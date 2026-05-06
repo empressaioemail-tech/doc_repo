@@ -1,0 +1,316 @@
+---
+id: cloud_run_canary_deploy
+title: Cloud Run canary deploy runbook
+status: active
+last_updated: 2026-05-06
+applies_to: portfolio
+related: [10_ground_truth, 12_migration_sprint, 20_agent_operating_rules, 91_postmortems/2026-05-05_track_b_deploy_saga]
+---
+
+# Cloud Run canary deploy runbook
+
+> **Operational runbook.** Use this for any Cloud Run service deploy
+> in the portfolio: SmartCity OS revisions, the Phase 1A cutover for
+> legacy-design-tools, future product Cloud Run services. The pattern
+> is build â canary at 0% traffic â smoke probe â shift traffic â
+> backup tag â observation.
+>
+> **Why canary at 0% traffic first:** the Track B saga
+> ([`91_postmortems/2026-05-05_track_b_deploy_saga.md`](../91_postmortems/2026-05-05_track_b_deploy_saga.md))
+> taught that "deploy succeeded" doesn't mean "feature live." A
+> 0%-traffic canary lets you probe the new revision's behavior
+> against its real URL before any production traffic touches it.
+> The smoke probe is part of the deploy, not a separate step.
+
+## When this applies
+
+Any deploy to a Cloud Run service in `smartcity-os-prod` (or future
+GCP projects) where:
+
+- New code is being shipped
+- New environment variables / secrets are being introduced
+- A revision should be verified before traffic shifts
+
+This runbook does NOT cover:
+
+- Initial Cloud Run service provisioning (covered in
+  [`12_migration_sprint.md`](../12_migration_sprint.md) Phase 1A
+  for legacy-design-tools)
+- GCP project / IAM / Artifact Registry setup
+- Custom domain mappings (one-time per service)
+
+## Prerequisites
+
+- Cloud Shell access (preferred) or local `gcloud` authenticated
+  against the right project
+- The merge SHA you intend to deploy is on origin/main
+- A backup tag is created on origin BEFORE the deploy (per HR-1
+  GitHub-as-truth and the agent operating rules)
+
+```bash
+# Backup tag at the SHA before this deploy lands
+git tag backup/pre-<task-name>-$(date +%Y%m%d) <merged-sha>
+git push origin backup/pre-<task-name>-$(date +%Y%m%d)
+```
+
+## Deploy sequence
+
+Substitute `$SERVICE_NAME` (e.g. `smartcity-api`), `$PROJECT_ID`
+(e.g. `smartcity-os-prod`), `$REGION` (e.g. `us-central1`),
+`$IMAGE_PATH` (the Artifact Registry path), and `$CANARY_TAG` (a
+short identifier for this deploy, e.g. `w1-c-4a-auth-fix`).
+
+### Step 1 â Set defaults
+
+```bash
+gcloud config set project $PROJECT_ID
+gcloud config set run/region $REGION
+```
+
+### Step 2 â Build new image from origin/main
+
+For services using Cloud Build with a config file:
+
+```bash
+gcloud builds submit --config $BUILD_CONFIG_FILE
+# e.g. cloudbuild-api.yaml for smartcity-api
+```
+
+For services using `gcloud run deploy --source` (Cloud Run buildpacks):
+
+```bash
+# Build implicitly happens during `gcloud run deploy` in step 3
+# No separate build step
+```
+
+For services using GitHub Actions to build and push to Artifact
+Registry (Phase 1A pattern for legacy-design-tools):
+
+```bash
+# Image is already in Artifact Registry by the time you reach
+# step 3; no local build needed
+```
+
+### Step 3 â Deploy as canary tag with NO traffic
+
+```bash
+gcloud run deploy $SERVICE_NAME \
+  --image $IMAGE_PATH \
+  --tag $CANARY_TAG \
+  --no-traffic
+```
+
+The `--no-traffic` flag is the load-bearing piece. It creates a new
+revision and tags it without shifting any traffic to it. The
+revision becomes addressable via a tag-prefixed URL.
+
+### Step 4 â Get the canary URL
+
+```bash
+CANARY_URL=$(gcloud run services describe $SERVICE_NAME \
+  --format='value(status.traffic[?tag=='"$CANARY_TAG"'].url)')
+echo "Canary: $CANARY_URL"
+```
+
+The URL has the form
+`https://$CANARY_TAG---$SERVICE_NAME-<hash>-<region>.a.run.app`. It
+routes only to the canary revision; production traffic continues
+to flow to the prior revision.
+
+### Step 5 â Smoke probe against canary URL
+
+The smoke probe validates that the new revision's behavior matches
+expectations. Per HR-3 (deploy success != feature live), this is
+non-negotiable.
+
+What to probe depends on what changed in this deploy:
+
+```bash
+# Generic health check
+curl -sI "$CANARY_URL/api/healthz"
+
+# Auth boundary check (relevant for auth-related changes)
+curl -sI "$CANARY_URL/api/healthz" -H "x-internal-ai: smartcity-ctx"
+
+# Schema-dependent endpoint (relevant if schema changed in this deploy)
+curl -sI "$CANARY_URL/api/<endpoint-touching-new-schema>"
+```
+
+Expected response shapes are deploy-specific. For each probe,
+**verify the response shape, not just the HTTP status code.** A 401
+returning HTML "Cannot GET" is a different outcome than a 401
+returning `{"error":"unauthorized"}`.
+
+If smoke probes return unexpected results, **stop here.** Do not
+shift traffic. Investigate against the canary URL â the prior
+revision is still serving production unaffected.
+
+### Step 6 â Shift 100% traffic to the canary tag
+
+Once smoke probes pass:
+
+```bash
+gcloud run services update-traffic $SERVICE_NAME \
+  --to-tags $CANARY_TAG=100
+```
+
+This atomic update routes 100% of traffic to the canary revision.
+The prior revision is preserved and stays addressable for fast
+rollback.
+
+### Step 7 â Verify production URL
+
+```bash
+# Verify against the production custom domain (or service URL)
+curl -sI https://$PRODUCTION_DOMAIN/api/healthz
+# Expected: same response as the canary smoke probe in step 5
+```
+
+If the production URL response differs from the canary URL response
+post-traffic-shift, **roll back immediately** (step 9).
+
+### Step 8 â Tag the deployed revision in git
+
+```bash
+DEPLOYED_REV=$(gcloud run revisions list --service $SERVICE_NAME \
+  --limit 1 --format='value(metadata.name)')
+echo "Deployed: $DEPLOYED_REV"
+
+git tag backup/post-<task-name>-${DEPLOYED_REV} <merged-sha>
+git push origin --tags
+```
+
+This creates a backup tag at the merged SHA with the revision name
+embedded â useful for rollback context and audit trail.
+
+### Step 9 â Observation window
+
+For deploys that change behavior visible to customers (auth, data,
+features), observe for ~1 hour minimum before declaring done. For
+deploys that change behavior visible only to internal callers, the
+observation window can be shorter (smoke probes pass + 5 min sanity
+check).
+
+What to monitor:
+
+- Cloud Run revision metrics (requests, errors, latency)
+- Application-level error rates
+- Customer-facing surfaces (Bastrop dashboard, architect-side UI)
+  if applicable
+
+## Rollback
+
+Two paths depending on what failed.
+
+### Smoke probe failure (canary at 0% traffic)
+
+The canary revision is exposed only via the tag URL. Production
+traffic is unaffected.
+
+```bash
+# Optional: delete the failed canary revision (keeps things tidy)
+gcloud run revisions delete $CANARY_REVISION_NAME
+
+# Re-attempt with fix; no production rollback needed
+```
+
+### Failure detected after traffic shift
+
+If the production URL is showing problems post-shift, revert
+traffic to the prior revision:
+
+```bash
+# Find the prior revision (was at 100% before this deploy)
+gcloud run revisions list --service $SERVICE_NAME --limit 5
+
+# Shift 100% traffic back
+gcloud run services update-traffic $SERVICE_NAME \
+  --to-revisions <prior-revision-name>=100
+```
+
+Cloud Run's traffic update is atomic and effectively instantaneous;
+rollback is fast. Investigate the failed revision after rollback,
+not during.
+
+## Discipline cross-references
+
+This runbook enforces several rules from
+[`20_agent_operating_rules.md`](../20_agent_operating_rules.md):
+
+- **HR-3** (deploy success != feature live) â smoke probe is part
+  of the deploy, not a separate step
+- **HR-7** (three failures in 4 hours = stop) â if a deploy attempt
+  needs to be re-tried for distinct reasons multiple times, halt
+  and assess
+- **HR-8** (verbatim verification artifacts) â every step's output
+  pasted verbatim in the deploy chat record
+
+## Stop conditions
+
+Halt and assess if any of these occur:
+
+- Cloud Build fails in step 2
+- `gcloud run deploy` returns errors that don't resolve on retry
+- Canary URL doesn't respond at all (revision didn't boot)
+- Smoke probe in step 5 returns unexpected response shape
+- Step 7 production URL response differs from canary post-shift
+- Three deploy attempts in 4 hours fail for distinct reasons (HR-7)
+
+## Examples
+
+### Example 1 â Auth fix on smartcity-api (W1.C.4a pattern)
+
+```bash
+# Setup
+gcloud config set project smartcity-os-prod
+gcloud config set run/region us-central1
+
+# Build
+gcloud builds submit --config cloudbuild-api.yaml
+
+# Canary deploy
+gcloud run deploy smartcity-api \
+  --image us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-api:latest \
+  --tag w1-c-4a-auth-fix \
+  --no-traffic
+
+# Get canary URL
+CANARY_URL=$(gcloud run services describe smartcity-api \
+  --format='value(status.traffic[?tag=='w1-c-4a-auth-fix'].url)')
+
+# Smoke probes (both should now return 401 with JSON shape)
+curl -sI "$CANARY_URL/api/healthz" -H "x-internal-ai: smartcity-ctx"
+curl -sI "$CANARY_URL/api/healthz"
+
+# Traffic shift
+gcloud run services update-traffic smartcity-api \
+  --to-tags w1-c-4a-auth-fix=100
+
+# Production verify
+curl -sI https://smartcityos.io/api/healthz -H "x-internal-ai: smartcity-ctx"
+# Expected: HTTP/2 401 â Fire 1 closed
+```
+
+### Example 2 â Phase 1A initial Cloud Run deploy (legacy-design-tools)
+
+Phase 1A introduces a NEW service. The pattern is the same with
+two adjustments:
+
+1. The prior-revision rollback path doesn't exist for the very
+   first deploy. Rollback at this stage means reverting to the
+   Replit deploy (per
+   [`90_runbooks/replit_deploy.md`](replit_deploy.md)), not to a
+   prior Cloud Run revision.
+2. The custom domain mapping is a one-time setup. The first deploy
+   may go to the auto-generated `*.a.run.app` URL until the
+   domain mapping is configured.
+
+See [`12_migration_sprint.md`](../12_migration_sprint.md) Phase 1A
+for the full sequence including service provisioning prerequisites.
+
+## Revision history
+
+- **2026-05-06 (origin):** runbook drafted from the W1.C.4a deploy
+  sequence in the 2026-05-05 planning conversation. Generalized for
+  reuse across portfolio Cloud Run deploys (Phase 1A, Phase 2
+  cutover, ongoing SmartCity OS revisions, future products).

@@ -2,7 +2,7 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-06
 applies_to: portfolio
 related: [10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment]
 ---
@@ -14,13 +14,26 @@ related: [10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_asses
 > every edit, however small. The checklist is the roadmap; surrounding
 > prose stays minimal so the action items are scannable.
 >
+> **2026-05-06 changes:** Tooling setup complete on Nick box (`gh
+> auth login` + `gh auth setup-git` + credential username pinned;
+> all four repos verified accessible). Migration sprint structure
+> decided as 3-phase split (legacy-design-tools full migration â
+> SmartCity OS Neon swap â Drizzle migrate adoption); landed as
+> [`12_migration_sprint.md`](12_migration_sprint.md). Cloud Run
+> canary deploy pattern codified at
+> [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md).
+> Biz ops repo concept agreed (separate repo for finance / sales /
+> customer / corporate; cross-references to canonical-numbers
+> docs); creation queued in P2. Pricing framework renumbered
+> 15 â 14 (slot collision).
+>
 > **2026-05-05 changes:** P0 docs work closed (atom ADR + reference +
 > upgrade guide migrated; recon backfill landed; ADR-Replit-Neon
 > migration done; saga package cleanup decided as retire-both). Part 8
 > open questions from `04_strategic_conversation_record.md` folded in:
 > action-shaped items added to P-tiers; genuinely-open questions in
 > new "Open strategic questions" section. Risk register, leading
-> indicators, and pricing framework extracted as `13`, `17`, `15`.
+> indicators, and pricing framework extracted as `13`, `17`, `14`.
 >
 > **Supersedes** the pre-docs-repo `11_roadmap.md` carried forward in
 > Claude.ai project knowledge â Phase 0 framing is dropped because the
@@ -64,8 +77,10 @@ externals where a question depends on them.
 
 ## P1 â this week / next
 
-- [ ] **Cloud Run + GitHub Actions CI migration** for legacy-design-tools â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md), [`23_dev_setup_assessment.md`](23_dev_setup_assessment.md)
-- [ ] **Empressa Neon swap, both apps** (paired with Cloud Run sprint; SmartCity OS Neon to `us-central1` to close Fire 5 cross-region hop) â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md)
+- [ ] **Migration sprint Phase 1** â legacy-design-tools full migration (Cloud Run + GHA CI + Empressa Neon swap). Sub-phases 1A/1B/1C per [`12_migration_sprint.md`](12_migration_sprint.md). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
+- [ ] **Migration sprint Phase 2** â SmartCity OS Empressa Neon swap (us-central1 closes Fire 5). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
+- [ ] **Migration sprint Phase 3** â Drizzle migrate adoption for both apps. â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
+- [ ] **Dispatch prompts queue** â 11 prompts pending draft (Fire 4 Repl drift, W1.A.6-9 forensics, W1.C.1-3 implementation, A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth). Batch by similarity per prior planner recommendation. â `docs` Â· planner Â· M (batch turns) Â· ref: chat 2026-05-06
 - [ ] **W1.A.6-9 forensics dispatches** (calendar event visibility / Power BI accuracy / police units & Spireon / daily health-watch email) â `sprint` Â· agent Â· XL Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
 - [ ] **W1.C.1-3 implementation dispatches** (Prophecy layout / CSP frame-src / OpenGov BNP hardening) â `sprint` Â· agent Â· XL Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
 - [ ] **$21M water/wastewater state grant** â June 1 deadline, no owner, no technology narrative drafted â `strategic` Â· Nick (open) Â· XL Â· ref: `userMemories` (no doc yet â propose `12_grants_pipeline.md` if multiple grants surface)
@@ -78,7 +93,11 @@ externals where a question depends on them.
 - [ ] **ADR-005 multitenancy** migration â `80_adrs/adr_005_smartcity_multitenancy.md` from pre-docs-repo `45_smartcity_multitenancy_spec.md` (every atom is tenant-scoped per ADR-001; this captures the multitenancy decision separately). Decided 2026-05-05 to land as ADR not sub-product spec â `docs` Â· planner Â· M Â· ref: [`02_doc_migration_plan.md`](02_doc_migration_plan.md) item 11
 - [ ] **Watchlist / risk register owner assignment** â Suggested in [`13_risk_register.md`](13_risk_register.md) and [`17_leading_indicators.md`](17_leading_indicators.md) as Nick to set, Valerie to operate. Until owner is named, monthly cadence is aspirational. â `ops` Â· Nick (decision) Â· S Â· ref: [`13_risk_register.md`](13_risk_register.md)
 - [ ] **Cente box layout confirmation** (paths, `gcloud`, `gh`, `doc_repo` clone, working repo paths) â `ops` Â· Nick Â· S Â· ref: [`22_workstation_inventory.md`](22_workstation_inventory.md)
-- [ ] **SSH remotes migration on Nick box** + `gh auth login` â `ops` Â· Nick Â· S Â· ref: [`22_workstation_inventory.md`](22_workstation_inventory.md)
+- [x] **SSH remotes migration on Nick box** â superseded 2026-05-06 by `gh auth setup-git` + `credential.https://github.com.username` pinning. SSH remotes deferred indefinitely; current pattern works.
+- [x] **`gh auth login` on Nick box** â done 2026-05-06. All four working repos verified accessible.
+- [x] **Cloud Run canary deploy runbook** â [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md). **Shipped 2026-05-06.** Pattern from W1.C.4a generalized for Phase 1A and ongoing Cloud Run work.
+- [x] **Migration sprint structure decision** â **decided 2026-05-06 as 3-phase split**, captured in [`12_migration_sprint.md`](12_migration_sprint.md). Surgical phasing avoids stacked-failure pattern from Track B saga.
+- [ ] **Biz ops repo creation** â separate repo for finance / sales / customer relationships / corporate / strategy. Repo name TBD (`biz_ops_repo` / `legacy_biz_ops` / `empressa_biz`). First content: README + `00_logs/` directory with 6 capture log templates (pricing log, deal events log, sprint actuals log, pipeline movement log, time allocation log, expenses log). Cross-references from `doc_repo` (`14_pricing_framework`, `13_risk_register`, `17_leading_indicators`). Backfill Track B saga sprint actuals + Sylvia $1M proposal data point + current Bastrop pipeline state. â `corporate` Â· Nick + planner Â· M Â· ref: chat 2026-05-05
 - [ ] **Anthropic GitHub MCP wiring** (post seed-doc-stable; replaces manual project-knowledge sync) â `ops` Â· Nick + planner Â· M Â· ref: [`22_workstation_inventory.md`](22_workstation_inventory.md)
 - [ ] **Empressa credentials vault decision** â pick 1Password or equivalent as canonical store â `ops` Â· Nick Â· S Â· ref: [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md), [`22_workstation_inventory.md`](22_workstation_inventory.md)
 - [ ] **Pre-docs-repo migration progress** â work the queue in [`02_doc_migration_plan.md`](02_doc_migration_plan.md) (~22 migrate items, 12 absorb, 6 archive, 7 retire). Sequence per matrix's "Suggested execution order." â `docs` Â· planner Â· L (multi-turn) Â· ref: [`02_doc_migration_plan.md`](02_doc_migration_plan.md)
@@ -118,7 +137,7 @@ resolved. Resolved items struck through.
 
 - ~~Atom ADR + recon backfill at P0~~ â resolved 2026-05-05 (both shipped).
 - **$21M grant at P1 with size XL** â time-bound by external deadline (June 1) but currently no owner / no narrative. If this stays at P1 it needs decisions and bodies; otherwise it slides to "abandoned" rather than "deferred."
-- **Migration sprint as one item vs split into pieces** â currently lumped (Cloud Run + GHA + Empressa Neon for both apps as effectively two rows). Could split into 4-6 sub-items to surface dependencies more clearly. Nick to decide before sprint kickoff.
+- ~~**Migration sprint as one item vs split into pieces**~~ â resolved 2026-05-06 as **3-phase split** (legacy-design-tools full migration â SmartCity OS Neon swap â Drizzle migrate adoption). See [`12_migration_sprint.md`](12_migration_sprint.md).
 - **Jarrell at P3 not P2** â demoted because Bastrop fires + product roadmap have to clear first. Could be argued the other way (Jarrell drives the city-to-city architecture which needs scoping work even before the city is live).
 - **Compass system prompt refactoring at P3** â if blocking AI Plan Review M4-B work, rises to P2.
 - **Items not on this roadmap because it's a software roadmap:** marketing/sales pipeline (Pipedrive, Synthesia content, TCMA/ICMA prep), Sylvia $1M proposal restructuring (per [`14_pricing_framework.md`](14_pricing_framework.md)), EdgeConneX partnership outreach. These shape *what* the software needs to do and *when* â surface them on a separate sales/customer roadmap or absorb them here. Decision pending.
@@ -180,6 +199,7 @@ The canonical docs each item points back to:
 
 **Portfolio reference:**
 - [`10_ground_truth.md`](10_ground_truth.md) â current state, fires, planner-belief corrections
+- [`12_migration_sprint.md`](12_migration_sprint.md) â 3-phase migration sprint plan (Cloud Run + Empressa Neon + Drizzle migrate)
 - [`13_risk_register.md`](13_risk_register.md) â 10 named failure modes
 - [`14_pricing_framework.md`](14_pricing_framework.md) â Path A vs Path B, defaults, live Sylvia application
 - [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md) â Replit-managed Neon migration plan
@@ -206,6 +226,7 @@ The canonical docs each item points back to:
 - ADR-005 (multitenancy) and ADR-006 (anchoring substrate) â pending, see P2 / P3
 
 **Operational:**
+- [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md) â Cloud Run canary deploy runbook (build â 0% canary â smoke probe â traffic shift â backup tag â observation)
 - [`90_runbooks/replit_deploy.md`](90_runbooks/replit_deploy.md) â Replit deploy runbook
 - [`91_postmortems/2026-05-05_track_b_deploy_saga.md`](91_postmortems/2026-05-05_track_b_deploy_saga.md) â Track B postmortem
 
