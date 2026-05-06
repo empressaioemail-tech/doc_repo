@@ -28,8 +28,8 @@ archived_from: 04_strategic_conversation_record.md
 > | Part 8 (Open questions) | Pending fold into [`11_roadmap.md`](../../../11_roadmap.md) P2/P3 entries | Pending migration |
 > | Part 9 (Leading indicators watch list) | [`17_leading_indicators.md`](../../../17_leading_indicators.md) | Migrated 2026-05-05 |
 > | Part 10.1 (Velocity baseline) | Partially absorbed into [`23_dev_setup_assessment.md`](../../../23_dev_setup_assessment.md) | Partially absorbed |
-> | Part 10.2 (Pricing strategy framework) | [`15_pricing_framework.md`](../../../15_pricing_framework.md) | Migrated 2026-05-05 |
-> | Part 10.3 (Pitch discipline) | Referenced from `15_pricing_framework.md`; full content remains in this archive | Pending decision |
+> | Part 10.2 (Pricing strategy framework) | [`14_pricing_framework.md`](../../../14_pricing_framework.md) | Migrated 2026-05-05 |
+> | Part 10.3 (Pitch discipline) | Referenced from `14_pricing_framework.md`; full content remains in this archive | Pending decision |
 > | Part 10.4 (Parcel Intelligence as prerequisite to AI Plan Review) | Settled ADR; referenced in [`30_smartcity_os.md`](../../../30_smartcity_os.md) and [`40_design_accelerator.md`](../../../40_design_accelerator.md) | Absorbed |
 > | Part 10.5 (Property Intelligence as UX container) | OPEN â not yet migrated | Pending |
 > | Part 10.6 (Customer engagement doc structure) | OPEN â not yet migrated | Pending |

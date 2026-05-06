@@ -45,7 +45,7 @@ The watchlist is the fast-pass; the register is the deep-pass.
 | 2 | Provenance not a purchase criterion | Peer cities don't weight the provenance chain in their selection scoring | Insufficient data â second-customer conversations haven't been comprehensive enough to test |
 | 3 | "Good enough integration" beats integration-first | Incumbent (Tyler / Accela / CentralSquare) announces a "platform mode" that promises to leave existing systems in place | Not firing as of last check; Tyler has integration features but no announced platform mode |
 | 4 | Portability never exercised | Customer interviews reveal portability is "nice to know" and never the decisive factor | Insufficient data â no customer has been asked to articulate buying criteria post-portability-claim |
-| 5 | Single-customer risk | Churn signals from Sylvia â pre-budget pushback, staff cycling, sponsor loss | **Active** â 2026-05-05 $1M proposal pushback. Investigating trajectory. Pricing framework path discussed in [`15_pricing_framework.md`](15_pricing_framework.md). |
+| 5 | Single-customer risk | Churn signals from Sylvia â pre-budget pushback, staff cycling, sponsor loss | **Active** â 2026-05-05 $1M proposal pushback. Investigating trajectory. Pricing framework path discussed in [`14_pricing_framework.md`](14_pricing_framework.md). |
 | 6 | Velocity tax | A pre-revenue competitor reaches five municipal customers before Legacy reaches two | Not firing â no competitor visible at this scale |
 | 7 | Regulatory non-compounding | TCEQ issues DPR guidance without citing Legacy-style tamper-evident approaches, OR adopts a mandate requiring a certification Legacy hasn't pursued | Not firing â no TCEQ DPR guidance issued in the watch period |
 | 8 | Multi-agent team dilution | A second engineer's early PRs introduce ruled-out patterns | Not applicable yet â no engineer #2 onboarded; Risk fires when this changes |
@@ -112,7 +112,7 @@ When retiring an indicator (the risk no longer applies):
   ownership
 - [`20_agent_operating_rules.md`](20_agent_operating_rules.md) â
   rules that mitigate Risks 9 and 10
-- [`15_pricing_framework.md`](15_pricing_framework.md) â Sylvia
+- [`14_pricing_framework.md`](14_pricing_framework.md) â Sylvia
   $1M proposal context relevant to Risk 5 active signal
 - [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md)
   â original strategic record (Part 9 source)

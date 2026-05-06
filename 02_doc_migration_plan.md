@@ -16,7 +16,7 @@ related: [00_README, 01_doc_conventions, 10_ground_truth, 11_roadmap]
 >
 > **2026-05-05 updates:** Item #11 (multitenancy) decided as ADR-005.
 > Item #18 (strategic conversation record) in progress â three
-> extractions landed (`13_risk_register`, `15_pricing_framework`,
+> extractions landed (`13_risk_register`, `14_pricing_framework`,
 > `17_leading_indicators`), original archived, remaining Parts
 > tracked in archive header.
 
@@ -82,7 +82,7 @@ decides one of four outcomes:
 | 15 | `51a_design_accelerator_atom_catalog.md` | `45_design_accelerator_atom_catalog.md` | M | pending | DA atom catalog (referenced in `25_atom_architecture_reference.md` Section 8). |
 | 16 | `_52___Design_Accelerator_Model_Viewer` | `43_design_accelerator_model_viewer.md` | M | pending | Odd filename in source (underscores, no extension); content needs verification before migration. |
 | 17 | `53_design_accelerator_cad_connectors.md` | `44_design_accelerator_cad_connectors.md` | M | pending | DA CAD connector spec. |
-| 18 | `04_strategic_conversation_record.md` | Option D extraction (multiple targets â see notes) | L | in progress | **2026-05-05:** Per Option D â Part 4 â [`13_risk_register.md`](13_risk_register.md) â; Part 9 â [`17_leading_indicators.md`](17_leading_indicators.md) â; Section 10.2 â [`15_pricing_framework.md`](15_pricing_framework.md) â; original archived to [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md). Part 8 (open questions) â [`11_roadmap.md`](11_roadmap.md) (pending). Part 3 / Part 5 / Part 6 partial / Part 10.3 / 10.5 / 10.6 stay in archive until extraction or retirement decided per-Part. |
+| 18 | `04_strategic_conversation_record.md` | Option D extraction (multiple targets â see notes) | L | in progress | **2026-05-05:** Per Option D â Part 4 â [`13_risk_register.md`](13_risk_register.md) â; Part 9 â [`17_leading_indicators.md`](17_leading_indicators.md) â; Section 10.2 â [`14_pricing_framework.md`](14_pricing_framework.md) â; original archived to [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md). Part 8 (open questions) â [`11_roadmap.md`](11_roadmap.md) (pending). Part 3 / Part 5 / Part 6 partial / Part 10.3 / 10.5 / 10.6 stay in archive until extraction or retirement decided per-Part. |
 | 19 | `92_architecture_diagrams.md` | `04_architecture_diagrams.md` | S | pending | Diagrams reference; foundational/meta band. |
 | 20 | `wave0_p0-6_hsts_gated_runbook.md` | `90_runbooks/hsts_gated.md` | M | pending | Operational runbook; HSTS-gated deploy. |
 | 21 | `codes-data-sourcing-strategy.md` | partial absorb into `32_smartcity_parcel_intelligence.md` and `42_design_accelerator_parcel_intelligence.md`, remainder retire | M | pending â peek required | Codes/legal data sourcing strategy. Spans both products' parcel intelligence work. Peek before deciding. |

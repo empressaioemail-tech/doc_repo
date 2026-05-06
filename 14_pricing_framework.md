@@ -1,5 +1,5 @@
 ---
-id: 15_pricing_framework
+id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
 last_updated: 2026-05-05
