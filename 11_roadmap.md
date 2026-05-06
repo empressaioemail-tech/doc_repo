@@ -77,7 +77,7 @@ externals where a question depends on them.
 
 ## P1 â this week / next
 
-- [ ] **Migration sprint Phase 1** â legacy-design-tools full migration (Cloud Run + GHA CI + Empressa Neon swap). Sub-phases 1A/1B/1C per [`12_migration_sprint.md`](12_migration_sprint.md). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
+- [ ] **Migration sprint Phase 1** â legacy-design-tools full migration (Cloud Run + GHA CI + Empressa Neon swap). Sub-phases 1A/1B/1C per [`12_migration_sprint.md`](12_migration_sprint.md). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md). **2026-05-06 progress:** Phase 1A scaffold + workflow first-deploy fixes + cascading test fixes shipped via PRs #18, #20, #21, #22 + `fix/cloud-run-first-deploy-and-auth-flags`. GCP infrastructure stood up. Canary smoke verification pending. Frontend hosting deferred.
 - [ ] **Migration sprint Phase 2** â SmartCity OS Empressa Neon swap (us-central1 closes Fire 5). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
 - [ ] **Migration sprint Phase 3** â Drizzle migrate adoption for both apps. â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
 - [ ] **Dispatch prompts queue** â 11 prompts pending draft (Fire 4 Repl drift, W1.A.6-9 forensics, W1.C.1-3 implementation, A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth). Batch by similarity per prior planner recommendation. â `docs` Â· planner Â· M (batch turns) Â· ref: chat 2026-05-06

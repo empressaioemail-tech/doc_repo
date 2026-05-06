@@ -31,7 +31,7 @@ related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev
 
 | Phase | Sub-phase | Description | Owner | Status | Started | Completed | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | 1A | legacy-design-tools: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify | Nick + agent | pending | â | â | â |
+| 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | active | 2026-05-06 | â | PRs #18, #20, #21, #22 + fix/cloud-run-first-deploy-and-auth-flags shipped; canary smoke verification pending |
 | 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | pending | â | â | â |
 | 1 | 1C | legacy-design-tools: data sync + cutover from Replit Neon to Empressa Neon | Nick + agent | pending | â | â | â |
 | 2 | 2A | SmartCity OS: Empressa Neon provisioning (us-central1) + schema sync | Nick + agent | pending | â | â | â |
@@ -44,6 +44,16 @@ related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev
 Status values: `pending` / `active` / `verified` / `rolled_back` /
 `superseded`.
 
+## Deferred items
+
+Items deliberately scoped out of this sprint, captured here so they
+don't get lost in chat:
+
+- **Frontend hosting decision** â `design-tools`, `plan-review`,
+  `mockup-sandbox` artifacts in the legacy-design-tools monorepo.
+  Deferred from Phase 1A. Queued for separate phase scoping. Owner:
+  Nick + planner.
+
 ## Cross-cutting prerequisites
 
 These must be in place before any phase starts. Some are already
@@ -55,18 +65,24 @@ queued separately in [`11_roadmap.md`](11_roadmap.md):
 - [ ] **Empressa credentials vault decision made** (1Password or
       alternative). New Neon credentials land here, not in `.replit`
       or repo files. See [`11_roadmap.md`](11_roadmap.md) P2 entry.
-- [ ] **`gh auth login` complete on Nick box** â required for
+- [x] **`gh auth login` complete on Nick box** (2026-05-06, with
+      `workflow` scope per `gh auth refresh -h github.com -s workflow`
+      â the default scope set does NOT include `workflow`, blocked
+      first push of `.github/workflows/` files). Required for
       agent-opened PRs across the sprint. See
       [`22_workstation_inventory.md`](22_workstation_inventory.md).
-- [ ] **GCP project decision for legacy-design-tools** â reuse
-      `smartcity-os-prod` (multi-service pattern) or create a new
-      project (e.g., `legacy-design-tools-prod`). Recommendation:
-      **new project.** Keeps blast radius separate; aligns with the
-      "each product owns its own infrastructure" pattern; simplifies
-      IAM. Decide before Phase 1A starts.
-- [ ] **Backup tags on origin/main for both repos** before any
-      phase touches production. Tag format:
-      `backup/pre-migration-sprint-<YYYYMMDD>`.
+- [x] **GCP project decision for legacy-design-tools** â new project
+      `legacy-design-tools-prod` created 2026-05-06. Keeps blast
+      radius separate; aligns with the "each product owns its own
+      infrastructure" pattern (ADR-004); simplifies IAM.
+- [x] **Backup tags on origin/main** â
+      `backup/pre-migration-sprint-20260506` at `b135955` on
+      legacy-design-tools origin (2026-05-06). SmartCity OS backup
+      tag pending until Phase 2 prep.
+- [x] **`iamcredentials.googleapis.com` enabled on
+      `legacy-design-tools-prod`** â required for WIF auth from GHA;
+      silent failure mode if missing (first build-and-push run
+      surfaced this gap). Now in deploy.md prereqs explicitly.
 
 ## Phase 1 â legacy-design-tools full migration
 
@@ -473,6 +489,13 @@ Particularly relevant rules:
 Edits to this section log progress. Newest at top. Format: date â
 phase â note.
 
+- *2026-05-06 â Phase 1A active. Scaffold + first-deploy workflow
+  fixes + cascading test fixes shipped via PRs #18, #20, #21, #22 +
+  `fix/cloud-run-first-deploy-and-auth-flags`. GCP infrastructure
+  stood up in `legacy-design-tools-prod` (5 APIs, AR repo, 2 SAs,
+  WIF, 14 Secret Manager entries, GCS bucket, 4 GHA repo secrets).
+  Backup tag at `b135955`. Canary smoke verification pending. See
+  [`_sessions/2026-05-06_phase_1a_kickoff_claude_ai_planner.md`](_sessions/2026-05-06_phase_1a_kickoff_claude_ai_planner.md).*
 - *2026-05-06 â sprint plan drafted; awaiting cross-cutting
   prerequisites before Phase 1A kickoff.*
 
