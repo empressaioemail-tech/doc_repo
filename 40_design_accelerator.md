@@ -2,9 +2,9 @@
 id: 40_design_accelerator
 title: Design Accelerator
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-06
 applies_to: design-accelerator
-related: [10_ground_truth, 30_smartcity_os, 41_revit_connector]
+related: [10_ground_truth, 30_smartcity_os, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_revit_connector]
 ---
 
 # Design Accelerator
@@ -205,7 +205,8 @@ Repo vocabulary is canonical.
 ## Strategic frames worth carrying forward
 
 - **Customer-zero is Empressa.** Pilot on real Moab projects before
-  external sales. Friction surfaces internally first.
+  external sales. Friction surfaces internally first. Dated field notes:
+  [`40a_customer_zero_observations_arena_roja_2026_05_06.md`](40a_customer_zero_observations_arena_roja_2026_05_06.md).
 - **Atom-graph-first.** Same as SmartCity OS — every feature extends
   the graph or gets reworked.
 - **Same engine, two surfaces.** The compliance checker is one
