@@ -31,7 +31,7 @@ related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev
 
 | Phase | Sub-phase | Description | Owner | Status | Started | Completed | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | active | 2026-05-06 | â | PRs #18, #20, #21, #22 + fix/cloud-run-first-deploy-and-auth-flags shipped; canary smoke verification pending |
+| 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | verified | 2026-05-06 | 2026-05-06 | PRs #18, #20, #21, #22, #24 + fix/cloud-run-first-deploy-and-auth-flags merged. Revision `api-server-00003-wix` tagged canary, `/api/healthz` HTTP 200. Traffic ramp pending. |
 | 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | pending | â | â | â |
 | 1 | 1C | legacy-design-tools: data sync + cutover from Replit Neon to Empressa Neon | Nick + agent | pending | â | â | â |
 | 2 | 2A | SmartCity OS: Empressa Neon provisioning (us-central1) + schema sync | Nick + agent | pending | â | â | â |
@@ -489,6 +489,14 @@ Particularly relevant rules:
 Edits to this section log progress. Newest at top. Format: date â
 phase â note.
 
+- *2026-05-06 â Phase 1A **verified**. PR #24 mounted
+  `SNAPSHOT_SECRET` (one-line workflow fix unblocking the boot
+  validator at `lib/snapshotSecret.ts:14-17`). Canary revision
+  `api-server-00003-wix` reachable at
+  `https://canary---api-server-tds7av26va-uc.a.run.app`,
+  `/api/healthz` HTTP 200, all boot validators clear. Traffic ramp
+  (10% â 50% â 100%) pending. See
+  [`_sessions/2026-05-06_phase_1a_complete_claude_ai_planner.md`](_sessions/2026-05-06_phase_1a_complete_claude_ai_planner.md).*
 - *2026-05-06 â Phase 1A active. Scaffold + first-deploy workflow
   fixes + cascading test fixes shipped via PRs #18, #20, #21, #22 +
   `fix/cloud-run-first-deploy-and-auth-flags`. GCP infrastructure

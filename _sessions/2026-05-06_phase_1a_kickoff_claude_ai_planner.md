@@ -5,6 +5,8 @@ date: 2026-05-06
 agent: claude-ai-planner
 repo: doc_repo
 session_type: sprint_execution
+status: superseded
+superseded_by: 2026-05-06_phase_1a_complete_claude_ai_planner
 rolled_up: true
 rolled_up_into: [12_migration_sprint, 11_roadmap, regenerate_schema_fixture_windows, 40a_customer_zero_observations_arena_roja_2026_05_06]
 ---
