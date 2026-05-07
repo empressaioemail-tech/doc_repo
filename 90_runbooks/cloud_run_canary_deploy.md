@@ -294,7 +294,7 @@ curl -sI https://smartcityos.io/api/healthz -H "x-internal-ai: smartcity-ctx"
 ### Example 2 â Phase 1A initial Cloud Run deploy (legacy-design-tools)
 
 Phase 1A introduces a NEW service. The pattern is the same with
-two adjustments:
+three adjustments:
 
 1. The prior-revision rollback path doesn't exist for the very
    first deploy. Rollback at this stage means reverting to the
@@ -304,9 +304,53 @@ two adjustments:
 2. The custom domain mapping is a one-time setup. The first deploy
    may go to the auto-generated `*.a.run.app` URL until the
    domain mapping is configured.
+3. **`--no-traffic --tag=<TAG>` does NOT result in 0% traffic to
+   the canary on first deploy.** Cloud Run auto-routes 100% to
+   LATEST and applies the tag because there's no prior revision to
+   claim the remaining traffic. The describe output will show
+   `{percent: 100, latestRevision: true, tag: <TAG>}` as a single
+   traffic entry. The "gradual ramp" pattern (10/50/100) in step 6
+   applies to service updates with a known-good baseline; on first
+   deploy: do recon, smoke probe at the tag URL, confirm bare
+   service URL routes equivalently, tag the deployed source SHA,
+   observe. Skip the explicit traffic-shift command â it would be
+   a no-op.
 
 See [`12_migration_sprint.md`](../12_migration_sprint.md) Phase 1A
 for the full sequence including service provisioning prerequisites.
+
+## Verifying deployed source SHA via Artifact Registry
+
+When tagging git for backup-pointer purposes, do not assume the
+source SHA from external context (orientation reports, planner
+memory, prior session summaries â these can drift or refer to a
+different repo entirely). Verify the actual source SHA from the
+deployed image:
+
+1. Get the running revision's image digest:
+   ```bash
+   gcloud run revisions describe <REV> --format='value(spec.containers[0].image)'
+   ```
+2. List image tags on that digest in Artifact Registry, filtered
+   by likely SHA fragments:
+   ```bash
+   gcloud artifacts docker images list <REGION>-docker.pkg.dev/<PROJECT>/<REPO>/<IMAGE> \
+     --include-tags --filter='tags:<short-sha-fragment>'
+   ```
+   Or describe the digest directly:
+   ```bash
+   gcloud artifacts docker images describe \
+     <REGION>-docker.pkg.dev/<PROJECT>/<REPO>/<IMAGE>@<digest> \
+     --format='value(image_summary.tags)'
+   ```
+3. The source-SHA tag (typically the full or short git SHA applied
+   at build time by the GHA workflow) is the verified source. Use
+   it for the git tag.
+
+This pattern caught a SHA conflation in the 2026-05-06 PM session
+where the dispatch prompt hardcoded a SHA from an unrelated repo
+(`doc_repo` HEAD) instead of the `legacy-design-tools` deployed
+source SHA.
 
 ## Revision history
 

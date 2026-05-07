@@ -31,8 +31,8 @@ related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev
 
 | Phase | Sub-phase | Description | Owner | Status | Started | Completed | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | verified | 2026-05-06 | 2026-05-06 | PRs #18, #20, #21, #22, #24 + fix/cloud-run-first-deploy-and-auth-flags merged. Revision `api-server-00003-wix` tagged canary, `/api/healthz` HTTP 200. Traffic ramp pending. |
-| 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | pending | â | â | â |
+| 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | verified | 2026-05-06 | 2026-05-06 | PRs #18, #20, #21, #22, #24 + fix/cloud-run-first-deploy-and-auth-flags merged. Revision `api-server-00003-wix` tagged canary, `/api/healthz` HTTP 200. Traffic at 100% via canary tag (auto-promoted to LATEST per Cloud Run first-deploy semantics). Backup tag `backup/post-1A-100traffic-api-server-00003-wix` at `e4b15c1` on origin. |
+| 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | pending | â | â | Empressa Neon project `legacy-design-tools-prod` provisioned (Neon project ID `shiny-snow-37459644`, branch `production`, Scale tier under Empressa org, account empressaioemail@gmail.com). Postgres client install + `EMPRESSA_DATABASE_URL` secret load pending before Stage 1 dispatch can run. |
 | 1 | 1C | legacy-design-tools: data sync + cutover from Replit Neon to Empressa Neon | Nick + agent | pending | â | â | â |
 | 2 | 2A | SmartCity OS: Empressa Neon provisioning (us-central1) + schema sync | Nick + agent | pending | â | â | â |
 | 2 | 2B | SmartCity OS: data sync + cutover at low-traffic window | Nick + agent | pending | â | â | â |
@@ -59,8 +59,10 @@ don't get lost in chat:
 These must be in place before any phase starts. Some are already
 queued separately in [`11_roadmap.md`](11_roadmap.md):
 
-- [ ] **Empressa Neon Pro account created** under a Legacy Group /
-      Empressa email (distinct from any GitHub-tied address). See
+- [x] **Empressa Neon Pro account created** under a Legacy Group /
+      Empressa email (2026-05-06; account empressaioemail@gmail.com
+      on Empressa-org Scale tier â exceeds the Pro tier the prereq
+      named). See
       [`adr_004_future_neon_provisioning.md`](80_adrs/adr_004_future_neon_provisioning.md).
 - [ ] **Empressa credentials vault decision made** (1Password or
       alternative). New Neon credentials land here, not in `.replit`
@@ -489,6 +491,15 @@ Particularly relevant rules:
 Edits to this section log progress. Newest at top. Format: date â
 phase â note.
 
+- *2026-05-06 (PM) â Phase 1A traffic ramp closed. Canary tag at
+  100% to api-server-00003-wix, both bare service URL and canary
+  URL routing identically. Backup tag
+  `backup/post-1A-100traffic-api-server-00003-wix` at `e4b15c1` on
+  `legacy-design-tools` origin. Empressa Neon project provisioned
+  for Phase 1B (project ID `shiny-snow-37459644`, Scale tier);
+  workstation Postgres client + `EMPRESSA_DATABASE_URL` secret load
+  pending. See
+  [`_sessions/2026-05-06_phase_1a_ramp_and_1b_prep_claude_ai_planner.md`](_sessions/2026-05-06_phase_1a_ramp_and_1b_prep_claude_ai_planner.md).*
 - *2026-05-06 â Phase 1A **verified**. PR #24 mounted
   `SNAPSHOT_SECRET` (one-line workflow fix unblocking the boot
   validator at `lib/snapshotSecret.ts:14-17`). Canary revision
