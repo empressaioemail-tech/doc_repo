@@ -8,7 +8,7 @@ session_type: sprint_execution
 status: active
 supersedes: 2026-05-06_phase_1a_kickoff_claude_ai_planner
 rolled_up: true
-rolled_up_into: [12_migration_sprint, 11_roadmap, 90_runbooks/regenerate_schema_fixture_windows, 40_design_accelerator/customer_zero_observations_arena_roja_2026_05_06]
+rolled_up_into: [12_migration_sprint, 11_roadmap, regenerate_schema_fixture_windows, 40a_customer_zero_observations_arena_roja_2026_05_06]
 ---
 
 # Phase 1A complete — kickoff through canary verified
@@ -134,4 +134,4 @@ Single-day end-to-end execution: legacy-design-tools api-server containerized, d
 - `_sessions/2026-05-05_doc_repo_planner.md`, `2026-05-06_doc_repo_planner.md` — yesterday's audit trail
 - `_sessions/2026-05-06_phase_1a_kickoff_claude_ai_planner.md` — superseded by this doc
 - ADR-001 atom-graph contract — load-bearing throughout; no edits this session
-- `20_agent_operating_rules.md` — HR-7 (no three-failure rule), SR-3 (recon-only first
+- `20_agent_operating_rules.md` — HR-7 (no three-failure rule), SR-3 (recon-only first when ambiguous), HR-8 (verbatim verification artifacts) all earned their place in this session's execution; no edits
