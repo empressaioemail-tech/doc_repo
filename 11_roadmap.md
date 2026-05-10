@@ -106,6 +106,18 @@ externals where a question depends on them.
 - [ ] **AI Plan Review M4-B kickoff** (PLR-1..28 active, SD-1..8 settled, W1 three-button â W6 differentiation) â `product` Â· Nick + agent Â· XL sprint Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
 - [ ] **B1 bidirectional taxonomy** (v1.0 requirement; server-side classification in api-server) â `product` Â· Nick + agent Â· L Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md), [`41_revit_connector.md`](41_revit_connector.md)
 - [ ] **Sprint A04.7 followups** â dedup edge cases, post-fix monitoring â `product` Â· agent Â· M Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
+- [ ] **Codex Wave 1 (commercial wedge / 1a invited foundation)** â
+  Bluebeam invited-participant adapter, markup format adapters,
+  one-click AI review pass, finding accept/edit/reject loop,
+  jurisdiction switcher. Bluebeam ToS verification gate.
+  `product` Â· Nick + agent Â· XL sprint Â· ref:
+  [`47_codex_plan_review.md`](47_codex_plan_review.md) Wave 1
+- [ ] **Bastrop property intelligence** â
+  city-manager view of property intelligence (Sylvia's hydrology
+  query). Slice of the same engine as DA parcel briefing,
+  scoped at jurisdiction level. Pending after current Bastrop
+  housekeeping clears. `product` Â· Nick + agent Â· L Â· ref:
+  [`30_smartcity_os.md`](30_smartcity_os.md) updated entry
 
 ## P3 â backlog
 
@@ -132,6 +144,23 @@ externals where a question depends on them.
 - [ ] **`server/app.ts:85` CORS allowlist removal of `x-internal-ai`** (defense-in-depth post-Fire-1) â `security` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
 - [ ] **Auth middleware vitest coverage gap** (`c4c559d` covers 5 surfaces, auth not one) â `test-debt` Â· agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
 - [ ] **Audit production Neon for MyGov raw-records growth pattern** (independent of Repl dev-DB issue) â `recon` Â· agent Â· M Â· ref: [`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md)
+- [ ] **Hauska Engine factor-out sprint** â gated on migration
+  Phase 2C closure. Repo `hauska-engine` in
+  `empressaioemail-tech` org. Code move with behavior parity
+  tests. Consumers updated. `architecture` Â· Nick + agent Â· XL
+  sprint Â· ref:
+  [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md)
+- [ ] **Codex 1b standalone in SmartCity OS Plan Review** â
+  Bastrop activation; PDF viewer + annotation layer + engine
+  hook + dashboard atom flow. `product` Â· Nick + agent Â· L Â· ref:
+  [`47_codex_plan_review.md`](47_codex_plan_review.md) Wave 2
+- [ ] **PropTech ecosystem partner outreach** â gated on engine
+  factor-out and ADR-007 landing. Identify and engage candidate
+  fabric consumers in
+  [futureproptechmiami.com](https://futureproptechmiami.com/)
+  network. `corporate / strategic` Â· Nick Â· M Â· ref:
+  [`47_codex_plan_review.md`](47_codex_plan_review.md) Strategic
+  frames
 
 ---
 
@@ -202,6 +231,12 @@ The canonical docs each item points back to:
 - [`01_doc_conventions.md`](01_doc_conventions.md) â naming, frontmatter, archive/rollup conventions
 - [`02_doc_migration_plan.md`](02_doc_migration_plan.md) â pre-docs-repo migration triage matrix
 
+**Strategic foundation:**
+- [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md) â
+  governing thesis for the portfolio
+- [`06_cities_value_narrative.md`](06_cities_value_narrative.md) â
+  cities-facing application of the thesis
+
 **Portfolio reference:**
 - [`10_ground_truth.md`](10_ground_truth.md) â current state, fires, planner-belief corrections
 - [`12_migration_sprint.md`](12_migration_sprint.md) â 3-phase migration sprint plan (Cloud Run + Empressa Neon + Drizzle migrate)
@@ -222,6 +257,7 @@ The canonical docs each item points back to:
 - [`30_smartcity_os.md`](30_smartcity_os.md) â SmartCity OS product home
 - [`40_design_accelerator.md`](40_design_accelerator.md) â Design Accelerator product home
 - [`41_revit_connector.md`](41_revit_connector.md) â Revit Connector product home
+- [`47_codex_plan_review.md`](47_codex_plan_review.md) â Codex plan review intelligence product home
 
 **ADRs:**
 - [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) â atom contract as foundational pattern
@@ -229,6 +265,10 @@ The canonical docs each item points back to:
 - [`80_adrs/adr_003_replit_neon_tactical.md`](80_adrs/adr_003_replit_neon_tactical.md) â tactical workaround
 - [`80_adrs/adr_004_future_neon_provisioning.md`](80_adrs/adr_004_future_neon_provisioning.md) â future products provision Empressa-owned
 - ADR-005 (multitenancy) and ADR-006 (anchoring substrate) â pending, see P2 / P3
+- [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md) â
+  property-as-tenant model
+- [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md) â
+  Hauska Engine factor-out, naming, repo
 
 **Operational:**
 - [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md) â Cloud Run canary deploy runbook (build â 0% canary â smoke probe â traffic shift â backup tag â observation)

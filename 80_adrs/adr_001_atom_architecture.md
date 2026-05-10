@@ -2,7 +2,7 @@
 id: adr_001_atom_architecture
 title: "ADR-001 — Atom contract as foundational data-model pattern"
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector]
 ---
@@ -118,6 +118,8 @@ the same time:
   cryptographically-signed, append-only histories that travel with
   the entity. The chain is per-atom (not global) and verifiable
   without trusting the hosting system.
+  The strategic foundation for this commitment is detailed in
+  [`05_living_lineage_thesis.md`](../05_living_lineage_thesis.md).
 - **Five rendering modes per atom.** `inline` / `compact` / `card` /
   `expanded` / `focus`. Every atom implements all five. Windows
   (application surfaces) pick modes; atoms don't pick. The atom is
@@ -245,6 +247,12 @@ ship saves significant migration debt.
 - [`41_revit_connector.md`](../41_revit_connector.md) — connector
   remains thin; intelligence lives in the api-server which extends
   the graph
+- [`05_living_lineage_thesis.md`](../05_living_lineage_thesis.md) —
+  strategic foundation derived from this commitment
+- [`adr_007_cross_stakeholder_atom_access.md`](adr_007_cross_stakeholder_atom_access.md) —
+  cross-stakeholder access model that extends this contract
+- [`adr_008_engine_factor_out.md`](adr_008_engine_factor_out.md) —
+  engine factor-out, depends on this contract
 - Predecessor source documents (now retired or migrated): six prior
   drafts including `hauska-atom-master-architecture.md`,
   `hauska-atom-executive-summary.md`,

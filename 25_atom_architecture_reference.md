@@ -2,7 +2,7 @@
 id: 25_atom_architecture_reference
 title: "@empressaio/atom â Architecture reference"
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [adr_001_atom_architecture, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector]
 ---
@@ -591,6 +591,15 @@ in 2026.
 This is a structural limit of hash chains. No engineering closes it.
 The honest-claim discipline in [`10_ground_truth.md`](10_ground_truth.md)
 handles the external messaging.
+
+The strategic implications of this commitment â property as
+first-class durable entity, the fabric framing, the long-term
+moat structure â are detailed in
+[`05_living_lineage_thesis.md`](05_living_lineage_thesis.md).
+That doc is the strategic foundation; this section remains the
+technical reference. Cross-stakeholder access mechanics that
+make the lineage operational across surfaces are settled in
+[`adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md).
 
 ---
 

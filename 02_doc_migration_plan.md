@@ -2,7 +2,7 @@
 id: 02_doc_migration_plan
 title: Pre-docs-repo migration plan
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [00_README, 01_doc_conventions, 10_ground_truth, 11_roadmap]
 ---
@@ -180,6 +180,45 @@ Realistic cadence: ~6-12 turns at one batch per turn. Faster if turns batch rela
 - [`11_roadmap.md`](11_roadmap.md) â portfolio roadmap; absorbs portfolio-level items from migrated roadmap docs
 - [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) â example of decision-shaped migration target
 
+## Migration items added 2026-05-10
+
+Added during the plan review framing session. New supersession
+records and previously-uncaptured pre-docs-repo files surface for
+later triage.
+
+- pre-docs-repo `47_plan_review_amplifier_features.md` â
+  superseded by `47_codex_plan_review.md` (landed 2026-05-10).
+  Predecessor file should be archived from project knowledge if
+  any references remain.
+- pre-docs-repo `47b_plan_review_amplifier_addendum.md` â
+  superseded by `47_codex_plan_review.md` (landed 2026-05-10).
+  Same archival treatment.
+- pre-docs-repo `01_current_state_ground_truth.md` â not yet
+  migrated; relevant content lives in `10_ground_truth.md` (different
+  numbering convention). Reconcile and retire predecessor.
+- pre-docs-repo `02_architecture_reference.md` â not yet migrated;
+  partial overlap with `25_atom_architecture_reference.md` (atom
+  architecture) and connector specs that are currently scattered.
+  Reconcile.
+- pre-docs-repo `04_strategic_conversation_record.md` â already
+  archived as
+  [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md);
+  formal retirement of project-knowledge copy.
+- pre-docs-repo `33_hauska_sdk_roadmap.md` â not yet migrated;
+  high-priority because Codex CDX-15 audit trail depends on SDK
+  gap closures named there.
+- pre-docs-repo `45_smartcity_multitenancy_spec.md` â already
+  queued as ADR-005 in [`11_roadmap.md`](11_roadmap.md). Now
+  also extends per ADR-007 cross-stakeholder atom access.
+- pre-docs-repo `46_smartcity_parcel_intelligence.md` â not yet
+  migrated; relevant to Bastrop property intelligence work
+  (Sylvia's hydrology query) and Codex CDX-6 parcel intelligence
+  pull.
+- pre-docs-repo `51_design_accelerator_parcel_intelligence.md` â
+  not yet migrated; relevant to engine factor-out (ADR-008) and
+  the architect-side parcel briefing engine.
+
 ## Revision history
 
 - **2026-05-05 (origin):** initial triage matrix landed during docs-repo bootstrap session. Reflects pre-docs-repo state at `/mnt/project/` as of that date.
+- **2026-05-10:** added "Migration items added 2026-05-10" section capturing pre-docs-repo supersession by Codex product home and previously-uncaptured pre-docs-repo files surfaced during plan review framing.

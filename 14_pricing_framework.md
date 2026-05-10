@@ -2,7 +2,7 @@
 id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 30_smartcity_os, 40_design_accelerator]
 ---
@@ -137,6 +137,29 @@ true and exciting, not what would be true if certain things were
 true.** In a pricing conversation, this means: don't promise
 features that depend on yet-to-ship work as if they're in the
 proposal. Phase boundaries respect what's actually shippable.
+
+## Cross-surface pricing â pending
+
+The fabric framing introduces multi-surface customers:
+- A city like Bastrop runs SmartCity OS + Codex 1b standalone
+  in one deployment.
+- A contractor firm runs Codex 1a invited mode (commercial
+  product, separate sale).
+- Future: an architect firm runs Design Accelerator while
+  reviewing through a city using SmartCity OS + Codex 1b.
+
+Pricing framework extension needed for:
+- Synergy / discount logic for customers buying multiple
+  surfaces vs. independent pricing per surface
+- Cross-surface bundle defaults vs. Ã -la-carte
+- Contractor-firm-to-city pricing relationship (does the firm's
+  Codex 1a usage on a city's behalf imply a city-side pricing
+  effect?)
+
+Resolution pending pilot conversion data from Codex 1a (firms)
+and Codex 1b (cities). See
+[`47_codex_plan_review.md`](47_codex_plan_review.md) for product
+context.
 
 ## Cross-references
 

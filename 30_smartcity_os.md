@@ -2,7 +2,7 @@
 id: 30_smartcity_os
 title: SmartCity OS
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: smartcity-os
 related: [10_ground_truth, 40_design_accelerator]
 ---
@@ -182,6 +182,19 @@ runs.
 
 ## Strategic frames worth carrying forward
 
+**Living lineage and fabric framing.** SmartCity OS is the
+city-manager surface in the broader construction-lifecycle
+fabric. Reviewer findings (Codex), architect submissions (Design
+Accelerator), and future inspector/owner/contractor surfaces
+all populate the same atom graph that SmartCity OS dashboards
+reason over. Strategic foundation:
+[`05_living_lineage_thesis.md`](05_living_lineage_thesis.md).
+Cities-facing narrative for that framing:
+[`06_cities_value_narrative.md`](06_cities_value_narrative.md).
+Plan review surface for cities (1b standalone) and contractor
+firms (1a invited):
+[`47_codex_plan_review.md`](47_codex_plan_review.md).
+
 - **Atom-graph-first.** Every feature must extend the atom graph or
   get reworked. Routing around the graph creates architectural debt.
 - **Parcel Intelligence is a prerequisite to AI Plan Review.** Do not
@@ -193,6 +206,15 @@ runs.
   sit over Tyler + best-of-breed tools and unify.
 - **City-to-city communication architecture (M9)** triggers when
   Jarrell goes live; design now or pay later.
+
+**Bastrop property intelligence enhancement** — city-manager view
+of property intelligence using a slice of the same engine and
+corpus as Design Accelerator parcel briefing, scoped at
+jurisdiction level. Cross-property hydrology / drainage /
+flood-impact queries (Sylvia's "if we get four inches of rain,
+what happens?"). Lightly outlined in pre-docs-repo project
+knowledge; formal scope to be expanded after current Bastrop
+housekeeping clears. Owner: Nick + planner.
 
 ## Current state
 
@@ -212,3 +234,13 @@ durable.
 - Sub-product depth: `31_*` through `35_*` when those land
 - Atom architecture ADR: `80_adrs/adr_001_atom_architecture.md` when
   that lands
+- Strategic foundation:
+  [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md)
+- Cities value narrative:
+  [`06_cities_value_narrative.md`](06_cities_value_narrative.md)
+- Reviewer-side surface (shares engine):
+  [`47_codex_plan_review.md`](47_codex_plan_review.md)
+- Cross-stakeholder atom access:
+  [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md)
+- Engine factor-out:
+  [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md)

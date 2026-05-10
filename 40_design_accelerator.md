@@ -2,7 +2,7 @@
 id: 40_design_accelerator
 title: Design Accelerator
 status: active
-last_updated: 2026-05-06
+last_updated: 2026-05-10
 applies_to: design-accelerator
 related: [10_ground_truth, 30_smartcity_os, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_revit_connector]
 ---
@@ -85,7 +85,7 @@ artifact apps under `artifacts/`:
 |---|---|---|
 | `api-server` | Express 5 backend, all atom logic, AI surfaces | (consumed by other artifacts; no direct URL) |
 | `design-tools` | Architect-facing UI (briefings, client comments, render previews) | `/` |
-| `plan-review` | Reviewer-side AI plan review UI (architect-side mirror of city-side product) | `/plan-review/` |
+| `plan-review` | Architect-side window into Codex (Hauska Engine in incremental mode); not its own product roadmap. See [`47_codex_plan_review.md`](47_codex_plan_review.md) for the canonical reviewer product. | `/plan-review/` |
 | `qa` | Internal QA / data-inspection surface | `/qa/` |
 | `mockup-sandbox` | Design exploration / spike work | `/mockup/` |
 
@@ -234,6 +234,14 @@ frequently as state changes; this product home stays durable.
 - Portfolio ground truth: [`10_ground_truth.md`](10_ground_truth.md)
 - Sister product (city side): [`30_smartcity_os.md`](30_smartcity_os.md)
 - Companion Revit add-in: [`41_revit_connector.md`](41_revit_connector.md)
+- Reviewer-side product (shares engine):
+  [`47_codex_plan_review.md`](47_codex_plan_review.md)
+- Strategic foundation:
+  [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md)
+- Engine factor-out:
+  [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md)
+- Cross-stakeholder atom access:
+  [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md)
 - Agent operating rules: [`20_agent_operating_rules.md`](20_agent_operating_rules.md)
 - Sub-product depth: `4X` docs (TBD)
 - Atom architecture ADR: `80_adrs/adr_001_atom_architecture.md` when
