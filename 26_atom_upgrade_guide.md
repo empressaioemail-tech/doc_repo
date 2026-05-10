@@ -2,7 +2,7 @@
 id: 26_atom_upgrade_guide
 title: "@empressaio/atom â Upgrade & Consumption Guide"
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [adr_001_atom_architecture, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator]
 ---
@@ -27,9 +27,9 @@ specific migration steps preserved), plus new content for
 onboarding from scratch.
 
 **Prerequisite reading:**
-[`25_atom_architecture_reference.md`](25_atom_architecture_reference.md).
-This guide assumes familiarity with the atom contract, five render modes,
-context interface, and the living-lineage principle.
+
+- [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md) â atom contract, five render modes, context interface, living-lineage principle. This guide assumes familiarity with all of these.
+- [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md) â cross-stakeholder atom access model. Required reading before implementing `tenantScoped` or PII scope filters; ADR-007 is the canonical access model these filters operate against.
 
 ---
 
@@ -220,6 +220,8 @@ Principles:
   temporal ones (last inspector â current inspector).
 - **Fast.** Sub-100ms synchronous response on the common path. Cache
   model-generated narrative summaries. Regenerate on new events.
+
+Scope filters in this section operate against the access model defined in [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md). Property-as-tenant-of-record, stakeholder access scopes, and cross-tenant references are settled there. New atom registrations should review ADR-007 to confirm scope assumptions match the access model.
 
 ### 2.5 Write the render specs
 

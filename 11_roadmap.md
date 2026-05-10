@@ -103,7 +103,7 @@ externals where a question depends on them.
 - [ ] **Pre-docs-repo migration progress** â work the queue in [`02_doc_migration_plan.md`](02_doc_migration_plan.md) (~22 migrate items, 12 absorb, 6 archive, 7 retire). Sequence per matrix's "Suggested execution order." â `docs` Â· planner Â· L (multi-turn) Â· ref: [`02_doc_migration_plan.md`](02_doc_migration_plan.md)
 - [ ] **Design Accelerator Moab waves W0-W3** (foundation / parcel + 3DEP / context + render / comments) â `product` Â· Nick + agent Â· XL sprint Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
 - [ ] **DA-PI-1:** Design Accelerator parcel intelligence MVP â `product` Â· Nick + agent Â· XL sprint Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
-- [ ] **AI Plan Review M4-B kickoff** (PLR-1..28 active, SD-1..8 settled, W1 three-button â W6 differentiation) â `product` Â· Nick + agent Â· XL sprint Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
+- [ ] **AI Plan Review M4-B kickoff** (PLR-1..28 active, SD-1..8 settled, W1 three-button â W6 differentiation). Now Codex 1b â see [`47_codex_plan_review.md`](47_codex_plan_review.md). Vocabulary cross-mapping (M4-B/PLR/SD/W â CDX-*) pending Pass B. Â· `product` Â· Nick + agent Â· XL sprint Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
 - [ ] **B1 bidirectional taxonomy** (v1.0 requirement; server-side classification in api-server) â `product` Â· Nick + agent Â· L Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md), [`41_revit_connector.md`](41_revit_connector.md)
 - [ ] **Sprint A04.7 followups** â dedup edge cases, post-fix monitoring â `product` Â· agent Â· M Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
 - [ ] **Codex Wave 1 (commercial wedge / 1a invited foundation)** â

@@ -2,7 +2,7 @@
 id: 41_revit_connector
 title: Revit Connector
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: revit-connector
 related: [10_ground_truth, 40_design_accelerator]
 ---
@@ -181,9 +181,14 @@ Empressa.
   truth and rapid drift.
 - **Same engine, two sides.** Architects use Design Accelerator's
   incremental compliance check via this connector; reviewers use the
-  same engine in full-pass mode via SmartCity OS. The connector's
-  thinness is what allows the same engine to run cleanly on both
-  sides.
+  **Hauska Engine** in full-pass mode via Codex (1a invited mode in
+  Bluebeam / Acrobat / ProjectDox, or 1b standalone in SmartCity OS
+  Plan Review surface). The connector's thinness is what allows the
+  same engine to run cleanly across surfaces. See
+  [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md)
+  for engine naming and repo placement;
+  [`47_codex_plan_review.md`](47_codex_plan_review.md) for the
+  reviewer-side product.
 - **One panel, two buttons (today).** Don't write specs that assume
   the six-panel structure exists. When a new command is needed,
   decide whether it belongs in Design Tools or whether a second panel
@@ -206,4 +211,8 @@ durable.
   [`30_smartcity_os.md`](30_smartcity_os.md)
 - Agent operating rules:
   [`20_agent_operating_rules.md`](20_agent_operating_rules.md)
+- Reviewer-side product (shares engine):
+  [`47_codex_plan_review.md`](47_codex_plan_review.md)
+- Engine factor-out:
+  [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md)
 - Sub-doc depth: `4X` if needed (likely not — connector is small)

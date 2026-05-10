@@ -138,7 +138,7 @@ populated by ingest pipelines from jurisdiction code documents. As of
 Production count needs verification against deployment Neon — see
 [`10_ground_truth.md`](10_ground_truth.md) Open questions.
 
-### Briefing engine — the "same engine" principle
+### Hauska Engine — the "same engine" principle
 
 Compliance checking, parcel briefing generation, and code retrieval are
 implemented in **one codebase** consumed by two surfaces:
@@ -150,11 +150,7 @@ implemented in **one codebase** consumed by two surfaces:
 
 Rules and code ontology written once benefit both products. Architects
 get the same compliance interpretation reviewers will apply — no
-"surprise" findings at submission time. The shared engine is being
-factored into a separate service tentatively named `legacy-bim-service`;
-specific repo location is in flight. Spec exists as
-`51_design_accelerator_parcel_intelligence.md` in pre-docs-repo project
-knowledge; migrate to docs repo when the engine factoring concretizes.
+"surprise" findings at submission time. The shared engine is named **Hauska Engine** and is being factored into its own repo `hauska-engine` in the `empressaioemail-tech` org, gated on migration sprint Phase 2C closure. Naming, repo placement, and timing are settled in [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md). The architect-side `plan-review` artifact mirrors what Codex reviewers see; the spec previously titled `51_design_accelerator_parcel_intelligence.md` in pre-docs-repo project knowledge migrates to docs repo as part of Hauska Engine factor-out work.
 
 ### Inverted Pyramid methodology
 

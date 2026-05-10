@@ -2,7 +2,7 @@
 id: 12_migration_sprint
 title: Migration sprint â Cloud Run + Empressa Neon + Drizzle migrate
 status: active
-last_updated: 2026-05-06
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment, adr_002_replit_neon_migration, adr_003_replit_neon_tactical, 2026-05-05_track_b_deploy_saga, replit_deploy]
 ---
@@ -328,6 +328,7 @@ a single config change.
       `superseded`** with `superseded_by:
       adr_002_replit_neon_migration` â the tactical workaround
       formally retires
+- [ ] **Phase 2C closure unblocks engine factor-out** per [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md). The factor-out is sequenced after Phase 2C closes; reference the ADR for naming, repo placement, and downstream sprint scoping.
 - [ ] Update [`10_ground_truth.md`](10_ground_truth.md) Fire 5
       (cross-region hop) status â closes
 - [ ] Phase 3 prerequisites confirmed
@@ -528,6 +529,7 @@ phase â note.
 - [`90_runbooks/replit_deploy.md`](90_runbooks/replit_deploy.md) â current deploy mechanics (retires for legacy-design-tools at Phase 1A close)
 - [`23_dev_setup_assessment.md`](23_dev_setup_assessment.md) â Layer 2 strategic context for this sprint
 - [`11_roadmap.md`](11_roadmap.md) â P1 entries tracking this sprint at the portfolio level
+- [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md) â engine factor-out gated on this sprint's Phase 2C
 
 ## Revision history
 
