@@ -14,6 +14,26 @@ related: [10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_asses
 > every edit, however small. The checklist is the roadmap; surrounding
 > prose stays minimal so the action items are scannable.
 >
+> **2026-05-10 changes:** Codex (formerly "Plan Review Amplifier")
+> launched as canonical reviewer-side product home in
+> [`47_codex_plan_review.md`](47_codex_plan_review.md). Living
+> lineage thesis landed as portfolio strategic foundation
+> ([`05_living_lineage_thesis.md`](05_living_lineage_thesis.md));
+> cities value narrative landed for Sylvia / city-manager
+> conversations
+> ([`06_cities_value_narrative.md`](06_cities_value_narrative.md)).
+> ADR-007 cross-stakeholder atom access (property-as-tenant) and
+> ADR-008 Hauska Engine factor-out (named, repo-targeted, sequenced
+> after migration Phase 2C) added at
+> [`80_adrs/adr_007_*`](80_adrs/adr_007_cross_stakeholder_atom_access.md)
+> and
+> [`80_adrs/adr_008_*`](80_adrs/adr_008_engine_factor_out.md). Fabric
+> overview diagram at `80_adrs/diagrams/fabric_overview.svg`. M4-B
+> SmartCity-internal vocabulary cross-mapped to Codex 1b via option-b
+> hybrid (per-item mapping deferred to `33_*` when written).
+> Three commits landed: `822dd1b` initial batch + `48d43a7`
+> housekeeping pass A + `eb48911` housekeeping pass B.
+>
 > **2026-05-06 changes:** Tooling setup complete on Nick box (`gh
 > auth login` + `gh auth setup-git` + credential username pinned;
 > all four repos verified accessible). Migration sprint structure
