@@ -81,22 +81,37 @@ Five products served from the same Cloud Run service:
 |---|---|---|---|
 | Operations Dashboard | Live | Real-time city ops view — fleet, incidents, permits, calls, calendar | `31_*` (TBD) |
 | Parcel Intelligence | Live | Parcel-level briefings combining municipal + federal + spatial data | `32_*` (TBD) |
-| AI Plan Review | In development (M4-B) | Reviewer-side plan review with AI-assisted finding generation | `33_*` (TBD) |
+| AI Plan Review (Codex 1b) | In development (M4-B) | Reviewer-side plan review with AI-assisted finding generation. SmartCity-side standalone surface (1b); companion to contractor-firm-side Codex 1a deployed via host markup tools. See [`47_codex_plan_review.md`](47_codex_plan_review.md). | `33_*` (TBD) |
 | CitizenConnect | Live | Citizen-facing app for service requests, status, communication | `34_*` (TBD) |
 | Digital Twinning | Early | 3D model of city assets, integration with parcel + ops data | `35_*` (TBD) |
 
 **Architectural prerequisite chain:** Parcel Intelligence is a
 prerequisite to AI Plan Review. Settled ADR — do not re-litigate.
 
-**AI Plan Review (M4-B specifically):** Sprint specs PLR-1 through
-PLR-28 are active. Eight architectural decisions SD-1 through SD-8 are
-settled, including the strategic call to replace Bluebeam for the 70%
-case while keeping an embedded editor escape for the 30%; atom-graph
-plus single-engine compliance checking replace Markups List, Tool Chest,
-Stamps, Slip Sheet, and Studio Sessions. Wave order is parity-first: W1
-three-button, W2 Bluebeam parity, W3 convergence/moat, W4 integration
-seam, W5 power-user escape, W6 differentiation. Detail belongs in the
-`33_*` doc when written.
+**AI Plan Review (M4-B → Codex 1b):** The SmartCity-side reviewer
+surface is now Codex 1b — see
+[`47_codex_plan_review.md`](47_codex_plan_review.md). M4-B / PLR-1..28
+/ SD-1..SD-8 / W1-W6 vocabulary stays here as the SmartCity-internal
+milestone, sprint inventory, settled-decision catalog, and activation
+sequence; per-item cross-mapping to Codex's CDX-* feature structure
+lands in the `33_*` sub-doc when written.
+
+Two updates to the prior framing fall out of the Codex rename and the
+1a/1b surface split:
+
+- **Bluebeam framing.** SD-1's "replace Bluebeam for the 70% case while
+  keeping an embedded editor escape for the 30%" is superseded by the
+  hybrid: Codex 1a *invites into* Bluebeam (and other host tools —
+  Acrobat, ProjectDox) for contractor-firm reviewers, while Codex 1b
+  is the standalone surface for cities that don't use a host tool. We
+  don't replace Bluebeam; we serve both ICPs.
+- **Wave order.** W1-W6's parity-first sequencing yields to CDX-*
+  commercial-wedge-first (1a invited foundation → 1b activation →
+  moat-grade compounding → versatility → fabric). W1-W6 labels can
+  stay as a SmartCity-side activation reference for 1b deployment if
+  the `33_*` author finds them useful; not load-bearing.
+
+Detail belongs in `33_*` when written.
 
 ## Architecture
 
@@ -166,7 +181,12 @@ hydrated from atom queries before each prompt fires.
 Federated knowledge base across Compass models per city is the
 network-effect moat — knowledge learned in Bastrop's Compass model
 improves Jarrell's, and so on, without crossing the underlying tenant
-boundary on private records.
+boundary on private records. See
+[`06_cities_value_narrative.md`](06_cities_value_narrative.md) for the
+cities-facing narrative on this city-to-city knowledge sharing, and
+[`47_codex_plan_review.md`](47_codex_plan_review.md) for how Codex
+surfaces the federated layer to reviewers via the conversational
+primitive.
 
 ## Competitive positioning
 
