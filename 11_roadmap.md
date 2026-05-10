@@ -97,7 +97,7 @@ externals where a question depends on them.
 
 ## P1 â this week / next
 
-- [ ] **Migration sprint Phase 1** â legacy-design-tools full migration (Cloud Run + GHA CI + Empressa Neon swap). Sub-phases 1A/1B/1C per [`12_migration_sprint.md`](12_migration_sprint.md). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md). **2026-05-06 progress:** **Phase 1A verified** â scaffold + first-deploy + cascading test fixes shipped via PRs #18, #20, #21, #22, #24 + `fix/cloud-run-first-deploy-and-auth-flags`. GCP infrastructure stood up in `legacy-design-tools-prod`. Canary revision `api-server-00003-wix` healthz 200. Traffic ramp pending. Phases 1B + 1C unblocked. Frontend hosting deferred. **2026-05-06 PM:** Traffic ramp closed (100% to api-server-00003-wix, post-ramp backup tag at `e4b15c1`). Empressa Neon project provisioned for Phase 1B. Phase 1B Stage 1 dispatch ready, blocked on workstation Postgres client install + `EMPRESSA_DATABASE_URL` secret load.
+- [ ] **Migration sprint Phase 1** â legacy-design-tools full migration (Cloud Run + GHA CI + Empressa Neon swap). Sub-phases 1A/1B/1C per [`12_migration_sprint.md`](12_migration_sprint.md). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md). **2026-05-06 progress:** **Phase 1A verified** â scaffold + first-deploy + cascading test fixes shipped via PRs #18, #20, #21, #22, #24 + `fix/cloud-run-first-deploy-and-auth-flags`. GCP infrastructure stood up in `legacy-design-tools-prod`. Canary revision `api-server-00003-wix` healthz 200. Traffic ramp pending. Phases 1B + 1C unblocked. Frontend hosting deferred. **2026-05-06 PM:** Traffic ramp closed (100% to api-server-00003-wix, post-ramp backup tag at `e4b15c1`). Empressa Neon project provisioned for Phase 1B. Phase 1B Stage 1 dispatch ready, blocked on workstation Postgres client install + `EMPRESSA_DATABASE_URL` secret load. **2026-05-10 PM:** Phase 1B prereqs closed (psql 18.3 + pg_dump 18.3 on Nick box, `EMPRESSA_DATABASE_URL` in GCP Secret Manager on `legacy-design-tools-prod`). Phase 1B Stage 1 verified — schema-only dump from `ep-little-base-amyyxjca` (PG 16.12) → `ep-dry-queen-aq0yxp05-pooler` (PG 17.8) excluding `test_*` schemas + `_system` Replit migration tracking. 36 tables / 419 columns / 98 indexes / 104 constraints (36 PK + 37 FK + 5 unique + 26 check); plpgsql + vector 0.8.0 extensions parity. Phase 1B Stage 2 / Phase 1C eligible to schedule.
 - [ ] **Migration sprint Phase 2** â SmartCity OS Empressa Neon swap (us-central1 closes Fire 5). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
 - [ ] **Migration sprint Phase 3** â Drizzle migrate adoption for both apps. â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
 - [ ] **Dispatch prompts queue** â 11 prompts pending draft (Fire 4 Repl drift, W1.A.6-9 forensics, W1.C.1-3 implementation, A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth). Batch by similarity per prior planner recommendation. â `docs` Â· planner Â· M (batch turns) Â· ref: chat 2026-05-06
@@ -107,7 +107,7 @@ externals where a question depends on them.
 
 ## P2 â next 2-4 weeks
 
-- [ ] **Fire 4:** SmartCity OS Repl drift cleanup (cherry-pick `b67c333` if functional, discard auto-checkpoints, neutralize `[deployment]` block) â `fire (demoted)` Â· Nick + agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
+- [ ] **Fire 4:** SmartCity OS Repl drift cleanup — PR #7 merged 2026-05-10 PM (`.replit` `[deployment]`/`[postMerge]` + `scripts/post-merge.sh` neutralized to loud-fail; `b67c333` + 9 auto-checkpoints preserved on `archive/repl-local-main-20260510`). Workspace rename to `SmartCityOSMain-retired-20260510` pending Nick UI action — fully closes after rename. — `fire (demoted)` · Nick + agent · M
 - [x] **Saga package cleanup** â cross-app handoff disposition + package README disposition. **Shipped 2026-05-05.** Decision: retire both (handoff's recon-request was fulfilled by 2026-05-05 multi-repo recon; package README replaced by individual doc frontmatter).
 - [x] **ADR-Replit-Neon-001/002/003 migrate** from advisory body to [`80_adrs/`](80_adrs/) â [`adr_002_replit_neon_migration.md`](80_adrs/adr_002_replit_neon_migration.md), [`adr_003_replit_neon_tactical.md`](80_adrs/adr_003_replit_neon_tactical.md), [`adr_004_future_neon_provisioning.md`](80_adrs/adr_004_future_neon_provisioning.md). **Shipped 2026-05-05.**
 - [ ] **ADR-005 multitenancy** migration â `80_adrs/adr_005_smartcity_multitenancy.md` from pre-docs-repo `45_smartcity_multitenancy_spec.md` (every atom is tenant-scoped per ADR-001; this captures the multitenancy decision separately). Decided 2026-05-05 to land as ADR not sub-product spec â `docs` Â· planner Â· M Â· ref: [`02_doc_migration_plan.md`](02_doc_migration_plan.md) item 11
@@ -181,6 +181,14 @@ externals where a question depends on them.
   network. `corporate / strategic` Â· Nick Â· M Â· ref:
   [`47_codex_plan_review.md`](47_codex_plan_review.md) Strategic
   frames
+- [ ] **Audit legacy-design-tools test isolation pattern** — 4
+  timestamped schemas (`test_<unix_timestamp>_<8hex>`) on
+  production-shared Neon, each mirroring public's 36 tables minus 1.
+  Likely integration test framework using schema-per-test isolation
+  against the production-shared connection. Footgun shape similar to
+  MyGov raw-records on Replit dev DB. Recommend separate test DB or
+  in-memory test fixtures. — `recon` · agent · M · ref:
+  [`_sessions/2026-05-10_phase_1b_stage_1_verified_and_fire_4_pr_claude_ai_planner.md`](_sessions/2026-05-10_phase_1b_stage_1_verified_and_fire_4_pr_claude_ai_planner.md)
 
 ---
 

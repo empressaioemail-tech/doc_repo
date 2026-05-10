@@ -32,7 +32,7 @@ related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev
 | Phase | Sub-phase | Description | Owner | Status | Started | Completed | Notes |
 |---|---|---|---|---|---|---|---|
 | 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | verified | 2026-05-06 | 2026-05-06 | PRs #18, #20, #21, #22, #24 + fix/cloud-run-first-deploy-and-auth-flags merged. Revision `api-server-00003-wix` tagged canary, `/api/healthz` HTTP 200. Traffic at 100% via canary tag (auto-promoted to LATEST per Cloud Run first-deploy semantics). Backup tag `backup/post-1A-100traffic-api-server-00003-wix` at `e4b15c1` on origin. |
-| 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | pending | â | â | Empressa Neon project `legacy-design-tools-prod` provisioned (Neon project ID `shiny-snow-37459644`, branch `production`, Scale tier under Empressa org, account empressaioemail@gmail.com). Postgres client install + `EMPRESSA_DATABASE_URL` secret load pending before Stage 1 dispatch can run. |
+| 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | verified | 2026-05-10 | 2026-05-10 | Schema-only pg_dump from Replit-managed Neon (ep-little-base-amyyxjca, PG 16.12) → Empressa Neon (ep-dry-queen-aq0yxp05-pooler, PG 17.8) via Cloud Shell. Excluded test_* schemas (4 integration test artifacts) + _system (Replit-managed migration tracking). 36 tables / 419 cols / 98 idx / 104 constraints (36 PK + 37 FK + 5 u + 26 c); plpgsql + vector 0.8.0 ext parity. Tooling: pg_dump/psql 16.13 in Cloud Shell. EMPRESSA_DATABASE_URL secret v1 on legacy-design-tools-prod. |
 | 1 | 1C | legacy-design-tools: data sync + cutover from Replit Neon to Empressa Neon | Nick + agent | pending | â | â | â |
 | 2 | 2A | SmartCity OS: Empressa Neon provisioning (us-central1) + schema sync | Nick + agent | pending | â | â | â |
 | 2 | 2B | SmartCity OS: data sync + cutover at low-traffic window | Nick + agent | pending | â | â | â |
@@ -85,6 +85,12 @@ queued separately in [`11_roadmap.md`](11_roadmap.md):
       `legacy-design-tools-prod`** â required for WIF auth from GHA;
       silent failure mode if missing (first build-and-push run
       surfaced this gap). Now in deploy.md prereqs explicitly.
+
+### Phase 2 added prereqs (scoped 2026-05-10)
+
+- [ ] post-merge.sh Neon guard verification on smartcity-os — scripts/post-merge.sh was neutralized in PR #7 (Fire 4 close-out, 2026-05-10 PM); the original 200 lines are preserved below the loud-fail delimiter for reference. Before Phase 2A swaps the underlying Neon, verify the (now-neutralized) script's three migration blocks (mygov_fees index, AI tables, MyGov schema-sync) are consistent with the future Drizzle migrate adoption path and the new Empressa Neon target. Owner: Nick + planner · S
+- [ ] Migration prefix collisions on smartcity-os — two `0003_*` and two `0004_*` filenames in `migrations/` (per `10_ground_truth.md`). Resolve before Phase 2A schema sync so the dumped schema reflects deterministic migration ordering. Owner: agent · S · ref: 10_ground_truth.md
+- [ ] gcloud SSL fix on Nick box — Cloud Shell has been the workaround for Fire 1 deploy, Phase 1B prereqs (Secret Manager), and Phase 1B Stage 1 (psql/pg_dump). Fix Nick box's gcloud SSL cert chain (`unable to get local issuer certificate`) so future deploys + ad-hoc Secret Manager work doesn't require Cloud Shell every time. Owner: Nick · S
 
 ## Phase 1 â legacy-design-tools full migration
 

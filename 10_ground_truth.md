@@ -68,12 +68,12 @@ unconfirmed.
 
 ### Repository
 
-Origin/main HEAD: `5e9fca3` ("fix(auth): gate x-internal-ai bypass on
-loopback (Fire 1, W1.C.4a)", PR #6). Recent merge sequence (most recent
-first): `5e9fca3` (Fire 1 fix) → `a08d9bb` (package-lock sync, PR #5) →
-`602f0d8` (Prophecy nav) → `6a97220` (Cloud Run cutover commit) →
-`c4c559d` (vitest safety net) → `3016ae0` (release/2026-04-29 prophecy
-+ focus metrics merge).
+Origin/main HEAD: `602f599` ("chore(repl): neutralize .replit +
+scripts/post-merge.sh with loud-fail (Fire 4)", PR #7). Recent merge
+sequence (most recent first): `602f599` (Fire 4 close-out) → `5e9fca3`
+(Fire 1 fix) → `a08d9bb` (package-lock sync, PR #5) → `602f0d8` (Prophecy
+nav) → `6a97220` (Cloud Run cutover commit) → `c4c559d` (vitest safety
+net) → `3016ae0` (release/2026-04-29 prophecy + focus metrics merge).
 
 Backup tags on origin: `backup/p0-6-cutover-pre-20260503-201715` at
 `6a97220`, `backup/p0-followup-prophecy-pre-20260503-235103` at `a08d9bb`,
@@ -211,8 +211,12 @@ against accidental Republish of the 10 unreviewed local commits.
   via PR #6** — commit `5e9fca3`, Cloud Run revision
   `smartcity-api-00084-weg` at 100% traffic)
 - Plaintext secrets in `.replit` — rotate + remove from git (Fire 2)
-- Repl drift cleanup (Fire 4): cherry-pick `b67c333` if needed, discard
-  checkpoints, neutralize `[deployment]` block
+- Repl drift cleanup (Fire 4): PR #7 merged 2026-05-10 PM as squash
+  commit `602f599`; `.replit` `[deployment]`/`[postMerge]` +
+  `scripts/post-merge.sh` neutralized to loud-fail; `b67c333` + 9
+  auto-checkpoints preserved on `archive/repl-local-main-20260510`.
+  Workspace rename to `SmartCityOSMain-retired-20260510` pending Nick
+  UI action — Fire 4 fully closes after rename.
 - Neon migration to Empressa-owned account (Phase 1 work item; pair with
   Cloud Run hardening sprint)
 - Cross-region hop fix: provision new Empressa Neon in `us-central1`
@@ -510,6 +514,16 @@ real fix that needs preservation before Repl cleanup.
 Mitigation: triage the 10 commits, cherry-pick anything functional onto a
 feature branch, push, discard remainder, neutralize `[deployment]` block
 in `.replit`.
+
+**Status (2026-05-10 PM):** PR #7 merged as squash commit `602f599` on
+origin/main. `.replit` `[deployment]` + `[postMerge]` blocks neutralized
+(loud-fail variant; `[postMerge]` block shape preserved per Replit TOML
+schema, `scripts/post-merge.sh` carries the loud-fail with original 200
+lines preserved below `=== ORIGINAL CONTENT BELOW ===` delimiter). The
+10 unreviewed local-Repl commits (incl. `b67c333`) preserved on origin
+tag/branch `archive/repl-local-main-20260510`. Workspace rename to
+`SmartCityOSMain-retired-20260510` pending Nick UI action; Fire 4 fully
+closes after rename.
 
 ### Fire 5 — Cross-region DB hop on SmartCity OS
 
