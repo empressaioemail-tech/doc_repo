@@ -2,7 +2,7 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-06
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment]
 ---
@@ -70,8 +70,8 @@ externals where a question depends on them.
 ## P0 â now / this week
 
 - [ ] **Fire 3:** verify legacy-design-tools `post-merge.sh` Neon-guard on GitHub web UI â `fire` Â· Nick (browser) Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Fire 1:** W1.C.4a auth bypass fix on SmartCity OS â `fire` Â· Nick + agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Fire 2:** plaintext secrets in `.replit` â rotate ADMIN_RESET / USER_RESET / BASTROP_BOOTSTRAP / ARCGIS / VERKADA / CALENDAR / VFD_*, remove `[userenv.shared]` plaintext, decide on git history scrub â `fire` Â· Nick Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
+- [x] **Fire 1:** W1.C.4a auth bypass fix on SmartCity OS â closed 2026-05-10 (PR #6, commit `5e9fca3`, Cloud Run revision `smartcity-api-00084-weg`) â `fire` Â· Nick + agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
+- [ ] **Fire 2:** plaintext secrets in `.replit` â rotate ADMIN_RESET / USER_RESET / BASTROP_BOOTSTRAP / ARCGIS / VERKADA / CALENDAR / VFD_*, remove `[userenv.shared]` plaintext, decide on git history scrub â `fire` Â· Nick Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md) **(held â Bastrop IT engagement required for external rotations)**
 - [x] **Atom architecture ADR migration** â [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) + reference in [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md) + upgrade guide in [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md). Closed 3 forward-references in 30 / 40 / 41. **Shipped 2026-05-05.**
 - [x] **Recon backfill** into `_sessions/2026-05-05_*` (3 summaries: smartcity-os, legacy-design-tools, legacy-revit-sensor). **Shipped 2026-05-05.** Closes the audit trail behind [`10_ground_truth.md`](10_ground_truth.md)'s planner-belief corrections.
 
@@ -127,6 +127,11 @@ externals where a question depends on them.
 - [ ] **Engineer-2 operational protocol** â onboarding doc + agent rules training + first-PRs review pattern. Triggers when first additional engineer onboards. â `ops` Â· Nick Â· M (when triggered) Â· ref: archived strategic record Part 8 #10, [`13_risk_register.md`](13_risk_register.md) Risk 8
 - [ ] **ADR-006 anchoring substrate decision** â Polygon CDK (existing ADR-007 in pre-docs-repo project knowledge) vs. public TSA vs. customer-controlled. Precondition for M6. â `architecture` Â· Nick + planner (ADR doc) Â· M Â· ref: archived strategic record Part 8 #16
 - [ ] **Nick Chesser subdivision real name** â low-stakes text reply pending. Trivial. â `ops` Â· Nick Â· S Â· ref: archived strategic record Part 8 #17
+- [ ] **Semgrep `// nosemgrep:` annotation on `server/routes/mygov.ts:269`** (GCP metadata-server false positive â clears CI noise) â `docs/cleanup` Â· agent Â· S Â· ref: [`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md)
+- [ ] **`server/routes/ai-assistant.ts:4212` stale `"x-internal-ai": "1"` header** (broken internal call, separate from Fire 1) â `bug` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
+- [ ] **`server/app.ts:85` CORS allowlist removal of `x-internal-ai`** (defense-in-depth post-Fire-1) â `security` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
+- [ ] **Auth middleware vitest coverage gap** (`c4c559d` covers 5 surfaces, auth not one) â `test-debt` Â· agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
+- [ ] **Audit production Neon for MyGov raw-records growth pattern** (independent of Repl dev-DB issue) â `recon` Â· agent Â· M Â· ref: [`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md)
 
 ---
 

@@ -2,7 +2,7 @@
 id: 10_ground_truth
 title: Portfolio ground truth
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 ---
 
@@ -47,13 +47,13 @@ Live on Google Cloud Run since the 2026-05-03 cutover. Project
 | Surface | Value |
 |---|---|
 | API service | `smartcity-api` |
-| Latest revision | `smartcity-api-00082-pog` (tag `p0-followup-prophecy`) |
-| Traffic | 100% on `00082-pog`; 0% on `00080-men` (leftover canary tag `p0-3-canary`) |
+| Latest revision | `smartcity-api-00084-weg` (tag `w1-c-4a-auth-fix`) |
+| Traffic | 100% on `00084-weg`; 0% on `00082-pog` (held for rollback during Fire 1 obs window); 0% on `00080-men` (leftover canary tag `p0-3-canary`) |
 | Image | `us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-api:latest` |
 | Service URL | `https://smartcity-api-7dyaiy7wha-uc.a.run.app` |
 | Custom domain | `smartcityos.io` → Google anycast `216.239.32.0/24` → Cloud Run domain mapping (confirmed via `dig` + curl headers) |
 | Bundle (last built locally) | `index-BsfNEJYB.js` |
-| Last-modified header | `2026-05-03 23:24:48 UTC` (matches post-cutover Prophecy follow-up) |
+| Last-modified header | `2026-05-10` (post-Fire-1 deploy) |
 
 A second service `smartcity-scraper` exists in the same project with
 revisions through `00037-zfm` plus a `wo-chunking` revision. Role:
@@ -68,14 +68,16 @@ unconfirmed.
 
 ### Repository
 
-Origin/main HEAD: `a08d9bb` ("chore(deps): sync package-lock.json with
-package.json (#5)"). Recent merge sequence (most recent first):
-`a08d9bb` → `602f0d8` (Prophecy nav) → `6a97220` (Cloud Run cutover
-commit) → `c4c559d` (vitest safety net) → `3016ae0` (release/2026-04-29
-prophecy + focus metrics merge).
+Origin/main HEAD: `5e9fca3` ("fix(auth): gate x-internal-ai bypass on
+loopback (Fire 1, W1.C.4a)", PR #6). Recent merge sequence (most recent
+first): `5e9fca3` (Fire 1 fix) → `a08d9bb` (package-lock sync, PR #5) →
+`602f0d8` (Prophecy nav) → `6a97220` (Cloud Run cutover commit) →
+`c4c559d` (vitest safety net) → `3016ae0` (release/2026-04-29 prophecy
++ focus metrics merge).
 
 Backup tags on origin: `backup/p0-6-cutover-pre-20260503-201715` at
-`6a97220`, `backup/p0-followup-prophecy-pre-20260503-235103` at `a08d9bb`.
+`6a97220`, `backup/p0-followup-prophecy-pre-20260503-235103` at `a08d9bb`,
+`backup/post-fire-1-5e9fca3` at `5e9fca3`.
 No commit, tag, or markdown doc references "stage 8", "replit detach", or
 "24h watch" — Phase 0 Stage 8 closure has no codified evidence (see
 [Outstanding](#outstanding-smartcity-os)).
@@ -188,10 +190,26 @@ means a Stage 8 is still owed — even if just symbolic, to remove the
 loaded-gun risk that someone clicks Redeploy and ships 10 unreviewed
 commits.
 
+**2026-05-07 dev DB wedged incident** — see
+[`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md).
+Workspace `SmartCityOSMain` helium dev DB hit its 20 GiB quota cap (~30
+GiB across `mygov_raw_records`, `mygov_raw_sync_pages`,
+`mygov_work_orders`); pre-flight wedged the publish orchestrator at
+"Preparing" indefinitely. Eight-day Replit support cycle to root-cause
+(VLR91Y-M3XRE). Cloud Run production unaffected throughout. **Decision:
+Option B — retire Repl, do not apply Replit's three-table cleanup
+recipe.** Fire 4 dispatch will neutralize the `[deployment]` and
+`[postMerge]` blocks (loud-fail variant), push local-Repl branch as
+`archive/repl-local-main-20260510` to preserve `b67c333`, and rename
+the workspace to `SmartCityOSMain-retired-20260510`. Replit's recipe is
+NOT being executed — the wedged dev DB acts as an inadvertent safety
+against accidental Republish of the 10 unreviewed local commits.
+
 ### Outstanding (smartcity-os)
 
-- Auth bypass on `server/routes.ts:83` — fix is scoped, ready to dispatch
-  (Fire 1)
+- ~~Auth bypass on `server/routes.ts:83`~~ (Fire 1, **closed 2026-05-10
+  via PR #6** — commit `5e9fca3`, Cloud Run revision
+  `smartcity-api-00084-weg` at 100% traffic)
 - Plaintext secrets in `.replit` — rotate + remove from git (Fire 2)
 - Repl drift cleanup (Fire 4): cherry-pick `b67c333` if needed, discard
   checkpoints, neutralize `[deployment]` block
@@ -429,6 +447,18 @@ Fix is scoped (single-file patch + possible 1-line trust-proxy add in
 `server/middleware/tenant.ts:55-62`). No longer gated on Phase 0 Stage 8
 since Stage 8 was never codified.
 
+**Status (2026-05-10): Closed.** PR #6 merged as commit `5e9fca3`
+(single-file patch on `server/routes.ts:83`, +5/-1, mirrors
+`server/middleware/tenant.ts:57-62` loopback predicate). Cloud Build
+SUCCESS, image `sha256:8e3290178eeb...`. Cloud Run revision
+`smartcity-api-00084-weg` (tag `w1-c-4a-auth-fix`) deployed via canary
+runbook Example 1 (`--no-traffic` initial deploy, smoke probes, then
+atomic `update-traffic --to-tags w1-c-4a-auth-fix=100`). Production
+smoke probes against `smartcityos.io` returned HTTP/2 401 with and
+without bypass header. Prior revision `smartcity-api-00082-pog` held
+at 0% for instant rollback during the observation window. Backup tag
+`backup/post-fire-1-5e9fca3` on origin.
+
 ### Fire 2 — Plaintext secrets in SmartCity OS `.replit` committed to git
 
 `.replit` `[userenv.shared]` contains, verbatim:
@@ -451,6 +481,11 @@ Mitigation: rotate all listed secrets, change bootstrap-password
 mechanism to generate-on-first-run, remove `[userenv.shared]` plaintext
 from current `.replit` (not from git history — that's a separate cleanup
 with merge implications).
+
+**Status: held — Bastrop IT engagement required for external rotations
+(Esri, Verkada, Calendar API, VFD codes). Internal-only items
+(Admin123! ×3, USER_RESET_EMAIL, POWERBI_REPORT_ID) deferred with the
+rest pending coordination.**
 
 ### Fire 3 — legacy-design-tools `post-merge.sh` runs `drizzle-kit push --force` with no Neon guard
 

@@ -2,7 +2,7 @@
 id: 15_replit_neon_ownership_advisory
 title: Replit-managed Neon ownership — cross-project advisory
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [10_ground_truth, 2026-05-05_track_b_deploy_saga, 30_smartcity_os, 40_design_accelerator]
 ---
@@ -304,6 +304,29 @@ Once the migration sprint completes:
   the GitHub Actions deploy pipeline
 - Or through manual review in Neon's web SQL editor — accessible
   because it's our account
+
+### 2026-05-07 incident — dev DB wedge
+
+Workspace `SmartCityOSMain` dev DB hit 20 GiB cap (3 MyGov tables
+responsible: `mygov_raw_records` ~20 GB, `mygov_raw_sync_pages`
+~9.3 GB, `mygov_work_orders` ~1.2 GB). Replit pre-flight blocked the
+publish orchestrator on dev-DB health, requiring an eight-day support
+cycle (VLR91Y-M3XRE) to root-cause. Cloud Run production was
+unaffected throughout — the failure was confined to the Repl's
+publish flow.
+
+Decision: **Option B — retire the Repl, do not apply Replit's
+cleanup recipe.** The wedged dev DB is an inadvertent safety against
+accidental autoscale deploy of the 10 unreviewed local-Repl commits.
+Fixing it would unblock that risk; retiring the Repl closes Fire 4
+(Repl drift cleanup) cleanly and codifies Phase 0 Stage 8 (Repl
+detach) for the first time.
+
+This is the second consecutive Replit-platform incident in two weeks
+(Track B saga 2026-05-05 + this 2026-04-29 wedge). Both are deploy
+abstraction failures; both are invisible from outside the platform.
+Strengthens the ADR-002 migration thesis. Full postmortem:
+[`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md).
 
 ---
 

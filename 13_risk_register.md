@@ -2,7 +2,7 @@
 id: 13_risk_register
 title: Risk register â named failure modes
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-10
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 17_leading_indicators]
 ---
@@ -189,6 +189,33 @@ aren't being followed.
 **Category:** preventable through process (HR-1, HR-8, HR-9 in
 agent operating rules).
 
+### Risk 11 — Replit pre-flight couples deploy-availability to dev-DB health
+
+Replit's deploy orchestrator runs a workspace pre-flight that blocks
+the deploy pipeline on dev-DB health. When the dev DB on workspace
+`SmartCityOSMain` hit its 20 GiB quota cap (2026-04-29 → 2026-05-07
+incident), the pre-flight wedged at "Preparing" indefinitely with no
+error surfaced to the deploy UI. Root-causing took an eight-day Replit
+support cycle. The coupling is undocumented; it is invisible from
+outside the platform, and it is precisely the failure shape ADR-002 is
+designed to remove.
+
+**Leading indicator:** Any Replit Republish hung at "Preparing" for
+>5 minutes with no log output should be treated as a possible pre-flight
+wedge. Workspace dev DB usage approaching 80% of its 20 GiB cap is an
+upstream warning. Cron-driven raw-record ingestion writing to whatever
+`DATABASE_URL` resolves to in dev context is the most likely path to
+quota exhaustion.
+
+**Category:** structural / vendor-platform.
+
+**Status:** Active — being retired via ADR-002 migration sprint; new
+risk should not appear post-Phase-2C (Cloud Run + Empressa Neon
+decouples deploy from Replit pre-flight entirely). See
+[`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md)
+and
+[`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md).
+
 ## Watchlist mechanics
 
 Leading indicators are listed in
@@ -233,6 +260,13 @@ artifact.
 
 ## Revision history
 
+- **2026-05-10:** Added Risk 11 (Replit pre-flight couples
+  deploy-availability to dev-DB health) following the 2026-04-29 →
+  2026-05-07 SmartCityOSMain dev DB wedge incident. Risk noted as
+  Active but scheduled to retire post-Phase-2C of the migration
+  sprint (Cloud Run + Empressa Neon decouples the failure mode
+  entirely). Cross-references new postmortem at
+  `91_postmortems/2026-05-07_replit_dev_db_wedged.md`.
 - **2026-05-05 (origin):** Extracted from Part 4 of
   `04_strategic_conversation_record.md` during pre-docs-repo
   migration. 10 risks (8 named originally + 2 surfaced April 18,
