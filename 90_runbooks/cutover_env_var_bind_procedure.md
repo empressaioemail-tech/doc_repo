@@ -175,3 +175,11 @@ SECRET_PREFIX="${SECRET_PREFIX:-smartcity-}"
 - Auth-protected health endpoints (e.g., `/api/spireon/health` returns 401 anonymous) make curl-based verification incomplete. Cloud Run logs are the reliable signal: look for `authenticated`, `live`, `connected`, `fetched`, integration-specific log markers.
 - Cloud Shell + UI upload preserves filename including extension. `smartcity_secrets.txt` after drag-drop is a common gotcha.
 - Bash script dry-run/execute gating catches anomalies before they cause damage. Specifically caught MYGOV pre-existing secrets in this session and allowed remediation before main bind.
+
+## Reconciliation notes (added 2026-05-11 session 3)
+
+Cloud Run revision generation numbers (`smartcity-api-NNNNN-xxx`) can be reused across distinct revisions with different suffixes. When reconciling revision history across sessions / postmortems / handoffs, always join on `creationTimestamp` from `gcloud run revisions list --format='table(name,active,creationTimestamp)'`, never on suffix-as-unique-key.
+
+Verified 2026-05-11: both `smartcity-api-00084-vhr` (created 2026-05-11T18:24Z) and `smartcity-api-00084-weg` (created 2026-05-10T02:22Z, the May-10 W1.C.4a auth-fix revision) coexist on the same service. Earlier handoffs that treated `00084` as a stable identifier for a single revision were misreading Cloud Run's revision-naming behavior.
+
+Practical implication for env-var bind reconciliation: when correlating "which revision applied a given secret update" against session summaries or postmortems, fetch the timestamped revision list once at the start of the bind/audit and key all references off `creationTimestamp` (or, equivalently, the full `name` including suffix). Never abbreviate to the generation number alone.

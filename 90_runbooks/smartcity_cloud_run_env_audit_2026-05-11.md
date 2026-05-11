@@ -13,6 +13,24 @@ Point-in-time enumeration of Cloud Run env config vs what the code actually read
 
 > **Audit-method gap (flagged 2026-05-11 session 2).** This audit checked code-references vs Cloud Run env-from-secret bindings. It did NOT enumerate existing Secret Manager secrets independently. As a result, it missed `smartcity-MYGOV_USERNAME` and `smartcity-MYGOV_PASSWORD` already existing in Secret Manager (created 2026-04-04 with v1/v2, no IAM grant, no Cloud Run env-from-secret reference) — partial-migration debris from the 2026-04-cutover that the code-reference check classified as "unbound." Future env-var audits must also run `gcloud secrets list --filter="name~smartcity-"` and reconcile against expected inventory. See [`91_postmortems/2026-05-11_cutover_env_var_silent_drops.md`](../91_postmortems/2026-05-11_cutover_env_var_silent_drops.md) Remediation status (2026-05-11 session 2).
 
+> **Audit-method corrections (flagged 2026-05-11 session 3).**
+>
+> - **`OPENAI_API_KEY` is NOT bound to Cloud Run** — verified 2026-05-11 via `gcloud run services describe smartcity-api --region=us-central1`. Earlier audit framing (and downstream CURRENT_STATE references) treated `OPENAI_API_KEY` as Active; this was inaccurate. Post-PR #14 (AI_INTEGRATIONS rename, merged but not yet deployed) the code reads canonical `OPENAI_API_KEY` directly, but the secret/binding still does not exist. Either the secret needs creation OR the code paths (`server/replit_integrations/{image,audio}/`) need deletion. Per Nick's clarification, all current AI workloads run on Anthropic; OpenAI image/audio integrations are dead-code from an early migration and deletion is the preferred path (queued for the secrets/db-migration session).
+>
+> - **OpenAI SDK fallback framing correction.** Both `@anthropic-ai/sdk` and `openai` Node SDKs auto-fall-back to `process.env.<CANONICAL>_API_KEY` when the constructor `apiKey` is undefined. Earlier audit framing claiming "OpenAI has no fallback" (see Oddities section below) was incorrect — `new OpenAI()` with no args reads `process.env.OPENAI_API_KEY` exactly the same way `new Anthropic()` reads `process.env.ANTHROPIC_API_KEY`. The actual reason the OpenAI image/audio integrations are dead is the missing binding, not a missing fallback. Net-effect for dead-code: same (no key → no integration), but the framing matters for future audit dispatches that lean on "SDK behavior" as evidence.
+>
+> ### Method gaps identified (sessions 2-3)
+>
+> Three accuracy issues found across two sessions:
+> 1. MYGOV partial-migration debris missed (session 2) — code-reference check classified as "unbound" while Secret Manager had v1/v2 from 2026-04-04 with no IAM, no Cloud Run wire.
+> 2. `OPENAI_API_KEY` status claimed "Active" (this session) — actually not bound; the claim propagated from this audit runbook through the handoff into CURRENT_STATE references.
+> 3. OpenAI SDK fallback framing wrong (this session) — claimed no fallback exists; both Node SDKs auto-fall-back to canonical env-var names.
+>
+> Corrective steps for future audits:
+> - **Enumerate Secret Manager state** via `gcloud secrets list --filter="name~<prefix>"` independently of Cloud Run binding state. Reconcile "exists in Secret Manager" against "wired to Cloud Run" against "referenced in code" as three independent dimensions.
+> - **Verify VALUE correctness, not just NAME binding.** `POWERBI_REPORT_ID` was bound but pointed at the wrong GUID for the workspace (this session, separate from the auth this runbook covers — Power BI GUID alignment was the session 3 Power BI fix). A "bound" env var with a stale or wrong value is functionally identical to an unbound one.
+> - **Confirm SDK fallback behavior before declaring integrations "dead."** Read the SDK source / docs (or grep node_modules for `process.env`) before concluding that a missing prefixed env var means the integration cannot function. Anthropic + OpenAI Node SDKs both auto-fall-back; pattern likely holds for most modern vendor SDKs.
+
 ## In Cloud Run + read by code (working)
 
 ### Original 18 (as of 2026-05-11 session 1)
@@ -85,7 +103,7 @@ Cloud Run sets `ANTHROPIC_API_KEY`. Code at `server/lib/anthropic.ts:5-6` reads 
 - Fix the code to read `ANTHROPIC_API_KEY` directly (matches the Cloud Run reality, drops the dead Replit-era prefix), OR
 - Add `AI_INTEGRATIONS_ANTHROPIC_API_KEY` to Cloud Run and rename the secret.
 
-Same applies to `AI_INTEGRATIONS_OPENAI_API_KEY` / `AI_INTEGRATIONS_OPENAI_BASE_URL` if any OpenAI-powered feature is in production use — those are read by `server/replit_integrations/{image,audio}/client.ts` and have no SDK env fallback, so any image/audio integration is dead unless never reached.
+Same applies to `AI_INTEGRATIONS_OPENAI_API_KEY` / `AI_INTEGRATIONS_OPENAI_BASE_URL`: those are read by `server/replit_integrations/{image,audio}/client.ts`. **Correction (2026-05-11 session 3):** earlier text here claimed "no SDK env fallback" — that was wrong. The `openai` Node SDK auto-falls-back to `process.env.OPENAI_API_KEY` exactly like `@anthropic-ai/sdk` does for `ANTHROPIC_API_KEY`. The actual reason the OpenAI image/audio integrations are dead is that `OPENAI_API_KEY` is NOT bound in Cloud Run (verified this session). Post-PR #14 (merged, awaiting deploy) the code reads canonical names directly; binding still missing — slated for `server/replit_integrations/{image,audio}/` deletion in the secrets/db-migration session per Nick's "all current AI workloads run on Anthropic" clarification.
 
 ### `smartcity-SAMSARA_API_KEY` → `SAMSARA_API_TOKEN` env-name mismatch
 

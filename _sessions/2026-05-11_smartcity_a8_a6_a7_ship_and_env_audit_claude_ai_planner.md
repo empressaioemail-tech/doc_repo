@@ -2,6 +2,7 @@
 id: 2026-05-11_smartcity_a8_a6_a7_ship_and_env_audit
 title: SmartCity OS — W1.A.8 + W1.A.6 + W1.A.7 scoping ship, deploy, and cutover env-var gap discovery
 date: 2026-05-11
+last_updated: 2026-05-11
 agent: claude_ai_planner
 repo: smartcity-os, doc_repo
 session_type: dispatch
@@ -12,6 +13,8 @@ rolled_up_into: [00_current_state.md, 30a_smartcity_stabilization_sprint.md, 11_
 # 2026-05-11 — SmartCity OS: A.8 + A.6 + A.7 scoping ship + cutover env-var gap discovery
 
 Second smartcity-thread planner session of 2026-05-11. Prior session (`_sessions/2026-05-11_smartcity_deploy_recovery_claude_ai_planner.md`) recovered from the compound deploy failure, established the canonical deploy procedure, and queued A.6/A.7/A.8 implementation. This session executed against that queue and surfaced a substantial pre-existing cutover gap during post-deploy verification.
+
+> **Revision-suffix reconciliation note (added 2026-05-11 by session 3 planner):** Cloud Run generation numbers can be reused across revisions with different suffixes. Both `smartcity-api-00084-vhr` (created 2026-05-11T18:24Z during this session) and `smartcity-api-00084-weg` (created 2026-05-10T02:22Z, the May-10 W1.C.4a auth-fix) coexist. Reconcile revision references by `creationTimestamp`, not by suffix. See `90_runbooks/cutover_env_var_bind_procedure.md` (reconciliation notes) for the canonical guidance.
 
 ## Inputs
 
