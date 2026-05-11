@@ -13,16 +13,16 @@ related: [11_roadmap, 30a_smartcity_stabilization_sprint, 27_engine_evolution_pl
 
 ## 1. Active fires
 
-- **Fire 2** — plaintext secrets in `.replit`. Internal items absorbed into [`30a`](30a_smartcity_stabilization_sprint.md) WS-3; external rotations (Esri, Verkada, Calendar API, VFD) held for Bastrop IT engagement. Owner: Nick + agent.
+- **Fire 2** — plaintext secrets in `.replit`. WS-2 internals (`CALENDAR_API_KEY`, `SPIREON_USERNAME`/`SPIREON_TOKEN`/`SPIREON_PASSWORD`, plus `SPIREON_API_TROUBLESHOOTING.md` token UUID + password-length hint) redacted at HEAD 2026-05-11 via A.6/A.8 commits to smartcity-os main. Operational rotation for those secrets carries forward as **A.6.b / A.8.b** post-sprint follow-ons (Bastrop IT + Solera Tier-2 + BeWith coordination required). WS-3 internals (`Admin123!` literals ×3, `POWERBI_REPORT_ID` audit, `USER_RESET_EMAIL` PII) still pending. External rotations (Esri, Verkada, VFD codes) held for Bastrop IT engagement. Portfolio-level git-history scrub (BFG / git-filter-repo) carries forward separately. Owner: Nick + agent.
 - **Fire 3** — legacy-design-tools `post-merge.sh` Neon-guard verification. Open. Owner: Nick (browser). Likely moot after [`42`](42_design_accelerator_program_plan.md) Phase 1 clears.
 
 (Fire 1 closed 2026-05-10. Fire 4 closed pending workspace rename. Fire 5 closes at M-Stabilize Phase 2C cutover.)
 
 ## 2. In-flight sprints
 
-- **[`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md)** — SmartCity OS — phase 0 of 4 — last update 2026-05-11
-  - Owner agent: TBD (4 workstreams: WS-1 migration spine, WS-2 W1 sprint, WS-3 security, WS-4 schema/multi-tenancy)
-  - Status: pending across all workstreams; cross-cutting prereqs need clearing before Phase 2A dispatches fire
+- **[`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md)** — SmartCity OS — phase 1 of 4 — last update 2026-05-11
+  - Owner agent: TBD (3 workstreams remaining: WS-1 migration spine, WS-3 security sweep remainder, WS-4 schema/multi-tenancy)
+  - Status: **WS-2 verified 2026-05-11** (seven W1 items shipped via smartcity-os PRs #8/#9/#10 + four forensics findings docs; A.6/A.8 rotation work continues as A.6.b/A.8.b post-sprint). WS-1, WS-3 (remaining items beyond x-internal-ai CORS removal already bundled into C.2's PR #9), and WS-4 still pending. Cross-cutting prereqs (gcloud SSL, clone refresh, ADR-005 migration, Neon quota) still need clearing for Phase 2A.
   - Path to: M-Stabilize
 
 - **[`27_engine_evolution_plan.md`](27_engine_evolution_plan.md) + [`42_*`](42_design_accelerator_program_plan.md) + [`48_*`](48_codex_program_plan.md)** — Codex/Cortex track — Phase 1 across both program plans — last update 2026-05-11
@@ -63,6 +63,12 @@ related: [11_roadmap, 30a_smartcity_stabilization_sprint, 27_engine_evolution_pl
 - **Test isolation patterns** — [`42`](42_design_accelerator_program_plan.md) DA-Test-Iso (legacy-design-tools) and [`30a`](30a_smartcity_stabilization_sprint.md) WS-4 (smartcity-os MyGov audit) are the same footgun shape across two repos; coordinate findings
 - **Migration sprint Phase 2** absorbed into [`30a`](30a_smartcity_stabilization_sprint.md) WS-1; [`12_migration_sprint.md`](12_migration_sprint.md) retains canonical phase definitions
 - **ADR-005 + ADR-006** authoring pending in active sprints
+- **A.6.b / A.8.b post-sprint follow-ons** — operational secret rotation for Calendar (`CALENDAR_API_KEY` via BeWith, F-8 dual-key middleware, ~14-day `.ics` re-key window) and Spireon (`SPIREON_TOKEN` via Solera Tier-2 most urgent, plus `SPIREON_USERNAME`/`SPIREON_PASSWORD`); requires Bastrop IT + vendor coordination. Plus portfolio-level Fire 2 git-history scrub (BFG / git-filter-repo) coordinated across A.6.b/A.8.b.
+- **Workspace hygiene investigation** — three wrong-branch / detached-HEAD incidents observed across cc-agent-1/2/3 during WS-2 dispatches (every agent recovered cleanly). Underlying coordination gap (shared working directory, IDE auto-checkout, hook, or similar) worth scoping `90_runbooks/agent_workspace_hygiene.md`.
+- **CI workflow fixes** — Semgrep false positive on `server/routes/mygov.ts:268-270` (`react-insecure-request` rule on GCE metadata server fetch) needs `// nosemgrep:` annotation; Gitleaks workflow 403s on PRs because `GITHUB_TOKEN` lacks `pull_requests: read`.
+- **Prophecy design spec pending commit** — `_research/w1_c_1_prophecy_design_spec.md` authored by Replit Agent parallel to W1.C.1; awaits clean-tree commit in smartcity-os (off the shippable-code-push path per SR-1).
+- **Dead-code cleanup PR** — `client/src/components/layout/{Sidebar,Header,DashboardLayout}.tsx` have zero consumers post-W1.C.1; delete in a follow-on PR.
+- **Cloud Run deploy gate** — confirm auto-CD on main merges OR trigger Cloud Shell deploy to land W1.C.1+C.2+C.3 in Bastrop production. gcloud SSL on Nick box still broken — Cloud Shell route in use.
 
 ## References
 

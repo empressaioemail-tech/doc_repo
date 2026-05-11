@@ -132,8 +132,10 @@ The sprint exits when these are verified:
    table verified to have `tenant_id NOT NULL` + FK + index per
    ADR-005. Smoke test demonstrates tenant isolation under load (no
    cross-tenant data leakage on production-shape queries).
-6. **W1 sprint complete.** All seven W1 items (W1.A.6–9 forensics +
-   W1.C.1–3 implementation) shipped with verifications captured.
+6. ✅ **W1 sprint complete.** All seven W1 items (W1.A.6–9 forensics +
+   W1.C.1–3 implementation) shipped with verifications captured. Met
+   2026-05-11. A.6/A.8 rotation work continues post-sprint as A.6.b/A.8.b
+   (Bastrop IT + vendor coordination required).
 7. **CI clean baseline.** `typecheck` errors at zero or annotated as
    known-blocked-on-X with named follow-up. Semgrep + Gitleaks green
    or annotated. Lockfile drift root cause identified (resolved or
@@ -149,8 +151,8 @@ The sprint exits when these are verified:
 | 2B | WS-1 | Phase 2B data-only sync | cc-agent-1 + Nick | pending | — | — | Needs low-traffic window |
 | 2C | WS-1 | Phase 2C cutover + 24h obs | cc-agent-1 + Nick | pending | — | — | Backup tag + instant rollback ready |
 | 3 | WS-1 | Drizzle migrate adoption (closes `12_migration_sprint.md` Phase 3) | cc-agent-1 | pending | — | — | Post-Phase-2C; ADR-006 |
-| W1.A | WS-2 | W1.A.6–9 forensics dispatches (4 items, parallel-eligible) | cc-agent-2 | pending | — | — | Specs in §WS-2 below |
-| W1.C | WS-2 | W1.C.1–3 implementation dispatches (3 items) | cc-agent-2 | pending | — | — | Specs in §WS-2 below |
+| W1.A | WS-2 | W1.A.6–9 forensics dispatches (4 items, parallel-eligible) | cc-agent-1/2/3/4 | verified | 2026-05-11 | 2026-05-11 | All four shipped; A.6/A.8 rotation partial (A.6.b/A.8.b post-sprint) |
+| W1.C | WS-2 | W1.C.1–3 implementation dispatches (3 items) | cc-agent-2 | verified | 2026-05-11 | 2026-05-11 | PRs #8/#9/#10 squash-merged to smartcity-os main |
 | Sec | WS-3 | Security sweep + auth middleware vitest + Fire 2 internal items | cc-agent-3 | pending | — | — | 5–6 small items, bundleable |
 | Sch | WS-4 | ADR-005 migration + multi-tenancy verification + schema hygiene | cc-agent-4 | pending | — | — | ADR-005 unblock first |
 | Final | All | Done criteria validation + doc updates + retrospective | planner | pending | — | — | Sprint exit |
@@ -339,6 +341,8 @@ the spec below.
 
 ### W1.A.6 — Calendar event visibility (forensics)
 
+**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `f3c06f1`); CALENDAR_API_KEY removed from `.replit` at HEAD (`01fa14e`); rotation partial — A.6.b post-sprint follow-on covers dual-key middleware, Cloud Shell rotation, 14-day `.ics` re-key window.
+
 **Problem.** Calendar events from the BeWith / Google Calendar
 integration aren't reliably visible in the SmartCity OS UI where
 expected. Symptom shape and reproduction conditions captured in
@@ -364,6 +368,8 @@ with evidence; fix list scoped and prioritized.
 
 ### W1.A.7 — Power BI accuracy (forensics)
 
+**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `6d020d4`); 11 divergences cataloged with recommended-fixes-as-separate-table pattern; implementation follow-on requires strategic call (align OS recompute to PBI logic vs. have OS read PBI visuals directly).
+
 **Problem.** Power BI dashboards display numbers that diverge from
 SmartCity OS source-of-truth queries. Specific divergences captured
 in recon.
@@ -387,6 +393,8 @@ has a root cause and a recommended fix.
 
 ### W1.A.8 — Police units / Spireon (forensics)
 
+**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `ad0cbf7`); `.replit` plaintext and `SPIREON_API_TROUBLESHOOTING.md` token UUID + password-length hint redacted at HEAD (`93e4da5`); rotation partial — A.8.b post-sprint follow-on covers SPIREON_TOKEN via Solera Tier-2 (most urgent), SPIREON_USERNAME + SPIREON_PASSWORD rotation, Cloud Run cutover, git-history scrub coordination with A.6.b.
+
 **Problem.** Police unit tracking via Spireon GPS integration is
 incomplete or unreliable. Symptom shape TBD in recon.
 
@@ -409,6 +417,8 @@ fix list.
 characterized; fix list includes secret rotation if applicable.
 
 ### W1.A.9 — Daily health-watch email (forensics + design)
+
+**Status:** ✅ verified 2026-05-11 — findings + design doc shipped (smartcity-os `5d126d0`); implementation deferred per 30a explicit scope (~7.5h V1 follow-on).
 
 **Problem.** No daily summary of SmartCity OS system health currently
 exists (or exists but is unreliable / unread). Need: design a daily
@@ -438,6 +448,8 @@ delivery mechanism decided (build vs. adopt).
 
 ### W1.C.1 — Prophecy layout (implementation)
 
+**Status:** ✅ verified 2026-05-11 — PR #10 squash-merged to smartcity-os main. Reframed mid-stream from viewport/layout fix to design-system alignment per Nick's actual symptom ("doesn't follow look and feel"). Replit Agent design.md authored as parallel artifact (`_research/w1_c_1_prophecy_design_spec.md`); pending clean-tree commit to smartcity-os.
+
 **Problem.** Prophecy was added to `SmartCityLayout` top navigation
 in PR #4 (commit `602f0d8`). Layout issue exists — exact shape per
 Nick's prior context. Confirm with Nick before dispatch fires.
@@ -458,6 +470,8 @@ before/after screenshots in PR description.
 vitest + typecheck pass; PR merged.
 
 ### W1.C.2 — CSP frame-src (implementation)
+
+**Status:** ✅ verified 2026-05-11 — PR #9 squash-merged to smartcity-os main (`8402e66`). Bundled with WS-3 `x-internal-ai` CORS removal on `server/app.ts` (single PR per coordination note). PR-body framing rewritten mid-stream after Prophecy iframe blockage identified as third-party-side (their `frame-ancestors` policy); our CSP fix is precondition, not complete solution — allowlist coordination with Prophecy in progress.
 
 **Problem.** Content Security Policy `frame-src` directive needs
 configuration for embedded content (likely Power BI, ArcGIS map
@@ -481,6 +495,8 @@ improves; no wildcard origins; PR merged. **Coordinate with WS-3
 edits to `server/app.ts`** — bundle into one PR or sequence cleanly.
 
 ### W1.C.3 — OpenGov BNP hardening (implementation)
+
+**Status:** ✅ verified 2026-05-11 — PR #8 squash-merged to smartcity-os main (`281126a`). Exponential backoff, circuit breaker, structured logging, rate-limit respect; synthetic failure injection tests pass per success criteria.
 
 **Problem.** OpenGov integration's BNP endpoint (acronym TBD —
 likely Building / Bid / Budget / Notice / Permit) needs hardening.
@@ -684,6 +700,16 @@ From `20_agent_operating_rules.md`:
 Newest-first dated log. Each entry: date, sub-phase, status change,
 SHA / artifact reference.
 
+- **2026-05-11 (WS-2 exit):** All seven W1 items verified. Phase
+  board rows W1.A and W1.C flipped to `verified`. Done criterion #6
+  met. Smartcity-os PRs #8 (W1.C.3 OpenGov BNP hardening), #9 (W1.C.2
+  CSP + bundled WS-3 x-internal-ai CORS removal), #10 (W1.C.1 Prophecy
+  design-system alignment) all squash-merged. Forensics findings docs
+  (A.6 calendar, A.7 Power BI, A.8 Spireon, A.9 health-watch email)
+  shipped to smartcity-os `_research/`. A.6 and A.8 plaintext-at-HEAD
+  removal landed in `.replit` + `SPIREON_API_TROUBLESHOOTING.md`;
+  rotation work continues post-sprint as A.6.b / A.8.b. Session
+  summary: `_sessions/2026-05-11_w1_sprint_ws2_exit_claude_ai_planner.md`.
 - **2026-05-11:** Audit pass finalized. Cross-track interfaces
   documented; `33_smartcity_codex_1b_integration.md` stub created
   as Codex 1b receiving surface (Option A). Sister-doc cross-refs
@@ -727,6 +753,11 @@ SHA / artifact reference.
 
 ## Revision history
 
+- **2026-05-11 (WS-2 exit):** Phase board W1.A + W1.C flipped to
+  `verified`. Per-item status lines added to W1.A.6/A.7/A.8/A.9 and
+  W1.C.1/C.2/C.3 sub-sections. Done criterion #6 marked met. Status
+  tracking log entry added. Sprint remains `active`; WS-1, WS-3
+  remaining items, and WS-4 still pending.
 - **2026-05-11:** Audit pass — Cross-track interfaces section added
   (sister docs 27/42/48 cross-referenced); M4-B → Codex 1b receiving
   surface decision noted (Option A: new stub doc

@@ -65,7 +65,8 @@ The portfolio is "ready to bring on more clients and build more on top" when thr
 
 - **Doc:** [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md)
 - **Target:** ~3-4 weeks across 4 workstreams (WS-1 migration spine, WS-2 W1 sprint, WS-3 security sweep, WS-4 schema/multi-tenancy)
-- **Exits:** SmartCity OS on Empressa Neon end-to-end; all fires closed; code-side security debt cleared; schema hygiene baseline; ADR-005 canonical + multi-tenancy invariants verified; W1 sprint complete; CI clean baseline.
+- **Progress:** WS-2 verified 2026-05-11 (seven W1 items shipped; A.6/A.8 rotation work continues as A.6.b/A.8.b post-sprint). WS-1, WS-3 remaining (beyond x-internal-ai CORS removal bundled into W1.C.2's PR #9), and WS-4 still pending.
+- **Exits:** SmartCity OS on Empressa Neon end-to-end; all fires closed; code-side security debt cleared; schema hygiene baseline; ADR-005 canonical + multi-tenancy invariants verified; ✅ W1 sprint complete (2026-05-11); CI clean baseline.
 
 ### M-PropIntel — SmartCity property intelligence
 
@@ -125,13 +126,15 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 - [ ] **Migration sprint Phase 2** — SmartCity OS Empressa Neon swap (us-central1 closes Fire 5) · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1**. `migration` · Nick + agent · XL sprint.
 - [ ] **Migration sprint Phase 3** — Drizzle migrate adoption · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 3 (ADR-006)**. `migration` · Nick + agent · XL sprint.
 - [ ] **Dispatch prompts queue** — 4 prompts pending draft · W1 specs absorbed by [`30a`](30a_smartcity_stabilization_sprint.md). Remaining un-drafted: A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth. `docs` · planner · M.
-- [ ] **W1.A.6-9 forensics dispatches** (calendar / Power BI / police units / health-watch email) · **specs landed in [`30a`](30a_smartcity_stabilization_sprint.md) §WS-2; executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-2**. `sprint` · agent · XL.
-- [ ] **W1.C.1-3 implementation dispatches** (Prophecy layout / CSP frame-src / OpenGov BNP hardening) · **specs landed in [`30a`](30a_smartcity_stabilization_sprint.md) §WS-2; executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-2**. `sprint` · agent · XL.
+- [x] **W1.A.6-9 forensics dispatches** (calendar / Power BI / police units / health-watch email) — verified 2026-05-11. Findings docs shipped to smartcity-os `_research/`; A.6/A.8 plaintext-at-HEAD redacted in `.replit` + `SPIREON_API_TROUBLESHOOTING.md`. Implementation follow-ons (A.6/A.7/A.8 structural fixes; A.9 ~7.5h V1) post-sprint. Operational rotation continues as A.6.b/A.8.b (see P2).
+- [x] **W1.C.1-3 implementation dispatches** (Prophecy design-system alignment / CSP frame-src + bundled x-internal-ai CORS removal / OpenGov BNP hardening) — verified 2026-05-11. Smartcity-os PRs #10, #9 (`8402e66`), #8 (`281126a`) all squash-merged. W1.C.1 reframed mid-stream from viewport fix to design-system alignment per Nick's actual symptom.
 - [ ] **$21M water/wastewater state grant** — June 1 deadline, no owner, no technology narrative drafted. `strategic` · Nick (open) · XL.
 
 ## P2 — next 2-4 weeks
 
 - [ ] **Fire 4:** SmartCity OS Repl drift cleanup — PR #7 merged 2026-05-10 PM. Workspace rename to `SmartCityOSMain-retired-20260510` pending Nick UI action — fully closes after rename. `fire (demoted)` · Nick + agent · M.
+- [ ] **W1.A.6.b — Calendar rotation completion** (post-sprint follow-on to W1.A.6) — F-8 dual-key middleware, Cloud Shell rotation of `CALENDAR_API_KEY` via BeWith, ~14-day `.ics` subscriber re-key window, old-key disable, git-history scrub coordination with A.8.b. Needed for Fire 2 closure on Calendar side. `security / follow-on` · Nick + agent + BeWith · L · ref: [`30a`](30a_smartcity_stabilization_sprint.md) §WS-2 W1.A.6 Status line.
+- [ ] **W1.A.8.b — Spireon rotation completion** (post-sprint follow-on to W1.A.8) — `SPIREON_TOKEN` rotation via Solera Tier-2 (most urgent), `SPIREON_USERNAME` + `SPIREON_PASSWORD` rotation, Cloud Shell + Cloud Run cutover, git-history scrub coordination with A.6.b, identity-field review for troubleshooting doc, F-2 mapDepartment 5-LoC reorder. Needed for Fire 2 closure on Spireon side. `security / follow-on` · Nick + agent + Solera Tier-2 · L · ref: [`30a`](30a_smartcity_stabilization_sprint.md) §WS-2 W1.A.8 Status line.
 - [x] **Saga package cleanup** — shipped 2026-05-05.
 - [x] **ADR-Replit-Neon-001/002/003 migrate** — shipped 2026-05-05.
 - [ ] **ADR-005 multitenancy migration** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4 cross-cutting prereq**. `docs` · planner · M.
