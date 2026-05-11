@@ -107,3 +107,65 @@ Third Claude.ai planner session of 2026-05-11. Sequenced after session 2's cutov
 - `90_runbooks/cloud_run_canary_deploy.md` — referenced for deploy instructions
 - GitHub PR #14 (AI_INTEGRATIONS rename, merged, awaiting deploy): https://github.com/empressaioemail-tech/smartcity-os/pull/14
 - GitHub Calendar PR (Predicate B fix, in flight from cc-agent dispatch): URL TBD
+
+---
+
+## Addendum — deploy loop: two regressions, parseDate fix shipped, source-set issue carried forward (added post-close)
+
+After the session-3 close at `f6863b2`, Nick ran a deploy bundling PR #14, PR #15, A.6 (which had never actually served production traffic until this build), Spireon batch, and W1.A.7 docs. Two distinct regressions surfaced; one fixed, one carried forward. Production was rolled back to `smartcity-api-00087-njz` twice and is currently serving stably from that revision.
+
+### Sequence of events
+
+**1. Initial deploy: `smartcity-api-00093-yit` at 22:08Z.** Backup tags created pre- and post-deploy. Boot probe healthy ("Cold cache populated with 25 Municode meetings"). Tag: `pbi-ai-cal-20260511`. Promoted to 100% traffic.
+
+**2. Regression 1 observed: calendar widget empty.** Widget on `/overview` showed "No upcoming events" — pre-deploy state was 6 events with "View all 57 upcoming meetings."
+
+**3. Diagnosis 1: parseDate strictness incompatible with Municode datetime format.** curl against the tagged URL showed `/api/calendar/events/public` returning 25 valid events, each with full ISO datetime `isoDate` (e.g., `"2026-06-01T18:00:00-05:00"`). The F-3-fixed `parseDate()` at `CommunityCalendar.tsx:48-53` split on `-` and `Number`-parsed the third element `"01T18:00:00"` as `NaN`, returning null. Every event failed the `parsedDate !== null` filter. PR #15's inline `parseLocalDate` in `ai-assistant.ts` had the same vulnerability (copied the same pattern).
+
+**4. First rollback to `00087-njz` at ~22:25Z.** Traffic-only update via `gcloud run services update-traffic --to-revisions=smartcity-api-00087-njz=100`. `00093-yit` remained at 0% tagged for diagnostic.
+
+**5. parseDate T-component hardening shipped.** PR opened (URL/number TBD — capture from main's git log) with one-line fix: `const datePortion = isoDate.split("T")[0]` before parsing parts. Same fix applied to `ai-assistant.ts` inline `parseLocalDate`. Three regression tests added in `tests/client/calendar-parseDate.test.ts` asserting Municode-shape isoDate handling. Merged to main.
+
+**6. Redeploy with parseDate fix.** Standard build + deploy via the canary procedure. Revision name TBD (capture via `gcloud run revisions list --service=smartcity-api --region=us-central1 --limit=5`). Calendar widget rendered events — parseDate fix confirmed correct.
+
+**7. Regression 2 observed: today's event missing from the rendered list.** Today is May 11; the City Council Regular Meeting at 6:30 PM (visible on pre-A.6 production image, captured in this session's earlier screenshot) was NOT in the rendered widget post-fix. Other future events did render.
+
+**8. Second rollback to `00087-njz`.** Confirmed stably serving with today's event visible on the widget.
+
+### Diagnosis 2 — source-set change in A.6
+
+Evidence from curl against `00093-yit`'s tagged URL: the event list starts at May 14 and runs to June 1, 25 events total, all sourced from Municode. The pre-A.6 production image (`00087-njz`, May-10 build) was showing 57 upcoming meetings including today's events.
+
+Working hypothesis: A.6's calendar.ts changes altered how event sources are combined. Pre-A.6 was either merging Municode + the hardcoded BASTROP_MEETINGS schedule, or had a wider date range, or fell back to schedule when Municode's window didn't include today's events. Post-A.6 uses Municode-only with a future-only window that begins ~3 days out, dropping any event on or before today. The recon's Step 5 noted `generateSchedule()` emits a -2 to +6 month range (which would include today and past events) — that path is no longer being hit, or its output is no longer being merged with Municode's.
+
+Not yet diagnosed in depth. Queued for next session — the codebase recon needed is:
+- Read `resolveColdCacheEvents()` in `server/routes/calendar.ts` end-to-end on current `main` (post-A.6)
+- Compare against the same function on `9768c23` (pre-this-session main, i.e., what the May-10 image was built from — or wherever the pre-A.6 implementation last lived)
+- Identify the change that switched from merged/schedule-inclusive to Municode-only-future
+- Decide remediation: re-introduce schedule merge, widen Municode scrape range, OR add explicit "include today" logic in the resolver
+
+### Production state after second rollback
+
+- Revision `smartcity-api-00087-njz` serving 100% (May-10 image plus today's Power BI env-binds)
+- Power BI fixes retained (POWERBI_REPORT_ID rebound, POWERBI_CIP_DATASET_ID newly bound — both are Cloud Run secret bindings, survived both rollbacks)
+- A.6 calendar code — rolled back, not in production
+- PR #14 (AI_INTEGRATIONS rename) — merged on main, not in production
+- PR #15 (Calendar Predicate B fix) — merged on main, not in production
+- parseDate T-component hardening PR — merged on main, not in production
+- Spireon batch + W1.A.7 docs — merged on main, not in production
+- Two stale revisions at 0% traffic: `smartcity-api-00093-yit` (tag `pbi-ai-cal-20260511`) and the parseDate-fix redeploy revision (name TBD)
+
+### Top of next session's queue
+
+1. **Diagnose A.6 calendar source-set regression.** Read `resolveColdCacheEvents()` on current main vs prior version. Identify the source-set behavior change. Decide remediation.
+2. **Add a regression test that asserts today's events render.** The widget gap held this far because no test exercised "current day event present in upcomingEvents." Add `tests/server/calendar-today-event-included.test.ts` or similar, mocking `Date.now()` to a known wall-clock and asserting that an event scheduled for that day is in the public endpoint's response.
+3. **Redeploy after fix.** Will bring main back to serving traffic, restoring PR #14 (AI rename), PR #15 (Predicate B), A.6 (its non-source-set parts), parseDate T-component fix, Spireon batch, W1.A.7 docs — all currently sitting on main behind the rollback.
+4. **Audit other A.6 changes for similar "subtle source-set / window changes" we missed.** F-4 (VTIMEZONE) and F-5 (Municode timeout) are unlikely culprits; F-1 (public endpoint) and F-3 (parseDate) are now well-understood. F-2 doesn't appear in the F-numbering — confirm what F-2 was and whether it relates.
+
+### Lessons added to this session's record
+
+- **F-3 was scoped as "TZ shift fix" but the actual production regression was a multi-factor: TZ shift + input-format mismatch (parseDate strictness) + source-set change (Municode-only, no schedule merge).** A.6's batched scope hid the latter two from code review because everything was bundled. Future F-* batches should be split into single-concern PRs.
+- **Production-correctness verification must include "does TODAY's event render," not just "do FUTURE events render."** Both regressions today were caught only by Nick eyeballing the widget for specific events; no automated test would have flagged either before the deploy went live. Regression tests for the widget should assert an event-for-today event-for-tomorrow event-for-next-week minimum coverage.
+- **Recon flags must drive verification before related code ships.** Step 5/Step 6 of the calendar recon explicitly flagged "if Municode emits T-component, parseDate returns null." Planner treated this as latent observation. The right move was to verify Municode's actual output format BEFORE greenlighting any work that touched parseDate or its consumers. Cost of the verification: one curl. Cost of skipping it: two rollbacks and a follow-up PR.
+- **"Merged to main" remains distinct from "in serving traffic."** This session's env-bind revisions created the illusion that A.6 was live; it wasn't until `00093-yit` actually built a new image. Handoffs and current_state docs should ALWAYS distinguish "merged at commit X" from "deployed at revision Y serving traffic Z%."
+- **Bundled deploys make rollback painful.** Two rollbacks today; each one un-shipped PR #14, PR #15, Spireon batch, and W1.A.7 docs alongside the broken code. Smaller, focused deploys reduce blast radius. If A.6 had shipped alone, the rollback would have been clean; bundling it with multiple unrelated PRs means everything queues for the next deploy.
