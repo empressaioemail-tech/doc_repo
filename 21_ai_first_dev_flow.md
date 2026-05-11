@@ -2,7 +2,7 @@
 id: 21_ai_first_dev_flow
 title: AI-first dev flow
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-11
 applies_to: portfolio
 related: [20_agent_operating_rules, 22_workstation_inventory]
 ---
@@ -40,7 +40,7 @@ agents harder is almost always the right move over adding a new one.
 
 One Cursor workspace per active working repo:
 
-- `p:\smartcity-os` — its own Cursor workspace
+- `P:\empressaio_tech_smartcity_os` — its own Cursor workspace
 - `p:\legacy-design-tools` — its own
 - `p:\legacy-revit-sensor` — its own
 - `p:\doc_repo` — its own (this docs repo, lower-volume but worth its

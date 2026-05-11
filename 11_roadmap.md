@@ -2,309 +2,248 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-11
 applies_to: portfolio
-related: [10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment]
+related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan, 48_codex_program_plan]
 ---
 
 # Roadmap
 
-> **Working checklist.** Edit in place. Check items off as they ship.
-> Move items between tiers as priority shifts. Bump `last_updated` on
-> every edit, however small. The checklist is the roadmap; surrounding
-> prose stays minimal so the action items are scannable.
+> **Working checklist + milestone view.** Edit in place. Check items off as
+> they ship. Move items between tiers as priority shifts. Bump `last_updated`
+> on every edit. The checklist is the operational view; the milestone
+> roadmap above orients new work and shows the path to the end state.
+>
+> **2026-05-11 changes:** End-state framing + milestone roadmap added
+> (M-Stabilize, M-PropIntel, M-CortexQA, M-CodexQA). Three new active
+> sprints landed in doc_repo: `30a_smartcity_stabilization_sprint.md`
+> (SmartCity OS platform-ready), `27_engine_evolution_plan.md` (Hauska
+> Engine evolution + atom registry expansion + brand migration Stream G),
+> `42_design_accelerator_program_plan.md` (Cortex program through GA),
+> `48_codex_program_plan.md` (Codex program through GA). Cross-track stub
+> at `33_smartcity_codex_1b_integration.md`. P1 reorganized so 30a heads
+> the list and absorbed items reference their executing sprint. Snapshot
+> doc + orientation protocol landed (`00_current_state.md`,
+> `90_runbooks/current_state_protocol.md`).
 >
 > **2026-05-10 changes:** Codex (formerly "Plan Review Amplifier")
-> launched as canonical reviewer-side product home in
-> [`47_codex_plan_review.md`](47_codex_plan_review.md). Living
-> lineage thesis landed as portfolio strategic foundation
-> ([`05_living_lineage_thesis.md`](05_living_lineage_thesis.md));
-> cities value narrative landed for Sylvia / city-manager
-> conversations
-> ([`06_cities_value_narrative.md`](06_cities_value_narrative.md)).
-> ADR-007 cross-stakeholder atom access (property-as-tenant) and
-> ADR-008 Hauska Engine factor-out (named, repo-targeted, sequenced
-> after migration Phase 2C) added at
-> [`80_adrs/adr_007_*`](80_adrs/adr_007_cross_stakeholder_atom_access.md)
-> and
-> [`80_adrs/adr_008_*`](80_adrs/adr_008_engine_factor_out.md). Fabric
-> overview diagram at `80_adrs/diagrams/fabric_overview.svg`. M4-B
-> SmartCity-internal vocabulary cross-mapped to Codex 1b via option-b
-> hybrid (per-item mapping deferred to `33_*` when written).
-> Three commits landed: `822dd1b` initial batch + `48d43a7`
-> housekeeping pass A + `eb48911` housekeeping pass B.
+> launched as canonical reviewer-side product home in `47_codex_plan_review.md`.
+> Living lineage thesis (`05_*`) and cities value narrative (`06_*`)
+> landed. ADR-007 cross-stakeholder atom access and ADR-008 Hauska Engine
+> factor-out added. Three commits: `822dd1b` initial + `48d43a7`
+> housekeeping A + `eb48911` housekeeping B.
 >
-> **2026-05-06 changes:** Tooling setup complete on Nick box (`gh
-> auth login` + `gh auth setup-git` + credential username pinned;
-> all four repos verified accessible). Migration sprint structure
-> decided as 3-phase split (legacy-design-tools full migration â
-> SmartCity OS Neon swap â Drizzle migrate adoption); landed as
-> [`12_migration_sprint.md`](12_migration_sprint.md). Cloud Run
-> canary deploy pattern codified at
-> [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md).
-> Biz ops repo concept agreed (separate repo for finance / sales /
-> customer / corporate; cross-references to canonical-numbers
-> docs); creation queued in P2. Pricing framework renumbered
-> 15 â 14 (slot collision).
+> **2026-05-06 changes:** Tooling setup complete on Nick box. Migration
+> sprint structure decided as 3-phase split, landed as `12_migration_sprint.md`.
+> Cloud Run canary deploy pattern codified.
 >
-> **2026-05-05 changes:** P0 docs work closed (atom ADR + reference +
-> upgrade guide migrated; recon backfill landed; ADR-Replit-Neon
-> migration done; saga package cleanup decided as retire-both). Part 8
-> open questions from `04_strategic_conversation_record.md` folded in:
-> action-shaped items added to P-tiers; genuinely-open questions in
-> new "Open strategic questions" section. Risk register, leading
-> indicators, and pricing framework extracted as `13`, `17`, `14`.
->
-> **Supersedes** the pre-docs-repo `11_roadmap.md` carried forward in
-> Claude.ai project knowledge â Phase 0 framing is dropped because the
-> Phase 0 Stage 8 closure narrative had no codified evidence (see
-> [`10_ground_truth.md`](10_ground_truth.md)).
+> **2026-05-05 changes:** P0 docs work closed. Risk register, leading
+> indicators, pricing framework extracted as `13`, `17`, `14`.
+
+## End state
+
+The portfolio is "ready to bring on more clients and build more on top" when three product readiness milestones are met. Beyond end state lives downstream of these gates.
+
+| Milestone | What it means | Source |
+|---|---|---|
+| **M-PropIntel** | SmartCity OS has property intelligence visualization in place — Sylvia's hydrology query and analogous city-manager workflows answered against the same engine that powers DA parcel briefing. | M-Stabilize exit + property intelligence sprint (TBD scope) |
+| **M-CortexQA** | Cortex (formerly Design Accelerator) is functional end-to-end on real Moab projects. Nick can structurally evaluate every output as classified atoms. Ready for heavy QA testing from real-world industry users. | [`42_*`](42_design_accelerator_program_plan.md) Phase 2 exit |
+| **M-CodexQA** | Codex 1b is functional end-to-end on real submittals. Nick can structurally evaluate every output. Ready for heavy QA testing from real-world industry users. | [`48_*`](48_codex_program_plan.md) Phase 2 exit |
+
+**Beyond end state — enabled by it, not part of it:**
+
+- New client onboarding (Jarrell, M9, future cities)
+- IoT work, cit hub, additional SmartCity OS surfaces
+- Codex 1b Bastrop production activation ([`48_*`](48_codex_program_plan.md) Phase 4)
+- Codex 1a invited mode + contractor firm pilot ([`48_*`](48_codex_program_plan.md) Phase 5-6)
+- GA for both products ([`48_*`](48_codex_program_plan.md) Phase 7, [`42_*`](42_design_accelerator_program_plan.md) Phase 6)
+- Hauska Engine factor-out to `hauska-engine` repo (ADR-008; gated on M-Stabilize Phase 2C)
+
+## Milestone roadmap
+
+### M-Stabilize → unblocks everything
+
+- **Doc:** [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md)
+- **Target:** ~3-4 weeks across 4 workstreams (WS-1 migration spine, WS-2 W1 sprint, WS-3 security sweep, WS-4 schema/multi-tenancy)
+- **Exits:** SmartCity OS on Empressa Neon end-to-end; all fires closed; code-side security debt cleared; schema hygiene baseline; ADR-005 canonical + multi-tenancy invariants verified; W1 sprint complete; CI clean baseline.
+
+### M-PropIntel — SmartCity property intelligence
+
+- **Gated on:** M-Stabilize exit (multi-tenancy verified; ADR-005 canonical; engine factor-out unblocked via ADR-008)
+- **Doc:** TBD — currently lives as "Bastrop property intelligence" in P2 backlog below; needs scope-and-sprint after M-Stabilize.
+- **Scope:** City-manager view of property intelligence — Sylvia's hydrology query is the canonical use case. Engine-backed parcel briefing scoped to jurisdiction. Slice of the same engine that powers DA parcel briefing per [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md). Also informs [`48_*`](48_codex_program_plan.md) Phase 3 CDX-6 (reviewer-side parcel intelligence).
+
+### M-CortexQA — Cortex functional, QA-ready
+
+- **Gated on:** [`27_*`](27_engine_evolution_plan.md) Streams A/B/C/D running; [`42_*`](42_design_accelerator_program_plan.md) Phase 1 complete
+- **Doc:** [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) Phase 2 exit
+- **Exits:** Nick can run Musgrave (or any active Moab project) end-to-end with structural evaluation per the 8-point QA-readiness definition. Bugs are pointable-at-atoms.
+
+### M-CodexQA — Codex 1b functional, QA-ready
+
+- **Gated on:** [`27_*`](27_engine_evolution_plan.md) Streams A/B/C/D running; [`48_*`](48_codex_program_plan.md) Phase 1 complete
+- **Doc:** [`48_codex_program_plan.md`](48_codex_program_plan.md) Phase 2 exit
+- **Exits:** Nick can run real reviewer pass end-to-end through Codex 1b on Moab projects with structural evaluation per the 8-point QA-readiness definition.
+
+### Cross-cutting work in flight
+
+- **Brand migration** (Plan Review → Codex, Design Accelerator → Cortex) — [`27_*`](27_engine_evolution_plan.md) Stream G. Gated on legacy-design-tools PR #17 landing.
+- **Atom registry expansion** — [`27_*`](27_engine_evolution_plan.md) Stream B. Coordinated rollout across all consumers, single minor version bump.
+- **Cross-track interface spec** — [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) stub. Full spec deferred to post-M-Stabilize coordination session.
 
 ## Summary
 
-~45 pending items across the portfolio. Five active fires (3 unfixed
-as of 2026-05-05; 2 mitigated/tracked), two infrastructure
-migrations, two product wave plans (architect-side Moab waves +
-city-side AI Plan Review M4-B), a stack of operational debt, a
-handful of strategic items, and a register of open strategic
-questions awaiting external signal.
+Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Codex/Cortex track (`27`/`42`/`48`) executing toward end-state. ~45 backlog items below tracked by priority tier; most P1 items now absorbed by active sprints. Five active fires (Fires 1 + 4 closed; Fire 2 held on Bastrop IT; Fire 3 pending; Fire 5 closes at M-Stabilize Phase 2C). Roadmap balances milestone view (above) with operational tier view (below).
 
-**Priority tiers:**
-- **P0** â fire / blocking / today-this week
-- **P1** â committed work this week / next
-- **P2** â next 2-4 weeks
-- **P3** â backlog (important, not urgent)
-- **Open strategic questions** â genuinely-open, awaiting signal /
-  conversation / data; listed separately because they're not work
-  items in the same shape
+**Priority tiers (operational):**
 
-**Sizing:** S < 1h Â· M = 1-4h Â· L = 1+ days Â· XL = multi-day sprint.
+- **P0** — fire / blocking / today-this week
+- **P1** — committed work this week / next
+- **P2** — next 2-4 weeks
+- **P3** — backlog (important, not urgent)
+- **Open strategic questions** — awaiting external signal; not work items in the same shape
 
-**Owner notation:** Nick = manual / decision / browser. Agent =
-Cursor Claude Code or Replit Agent. Planner = Claude.ai planning
-chat. Open = no owner currently assigned. Valerie / Sylvia = named
-externals where a question depends on them.
+**Sizing:** S < 1h · M = 1-4h · L = 1+ days · XL = multi-day sprint.
+
+**Owner notation:** Nick = manual / decision / browser. Agent = Cursor Claude Code or Replit Agent. Planner = Claude.ai planning chat. Open = no owner.
 
 ---
 
-## P0 â now / this week
+## P0 — now / this week
 
-- [ ] **Fire 3:** verify legacy-design-tools `post-merge.sh` Neon-guard on GitHub web UI â `fire` Â· Nick (browser) Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [x] **Fire 1:** W1.C.4a auth bypass fix on SmartCity OS â closed 2026-05-10 (PR #6, commit `5e9fca3`, Cloud Run revision `smartcity-api-00084-weg`) â `fire` Â· Nick + agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Fire 2:** plaintext secrets in `.replit` â rotate ADMIN_RESET / USER_RESET / BASTROP_BOOTSTRAP / ARCGIS / VERKADA / CALENDAR / VFD_*, remove `[userenv.shared]` plaintext, decide on git history scrub â `fire` Â· Nick Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md) **(held â Bastrop IT engagement required for external rotations)**
-- [x] **Atom architecture ADR migration** â [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) + reference in [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md) + upgrade guide in [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md). Closed 3 forward-references in 30 / 40 / 41. **Shipped 2026-05-05.**
-- [x] **Recon backfill** into `_sessions/2026-05-05_*` (3 summaries: smartcity-os, legacy-design-tools, legacy-revit-sensor). **Shipped 2026-05-05.** Closes the audit trail behind [`10_ground_truth.md`](10_ground_truth.md)'s planner-belief corrections.
+- [ ] **Fire 3:** verify legacy-design-tools `post-merge.sh` Neon-guard on GitHub web UI — `fire` · Nick (browser) · S · ref: [`10_ground_truth.md`](10_ground_truth.md). May go moot after [`42_*`](42_design_accelerator_program_plan.md) Phase 1 clears.
+- [x] **Fire 1:** W1.C.4a auth bypass fix on SmartCity OS — closed 2026-05-10 (PR #6, commit `5e9fca3`, Cloud Run revision `smartcity-api-00084-weg`).
+- [ ] **Fire 2:** plaintext secrets in `.replit` — internal items absorbed into [`30a`](30a_smartcity_stabilization_sprint.md) WS-3; external rotations held for Bastrop IT engagement. `fire` · Nick + agent · M.
+- [x] **Atom architecture ADR migration** — shipped 2026-05-05.
+- [x] **Recon backfill** into `_sessions/2026-05-05_*` — shipped 2026-05-05.
 
-## P1 â this week / next
+## P1 — this week / next
 
-- [ ] **Migration sprint Phase 1** â legacy-design-tools full migration (Cloud Run + GHA CI + Empressa Neon swap). Sub-phases 1A/1B/1C per [`12_migration_sprint.md`](12_migration_sprint.md). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md). **2026-05-06 progress:** **Phase 1A verified** â scaffold + first-deploy + cascading test fixes shipped via PRs #18, #20, #21, #22, #24 + `fix/cloud-run-first-deploy-and-auth-flags`. GCP infrastructure stood up in `legacy-design-tools-prod`. Canary revision `api-server-00003-wix` healthz 200. Traffic ramp pending. Phases 1B + 1C unblocked. Frontend hosting deferred. **2026-05-06 PM:** Traffic ramp closed (100% to api-server-00003-wix, post-ramp backup tag at `e4b15c1`). Empressa Neon project provisioned for Phase 1B. Phase 1B Stage 1 dispatch ready, blocked on workstation Postgres client install + `EMPRESSA_DATABASE_URL` secret load. **2026-05-10 PM:** Phase 1B prereqs closed (psql 18.3 + pg_dump 18.3 on Nick box, `EMPRESSA_DATABASE_URL` in GCP Secret Manager on `legacy-design-tools-prod`). Phase 1B Stage 1 verified — schema-only dump from `ep-little-base-amyyxjca` (PG 16.12) → `ep-dry-queen-aq0yxp05-pooler` (PG 17.8) excluding `test_*` schemas + `_system` Replit migration tracking. 36 tables / 419 columns / 98 indexes / 104 constraints (36 PK + 37 FK + 5 unique + 26 check); plpgsql + vector 0.8.0 extensions parity. Phase 1B Stage 2 / Phase 1C eligible to schedule.
-- [ ] **Migration sprint Phase 2** â SmartCity OS Empressa Neon swap (us-central1 closes Fire 5). â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
-- [ ] **Migration sprint Phase 3** â Drizzle migrate adoption for both apps. â `migration` Â· Nick + agent Â· XL sprint Â· ref: [`12_migration_sprint.md`](12_migration_sprint.md)
-- [ ] **Dispatch prompts queue** â 11 prompts pending draft (Fire 4 Repl drift, W1.A.6-9 forensics, W1.C.1-3 implementation, A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth). Batch by similarity per prior planner recommendation. â `docs` Â· planner Â· M (batch turns) Â· ref: chat 2026-05-06
-- [ ] **W1.A.6-9 forensics dispatches** (calendar event visibility / Power BI accuracy / police units & Spireon / daily health-watch email) â `sprint` Â· agent Â· XL Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **W1.C.1-3 implementation dispatches** (Prophecy layout / CSP frame-src / OpenGov BNP hardening) â `sprint` Â· agent Â· XL Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **$21M water/wastewater state grant** â June 1 deadline, no owner, no technology narrative drafted â `strategic` Â· Nick (open) Â· XL Â· ref: `userMemories` (no doc yet â propose `12_grants_pipeline.md` if multiple grants surface)
+- [ ] **SmartCity OS Stabilization Sprint** — [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md), active 2026-05-11. Orchestrates Phase 2 migration + W1 sprint + security sweep + multi-tenancy foundation. ~3-4 weeks across 4 workstreams. **This is M-Stabilize.**
+- [ ] **Codex/Cortex Phase 1 work** — [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md) Streams A/B/C/D/G + [`42_*`](42_design_accelerator_program_plan.md) Phase 1 + [`48_*`](48_codex_program_plan.md) Phase 1. Module boundary refactor, atom registry expansion, engine quality, corpus depth, brand migration. Path to M-CortexQA and M-CodexQA. `product` · Nick + agent · XL sprint.
+- [ ] **Migration sprint Phase 1** — legacy-design-tools full migration · executing per existing track. `migration` · Nick + agent · XL sprint · ref: [`12_migration_sprint.md`](12_migration_sprint.md). 2026-05-10 PM: Phase 1B Stage 1 verified — schema parity to Empressa Neon. Phase 1B Stage 2 / Phase 1C eligible to schedule.
+- [ ] **Migration sprint Phase 2** — SmartCity OS Empressa Neon swap (us-central1 closes Fire 5) · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1**. `migration` · Nick + agent · XL sprint.
+- [ ] **Migration sprint Phase 3** — Drizzle migrate adoption · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 3 (ADR-006)**. `migration` · Nick + agent · XL sprint.
+- [ ] **Dispatch prompts queue** — 4 prompts pending draft · W1 specs absorbed by [`30a`](30a_smartcity_stabilization_sprint.md). Remaining un-drafted: A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth. `docs` · planner · M.
+- [ ] **W1.A.6-9 forensics dispatches** (calendar / Power BI / police units / health-watch email) · **specs landed in [`30a`](30a_smartcity_stabilization_sprint.md) §WS-2; executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-2**. `sprint` · agent · XL.
+- [ ] **W1.C.1-3 implementation dispatches** (Prophecy layout / CSP frame-src / OpenGov BNP hardening) · **specs landed in [`30a`](30a_smartcity_stabilization_sprint.md) §WS-2; executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-2**. `sprint` · agent · XL.
+- [ ] **$21M water/wastewater state grant** — June 1 deadline, no owner, no technology narrative drafted. `strategic` · Nick (open) · XL.
 
-## P2 â next 2-4 weeks
+## P2 — next 2-4 weeks
 
-- [ ] **Fire 4:** SmartCity OS Repl drift cleanup — PR #7 merged 2026-05-10 PM (`.replit` `[deployment]`/`[postMerge]` + `scripts/post-merge.sh` neutralized to loud-fail; `b67c333` + 9 auto-checkpoints preserved on `archive/repl-local-main-20260510`). Workspace rename to `SmartCityOSMain-retired-20260510` pending Nick UI action — fully closes after rename. — `fire (demoted)` · Nick + agent · M
-- [x] **Saga package cleanup** â cross-app handoff disposition + package README disposition. **Shipped 2026-05-05.** Decision: retire both (handoff's recon-request was fulfilled by 2026-05-05 multi-repo recon; package README replaced by individual doc frontmatter).
-- [x] **ADR-Replit-Neon-001/002/003 migrate** from advisory body to [`80_adrs/`](80_adrs/) â [`adr_002_replit_neon_migration.md`](80_adrs/adr_002_replit_neon_migration.md), [`adr_003_replit_neon_tactical.md`](80_adrs/adr_003_replit_neon_tactical.md), [`adr_004_future_neon_provisioning.md`](80_adrs/adr_004_future_neon_provisioning.md). **Shipped 2026-05-05.**
-- [ ] **ADR-005 multitenancy** migration â `80_adrs/adr_005_smartcity_multitenancy.md` from pre-docs-repo `45_smartcity_multitenancy_spec.md` (every atom is tenant-scoped per ADR-001; this captures the multitenancy decision separately). Decided 2026-05-05 to land as ADR not sub-product spec â `docs` Â· planner Â· M Â· ref: [`02_doc_migration_plan.md`](02_doc_migration_plan.md) item 11
-- [ ] **Watchlist / risk register owner assignment** â Suggested in [`13_risk_register.md`](13_risk_register.md) and [`17_leading_indicators.md`](17_leading_indicators.md) as Nick to set, Valerie to operate. Until owner is named, monthly cadence is aspirational. â `ops` Â· Nick (decision) Â· S Â· ref: [`13_risk_register.md`](13_risk_register.md)
-- [ ] **Cente box layout confirmation** (paths, `gcloud`, `gh`, `doc_repo` clone, working repo paths) â `ops` Â· Nick Â· S Â· ref: [`22_workstation_inventory.md`](22_workstation_inventory.md)
-- [x] **SSH remotes migration on Nick box** â superseded 2026-05-06 by `gh auth setup-git` + `credential.https://github.com.username` pinning. SSH remotes deferred indefinitely; current pattern works.
-- [x] **`gh auth login` on Nick box** â done 2026-05-06. All four working repos verified accessible.
-- [x] **Cloud Run canary deploy runbook** â [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md). **Shipped 2026-05-06.** Pattern from W1.C.4a generalized for Phase 1A and ongoing Cloud Run work.
-- [x] **Migration sprint structure decision** â **decided 2026-05-06 as 3-phase split**, captured in [`12_migration_sprint.md`](12_migration_sprint.md). Surgical phasing avoids stacked-failure pattern from Track B saga.
-- [ ] **Biz ops repo creation** â separate repo for finance / sales / customer relationships / corporate / strategy. Repo name TBD (`biz_ops_repo` / `legacy_biz_ops` / `empressa_biz`). First content: README + `00_logs/` directory with 6 capture log templates (pricing log, deal events log, sprint actuals log, pipeline movement log, time allocation log, expenses log). Cross-references from `doc_repo` (`14_pricing_framework`, `13_risk_register`, `17_leading_indicators`). Backfill Track B saga sprint actuals + Sylvia $1M proposal data point + current Bastrop pipeline state. â `corporate` Â· Nick + planner Â· M Â· ref: chat 2026-05-05
-- [ ] **Anthropic GitHub MCP wiring** (post seed-doc-stable; replaces manual project-knowledge sync) â `ops` Â· Nick + planner Â· M Â· ref: [`22_workstation_inventory.md`](22_workstation_inventory.md)
-- [ ] **Empressa credentials vault decision** â pick 1Password or equivalent as canonical store â `ops` Â· Nick Â· S Â· ref: [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md), [`22_workstation_inventory.md`](22_workstation_inventory.md)
-- [ ] **Pre-docs-repo migration progress** â work the queue in [`02_doc_migration_plan.md`](02_doc_migration_plan.md) (~22 migrate items, 12 absorb, 6 archive, 7 retire). Sequence per matrix's "Suggested execution order." â `docs` Â· planner Â· L (multi-turn) Â· ref: [`02_doc_migration_plan.md`](02_doc_migration_plan.md)
-- [ ] **Design Accelerator Moab waves W0-W3** (foundation / parcel + 3DEP / context + render / comments) â `product` Â· Nick + agent Â· XL sprint Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
-- [ ] **DA-PI-1:** Design Accelerator parcel intelligence MVP â `product` Â· Nick + agent Â· XL sprint Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
-- [ ] **AI Plan Review M4-B kickoff** (PLR-1..28 active, SD-1..8 settled, W1 three-button â W6 differentiation). Now Codex 1b â see [`47_codex_plan_review.md`](47_codex_plan_review.md). Vocabulary cross-mapping (M4-B/PLR/SD/W â CDX-*) pending Pass B. Â· `product` Â· Nick + agent Â· XL sprint Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
-- [ ] **B1 bidirectional taxonomy** (v1.0 requirement; server-side classification in api-server) â `product` Â· Nick + agent Â· L Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md), [`41_revit_connector.md`](41_revit_connector.md)
-- [ ] **Sprint A04.7 followups** â dedup edge cases, post-fix monitoring â `product` Â· agent Â· M Â· ref: [`40_design_accelerator.md`](40_design_accelerator.md)
-- [ ] **Codex Wave 1 (commercial wedge / 1a invited foundation)** â
-  Bluebeam invited-participant adapter, markup format adapters,
-  one-click AI review pass, finding accept/edit/reject loop,
-  jurisdiction switcher. Bluebeam ToS verification gate.
-  `product` Â· Nick + agent Â· XL sprint Â· ref:
-  [`47_codex_plan_review.md`](47_codex_plan_review.md) Wave 1
-- [ ] **Bastrop property intelligence** â
-  city-manager view of property intelligence (Sylvia's hydrology
-  query). Slice of the same engine as DA parcel briefing,
-  scoped at jurisdiction level. Pending after current Bastrop
-  housekeeping clears. `product` Â· Nick + agent Â· L Â· ref:
-  [`30_smartcity_os.md`](30_smartcity_os.md) updated entry
+- [ ] **Fire 4:** SmartCity OS Repl drift cleanup — PR #7 merged 2026-05-10 PM. Workspace rename to `SmartCityOSMain-retired-20260510` pending Nick UI action — fully closes after rename. `fire (demoted)` · Nick + agent · M.
+- [x] **Saga package cleanup** — shipped 2026-05-05.
+- [x] **ADR-Replit-Neon-001/002/003 migrate** — shipped 2026-05-05.
+- [ ] **ADR-005 multitenancy migration** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4 cross-cutting prereq**. `docs` · planner · M.
+- [ ] **Bastrop property intelligence** — city-manager view (Sylvia's hydrology query). **Path to M-PropIntel.** Slice of same engine as DA parcel briefing per [`27_*`](27_engine_evolution_plan.md); scoped at jurisdiction level. Sprint scope TBD after M-Stabilize exit. `product` · Nick + agent · L · ref: [`30_smartcity_os.md`](30_smartcity_os.md).
+- [ ] **Watchlist / risk register owner assignment** — Nick to set, Valerie to operate. `ops` · Nick (decision) · S.
+- [ ] **Cente box layout confirmation** — `ops` · Nick · S.
+- [x] **SSH remotes migration** — superseded 2026-05-06.
+- [x] **`gh auth login` on Nick box** — done 2026-05-06.
+- [x] **Cloud Run canary deploy runbook** — shipped 2026-05-06.
+- [x] **Migration sprint structure decision** — decided 2026-05-06 as 3-phase split.
+- [ ] **Biz ops repo creation** — `corporate` · Nick + planner · M.
+- [ ] **Anthropic GitHub MCP wiring** — `ops` · Nick + planner · M.
+- [ ] **Empressa credentials vault decision** — `ops` · Nick · S.
+- [ ] **Pre-docs-repo migration progress** — ~22 migrate / 12 absorb / 6 archive / 7 retire. `docs` · planner · L.
+- [ ] **Design Accelerator Moab waves W0-W3** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 1 DA-2**. `product` · Nick + agent · XL sprint.
+- [ ] **DA-PI-1:** Design Accelerator parcel intelligence MVP · informs M-PropIntel. `product` · Nick + agent · XL sprint.
+- [ ] **AI Plan Review M4-B kickoff** — Now Codex 1b. Vocabulary cross-mapping deferred to [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) (stub). Execution under [`48_*`](48_codex_program_plan.md) Phase 1-2. `product` · Nick + agent · XL sprint.
+- [ ] **B1 bidirectional taxonomy** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 2 DA-7**. `product` · L.
+- [ ] **Sprint A04.7 followups** · pending dispatch draft (in P1 queue). `product` · agent · M.
+- [ ] **Codex Wave 1 (commercial wedge / 1a invited foundation)** · **deferred to [`48_*`](48_codex_program_plan.md) Phase 5** (1b-first sequencing decision 2026-05-11). `product` · ref: [`48_codex_program_plan.md`](48_codex_program_plan.md).
 
-## P3 â backlog
+## P3 — backlog
 
-- [ ] **Jarrell onboarding** + city-to-city architecture (M9) â `product` Â· Nick + open Â· XL sprint Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
-- [ ] **Digital Twinning surface** â early product, depth deferred â `product` Â· Nick + agent Â· XL Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
-- [ ] **typecheck baseline â zero** (SmartCity OS 422 errors) â `ops` Â· agent Â· XL Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **SmartCity OS `migrations/` prefix collisions** (two `0003_*`, two `0004_*`) â `ops` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Lockfile drift root cause** (SmartCity OS â `bufferutil` / `@emnapi/runtime`) â `ops` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Universal `sync_health` adoption** across integrations â `ops` Â· agent Â· M Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
-- [ ] **Schema migration framework decision** (drizzle migrate vs raw SQL in CI vs manual; post-Empressa-Neon) â `ops` Â· Nick + planner Â· S Â· ref: [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md)
-- [ ] **Devcontainer / Codespaces evaluation** for cross-box parity â `ops` Â· Nick + planner Â· L Â· ref: [`23_dev_setup_assessment.md`](23_dev_setup_assessment.md)
-- [ ] **Compass system prompt refactoring** â `ops` Â· planner + agent Â· M Â· ref: [`30_smartcity_os.md`](30_smartcity_os.md)
-- [ ] **Quantum cryptography strategic vision doc** â `strategic` Â· Nick + planner Â· L Â· ref: `userMemories` (no doc yet â would land as `13_quantum_strategy.md` or similar)
-- [ ] **Security Day** â 4 deferred security commits â `ops` Â· Nick + agent Â· M Â· ref: `userMemories` (no doc yet)
-- [ ] **GoTo Connect OAuth fix** (descoped to separate day) â `ops` Â· agent Â· S Â· ref: `userMemories`
-- [ ] **Deduplicate `mygov_work_orders` schema** (one-row-per-job vs intentional duplicates â architectural decision pending) â `ops` Â· Nick (decision) Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Hauska â Legacy services agreement** â formal document. Currently informal/founder-overlap. â `corporate` Â· Nick + Valerie Â· M Â· ref: archived [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md) Part 8 #8
-- [ ] **Hauska Inc. GitHub org migration** â code currently lives under `empressaioemail-tech` org. Migrate Hauska SDK packages to a Hauska-Inc-owned org. â `corporate / ops` Â· Nick Â· M Â· ref: archived strategic record Part 8 #9
-- [ ] **Engineer-2 operational protocol** â onboarding doc + agent rules training + first-PRs review pattern. Triggers when first additional engineer onboards. â `ops` Â· Nick Â· M (when triggered) Â· ref: archived strategic record Part 8 #10, [`13_risk_register.md`](13_risk_register.md) Risk 8
-- [ ] **ADR-006 anchoring substrate decision** â Polygon CDK (existing ADR-007 in pre-docs-repo project knowledge) vs. public TSA vs. customer-controlled. Precondition for M6. â `architecture` Â· Nick + planner (ADR doc) Â· M Â· ref: archived strategic record Part 8 #16
-- [ ] **Nick Chesser subdivision real name** â low-stakes text reply pending. Trivial. â `ops` Â· Nick Â· S Â· ref: archived strategic record Part 8 #17
-- [ ] **Semgrep `// nosemgrep:` annotation on `server/routes/mygov.ts:269`** (GCP metadata-server false positive â clears CI noise) â `docs/cleanup` Â· agent Â· S Â· ref: [`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md)
-- [ ] **`server/routes/ai-assistant.ts:4212` stale `"x-internal-ai": "1"` header** (broken internal call, separate from Fire 1) â `bug` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **`server/app.ts:85` CORS allowlist removal of `x-internal-ai`** (defense-in-depth post-Fire-1) â `security` Â· agent Â· S Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Auth middleware vitest coverage gap** (`c4c559d` covers 5 surfaces, auth not one) â `test-debt` Â· agent Â· M Â· ref: [`10_ground_truth.md`](10_ground_truth.md)
-- [ ] **Audit production Neon for MyGov raw-records growth pattern** (independent of Repl dev-DB issue) â `recon` Â· agent Â· M Â· ref: [`91_postmortems/2026-05-07_replit_dev_db_wedged.md`](91_postmortems/2026-05-07_replit_dev_db_wedged.md)
-- [ ] **Hauska Engine factor-out sprint** â gated on migration
-  Phase 2C closure. Repo `hauska-engine` in
-  `empressaioemail-tech` org. Code move with behavior parity
-  tests. Consumers updated. `architecture` Â· Nick + agent Â· XL
-  sprint Â· ref:
-  [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md)
-- [ ] **Codex 1b standalone in SmartCity OS Plan Review** â
-  Bastrop activation; PDF viewer + annotation layer + engine
-  hook + dashboard atom flow. `product` Â· Nick + agent Â· L Â· ref:
-  [`47_codex_plan_review.md`](47_codex_plan_review.md) Wave 2
-- [ ] **PropTech ecosystem partner outreach** â gated on engine
-  factor-out and ADR-007 landing. Identify and engage candidate
-  fabric consumers in
-  [futureproptechmiami.com](https://futureproptechmiami.com/)
-  network. `corporate / strategic` Â· Nick Â· M Â· ref:
-  [`47_codex_plan_review.md`](47_codex_plan_review.md) Strategic
-  frames
-- [ ] **Audit legacy-design-tools test isolation pattern** — 4
-  timestamped schemas (`test_<unix_timestamp>_<8hex>`) on
-  production-shared Neon, each mirroring public's 36 tables minus 1.
-  Likely integration test framework using schema-per-test isolation
-  against the production-shared connection. Footgun shape similar to
-  MyGov raw-records on Replit dev DB. Recommend separate test DB or
-  in-memory test fixtures. — `recon` · agent · M · ref:
-  [`_sessions/2026-05-10_phase_1b_stage_1_verified_and_fire_4_pr_claude_ai_planner.md`](_sessions/2026-05-10_phase_1b_stage_1_verified_and_fire_4_pr_claude_ai_planner.md)
+- [ ] **Jarrell onboarding** + city-to-city architecture (M9) — beyond M-PropIntel; new-client motion. `product` · Nick + open · XL sprint.
+- [ ] **Digital Twinning surface** — `product` · Nick + agent · XL.
+- [ ] **typecheck baseline → zero** (SmartCity OS 422 errors) · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4**. `ops` · agent · XL.
+- [ ] **SmartCity OS `migrations/` prefix collisions** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 2A prereqs**. `ops` · agent · S.
+- [ ] **Lockfile drift root cause** (SmartCity OS) · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4**. `ops` · agent · S.
+- [ ] **Universal `sync_health` adoption** — `ops` · agent · M.
+- [ ] **Schema migration framework decision** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 3 (ADR-006)**. `ops` · Nick + planner · S.
+- [ ] **Devcontainer / Codespaces evaluation** — `ops` · Nick + planner · L.
+- [ ] **Compass system prompt refactoring** — `ops` · planner + agent · M.
+- [ ] **Quantum cryptography strategic vision doc** — `strategic` · Nick + planner · L.
+- [ ] **Security Day** — 4 deferred security commits. `ops` · Nick + agent · M.
+- [ ] **GoTo Connect OAuth fix** — `ops` · agent · S.
+- [ ] **Deduplicate `mygov_work_orders` schema** · **folded into [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 2A schema sync**. `ops` · Nick (decision) · M.
+- [ ] **Hauska ↔ Legacy services agreement** — `corporate` · Nick + Valerie · M.
+- [ ] **Hauska Inc. GitHub org migration** — `corporate / ops` · Nick · M.
+- [ ] **Engineer-2 operational protocol** — `ops` · Nick · M (when triggered).
+- [ ] **ADR-006 anchoring substrate decision** — Polygon CDK vs TSA vs Hauska cluster vs customer-controlled. Precondition for M6. Also relevant to `audit-trail-anchor` atom in [`27_*`](27_engine_evolution_plan.md). `architecture` · Nick + planner · M.
+- [ ] **Nick Chesser subdivision real name** — `ops` · Nick · S.
+- [ ] **Semgrep `// nosemgrep:` annotation** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-3**. `docs/cleanup` · agent · S.
+- [ ] **`server/routes/ai-assistant.ts:4212` stale `x-internal-ai` header** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-3**. `bug` · agent · S.
+- [ ] **`server/app.ts:85` CORS allowlist removal of `x-internal-ai`** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-3**. `security` · agent · S.
+- [ ] **Auth middleware vitest coverage gap** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-3**. `test-debt` · agent · M.
+- [ ] **Audit production Neon for MyGov raw-records growth pattern** · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4**. `recon` · agent · M.
+- [ ] **Hauska Engine factor-out sprint** — gated on M-Stabilize Phase 2C closure. Repo `hauska-engine`. `architecture` · Nick + agent · XL sprint · ref: [ADR-008](80_adrs/adr_008_engine_factor_out.md).
+- [ ] **Codex 1b standalone in SmartCity OS Plan Review** — full integration spec in [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) (stub today); execution as [`48_*`](48_codex_program_plan.md) Phase 4. Beyond M-CodexQA. `product` · Nick + agent · L.
+- [ ] **PropTech ecosystem partner outreach** — gated on engine factor-out + ADR-007. `corporate / strategic` · Nick · M.
+- [ ] **Audit legacy-design-tools test isolation pattern** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 1 DA-Test-Iso**. `recon` · agent · M.
 
 ---
 
 ## Open decisions / judgment calls
 
-Roadmap-shape calls that affect priority/scope but haven't been
-resolved. Resolved items struck through.
-
-- ~~Atom ADR + recon backfill at P0~~ â resolved 2026-05-05 (both shipped).
-- **$21M grant at P1 with size XL** â time-bound by external deadline (June 1) but currently no owner / no narrative. If this stays at P1 it needs decisions and bodies; otherwise it slides to "abandoned" rather than "deferred."
-- ~~**Migration sprint as one item vs split into pieces**~~ â resolved 2026-05-06 as **3-phase split** (legacy-design-tools full migration â SmartCity OS Neon swap â Drizzle migrate adoption). See [`12_migration_sprint.md`](12_migration_sprint.md).
-- **Jarrell at P3 not P2** â demoted because Bastrop fires + product roadmap have to clear first. Could be argued the other way (Jarrell drives the city-to-city architecture which needs scoping work even before the city is live).
-- **Compass system prompt refactoring at P3** â if blocking AI Plan Review M4-B work, rises to P2.
-- **Items not on this roadmap because it's a software roadmap:** marketing/sales pipeline (Pipedrive, Synthesia content, TCMA/ICMA prep), Sylvia $1M proposal restructuring (per [`14_pricing_framework.md`](14_pricing_framework.md)), EdgeConneX partnership outreach. These shape *what* the software needs to do and *when* â surface them on a separate sales/customer roadmap or absorb them here. Decision pending.
+- ~~Atom ADR + recon backfill at P0~~ — resolved 2026-05-05.
+- **$21M grant at P1 with size XL** — time-bound by June 1; needs owner.
+- ~~Migration sprint as one item vs split~~ — resolved 2026-05-06 as 3-phase split.
+- **Jarrell at P3 not P2** — Bastrop fires + product roadmap clear first.
+- **Compass system prompt refactoring at P3** — rises to P2 if blocking AI Plan Review M4-B.
+- **Items not on this roadmap because it's a software roadmap:** marketing/sales pipeline, Sylvia $1M proposal restructuring, EdgeConneX partnership outreach. Decision pending whether to absorb here or separate roadmap.
 
 ## Open strategic questions
 
-Questions that are not work items in the same shape as roadmap
-entries. They're decisions awaiting external signal â customer
-conversations, market data, regulatory developments, or sustained
-deliberation. Listed by category with current owner. Folded in from
-Part 8 of [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md)
-on 2026-05-05.
+Decisions awaiting external signal — customer conversations, market data, regulatory developments, or sustained deliberation. Listed by category with current owner.
 
-These don't get checkboxes (they don't ship in a single state
-change). When a question resolves, it gets struck through and a
-short note explains the resolution. New questions can be added as
-they surface.
+### Commercial — Legacy
 
-### Commercial â Legacy
+- **Per-city price envelope for deal #2** — *Valerie*.
+- **Services vs. platform revenue on Bastrop** — *Valerie + Nick*.
+- **Plan review module-or-bundle** — *Nick + Valerie*. Resolves before Bastrop's first plan-review billing event.
+- **Tenth-deal economics** — *Valerie*.
+- **`@empressaio/atom` commercial posture revisit trigger** — *Nick*.
 
-- **Per-city price envelope for deal #2** â *Valerie*. Resolves with Jarrell pricing decision and/or pipeline data from city-manager outreach. Affects [`14_pricing_framework.md`](14_pricing_framework.md) defaults if we discover a different anchor profile.
-- **Services vs. platform revenue on Bastrop** â *Valerie + Nick*. How much of current Bastrop revenue is implementation services (one-time) vs. platform/SaaS (recurring)? Affects how we project deal #2 economics.
-- **Plan review module-or-bundle** â *Nick + Valerie*. Is AI Plan Review (M4-B) sold as a bundled feature of SmartCity OS or as an add-on module? Resolves before Bastrop's first plan-review billing event.
-- **Tenth-deal economics** â *Valerie*. What does the bundle look like at customer #10? Pricing, services intensity, expansion math. Resolves with cumulative pipeline data; not urgent but informs Path A/B framework defaults.
-- **`@empressaio/atom` commercial posture revisit trigger** â *Nick*. Currently proprietary, internal to Legacy products only. Trigger: third-party vertical app builders asking to consume it. Reopens license decision when triggered. See [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md) Licensing section.
+### Commercial — Hauska Inc.
 
-### Commercial â Hauska Inc.
-
-- **Hauska SDK pricing model** â *Nick*. Hauska is a separate C-corp; the SDK is its product. Pricing model not yet set (per-seat, usage-based, value-based). Resolves before Hauska Inc. external developer motion launches.
-- **Hauska Inc. external developer motion** â *Nick*. If/when to launch SDK to external developers. Today, Legacy is the sole customer (intra-Nick relationship). Triggers: external developer demand surfaces, OR Legacy's revenue independence makes the developer motion strategically necessary for Hauska's identity.
-
-### Corporate / structural
-
-- *(Action items for HauskaâLegacy services agreement, GitHub org migration, Engineer-2 protocol moved to P3 above â they're concrete deliverables.)*
+- **Hauska SDK pricing model** — *Nick*.
+- **Hauska Inc. external developer motion** — *Nick*.
 
 ### Regulatory and positioning
 
-- **Active vs. passive posture toward TCEQ standard-setting** â *Nick + Sylvia conversation*. Active = help write the rules, become reference implementation, compliance-as-differentiator. Passive = meet whatever standard TCEQ settles on. Resolves with Sylvia's input on Bastrop VVater DPR engagement and TCEQ relationship. Tied to [`13_risk_register.md`](13_risk_register.md) Risk 7.
-- **Bring-your-own-agent public API** â *Nick (product decision)*. Should SmartCity OS expose its atom graph + context interface to customer-supplied AI agents? Architectural fit is good; commercial implications are not yet thought through. Tied to [`13_risk_register.md`](13_risk_register.md) Risk 1 (AI-access commoditization).
-- **Empressa Company Intelligence trajectory** â *Nick*. ECI v1 is shipped (internal team workspace). Question: stays internal-only forever, or eventually becomes a commercial product (small-team coordination tool)? Resolves with Empressa's own growth and any external interest signal.
+- **Active vs. passive posture toward TCEQ standard-setting** — *Nick + Sylvia conversation*. Tied to Risk 7.
+- **Bring-your-own-agent public API** — *Nick (product decision)*. Tied to Risk 1.
+- **Empressa Company Intelligence trajectory** — *Nick*.
 
 ### Market and customer
 
-- **Which second customer, and what the referral funnel looks like** â *Valerie + Sylvia*. Jarrell is confirmed pipeline; what comes after? Sylvia's TCMA/ICMA network is the primary referral channel. Resolves with TCMA/ICMA outreach yield and Jarrell-conversion signal.
-- *(Watchlist ownership moved to P2 above â it's a concrete decision, not an open question.)*
-
-### Architectural
-
-- *(Anchoring substrate decision moved to P3 above as ADR-006 task â concrete deliverable, not an open question.)*
+- **Which second customer, and what the referral funnel looks like** — *Valerie + Sylvia*.
 
 ## References
 
-The canonical docs each item points back to:
-
 **Foundation / meta:**
-- [`00_README.md`](00_README.md) â repo purpose, scope, numbering bands
-- [`01_doc_conventions.md`](01_doc_conventions.md) â naming, frontmatter, archive/rollup conventions
-- [`02_doc_migration_plan.md`](02_doc_migration_plan.md) â pre-docs-repo migration triage matrix
+- [`00_current_state.md`](00_current_state.md) — current state snapshot (orientation entry point per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md))
+- [`00_README.md`](00_README.md), [`01_doc_conventions.md`](01_doc_conventions.md), [`02_doc_migration_plan.md`](02_doc_migration_plan.md)
 
 **Strategic foundation:**
-- [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md) â
-  governing thesis for the portfolio
-- [`06_cities_value_narrative.md`](06_cities_value_narrative.md) â
-  cities-facing application of the thesis
+- [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md), [`06_cities_value_narrative.md`](06_cities_value_narrative.md)
 
 **Portfolio reference:**
-- [`10_ground_truth.md`](10_ground_truth.md) â current state, fires, planner-belief corrections
-- [`12_migration_sprint.md`](12_migration_sprint.md) â 3-phase migration sprint plan (Cloud Run + Empressa Neon + Drizzle migrate)
-- [`13_risk_register.md`](13_risk_register.md) â 10 named failure modes
-- [`14_pricing_framework.md`](14_pricing_framework.md) â Path A vs Path B, defaults, live Sylvia application
-- [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md) â Replit-managed Neon migration plan
-- [`17_leading_indicators.md`](17_leading_indicators.md) â flat-table watchlist
+- [`10_ground_truth.md`](10_ground_truth.md), [`12_migration_sprint.md`](12_migration_sprint.md), [`13_risk_register.md`](13_risk_register.md), [`14_pricing_framework.md`](14_pricing_framework.md), [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md), [`17_leading_indicators.md`](17_leading_indicators.md)
 
 **Agent rules + dev flow:**
-- [`20_agent_operating_rules.md`](20_agent_operating_rules.md) â rules the fleet operates under
-- [`21_ai_first_dev_flow.md`](21_ai_first_dev_flow.md) â fleet structure, work cycle, routing
-- [`22_workstation_inventory.md`](22_workstation_inventory.md) â per-machine paths, gh / gcloud / git auth
-- [`23_dev_setup_assessment.md`](23_dev_setup_assessment.md) â strategic three-layer plan (Today / This week / Next quarter)
-- [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md) â full atom architecture spec
-- [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md) â atom adoption protocol
+- [`20_agent_operating_rules.md`](20_agent_operating_rules.md), [`21_ai_first_dev_flow.md`](21_ai_first_dev_flow.md), [`22_workstation_inventory.md`](22_workstation_inventory.md), [`23_dev_setup_assessment.md`](23_dev_setup_assessment.md), [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md), [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md), [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md)
 
-**Product homes:**
-- [`30_smartcity_os.md`](30_smartcity_os.md) â SmartCity OS product home
-- [`40_design_accelerator.md`](40_design_accelerator.md) â Design Accelerator product home
-- [`41_revit_connector.md`](41_revit_connector.md) â Revit Connector product home
-- [`47_codex_plan_review.md`](47_codex_plan_review.md) â Codex plan review intelligence product home
+**Product homes + program plans:**
+- [`30_smartcity_os.md`](30_smartcity_os.md), [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md), [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md)
+- [`40_design_accelerator.md`](40_design_accelerator.md), [`41_revit_connector.md`](41_revit_connector.md), [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md)
+- [`47_codex_plan_review.md`](47_codex_plan_review.md), [`48_codex_program_plan.md`](48_codex_program_plan.md)
 
 **ADRs:**
-- [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) â atom contract as foundational pattern
-- [`80_adrs/adr_002_replit_neon_migration.md`](80_adrs/adr_002_replit_neon_migration.md) â migration commitment
-- [`80_adrs/adr_003_replit_neon_tactical.md`](80_adrs/adr_003_replit_neon_tactical.md) â tactical workaround
-- [`80_adrs/adr_004_future_neon_provisioning.md`](80_adrs/adr_004_future_neon_provisioning.md) â future products provision Empressa-owned
-- ADR-005 (multitenancy) and ADR-006 (anchoring substrate) â pending, see P2 / P3
-- [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md) â
-  property-as-tenant model
-- [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md) â
-  Hauska Engine factor-out, naming, repo
+- [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) through [`80_adrs/adr_004_*`](80_adrs/), [`80_adrs/adr_007_*`](80_adrs/adr_007_cross_stakeholder_atom_access.md), [`80_adrs/adr_008_*`](80_adrs/adr_008_engine_factor_out.md). ADR-005 and ADR-006 pending; ADR-009 deferred.
 
 **Operational:**
-- [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md) â Cloud Run canary deploy runbook (build â 0% canary â smoke probe â traffic shift â backup tag â observation)
-- [`90_runbooks/replit_deploy.md`](90_runbooks/replit_deploy.md) â Replit deploy runbook
-- [`91_postmortems/2026-05-05_track_b_deploy_saga.md`](91_postmortems/2026-05-05_track_b_deploy_saga.md) â Track B postmortem
-
-**Archived:**
-- [`_sessions/archived/2026-04/2026-04-18_strategic_record.md`](_sessions/archived/2026-04/2026-04-18_strategic_record.md) â strategic conversation record snapshot (extractions live across `13`, `15`, `17`, this roadmap, and product home docs)
-- `_sessions/2026-05-05_*` â multi-repo recon summaries (rolled up into `10_ground_truth.md`)
-
-Items marked `userMemories` (no doc yet) are tracked only in this roadmap and in Claude.ai planner memory until they earn their own canonical doc.
+- [`90_runbooks/`](90_runbooks/) — `cloud_run_canary_deploy`, `neon_schema_migration_via_cloud_shell`, `replit_deploy`, `session_close_template`, `current_state_protocol`, `regenerate_schema_fixture_windows`
+- [`91_postmortems/`](91_postmortems/) — `2026-05-05_track_b_deploy_saga`, `2026-05-07_replit_dev_db_wedged`

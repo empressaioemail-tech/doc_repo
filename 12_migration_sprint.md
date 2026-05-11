@@ -2,9 +2,9 @@
 id: 12_migration_sprint
 title: Migration sprint â Cloud Run + Empressa Neon + Drizzle migrate
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-11
 applies_to: portfolio
-related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment, adr_002_replit_neon_migration, adr_003_replit_neon_tactical, 2026-05-05_track_b_deploy_saga, replit_deploy]
+related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment, 30a_smartcity_stabilization_sprint, adr_002_replit_neon_migration, adr_003_replit_neon_tactical, 2026-05-05_track_b_deploy_saga, replit_deploy]
 ---
 
 # Migration sprint â Cloud Run + Empressa Neon + Drizzle migrate
@@ -34,12 +34,12 @@ related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev
 | 1 | 1A | legacy-design-tools api-server: Cloud Run + GHA CI + container, deploy with OLD Replit Neon, verify (frontends remain on Replit autoscale pending separate phase) | Nick + agent | verified | 2026-05-06 | 2026-05-06 | PRs #18, #20, #21, #22, #24 + fix/cloud-run-first-deploy-and-auth-flags merged. Revision `api-server-00003-wix` tagged canary, `/api/healthz` HTTP 200. Traffic at 100% via canary tag (auto-promoted to LATEST per Cloud Run first-deploy semantics). Backup tag `backup/post-1A-100traffic-api-server-00003-wix` at `e4b15c1` on origin. |
 | 1 | 1B | legacy-design-tools: Empressa Neon provisioning + schema sync (parallel-eligible with 1A) | Nick + agent | verified | 2026-05-10 | 2026-05-10 | Schema-only pg_dump from Replit-managed Neon (ep-little-base-amyyxjca, PG 16.12) → Empressa Neon (ep-dry-queen-aq0yxp05-pooler, PG 17.8) via Cloud Shell. Excluded test_* schemas (4 integration test artifacts) + _system (Replit-managed migration tracking). 36 tables / 419 cols / 98 idx / 104 constraints (36 PK + 37 FK + 5 u + 26 c); plpgsql + vector 0.8.0 ext parity. Tooling: pg_dump/psql 16.13 in Cloud Shell. EMPRESSA_DATABASE_URL secret v1 on legacy-design-tools-prod. |
 | 1 | 1C | legacy-design-tools: data sync + cutover from Replit Neon to Empressa Neon | Nick + agent | pending | â | â | â |
-| 2 | 2A | SmartCity OS: Empressa Neon provisioning (us-central1) + schema sync | Nick + agent | pending | â | â | â |
-| 2 | 2B | SmartCity OS: data sync + cutover at low-traffic window | Nick + agent | pending | â | â | â |
-| 2 | 2C | SmartCity OS: 24h observation + decommission Replit-managed Neon | Nick | pending | â | â | â |
-| 3 | 3A | Drizzle migrate baseline generation (both apps) | Nick + agent | pending | â | â | â |
-| 3 | 3B | Drizzle migrate adopted in CI for both apps | Nick + agent | pending | â | â | â |
-| 3 | 3C | Retire push-force / hand-rolled SQL paths | Nick + agent | pending | â | â | â |
+| 2 | 2A | SmartCity OS: Empressa Neon provisioning (us-central1) + schema sync | Nick + agent | pending | â | â | Executing under [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) WS-1. |
+| 2 | 2B | SmartCity OS: data sync + cutover at low-traffic window | Nick + agent | pending | â | â | Executing under [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) WS-1. |
+| 2 | 2C | SmartCity OS: 24h observation + decommission Replit-managed Neon | Nick | pending | â | â | Executing under [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) WS-1. |
+| 3 | 3A | Drizzle migrate baseline generation (both apps) | Nick + agent | pending | â | â | Executing under [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) WS-1. |
+| 3 | 3B | Drizzle migrate adopted in CI for both apps | Nick + agent | pending | â | â | Executing under [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) WS-1. |
+| 3 | 3C | Retire push-force / hand-rolled SQL paths | Nick + agent | pending | â | â | Executing under [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) WS-1. |
 
 Status values: `pending` / `active` / `verified` / `rolled_back` /
 `superseded`.
@@ -498,6 +498,7 @@ Particularly relevant rules:
 Edits to this section log progress. Newest at top. Format: date â
 phase â note.
 
+- *2026-05-11 â Phase 2AâC and Phase 3 execution adopted by `30a_smartcity_stabilization_sprint.md`. Sub-phase status flips in that doc; this doc retains the canonical phase definitions.*
 - *2026-05-06 (PM) â Phase 1A traffic ramp closed. Canary tag at
   100% to api-server-00003-wix, both bare service URL and canary
   URL routing identically. Backup tag
@@ -528,6 +529,7 @@ phase â note.
 ## References
 
 - [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md) â discovery, four risks, original migration plan
+- [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) â SmartCity OS-scoped sprint executing Phase 2AâC and Phase 3 (Drizzle migrate adoption)
 - [`80_adrs/adr_002_replit_neon_migration.md`](80_adrs/adr_002_replit_neon_migration.md) â the migration commitment this sprint executes
 - [`80_adrs/adr_003_replit_neon_tactical.md`](80_adrs/adr_003_replit_neon_tactical.md) â tactical workaround that retires when Phase 2 closes
 - [`80_adrs/adr_004_future_neon_provisioning.md`](80_adrs/adr_004_future_neon_provisioning.md) â forward-looking commitment for new products

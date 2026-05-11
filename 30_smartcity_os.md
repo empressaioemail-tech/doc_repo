@@ -2,9 +2,9 @@
 id: 30_smartcity_os
 title: SmartCity OS
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-11
 applies_to: smartcity-os
-related: [10_ground_truth, 40_design_accelerator]
+related: [10_ground_truth, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 40_design_accelerator]
 ---
 
 # SmartCity OS
@@ -238,6 +238,8 @@ housekeeping clears. Owner: Nick + planner.
 
 ## Current state
 
+**Active sprint (2026-05-11):** [SmartCity OS Stabilization Sprint](30a_smartcity_stabilization_sprint.md) — multi-week effort closing the Replit-managed Neon dependency, clearing security debt, landing multi-tenancy contract (ADR-005), and completing W1 sprint backlog. Codex 1b receiving surface is stubbed at [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) with full spec deferred to post-stabilization coordination. See `30a` for done criteria, workstreams, and status board.
+
 For current state — Cloud Run revision, traffic split, Neon endpoint,
 schema management, active fires, recent recon findings — see the
 SmartCity OS section of [`10_ground_truth.md`](10_ground_truth.md). That
@@ -247,6 +249,8 @@ durable.
 ## Cross-references
 
 - Portfolio ground truth: [`10_ground_truth.md`](10_ground_truth.md)
+- [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) — active stabilization sprint
+- [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) — Codex 1b receiving surface (stub)
 - Agent operating rules: [`20_agent_operating_rules.md`](20_agent_operating_rules.md)
 - Workstation paths: [`22_workstation_inventory.md`](22_workstation_inventory.md)
 - Design Accelerator (sister product, separate repo, different schema):

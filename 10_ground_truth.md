@@ -2,7 +2,7 @@
 id: 10_ground_truth
 title: Portfolio ground truth
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-11
 applies_to: portfolio
 ---
 
@@ -36,7 +36,7 @@ when this doc lands, completing the audit trail.
 
 ## SmartCity OS
 
-GitHub: `empressaioemail-tech/smartcity-os`. Local clone: `p:\smartcity-os`.
+GitHub: `empressaioemail-tech/smartcity-os`. Local clone: `P:\empressaio_tech_smartcity_os` (matches GitHub repo name; prior reference `p:\smartcity-os` was incorrect).
 
 ### Production
 

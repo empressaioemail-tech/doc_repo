@@ -2,7 +2,7 @@
 id: 13_risk_register
 title: Risk register â named failure modes
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-11
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 17_leading_indicators]
 ---
@@ -47,7 +47,7 @@ quarterly review. 1-4 get monitored. 9 and 10 are kept prevented by
 the agent operating rules and the inter-entity roadmap discipline.
 7 and 8 get watched and shape decisions when the trigger fires.
 
-## The 10 named failure modes
+## The 11 named failure modes
 
 ### Risk 1 â AI-native access becomes a commodity
 
@@ -260,6 +260,7 @@ artifact.
 
 ## Revision history
 
+- **2026-05-11:** Header count corrected from `10` to `11` to reflect Risk 11's addition (Replit pre-flight coupling); no risk content changed.
 - **2026-05-10:** Added Risk 11 (Replit pre-flight couples
   deploy-availability to dev-DB health) following the 2026-04-29 →
   2026-05-07 SmartCityOSMain dev DB wedge incident. Risk noted as
