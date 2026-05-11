@@ -361,7 +361,7 @@ source SHA.
 
 ## 2026-05-11 addendum — deploy mechanism + traffic-tag verification
 
-Compound silent failure documented in [`91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md`](../91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md). Two requirements added to the canonical procedure as a result.
+Compound silent failure documented in [`91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md`](../91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md). Two requirements added to the canonical procedure as a result. Env-var state at the time of this deploy captured in [`smartcity_cloud_run_env_audit_2026-05-11.md`](smartcity_cloud_run_env_audit_2026-05-11.md) — pre-existing Spireon/Verkada/ArcGIS/etc. gaps survive the A.6 + A.8 batch.
 
 ### Do not use `gcloud run deploy --source .` for smartcity-api
 

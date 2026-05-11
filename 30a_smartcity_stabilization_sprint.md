@@ -341,7 +341,7 @@ the spec below.
 
 ### W1.A.6 — Calendar event visibility (forensics)
 
-**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `f3c06f1`); CALENDAR_API_KEY removed from `.replit` at HEAD (`01fa14e`); rotation partial — A.6.b post-sprint follow-on covers dual-key middleware, Cloud Shell rotation, 14-day `.ics` re-key window.
+**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `f3c06f1`); CALENDAR_API_KEY removed from `.replit` at HEAD (`01fa14e`); rotation partial — A.6.b post-sprint follow-on covers dual-key middleware, Cloud Shell rotation, 14-day `.ics` re-key window. **Implementation merged 2026-05-11 (PR #12, squash `86a90ff`)** — F-1 public read-only `/api/calendar/events/public`, F-3 parseDate TZ fix, F-4 VTIMEZONE block, F-5 Municode await+timeout, F-6 boot probe + status endpoint extension. Deployed in revision `smartcity-api-00084-vhr`. F-2 board schedule reconciliation still blocked on Bastrop city clerk authoritative schedule. A.6.b CALENDAR_API_KEY bind for env-keyed partner subscriptions still gated on F-7/F-8 dual-key middleware (now bundled with broader cutover env-var rebind cluster — see Status tracking).
 
 **Problem.** Calendar events from the BeWith / Google Calendar
 integration aren't reliably visible in the SmartCity OS UI where
@@ -368,7 +368,7 @@ with evidence; fix list scoped and prioritized.
 
 ### W1.A.7 — Power BI accuracy (forensics)
 
-**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `6d020d4`); 11 divergences cataloged with recommended-fixes-as-separate-table pattern; implementation follow-on requires strategic call (align OS recompute to PBI logic vs. have OS read PBI visuals directly).
+**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `6d020d4`); 11 divergences cataloged with recommended-fixes-as-separate-table pattern. **Strategic call resolved 2026-05-11 — Option B (OS reads PBI's published visuals directly). Scoping doc shipped (PR #13, squash `04b296e`) at smartcity-os `_research/w1_a_7_pbi_option_b_scoping.md`.** Option A retired. Phase 1 implementation gated on five open questions in scoping doc §8: Bastrop PBI workspace visual inventory (Monday Bastrop ask), ProjectDetailCard treatment, RLS posture, executive-overview / AI-assistant consumer disposition (Phase 2 gate), filter-chip → bookmark wiring.
 
 **Problem.** Power BI dashboards display numbers that diverge from
 SmartCity OS source-of-truth queries. Specific divergences captured
@@ -393,7 +393,7 @@ has a root cause and a recommended fix.
 
 ### W1.A.8 — Police units / Spireon (forensics)
 
-**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `ad0cbf7`); `.replit` plaintext and `SPIREON_API_TROUBLESHOOTING.md` token UUID + password-length hint redacted at HEAD (`93e4da5`); rotation partial — A.8.b post-sprint follow-on covers SPIREON_TOKEN via Solera Tier-2 (most urgent), SPIREON_USERNAME + SPIREON_PASSWORD rotation, Cloud Run cutover, git-history scrub coordination with A.6.b.
+**Status:** ✅ verified 2026-05-11 — findings doc shipped (smartcity-os `ad0cbf7`); `.replit` plaintext and `SPIREON_API_TROUBLESHOOTING.md` token UUID + password-length hint redacted at HEAD (`93e4da5`); rotation partial — A.8.b post-sprint follow-on covers SPIREON_TOKEN via Solera Tier-2 (most urgent), SPIREON_USERNAME + SPIREON_PASSWORD rotation, Cloud Run cutover, git-history scrub coordination with A.6.b. **Implementation merged 2026-05-11 (PR #11, squash `5b9815e`)** — F-2 mapDepartment reorder, F-3 active flag + inactive UI label, F-4 retry + LKG fallback, F-8 disappearance log. Deployed in revision `smartcity-api-00084-vhr`. User-visible value (police cars on live map) gated on A.8.b Spireon credentials bind — now bundled with broader cutover env-var rebind cluster (see Status tracking).
 
 **Problem.** Police unit tracking via Spireon GPS integration is
 incomplete or unreliable. Symptom shape TBD in recon.
@@ -700,6 +700,7 @@ From `20_agent_operating_rules.md`:
 Newest-first dated log. Each entry: date, sub-phase, status change,
 SHA / artifact reference.
 
+- **2026-05-11 (W1 implementation follow-ons + cutover env-var gap):** W1.A.6 / W1.A.7 / W1.A.8 implementation follow-ons shipped — smartcity-os PRs #11 (A.8 batch, squash `5b9815e`), #12 (A.6 batch, squash `86a90ff`), #13 (A.7 Option B scoping, squash `04b296e`). All three deployed to Cloud Run revision `smartcity-api-00084-vhr` (image digest `sha256:a53cd036...`). Per-item status lines updated above. **New work cluster surfaced — Cutover env-var rebind.** Post-deploy verification of A.8 surfaced 30+ env vars referenced in code but not bound in Cloud Run; full inventory at `90_runbooks/smartcity_cloud_run_env_audit_2026-05-11.md`, analysis at `91_postmortems/2026-05-11_cutover_env_var_silent_drops.md`. Cluster bundles A.6.b + A.8.b + 11-var silent-drop restore + 13-var rotation-pending restore + AI_INTEGRATIONS_* code rename. P1 next-session work, two-track (immediate silent-drop / rotation-pending as vendor responses arrive). Session summary: `_sessions/2026-05-11_smartcity_a8_a6_a7_ship_and_env_audit_claude_ai_planner.md`.
 - **2026-05-11 (WS-2 exit):** All seven W1 items verified. Phase
   board rows W1.A and W1.C flipped to `verified`. Done criterion #6
   met. Smartcity-os PRs #8 (W1.C.3 OpenGov BNP hardening), #9 (W1.C.2
@@ -753,6 +754,7 @@ SHA / artifact reference.
 
 ## Revision history
 
+- **2026-05-11 (W1 implementation follow-ons + cutover env-var gap):** Per-item status lines for W1.A.6 / W1.A.7 / W1.A.8 updated with PR merge + deploy reference (PRs #11 / #12 / #13 to smartcity-os; revision `smartcity-api-00084-vhr`). Status tracking entry added for the implementation batch + cutover env-var rebind cluster. Sprint remains `active`; M-Stabilize done criteria unchanged.
 - **2026-05-11 (WS-2 exit):** Phase board W1.A + W1.C flipped to
   `verified`. Per-item status lines added to W1.A.6/A.7/A.8/A.9 and
   W1.C.1/C.2/C.3 sub-sections. Done criterion #6 marked met. Status
