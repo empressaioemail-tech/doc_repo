@@ -62,3 +62,23 @@ Additional small dispatches:
 Forward-looking:
 
 - **`90_runbooks/cutover_env_var_audit.md`** — new runbook (P2, after Track A ships). Forward-looking checklist for future infra cutovers covering the four lessons above. Distinct from this session's `smartcity_cloud_run_env_audit_2026-05-11.md` which is a point-in-time snapshot for this specific cutover.
+
+## Remediation status (2026-05-11 session 2)
+
+Track A bind + Track B Spireon bind executed via Cloud Shell. New Cloud Run revision `smartcity-api-00085-pvd`, 100% traffic on LATEST.
+
+- **18 vars bound:** 10 of 11 Track A silent-drops (`MYGOV_USERNAME`, `MYGOV_PASSWORD`, `RESEND_API_KEY`, `PIPEDRIVE_API_TOKEN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_RESET_PASSWORD`, `BASTROP_BOOTSTRAP_PASSWORD`, `USER_RESET_EMAIL`, `USER_RESET_PASSWORD` — `OPENGOV_TRANSPARENCY_KEY` deferred per below) + 6 Spireon Track B (`SPIREON_TOKEN`, `SPIREON_USERNAME`, `SPIREON_PASSWORD`, plus `SPIREON_ACCOUNT_NAME`, `SPIREON_NSPIRE_ID`, `SPIREON_SYSDEVX_ID` — last three not previously enumerated in the audit) + 2 OpenGov family (`OPENGOV_EMAIL`, `OPENGOV_BNP_API_KEY`).
+- **MYGOV pre-existing Secret Manager debris finding.** During bind dry-run, `smartcity-MYGOV_USERNAME` and `smartcity-MYGOV_PASSWORD` surfaced as already-existing secrets. Inspection: created 2026-04-04 with v1, updated 2026-04-05 with v2, unknown provenance, no IAM grant to runtime SA, no Cloud Run env-from-secret reference. Resolved via v3 version-add (Nick's known-good values) + IAM grant to runtime SA. v1/v2 preserved as rollback history. The main bind script's existing-secret skip-guard correctly flagged these for manual handling.
+- **Audit-doc gap flagged as lesson.** `90_runbooks/smartcity_cloud_run_env_audit_2026-05-11.md` checked code-references vs Cloud Run env-from-secret bindings; it did NOT enumerate existing Secret Manager secrets. Result: the MYGOV partial-migration debris was missed by the audit. Future env-var audits must additionally run `gcloud secrets list --filter="name~smartcity-"` and reconcile against the working/missing inventory.
+- **Verified live via Cloud Run logs (logs-based verification, not anonymous-curl on health endpoints):**
+  - Spireon: 21 vehicles, NSpire Platform authenticated, fleet map operational. A.8 user-visible value (police cars on live map) restored.
+  - MyGov: 12,240 permits in scraper cache; cron sync no longer no-op.
+  - OpenGov BNP: healthy, cache warm.
+- **Spireon Track B framing relaxed in practice.** Original postmortem classified Spireon credentials as "rotation-pending — vendor coordination required." Today's bind used known-good pre-cutover values from Replit vault; Spireon authenticated successfully on first try, validating that the rotation-pending classification was conservative. Solera Tier-2 vendor rotation remains available as a future swap if needed.
+- **Outstanding (deferred to next session):**
+  - `OPENGOV_TRANSPARENCY_KEY` — Nick couldn't locate value in Replit vault; vendor-portal lookup deferred to next OpenGov admin visit. `/opengov` transparency tables remain dark until bound.
+  - Track B remainder — Verkada×2, ESRI/ArcGIS×3, VFD codes×6, `CALENDAR_API_KEY` (post F-7/F-8). Vendor coordination via Bastrop Monday message.
+  - `AI_INTEGRATIONS_*` code rename — separate surface, ~10 LoC.
+  - Naming normalization items (Samsara, NODE_ENV/MYGOV_BASE_URL move-out-of-Secret-Manager) — still pending.
+- **New bind-procedure runbook:** [`90_runbooks/cutover_env_var_bind_procedure.md`](../90_runbooks/cutover_env_var_bind_procedure.md) — dry-run + execute gating, per-var IAM, bulk Cloud Run `--update-secrets`, Cloud Shell isolation, `shred -u` cleanup.
+- **Session summary:** [`_sessions/2026-05-11_cutover_env_var_bind_shipped_claude_ai_planner.md`](../_sessions/2026-05-11_cutover_env_var_bind_shipped_claude_ai_planner.md) — includes Lessons section flagging an unresolved revision-suffix contradiction (`00084-vhr` vs `00084-weg`) that emerged between session 1 handoff, the deploy drift postmortem, and session 2's `gcloud run services describe` output. No historical doc rewriting performed; investigation queued.

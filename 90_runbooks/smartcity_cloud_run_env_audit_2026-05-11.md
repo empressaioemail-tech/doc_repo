@@ -11,19 +11,27 @@ related: [30_smartcity_os, 30a_smartcity_stabilization_sprint, 90_runbooks/cloud
 
 Point-in-time enumeration of Cloud Run env config vs what the code actually reads, produced during the 2026-05-11 A.6 + A.8 batched-deploy planning session. Captures the gap between "secrets/env present on the service" and "code paths that have data to operate on" — the A.6/A.8 PRs ship clean against this state; the listed gaps are pre-existing and not caused by the batch.
 
-## In Cloud Run + read by code (working) — 18 env vars
+> **Audit-method gap (flagged 2026-05-11 session 2).** This audit checked code-references vs Cloud Run env-from-secret bindings. It did NOT enumerate existing Secret Manager secrets independently. As a result, it missed `smartcity-MYGOV_USERNAME` and `smartcity-MYGOV_PASSWORD` already existing in Secret Manager (created 2026-04-04 with v1/v2, no IAM grant, no Cloud Run env-from-secret reference) — partial-migration debris from the 2026-04-cutover that the code-reference check classified as "unbound." Future env-var audits must also run `gcloud secrets list --filter="name~smartcity-"` and reconcile against expected inventory. See [`91_postmortems/2026-05-11_cutover_env_var_silent_drops.md`](../91_postmortems/2026-05-11_cutover_env_var_silent_drops.md) Remediation status (2026-05-11 session 2).
+
+## In Cloud Run + read by code (working)
+
+### Original 18 (as of 2026-05-11 session 1)
 
 `DATABASE_URL`, `SESSION_SECRET`, `NODE_ENV`, `VFD_JWT_SECRET`, `CREDENTIAL_ENCRYPTION_KEY`, `POWERBI_CLIENT_ID`, `POWERBI_CLIENT_SECRET`, `POWERBI_TENANT_ID`, `POWERBI_WORKSPACE_ID`, `POWERBI_REPORT_ID`, `SAMSARA_API_TOKEN`, `SAMSARA_WEBHOOK_SECRET`, `FIRSTDUE_API_EMAIL`, `FIRSTDUE_API_PASSWORD`, `OPENGOV_API_KEY`, `GOTO_CLIENT_ID`, `GOTO_CLIENT_SECRET`, `GOTO_ACCOUNT_KEY`, `MYGOV_BASE_URL`.
 
+### Bound 2026-05-11 session 2 (revision `smartcity-api-00085-pvd`)
+
+Moved from "Missing — production-breaking" (13):
+
+`MYGOV_USERNAME`, `MYGOV_PASSWORD`, `RESEND_API_KEY`, `PIPEDRIVE_API_TOKEN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_RESET_PASSWORD`, `BASTROP_BOOTSTRAP_PASSWORD`, `USER_RESET_EMAIL`, `USER_RESET_PASSWORD`, `SPIREON_TOKEN`, `SPIREON_USERNAME`, `SPIREON_PASSWORD`.
+
+Added to audit + bound (5; not previously in audit — flag: confirmed in code via Spireon NSpire/SysDevX/account flow and OpenGov auth path; verify with code grep):
+
+`SPIREON_ACCOUNT_NAME`, `SPIREON_NSPIRE_ID`, `SPIREON_SYSDEVX_ID`, `OPENGOV_EMAIL`, `OPENGOV_BNP_API_KEY` (also moved out of soft-default fallback section below).
+
 ## Missing from Cloud Run — production-breaking
 
-Read by code, no default; the feature is dead until added.
-
-### Spireon (entire integration disabled)
-
-- `SPIREON_TOKEN` (or alias `SPIREON_APP_TOKEN`)
-- `SPIREON_USERNAME` — W1.A.8.b vendor coordination pending; was removed from `.replit`
-- `SPIREON_PASSWORD`
+Read by code, no default; the feature is dead until added. (Updated 2026-05-11 session 2 — Spireon, MyGov scraper, Resend, Pipedrive, Google OAuth, and Internal bootstrap / admin reset sections all bound; see Working section above.)
 
 ### Verkada (entire integration disabled)
 
@@ -36,31 +44,13 @@ Read by code, no default; the feature is dead until added.
 - `ARCGIS_CLIENT_SECRET`
 - `ESRI_API_KEY`
 
-### MyGov scraper (auth credentials — cron sync silently no-ops without these)
-
-- `MYGOV_USERNAME`
-- `MYGOV_PASSWORD`
-
 ### Calendar partner-feed auth (was removed from `.replit` 2026-05-10; W1.A.6 F-7/F-8 rotation deferred)
 
 - `CALENDAR_API_KEY` — tenant feed-key path still works (DB-backed); only the env-keyed partner subscriptions (BeWith, anyone using `?api_key=`) are broken without this.
 
-### Email outbound (transactional emails — team invites, password resets, support tickets, feedback notifications)
-
-- `RESEND_API_KEY`
-
-### Pipedrive (CRM sync)
-
-- `PIPEDRIVE_API_TOKEN`
-
-### Google OAuth (login button broken)
-
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-
 ### OpenGov Transparency (separate from BNP — `/opengov` transparency tables)
 
-- `OPENGOV_TRANSPARENCY_KEY`
+- `OPENGOV_TRANSPARENCY_KEY` — Nick couldn't locate value in Replit vault 2026-05-11 session 2; deferred to vendor-portal lookup; `/opengov` transparency tables remain dark until bound.
 
 ### VFD portal access codes (6 missing — VFD auth dead for every department)
 
@@ -71,13 +61,6 @@ Read by code, no default; the feature is dead until added.
 - `VFD_CODE_PAIGE`
 - `VFD_CODE_RED_ROCK`
 
-### Internal bootstrap / admin reset (was in `.replit` plaintext)
-
-- `ADMIN_RESET_PASSWORD`
-- `BASTROP_BOOTSTRAP_PASSWORD`
-- `USER_RESET_EMAIL`
-- `USER_RESET_PASSWORD`
-
 ## Missing from Cloud Run — soft-default fallback (works without)
 
 Code has a sensible default; not breaking, but worth setting explicitly.
@@ -87,7 +70,6 @@ Code has a sensible default; not breaking, but worth setting explicitly.
 - `ADMIN_NOTIFICATION_EMAIL` → defaults to `admin@smartcityos.io`
 - `FEEDBACK_EMAIL` → defaults to `nick@smartcityos.io`
 - `MYGOV_SYNC_CRON` → defaults to `0 * * * *`
-- `OPENGOV_BNP_API_KEY` → falls back to `OPENGOV_API_KEY` ✓
 - `OPENGOV_AUTH_SCHEME` → defaults to `Token`
 - `POWERBI_CIP_DATASET_ID` → hard-coded fallback at `powerbi.ts:182`
 - `CIP_COMPLETION_MEASURE` → unset; W1.A.7 RC-5 says this is the highest-leverage missing config for the OS-recompute path (moot under Option B once Phase 1 ships)
