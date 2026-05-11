@@ -129,6 +129,9 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 - [x] **W1.A.6-9 forensics dispatches** (calendar / Power BI / police units / health-watch email) — verified 2026-05-11. Findings docs shipped to smartcity-os `_research/`; A.6/A.8 plaintext-at-HEAD redacted in `.replit` + `SPIREON_API_TROUBLESHOOTING.md`. Implementation follow-ons (A.6/A.7/A.8 structural fixes; A.9 ~7.5h V1) post-sprint. Operational rotation continues as A.6.b/A.8.b (see P2).
 - [x] **W1.C.1-3 implementation dispatches** (Prophecy design-system alignment / CSP frame-src + bundled x-internal-ai CORS removal / OpenGov BNP hardening) — verified 2026-05-11. Smartcity-os PRs #10, #9 (`8402e66`), #8 (`281126a`) all squash-merged. W1.C.1 reframed mid-stream from viewport fix to design-system alignment per Nick's actual symptom.
 - [ ] **$21M water/wastewater state grant** — June 1 deadline, no owner, no technology narrative drafted. `strategic` · Nick (open) · XL.
+- [ ] **W1.A.6 Calendar implementation** — F-1 public read-only `/api/calendar/events/public` endpoint, F-3 `parseDate` TZ fix, F-4 VTIMEZONE block in `.ics` output, F-5 cold-cache `await` Municode with 1.5s timeout, F-6 boot canary log. Per smartcity-os `_research/w1_a_6_calendar_event_visibility.md`. **F-2 (board schedule reconciliation) blocked on city clerk authoritative schedule.** `sprint follow-on / smartcity-os` · Nick + cc-agent · M · ref: [`30a`](30a_smartcity_stabilization_sprint.md) W1.A.6 status line.
+- [ ] **W1.A.8 Spireon implementation** — F-2 `mapDepartment` 5-LoC reorder, F-3 `active` flag toggle + inactive UI label, F-4 retry + last-known-good fallback, F-8 diagnostic disappearance log. Per smartcity-os `_research/w1_a_8_police_units_spireon.md`. RC-1 is the cause of "missing police cars" symptom. F-1 (DB-backed override) → P2. `sprint follow-on / smartcity-os` · Nick + cc-agent · M · ref: [`30a`](30a_smartcity_stabilization_sprint.md) W1.A.8 status line.
+- [ ] **W1.A.7 PBI Option B scoping** — Nick chose Option B (OS reads PBI's published visuals directly). Forensics doc only sketches Option A; scoping pass needed: which OS tiles → which PBI visuals, embed token flow, layout changes, effort estimate. Implementation in follow-on PR after scoping review. Per smartcity-os `_research/w1_a_7_power_bi_accuracy.md`. `sprint follow-on / smartcity-os` · Nick + cc-agent · M-L · ref: [`30a`](30a_smartcity_stabilization_sprint.md) W1.A.7 status line.
 
 ## P2 — next 2-4 weeks
 
@@ -155,6 +158,7 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 - [ ] **B1 bidirectional taxonomy** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 2 DA-7**. `product` · L.
 - [ ] **Sprint A04.7 followups** · pending dispatch draft (in P1 queue). `product` · agent · M.
 - [ ] **Codex Wave 1 (commercial wedge / 1a invited foundation)** · **deferred to [`48_*`](48_codex_program_plan.md) Phase 5** (1b-first sequencing decision 2026-05-11). `product` · ref: [`48_codex_program_plan.md`](48_codex_program_plan.md).
+- [ ] **W1.A.8 F-1 — DB-backed Spireon department override mechanism** — `tenants.settings.spireonDepartmentOverrides` schema column + admin UI to set per-asset overrides. Proper fix for `mapDepartment` heuristic mis-bins; F-2 reorder (in W1.A.8 P1) is the bite-sized partial. `sprint follow-on / smartcity-os` · Nick + cc-agent · L · ref: smartcity-os `_research/w1_a_8_police_units_spireon.md`.
 
 ## P3 — backlog
 
@@ -185,6 +189,9 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 - [ ] **Codex 1b standalone in SmartCity OS Plan Review** — full integration spec in [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) (stub today); execution as [`48_*`](48_codex_program_plan.md) Phase 4. Beyond M-CodexQA. `product` · Nick + agent · L.
 - [ ] **PropTech ecosystem partner outreach** — gated on engine factor-out + ADR-007. `corporate / strategic` · Nick · M.
 - [ ] **Audit legacy-design-tools test isolation pattern** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 1 DA-Test-Iso**. `recon` · agent · M.
+- [ ] **`30_smartcity_os.md` deploy-architecture section** — substantive write-up: two-target reality (build vs build:cloud-run, index-prod vs index-cloud), canonical Cloud Run build path (Dockerfile.api + cloudbuild-api.yaml), traffic-tag awareness, `deploy:check` script disposition, post-cutover Replit-is-dead state. `docs` · planner · M.
+- [ ] **`deploy:check` package.json script disposition** — stale post-2026-05-03 cutover (warns to deploy Replit when client changes). Remove or comment as Replit-legacy. Coordinate with `npm run build` script disposition (Replit target is dead code). `hygiene / smartcity-os` · Nick + cc-agent · S.
+- [ ] **Cloud Run traffic-tag audit + cleanup on smartcity-api** — three tags at 0% traffic (`p0-3-canary`, `p0-followup-prophecy`, `w1-c-4a-auth-fix`). Decide keep-for-record vs remove; document remaining tags' purposes if kept. Prevents future silent-strand traps. `hygiene / smartcity-os` · Nick · S.
 
 ---
 

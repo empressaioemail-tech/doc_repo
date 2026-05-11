@@ -50,11 +50,11 @@ related: [11_roadmap, 30a_smartcity_stabilization_sprint, 27_engine_evolution_pl
 
 ## 5. Recent session summaries (last 5)
 
+- **2026-05-11 — Smartcity-thread: deploy recovery + canonical Dockerfile path** — WS-2 PRs #8/#9/#10 actually serving Bastrop production via revision `smartcity-api-00083-dss`; canary-runbook addendum, deploy postmortem landed; A.6/A.7/A.8 implementation queued for next session.
+- **2026-05-11 — Smartcity-thread: WS-2 W1 sprint exit** — seven W1 items shipped (PRs #8/#9/#10 + four forensics docs); A.6/A.8 rotation work continues as A.6.b/A.8.b post-sprint.
 - **2026-05-11 — Orchestrator: roadmap revision + orientation runbooks** — milestone framing landed; snapshot pattern adopted; session-close template updated.
 - **2026-05-11 — Codex/Cortex program plans** — 27 + 42 + 48 drafted with audit pass; Stream G brand migration added; DA-Test-Iso added.
 - **2026-05-11 — SmartCity Stabilization Sprint finalized** — 30a + 33 stub landed; cross-track interfaces sectioned.
-- **2026-05-10 — Phase 1B Stage 1 verified + Fire 4 PR merged + neon migration runbook**
-- **2026-05-10 — Codex launch (fabric thesis, two ADRs, vocabulary cross-mapping)**
 
 ## 6. Cross-cutting watch list
 
@@ -66,9 +66,9 @@ related: [11_roadmap, 30a_smartcity_stabilization_sprint, 27_engine_evolution_pl
 - **A.6.b / A.8.b post-sprint follow-ons** — operational secret rotation for Calendar (`CALENDAR_API_KEY` via BeWith, F-8 dual-key middleware, ~14-day `.ics` re-key window) and Spireon (`SPIREON_TOKEN` via Solera Tier-2 most urgent, plus `SPIREON_USERNAME`/`SPIREON_PASSWORD`); requires Bastrop IT + vendor coordination. Plus portfolio-level Fire 2 git-history scrub (BFG / git-filter-repo) coordinated across A.6.b/A.8.b.
 - **Workspace hygiene investigation** — three wrong-branch / detached-HEAD incidents observed across cc-agent-1/2/3 during WS-2 dispatches (every agent recovered cleanly). Underlying coordination gap (shared working directory, IDE auto-checkout, hook, or similar) worth scoping `90_runbooks/agent_workspace_hygiene.md`.
 - **CI workflow fixes** — Semgrep false positive on `server/routes/mygov.ts:268-270` (`react-insecure-request` rule on GCE metadata server fetch) needs `// nosemgrep:` annotation; Gitleaks workflow 403s on PRs because `GITHUB_TOKEN` lacks `pull_requests: read`.
-- **Prophecy design spec pending commit** — `_research/w1_c_1_prophecy_design_spec.md` authored by Replit Agent parallel to W1.C.1; awaits clean-tree commit in smartcity-os (off the shippable-code-push path per SR-1).
 - **Dead-code cleanup PR** — `client/src/components/layout/{Sidebar,Header,DashboardLayout}.tsx` have zero consumers post-W1.C.1; delete in a follow-on PR.
-- **Cloud Run deploy gate** — confirm auto-CD on main merges OR trigger Cloud Shell deploy to land W1.C.1+C.2+C.3 in Bastrop production. gcloud SSL on Nick box still broken — Cloud Shell route in use.
+- **Cloud Run deploy procedure** — Canonical path established 2026-05-11: `gcloud builds submit --config cloudbuild-api.yaml` → `gcloud run deploy --image <registry>:latest --region us-central1` → `gcloud run services update-traffic smartcity-api --to-latest --region us-central1`. **Never `gcloud run deploy --source .`** — see [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md) 2026-05-11 addendum and [`91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md`](91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md). gcloud SSL on Nick box still broken; Cloud Shell remains the deploy environment. WS-2 PRs (C.1/C.2/C.3) live in Bastrop via revision `smartcity-api-00083-dss` as of 2026-05-11.
+- **Cloud Run traffic-tag audit** — three tags exist on smartcity-api with 0% traffic post-2026-05-11: `p0-3-canary` → `smartcity-api-00080-men`, `p0-followup-prophecy` → `smartcity-api-00082-pog`, `w1-c-4a-auth-fix` → `smartcity-api-00084-weg`. The last one silently stranded two May 11 deploys before discovery. Decision: keep for record or remove. P3 hygiene; see postmortem for context.
 
 ## References
 

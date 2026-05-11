@@ -2,7 +2,7 @@
 id: cloud_run_canary_deploy
 title: Cloud Run canary deploy runbook
 status: active
-last_updated: 2026-05-06
+last_updated: 2026-05-11
 applies_to: portfolio
 related: [10_ground_truth, 12_migration_sprint, 20_agent_operating_rules, 91_postmortems/2026-05-05_track_b_deploy_saga]
 ---
@@ -358,3 +358,48 @@ source SHA.
   sequence in the 2026-05-05 planning conversation. Generalized for
   reuse across portfolio Cloud Run deploys (Phase 1A, Phase 2
   cutover, ongoing SmartCity OS revisions, future products).
+
+## 2026-05-11 addendum — deploy mechanism + traffic-tag verification
+
+Compound silent failure documented in [`91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md`](../91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md). Two requirements added to the canonical procedure as a result.
+
+### Do not use `gcloud run deploy --source .` for smartcity-api
+
+Cloud Native Buildpacks do not auto-detect `Dockerfile.api` (it is a named Dockerfile, not the root `Dockerfile` Buildpacks looks for). Node.js Buildpacks fall back to `npm run build`, which in smartcity-os bundles `server/index-prod.ts` (the Replit production target, stale post 2026-05-03 cutover). The resulting Cloud Run revision runs the wrong server entry point.
+
+Canonical sequence:
+
+```bash
+cd ~/smartcity-os
+gcloud builds submit --config cloudbuild-api.yaml
+gcloud run deploy smartcity-api \
+  --image us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-api:latest \
+  --region us-central1
+gcloud run services update-traffic smartcity-api --to-latest --region us-central1
+```
+
+The third step is mandatory; see next subsection.
+
+### Verify traffic routing after every deploy
+
+`status.latestReadyRevisionName` does NOT reflect what's serving traffic when traffic tags are pinned. Three tags exist on smartcity-api as of 2026-05-11 (`p0-3-canary`, `p0-followup-prophecy`, `w1-c-4a-auth-fix`); any pinned tag will silently strand new deploys.
+
+Verify with:
+
+```bash
+gcloud run services describe smartcity-api --region us-central1 \
+  --format='value(status.traffic[].revisionName,status.traffic[].percent)'
+```
+
+If the LATEST revision isn't at 100%, route it explicitly:
+
+```bash
+gcloud run services update-traffic smartcity-api --to-latest --region us-central1
+```
+
+Audit existing tags before relying on `--to-latest`:
+
+```bash
+gcloud run services describe smartcity-api --region us-central1 \
+  --format='value(status.traffic[].tag,status.traffic[].revisionName,status.traffic[].percent)'
+```
