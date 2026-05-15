@@ -2,7 +2,7 @@
 id: cloud_run_canary_deploy
 title: Cloud Run canary deploy runbook
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-15
 applies_to: portfolio
 related: [10_ground_truth, 12_migration_sprint, 20_agent_operating_rules, 91_postmortems/2026-05-05_track_b_deploy_saga]
 ---
@@ -382,7 +382,7 @@ The third step is mandatory; see next subsection.
 
 ### Verify traffic routing after every deploy
 
-`status.latestReadyRevisionName` does NOT reflect what's serving traffic when traffic tags are pinned. Three tags exist on smartcity-api as of 2026-05-11 (`p0-3-canary`, `p0-followup-prophecy`, `w1-c-4a-auth-fix`); any pinned tag will silently strand new deploys.
+`status.latestReadyRevisionName` does NOT reflect what's serving traffic when traffic tags are pinned. Pinned tags accumulate on smartcity-api with every canary deploy. As of 2026-05-15, five tags exist (`p0-3-canary`, `p0-followup-prophecy`, `w1-c-4a-auth-fix`, `pbi-ai-cal-20260511`, `lkg-20260515-1848`); any pinned tag at non-zero percent will silently strand new deploys via `--to-latest`. Audit with `gcloud run services describe` before every deploy rather than trusting any specific count in this runbook.
 
 Verify with:
 
