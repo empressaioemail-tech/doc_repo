@@ -46,7 +46,7 @@ owner: nick | planner                           # optional
 - `_sessions/`: session summaries
 - `_decisions/`: decision log records
 
-When creating a new doc, pick the appropriate band and the next available number. ADR numbering continues sequentially; the recon found ADRs 001, 002, 003, 004, 007, 008, 010, 011, 012, 013, 015, 017. Next free slots: 005, 006, 009, 014, 016, 018+.
+When creating a new doc, pick the appropriate band and the next available number. ADR numbering continues sequentially; for the current ADR list and next free slots, list `80_adrs/` directly rather than relying on this skill (which would rot). Band table is in [`00_README.md`](../../../00_README.md).
 
 ## ADR format
 

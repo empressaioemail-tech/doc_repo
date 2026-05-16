@@ -23,7 +23,7 @@ For each factual claim, ask: where did this come from?
 
 Acceptable provenance:
 - Operator direct knowledge ("I talked to Sylvia yesterday and she said X")
-- Canonical doc in this repo, verified by `view` in the current session ("per `51_substrate_v1_sprint.md` line 47")
+- Canonical doc in this repo, verified by `Read` in the current session ("per `51_substrate_v1_sprint.md` line 47")
 - Cited web search result with URL
 - Cited document with file path and date
 - Cited Pipedrive, CRM, or ECI record with ID
@@ -46,15 +46,15 @@ If a claim lacks provenance:
 1. Pause before committing the claim to any artifact
 2. Ask the operator: "I am about to assert [X]. Where does this come from? If you do not have the source, I can search to verify, or we can flag this as inference rather than fact."
 3. If operator confirms it is operator direct knowledge, log as operator-attributed
-4. If operator does not have source, either run a verification search (web_search) or read the relevant canonical doc (`view`) or flag the claim as unverified in the output
+4. If operator does not have source, either run a verification search (WebSearch) or read the relevant canonical doc (`Read`) or flag the claim as unverified in the output
 
 ## Routing unverified canonical-doc claims
 
-When a factual claim depends on the content of a canonical doc (an ADR, a sprint plan, an atom spec, a runbook) and that doc has not been read with `view` in the current session, do not accept the claim by paraphrase or memory. The verbatim read is the verification.
+When a factual claim depends on the content of a canonical doc (an ADR, a sprint plan, an atom spec, a runbook) and that doc has not been read with `Read` in the current session, do not accept the claim by paraphrase or memory. The verbatim read is the verification.
 
-Use the `view` tool. The full file is in this repo and directly readable. If the file is large, view the relevant section by line range. Reading a 300-line ADR is cheap; relying on a stale paraphrase is expensive.
+Use the `Read` tool. The full file is in this repo and directly readable. If the file is large, read the relevant section by offset and limit. Reading a 300-line ADR is cheap; relying on a stale paraphrase is expensive.
 
-If the claim depends on a doc outside this repo (an external partner doc, a vendor spec, an Anthropic doc), use `web_fetch` if a URL exists, or flag the claim as agent-attributed pending external verification.
+If the claim depends on a doc outside this repo (an external partner doc, a vendor spec, an Anthropic doc), use `WebFetch` if a URL exists, or flag the claim as agent-attributed pending external verification.
 
 ## Inference framing
 
@@ -67,7 +67,7 @@ The skill should rewrite confident assertions as inferences when source is missi
 
 ## Special case: cross-conversation memory
 
-Claims from prior sessions are not facts in the current session; they are recall. The skill should treat them as "in the 2026-05-16 session we noted X" rather than "X is true." If X needs to enter durable artifacts now, verify against the actual canonical doc this session via `view`.
+Claims from prior sessions are not facts in the current session; they are recall. The skill should treat them as "in the 2026-05-16 session we noted X" rather than "X is true." If X needs to enter durable artifacts now, verify against the actual canonical doc this session via `Read`.
 
 This applies even when the prior-session claim is plausible and consistent with the rest of the conversation. Plausibility is not verification.
 
@@ -87,7 +87,7 @@ Without this skill, the agent might say: "MGO operates under exclusive contracts
 
 With this skill, the agent says: "I do not have a verified source in this session for MGO's current contract structure. There is competitive intel in this repo; I should check `13_risk_register.md` and search `_sessions/` for prior MGO research before answering. Want me to do that now, or treat this as recall and flag for re-verification before any commitment hinges on it?"
 
-Second example. A prior session's summary says: "ADR-007 already covers stakeholder access for the construction lifecycle." This is recall, not verification in this session. The skill response: "Flagging as recall pending re-verification. Reading `80_adrs/adr_007_cross_stakeholder_atom_access.md` now via view before this enters the decision record."
+Second example. A prior session's summary says: "ADR-007 already covers stakeholder access for the construction lifecycle." This is recall, not verification in this session. The skill response: "Flagging as recall pending re-verification. Reading `80_adrs/adr_007_cross_stakeholder_atom_access.md` now via Read before this enters the decision record."
 
 The discipline is to make uncertainty visible rather than hiding it under confident phrasing.
 

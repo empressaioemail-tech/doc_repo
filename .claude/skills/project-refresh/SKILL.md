@@ -37,7 +37,7 @@ For each ADR with `status: proposed`:
 - Is it blocked on a verification or a dependency? Note.
 - Was a session held that should have moved it to accepted but didn't update the doc?
 
-As of the most recent recon: ADRs 013, 015, 017 are proposed status awaiting Nick's ratification.
+To enumerate currently-proposed ADRs, grep `80_adrs/` for `status: proposed` directly rather than relying on this skill. The set drifts; `00_current_state.md` carries the authoritative current list.
 
 ### Decision register
 
@@ -61,7 +61,7 @@ Reference `18_stakeholder_graph.md`. For each strategic stakeholder, when was th
 
 Run `git status` and flag untracked files at the repo root that fall outside the band convention. Files at root that are neither numbered band docs nor the standard `00_README.md`, `00_current_state.md` family are drift candidates.
 
-As of the most recent recon: `MCP Server/`, `mox_executive_summary_v2.md`, `mox_prospect_briefing.md`, `mox_prospect_project_instructions.md` are untracked. Need disposition.
+Cross-reference findings against `00_current_state.md` and CLAUDE.md "What is open" — the canonical doc carries the current known-untracked set with disposition. Do not hard-code candidates here.
 
 ### Sprint scope drift
 

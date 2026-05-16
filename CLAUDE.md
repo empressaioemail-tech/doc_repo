@@ -14,7 +14,7 @@ If today's work touches a specific product or workstream, also read the canonica
 
 ## Identity and entity structure
 
-Legacy Group ATX LLC is the operating company. Hauska Inc. is a separate C-corp (entity separation established) carrying the commercial substrate: Hauska Engine, Hauska SDK, Hauska MCP Server, atom contract, public catalog, eventual payment substrate. Empressa is the product brand carrying product surfaces: SmartCity OS, Codex, Cortex Design Accelerator, Revit Connector. Brand and entity placement per `80_adrs/adr_008_engine_factor_out.md`. Do not conflate the layers.
+Legacy Group ATX LLC is the operating company. Hauska Inc. is a separate C-corp (entity separation established) carrying the commercial substrate: Hauska Engine, Hauska SDK, Hauska MCP Server, atom contract, public catalog, eventual payment substrate. Empressa is the product brand carrying product surfaces: SmartCity OS, Codex (plan review plus code intelligence), Cortex (the design-accelerator surface; Cortex is the new name and supersedes "Design Accelerator" in product framing), Revit Connector. Brand and entity placement per `80_adrs/adr_008_engine_factor_out.md`. Do not conflate the layers.
 
 ## Core thesis
 
@@ -34,11 +34,11 @@ Every architectural and strategic move checks against these. Use the `premortem-
 
 ## Three-tier atom architecture
 
-Data atoms (current), skill or behavior atoms (queued for ADR-014 v2 timing), execution atoms (ADR-013 scaffolded). Architecture extensions: actor atoms ADR-015 (proposed), atom access control ADR-017 (proposed, dependency for ECI atomization sprint), intent atoms ADR-016 deferred with a purpose field on procedure-execution as v1 stopgap.
+Data atoms (current), skill or behavior atoms (queued for ADR-014 v2 timing), execution atoms (ADR-013 accepted 2026-05-16). Architecture extensions: actor atoms ADR-015 (accepted 2026-05-16), atom access control ADR-017 (accepted 2026-05-16, dependency for ECI atomization sprint), intent atoms ADR-016 deferred with a purpose field on procedure-execution as v1 stopgap.
 
 ## Memory and source verification
 
-This conversation has no memory across sessions beyond what is in this CLAUDE.md and the canonical doc set. Verify before claiming. If you are about to make a confident statement about portfolio state, active sprints, architectural rules, or canonical doc content, trace it to a file you have read via the `view` tool in this session or to something Nick has said in this conversation. Do not paper over missing context with plausible-sounding guesses. Halting to read a doc is correct behavior, not failure.
+This conversation has no memory across sessions beyond what is in this CLAUDE.md and the canonical doc set. Verify before claiming. If you are about to make a confident statement about portfolio state, active sprints, architectural rules, or canonical doc content, trace it to a file you have read via the `Read` tool in this session or to something Nick has said in this conversation. Do not paper over missing context with plausible-sounding guesses. Halting to read a doc is correct behavior, not failure.
 
 When canonical docs and your prior expectations disagree, the doc wins. Acknowledge openly and update your working understanding.
 
@@ -90,31 +90,29 @@ Web UI per atom deferred to v2 at the catalog level; per-product retrofit princi
 
 ECI atomization: own sprint post-51 ship, separate registry `@empressaio/atom-internal`. Spec lives at `60_eci_atomization.md`.
 
-Procedure-execution atoms: `80_adrs/adr_013_procedure_execution_atoms.md` (proposed status; awaits ratification).
+Procedure-execution atoms: `80_adrs/adr_013_procedure_execution_atoms.md` (accepted 2026-05-16).
 
-Q4 actor atoms: `80_adrs/adr_015_actor_atoms.md` (proposed; single actor-record atom type, additive to ADR-007).
+Q4 actor atoms: `80_adrs/adr_015_actor_atoms.md` (accepted 2026-05-16; single actor-record atom type, additive to ADR-007).
 
 Q5 intent atoms: purpose field on procedure-execution per ADR-013 for v1; ADR-016 deferred.
 
-Q6 access control: `80_adrs/adr_017_atom_access_control.md` (proposed; dependency for ECI atomization).
+Q6 access control: `80_adrs/adr_017_atom_access_control.md` (accepted 2026-05-16; dependency for ECI atomization).
 
 SDK payment substrate principle: committed per `14_pricing_framework.md`; implementation phased.
 
 ## What is open
 
-ADR-013, 015, 017 are proposed status (scaffolded); pending Nick's review and ratification.
+Bizops 70-band structural design (dedicated session scheduled; mox_*.md docs at root re-file into proper slots once 70-band exists).
 
-Adjudication-record atom spec gap (referenced in 08 but not specced in 27).
-
-Bizops files structural design (70-band proposed; needs dedicated session).
-
-Tier model for per-product MCP surfaces (decision pending before MCP retrofits begin).
+Tier model for per-product MCP surfaces (decision pending before MCP retrofits begin; separate session from bizops).
 
 Mox CEO meeting timing (gates Mox pilot reframing urgency).
 
 IP attorney memo and Tech E and O insurance routing dates.
 
-Untracked files at root: `MCP Server/`, `mox_executive_summary_v2.md`, `mox_prospect_briefing.md`, `mox_prospect_project_instructions.md`. Need disposition: commit into appropriate band slot, gitignore, or remove.
+MCP server code migration: the `MCP Server/` directory in this repo contains a hauska-mcp-server starter implementation (auth.ts, hauska-client.ts, index.ts, tools.ts, package.json). Needs migration to a dedicated `hauska-mcp-server` product repo per the v1 sprint plan in `51_substrate_v1_sprint.md`. Currently `.gitignore`d locally until that repo is set up; after migration, delete the local files and add a cross-repo pointer in `50_hauska_mcp_server.md`.
+
+Mox docs at root (`mox_executive_summary_v2.md`, `mox_prospect_briefing.md`, `mox_prospect_project_instructions.md`) are committed at root as portable artifacts pending 70-band bizops design; they relocate into proper slots once the bizops session lands.
 
 ## What is out of scope
 
@@ -160,7 +158,7 @@ Stakeholder voice matching when drafting communications per the `stakeholder-upd
 
 Frontmatter required on every canonical doc per `01_doc_conventions.md`. Numeric-prefix bands; check slot availability. Edit in place; bump `last_updated`. Retire via status flip, never delete.
 
-Session summaries at `_sessions/<YYYY-MM-DD>_<topic>_claude_code.md`. Decision records at `_decisions/<YYYY-MM-DD>_<slug>.md`.
+Session summaries at `_sessions/<YYYY-MM-DD>_<topic>_claude_code.md`. Decision records at `_decisions/<YYYY-MM-DD>_<slug>.md` per the `decision-log` skill format (single-decision markdown record, includes reversal criteria, filed alongside the session summary that produced it).
 
 Verbatim verification artifacts required when reporting on git or tool state: paste raw command output, do not summarize.
 

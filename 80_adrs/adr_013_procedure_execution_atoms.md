@@ -1,7 +1,7 @@
 ---
 id: adr_013_procedure_execution_atoms
 title: ADR-013 — Procedure-execution atoms
-status: proposed
+status: accepted
 last_updated: 2026-05-16
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_014_skill_behavior_atoms, adr_015_actor_atoms, adr_016_intent_atoms, adr_017_atom_access_control, 08_tiered_access_model, 51_substrate_v1_sprint, 60_eci_atomization]
@@ -12,7 +12,7 @@ owner: nick
 
 ## Status
 
-Proposed. Originated 2026-05-15 during the catalog roadmap dialogue (Q2 option C decision). Carries the `purpose` field rider per Q5 decision 2026-05-16. Scaffolded 2026-05-16 during the alignment session.
+Accepted 2026-05-16. Originated 2026-05-15 during the catalog roadmap dialogue (Q2 option C decision). Carries the `purpose` field rider per Q5 decision 2026-05-16. Scaffolded 2026-05-16 during the alignment session. Ratified 2026-05-16 during the Claude Code migration test session.
 
 ## Context
 

@@ -1,7 +1,7 @@
 ---
 id: adr_015_actor_atoms
 title: ADR-015 — Actor atoms
-status: proposed
+status: accepted
 last_updated: 2026-05-16
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_013_procedure_execution_atoms, adr_017_atom_access_control, 60_eci_atomization]
@@ -12,7 +12,7 @@ owner: nick
 
 ## Status
 
-Proposed. Originated 2026-05-16 during the Q4/Q5/Q6 resolution session in the Empressa Strategic Core Project.
+Accepted 2026-05-16. Originated 2026-05-16 during the Q4/Q5/Q6 resolution session in the Empressa Strategic Core Project. Ratified 2026-05-16 during the Claude Code migration test session.
 
 ## Context
 

@@ -63,7 +63,7 @@ related_canonical: [list of doc_repo files this touches]
 
 ## Provisional to active
 
-When a provisional decision's verification items clear (the canonical doc is read verbatim with `view`, the counterparty confirms, the search verifies), edit the record: status flips from provisional to active, verification_pending field is removed, and a one-line note is added under Context recording what was verified and when.
+When a provisional decision's verification items clear (the canonical doc is read verbatim with `Read`, the counterparty confirms, the search verifies), edit the record: status flips from provisional to active, verification_pending field is removed, and a one-line note is added under Context recording what was verified and when.
 
 If verification reveals the decision direction was wrong, the record is edited to status reversed and a new decision_id is created with the corrected direction.
 
@@ -97,6 +97,6 @@ Second example. Operator: "Going with the unified actor-record design for ADR-01
 
 Source-required has flagged that the design rests on a paraphrase of ADR-007 read in a prior session, not re-verified this session.
 
-Skill response: Produces decision record with status provisional, verification_pending listing the ADR-007 stakeholder scopes section to re-read with view. Reversal criteria includes "if ADR-007 verification reveals stakeholder scopes are modeled as roles not as person atoms, the subsumes framing breaks and the design needs adjustment." Decision is filed but not promoted to active until verification clears.
+Skill response: Produces decision record with status provisional, verification_pending listing the ADR-007 stakeholder scopes section to re-read with Read. Reversal criteria includes "if ADR-007 verification reveals stakeholder scopes are modeled as roles not as person atoms, the subsumes framing breaks and the design needs adjustment." Decision is filed but not promoted to active until verification clears.
 
 End of skill.

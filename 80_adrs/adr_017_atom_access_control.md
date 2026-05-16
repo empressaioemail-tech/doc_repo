@@ -1,7 +1,7 @@
 ---
 id: adr_017_atom_access_control
 title: ADR-017 — Atom access control
-status: proposed
+status: accepted
 last_updated: 2026-05-16
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_015_actor_atoms, 08_tiered_access_model, 50_hauska_mcp_server, 60_eci_atomization]
@@ -12,7 +12,7 @@ owner: nick
 
 ## Status
 
-Proposed. Originated 2026-05-16 during the Q4/Q5/Q6 resolution session.
+Accepted 2026-05-16. Originated 2026-05-16 during the Q4/Q5/Q6 resolution session. Ratified 2026-05-16 during the Claude Code migration test session.
 
 ## Context
 
