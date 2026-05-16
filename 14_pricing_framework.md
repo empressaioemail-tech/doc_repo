@@ -2,7 +2,7 @@
 id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-16
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 30_smartcity_os, 40_design_accelerator]
 ---
@@ -161,6 +161,66 @@ and Codex 1b (cities). See
 [`47_codex_plan_review.md`](47_codex_plan_review.md) for product
 context.
 
+## SDK as payment substrate
+
+The 2026-05-16 strategic brainstorm session extended the catalog thesis from "data catalog" to "data catalog plus payment substrate." This section captures the principle commitment; implementation is phased and not currently active work.
+
+### Principle
+
+The Hauska SDK is the payment substrate for atom transactions. When agents consume atoms via the Hauska MCP Server, micropayments flow through the SDK back to the source actors of those atoms (cities, firms, regulators, professionals). This makes partnership-first sourcing substrate-enforced rather than contract-enforced.
+
+Repositioning: Hauska is "Plaid for jurisdiction-grounded physical-world data" plus "Stripe for atom transactions in that domain."
+
+### Commercial model
+
+Usage-based pricing replaces SaaS per-seat pricing as the commercial model for agent consumption. Several composing models:
+- Per-atom-access (small fee per MCP call, routed to source actor)
+- Stream subscription (recurring fee, revenue-shared)
+- Composition royalty (percentage of derivative product revenue)
+- Reasoning-call pricing (aligned with "sell reasoning not data")
+- Marketplace dynamic pricing (flexible, operationally complex)
+
+Most likely outcome: a composition. Layer 1 free. Layer 2 paid via per-call or stream. High-value derivative via composition royalty. Reasoning-call as unifying frame.
+
+### Entity structure
+
+Hauska Inc. is a separate C-corp, already established. Hauska Inc. carries the payment-bearing operations and the regulatory posture (money transmitter status, KYC/AML, tax reporting, escheatment as applicable). Legacy Group ATX LLC and Empressa product brands sit cleanly above Hauska Inc. with payment substrate isolated.
+
+### Settlement model
+
+Hybrid fiat and stablecoin processor. Fiat settlement for traditional counterparty preferences (cities, firms with conservative compliance postures); stablecoin rails for high-volume, low-friction micropayment flows and for agent-to-agent transactions in future phases. Stripe Connect is a candidate fiat partner; stablecoin rail TBD.
+
+### Take rate philosophy
+
+Lower than the current SaaS landscape. Software pricing is in deflationary regime as production costs fall toward compute costs. Hauska's value is in being the substrate everyone runs on, which compounds. Maximizing rent per transaction is not the optimization target; volume and adoption are. Specific take rate is TBD pending modeling work but anchors below Stripe (3 percent) and well below app store rates (30 percent). Probably in the 1-3 percent range depending on transaction type.
+
+### Phased implementation
+
+Phase 1 (Sprint 51 timeframe): Atom contract supports licensing and revenue-share metadata on atoms. accessPolicy carries source actor for routing. No payments yet.
+
+Phase 2 (post-51, alongside ECI atomization and SmartCity OS MCP retrofit): Metering at the SDK and MCP server tools layer. Records who consumed what when. Accounting infrastructure exists; no actual money movement.
+
+Phase 3 (after Bastrop revenue share contract is operationally tested with manual reconciliation): Settlement infrastructure. Hauska Inc. operating with full regulatory posture. Real money flows. Partners receive payments.
+
+Phase 4 (longer term, 18-36 months out): Marketplace dynamics, dynamic pricing, agent-to-agent atom transactions, the full payment substrate vision.
+
+### Open questions
+
+- Specific take rate (lower than landscape; modeling work needed)
+- Pricing model composition (per-call vs stream vs composition vs reasoning vs marketplace blend)
+- Regulatory posture details (money transmitter requirements per state; KYC/AML thresholds)
+- Settlement rail selection (Stripe Connect plus stablecoin choice)
+- Adversarial agent mitigations (signed SDK builds; attestation; accessPolicy enforcement)
+
+### References
+
+- 09_post_saas_substrate_thesis.md (strategic positioning that motivates this model)
+- 28_mcp_first_product_design.md (product line architecture that produces the consumption events)
+- 50_hauska_mcp_server.md (the enforcement surface)
+- ADR-017 (atom access control; accessPolicy field carries source actor routing)
+- ADR-013 (procedure-execution atoms; the unit of metering)
+- Session origin: _sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md
+
 ## Cross-references
 
 - [`30_smartcity_os.md`](30_smartcity_os.md) â SmartCity OS
@@ -176,6 +236,7 @@ context.
 
 ## Revision history
 
+- **2026-05-16:** Added "SDK as payment substrate" section per the 2026-05-16 strategic brainstorm session ([`_sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md`](_sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md)). Captures the Hauska SDK as payment substrate principle commitment — usage-based pricing with revenue routed to source actors via accessPolicy. Phased implementation (Phase 1 atom-contract metadata in Sprint 51 timeframe; Phase 2 metering post-51; Phase 3 settlement after Bastrop revenue share contract testing; Phase 4 marketplace dynamics longer term). Companion to new canonical docs [`09_post_saas_substrate_thesis.md`](09_post_saas_substrate_thesis.md) and [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md).
 - **2026-05-05 (origin):** Extracted from Section 10.2 of
   `04_strategic_conversation_record.md` during pre-docs-repo
   migration. Path A and Path B preserved verbatim. Default segment
