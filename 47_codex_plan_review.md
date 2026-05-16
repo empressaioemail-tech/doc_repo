@@ -1,17 +1,19 @@
 ---
 id: 47_codex_plan_review
-title: Codex — plan review intelligence layer
+title: Codex — plan review intelligence + code intelligence
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-16
 applies_to: codex
-related: [05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, 41_revit_connector, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
+related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 28_mcp_first_product_design, 30_smartcity_os, 40_design_accelerator, 41_revit_connector, 50_hauska_mcp_server, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
 supersedes: pre-docs-repo `47_plan_review_amplifier_features.md` and pre-docs-repo `47b_plan_review_amplifier_addendum.md`
 owner: nick
 ---
 
 # Codex
 
-> Plan review intelligence layer. Operates as a reviewer's amplifier when invited into a host markup tool (Bluebeam, Acrobat, ProjectDox), or as a standalone web review surface when no host tool is in use. Same engine, two surfaces.
+> Plan review intelligence layer plus code intelligence surface. As plan review: operates as a reviewer's amplifier when invited into a host markup tool (Bluebeam, Acrobat, ProjectDox), or as a standalone web review surface when no host tool is in use. As code intelligence: human-facing code-lookup surface plus agent-facing tools on the Hauska MCP Server over `code-section` atoms (free at Layer 1 per [`08_tiered_access_model.md`](08_tiered_access_model.md)). Same engine, three surfaces.
+>
+> **2026-05-16 scope expansion.** The Codex brand was consolidated to cover plan review (1a + 1b) AND code intelligence (the code-lookup surface) per the 2026-05-16 strategic brainstorm session. See "Three deployment surfaces" below and [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md) for the product-line context.
 
 This doc is the product home: identity, surface, architecture, deployment modes, feature roadmap, customer-zero context. For *current* implementation state see [`10_ground_truth.md`](10_ground_truth.md). For the engine the product runs on, see [`adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md). For the strategic frame this product delivers on, see [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md).
 
@@ -33,9 +35,9 @@ Two commercial drivers and one strategic driver.
 
 **Strategic driver — fabric expression.** The reviewer is the highest-network-density stakeholder in the construction lifecycle. Architect submits → reviewer reads → reviewer creates findings → those flow to architect (response), city manager (workflow state), inspector (compliance gates), and the property's lineage. Every reviewer interaction is multi-stakeholder. An amazing reviewer experience pulls demand through the entire fabric.
 
-## Two deployment surfaces
+## Three deployment surfaces
 
-Codex ships as one product with two deployment surfaces. Same engine, same corpus, same atoms. Surface differs based on the reviewer's primary environment.
+Codex ships as one product with three deployment surfaces. Same engine, same corpus, same atoms. Surface differs based on user and use case. Surfaces 1a and 1b are plan-review-shaped; surface 2 is code-intelligence-shaped (free Layer 1, code-lookup only).
 
 ### 1a — Invited participant (commercial wedge)
 
@@ -51,9 +53,22 @@ For reviewers who don't use a host markup tool, prefer the native experience, or
 
 The reviewer logs into SmartCity OS Plan Review, opens an assigned submittal, hits "run review." Engine pass renders findings as native annotations on the PDF in the in-browser viewer (PDF.js + custom annotation layer). Adjudication via native UI. All Codex features render natively rather than through a host-tool roundtrip.
 
-### Why both surfaces
+### 2 — Code intelligence (consumer-facing, free Layer 1)
 
-City-direct ICP doesn't use Bluebeam. Contractor-firm ICP lives in Bluebeam and won't leave it. Some reviewers will use both modes depending on which city they're working for that day. The hybrid architecture covers the full ICP without forcing customers to choose.
+For architects, contractors, code reviewers, and AI agents who need direct query access to atomized municipal code without a plan-review workflow. Two channels:
+
+- **Human web surface.** Code-lookup web tool at the Codex code intelligence URL. Free at Layer 1. Search across loaded jurisdictions; retrieve individual `code-section`, `code-definition`, `code-amendment`, `code-cross-reference`, `code-edition`, `jurisdiction-corpus` atoms with full provenance.
+- **Agent surface.** Tools on the Hauska MCP Server (`search_atoms`, `get_atom`, `list_jurisdictions`) over the same atoms. Discovery via Anthropic's MCP directory and `awesome-mcp-servers` listings. Free at Layer 1 with attribution requirement; paid tiers per [`50_hauska_mcp_server.md`](50_hauska_mcp_server.md) commercial model.
+
+The code intelligence surface is the cleanest example of MCP-first product design per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md): MCP IS the primary surface; the web tool is the human wrapper.
+
+Codex code intelligence shares the corpus with Codex 1a / 1b plan review but does **not** expose Layer 2 paid atoms (`adjudication-record`, `per-reviewer-pattern`, `comparable-project-precedent`). Layer 2 stays inside the plan-review surfaces. The brand consolidates around code-related surfaces; the tier model preserves the moat.
+
+Per the 2026-05-16 operator decision, this third surface lives under the Codex brand alongside the two plan-review surfaces.
+
+### Why three surfaces
+
+City-direct ICP doesn't use Bluebeam. Contractor-firm ICP lives in Bluebeam and won't leave it. Some reviewers will use both modes depending on which city they're working for that day. The hybrid plan-review architecture covers the full plan-review ICP without forcing customers to choose. The code-intelligence surface covers a third, distinct audience (architects/contractors/agents who need code lookup without a plan-review workflow) and provides the free Layer 1 distribution channel that drives Hauska substrate adoption per [`09_post_saas_substrate_thesis.md`](09_post_saas_substrate_thesis.md).
 
 ## The four-layer stack
 

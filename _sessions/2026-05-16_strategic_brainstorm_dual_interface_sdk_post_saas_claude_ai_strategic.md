@@ -111,6 +111,7 @@ Captured as canonical doc 09_post_saas_substrate_thesis.md, formatted to stand a
 1. Dual-interface as product-line principle: committed as direction. Implementation phased starting with ECI atomization post-51 ship.
 2. SDK payment substrate: principle committed; implementation deferred and phased. Hybrid fiat/stablecoin processor model; lower take rate than current SaaS landscape.
 3. Post-SaaS thesis: captured as canonical doc for external use (investors, partnerships, hiring, case studies).
+4. Codex naming override (decision-logged 2026-05-16 alignment session followup): Codex is the product brand covering plan review (1a contractor-side + 1b city-side) AND code intelligence (the code-lookup surface on the Hauska MCP Server, free at Layer 1). The catalog-roadmap-default "skip sub-brand, describe functionally" was overridden in favor of consolidating the Codex brand across all code-related surfaces. Captured in [`28_mcp_first_product_design.md`](../28_mcp_first_product_design.md) §Product-by-product status §Codex. Propagation to [`47_codex_plan_review.md`](../47_codex_plan_review.md), [`48_codex_program_plan.md`](../48_codex_program_plan.md), [`07_product_line_summary.md`](../07_product_line_summary.md), and [`11_roadmap.md`](../11_roadmap.md) "Open architectural questions" closeout landed in the alignment session followup commit.
 
 ## Open questions surfaced this session
 

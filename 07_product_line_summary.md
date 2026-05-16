@@ -2,7 +2,7 @@
 id: 07_product_line_summary
 title: Empressa product line — bizops handoff summary
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-16
 applies_to: portfolio
 related: [05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, 41_revit_connector, 47_codex_plan_review]
 owner: nick
@@ -37,7 +37,7 @@ recommendation traces back to a specific code section — not free-form chat.
 
 ## Codex
 
-Plan review intelligence, two surfaces:
+Plan review intelligence plus code intelligence, three surfaces:
 
 ### Codex 1b — city-side
 
@@ -55,6 +55,21 @@ accelerated.
 **Value:** Run the same review the city will run — before you submit.
 Catch what the reviewer would catch, fix it, submit clean. Reduces
 resubmission cycles.
+
+### Codex code intelligence — code-lookup surface
+
+**For:** Architects, contractors, code reviewers, AI agents.
+
+**Value:** Direct query access to atomized municipal code via two
+channels — a human-facing code-lookup web tool, and agent-facing tools
+(`search_atoms` / `get_atom` / `list_jurisdictions`) on the Hauska MCP
+Server over `code-section` atoms. Free at Layer 1 per
+[`08_tiered_access_model.md`](08_tiered_access_model.md). Per the
+2026-05-16 operator decision, the code intelligence surface lives under
+the Codex brand alongside the two plan-review surfaces. Distinct from
+1a/1b: this surface does **not** expose Layer 2 paid atoms (adjudication
+context); it provides bare code lookup as the free distribution channel
+that drives substrate adoption.
 
 ## Revit Connector
 
@@ -92,7 +107,7 @@ Hauska — surfaced at every role:
 
 - **SmartCity OS** is the city's seat at the table.
 - **Cortex** is the architect's and engineer's seat.
-- **Codex** is the reviewer's seat (1b) and the contractor's self-check (1a).
+- **Codex** is the reviewer's seat (1b) and the contractor's self-check (1a), plus the code-lookup surface (code intelligence) for architects, contractors, and agents who need direct code query access without a plan-review workflow.
 - **Revit Connector** is the bridge from the designer's existing tool.
 - **Hauska Engine** is the shared intelligence underneath every product.
 - **Code Ingestion Pipeline** is what makes the engine work for every

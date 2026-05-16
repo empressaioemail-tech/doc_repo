@@ -2,9 +2,9 @@
 id: 48_codex_program_plan
 title: Codex program plan — current state through GA
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-16
 applies_to: codex
-related: [11_roadmap, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 47_codex_plan_review, 05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
+related: [11_roadmap, 27_engine_evolution_plan, 28_mcp_first_product_design, 42_design_accelerator_program_plan, 47_codex_plan_review, 50_hauska_mcp_server, 51_substrate_v1_sprint, 05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
 owner: nick
 ---
 
@@ -19,6 +19,8 @@ owner: nick
 > (architect side, same shape). Shared engine work lives in
 > [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md);
 > this doc references it.
+
+> **Scope expansion (2026-05-16).** Per the 2026-05-16 operator decision, Codex is the product brand covering plan review (this program plan's scope) AND code intelligence (the human/agent code-lookup surface on the Hauska MCP Server). The code intelligence surface is on a separate execution track — primary implementation in [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) via the Hauska MCP Server tools, with the human web tool surface as the wrapper. This program plan continues to cover Codex 1a/1b plan review phases only. Cross-reference [`47_codex_plan_review.md`](47_codex_plan_review.md) for the three-surface product home and [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md) for the MCP-first product line architecture.
 
 > **Scope decision (2026-05-11). Codex 1b first.** 1a invited mode
 > (Bluebeam/Acrobat/ProjectDox adapter) is deferred to Phase 5;
