@@ -4,7 +4,7 @@ title: Codex — plan review intelligence + code intelligence
 status: active
 last_updated: 2026-05-16
 applies_to: codex
-related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 28_mcp_first_product_design, 30_smartcity_os, 40_design_accelerator, 41_revit_connector, 50_hauska_mcp_server, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
+related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 30_smartcity_os, 40_design_accelerator, 41_revit_connector, 50_hauska_mcp_server, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_009_firm_tenancy]
 supersedes: pre-docs-repo `47_plan_review_amplifier_features.md` and pre-docs-repo `47b_plan_review_amplifier_addendum.md`
 owner: nick
 ---
@@ -181,6 +181,7 @@ Carried forward from the predecessor addendum, refined through this session.
 - **Firm tenancy schema ADR** — extends ADR-005 multitenancy (queued for migration). Firm-tenancy nests inside city-tenancy with different access scopes per ADR-007.
 - **Bluebeam ToS interpretation** — legal review + commercial outreach required. Risk: Bluebeam blocks service accounts, forcing back to partner-integration path.
 - **Pricing publication** — addendum default $300/seat/month for 1a. Hold private until two paid conversions close. Pilots free.
+- **MCP surface tier model** — ~~Open.~~ **Resolved 2026-05-16** per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). 1a MCP: per-seat with bundled submissions plus cross-tenant Layer 2 overage; agent calls meter against firm's seat. 1b MCP: two buyer paths (city-direct via SmartCity OS subscription; firm-direct per-seat-or-per-jurisdiction deferred to ADR-009). Code intelligence MCP: Layer 1 only by design, API-key gated with generous cap, same surface as Hauska MCP Server (one ruling, two brand hats per ADR-008).
 - **Comment-letter training data legal handling** — data agreement for ingesting firm historical comment letters.
 - **Code licensing economics escalator** — ICC per-tenant fixed fee scaling per tenant size.
 - **Conflict-of-interest controls** — firm reviewing for City A and consulting for a developer. Per-engagement metadata + contractual policy. Specifics deferred to firm-tenancy ADR.

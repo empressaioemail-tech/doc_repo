@@ -2,9 +2,9 @@
 id: 50_hauska_mcp_server
 title: Hauska MCP Server — v1 sprint and product framing
 status: active
-last_updated: 2026-05-15
+last_updated: 2026-05-16
 applies_to: portfolio
-related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 49_code_ingestion_pipeline, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format]
+related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 49_code_ingestion_pipeline, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format]
 owner: nick
 ---
 
@@ -340,12 +340,9 @@ recorded.
 
 ## Open decisions
 
-Seven Phase 0 decisions:
+Seven Phase 0 decisions. Decision 1 resolved 2026-05-16; six remain.
 
-1. **Revenue model.** Scenario A / B / C (see [Business model](#business-model)).
-   *Recommendation:* B as a minimum (self-serve covers cost; lets the
-   commercial layer exist for embedder upsell). C if the company can
-   commit a BD person.
+1. **Revenue model.** ~~Scenario A / B / C (see [Business model](#business-model)).~~ **Resolved 2026-05-16: Scenario B (self-serve paid tier).** Decision record at [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md). Four-tier shape (Free / Developer Pro / Team / Embedder License) confirmed in [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). Phase 8 (self-serve paid tier infrastructure) moves from conditional to in-scope; Phase 9 (BD enablement materials) remains conditional and out of scope for Scenario B.
 2. **BD ownership** (if Scenario C). Nick / Valerie / new hire /
    hold-for-now.
 3. **Hosting target.** Cloud Run / Vercel / Cloudflare Workers.
@@ -473,6 +470,7 @@ Seven Phase 0 decisions:
 
 ## Revision history
 
+- **2026-05-16.** Phase 0 decision #1 (revenue model) resolved as Scenario B (self-serve paid tier) during the 2026-05-16 per-product MCP surface tier model session. Decision record at [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md); tier model context in [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). Open decisions list reduced from seven to six. Phase 8 (self-serve paid tier) moves from conditional to in-scope.
 - **2026-05-15 (origin).** Sprint drafted from MCP server scaffold
   review + business model analysis session. Phase 0 decisions explicit;
   Phase 1–9 sprint structure laid out; three-scenario business model

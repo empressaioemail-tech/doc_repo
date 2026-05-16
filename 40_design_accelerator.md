@@ -2,9 +2,9 @@
 id: 40_design_accelerator
 title: Design Accelerator
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-16
 applies_to: design-accelerator
-related: [10_ground_truth, 30_smartcity_os, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_revit_connector]
+related: [10_ground_truth, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 30_smartcity_os, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_revit_connector]
 ---
 
 # Design Accelerator
@@ -216,6 +216,12 @@ Repo vocabulary is canonical.
 - **Architect-side and reviewer-side products use the same engine.**
   The architect sees what the reviewer will see; the reviewer sees
   what the architect saw. No "surprise" findings.
+
+## MCP surface tier model
+
+Cortex MCP retrofit queued at or after launch per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md) sequencing recommendation (Phase 5 in the post-Sprint-51 sequence). Tier ruling per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md): per-seat subscription default with per-firm enterprise option for larger firms; bundled call quota per seat per month covering within-firm-tenant calls; cross-jurisdictional Layer 2 metered as overage with revenue share to source cities; cross-firm precedent opt-in only (deviates from principle 2's default-cross-tenant-meters posture due to design-IP sensitivity). Revit add-in calls use the same metering as direct MCP calls per the Revit Connector ruling in 29. Specific seat price and bundled call quota deferred to first Cortex paid conversions.
+
+> **Naming note.** Per 2026-05-16 brand consolidation, Cortex is the new name superseding "Design Accelerator" in product framing. This doc's title and id retain the legacy slug pending the 27 Stream G brand migration; the product the doc describes is Cortex.
 
 ## Current state
 

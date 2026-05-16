@@ -2,9 +2,9 @@
 id: 41_revit_connector
 title: Revit Connector
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-16
 applies_to: revit-connector
-related: [10_ground_truth, 40_design_accelerator]
+related: [10_ground_truth, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 40_design_accelerator, 50_hauska_mcp_server]
 ---
 
 # Revit Connector
@@ -168,6 +168,14 @@ match decisions across sessions — each `Send Snapshot` re-resolves.
 Operational gaps are real — at minimum CI, code signing, and an
 auto-update mechanism should land before external pilots beyond
 Empressa.
+
+## MCP surface tier model
+
+Per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md) and [`28:74-77`](28_mcp_first_product_design.md#L74-L77), Revit Connector MCP has two paths.
+
+**Internal Cortex add-in path** (current scope). Architect uses Revit Connector to pull Cortex intelligence into Revit; MCP calls meter against the firm's Cortex seat per the Cortex ruling in 29. Single metering surface; consistent reasoning-call accounting per principle 4 of 29.
+
+**External multi-host embedder license** (opportunistic; Phase 6 in the post-Sprint-51 sequence per 28). Another host tool's vendor (AutoCAD integration partner, ArchiCAD plugin developer, Vectorworks add-in) licenses the MCP surface to deliver Cortex-equivalent experience in their host. Same shape as Hauska MCP Server Embedder License per 29. Per-host or per-end-user-MAU terms; specifics deferred to first partner conversation per [`08:173`](08_tiered_access_model.md#L173).
 
 ## Strategic frames
 

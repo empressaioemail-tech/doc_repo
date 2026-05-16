@@ -4,7 +4,7 @@ title: MCP-first product design principle and product line architecture
 status: active
 last_updated: 2026-05-16
 applies_to: portfolio
-related: [07_product_line_summary, 09_post_saas_substrate_thesis, 14_pricing_framework, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review, 48_codex_program_plan, 41_revit_connector, 50_hauska_mcp_server, 60_eci_atomization, adr_008_engine_factor_out]
+related: [07_product_line_summary, 09_post_saas_substrate_thesis, 14_pricing_framework, 29_mcp_surface_tier_model, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review, 48_codex_program_plan, 41_revit_connector, 50_hauska_mcp_server, 60_eci_atomization, adr_008_engine_factor_out]
 owner: nick
 ---
 
@@ -60,7 +60,7 @@ The pattern generalizes to Codex 1a/1b, Design Accelerator, and other UI-first p
 - Notes: MCP retrofit and city-to-city data sharing are the same work. Cross-tenant atom access per ADR-007 and ADR-017 is the mechanism; the MCP server tools layer is the surface. Should be tracked as one roadmap item, not two.
 
 ### Codex (plan review and code intelligence)
-- Codex 1a (architect-side plan review): Live or pre-launch (status per 47_codex_plan_review.md). MCP retrofit queued; expected to be highest-leverage commercial MCP because architects pay per submission and per-call metering is a natural fit.
+- Codex 1a (contractor-side plan review for firms doing reviews on a city's behalf or self-review pre-submission per 47_codex_plan_review.md): Live or pre-launch. MCP retrofit queued; expected to be highest-leverage commercial MCP because firms already pay per-seat for plan-review tooling and the metering model is per-seat with bundled MCP call quota plus cross-tenant Layer 2 overage per 29_mcp_surface_tier_model.md.
 - Codex 1b (city-side plan review): Pre-launch; lands when 11a Bastrop production sprint exits. MCP retrofit queued post-launch.
 - Codex code intelligence: MCP IS the primary surface (via Hauska MCP Server tools over code-section atoms). Human UI is the Codex code-lookup web tool, free at Layer 1 per 08_tiered_access_model.md. This is the cleanest example of MCP-first design in the portfolio.
 
@@ -105,7 +105,7 @@ Each step de-risks the next. Each step also produces execution atoms feeding ECI
 
 These are real and need answers before they become blockers.
 
-**Tier model for product MCP surfaces.** The 08 tier model is about data atoms (Layer 1 free, Layer 2 paid). What is the tier model for a Codex 1a MCP call? A SmartCity OS MCP call? Probably different per product. SmartCity OS MCP for a city's own data is probably included in city subscription; cross-city queries are paid Layer 2. Codex 1a MCP is probably per-call metered against the architect's seat. Needs explicit decision per product before MCP retrofits begin because metering surface is part of the MCP server tools layer work.
+**Tier model for product MCP surfaces.** ~~Open.~~ **Resolved 2026-05-16.** See [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md) for the four cross-cutting principles (Layer 1/2 mirrors 08 atom-tier; within-vs-cross-tenant as second axis with substrate-MCP refinement; SDK as settlement layer; reasoning-call as unifying accounting unit) and per-product matrix covering all eight product MCP surfaces. Side-effect decision: Hauska MCP Server Phase 0 revenue scenario resolved as Scenario B per [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md).
 
 **Customer pull validation.** Building MCP for a product that no agent wants to query is wasted work. Need a signal mechanism. Probably the answer is: ship MCP at v1 for products where the agent ecosystem is at least nascent (code intelligence, plan review), wait for signal on products where it is not (SmartCity OS for city managers themselves, who are not running agents yet; their counterparties like developers and brokers are).
 
@@ -139,4 +139,5 @@ The original "MCP primary for v1, web UI deferred to v2" framing remains correct
 
 ## Revision history
 
+- **2026-05-16 (per-product MCP tier model session):** "Tier model for product MCP surfaces" Open question resolved via new canonical doc [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). Codex 1a product-by-product status row corrected from "architect-side" to "contractor-side" framing per [`47_codex_plan_review.md`](47_codex_plan_review.md), and pricing-unit framing aligned with the per-seat plus bundled call quota plus cross-tenant overage shape settled in 29.
 - **2026-05-16 (origin):** drafted during strategic brainstorm session. Extends structural commitment 4 from atom-level to product-line. Sequencing recommendation and product-by-product status captured. Companion to 09_post_saas_substrate_thesis.md.

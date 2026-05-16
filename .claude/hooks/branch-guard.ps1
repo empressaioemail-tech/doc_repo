@@ -1,11 +1,26 @@
 # Branch-protection hook for git commit / git push tool calls.
 # Refuses commit/push when working tree is not on `main` (single-branch workflow per CLAUDE.md).
 # Invoked from .claude/settings.json PreToolUse hook on Bash matcher.
+# Claude Code passes the tool payload as JSON on stdin (verified 2026-05-16 via diag log).
+# Fails open on any parse error so a hook bug never breaks routine Bash use.
 
-$ti = $env:CLAUDE_TOOL_INPUT
-if ($null -eq $ti) { exit 0 }
+$stdin = [Console]::In.ReadToEnd()
+if ([string]::IsNullOrWhiteSpace($stdin)) { exit 0 }
 
-if ($ti -match 'git (commit|push)') {
+try {
+    $payload = $stdin | ConvertFrom-Json
+} catch {
+    exit 0
+}
+
+$command = $payload.tool_input.command
+if ([string]::IsNullOrWhiteSpace($command)) { exit 0 }
+
+# Match `git ... commit` or `git ... push` within a single shell-command segment.
+# The [^&|;]*? guards against crossing into a chained sub-command (e.g. `cd foo && git status`
+# where the second segment is what we care about; here we only care if commit/push appears
+# in the same segment as the git invocation).
+if ($command -match '\bgit\b[^&|;]*?\b(commit|push)\b') {
     $branch = (git -C P:/doc_repo branch --show-current 2>$null)
     if ($branch) { $branch = $branch.Trim() }
 
