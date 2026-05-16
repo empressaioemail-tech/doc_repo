@@ -2,9 +2,9 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-15
 applies_to: portfolio
-related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan, 48_codex_program_plan]
+related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization]
 ---
 
 # Roadmap
@@ -13,6 +13,35 @@ related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 
 > they ship. Move items between tiers as priority shifts. Bump `last_updated`
 > on every edit. The checklist is the operational view; the milestone
 > roadmap above orients new work and shows the path to the end state.
+>
+> **2026-05-15 changes (v3):** Catalog roadmap dialogue absorbed.
+> Texas IP attorney memo added at P1 (gates non-Bastrop catalog
+> ingest). Tech E&O insurance added at P3 (gated on first enterprise
+> contract; mitigates new Risk 12 in [`13`](13_risk_register.md)).
+> Separate legal entity for the catalog added to Open strategic
+> questions. Stakeholder graph landed at
+> [`18_stakeholder_graph.md`](18_stakeholder_graph.md). ECI atomization
+> spec drafted at [`60_eci_atomization.md`](60_eci_atomization.md);
+> own sprint queued post-51 v1 ship. ADR-013 (procedure-execution
+> atoms) and ADR-014 (skill + behavior atoms, queued for Q3 v2
+> activation) added to ADR queue. See dialogue thread at
+> [`_sessions/2026-05-15_catalog_roadmap_input.md`](_sessions/2026-05-15_catalog_roadmap_input.md)
+> through `_response_reply.md` for context.
+>
+> **2026-05-15 changes (v2):** Substrate v1 sprint added at P1 — combined
+> Code Ingestion Pipeline + Hauska MCP Server execution plan at
+> [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md). Two new
+> repos (`hauska-engine` + `hauska-mcp-server`), two parallel tracks,
+> four streams per track, eight cc-agents. Supersedes the standalone
+> sprint sections in 49 and 50 — those become canonical reference.
+> Velocity-first; no timeframes; task-list driven.
+>
+> **2026-05-15 changes:** Hauska MCP Server v1 sprint added at P1
+> ([`50_hauska_mcp_server.md`](50_hauska_mcp_server.md)). Operationalizes
+> the "Bring-your-own-agent public API" open strategic question; that
+> entry below now points at the sprint doc rather than sitting open.
+> Phase 0 (revenue model + BD ownership + hosting + tool surface trim +
+> logging + coupling route + key issuance) is the immediate next step.
 >
 > **2026-05-11 changes:** End-state framing + milestone roadmap added
 > (M-Stabilize, M-PropIntel, M-CortexQA, M-CodexQA). Three new active
@@ -120,6 +149,8 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 
 ## P1 — this week / next
 
+- [ ] **Substrate v1 sprint** (Code Ingestion Pipeline + Hauska MCP Server combined) — [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md), active 2026-05-15. Two new repos (`hauska-engine`, `hauska-mcp-server`), two parallel tracks, four streams per track, eight cc-agents. v1 ships quality-gated TX-first jurisdiction corpus + public MCP endpoint at `mcp.hauska.dev`. **Phase 0 decisions are immediate next step** — 16 consolidated decisions including revenue model, BD ownership, hosting, orchestration substrate, OCR provider, quality bar, query authoring, TX-first batch list, cost budget. Supersedes standalone sprint sections in 49 + 50 (those remain canonical reference for pipeline design + MCP product framing). Resolves "Bring-your-own-agent public API" open strategic question + Risk 1. `product` · Nick (Phase 0 decisions) + 8 cc-agents (streams) · XL sprint.
+- [ ] **Texas IP attorney opinion memo** — data-licensing posture for catalog ingest; budget $8–12K. **Gates [`51`](51_substrate_v1_sprint.md) Stream 1D non-Bastrop ingestion.** Candidates per [`18_stakeholder_graph.md`](18_stakeholder_graph.md): Husch Blackwell Austin, Norton Rose Fulbright Austin, Pillsbury Austin (data licensing + AI practice). Sourced from catalog roadmap dialogue 2026-05-15. `legal / strategic` · Nick · M.
 - [ ] **SmartCity OS Stabilization Sprint** — [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md), active 2026-05-11. Orchestrates Phase 2 migration + W1 sprint + security sweep + multi-tenancy foundation. ~3-4 weeks across 4 workstreams. **This is M-Stabilize.**
 - [ ] **Codex/Cortex Phase 1 work** — [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md) Streams A/B/C/D/G + [`42_*`](42_design_accelerator_program_plan.md) Phase 1 + [`48_*`](48_codex_program_plan.md) Phase 1. Module boundary refactor, atom registry expansion, engine quality, corpus depth, brand migration. Path to M-CortexQA and M-CodexQA. `product` · Nick + agent · XL sprint.
 - [ ] **Migration sprint Phase 1** — legacy-design-tools full migration · executing per existing track. `migration` · Nick + agent · XL sprint · ref: [`12_migration_sprint.md`](12_migration_sprint.md). 2026-05-10 PM: Phase 1B Stage 1 verified — schema parity to Empressa Neon. Phase 1B Stage 2 / Phase 1C eligible to schedule.
@@ -179,6 +210,8 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 - [ ] **Devcontainer / Codespaces evaluation** — `ops` · Nick + planner · L.
 - [ ] **Compass system prompt refactoring** — `ops` · planner + agent · M.
 - [ ] **Quantum cryptography strategic vision doc** — `strategic` · Nick + planner · L.
+- [ ] **Tech E&O insurance** before first enterprise contract — data-provider + AI-liability specialist broker. Mitigates new Risk 12 in [`13_risk_register.md`](13_risk_register.md). Sourced from catalog roadmap dialogue 2026-05-15. `corporate / risk` · Nick · M (when first enterprise conversation activates).
+- [ ] **ECI atomization sprint** (likely `60a_eci_atomization_sprint.md` when scoped) — execute the [`60_eci_atomization.md`](60_eci_atomization.md) draft spec; wire ECI to Hauska Engine + atom substrate + internal MCP read surface. Gated on [`51`](51_substrate_v1_sprint.md) v1 ship. `architecture / product` · Nick + cc-agent · L sprint.
 - [ ] **Security Day** — 4 deferred security commits. `ops` · Nick + agent · M.
 - [ ] **GoTo Connect OAuth fix** — `ops` · agent · S.
 - [ ] **Deduplicate `mygov_work_orders` schema** · **folded into [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 2A schema sync**. `ops` · Nick (decision) · M.
@@ -227,11 +260,12 @@ Decisions awaiting external signal — customer conversations, market data, regu
 
 - **Hauska SDK pricing model** — *Nick*.
 - **Hauska Inc. external developer motion** — *Nick*.
+- **Separate legal entity for the catalog** — *Nick*. Sourced from catalog roadmap dialogue 2026-05-15; whether the Hauska MCP Server + ingestion engine warrants a distinct entity from Hauska Inc. Resolves alongside Hauska / Legacy Group separation timing.
 
 ### Regulatory and positioning
 
 - **Active vs. passive posture toward TCEQ standard-setting** — *Nick + Sylvia conversation*. Tied to Risk 7.
-- **Bring-your-own-agent public API** — *Nick (product decision)*. Tied to Risk 1.
+- **Bring-your-own-agent public API** — *Nick (product decision)*. Tied to Risk 1. **In flight as [`50_hauska_mcp_server.md`](50_hauska_mcp_server.md) Phase 0 (2026-05-15).** Resolution drops this entry when Phase 0 closes.
 - **Empressa Company Intelligence trajectory** — *Nick*.
 
 ### Market and customer

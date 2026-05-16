@@ -16,12 +16,15 @@ owner: nick
 > that turns "atomizing the next jurisdiction" from a sprint into a
 > pipeline run.
 
-> **Status posture.** Active design; tooling buildout starts when
-> cc-agent capacity opens after [`11a_bastrop_live_roadmap.md`](11a_bastrop_live_roadmap.md)
-> Sprint A.1 staffs. Bastrop UDC + Grand County IRC will be loaded
-> one-off during A.1 to unblock Bastrop-live; this pipeline regenerates
-> them as a validation pass (B.6) and then handles every jurisdiction
-> after.
+> **Status posture.** Active design (this doc) — canonical reference
+> for pipeline architecture. **Active execution lives in
+> [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md)** (combined
+> with the MCP server v1 ship), which executes B.1–B.6 against this
+> design across four parallel streams in the new `hauska-engine` repo.
+> Bastrop UDC + Grand County IRC are loaded one-off during 11a Sprint
+> A.1 to unblock Bastrop-live; the pipeline regenerates them as a
+> validation pass (B.6) per 51's Stream 1D, then handles every
+> jurisdiction after.
 
 ## Why this exists
 

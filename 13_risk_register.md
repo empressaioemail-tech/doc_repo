@@ -2,7 +2,7 @@
 id: 13_risk_register
 title: Risk register â named failure modes
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-15
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 17_leading_indicators]
 ---
@@ -47,7 +47,7 @@ quarterly review. 1-4 get monitored. 9 and 10 are kept prevented by
 the agent operating rules and the inter-entity roadmap discipline.
 7 and 8 get watched and shape decisions when the trigger fires.
 
-## The 11 named failure modes
+## The 12 named failure modes
 
 ### Risk 1 â AI-native access becomes a commodity
 
@@ -216,6 +216,49 @@ decouples deploy from Replit pre-flight entirely). See
 and
 [`15_replit_neon_ownership_advisory.md`](15_replit_neon_ownership_advisory.md).
 
+### Risk 12 — Data-provider liability without insurance backstop
+
+As the catalog activates and PropTech embedders / enterprise buyers
+license access to atomized jurisdictional data, Empressa becomes a
+data provider under the legal frame that implies. Incorrect data
+(missed amendment, stale code, mis-classified parcel, hallucinated
+finding) relied on by a paying customer for a material decision
+(zoning approval, design submittal, transaction closing) produces
+liability exposure that is uninsured today. Tier-of-error matters:
+free-tier users have lower expectations; enterprise customers paying
+for catalog access have substantially higher.
+
+Two distinct loss shapes inside this risk:
+1. **Reliance liability** — customer made a decision based on
+   catalog output that was wrong; harm follows.
+2. **License / IP exposure** — data-source partner asserts the
+   catalog re-distributed material that exceeded license scope
+   (relevant to ICC, county CAD, Municode, eCode360).
+
+**Leading indicator:** First enterprise contract proposal advances to
+legal review without Tech E&O coverage in place; or first paid
+customer issues a formal claim about output reliability.
+
+**Category:** structural / corporate-readiness.
+
+**Mitigation:**
+- Tech E&O insurance with data-provider + AI-liability specialist
+  carrier — tracked as [`11_roadmap.md`](11_roadmap.md) P3 item,
+  gated on first enterprise contract conversation.
+- Texas IP attorney opinion memo before non-Bastrop ingest — tracked
+  as [`11_roadmap.md`](11_roadmap.md) P1 item; gates
+  [`51`](51_substrate_v1_sprint.md) Stream 1D non-Bastrop batch
+  ingest per Sync Point #6.
+- "Sell reasoning, not data" quality contract per catalog roadmap
+  Move 1 (kept as universal quality contract regardless of tier):
+  every catalog response carries reasoning chain, source citation,
+  confidence score, and timestamp. Reduces both loss shapes by
+  making the catalog's claims auditable.
+
+**Status:** Active monitor. Not yet a fire; becomes a fire the
+moment enterprise contract conversation advances or first paid free-
+tier conversion lands without coverage in place.
+
 ## Watchlist mechanics
 
 Leading indicators are listed in
@@ -260,6 +303,18 @@ artifact.
 
 ## Revision history
 
+- **2026-05-15:** Added Risk 12 (Data-provider liability without
+  insurance backstop). Sourced from 2026-05-15 catalog roadmap
+  dialogue ([`_sessions/2026-05-15_catalog_roadmap_input.md`](_sessions/2026-05-15_catalog_roadmap_input.md)
+  through `_response_reply.md`). Mitigations: Tech E&O insurance
+  (P3 roadmap item, gated on first enterprise contract); Texas IP
+  attorney opinion memo (P1 roadmap item, gates non-Bastrop catalog
+  ingest); "sell reasoning, not data" quality contract per Move 1
+  kept as universal quality contract on catalog responses. Header
+  count updated 11 → 12. Cross-references added to
+  [`11_roadmap.md`](11_roadmap.md) and
+  [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Sync
+  Point #6.
 - **2026-05-11:** Header count corrected from `10` to `11` to reflect Risk 11's addition (Replit pre-flight coupling); no risk content changed.
 - **2026-05-10:** Added Risk 11 (Replit pre-flight couples
   deploy-availability to dev-DB health) following the 2026-04-29 →
