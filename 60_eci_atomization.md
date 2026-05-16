@@ -2,9 +2,9 @@
 id: 60_eci_atomization
 title: ECI atomization — internal atom types draft against ADR-001
 status: draft
-last_updated: 2026-05-15
+last_updated: 2026-05-16
 applies_to: portfolio
-related: [11_roadmap, 25_atom_architecture_reference, 27_engine_evolution_plan, 50_hauska_mcp_server, 51_substrate_v1_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions]
+related: [11_roadmap, 18_stakeholder_graph, 25_atom_architecture_reference, 27_engine_evolution_plan, 50_hauska_mcp_server, 51_substrate_v1_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_015_actor_atoms, adr_017_atom_access_control]
 owner: nick
 ---
 
@@ -70,6 +70,15 @@ Confirmed per Nick's 2026-05-15 Q1 decision. Briefly:
   kicks off; gives a concrete artifact to reference when ECI sprint
   comes up for prioritization.
 
+## Sprint dependencies
+
+Added 2026-05-16 per Q4/Q6 resolution session. The ECI atomization sprint cannot proceed cleanly until two newly-scaffolded ADRs ratify:
+
+- **[ADR-015 actor atoms](80_adrs/adr_015_actor_atoms.md)** — introduces `actor-record` atom type with discriminator field (`actorType: person | agent | organization`) and `trustLevel` enum. ECI `team_members` map to `actor-record` with `actorType: person`. The prior framing of a shared `person` atom shape is superseded by ADR-015's unifying actor-record type. **Status:** proposed.
+- **[ADR-017 atom access control](80_adrs/adr_017_atom_access_control.md)** — introduces a layered `accessPolicy` field on the atom contract. ECI internal atoms use `platform-internal` scope. Tenant representation moves to `actor-record` of `actorType: organization` with `tenantKind: internal`. **Status:** proposed; sequenced after ADR-015.
+
+Both ADRs must reach accepted status before the ECI atomization sprint (`60a_eci_atomization_sprint.md` when scoped) kicks off.
+
 ## ECI current state — table → atom mapping
 
 ECI's existing Replit pnpm monorepo carries these tables. Each row is
@@ -89,7 +98,7 @@ disposition.
 | `messages` | (composition of `conversation-record`) | **Do not atomize individually.** Per-message atoms blow cardinality; messages live as composition under the conversation. |
 | `notifications` | (ephemeral) | **Do not atomize.** Notifications are runtime UX state, not durable substrate. |
 | `daily_updates` | `daily-update` | Atomize. Daily synthesis of state; high-value retrieval target. |
-| `team_members` | `person` (shared with ADR-007 person atom) | Atomize using the existing `person` shape per ADR-007 — same atom type, just an internal-tenant scope. |
+| `team_members` | `actor-record` per [ADR-015](80_adrs/adr_015_actor_atoms.md) | Atomize as `actor-record` with `actorType: person` per ADR-015. **Updated 2026-05-16:** the prior framing of a shared `person` atom shape is superseded by ADR-015's unifying actor-record type. ADR-007 stakeholder scopes (architect / reviewer / city-manager) remain as access roles that can be granted to actors. |
 
 Additional types proposed by the catalog agent that don't map to an
 existing table but should land in the registry for forward
@@ -366,10 +375,7 @@ Items deferred to the future ECI atomization sprint scoping:
   endpoint for internal vs. shared endpoint with auth-gated internal
   tools? Recommendation: separate endpoint (`mcp.internal.hauska.dev`
   or similar); avoids tool-surface pollution for external agents.
-- **`person` atom shape** — ADR-007 references a `person` atom for
-  reviewer / city-manager / architect tenants. ECI's `team_members`
-  table uses the same shape but at internal-tenant scope. Confirm
-  same atom type with scope-flag distinction, not parallel types.
+- ~~**`person` atom shape**~~ — **Resolved 2026-05-16 by [ADR-015](80_adrs/adr_015_actor_atoms.md).** Actor-record with `actorType: person | agent | organization` is the unifying type. ADR-007 stakeholder scopes are access roles, not actor types; an actor (a specific entity) can be granted a tenant scope. ECI `team_members` map to `actor-record` with `actorType: person` per ADR-015.
 - **Public-publishable decisions.** Some decisions (case studies,
   public commitments) may want to publish to network. Add
   `scopeFlags` shape analogous to ADR-007 patterns; defer to sprint.
@@ -407,6 +413,7 @@ Items deferred to the future ECI atomization sprint scoping:
 
 ## Revision history
 
+- **2026-05-16.** Sprint dependencies updated per Q4/Q6 resolution session ([`_sessions/2026-05-16_q4_q5_q6_master_roadmap_resolution_claude_ai_strategic.md`](_sessions/2026-05-16_q4_q5_q6_master_roadmap_resolution_claude_ai_strategic.md)). [ADR-015 actor atoms](80_adrs/adr_015_actor_atoms.md) and [ADR-017 atom access control](80_adrs/adr_017_atom_access_control.md) added as required dependencies. `team_members` mapping updated from `person` atom shape to `actor-record` with `actorType: person` per ADR-015. The prior `person` atom shape Open question is resolved by ADR-015. New "Sprint dependencies" section added.
 - **2026-05-15 (origin).** Draft spec'd from catalog roadmap agent's
   Q1 proposal + Nick's routing decisions (separate
   `@empressaio/atom-internal` registry, own bump, own sprint

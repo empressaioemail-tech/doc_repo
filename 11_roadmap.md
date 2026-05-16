@@ -2,9 +2,9 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-15
+last_updated: 2026-05-16
 applies_to: portfolio
-related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization]
+related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, adr_015_actor_atoms, adr_017_atom_access_control]
 ---
 
 # Roadmap
@@ -13,6 +13,12 @@ related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 
 > they ship. Move items between tiers as priority shifts. Bump `last_updated`
 > on every edit. The checklist is the operational view; the milestone
 > roadmap above orients new work and shows the path to the end state.
+>
+> **2026-05-16: Q4 Q5 Q6 master roadmap session.** Three new ADRs
+> scaffolded (015 actor atoms, 017 atom access control), Q5 deferred
+> to ADR-016 v2 candidacy. 11_roadmap extended with Active sprint
+> exit criteria, Open architectural questions, Queued ADR work
+> sections per master roadmap consolidation decision.
 >
 > **2026-05-15 changes (v3):** Catalog roadmap dialogue absorbed.
 > Texas IP attorney memo added at P1 (gates non-Bastrop catalog
@@ -120,6 +126,16 @@ The portfolio is "ready to bring on more clients and build more on top" when thr
 - **Brand migration** (Plan Review → Codex, Design Accelerator → Cortex) — [`27_*`](27_engine_evolution_plan.md) Stream G. Gated on legacy-design-tools PR #17 landing.
 - **Atom registry expansion** — [`27_*`](27_engine_evolution_plan.md) Stream B. Coordinated rollout across all consumers, single minor version bump.
 - **Cross-track interface spec** — [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) stub. Full spec deferred to post-M-Stabilize coordination session.
+
+## Active sprint exit criteria
+
+Per-sprint exit conditions for the three active sprints. Detailed exit criteria live in each sprint doc; this is the at-a-glance reference. Added 2026-05-16 per master roadmap consolidation decision.
+
+**[`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) — Substrate v1.** Exits when: (1) `hauska-engine` running the Code Ingestion Pipeline in production with quality-gated 20+ jurisdiction corpus (TX-first per the explicit Stream 1D city list); (2) `hauska-mcp-server` running at the chosen public endpoint wired to `hauska-engine` retrieval API; (3) listed in MCP directories serving real external traffic; (4) logging captured for training-data + commercial-use monitoring. Phase 0's 16 consolidated decisions land first. Sync Point #6 (Texas IP attorney memo) gates non-Bastrop ingestion.
+
+**[`11a_bastrop_live_roadmap.md`](11a_bastrop_live_roadmap.md) — Bastrop-live.** Exits when Codex 1b live in Bastrop production; Sylvia and Jaime running real submittals through the SmartCity OS Plan Review surface (Sprint A.3 exit). Gated on M-Stabilize closeout (A.0). Sprint A.1 corpus load coordinates with [`51`](51_substrate_v1_sprint.md) Stream 1D's B.6 validation pass.
+
+**[`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md) — M-Stabilize.** Exits when: SmartCity OS on Empressa Neon end-to-end; all fires closed; code-side security debt cleared; schema hygiene baseline; ADR-005 canonical + multi-tenancy invariants verified; W1 sprint complete; CI clean baseline. WS-2 verified 2026-05-11; WS-1, WS-3 remainder, and WS-4 still pending per [`00_current_state.md`](00_current_state.md).
 
 ## Summary
 
@@ -271,6 +287,31 @@ Decisions awaiting external signal — customer conversations, market data, regu
 ### Market and customer
 
 - **Which second customer, and what the referral funnel looks like** — *Valerie + Sylvia*.
+
+## Open architectural questions
+
+Architectural decisions awaiting resolution or in flight via ADR drafting. Mirrors [Open strategic questions](#open-strategic-questions) in shape; commercial questions stay separate from architectural ones. Added 2026-05-16 per master roadmap consolidation decision.
+
+- **Q4 actor atoms** — *Nick*. **Decided 2026-05-16:** single `actor-record` atom type with discriminator field (`actorType: person | agent | organization`) plus `trustLevel` enum. [ADR-015](80_adrs/adr_015_actor_atoms.md) scaffolded; lands with ECI atomization sprint internal-atom bump. Status: proposed pending ratification.
+- **Q5 intent atoms** — *Nick*. **Decided 2026-05-16:** no new atom type for v1. Add a `purpose` field to procedure-execution atoms (ADR-013) with optional links to parent `decision-record` / `sprint-item` / `open-question` atoms in the ECI internal registry. Run for one quarter post ECI atomization; promote to full `intent-record` atom type in ADR-016 if usage demands. ADR-016 status: deferred to v2 candidacy.
+- **Q6 atom access control** — *Nick*. **Decided 2026-05-16:** extend the atom contract per ADR-001 with a layered `accessPolicy` field (`public-free` / `public-paid` / `tenant-private` / `tenant-shared` / `platform-internal`). [ADR-017](80_adrs/adr_017_atom_access_control.md) scaffolded; sequenced after ADR-015; added as a dependency for the ECI atomization sprint. Status: proposed pending ratification.
+- **Adjudication-record atom spec gap** — *Nick (surfaced 2026-05-16)*. The `adjudication-record` atom is referenced in [`08_tiered_access_model.md`](08_tiered_access_model.md) Layer 2 and in prior catalog roadmap dialogue, but no explicit atom spec was found during 2026-05-16 verbatim verification of [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md). Either find the spec elsewhere in the doc set or treat as a doc gap to address in a small followup.
+- **Codex naming follow-up** — *Nick (carried from 2026-05-15 catalog roadmap dialogue)*. Default per dialogue: skip sub-brand for the building-code-lookup capability; describe functionally as MCP server tools (`search_atoms` / `get_atom` / `list_jurisdictions` over `code-section` atoms). Operator has not confirmed or overridden. One-line confirmation requested.
+
+## Queued ADR work
+
+ADRs not yet drafted, scaffolded but proposed, or active drafts. Tracked here so architectural work doesn't go invisible. Added 2026-05-16.
+
+| ADR | Topic | Status |
+|---|---|---|
+| ADR-005 | Multi-tenancy | Deferred; queued under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4 |
+| ADR-006 | Anchoring substrate (Polygon CDK / TSA / Hauska cluster / customer-controlled) | Deferred until `audit-trail-anchor` atom production unblocks |
+| ADR-009 | Firm tenancy | Deferred until Codex 1a returns to active scope (post-[`11a`](11a_bastrop_live_roadmap.md)) |
+| ADR-013 | Procedure-execution atoms | **In scope now.** Drafts in parallel with [`51`](51_substrate_v1_sprint.md); per Q2 decision 2026-05-15. Q5 `purpose` field rider per Q5 decision 2026-05-16. Scaffold pending. |
+| ADR-014 | Skill / behavior atoms | Queued for Q3 v2 activation; design pre-committed (Hauska-layer brand per ADR-008, 08 tier model inherited). Stricter discipline gates than ADR-013 — atomizes stable distributable versioned procedures only. |
+| ADR-015 | Actor atoms | **Scaffolded 2026-05-16** — [`80_adrs/adr_015_actor_atoms.md`](80_adrs/adr_015_actor_atoms.md). Status: proposed pending ratification |
+| ADR-016 | Intent atoms | Deferred to v2; revisit one quarter post ECI atomization (Q5 trial period) |
+| ADR-017 | Atom access control | **Scaffolded 2026-05-16** — [`80_adrs/adr_017_atom_access_control.md`](80_adrs/adr_017_atom_access_control.md). Status: proposed pending ratification; sequenced after ADR-015 |
 
 ## References
 
