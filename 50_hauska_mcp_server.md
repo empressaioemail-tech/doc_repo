@@ -350,31 +350,15 @@ recorded.
 
 ## Open decisions
 
-Seven Phase 0 decisions. Decision 1 resolved 2026-05-16; six remain.
+Seven Phase 0 decisions. All resolved per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close (2026-05-18) and the prior 2026-05-16 Scenario B decision. Combined record at [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md).
 
 1. **Revenue model.** ~~Scenario A / B / C (see [Business model](#business-model)).~~ **Resolved 2026-05-16: Scenario B (self-serve paid tier).** Decision record at [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md). Four-tier shape (Free / Developer Pro / Team / Embedder License) confirmed in [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). Phase 8 (self-serve paid tier infrastructure) moves from conditional to in-scope; Phase 9 (BD enablement materials) remains conditional and out of scope for Scenario B.
-2. **BD ownership** (if Scenario C). Nick / Valerie / new hire /
-   hold-for-now.
-3. **Hosting target.** Cloud Run / Vercel / Cloudflare Workers.
-   *Recommendation:* Cloud Run (matches SmartCity OS posture; gcloud
-   tooling and runbooks already in flight; team familiarity).
-4. **Tool surface trim.** Drop `query_jurisdiction` parcel path? Drop,
-   rename, or paid-tier `get_permit_requirements`?
-   *Recommendation:* drop parcel path; rename `get_permit_requirements`
-   to `search_permit_atoms` (retrieval-shaped).
-5. **Logging destination.** Postgres (coordinated with ADR-010) /
-   GCS+BigQuery / Snowflake / hybrid.
-   *Recommendation:* Postgres for index + GCS for raw payloads, joining
-   ADR-010's Postgres index choice.
-6. **Backend coupling route.** Route A (wrap api-server now) vs Route B
-   (wait for Stream A factor-out).
-   *Recommendation:* Route A. Stream A factor-out is itself
-   migration-gated; waiting compounds risk. MCP server moves to the
-   Stream A query interface when it's ready.
-7. **Key issuance.** Manual at v1, automate at Phase 8 / day one
-   automation.
-   *Recommendation:* Manual at v1; admin endpoint behind bootstrap key;
-   automate as Phase 8 if Scenario B/C selected.
+2. **BD ownership** (if Scenario C). ~~Nick / Valerie / new hire / hold-for-now.~~ **Resolved 2026-05-18: N/A under Scenario B; revisit only if Scenario C ever activates.** Per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close.
+3. **Hosting target.** ~~Cloud Run / Vercel / Cloudflare Workers.~~ **Resolved 2026-05-18: Cloud Run.** Matches SmartCity OS operational posture; gcloud tooling and runbooks already in flight per [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md). Per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close.
+4. **Tool surface trim.** ~~Drop `query_jurisdiction` parcel path? Drop, rename, or paid-tier `get_permit_requirements`?~~ **Resolved 2026-05-18: drop parcel path; rename `get_permit_requirements` to `search_permit_atoms`.** Parcel atoms are Bump 2 per [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md) Stream B and [`46_smartcity_parcel_intelligence.md`](46_smartcity_parcel_intelligence.md) open question #1; `search_permit_atoms` is the honest Layer 1 retrieval shape. Per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close.
+5. **Logging destination.** ~~Postgres (coordinated with ADR-010) / GCS+BigQuery / Snowflake / hybrid.~~ **Resolved 2026-05-18: Postgres index per ADR-010 + GCS raw payloads.** Joins MCP traffic data to atom-graph data per ADR-010. Per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close.
+6. **Backend coupling route.** ~~Route A (wrap api-server now) vs Route B (wait for Stream A factor-out).~~ **Resolved 2026-05-18: Route A.** `hauska-engine` is bootstrapped net-new in [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md); MCP server wraps its retrieval-api directly; no legacy api-server wait needed. Per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close.
+7. **Key issuance.** ~~Manual at v1, automate at Phase 8 / day one automation.~~ **Resolved 2026-05-18: Manual at v1 via admin endpoint behind bootstrap key; auto-issuance lands at Phase 8.** Per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close.
 
 ## Dependencies (external to this sprint)
 
@@ -481,6 +465,7 @@ Seven Phase 0 decisions. Decision 1 resolved 2026-05-16; six remain.
 
 ## Revision history
 
+- **2026-05-18 (Phase 0 close).** Decisions 2 through 7 resolved per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close (combined record at [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md)). All seven Phase 0 decisions now resolved (decision 1 was resolved prior 2026-05-16 as Scenario B). Stream-level dispatch across Phases 1 through 9 unblocked. `hauska.dev` registration remains a pre-launch action item per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md) Domains section.
 - **2026-05-18 (post-session-close).** MCP server repo created and bootstrapped at [`https://github.com/empressaioemail-tech/hauska-mcp-server`](https://github.com/empressaioemail-tech/hauska-mcp-server) (bootstrap commit `d00586b`). Five tools scaffolded; Streamable HTTP transport; Express host; Zod validation; auth and logging stubs. Local starter files at `doc_repo/MCP Server/` deleted; `.gitignore` entry preserved as guard. Repo-placement section flipped from "migrating" to "lives at"; scaffold-location pointer in Cross-references replaced with the live repo URL. Companion to the same-day rename of the atom-contract M2-C target to `@hauska/atom-contract` in `legacy-design-tools/lib/empressa-atom/README.md` (PR #25, squash-merged to main).
 - **2026-05-18.** Repo-placement section added per [Decision 2026-05-18](_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md): MCP server starter migrates from `doc_repo/MCP Server/` to dedicated `empressaioemail-tech/hauska-mcp-server` repo. Bump 1 atom-package reference updated to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md). Scaffold-location pointer updated to note migration in flight; will be replaced with new repo URL once Nick creates the repo.
 - **2026-05-16.** Phase 0 decision #1 (revenue model) resolved as Scenario B (self-serve paid tier) during the 2026-05-16 per-product MCP surface tier model session. Decision record at [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md); tier model context in [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). Open decisions list reduced from seven to six. Phase 8 (self-serve paid tier) moves from conditional to in-scope.

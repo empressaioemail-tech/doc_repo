@@ -100,33 +100,65 @@ Consolidated from [49](49_code_ingestion_pipeline.md) §Open decisions +
 [50](50_hauska_mcp_server.md) §Open decisions. Recommended defaults in
 parens.
 
-- [ ] **Revenue model** for MCP server (Scenario A / B / C — default
-      Scenario B if no preference)
-- [ ] **BD ownership** if Scenario C selected
-- [ ] **MCP hosting target** (Cloud Run)
-- [ ] **Tool surface trim** (drop `query_jurisdiction` parcel path;
-      rename `get_permit_requirements` to `search_permit_atoms`)
-- [ ] **Logging destination** (Postgres index per ADR-010 + GCS raw)
-- [ ] **MCP backend coupling route** (Route A wraps `hauska-engine`
+- [x] **Revenue model** for MCP server (Scenario A / B / C — default
+      Scenario B if no preference). Resolved 2026-05-16 as Scenario B
+      per [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md);
+      Phase 8 (self-serve paid tier) moves in-scope.
+- [x] **BD ownership** if Scenario C selected. N/A under Scenario B;
+      revisit only if Scenario C ever activates.
+- [x] **MCP hosting target** (Cloud Run). Resolved 2026-05-18; matches
+      SmartCity OS operational posture.
+- [x] **Tool surface trim** (drop `query_jurisdiction` parcel path;
+      rename `get_permit_requirements` to `search_permit_atoms`).
+      Resolved 2026-05-18; parcel atoms are Bump 2, out of v1 scope.
+- [x] **Logging destination** (Postgres index per ADR-010 + GCS raw).
+      Resolved 2026-05-18; keeps MCP traffic data joinable to
+      atom-graph data.
+- [x] **MCP backend coupling route** (Route A wraps `hauska-engine`
       retrieval-api now; no Route B needed since we're not waiting for
-      legacy factor-out)
-- [ ] **Key issuance** (manual at v1 via admin endpoint)
-- [ ] **Pipeline orchestration substrate** (Postgres job table +
-      Cloud Run jobs)
-- [ ] **OCR provider** for raw-PDF jurisdictions (Claude vision primary,
-      Tesseract fallback)
-- [ ] **Quality bar threshold** (49's 90% top-3 / 100% section-num /
-      95% cross-ref defaults; recalibrate after first 10 jurisdictions)
-- [ ] **Curated query authoring** (LLM-generate from TOC, human-review
-      first 20 jurisdictions, then trust eval harness)
-- [ ] **Pre-publish review gate** (human review for first 20
-      jurisdictions; eval-harness-only after)
-- [ ] **TX-first prioritization list** (25-city list — confirm or edit;
-      starter list in §Stream 1D below)
-- [ ] **Cost budget for batch ingest** ($1–2K LLM + 60–100 person-hours
-      for first 30 cities; source from where?)
-- [ ] **MCP public launch domain** (`mcp.hauska.dev` or alternative)
-- [ ] **`hauska.dev` domain status** (registered? if not, register)
+      legacy factor-out). Resolved 2026-05-18 as Route A.
+- [x] **Key issuance** (manual at v1 via admin endpoint). Resolved
+      2026-05-18; auto-issuance lands at Phase 8.
+- [x] **Pipeline orchestration substrate** (Postgres job table +
+      Cloud Run jobs). Resolved 2026-05-18; simplest viable option;
+      revisit if scale forces a workflow framework.
+- [x] **OCR provider** for raw-PDF jurisdictions (Claude vision primary,
+      Tesseract fallback). Resolved 2026-05-18; raw PDF is P2-P3 per
+      [49 §B.1](49_code_ingestion_pipeline.md), so this is a backstop.
+- [x] **Quality bar threshold** (49's 90% top-3 / 100% section-num /
+      95% cross-ref defaults; recalibrate after first 10 jurisdictions).
+      Resolved 2026-05-18; recalibration check after batch-10 ingest.
+- [x] **Curated query authoring** (LLM-generate from TOC, human-review
+      first 20 jurisdictions, then trust eval harness). Resolved
+      2026-05-18; Bastrop UDC stays Sylvia/Jaime reviewer-zero
+      curation.
+- [x] **Pre-publish review gate** (human review for first 20
+      jurisdictions; eval-harness-only after). Resolved 2026-05-18;
+      pairs with curated query authoring.
+- [x] **TX-first prioritization list** (25-city list — confirm or edit;
+      starter list in §Stream 1D below). Resolved 2026-05-18; all 25
+      cities approved as listed at §Stream 1D below; M9 Tier-3 slot
+      stays "Nick to name" deferred to batch-time.
+- [x] **Cost budget for batch ingest** ($1–2K LLM + 60–100 person-hours
+      for first 30 cities; source from where?). Resolved 2026-05-18;
+      funded from Hauska Inc. equity per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md);
+      3-county hard-kill checkpoint at Stream 1D enforces cost ceiling.
+- [x] **MCP public launch domain** (`mcp.hauska.dev` or alternative).
+      Resolved 2026-05-18 as `mcp.hauska.dev`; pending `hauska.dev`
+      registration.
+- [x] **`hauska.dev` domain status** (registered? if not, register).
+      Decision logged 2026-05-18; not yet registered; Nick action item
+      before Phase 5 deploy or Phase 7 launch per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md).
+
+All sixteen Phase 0 items resolved 2026-05-18. Twelve adopted
+inline-recommended defaults from 50 and 51; three were binary calls
+landed in this session (cost source from Hauska Inc. equity;
+`hauska.dev` registration deferred to Nick; 25-city list approved as
+listed); revenue model was already resolved 2026-05-16. Combined
+decision record at [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md).
+Stream-level dispatch across Tracks 1A-1D and 2A-2D now unblocked;
+cc-agent assignments pending in [`00_current_state.md`](00_current_state.md)
+agent-fleet section.
 
 ### Bump 1 atom contract coordination (sync point — load-bearing)
 
@@ -744,3 +776,15 @@ See [Cross-cutting work — Phase 0](#phase-0--decisions) above.
   to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md).
   Atom contract is Hauska commercial substrate, peer to the Hauska SDK.
   `related` field extended to ADR-018. No sprint-plan content changes.
+- **2026-05-18 (Phase 0 close).** All sixteen Phase 0 items resolved
+  per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md).
+  Twelve items adopted inline-recommended defaults from 50 and 51;
+  three new binary calls landed (cost budget from Hauska Inc. equity
+  per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md);
+  `hauska.dev` registration deferred to Nick as pre-launch action;
+  25-city TX-first list approved as listed with Tier-3 M9 slot
+  deferred to batch-time); revenue model was already resolved
+  2026-05-16. Stream-level dispatch across Tracks 1A-1D and 2A-2D now
+  unblocked. No engineering content changed; the close ratifies the
+  v1 sprint scope and surfaces one open Nick action (`hauska.dev`
+  registration).

@@ -104,6 +104,8 @@ SDK payment substrate principle: committed per `14_pricing_framework.md`; implem
 
 Bizops 70-band designed 2026-05-18. Five canonical docs (70 overview, 71 pipeline, 72 Hauska Inc. operations, 73 partnerships, 74 commercial agreements) plus `_prospects/` subdirectory. Three Mox artifacts relocated from root to `_prospects/mox/`. The 70-band tracks operational state; legal and corporate execution still route to Nick per "What is out of scope" below.
 
+Substrate v1 sprint Phase 0 closed 2026-05-18 per `_decisions/2026-05-18_substrate_v1_phase_0_close.md`. All sixteen items in `51_substrate_v1_sprint.md` Phase 0 resolved (twelve ratifications of 50/51 inline defaults; three binary calls landed this session; revenue model resolved prior 2026-05-16 as Scenario B). Cost budget funded from Hauska Inc. equity per `72_hauska_inc_operations.md` Capital allocation section; `mcp.hauska.dev` is v1 launch subdomain pending `hauska.dev` registration. Stream-level dispatch across Tracks 1A-1D and 2A-2D unblocked.
+
 ## What is open
 
 Tier model for per-product MCP surfaces (decision pending before MCP retrofits begin; separate session from bizops).
@@ -111,6 +113,8 @@ Tier model for per-product MCP surfaces (decision pending before MCP retrofits b
 Mox CEO meeting timing (gates Mox pilot reframing urgency; tracked in `71_pipeline.md`).
 
 IP attorney memo and Tech E and O insurance routing dates (tracked in `72_hauska_inc_operations.md`; gate `14_pricing_framework.md` Open-question #5 regulatory posture).
+
+`hauska.dev` domain registration (Nick action). Gates `51_substrate_v1_sprint.md` Phase 5 deploy and Phase 7 public launch per `72_hauska_inc_operations.md` Domains section.
 
 ## What is out of scope
 

@@ -27,6 +27,14 @@ owner: nick
 | **Operating bank account** | Open / not yet established | Gates [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 (regulatory posture). Resolves money-transmitter posture work alongside the IP attorney memo. Routing date TBD per CLAUDE.md "What is open." |
 | **Capital structure** | Not tracked in this band | If structural decisions emerge, log here; legal execution stays with Nick per CLAUDE.md "What is out of scope." |
 
+## Capital allocation
+
+State of declared capital allocations against Hauska Inc. operations.
+
+| Item | Status | Notes |
+|---|---|---|
+| **Substrate v1 first-30-cities ingest budget** | Allocated 2026-05-18 | $1-2K LLM compute + 60-100 person-hours per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close. Funded from Hauska Inc. equity per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md). Cost ceiling enforced by the cost-per-jurisdiction structural commitment ($200 compute + 1 hour human review per jurisdiction) and the 3-county hard-kill checkpoint at [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Stream 1D. |
+
 ## IP attorney memo
 
 | Item | Status | Notes |
@@ -57,6 +65,14 @@ State carried here for cross-band visibility; the substrate decisions are in [`1
 | **Fiat (Stripe Connect)** | v1 candidate pinned 2026-05-18 | Per [`14_pricing_framework.md`](14_pricing_framework.md) close-the-loop pass. Implementation deferred; revisit trigger is first paid Layer 2 call from a fiat-preferring counterparty pulling Stripe Connect implementation off the queue. |
 | **Crypto (USDC on Base / Ethereum / Polygon)** | Built and tested | Per `@hauska-sdk/payment` v0.1.0; 56 tests green; on-chain verification via ethers v6. Circle fiat checkout URL at `packages/payment/src/payment-request.ts:253` is the sole production code TODO blocking the Circle-checkout fiat half. |
 
+## Domains
+
+Hauska-namespaced internet domains required for production substrate.
+
+| Domain | Status | Notes |
+|---|---|---|
+| **`hauska.dev`** | Open / Nick action | Registration not yet completed. Gates [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 5 (deploy) and Phase 7 (public launch). `mcp.hauska.dev` is the planned v1 MCP launch subdomain per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md). |
+
 ## Cross-references
 
 - [`14_pricing_framework.md`](14_pricing_framework.md) â regulatory-posture and settlement-rail decisions; this doc tracks state, 14 owns the framework.
@@ -68,3 +84,4 @@ State carried here for cross-band visibility; the substrate decisions are in [`1
 ## Revision history
 
 - **2026-05-18 (origin):** doc seeded as part of the 70-band design session. Entity-separation status from CLAUDE.md; banking / IP memo / Tech E&O insurance status from CLAUDE.md "What is open"; regulatory posture and settlement rails from [`14_pricing_framework.md`](14_pricing_framework.md) close-the-loop pass landed same session.
+- **2026-05-18 (Phase 0 close):** Capital allocation section added (Hauska Inc. equity funds substrate v1 first-30-cities ingest budget per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md); cost ceiling enforced by the structural commitment and the 3-county hard-kill checkpoint at [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Stream 1D). Domains section added (`hauska.dev` open / Nick action; gates Phase 5 deploy and Phase 7 launch; `mcp.hauska.dev` is the v1 MCP subdomain).
