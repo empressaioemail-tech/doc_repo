@@ -120,11 +120,11 @@ follow-up outreach converts them.
 
 ## Repo placement and migration status
 
-The Hauska MCP Server lives in a dedicated `empressaioemail-tech/hauska-mcp-server` GitHub repo per [Decision 2026-05-18](_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md). The repo follows the same `empressaioemail-tech` org convention used for `hauska-sdk` and the planned `hauska-engine` per [ADR-008](80_adrs/adr_008_engine_factor_out.md), and migrates with the rest of the Hauska org content if the Hauska Inc. GitHub org migration completes per the P3 roadmap entry in ADR-008.
+The Hauska MCP Server lives at [`https://github.com/empressaioemail-tech/hauska-mcp-server`](https://github.com/empressaioemail-tech/hauska-mcp-server). Repo created and bootstrapped 2026-05-18 per [Decision 2026-05-18](_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md). Bootstrap commit `d00586b` on top of GitHub's initial commit imports the v1 starter framework: five tools scaffolded (`search_atoms`, `get_atom`, `query_jurisdiction`, `get_permit_requirements`, `list_jurisdictions`) via `@modelcontextprotocol/sdk`; Streamable HTTP transport; Express host; Zod validation; API-key auth stub; structured logging stub. The repo follows the same `empressaioemail-tech` org convention used for `hauska-sdk` and the planned `hauska-engine` per [ADR-008](80_adrs/adr_008_engine_factor_out.md); the repo migrates with the rest of the Hauska org content if the Hauska Inc. GitHub org migration completes per the P3 roadmap entry in ADR-008.
 
-Starter implementation currently lives in this doc_repo at [`MCP Server/`](MCP%20Server/), gitignored locally. Migration steps: (1) Nick creates the dedicated repo (`gh repo create empressaioemail-tech/hauska-mcp-server --private` or web UI); (2) agent migrates the four starter files (auth.ts, hauska-client.ts, index.ts, tools.ts) plus package.json into the new repo; (3) agent deletes the local files in doc_repo and updates the scaffold-location pointer in the [References](#cross-references) section below to the new repo URL.
+The MCP server depends on the atom contract directly via `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md), not transitively through the Hauska SDK. The SDK is consumed only for paid-tier surfaces that require VDA wrapping or revenue routing per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). No backend connection yet; `hauska-client.ts` in the repo is an interface stub awaiting M2-C `@hauska/atom-contract` publication and atom-query-layer reachability per Sprint 51 Phase 1.
 
-The MCP server depends on the atom contract directly via `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md), not transitively through the Hauska SDK. The SDK is consumed only for paid-tier surfaces that require VDA wrapping or revenue routing per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md).
+The local starter files previously at `doc_repo/MCP Server/` were deleted post-migration; the canonical starter now lives in the dedicated repo. The doc_repo `.gitignore` entry for `MCP Server/` is preserved as a guard against accidental recreation.
 
 ## Sprint phasing
 
@@ -475,14 +475,13 @@ Seven Phase 0 decisions. Decision 1 resolved 2026-05-16; six remain.
   — brand placement; MCP server is Hauska-layer
 - [`80_adrs/adr_012_atom_export_format.md`](80_adrs/adr_012_atom_export_format.md)
   — `.atompack` is the offline complement to MCP's live-query surface
-- Scaffold location (migrating): [`MCP Server/`](MCP%20Server/) currently
-  gitignored in doc_repo; migrating to dedicated
-  `empressaioemail-tech/hauska-mcp-server` repo per
+- Repo: [`https://github.com/empressaioemail-tech/hauska-mcp-server`](https://github.com/empressaioemail-tech/hauska-mcp-server)
+  — created and bootstrapped 2026-05-18 (bootstrap commit `d00586b`) per
   [Decision 2026-05-18](_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md).
-  Pointer will be replaced with the new repo URL once Nick creates the repo.
 
 ## Revision history
 
+- **2026-05-18 (post-session-close).** MCP server repo created and bootstrapped at [`https://github.com/empressaioemail-tech/hauska-mcp-server`](https://github.com/empressaioemail-tech/hauska-mcp-server) (bootstrap commit `d00586b`). Five tools scaffolded; Streamable HTTP transport; Express host; Zod validation; auth and logging stubs. Local starter files at `doc_repo/MCP Server/` deleted; `.gitignore` entry preserved as guard. Repo-placement section flipped from "migrating" to "lives at"; scaffold-location pointer in Cross-references replaced with the live repo URL. Companion to the same-day rename of the atom-contract M2-C target to `@hauska/atom-contract` in `legacy-design-tools/lib/empressa-atom/README.md` (PR #25, squash-merged to main).
 - **2026-05-18.** Repo-placement section added per [Decision 2026-05-18](_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md): MCP server starter migrates from `doc_repo/MCP Server/` to dedicated `empressaioemail-tech/hauska-mcp-server` repo. Bump 1 atom-package reference updated to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md). Scaffold-location pointer updated to note migration in flight; will be replaced with new repo URL once Nick creates the repo.
 - **2026-05-16.** Phase 0 decision #1 (revenue model) resolved as Scenario B (self-serve paid tier) during the 2026-05-16 per-product MCP surface tier model session. Decision record at [`_decisions/2026-05-16_hauska_mcp_server_scenario_b.md`](_decisions/2026-05-16_hauska_mcp_server_scenario_b.md); tier model context in [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md). Open decisions list reduced from seven to six. Phase 8 (self-serve paid tier) moves from conditional to in-scope.
 - **2026-05-15 (origin).** Sprint drafted from MCP server scaffold

@@ -112,8 +112,6 @@ Mox CEO meeting timing (gates Mox pilot reframing urgency).
 
 IP attorney memo and Tech E and O insurance routing dates.
 
-MCP server code migration. Ratified 2026-05-18 per `_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md`. Target repo: `empressaioemail-tech/hauska-mcp-server`. The `MCP Server/` directory in this repo contains a starter implementation (auth.ts, hauska-client.ts, index.ts, tools.ts, package.json), currently `.gitignore`d locally. Action: Nick creates the repo (`gh repo create empressaioemail-tech/hauska-mcp-server --private` or via web UI); agent then deletes the local files, updates the scaffold-location pointer in `50_hauska_mcp_server.md`, and surfaces the new repo URL in `00_current_state.md`. MCP server consumes `@hauska/atom-contract` directly per ADR-018.
-
 Mox docs at root (`mox_executive_summary_v2.md`, `mox_prospect_briefing.md`, `mox_prospect_project_instructions.md`) are committed at root as portable artifacts pending 70-band bizops design; they relocate into proper slots once the bizops session lands.
 
 ## What is out of scope
