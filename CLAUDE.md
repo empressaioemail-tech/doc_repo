@@ -100,19 +100,17 @@ Q5 intent atoms: purpose field on procedure-execution per ADR-013 for v1; ADR-01
 
 Q6 access control: `80_adrs/adr_017_atom_access_control.md` (accepted 2026-05-16; dependency for ECI atomization).
 
-SDK payment substrate principle: committed per `14_pricing_framework.md`; implementation phased.
+SDK payment substrate principle: committed per `14_pricing_framework.md`; implementation phased. **Take rate, pricing-model composition, and v1 fiat-rail (Stripe Connect) settled 2026-05-18 in the 14_pricing_framework close-the-loop pass.** Crypto rail (USDC on Base/ETH/Polygon) already built in `@hauska-sdk/payment` v0.1.0.
+
+Bizops 70-band designed 2026-05-18. Five canonical docs (70 overview, 71 pipeline, 72 Hauska Inc. operations, 73 partnerships, 74 commercial agreements) plus `_prospects/` subdirectory. Three Mox artifacts relocated from root to `_prospects/mox/`. The 70-band tracks operational state; legal and corporate execution still route to Nick per "What is out of scope" below.
 
 ## What is open
 
-Bizops 70-band structural design (dedicated session scheduled; mox_*.md docs at root re-file into proper slots once 70-band exists).
-
 Tier model for per-product MCP surfaces (decision pending before MCP retrofits begin; separate session from bizops).
 
-Mox CEO meeting timing (gates Mox pilot reframing urgency).
+Mox CEO meeting timing (gates Mox pilot reframing urgency; tracked in `71_pipeline.md`).
 
-IP attorney memo and Tech E and O insurance routing dates.
-
-Mox docs at root (`mox_executive_summary_v2.md`, `mox_prospect_briefing.md`, `mox_prospect_project_instructions.md`) are committed at root as portable artifacts pending 70-band bizops design; they relocate into proper slots once the bizops session lands.
+IP attorney memo and Tech E and O insurance routing dates (tracked in `72_hauska_inc_operations.md`; gate `14_pricing_framework.md` Open-question #5 regulatory posture).
 
 ## What is out of scope
 

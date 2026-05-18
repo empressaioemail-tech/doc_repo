@@ -272,7 +272,7 @@ Decisions awaiting external signal — customer conversations, market data, regu
 - **Services vs. platform revenue on Bastrop** — *Valerie + Nick*.
 - **Plan review module-or-bundle** — *Nick + Valerie*. Resolves before Bastrop's first plan-review billing event.
 - **Tenth-deal economics** — *Valerie*.
-- **`@hauska/atom-contract` commercial posture revisit trigger** — *Nick*. (Package renamed from `@empressaio/atom` 2026-05-18 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md); atom contract is Hauska commercial substrate, peer to the Hauska SDK.)
+- **`@hauska/atom-contract` commercial posture revisit** — *Nick*. Trigger: revisit when (a) third-party agent builders outside the Empressa product surfaces request consumption, OR (b) a paid Layer 2 surface ships first revenue — whichever comes first. (Settled 2026-05-18 with the 14_pricing_framework close-the-loop pass; package renamed from `@empressaio/atom` 2026-05-18 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md); atom contract is Hauska commercial substrate, peer to the Hauska SDK.)
 
 ### Commercial — Hauska Inc.
 
