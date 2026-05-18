@@ -114,8 +114,6 @@ Mox CEO meeting timing (gates Mox pilot reframing urgency; tracked in `71_pipeli
 
 IP attorney memo and Tech E and O insurance routing dates (tracked in `72_hauska_inc_operations.md`; gate `14_pricing_framework.md` Open-question #5 regulatory posture).
 
-`hauska.dev` domain registration (Nick action). Gates `51_substrate_v1_sprint.md` Phase 5 deploy and Phase 7 public launch per `72_hauska_inc_operations.md` Domains section.
-
 ## What is out of scope
 
 Real estate development at Jarrell (separate operation).

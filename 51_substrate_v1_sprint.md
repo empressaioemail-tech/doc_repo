@@ -144,11 +144,11 @@ parens.
       funded from Hauska Inc. equity per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md);
       3-county hard-kill checkpoint at Stream 1D enforces cost ceiling.
 - [x] **MCP public launch domain** (`mcp.hauska.dev` or alternative).
-      Resolved 2026-05-18 as `mcp.hauska.dev`; pending `hauska.dev`
-      registration.
+      Resolved 2026-05-18 as `mcp.hauska.dev`; `hauska.dev` registered
+      same day.
 - [x] **`hauska.dev` domain status** (registered? if not, register).
-      Decision logged 2026-05-18; not yet registered; Nick action item
-      before Phase 5 deploy or Phase 7 launch per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md).
+      Resolved 2026-05-18; registered same day. Per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md)
+      Domains section.
 
 All sixteen Phase 0 items resolved 2026-05-18. Twelve adopted
 inline-recommended defaults from 50 and 51; three were binary calls

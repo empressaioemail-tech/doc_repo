@@ -71,7 +71,7 @@ Hauska-namespaced internet domains required for production substrate.
 
 | Domain | Status | Notes |
 |---|---|---|
-| **`hauska.dev`** | Open / Nick action | Registration not yet completed. Gates [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 5 (deploy) and Phase 7 (public launch). `mcp.hauska.dev` is the planned v1 MCP launch subdomain per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md). |
+| **`hauska.dev`** | Registered 2026-05-18 | Domain secured by Nick. Unblocks [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 5 (deploy) and Phase 7 (public launch) at the domain layer. `mcp.hauska.dev` is the v1 MCP launch subdomain per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md). |
 
 ## Cross-references
 
