@@ -106,9 +106,11 @@ Bizops 70-band designed 2026-05-18. Five canonical docs (70 overview, 71 pipelin
 
 Substrate v1 sprint Phase 0 closed 2026-05-18 per `_decisions/2026-05-18_substrate_v1_phase_0_close.md`. All sixteen items in `51_substrate_v1_sprint.md` Phase 0 resolved (twelve ratifications of 50/51 inline defaults; three binary calls landed this session; revenue model resolved prior 2026-05-16 as Scenario B). Cost budget funded from Hauska Inc. equity per `72_hauska_inc_operations.md` Capital allocation section; `mcp.hauska.dev` is v1 launch subdomain pending `hauska.dev` registration. Stream-level dispatch across Tracks 1A-1D and 2A-2D unblocked.
 
-## What is open
+Substrate v1 sprint dispatch allocated 2026-05-18 per `_decisions/2026-05-18_substrate_v1_dispatch_allocation.md`: four cc-agents doubled across the eight parallel streams (cc-agent-1: 1A+2A input boundaries; cc-agent-2: 1B+2B schema and access control; cc-agent-3: 1C+2C data layer and telemetry; cc-agent-4: 1D+2D quality and production posture). Planner retains Bump 1 atom contract coordination plus sync points 4 and 5 (launch gates). Pasteable kickoff prompts at `_dispatches/2026-05-18_cc-agent-*.md`.
 
-Tier model for per-product MCP surfaces (decision pending before MCP retrofits begin; separate session from bizops).
+ECI atomization sprint kickoff 2026-05-18 per `_decisions/2026-05-18_eci_registry_naming.md`. Package name `@empressaio/atom-internal` confirmed; dedicated repo `empressaioemail-tech/empressa-atom-internal` decided. Sprint plan at `60a_eci_atomization_sprint.md`. P0 (decisions) and P1 (registry scaffold against workspace-private contract path-pin) and P2 (backfill) are pre-M2-C feasible; P3 (M2-C sync plus internal MCP wiring) gates on cc-agent-2's Stream 1B publishing `packages/atoms/` plus planner-coordinated Bump 1 publishing `@hauska/atom-contract@1.0.0`.
+
+## What is open
 
 Mox CEO meeting timing (gates Mox pilot reframing urgency; tracked in `71_pipeline.md`).
 

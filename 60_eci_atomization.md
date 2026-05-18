@@ -1,10 +1,10 @@
 ---
 id: 60_eci_atomization
-title: ECI atomization — internal atom types draft against ADR-001
-status: draft
-last_updated: 2026-05-16
+title: ECI atomization — internal atom types spec against ADR-001
+status: active
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [11_roadmap, 18_stakeholder_graph, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_015_actor_atoms, adr_017_atom_access_control]
+related: [11_roadmap, 18_stakeholder_graph, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60a_eci_atomization_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer, _decisions/2026-05-18_eci_registry_naming]
 owner: nick
 ---
 
@@ -63,8 +63,9 @@ Confirmed per Nick's 2026-05-15 Q1 decision. Briefly:
   Bump 1 / 2 / 3 on `@empressaio/atom` — different package, different
   coordination set, much lighter coordination tax.
 - **Sprint placement.** Own sprint, post-[`51`](51_substrate_v1_sprint.md)
-  v1 ship. Likely `60a_eci_atomization_sprint.md` when scoped. Scope:
-  ECI atom contract alignment + Hauska Engine wiring + Hauska MCP
+  v1 ship. Sprint plan at [`60a_eci_atomization_sprint.md`](60a_eci_atomization_sprint.md)
+  per [`_decisions/2026-05-18_eci_registry_naming.md`](_decisions/2026-05-18_eci_registry_naming.md).
+  Scope: ECI atom contract alignment + Hauska Engine wiring + Hauska MCP
   Server as internal-read surface.
 - **This doc.** Spec only — no code. Settles design before the sprint
   kicks off; gives a concrete artifact to reference when ECI sprint
@@ -370,8 +371,10 @@ ECI MCP is non-commercial per [`29_mcp_surface_tier_model.md`](29_mcp_surface_ti
 
 Items deferred to the future ECI atomization sprint scoping:
 
-- **ECI sprint slot.** Likely `60a_eci_atomization_sprint.md`;
-  confirm when sprint is scoped.
+- ~~**ECI sprint slot.** Likely `60a_eci_atomization_sprint.md`;
+  confirm when sprint is scoped.~~ **Resolved 2026-05-18:** sprint plan
+  lives at [`60a_eci_atomization_sprint.md`](60a_eci_atomization_sprint.md);
+  decisions at [`_decisions/2026-05-18_eci_registry_naming.md`](_decisions/2026-05-18_eci_registry_naming.md).
 - **Aggregation cadence for `daily-update`** (real-time vs scheduled).
 - **Vector index for `knowledge-chunk`** — share infrastructure with
   `hauska-engine` Stream 1C's pgvector setup, or separate instance?
@@ -417,6 +420,7 @@ Items deferred to the future ECI atomization sprint scoping:
 
 ## Revision history
 
+- **2026-05-18 (sprint kickoff).** Sprint plan landed at [`60a_eci_atomization_sprint.md`](60a_eci_atomization_sprint.md) per [`_decisions/2026-05-18_eci_registry_naming.md`](_decisions/2026-05-18_eci_registry_naming.md). Package name `@empressaio/atom-internal` confirmed; dedicated repo `empressaioemail-tech/empressa-atom-internal` decided. Routing decisions Sprint placement section flipped from "Likely 60a when scoped" to definitive pointer. Open questions ECI sprint slot resolved. `related` field gains 60a plus ADR-013, ADR-018, decision record. Status flipped from draft to active (60 is now the canonical spec; 60a is the executable plan). No atom-type-spec content changed in 60 body; the sweep was status-and-routing plus the new revision-history entry.
 - **2026-05-16.** Sprint dependencies updated per Q4/Q6 resolution session ([`_sessions/2026-05-16_q4_q5_q6_master_roadmap_resolution_claude_ai_strategic.md`](_sessions/2026-05-16_q4_q5_q6_master_roadmap_resolution_claude_ai_strategic.md)). [ADR-015 actor atoms](80_adrs/adr_015_actor_atoms.md) and [ADR-017 atom access control](80_adrs/adr_017_atom_access_control.md) added as required dependencies. `team_members` mapping updated from `person` atom shape to `actor-record` with `actorType: person` per ADR-015. The prior `person` atom shape Open question is resolved by ADR-015. New "Sprint dependencies" section added.
 - **2026-05-15 (origin).** Draft spec'd from catalog roadmap agent's
   Q1 proposal + Nick's routing decisions (separate
