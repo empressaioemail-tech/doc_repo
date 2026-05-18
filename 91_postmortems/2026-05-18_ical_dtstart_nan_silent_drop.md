@@ -30,7 +30,8 @@ Pre-2026-05-15: latent. The synthetic-fallback path (`generateSchedule()`, trigg
 - 2026-05-15T21:29Z onward. Microsoft Exchange (BeWith) polls every ~6h, receives HTTP 200, silently drops all 25 VEVENTs during parse.
 - 2026-05-18T09:49 local. Jaime emails Bar / Nick / Shayna reporting events stopped coming through.
 - 2026-05-18T15:00Z range. Cloud Shell diagnostics + live `.ics` fetch surface the DTSTART/DTEND NaN pattern.
-- 2026-05-18T evening. Smartcity-os PR #18 (`fix/ical-dtstart-dtend-nan`, commit `7a6e9ce`) merges to main. Deploy via canonical canary runbook pending.
+- 2026-05-18T evening. Smartcity-os PR #18 (`fix/ical-dtstart-dtend-nan`, commit `7a6e9ce`) merges to main.
+- 2026-05-18T16:47Z. PR #18 deployed via canonical canary runbook. Cloud Build `9d0626f6` SUCCESS in ~3min; canary revision `smartcity-api-00101-nir` at tag `ical-nan-fix-20260518` at 0% traffic; smoke probe via real tenant feed key returned HTTP 200, 17,799 bytes, content-type `text/calendar`, real day-of-month DTSTART (e.g. `20260609T183000`), DTEND = DTSTART + 2h, zero NaN occurrences, 25 VEVENTs; traffic shifted to canary via `--to-tags ical-nan-fix-20260518=100`; production verify against `smartcityos.io/api/calendar/events.ics` returned identical shape (HTTP 200, 17,799 bytes, zero NaN); post-deploy backup tag `backup/post-ical-nan-fix-smartcity-api-00101-nir` pushed at SHA `b077804`.
 
 ## Root cause
 
@@ -60,7 +61,7 @@ Recon dispatched from local Windows could not access the auth key, so its body i
 
 Smartcity-os repo (assigned to cc-agent / Nick):
 
-1. Deploy PR #18 via canonical canary runbook with post-shift verification that DTSTART renders real day-of-month for at least the next 3 future events.
+1. **Done 2026-05-18.** PR #18 deployed via canonical canary runbook to revision `smartcity-api-00101-nir` at tag `ical-nan-fix-20260518`, 100% traffic. Both canary and production probes returned HTTP 200, real day-of-month values in DTSTART (`20260609T183000`, `20260601T180000`, `20260601T170000`, etc.), DTEND = DTSTART + 2h, zero NaN occurrences, 25 VEVENTs as expected. Pre/post backup tags pushed at `b077804`.
 2. Add an end-to-end iCal smoke test to the deploy verification checklist in the canary runbook: authenticated fetch of `/api/calendar/events.ics` followed by per-field structural assertions (no NaN, DTSTART parses, DTEND parses, VEVENT count matches the JSON endpoint).
 3. Audit Cloud Run env bindings against code references. `CALENDAR_API_KEY` is read by `requireCalendarApiKey` but unbound in production; any other env vars in the same shape should surface and either be bound or removed from code.
 4. Schedule a single-pass review of every `Date`-formatting site in the server codebase for the same split-on-dash-without-stripping-time pattern.

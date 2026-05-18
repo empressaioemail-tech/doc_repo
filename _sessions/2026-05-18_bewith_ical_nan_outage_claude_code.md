@@ -45,7 +45,7 @@ The cutover env-var silent-drops bucket (Fire 2) missed `CALENDAR_API_KEY`. Toda
 
 ## Outstanding from this session
 
-Deploy PR #18 (`fix/ical-dtstart-dtend-nan`, commit `7a6e9ce`) via canonical canary runbook at `90_runbooks/cloud_run_canary_deploy.md`. Verify post-deploy with the same `curl + grep DTSTART` check that surfaced the bug; confirm `DTSTART;TZID=America/Chicago:20260609T183000` shape (real day-of-month, no NaN anywhere). Cleanup the orphan tag this canary adds.
+~~Deploy PR #18 (`fix/ical-dtstart-dtend-nan`, commit `7a6e9ce`) via canonical canary runbook at `90_runbooks/cloud_run_canary_deploy.md`. Verify post-deploy with the same `curl + grep DTSTART` check that surfaced the bug; confirm `DTSTART;TZID=America/Chicago:20260609T183000` shape (real day-of-month, no NaN anywhere).~~ **Done 2026-05-18 (post-session-close follow-on).** Deployed to revision `smartcity-api-00101-nir` at tag `ical-nan-fix-20260518` (Cloud Build `9d0626f6` SUCCESS in ~3min; canary smoke probe HTTP 200, real day-of-month DTSTART, DTEND = DTSTART + 2h, zero NaN, 25 VEVENTs; production verify identical; pre/post backup tags pushed at `b077804`). Six tags now on the service; orphan-tag cleanup queued at P3 hygiene per `00_current_state.md` Cloud Run traffic-tag audit entry.
 
 Email Jaime, Bar, and Shayna confirming root cause was a server-side iCal date-formatting bug (not credentials), fix deployed, subscription should populate on next poll. Send only after deploy is verified.
 
