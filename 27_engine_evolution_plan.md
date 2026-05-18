@@ -2,9 +2,9 @@
 id: 27_engine_evolution_plan
 title: Engine evolution plan and atom registry expansion
 status: active
-last_updated: 2026-05-12
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 40_design_accelerator, 47_codex_plan_review, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 46_smartcity_parcel_intelligence, 11a_bastrop_live_roadmap, 08_tiered_access_model, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format]
+related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 40_design_accelerator, 47_codex_plan_review, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 46_smartcity_parcel_intelligence, 11a_bastrop_live_roadmap, 08_tiered_access_model, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
 owner: nick
 ---
 
@@ -223,7 +223,7 @@ Atoms supporting the Parcel Intelligence capability in SmartCity OS Operations D
 
 ### Contract version bump
 
-Adding the above atoms to the registry triggers an `@empressaio/atom` contract version bump. Per [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md), this requires coordinated rollout across:
+Adding the above atoms to the registry triggers an `@hauska/atom-contract` contract version bump. Per [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md), this requires coordinated rollout across:
 
 - `legacy-design-tools` api-server (engine + atom validation)
 - `smartcity-os` api-server (consumer, when CDX-1b lands)
@@ -546,3 +546,4 @@ POST-FACTOR-OUT (in hauska-engine):
 
 - **2026-05-11 (origin):** drafted during comprehensive planning session. Six streams (A–F) plus brand migration (Stream G, added in same-session audit pass). Establishes shared engine work stream + atom registry expansion. Gating dependencies and verification criteria. Companion to `42_design_accelerator_program_plan.md` and `48_codex_program_plan.md`.
 - **2026-05-12 (velocity-through-2026 brainstorm absorption):** Sprint-prep update absorbing the 2026-05-12 session outputs (atom-substrate ADRs 010 / 011 / 012, `49_code_ingestion_pipeline.md`, `46_smartcity_parcel_intelligence.md`, `08_tiered_access_model.md`). **Stream A** target module structure adds `storage/` (IPFS pinning adapter + Postgres index access + hot cache per ADR-010) and `identity/` (DID resolver + IPNS + key custody hooks per ADR-011); verification criterion updated. **Stream B** atom roster grows by 11 net-new types: 6 code-pipeline atoms (`code-section`, `code-definition`, `code-amendment`, `code-cross-reference`, `code-edition`, `jurisdiction-corpus`) sourced from 49, and 5 Parcel Intelligence atoms (`parcel-record`, `constraint-overlay`, `infrastructure-proximity`, `permit-precedent`, `pre-application-input`) sourced from 46. `parcel-briefing` skipped (already in 19-atom registry); `neighboring-context` overlap with `constraint-overlay` / `infrastructure-proximity` flagged for dedup. Renderer obligation per ADR-012 noted on Contract version bump. Version bump strategy split into two bumps (Bump 1: A.1-window atoms incl. adjudication-context; Bump 2: parcel-intelligence atoms when 46 sequencing resolves). New **Compounding-context atoms** section appends three substrate atom specs for Bastrop-live capture: `adjudication-record`, `per-reviewer-pattern`, `comparable-project-precedent`. Three round-trip-to-Nick decisions surfaced (anonymization minimum-viable scope; `reasoningProse` capture UX; `per-reviewer-learning` ↔ `per-reviewer-pattern` consolidation). Companion 49 / 46 / 08 / 11a remain authoritative on their domain; 27 absorbs the atom-registry and engine-module implications.
+- **2026-05-18 (ADR-018 doc-set sweep):** Contract-version-bump reference (Stream B) renamed from `@empressaio/atom` to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md). Atom contract is Hauska commercial substrate, peer to the Hauska SDK. `related` field extended to ADR-018. No engineering-content changes.

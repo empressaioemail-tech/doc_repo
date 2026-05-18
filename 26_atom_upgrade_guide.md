@@ -1,13 +1,13 @@
 ---
 id: 26_atom_upgrade_guide
-title: "@empressaio/atom â Upgrade & Consumption Guide"
+title: "@hauska/atom-contract â Upgrade & Consumption Guide"
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [adr_001_atom_architecture, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator]
+related: [adr_001_atom_architecture, adr_018_atom_contract_substrate_layer, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator]
 ---
 
-# `@empressaio/atom` â Upgrade & Consumption Guide
+# `@hauska/atom-contract` â Upgrade & Consumption Guide
 
 > **Adoption guide.** Operational counterpart to the architecture
 > spec. The contract is described in
@@ -16,12 +16,14 @@ related: [adr_001_atom_architecture, 25_atom_architecture_reference, 30_smartcit
 > [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md);
 > this guide is the *how-to* for adopting it.
 
-**Version:** 2026.04 v1 (migrated to docs repo 2026-05-05)
-**Owner:** Empressa (Legacy Group ATX LLC product brand).
-**Intended audience:** Engineers adopting `@empressaio/atom` for the
+**Version:** 2026.04 v1 (migrated to docs repo 2026-05-05; package rename 2026-05-18 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md))
+**Owner:** Hauska Inc. (commercial substrate, peer to the Hauska SDK; brand placement per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md)).
+**Intended audience:** Engineers adopting `@hauska/atom-contract` for the
 first time (new vertical product, or existing product migrating onto
-it) and engineers consuming a new `@empressaio/atom` version in an
-existing product.
+it) and engineers consuming a new `@hauska/atom-contract` version in an
+existing product. (Renamed from `@empressaio/atom` on 2026-05-18 per
+ADR-018; currently staged as workspace-private `@workspace/empressa-atom`
+in legacy-design-tools.)
 **Consolidated from:** `smartcity-atom-upgrade-guide.md` (SmartCity-
 specific migration steps preserved), plus new content for
 onboarding from scratch.
@@ -40,7 +42,7 @@ Six sections:
 1. **When to use this guide** â four scenarios
 2. **First-time adoption** â new vertical app onboarding onto atoms
 3. **SmartCity OS migration path** â specific to the M3 Compass V4 cutover
-4. **Version upgrade protocol** â when consuming a new `@empressaio/atom` release
+4. **Version upgrade protocol** â when consuming a new `@hauska/atom-contract` release
 5. **Breaking-change migration patterns** â named patterns for common
    contract changes
 6. **Validation checklist** â the before-ship confirmation every consumer runs
@@ -55,8 +57,8 @@ Four scenarios:
 |---|---|
 | New vertical product adopting atoms for the first time (e.g., a future Empressa O&G Ops product) | Â§2 |
 | SmartCity OS migrating its Operations Dashboard from pre-atom Compass V3 to atom-backed Compass V4 (M3) | Â§3 |
-| Empressa Land refactoring onto `@empressaio/atom` after M2-C extraction (M5) | Â§2 + Â§3 patterns apply |
-| Existing consumer bumping to a new version of `@empressaio/atom` | Â§4 + Â§5 |
+| Empressa Land refactoring onto `@hauska/atom-contract` after M2-C extraction (M5) | Â§2 + Â§3 patterns apply |
+| Existing consumer bumping to a new version of `@hauska/atom-contract` | Â§4 + Â§5 |
 
 ---
 
@@ -69,17 +71,18 @@ prerequisites in the prior step.
 
 Install:
 ```bash
-npm install @empressaio/atom
+npm install @hauska/atom-contract
 npm install @hauska-sdk/core @hauska-sdk/vda @hauska-sdk/wallet
 ```
 
-The atom package has peer dependencies on Hauska SDK packages. Pin
-exact versions in package.json â no `^` or `~`. Upgrades are
+The atom contract package is a peer Hauska substrate to the SDK packages,
+not a sub-package of `@hauska-sdk/*` (per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md)).
+Pin exact versions in package.json â no `^` or `~`. Upgrades are
 deliberate.
 
 Configure the atom registry at application boot:
 ```ts
-import { AtomRegistry } from "@empressaio/atom";
+import { AtomRegistry } from "@hauska/atom-contract";
 
 const registry = new AtomRegistry({
   tenantId: currentTenant.id,
@@ -127,7 +130,7 @@ still get a catalog entry.
 For each catalog entry, write a `registerAtom<TType>()` call:
 
 ```ts
-import { registerAtom } from "@empressaio/atom";
+import { registerAtom } from "@hauska/atom-contract";
 
 export const PermitAtom = registerAtom<"permit">({
   entityType: "permit",
@@ -233,7 +236,7 @@ a Vue consumer, a mobile consumer all receive the same spec and
 render it with their framework's primitives. Do not couple render
 specs to a specific UI library in the atom definition.
 
-Consult `@empressaio/atom/docs/rendering/` for render spec schema
+Consult `@hauska/atom-contract/docs/rendering/` for render spec schema
 and cinematography conventions.
 
 ### 2.6 Wire the event emitter
@@ -298,7 +301,7 @@ the same migration applied to a customer-facing surface.
 
 - [ ] M1 complete (test safety net â the migration is structural
       refactoring on live production; coverage is non-negotiable)
-- [ ] M2-C complete (`@empressaio/atom` published at v1.0.0)
+- [ ] M2-C complete (`@hauska/atom-contract` published at v1.0.0)
 - [ ] SmartCity OS atom catalog drafted (minimal viable set â permit,
       work-order, vehicle, inspection, asset. Full catalog is M3.5.)
 - [ ] Atom registry service wired into SmartCity OS application boot
@@ -307,7 +310,7 @@ the same migration applied to a customer-facing surface.
 
 **Step 1. Register minimum viable atom types.**
 Register the 5 minimum-viable atom types (permit, work-order, vehicle,
-inspection, asset) against `@empressaio/atom` in SmartCity OS. Each
+inspection, asset) against `@hauska/atom-contract` in SmartCity OS. Each
 gets a full `registerAtom()` call per Â§2.3â2.5.
 
 Context summary implementations pull from the existing SmartCity OS
@@ -396,13 +399,13 @@ visibly (a small "imported from MyGov" label on backfilled permits).
 
 ## Section 4 â Version upgrade protocol
 
-When a consumer bumps to a new version of `@empressaio/atom`, follow
+When a consumer bumps to a new version of `@hauska/atom-contract`, follow
 this protocol.
 
 ### 4.1 Patch upgrade (x.y.Z)
 
 ```bash
-npm install @empressaio/atom@<new-patch-version>
+npm install @hauska/atom-contract@<new-patch-version>
 npm test
 ```
 
@@ -415,7 +418,7 @@ If tests fail on a patch release, that's an SDK bug masked as a patch
 ### 4.2 Minor upgrade (x.Y.0)
 
 ```bash
-npm install @empressaio/atom@<new-minor-version>
+npm install @hauska/atom-contract@<new-minor-version>
 npm test
 ```
 
@@ -433,7 +436,7 @@ Steps:
 
 1. **Read the upgrade guide for this specific major version.**
    Every major release ships with migration notes in the package
-   (`@empressaio/atom/UPGRADE_v{X}.md`) and is summarized here in Â§5.
+   (`@hauska/atom-contract/UPGRADE_v{X}.md`) and is summarized here in Â§5.
 
 2. **Plan the migration.** Which atom registrations need changes?
    Which call sites need updating? Estimate PR size.
@@ -510,8 +513,8 @@ Migration:
 
 ### Pattern E: Package scope change
 
-Example: splitting `@empressaio/atom` into `@empressaio/atom-core`
-and `@empressaio/atom-rendering`.
+Example: splitting `@hauska/atom-contract` into
+`@hauska/atom-contract-core` and `@hauska/atom-contract-rendering`.
 
 Migration:
 - Update imports across consumers.
@@ -525,7 +528,7 @@ over splitting them until clear evidence the split is necessary.
 
 ## Section 6 â Validation checklist (before ship)
 
-Run this every time a consumer adopts or upgrades `@empressaio/atom`.
+Run this every time a consumer adopts or upgrades `@hauska/atom-contract`.
 
 ### Registration contract
 
@@ -554,7 +557,7 @@ Run this every time a consumer adopts or upgrades `@empressaio/atom`.
 ### Rendering
 
 - [ ] Each render mode returns a valid render spec per
-      `@empressaio/atom/docs/rendering/` schema
+      `@hauska/atom-contract/docs/rendering/` schema
 - [ ] All five modes tested against a sample atom of each registered
       type
 - [ ] Cinematography / mode transitions work (inline â card â focus)
@@ -652,3 +655,14 @@ Run this every time a consumer adopts or upgrades `@empressaio/atom`.
   steps, SmartCity OS M3 migration path, version-upgrade protocol,
   breaking-change patterns, and pre-ship validation checklist are
   stable.
+
+- **2026-05-18 (package rename per ADR-018)** â Package name changed
+  from `@empressaio/atom` to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md).
+  Atom contract is Hauska commercial substrate, peer to the Hauska SDK,
+  not Empressa product. Fifteen in-body references swept: title, H1,
+  audience descriptions, scenario table (Â§1), install commands and
+  import statements (Â§2.1, Â§2.3), prerequisites (Â§3.1), Step 1
+  registration (Â§3.2), version-upgrade-protocol intro and commands
+  (Â§4.1, Â§4.2, Â§4.3), Pattern E split example (Â§5), and validation
+  checklist references (Â§6). Owner line restated as Hauska Inc.
+  commercial substrate. Adoption-protocol content otherwise unchanged.

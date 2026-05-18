@@ -2,9 +2,9 @@
 id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
-last_updated: 2026-05-16
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [10_ground_truth, 11_roadmap, 30_smartcity_os, 40_design_accelerator]
+related: [10_ground_truth, 11_roadmap, 30_smartcity_os, 40_design_accelerator, 80_adrs/adr_018_atom_contract_substrate_layer]
 ---
 
 # Pricing framework â Path A vs Path B
@@ -194,15 +194,36 @@ Hybrid fiat and stablecoin processor. Fiat settlement for traditional counterpar
 
 Lower than the current SaaS landscape. Software pricing is in deflationary regime as production costs fall toward compute costs. Hauska's value is in being the substrate everyone runs on, which compounds. Maximizing rent per transaction is not the optimization target; volume and adoption are. Specific take rate is TBD pending modeling work but anchors below Stripe (3 percent) and well below app store rates (30 percent). Probably in the 1-3 percent range depending on transaction type.
 
-### Phased implementation
+### Substrate state — code reality vs integration work
 
-Phase 1 (Sprint 51 timeframe): Atom contract supports licensing and revenue-share metadata on atoms. accessPolicy carries source actor for routing. No payments yet.
+The 2026-05-16 framing treated the SDK payment substrate as principle-committed and entirely future-phased work. The 2026-05-18 SDK recon and re-verification (see ADR-018 follow-on for context) established that the on-chain half of the substrate is substantially built and the bottleneck is integration plus operational posture, not core SDK code. The accurate state breakdown follows.
 
-Phase 2 (post-51, alongside ECI atomization and SmartCity OS MCP retrofit): Metering at the SDK and MCP server tools layer. Records who consumed what when. Accounting infrastructure exists; no actual money movement.
+Built today in `@hauska-sdk/payment` v0.1.0 (verified 2026-05-18 against `p:\Hauska SDK`; 56 tests passing across five test files):
 
-Phase 3 (after Bastrop revenue share contract is operationally tested with manual reconciliation): Settlement infrastructure. Hauska Inc. operating with full regulatory posture. Real money flows. Partners receive payments.
+- x402-protocol payment-request signing via EIP-712 typed-data (`packages/payment/src/payment-request.ts`).
+- On-chain payment verification via ethers v6 with provider abstraction (`packages/payment/src/payment-verification.ts`).
+- Wallet integration for request signing (`packages/payment/src/wallet-integration.ts`).
+- Payment storage / transaction-record substrate (`packages/payment/src/payment-storage.ts`).
+- PaymentSDK orchestrator wiring the above together (`packages/payment/src/PaymentSDK.ts`).
+- USDC stablecoin support across Base (chainId 8453), Ethereum (chainId 1), and Polygon (chainId 137) per chain-ID table at `packages/payment/src/payment-request.ts:267-273`.
+- Vitest coverage: payment-storage 15 tests, payment-request 8, wallet-integration 11, payment-verification 7, PaymentSDK 15.
+- Publish-ready posture: `prepublishOnly: "npm run build"` + npmjs.org publish target in `packages/payment/package.json`.
 
-Phase 4 (longer term, 18-36 months out): Marketplace dynamics, dynamic pricing, agent-to-agent atom transactions, the full payment substrate vision.
+The crypto rail is operationally complete at the SDK code level.
+
+Remaining as code-level TODO inside the SDK:
+
+- Circle fiat checkout URL generation at `packages/payment/src/payment-request.ts:253`. Comment reads `TODO: Implement Circle checkout URL generation`; current implementation returns a placeholder `checkout.circle.com` URL. This is the sole production-code TODO blocking the fiat rail.
+
+Remaining as integration-and-operational work outside the SDK:
+
+- Atom-contract licensing-metadata and accessPolicy source-actor fields, published at M2-C extraction of `@hauska/atom-contract` v1.0.0 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md). Gates source-actor revenue routing.
+- Hauska MCP Server metering wire-up. The server consumes `@hauska-sdk/payment` at the tool-call layer for Layer 2 paid calls per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md); sequenced after both M2-C extraction and the dedicated repo at [`empressaioemail-tech/hauska-mcp-server`](https://github.com/empressaioemail-tech/hauska-mcp-server) (bootstrapped 2026-05-18) gains its first backend connection.
+- Bastrop revenue-share contract operationally tested with manual reconciliation. Gates first real money movement and informs the operational shape before the SDK rails switch on for production traffic.
+- Hauska Inc. regulatory posture. Money transmitter registration per state, KYC/AML thresholds, settlement-rail selection between Stripe Connect (fiat candidate) and stablecoin rails on the three live chains. Org and legal work, not SDK code.
+- Marketplace dynamics. Dynamic pricing, agent-to-agent atom transactions, the broader payment-substrate vision. Genuinely future work, 18–36 month horizon.
+
+Verification artifact: SDK recon `p:\Hauska SDK\RECON_2026-05-18.md`; re-verification 2026-05-18 by direct reads of `packages/payment/package.json`, `packages/payment/src/payment-request.ts` (lines 250–273), and `npm test --workspace=@hauska-sdk/payment` (56 passed in 783ms).
 
 ### Open questions
 
@@ -236,7 +257,8 @@ Phase 4 (longer term, 18-36 months out): Marketplace dynamics, dynamic pricing, 
 
 ## Revision history
 
-- **2026-05-16:** Added "SDK as payment substrate" section per the 2026-05-16 strategic brainstorm session ([`_sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md`](_sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md)). Captures the Hauska SDK as payment substrate principle commitment — usage-based pricing with revenue routed to source actors via accessPolicy. Phased implementation (Phase 1 atom-contract metadata in Sprint 51 timeframe; Phase 2 metering post-51; Phase 3 settlement after Bastrop revenue share contract testing; Phase 4 marketplace dynamics longer term). Companion to new canonical docs [`09_post_saas_substrate_thesis.md`](09_post_saas_substrate_thesis.md) and [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md).
+- **2026-05-18:** Replaced the "Phased implementation" subsection with "Substrate state — code reality vs integration work" after the 2026-05-18 Hauska SDK recon ([`80_adrs/adr_018_atom_contract_substrate_layer.md`](80_adrs/adr_018_atom_contract_substrate_layer.md) follow-on item 7) established the 2026-05-16 phasing language was significantly behind code reality. `@hauska-sdk/payment` v0.1.0 has the x402 + USDC on Base/ETH/Polygon crypto rail substantially built and tested (56 tests green across five test files; re-verified 2026-05-18). Sole production code TODO is Circle fiat checkout URL generation at `packages/payment/src/payment-request.ts:253`. Remaining work is integration (atom-contract licensing-metadata at M2-C `@hauska/atom-contract` publication; MCP server metering wire-up; Bastrop revenue-share manual reconciliation pilot) plus operational posture (Hauska Inc. money-transmitter / KYC/AML / settlement-rail selection). Marketplace dynamics remain 18–36 month horizon. Frontmatter `related` extended to ADR-018. `related` field also bumped at this revision.
+- **2026-05-16:** Added "SDK as payment substrate" section per the 2026-05-16 strategic brainstorm session ([`_sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md`](_sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md)). Captures the Hauska SDK as payment substrate principle commitment — usage-based pricing with revenue routed to source actors via accessPolicy. Phased implementation (Phase 1 atom-contract metadata in Sprint 51 timeframe; Phase 2 metering post-51; Phase 3 settlement after Bastrop revenue share contract testing; Phase 4 marketplace dynamics longer term). Companion to new canonical docs [`09_post_saas_substrate_thesis.md`](09_post_saas_substrate_thesis.md) and [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md). **Note (2026-05-18):** the "Phased implementation" subsection produced in this revision was superseded the same week by the substrate-state subsection above after the SDK recon established code reality.
 - **2026-05-05 (origin):** Extracted from Section 10.2 of
   `04_strategic_conversation_record.md` during pre-docs-repo
   migration. Path A and Path B preserved verbatim. Default segment

@@ -2,9 +2,9 @@
 id: adr_001_atom_architecture
 title: "ADR-001 — Atom contract as foundational data-model pattern"
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector]
+related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector, adr_018_atom_contract_substrate_layer]
 ---
 
 # ADR-001 — Atom contract as foundational data-model pattern
@@ -12,10 +12,18 @@ related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 30_smartcity_os
 ## Status
 
 **Accepted.** Originated 2026-04 as the v1 consolidation of six prior
-source documents. The v1.3 structural correction (2026-04-18) clarified
-that the atom belongs to **Empressa**, not Hauska — package
-`@empressaio/atom`, with `@hauska-sdk/core` as a peer dependency rather
-than a parent.
+source documents. The v1.3 structural correction (2026-04-18) reframed
+ownership from Hauska to Empressa, naming package `@empressaio/atom`
+with `@hauska-sdk/core` as a peer dependency rather than a parent.
+**The v1.3 ownership-correction note is superseded 2026-05-18 by
+[ADR-018](adr_018_atom_contract_substrate_layer.md).** Current canon:
+the atom contract is Hauska commercial substrate, peer to the Hauska
+SDK; M2-C extraction target is `@hauska/atom-contract`. The contract
+is consumed directly by the Hauska MCP Server, by every Empressa
+product surface, and (optionally, for paid surfaces requiring VDA
+wrapping) by the Hauska SDK. The dependency graph stays clean because
+the contract and the SDK are sibling Hauska substrates rather than
+parent and child.
 
 This ADR captures the architectural decision that the more detailed
 [`25_atom_architecture_reference.md`](../25_atom_architecture_reference.md)
@@ -78,7 +86,7 @@ verifiable history layer per entity.
 across all Empressa products.**
 
 Every addressable entity — real-world or workflow-internal — registers
-against `@empressaio/atom` as an `AtomRegistration` providing four
+against `@hauska/atom-contract` as an `AtomRegistration` providing four
 mandatory layers:
 
 1. **Identity** — `entityType`, `entityId`, `cid` (content
@@ -128,13 +136,23 @@ the same time:
   speak; the AI resolves intent, curates atom context, responds with
   atoms inline using `{{atom:type:id:label}}` markup. Drill-down is
   through tap-to-expand.
-- **Empressa owns the atom contract, not Hauska.** Package is
-  `@empressaio/atom`. Hauska SDK is a peer dependency
-  (`@hauska-sdk/core` for event anchoring, `@hauska-sdk/vda` for
-  ownership wrappers). The dependency arrow runs Empressa → Hauska,
-  never the reverse. This is the v1.3 structural correction; mixing
-  scopes in the other direction would collapse the
-  brand-and-architecture separation the portfolio depends on.
+- **Hauska commercial substrate owns the atom contract, distinct
+  from the Hauska SDK.** Package is `@hauska/atom-contract`, peer to
+  the `@hauska-sdk/*` family (core, vda, payment, retrieval, wallet,
+  adapters). The SDK provides verification, payment, retrieval, and
+  wallet primitives over atom-shaped digital assets; the contract
+  provides the typed-data interface, registration mechanism, rendering
+  modes, accessPolicy semantics, and context interface that make
+  something an atom in the first place. Both layers sit under Hauska
+  Inc. as sibling commercial substrates; neither contains the other.
+  Consumers depend on each substrate independently: every MCP server
+  and every Empressa product surface depends on `@hauska/atom-contract`
+  directly; the SDK is consumed only for paid-tier surfaces requiring
+  VDA wrapping or revenue routing. The dependency graph contains no
+  cycles. This **supersedes the v1.3 (2026-04-18)
+  ownership-correction note** that placed the contract under Empressa;
+  see [ADR-018](adr_018_atom_contract_substrate_layer.md) for the
+  substrate-layer split and the package rename rationale.
 - **Migration is an event.** Schema changes to a registered atom type
   are modeled as events in the chain rather than out-of-band DDL.
   The chain of contract changes itself becomes verifiable.
@@ -212,13 +230,13 @@ ship saves significant migration debt.
   contract surfaces this via `historyProvenance: "backfill"` and
   external messaging discipline. Engineering does not close this gap;
   honest claims do.
-- **Coordinated version bumps.** Major versions of `@empressaio/atom`
+- **Coordinated version bumps.** Major versions of `@hauska/atom-contract`
   require every consuming product to co-bump. This is a real
   coordination cost, paid in the upgrade-guide protocol rather than
   avoided.
 - **Single source of truth = single point of failure.** The atom
   contract becomes the most-load-bearing piece of code in the
-  portfolio. A bug in `@empressaio/atom` v1.0.0 affects every
+  portfolio. A bug in `@hauska/atom-contract` v1.0.0 affects every
   product. Mitigated by extensive contract tests in `/testing` plus
   the registration-contract tests every consumer runs.
 
@@ -267,9 +285,24 @@ ship saves significant migration debt.
 - **2026-04-18 (v1.3 correction):** ownership clarified (Empressa
   owns atom; Hauska SDK is peer dependency). Anchoring attribution
   consistently `@hauska-sdk/core.EventAnchoringService` throughout.
+  **Superseded 2026-05-18 by ADR-018:** the contract is Hauska
+  commercial substrate, peer to the Hauska SDK; package renamed to
+  `@hauska/atom-contract`.
 - **2026-05-05 (this ADR):** captured as ADR-001 in the docs repo.
   Architecture spec migrates to `25_atom_architecture_reference.md`;
   upgrade guide migrates to `26_atom_upgrade_guide.md`. Predecessor
   pre-docs-repo files
   (`20_empressaio_atom_architecture.md`,
   `21_empressaio_atom_upgrade_guide.md`) retire on migration.
+- **2026-05-18 (ADR-018 reconciliation):** [ADR-018](adr_018_atom_contract_substrate_layer.md)
+  ratifies the substrate-layer split. The v1.3 (2026-04-18)
+  ownership-correction note placing the atom contract under Empressa
+  is superseded; the contract is Hauska commercial substrate, peer to
+  the Hauska SDK. M2-C extraction target renamed from `@empressaio/atom`
+  to `@hauska/atom-contract`. Body sweep covers the Status section
+  v1.3 reframe, five in-body package references (Decision opening,
+  two Consequences bullets), and the Subsidiary-commitments
+  "Empressa owns the atom contract" bullet rewrite (now "Hauska
+  commercial substrate owns the atom contract, distinct from the
+  Hauska SDK"). Companion decision record at
+  [`_decisions/2026-05-18_atom_contract_hauska_namespace.md`](../_decisions/2026-05-18_atom_contract_hauska_namespace.md).

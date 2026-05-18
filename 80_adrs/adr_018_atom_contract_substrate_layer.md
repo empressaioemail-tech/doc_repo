@@ -72,15 +72,17 @@ The public jurisdiction atom-collection packages naming (e.g., `@hauska/atoms-ba
 
 ## Known follow-on doc updates
 
-Queued for future sessions. Not in scope for the 2026-05-18 session.
+Initially queued for future sessions; **all seven items completed in
+the 2026-05-18 doc-set-sweep session** ([`_sessions/2026-05-18_doc_set_sweep_adr018_claude_code.md`](../_sessions/2026-05-18_doc_set_sweep_adr018_claude_code.md)).
+Checklist preserved as a status indicator for future agents.
 
-- [ ] [`25_atom_architecture_reference.md`](../25_atom_architecture_reference.md) — body sweep plus title update (doc title is "@empressaio/atom — Architecture reference"; needs to become "@hauska/atom-contract — Architecture reference"). Substantial; treat as own task.
-- [ ] [`26_atom_upgrade_guide.md`](../26_atom_upgrade_guide.md) — body sweep plus title update (doc title is "@empressaio/atom — Upgrade & Consumption Guide"). Substantial.
-- [ ] [`27_engine_evolution_plan.md`](../27_engine_evolution_plan.md) line 226 — `@empressaio/atom` consumer-coordination reference.
-- [ ] [`51_substrate_v1_sprint.md`](../51_substrate_v1_sprint.md) lines 90, 133 — minor-version-bump coordination references.
-- [ ] [`80_adrs/adr_001_atom_architecture.md`](adr_001_atom_architecture.md) — five references to `@empressaio/atom` plus the v1.3 ownership-correction note that ADR-018 supersedes.
-- [ ] [`11_roadmap.md`](../11_roadmap.md) line 275 — `@empressaio/atom` commercial-posture revisit trigger.
-- [ ] [`14_pricing_framework.md`](../14_pricing_framework.md) — separate finding from the SDK recon: the SDK payment substrate is described as phased (Phase 1 metadata, Phase 2 metering, Phase 3 settlement). Code reality: x402 + USDC + Circle implementation is built and tested (56 tests green); only the Circle checkout URL generation is a real TODO. Doc needs reconciliation with code state.
+- [x] [`25_atom_architecture_reference.md`](../25_atom_architecture_reference.md) — body sweep plus title update (doc title was "@empressaio/atom — Architecture reference"; now "@hauska/atom-contract — Architecture reference"). Completed 2026-05-18.
+- [x] [`26_atom_upgrade_guide.md`](../26_atom_upgrade_guide.md) — body sweep plus title update (doc title was "@empressaio/atom — Upgrade & Consumption Guide"; now "@hauska/atom-contract — Upgrade & Consumption Guide"). Completed 2026-05-18.
+- [x] [`27_engine_evolution_plan.md`](../27_engine_evolution_plan.md) line 226 — `@empressaio/atom` consumer-coordination reference renamed to `@hauska/atom-contract`. Completed 2026-05-18.
+- [x] [`51_substrate_v1_sprint.md`](../51_substrate_v1_sprint.md) lines 90, 133 — minor-version-bump coordination references renamed to `@hauska/atom-contract`. Completed 2026-05-18.
+- [x] [`80_adrs/adr_001_atom_architecture.md`](adr_001_atom_architecture.md) — five in-body references renamed; v1.3 ownership-correction note marked superseded with adjacent ADR-018 pointer; Subsidiary-commitments "Empressa owns the atom contract" bullet rewritten to "Hauska commercial substrate owns the atom contract, distinct from the Hauska SDK." Completed 2026-05-18.
+- [x] [`11_roadmap.md`](../11_roadmap.md) line 275 — `@empressaio/atom` commercial-posture revisit trigger renamed to `@hauska/atom-contract`. Completed 2026-05-18.
+- [x] [`14_pricing_framework.md`](../14_pricing_framework.md) — "Phased implementation" subsection replaced with "Substrate state — code reality vs integration work" reflecting the SDK recon re-verification 2026-05-18 (56 tests green; Circle checkout URL generation at `packages/payment/src/payment-request.ts:253` the sole production code TODO). Completed 2026-05-18.
 
 ## Reversal criteria
 
@@ -103,3 +105,4 @@ Revisit if (a) a downstream consumer reveals that consuming `@hauska/atom-contra
 ## Revision history
 
 - **2026-05-18 (origin):** drafted during the Claude Code session that ran the Hauska SDK and legacy-design-tools recons. Ratifies the substrate-layer split (atom contract as Hauska substrate, peer to the Hauska SDK), names the M2-C extraction target as `@hauska/atom-contract`, supersedes the ADR-001 v1.3 ownership-correction note, and queues the doc-set sweep across 25, 26, 27, 11, 14, 51, ADR-001 as named follow-ons.
+- **2026-05-18 (doc-set sweep completion):** all seven Known-follow-on-doc-updates items executed in a same-day follow-on session per [`_sessions/2026-05-18_doc_set_sweep_adr018_claude_code.md`](../_sessions/2026-05-18_doc_set_sweep_adr018_claude_code.md). Checklist flipped from unchecked to checked; preserved in place as a status indicator. 14_pricing_framework reconciliation re-verified the SDK payment substrate state against current code (`packages/payment/package.json`, `packages/payment/src/payment-request.ts:250-273`, `npm test --workspace=@hauska-sdk/payment` 56 passed). No engineering content changed in any of the seven docs; the sweep was strictly nomenclature plus the 14_pricing_framework substrate-state reconciliation.

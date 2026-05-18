@@ -2,9 +2,9 @@
 id: 51_substrate_v1_sprint
 title: Substrate v1 sprint — Code Ingestion Pipeline + Hauska MCP Server
 status: active
-last_updated: 2026-05-15
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [11_roadmap, 11a_bastrop_live_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format]
+related: [11_roadmap, 11a_bastrop_live_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
 owner: nick
 ---
 
@@ -87,7 +87,7 @@ hauska-mcp-server/
 ### Coordination touchpoints in existing repos
 
 - **`legacy-design-tools`** — Bump 1 atom contract version bump
-  affects `@empressaio/atom` consumers. Coordinated via cross-track
+  affects `@hauska/atom-contract` consumers. Coordinated via cross-track
   task below.
 - **`smartcity-os`** — Bump 1 consumer. Coordinated.
 - **`legacy-revit-sensor`** — Bump 1 consumer. Coordinated.
@@ -130,7 +130,7 @@ parens.
 
 ### Bump 1 atom contract coordination (sync point — load-bearing)
 
-Single coordinated minor version bump of `@empressaio/atom` per
+Single coordinated minor version bump of `@hauska/atom-contract` per
 [27](27_engine_evolution_plan.md) Stream B Bump 1. Adds:
 
 - `code-section`
@@ -738,3 +738,9 @@ See [Cross-cutting work — Phase 0](#phase-0--decisions) above.
   unblocked (one-off + B.6 validation pass). See dialogue archive
   at [`_sessions/2026-05-15_catalog_roadmap_input.md`](_sessions/2026-05-15_catalog_roadmap_input.md)
   through `_response_reply.md`.
+- **2026-05-18 (ADR-018 doc-set sweep).** Bump-1 atom-contract
+  coordination references (Coordination touchpoints — legacy-design-tools
+  line; Bump 1 minor-version-bump line) renamed from `@empressaio/atom`
+  to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md).
+  Atom contract is Hauska commercial substrate, peer to the Hauska SDK.
+  `related` field extended to ADR-018. No sprint-plan content changes.

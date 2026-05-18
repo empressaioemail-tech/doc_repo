@@ -1,13 +1,13 @@
 ---
 id: 25_atom_architecture_reference
-title: "@empressaio/atom â Architecture reference"
+title: "@hauska/atom-contract â Architecture reference"
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-18
 applies_to: portfolio
-related: [adr_001_atom_architecture, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector]
+related: [adr_001_atom_architecture, adr_018_atom_contract_substrate_layer, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector]
 ---
 
-# `@empressaio/atom` â Architecture reference
+# `@hauska/atom-contract` â Architecture reference
 
 > **Architecture spec.** This is the full reference for the atom
 > contract, its rendering model, its composition rules, and its
@@ -17,12 +17,14 @@ related: [adr_001_atom_architecture, 26_atom_upgrade_guide, 30_smartcity_os, 40_
 > Companion adoption guide:
 > [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md).
 
-**Version:** 2026.04 v1 (migrated to docs repo 2026-05-05)
-**Owner:** Empressa (Legacy Group ATX LLC product brand).
-**Package:** `@empressaio/atom` â not yet extracted at time of writing;
-extracted and published as v1.0.0 during roadmap milestone M2-C.
+**Version:** 2026.04 v1 (migrated to docs repo 2026-05-05; package rename 2026-05-18 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md))
+**Owner:** Hauska Inc. (commercial substrate, peer to the Hauska SDK; brand placement per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md)).
+**Package:** `@hauska/atom-contract` â M2-C extraction target per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md). Currently staged as workspace-private `@workspace/empressa-atom` in the legacy-design-tools repo at `lib/empressa-atom/`. Renamed from `@empressaio/atom` on 2026-05-18 per ADR-018; atom contract is Hauska commercial substrate, peer to the Hauska SDK, not Empressa product.
 **Consumers:** SmartCity OS (from M3), Empressa Land (from M5),
-Empressa Company Intelligence (from M5).
+Empressa Company Intelligence (from M5), Hauska MCP Server (consumes
+contract directly for tool generation and schema validation; SDK
+consumed only for paid-tier surfaces requiring VDA wrapping or
+revenue routing per ADR-018).
 
 **Sources consolidated** (all retired on publication of original v1, 2026-04):
 - `hauska-atom-master-architecture.md`
@@ -37,13 +39,17 @@ Empressa Company Intelligence (from M5).
   content merged here)
 - `the-living-lineage-v2__3_.docx` (intro prose absorbed into Section 1)
 
-Every use of "Hauska Atom" or "`@hauska-sdk/atom`" in prior materials
-is a rename to "Empressa Atom" / "`@empressaio/atom`." The atom belongs
-to Empressa, which is a Legacy Group product brand. It does not live
-inside Hauska SDK â the dependency arrow is Empressa â Hauska, never
-the reverse. This is the v1.3 structural correction of April 18, 2026
-and is captured as a load-bearing commitment in
-[`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md).
+Historical note. The v1 consolidation (2026-04) and the v1.3
+structural correction (2026-04-18) renamed every use of "Hauska Atom"
+or "`@hauska-sdk/atom`" in prior materials to "Empressa Atom" /
+"`@empressaio/atom`" and asserted that the atom belonged to Empressa,
+not Hauska. **Superseded 2026-05-18 by [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md).**
+The atom contract is now Hauska commercial substrate, peer to the
+Hauska SDK and to Hauska Engine, distinct from any Hauska-namespaced
+SDK sub-package. Current canonical package name is
+`@hauska/atom-contract`. The 2026-04-18 v1.3 ownership-correction note
+in [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md)
+is reconciled to match.
 
 ---
 
@@ -310,7 +316,7 @@ cached. The AI request path stays synchronous.
 
 ### Compile-time enforcement
 
-`@empressaio/atom` defines `AtomRegistration<TType extends string>` as
+`@hauska/atom-contract` defines `AtomRegistration<TType extends string>` as
 a typed contract. An atom type that doesn't implement `contextSummary`
 correctly doesn't compile. This is Commitment 1 enforced at the type
 level, not by convention. Section 8 specifies the registration contract.
@@ -399,7 +405,7 @@ reference expanded in place. A card "opens" into focus mode as if
 the whole chat context zoomed into the atom.
 
 Specific easing and duration specs live in the package docs
-(`@empressaio/atom/docs/rendering/cinematography.md`) â preserved
+(`@hauska/atom-contract/docs/rendering/cinematography.md`) â preserved
 from the `intelligence-interface-cinematography-v4_1.md` source.
 Architectural point: transitions are a property of the rendering
 model, not decoration. They're how the user keeps track of which
@@ -605,7 +611,7 @@ make the lineage operational across surfaces are settled in
 
 ## Section 8 â The registration contract
 
-Every atom type registers against `@empressaio/atom` as an
+Every atom type registers against `@hauska/atom-contract` as an
 `AtomRegistration`:
 
 ```ts
@@ -759,7 +765,7 @@ markup is validated before rendering).
 
 | Anti-pattern | Why it violates the architecture |
 |---|---|
-| Publishing `@hauska-sdk/atom` | Atom belongs to Empressa. Mixing scopes collapses the entity-separation architecture claim. |
+| Publishing the atom contract as `@hauska-sdk/atom` (folded inside the SDK family) | The atom contract is a peer Hauska substrate, not a sub-package of the SDK. Folding it inside `@hauska-sdk/*` forces every MCP server and product to take a transitive dependency on the entire SDK commerce substrate (x402, USDC on three chains, ethers v6, Circle, BIP39 wallets) just to register an atom type. Per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md), contract package is `@hauska/atom-contract`, sibling to `@hauska-sdk/*`. |
 | Registering an atom type without `contextSummary` | Commitment 1 enforcement is the whole point. |
 | Registering an atom type without all 5 render modes | Rendering model requires the full spectrum so windows can pick. |
 | Hardcoded context summaries (stub strings) | The vehicle atom in Empressa Demo is the current live example â scheduled for fix. |
@@ -783,7 +789,7 @@ markup is validated before rendering).
 | Term | Definition |
 |---|---|
 | **Atom** | The smallest addressable entity. Carries identity, context interface, composition, and history. |
-| **`@empressaio/atom`** | The npm package defining the atom contract and registration pattern. Empressa (Legacy Group) product, not Hauska. |
+| **`@hauska/atom-contract`** | The npm package defining the atom contract and registration pattern. Hauska commercial substrate, peer to the Hauska SDK. Renamed from `@empressaio/atom` on 2026-05-18 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md); current workspace-private staging is `@workspace/empressa-atom` in legacy-design-tools. |
 | **Data-level atom** | Atom referring to a real-world entity. VDA-backed. Cryptographically anchored history. |
 | **App-level atom** | Atom referring to a workflow container. No VDA. No anchored history. |
 | **Context interface** | The atom's method that returns a structured self-description for AI consumption. |
@@ -803,7 +809,7 @@ markup is validated before rendering).
 ### Package surface (planned v1.0.0)
 
 ```
-@empressaio/atom
+@hauska/atom-contract
 âââ /core
 â   âââ registerAtom<TType>(registration)
 â   âââ AtomRegistry
@@ -845,13 +851,19 @@ alongside.
 ### Licensing and publication
 
 Current decision (OPEN Q4 in `04_strategic_conversation_record.md` â
-pre-docs-repo, pending migration): proprietary, internal to Legacy
-Group's products only. Published to npm under the `@empressaio/` scope
-but not marketed externally. Licensing decision deferred.
+pre-docs-repo, pending migration): proprietary, internal to the
+Hauska Inc. and Empressa product surfaces only. Published to npm under
+the `@hauska/` scope (specifically `@hauska/atom-contract` per
+[ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md)) but not
+marketed externally. Licensing decision deferred.
 
 If publication shifts (e.g., third-party vertical app builders want to
-consume it), the license decision reopens. Until then, `@empressaio/atom`
-is Legacy's internal infrastructure even though it lives on npm.
+consume it), the license decision reopens. Until then,
+`@hauska/atom-contract` is internal-to-portfolio infrastructure even
+though it lives on npm. Brand-placement rationale: the atom contract
+is Hauska commercial substrate, peer to the Hauska SDK; the
+`@hauska/` namespace matches the substrate layer rather than the
+product brand that consumes it.
 
 ---
 
@@ -881,3 +893,17 @@ is Legacy's internal infrastructure even though it lives on npm.
   this doc retains the full spec depth. Architecture content unchanged
   from v1 â the eleven sections, the registration contract, the
   composition mechanics, and the package surface are stable.
+
+- **2026-05-18 (package rename per ADR-018)** â Package name changed
+  from `@empressaio/atom` to `@hauska/atom-contract` per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md).
+  Atom contract is Hauska commercial substrate, peer to the Hauska SDK,
+  not Empressa product. Eleven in-body references swept. Title, H1,
+  Section 8 opening, Section 4 enforcement reference, Section 5
+  cinematography reference, Glossary row, Section 11 package surface
+  tree, and Section 11 licensing paragraph all rewritten. Owner line
+  restated as Hauska Inc. commercial substrate. Section 10 anti-pattern
+  reframed (publishing the contract as `@hauska-sdk/atom` is the
+  anti-pattern; the contract sits as a peer Hauska substrate). Historical
+  v1.3 ownership-correction note (lines 40â46 in prior revision) preserved
+  with an adjacent supersession callout pointing at ADR-018. Architecture
+  content otherwise unchanged.
