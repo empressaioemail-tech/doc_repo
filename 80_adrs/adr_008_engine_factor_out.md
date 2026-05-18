@@ -2,7 +2,7 @@
 id: adr_008_engine_factor_out
 title: "ADR-008 — Hauska Engine factor-out, naming, and repo placement"
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-05-18
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, 05_living_lineage_thesis, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review]
 ---
@@ -27,7 +27,7 @@ Three forces argue for factor-out:
 
 1. **Independent release cadence.** Today the engine ships when `legacy-design-tools` `api-server` ships. Reviewer-side changes ride architect-side deploys; architect-side changes ride reviewer-side test surface. Engine evolution is coupled to architect-side release pressure.
 2. **Multi-consumer surface area.** Two consumers today (DA, SmartCity OS), three on the near horizon (Codex 1a invited, Codex 1b standalone, future inspector surface), more when PropTech ecosystem partners begin consuming.
-3. **Brand and commercial coherence.** The engine sits between the Hauska SDK (atom contract + anchoring) and Empressa surfaces. Naming the engine forces a brand decision that has been deferred. The Hauska commercial story benefits from extending beyond "atom contract" to "atom contract + intelligent processing."
+3. **Brand and commercial coherence.** The engine sits between Hauska substrate (Hauska SDK plus the atom contract, both Hauska commercial layer per ADR-018) and Empressa product surfaces. Naming the engine forces a brand decision that has been deferred. The Hauska commercial story benefits from extending beyond "atom contract" to "atom contract + intelligent processing."
 
 Two forces argue against doing it now:
 
@@ -40,9 +40,9 @@ The decision is *yes, factor out*, with timing sequenced to avoid stacking again
 
 ### Engine name and brand
 
-**The engine is named "Hauska Engine."** It sits in the Hauska commercial layer alongside the Hauska SDK. Empressa product surfaces (Design Accelerator, Codex, SmartCity OS) consume Hauska Engine + Hauska SDK + the `@empressaio/atom` contract.
+**The engine is named "Hauska Engine."** It sits in the Hauska commercial layer alongside the Hauska SDK and the atom contract. Empressa product surfaces (Cortex, Codex, SmartCity OS) consume Hauska Engine + Hauska SDK + `@hauska/atom-contract`.
 
-The naming choice preserves the v1.3 ownership correction in ADR-001 (atom contract is Empressa, not Hauska — Empressa-the-product owns the contract that everyone consumes), while putting the engine in the Hauska commercial layer where it can be sold as substrate.
+The naming choice puts the engine in the Hauska commercial layer where it can be sold as substrate alongside the SDK and atom contract. Per [ADR-018](adr_018_atom_contract_substrate_layer.md), the atom contract is Hauska substrate, peer to the Hauska SDK; the ADR-001 v1.3 ownership-correction note that placed the contract under Empressa is superseded.
 
 External product surfaces use their own brand names; the engine is visible as "powered by Hauska Engine" in product collateral where the substrate matters (e.g., for technical buyers, partners, audit-conscious customers). For most reviewer-facing collateral, the engine is invisible — Codex is the product name; Hauska Engine is the substrate.
 
@@ -77,7 +77,7 @@ Factor-out is *not* a v1 prerequisite. Codex Wave 1 (1a invited foundation) ship
 - **Design Accelerator** — product name, surface-facing. Hauska Engine substrate visible in same contexts.
 - **SmartCity OS** — product name, surface-facing. Hauska Engine substrate visible same way.
 
-The Hauska brand expands to cover SDK + Engine + (future) other substrate components. Empressa brand covers product surfaces and the atom contract.
+The Hauska brand expands to cover SDK + Engine + atom contract + (future) other substrate components. Empressa brand covers product surfaces. Atom contract substrate layer placement per [ADR-018](adr_018_atom_contract_substrate_layer.md).
 
 ## Alternatives considered
 
@@ -144,3 +144,4 @@ To be tracked in the eventual factor-out sprint plan:
 ## Revision history
 
 - **2026-05-10 (origin):** drafted as ADR-008 during plan review framing session. Establishes Hauska Engine name, Hauska commercial brand placement, and post-migration factor-out timing.
+- **2026-05-18:** atom contract layer placement clarified via [ADR-018](adr_018_atom_contract_substrate_layer.md). Body text at the brand-coherence section, decision section, and brand-summary section reconciled to reflect Hauska substrate placement of the atom contract; the ADR-001 v1.3 ownership-correction note is superseded. Stale "Design Accelerator" product reference corrected to "Cortex" per CLAUDE.md identity section. Package name `@empressaio/atom` updated to `@hauska/atom-contract` per [Decision 2026-05-18](../_decisions/2026-05-18_atom_contract_hauska_namespace.md).

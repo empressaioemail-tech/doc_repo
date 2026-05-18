@@ -80,6 +80,8 @@ Commit message format: `<type>(<scope>): <summary>`. Examples: `docs: 2026-05-17
 
 Brand placement per `80_adrs/adr_008_engine_factor_out.md`.
 
+Atom contract substrate layer per `80_adrs/adr_018_atom_contract_substrate_layer.md` (accepted 2026-05-18). The atom contract is Hauska commercial substrate, peer to the Hauska SDK, not Empressa product. M2-C extraction target is `@hauska/atom-contract`. The Hauska MCP Server and every product surface consume the contract directly; the SDK is consumed only for paid-tier surfaces that require VDA wrapping or revenue routing. ADR-001 v1.3 ownership-correction note (atom contract under Empressa) is superseded.
+
 Codex naming (2026-05-16): Codex is the product brand covering plan review plus code intelligence capability. The building-code-lookup surface is Codex, sitting on Hauska MCP Server tools, free at Layer 1.
 
 Tier model per `08_tiered_access_model.md`: Layer 1 free, Layer 2 paid.
@@ -110,7 +112,7 @@ Mox CEO meeting timing (gates Mox pilot reframing urgency).
 
 IP attorney memo and Tech E and O insurance routing dates.
 
-MCP server code migration: the `MCP Server/` directory in this repo contains a hauska-mcp-server starter implementation (auth.ts, hauska-client.ts, index.ts, tools.ts, package.json). Needs migration to a dedicated `hauska-mcp-server` product repo per the v1 sprint plan in `51_substrate_v1_sprint.md`. Currently `.gitignore`d locally until that repo is set up; after migration, delete the local files and add a cross-repo pointer in `50_hauska_mcp_server.md`.
+MCP server code migration. Ratified 2026-05-18 per `_decisions/2026-05-18_hauska_mcp_server_dedicated_repo.md`. Target repo: `empressaioemail-tech/hauska-mcp-server`. The `MCP Server/` directory in this repo contains a starter implementation (auth.ts, hauska-client.ts, index.ts, tools.ts, package.json), currently `.gitignore`d locally. Action: Nick creates the repo (`gh repo create empressaioemail-tech/hauska-mcp-server --private` or via web UI); agent then deletes the local files, updates the scaffold-location pointer in `50_hauska_mcp_server.md`, and surfaces the new repo URL in `00_current_state.md`. MCP server consumes `@hauska/atom-contract` directly per ADR-018.
 
 Mox docs at root (`mox_executive_summary_v2.md`, `mox_prospect_briefing.md`, `mox_prospect_project_instructions.md`) are committed at root as portable artifacts pending 70-band bizops design; they relocate into proper slots once the bizops session lands.
 
