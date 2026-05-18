@@ -17,11 +17,16 @@ owner: nick
 > pipeline has produced a quality-gated jurisdiction corpus large enough
 > to make the surface viable.
 >
-> **Status posture.** Sprint structured for velocity. Two repos, two
-> tracks, four parallel streams per track, one cc-agent per stream
-> (eight cc-agents total). Streams start in parallel; integrate at the
-> sync points listed below. No timeframes — task completion drives the
-> schedule.
+> **Status posture.** Sprint structured for velocity. Three repos
+> (`hauska-atom-contract`, `hauska-engine`, `hauska-mcp-server`), two
+> tracks, four streams per track. Per-repo single-agent ownership
+> per [`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md):
+> cc-agent-AC owns `hauska-atom-contract` (M2-C extraction plus Bump 1
+> publication); cc-agent-E owns all of Track 1 in `hauska-engine`;
+> cc-agent-M owns all of Track 2 in `hauska-mcp-server`; planner
+> (doc_repo) owns Bump 1 cross-repo PR rollout plus sync points 4 and 5
+> launch gates. Streams integrate at the sync points listed below. No
+> timeframes — task completion drives the schedule.
 
 ## End state (combined v1 ship)
 
@@ -156,9 +161,12 @@ landed in this session (cost source from Hauska Inc. equity;
 `hauska.dev` registration deferred to Nick; 25-city list approved as
 listed); revenue model was already resolved 2026-05-16. Combined
 decision record at [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md).
-Stream-level dispatch across Tracks 1A-1D and 2A-2D now unblocked;
-cc-agent assignments pending in [`00_current_state.md`](00_current_state.md)
-agent-fleet section.
+Stream-level dispatch unblocked; per-repo allocation resolved at
+[`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md)
+(cc-agent-AC, cc-agent-E, cc-agent-M, plus planner); pasteable kickoff
+prompts at [`_dispatches/2026-05-18_cc-agent-AC_hauska_atom_contract.md`](_dispatches/2026-05-18_cc-agent-AC_hauska_atom_contract.md),
+[`_dispatches/2026-05-18_cc-agent-E_hauska_engine.md`](_dispatches/2026-05-18_cc-agent-E_hauska_engine.md),
+[`_dispatches/2026-05-18_cc-agent-M_hauska_mcp_server.md`](_dispatches/2026-05-18_cc-agent-M_hauska_mcp_server.md).
 
 ### Bump 1 atom contract coordination (sync point — load-bearing)
 
@@ -196,8 +204,10 @@ repo, atomically merged.
 
 ## Track 1 — Code Ingestion Pipeline (`hauska-engine` repo)
 
-Four parallel streams. Each is one cc-agent's workstream. Streams start
-simultaneously; sync points marked in dependencies.
+Four streams in `hauska-engine`, all owned by cc-agent-E per
+[`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md).
+Sync points 2, 3, 4, 5 are within-track and self-coordinated by cc-agent-E.
+Sync point 1 (Bump 1 atom contract published) is cc-agent-AC's, consumed here.
 
 ### Stream 1A — Adapters + Pipeline runner
 
@@ -456,7 +466,11 @@ simultaneously; sync points marked in dependencies.
 
 ## Track 2 — Hauska MCP Server (`hauska-mcp-server` repo)
 
-Four parallel streams. Each is one cc-agent's workstream.
+Four streams in `hauska-mcp-server`, all owned by cc-agent-M per
+[`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md).
+All four streams proceed against mocked or staged backends until Sync 3
+lands; real wiring follows. Sync 1 (Bump 1 atom contract) consumed for
+response-shape pins.
 
 ### Stream 2A — Backend coupling + Tool surface
 
@@ -788,3 +802,18 @@ See [Cross-cutting work — Phase 0](#phase-0--decisions) above.
   unblocked. No engineering content changed; the close ratifies the
   v1 sprint scope and surfaces one open Nick action (`hauska.dev`
   registration).
+- **2026-05-18 (dispatch reallocation).** Prior cross-repo doubling
+  allocation at [`_decisions/2026-05-18_substrate_v1_dispatch_allocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_allocation.md)
+  status-flipped to superseded. New per-repo single-agent allocation
+  at [`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md):
+  cc-agent-AC owns new `empressaioemail-tech/hauska-atom-contract`
+  (dedicated repo for `@hauska/atom-contract` ratified same decision);
+  cc-agent-E owns all of Track 1 in `hauska-engine`; cc-agent-M owns
+  all of Track 2 in `hauska-mcp-server`. Status-posture line at top
+  of sprint plan plus Track 1 and Track 2 framing lines plus the
+  Phase 0 close pointer updated to reflect the corrected allocation.
+  Original cc-agent count (eight) and stream-pair shape preserved as
+  historical reading in earlier revision-history entries. Three
+  pasteable kickoff prompts at [`_dispatches/`](_dispatches/) replace
+  the four superseded cross-repo prompts; old prompts retain
+  `status: superseded` plus top-callout pointing at replacements.

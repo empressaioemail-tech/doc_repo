@@ -5,8 +5,12 @@ date: 2026-05-18
 agent: cc-agent-1
 repo: hauska-engine + hauska-mcp-server
 kind: dispatch
-related: [51_substrate_v1_sprint, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 00_current_state, CLAUDE.md, _decisions/2026-05-18_substrate_v1_dispatch_allocation, _decisions/2026-05-18_substrate_v1_phase_0_close]
+status: superseded
+superseded_by: [_dispatches/2026-05-18_cc-agent-E_hauska_engine, _dispatches/2026-05-18_cc-agent-M_hauska_mcp_server]
+related: [51_substrate_v1_sprint, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 00_current_state, CLAUDE.md, _decisions/2026-05-18_substrate_v1_dispatch_allocation, _decisions/2026-05-18_substrate_v1_phase_0_close, _decisions/2026-05-18_substrate_v1_dispatch_reallocation]
 ---
+
+> **Superseded 2026-05-18.** Cross-repo doubling axis was incompatible with Cursor one-terminal-per-repo. Stream 1A work moved to [`_dispatches/2026-05-18_cc-agent-E_hauska_engine.md`](2026-05-18_cc-agent-E_hauska_engine.md); Stream 2A to [`_dispatches/2026-05-18_cc-agent-M_hauska_mcp_server.md`](2026-05-18_cc-agent-M_hauska_mcp_server.md). See [`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](../_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md).
 
 # Substrate v1 — cc-agent-1 dispatch (Streams 1A + 2A)
 

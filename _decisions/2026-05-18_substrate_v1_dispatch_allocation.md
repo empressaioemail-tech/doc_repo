@@ -2,9 +2,12 @@
 decision_id: 2026-05-18_substrate_v1_dispatch_allocation
 date: 2026-05-18
 owner: nick
-status: active
-related_canonical: [51_substrate_v1_sprint, 00_current_state, CLAUDE.md, _decisions/2026-05-18_substrate_v1_phase_0_close]
+status: superseded
+superseded_by: _decisions/2026-05-18_substrate_v1_dispatch_reallocation
+related_canonical: [51_substrate_v1_sprint, 00_current_state, CLAUDE.md, _decisions/2026-05-18_substrate_v1_phase_0_close, _decisions/2026-05-18_substrate_v1_dispatch_reallocation]
 ---
+
+> **Superseded 2026-05-18** by [`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](2026-05-18_substrate_v1_dispatch_reallocation.md). Operator-side review surfaced that the cross-repo doubling axis below is incompatible with Cursor's one-terminal-per-repo execution model. Reallocated to per-repo single-agent ownership: cc-agent-AC (hauska-atom-contract), cc-agent-E (hauska-engine; all of Track 1), cc-agent-M (hauska-mcp-server; all of Track 2). Reasoning preserved here as rejected-alternative record.
 
 ## Decision
 
