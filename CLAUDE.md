@@ -152,7 +152,7 @@ Direct. No filler, no hedging, no premature compliance. Real items, real names, 
 
 Tables when they earn their place; prose otherwise. Bullets only when content is genuinely a list. Reports, documents, technical documentation as prose without bullets, numbered lists, or excessive bolding unless asked.
 
-No em dashes or en dashes anywhere. Minimal decorative symbols and emoji. Short paragraphs.
+No em dashes or en dashes in doc body prose. Exempt: section titles, commit subject lines, verbatim brand strings (e.g. `Powered by Hauska Engine — hauska.dev`), and direct quotes from third-party content. Minimal decorative symbols and emoji. Short paragraphs.
 
 Stakeholder voice matching when drafting communications per the `stakeholder-update` skill.
 
