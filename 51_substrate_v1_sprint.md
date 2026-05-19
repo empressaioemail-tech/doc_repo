@@ -682,13 +682,13 @@ response-shape pins.
 
 Critical points where streams synchronize:
 
-| # | Sync point | Streams | Gate |
-|---|---|---|---|
-| 1 | Bump 1 atom contract published | 1B + (all consumers) | Both tracks can pin to a real atom contract version. Cross-cutting work above. |
-| 2 | Adapter contract stable | 1A → 1B + 1D | Stream 1B can hard-wire to adapter output; Stream 1D can write eval against actual ingested cities. |
-| 3 | Retrieval API contract stable | 1C → 2A | Stream 2A wires real client; until then 2A uses mocked client identical in shape. |
-| 4 | First jurisdiction passes eval | 1D → 2D launch gate | Pre-launch: at least Bastrop UDC passes quality bar. |
-| 5 | Quality-gated 20-jurisdiction corpus | 1D → 2D launch gate | Public launch unblocked. |
+| # | Sync point | Streams | Status | Gate |
+|---|---|---|---|---|
+| 1 | Bump 1 atom contract published | 1B + (all consumers) | **DONE 2026-05-19** — `@hauska/atom-contract@1.0.0` on npm; v1.0.0 tag pushed; cc-agent-AC bootstrap commit `824e68e` | Both tracks can pin to a real atom contract version. |
+| 2 | Adapter contract stable | 1A → 1B + 1D | **DONE 2026-05-19** — `packages/corpus/src/adapters/types.ts` plus conformance suite per cc-agent-E commit `5049961` | Stream 1B hard-wired to adapter output; Stream 1D writes eval against actual ingested cities. |
+| 3 | Retrieval API contract stable | 1C → 2A | **DONE 2026-05-19** — `services/retrieval-api/src/server.ts` plus 10-test contract suite per cc-agent-E commit `5049961`; cc-agent-M Stream 2A wired against it per PR #1 squash-merge | Stream 2A wires real client. |
+| 4 | First jurisdiction passes eval | 1D → 2D launch gate | **DONE 2026-05-19** — Grand County partial (IRC R301 + IWUIC; 75 atoms) passed 0.9 / 1.0 / 1.0 quality bar per cc-agent-E PR #3 commit `cbe4852`. Note: Bastrop UDC absent from legacy Neon (BASTROP BUILDING BLOCK / B3 CODE lives on bastrop.gov); B3 publisher adapter is Session B work toward Sync 5. | Pre-launch: at least one jurisdiction passes quality bar. |
+| 5 | Quality-gated 20-jurisdiction corpus | 1D → 2D launch gate | Open. Grand County fully covered (290 atoms total: IRC R301 14 + IWUIC 61 + LAND_USE 215) per cc-agent-E PR #4. Bastrop UDC pending Session B B3 publisher adapter. 18 other TX cities sequenced after Session B. | Public launch unblocked. |
 
 Streams 2A/2B/2C/2D all proceed against mocked / staged backends before
 sync point 3 lands. Real wiring follows the moment 1C publishes the
