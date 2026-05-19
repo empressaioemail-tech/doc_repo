@@ -10,6 +10,15 @@ related: [_decisions/2026-05-19_sync_4_5_and_cortex_sprint, _sessions/2026-05-18
 
 # Lane C.3 — cc-agent-C dispatch (UI-4 reclassify endpoint UI + EngagementDetail.tsx split)
 
+> **Pre-orientation captured 2026-05-19 (cc-agent-C).** cc-agent-C ran full recon on Lane C.3 at end-of-Lane-C.2 session but elected (with operator concurrence) to defer execution to a fresh session per the pacing rule. The orientation below is a head-start, not a restart — fresh session opens the dispatch and inherits the recon.
+>
+> **C.3.1 reclassify UI — ready to build.** Endpoint: `POST /api/submissions/:id/reclassify` (reviewer-audience-gated). Body shape (`ReclassifySubmissionBody`): `projectType` (string, min 1), `disciplines` (`PlanReviewDiscipline[]` — 7 values: `building`, `electrical`, `mechanical`, `plumbing`, `residential`, `fire-life-safety`, `accessibility`), `applicableCodeBooks` (`string[]`), `confidence?` (0-1), `note?`. Returns the updated `SubmissionClassification`. Server emits a `submission.reclassified` atom event (audit trail already wired server-side).
+> Build plan: new `ReclassifySubmissionDialog.tsx` in `artifacts/plan-review/src/components/` matching the existing `DecideModal` / `SubmitToJurisdictionDialog` pattern (shadcn Dialog, opened from a button). Two-step: form → confirmation → submit via the generated `useReclassifySubmission` hook. Reachable from a "Reclassify" button in `SubmissionDetailModal`'s `SubmissionActionHeader`. Form pre-fills from the submission's current classification. Scope: ~1 new component + 1 wiring edit + tests.
+>
+> **C.3.2 EngagementDetail.tsx split — scoped, not started.** `artifacts/design-tools/src/pages/EngagementDetail.tsx` is 5,172 lines. The split is a precision refactor with a hard "zero behavior change / preserve performance characteristics" bar. Needs full file read (~3 large reads), section-boundary mapping, then careful extraction of ~6-8 components under `components/engagement-detail/` with every prop / handler / memo preserved. This is the precision-work half of C.3 — pacing rule says fresh session.
+
+
+
 You are cc-agent-C continuing on the `legacy-design-tools` repo. Lane C.3 is independent of L-surface work and infrastructure cutover — parallel-safe with both. Closes two UI debts surfaced by the cortex UI inventory.
 
 ## Why this exists
