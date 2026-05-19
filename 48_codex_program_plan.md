@@ -2,9 +2,9 @@
 id: 48_codex_program_plan
 title: Codex program plan — current state through GA
 status: active
-last_updated: 2026-05-16
+last_updated: 2026-05-19 (combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; new Phase 2 stream CDX-MCP for existing-product Codex MCP tool exposure — finding-generation, override-write, briefing-fetch, snapshot-ingest)
 applies_to: codex
-related: [11_roadmap, 27_engine_evolution_plan, 28_mcp_first_product_design, 42_design_accelerator_program_plan, 47_codex_plan_review, 50_hauska_mcp_server, 51_substrate_v1_sprint, 05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
+related: [11_roadmap, 27_engine_evolution_plan, 28_mcp_first_product_design, 42_design_accelerator_program_plan, 47_codex_plan_review, 50_hauska_mcp_server, 51_substrate_v1_sprint, 05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
 owner: nick
 ---
 
@@ -133,6 +133,7 @@ Phase 2 builds the reviewer-side surface for 1b QA and closes the gaps that turn
 | **CDX-EngineHook-prep.** Engine integration surface | Define engine API contract that smartcity-os Plan Review surface will consume in Phase 4. Build it in legacy-design-tools first; smartcity-os planner consumes when activating. | `47_*` Wave 2 |
 | **CDX-QA-1.** Codex 1b QA scenarios documentation | Write the QA scenario set: which projects, which jurisdictions, expected atom outputs at each step, what "wrong" looks like for each. Mirrors DA-8. Durable QA spec; future regression tests run against it. | This plan |
 | **CDX-Customer-Zero.** Empressa-as-reviewer-zero rollout | Set up Empressa team to QA Codex 1b on their own DA outputs. Eat whole dog food across DA → Codex on Moab projects. | This plan |
+| **CDX-MCP.** Codex MCP tool surface (existing-product retrofit) | Per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md) and [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). Four tools wrapping existing Codex 1b capabilities under the `codex/*` namespace in `hauska-mcp-server`: `finding_generation` (engine full-pass trigger), `override_write` (adjudication-state writes), `briefing_fetch` (briefing atom retrieval), `snapshot_ingest` (submission ingest). All Layer 2 paid; auth required. Stronger than the `28_mcp_first_product_design.md` minimum policy (which queues Codex MCP retrofit post-launch); this sprint runs it concurrent with QA-readiness work because the operator's next QA cycle is expected to flow through MCP-driven agent workflows. Repo: `hauska-mcp-server` (cc-agent-M, Lane B). | Sprint decision; this plan |
 
 **Phase 2 gates:**
 

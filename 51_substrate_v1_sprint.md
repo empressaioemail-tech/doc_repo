@@ -2,9 +2,9 @@
 id: 51_substrate_v1_sprint
 title: Substrate v1 sprint — Code Ingestion Pipeline + Hauska MCP Server
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-19 (Sync 4.5 added to Sync points table per combined Cortex/Codex sprint decision; hard-kill checkpoint semantics tightened from "three counties" to "three jurisdictions"; Sync 5 explicit deferral framing per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)
 applies_to: portfolio
-related: [11_roadmap, 11a_bastrop_live_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
+related: [11_roadmap, 11a_bastrop_live_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
 owner: nick
 ---
 
@@ -421,10 +421,14 @@ Sync point 1 (Bump 1 atom contract published) is cc-agent-AC's, consumed here.
         compute + 1 hr human review**
   - [ ] Flag-and-review pipeline: jurisdictions exceeding target
         surface for engineering review (not silently absorbed)
-  - [ ] **Hard-kill checkpoint** at 3 counties: if the metric is not
-        achievable after first three counties (proof set in early
-        batch ingest), halt catalog expansion and surface to Nick for
-        thesis review per catalog roadmap Move 3
+  - [ ] **Hard-kill checkpoint** at 3 jurisdictions: if the metric is
+        not achievable after first three jurisdiction-onboarding events
+        (proof set in early batch ingest), halt catalog expansion and
+        surface to Nick for thesis review per catalog roadmap Move 3.
+        Semantics tightened from "three counties" to "three
+        jurisdictions" per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)
+        — the original framing was loose-language for the proof
+        threshold; literal county count was never the intent.
 - [ ] **B.6 Bastrop validation pass:**
   - [ ] Run full pipeline against Bastrop UDC
   - [ ] Diff atom output against A.1 one-off load
@@ -687,8 +691,9 @@ Critical points where streams synchronize:
 | 1 | Bump 1 atom contract published | 1B + (all consumers) | **DONE 2026-05-19** — `@hauska/atom-contract@1.0.0` on npm; v1.0.0 tag pushed; cc-agent-AC bootstrap commit `824e68e` | Both tracks can pin to a real atom contract version. |
 | 2 | Adapter contract stable | 1A → 1B + 1D | **DONE 2026-05-19** — `packages/corpus/src/adapters/types.ts` plus conformance suite per cc-agent-E commit `5049961` | Stream 1B hard-wired to adapter output; Stream 1D writes eval against actual ingested cities. |
 | 3 | Retrieval API contract stable | 1C → 2A | **DONE 2026-05-19** — `services/retrieval-api/src/server.ts` plus 10-test contract suite per cc-agent-E commit `5049961`; cc-agent-M Stream 2A wired against it per PR #1 squash-merge | Stream 2A wires real client. |
-| 4 | First jurisdiction passes eval | 1D → 2D launch gate | **DONE 2026-05-19** — Grand County partial (IRC R301 + IWUIC; 75 atoms) passed 0.9 / 1.0 / 1.0 quality bar per cc-agent-E PR #3 commit `cbe4852`. Note: Bastrop UDC absent from legacy Neon (BASTROP BUILDING BLOCK / B3 CODE lives on bastrop.gov); B3 publisher adapter is Session B work toward Sync 5. | Pre-launch: at least one jurisdiction passes quality bar. |
-| 5 | Quality-gated 20-jurisdiction corpus | 1D → 2D launch gate | Open. Grand County fully covered (290 atoms total: IRC R301 14 + IWUIC 61 + LAND_USE 215) per cc-agent-E PR #4. Bastrop UDC pending Session B B3 publisher adapter. 18 other TX cities sequenced after Session B. | Public launch unblocked. |
+| 4 | First jurisdiction passes eval | 1D → 2D launch gate | **DONE 2026-05-19** — Grand County partial (IRC R301 + IWUIC; 75 atoms) passed 0.9 / 1.0 / 1.0 quality bar per cc-agent-E PR #3 commit `cbe4852`. Note: Bastrop UDC absent from legacy Neon (BASTROP BUILDING BLOCK / B3 CODE lives on bastrop.gov); B3 publisher adapter is Lane A.1 work toward Sync 4.5. | Pre-launch: at least one jurisdiction passes quality bar. |
+| 4.5 | Quality-gated 4-jurisdiction Bastrop-network corpus | 1A + 1D | **Open** (added 2026-05-19 per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)). Scope: Bastrop UDC (public-tier; new B3 publisher adapter against bastrop.gov) plus Bastrop County via Municode Path A (internal-tier pending Sylvia outreach) plus Smithville via Municode Path A (internal-tier pending) plus Elgin via Municode Path A (internal-tier pending). Quality bar ≥ 0.9 / 1.0 / 1.0 per Grand County precedent. Dispatch: [`_dispatches/2026-05-19_cc-agent-E_sync_4_5_jurisdictions.md`](_dispatches/2026-05-19_cc-agent-E_sync_4_5_jurisdictions.md). | Closes substrate v1 substrate-side work for the next QA cycle; cost-per-jurisdiction hard-kill checkpoint clears at 5 total onboarding events (Grand County + 4 here). |
+| 5 | Quality-gated 20-jurisdiction corpus | 1D → 2D launch gate | **Deferred to public-launch-sequenced demand** per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). 16+ remaining TX cities (Tier 1 Bastrop-network: Round Rock, Pflugerville, Cedar Park, Leander, Hutto, Taylor, Georgetown; Tier 2 metros: Austin, San Antonio, Fort Worth, El Paso, Plano, Arlington, Irving, Garland, Lubbock, Laredo; Tier 3: Jarrell, Frisco, McKinney, Killeen, plus M9-TBD) sequenced for batch ingest when public-launch timing demands it. Sync 4.5 plus Grand County = 5 jurisdictions cover the operator's actual test surface; the 20-jurisdiction target was the public-launch unblocker, not the internal-QA unblocker. | Public launch unblocked. |
 
 Streams 2A/2B/2C/2D all proceed against mocked / staged backends before
 sync point 3 lands. Real wiring follows the moment 1C publishes the

@@ -2,9 +2,9 @@
 id: 28_mcp_first_product_design
 title: MCP-first product design principle and product line architecture
 status: active
-last_updated: 2026-05-16
+last_updated: 2026-05-19 (combined Cortex/Codex sprint folds MCP co-design into L1-L6 stream rather than queuing retrofit as a separate later phase; Codex 1a, Codex 1b, Cortex all confirmed tracked-retrofit; sprint goes stronger than minimum policy per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)
 applies_to: portfolio
-related: [07_product_line_summary, 09_post_saas_substrate_thesis, 14_pricing_framework, 29_mcp_surface_tier_model, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review, 48_codex_program_plan, 41_revit_connector, 50_hauska_mcp_server, 60_eci_atomization, adr_008_engine_factor_out]
+related: [07_product_line_summary, 09_post_saas_substrate_thesis, 14_pricing_framework, 29_mcp_surface_tier_model, 30_smartcity_os, 40_design_accelerator, 42_design_accelerator_program_plan, 47_codex_plan_review, 48_codex_program_plan, 41_revit_connector, 50_hauska_mcp_server, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_008_engine_factor_out]
 owner: nick
 ---
 
@@ -61,14 +61,14 @@ The pattern generalizes to Codex 1a/1b, Design Accelerator, and other UI-first p
 
 ### Codex (plan review and code intelligence)
 - Codex 1a (contractor-side plan review for firms doing reviews on a city's behalf or self-review pre-submission per 47_codex_plan_review.md): Live or pre-launch. MCP retrofit queued; expected to be highest-leverage commercial MCP because firms already pay per-seat for plan-review tooling and the metering model is per-seat with bundled MCP call quota plus cross-tenant Layer 2 overage per 29_mcp_surface_tier_model.md.
-- Codex 1b (city-side plan review): Pre-launch; lands when 11a Bastrop production sprint exits. MCP retrofit queued post-launch.
+- Codex 1b (city-side plan review): Pre-launch; lands when 11a Bastrop production sprint exits. **MCP retrofit in flight per 2026-05-19 combined Cortex/Codex sprint** — four existing-product tools (`codex/finding_generation`, `codex/override_write`, `codex/briefing_fetch`, `codex/snapshot_ingest`) ride this sprint alongside Cortex retrofit; runs concurrent with Phase 2 QA-readiness work rather than queued post-launch. Per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md).
 - Codex code intelligence: MCP IS the primary surface (via Hauska MCP Server tools over code-section atoms). Human UI is the Codex code-lookup web tool, free at Layer 1 per 08_tiered_access_model.md. This is the cleanest example of MCP-first design in the portfolio.
 
 Per the 2026-05-16 operator decision, Codex is the product brand covering all three (plan review plus code intelligence). The naming consolidates the brand around code-related agent and human surfaces.
 
 ### Design Accelerator (Cortex)
 - Status: pre-launch; customer-zero is Empressa's own Moab projects (Arena Roja)
-- MCP retrofit: queued at or after launch
+- MCP retrofit: **in flight per 2026-05-19 combined Cortex/Codex sprint** — see [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Co-designed with L1-L6 UI surfaces rather than treated as a separate later phase; this is stronger than the minimum policy. Lane B dispatch: [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). Tools land in `hauska-mcp-server` under `cortex/*` namespace.
 - Notes: architect-facing UI today. MCP version lets architect-side agents query design intelligence directly. Most natural agent use cases involve delegated workflow (draft response letter, query constraint set, generate detail spec).
 
 ### Revit Connector

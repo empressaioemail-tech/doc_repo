@@ -2,9 +2,9 @@
 id: 42_design_accelerator_program_plan
 title: Design Accelerator program plan — current state through GA
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-19 (combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; L1-L6 ships with MCP tool surface co-designed per surface; new Phase 2 stream DA-MCP-Cortex added for Cortex existing-product MCP tool exposure; rendering / image-to-BIM / image-to-CAD descoped to 41_advanced_capture_features.md)
 applies_to: design-accelerator
-related: [10_ground_truth, 11_roadmap, 27_engine_evolution_plan, 40_design_accelerator, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_revit_connector, 48_codex_program_plan, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
+related: [10_ground_truth, 11_roadmap, 27_engine_evolution_plan, 40_design_accelerator, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_advanced_capture_features, 41_revit_connector, 48_codex_program_plan, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
 owner: nick
 ---
 
@@ -72,12 +72,14 @@ Concretely, at QA-readiness Nick can:
 7. **Generate a client render** via mnml.ai integration at deliverable-acceptable quality (not photorealistic perfection — sufficient for client review).
 8. **Find bugs.** QA-readiness is the state where bugs surface structurally rather than as vague "AI weirdness" — Nick can point at a specific atom and say "this is wrong because X."
 
+**MCP co-design (added 2026-05-19).** Per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md), L1-L6 in the current sprint cycle ship with MCP tool surface co-designed per surface — UI consumer and MCP tool counterpart share the same atom and aligned consumer signatures. The dual-interface principle in [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md) treats Cortex as a tracked-retrofit product; this sprint folds retrofit into L1-L6 stream rather than treating it as a separate later phase. Lane B dispatch covering Cortex tool surface: [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). L-surface tools per surface: `cortex/response_task_*` (L1), `cortex/sheet_content_extraction_*` (L2), `cortex/deliverable_letter_*` (L3), `cortex/detail_callout_spec_*` (L4), `cortex/product_spec_reference_*` (L5), `cortex/deliverable_letter_render` (L6). Plus existing-product Cortex tools: `cortex/ifc_ingest`, `cortex/bim_model_query`, `cortex/snapshot_register`, `cortex/briefing_emit`.
+
+**Rendering / advanced capture (note 2026-05-19).** mnml.ai integration depth, image-to-BIM, image-to-CAD all descoped to [`41_advanced_capture_features.md`](41_advanced_capture_features.md) with explicit activation gate (post-sprint, post-first-QA-cycle). Existing mnml.ai code at `routes/renders.ts` stays env-gated and available for ad-hoc use; the descope is sprint-scope, not feature removal.
+
 **What QA-readiness does NOT require:**
 
-- L4 Revit content push (`detail-callout-spec` → APS Design Automation) — Phase 3.
-- L5 live ICC-ES verification — Phase 3.
 - B1–B5 full taxonomy — only B1 minimum needed for QA; full taxonomy is v1.0 GA criterion.
-- mnml.ai photorealistic deep integration — Phase 3 polish.
+- mnml.ai photorealistic deep integration — per `41_advanced_capture_features.md` activation gate.
 - External pilot firm anything — Phases 4–5.
 
 ## Phases
@@ -122,6 +124,7 @@ Closes customer-zero gaps (L1, L2, L3, L6) and lands B1 taxonomy minimum. Turns 
 | **DA-7.** B1 taxonomy minimum | Settle "where does B1 classification live" (server-side in `api-server` is the natural home per `40_*`). Implement B1 — basic bidirectional code-tagging — sufficient for QA finding classification. B2–B5 stay aspirational. | `40_design_accelerator.md` |
 | **DA-8.** QA scenarios documentation | Write the QA scenario set: which projects, which workflows, expected atom outputs at each step, what "wrong" looks like for each. This is the durable QA spec; future regression tests run against it. | This plan |
 | **DA-9.** Compliance pass quality on Grand County IRC | Per `27_*` Stream C, focused on QA scenarios. Goal: Musgrave compliance check produces findings Nick can structurally critique. | Engine plan |
+| **DA-MCP-Cortex.** Cortex MCP tool surface co-design (L1-L6 + existing-product tools) | Per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md) and [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). Co-designed with DA-4 / DA-5 / DA-6 / L3-L6 streams: every L-surface ships with an MCP tool counterpart in `hauska-mcp-server` under the `cortex/*` namespace, plus 4 existing-product Cortex tools (`ifc_ingest`, `bim_model_query`, `snapshot_register`, `briefing_emit`). Repo: `hauska-mcp-server` (cc-agent-M, Lane B). | Sprint decision; this plan |
 
 **Phase 2 gates:**
 

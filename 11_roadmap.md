@@ -2,9 +2,9 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-19 (combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; absorbs prior Codex/Cortex Phase 1 P1 entry plus adds Sync 4.5 substrate close + Replit decouple + Neon swap; M-CortexQA and M-CodexQA entry criteria reference Lane A/B/C completion)
 applies_to: portfolio
-related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
+related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 41_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
 ---
 
 # Roadmap
@@ -113,15 +113,15 @@ The portfolio is "ready to bring on more clients and build more on top" when thr
 
 ### M-CortexQA — Cortex functional, QA-ready
 
-- **Gated on:** [`27_*`](27_engine_evolution_plan.md) Streams A/B/C/D running; [`42_*`](42_design_accelerator_program_plan.md) Phase 1 complete
-- **Doc:** [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) Phase 2 exit
-- **Exits:** Nick can run Musgrave (or any active Moab project) end-to-end with structural evaluation per the 8-point QA-readiness definition. Bugs are pointable-at-atoms.
+- **Gated on:** Combined Cortex/Codex sprint Lanes A + B + C close (substrate Sync 4.5 + L1-L6 atom shapes + Cortex MCP tool surfaces + L1-L6 UI surfaces); legacy-design-tools cutover to Cloud Run + new Neon prod complete per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md).
+- **Doc:** [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) Phase 2 exit (updated 2026-05-19 to fold MCP co-design into Phase 2).
+- **Exits:** Nick can run Musgrave (or any active Moab project) end-to-end with structural evaluation per the 8-point QA-readiness definition. Bugs are pointable-at-atoms. MCP-driven agent workflows also exercise the full L1-L6 surface set via `cortex/*` tools.
 
 ### M-CodexQA — Codex 1b functional, QA-ready
 
-- **Gated on:** [`27_*`](27_engine_evolution_plan.md) Streams A/B/C/D running; [`48_*`](48_codex_program_plan.md) Phase 1 complete
-- **Doc:** [`48_codex_program_plan.md`](48_codex_program_plan.md) Phase 2 exit
-- **Exits:** Nick can run real reviewer pass end-to-end through Codex 1b on Moab projects with structural evaluation per the 8-point QA-readiness definition.
+- **Gated on:** Combined Cortex/Codex sprint Lanes A + B + C close (substrate Sync 4.5 + Codex MCP tool surfaces via Lane B + Codex 1b reviewer-side QA surface via Lane C); legacy-design-tools cutover complete per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md).
+- **Doc:** [`48_codex_program_plan.md`](48_codex_program_plan.md) Phase 2 exit (updated 2026-05-19 to add CDX-MCP stream).
+- **Exits:** Nick can run real reviewer pass end-to-end through Codex 1b on Moab projects with structural evaluation per the 8-point QA-readiness definition. MCP-driven agent workflows also exercise the four Codex tool surfaces (`codex/finding_generation`, `codex/override_write`, `codex/briefing_fetch`, `codex/snapshot_ingest`).
 
 ### Cross-cutting work in flight
 
@@ -167,10 +167,11 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 
 ## P1 — this week / next
 
-- [ ] **Substrate v1 sprint** (Code Ingestion Pipeline + Hauska MCP Server combined) — [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md), active 2026-05-15. Two new repos (`hauska-engine`, `hauska-mcp-server`), two parallel tracks, four streams per track, eight cc-agents. v1 ships quality-gated TX-first jurisdiction corpus + public MCP endpoint at `mcp.hauska.dev`. **Phase 0 decisions are immediate next step** — 16 consolidated decisions including revenue model, BD ownership, hosting, orchestration substrate, OCR provider, quality bar, query authoring, TX-first batch list, cost budget. Supersedes standalone sprint sections in 49 + 50 (those remain canonical reference for pipeline design + MCP product framing). Resolves "Bring-your-own-agent public API" open strategic question + Risk 1. `product` · Nick (Phase 0 decisions) + 8 cc-agents (streams) · XL sprint.
+- [ ] **Substrate v1 sprint** (Code Ingestion Pipeline + Hauska MCP Server combined) — [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md), active 2026-05-15. **Sync 4.5 close added 2026-05-19** per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md): Bastrop UDC plus Bastrop County plus Smithville plus Elgin (4-jurisdiction Bastrop-network corpus); Sync 5 (16+ TX cities) deferred to public-launch demand. Two repos (`hauska-engine`, `hauska-mcp-server`), per-repo single-agent ownership (cc-agent-E, cc-agent-M), cc-agent-AC steady-state on `hauska-atom-contract`. `product` · Nick + 3 cc-agents · XL sprint.
+- [ ] **Combined Cortex/Codex sprint** — [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Replaces the prior Codex/Cortex Phase 1 P1 entry below. Cortex/Codex L1-L6 surfaces ship with MCP co-design per surface; existing-product Codex (4 tools) + Cortex (4 tools) MCP surfaces land in `hauska-mcp-server`; legacy-design-tools production moves from Replit autoscale to Cloud Run; current Neon prod swapped to fresh prod-grade Neon instance. Three lanes parallel (cc-agent-E in `hauska-engine`, cc-agent-M in `hauska-mcp-server`, cc-agent-C in `legacy-design-tools`) plus Lane Foundation (cc-agent-AC v1.1.0 atom contract minor bump). 8 dispatches at `_dispatches/2026-05-19_*`. `product` · Nick + 4 cc-agents · XL sprint.
 - [ ] **Texas IP attorney opinion memo** — data-licensing posture for catalog ingest; budget $8–12K. **Gates [`51`](51_substrate_v1_sprint.md) Stream 1D non-Bastrop ingestion.** Candidates per [`18_stakeholder_graph.md`](18_stakeholder_graph.md): Husch Blackwell Austin, Norton Rose Fulbright Austin, Pillsbury Austin (data licensing + AI practice). Sourced from catalog roadmap dialogue 2026-05-15. `legal / strategic` · Nick · M.
 - [ ] **SmartCity OS Stabilization Sprint** — [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md), active 2026-05-11. Orchestrates Phase 2 migration + W1 sprint + security sweep + multi-tenancy foundation. ~3-4 weeks across 4 workstreams. **This is M-Stabilize.**
-- [ ] **Codex/Cortex Phase 1 work** — [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md) Streams A/B/C/D/G + [`42_*`](42_design_accelerator_program_plan.md) Phase 1 + [`48_*`](48_codex_program_plan.md) Phase 1. Module boundary refactor, atom registry expansion, engine quality, corpus depth, brand migration. Path to M-CortexQA and M-CodexQA. `product` · Nick + agent · XL sprint.
+- [x] **Codex/Cortex Phase 1 work** — absorbed into combined Cortex/Codex sprint above per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). DA-BIM-Symmetry shipped 2026-05-19 (PRs #28 + #29 merged); 27-G brand migration landed via PR #17 + #27. Remaining 27/42/48 Phase 2 streams now folded into the combined sprint Lanes A + B + C.
 - [ ] **Migration sprint Phase 1** — legacy-design-tools full migration · executing per existing track. `migration` · Nick + agent · XL sprint · ref: [`12_migration_sprint.md`](12_migration_sprint.md). 2026-05-10 PM: Phase 1B Stage 1 verified — schema parity to Empressa Neon. Phase 1B Stage 2 / Phase 1C eligible to schedule.
 - [ ] **Migration sprint Phase 2** — SmartCity OS Empressa Neon swap (us-central1 closes Fire 5) · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1**. `migration` · Nick + agent · XL sprint.
 - [ ] **Migration sprint Phase 3** — Drizzle migrate adoption · **executing under [`30a`](30a_smartcity_stabilization_sprint.md) WS-1 Phase 3 (ADR-006)**. `migration` · Nick + agent · XL sprint.

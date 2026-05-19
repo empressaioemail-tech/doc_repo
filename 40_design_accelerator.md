@@ -2,9 +2,9 @@
 id: 40_design_accelerator
 title: Design Accelerator
 status: active
-last_updated: 2026-05-16
+last_updated: 2026-05-19 (production target shifting from Replit autoscale to Cloud Run per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-C_replit_decouple.md; rendering + image-to-BIM + image-to-CAD descoped to 41_advanced_capture_features.md)
 applies_to: design-accelerator
-related: [10_ground_truth, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 30_smartcity_os, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_revit_connector]
+related: [10_ground_truth, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 30_smartcity_os, 40a_customer_zero_observations_arena_roja_2026_05_06, 41_advanced_capture_features, 41_revit_connector, _decisions/2026-05-19_sync_4_5_and_cortex_sprint]
 ---
 
 # Design Accelerator
@@ -37,11 +37,18 @@ stored in a separate Postgres database scoped to the architect side of
 the workflow.
 
 Production target today: Replit autoscale at
-`prompt-agent-accelerator.replit.app`. Migration to Cloud Run + GitHub
-Actions CI is on the post-saga commitment list. Backing services: Neon
-PostgreSQL with pgvector (Replit-managed today, Empressa-owned
-post-migration), Anthropic API for AI surfaces, APS (Autodesk Platform
-Services) on the paid tier for Revit cloud operations.
+`prompt-agent-accelerator.replit.app`. **Migration to Cloud Run + fresh
+Neon prod instance is in flight per the 2026-05-19 combined sprint** —
+see [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)
+and the Lane C.2 dispatch at [`_dispatches/2026-05-19_cc-agent-C_replit_decouple.md`](_dispatches/2026-05-19_cc-agent-C_replit_decouple.md).
+Phase 1A CI/CD scaffold (build-and-push workflow + canary deploy
+workflow) already exists per the 2026-05-19 cortex-track close-out;
+cutover is sequenced after all of Lane A + Lane B + Lane C.1 + C.3 +
+C.4 close. Backing services post-cutover: Cloud Run (production
+target), fresh prod-grade Neon PostgreSQL with pgvector
+(Empressa-owned, operator-specced region/plan in Decision 0.20),
+Anthropic API for AI surfaces, APS (Autodesk Platform Services) on the
+paid tier for Revit cloud operations.
 
 ## Customer-zero: Empressa pilot
 
@@ -187,7 +194,7 @@ Load-bearing third-party services:
 |---|---|---|
 | Anthropic API | Briefing generation, client-comment summarization, finding generation, sheet OCR via Claude vision | Sonnet 4.5 for analytical surfaces; Haiku for classification. Every analytical surface routes a single prompt to Anthropic (no rules-engine fallback today) per the 2026-05-18 plan-review engine recon. |
 | APS (Autodesk Platform Services) | Future: Revit cloud operations, IFC translation, sheet PDFs, Design Automation for L4 Revit content push | Empressa has full APS access available. **Not currently integrated in code** — zero APS imports in the api-server or any UI artifact per the 2026-05-18 Cortex UI recon. Integration is the gap, not access. |
-| mnml.ai | Photorealistic exterior rendering from massing models | Wired server-side via `routes/renders.ts`; gated by `RENDERS_PROD_ENABLED` env flag. Used in W2 wave for client deliverables. |
+| mnml.ai | Photorealistic exterior rendering from massing models | Wired server-side via `routes/renders.ts`; gated by `RENDERS_PROD_ENABLED` env flag. **Sprint scope descoped to [`41_advanced_capture_features.md`](41_advanced_capture_features.md)** per the 2026-05-19 combined sprint decision; integration depth (pose control, material fidelity, lighting consistency) deferred until activation gate clears. Existing code stays env-gated and available for ad-hoc use; descope is sprint-scope, not feature removal. |
 | Leaflet 2D + Three.js GLB viewer | Geospatial visualization (Leaflet); BIM glTF preview (Three.js) | The actual 3D / spatial stack in `legacy-design-tools` design-tools artifact. **Supersedes prior CesiumJS framing** — Cesium was never wired in any artifact per the 2026-05-18 Cortex UI recon. If true Cesium scene work returns, treat as net-new. |
 | Neon (pgvector) | Embeddings store for code atom retrieval | Replit-managed; migration pending. Retrieval today is top-K vector + lexical fallback per [`27`](27_engine_evolution_plan.md); hybrid graph traversal per ADR-010 is design-fresh in `hauska-engine`. |
 
@@ -197,7 +204,7 @@ The Moab residential projects drive a wave-based v1.0 plan:
 
 - **W0** — foundation, ribbon panel structure, Revit integration baseline
 - **W1** — Grand County parcel briefing + 3DEP elevation import
-- **W2** — neighboring context model + mnml.ai client render
+- **W2** — neighboring context model + mnml.ai client render (rendering portion descoped to [`41_advanced_capture_features.md`](41_advanced_capture_features.md) per 2026-05-19 sprint; neighboring-context portion stays in this wave)
 - **W3** — client comments panel, two-way comment flow
 
 Detailed wave breakdown lives in roadmap (deferred). Sprint vocabulary

@@ -2,9 +2,9 @@
 id: 50_hauska_mcp_server
 title: Hauska MCP Server — v1 sprint and product framing
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-19 (Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
 applies_to: portfolio
-related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 49_code_ingestion_pipeline, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format]
+related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format, adr_017_atom_access_control]
 owner: nick
 ---
 
@@ -212,6 +212,37 @@ the 2026-05-15 scaffold review:
 
 **Exit:** Tool surface matches Phase 0 decision; Zod schemas updated;
 descriptions clean for LLM consumption; tool list documented.
+
+### Sprint 2 tool expansion — Cortex + Codex tool surfaces plus L1-L6 surface tools
+
+Added 2026-05-19 per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Lane B dispatch: [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). 14 new tools land in `hauska-mcp-server` under per-product namespaces (`cortex/*` and `codex/*`), in addition to the 5 v1 public catalog tools above.
+
+**Public catalog tools (v1, unchanged):** `search_atoms`, `get_atom`, `list_jurisdictions`, `search_permit_atoms`, `query_jurisdiction`. **Filter update on `list_jurisdictions` per Lane Foundation v1.1.0:** unauthenticated callers see only public-tier `jurisdiction-corpus` atoms (Bastrop UDC, Grand County as of Sync 4.5); platform-internal callers see all jurisdictions including partnership-pending ones (Smithville, Elgin, Bastrop County). The partition lives in the visibility partition added to `jurisdiction-corpus` per Lane Foundation (shape: new `visibility` field OR existing ADR-017 `accessPolicy: 'platform-internal'` — cc-agent-AC chose at v1.1.0 publish; honor the choice).
+
+**Codex existing-product tools (Layer 2 paid, auth required, `codex/*` namespace):**
+
+- `codex/finding_generation` — triggers engine full-pass mode against a submission; emits findings as atoms; returns finding atom IDs plus summary. Wraps existing plan-review `routes/findings.ts` POST endpoint.
+- `codex/override_write` — writes an adjudication-state atom against a finding (accept / edit / reject + reviewer rationale). Wraps existing override endpoint.
+- `codex/briefing_fetch` — returns a briefing atom for a given engagement.
+- `codex/snapshot_ingest` — accepts a snapshot artifact (PDF + metadata) and triggers the ingest pipeline.
+
+**Cortex existing-product tools (Layer 2 paid, auth required, `cortex/*` namespace):**
+
+- `cortex/ifc_ingest` — accepts an IFC file; triggers ingest at `lib/ifcIngest.ts`; emits a `bim-model` atom symmetric with Push-to-Revit.
+- `cortex/bim_model_query` — queries a `bim-model` atom for downstream consumers.
+- `cortex/snapshot_register` — registers a snapshot against an engagement.
+- `cortex/briefing_emit` — generates a parcel briefing for a given engagement.
+
+**Cortex L-surface tools (Layer 2 paid, auth required, `cortex/*` namespace; gated per Sync B from Lane A.2 atom-shape locks):**
+
+- `cortex/response_task_*` (L1) — response-task atom lifecycle: create, update state, list per engagement, link to finding.
+- `cortex/sheet_content_extraction_*` (L2) — sheet OCR + annotation extraction trigger; fetch extracted content; list attached documents.
+- `cortex/deliverable_letter_*` (L3) — draft, update, finalize a deliverable letter.
+- `cortex/detail_callout_spec_*` (L4) — define a detail callout spec, list per engagement, mark push-status.
+- `cortex/product_spec_reference_*` (L5) — add a product-spec reference, refresh ESR status, list per engagement.
+- `cortex/deliverable_letter_render` (L6) — render a deliverable-letter atom into DOCX/PDF.
+
+Final tool count and naming may adjust during Lane B implementation if existing endpoints don't cleanly map to the operator-named tool set (e.g., briefing flow may require two tools rather than one). Surface adjustments via Lane B session summary; planner ratifies before lock.
 
 ### Phase 3 — Auth, rate limiting, key issuance
 

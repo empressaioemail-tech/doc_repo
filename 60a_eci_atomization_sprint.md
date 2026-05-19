@@ -2,9 +2,9 @@
 id: 60a_eci_atomization_sprint
 title: ECI atomization sprint — kickoff plan
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-19 (P1 + P2 confirmed staying queued during combined Cortex/Codex sprint per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; cc-agent allocation decision deferred until after sprint Lanes close)
 applies_to: portfolio
-related: [60_eci_atomization, adr_001_atom_architecture, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer, 25_atom_architecture_reference, 26_atom_upgrade_guide, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, _decisions/2026-05-18_eci_registry_naming]
+related: [60_eci_atomization, adr_001_atom_architecture, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer, 25_atom_architecture_reference, 26_atom_upgrade_guide, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, _decisions/2026-05-18_eci_registry_naming, _decisions/2026-05-19_sync_4_5_and_cortex_sprint]
 owner: nick
 ---
 
@@ -50,7 +50,7 @@ Confirm package name; decide repo placement; file decision record; produce 60a s
 
 ### P1 — Minimum-viable registry (pre-M2-C feasible)
 
-**Dispatch target.** Single cc-agent allocation (TBD). Current fleet at [`00_current_state.md`](00_current_state.md) §4 lists cc-agent-1..4 doubled across substrate v1 streams per [`_decisions/2026-05-18_substrate_v1_dispatch_allocation.md`](_decisions/2026-05-18_substrate_v1_dispatch_allocation.md). The ECI dispatch either reuses one of the four after their substrate v1 work stabilizes or expands the fleet to a fifth. Allocation decision: separate session.
+**Dispatch target.** Single cc-agent allocation (TBD). **Status update 2026-05-19:** P1 stays queued during the combined Cortex/Codex sprint per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). cc-agent-AC, cc-agent-E, cc-agent-M, cc-agent-C are all allocated to that sprint's lanes; ECI P1 dispatch waits until sprint lanes close (or until operator names a fifth cc-agent for the ECI work earlier, which the sprint plan does not currently require). Substrate-side prereqs already cleared: `@hauska/atom-contract@1.0.0` on npm (Sync 1, 2026-05-19); engine `packages/atoms/` shipped per cc-agent-E commit `5049961`. So P1 is technically unblocked — just queued behind capacity.
 
 **Work.**
 
