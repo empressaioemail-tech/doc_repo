@@ -193,13 +193,84 @@ Response `200`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
 - `400` for body/param validation failures, including `sectionIndex` out of range
 - `409` `{ "error": "deliverable_letter_incomplete", "missing": [...] }` on `send`
 
-## L4-L6
+## L4 — detail-callout-spec
 
-Appended as each surface's MCP tools land. L4 (detail-callout-spec) is next per cc-agent-E's Lane A.2 progress.
+Atom: `DetailCalloutSpecAtomInstance` / `DETAIL_CALLOUT_SPEC_SCHEMA` (`@hauska-engine/atoms` package 0.4.0). A structured spec for a Revit detail callout the Revit Connector pushes via APS Design Automation.
+
+The atom's `spec` field is a Zod discriminated union keyed on `detailType` (`DETAIL_CALLOUT_SPEC_PAYLOAD_SCHEMA`). Detail types and their spec fields:
+- `door-schedule` — `{ rows: [{ doorMark, doorType, width, height, material, fireRating, hardwareSet }] }`
+- `wall-section` — `{ sectionMark, cutLocation, assemblyLayers: [{ material, thickness, function }], baseDatum, topDatum }`
+- `wall-type` — `{ typeMark, assemblyLayers: [{ material, thickness, function }], fireRating, stcRating }`
+- `room-finish` — `{ roomName, roomNumber, floorFinish, baseFinish, wallFinish, ceilingFinish, ceilingHeight }`
+
+Push lifecycle (`pushState`): `pending → pushed → applied | rejected-by-user`; `applied` is terminal; `rejected-by-user → pending` is allowed (revise + re-push). The engine `isLegalPushTransition(from, to)` helper is the source of truth.
+
+### POST /api/engagements/:engagementId/detail-callout-specs
+
+Create a detail-callout spec.
+
+Request body:
+```
+{
+  "spec": { "detailType": DetailCalloutType, ...type-specific fields },
+  "findingId": string | null,        // optional
+  "responseTaskId": string | null,   // optional
+  "actorId": string | null,          // optional
+  "principalActorId": string | null  // optional
+}
+```
+The `spec` object carries `detailType` plus the type-specific fields. Validate it against `DETAIL_CALLOUT_SPEC_PAYLOAD_SCHEMA` — a malformed per-type payload is a `400`.
+
+Backend behavior: assign `entityId`; set `pushState` to `"pending"`; leave `apsTaskRef` null; stamp `createdAt`; set `accessPolicy` to `"tenant-private"`; record the `detail-callout-spec.created` event.
+
+Response `201`: `{ "detailCalloutSpec": DetailCalloutSpecAtomInstance }`
+
+### POST /api/detail-callout-specs/:specId/push-state
+
+Transition the spec to a new push state.
+
+Request body: `{ "pushState": DetailCalloutPushState }`
+
+Backend behavior: validate the transition via `isLegalPushTransition`. An illegal transition is rejected with `409` `{ "error": "illegal_push_transition", "from": DetailCalloutPushState, "to": DetailCalloutPushState, "legalNextStates": DetailCalloutPushState[] }`. On success record the matching event (`detail-callout-spec.pushed` / `.applied` / `.rejected`); entering `"pushed"` stamps `pushedAt`.
+
+Response `200`: `{ "detailCalloutSpec": DetailCalloutSpecAtomInstance }`
+
+### POST /api/detail-callout-specs/:specId/aps-ref
+
+Write the opaque APS Design Automation work-item ref onto the spec.
+
+Request body: `{ "apsTaskRef": string }`
+
+Response `200`: `{ "detailCalloutSpec": DetailCalloutSpecAtomInstance }`
+
+### GET /api/engagements/:engagementId/detail-callout-specs
+
+List the detail-callout specs for an engagement.
+
+Query params: `pushState` (optional) — one of `pending | pushed | applied | rejected-by-user`.
+
+Response `200`: `{ "detailCalloutSpecs": DetailCalloutSpecAtomInstance[] }`
+
+### GET /api/detail-callout-specs/:specId
+
+Fetch a single detail-callout-spec atom.
+
+Response `200`: `{ "detailCalloutSpec": DetailCalloutSpecAtomInstance }`
+
+### Error envelopes (all L4 routes)
+
+- `404` `{ "error": "engagement_not_found" }` / `{ "error": "detail_callout_spec_not_found" }`
+- `400` for body/param validation failures, including a malformed per-type `spec`
+- `409` `{ "error": "illegal_push_transition", "from", "to", "legalNextStates" }` on `push-state`
+
+## L5-L6
+
+Appended as each surface's MCP tools land.
 
 ## Status
 
 - L1 contract: defined; MCP tools shipped in hauska-mcp-server (`cortex_response_task_*`, PR #6). Legacy routes pending cc-agent-C Lane C.4.
 - L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7). Legacy routes pending cc-agent-C Lane C.4.
 - L3 contract: defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8). Legacy routes pending cc-agent-C Lane C.4.
-- L4-L6: pending.
+- L4 contract: defined; MCP tools shipped (`cortex_detail_callout_spec_*`, PR #9). Legacy routes pending cc-agent-C Lane C.4.
+- L5-L6: pending.
