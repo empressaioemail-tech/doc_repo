@@ -5,9 +5,12 @@ date: 2026-05-19
 agent: cc-agent-M
 repo: hauska-mcp-server
 session_type: contract
+status: GROUP 3 COMPLETE — all six L-surface contracts (L1-L6) defined; MCP tools shipped; legacy routes pending cc-agent-C Lane C.4
 rolled_up: false
 related: [_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces, _dispatches/2026-05-19_cc-agent-C_l_surface_ui, _research/2026-05-19_l1_l6_mcp_tool_prep_cc-agent-M]
 ---
+
+> **Group 3 COMPLETE (2026-05-19).** All six L-surface MCP tool sets (L1-L6) are shipped in hauska-mcp-server. Every endpoint contract below is final and ready for cc-agent-C to implement in Lane C.4. Surface any drift discovered during implementation to the planner before locking.
 
 ## Purpose
 
@@ -319,15 +322,41 @@ Response `200`: `{ "productSpecReference": ProductSpecReferenceAtomInstance }`
 - `400` for body/param validation failures, including a malformed `esrNumber`
 - `502` `{ "error": "icc_es_unreachable" }` is a reasonable shape if the `refresh` poll cannot reach ICC-ES — the MCP server surfaces 5xx as an engineering-notified error
 
-## L6
+## L6 — deliverable-letter render
 
-Appended when the L6 (deliverable-letter render) MCP tool lands. Per the planner, the render output is itself an atom (`deliverable-letter-render`); `cortex_deliverable_letter_render` will produce that atom and return the blob ref.
+Atom: `DeliverableLetterRenderAtomInstance` / `DELIVERABLE_LETTER_RENDER_SCHEMA` (`@hauska-engine/atoms` package 0.6.0). The rendered DOCX/PDF artifact of an L3 deliverable-letter, as a first-class atom (render output IS an atom per Sprint Amendment 6 — queryable, provenance-pinned).
 
-## Status
+`format` ∈ `docx | pdf` (lowercase). `sourceLetterRef` is a `did:hauska:deliverable-letter:<localId>` ref to the L3 source letter. `sourceLetterVersion` pins the source letter's `contentHash` at render time. `blobRef` is an opaque pointer to the stored render bytes — storage details (object key, signed-URL pattern, retention) are runtime-layer concerns; the atom carries the reference, not the bytes.
 
-- L1 contract: defined; MCP tools shipped in hauska-mcp-server (`cortex_response_task_*`, PR #6). Legacy routes pending cc-agent-C Lane C.4.
-- L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7). Legacy routes pending cc-agent-C Lane C.4.
-- L3 contract: defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8). Legacy routes pending cc-agent-C Lane C.4.
-- L4 contract: defined; MCP tools shipped (`cortex_detail_callout_spec_*`, PR #9). Legacy routes pending cc-agent-C Lane C.4.
-- L5 contract: defined; MCP tools shipped (`cortex_product_spec_reference_*`, PR #10). Legacy routes pending cc-agent-C Lane C.4.
-- L6: pending Sync B(L6).
+### POST /api/deliverable-letters/:letterId/renders
+
+Render the letter to DOCX or PDF.
+
+Request body: `{ "format": "docx" | "pdf", "renderedByActorId": string | null }` (`renderedByActorId` optional).
+
+Backend behavior: run the completeness check first (the engine `deliverableLetterCompleteness` helper) — an incomplete letter is rejected with `409` `{ "error": "deliverable_letter_incomplete", "missing": LetterSectionKind[] }` rather than producing a partial document. On success: generate the document **synchronously**, store the bytes, assign `entityId`, set `sourceLetterRef` + `sourceLetterVersion` (the source letter's contentHash at render time), set `blobRef`, stamp `renderedAt`, set `accessPolicy` to `"tenant-private"`, record the render event. If render generation is found to routinely exceed ~30s during Lane C.4 integration, surface to the planner — an async poll shape would be the follow-on.
+
+Response `201`: `{ "render": DeliverableLetterRenderAtomInstance, "downloadUrl"?: string }`. `downloadUrl` is an optional directly-usable (e.g. signed) URL the backend may resolve from `blobRef`.
+
+### GET /api/deliverable-letters/:letterId/renders
+
+List every render of a deliverable letter, ordered `renderedAt` descending.
+
+Response `200`: `{ "renders": DeliverableLetterRenderAtomInstance[] }`
+
+### Error envelopes (all L6 routes)
+
+- `404` `{ "error": "deliverable_letter_not_found" }`
+- `400` for body/param validation failures (e.g. an unsupported `format`)
+- `409` `{ "error": "deliverable_letter_incomplete", "missing": [...] }` on `render`
+
+## Status — GROUP 3 COMPLETE
+
+- L1 contract: defined; MCP tools shipped (`cortex_response_task_*`, PR #6, merged). Legacy routes pending cc-agent-C Lane C.4.
+- L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7, merged). Legacy routes pending cc-agent-C Lane C.4.
+- L3 contract: defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8, merged). Legacy routes pending cc-agent-C Lane C.4.
+- L4 contract: defined; MCP tools shipped (`cortex_detail_callout_spec_*`, PR #9, merged). Legacy routes pending cc-agent-C Lane C.4.
+- L5 contract: defined; MCP tools shipped (`cortex_product_spec_reference_*`, PR #10, merged). Legacy routes pending cc-agent-C Lane C.4.
+- L6 contract: defined; MCP tools shipped (`cortex_deliverable_letter_render` + `cortex_deliverable_letter_renders_list`, PR #11). Legacy routes pending cc-agent-C Lane C.4.
+
+All six L-surface endpoint contracts are final. cc-agent-C implements the matching legacy-design-tools routes in Lane C.4; the L-surface UI consumes the same endpoints. Group 4 (cross-client verification) is the sprint-end QA gate and needs these legacy routes live.
