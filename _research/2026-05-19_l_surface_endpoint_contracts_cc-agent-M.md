@@ -85,11 +85,53 @@ Response `200`: `{ "responseTask": ResponseTaskAtomInstance }`
 
 The MCP server surfaces 4xx bodies to the agent and treats 5xx as an engineering-notified server error.
 
-## L2-L6
+## L2 — sheet-content-extraction + attached-document
 
-Appended as each surface's MCP tools land. L2 (sheet-content-extraction + attached-document) is next.
+Atoms: `SheetContentExtractionAtomInstance` (L2a) + `AttachedDocumentAtomInstance` (L2b), `@hauska-engine/atoms` package 0.2.0. Two coupled atoms — the sheet-ingest pass emits both.
+
+### POST /api/sheets/:sheetId/content-extraction
+
+Trigger the structured-content extraction pass on a sheet (OCR text segments + structured annotations: revision-cloud, dimension, schedule-row, callout).
+
+Request body: `{}` (empty — the sheet id in the path is the only input).
+
+Backend behavior: run the extraction; emit a `sheet-content-extraction` atom; set `accessPolicy` to `"tenant-private"`. Extraction may be a heavy pass — if the backend makes it async, return the in-progress atom or extend the contract with a job ref and surface it to the planner.
+
+Response `200`: `{ "sheetContentExtraction": SheetContentExtractionAtomInstance }`
+
+### GET /api/sheets/:sheetId/content-extraction
+
+Fetch the `sheet-content-extraction` atom for a sheet.
+
+Response `200`: `{ "sheetContentExtraction": SheetContentExtractionAtomInstance | null }` — `null` when the sheet has not been extracted yet (a normal empty result, not a 404).
+
+### GET /api/engagements/:engagementId/attached-documents
+
+List the supporting documents attached to an engagement.
+
+Query params: `documentType` (optional) — one of `specification | calculation | product-data | narrative`.
+
+Response `200`: `{ "attachedDocuments": AttachedDocumentAtomInstance[] }`
+
+### GET /api/attached-documents/:attachedDocumentId
+
+Fetch a single attached-document atom, including parsed `extractedText` and `originalBlobRef`.
+
+Response `200`: `{ "attachedDocument": AttachedDocumentAtomInstance }`
+
+### Error envelopes (all L2 routes)
+
+- `404` `{ "error": "sheet_not_found" }` / `{ "error": "engagement_not_found" }` / `{ "error": "attached_document_not_found" }`
+- `400` for body/param validation failures
+
+Note: there is no MCP tool to *create* an `attached-document` — those atoms are produced by the sheet-ingest pipeline (coupled at the producer with `sheet-content-extraction`). The MCP surface for attached-document is read-only (list + fetch).
+
+## L3-L6
+
+Appended as each surface's MCP tools land. Sync B(L3) (deliverable-letter) has fired (hauska-engine PR #11); L3 MCP tools pending.
 
 ## Status
 
-- L1 contract: defined here; MCP tools shipped in hauska-mcp-server (`cortex_response_task_*`). Legacy routes pending cc-agent-C Lane C.4.
-- L2-L6: pending.
+- L1 contract: defined; MCP tools shipped in hauska-mcp-server (`cortex_response_task_*`, PR #6). Legacy routes pending cc-agent-C Lane C.4.
+- L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7). Legacy routes pending cc-agent-C Lane C.4.
+- L3-L6: pending.
