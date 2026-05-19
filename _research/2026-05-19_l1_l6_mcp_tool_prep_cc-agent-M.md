@@ -19,71 +19,58 @@ Group 3 gates per Sync B per surface from Lane A.2. Lane A.2 has not started; cc
 
 Each surface gets multiple tools per Lane B dispatch line items B.1.1 through B.1.6. Naming locks to underscore-style per the PR #2 / PR #3 convention (`cortex_<surface>_<verb>`), not the slash-style the dispatch suggests. Auth: `product='cortex'` gate (already in place from PR #3).
 
-| # | Surface | Atom(s) from A.2 | Expected MCP tools | Backend pattern | Sync B status |
-|---|---|---|---|---|---|
-| L1 | response-task | `response-task` | `cortex_response_task_create`, `cortex_response_task_update_state`, `cortex_response_task_list`, `cortex_response_task_link_to_finding` | TBD — see Open Questions §1 | not fired |
-| L2 | sheet-content-extraction + attached-document | `sheet-content-extraction`, `attached-document` | `cortex_sheet_content_extract` (trigger), `cortex_sheet_content_fetch` (read), `cortex_attached_document_list` (per engagement) | TBD | not fired |
-| L3 | deliverable-letter | `deliverable-letter` | `cortex_deliverable_letter_draft`, `cortex_deliverable_letter_update`, `cortex_deliverable_letter_finalize` | TBD | not fired |
-| L4 | detail-callout-spec | `detail-callout-spec` | `cortex_detail_callout_spec_define`, `cortex_detail_callout_spec_list`, `cortex_detail_callout_spec_mark_pushed` | TBD; APS Design Automation push is a downstream side-effect, not in scope for v1 MCP | not fired |
-| L5 | product-spec-reference | `product-spec-reference` | `cortex_product_spec_reference_add`, `cortex_product_spec_reference_refresh_esr`, `cortex_product_spec_reference_list` | TBD; ICC-ES upstream poll is a periodic backend job per cc-agent-E dispatch Phase E, not an MCP tool concern | not fired |
-| L6 | deliverable-letter render | (extends L3) | `cortex_deliverable_letter_render` (single tool returns DOCX or PDF blob ref) | TBD | not fired |
+Backend pattern is locked to **Pattern A (engine)** for all six surfaces per the resolved Open Question §1: the atoms live in `hauska-engine/packages/atoms/` and the engine retrieval API serves their CRUD. Group 3 tools wrap the engine via `hauska-client.ts`.
+
+| # | Surface | Atom(s) from A.2 | Expected MCP tools | Sync B status |
+|---|---|---|---|---|
+| L1 | response-task | `response-task` | `cortex_response_task_create`, `cortex_response_task_update_state`, `cortex_response_task_list`, `cortex_response_task_link_to_finding` | not fired (cc-agent-E working it now) |
+| L2 | sheet-content-extraction + attached-document | `sheet-content-extraction`, `attached-document` | `cortex_sheet_content_extract` (trigger), `cortex_sheet_content_fetch` (read), `cortex_attached_document_list` (per engagement) | not fired |
+| L3 | deliverable-letter | `deliverable-letter` | `cortex_deliverable_letter_draft`, `cortex_deliverable_letter_update`, `cortex_deliverable_letter_finalize` | not fired |
+| L4 | detail-callout-spec | `detail-callout-spec` | `cortex_detail_callout_spec_define`, `cortex_detail_callout_spec_list`, `cortex_detail_callout_spec_mark_pushed` (APS Design Automation push is a downstream side-effect, not in scope for v1 MCP) | not fired |
+| L5 | product-spec-reference | `product-spec-reference` | `cortex_product_spec_reference_add`, `cortex_product_spec_reference_refresh_esr`, `cortex_product_spec_reference_list` (ICC-ES upstream poll is a periodic backend job per cc-agent-E dispatch Phase E, not an MCP tool concern) | not fired |
+| L6 | deliverable-letter render | (extends L3) | `cortex_deliverable_letter_render` (single tool returns DOCX or PDF blob ref) | not fired |
 
 Tool counts will adjust during implementation per the dispatch's "Surface adjustments via Lane B session summary; planner ratifies before lock" clause. Naming is the conservative first cut; if a surface needs split tools or merged tools, surface the call.
 
-## Open questions for planner
+## Open questions — RESOLVED by planner 2026-05-19
 
-These need answers before Group 3 tools wire cleanly; not before Sync B fires (they can be parallel-asked).
+The three open questions below were answered by the planner in the Engine-PR-7-follow-up + Group-3-L1-prep dispatch (2026-05-19). Answers folded in here so the ready-state checklist is fully actionable when Sync B(L1) fires.
 
-### 1. Where do L1-L6 atoms live at runtime?
+### 1. Where do L1-L6 atoms live at runtime? — RESOLVED: engine (Pattern A)
 
-The dispatches are clear that atom SHAPES live in `hauska-engine/packages/atoms/` per option β. But the data — instances of `response-task`, `deliverable-letter`, etc. — is engagement-specific, tenant-private (per ADR-017 `accessPolicy: 'tenant-private'`), and currently lives in `legacy-design-tools` Postgres.
+**Answer:** L1-L6 atoms live in `hauska-engine/packages/atoms/` per option β (already established). Group 3 wraps the **engine** for these atoms.
 
-Three possible patterns for Group 3:
+This means **Pattern A**: Group 3 tools consume the engine retrieval API via `hauska-client.ts`, not the legacy backend via `legacy-client.ts`. `response-task` and the other L-surface atoms are mutable (create, update state), so the engine retrieval API needs write/CRUD endpoints for them. Those endpoints land as part of cc-agent-E's Lane A.2 L-surface work; read cc-agent-E's Sync B(L1) session summary for the exact endpoint shapes before wiring the L1 tools.
 
-- **Pattern A — engine retrieval API grows endpoints.** The engine retrieval API today serves Layer 1 catalog reads; Lane A.2 implicitly extends it for L1-L6 CRUD. Group 3 wraps the engine via the existing `hauska-client.ts`.
-- **Pattern B — legacy-design-tools grows endpoints.** cc-agent-C in Lane C.4 builds new UI surfaces that need new API routes; the atoms live in legacy Postgres at runtime. Group 3 wraps legacy via the existing `legacy-client.ts`.
-- **Pattern C — hybrid.** Catalog-shape reads (e.g., list response-tasks per engagement) hit the engine retrieval API; tenant-private mutations (create, update) hit legacy.
+Consequence for the codex/cortex provenance helper: L-surface atoms get real Hauska DIDs (`did:hauska:response-task:...`) from the engine, unlike the Codex/Cortex existing-product tools (Groups 1+2) which carry synthetic `legacy:<kind>:<id>` identifiers. The L-surface tools should use `provenanceFromAtom` (the real-DID path in `atom-shape.ts`), not `codexProvenance`.
 
-Pattern B is the conservative bet based on existing structure (engagements live in legacy today; ECI atomization Phase 1+2 is queued, not in flight). Pattern A would require Lane A.2 to fold in retrieval-API endpoints, which isn't named in cc-agent-E's atom-shape dispatch — that dispatch is shapes-only.
+### 2. UI consumer signatures co-design — RESOLVED
 
-**Recommend:** ask the planner when Sync B(L1) fires. The right answer is likely Pattern B with the option to migrate to A or C in a later sprint.
+**Answer:** Align with cc-agent-C's Lane C.4 L1 work. The operator coordinates the handoff. Signature drift is surfaced to the planner before locking.
 
-### 2. UI consumer signatures co-design
+Practically: when Sync B(L1) fires, coordinate with cc-agent-C on the L1 response-task consumer signature so the UI action and the MCP tool action take the same shape. If the two drift, do not lock unilaterally — surface to the planner.
 
-Per the Lane C.4 dispatch: "UI shape and MCP tool shape consume the same atom; their consumer signatures should align so an operator can do the same action via UI or MCP without surprise."
+### 3. Engagement-scope vs tenant-scope — RESOLVED: tenant-scoped for v1
 
-In practice this means: when cc-agent-C ships an L1 UI mutation (e.g., "create response-task from client comment"), the MCP tool's input shape should mirror what the UI sends to its backend. Coordinate per surface:
+**Answer:** Tenant-scoped for v1 per ADR-007 (cross-stakeholder atom access). Engagement-level filtering is an **optional query param**, not a hard gate.
 
-1. cc-agent-E ships Sync B(L#) — atom shape locked.
-2. cc-agent-C starts Lane C.4 UI for L# — defines the API contract.
-3. cc-agent-M (me) waits for cc-agent-C to settle the API contract OR proposes the MCP tool shape and lets cc-agent-C mirror.
-
-The race depends on who moves first per surface. If I propose first, cc-agent-C's UI mirrors. If they propose first, my tool mirrors. **Recommend coordinating per-surface; surface drift via planner.**
-
-### 3. Engagement-scope vs tenant-scope on MCP tools
-
-All L1-L6 atoms are engagement-scoped. Every Group 3 tool's primary input is `engagement_id` (or an engagement-resolvable identifier like `finding_id`).
-
-Today's product gate (`product='cortex'` required) doesn't enforce engagement-level access — a cortex-product key has access to all engagements served by the legacy backend it's pointing at. That's likely the right v1 shape (operator-team keys, single tenant) but worth flagging before public Cortex MCP signups.
-
-**Recommend:** v1 ships engagement-id pass-through with no tenant enforcement at the MCP layer; backend audience guards (`requireArchitectAudience`) handle tenant boundaries. Stricter tenancy gating is a separate sprint, dependent on ADR-009 firm-tenancy work.
+Practically: Group 3 tools enforce the tenant boundary (the `product='cortex'` key is scoped to its tenant per ADR-007); within that tenant, `engagement_id` is an optional filter parameter on list-style tools rather than a mandatory access gate. Read ADR-007 before wiring the L1 `list` tool to get the tenant-scope semantics right.
 
 ## Ready-state checklist (when Sync B(L1) fires)
 
-When cc-agent-E publishes the L1 `response-task` atom-shape lock session summary:
+When cc-agent-E publishes the L1 `response-task` atom-shape lock session summary (Sync B(L1) fires). Backend pattern is locked to **Pattern A** (engine) per the resolved Open Question §1.
 
-- [ ] Read cc-agent-E's session summary — atom field list, conformance suite, decisions made.
-- [ ] Resolve Open Question §1 with planner — which backend pattern (A / B / C).
-- [ ] If Pattern B: check legacy-design-tools for new `/api/engagements/:id/response-tasks` (or equivalent) routes shipped in cc-agent-C's Lane C.4 work; mirror types in `legacy-client.ts`.
-- [ ] If Pattern A: extend `hauska-client.ts` against new engine retrieval-api endpoints.
-- [ ] Add `response-task` atom kind to the `codexProvenance` `atomKind` union (currently has `submission`, `finding-generation-run`, `finding-override`, `parcel-briefing`).
-- [ ] Register four `cortex_response_task_*` tools in `tools.ts` mirroring the Codex/Cortex tool pattern from PR #2 / PR #3.
+- [ ] Read cc-agent-E's Sync B(L1) session summary — atom field list, conformance suite, the new engine retrieval-api endpoint shapes for response-task CRUD.
+- [ ] Extend `hauska-client.ts` against the new engine retrieval-api endpoints (create / update-state / list / link-to-finding for `response-task`). Bearer auth via the existing `HAUSKA_ENGINE_API_KEY`.
+- [ ] Use `provenanceFromAtom` for L-surface responses — these atoms carry real `did:hauska:response-task:...` DIDs from the engine, not the synthetic `legacy:` identifiers the Groups 1+2 tools use.
+- [ ] Register the `cortex_response_task_*` tools in `tools.ts` behind the existing `requireProduct(tool, 'cortex')` gate. Tenant-scoped per ADR-007; `engagement_id` is an optional filter param on list-style tools.
+- [ ] Coordinate the consumer signature with cc-agent-C's Lane C.4 L1 UI; surface drift to the planner before locking.
 - [ ] Add tests in `tests/cortex-response-task.test.ts` (or `tests/cortex-l-surface.test.ts` covering all L# surfaces as they land).
-- [ ] Update CHANGELOG + REPO_NOTES with L1 entry.
+- [ ] Update CHANGELOG + REPO_NOTES with the L1 entry.
 - [ ] Commit + push + PR.
 - [ ] Session summary at `_sessions/<date>_l1_response_task_mcp_cc-agent-M.md`.
 
-Each subsequent surface (L2-L6) follows the same checklist with that surface's atom kind substituted.
+Each subsequent surface (L2-L6) follows the same checklist with that surface's atom kind substituted. Atom-runtime location is engine (Pattern A) for all six.
 
 ## Pattern already in place from Groups 1 + 2
 
@@ -100,19 +87,23 @@ These are settled and DO NOT need re-deciding per surface:
 
 - Skeleton code in `hauska-mcp-server`. Tool definitions are small and per-surface; scaffolding without atom shapes is just commented-out code that rots.
 - Tests against hypothetical schemas. Same problem.
-- Backend client extensions to `legacy-client.ts`. Surface-specific; wait for each Sync B fire.
+- Backend client extensions. Surface-specific; wait for each Sync B fire, then extend `hauska-client.ts` (Pattern A — engine).
 
-## Status
+## Status (updated 2026-05-19, post Engine-PR-7-follow-up dispatch)
 
 - Lane Foundation v1.1.0: ✓ shipped (cc-agent-AC).
-- Lane A.1 (Sync 4.5 jurisdictions): in flight (cc-agent-E).
-- Lane A.2 (L1-L6 atom shapes): not started; gates on A.1 close per the dispatch.
+- Lane A.1 (Sync 4.5 jurisdictions): ✓ closed at 3 of 4 (Bastrop UDC + Bastrop County + Elgin; Smithville deferred). hauska-engine `3c256b5`.
+- Lane A.2 (L1-L6 atom shapes): in flight — cc-agent-E on the L1 `response-task` atom shape (branch `stream-1d/l-surface-l1-response-task`).
 - Lane B Group 1 (Codex 4 tools): ✓ merged PR #2.
 - Lane B Group 2 (Cortex 4 tools): ✓ merged PR #3.
-- Lane B Group 5 (visibility filter): ✓ merged PR #4.
-- Lane B Group 3 (L1-L6): not started; this note is the prep.
+- Lane B Group 5 (visibility filter): ✓ merged PR #4. Engine-side cleanup: hauska-engine PR #7 (`accessPolicies` query param) open; hauska-mcp-server follow-up branch `feat/list-jurisdictions-engine-filter` (`afedcdf`) pre-staged + pushed, PR held until PR #7 merges.
+- Lane B Group 3 (L1-L6): not started; this note is the prep. Fires per Sync B per surface.
 - Lane B Group 4 (cross-client verification): gates on Group 3 + L1-L6 lanes closing.
 - Lane C.3 (EngagementDetail split): not tracked here.
-- Lane C.4 (L-surface UI): not started; gates on C.3 close + per-surface Sync B fire.
+- Lane C.4 (L-surface UI): per-surface, co-designed with Group 3.
 
 Group 3 work will fire in six independent waves, one per surface, as Sync B fires from cc-agent-E. Each wave is small (~3-4 tools + tests + 1 PR). Total surface area: roughly 18-22 new MCP tools across the six surfaces.
+
+## Workspace hygiene (planner directive 2026-05-19)
+
+cc-agent-M owns the `hauska-mcp-server` clone exclusively. Cross-repo work touching `hauska-engine` goes through cc-agent-E or a separate clone/worktree — never the same working tree cc-agent-E is using. The 2026-05-19 race-condition incident (concurrent git operations in one hauska-engine clone; branch HEAD switching mid-commit) is the case this rule prevents. hauska-engine PR #7 was a cc-agent-M cross-repo PR; future engine-side changes route through cc-agent-E or an isolated worktree.
