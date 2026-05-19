@@ -92,10 +92,16 @@ Per-criterion reversal does not require sprint-wide reversal — partial scope c
 
 This decision depends on the prior decisions at [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](2026-05-18_substrate_v1_phase_0_close.md) (substrate v1 Phase 0 closed; Streams 1A-1D and 2A-2D unblocked), [`_decisions/2026-05-18_substrate_v1_dispatch_reallocation.md`](2026-05-18_substrate_v1_dispatch_reallocation.md) (per-repo single-agent ownership; cc-agent-AC, cc-agent-E, cc-agent-M roles confirmed), and ADR-018 (atom contract substrate layer; option β for catalog atoms in engine atom-registry).
 
-Operator actions required in parallel to sprint launch:
+Operator parallel actions (post-amendment 2026-05-19):
 
-- **Decision 0.19** — Ping Sylvia: partnership outreach for Smithville, Elgin, Bastrop County. Internal-tier ingest proceeds in parallel; partnership close flips visibility from `internal` to `public` per Path A.
-- **Decision 0.20** — Cloud Run target project specs (region, project name, service naming); new Neon prod instance specs (region, plan tier, co-tenanted with hauska-engine stack vs separate); production domain decision (keep `prompt-agent-accelerator` until later vs new domain at cutover).
+- **Decision 0.19 — withdrawn from sprint-tracked actions.** Operator does not want Sylvia outreach surfaced as a sprint-tracked dependency. Path A still applies structurally: Smithville, Elgin, Bastrop County ingest tags as internal-tier per the visibility partition on `jurisdiction-corpus`. Whether and when partnership closes for those three is parallel bizops on operator pace; not a sprint gate.
+- **Decision 0.20 — resolved by planner 2026-05-19.** Operator delegated to planner judgment. Specs landed in Lane C.2 dispatch Read first step 6: same GCP project as smartcity-os production, service name `cortex-api`, `us-central1` region; new Neon prod instance separate from hauska-engine stack, `us-central1`, Neon Pro plan tier; production domain keeps `prompt-agent-accelerator.replit.app` DNS short-term (CNAME swap to Cloud Run at cutover) with Cortex-branded subdomain as queued follow-on (Nick names exact domain).
+
+## Sprint amendments
+
+**Amendment 1 (2026-05-19): site context tab / ingestion broken.** Added to Lane C.1 as sub-task C.1.6 per [`_dispatches/2026-05-19_cc-agent-C_quick_wins_and_schema.md`](../_dispatches/2026-05-19_cc-agent-C_quick_wins_and_schema.md). Operator-reported issue: SiteContextTab (`design-tools/src/pages/EngagementDetail.tsx:1828-3160`) and/or its underlying ingestion is currently not working. Was marked "works" in the 2026-05-18 Cortex UI inventory, so the regression is recent. Diagnosis phase precedes fix; cc-agent-C produces a `_research/2026-05-19_site_context_diagnosis.md` before acting. If fix is large or bridges Lane A engine-side ingest pipeline, planner spawns a follow-on dispatch rather than absorbing silently into C.1. Coordinates with Lane C.3 EngagementDetail split — UI-shape fixes prefer to land after the split for cleaner consumer shape.
+
+**Amendment 2 (2026-05-19): Decision 0.19 dropped as sprint-tracked action; Decision 0.20 resolved by planner.** Per operator at sprint amendment. Path A still locked structurally per pre-mortem.
 
 ## Counterparties
 

@@ -29,7 +29,10 @@ In order:
 3. [`40_design_accelerator.md`](../40_design_accelerator.md) lines 39-44 (production target — updated this sprint) and external services table.
 4. [`_sessions/2026-05-19_cortex_track_close_out_claude_code.md`](../_sessions/2026-05-19_cortex_track_close_out_claude_code.md) §Phase 7 (Neon prod schema apply context; Phase 1A CI/CD scaffold reference).
 5. [`90_runbooks/cloud_run_canary_deploy.md`](../90_runbooks/cloud_run_canary_deploy.md) — canonical canary pattern for smartcity-os; legacy-design-tools cutover should follow the same pattern.
-6. Operator decision 0.20 — when delivered, it names the Cloud Run target project, Neon instance specs, and domain disposition. Do not start C.2.3 (Neon provision) without this.
+6. **Decision 0.20 — resolved by planner 2026-05-19 (operator delegated to judgment).** Specs:
+   - **Cloud Run target:** same GCP project as smartcity-os production (cc-agent confirms exact project name from existing smartcity-os deploys; whatever project hosts `smartcity-api` service). New service name: `cortex-api` (aligned with 27-G brand migration; Cortex supersedes Design Accelerator per CLAUDE.md). Region: `us-central1` to match smartcity-os Cloud Run footprint.
+   - **New Neon prod instance:** separate Neon project from the hauska-engine substrate stack — keeps blast radius bounded and access control simple (legacy-design-tools holds product operational data; hauska-engine holds substrate retrieval data; these are different concerns). Region: `us-central1` to minimize Cloud Run → Neon latency. Plan tier: Neon Pro as v1 baseline (autoscaling compute + branching + backup retention; Scale upgrade path documented as a queued follow-on if uptime SLA requirements surface).
+   - **Production domain:** short-term keep the `prompt-agent-accelerator.replit.app` DNS — at cutover, CNAME swap to point at the new Cloud Run service URL rather than the Replit instance. This preserves continuity for any external links pointing at the existing URL. Long-term: queued follow-on to set up a Cortex-branded subdomain (e.g., `cortex.{empressa-owned-domain}`). Nick names the exact domain at the follow-on; not blocking for cutover. Cloud Run's auto-assigned `*.run.app` URL is available immediately as a fallback if the CNAME swap surfaces issues.
 
 ## Scope
 
@@ -60,11 +63,11 @@ Per the C.2.1 audit:
 
 ### C.2.3 — New Neon prod instance provisioning
 
-Gated on operator decision 0.20 (specs: region, plan tier, co-tenanted with hauska-engine stack vs separate).
+Specs resolved at Read first step 6: separate from hauska-engine stack, `us-central1`, Neon Pro plan tier.
 
 **Work.**
 
-- Provision the new Neon instance per operator specs.
+- Provision the new Neon instance per the specs above.
 - Apply the current schema from main (via `pnpm --filter @workspace/db run push` against the new instance's URL, mirroring the supervised non-force pattern from the 2026-05-19 Track B IFC apply per the post-merge.sh Neon guard).
 - Verify schema parity: `to_regclass` checks for every expected table on the new instance.
 - Capture connection string in GCP Secret Manager under the new naming convention.
@@ -106,7 +109,7 @@ Per-task as noted. Cross-task: at the end of C.2 work, verify that the legacy-de
 
 ## Dependencies
 
-- **Gates this dispatch:** Lane C.1 closes (you've finished the quick wins); operator decision 0.20 (Cloud Run target + Neon specs) delivered before starting C.2.3.
+- **Gates this dispatch:** Lane C.1 closes (you've finished the quick wins). Decision 0.20 already resolved at planner level — no operator wait at C.2.3.
 - **Parallel-safe with:** Lane A (cc-agent-E) and Lane B (cc-agent-M). No code-path overlap.
 - **C.2.3 + C.2.4 + C.2.5 are sequential** within this dispatch.
 - **Cutover (C.6) gates on:** all of Lane A.1 + A.2 + B + C.1 + C.3 + C.4 closed; operator authorization at runbook trigger.

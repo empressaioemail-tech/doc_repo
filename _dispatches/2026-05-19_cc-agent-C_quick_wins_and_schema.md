@@ -99,6 +99,22 @@ Five sub-tasks. Sequence in the order below if running single-threaded; parallel
 
 **Test.** Re-ingest IFC against an engagement with prior materializable_elements; verify (a) no rows deleted, (b) prior rows flagged superseded, (c) new rows present, (d) UI reads active rows only.
 
+### C.1.6 — Site Context tab / ingestion currently broken
+
+**Context.** Operator surfaced 2026-05-19 (sprint amendment): the Site Context tab and/or its ingestion pipeline is currently not working. The SiteContextTab lives at `design-tools/src/pages/EngagementDetail.tsx:1828-3160` (1,300+ lines) per the 2026-05-18 Cortex UI inventory at [`_sessions/2026-05-18_cortex_ui_inventory_cc-agent-UI.md`](../_sessions/2026-05-18_cortex_ui_inventory_cc-agent-UI.md). It consumes parcel-briefing and briefing-source atoms; renders citation chips inline; includes a SiteContextViewer with Three.js terrain mesh fed by GLBs converted from DXF uploads. As of the 2026-05-18 inventory it was marked "works"; current operator-reported state is broken. Either the parcel briefing generation path, the briefing-source ingest (3DEP / federal adapters), the DXF-to-GLB conversion, or the Three.js render is the broken link — diagnosis required before fix shape can be named.
+
+**Work.**
+
+- **Diagnose phase (do this first).** Reproduce the failure on a known-good engagement (Musgrave is the canonical test). Capture which sub-surface is broken: (a) parcel briefing data generation, (b) 3DEP elevation ingest, (c) briefing-source ingestion of federal adapter outputs, (d) DXF-to-GLB conversion in `lib/converterClient`, (e) Three.js render in `SiteContextViewer`, (f) other. Trace errors via browser console, server logs, network panel. Output a diagnosis note at `_research/2026-05-19_site_context_diagnosis.md` (in legacy-design-tools) before fixing.
+- **Fix phase.** Depends on diagnosis:
+  - If the fix is small (< ~50 LoC) and isolated, fix inline as part of this dispatch.
+  - If the fix requires substantial restructure or bridges Lane A (engine-side ingest pipeline), surface to planner — likely spawns a follow-on dispatch or routes to cc-agent-E for an engine-side fix.
+- **Coordinate with Lane C.3.** SiteContextTab lives inside `EngagementDetail.tsx`, which Lane C.3 (dispatch [`2026-05-19_cc-agent-C_ui_4_and_engagement_detail_split.md`](2026-05-19_cc-agent-C_ui_4_and_engagement_detail_split.md)) is splitting into per-section components. If your C.1.6 fix is UI-shape work, prefer to land it AFTER the Lane C.3 split so you work against the cleaner shape. If the fix is server-side or ingest-pipeline-side, land before or independent of the split. Planner coordinates the sequencing.
+
+**Test.** Diagnosis-phase: written diagnosis note explicitly names the broken sub-surface with evidence. Fix-phase: operator-named test engagement renders the Site Context tab end-to-end without error post-fix, with parcel briefing data + 3DEP elevation visualization + terrain mesh all working.
+
+**Critical note.** This is sprint-amendment scope, not original sprint scope. If diagnosis surfaces that the fix is large enough to compete with L1-L6 surface work or the cutover gate, the planner re-prioritizes — do not silently absorb a deep fix into this dispatch.
+
 ## Test plan (cross-task)
 
 Per-task tests as noted above. Cross-task: full pnpm build + typecheck + test on legacy-design-tools after each sub-task lands, to ensure no cross-cutting breakage.
