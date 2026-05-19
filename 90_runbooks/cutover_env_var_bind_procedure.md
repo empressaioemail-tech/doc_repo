@@ -2,10 +2,11 @@
 id: cutover_env_var_bind_procedure
 title: Cutover env var bind procedure
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-18
 applies_to: smartcity_os
 related:
   - 91_postmortems/2026-05-11_cutover_env_var_silent_drops.md
+  - 91_postmortems/2026-05-18_pbi_cip_shared_dataset_workspace_qualifier.md
   - 90_runbooks/smartcity_cloud_run_env_audit_2026-05-11.md
   - 90_runbooks/cloud_run_canary_deploy.md
 ---
@@ -175,6 +176,7 @@ SECRET_PREFIX="${SECRET_PREFIX:-smartcity-}"
 - Auth-protected health endpoints (e.g., `/api/spireon/health` returns 401 anonymous) make curl-based verification incomplete. Cloud Run logs are the reliable signal: look for `authenticated`, `live`, `connected`, `fetched`, integration-specific log markers.
 - Cloud Shell + UI upload preserves filename including extension. `smartcity_secrets.txt` after drag-drop is a common gotcha.
 - Bash script dry-run/execute gating catches anomalies before they cause damage. Specifically caught MYGOV pre-existing secrets in this session and allowed remediation before main bind.
+- **End-to-end query path verification is non-negotiable. `connected:true` on a status route does NOT imply downstream consumer routes succeed.** Origin: 2026-05-11 PBI env-bind session confirmed `/api/powerbi/status` returned `connected:true` and embed rendered, but never exercised `/api/powerbi/cip-data` (the DAX query path). The DAX URL was group-qualified with the report's workspace ID, but the dataset lived in a different workspace via Power BI's shared-dataset pattern (`datasetWorkspaceId` field on the report metadata). The 400 `StorageInvalidData` was latent for 7 days until Bastrop hit the CIP Dashboard hard enough to notice. For every integration with multiple distinct API consumer routes, post-bind smoke probes must hit EACH consumer route, not just status/listing/embed. See [`91_postmortems/2026-05-18_pbi_cip_shared_dataset_workspace_qualifier.md`](../91_postmortems/2026-05-18_pbi_cip_shared_dataset_workspace_qualifier.md).
 
 ## Reconciliation notes (added 2026-05-11 session 3)
 
@@ -183,3 +185,33 @@ Cloud Run revision generation numbers (`smartcity-api-NNNNN-xxx`) can be reused 
 Verified 2026-05-11: both `smartcity-api-00084-vhr` (created 2026-05-11T18:24Z) and `smartcity-api-00084-weg` (created 2026-05-10T02:22Z, the May-10 W1.C.4a auth-fix revision) coexist on the same service. Earlier handoffs that treated `00084` as a stable identifier for a single revision were misreading Cloud Run's revision-naming behavior.
 
 Practical implication for env-var bind reconciliation: when correlating "which revision applied a given secret update" against session summaries or postmortems, fetch the timestamped revision list once at the start of the bind/audit and key all references off `creationTimestamp` (or, equivalently, the full `name` including suffix). Never abbreviate to the generation number alone.
+
+## 2026-05-18 addendum — Power BI verification template
+
+Origin: 2026-05-18 PBI CIP Dashboard outage diagnosis. The May 11 PBI env-bind step 8 verified `connected:true` on `/api/powerbi/status` and watched the embed render, then declared the bind verified. The DAX query route `/api/powerbi/cip-data` was never exercised. The bug (group-qualified DAX URL incompatible with the report's shared-dataset workspace topology) stayed latent for 7 days until Bastrop hit it.
+
+When binding any Power BI secret going forward, the verification step must exercise every `/api/powerbi/*` consumer route the running code uses, not just `/status`. Generic template:
+
+```bash
+# After bind + new revision is serving, hit every consumer route.
+# App routes are session-gated, so smoke-probe from a logged-in browser
+# session (open canary URL, log in, navigate to the dashboard surfaces)
+# AND check the deployed revision's logs for query-path-specific success.
+
+REV=$(gcloud run services describe smartcity-api --region=$REGION \
+        --format='value(status.latestReadyRevisionName)')
+
+gcloud logging read \
+  "resource.type=cloud_run_revision AND resource.labels.revision_name=\"$REV\"" \
+  --limit=200 --format='value(textPayload)' \
+  | grep -iE "powerbi|cip-data|executeQueries|DAX query" | tail -60
+```
+
+What to verify in logs (PBI-specific):
+
+- `[powerbi] Azure AD token acquired successfully` — auth working
+- `[powerbi] DAX query error` — should be ABSENT (this is the signal that failed silently May 11 to May 18)
+- `GET /api/powerbi/cip-data 200` — the load-bearing route returning success
+- `StorageInvalidData` — should be ABSENT (this would indicate a workspace/dataset mismatch like the 2026-05-18 incident)
+
+For non-PBI integrations, the principle generalizes: identify EVERY route that consumes the bound secret(s) and exercise each one. A status route returning `connected:true` while a query route returns 500 is the canonical latent-failure shape.

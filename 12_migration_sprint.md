@@ -2,7 +2,7 @@
 id: 12_migration_sprint
 title: Migration sprint â Cloud Run + Empressa Neon + Drizzle migrate
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-19 (Sub-phase 2B gains application-code hardcoded-tenant-ID audit per 2026-05-19 calendar outage)
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 15_replit_neon_ownership_advisory, 23_dev_setup_assessment, 30a_smartcity_stabilization_sprint, adr_002_replit_neon_migration, adr_003_replit_neon_tactical, 2026-05-05_track_b_deploy_saga, replit_deploy]
 ---
@@ -287,6 +287,18 @@ fully verified (cutover playbook proven).
       demo tenants both intact)
 - [ ] **Tenant integrity check**: no row in destination has
       `tenant_id = NULL` or unexpected tenant_ids
+- [ ] **Application-code hardcoded-tenant-ID audit**: pre-cutover
+      grep of server-side application code for any `tenant_id\s*=\s*1\b`
+      or `tenantId\s*[:=]\s*1\b` patterns that should be the canonical
+      production tenant. Origin: the April 5-6 enforcement sweep keyed
+      on `DEFAULT_TENANT_ID` name alone and missed `BASTROP_TENANT_ID = 1`
+      in `calendar.ts`, which surfaced as a 16-day silent partner-facing
+      401 on 2026-05-19. See
+      [`91_postmortems/2026-05-19_calendar_tenant_id_silent_outage.md`](91_postmortems/2026-05-19_calendar_tenant_id_silent_outage.md)
+      catalog follow-on #1 for the three-phase plan (server-side sweep,
+      client-side investigation, client-side fix). Client-side audit
+      covers the 5 PermitFlow components plus the `permitFlowTenant`
+      middleware default at `replit.md:254`
 - [ ] **Update GCP Secret Manager** entry `smartcity-DATABASE_URL`
       (production version) to Empressa Neon URL
 - [ ] **Roll Cloud Run `smartcity-api` service** to pick up new
