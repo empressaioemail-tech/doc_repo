@@ -109,6 +109,18 @@ Operator parallel actions (post-amendment 2026-05-19):
 
 **Amendment 5 (2026-05-19): Worktree-per-agent rule codified.** Per recurring shared-working-tree incidents flagged by cc-agent-M and cc-agent-E independently during the Lane B / Lane A.2 race. Operator confirmed codification path via AskUserQuestion. New runbook at [`90_runbooks/agent_workspace_hygiene.md`](../90_runbooks/agent_workspace_hygiene.md) — one clone per cc-agent; cross-repo work uses `git worktree add` from a separate clone; recon-time refusal when entering a working tree owned by another agent. Dispatch boilerplate clause added for all future cc-agent dispatches.
 
+**Amendment 6 (2026-05-19): L-surface backend location clarified — legacy-design-tools is the runtime home.** Per cc-agent-M's correction during Group 3 L1+L2 work. Planner's earlier answer to cc-agent-M's Group 3 prep-research open question ("backend location for L1-L6 atoms") was framed as "hauska-engine packages/atoms/ per option β" — this was the **shape/contract** location, not the **runtime persistence** location. The hauska-engine retrieval-api is read-only with no persistence. **Correct mapping:**
+- Atom **shape/contract** lives in `hauska-engine/packages/atoms/` (option β; what cc-agent-E ships).
+- Atom **persistence/runtime** lives in `legacy-design-tools` Postgres (for Cortex/Codex product atoms).
+- MCP **tools** call legacy-design-tools endpoints via cc-agent-M's `legacy-client.ts`.
+- The legacy endpoints for L1-L6 atoms **do not exist yet** — cc-agent-M defined them in `legacy-client.ts` (mocked-fetch tested) plus published a canonical contract doc at [`_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md`](../_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md). **cc-agent-C builds the matching endpoints as part of Lane C.4** alongside the UI surfaces.
+
+Lane C.4 dispatch scope expanded: per-surface work is now endpoints + UI, not just UI. The dispatch frontmatter and Read first sections add the contract doc as canonical reference.
+
+L-surface atoms also get real `did:hauska:` DIDs via a new `lSurfaceProvenance` helper, unlike Groups 1+2's synthetic `legacy:` identifiers. Cleaner contract for downstream consumption.
+
+**Planner discipline lesson:** when a cc-agent asks an open question about a system they're closer to than the planner, the planner's answer should weight the agent's proximity higher than canonical docs that aren't speaking to the exact question. This is the second such correction in the sprint (first was Decision 0.20 ④ Replit DNS impossibility caught by cc-agent-C). Capture: planner answers to cc-agent open questions should explicitly invite "if this answer doesn't match the system as you see it, correct me before acting."
+
 ## Counterparties
 
 Internal: Nick (operator, all four pre-mortem resolutions plus decisions 0.19 + 0.20 + sprint-wide go-ahead). Affected agents: cc-agent-AC (Lane Foundation), cc-agent-E (Lane A.1 + A.2), cc-agent-M (Lane B), cc-agent-C (Lane C.1-4 sequenced), planner (this Claude Code session in doc_repo, sprint coordination).

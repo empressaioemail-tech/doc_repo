@@ -10,9 +10,11 @@ related: [_decisions/2026-05-19_sync_4_5_and_cortex_sprint, 42_design_accelerato
 
 # Lane C.4 — cc-agent-C dispatch (L1-L6 UI surfaces with MCP co-design)
 
-You are cc-agent-C continuing on the `legacy-design-tools` repo. Lane C.4 covers the L1-L6 UI surfaces per `42_design_accelerator_program_plan.md` QA-readiness milestone definitions. Six surfaces; each gates on the matching Sync B (atom-shape lock) from Lane A.2 (cc-agent-E).
+You are cc-agent-C continuing on the `legacy-design-tools` repo. Lane C.4 covers the L1-L6 **endpoints + UI surfaces** per `42_design_accelerator_program_plan.md` QA-readiness milestone definitions. Six surfaces; each gates on the matching Sync B (atom-shape lock) from Lane A.2 (cc-agent-E).
 
-The dual-interface principle applies to every surface: ship the UI consumer **co-designed with** the MCP tool counterpart from Lane B (cc-agent-M). UI shape and MCP tool shape consume the same atom; their consumer signatures should align so an operator can do the same action via UI or MCP without surprise.
+**Scope expanded per Amendment 6 (2026-05-19):** Lane C.4 per-surface work is endpoints + UI, NOT just UI. cc-agent-M's MCP tools call legacy-design-tools endpoints that **do not exist yet** — you build them. Canonical contract: [`_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md`](../_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md). The endpoints persist L1-L6 atoms in legacy-design-tools Postgres; cc-agent-M's MCP tools and your UI surfaces both consume the endpoints. Atom shape lives in `hauska-engine/packages/atoms/` (cc-agent-E's domain); runtime persistence lives in legacy-design-tools (your domain); both surfaces consume the contract.
+
+The dual-interface principle applies to every surface: ship the UI consumer **co-designed with** the MCP tool counterpart from Lane B (cc-agent-M). UI shape and MCP tool shape consume the same atom AND the same endpoints; their consumer signatures should align so an operator can do the same action via UI or MCP without surprise. cc-agent-M's `legacy-client.ts` is the consumer-signature reference.
 
 ## Why this exists
 
