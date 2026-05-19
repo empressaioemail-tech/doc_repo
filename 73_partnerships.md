@@ -2,7 +2,7 @@
 id: 73_partnerships
 title: Partnerships â formalized partnership state
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-19 (Publisher / aggregator partnerships section added; General Code as partnership target per cc-agent-E Smithville structural-blocker finding; Municode as future template target)
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 13_risk_register, 18_stakeholder_graph, 30_smartcity_os, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 70_bizops_overview, 71_pipeline, 74_commercial_agreements]
 owner: nick
@@ -50,6 +50,15 @@ Sourced from [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md) an
 |---|---|---|
 | **Grand County** | [`51`](51_substrate_v1_sprint.md) | One-off + B.6 validation pass; Bastrop-equivalent unblocked posture; partnership terms TBD |
 | **Texas-first 25-city list** | [`51`](51_substrate_v1_sprint.md) Stream 1D | Gated on Texas IP attorney memo delivery (tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md)) |
+
+## Publisher / aggregator partnerships
+
+Distinct from jurisdiction partnerships above. Publisher partnerships unlock many jurisdictions per partnership because the publisher hosts the ordinance content for multiple cities. Strategic leverage: one partnership conversation opens N jurisdictions where N is the publisher's customer list.
+
+| Publisher | Coverage | Status | Triggering finding |
+|---|---|---|---|
+| **General Code (eCode360)** | Smithville and many other small/mid-TX cities (eCode360 is the publisher platform; SM6484 is Smithville's instance ID). Likely overlaps with several Sync 5 targets. | **Partnership target — pending outreach.** Surfaced 2026-05-19 per cc-agent-E's Smithville structural-blocker recon at [`_sessions/2026-05-19_smithville_ecode360_blocker_cc-agent-E.md`](_sessions/2026-05-19_smithville_ecode360_blocker_cc-agent-E.md). | Smithville code on eCode360 returns HTTP 403 for both ingest and browser user-agents (bot protection); robots.txt disallows `/documents/`, `/search`. Direct ingest violates published policy. General Code's eCode360 partner API is the substantive-access path. Per Commitment #2 (partnership-first sourcing), this is a partnership conversation. |
+| **Municode** | Bastrop City, Elgin, Bastrop County (Subdivision Regs were direct-PDF instead), and most TX small-city ordinance pages. Currently scraped via the working `MunicodeHtmlAdapter` JSON mode. | **Not currently partnered.** Scraping the public HTML/JSON surface works today; no immediate friction. Worth a partnership conversation as the catalog scales — moves Municode from "tolerated scrape" to "structured aggregator partnership." Lower priority than General Code while scraping holds. | Coverage spans most active Sync 4.5 + Sync 5 jurisdictions; partnership shape mirrors the eCode360 framing once we have a working template. |
 
 ## Cross-references
 
