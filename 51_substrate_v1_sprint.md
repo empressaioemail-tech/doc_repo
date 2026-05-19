@@ -168,10 +168,20 @@ prompts at [`_dispatches/2026-05-18_cc-agent-AC_hauska_atom_contract.md`](_dispa
 [`_dispatches/2026-05-18_cc-agent-E_hauska_engine.md`](_dispatches/2026-05-18_cc-agent-E_hauska_engine.md),
 [`_dispatches/2026-05-18_cc-agent-M_hauska_mcp_server.md`](_dispatches/2026-05-18_cc-agent-M_hauska_mcp_server.md).
 
-### Bump 1 atom contract coordination (sync point — load-bearing)
+### Bump 1 engine atom-registry coordination (post-Sync-1)
 
-Single coordinated minor version bump of `@hauska/atom-contract` per
-[27](27_engine_evolution_plan.md) Stream B Bump 1. Adds:
+**Scope reshaped 2026-05-19 per option β.** Per
+[`_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md`](_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md)
+the new atom types ship in `hauska-engine/packages/atoms/` against the
+published `@hauska/atom-contract@1.0.0` framework, not inside the
+contract package itself. Contract package stays at 1.0.0 absent
+unrelated framework changes (new render modes, ContextSummary
+additions, etc.). Engine atom-registry version is what bumps when new
+atom types arrive.
+
+Atom types added at this bump (engine-side registration in
+`hauska-engine/packages/atoms/` per cc-agent-E's foundation commit
+`5049961`):
 
 - `code-section`
 - `code-definition`
@@ -182,23 +192,24 @@ Single coordinated minor version bump of `@hauska/atom-contract` per
 
 Plus adjudication-context atoms (`adjudication-record`,
 `per-reviewer-pattern`, `comparable-project-precedent`) from
-[27](27_engine_evolution_plan.md) §Compounding-context atoms — these
-ship in Bump 1 but are NOT exposed via MCP server (Layer 2 paid; stay
-inside Codex 1b).
+[27](27_engine_evolution_plan.md) §Compounding-context atoms. Owner of
+those three: `smartcity-os` Codex 1b (production-side) per
+[`_sessions/2026-05-18_hauska_engine_foundation_cc-agent-E.md`](_sessions/2026-05-18_hauska_engine_foundation_cc-agent-E.md);
+engine reads them through the same framework. NOT exposed via the
+public MCP server (Layer 2 paid; stay inside Codex 1b).
 
-Consumers to coordinate (per [26_atom_upgrade_guide.md](26_atom_upgrade_guide.md)):
+Consumer migration to `@hauska/atom-contract@^1.0.0` runs per-consumer,
+not atomically, because the framework shape did not change under
+option β (only the package name and home moved). Status:
 
-- [ ] `legacy-design-tools` `api-server` — version bump + atom
-      validation
-- [ ] `smartcity-os` `api-server` — consumer (no-op until 1b lands)
-- [ ] `legacy-revit-sensor` — consumer (touches `detail-callout-spec`
-      separately; bump compatibility only)
-- [ ] `hauska-engine` `packages/atoms/` — new repo, lands at Bump 1
-      version
-- [ ] `hauska-mcp-server` — consumer; pin to Bump 1 version
+- [x] `legacy-design-tools` README hand-off pointer — landed 2026-05-19 (PR #27 squash-merged).
+- [x] `hauska-engine` atom-contract-pin shim flip — landed 2026-05-19 (PR #1 squash-merged).
+- [ ] `legacy-design-tools` `api-server` import migration from `@workspace/empressa-atom` to `@hauska/atom-contract` — deferred to a dedicated cc-agent session within 1-2 weeks per the 2026-05-19 planner correction. Workspace-private path stays valid through the transition per cc-agent-AC's hand-off snippet; framework-at-1.0.0 makes drift risk low for that window.
+- [ ] `hauska-mcp-server` — dep pin folds into cc-agent-M Stream 2A wiring (next session). Atom-type-agnostic until then.
+- [ ] `smartcity-os` `api-server` — defer until Codex 1b actually consumes; no current imports of `@workspace/empressa-atom`.
+- [ ] `legacy-revit-sensor` — recon pending (~10 minutes) to confirm whether it currently imports the framework; defer or fold pending result.
 
-Owner: planner coordinator role across all five repos. Single PR per
-repo, atomically merged.
+Owner: planner coordinator role. PRs filed independently per repo as each consumer migrates. The original "single PR per repo, atomically merged" framing was sized for a contract-package version bump that does not occur under option β.
 
 ---
 
@@ -678,7 +689,6 @@ Critical points where streams synchronize:
 | 3 | Retrieval API contract stable | 1C → 2A | Stream 2A wires real client; until then 2A uses mocked client identical in shape. |
 | 4 | First jurisdiction passes eval | 1D → 2D launch gate | Pre-launch: at least Bastrop UDC passes quality bar. |
 | 5 | Quality-gated 20-jurisdiction corpus | 1D → 2D launch gate | Public launch unblocked. |
-| 6 | Texas IP attorney opinion memo delivered | external (Nick, [`11`](11_roadmap.md) P1) → 1D batch ingest | Non-Bastrop ingestion (Tier 1+2+3 city batches) gated on attorney memo per catalog roadmap 2026-05-15 Move 1. Bastrop + Grand County remain unblocked (one-off load + B.6 validation). |
 
 Streams 2A/2B/2C/2D all proceed against mocked / staged backends before
 sync point 3 lands. Real wiring follows the moment 1C publishes the
@@ -817,3 +827,25 @@ See [Cross-cutting work — Phase 0](#phase-0--decisions) above.
   pasteable kickoff prompts at [`_dispatches/`](_dispatches/) replace
   the four superseded cross-repo prompts; old prompts retain
   `status: superseded` plus top-callout pointing at replacements.
+- **2026-05-19 (post-Sync-1 sweep).** Sync 1 landed
+  (`@hauska/atom-contract@1.0.0` published to npm; v1.0.0 tag pushed).
+  cc-agent-AC scope correction surfaced during their first session
+  per [`_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md`](_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md):
+  the source `lib/empressa-atom/` package is framework-only, and the
+  19 existing atom-type registrations live in
+  `legacy-design-tools/artifacts/api-server/src/atoms/` with runtime
+  deps on `@workspace/db` and route helpers. Option β selected: the
+  contract package stays at framework-only 1.0.0; all 28 atom-type
+  registrations (19 existing in api-server; 9 new in
+  `hauska-engine/packages/atoms/`) live in consumer packages, not
+  inside the contract. §Bump 1 atom contract coordination renamed to
+  §Bump 1 engine atom-registry coordination and rewritten per option
+  β. Sync 6 (Texas IP attorney memo) dropped from §Sync points table
+  per 2026-05-19 fleet correction: that work is parallel bizops
+  tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md),
+  not a substrate v1 ingestion gate. Bump 1 cross-repo PR rollout
+  collapsed from five PRs to two-merged-plus-three-deferred under
+  option β: hauska-engine PR #1 (atom-contract-pin shim flip) and
+  legacy-design-tools PR #27 (README hand-off pointer) both
+  squash-merged; remaining consumer migrations run per-consumer pace
+  rather than atomic.

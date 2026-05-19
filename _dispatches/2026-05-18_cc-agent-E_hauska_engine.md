@@ -28,7 +28,7 @@ In order:
 10. [`80_adrs/adr_018_atom_contract_substrate_layer.md`](../80_adrs/adr_018_atom_contract_substrate_layer.md) — atom contract is Hauska commercial substrate; your registrations consume `@hauska/atom-contract` directly.
 11. [`27_engine_evolution_plan.md`](../27_engine_evolution_plan.md) — §Stream B Bump 1 atom types you consume for atom-instance generation.
 12. [`11a_bastrop_live_roadmap.md`](../11a_bastrop_live_roadmap.md) — Sprint A.1 corpus load coordinates with your Stream 1D B.6 Bastrop validation pass.
-13. [`72_hauska_inc_operations.md`](../72_hauska_inc_operations.md) — Capital allocation section (your batch ingest budget); Domains section; IP attorney memo section (Sync 6 dependency for non-Bastrop ingestion).
+13. [`72_hauska_inc_operations.md`](../72_hauska_inc_operations.md) — Capital allocation section (your batch ingest budget); Domains section. (IP attorney memo lives in 72 as parallel bizops, not a substrate-v1 gate per 2026-05-19 fleet correction.)
 
 ## Scope
 
@@ -165,7 +165,7 @@ First TX batch ingest (Tier 1 plus Tier 2 plus Tier 3 from [`51_substrate_v1_spr
 - Tier 1 (Bastrop-network): Round Rock, Pflugerville, Cedar Park, Leander, Hutto, Elgin, Smithville, Manor, Taylor, Georgetown.
 - Tier 2 (major TX metros): Austin, San Antonio, Fort Worth, El Paso, Plano, Arlington, Irving, Garland, Lubbock, Laredo.
 - Tier 3 (open pipeline targets): Jarrell, M9 candidate (Nick to name at batch-time), Frisco, McKinney, Killeen.
-- **Tier 1 plus Tier 2 plus Tier 3 gated on Sync 6 (Texas IP attorney opinion memo, Nick action).** Bastrop plus Grand County stay unblocked.
+- Tier 1 plus Tier 2 plus Tier 3 ingestion proceeds in parallel with bizops; no external gate from 2026-05-19 onward.
 
 eCode360 batch (post-1A eCode360 adapter): Houston, Dallas, others identified as eCode360-resident.
 
@@ -183,7 +183,6 @@ You publish:
 You wait on:
 
 - **Sync 1 — Bump 1 atom contract published.** cc-agent-AC publishes `@hauska/atom-contract@1.0.0` to npm. Until then, register atoms against workspace-private `@workspace/empressa-atom` at `legacy-design-tools/lib/empressa-atom/`; swap to npm dependency on signal.
-- **Sync 6 — Texas IP attorney opinion memo delivered.** Nick action, external. Tier 1 plus Tier 2 plus Tier 3 batch ingest gated on this; Bastrop plus Grand County stay unblocked. Track at [`72_hauska_inc_operations.md`](../72_hauska_inc_operations.md) IP attorney memo section.
 
 ## Coordination
 

@@ -399,6 +399,20 @@ visibly (a small "imported from MyGov" label on backfilled permits).
 
 ## Section 4 â Version upgrade protocol
 
+> **Scope note (2026-05-19).** This section covers framework upgrades
+> to the `@hauska/atom-contract` package itself (new render modes, new
+> `ContextSummary` fields, breaking-change majors). It does NOT cover
+> adding new atom *types* to the catalog: per option β
+> ([`_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md`](_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md)),
+> atom-type registrations live in consumer packages
+> (`hauska-engine/packages/atoms/` for catalog atoms;
+> `legacy-design-tools/artifacts/api-server/src/atoms/` for product
+> atoms; `smartcity-os` Codex 1b for adjudication-context atoms).
+> Adding new atom types bumps the engine atom-registry (or the
+> respective consumer-package) version, not the contract package
+> version. The contract package stays at 1.0.0 absent framework
+> changes.
+
 When a consumer bumps to a new version of `@hauska/atom-contract`, follow
 this protocol.
 

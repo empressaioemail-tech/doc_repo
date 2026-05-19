@@ -221,22 +221,36 @@ Atoms supporting the Parcel Intelligence capability in SmartCity OS Operations D
 - **Key fields.** `parcelDid` (link), `inputType` (`text` | `photo` | `sketch-outline-geojson` | `text-with-attachments`), `inputContent` (CID-addressed payload for non-text), `authorTenant`, `submittedAt`, `parsedIntent` (LLM-extracted structured summary).
 - **Open.** Per 46 Open questions #2 — MVP scope. Probably `text` only at MVP; `photo` and `sketch-outline-geojson` as type variants pre-declared so adding them later doesn't break the atom contract.
 
-### Contract version bump
+### Engine atom-registry version bump (reframed 2026-05-19 per option β)
 
-Adding the above atoms to the registry triggers an `@hauska/atom-contract` contract version bump. Per [`26_atom_upgrade_guide.md`](26_atom_upgrade_guide.md), this requires coordinated rollout across:
+**Scope note.** Per cc-agent-AC's 2026-05-18 scope correction at
+[`_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md`](_sessions/2026-05-18_hauska_atom_contract_bootstrap_and_port_cc-agent-AC.md),
+the new atom types below register in `hauska-engine/packages/atoms/`
+against the published `@hauska/atom-contract@1.0.0` framework, NOT
+inside the contract package. The contract package stays at 1.0.0
+absent unrelated framework changes (new render modes,
+`ContextSummary` field additions, etc.). What bumps when new atom
+types arrive is the engine atom-registry version. Earlier framing in
+this section ("Adding atoms triggers an `@hauska/atom-contract`
+version bump") reflected the pre-option-β scope.
 
-- `legacy-design-tools` api-server (engine + atom validation)
-- `smartcity-os` api-server (consumer, when CDX-1b lands)
-- `legacy-revit-sensor` (Revit add-in — consumer of `detail-callout-spec`)
-- Hauska SDK packages (consumer of `audit-trail-anchor` via `EventAnchoringService`)
+Per-consumer dependency migration to `@hauska/atom-contract@^1.0.0`
+runs at each consumer's pace (the framework shape did not change at
+extraction; only the package name and home moved):
+
+- `legacy-design-tools` api-server — uses framework primitives for the 19 existing atom-type registrations. Import migration from `@workspace/empressa-atom` to `@hauska/atom-contract` queued as a dedicated cc-agent session within 1-2 weeks per 2026-05-19 planner correction.
+- `smartcity-os` api-server — defer pin until Codex 1b actually consumes engine atoms.
+- `legacy-revit-sensor` — consumer of `detail-callout-spec`; ~10-minute recon pending to confirm framework import shape.
+- `hauska-engine` — published-framework dependency landed 2026-05-19 via PR #1 (atom-contract-pin shim flip).
+- Hauska SDK packages — consumer of `audit-trail-anchor` via `EventAnchoringService`; gating on Stream E SDK closure (see audit-trail-anchor note below).
 
 **Renderer obligation.** Every new atom type below ships with all five render modes per [ADR-001](80_adrs/adr_001_atom_architecture.md) (`inline` / `compact` / `card` / `expanded` / `focus`); the `focus` renderer must produce a polished, brand-consistent, offline-capable HTML view per [ADR-012](80_adrs/adr_012_atom_export_format.md) §4 (it's what `.atom` export packages). A net-new atom type that ships without a `focus` renderer cannot be downloadable. This is real engineering cost per atom; budget for it in Stream B implementation.
 
-**Version bump strategy.** Earlier guidance was a single mega-bump for all new atoms. The 2026-05-12 absorption changes this. Split into **two coordinated minor bumps**:
+**Engine atom-registry bump strategy.** Earlier guidance was a single mega-bump for all new atoms. The 2026-05-12 absorption split this into two coordinated minor bumps of the engine atom-registry version (NOT the contract package version, per the scope reframe above):
 
 | Bump | Atom set | Trigger | Rationale |
 |---|---|---|---|
-| **Bump 1** (e.g., 1.4 → 1.5) | Adjudication-context atoms (3, specified in [Compounding-context atoms](#compounding-context-atoms-bastrop-live-capture) below) + code-pipeline atoms (6, this section) + DA-side new atoms (6, this section) + Codex-side new atoms minus deferred (3, this section) | Start of Sprint A.1 in [`11a_bastrop_live_roadmap.md`](11a_bastrop_live_roadmap.md). | Adjudication-context atoms **must capture from A.1 day-one** — retrofitting compounding context is expensive. Code-pipeline atoms ship at B.3 which runs concurrent with A.1+. DA-side new atoms drive customer-zero L1–L6 fixes. Codex-side new atoms (firm-precedent, per-reviewer-learning, version-drift, etc.) ship in A.2 / A.3 windows. All fit one coordinated bump. |
+| **Bump 1** | Adjudication-context atoms (3, specified in [Compounding-context atoms](#compounding-context-atoms-bastrop-live-capture) below) + code-pipeline atoms (6, this section) + DA-side new atoms (6, this section) + Codex-side new atoms minus deferred (3, this section) | Start of Sprint A.1 in [`11a_bastrop_live_roadmap.md`](11a_bastrop_live_roadmap.md). | Adjudication-context atoms **must capture from A.1 day-one** — retrofitting compounding context is expensive. Code-pipeline atoms ship at B.3 which runs concurrent with A.1+. DA-side new atoms drive customer-zero L1–L6 fixes. Codex-side new atoms (firm-precedent, per-reviewer-learning, version-drift, etc.) ship in A.2 / A.3 windows. All fit one coordinated bump. |
 | **Bump 2** | Parcel Intelligence atoms (5, this section) | When [`46_smartcity_parcel_intelligence.md`](46_smartcity_parcel_intelligence.md) Open question #1 resolves (Parcel Intelligence sequencing vs. Bastrop-live). | Parcel Intelligence's producer surfaces don't exist yet; sequencing decision is open. Bundling these into Bump 1 risks shipping unused atom types whose contracts may need to shift once the surface is real. Defer until producer is scoped in. |
 
 **Why two bumps, not one or three.** One bump (status quo): forces parcel atoms to ship before their producer exists; locks in atom contracts against incomplete design. Three bumps (adjudication-context / pipeline / parcel separate): triples coordination overhead for atoms whose A.1-window shipping is already coupled. Two is the minimum cuts the timing properly.

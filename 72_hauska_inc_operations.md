@@ -39,7 +39,7 @@ State of declared capital allocations against Hauska Inc. operations.
 
 | Item | Status | Notes |
 |---|---|---|
-| **Texas IP attorney memo** | Open / routing date TBD | Per CLAUDE.md "What is open" and [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) sync point #6. Memo delivery gates non-Bastrop ingestion (Bastrop + Grand County stay unblocked; rest of Texas county pipeline gated). Joint dependency with [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory-posture gating. |
+| **Texas IP attorney memo** | Open / routing date TBD; parallel bizops, not a substrate-v1 ingestion gate. | Per CLAUDE.md "What is open." Runs in parallel with substrate v1 work; does not gate Bastrop, Grand County, or the Tier 1/2/3 Texas city pipeline. Reframed 2026-05-19 per fleet correction: prior framing as [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) sync point #6 retired; Sync 6 removed from §Sync points table same date. Joint dependency with [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory-posture stands for paid Layer 2 surfaces but does not block ingestion. |
 
 ## Tech E&O insurance
 
