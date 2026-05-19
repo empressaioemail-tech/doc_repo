@@ -126,12 +126,80 @@ Response `200`: `{ "attachedDocument": AttachedDocumentAtomInstance }`
 
 Note: there is no MCP tool to *create* an `attached-document` — those atoms are produced by the sheet-ingest pipeline (coupled at the producer with `sheet-content-extraction`). The MCP surface for attached-document is read-only (list + fetch).
 
-## L3-L6
+## L3 — deliverable-letter
 
-Appended as each surface's MCP tools land. Sync B(L3) (deliverable-letter) has fired (hauska-engine PR #11); L3 MCP tools pending.
+Atom: `DeliverableLetterAtomInstance` / `DELIVERABLE_LETTER_SCHEMA` (`@hauska-engine/atoms` package 0.3.0). Status enum: `draft | sent`. Sections are an ordered array of `LetterSection` (`kind` ∈ `cover | intro | per-comment-response | signature`, `heading`, `content`, `provenance`). A letter is complete (sendable) when `cover`, `intro`, and `signature` are each present at least once — the engine `deliverableLetterCompleteness()` helper is the source of truth.
+
+Sections have no per-section id field. Endpoints that target a single section use the section's zero-based **index** into the ordered `sections` array.
+
+### POST /api/engagements/:engagementId/deliverable-letters
+
+Create a deliverable letter in `draft` status.
+
+Request body:
+```
+{
+  "title": string,                       // required, non-empty
+  "sections": [                          // optional initial sections
+    { "kind": LetterSectionKind, "heading": string, "content": string }
+  ],
+  "recipientActorId": string | null,     // optional
+  "actorId": string | null,              // optional
+  "principalActorId": string | null      // optional
+}
+```
+
+Backend behavior: assign `entityId`; set `status` to `"draft"`; stamp `createdAt`; set `accessPolicy` to `"tenant-private"`; for each supplied section initialize `provenance` to empty arrays; record the `deliverable-letter.drafted` event.
+
+Response `201`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
+
+### POST /api/deliverable-letters/:letterId/sections
+
+Upsert a section by index.
+
+Request body: `{ "sectionIndex": number, "kind": LetterSectionKind, "heading": string, "content": string }`
+
+Backend behavior: `sectionIndex` within the current array replaces that section's `kind` / `heading` / `content` and **preserves its `provenance`**; `sectionIndex` equal to the current array length appends a new section with empty `provenance`; a larger index is a `400`. Record the `deliverable-letter.section-revised` event.
+
+Response `200`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
+
+### POST /api/deliverable-letters/:letterId/sections/:sectionIndex/provenance
+
+Merge atom references into a section's provenance.
+
+Request body (all keys optional; at least one required): `{ "responseTaskIds": string[], "sheetContentExtractionIds": string[], "findingIds": string[], "adjudicationStateIds": string[] }`
+
+Backend behavior: add the supplied entityIds to the section's existing provenance arrays, deduped.
+
+Response `200`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
+
+### GET /api/deliverable-letters/:letterId/completeness
+
+Run the engine `deliverableLetterCompleteness()` helper against the letter's sections.
+
+Response `200`: `{ "complete": boolean, "missing": LetterSectionKind[] }`
+
+### POST /api/deliverable-letters/:letterId/send
+
+Transition the letter from `draft` to `sent`.
+
+Backend behavior: run the completeness check first. An incomplete letter is rejected with `409` `{ "error": "deliverable_letter_incomplete", "missing": LetterSectionKind[] }`. On success set `status` to `"sent"`, stamp `sentAt`, record the `deliverable-letter.sent` event.
+
+Response `200`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
+
+### Error envelopes (all L3 routes)
+
+- `404` `{ "error": "engagement_not_found" }` / `{ "error": "deliverable_letter_not_found" }`
+- `400` for body/param validation failures, including `sectionIndex` out of range
+- `409` `{ "error": "deliverable_letter_incomplete", "missing": [...] }` on `send`
+
+## L4-L6
+
+Appended as each surface's MCP tools land. L4 (detail-callout-spec) is next per cc-agent-E's Lane A.2 progress.
 
 ## Status
 
 - L1 contract: defined; MCP tools shipped in hauska-mcp-server (`cortex_response_task_*`, PR #6). Legacy routes pending cc-agent-C Lane C.4.
 - L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7). Legacy routes pending cc-agent-C Lane C.4.
-- L3-L6: pending.
+- L3 contract: defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8). Legacy routes pending cc-agent-C Lane C.4.
+- L4-L6: pending.
