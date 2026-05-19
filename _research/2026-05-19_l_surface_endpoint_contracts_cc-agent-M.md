@@ -263,9 +263,65 @@ Response `200`: `{ "detailCalloutSpec": DetailCalloutSpecAtomInstance }`
 - `400` for body/param validation failures, including a malformed per-type `spec`
 - `409` `{ "error": "illegal_push_transition", "from", "to", "legalNextStates" }` on `push-state`
 
-## L5-L6
+## L5 — product-spec-reference
 
-Appended as each surface's MCP tools land.
+Atom: `ProductSpecReferenceAtomInstance` / `PRODUCT_SPEC_REFERENCE_SCHEMA` (`@hauska-engine/atoms` package 0.5.0). A reference to an ICC-ES-evaluated product spec with live evaluation status.
+
+`product` is a structured `{ name, manufacturer }` (never free-text). `esrNumber` is format-validated `ESR-<digits>`. `status` ∈ `active | withdrawn | expired`. `statusHistory` is an append-only chain of `{ status, changedAt, sourceUrl }`; the newest entry's `status` mirrors the atom's current `status`. The inherited `sourceUrl` carries the ICC-ES listing URL the current status was verified against.
+
+### POST /api/engagements/:engagementId/product-spec-references
+
+Create a product-spec reference.
+
+Request body:
+```
+{
+  "product": { "name": string, "manufacturer": string },  // required
+  "esrNumber": string,                                    // required, /^ESR-\d+$/
+  "findingId": string | null,        // optional
+  "responseTaskId": string | null,   // optional
+  "actorId": string | null,          // optional
+  "principalActorId": string | null  // optional
+}
+```
+
+Backend behavior: assign `entityId`; set `status` to `"active"`; stamp `createdAt` + `lastVerifiedAt`; initialize `statusHistory` (empty, or with the initial `active` observation); set `accessPolicy` to `"tenant-private"`; record the creation event.
+
+Response `201`: `{ "productSpecReference": ProductSpecReferenceAtomInstance }`
+
+### POST /api/product-spec-references/:referenceId/refresh
+
+Re-verify the reference against the live ICC-ES listing.
+
+Request body: `{}`
+
+Backend behavior: synchronously fetch the ICC-ES listing page (HTML-scrapable, typically fast — use a 5-10s timeout). If the status changed, append a new `{ status, changedAt, sourceUrl }` entry to `statusHistory` and update `status`; always update `lastVerifiedAt`. The call blocks until the poll completes. The periodic background re-poll is a separate legacy-side runtime concern (sprint Amendment 6) — this endpoint is the manual trigger only.
+
+Response `200`: `{ "productSpecReference": ProductSpecReferenceAtomInstance }`
+
+### GET /api/engagements/:engagementId/product-spec-references
+
+List the product-spec references for an engagement.
+
+Query params: `status` (optional) — one of `active | withdrawn | expired`.
+
+Response `200`: `{ "productSpecReferences": ProductSpecReferenceAtomInstance[] }`
+
+### GET /api/product-spec-references/:referenceId
+
+Fetch a single product-spec-reference atom, including its full `statusHistory`.
+
+Response `200`: `{ "productSpecReference": ProductSpecReferenceAtomInstance }`
+
+### Error envelopes (all L5 routes)
+
+- `404` `{ "error": "engagement_not_found" }` / `{ "error": "product_spec_reference_not_found" }`
+- `400` for body/param validation failures, including a malformed `esrNumber`
+- `502` `{ "error": "icc_es_unreachable" }` is a reasonable shape if the `refresh` poll cannot reach ICC-ES — the MCP server surfaces 5xx as an engineering-notified error
+
+## L6
+
+Appended when the L6 (deliverable-letter render) MCP tool lands. Per the planner, the render output is itself an atom (`deliverable-letter-render`); `cortex_deliverable_letter_render` will produce that atom and return the blob ref.
 
 ## Status
 
@@ -273,4 +329,5 @@ Appended as each surface's MCP tools land.
 - L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7). Legacy routes pending cc-agent-C Lane C.4.
 - L3 contract: defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8). Legacy routes pending cc-agent-C Lane C.4.
 - L4 contract: defined; MCP tools shipped (`cortex_detail_callout_spec_*`, PR #9). Legacy routes pending cc-agent-C Lane C.4.
-- L5-L6: pending.
+- L5 contract: defined; MCP tools shipped (`cortex_product_spec_reference_*`, PR #10). Legacy routes pending cc-agent-C Lane C.4.
+- L6: pending Sync B(L6).
