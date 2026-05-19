@@ -78,7 +78,7 @@ Codex is four layers, each load-bearing.
 
 Compliance pass against jurisdiction code, parcel context, neighboring context. Same code as Design Accelerator's incremental pass, run in full-pass mode (30-120s vs <5s). Generates findings with code-section citations, severity, plan location.
 
-The engine is the same code that powers the architect-side view (Design Accelerator's `plan-review` artifact mirrors what the reviewer will see) and is being factored into its own repo per [ADR-008](80_adrs/adr_008_engine_factor_out.md).
+The engine is the same code that powers the architect-side view (Design Accelerator's `plan-review` artifact mirrors what the reviewer will see) and is being factored into its own repo per [ADR-008](80_adrs/adr_008_engine_factor_out.md). **Note on mode separation:** the incremental-vs-full-pass distinction is currently aspirational — see [`40`](40_design_accelerator.md) §Hauska Engine for the gate. One code path serves both surfaces today; budget-aware mode separation is design-fresh in `hauska-engine` per the 2026-05-18 plan-review engine recon.
 
 ### Corpus
 
@@ -220,7 +220,7 @@ These share Codex's data substrate but warrant separate product treatment, separ
 
 - **Stay reviewer-shaped.** Codex is the reviewer's interface. Feature decisions test against reviewer experience first; architect / city / inspector benefits are downstream effects.
 - **Fabric framing is customer-facing.** The product is sold with the network-effects narrative explicit, not buried in architecture. See [`06_cities_value_narrative.md`](06_cities_value_narrative.md).
-- **Same engine, two surfaces.** Surface decisions never diverge the engine. If 1b can do something 1a can't, it belongs in the web companion (which 1a also accesses) or it is a candidate for the engine, not for surface-specific divergence.
+- **Same engine, two surfaces.** Surface decisions never diverge the engine. If 1b can do something 1a can't, it belongs in the web companion (which 1a also accesses) or it is a candidate for the engine, not for surface-specific divergence. (Mode separation between the two surfaces is currently aspirational — see [`40`](40_design_accelerator.md) §Hauska Engine; one code path serves both today, real mode budgeting is design-fresh in `hauska-engine`.)
 - **Living lineage governs.** Every feature tests against: does this enrich the property's lineage or hollow it out?
 - **Don't pretend B1-B5 exists.** The taxonomy is aspirational per the predecessor addendum. v1 needs B1; the others wait.
 - **PropTech ecosystem partners are downstream consumers.** The tool-agnostic invited-participant pattern generalizes beyond markup tools. PropTech network partners (futureproptechmiami.com network) are candidate fabric consumers when the engine repo and ADR-007 land. Captured here to avoid scope drift; pickup is a separate doc later.

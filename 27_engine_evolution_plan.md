@@ -245,6 +245,11 @@ Adding the above atoms to the registry triggers an `@hauska/atom-contract` contr
 
 Atom additions are non-breaking per ADR-001; existing consumers ignore unknown atoms per the contract's forward-compatibility rules.
 
+**Bump 1 window — behavior fixes (not contract changes).** Two fixes land alongside the Bump 1 atom additions without changing the contract shape, surfaced by the 2026-05-18 plan-review engine recon at [`_sessions/2026-05-18_plan_review_engine_inventory_cc-agent-PR.md`](_sessions/2026-05-18_plan_review_engine_inventory_cc-agent-PR.md):
+
+- **`bim-model` produced symmetrically on IFC ingest.** Today only Push-to-Revit produces this atom; IFC ingest writes `materializable-element` rows + glTF bundle but no `bim-model`. UI viewport renders nothing after an IFC upload. Fix at `artifacts/api-server/src/lib/ifcIngest.ts:227-399` per [`42`](42_design_accelerator_program_plan.md) DA-BIM-Symmetry. `bim-model` already in the 19-atom registry — no contract change. Confirmed in scope by Nick 2026-05-18.
+- **Open: materializable-element re-ingest semantics.** Current `ifcIngest.ts:260-314` delete-prior-rows-then-reinsert breaks ADR-001 atom history. Append + supersede chain per ADR-011 is the resolution path; lands as follow-on after Bump 1, not gating.
+
 ### Compounding-context atoms (Bastrop-live capture)
 
 The substantive design pass from the 2026-05-12 brainstorm. These atoms are what makes use of the platform *compound* — every Sylvia / Jaime adjudication becomes durable, retrievable, cross-jurisdictionally-precedent-eligible context attached to the underlying `code-section` and `finding` atoms. They are the **depth moat** complement to the Code Ingestion Pipeline's **width moat** (per [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md) §Strategic role).

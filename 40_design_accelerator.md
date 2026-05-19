@@ -126,6 +126,11 @@ briefing-divergence, bim-model, reviewer-annotation, reviewer-request,
 viewpoint-render, render-output, finding, communication-event,
 decision-event, submission-classification.
 
+**Bump 1 atom-production fixes** (planned alongside the contract bump per [`27`](27_engine_evolution_plan.md) §Contract version bump):
+
+- **`bim-model` produced symmetrically on IFC ingest.** Today the atom is produced only on Push-to-Revit per `bimModels.ts`; IFC ingest writes `materializable-element` rows and a glTF bundle but does not produce a `bim-model` atom. The UI BIM viewport consequently has nothing to render after an IFC upload — surfaces as "IFC ingest doesn't work in the UI." Bump 1 plan: IFC ingest produces `bim-model` symmetrically, so as-built (IFC) and to-be-built (Push-to-Revit) are peer producers of the same atom type. Surfaced 2026-05-18 plan-review engine recon §6.
+- **Open: materializable-element re-ingest semantics.** Current behavior at `ifcIngest.ts:260-314` is delete-prior-rows then re-insert, which breaks ADR-001 atom history per the 2026-05-18 engine recon §57. Resolution path (append + supersede chain per ADR-011) is open and will land as a follow-on; not gating Bump 1.
+
 Code atoms (legal corpus — distinct concept from domain atoms) are
 populated by ingest pipelines from jurisdiction code documents. As of
 2026-05-05, the helium dev DB has 479 code atoms across four sources:
@@ -150,7 +155,9 @@ implemented in **one codebase** consumed by two surfaces:
 
 Rules and code ontology written once benefit both products. Architects
 get the same compliance interpretation reviewers will apply — no
-"surprise" findings at submission time. The shared engine is named **Hauska Engine** and is being factored into its own repo `hauska-engine` in the `empressaioemail-tech` org, gated on migration sprint Phase 2C closure. Naming, repo placement, and timing are settled in [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md). The architect-side `plan-review` artifact mirrors what Codex reviewers see; the spec previously titled `51_design_accelerator_parcel_intelligence.md` in pre-docs-repo project knowledge migrates to docs repo as part of Hauska Engine factor-out work.
+"surprise" findings at submission time.
+
+**Mode distinction is currently aspirational** per the 2026-05-18 plan-review engine recon at [`_sessions/2026-05-18_plan_review_engine_inventory_cc-agent-PR.md`](_sessions/2026-05-18_plan_review_engine_inventory_cc-agent-PR.md). One `generateFindings` code path serves both surfaces today; budget-aware mode separation (incremental sub-second vs. full-pass minutes) is design-fresh in `hauska-engine` per cc-agent-E side-intel, not a port from the legacy engine. The same recon also surfaced that **every analytical surface is pure-LLM with no structural rules pass** — a structural rules layer for setbacks, heights, lot coverage, egress widths against parsed BIM geometry is also design-fresh in `hauska-engine`, not present in legacy. The shared engine is named **Hauska Engine** and is being factored into its own repo `hauska-engine` in the `empressaioemail-tech` org, gated on migration sprint Phase 2C closure. Naming, repo placement, and timing are settled in [`80_adrs/adr_008_engine_factor_out.md`](80_adrs/adr_008_engine_factor_out.md). The architect-side `plan-review` artifact mirrors what Codex reviewers see; the spec previously titled `51_design_accelerator_parcel_intelligence.md` in pre-docs-repo project knowledge migrates to docs repo as part of Hauska Engine factor-out work.
 
 ### Inverted Pyramid methodology
 
@@ -178,11 +185,11 @@ Load-bearing third-party services:
 
 | Service | Purpose | Notes |
 |---|---|---|
-| Anthropic API | Briefing generation, client-comment summarization, finding generation | Sonnet for complex writing, Haiku for classification |
-| APS (Autodesk Platform Services) | Revit cloud operations, IFC translation, sheet PDFs | Paid tier active. Model Derivative + AEC Data Model APIs load-bearing. Design Automation API elevated to near-term priority (enables Claude-as-designer via MCP) |
-| mnml.ai | Photorealistic exterior rendering from massing models | Used in W2 wave for client deliverables |
-| CesiumJS | Geospatial visualization, neighboring-context display | In-browser only; no server-side dependency |
-| Neon (pgvector) | Embeddings store for code atom retrieval | Replit-managed; migration pending |
+| Anthropic API | Briefing generation, client-comment summarization, finding generation, sheet OCR via Claude vision | Sonnet 4.5 for analytical surfaces; Haiku for classification. Every analytical surface routes a single prompt to Anthropic (no rules-engine fallback today) per the 2026-05-18 plan-review engine recon. |
+| APS (Autodesk Platform Services) | Future: Revit cloud operations, IFC translation, sheet PDFs, Design Automation for L4 Revit content push | Empressa has full APS access available. **Not currently integrated in code** — zero APS imports in the api-server or any UI artifact per the 2026-05-18 Cortex UI recon. Integration is the gap, not access. |
+| mnml.ai | Photorealistic exterior rendering from massing models | Wired server-side via `routes/renders.ts`; gated by `RENDERS_PROD_ENABLED` env flag. Used in W2 wave for client deliverables. |
+| Leaflet 2D + Three.js GLB viewer | Geospatial visualization (Leaflet); BIM glTF preview (Three.js) | The actual 3D / spatial stack in `legacy-design-tools` design-tools artifact. **Supersedes prior CesiumJS framing** — Cesium was never wired in any artifact per the 2026-05-18 Cortex UI recon. If true Cesium scene work returns, treat as net-new. |
+| Neon (pgvector) | Embeddings store for code atom retrieval | Replit-managed; migration pending. Retrieval today is top-K vector + lexical fallback per [`27`](27_engine_evolution_plan.md); hybrid graph traversal per ADR-010 is design-fresh in `hauska-engine`. |
 
 ## Pilot wave plan (Moab projects)
 
