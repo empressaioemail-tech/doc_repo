@@ -2,7 +2,7 @@
 id: 27_engine_evolution_plan
 title: Engine evolution plan and atom registry expansion
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-19 (Lane A.2 closed: all 7 Cortex atom types locked in engine atom-registry across six Sync B fires; `@hauska-engine/atoms` 0.0.0 → 0.6.0 via PRs #9-#14; 194 workspace tests green at HEAD `7ed915c`; design decisions captured below per cc-agent-E Phase G close-out — state-as-field + declared eventTypes, discriminated unions key on discriminant, advisory helpers, leaf composition, tenant-private accessPolicy throughout. New `deliverable-letter-render` atom spec added under DA-side new atoms per Sprint Amendment 6 — render output IS a first-class atom, not bytes-only. Runtime-layer work the atom shapes deliberately deferred to legacy-design-tools: ICC-ES poller for L5, DOCX/PDF render pipeline for L6. Earlier 2026-05-18 entry: doc-set sweep for ADR-018 substrate-layer reframe.)
 applies_to: portfolio
 related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 40_design_accelerator, 47_codex_plan_review, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 46_smartcity_parcel_intelligence, 11a_bastrop_live_roadmap, 08_tiered_access_model, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
 owner: nick
@@ -131,6 +131,13 @@ Each atom below specifies: name, purpose, producer/consumer surface(s), key fiel
 - **Consumer.** DA `design-tools` (workflow UI).
 - **Key fields.** `taskText`, `status` (`open|in_progress|done`), `parentEngagementId`, `linkedFindingIds[]`.
 
+#### `deliverable-letter-render`
+- **Purpose.** The rendered DOCX/PDF of a `deliverable-letter` (L3 atom) as a first-class atom (L6 fix). Per Sprint Amendment 6 (2026-05-19): render output IS its own atom — queryable, addressable, version-pinned — not ephemeral bytes returned by a render API call. Multi-render off one letter is 1-to-many and each render is independently addressable for downstream consumers (audit, archive, recipient delivery tracking).
+- **Producer.** DA render pipeline in `legacy-design-tools` (runtime-layer work — out of engine atom-registry scope; engine declares the shape, runtime emits instances).
+- **Consumer.** DA `design-tools` + `plan-review` UI (download / preview), Codex audit export, agent workflows via `cortex/deliverable_letter_render` MCP tool.
+- **Key fields.** `sourceLetterRef` (DID-validated reference to the source L3 `deliverable-letter` atom), `sourceLetterVersion` (pins the rendered-against version per [ADR-011](80_adrs/adr_011_atom_identity_across_versions.md) chain semantics — re-rendering against a later letter version produces a new render atom, not a mutation), `format` (`DOCX | PDF` enum), `blobRef` (opaque pointer to the stored bytes; storage substrate per Stream A's `storage/` module), `renderedAt`, `renderedBy` (actor DID per ADR-015). `accessPolicy: "tenant-private"`.
+- **Open.** Render fidelity acceptance bar (typography, page breaks, signature blocks) — runtime concern, not atom-shape concern. ICC-ES-style auto-refresh on the source letter (re-render when the source letter changes version) is a runtime policy decision; the atom shape supports either eager or lazy.
+
 ### Code-pipeline atoms (sourced from [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md))
 
 Produced by the Code Ingestion Pipeline (B.3 atomization stage). Bare reference atoms — free-tier substrate per [`08_tiered_access_model.md`](08_tiered_access_model.md). Consumed by Codex (citation), Cortex (design-time grounding), SmartCity OS (parcel-briefing context). Detailed pipeline design in 49; atom contract specified here for registry coordination.
@@ -234,6 +241,19 @@ types arrive is the engine atom-registry version. Earlier framing in
 this section ("Adding atoms triggers an `@hauska/atom-contract`
 version bump") reflected the pre-option-β scope.
 
+**Cortex L1-L6 trajectory landed 2026-05-19.** All seven Cortex atom types shipped across six Sync B fires from Lane A.2 (cc-agent-E), each as its own PR per the dispatch's anti-batching rule. `@hauska-engine/atoms` 0.0.0 → 0.6.0:
+
+| Sync | Atom(s) | hauska-engine PR | atoms version | HEAD |
+|---|---|---|---|---|
+| B(L1) | `response-task` | #9 | 0.0.0 → 0.1.0 | `31a8f1f` |
+| B(L2) | `sheet-content-extraction` + `attached-document` | #10 | 0.1.0 → 0.2.0 | `30b8047` |
+| B(L3) | `deliverable-letter` | #11 | 0.2.0 → 0.3.0 | `99d4f5f` |
+| B(L4) | `detail-callout-spec` | #12 | 0.3.0 → 0.4.0 | `918f4eb` |
+| B(L5) | `product-spec-reference` | #13 | 0.4.0 → 0.5.0 | `b030570` |
+| B(L6) | `deliverable-letter-render` | #14 | 0.5.0 → 0.6.0 | `7ed915c` |
+
+194 workspace tests green at HEAD; 112 of them are the L-surface conformance suites (16 + 20 + 23 + 20 + 17 + 16). Per option β the L-surface atoms are catalog-data atoms in the engine atom-registry, not the `@hauska/atom-contract` framework package — the framework stays at 1.1.0 (accessPolicy reuse from Lane Foundation Sync A) absent further primitive changes.
+
 Per-consumer dependency migration to `@hauska/atom-contract@^1.0.0`
 runs at each consumer's pace (the framework shape did not change at
 extraction; only the package name and home moved):
@@ -259,9 +279,26 @@ extraction; only the package name and home moved):
 
 Atom additions are non-breaking per ADR-001; existing consumers ignore unknown atoms per the contract's forward-compatibility rules.
 
+**Design decisions captured at L-surface atom-shape lock (2026-05-19, cc-agent-E Phase G close-out).** Five cross-cutting decisions establish the pattern for future atom-shape work in the engine atom-registry:
+
+- **State-as-field with declared event types beats inline event-sourcing for workflow atoms.** L1 (`response-task`), L3 (`deliverable-letter`), L4 (`detail-callout-spec`) carry current state as a field; the atom record is the single source of truth, and the storage event log carries the audit chain via declared `eventTypes` on the registration. Consumers wanting an event-sourced view compose it from the storage event log, not the atom shape. The one inline-history exception is L5 (`product-spec-reference`)'s `statusHistory` chain — the dispatch explicitly asked for a queryable ESR-status chain on the atom because a verifier holding one atom version benefits from not walking the version chain.
+
+- **Discriminated unions key on the discriminant — no redundant flat field.** L4's `spec` payload is a Zod `discriminatedUnion` keyed on `detailType` (`door-schedule` / `wall-section` / `wall-type` / `room-finish`). The enum IS the discriminant, no parallel top-level field carries it — zero drift risk between the atom-level type tag and the spec shape, Zod-native validation. The generalized principle: when a payload varies by a type tag, make the tag the union discriminant and don't also carry it as a top-level field.
+
+- **Advisory helpers, not runtime enforcement.** `deliverableLetterCompleteness` (L3) and `isLegalPushTransition` (L4) are exported helpers consumers consult; the engine atom-registry enforces nothing at runtime. Keeps the registry a pure declarative surface; legality / completeness gating happens at the consumer boundary (server-side for MCP tools, UI-side for direct UI use) — consistent with how the code-corpus atoms behave.
+
+- **Leaf composition throughout.** All six L-atoms use `composition: []`. Cross-atom references (`findingId`, `sourceLetterRef`, per-section provenance) are data fields consumers resolve themselves, not declared composition edges. The atom-contract's flat `dataKey` composition model doesn't fit nested or single-ref provenance cleanly; keeping these atoms leaf-composition is consistent and simple. Composition is for actual pack-level aggregation (e.g., `jurisdiction-corpus` over `code-edition`), not for cross-atom data references.
+
+- **`accessPolicy: "tenant-private"` for every L-atom.** Engagement workflow data is never public-catalog (per [ADR-017](80_adrs/adr_017_atom_access_control.md)). Cross-tenant scope for these atoms is shaped via the per-engagement actor / principalActor links (ADR-015), not via the contract-level access policy field.
+
+**Runtime-layer deferrals.** Two pieces of L-surface work are explicitly out of engine atom-registry scope and land in `legacy-design-tools` instead per Sprint Amendment 6:
+
+- **L5 ICC-ES poller** — live-verification of `product-spec-reference` ESR status against ICC-ES is runtime concern. The atom shape carries `statusHistory` to support the eventual poller; the poller itself lives at the consumer boundary.
+- **L6 DOCX/PDF render pipeline** — the atom shape declares the render output as a first-class atom (`deliverable-letter-render`); the actual rendering (document assembly, template engine, byte output) is runtime-layer work in legacy-design-tools. The atom shape supports either eager or lazy render policy.
+
 **Bump 1 window — behavior fixes (not contract changes; NOT part of the substrate-v1 5-repo cross-PR rollout).** Two fixes land in the post-Sync-1 unlock window without changing the contract shape, surfaced by the 2026-05-18 plan-review engine recon at [`_sessions/2026-05-18_plan_review_engine_inventory_cc-agent-PR.md`](_sessions/2026-05-18_plan_review_engine_inventory_cc-agent-PR.md). **Disambiguation per 2026-05-19 cross-planner sync**: "Bump 1 window" here is the post-publish unlock window for downstream Cortex-track work. The **substrate-v1 planner's Bump 1 cross-PR rollout** is separate scope (5 repos: legacy-design-tools, smartcity-os, legacy-revit-sensor, hauska-engine, hauska-mcp-server pinning consumers to `@hauska/atom-contract@^1.0.0`, atomically merged per §Bump 1 atom contract coordination above). These behavior fixes ship as their own targeted PRs and do not enter the cross-PR rollout.
 
-- **`bim-model` produced symmetrically on IFC ingest.** Today only Push-to-Revit produces this atom; IFC ingest writes `materializable-element` rows + glTF bundle but no `bim-model`. UI viewport renders nothing after an IFC upload. Fix at `artifacts/api-server/src/lib/ifcIngest.ts:227-399` per [`42`](42_design_accelerator_program_plan.md) DA-BIM-Symmetry. `bim-model` already in the 19-atom registry — no contract change. Confirmed in scope by Nick 2026-05-18.
+- **`bim-model` produced symmetrically on IFC ingest. SHIPPED 2026-05-19** via legacy-design-tools PRs #28 + #29. `ensureBimModelAndEmitIfcIngestEvent` UPSERT preserves Push-to-Revit state; new `bim-model.ingested-from-ifc` event type appended (append-only order restored in PR #29 after PR #28 regression). Neon prod Track B IFC schema applied 2026-05-19 (`snapshot_ifc_files` + `materializable_elements` Track B columns + 2 CHECK constraints + 4 FKs + 2 partial indexes). Revit IFC retry verification operator-pending. No contract change — `bim-model` already in the 19-atom registry.
 - **Open: materializable-element re-ingest semantics.** Current `ifcIngest.ts:260-314` delete-prior-rows-then-reinsert breaks ADR-001 atom history. Append + supersede chain per ADR-011 is the resolution path; lands as follow-on after Bump 1, not gating.
 
 ### Compounding-context atoms (Bastrop-live capture)
@@ -529,7 +566,7 @@ POST-FACTOR-OUT (in hauska-engine):
 | Stream | Verification |
 |---|---|
 | A. Module boundary refactor | `artifacts/api-server/src/` directory listing matches target structure (incl. `storage/` and `identity/` per ADR-010/011); existing tests pass; no engine code left in `src/` root; `storage/` exposes a uniform access layer over Postgres index + IPFS pin operations, with a hot-cache seam; `identity/` exposes a DID resolver + IPNS read/write surface, with hooks for the deferred custody model |
-| B. Atom registry implementation | New atoms appear in `registry.ts`; contract version bumped to next minor; all consumers updated; existing atom tests pass; new atoms have at least minimal schema tests |
+| B. Atom registry implementation | New atoms appear in `hauska-engine/packages/atoms/` (option β; engine atom-registry version bumps, not `@hauska/atom-contract` framework version); all consumers pin against the appropriate `^x.y.0` range; existing atom tests pass; new atoms ship the full ADR-001 four-layer contract (Zod schema, contextSummary, composition, history) plus five render modes plus conformance suite. **L1-L6 Cortex atom set complete 2026-05-19** at `@hauska-engine/atoms@0.6.0` (7 atom types, 194 workspace tests green). Remaining Stream B scope: Bump 1 code-corpus atoms (6) + adjudication-context atoms (3) + Codex-side atoms (minus deferred `audit-trail-anchor` and the consolidated `per-reviewer-learning` ↔ `per-reviewer-pattern`); Bump 2 Parcel Intelligence atoms (5) gated on 46 sequencing decision. |
 | C. Engine output quality | QA scenarios in DA and Codex program plans pass with engine output Nick can evaluate (specific scenarios defined in each program plan) |
 | D. Corpus depth | Corpus count per jurisdiction grows to defined target; retrieval tests pass for representative queries; production Neon corpus count verified |
 | E. SDK gap closure | `audit-trail-anchor` atoms produced for test scenarios; CDX-15 audit export workflow ends with a verifiable artifact |

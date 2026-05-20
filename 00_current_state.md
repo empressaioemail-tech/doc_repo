@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-05-18
 status: active
-last_updated: 2026-05-19 (sprint mid-sync rollup 4: Sync B(L1)+(L2)+(L3) all fired via cc-agent-E PRs #9/#10/#11; atoms 0.0.0->0.1.0->0.2.0->0.3.0; 141 workspace tests. cc-agent-M shipped Group 3 L1+L2 MCP tools as stacked PRs #5/#6/#7 on hauska-mcp-server (open, awaiting operator merge). Sprint Amendment 6 in decision record: L-surface atom persistence/runtime is legacy-design-tools, not hauska-engine; cc-agent-C builds L1-L6 endpoints + UI in Lane C.4 per cc-agent-M's contract doc. cc-agent-E operator-authorized to ship L4 next. cc-agent-C continues Lane C.2. Prior context preserved.)
+last_updated: 2026-05-19 (planner session: 42 + 27 updated to reflect Lane A.2 + Lane B Group 3 close — all 7 Cortex atom types locked at @hauska-engine/atoms@0.6.0; deliverable-letter-render atom spec added to 27 per Amendment 6; five cc-agent-E design decisions captured in both docs. Three agent prompts handed to operator covering cc-agent-C Lane C.3, cc-agent-C Lane C.4, cc-agent-M Lane B Group 4. cc-agent-C surfaced two structural blockers on first contact with Lane C.4; resolved: Sprint Amendment 7 locks Path A (mirror L-surface atom schemas into legacy-design-tools/lib/atoms-l-surface/ with header pinning + contract-conformance test); operator merging C.3.2 PRs #42 + #43 unblocks C.4 base branch. Snapshot body already reflects Lane A.2 + Lane B Group 3 close from earlier in the day; this is a last_updated-only bump. Prior context preserved.)
 applies_to: portfolio
 related: [11_roadmap, 29_mcp_surface_tier_model, 30a_smartcity_stabilization_sprint, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan]
 ---
