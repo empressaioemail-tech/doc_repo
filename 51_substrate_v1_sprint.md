@@ -2,9 +2,9 @@
 id: 51_substrate_v1_sprint
 title: Substrate v1 sprint — Code Ingestion Pipeline + Hauska MCP Server
 status: active
-last_updated: 2026-05-19 (Sync 4.5 added to Sync points table per combined Cortex/Codex sprint decision; hard-kill checkpoint semantics tightened from "three counties" to "three jurisdictions"; Sync 5 explicit deferral framing per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)
+last_updated: 2026-05-19 (Sync 4.5 added to Sync points table per combined Cortex/Codex sprint decision; hard-kill checkpoint semantics tightened from "three counties" to "three jurisdictions"; Sync 5 explicit deferral framing per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md. Streams 2C+2D launch-prep dispatch filed under new 16_commercialization_roadmap.md; cross-reference added below.)
 applies_to: portfolio
-related: [11_roadmap, 11a_bastrop_live_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
+related: [11_roadmap, 11a_bastrop_live_roadmap, 16_commercialization_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
 owner: nick
 ---
 
@@ -757,6 +757,7 @@ See [Cross-cutting work — Phase 0](#phase-0--decisions) above.
 
 - [`11_roadmap.md`](11_roadmap.md) — portfolio roadmap; sprint appears
   at P1
+- [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md): post-cutover commercialization sequencing for the Hauska layer. Step 1 of that queue executes Streams 2C and 2D from this sprint as public-launch prep; dispatch at [`_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md`](_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md).
 - [`11a_bastrop_live_roadmap.md`](11a_bastrop_live_roadmap.md) — Track A
   Sprint A.1 corpus load coordinates with this sprint's B.6 validation
   pass
