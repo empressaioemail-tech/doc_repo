@@ -128,3 +128,27 @@ Group 5:
 Each Group fires a session summary. Group 4 verification produces the canonical "MCP tool surfaces live and addressable" hand-off to the operator for Stage 9 verification.
 
 Note: the Codex/Cortex tool count and naming are first-pass framings from the operator's sprint scope. If during implementation you find that the four operator-named tools per product don't cleanly map to existing endpoints (e.g., `cortex/briefing_emit` actually requires two tools because the briefing flow is multi-step), surface the proposed adjustment in your session summary and let the planner ratify before locking the v1 tool surface. Tool surface is contract-grade — easier to add than to rename.
+
+## Group 4 addendum (2026-05-19 post-Amendment-7)
+
+> Added after cc-agent-C's first-contact recon on Lane C.4 exposed structural questions the original Group 4 scope didn't anticipate. Captured here so cc-agent-M doesn't re-litigate when Group 4 fires.
+
+**Read Sprint Amendment 7 before firing Group 4.** [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](../_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md) §Sprint amendments. Path A locked: `legacy-design-tools` mirrors the 7 L-atom Zod schemas verbatim from `hauska-engine/packages/atoms/src/instances.ts` into `lib/atoms-l-surface/` (or sibling per cc-agent-C's final placement) with header pinning + contract-conformance test. `@hauska-engine/atoms` stays workspace-private; the endpoint contract doc at [`_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md`](../_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md) is the canonical cross-repo seam.
+
+**The consumer landscape is now three mirrors.** When you fire Group 4, three places carry copies of the L-surface atom shape:
+
+1. **Engine source of truth** — `P:/hauska-engine/packages/atoms/src/instances.ts` at `@hauska-engine/atoms@0.6.0` (SHA `7ed915c`).
+2. **MCP mirror** — your own `hauska-mcp-server/src/legacy-client.ts`, mocked-fetch tested during Group 3.
+3. **Legacy-design-tools mirror** — `legacy-design-tools/lib/atoms-l-surface/`, shipped during Lane C.4 by cc-agent-C.
+
+Group 4 is the first moment these three mirrors meet real endpoints + real clients. Drift between any pair surfaces here, not earlier.
+
+**Added Group 4 scope** (supplements the original Group 4 list above; does not replace it):
+
+- **Cross-mirror diff.** Pull cc-agent-C's `legacy-design-tools/lib/atoms-l-surface/` mirror; diff against your `legacy-client.ts`; verify both match engine source at v0.6.0 SHA `7ed915c` (or later if cc-agent-C re-mirrored against a bump — capture that bump pointer in your session summary). Flag any field-shape, enum-value, or required-vs-optional drift to the planner BEFORE ratifying. Per Amendment 7's surface-drift-to-planner rule.
+- **Contract-conformance test on the MCP side.** Add a sibling of cc-agent-C's pattern: parse representative JSON examples from the endpoint contract doc against `legacy-client.ts` schemas. Drift surfaces in CI, not runtime. cc-agent-C ships the legacy-design-tools side; you ship the MCP-side parallel.
+- **`did:hauska:` DID verification for L-surface atoms.** Per Amendment 6, L-surface atoms get real `did:hauska:` DIDs via the new `lSurfaceProvenance` helper — different from Groups 1+2's synthetic `legacy:` identifiers. Verify end-to-end through your tool layer: engine emits a real DID → cc-agent-C's endpoint returns it → your MCP tool serializes through → MCP client receives a `did:hauska:` string. Worth one discrete test per surface (L1 through L6).
+- **L4 discriminated-union round-trip across MCP clients.** Per your own Group 3 close-out flag: `cortex/detail_callout_spec_*` tools carry the opaque `spec` payload as a `z.discriminatedUnion` keyed on `detailType`. Verify each MCP client (Inspector + Desktop + Cursor) handles the union shape on round-trip — request and response serialization both. Capture any client that flattens or stringifies the union.
+- **Latency budget verification on synchronous L5/L6 calls.** Per your own Group 3 close-out flag: `cortex/product_spec_reference_refresh` (L5) and `cortex/deliverable_letter_render` (L6) are synchronous — verify each MCP client's tool-call timeout budget accommodates real-world latency (DOCX render in particular can be slow). MCP Inspector + Claude Desktop + Cursor each have different timeout shapes; document the observed limits.
+
+The original Group 4 scope (auth-tier wiring, MCP Inspector round-trips, end-to-end multi-tool flow on a fixture engagement, `50_hauska_mcp_server.md` divergence pass) stays intact — the addendum supplements rather than replaces.
