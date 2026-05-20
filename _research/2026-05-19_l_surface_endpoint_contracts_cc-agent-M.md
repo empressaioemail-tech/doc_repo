@@ -5,12 +5,20 @@ date: 2026-05-19
 agent: cc-agent-M
 repo: hauska-mcp-server
 session_type: contract
-status: GROUP 3 COMPLETE — all six L-surface contracts (L1-L6) defined; MCP tools shipped; legacy routes pending cc-agent-C Lane C.4
+status: GROUP 3 + LANE C.4 COMPLETE — all six L-surface contracts defined; MCP tools shipped; legacy routes live on legacy-design-tools main (PR #46 L1 + PR #51 L2-L6, merged 2026-05-20); Lane C.4 contract extensions ratified via Sprint Amendment 8 (L3 list/get + L6 download endpoints; BaseAtomInstance field convention; event-casing-to-dots; L1 transition table; L4 revise/aps-ref events)
 rolled_up: false
 related: [_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces, _dispatches/2026-05-19_cc-agent-C_l_surface_ui, _research/2026-05-19_l1_l6_mcp_tool_prep_cc-agent-M]
 ---
 
 > **Group 3 COMPLETE (2026-05-19).** All six L-surface MCP tool sets (L1-L6) are shipped in hauska-mcp-server. Every endpoint contract below is final and ready for cc-agent-C to implement in Lane C.4. Surface any drift discovered during implementation to the planner before locking.
+>
+> **Lane C.4 COMPLETE + contract extensions ratified (2026-05-20, Sprint Amendment 8).** cc-agent-C closed Lane C.4 by shipping all six surfaces' endpoints + Postgres tables + UI via PR #46 (L1) and PR #51 (L2-L6 consolidated) on `legacy-design-tools` main. Three contract extensions surfaced during implementation, all ratified as in-scope:
+>
+> 1. **L3/L6 read + download endpoints added** beyond the original contract — UIs need them; ratifying them as in-scope means MCP keeps symmetric capability. See L3 + L6 sections below.
+> 2. **BaseAtomInstance field convention** — every L-atom instance carries `sourceAdapter` / `sourceUrl` / `contentHash` / `fetchedAt` provenance fields, centralized in `legacy-design-tools/lib/lSurfaceAtom.ts`. L5 `sourceUrl` carries the ICC-ES report URL per the engine atom docstring. Consumers of the response shape should expect these fields on every L-atom instance.
+> 3. **Event-casing resolved to dots** (e.g., `response-task.opened` not `response-task-opened`). The hyphen forms in the body below predate this convention; **dot form is canonical**. L1 also gains a documented transition table (open → in-progress → done | cancelled; transitions back from `done` or `cancelled` are forbidden). L4 gains two new events the contract was silent on: `detail-callout-spec.revised` (when a `rejected-by-user` spec is edited and pushed again) and `detail-callout-spec.aps-ref-attached` (when the APS Design Automation work-item ref lands on the atom).
+>
+> cc-agent-M follow-on dispatch (post-Amendment-8) extends `legacy-client.ts` + adds three MCP tools (`cortex_deliverable_letter_list`, `cortex_deliverable_letter_fetch`, `cortex_deliverable_letter_render_download`) to match. Group 4 e2e fires after that extension + cutover.
 
 ## Purpose
 
@@ -190,6 +198,20 @@ Backend behavior: run the completeness check first. An incomplete letter is reje
 
 Response `200`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
 
+### GET /api/engagements/:engagementId/deliverable-letters
+
+**Added in Lane C.4 (ratified Sprint Amendment 8).** List deliverable-letters for an engagement, newest-first.
+
+Query params: `status` (optional) — filter to a single status (`draft` | `sent`).
+
+Response `200`: `{ "deliverableLetters": DeliverableLetterAtomInstance[] }`
+
+### GET /api/deliverable-letters/:letterId
+
+**Added in Lane C.4 (ratified Sprint Amendment 8).** Fetch a single deliverable-letter by id.
+
+Response `200`: `{ "deliverableLetter": DeliverableLetterAtomInstance }`
+
 ### Error envelopes (all L3 routes)
 
 - `404` `{ "error": "engagement_not_found" }` / `{ "error": "deliverable_letter_not_found" }`
@@ -344,19 +366,31 @@ List every render of a deliverable letter, ordered `renderedAt` descending.
 
 Response `200`: `{ "renders": DeliverableLetterRenderAtomInstance[] }`
 
+### GET /api/deliverable-letter-renders/:renderId/file
+
+**Added in Lane C.4 (ratified Sprint Amendment 8).** Download the rendered DOCX/PDF bytes for a given render atom. The render atom carries a `blobRef` (opaque pointer); this endpoint resolves it to a byte stream with the appropriate `Content-Type` (`application/vnd.openxmlformats-officedocument.wordprocessingml.document` for DOCX, `application/pdf` for PDF) and a `Content-Disposition: attachment` header naming the file `<letterId>-<renderedAt>.<ext>`.
+
+Note (per cc-agent-C's PR #51 note 6): the v1 DOCX implementation is a hand-rolled minimal OOXML (valid, unstyled). Render bytes are currently stored inline as `bytea` on the render row; the endpoint streams from there. Render quality polish is QA-cycle work, not contract work.
+
+Response `200`: the file bytes (binary; not JSON).
+
 ### Error envelopes (all L6 routes)
 
 - `404` `{ "error": "deliverable_letter_not_found" }`
 - `400` for body/param validation failures (e.g. an unsupported `format`)
 - `409` `{ "error": "deliverable_letter_incomplete", "missing": [...] }` on `render`
 
-## Status — GROUP 3 COMPLETE
+## Status — GROUP 3 + LANE C.4 COMPLETE
 
-- L1 contract: defined; MCP tools shipped (`cortex_response_task_*`, PR #6, merged). Legacy routes pending cc-agent-C Lane C.4.
-- L2 contract: defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7, merged). Legacy routes pending cc-agent-C Lane C.4.
-- L3 contract: defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8, merged). Legacy routes pending cc-agent-C Lane C.4.
-- L4 contract: defined; MCP tools shipped (`cortex_detail_callout_spec_*`, PR #9, merged). Legacy routes pending cc-agent-C Lane C.4.
-- L5 contract: defined; MCP tools shipped (`cortex_product_spec_reference_*`, PR #10, merged). Legacy routes pending cc-agent-C Lane C.4.
-- L6 contract: defined; MCP tools shipped (`cortex_deliverable_letter_render` + `cortex_deliverable_letter_renders_list`, PR #11). Legacy routes pending cc-agent-C Lane C.4.
+- L1: contract defined; MCP tools shipped (`cortex_response_task_*`, PR #6, merged); legacy routes live (PR #46, merged 2026-05-20).
+- L2: contract defined; MCP tools shipped (`cortex_sheet_content_extraction_*` + `cortex_attached_document_*`, PR #7, merged); legacy routes live (PR #51, merged 2026-05-20). v1 limitation per PR #51 note 4: structured-annotation extractor is stub (flat OCR mapped to one segment); attached-document has no producer yet. Engine-side L2 producer is post-sprint follow-on (tracked in `27_engine_evolution_plan.md` Stream B).
+- L3: contract defined; MCP tools shipped (`cortex_deliverable_letter_*`, PR #8, merged) **plus three follow-on tools pending per Amendment 8** (`cortex_deliverable_letter_list`, `cortex_deliverable_letter_fetch`, and the L6 `cortex_deliverable_letter_render_download` below); legacy routes live including the two added GET endpoints (PR #51).
+- L4: contract defined; MCP tools shipped (`cortex_detail_callout_spec_*`, PR #9, merged); legacy routes live (PR #51); event taxonomy now includes `detail-callout-spec.revised` + `.aps-ref-attached`.
+- L5: contract defined; MCP tools shipped (`cortex_product_spec_reference_*`, PR #10, merged); legacy routes live (PR #51) — ICC-ES URL/scrape is best-effort per PR #51 note 5, operator-tunable via `ICC_ES_REPORT_URL_TEMPLATE` env var.
+- L6: contract defined; MCP tools shipped (`cortex_deliverable_letter_render` + `cortex_deliverable_letter_renders_list`, PR #11) **plus the `cortex_deliverable_letter_render_download` follow-on pending per Amendment 8**; legacy routes live including the added byte-serve endpoint (PR #51); v1 DOCX is minimal OOXML (PR #51 note 6).
 
-All six L-surface endpoint contracts are final. cc-agent-C implements the matching legacy-design-tools routes in Lane C.4; the L-surface UI consumes the same endpoints. Group 4 (cross-client verification) is the sprint-end QA gate and needs these legacy routes live.
+Known non-blocking follow-ons surfaced in PR #51 body, tracked outside this contract doc:
+- legacy-design-tools task #29 — dual-auth (`requireServiceTokenOrSession`) tightening; prod fail-closed in v1 (SPA `audience:"user"` equals anonymous default; session path not meaningfully audience-gated until #29 lands).
+- Engine-side L2a / L2b producers (sheet annotation extractor + attached-document ingest) — `27_engine_evolution_plan.md` Stream B follow-on.
+
+cc-agent-M follow-on dispatch (post-Amendment-8) grows `legacy-client.ts` + adds the three new MCP tools to match the added L3/L6 endpoints. Group 4 e2e (`_sessions/2026-05-19_mcp_tool_cross_client_cc-agent-M.md` carries the 9-item runbook) fires after that extension lands + the cutover executes.

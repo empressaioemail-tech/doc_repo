@@ -33,6 +33,11 @@ Do not start Stage 1 until every box is checked.
   - [ ] Mapped to the `cortex-api` Cloud Run service via `gcloud beta run domain-mappings create --service=cortex-api --domain=cortex.empressa.io --region=us-central1`. Mapping reports `Ready`.
   - [ ] TLS certificate for `cortex.empressa.io` is provisioned and valid. Confirm with `curl -sI https://cortex.empressa.io/api/healthz` (TLS negotiates cleanly).
   - [ ] `PUBLIC_BASE_URL=https://cortex.empressa.io` is set on the `cortex-api` service env.
+- [ ] **L-surface bearer-auth env vars set** (added per Sprint Amendment 8; required for MCP↔legacy bearer path to work):
+  - [ ] `SERVICE_API_KEY` set on the `cortex-api` Cloud Run service. Value must equal the MCP server's `LEGACY_BACKEND_API_KEY` — the L-routes' bearer middleware validates against this; mismatch returns 401 on every L-surface MCP tool call. Production fail-closed: if `SERVICE_API_KEY` is unset, `getServiceApiKey()` throws at startup.
+  - [ ] `LEGACY_BACKEND_API_KEY` on the Hauska MCP Server Cloud Run service matches the value above.
+- [ ] **L5 ICC-ES URL template set** (added per Sprint Amendment 8; operator-tunable per PR #51 note 5):
+  - [ ] `ICC_ES_REPORT_URL_TEMPLATE` env var set on `cortex-api`. Default template format documented in legacy-design-tools `lib/icc-es/`. L5 `product-spec-reference` refresh uses this; status parser returns `null` rather than guessing when the URL doesn't resolve.
 - [ ] **Backup tag** on `origin/main` of legacy-design-tools: `git tag backup/pre-cutover-$(date +%Y%m%d) origin/main && git push origin --tags`.
 - [ ] **Operator availability.** A verification window is scheduled. The operator can watch logs and roll back for its duration.
 - [ ] **gcloud account** is the smartcity-os admin account, not the workstation-default smartcity service account.

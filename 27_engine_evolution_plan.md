@@ -99,6 +99,7 @@ Each atom below specifies: name, purpose, producer/consumer surface(s), key fiel
 - **Producer.** DA sheet ingest pipeline (PDF parse + OCR + annotation extraction).
 - **Consumer.** DA `plan-review` artifact (compare-against-comments workflow), Codex (when reviewer-side sees architect's sheet content).
 - **Key fields.** `sheetId`, `extractedText`, `annotations[]`, `dimensionCallouts[]`, `revisionClouds[]`, `attachedDocRefs[]`.
+- **Status note (2026-05-20, post-Lane-C.4).** Atom shape locked at `@hauska-engine/atoms@0.2.0`; legacy persistence + endpoints live in legacy-design-tools (PR #51). **v1 producer is stub** per PR #51 note 4: `extractedText` is populated from flat OCR mapped to a single annotation segment; structured annotation extraction (dimension callouts, revision clouds, drawn annotations) is not yet implemented. Engine-side L2a structured-annotation extractor is a post-sprint follow-on in this stream. Same applies to `attached-document` (no producer yet — atom shape ships, ingest pipeline is the engine follow-on).
 
 #### `attached-document`
 - **Purpose.** Supporting docs attached to a submission (ICC-ES reports, Rescheck, structural calcs). Today these are inert PDFs; this atom makes them queryable.
