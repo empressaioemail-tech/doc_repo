@@ -2,10 +2,8 @@
 decision_id: 2026-05-20_hutto_tx_prioritized_ingest
 date: 2026-05-20
 owner: Nick
-status: provisional
-verification_pending:
-  - Hutto, TX code-publishing platform confirmed as Municode or another programmatically-ingestable source. If Hutto publishes on eCode360 or another access-blocked publisher, the prioritized one-off ingest is not feasible and the decision re-routes to a bizops partnership-API track. cc-agent-E dispatch step HUTTO.1 performs this verification.
-related_canonical: [43_cortex_qa_backlog, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 73_partnerships, _dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest]
+status: active
+related_canonical: [43_cortex_qa_backlog, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 73_partnerships, _dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest, _sessions/2026-05-20_hutto_tx_udc_ingest_cc-agent-E]
 ---
 
 ## Decision
@@ -15,6 +13,8 @@ Prioritize a one-off Hutto, TX municipal-code ingestion now, ahead of the deferr
 ## Context
 
 QA-10 of the Cortex QA backlog asked to add Hutto, TX as a code-ingestion target, citing an expected large growth surge. Sync 5, the sixteen-plus remaining TX cities, is deferred to public-launch demand per the settled decisions in CLAUDE.md. The planner recommended queuing Hutto with Sync 5 and starting Sylvia outreach in parallel; the operator chose instead to prioritize a standalone Hutto ingest now. cc-agent-E is at steady-state, so the ingest re-activates idle capacity rather than displacing active sprint work.
+
+Verified 2026-05-20 (cc-agent-E HUTTO.1, hauska-engine PR #15). Hutto publishes on two sources: the general Code of Ordinances is on eCode360 (access-blocked, HTTP 403, the Smithville pattern), and the Unified Development Code (Chapter 16, the zoning and development code, the highest-value code for plan review) is a free born-digital PDF on the city website. The operator authorized a reshape: ingest the UDC now via the raw-PDF path, route the eCode360 general code to the bizops General Code partnership-API track. The UDC ingested as 1716 code-section atoms, passed the eval bar at 1.0 / 1.0 / 1.0, and is declared loaded, well inside the cost envelope (born-digital, no LLM or OCR spend). This decision is now active with scope narrowed to the UDC; the eCode360 general code is a partnership-track item, not a one-off ingest.
 
 ## Structural commitment check
 
