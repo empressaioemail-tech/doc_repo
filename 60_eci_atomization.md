@@ -2,7 +2,7 @@
 id: 60_eci_atomization
 title: ECI atomization — internal atom types spec against ADR-001
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-21
 applies_to: portfolio
 related: [11_roadmap, 18_stakeholder_graph, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60a_eci_atomization_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer, _decisions/2026-05-18_eci_registry_naming]
 owner: nick
@@ -73,12 +73,12 @@ Confirmed per Nick's 2026-05-15 Q1 decision. Briefly:
 
 ## Sprint dependencies
 
-Added 2026-05-16 per Q4/Q6 resolution session. The ECI atomization sprint cannot proceed cleanly until two newly-scaffolded ADRs ratify:
+Added 2026-05-16 per the Q4/Q6 resolution session. The ECI atomization sprint depends on two ADRs, both now accepted:
 
-- **[ADR-015 actor atoms](80_adrs/adr_015_actor_atoms.md)** — introduces `actor-record` atom type with discriminator field (`actorType: person | agent | organization`) and `trustLevel` enum. ECI `team_members` map to `actor-record` with `actorType: person`. The prior framing of a shared `person` atom shape is superseded by ADR-015's unifying actor-record type. **Status:** proposed.
-- **[ADR-017 atom access control](80_adrs/adr_017_atom_access_control.md)** — introduces a layered `accessPolicy` field on the atom contract. ECI internal atoms use `platform-internal` scope. Tenant representation moves to `actor-record` of `actorType: organization` with `tenantKind: internal`. **Status:** proposed; sequenced after ADR-015.
+- **[ADR-015 actor atoms](80_adrs/adr_015_actor_atoms.md)** — introduces `actor-record` atom type with discriminator field (`actorType: person | agent | organization`) and `trustLevel` enum. ECI `team_members` map to `actor-record` with `actorType: person`. The prior framing of a shared `person` atom shape is superseded by ADR-015's unifying actor-record type. **Status:** accepted 2026-05-16.
+- **[ADR-017 atom access control](80_adrs/adr_017_atom_access_control.md)** — introduces a layered `accessPolicy` field on the atom contract. ECI internal atoms use `platform-internal` scope. Tenant representation moves to `actor-record` of `actorType: organization` with `tenantKind: internal`. **Status:** accepted 2026-05-16.
 
-Both ADRs must reach accepted status before the ECI atomization sprint (`60a_eci_atomization_sprint.md` when scoped) kicks off.
+Both ADRs are accepted; this dependency is satisfied and no longer gates the ECI atomization sprint (`60a_eci_atomization_sprint.md` when scoped).
 
 ## ECI current state — table → atom mapping
 
@@ -420,6 +420,7 @@ Items deferred to the future ECI atomization sprint scoping:
 
 ## Revision history
 
+- **2026-05-21 (ADR-status correction).** Sprint dependencies section corrected: ADR-015 and ADR-017 were marked `proposed`, but both were accepted 2026-05-16. The dependency is satisfied and no longer gates the ECI atomization sprint. Roadmap catch-up refresh; matches the ADR-status corrections in `11_roadmap.md` the same session.
 - **2026-05-18 (sprint kickoff).** Sprint plan landed at [`60a_eci_atomization_sprint.md`](60a_eci_atomization_sprint.md) per [`_decisions/2026-05-18_eci_registry_naming.md`](_decisions/2026-05-18_eci_registry_naming.md). Package name `@empressaio/atom-internal` confirmed; dedicated repo `empressaioemail-tech/empressa-atom-internal` decided. Routing decisions Sprint placement section flipped from "Likely 60a when scoped" to definitive pointer. Open questions ECI sprint slot resolved. `related` field gains 60a plus ADR-013, ADR-018, decision record. Status flipped from draft to active (60 is now the canonical spec; 60a is the executable plan). No atom-type-spec content changed in 60 body; the sweep was status-and-routing plus the new revision-history entry.
 - **2026-05-16.** Sprint dependencies updated per Q4/Q6 resolution session ([`_sessions/2026-05-16_q4_q5_q6_master_roadmap_resolution_claude_ai_strategic.md`](_sessions/2026-05-16_q4_q5_q6_master_roadmap_resolution_claude_ai_strategic.md)). [ADR-015 actor atoms](80_adrs/adr_015_actor_atoms.md) and [ADR-017 atom access control](80_adrs/adr_017_atom_access_control.md) added as required dependencies. `team_members` mapping updated from `person` atom shape to `actor-record` with `actorType: person` per ADR-015. The prior `person` atom shape Open question is resolved by ADR-015. New "Sprint dependencies" section added.
 - **2026-05-15 (origin).** Draft spec'd from catalog roadmap agent's
