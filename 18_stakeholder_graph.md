@@ -2,7 +2,7 @@
 id: 18_stakeholder_graph
 title: Stakeholder graph — relationships, contacts, channels
 status: active
-last_updated: 2026-05-15
+last_updated: 2026-05-21
 applies_to: portfolio
 related: [11_roadmap, 13_risk_register, 14_pricing_framework, 06_cities_value_narrative, 11a_bastrop_live_roadmap, 47_codex_plan_review, 51_substrate_v1_sprint]
 owner: nick
@@ -73,6 +73,12 @@ context.
 | **Valerie Thompson** (eXp Realty) | Realtor; CMA tool user | Active | Consumer of parcel + comp data; tier-conversion candidate for Cortex / SmartCity OS data surfaces |
 | **Sylvia $1M proposal pipeline** | Bastrop expansion | Live negotiation | Pricing posture is Path A per [`14_pricing_framework.md`](14_pricing_framework.md); phase the work, anchor Y1, expansion via change orders |
 
+### Distribution channels
+
+| Name | Role | Relationship status | Strategic role |
+|---|---|---|---|
+| **SoftPlan / ArchiCAD designer community** (~7,000-member Facebook group) | Online community of practicing architects and home designers using SoftPlan and ArchiCAD | Established; operator relationship with the group owner | BD asset. Direct distribution channel to ~7,000 practitioners who are the exact ICP for the QA-21 SoftPlan / ArchiCAD connectors and a broader GTM channel for Cortex. Activates when QA-21 enters scope (queued until Cortex is QA-clean per [`43_cortex_qa_backlog.md`](43_cortex_qa_backlog.md)); QA-21 itself carries a catalog-thesis-check on brand and layer placement before any build commitment. |
+
 ## Contacts to engage (action surface)
 
 These roles are required to execute the plan and are **not yet** in
@@ -83,7 +89,7 @@ and a sequencing.
 
 | Need | Candidates | Owner | Sequencing |
 |---|---|---|---|
-| **Texas IP attorney** for data licensing opinion memo (gate for non-Bastrop catalog ingest) | Husch Blackwell Austin · Norton Rose Fulbright Austin · Pillsbury Austin (data licensing + AI practice) | Nick | **P1** — gates [`51`](51_substrate_v1_sprint.md) Stream 1D non-Bastrop ingestion. Budget $8–12K |
+| **Texas IP attorney** for data licensing opinion memo | Husch Blackwell Austin · Norton Rose Fulbright Austin · Pillsbury Austin (data licensing + AI practice) | Nick | Parallel bizops, not a critical-path gate (Sync 6 retired 2026-05-19; the substrate runs on the interim deep-link footing per [ADR-019](80_adrs/adr_019_layered_code_substrate.md)). Tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md); informs [`14`](14_pricing_framework.md) Open-question #5. Budget $8-12K |
 | **Texas startup / corporate attorney** for partnership agreement templates + Legacy Group separation work | TBD — different counsel from IP attorney | Nick | P2 — needed before first city partnership signs |
 | **Tech E&O insurance broker** | Look for specialists in data-provider + AI liability coverage | Nick | **P3** — needed before first enterprise contract. Mitigates Risk 12 (data provider liability) |
 
@@ -165,3 +171,8 @@ and a sequencing.
   Established relationships seeded from current state; contacts-to-engage
   rows tied to roadmap sequencing (P1 / P2 / P3) so the action
   surface is actionable rather than aspirational.
+- **2026-05-21 (roadmap catch-up refresh).** Texas IP attorney row
+  de-gated: it is parallel bizops, not a critical-path gate (Sync 6
+  retired 2026-05-19). New "Distribution channels" subsection added
+  under Established relationships, logging the ~7,000-member SoftPlan /
+  ArchiCAD designer Facebook group as a BD asset tied to QA-21.

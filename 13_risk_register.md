@@ -2,7 +2,7 @@
 id: 13_risk_register
 title: Risk register â named failure modes
 status: active
-last_updated: 2026-05-15
+last_updated: 2026-05-21
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 17_leading_indicators]
 ---
@@ -245,10 +245,13 @@ customer issues a formal claim about output reliability.
 - Tech E&O insurance with data-provider + AI-liability specialist
   carrier — tracked as [`11_roadmap.md`](11_roadmap.md) P3 item,
   gated on first enterprise contract conversation.
-- Texas IP attorney opinion memo before non-Bastrop ingest — tracked
-  as [`11_roadmap.md`](11_roadmap.md) P1 item; gates
-  [`51`](51_substrate_v1_sprint.md) Stream 1D non-Bastrop batch
-  ingest per Sync Point #6.
+- Texas IP attorney opinion memo — data-licensing posture, tracked as
+  parallel bizops in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md)
+  and as a [`11_roadmap.md`](11_roadmap.md) P1 item. Not an ingestion
+  gate: Sync 6 was retired 2026-05-19 and the layered substrate runs on
+  the interim deep-link footing per [ADR-019](80_adrs/adr_019_layered_code_substrate.md).
+  The memo still informs the data-provider liability posture this risk
+  tracks.
 - "Sell reasoning, not data" quality contract per catalog roadmap
   Move 1 (kept as universal quality contract regardless of tier):
   every catalog response carries reasoning chain, source citation,

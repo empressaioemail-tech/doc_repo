@@ -3,7 +3,8 @@ date: 2026-05-21
 agent: cc-agent-C
 repo: legacy-design-tools
 session_type: engineering
-rolled_up: false
+rolled_up: true
+rolled_up_into: [43_cortex_qa_backlog, 11_roadmap, 00_current_state]
 ---
 
 # Cortex QA close-out — QA-16, QA-23, QA-19, QA-18

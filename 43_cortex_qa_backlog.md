@@ -41,7 +41,7 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-18 | No path to upload client PDFs, photos, and notes to an engagement for the in-app agent to reference. | Feature | WS-F | PR #62 open |
 | QA-19 | In-app chat does not auto-scroll while the AI streams a response. | Bug (UX) | WS-F | PR #61 open |
 | QA-20 | Engagements outside an ingested jurisdiction should trigger best-effort background code collection. | Feature (engine/substrate) | WS-F | Triaged: pairs with ADR-019 and the ICC ingest |
-| QA-21 | Net-new SoftPlan and ArchiCAD connectors. Operator-flagged off current roadmap. | Strategy / new workstream | WS-F | Routed: strategic session (premortem, catalog-thesis-check, focus-queue) |
+| QA-21 | Net-new SoftPlan and ArchiCAD connectors. Operator-flagged off current roadmap. | Strategy / new workstream | WS-F | Routed: strategic session (premortem, catalog-thesis-check, focus-queue). BD asset logged: ~7,000-member SoftPlan/ArchiCAD designer Facebook group as a distribution channel, per [`18_stakeholder_graph.md`](18_stakeholder_graph.md) |
 | QA-22 | Site-context layers still failing post-WSA.4; focused session requested, then a Bastrop SmartCity dashboard install. | Bug + strategy | WS-F | Routed: focused engineering session; SmartCity install is a separate strategic call |
 | QA-23 | In-app agent presents ungrounded code as confident citations for jurisdictions it has no atoms for (Pagosa Springs / Daulton)CO). | Bug (quality gate) | WS-F | PR #60 open |
 | QA-24 | Stale second Cloud Run service `api-server` (Phase 1A, last deployed 2026-05-06) still in `legacy-design-tools-prod`. | Ops cleanup | WS-F | Logged: decommission candidate |
@@ -106,7 +106,7 @@ QA-17, QA-20, and QA-23 share one root cause: the Cortex app is not wired to the
 
 QA-19 (chat auto-scroll) is a quick frontend fix for the QA-fix round. QA-18 (client PDF, photo, and note upload) is a moderate Cortex feature that reuses the L2 attached-document atom shape already in the engine registry; the build is upload UI, blob storage, and wiring the in-app chat to read attachments.
 
-QA-21 (SoftPlan and ArchiCAD connectors) is an operator-flagged off-roadmap workstream. It does not enter the QA-fix round. It routes to a strategic session carrying premortem-check, a catalog-thesis-check for brand and layer placement, and the focus-queue rule naming what is displaced.
+QA-21 (SoftPlan and ArchiCAD connectors) is an operator-flagged off-roadmap workstream. It does not enter the QA-fix round. It routes to a strategic session carrying premortem-check, a catalog-thesis-check for brand and layer placement, and the focus-queue rule naming what is displaced. A distribution-channel BD asset is logged against it: the operator holds a relationship with the owner of a ~7,000-member Facebook group of architects and home designers who use SoftPlan and ArchiCAD, the exact ICP for these connectors. It is recorded under Distribution channels in [`18_stakeholder_graph.md`](18_stakeholder_graph.md); it does not change QA-21's routing or its catalog-thesis-check gate.
 
 QA-22 splits. The site-context layers still fail after the WSA.4 timeout diagnosis; that is a focused engineering session, not a fold-in. The attached goal of installing the site-context capability into Bastrop's SmartCity OS dashboard is a separate cross-product decision needing its own catalog-thesis-check and premortem. Fix first, install decision second.
 

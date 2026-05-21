@@ -2,7 +2,7 @@
 id: 48_codex_program_plan
 title: Codex program plan — current state through GA
 status: active
-last_updated: 2026-05-19 (combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; new Phase 2 stream CDX-MCP for existing-product Codex MCP tool exposure — finding-generation, override-write, briefing-fetch, snapshot-ingest)
+last_updated: 2026-05-21 (CDX-Phase1-1 resolved: reviewer-side QA surface lives as a new codex-reviewer-qa artifact per _decisions/2026-05-21_codex_reviewer_qa_surface_location.md. Prior: combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; Phase 2 stream CDX-MCP added for existing-product Codex MCP tool exposure.)
 applies_to: codex
 related: [11_roadmap, 27_engine_evolution_plan, 28_mcp_first_product_design, 42_design_accelerator_program_plan, 47_codex_plan_review, 50_hauska_mcp_server, 51_substrate_v1_sprint, 05_living_lineage_thesis, 06_cities_value_narrative, 30_smartcity_os, 40_design_accelerator, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out]
 owner: nick
@@ -107,7 +107,7 @@ Engine work, atom expansion, and reviewer-side QA surface decision. Parallel-eli
 | **27-C.** Engine output quality — Codex full-pass mode | Per `27_*` Stream C; scenarios drawn from active test projects in reviewer context | Engine plan | M (ongoing) |
 | **27-D.** Corpus depth — Bastrop UDC + Grand County IRC | Per `27_*` Stream D; Bastrop UDC tuning ahead of Phase 4 activation; Grand County IRC full ingestion shared with DA | Engine plan | M |
 | **27-G.** Brand migration (Plan Review → Codex side) | Per `27_*` Stream G; the larger half of the rename (file paths, packages, UI copy, routes, code identifiers, system prompts, docs). Coordinated with Design Accelerator → Cortex (DA side) in same stream. Gated on PR #17 landing. | Engine plan | (included in M-effort Stream G) |
-| **CDX-Phase1-1.** Reviewer-side QA surface location decision | Decide where Codex 1b reviewer-side surface lives in `legacy-design-tools` for QA: extend `plan-review` artifact with reviewer-mode, new artifact (`codex-1b-qa`?), or extend `qa` artifact. Sprint-level design call. | This plan | S |
+| **CDX-Phase1-1.** Reviewer-side QA surface location decision | **Resolved 2026-05-21** per [`_decisions/2026-05-21_codex_reviewer_qa_surface_location.md`](_decisions/2026-05-21_codex_reviewer_qa_surface_location.md): the reviewer-side QA surface lives as a new dedicated `codex-reviewer-qa` artifact in `legacy-design-tools`. Scaffold build dispatched to cc-agent-C, activation-gated behind the Cortex QA close-out merge. | This plan | S |
 | **CDX-Phase1-2.** Multi-surface coherence test design | Test design ensuring DA-side and Codex-side engine outputs are coherent on the same project. Listed as verification in `47_*`. | This plan | S |
 
 **Phase 1 gates.** Streams 27-A through 27-D and 27-G follow gates in `27_engine_evolution_plan.md` (27-G gated on PR #17 landing). CDX-Phase1-1 needs the QA surface design call before Phase 2 UI streams start.
@@ -285,7 +285,7 @@ Phase 5 reopens 1a invited mode. Per `47_*`, 1a is the commercial wedge (contrac
 
 ## Open decisions
 
-- **Reviewer-side QA surface location in legacy-design-tools** — extend `plan-review` artifact, new artifact (`codex-1b-qa`?), or extend `qa` artifact. Resolution required to start Phase 1 CDX-Phase1-1.
+- ~~**Reviewer-side QA surface location in legacy-design-tools**~~ — **Resolved 2026-05-21:** a new dedicated `codex-reviewer-qa` artifact, per [`_decisions/2026-05-21_codex_reviewer_qa_surface_location.md`](_decisions/2026-05-21_codex_reviewer_qa_surface_location.md). Extend-`plan-review` and extend-`qa` both rejected; reasoning in the decision record.
 - **Empressa-as-customer-zero rotation** — DA customer-zero AND Codex 1b reviewer-zero simultaneously, or sequential? Decided in DA Phase 4 DA-17 with implications for Codex Phase 2.
 - **Reviewer-side surface migration to smartcity-os** — when Phase 4 activates, does the surface code move from legacy-design-tools to smartcity-os, get duplicated, or share via component library? Cross-planner design call.
 - **Smartcity-os slot for Codex 1b receiving surface** — smartcity track deliverable. Tracked here for awareness; resolution required for Phase 4 entry.

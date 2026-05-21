@@ -2,7 +2,7 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-19 (combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; absorbs prior Codex/Cortex Phase 1 P1 entry plus adds Sync 4.5 substrate close + Replit decouple + Neon swap; M-CortexQA and M-CodexQA entry criteria reference Lane A/B/C completion. **2026-05-19 forward planning:** Hauska commercialization queue landed at new 16_commercialization_roadmap.md; first-step dispatch for cc-agent-M Streams 2C+2D launch prep filed at _dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md; new P1 entry added below.)
+last_updated: 2026-05-21 (roadmap catch-up refresh: M-HauskaCommercial added to the end-state model; Fire 3 closed; Texas IP-memo ingestion gate retired; ADR-013/015/017 marked accepted and ADR-018/019 added; milestone statuses refreshed; M-CodexQA reviewer QA-surface location settled. Prior: combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; Hauska commercialization queue landed at 16_commercialization_roadmap.md.)
 applies_to: portfolio
 related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 41_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
 ---
@@ -13,6 +13,18 @@ related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 
 > they ship. Move items between tiers as priority shifts. Bump `last_updated`
 > on every edit. The checklist is the operational view; the milestone
 > roadmap above orients new work and shows the path to the end state.
+>
+> **2026-05-21 (roadmap catch-up refresh):** The end-state model gains a
+> fourth milestone, M-HauskaCommercial (Hauska commercial substrate live and
+> revenue-producing per [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md)),
+> alongside the three product-readiness milestones. Fire 3 closed
+> (2026-05-19). The Texas IP-attorney-memo ingestion gate is retired: Sync 6
+> was dropped from [`51`](51_substrate_v1_sprint.md) on 2026-05-19, and the
+> memo is parallel bizops tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md),
+> never a critical-path gate. ADR-013, ADR-015, ADR-017 marked accepted;
+> ADR-018 and ADR-019 added. Milestone statuses refreshed. M-CodexQA reviewer
+> QA-surface location settled per
+> [`_decisions/2026-05-21_codex_reviewer_qa_surface_location.md`](_decisions/2026-05-21_codex_reviewer_qa_surface_location.md).
 >
 > **2026-05-16 (alignment session followup):** Codex naming override resolved — Codex brand now covers plan review (1a + 1b) plus code intelligence (free Layer 1 code-lookup on Hauska MCP Server). Updates landed in 47_codex_plan_review.md, 48_codex_program_plan.md, 07_product_line_summary.md, and the 2026-05-16 strategic brainstorm session file. ADR-013 (procedure-execution atoms) scaffolded combining Q2 decision (option C) and Q5 purpose-field rider. Adjudication-record atom spec confirmed present at 27_engine_evolution_plan.md line 263 onward; the earlier "doc gap" finding was incorrect.
 >
@@ -79,13 +91,14 @@ related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 
 
 ## End state
 
-The portfolio is "ready to bring on more clients and build more on top" when three product readiness milestones are met. Beyond end state lives downstream of these gates.
+The portfolio reaches end state across two milestone classes. Three product-readiness milestones make the product surfaces "ready to bring on more clients and build more on top." One Hauska commercial-activation milestone makes the Hauska commercial substrate live and revenue-producing, expressing the core thesis per CLAUDE.md. Beyond end state lives downstream of these gates.
 
 | Milestone | What it means | Source |
 |---|---|---|
 | **M-PropIntel** | SmartCity OS has property intelligence visualization in place — Sylvia's hydrology query and analogous city-manager workflows answered against the same engine that powers DA parcel briefing. | M-Stabilize exit + property intelligence sprint (TBD scope) |
 | **M-CortexQA** | Cortex (formerly Design Accelerator) is functional end-to-end on real Moab projects. Nick can structurally evaluate every output as classified atoms. Ready for heavy QA testing from real-world industry users. | [`42_*`](42_design_accelerator_program_plan.md) Phase 2 exit |
 | **M-CodexQA** | Codex 1b is functional end-to-end on real submittals. Nick can structurally evaluate every output. Ready for heavy QA testing from real-world industry users. | [`48_*`](48_codex_program_plan.md) Phase 2 exit |
+| **M-HauskaCommercial** | The Hauska commercial substrate is live and revenue-producing. The Hauska MCP Server is publicly launched at `mcp.hauska.dev`, and the first paid Layer 2 contract has closed. Expresses the core thesis: the canonical agent data catalog and payment substrate, Layer 1 free and Layer 2 paid. | [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md) seven-step queue; exits at step 7 |
 
 **Beyond end state — enabled by it, not part of it:**
 
@@ -102,26 +115,32 @@ The portfolio is "ready to bring on more clients and build more on top" when thr
 
 - **Doc:** [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md)
 - **Target:** ~3-4 weeks across 4 workstreams (WS-1 migration spine, WS-2 W1 sprint, WS-3 security sweep, WS-4 schema/multi-tenancy)
-- **Progress:** WS-2 verified 2026-05-11; W1 implementation follow-ons (A.6 PR #12, A.8 PR #11, A.7 PBI Option B scoping PR #13) shipped + deployed to Cloud Run revision `smartcity-api-00084-vhr` 2026-05-11. Cutover env-var rebind cluster surfaced 2026-05-11 (30+ vars dropped in 2026-05-03 cutover) — P1 next-session two-track work. WS-1, WS-3 remaining (beyond x-internal-ai CORS removal bundled into W1.C.2's PR #9), and WS-4 still pending.
+- **Progress:** WS-2 verified 2026-05-11; W1 implementation follow-ons (A.6 PR #12, A.8 PR #11, A.7 PBI Option B scoping PR #13) shipped + deployed to Cloud Run revision `smartcity-api-00084-vhr` 2026-05-11. Cutover env-var rebind cluster surfaced 2026-05-11 (30+ vars dropped in 2026-05-03 cutover) — P1 next-session two-track work. WS-1, WS-3 remaining (beyond x-internal-ai CORS removal bundled into W1.C.2's PR #9), and WS-4 still pending. **2026-05-21:** sprint restarted, reassigned to cc-agent-M after parking ten-plus days; re-orientation against the live repo first, then the WS-1 migration spine. Phase 2C closure gates the ADR-008 engine factor-out and M-PropIntel.
 - **Exits:** SmartCity OS on Empressa Neon end-to-end; all fires closed; code-side security debt cleared; schema hygiene baseline; ADR-005 canonical + multi-tenancy invariants verified; ✅ W1 sprint complete (2026-05-11); CI clean baseline.
 
 ### M-PropIntel — SmartCity property intelligence
 
 - **Gated on:** M-Stabilize exit (multi-tenancy verified; ADR-005 canonical; engine factor-out unblocked via ADR-008)
 - **Doc:** TBD — currently lives as "Bastrop property intelligence" in P2 backlog below; needs scope-and-sprint after M-Stabilize.
-- **Scope:** City-manager view of property intelligence — Sylvia's hydrology query is the canonical use case. Engine-backed parcel briefing scoped to jurisdiction. Slice of the same engine that powers DA parcel briefing per [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md). Also informs [`48_*`](48_codex_program_plan.md) Phase 3 CDX-6 (reviewer-side parcel intelligence).
+- **Scope:** City-manager view of property intelligence — Sylvia's hydrology query is the canonical use case. Engine-backed parcel briefing scoped to jurisdiction. Slice of the same engine that powers DA parcel briefing per [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md). Also informs [`48_*`](48_codex_program_plan.md) Phase 3 CDX-6 (reviewer-side parcel intelligence). QA-22 Part 2 (installing the Cortex site-context capability into Bastrop's SmartCity OS dashboard, per [`43_cortex_qa_backlog.md`](43_cortex_qa_backlog.md) WS-F) is an M-PropIntel input and folds in at scope-and-sprint time; it carries its own catalog-thesis-check and pre-mortem.
 
 ### M-CortexQA — Cortex functional, QA-ready
 
-- **Gated on:** Combined Cortex/Codex sprint Lanes A + B + C close (substrate Sync 4.5 + L1-L6 atom shapes + Cortex MCP tool surfaces + L1-L6 UI surfaces); legacy-design-tools cutover to Cloud Run + new Neon prod complete per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md).
+- **Gated on:** Combined Cortex/Codex sprint Lanes A, B, and C plus the legacy-design-tools Cloud Run cutover are complete (2026-05-20). Gate cleared; the remaining path to exit is the Cortex QA backlog burndown in [`43_cortex_qa_backlog.md`](43_cortex_qa_backlog.md): QA-04 (gated on the QA-16 operator-supervised canary), QA-17 substrate wiring, QA-22 site-context, and the WS-F tail. cc-agent-C shipped the QA-16/23/19/18 close-out as PRs #59-62 (open, none deployed) 2026-05-21.
 - **Doc:** [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) Phase 2 exit (updated 2026-05-19 to fold MCP co-design into Phase 2).
 - **Exits:** Nick can run Musgrave (or any active Moab project) end-to-end with structural evaluation per the 8-point QA-readiness definition. Bugs are pointable-at-atoms. MCP-driven agent workflows also exercise the full L1-L6 surface set via `cortex/*` tools.
 
 ### M-CodexQA — Codex 1b functional, QA-ready
 
-- **Gated on:** Combined Cortex/Codex sprint Lanes A + B + C close (substrate Sync 4.5 + Codex MCP tool surfaces via Lane B + Codex 1b reviewer-side QA surface via Lane C); legacy-design-tools cutover complete per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md).
+- **Gated on:** Combined Cortex/Codex sprint Lanes A, B, and C plus the legacy-design-tools cutover are complete. The Codex MCP tool surface shipped via Lane B. Remaining: the Codex 1b reviewer-side QA surface. CDX-Phase1-1, its location, resolved 2026-05-21 as a dedicated `codex-reviewer-qa` artifact per [`_decisions/2026-05-21_codex_reviewer_qa_surface_location.md`](_decisions/2026-05-21_codex_reviewer_qa_surface_location.md); the scaffold dispatch is gated behind the cc-agent-C Cortex QA close-out merge. The reviewer-surface build is [`48_codex_program_plan.md`](48_codex_program_plan.md) Phase 2.
 - **Doc:** [`48_codex_program_plan.md`](48_codex_program_plan.md) Phase 2 exit (updated 2026-05-19 to add CDX-MCP stream).
 - **Exits:** Nick can run real reviewer pass end-to-end through Codex 1b on Moab projects with structural evaluation per the 8-point QA-readiness definition. MCP-driven agent workflows also exercise the four Codex tool surfaces (`codex/finding_generation`, `codex/override_write`, `codex/briefing_fetch`, `codex/snapshot_ingest`).
+
+### M-HauskaCommercial — Hauska commercial substrate live and revenue-producing
+
+- **Gated on:** Hauska MCP Server public launch (Streams 2C and 2D complete; `mcp.hauska.dev` domain mapping and GTM publication operator-gated); pricing finalization; Stream 2B Circle fiat rail plus self-serve signup; first paid Layer 2 contract.
+- **Doc:** [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md), the seven-step forward-execution queue. In execution as the Hauska commercialization sprint per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md): Wave 1 (steps 1 and 4) dispatched to cc-agent-M and cc-agent-E; Wave 2 (steps 2, 3, 5, 7) gated on operator decisions B (tier numbers) and C (GTM channel plan).
+- **Exits:** an external customer pays for Layer 2 substrate usage, the commercial substrate proof point. The take-rate number sets at that first call per the [`14_pricing_framework.md`](14_pricing_framework.md) take-rate philosophy.
 
 ### Cross-cutting work in flight
 
@@ -133,7 +152,7 @@ The portfolio is "ready to bring on more clients and build more on top" when thr
 
 Per-sprint exit conditions for the three active sprints. Detailed exit criteria live in each sprint doc; this is the at-a-glance reference. Added 2026-05-16 per master roadmap consolidation decision.
 
-**[`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) — Substrate v1.** Exits when: (1) `hauska-engine` running the Code Ingestion Pipeline in production with quality-gated 20+ jurisdiction corpus (TX-first per the explicit Stream 1D city list); (2) `hauska-mcp-server` running at the chosen public endpoint wired to `hauska-engine` retrieval API; (3) listed in MCP directories serving real external traffic; (4) logging captured for training-data + commercial-use monitoring. Phase 0's 16 consolidated decisions land first. Sync Point #6 (Texas IP attorney memo) gates non-Bastrop ingestion.
+**[`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) — Substrate v1.** Exits when: (1) `hauska-engine` running the Code Ingestion Pipeline in production with quality-gated 20+ jurisdiction corpus (TX-first per the explicit Stream 1D city list); (2) `hauska-mcp-server` running at the chosen public endpoint wired to `hauska-engine` retrieval API; (3) listed in MCP directories serving real external traffic; (4) logging captured for training-data + commercial-use monitoring. Phase 0's 16 consolidated decisions land first. (Sync 6, the Texas IP attorney memo, was retired as an ingestion gate 2026-05-19; the memo is parallel bizops tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md).)
 
 **[`11a_bastrop_live_roadmap.md`](11a_bastrop_live_roadmap.md) — Bastrop-live.** Exits when Codex 1b live in Bastrop production; Sylvia and Jaime running real submittals through the SmartCity OS Plan Review surface (Sprint A.3 exit). Gated on M-Stabilize closeout (A.0). Sprint A.1 corpus load coordinates with [`51`](51_substrate_v1_sprint.md) Stream 1D's B.6 validation pass.
 
@@ -141,7 +160,7 @@ Per-sprint exit conditions for the three active sprints. Detailed exit criteria 
 
 ## Summary
 
-Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Codex/Cortex track (`27`/`42`/`48`) executing toward end-state. ~45 backlog items below tracked by priority tier; most P1 items now absorbed by active sprints. Five active fires (Fires 1 + 4 closed; Fire 2 held on Bastrop IT; Fire 3 pending; Fire 5 closes at M-Stabilize Phase 2C). Roadmap balances milestone view (above) with operational tier view (below).
+Active state across the portfolio: M-Stabilize sprint (`30a`, restarted under cc-agent-M) plus the Hauska commercialization sprint (`16`) and the Cortex QA backlog burndown (`43`) executing toward end state. ~45 backlog items below tracked by priority tier; most P1 items now absorbed by active sprints. Fires: 1, 3, and 4 closed; Fire 2 (plaintext secrets) active, held on Bastrop IT; Fire 5 closes at M-Stabilize Phase 2C. Roadmap balances milestone view (above) with operational tier view (below).
 
 **Priority tiers (operational):**
 
@@ -159,7 +178,7 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 
 ## P0 — now / this week
 
-- [ ] **Fire 3:** verify legacy-design-tools `post-merge.sh` Neon-guard on GitHub web UI — `fire` · Nick (browser) · S · ref: [`10_ground_truth.md`](10_ground_truth.md). May go moot after [`42_*`](42_design_accelerator_program_plan.md) Phase 1 clears.
+- [x] **Fire 3:** legacy-design-tools `post-merge.sh` Neon-guard — closed 2026-05-19. `fire` · Nick (browser) · S · ref: [`10_ground_truth.md`](10_ground_truth.md).
 - [x] **Fire 1:** W1.C.4a auth bypass fix on SmartCity OS — closed 2026-05-10 (PR #6, commit `5e9fca3`, Cloud Run revision `smartcity-api-00084-weg`).
 - [ ] **Fire 2:** plaintext secrets in `.replit` — internal items absorbed into [`30a`](30a_smartcity_stabilization_sprint.md) WS-3; external rotations held for Bastrop IT engagement. `fire` · Nick + agent · M.
 - [x] **Atom architecture ADR migration** — shipped 2026-05-05.
@@ -168,9 +187,9 @@ Active state across the portfolio: M-Stabilize sprint (`30a`) plus parallel Code
 ## P1 — this week / next
 
 - [ ] **Substrate v1 sprint** (Code Ingestion Pipeline + Hauska MCP Server combined) — [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md), active 2026-05-15. **Sync 4.5 close added 2026-05-19** per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md): Bastrop UDC plus Bastrop County plus Smithville plus Elgin (4-jurisdiction Bastrop-network corpus); Sync 5 (16+ TX cities) deferred to public-launch demand. Two repos (`hauska-engine`, `hauska-mcp-server`), per-repo single-agent ownership (cc-agent-E, cc-agent-M), cc-agent-AC steady-state on `hauska-atom-contract`. `product` · Nick + 3 cc-agents · XL sprint.
-- [ ] **Combined Cortex/Codex sprint** — [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Replaces the prior Codex/Cortex Phase 1 P1 entry below. Cortex/Codex L1-L6 surfaces ship with MCP co-design per surface; existing-product Codex (4 tools) + Cortex (4 tools) MCP surfaces land in `hauska-mcp-server`; legacy-design-tools production moves from Replit autoscale to Cloud Run; current Neon prod swapped to fresh prod-grade Neon instance. Three lanes parallel (cc-agent-E in `hauska-engine`, cc-agent-M in `hauska-mcp-server`, cc-agent-C in `legacy-design-tools`) plus Lane Foundation (cc-agent-AC v1.1.0 atom contract minor bump). 8 dispatches at `_dispatches/2026-05-19_*`. `product` · Nick + 4 cc-agents · XL sprint.
-- [ ] **Hauska commercialization queue (post-cutover)** — [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md), landed 2026-05-19. Seven-step forward-execution queue covering Hauska MCP Server public launch (Streams 2C + 2D), pricing finalization, Stripe + self-serve signup (Phase 8), Sync 5 corpus expansion, GTM/distribution motion, partnership-pending visibility flips, first paid Layer 2 contract. Step 1 dispatch filed for cc-agent-M at [`_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md`](_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md); fires after Lane B Group 4 close (currently in flight). Three open Nick decisions blocking clean traversal: ICP for paid Layer 2; tier prices and bundled call quotas; GTM channels, sequence, and owner per channel. `commercial / Hauska` · Nick + cc-agent-M · XL sequence.
-- [ ] **Texas IP attorney opinion memo** — data-licensing posture for catalog ingest; budget $8–12K. **Gates [`51`](51_substrate_v1_sprint.md) Stream 1D non-Bastrop ingestion.** Candidates per [`18_stakeholder_graph.md`](18_stakeholder_graph.md): Husch Blackwell Austin, Norton Rose Fulbright Austin, Pillsbury Austin (data licensing + AI practice). Sourced from catalog roadmap dialogue 2026-05-15. `legal / strategic` · Nick · M.
+- [ ] **Combined Cortex/Codex sprint** — [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Replaces the prior Codex/Cortex Phase 1 P1 entry below. Cortex/Codex L1-L6 surfaces ship with MCP co-design per surface; existing-product Codex (4 tools) + Cortex (4 tools) MCP surfaces land in `hauska-mcp-server`; legacy-design-tools production moves from Replit autoscale to Cloud Run; current Neon prod swapped to fresh prod-grade Neon instance. Three lanes parallel (cc-agent-E in `hauska-engine`, cc-agent-M in `hauska-mcp-server`, cc-agent-C in `legacy-design-tools`) plus Lane Foundation (cc-agent-AC v1.1.0 atom contract minor bump). 8 dispatches at `_dispatches/2026-05-19_*`. **Status 2026-05-21:** the legacy-design-tools Cloud Run cutover is complete and Lanes A, B, and C have landed; the remaining tail is the Cortex QA backlog burndown ([`43`](43_cortex_qa_backlog.md)). `product` · Nick + 4 cc-agents · XL sprint.
+- [ ] **Hauska commercialization queue (post-cutover)** — [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md), landed 2026-05-19. **This is M-HauskaCommercial.** Seven-step forward-execution queue covering Hauska MCP Server public launch (Streams 2C + 2D), pricing finalization, Circle fiat rail + self-serve signup (Phase 8), Sync 5 corpus expansion, GTM/distribution motion, partnership-pending visibility flips, first paid Layer 2 contract. **In execution 2026-05-21** as the Hauska commercialization sprint per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md): Wave 1 (steps 1, 4) dispatched to cc-agent-M and cc-agent-E. Decision A (paid-Layer-2 ICP) ratified as agent builders. Open Nick decisions gating Wave 2: tier prices and bundled call quotas (B); GTM channels, sequence, and owner per channel (C). `commercial / Hauska` · Nick + cc-agent-M + cc-agent-E · XL sequence.
+- [ ] **Texas IP attorney opinion memo** — data-licensing posture for catalog ingest; budget $8-12K. Parallel bizops, **not an ingestion gate** (Sync 6 retired 2026-05-19; the layered substrate runs on the interim deep-link footing per [ADR-019](80_adrs/adr_019_layered_code_substrate.md)). Tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md); informs [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory posture. Candidates per [`18_stakeholder_graph.md`](18_stakeholder_graph.md): Husch Blackwell Austin, Norton Rose Fulbright Austin, Pillsbury Austin. `legal / strategic` · Nick · M.
 - [ ] **SmartCity OS Stabilization Sprint** — [`30a_smartcity_stabilization_sprint.md`](30a_smartcity_stabilization_sprint.md), active 2026-05-11. Orchestrates Phase 2 migration + W1 sprint + security sweep + multi-tenancy foundation. ~3-4 weeks across 4 workstreams. **This is M-Stabilize.**
 - [x] **Codex/Cortex Phase 1 work** — absorbed into combined Cortex/Codex sprint above per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). DA-BIM-Symmetry shipped 2026-05-19 (PRs #28 + #29 merged); 27-G brand migration landed via PR #17 + #27. Remaining 27/42/48 Phase 2 streams now folded into the combined sprint Lanes A + B + C.
 - [ ] **Migration sprint Phase 1** — legacy-design-tools full migration · executing per existing track. `migration` · Nick + agent · XL sprint · ref: [`12_migration_sprint.md`](12_migration_sprint.md). 2026-05-10 PM: Phase 1B Stage 1 verified — schema parity to Empressa Neon. Phase 1B Stage 2 / Phase 1C eligible to schedule.
@@ -296,26 +315,28 @@ Decisions awaiting external signal — customer conversations, market data, regu
 
 Architectural decisions awaiting resolution or in flight via ADR drafting. Mirrors [Open strategic questions](#open-strategic-questions) in shape; commercial questions stay separate from architectural ones. Added 2026-05-16 per master roadmap consolidation decision.
 
-- **Q4 actor atoms** — *Nick*. **Decided 2026-05-16:** single `actor-record` atom type with discriminator field (`actorType: person | agent | organization`) plus `trustLevel` enum. [ADR-015](80_adrs/adr_015_actor_atoms.md) scaffolded; lands with ECI atomization sprint internal-atom bump. Status: proposed pending ratification.
+- **Q4 actor atoms** — *Nick*. **Decided 2026-05-16:** single `actor-record` atom type with discriminator field (`actorType: person | agent | organization`) plus `trustLevel` enum. [ADR-015](80_adrs/adr_015_actor_atoms.md) accepted 2026-05-16; lands with the ECI atomization sprint internal-atom bump. Status: accepted.
 - **Q5 intent atoms** — *Nick*. **Decided 2026-05-16:** no new atom type for v1. Add a `purpose` field to procedure-execution atoms (ADR-013) with optional links to parent `decision-record` / `sprint-item` / `open-question` atoms in the ECI internal registry. Run for one quarter post ECI atomization; promote to full `intent-record` atom type in ADR-016 if usage demands. ADR-016 status: deferred to v2 candidacy.
-- **Q6 atom access control** — *Nick*. **Decided 2026-05-16:** extend the atom contract per ADR-001 with a layered `accessPolicy` field (`public-free` / `public-paid` / `tenant-private` / `tenant-shared` / `platform-internal`). [ADR-017](80_adrs/adr_017_atom_access_control.md) scaffolded; sequenced after ADR-015; added as a dependency for the ECI atomization sprint. Status: proposed pending ratification.
+- **Q6 atom access control** — *Nick*. **Decided 2026-05-16:** extend the atom contract per ADR-001 with a layered `accessPolicy` field (`public-free` / `public-paid` / `tenant-private` / `tenant-shared` / `platform-internal`). [ADR-017](80_adrs/adr_017_atom_access_control.md) accepted 2026-05-16; a dependency for the ECI atomization sprint. Status: accepted.
 - ~~**Adjudication-record atom spec gap**~~ — **Resolved 2026-05-16 (alignment session recon):** spec IS present at [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md) "Compounding-context atoms (Bastrop-live capture)" section (line 263 onward). Full atom contract per ADR-001, 14 key fields with cross-tenant scope per ADR-007, link taxonomy per ADR-010, six explicit open questions. The earlier finding was based on incomplete search (the section title doesn't contain "adjudication-record" verbatim).
 - ~~**Codex naming follow-up**~~ — **Resolved 2026-05-16 (alignment session):** Codex is the product brand covering plan review (1a contractor-side + 1b city-side) AND code intelligence (the code-lookup surface over `code-section` atoms via Hauska MCP Server tools, free at Layer 1). The catalog-roadmap-default "skip sub-brand, describe functionally" was overridden in favor of brand consolidation. Updates propagated to [`47_codex_plan_review.md`](47_codex_plan_review.md), [`48_codex_program_plan.md`](48_codex_program_plan.md), [`07_product_line_summary.md`](07_product_line_summary.md), and the 2026-05-16 strategic brainstorm session file.
 
 ## Queued ADR work
 
-ADRs not yet drafted, scaffolded but proposed, or active drafts. Tracked here so architectural work doesn't go invisible. Added 2026-05-16.
+ADR status across the portfolio: accepted, queued, deferred, or in draft. Tracked here so architectural work doesn't go invisible. Added 2026-05-16; accepted-ADR rows updated 2026-05-21.
 
 | ADR | Topic | Status |
 |---|---|---|
 | ADR-005 | Multi-tenancy | Deferred; queued under [`30a`](30a_smartcity_stabilization_sprint.md) WS-4 |
 | ADR-006 | Anchoring substrate (Polygon CDK / TSA / Hauska cluster / customer-controlled) | Deferred until `audit-trail-anchor` atom production unblocks |
 | ADR-009 | Firm tenancy | Deferred until Codex 1a returns to active scope (post-[`11a`](11a_bastrop_live_roadmap.md)) |
-| ADR-013 | Procedure-execution atoms | **Scaffolded 2026-05-16 (alignment session)** — [`80_adrs/adr_013_procedure_execution_atoms.md`](80_adrs/adr_013_procedure_execution_atoms.md). Status: proposed pending ratification. Combines Q2 2026-05-15 (option C audit shape) and Q5 2026-05-16 (purpose-field rider). Slots into Bump 2. |
+| ADR-013 | Procedure-execution atoms | **Accepted 2026-05-16** — [`80_adrs/adr_013_procedure_execution_atoms.md`](80_adrs/adr_013_procedure_execution_atoms.md). Combines Q2 2026-05-15 (option C audit shape) and Q5 2026-05-16 (purpose-field rider). Slots into Bump 2. |
 | ADR-014 | Skill / behavior atoms | Queued for Q3 v2 activation; design pre-committed (Hauska-layer brand per ADR-008, 08 tier model inherited). Stricter discipline gates than ADR-013 — atomizes stable distributable versioned procedures only. |
-| ADR-015 | Actor atoms | **Scaffolded 2026-05-16** — [`80_adrs/adr_015_actor_atoms.md`](80_adrs/adr_015_actor_atoms.md). Status: proposed pending ratification |
+| ADR-015 | Actor atoms | **Accepted 2026-05-16** — [`80_adrs/adr_015_actor_atoms.md`](80_adrs/adr_015_actor_atoms.md). Lands with the ECI atomization sprint internal-atom bump. |
 | ADR-016 | Intent atoms | Deferred to v2; revisit one quarter post ECI atomization (Q5 trial period) |
-| ADR-017 | Atom access control | **Scaffolded 2026-05-16** — [`80_adrs/adr_017_atom_access_control.md`](80_adrs/adr_017_atom_access_control.md). Status: proposed pending ratification; sequenced after ADR-015 |
+| ADR-017 | Atom access control | **Accepted 2026-05-16** — [`80_adrs/adr_017_atom_access_control.md`](80_adrs/adr_017_atom_access_control.md). Dependency for the ECI atomization sprint. |
+| ADR-018 | Atom contract substrate layer | **Accepted 2026-05-18** — [`80_adrs/adr_018_atom_contract_substrate_layer.md`](80_adrs/adr_018_atom_contract_substrate_layer.md). Atom contract is Hauska commercial substrate, peer to the Hauska SDK; extraction target `@hauska/atom-contract`. |
+| ADR-019 | Layered code substrate | **Accepted 2026-05-21** — [`80_adrs/adr_019_layered_code_substrate.md`](80_adrs/adr_019_layered_code_substrate.md). Model-code base (Layer 1, public-free) amortized across the catalog; per-city amendment overlay + local code. Layer 1 ingest gated on ICC API access. |
 
 ## References
 
@@ -338,7 +359,7 @@ ADRs not yet drafted, scaffolded but proposed, or active drafts. Tracked here so
 - [`47_codex_plan_review.md`](47_codex_plan_review.md), [`48_codex_program_plan.md`](48_codex_program_plan.md)
 
 **ADRs:**
-- [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) through [`80_adrs/adr_004_*`](80_adrs/), [`80_adrs/adr_007_*`](80_adrs/adr_007_cross_stakeholder_atom_access.md), [`80_adrs/adr_008_*`](80_adrs/adr_008_engine_factor_out.md). ADR-005 and ADR-006 pending; ADR-009 deferred.
+- [`80_adrs/adr_001_atom_architecture.md`](80_adrs/adr_001_atom_architecture.md) through [`80_adrs/adr_004_*`](80_adrs/), [`80_adrs/adr_007_*`](80_adrs/adr_007_cross_stakeholder_atom_access.md), [`80_adrs/adr_008_*`](80_adrs/adr_008_engine_factor_out.md). Accepted: ADR-013, ADR-015, ADR-017 (2026-05-16), [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md) (2026-05-18), [ADR-019](80_adrs/adr_019_layered_code_substrate.md) (2026-05-21). ADR-005 and ADR-006 pending; ADR-009, ADR-014, ADR-016 deferred. Full status in [Queued ADR work](#queued-adr-work) above.
 
 **Operational:**
 - [`90_runbooks/`](90_runbooks/) — `cloud_run_canary_deploy`, `neon_schema_migration_via_cloud_shell`, `replit_deploy`, `session_close_template`, `current_state_protocol`, `regenerate_schema_fixture_windows`

@@ -49,7 +49,7 @@ Sourced from [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md) an
 | Jurisdiction | Source | Status |
 |---|---|---|
 | **Grand County** | [`51`](51_substrate_v1_sprint.md) | One-off + B.6 validation pass; Bastrop-equivalent unblocked posture; partnership terms TBD |
-| **Texas-first 25-city list** | [`51`](51_substrate_v1_sprint.md) Stream 1D | Gated on Texas IP attorney memo delivery (tracked in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md)) |
+| **Texas-first 25-city list** | [`51`](51_substrate_v1_sprint.md) Stream 1D; Sync 5 expansion | Partnership-first sourcing per the template. Not gated on the Texas IP attorney memo: Sync 6 was retired 2026-05-19, and the layered substrate runs on the interim deep-link footing per [ADR-019](80_adrs/adr_019_layered_code_substrate.md). The memo is parallel bizops in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md). |
 
 ## Publisher / aggregator partnerships
 
@@ -100,3 +100,4 @@ Sequencing relative to General Code. The General Code (eCode360) track above is 
 
 - **2026-05-18 (origin):** doc seeded as part of the 70-band design session. Bastrop pioneering-city instance documented; partnership template draft populated from the Bastrop instance; pipeline of future partnerships imported from 49 / 51 sources.
 - **2026-05-21 (standards-body partnerships):** Standards-body licensor partnerships section added. ICC and NFPA recorded as prospective model-code licensor partnerships, with the pitch framing scaffolded for Nick and bizops. Surfaced in the 2026-05-21 strategic session acting on cc-agent-E's Hutto findings; tied to the layered code substrate per ADR-019.
+- **2026-05-21 (IP-memo gate cleanup):** Texas-first city list row de-gated. The Texas IP attorney memo is no longer recorded as a gate on Stream 1D ingestion: Sync 6 was retired 2026-05-19 and the memo is parallel bizops in `72_hauska_inc_operations.md`. Roadmap catch-up refresh; matches `11_roadmap.md`, `18_stakeholder_graph.md`, and `13_risk_register.md` the same session.
