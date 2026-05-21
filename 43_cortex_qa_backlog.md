@@ -30,7 +30,7 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Dispatched (WS-C) |
 | QA-08 | Grand County site data will not populate; map view fails on some engagements; site 3D fails; surrounding buildings and topo missing. Want the house model rendered on the site, and a self-run code review shown in the center frame and converted to a task list. | Bug + Feature | WS-A + WS-C | Site diagnosed (PR #55); WS-C dispatched |
 | QA-09 | Detail-callout and product-spec tabs: intent unclear. Candidate to become an AI-driven function rather than manual forms. | Question | WS-C | Dispatched (WS-C) — augment forms, not replace |
-| QA-10 | Add Hutto, TX as the next code-ingestion target (growth surge expected). | Strategy/catalog | WS-E | Gated |
+| QA-10 | Add Hutto, TX as the next code-ingestion target (growth surge expected). | Strategy/catalog | WS-E | Decided 2026-05-20 — prioritized ingest, dispatched cc-agent-E (provisional) |
 | QA-11 | Deliverable-letters page is glitchy and unusable. Self-run code reviews should be pushable to a response task and from chat. | Bug + Feature | WS-B + WS-C | Fixed: page (PR #55); WS-C dispatched |
 | QA-12 | Snapshots tab: hide the raw JSON block, move the 3D model higher, make the tab more actionable. | UX | WS-B | Fixed (PR #55) |
 | QA-13 | Code Library warmup fails (HTTP 403, codes_warmup_requires_internal). Elgin absent entirely. Open whether Code Library reflects the MCP server or an old database. | Bug | WS-A | Diagnosed: by-design, not a wiring bug |
@@ -75,11 +75,11 @@ Items QA-06, QA-10. Not QA bugs; each gets its own conversation.
 
 QA-06 routes to [`41_advanced_capture_features.md`](41_advanced_capture_features.md), where rendering is descoped, and the operator framed plan-set publishing as pairing with rendering work. It carries a catalog-thesis-check gate before any commitment because it raises product-line placement questions: whether publisher-ready plan export is an Empressa product surface, and whether "Claude operates Revit" sits in the Hauska or Empressa layer.
 
-QA-10 carries a premortem-check gate and routes through Sylvia per the partnership-preferred rule. It intersects the currently-deferred Sync 5 (16-plus TX cities deferred to public-launch demand), so adding Hutto is either a demand signal that justifies un-deferring Sync 5 or it queues behind it. Tracked against [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md).
+QA-10 resolved 2026-05-20. Pre-mortem cleared green (all load-bearing commitments clear; one operational yellow on focus-queue, operator-acknowledged). The operator chose a prioritized one-off Hutto ingest ahead of the deferred Sync 5, over the planner's queue-with-Sync-5 recommendation. Decision record at [`_decisions/2026-05-20_hutto_tx_prioritized_ingest.md`](_decisions/2026-05-20_hutto_tx_prioritized_ingest.md); dispatched to cc-agent-E per [`_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md`](_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md). The decision is provisional pending platform verification: if Hutto publishes on eCode360 rather than Municode, the one-off ingest re-routes to a bizops partnership-API track (the Smithville pattern). Sylvia partnership outreach to Hutto runs in parallel as operator-paced bizops. Tracked against [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md).
 
 ### Execution order
 
-WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is scoped and dispatched to cc-agent-C 2026-05-20: a bounded one-sprint build adding tool-use to the in-app chat. WS-E conversations are scheduled separately.
+WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is scoped and dispatched to cc-agent-C 2026-05-20: a bounded one-sprint build adding tool-use to the in-app chat. WS-E: QA-10 decided and dispatched to cc-agent-E 2026-05-20; QA-06 remains as a separate strategy conversation.
 
 ## Standing findings
 
@@ -99,6 +99,8 @@ Finding 3. QA-07, the QA-08 review portion, QA-09, and the QA-11 push portion ar
 - [`_dispatches/2026-05-20_cc-agent-M_architecture_map_input.md`](_dispatches/2026-05-20_cc-agent-M_architecture_map_input.md) — QA-05 architecture-map input (hauska-mcp-server side).
 - [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md) — QA-05 deliverable: the assembled MCP and Cortex architecture map.
 - [`_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md`](_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md) — WS-C dispatch.
+- [`_decisions/2026-05-20_hutto_tx_prioritized_ingest.md`](_decisions/2026-05-20_hutto_tx_prioritized_ingest.md) — QA-10 decision: prioritized Hutto TX ingest.
+- [`_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md`](_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md) — QA-10 dispatch: Hutto TX ingestion.
 - [`40_design_accelerator.md`](40_design_accelerator.md) — Cortex production target.
 - [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) — program plan this backlog feeds.
 - [`00_current_state.md`](00_current_state.md) — portfolio snapshot.
