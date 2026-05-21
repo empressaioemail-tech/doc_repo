@@ -27,11 +27,11 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-04 | Revit add-in: IFC upload fails HTTP 500, and the new engagement did not reach the Cloud Run Cortex app. | Bug | WS-A | Open: IFC 500 filed; add-in repoint flagged |
 | QA-05 | No architecture diagram of which MCP servers run what, how they relate to the database, and how they consume the Hauska SDK. | Doc | WS-D | Delivered — doc 44 |
 | QA-06 | Productize turning a custom plan set into a publisher-ready plan set. Also scope what Claude operating the Revit platform would take. | Strategy | WS-E | Gated |
-| QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Open |
-| QA-08 | Grand County site data will not populate; map view fails on some engagements; site 3D fails; surrounding buildings and topo missing. Want the house model rendered on the site, and a self-run code review shown in the center frame and converted to a task list. | Bug + Feature | WS-A + WS-C | Site diagnosed (PR #55); WS-C open |
-| QA-09 | Detail-callout and product-spec tabs: intent unclear. Candidate to become an AI-driven function rather than manual forms. | Question | WS-C | Open |
+| QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Dispatched (WS-C) |
+| QA-08 | Grand County site data will not populate; map view fails on some engagements; site 3D fails; surrounding buildings and topo missing. Want the house model rendered on the site, and a self-run code review shown in the center frame and converted to a task list. | Bug + Feature | WS-A + WS-C | Site diagnosed (PR #55); WS-C dispatched |
+| QA-09 | Detail-callout and product-spec tabs: intent unclear. Candidate to become an AI-driven function rather than manual forms. | Question | WS-C | Dispatched (WS-C) — augment forms, not replace |
 | QA-10 | Add Hutto, TX as the next code-ingestion target (growth surge expected). | Strategy/catalog | WS-E | Gated |
-| QA-11 | Deliverable-letters page is glitchy and unusable. Self-run code reviews should be pushable to a response task and from chat. | Bug + Feature | WS-B + WS-C | Fixed: page (PR #55); WS-C open |
+| QA-11 | Deliverable-letters page is glitchy and unusable. Self-run code reviews should be pushable to a response task and from chat. | Bug + Feature | WS-B + WS-C | Fixed: page (PR #55); WS-C dispatched |
 | QA-12 | Snapshots tab: hide the raw JSON block, move the 3D model higher, make the tab more actionable. | UX | WS-B | Fixed (PR #55) |
 | QA-13 | Code Library warmup fails (HTTP 403, codes_warmup_requires_internal). Elgin absent entirely. Open whether Code Library reflects the MCP server or an old database. | Bug | WS-A | Diagnosed: by-design, not a wiring bug |
 | QA-14 | Header alert bell is non-functional. | UX | WS-B | Fixed (PR #55) |
@@ -59,7 +59,9 @@ Status 2026-05-20: WS-B merged via legacy-design-tools PR #55, all five sub-task
 
 ### WS-C. In-app agent: write-back and platform awareness
 
-Items QA-07, QA-08 (review-to-taskboard portion), QA-09, QA-11 (push-to-response-task portion). One coherent gap: the in-app agent reads the BIM model but not the rest of the platform, and cannot write anything back. Needs a design pass mapping the capability onto the Cortex MCP tool surface before any build. Gated on WS-D so the design knows where write-back plugs in.
+Items QA-07, QA-08 (review-to-taskboard portion), QA-09, QA-11 (push-to-response-task portion). One coherent gap: the in-app Cortex chat panel reads the BIM model but not the rest of the platform, and cannot write anything back.
+
+Scoped 2026-05-20 against docs 28 and 42: this is a bounded sprint, not the roadmap-scale retrofit the earlier framing implied. The Cortex MCP tool surface already shipped in the combined Cortex/Codex sprint (31 Cortex tools on hauska-mcp-server, the full L1-L6 atom and endpoint set). WS-C wires the one surface that never got connected: the in-app chat (`chat.ts`), which calls Anthropic with no tool use. All four items collapse to adding Anthropic tool-use to `chat.ts`, wired to cortex-api's own L-surface and read endpoints (the in-app chat is inside cortex-api and does not route through the MCP server). Dispatched to cc-agent-C 2026-05-20 per [`_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md`](_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md). Operator decisions: direct-write (agent writes persist immediately, must be reversible and visible); one sprint covering all four items. Pre-mortem cleared green, with the quality-gate guardrails (agent-created atoms carry source attribution, timestamp, AI-origin marker; every write reversible; agent-action log) as a hard dispatch requirement (WSC.5). doc 42 gains a WS-C stream entry at session close.
 
 ### WS-D. Architecture documentation
 
@@ -77,7 +79,7 @@ QA-10 carries a premortem-check gate and routes through Sylvia per the partnersh
 
 ### Execution order
 
-WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C, the in-app agent design pass, is next and is informed by doc 44; the WSA.1 audit reframes it as the Cortex MCP retrofit, net-new wiring rather than a repair. WS-E conversations are scheduled separately.
+WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is scoped and dispatched to cc-agent-C 2026-05-20: a bounded one-sprint build adding tool-use to the in-app chat. WS-E conversations are scheduled separately.
 
 ## Standing findings
 
@@ -87,7 +89,7 @@ Finding 1. The Revit add-in is still pointed at Replit. The "Snapshot sent" dial
 
 Finding 2. Resolved by the WSA.1 audit. The Code Library reads cortex-prod-local tables (`code_atoms`, `code_atom_sources`, `code_atom_fetch_queue`) directly via `@workspace/db`. It does not call the MCP server or the Hauska substrate at all, so the original "MCP server versus old database" question resolves to: a cortex-prod-local corpus, never connected to the substrate. Grand County showing 290 atoms matching the substrate corpus is coincidental. Elgin and Bastrop County are absent because the Code Library's jurisdiction registry contains only `grand_county_ut` and `bastrop_tx` (City of Bastrop), and no Cortex-side ingest exists for them; their Sync 4.5 atoms live only in the Hauska substrate, which the Cortex app has no path to. Connecting the Code Library to the substrate is the Cortex MCP retrofit, a roadmap item per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md), not a cutover-tail bug. The warmup 403 is a separate, by-design failure: the production session auth stub never grants `audience: internal`, so the "Warm up now" button is structurally dead on Cloud Run.
 
-Finding 3. QA-07, the QA-08 review portion, QA-09, and the QA-11 push portion are one gap, not four. The in-app chat works (it produced full code reviews, so the cutover-close Anthropic-key issue is resolved), but it is read-only. It reported directly that it cannot create tasks or write back. All four items are the same need: give the in-app agent platform read scope and write-back, wired onto the Cortex MCP tool surface.
+Finding 3. QA-07, the QA-08 review portion, QA-09, and the QA-11 push portion are one gap, not four. The in-app chat works (it produced full code reviews, so the cutover-close Anthropic-key issue is resolved), but it is read-only. It reported directly that it cannot create tasks or write back. All four items are the same need: give the in-app agent platform read scope and write-back. Scoped as WS-C 2026-05-20: the wiring goes into the in-app chat route (`chat.ts`) against cortex-api's own L-surface endpoints, not through the MCP server, which serves external agents.
 
 ## Cross-references
 
@@ -96,6 +98,7 @@ Finding 3. QA-07, the QA-08 review portion, QA-09, and the QA-11 push portion ar
 - [`_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsb_ui_cleanup.md`](_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsb_ui_cleanup.md) — WS-B dispatch.
 - [`_dispatches/2026-05-20_cc-agent-M_architecture_map_input.md`](_dispatches/2026-05-20_cc-agent-M_architecture_map_input.md) — QA-05 architecture-map input (hauska-mcp-server side).
 - [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md) — QA-05 deliverable: the assembled MCP and Cortex architecture map.
+- [`_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md`](_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md) — WS-C dispatch.
 - [`40_design_accelerator.md`](40_design_accelerator.md) — Cortex production target.
 - [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) — program plan this backlog feeds.
 - [`00_current_state.md`](00_current_state.md) — portfolio snapshot.
