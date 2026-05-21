@@ -81,27 +81,28 @@ A request flows top to bottom. A builder runs an agent. The agent needs a jurisd
 ```
    LIVE TODAY              BUILDING NOW            DESIGNED & AHEAD
    ----------              ------------            ----------------
-   The catalog:            Public launch of        Paid tier, with
-   2,414 rule-units        the storefront at       self-serve signup
-   across 5                mcp.hauska.dev
-   jurisdictions,                                  Verified-document
-   quality-checked         The shared model-       sale and secure
-                           code base (the          delivery
-   The storefront          foundation under
-   tool set, proven        every US                Go-to-market
-   working end to end      construction project)   launch
-
-   The payment rail        Many more cities,       First paying
-   (crypto), built         onboarded cheaply       customers
-   and tested              on the layered
-                           substrate
+   The catalog of          More jurisdictions,     The shared model-code
+   quality-checked         onboarded one at a      base (gated on a data
+   jurisdiction rules      time onto the           agreement with the
+                           catalog                 code publishers)
+   The storefront,
+   deployed and serving                            Paid tier and
+   live, every tool                                self-serve signup
+   verified
+                                                   Verified-document
+   The crypto payment                              sale and delivery
+   rail, built and
+   tested                                          Public launch and
+                                                   go-to-market
+   The layered catalog
+   architecture
 ```
 
-**Live today.** The catalog holds 2,414 quality-checked rule-units across five jurisdictions, including a full county code and several Texas city codes. The storefront's full tool set is built and has been proven working end to end. The crypto payment rail is built and tested.
+**Live today.** The storefront is deployed and serving live, with every tool verified end to end. The catalog behind it holds over 2,700 quality-checked rule-units across multiple jurisdictions, including a full county code and several Texas city codes. The crypto payment rail is built and tested. And the layered catalog architecture, the structure that lets each new jurisdiction be added cheaply, is built.
 
-**Building now.** Two work streams are in active execution. The first deploys the storefront publicly at `mcp.hauska.dev` so any agent can reach it, with full observability and a documentation site. The second deepens the catalog: it ingests the shared model-code base (the building codes that underlie essentially every construction project in the country) and then onboards many more cities cheaply on top of it.
+**Building now.** The active work is corpus depth: onboarding more jurisdictions onto the catalog, one at a time. Each jurisdiction's own zoning and development code is independent work that compounds the catalog steadily.
 
-**Designed and ahead.** The paid tier and self-serve signup, the traditional-card payment rail, the verified-document sale-and-delivery capability, the public go-to-market launch, and the first paying customers.
+**Designed and ahead.** The shared model-code base is the highest-value layer of the catalog, and the one piece that depends on an outside agreement. The model codes are published by standards bodies (the ICC and the NFPA); ingesting them is gated on a data agreement with those publishers, a partnership conversation now in progress. That is consistent with how Hauska treats every source: as a partner. Also ahead: the paid tier and self-serve signup, the traditional-card payment rail, the verified-document sale and delivery capability, the public go-to-market launch, and the first paying customers.
 
 ## The shape of the business
 

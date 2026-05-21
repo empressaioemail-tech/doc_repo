@@ -14,6 +14,14 @@ owner: nick
 
 **Accepted 2026-05-21.** Originated in the 2026-05-21 Claude Code strategic session convened to act on two connected moves surfaced during the Hutto TX UDC ingest (cc-agent-E, hauska-engine PR #15; session summary [`_sessions/2026-05-20_hutto_tx_udc_ingest_cc-agent-E.md`](../_sessions/2026-05-20_hutto_tx_udc_ingest_cc-agent-E.md)). Pre-mortem cleared green: all three load-bearing commitments clear, with commitment 3 (cost per jurisdiction) materially improved by the move; one operational yellow on the focus queue, resolved on idle-capacity acknowledgment. The companion move, the ICC and NFPA commercial-layer pitch, is scaffolded in [`73_partnerships.md`](../73_partnerships.md) and is a separate Nick and bizops decision; this ADR proceeds independently of it.
 
+## Material update — 2026-05-21
+
+cc-agent-E's E1 Layer 1 probes established that a load-bearing premise of this ADR is false. The ADR assumed model-code structure (hierarchy, section numbers, titles, anchors) is freely ingestable and only the verbatim normative text is gated. On contact it is not: ICC serves no model-code structure freely. The free Digital Codes viewer (codes.iccsafe.org) is a single-page app that exposes no structure in its HTML, and the only structured feed is the Code Connect API, a paid commercial product with no free tier and no self-provisionable credentials.
+
+Consequence: **Layer 1 ingest is gated on ICC structured-data access (a Code Connect API subscription or a partnership), and on NFPA for the NEC.** The interim deep-link footing still needs no copyright clearance, but it is not independent of the ICC and NFPA relationship as the Status, Decision, and Open-decisions sections below originally state. Those sentences are superseded by this note.
+
+This does not block the layered architecture, which is built and merged (engine PRs #17, #18, #19) and will receive Layer 1 atoms the moment access lands. It does not affect Layer 3 (bespoke local code: zoning, UDC), which ingests freely and continues. Layer 2 amendment overlays attach to Layer 1 and follow it. The ICC and NFPA contact is correspondingly elevated from a parallel bizops prospect to a critical-path dependency for the model-code base; the track lives in `73_partnerships.md`.
+
 ## Context
 
 The code ingestion pipeline today ([`49_code_ingestion_pipeline.md`](../49_code_ingestion_pipeline.md)) ingests each jurisdiction's municipal code as a monolith. One adapter run produces one jurisdiction's full corpus from scratch, every time.
@@ -113,4 +121,5 @@ An ICC or NFPA licensing partnership landing is an upgrade, not a reversal: it c
 
 ## Revision history
 
+- **2026-05-21 (Layer 1 access finding):** cc-agent-E's E1 probes established that ICC serves no model-code structure freely; Layer 1 ingest is gated on ICC structured-data access (Code Connect API or partnership) and on NFPA for the NEC. The ADR's premise that the interim deep-link footing is independent of the ICC and NFPA relationship is corrected. See the Material update section near the top. The layered architecture (engine PRs #17/#18/#19) is built and merged; Layer 3 ingest is unaffected and continues.
 - **2026-05-21 (origin):** drafted during the Claude Code strategic session acting on the two moves surfaced by the Hutto TX UDC ingest. Ratifies the three-layer decomposition (shared model-code base, jurisdiction amendment overlay, bespoke local code), the interim deep-link footing for the Layer 1 base text, and the decoupling of the substrate from both the IP attorney memo and the ICC and NFPA pitch. Closes the cross-jurisdictional-code-reuse and custom-amendment-handling open-design items in doc 49.
