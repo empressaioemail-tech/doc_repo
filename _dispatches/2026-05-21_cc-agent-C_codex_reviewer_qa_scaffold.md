@@ -14,7 +14,7 @@ You are cc-agent-C owning the `legacy-design-tools` repo. This dispatch builds t
 
 ## Activation gate
 
-This dispatch does not run yet. It fires only after your Cortex QA close-out is merged: PRs #59, #60, #61, #62 landed on `legacy-design-tools` `main`, and the QA-04 operator-supervised canary resolved. Until then, `legacy-design-tools` has two concurrent agents (you on the close-out, cc-agent-AC on QA-17); a third concurrent workstream in the repo is the collision the operating rules forbid. When the close-out is merged you are the natural owner of this scaffold as the repo expert, on your existing clone, no new clone.
+This dispatch does not run yet. It fires after the full Cortex QA close-out is merged (QA-16/19/23 are merged; QA-18 PR #175 lands once its conflict-resolution dispatch completes), after the QA-04 operator-supervised canary resolves, and after the QA-22 site-context dispatch. Until then, `legacy-design-tools` has two concurrent agents (cc-agent-AC on QA-17 and its follow-on, you on the close-out chain); a third concurrent workstream in the repo is the collision the operating rules forbid. You are the natural owner of this scaffold as the repo expert, on your existing clone, no new clone.
 
 ## Why this exists
 

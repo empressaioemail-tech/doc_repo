@@ -14,7 +14,7 @@ You are cc-agent-C owning the `legacy-design-tools` repo. This dispatch is QA-22
 
 ## Activation gate
 
-This dispatch fires after your Cortex QA close-out is merged: PRs #59-62 landed on `main` and the QA-04 operator-supervised canary resolved. Until then `legacy-design-tools` carries two concurrent agents; do not start this in parallel. Sequence it ahead of the codex-reviewer-qa scaffold ([`_dispatches/2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md`](2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md)): QA-22 is a user-facing reliability bug, the scaffold is net-new feature work, so the bug goes first.
+This dispatch fires after the full Cortex QA close-out is merged. QA-16, QA-19, and QA-23 are merged; QA-18 lands once the QA-18 PR #175 conflict-resolution dispatch ([`2026-05-21_cc-agent-C_qa18_pr175_conflict_resolution.md`](2026-05-21_cc-agent-C_qa18_pr175_conflict_resolution.md)) completes. Also gated on the QA-04 operator-supervised canary resolving. Until then `legacy-design-tools` carries two concurrent agents; do not start this in parallel. Sequence it ahead of the codex-reviewer-qa scaffold ([`2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md`](2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md)): QA-22 is a user-facing reliability bug, the scaffold is net-new feature work, so the bug goes first.
 
 ## Why this exists
 
