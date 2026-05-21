@@ -2,9 +2,9 @@
 id: 49_code_ingestion_pipeline
 title: Code Ingestion Pipeline — any jurisdiction's code in, atomized corpus out
 status: active
-last_updated: 2026-05-12
+last_updated: 2026-05-21 (Layered code substrate section added per ADR-019; cross-jurisdictional-code-reuse and custom-amendment-handling open-design items resolved)
 applies_to: portfolio
-related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 25_atom_architecture_reference, 27_engine_evolution_plan, 46_smartcity_parcel_intelligence, 47_codex_plan_review, 48_codex_program_plan, adr_001_atom_architecture, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions]
+related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 25_atom_architecture_reference, 27_engine_evolution_plan, 46_smartcity_parcel_intelligence, 47_codex_plan_review, 48_codex_program_plan, 73_partnerships, adr_001_atom_architecture, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_019_layered_code_substrate]
 owner: nick
 ---
 
@@ -71,6 +71,20 @@ The pipeline sits between **raw code sources** (external — PDFs, Municode, eCo
 ```
 
 Each pipeline stage produces durable atoms in the substrate. There's no in-pipeline state separate from the substrate — once stage B.3 atomizes, the atoms are first-class and queryable. Later stages (B.4 eval, B.5 versioning) operate on the atoms in the substrate, not on intermediate pipeline state.
+
+## Layered code substrate
+
+A jurisdiction's municipal code is not a monolith. Per [ADR-019](80_adrs/adr_019_layered_code_substrate.md), the pipeline decomposes it into three layers, which closes two of the open design items below and reshapes the cost model.
+
+Layer 1 is the model-code base: the ICC I-Codes (IRC, IBC, IFC, IMC, IPC, IFGC, IECC) and the NEC, by edition. Roughly 30 to 40 documents cover essentially every Texas city. The base is ingested once into shared `code-edition` and `code-section` atoms and referenced by every jurisdiction that adopts that edition, so it is a one-time capability-and-corpus investment amortized across the catalog rather than a per-jurisdiction cost.
+
+Layer 2 is the jurisdiction amendment overlay: jurisdiction-scoped `code-amendment` atoms, each linked to the model-code section it modifies. Jurisdiction-authored, hosted in full.
+
+Layer 3 is the bespoke local code: `code-section` atoms for zoning, the UDC, subdivision regulations, and local-only chapters with no model-code parent. Jurisdiction-authored, hosted in full. This is what the Hutto UDC ingest produced.
+
+A `jurisdiction-corpus` atom references the shared Layer 1 editions a city adopts plus its own Layer 2 overlay and Layer 3 sections. The effective rule for a jurisdiction is the model-code base section composed with that jurisdiction's overlay. This is why the layered substrate reshapes the cost model: ingest the base once, and each new city becomes a cheap amendment-plus-zoning ingest. It is the structural answer to the cost-per-jurisdiction commitment as the catalog scales.
+
+The substrate proceeds now on an interim footing. The Layer 1 base atoms host structure, cross-references, and the reasoning layer, and deep-link the verbatim model-code text to the publishers' free public viewers rather than hosting it; the Layer 2 and Layer 3 jurisdiction-authored text is hosted in full. Full licensed hosting of the base text is an upgrade gated independently on the IP attorney memo or an ICC and NFPA partnership, and neither gates the interim substrate. See ADR-019 for the decision, alternatives, and open implementation choices, and [`73_partnerships.md`](73_partnerships.md) for the ICC and NFPA standards-body partnership track.
 
 ## Sprint plan
 
@@ -204,8 +218,8 @@ Steps 1-6 are roughly 2-3 sprint-weeks with focused effort. Step 7 is the milest
 - **Default quality bar threshold.** 90% top-3 retrieval, 100% section-number retrievability, 95% cross-reference resolution are proposals. Refine after first jurisdiction's eval data.
 - **Curated query set authoring.** Who writes the ~50-100 known-answer queries per jurisdiction? Reviewer-zero (Sylvia / Jaime for Bastrop)? Consultant partner? Operator? Hybrid.
 - **Adapter authentication for paywalled sources.** Some jurisdictions sit behind paywalled code-publishing services. License terms, scrape ethics, formal partnerships all open.
-- **Cross-jurisdictional code reuse.** Some cities adopt other cities' codes (e.g., a small TX city might adopt Bastrop's UDC with edits). Pipeline should detect and represent this — open design.
-- **Custom-amendment handling.** Some cities maintain local amendments on top of a base code (e.g., "IRC plus our local mods"). Atom model probably has the base section + local amendments chain; explicit pattern needs spec.
+- **Cross-jurisdictional code reuse. Resolved 2026-05-21 per [ADR-019](80_adrs/adr_019_layered_code_substrate.md).** The layered code substrate makes shared code the ordinary case rather than a condition to detect: many jurisdictions reference the same shared Layer 1 `code-edition` atoms by design. See the Layered code substrate section above.
+- **Custom-amendment handling. Resolved 2026-05-21 per [ADR-019](80_adrs/adr_019_layered_code_substrate.md).** The explicit pattern is the Layer 2 amendment overlay: a base `code-section` atom plus a jurisdiction-scoped `code-amendment` link. Whether that reuses the existing temporal-amendment type or warrants a distinct type is an ADR-019 open implementation choice for cc-agent-E. See the Layered code substrate section above.
 - **OCR quality for raw PDF.** PDF-OCR pipeline (Tesseract, AWS Textract, Google Document AI, Claude vision) — pick one or composable. Some PDFs are scanned poorly; salvage policy needed.
 - **Multilingual codes.** Some jurisdictions publish in multiple languages. Out of scope for MVP; surface later when relevant.
 - **Pipeline orchestration.** Cron + Postgres job table? Temporal? Dagster? Airflow? The pipeline is a multi-stage workflow with retries, observability, and human-in-loop steps. Operational choice; defer until tooling step 4.

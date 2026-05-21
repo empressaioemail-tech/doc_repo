@@ -2,7 +2,7 @@
 id: 73_partnerships
 title: Partnerships â formalized partnership state
 status: active
-last_updated: 2026-05-19 (Publisher / aggregator partnerships section added; General Code as partnership target per cc-agent-E Smithville structural-blocker finding; Municode as future template target)
+last_updated: 2026-05-21 (Standards-body licensor partnerships section added; ICC and NFPA as prospective model-code licensor partnerships per ADR-019 and the 2026-05-21 strategic session)
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 13_risk_register, 18_stakeholder_graph, 30_smartcity_os, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 70_bizops_overview, 71_pipeline, 74_commercial_agreements]
 owner: nick
@@ -60,12 +60,38 @@ Distinct from jurisdiction partnerships above. Publisher partnerships unlock man
 | **General Code (eCode360)** | Smithville and many other small/mid-TX cities (eCode360 is the publisher platform; SM6484 is Smithville's instance ID). Likely overlaps with several Sync 5 targets. | **Partnership target — pending outreach.** Surfaced 2026-05-19 per cc-agent-E's Smithville structural-blocker recon at [`_sessions/2026-05-19_smithville_ecode360_blocker_cc-agent-E.md`](_sessions/2026-05-19_smithville_ecode360_blocker_cc-agent-E.md). | Smithville code on eCode360 returns HTTP 403 for both ingest and browser user-agents (bot protection); robots.txt disallows `/documents/`, `/search`. Direct ingest violates published policy. General Code's eCode360 partner API is the substantive-access path. Per Commitment #2 (partnership-first sourcing), this is a partnership conversation. |
 | **Municode** | Bastrop City, Elgin, Bastrop County (Subdivision Regs were direct-PDF instead), and most TX small-city ordinance pages. Currently scraped via the working `MunicodeHtmlAdapter` JSON mode. | **Not currently partnered.** Scraping the public HTML/JSON surface works today; no immediate friction. Worth a partnership conversation as the catalog scales — moves Municode from "tolerated scrape" to "structured aggregator partnership." Lower priority than General Code while scraping holds. | Coverage spans most active Sync 4.5 + Sync 5 jurisdictions; partnership shape mirrors the eCode360 framing once we have a working template. |
 
+## Standards-body licensor partnerships (ICC, NFPA)
+
+Distinct from the jurisdiction partnerships and the publisher / aggregator partnerships above. The International Code Council (ICC) and the National Fire Protection Association (NFPA) publish the model codes that sit underneath essentially every jurisdiction's building code: the ICC I-Codes (IRC, IBC, IFC, IMC, IPC, IFGC, IECC) and the NEC (NFPA 70). Per [`80_adrs/adr_019_layered_code_substrate.md`](80_adrs/adr_019_layered_code_substrate.md), this shared model-code base is Layer 1 of the layered code substrate. A licensing partnership with ICC and NFPA is the highest-leverage partnership available in the catalog. One ICC deal is the legally-clean base layer for every jurisdiction that adopts the I-Codes, and it moots the model-code copyright question.
+
+This pitch surfaced 2026-05-21 in the strategic session acting on cc-agent-E's Hutto session findings. The framing below is scaffolded by the planner; the decision to pitch, and the pitch itself, is a Nick and bizops action.
+
+| Standards body | Coverage | Status |
+|---|---|---|
+| **ICC (International Code Council)** | The I-Codes: IRC, IBC, IFC, IMC, IPC, IFGC, IECC. The Layer 1 model-code base under essentially every Texas jurisdiction and most US jurisdictions. | Prospective licensor partnership; pitch scaffolded, not yet decided. One deal legally clears the Layer 1 base for the whole catalog and moots the model-code copyright question. Nick and bizops decision. |
+| **NFPA (National Fire Protection Association)** | NFPA 70 (the National Electrical Code) and adjacent NFPA standards. The Layer 1 model-code base for electrical and fire-adjacent provisions. | Prospective licensor partnership; pitch scaffolded, not yet decided. Identical deal shape to ICC. Nick and bizops decision. |
+
+### Pitch framing
+
+The problem the standards bodies have. Agents are becoming the primary consumers of building codes. ICC and NFPA bill humans, through per-seat Digital Codes Premium subscriptions and print sales, and capture nothing when an agent retrieves a code section. Agent retrieval is a large and growing channel that neither body can currently bill. UpCodes-style litigation is the standards bodies defending the human-subscription model against the unbundling, on contested legal ground.
+
+The offer. Hauska is the metered agent-retrieval channel. The payment substrate meters every agent retrieval of code and routes a structural revenue share to the code's owner. ICC and NFPA become licensors with revenue share, the Bastrop partnership template applied to standards bodies. Hauska's "sell reasoning, not data" posture and verifiable provenance keep the standards body the citable source of truth rather than letting models paraphrase or hallucinate code.
+
+The leverage. Cities onboard one jurisdiction at a time. One ICC deal clears the Layer 1 model-code base for the entire catalog, moots the model-code copyright question, and makes the layered substrate's upgrade from interim deep-link to licensed full-text hosting trivial. It is the single highest-leverage partnership in the catalog.
+
+The counterparty view. A new revenue line on a channel ICC and NFPA cannot currently bill and that grows regardless. Alignment with the agent economy instead of litigation against it. Substrate-enforced revenue share, captured mechanically through the SDK rather than merely promised contractually. Retrieval analytics showing which codes, editions, and jurisdictions agents actually query, which is genuine intelligence for the standards bodies' own product and standards work.
+
+Decoupling and risk. The layered code substrate proceeds now on the interim deep-link footing regardless of this pitch, per ADR-019. The pitch is upside, not a dependency, which protects Hauska from the slow standards-body sales cycle. ICC has been litigious and may initially read Hauska as another UpCodes. The framing must lead with "we pay you," not "we host your code." The revenue-share-first framing is the entire differentiator: UpCodes hosts free, Hauska pays. Standards-body revenue-share mechanics, as distinct from the city template, route to [`74_commercial_agreements.md`](74_commercial_agreements.md) and [`14_pricing_framework.md`](14_pricing_framework.md) when the deal shapes up. The deal is legal and corporate execution and routes to Nick.
+
+Sequencing relative to General Code. The General Code (eCode360) track above is the adjacent, lower-altitude version of the same motion, a publisher aggregator, nearer-term and more tractable, unblocking the eCode360 jurisdiction bucket operationally. ICC and NFPA are the standards-body version at higher altitude and slower cycle, and they are the bodies whose copyright the Layer 1 base actually implicates. Run both; they are not mutually exclusive.
+
 ## Cross-references
 
 - [`09_post_saas_substrate_thesis.md`](09_post_saas_substrate_thesis.md) â strategic foundation for the partnership-first commitment.
 - [`14_pricing_framework.md`](14_pricing_framework.md) â revenue-share routing through the SDK payment substrate; Bastrop manual reconciliation pilot gates Phase 3.
 - [`18_stakeholder_graph.md`](18_stakeholder_graph.md) â relationship graph; this doc carries operational partnership state, 18 carries the relationship topology.
 - [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md) â code-ingest pipeline depends on partnership-first sourcing for jurisdictions beyond Bastrop / Grand County.
+- [`80_adrs/adr_019_layered_code_substrate.md`](80_adrs/adr_019_layered_code_substrate.md) - layered code substrate; the ICC and NFPA partnerships clear and upgrade its Layer 1 model-code base.
 - [`74_commercial_agreements.md`](74_commercial_agreements.md) â revenue-share template lives there; this doc references the template, 74 owns it.
 - [`80_adrs/adr_007_cross_stakeholder_atom_access.md`](80_adrs/adr_007_cross_stakeholder_atom_access.md) â cross-jurisdictional surfacing model.
 - [`13_risk_register.md`](13_risk_register.md) â Risk 7 (regulatory posture vs TCEQ) ties to Sylvia conversations on the partnership-narrative arc.
@@ -73,3 +99,4 @@ Distinct from jurisdiction partnerships above. Publisher partnerships unlock man
 ## Revision history
 
 - **2026-05-18 (origin):** doc seeded as part of the 70-band design session. Bastrop pioneering-city instance documented; partnership template draft populated from the Bastrop instance; pipeline of future partnerships imported from 49 / 51 sources.
+- **2026-05-21 (standards-body partnerships):** Standards-body licensor partnerships section added. ICC and NFPA recorded as prospective model-code licensor partnerships, with the pitch framing scaffolded for Nick and bizops. Surfaced in the 2026-05-21 strategic session acting on cc-agent-E's Hutto findings; tied to the layered code substrate per ADR-019.
