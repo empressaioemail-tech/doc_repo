@@ -2,7 +2,7 @@
 id: legacy_design_tools_replit_to_cloud_run_cutover
 title: legacy-design-tools Replit to Cloud Run cutover runbook
 status: active
-last_updated: 2026-05-20
+last_updated: 2026-05-21
 applies_to: design-accelerator
 related: [00_current_state, 40_design_accelerator, 90_runbooks/cloud_run_canary_deploy, 90_runbooks/agent_workspace_hygiene, 91_postmortems/2026-05-19_calendar_tenant_id_silent_outage, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, _dispatches/2026-05-19_cc-agent-C_replit_decouple, _sessions/2026-05-06_phase_1a_complete_claude_ai_planner]
 ---
@@ -209,6 +209,8 @@ Operator drove Stages 0-3 to completion in a single session 2026-05-20. Final st
 
 5. **Replit-managed buckets are cross-tenant inaccessible at the operator-account level.** Verified empirically — `empressaioemail@gmail.com` itself lacks `storage.objects.list` on the Replit bucket. The 2026-05-06 Phase 1A architectural decision holds tightly. Migration paths that try to rsync from the Replit bucket directly are not possible from outside Replit.
 
+6. **Pending DB migrations did not follow the cutover to cortex-prod.** drizzle migrations 0009-0014 and the hand-applied `lib/db/scripts/track-b-ifc-ingest.sql` had never been applied to any production database; the cutover (Stages 1-3) copied schema and data as they stood at roughly migration 0008. The gap surfaced 2026-05-21 during QA-04: `POST /api/snapshots/:id/ifc` 500'd on a missing `snapshot_ifc_files` table, and the whole L-surface (response-tasks, detail-callouts, product-specs, deliverable-letters) had silently been dark on cortex-prod. Resolved by applying drizzle 0009-0014 plus `track-b-ifc-ingest.sql` directly to cortex-prod (`ep-lucky-truth-apodo8hr`); the apply is additive and idempotent and stays in place. Future DB swaps need a hard checklist line: after the Stage 2 data load and before the Stage 3 traffic shift, apply every pending migration to the destination DB and verify its table count against the source. See [`43_cortex_qa_backlog.md`](../43_cortex_qa_backlog.md) WSA.3 and [`_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md`](../_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md).
+
 ### Stage 9 known issues at session close
 
 - **AI in-app chat returns empty responses.** Root cause: `AI_INTEGRATIONS_ANTHROPIC_API_KEY` in Secret Manager is the Replit-era value and returns `401 invalid x-api-key` from `api.anthropic.com`. Fix attempted at end of session via secret rotation (version 2 added) + revision update + explicit version pin, but operator stopped before traffic-shift completed verification. Operator parked the fix to "work into QA" cycle. Resolution requires: confirm fresh Anthropic key works at Anthropic console, ensure Secret Manager version 2 carries that exact value, force new Cloud Run revision via explicit-version-pin `--update-secrets=AI_INTEGRATIONS_ANTHROPIC_API_KEY=AI_INTEGRATIONS_ANTHROPIC_API_KEY:2`, then `gcloud run services update-traffic` to 100% on the new revision. Browser hard-refresh + retry. Non-blocking for MCP-driven QA path (which uses operator's local Claude Desktop / Cursor LLM, not the in-app chat).
@@ -228,6 +230,7 @@ Operator drove Stages 0-3 to completion in a single session 2026-05-20. Final st
 - Decommission Replit-side environment (Stage 7).
 - hauska-engine retrieval-api deployment (currently `HAUSKA_BACKEND_URL=http://localhost:8080` in hauska-mcp-server `.env`; public catalog tools fail gracefully until engine is up; tracked in `16_commercialization_roadmap.md` Streams 2C/2D).
 - Tighten `--allow-unauthenticated` flag on cortex-api Cloud Run service before broader exposure (workflow currently uses it for Phase-1A smoke testing).
+- Decommission the stale `api-server` Cloud Run service. The Phase-1A `api-server` service (last deployed 2026-05-06) still exists in `legacy-design-tools-prod` alongside `cortex-api`. It is not production and not load-bearing; removing it eliminates the confusion it caused early in the QA-04 investigation. Flagged by cc-agent-C 2026-05-21.
 
 ## Cross-references
 

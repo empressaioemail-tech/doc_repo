@@ -2,7 +2,7 @@
 id: 43_cortex_qa_backlog
 title: Cortex QA backlog — post-cutover verification window
 status: active
-last_updated: 2026-05-20
+last_updated: 2026-05-21
 applies_to: design-accelerator
 related: [00_current_state, 40_design_accelerator, 42_design_accelerator_program_plan, 41_advanced_capture_features, 49_code_ingestion_pipeline, 90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover]
 ---
@@ -15,7 +15,7 @@ related: [00_current_state, 40_design_accelerator, 42_design_accelerator_program
 
 The Replit to Cloud Run cutover landed 2026-05-20: cortex-api runs on Cloud Run against cortex-prod Neon, the Replit data dependency severed, per the [cutover runbook](90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover.md) Stage 9. With the platform stable, operator-driven QA is unblocked. This doc is Stage 5 of that runbook in practice: the verification-window backlog.
 
-Item IDs are QA-NN, assigned in report order and never reused. The first 14 entries were captured in a single operator QA pass on 2026-05-20.
+Item IDs are QA-NN, assigned in report order and never reused. The first 14 entries were captured in a single operator QA pass on 2026-05-20. New items append as QA-17 and up.
 
 ## Item register
 
@@ -24,7 +24,7 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-01 | Engagement-detail tabs are crowded (ten tabs). Reorganize, and move the model "View in 3D" into its own tab. | UX | WS-B | Fixed (PR #55) |
 | QA-02 | Projects cannot be archived. Left sidebar sections should expand and collapse. | Feature (small) | WS-B | Fixed (PR #55) |
 | QA-03 | Site context layers fail intermittently (varies which layer and when; observed EPA EJScreen, FCC broadband). Site 3D view renders nothing. | Bug | WS-A | ugrc:dem fixed (PR #55); rest diagnosed |
-| QA-04 | Revit add-in: IFC upload fails HTTP 500, and the new engagement did not reach the Cloud Run Cortex app. | Bug | WS-A | Part 1 done: add-in repointed (legacy-revit-sensor, merged); Part 2 IFC 500 with cc-agent-C |
+| QA-04 | Revit add-in: IFC upload fails HTTP 500, and the new engagement did not reach the Cloud Run Cortex app. | Bug | WS-A | Part 1 done (add-in repointed, merged). Part 2: 3 of 4 layers fixed (cortex-prod schema migration; PR #57; PR #58); 4th layer architectural — **OPEN, gated on QA-16** |
 | QA-05 | No architecture diagram of which MCP servers run what, how they relate to the database, and how they consume the Hauska SDK. | Doc | WS-D | Delivered — doc 44 |
 | QA-06 | Productize turning a custom plan set into a publisher-ready plan set. Also scope what Claude operating the Revit platform would take. | Strategy | WS-E | Gated |
 | QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Fixed (WS-C, PR pending) |
@@ -36,6 +36,7 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-13 | Code Library warmup fails (HTTP 403, codes_warmup_requires_internal). Elgin absent entirely. Open whether Code Library reflects the MCP server or an old database. | Bug | WS-A | Diagnosed: by-design, not a wiring bug |
 | QA-14 | Header alert bell is non-functional. | UX | WS-B | Fixed (PR #55) |
 | QA-15 | plan-review header bell stopped rendering after WSB.5 made the shared Header notifications prop-driven. plan-review must opt into `headerNotifications`, or the bell stays removed. | UX | WS-B follow-on | Logged |
+| QA-16 | IFC parse runs inline on the api-server Node main thread behind a non-reentrant `IfcAPI` singleton; a hung or trapped parse wedges the whole cortex-api instance. Isolate the parse in a worker. | Bug + architecture | WS-A follow-on | Logged — blocks QA-04 close |
 
 ## Workstreams
 
@@ -47,9 +48,15 @@ Status 2026-05-20: WS-A merged via legacy-design-tools PR #55. Outcomes per the 
 
 - WSA.1: cortex-api is self-contained for all four audited surfaces. The MCP integration is inbound and one-directional only (hauska-mcp-server calls cortex-api's L-surface over a SERVICE_API_KEY bearer); cortex-api makes no outbound call to the MCP server or hauska-engine. The earlier "zero MCP integration" headline was the stale-checkout error and is corrected.
 - WSA.2 (Revit add-in repoint): DONE 2026-05-21. The `legacy-revit-sensor` add-in was repointed off the retired Replit URL to cortex-api; the per-workstation `ReplitUrl` setting was renamed to `BackendUrl` with a cortex-api default and a migration guard that drops stored Replit values; the snapshot-secret pairing was verified matching. Part 1 committed and merged. The data-scatter risk is closed. The IFC 500 (WSA.3) is QA-04 Part 2, dispatched to cc-agent-C.
-- WSA.3 (IFC 500): filed. Root-cause hypothesis is the GCS object-storage write branch of `ingestSnapshotIfc`; Cloud Run log retrieval was blocked. QA-04 stays open.
+- WSA.3 (IFC 500): diagnosed 2026-05-21. The earlier GCS object-storage-write hypothesis is superseded. The failure is four bugs stacked: (1) cortex-prod was never migrated past roughly migration 0008, so `ingestSnapshotIfc`'s `snapshot_ifc_files` query threw an uncaught 500 — fixed by applying drizzle migrations 0009-0014 plus `track-b-ifc-ingest.sql` to cortex-prod, which also un-broke the L-surface (response-tasks, detail-callouts, product-specs, deliverable-letters had silently been dark on cortex-prod); (2) web-ifc's Node entry was resolved via a non-exported subpath — fixed in PR #57 (merged); (3) web-ifc WASM init exceeds the 2 GiB container limit — fixed in PR #58 (Cloud Run memory raised to 8 GiB, merged); (4) the IFC parse runs inline on the Node main thread behind a non-reentrant `IfcAPI` singleton, so a hung or trapped parse wedges the whole instance — unresolved, architectural, filed as QA-16. QA-04 stays open, gated on QA-16. See [`_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md`](_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md).
 - WSA.4 (site context): the ugrc:dem ArcGIS 400 was a constructed-URL bug, fixed in PR #55. The EPA, FCC, and Grand County "cancelled by the caller" failures are the 15-second server-side adapter-runner timeout firing on slow upstreams, not a wiring bug.
 - WSA.5 (Code Library): the warmup 403 and the missing jurisdictions are by-design and architecture-level, not wiring bugs. See QA-13 and the standing findings.
+
+### WS-A follow-on. QA-16 — isolate the IFC parse
+
+QA-04 Part 2 closed three of four IFC-failure layers this session (cortex-prod schema migration, PR #57, PR #58) and surfaced the fourth as architectural. The IFC ingest parse (`web-ifc`, `lib/ifcParser`) runs inline on the api-server Node main thread behind a process-global non-reentrant `IfcAPI` singleton with no reset path. web-ifc's WASM traps on malformed input and leaves the singleton corrupt; a parse that hangs blocks the entire event loop, so the cortex-api instance stops answering everything, healthz included. This was observed live 2026-05-21: a malformed-IFC probe on the fixed canary revision wedged the instance, and a traffic shift onto that revision briefly took cortex-api unresponsive before a rollback to `cortex-api-00011-xut` restored production within minutes.
+
+QA-16 moves the parse into a `worker_threads` worker (the `ifcParser` module already flags this as its intended upgrade) or a separate Cloud Run service, so a crash, hang, or OOM kills only the worker and each parse gets a fresh WASM context. Fold in the lighter robustness follow-ups: wrap the unguarded `await db.*` calls in `ingestSnapshotIfc` and `lookupSnapshotForIfc` so a DB error returns the route's clean `db_error` JSON instead of an opaque HTML 500 (the cause of Layer 1's opacity). QA-16 is the gate before IFC ingest can take production traffic and the gate before QA-04 can close: the revision carrying PRs #57 + #58 + the worker isolation deploys as a canary, a real Revit IFC must return `201` against it, then traffic shifts. A revision with a live, un-isolated IFC parse path must not take production traffic. See [`_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md`](_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md).
 
 ### WS-B. UI and UX cleanup
 
@@ -83,13 +90,13 @@ Update 2026-05-21: HUTTO.1 found a split. Hutto's general Code of Ordinances is 
 
 ### Execution order
 
-WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR pending). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. All five workstreams are delivered, merged, complete, or routed.
+WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR pending). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. Every QA item is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic.
 
 ## Standing findings
 
 Three calls already supported by the QA evidence, recorded so they are not re-derived.
 
-Finding 1. The Revit add-in is still pointed at Replit. The "Snapshot sent" dialog shows the workbench link as the retired `prompt-agent-accelerator.replit.app`. Sheets and the new engagement pushed to Replit-side Neon, which is why they did not appear in the Cloud Run Cortex app. Every add-in push during QA scatters test data across two databases. Repointing the add-in backend URL to cortex-api is the time-sensitive item inside WS-A. Update 2026-05-21: resolved. The `legacy-revit-sensor` add-in was repointed to cortex-api (Part 1 of QA-04, merged): the `ReplitUrl` setting renamed to `BackendUrl` with a cortex-api default and a migration guard that drops stored Replit values, and the snapshot-secret pairing verified matching. The data-scatter risk is closed. The IFC upload 500 remains as QA-04 Part 2, dispatched to cc-agent-C.
+Finding 1. The Revit add-in is still pointed at Replit. The "Snapshot sent" dialog shows the workbench link as the retired `prompt-agent-accelerator.replit.app`. Sheets and the new engagement pushed to Replit-side Neon, which is why they did not appear in the Cloud Run Cortex app. Every add-in push during QA scatters test data across two databases. Repointing the add-in backend URL to cortex-api is the time-sensitive item inside WS-A. Update 2026-05-21: resolved. The `legacy-revit-sensor` add-in was repointed to cortex-api (Part 1 of QA-04, merged): the `ReplitUrl` setting renamed to `BackendUrl` with a cortex-api default and a migration guard that drops stored Replit values, and the snapshot-secret pairing verified matching. The data-scatter risk is closed. The IFC upload 500 (QA-04 Part 2) is now diagnosed as a four-layer failure: three layers fixed (cortex-prod schema migration, PR #57, PR #58), the fourth — an inline main-thread IFC parse that wedges the instance — filed as QA-16. QA-04 stays open, gated on QA-16.
 
 Finding 2. Resolved by the WSA.1 audit. The Code Library reads cortex-prod-local tables (`code_atoms`, `code_atom_sources`, `code_atom_fetch_queue`) directly via `@workspace/db`. It does not call the MCP server or the Hauska substrate at all, so the original "MCP server versus old database" question resolves to: a cortex-prod-local corpus, never connected to the substrate. Grand County showing 290 atoms matching the substrate corpus is coincidental. Elgin and Bastrop County are absent because the Code Library's jurisdiction registry contains only `grand_county_ut` and `bastrop_tx` (City of Bastrop), and no Cortex-side ingest exists for them; their Sync 4.5 atoms live only in the Hauska substrate, which the Cortex app has no path to. Connecting the Code Library to the substrate is the Cortex MCP retrofit, a roadmap item per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md), not a cutover-tail bug. The warmup 403 is a separate, by-design failure: the production session auth stub never grants `audience: internal`, so the "Warm up now" button is structurally dead on Cloud Run.
 
@@ -105,6 +112,7 @@ Finding 3. QA-07, the QA-08 review portion, QA-09, and the QA-11 push portion ar
 - [`_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md`](_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md) — WS-C dispatch.
 - [`_decisions/2026-05-20_hutto_tx_prioritized_ingest.md`](_decisions/2026-05-20_hutto_tx_prioritized_ingest.md) — QA-10 decision: prioritized Hutto TX ingest.
 - [`_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md`](_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md) — QA-10 dispatch: Hutto TX ingestion.
+- [`_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md`](_sessions/2026-05-21_qa04_ifc_500_cc-agent-C.md) — QA-04 Part 2 IFC-upload diagnosis, three-layer fix, and QA-16 handoff.
 - [`40_design_accelerator.md`](40_design_accelerator.md) — Cortex production target.
 - [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) — program plan this backlog feeds.
 - [`00_current_state.md`](00_current_state.md) — portfolio snapshot.
