@@ -2,15 +2,17 @@
 id: 16_commercialization_roadmap
 title: Commercialization roadmap — Hauska layer
 status: active
-last_updated: 2026-05-19
+last_updated: 2026-05-21
 applies_to: portfolio
-related: [00_current_state, 09_post_saas_substrate_thesis, 11_roadmap, 14_pricing_framework, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 72_hauska_inc_operations, 80_adrs/adr_018_atom_contract_substrate_layer]
+related: [00_current_state, 09_post_saas_substrate_thesis, 11_roadmap, 14_pricing_framework, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 72_hauska_inc_operations, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_019_layered_code_substrate, _decisions/2026-05-21_hauska_commercialization_sprint]
 owner: nick
 ---
 
 # Commercialization roadmap — Hauska layer
 
-> **Forward-execution queue.** What advances Hauska commercialization once the in-flight combined Cortex/Codex sprint (Lane A, Lane B, Lane C, operator cutover) lands. Spans launch infrastructure, pricing finalization, payment substrate wire-up, corpus depth, distribution, partnership flips, and first paid contract. Does not duplicate `11_roadmap.md` (portfolio surfaces) or `14_pricing_framework.md` (pricing decision framework); this doc sequences the Hauska-spine commercial activation that those two and `51_substrate_v1_sprint.md` Streams 2C/2D/2B feed into.
+> **Forward-execution queue.** What advances Hauska commercialization. Spans launch infrastructure, pricing finalization, payment substrate wire-up, corpus depth, distribution, partnership flips, and first paid contract. Does not duplicate `11_roadmap.md` (portfolio surfaces) or `14_pricing_framework.md` (pricing decision framework); this doc sequences the Hauska-spine commercial activation that those two and `51_substrate_v1_sprint.md` Streams 2C/2D/2B feed into.
+
+> **Execution status (2026-05-21).** The combined Cortex/Codex sprint cutover is complete. This queue is now in execution as the Hauska commercialization sprint per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md): a two-wave, one-agent-per-repo, maximum-autonomy sprint. Wave 1 (steps 1 and 4, decision-independent) is dispatched to cc-agent-M and cc-agent-E. Wave 2 (steps 2, 3, 5, 7, decision-gated) follows. Decision A (ICP) is ratified as agent builders; decisions B and C have ratified shapes with numbers and channel plan pending. The sprint decision record is the live execution authority; this doc is the standing queue rationale.
 
 ## Why this exists
 
@@ -34,13 +36,11 @@ Seven steps. Order is by Hauska-spine weight, with technical and operator-decisi
 
 The storefront. Without it, nothing else commercializes. Stream 2C covers structured logger, Cloud Logging integration, dashboards, training-data export query, cost monitoring. Stream 2D covers containerization, Cloud Run deployment, custom domain at `mcp.hauska.dev`, docs site, cross-client testing across MCP Inspector + Claude Desktop + Claude Code + Cursor, launch artifacts, public launch coordination. Scope detailed in `51_substrate_v1_sprint.md` lines 573 through 682.
 
-Current state: streams not started. Quality-gated 5-jurisdiction corpus (Grand County full + 3 Bastrop-network) already in place per Sync 4.5 close. `hauska.dev` registered 2026-05-18 per `72_hauska_inc_operations.md` Domains section.
+Current state: dispatched as Lane M of the commercialization sprint. The MCP server is feature-complete on the tool side (35 product-gated plus 5 public catalog tools) and runs locally; Streams 2C and 2D take it to a deployed public storefront. Catalog at 2414 atoms across 5 jurisdictions as of the Hutto rollup; the public-free subset deepens decisively when Lane E Phase E1 lands the Layer 1 model-code base. `hauska.dev` registered per `72_hauska_inc_operations.md`. The combined Cortex/Codex cutover is complete and Group 4 cross-client behavior is de-risked by the cutover smoke matrix; the formal cross-client pass folds into Stream 2D against the deployed surface.
 
-Gates this step: Lane B Group 4 cross-client verification close (currently in flight per the Group 4 addendum dispatched 2026-05-19). Parallel-safe with the legacy-design-tools cutover; the two share no infrastructure.
+Closes when: the server is deployed at `mcp.hauska.dev` over managed TLS, observability is live, the docs site is live, the cross-client matrix passes, and the public catalog tools are wired to the deployed retrieval API. The GTM publication that produces the first external call is operator-gated and Wave 2.
 
-Closes when: free-tier signup is live at `mcp.hauska.dev`, cross-client testing matrix passes, first external MCP call is captured in logs. Stream 2D hand-off as named in `51_substrate_v1_sprint.md` line 681.
-
-First dispatch under this roadmap: `_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md`.
+Live dispatch: [`_dispatches/2026-05-21_cc-agent-M_commercialization_streams_2c_2d.md`](_dispatches/2026-05-21_cc-agent-M_commercialization_streams_2c_2d.md) (supersedes the 2026-05-19 launch-prep dispatch).
 
 ### 2. Pricing finalization (tier numbers, call quotas, signup quotes)
 
@@ -62,15 +62,19 @@ Gates this step: step 1 live (free-tier signup must exist before paid signup mak
 
 Closes when: an external paying customer can sign up at `mcp.hauska.dev`, select a paid tier, complete Stripe checkout, receive an API key, and successfully call a Layer 2 tool.
 
-### 4. Sync 5 corpus expansion (16+ remaining TX cities)
+### 4. Sync 5 corpus expansion (ADR-019 layered substrate + remaining TX cities)
 
-Per the 2026-05-19 sprint decision, Sync 5 is deferred to public-launch-sequenced demand. Under the commercialization lens this flips: Texas-statewide corpus depth IS the commercial offering, and the launch narrative is "first 20 of every state, not just TX" per `51_substrate_v1_sprint.md` line 752. Preemptive expansion past 5 jurisdictions strengthens both the launch narrative and the first-paid-contract sales motion.
+Texas-statewide corpus depth is the commercial offering. ADR-019 (layered code substrate, accepted 2026-05-21) restructured the economics: the model-code base, the ICC I-Codes and the NEC, is ingested once and amortized across the whole catalog, and each new city becomes a cheap Layer 2 amendment-overlay plus Layer 3 zoning ingest. The Layer 1 model-code base is itself `public-free` substrate and is arguably the highest-value public content for the agent-builder ICP.
 
-Current state: corpus at 698 atoms across 5 jurisdictions (Grand County full + Bastrop UDC + Bastrop County + Elgin). Remaining 16+ TX cities sequenced per the Tier 1/2/3 ladder in `51_substrate_v1_sprint.md` line 698.
+Current state: dispatched as Lane E of the commercialization sprint, three phases: E0 deploy the retrieval API, E1 build the ADR-019 pipeline and ingest the Layer 1 model-code base, E2 onboard the remaining ~20 TX cities. Catalog at 2414 atoms across 5 jurisdictions as of the Hutto rollup.
 
-Gates this step: cc-agent-E availability post Lane A.2 close. Hard-kill cost checkpoint already cleared at 4 onboarding events per Sync 4.5 close; cost trajectory holds.
+Gates this step: none blocking; cc-agent-E has capacity. Hard-kill cost checkpoint cleared at the Sync 4.5 and Hutto onboardings; ADR-019 improves the cost trajectory further.
 
-Closes when: 20-jurisdiction launch-gate threshold reached, evals pass at 1.0 / 1.0 / 1.0 across the new jurisdictions, partnership-pending tagging applied per Path A.
+Path A constraint (load-bearing, from the sprint pre-mortem): every non-partnered jurisdiction is tagged `platform-internal`; partnership-flip is the only path to `public-free`. The Layer 1 model-code base is `public-free` by design.
+
+Closes when: the layered pipeline is built, the Layer 1 base is ingested and public-free, and the TX city ladder is worked, each city either eval-passing and Path-A-tagged or explicitly deferred with its blocker named.
+
+Live dispatch: [`_dispatches/2026-05-21_cc-agent-E_adr019_pipeline_and_sync5.md`](_dispatches/2026-05-21_cc-agent-E_adr019_pipeline_and_sync5.md).
 
 ### 5. GTM and distribution motion
 
@@ -106,7 +110,7 @@ Closes when: external customer pays for Layer 2 substrate usage, take-rate numbe
 
 ## Open decisions Nick owns
 
-Three decisions block clean progress through the queue. None can be resolved by an agent.
+Three decisions. **Status as of 2026-05-21 per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md):** Decision A is ratified (agent builders). Decisions B and C have ratified shapes (free plus two self-serve paid tiers; developer-community distribution); the tier numbers and the channel plan are pending working sessions and gate Wave 2, not Wave 1. The original framing of all three is retained below as rationale.
 
 ### Decision A: ICP for paid Layer 2
 
@@ -176,4 +180,5 @@ Quality-gate rule from CLAUDE.md continues to apply: every commercial output (do
 
 ## Revision history
 
+- **2026-05-21:** Queue moved into execution as the Hauska commercialization sprint per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md). Execution-status banner added. Decision A ratified (agent-builder ICP); decisions B and C shapes ratified. Step 1 refreshed for post-cutover reality (server feature-complete, Group 4 de-risked by cutover, 2414-atom corpus). Step 4 rewritten to integrate ADR-019 layered code substrate and the Path A load-bearing constraint from the sprint pre-mortem. Wave 1 dispatches filed for cc-agent-M (Streams 2C/2D) and cc-agent-E (ADR-019 pipeline plus Sync 5); the 2026-05-19 launch-prep dispatch is superseded. `related` extended with ADR-019 and the sprint decision record.
 - **2026-05-19 (origin):** doc seeded after the combined Cortex/Codex sprint mid-sync. Captures the post-cutover commercialization queue surfaced in the 2026-05-19 forward-planning thread. Seven steps named with current state, gating, and close criteria. Three open Nick decisions explicitly called out with recommended resolution paths. Companion dispatch for step 1 filed at `_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md`.

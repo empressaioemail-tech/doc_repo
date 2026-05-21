@@ -5,8 +5,12 @@ date: 2026-05-19
 agent: cc-agent-M
 repo: hauska-mcp-server
 kind: dispatch
+status: superseded
+superseded_by: 2026-05-21_cc-agent-M_commercialization_streams_2c_2d
 related: [16_commercialization_roadmap, 51_substrate_v1_sprint, 50_hauska_mcp_server, 72_hauska_inc_operations, 14_pricing_framework, 29_mcp_surface_tier_model, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, CLAUDE.md]
 ---
+
+> **Superseded 2026-05-21** by [`2026-05-21_cc-agent-M_commercialization_streams_2c_2d.md`](2026-05-21_cc-agent-M_commercialization_streams_2c_2d.md). The Streams 2C/2D scope carries forward into the live commercialization-sprint dispatch, refreshed for post-cutover reality and the maximum-autonomy run posture. Retained for history.
 
 # Stream 2C + Stream 2D launch prep — cc-agent-M dispatch
 
