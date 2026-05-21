@@ -1,6 +1,6 @@
 ---
-id: 2026-05-21_cc-agent-C_qa18_pr175_conflict_resolution
-title: Dispatch — cc-agent-C QA-18 PR #175 conflict resolution + CI green
+id: 2026-05-21_cc-agent-C_qa18_conflict_resolution
+title: Dispatch — cc-agent-C QA-18 PR #62 conflict resolution + CI green
 date: 2026-05-21
 agent: cc-agent-C
 repo: legacy-design-tools
@@ -8,9 +8,9 @@ kind: dispatch
 related: [43_cortex_qa_backlog, 2026-05-21_cc-agent-C_cortex_qa_close_out, 2026-05-21_cc-agent-C_qa22_site_context, 20_agent_operating_rules, CLAUDE.md]
 ---
 
-# cc-agent-C dispatch — QA-18 PR #175 conflict resolution
+# cc-agent-C dispatch — QA-18 PR #62 conflict resolution
 
-You are cc-agent-C owning the `legacy-design-tools` repo. This is the **front of your queue**: it runs before the QA-22 site-context dispatch and before the codex-reviewer-qa scaffold. QA-16, QA-19, and QA-23 from the Cortex QA close-out are merged. QA-18 (PR #175, branch `feat/qa-18-client-document-upload`) did not merge: it has conflicts with `main` and is failing CI.
+You are cc-agent-C owning the `legacy-design-tools` repo. This is the **front of your queue**: it runs before the QA-22 site-context dispatch and before the codex-reviewer-qa scaffold. QA-16 (#59), QA-23 (#60), and QA-19 (#61) from the Cortex QA close-out are merged. QA-18 (PR #62, branch `feat/qa-18-client-document-upload`) did not merge: it is OPEN with `mergeable: CONFLICTING` and `mergeStateStatus: DIRTY`, and it is failing CI.
 
 ## Task
 
@@ -18,7 +18,7 @@ Land QA-18. This is conflict resolution and integration repair on an already-rev
 
 ### 1. Resolve the merge conflicts
 
-Rebase or merge `feat/qa-18-client-document-upload` (PR #175) onto current `main`, which now carries the merged QA-16, QA-19, and QA-23 PRs.
+Rebase or merge `feat/qa-18-client-document-upload` (PR #62) onto current `main`, which now carries the merged QA-16 (#59), QA-23 (#60), and QA-19 (#61) PRs.
 
 ### 2. Fix the CI failure — root cause already diagnosed
 
@@ -34,7 +34,7 @@ The fix: update the `useEngagementsStore` mock in `CitationChip.test.tsx` to inc
 
 ### 3. Full CI green
 
-All workspace tests passing (the run that failed reported 3 failed / 320 passed; target is 323/323), typecheck and build clean. Push the updated branch so PR #175 is green for the operator to merge.
+All workspace tests passing (the run that failed reported 3 failed / 320 passed; target is 323/323), typecheck and build clean. Push the updated branch so PR #62 is green for the operator to merge.
 
 ## Out of scope
 
@@ -42,7 +42,7 @@ QA-22 site-context ([`2026-05-21_cc-agent-C_qa22_site_context.md`](2026-05-21_cc
 
 ## Run posture
 
-Operator-supervised. The operator merges PR #175 once CI is green. Do not self-deploy cortex-api.
+Operator-supervised. The operator merges PR #62 once CI is green. Do not self-deploy cortex-api.
 
 ## Workspace ownership
 
