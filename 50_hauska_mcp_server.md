@@ -2,7 +2,7 @@
 id: 50_hauska_mcp_server
 title: Hauska MCP Server — v1 sprint and product framing
 status: active
-last_updated: 2026-05-19 (Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
+last_updated: 2026-05-20 (tool-surface correction per the code-verified 44_mcp_cortex_architecture_map.md: shipped surface is 40 tools, 5 public plus 4 Codex plus 31 Cortex, flat underscore names; the section's "14 new tools" scoping superseded. Earlier: Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
 applies_to: portfolio
 related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format, adr_017_atom_access_control]
 owner: nick
@@ -215,7 +215,7 @@ descriptions clean for LLM consumption; tool list documented.
 
 ### Sprint 2 tool expansion — Cortex + Codex tool surfaces plus L1-L6 surface tools
 
-Added 2026-05-19 per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Lane B dispatch: [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). 14 new tools land in `hauska-mcp-server` under per-product namespaces (`cortex/*` and `codex/*`), in addition to the 5 v1 public catalog tools above.
+Added 2026-05-19 per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). Lane B dispatch: [`_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md`](_dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md). **Shipped surface, code-verified 2026-05-20.** The full hauska-mcp-server tool surface is 40 tools: 5 public catalog (ungated), 4 Codex (product-gated), and 31 Cortex (product-gated), which is 35 product-gated plus 5 public. Registered tool names are flat with underscores (`codex_finding_generation`, `cortex_response_task_create`); the slash form used in the lists below (`codex/finding_generation`) is grouping shorthand only, since MCP has no namespace primitive. The "14 new tools" originally scoped here is superseded: the L-surface expanded to 24 tools across L1-L6, and Sprint Amendment 8 added 3 L3/L6 read tools. See [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md) for the code-verified architecture map.
 
 **Public catalog tools (v1, unchanged):** `search_atoms`, `get_atom`, `list_jurisdictions`, `search_permit_atoms`, `query_jurisdiction`. **Filter update on `list_jurisdictions` per Sync A (v1.1.0 published 2026-05-19):** unauthenticated callers see only `accessPolicy === 'public-free'` `jurisdiction-corpus` atoms (Bastrop UDC, Grand County as of Sync 4.5); `accessPolicy === 'platform-internal'` callers (or the operator-internal scope) see all jurisdictions including partnership-pending ones (Smithville, Elgin, Bastrop County). Shape: cc-agent-AC chose **Path R — ADR-017 `accessPolicy` four-value union reuse** rather than a fresh `visibility` boolean. Wired onto AtomRegistration (type-level default), ContextSummary (per-instance override for the partnership-pending case), and AtomPromptDescription (normalized to `public-free` for downstream filters). Backward-compatible; `^1.0.0` consumers pick up automatically.
 
@@ -242,7 +242,7 @@ Added 2026-05-19 per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_de
 - `cortex/product_spec_reference_*` (L5) — add a product-spec reference, refresh ESR status, list per engagement.
 - `cortex/deliverable_letter_render` (L6) — render a deliverable-letter atom into DOCX/PDF.
 
-Final tool count and naming may adjust during Lane B implementation if existing endpoints don't cleanly map to the operator-named tool set (e.g., briefing flow may require two tools rather than one). Surface adjustments via Lane B session summary; planner ratifies before lock.
+Lane B implementation is complete: all 40 tools shipped on hauska-mcp-server main. The code-verified surface is recorded in [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md).
 
 ### Phase 3 — Auth, rate limiting, key issuance
 
