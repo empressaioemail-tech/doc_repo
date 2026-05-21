@@ -2,7 +2,7 @@
 id: 60a_eci_atomization_sprint
 title: ECI atomization sprint — kickoff plan
 status: active
-last_updated: 2026-05-19 (P1 + P2 confirmed staying queued during combined Cortex/Codex sprint per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; cc-agent allocation decision deferred until after sprint Lanes close)
+last_updated: 2026-05-21 (P1 dispatch filed ready-to-fire and QUEUED at _dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md; allocation call confirmed ECI P1 queues behind the Hauska commercialization spine. Prior: P1 + P2 confirmed staying queued during the combined Cortex/Codex sprint per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md.)
 applies_to: portfolio
 related: [60_eci_atomization, adr_001_atom_architecture, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer, 25_atom_architecture_reference, 26_atom_upgrade_guide, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, _decisions/2026-05-18_eci_registry_naming, _decisions/2026-05-19_sync_4_5_and_cortex_sprint]
 owner: nick
@@ -51,6 +51,8 @@ Confirm package name; decide repo placement; file decision record; produce 60a s
 ### P1 — Minimum-viable registry (pre-M2-C feasible)
 
 **Dispatch target.** Single cc-agent allocation (TBD). **Status update 2026-05-19:** P1 stays queued during the combined Cortex/Codex sprint per [`_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md`](_decisions/2026-05-19_sync_4_5_and_cortex_sprint.md). cc-agent-AC, cc-agent-E, cc-agent-M, cc-agent-C are all allocated to that sprint's lanes; ECI P1 dispatch waits until sprint lanes close (or until operator names a fifth cc-agent for the ECI work earlier, which the sprint plan does not currently require). Substrate-side prereqs already cleared: `@hauska/atom-contract@1.0.0` on npm (Sync 1, 2026-05-19); engine `packages/atoms/` shipped per cc-agent-E commit `5049961`. So P1 is technically unblocked — just queued behind capacity.
+
+**Status update 2026-05-21.** The P1 dispatch is filed ready-to-fire and QUEUED (not active) at [`_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md`](_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md). Per the 2026-05-21 allocation call, ECI P1 queues behind the Hauska commercialization spine: ECI is the internal dogfood instance, not commercialization, so the Hauska-spine and focus-queue rules put spine work first; no fifth cc-agent seat is opened for it now. Two activation gates: Nick creates the `empressa-atom-internal` repo, and a cc-agent seat frees up. The ADR-015 and ADR-017 dependency named below is satisfied: both were accepted 2026-05-16 (the stale `proposed` status in `60_eci_atomization.md` was corrected 2026-05-21).
 
 **Work.**
 
@@ -126,4 +128,5 @@ Cross-repo coordination at P3:
 
 ## Revision history
 
+- **2026-05-21 (P1 dispatch filed, QUEUED).** P1 registry-scaffold dispatch filed ready-to-fire at `_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md`, QUEUED not active. Allocation call: ECI P1 queues behind the Hauska commercialization spine; activation gates are repo creation (Nick) plus a freed cc-agent seat. ADR-015/017 dependency confirmed satisfied (both accepted 2026-05-16).
 - **2026-05-18 (origin).** Drafted during the ECI atomization sprint kickoff session. Decisions ratified: `@empressaio/atom-internal` confirmed as package name; dedicated repo `empressaioemail-tech/empressa-atom-internal`. Twelve-atom-type inventory enumerated. Four-phase structure (P0 decisions through P3 M2-C sync plus internal MCP) with explicit pre-M2-C feasibility analysis. Critical-path dependency: cc-agent-2's Stream 1B `packages/atoms/` plus planner-coordinated Bump 1 publishes `@hauska/atom-contract@1.0.0`, which gates P3.
