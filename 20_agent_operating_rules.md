@@ -2,7 +2,7 @@
 id: 20_agent_operating_rules
 title: Agent operating rules
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-21
 applies_to: portfolio
 supersedes: 13_agent_operating_rules
 ---
@@ -219,6 +219,34 @@ production traffic path) but the Repl drift it warns about persists —
 see [`10_ground_truth.md`](10_ground_truth.md) on the SmartCity OS
 Repl's 10 unpushed commits.
 
+### HR-11: Session summaries and findings route to the doc-repo `_inbox/`
+
+Work not captured in the canonical doc repo did not happen, as far as the
+next planner session can tell. A session summary that lives only in a
+cc-agent's own repo strands there. The 2026-05-21 cross-repo reconciliation
+found ten such summaries that never reached the doc repo, which left the
+portfolio snapshot weeks behind reality.
+
+**Operationalization:**
+
+- At every session break-point, every cc-agent writes its session summary,
+  plus any recon note or decision-relevant finding, as a Markdown file in
+  `P:\doc_repo\_inbox\`, named `<YYYY-MM-DD>_<repo>_<agent>_<topic>.md`.
+- The agent writes the file only. It does not commit to the doc repo and
+  does not edit anything outside `_inbox/`. It keeps committing the
+  original in its own repo, which stays the system of record.
+- The planner sweeps `_inbox/` at session start and session close, files
+  each item into `_sessions/`, `_decisions/`, or `_research/`, rolls the
+  findings into the canonical docs, and clears the folder.
+- Full protocol: [`_inbox/README.md`](_inbox/README.md).
+- Every cc-agent dispatch carries this boilerplate clause under a
+  §Reporting heading:
+  > At every session break-point, write your session summary and any
+  > decision-relevant finding to `P:\doc_repo\_inbox\` as
+  > `<date>_<repo>_<agent>_<topic>.md`. Do not commit to the doc repo or
+  > edit anything outside `_inbox/`. Keep committing the original in your
+  > own repo.
+
 ## Soft rules — strong defaults, can be overridden with reason
 
 ### SR-1: Default to Cursor Claude Code agents for code changes that need to ship
@@ -400,6 +428,10 @@ The infrastructure sprint moves us out of those constraints.
   HR-10, soft rules SR-1 through SR-4, multi-agent coordination
   patterns, schema management discipline, process changes for the
   planner. Frontmatter `supersedes:` field formalizes the chain.
+- **v2.1 (2026-05-21).** Adds HR-11: session summaries and findings
+  route to the doc-repo `_inbox/`. Added after the 2026-05-21 cross-repo
+  reconciliation found ten cc-agent session summaries stranded in their
+  own repos, leaving the portfolio snapshot weeks behind reality.
 
 Future revisions should add a delta section, not rewrite from scratch.
 The history of why specific rules exist is load-bearing — a rule

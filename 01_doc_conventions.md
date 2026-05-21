@@ -2,7 +2,7 @@
 id: 01_doc_conventions
 title: Doc conventions — naming, frontmatter, write patterns, lifecycle
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-21
 applies_to: docs
 ---
 
@@ -53,6 +53,7 @@ Most docs live at the root. Subdirectories are reserved for things that are
 inherently a series:
 
 ```
+_inbox/                cc-agent courier drop, planner-swept (see 20_agent_operating_rules.md HR-11)
 _sessions/             append-only session summaries (see below)
 _sessions/archived/    sessions older than 30 days
 80_adrs/               architecture decision records, one file per ADR
