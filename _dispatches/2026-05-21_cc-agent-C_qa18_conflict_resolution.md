@@ -26,11 +26,11 @@ Three tests fail in `artifacts/design-tools/src/components/__tests__/CitationChi
 
 This is a merge-integration artifact, not a bug in either feature:
 
-- QA-18 added two slices to the engagements store (`store/engagements.ts:72-73`, `147-148`): `attachedDocumentsByEngagement` and `uploadingDocumentByEngagement`, both initialized to `{}`.
-- `ClaudeChat.tsx:134-138` reads them via `useEngagementsStore` selectors.
-- QA-23's test `CitationChip.test.tsx` renders `ClaudeChat` against its own `useEngagementsStore` mock. That mock (around line 30) supplies `agentActionsByEngagement` but not the two QA-18 slices, so both selectors return `undefined` and `ClaudeChat.tsx:172` throws.
+- QA-18 added **three** slices to the engagements store (`store/engagements.ts:72-74` types, `147-149` inits): `attachedDocumentsByEngagement`, `uploadingDocumentByEngagement`, and `documentUploadErrorByEngagement`, all initialized to `{}`.
+- `ClaudeChat.tsx:134-142` reads all three via `useEngagementsStore` selectors and indexes them by `engagementId` at `:172`, `:174`, and `:176` — an undefined selector throws at whichever line comes first.
+- QA-23's test `CitationChip.test.tsx` renders `ClaudeChat` against its own `useEngagementsStore` mock (lines 24-40). That mock supplies `agentActionsByEngagement` but none of the three QA-18 slices, so each selector returns `undefined` and `ClaudeChat.tsx:172` throws.
 
-The fix: update the `useEngagementsStore` mock in `CitationChip.test.tsx` to include `attachedDocumentsByEngagement: {}` and `uploadingDocumentByEngagement: {}`, mirroring the complete mock already in `ClaudeChat.test.tsx:18-26`. The real store initializes all three slices to `{}`, so `ClaudeChat.tsx` is correct as written; the QA-23 test mock simply predates QA-18 and is now incomplete. Do not paper over it with optional chaining in `ClaudeChat.tsx` — the store cannot legitimately omit the slice, so the mock is the gap, and a null-guard would only hide future incomplete mocks.
+The fix: update the `useEngagementsStore` mock in `CitationChip.test.tsx` to include all three — `attachedDocumentsByEngagement: {}`, `uploadingDocumentByEngagement: {}`, and `documentUploadErrorByEngagement: {}` — mirroring the complete mock already in `ClaudeChat.test.tsx` (the `stores` typedef at lines 18-23, the `vi.mock` selector object at lines 38-40). Adding only two leaves `ClaudeChat.tsx:176` throwing the byte-identical error — same three failures, CI still red. The real store initializes all three to `{}`, so `ClaudeChat.tsx` is correct as written; the QA-23 mock predates QA-18 and is incomplete. Do not paper over it with optional chaining in `ClaudeChat.tsx` — the store cannot legitimately omit the slices, so the mock is the gap, and a null-guard would only hide future incomplete mocks.
 
 ### 3. Full CI green
 
