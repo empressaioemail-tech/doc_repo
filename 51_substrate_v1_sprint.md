@@ -2,7 +2,7 @@
 id: 51_substrate_v1_sprint
 title: Substrate v1 sprint — Code Ingestion Pipeline + Hauska MCP Server
 status: active
-last_updated: 2026-05-21 (Hutto UDC rollup: Tier 1 Hutto checked off as a prioritized one-off ingest, 1716 atoms, eval 1.0/1.0/1.0; Hutto removed from the Sync 5 deferred list; running catalog total 2414 atoms)
+last_updated: 2026-05-21 (Hutto UDC rollup: Tier 1 Hutto checked off as a prioritized one-off ingest, 1716 atoms, eval 1.0/1.0/1.0; Hutto removed from the Sync 5 deferred list; running catalog total 2702 atoms, reconciled 2026-05-21 from the prior 2414 tally which omitted code-edition and cross-reference atoms)
 applies_to: portfolio
 related: [11_roadmap, 11a_bastrop_live_roadmap, 16_commercialization_roadmap, 27_engine_evolution_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
 owner: nick

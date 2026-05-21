@@ -9,13 +9,13 @@ related: [00_current_state, 40_design_accelerator, 42_design_accelerator_program
 
 # Cortex QA backlog
 
-> Running QA backlog for Cortex. Operator reports items; planner triages into workstreams and tracks to closure. New items append as QA-15 and up.
+> Running QA backlog for Cortex. Operator reports items; planner triages into workstreams and tracks to closure. New items append as QA-27 and up.
 
 ## Purpose
 
 The Replit to Cloud Run cutover landed 2026-05-20: cortex-api runs on Cloud Run against cortex-prod Neon, the Replit data dependency severed, per the [cutover runbook](90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover.md) Stage 9. With the platform stable, operator-driven QA is unblocked. This doc is Stage 5 of that runbook in practice: the verification-window backlog.
 
-Item IDs are QA-NN, assigned in report order and never reused. The first 14 entries were captured in a single operator QA pass on 2026-05-20. New items append as QA-17 and up.
+Item IDs are QA-NN, assigned in report order and never reused. The first 14 entries were captured in a single operator QA pass on 2026-05-20. QA-17 through QA-26 came from a second operator pass plus the cc-agent-C reconciliation on 2026-05-21. New items append as QA-27 and up.
 
 ## Item register
 
@@ -27,16 +27,26 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-04 | Revit add-in: IFC upload fails HTTP 500, and the new engagement did not reach the Cloud Run Cortex app. | Bug | WS-A | Part 1 done (add-in repointed, merged). Part 2: 3 of 4 layers fixed (cortex-prod schema migration; PR #57; PR #58); 4th layer architectural — **OPEN, gated on QA-16** |
 | QA-05 | No architecture diagram of which MCP servers run what, how they relate to the database, and how they consume the Hauska SDK. | Doc | WS-D | Delivered — doc 44 |
 | QA-06 | Productize turning a custom plan set into a publisher-ready plan set. Also scope what Claude operating the Revit platform would take. | Strategy | WS-E | Gated |
-| QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Fixed (WS-C, PR pending) |
-| QA-08 | Grand County site data will not populate; map view fails on some engagements; site 3D fails; surrounding buildings and topo missing. Want the house model rendered on the site, and a self-run code review shown in the center frame and converted to a task list. | Bug + Feature | WS-A + WS-C | Site diagnosed (PR #55); WS-C fixed (PR pending) |
-| QA-09 | Detail-callout and product-spec tabs: intent unclear. Candidate to become an AI-driven function rather than manual forms. | Question | WS-C | Fixed (WS-C, PR pending) — agent AI-populates the L4/L5 forms, draft-only |
+| QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Fixed (WS-C, PR #56 merged) |
+| QA-08 | Grand County site data will not populate; map view fails on some engagements; site 3D fails; surrounding buildings and topo missing. Want the house model rendered on the site, and a self-run code review shown in the center frame and converted to a task list. | Bug + Feature | WS-A + WS-C | Site diagnosed (PR #55); WS-C fixed (PR #56 merged) |
+| QA-09 | Detail-callout and product-spec tabs: intent unclear. Candidate to become an AI-driven function rather than manual forms. | Question | WS-C | Fixed (WS-C, PR #56 merged) — agent AI-populates the L4/L5 forms, draft-only |
 | QA-10 | Add Hutto, TX as the next code-ingestion target (growth surge expected). | Strategy/catalog | WS-E | Done — Hutto UDC ingested + loaded (hauska-engine PR #15); eCode360 general code routed to partnership track |
-| QA-11 | Deliverable-letters page is glitchy and unusable. Self-run code reviews should be pushable to a response task and from chat. | Bug + Feature | WS-B + WS-C | Fixed: page (PR #55); WS-C fixed (PR pending) |
+| QA-11 | Deliverable-letters page is glitchy and unusable. Self-run code reviews should be pushable to a response task and from chat. | Bug + Feature | WS-B + WS-C | Fixed: page (PR #55); WS-C fixed (PR #56 merged) |
 | QA-12 | Snapshots tab: hide the raw JSON block, move the 3D model higher, make the tab more actionable. | UX | WS-B | Fixed (PR #55) |
 | QA-13 | Code Library warmup fails (HTTP 403, codes_warmup_requires_internal). Elgin absent entirely. Open whether Code Library reflects the MCP server or an old database. | Bug | WS-A | Diagnosed: by-design, not a wiring bug |
 | QA-14 | Header alert bell is non-functional. | UX | WS-B | Fixed (PR #55) |
 | QA-15 | plan-review header bell stopped rendering after WSB.5 made the shared Header notifications prop-driven. plan-review must opt into `headerNotifications`, or the bell stays removed. | UX | WS-B follow-on | Logged |
 | QA-16 | IFC parse runs inline on the api-server Node main thread behind a non-reentrant `IfcAPI` singleton; a hung or trapped parse wedges the whole cortex-api instance. Isolate the parse in a worker. | Bug + architecture | WS-A follow-on | Logged — blocks QA-04 close |
+| QA-17 | Code Library lists only 2 of 5 ingested jurisdictions (Grand County UT, Bastrop TX); Bastrop County, Elgin, Hutto absent. | Bug / architecture | WS-F | Triaged: needs the Cortex MCP retrofit scoping decision |
+| QA-18 | No path to upload client PDFs, photos, and notes to an engagement for the in-app agent to reference. | Feature | WS-F | Triaged: reuses the L2 attached-document atom shape |
+| QA-19 | In-app chat does not auto-scroll while the AI streams a response. | Bug (UX) | WS-F | Triaged: quick frontend fix, QA-fix round |
+| QA-20 | Engagements outside an ingested jurisdiction should trigger best-effort background code collection. | Feature (engine/substrate) | WS-F | Triaged: pairs with ADR-019 and the ICC ingest |
+| QA-21 | Net-new SoftPlan and ArchiCAD connectors. Operator-flagged off current roadmap. | Strategy / new workstream | WS-F | Routed: strategic session (premortem, catalog-thesis-check, focus-queue) |
+| QA-22 | Site-context layers still failing post-WSA.4; focused session requested, then a Bastrop SmartCity dashboard install. | Bug + strategy | WS-F | Routed: focused engineering session; SmartCity install is a separate strategic call |
+| QA-23 | In-app agent presents ungrounded code as confident citations for jurisdictions it has no atoms for (Pagosa Springs / Daulton)CO). | Bug (quality gate) | WS-F | Triaged: load-bearing; agent must flag coverage and confidence |
+| QA-24 | Stale second Cloud Run service `api-server` (Phase 1A, last deployed 2026-05-06) still in `legacy-design-tools-prod`. | Ops cleanup | WS-F | Logged: decommission candidate |
+| QA-25 | Orphaned empty `EMPRESSA_DATABASE_URL` secret, superseded and unused. | Ops cleanup | WS-F | Logged: cleanup candidate |
+| QA-26 | `legacy-design-tools` has `core.autocrlf=true` and no root `.gitattributes`; recurring phantom diffs and empty stashes. | Ops cleanup | WS-F | Logged: add root `.gitattributes` |
 
 ## Workstreams
 
@@ -70,7 +80,7 @@ Items QA-07, QA-08 (review-to-taskboard portion), QA-09, QA-11 (push-to-response
 
 Scoped 2026-05-20 against docs 28 and 42: this is a bounded sprint, not the roadmap-scale retrofit the earlier framing implied. The Cortex MCP tool surface already shipped in the combined Cortex/Codex sprint (31 Cortex tools on hauska-mcp-server, the full L1-L6 atom and endpoint set). WS-C wires the one surface that never got connected: the in-app chat (`chat.ts`), which calls Anthropic with no tool use. All four items collapse to adding Anthropic tool-use to `chat.ts`, wired to cortex-api's own L-surface and read endpoints (the in-app chat is inside cortex-api and does not route through the MCP server). Dispatched to cc-agent-C 2026-05-20 per [`_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md`](_dispatches/2026-05-20_cc-agent-C_cortex_qa_wsc_in_app_agent.md). Operator decisions: direct-write (agent writes persist immediately, must be reversible and visible); one sprint covering all four items. Pre-mortem cleared green, with the quality-gate guardrails (agent-created atoms carry source attribution, timestamp, AI-origin marker; every write reversible; agent-action log) as a hard dispatch requirement (WSC.5). doc 42 gains a WS-C stream entry at session close.
 
-Status 2026-05-21: WS-C complete (cc-agent-C; legacy-design-tools, PR pending). `chat.ts` converted to a bounded Anthropic tool-use agentic loop (12 tools, capped at 8 iterations) wired to cortex-api's own tables in-process, never through the MCP server. WSC.5 resolved cleanly: L4/L5 spec creation is draft-only (the agent pre-fills the existing manual forms, the operator saves), so there is no irreversible agent spec-write and the confirm-step exception was designed out, not skipped; response-task writes are direct and reversible via the L1 cancelled state, with a session agent-action log. typecheck green across all six artifacts; CI runs the vitest suites.
+Status 2026-05-21: WS-C complete (cc-agent-C; legacy-design-tools, PR #56 merged). `chat.ts` converted to a bounded Anthropic tool-use agentic loop (12 tools, capped at 8 iterations) wired to cortex-api's own tables in-process, never through the MCP server. WSC.5 resolved cleanly: L4/L5 spec creation is draft-only (the agent pre-fills the existing manual forms, the operator saves), so there is no irreversible agent spec-write and the confirm-step exception was designed out, not skipped; response-task writes are direct and reversible via the L1 cancelled state, with a session agent-action log. typecheck green across all six artifacts; CI runs the vitest suites.
 
 ### WS-D. Architecture documentation
 
@@ -88,9 +98,25 @@ QA-10 resolved 2026-05-20. Pre-mortem cleared green (all load-bearing commitment
 
 Update 2026-05-21: HUTTO.1 found a split. Hutto's general Code of Ordinances is on eCode360 (access-blocked), but the Unified Development Code is a free born-digital PDF. The operator reshaped: the UDC ingested via the raw-PDF path (1716 code-section atoms, eval 1.0 / 1.0 / 1.0, declared loaded, hauska-engine PR #15), and the eCode360 general code routes to the bizops General Code partnership track. The decision record is now active, scope narrowed to the UDC. QA-10 is closed for the UDC; the general code is a partnership-track item. cc-agent-E's session summary also surfaced two strategic threads (a layered code substrate and an ICC commercial-layer pitch) routed to a dedicated strategic session.
 
+### WS-F. Second operator pass (2026-05-21)
+
+A second operator QA pass on 2026-05-21 produced QA-17 through QA-23; the cc-agent-C reconciliation the same day added QA-24 through QA-26 as ops cleanup. Confirmed working this pass: snapshot and sheet ingest (the Daulton)CO engagement pushed 16 sheets clean), the in-app chat agent parsing a pasted client email thread into a structured task list, the Code Library render, and the engagement-detail tabs.
+
+QA-17, QA-20, and QA-23 share one root cause: the Cortex app is not wired to the Hauska substrate. QA-17 is the Code Library showing 2 of 5 ingested jurisdictions, QA-20 wants best-effort background code collection for uningested jurisdictions, and QA-23 is the in-app agent presenting ungrounded code as a confident citation (it cited fabricated "Grand County, Colorado" codes for the Pagosa Springs Daulton)CO engagement). All three resolve through the Cortex MCP retrofit per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md). The scoping decision, whether to pull the retrofit forward into this QA round or hold it as a roadmap line, is taken in the roadmap scrub. QA-23 is load-bearing on the quality-gate rule and ships regardless: until coverage is real, the agent flags jurisdiction coverage and confidence rather than fabricating.
+
+QA-19 (chat auto-scroll) is a quick frontend fix for the QA-fix round. QA-18 (client PDF, photo, and note upload) is a moderate Cortex feature that reuses the L2 attached-document atom shape already in the engine registry; the build is upload UI, blob storage, and wiring the in-app chat to read attachments.
+
+QA-21 (SoftPlan and ArchiCAD connectors) is an operator-flagged off-roadmap workstream. It does not enter the QA-fix round. It routes to a strategic session carrying premortem-check, a catalog-thesis-check for brand and layer placement, and the focus-queue rule naming what is displaced.
+
+QA-22 splits. The site-context layers still fail after the WSA.4 timeout diagnosis; that is a focused engineering session, not a fold-in. The attached goal of installing the site-context capability into Bastrop's SmartCity OS dashboard is a separate cross-product decision needing its own catalog-thesis-check and premortem. Fix first, install decision second.
+
+QA-24, QA-25, and QA-26 are ops cleanup from the cc-agent-C reconciliation: a stale `api-server` Cloud Run service in `legacy-design-tools-prod`, an orphaned `EMPRESSA_DATABASE_URL` secret, and the missing root `.gitattributes`.
+
+Incoming dependency: the operator has an appointment for ICC API access and will ingest the full ICC model-code corpus. That unblocks Lane E Phase E1 (the Layer 1 model-code base) and pairs with QA-20. Tracked in [`73_partnerships.md`](73_partnerships.md).
+
 ### Execution order
 
-WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR pending). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. Every QA item is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic.
+WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR #56 merged). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. Every first-pass QA item (QA-01 through QA-16) is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic. The second operator pass (QA-17 through QA-26) is the open WS-F backlog, triaged above and feeding the roadmap scrub.
 
 ## Standing findings
 
