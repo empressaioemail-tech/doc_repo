@@ -2,7 +2,7 @@
 id: 09_post_saas_substrate_thesis
 title: Post-SaaS substrate thesis
 status: active
-last_updated: 2026-05-16
+last_updated: 2026-05-21
 applies_to: portfolio
 related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 14_pricing_framework, 28_mcp_first_product_design]
 owner: nick
@@ -28,7 +28,7 @@ The combination of four operating principles is uncommon. Each principle exists 
 
 **MCP-first product design.** Every Empressa product surface is designed for agent consumption first, with human UI as the second surface wrapped around the same engine. For products with UI heritage (SmartCity OS, Codex plan review, Design Accelerator) the MCP surface is retrofitted as a tracked roadmap item. Net-new products ship MCP-first from day one. The detailed product line architecture lives in 28_mcp_first_product_design.md.
 
-**Partnership-first sourcing with substrate-enforced revenue share.** Cities, counties, firms, and other data sources are treated as licensors with revenue share, not as extraction targets. The Hauska SDK as payment substrate makes revenue share mechanically enforced rather than contractually promised. Sources are aligned commercially because the substrate ensures they capture value when their data drives agent consumption. The pricing framework lives in 14_pricing_framework.md.
+**Partnership-first sourcing with substrate-enforced revenue share.** Cities, counties, firms, and other data sources are treated as licensors with revenue share, not as extraction targets. The design intent is that the Hauska SDK as payment substrate makes revenue share mechanically enforced rather than contractually promised. That is the designed model, not yet the running state: the SDK crypto settlement rail is built, but the revenue-routing layer that splits and pays a source actor's share is not yet implemented, so revenue share today is contractually promised and substrate-enforced settlement is the committed direction. Sources are aligned commercially because the substrate is built to ensure they capture value when their data drives agent consumption. The pricing framework lives in 14_pricing_framework.md.
 
 **Compounding intelligence via dogfooded company intelligence.** Empressa Company Intelligence (ECI) atomizes against the same Hauska atom contract that external customers use. Every decision, sprint, conversation, and procedure-execution becomes structured organizational memory. Strategic decisions stop starting from zero. The platform improves itself by being used internally. The implementation plan lives in 60_eci_atomization.md.
 
@@ -84,7 +84,7 @@ The lean shop model spreads. One operator with structured organizational memory 
 
 For investors. Empressa is not a SaaS company. The metrics that worked for SaaS (per-seat ARR, NDR, CAC payback in 12-18 months) are partially relevant but not the primary lens. The relevant metrics are atom volume, jurisdiction coverage, source revenue routing rate, agent operator adoption, MCP call volume by product, and the compounding rate of the intelligence loop. The investment thesis is that substrate companies built well in the post-SaaS shift will produce returns over a longer horizon than the typical SaaS investment, but with deeper moats and lower commodification risk.
 
-For city and firm partners. Empressa's offer is fundamentally different from a typical software vendor. The platform converts your data into a revenue-generating asset rather than charging you a fee for software access. The revenue share is substrate-enforced rather than contractually promised. Your data portability is structural via the atom contract. Your strategic alignment with the platform deepens because your interests are aligned with platform success.
+For city and firm partners. Empressa's offer is fundamentally different from a typical software vendor. The platform converts your data into a revenue-generating asset rather than charging you a fee for software access. Revenue share is committed contractually today, and the platform is being built so that settlement becomes substrate-enforced rather than only contractually promised. Your data portability is structural via the atom contract. Your strategic alignment with the platform deepens because your interests are aligned with platform success.
 
 For hiring. Empressa is building the operating system for a new kind of company. The skills and protocols and substrate that make a lean operator plus agent fleet operate effectively are themselves valuable artifacts. Working at Empressa is partly about producing the products and partly about helping build the operating model that other companies will adopt.
 
@@ -108,5 +108,7 @@ Two genuinely open questions that the company does not have answers to yet.
 - Session origin: _sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md
 
 ## Revision history
+
+- **2026-05-21:** Revenue-share language reframed from "substrate-enforced" stated as present fact to the designed model with settlement not yet enforced, after the 2026-05-21 cross-repo reconciliation found no revenue-routing code in the hauska-sdk. The crypto settlement rail is built; the routing layer is not. Affects the partnership-first-sourcing principle and the city-and-firm-partner section.
 
 - **2026-05-16 (origin):** drafted during strategic brainstorm session. Captures the company-level strategic frame for investor, partnership, hiring, and case study use. Companion to 28_mcp_first_product_design.md.

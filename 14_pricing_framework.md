@@ -2,7 +2,7 @@
 id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
-last_updated: 2026-05-19
+last_updated: 2026-05-21
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 16_commercialization_roadmap, 30_smartcity_os, 40_design_accelerator, 80_adrs/adr_018_atom_contract_substrate_layer]
 ---
@@ -169,6 +169,8 @@ The 2026-05-16 strategic brainstorm session extended the catalog thesis from "da
 
 The Hauska SDK is the payment substrate for atom transactions. When agents consume atoms via the Hauska MCP Server, micropayments flow through the SDK back to the source actors of those atoms (cities, firms, regulators, professionals). This makes partnership-first sourcing substrate-enforced rather than contract-enforced.
 
+**Implementation status (2026-05-21).** This is the designed model, not yet the running state. The crypto settlement rail is built and tested in `@hauska-sdk/payment` (one of twelve published `@hauska-sdk/*` packages). The revenue-routing layer that splits a micropayment and routes the source-actor share back does not yet exist: the 2026-05-21 cross-repo reconciliation found no routing, payout, or split code in any `@hauska-sdk/*` package. Revenue share is designed and its settlement components are partially present; it is not yet substrate-enforced. Until the routing layer ships, revenue share is contractually promised, and partner-facing and BD materials must say so.
+
 Repositioning: Hauska is "Plaid for jurisdiction-grounded physical-world data" plus "Stripe for atom transactions in that domain."
 
 ### Commercial model
@@ -191,7 +193,7 @@ Hauska Inc. is a separate C-corp, already established. Hauska Inc. carries the p
 
 Hybrid fiat and stablecoin processor. Fiat settlement for traditional counterparty preferences (cities, firms with conservative compliance postures); stablecoin rails for high-volume, low-friction micropayment flows and for agent-to-agent transactions in future phases.
 
-**v1 fiat rail: Stripe Connect** (settled 2026-05-18). Pinning the only candidate named in this section as the v1 selection makes the question concrete; revisit trigger is first paid Layer 2 call from a fiat-preferring counterparty pulling implementation off the queue.
+**v1 fiat rail: Circle** (selected 2026-05-21 per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md), superseding the Stripe Connect placeholder pinned 2026-05-18). The 2026-05-21 hauska-sdk reconciliation found the SDK payment package already built Circle-shaped, with a hardcoded `provider: "circle"` and no Stripe code; the decision follows the code reality. Circle is also USDC-native, so it unifies the fiat rail with the existing USDC crypto rail under one provider. Revisit trigger is a regulatory or onboarding blocker surfaced in Hauska Inc. corporate-readiness work, or a fiat-preferring counterparty at first paid Layer 2 call requiring a rail Circle cannot serve.
 
 **v1 crypto rail: USDC on Base, Ethereum, and Polygon** â already built in `@hauska-sdk/payment` v0.1.0 (56 tests green; on-chain verification via ethers v6) per the substrate-state subsection above. No further rail-selection work pending on the crypto side.
 
@@ -199,7 +201,7 @@ Hybrid fiat and stablecoin processor. Fiat settlement for traditional counterpar
 
 Lower than the current SaaS landscape. Software pricing is in deflationary regime as production costs fall toward compute costs. Hauska's value is in being the substrate everyone runs on, which compounds. Maximizing rent per transaction is not the optimization target; volume and adoption are.
 
-**Settled v1 range: 1.5 to 2.5 percent depending on transaction type** (closed 2026-05-18). Below Stripe's 3 percent and well below app-store 30 percent matches the substrate-not-rent positioning of the post-SaaS thesis; floor stays above Stripe Connect's fiat-passthrough overhead so the fiat rail does not run at a loss. The exact number within the range sets at first paid Layer 2 call rather than from modeling against zero data.
+**Settled v1 range: 1.5 to 2.5 percent depending on transaction type** (closed 2026-05-18). Below the 3 percent card-processing benchmark and well below app-store 30 percent matches the substrate-not-rent positioning of the post-SaaS thesis; floor stays above the Circle fiat-passthrough overhead so the fiat rail does not run at a loss. The exact number within the range sets at first paid Layer 2 call rather than from modeling against zero data.
 
 ### Substrate state — code reality vs integration work
 
@@ -218,16 +220,17 @@ Built today in `@hauska-sdk/payment` v0.1.0 (verified 2026-05-18 against `p:\Hau
 
 The crypto rail is operationally complete at the SDK code level.
 
-Remaining as code-level TODO inside the SDK:
+Remaining as code-level work inside the SDK:
 
-- Circle fiat checkout URL generation at `packages/payment/src/payment-request.ts:253`. Comment reads `TODO: Implement Circle checkout URL generation`; current implementation returns a placeholder `checkout.circle.com` URL. This is the sole production-code TODO blocking the fiat rail.
+- **The fiat rail is a near-greenfield build, not a single TODO.** The 2026-05-21 hauska-sdk reconciliation corrected the earlier "sole TODO" framing: there is no Circle payment creation, no webhook handling, and no Circle-side payment verification. What exists is a placeholder `generateFiatCheckoutUrl()` at `packages/payment/src/payment-request.ts:253` that silently returns a fake `checkout.circle.com` URL rather than throwing. Provider is settled as Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md); the full integration is Wave 2 step 3.
+- **The revenue-routing layer does not exist.** The reconciliation found no routing, payout, or split code in any `@hauska-sdk/*` package. The layer that splits a micropayment and routes the source-actor share back is unbuilt. This is the gap behind the "substrate-enforced revenue share" thesis claim; see the Principle subsection's implementation-status note.
 
 Remaining as integration-and-operational work outside the SDK:
 
-- Atom-contract licensing-metadata and accessPolicy source-actor fields, published at M2-C extraction of `@hauska/atom-contract` v1.0.0 per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md). Gates source-actor revenue routing.
+- Atom-contract licensing-metadata and accessPolicy source-actor fields. The `accessPolicy` four-value union shipped in `@hauska/atom-contract` v1.1.0; dedicated source-actor and licensing-metadata fields are still unbuilt. These are the data half of source-actor revenue routing per [ADR-018](80_adrs/adr_018_atom_contract_substrate_layer.md); the code half is the SDK routing layer noted above.
 - Hauska MCP Server metering wire-up. The server consumes `@hauska-sdk/payment` at the tool-call layer for Layer 2 paid calls per [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md); sequenced after both M2-C extraction and the dedicated repo at [`empressaioemail-tech/hauska-mcp-server`](https://github.com/empressaioemail-tech/hauska-mcp-server) (bootstrapped 2026-05-18) gains its first backend connection.
 - Bastrop revenue-share contract operationally tested with manual reconciliation. Gates first real money movement and informs the operational shape before the SDK rails switch on for production traffic.
-- Hauska Inc. regulatory posture. Money transmitter registration per state, KYC/AML thresholds, settlement-rail selection between Stripe Connect (fiat candidate) and stablecoin rails on the three live chains. Org and legal work, not SDK code.
+- Hauska Inc. regulatory posture. Money transmitter registration per state and KYC/AML thresholds, now driven by Circle's onboarding and compliance requirements rather than Stripe's. Settlement-rail selection is settled: Circle for fiat, USDC stablecoin on the three live chains for crypto. Org and legal work, not SDK code.
 - Marketplace dynamics. Dynamic pricing, agent-to-agent atom transactions, the broader payment-substrate vision. Genuinely future work, 18–36 month horizon.
 
 Verification artifact: SDK recon `p:\Hauska SDK\RECON_2026-05-18.md`; re-verification 2026-05-18 by direct reads of `packages/payment/package.json`, `packages/payment/src/payment-request.ts` (lines 250–273), and `npm test --workspace=@hauska-sdk/payment` (56 passed in 783ms).
@@ -264,6 +267,8 @@ Three items remain after the 2026-05-18 close-the-loop pass. Five prior items re
 - [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md): post-cutover Hauska-layer commercialization sequencing. Step 2 of that queue closes this framework's deferred tier-prices and bundled-call-quotas decision; step 7 closes the take-rate-exact-number decision at first paid Layer 2 call.
 
 ## Revision history
+
+- **2026-05-21:** Fiat rail changed from the Stripe Connect placeholder to Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md), following the cross-repo reconciliation finding that the hauska-sdk payment package is already built Circle-shaped. Substrate-state section corrected: the fiat rail is a near-greenfield build, not a single TODO, and the revenue-routing layer does not exist in the SDK. Principle subsection gains an implementation-status note reframing substrate-enforced revenue share as designed but not yet enforced. Take-rate-philosophy and regulatory-posture lines re-pointed from Stripe Connect to Circle.
 
 - **2026-05-19:** Cross-reference added to new [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md) (post-cutover Hauska-layer commercialization sequencing). Step 2 of the commercialization queue closes this framework's deferred tier-prices and bundled-call-quotas decision; step 7 closes the take-rate-exact-number decision at first paid Layer 2 call. Frontmatter `related` extended; no body changes outside the cross-references section.
 - **2026-05-18 (close-the-loop pass):** Four prior Open-question items resolved with binary calls. Take-rate range settled at 1.5 to 2.5 percent for v1 with exact number set at first paid Layer 2 call. Pricing-model composition promoted from "most likely outcome" to v1 canon (Layer 1 free; Layer 2 per-call default with optional stream upsell; composition royalty deferred; reasoning-call as unifying frame; marketplace dynamics future). Stripe Connect pinned as v1 fiat-rail candidate; crypto rail already built in `@hauska-sdk/payment` v0.1.0. Open-questions section narrowed from five items to two gated items plus one architecturally-settled-implementation-gated item, each with explicit resolution criteria named. Defaults-table "Revisit when market signal" rows rewritten with concrete gating shape matching the Open-questions section. Cross-surface pricing section header retitled from "pending" to "gated on Codex 1a + 1b pilot conversion." Companion edit at [`11_roadmap.md`](11_roadmap.md) inlines the `@hauska/atom-contract` commercial-posture revisit trigger as third-party-consumption OR first-paid-Layer-2-revenue, whichever-first.
