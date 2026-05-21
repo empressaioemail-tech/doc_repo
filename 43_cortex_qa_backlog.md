@@ -36,14 +36,14 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-13 | Code Library warmup fails (HTTP 403, codes_warmup_requires_internal). Elgin absent entirely. Open whether Code Library reflects the MCP server or an old database. | Bug | WS-A | Diagnosed: by-design, not a wiring bug |
 | QA-14 | Header alert bell is non-functional. | UX | WS-B | Fixed (PR #55) |
 | QA-15 | plan-review header bell stopped rendering after WSB.5 made the shared Header notifications prop-driven. plan-review must opt into `headerNotifications`, or the bell stays removed. | UX | WS-B follow-on | Logged |
-| QA-16 | IFC parse runs inline on the api-server Node main thread behind a non-reentrant `IfcAPI` singleton; a hung or trapped parse wedges the whole cortex-api instance. Isolate the parse in a worker. | Bug + architecture | WS-A follow-on | Logged — blocks QA-04 close |
+| QA-16 | IFC parse runs inline on the api-server Node main thread behind a non-reentrant `IfcAPI` singleton; a hung or trapped parse wedges the whole cortex-api instance. Isolate the parse in a worker. | Bug + architecture | WS-A follow-on | PR #59 open (one-shot worker_threads isolation). QA-04 still gated: canary deploy + traffic shift operator-supervised |
 | QA-17 | Code Library lists only 2 of 5 ingested jurisdictions (Grand County UT, Bastrop TX); Bastrop County, Elgin, Hutto absent. | Bug / architecture | WS-F | Dispatched 2026-05-21: framework-proving pass (Code Library reads substrate), cc-agent-AC |
-| QA-18 | No path to upload client PDFs, photos, and notes to an engagement for the in-app agent to reference. | Feature | WS-F | Triaged: reuses the L2 attached-document atom shape |
-| QA-19 | In-app chat does not auto-scroll while the AI streams a response. | Bug (UX) | WS-F | Triaged: quick frontend fix, QA-fix round |
+| QA-18 | No path to upload client PDFs, photos, and notes to an engagement for the in-app agent to reference. | Feature | WS-F | PR #62 open |
+| QA-19 | In-app chat does not auto-scroll while the AI streams a response. | Bug (UX) | WS-F | PR #61 open |
 | QA-20 | Engagements outside an ingested jurisdiction should trigger best-effort background code collection. | Feature (engine/substrate) | WS-F | Triaged: pairs with ADR-019 and the ICC ingest |
 | QA-21 | Net-new SoftPlan and ArchiCAD connectors. Operator-flagged off current roadmap. | Strategy / new workstream | WS-F | Routed: strategic session (premortem, catalog-thesis-check, focus-queue) |
 | QA-22 | Site-context layers still failing post-WSA.4; focused session requested, then a Bastrop SmartCity dashboard install. | Bug + strategy | WS-F | Routed: focused engineering session; SmartCity install is a separate strategic call |
-| QA-23 | In-app agent presents ungrounded code as confident citations for jurisdictions it has no atoms for (Pagosa Springs / Daulton)CO). | Bug (quality gate) | WS-F | Triaged: load-bearing; agent must flag coverage and confidence |
+| QA-23 | In-app agent presents ungrounded code as confident citations for jurisdictions it has no atoms for (Pagosa Springs / Daulton)CO). | Bug (quality gate) | WS-F | PR #60 open |
 | QA-24 | Stale second Cloud Run service `api-server` (Phase 1A, last deployed 2026-05-06) still in `legacy-design-tools-prod`. | Ops cleanup | WS-F | Logged: decommission candidate |
 | QA-25 | Orphaned empty `EMPRESSA_DATABASE_URL` secret, superseded and unused. | Ops cleanup | WS-F | Logged: cleanup candidate |
 | QA-26 | `legacy-design-tools` has `core.autocrlf=true` and no root `.gitattributes`; recurring phantom diffs and empty stashes. | Ops cleanup | WS-F | Logged: add root `.gitattributes` |
