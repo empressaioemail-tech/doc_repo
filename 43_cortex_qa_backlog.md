@@ -37,7 +37,7 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-14 | Header alert bell is non-functional. | UX | WS-B | Fixed (PR #55) |
 | QA-15 | plan-review header bell stopped rendering after WSB.5 made the shared Header notifications prop-driven. plan-review must opt into `headerNotifications`, or the bell stays removed. | UX | WS-B follow-on | Logged |
 | QA-16 | IFC parse runs inline on the api-server Node main thread behind a non-reentrant `IfcAPI` singleton; a hung or trapped parse wedges the whole cortex-api instance. Isolate the parse in a worker. | Bug + architecture | WS-A follow-on | Logged — blocks QA-04 close |
-| QA-17 | Code Library lists only 2 of 5 ingested jurisdictions (Grand County UT, Bastrop TX); Bastrop County, Elgin, Hutto absent. | Bug / architecture | WS-F | Triaged: needs the Cortex MCP retrofit scoping decision |
+| QA-17 | Code Library lists only 2 of 5 ingested jurisdictions (Grand County UT, Bastrop TX); Bastrop County, Elgin, Hutto absent. | Bug / architecture | WS-F | Dispatched 2026-05-21: framework-proving pass (Code Library reads substrate), cc-agent-AC |
 | QA-18 | No path to upload client PDFs, photos, and notes to an engagement for the in-app agent to reference. | Feature | WS-F | Triaged: reuses the L2 attached-document atom shape |
 | QA-19 | In-app chat does not auto-scroll while the AI streams a response. | Bug (UX) | WS-F | Triaged: quick frontend fix, QA-fix round |
 | QA-20 | Engagements outside an ingested jurisdiction should trigger best-effort background code collection. | Feature (engine/substrate) | WS-F | Triaged: pairs with ADR-019 and the ICC ingest |
