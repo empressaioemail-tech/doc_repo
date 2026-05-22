@@ -10,6 +10,8 @@ related: [25_atom_architecture_reference, 16_commercialization_roadmap, 80_adrs/
 
 # cc-agent-AC dispatch — api-server import migration
 
+> **COMPLETE 2026-05-21.** Delivered as PR #65, merged to `main` (merge commit `f6f4145`). Follow-on dispatched as [`2026-05-21_cc-agent-AC_empressa_atom_retirement.md`](2026-05-21_cc-agent-AC_empressa_atom_retirement.md).
+
 You are cc-agent-AC. This dispatch migrates the `legacy-design-tools` api-server's atom-contract imports from the workspace-private `@workspace/empressa-atom` to the published `@hauska/atom-contract`. It is the one named can-kick carried forward from the 2026-05-19 doc-sweep per CLAUDE.md.
 
 ## Activation gate
