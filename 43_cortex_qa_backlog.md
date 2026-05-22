@@ -2,20 +2,20 @@
 id: 43_cortex_qa_backlog
 title: Cortex QA backlog — post-cutover verification window
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-05-22
 applies_to: design-accelerator
 related: [00_current_state, 40_design_accelerator, 42_design_accelerator_program_plan, 41_advanced_capture_features, 49_code_ingestion_pipeline, 90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover]
 ---
 
 # Cortex QA backlog
 
-> Running QA backlog for Cortex. Operator reports items; planner triages into workstreams and tracks to closure. New items append as QA-27 and up.
+> Running QA backlog for Cortex. Operator reports items; planner triages into workstreams and tracks to closure. New items append as QA-30 and up.
 
 ## Purpose
 
 The Replit to Cloud Run cutover landed 2026-05-20: cortex-api runs on Cloud Run against cortex-prod Neon, the Replit data dependency severed, per the [cutover runbook](90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover.md) Stage 9. With the platform stable, operator-driven QA is unblocked. This doc is Stage 5 of that runbook in practice: the verification-window backlog.
 
-Item IDs are QA-NN, assigned in report order and never reused. The first 14 entries were captured in a single operator QA pass on 2026-05-20. QA-17 through QA-26 came from a second operator pass plus the cc-agent-C reconciliation on 2026-05-21. New items append as QA-27 and up.
+Item IDs are QA-NN, assigned in report order and never reused. The first 14 entries were captured in a single operator QA pass on 2026-05-20. QA-17 through QA-26 came from a second operator pass plus the cc-agent-C reconciliation on 2026-05-21. New items append as QA-30 and up.
 
 ## Item register
 
@@ -24,7 +24,7 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-01 | Engagement-detail tabs are crowded (ten tabs). Reorganize, and move the model "View in 3D" into its own tab. | UX | WS-B | Fixed (PR #55) |
 | QA-02 | Projects cannot be archived. Left sidebar sections should expand and collapse. | Feature (small) | WS-B | Fixed (PR #55) |
 | QA-03 | Site context layers fail intermittently (varies which layer and when; observed EPA EJScreen, FCC broadband). Site 3D view renders nothing. | Bug | WS-A | ugrc:dem fixed (PR #55); rest diagnosed |
-| QA-04 | Revit add-in: IFC upload fails HTTP 500, and the new engagement did not reach the Cloud Run Cortex app. | Bug | WS-A | Part 1 done (add-in repointed). Part 2 fixes #57/#58/#59 deployed to cortex-api-00017-gex 2026-05-22. **STILL OPEN** — the 2026-05-22 operator QA pass found IFC still 500s. Verified root cause from prod logs: the production DB is missing `materializable_elements.superseded_at` (PR #33's supersede-and-append column), a migration-gap the QA-04 manual 0009-0014 apply did not cover. Dispatched to cc-agent-C: [`_dispatches/2026-05-22_cc-agent-C_ifc_ingest_schema_migration.md`](_dispatches/2026-05-22_cc-agent-C_ifc_ingest_schema_migration.md) |
+| QA-04 | Revit add-in: IFC upload fails HTTP 500, and the new engagement did not reach the Cloud Run Cortex app. | Bug | WS-A | Part 1 done (add-in repointed). Part 2 fixes #57/#58/#59 deployed to cortex-api-00017-gex 2026-05-22. **STILL OPEN** — the 2026-05-22 operator QA pass found IFC still 500s. Verified root cause from prod logs: the production DB is missing `materializable_elements.superseded_at` (PR #33's supersede-and-append column), a migration-gap the QA-04 manual 0009-0014 apply did not cover. It is P0-1 of the cc-agent-C QA build, [`_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md`](_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md) |
 | QA-05 | No architecture diagram of which MCP servers run what, how they relate to the database, and how they consume the Hauska SDK. | Doc | WS-D | Delivered — doc 44 |
 | QA-06 | Productize turning a custom plan set into a publisher-ready plan set. Also scope what Claude operating the Revit platform would take. | Strategy | WS-E | Gated |
 | QA-07 | No way to select sheets to send to chat (checkbox on thumbnail). Want the in-app agent to read sheets and platform state directly. | Feature | WS-C | Fixed (WS-C, PR #56 merged) |
@@ -47,6 +47,9 @@ Item IDs are QA-NN, assigned in report order and never reused. The first 14 entr
 | QA-24 | Stale second Cloud Run service `api-server` (Phase 1A, last deployed 2026-05-06) still in `legacy-design-tools-prod`. | Ops cleanup | WS-F | Logged: decommission candidate |
 | QA-25 | Orphaned empty `EMPRESSA_DATABASE_URL` secret, superseded and unused. | Ops cleanup | WS-F | Logged: cleanup candidate |
 | QA-26 | `legacy-design-tools` has `core.autocrlf=true` and no root `.gitattributes`; recurring phantom diffs and empty stashes. | Ops cleanup | WS-F | Fixed — PR #68 merged 2026-05-21 — root `.gitattributes` `* text=auto eol=lf` + binary carve-outs. Committed blobs were already LF, so no repo-wide renormalize is needed |
+| QA-27 | Start a project from a dropped link, image, text, or email; the in-app agent synthesizes it into engagement context and creates the engagement, with the Revit model attached later. | Feature | WS-G | Dispatched — cc-agent-C QA build Phase 3, [`_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md`](_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md) |
+| QA-28 | In-app agent cannot generate a client letter or export a document. Add a generate-deliverable-letter tool wired to the existing L3/L6 pipeline. | Feature | WS-G | Dispatched — cc-agent-C QA build Phase 3 |
+| QA-29 | No way to generate client presentations. Add a branded presentation-packet deliverable assembled via the L6 render pipeline. | Feature | WS-G | Dispatched — cc-agent-C QA build Phase 3 |
 
 ## Workstreams
 
@@ -114,9 +117,19 @@ QA-24, QA-25, and QA-26 are ops cleanup from the cc-agent-C reconciliation: a st
 
 Incoming dependency: the operator has an appointment for ICC API access and will ingest the full ICC model-code corpus. That unblocks Lane E Phase E1 (the Layer 1 model-code base) and pairs with QA-20. Tracked in [`73_partnerships.md`](73_partnerships.md).
 
+### WS-G. The 2026-05-22 QA run
+
+A third operator QA pass on 2026-05-22 found the deployed app not yet QA-able: the architect customer-zero loop (push a Revit model, see it geocoded on the site in 3D, render site context, run a pre-submittal compliance review, submit) breaks at multiple points. The pass also surfaced three net-new product features (QA-27, QA-28, QA-29). All of it is consolidated into one phased cc-agent-C dispatch, [`_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md`](_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md), cc-agent-C the exclusive owner of `legacy-design-tools` for the run.
+
+Phase 1, the customer-zero loop: the IFC 500 (QA-04, verified root cause — a prod-DB schema-migration gap), geocoding, 3D site assembly, site-context render, the blank map, the site-context adapter timeouts (QA-22 territory, still failing on production engagement 343 E 200 N and the canary Musgrave engagement), relocating the compliance review into the Design Tools Findings tab (reverses CDX-Phase1-1 per [`_decisions/2026-05-22_codex_review_surface_relocation.md`](_decisions/2026-05-22_codex_review_surface_relocation.md)), the review-run error, and corpus/jurisdiction resolution.
+
+Phase 2, the deploy workflow: shift-traffic, rollback, and a migration job added to `cloud-run-deploy.yml`. The deploy shipping code without running migrations is the mechanism behind the QA-04 IFC 500 and the broader pattern of merged fixes not taking effect; Phase 2 closes it.
+
+Phase 3, the feature build: QA-27, QA-28, QA-29. These are net-new in-app capabilities; built UI-first is correct for Cortex, an existing UI-first product, and per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md) each is a tracked Cortex MCP-retrofit follow-on so the eventual retrofit captures the intake-synthesis, letter-generation, and presentation-export surfaces. The QA-run premortem cleared green with this as the resolution of its one operational flag, and with a quality-gate guardrail (source attribution, AI-origin marker, unverified flag, draft-only) required on all three features.
+
 ### Execution order
 
-WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR #56 merged). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. Every first-pass QA item (QA-01 through QA-16) is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic. The second operator pass (QA-17 through QA-26) is the open WS-F backlog, triaged above and feeding the roadmap scrub.
+WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR #56 merged). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. Every first-pass QA item (QA-01 through QA-16) is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic. The second operator pass (QA-17 through QA-26) is the open WS-F backlog, triaged above and feeding the roadmap scrub. The third operator pass (2026-05-22) is WS-G: the customer-zero loop is broken, dispatched as the one phased cc-agent-C QA build, with QA-27 through QA-29 as its Phase 3 features.
 
 ## Standing findings
 

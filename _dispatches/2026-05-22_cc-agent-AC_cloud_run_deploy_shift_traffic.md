@@ -10,6 +10,8 @@ related: [90_runbooks/cloud_run_canary_deploy, 43_cortex_qa_backlog, 00_current_
 
 # cc-agent-AC dispatch — cloud-run-deploy.yml shift-traffic + rollback
 
+> **Folded in 2026-05-22.** This work is Phase 2 of the cc-agent-C QA build, [`2026-05-22_cc-agent-C_cortex_qa_build.md`](2026-05-22_cc-agent-C_cortex_qa_build.md), which adds a migration job alongside the shift-traffic and rollback jobs. Do not run this as a separate cc-agent-AC dispatch. cc-agent-AC is dormant; its atom-contract work is complete.
+
 You are cc-agent-AC. This dispatch makes the cortex-api Cloud Run deploy fully runnable as an operator-supervised agent dispatch, by adding manual traffic-shift and rollback jobs to the deploy workflow. Today the traffic shift is a raw `gcloud` command that needs local GCP credentials no agent has; this closes that one gap.
 
 ## Why this exists

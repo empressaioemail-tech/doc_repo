@@ -2,7 +2,7 @@
 id: 44_mcp_cortex_architecture_map
 title: MCP and Cortex architecture map
 status: active
-last_updated: 2026-05-20
+last_updated: 2026-05-22
 applies_to: design-accelerator
 related: [43_cortex_qa_backlog, 50_hauska_mcp_server, 40_design_accelerator, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 80_adrs/adr_018_atom_contract_substrate_layer]
 ---
@@ -10,6 +10,8 @@ related: [43_cortex_qa_backlog, 50_hauska_mcp_server, 40_design_accelerator, 28_
 # MCP and Cortex architecture map
 
 > Delivers QA-05 (WS-D) of the [Cortex QA backlog](43_cortex_qa_backlog.md): one map of which MCP servers run what, how they relate to the databases, and how they consume the atom contract and the Hauska SDK. Synthesized from two code-verified recon passes on 2026-05-20: cc-agent-M against `hauska-mcp-server` (`_research/2026-05-20_mcp_architecture_map.md`, HEAD `3f45655`) and cc-agent-C against `legacy-design-tools` (`_research/2026-05-20_cortex_qa_wsa_data_source_audit.md`, on main post PR #55). Those two repo-local drafts hold the exhaustive file-and-line detail; this doc is the unified picture.
+
+> **Update 2026-05-22.** Facts 5 and 6 are partly superseded. `00_current_state.md` records the hauska-mcp-server deployed to hauska-prod and the hauska-engine retrieval API live, since this map was written on 2026-05-20. QA-17 (PR #64, merged 2026-05-21) added one Code-Library-to-MCP outbound path on cortex-api (`hauskaSubstrateClient.ts`, mock-mode default), a documented exception to the one-directional-edge claim in fact 3. The customer-zero loop breakage tracked in `43_cortex_qa_backlog.md` WS-G is not MCP-related; the Design Tools app surfaces remain self-contained. A full refresh of this map against the post-deploy topology is owed.
 
 ## The picture in six facts
 

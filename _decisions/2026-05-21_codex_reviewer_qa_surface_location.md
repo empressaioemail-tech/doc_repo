@@ -2,9 +2,11 @@
 decision_id: 2026-05-21_codex_reviewer_qa_surface_location
 date: 2026-05-21
 owner: Nick
-status: active
+status: superseded
 related_canonical: [48_codex_program_plan, 11_roadmap, 28_mcp_first_product_design, 43_cortex_qa_backlog]
 ---
+
+> **Superseded 2026-05-22** by [`2026-05-22_codex_review_surface_relocation.md`](2026-05-22_codex_review_surface_relocation.md): the reviewer-side review surface relocates into the Design Tools app's Findings tab. The standalone `codex-reviewer-qa` artifact this decision created is retained as the reference for the eventual smartcity-os production reviewer surface.
 
 ## Decision
 

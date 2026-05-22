@@ -10,6 +10,8 @@ related: [43_cortex_qa_backlog, 42_design_accelerator_program_plan, 48_codex_pro
 
 # Fix session — Cortex / Design Tools functionality (2026-05-22 QA)
 
+> **Superseded 2026-05-22.** This fix session is consolidated into the cc-agent-C QA build, [`2026-05-22_cc-agent-C_cortex_qa_build.md`](2026-05-22_cc-agent-C_cortex_qa_build.md), as Phase 1. The "cc-agent-D" agent name is retired — all `legacy-design-tools` work in this run is cc-agent-C. Do not run this dispatch; its content is carried into Phase 1 of that dispatch.
+
 You are cc-agent-D, a fresh fix-session agent on `legacy-design-tools`. The 2026-05-22 deploy put all merged work live on `cortex-api-00017-gex` (production, `cortex-api-tds7av26va-uc.a.run.app`). The operator's QA pass found the app is not yet functional enough to QA: the architect customer-zero loop (push a Revit model, see it on the site in 3D, run analysis, run a compliance review, submit) is broken at multiple points. This dispatch is the fix session for those breaks.
 
 The operator will append further QA items they have outstanding; this dispatch covers what the 2026-05-22 QA pass surfaced. Work it as a sequenced fix session, a PR per fix or per coherent cluster.

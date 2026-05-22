@@ -10,7 +10,7 @@ related: [43_cortex_qa_backlog, 90_runbooks/neon_schema_migration_via_cloud_shel
 
 # cc-agent-C dispatch — cortex-api production schema migration (IFC ingest 500)
 
-> **Folded into the cc-agent-D fix session 2026-05-22.** The operator consolidated the 2026-05-22 QA bugs into one fix session, [`2026-05-22_cc-agent-D_cortex_functionality_fix_session.md`](2026-05-22_cc-agent-D_cortex_functionality_fix_session.md), where the IFC schema migration is P0-1. Do not run this as a separate cc-agent-C dispatch; the verified diagnosis below is carried into P0-1 of that session.
+> **Folded into the cc-agent-C QA build 2026-05-22.** The operator consolidated the 2026-05-22 QA work into one phased dispatch, [`2026-05-22_cc-agent-C_cortex_qa_build.md`](2026-05-22_cc-agent-C_cortex_qa_build.md), where the IFC schema migration is Phase 1 P0-1. Do not run this as a separate dispatch; the verified diagnosis below is carried into P0-1 of that dispatch.
 
 You are cc-agent-C. This dispatch closes the IFC-ingest 500 surfaced in the 2026-05-22 operator QA pass. The cause is verified from the cortex-api production logs: a database schema-drift gap, not a code bug.
 
