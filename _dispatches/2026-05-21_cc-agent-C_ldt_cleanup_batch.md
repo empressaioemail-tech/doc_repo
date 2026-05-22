@@ -10,6 +10,8 @@ related: [43_cortex_qa_backlog, 00_current_state, 20_agent_operating_rules]
 
 # cc-agent-C dispatch — legacy-design-tools cleanup batch
 
+> **COMPLETE 2026-05-21.** Delivered as PR #68, merged. QA-15 (`headerNotifications` at all 14 plan-review `DashboardLayout` call sites), QA-26 (root `.gitattributes`), and the flaky `lib/codes` CI timeout (30s `testTimeout` on the three slow files) all shipped. Next: [`2026-05-21_cc-agent-C_codex_phase2_reviewer_surfaces.md`](2026-05-21_cc-agent-C_codex_phase2_reviewer_surfaces.md).
+
 You are cc-agent-C. This dispatch clears three small, ungated hygiene items in `legacy-design-tools`. All are logged, all in one repo, one PR. It runs before the Codex Phase 2 reviewer-surfaces dispatch.
 
 ## Activation gate
