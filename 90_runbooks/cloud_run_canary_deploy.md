@@ -406,6 +406,30 @@ source SHA.
   cutover, ongoing SmartCity OS revisions, future products).
 - **2026-05-22 (run-migrations as a mandatory canary step):** Inserted Step 4 â Run pending DB migrations â between deploy-canary and the smoke probe; renumbered steps 4-9 to 5-10. Added the `workflow_dispatch action` framing for legacy-design-tools / cortex-api â the new operator-runnable form per `cloud-run-deploy.yml`'s four-job action input shipped in legacy-design-tools PR #81 (Phase 2 of the 2026-05-22 QA build, `lib/db/scripts/migrate-prod.mjs` runner backed by a `_schema_migrations` tracker). Added workflow-form notes to shift-traffic and Rollback. Direct-`gcloud` forms retained for services not on the workflow.
 
+## 2026-05-22 cortex-api addendum — image path and direct-deploy form
+
+For cortex-api specifically (`legacy-design-tools` / `cortex-api`), the Artifact Registry path is `us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api`, image tag `:latest` (GitHub Actions updates `:latest` on every push to `main`). Smartcity-api uses `cloud-run-source-deploy/` under its project; cortex-api uses `apps/` under `legacy-design-tools-prod`. Verify with `gcloud run services describe cortex-api --region us-central1 --format='value(spec.template.spec.containers[0].image)'` rather than guessing.
+
+The simplest direct-`gcloud` deploy for a known-good image (operator-runnable from Cloud Shell `~`, no clone or `gh` required):
+
+```bash
+gcloud run deploy cortex-api \
+  --image us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api:latest \
+  --region us-central1
+
+gcloud run services update-traffic cortex-api --to-latest --region us-central1
+```
+
+The `--to-latest` is per the 2026-05-11 traffic-routing discipline. After deploy:
+
+```bash
+curl -sI https://cortex-api-tds7av26va-uc.a.run.app/api/healthz
+gcloud run services describe cortex-api --region us-central1 \
+  --format='value(status.traffic[].tag,status.traffic[].revisionName,status.traffic[].percent)'
+```
+
+The full canary form (steps 1-10 above, with the workflow form per Step 4) wraps this with the `_schema_migrations` tracker and a deliberate 0%-traffic canary; the direct form here is the minimum for a known-good image when migrations have already been applied (e.g. via direct `psql` in Cloud Shell, the path used for the 2026-05-22 P0-1 `0015` apply).
+
 ## 2026-05-11 addendum — deploy mechanism + traffic-tag verification
 
 Compound silent failure documented in [`91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md`](../91_postmortems/2026-05-11_canonical_deploy_drift_and_traffic_pin.md). Two requirements added to the canonical procedure as a result. Env-var state at the time of this deploy captured in [`smartcity_cloud_run_env_audit_2026-05-11.md`](smartcity_cloud_run_env_audit_2026-05-11.md) — pre-existing Spireon/Verkada/ArcGIS/etc. gaps survive the A.6 + A.8 batch.
