@@ -20,10 +20,10 @@ related: [11_roadmap, 16_commercialization_roadmap, 43_cortex_qa_backlog, 30a_sm
 
 **Roadmap catch-up**, dispatched 2026-05-21. Four cc-agent tracks plus the planner refresh:
 
-- **Cortex QA close-out** — cc-agent-C, legacy-design-tools. **Complete:** QA-16 (#59), QA-23 (#60), QA-19 (#61), QA-18 (#62) all merged 2026-05-21. QA-18 needed a rebase plus a `CitationChip.test.tsx` mock fix (5 store members) and landed CI-green (design-tools 326/326). cc-agent-C's next is QA-22 Part 1 site-context (ready to run — independent of the QA-04 canary). Toward M-CortexQA exit via the 43 backlog burndown. QA-16 does not close QA-04 — see watch list.
+- **Cortex QA close-out + QA-22** — cc-agent-C, legacy-design-tools. Close-out complete (QA-16/23/19/18 = PRs #59-62) and **QA-22 Part 1 merged** (PR #63 — site-context adapter-timeout reliability). cc-agent-C's next is the codex-reviewer-qa scaffold. Toward M-CortexQA exit via the 43 backlog burndown. QA-16 does not close QA-04 — see watch list.
 - **M-Stabilize restart** — cc-agent-M, smartcity-os. **On operator hold (2026-05-21):** the operator is handling the smartcity-os production database directly; cc-agent-M is curbed so agent migration work (WS-1 touches that database) does not collide with hands-on prod-DB work. Resumes on the operator's word.
 - **Lane E continuation** — cc-agent-E, hauska-engine. Sync 5 Tier 1: Round Rock + Taylor shipped (merged, not yet in the deployed corpus). Bare-numbered-section fix → Leander next.
-- **QA-17 Cortex substrate integration** (framework-proving) — cc-agent-AC. Hit a no-clone blocker 2026-05-21 (the dedicated clone never existed) and surfaced correctly without touching cc-agent-C's tree; dispatch amended — cc-agent-AC provisions its own clone at `P:\ldt-ac-qa17`. Also needs an operator-minted Cortex product key (see watch list). Prove cortex-api ↔ Hauska substrate wiring; scoped to the Code Library reading the live catalog.
+- **QA-17 Cortex substrate integration** — cc-agent-AC. **PR #64 merged 2026-05-21:** the Code Library now reads the Hauska substrate via the MCP server (`mock` mode default). Full closure pends operator mcp-mode config (Cortex product key + env + deploy — see watch list). cc-agent-AC's next is the api-server import migration; its workspace is its own clone `P:\ldt-ac-qa17`.
 
 **M-CodexQA** — CDX-Phase1-1 resolved 2026-05-21: the Codex 1b reviewer-side QA surface lives as a new `codex-reviewer-qa` artifact per [`_decisions/2026-05-21_codex_reviewer_qa_surface_location.md`](_decisions/2026-05-21_codex_reviewer_qa_surface_location.md). The scaffold dispatch to cc-agent-C is filed and activation-gated behind the Cortex QA close-out merge.
 
@@ -36,27 +36,27 @@ ADR-005 multitenancy (queued, 30a WS-4); ADR-006 anchoring substrate; ADR-007 cr
 ## 4. Agent fleet
 
 - **planner** (doc_repo Claude Code) — portfolio planning, reconciliation, session-close.
-- **cc-agent-C** → legacy-design-tools — Cortex QA close-out complete (QA-16/19/23/18 merged as #59/#60/#61/#62). Next: QA-22 Part 1 site-context (ready), then the codex-reviewer-qa scaffold.
+- **cc-agent-C** → legacy-design-tools — Cortex QA close-out + QA-22 Part 1 merged (PRs #59-63). Next: the codex-reviewer-qa scaffold (ready).
 - **cc-agent-M** → smartcity-os — M-Stabilize restart. **Held 2026-05-21** at the operator's call (operator handling the production DB directly); dispatch ready to re-fire on release.
 - **cc-agent-E** → hauska-engine — Lane E continuation (Taylor shipped). Deep multi-phase dispatch; QA-20 folds into Phase E1.
-- **cc-agent-AC** → legacy-design-tools (own clone `P:\ldt-ac-qa17`, to provision) — QA-17 retrofit. Surfaced a no-clone blocker 2026-05-21; dispatch amended to provision the clone. Queued behind QA-17: the api-server import migration to `@hauska/atom-contract`.
+- **cc-agent-AC** → legacy-design-tools (own clone `P:\ldt-ac-qa17`) — QA-17 merged (PR #64). Next: the api-server import migration to `@hauska/atom-contract` (ready).
 - **Nick** — merge, deploy, decisions.
 
 ## 5. Recent sessions
 
-- 2026-05-21 planner — roadmap catch-up refresh: `11_roadmap` end-state model gains M-HauskaCommercial; Fire 3 closed; IP-memo ingestion gate retired across 11/73/18/13; ADR-013/015/017/018/019 statuses corrected; M-CodexQA CDX-Phase1-1 resolved; QA-21 BD asset logged.
-- 2026-05-21 planner — cross-repo reconciliation, `_inbox/` + HR-11, Circle decision, factual corrections, roadmap-catch-up plan + 5 dispatches, QA-17/21/22 scoping. Five commits.
-- 2026-05-21 cc-agent-C — Cortex QA close-out QA-16/19/23/18 merged as #59-62; QA-18 needed a rebase + the `CitationChip.test.tsx` mock completed (5 store members), CI green 326/326.
-- 2026-05-21 cc-agent-C — QA-04 IFC-upload four-layer diagnosis; three layers fixed (PRs #57/#58 + cortex-prod schema migration); QA-16 filed for the fourth.
-- 2026-05-21 cc-agent-E — Taylor LDC shipped (Path PDF, reclassified from Path C); `chapter-decimal` parsing convention added.
+- 2026-05-21 cc-agent-AC — QA-17 merged (PR #64): Code Library wired to the Hauska substrate via the MCP server; chose MCP over the retrieval API for the ADR-017 accessPolicy gate.
+- 2026-05-21 cc-agent-C — QA-22 Part 1 merged (PR #63): per-adapter timeout floors for slow site-context upstreams; the runner already isolated per-adapter.
+- 2026-05-21 planner — roadmap catch-up refresh + dispatch-queue teeing; QA-18 PR-number correction; M-Stabilize hold; QA-17 no-clone blocker resolved.
+- 2026-05-21 cc-agent-C — Cortex QA close-out QA-16/19/23/18 merged as #59-62.
+- 2026-05-21 cc-agent-E — Taylor LDC shipped (Path PDF, reclassified from Path C).
 
 ## 6. Cross-cutting watch list
 
 - **QA-16 / QA-04** — PR #59 isolates the IFC parse but does NOT close QA-04. The canary deploy (the revision carrying #57+#58+#59) and the traffic shift are operator-supervised: confirm a real Revit IFC returns 201 against the canary before shifting.
 - **`_inbox/` + HR-11 live** (2026-05-21). cc-agents drop session summaries into the doc repo's `_inbox/`; the planner sweeps and files. The `_inbox/` write is the one permitted cross-repo write; cc-agent-C had drafted into `legacy-design-tools/_research/` instead, and the new codex-reviewer-qa scaffold dispatch reinforces `_inbox/`.
-- **QA-17 needs an operator-minted Cortex product key** (2026-05-21). cc-agent-AC's QA-17 pass needs an authenticated Cortex product key, minted via the hauska-mcp-server admin key-issuance endpoint, to see the three platform-internal jurisdictions (Bastrop County, Elgin, Hutto). Nick action — surface before cc-agent-AC reaches that step so it is not a mid-task stall.
+- **QA-17 full closure — operator mcp-mode config** (2026-05-21). QA-17's code is merged (PR #64) with `mock` mode as the default. To meet the success criterion (five jurisdictions with real atom counts, including the three `platform-internal` ones): mint a Cortex product key via the hauska-mcp-server admin key-issuance endpoint, set `HAUSKA_SUBSTRATE_MODE=mcp` + `HAUSKA_MCP_URL` + `HAUSKA_MCP_KEY` on cortex-api, and operator-supervised-deploy. Nick action.
 - **smartcity-os production database — operator hands-on (2026-05-21).** The operator is dealing with the smartcity-os production database directly and wants full attention on it. cc-agent-M / M-Stabilize is held for the duration — WS-1's migration spine touches that database and would collide. The M-Stabilize dispatch re-fires when the operator releases it.
-- **Teed-up cc-agent dispatch queue** (2026-05-21). cc-agent-C: QA-18 #62 done (merged); next QA-22 Part 1 site-context (ready to run, independent of the QA-04 canary), then the codex-reviewer-qa scaffold. cc-agent-AC: api-server import migration to `@hauska/atom-contract` (behind QA-17). QUEUED, not yet fireable: ECI atomization P1 ([`_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md`](_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md)) — gated on Nick creating the `empressa-atom-internal` repo and a cc-agent seat freeing, queued behind the commercialization spine. QA-20 routed into cc-agent-E Lane E Phase E1.
+- **Teed-up cc-agent dispatch queue** (2026-05-21). cc-agent-C: close-out + QA-22 done; next is the codex-reviewer-qa scaffold (ready). cc-agent-AC: QA-17 done; next is the api-server import migration to `@hauska/atom-contract` (ready, on clone `P:\ldt-ac-qa17`). QUEUED, not yet fireable: ECI atomization P1 ([`_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md`](_dispatches/2026-05-21_eci_atomization_p1_registry_scaffold_QUEUED.md)) — gated on Nick creating the `empressa-atom-internal` repo and a cc-agent seat freeing. QA-20 routed into cc-agent-E Lane E Phase E1.
 - **Circle is the v1 fiat rail** per `_decisions/2026-05-21_fiat_rail_circle.md`. The fiat rail is a near-greenfield Circle build, not a single TODO.
 - **Revenue-routing gap** — substrate-enforced revenue share has no code in the SDK. Designed, not built. Needs a Wave 2 build line.
 - **ICC API access** — Nick is pursuing it. It unblocks Lane E Phase E1 (the Layer 1 model-code base, ADR-019).
