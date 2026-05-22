@@ -14,7 +14,7 @@ You are cc-agent-C. This dispatch builds the Codex 1b reviewer-side QA surfaces 
 
 ## Activation gate
 
-Fires after the cleanup-batch dispatch ([`2026-05-21_cc-agent-C_ldt_cleanup_batch.md`](2026-05-21_cc-agent-C_ldt_cleanup_batch.md)) merges. Same clone. Re-orient onto `main` and pull first.
+Fires after the cleanup-batch dispatch ([`2026-05-21_cc-agent-C_ldt_cleanup_batch.md`](2026-05-21_cc-agent-C_ldt_cleanup_batch.md)) merges. Same clone. Re-orient onto `main`, pull, and run `pnpm install` before building — PRs #65 and #67 changed dependencies, so a pull without `pnpm install` leaves `node_modules` stale and typecheck fails on `Cannot find module '@hauska/atom-contract'` (cc-agent-C hit this exact failure on the cleanup batch).
 
 ## Foundation already in place
 
