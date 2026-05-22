@@ -1,10 +1,10 @@
 ---
-id: 41_advanced_capture_features
+id: 40b_advanced_capture_features
 title: Advanced capture features — rendering, image-to-BIM, image-to-CAD
-status: queued
-last_updated: 2026-05-19
+status: active
+last_updated: 2026-05-22 (Lane 1 photorealistic rendering activated as the Cortex rendering sprint 40c_cortex_rendering_sprint.md per _decisions/2026-05-22_cortex_rendering_activation.md; Lanes 2 and 3 stay queued; doc renumbered from 41 to 40b, resolving the slot collision with 41_revit_connector)
 applies_to: design-accelerator
-related: [40_design_accelerator, 42_design_accelerator_program_plan, 27_engine_evolution_plan, _decisions/2026-05-19_sync_4_5_and_cortex_sprint]
+related: [40_design_accelerator, 40c_cortex_rendering_sprint, 42_design_accelerator_program_plan, 27_engine_evolution_plan, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, _decisions/2026-05-22_cortex_rendering_activation]
 ---
 
 # Advanced capture features — rendering, image-to-BIM, image-to-CAD
@@ -13,7 +13,7 @@ This doc absorbs three feature lanes descoped from the active Cortex/Codex sprin
 
 ## Status
 
-`status: queued`. Activation gate stated below.
+Mixed. **Lane 1, photorealistic rendering, is active** as of 2026-05-22, scoped as the Cortex rendering sprint at [`40c_cortex_rendering_sprint.md`](40c_cortex_rendering_sprint.md) per [`_decisions/2026-05-22_cortex_rendering_activation.md`](_decisions/2026-05-22_cortex_rendering_activation.md). Lanes 2 and 3, image-to-BIM and image-to-CAD, stay `queued` behind the activation gate below.
 
 ## Activation gate
 
@@ -28,6 +28,8 @@ Activate after all five conditions clear:
 Until all five conditions clear, no engineering capacity allocated to anything in this doc.
 
 ## Lane 1 — Photorealistic rendering pipeline
+
+> **Activated 2026-05-22.** Lane 1 is now the scoped, dispatch-ready Cortex rendering sprint at [`40c_cortex_rendering_sprint.md`](40c_cortex_rendering_sprint.md). The sprint-scope decisions (full render engine plus video, both source-input paths, credit-balance display only) are settled in [`_decisions/2026-05-22_cortex_rendering_activation.md`](_decisions/2026-05-22_cortex_rendering_activation.md). The text below is the original descope framing, retained for context; 40c is the execution truth.
 
 Currently wired server-side via [`legacy-design-tools/artifacts/api-server/src/routes/renders.ts`](https://github.com/empressaioemail-tech/legacy-design-tools) and gated by `RENDERS_PROD_ENABLED` env flag. Vendor integration with mnml.ai for photorealistic exterior rendering from massing models. Used in the W2 wave for client deliverables per the [`40_design_accelerator.md`](40_design_accelerator.md) wave plan as originally framed.
 

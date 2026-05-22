@@ -2,9 +2,9 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-21 (roadmap catch-up refresh: M-HauskaCommercial added to the end-state model; Fire 3 closed; Texas IP-memo ingestion gate retired; ADR-013/015/017 marked accepted and ADR-018/019 added; milestone statuses refreshed; M-CodexQA reviewer QA-surface location settled. Prior: combined Cortex/Codex sprint launched per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md; Hauska commercialization queue landed at 16_commercialization_roadmap.md.)
+last_updated: 2026-05-22 (Cortex rendering sprint added to P2, scoped at 40c_cortex_rendering_sprint.md; agentic-Revit-operation strategic question logged under Open strategic questions / Product direction. Prior 2026-05-21: roadmap catch-up refresh — M-HauskaCommercial added to the end-state model; Fire 3 closed; Texas IP-memo ingestion gate retired; ADR-013/015/017 marked accepted and ADR-018/019 added; milestone statuses refreshed; M-CodexQA reviewer QA-surface location settled.)
 applies_to: portfolio
-related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 41_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
+related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 40b_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
 ---
 
 # Roadmap
@@ -229,6 +229,7 @@ Active state across the portfolio: M-Stabilize sprint (`30a`, restarted under cc
 - [ ] **Pre-docs-repo migration progress** — ~22 migrate / 12 absorb / 6 archive / 7 retire. `docs` · planner · L.
 - [ ] **Design Accelerator Moab waves W0-W3** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 1 DA-2**. `product` · Nick + agent · XL sprint.
 - [ ] **DA-PI-1:** Design Accelerator parcel intelligence MVP · informs M-PropIntel. `product` · Nick + agent · XL sprint.
+- [ ] **Cortex rendering sprint** — mnml.ai render engine built into the Cortex Renders tab, activating Lane 1 of [`40b_advanced_capture_features.md`](40b_advanced_capture_features.md). Full render engine plus video, four-direction elevation sets, concept imagery for floor plans, render-output atoms. Scoped at [`40c_cortex_rendering_sprint.md`](40c_cortex_rendering_sprint.md); operator authorized 2026-05-22 to build now in parallel with cc-agent-C's IFC/WS-G work (cc-agent-R, dedicated clone). Executes [`42_*`](42_design_accelerator_program_plan.md) DA-12. `product` · Nick + cc-agent-R · XL sprint · ref: [`_decisions/2026-05-22_cortex_rendering_activation.md`](_decisions/2026-05-22_cortex_rendering_activation.md).
 - [ ] **AI Plan Review M4-B kickoff** — Now Codex 1b. Vocabulary cross-mapping deferred to [`33_smartcity_codex_1b_integration.md`](33_smartcity_codex_1b_integration.md) (stub). Execution under [`48_*`](48_codex_program_plan.md) Phase 1-2. `product` · Nick + agent · XL sprint.
 - [ ] **B1 bidirectional taxonomy** · **executing under [`42_*`](42_design_accelerator_program_plan.md) Phase 2 DA-7**. `product` · L.
 - [ ] **Sprint A04.7 followups** · pending dispatch draft (in P1 queue). `product` · agent · M.
@@ -310,6 +311,10 @@ Decisions awaiting external signal — customer conversations, market data, regu
 ### Market and customer
 
 - **Which second customer, and what the referral funnel looks like** — *Valerie + Sylvia*.
+
+### Product direction
+
+- **Agentic Revit operation (Claude operating Revit)** — *Nick (product decision)*. Whether and when to build an agent that operates Revit directly (creating and editing model geometry, running Revit commands) rather than the current extract-and-post connector. Not on the roadmap today; sits beyond end state. The Revit Connector is deliberately thin and one-directional per [`41_revit_connector.md`](41_revit_connector.md); even its aspirational v1.0 (six panels, B1-B5 bidirectional taxonomy) is architect-triggered intelligence rendered into Revit, not autonomous operation. Dependency stack before this is buildable: B1-B5 bidirectional taxonomy ([`42_*`](42_design_accelerator_program_plan.md) Phase 2 DA-7); ADR-014 skill/behavior atoms (queued for Q3 v2) plus execution-atom maturity; and either a connector architecture change or a separate MCP bridge exposing the Revit API as agent-callable tools. Trigger to activate: a Cortex QA signal showing architect demand for model write-back, or a specific customer ask. Logged 2026-05-22.
 
 ## Open architectural questions
 

@@ -3,7 +3,7 @@ decision_id: 2026-05-19_sync_4_5_and_cortex_sprint
 date: 2026-05-19
 owner: nick
 status: active
-related_canonical: [51_substrate_v1_sprint, 42_design_accelerator_program_plan, 48_codex_program_plan, 40_design_accelerator, 41_advanced_capture_features, 50_hauska_mcp_server, 28_mcp_first_product_design, 11_roadmap, 60a_eci_atomization_sprint, 00_current_state, CLAUDE.md, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_018_atom_contract_substrate_layer, _decisions/2026-05-18_substrate_v1_phase_0_close, _decisions/2026-05-18_substrate_v1_dispatch_reallocation]
+related_canonical: [51_substrate_v1_sprint, 42_design_accelerator_program_plan, 48_codex_program_plan, 40_design_accelerator, 40b_advanced_capture_features, 50_hauska_mcp_server, 28_mcp_first_product_design, 11_roadmap, 60a_eci_atomization_sprint, 00_current_state, CLAUDE.md, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_018_atom_contract_substrate_layer, _decisions/2026-05-18_substrate_v1_phase_0_close, _decisions/2026-05-18_substrate_v1_dispatch_reallocation]
 ---
 
 ## Decision
@@ -18,7 +18,7 @@ The four workstreams:
 
 3. **Replit decouple + Neon swap.** legacy-design-tools production moves from Replit autoscale at `prompt-agent-accelerator.replit.app` to Cloud Run; current Neon prod instance is swapped to a fresh prod-grade Neon instance per operator's specs. Cutover is a separate operator-led action sequenced after all of Lanes A, B, C.1, C.3, C.4 close.
 
-4. **Rendering / image-to-BIM / image-to-CAD descope.** Three advanced capture lanes pulled from the active sprint into a new `41_advanced_capture_features.md` doc with `status: queued` and an explicit activation gate (five conditions must clear).
+4. **Rendering / image-to-BIM / image-to-CAD descope.** Three advanced capture lanes pulled from the active sprint into a new `40b_advanced_capture_features.md` doc with `status: queued` and an explicit activation gate (five conditions must clear).
 
 ## Context
 
@@ -48,7 +48,7 @@ Second, the cutover (legacy-design-tools Replit → Cloud Run + Neon swap) is a 
 
 Third, MCP co-design with L-surface UI is materially cheaper than UI-first-then-retrofit-later. Per the 2026-05-19 session conversation, the cost is roughly 20% extra per surface for co-design; the savings is one full retrofit pass per surface later. Sequencing this sprint with co-design avoids paying that retrofit cost.
 
-The descope of rendering + image-to-BIM + image-to-CAD to `41_advanced_capture_features.md` follows the same logic in reverse: those three lanes do not share infrastructure with the L1-L6 + MCP + cutover work, would saturate agent fleet capacity if pulled into this sprint, and are not required for the next QA cycle. Pulling them into a queued standalone doc with an explicit activation gate preserves the architectural intent in the doc set without bleeding into sprint scope.
+The descope of rendering + image-to-BIM + image-to-CAD to `40b_advanced_capture_features.md` follows the same logic in reverse: those three lanes do not share infrastructure with the L1-L6 + MCP + cutover work, would saturate agent fleet capacity if pulled into this sprint, and are not required for the next QA cycle. Pulling them into a queued standalone doc with an explicit activation gate preserves the architectural intent in the doc set without bleeding into sprint scope.
 
 ## Sprint execution shape
 
@@ -70,7 +70,7 @@ Dispatch files capturing each lane's scope:
 Explicitly named per the focus queue rule:
 
 - Sync 5 remaining 16+ TX cities (Round Rock, Pflugerville, Cedar Park, Leander, Hutto, Taylor, Georgetown, Austin, San Antonio, Fort Worth, El Paso, Plano, Arlington, Irving, Garland, Lubbock, Laredo, Jarrell, Frisco, McKinney, Killeen, M9-TBD) — deferred to public-launch-sequenced demand.
-- Rendering (mnml.ai integration depth), image-to-BIM, image-to-CAD — descoped to [`41_advanced_capture_features.md`](../41_advanced_capture_features.md) with explicit activation gate.
+- Rendering (mnml.ai integration depth), image-to-BIM, image-to-CAD — descoped to [`40b_advanced_capture_features.md`](../40b_advanced_capture_features.md) with explicit activation gate.
 - ECI atomization Phase 1 (registry scaffold) plus Phase 2 (backfill) — stays queued during this sprint; cc-agent allocation deferred per [`60a_eci_atomization_sprint.md`](../60a_eci_atomization_sprint.md).
 - SmartCity OS WS-1 (migration spine) plus WS-3 (security sweep remainder) plus WS-4 (schema / multi-tenancy) — stays queued behind this sprint per [`30a_smartcity_stabilization_sprint.md`](../30a_smartcity_stabilization_sprint.md).
 - IFC import bug (the deferred-bug carry-over): explicitly accepted into sprint scope as a deferred verification. Stage 9 retry against post-cutover Cloud Run + new Neon is the verification gate. If still broken post-cutover, dedicated debug session post-sprint; do not block QA cycle on it without explicit operator authorization.

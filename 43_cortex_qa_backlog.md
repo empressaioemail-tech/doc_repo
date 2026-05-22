@@ -4,7 +4,7 @@ title: Cortex QA backlog — post-cutover verification window
 status: active
 last_updated: 2026-05-22
 applies_to: design-accelerator
-related: [00_current_state, 40_design_accelerator, 42_design_accelerator_program_plan, 41_advanced_capture_features, 49_code_ingestion_pipeline, 90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover]
+related: [00_current_state, 40_design_accelerator, 42_design_accelerator_program_plan, 40b_advanced_capture_features, 49_code_ingestion_pipeline, 90_runbooks/legacy_design_tools_replit_to_cloud_run_cutover]
 ---
 
 # Cortex QA backlog
@@ -95,7 +95,7 @@ Status 2026-05-20: delivered. cc-agent-M produced the hauska-mcp-server side and
 
 Items QA-06, QA-10. Not QA bugs; each gets its own conversation.
 
-QA-06 routes to [`41_advanced_capture_features.md`](41_advanced_capture_features.md), where rendering is descoped, and the operator framed plan-set publishing as pairing with rendering work. It carries a catalog-thesis-check gate before any commitment because it raises product-line placement questions: whether publisher-ready plan export is an Empressa product surface, and whether "Claude operates Revit" sits in the Hauska or Empressa layer.
+QA-06 routes to [`40b_advanced_capture_features.md`](40b_advanced_capture_features.md), where rendering is descoped, and the operator framed plan-set publishing as pairing with rendering work. It carries a catalog-thesis-check gate before any commitment because it raises product-line placement questions: whether publisher-ready plan export is an Empressa product surface, and whether "Claude operates Revit" sits in the Hauska or Empressa layer.
 
 QA-10 resolved 2026-05-20. Pre-mortem cleared green (all load-bearing commitments clear; one operational yellow on focus-queue, operator-acknowledged). The operator chose a prioritized one-off Hutto ingest ahead of the deferred Sync 5, over the planner's queue-with-Sync-5 recommendation. Decision record at [`_decisions/2026-05-20_hutto_tx_prioritized_ingest.md`](_decisions/2026-05-20_hutto_tx_prioritized_ingest.md); dispatched to cc-agent-E per [`_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md`](_dispatches/2026-05-20_cc-agent-E_hutto_tx_ingest.md). The decision is provisional pending platform verification: if Hutto publishes on eCode360 rather than Municode, the one-off ingest re-routes to a bizops partnership-API track (the Smithville pattern). Sylvia partnership outreach to Hutto runs in parallel as operator-paced bizops. Tracked against [`49_code_ingestion_pipeline.md`](49_code_ingestion_pipeline.md).
 
@@ -129,7 +129,7 @@ Phase 3, the feature build: QA-27, QA-28, QA-29. These are net-new in-app capabi
 
 ### Execution order
 
-WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR #56 merged). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 41. Every first-pass QA item (QA-01 through QA-16) is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic. The second operator pass (QA-17 through QA-26) is the open WS-F backlog, triaged above and feeding the roadmap scrub. The third operator pass (2026-05-22) is WS-G: the customer-zero loop is broken, dispatched as the one phased cc-agent-C QA build, with QA-27 through QA-29 as its Phase 3 features.
+WS-A and WS-B merged via legacy-design-tools PR #55. WS-D is delivered as [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md). WS-C is complete (cc-agent-C; PR #56 merged). WS-E: QA-10's Hutto UDC ingest is done (hauska-engine PR #15), with the eCode360 general code routed to a partnership track; QA-06 let-ride to doc 40b. Every first-pass QA item (QA-01 through QA-16) is delivered, merged, complete, or routed except QA-04: its Part 2 IFC fixes are landed (PRs #57 and #58 merged, the cortex-prod schema migration applied), but QA-04 stays open behind QA-16, the WS-A follow-on that isolates the IFC parse before IFC ingest can take production traffic. The second operator pass (QA-17 through QA-26) is the open WS-F backlog, triaged above and feeding the roadmap scrub. The third operator pass (2026-05-22) is WS-G: the customer-zero loop is broken, dispatched as the one phased cc-agent-C QA build, with QA-27 through QA-29 as its Phase 3 features.
 
 ## Standing findings
 
