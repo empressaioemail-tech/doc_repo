@@ -10,6 +10,8 @@ related: [2026-05-21_cc-agent-AC_api_server_import_migration, 25_atom_architectu
 
 # cc-agent-AC dispatch — retire @workspace/empressa-atom
 
+> **COMPLETE 2026-05-21.** Delivered as PR #67 (open, CI green). Re-enumeration confirmed `lib/submission-classifier` and `scripts` as the only importers; both migrated and `lib/empressa-atom/` removed (34 files, 3343 deletions). The ADR-018 atom-contract transition for legacy-design-tools is complete across #64/#65/#67. cc-agent-AC's dispatch queue is empty.
+
 You are cc-agent-AC. This dispatch finishes the `legacy-design-tools` migration off the workspace-private `@workspace/empressa-atom` staging package onto the published `@hauska/atom-contract`, and removes the staging package. It is the scoped follow-on you enumerated yourself when PR #65 landed.
 
 ## Activation gate
