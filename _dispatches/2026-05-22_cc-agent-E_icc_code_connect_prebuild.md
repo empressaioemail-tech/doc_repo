@@ -10,6 +10,8 @@ related: [80_adrs/adr_019_layered_code_substrate, 49_code_ingestion_pipeline, 27
 
 # cc-agent-E dispatch — ICC Code Connect adapter, pre-credential build-out
 
+> **Completed 2026-05-22.** All four deliverables done: D1 adapter (PR #24, merged), D2 model-code extractor (PR #25, open), D3 Layer 1 eval rubric (PR #26, open), D4 corpus-edition plan (resolved). Session summaries: [`_sessions/2026-05-22_icc_code_connect_prebuild_cc-agent-E.md`](../_sessions/2026-05-22_icc_code_connect_prebuild_cc-agent-E.md) and [`_sessions/2026-05-22_icc_prebuild_extractor_eval_cc-agent-E.md`](../_sessions/2026-05-22_icc_prebuild_extractor_eval_cc-agent-E.md). cc-agent-E's next work is Sync 5 Tier 1 (Georgetown next). Live Layer 1 corpus ingest stays gated on ICC credentials, a separate post-credentials dispatch.
+
 You are cc-agent-E. This dispatch builds the ICC Code Connect integration for the Layer 1 model-code base, as far as it can be built before the operator has live API credentials. The operator has an ICC meeting next week to obtain Code Connect API access; the goal here is that the moment credentials land, Layer 1 ingest is "populate the secret, run the ingest, run the eval," not "start building."
 
 ## Why this exists
