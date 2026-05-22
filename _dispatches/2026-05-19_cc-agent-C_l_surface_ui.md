@@ -10,6 +10,13 @@ related: [_decisions/2026-05-19_sync_4_5_and_cortex_sprint, 42_design_accelerato
 
 # Lane C.4 — cc-agent-C dispatch (L1-L6 UI surfaces with MCP co-design)
 
+> **Activation update 2026-05-22.** This dispatch is fully unblocked and is cc-agent-C's next work, after the Codex Phase 2 reviewer surfaces (CDX-3/4/5, PRs #69/#70/#71) completed. Gate status, all clear:
+> - Lane C.3 (the EngagementDetail split this dispatch hooks into) merged as legacy-design-tools PR #43. The per-section components exist on `main`.
+> - All six L1-L6 atom shapes are locked at `@hauska-engine/atoms@0.6.0`; every per-surface Sync B has fired, so no surface is atom-blocked.
+> - The Lane B MCP tool counterparts all shipped on `hauska-mcp-server` main (24 L-surface tools); `legacy-client.ts` is the final consumer-signature reference.
+>
+> Before starting: re-orient onto `main`, pull, and run `pnpm install` (PRs #65 and #67 changed dependencies; a pull without `pnpm install` fails typecheck on `@hauska/atom-contract`). Keep using explicit per-path `git add`: four stray pre-existing modified test files in this clone must stay out of your branches. The closing paragraph below about the C.6 cutover is stale: the Replit-to-Cloud-Run cutover already happened on 2026-05-20.
+
 You are cc-agent-C continuing on the `legacy-design-tools` repo. Lane C.4 covers the L1-L6 **endpoints + UI surfaces** per `42_design_accelerator_program_plan.md` QA-readiness milestone definitions. Six surfaces; each gates on the matching Sync B (atom-shape lock) from Lane A.2 (cc-agent-E).
 
 **Scope expanded per Amendment 6 (2026-05-19):** Lane C.4 per-surface work is endpoints + UI, NOT just UI. cc-agent-M's MCP tools call legacy-design-tools endpoints that **do not exist yet** — you build them. Canonical contract: [`_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md`](../_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md). The endpoints persist L1-L6 atoms in legacy-design-tools Postgres; cc-agent-M's MCP tools and your UI surfaces both consume the endpoints. Atom shape lives in `hauska-engine/packages/atoms/` (cc-agent-E's domain); runtime persistence lives in legacy-design-tools (your domain); both surfaces consume the contract.
