@@ -2,7 +2,7 @@
 id: adr_019_layered_code_substrate
 title: "ADR-019 — Layered code substrate (model-code base, jurisdiction amendment overlay, local code)"
 status: accepted
-last_updated: 2026-05-21
+last_updated: 2026-05-22
 applies_to: portfolio
 related: [49_code_ingestion_pipeline, 08_tiered_access_model, 09_post_saas_substrate_thesis, 28_mcp_first_product_design, 73_partnerships, adr_001_atom_architecture, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
 owner: nick
@@ -82,7 +82,7 @@ These are implementation-mechanism choices left for cc-agent-E, who executes the
 
 Whether the existing `code-amendment` atom type carries jurisdictional amendments directly, or whether a distinct jurisdictional-amendment type or link is cleaner than overloading the temporal-amendment type. Engine call for cc-agent-E.
 
-Which model-code editions to ingest first, and in what order. Likely the editions Texas jurisdictions most commonly adopt, recent IRC, IBC, and IECC editions first.
+Which model-code editions to ingest first, and in what order. **Resolved 2026-05-22** by cc-agent-E in the ICC Code Connect prebuild session: a three-wave plan ordered by how many active-corpus jurisdictions each edition immediately serves (the amortization logic this ADR turns on). Wave 1, the 2021 IRC then IBC then IECC, in that order (the Central Texas Tier 1 cities and Austin predominantly adopt the 2021 I-Codes, so one ingest underlies the whole active corpus; IRC first as the residential-review volume surface). Wave 2, the 2018 IRC/IBC/IECC, the prior-cycle editions still in force in slower-adopting jurisdictions and needed for as-of-time queries. Wave 3, the remaining I-Codes (IFC, IMC, IPC, IFGC) at 2021, then 2015 editions of the high-traffic codes as a tail. Current edition before historical within each code. The NEC stays excluded (NFPA, not on Code Connect).
 
 Deep-link target granularity: section-level deep-links versus chapter-level, depending on what the ICC and NFPA viewers expose as addressable anchors.
 
@@ -121,5 +121,6 @@ An ICC or NFPA licensing partnership landing is an upgrade, not a reversal: it c
 
 ## Revision history
 
+- **2026-05-22 (corpus-edition order resolved; adapter shipped):** the open decision on which model-code editions to ingest first is resolved as a three-wave plan (Wave 1: 2021 IRC/IBC/IECC; Wave 2: 2018 IRC/IBC/IECC; Wave 3: the remaining I-Codes), per cc-agent-E's ICC Code Connect pre-credential build-out. The Code Connect OAuth2 adapter shipped as hauska-engine PR #24; the model-code extractor and the Layer 1 eval rubric are scoped to follow. See [`_sessions/2026-05-22_icc_code_connect_prebuild_cc-agent-E.md`](../_sessions/2026-05-22_icc_code_connect_prebuild_cc-agent-E.md).
 - **2026-05-21 (Layer 1 access finding):** cc-agent-E's E1 probes established that ICC serves no model-code structure freely; Layer 1 ingest is gated on ICC structured-data access (Code Connect API or partnership) and on NFPA for the NEC. The ADR's premise that the interim deep-link footing is independent of the ICC and NFPA relationship is corrected. See the Material update section near the top. The layered architecture (engine PRs #17/#18/#19) is built and merged; Layer 3 ingest is unaffected and continues.
 - **2026-05-21 (origin):** drafted during the Claude Code strategic session acting on the two moves surfaced by the Hutto TX UDC ingest. Ratifies the three-layer decomposition (shared model-code base, jurisdiction amendment overlay, bespoke local code), the interim deep-link footing for the Layer 1 base text, and the decoupling of the substrate from both the IP attorney memo and the ICC and NFPA pitch. Closes the cross-jurisdictional-code-reuse and custom-amendment-handling open-design items in doc 49.
