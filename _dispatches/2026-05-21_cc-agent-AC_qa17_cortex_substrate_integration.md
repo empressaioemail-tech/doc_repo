@@ -35,9 +35,19 @@ Wire cortex-api to consume the Hauska substrate, and make the Code Library page 
 
 Operator-supervised, not maximum-autonomy. Open PRs for review. Do not self-deploy cortex-api.
 
-## Workspace ownership
+## Workspace provisioning and ownership
 
-cc-agent-AC owns a dedicated `legacy-design-tools` clone for this dispatch, separate from cc-agent-C's. Branch your work under `qa-17/*`. cc-agent-C is on `chat.ts`, the IFC parse, and the upload feature; you are on the cortex-api substrate client and the Code Library page. Keep file overlap at zero. If you enter a working directory and see another agent's uncommitted changes, stop and surface to the planner.
+**Amended 2026-05-21:** the dedicated clone this dispatch assumed did not exist on disk; cc-agent-AC surfaced the blocker per the stop-and-surface clause rather than working in cc-agent-C's tree. Provisioning is now explicit.
+
+cc-agent-AC owns a dedicated `legacy-design-tools` clone for this dispatch, separate from cc-agent-C's. It does not yet exist — create it as your first step:
+
+```
+git clone https://github.com/empressaioemail-tech/legacy-design-tools P:\ldt-ac-qa17
+```
+
+Branch your work under `qa-17/*` from `origin/main`. Do not work in `P:\legacy-design-tools` — that is cc-agent-C's tree, currently on `qa-22/site-context-reliability` with cc-agent-C's uncommitted scratch.
+
+cc-agent-C is running QA-22 Part 1 (site-context layer reliability — the server-side adapter-runner timeout and the site-context layer components). You are on the cortex-api substrate client and the Code Library page. Those are distinct Cortex surfaces, and because you work a separate clone, any incidental file overlap surfaces only as a PR-time merge conflict, never a working-tree collision. If QA-17 turns out to need a file QA-22 is also editing, flag it to the planner. If you enter a working directory and see another agent's uncommitted changes, stop and surface.
 
 ## Reporting
 
