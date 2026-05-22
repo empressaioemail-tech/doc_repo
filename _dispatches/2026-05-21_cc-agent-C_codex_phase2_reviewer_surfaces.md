@@ -30,9 +30,13 @@ Verify the cortex-api L-surface against source before building each stream, the 
 
 **CDX-5 — Jurisdiction switcher.** Runtime jurisdiction selection (Grand County, Bastrop UDC, and others as the corpus exists); findings update on switch.
 
+**Planner ruling 2026-05-21 (after the CDX-3 L-surface check).** The finding-generation route resolves jurisdiction implicitly from the engagement; there is no per-run jurisdiction-override parameter. CDX-5 is therefore scoped as an **engagement/submission switcher** — the reviewer switches which engagement is in view, and jurisdiction follows the engagement. Do NOT add an engine-side or api-server jurisdiction-override parameter; that is out of scope (focus-queue rule: it would pull engine work into this reviewer-surface dispatch). The cross-jurisdiction "what-if" (running one submission against an arbitrary jurisdiction) is logged as a possible Phase 3 capability, not Phase 2.
+
 ## Hard requirement — sell reasoning, not data
 
 Structural commitment 1 governs this surface. Every finding the UI renders carries its reasoning chain, source citation, confidence score, and timestamp, shown visibly rather than collapsed away to a bare pass-or-fail verdict. The engine produces these on every finding; the reviewer surface must surface them. A findings UI that shows verdicts without the reasoning chain fails the commitment and fails this dispatch. Adjudication atoms written by CDX-4 carry reviewer attribution and a timestamp.
+
+**Clarification 2026-05-21 (after the CDX-3 L-surface check).** The finding wire has no separately-structured "reasoning chain" field. The engine's reasoning IS the finding `text` — free-text with inline, validator-stripped citations. The commitment is met by rendering the finding `text` in full and unabbreviated alongside the structured `citations` / `confidence` / `aiGeneratedAt`, exactly as CDX-3's `FindingCard` does. Do not collapse or truncate the finding text. No engine change is required or in scope.
 
 ## Out of scope — gated or other-owner Phase 2 streams
 
