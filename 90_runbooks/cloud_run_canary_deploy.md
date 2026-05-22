@@ -2,7 +2,7 @@
 id: cloud_run_canary_deploy
 title: Cloud Run canary deploy runbook
 status: active
-last_updated: 2026-05-15
+last_updated: 2026-05-22
 applies_to: portfolio
 related: [10_ground_truth, 12_migration_sprint, 20_agent_operating_rules, 91_postmortems/2026-05-05_track_b_deploy_saga]
 ---
@@ -12,8 +12,8 @@ related: [10_ground_truth, 12_migration_sprint, 20_agent_operating_rules, 91_pos
 > **Operational runbook.** Use this for any Cloud Run service deploy
 > in the portfolio: SmartCity OS revisions, the Phase 1A cutover for
 > legacy-design-tools, future product Cloud Run services. The pattern
-> is build â canary at 0% traffic â smoke probe â shift traffic â
-> backup tag â observation.
+> is build â canary at 0% traffic â **run-migrations** â smoke probe
+> â shift traffic â backup tag â observation.
 >
 > **Why canary at 0% traffic first:** the Track B saga
 > ([`91_postmortems/2026-05-05_track_b_deploy_saga.md`](../91_postmortems/2026-05-05_track_b_deploy_saga.md))
@@ -55,10 +55,11 @@ git push origin backup/pre-<task-name>-$(date +%Y%m%d)
 
 ## Deploy sequence
 
-Substitute `$SERVICE_NAME` (e.g. `smartcity-api`), `$PROJECT_ID`
-(e.g. `smartcity-os-prod`), `$REGION` (e.g. `us-central1`),
-`$IMAGE_PATH` (the Artifact Registry path), and `$CANARY_TAG` (a
-short identifier for this deploy, e.g. `w1-c-4a-auth-fix`).
+Substitute `$SERVICE_NAME` (e.g. `cortex-api`), `$PROJECT_ID` (e.g. `legacy-design-tools-prod`), `$REGION` (e.g. `us-central1`), `$IMAGE_PATH` (the Artifact Registry path), and `$CANARY_TAG` (a short identifier for this deploy, e.g. `w1-c-4a-auth-fix`).
+
+For `legacy-design-tools` / `cortex-api`, every step in this sequence is a separate `workflow_dispatch` against `.github/workflows/cloud-run-deploy.yml`'s `action` input â no local `gcloud` required. See `docs/deploy.md` (in the legacy-design-tools repo) for the workflow form. The sections below give the equivalent direct-`gcloud` form for use against other services or when the workflow is unavailable.
+
+**Canonical sequence**: deploy-canary â **run-migrations** â smoke probe â shift traffic â backup tag â observation. Each is a deliberate operator-triggered step; never chain them. `run-migrations` is mandatory between deploy-canary and the smoke probe â it applies any pending `lib/db/drizzle/*.sql` files so the canary's smoke probe hits the right schema.
 
 ### Step 1 â Set defaults
 
@@ -104,7 +105,27 @@ The `--no-traffic` flag is the load-bearing piece. It creates a new
 revision and tags it without shifting any traffic to it. The
 revision becomes addressable via a tag-prefixed URL.
 
-### Step 4 â Get the canary URL
+### Step 4 â Run pending DB migrations (mandatory)
+
+The cortex-api deploy ships code; migrations are a separate deliberate step so a schema-touching PR cannot drift the prod DB behind the code it deploys (the failure mode the 2026-05-22 P0-1 IFC 500 surfaced).
+
+Workflow form (preferred â operator-runnable with no local `gcloud`):
+
+```bash
+gh workflow run "Cloud Run Deploy (cortex-api)" \
+  -f action=run-migrations
+# First execution against a given DB also passes `-f bootstrap=true`
+# (one-time, seeds _schema_migrations with every existing file marked
+# applied â use when the DB is already at the head).
+```
+
+The job authenticates via the same Workload Identity Federation the deploy job uses, fetches `DEPLOYMENT_DATABASE_URL` from Secret Manager, echoes the pending list, applies each pending file in its own transaction, and echoes the applied state on success. A failure rolls the offending file and fails the job with the file name â production is left at the prior schema, not half-migrated.
+
+Direct form (for services not yet on the workflow, or when the workflow is unavailable): per [`neon_schema_migration_via_cloud_shell.md`](neon_schema_migration_via_cloud_shell.md), applying the pending SQL files by hand via `psql -f` in Cloud Shell. The runner script is `lib/db/scripts/migrate-prod.mjs` in `empressaioemail-tech/legacy-design-tools`.
+
+If `run-migrations` reports zero pending, the canary code does not require new schema and the step is a no-op â continue to smoke probe. If migrations apply, re-run the smoke probe **against the canary URL** (the next step) so the smoke verifies the post-migration behaviour.
+
+### Step 5 â Get the canary URL
 
 ```bash
 CANARY_URL=$(gcloud run services describe $SERVICE_NAME \
@@ -117,7 +138,7 @@ The URL has the form
 routes only to the canary revision; production traffic continues
 to flow to the prior revision.
 
-### Step 5 â Smoke probe against canary URL
+### Step 6 â Smoke probe against canary URL
 
 The smoke probe validates that the new revision's behavior matches
 expectations. Per HR-3 (deploy success != feature live), this is
@@ -145,7 +166,7 @@ If smoke probes return unexpected results, **stop here.** Do not
 shift traffic. Investigate against the canary URL â the prior
 revision is still serving production unaffected.
 
-### Step 6 â Shift 100% traffic to the canary tag
+### Step 7 â Shift 100% traffic to the canary tag
 
 Once smoke probes pass:
 
@@ -158,18 +179,26 @@ This atomic update routes 100% of traffic to the canary revision.
 The prior revision is preserved and stays addressable for fast
 rollback.
 
-### Step 7 â Verify production URL
+Workflow form for legacy-design-tools / cortex-api (preferred):
+
+```bash
+gh workflow run "Cloud Run Deploy (cortex-api)" -f action=shift-traffic
+```
+
+The job runs the same `gcloud run services update-traffic --to-tags` command shown above, plus a `/api/healthz` smoke probe on the production URL that fails the job if the post-shift response is not 200 (HR-3 enforcement at the workflow layer).
+
+### Step 8 â Verify production URL
 
 ```bash
 # Verify against the production custom domain (or service URL)
 curl -sI https://$PRODUCTION_DOMAIN/api/healthz
-# Expected: same response as the canary smoke probe in step 5
+# Expected: same response as the canary smoke probe in step 6
 ```
 
 If the production URL response differs from the canary URL response
-post-traffic-shift, **roll back immediately** (step 9).
+post-traffic-shift, **roll back immediately** (see Rollback below).
 
-### Step 8 â Tag the deployed revision in git
+### Step 9 â Tag the deployed revision in git
 
 ```bash
 DEPLOYED_REV=$(gcloud run revisions list --service $SERVICE_NAME \
@@ -183,7 +212,7 @@ git push origin --tags
 This creates a backup tag at the merged SHA with the revision name
 embedded â useful for rollback context and audit trail.
 
-### Step 9 â Observation window
+### Step 10 â Observation window
 
 For deploys that change behavior visible to customers (auth, data,
 features), observe for ~1 hour minimum before declaring done. For
@@ -215,6 +244,16 @@ gcloud run revisions delete $CANARY_REVISION_NAME
 ```
 
 ### Failure detected after traffic shift
+
+Workflow form for legacy-design-tools / cortex-api (preferred â operator-runnable with no local `gcloud`):
+
+```bash
+gh workflow run "Cloud Run Deploy (cortex-api)" \
+  -f action=rollback \
+  -f rollback_revision=<previous-revision>
+```
+
+Direct form (other services, or when the workflow is unavailable):
 
 If the production URL is showing problems post-shift, revert
 traffic to the prior revision:
@@ -253,7 +292,7 @@ Halt and assess if any of these occur:
 - `gcloud run deploy` returns errors that don't resolve on retry
 - Canary URL doesn't respond at all (revision didn't boot)
 - Smoke probe in step 5 returns unexpected response shape
-- Step 7 production URL response differs from canary post-shift
+- Step 8 production URL response differs from canary post-shift
 - Three deploy attempts in 4 hours fail for distinct reasons (HR-7)
 
 ## Examples
@@ -358,6 +397,7 @@ source SHA.
   sequence in the 2026-05-05 planning conversation. Generalized for
   reuse across portfolio Cloud Run deploys (Phase 1A, Phase 2
   cutover, ongoing SmartCity OS revisions, future products).
+- **2026-05-22 (run-migrations as a mandatory canary step):** Inserted Step 4 â Run pending DB migrations â between deploy-canary and the smoke probe; renumbered steps 4-9 to 5-10. Added the `workflow_dispatch action` framing for legacy-design-tools / cortex-api â the new operator-runnable form per `cloud-run-deploy.yml`'s four-job action input shipped in legacy-design-tools PR #81 (Phase 2 of the 2026-05-22 QA build, `lib/db/scripts/migrate-prod.mjs` runner backed by a `_schema_migrations` tracker). Added workflow-form notes to shift-traffic and Rollback. Direct-`gcloud` forms retained for services not on the workflow.
 
 ## 2026-05-11 addendum — deploy mechanism + traffic-tag verification
 
