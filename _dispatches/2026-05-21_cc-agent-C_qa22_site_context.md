@@ -12,9 +12,9 @@ related: [43_cortex_qa_backlog, 11_roadmap, 20_agent_operating_rules, CLAUDE.md]
 
 You are cc-agent-C owning the `legacy-design-tools` repo. This dispatch is QA-22 Part 1: the site-context layers still fail. It is a focused engineering session toward the M-CortexQA milestone.
 
-## Activation gate
+## Status — ready to run
 
-This dispatch fires after the full Cortex QA close-out is merged. QA-16 (#59), QA-19 (#61), and QA-23 (#60) are merged; QA-18 lands once the QA-18 PR #62 conflict-resolution dispatch ([`2026-05-21_cc-agent-C_qa18_conflict_resolution.md`](2026-05-21_cc-agent-C_qa18_conflict_resolution.md)) completes. Also gated on the QA-04 operator-supervised canary resolving. Until then `legacy-design-tools` carries two concurrent agents; do not start this in parallel. Sequence it ahead of the codex-reviewer-qa scaffold ([`2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md`](2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md)): QA-22 is a user-facing reliability bug, the scaffold is net-new feature work, so the bug goes first.
+The full Cortex QA close-out (QA-16/19/23/18, PRs #59-62) merged 2026-05-21 and cc-agent-C is free, so this dispatch is ready. The QA-04 canary is an independent operator-supervised deploy of the IFC-isolation revision; it does not gate this engineering session, which produces a PR and self-deploys nothing. Run QA-22 before the codex-reviewer-qa scaffold ([`2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md`](2026-05-21_cc-agent-C_codex_reviewer_qa_scaffold.md)): QA-22 is a user-facing reliability bug, the scaffold is net-new feature work, so the bug goes first. cc-agent-AC may be running QA-17 or the api-server migration in its own separate clone; that is fine — separate clones, file overlap zero.
 
 ## Why this exists
 
