@@ -113,10 +113,14 @@ Workflow form (preferred â operator-runnable with no local `gcloud`):
 
 ```bash
 gh workflow run "Cloud Run Deploy (cortex-api)" \
+  --repo empressaioemail-tech/legacy-design-tools \
   -f action=run-migrations
 # First execution against a given DB also passes `-f bootstrap=true`
 # (one-time, seeds _schema_migrations with every existing file marked
 # applied â use when the DB is already at the head).
+#
+# The `--repo` flag lets `gh` run from any directory (e.g. Cloud Shell
+# `~`) without needing a `legacy-design-tools` clone in scope.
 ```
 
 The job authenticates via the same Workload Identity Federation the deploy job uses, fetches `DEPLOYMENT_DATABASE_URL` from Secret Manager, echoes the pending list, applies each pending file in its own transaction, and echoes the applied state on success. A failure rolls the offending file and fails the job with the file name â production is left at the prior schema, not half-migrated.
@@ -182,7 +186,9 @@ rollback.
 Workflow form for legacy-design-tools / cortex-api (preferred):
 
 ```bash
-gh workflow run "Cloud Run Deploy (cortex-api)" -f action=shift-traffic
+gh workflow run "Cloud Run Deploy (cortex-api)" \
+  --repo empressaioemail-tech/legacy-design-tools \
+  -f action=shift-traffic
 ```
 
 The job runs the same `gcloud run services update-traffic --to-tags` command shown above, plus a `/api/healthz` smoke probe on the production URL that fails the job if the post-shift response is not 200 (HR-3 enforcement at the workflow layer).
@@ -249,6 +255,7 @@ Workflow form for legacy-design-tools / cortex-api (preferred â operator-runnab
 
 ```bash
 gh workflow run "Cloud Run Deploy (cortex-api)" \
+  --repo empressaioemail-tech/legacy-design-tools \
   -f action=rollback \
   -f rollback_revision=<previous-revision>
 ```
