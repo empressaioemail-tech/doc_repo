@@ -135,6 +135,8 @@ L-surface atoms also get real `did:hauska:` DIDs via a new `lSurfaceProvenance` 
 
 Updated endpoint contract doc carries the three new endpoints + the convention extensions: [`_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md`](../_research/2026-05-19_l_surface_endpoint_contracts_cc-agent-M.md).
 
+**Amendment 9 (2026-05-22): Sync 5 un-deferred.** The Out-of-scope deferral of "Sync 5 remaining 16+ TX cities ... to public-launch-sequenced demand" is superseded. Per the operator's 2026-05-22 call and [`2026-05-22_sync5_texas_ingest_undeferred.md`](2026-05-22_sync5_texas_ingest_undeferred.md), cc-agent-E runs the Texas ingest ladder continuously toward statewide coverage; Tier 2 central-Texas is dispatched. The capacity-protection rationale for the deferral lapsed once the substrate-v1 plus Cortex/Codex plus cutover crunch closed; access-blocked platforms still route to the General Code partnership track per Commitment 2.
+
 ## Counterparties
 
 Internal: Nick (operator, all four pre-mortem resolutions plus decisions 0.19 + 0.20 + sprint-wide go-ahead). Affected agents: cc-agent-AC (Lane Foundation), cc-agent-E (Lane A.1 + A.2), cc-agent-M (Lane B), cc-agent-C (Lane C.1-4 sequenced), planner (this Claude Code session in doc_repo, sprint coordination).
