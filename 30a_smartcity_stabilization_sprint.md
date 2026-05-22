@@ -2,7 +2,7 @@
 id: 30a_smartcity_stabilization_sprint
 title: SmartCity OS Stabilization Sprint — platform-ready foundation
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-21
 applies_to: smartcity-os
 related: [30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 11_roadmap, 12_migration_sprint, 13_risk_register, 15_replit_neon_ownership_advisory, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan, 90_runbooks/neon_schema_migration_via_cloud_shell, 91_postmortems/2026-05-07_replit_dev_db_wedged, adr_002_replit_neon_migration]
 ---
@@ -15,6 +15,15 @@ related: [30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 1
 > criteria checked off, retrospective committed in `_sessions/`,
 > this doc's `status` flipped to `superseded` with `superseded_by:`
 > pointing to the retrospective.
+
+> **On operator hold (2026-05-21).** cc-agent-M is curbed and M-Stabilize
+> is paused at the operator's call: the operator is handling the
+> smartcity-os production database directly and wants full attention on
+> it. WS-1, the migration spine, touches that database, so agent work in
+> parallel would collide. The sprint resumes when the operator releases
+> it; the dispatch at
+> [`_dispatches/2026-05-21_cc-agent-M_m_stabilize_restart.md`](_dispatches/2026-05-21_cc-agent-M_m_stabilize_restart.md)
+> is ready to re-fire on that word.
 
 ## Why this sprint
 
