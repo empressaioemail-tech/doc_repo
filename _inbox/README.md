@@ -39,8 +39,15 @@ At every session break-point:
    ```
 
 4. Do not commit to the doc repo. Do not edit anything outside `_inbox/`.
-5. Keep committing the original summary in your own repo. That copy stays
-   the system of record; this one is a courier copy.
+5. Keep a durable record in your own repo. For a recon or a finding,
+   commit a note in your repo's conventional agent-notes location. For an
+   engineering session, the commits and the PR are already the durable
+   record, so a separate summary file is optional. Either way the
+   `_inbox/` drop above is the one required artifact and must not be
+   blocked on finding an in-repo home for the copy. (Surfaced 2026-05-21:
+   `legacy-design-tools` has no `_sessions/` directory, and dispatches
+   may forbid `_research/` as a courier substitute — neither blocks the
+   `_inbox/` drop.)
 
 That is the whole rule. Write the file, leave it, move on.
 

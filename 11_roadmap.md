@@ -126,7 +126,7 @@ The portfolio reaches end state across two milestone classes. Three product-read
 
 ### M-CortexQA — Cortex functional, QA-ready
 
-- **Gated on:** Combined Cortex/Codex sprint Lanes A, B, and C plus the legacy-design-tools Cloud Run cutover are complete (2026-05-20). Gate cleared; the remaining path to exit is the Cortex QA backlog burndown in [`43_cortex_qa_backlog.md`](43_cortex_qa_backlog.md): QA-04 (gated on the QA-16 operator-supervised canary), QA-17 substrate wiring, QA-22 site-context, and the WS-F tail. cc-agent-C's QA-16/19/23 close-out PRs (#59/#60/#61) merged 2026-05-21; QA-18 (PR #62) hit merge conflicts and is in conflict-resolution at the front of cc-agent-C's queue.
+- **Gated on:** Combined Cortex/Codex sprint Lanes A, B, and C plus the legacy-design-tools Cloud Run cutover are complete (2026-05-20). Gate cleared; the remaining path to exit is the Cortex QA backlog burndown in [`43_cortex_qa_backlog.md`](43_cortex_qa_backlog.md): QA-04 (gated on the QA-16 operator-supervised canary), QA-17 substrate wiring, QA-22 site-context, and the WS-F tail. the full Cortex QA close-out merged 2026-05-21 (QA-16/19/23/18 as PRs #59-62); QA-18 #62 needed a rebase plus a `CitationChip.test.tsx` mock fix and landed CI-green (design-tools 326/326).
 - **Doc:** [`42_design_accelerator_program_plan.md`](42_design_accelerator_program_plan.md) Phase 2 exit (updated 2026-05-19 to fold MCP co-design into Phase 2).
 - **Exits:** Nick can run Musgrave (or any active Moab project) end-to-end with structural evaluation per the 8-point QA-readiness definition. Bugs are pointable-at-atoms. MCP-driven agent workflows also exercise the full L1-L6 surface set via `cortex/*` tools.
 
