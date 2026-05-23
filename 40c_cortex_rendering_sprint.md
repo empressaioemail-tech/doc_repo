@@ -2,7 +2,7 @@
 id: 40c_cortex_rendering_sprint
 title: Cortex rendering sprint
 status: active
-last_updated: 2026-05-23 (Status reset against codebase: cc-agent-R Phase A.1 audit 2026-05-22 found the mnml.ai render feature already ~85-90% shipped from the prior V1 / Spec-54 sprint; operator chose path A — gap-fill only. Phase A (PR #79, mnml `GET /credits` + Prompt Generator) and Phase B (PR #80, credit badge + intent toggle + expert/style selects + Prompt Generator affordance) both merged 2026-05-22. Two scope items deferred as follow-ons: B.1 full schema-driven per-expert parameter grid; B.2 concept-imagery image-upload-as-source pipe — the intent toggle and prompt path shipped, but the underlying render still captures the GLB rather than an uploaded image. Renders surface stays dark in prod behind `RENDERS_PROD_ENABLED=false`; activation requires the env flag flip paired with `MNML_RENDER_MODE=live` in the same Cloud Run revision. Pre-existing 2026-05-22: this sprint is the execution home of `42` DA-12 and Lane 1 of `40b`; Lanes 2 and 3 of 40b stay queued.)
+last_updated: 2026-05-23 (Successor sprint dispatched: 40c's named B.1 + B.2 + 4 power-tool deferrals pulled forward into [`40e_cortex_rendering_parity_sprint.md`](40e_cortex_rendering_parity_sprint.md) per `_decisions/2026-05-23_cortex_rendering_parity_sprint_scope.md`. cc-agent-R re-activated 2026-05-23 on its dedicated clone; dispatch at `_dispatches/2026-05-23_cc-agent-R_rendering_parity_build.md`; behind `RENDERS_PROD_ENABLED` (unchanged). 40c remains the canonical record of the V1 gap-fill that closed PRs #79/#80. Earlier 2026-05-23: Status reset against codebase: cc-agent-R Phase A.1 audit 2026-05-22 found the mnml.ai render feature already ~85-90% shipped from the prior V1 / Spec-54 sprint; operator chose path A — gap-fill only. Phase A (PR #79, mnml `GET /credits` + Prompt Generator) and Phase B (PR #80, credit badge + intent toggle + expert/style selects + Prompt Generator affordance) both merged 2026-05-22. Two scope items deferred as follow-ons: B.1 full schema-driven per-expert parameter grid; B.2 concept-imagery image-upload-as-source pipe — the intent toggle and prompt path shipped, but the underlying render still captures the GLB rather than an uploaded image. Renders surface stays dark in prod behind `RENDERS_PROD_ENABLED=false`; activation requires the env flag flip paired with `MNML_RENDER_MODE=live` in the same Cloud Run revision. Pre-existing 2026-05-22: this sprint is the execution home of `42` DA-12 and Lane 1 of `40b`; Lanes 2 and 3 of 40b stay queued.)
 applies_to: design-accelerator
 related: [40b_advanced_capture_features, 42_design_accelerator_program_plan, 40_design_accelerator, 43_cortex_qa_backlog, 27_engine_evolution_plan, 28_mcp_first_product_design, _decisions/2026-05-22_cortex_rendering_activation]
 owner: nick
@@ -17,6 +17,16 @@ owner: nick
 > Activation decision: [`_decisions/2026-05-22_cortex_rendering_activation.md`](_decisions/2026-05-22_cortex_rendering_activation.md).
 
 ## Status — 2026-05-23
+
+**Successor sprint dispatched 2026-05-23.** The named B.1 + B.2 +
+power-tool deferrals below are now in-scope for
+[`40e_cortex_rendering_parity_sprint.md`](40e_cortex_rendering_parity_sprint.md)
+per [`_decisions/2026-05-23_cortex_rendering_parity_sprint_scope.md`](_decisions/2026-05-23_cortex_rendering_parity_sprint_scope.md).
+cc-agent-R re-activated; dispatch at
+[`_dispatches/2026-05-23_cc-agent-R_rendering_parity_build.md`](_dispatches/2026-05-23_cc-agent-R_rendering_parity_build.md).
+40c remains the canonical record of the V1 gap-fill that closed
+PRs #79/#80; the deferral status preserved below is historical context
+for 40e's scope.
 
 The cc-agent-R Phase A.1 audit 2026-05-22 found this sprint's premise
 wrong: the mnml.ai render feature was already built and merged to `main`
