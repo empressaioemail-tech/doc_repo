@@ -26,7 +26,7 @@ Every architectural and strategic move checks against these. Use the `premortem-
 
 1. **Sell reasoning, not data.** Every output carries reasoning chain, source citation, confidence score, timestamp regardless of tier. Layer 1 free, Layer 2 paid per `08_tiered_access_model.md`.
 
-2. **Partnership-first sourcing.** Cities, counties, firms are licensors with structural revenue share. Bastrop is the template.
+2. **Partnership-first sourcing.** Cities, counties, firms are licensors with structural revenue share. Bastrop is the template. **Scoping clarifier (2026-05-23 per `_decisions/2026-05-23_partnership_first_scoping.md`):** this commitment governs **city operational data + Hauska substrate ingest** (Bastrop UDC, code corpus, permit history, plan review precedent, SmartCity OS data, @hauska/atom-contract catalog atoms). It does NOT govern Cortex product-baseline data sourcing for architect-facing layers — national public-records aggregators (Regrid for parcels/zoning baseline) and federal national APIs (FEMA, USGS, USDA, USFWS, FCC) are out of scope. The Hauska refusal target is operational-data aggregation that locks cities out of revenue share, not public-records aggregation.
 
 3. **Cost per jurisdiction onboarded.** Under 200 dollars compute plus one hour human review per new jurisdiction. Hard kill at three counties if not achievable.
 
