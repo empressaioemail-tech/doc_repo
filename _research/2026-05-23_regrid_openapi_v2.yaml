@@ -1,0 +1,239 @@
+openapi: 3.0.0
+info:
+  title: Regrid OpenAPI Specification
+  version: 2.0.0
+  description: Integrate Regrid's parcel data in your tech stack with over 156M parcels records with associated spatial and tabular data including over 120 fields.
+
+externalDocs:
+  description: Regrid Parcel documentation and extended examples
+  url: https://support.regrid.com/api
+
+servers:
+- url: https://app.regrid.com/api/v2
+  description: Regrid API server
+
+security:
+  - APIKeyQueryParam: []
+
+paths:
+  /parcels/point:
+    get:
+      tags:
+        - Search by
+      summary: Point - Latitude and Longitude
+      description: >-
+        This endpoint delivers parcels using latitude and longitude points. You can add a radius zone to the point or
+        points and limit the amount of parcels returned in the response. Parameter 'geojson' takes priority if Lat/Lon is
+        used in same request. This endpoint allows access to test all of our premium matched datasets.
+        **Attention API Trial Token Users:** Data is restricted to 7 counties. Please only use data from one of the restricted counties.
+      parameters:
+        - $ref: '#/components/parameters/longitudeParam'
+        - $ref: '#/components/parameters/latitudeParam'
+        - $ref: '#/components/parameters/radiusParam'
+        - name: geojson
+          in: query
+          schema:
+            type: string
+          description: Geographic data structure for Point and MultiPoint only. This parameter takes priority if Lat/Lon is used in same request
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/countParam'
+        - $ref: '#/components/parameters/returnGeometry'
+        - $ref: '#/components/parameters/returnCustom'
+        - $ref: '#/components/parameters/returnFieldLabels'
+        - $ref: '#/components/parameters/returnStacked'
+        - $ref: '#/components/parameters/returnZoning'
+        - $ref: '#/components/parameters/matchedBuildings'
+        - $ref: '#/components/parameters/matchedAddresses'
+        - $ref: '#/components/parameters/enhancedOwnership'
+      responses:
+        '200':
+          description: 'A list of parcel features with optional buildings/addresses'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeaturesResponse'
+
+# NOTE: Full OpenAPI spec is operator-provided 2026-05-23.
+# Truncated here for repo size; the COMPLETE spec is in cc-agent-C2's
+# session context (operator dropped it in chat). Key surfaces:
+#
+# Endpoints used by Cortex SCOPE B:
+#   - GET  /parcels/point?lat=...&lon=...&token=...   <- primary parcel + zoning lookup
+#   - GET  /parcels/address?query=...&token=...        <- (future) address-based
+#   - GET  /schemas/parcel                              <- introspect available fields
+#   - GET  /schemas/zoning                              <- introspect zoning schema
+#   - GET  /usage                                       <- billing visibility
+#
+# Auth: APIKeyQueryParam (token query param)
+# Server: https://app.regrid.com/api/v2
+#
+# Response shape (parcels.features[].properties.fields includes):
+#   Standard tier: parcelnumb, geometry, owner, zoning, zoning_description,
+#                  sourceurl, ll_last_refresh, ll_updated_at, lat, lon
+#   Premium tier:  zoning_id, zoning_type, zoning_subtype, zoning_code_link,
+#                  fema_flood_zone, padus_public_access, lbcs_*
+#
+# Trial restriction: Data limited to 7 counties (Utah NOT in default trial list).
+# Operator OK upgrading paid plan as needed; UT is just the current test geo.
+
+components:
+  securitySchemes:
+    APIKeyQueryParam:
+      type: apiKey
+      in: query
+      name: token
+
+  parameters:
+    longitudeParam:
+      name: lon
+      in: query
+      schema:
+        type: number
+      description: Longitude point
+    latitudeParam:
+      name: lat
+      in: query
+      schema:
+        type: number
+      description: Latitude point
+    radiusParam:
+      name: radius
+      in: query
+      schema:
+        type: integer
+      description: '(Default: 0, Maximum: 32000) Radius in meters'
+    limitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+      description: 'Maximum number of Parcel Records to return'
+    countParam:
+      name: return_count
+      in: query
+      schema:
+        type: boolean
+    returnGeometry:
+      name: return_geometry
+      in: query
+      schema:
+        type: boolean
+      description: 'Default true. Set false to omit geometry'
+    returnCustom:
+      name: return_custom
+      in: query
+      schema:
+        type: boolean
+      description: 'Default false. Set true for county-specific fields beyond standard schema'
+    returnFieldLabels:
+      name: return_field_labels
+      in: query
+      schema:
+        type: boolean
+    returnStacked:
+      name: return_stacked
+      in: query
+      schema:
+        type: boolean
+    returnZoning:
+      name: return_zoning
+      in: query
+      schema:
+        type: boolean
+      description: 'Default true. Set false to disable zoning data in response'
+    matchedBuildings:
+      name: return_matched_buildings
+      in: query
+      schema:
+        type: boolean
+    matchedAddresses:
+      name: return_matched_addresses
+      in: query
+      schema:
+        type: boolean
+    enhancedOwnership:
+      name: return_enhanced_ownership
+      in: query
+      schema:
+        type: boolean
+
+  schemas:
+    FeaturesResponse:
+      type: object
+      properties:
+        parcels:
+          type: object
+          properties:
+            type:
+              type: string
+              example: FeatureCollection
+            features:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: Feature
+                  geometry:
+                    type: object
+                    description: GeoJSON Polygon or MultiPolygon
+                  properties:
+                    type: object
+                    properties:
+                      headline:
+                        type: string
+                      path:
+                        type: string
+                      fields:
+                        type: object
+                        description: 120+ parcel data fields per schema
+                      field_labels:
+                        type: object
+                      context:
+                        type: object
+                      ll_uuid:
+                        type: string
+                  id:
+                    type: integer
+        zoning:
+          description: Zoning details returned when supported by account
+          type: object
+          properties:
+            type:
+              type: string
+              example: FeatureCollection
+            features:
+              type: array
+              items:
+                type: object
+                properties:
+                  properties:
+                    type: object
+                    properties:
+                      zoning:
+                        type: string
+                      zoning_description:
+                        type: string
+                      zoning_type:
+                        type: string
+                      zoning_subtype:
+                        type: string
+                      zoning_code_link:
+                        type: string
+                      min_front_setback_ft:
+                        type: number
+                      min_rear_setback_ft:
+                        type: number
+                      min_side_setback_ft:
+                        type: number
+                      max_building_height_ft:
+                        type: number
+                      min_lot_area_sq_ft:
+                        type: number
+                      max_far:
+                        type: number
+                      max_coverage_pct:
+                        type: number
+                      max_density_du_per_acre:
+                        type: number
