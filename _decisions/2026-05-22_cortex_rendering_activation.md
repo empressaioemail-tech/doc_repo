@@ -146,3 +146,67 @@ duration of this build, concurrent with cc-agent-C. Affects the
 M-CortexQA milestone path. mnml.ai is the third-party rendering vendor;
 this decision commits to the existing mnml.ai integration as the v1
 vendor, with vendor re-evaluation noted as open in doc 40b Lane 1.
+
+## Amendment 2026-05-23 — premise correction + actual execution
+
+The activation decision above presumed greenfield: that 40c was building
+the mnml render engine from a placeholder. The cc-agent-R Phase A.1
+audit 2026-05-22 found that premise wrong. The mnml.ai render feature
+was already built and merged to `main` by the earlier V1 / Spec-54
+sprint, roughly 85-90% of 40c. The placeholder framing in 40c, in this
+decision, and in the cc-agent-R dispatch all reflected pre-V1 state and
+were not reconciled against the codebase before this decision was
+written.
+
+The operator's response to the audit was **path A — gap-fill only**,
+additive behind `RENDERS_PROD_ENABLED`. cc-agent-R executed:
+
+- **PR #79 merged 2026-05-22** (`b8b0cdf`) — backend: `GET /credits` +
+  Prompt Generator added to the mnml client and `api-server`, additive
+  behind `RENDERS_PROD_ENABLED`, no DB migration.
+- **PR #80 merged 2026-05-22** — frontend: `RenderCreditsBadge`,
+  `RenderKickoffDialog` extended with the deliverable-vs-concept intent
+  toggle, all six expert types + all eight render styles surfaced as
+  selects, Prompt Generator affordance wired to the new backend.
+
+Two scope items from this decision deferred as follow-ons (named in 40c
+Status):
+
+- **B.1** — the full schema-driven per-expert parameter grid (camera
+  angle × time of day × weather × greenery × vehicles × people). The
+  highest-leverage subset (expert + style) shipped; the rest is a
+  follow-on with no named demand.
+- **B.2** — image-upload-as-render-source for concept imagery. The
+  architect-facing concept affordance ships (intent toggle, plan expert,
+  sketch styles, Prompt Generator), but the underlying render still
+  captures the GLB. Concept imagery is **not end-to-end** from a manual
+  sketch upload until B.2 lands.
+
+The four remaining power tools (4K upscaler, render enhancer, AI
+eraser, inpainting, style transfer) and the `cortex/render_*` MCP
+retrofit stay queued per the original Reasoning section — no change to
+their treatment.
+
+**Activation gate (added by this amendment).** The shipped scope is
+gated by `RENDERS_PROD_ENABLED=false` in prod. Flipping the flag must
+be paired with `MNML_RENDER_MODE=live` in the same Cloud Run revision —
+flipping one without the other either keeps mock renders behind a live
+surface or makes the surface reachable while still mocked. The two-flip
+is an operator action; no further code change is required to activate
+the shipped scope.
+
+**Premortem deferred to the activation event.** This decision's
+pre-mortem covered the build commitment; activation is a smaller commit
+(flag flips, no code change) but exposes credit spend to live use. A
+brief operator-facing pre-mortem at activation should cover credit-COGS
+exposure, vendor uptime dependency, and whether concept imagery is
+gated on B.2 landing first (so the toggle doesn't ship a non-functional
+upload path to architects).
+
+**Structural-commitment status unchanged.** Load-bearing commitments
+are still clean (render-output atom provenance, vendor not jurisdiction,
+COGS not jurisdiction-onboarding cost). The operational yellow on
+focus-queue resolved positively: the parallel build did not collide
+with cc-agent-C beyond the bounded workspace-conflict incident filed
+separately at
+[`_sessions/2026-05-22_workspace_hygiene_incident_cc-agent-R.md`](../_sessions/2026-05-22_workspace_hygiene_incident_cc-agent-R.md).

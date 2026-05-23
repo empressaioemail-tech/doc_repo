@@ -2,7 +2,7 @@
 id: 40c_cortex_rendering_sprint
 title: Cortex rendering sprint
 status: active
-last_updated: 2026-05-22
+last_updated: 2026-05-23 (Status reset against codebase: cc-agent-R Phase A.1 audit 2026-05-22 found the mnml.ai render feature already ~85-90% shipped from the prior V1 / Spec-54 sprint; operator chose path A — gap-fill only. Phase A (PR #79, mnml `GET /credits` + Prompt Generator) and Phase B (PR #80, credit badge + intent toggle + expert/style selects + Prompt Generator affordance) both merged 2026-05-22. Two scope items deferred as follow-ons: B.1 full schema-driven per-expert parameter grid; B.2 concept-imagery image-upload-as-source pipe — the intent toggle and prompt path shipped, but the underlying render still captures the GLB rather than an uploaded image. Renders surface stays dark in prod behind `RENDERS_PROD_ENABLED=false`; activation requires the env flag flip paired with `MNML_RENDER_MODE=live` in the same Cloud Run revision. Pre-existing 2026-05-22: this sprint is the execution home of `42` DA-12 and Lane 1 of `40b`; Lanes 2 and 3 of 40b stay queued.)
 applies_to: design-accelerator
 related: [40b_advanced_capture_features, 42_design_accelerator_program_plan, 40_design_accelerator, 43_cortex_qa_backlog, 27_engine_evolution_plan, 28_mcp_first_product_design, _decisions/2026-05-22_cortex_rendering_activation]
 owner: nick
@@ -15,6 +15,62 @@ owner: nick
 > [`40b_advanced_capture_features.md`](40b_advanced_capture_features.md).
 > Lanes 2 and 3 of that doc (image-to-BIM, image-to-CAD) stay queued.
 > Activation decision: [`_decisions/2026-05-22_cortex_rendering_activation.md`](_decisions/2026-05-22_cortex_rendering_activation.md).
+
+## Status — 2026-05-23
+
+The cc-agent-R Phase A.1 audit 2026-05-22 found this sprint's premise
+wrong: the mnml.ai render feature was already built and merged to `main`
+by the earlier V1 / Spec-54 sprint, roughly 85-90% of 40c. The operator
+chose **path A — gap-fill only**, additive behind `RENDERS_PROD_ENABLED`.
+
+Shipped 2026-05-22:
+
+- **Phase A — PR #79 merged** (`b8b0cdf`). `GET /credits` and Prompt
+  Generator added to the mnml client and `api-server`, additive behind
+  `RENDERS_PROD_ENABLED`, no DB migration.
+- **Phase B — PR #80 merged.** `RenderCreditsBadge` in `lib/portal-ui`,
+  wired to the credits endpoint via the generated hook. `RenderKickoffDialog`
+  extended with deliverable-vs-concept intent toggle (40c B.1, the
+  highest-leverage subset), all six expert types and all eight render
+  styles exposed as selects, and a Prompt Generator affordance that
+  consumes an image and drops the returned prompt into the textarea. 447
+  portal-ui tests green, `pnpm -w typecheck:libs` and
+  `pnpm --filter design-tools typecheck` green. Self-merged per the
+  dispatch autonomy clause.
+
+Deferred follow-ons (not in scope for this sprint's exit):
+
+- **B.1 — full schema-driven per-expert parameter grid.** The kickoff
+  body already accepts a free `expertParams` map and the engine handles
+  per-expert validation; this sprint exposes the two highest-leverage
+  knobs (expert + style) without the full camera-angle × time-of-day ×
+  weather grid.
+- **B.2 — concept-imagery image-upload-as-source.** Full manual-upload
+  as render source needs a new image-upload pipe plus `viewpoint_renders`
+  accepting an image source (currently GLB-capture-only). This sprint
+  delivers the architect-facing concept affordance (intent toggle, plan
+  expert, sketch styles, Prompt Generator), but the underlying render
+  still captures the GLB. The concept-imagery flow is **not end-to-end**
+  until B.2 lands.
+
+Out of this gap-fill scope by activation-decision call (not deferred,
+not scheduled): the remaining four power tools (4K upscaler, render
+enhancer, AI eraser, inpainting, style transfer — typed-but-not-surfaced
+in the client) and the `cortex/render_*` MCP retrofit. Both stay queued
+without named demand.
+
+**Activation in prod is gated.** `RENDERS_PROD_ENABLED=false` keeps the
+Renders tab dark in production. Flipping the flag must be paired with
+`MNML_RENDER_MODE=live` in the same Cloud Run revision — flipping one
+without the other either keeps mock renders behind a live surface (bad
+first impression) or makes the surface reachable while still mocked. The
+two-flip is an operator action; no further code change is required to
+activate the shipped scope.
+
+Doc-set reconciliation owed at session close 2026-05-23: this Status
+section, plus the activation-decision amendment at
+[`_decisions/2026-05-22_cortex_rendering_activation.md`](_decisions/2026-05-22_cortex_rendering_activation.md),
+plus the `42` DA-12 row + deferred-follow-on watch line.
 
 ## Origin
 
@@ -225,17 +281,33 @@ numbering and the atom registry, and resolves at PR-merge.
 
 ## Exit criteria
 
+Status reset 2026-05-23 against the codebase + cc-agent-R gap-fill PRs
+#79 / #80. Per the Status section above, exit criteria are **satisfied
+with two named caveats**:
+
 - The Renders tab is rebuilt with two intents: an architect can run a
   deliverable render or concept imagery on a real engagement, choosing
-  expert type, style, and parameters.
+  expert type, style, and parameters. **Satisfied** (V1 sprint shipped
+  the tab; PR #80 added the intent toggle + expert / style selects).
 - Single renders, four-direction elevation sets, concept floor-plan
   imagery, and video all complete end-to-end, sourced from model-capture
-  or upload.
+  or upload. **Satisfied with caveat**: model-capture path is end-to-end;
+  the upload-as-source path for concept imagery is deferred as B.2 —
+  the architect-facing concept affordance ships but the underlying
+  render still captures the GLB.
 - Every render produces a `render-output` atom carrying full generation
   provenance and an AI-origin marker; outputs are stored in GCS, not
-  referenced from expiring mnml URLs.
+  referenced from expiring mnml URLs. **Satisfied** (V1 sprint).
 - The polling worker survives a process restart with in-flight jobs.
-- The credit balance is visible in the tab.
+  **Satisfied** (V1 sprint).
+- The credit balance is visible in the tab. **Satisfied** (PR #79
+  backend + PR #80 `RenderCreditsBadge`).
+
+Caveat summary: B.1 (full schema-driven per-expert param grid) and B.2
+(image-upload-as-render-source for concept imagery) are deferred
+follow-ons, not in this sprint's exit. Activation in prod requires
+`RENDERS_PROD_ENABLED=true` + `MNML_RENDER_MODE=live` in the same Cloud
+Run revision — operator action, no further code change.
 
 ## Watch line
 
