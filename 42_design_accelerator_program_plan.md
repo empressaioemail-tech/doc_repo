@@ -93,6 +93,12 @@ Concretely, at QA-readiness Nick can:
 - **Four remaining power tools** — 4K upscaler, render enhancer, AI eraser, inpainting, style transfer. Typed-but-not-surfaced in the client. Queued without named demand.
 - **`cortex/render_*` MCP retrofit** — UI-first product MCP retrofit per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md), lands on hauska-mcp-server after the Renders tab activates.
 
+**Cortex Site Context Sprint follow-ons (watch line, 2026-05-23).** Activated as a 2D-first sprint per [`_decisions/2026-05-23_site_context_2d_first.md`](_decisions/2026-05-23_site_context_2d_first.md) at [`40d_cortex_site_context_sprint.md`](40d_cortex_site_context_sprint.md). Three follow-ons recorded:
+
+- **3D site assembly** — terrain mesh build + georeferenced scene-assembly stage feeding `SiteContextViewer` + Three.js viewer extension. Queued behind the 2D sprint, not deferred indefinitely. Becomes a real roadmap line once 2D-site-context completes.
+- **`cortex/site_context_*` MCP retrofit** — UI-first product MCP retrofit per [`28_mcp_first_product_design.md`](28_mcp_first_product_design.md), lands on hauska-mcp-server after the 2D sprint ships.
+- **TX-specific hydrology overlays** — TCEQ aquifer zones, county flood ordinances. v1 is federal-only USGS 3DEP; jurisdictional overlays queue for v2.
+
 **Activation in prod (operator action).** Flipping `RENDERS_PROD_ENABLED=true` must be paired with `MNML_RENDER_MODE=live` in the same Cloud Run revision — flipping one without the other either keeps mock renders behind a live surface or makes the surface reachable while still mocked. No further code change required to activate the shipped scope.
 
 **What QA-readiness does NOT require:**
