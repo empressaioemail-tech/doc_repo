@@ -2,9 +2,9 @@
 id: 21_ai_first_dev_flow
 title: AI-first dev flow
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-23
 applies_to: portfolio
-related: [20_agent_operating_rules, 22_workstation_inventory]
+related: [20_agent_operating_rules, 21b_cursor_workflow_observatory, 21c_grok_atom_migration_plan, 01a_atom_conventions, 22_workstation_inventory]
 ---
 
 # AI-first dev flow
@@ -13,217 +13,195 @@ How work gets done across the portfolio. Captures the agent fleet, who
 owns what, the standard work cycle, and how documentation flows through
 session summaries back into canonical docs. Pairs with
 [`20_agent_operating_rules.md`](20_agent_operating_rules.md) (the rules
-the fleet operates under) and
-[`22_workstation_inventory.md`](22_workstation_inventory.md) (the
-machine-specific paths and tooling).
+the fleet operates under, including HR-12 Grok + atom-first),
+[`01a_atom_conventions.md`](01a_atom_conventions.md) (portfolio atom
+catalog), and [`22_workstation_inventory.md`](22_workstation_inventory.md)
+(the machine-specific paths and tooling).
+
+Observed May 2026 behavior is documented in
+[`21b_cursor_workflow_observatory.md`](21b_cursor_workflow_observatory.md).
 
 ## The fleet
 
-Six agents work the portfolio at various levels of engagement. Not all
-are active at once.
+Named cc-agents plus the doc_repo planner work the portfolio. Not all
+are active at once. Default execution model per HR-12: **Grok** in Cursor
+(`Grok Build 0.1` for agentic multi-file work; `grok-code-fast-1` for
+speed); Claude only on explicit escalation.
 
-| Agent | Surface | Primary role | Ships code |
-|---|---|---|---|
-| Claude.ai planner | Browser tab | Architecture, planning, prompt generation, cross-agent coordination, doc rollup | No — non-executing by design |
-| `cc-agent-1` through `cc-agent-4` | Cursor (4 parallel) | Backend, SDK, GCP, code changes; soft specialization | Yes — origin push + `gh pr create` |
-| `cursor-manual` | Cursor terminal (Nick at the keyboard) | Human-in-loop fixes, ambiguous cases, ops the agents can't reach | Yes — but slow; deliberate use |
-| `replit-agent` | Replit Repl (per-repo, when one exists) | In-IDE exploration, runtime log inspection, DB queries via Replit Secrets | No — repl-local ops only per HR-2 |
-| Comet browser | Nick driving | Browser-manual ops (Search Console, GoDaddy UI, screenshots) | No — no live credentials in agent context |
-| Nick | Everywhere | Final say, merge button, deploy button, hardware keys | Yes — sole holder of merge + deploy authority |
+| Agent | Surface | Primary role | Default model | Ships code |
+|---|---|---|---|---|
+| **planner** | Cursor in `P:\doc_repo` | Strategy, dispatches, `_inbox` sweep, session close, canonical doc commits | Grok Build 0.1 | Docs only (commits to doc_repo) |
+| **rendering planner** (second doc_repo session) | Cursor in `P:\doc_repo` | Rendering sprint docs (40e); does not sweep `_inbox/` or edit `00` | Grok Build 0.1 | Docs only (scoped) |
+| **cc-agent-C** | Cursor, `P:\legacy-design-tools` | Cortex QA build, adapters, Codex Phase 2 surfaces | Grok Build 0.1 | Yes |
+| **cc-agent-C2** | Cursor, `P:\legacy-design-tools-c2` | Site context 2D (DEM, Regrid, topography) | Grok Build 0.1 | Yes |
+| **cc-agent-R** | Cursor, `P:\legacy-design-tools-r` | Rendering parity sprint (40e) | Grok Build 0.1 | Yes |
+| **cc-agent-E** | Cursor, `hauska-engine` clone | Sync 5 Texas ingest, ICC prebuild | Grok Build 0.1 | Yes |
+| **cc-agent-M** | Cursor, `smartcity-os` | M-Stabilize (on hold 2026-05-21) | Grok Build 0.1 | Yes |
+| **cc-agent-AC** | (dormant) | Atom contract migration complete | — | — |
+| **cursor-manual** | Cursor terminal (Nick) | Human-in-loop fixes, ambiguous ops | N/A | Yes (deliberate) |
+| **replit-agent** | Replit Repl | In-IDE exploration, Repl-local ops | N/A | No (per HR-2) |
+| **Nick** | Everywhere | Merge, deploy, binary decisions | N/A | Yes (sole merge authority) |
 
-**6 agents + Nick = 7 working seats.** This calibration is intentional.
-Adding agents past this superlinearly increases coordination overhead
-with diminishing throughput gains. Specializing one of the existing
-agents harder is almost always the right move over adding a new one.
+**~7 working seats** including Nick. Retired: `cc-agent-D` (invented name,
+2026-05-22). Legacy IDs `cc-agent-1` through `cc-agent-4` appear in older
+sessions and dispatches; map to named agents per
+[`21b_cursor_workflow_observatory.md`](21b_cursor_workflow_observatory.md).
+
+Browser Claude.ai planner sessions are legacy for ad-hoc strategy; the
+executing planner lives in doc_repo and commits directly per
+[`CLAUDE.md`](CLAUDE.md).
 
 ## Per-repo Cursor workspace
 
-One Cursor workspace per active working repo:
+One Cursor workspace per active working repo, often **multiple clones per
+repo** for parallel agents (see
+[`90_runbooks/agent_workspace_hygiene.md`](90_runbooks/agent_workspace_hygiene.md)):
 
-- `P:\empressaio_tech_smartcity_os` — its own Cursor workspace
-- `p:\legacy-design-tools` — its own
-- `p:\legacy-revit-sensor` — its own
-- `p:\doc_repo` — its own (this docs repo, lower-volume but worth its
-  own workspace for rollup work)
+| Path | Agent(s) |
+|---|---|
+| `P:\doc_repo` | planner, rendering planner |
+| `P:\legacy-design-tools` | cc-agent-C |
+| `P:\legacy-design-tools-c2` | cc-agent-C2 |
+| `P:\legacy-design-tools-r` | cc-agent-R |
+| `P:\smartcity-os` (or `P:\empressaio_tech_smartcity-os`) | cc-agent-M |
+| `hauska-engine` clone | cc-agent-E |
+| `p:\legacy-revit-sensor` | as needed |
 
-Each workspace runs up to 4 Claude Code agents in parallel plus 1 Cursor
-manual session for Nick's keyboard. Soft specialization within a
-workspace:
+Each cc-agent runs in an **isolated clone** with a branch prefix
+(`cortex/`, `2d/`, `render/`, `stream-1d/`). Shared working trees between
+agents are forbidden.
 
-- One agent on the dominant active workstream (e.g. the auth-fix sprint)
-- One on independent recon or tests
-- One on infrastructure / config / GCP
-- One held in reserve or doing parallel-eligible work
+## The doc_repo planner role
 
-Specialization is soft because the work shifts. The point is parallel
-forward motion across independent codebases, not strict role boundaries.
-
-## The Claude.ai planner role
-
-The planner runs in a browser, separately from Cursor. It holds the
-long-form planning context: project knowledge synced from `doc_repo`,
-conversation history, and the cross-agent coordination layer.
+The planner runs in Cursor on `P:\doc_repo` (Grok default per HR-12).
+It holds portfolio context via [`00_current_state.md`](00_current_state.md),
+canonical docs, dispatches, and decision records.
 
 What the planner does:
 
-- Drafts agent prompts in fenced markdown blocks (Copy button) per the
-  prompt-format convention
-- Reviews PR diffs and comments back with approve / change requests
-- Synthesizes recon reports across multiple agents into canonical doc
-  patches
-- Maintains the active-fires list and the migration sprint plan
-- Resolves contradictions between agent reports per HR-1 (GitHub web
-  UI as tiebreaker) and HR-8 (verbatim verification artifacts)
+- Resolves and maintains portfolio atoms per
+  [`01a_atom_conventions.md`](01a_atom_conventions.md)
+- Drafts cc-agent dispatches (paste-ready; template at
+  [`_dispatches/_template.md`](_dispatches/_template.md))
+- Sweeps `_inbox/` (QA planner only when two planners run)
+- Regenerates `00_current_state.md` at session close
+- Writes and commits canonical docs after Nick reviews the plan
+- Files `_decisions/` with reversal criteria on load-bearing calls
 
-What the planner does NOT do:
+What product cc-agents do NOT do:
 
-- Push code, open PRs, merge PRs, run deploys
-- Execute commands against any production system directly
-- Generate output other than text + drafted prompts + doc patches
+- Edit canonical docs directly (HR-11 courier pattern)
+- Merge PRs or deploy (Nick)
 
-The planner stays browser-based deliberately. Adding execute capability
-to the planner would collapse the architect / executor separation that
-the verification chain depends on.
+Two-planner split (2026-05-22): QA planner owns `_inbox/` + `00`;
+rendering planner owns 40e docs only.
 
 ## Standard work cycle
 
 Per [`20_agent_operating_rules.md`](20_agent_operating_rules.md) SR-3
 (recon-only first when ambiguous):
 
-1. **Recon.** Planner drafts a read-only recon prompt in a fenced
-   block. Nick pastes into a Cursor Claude Code agent. Agent runs,
-   returns verbatim verification artifacts (HR-8) and findings.
+0. **Atom resolve (new).** Planner lists named atoms in the dispatch
+   (`current-state:portfolio`, `sprint:40e`, `qa-backlog-item:QA-32`, etc.).
+   cc-agent reads atom summaries from the catalog in
+   [`01a_atom_conventions.md`](01a_atom_conventions.md) before full
+   canonical docs. Deep docs follow only when atoms are insufficient.
+1. **Recon.** Planner drafts a read-only recon prompt. Nick pastes into
+   a cc-agent Cursor session (Grok). Agent returns verbatim verification
+   artifacts (HR-8) and findings.
 2. **Triage.** Planner reads the recon report, decides next action.
-   Common branches: dispatch an execute prompt, ask follow-up recon,
-   pause for Nick to clarify scope.
-3. **Execute.** Planner drafts the execute prompt with explicit
-   stage-gates (PAUSE for "go" before code changes; PAUSE before
-   push; PAUSE before PR open). Nick pastes; agent works.
-4. **PR open.** Agent runs `gh pr create` after pushing. PR sits
-   open for review.
-5. **Review.** Planner reads diff, comments. Nick weighs in if
-   architecture or product decisions are involved.
-6. **Merge.** Nick squash-merges via GitHub web UI. No agent merges.
-7. **Deploy.** Nick deploys via Cloud Shell (or Replit dashboard for
-   legacy-design-tools until migration). Planner inlines pre-deploy
-   sync commands and post-deploy curl probes per HR-3 and PC-3.
-8. **Verify.** Curl probe + 1-hour stability watch before any next
-   deploy.
-9. **Report.** Agent (or Nick, or planner) writes a session summary
-   to `..\doc_repo\_sessions\<date>_<repo>_<agent>.md` per
-   [`01_doc_conventions.md`](01_doc_conventions.md).
-
-The planner watches for the failure modes named in HR-7 (three
-deploys in 4 hours = stop) and PC-2 (third distinct failure =
-escalate).
+3. **Execute.** Planner drafts the execute prompt with stage-gates.
+   Nick pastes; cc-agent works (Grok Build 0.1 default).
+4. **PR open.** Agent pushes and runs `gh pr create`. PR held for Nick.
+5. **Review.** Planner or operator reads diff.
+6. **Merge.** Nick squash-merges via GitHub web UI.
+7. **Deploy.** Nick or agent-runnable workflow (`cloud-run-deploy.yml`
+   on legacy-design-tools). Planner inlines probes per HR-3.
+8. **Verify.** Curl probe or live UI verify before "done."
+9. **Report.** Agent drops summary to `_inbox/` or `_sessions/` (HR-11).
+   Include atom refs touched and model used if escalated from Grok.
 
 ## Tool access map
 
-Who has what access:
-
-| Tool | Planner | Cursor CC | Cursor manual | Replit Agent | Nick |
+| Tool | Planner | cc-agent (Grok) | Cursor manual | Replit Agent | Nick |
 |---|---|---|---|---|---|
-| `git` push to origin | No | Yes | Yes | Effectively no (per HR-2) | Yes |
+| `git` push to origin | Yes (doc_repo) | Yes | Yes | Effectively no (HR-2) | Yes |
 | `gh pr create` | No | Yes | Yes | No | Yes |
-| `gh pr merge` | No | No (per rules) | No | No | Yes |
-| GitHub web UI | Via screenshots | No direct | No direct | No direct | Full |
-| `gcloud` | No | Yes (terminal) | Yes | No | Yes |
-| GCP Cloud Shell | No | No | No | No | Yes |
-| Neon Console | No | No | No | No | Yes (post-Empressa-migration) |
-| Replit shell | No | No | No | Yes | Yes |
-| Production DB | No | No | No | Yes (via secrets) | Yes |
-| `doc_repo` read | Project knowledge sync | Sibling clone at `..\doc_repo` | Same | Same | Same |
-| `doc_repo` write | Drafts patches inline | Session summaries to `_sessions/` | Session summaries | Session summaries | Rollups |
+| `gh pr merge` | No | No | No | No | Yes |
+| GitHub web UI | Yes | Via `gh` | Yes | No | Full |
+| `gcloud` | Yes (doc_repo) | Yes | Yes | No | Yes |
+| `doc_repo` canonical write | Yes (after plan review) | No (HR-11) | Session summaries | `_inbox/` only | Rollups |
+| Atom catalog | Owns synthesis | Consumes | — | — | — |
 
 ## Documentation flow
 
 Read access:
 
-- All Cursor agents read from `..\doc_repo` (sibling clone). They get
-  full visibility into canonical docs by treating the path as part of
-  their context.
-- Claude.ai planner reads from project knowledge manually synced from
-  `doc_repo`. GitHub MCP wiring (deferred) will eventually replace
-  manual sync.
+- cc-agents read `..\doc_repo` from product clones.
+- Prefer atom refs from [`01a_atom_conventions.md`](01a_atom_conventions.md)
+  over full-doc reads when dispatch lists them.
 
 Write access:
 
-- Agents never edit canonical docs directly (per
-  [`01_doc_conventions.md`](01_doc_conventions.md)).
-- Every working session ends with a session summary appended to
-  `..\doc_repo\_sessions\<date>_<repo>_<agent>.md`. Frontmatter shape
-  per the conventions doc.
-- Rollup happens end-of-day or when a session reveals something
-  materially new. Planner (or Nick) reads accumulated session files,
-  patches canonical docs, flips `rolled_up: true` on absorbed sessions.
+- cc-agents: `_inbox/` or `_sessions/` only (HR-11).
+- Planner: canonical docs, `_decisions/`, `_dispatches/`, `00_current_state.md`.
+- Session summaries include `related_refs` atom list when applicable.
 
 ## Fleet sizing rationale
 
-Why 6 agents and not more or fewer:
+Why ~7 seats and not more:
 
-- **Adding agents past 6** runs into coordination overhead. The planner
-  spends increasing time reconciling reports rather than synthesizing
-  insights. Wrong-routing errors increase (the planner asks the wrong
-  agent for the wrong thing).
-- **Reducing below 6** loses parallelism. With 4 Cursor Claude Code
-  agents you can keep recon, execute, tests, and infra all moving
-  concurrently across a sprint. Drop to 2 and you're serializing what
-  doesn't have to be serial.
-- **Specialize harder, don't hire more.** If a particular workstream
-  needs more attention, dedicate one of the existing 4 to it for the
-  duration. Don't introduce a 5th.
-
-This calibration assumes one architect (Nick). If a second human-in-loop
-ever joins (Valerie, Kendra, contractor), the agent count probably
-stays the same but the human routing layer gets richer — Cursor manual
-splits into per-human sessions, Replit Agent authentication has to
-become per-person, etc.
+- **Adding agents past ~7** increases coordination overhead (workspace
+  collisions, migration numbering, `00` merge conflicts).
+- **Multiple clones per repo** (C, C2, R on legacy-design-tools) replace
+  the old "4 anonymous agents in one workspace" pattern.
+- **Specialize by named agent**, not by adding seats. Replit Agent is
+  scoped separately for UI overhaul experiments (2026-05-23).
 
 ## Routing decisions — what goes where
 
-Common routing patterns the planner should default to:
+- **Code change that needs to ship** — named cc-agent on isolated clone
+  (Grok default). Never Replit Agent (HR-2, SR-1).
+- **Doc rollup / strategy / dispatch** — doc_repo planner (Grok).
+- **In-Repl exploration** — Replit Agent.
+- **Merge / deploy / secrets** — Nick.
+- **Atom missing from catalog** — cc-agent asks planner; planner extends
+  `01a` or files decision.
 
-- **Code change that needs to ship** — Cursor Claude Code agent. Never
-  Replit Agent (per HR-2 and SR-1).
-- **In-Repl exploration / runtime log fetch / DB query via Repl secret**
-  — Replit Agent. Never Cursor (no shell access to the Repl).
-- **Browser-manual op** (DNS, Search Console, GoDaddy UI, dashboards)
-  — Comet browser, Nick driving.
-- **Cloud Shell op** (`gcloud`, big SELECT against prod) — Nick directly,
-  in his Cloud Shell session. Planner provides the commands inline.
-- **Doc rollup / session synthesis** — Planner. Cursor agents shouldn't
-  edit canonical docs directly.
-- **Architecture decision or scope question** — Planner with Nick.
-  Agents propose, planner synthesizes, Nick decides.
+When routing is unclear, planner asks before dispatching.
 
-When a request lands and the right agent isn't obvious, the planner
-asks before routing. Wrong-routing wastes a turn.
+## Model policy (HR-12 summary)
+
+| Task type | Default model |
+|---|---|
+| Multi-file dispatch, autonomous loops | Grok Build 0.1 |
+| Focused code, tests, small patches | grok-code-fast-1 |
+| Heavy reasoning / architecture deadlock | grok-4.3 or grok-4.20-reasoning |
+| Grok failure after escalation | Claude (logged in session summary) |
+
+Cursor config: base URL `https://api.x.ai/v1`. Product runtime LLMs
+(Cortex api-server Anthropic Sonnet) are separate; see
+[`_research/2026-05-23_cortex_ai_model_inventory.md`](_research/2026-05-23_cortex_ai_model_inventory.md).
 
 ## What's coming next (deferred items)
 
-Items that improve the flow but aren't urgent:
-
-- **GitHub MCP for Claude.ai planner** — replaces manual project
-  knowledge sync. Planner reads doc_repo directly through the
-  connector. Worth wiring once the seed doc set is stable.
-- **Neon MCP for Cursor agents** (post-Empressa-Neon migration). Lets
-  agents introspect schemas, list branches, run migrations from chat
-  without shell intermediation.
-- **Devcontainer for workstation parity** — eliminates the Nick-box
-  vs cente-box `gcloud`-path divergence. About a day to set up
-  properly.
-- **Cloud Code extension** in Cursor — browse Cloud Run revisions,
-  Secret Manager values, logs without leaving the editor. Nice to
-  have, not essential.
-
-These all live in the migration sprint backlog or beyond. The current
-flow works without them.
+- **ECI atomization P1/P2** — machine-readable doc_repo atom registry
+  in `@empressaio/atom-internal`
+- **GitHub MCP for planner** — replaces manual doc sync
+- **Neon MCP for Cursor agents** (post-Empressa-Neon migration)
+- **Devcontainer for workstation parity**
+- **Phase 3 Grok migration** — fleet behavior, expand atom catalog
+  ([`21c_grok_atom_migration_plan.md`](21c_grok_atom_migration_plan.md))
 
 ## What this document is NOT
 
-Not a sequence of commands or recipes — see [`90_runbooks/`](90_runbooks/)
-for those. Not the rules — see
-[`20_agent_operating_rules.md`](20_agent_operating_rules.md). Not the
-machine-specific paths — see
-[`22_workstation_inventory.md`](22_workstation_inventory.md). This is
-the structural picture: who, where, why.
+Not runbooks — see [`90_runbooks/`](90_runbooks/). Not hard rules — see
+[`20_agent_operating_rules.md`](20_agent_operating_rules.md). Not observed
+behavior — see [`21b_cursor_workflow_observatory.md`](21b_cursor_workflow_observatory.md).
+
+## Revision history
+
+- **2026-05-11 (origin):** fleet and work-cycle baseline.
+- **2026-05-23:** Phase 2 Grok + atom-first reconciliation. Named agents,
+  dual planner, Grok defaults (HR-12), atom-resolve dispatch step, multi-clone
+  map per 21b.

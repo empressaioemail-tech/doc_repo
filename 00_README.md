@@ -2,15 +2,16 @@
 id: 00_README
 title: Empressa portfolio docs — README
 status: active
-last_updated: 2026-05-05
+last_updated: 2026-05-23
 applies_to: portfolio
+related: [00b_doc_repo_guide, 01_doc_conventions, 00_current_state]
 ---
 
 # Empressa portfolio docs
 
 Canonical project knowledge for the software portfolio: SmartCity OS, Design
 Accelerator, Revit Connector, Hauska SDK, ECI. This is the source of truth
-every agent (Cursor Claude Code, Claude.ai planner, Cursor manual, Replit
+every agent (Cursor Grok cc-agents, doc_repo planner, Cursor manual, Replit
 Agent) reads at session start and writes back to at session end.
 
 ## Scope
@@ -46,7 +47,7 @@ read from `..\doc_repo` and write session summaries to
 ## Numbering bands
 
 ```
-00-09  Meta — README, conventions, lifecycle
+00-09  Meta — README, conventions, current state, doc_repo guide
 10-19  Ground truth, portfolio architecture, roadmap
 20-29  Agent operating rules, AI-first dev flow, workstation, deploy rules
 30-39  SmartCity OS
@@ -83,15 +84,19 @@ and frontmatter format.
 
 ## First-time orientation order
 
-1. [`01_doc_conventions.md`](01_doc_conventions.md) — naming, frontmatter,
+1. [`00b_doc_repo_guide.md`](00b_doc_repo_guide.md) — purpose, structure,
+   who writes what, session rhythm
+2. [`01_doc_conventions.md`](01_doc_conventions.md) — naming, frontmatter,
    write patterns, lifecycle
-2. [`10_ground_truth.md`](10_ground_truth.md) — current state of all active
+3. [`01a_atom_conventions.md`](01a_atom_conventions.md) — portfolio atom
+   catalog, atom-first context retrieval (HR-12)
+4. [`10_ground_truth.md`](10_ground_truth.md) — current state of all active
    repos, open fires, planner-belief corrections
-3. [`20_agent_operating_rules.md`](20_agent_operating_rules.md) — hard
-   rules, soft rules, agent role taxonomy
-4. [`21_ai_first_dev_flow.md`](21_ai_first_dev_flow.md) — per-repo Cursor +
-   Claude Code + planner pattern
-5. Per-product state docs in `30_*` / `40_*` / `41_*` as relevant to your
+5. [`20_agent_operating_rules.md`](20_agent_operating_rules.md) — hard
+   rules, soft rules, agent role taxonomy (includes HR-12 Grok + atom-first)
+6. [`21_ai_first_dev_flow.md`](21_ai_first_dev_flow.md) — named fleet,
+   Grok defaults, atom-first dispatch pattern
+7. Per-product state docs in `30_*` / `40_*` / `41_*` as relevant to your
    task
 
 ## Lifecycle

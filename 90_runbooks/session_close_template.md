@@ -2,9 +2,9 @@
 id: session_close_template
 title: Session-close courier prompt template
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-23
 applies_to: portfolio
-related: [20_agent_operating_rules, 01_doc_conventions, current_state_protocol]
+related: [20_agent_operating_rules, 01_doc_conventions, 01a_atom_conventions, current_state_protocol]
 ---
 
 # Session-close courier prompt template
@@ -38,8 +38,10 @@ Before generating the prompt, the planner determines:
    `sprint_planning`, `biz_ops_setup`, `sylvia_proposal_response`).
    Used in filename: `_sessions/<date>_<topic>_<agent>.md`
 3. **Session summary content** — what was decided, what was produced,
-   what's still open. The planner drafts this in markdown; it becomes
-   the body of the session summary file.
+   what's still open. Include **atom refs touched** (per
+   [`01a_atom_conventions.md`](../01a_atom_conventions.md)) and **model
+   used** if the session logged Grok vs Claude escalation. The planner
+   drafts this in markdown; it becomes the body of the session summary file.
 4. **Canonical doc updates** — every existing doc that needs an edit:
    file path, what changes (specific lines / sections / frontmatter),
    why. Including `last_updated` bumps even when the substantive
@@ -195,6 +197,8 @@ End-of-task signal: `SESSION CLOSE SHIPPED — pushed to origin/main as <sha>` a
 The session summary should follow the pattern established by previous summaries in `_sessions/` (e.g., `2026-05-05_doc_repo_planner.md`, `2026-05-06_doc_repo_planner.md`). Sections typically include:
 
 - **Inputs** — what the planner had to work with (orientation report, attached docs, prior decisions)
+- **Atoms resolved** — named atom refs read or updated this session (`sprint:40e`, `current-state:portfolio`, etc.)
+- **Model** — Grok variant used, or Claude if escalated (optional when default Grok)
 - **Outputs** — docs landed, decisions made, prompts drafted
 - **Decisions** — capture every binary call made in the session with reasoning
 - **Lessons / patterns** — anything established that should propagate forward
@@ -278,6 +282,8 @@ One commit per session-close. Don't try to combine multiple sessions.
 
 ## Revision history
 
+- **2026-05-23:** Session summary inputs require atom refs touched and
+  optional Grok model logging per HR-12 / Phase 2 Grok migration.
 - **2026-05-11:** Stage 2D added for current-state snapshot regeneration
   per [`current_state_protocol.md`](current_state_protocol.md). Prior
   Stage 2D (verify before commit) renumbered to 2E. New

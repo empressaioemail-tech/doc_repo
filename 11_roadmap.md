@@ -2,7 +2,7 @@
 id: 11_roadmap
 title: Roadmap
 status: active
-last_updated: 2026-05-22 (Cortex rendering sprint added to P2, scoped at 40c_cortex_rendering_sprint.md; agentic-Revit-operation strategic question logged under Open strategic questions / Product direction. Prior 2026-05-21: roadmap catch-up refresh — M-HauskaCommercial added to the end-state model; Fire 3 closed; Texas IP-memo ingestion gate retired; ADR-013/015/017 marked accepted and ADR-018/019 added; milestone statuses refreshed; M-CodexQA reviewer QA-surface location settled.)
+last_updated: 2026-05-23
 applies_to: portfolio
 related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 40b_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
 ---
@@ -172,7 +172,7 @@ Active state across the portfolio: M-Stabilize sprint (`30a`, restarted under cc
 
 **Sizing:** S < 1h · M = 1-4h · L = 1+ days · XL = multi-day sprint.
 
-**Owner notation:** Nick = manual / decision / browser. Agent = Cursor Claude Code or Replit Agent. Planner = Claude.ai planning chat. Open = no owner.
+**Owner notation:** Nick = manual / decision / browser. Agent = Cursor cc-agent (Grok default per HR-12) or Replit Agent. Planner = doc_repo planner (Grok-capable Cursor). Open = no owner.
 
 ---
 

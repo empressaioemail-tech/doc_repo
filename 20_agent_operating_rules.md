@@ -2,7 +2,7 @@
 id: 20_agent_operating_rules
 title: Agent operating rules
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-05-23
 applies_to: portfolio
 supersedes: 13_agent_operating_rules
 ---
@@ -249,10 +249,11 @@ portfolio snapshot weeks behind reality.
 
 ## Soft rules — strong defaults, can be overridden with reason
 
-### SR-1: Default to Cursor Claude Code agents for code changes that need to ship
+### SR-1: Default to Cursor cc-agents (Grok per HR-12) for code changes that need to ship
 
-**Reasoning:** Cursor agents work against local clones with reliable
-origin push. Replit Agent's checkpoint flow is unreliable for "shipped"
+**Reasoning:** Cursor cc-agents work against local clones with reliable
+origin push. Grok Build 0.1 / grok-code-fast-1 are the default models
+(HR-12). Replit Agent's checkpoint flow is unreliable for "shipped"
 outcomes.
 
 **Override condition:** Replit Agent IS the right tool for changes that
@@ -295,12 +296,12 @@ session-log; production disasters deserve a full postmortem in
 
 | Agent | Role | Trust profile |
 |---|---|---|
-| Claude.ai planner | Architecture, planning, prompt generation, cross-agent coordination | Authoritative on strategy; deliberately non-executing |
-| Cursor Claude Code (4 instances) | Backend, SDK, GCP, code changes | Trusted for code that needs to ship; verifiable via origin push |
+| doc_repo planner | Architecture, planning, dispatch, cross-agent coordination, doc commits | Authoritative on strategy; executes doc_repo commits |
+| Cursor cc-agent (Grok default; C, C2, E, R, M, AC) | Backend, SDK, GCP, code changes | Trusted for code that needs to ship; verifiable via origin push |
 | Cursor manual | Human-in-loop fixes | Trusted; slow; reserved for ambiguous changes |
 | Replit Agent | In-IDE exploration, Repl-local ops, runtime log/DB access via secrets | Trusted for scoped Repl operations; NOT for shipping code; NOT for declaring origin/main state |
 
-The Claude.ai planner is responsible for routing work to the right
+The doc_repo planner is responsible for routing work to the right
 agent type. Wrong-routing is a planner error.
 
 ### Verification chains
@@ -432,8 +433,39 @@ The infrastructure sprint moves us out of those constraints.
   route to the doc-repo `_inbox/`. Added after the 2026-05-21 cross-repo
   reconciliation found ten cc-agent session summaries stranded in their
   own repos, leaving the portfolio snapshot weeks behind reality.
+- **v2.2 (2026-05-23).** Adds HR-12: Grok model strategy and atom-first
+  workflow. Supersedes prior model-agnostic instructions where they conflict.
 
 Future revisions should add a delta section, not rewrite from scratch.
 The history of why specific rules exist is load-bearing — a rule
 without context becomes a rule that gets ignored when it's
 inconvenient.
+
+## HR-12: Grok model strategy + atom-first workflow (Effective 2026-05-23)
+
+Decision record: [`_decisions/2026-05-23_grok_atom_fleet_migration.md`](_decisions/2026-05-23_grok_atom_fleet_migration.md). Atom catalog: [`01a_atom_conventions.md`](01a_atom_conventions.md).
+
+### Model preference order
+
+- **Primary (default):** `grok-code-fast-1` — speed and cost for most work.
+- **Agentic / Composer default:** `Grok Build 0.1` — multi-file dispatch execution and autonomous loops.
+- **Heavy reasoning:** `grok-4.3` or `grok-4.20-reasoning`.
+- **Fallback:** Claude only when Grok cannot complete the task after escalation (operator or planner confirms).
+
+### Cursor configuration (all agents)
+
+- Base URL: `https://api.x.ai/v1`
+- Primary model: `Grok Build 0.1` or `grok-code-fast-1` per task type above.
+- Disable non-Grok models during the transition unless executing an explicit escalation.
+
+### Skills and subagents
+
+Existing skills remain valid. Grok handles structured instructions well. Reduce subagent usage where Grok Build 0.1 can handle the task natively.
+
+### Atom-first rule
+
+- Resolve relevant atoms before implementation (see [`01a_atom_conventions.md`](01a_atom_conventions.md)).
+- Include atom references in all reports and PR descriptions when the work touches catalog entities.
+- Planner owns atom synthesis and reconciliation.
+
+This rule supersedes previous model-agnostic instructions where they conflict.

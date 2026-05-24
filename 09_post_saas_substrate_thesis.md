@@ -2,7 +2,7 @@
 id: 09_post_saas_substrate_thesis
 title: Post-SaaS substrate thesis
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-05-23
 applies_to: portfolio
 related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 14_pricing_framework, 28_mcp_first_product_design]
 owner: nick
@@ -34,7 +34,7 @@ The combination of four operating principles is uncommon. Each principle exists 
 
 **Compounding intelligence via dogfooded company intelligence.** Empressa Company Intelligence (ECI) atomizes against the same Hauska atom contract that external customers use. Every decision, sprint, conversation, and procedure-execution becomes structured organizational memory. Strategic decisions stop starting from zero. The platform improves itself by being used internally. The implementation plan lives in 60_eci_atomization.md.
 
-**Lean operator plus agent fleet.** A single human operator plus an agent fleet (claude.ai strategic agents, Cursor Claude Code engineering agents, Replit Agent for prototyping, browser agents for research) can build and operate what would have required dozens of engineers in the SaaS era. The operating model documentation lives in 20_agent_operating_rules.md and 21_ai_first_dev_flow.md.
+**Lean operator plus agent fleet.** A single human operator plus a Grok-first agent fleet (doc_repo planner and named cc-agents C/C2/E/R/M/AC on Cursor, default Grok Build 0.1 per HR-12; Replit Agent for scoped prototyping; Claude on explicit escalation only) can build and operate what would have required dozens of engineers in the SaaS era. The operating model documentation lives in [`20_agent_operating_rules.md`](20_agent_operating_rules.md) (HR-12), [`21_ai_first_dev_flow.md`](21_ai_first_dev_flow.md), and [`01a_atom_conventions.md`](01a_atom_conventions.md) (atom-first context).
 
 Each principle compounds with the others. MCP-first products produce execution atoms via the SDK. Execution atoms feed ECI. ECI improves strategic judgment. Better strategic judgment guides more MCP-first product investment. Partnership-first sourcing brings more cities and firms into the substrate, which produces more consumption, which generates more revenue routed back to sources, which deepens the partnerships. The loop closes.
 

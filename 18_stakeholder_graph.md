@@ -2,7 +2,7 @@
 id: 18_stakeholder_graph
 title: Stakeholder graph — relationships, contacts, channels
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-05-23
 applies_to: portfolio
 related: [11_roadmap, 13_risk_register, 14_pricing_framework, 06_cities_value_narrative, 11a_bastrop_live_roadmap, 47_codex_plan_review, 51_substrate_v1_sprint]
 owner: nick
@@ -53,7 +53,7 @@ context.
 |---|---|---|
 | **Nick** (operator) | All strategic decisions, architecture review, final approvals | Self |
 | **Valerie** (commercial / GTM) | Commercial and GTM lead; enterprise + broker pipeline | Nick + Valerie |
-| **AI development agents** (Claude Code, Cursor, Replit Agent, claude.ai planners) | Build under direction; per-repo soft specialization | Nick directs |
+| **AI development agents** (Cursor Grok cc-agents C/C2/E/R/M/AC; doc_repo planner; Replit Agent for scoped Repl ops; Claude on HR-12 escalation only) | Build under direction; per-repo soft specialization; atom-first dispatches per [`01a_atom_conventions.md`](01a_atom_conventions.md) | Nick directs |
 
 ## Established relationships (current contact graph)
 

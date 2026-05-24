@@ -2,7 +2,7 @@
 id: 10_ground_truth
 title: Portfolio ground truth
 status: active
-last_updated: 2026-05-11
+last_updated: 2026-05-23
 applies_to: portfolio
 ---
 
@@ -33,6 +33,11 @@ and one DNS + HTTP-headers check against `smartcityos.io`. Every claim
 below is backed by verbatim command output from those recons. The recon
 reports themselves should be backfilled into `_sessions/2026-05-05_*` files
 when this doc lands, completing the audit trail.
+
+> **Fleet note (2026-05-23):** Historical recon in this section predates the
+> Grok + atom-first migration. Post-2026-05-23, engineering agents are named
+> cc-agents on Cursor with Grok default (HR-12); see
+> [`21_ai_first_dev_flow.md`](21_ai_first_dev_flow.md).
 
 ## SmartCity OS
 
