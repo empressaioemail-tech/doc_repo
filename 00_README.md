@@ -33,7 +33,7 @@ Active development on:
 | Repo | Local path | Production target |
 |---|---|---|
 | `empressaioemail-tech/smartcity-os` | `p:\smartcity-os` | Cloud Run `smartcity-api` (us-central1), live at `smartcityos.io` |
-| `empressaioemail-tech/legacy-design-tools` | `p:\legacy-design-tools` | Replit autoscale at `prompt-agent-accelerator.replit.app` (migration to Cloud Run pending) |
+| `empressaioemail-tech/legacy-design-tools` | `p:\legacy-design-tools` | Cloud Run `cortex-api` (us-central1); design-tools UI local `:20295` or Replit during transition |
 | `empressaioemail-tech/legacy-revit-sensor` | `p:\legacy-revit-sensor` | C# Revit add-in, distributed via `%APPDATA%\Autodesk\Revit\Addins` |
 
 Additional products tracked in `50_*` (Hauska SDK npm packages) and `60_*`

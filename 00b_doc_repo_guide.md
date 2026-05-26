@@ -2,7 +2,7 @@
 id: 00b_doc_repo_guide
 title: doc_repo guide — purpose, structure, and usage
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-05-26
 applies_to: docs
 related: [00_README, 00_current_state, 01_doc_conventions, 01a_atom_conventions, 20_agent_operating_rules, 21_ai_first_dev_flow]
 owner: planner
@@ -24,6 +24,8 @@ A version-controlled knowledge base, not an application repo. It holds:
 - Dispatches (paste-ready prompts for engineering agents on other repos)
 
 The operating thesis: agents and humans have no durable memory across sessions except what is written here. [`00_current_state.md`](00_current_state.md) is the daily entry point; everything else is linked from there or from numeric-band docs.
+
+**New machine (laptop):** before a long QA or E2E block, run [`90_runbooks/laptop_workspace_sync.md`](90_runbooks/laptop_workspace_sync.md) so clones, `.env.local`, Cursor MCP, and Grok settings match the desktop.
 
 ### Entities tracked (do not conflate)
 

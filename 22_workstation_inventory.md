@@ -2,7 +2,7 @@
 id: 22_workstation_inventory
 title: Workstation inventory
 status: active
-last_updated: 2026-05-06
+last_updated: 2026-05-26
 applies_to: portfolio
 related: [20_agent_operating_rules, 21_ai_first_dev_flow]
 ---
@@ -61,21 +61,28 @@ deferred â current setup is good enough for the agent fleet.
 **Browser:** Comet for browser-manual ops. Claude.ai planner runs in
 this browser as a separate tab.
 
-### Cente box (secondary)
+### Cente box (primary dev workstation, 2026-05-26)
 
-Layout per memory; verify when next on the machine. Treat the values
-below as TBD until confirmed.
+Desktop used for Cortex QA, Cloud Run deploys, and cc-agent-C sessions through PR #127.
+Laptop should match this layout via [`90_runbooks/laptop_workspace_sync.md`](90_runbooks/laptop_workspace_sync.md).
 
-**Tooling (per memory):**
+**Working repos (confirmed):**
 
-- `gcloud`: `C:\Users\cente\google-cloud-sdk\bin\gcloud.cmd`
-- Service account key: `C:\Users\cente\google-cloud-sdk\smartcity-agent-key.json`
+- `P:\doc_repo` — portfolio docs (planner / Grok Cursor)
+- `P:\legacy-design-tools` — Cortex monorepo (local `:20295`, Cloud Run `cortex-api`)
+- `P:\hauska-mcp-server` — optional local MCP `:3000`; prod MCP on Cloud Run for daily QA
+- `P:\hauska-engine` — substrate ingest (as needed)
+
+**Tooling:**
+
+- `gcloud`: `C:\Users\cente\google-cloud-sdk\bin\gcloud.cmd` (deploys often via Cloud Shell instead)
+- Service account key: `C:\Users\cente\google-cloud-sdk\smartcity-agent-key.json` (GCS for local GLB/sheets)
 - `psql`: not installed
-- Working repo paths and `doc_repo` location: not yet confirmed; assume
-  not the same as Nick box until verified
+- Cursor: Grok default (HR-12); global `C:\Users\cente\.cursor\mcp.json` with `hauska-cortex` + `hauska-codex`
 
-The path divergence between the two boxes is real friction. Devcontainers
-or Codespaces will eventually solve this; deferred.
+**Laptop:** treat as secondary until synced; run [`90_runbooks/laptop_workspace_sync.md`](90_runbooks/laptop_workspace_sync.md) on first open of `doc_repo` there.
+
+The path divergence between machines is real friction. Use one `<DEV_ROOT>` per machine and the laptop sync runbook until devcontainers land.
 
 ## Common tooling references
 
