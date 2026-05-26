@@ -15,7 +15,7 @@ related: [11_roadmap, 16_commercialization_roadmap, 43_cortex_qa_backlog, 30a_sm
 
 **Prod `cortex-api`:** Deployed through `76a5407` with MCP + Grok findings + Studio env; **PR #127** (`74569dc`) merged — Grok **briefing**, codes **warmup 403 fix**, geocode **auto-warmup**. Operator redeploying `:latest` / `74569dc` with `BRIEFING_LLM_MODE=grok`. Migrations applied via GHA `run-migrations`. Test engagement: **430 Evergreen Trl, Cedar Hill, TX** (`cedar_hill_tx`).
 
-**Laptop:** [`90_runbooks/laptop_workspace_sync.md`](90_runbooks/laptop_workspace_sync.md) filed — pull doc_repo on laptop, clone `legacy-design-tools`, copy `.env.local` + Cursor `mcp.json`, run local `:20295` for fast QA.
+**Laptop:** [`90_runbooks/laptop_workspace_sync.md`](90_runbooks/laptop_workspace_sync.md) + [`_dispatches/2026-05-26_laptop_multi_repo_bootstrap.md`](_dispatches/2026-05-26_laptop_multi_repo_bootstrap.md) — multi-repo Cursor bootstrap + open analysis queue (§14). Pull doc_repo on laptop before product clones.
 
 **Post-QA:** master secret rotation (operator deferred).
 

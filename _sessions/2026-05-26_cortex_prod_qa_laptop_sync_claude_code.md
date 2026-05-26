@@ -21,8 +21,12 @@ topic: cortex_prod_qa_laptop_sync
 
 1. Finish deploy `74569dc` + shift traffic; verify `BRIEFING_LLM_MODE=grok` on serving revision.
 2. QA on 430 Evergreen: geocode, warmup Cedar Hill, briefing (Grok), plan review (Grok), Studio floor plan viz (needs migrations + mnml secrets).
-3. Laptop: `git pull` doc_repo, follow laptop runbook, copy `.env.local` + `mcp.json` from desktop.
+3. Laptop: `git pull` doc_repo, follow laptop runbook + multi-repo dispatch; paste bootstrap to cc-agent terminals.
 4. **Post-QA:** master secret rotation (operator deferred).
+
+## Follow-up commit (same day)
+
+Bulk commit: 40–41 sprint docs, dispatches, inbox artifacts, session closes, research — plus runbook §13–14 and laptop multi-repo dispatch.
 
 ## Security note
 

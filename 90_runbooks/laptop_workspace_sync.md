@@ -3,8 +3,8 @@ id: laptop_workspace_sync
 title: Laptop workspace sync — match desktop Cursor + local Cortex QA
 status: active
 last_updated: 2026-05-26
+related: [22_workstation_inventory, 21c_grok_atom_migration_plan, 44_mcp_cortex_architecture_map, 90_runbooks/agent_workspace_hygiene, 90_runbooks/cloud_run_canary_deploy, _dispatches/2026-05-26_laptop_multi_repo_bootstrap, _inbox/2026-05-26_operator_localhost_substrate_qa_runbook, legacy-design-tools/docs/local-dev-windows.md]
 applies_to: portfolio
-related: [22_workstation_inventory, 21c_grok_atom_migration_plan, 44_mcp_cortex_architecture_map, 90_runbooks/agent_workspace_hygiene, 90_runbooks/cloud_run_canary_deploy, _inbox/2026-05-26_operator_localhost_substrate_qa_runbook, legacy-design-tools/docs/local-dev-windows.md]
 owner: Nick
 ---
 
@@ -353,9 +353,76 @@ Prod deploy env (after merge): `BRIEFING_LLM_MODE=grok`, `AIR_FINDING_LLM_MODE=g
 
 ---
 
+## 13. Cursor agents — bring all product repos up to speed (laptop)
+
+Paste-ready dispatch: [`_dispatches/2026-05-26_laptop_multi_repo_bootstrap.md`](../_dispatches/2026-05-26_laptop_multi_repo_bootstrap.md).
+
+**Planner (doc_repo folder open).** Read [`00_current_state.md`](../00_current_state.md) + this runbook. Do not code in product repos from doc_repo unless Nick greenlights a doc-only edit.
+
+**Per-repo agents (one Cursor window / clone each).** Default model: Grok Build 0.1 (HR-12). One clone per agent ([`agent_workspace_hygiene.md`](agent_workspace_hygiene.md)).
+
+| Repo | Clone path | Branch | Agent seat | Bootstrap commands |
+|------|------------|--------|------------|-------------------|
+| `legacy-design-tools` | `<DEV_ROOT>\legacy-design-tools` | `main` | cc-agent-C | `git pull origin main` → copy `.env.local` → `pnpm install --frozen-lockfile` → `cd lib/db && pnpm run push` → `.\scripts\dev-local-windows.ps1` |
+| `hauska-mcp-server` | `<DEV_ROOT>\hauska-mcp-server` | `main` | cc-agent-M | `git pull` → copy `.env` from desktop → `pnpm install` → optional `pnpm dev` (:3000) only if hacking MCP tools |
+| `hauska-engine` | `<DEV_ROOT>\hauska-engine` | `main` | cc-agent-E | `git pull` → `pnpm install` → only if ingest/snapshot work scheduled |
+| `hauska-atom-contract` | `<DEV_ROOT>\hauska-atom-contract` | `main` | cc-agent-AC | `git pull` → `pnpm install` → only if contract schema work |
+| `smartcity-os` | `<DEV_ROOT>\smartcity-os` | `main` | cc-agent-M (when unheld) | `git pull` — M-Stabilize held per `00_current_state` |
+| `legacy-revit-sensor` | `<DEV_ROOT>\legacy-revit-sensor` | `main` | — | `git pull` — only for Revit add-in work |
+
+**legacy-design-tools acceptance (laptop)**
+
+- `main` includes PR #127+ (`74569dc` or later): Grok briefing, warmup fix, geocode auto-warmup
+- `curl http://127.0.0.1:8080/api/substrate/health` → `mode: mcp`
+- http://localhost:20295 loads; one engagement opens (430 Evergreen Trl QA)
+- `git status` clean or only intentional WIP branch
+
+**hauska-mcp-server acceptance (laptop)**
+
+- Prod MCP URL works from Cursor `mcp.json` without local server (preferred for QA)
+- If local server needed: boots on :3000, `X-Hauska-Key` smoke on `tools/list`
+
+**hauska-engine acceptance (laptop)**
+
+- Only required when running ingest. Confirm `git log -1` matches desktop expectation before corpus work.
+
+**Do not**
+
+- Share one clone between two agents
+- Commit `.env`, `.env.local`, or API keys
+- Force-push `main`
+
+---
+
+## 14. Open analysis and think-through queue (not blocking laptop bootstrap)
+
+These items need planner or operator judgment; agents should **read and report**, not decide unilaterally.
+
+| Item | Why it is open | Suggested owner | Doc entry point |
+|------|----------------|-----------------|-----------------|
+| **Post-QA secret rotation** | Keys surfaced in deploy sessions | Nick | Deferred by operator; rotate MCP + XAI + SERVICE_API_KEY after QA pass |
+| **430 Evergreen E2E sign-off** | Prod deploy + migrations + geocode/warmup/briefing/render | Nick | [`40i_cortex_dallas_e2e_grok_plan_review_sprint.md`](../40i_cortex_dallas_e2e_grok_plan_review_sprint.md) |
+| **Replit vs local UI** | Operator may use Replit for frontend; local api for backend | Nick | [`00_current_state`](../00_current_state.md) Replit Agent watch line |
+| **Host connectors program (41-band)** | Approved framing; implementation not started | Planner + future dispatches | [`41_host_connectors_program.md`](../41_host_connectors_program.md) |
+| **40f product-runtime Grok** | Agent fleet Grok done; api-server chat still Anthropic by design | cc-agent-R when greenlit | [`40f_cortex_grok_runtime_migration_sprint.md`](../40f_cortex_grok_runtime_migration_sprint.md) |
+| **doc 44 MCP map refresh** | Facts 5–6 stale post hauska-prod deploy | Planner | [`44_mcp_cortex_architecture_map.md`](../44_mcp_cortex_architecture_map.md) |
+| **Inbox sweep backlog** | Many `_inbox/` closes filed 2026-05-26; planner rollup into canonical docs | Planner | `_inbox/` + [`20_agent_operating_rules`](../20_agent_operating_rules.md) HR-11 |
+| **Planning carryover A1–A4, B1–B4, C1–C2, E1** | Claude parallel chats not fully filed | Planner | [`_sessions/2026-05-24_claude_parallel_planning_carryover_claude_code.md`](../_sessions/2026-05-24_claude_parallel_planning_carryover_claude_code.md) |
+| **Commercialization vision reconcile** | 2414 vs 698 atom count before external share | Planner | Planning carryover §4 |
+| **Smithville / General Code partnerships** | eCode360 blocked; bizops track | Nick / bizops | [`73_partnerships.md`](../73_partnerships.md) |
+| **Softplan decompile research** | Connector recon artifact | Reference only | [`_research/softplan_sptomxf_decompile/`](../_research/softplan_sptomxf_decompile/) |
+| **Corpus snapshot + retrieval redeploy** | Many hauska-engine PRs merged but catalog deploy batched | cc-agent-E + operator | `00_current_state` Sync 5 watch lines |
+| **RENDERS_PROD_ENABLED live QA** | Studio mnml path needs prod verify after #127 deploy | Nick | [`docs/studio-prod-enable.md`](../../legacy-design-tools/docs/studio-prod-enable.md) |
+| **ECI atom registry** | `@empressaio/atom-internal` repo creation | Nick | [`60a_eci_atomization_sprint.md`](../60a_eci_atomization_sprint.md) |
+
+**Agent instruction:** When bootstrapping laptop repos, log blockers only. Queue strategic questions back to doc_repo planner with file paths and `git log -1` evidence.
+
+---
+
 ## Related docs
 
 - [`22_workstation_inventory.md`](../22_workstation_inventory.md) — per-machine paths (update laptop row when layout confirmed)
 - [`44_mcp_cortex_architecture_map.md`](../44_mcp_cortex_architecture_map.md) — MCP topology
 - [`90_runbooks/cloud_run_canary_deploy.md`](cloud_run_canary_deploy.md) — prod deploy sequence
+- [`_dispatches/2026-05-26_laptop_multi_repo_bootstrap.md`](../_dispatches/2026-05-26_laptop_multi_repo_bootstrap.md) — paste into cc-agent terminals
 - `legacy-design-tools/docs/local-dev-windows.md` — authoritative local dev runbook (in product repo)
