@@ -2,9 +2,9 @@
 id: 27_engine_evolution_plan
 title: Engine evolution plan and atom registry expansion
 status: active
-last_updated: 2026-05-19 (Lane A.2 closed: all 7 Cortex atom types locked in engine atom-registry across six Sync B fires; `@hauska-engine/atoms` 0.0.0 → 0.6.0 via PRs #9-#14; 194 workspace tests green at HEAD `7ed915c`; design decisions captured below per cc-agent-E Phase G close-out — state-as-field + declared eventTypes, discriminated unions key on discriminant, advisory helpers, leaf composition, tenant-private accessPolicy throughout. New `deliverable-letter-render` atom spec added under DA-side new atoms per Sprint Amendment 6 — render output IS a first-class atom, not bytes-only. Runtime-layer work the atom shapes deliberately deferred to legacy-design-tools: ICC-ES poller for L5, DOCX/PDF render pipeline for L6. Earlier 2026-05-18 entry: doc-set sweep for ADR-018 substrate-layer reframe.)
+last_updated: 2026-05-26 (Recorded encumbrance atom specs added per ADR-020/021. Prior 2026-05-19: Lane A.2 closed: all 7 Cortex atom types locked in engine atom-registry across six Sync B fires; `@hauska-engine/atoms` 0.0.0 → 0.6.0 via PRs #9-#14; 194 workspace tests green at HEAD `7ed915c`; design decisions captured below per cc-agent-E Phase G close-out — state-as-field + declared eventTypes, discriminated unions key on discriminant, advisory helpers, leaf composition, tenant-private accessPolicy throughout. New `deliverable-letter-render` atom spec added under DA-side new atoms per Sprint Amendment 6 — render output IS a first-class atom, not bytes-only. Runtime-layer work the atom shapes deliberately deferred to legacy-design-tools: ICC-ES poller for L5, DOCX/PDF render pipeline for L6. Earlier 2026-05-18 entry: doc-set sweep for ADR-018 substrate-layer reframe.)
 applies_to: portfolio
-related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 40_design_accelerator, 47_codex_plan_review, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 46_smartcity_parcel_intelligence, 11a_bastrop_live_roadmap, 08_tiered_access_model, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer]
+related: [25_atom_architecture_reference, 26_atom_upgrade_guide, 40_design_accelerator, 47_codex_plan_review, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 46_smartcity_parcel_intelligence, 11a_bastrop_live_roadmap, 08_tiered_access_model, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_010_atom_graph_traversal, adr_011_atom_identity_across_versions, adr_012_atom_export_format, adr_018_atom_contract_substrate_layer, adr_020_recorded_instruments_and_restriction_clauses, adr_021_constraint_resolution_and_precedence, 49b_encumbrance_ingestion_pipeline]
 owner: nick
 ---
 
@@ -228,6 +228,41 @@ Atoms supporting the Parcel Intelligence capability in SmartCity OS Operations D
 - **Consumer.** Engine (briefing refinement pass), `parcel-briefing` composition.
 - **Key fields.** `parcelDid` (link), `inputType` (`text` | `photo` | `sketch-outline-geojson` | `text-with-attachments`), `inputContent` (CID-addressed payload for non-text), `authorTenant`, `submittedAt`, `parsedIntent` (LLM-extracted structured summary).
 - **Open.** Per 46 Open questions #2 — MVP scope. Probably `text` only at MVP; `photo` and `sketch-outline-geojson` as type variants pre-declared so adding them later doesn't break the atom contract.
+
+### Recorded private encumbrances (ADR-020, 2026-05-26)
+
+Private recorded land-use instruments (CC&Rs, plat restrictions, deed restrictions, easements). **Distinct from `constraint-overlay`** (public regulatory). Spec: [ADR-020](80_adrs/adr_020_recorded_instruments_and_restriction_clauses.md), [ADR-021](80_adrs/adr_021_constraint_resolution_and_precedence.md), ingest: [`49b_encumbrance_ingestion_pipeline.md`](49b_encumbrance_ingestion_pipeline.md). **Registry bump:** queued for cc-agent-AC after contract publish; not yet in `hauska-engine/packages/atoms/`.
+
+#### `recorded-instrument`
+- **Purpose.** Parent atom for one recorded or uploaded instrument; wet PDF via `sourceDocumentCid` required.
+- **Producer.** Encumbrance pipeline E.3 ([`49b`](49b_encumbrance_ingestion_pipeline.md)); Phase 1 R4 upload in Cortex.
+- **Consumer.** `restriction-clause` parent, `parcel-record` (`subject-to`), `.atompack` export for subdivision corpora.
+- **Key fields.** Per ADR-020: `instrumentType`, `recording`, `issuerActorDid`, `appliesTo`, `accessPolicy` (never `public-free`), `verificationStatus`.
+- **Status.** Draft in canonical docs; implementation Phase 1+.
+
+#### `restriction-clause`
+- **Purpose.** Enforceable snippet from an instrument; plan-review and briefing citation target.
+- **Producer.** E.2 extraction + E.3 atomization; human verify queue (E.4).
+- **Consumer.** `parcel-briefing`, `constraint-resolution` (ADR-021), Codex/Cortex findings (Phase 3).
+- **Key fields.** `parentInstrumentCid`, `clausePath`, `bodyText`, `structuredFields?`, `confidence`, `humanVerifiedAt?`.
+- **Status.** Draft in canonical docs; implementation Phase 1+.
+
+#### `restriction-corpus`
+- **Purpose.** Subdivision-scoped pack; many parcels inherit one CC&R set.
+- **Producer.** E.3 when plat/subdivision scope; HOA/R3 track.
+- **Consumer.** Title-channel `.atompack`; parcel inheritance links.
+- **Status.** Phase 2.
+
+#### `administrative-rule`
+- **Purpose.** Unrecorded HOA guidelines; `legalWeight: advisory` only.
+- **Consumer.** Briefing and findings labeled advisory; must not present as code.
+- **Status.** Phase 2+.
+
+#### `constraint-resolution`
+- **Purpose.** Effective constraint set for a parcel (public code + overlays + private clauses) with precedence and conflict list.
+- **Producer.** Engine `resolveConstraints()` per ADR-021.
+- **Consumer.** `parcel-briefing`, MCP `resolve_constraints`, plan review.
+- **Status.** Phase 1 simplified merge in briefing; Phase 6 full engine primitive.
 
 ### Engine atom-registry version bump (reframed 2026-05-19 per option β)
 

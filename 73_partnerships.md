@@ -2,7 +2,7 @@
 id: 73_partnerships
 title: Partnerships â formalized partnership state
 status: active
-last_updated: 2026-05-23 (Sync 5 TX-metros batch: McAllen confirmed eCode360 added to General Code row; 7 metro-suburb cities + Edinburg added to publisher-TBD bucket with Fort Worth flagged as the strategic anchor for the FW metro. Earlier 2026-05-22: Sync 5 Tier 2 central-Texas recon — Kyle, Buda, Liberty Hill, Bee Cave to General Code, American Legal Publishing logged. Prior 2026-05-22: Pflugerville and Cedar Park added to General Code, EncodePlus / GovOS logged. Prior 2026-05-21: Standards-body licensor partnerships section added.)
+last_updated: 2026-05-26 (Sync 5 TX-metros batch: McAllen confirmed eCode360 added to General Code row; 7 metro-suburb cities + Edinburg added to publisher-TBD bucket with Fort Worth flagged as the strategic anchor for the FW metro. Earlier 2026-05-22: Sync 5 Tier 2 central-Texas recon — Kyle, Buda, Liberty Hill, Bee Cave to General Code, American Legal Publishing logged. Prior 2026-05-22: Pflugerville and Cedar Park added to General Code, EncodePlus / GovOS logged. Prior 2026-05-21: Standards-body licensor partnerships section added.)
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 13_risk_register, 18_stakeholder_graph, 30_smartcity_os, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 70_bizops_overview, 71_pipeline, 74_commercial_agreements]
 owner: nick
@@ -78,6 +78,18 @@ cc-agent-E's TX-metros batch found seven additional cities off Municode whose pu
 | **Edinburg, TX** | RGV | Different shape — Municode "TITLE XV - LAND USAGE" carries only 3 chapters (150, 151, 154 — no Zoning / Subdivision). Full UDC appears off-Municode; partnership-track recon owed for the missing UDC portion. |
 
 This bucket joins the prior "roughly eleven small central-Texas towns off Municode with publishers not yet identified" later-recon bucket from the 2026-05-22 Tier 2 history entry. A consolidated publisher-recon pass across both buckets is a separable bizops or cc-agent-E discovery dispatch.
+
+## County recorder and title encumbrance partnerships (recorded restrictions)
+
+Distinct from municipal code publishers and from Cortex public-records baselines (Regrid). Governs **private recorded instruments** per [ADR-020](80_adrs/adr_020_recorded_instruments_and_restriction_clauses.md) and ingest tracks R1–R3 in [`49b_encumbrance_ingestion_pipeline.md`](49b_encumbrance_ingestion_pipeline.md). Partnership-first applies: no national county-recorder scrape.
+
+| Counterparty class | Examples | Status | Notes |
+|---|---|---|---|
+| **County clerk / official records** | Bastrop County, Dallas County (Cedar Hill engagements) | **Prospective.** Phase 4+ | MOU + API or bulk SFTP for instrument PDFs by APN. Template follows Bastrop city partnership shape; revenue share on Layer 2 encumbrance queries. |
+| **Title insurance underwriters / plants** | Stewart, First American, Fidelity National | **Prospective.** Phase 5+ | Per [`18_stakeholder_graph.md`](18_stakeholder_graph.md) P3. Enterprise catalog + `.atompack` for subdivision corpora. |
+| **HOA / management companies** | Per-subdivision | **Prospective.** Phase 2–3 | CC&R + design guidelines; recorded vs advisory split in ADR-020. |
+
+**Phase 1 does not require these partnerships.** Customer upload (track R4) is the default until R1 is signed.
 
 ## Standards-body licensor partnerships (ICC, NFPA)
 
