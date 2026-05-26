@@ -238,10 +238,10 @@ Ship only cities with eval-passing corpus. Publish live coverage list on admin p
 
 | # | Deliverable | Owner | Status |
 |---|-------------|-------|--------|
-| 0.1 | `POST /api/brokerage/v1/brief` — address in, JSON (+ PDF later) | cc-agent-C | **Dispatched** [`_dispatches/2026-05-26_cc-agent-C_brokerage_brief_api.md`](_dispatches/2026-05-26_cc-agent-C_brokerage_brief_api.md) |
-| 0.1b | `POST /api/brokerage/v1/brief/summarize` — Grok reasoning on atom set | cc-agent-C | Same dispatch |
-| 0.1c | `POST /api/brokerage/v1/research/chat` — follow-up Q&A with citations | cc-agent-C | Same dispatch (feeds deep research page) |
-| 0.2 | Brokerage tenant model (slug, API key, usage counter) | cc-agent-C | v1: `BROKERAGE_DEV_API_KEY` env |
+| 0.1 | `POST /api/brokerage/v1/brief` — address in, JSON (+ PDF later) | cc-agent-C | **Merged** PR #128 `73b86bf` 2026-05-26 |
+| 0.1b | `POST /api/brokerage/v1/brief/summarize` — Grok reasoning on atom set | cc-agent-C | **Merged** PR #128 |
+| 0.1c | `POST /api/brokerage/v1/research/chat` — follow-up Q&A with citations | cc-agent-C | **Merged** PR #128 |
+| 0.2 | Brokerage tenant model (slug, API key, usage counter) | cc-agent-C | v1: `BROKERAGE_DEV_API_KEY` env (shipped) |
 | 0.3 | 5 code question templates per pilot city | planner + engine | **Done in extension** (`CODE_QUERIES`); server must mirror |
 | 0.4 | PDF template (Hauska + optional brokerage logo) | cc-agent-C | Queued after 0.1 |
 | 0.5 | Public coverage page (`/coverage`) | planner | Open |

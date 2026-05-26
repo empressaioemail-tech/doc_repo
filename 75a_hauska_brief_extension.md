@@ -22,7 +22,7 @@ owner: nick
 | Floating panel (Shadow DOM) | Shipped | Tab under toolbar area → morphs to panel |
 | Deep research page | Shipped UI | `research/research.html` — chat + atom sources panel |
 | MCP direct (dev) | Shipped | Extension orchestrates MCP when `briefApiUrl` unset |
-| Brokerage API (prod) | **Dispatched** | cc-agent-C — Grok on server |
+| Brokerage API (prod) | **Merged PR #128** | Deploy + extension options pending |
 
 ## Architecture
 
@@ -121,9 +121,10 @@ Extension: `hauska-brief-extension/src/lib/reasoning-summary.js` `fetchReasoning
 
 | Gate | Owner |
 |------|-------|
-| Brokerage API merged + deployed | cc-agent-C |
-| Extension `briefApiUrl` pointed at prod cortex-api | Nick |
-| CORS `chrome-extension://*` on brokerage routes | cc-agent-C |
+| Brokerage API merged | **Done** PR #128 `73b86bf` |
+| cortex-api deployed + migration 0026 | Nick |
+| Extension `briefApiUrl` / `summarizeApiUrl` at prod | Nick |
+| CORS `chrome-extension://*` on brokerage routes | Shipped in #128 |
 | Corpus for pilot metros | cc-agent-E + operator merge |
 
 ## Out of scope (extension repo)
