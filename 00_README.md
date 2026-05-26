@@ -54,7 +54,7 @@ read from `..\doc_repo` and write session summaries to
 40-49  Design Accelerator + Revit Connector
 50-59  Hauska SDK
 60-69  ECI
-70-79  Reserved
+70-79  Bizops + brokerage (70-74 bizops band; 75 GTM plan; 75a extension spec)
 80-89  ADRs (architecture decision records)
 90-99  Runbooks, postmortems, incident records
 ```
