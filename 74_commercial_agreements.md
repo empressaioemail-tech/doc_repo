@@ -2,7 +2,7 @@
 id: 74_commercial_agreements
 title: Commercial agreements â contracts, proposals, templates
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-26
 applies_to: portfolio
 related: [14_pricing_framework, 18_stakeholder_graph, 30_smartcity_os, 70_bizops_overview, 71_pipeline, 73_partnerships]
 owner: nick
@@ -36,6 +36,11 @@ Templates are TBD. The shape they need to take is informed by 14_pricing_framewo
 | **Master services agreement (MSA)** | TBD | First contract beyond Bastrop. Currently no second contract in flight. |
 | **Revenue-share template** | TBD | Bastrop revenue-share contract operational pilot (per [`14_pricing_framework.md`](14_pricing_framework.md) substrate-state subsection). The pilot informs the template before the template is generalized. |
 | **Layer 2 paid agent-consumption agreement** | TBD | First paid Layer 2 call. Likely thin (substrate side does the metering and routing per the SDK payment substrate); legal posture per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md) regulatory items. |
+| **Empressa wedge ToS + Privacy Policy** | TBD | Before external extension users (day 30 target). [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md) legal track. |
+| **Brokerage pilot agreement** | TBD | Before first paid pilot invoice (day 45–60). Flat fee maps to Team tier per [`_decisions/2026-05-26_empressa_wedge_operating_commitments.md`](_decisions/2026-05-26_empressa_wedge_operating_commitments.md). |
+| **Extension subscription terms** | TBD | Stripe live (day 60 target). Auto-renew, acceptable use, refund policy. |
+| **Share card + graph consent exhibit** | TBD | Before public share URLs (day 46+). Graph opt-in copy reviewed by counsel. |
+| **Institutional data product term sheet** | TBD | Design-partner meetings (day 76–90). Anonymized activity feed; k-anonymity posture. |
 
 ## Pricing application reference
 
@@ -61,4 +66,5 @@ None tracked yet.
 
 ## Revision history
 
+- **2026-05-26:** Empressa wedge template rows (ToS, pilot agreement, subscription, share consent, institutional term sheet).
 - **2026-05-18 (origin):** doc seeded as part of the 70-band design session. Sylvia $1M proposal tracked as the one active commercial instance; templates section laid out with triggers to author; pricing-application reference inlined from [`14`](14_pricing_framework.md) close-the-loop pass landed same session.

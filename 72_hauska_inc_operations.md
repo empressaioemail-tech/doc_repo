@@ -2,7 +2,7 @@
 id: 72_hauska_inc_operations
 title: Hauska Inc. operations â corporate state tracker
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-26
 applies_to: portfolio
 related: [00_current_state, 14_pricing_framework, 50_hauska_mcp_server, 51_substrate_v1_sprint, 70_bizops_overview, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_018_atom_contract_substrate_layer]
 owner: nick
@@ -39,13 +39,13 @@ State of declared capital allocations against Hauska Inc. operations.
 
 | Item | Status | Notes |
 |---|---|---|
-| **Texas IP attorney memo** | Open / routing date TBD; parallel bizops, not a substrate-v1 ingestion gate. | Per CLAUDE.md "What is open." Runs in parallel with substrate v1 work; does not gate Bastrop, Grand County, or the Tier 1/2/3 Texas city pipeline. Reframed 2026-05-19 per fleet correction: prior framing as [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) sync point #6 retired; Sync 6 removed from §Sync points table same date. Joint dependency with [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory-posture stands for paid Layer 2 surfaces but does not block ingestion. |
+| **Texas IP attorney memo** | Open / routing date TBD; parallel bizops, not a substrate-v1 ingestion gate. | Per CLAUDE.md "What is open." Runs in parallel with substrate v1 work; does not gate Bastrop, Grand County, or the Tier 1/2/3 Texas city pipeline. Reframed 2026-05-19 per fleet correction: prior framing as [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) sync point #6 retired; Sync 6 removed from §Sync points table same date. Joint dependency with [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory-posture stands for paid Layer 2 surfaces but does not block ingestion. **Wedge scope addendum (2026-05-26):** memo must cover extension, brokerage API, Regrid/Grok outputs, share cards, and future graph/institutional product per [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md). Interim memo acceptable by day 90. |
 
 ## Tech E&O insurance
 
 | Item | Status | Notes |
 |---|---|---|
-| **Tech E&O insurance routing** | Open / routing date TBD | Per CLAUDE.md "What is open." Required before paid Layer 2 surfaces ship first revenue; same compliance pre-revenue work as banking and IP memo. |
+| **Tech E&O insurance routing** | Open / routing date TBD | Per CLAUDE.md "What is open." Required before paid Layer 2 surfaces ship first revenue; same compliance pre-revenue work as banking and IP memo. **Property Brief / Empressa wedge (2026-05-26):** E&O must be **bound before first paid brokerage pilot** (target day 60 of [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md)), not only before MCP Layer 2. Application should start day 15. |
 
 ## Regulatory posture
 
@@ -83,5 +83,6 @@ Hauska-namespaced internet domains required for production substrate.
 
 ## Revision history
 
+- **2026-05-26:** Property Brief / Empressa wedge gates on E&O (before paid pilot) and IP memo scope (extension, share graph, institutional).
 - **2026-05-18 (origin):** doc seeded as part of the 70-band design session. Entity-separation status from CLAUDE.md; banking / IP memo / Tech E&O insurance status from CLAUDE.md "What is open"; regulatory posture and settlement rails from [`14_pricing_framework.md`](14_pricing_framework.md) close-the-loop pass landed same session.
 - **2026-05-18 (Phase 0 close):** Capital allocation section added (Hauska Inc. equity funds substrate v1 first-30-cities ingest budget per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md); cost ceiling enforced by the structural commitment and the 3-county hard-kill checkpoint at [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Stream 1D). Domains section added (`hauska.dev` open / Nick action; gates Phase 5 deploy and Phase 7 launch; `mcp.hauska.dev` is the v1 MCP subdomain).

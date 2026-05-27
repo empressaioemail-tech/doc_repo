@@ -1,0 +1,48 @@
+flowchart TB
+    subgraph Apps["Application surface (90d scope: wedge + cortex-api)"]
+        A1[cortex-api brokerage + Cortex]
+        A2[hauska-brief-extension]
+        A3[hauska-mcp-server catalog]
+        A4[Cortex portal-ui]
+        A5["SmartCity OS (observe only, Tier 2+)"]
+    end
+
+    Apps -->|"user actions, errors, latency, feature use, anomalies"| Tel[Telemetry plane]
+    Tel --> Log[(Observation log, durable)]
+
+    Log --> Triage[Triage agent<br/>classifies signals]
+
+    Triage --> B1[Bug]
+    Triage --> B2[Degradation]
+    Triage --> B3[User friction]
+    Triage --> B4[Opportunity signal]
+    Triage --> B5[Noise, drop]
+
+    B1 --> W1[Bug fix worker]
+    B2 --> W2[Performance worker]
+    B3 --> W3[UX worker]
+    B4 --> W4[Product proposal worker]
+
+    W1 --> Pol{Policy tier check}
+    W2 --> Pol
+    W3 --> Pol
+    W4 --> Pol
+
+    Pol -->|"Tier 0, safe auto fix"| Act[Action layer<br/>PR, config, hotpatch]
+    Pol -->|"Tier 1, auto merge if tests green"| Act
+    Pol -->|"Tier 2, propose, needs approval"| St
+    Pol -->|"Tier 3, design call needed"| St
+
+    Act --> Ver[Verify post action<br/>canary, re measure]
+    Ver -->|"regression"| Roll[Rollback]
+    Ver -->|"healthy"| Tel
+    Roll --> Tel
+
+    St[Steward agent<br/>single human interface]
+    St -->|"daily digest"| You[Operator]
+    St -->|"weekly KPI and improvement report"| You
+    You -->|"approve, redirect, override, set rules"| St
+    St --> Pol
+
+    Drift[Drift watcher<br/>monitors agent behavior] --> St
+    Tel --> Drift

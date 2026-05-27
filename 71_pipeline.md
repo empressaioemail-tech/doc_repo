@@ -2,7 +2,7 @@
 id: 71_pipeline
 title: Pipeline â active prospects, leads, funnel state
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-05-26
 applies_to: portfolio
 related: [13_risk_register, 14_pricing_framework, 18_stakeholder_graph, 30_smartcity_os, 70_bizops_overview, 73_partnerships, 74_commercial_agreements]
 owner: nick
@@ -46,9 +46,17 @@ Promotion between stages is operator-driven, not automatic. A prospect that has 
 - **Pipeline relevance.** Potential anchor for a future SmartCity OS deployment outside the Bastrop-Jarrell corridor; decision pending whether to absorb into this roadmap or run as a separate sales pipeline.
 - **No active artifacts.**
 
+### Lead — Empressa Property Brief / brokerage wedge
+
+- **Status.** Lead → pilot motion; 90-day plan [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md).
+- **Design partner.** Valerie Thompson (eXp Austin); agent seed + UX copy.
+- **ICP.** Regional brokerage or eXp office; Unlock MLS + SkySlope stack.
+- **Target.** First paid pilot $2.5–5K (Team tier prepay); day-60 gate.
+- **Institutional (parallel).** 3 design-partner conversations (anonymized activity feed); day 76–90.
+
 ### Open leads
 
-No additional leads tracked at this band level today. Per [`11_roadmap.md`](11_roadmap.md) Open strategic questions, the "Which second customer, and what the referral funnel looks like" question is owned by Valerie + Sylvia and resolves with market signal.
+No additional leads beyond brokerage wedge at this band level today. Per [`11_roadmap.md`](11_roadmap.md) Open strategic questions, the "Which second customer, and what the referral funnel looks like" question is owned by Valerie + Sylvia and resolves with market signal.
 
 ## Killed / dormant
 

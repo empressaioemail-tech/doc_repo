@@ -19,6 +19,10 @@ related: [11_roadmap, 16_commercialization_roadmap, 43_cortex_qa_backlog, 30a_sm
 
 **Post-QA:** master secret rotation (operator deferred).
 
+## Empressa wedge — 90-day operating scaffold filed (2026-05-26)
+
+**Plan:** [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md) — $500M ARR base (Y5), 90-day wedge deploy + legal up front + dual operator loops. **Loops:** [`76a_operator_autonomous_loops.md`](76a_operator_autonomous_loops.md); diagrams [`90_runbooks/diagrams/self_healing_loop.mermaid`](90_runbooks/diagrams/self_healing_loop.mermaid), [`90_runbooks/diagrams/gtm_loop.mermaid`](90_runbooks/diagrams/gtm_loop.mermaid). **Decision:** [`_decisions/2026-05-26_empressa_wedge_operating_commitments.md`](_decisions/2026-05-26_empressa_wedge_operating_commitments.md).
+
 ## Brokerage Property Brief — API merged, deploy gate (2026-05-26)
 
 **Extension:** `P:\hauska-brief-extension` **v0.4.1** — panel + deep research UI. Spec: [`75a_hauska_brief_extension.md`](75a_hauska_brief_extension.md).

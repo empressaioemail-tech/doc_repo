@@ -4,7 +4,7 @@ title: Hauska brokerage workflow plan — Matrix listing + SkySlope
 status: draft
 last_updated: 2026-05-26
 applies_to: portfolio
-related: [75a_hauska_brief_extension, 08_tiered_access_model, 09_post_saas_substrate_thesis, 14_pricing_framework, 16_commercialization_roadmap, 18_stakeholder_graph, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 40_design_accelerator, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 71_pipeline, 73_partnerships, 74_commercial_agreements, _dispatches/2026-05-26_cc-agent-C_brokerage_brief_api]
+related: [75a_hauska_brief_extension, 76_empressa_wedge_90d_operating_plan, 76a_operator_autonomous_loops, 08_tiered_access_model, 09_post_saas_substrate_thesis, 14_pricing_framework, 16_commercialization_roadmap, 18_stakeholder_graph, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 40_design_accelerator, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 71_pipeline, 73_partnerships, 74_commercial_agreements, _decisions/2026-05-26_empressa_wedge_operating_commitments, _dispatches/2026-05-26_cc-agent-C_brokerage_brief_api]
 owner: nick
 ---
 
@@ -13,6 +13,8 @@ owner: nick
 > **Purpose.** Executive summary and execution plan for the brokerage GTM wedge: cited property intelligence inside the tools Texas agents already use (Unlock MLS / Matrix on the listing; SkySlope on the deal file). One product engine, two workflow latch points, one listing identity thread.
 >
 > **Status posture.** Draft for operator review. Does not supersede substrate v1 or Cortex prod QA priorities; sequences brokerage work after Cortex prod validation and defines what gets built in parallel vs queued.
+>
+> **90-day operating scaffold (2026-05-26).** Executable plan, $500M base trajectory, legal-up-front gates, and dual operator loops (maintenance + GTM): [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md), [`76a_operator_autonomous_loops.md`](76a_operator_autonomous_loops.md). Decision record: [`_decisions/2026-05-26_empressa_wedge_operating_commitments.md`](_decisions/2026-05-26_empressa_wedge_operating_commitments.md).
 
 ## Executive summary
 

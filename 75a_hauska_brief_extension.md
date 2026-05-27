@@ -18,7 +18,7 @@ owner: nick
 
 | Surface | Status | Notes |
 |---------|--------|-------|
-| Chrome MV3 extension | **Pilot v0.4.1** | Zillow, Redfin, Matrix listing detection |
+| Chrome MV3 extension | **Pilot v0.4.3** | Zillow, Redfin, Matrix listing detection; GTM consent + events |
 | Floating panel (Shadow DOM) | Shipped | Tab under toolbar area → morphs to panel |
 | Deep research page | Shipped UI | `research/research.html` — chat + atom sources panel |
 | MCP direct (dev) | Shipped | Extension orchestrates MCP when `briefApiUrl` unset |
@@ -57,7 +57,7 @@ owner: nick
 | `defaultJurisdiction` | e.g. `bastrop_tx`, `cedar_hill_tx` |
 | `briefApiUrl` | Cortex host (no path) — enables `POST …/brief` |
 | `summarizeApiUrl` | Optional — `POST …/brief/summarize` |
-| `researchApiUrl` | **Planned** — `POST …/research/chat` (extension field TBD) |
+| `researchApiUrl` | Optional — defaults to `{briefApiUrl}/api/brokerage/v1/research/chat` (v0.4.2 live Grok chat) |
 
 ## API contracts (extension expects)
 
@@ -101,6 +101,26 @@ Extension: `hauska-brief-extension/src/lib/reasoning-summary.js` `fetchReasoning
 **Response:** `{ message, messageHtml, citations[], disclaimer, confidence, generatedAt, method }`
 
 **Server:** Load run; `retrieveAtomsForQuestion` (pattern: `routes/chat.ts`); Grok with atom-only citations.
+
+### `POST /api/brokerage/v1/gtm/consent`
+
+**Request:** `{ installId, consentVersion, graphOptIn, termsAcceptedAt? }`
+
+**Response:** `{ ok, installId, consentVersion, graphOptIn, termsAcceptedAt }`
+
+Extension: options page on first install; local + server when `briefApiUrl` and key set.
+
+### `POST /api/brokerage/v1/gtm/events`
+
+**Request:** `{ installId, eventType, sourceSurface?, runId?, listingKey?, payload? }`
+
+Requires prior consent. Share/graph events require `graphOptIn: true`.
+
+**Headers:** `Authorization` or `X-Hauska-Key`; `X-Hauska-Install-Id` on `/brief` for server-side events.
+
+### `GET /api/brokerage/v1/gtm/digest`
+
+Steward digest (7-day event counts). Operator auth only.
 
 ## Extension version history (pilot)
 
