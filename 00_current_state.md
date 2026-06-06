@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-01
+title: Current state snapshot — 2026-06-06
 status: active
-last_updated: 2026-06-01
+last_updated: 2026-06-06
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
 ---
@@ -12,6 +12,22 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Read me first.** Per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md). Regenerated at session close. Pointer doc — follow links into canonical docs for full context.
 >
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
+
+## Cotality data spine + Cortex hydrology (2026-06-06)
+
+**Decision:** Cotality is the parcel/property data spine over Regrid for extension + Cortex/Codex viability ([`_decisions/2026-06-06_cotality_parcel_provider.md`](_decisions/2026-06-06_cotality_parcel_provider.md)). Strategy: [`77b_cotality_integration_strategy.md`](77b_cotality_integration_strategy.md). API surface + swaggers: [`_research/2026-06-06_cotality_api_surface_catalog.md`](_research/2026-06-06_cotality_api_surface_catalog.md), [`_research/cotality/`](_research/cotality/).
+
+**Built (cc-agent-C, PR #141 HELD):** full 8-adapter Cotality data layer — 264 tests green, typecheck clean, token-gated. Parcel polygon via Spatial Tile; climate demo-reachable; O&G via SpatialRecord.
+
+**BLOCKER (single gate):** Cotality OAuth throws `Invalid client identifier`. **Likely cause:** eval app signed up under `nick@hauska.io`, but stored key/secret may be from the old demo/other account. **Fix (operator, mechanical):** log into `developer.corelogic.com` as `nick@hauska.io`, re-copy the eval `client_id`+`secret`, overwrite Secret Manager secrets, re-mint. Unblocks live smoke + PR #141 merge + Cotality MCP ([`90_runbooks/cotality_mcp_setup.md`](90_runbooks/cotality_mcp_setup.md)).
+
+**Cortex hydrology (40d 2D.2+2D.3, PR HELD on `cortex/hydrology-engine`):** landed — pysheds sidecar + TS D8 fallback, NOAA Atlas 14 forcing, Cotality flood-depth overlay hook (inert), `site-drainage` tenant-private atom, briefing wired. Typecheck + unit tests green. Smoke "4 inches" on 1904 Heathwood Cir needs DB+GCS; prod needs Python sidecar `requirements.txt` in the Cloud Run image. Report: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_cortex_hydrology_engine.md`](_inbox/2026-06-06_legacy-design-tools_cc-agent-C_cortex_hydrology_engine.md).
+
+**ICC Code Connect:** captured as plane-A/Codex feed ([`_research/icc/2026-06-06_icc_code_connect_api_findings.md`](_research/icc/2026-06-06_icc_code_connect_api_findings.md)); contract moving forward; needs ICC creds + onboarding.
+
+**Engine extraction (ADR-008): UNFROZEN** ([`_decisions/2026-06-06_engine_extraction_unfrozen.md`](_decisions/2026-06-06_engine_extraction_unfrozen.md)) — build clean, sequenced behind M-Stabilize 2C + wedge ship.
+
+**Strategic core filed:** [`03`](03_structural_constitution_and_drift_guard.md)/[`03a`](03a_positioning_framework.md)/[`03b`](03b_thought_leadership.md) theology + [`04`](04_roadmap_alignment_audit.md) audit; [`00d`](00d_portfolio_roadmap_reference.md) roadmap. Arrow-two calibration capture = priority #1, no canonical home yet.
 
 ## Bastrop SmartCity OS — maintenance sprint (2026-06-01)
 
