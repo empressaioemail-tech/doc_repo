@@ -4,7 +4,7 @@ title: Cotality integration strategy — multi-plane place-graph feed, hydrology
 status: active
 last_updated: 2026-06-06
 applies_to: portfolio
-related: [77_place_graph_strategy, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 40d_cortex_site_context_sprint, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 14_pricing_framework, _research/2026-05-30_cotality_property_brief_recon, _decisions/2026-06-06_cotality_parcel_provider, 80_meetings/transcripts/2026-06-cotality_corelogic_gene_sales_engineer_call_otter]
+related: [77_place_graph_strategy, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 40d_cortex_site_context_sprint, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 14_pricing_framework, _research/2026-06-06_cotality_api_surface_catalog, _research/2026-05-30_cotality_property_brief_recon, _decisions/2026-06-06_cotality_parcel_provider, 80_meetings/transcripts/2026-06-cotality_corelogic_gene_sales_engineer_call_otter]
 owner: nick
 ---
 
@@ -13,6 +13,8 @@ owner: nick
 > **Purpose.** Capture the full Cotality opportunity beyond the parcel/zoning swap, and lay out the implementation path the operator wants to leverage as far as possible. Cotality is not a Regrid replacement; it is a multi-plane feed on the [place graph](77_place_graph_strategy.md) plus a governed MCP server (launched 2026-03-31) we can federate under ours. Grounds the brainstorm so it is not lost. Decision basis: [`_decisions/2026-06-06_cotality_parcel_provider.md`](_decisions/2026-06-06_cotality_parcel_provider.md); product map: [`_research/2026-05-30_cotality_property_brief_recon.md`](_research/2026-05-30_cotality_property_brief_recon.md).
 >
 > **Posture.** Strategy + implementation sequence. Most layers are post-wedge and tier/license gated; the near-term increment is the already-dispatched parcel/zoning adapter, then the climate (hydrology) and property (Carfax) layers the operator has greenlit pursuing.
+>
+> **Full endpoint reference (2026-06-06):** the complete Cotality platform swagger set is cataloged in [`_research/2026-06-06_cotality_api_surface_catalog.md`](_research/2026-06-06_cotality_api_surface_catalog.md). Three corrections it lands against earlier assumptions in this doc: (1) **parcel polygon is solved** via Spatial Tile `/spatial-tile/parcels` (§2/§6 "point-only" is superseded); (2) **climate is demo-key reachable** via Property CRA AR6 + RiskMeter `/climate-risk` and inland-flood-cat-model flood depths (§2 hydrology forcing is directly available; not eval-gated); (3) **Spatial Tile SpatialRecord Oil & Gas** tiers feed the [place-graph](77_place_graph_strategy.md) vertical/mineral estate plane — a new lane for the TX CRG minerals workstream.
 
 ## 1. Cotality lights up three place-graph planes
 

@@ -34,9 +34,13 @@ Cursor: base URL `https://api.x.ai/v1`.
 3. [`_research/2026-05-30_cotality_property_brief_recon.md`](../_research/2026-05-30_cotality_property_brief_recon.md) §6 license risks
 4. [`20_agent_operating_rules.md`](../20_agent_operating_rules.md) — HR-1, HR-2, HR-3, HR-8, HR-11
 
-## Gate (entitlement — read before starting)
+## Gate (entitlement — UPDATED 2026-06-06)
 
-Cotality **Climate Risk Analytics is a premium SKU, not in the self-serve 30-day trial** (trial = property-data + AVM calls only). This layer therefore gates on the **MCP eval / Climate Risk Analytics entitlement** from the Cotality sales track (Hannah call), not the trial key. **Build the adapter + normalization + tests against the documented response shape and a recorded fixture now; live smoke waits for the entitled climate key.** Confirm entitlement before attempting a live call.
+**Climate is reachable on the demo keys** — the earlier "premium SKU, eval-only" assumption is reversed by the full API catalog ([`_research/2026-06-06_cotality_api_surface_catalog.md`](../_research/2026-06-06_cotality_api_surface_catalog.md)). Two demo-key paths:
+- **Property key** → `GET https://api.cotality.com/v2/properties/{clip}/climate-risk-analytics/ar6/comprehensive` (CRA AR6: per-peril AAL + risk score + AEP/OEP + TVaR across SSP scenarios and horizons current/2030/2040/2050).
+- **RiskMeter key** → `GET https://api.cotality.com/riskmeter-api/climate-risk` (composite perils) plus the granular hazard endpoints, especially `/us-inland-flood-cat-model` and `/us-inland-flood-hazard` which return **modeled flood depth at 50/100/250/500-yr return periods + water-surface elevation** (the hydrology forcing/validation for 40d), and `/flash-flood-risk-score` (flow accumulation, rain intensity, imperviousness).
+
+So: live-smoke this layer on the demo keys once the token smoke succeeds (auth pattern in the catalog). Build against the documented CRA AR6 + RiskMeter shapes. Capture extreme-precipitation / flood-depth-at-return-period explicitly as the field the Cortex simulator consumes.
 
 ## Workspace ownership
 

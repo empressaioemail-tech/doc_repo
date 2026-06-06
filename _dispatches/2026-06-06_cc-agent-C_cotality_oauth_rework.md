@@ -31,6 +31,13 @@ OAuth2 token helper (`grant_type=client_credentials`, form-urlencoded `client_id
 
 PR #141 updated in place, HEAD `ddb7029`, **held for operator merge**. 262/262 adapter tests green, `pnpm run typecheck` exit 0.
 
-## Operator gate before merge
+## Endpoint constants — CONFIRMED 2026-06-06
 
-Confirm five endpoint constants from the developer.corelogic.com API DOCUMENTATION tab and the OAuth body format, set env overrides on cortex-api if defaults differ, then smoke 1904 Heathwood Cir. Defaults: `COTALITY_TOKEN_URL=https://api-prod.corelogic.com/oauth/token`, `COTALITY_PROPERTY_BASE_URL=.../property/v2`, `COTALITY_SPATIALTILE_BASE_URL=.../spatialtile/v1`, `COTALITY_PROPERTY_POINT_PATH=/point`, `COTALITY_SPATIALTILE_POINT_PATH=/point`.
+Full swagger catalog retrieved: [`_research/2026-06-06_cotality_api_surface_catalog.md`](../_research/2026-06-06_cotality_api_surface_catalog.md). The provisional guesses (`api-prod.corelogic.com`, `/point`) are wrong. Real values:
+
+- `COTALITY_TOKEN_URL=https://api.cotality.com/oauth/token` — POST, **creds in form body** `grant_type=client_credentials&client_id=&client_secret=&scope=openid` (NOT Basic at this host). Behind a WAF: a real User-Agent and a non-empty body are required (body-less POST → 411).
+- Base host `https://api.cotality.com` (the swaggers' `api1.cotality.com` is the backend, not the gateway).
+- Flow is two-step CLIP: `GET /v2/properties/search/geocode?streetAddress=&city=&state=&bestMatch=true` → `items[0].clip` + geocode lat/lng, then `GET /v2/properties/{clip}/site-location` → centroid + `lot` + `landUseAndZoningCodes`. No `/point` endpoint exists.
+- **Parcel polygon** is NOT in Property V2 (centroid only). Real polygon: Spatial Tile `GET https://api.cotality.com/spatial-tile/parcels?lat=&lon=&pageNumber=0&pageSize=1` (SpatialTile/Property key). Adapter should emit the Spatial Tile polygon; centroid is the fallback.
+
+Operator: run the catalog's token smoke; if it returns a token, the constants above are correct as-is (no overrides needed) — merge after the geocode/site-location/spatial-tile smoke on 1904 Heathwood Cir.
