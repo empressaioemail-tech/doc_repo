@@ -111,7 +111,7 @@ Q5 intent atoms: purpose field on procedure-execution per ADR-013 for v1; ADR-01
 
 Q6 access control: `80_adrs/adr_017_atom_access_control.md` (accepted 2026-05-16; dependency for ECI atomization).
 
-SDK payment substrate principle: committed per `14_pricing_framework.md`; implementation phased. **Take rate, pricing-model composition, and v1 fiat-rail (Stripe Connect) settled 2026-05-18 in the 14_pricing_framework close-the-loop pass.** Crypto rail (USDC on Base/ETH/Polygon) already built in `@hauska-sdk/payment` v0.1.0.
+SDK payment substrate principle: committed per `14_pricing_framework.md`; implementation phased. **Take rate and pricing-model composition settled 2026-05-18 in the 14_pricing_framework close-the-loop pass.** **v1 fiat-rail is Circle, switched 2026-05-21 from the Stripe Connect placeholder per `_decisions/2026-05-21_fiat_rail_circle.md` (the `@hauska-sdk/payment` package was already built Circle-shaped; Circle is USDC-native, unifying the fiat and crypto rails under one provider).** Crypto rail (USDC on Base/ETH/Polygon) already built in `@hauska-sdk/payment` v0.1.0.
 
 Bizops 70-band designed 2026-05-18. Five canonical docs (70 overview, 71 pipeline, 72 Hauska Inc. operations, 73 partnerships, 74 commercial agreements) plus `_prospects/` subdirectory. Three Mox artifacts relocated from root to `_prospects/mox/`. The 70-band tracks operational state; legal and corporate execution still route to Nick per "What is out of scope" below.
 
