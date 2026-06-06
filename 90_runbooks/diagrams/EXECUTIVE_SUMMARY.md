@@ -2,14 +2,14 @@
 id: portfolio_executive_summary
 title: Portfolio executive summary — the picture in narrative
 status: active
-last_updated: 2026-06-01
+last_updated: 2026-06-06
 applies_to: portfolio
 related: [00c_portfolio_master_map, 09_post_saas_substrate_thesis, 07_product_line_summary, 76_empressa_wedge_90d_operating_plan, 16_commercialization_roadmap]
 ---
 
 # Portfolio executive summary
 
-This is the narrative companion to the diagrams in this folder. It reads the whole portfolio in prose, with each diagram embedded where it earns its place. It was built on 2026-06-01 from a live read of every repo, not from the doc set, so where the two disagree this is the more current account. The full reference, including the per-repo ground truth and the housekeeping list, is in [`00c_portfolio_master_map.md`](../../00c_portfolio_master_map.md).
+This is the narrative companion to the diagrams in this folder. It reads the whole portfolio in prose, with each diagram embedded where it earns its place. It was built on 2026-06-01 from a live read of every repo, not from the doc set, so where the two disagree this is the more current account. It was refreshed 2026-06-06 for the three movements that landed that day: the Cotality data-spine decision, the Cortex hydrology engine landing, and the engine-extraction unfreeze. The full reference, including the per-repo ground truth and the housekeeping list, is in [`00c_portfolio_master_map.md`](../../00c_portfolio_master_map.md).
 
 ## The one idea
 
@@ -37,7 +37,7 @@ Underneath all of them are two logical engines. A property and parcel engine geo
 
 ![Shared engines — the destination](shared_engines_vision.png)
 
-The motivating example for the property engine is the question a city manager actually asks: what happens to this property with four inches of rain. That answer is not a data lookup. It is the property engine reasoning over public flood and elevation inputs and wrapping the result in a citation, a confidence score, and a timestamp. The free public inputs are Layer 1. The reasoning over them is the paid product. That single distinction is the whole commercial model in miniature.
+The motivating example for the property engine is the question a city manager actually asks: what happens to this property with four inches of rain. That answer is not a data lookup. It is the property engine reasoning over public flood and elevation inputs and wrapping the result in a citation, a confidence score, and a timestamp. The free public inputs are Layer 1. The reasoning over them is the paid product. That single distinction is the whole commercial model in miniature. The parcel and property baseline beneath that reasoning, together with a commercial flood-depth layer that sharpens the rain answer, standardized in June on a single provider, Cotality, chosen over the earlier parcel source; that integration is built and held behind one credential fix.
 
 ## How we build it
 
@@ -61,7 +61,7 @@ Both the growth engine and the maintenance engine are designed as the same self-
 
 ## Where we stand on the path
 
-One dependency dominates the technical roadmap. The city platform is on an operator hold while its production database is handled directly. Until that releases, the reviewer product going live at our anchor city, the property-intelligence capability, and the engine extraction all wait behind it. The rain capability specifically needs two more build phases in the Cortex site-context work, since only the topography phase is done, and then a port into the city platform.
+One dependency dominates the technical roadmap. The city platform is on an operator hold while its production database is handled directly. Until that releases, the reviewer product going live at our anchor city and the property-intelligence port into the city platform wait behind it. The rain capability itself is now built: both remaining Cortex site-context phases, drainage and rainfall simulation, landed in June with a pull request held for review, leaving only a production packaging step, a Python sidecar baked into the Cloud Run image, and the port into the city platform. The engine extraction is no longer frozen; as of June it is unfrozen and sequenced to follow city-platform stabilization and the wedge ship rather than waiting on the database hold.
 
 ![Roadmap milestone ladder](roadmap_milestone_ladder.png)
 
