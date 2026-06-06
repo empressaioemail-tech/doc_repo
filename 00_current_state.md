@@ -1,15 +1,53 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-05-26
+title: Current state snapshot — 2026-06-01
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-06-01
 applies_to: portfolio
-related: [11_roadmap, 16_commercialization_roadmap, 43_cortex_qa_backlog, 30a_smartcity_stabilization_sprint, 48_codex_program_plan, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
+related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
 ---
 
 # Current state snapshot
 
 > **Read me first.** Per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md). Regenerated at session close. Pointer doc — follow links into canonical docs for full context.
+>
+> **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
+
+## Bastrop SmartCity OS — maintenance sprint (2026-06-01)
+
+**Platform grade: YELLOW.** Health check recon complete. Report: smartcity-os
+`_research/bastrop_platform_health_check_2026-06-01.md` · branch
+`recon/bastrop-platform-health-check` · commit `3bc4eb8`.
+
+**Sprint anchor:** [`31a_bastrop_maintenance_sprint.md`](31a_bastrop_maintenance_sprint.md).
+M-Stabilize ([`30a`](30a_smartcity_stabilization_sprint.md)) remains on operator
+DB hold; 31a Phase 0–2 is parallel-safe.
+
+**Production:** `smartcity-api-00104-taw` @ 100%. Core dashboards green
+(MyGov, Samsara, FirstDue, OpenGov, Compass, calendar). **Red:** Prophecy
+embed (vendor hold). **Unbound:** Verkada, ESRI, transparency key.
+
+**Prior recons folded:** Prophecy `2478a4e`, Compass `1a9d0c9`.
+
+**Operator today:** Run Monday health script (31a → health report §11) +
+Phase 0 SQL sample. Answer open questions in 31a.
+
+**Fire when ready:** Phase 1 cc-agent-M dispatch (traffic tags, feedback
+auth-gate, thread-health Scheduler, CompassQuickAsk logging).
+
+## Property Brief — data wave sprint (2026-05-29)
+
+**Sprint anchor:** [`75_hauska_brokerage_workflow_plan.md`](75_hauska_brokerage_workflow_plan.md) § Current sprint. **Backlog:** [`75c_property_brief_data_backlog.md`](75c_property_brief_data_backlog.md). **Decision:** [`_decisions/2026-05-29_property_brief_data_backlog_priorities.md`](_decisions/2026-05-29_property_brief_data_backlog_priorities.md).
+
+**Deploy gate:** [PR #134](https://github.com/empressaioemail-tech/legacy-design-tools/pull/134) — place graph (`0030`, `atoms.*`, coverage API). **Fix in flight** (2026-05-29); do not deploy until merged and CI green.
+
+**Ready before deploy:** Neon warmup JSONL for 6 cities (`hauska-engine/tools/migrate-legacy-codes/tmp/neon-warmup-pilot/`). Extension **v0.5.2** atom UX (inbox close). Engine `central_texas_coverage.json` regenerated (34 keys).
+
+**Fire now (cc-agents):** [`2026-05-29_cc-agent-C_brief_federal_site_context_layers.md`](_dispatches/2026-05-29_cc-agent-C_brief_federal_site_context_layers.md), [`2026-05-29_cc-agent-E_neon_warmup_pilot_batch.md`](_dispatches/2026-05-29_cc-agent-E_neon_warmup_pilot_batch.md), [`2026-05-29_cc-agent-C_brief_encumbrance_upload_path.md`](_dispatches/2026-05-29_cc-agent-C_brief_encumbrance_upload_path.md).
+
+**Operator today:** unblock #134 → merge → `0030` + [`property_brief_cortex_deploy.ps1`](90_runbooks/property_brief_cortex_deploy.ps1) → load `round_rock_tx.jsonl` on staging → smoke `/coverage` + `/brief`.
+
+**Partner tomorrow (2026-05-30):** [`90_runbooks/partner_outreach_brief_wave.md`](90_runbooks/partner_outreach_brief_wave.md) — General Code, ICC, county clerk, Bastrop, HOA pilot.
 
 ## Cortex prod QA + laptop sync (2026-05-26)
 
@@ -23,13 +61,13 @@ related: [11_roadmap, 16_commercialization_roadmap, 43_cortex_qa_backlog, 30a_sm
 
 **Plan:** [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md) — $500M ARR base (Y5), 90-day wedge deploy + legal up front + dual operator loops. **Loops:** [`76a_operator_autonomous_loops.md`](76a_operator_autonomous_loops.md); diagrams [`90_runbooks/diagrams/self_healing_loop.mermaid`](90_runbooks/diagrams/self_healing_loop.mermaid), [`90_runbooks/diagrams/gtm_loop.mermaid`](90_runbooks/diagrams/gtm_loop.mermaid). **Decision:** [`_decisions/2026-05-26_empressa_wedge_operating_commitments.md`](_decisions/2026-05-26_empressa_wedge_operating_commitments.md).
 
-## Brokerage Property Brief — API merged, deploy gate (2026-05-26)
+## Brokerage Property Brief — API merged, deploy gated on #134 (2026-05-29)
 
-**Extension:** `P:\hauska-brief-extension` **v0.4.1** — panel + deep research UI. Spec: [`75a_hauska_brief_extension.md`](75a_hauska_brief_extension.md).
+**Extension:** `P:\hauska-brief-extension` **v0.5.2** — atom UX wave 7 (inbox close). Spec: [`75a_hauska_brief_extension.md`](75a_hauska_brief_extension.md).
 
-**Backend:** **PR #128 MERGED** `73b86bf` (2026-05-26) — `POST /api/brokerage/v1/brief`, `/brief/summarize`, `/research/chat` on `cortex-api`. Close report: [`_inbox/2026-05-26_legacy-design-tools_cc-agent-C_brokerage_brief_api.md`](_inbox/2026-05-26_legacy-design-tools_cc-agent-C_brokerage_brief_api.md). Migration: `0026_brokerage_brief_runs.sql`.
+**Backend:** **PR #128 MERGED** `73b86bf`; **PR #132/#133** workspace + lay summary merged; **PR #134 OPEN** place snapshots + atoms + coverage — fix in flight. Scope: [`_dispatches/2026-05-28_central-tx-property-brief-scope.md`](_dispatches/2026-05-28_central-tx-property-brief-scope.md).
 
-**Operator gate (now):** Deploy cortex-api with migration + `BROKERAGE_DEV_API_KEY` + `BRIEFING_LLM_MODE=grok` + `XAI_API_KEY`; point extension `briefApiUrl` / `summarizeApiUrl` at prod; smoke Bastrop listing.
+**Operator gate:** Merge #134 → migration `0030` → deploy per [`90_runbooks/property_brief_cortex_deploy.md`](90_runbooks/property_brief_cortex_deploy.md) → Neon warmup → extension prod smoke.
 
 ## Planning carryover — Claude parallel chats (2026-05-24)
 
@@ -89,7 +127,7 @@ Three tracks as of 2026-05-22:
 
 - **Cortex / Design Tools QA build** — cc-agent-C, legacy-design-tools. One phased dispatch ([`_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md`](_dispatches/2026-05-22_cc-agent-C_cortex_qa_build.md)). **Phase 1 and Phase 2 code-complete and all merged 2026-05-22; held for the operator before Phase 3.** Phase 1 PRs #73 (P0-1 0015 migration), #74 (P0-2 geocode), #75 (P1-1 site-context overlays), #76 (P1-3 adapter timeouts), #77 (P1-5 review audience) all merged. P0-3 (3D-site assembly + drainage analysis) flagged as a missing capability, not a bug. Phase 2 PR #81 merged: `cloud-run-deploy.yml` `action` input + four `workflow_dispatch` jobs (`deploy-canary`, `run-migrations`, `shift-traffic`, `rollback`) plus the `migrate-prod.mjs` numbered-SQL runner with the `_schema_migrations` tracker — the cortex-api deploy is now agent-runnable end-to-end, and the migration-drift mechanism behind Phase 1's IFC 500 is closed. Workspace-conflict incident this session — see watch list. Remaining operator gates in the watch list (now narrow: bootstrap run-migrations, canary deploy + verify, mock-mode decision). Phase 3 (QA-27/28/29 features) dispatches once the canary loop is verified. Backlog: [`43_cortex_qa_backlog.md`](43_cortex_qa_backlog.md) WS-G.
 - **Cortex rendering sprint** — cc-agent-R, legacy-design-tools (own clone). **Gap-fill complete and merged.** Per the operator's path-A call on the Phase A.1 finding that the render feature was already built and merged, cc-agent-R shipped Phase A (`GET /credits` + Prompt Generator, mnml client + api-server) as PR #79 and Phase B (frontend: credit-balance badge, deliverable-vs-concept intent toggle, expert/style selects, Prompt Generator affordance) as PR #80 — both **merged 2026-05-22**. `RENDERS_PROD_ENABLED` keeps the surface dark in prod. Two scope follow-ons deferred: B.1 full schema-driven per-expert param grid, B.2 manual upload as render source for concept imagery. 40c / dispatch / activation-decision doc reconciliation against `main` still owed by the rendering-sprint planner.
-- **Brokerage Property Brief API** — cc-agent-C, legacy-design-tools. **PR #128 merged** `73b86bf` 2026-05-26. **Operator:** deploy cortex-api + migration 0026 + env; wire extension to prod API. Plan: [`75_hauska_brokerage_workflow_plan.md`](75_hauska_brokerage_workflow_plan.md).
+- **Brokerage Property Brief — data wave sprint** — cc-agent-C + cc-agent-E + extension-agent. **PR #134** place graph (fix in flight). **P0:** Neon JSONL load, federal layers dispatch, encumbrance R4 dispatch. Plan: [`75_hauska_brokerage_workflow_plan.md`](75_hauska_brokerage_workflow_plan.md) § Current sprint; backlog [`75c_property_brief_data_backlog.md`](75c_property_brief_data_backlog.md).
 - **Sync 5 Texas ingest** — cc-agent-E, hauska-engine. **Central-Texas corridor essentially complete on the accessible-Path-C track.** Tier 1 (6 cities) + Tier 2 (10 cities) ingested. Tier 1 plus early Tier 2 merged (PRs #20/#21/#23/#27/#28/#29: Round Rock, Taylor, Leander, Georgetown, New Braunfels, Killeen). PRs #30-37 open from the continuous-run corridor batch — Austin LDC (the anchor, 2211 atoms via productNameFilter), Copperas Cove, Manor, Lockhart, Lago Vista, Dripping Springs, Wimberley, Rollingwood; 4667 new atoms across 8 cities, all eval 1.0/1.0/1.0. Combined central-TX accessible-Path-C catalog approaching **~8000 code-section atoms across 14 ingested cities** (16 with Bastrop/Bastrop County/Elgin/Hutto). **Four cities adapter-limited** (Luling, Woodcreek, Belton, Creedmoor) — dev chapters nested under wrapper TOC nodes that the current `MunicodeHtmlAdapter.chapterFilter` (top-level only) can't isolate; flagged for a `tocRootNodeIds?: string[]` adapter follow-up (separable). Sync 5 un-deferred per [`_decisions/2026-05-22_sync5_texas_ingest_undeferred.md`](_decisions/2026-05-22_sync5_texas_ingest_undeferred.md). ICC prebuild fully merged (#24/#25/#26). Access-blocked cities route to the General Code partnership track across three aggregators (eCode360, EncodePlus, American Legal Publishing). Tier 2 corpus-quality follow-up still flagged (single-product cities resolve ~zero in-corpus xrefs because the chapter filter excludes the chapters they reference). Next ladder: remaining TX metros (San Antonio metro, Fort Worth, Rio Grande Valley, El Paso area).
 
 **M-CodexQA.** Codex Phase 2 reviewer surfaces CDX-3/4/5 (#69/#70/#71) and CDX-9 comment-letter (#72) all merged. CDX-QA-1 delivered as [`45_codex_qa_scenarios.md`](45_codex_qa_scenarios.md). CDX-Phase1-1 was reversed 2026-05-22 ([`_decisions/2026-05-22_codex_review_surface_relocation.md`](_decisions/2026-05-22_codex_review_surface_relocation.md)): the reviewer-side review surface relocates from the standalone `codex-reviewer-qa` artifact into the Design Tools app's Findings tab, which is Phase 1 P1-4 of the QA build. Phase 2 still carries CDX-EngineHook-prep (gated on 27-A) and CDX-MCP (cc-agent-M, hauska-mcp-server).
@@ -107,7 +145,11 @@ ADR-005 multitenancy (queued, 30a WS-4); ADR-006 anchoring substrate; ADR-007 cr
 - **cc-agent-C2** → legacy-design-tools (dedicated clone at `P:\legacy-design-tools-c2`) — **Validation dispatch #3 complete 2026-05-24 (Grok Build 0.1).** **PR #112 OPEN** (`2d/migration-0017-renumber` @ `a818805`) — renames site-topography migration `0016` → `0017` to resolve duplicate prefix with 40e `0016_renders_power_tools_source_type.sql`; adds `drizzleMigrationNames.test.ts` guard. Held for operator merge. **Next queued: Phase 2D.1.5 (SiteMap topo overlay UI)** after PR #112 merge + migrations applied.
 - **cc-agent-R** → legacy-design-tools (dedicated clone at `P:\legacy-design-tools-r`) — **Validation dispatch #1 complete 2026-05-23 (Grok Build 0.1).** PR #109 MERGED `74a3941`. **PR #110 OPEN — CI green** — held for operator merge (40e close). **NEXT QUEUED (do not fire yet):** [`40f_cortex_grok_runtime_migration_sprint.md`](40f_cortex_grok_runtime_migration_sprint.md) — Cortex **product runtime** Grok migration **planning** (Anthropic → xAI at api-server call sites; separate from agent fleet HR-12). Dispatch: [`_dispatches/2026-05-24_cc-agent-R_cortex_grok_runtime_migration_QUEUED.md`](_dispatches/2026-05-24_cc-agent-R_cortex_grok_runtime_migration_QUEUED.md). Gates: PR #110 merged + operator greenlight.
 - **cc-agent-E** → hauska-engine — Sync 5 Texas ingest, continuous statewide. **TX-metros batch shipped 2026-05-23**: PRs #38-#47 open (~5690 atoms across 10 cities — SA core + Boerne + Schertz + Live Oak + Converse; Brownsville + Mission; Saginaw + Keller + Crowley), eval mostly 1.0/1.0/1.0. 3 cities deferred (El Paso compute-bound, Pharr query-bug, Edinburg partial corpus); 8 cities to General Code partnership track (Fort Worth strategic anchor). 8-10 cities staged for follow-on dispatch (Cibolo / Selma / Watauga / Universal City / Converse / Leon Valley / Anthony / Socorro + Pharr re-ingest + El Paso narrow retry). Currently idle pending operator merge of #38-#46 + follow-on dispatch greenlight. Prior: Tier 1 complete (6/6); Tier 2 central-TX corridor (10 cities, #28/#29 merged; #30-37 open, ~4667 atoms). 4 cities adapter-limited (Luling/Woodcreek/Belton/Creedmoor) pending `tocRootNodeIds` follow-up (still queued; dev-only-wrapper class resolved via existing `chapterFilter` this session, distinct from `tocRootNodeIds` mixed-content class). ICC prebuild fully merged.
-- **cc-agent-M** → smartcity-os — M-Stabilize restart, **held 2026-05-21** at the operator's call (operator handling the production DB directly). Dispatch ready to re-fire on release.
+- **cc-agent-M** → smartcity-os — M-Stabilize restart **held 2026-05-21**
+  (operator DB hold). **Bastrop health check complete 2026-06-01**
+  (`3bc4eb8`, grade YELLOW). Maintenance sprint at
+  [`31a_bastrop_maintenance_sprint.md`](31a_bastrop_maintenance_sprint.md).
+  Phase 1 dispatch ready on operator greenlight. Prophecy vendor pending.
 - **cc-agent-AC** — dormant. The atom-contract work (the ADR-018 transition, #64/#65/#67) is complete and the queue is empty. The deploy-workflow CI work it briefly carried is folded into the cc-agent-C QA build Phase 2. The clone `P:\ldt-ac-qa17` is vestigial.
 - **Nick** — merge, deploy, decisions.
 

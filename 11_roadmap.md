@@ -1,15 +1,33 @@
 ---
 id: 11_roadmap
-title: Roadmap
-status: active
-last_updated: 2026-05-23
-applies_to: portfolio
-related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 40b_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
+title: Roadmap (OUTDATED — superseded 2026-06-06 by 00d_portfolio_roadmap_reference)
+status: superseded
+last_updated: 2026-06-06
+superseded_by: 00d_portfolio_roadmap_reference
+related: [00d_portfolio_roadmap_reference, 00_current_state, 00c_portfolio_master_map, 10_ground_truth, 15_replit_neon_ownership_advisory, 18_stakeholder_graph, 23_dev_setup_assessment, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 33_smartcity_codex_1b_integration, 40b_advanced_capture_features, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, 50_hauska_mcp_server, 51_substrate_v1_sprint, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_013_procedure_execution_atoms, adr_015_actor_atoms, adr_017_atom_access_control, adr_018_atom_contract_substrate_layer]
 ---
 
-# Roadmap
+# Roadmap (OUTDATED)
 
-> **Working checklist + milestone view.** Edit in place. Check items off as
+> **⚠️ OUTDATED — DO NOT USE AS CURRENT STATE.** This document is the legacy
+> operational checklist, frozen at its 2026-05-23 content. It predates the
+> Property Brief wedge, the public extension tier, the 2026-06-01 cross-repo
+> recon, and the strategic-core realignment. **Superseded 2026-06-06 by
+> [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md)**
+> (the honed planned-work view), with [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md)
+> for verified topology and [`00_current_state.md`](00_current_state.md) for the
+> rolling fires snapshot.
+>
+> **Why this is preserved, not deleted.** It is kept intact so no live in-flight
+> item is dropped during the roadmap realignment. **Reconciliation complete
+> 2026-06-06** (see the [reconciliation ledger](#reconciliation-ledger-2026-06-06)
+> immediately below). Every open P0–P3 item was swept against the current docs
+> and sorted into migrated, done, or carry-forward. This doc now serves only as
+> the home of record for the residual carry-forward backlog the ledger names; do
+> not mine it for current priorities, sequencing, or status, which live in 00d /
+> 00c / 76c and the active sprint docs.
+
+> **Working checklist + milestone view (historical).** Edit in place. Check items off as
 > they ship. Move items between tiers as priority shifts. Bump `last_updated`
 > on every edit. The checklist is the operational view; the milestone
 > roadmap above orients new work and shows the path to the end state.
@@ -88,6 +106,53 @@ related: [00_current_state, 10_ground_truth, 15_replit_neon_ownership_advisory, 
 >
 > **2026-05-05 changes:** P0 docs work closed. Risk register, leading
 > indicators, pricing framework extracted as `13`, `17`, `14`.
+
+## Reconciliation ledger (2026-06-06)
+
+Every open item from the P0–P3 checklist and milestone view below was swept against the current orientation docs ([`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md), [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md), [`76c_operator_master_next_steps.md`](76c_operator_master_next_steps.md)) and the active sprint docs (`30a`, `31a`, `42`, `48`, `16`). Status is **MIGRATED** (captured and now tracked in a current doc), **DONE** (shipped or closed), or **CARRY-FORWARD** (still live; home named). Carry-forwards with no active-sprint home remain live in this doc as the residual backlog, so this doc stays their home of record.
+
+### MIGRATED — now tracked in current docs
+
+| Item(s) | Now tracked in |
+|---|---|
+| Substrate v1 sprint (51); Sync 4.5 done, Sync 5 demand-deferred | `00c` §8, `00d` Hauska spine rows |
+| Combined Cortex/Codex sprint; legacy-design-tools Cloud Run cutover | done per `00c`; Cortex tail in `43` / `00d` |
+| Hauska commercialization queue (16) = M-HauskaCommercial | `00d` commercial row + §4 gates, `16` |
+| M-Stabilize (30a) + items executing under it: Migration Phase 2/3, ADR-005 multitenancy, WS-3 (semgrep, `x-internal-ai` header, CORS allowlist, auth vitest), WS-4 (typecheck→zero, lockfile drift, schema framework ADR-006-adjacent, `mygov_work_orders` dedup, Neon growth audit) | `00d` milestone ladder, `30a` |
+| Bastrop property intelligence; DA-PI-1 | M-PropIntel (`00d` ladder) |
+| Cortex program (Moab waves W0-W3, B1 taxonomy, test-isolation audit) | `42` / `00d` Cortex row |
+| AI Plan Review M4-B (= Codex 1b); Codex Wave 1 | `48` / `00d` Codex row |
+| Hauska Engine factor-out | `00d` engine row — **unfrozen 2026-06-06**, sequenced behind M-Stabilize 2C; [`_decisions/2026-06-06_engine_extraction_unfrozen.md`](_decisions/2026-06-06_engine_extraction_unfrozen.md) |
+| ECI atomization; Jarrell/M9; Codex 1b standalone in SmartCity | `00d` §5 parked |
+| Texas IP attorney memo | `72` bizops (never a gate) |
+
+### DONE — shipped or superseded
+
+| Item | Evidence |
+|---|---|
+| Migration sprint Phase 1 (legacy-design-tools) | Cloud Run cutover complete per `00c` §1 |
+| `90_runbooks/agent_workspace_hygiene.md` runbook | Filed (verified present) |
+| W1.A.6.b Calendar key rotation | Superseded — `CALENDAR_API_KEY` unbound 2026-05-18; F-7/F-8 no longer load-bearing (see P1 Track B note) |
+
+### CARRY-FORWARD — still live, home named
+
+**Security follow-ons** (SmartCity/Bastrop; route via `30a` / `31a`, tracked in `00c` §9): Fire 2 external secret rotations (Bastrop IT); cutover env-var rebind Track A (11 silent-drop vars) and Track B (12 rotation-pending: Spireon, Verkada, ESRI, VFD); W1.A.8.b Spireon rotation; W1.A.8 F-1 DB-backed Spireon override; `AI_INTEGRATIONS_*` code rename; Security Day (4 deferred commits); Cloud Run traffic-tag audit on smartcity-api; `deploy:check` script disposition.
+
+**Bizops / corporate** (70-band: `72` / `74`): Tech E&O insurance; Hauska ↔ Legacy services agreement; Hauska Inc. GitHub org migration; biz ops repo creation; PropTech ecosystem partner outreach (gated on factor-out + ADR-007).
+
+**Architecture / ADR queue**: ADR-006 anchoring substrate decision (Polygon CDK / TSA / Hauska cluster / customer-controlled; precondition for M6).
+
+**Active sub-sprint not separately in 00d**: Cortex rendering sprint (`40c`, cc-agent-R) — tracked in `40c` / `42`.
+
+**Planner doc-debt** (residual backlog, stays here until scoped): `90_runbooks/cutover_env_var_audit.md` (verified not yet created); `30_smartcity_os.md` deploy-architecture section; pre-docs-repo migration (~22 migrate / 12 absorb / 6 archive / 7 retire); dispatch prompts queue (A04.7 followups, lockfile drift, prefix collisions, GoTo OAuth).
+
+**Ops trivia** (residual backlog, stays here): watchlist/risk-register owner assignment; Cente box layout confirmation; Anthropic GitHub MCP wiring; Empressa credentials vault decision; universal `sync_health` adoption; Devcontainer/Codespaces eval; Compass system-prompt refactor; Engineer-2 operational protocol; Nick Chesser subdivision real name; Digital Twinning surface; Quantum cryptography strategic vision doc; GoTo Connect OAuth fix.
+
+### FLAG — expired, needs operator call
+
+**$21M water/wastewater state grant** — the **June 1 2026 deadline has passed** with no owner assigned and no technology narrative drafted. Treat as missed unless you are reopening it; confirm so it can be closed rather than lingering.
+
+---
 
 ## End state
 
