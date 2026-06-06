@@ -6,9 +6,13 @@ agent: cc-agent-C
 repo: legacy-design-tools
 branch: cortex/brokerage-site-context
 depends_on: PR #128 merged, cortex-api on revision with BROKERAGE_DEV_API_KEY + BRIEFING_LLM_MODE=grok
+status: superseded
+superseded_by: [_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md, _dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md]
 ---
 
 # Brokerage API — parcel layers (Regrid, FEMA, etc.) for Property Brief
+
+> **Superseded 2026-05-28.** Implementation merged PR #131. Remaining work split: prod enablement [`2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md`](2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md); extension panel [`2026-05-28_extension_property_brief_parcel_layers_panel.md`](2026-05-28_extension_property_brief_parcel_layers_panel.md).
 
 ## Problem
 

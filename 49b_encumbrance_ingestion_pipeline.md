@@ -2,9 +2,9 @@
 id: 49b_encumbrance_ingestion_pipeline
 title: Encumbrance ingestion pipeline — recorded private land-use instruments in, clause atoms out
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-05-27
 applies_to: portfolio
-related: [49_code_ingestion_pipeline, adr_020_recorded_instruments_and_restriction_clauses, adr_021_constraint_resolution_and_precedence, 27_engine_evolution_plan, 73_partnerships, 08_tiered_access_model, _decisions/2026-05-26_recorded_restrictions_phase_0_scope]
+related: [49_code_ingestion_pipeline, adr_020_recorded_instruments_and_restriction_clauses, adr_021_constraint_resolution_and_precedence, 27_engine_evolution_plan, 73_partnerships, 77_place_graph_strategy, 08_tiered_access_model, _decisions/2026-05-26_recorded_restrictions_phase_0_scope]
 owner: nick
 ---
 
@@ -19,6 +19,8 @@ owner: nick
 Municipal code ingest ([`49`](49_code_ingestion_pipeline.md), [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md)) does not produce private encumbrances. Regrid and federal overlays produce regulatory context, not CC&R text. Architects and reviewers discover deed restrictions late, often from title commitments, not from the Code Library.
 
 The encumbrance pipeline is the width complement for **place-bound** intelligence: one subdivision CC&R corpus amortized across hundreds of lots; one supplemental deed restriction scoped to a single parcel.
+
+**Mineral and O&G instruments (2026-05-27).** County-clerk **mineral deeds** and **O&G leases** indexed by **legal description** (not street address) are a planned extension of R1 discovery per [`77_place_graph_strategy.md`](77_place_graph_strategy.md). High-level index only—not title run sheet; partnership-first county access applies.
 
 ## Architectural overview
 

@@ -2,9 +2,9 @@
 id: 30a_smartcity_stabilization_sprint
 title: SmartCity OS Stabilization Sprint — platform-ready foundation
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-06-01
 applies_to: smartcity-os
-related: [30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 11_roadmap, 12_migration_sprint, 13_risk_register, 15_replit_neon_ownership_advisory, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan, 90_runbooks/neon_schema_migration_via_cloud_shell, 91_postmortems/2026-05-07_replit_dev_db_wedged, adr_002_replit_neon_migration]
+related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 11_roadmap, 12_migration_sprint, 13_risk_register, 15_replit_neon_ownership_advisory, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan, 90_runbooks/neon_schema_migration_via_cloud_shell, 91_postmortems/2026-05-07_replit_dev_db_wedged, adr_002_replit_neon_migration]
 ---
 
 # SmartCity OS Stabilization Sprint — platform-ready foundation
@@ -24,6 +24,13 @@ related: [30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 1
 > it; the dispatch at
 > [`_dispatches/2026-05-21_cc-agent-M_m_stabilize_restart.md`](_dispatches/2026-05-21_cc-agent-M_m_stabilize_restart.md)
 > is ready to re-fire on that word.
+>
+> **June 2026 maintenance catch-up (parallel-safe).** Bastrop platform
+> health check recon complete 2026-06-01 (grade **YELLOW**, commit
+> `3bc4eb8`). Operational hygiene and integration restore tracked in
+> sibling sprint [`31a_bastrop_maintenance_sprint.md`](31a_bastrop_maintenance_sprint.md).
+> Phase 0–2 of 31a do not touch DATABASE_URL migration; Phase 3 remains
+> blocked on this hold.
 
 ## Why this sprint
 
@@ -709,6 +716,13 @@ From `20_agent_operating_rules.md`:
 Newest-first dated log. Each entry: date, sub-phase, status change,
 SHA / artifact reference.
 
+- **2026-06-01 (Bastrop platform health check):** Read-only recon by
+  cc-agent-M. Platform grade YELLOW. Production `smartcity-api-00104-taw`
+  @ 100%; core integrations green; Prophecy red (vendor); Verkada/ESRI
+  unbound; thread-health cron disabled on Cloud Run; `wo_manager_export`
+  sync failure flagged. Sprint backlog filed at
+  `31a_bastrop_maintenance_sprint.md`. Report: smartcity-os
+  `_research/bastrop_platform_health_check_2026-06-01.md` (`3bc4eb8`).
 - **2026-05-11 (session 2 — cutover env-var bind shipped):** Cutover env-var bind executed via Cloud Shell. 18 vars bound to Cloud Run smartcity-api via revision `smartcity-api-00085-pvd` (10 of 11 Track A silent-drops + 6 Spireon Track B + 2 OpenGov family additions). MYGOV pre-existing Secret Manager debris discovered (v1/v2 from 2026-04-04, never wired to Cloud Run, no IAM); remediated via v3 version-add + IAM grant. Spireon verified live (21 vehicles, NSpire authenticated); MyGov verified live (12,240 permits); OpenGov BNP healthy. A.8 user-visible value restored. New bind-procedure runbook landed: `90_runbooks/cutover_env_var_bind_procedure.md`. Outstanding: `OPENGOV_TRANSPARENCY_KEY` (Replit-vault lookup failed; vendor-portal lookup deferred), Track B remainder (Verkada/ESRI/VFD/Calendar via Bastrop Monday vendor coordination), AI_INTEGRATIONS_* code rename. Revision-suffix contradiction (`00084-vhr` vs `00084-weg`) surfaced and queued for investigation next session. Session summary: `_sessions/2026-05-11_cutover_env_var_bind_shipped_claude_ai_planner.md`.
 - **2026-05-11 (W1 implementation follow-ons + cutover env-var gap):** W1.A.6 / W1.A.7 / W1.A.8 implementation follow-ons shipped — smartcity-os PRs #11 (A.8 batch, squash `5b9815e`), #12 (A.6 batch, squash `86a90ff`), #13 (A.7 Option B scoping, squash `04b296e`). All three deployed to Cloud Run revision `smartcity-api-00084-vhr` (image digest `sha256:a53cd036...`). Per-item status lines updated above. **New work cluster surfaced — Cutover env-var rebind.** Post-deploy verification of A.8 surfaced 30+ env vars referenced in code but not bound in Cloud Run; full inventory at `90_runbooks/smartcity_cloud_run_env_audit_2026-05-11.md`, analysis at `91_postmortems/2026-05-11_cutover_env_var_silent_drops.md`. Cluster bundles A.6.b + A.8.b + 11-var silent-drop restore + 13-var rotation-pending restore + AI_INTEGRATIONS_* code rename. P1 next-session work, two-track (immediate silent-drop / rotation-pending as vendor responses arrive). Session summary: `_sessions/2026-05-11_smartcity_a8_a6_a7_ship_and_env_audit_claude_ai_planner.md`.
 - **2026-05-11 (WS-2 exit):** All seven W1 items verified. Phase

@@ -2,9 +2,9 @@
 id: 76_empressa_wedge_90d_operating_plan
 title: Empressa wedge — 90-day operating plan ($500M base)
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-05-28
 applies_to: portfolio
-related: [75_hauska_brokerage_workflow_plan, 75a_hauska_brief_extension, 76a_operator_autonomous_loops, 72_hauska_inc_operations, 74_commercial_agreements, 13_risk_register, 16_commercialization_roadmap, _decisions/2026-05-26_empressa_wedge_operating_commitments, 90_runbooks/diagrams/self_healing_loop.mermaid, 90_runbooks/diagrams/gtm_loop.mermaid]
+related: [75_hauska_brokerage_workflow_plan, 75a_hauska_brief_extension, 76a_operator_autonomous_loops, 77_place_graph_strategy, 77a_txcrg_crm_and_brokerage_ops, 72_hauska_inc_operations, 74_commercial_agreements, 13_risk_register, 16_commercialization_roadmap, _decisions/2026-05-26_empressa_wedge_operating_commitments, 90_runbooks/diagrams/self_healing_loop.mermaid, 90_runbooks/diagrams/gtm_loop.mermaid]
 owner: nick
 ---
 
@@ -15,6 +15,8 @@ owner: nick
 > **Operator loops.** Pattern and 90-day phasing: [`76a_operator_autonomous_loops.md`](76a_operator_autonomous_loops.md). Diagrams: [`90_runbooks/diagrams/self_healing_loop.mermaid`](90_runbooks/diagrams/self_healing_loop.mermaid), [`90_runbooks/diagrams/gtm_loop.mermaid`](90_runbooks/diagrams/gtm_loop.mermaid).
 >
 > **Wedge spec.** Extension and API contracts: [`75a_hauska_brief_extension.md`](75a_hauska_brief_extension.md). Matrix + SkySlope GTM: [`75_hauska_brokerage_workflow_plan.md`](75_hauska_brokerage_workflow_plan.md).
+>
+> **Strategy anchor.** Place graph north star and G0–G6 milestones: [`77_place_graph_strategy.md`](77_place_graph_strategy.md).
 
 ## Executive summary
 
@@ -39,6 +41,8 @@ Capital assumption: **$80–100M** through end of year 2. Geographic: TX depth y
 ## What ships in 90 days (wedge product)
 
 This plan assumes **deploy is not optional**; operator loops sit on top of a working prod path.
+
+Brokerage V1 scope update (2026-05-28): property workspace collaboration (`3b`), atomization start (`3c`), paywall plus wallet metering (`3d`), and admin session/viral graph baseline (`3e`) are included in V1, not deferred.
 
 | Track | Days 1–14 | Days 15–45 | Days 46–75 | Days 76–90 |
 |-------|-----------|------------|------------|------------|
@@ -134,3 +138,4 @@ Brokerage pilots map to **Team** annual prepay, not a separate SKU.
 | Date | Change |
 |------|--------|
 | 2026-05-26 | Initial 90-day operating plan: $500M base, legal up front, operator loops cross-ref |
+| 2026-05-28 | V1 scope update: include 3b/3c/3d/3e in launch scope |

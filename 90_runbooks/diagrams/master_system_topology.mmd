@@ -1,0 +1,57 @@
+%%{init: {'theme': 'dark', 'flowchart': {'nodeSpacing': 36, 'rankSpacing': 50}}}%%
+flowchart TB
+    subgraph EMP["EMPRESSA PRODUCT SURFACES"]
+        direction LR
+        DT["Cortex (design-tools SPA)"]
+        PR["Codex (plan-review / codex-reviewer-qa SPA)"]
+        BX["Hauska Brief ext (MV3 v0.6.5)"]
+        RS["Revit add-in (C#)"]
+        SC["SmartCity OS (smartcity-api)<br/>15 integrations, own Neon<br/>own ESRI Property Intelligence"]
+    end
+
+    subgraph CLIENTS["AGENT / MCP CLIENTS"]
+        MCPC["Cursor, Claude, SDK agents"]
+    end
+
+    CORTEX["cortex-api (Cloud Run, project smartcity-os)<br/><b>PRODUCT ENGINES</b><br/>@workspace/briefing-engine + @workspace/finding-engine<br/>site-context adapters + L-surface (L1-L6)<br/>21-atom registry · LLM: Grok / Anthropic chat<br/>on @hauska/atom-contract 1.2.0"]
+
+    MCP["hauska-mcp-server (Cloud Run, hauska-prod)<br/><b>GATING BOUNDARY</b> · 46 tools<br/>5 public + 6 brokerage + 18 Codex + 17 Cortex<br/>gate at call time via X-Hauska-Key"]
+
+    ENGINE["hauska-engine retrieval API (Cloud Run, hauska-prod)<br/><b>READ-ONLY</b> · port 8080 · no reasoning<br/>54MB snapshot · ~35 TX jurisdictions"]
+
+    CONTRACT["@hauska/atom-contract 1.3.0 (npm)<br/>shape every layer speaks"]
+    SDK["Hauska SDK @hauska-sdk/* 0.1.0 (npm)<br/>payment / VDA / event anchoring<br/>(consumed only by scaffold command-center)"]
+
+    subgraph DATA["DATA"]
+        direction LR
+        CORPUS[("engine corpus snapshot + substrate Neon")]
+        CNEON[("cortex-prod Neon: neondb + api_keys")]
+        SNEON[("smartcity Neon (Replit-managed)")]
+        EXT["external APIs: FEMA USGS EPA Regrid (cortex) · ESRI (smartcity)"]
+    end
+
+    DT --> CORTEX
+    PR --> CORTEX
+    BX -->|"/api/brokerage/v1 DIRECT — bypasses gate"| CORTEX
+    RS -->|"/api/snapshots"| CORTEX
+    MCPC -->|X-Hauska-Key| MCP
+
+    MCP -->|Bearer, legacy backend| CORTEX
+    MCP -->|Bearer, HAUSKA_ENGINE_API_KEY| ENGINE
+    CORTEX -.->|hauskaSubstrateClient, mock default| MCP
+
+    CORTEX --> CNEON
+    CORTEX --> EXT
+    ENGINE --> CORPUS
+    SC --> SNEON
+    SC --> EXT
+    CORTEX -. type/runtime .- CONTRACT
+    MCP -. type-only .- CONTRACT
+    ENGINE -. runtime .- CONTRACT
+
+    classDef live fill:#04293a,stroke:#3aa0d4,color:#fff;
+    classDef gate fill:#3a2d00,stroke:#d4a200,color:#fff;
+    classDef island fill:#2a0a0a,stroke:#c05050,color:#fff;
+    class CORTEX,ENGINE live;
+    class MCP gate;
+    class SC island;

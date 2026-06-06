@@ -2,9 +2,9 @@
 id: 09_post_saas_substrate_thesis
 title: Post-SaaS substrate thesis
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-05-27
 applies_to: portfolio
-related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 14_pricing_framework, 28_mcp_first_product_design]
+related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 14_pricing_framework, 28_mcp_first_product_design, 77_place_graph_strategy]
 owner: nick
 ---
 
@@ -47,6 +47,8 @@ The durable categories in the post-SaaS economy are different. They are: unique 
 Hauska's position is intentionally in the substrate category. The catalog contains jurisdictional data that is genuinely hard to replicate because acquiring it requires partnership relationships that take years to build. The reasoning layer over that data has fewer training-data parallels than general reasoning because physical-world jurisdictional adjudication is a long-tail domain not well-represented in foundation model training. The payment substrate has switching costs because cities and firms sign revenue share contracts that align them with the platform's success.
 
 Plaid is the closest analog for what Hauska is becoming on the data side. Stripe is the closest analog for what the SDK is becoming on the payment side. The combination of both layers, in a specific vertical (physical-world jurisdictional intelligence), is the differentiated position.
+
+**Place graph (2026-05-27).** The substrate is not a flat catalog of jurisdictions. It is a **place graph**: one resolvable location (parcel, legal description, jurisdiction context) as the node; normative law, physical constraints, recorded private instruments, operational precedent, and (over time) mineral and airspace estates as typed, provenanced edges. Agent queries are metered reasoning walks on that graph, not document dumps. Product GTM lanes (Property Brief, TX CRG CRM, Cortex, future O&G land admin) are views on the same node. Full strategy: [`77_place_graph_strategy.md`](77_place_graph_strategy.md).
 
 ## Partnership-first as political-economy statement
 

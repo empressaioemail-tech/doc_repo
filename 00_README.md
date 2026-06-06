@@ -2,7 +2,7 @@
 id: 00_README
 title: Empressa portfolio docs — README
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-05-27
 applies_to: portfolio
 related: [00b_doc_repo_guide, 01_doc_conventions, 00_current_state]
 ---
@@ -54,7 +54,7 @@ read from `..\doc_repo` and write session summaries to
 40-49  Design Accelerator + Revit Connector
 50-59  Hauska SDK
 60-69  ECI
-70-79  Bizops + brokerage (70-74 bizops; 75 GTM plan; 75a extension; 76 90d operating plan; 76a operator loops)
+70-79  Bizops + brokerage (70-74 bizops; 75–75c brokerage/brief/coverage/backlog; 76–77a GTM/place/TX CRG; 76b GTM engine polish sprint; 78 formation graph additive; 78a pattern; 78b atomization plan; 79 competitive execution system; 79a weekly moat scoreboard)
 80-89  ADRs (architecture decision records)
 90-99  Runbooks, postmortems, incident records
 ```

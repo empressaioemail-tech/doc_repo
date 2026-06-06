@@ -2,7 +2,7 @@
 id: dispatch_template
 title: Dispatch template — cc-agent work order
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-05-27
 applies_to: portfolio
 kind: template
 related: [01a_atom_conventions, 20_agent_operating_rules, 21_ai_first_dev_flow, 90_runbooks/agent_workspace_hygiene]
@@ -50,6 +50,11 @@ Resolve these before reading full canonical docs (catalog:
 - `{{entity_type}}:{{entity_id}}` — {{why this atom}}
 - `{{entity_type}}:{{entity_id}}` — {{why this atom}}
 
+Optional additive ops atoms (R and D process only):
+
+- `strategy-module:competitive-execution-system`
+- `ops-scoreboard:weekly`
+
 ## Read first (after atoms)
 
 1. [`00_current_state.md`](../00_current_state.md) — § relevant to this dispatch only
@@ -90,4 +95,5 @@ Include:
 
 ## Revision history
 
+- **2026-05-27:** Added optional additive ops atoms for execution discipline and weekly scoreboard.
 - **2026-05-23:** Phase 2 Grok migration. Atoms block + HR-12 model line added.

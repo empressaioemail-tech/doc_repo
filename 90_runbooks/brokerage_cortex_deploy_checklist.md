@@ -1,45 +1,42 @@
 ---
 id: brokerage_cortex_deploy_checklist
-title: Brokerage cortex-api deploy checklist
+title: Property Brief cortex-api deploy checklist (short)
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-05-28
 applies_to: portfolio
-related: [75a_hauska_brief_extension, 76_empressa_wedge_90d_operating_plan, 90_runbooks/cloud_run_canary_deploy.md]
+related: [75a_hauska_brief_extension, 90_runbooks/property_brief_cortex_deploy, 90_runbooks/property_brief_cortex_deploy.ps1]
 owner: nick
 ---
 
-# Brokerage cortex-api deploy checklist
+# Property Brief cortex-api deploy checklist (short)
 
-> **Lesson.** Pinning traffic to an old Cloud Run revision leaves `BROKERAGE_DEV_API_KEY` empty → 503 on brokerage routes.
+> **Full runbook:** [`property_brief_cortex_deploy.md`](property_brief_cortex_deploy.md)  
+> **Automate:** [`property_brief_cortex_deploy.ps1`](property_brief_cortex_deploy.ps1)
+
+## One-command deploy
+
+```powershell
+cd P:\doc_repo\90_runbooks
+.\property_brief_cortex_deploy.ps1 -ImageTag <merge-sha> -BrokerageKey "<your-key>"
+```
 
 ## Pre-deploy
 
-- [ ] Migrations queued: `0026_brokerage_brief_runs.sql`, `0028_gtm_observation_layer.sql` (and any newer)
-- [ ] Env: `BROKERAGE_DEV_API_KEY`, `BRIEFING_LLM_MODE=grok`, `XAI_API_KEY`
-- [ ] Optional adapters: `REGRID_API_TOKEN` for parcel layers dispatch
-
-## Deploy
-
-1. Deploy new revision (`:latest` or commit SHA).
-2. **Shift 100% traffic to new revision** (do not leave split on old revision).
-3. Run migrations via GHA `run-migrations` or approved script.
+- [ ] Merge on `main`; **Build & push image** green (push workflow — not deploy)
+- [ ] API key generated (same value → Cloud Run + extension)
+- [ ] Migrations: `0026`, `0028`, `0029` (script runs `run-migrations`)
 
 ## Post-deploy smoke
 
-```bash
-# Replace URL and key
-curl -sS -X POST "$CORTEX/api/brokerage/v1/brief" \
-  -H "Authorization: Bearer $BROKERAGE_KEY" \
-  -H "Content-Type: application/json" \
-  -H "X-Hauska-Install-Id: smoke-test-install-01" \
-  -d '{"address":"251 Cool Water Dr, Bastrop, TX 78602","source":"smoke"}'
-
-curl -sS "$CORTEX/api/brokerage/v1/gtm/digest" \
-  -H "Authorization: Bearer $BROKERAGE_KEY"
-```
+- [ ] `GET /api/healthz` → 200
+- [ ] `POST /api/brokerage/v1/brief` → `runId` + `laySummary`
+- [ ] Traffic on revision with `BRIEFING_LLM_MODE=grok` + key (`update-traffic --to-latest` after env patch)
 
 ## Extension
 
-- Set `briefApiUrl` to cortex host (no path)
-- Set `hauskaKey` to same brokerage key
-- Options → accept terms → run brief on Zillow homedetails
+- `briefApiUrl` = `https://cortex-api-tds7av26va-uc.a.run.app`
+- `hauskaKey` = same as `BROKERAGE_DEV_API_KEY`
+
+## Pitfall
+
+**Push ≠ deploy.** Gray jobs on merge run are normal. Run script or **Run workflow** for deploy-canary / migrations / shift-traffic.

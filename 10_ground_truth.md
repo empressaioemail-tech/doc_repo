@@ -2,7 +2,7 @@
 id: 10_ground_truth
 title: Portfolio ground truth
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-06-01
 applies_to: portfolio
 ---
 
@@ -52,13 +52,13 @@ Live on Google Cloud Run since the 2026-05-03 cutover. Project
 | Surface | Value |
 |---|---|
 | API service | `smartcity-api` |
-| Latest revision | `smartcity-api-00084-weg` (tag `w1-c-4a-auth-fix`) |
-| Traffic | 100% on `00084-weg`; 0% on `00082-pog` (held for rollback during Fire 1 obs window); 0% on `00080-men` (leftover canary tag `p0-3-canary`) |
-| Image | `us-central1-docker.pkg.dev/smartcity-os-prod/cloud-run-source-deploy/smartcity-api:latest` |
+| Latest revision | `smartcity-api-00104-taw` (tag `bastrop-tenant-fix`, deployed 2026-05-19) |
+| Traffic | 100% on `00104-taw`; 7 stale tags at 0% (see [`31a_bastrop_maintenance_sprint.md`](31a_bastrop_maintenance_sprint.md) P1-1) |
+| Health probe (2026-06-01) | `GET /api/health` → `{"status":"ok","db":"connected"}` |
+| Deploy mechanism | `gcloud run deploy --source` (zip in GCS run-sources bucket) |
 | Service URL | `https://smartcity-api-7dyaiy7wha-uc.a.run.app` |
-| Custom domain | `smartcityos.io` → Google anycast `216.239.32.0/24` → Cloud Run domain mapping (confirmed via `dig` + curl headers) |
-| Bundle (last built locally) | `index-BsfNEJYB.js` |
-| Last-modified header | `2026-05-10` (post-Fire-1 deploy) |
+| Custom domain | `smartcityos.io` → Cloud Run domain mapping |
+| Platform grade | **YELLOW** — full matrix in smartcity-os `_research/bastrop_platform_health_check_2026-06-01.md` (`3bc4eb8`) |
 
 A second service `smartcity-scraper` exists in the same project with
 revisions through `00037-zfm` plus a `wo-chunking` revision. Role:

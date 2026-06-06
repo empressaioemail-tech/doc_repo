@@ -2,9 +2,9 @@
 id: 75_hauska_brokerage_workflow_plan
 title: Hauska brokerage workflow plan — Matrix listing + SkySlope
 status: draft
-last_updated: 2026-05-26
+last_updated: 2026-05-29
 applies_to: portfolio
-related: [75a_hauska_brief_extension, 76_empressa_wedge_90d_operating_plan, 76a_operator_autonomous_loops, 08_tiered_access_model, 09_post_saas_substrate_thesis, 14_pricing_framework, 16_commercialization_roadmap, 18_stakeholder_graph, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 40_design_accelerator, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 71_pipeline, 73_partnerships, 74_commercial_agreements, _decisions/2026-05-26_empressa_wedge_operating_commitments, _dispatches/2026-05-26_cc-agent-C_brokerage_brief_api]
+related: [75a_hauska_brief_extension, 75b_brief_coverage_v0, 75c_property_brief_data_backlog, 76_empressa_wedge_90d_operating_plan, 76a_operator_autonomous_loops, 77_place_graph_strategy, 77a_txcrg_crm_and_brokerage_ops, 08_tiered_access_model, 09_post_saas_substrate_thesis, 14_pricing_framework, 16_commercialization_roadmap, 18_stakeholder_graph, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 40_design_accelerator, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 71_pipeline, 73_partnerships, 74_commercial_agreements, _decisions/2026-05-26_empressa_wedge_operating_commitments, _decisions/2026-05-29_property_brief_data_backlog_priorities, _dispatches/2026-05-26_cc-agent-C_brokerage_brief_api, _dispatches/2026-05-28_central-tx-property-brief-scope]
 owner: nick
 ---
 
@@ -15,6 +15,53 @@ owner: nick
 > **Status posture.** Draft for operator review. Does not supersede substrate v1 or Cortex prod QA priorities; sequences brokerage work after Cortex prod validation and defines what gets built in parallel vs queued.
 >
 > **90-day operating scaffold (2026-05-26).** Executable plan, $500M base trajectory, legal-up-front gates, and dual operator loops (maintenance + GTM): [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md), [`76a_operator_autonomous_loops.md`](76a_operator_autonomous_loops.md). Decision record: [`_decisions/2026-05-26_empressa_wedge_operating_commitments.md`](_decisions/2026-05-26_empressa_wedge_operating_commitments.md).
+>
+> **Place graph north star (2026-05-27).** This plan is the **eXp / Matrix / SkySlope** GTM lane. Portfolio substrate strategy (layers per place, mineral index, MCP dossier): [`77_place_graph_strategy.md`](77_place_graph_strategy.md). **Texas Commercial Realty Group** CRM wedge (separate operator track): [`77a_txcrg_crm_and_brokerage_ops.md`](77a_txcrg_crm_and_brokerage_ops.md).
+>
+> **Current sprint (2026-05-29).** Property Brief **data completeness wave** before Valerie pilot deploy. Scored backlog: [`75c_property_brief_data_backlog.md`](75c_property_brief_data_backlog.md). Decision: [`_decisions/2026-05-29_property_brief_data_backlog_priorities.md`](_decisions/2026-05-29_property_brief_data_backlog_priorities.md). Scope: [`_dispatches/2026-05-28_central-tx-property-brief-scope.md`](_dispatches/2026-05-28_central-tx-property-brief-scope.md).
+
+## Current sprint — Property Brief data wave (2026-05-29)
+
+**Goal:** Flush Central TX brief with cited code + environmental layers + honest coverage before operator deploy and partner outreach.
+
+**Deploy gate (do not skip):** [PR #134](https://github.com/empressaioemail-tech/legacy-design-tools/pull/134) (`cortex/property-brief-lay-surface`) — place snapshots (`0030`), `atoms.*`, coverage API. **Status 2026-05-29:** CI/fix in flight on branch; merge when green, then migration `0030` + [`property_brief_cortex_deploy.ps1`](90_runbooks/property_brief_cortex_deploy.ps1) (Grok, `BROKERAGE_DEV_API_KEY`, `REGRID_API_KEY`).
+
+### P0 — this week (non-partner)
+
+| Pri | ID | What | Owner | Status |
+|-----|-----|------|-------|--------|
+| 8 | PB-002 | Merge + deploy PR #134 | Nick | **Blocked** — PR fix in flight |
+| 8 | PB-001 | Neon warmup (6 pilot cities) | Nick + cc-agent-E | JSONL exported; **load pending** |
+| 7 | PB-004 | Regrid + FEMA prod smoke on `/brief` | Nick | After deploy |
+| 6 | PB-003 | Federal layers on `/brief` (USGS/USDA/USFWS/EPA) | cc-agent-C | Dispatch filed — parallel OK |
+| 8 | PB-301 | Encumbrance R4 upload path on brief | cc-agent-C | Dispatch filed — after #134 or separate PR |
+| 6 | PB-009 | Extension 7a–7c atom UX | extension-agent | **v0.5.2** close in inbox; prod after deploy |
+
+**Neon JSONL ready** (`P:\hauska-engine\tools\migrate-legacy-codes\tmp\neon-warmup-pilot\`): `round_rock_tx` (276), `georgetown_tx` (571), `new_braunfels_tx` (170), `leander_tx` (156), `hutto_tx` (1376), `austin_tx` (1810). Load **staging first** (`round_rock_tx`); verify `GET /api/brokerage/v1/coverage` flips `neon`.
+
+### Agent dispatches (fire now)
+
+| Dispatch | Agent | PB-ID |
+|----------|-------|-------|
+| [`2026-05-29_cc-agent-C_brief_federal_site_context_layers.md`](_dispatches/2026-05-29_cc-agent-C_brief_federal_site_context_layers.md) | cc-agent-C | PB-003 |
+| [`2026-05-29_cc-agent-E_neon_warmup_pilot_batch.md`](_dispatches/2026-05-29_cc-agent-E_neon_warmup_pilot_batch.md) | cc-agent-E | PB-001 |
+| [`2026-05-29_cc-agent-C_brief_encumbrance_upload_path.md`](_dispatches/2026-05-29_cc-agent-C_brief_encumbrance_upload_path.md) | cc-agent-C | PB-301 |
+
+Prior wave closes (inbox): place graph A, extension B, engine corpus C — see `_inbox/2026-05-28_*_close.md`.
+
+### Operator queue (today)
+
+1. Unblock PR #134 → merge.
+2. Deploy cortex-api + migration `0030`.
+3. Neon load `round_rock_tx.jsonl` on staging; smoke coverage + brief.
+4. Load extension **v0.5.2**; point at prod API.
+5. Fire cc-agent-C (federal layers) and cc-agent-E (warmup loader) in parallel with deploy review.
+
+### Partner queue (2026-05-30)
+
+[`90_runbooks/partner_outreach_brief_wave.md`](90_runbooks/partner_outreach_brief_wave.md) — General Code first, then ICC, county clerk, Bastrop ops, one HOA pilot (PB-101–107).
+
+---
 
 ## Executive summary
 
@@ -253,6 +300,8 @@ Ship only cities with eval-passing corpus. Publish live coverage list on admin p
 
 **Extension today:** MCP path works locally; point `briefApiUrl` at cortex-api when 0.1 ships.
 
+**Operator sequencing update (2026-05-28):** `3b` workspace collaboration, `3c` atomization start, `3d` paywall-wallet metering, and `3e` admin graph are now in **V1 scope**.
+
 ### Phase 1 — Matrix extension (weeks 3 to 7)
 
 | # | Deliverable | Owner | Status |
@@ -286,6 +335,40 @@ Ship only cities with eval-passing corpus. Publish live coverage list on admin p
 | 3.2 | City amendment watch (re-run brief alert) | |
 | 3.3 | Brokerage playbook rules (5 configurable flags) | |
 | 3.4 | Compliance export CSV (runs per deal) | |
+
+### Phase 3b — Property workspace and collaboration (V1)
+
+| # | Deliverable | Owner |
+|---|-------------|-------|
+| 3b.1 | Recent property workspace list (open prior run + source listing link) | cc-agent-C |
+| 3b.2 | Workspace attachments: links, images, PDFs, notes | cc-agent-C |
+| 3b.3 | Workspace share flow (owner -> collaborator, read access) | cc-agent-C |
+| 3b.4 | Share payload includes full research package and evidence refs | cc-agent-C |
+
+### Phase 3c — Atomization of property workspace (V1)
+
+| # | Deliverable | Owner |
+|---|-------------|-------|
+| 3c.1 | `property-workspace` package shape documented in atom terms | planner + cc-agent-E |
+| 3c.2 | Run + attachment + share edges emitted as queryable atoms | cc-agent-E + cc-agent-C |
+| 3c.3 | Export/import of workspace package for portability | cc-agent-E |
+
+### Phase 3d — Paywall and wallet metering (V1, do not lock projects)
+
+| # | Deliverable | Owner |
+|---|-------------|-------|
+| 3d.1 | Research compute gate blocks only net-new brief/chat when balance is exhausted | cc-agent-C |
+| 3d.2 | Existing workspace read + history access remains available at zero balance | cc-agent-C |
+| 3d.3 | Wallet top-up in $5 increments with auto-refill on depletion | cc-agent-C |
+| 3d.4 | Admin controls for top-up policy and spend caps | cc-agent-C |
+
+### Phase 3e — Admin session map and viral graph (V1 baseline)
+
+| # | Deliverable | Owner |
+|---|-------------|-------|
+| 3e.1 | Internal admin map with blue usage dots by browser session geography | cc-agent-C |
+| 3e.2 | Share-edge visualization (thin blue line between connected users) | cc-agent-C |
+| 3e.3 | Consent-aware graph mode (no graph edges without explicit opt-in) | cc-agent-C + planner |
 
 ### Phase 4 — Partnership scale (months 4 to 9)
 
@@ -333,7 +416,7 @@ Layer 1 code in brief is substrate marketing; **brief itself is Layer 3** workfl
 | ECI / ADR-019 project memory | Out of scope v1 |
 | 46 SmartCity parcel intelligence | Complementary; city-facing, not brokerage |
 
-**Focus queue rule:** Brokerage Phase 0 to 1 runs **after** Cortex prod QA gate clears; SkySlope Phase 2 runs in parallel once partner sandbox exists. Do not displace Sync 5 or substrate launch without operator kill/queue call.
+**Focus queue rule:** Brokerage V1 includes Phases 0/1 plus 3b/3c/3d/3e. SkySlope Phase 2 still runs in parallel once partner sandbox exists. Do not displace Sync 5 or substrate launch without operator kill/queue call.
 
 ---
 
@@ -348,6 +431,25 @@ Layer 1 code in brief is substrate marketing; **brief itself is Layer 3** workfl
 | ReadyPermit parity on marketing | Medium | Workflow-native + TX code depth positioning |
 | Extension breaks on Matrix UI update | Medium | URL + fallback paste page |
 | Compute cost per brief | Medium | Cache by parcel hash 24h; cap pilot volume |
+
+---
+
+## V1 tooling readiness matrix (operator lock pass)
+
+| Tooling lane | Needed for V1 | Current state | Gap to close now | Owner |
+|---|---|---|---|---|
+| Workspace persistence | Recent properties, reopen prior workspace, listing-source backlink | Planned in 3b | Lock schema and retrieval contract | cc-agent-C |
+| Collaboration + attachments | Links, images, PDFs, notes, and shared workspace payload | Planned in 3b | Define storage path, limits, and access rules | cc-agent-C |
+| Atomization package | `property-workspace`, `brief-run`, `workspace-attachment`, `workspace-share-edge` | Planned in 3c | Finalize atom IDs/fields and emit pipeline | planner + cc-agent-E |
+| Compute gating | Preserve read access, block net-new `/brief` and `/research/chat` at zero balance | Planned in 3d | Implement enforcement middleware and UX states | cc-agent-C |
+| Wallet metering | `$5` top-up with auto-refill | Planned in 3d | Billing rail behavior: retries, caps, failure fallback | cc-agent-C |
+| Consent + graph events | Consent-gated share/graph events (`graphOptIn`) | Contract captured in 75a and inbox rollups | Confirm deployed telemetry path and retention policy | cc-agent-C + planner |
+| Admin map + edges | Blue usage dots and blue share lines | Planned in 3e | Build internal page with filters and consent-safe views | cc-agent-C |
+| Abuse and safety controls | Rate limits, share spam controls, wallet drain guardrails | Not explicitly locked | Add v1 anti-abuse policy and middleware checklist | cc-agent-C |
+| KPI instrumentation | Activation, reopen rate, shares sent/opened, paid conversion, cost per run | Partially implied in GTM docs | Publish single V1 scoreboard spec | planner |
+| Dispatch/test harness | One dispatch map with acceptance tests per lane | In progress across docs | Produce single execution checklist and fire order | planner |
+
+**Readiness call:** architecture and intent are aligned; V1 is execution-ready after locking four hard gaps: (1) schema contract, (2) billing edge cases, (3) consent/retention policy, (4) abuse controls.
 
 ---
 
@@ -384,10 +486,10 @@ Layer 1 code in brief is substrate marketing; **brief itself is Layer 3** workfl
 
 ## Immediate next steps (next 14 days)
 
-1. **Nick:** Confirm pilot brokerage SkySlope vs Dotloop; submit SkySlope partner inquiry.
-2. **Nick:** Get 3 redacted Matrix listing URLs from Valerie for parser spec.
-3. **Planner:** File decision record if lane approved (`_decisions/2026-05-26_brokerage_matrix_skyslope_lane.md`).
-4. **cc-agent-C (after QA gate):** Phase 0 Brief API + paste-URL page dispatch.
+1. **Nick:** Finish expanded V1 launch gate (deploy + env + extension prod URLs + smoke runs + 3b/3c/3d/3e acceptance).
+2. **Nick:** Confirm pilot brokerage SkySlope vs Dotloop; submit SkySlope partner inquiry.
+3. **Nick:** Get 3 redacted Matrix listing URLs from Valerie for parser spec.
+4. **Planner:** Convert V1 expanded scope into dispatch-ready build slices and acceptance checks (3b, 3c, 3d, 3e).
 5. **Valerie:** 30-min design partner session: button label, PDF sections, disclaimer copy.
 6. **Partnerships:** Draft Unlock MLS introductory email (subscriber tool, not code ingest).
 
@@ -409,3 +511,7 @@ Layer 1 code in brief is substrate marketing; **brief itself is Layer 3** workfl
 | Date | Change |
 |------|--------|
 | 2026-05-26 | Initial draft — executive summary and phased plan (Matrix + SkySlope) from brokerage strategy session |
+| 2026-05-28 | Added post-V1 queue: property workspace history, attachments/sharing, atomization start, paywall wallet behavior, and admin session graph view |
+| 2026-05-28 | Recut scope: 3b/3c/3d/3e moved into V1 per operator direction |
+| 2026-05-28 | Added V1 tooling readiness matrix with lock-pass gaps and owners |
+| 2026-05-29 | Current sprint section: data completeness wave (`75c`), PR #134 deploy gate, Neon JSONL batch, dispatches D/E/F, partner outreach 2026-05-30 |

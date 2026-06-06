@@ -2,7 +2,7 @@
 id: 75a_hauska_brief_extension
 title: Hauska Property Brief — Chrome extension and API contracts
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-05-28
 applies_to: portfolio
 related: [75_hauska_brokerage_workflow_plan, 50_hauska_mcp_server, 08_tiered_access_model, 28_mcp_first_product_design, _dispatches/2026-05-26_cc-agent-C_brokerage_brief_api]
 owner: nick
@@ -54,10 +54,16 @@ owner: nick
 |---------|---------|
 | `mcpUrl` | Dev: `http://127.0.0.1:3000/mcp` |
 | `hauskaKey` | `X-Hauska-Key` or Bearer for API/MCP |
-| `defaultJurisdiction` | e.g. `bastrop_tx`, `cedar_hill_tx` |
+| `defaultJurisdiction` | Dev/MCP fallback only — e.g. `bastrop_tx`, `cedar_hill_tx` (see note below) |
 | `briefApiUrl` | Cortex host (no path) — enables `POST …/brief` |
 | `summarizeApiUrl` | Optional — `POST …/brief/summarize` |
 | `researchApiUrl` | Optional — defaults to `{briefApiUrl}/api/brokerage/v1/research/chat` (v0.4.2 live Grok chat) |
+
+### `defaultJurisdiction` vs server geocode (2026-05-28)
+
+When `briefApiUrl` is set (production API mode), `cortex-api` geocodes the listing address and resolves `jurisdiction_key` from the Central TX pilot registry (`legacy-design-tools/lib/codes/src/centralTexasPilot.ts`). The extension option **`defaultJurisdiction` is ignored** for corpus retrieval in API mode.
+
+Use `defaultJurisdiction` only when `briefApiUrl` is unset and the extension calls MCP directly. Pilot honesty for code coverage: [`75b_brief_coverage_v0.md`](75b_brief_coverage_v0.md) and `GET /api/brokerage/v1/coverage`.
 
 ## API contracts (extension expects)
 
@@ -75,6 +81,10 @@ owner: nick
 ```
 
 **Response (minimum):** `runId`, `startedAt`, `finishedAt`, `property`, `jurisdiction`, `corpusStatus`, `sections[]`, `citations[]`, `reasoningSummary` (`headline`, `paragraphsHtml`, `citations[]`, `disclaimer`, `method`).
+
+**Response (step 4 parcel):** `siteContext.layers[]` (`layerKind`, `status`, `summary`, `provider?`); `laySummary.verdicts[]` (consumer traffic-light cards; flood verdict uses FEMA layer when present).
+
+**Response (place graph wave, pending Dispatch A deploy):** `atoms` object — `workspaceDid`, `briefRunDid`, `placeLayers[]`, `inlineRefs[]` (extension Dispatch B consumes `inlineRefs` for chat-native atom chips). `property.llUuid` when Regrid returns parcel.
 
 **Server:** Geocode → jurisdiction; five code queries via `@workspace/codes` `retrieveAtomsForQuestion`; Grok summary via `getBriefingLlmClient()`; persist `brokerage_brief_runs`.
 
@@ -142,10 +152,62 @@ Steward digest (7-day event counts). Operator auth only.
 | Gate | Owner |
 |------|-------|
 | Brokerage API merged | **Done** PR #128 `73b86bf` |
-| cortex-api deployed + migration 0026 | Nick |
-| Extension `briefApiUrl` / `summarizeApiUrl` at prod | Nick |
+| Workspace/wallet/graph API | **Done** PR #132; migration `0029` |
+| Lay summary API | **Done** PR #133 |
+| cortex-api deployed + migrations 0026/28/29 | **Done** 2026-05-28 — see [`90_runbooks/property_brief_cortex_deploy.md`](90_runbooks/property_brief_cortex_deploy.md) |
+| Extension `briefApiUrl` + `hauskaKey` at prod | Nick — `https://cortex-api-tds7av26va-uc.a.run.app` |
+| Extension v0.5.0 Carfax UI | In progress (`P:\hauska-brief-extension`) |
 | CORS `chrome-extension://*` on brokerage routes | Shipped in #128 |
 | Corpus for pilot metros | cc-agent-E + operator merge |
+
+## Operator capture addendum (2026-05-28)
+
+Operator scope update: `3b/3c/3d/3e` are now part of **V1**.
+
+### V1 launch gate (current sprint)
+
+1. Deploy `cortex-api` brokerage routes + migration 0026 + Grok env vars.
+2. Point extension options to prod API endpoints.
+3. Smoke on real Bastrop / Cedar Hill addresses.
+4. Ship with retrieval + research chat working and source citations visible.
+   - **4a Code + citations** — `sections[]`, `citations[]`, deep research chat (done when prod brief smoke passes).
+   - **4b Parcel layers on brief (API)** — `siteContext.layers` (FEMA + Regrid) on `POST /brief`; prod needs `REGRID_API_KEY` on `cortex-api`. Dispatch: [`_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md`](_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md). Merged backend: PR #131.
+   - **4c Parcel layers on brief (extension UI)** — panel renders `siteContext` + flood verdict from API `laySummary`. Dispatch: [`_dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md`](_dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md).
+   - **4d Atom UX (wave 7)** — no listing morph; property list nav; inline atom chips from `atoms.inlineRefs`. Scope: [`_dispatches/2026-05-28_central-tx-property-brief-scope.md`](_dispatches/2026-05-28_central-tx-property-brief-scope.md). Dispatch B: [`_dispatches/2026-05-28_dispatch-B_extension_brief-atom-ux.md`](_dispatches/2026-05-28_dispatch-B_extension_brief-atom-ux.md).
+5. Include V1 workspace collaboration, atomization start, paywall-wallet behavior, and admin graph telemetry baseline.
+
+### V1 product requirements (expanded)
+
+1. **Property workspace history:** User can see recent properties researched, reopen a property, rehydrate prior research, and jump back to source listing URL.
+2. **Property attachments and notes:** User can add links, images, PDFs, and notes to each property workspace.
+3. **Property sharing:** User can share a property workspace (research, citations, links, attachments, notes) with another user.
+4. **Atomization start:** Property workspace persists as an atomized package (property dossier atom bundle with source and evidence refs).
+5. **Paywall behavior:** Do not lock users out of existing projects. When quota is exhausted, block new research generation only.
+6. **Metering UX:** Wallet-style microfunding with auto top-up (`$5` increments) when balance reaches zero.
+7. **Admin graph view:** Internal admin page shows session geography as blue dots and share relationships as connecting blue lines.
+
+### Suggested package shape (v1)
+
+- `property-workspace` (root): property identity, listing URL(s), owner, collaborators, status.
+- `brief-run` (child): run metadata, reasoning summary, citations, confidence, timestamp.
+- `workspace-attachment` (child): url/image/pdf/note with uploader + timestamps.
+- `workspace-share-edge` (child): who shared to whom and when.
+
+### Access policy intent
+
+- Owner retains project read access regardless of billing state.
+- Collaborators keep read access to shared workspace unless explicitly revoked.
+- New compute actions (`/brief`, `/research/chat`) require positive balance or active paid tier.
+
+### V1 acceptance checks (high level)
+
+1. User can reopen any recent property workspace and recover prior brief + research context.
+2. User can add and retrieve links, images, PDFs, and notes on a property workspace.
+3. User can share a workspace and collaborator can open the same evidence package.
+4. Workspace package emits atomized records for run, attachment, and share edges.
+5. Zero-balance state preserves project read access but blocks net-new compute actions.
+6. Wallet top-up supports `$5` increments with auto-refill behavior.
+7. Admin view shows usage dots and share-link edges with consent-aware graph visibility.
 
 ## Out of scope (extension repo)
 

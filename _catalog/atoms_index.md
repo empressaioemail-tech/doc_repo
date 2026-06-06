@@ -2,7 +2,7 @@
 id: atoms_index
 title: Portfolio atom index — active catalog
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-05-28
 applies_to: portfolio
 related: [01a_atom_conventions, 21c_grok_atom_migration_plan, 00_current_state]
 owner: planner
@@ -39,6 +39,11 @@ this index when hot-path refs change; ECI P2 will supersede with code registry.
 | `runbook:agent_workspace_hygiene` | runbook | [`90_runbooks/agent_workspace_hygiene.md`](../90_runbooks/agent_workspace_hygiene.md) | active |
 | `runbook:cloud_run_canary_deploy` | runbook | [`90_runbooks/cloud_run_canary_deploy.md`](../90_runbooks/cloud_run_canary_deploy.md) | active |
 | `dispatch-template:standard` | template | [`_dispatches/_template.md`](../_dispatches/_template.md) | active |
+| `strategy-module:formation-graph` | strategy | [`78_talent_education_graph.md`](../78_talent_education_graph.md) | active |
+| `formation-pattern:outlier-ai-v1` | formation | [`78a_formation_pattern_outlier_ai_v1.md`](../78a_formation_pattern_outlier_ai_v1.md) + [`_catalog/education/outlier_ai_formation_v1.yaml`](education/outlier_ai_formation_v1.yaml) | active |
+| `strategy-module:competitive-execution-system` | strategy | [`79_competitive_execution_system.md`](../79_competitive_execution_system.md) | active |
+| `strategy-module:gtm-engine-polish-sprint` | strategy | [`76b_gtm_engine_polish_sprint.md`](../76b_gtm_engine_polish_sprint.md) + [`_catalog/ops/gtm_public_capability_matrix_v1.yaml`](ops/gtm_public_capability_matrix_v1.yaml) | active (Lane P governance filed) |
+| `ops-scoreboard:weekly` | ops | [`79a_weekly_moat_scoreboard.md`](../79a_weekly_moat_scoreboard.md) + [`_catalog/ops/weekly_moat_scoreboard_contextsummary.yaml`](ops/weekly_moat_scoreboard_contextsummary.yaml) | active |
 
 ## Maintenance
 
@@ -48,4 +53,7 @@ Do not register one-off session facts.
 
 ## Revision history
 
+- **2026-05-28:** Added `strategy-module:gtm-engine-polish-sprint` (76b + capability matrix).
+- **2026-05-27:** Added competitive execution system and weekly moat scoreboard atoms.
+- **2026-05-27:** Formation graph (additive); outlier-ai-v1 pattern (depersonalized).
 - **2026-05-23:** Initial index seeded at Grok migration Phase 3.

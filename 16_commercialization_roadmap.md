@@ -2,9 +2,9 @@
 id: 16_commercialization_roadmap
 title: Commercialization roadmap — Hauska layer
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-05-28
 applies_to: portfolio
-related: [00_current_state, 09_post_saas_substrate_thesis, 11_roadmap, 14_pricing_framework, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 72_hauska_inc_operations, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_019_layered_code_substrate, _decisions/2026-05-21_hauska_commercialization_sprint]
+related: [00_current_state, 09_post_saas_substrate_thesis, 11_roadmap, 14_pricing_framework, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 72_hauska_inc_operations, 76b_gtm_engine_polish_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_019_layered_code_substrate, _decisions/2026-05-21_hauska_commercialization_sprint, _decisions/2026-05-28_gtm_engine_polish_sprint]
 owner: nick
 ---
 
@@ -78,13 +78,13 @@ Live dispatch: [`_dispatches/2026-05-21_cc-agent-E_adr019_pipeline_and_sync5.md`
 
 ### 5. GTM and distribution motion
 
-Currently unspec'd in the doc set. Stream 2D includes launch artifact drafting (HN post, ProductHunt package, social posts, BD pitch deck, PropTech-press list) but does not name channels, sequence, or owner. The substrate is a developer-facing MCP server; distribution motion is agent-builder-community-shaped, not enterprise-sales-shaped at v1.
+**Active execution:** [`76b_gtm_engine_polish_sprint.md`](76b_gtm_engine_polish_sprint.md) (2026-05-28). Unifies agent discoverability (`hauska.dev/mcp`, registries, `llms.txt`), MCP observation in `gtm_events`, place read MCP tools, and steward digests. Decision record: [`_decisions/2026-05-28_gtm_engine_polish_sprint.md`](_decisions/2026-05-28_gtm_engine_polish_sprint.md). Channel scaffold: [`_catalog/ops/gtm_launch_channel_plan_v1.yaml`](_catalog/ops/gtm_launch_channel_plan_v1.yaml). Public honesty: [`_catalog/ops/gtm_public_capability_matrix_v1.yaml`](_catalog/ops/gtm_public_capability_matrix_v1.yaml).
 
-Current state: open. Channels mentioned in Sprint 51 Stream 2D launch-prep checklist; ownership and sequencing not assigned.
+Current state: **in flight** (Lane M/C/P dispatches filed). Stream 2D launch-artifact **drafts** remain cc-agent-M scope; **publish** is operator-gated.
 
-Gates this step: Nick decision on the open question C below (channels, sequence, owner). Inputs: ICP from open decision A, the launch artifacts cc-agent-M produces under step 1's Stream 2D scope.
+Gates this step: Nick completes decision C in `gtm_launch_channel_plan_v1.yaml` (N1 session); DNS + directory submit (N2–N3).
 
-Closes when: a launch motion plan exists with named channels, named publish dates relative to step 1 completion, named owner per channel.
+Closes when: sprint exit E1–E12 in `76b` met, including first external MCP caller in prod logs and launch plan dates filled.
 
 ### 6. Partnership-pending visibility flips
 
@@ -180,5 +180,6 @@ Quality-gate rule from CLAUDE.md continues to apply: every commercial output (do
 
 ## Revision history
 
+- **2026-05-28:** Step 5 cross-linked to active GTM engine polish sprint ([`76b_gtm_engine_polish_sprint.md`](76b_gtm_engine_polish_sprint.md)); capability matrix and launch channel plan paths confirmed in step body (Lane P planner sign-off).
 - **2026-05-21:** Queue moved into execution as the Hauska commercialization sprint per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md). Execution-status banner added. Decision A ratified (agent-builder ICP); decisions B and C shapes ratified. Step 1 refreshed for post-cutover reality (server feature-complete, Group 4 de-risked by cutover, 2414-atom corpus). Step 4 rewritten to integrate ADR-019 layered code substrate and the Path A load-bearing constraint from the sprint pre-mortem. Wave 1 dispatches filed for cc-agent-M (Streams 2C/2D) and cc-agent-E (ADR-019 pipeline plus Sync 5); the 2026-05-19 launch-prep dispatch is superseded. `related` extended with ADR-019 and the sprint decision record. Reconciliation update (same day): catalog total corrected to 2702 (the 2414 tally omitted code-edition and cross-reference atoms); step 1 current-state marked deployed after Streams 2C and 2D completed; step 3 fiat rail changed from Stripe to Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md).
 - **2026-05-19 (origin):** doc seeded after the combined Cortex/Codex sprint mid-sync. Captures the post-cutover commercialization queue surfaced in the 2026-05-19 forward-planning thread. Seven steps named with current state, gating, and close criteria. Three open Nick decisions explicitly called out with recommended resolution paths. Companion dispatch for step 1 filed at `_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md`.

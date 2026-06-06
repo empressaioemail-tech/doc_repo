@@ -2,7 +2,7 @@
 id: 01a_atom_conventions
 title: Atom conventions for the portfolio
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-05-27
 applies_to: portfolio
 related: [01_doc_conventions, 20_agent_operating_rules, 21_ai_first_dev_flow, 21c_grok_atom_migration_plan, 25a_atom_principle_llm_economics, 25_atom_architecture_reference, 26_atom_upgrade_guide]
 owner: planner
@@ -71,6 +71,10 @@ Phase 1 is **manual planner synthesis**: named refs resolve to canonical doc sec
 | `runbook:agent_workspace_hygiene` | [`90_runbooks/agent_workspace_hygiene.md`](90_runbooks/agent_workspace_hygiene.md) |
 | `runbook:cloud_run_canary_deploy` | [`90_runbooks/cloud_run_canary_deploy.md`](90_runbooks/cloud_run_canary_deploy.md) |
 | `dispatch-template:standard` | [`_dispatches/_template.md`](_dispatches/_template.md) |
+| `strategy-module:formation-graph` | [`78_talent_education_graph.md`](78_talent_education_graph.md) |
+| `formation-pattern:outlier-ai-v1` | [`78a_formation_pattern_outlier_ai_v1.md`](78a_formation_pattern_outlier_ai_v1.md); YAML [`_catalog/education/outlier_ai_formation_v1.yaml`](_catalog/education/outlier_ai_formation_v1.yaml) |
+| `strategy-module:competitive-execution-system` | [`79_competitive_execution_system.md`](79_competitive_execution_system.md) |
+| `ops-scoreboard:weekly` | [`79a_weekly_moat_scoreboard.md`](79a_weekly_moat_scoreboard.md); YAML [`_catalog/ops/weekly_moat_scoreboard_contextsummary.yaml`](_catalog/ops/weekly_moat_scoreboard_contextsummary.yaml) |
 
 Expand this table as new hot-path refs stabilize. Do not register one-off session facts as atoms; those stay in `_sessions/`.
 
@@ -99,5 +103,7 @@ Note: external drafts referenced `EMPRESSA_ATOM_FIT.md`; that file is not in the
 
 ## Revision history
 
+- **2026-05-27:** Added operating-system atoms `strategy-module:competitive-execution-system` and `ops-scoreboard:weekly`.
+- **2026-05-27:** Formation graph (additive); `formation-pattern:outlier-ai-v1` (depersonalized).
 - **2026-05-23 (Phase 3):** Catalog expanded (40d, QA-110, grok migration decision, partnership scoping, cc-agent-R/C2/E, runbooks, dispatch template). Index at `_catalog/atoms_index.md`.
 - **2026-05-23 (origin):** Phase 1 catalog seeded; HR-12 companion rules filed alongside Grok fleet migration decision.
