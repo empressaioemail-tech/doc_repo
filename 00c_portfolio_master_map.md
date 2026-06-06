@@ -2,7 +2,7 @@
 id: 00c_portfolio_master_map
 title: Portfolio master map — verified topology, dev process, spine, GTM, maintenance engine
 status: active
-last_updated: 2026-06-01
+last_updated: 2026-06-06
 applies_to: portfolio
 related: [00_current_state, 07_product_line_summary, 09_post_saas_substrate_thesis, 27_engine_evolution_plan, 44_mcp_cortex_architecture_map, 50_hauska_mcp_server, 80_adrs/adr_008_engine_factor_out, 08_tiered_access_model, _research/2026-06-01_shared_engines_vision_and_current_state, 90_runbooks/diagrams/gtm_loop.mermaid, 90_runbooks/diagrams/self_healing_loop.mermaid]
 ---
@@ -17,13 +17,13 @@ related: [00_current_state, 07_product_line_summary, 09_post_saas_substrate_thes
 
 | Repo (local) | Layer | What it IS today | Deploy state | Atom contract |
 |---|---|---|---|---|
-| `hauska-engine` | Hauska spine | Code ingest + atomization + eval + **read-only retrieval API** (port 8080). No product reasoning, no LLM. 54MB snapshot, ~35 TX jurisdictions. New `packages/workspace/` for brokerage property-workspace atoms. | **LIVE** Cloud Run `hauska-retrieval-api`, `hauska-prod`, us-central1 | `@hauska/atom-contract@1.3.0` (runtime) |
-| `hauska-mcp-server` | Hauska spine | The gating boundary. **46 MCP tools** (5 public + 6 brokerage + ~18 Codex + ~17 Cortex), product gate at call time via `X-Hauska-Key`. Calls hauska-engine retrieval API and cortex-api legacy backend. | **LIVE** Cloud Run `hauska-prod` (since 2026-05-21); `mcp.hauska.dev` mapping pending | `@hauska/atom-contract@^1.1.0` (type-only) |
+| `hauska-engine` | Hauska spine | Code ingest + atomization + eval + **read-only retrieval API** (port 8080). No product reasoning, no LLM. 56MB snapshot, 34 jurisdictions / 21,126 atoms (2 public-free, 32 platform-internal). New `packages/workspace/` for brokerage property-workspace atoms. | **LIVE** Cloud Run `hauska-retrieval-api`, `hauska-prod`, us-central1 | `@hauska/atom-contract@1.3.0` (runtime) |
+| `hauska-mcp-server` | Hauska spine | The gating boundary. **46 MCP tools** (11 public + 4 Codex + 31 Cortex), product gate at call time via `X-Hauska-Key` (malformed/unknown keys 401; only the no-header anonymous path is public). Calls hauska-engine retrieval API and cortex-api legacy backend. | **LIVE** Cloud Run `hauska-prod` (since 2026-05-21); `mcp.hauska.dev` mapping pending | `@hauska/atom-contract@^1.1.0` (type-only) |
 | `hauska-atom-contract` | Hauska spine | The atom shape every layer speaks. Framework primitives + `./testing` + `./encumbrances` (ADR-020/021) + `./workspace` (brokerage). | **PUBLISHED** npm `@hauska/atom-contract@1.3.0` (manual publish) | is the contract |
 | `legacy-design-tools` (cortex-api) | Empressa product engine | The product reasoning monorepo. `@workspace/briefing-engine` + `@workspace/finding-engine` + site-context adapters + L-surface (L1-L6) + 21-atom registry. LLM: Grok primary, Anthropic for chat. | **LIVE** Cloud Run `cortex-api`, project `smartcity-os`, us-central1 | `@hauska/atom-contract@1.2.0` (migration DONE) |
 | `empressaio_tech_smartcity_os` | Empressa product | City platform. 15 integrations (MyGov, Samsara, FirstDue, OpenGov, PowerBI, ESRI, Verkada, Calendar, Compass, Property Intelligence, etc.). Self-contained. | **LIVE** Cloud Run `smartcity-api` (+ staging), us-central1, Neon (Replit-managed) | **none** (not integrated; Codex 1b is the trigger) |
 | `hauska-brief-extension` | Empressa product | Chrome MV3 extension (v0.6.5), property briefs on MLS/Zillow/Redfin. Calls cortex-api `/api/brokerage/v1` **directly, bypassing the MCP gate**. | Sideload only (not on Web Store) | renders atoms from API payload |
-| `Hauska SDK` | Hauska spine (commerce) | CNS Protocol SDK: payment (crypto+fiat), VDA, event anchoring, IPFS retrieval. 12 packages, v0.1.0, real (not stubbed). | **PUBLISHED** npm `@hauska-sdk/*@0.1.0`. Consumed only by a scaffolded `command-center` app. | peer to the contract |
+| `Hauska SDK` | Hauska spine (commerce) | CNS Protocol SDK: payment, VDA, event anchoring, IPFS retrieval. 12 packages, v0.1.0. Crypto USDC rail is real (on-chain Transfer-event verification, Base/ETH/Polygon); fiat is a **Circle stub** (placeholder URL + TODO, zero Stripe code); revenue routing/splitting not built (single facilitator wallet). Dormant since 2026-04-05. | **PUBLISHED** npm `@hauska-sdk/*@0.1.0` (publish unverified). Consumed only by a scaffolded `command-center` app. | peer to the contract |
 | `legacy-revit-sensor` | Empressa product (bridge) | C# Revit 2026/2024 add-in. Pushes model snapshot + sheet PNGs to cortex-api `/api/snapshots` (`x-snapshot-secret`). IFC export working (v0.2). | Compiled add-in; clean | consumer of `detail-callout-spec` |
 
 The one-line takeaway: the **Hauska spine is real and deployed** (contract published, engine and MCP on Cloud Run), the **product reasoning lives in cortex-api** (not in hauska-engine), and **SmartCity OS is still an island** that touches none of it yet.
@@ -48,9 +48,9 @@ flowchart TB
 
     CORTEX["cortex-api (Cloud Run, project smartcity-os)<br/><b>PRODUCT ENGINES</b><br/>@workspace/briefing-engine + @workspace/finding-engine<br/>site-context adapters + L-surface (L1-L6)<br/>21-atom registry · LLM: Grok / Anthropic chat<br/>on @hauska/atom-contract 1.2.0"]
 
-    MCP["hauska-mcp-server (Cloud Run, hauska-prod)<br/><b>GATING BOUNDARY</b> · 46 tools<br/>5 public + 6 brokerage + 18 Codex + 17 Cortex<br/>gate at call time via X-Hauska-Key"]
+    MCP["hauska-mcp-server (Cloud Run, hauska-prod)<br/><b>GATING BOUNDARY</b> · 46 tools<br/>11 public + 4 Codex + 31 Cortex<br/>gate at call time via X-Hauska-Key"]
 
-    ENGINE["hauska-engine retrieval API (Cloud Run, hauska-prod)<br/><b>READ-ONLY</b> · port 8080 · no reasoning<br/>54MB snapshot · ~35 TX jurisdictions"]
+    ENGINE["hauska-engine retrieval API (Cloud Run, hauska-prod)<br/><b>READ-ONLY</b> · port 8080 · no reasoning<br/>56MB snapshot · 34 juris / 21,126 atoms"]
 
     CONTRACT["@hauska/atom-contract 1.3.0 (npm)<br/>shape every layer speaks"]
     SDK["Hauska SDK @hauska-sdk/* 0.1.0 (npm)<br/>payment / VDA / event anchoring<br/>(consumed only by scaffold command-center)"]
@@ -227,9 +227,9 @@ flowchart TB
 
 **Active sprints as of 2026-06-01.** Property Brief data wave (blocked on PR #134 merge). Cortex QA backlog burndown (cc-agent-C, final WS-G phase). Substrate v1 / Hauska commercialization (Step 1 live, Wave 2 gated on Nick decisions B pricing and C GTM channels). Bastrop 31a maintenance (Phase 0-2 parallel-safe, YELLOW). M-Stabilize on operator DB hold.
 
-**The three critical paths.** Codex 1b live at Bastrop and M-PropIntel both gate on M-Stabilize releasing the operator DB hold, then engine-quality eval cycles (not implementation hours). The "4 inches of rain" capability specifically needs Cortex 40d phases 2D.2 (drainage) and 2D.3 (rainfall sim) built — only 2D.1 (topography) is done — then a port to SmartCity. First revenue gates on Nick's pricing (Decision B) and GTM-channel (Decision C) calls plus the Circle fiat-rail build.
+**The three critical paths.** Codex 1b live at Bastrop and M-PropIntel both gate on M-Stabilize releasing the operator DB hold, then engine-quality eval cycles (not implementation hours). The "4 inches of rain" capability had its Cortex 40d phases 2D.2 (drainage) and 2D.3 (rainfall sim) land in PR #142 (2026-06-06, running on the native D8 fallback; pysheds sidecar bake is a fast-follow); what remains is the port to SmartCity. First revenue gates on Nick's pricing (Decision B) and GTM-channel (Decision C) calls plus the Circle fiat-rail build.
 
-**Substrate v1 status.** Phase 0 decisions all closed. MCP server and retrieval API live on Cloud Run. Corpus: 2702 atoms across 5 jurisdictions (Bastrop UDC, Bastrop County, Smithville, Elgin, Hutto). Hard-kill cost checkpoint CLEAR. Sync 5 (remaining ~20 TX cities) deferred to demand-pull, gated on ICC API access and partnership flips.
+**Substrate v1 status.** Phase 0 decisions all closed. MCP server and retrieval API live on Cloud Run. Corpus (committed snapshot 2026-05-26, per [`_research/2026-06-06_cross_repo_recon.md`](_research/2026-06-06_cross_repo_recon.md)): 34 jurisdictions / 21,126 atoms, all passing — supersedes the earlier 2702/5 figure. Two jurisdictions are public-free (Bastrop 193, Grand County/Moab 285; ~478 atoms); the other 32 are platform-internal. State external figures with that split, never a bare headline. Hard-kill cost checkpoint CLEAR. Cotality 8-adapter data-layer pack merged (PR #141, 2026-06-06) but inert until OAuth tokens clear; Regrid remains the live parcel/zoning baseline. Sync 5 (remaining TX cities) deferred to demand-pull.
 
 **Parked, with reason:** ECI atomization (internal, behind commercial spine), intent atoms ADR-016 (v2 candidacy), firm tenancy ADR-009 / Codex 1a (post-Bastrop-live), Hauska SDK external motion (post-commercial decision), Starlink/IoT (warm only), Jarrell/M9 (P3), 3D site assembly (2D-first).
 
@@ -242,9 +242,9 @@ Loose ends found in recon, grouped by where they live. Product-repo items route 
 1. [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md) — stale on three facts: cortex-api atom-contract migration is DONE (not a can-kick), the MCP-to-cortex edge is no longer one-directional, hauska-engine is deployed (not dark). Needs a refresh pass.
 2. [`00_current_state.md`](00_current_state.md) — engine/MCP deploy state and the 40-vs-46 tool count should be reconciled.
 3. [`_research/2026-06-01_shared_engines_vision_and_current_state.md`](_research/2026-06-01_shared_engines_vision_and_current_state.md) — current-state diagram inherits the pre-recon framing; correct the "engine dark / empressa-atom" notes.
-4. Tool count drift: docs say 40 tools, server registers 46 (6 new brokerage tools). Atom-contract version drift: docs reference 1.1.0/1.2.0, published is 1.3.0.
-5. **Fiat-rail drift (verify and correct).** Per recon, [`14_pricing_framework.md`](14_pricing_framework.md) and a 2026-05-21 decision record flipped the v1 fiat rail from Stripe Connect to **Circle** (SDK payment package is already Circle-shaped). [`74_commercial_agreements.md`](74_commercial_agreements.md) and this repo's `CLAUDE.md` "What is settled" section both still say Stripe Connect. Confirm against the decision record, then correct both.
-6. Corpus count: prior docs cite 2414 atoms; reconciled total is 2702 (code-edition + cross-reference atoms were uncounted). Confirm a single number is used everywhere.
+4. Tool count drift: server registers 46. **Recategorized 2026-06-06** to the recon's split (11 public + 4 Codex + 31 Cortex); the earlier 5+6+18+17 grouping was wrong. Atom-contract published is 1.3.0; corrected in `CLAUDE.md` and this map 2026-06-06.
+5. **Fiat-rail drift — APPLIED 2026-06-06 in `CLAUDE.md` (now Circle, per `_decisions/2026-05-21_fiat_rail_circle.md`).** [`14_pricing_framework.md`](14_pricing_framework.md) was already Circle. **Still pending:** [`74_commercial_agreements.md`](74_commercial_agreements.md) and the [`44_mcp_cortex_architecture_map.md`](44_mcp_cortex_architecture_map.md) refresh (item 1).
+6. **Corpus count — RECONCILED 2026-06-06.** Both 2414 and 2702 are dead; ground truth is 34 jurisdictions / 21,126 atoms (committed snapshot), stated with the public-free (2 juris, ~478) vs platform-internal (32 juris) split. Corrected in `CLAUDE.md` and this map; still to propagate to external-facing docs before any share.
 
 ### Product-repo loose ends (route to Nick / cc-agents)
 
