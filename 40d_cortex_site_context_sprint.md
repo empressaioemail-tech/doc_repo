@@ -2,9 +2,9 @@
 id: 40d_cortex_site_context_sprint
 title: Cortex site context sprint — 2D-first
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-06-06
 applies_to: design-accelerator
-related: [40_design_accelerator, 40c_cortex_rendering_sprint, 42_design_accelerator_program_plan, 43_cortex_qa_backlog, 46_smartcity_parcel_intelligence, 27_engine_evolution_plan, 28_mcp_first_product_design, _decisions/2026-05-23_site_context_2d_first]
+related: [40_design_accelerator, 40c_cortex_rendering_sprint, 42_design_accelerator_program_plan, 43_cortex_qa_backlog, 46_smartcity_parcel_intelligence, 27_engine_evolution_plan, 28_mcp_first_product_design, 77b_cotality_integration_strategy, _decisions/2026-05-23_site_context_2d_first]
 owner: nick
 ---
 
@@ -49,6 +49,15 @@ In scope for this sprint:
   an off-the-shelf hydrology library.
 - Drainage-zone polygons + flow-line polylines rendered on `SiteMap`.
 - Rainfall-depth input UI + simulation result panel on the Site tab.
+  **Re-scope 2026-06-06:** the rainfall forcing input should be sourceable from
+  the Cotality climate layer (extreme-precipitation design-storm intensity +
+  forward scenarios to 2050) per [`77b_cotality_integration_strategy.md`](77b_cotality_integration_strategy.md)
+  §2, not only a manual depth entry. 2D.2/2D.3 consume the Cotality precip
+  intensity exposed by the `cotality:climate` adapter as actuarially-grounded,
+  forward-looking forcing on the parcel DEM; manual depth stays as an override.
+  This couples the regional climate model (Cotality) with site physics (the
+  simulator) into the "4 inches of rain" capability. cc-agent-C exposes the
+  precip field; cc-agent-R wires it as simulator input.
 - Briefing integration so drainage findings cite into the parcel
   briefing as L1-style response tasks or site-finding atoms.
 - Two new atom shapes in `@hauska-engine/atoms`: `site-topography`

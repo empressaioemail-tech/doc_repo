@@ -203,6 +203,18 @@ Lower than the current SaaS landscape. Software pricing is in deflationary regim
 
 **Settled v1 range: 1.5 to 2.5 percent depending on transaction type** (closed 2026-05-18). Below the 3 percent card-processing benchmark and well below app-store 30 percent matches the substrate-not-rent positioning of the post-SaaS thesis; floor stays above the Circle fiat-passthrough overhead so the fiat rail does not run at a loss. The exact number within the range sets at first paid Layer 2 call rather than from modeling against zero data.
 
+### v1 tier pricing (Layer 2 access) — Decision B
+
+Ratified 2026-06-06 per [`_decisions/2026-06-06_v1_tier_pricing_decision_b.md`](_decisions/2026-06-06_v1_tier_pricing_decision_b.md), closing the deferred tier-prices/quotas decision and `16_commercialization_roadmap.md` step 2. Shape is free plus two self-serve paid tiers for the agent-builder ICP (Decision A). These are the access prices the builder pays Hauska for Layer 2 calls; the 1.5–2.5% take rate is the separate source-actor routing cut.
+
+| Tier | Price | Layer 2 calls bundled | Overage | Audience |
+|---|---|---|---|---|
+| Free / Developer | $0 | Layer 1 unlimited; 100 Layer 2 calls/mo (hard cap) | none | evaluate + build |
+| Builder (metered) | $49/mo | 1,000 Layer 2 calls/mo | $0.04/call | indie dev / small agent app |
+| Pro (stream) | $199/mo | 10,000 Layer 2 calls/mo + stream subscription to a jurisdiction/corpus | $0.02/call | power users / production agents |
+
+Rationale: $0.04/call undercuts the Regrid ~$0.25/parcel reference ~6x so a builder reselling into a $20/mo consumer app keeps margin; the 100 free Layer 2 calls are acquisition cost per the positioning framework wide-surface logic; the Pro stream tier expresses substrate-not-rent. All three numbers revisit at first paid-call signal per the take-rate philosophy above.
+
 ### Substrate state — code reality vs integration work
 
 The 2026-05-16 framing treated the SDK payment substrate as principle-committed and entirely future-phased work. The 2026-05-18 SDK recon and re-verification (see ADR-018 follow-on for context) established that the on-chain half of the substrate is substantially built and the bottleneck is integration plus operational posture, not core SDK code. The accurate state breakdown follows.

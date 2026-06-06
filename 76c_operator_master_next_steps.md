@@ -36,7 +36,7 @@ Extension public tier works via API; browser UX still rough. **Block Chrome Web 
 
 ### 1A. Merge + rebuild extension
 
-- [ ] Merge hauska-brief-extension **PR #1** (v0.6.5 zero-config UX) if open
+- [x] Merge hauska-brief-extension **PR #1** (v0.6.5 zero-config UX) — **merged ~week of 2026-05-30**; extension on `main`. Remaining 1A work is pull + release build only.
 - [ ] Pull `main`; run release build:
 
 ```powershell
@@ -151,12 +151,14 @@ Transcript: [`80_meetings/transcripts/2026-05-forest_forrest_consulting_call_ott
 
 **Status:** sales-engineer call done; AE Michelle Taylor (michelletaylor@cotality.com, 817-699-8152) emailed eval onboarding 2026-06-06. Two parallel tracks now open.
 
-**Track 1 — implement now (self-serve trial, no wait):**
-- [ ] Sign up 30-day API trial: https://developer.corelogic.com/#/sign-up (100 property-data calls/day + 25 AVM/day)
-- [ ] Dispatch cc-agent-C: `cotality:parcels` + `cotality:zoning` adapter on the Regrid port (overlays.ts GeoJSON shape), validate on 1904 Heathwood Cir, Round Rock — dispatch [`_dispatches/2026-06-06_cc-agent-C_cotality_adapter_scaffold.md`](_dispatches/2026-06-06_cc-agent-C_cotality_adapter_scaffold.md)
+**Track 1 — implement now (self-serve trial):**
+- [x] Dispatch cc-agent-C parcel/zoning adapter — **LANDED 2026-06-06**. Branch `cortex/cotality-adapter-scaffold`, commit `e5c0daa`, 259/259 tests green, **PR held for operator merge** (create at https://github.com/empressaioemail-tech/legacy-design-tools/pull/new/cortex/cotality-adapter-scaffold). Close note: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_cotality_adapter_scaffold.md`](_inbox/2026-06-06_legacy-design-tools_cc-agent-C_cotality_adapter_scaffold.md).
+- [ ] **Operator smoke (gates everything downstream):** sign up trial https://developer.corelogic.com/#/sign-up (100 property-data + 25 AVM calls/day); mount `COTALITY_API_KEY`; **correct the provisional endpoint constant** in `cotality.ts` from the authenticated portal; run the smoke command in the close note on 1904 Heathwood Cir; record vintage + which fields the trial returns; then merge the PR.
+- [ ] Property (Carfax) layer — dispatch [`_dispatches/2026-06-06_cc-agent-C_cotality_property_layer.md`](_dispatches/2026-06-06_cc-agent-C_cotality_property_layer.md). **Trial-smokeable now** (owner/sale/tax/AVM/characteristics are in the trial's property-data + AVM scope).
+- [ ] Climate (hydrology v1) layer — dispatch [`_dispatches/2026-06-06_cc-agent-C_cotality_climate_layer.md`](_dispatches/2026-06-06_cc-agent-C_cotality_climate_layer.md). **Eval-gated** — Climate Risk Analytics is a premium SKU, NOT in the self-serve trial; build now against fixtures, live smoke waits on the MCP/climate entitlement from the Hannah call. Strategy: [`77b_cotality_integration_strategy.md`](77b_cotality_integration_strategy.md).
 
 **Track 2 — production MCP eval:**
-- [ ] Return to Michelle: legal name, physical + billing address, billing + signor contact, phone, + the one-paragraph use-case (drafted, see decision record / session)
+- [x] Return to Michelle: legal/billing info + one-paragraph use-case — **returned 2026-06-06**
 - [ ] Call with product manager Hannah (APIs + MCP) — Thu/Fri
 - [ ] Confirm license terms (recon §6): consumer-extension display, agent metering / rev-share, attribution, caching, sub-licensing, TX-scoped pricing
 - [ ] PUC (Permissible Use Committee) write-up — Cotality drafts with our data-protection paragraph
