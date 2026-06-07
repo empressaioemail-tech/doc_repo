@@ -36,8 +36,10 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 `recon/bastrop-platform-health-check` · commit `3bc4eb8`.
 
 **Sprint anchor:** [`31a_bastrop_maintenance_sprint.md`](31a_bastrop_maintenance_sprint.md).
-M-Stabilize ([`30a`](30a_smartcity_stabilization_sprint.md)) remains on operator
-DB hold; 31a Phase 0–2 is parallel-safe.
+M-Stabilize ([`30a`](30a_smartcity_stabilization_sprint.md)) operator DB hold
+RELEASED 2026-06-06; restart dispatch cleared to fire (cc-agent-M, smartcity-os;
+Neon target us-east-2 `tiny-art-63602898`). 31a Phase 0-2 parallel-safe. (Other
+M-Stabilize-hold references below pending next 00 regen.)
 
 **Production:** `smartcity-api-00104-taw` @ 100%. Core dashboards green
 (MyGov, Samsara, FirstDue, OpenGov, Compass, calendar). **Red:** Prophecy

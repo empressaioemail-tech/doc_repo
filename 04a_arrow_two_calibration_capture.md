@@ -38,7 +38,7 @@ The capture points largely exist. The recon places these in the codebase, and Ph
 - Codex reviewer one-click accept, edit, reject (PRs #66 to #72) is the reviewer-adjudication capture surface.
 - decision-event, finding, and submission atoms in cortex-api record the adjudication artifacts.
 - The `codex_override_write` MCP tool writes reviewer overrides.
-- Every atom carries a confidence score per the quality-gate commitment; the storage shape lives in the atom contract and the engine.
+- Confidence today lives on the finding and on encumbrance/workspace atoms, NOT on the code-section/cross-reference atoms the calibration targets (Phase 0 recon finding); the code corpus has no confidence field, no setter, no recompute, and is rebuilt-immutable.
 
 ## The gap
 
@@ -54,10 +54,14 @@ Three things are unwired:
 - **Keep the rail quiet (I7).** The calibration and revenue-share plumbing stays invisible under the AI-first integration pitch. The buyer hears that the answers get more trustworthy with use, not the mechanism underneath.
 - **Build concentration.** This is the rank-1 build, but it competes for build attention with the MCP build-out ([`52_mcp_offer_and_buildout.md`](52_mcp_offer_and_buildout.md)) and M-Stabilize. Phase 0 is cheap recon and parallel-safe; the Phase 1 build is sequenced deliberately against those, not run alongside them.
 
+## Phase 0 findings (recon complete 2026-06-06)
+
+Report: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_recon.md`](_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_recon.md). Load-bearing discovery: the calibration targets named here (code-section and code-cross-reference atoms) carry no confidence field, have no setter, and the engine has no recompute path; the corpus is a rebuilt immutable snapshot. The confidence number that exists today lives on the finding, not on the cited atoms. So arrow two cannot land in Phase 1 as a write to atom confidence. What makes it buildable: the finding-to-atom lineage already exists at per-finding granularity (`findings.citations[].atomId`), and every adjudication already emits an append-only `atom_events` row. The faithful Phase 1 is therefore an append-only adjudication-to-atom evidence ledger, cortex-api-side, not a confidence write-back.
+
 ## Build phases
 
-- **Phase 0, design and recon (no code).** Map the exact capture points, where atom confidence is stored across cortex-api, the atom contract, and the engine, and the proposed adjudication-to-confidence update path. Output is a wiring-design report with the partnership guardrail built in. Owner: cc-agent-C. This is the next dispatch.
-- **Phase 1, wire adjudication into atom confidence.** Route accept/edit/reject through to the cited atoms' confidence. Owner: cc-agent-C, sequenced per the operator.
+- **Phase 0, design and recon (no code). DONE 2026-06-06** (cc-agent-C). See findings above.
+- **Phase 1, adjudication-to-atom evidence ledger (cortex-api).** Route each finding's `citations[].atomId` plus its adjudication (accept/reject/override) into a per-atom evidence record, partitioned by `jurisdictionTenant`. Tier 1a: a zero-schema derived projection joining the existing `atom_events` finding-mutation events to `findings.citations[].atomId` (proves routing, closes the stranding gap, no migration). Tier 1b: an append-only durable evidence write at the three capture points if the projection proves too costly. Ship 1a first. No confidence write-back, no engine change, no corpus mutation. Owner: cc-agent-C. Dispatch ready.
 - **Phase 2, outcome-observation capture.** Add the capture of real-world outcomes so finding accuracy can be measured against ground truth.
 - **Phase 3, calibration computation.** Compare stated confidence to observed frequency, tighten with use, and surface the calibration grade (which also feeds the calibration-grade pricing tiers in the positioning framework).
 
