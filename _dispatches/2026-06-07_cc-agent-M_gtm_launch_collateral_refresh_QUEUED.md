@@ -6,14 +6,14 @@ agent: cc-agent-M
 repo: hauska-mcp-server
 kind: dispatch
 status: QUEUED
-related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76f_gtm_data_package_go_to_market, 76b_gtm_engine_polish_sprint, 52_mcp_offer_and_buildout, _catalog/ops/gtm_public_capability_matrix_v1.yaml, _catalog/ops/gtm_launch_channel_plan_v1.yaml]
+related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76d_gtm_data_package_go_to_market, 76b_gtm_engine_polish_sprint, 52_mcp_offer_and_buildout, _catalog/ops/gtm_public_capability_matrix_v1.yaml, _catalog/ops/gtm_launch_channel_plan_v1.yaml]
 ---
 
 # GTM launch collateral refresh to the deployed surface
 
 You are **cc-agent-M**, the single owner of `hauska-mcp-server` for this run.
 
-> **QUEUED-on-deploy. Do not start until the operator fires this.** The collateral must match the deployed surface, so it is authored against prod reality, not merged-but-undeployed code. Gate list in [`76f_gtm_data_package_go_to_market.md`](../76f_gtm_data_package_go_to_market.md) §4. You produce drafts only; the operator publishes every registry and community post (76b N-track).
+> **QUEUED-on-deploy. Do not start until the operator fires this.** The collateral must match the deployed surface, so it is authored against prod reality, not merged-but-undeployed code. Gate list in [`76d_gtm_data_package_go_to_market.md`](../76d_gtm_data_package_go_to_market.md) §4. You produce drafts only; the operator publishes every registry and community post (76b N-track).
 
 ## Model (HR-12)
 
@@ -31,7 +31,7 @@ Resolve these before reading full canonical docs (catalog: [`01a_atom_convention
 
 ## Read first (after atoms)
 
-1. [`76f_gtm_data_package_go_to_market.md`](../76f_gtm_data_package_go_to_market.md) — §2 per-package messaging, §3 matrix refresh, §4 gate
+1. [`76d_gtm_data_package_go_to_market.md`](../76d_gtm_data_package_go_to_market.md) — §2 per-package messaging, §3 matrix refresh, §4 gate
 2. [`_catalog/ops/gtm_public_capability_matrix_v1.yaml`](../_catalog/ops/gtm_public_capability_matrix_v1.yaml) — the source of truth for claims (v1.1)
 3. [`_catalog/ops/gtm_launch_channel_plan_v1.yaml`](../_catalog/ops/gtm_launch_channel_plan_v1.yaml) — Decision C channels (drafts live in `hauska-mcp-server/docs/gtm/`)
 4. [`52_mcp_offer_and_buildout.md`](../52_mcp_offer_and_buildout.md) — the verified 46-tool surface

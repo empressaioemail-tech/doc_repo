@@ -6,14 +6,14 @@ agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
 status: QUEUED
-related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76f_gtm_data_package_go_to_market, 76b_gtm_engine_polish_sprint, 79a_weekly_moat_scoreboard, 90_runbooks/diagrams/gtm_loop.mermaid]
+related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76d_gtm_data_package_go_to_market, 76b_gtm_engine_polish_sprint, 79a_weekly_moat_scoreboard, 90_runbooks/diagrams/gtm_loop.mermaid]
 ---
 
 # GTM-loop discovery + observation + steward digest
 
 You are **cc-agent-C**, the single owner of `legacy-design-tools` for this run.
 
-> **QUEUED-on-deploy. Do not start until the operator fires this.** This loop observes a live MCP surface; it cannot meaningfully run before the build-out wave is deployed to prod and Decision C is unpinned. Gate list in [`76f_gtm_data_package_go_to_market.md`](../76f_gtm_data_package_go_to_market.md) §4. When fired, first verify against live source what already exists (the 76b observation schema may have partly landed); do not re-build what is already there.
+> **QUEUED-on-deploy. Do not start until the operator fires this.** This loop observes a live MCP surface; it cannot meaningfully run before the build-out wave is deployed to prod and Decision C is unpinned. Gate list in [`76d_gtm_data_package_go_to_market.md`](../76d_gtm_data_package_go_to_market.md) §4. When fired, first verify against live source what already exists (the 76b observation schema may have partly landed); do not re-build what is already there.
 
 ## Model (HR-12)
 
@@ -35,7 +35,7 @@ Optional additive ops atoms (R and D process only):
 
 ## Read first (after atoms)
 
-1. [`76f_gtm_data_package_go_to_market.md`](../76f_gtm_data_package_go_to_market.md) — §5 GTM-loop buildable spec (the authority for this dispatch)
+1. [`76d_gtm_data_package_go_to_market.md`](../76d_gtm_data_package_go_to_market.md) — §5 GTM-loop buildable spec (the authority for this dispatch)
 2. [`76b_gtm_engine_polish_sprint.md`](../76b_gtm_engine_polish_sprint.md) — Track C observation deliverables (migration 0029 gtm_events extension, error taxonomy, digest)
 3. [`90_runbooks/diagrams/gtm_loop.mermaid`](../90_runbooks/diagrams/gtm_loop.mermaid) — the full loop; build only the v1 Tier-0 subset
 4. [`20_agent_operating_rules.md`](../20_agent_operating_rules.md) — HR-1, HR-2, HR-3, HR-8, HR-11

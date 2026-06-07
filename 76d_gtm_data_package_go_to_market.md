@@ -1,5 +1,5 @@
 ---
-id: 76f_gtm_data_package_go_to_market
+id: 76d_gtm_data_package_go_to_market
 title: GTM data-package go-to-market and launch readiness (Decision C pinned)
 status: active
 last_updated: 2026-06-07
