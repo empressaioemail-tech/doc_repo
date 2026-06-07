@@ -2,7 +2,7 @@
 id: 50_hauska_mcp_server
 title: Hauska MCP Server — v1 sprint and product framing
 status: active
-last_updated: 2026-05-20 (tool-surface correction per the code-verified 44_mcp_cortex_architecture_map.md: shipped surface is 40 tools, 5 public plus 4 Codex plus 31 Cortex, flat underscore names; the section's "14 new tools" scoping superseded. Earlier: Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
+last_updated: 2026-06-06 (current-offer reconciliation note added linking 52/53; shipped surface is 46 tools, 11 public plus 4 Codex plus 31 Cortex per the 2026-06-06 recon; Business model "Layer 1 only" framing marked superseded by the product-gated tier model. Earlier 2026-05-20 (tool-surface correction per the code-verified 44_mcp_cortex_architecture_map.md: shipped surface is 40 tools, 5 public plus 4 Codex plus 31 Cortex, flat underscore names; the section's "14 new tools" scoping superseded. Earlier: Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
 applies_to: portfolio
 related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format, adr_017_atom_access_control]
 owner: nick
@@ -24,6 +24,18 @@ owner: nick
 > MCP server portion across four parallel streams in the new
 > `hauska-mcp-server` repo. Phase 0 decisions consolidated with
 > pipeline-side decisions in 51.
+>
+> **Current-offer reconciliation (2026-06-06).** The shipped surface is
+> 46 tools across three gated products (11 public, 4 Codex, 31 Cortex),
+> verified from the live registry per the cross-repo recon
+> ([`_research/2026-06-06_cross_repo_recon.md`](_research/2026-06-06_cross_repo_recon.md)).
+> The current offer, the built-but-not-offered gap, the Tier 1/Tier 2
+> build-out, and the SDK completion plan that makes paid calls transact
+> are captured in [`52_mcp_offer_and_buildout.md`](52_mcp_offer_and_buildout.md);
+> the SDK completion sprint is
+> [`53_hauska_sdk_completion_sprint.md`](53_hauska_sdk_completion_sprint.md).
+> The "Layer 1 only" framing in the Business model section below is
+> superseded; see the note there.
 
 ## End state (v1 ship)
 
@@ -73,11 +85,23 @@ distribution + substrate-ownership + PropTech embedder enablement.
 
 Cities, architects, and contractors are deliberately **not** an
 MCP-server customer segment — they're steered to SmartCity OS, Cortex,
-or Codex respectively. The MCP server is Layer 1 only; Layer 2 paid
-atoms (adjudication-records, per-reviewer-pattern,
-comparable-project-precedent per [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md))
-do **not** appear in the MCP tool surface, by design. The moat lives in
-the products that consume the same engine, not in the public substrate.
+or Codex respectively.
+
+> **Superseded 2026-06-06.** The original framing here said "the MCP
+> server is Layer 1 only; Layer 2 paid atoms do not appear in the MCP
+> tool surface, by design." That is now stale. The shipped server is a
+> product-gated three-product platform per
+> [`29_mcp_surface_tier_model.md`](29_mcp_surface_tier_model.md): the
+> anonymous and public-product tier stays Layer 1, and Layer 2 reasoning
+> and product tools (Codex, Cortex, and the Tier 1 wraps in
+> [`52_mcp_offer_and_buildout.md`](52_mcp_offer_and_buildout.md) §3a)
+> sit behind a product key at Layer 2. What stays unexposed is the
+> moat-bearing Layer 2 **atoms** (adjudication-records,
+> per-reviewer-pattern, comparable-project-precedent per
+> [`27_engine_evolution_plan.md`](27_engine_evolution_plan.md)), not all
+> Layer 2 surface. The moat lives in those proprietary inference atoms
+> and in the products that consume the engine, not in raw public
+> substrate.
 
 ### Free tier attribution
 

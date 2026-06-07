@@ -2,9 +2,9 @@
 id: 16_commercialization_roadmap
 title: Commercialization roadmap — Hauska layer
 status: active
-last_updated: 2026-05-28
+last_updated: 2026-06-06
 applies_to: portfolio
-related: [00_current_state, 09_post_saas_substrate_thesis, 11_roadmap, 14_pricing_framework, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 72_hauska_inc_operations, 76b_gtm_engine_polish_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_019_layered_code_substrate, _decisions/2026-05-21_hauska_commercialization_sprint, _decisions/2026-05-28_gtm_engine_polish_sprint]
+related: [00_current_state, 09_post_saas_substrate_thesis, 11_roadmap, 14_pricing_framework, 28_mcp_first_product_design, 29_mcp_surface_tier_model, 50_hauska_mcp_server, 51_substrate_v1_sprint, 52_mcp_offer_and_buildout, 53_hauska_sdk_completion_sprint, 72_hauska_inc_operations, 76b_gtm_engine_polish_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_019_layered_code_substrate, _decisions/2026-05-21_hauska_commercialization_sprint, _decisions/2026-05-28_gtm_engine_polish_sprint, _decisions/2026-06-06_v1_tier_pricing_decision_b]
 owner: nick
 ---
 
@@ -28,9 +28,19 @@ v1 canonical pricing-model composition (per `14_pricing_framework.md` close-the-
 
 Hauska Inc. is the C-corp carrying commercial substrate. Corporate readiness state lives in `72_hauska_inc_operations.md`.
 
+## Build-out lane (precedes the launch steps)
+
+Added 2026-06-06 per [`52_mcp_offer_and_buildout.md`](52_mcp_offer_and_buildout.md). A wave of cortex-api and engine work shipped that the commercial surface does not yet express, and the SDK commerce rail is unfinished. Before the launch steps below can produce revenue, two pieces of build-and-test work land first. This lane gates step 3 (paid signup) and the public-launch portion of steps 1 and 5; it does not move anything toward public launch on its own.
+
+**Build-out 1: Tier 1 MCP build-out.** Wrap the shipped property, hydrology, topography, and encumbrance engines as Layer 2 cortex tools, leading with `generate_property_brief`, which makes the wedge itself agent-callable. Specs verified against the live engine surface in `52` §3a. Two dispatches: cc-agent-M (the tool wraps in `hauska-mcp-server`) and cc-agent-C (the cortex-api service-auth and metering seam the brief endpoint needs). The Cotality data tier rides the same dispatch but ships dark until the CoreLogic credential clears. The site-context single tools are de-scoped as redundant with the already-public place tools.
+
+**Build-out 2: SDK completion.** Finish the Hauska SDK so a Layer 2 paid call transacts: Circle fiat rail, revenue routing and source-actor split, MCP-gate metering, tested. Plan and acceptance criteria in [`53_hauska_sdk_completion_sprint.md`](53_hauska_sdk_completion_sprint.md). This is the same work as step 3's fiat-rail gap, now scoped as a sprint; step 3 closes when it lands.
+
+**Decision C stays pinned.** Per the recommended sequence in `52` §5: capture, then Tier 1 build-out, then finish the SDK, then unpin Decision C and launch. Decision C remains drafted but pinned in [`_catalog/ops/gtm_launch_channel_plan_v1.yaml`](_catalog/ops/gtm_launch_channel_plan_v1.yaml) until the build-out lands; nothing in this lane unpins it.
+
 ## Sequence
 
-Seven steps. Order is by Hauska-spine weight, with technical and operator-decision dependencies named per step. Some steps are technically parallel-safe; the ordering reflects strategic priority, not strict gating.
+Seven steps. Order is by Hauska-spine weight, with technical and operator-decision dependencies named per step. Some steps are technically parallel-safe; the ordering reflects strategic priority, not strict gating. The build-out lane above precedes the launch portions of these steps.
 
 ### 1. Hauska MCP Server public launch (Streams 2C and 2D)
 
@@ -56,7 +66,7 @@ Closes when: per-tier price points and bundled call quotas are written into `14_
 
 Layer 2 paid-tier infrastructure. Crypto rail is built per `@hauska-sdk/payment` v0.1.0. Fiat rail is the gap. Sprint 51 Phase 8 covers the Circle product and price catalog, customer signup to Circle checkout to webhook to key mint flow per `51_substrate_v1_sprint.md` line 554.
 
-Current state: deferred per Phase 8 scope. The fiat rail is Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md), and it is a near-greenfield build, not a single TODO: the 2026-05-21 reconciliation found no Circle payment creation, webhook handling, or verification in the SDK, only a placeholder checkout-URL function. See `14_pricing_framework.md` substrate-state section.
+Current state: scoped as a sprint. The fiat rail is Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md), and it is a near-greenfield build, not a single TODO: the 2026-06-06 recon re-confirmed no Circle payment creation, webhook handling, or verification in the SDK, only a placeholder checkout-URL function, and no revenue-routing code anywhere. The full plan, with the five-item punch list and acceptance criteria, is [`53_hauska_sdk_completion_sprint.md`](53_hauska_sdk_completion_sprint.md) (build-out lane above). Decision B tier numbers are now ratified ([`_decisions/2026-06-06_v1_tier_pricing_decision_b.md`](_decisions/2026-06-06_v1_tier_pricing_decision_b.md)), so the signup flow can quote. See `14_pricing_framework.md` substrate-state section.
 
 Gates this step: step 1 live (free-tier signup must exist before paid signup makes sense), step 2 closed (signup needs prices to quote), Hauska Inc. corporate readiness on regulatory posture per `72_hauska_inc_operations.md` (banking, Tech E&O insurance, IP attorney memo).
 
@@ -180,6 +190,7 @@ Quality-gate rule from CLAUDE.md continues to apply: every commercial output (do
 
 ## Revision history
 
+- **2026-06-06:** Build-out lane added ahead of the launch steps per [`52_mcp_offer_and_buildout.md`](52_mcp_offer_and_buildout.md): Tier 1 MCP build-out (cc-agent-M tool wraps plus cc-agent-C cortex-api seam) and SDK completion ([`53_hauska_sdk_completion_sprint.md`](53_hauska_sdk_completion_sprint.md)) land before the launch portions of steps 1, 3, and 5. Decision C confirmed pinned until the lane lands. Step 3 rescoped from "deferred" to "scoped as a sprint" pointing at 53; Decision B tier numbers noted ratified, unblocking signup quoting. Frontmatter `related` extended with 52, 53, and the Decision B record.
 - **2026-05-28:** Step 5 cross-linked to active GTM engine polish sprint ([`76b_gtm_engine_polish_sprint.md`](76b_gtm_engine_polish_sprint.md)); capability matrix and launch channel plan paths confirmed in step body (Lane P planner sign-off).
 - **2026-05-21:** Queue moved into execution as the Hauska commercialization sprint per [`_decisions/2026-05-21_hauska_commercialization_sprint.md`](_decisions/2026-05-21_hauska_commercialization_sprint.md). Execution-status banner added. Decision A ratified (agent-builder ICP); decisions B and C shapes ratified. Step 1 refreshed for post-cutover reality (server feature-complete, Group 4 de-risked by cutover, 2414-atom corpus). Step 4 rewritten to integrate ADR-019 layered code substrate and the Path A load-bearing constraint from the sprint pre-mortem. Wave 1 dispatches filed for cc-agent-M (Streams 2C/2D) and cc-agent-E (ADR-019 pipeline plus Sync 5); the 2026-05-19 launch-prep dispatch is superseded. `related` extended with ADR-019 and the sprint decision record. Reconciliation update (same day): catalog total corrected to 2702 (the 2414 tally omitted code-edition and cross-reference atoms); step 1 current-state marked deployed after Streams 2C and 2D completed; step 3 fiat rail changed from Stripe to Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md).
 - **2026-05-19 (origin):** doc seeded after the combined Cortex/Codex sprint mid-sync. Captures the post-cutover commercialization queue surfaced in the 2026-05-19 forward-planning thread. Seven steps named with current state, gating, and close criteria. Three open Nick decisions explicitly called out with recommended resolution paths. Companion dispatch for step 1 filed at `_dispatches/2026-05-19_cc-agent-M_stream_2c_2d_launch_prep.md`.
