@@ -14,9 +14,33 @@ owner: planner
 
 ## Daily (maintenance loop)
 
+Automated by the **health-watch aggregator** (76e observability sprint, `cortex/observability-hub`). **Deploy-pending:** live once the cc-agent-C PR merges and `cortex-api` deploys; use the manual fallbacks below until then. Cloud Scheduler fires `POST /api/ops/health-watch` on `cortex-api` daily (7 AM US Central). The report polls all six Cloud Run services, revision/traffic drift, peer `hauska_health` signals (gate probe, scraper jobs, Neon size), and emits structured Cloud Logging lines.
+
+**Copy-paste — latest health-watch report (service token required):**
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $SERVICE_API_KEY" \
+  "https://cortex-api.hauska.dev/api/ops/health-watch" | jq .
+```
+
+**Copy-paste — Cloud Logging filter for emitted maintenance signals:**
+
+```
+jsonPayload.hauska_health=true
+timestamp>="-24h"
+```
+
+Group by `jsonPayload.check` and `jsonPayload.service`. Every line carries `source`, `value`, `threshold`, and `ts`.
+
+**Manual fallbacks** (when the aggregator or Scheduler is down):
+
 1. **Cloud Run** `cortex-api` latest revision receiving traffic (not pinned stale revision).
 2. **Brokerage smoke:** one `POST /api/brokerage/v1/brief` on Bastrop + Cedar Hill pilot addresses (or internal script).
 3. **Error scan:** Cloud Logging filter `severity>=ERROR` + `brokerage` last 24h.
+
+**Steward triage (still manual):**
+
 4. **Open `_inbox/`** cc-agent-C items; tag triage bin: bug | degradation | friction | opportunity.
 5. **Note blockers** for next dispatch.
 

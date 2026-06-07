@@ -16,6 +16,22 @@ owner: nick
 >
 > **Hard rules (load-bearing, from the premortem below).** (1) City operational data retention or deletion (`mygov_raw_records` and the MyGov family) is alert-only and human-gated, never auto-remediated, per the partnership-first commitment. (2) Native Google Cloud Monitoring is the tooling. No paid observability vendor without an explicit operator decision, per the cost-per-jurisdiction commitment.
 
+## Build status — Wave A landed (2026-06-07)
+
+Wave A came back code-complete, held for operator merge. Reports: [`_inbox/2026-06-07_hauska-mcp-server_cc-agent-M_gate_probe_uptime.md`](_inbox/2026-06-07_hauska-mcp-server_cc-agent-M_gate_probe_uptime.md), [`_inbox/2026-06-07_legacy-design-tools_cc-agent-C_observability_hub.md`](_inbox/2026-06-07_legacy-design-tools_cc-agent-C_observability_hub.md).
+
+- **cc-agent-M / hauska-mcp-server** — PR [#27](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/27) held. `/healthz`, `/gate-probe` (three cases, `X-Hauska-Key`), emit contract, uptime checks LIVE for both hauska-prod services, alert policies LIVE (5xx, p95, revision drift), 245 tests pass. Cloud Scheduler API enabled on `hauska-prod-497015`.
+- **cc-agent-C / legacy-design-tools** — branch `cortex/observability-hub`, local, PR pending operator go to commit/push. Normalized `/api/healthz`, signal emit, daily aggregator, OpenAPI, operator script, steward-digest automation, 8 health tests pass. Cloud Scheduler API enabled on `legacy-design-tools-prod`.
+- **cc-agent-E / hauska-engine** — not yet reported (retrieval-api `/healthz`); the mcp uptime check for retrieval-api stays red until it lands. Expected.
+- **Wave B / smartcity** — correctly not started (gated on clean WS-1 2C plus the second cc-agent-M clone).
+
+Both pre-fire Scheduler-API gates are now done (the agents enabled them). Still owed by the operator: merge the two PRs and deploy; bind `GATE_PROBE_CODEX_KEY` for the valid-key gate case; mint the Neon read-only token; supply the alert email to `scripts/setup-health-monitoring.ps1`; create the health-watch scheduler service account with `run.invoker`; delete the always-true test alert policy `8570526367601301438` after confirming email receipt.
+
+**Two real live findings, surfaced by the build itself (the loop already earned its keep):**
+
+1. **cortex-api revision drift, confirmed live.** Prod serves `cortex-api-00119-laq` (deployed 2026-05-29) at 100 percent while `cortex-api-00090-vf9` (2026-06-06) is the latest ready at 0 percent. This is the exact stale-revision failure mode the sprint targets. It is consistent with the intentional deferred-deploy posture in `00_current_state`, so the alert is true signal, not noise: it will clear the moment the build-out is deployed to traffic. Calibration note: if the drift alert should stay quiet during an intentional defer, give it a per-service expected-serving-revision acknowledgment; otherwise expect it to fire until deploy. Alert-only, no auto-remediation.
+2. **mcp-server `/health` reports degraded in prod.** The existing self-check returns `engine_retrieval_api: down (fetch failed)`, `cortex_api: down (aborted)`, `upstash: down`, `postgres: ok`. Either the gate genuinely cannot reach the engine and cortex from prod, or the dependency health-check is misconfigured (wrong URL/key/timeout). Worth a verify before the new `/healthz` deploys over it. Routed as an alert-class signal, human-gated.
+
 ## Verified deployed surface (2026-06-07)
 
 Enumerated live against the GCP control plane this session (the doc set lagged the project IDs and one service). Verbatim findings retained so the build agents inherit ground truth, not the stale map.
