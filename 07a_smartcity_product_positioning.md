@@ -55,6 +55,19 @@ Mirror the Mox collateral set, SmartCity/gov-branded, use-case-first. Advantage 
 - Forrest contract/commission structure finalized.
 - SKU scope: SmartCity OS as one bundle, or plan review / parcel intelligence as named add-ons.
 
+## Collateral production (scope and sequence)
+
+Production is a separate build, scoped here and held until fired. It mirrors the Mox collateral build (standalone branded HTML plus a walkthrough deck plus an executive summary), SmartCity/gov-branded and use-case-first. The Bastrop advantage over Mox is that the deployment is live, so the assets use real screenshots and real metrics, not placeholder mockups. Dispatch scaffolded at [`_dispatches/2026-06-07_smartcity_collateral_production_QUEUED.md`](_dispatches/2026-06-07_smartcity_collateral_production_QUEUED.md), status QUEUED.
+
+Sequence, gated by what is operator-supplied:
+
+1. **Pricing-independent assets first.** The overview deck (use-case-first, the `Mox_Intelligence_Overview` analog), the four per-product one-pagers (dashboard, plan review, parcel intelligence, ambient extension), and the Bastrop case-study one-pager (the lead asset, built from real Bastrop screenshots). None of these need the pricing decision. Bastrop case-study metrics must be real and source-attributed per the quality gate; do not invent numbers.
+2. **Pricing slide and channel-partner pricing second.** The deck's pricing slide and the channel pack's pricing tiers are gated on the government pricing tiers / list price (operator decision in the Vertosoft offer doc). Hold these until the price is set.
+3. **Channel-partner pack** for Forrest and Vertosoft: positioning, problem statements, contract-vehicle list, and the how-to-position cheat sheet. The non-pricing portions ship with step 1; the pricing tier table slots in at step 2.
+
+Keep the substrate / calibration / revenue-share plumbing out of the gov pitch (use-case-first, per Vertosoft's own advice and I7). The pricing model is a Layer 3 integrated-product sale to cities, distinct from the Layer 1/2 substrate model.
+
 ## Revision history
 
+- 2026-06-07, collateral production scope and sequence added (pricing-independent assets first, pricing slide and channel pricing gated on the operator pricing decision; QUEUED build dispatch scaffolded).
 - 2026-06-07, origin. Shared positioning + collateral pack for the SmartCity product line, serving Forrest and Vertosoft; four-surface line with the ambient extension added as the bundled deposit layer; collateral plan and pricing/scope inputs flagged.

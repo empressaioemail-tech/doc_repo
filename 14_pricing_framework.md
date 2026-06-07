@@ -4,7 +4,7 @@ title: Pricing framework â Path A vs Path B
 status: active
 last_updated: 2026-05-21
 applies_to: portfolio
-related: [10_ground_truth, 11_roadmap, 16_commercialization_roadmap, 30_smartcity_os, 40_design_accelerator, 80_adrs/adr_018_atom_contract_substrate_layer]
+related: [10_ground_truth, 11_roadmap, 16_commercialization_roadmap, 30_smartcity_os, 40_design_accelerator, 55_spine_data_intelligence_stack, 80_adrs/adr_018_atom_contract_substrate_layer]
 ---
 
 # Pricing framework â Path A vs Path B
@@ -264,6 +264,23 @@ Three items remain after the 2026-05-18 close-the-loop pass. Five prior items re
 - ADR-013 (procedure-execution atoms; the unit of metering)
 - Session origin: _sessions/2026-05-16_strategic_brainstorm_dual_interface_sdk_post_saas_claude_ai_strategic.md
 
+## Spine COGS (cost floor for pricing)
+
+All-inclusive monthly cost of running the Hauska spine, verified against live infra 2026-06-07. Full inventory and evidence: [`55_spine_data_intelligence_stack.md`](55_spine_data_intelligence_stack.md) Section 9.
+
+| Category | Monthly | Confidence |
+|---|---|---|
+| Compute (Cloud Run: retrieval-api + mcp-gate min-1 warm + cortex-api 2vCPU/8Gi) | $500-875 | Med |
+| Data (Neon x3) | $150-350 | Med |
+| Storage (GCS objects + logs) | $50-150 | Low-Med |
+| External APIs (Cotality unknown tier, ICC partnership TBD, Regrid eval; FEMA/USGS/EPA/NOAA/FCC/USDA free) | $500-5,650+ | Low (dominant uncertainty) |
+| LLM runtime (Grok-first + Anthropic fallback) | $20-60 | Med |
+| Other (Cloud Build, Upstash, Secret Manager, Artifact Registry, domain, logging) | $30-90 | Med |
+| **Fixed spine total** | **~$1,250-7,200/mo** (midpoint ~$3-4k excluding Cotality/ICC) | |
+| Per-jurisdiction onboard (variable) | ~$1-2k LLM + 60-100 person-hours across first 30 cities, amortizing toward the under-$200-compute + 1hr-review target | Med |
+
+Pricing implications: the fixed floor (compute + Neon, ~$700-1,200) is manageable and LLM is cheap until call volume scales. Cotality is the swing factor and can multiply COGS on its own, so it is the binding constraint on any Cotality-backed Layer 2 SKU. Discipline: sell reasoning (LLM, the margin), price third-party raw data (Cotality) at floor as pass-through, and do not finalize a Cotality-backed SKU price until the Cotality production tier is known. This feeds the deferred tier-prices decision (step 2 of the commercialization queue).
+
 ## Cross-references
 
 - [`30_smartcity_os.md`](30_smartcity_os.md) â SmartCity OS
@@ -280,6 +297,7 @@ Three items remain after the 2026-05-18 close-the-loop pass. Five prior items re
 
 ## Revision history
 
+- **2026-06-07:** Added "Spine COGS (cost floor for pricing)" section with the all-inclusive monthly cost table (verified against live infra; full inventory in 55_spine_data_intelligence_stack.md). Flags Cotality as the binding pricing constraint and sets the discipline: sell reasoning, price raw third-party data at floor, do not finalize a Cotality-backed SKU price until the production tier is known. Frontmatter `related` extended (55). No change to Path A/B or the SDK section.
 - **2026-05-21:** Fiat rail changed from the Stripe Connect placeholder to Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md), following the cross-repo reconciliation finding that the hauska-sdk payment package is already built Circle-shaped. Substrate-state section corrected: the fiat rail is a near-greenfield build, not a single TODO, and the revenue-routing layer does not exist in the SDK. Principle subsection gains an implementation-status note reframing substrate-enforced revenue share as designed but not yet enforced. Take-rate-philosophy and regulatory-posture lines re-pointed from Stripe Connect to Circle.
 
 - **2026-05-19:** Cross-reference added to new [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md) (post-cutover Hauska-layer commercialization sequencing). Step 2 of the commercialization queue closes this framework's deferred tier-prices and bundled-call-quotas decision; step 7 closes the take-rate-exact-number decision at first paid Layer 2 call. Frontmatter `related` extended; no body changes outside the cross-references section.

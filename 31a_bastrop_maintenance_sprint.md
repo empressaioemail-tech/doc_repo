@@ -4,7 +4,7 @@ title: Bastrop maintenance sprint — platform health catch-up
 status: active
 last_updated: 2026-06-01
 applies_to: smartcity-os
-related: [30a_smartcity_stabilization_sprint, 30_smartcity_os, 10_ground_truth, 11_roadmap, 90_runbooks/smartcity_cloud_run_env_audit_2026-05-11, 90_runbooks/cloud_run_canary_deploy]
+related: [30a_smartcity_stabilization_sprint, 30_smartcity_os, 10_ground_truth, 11_roadmap, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 90_runbooks/smartcity_cloud_run_env_audit_2026-05-11, 90_runbooks/cloud_run_canary_deploy]
 ---
 
 # Bastrop maintenance sprint — platform health catch-up
@@ -131,9 +131,10 @@ first).
 
 ---
 
-## Phase 3 — Platform foundation (L, blocked)
+## Phase 3 — Platform foundation (L)
 
-Deferred to M-Stabilize operator release:
+DB hold released 2026-06-06; this phase is no longer blocked. P3-2 and P3-4
+now connect to the tenant leg ([`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md)).
 
 | ID | Title | Blocks enhancement? |
 |----|-------|---------------------|
@@ -141,6 +142,16 @@ Deferred to M-Stabilize operator release:
 | P3-2 | WS-4 multitenancy + ADR-005 audit | Yes — Jarrell |
 | P3-3 | Drizzle migrate adoption | Yes — schema velocity |
 | P3-4 | Compass V4 / atom-backed context | No — additive |
+
+**Tenant-leg dependencies (2026-06-07).** P3-2 ADR-005 audit verifies the
+Layer B (storage) invariants of the portfolio multitenancy ADR
+[`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md), not a
+SmartCity-only spec. P3-4 atom-backed context is SmartCity reading substrate
+atoms through the MCP gate as the Bastrop city tenant; it depends on the
+tenant-leg gate work (gate tenant resolution, step 1 of 54) so SmartCity reads
+as the city tenant rather than off its island data path. SmartCity-on-spine
+onboarding is dispatched (QUEUED) at
+[`_dispatches/2026-06-07_cc-agent-M_smartcity_tenant_onboarding.md`](_dispatches/2026-06-07_cc-agent-M_smartcity_tenant_onboarding.md).
 
 ---
 
@@ -179,6 +190,7 @@ Deferred to M-Stabilize operator release:
 
 ## Revision history
 
+- **2026-06-07:** Phase 3 unblocked (DB hold released 2026-06-06). P3-2 ADR-005 audit repointed to the portfolio `adr_005_multitenancy.md` (Layer B); P3-4 atom-backed context tied to the tenant-leg gate work (SmartCity as city tenant); tenant-leg dependency note added; frontmatter `related` extended (54, adr_005_multitenancy).
 - **2026-06-01:** Sprint filed from Bastrop platform health check recon
   (`3bc4eb8`). Phases 0–3 extracted from health report §10; traffic-light
   from §2.

@@ -2,9 +2,9 @@
 id: 30a_smartcity_stabilization_sprint
 title: SmartCity OS Stabilization Sprint — platform-ready foundation
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-06-07
 applies_to: smartcity-os
-related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 11_roadmap, 12_migration_sprint, 13_risk_register, 15_replit_neon_ownership_advisory, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan, 90_runbooks/neon_schema_migration_via_cloud_shell, 91_postmortems/2026-05-07_replit_dev_db_wedged, adr_002_replit_neon_migration]
+related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 11_roadmap, 12_migration_sprint, 13_risk_register, 15_replit_neon_ownership_advisory, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 90_runbooks/neon_schema_migration_via_cloud_shell, 91_postmortems/2026-05-07_replit_dev_db_wedged, adr_002_replit_neon_migration]
 ---
 
 # SmartCity OS Stabilization Sprint — platform-ready foundation
@@ -38,6 +38,22 @@ related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b
 > Phase 0–2 of 31a do not touch DATABASE_URL migration; Phase 3 (DATABASE_URL
 > migration) is unblocked as of the 2026-06-06 hold release and folds
 > into WS-1.
+>
+> **Phase 2A.0 merged (2026-06-07).** WS-1 Phase 2A.0 (migration
+> reconcile) shipped as smartcity-os PR #21, unblocking Phase 2A schema
+> sync. See the build-out-wave session record
+> [`_sessions/2026-06-07_substrate_buildout_merged_and_tenant_framing_claude_code.md`](_sessions/2026-06-07_substrate_buildout_merged_and_tenant_framing_claude_code.md).
+>
+> **ADR-005 elevated to load-bearing (2026-06-07).** This sprint's WS-4
+> multi-tenancy work is now the storage-layer (Layer B) instance of a
+> portfolio multitenancy ADR. ADR-005 was reframed from a SmartCity-only
+> spec into [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md)
+> (gate tenant resolution + accessPolicy enforcement at Layer A; the
+> SmartCity `tenant_id` invariants at Layer B), driven by the tenant leg
+> ([`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md)) which serves Mox
+> and SmartCity on one shared spine. WS-4 verifies the schema against this
+> ADR; the canonical file is `adr_005_multitenancy.md`, not the previously
+> planned `adr_005_smartcity_multitenancy.md`.
 
 ## Why this sprint
 
@@ -149,12 +165,13 @@ The sprint exits when these are verified:
    Schema migration framework decided (Drizzle migrate per ADR-006)
    and adopted — `migrations/` directory and tooling reflect the
    decision.
-5. **Multi-tenancy invariants verified.** ADR-005 migrated from
-   pre-docs-repo source and canonical at
-   `80_adrs/adr_005_smartcity_multitenancy.md`. Every tenant-scoped
-   table verified to have `tenant_id NOT NULL` + FK + index per
-   ADR-005. Smoke test demonstrates tenant isolation under load (no
-   cross-tenant data leakage on production-shape queries).
+5. **Multi-tenancy invariants verified.** ADR-005 canonical at
+   `80_adrs/adr_005_multitenancy.md` (the portfolio multitenancy ADR;
+   WS-4 verifies its Layer B storage invariants, pre-docs-repo
+   `45_smartcity_multitenancy_spec.md` content folded in as that layer).
+   Every tenant-scoped table verified to have `tenant_id NOT NULL` + FK
+   + index per ADR-005 Layer B. Smoke test demonstrates tenant isolation
+   under load (no cross-tenant data leakage on production-shape queries).
 6. ✅ **W1 sprint complete.** All seven W1 items (W1.A.6–9 forensics +
    W1.C.1–3 implementation) shipped with verifications captured. Met
    2026-05-11. A.6/A.8 rotation work continues post-sprint as A.6.b/A.8.b
@@ -169,7 +186,7 @@ The sprint exits when these are verified:
 | Phase | Workstream | Description | Owner | Status | Started | Completed | Notes |
 |---|---|---|---|---|---|---|---|
 | 0 | Foundation | Cross-cutting prereqs (clone refresh, doc clone-path fix, ADR-005 migration, gcloud SSL, quota headroom) | mixed | pending | — | — | Gate to WS-1 Phase 2A |
-| 2A.0 | WS-1 | Phase 2A prereqs (post-merge.sh verification, migration prefix collisions, gcloud SSL) | cc-agent-1 + Nick | pending | — | — | gcloud SSL is Nick-only |
+| 2A.0 | WS-1 | Phase 2A prereqs (post-merge.sh verification, migration prefix collisions, gcloud SSL) | cc-agent-1 + Nick | verified | 2026-06-07 | 2026-06-07 | Migration reconcile shipped as PR #21; Phase 2A schema sync unblocked. gcloud SSL is Nick-only |
 | 2A | WS-1 | Phase 2A schema sync (Cloud Shell, smartcity-os → Empressa Neon) | cc-agent-1 | pending | — | — | Mirrors neon migration runbook pattern |
 | 2B | WS-1 | Phase 2B data-only sync | cc-agent-1 + Nick | pending | — | — | Needs low-traffic window |
 | 2C | WS-1 | Phase 2C cutover + 24h obs | cc-agent-1 + Nick | pending | — | — | Backup tag + instant rollback ready |
@@ -200,14 +217,15 @@ workstreams.
   Update doc references; don't rename clone. Owner: planner (folded
   into the session-close commit that lands this sprint plan).
   Size: S.
-- [ ] **ADR-005 migration from pre-docs-repo.** Source: pre-docs-repo
-  `45_smartcity_multitenancy_spec.md`. Target:
-  `80_adrs/adr_005_smartcity_multitenancy.md`. Unblocks multi-tenancy
-  verification (done criterion 5) and WS-4's invariant audit. If
-  pre-docs-repo source isn't accessible to the doc_repo agent,
-  escalate to Nick; do not block WS-1 — proceed with migration spine
-  and address WS-4 once source is available. Owner: cc-agent-4 OR
-  Nick + planner. Size: M.
+- [ ] **ADR-005 Layer B content from pre-docs-repo.** ADR-005 now exists
+  as the portfolio multitenancy ADR `80_adrs/adr_005_multitenancy.md`
+  (scaffolded 2026-06-07). This prereq narrows to folding the
+  pre-docs-repo `45_smartcity_multitenancy_spec.md` invariants into that
+  ADR's Layer B (storage) section. Unblocks multi-tenancy verification
+  (done criterion 5) and WS-4's invariant audit. If pre-docs-repo source
+  isn't accessible to the doc_repo agent, escalate to Nick; do not block
+  WS-1 — proceed with migration spine and address WS-4 once source is
+  available. Owner: cc-agent-4 OR Nick + planner. Size: S.
 - [ ] **gcloud SSL fix on Nick box.** Currently broken (`unable to
   get local issuer certificate`); Cloud Shell is the workaround.
   Resolves it so WS-1 doesn't need Cloud Shell for every Secret
@@ -605,13 +623,14 @@ multi-tenancy verification post-Phase-2C).
 
 ### Items
 
-- [ ] **ADR-005 migration from pre-docs-repo.** Source: pre-docs-repo
-  `45_smartcity_multitenancy_spec.md`. Target:
-  `80_adrs/adr_005_smartcity_multitenancy.md`. Apply
-  `02_doc_migration_plan.md` patterns. If source content has evolved
-  since the original draft, surface the deltas. Cross-reference
-  ADR-007 (which extends ADR-005 to cross-stakeholder) and ADR-001
-  (atom contract). **Unblocks done criterion 5.**
+- [ ] **ADR-005 Layer B content from pre-docs-repo.** Source:
+  pre-docs-repo `45_smartcity_multitenancy_spec.md`. Target: the Layer B
+  (storage) section of `80_adrs/adr_005_multitenancy.md` (the portfolio
+  ADR, scaffolded 2026-06-07). Apply `02_doc_migration_plan.md` patterns.
+  If source content has evolved since the original draft, surface the
+  deltas. Cross-reference ADR-007 (which extends ADR-005 to
+  cross-stakeholder) and ADR-001 (atom contract). **Unblocks done
+  criterion 5.**
 - [ ] **MyGov raw-records growth audit on production Empressa Neon.**
   Read-only forensics. Per
   `91_postmortems/2026-05-07_replit_dev_db_wedged.md`, three tables
@@ -723,6 +742,19 @@ From `20_agent_operating_rules.md`:
 Newest-first dated log. Each entry: date, sub-phase, status change,
 SHA / artifact reference.
 
+- **2026-06-07 (Phase 2A.0 merged + ADR-005 reframed):** WS-1 Phase 2A.0
+  migration reconcile shipped as smartcity-os PR #21 in the build-out
+  wave; status board row 2A.0 flipped to `verified`; Phase 2A schema
+  sync unblocked. ADR-005 reframed from the planned SmartCity-only
+  `adr_005_smartcity_multitenancy.md` into the portfolio multitenancy ADR
+  `80_adrs/adr_005_multitenancy.md` (Layer A gate tenant resolution +
+  accessPolicy enforcement, Layer B SmartCity storage invariants); done
+  criterion 5, the cross-cutting prereq, and the WS-4 item repointed
+  accordingly. Driver: the tenant leg
+  ([`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md)) serving Mox and
+  SmartCity on one shared spine. Session record:
+  [`_sessions/2026-06-07_substrate_buildout_merged_and_tenant_framing_claude_code.md`](_sessions/2026-06-07_substrate_buildout_merged_and_tenant_framing_claude_code.md).
+
 - **2026-06-06 (operator hold released, WS-1 unblocked):** The
   2026-05-21 operator DB hold is lifted. Precondition probe by cc-agent-M
   (read-only) returned NOT-CLEAR-pending-prereqs; all prereqs then cleared
@@ -802,6 +834,7 @@ SHA / artifact reference.
 
 ## Revision history
 
+- **2026-06-07 (Phase 2A.0 merged + ADR-005 reframe):** Status board row 2A.0 flipped to `verified` (PR #21, Phase 2A schema sync unblocked). Done criterion 5, the cross-cutting ADR-005 prereq, and the WS-4 ADR-005 item repointed from `adr_005_smartcity_multitenancy.md` to the portfolio `adr_005_multitenancy.md` (SmartCity invariants = Layer B). Header notes added for Phase 2A.0 merge and the ADR-005 elevation; status-tracking entry added; frontmatter `related` extended (54, adr_005_multitenancy); `last_updated` bumped to 2026-06-07. Sprint remains `active`.
 - **2026-05-11 (W1 implementation follow-ons + cutover env-var gap):** Per-item status lines for W1.A.6 / W1.A.7 / W1.A.8 updated with PR merge + deploy reference (PRs #11 / #12 / #13 to smartcity-os; revision `smartcity-api-00084-vhr`). Status tracking entry added for the implementation batch + cutover env-var rebind cluster. Sprint remains `active`; M-Stabilize done criteria unchanged.
 - **2026-05-11 (WS-2 exit):** Phase board W1.A + W1.C flipped to
   `verified`. Per-item status lines added to W1.A.6/A.7/A.8/A.9 and

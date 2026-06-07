@@ -21,6 +21,8 @@ this index when hot-path refs change; ECI P2 will supersede with code registry.
 | `sprint:40f` | sprint | [`40f_cortex_grok_runtime_migration_sprint.md`](../40f_cortex_grok_runtime_migration_sprint.md) | QUEUED — product runtime Grok planning |
 | `sprint:40d` | sprint | [`40d_cortex_site_context_sprint.md`](../40d_cortex_site_context_sprint.md) | active (2D-first) |
 | `sprint:51` | sprint | [`51_substrate_v1_sprint.md`](../51_substrate_v1_sprint.md) | winding down |
+| `sprint:54` | sprint | [`54_tenant_leg_sprint.md`](../54_tenant_leg_sprint.md) | active (tenant leg; dispatches QUEUED) |
+| `sprint:55` | sprint | [`55_spine_data_intelligence_stack.md`](../55_spine_data_intelligence_stack.md) | active (spine robustness; 4 dispatches teed) |
 | `qa-backlog-item:QA-32` | qa | [`43_cortex_qa_backlog.md`](../43_cortex_qa_backlog.md) | closed 2026-05-23 |
 | `qa-backlog-item:QA-110` | qa | [`43_cortex_qa_backlog.md`](../43_cortex_qa_backlog.md) + `00` §6 | open (PR #110 CI) |
 | `decision:2026-05-23_grok_atom_fleet_migration` | decision | [`_decisions/2026-05-23_grok_atom_fleet_migration.md`](../_decisions/2026-05-23_grok_atom_fleet_migration.md) | active |
@@ -53,6 +55,7 @@ Do not register one-off session facts.
 
 ## Revision history
 
+- **2026-06-07:** Added `sprint:54` (tenant leg) and `sprint:55` (spine data-intelligence stack); both appear across the 2026-06-07 dispatch wave.
 - **2026-05-28:** Added `strategy-module:gtm-engine-polish-sprint` (76b + capability matrix).
 - **2026-05-27:** Added competitive execution system and weekly moat scoreboard atoms.
 - **2026-05-27:** Formation graph (additive); outlier-ai-v1 pattern (depersonalized).

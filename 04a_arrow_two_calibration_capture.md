@@ -2,10 +2,10 @@
 id: 04a_arrow_two_calibration_capture
 title: Arrow two — calibration capture (build spec for roadmap item 1)
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-06-07
 applies_to: portfolio
 owner: nick
-related: [03_structural_constitution_and_drift_guard, 03a_positioning_framework, 04_roadmap_alignment_audit, 00d_portfolio_roadmap_reference, 50_hauska_mcp_server, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_017_atom_access_control, _research/2026-06-06_cross_repo_recon]
+related: [03_structural_constitution_and_drift_guard, 03a_positioning_framework, 04_roadmap_alignment_audit, 00d_portfolio_roadmap_reference, 50_hauska_mcp_server, 54_tenant_leg_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_005_multitenancy, _research/2026-06-06_cross_repo_recon]
 ---
 
 # Arrow two: calibration capture
@@ -62,8 +62,10 @@ Report: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_reco
 
 - **Phase 0, design and recon (no code). DONE 2026-06-06** (cc-agent-C). See findings above.
 - **Phase 1, adjudication-to-atom evidence ledger (cortex-api).** Route each finding's `citations[].atomId` plus its adjudication (accept/reject/override) into a per-atom evidence record, partitioned by `jurisdictionTenant`. Tier 1a: a zero-schema derived projection joining the existing `atom_events` finding-mutation events to `findings.citations[].atomId` (proves routing, closes the stranding gap, no migration). Tier 1b: an append-only durable evidence write at the three capture points if the projection proves too costly. Ship 1a first. No confidence write-back, no engine change, no corpus mutation. Owner: cc-agent-C. Dispatch ready.
-- **Phase 2, outcome-observation capture.** Add the capture of real-world outcomes so finding accuracy can be measured against ground truth.
-- **Phase 3, calibration computation.** Compare stated confidence to observed frequency, tighten with use, and surface the calibration grade (which also feeds the calibration-grade pricing tiers in the positioning framework).
+- **Phase 2, outcome-observation capture.** Add the capture of real-world outcomes so finding accuracy can be measured against ground truth. Sequenced in the tenant leg ([`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md) step 3), tenant-partitioned on the same `jurisdictionTenant` key as Phase 1. Dispatch (QUEUED): [`_dispatches/2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md`](_dispatches/2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md).
+- **Phase 3, calibration computation.** Compare stated confidence to observed frequency, tighten with use, and surface the calibration grade (which also feeds the calibration-grade pricing tiers in the positioning framework). Tenant leg step 4, computed per tenant with no cross-tenant pooling. Dispatch (QUEUED): [`_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md`](_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md).
+
+**Tenant partition is the shared sovereignty guardrail (2026-06-07).** The `jurisdictionTenant` partition on the evidence ledger and the `tenant-private` accessPolicy enforced at the gate (ADR-005, [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md)) are the same boundary. Arrow two is Mox's value prop (the deposit loop) and Mox's and Bastrop's sovereignty guarantee (a tenant's adjudications and outcomes are never pooled). Phases 2 and 3 are therefore planned inside the tenant leg, which serves Mox and SmartCity on one shared spine.
 
 ## Cross-references
 
@@ -74,4 +76,5 @@ Report: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_reco
 
 ## Revision history
 
+- **2026-06-07:** Phases 2 and 3 sequenced into the tenant leg (54) with QUEUED dispatches linked; added the tenant-partition-is-sovereignty-guardrail note tying the `jurisdictionTenant` ledger partition to the ADR-005 `tenant-private` accessPolicy. Frontmatter `related` extended (54, adr_005_multitenancy); `last_updated` bumped.
 - **2026-06-06 (origin):** Created as the canonical home for roadmap item 1. Mechanism, calibration definition, current substrate, the three-part gap, pre-mortem guardrails, and four build phases. Phase 0 recon dispatched to cc-agent-C.
