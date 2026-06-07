@@ -133,12 +133,14 @@ What v1 explicitly defers: all Tier 1+ outbound workers, paid-signup automation,
 
 ## 6. QUEUED-on-deploy dispatches
 
-Authored fire-ready but QUEUED; do not fire until the §4 deploy gate clears and the operator unpins.
+Authored fire-ready but QUEUED; do not fire until the §4 deploy gate clears and the operator unpins. **Both ran early (operator-fired 2026-06-07); the build-side work is code-complete with PRs held for merge, and the publish/observe side stays gated on §4.**
 
-| Dispatch | Owner | Repo | Fires when |
+| Dispatch | Owner | Repo | Status (2026-06-07) |
 |---|---|---|---|
-| [`_dispatches/2026-06-07_cc-agent-C_gtm_loop_discovery_automation_QUEUED.md`](_dispatches/2026-06-07_cc-agent-C_gtm_loop_discovery_automation_QUEUED.md) | cc-agent-C | legacy-design-tools | build-out deployed; observes live surface |
-| [`_dispatches/2026-06-07_cc-agent-M_gtm_launch_collateral_refresh_QUEUED.md`](_dispatches/2026-06-07_cc-agent-M_gtm_launch_collateral_refresh_QUEUED.md) | cc-agent-M | hauska-mcp-server | matrix v1.1 final + deploy done; operator publishes |
+| [`_dispatches/2026-06-07_cc-agent-C_gtm_loop_discovery_automation_QUEUED.md`](_dispatches/2026-06-07_cc-agent-C_gtm_loop_discovery_automation_QUEUED.md) | cc-agent-C | legacy-design-tools | DONE, PR #148 held. Tier-0 loop built (triage, scoreboard metrics, outbound provably disabled). Confirmed the 76b observation schema already landed (migrations 0028 + 0032), built only the delta. E5 external-caller validation still waits on prod deploy. |
+| [`_dispatches/2026-06-07_cc-agent-M_gtm_launch_collateral_refresh_QUEUED.md`](_dispatches/2026-06-07_cc-agent-M_gtm_launch_collateral_refresh_QUEUED.md) | cc-agent-M | hauska-mcp-server | DONE, PR #26 held. Collateral refreshed to the data-package framing; passed all honesty gates (no "calibrated", corpus split on every number). Nothing published (operator-gated). Surfaced two matrix-staleness flags, now reconciled into v1.1 (§3). |
+
+Matrix reconciliation from PR #26 (folded into [`_catalog/ops/gtm_public_capability_matrix_v1.yaml`](_catalog/ops/gtm_public_capability_matrix_v1.yaml) v1.1): the deployed surface is 46 tools but the merged code carries 57 (the +11 Tier-1 Layer 2 wraps are deploy-pending, not marketable until prod); the six place/workspace tools are flipped from `gtm_sprint_planned` to `shipped` (they are in the deployed 11-public surface). Marketing copy uses 46; 57 stays code-only until the build-out deploys per §4.
 
 ## 7. Premortem and focus-queue
 
@@ -160,4 +162,5 @@ Focus-queue (CLAUDE.md focus-queue rule): this workstream queues nothing new and
 
 ## Revision history
 
+- **2026-06-07 (dispatch reconciliation):** Both QUEUED dispatches ran early (operator-fired): cc-agent-C PR #148 (Tier-0 gtm-loop, observation schema confirmed pre-landed, outbound provably disabled) and cc-agent-M PR #26 (collateral refresh, all honesty gates passed). Folded PR #26's two matrix-staleness flags into the capability matrix v1.1: the 46-deployed vs 57-merged split (the +11 Tier-1 wraps are deploy-pending) and the six place/workspace tools flipped to `shipped`. §6 updated with PR/status. PRs held for operator merge; publish/observe still gated on §4. Slot moved 76f -> 76d (gap-fill vs 76e observability).
 - **2026-06-07 (origin):** Filed as the GTM data-package go-to-market + launch-readiness doc while Decision C stays pinned. Translates the composable data-package model (08) into per-package buyer/channel/reasoning-first messaging (Subsurface, Hydrology/flood, Parcel/property, Code/plan-review, Environmental); enumerates the single Decision C unpin gate (deploy + Cotality/ICC creds + SDK metering + offer/collateral); refines the gtm_loop into a buildable Tier-0 v1 spec with Tier 1 outbound held behind E&O + consent; indexes two QUEUED-on-deploy dispatches; refreshes the public capability matrix to v1.1. Premortem GREEN. Honesty discipline (public-vs-internal corpus split; no calibration claim) enforced throughout.
