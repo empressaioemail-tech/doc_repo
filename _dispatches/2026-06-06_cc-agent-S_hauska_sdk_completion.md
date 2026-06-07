@@ -2,7 +2,7 @@
 id: 2026-06-06_cc-agent-S_hauska_sdk_completion
 title: Dispatch — Hauska SDK completion (Circle rail, revenue routing, MCP metering, tests, polish)
 date: 2026-06-06
-agent: cc-agent-S (PROPOSED — operator-assigned; hauska-sdk has no standing fleet owner)
+agent: cc-agent-S (confirmed 2026-06-06; dedicated single-owner seat for hauska-sdk)
 repo: hauska-sdk
 kind: dispatch
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 53_hauska_sdk_completion_sprint, 52_mcp_offer_and_buildout, 14_pricing_framework, 29_mcp_surface_tier_model, _decisions/2026-05-21_fiat_rail_circle, _decisions/2026-06-06_v1_tier_pricing_decision_b]
@@ -10,7 +10,7 @@ related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 53_h
 
 # Hauska SDK completion — SDK owner
 
-> **Seat note for the operator.** `hauska-sdk` is not owned by any current fleet seat (the standing seats are C, C2, E, R, M, AC, none of which owns this repo). `cc-agent-S` is a proposed slug for a dedicated single-owner seat on `P:\Hauska SDK`; confirm or reassign before dispatching. Do not let an unassigned seat default silently into another agent's clone.
+> **Seat note.** `hauska-sdk` had no standing fleet owner (the prior seats are C, C2, E, R, M, AC). `cc-agent-S` is confirmed by the operator 2026-06-06 as the dedicated single-owner seat on `P:\Hauska SDK`, per the one-agent-per-repo model. Do not let it default silently into another agent's clone.
 
 You are the single owner of `hauska-sdk` for this run. This dispatch finishes the SDK so a Layer 2 paid MCP call actually transacts. It is the commerce backbone; the full plan with rationale and the first-paid-revenue dependency chain is [`53_hauska_sdk_completion_sprint.md`](../53_hauska_sdk_completion_sprint.md). This dispatch is the execution order for that sprint's five items.
 
