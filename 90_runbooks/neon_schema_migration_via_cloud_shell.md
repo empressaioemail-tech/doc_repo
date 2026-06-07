@@ -2,7 +2,7 @@
 id: neon_schema_migration_via_cloud_shell
 title: Neon schema migration via Cloud Shell — runbook
 status: active
-last_updated: 2026-05-10
+last_updated: 2026-06-06
 applies_to: portfolio
 related: [10_ground_truth, 12_migration_sprint, adr_002_replit_neon_migration]
 ---
@@ -125,7 +125,8 @@ Plus targeted `\d <table>` on architecturally critical tables (atom_events, user
 When applying this runbook to smartcity-os:
 
 - **tenant_id integrity** — smartcity-os enforces multitenancy via tenant_id on every atomic table (per ADR-005). After restore, verify every table that has tenant_id on source also has it on target (column count parity may not catch a single-column drop). Sample query: `SELECT table_name FROM information_schema.columns WHERE table_schema = 'public' AND column_name = 'tenant_id'` on both sides; counts must match.
-- **Region** — smartcity-os Phase 2A target is us-central1 (not us-east-1) to colocate with Cloud Run and close Fire 5. Verify the target endpoint URL contains `us-central1`.
+- **Region**: smartcity-os Phase 2A target is `us-east-2` (Ohio), the nearest AWS region to the GCP `us-central1` Cloud Run. Neon offers no GCP region, so Fire 5 is narrowed, not eliminated. Verify the target endpoint URL contains `us-east-2`. Provisioned target host: `ep-mute-moon-ajbx8pd3.c-3.us-east-2.aws.neon.tech` (direct endpoint; secret `smartcity-EMPRESSA_DATABASE_URL`).
+- **Postgres major-version gap**: source is PG 16, the us-east-2 target is PG 18. Restoring a 16 dump into 18 is forward-compatible, but use a pg_dump/psql client of version 18 or newer in Cloud Shell (the preinstalled client may be older). Confirm `pg_dump --version` is 18 or newer before the dump.
 - **Larger schema** — smartcity-os has 106 public tables (per `10_ground_truth.md`); dump and restore times will scale accordingly. Cloud Shell timeouts (1h idle) are not a risk for schema-only.
 - **Migration prefix collisions** — smartcity-os has two `0003_*` and two `0004_*` migrations in `migrations/` (Phase 2 added prereq in `12_migration_sprint.md`). Resolve before Phase 2A so the dumped schema reflects deterministic migration ordering.
 - **Existing post-merge.sh** — smartcity-os scripts/post-merge.sh was neutralized in PR #7 (Fire 4). Do not re-run its migration logic during Phase 2A.

@@ -2,7 +2,7 @@
 id: 30a_smartcity_stabilization_sprint
 title: SmartCity OS Stabilization Sprint — platform-ready foundation
 status: active
-last_updated: 2026-06-01
+last_updated: 2026-06-06
 applies_to: smartcity-os
 related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b_integration, 10_ground_truth, 11_roadmap, 12_migration_sprint, 13_risk_register, 15_replit_neon_ownership_advisory, 27_engine_evolution_plan, 42_design_accelerator_program_plan, 48_codex_program_plan, 90_runbooks/neon_schema_migration_via_cloud_shell, 91_postmortems/2026-05-07_replit_dev_db_wedged, adr_002_replit_neon_migration]
 ---
@@ -16,21 +16,28 @@ related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b
 > this doc's `status` flipped to `superseded` with `superseded_by:`
 > pointing to the retrospective.
 
-> **On operator hold (2026-05-21).** cc-agent-M is curbed and M-Stabilize
-> is paused at the operator's call: the operator is handling the
-> smartcity-os production database directly and wants full attention on
-> it. WS-1, the migration spine, touches that database, so agent work in
-> parallel would collide. The sprint resumes when the operator releases
-> it; the dispatch at
+> **Operator hold RELEASED (2026-06-06).** The operator's direct
+> production-database work is complete and the 2026-05-21 hold is lifted.
+> The precondition probe
+> ([`_inbox/2026-06-06_smartcity-os_cc-agent-M_precondition_probe.md`](_inbox/2026-06-06_smartcity-os_cc-agent-M_precondition_probe.md))
+> confirmed WS-1's premise still holds (production still on Replit-managed
+> Neon, no operator migration during the hold). The enrichment columns and
+> fleet tables on production are a Drizzle journaling slip, not operator
+> DDL; Phase 2A captures them via the live-schema dump and Phase 2A.0
+> reconciles the journal. Empressa Neon target provisioned: project
+> `tiny-art-63602898`, region `us-east-2` (Ohio), PG 18, secret
+> `smartcity-EMPRESSA_DATABASE_URL` (direct endpoint) on `smartcity-os-prod`.
+> The restart dispatch at
 > [`_dispatches/2026-05-21_cc-agent-M_m_stabilize_restart.md`](_dispatches/2026-05-21_cc-agent-M_m_stabilize_restart.md)
-> is ready to re-fire on that word.
+> is cleared to fire.
 >
 > **June 2026 maintenance catch-up (parallel-safe).** Bastrop platform
 > health check recon complete 2026-06-01 (grade **YELLOW**, commit
 > `3bc4eb8`). Operational hygiene and integration restore tracked in
 > sibling sprint [`31a_bastrop_maintenance_sprint.md`](31a_bastrop_maintenance_sprint.md).
-> Phase 0–2 of 31a do not touch DATABASE_URL migration; Phase 3 remains
-> blocked on this hold.
+> Phase 0–2 of 31a do not touch DATABASE_URL migration; Phase 3 (DATABASE_URL
+> migration) is unblocked as of the 2026-06-06 hold release and folds
+> into WS-1.
 
 ## Why this sprint
 
@@ -715,6 +722,23 @@ From `20_agent_operating_rules.md`:
 
 Newest-first dated log. Each entry: date, sub-phase, status change,
 SHA / artifact reference.
+
+- **2026-06-06 (operator hold released, WS-1 unblocked):** The
+  2026-05-21 operator DB hold is lifted. Precondition probe by cc-agent-M
+  (read-only) returned NOT-CLEAR-pending-prereqs; all prereqs then cleared
+  this session: Empressa Neon target provisioned (`smartcity-os-prod`,
+  Neon project `tiny-art-63602898`, `us-east-2` Ohio, PG 18), target
+  secret `smartcity-EMPRESSA_DATABASE_URL` loaded as the direct endpoint
+  and verified (host `ep-mute-moon-ajbx8pd3.c-3.us-east-2.aws.neon.tech`,
+  no `-pooler`), local clone refreshed to `62dbf28` on `main`. WS-1
+  premise confirmed intact (still Replit-managed Neon source); the
+  enrichment and fleet objects on prod are a journaling slip resolved in
+  Phase 2A.0, not operator DDL. Probe report:
+  `_inbox/2026-06-06_smartcity-os_cc-agent-M_precondition_probe.md`.
+  Restart dispatch cleared to fire. Region note: the planned `us-central1`
+  was never achievable because Neon offers no GCP region; `us-east-2` is
+  the nearest AWS region to the GCP Cloud Run, so Fire 5 is narrowed, not
+  eliminated.
 
 - **2026-06-01 (Bastrop platform health check):** Read-only recon by
   cc-agent-M. Platform grade YELLOW. Production `smartcity-api-00104-taw`

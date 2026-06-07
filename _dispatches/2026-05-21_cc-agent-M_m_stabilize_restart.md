@@ -10,12 +10,16 @@ related: [30a_smartcity_stabilization_sprint, 11_roadmap, 00_current_state, 12_m
 
 # cc-agent-M dispatch — M-Stabilize restart
 
-> **HELD — do not dispatch (2026-05-21).** The operator has curbed
-> cc-agent-M to handle the smartcity-os production database directly and
-> wants full attention on it. WS-1's migration spine touches that
-> database, so agent work in parallel would collide. Do not fire this
-> dispatch until the operator releases the hold. State tracked in
-> [`00_current_state.md`](../00_current_state.md) watch list.
+> **CLEARED TO FIRE (2026-06-06).** The 2026-05-21 operator hold is
+> released. The precondition-probe verdict and Empressa Neon target
+> provisioning are recorded in
+> [`30a_smartcity_stabilization_sprint.md`](../30a_smartcity_stabilization_sprint.md)
+> Status tracking. The migration target secret is
+> `smartcity-EMPRESSA_DATABASE_URL` (direct endpoint, `us-east-2`) on
+> `smartcity-os-prod`; the existing `smartcity-DATABASE_URL` stays on the
+> Replit-managed source until the 2B cutover. Run posture below is
+> unchanged: operator-supervised, open PRs for review, no self-deploy to
+> production.
 
 You are cc-agent-M, reassigned from the now-complete Lane M (`hauska-mcp-server`) to the `smartcity-os` repo for the M-Stabilize restart. The SmartCity OS stabilization sprint [`30a_smartcity_stabilization_sprint.md`](../30a_smartcity_stabilization_sprint.md) has been parked with no owner since 2026-05-11. Restarting it is the roadmap catch-up. M-Stabilize Phase 2C closure gates the ADR-008 engine factor-out and the M-PropIntel milestone.
 
