@@ -22,7 +22,7 @@ The ranked 90-day frame from the roadmap audit. Rank by impact and accelerate; t
 
 | # | Move | Type | Root | Owner | Status |
 |---|---|---|---|---|---|
-| 1 | **Wire arrow two** — capture reviewer edits + finding accuracy into atom confidence | Build (the one load-bearing build) | Calibration | Nick | **Not yet a tracked sprint — the gap** |
+| 1 | **Wire arrow two** — capture reviewer edits + finding accuracy into atom confidence | Build (the one load-bearing build) | Calibration | Nick | **Spec'd in [`04a`](04a_arrow_two_calibration_capture.md); Phase 0 recon dispatched to cc-agent-C 2026-06-06** |
 | 2 | Ship Cortex + Brief extension to beta in parallel | Ship | Calibration | Operator + Valerie | In flight, operator-gated |
 | 3 | Keep the Bastrop municipal funnel running as long money | Run / maintain | Both | Operator + Nick (capture wiring) | Continuous |
 | 4 | Naming pass on the theology — write the two-root thesis into the doc set | Documentation | Both | Operator | Filing pending |

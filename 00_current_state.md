@@ -27,7 +27,7 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 
 **Engine extraction (ADR-008): UNFROZEN** ([`_decisions/2026-06-06_engine_extraction_unfrozen.md`](_decisions/2026-06-06_engine_extraction_unfrozen.md)) — build clean, sequenced behind M-Stabilize 2C + wedge ship.
 
-**Strategic core filed:** [`03`](03_structural_constitution_and_drift_guard.md)/[`03a`](03a_positioning_framework.md)/[`03b`](03b_thought_leadership.md) theology + [`04`](04_roadmap_alignment_audit.md) audit; [`00d`](00d_portfolio_roadmap_reference.md) roadmap. Arrow-two calibration capture = priority #1, no canonical home yet.
+**Strategic core filed:** [`03`](03_structural_constitution_and_drift_guard.md)/[`03a`](03a_positioning_framework.md)/[`03b`](03b_thought_leadership.md) theology + [`04`](04_roadmap_alignment_audit.md) audit; [`00d`](00d_portfolio_roadmap_reference.md) roadmap. Arrow-two calibration capture = priority #1, now spec'd in [`04a`](04a_arrow_two_calibration_capture.md); Phase 0 recon dispatched to cc-agent-C (2026-06-06).
 
 ## Bastrop SmartCity OS — maintenance sprint (2026-06-01)
 
