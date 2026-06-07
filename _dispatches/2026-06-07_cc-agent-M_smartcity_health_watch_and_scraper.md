@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-M
 repo: empressaio_tech_smartcity_os
 kind: dispatch
-status: queued
+status: ready
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76e_platform_observability_sprint, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 91_postmortems/2026-05-07_replit_dev_db_wedged]
 ---
 
 # SmartCity W1.A.9 health-watch, scraper-result monitoring, thread-health cron
 
-> **QUEUED — do not fire.** Held pending operator sequencing against the active M-Stabilize WS-1 Neon cutover (do not build on the data path mid-cutover) and the gates in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md). This is a different clone and run from the `hauska-mcp-server` cc-agent-M dispatch; do not run them concurrently.
+> **Fire-ready (Wave B), two real gates.** Planning hold lifted 2026-06-07. Fire only after: (1) cc-agent-M's `hauska-mcp-server` Wave A run is complete (one clone per run, not concurrent), and (2) the M-Stabilize WS-1 2C cutover is clean (do not build on the smartcity data path mid-cutover). Channel is native Cloud Monitoring email per [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) §Fire order. Emit per the pinned signal contract in 76e; the cc-agent-C hub reads it when it lands and does not block on it.
 
 You are **cc-agent-M**, the single owner of `empressaio_tech_smartcity_os` for this run. You implement the W1.A.9 daily health-watch (designed, not built) and the scraper-result and cron monitoring.
 

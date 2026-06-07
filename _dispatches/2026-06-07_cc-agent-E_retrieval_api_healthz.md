@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-E
 repo: hauska-engine
 kind: dispatch
-status: queued
+status: ready
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76e_platform_observability_sprint]
 ---
 
 # Retrieval API health endpoint (corpus + substrate Neon)
 
-> **QUEUED — do not fire.** Held pending operator sequencing per [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md). Small, app-only; coordinate the `/healthz` shape with the cc-agent-M hauska-prod uptime dispatch so its dep-check can read this.
+> **Fire-ready (Wave A).** Planning hold lifted 2026-06-07. Small, app-only; no operator gate blocks this one. Emit per the pinned signal contract in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) so the cc-agent-M hauska-prod uptime dispatch and the cc-agent-C hub can read the result without live coordination.
 
 You are **cc-agent-E**, the single owner of `hauska-engine` for this run.
 
@@ -43,7 +43,7 @@ Resolve these before reading full canonical docs (catalog: [`01a_atom_convention
 **In scope:**
 
 - `GET /healthz` on `hauska-retrieval-api` (port 8080) returning `{status, db, corpus}` where db = substrate Neon connection liveness and corpus = atoms loaded with a non-zero count (a zero count on a service that should have the committed snapshot is an unhealthy signal).
-- Emit the health result in the shape the cc-agent-C hub expects (structured log fields acceptable; agree shape with that dispatch).
+- Emit the health result per the pinned signal-emit contract in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) §Signal emit contract (one structured Cloud Logging line, `hauska_health=true`, `check: healthz`, `service: hauska-retrieval-api`).
 
 **Out of scope:**
 

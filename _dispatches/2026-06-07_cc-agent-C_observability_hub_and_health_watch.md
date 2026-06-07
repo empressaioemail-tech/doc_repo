@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: queued
+status: ready
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76e_platform_observability_sprint, 76a_operator_autonomous_loops, 90_runbooks/steward_daily_digest, 90_runbooks/cloud_run_canary_deploy]
 ---
 
 # Observability hub, health-watch aggregator, cortex/api-server health
 
-> **QUEUED — do not fire.** Held pending operator sequencing against the deferred build-out deploy and the active M-Stabilize WS-1 cutover, and the operator gates in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) (Scheduler API enable, notification channel, Neon token).
+> **Fire-ready (Wave A).** Planning hold lifted 2026-06-07. Preconditions: the pre-fire operator gates in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) §Fire order (Cloud Scheduler API enabled on `legacy-design-tools-prod`; Neon read-only token in Secret Manager; channel is native Cloud Monitoring email). If the Neon token is absent, degrade to app-`/healthz` Neon liveness and flag the size query as blocked; do not hard-stop. Tier-0 auto-remediation is alert-then-suggest (detect-and-propose, do not act autonomously). Read the emitted signals via the pinned signal-emit contract in 76e (Cloud Logging filter `jsonPayload.hauska_health=true`, group by `check` plus `service`).
 
 You are **cc-agent-C**, the single owner of `legacy-design-tools` for this run. You build the central monitoring hub: the daily health-watch aggregator plus the uptime/alert layer for `legacy-design-tools-prod`.
 

@@ -97,7 +97,7 @@ The policy tiers are inherited verbatim from [`76a_operator_autonomous_loops.md`
 - Sustained error-rate or latency regression. Becomes a triaged dispatch, not a hotpatch.
 - Secret, schema, and any cross-tenant condition. Human-gated by definition.
 
-The autonomous (non-deploy-time) Tier-0 triggers are pre-authorized in 76a but their first live wiring needs an explicit operator go, named below. Until that go, the sprint ships them in alert-then-suggest mode.
+The autonomous (non-deploy-time) Tier-0 triggers are pre-authorized in 76a. **Operator decision 2026-06-07: ship them in alert-then-suggest mode.** The remediation logic is built and wired to detect-and-propose, but does not act autonomously; it flips to acting after one clean week of observed behavior, on a one-line operator go. The deploy-time canary-healthz rollback is unaffected (it is not an autonomous background actor) and stays active.
 
 ## Build targets
 
@@ -107,9 +107,28 @@ Three named artifacts, consistent with the prompt's expected shape (Cloud Schedu
 2. **Synthetic monitoring plus alerting.** Native Cloud Monitoring uptime checks (one per service), metric alert policies (uptime, 5xx rate, p95 latency, stale-revision traffic drift), and one notification channel. Channel type is operator-gated; native Cloud Monitoring email channel is the zero-vendor default recommendation.
 3. **Central health-watch aggregator.** A scheduled job (Cloud Scheduler to a small endpoint or Cloud Function) that polls all six `/healthz`, the Cloud Run revision and traffic state, the scraper job results, the Neon size signals, and the MCP-gate probe, then writes the daily health-watch report (the W1.A.9 deliverable) and fans alerts to the one channel on threshold breach. This automates the maintenance section of [`90_runbooks/steward_daily_digest.md`](90_runbooks/steward_daily_digest.md). It lives in `legacy-design-tools` (cortex-api / api-server), where the steward digest and the `gtm_events` observation plane already sit, so the maintenance observation log is a peer to the GTM one rather than a fork.
 
-## Dispatches (QUEUED)
+## Signal emit contract (pinned)
 
-Four build dispatches, one per repo, queued (do not fire) pending operator sequencing against the deferred build-out deploy and the active M-Stabilize WS-1 cutover. Per-project ownership avoids a single agent needing cross-project IAM. The aggregator hub is cc-agent-C; the per-project agents expose health and emit signals to the hub.
+So the four dispatches run in parallel without live cross-agent coordination, the emit shape is pinned here rather than left to the agents to agree. Every monitored surface emits one structured Cloud Logging line per check; the cc-agent-C hub reads them by `check` and `service`. No new transport, no shared table; Cloud Logging is the bus.
+
+```json
+{
+  "hauska_health": true,
+  "check": "healthz | gate_probe | scraper_job | neon_size | revision_drift",
+  "service": "hauska-retrieval-api | hauska-mcp-server | cortex-api | api-server | smartcity-api | smartcity-scraper",
+  "status": "ok | warn | fail",
+  "value": "<observed>",
+  "threshold": "<expected or limit>",
+  "source": "<probe or query that produced this>",
+  "ts": "<RFC3339>"
+}
+```
+
+Every line carries `source`, `value`, and `ts` to satisfy the quality-gate rule. The hub filters `jsonPayload.hauska_health=true` and groups by `check` plus `service`. Emitters log the line; they do not call the hub.
+
+## Dispatches (fire-ready)
+
+Four build dispatches, one per repo. The planning hold is lifted; fire per the order below. Genuine preconditions remain named inside each dispatch (pre-fire operator gates; the smartcity dispatch waits on a clean WS-1 2C cutover). Per-project ownership avoids a single agent needing cross-project IAM. The aggregator hub is cc-agent-C; the per-project agents emit to the pinned contract above.
 
 | Dispatch | Agent | Repo / project | Build |
 |---|---|---|---|
@@ -120,15 +139,27 @@ Four build dispatches, one per repo, queued (do not fire) pending operator seque
 
 Agent-label note: cc-agent-M owns both a `hauska-mcp-server` dispatch and a `empressaio_tech_smartcity_os` dispatch (the 31a convention also calls the smartcity owner cc-agent-M). These are different clones; per workspace hygiene they run sequentially, one clone per run, not concurrently. The operator may split smartcity to a distinct agent; flagged below.
 
-## Sequencing
+## Fire order
 
-This sprint takes the maintenance slot ahead of net-new spine-robustness Wave 2 and the 76b Tier-1 outbound items (focus-queue tradeoff, acknowledged in the premortem). Within the sprint:
+This sprint takes the maintenance slot ahead of net-new spine-robustness Wave 2 and the 76b Tier-1 outbound items (focus-queue tradeoff, acknowledged in the premortem).
 
-1. Operator gates first: enable Scheduler API on the two projects, mint the Neon read-only token, pick the notification channel. These unblock everything scheduled or Neon-touching.
-2. Per-project `/healthz` normalization (cc-agent-E retrieval-api, cc-agent-M mcp-server, cc-agent-C cortex-api plus api-server, cc-agent-M smartcity) lands before the hub reads them.
-3. cc-agent-C hub aggregator and the uptime-check plus alert layer land once health endpoints are normalized.
-4. The autonomous Tier-0 wiring lands last, behind its own operator go, in alert-then-suggest mode until then.
-5. Land the monitoring baseline before the deferred build-out deploy, so the deploy lands into an observed surface.
+**Pre-fire (operator, about 15 minutes, unblocks everything scheduled or Neon-touching):**
+
+- Enable Cloud Scheduler API on `hauska-prod-497015` and `legacy-design-tools-prod` (`gcloud services enable cloudscheduler.googleapis.com --project <id>`). Already on for `smartcity-os-prod`.
+- Mint a Neon read-only API token; store in Secret Manager per project. If skipped, the agents degrade to app-`/healthz` Neon liveness and flag the size-query as blocked (they do not hard-stop).
+- Channel: native Cloud Monitoring email is the working default (operator decision deferred to recommendation); confirm the recipient and the 7 AM US Central send, or name a different channel.
+
+**Wave A (parallel, different repos and agents, fire together):**
+
+- cc-agent-E on `hauska-engine` (retrieval-api `/healthz`).
+- cc-agent-C on `legacy-design-tools` (cortex-api plus api-server `/healthz`, then the hub aggregator and the `legacy-design-tools-prod` uptime/alert layer).
+- cc-agent-M on `hauska-mcp-server` (mcp `/healthz`, gate probe, hauska-prod uptime/alert layer).
+
+**Wave B (after Wave A, the second cc-agent-M clone):**
+
+- cc-agent-M on `empressaio_tech_smartcity_os` (W1.A.9 health-watch, scraper-result monitoring, thread-health job, mygov growth alert, smartcity uptime). Two genuine gates: it is cc-agent-M's second clone so it runs after the hauska-mcp-server run completes (one clone per run), and it waits on a clean WS-1 2C cutover (do not build on the data path mid-cutover). The hub (cc-agent-C) reads its emit when it lands; the hub does not block on it.
+
+The agents emit per the pinned contract, so Wave A and Wave B do not need to coordinate live. Land the baseline before the deferred build-out deploy, so the deploy lands into an observed surface.
 
 ## Operator-gated inputs
 
@@ -136,14 +167,14 @@ Flagged rather than invented, per the constraint:
 
 | Input | Decision | Recommendation |
 |---|---|---|
-| Notification / alerting channel | Email, Slack, PagerDuty, or native Cloud Monitoring email | Native Cloud Monitoring email channel (zero new vendor, in-project). W1.A.9 suggested 7 AM US Central; recipient TBD |
+| Notification / alerting channel | Email, Slack, PagerDuty, or native Cloud Monitoring email | **Working default: native Cloud Monitoring email** (zero new vendor, in-project), 7 AM US Central per W1.A.9. Confirm recipient or override |
 | On-call / escalation policy | Who is alerted, hours, escalation ladder | Single operator recipient for v1; escalation deferred until external traffic |
 | Paid monitoring tool | Datadog / Grafana Cloud / Better Stack vs native | Native (hard rule, cost-per-jurisdiction commitment). Do not adopt a paid vendor without an explicit decision |
 | Neon read-only API token | Mint a read-only token for size and growth queries | Read-only scope only; store in Secret Manager per project |
 | Enable Cloud Scheduler API | On `hauska-prod-497015` and `legacy-design-tools-prod` | Operator or an agent with `serviceusage.services.enable` |
 | Cross-project monitoring IAM | Which agent configures uptime checks where | Resolved by per-project ownership above; confirm each agent has Monitoring Editor in its project |
 | smartcity-os monitoring owner | cc-agent-M (per 31a) or a distinct agent | Keep cc-agent-M per 31a; sequence the two cc-agent-M clones, do not run concurrently |
-| Autonomous Tier-0 go | Authorize the non-deploy-time auto-remediation triggers to act, vs alert-then-suggest | Start alert-then-suggest; flip to auto after one clean week of observed behavior |
+| Autonomous Tier-0 go | Authorize the non-deploy-time auto-remediation triggers to act, vs alert-then-suggest | **DECIDED 2026-06-07: alert-then-suggest.** Built wired to detect-and-propose; flips to acting after one clean week on a one-line operator go |
 
 ## Premortem result
 
@@ -170,4 +201,5 @@ Cleared **GREEN** this session (premortem-check skill, 2026-06-07). All three lo
 
 | Date | Change |
 |------|--------|
-| 2026-06-07 | Initial sprint plan. Verified the six-service surface and scheduler / uptime-check state live; scoped monitoring domains, the Tier-0 vs alert-only boundary, three build targets, four QUEUED dispatches, operator gates. Premortem cleared GREEN. |
+| 2026-06-07 (fire-ready) | Operator greenlit the build. Tier-0 decided as alert-then-suggest; native Cloud Monitoring email set as the working channel default. Pinned the signal-emit contract (structured Cloud Logging line) so the four dispatches run in parallel without live coordination. Replaced sequencing with a concrete pre-fire plus Wave A / Wave B fire order; dispatches flipped from QUEUED to fire-ready. Slot moved 76d to 76e (collision with a parallel GTM data-package doc; yielded 76d, touched only own files). |
+| 2026-06-07 | Initial sprint plan. Verified the six-service surface and scheduler / uptime-check state live; scoped monitoring domains, the Tier-0 vs alert-only boundary, three build targets, four dispatches, operator gates. Premortem cleared GREEN. |

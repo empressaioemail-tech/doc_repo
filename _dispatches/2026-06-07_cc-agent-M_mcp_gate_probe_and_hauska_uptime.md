@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-M
 repo: hauska-mcp-server
 kind: dispatch
-status: queued
+status: ready
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 76e_platform_observability_sprint, 50_hauska_mcp_server, 90_runbooks/steward_daily_digest]
 ---
 
 # MCP-gate availability probe, hauska-prod health and uptime
 
-> **QUEUED — do not fire.** Held pending operator sequencing and the gates in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) (Scheduler API enable on `hauska-prod-497015`, notification channel).
+> **Fire-ready (Wave A).** Planning hold lifted 2026-06-07. Preconditions: the pre-fire operator gates in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) §Fire order (Cloud Scheduler API enabled on `hauska-prod-497015`; channel is native Cloud Monitoring email). This is cc-agent-M's first clone; the `empressaio_tech_smartcity_os` dispatch is a separate Wave B run, not concurrent. Tier-0 stays alert-only for gate anomalies (never auto-fix).
 
 You are **cc-agent-M**, the single owner of `hauska-mcp-server` for this run. You build the gate-availability probe and the uptime/alert layer for `hauska-prod-497015` (both hauska services). This is a different clone and run from the smartcity-os monitoring dispatch; do not run them concurrently.
 
@@ -50,7 +50,7 @@ Resolve these before reading full canonical docs (catalog: [`01a_atom_convention
 - **Gate-availability synthetic probe.** Asserts the three documented gate behaviors: the no-header anonymous path resolves to public; a valid product key resolves to its product; a malformed or unknown key returns 401. The probe uses the `X-Hauska-Key` header (not `Authorization: Bearer`; the wrong header silently falls through to product public, which would mask a gate failure). It emits a structured result for the cc-agent-C hub. Treat a 401 anomaly or an availability drop as alert-only (possible auth incident), never auto-fixed.
 - Cloud Monitoring uptime checks for both `hauska-mcp-server` and `hauska-retrieval-api`; metric alert policies for 5xx rate, p95 latency, stale-revision traffic drift.
 - Enable the Cloud Scheduler API on `hauska-prod-497015` (or hand the enable to the operator if IAM blocks; report verbatim).
-- Emit health and gate-probe signals to the cc-agent-C aggregator hub (agree the emit shape with that dispatch; structured log fields are acceptable).
+- Emit health and gate-probe signals per the pinned signal-emit contract in [`76e_platform_observability_sprint.md`](../76e_platform_observability_sprint.md) §Signal emit contract (one structured Cloud Logging line per check, `hauska_health=true`). The hub reads them; you do not call the hub.
 
 **Out of scope:**
 
