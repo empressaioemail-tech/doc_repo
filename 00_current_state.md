@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-06
+title: Current state snapshot — 2026-06-07
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-06-07
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
 ---
@@ -12,6 +12,18 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Read me first.** Per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md). Regenerated at session close. Pointer doc — follow links into canonical docs for full context.
 >
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
+
+## Substrate build-out wave merged — deploy deferred (2026-06-07)
+
+The build-out + commerce + calibration-v1 leg is fully merged to main. Session record: [`_sessions/2026-06-07_substrate_buildout_merged_and_tenant_framing_claude_code.md`](_sessions/2026-06-07_substrate_buildout_merged_and_tenant_framing_claude_code.md).
+
+**Merged 2026-06-07:** MCP Tier-1 wraps incl. `generate_property_brief` (hauska-mcp-server #25); brief service seam (legacy-design-tools #144); arrow-two Phase 1 evidence ledger (#143); hydrology (#142); SDK completion, Circle rail + revenue routing + gate metering (hauska-sdk #1); SmartCity WS-1 Phase 2A.0 (#21). Cotality 8-adapter pack (#141) merged-but-inert.
+
+**Code-complete, deploy pending.** Prod still runs prior revisions. Operator deferred deployment until ICC + Cotality are ready and the relevant fixes/builds land. Cotality credential activation is CoreLogic-side (Gene escalation + PUC one-pager drafted, [`_research/cotality/2026-06-06_cotality_puc_data_protection_one_pager.md`](_research/cotality/2026-06-06_cotality_puc_data_protection_one_pager.md)); ICC needs onboarding/creds.
+
+**Next leg = the tenant leg.** Mox and SmartCity are one shape (scoped tenant + custom surfaces + shared spine; see [`00c`](00c_portfolio_master_map.md) scoped-tenant pattern and [`_prospects/mox/2026-06-07_mox_engagement_plan.md`](_prospects/mox/2026-06-07_mox_engagement_plan.md) substrate-readiness section). Both force ADR-005 multitenancy + ADR-008 decoupling + arrow-two Phase 2/3; stand up once, both ride it. SmartCity-on-spine (31a Phase 3 atom-backed context) is now unblocked by the DB-hold release.
+
+**Operator gate before more building:** sharpen the SmartCity product line (add the Mox-style browser-extension product alongside plan review and the other surfaces) and refine the Vertosoft offer. **Decision C (GTM) pinned** until build-out is deployed and tested.
 
 ## Cotality data spine + Cortex hydrology (2026-06-06)
 
