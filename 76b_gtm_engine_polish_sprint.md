@@ -2,11 +2,13 @@
 id: 76b_gtm_engine_polish_sprint
 title: GTM engine polish sprint — agent discoverability + unified observation
 status: active
-last_updated: 2026-05-28
+last_updated: 2026-06-07
 applies_to: portfolio
-related: [16_commercialization_roadmap, 50_hauska_mcp_server, 51_substrate_v1_sprint, 76_empressa_wedge_90d_operating_plan, 76a_operator_autonomous_loops, 77_place_graph_strategy, 79_competitive_execution_system, 79a_weekly_moat_scoreboard, 75b_brief_coverage_v0, _decisions/2026-05-28_gtm_engine_polish_sprint, _catalog/ops/gtm_public_capability_matrix_v1.yaml, _catalog/ops/gtm_launch_channel_plan_v1.yaml]
+related: [16_commercialization_roadmap, 50_hauska_mcp_server, 51_substrate_v1_sprint, 76_empressa_wedge_90d_operating_plan, 76a_operator_autonomous_loops, 76f_gtm_data_package_go_to_market, 77_place_graph_strategy, 79_competitive_execution_system, 79a_weekly_moat_scoreboard, 75b_brief_coverage_v0, _decisions/2026-05-28_gtm_engine_polish_sprint, _catalog/ops/gtm_public_capability_matrix_v1.yaml, _catalog/ops/gtm_launch_channel_plan_v1.yaml]
 owner: nick
 ---
+
+> **2026-06-07 update (GTM lane).** The data-package go-to-market and the single Decision C unpin gate now live in [`76f_gtm_data_package_go_to_market.md`](76f_gtm_data_package_go_to_market.md), which also refines the gtm_loop to a buildable Tier-0 v1 spec and indexes two QUEUED-on-deploy dispatches. The capability matrix is refreshed to v1.1 (46-tool surface, public-vs-internal corpus split, calibration caveat). Decision C remains pinned per [`52_mcp_offer_and_buildout.md`](52_mcp_offer_and_buildout.md) §5.
 
 # GTM engine polish sprint
 
