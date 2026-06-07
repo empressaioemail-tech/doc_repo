@@ -6,7 +6,7 @@
 
 ## Headline
 
-The spine is built and deployed end to end. The atom contract is published, the engine ingests and serves the catalog, the MCP gate meters and enforces tiers at call time, and the payment SDK clears a transaction on chain. As of this snapshot the catalog is live in production, the anchor jurisdiction is serving, and the corpus stands at roughly 2,700 atoms across five fully evaluated jurisdictions inside a snapshot spanning about thirty-five Texas jurisdictions.
+The spine is built and deployed end to end. The atom contract is published, the engine ingests and serves the catalog, the MCP gate meters and enforces tiers at call time, and the payment SDK clears a transaction on chain. As of this snapshot the catalog is live in production, the anchor jurisdiction is serving, and the corpus stands at roughly 21,100 atoms across thirty-four jurisdictions, all passing the fidelity evaluation in the committed snapshot, of which two are public and free to read (about 478 atoms) and the remainder are platform-internal inventory.
 
 We are pre-first-paid-call. The architecturally hard work is behind us. The two active fronts are coverage expansion and turning on the parts of the meter that are built but not yet wired to live money. Everything below is status, not narrative.
 
@@ -27,7 +27,7 @@ The MCP gate now exposes forty-six tools, up from the prior count, after a wave 
 
 ## Corpus and coverage
 
-The catalog is no longer dark. Five jurisdictions have been fully atomized and passed the fidelity evaluation gate end to end: Bastrop's unified development code, Bastrop County, Smithville, Elgin, and Hutto. The verified corpus is on the order of 2,700 atoms. The deployed engine snapshot spans roughly thirty-five Texas jurisdictions at varying depth.
+The catalog is no longer dark. Thirty-four jurisdictions are atomized and pass the fidelity evaluation gate in the committed snapshot (2026-05-26), among them Bastrop's unified development code, Bastrop County, Elgin, Hutto, Dripping Springs, Austin, San Antonio, and Grand County (Moab). The verified corpus is on the order of 21,100 atoms. Two jurisdictions are public and free to read, Bastrop and Grand County, totaling roughly 478 atoms; the rest are platform-internal inventory.
 
 The onboarding cost discipline is holding. The target is under two hundred dollars of compute plus one hour of human review per new jurisdiction, with a hard-kill checkpoint if we could not hit it by the third county. That checkpoint is cleared. Onboarding a jurisdiction is cheap and repeatable, which is what makes broader coverage a question of demand and partnership flips rather than headcount.
 

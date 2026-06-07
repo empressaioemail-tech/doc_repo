@@ -98,7 +98,7 @@ A request flows top to bottom. A builder runs an agent. The agent needs a jurisd
    architecture
 ```
 
-**Live today.** The storefront is deployed and serving live, with every tool verified end to end. The catalog behind it holds over 2,700 quality-checked rule-units across multiple jurisdictions, including a full county code and several Texas city codes. The crypto payment rail is built and tested. And the layered catalog architecture, the structure that lets each new jurisdiction be added cheaply, is built.
+**Live today.** The storefront is deployed and serving live, with every tool verified end to end. The catalog behind it holds over 21,000 quality-checked rule-units across thirty-four jurisdictions, all passing the fidelity gate, including a full county code and several Texas city codes. Two of those jurisdictions are public and free to read; the rest are platform-internal inventory. The crypto payment rail is built and tested. And the layered catalog architecture, the structure that lets each new jurisdiction be added cheaply, is built.
 
 **Building now.** The active work is corpus depth: onboarding more jurisdictions onto the catalog, one at a time. Each jurisdiction's own zoning and development code is independent work that compounds the catalog steadily.
 
