@@ -68,7 +68,9 @@ Steps 3-6 are gated behind M-Stabilize Phase 2C ([`30a`](30a_smartcity_stabiliza
 |---|---|---|---|---|
 | [`2026-06-07_cc-agent-E_engine_api_home_scaffold.md`](_dispatches/2026-06-07_cc-agent-E_engine_api_home_scaffold.md) | hauska-engine | cc-agent-E | 1 | FIRE-READY (parallel-safe now) |
 | [`2026-06-07_cc-agent-C2_decomposition_rebase.md`](_dispatches/2026-06-07_cc-agent-C2_decomposition_rebase.md) | legacy-design-tools | cc-agent-C2 | 2 | FIRE-READY |
-| (lift adapters / engine-core / cut consumers / thin BFF) | both | TBD | 3-6 | QUEUED behind M-Stabilize 2C |
+| [`2026-06-07_cc-agent-E_engine_lift_adapters.md`](_dispatches/2026-06-07_cc-agent-E_engine_lift_adapters.md) | hauska-engine | cc-agent-E | 3 | QUEUED - fire when 2C clears |
+| [`2026-06-07_cc-agent-E_engine_lift_engine_core.md`](_dispatches/2026-06-07_cc-agent-E_engine_lift_engine_core.md) | hauska-engine | cc-agent-E | 4 | QUEUED - after adapters lift |
+| [`2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md`](_dispatches/2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md) | legacy-design-tools | cc-agent-C | 5-6 | QUEUED - after engine-core parity + gate seam |
 
 ## Cross-references
 
