@@ -2,7 +2,7 @@
 id: 00c_portfolio_master_map
 title: Portfolio master map — verified topology, dev process, spine, GTM, maintenance engine
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-06-07
 applies_to: portfolio
 related: [00_current_state, 07_product_line_summary, 09_post_saas_substrate_thesis, 27_engine_evolution_plan, 44_mcp_cortex_architecture_map, 50_hauska_mcp_server, 80_adrs/adr_008_engine_factor_out, 08_tiered_access_model, _research/2026-06-01_shared_engines_vision_and_current_state, 90_runbooks/diagrams/gtm_loop.mermaid, 90_runbooks/diagrams/self_healing_loop.mermaid]
 ---
@@ -27,6 +27,8 @@ related: [00_current_state, 07_product_line_summary, 09_post_saas_substrate_thes
 | `legacy-revit-sensor` | Empressa product (bridge) | C# Revit 2026/2024 add-in. Pushes model snapshot + sheet PNGs to cortex-api `/api/snapshots` (`x-snapshot-secret`). IFC export working (v0.2). | Compiled add-in; clean | consumer of `detail-callout-spec` |
 
 The one-line takeaway: the **Hauska spine is real and deployed** (contract published, engine and MCP on Cloud Run), the **product reasoning lives in cortex-api** (not in hauska-engine), and **SmartCity OS is still an island** that touches none of it yet.
+
+**Scoped-tenant pattern (2026-06-07).** SmartCity OS, the Mox engagement ([`_prospects/mox/2026-06-07_mox_engagement_plan.md`](_prospects/mox/2026-06-07_mox_engagement_plan.md)), and the brokerage extension are three instances of one shape: a scoped tenant with custom surfaces on the shared, gated spine, same theology (calibration + sovereignty, the deposit loop, the gate). Custom surfaces (a city dashboard, Mox ops-finance apps) are tenant-specific, not forks. Bringing SmartCity onto the spine (it is an island today) is the same work as onboarding Mox. Both force the same dependency chain, which this elevates from roadmap to load-bearing: **ADR-005 multitenancy** (per-tenant private store + tenant `accessPolicy` at the gate; the gate gates by product today, not tenant), **ADR-008 engine extraction** (gate-front the property/parcel + plan-review engines so a tenant consumes through the gate, not by reaching cortex-api directly), and **arrow two** ([`04a`](04a_arrow_two_calibration_capture.md); the deposit loop is the calibration mechanism, and the tenant-partitioned evidence ledger is the sovereignty guardrail).
 
 ## 2. Master system diagram (verified topology)
 
