@@ -2,9 +2,9 @@
 id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-06-07
 applies_to: portfolio
-related: [10_ground_truth, 11_roadmap, 16_commercialization_roadmap, 30_smartcity_os, 40_design_accelerator, 55_spine_data_intelligence_stack, 80_adrs/adr_018_atom_contract_substrate_layer]
+related: [10_ground_truth, 11_roadmap, 16_commercialization_roadmap, 30_smartcity_os, 40_design_accelerator, 55_spine_data_intelligence_stack, 08_tiered_access_model, _decisions/2026-06-07_full_engine_extraction_and_data_packages, 80_adrs/adr_018_atom_contract_substrate_layer]
 ---
 
 # Pricing framework â Path A vs Path B
@@ -281,6 +281,8 @@ All-inclusive monthly cost of running the Hauska spine, verified against live in
 
 Pricing implications: the fixed floor (compute + Neon, ~$700-1,200) is manageable and LLM is cheap until call volume scales. Cotality is the swing factor and can multiply COGS on its own, so it is the binding constraint on any Cotality-backed Layer 2 SKU. Discipline: sell reasoning (LLM, the margin), price third-party raw data (Cotality) at floor as pass-through, and do not finalize a Cotality-backed SKU price until the Cotality production tier is known. This feeds the deferred tier-prices decision (step 2 of the commercialization queue).
 
+**Decision B reshape (2026-06-07).** The tier model is being reframed from generic SaaS price points into composable data packages (Subsurface, Hydrology, Parcel/property, Code/plan-review, Environmental) crossed with the access layer (L1 free public baseline, L2 paid calibrated reasoning), per [`08_tiered_access_model.md`](08_tiered_access_model.md) and [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](_decisions/2026-06-07_full_engine_extraction_and_data_packages.md). Decision B's $0 / $49 / $199 points become package-composed rather than flat tiers; the exact package prices are an open operator decision, floored by the spine COGS above (and, for any Cotality-backed package, by the Cotality production tier). The binding constraint holds: a package's L2 sells reasoning over the domain, not raw-data resale.
+
 ## Cross-references
 
 - [`30_smartcity_os.md`](30_smartcity_os.md) â SmartCity OS
@@ -297,7 +299,7 @@ Pricing implications: the fixed floor (compute + Neon, ~$700-1,200) is manageabl
 
 ## Revision history
 
-- **2026-06-07:** Added "Spine COGS (cost floor for pricing)" section with the all-inclusive monthly cost table (verified against live infra; full inventory in 55_spine_data_intelligence_stack.md). Flags Cotality as the binding pricing constraint and sets the discipline: sell reasoning, price raw third-party data at floor, do not finalize a Cotality-backed SKU price until the production tier is known. Frontmatter `related` extended (55). No change to Path A/B or the SDK section.
+- **2026-06-07:** Added "Spine COGS (cost floor for pricing)" section with the all-inclusive monthly cost table (verified against live infra; full inventory in 55_spine_data_intelligence_stack.md). Flags Cotality as the binding pricing constraint and sets the discipline: sell reasoning, price raw third-party data at floor, do not finalize a Cotality-backed SKU price until the production tier is known. Added the Decision B reshape note: tiers reframed into composable data packages x access layer per 08 + the 2026-06-07 extraction/data-packages decision. Frontmatter `related` extended (55); `last_updated` bumped. No change to Path A/B or the SDK section.
 - **2026-05-21:** Fiat rail changed from the Stripe Connect placeholder to Circle per [`_decisions/2026-05-21_fiat_rail_circle.md`](_decisions/2026-05-21_fiat_rail_circle.md), following the cross-repo reconciliation finding that the hauska-sdk payment package is already built Circle-shaped. Substrate-state section corrected: the fiat rail is a near-greenfield build, not a single TODO, and the revenue-routing layer does not exist in the SDK. Principle subsection gains an implementation-status note reframing substrate-enforced revenue share as designed but not yet enforced. Take-rate-philosophy and regulatory-posture lines re-pointed from Stripe Connect to Circle.
 
 - **2026-05-19:** Cross-reference added to new [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md) (post-cutover Hauska-layer commercialization sequencing). Step 2 of the commercialization queue closes this framework's deferred tier-prices and bundled-call-quotas decision; step 7 closes the take-rate-exact-number decision at first paid Layer 2 call. Frontmatter `related` extended; no body changes outside the cross-references section.

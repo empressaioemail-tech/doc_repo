@@ -13,6 +13,8 @@ related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, 05_l
 
 **Accepted, scheduled.** Originated 2026-05-10 during the plan review framing session. Execution sequenced after the Cloud Run + Empressa Neon migration sprint completes (per [`12_migration_sprint.md`](../12_migration_sprint.md)) — splitting a structural refactor onto the same repo as a mid-flight infrastructure migration is the Track B saga pattern this ADR explicitly avoids.
 
+**Committed and operationalized (2026-06-07).** Full extraction is committed per [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](../_decisions/2026-06-07_full_engine_extraction_and_data_packages.md) and operationalized as a sprint in [`56_engine_extraction_sprint.md`](../56_engine_extraction_sprint.md). Two clarifications to this ADR: (1) the engine home is a new `engine-api` service inside the existing `hauska-engine` repo (sibling to the read-only `retrieval-api`), matching the `services/engine-api` layout below; (2) the gate-front seam (per [`_decisions/2026-06-07_adr008_gate_front_seam_scoping.md`](../_decisions/2026-06-07_adr008_gate_front_seam_scoping.md)) is step 1 of the extraction and applies to ALL apps, not only cross-tenant consumers, so cortex-api thins to a product BFF with no ungated path to an engine. The physical lift stays gated behind M-Stabilize Phase 2C; only the engine-home scaffold and the in-flight migration cargo proceed now.
+
 ![Hauska fabric overview](diagrams/fabric_overview.svg)
 
 *The diagram above shows the Hauska Engine sitting inside the Hauska fabric, between the Hauska SDK substrate and the Empressa stakeholder surfaces. This ADR establishes the engine's name, its commercial brand placement, and its target repo location.*

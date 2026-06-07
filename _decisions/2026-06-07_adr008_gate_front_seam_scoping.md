@@ -39,6 +39,10 @@ Re-fold into the repo factor-out if generalizing the seam proves to require so m
 
 Feeds [`54_tenant_leg_sprint.md`](../54_tenant_leg_sprint.md) (the gate-front seam is sequence step 2) and [`adr_005_multitenancy.md`](../80_adrs/adr_005_multitenancy.md) Layer A (enforcement runs behind the seam). Does not amend the ADR-008 body or its repo-factor-out sequencing.
 
+## Update (2026-06-07): widened to all apps, and the seam is step 1 of full extraction
+
+Superseding framing per [`2026-06-07_full_engine_extraction_and_data_packages.md`](2026-06-07_full_engine_extraction_and_data_packages.md): the gate-front seam is no longer just "so other tenants reach the engines." Full engine extraction is committed, so the seam is **step 1 of the extraction** ([`56_engine_extraction_sprint.md`](../56_engine_extraction_sprint.md)) and applies to **every app, including our own** (Cortex, Codex, the extension, SmartCity). The end state is no ungated path to an engine: engines live in the spine (`hauska-engine/engine-api`), cortex-api thins to a BFF, and there is no in-app engine to bypass. The seam-vs-physical-lift distinction in this decision still holds (seam now, physical lift gated behind M-Stabilize 2C); what changed is the seam's scope (all apps) and its role (extraction step 1, not a permanent in-cortex-api shim).
+
 ## Counterparties
 
-Internal. Affects cc-agent-C (legacy-design-tools seam generalization) and cc-agent-M (gate consumption of the seam) scope in the tenant-leg sprint.
+Internal. Affects cc-agent-C (legacy-design-tools seam generalization) and cc-agent-M (gate consumption of the seam) scope in the tenant-leg sprint, and cc-agent-E (the engine-api home) in the extraction sprint.

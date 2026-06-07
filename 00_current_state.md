@@ -4,7 +4,7 @@ title: Current state snapshot — 2026-06-07
 status: active
 last_updated: 2026-06-07
 applies_to: portfolio
-related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 80_adrs/adr_005_multitenancy, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
+related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
 ---
 
 # Current state snapshot
@@ -172,7 +172,7 @@ Three tracks as of 2026-05-22:
 
 ## 3. Open ADRs
 
-ADR-005 multitenancy (**scaffolded 2026-06-07 as the portfolio ADR** [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md), status proposed; Layer A gate enforcement built in the tenant leg [`54`](54_tenant_leg_sprint.md), Layer B storage in 30a WS-4); ADR-006 anchoring substrate; ADR-007 cross-stakeholder atom access; ADR-008 engine factor-out (gated on M-Stabilize Phase 2C); ADR-009 firm tenancy (deferred); ADR-014 skill/behavior atoms (deferred, Q3 v2); ADR-016 intent atoms (deferred, v2). Accepted: ADR-013/015/017 (2026-05-16), ADR-018 (2026-05-18), ADR-019 (2026-05-21; Layer 1 model-code ingest gated on ICC API access).
+ADR-005 multitenancy (**scaffolded 2026-06-07 as the portfolio ADR** [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md), status proposed; Layer A gate enforcement built in the tenant leg [`54`](54_tenant_leg_sprint.md), Layer B storage in 30a WS-4); ADR-006 anchoring substrate; ADR-007 cross-stakeholder atom access; ADR-008 engine factor-out (**committed + operationalized 2026-06-07** as full extraction into `hauska-engine/engine-api`, [`56_engine_extraction_sprint.md`](56_engine_extraction_sprint.md) + [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](_decisions/2026-06-07_full_engine_extraction_and_data_packages.md); scaffold now, physical lift gated on M-Stabilize Phase 2C); ADR-009 firm tenancy (deferred); ADR-014 skill/behavior atoms (deferred, Q3 v2); ADR-016 intent atoms (deferred, v2). Accepted: ADR-013/015/017 (2026-05-16), ADR-018 (2026-05-18), ADR-019 (2026-05-21; Layer 1 model-code ingest gated on ICC API access).
 
 ## 4. Agent fleet
 

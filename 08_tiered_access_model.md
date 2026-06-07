@@ -2,9 +2,9 @@
 id: 08_tiered_access_model
 title: Tiered access model — free substrate, paid context, integrated products
 status: active
-last_updated: 2026-05-12
+last_updated: 2026-06-07
 applies_to: portfolio
-related: [05_living_lineage_thesis, 07_product_line_summary, 11_roadmap, 11a_bastrop_live_roadmap, 14_pricing_framework, 47_codex_plan_review, 49_code_ingestion_pipeline]
+related: [05_living_lineage_thesis, 07_product_line_summary, 11_roadmap, 11a_bastrop_live_roadmap, 14_pricing_framework, 47_codex_plan_review, 49_code_ingestion_pipeline, 55_spine_data_intelligence_stack, _decisions/2026-06-07_full_engine_extraction_and_data_packages]
 owner: nick
 ---
 
@@ -32,6 +32,8 @@ Tiering operates on two axes simultaneously:
 | **Who** | Architect / engineer · contractor · city · consultant / partner · PropTech embedder |
 
 The same buyer can sit in multiple tiers depending on which products they use. A city using SmartCity OS pays at the integrated-workflow tier; the city's contractors using public Codex 1a are on the free tier; the city's plan-review consultant is on a partner tier. One substrate, many points of entry.
+
+**Refinement (2026-06-07): the entitlement unit is a composable data package, not a persona.** The "Who" segments below describe who buys; they do not bound what a buyer can access, because buyers overlap (a landman is also a broker; a city operator is also a reviewer). So the operative unit is a data package the buyer composes freely, crossed with the access layer. See "Data packages" below. This reshapes Decision B per [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](../_decisions/2026-06-07_full_engine_extraction_and_data_packages.md).
 
 ## What axis — three layers
 
@@ -124,6 +126,22 @@ Distinct enough from generic consultants to call out. Atom-pack embedding in thi
 - **Paid tier:** production licensing for atom packs in shipped products; potentially per-jurisdiction or per-end-user-call.
 - **Conversion trigger:** when their LLM features go from prototype to production with end-user volume.
 
+## Data packages (composable entitlement unit)
+
+The unit a buyer entitles to is a data package, mixed and matched, persona-agnostic. The gate enforces accessPolicy + package-entitlement + tier. Each package spans the access layers: Layer 1 is the free public-records baseline for that domain; Layer 2 is calibrated, cited reasoning over it.
+
+| Package | Domain contents | Example overlapping buyers |
+|---|---|---|
+| Subsurface | soils (SSURGO), geology, seismic, groundwater, mineral | geotech, civil, landman, O&G |
+| Hydrology / flood | drainage, NOAA design storms, FEMA, flood depth | civil, insurer, developer |
+| Parcel / property | parcel, zoning, ownership, encumbrances | broker, landman, appraiser |
+| Code / plan-review | municipal codes, I-Codes, accessibility (A117.1/ADA/FHA), precedence, decomposition | architect, reviewer, AHJ |
+| Environmental | EJ, wetlands, species, air | planner, ESG |
+
+**Binding constraint (sell reasoning, not data).** A package's Layer 2 is reasoning over the domain, cited and calibrated. The raw national/federal data underneath (SSURGO, USGS, FEMA, code text) stays Layer 1 free. A package must never become a raw-data resale SKU; that would break structural commitment 1.
+
+A landman who is also a broker composes Subsurface + Parcel; an architect composes Code + Hydrology; a city tenant gets all of them, jurisdiction-scoped and tenant-private. One spine, one gate, any composition.
+
 ## Conversion mechanics
 
 Free-tier use produces signal that informs paid-tier conversion conversations:
@@ -192,4 +210,5 @@ Specific items deferred until first paid conversion data lands:
 
 ## Revision history
 
+- **2026-06-07:** Added the data-package framing (composable entitlement unit, package x access-layer; Subsurface / Hydrology / Parcel / Code-plan-review / Environmental) refining the persona-based "Who" axis, with the binding sell-reasoning-not-raw-data constraint. Per [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](../_decisions/2026-06-07_full_engine_extraction_and_data_packages.md); reshapes Decision B. Frontmatter `related` + `last_updated` bumped.
 - **2026-05-12 (origin):** Drafted during velocity-through-2026 brainstorm session in response to the compounding-atoms / free-vs-paid insight. Establishes two-axis tiering (what + who) with three layers on the "what" axis (free reference / paid context / paid integrated workflow) and five segments on the "who" axis. Pricing numbers explicitly deferred to [`14_pricing_framework.md`](14_pricing_framework.md) revisions after first paid conversions. Companion to [`07_product_line_summary.md`](07_product_line_summary.md) (product line) and [`14_pricing_framework.md`](14_pricing_framework.md) (negotiation framework).
