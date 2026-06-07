@@ -39,16 +39,17 @@ related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b
 > migration) is unblocked as of the 2026-06-06 hold release and folds
 > into WS-1.
 >
-> **Phase 2A.0 shipped as PR #21, NOT yet merged (2026-06-07).** WS-1
-> Phase 2A.0 (migration journal reconcile) is smartcity-os PR #21, OPEN
-> and pending operator merge per cc-agent-M's report
-> ([`_inbox/2026-06-07_smartcity-os_cc-agent-M_ws1_phase_2a0.md`](_inbox/2026-06-07_smartcity-os_cc-agent-M_ws1_phase_2a0.md)).
-> The earlier session-record claim that #21 "merged" was premature; the
-> agent's primary report is authoritative. Phase 2A schema sync unblocks
-> on merge. The Neon cutover (Phase 2A schema sync, 2B data, 2C cutover)
-> has NOT started; production is still `smartcity-api-00104-taw`
-> (commit `62dbf28`, 2026-05-19). M-Stabilize Phase 2C, the gate for
-> engine extraction, is therefore far off.
+> **Phase 2A.0 MERGED; WS-1 migration running 2A->2C (2026-06-07).** WS-1
+> Phase 2A.0 (migration journal reconcile) merged as smartcity-os PR #21
+> (merge commit `ebb446b`, 2026-06-07T13:02:44Z). The earlier session-record
+> claim of merge was briefly premature (the agent reported it open), then
+> resolved; #21 is now merged. WS-1 Phases 2A schema sync -> 2B data sync ->
+> 2C cutover are being run end-to-end this session (Sunday low-traffic
+> window, operator-supervised, Cloud Shell), dispatch prompt issued to
+> cc-agent-M. Production is still `smartcity-api-00104-taw` until the 2C
+> cutover deploys the Empressa-Neon revision. **When the 2C cutover lands
+> clean, M-Stabilize Phase 2C closes and the engine-extraction physical
+> lift ([`56`](56_engine_extraction_sprint.md)) is unblocked.**
 >
 > **ADR-005 elevated to load-bearing (2026-06-07).** This sprint's WS-4
 > multi-tenancy work is now the storage-layer (Layer B) instance of a
@@ -192,7 +193,8 @@ The sprint exits when these are verified:
 | Phase | Workstream | Description | Owner | Status | Started | Completed | Notes |
 |---|---|---|---|---|---|---|---|
 | 0 | Foundation | Cross-cutting prereqs (clone refresh, doc clone-path fix, ADR-005 migration, gcloud SSL, quota headroom) | mixed | pending | — | — | Gate to WS-1 Phase 2A |
-| 2A.0 | WS-1 | Phase 2A prereqs (post-merge.sh verification, migration prefix collisions, gcloud SSL) | cc-agent-1 + Nick | pending | 2026-06-07 | - | Migration reconcile shipped as PR #21 (smartcity-os) but PR is OPEN, pending operator merge. Phase 2A schema sync unblocks on merge. gcloud SSL is Nick-only |
+| 2A.0 | WS-1 | Phase 2A prereqs (post-merge.sh verification, migration prefix collisions, gcloud SSL) | cc-agent-1 + Nick | verified | 2026-06-07 | 2026-06-07 | PR #21 MERGED (merge commit `ebb446b`). Phase 2A schema sync unblocked. gcloud SSL still Nick-only (Cloud Shell workaround) |
+| 2A/2B/2C | WS-1 | Schema sync -> data sync -> cutover + 24h obs (Cloud Shell) | cc-agent-M + Nick | active | 2026-06-07 | - | Running end-to-end 2026-06-07 (Sunday window); operator supervised. Cutover closes the engine-extraction gate when clean |
 | 2A | WS-1 | Phase 2A schema sync (Cloud Shell, smartcity-os → Empressa Neon) | cc-agent-1 | pending | — | — | Mirrors neon migration runbook pattern |
 | 2B | WS-1 | Phase 2B data-only sync | cc-agent-1 + Nick | pending | — | — | Needs low-traffic window |
 | 2C | WS-1 | Phase 2C cutover + 24h obs | cc-agent-1 + Nick | pending | — | — | Backup tag + instant rollback ready |
