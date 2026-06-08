@@ -29,6 +29,16 @@ The build-out + commerce + calibration-v1 leg is fully merged to main. Session r
 
 **Operator gate before more building:** sharpen the SmartCity product line (add the Mox-style browser-extension product alongside plan review and the other surfaces) and refine the Vertosoft offer. **Decision C (GTM) pinned** until build-out is deployed and tested.
 
+## Inbox sweep reconciliation (2026-06-08, mid-session)
+
+Swept 21 cc-agent drops (2026-06-06..08) against live `gh`; all PR/branch SHAs verified. Most are already reflected below. Net-new and corrections:
+
+- **Miami Beach vision branch now has PR #150** (`cortex/whole-review-vision-miami`, OPEN + mergeable). Its Test check is red from the pre-existing `@workspace/db` fixture drift (PR #146 migration 0034), NOT the Miami code - merge on its merits or regen fixtures first. The web-search code-grounding work builds on this branch: [`_dispatches/2026-06-08_cc-agent-C_cortex_websearch_code_retrieval.md`](_dispatches/2026-06-08_cc-agent-C_cortex_websearch_code_retrieval.md) + [`_decisions/2026-06-08_websearch_code_grounding_supersedes_interim_atoms.md`](_decisions/2026-06-08_websearch_code_grounding_supersedes_interim_atoms.md).
+- **observability-hub still local-only (BLOCKER, remote branch 404).** Live findings carried in that report: cortex-api revision drift (`cortex-api-00119-laq` serving 100% vs `00090-vf9` latest-ready, 2026-05-29 vs 06-06) and zero uptime configs on legacy-design-tools-prod. Push-or-lose; the findings are independently actionable.
+- **healthz trailing-slash coordination flag:** PR #68 (retrieval-api) proved Cloud Run GFE 404s bare `/healthz`; uptime must poll `/healthz/` with the slash. mcp PR #27's uptime check targets `/healthz` (no slash) - reconcile before relying on it.
+- **Status bumps to MERGED since last regen:** smartcity-os Bastrop CIP #23 (still needs `smartcity-api` Cloud Run deploy to take effect); hauska-sdk #1 (SDK completion - `@hauska-sdk/metering` not yet npm-published); subsurface #145; precedence taxonomy #149.
+- **SmartCity WS-1 reconcile:** the 2026-06-07 `ws1_migration_2a_2c` "Phase 2B data sync FAILED" report is superseded by the 2026-06-08 lean/raw-split resolution below (raw tables deferred-empty, repopulating on Empressa Neon); 2C is CLOSED, not blocked. Do not reopen.
+
 ## Open action map - three lanes (2026-06-08 session close)
 
 Full close: [`_sessions/2026-06-08_session_close_tenant_leg_spine_migration_claude_code.md`](_sessions/2026-06-08_session_close_tenant_leg_spine_migration_claude_code.md).
