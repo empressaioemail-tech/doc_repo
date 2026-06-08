@@ -49,6 +49,8 @@ The architecture expresses the two roots through four commitments. They are reco
 
 Other systems tell you how sure they are. This one tells you how often it has been right when it was that sure, it gets less wrong every time it is used, and it never owns you.
 
+For the code-reasoning surface specifically, the position compresses to one line: **the code tells you the rule; Hauska tells you what it means for your building, reconciled with every other code that applies.** The code text is commodity and authoritative-elsewhere; the reasoning - what the rule means in context, harmonized across all applicable codes (the precedence/reconciliation engine, ADR-021), calibrated by outcome (arrow-two) - is the product. We store reasoning, not code text. Captured and operationalized in [`_decisions/2026-06-08_reasoning_not_text_grounding_and_web_first_gtm.md`](_decisions/2026-06-08_reasoning_not_text_grounding_and_web_first_gtm.md).
+
 ## The participation model
 
 The reward for participation is intrinsic. Contributing feedback makes the contributor's own work better, so there is nothing to financialize and no token is needed. The model tiers by the calibration grade of the contribution.
