@@ -27,6 +27,8 @@ owner: nick
 > in doc_repo happen as a separate coordination step after the
 > canonical product home migrates.
 
+> **Amendment 2026-06-08.** Rendering (DA-12 / Lane 1 of [`40b`](40b_advanced_capture_features.md)) is more complete than this plan states - image-upload-as-source and the five power tools are wired (repo recon 2026-06-08), still dark behind `RENDERS_PROD_ENABLED=false` + `MNML_RENDER_MODE=mock`, and the QA-30/31 auth-gate removal is an open security item before prod activation. The advanced-capture lanes (rendering, image-to-CAD, image-to-BIM) are now governed by buy-not-build per [`_decisions/2026-06-08_buy_not_build_cortex_cockpit.md`](_decisions/2026-06-08_buy_not_build_cortex_cockpit.md): the spine is the value prop, these cockpit features are thin vendor integrations.
+
 ## Current state
 
 Design Accelerator is pre-launch, single-customer (Empressa). Pilot workload: two adjacent residential lots in Spanish Valley near Moab, Utah (Grand County). Strategic positioning, customer-zero context, surface architecture, and engine relationship are in [`40_design_accelerator.md`](40_design_accelerator.md); current implementation state (repo HEAD, deployment URL, schema state, fires) is in [`10_ground_truth.md`](10_ground_truth.md). This program plan reads both as inputs and does not duplicate them.
