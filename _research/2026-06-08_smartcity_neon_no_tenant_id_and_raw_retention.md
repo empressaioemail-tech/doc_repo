@@ -49,16 +49,16 @@ Properties that shape the decision:
 2. **Partition by month, keep in Neon.** Simpler operationally; retains the full wedge risk on the hot DB; only helps query/vacuum cost, not size.
 3. **Keep raw indefinitely in Neon.** Rejected - this is exactly the wedge the migration just escaped.
 
-### The operator decision (decision-log item)
+### The operator decision - DECIDED 2026-06-08
 
-Recommendation is option 1. What the operator needs to set, for a `decision-log` record:
+Resolved by the operator 2026-06-08, logged at [`_decisions/2026-06-08_mygov_raw_retention.md`](../_decisions/2026-06-08_mygov_raw_retention.md) (status active). Option 1 (TTL/archive-after-normalization), with:
 
-- Retention window for raw rows post-normalization (for example 30 / 60 / 90 days).
-- Archive target and format (GCS bucket, JSONL or raw HTML, lifecycle class).
-- Whether `mygov_raw_sync_pages` (the big HTML blobs) gets a shorter window than `mygov_raw_records`.
-- Confirmation that enforcement runs as a gated job with the growth alert as the trip, never an autonomous delete.
+- `mygov_raw_records`: kept 90 days after a row is confirmed normalized into `mygov_work_orders`, then archived to GCS (JSONL, lifecycle nearline/coldline) and dropped from Neon.
+- `mygov_raw_sync_pages` (big HTML blobs): same archive-then-drop on a shorter 14-day window.
+- Raw rows tenant-tagged at ingest.
+- Enforcement is a gated job with the MyGov growth alert as the trip, never an autonomous delete.
 
-Reversal criteria: revisit if normalization proves lossy (a raw field is needed that the normalized table drops), in which case widen the retained raw schema rather than the retention window.
+Reversal criteria (in the decision record): revisit if normalization proves lossy (widen the retained raw schema, not the window), if the in-window footprint still trends toward the wedge range (tighten toward 30 days), or if audit/compliance needs a longer trail (lengthen, in GCS not Neon).
 
 ## Recommended WS-4 / next-step actions
 
