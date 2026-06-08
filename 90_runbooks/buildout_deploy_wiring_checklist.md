@@ -26,6 +26,8 @@ Note the project split: the gate + retrieval-api live in `hauska-prod-497015`; c
 
 These are external/operator and gate the deploy, not this checklist's mechanics:
 
+> **UPDATE 2026-06-08 - preconditions DISSOLVED, deploy is fireable now.** **ICC no longer gates** the deploy at all: web-first reasoning grounding replaces the ICC-corpus dependency per [`_decisions/2026-06-08_reasoning_not_text_grounding_and_web_first_gtm.md`](../_decisions/2026-06-08_reasoning_not_text_grounding_and_web_first_gtm.md); the A117.1/IRC live-ingest becomes a later licensed-display upgrade, not a launch gate. **Cotality is reframed and unblocked** - the `InvalidClientIdentifier` was the token host (Property must use `https://api1.cotality.com/oauth/token`, NOT a re-mint; vendor-confirmed 2026-06-08, see [`00_current_state.md`](../00_current_state.md)); the 8-adapter tools stay inert until that `api1` wiring lands but do NOT block the deploy. The `@workspace/db` fixture-drift is a PR-CI issue, not a blocker on deploying already-built revisions. Net: proceed now; wire the gate (section 1 below) as the first move.
+
 - **Cotality OAuth** re-minted as `nick@hauska.io` (Gene/CoreLogic escalation); unblocks the 8-adapter pack (#141 merged-inert) and the Cotality MCP tools.
 - **ICC creds + onboarding** for the A117.1 + IRC live-ingest (accessibility corpus #66 is credential-pending on these).
 - The relevant fixes/builds landed (incl. the legacy-design-tools `@workspace/db` fixture-drift CI fix so PRs go green).
