@@ -80,11 +80,20 @@ gcloud run services update-traffic <city>-api --region us-central1 --to-tags emp
 ```
 The prior revision stays at 0% for instant rollback: `update-traffic --to-revisions=<prior>=100`. If the new revision can't access the new secret, grant the runtime SA `roles/secretmanager.secretAccessor` on it (the canary holds prod safe meanwhile). Note: `/healthz` may 404 (no such path) - smoke via the actual dashboard load, not a guessed health route.
 
+**Cut over EVERY service bound to the DB secret, not just the API.** A city has more than one Cloud Run service on the same database - at minimum `<city>-api` AND `<city>-scraper` (and possibly workers). They each mount `DATABASE_URL` from `<city>-DATABASE_URL` independently. Cutting over only the API leaves the scraper writing to the OLD DB. Find them all and re-point each:
+```
+gcloud run services list --region us-central1 --format="value(metadata.name)" | grep -i <city>
+# for each (api, scraper, ...): re-point DATABASE_URL to the Empressa secret
+gcloud run services update <service> --region us-central1 \
+  --update-secrets=DATABASE_URL=<city>-EMPRESSA_DATABASE_URL:latest
+```
+For the scraper, after cutover trigger a run (Cloud Scheduler) and confirm it writes to Empressa (sync row goes `running`, raw tables start climbing).
+
 ### 6. Post-cutover
 
 - Hold the prior revision + the old Neon ~24h before teardown.
 - Rotate the old Neon password (it tends to surface in transcripts via `ps`/process listings).
-- Confirm the scraper runs against the new DB and repopulates the deferred raw tables.
+- Confirm the scraper (its OWN service - see the multi-service note in step 5) is cut over and repopulating the deferred raw tables on the new DB. Bastrop: `smartcity-scraper-00038-hb4`, full-scrape triggered, `mygov_raw_records` climbing from 0; full ~2 M backfill takes hours, expected.
 - Decide raw retention (WS-4): re-scrape vs restore `raw_dir` vs a retention window. Usually do NOT drag the full raw history onto the clean instance - those tables are what wedge the DB.
 
 ## Revision history

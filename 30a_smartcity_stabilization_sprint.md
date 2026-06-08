@@ -58,9 +58,16 @@ related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b
 > the hard-won gotchas: [`90_runbooks/replit_neon_migration.md`](90_runbooks/replit_neon_migration.md).
 > **M-Stabilize Phase 2C is closed; the engine-extraction physical lift
 > ([`56`](56_engine_extraction_sprint.md)) is unblocked** (gate met).
-> **Operator follow-ups:** rotate the old Replit Neon password (leaked into a
-> transcript once); confirm the MyGov scraper runs against the new DB and
-> repopulates raw; hold `00104-taw` + old Neon ~24h before teardown.
+> **Scraper also cut over (2026-06-08):** `smartcity-scraper` was a SEPARATE
+> Cloud Run service still bound to the old secret after the api cutover; it is
+> now re-pointed to the Empressa secret (`smartcity-scraper-00038-hb4`), full
+> scrape triggered, and the deferred raw tables are repopulating on Empressa
+> (`mygov_raw_records` climbing from 0; ~2 M backfill takes hours, expected).
+> Lesson folded into the runbook: cut over EVERY service on the DB secret
+> (api + scraper + workers), not just the api.
+> **Remaining operator follow-ups:** rotate/disable the old Replit Neon
+> credentials once confident (it leaked once, and the scraper was writing there
+> pre-fix); hold `00104-taw` + old Neon ~24h before teardown.
 >
 > **ADR-005 elevated to load-bearing (2026-06-07).** This sprint's WS-4
 > multi-tenancy work is now the storage-layer (Layer B) instance of a
