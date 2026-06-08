@@ -2,7 +2,7 @@
 id: 56_engine_extraction_sprint
 title: Engine extraction sprint - engines out of cortex-api into the spine
 status: active
-last_updated: 2026-06-07
+last_updated: 2026-06-08
 applies_to: hauska
 owner: nick
 related: [80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_full_engine_extraction_and_data_packages, _decisions/2026-06-07_adr008_gate_front_seam_scoping, 55_spine_data_intelligence_stack, 54_tenant_leg_sprint, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 00c_portfolio_master_map]
@@ -52,6 +52,8 @@ Stays in cortex-api (becomes the BFF): UI serving, session/auth, snapshot/sheet/
 
 Steps 3-6 are gated behind M-Stabilize Phase 2C ([`30a`](30a_smartcity_stabilization_sprint.md)). Step 1 and the cargo (step 2) are safe now.
 
+**Lift status (2026-06-08): 2C is MET, but hold the lift behind the deferred deploy.** The SmartCity migration closed Phase 2C, so the mechanical gate on steps 3-6 is cleared. The lift is nonetheless held, by planner recommendation, behind the build-out deploy (the multi-lane linchpin in [`00_current_state.md`](00_current_state.md)) for three reasons: (1) steps 3-6 pull engine code out of cortex-api, the exact surface the merged-but-undeployed build-out wave still occupies, so lifting now creates a moving-target / merge-conflict risk on cortex-api right as it needs a clean deploy; (2) deploy-first gives a known-good prod baseline to extract against, where lift-first ships the new architecture to prod untested; (3) step 5 ("cut consumers to the gate") is hard-blocked regardless of 2C, because the live gate cannot reach the engine yet — `HAUSKA_BACKEND_URL` is still a placeholder in the deployed mcp-server (verified 2026-06-08; see 76e finding 2), and you cannot cut consumers onto a gate that is not wired to the engine. Net: 2C cleared the mechanical gate; the deploy is the real gate for the lift's payoff. Scaffold (#67) and cargo (#145/#146/#147) are landed; the step-3 adapters dispatch is fire-ready the moment the deploy lands.
+
 ## Engine home decision
 
 `engine-api` is a NEW service inside the existing `hauska-engine` repo, sibling to `retrieval-api`. Retrieval stays read-only and reasoning-free; engine-api is the LLM-driven reasoning tier. This matches ADR-008's original `services/engine-api` layout and keeps the "fetch atoms" vs "reason over atoms" separation clean, both behind the one gate.
@@ -82,4 +84,5 @@ Steps 3-6 are gated behind M-Stabilize Phase 2C ([`30a`](30a_smartcity_stabiliza
 
 ## Revision history
 
+- **2026-06-08:** Lift-status note added. M-Stabilize 2C met (SmartCity migration closed), so the mechanical gate on steps 3-6 is cleared, but the lift is held behind the deferred build-out deploy (moving-target risk on cortex-api; deploy-first baseline; step 5 hard-blocked by the unwired gate, `HAUSKA_BACKEND_URL` placeholder verified 2026-06-08). Step-3 adapters dispatch is fire-ready on deploy.
 - **2026-06-07 (origin):** Filed to operationalize ADR-008 full extraction. Target architecture (engine-api in hauska-engine, cortex-api to BFF), what-moves table, six-step sequence (scaffold + cargo now; lift gated behind M-Stabilize 2C), engine-home decision, risks, dispatch index.
