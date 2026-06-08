@@ -2,7 +2,7 @@
 id: adr_021_constraint_resolution_and_precedence
 title: ADR-021 — Constraint resolution and precedence (public + private lattice)
 status: accepted
-last_updated: 2026-05-26
+last_updated: 2026-06-08
 applies_to: portfolio
 related: [adr_010_atom_graph_traversal, adr_013_procedure_execution_atoms, adr_020_recorded_instruments_and_restriction_clauses, 27_engine_evolution_plan, 46_smartcity_parcel_intelligence, 47_codex_plan_review, 49b_encumbrance_ingestion_pipeline, _decisions/2026-05-26_recorded_restrictions_phase_0_scope]
 owner: nick
@@ -55,6 +55,15 @@ Apply in order when domains overlap:
 5. **Unresolved conflict.** If rules 1–4 cannot resolve (contradictory recorded clauses, or code silent and two recorded clauses conflict), emit `conflicts[]` with `status: unresolved`. Downstream workflow must not auto-approve.
 
 Rules are implemented in engine code (deterministic), not left to LLM-only judgment. LLM may *propose* resolutions; engine validates against rules 1–5 before writing `constraint-resolution`.
+
+#### Cross-tier preemption vs intra-tier selection (implementation clarification, 2026-06-08)
+
+The finding-engine `reconcileStandardPrecedence` primitive (legacy-design-tools `lib/finding-engine`, shipped in PR #147) carries a finer-grained `ruleApplied` label than the v1 rules above. Two of those labels describe different operations and must not be conflated:
+
+- `federal-preempts-where-applicable` is a **cross-tier** statement: a federal standard displaces model-code / state / local on a topic where federal is the controlling floor. It explains why the lower tier was dropped from the decision pool.
+- `most-stringent-governs` is an **intra-tier selection**: among co-applicable standards of the same tier, the more stringent value governs (rule 2 above).
+
+The case that exposed the distinction is two co-applicable **federal** standards (ADA vs FHA) on accessibility. Neither preempts the other; both are federal and co-applicable, so the governing value is selected by `most-stringent-governs` (FHA's 24in latch-side clearance governs), while the cross-tier `federal-preempts-where-applicable` step belongs in the reasoning chain only where a lower tier was actually displaced. Reporting `federal-preempts-where-applicable` as the governing rule for an intra-federal stringency pick is a label error (outcome correct, attribution wrong). The implementation refinement is dispatched at `_dispatches/2026-06-08_cc-agent-C2_precedence_taxonomy_intra_federal_most_stringent.md`.
 
 ### Procedure-execution gating (v1 stopgap)
 
