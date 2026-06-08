@@ -125,7 +125,7 @@ first).
 | P2-3 | Bind `OPENGOV_TRANSPARENCY_KEY` | Transparency tables populate | Vendor portal | pending |
 | P2-4 | Compass operator admin tab (feedback + thread-health) | Weekly review without SQL | None | pending |
 | P2-5 | Persist conversation-insight gaps | DB table + list view | None | pending |
-| P2-6 | PBI repoint to Jaime's live Dynamics/Dataverse CIP dataset | CIP tiles serve 28 live projects from the new dataset; output contract unchanged | None (dispatch ready) | **fire-ready** — [`_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md`](_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md) |
+| P2-6 | PBI repoint to Jaime's live Dynamics/Dataverse CIP dataset | CIP tiles serve 28 live projects from the new dataset; output contract unchanged | None | **DONE - PR [#23](https://github.com/empressaioemail-tech/smartcity-os/pull/23) (mergeable, CI green); held for operator merge + `smartcity-api` deploy.** Secrets repointed (v3/v4); `powerbi.ts` remapped to `msdyn_projecttask` summary phases joined to `msdyn_project`; 28 projects verified live (Agnes St 0.83, WWTP#4 0.46); 103 tests pass. Follow-up: duplicate project names disambiguated with GUID suffix (flag to Jaime if she prefers another label). Report: [`_inbox/2026-06-08_smartcity-os_cc-agent-M_bastrop_cip_powerbi_repoint.md`](_inbox/2026-06-08_smartcity-os_cc-agent-M_bastrop_cip_powerbi_repoint.md). |
 | P2-7 | Scheduler jobs for weather/FirstDue/enrichment OR document cache-on-request SLO | Stale data bounded | Arch decision | pending |
 | P2-8 | Bind VFD portal codes (6) | VFD auth works | Bastrop fire chiefs | pending |
 
