@@ -2,7 +2,7 @@
 id: adr_005_multitenancy
 title: "ADR-005 - Multitenancy (gate tenant resolution + storage invariants)"
 status: proposed
-last_updated: 2026-06-07
+last_updated: 2026-06-08
 applies_to: portfolio
 related: [adr_007_cross_stakeholder_atom_access, adr_015_actor_atoms, adr_017_atom_access_control, adr_008_engine_factor_out, 54_tenant_leg_sprint, 30a_smartcity_stabilization_sprint, _prospects/mox/2026-06-07_mox_engagement_plan, 04a_arrow_two_calibration_capture]
 owner: nick
@@ -56,24 +56,29 @@ The storage-layer invariants are the same partition expressed in the product dat
 
 Layer B is owned by [`30a_smartcity_stabilization_sprint.md`](../30a_smartcity_stabilization_sprint.md) WS-4 (done criterion 5). This ADR is the canonical home that WS-4 verifies against; the SmartCity `tenant_id` schema is the storage instance of the portfolio partition, not a separate ADR.
 
-### Layer B verification prep (from the 2A schema sync, 2026-06-07)
+### Layer B verification prep (verified against live Empressa Neon, 2026-06-08)
 
-The WS-1 Phase 2A schema sync confirmed 91 tenant_id columns (source and target exact match) and surfaced 10 public tables with NO tenant_id. They mirror identically on both sides (faithful sync, not drift). For the post-2C multi-tenancy invariant verification (30a WS-4), each is pre-classified here so verification is a checklist, not a fresh investigation. Categories: OK-global (tenancy not applicable), OK-by-FK (tenant reachable through a foreign key), or CANDIDATE (may need tenant_id for isolation; confirm with the schema owner).
+The WS-1 Phase 2A schema sync (2026-06-07) confirmed 91 tenant_id columns (source and target exact match) and surfaced "10" public tables with NO tenant_id. **Re-verified against the live migrated Empressa Neon 2026-06-08 (`information_schema`): the no-tenant_id set is actually 15, not 10** - the 2A review captured only the isolation-review subset. tenant_id parity holds (91 tables with tenant_id). The five not in the original list are all non-isolation-critical: `tenants`, `products`, `platform_admins`, `admin_password_reset_tokens` (global platform tables), and `ticket_messages` (OK-by-FK to `support_tickets`, which carries tenant_id - confirmed). The CANDIDATE set is therefore unchanged at five. For the post-2C invariant verification (30a WS-4), each is classified here so verification is a checklist. Categories: OK-global (tenancy not applicable), OK-by-FK (tenant reachable through a foreign key), or CANDIDATE (may need tenant_id for isolation).
 
-| Table | Classification | Rationale |
-|---|---|---|
-| `users` | OK-global (confirm) | Global auth identities; tenant access via membership/role, not a column. Confirm SmartCity does not need per-tenant user partition. |
-| `sessions` | OK-global | Auth session store keyed by user/session id. |
-| `page_views` | OK-global | Web analytics; not isolation-critical. |
-| `visitor_sessions` | OK-global | Web analytics; not isolation-critical. |
-| `work_order_managers` | OK-by-FK | FK to `mygov_work_orders(id)` which carries tenant_id; tenant inherited via the join. A denormalized tenant_id would speed isolation queries but is not required. |
-| `activity_logs` | CANDIDATE | Audit/activity should likely be tenant-scoped for per-tenant audit isolation. |
-| `chat_messages` | CANDIDATE | If citizen/Compass chat content, this is per-tenant and should be tenant-scoped. |
-| `live_chats` | CANDIDATE | Same as chat_messages. |
-| `mygov_raw_records` | CANDIDATE | Raw scraper ingest (tenant assigned at normalization to `mygov_work_orders`). Tenant-tagging at ingest would tighten isolation and the retention story (these are the tables that wedged the old Replit Neon). |
-| `mygov_raw_sync_pages` | CANDIDATE | Same as mygov_raw_records. |
+| Table | Live rows (2026-06-08) | Classification | Rationale |
+|---|---|---|---|
+| `users` | 6 | OK-global (confirm) | Global auth identities; tenant access via membership/role, not a column. |
+| `sessions` | 38 | OK-global | Auth session store keyed by user/session id. |
+| `page_views` | 1662 | OK-global | Web analytics; not isolation-critical. |
+| `visitor_sessions` | 398 | OK-global | Web analytics; not isolation-critical. |
+| `tenants` | 2 | OK-global | The tenant registry itself; definitionally global. |
+| `products` | 4 | OK-global | Platform product catalog (slug/price/tier); cross-tenant offering list. |
+| `platform_admins` | 1 | OK-global | Platform admins with `assigned_states` (cross-tenant by design). |
+| `admin_password_reset_tokens` | 0 | OK-global (OK-by-FK) | Auth artifact, FK `admin_id` -> `platform_admins` (global). |
+| `work_order_managers` | 42888 | OK-by-FK | FK to `mygov_work_orders(id)` which carries tenant_id; tenant inherited via the join. Denormalized tenant_id would speed isolation but is not required. |
+| `ticket_messages` | 0 | OK-by-FK | FK `ticket_id` -> `support_tickets` which carries tenant_id (confirmed live). Empty, so trivial to denormalize if isolation queries want it. |
+| `activity_logs` | 3 | CANDIDATE (decide now - empty) | Audit/activity should likely be tenant-scoped. Only 3 rows; adding `tenant_id NOT NULL` + index now is near-zero cost. |
+| `chat_messages` | 0 | CANDIDATE (decide now - empty) | Citizen/Compass chat content is per-tenant. Empty table; cheapest possible moment to scope. |
+| `live_chats` | 0 | CANDIDATE (decide now - empty) | Same as chat_messages. Empty. |
+| `mygov_raw_records` | 8089 / 23 MB | CANDIDATE (tenancy + retention) | Raw scraper ingest (tenant assigned at normalization to `mygov_work_orders`). Actively repopulating post-migration (4059 -> 8089 in ~1h on 2026-06-08). Tenant-tag at ingest; tie to the retention decision below (these are the tables that wedged the old Replit Neon at ~20 GB). |
+| `mygov_raw_sync_pages` | 18 / 14 MB | CANDIDATE (tenancy + retention) | Raw HTML page captures (large per-row blobs). Same tenancy + retention treatment as mygov_raw_records. |
 
-WS-4 action: confirm the OK-global rows with the schema owner, decide the CANDIDATE rows (add tenant_id + backfill, or accept global with rationale), and run the load smoke test for zero cross-tenant leakage. The raw-table CANDIDATEs intersect the MyGov raw-records growth audit (30a WS-4), so treat tenancy + retention together.
+WS-4 action: confirm the OK-global rows with the schema owner; **decide the three empty CANDIDATEs now** (`activity_logs`, `chat_messages`, `live_chats`) - add `tenant_id NOT NULL` + tenant-leading index while they are empty/trivial, rather than paying a backfill later; tenant-tag the two raw tables at ingest and resolve their retention together (the raw-table CANDIDATEs intersect the MyGov growth audit). Then run the two-tenant load smoke test for zero cross-tenant leakage. Live introspection + the raw-retention decision tee-up: [`_research/2026-06-08_smartcity_neon_no_tenant_id_and_raw_retention.md`](../_research/2026-06-08_smartcity_neon_no_tenant_id_and_raw_retention.md).
 
 ### Relationship to the other tenant-leg ADRs
 
@@ -130,5 +135,6 @@ Revisit if gate-layer `accessPolicy` enforcement creates unmanageable query over
 
 ## Revision history
 
+- **2026-06-08 (Layer B re-verified live):** Re-ran the no-tenant_id introspection against the live migrated Empressa Neon. The set is 15, not the 10 from the 2A review; the 5 extras (`tenants`, `products`, `platform_admins`, `admin_password_reset_tokens`, `ticket_messages`) are all non-isolation-critical (4 global + 1 OK-by-FK to `support_tickets`), so the CANDIDATE set holds at 5. Added live row counts; flagged that the three empty CANDIDATEs (`activity_logs`, `chat_messages`, `live_chats`) should be scoped now while trivial. Raw tables actively repopulating (mygov_raw_records 4059 -> 8089 in ~1h); retention teed up in `_research/2026-06-08_smartcity_neon_no_tenant_id_and_raw_retention.md`.
 - **2026-06-07 (Layer B verification prep):** Added the Layer B verification-prep table classifying the 10 no-tenant_id tables surfaced by the WS-1 Phase 2A schema sync (OK-global / OK-by-FK / CANDIDATE), so the post-2C WS-4 invariant verification is a checklist. tenant_id parity confirmed 91=91 source/target.
 - **2026-06-07 (origin):** Scaffolded as the portfolio multitenancy ADR. Unifies the substrate gate tenant model (Layer A) and the SmartCity storage invariants (Layer B) as one partition at two enforcement layers; resolves the slot collision between the planned SmartCity-only ADR-005 and the substrate "ADR-005 multitenancy" references. Status proposed pending operator ratification.
