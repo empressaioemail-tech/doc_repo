@@ -2,7 +2,7 @@
 id: 31a_bastrop_maintenance_sprint
 title: Bastrop maintenance sprint — platform health catch-up
 status: active
-last_updated: 2026-06-01
+last_updated: 2026-06-08
 applies_to: smartcity-os
 related: [30a_smartcity_stabilization_sprint, 30_smartcity_os, 10_ground_truth, 11_roadmap, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 90_runbooks/smartcity_cloud_run_env_audit_2026-05-11, 90_runbooks/cloud_run_canary_deploy]
 ---
@@ -125,7 +125,7 @@ first).
 | P2-3 | Bind `OPENGOV_TRANSPARENCY_KEY` | Transparency tables populate | Vendor portal | pending |
 | P2-4 | Compass operator admin tab (feedback + thread-health) | Weekly review without SQL | None | pending |
 | P2-5 | Persist conversation-insight gaps | DB table + list view | None | pending |
-| P2-6 | PBI Option B Phase 1 | Cross-workspace DAX reads published visuals | P0-5 | pending |
+| P2-6 | PBI repoint to Jaime's live Dynamics/Dataverse CIP dataset | CIP tiles serve 28 live projects from the new dataset; output contract unchanged | None (dispatch ready) | **fire-ready** — [`_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md`](_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md) |
 | P2-7 | Scheduler jobs for weather/FirstDue/enrichment OR document cache-on-request SLO | Stale data bounded | Arch decision | pending |
 | P2-8 | Bind VFD portal codes (6) | VFD auth works | Bastrop fire chiefs | pending |
 
@@ -190,6 +190,7 @@ onboarding is dispatched (QUEUED) at
 
 ## Revision history
 
+- **2026-06-08:** P2-6 reframed from the abstract "PBI Option B Phase 1" to the concrete repoint of the CIP dashboard to Jaime's new live Dynamics/Dataverse dataset. Probed from the prod service principal 2026-06-08: the new `CIP_Projects_Database` (dataset `f86e76e6-26f6-43b2-86e6-0b3aaec72243`, report `8a4009f6-e5c9-4ccf-b1e2-66409158538a`) is reachable and returns 28 live projects; the old `POWERBI_CIP_DATASET_ID` is gone (404), which is why CIP tiles are empty. Fire-ready dispatch authored (`_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md`): repoint secrets + rewrite `powerbi.ts` from `PowerBIDashboardTasks` to the `msdyn_project` Dataverse schema (real code change, output contract preserved). Self-contained; does not touch the WS-1 data path or the deferred deploy.
 - **2026-06-07:** Phase 3 unblocked (DB hold released 2026-06-06). P3-2 ADR-005 audit repointed to the portfolio `adr_005_multitenancy.md` (Layer B); P3-4 atom-backed context tied to the tenant-leg gate work (SmartCity as city tenant); tenant-leg dependency note added; frontmatter `related` extended (54, adr_005_multitenancy).
 - **2026-06-01:** Sprint filed from Bastrop platform health check recon
   (`3bc4eb8`). Phases 0–3 extracted from health report §10; traffic-light
