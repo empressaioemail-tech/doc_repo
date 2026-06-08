@@ -39,17 +39,28 @@ related: [31a_bastrop_maintenance_sprint, 30_smartcity_os, 33_smartcity_codex_1b
 > migration) is unblocked as of the 2026-06-06 hold release and folds
 > into WS-1.
 >
-> **Phase 2A.0 MERGED; WS-1 migration running 2A->2C (2026-06-07).** WS-1
-> Phase 2A.0 (migration journal reconcile) merged as smartcity-os PR #21
-> (merge commit `ebb446b`, 2026-06-07T13:02:44Z). The earlier session-record
-> claim of merge was briefly premature (the agent reported it open), then
-> resolved; #21 is now merged. WS-1 Phases 2A schema sync -> 2B data sync ->
-> 2C cutover are being run end-to-end this session (Sunday low-traffic
-> window, operator-supervised, Cloud Shell), dispatch prompt issued to
-> cc-agent-M. Production is still `smartcity-api-00104-taw` until the 2C
-> cutover deploys the Empressa-Neon revision. **When the 2C cutover lands
-> clean, M-Stabilize Phase 2C closes and the engine-extraction physical
-> lift ([`56`](56_engine_extraction_sprint.md)) is unblocked.**
+> **WS-1 COMPLETE - production cut over to Empressa Neon; M-Stabilize Phase 2C CLOSED (2026-06-07).**
+> SmartCity OS production now runs on the Empressa-owned Neon
+> (`smartcity-EMPRESSA_DATABASE_URL`, project `tiny-art-63602898`, us-east-2),
+> off the Replit-managed Neon. Cutover via Cloud Run canary: `smartcity-api`
+> revision `smartcity-api-00106-riz` (tag `empressa-neon`), `DATABASE_URL`
+> re-pointed to the Empressa secret, 100% traffic, region us-central1. Verified
+> live: Bastrop dashboard serving real data (24,575 MyGov work orders, 709
+> active projects, 254 reviews, Compass connected 7 integrations); zero DB
+> errors in logs; root 200. Prior revision `smartcity-api-00104-taw` held at
+> 0% for instant rollback; old Replit Neon retained as source fallback during
+> the obs window. **Data approach (lean/raw split):** the operational data
+> (105 tables, ~330 MB restored) migrated via a Replit managed-workflow
+> `pg_dump -Fd -j` lean export (raw table DATA excluded), restored to the
+> Empressa target. The two raw scrape tables (`mygov_raw_records` ~5.7 GB,
+> `mygov_raw_sync_pages` ~3.3 GB = 96% of the DB) are DEFERRED/empty by design
+> - scrapers repopulate; their retention is a WS-4 decision. Full runbook +
+> the hard-won gotchas: [`90_runbooks/replit_neon_migration.md`](90_runbooks/replit_neon_migration.md).
+> **M-Stabilize Phase 2C is closed; the engine-extraction physical lift
+> ([`56`](56_engine_extraction_sprint.md)) is unblocked** (gate met).
+> **Operator follow-ups:** rotate the old Replit Neon password (leaked into a
+> transcript once); confirm the MyGov scraper runs against the new DB and
+> repopulates raw; hold `00104-taw` + old Neon ~24h before teardown.
 >
 > **ADR-005 elevated to load-bearing (2026-06-07).** This sprint's WS-4
 > multi-tenancy work is now the storage-layer (Layer B) instance of a
@@ -152,11 +163,11 @@ half lives on the sister track.
 
 The sprint exits when these are verified:
 
-1. **On Empressa Neon end-to-end.** SmartCity OS production data
-   path has zero remaining Replit-managed Neon dependencies. Cloud
-   Run service `smartcity-api` points to Empressa-owned Neon project,
-   not Replit-managed. Old DB remains as fallback only during the
-   rollback window, no longer source of truth.
+1. ✅ **On Empressa Neon end-to-end (met 2026-06-07).** `smartcity-api`
+   (rev `00106-riz`) points `DATABASE_URL` at the Empressa-owned Neon, not
+   Replit-managed; verified live serving Bastrop data. Old Replit Neon retained
+   as fallback during the rollback window only, no longer source of truth.
+   (Raw scrape tables deferred-empty by design; scrapers repopulate.)
 2. **All Fires closed.** Fire 1 ✅ (closed 2026-05-10). Fire 2 has
    internal items mitigated and Bastrop IT engagement initiated for
    externals. Fire 4 fully closed (PR #7 merged AND Replit workspace
@@ -194,7 +205,7 @@ The sprint exits when these are verified:
 |---|---|---|---|---|---|---|---|
 | 0 | Foundation | Cross-cutting prereqs (clone refresh, doc clone-path fix, ADR-005 migration, gcloud SSL, quota headroom) | mixed | pending | — | — | Gate to WS-1 Phase 2A |
 | 2A.0 | WS-1 | Phase 2A prereqs (post-merge.sh verification, migration prefix collisions, gcloud SSL) | cc-agent-1 + Nick | verified | 2026-06-07 | 2026-06-07 | PR #21 MERGED (merge commit `ebb446b`). Phase 2A schema sync unblocked. gcloud SSL still Nick-only (Cloud Shell workaround) |
-| 2A/2B/2C | WS-1 | Schema sync -> data sync -> cutover + 24h obs (Cloud Shell) | cc-agent-M + Nick | active | 2026-06-07 | - | Running end-to-end 2026-06-07 (Sunday window); operator supervised. Cutover closes the engine-extraction gate when clean |
+| 2A/2B/2C | WS-1 | Schema + data migration + cutover (lean/raw split via Replit export) | cc-agent-M + Nick + planner | verified | 2026-06-07 | 2026-06-07 | DONE. Production on Empressa Neon, rev `00106-riz`. Operational data restored (raw deferred). M-Stabilize 2C CLOSED -> engine lift unblocked. 24h obs + rollback held |
 | 2A | WS-1 | Phase 2A schema sync (Cloud Shell, smartcity-os → Empressa Neon) | cc-agent-1 | pending | — | — | Mirrors neon migration runbook pattern |
 | 2B | WS-1 | Phase 2B data-only sync | cc-agent-1 + Nick | pending | — | — | Needs low-traffic window |
 | 2C | WS-1 | Phase 2C cutover + 24h obs | cc-agent-1 + Nick | pending | — | — | Backup tag + instant rollback ready |
@@ -750,6 +761,22 @@ From `20_agent_operating_rules.md`:
 Newest-first dated log. Each entry: date, sub-phase, status change,
 SHA / artifact reference.
 
+- **2026-06-07 (WS-1 COMPLETE - cutover to Empressa Neon; 2C CLOSED):** The
+  full WS-1 migration landed in one long operator-supervised session. The
+  Cloud Shell `pg_dump` path stalled hard against the throttled Replit-managed
+  source (source compute ~2-6 MB/min, no console/API access to scale it, and
+  `idle_in_transaction_session_timeout=5min` killing long snapshot dumps at a
+  consistent ~42 MB). Resolution: the Replit agent exported the DB as a managed
+  workflow (no timeout, `pg_dump -Fd -j` parallel directory format) into a
+  lean/raw split - lean (105 tables, raw DATA excluded, 42.7 MB) + raw
+  (1.01 GB, the two scrape tables = 96% of the 9.5 GB). Only the lean archive
+  was restored (download then Cloud Shell upload then `DROP SCHEMA public/_system`
+  then `pg_restore -j 2` into the Empressa target). Verified: tenants incl.
+  Bastrop, `mygov_work_orders` 37,546, permits 14,695, fees 307,977, raw 0
+  (deferred). Cutover via canary, rev `00106-riz` at 100%, `00104-taw` held at
+  0%. Live-verified (Bastrop dashboard, zero DB errors). Done criterion 1 met;
+  Phase 2C closed; engine lift unblocked. Runbook + memory filed. Follow-ups:
+  rotate old Neon password; scraper-on-new-DB check; WS-4 raw-retention decision.
 - **2026-06-07 (correction — Phase 2A.0 NOT merged; ADR-005 reframed):**
   Earlier this session the status board was wrongly flipped to `verified`
   on the premise that PR #21 had merged. Corrected on cc-agent-M's report:
@@ -845,6 +872,7 @@ SHA / artifact reference.
 
 ## Revision history
 
+- **2026-06-07 (WS-1 COMPLETE; 2C CLOSED):** SmartCity production cut over to Empressa Neon (rev `00106-riz`) via the lean/raw-split + Replit managed-workflow export path; done criterion 1 met; status board 2A/2B/2C -> verified; header note + status-tracking entry added; engine-extraction gate (Phase 2C) closed. Migration runbook filed at `90_runbooks/replit_neon_migration.md` + memory logged. `last_updated` 2026-06-07.
 - **2026-06-07 (corrected — Phase 2A.0 NOT merged; ADR-005 reframe):** Status board row 2A.0 was briefly flipped to `verified` then corrected back to `pending` on cc-agent-M's report (PR #21 is OPEN, pending operator merge; Neon cutover not started; production unchanged). Done criterion 5, the cross-cutting ADR-005 prereq, and the WS-4 ADR-005 item repointed from `adr_005_smartcity_multitenancy.md` to the portfolio `adr_005_multitenancy.md` (SmartCity invariants = Layer B). Header note + status-tracking entry reflect the open-PR reality; frontmatter `related` extended (54, adr_005_multitenancy); `last_updated` bumped to 2026-06-07. Sprint remains `active`.
 - **2026-05-11 (W1 implementation follow-ons + cutover env-var gap):** Per-item status lines for W1.A.6 / W1.A.7 / W1.A.8 updated with PR merge + deploy reference (PRs #11 / #12 / #13 to smartcity-os; revision `smartcity-api-00084-vhr`). Status tracking entry added for the implementation batch + cutover env-var rebind cluster. Sprint remains `active`; M-Stabilize done criteria unchanged.
 - **2026-05-11 (WS-2 exit):** Phase board W1.A + W1.C flipped to
