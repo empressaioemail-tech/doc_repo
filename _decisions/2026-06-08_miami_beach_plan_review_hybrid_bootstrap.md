@@ -5,7 +5,10 @@ owner: Nick
 status: active
 related_canonical: [40i_cortex_dallas_e2e_grok_plan_review_sprint, 56_engine_extraction_sprint, 00_current_state, 73_partnerships]
 related_adr: [80_adrs/adr_019_layered_code_substrate, 80_adrs/adr_008_engine_factor_out]
+amended: 2026-06-08
 ---
+
+> **Amendment 2026-06-08.** The P1 Layer-1 grounding method below — seeding interim `ungrounded-pending-ICC` / `ungrounded-pending-NFPA` placeholder atoms — is superseded by an on-demand web-search code-retrieval fallback that fetches verbatim section text with provenance. See [`_decisions/2026-06-08_websearch_code_grounding_supersedes_interim_atoms.md`](2026-06-08_websearch_code_grounding_supersedes_interim_atoms.md) and dispatch [`_dispatches/2026-06-08_cc-agent-C_cortex_websearch_code_retrieval.md`](../_dispatches/2026-06-08_cc-agent-C_cortex_websearch_code_retrieval.md). Everything else in this decision (PDF extraction, Municode warmup, vision pipeline, the GATED cc-agent-E ICC/NFPA cutover) stands unchanged.
 
 ## Decision
 
