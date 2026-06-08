@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-07
+title: Current state snapshot — 2026-06-08
 status: active
-last_updated: 2026-06-07
+last_updated: 2026-06-08
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
 ---
@@ -28,6 +28,18 @@ The build-out + commerce + calibration-v1 leg is fully merged to main. Session r
 **Tenant leg planned + scaffolded (2026-06-07).** Sequenced plan: [`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md) (gate tenant resolution -> gate-front seam -> arrow-2 Phase 2 -> Phase 3; SmartCity-on-spine; Mox Phase 0 readiness). ADR-005 scaffolded as the portfolio multitenancy ADR [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md) (Layer A gate enforcement + Layer B SmartCity storage; resolves the slot collision with 30a's planned SmartCity-only ADR-005, operator-ratified). ADR-008 tenant-leg slice = gate-front seam, distinct from the M-Stabilize-2C-gated repo factor-out ([`_decisions/2026-06-07_adr008_gate_front_seam_scoping.md`](_decisions/2026-06-07_adr008_gate_front_seam_scoping.md)). Four cc-agent dispatches authored fire-ready but **QUEUED (do not fire)** pending operator sequencing vs the deferred deploy + M-Stabilize WS-1. SmartCity gov collateral production scoped in [`07a`](07a_smartcity_product_positioning.md) + a QUEUED build dispatch (pricing-independent assets first; pricing slide gated on the gov pricing decision). Code state verified against live source: gate has no tenant field, `accessPolicy` declared-but-unenforced, arrow-2 Phase 1 ledger partitions on `jurisdictionTenant`. Premortem cleared GREEN (load-bearing); operational yellow on build concentration mitigated by the hold posture.
 
 **Operator gate before more building:** sharpen the SmartCity product line (add the Mox-style browser-extension product alongside plan review and the other surfaces) and refine the Vertosoft offer. **Decision C (GTM) pinned** until build-out is deployed and tested.
+
+## Open action map - three lanes (2026-06-08 session close)
+
+Full close: [`_sessions/2026-06-08_session_close_tenant_leg_spine_migration_claude_code.md`](_sessions/2026-06-08_session_close_tenant_leg_spine_migration_claude_code.md).
+
+**THE LINCHPIN - deploy the build-out wave.** Merged-but-undeployed (operator-deferred until ICC + Cotality clear). This one gate blocks: GTM Decision C unpin, the +11 Tier-1 MCP tools going live (46 deployed -> 57 in code), SDK metering, the cortex-api revision-drift alert clearing, and the GTM E5 external-caller validation. **Deploy + Cotality OAuth (Gene) + ICC creds is the critical multi-lane unblock.**
+
+**Lane 1 - spine + migration (this session).** SmartCity migration DONE (2C closed -> engine lift `56` unblocked). Residual: (a) operator rotate/disable old Replit Neon creds (scraper wrote there pre-fix); (b) hold `00104-taw` rollback ~24h then teardown; (c) WS-4 raw-table retention + the 10 no-tenant_id tables (ADR-005 Layer B); (d) **Bastrop CIP Power BI repoint** to Jaime's new live Dynamics DB (secrets + `powerbi.ts` schema mapping; 31a item). Engine-extraction lift dispatches pre-staged, fireable now (2C met). Tenant-leg dispatches still QUEUED.
+
+**Lane 2 - monitoring (76e Wave A).** HELD for merge: PR #27 (mcp-server healthz). cc-agent-C observability-hub is LOCAL (no PR - tell it to open/push). cc-agent-E retrieval-api healthz not reported. Wave B (smartcity) now unblocked (2C done). **Verify the real finding: mcp-server `/health` reports DEGRADED in prod (engine_retrieval_api + cortex_api + upstash down) - confirm whether the gate genuinely cannot reach the engine from prod (live substrate issue) or it is a dep-check misconfig, BEFORE #27 deploys over it.** Plus the operator setup steps (mint GATE_PROBE key + Neon RO token, run setup script, delete test alert policy).
+
+**Lane 3 - GTM (76d).** HELD for merge: PR #26 (collateral, passed honesty gates) + PR #148 (gtm-loop Tier-0, outbound disabled). Capability matrix v1.1 reconciled (46 vs 57). **GTM commits are LOCAL, not pushed - resolve.** Gated on the deploy before Decision C unpin.
 
 ## Cotality data spine + Cortex hydrology (2026-06-06)
 
