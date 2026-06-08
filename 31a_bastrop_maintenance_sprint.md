@@ -30,8 +30,13 @@ or leave blind spots: unbound integrations (Verkada, ESRI, transparency),
 cron architecture holes (thread-health off in prod), security leaks
 (public feedback GET), and sync failures (`wo_manager_export`).
 
-Prophecy embed stays **vendor hold** — pop-out fallback is in Phase 1 but
-full iframe fix waits on Prophecy response.
+Prophecy embed **RESOLVED 2026-06-08** (was vendor hold). ProphecyGov
+(Ashkon) shipped the allowlist + `SameSite=None; Secure` cookie fix; live
+header verification plus an operator browser test confirm the embedded chat
+loads via pop-out login. Cold in-iframe login is structurally impossible
+(WorkOS hosted auth sets `frame-ancestors 'self'` / `X-Frame-Options:
+SAMEORIGIN` on `api.workos.com`, unchangeable by ProphecyGov) - pop-out is
+the supported pattern. Verified state: [`_research/2026-06-01_prophecy_embed_flow_diagram.md`](_research/2026-06-01_prophecy_embed_flow_diagram.md).
 
 ## Relationship to M-Stabilize (30a)
 
@@ -56,7 +61,7 @@ parallel without touching DATABASE_URL migration.
 | OpenGov / PBI | Yellow | BNP + PBI bound; transparency key missing |
 | Calendar | Green | Municode public feed live |
 | Compass | Yellow | Works; feedback loop partial; thread-health cron off |
-| Prophecy | Red | Vendor hold |
+| Prophecy | Green | RESOLVED 2026-06-08 - embed works via pop-out login (vendor fix landed + verified) |
 | Verkada / ESRI | Red | Env not bound since May 11 audit |
 | Security | Yellow | Public `GET /api/feedback`; `.replit` plaintext |
 | Crons | Yellow | In-process crons disabled on Cloud Run |
@@ -79,7 +84,7 @@ parallel without touching DATABASE_URL migration.
 |----|------|----------|--------|
 | P0-1 | Run production SQL sample (sync_health, feedback counts, raw table sizes) | Health check §11 | pending |
 | P0-2 | Bastrop IT: Verkada + ESRI credential handoff for Cloud Run bind | Env audit still open | pending |
-| P0-3 | Prophecy vendor response on `auth.prophecygov.com` allowlist | Audit `2478a4e` | pending |
+| P0-3 | Prophecy vendor response on allowlist | Audit `2478a4e` | **DONE 2026-06-08** - Ashkon shipped `prophecygov.com` frame-ancestors allowlist + `SameSite=None` cookies; embed verified working via pop-out |
 | P0-4 | Release M-Stabilize DB hold when ready for WS-1 | `30a` operator hold | pending |
 | P0-5 | PBI Option B — request Bastrop workspace visual inventory | `w1_a_7_pbi_option_b_scoping.md` | pending |
 
@@ -97,8 +102,8 @@ no SQL dependency.
 |----|-------|------------|------|--------|
 | P1-1 | Remove stale Cloud Run traffic tags | Only `bastrop-tenant-fix` + latest remain | None | pending |
 | P1-2 | Auth-gate `GET /api/feedback` | 401 without session | None | pending |
-| P1-3 | Prophecy pop-out-first fallback UI | Usable `/prophecy` when iframe blocked | None | pending |
-| P1-4 | Extend CSP `frameSrc` for Prophecy OAuth domains | `app.ts:117-125` updated | Vendor for full fix | pending |
+| P1-3 | Prophecy pop-out-first UI | Usable `/prophecy` via pop-out login | None | mechanism VERIFIED working 2026-06-08; only the polished "log in to Prophecy" button UX remains (deploy-pending, bundle with the PBI/`smartcity-api` deploy) |
+| P1-4 | Extend CSP `frameSrc` for Prophecy OAuth domains | `app.ts:117-125` | None | **NOT NEEDED** - deployed `frame-src` already allows `prophecygov.com`; adding `api.workos.com` is pointless (WorkOS sets `frame-ancestors 'self'`, blocks the frame regardless). Closed as wontfix. |
 | P1-5 | Cloud Scheduler job → thread-health check | `[thread-monitor]` logs in prod | None | pending |
 | P1-6 | Log CompassQuickAsk to `compass_chat_logs` | `/api/ai/chat` writes logs | None | pending |
 | P1-7 | Compass thumbs-down correction textarea | `correction` field POSTed | None | pending |
@@ -160,7 +165,7 @@ onboarding is dispatched (QUEUED) at
 - [ ] Phase 0 SQL sample run; `wo_manager_export` root cause known (P1-8)
 - [ ] Phase 1 items P1-1, P1-2, P1-5 shipped and deployed
 - [ ] Compass feedback visible to operators (P2-4 or Phase 1 minimum)
-- [ ] Prophecy page usable via pop-out OR vendor iframe fix landed
+- [x] Prophecy page usable via pop-out OR vendor iframe fix landed (RESOLVED 2026-06-08 - pop-out works, vendor fix landed + verified)
 - [ ] Weekly operator script run once without agent assistance
 - [ ] `10_ground_truth.md` production revision row updated
 
@@ -190,6 +195,7 @@ onboarding is dispatched (QUEUED) at
 
 ## Revision history
 
+- **2026-06-08 (Prophecy resolved):** Prophecy embed marked off - was Red/vendor-hold for weeks. ProphecyGov shipped the `prophecygov.com` frame-ancestors allowlist (`smartcityos.io` + www + wildcards) and `SameSite=None; Secure` session cookies; live header verification + operator browser test confirm the embedded chat loads via pop-out login. Cold in-iframe login ruled out permanently (WorkOS `api.workos.com` sets `frame-ancestors 'self'`/`X-Frame-Options: SAMEORIGIN`, unchangeable by the vendor). P0-3 done, P1-3 mechanism verified (only the pop-out button UX remains, deploy-pending), P1-4 closed wontfix (our `frame-src` already allows `prophecygov.com`; framing `api.workos.com` is futile). Done-criterion met. Traffic-light Prophecy Red -> Green.
 - **2026-06-08:** P2-6 reframed from the abstract "PBI Option B Phase 1" to the concrete repoint of the CIP dashboard to Jaime's new live Dynamics/Dataverse dataset. Probed from the prod service principal 2026-06-08: the new `CIP_Projects_Database` (dataset `f86e76e6-26f6-43b2-86e6-0b3aaec72243`, report `8a4009f6-e5c9-4ccf-b1e2-66409158538a`) is reachable and returns 28 live projects; the old `POWERBI_CIP_DATASET_ID` is gone (404), which is why CIP tiles are empty. Fire-ready dispatch authored (`_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md`): repoint secrets + rewrite `powerbi.ts` from `PowerBIDashboardTasks` to the `msdyn_project` Dataverse schema (real code change, output contract preserved). Self-contained; does not touch the WS-1 data path or the deferred deploy.
 - **2026-06-07:** Phase 3 unblocked (DB hold released 2026-06-06). P3-2 ADR-005 audit repointed to the portfolio `adr_005_multitenancy.md` (Layer B); P3-4 atom-backed context tied to the tenant-leg gate work (SmartCity as city tenant); tenant-leg dependency note added; frontmatter `related` extended (54, adr_005_multitenancy).
 - **2026-06-01:** Sprint filed from Bastrop platform health check recon

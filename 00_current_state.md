@@ -83,9 +83,10 @@ RELEASED 2026-06-06; restart dispatch cleared to fire (cc-agent-M, smartcity-os;
 Neon target us-east-2 `tiny-art-63602898`). 31a Phase 0-2 parallel-safe. (Other
 M-Stabilize-hold references below pending next 00 regen.)
 
-**Production:** `smartcity-api-00104-taw` @ 100%. Core dashboards green
-(MyGov, Samsara, FirstDue, OpenGov, Compass, calendar). **Red:** Prophecy
-embed (vendor hold). **Unbound:** Verkada, ESRI, transparency key.
+**Production:** `smartcity-api-00106-riz` @ 100% (Empressa Neon). Core dashboards green
+(MyGov, Samsara, FirstDue, OpenGov, Compass, calendar). **Prophecy embed RESOLVED 2026-06-08**
+(vendor shipped allowlist + `SameSite=None` cookies; pop-out embed verified working; cold
+in-iframe login ruled out permanently per WorkOS - 31a P0-3/P1-3 closed). **Unbound:** Verkada, ESRI, transparency key.
 
 **Prior recons folded:** Prophecy `2478a4e`, Compass `1a9d0c9`.
 

@@ -9,6 +9,8 @@ related: [_research/prophecy_integration_audit_2026-06-01.md in smartcity-os rep
 
 # Prophecy Gov embed flow — vendor diagram
 
+> **RESOLVED 2026-06-08.** ProphecyGov (Ashkon) shipped the fix and it is verified working. Live header check 2026-06-08: `prophecygov.com/chat` frame-ancestors now allows `'self' https://smartcityos.io https://www.smartcityos.io https://*.smartcityos.io https://*.run.app`, and the session cookie is now `SameSite=None; Secure` (was `Lax`). With those two changes the **Path B pop-out pattern works end to end** (operator browser test confirmed): pop-out top-level login sets the session cookie, then the embedded `/chat` iframe carries it (survives cross-site now), serves the authenticated chat, and renders. **Path A (cold in-iframe login) remains permanently impossible** - the `/chat` 307 still targets `api.workos.com`, whose `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN` ProphecyGov cannot change (WorkOS hosted AuthKit is not iframe-embeddable by design). No further vendor change needed; pop-out is the supported pattern. Caveat: relies on third-party cookies, so Safari/3p-cookie-blocked browsers may need CHIPS/partitioned cookies. Tracked off in [`31a`](../31a_bastrop_maintenance_sprint.md).
+>
 > **Caption for email:** Current embed flow (Bastrop / SmartCity OS at `https://smartcityos.io/prophecy`). Main-domain allowlist is in place; failure occurs when unauthenticated `/chat` redirects into WorkOS OAuth, which blocks iframe embedding. Pop-out login in a new tab works today.
 
 Evidence: read-only recon `_research/prophecy_integration_audit_2026-06-01.md` in `empressaioemail-tech/smartcity-os` (branch `recon/prophecy-integration-audit`, commit `2478a4e`).
