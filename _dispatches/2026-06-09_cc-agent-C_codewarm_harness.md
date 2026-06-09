@@ -5,13 +5,13 @@ date: 2026-06-09
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: HELD - do not fire until the operator and the plan-review session clear 57_national_code_warming_sprint and the field contract
+status: READY - plan-review cleared 2026-06-09 (findings folded in); first build of the sprint, no upstream dependency. Fire in Cursor.
 related: [57_national_code_warming_sprint, _decisions/2026-06-09_codewarm_arrow_two_combined, _decisions/2026-06-08_reasoning_not_text_grounding_and_web_first_gtm, 04a_arrow_two_calibration_capture, 80_adrs/adr_019_layered_code_substrate, 20_agent_operating_rules, _catalog/codes]
 ---
 
 # Cold-warm batch harness
 
-> HELD for operator + plan-review clearance. Builds the batch job that warms the national reference manifests into cortex-local reasoning atoms. This is Phase 0 of [`57_national_code_warming_sprint.md`](../57_national_code_warming_sprint.md) and blocks the warming runs. Builds on the merged v1 `fetchCodeSection` (`lib/codes`) and v2 reasoning-atom persistence (migration 0035). Verify identifiers against live source before building.
+> READY. The adversarial plan-review cleared 2026-06-09 and its findings (tenant-data-sovereignty reframe, source-set-drift invalidation, attribution coverage) are folded into the scope below; the field contract is settled. Builds the batch job that warms the national reference manifests into cortex-local reasoning atoms. This is Phase 0 of [`57_national_code_warming_sprint.md`](../57_national_code_warming_sprint.md) and blocks the warming runs. Builds on the merged v1 `fetchCodeSection` (`lib/codes`) and v2 reasoning-atom persistence (migration 0035). Verify identifiers against live source before building.
 
 You are **cc-agent-C**, single owner of the `legacy-design-tools` clone.
 
