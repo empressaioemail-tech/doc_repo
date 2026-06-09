@@ -2,7 +2,7 @@
 id: 09_post_saas_substrate_thesis
 title: Post-SaaS substrate thesis
 status: active
-last_updated: 2026-05-27
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 14_pricing_framework, 28_mcp_first_product_design, 77_place_graph_strategy]
 owner: nick
@@ -50,9 +50,11 @@ Plaid is the closest analog for what Hauska is becoming on the data side. Stripe
 
 **Place graph (2026-05-27).** The substrate is not a flat catalog of jurisdictions. It is a **place graph**: one resolvable location (parcel, legal description, jurisdiction context) as the node; normative law, physical constraints, recorded private instruments, operational precedent, and (over time) mineral and airspace estates as typed, provenanced edges. Agent queries are metered reasoning walks on that graph, not document dumps. Product GTM lanes (Property Brief, TX CRG CRM, Cortex, future O&G land admin) are views on the same node. Full strategy: [`77_place_graph_strategy.md`](77_place_graph_strategy.md).
 
-## Partnership-first as political-economy statement
+## Value-returns-to-contributors as political-economy statement
 
-There is a second dimension to partnership-first sourcing worth being explicit about. It is not only a commercial decision. It is implicitly a statement about how value should flow in the agent-mediated economy.
+> **Amendment note (2026-06-09).** Partnership-first sourcing (cities as licensors with revenue share) was retired as a structural commitment ([`_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`](_decisions/2026-06-09_retire_partnership_first_amend_constitution.md)). The political-economy bet below survives, re-grounded: it now expresses through tenant data sovereignty plus calibration deposits that land value on the contributor's own work (I5/I6), rather than through city operational-data revenue share. Read "partnership-first sourcing" in this section as "value returns to contributors."
+
+There is a second dimension to the value-returns-to-contributors commitment worth being explicit about. It is not only a commercial decision. It is implicitly a statement about how value should flow in the agent-mediated economy.
 
 The companies that scale fastest in agent economies will be tempted to extract maximum rent from data sources, treating them as commodity inputs to be acquired cheaply and resold expensively. The historic precedent in adjacent industries (search, social media, marketplaces) shows where that leads. Concentrated platform power, declining terms for contributors, eventual regulatory backlash.
 

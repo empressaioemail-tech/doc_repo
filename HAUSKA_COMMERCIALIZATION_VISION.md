@@ -18,7 +18,7 @@ Hauska is the canonical catalog of physical-world jurisdictional rules, made que
 
 One principle runs through everything: **sell reasoning, not data.** Every answer Hauska returns carries its reasoning chain, its source citation, a confidence score, and a timestamp. A buyer is not getting a scraped fact of unknown origin. They are getting a trustworthy, attributed, current answer they can act on and defend.
 
-A second principle makes the model durable: **the sources are partners, not targets.** Cities, counties, and code publishers are licensors with a revenue share, not websites to be scraped. When an agent pays to use a jurisdiction's rules, money flows back to that jurisdiction. That turns every data source into a stakeholder.
+A second principle makes the model durable: **value returns to contributors.** Originally framed as partnership-first sourcing (cities and counties as licensors with revenue share), this was retired as a structural commitment 2026-06-09 (`_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`): the moat moved to the calibrated public-code reasoning corpus, not city operational data. The principle survives re-grounded as tenant data sovereignty (a tenant's data and judgment stay theirs, never pooled) plus calibration deposits that land value on the contributor's own work. Code publishers (ICC, NFPA) remain content-licensing counterparties, and the SDK rail can still route revenue to paid source actors; both are distinct from the retired city sourcing ethic and their status is a separate decision.
 
 ## The commercialization layer — what it includes
 

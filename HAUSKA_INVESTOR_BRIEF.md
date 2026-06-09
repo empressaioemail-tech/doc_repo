@@ -31,7 +31,7 @@ The catalog is no longer dark. Thirty-four jurisdictions are atomized and pass t
 
 The onboarding cost discipline is holding. The target is under two hundred dollars of compute plus one hour of human review per new jurisdiction, with a hard-kill checkpoint if we could not hit it by the third county. That checkpoint is cleared. Onboarding a jurisdiction is cheap and repeatable, which is what makes broader coverage a question of demand and partnership flips rather than headcount.
 
-Bastrop is live in production as the anchor jurisdiction and the template for the partnership-with-revenue-share model that every subsequent jurisdiction follows.
+Bastrop is live in production as the anchor jurisdiction and the proof of the city-customer side of the model, as a SmartCity OS customer and design partner. (The earlier "partnership-with-revenue-share / cities as licensors" framing was retired 2026-06-09 with the partnership-first sourcing commitment; the moat is the calibrated public-code reasoning corpus, not city operational data sourced under revenue share. See `_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`.)
 
 ---
 

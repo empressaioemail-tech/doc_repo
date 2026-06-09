@@ -2,7 +2,7 @@
 id: 18_stakeholder_graph
 title: Stakeholder graph — relationships, contacts, channels
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [11_roadmap, 13_risk_register, 14_pricing_framework, 06_cities_value_narrative, 11a_bastrop_live_roadmap, 47_codex_plan_review, 51_substrate_v1_sprint]
 owner: nick
@@ -61,7 +61,7 @@ context.
 
 | Name | Role | Relationship status | Strategic role |
 |---|---|---|---|
-| **Sylvia Carrillo** | Bastrop city manager; municipal-network anchor | Active deep partnership | Gate for city partnerships; reviewer-zero for Codex 1b; Bastrop-pioneering narrative anchor. Risk 5 (single-customer existential) is about this relationship. |
+| **Sylvia Carrillo** | Bastrop city manager; municipal-network anchor | Active deep partnership | Gate for city customer / SmartCity OS relationships (partnership-first sourcing retired 2026-06-09; cities are customers and design partners, not data-sourcing licensors); reviewer-zero for Codex 1b; Bastrop-pioneering narrative anchor. Risk 5 (single-customer existential) is about this relationship. |
 | **Jaime** (Bastrop reviewer) | Bastrop plan reviewer | Active | Reviewer-zero alongside Sylvia for Codex 1b adjudication-capture |
 | **Bastrop city** | First SmartCity OS partner | Active deep partnership | Source of permit + inspection ingestion patterns; partnership template for subsequent cities |
 

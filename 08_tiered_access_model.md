@@ -2,7 +2,7 @@
 id: 08_tiered_access_model
 title: Tiered access model — free substrate, paid context, integrated products
 status: active
-last_updated: 2026-06-07
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [05_living_lineage_thesis, 07_product_line_summary, 11_roadmap, 11a_bastrop_live_roadmap, 14_pricing_framework, 47_codex_plan_review, 49_code_ingestion_pipeline, 55_spine_data_intelligence_stack, _decisions/2026-06-07_full_engine_extraction_and_data_packages]
 owner: nick
@@ -192,7 +192,7 @@ Specific items deferred until first paid conversion data lands:
 - **Code-rewrite-firm co-publishing economics.** Revenue share, flat fee, in-kind (their rewrite work feeds the network), or hybrid. Resolve in first firm MOU.
 - **Cross-tier downgrade / upgrade mechanics.** A paid-tier customer who lapses — do they retain their stored paid-tier atoms or lose access? Probably retain read-only; spec needs design.
 - **Anonymous / aggregated free tier.** Should we expose anonymous aggregate adjudication patterns ("most jurisdictions interpret § X this way") as a free-tier teaser of the paid tier? Probably yes, with care; spec deferred.
-- **Bastrop-pioneering implications for tier.** Bastrop as the first city in the network has unusual leverage. Special-case terms (founder pricing, perpetual paid-tier-included status, revenue share) are open per the pioneering framing.
+- **Bastrop-pioneering implications for tier.** Bastrop as the first city in the network has unusual leverage. Special-case terms (founder pricing, perpetual paid-tier-included status) are open per the pioneering framing. (The "revenue share" special-case term reflected the retired partnership-first sourcing model, 2026-06-09; Bastrop is a SmartCity OS customer and design partner now, so revenue-share-to-city terms are no longer the default frame.)
 - **Firm-tenancy interaction with tier (ADR-009).** Per-firm-engagement metadata interacts with tier in ways not yet specified. Resolves when ADR-009 lands.
 - **Public-good carveouts.** Some uses (academic research, free legal aid, citizen access to their own property's lineage) probably warrant paid-tier access at no cost. Policy needs framing.
 

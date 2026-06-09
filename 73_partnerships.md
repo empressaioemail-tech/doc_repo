@@ -2,7 +2,7 @@
 id: 73_partnerships
 title: Partnerships â formalized partnership state
 status: active
-last_updated: 2026-05-29 (Property Brief outreach wave + backlog cross-link. Prior 2026-05-26 Sync 5 TX-metros batch: McAllen confirmed eCode360 added to General Code row; 7 metro-suburb cities + Edinburg added to publisher-TBD bucket with Fort Worth flagged as the strategic anchor for the FW metro. Earlier 2026-05-22: Sync 5 Tier 2 central-Texas recon — Kyle, Buda, Liberty Hill, Bee Cave to General Code, American Legal Publishing logged. Prior 2026-05-22: Pflugerville and Cedar Park added to General Code, EncodePlus / GovOS logged. Prior 2026-05-21: Standards-body licensor partnerships section added.)
+last_updated: 2026-06-09 (partnership-first sourcing retired, reframed to customer/design-partner + content-licensing posture; prior 2026-05-29 Property Brief outreach wave + backlog cross-link. Prior 2026-05-26 Sync 5 TX-metros batch: McAllen confirmed eCode360 added to General Code row; 7 metro-suburb cities + Edinburg added to publisher-TBD bucket with Fort Worth flagged as the strategic anchor for the FW metro. Earlier 2026-05-22: Sync 5 Tier 2 central-Texas recon — Kyle, Buda, Liberty Hill, Bee Cave to General Code, American Legal Publishing logged. Prior 2026-05-22: Pflugerville and Cedar Park added to General Code, EncodePlus / GovOS logged. Prior 2026-05-21: Standards-body licensor partnerships section added.)
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 13_risk_register, 18_stakeholder_graph, 30_smartcity_os, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 70_bizops_overview, 71_pipeline, 74_commercial_agreements]
 owner: nick
@@ -12,17 +12,17 @@ owner: nick
 
 > **Formal partnership state.** Operational counterpart to [`18_stakeholder_graph.md`](18_stakeholder_graph.md) (which is the relationship graph). This doc tracks which counterparties are formal Hauska partners under the partnership-first sourcing commitment, what the partnership terms look like, and what the partnership template should look like as the pattern scales.
 
-## Partnership-first sourcing commitment
+## Partnership posture (partnership-first sourcing RETIRED 2026-06-09)
 
-Per the [four structural commitments](../CLAUDE.md) (commitment #2): cities, counties, and firms are licensors with structural revenue share, not data sources to be scraped. Bastrop is the template. Every new jurisdiction onboarded under the public catalog stack should follow the Bastrop-shaped partnership pattern unless explicitly justified otherwise.
+> **Amendment note.** Partnership-first sourcing was retired as a structural commitment 2026-06-09 ([`_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`](_decisions/2026-06-09_retire_partnership_first_amend_constitution.md)), superseded by the web-first reasoning pivot: the moat is the calibrated public-code reasoning corpus, not city operational data sourced under revenue share. This doc no longer tracks "cities as licensors." It tracks three distinct relationship types, only the first of which was retired: (1) **cities as SmartCity OS customers and design partners** (Bastrop), not data-sourcing licensors; (2) **ICC / NFPA standards-body content licensing** (display license for code text; the enhance phase) — alive and distinct; (3) the **SDK rail that routes revenue to paid source actors** — a commercial mechanism whose city rationale is gone but which survives for content/firm models. The value-returns-to-contributors thesis survives, re-grounded as tenant data sovereignty plus calibration deposits (I5/I6).
 
-The partnership-preferred rule (per CLAUDE.md decision rules) reads: target partnership cities go through Sylvia, not scraping. Scraping is the fallback for jurisdictions that decline partnership; partnership is the default.
+Cities are reached through Sylvia as SmartCity OS customer and design-partner relationships, not as data-sourcing licensing. Public code is grounded web-first; no city partnership is required to onboard a jurisdiction's model code.
 
 ## Active partnerships
 
 ### Bastrop â pioneering city (template)
 
-- **Status.** Active. Anchor customer (per [`30_smartcity_os.md`](30_smartcity_os.md)) and partnership template per the partnership-first sourcing commitment.
+- **Status.** Active. Anchor SmartCity OS customer (per [`30_smartcity_os.md`](30_smartcity_os.md)) and design partner. (No longer framed as a sourcing "template" since partnership-first was retired 2026-06-09; Bastrop is a customer and the reviewer-zero design partner for calibration, not a data-sourcing licensor.)
 - **Primary contacts.** Sylvia Carrillo (city manager); Valerie. Per [`18_stakeholder_graph.md`](18_stakeholder_graph.md).
 - **Narrative framing.** Per the user-memory `bastrop_pioneer_narrative`: frame Bastrop as the pioneering first city in a network, not as a data source feeding other cities. The narrative matters for both Bastrop-facing communication and the broader partnership pattern.
 - **Revenue share.** Structural revenue share contemplated; specific terms gated on the Bastrop revenue-share contract operational pilot per [`14_pricing_framework.md`](14_pricing_framework.md) substrate-state subsection. First real money movement through this partnership gates Phase 3 of the SDK payment substrate.

@@ -2,7 +2,7 @@
 id: 00d_portfolio_roadmap_reference
 title: Portfolio roadmap reference — the honed planned-work view
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [00_current_state, 00c_portfolio_master_map, 03_structural_constitution_and_drift_guard, 04_roadmap_alignment_audit, 16_commercialization_roadmap, 76c_operator_master_next_steps, 11_roadmap]
 owner: nick
@@ -28,7 +28,7 @@ The ranked 90-day frame from the roadmap audit. Rank by impact and accelerate; t
 | 4 | Naming pass on the theology — write the two-root thesis into the doc set | Documentation | Both | Operator | Filing pending |
 | 5 | Design the city data sharing cooperative with counsel | Design / legal | Both | Operator + counsel | Long horizon, start study |
 | 6 | Hold adjacency freezes (trading/issuance/PE/IBKR); build spine clean | Freeze + sequenced build | Protective + spine | Operator | Engine extraction **unfrozen** 2026-06-06 |
-| 7 | Keep the rev-share rail quiet (invisible plumbing) | Framing rule | Both | Valerie + operator | Continuous discipline |
+| 7 | Keep any rev-share rail quiet (invisible plumbing) | Framing rule | Both | Valerie + operator | Continuous discipline; note: partnership-first / city revenue-share retired 2026-06-09, so this now governs only the surviving content-licensing (ICC/NFPA) and SDK source-actor rail, whose retention is a separate decision |
 
 The one thing not to miss: item 1 is ranked first and is the only genuinely load-bearing build, but it is not on any active sprint. Until reviewer adjudications (the finding-engine accept/edit/reject events that already emit `decision-event` atoms) feed back into atom confidence, every shipped surface only withdraws from the flywheel and never deposits, and confidence stays asserted rather than earned (invariant I3). This is the gap between the strategic frame and the tactical queue.
 

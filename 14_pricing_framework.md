@@ -2,7 +2,7 @@
 id: 14_pricing_framework
 title: Pricing framework â Path A vs Path B
 status: active
-last_updated: 2026-06-07
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 16_commercialization_roadmap, 30_smartcity_os, 40_design_accelerator, 55_spine_data_intelligence_stack, 08_tiered_access_model, _decisions/2026-06-07_full_engine_extraction_and_data_packages, 80_adrs/adr_018_atom_contract_substrate_layer]
 ---
@@ -167,7 +167,7 @@ The 2026-05-16 strategic brainstorm session extended the catalog thesis from "da
 
 ### Principle
 
-The Hauska SDK is the payment substrate for atom transactions. When agents consume atoms via the Hauska MCP Server, micropayments flow through the SDK back to the source actors of those atoms (cities, firms, regulators, professionals). This makes partnership-first sourcing substrate-enforced rather than contract-enforced.
+The Hauska SDK is the payment substrate for atom transactions. When agents consume atoms via the Hauska MCP Server, micropayments flow through the SDK back to the paid source actors of those atoms (content licensors such as ICC / NFPA, firms, professionals). This routes revenue to paid sources mechanically rather than only by contract. (Note 2026-06-09: partnership-first sourcing was retired as a structural commitment; the city-operational-data revenue-share rationale is gone. The rail itself survives for content-licensing and firm models. Whether the SDK source-actor routing is retained as a commercial mechanism is a separate decision, flagged in `_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`.)
 
 **Implementation status (2026-05-21).** This is the designed model, not yet the running state. The crypto settlement rail is built and tested in `@hauska-sdk/payment` (one of twelve published `@hauska-sdk/*` packages). The revenue-routing layer that splits a micropayment and routes the source-actor share back does not yet exist: the 2026-05-21 cross-repo reconciliation found no routing, payout, or split code in any `@hauska-sdk/*` package. Revenue share is designed and its settlement components are partially present; it is not yet substrate-enforced. Until the routing layer ships, revenue share is contractually promised, and partner-facing and BD materials must say so.
 
