@@ -1,10 +1,10 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-08
+title: Current state snapshot — 2026-06-09
 status: active
-last_updated: 2026-06-08
+last_updated: 2026-06-09
 applies_to: portfolio
-related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration]
+related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
 
 # Current state snapshot
@@ -12,6 +12,18 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Read me first.** Per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md). Regenerated at session close. Pointer doc — follow links into canonical docs for full context.
 >
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
+
+## DEPLOYED + LIVE — build-out + Miami keystone arc in prod (2026-06-09, verified recon)
+
+> **This section supersedes every "deploy deferred / deploy STARTED / RESUME STEPS / prod ships mock / 46->57 pending" claim in the dated sections below.** Verified by live cross-repo recon ([`_research/2026-06-09_cross_repo_recon.md`](_research/2026-06-09_cross_repo_recon.md)): GitHub API, gcloud Cloud Run, live health endpoints, 2026-06-09 ~20:40.
+
+The entire build-out plus Miami keystone arc (legacy-design-tools #141 through #156) is **merged AND deployed to production.** There is no pending deploy. The "deploy the build-out wave" linchpin is closed.
+
+**Live prod (serving 100 percent):** cortex-api **`00140-dax`** (deployed 20:23, nine minutes after #156 merged at 20:14), env **`AIR_FINDING_LLM_MODE=anthropic` + `BRIEFING_LLM_MODE=anthropic` + `AIR_FINDING_ORCHESTRATED=1`**, `/api/healthz` ok — **prod serves real web-grounded findings, not mock** (the #154 `cloud-run-deploy.yml:204` fix held through this deploy, so it is durable). A second prod service **`api-server-00003-wix`** (legacy-design-tools-prod, `/api/healthz` ok) now serves alongside cortex-api and is **not in the [`00c`](00c_portfolio_master_map.md) master map** (identity not yet established; topology-update owed). Gate **`hauska-mcp-server-00007-njc`** `/health` ok, all four deps ok (engine/cortex/postgres/upstash) — wired for real; main `src/tools.ts` registers **57 tools** and the gate image was rebuilt in the 06-09 deploy cluster, so the 46->57 expansion is effectively live. Retrieval **`hauska-retrieval-api-00006-2lq`** `/healthz/` **warn**: corpus ok (`atomCount:21126` confirmed live) but `db:not_configured` — the substrate Neon observability DB is genuinely unwired, which is exactly what **PR #68 (hauska-engine, OPEN + mergeable)** does. SmartCity `00106-riz` (empressa-neon) @ 100 percent, scraper `00038-hb4` @ 100 percent.
+
+**The entire org-wide open-PR surface is three observability/GTM PRs** (everything else is merged): **#68** hauska-engine (wire retrieval substrate Neon — clears the one live warn), **#27** hauska-mcp-server (observability/uptime — must also RETIRE the noisy v1 stale-revision drift alert policy `8570526367601301438`), **#26** hauska-mcp-server (GTM collateral — its body still says "46-tool surface", correct to 57 before merge).
+
+**Corrected next-moves (the real backlog, none is a deploy):** (1) merge #68 / #27 / #26; (2) **finding QUALITY** — the proven FBC M601.6 finding loosely conflated egress with mechanical, this is now the frontier, not plumbing; (3) **unpin GTM Decision C** — its gate ("build-out deployed and tested") is now fully met; (4) **arrow-two calibration capture** — still the only load-bearing build and still not on an active sprint; (5) Cortex 7k phased launch (Phase 1 ephemeral demo, Phase 2 auth/isolation = the unbuilt task #29); (6) Cotality activation (OAuth unblocked via the `api1` host), tenant leg + engine lift (queued). The capital-raise doc [`72a`](72a_capital_raise_positioning.md) gap #1 ("verifiable output not provable on a live prod run / prod ships mock") is **obsolete as of this recon** — corrected in that doc.
 
 ## Substrate build-out wave merged — deploy deferred (2026-06-07)
 

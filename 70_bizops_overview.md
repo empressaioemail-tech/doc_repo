@@ -2,9 +2,9 @@
 id: 70_bizops_overview
 title: Bizops overview â 70-band pointer doc
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-06-09
 applies_to: portfolio
-related: [00_current_state, 14_pricing_framework, 18_stakeholder_graph, 71_pipeline, 72_hauska_inc_operations, 73_partnerships, 74_commercial_agreements]
+related: [00_current_state, 14_pricing_framework, 18_stakeholder_graph, 71_pipeline, 72_hauska_inc_operations, 72a_capital_raise_positioning, 73_partnerships, 74_commercial_agreements]
 owner: nick
 ---
 
@@ -16,6 +16,7 @@ owner: nick
 
 - [`71_pipeline.md`](71_pipeline.md) â active prospects, leads, funnel state.
 - [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md) â Hauska Inc. corporate state: entity separation, banking, IP attorney memo, Tech E&O insurance, money-transmitter posture, KYC/AML thresholds, settlement-rail status.
+- [`72a_capital_raise_positioning.md`](72a_capital_raise_positioning.md) â capital-raise narrative layer: category placement, one-page investor summary, investor archetypes, go-to-market gaps. Companion to the verified development snapshot [`HAUSKA_INVESTOR_BRIEF.md`](HAUSKA_INVESTOR_BRIEF.md).
 - [`73_partnerships.md`](73_partnerships.md) â formalized partnerships and the partnership-first sourcing template applied through Bastrop.
 - [`74_commercial_agreements.md`](74_commercial_agreements.md) â active contracts, proposals in flight, NDA / revenue-share / MSA templates.
 - [`_prospects/`](_prospects/) â per-prospect working files. Series subdirectory per [`01_doc_conventions.md`](01_doc_conventions.md). Today: `_prospects/mox/` carries three Mox engagement artifacts moved from root 2026-05-18.

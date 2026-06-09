@@ -99,4 +99,4 @@ Atom volume, jurisdiction coverage, cost per jurisdiction onboarded, metered cal
 
 ---
 
-*Confidence note. Deployment states, package versions, tool counts, and the corpus figure are verified against running systems and published artifacts as of 1 June 2026. The roughly 2,700-atom count is reconciled and under final confirmation across the internal record. Pricing range, tier model, and partnership status are settled internal commitments. Fiat rail, revenue-routing settlement, and first paid revenue are pre-launch as described under Honest gaps.*
+*Confidence note. Deployment states, package versions, tool counts, and the corpus figure are verified against running systems and published artifacts as of 1 June 2026. The corpus figure is the committed snapshot (2026-05-26): 34 jurisdictions, roughly 21,100 atoms, two public-free (about 478 atoms) and the rest platform-internal. Pricing range, tier model, and partnership status are settled internal commitments. Fiat rail, revenue-routing settlement, and first paid revenue are pre-launch as described under Honest gaps.*
