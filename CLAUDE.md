@@ -37,11 +37,13 @@ Every architectural and strategic move checks against these. Use the `premortem-
 
 1. **Sell reasoning, not data.** Every output carries reasoning chain, source citation, confidence score, timestamp regardless of tier. Layer 1 free, Layer 2 paid per `08_tiered_access_model.md`.
 
-2. **Partnership-first sourcing.** Cities, counties, firms are licensors with structural revenue share. Bastrop is the template. **Scoping clarifier (2026-05-23 per `_decisions/2026-05-23_partnership_first_scoping.md`):** this commitment governs **city operational data + Hauska substrate ingest** (Bastrop UDC, code corpus, permit history, plan review precedent, SmartCity OS data, @hauska/atom-contract catalog atoms). It does NOT govern Cortex product-baseline data sourcing for architect-facing layers — national public-records aggregators (Regrid for parcels/zoning baseline) and federal national APIs (FEMA, USGS, USDA, USFWS, FCC) are out of scope. The Hauska refusal target is operational-data aggregation that locks cities out of revenue share, not public-records aggregation.
+2. **Confidence is earned, not asserted.** Every output that carries a confidence signal must be calibratable against outcome, and the system must be built to tighten that calibration with use (arrow two, `04a_arrow_two_calibration_capture.md`; invariant I3). At launch calibration is sparse, so the commitment is that the earning loop exists and is live (the adjudication-to-atom evidence ledger is merged), with confidence falling back to an asserted baseline carrying provenance and verification state, never a bare or unearned number presented as earned. The compounding calibrated reasoning is the moat; the public code text is not. (Replaces the retired partnership-first sourcing commitment per `_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`.)
 
 3. **Cost per jurisdiction onboarded.** Under 200 dollars compute plus one hour human review per new jurisdiction. Hard kill at three counties if not achievable.
 
 4. **Dual interface as product line principle.** Net-new products ship MCP-first with UI second; existing UI-first products retrofit MCP as a tracked roadmap item per `28_mcp_first_product_design.md`. The original v1-MCP-only framing remains correct for atom-level catalog work in `51_substrate_v1_sprint.md`.
+
+**Tenant data sovereignty (customer-trust principle, not a sourcing ethic).** A tenant's private data and adjudications stay isolated to that tenant and are never pooled into a shared or public asset (`tenant-private` accessPolicy, ADR-005 / ADR-017); public-code calibration may pool freely from anonymous and public-tier signal. This is an enterprise customer-trust and security requirement (Mox and every enterprise tenant depend on it) and the re-grounded expression of invariant I5. It is gated on the tenancy/auth build (task #29 + the tenant leg); Cortex does not enforce isolation today (anonymous default tenant), so this names the requirement and its path, not a present-tense guarantee. Partnership-first sourcing was retired 2026-06-09 (`_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`): the sovereignty root survives, re-expressed here at the tenant level; cities are SmartCity OS customers and design partners (Bastrop), not data-sourcing licensors.
 
 ## Three-tier atom architecture
 
@@ -155,7 +157,7 @@ Legal and corporate execution items (route to Nick; do not work them inside stra
 
 **Quality gate rule.** Every output carries source attribution, confidence score, timestamp.
 
-**Partnership preferred rule.** Target partnership cities go through Sylvia, not scraping.
+**Tenant-sovereignty rule.** A tenant's private data and adjudications never pool into a shared or public number; only anonymous and public-tier signal feeds public-code calibration. Enforced at the gate via accessPolicy (ADR-005 / ADR-017). City relationships (Bastrop, SmartCity OS sales) run through Sylvia as customer and design-partner relationships, not data-sourcing licensing. (Replaces the retired Partnership preferred rule, 2026-06-09.)
 
 **MCP-first product design rule.** Net-new products design for agent consumption first; existing UI-first products track MCP retrofit as a roadmap line item.
 

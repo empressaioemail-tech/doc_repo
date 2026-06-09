@@ -2,7 +2,9 @@
 decision_id: 2026-05-23_partnership_first_scoping
 date: 2026-05-23
 owner: Nick
-status: active
+status: superseded
+superseded_by: 2026-06-09_retire_partnership_first_amend_constitution
+superseded_note: "Partnership-first sourcing was retired entirely as a structural commitment 2026-06-09 (this decision had narrowed it; the amendment removes it). Kept for history."
 related_canonical: [CLAUDE, 09_post_saas_substrate_thesis, 14_pricing_framework, 46_smartcity_parcel_intelligence, 51_substrate_v1_sprint, 73_partnerships, 40d_cortex_site_context_sprint, 43_cortex_qa_backlog]
 related_skill: [premortem-check]
 ---

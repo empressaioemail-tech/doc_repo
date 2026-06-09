@@ -19,7 +19,7 @@ Runs the proposed move through the four structural commitments and three additio
 
 1. **Sell reasoning, not data.** Every output carries reasoning chain, source citation, confidence score, timestamp regardless of tier. Layer 1 free, Layer 2 paid per `08_tiered_access_model.md`. Does the proposed move respect this contract?
 
-2. **Partnership-first sourcing.** Cities and counties are licensors with revenue share, not extraction targets. Bastrop is the template. Does the proposed move treat data sources as partners or as targets? **Scope (2026-05-23 per `_decisions/2026-05-23_partnership_first_scoping.md`):** this commitment governs city operational data + Hauska substrate ingest (Bastrop UDC, code corpus, permit history, plan review precedent, SmartCity OS data, @hauska/atom-contract catalog atoms). It does NOT govern Cortex product-baseline data sourcing for architect-facing layers — national public-records aggregators (e.g. Regrid for parcels/zoning) and federal national APIs (FEMA, USGS, USDA, USFWS, FCC) are out of scope. The Hauska refusal target is operational-data aggregation that locks cities out of revenue share, not public-records aggregation. When evaluating Cortex product-baseline data sourcing decisions, return green on this commitment and proceed to the next.
+2. **Confidence is earned, not asserted.** Every output that carries a confidence signal must be calibratable against outcome, and the system must be built to tighten that calibration with use (arrow two, `04a_arrow_two_calibration_capture.md`; invariant I3). Does the proposed move preserve or strengthen the earning loop, and does it avoid presenting a bare or unearned confidence number as earned? At launch calibration is sparse, so confidence falls back to an asserted baseline carrying provenance and verification; green requires that the move keeps that honest fallback and the live earning loop, not that numbers are already calibrated. (Replaced partnership-first sourcing here 2026-06-09 per `_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`. Partnership-first is retired; do NOT re-raise it. The sovereignty root survives as tenant data sovereignty: a tenant's private data/adjudications never pool into a shared or public number, `tenant-private` accessPolicy ADR-005/017 — check that under commitment 7's quality/sovereignty gate, not as a sourcing ethic.)
 
 3. **Cost per jurisdiction onboarded.** Under 200 dollars compute plus one hour human review per new jurisdiction. Hard kill at three counties if not achievable. Does the proposed move stay within this envelope, or does it require unbounded engineering effort?
 
@@ -35,7 +35,7 @@ Runs the proposed move through the four structural commitments and three additio
 
 ## Load-bearing commitments
 
-Commitments 1 (sell reasoning), 2 (partnership-first), and 3 (cost per jurisdiction) are load-bearing. They are the structural thesis. A yellow on any load-bearing commitment cannot be absorbed by green elsewhere; it must be resolved before commitment, not flagged in passing.
+Commitments 1 (sell reasoning), 2 (confidence is earned, not asserted), and 3 (cost per jurisdiction) are load-bearing. They are the structural thesis. A yellow on any load-bearing commitment cannot be absorbed by green elsewhere; it must be resolved before commitment, not flagged in passing.
 
 Commitments 4, 5, 6, 7 are operational. A yellow on these can be absorbed if the load-bearing commitments are clean and the operator acknowledges the operational tradeoff.
 
@@ -67,8 +67,8 @@ This is not a substitute for the operator's judgment. It surfaces concerns; the 
 
 ## Example invocation
 
-User: "Should we partner with MGO instead of displacing them, since they have the city contracts already?"
+User: "Should we let one partner city's reviewer adjudications feed the public confidence number, since they have the richest review signal?"
 
-Skill response: Runs partnership-first sourcing (yellow on a load-bearing commitment, MGO is an aggregator not a primary data licensor), Hauska spine (red, MGO partnership preserves the data lock pattern Hauska is built to refuse), focus queue (red, this contradicts the active MGO displacement strategy in canonical docs). Overall red. Proposed move conflicts with the Hauska refusal of data estate absorption and would invalidate the displacement work that motivates 51_substrate_v1_sprint and the partnership-first sourcing move.
+Skill response: Runs confidence-is-earned (green on the surface, more signal tightens calibration) but routes to the tenant-sovereignty gate under quality (red, pooling a tenant's private adjudications into a shared or public number violates I5 tenant data sovereignty and the enterprise customer-trust floor), Hauska spine (yellow, the calibration is spine substrate but the pooling breaks the sovereignty root). Overall red. Public-code calibration may draw only on anonymous and public-tier signal; a tenant's private adjudications stay in a `tenant-private` overlay that never pools (ADR-005/017). The fix is the sovereignty split, not the pooling. (Note: partnership-first sourcing and the MGO-displacement framing were retired 2026-06-09; do not raise them.)
 
 End of skill.
