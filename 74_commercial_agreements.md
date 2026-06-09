@@ -2,7 +2,7 @@
 id: 74_commercial_agreements
 title: Commercial agreements â contracts, proposals, templates
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [14_pricing_framework, 18_stakeholder_graph, 30_smartcity_os, 70_bizops_overview, 71_pipeline, 73_partnerships]
 owner: nick
@@ -28,13 +28,13 @@ None signed and tracked at the band level today. When a contract is signed, log 
 
 ## Templates
 
-Templates are TBD. The shape they need to take is informed by 14_pricing_framework v1 canonical (Layer 1 free; Layer 2 per-call default; optional stream subscription; reasoning-call as unifying frame) plus the partnership-first sourcing pattern from [`73_partnerships.md`](73_partnerships.md).
+Templates are TBD. The shape they need to take is informed by 14_pricing_framework v1 canonical (Layer 1 free; Layer 2 per-call default; optional stream subscription; reasoning-call as unifying frame). Partnership-first sourcing was retired 2026-06-09 ([`_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`](_decisions/2026-06-09_retire_partnership_first_amend_constitution.md)), so the city-licensor template pattern is gone; the surviving revenue-routing counterparty is ICC/NFPA content licensing ([`_decisions/2026-06-09_icc_nfpa_licensing_and_sdk_rail_survive.md`](_decisions/2026-06-09_icc_nfpa_licensing_and_sdk_rail_survive.md)), and the templates follow the content-license and Layer-2 consumption shapes in [`73_partnerships.md`](73_partnerships.md).
 
 | Template | Status | Trigger to author |
 |---|---|---|
 | **NDA** | TBD | First counterparty conversation requiring confidentiality before scoping. None pending today. |
 | **Master services agreement (MSA)** | TBD | First contract beyond Bastrop. Currently no second contract in flight. |
-| **Revenue-share template** | TBD | Bastrop revenue-share contract operational pilot (per [`14_pricing_framework.md`](14_pricing_framework.md) substrate-state subsection). The pilot informs the template before the template is generalized. |
+| **Revenue-share template** | TBD (re-triggered 2026-06-09) | First content-license deal that carries a metered-share structure (ICC/NFPA), not the retired Bastrop city revenue-share pilot. Authored only if that deal carries routing; otherwise parked. The SDK routing/split layer is unbuilt, so any share is contractually promised, not substrate-enforced, until it ships. |
 | **Layer 2 paid agent-consumption agreement** | TBD | First paid Layer 2 call. Likely thin (substrate side does the metering and routing per the SDK payment substrate); legal posture per [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md) regulatory items. |
 | **Empressa wedge ToS + Privacy Policy** | TBD | Before external extension users (day 30 target). [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md) legal track. |
 | **Brokerage pilot agreement** | TBD | Before first paid pilot invoice (day 45–60). Flat fee maps to Team tier per [`_decisions/2026-05-26_empressa_wedge_operating_commitments.md`](_decisions/2026-05-26_empressa_wedge_operating_commitments.md). |
