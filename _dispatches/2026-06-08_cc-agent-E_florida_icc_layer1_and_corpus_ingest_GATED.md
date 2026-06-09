@@ -5,7 +5,7 @@ date: 2026-06-08
 agent: cc-agent-E
 repo: hauska-engine
 kind: dispatch
-status: GATED - DO NOT FIRE until the operator returns from the ICC meeting with the Code Connect OAuth spec + credentials
+status: GATED - ICC meeting happened 2026-06-09; awaiting Code Connect OAuth spec + credential delivery. DO NOT FIRE until credentials are in hand.
 related: [00_current_state, 80_adrs/adr_019_layered_code_substrate, 56_engine_extraction_sprint, _decisions/2026-06-08_miami_beach_plan_review_hybrid_bootstrap, 73_partnerships, 20_agent_operating_rules, 01a_atom_conventions]
 ---
 

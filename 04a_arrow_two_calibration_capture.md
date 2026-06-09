@@ -2,10 +2,10 @@
 id: 04a_arrow_two_calibration_capture
 title: Arrow two — calibration capture (build spec for roadmap item 1)
 status: active
-last_updated: 2026-06-07
+last_updated: 2026-06-09
 applies_to: portfolio
 owner: nick
-related: [03_structural_constitution_and_drift_guard, 03a_positioning_framework, 04_roadmap_alignment_audit, 00d_portfolio_roadmap_reference, 50_hauska_mcp_server, 54_tenant_leg_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_005_multitenancy, _research/2026-06-06_cross_repo_recon]
+related: [03_structural_constitution_and_drift_guard, 03a_positioning_framework, 04_roadmap_alignment_audit, 00d_portfolio_roadmap_reference, 50_hauska_mcp_server, 54_tenant_leg_sprint, 57_national_code_warming_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_005_multitenancy, _decisions/2026-06-09_codewarm_arrow_two_combined, _research/2026-06-06_cross_repo_recon]
 ---
 
 # Arrow two: calibration capture
@@ -58,12 +58,26 @@ Three things are unwired:
 
 Report: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_recon.md`](_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_recon.md). Load-bearing discovery: the calibration targets named here (code-section and code-cross-reference atoms) carry no confidence field, have no setter, and the engine has no recompute path; the corpus is a rebuilt immutable snapshot. The confidence number that exists today lives on the finding, not on the cited atoms. So arrow two cannot land in Phase 1 as a write to atom confidence. What makes it buildable: the finding-to-atom lineage already exists at per-finding granularity (`findings.citations[].atomId`), and every adjudication already emits an append-only `atom_events` row. The faithful Phase 1 is therefore an append-only adjudication-to-atom evidence ledger, cortex-api-side, not a confidence write-back.
 
+## Write target resolved (2026-06-09)
+
+The Phase-0 "no write target" conclusion held only because the calibration targets were the immutable corpus atoms. Two things resolve it, and together they make arrow two universal across the whole base rather than reasoning-layer-only. Decision: [`_decisions/2026-06-09_codewarm_arrow_two_combined.md`](_decisions/2026-06-09_codewarm_arrow_two_combined.md); sprint home: [`57_national_code_warming_sprint.md`](57_national_code_warming_sprint.md).
+
+First, the web-first `reasoning_atoms` table (migration 0035) is mutable, UPSERT, and confidence-bearing. It is the write target the reasoning layer lacked. The national code-warming sprint populates it at scale.
+
+Second, the existing immutable corpus is reached not by mutation but by a calibration overlay keyed `(atomId, jurisdictionTenant)`, attributed through the same `findings.citations[].atomId` lineage. One adjudication ledger and one overlay carry calibration for both stores; the corpus stays rebuilt-immutable. This supersedes the Phase-0 blocker for the corpus too, by the overlay route.
+
+The field contract is load-bearing: `assertedConfidence` (cold-warm-owned, set on every warm) is split from `calibratedConfidence` (arrow-two-owned, Phase 3). The cold-warm UPSERT preserves the calibration columns, so re-warming never erases earned calibration. Calibration is edition-scoped, grain-adaptive (per-atom where dense, per-class-within-jurisdiction where sparse), and falls back to asserted at read time until earned (cold-start prior). The existing corpus is confidence-blind today, so the overlay also seeds an asserted baseline per corpus atom from source quality, giving a uniform base where every served atom carries confidence plus provenance plus verification.
+
+The sovereignty split extends the Phase-0 guardrail flag into the mechanism: a shared atom's public `calibratedConfidence` draws only on non-tenant-private signal; tenant-private adjudications stay in a per-tenant overlay row (`tenant-private` accessPolicy) that never pools. This is the partnership-first commitment made mechanical, holding for both stores.
+
+One launch-readiness gate this surfaces: lineage completeness. Arrow two can only deposit where the outbound emission carried an attributable atom id. Phase 0 confirmed it on Cortex findings; Codex, the MCP tools, and the Brief extension must be audited too, since any surface that emits a citation without atom-id lineage is arrow-one-only withdrawal that can never become a deposit.
+
 ## Build phases
 
 - **Phase 0, design and recon (no code). DONE 2026-06-06** (cc-agent-C). See findings above.
 - **Phase 1, adjudication-to-atom evidence ledger (cortex-api).** Route each finding's `citations[].atomId` plus its adjudication (accept/reject/override) into a per-atom evidence record, partitioned by `jurisdictionTenant`. Tier 1a: a zero-schema derived projection joining the existing `atom_events` finding-mutation events to `findings.citations[].atomId` (proves routing, closes the stranding gap, no migration). Tier 1b: an append-only durable evidence write at the three capture points if the projection proves too costly. Ship 1a first. No confidence write-back, no engine change, no corpus mutation. Owner: cc-agent-C. Dispatch ready.
 - **Phase 2, outcome-observation capture.** Add the capture of real-world outcomes so finding accuracy can be measured against ground truth. Sequenced in the tenant leg ([`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md) step 3), tenant-partitioned on the same `jurisdictionTenant` key as Phase 1. Dispatch (QUEUED): [`_dispatches/2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md`](_dispatches/2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md).
-- **Phase 3, calibration computation.** Compare stated confidence to observed frequency, tighten with use, and surface the calibration grade (which also feeds the calibration-grade pricing tiers in the positioning framework). Tenant leg step 4, computed per tenant with no cross-tenant pooling. Dispatch (QUEUED): [`_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md`](_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md).
+- **Phase 3, calibration computation (retargeted 2026-06-09).** Compare stated confidence to observed frequency, tighten with use, and surface the calibration grade (which also feeds the calibration-grade pricing tiers in the positioning framework). Tenant leg step 4, computed per tenant with no cross-tenant pooling. Writes `calibratedConfidence` to the `(atomId, jurisdictionTenant)` overlay covering both the reasoning atoms and the existing corpus atoms; migration 0037; gated on both Phase 2 outcome capture and the cold-warm field split (migration 0036). Dispatch (QUEUED, retargeted): [`_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md`](_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md).
 
 **Tenant partition is the shared sovereignty guardrail (2026-06-07).** The `jurisdictionTenant` partition on the evidence ledger and the `tenant-private` accessPolicy enforced at the gate (ADR-005, [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md)) are the same boundary. Arrow two is Mox's value prop (the deposit loop) and Mox's and Bastrop's sovereignty guarantee (a tenant's adjudications and outcomes are never pooled). Phases 2 and 3 are therefore planned inside the tenant leg, which serves Mox and SmartCity on one shared spine.
 
@@ -76,5 +90,6 @@ Report: [`_inbox/2026-06-06_legacy-design-tools_cc-agent-C_arrow_two_phase0_reco
 
 ## Revision history
 
+- **2026-06-09:** Write target resolved. Added the "Write target resolved" section: the v2 `reasoning_atoms` table (0035) plus a `(atomId, jurisdictionTenant)` overlay covering both stores supersede the Phase-0 "no write target" blocker; the field contract (asserted vs calibrated, UPSERT-preserved), edition-scoped and grain-adaptive calibration, cold-start prior, asserted baseline for the confidence-blind corpus, the sovereignty split made mechanical, and the lineage-completeness launch gate. Phase 3 bullet retargeted onto the overlay (migration 0037, gated on Phase 2 + the cold-warm field split 0036). Frontmatter `related` extended (57, the combined decision); `last_updated` bumped. Per [`_decisions/2026-06-09_codewarm_arrow_two_combined.md`](_decisions/2026-06-09_codewarm_arrow_two_combined.md).
 - **2026-06-07:** Phases 2 and 3 sequenced into the tenant leg (54) with QUEUED dispatches linked; added the tenant-partition-is-sovereignty-guardrail note tying the `jurisdictionTenant` ledger partition to the ADR-005 `tenant-private` accessPolicy. Frontmatter `related` extended (54, adr_005_multitenancy); `last_updated` bumped.
 - **2026-06-06 (origin):** Created as the canonical home for roadmap item 1. Mechanism, calibration definition, current substrate, the three-part gap, pre-mortem guardrails, and four build phases. Phase 0 recon dispatched to cc-agent-C.

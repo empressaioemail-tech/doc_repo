@@ -2,10 +2,10 @@
 id: 56_engine_extraction_sprint
 title: Engine extraction sprint - engines out of cortex-api into the spine
 status: active
-last_updated: 2026-06-08
+last_updated: 2026-06-09
 applies_to: hauska
 owner: nick
-related: [80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_full_engine_extraction_and_data_packages, _decisions/2026-06-07_adr008_gate_front_seam_scoping, 55_spine_data_intelligence_stack, 54_tenant_leg_sprint, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 00c_portfolio_master_map]
+related: [80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_full_engine_extraction_and_data_packages, _decisions/2026-06-07_adr008_gate_front_seam_scoping, 55_spine_data_intelligence_stack, 57_national_code_warming_sprint, 54_tenant_leg_sprint, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 00c_portfolio_master_map, _decisions/2026-06-09_codewarm_arrow_two_combined]
 ---
 
 # Engine extraction sprint
@@ -36,6 +36,7 @@ related: [80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_full_engine_e
 |---|---|---|
 | `lib/adapters` (site-context federal/national/state/local + the merged subsurface set) | `hauska-engine/packages/adapters` | PR #145 subsurface is cargo |
 | `lib/briefing-engine`, `lib/finding-engine` (+ plan-set decomposition, precedence) | `hauska-engine/packages/engine-core` | decomposition (b06d0ac, pending rebase) + precedence (Wave 2) are cargo |
+| reasoning-atom corpus (web-first grounding cache) + adjudication ledger + calibration overlay | `hauska-engine/packages/engine-core` (corpus may split toward the retrieval layer) | the national code-warming substrate ([`57`](57_national_code_warming_sprint.md)); built in cortex-api now behind a clean package seam because capture + lineage live there and the gate is not yet wired; lifts with the finding engine in step 4. Spine substrate, not a Cortex feature; calibration is a spine-wide invariant ([`55`](55_spine_data_intelligence_stack.md) §7) |
 | hydrology / drainage worker + site-topography | `hauska-engine/packages/engine-core` (+ pysheds sidecar in the engine image) | closes the pysheds-not-baked deploy gap in the new home |
 | brief / engagement reasoning entry points | `hauska-engine/services/engine-api` | gate-fronted; cortex-api calls via the seam during transition |
 
@@ -84,5 +85,6 @@ Steps 3-6 are gated behind M-Stabilize Phase 2C ([`30a`](30a_smartcity_stabiliza
 
 ## Revision history
 
+- **2026-06-09:** Reasoning/calibration substrate added as engine-core cargo. The national code-warming reasoning-atom corpus, adjudication ledger, and calibration overlay ([`57`](57_national_code_warming_sprint.md)) are built in cortex-api now behind a clean package seam (capture and lineage live there, gate not yet wired) and lift with the finding engine in step 4; they are spine substrate, not a Cortex feature, and calibration is a spine-wide invariant ([`55`](55_spine_data_intelligence_stack.md) §7). Per [`_decisions/2026-06-09_codewarm_arrow_two_combined.md`](_decisions/2026-06-09_codewarm_arrow_two_combined.md).
 - **2026-06-08:** Lift-status note added. M-Stabilize 2C met (SmartCity migration closed), so the mechanical gate on steps 3-6 is cleared, but the lift is held behind the deferred build-out deploy (moving-target risk on cortex-api; deploy-first baseline; step 5 hard-blocked by the unwired gate, `HAUSKA_BACKEND_URL` placeholder verified 2026-06-08). Step-3 adapters dispatch is fire-ready on deploy.
 - **2026-06-07 (origin):** Filed to operationalize ADR-008 full extraction. Target architecture (engine-api in hauska-engine, cortex-api to BFF), what-moves table, six-step sequence (scaffold + cargo now; lift gated behind M-Stabilize 2C), engine-home decision, risks, dispatch index.
