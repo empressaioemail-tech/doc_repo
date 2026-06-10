@@ -47,6 +47,22 @@ Every tool output emits the same provenance envelope: lineage (cited atom-id[s])
 - **Atom-graph cross-reference traversal** (ADR-010; 55 Section 7 wants it spine-wide). Follow code cross-references and related-atom links. Connected reasoning across the graph is high-utility and hard to replicate.
 - **Execution atoms (north star, ADR-013 queued).** The jump from reasoning *about* the code to *acting* — generating the submission, drafting the variance, filing. The deliverable-letter tools already hint at it. The largest moat expansion available, from intelligence to action. v2 territory; hold as the direction.
 
+## 6. Cortex connector candidates (from the 2026-06-10 connector dig)
+
+The connector dig (parallel planning thread, 2026-06-10) mapped the planned connector set against the residential-designer audience and surfaced unplanned candidates. Captured here so they are not lost; only the permit/AHJ one has a decision.
+
+**Planned / in motion** (condensed): parcel/zoning (Regrid live, Cotality 3-increment), hazard (FEMA live, Cotality climate), topo/soil/subsurface (USGS 3DEP live, SSURGO + USGS geology merged), codes (ICC creds-pending, ADA/FHA/A117.1 live, precedence engine merged), hydrology (NOAA Atlas 14), CAD hosts (Revit GA; ArchiCAD/SketchUp/SoftPlan planned). **Deferred from the planned set:** Shovels permits, MLS, FAA/airspace.
+
+**Unplanned candidates** (for the SoftPlan/ArchiCAD residential + light-commercial audience — strong on site/physical/code data, weak on what actually kills projects):
+
+| Candidate | Why it matters | Status |
+|---|---|---|
+| **Permit-portal / AHJ-precedent** | The designer's #1 question (has this AHJ approved a project like mine, what got red-lined, submittal checklist + turnaround); proprietary operational data; **doubles as arrow-two's deepest ground-truth signal** (permit approved/denied) | **CHOSEN — BUILD, family-first, post-C4** ([`_decisions/2026-06-10_permit_ahj_precedent_connector_recon_seed.md`](_decisions/2026-06-10_permit_ahj_precedent_connector_recon_seed.md), recon cleared) |
+| **HOA / CC&R / deed restrictions** | For residential, HOA architectural review + CC&R setback/height/material rules kill more designs than the building code | Candidate — **honesty-gated** (58 says the CC&R cross-layer is unbuilt and must not be marketed); pairs with precedence S4/S5 |
+| **Utility / service-territory** | Septic-vs-sewer, well-vs-municipal, tap fees — change the whole site plan; SSURGO gives septic soil suitability but nothing connects service territory | Candidate (mostly data lookup, less reasoning) |
+| **Energy / climate-zone** | NREL PVWatts, ASHRAE/IECC climate zone, SECO — energy code (IECC/SECO) is a live compliance surface; Austin@2024 enforces it | Candidate (feeds the code-reasoning layer) |
+| **WUI / wildfire trigger** | TX hill-country + western designers hit WUI ignition-resistant construction requirements; Cotality has peril but not the code trigger | Candidate |
+
 ## Roadmap routing
 
 | Item | Lane / when | Owner repo(s) |
