@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-E
 repo: hauska-engine
 kind: dispatch
-status: QUEUED - FIRE WHEN M-STABILIZE 2C CLEARS (first lift; cleanest, fewest deps)
+status: FIRE-READY (2026-06-10 — 2C met, deploy done, gate wired, cortex-api static after Phase 3; Front A step A1 of sprint 58)
 related: [00_current_state, 20_agent_operating_rules, 56_engine_extraction_sprint, _decisions/2026-06-07_full_engine_extraction_and_data_packages, 80_adrs/adr_008_engine_factor_out]
 ---
 
 # Engine lift step 3 - adapters into the spine
 
-> **QUEUED.** Fire when M-Stabilize Phase 2C cutover lands clean (that closes the extraction gate). This is the first and cleanest lift - the site-context + subsurface adapters are self-contained data-fetch with the fewest dependencies. Pairs with the cortex-api consume dispatch (cc-agent-C). Verify identifiers against live source before firing.
+> **FIRE-READY (2026-06-10).** All three lift hold-reasons are resolved (M-Stabilize 2C met, build-out deployed, gate wired, cortex-api static after arrow-two Phase 3). This is Front A step A1 of the GTM-readiness sprint ([`58`](../58_gtm_readiness_sprint.md)) and the first/cleanest lift — the site-context + subsurface adapters are self-contained data-fetch with the fewest dependencies. A2 (engine-core lift) fires on this landing. Verify identifiers against live source before firing.
 
 You are **cc-agent-E**, the single owner of `hauska-engine` for this run.
 

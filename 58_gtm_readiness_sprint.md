@@ -1,54 +1,140 @@
 ---
 id: 58_gtm_readiness_sprint
-title: GTM-readiness sprint — engine lift (app-by-app QA) + code-library maximization (SCAFFOLD)
+title: GTM-readiness sprint — engine lift (app-by-app QA) + Texas code-library + moat-in-flight
 status: active
-last_updated: 2026-06-09
+last_updated: 2026-06-10
 applies_to: portfolio
 owner: nick
-related: [56_engine_extraction_sprint, 57_national_code_warming_sprint, 54_tenant_leg_sprint, 04a_arrow_two_calibration_capture, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_005_multitenancy, 48_codex_program_plan, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint]
+related: [56_engine_extraction_sprint, 57_national_code_warming_sprint, 59_spine_moat_and_high_value_features, 54_tenant_leg_sprint, 04a_arrow_two_calibration_capture, 03a_positioning_framework, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_005_multitenancy, 48_codex_program_plan, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, _decisions/2026-06-10_gtm_readiness_plan]
 ---
 
-# GTM-readiness sprint (scaffold)
+# GTM-readiness sprint
 
-> **Scaffold.** Claims the slot and frames the lanes; to be fleshed out in the next planning session with the operator (who is moving directly into the engine extraction). Premised on the 2026-06-09 close: arrow-two is closed end-to-end (I3 satisfied), tenant isolation is live end-to-end, the build-out is deployed, the gate is wired, and the cold-warm harness is merged. The lift's three hold-reasons (moving-target on cortex-api, deploy-first baseline, unwired gate) are all resolved.
+> **What this is.** The sequenced, premortem-cleared plan to get Cortex and the browser extension ready for the architect-community launch with an amazing, grounded UX, by lifting the engines to the spine app-by-app (so each app is QA'd in its final topology) while the Texas code library is deepened underneath. The moat features from [`59`](59_spine_moat_and_high_value_features.md) are sequenced in, not bolted on. Premised on the 2026-06-09 close: arrow-two is closed end-to-end (I3 satisfied), tenant isolation is live end-to-end, the build-out is deployed, the gate is wired, the cold-warm harness is merged. Pre-mortem cleared GREEN 2026-06-10 (one operational yellow on cc-agent-C build concentration, mitigated by serial ordering). Plan decisions: [`_decisions/2026-06-10_gtm_readiness_plan.md`](_decisions/2026-06-10_gtm_readiness_plan.md).
 
-## Premise
+## What changed since the scaffold (verified live, 2026-06-10)
 
-Two coupled efforts get Cortex, the browser extension, and SmartCity ready for the FB-group / 7k-architect launch with an amazing UX. Both can run in parallel lanes.
+The scaffold listed several items as future work that are already done; the plan is narrowed accordingly.
 
-## Effort 1 — engine lift, done as the QA vehicle
+- **Org-wide open-PR surface is one PR:** hauska-engine #68 (retrieval `/healthz` + substrate Neon observability). legacy-design-tools and hauska-mcp-server have zero open PRs; mcp #26 (GTM) and #27 (observability) merged since the last snapshot.
+- **The cold-warm harness (#157 / migration 0036) is merged.** The cold-warm RUNS dispatch was held on it; it is now fire-ready with no new work.
+- **The two lineage-audit P0s are closed** (`codex_findings_fetch` #30/#159, atom-id namespace normalization #158). Those were the arrow-two-critical provenance gaps. The uniform-provenance moat is therefore no longer "fix the deposit loop" — it is the narrower, trust-facing job of standardizing the envelope shape across emission surfaces.
+- **The precedence taxonomy canary is fixed** (#149, ADA-vs-FHA most-stringent-governs). The precedence moat's recon is now about gate exposure + full-matrix completeness, not the taxonomy.
 
-The decoupling (engines out of cortex-api into the `hauska-engine` spine, apps consume through the gate; ADR-008 / [`56`](56_engine_extraction_sprint.md)) is committed direction. Doing it BEFORE the heavy customer-readiness QA means each app is validated in its final shipping topology, not re-QA'd after a later lift. The app-by-app cut (56 step 5) IS the QA vehicle and the de-risked (non-big-bang) way to lift.
+Net: the load-bearing correctness builds are behind us. This is a lift + coverage + polish sprint, not a make-the-substrate-work sprint.
 
-Ordering constraint: cortex-api must be static when `engine-core` lifts (56 step 4) — satisfied now that arrow-two Phase 3 has landed.
+## The launch gate (what "GTM-ready" means)
 
-Sequence to plan:
-1. Lift adapters + engine-core to the spine (56 steps 3-4; engine-core cargo already includes the calibration package from Phase 3). One-time, cc-agent-E (hauska-engine).
-2. Cut consumers to the gate APP-BY-APP, QA each in its final topology: Cortex (cortex-api repoints to the gate→engine) → browser extension (already hits cortex-api directly; repoint to the gate) → SmartCity/Bastrop (the bigger onboard — an island with zero Hauska deps today; 54 Task 2 + 31a Phase 3 atom-backed context).
-3. Thin cortex-api to a BFF (56 step 6).
+Cortex and the extension, cut onto the spine and QA'd in their final topology, with architect-facing surfaces emitting the uniform provenance envelope and per-user auth live for the 7k self-serve; a deep Texas code library (cold-warm first pass landed + Texas gap-fill); and the thin user-warm path (coverage report + honest pill + manual internal escalation, never ingesting user-supplied content into the shared corpus).
 
-Two adjacent lanes (separable from the lift topology):
-- **Per-user auth on Cortex** (the 7k self-serve isolation; the "task #29 auth layer," distinct from the gate-tenancy #29 already shipped): login/signup, owner/tenant columns + backfill, per-route ownership predicates, metering, rate-limit.
-- **Product polish:** browser-extension UX, Cortex UX/features, restore the QA-30/31-removed render auth gate, mnml render activation.
+Explicitly NOT gating launch: SmartCity-on-spine (the third app, follows), full-fleet provenance across all ~57 tools (fast-follow), the background enhancement loop (post-launch), payment/metering (ICC cutover), and the full user-warm build (fast-follow). Texas is the test-run and template; geography expansion is sequenced after the ICC cutover. No FB-group clock — make it right.
 
-## Effort 2 — code-library maximization for the FB-group launch
+## Resolved in the planning session (2026-06-10)
 
-Goal: by launch, an architect's lookup hits a deep, calibrated library so the UX is instant and grounded. Three moves:
+| Open question (from the scaffold) | Resolution |
+|---|---|
+| SmartCity-on-spine — this sprint or its own? | **Follows.** Cortex + extension gate launch; SmartCity/Bastrop is the third app on the same lift, off the critical path. |
+| User-warm coverage-escalation scope | **Thin for launch** (warm-what-we-can + honest report + manual escalation), full automated loop fast-follow. No-ingest guardrail hard in both. |
+| Uniform provenance — hard gate or fast-follow? | **Rides the app-by-app cut; architect-facing surfaces gate launch;** full-fleet standardization fast-follow. |
+| Background enhancement loop mechanism | **Deferred post-launch.** Cold-warm first pass + demand-driven lazy-cache is enough depth for launch. |
+| FB-group geography → gap-analysis scope | **Texas-first, deep.** Texas is the test-run + template; geography expansion after ICC. |
 
-1. **Warm the first pass (now-fireable).** Fire the cold-warm RUNS dispatch ([`_dispatches/2026-06-09_cc-agent-C_codewarm_runs.md`](_dispatches/2026-06-09_cc-agent-C_codewarm_runs.md)) over the six manifests (~640 sections), with the receiving-agent section-number verification gate. Harness #157 is merged, so it is fireable.
-2. **Coverage gap analysis (new — plan this).** A have-vs-need map. HAVE: the engine corpus (~34 jurisdictions / 21k atoms, mostly Texas + federal accessibility; 2 public-free), plus the warmed national model-code reasoning atoms from the first pass. NEED: the full I-Code family at the editions architects actually adopt (2021/2024 + the in-force priors), the states/jurisdictions matching the FB-group geography, the NFPA track (NEC/NFPA 101, license-gated), and the ICC licensed text (creds-gated). Output: a coverage matrix (code family x edition x jurisdiction/state) with have/warmed/missing, and a prioritized fill-list by expected FB-group demand.
-3. **Background enhancement loop (new — plan this).** A recurring process (candidate: a scheduled cloud agent, or a paced loop) that keeps the library deepening without manual fan-out: demand-driven warming of new refs from real usage (the lazy-cache), multi-link accretion (more authoritative source links per ref), arrow-two calibration accrual (now that Phase 3 is live, atoms calibrate from usage), edition-adjacency warming, and gap-fill against the analysis. The library compounds in the background while the apps get UX-polished.
+## The two fronts and the convergence
 
-Guardrails carry from 57: web-first reasoning atoms (no verbatim text hoarding), spine substrate served through the gate, tenant data sovereignty on calibration, ICC/NFPA as the licensed-display enhance phase.
+Two agent fronts run in parallel (different repos, no collision); they converge on cc-agent-C, the single-owner serialization point for legacy-design-tools.
 
-## Moat features to fold in
+```
+FRONT A (cc-agent-E / hauska-engine)        FRONT B (cc-agent-C / legacy-design-tools)
+  A1 lift adapters (step 3) ─────┐            B1 cold-warm RUNS over 6 manifests (Texas-first)
+  A2 lift engine-core (step 4) ──┤              └─> B2 Texas coverage gap analysis (recon)
+     (carries Phase-3 cargo)     │            (independent of the lift; data-only, no schema)
+                                 │
+                                 ▼
+                       CONVERGENCE (cc-agent-C, after A2 parity)
+                         C1 cut Cortex to gate + QA + Cortex surfaces -> uniform envelope
+                         C2 cut extension to gate + QA + extension surfaces -> envelope
+                         C3 thin cortex-api to BFF (step 6)
+                         C4 (post-gate) cut SmartCity/Bastrop — third app, off critical path
 
-The high-value moat features captured at session close ([`59_spine_moat_and_high_value_features.md`](59_spine_moat_and_high_value_features.md)) belong in this sprint's planning. Near-term ones especially: **user-warm with quality-gated coverage escalation** (the operator-refined design — warm-what-we-can + honest coverage report + internal gap-escalation + team curation; no user-supplied content into the shared corpus; this is the demand-driven national-coverage answer and a white-glove touchpoint, and it folds into Effort 2's code-library lane), the **uniform provenance contract** (pairs with the app-by-app cut), and **precedence/reconciliation tightening** (recon first). The **payment/metering activation** routes to the ICC cutover, not this sprint. The deeper moat builders (calibration-grade-sellable, real-outcome capture, participation flywheel, as-of-time, atom-graph, execution atoms) are roadmap items to sequence against this work.
+  ADJACENT (cc-agent-C, separable from the lift topology):
+    per-user auth on Cortex (task #29 self-serve) | product polish | user-warm-thin
+```
 
-## To resolve in the planning session
+## Sequence (execution order, dependencies named)
 
-Lift sequencing vs the per-user-auth and polish lanes; which apps cut first and the QA checklist per app; the gap-analysis owner + format; the background-enhancement mechanism (scheduled agent vs loop) and cadence; how the FB-group geography scopes the fill-list; whether SmartCity-on-spine rides this sprint or its own; the user-warm coverage-escalation spine functionality (coverage-assessment + gap-escalation + curation workflow); deploy + key-rotation housekeeping.
+No timeframe estimates; each item names what it depends on.
+
+**Front A — the lift (cc-agent-E / hauska-engine).** Fire now.
+1. **A1 — lift adapters (56 step 3).** Port `lib/adapters` into `packages/adapters`, behavior-parity. Depends on nothing. Dispatch: [`_dispatches/2026-06-07_cc-agent-E_engine_lift_adapters.md`](_dispatches/2026-06-07_cc-agent-E_engine_lift_adapters.md) (FIRE-READY).
+2. **A2 — lift engine-core (56 step 4).** Port briefing/finding/hydrology/decomposition/precedence into `packages/engine-core` (already carries the Phase-3 calibration cargo), expose via `engine-api` behind the gate-front seam, bake pysheds into the image, preserve `citations[].atomId` lineage. Depends on A1 parity. Dispatch: [`_dispatches/2026-06-07_cc-agent-E_engine_lift_engine_core.md`](_dispatches/2026-06-07_cc-agent-E_engine_lift_engine_core.md) (QUEUED → fire on A1 land).
+
+**Front B — Texas code library (cc-agent-C / legacy-design-tools).** Fire now; runs while Front A lifts.
+3. **B1 — cold-warm RUNS over the six manifests.** Data-only on the reasoning layer, no schema, with the receiving-agent section-number verification gate (the manifests were authored from model knowledge; section number + title are verified before grounding, not after). Texas-first read: warm the Texas-adopted editions + amendment-relevant sections first; corpus-covered refs overlay-not-reground. Depends on the harness (merged). Dispatch: [`_dispatches/2026-06-09_cc-agent-C_codewarm_runs.md`](_dispatches/2026-06-09_cc-agent-C_codewarm_runs.md) (FIRE-READY).
+4. **B2 — Texas coverage gap analysis (recon).** Have-vs-need matrix over the corpus + warmed atoms, scoped to Texas: code family × edition × Texas jurisdiction/amendment, with a prioritized fill-list. Establishes the template the post-ICC geography expansion reuses. Depends on B1 (needs the warmed counts to be accurate). Dispatch: [`_dispatches/2026-06-10_cc-agent-C_texas_coverage_gap_analysis.md`](_dispatches/2026-06-10_cc-agent-C_texas_coverage_gap_analysis.md) (FIRE-READY after B1).
+
+**cc-agent-C interleave during the Front-A wait.** The cuts (C1–C3) are gated on A2 parity, which is a real wait. cc-agent-C fills it productively and without opening a second concurrent build front on the one clone:
+5. **Per-user auth on Cortex (task #29 self-serve auth).** Independent of the lift topology; the launch-gating dependency for 7k self-serve. Login/signup, owner/tenant columns + backfill, per-route ownership predicates, metering, rate-limit, restore the QA-30/31-removed render auth gate. Distinct from the gate-tenancy #29 already shipped. Depends on nothing in the lift; sequence it in the A2 wait. Dispatch: [`_dispatches/2026-06-10_cc-agent-C_cortex_per_user_auth.md`](_dispatches/2026-06-10_cc-agent-C_cortex_per_user_auth.md) (FIRE-READY).
+
+**Convergence — the cuts (cc-agent-C).** Fire after A2 reaches parity in the spine; the two prerequisites (gate-front seam #160, gate citation lineage #30/#159) are met.
+6. **C1 — cut Cortex to the gate + QA + provenance envelope.** Repoint cortex-api's engine call sites to the spine `engine-api` via the seam, one engine at a time behind per-engine feature flags; QA Cortex in its final topology; bring Cortex's architect-facing tool outputs onto the uniform provenance envelope as part of the same pass. Depends on A2 + per-user auth landed (so the QA'd surface is the launch surface).
+7. **C2 — cut the extension to the gate + QA + envelope.** The extension hits cortex-api directly today; repoint to the gate; QA; envelope its surfaces. Depends on C1.
+8. **C3 — thin cortex-api to a BFF (56 step 6).** Remove migrated engine code, lock direct engine routes, leave UI/session/auth + ingest. Depends on C1 + C2. Dispatch (re-scoped app-by-app): [`_dispatches/2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md`](_dispatches/2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md).
+9. **User-warm-thin + product polish fold into the cut passes.** Coverage report + honest pill + manual escalation (no-ingest guardrail hard); extension UX, Cortex UX, mnml render activation. Dispatch (user-warm-thin): [`_dispatches/2026-06-10_cc-agent-C_user_warm_thin_coverage_report.md`](_dispatches/2026-06-10_cc-agent-C_user_warm_thin_coverage_report.md).
+
+**Post-launch-gate (same lift mechanism, off the critical path).**
+10. **C4 — cut SmartCity/Bastrop as the third app** (54 Task 2 tenant key + 31a Phase 3 atom-backed context). The bigger onboard; rides after the architect launch is ready.
+
+## Moat features, sequenced in
+
+Per [`59`](59_spine_moat_and_high_value_features.md), routed against this sprint:
+
+- **Uniform provenance contract (#3).** Rides the app-by-app cut (C1/C2) — architect-facing surfaces gate launch; full-fleet standardization across all ~57 gate tools is fast-follow. Arrow-two-critical lineage already closed; this is the trust/sell-reasoning envelope (lineage + sources + reasoning chain + confidence/grade + timestamp+edition).
+- **Precedence / reconciliation tighten (#4).** Recon FIRST. Taxonomy canary already fixed (#149); the recon scopes gate exposure (a `resolve_precedence` / `reconcile_codes` tool) + full-matrix completeness across model code + amendments + zoning. Dispatch: [`_dispatches/2026-06-10_cc-agent-C2_precedence_gate_exposure_recon.md`](_dispatches/2026-06-10_cc-agent-C2_precedence_gate_exposure_recon.md). Parallel-safe (cc-agent-C2, recon-only).
+- **User-warm with quality-gated coverage escalation (#1).** Thin version this sprint (step 9); full automated loop (coverage-assessment service + gap-escalation + curation workflow) fast-follow. The no-ingest guardrail is the load-bearing security boundary.
+- **Payment / metering activation (#2).** NOT this sprint. Routes to the ICC cutover as the first paid Layer-2 surface; the gated ICC dispatch is widened to name it. See [`_dispatches/2026-06-08_cc-agent-E_florida_icc_layer1_and_corpus_ingest_GATED.md`](_dispatches/2026-06-08_cc-agent-E_florida_icc_layer1_and_corpus_ingest_GATED.md).
+- **Moat builders (#5).** Roadmap, not this sprint: calibration-grade-sellable (deliberate positioning decision + premortem, rail-quiet by default), real-world permit-office outcome capture (SmartCity + public records, post-launch deepener), the participation flywheel (architecture of the user-warm path), as-of-time querying (ADR-011), atom-graph traversal (ADR-010), execution atoms (north star, ADR-013). Routed in [`00d`](00d_portfolio_roadmap_reference.md) Section 7.
+
+## The operational risk: cc-agent-C concentration
+
+Per-repo single-agent ownership makes cc-agent-C the serialization point for B1, B2, per-user auth, C1–C3, user-warm-thin, and polish — one clone, strict serial. This is the pre-mortem's one operational yellow. Mitigation: the lift (Front A, cc-agent-E) is the natural pacer; cc-agent-C runs B1 → B2 → per-user auth during the A1/A2 wait, then the cuts the moment A2 lands, then user-warm-thin + polish fold into the cut passes. Never two concurrent build fronts on the one clone. cc-agent-E (lift) and cc-agent-C2 (precedence recon) run in parallel on their own repos.
+
+## Hard acceptance criteria threaded from the pre-mortem
+
+Two load-bearing conditions are written into the dispatches as acceptance criteria, not prose:
+- The app-by-app cut **preserves `citations[].atomId` lineage end-to-end** (arrow-two depends on it; already in the cortex-consume dispatch).
+- The user-warm path **never writes user-supplied content into the shared corpus** (one bad upload poisons the jurisdiction; the whole pitch is trustworthy answers).
+
+## Deploy + housekeeping (non-gating, fold in)
+
+- Merge + deploy hauska-engine #68 → clears the one live retrieval `/healthz` warn (`db:not_configured`).
+- hauska-mcp-server migration 004 (tenant resolution) on the next gate deploy.
+- Key rotations parked (`BROKERAGE_DEV_API_KEY` + others); rotate when convenient, not gating.
+- doc_repo concurrent-commit hazard: another planner session is active (`b79579c`); `git log -3` before committing, stage explicit paths, commit promptly.
+
+## Dispatch index
+
+| Dispatch | Repo | Owner | Step | Status |
+|---|---|---|---|---|
+| [`engine_lift_adapters`](_dispatches/2026-06-07_cc-agent-E_engine_lift_adapters.md) | hauska-engine | cc-agent-E | A1 | FIRE-READY |
+| [`engine_lift_engine_core`](_dispatches/2026-06-07_cc-agent-E_engine_lift_engine_core.md) | hauska-engine | cc-agent-E | A2 | QUEUED → fire on A1 land |
+| [`codewarm_runs`](_dispatches/2026-06-09_cc-agent-C_codewarm_runs.md) | legacy-design-tools | cc-agent-C | B1 | FIRE-READY |
+| [`texas_coverage_gap_analysis`](_dispatches/2026-06-10_cc-agent-C_texas_coverage_gap_analysis.md) | legacy-design-tools | cc-agent-C | B2 | FIRE-READY after B1 |
+| [`cortex_per_user_auth`](_dispatches/2026-06-10_cc-agent-C_cortex_per_user_auth.md) | legacy-design-tools | cc-agent-C | task #29 | FIRE-READY (interleave in A2 wait) |
+| [`cortex_consume_spine_and_thin_bff`](_dispatches/2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md) | legacy-design-tools | cc-agent-C | C1–C3 | QUEUED → fire on A2 parity |
+| [`user_warm_thin_coverage_report`](_dispatches/2026-06-10_cc-agent-C_user_warm_thin_coverage_report.md) | legacy-design-tools | cc-agent-C | step 9 | QUEUED → folds into the cuts |
+| [`precedence_gate_exposure_recon`](_dispatches/2026-06-10_cc-agent-C2_precedence_gate_exposure_recon.md) | legacy-design-tools | cc-agent-C2 | moat #4 | FIRE-READY (recon, parallel-safe) |
+| [`florida_icc_layer1_..._GATED`](_dispatches/2026-06-08_cc-agent-E_florida_icc_layer1_and_corpus_ingest_GATED.md) | hauska-engine | cc-agent-E | moat #2 | GATED on ICC creds (now carries first-paid-surface scope) |
+
+## Cross-references
+
+- [`56_engine_extraction_sprint.md`](56_engine_extraction_sprint.md) — the lift this sequences app-by-app
+- [`57_national_code_warming_sprint.md`](57_national_code_warming_sprint.md) — the cold-warm substrate + manifests
+- [`59_spine_moat_and_high_value_features.md`](59_spine_moat_and_high_value_features.md) — the moat features sequenced in
+- [`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md) — the gate seam the cuts consume; SmartCity-on-spine (C4)
+- [`04a_arrow_two_calibration_capture.md`](04a_arrow_two_calibration_capture.md) — the closed deposit loop the cuts must not break
+- [`_decisions/2026-06-10_gtm_readiness_plan.md`](_decisions/2026-06-10_gtm_readiness_plan.md) — the plan decisions
 
 ## Revision history
 
-- **2026-06-09 (scaffold):** Created at session close to frame the GTM-readiness sprint (engine lift as app-by-app QA + code-library maximization for the FB-group launch). To be fleshed out with the operator in the next planning session.
+- **2026-06-10 (fleshed out):** Scaffold turned into the sequenced, premortem-cleared plan with the operator. Resolved the five open questions (SmartCity follows, user-warm thin, provenance rides-the-cut, background loop deferred, Texas-first). Two parallel fronts + convergence; cc-agent-C serialization mitigated by serial ordering; moat features sequenced in (provenance rides the cut, precedence recon-first, user-warm thin, payment to ICC); hard acceptance criteria threaded; deploy/housekeeping folded; dispatch index with the two flips + four new scaffolds + two edits. Pre-mortem cleared GREEN (one operational yellow, acknowledged). Per [`_decisions/2026-06-10_gtm_readiness_plan.md`](_decisions/2026-06-10_gtm_readiness_plan.md).
+- **2026-06-09 (scaffold):** Created at session close to frame the GTM-readiness sprint (engine lift as app-by-app QA + code-library maximization for the FB-group launch).

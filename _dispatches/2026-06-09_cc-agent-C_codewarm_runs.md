@@ -5,13 +5,15 @@ date: 2026-06-09
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: HELD - do not fire until the cold-warm harness (0036) merges
+status: FIRE-READY (2026-06-10 — harness #157/migration 0036 merged; Front B step B1 of sprint 58; TEXAS-FIRST read order)
 related: [57_national_code_warming_sprint, _decisions/2026-06-09_codewarm_arrow_two_combined, _dispatches/2026-06-09_cc-agent-C_codewarm_harness, _catalog/codes, 20_agent_operating_rules]
 ---
 
 # Cold-warm runs over the national manifests
 
-> HELD until the harness dispatch lands. Runs the harness across the six reference manifests to warm the national first pass, with a mandatory domain-assumption verification gate so the manifest section numbers are checked before grounding, not after. Phase 2 of [`57_national_code_warming_sprint.md`](../57_national_code_warming_sprint.md).
+> **FIRE-READY (2026-06-10).** The cold-warm harness (#157 / migration 0036) is merged, so this is unblocked. Runs the harness across the six reference manifests with a mandatory domain-assumption verification gate so the manifest section numbers are checked before grounding, not after. Phase 2 of [`57_national_code_warming_sprint.md`](../57_national_code_warming_sprint.md); Front B step B1 of the GTM-readiness sprint ([`58`](../58_gtm_readiness_sprint.md)).
+>
+> **TEXAS-FIRST read order (2026-06-10 operator scoping).** Texas is the launch geography, the test-run, and the template the post-ICC geography expansion reuses. Warm the Texas-adopted editions and the sections Texas amendments touch FIRST within each manifest; the rest of the national first pass follows but is not launch-gating. The corpus is already ~34 mostly-Texas jurisdictions, so much of Texas is overlay-not-reground — honor the corpus-aware precedence (warm gaps, overlay where corpus covers) and report the Texas have-vs-warmed split so step B2 (the Texas gap analysis) starts from real counts. Do not chase non-Texas geographies on this run beyond completing the manifest base.
 
 You are **cc-agent-C**, single owner of the `legacy-design-tools` clone.
 
