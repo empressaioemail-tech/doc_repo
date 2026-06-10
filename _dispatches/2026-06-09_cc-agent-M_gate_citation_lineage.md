@@ -5,7 +5,7 @@ date: 2026-06-09
 agent: cc-agent-M (+ cc-agent-C cortex-side companion)
 repo: hauska-mcp-server (+ legacy-design-tools)
 kind: dispatch
-status: HELD - fire after the canonical key function (P0b) lands; MUST precede engine-extraction sprint 56 step 5 (cut consumers to the gate)
+status: HELD - confirmed held by 2026-06-09 recon. Gates: (1) P0b canonical key landed in @hauska/atom-contract; (2) sprint-54 step-1 gate tenant resolution landed (AuthContext gains a tenant field). MUST precede 56 step 5. Exception: scope item 3 (cortex_briefing_emit provenance fix) is dependency-free and may land standalone now.
 related: [57_national_code_warming_sprint, 56_engine_extraction_sprint, _decisions/2026-06-09_codewarm_arrow_two_combined, _inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit, _dispatches/2026-06-09_cc-agent-C_atomid_namespace_normalization, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 50_hauska_mcp_server, 20_agent_operating_rules]
 ---
 
@@ -13,7 +13,7 @@ related: [57_national_code_warming_sprint, 56_engine_extraction_sprint, _decisio
 
 > The lineage audit ([`_inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit.md`](../_inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit.md)) found the MCP gate is arrow-one-only for the Codex finding path: `codex_finding_generation` returns a `generationId` with no citations, there is no `fetchSubmissionFindings` through the gate, and `codex_override_write` drops citation lineage on the revised text. The server-side ledger join still closes on the HTTP path, but once 56 step 5 cuts consumers to the gate, an agent (or gate-routed reviewer) cannot complete the arrow-two loop — the flywheel goes silent on the gate path. This dispatch closes the gate-deposit loop so the engine extraction can route adjudication through the gate without breaking calibration.
 
-> **HELD.** Two gates: (1) the canonical key function (P0b, [`_dispatches/2026-06-09_cc-agent-C_atomid_namespace_normalization.md`](2026-06-09_cc-agent-C_atomid_namespace_normalization.md)) must land first so the gate returns ids that match the overlay key-space; (2) this must precede 56 step 5. Verify identifiers against live source before firing.
+> **HELD — confirmed by 2026-06-09 recon ([`_inbox/2026-06-09_hauska-mcp-server_cc-agent-M_gate_citation_lineage.md`](../_inbox/2026-06-09_hauska-mcp-server_cc-agent-M_gate_citation_lineage.md)).** Three gates: (1) the canonical key function (P0b, [`_dispatches/2026-06-09_cc-agent-C_atomid_namespace_normalization.md`](2026-06-09_cc-agent-C_atomid_namespace_normalization.md)) must land in `@hauska/atom-contract` and be importable by the gate, so returned ids match the overlay key-space; (2) sprint-54 step-1 gate tenant resolution must land (`src/auth.ts` `AuthContext` carries product + tier only today — no tenant field, so the tenant-scoping acceptance fixture cannot be built); (3) this must precede 56 step 5. **Independent exception:** scope item 3 below (`cortex_briefing_emit` provenance `brief-run` fix, `tools.ts:1313`) has no dependency and may land standalone now. Do NOT branch a P0b-import stub — it fails key-space consistency and tenant scoping until the gates clear. Verify identifiers against live source before firing.
 
 ## Owners and clones
 
