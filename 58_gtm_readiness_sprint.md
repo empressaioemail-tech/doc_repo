@@ -117,14 +117,15 @@ Two load-bearing conditions are written into the dispatches as acceptance criter
 
 | Dispatch | Repo | Owner | Step | Status |
 |---|---|---|---|---|
-| [`engine_lift_adapters`](_dispatches/2026-06-07_cc-agent-E_engine_lift_adapters.md) | hauska-engine | cc-agent-E | A1 | **DONE — PR #69 held for operator merge** (277/277 parity) |
-| [`engine_lift_engine_core`](_dispatches/2026-06-07_cc-agent-E_engine_lift_engine_core.md) | hauska-engine | cc-agent-E | A2 | QUEUED → fire on PR #69 merge |
+| [`engine_lift_adapters`](_dispatches/2026-06-07_cc-agent-E_engine_lift_adapters.md) | hauska-engine | cc-agent-E | A1 | **MERGED — PR #69** (277/302 adapters parity) |
+| [`engine_lift_engine_core`](_dispatches/2026-06-07_cc-agent-E_engine_lift_engine_core.md) | hauska-engine | cc-agent-E | A2 (PR1) | **MERGED — PR #70** (engine-core 142/142; reasoning engines + endpoints + lineage; overlay I/O deferred to PR2) |
+| [`engine_core_pr2_calibration_overlay_io`](_dispatches/2026-06-10_cc-agent-E_engine_core_pr2_calibration_overlay_io.md) | hauska-engine | cc-agent-E | A2 (PR2) | FIRE-READY (recon-first on overlay-store topology; lands before C1's removal step) |
 | [`codewarm_runs`](_dispatches/2026-06-09_cc-agent-C_codewarm_runs.md) | legacy-design-tools | cc-agent-C | B1 | **BLOCKED → re-fire after B1-fix + 0036 applied** |
 | [`codewarm_harness_fix`](_dispatches/2026-06-10_cc-agent-C_codewarm_harness_fix.md) | legacy-design-tools | cc-agent-C | B1-fix | FIRE-READY (unblocks B1) |
 | [`texas_coverage_gap_analysis`](_dispatches/2026-06-10_cc-agent-C_texas_coverage_gap_analysis.md) | legacy-design-tools | cc-agent-C | B2 | QUEUED → fire after the B1 re-fire |
 | [`cortex_per_user_auth`](_dispatches/2026-06-10_cc-agent-C_cortex_per_user_auth.md) | legacy-design-tools | cc-agent-C | task #29 | FIRE-READY (interleave in A2 wait) |
 | [`precedence_wire_finding_engine`](_dispatches/2026-06-10_cc-agent-C_precedence_wire_finding_engine.md) | legacy-design-tools | cc-agent-C | S1 (pre-launch soft-gate) | FIRE-READY (folds into C1) |
-| [`cortex_consume_spine_and_thin_bff`](_dispatches/2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md) | legacy-design-tools | cc-agent-C | C1–C3 | QUEUED → fire on A2 parity |
+| [`cortex_consume_spine_and_thin_bff`](_dispatches/2026-06-07_cc-agent-C_cortex_consume_spine_and_thin_bff.md) | legacy-design-tools | cc-agent-C | C1–C3 | QUEUED → fire after A2-PR2 (overlay I/O) so the cut doesn't strand the calibration path |
 | [`user_warm_thin_coverage_report`](_dispatches/2026-06-10_cc-agent-C_user_warm_thin_coverage_report.md) | legacy-design-tools | cc-agent-C | step 9 | QUEUED → folds into the cuts |
 | [`precedence_gate_exposure_recon`](_dispatches/2026-06-10_cc-agent-C2_precedence_gate_exposure_recon.md) | legacy-design-tools | cc-agent-C2 | moat #4 | **DONE — recon filed** |
 | [`resolve_precedence_gate_tool`](_dispatches/2026-06-10_cc-agent-M_resolve_precedence_gate_tool.md) | hauska-mcp-server | cc-agent-M | S2 (fast-follow) | QUEUED → after A2 + S1 |
