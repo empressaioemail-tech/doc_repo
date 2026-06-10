@@ -4,7 +4,7 @@ title: Portfolio roadmap reference — the honed planned-work view
 status: active
 last_updated: 2026-06-09
 applies_to: portfolio
-related: [00_current_state, 00c_portfolio_master_map, 03_structural_constitution_and_drift_guard, 04_roadmap_alignment_audit, 16_commercialization_roadmap, 76c_operator_master_next_steps, 11_roadmap]
+related: [00_current_state, 00c_portfolio_master_map, 03_structural_constitution_and_drift_guard, 04_roadmap_alignment_audit, 16_commercialization_roadmap, 76c_operator_master_next_steps, 58_gtm_readiness_sprint, 59_spine_moat_and_high_value_features, 11_roadmap]
 owner: nick
 ---
 
@@ -22,7 +22,7 @@ The ranked 90-day frame from the roadmap audit. Rank by impact and accelerate; t
 
 | # | Move | Type | Root | Owner | Status |
 |---|---|---|---|---|---|
-| 1 | **Wire arrow two** — capture reviewer edits + finding accuracy into atom confidence | Build (the one load-bearing build) | Calibration | Nick | **Spec'd in [`04a`](04a_arrow_two_calibration_capture.md); Phase 0 recon dispatched to cc-agent-C 2026-06-06** |
+| 1 | **Wire arrow two** — capture reviewer edits + finding accuracy into atom confidence | Build (the one load-bearing build) | Calibration | Nick | **DONE 2026-06-09/10 — arrow-two CLOSED end-to-end (Phase 1 ledger, Phase 2 outcomes, Phase 3 calibration overlay `a431e8e`); invariant I3 satisfied. See [`04a`](04a_arrow_two_calibration_capture.md), [`57`](57_national_code_warming_sprint.md)** |
 | 2 | Ship Cortex + Brief extension to beta in parallel | Ship | Calibration | Operator + Valerie | In flight, operator-gated |
 | 3 | Keep the Bastrop municipal funnel running as long money | Run / maintain | Both | Operator + Nick (capture wiring) | Continuous |
 | 4 | Naming pass on the theology — write the two-root thesis into the doc set | Documentation | Both | Operator | Filing pending |
@@ -30,7 +30,7 @@ The ranked 90-day frame from the roadmap audit. Rank by impact and accelerate; t
 | 6 | Hold adjacency freezes (trading/issuance/PE/IBKR); build spine clean | Freeze + sequenced build | Protective + spine | Operator | Engine extraction **unfrozen** 2026-06-06 |
 | 7 | Keep any rev-share rail quiet (invisible plumbing) | Framing rule | Both | Valerie + operator | Continuous discipline; note: partnership-first / city revenue-share retired 2026-06-09, so this now governs only the surviving content-licensing (ICC/NFPA) and SDK source-actor rail, whose retention is a separate decision |
 
-The one thing not to miss: item 1 is ranked first and is the only genuinely load-bearing build, but it is not on any active sprint. Until reviewer adjudications (the finding-engine accept/edit/reject events that already emit `decision-event` atoms) feed back into atom confidence, every shipped surface only withdraws from the flywheel and never deposits, and confidence stays asserted rather than earned (invariant I3). This is the gap between the strategic frame and the tactical queue.
+~~The one thing not to miss: item 1 is ranked first and is the only genuinely load-bearing build, but it is not on any active sprint.~~ **Update 2026-06-09/10: item 1 is DONE.** Arrow-two is closed end-to-end (the deposit loop closes through the gate, tenant-scoped; calibration computes per tenant; invariant I3 is satisfied) — the flywheel now deposits, confidence is earned not asserted. The top strategic gap is closed. The forward frame is now the GTM-readiness sprint ([`58`](58_gtm_readiness_sprint.md)) and the moat-building feature set ([`59`](59_spine_moat_and_high_value_features.md), Section 7 below).
 
 ## 2. Portfolio roadmap reference table
 
@@ -77,6 +77,19 @@ Per item 6 (amended 2026-06-06), frozen for the 90 days: the trading, issuance, 
 
 Before anything enters as a decided direction, run premortem-check (scores against the structural commitments) and catalog-thesis-check (brand, naming, tier, architecture). After a move clears, record it with decision-log including reversal criteria. On a cadence, run project-refresh and update the roadmap audit (`04_*`), not the constitution (`03_*`). An item that serves no root, only withdraws, or fails a load-bearing test does not enter without a recorded override.
 
+## 7. Moat-building feature roadmap (2026-06-09)
+
+With arrow-two closed and the extracted-engine + MCP structure verified sound, the forward moat work is captured in [`59_spine_moat_and_high_value_features.md`](59_spine_moat_and_high_value_features.md). By lane:
+
+- **User-warm coverage escalation** (GTM-readiness sprint [`58`](58_gtm_readiness_sprint.md)) — warm-what-we-can + honest coverage report + internal gap-escalation + team curation; no user-supplied content into the shared corpus. The demand-driven national-coverage engine and a white-glove touchpoint.
+- **Payment/metering activation** — via the ICC cutover, the first paid Layer-2 surface (ICC contract next steps received 2026-06-09).
+- **Uniform provenance contract** (58, alongside the app-by-app cut) — one provenance envelope on every tool; the trust product and the arrow-two lineage rail.
+- **Precedence/reconciliation tighten** (exploration dispatch, recon first) — the positioning line as a callable product; the ADA-vs-FHA taxonomy flag shows the model is not fully right yet.
+- **Moat builders** — calibration grade as a sellable Layer-2 signal (positioning decision + premortem); real-world permit-office outcome capture (deepens calibration, via SmartCity + public records); the participation flywheel; as-of-time / version-in-force querying; atom-graph cross-reference traversal; execution atoms (the north star, ADR-013).
+
+All trace to the calibration and sovereignty roots; each enters via premortem-check + decision-log per Section 6.
+
 ## Revision history
 
+- **2026-06-09 (arrow-two done; moat roadmap added):** Strategic-frame item 1 (wire arrow two) marked DONE — closed end-to-end, I3 satisfied. Added Section 7 routing the moat-building feature set ([`59`](59_spine_moat_and_high_value_features.md)) into the roadmap (user-warm coverage escalation, payment/metering via ICC cutover, uniform provenance, precedence/recon tighten, and the moat builders). Frontmatter `related` extended (58, 59). `last_updated` 2026-06-09.
 - **2026-06-06 (origin):** Created as the honed planned-work roadmap reference. Synthesizes the 00c topology, the 16 commercial spine, the 76c operator queue, and the strategic priority frame from the roadmap alignment audit. Surfaces the arrow-two calibration-capture gap as the top unaddressed strategic item. 11_roadmap superseded and preserved for reconciliation.

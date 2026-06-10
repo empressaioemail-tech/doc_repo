@@ -41,9 +41,13 @@ Goal: by launch, an architect's lookup hits a deep, calibrated library so the UX
 
 Guardrails carry from 57: web-first reasoning atoms (no verbatim text hoarding), spine substrate served through the gate, tenant data sovereignty on calibration, ICC/NFPA as the licensed-display enhance phase.
 
+## Moat features to fold in
+
+The high-value moat features captured at session close ([`59_spine_moat_and_high_value_features.md`](59_spine_moat_and_high_value_features.md)) belong in this sprint's planning. Near-term ones especially: **user-warm with quality-gated coverage escalation** (the operator-refined design — warm-what-we-can + honest coverage report + internal gap-escalation + team curation; no user-supplied content into the shared corpus; this is the demand-driven national-coverage answer and a white-glove touchpoint, and it folds into Effort 2's code-library lane), the **uniform provenance contract** (pairs with the app-by-app cut), and **precedence/reconciliation tightening** (recon first). The **payment/metering activation** routes to the ICC cutover, not this sprint. The deeper moat builders (calibration-grade-sellable, real-outcome capture, participation flywheel, as-of-time, atom-graph, execution atoms) are roadmap items to sequence against this work.
+
 ## To resolve in the planning session
 
-Lift sequencing vs the per-user-auth and polish lanes; which apps cut first and the QA checklist per app; the gap-analysis owner + format; the background-enhancement mechanism (scheduled agent vs loop) and cadence; how the FB-group geography scopes the fill-list; whether SmartCity-on-spine rides this sprint or its own; deploy + key-rotation housekeeping.
+Lift sequencing vs the per-user-auth and polish lanes; which apps cut first and the QA checklist per app; the gap-analysis owner + format; the background-enhancement mechanism (scheduled agent vs loop) and cadence; how the FB-group geography scopes the fill-list; whether SmartCity-on-spine rides this sprint or its own; the user-warm coverage-escalation spine functionality (coverage-assessment + gap-escalation + curation workflow); deploy + key-rotation housekeeping.
 
 ## Revision history
 
