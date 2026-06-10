@@ -90,11 +90,11 @@ This bucket joins the prior "roughly eleven small central-Texas towns off Munico
 
 ## County recorder and title encumbrance partnerships (recorded restrictions)
 
-Distinct from municipal code publishers and from Cortex public-records baselines (Regrid). Governs **private recorded instruments** per [ADR-020](80_adrs/adr_020_recorded_instruments_and_restriction_clauses.md) and ingest tracks R1–R3 in [`49b_encumbrance_ingestion_pipeline.md`](49b_encumbrance_ingestion_pipeline.md). Partnership-first applies: no national county-recorder scrape.
+Distinct from municipal code publishers and from Cortex public-records baselines (Regrid). Governs **private recorded instruments** per [ADR-020](80_adrs/adr_020_recorded_instruments_and_restriction_clauses.md) and ingest tracks R1–R3 in [`49b_encumbrance_ingestion_pipeline.md`](49b_encumbrance_ingestion_pipeline.md). Access is via county-clerk MOU or SFTP, not national scrape — an access-methodology necessity (recorded instruments are gated by the clerk), not the retired partnership-first sourcing ethic (retired 2026-06-09).
 
 | Counterparty class | Examples | Status | Notes |
 |---|---|---|---|
-| **County clerk / official records** | Bastrop County, Dallas County (Cedar Hill engagements) | **Prospective.** Phase 4+ | MOU + API or bulk SFTP for instrument PDFs by APN. Template follows Bastrop city partnership shape; revenue share on Layer 2 encumbrance queries. |
+| **County clerk / official records** | Bastrop County, Dallas County (Cedar Hill engagements) | **Prospective.** Phase 4+ | MOU + API or bulk SFTP for instrument PDFs by APN. A data-access MOU, not a revenue-share-to-source licensor relationship (the Bastrop "partnership template / revenue share" framing was retired 2026-06-09). |
 | **Title insurance underwriters / plants** | Stewart, First American, Fidelity National | **Prospective.** Phase 5+ | Per [`18_stakeholder_graph.md`](18_stakeholder_graph.md) P3. Enterprise catalog + `.atompack` for subdivision corpora. |
 | **HOA / management companies** | Per-subdivision | **Prospective.** Phase 2–3 | CC&R + design guidelines; recorded vs advisory split in ADR-020. |
 
