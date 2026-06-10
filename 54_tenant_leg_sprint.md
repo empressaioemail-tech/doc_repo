@@ -70,8 +70,8 @@ All QUEUED (do not fire) pending operator sequencing against the deploy and M-St
 
 | Dispatch | Repo | Owner | Step | Status |
 |---|---|---|---|---|
-| [`2026-06-07_cc-agent-M_gate_tenant_resolution.md`](_dispatches/2026-06-07_cc-agent-M_gate_tenant_resolution.md) | hauska-mcp-server | cc-agent-M | 1 | **READY** (ADR-005 ratified 2026-06-09; keystone) |
-| [`2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md`](_dispatches/2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md) | legacy-design-tools | cc-agent-C | 2 + 3 | QUEUED |
+| [`2026-06-07_cc-agent-M_gate_tenant_resolution.md`](_dispatches/2026-06-07_cc-agent-M_gate_tenant_resolution.md) | hauska-mcp-server | cc-agent-M | 1 | **MERGED** (#29, 2026-06-09; `jurisdiction_tenant` on AuthContext, isolation test passes, ~11 ns/check) |
+| [`2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md`](_dispatches/2026-06-07_cc-agent-C_gate_front_seam_and_arrow2_phase2.md) | legacy-design-tools | cc-agent-C | 2 + 3 | **UNBLOCKED** (step 1 merged); ready to sequence on the legacy-design-tools clone |
 | [`2026-06-07_cc-agent-C_arrow2_phase3_calibration.md`](_dispatches/2026-06-07_cc-agent-C_arrow2_phase3_calibration.md) | legacy-design-tools | cc-agent-C | 4 | QUEUED (after step 3) |
 | [`2026-06-07_cc-agent-M_smartcity_tenant_onboarding.md`](_dispatches/2026-06-07_cc-agent-M_smartcity_tenant_onboarding.md) | hauska-mcp-server + smartcity-os | cc-agent-M | Task 2 | QUEUED (after step 1) |
 | Ambient capture extension build | new extension product | TBD | Task 2 | scoped only; not authored fire-ready |

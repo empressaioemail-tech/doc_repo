@@ -114,9 +114,10 @@ Neutral:
 
 ## Open decisions
 
-- Performance budget for enforcement at the MCP tools layer; specced at sprint scoping (carries forward the ADR-017 open item).
-- Whether the tenant binding lives on the api-keys row directly or in a join to the actor-record atom. Implementation-level; decided in the cc-agent-M dispatch.
-- Migration of existing atoms to populate `accessPolicy` correctly (inferred from current ADR-007 scoping or batch-assigned with operator review). The public-free corpus and the platform-internal jurisdictions are the first sort.
+- ~~Performance budget for enforcement at the MCP tools layer.~~ **RESOLVED 2026-06-09 (Layer A landed, #29):** post-fetch enforcement measured at ~11 ns per atom check in-process (50k iterations), negligible against engine RTT. Well within budget; the ADR-017 cached-sidecar reversal path is not triggered.
+- ~~Whether the tenant binding lives on the api-keys row directly or in a join to the actor-record atom.~~ **RESOLVED 2026-06-09 (#29):** direct `jurisdiction_tenant TEXT` column on `api_keys` plus `platform_internal BOOLEAN` for the Hauska/Empressa operator bypass (migration `004`). The actor-record DID join is deferred (not needed for Layer A enforcement).
+- Migration of existing atoms to populate `accessPolicy` correctly (inferred from current ADR-007 scoping or batch-assigned with operator review). The public-free corpus and the platform-internal jurisdictions are the first sort. **Still open.**
+- Gate atom-contract version: the gate ships pinned to `@hauska/atom-contract@1.1.0` (four-value union) and handles `tenant-shared` locally for forward-compat (#29). Bump to `1.3.0` for the native five-value union. Minor follow-up, not load-bearing.
 
 ## Reversal criteria
 
@@ -135,6 +136,7 @@ Revisit if gate-layer `accessPolicy` enforcement creates unmanageable query over
 
 ## Revision history
 
+- **2026-06-09 (Layer A landed):** Tenant-leg step 1 shipped and merged (hauska-mcp-server PR #29, migration `004`). `AuthContext` now carries `jurisdiction_tenant` + `platform_internal`; `access-policy.ts` enforces the five-value policy post-fetch with an `access_policy_denied` audit log; `tenant-isolation.test.ts` proves cross-tenant isolation; 262/262 green. Two open decisions resolved (tenant-binding shape = on-key direct column; perf budget = ~11 ns/check, no sidecar). Deploy requires `npm run migrate`. Layer A is live; Layer B (30a WS-4) remains independent.
 - **2026-06-09 (accepted):** Operator-ratified; status `proposed` -> `accepted`. Unblocks tenant-leg step 1 (gate tenant resolution). Swept the one stale partnership-first reference (consequences section) to tenant-data-sovereignty per the 2026-06-09 constitutional amendment, which retired partnership-first and re-grounded the sovereignty root as the enterprise customer-trust commitment (I5) that Layer A enforces. `last_updated` 2026-06-09.
 - **2026-06-08 (Layer B re-verified live):** Re-ran the no-tenant_id introspection against the live migrated Empressa Neon. The set is 15, not the 10 from the 2A review; the 5 extras (`tenants`, `products`, `platform_admins`, `admin_password_reset_tokens`, `ticket_messages`) are all non-isolation-critical (4 global + 1 OK-by-FK to `support_tickets`), so the CANDIDATE set holds at 5. Added live row counts; flagged that the three empty CANDIDATEs (`activity_logs`, `chat_messages`, `live_chats`) should be scoped now while trivial. Raw tables actively repopulating (mygov_raw_records 4059 -> 8089 in ~1h); retention teed up in `_research/2026-06-08_smartcity_neon_no_tenant_id_and_raw_retention.md`.
 - **2026-06-07 (Layer B verification prep):** Added the Layer B verification-prep table classifying the 10 no-tenant_id tables surfaced by the WS-1 Phase 2A schema sync (OK-global / OK-by-FK / CANDIDATE), so the post-2C WS-4 invariant verification is a checklist. tenant_id parity confirmed 91=91 source/target.
