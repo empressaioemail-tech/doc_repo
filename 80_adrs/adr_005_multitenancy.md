@@ -1,8 +1,8 @@
 ---
 id: adr_005_multitenancy
 title: "ADR-005 - Multitenancy (gate tenant resolution + storage invariants)"
-status: proposed
-last_updated: 2026-06-08
+status: accepted
+last_updated: 2026-06-09
 applies_to: portfolio
 related: [adr_007_cross_stakeholder_atom_access, adr_015_actor_atoms, adr_017_atom_access_control, adr_008_engine_factor_out, 54_tenant_leg_sprint, 30a_smartcity_stabilization_sprint, _prospects/mox/2026-06-07_mox_engagement_plan, 04a_arrow_two_calibration_capture]
 owner: nick
@@ -12,7 +12,7 @@ owner: nick
 
 ## Status
 
-**Proposed (scaffold), 2026-06-07.** Authored as the load-bearing input to the tenant leg ([`54_tenant_leg_sprint.md`](../54_tenant_leg_sprint.md)). This slot was referenced two ways before this scaffold: 30a planned a SmartCity-only `adr_005_smartcity_multitenancy.md` migrated from the pre-docs-repo `45_smartcity_multitenancy_spec.md`, while `00c`, the Mox engagement plan, and CLAUDE.md cite "ADR-005 multitenancy" as the substrate gate tenant model. This ADR unifies both as one concept enforced at two layers, resolving the slot collision. Ratify on operator review.
+**Accepted 2026-06-09** (operator ratification). Originally scaffolded proposed 2026-06-07 as the load-bearing input to the tenant leg ([`54_tenant_leg_sprint.md`](../54_tenant_leg_sprint.md)). This slot was referenced two ways before this scaffold: 30a planned a SmartCity-only `adr_005_smartcity_multitenancy.md` migrated from the pre-docs-repo `45_smartcity_multitenancy_spec.md`, while `00c`, the Mox engagement plan, and CLAUDE.md cite "ADR-005 multitenancy" as the substrate gate tenant model. This ADR unifies both as one concept enforced at two layers, resolving the slot collision. Ratification unblocks tenant-leg step 1 (gate tenant resolution, [`_dispatches/2026-06-07_cc-agent-M_gate_tenant_resolution.md`](../_dispatches/2026-06-07_cc-agent-M_gate_tenant_resolution.md)); Layer A enforcement is the operational form of the tenant-data-sovereignty commitment (re-grounded I5 in the 2026-06-09 amendment, which retired partnership-first).
 
 ## Context
 
@@ -97,7 +97,7 @@ WS-4 action: confirm the OK-global rows with the schema owner; scope the three e
 
 Positive:
 
-- The sovereignty claim becomes enforced rather than rhetorical. Mox's private operating flywheel and Bastrop's adjudications are partitioned at the gate, which is the guardrail the partnership-first commitment and the Mox engagement both rest on.
+- The sovereignty claim becomes enforced rather than rhetorical. Mox's private operating flywheel and Bastrop's adjudications are partitioned at the gate, which is the guardrail the tenant-data-sovereignty commitment (the enterprise customer-trust floor re-grounded as invariant I5 in the 2026-06-09 amendment) and the Mox engagement both rest on.
 - One coherent partition across the gate, the atom contract, the arrow-two ledger, and the SmartCity schema.
 - SmartCity and Mox onboard through the same mechanism; the second tenant is incremental once the first rides it.
 - ADR-017's declared `accessPolicy` finally does work.
@@ -135,6 +135,7 @@ Revisit if gate-layer `accessPolicy` enforcement creates unmanageable query over
 
 ## Revision history
 
+- **2026-06-09 (accepted):** Operator-ratified; status `proposed` -> `accepted`. Unblocks tenant-leg step 1 (gate tenant resolution). Swept the one stale partnership-first reference (consequences section) to tenant-data-sovereignty per the 2026-06-09 constitutional amendment, which retired partnership-first and re-grounded the sovereignty root as the enterprise customer-trust commitment (I5) that Layer A enforces. `last_updated` 2026-06-09.
 - **2026-06-08 (Layer B re-verified live):** Re-ran the no-tenant_id introspection against the live migrated Empressa Neon. The set is 15, not the 10 from the 2A review; the 5 extras (`tenants`, `products`, `platform_admins`, `admin_password_reset_tokens`, `ticket_messages`) are all non-isolation-critical (4 global + 1 OK-by-FK to `support_tickets`), so the CANDIDATE set holds at 5. Added live row counts; flagged that the three empty CANDIDATEs (`activity_logs`, `chat_messages`, `live_chats`) should be scoped now while trivial. Raw tables actively repopulating (mygov_raw_records 4059 -> 8089 in ~1h); retention teed up in `_research/2026-06-08_smartcity_neon_no_tenant_id_and_raw_retention.md`.
 - **2026-06-07 (Layer B verification prep):** Added the Layer B verification-prep table classifying the 10 no-tenant_id tables surfaced by the WS-1 Phase 2A schema sync (OK-global / OK-by-FK / CANDIDATE), so the post-2C WS-4 invariant verification is a checklist. tenant_id parity confirmed 91=91 source/target.
 - **2026-06-07 (origin):** Scaffolded as the portfolio multitenancy ADR. Unifies the substrate gate tenant model (Layer A) and the SmartCity storage invariants (Layer B) as one partition at two enforcement layers; resolves the slot collision between the planned SmartCity-only ADR-005 and the substrate "ADR-005 multitenancy" references. Status proposed pending operator ratification.

@@ -29,7 +29,7 @@ Grok Build 0.1 default; escalate to Claude only on failure after retry, log it.
 
 1. **`codex_findings_fetch` (P0a).** Add a tool (or extend the generation poll) wrapping `GET /api/submissions/:id/findings` + the status endpoint; return `data.findings[].citations` with the atom ids **as stored** (already canonical post-P0b #158 — return verbatim, do not re-normalize), plus per-citation `envelope.atoms[]` enumerating cited code-section DIDs (not the row-scoped synthetic `legacy:{kind}:{rowId}`); `reasoning:`/`websearch:` ids pass through as-is. `legacy-client.ts` gains `fetchSubmissionFindings` / `getFindingGenerationStatus`.
 2. **`codex_override_write` citation threading (P2).** The override body carries and validates `citations[]`; the gate passes them through to the cortex-api override route so an override-via-gate does not strip lineage.
-3. **`cortex_briefing_emit` provenance fix.** Correct the mis-tag (`atomKind: "brief-run"`, not `"finding-generation-run"`) so lineage class is honest.
+3. **`cortex_briefing_emit` provenance fix. DONE — landed standalone 2026-06-09 (PR #28, `62c2d65`).** `brief-run` added to the `CodexProvenanceParams.atomKind` union; `cortex_briefing_emit` now tags `brief-run`. Do not redo; this item is closed.
 4. **Tenant scoping (load-bearing, premortem condition).** `codex_findings_fetch` MUST enforce the gate's tenant partition (ADR-005, the tenant leg): a caller only ever receives findings within its resolved tenant. Never wrap `GET findings` in a way that can return cross-tenant findings. This is an acceptance gate, not a nicety.
 5. **Rail-quiet (I7).** Atom-id lineage is present in outputs; the calibration grade is NOT. Confirm no grade leaks into the new tool output schemas.
 

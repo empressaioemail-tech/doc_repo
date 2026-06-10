@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-M
 repo: hauska-mcp-server
 kind: dispatch
-status: QUEUED (do not fire - hold for operator sequencing vs deploy + M-Stabilize WS-1)
+status: READY - ADR-005 ratified 2026-06-09; deploy + M-Stabilize WS-1 holds cleared. Tenant-leg keystone; fire in Cursor (cc-agent-M, hauska-mcp-server).
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_017_atom_access_control]
 ---
 
 # Gate tenant resolution + accessPolicy enforcement (ADR-005 Layer A)
 
-> **HOLD - QUEUED.** Do not fire until the operator clears the tenant leg against the deferred deploy and M-Stabilize WS-1. This dispatch is fire-ready; sequencing is the gate. Verify identifiers against live source before firing.
+> **READY (2026-06-09).** ADR-005 is ratified and the deferred-deploy and M-Stabilize WS-1 holds are cleared. This is tenant-leg step 1, the keystone: it unblocks the gate-citation-lineage closure (P0a+P2), the gate-front seam (step 2), and arrow-two Phase 2/3 (steps 3-4). Layer A only; Layer B (SmartCity storage) is independent (30a WS-4). Verify identifiers against live source before firing.
 
 You are **cc-agent-M**, the single owner of `hauska-mcp-server` for this run.
 
