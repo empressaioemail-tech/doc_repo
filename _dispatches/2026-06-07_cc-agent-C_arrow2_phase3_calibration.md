@@ -5,7 +5,7 @@ date: 2026-06-07
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: READY on PR #160 merge - all deps met: Phase 2 outcome capture (PR #160 a9f965d, held for merge), cold-warm harness 0036 (#157 merged), P0b canonical key (#158 merged). The FINAL arrow-two build: the calibration write-back that makes confidence earned (I3). cc-agent-C, legacy-design-tools.
+status: MERGED (a431e8e, stacked on #160) - migration 0037 atom_calibration_overlay over both stores + new lib/engine-core package (calibration cargo for 56 step 4); tenant-sovereignty partitions (public/tenant-private/tenant-shared) with no-pool fixtures passing; cold-start fallback; source-set-drift invalidation; attribution coverage; rail-quiet. I3 CLOSED - confidence is earned. Arrow-two is closed end-to-end.
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 54_tenant_leg_sprint, 57_national_code_warming_sprint, 04a_arrow_two_calibration_capture, 03_structural_constitution_and_drift_guard, 03a_positioning_framework, _decisions/2026-06-09_codewarm_arrow_two_combined, _dispatches/2026-06-09_cc-agent-C_codewarm_harness]
 ---
 
