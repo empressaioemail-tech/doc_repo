@@ -2,7 +2,7 @@
 id: 31a_bastrop_maintenance_sprint
 title: Bastrop maintenance sprint — platform health catch-up
 status: active
-last_updated: 2026-06-08
+last_updated: 2026-06-10
 applies_to: smartcity-os
 related: [30a_smartcity_stabilization_sprint, 30_smartcity_os, 10_ground_truth, 11_roadmap, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 90_runbooks/smartcity_cloud_run_env_audit_2026-05-11, 90_runbooks/cloud_run_canary_deploy]
 ---
@@ -62,7 +62,7 @@ parallel without touching DATABASE_URL migration.
 | Calendar | Green | Municode public feed live |
 | Compass | Yellow | Works; feedback loop partial; thread-health cron off |
 | Prophecy | Green | RESOLVED 2026-06-08 - embed works via pop-out login (vendor fix landed + verified) |
-| Verkada / ESRI | Red | Env not bound since May 11 audit |
+| Verkada / ESRI | Red -> bind dispatched | Creds in operator hand 2026-06-10 (P0-2 cleared); bind + smoke dispatched (P2-1/P2-2) |
 | Security | Yellow | Public `GET /api/feedback`; `.replit` plaintext |
 | Crons | Yellow | In-process crons disabled on Cloud Run |
 | Tests | Green | vitest 103/103 |
@@ -83,7 +83,7 @@ parallel without touching DATABASE_URL migration.
 | ID | Item | Evidence | Status |
 |----|------|----------|--------|
 | P0-1 | Run production SQL sample (sync_health, feedback counts, raw table sizes) | Health check §11 | pending |
-| P0-2 | Bastrop IT: Verkada + ESRI credential handoff for Cloud Run bind | Env audit still open | pending |
+| P0-2 | Bastrop IT: Verkada + ESRI credential handoff for Cloud Run bind | Env audit still open | **CLEARED 2026-06-10** - operator has the Verkada + ESRI creds; unblocks P2-1/P2-2 (bind dispatched) |
 | P0-3 | Prophecy vendor response on allowlist | Audit `2478a4e` | **DONE 2026-06-08** - Ashkon shipped `prophecygov.com` frame-ancestors allowlist + `SameSite=None` cookies; embed verified working via pop-out |
 | P0-4 | Release M-Stabilize DB hold when ready for WS-1 | `30a` operator hold | pending |
 | P0-5 | PBI Option B — request Bastrop workspace visual inventory | `w1_a_7_pbi_option_b_scoping.md` | pending |
@@ -125,14 +125,15 @@ first).
 
 | ID | Title | Acceptance | Deps | Status |
 |----|-------|------------|------|--------|
-| P2-1 | Bind Verkada secrets → smoke camera list | `/api/verkada/*` returns devices | P0-2 | pending |
-| P2-2 | Bind ESRI/ArcGIS secrets → property intel green | Geocode + enrichment OK | P0-2 | pending |
+| P2-1 | Bind Verkada secrets → smoke camera list | `/api/verkada/*` returns devices | P0-2 cleared | **READY - dispatched** [`2026-06-10_cc-agent-M_verkada_esri_credential_bind`](_dispatches/2026-06-10_cc-agent-M_verkada_esri_credential_bind.md) |
+| P2-2 | Bind ESRI/ArcGIS secrets → property intel green | Geocode + enrichment OK | P0-2 cleared | **READY - dispatched** (same dispatch as P2-1) |
 | P2-3 | Bind `OPENGOV_TRANSPARENCY_KEY` | Transparency tables populate | Vendor portal | pending |
 | P2-4 | Compass operator admin tab (feedback + thread-health) | Weekly review without SQL | None | pending |
 | P2-5 | Persist conversation-insight gaps | DB table + list view | None | pending |
-| P2-6 | PBI repoint to Jaime's live Dynamics/Dataverse CIP dataset | CIP tiles serve 28 live projects from the new dataset; output contract unchanged | None | **DONE - PR [#23](https://github.com/empressaioemail-tech/smartcity-os/pull/23) (mergeable, CI green); held for operator merge + `smartcity-api` deploy.** Secrets repointed (v3/v4); `powerbi.ts` remapped to `msdyn_projecttask` summary phases joined to `msdyn_project`; 28 projects verified live (Agnes St 0.83, WWTP#4 0.46); 103 tests pass. Follow-up: duplicate project names disambiguated with GUID suffix (flag to Jaime if she prefers another label). Report: [`_inbox/2026-06-08_smartcity-os_cc-agent-M_bastrop_cip_powerbi_repoint.md`](_inbox/2026-06-08_smartcity-os_cc-agent-M_bastrop_cip_powerbi_repoint.md). |
+| P2-6 | PBI repoint to Jaime's live Dynamics/Dataverse CIP dataset | CIP tiles serve 28 live projects from the new dataset; output contract unchanged | None | **DONE + DEPLOYED 2026-06-10** - PR [#23](https://github.com/empressaioemail-tech/smartcity-os/pull/23) merged (`24fd7e5`) + frontend `ReportEmbed` SDK-lifecycle fix (`f2bd0b4`); live on revision **`smartcity-api-00111-zes`** (clean canary rebuild, image digest `787a4e69`) serving 100%. Secrets repointed (v3/v4); `powerbi.ts` remapped to `msdyn_projecttask` summary phases joined to `msdyn_project`; 28 projects verified live (Agnes St 0.83, WWTP#4 0.46). Bastrop operator testing in browser 2026-06-10. Follow-up: duplicate project names disambiguated with GUID suffix (flag to Jaime if another label preferred). Reports: [`_inbox/2026-06-08_...repoint.md`](_inbox/2026-06-08_smartcity-os_cc-agent-M_bastrop_cip_powerbi_repoint.md), [`_inbox/2026-06-10_...deploy_close.md`](_inbox/2026-06-10_smartcity-os_cc-agent-M_bastrop_cip_deploy_close.md). |
 | P2-7 | Scheduler jobs for weather/FirstDue/enrichment OR document cache-on-request SLO | Stale data bounded | Arch decision | pending |
 | P2-8 | Bind VFD portal codes (6) | VFD auth works | Bastrop fire chiefs | pending |
+| P2-9 | BeWith calendar feed address enrichment | Bastrop meeting events carry venue address; BeWith feed emits `LOCATION`/`location` end to end | None (public-tier) | **READY - dispatched** [`2026-06-10_cc-agent-M_bewith_calendar_address_enrichment`](_dispatches/2026-06-10_cc-agent-M_bewith_calendar_address_enrichment.md). Recon-first: Municode listing carries no address (verified live 2026-06-10), so derive via body->venue map from agenda headers; confirm BeWith feed path (public `/api/calendar/events/public` vs env-keyed `CALENDAR_API_KEY`) + the location field BeWith reads. |
 
 ---
 
@@ -178,7 +179,7 @@ onboarding is dispatched (QUEUED) at
 2. **Thread-health on Cloud Run** — Intentional omission or oversight when
    crons moved to Scheduler?
 3. **Traffic tag cleanup** — OK to remove all 7 zero-percent tags?
-4. **Verkada / ESRI** — Still waiting on Bastrop IT, or deprioritized?
+4. ~~**Verkada / ESRI** — Still waiting on Bastrop IT, or deprioritized?~~ RESOLVED 2026-06-10 - operator has the creds; bind + smoke dispatched (P2-1/P2-2).
 5. **Sprint scope** — Phase 1 only before Codex 1b / M-PropIntel, or include
    PBI Option B Phase 1?
 6. **M-Stabilize hold** — Timeline to release for WS-1 Neon work?
@@ -195,6 +196,7 @@ onboarding is dispatched (QUEUED) at
 
 ## Revision history
 
+- **2026-06-10 (CIP deployed; Verkada/ESRI unblocked; BeWith added):** P2-6 flipped DONE -> DONE + DEPLOYED - PR #23 merged plus the frontend `ReportEmbed` SDK-lifecycle fix, live on revision `smartcity-api-00111-zes` after a clean canary rebuild (an earlier direct-form attempt left `00095-r6p`; the agent close note records that stale revision - superseded by `00111-zes`). P0-2 CLEARED: operator now holds the Verkada + ESRI credentials, unblocking P2-1 + P2-2, dispatched as `2026-06-10_cc-agent-M_verkada_esri_credential_bind.md` (config-first secret bind + smoke). New item P2-9 added - BeWith calendar feed address enrichment (public-tier partner feed), dispatched as `2026-06-10_cc-agent-M_bewith_calendar_address_enrichment.md`; recon-first because the Municode listing carries no address (verified live). Open question #4 resolved. `last_updated` bumped.
 - **2026-06-08 (Prophecy resolved):** Prophecy embed marked off - was Red/vendor-hold for weeks. ProphecyGov shipped the `prophecygov.com` frame-ancestors allowlist (`smartcityos.io` + www + wildcards) and `SameSite=None; Secure` session cookies; live header verification + operator browser test confirm the embedded chat loads via pop-out login. Cold in-iframe login ruled out permanently (WorkOS `api.workos.com` sets `frame-ancestors 'self'`/`X-Frame-Options: SAMEORIGIN`, unchangeable by the vendor). P0-3 done, P1-3 mechanism verified (only the pop-out button UX remains, deploy-pending), P1-4 closed wontfix (our `frame-src` already allows `prophecygov.com`; framing `api.workos.com` is futile). Done-criterion met. Traffic-light Prophecy Red -> Green.
 - **2026-06-08:** P2-6 reframed from the abstract "PBI Option B Phase 1" to the concrete repoint of the CIP dashboard to Jaime's new live Dynamics/Dataverse dataset. Probed from the prod service principal 2026-06-08: the new `CIP_Projects_Database` (dataset `f86e76e6-26f6-43b2-86e6-0b3aaec72243`, report `8a4009f6-e5c9-4ccf-b1e2-66409158538a`) is reachable and returns 28 live projects; the old `POWERBI_CIP_DATASET_ID` is gone (404), which is why CIP tiles are empty. Fire-ready dispatch authored (`_dispatches/2026-06-08_cc-agent-M_bastrop_cip_powerbi_repoint_dataverse.md`): repoint secrets + rewrite `powerbi.ts` from `PowerBIDashboardTasks` to the `msdyn_project` Dataverse schema (real code change, output contract preserved). Self-contained; does not touch the WS-1 data path or the deferred deploy.
 - **2026-06-07:** Phase 3 unblocked (DB hold released 2026-06-06). P3-2 ADR-005 audit repointed to the portfolio `adr_005_multitenancy.md` (Layer B); P3-4 atom-backed context tied to the tenant-leg gate work (SmartCity as city tenant); tenant-leg dependency note added; frontmatter `related` extended (54, adr_005_multitenancy).
