@@ -5,7 +5,7 @@ date: 2026-06-09
 agent: cc-agent-M (+ cc-agent-C cortex-side companion)
 repo: hauska-mcp-server (+ legacy-design-tools)
 kind: dispatch
-status: READY - both gates cleared: P0b merged (#158; citations canonical in stored rows) and sprint-54 step-1 gate tenant resolution merged (#29; AuthContext now carries jurisdiction_tenant + platform_internal, and access-policy.ts ships filterByAccessPolicy). MUST precede 56 step 5. Scope item 3 (briefing-emit fix) already done (#28). cc-agent-M owns the gate half (sequenced after #29 on the same clone); cc-agent-C the cortex-side override companion.
+status: MERGED - gate half #30 (codex_findings_fetch + override citation threading + tenant scoping + rail-quiet; 270/270) and cortex companion #159 (override route preserves citations; ledger-deposit proven overrideCount:1 not zero). The arrow-two deposit loop now closes through the MCP gate. Scope item 3 (briefing-emit) done #28. Remaining for 56 step 5: the gate-front seam (54 step 2).
 related: [57_national_code_warming_sprint, 56_engine_extraction_sprint, _decisions/2026-06-09_codewarm_arrow_two_combined, _inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit, _dispatches/2026-06-09_cc-agent-C_atomid_namespace_normalization, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 50_hauska_mcp_server, 20_agent_operating_rules]
 ---
 

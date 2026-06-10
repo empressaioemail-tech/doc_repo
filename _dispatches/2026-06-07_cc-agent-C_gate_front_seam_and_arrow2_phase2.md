@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: QUEUED (do not fire - hold for operator sequencing; depends on cc-agent-M step 1)
+status: READY - cc-agent-M step 1 (gate tenant resolution) merged #29; tenant context the seam carries is live. The next legacy-design-tools run; feeds arrow-two Phase 3 and 56 step 5.
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 54_tenant_leg_sprint, 80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_adr008_gate_front_seam_scoping, 04a_arrow_two_calibration_capture]
 ---
 
 # Gate-front seam generalization + arrow-two Phase 2 outcome capture
 
-> **HOLD - QUEUED.** Do not fire until the operator clears the tenant leg AND cc-agent-M step 1 (gate tenant resolution) has landed; the seam carries tenant context the gate resolves. Fire-ready; sequencing is the gate. Verify identifiers against live source before firing.
+> **READY (2026-06-09).** cc-agent-M step 1 (gate tenant resolution) is merged (#29); the seam carries the tenant context the gate resolves. This is the next legacy-design-tools (cc-agent-C) run: part A the gate-front seam (54 step 2, feeds 56 step 5), part B arrow-two Phase 2 outcome capture (54 step 3, feeds Phase 3). Verify identifiers against live source before firing.
 
 You are **cc-agent-C**, the single owner of `legacy-design-tools` for this run.
 
