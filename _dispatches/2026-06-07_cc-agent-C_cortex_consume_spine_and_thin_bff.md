@@ -5,7 +5,7 @@ date: 2026-06-07
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: QUEUED - FIRE AFTER engine-core lift (A2/step 4) parity is green. Prereqs MET: gate-front seam (#160), gate citation lineage (#30/#159). App-by-app QA + provenance envelope per sprint 58 (C1-C3).
+status: SUPERSEDED (2026-06-10) by the granular per-app cuts — C1 `2026-06-10_cc-agent-C_C1_cortex_cut_to_gate`, C2 `2026-06-10_cc-agent-C_C2_extension_cut_and_unified_signin`, C3 `2026-06-10_cc-agent-C_C3_thin_cortex_api_to_bff`. Kept for reference.
 related: [00_current_state, 20_agent_operating_rules, 56_engine_extraction_sprint, 54_tenant_leg_sprint, _decisions/2026-06-07_adr008_gate_front_seam_scoping]
 ---
 
