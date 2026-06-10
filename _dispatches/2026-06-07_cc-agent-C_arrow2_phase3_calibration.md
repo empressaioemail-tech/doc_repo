@@ -5,13 +5,13 @@ date: 2026-06-07
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: QUEUED (do not fire - depends on arrow-two Phase 2, the cold-warm harness 0036, AND the P0b canonical atom-id key function landing first)
+status: READY on PR #160 merge - all deps met: Phase 2 outcome capture (PR #160 a9f965d, held for merge), cold-warm harness 0036 (#157 merged), P0b canonical key (#158 merged). The FINAL arrow-two build: the calibration write-back that makes confidence earned (I3). cc-agent-C, legacy-design-tools.
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 54_tenant_leg_sprint, 57_national_code_warming_sprint, 04a_arrow_two_calibration_capture, 03_structural_constitution_and_drift_guard, 03a_positioning_framework, _decisions/2026-06-09_codewarm_arrow_two_combined, _dispatches/2026-06-09_cc-agent-C_codewarm_harness]
 ---
 
 # Arrow-two Phase 3 calibration computation
 
-> **HOLD - QUEUED. Retargeted 2026-06-09** onto the unified calibration overlay per [`_decisions/2026-06-09_codewarm_arrow_two_combined.md`](../_decisions/2026-06-09_codewarm_arrow_two_combined.md). Do not fire until BOTH arrow-two Phase 2 (outcome capture) AND the cold-warm harness (migration 0036, the asserted/calibrated field split) have landed; Phase 3 needs captured outcomes to compute against and the field split as the write target. Migration 0037. Fire-ready; sequencing is the gate. Verify identifiers against live source before firing.
+> **READY on PR #160 merge.** Retargeted 2026-06-09 onto the unified calibration overlay per [`_decisions/2026-06-09_codewarm_arrow_two_combined.md`](../_decisions/2026-06-09_codewarm_arrow_two_combined.md). All three dependencies are met: Phase 2 outcome capture (PR #160, held for operator merge — fire after it merges so the outcome-observations table exists), the cold-warm harness field split (migration 0036, #157 merged), and the P0b canonical key (#158 merged). Migration 0037. This is the final arrow-two build. Verify identifiers against live source before firing.
 
 > **Design change from the original (2026-06-09):** the Phase-0 conclusion was "no write target, calibration lives on a finding/ledger projection only." The v2 `reasoning_atoms` table (migration 0035) supersedes that for the reasoning layer, and a `(atomId, jurisdictionTenant)` calibration overlay supersedes it for the existing immutable corpus. Calibration is written to ONE overlay covering BOTH stores via the `findings.citations[].atomId` lineage; the engine code-section corpus is still never mutated. See the retargeted scope below.
 
