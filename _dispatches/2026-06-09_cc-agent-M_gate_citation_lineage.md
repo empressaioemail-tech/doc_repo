@@ -1,0 +1,53 @@
+---
+id: 2026-06-09_cc-agent-M_gate_citation_lineage
+title: Dispatch — gate carries citation lineage (findings-fetch + override threading) so arrow-two deposits through the gate
+date: 2026-06-09
+agent: cc-agent-M (+ cc-agent-C cortex-side companion)
+repo: hauska-mcp-server (+ legacy-design-tools)
+kind: dispatch
+status: HELD - fire after the canonical key function (P0b) lands; MUST precede engine-extraction sprint 56 step 5 (cut consumers to the gate)
+related: [57_national_code_warming_sprint, 56_engine_extraction_sprint, _decisions/2026-06-09_codewarm_arrow_two_combined, _inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit, _dispatches/2026-06-09_cc-agent-C_atomid_namespace_normalization, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 50_hauska_mcp_server, 20_agent_operating_rules]
+---
+
+# Gate carries citation lineage (P0a + P2)
+
+> The lineage audit ([`_inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit.md`](../_inbox/2026-06-09_legacy-design-tools_cc-agent-C_lineage_completeness_audit.md)) found the MCP gate is arrow-one-only for the Codex finding path: `codex_finding_generation` returns a `generationId` with no citations, there is no `fetchSubmissionFindings` through the gate, and `codex_override_write` drops citation lineage on the revised text. The server-side ledger join still closes on the HTTP path, but once 56 step 5 cuts consumers to the gate, an agent (or gate-routed reviewer) cannot complete the arrow-two loop — the flywheel goes silent on the gate path. This dispatch closes the gate-deposit loop so the engine extraction can route adjudication through the gate without breaking calibration.
+
+> **HELD.** Two gates: (1) the canonical key function (P0b, [`_dispatches/2026-06-09_cc-agent-C_atomid_namespace_normalization.md`](2026-06-09_cc-agent-C_atomid_namespace_normalization.md)) must land first so the gate returns ids that match the overlay key-space; (2) this must precede 56 step 5. Verify identifiers against live source before firing.
+
+## Owners and clones
+
+cc-agent-M owns `hauska-mcp-server`; the cortex-side override-route piece is a cc-agent-C companion in `legacy-design-tools`. One agent per clone; coordinate the two pieces, do not cross clones in one run.
+
+## Model (HR-12)
+
+Grok Build 0.1 default; escalate to Claude only on failure after retry, log it.
+
+## Scope
+
+**cc-agent-M (hauska-mcp-server):**
+
+1. **`codex_findings_fetch` (P0a).** Add a tool (or extend the generation poll) wrapping `GET /api/submissions/:id/findings` + the status endpoint; return `data.findings[].citations` with atom ids **normalized via the P0b canonical key**, plus per-citation `envelope.atoms[]` enumerating cited code-section DIDs (not the row-scoped synthetic `legacy:{kind}:{rowId}`). `legacy-client.ts` gains `fetchSubmissionFindings` / `getFindingGenerationStatus`.
+2. **`codex_override_write` citation threading (P2).** The override body carries and validates `citations[]`; the gate passes them through to the cortex-api override route so an override-via-gate does not strip lineage.
+3. **`cortex_briefing_emit` provenance fix.** Correct the mis-tag (`atomKind: "brief-run"`, not `"finding-generation-run"`) so lineage class is honest.
+4. **Tenant scoping (load-bearing, premortem condition).** `codex_findings_fetch` MUST enforce the gate's tenant partition (ADR-005, the tenant leg): a caller only ever receives findings within its resolved tenant. Never wrap `GET findings` in a way that can return cross-tenant findings. This is an acceptance gate, not a nicety.
+5. **Rail-quiet (I7).** Atom-id lineage is present in outputs; the calibration grade is NOT. Confirm no grade leaks into the new tool output schemas.
+
+**cc-agent-C (legacy-design-tools companion):**
+
+6. **Override route preserves citations (P2, server side).** The cortex-api override route (`findings.ts` override path, ~1612) preserves/validates `citations[]` on the revised finding text, same as the manual-create path (~1434), so an override never produces an adjudicated finding with zero cited atoms. This is the server-side half of P2 and is what actually prevents ledger starvation.
+
+Out of scope: Phase 3 calibration computation (separate, migration 0037); the briefing-source non-deposit decision (operator call, tracked in 57); pulling the physical engine lift forward.
+
+## Acceptance criteria (the closure tests)
+
+- **Generation-persists-citations (the assumption, now proven):** an agent calls `codex_finding_generation` then `codex_findings_fetch` through the gate and receives findings WITH `citations[].atomId`. This demonstrates the server-side job persisted citations, not just that the HTTP path has them.
+- **Override-via-gate preserves lineage:** an override through `codex_override_write` yields a revised finding whose `citations[]` survive; the adjudication ledger fans to those atoms (no starvation).
+- **Key-space consistency:** ids returned through the gate normalize (via the P0b function) to the same overlay key as the HTTP path; a fixture proves a gate-fetched citation and an HTTP citation for the same atom resolve identically.
+- **Tenant scoping:** a two-tenant fixture proves `codex_findings_fetch` returns only the caller-tenant's findings; a cross-tenant fetch attempt is denied.
+- **Rail-quiet:** calibration grade absent from the new tool outputs; atom-id lineage present.
+- Existing mcp + cortex-api suites green plus the new closure tests. PRs held for operator merge; branches + SHAs reported.
+
+## Reporting
+
+At break-point write to `P:\doc_repo\_inbox\` as `2026-06-09_hauska-mcp-server_cc-agent-M_gate_citation_lineage.md`: the new tool + legacy-client methods, the override-threading change (both repos), the four closure-test outputs (generation-persists, override-preserves, key-space-consistency, tenant-scoping), PR URLs + branch SHAs, blockers verbatim.

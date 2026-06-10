@@ -5,7 +5,7 @@ date: 2026-06-07
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: QUEUED (do not fire - depends on arrow-two Phase 2 AND the cold-warm harness landing first)
+status: QUEUED (do not fire - depends on arrow-two Phase 2, the cold-warm harness 0036, AND the P0b canonical atom-id key function landing first)
 related: [00_current_state, 01a_atom_conventions, 20_agent_operating_rules, 54_tenant_leg_sprint, 57_national_code_warming_sprint, 04a_arrow_two_calibration_capture, 03_structural_constitution_and_drift_guard, 03a_positioning_framework, _decisions/2026-06-09_codewarm_arrow_two_combined, _dispatches/2026-06-09_cc-agent-C_codewarm_harness]
 ---
 
@@ -46,7 +46,7 @@ Default: **Grok Build 0.1** (multi-file / agentic). Escalate to Claude only if G
 
 **In scope:**
 
-- Recon first. Confirm the Phase 1 ledger and Phase 2 outcome capture are both present and tenant-partitioned on `jurisdictionTenant`, and confirm the cold-warm field split (migration 0036, `assertedConfidence` vs nullable `calibratedConfidence`) has landed. Report verbatim.
+- Recon first. Confirm the Phase 1 ledger and Phase 2 outcome capture are both present and tenant-partitioned on `jurisdictionTenant`; confirm the cold-warm field split (migration 0036, `assertedConfidence` vs nullable `calibratedConfidence`) has landed; and confirm the canonical atom-id key function (P0b, [`2026-06-09_cc-agent-C_atomid_namespace_normalization.md`](2026-06-09_cc-agent-C_atomid_namespace_normalization.md)) has landed. The overlay MUST key via the P0b canonical function, or attribution silently misses (the audit proved the key-spaces diverge). Report verbatim.
 - Migration 0037: the public calibration columns and the `(atomId, jurisdictionTenant)` calibration overlay table. The overlay carries calibration for BOTH the new reasoning atoms and the existing immutable corpus atoms, keyed by atom id, attributed via `findings.citations[].atomId` lineage. The corpus is never mutated.
 - Build calibration computation: compare stated confidence to observed frequency (from captured outcomes and adjudications), per tenant, and tighten with use. Write `calibratedConfidence` to the overlay; at read time it falls back to `assertedConfidence` until signal accrues (cold-start prior), never rendering uncalibrated as zero.
 - **Tenant data sovereignty (load-bearing, security).** Per the constitutional amendment ([`_decisions/2026-06-09_retire_partnership_first_amend_constitution.md`](../_decisions/2026-06-09_retire_partnership_first_amend_constitution.md)), a tenant's private adjudications stay isolated in a per-tenant overlay row (`tenant-private` accessPolicy) and never pool into a shared or public number; public-code calibration pools freely from anonymous and public-tier signal. Fixtures: (a) a seeded two-tenant case where a shared atom shows a public grade and a tenant-only overlay with no leakage between them; (b) a `tenant-shared` atom whose calibration pools ONLY within its shared-with list and never into the global public number (sovereignty-no-pool test).
