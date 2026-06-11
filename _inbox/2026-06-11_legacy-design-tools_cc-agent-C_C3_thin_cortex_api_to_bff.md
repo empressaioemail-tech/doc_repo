@@ -5,7 +5,7 @@ date: 2026-06-11
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: inbox-report
-status: IN_PROGRESS
+status: PR OPEN — awaiting CI + operator merge
 related: [_dispatches/2026-06-11_cc-agent-C_C3_thin_cortex_api_to_bff, 56_engine_extraction_sprint, 80_adrs/adr_008_engine_factor_out]
 ---
 
@@ -15,14 +15,23 @@ related: [_dispatches/2026-06-11_cc-agent-C_C3_thin_cortex_api_to_bff, 56_engine
 
 ## Workspace / HEAD (HR-11)
 
-### Verbatim `git status`
+### Verbatim `git status` (post-execution)
 
 ```
 On branch cortex/thin-cortex-api-to-bff
 Changes not staged for commit:
-	modified:   .claude/worktrees/recon-add-jurisdiction (untracked content)
-	modified:   .claude/worktrees/track-b-ifc-ingest (modified content, untracked content)
-no changes added to commit
+	modified:   artifacts/api-server/src/__tests__/engagements.test.ts
+	modified:   artifacts/api-server/src/lib/__tests__/engineSpineClient.test.ts
+	modified:   artifacts/api-server/src/lib/engineSpineClient.ts
+	modified:   artifacts/api-server/src/lib/engineSpineFlags.ts
+	modified:   artifacts/api-server/src/lib/engineSpineHydrology.ts
+	modified:   artifacts/api-server/src/lib/engineSpineRouting.ts
+	modified:   artifacts/api-server/src/lib/siteDrainageIngest.ts
+	modified:   artifacts/api-server/src/lib/siteTopographyIngest.ts
+	modified:   artifacts/api-server/src/routes/findings.ts
+	modified:   artifacts/api-server/src/routes/parcelBriefings.ts
+Untracked:
+	artifacts/api-server/src/lib/__tests__/engineSpineUngatedPaths.test.ts
 ```
 
 ### Verbatim `git log -3`
@@ -33,67 +42,134 @@ ea9d2d8 ci(deploy): append ENGINE_SPINE_TOPOGRAPHY — completes spine flag bake
 1295f64 Merge pull request #177 from empressaioemail-tech/cortex/reproject-parcel-geometry-wgs84
 ```
 
-**HEAD accepted:** `cortex/` prefix branch; spine flags baked in `.github/workflows/cloud-run-deploy.yml` (all four `ENGINE_SPINE_*=1`).
-
 ---
 
 ## 1. Recon — all reasoning consumers spine-served
 
-**Answer: YES (prod).** Deploy workflow bakes all flags on; prod soak 2026-06-11 verified. Cortex-api routes delegate through gate-front seam (`engineSpineClient` + `engineSpineRouting` / `engineSpineHydrology`).
+**Answer: YES (prod).** Deploy workflow bakes all flags on; prod soak 2026-06-11 verified. After C3 cut, cortex-api routes **unconditionally** delegate through gate-front seam.
 
-| Consumer surface | Engine | Cortex call path | Spine `/v1/*` | Prod flag |
-|---|---|---|---|---|
-| Plan review findings | Finding (+ orchestrated) | `findings.ts` → `routeGenerateFindings` / `routeGenerateOrchestratedFindings` | `/v1/findings/generate`, `/v1/findings/generate-orchestrated` | `ENGINE_SPINE_FINDINGS=1`, `ENGINE_SPINE_FINDINGS_ORCHESTRATED=1` |
-| Parcel briefing | Briefing | `parcelBriefings.ts` → `routeGenerateBriefing` | `/v1/briefing/generate` | `ENGINE_SPINE_BRIEFING=1` |
-| Site drainage | Hydrology worker + rainfall | `siteDrainageIngest.ts` → `routeRunHydrologyWorker`, `routeResolveRainfallForcing` | `/v1/hydrology/drainage`, `/v1/hydrology/rainfall-forcing` | `ENGINE_SPINE_HYDROLOGY=1` |
-| Site topography DEM | Topography DEM fetch | `siteTopographyIngest.ts` → `routeFetchUsgs3depDem` | `/v1/hydrology/dem` | `ENGINE_SPINE_TOPOGRAPHY=1` |
-| Generate-layers | **Adapters (not reasoning)** | `generateLayers.ts` → `@workspace/adapters` `runAdapters` | N/A — stays cortex BFF | No spine flag |
-| Extension property brief | Grok summarization (brokerage) | `brokerageBriefLlm.ts` — direct Grok, not `generateBriefing` | N/A — separate BFF path | N/A |
-| NOAA design-storms | Atlas 14 point fetch | `siteDrainage.ts` → `fetchNoaaAtlas14PointEstimate` | N/A — upstream data, not engine-api reasoning | N/A |
+| Consumer | Cortex path | Spine endpoint |
+|---|---|---|
+| Findings | `routeGenerateFindings` / `routeGenerateOrchestratedFindings` | `/v1/findings/generate`, `/v1/findings/generate-orchestrated` |
+| Briefing | `routeGenerateBriefing` | `/v1/briefing/generate` |
+| Drainage + rainfall | `routeRunHydrologyWorker`, `routeResolveRainfallForcing` | `/v1/hydrology/drainage`, `/v1/hydrology/rainfall-forcing` |
+| Topography DEM | `routeFetchUsgs3depDem` | `/v1/hydrology/dem` |
 
-**BFF intake (pre-spine, stays cortex-side):** plan-set classification (`planSetClassification.ts`), vision image gather (`planSetVision.ts`, `attachedDocumentVision.ts`), contour derivation from DEM bytes (`siteTopographyIngest.ts` d3-contour — spine returns raw DEM only).
+**Adapter pack:** `lib/adapters` + `generate-layers` **stay cortex-side** (BFF data-fetching). Future lift = sprint 56 step 3, out of C3 scope.
 
-### Adapter pack (scope item 3)
+**BFF intake (pre-spine, kept):** plan-set classification, vision gather, GeoTIFF parse + d3-contour derivation in `siteTopographyIngest.ts` (spine returns raw DEM bytes only).
 
-**Stays cortex-side as BFF data-fetching.** `lib/adapters` + `generate-layers` route are live with no spine flag. Future lift to `hauska-engine/packages/adapters` is sprint 56 step 3 — **out of scope for C3**.
+### Kill-list (removed dead flag-off paths)
+
+| Path | What was removed |
+|---|---|
+| `engineSpineRouting.ts` | `useSpine*` branches; imports/calls to `generateFindings`, `generateOrchestratedFindings`, `generateBriefing` |
+| `engineSpineHydrology.ts` | `useSpine*` branches; imports/calls to `fetchUsgs3depDem`, `runHydrologyWorker`, `resolveRainfallForcing` |
+| `engineSpineFlags.ts` | Env `flagOn()` gating; snapshot now always-true |
+
+### Kill-list (NOT deleted — intentional)
+
+| Path | Why kept |
+|---|---|
+| `lib/finding-engine/` | `lib/eval` runners + BFF intake (`classifyPlanSetPieces`, `visionSheetRead`, types) |
+| `lib/briefing-engine/` | Types, HTML helpers, Grok constants for brokerage |
+| `lib/adapters/` | Live generate-layers adapter pack |
+| `lib/site-context/server/{usgs3dep,hydrology*,rainfall*}*` | Package-level; cortex dead import path removed |
+
+### Keep-list (live BFF)
+
+`lib/adapters/**`, `generateLayers.ts`, plan-set/vision intake libs, site ingest orchestrators, `engineSpineClient.ts`, `gateEngineServiceAuth`, session/auth, wedge, letters, artifact UX, Revit/IFC ingress.
 
 ---
 
-## 2. Kill-list (dead behind flag-off branches)
+## 2. Code removed / changed
 
-### Cortex-api — remove unconditional spine cut
+**Net:** −162 / +149 lines across 11 files (+1 new test file).
 
-| Path | Rationale |
-|---|---|
-| `artifacts/api-server/src/lib/engineSpineRouting.ts` — `useSpine*` false branches + imports of `generateFindings`, `generateOrchestratedFindings`, `generateBriefing` | Local reasoning fallback |
-| `artifacts/api-server/src/lib/engineSpineHydrology.ts` — `useSpine*` false branches + imports of `fetchUsgs3depDem`, `runHydrologyWorker`, `resolveRainfallForcing` | Local hydrology compute fallback |
-| `artifacts/api-server/src/lib/engineSpineFlags.ts` — env `flagOn()` gating | Flags permanently on; snapshot becomes always-true |
-
-### Monorepo packages — NOT deleted in C3
-
-| Path | Rationale |
-|---|---|
-| `lib/finding-engine/` (full package) | Still required by `lib/eval` runners + BFF intake exports (`classifyPlanSetPieces`, `visionSheetRead`, types). **Generate/orchestrate/precedence runtime in cortex-api is dead** but package remains for eval + intake helpers. |
-| `lib/briefing-engine/` (full package) | Types + HTML helpers + Grok constants for brokerage; `generateBriefing` no longer called from cortex-api after cut. |
-| `lib/site-context/src/server/{usgs3dep,hydrologyWorkerClient,hydrologyNative,rainfallForcing}.ts` | Package-level compute; cortex-api dead path removed; tests/eval may still reference. |
+Core behavioral change: **no local reasoning fallback** — `engine-api` is the only path. Boot validation (`validateEngineSpineEnvAtBoot`) now **always** requires `ENGINE_API_URL`.
 
 ---
 
-## 3. Keep-list (live BFF)
+## 3. No-ungated-path audit
 
-| Path | Role |
-|---|---|
-| `lib/adapters/**` | Generate-layers adapter pack |
-| `artifacts/api-server/src/routes/generateLayers.ts` | Unified adapter run |
-| `artifacts/api-server/src/lib/{planSetClassification,planSetVision,attachedDocumentVision}.ts` | Pre-spine intake |
-| `artifacts/api-server/src/lib/siteTopographyIngest.ts` | DEM ingest orchestration; contour derive local |
-| `artifacts/api-server/src/lib/{siteDrainageIngest,siteDrainageMaterializer}.ts` | Drainage ingest orchestration (spine compute) |
-| `artifacts/api-server/src/lib/engineSpineClient.ts` | Gate-front seam client |
-| `artifacts/api-server/src/middlewares/gateEngineServiceAuth.ts` | Engine route auth |
-| Session/auth, wedge, letters, artifact UX, Revit/IFC ingest routes | Product BFF glue |
+**Route audit:** `artifacts/api-server/src/routes/*.ts` — no direct calls to `generateFindings(`, `generateBriefing(`, `runHydrologyWorker(`, `fetchUsgs3depDem(`, `resolveRainfallForcing(`.
+
+**Gate-front:** All four engine surfaces route through `postEngineSpine` with `buildSpineGateFrontContext*`.
+
+**CI test:** `artifacts/api-server/src/lib/__tests__/engineSpineUngatedPaths.test.ts` — static route-file scan + assertions that findings/briefings use spine routing helpers.
 
 ---
 
-## 4–7. Execution / verification
+## 4. Engine-unreachable error behavior (scope item 5)
 
-*(Updated after implementation)*
+| Path | Behavior on `EngineSpineError` / timeout |
+|---|---|
+| Findings | Run row `state: failed`, error `finding engine failed (<code>): <message>` |
+| Briefing | Job row `state: failed`, error `briefing engine failed (<code>): <message>` |
+| Topography DEM | Ingest `upstream-error` with codes `engine-api-unreachable` / `engine-api-rejected` |
+| Drainage | Ingest `upstream-error` code `engine-api-unreachable` for rainfall-forcing and drainage worker |
+
+Helper: `formatEngineSpineFailure()` in `engineSpineClient.ts`. No silent empty success on spine failure.
+
+---
+
+## 5. Verification (HR-8)
+
+### Typecheck (verbatim)
+
+```
+pnpm run typecheck
+→ Exit code 0 (all artifacts + libs)
+```
+
+### Unit tests (verbatim)
+
+```
+cd artifacts/api-server && pnpm test -- src/lib/__tests__/engineSpineUngatedPaths.test.ts src/lib/__tests__/engineSpineDeserialize.test.ts
+
+ RUN  v3.2.4
+ ✓ engineSpineUngatedPaths.test.ts (2 tests)
+ ✓ engineSpineDeserialize.test.ts (7 tests)
+ Test Files  2 passed (2)
+ Tests  9 passed (9)
+```
+
+### Integration tests — blocked locally
+
+```
+pnpm test -- src/__tests__/engagements.test.ts
+→ FAIL: DATABASE_URL must be set (test DB not provisioned on this workstation)
+```
+
+Full-product regression (plan review, brief, wedge, letters, Site/drainage/topo, extension, Revit) requires `DATABASE_URL` + test schema — **not run locally**; CI `pr-checks.yml` Test job is the authoritative gate.
+
+---
+
+## 6. PR / SHAs
+
+| Item | Value |
+|---|---|
+| Branch | `cortex/thin-cortex-api-to-bff` |
+| PR | https://github.com/empressaioemail-tech/legacy-design-tools/pull/179 |
+| Commit SHA | `d31b990` |
+| Base | `origin/main` (`ef53f22`) |
+
+---
+
+## 7. Blockers
+
+None on implementation. **Local blocker:** `DATABASE_URL` unset — integration/regression suites cannot run on this workstation without test DB provisioning per `lib/db` testing docs.
+
+---
+
+## Acceptance checklist
+
+| Criterion | Status |
+|---|---|
+| Recon + kill/keep lists filed before deletion | ✅ |
+| Dead flag-off branches removed; adapters preserved | ✅ |
+| No ungated path (audit + test) | ✅ |
+| Honest engine-unreachable on four paths | ✅ |
+| Full-product BFF regression | ⏳ CI / operator with DATABASE_URL |
+| CI green | ⏳ pending push |
+| PR held for operator merge | ✅ (not self-merged) |
