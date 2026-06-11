@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-06-10
 status: active
-last_updated: 2026-06-10
+last_updated: 2026-06-11
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -13,7 +13,23 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 >
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
 
-## THE ENGINE LIFT IS BUILT + DEPLOYED; THE CUT IS MERGED + FLIPPING (2026-06-10, this session)
+## THE CUT IS LIVE: FINDINGS + BRIEFING ON THE SPINE IN PROD, DURABLY BAKED (2026-06-11, this session)
+
+> **This section supersedes the 2026-06-10 "cut merged + flipping" section below on cut status.** Verified against gcloud + gh this session. Master plan home: [`61_property_intelligence_master_plan.md`](61_property_intelligence_master_plan.md). Audit: [`_research/2026-06-11_engine_robustness_audit.md`](_research/2026-06-11_engine_robustness_audit.md).
+
+The Cortex engine cut went from staged canary to LIVE in production this session, app-by-app, one engine at a time. **Findings-on-spine and briefing-on-spine are both live** (`cortex-api-00161-mus` @ 100%; `ENGINE_SPINE_FINDINGS` + `ENGINE_SPINE_FINDINGS_ORCHESTRATED` + `ENGINE_SPINE_BRIEFING` on; hydrology and topography still local). cortex-api now calls `engine-api` (`hauska-engine-api-00003-vjx`, anthropic findings + grok briefing) over the gate-front seam for findings and briefing; the rest run locally pending their flips.
+
+**Three C1 flip-blockers were caught on the canary (never prod) and fixed.** (1) **#171** findings persist: the spine returns ISO-string timestamps where drizzle expects `Date`, so the insert threw `value.toISOString is not a function`; fixed with `rehydrateSpineFindingsResult`. (2) **#172** jurisdiction key synthesis: any city now resolves a synthesized key so unwarmed jurisdictions web-ground on demand (the web-first promise made true); scoped to the finding path so the coverage resolver keeps returning `not_in_catalog` and the honest "web-grounded on demand" banner is preserved (the amendment, merged with #172). (3) **#173** provenance read: citation atom-ids are partitioned by namespace so `reasoning:*` ids no longer hit the UUID `code_atoms` query (was 500ing the findings list). Then **#175** extended the date rehydration to briefing (#171 had covered findings only; the date bug is **systemic to the spine seam**, fixed per-engine). The #175 hydro/topo audit confirmed those routes persist no drizzle-timestamp date field (their `computedAt`/`fetchedAt` are ISO strings in atom JSON, not drizzle columns), so they will NOT hit this on flip.
+
+**The flip is durable, not manual.** **#174** baked the findings `ENGINE_SPINE_*` flags + `ENGINE_API_URL` + the `ENGINE_API_GATE_TOKEN` secret into `cloud-run-deploy.yml` so deploys stop clobbering them (the line-204 `--set-env-vars`-replaces-everything class that bit three times this session); durability proven by a workflow `deploy-canary` that carried the flags with no manual `gcloud update`. Briefing's workflow append is fire-ready. The mirrored secret `HAUSKA_ENGINE_API_KEY` lives in `legacy-design-tools-prod`, IAM-bound to the `api-server-runtime` SA. Flags flip one engine at a time, verified on the 0% canary before shift, then appended to the workflow.
+
+**Remaining Wave 0:** hydrology flip (de-risked on the date bug; the flip also moves hydrology to `engine-api` where pysheds is baked, so verify it actually runs pysheds and not the broken native-D8 fallback the audit flagged), then topography, then **C3** (thin cortex-api, the one-way door, held until the flipped engines run clean in prod). Rollback handle: `gcloud run services update-traffic cortex-api --to-revisions cortex-api-00146-xul=100` (pre-cut, flags off).
+
+**Two governing artifacts filed this session.** The **10-engine robustness audit** ([`_research/2026-06-11_engine_robustness_audit.md`](_research/2026-06-11_engine_robustness_audit.md)): verdict "well-built per-engine, badly integrated at the seam" - confidence is asserted-not-earned on the read path (the calibration engine computes `effectiveConfidence` but the wire never consults it; briefing/code-atom hardcode `1.0`), silent degradation with `status:ok` is the default failure idiom (hydrology never installs pysheds so the broken native fallback always runs; precedence is a production no-op), and the output contract is non-uniform (3 of 9 surfaces emit the envelope; chat emits none); freshness is fetch-time not data vintage across ~8 adapters. The fix is one integration pass: a sealed `EngineEnvelope` at the gate-front seam. The **property-intelligence master plan** ([`61`](61_property_intelligence_master_plan.md)): the governing board merging the audit, the data-layer x analysis x tier inventory, the **Cotality every-SKU adoption plan (Regrid DROPPED**, Cotality is the sole parcel/property spine plus minerals/O&G, flood-depth forcing, insurability), and the open backlog into a seam-first wave sequence (0 flip, 1 seal the seam, 2 fix, 3 pour data, 4 tier).
+
+**Flagged (non-blocking):** a `reviewer_requests` UPDATE query fails on the deployment Neon during implicit-resolve (non-fatal, "domain action kept") - looks like schema/migration drift on that table, separate from the cut, worth a look.
+
+## THE ENGINE LIFT IS BUILT + DEPLOYED; THE CUT IS MERGED + FLIPPING (2026-06-10, prior session)
 
 > **This section supersedes the "engine lift queued / held" claims below.** Session record: [`_sessions/2026-06-10_engine_lift_built_and_deployed_claude_code.md`](_sessions/2026-06-10_engine_lift_built_and_deployed_claude_code.md). Sprint home: [`58_gtm_readiness_sprint.md`](58_gtm_readiness_sprint.md). Built and deployed live this session (verified against gh + gcloud).
 
