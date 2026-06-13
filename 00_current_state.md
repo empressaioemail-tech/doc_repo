@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-06-10
 status: active
-last_updated: 2026-06-11
+last_updated: 2026-06-13
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -12,6 +12,12 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Read me first.** Per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md). Regenerated at session close. Pointer doc — follow links into canonical docs for full context.
 >
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
+
+## ADAPTIVE UI GRADUATED TO A PORTFOLIO PRINCIPLE + MOX DEMO IN BUILD (2026-06-13, this session)
+
+> Two threads this session. (1) The **Mox demo** (`mox_demo` repo): a lightly functional, real-engine demo that shows the stack and, to a degree, the adaptive interface, built on a real Austin redevelopment (607-611 Nelray, a 5-story RVT on three MF-3 lots; hero plan-review finding is the 5-story-exceeds-MF-3 entitlement gap). Build plan [`_prospects/mox/2026-06-13_mox_demo_build_plan.md`]; premortem cleared 2026-06-13; multi-agent execution in flight (orchestrator + sub-agents in `mox_demo`, nine workstream briefs in `docs/dispatch/`). APS creds provisioned. Yardi research done: read+assist+capture now, licensed-interface write-back is roadmap. (2) **Adaptive UI** is now a captured, active design workstream with a canonical home at [`24_adaptive_ui/`].
+
+Now that the backend is largely roadmapped, the adaptive interface (intent-driven assembly of atom render modes, the visible payoff of the atom treatment) becomes a first-class build-and-design priority across all product surfaces, not just a demo behavior. Canonical vision: [`24_adaptive_ui/adaptive_ui_vision.md`] (reshaped to current brand and the live `@hauska/atom-contract` render-mode substrate, superseding the older intelligence-interface-v4 lineage). Chris (product designer) sharpens it visually in `mox_demo` then `legacy-design-tools`; his agent maintains a living capture pulled back into [`24_adaptive_ui/design_system.md`] at session boundaries. The Mox demo is the first surface making it tangible. Index propagation into [`00c`](00c_portfolio_master_map.md) is a session-close follow-up.
 
 ## THE CUT IS FULLY LIVE: ALL FOUR ENGINES ON THE SPINE IN PROD; SOAKING BEFORE C3 (2026-06-11, this session)
 
