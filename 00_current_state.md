@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-06-10
 status: active
-last_updated: 2026-06-13
+last_updated: 2026-06-14
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -14,6 +14,18 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
+
+## OIL AND GAS VERTICAL OPENED; SLB BACKEND BUILT AND SHIPPED (2026-06-14, this session)
+
+> New working vertical at [`_verticals/oil_gas/`](_verticals/oil_gas/00_oil_gas_index.md) (exploration, not canon). Dormant Western Midstream / O&G material became a market-discovery pass that surfaced the underserved small-and-mid operator long tail, then a product thesis and a real build. Session record: [`_sessions/2026-06-14_oil_gas_vertical_and_slb_backend_claude_code.md`](_sessions/2026-06-14_oil_gas_vertical_and_slb_backend_claude_code.md).
+
+**SLB is the customer for Chris's surveillance-to-intervention app (Permian Field Health); we won and built the backend.** `slb_prototype` (separate Nick-owned GitHub repo at `P:\slb_prototype`, branch `feat/ai-native-backend`): an AI-native backend on our atom substrate computing a bounded health index, decline-curve anomaly detection, root-cause attribution, intervention recommendations with provenance and confidence, BOE-and-dollar downtime exposure, and a conversational ask, plus the seven bounded operational layers / well-log correlation / directional surfaces matched to Chris's UI. Mock-mode fallback (runs keyless), live with a Grok/Anthropic key; verified both modes; agent-bootstrap `CLAUDE.md` so Chris's Claude installs, runs, and wires it unattended. Sent to Chris. This is the first owned piece of our own O&G offering (the operations lens).
+
+**Two tracks on one substrate, non-conflicting by segment** ([`80`](_verticals/oil_gas/80_slb_engagement_and_operator_product_path.md)): SLB as funded vendor entry (it serves majors/NOCs) and our own operator-owned revenue-twin product for the SMB long tail (the moat). The earlier operator-owned / anti-SLB framing was retired from [`40`](_verticals/oil_gas/40_chris_app_overlay.md) once SLB was confirmed as the customer. **Operator decision: let the SLB track run its course; the operator-product track is captured but gated on a real SMB operator design partner, not dispatched.**
+
+**The cross-domain thesis** (a revenue-producing asset as an inverted digital twin; four layers spine/twin/connect/monetize; three lenses operations/land/capital; the same offering as Mox and SmartCity) is captured in [`50`](_verticals/oil_gas/50_complete_product_plan.md) and should graduate to its own portfolio-level canonical doc (peer to [`09`](09_post_saas_substrate_thesis.md)) in a future session.
+
+**Substrate item surfaced:** [`53a_noncustodial_settlement_rail.md`](53a_noncustodial_settlement_rail.md) — remove the SDK's custodial facilitator wallet, move to a verify-only bank-to-bank rail (technology fee, no custody); required regardless of O&G, urgent for the capital lens.
 
 ## ADAPTIVE UI GRADUATED TO A PORTFOLIO PRINCIPLE + MOX DEMO IN BUILD (2026-06-13, this session)
 
