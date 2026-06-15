@@ -2,7 +2,7 @@
 id: 00d_portfolio_roadmap_reference
 title: Portfolio roadmap reference — the honed planned-work view
 status: active
-last_updated: 2026-06-09
+last_updated: 2026-06-15
 applies_to: portfolio
 related: [00_current_state, 00c_portfolio_master_map, 03_structural_constitution_and_drift_guard, 04_roadmap_alignment_audit, 16_commercialization_roadmap, 76c_operator_master_next_steps, 58_gtm_readiness_sprint, 59_spine_moat_and_high_value_features, 11_roadmap]
 owner: nick
@@ -34,18 +34,18 @@ The ranked 90-day frame from the roadmap audit. Rank by impact and accelerate; t
 
 ## 2. Portfolio roadmap reference table
 
-Status verified against [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) (2026-06-01 cross-repo recon). "Planned next" is the single next move, not the backlog.
+Status verified against [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) (2026-06-01 cross-repo recon), with a 2026-06-15 surface-status refresh applied below. For live execution detail (the convergent deploy, the auth leak, Cotality, the engine waves, the capital axis) the current sources are [`00_current_state.md`](00_current_state.md), [`61_property_intelligence_master_plan.md`](61_property_intelligence_master_plan.md), and [`72b_capital_readiness_audit.md`](72b_capital_readiness_audit.md). "Planned next" is the single next move, not the backlog.
 
 | Component | Layer | Today | Planned next | Docs |
 |---|---|---|---|---|
-| hauska-engine (retrieval API) | Hauska spine | Live, read-only, ~35 TX jurisdictions | Demand-pull Sync 5 ingest; factor-out **unfrozen 2026-06-06**, sequenced behind M-Stabilize 2C | [`27`](27_engine_evolution_plan.md), [`adr_008`](80_adrs/adr_008_engine_factor_out.md) |
-| hauska-mcp-server | Hauska spine | Live, the gate, 46 tools | `mcp.hauska.dev` mapping; `LEGACY_BACKEND_API_KEY` rotation | [`50`](50_hauska_mcp_server.md), [`44`](44_mcp_cortex_architecture_map.md) |
+| hauska-engine (retrieval + engine-api) | Hauska spine | Live, read-only retrieval (34 juris / 21,126 atoms; 2 public-free / 32 platform-internal) + engine-api reasoning service live | Engine extraction DONE (engine-api live, C1/C2 cut, C3 merged); deploy #68 to clear retrieval `db:not_configured`; demand-pull Sync 5 | [`27`](27_engine_evolution_plan.md), [`61`](61_property_intelligence_master_plan.md) |
+| hauska-mcp-server | Hauska spine | Live, the gate, 57 tools | `mcp.hauska.dev` mapping; migration 004; `LEGACY_BACKEND_API_KEY` rotation; retire drift policy `8570526367601301438` | [`50`](50_hauska_mcp_server.md), [`44`](44_mcp_cortex_architecture_map.md) |
 | @hauska/atom-contract | Hauska spine | Published npm v1.3.0 | CI publish action (manual today) | [`adr_018`](80_adrs/adr_018_atom_contract_substrate_layer.md), [`01a`](01a_atom_conventions.md) |
-| Hauska SDK (payment/VDA/ledger) | Hauska commerce | Published v0.1.0, consumed by nothing | Stays invisible plumbing; first integration gated on first paid surface (item 7) | [`14`](14_pricing_framework.md) |
-| Cortex (cortex-api) | Empressa product | Live, briefing + finding engines | QA backlog WS-G; "4in rain" needs 40d 2D.2/2D.3 | [`43`](43_cortex_qa_backlog.md), [`40d`](40d_cortex_site_context_sprint.md) |
-| Codex (plan review) | Empressa product | Functional-ready | Codex 1b live at Bastrop, gated on M-Stabilize | [`48`](48_codex_program_plan.md) |
-| Property Brief / Brief extension | Empressa product (the wedge) | v0.6.5 sideload, calls cortex-api direct | Merge PR #1, clean QA; wire Cotality (parcel/zoning) + ICC (code); Chrome Web Store | [`75`](75_hauska_brokerage_workflow_plan.md), [`76c`](76c_operator_master_next_steps.md), [`75c`](75c_property_brief_data_backlog.md) |
-| SmartCity OS | Empressa product | Live, 15 integrations, island | 31a Bastrop maintenance; M-Stabilize on operator DB hold | [`31a`](31a_bastrop_maintenance_sprint.md), [`30a`](30a_smartcity_stabilization_sprint.md) |
+| Hauska SDK (payment/VDA/ledger) | Hauska commerce | Published v0.1.0; crypto verify-only right, Circle fiat path built but custodial-by-construction | Non-custodial verify-only re-architecture spec'd ([`53a`](53a_noncustodial_settlement_rail.md)) + counsel pass; first integration on first paid surface | [`14`](14_pricing_framework.md), [`53a`](53a_noncustodial_settlement_rail.md) |
+| Cortex (cortex-api) | Empressa product | Live; 4 engines on the spine via the gate-front seam (C1/C2), C3 merged; per-user auth shipped | Deploy #180 auth fix (leak live on `00169-jep`) + C3 + Cotality (convergent canary); then seal the seam (61 Wave 1) | [`61`](61_property_intelligence_master_plan.md), [`72b`](72b_capital_readiness_audit.md) |
+| Codex (plan review) | Empressa product | Functional-ready | Codex 1b live at Bastrop (M-Stabilize DB hold released 2026-06-06) | [`48`](48_codex_program_plan.md) |
+| Property Brief / Brief extension | Empressa product (the wedge) | v0.6.5 sideload, calls cortex-api direct | Cotality auth solved (#181/#182), data-wiring on the convergent deploy; ICC (code) creds-gated; Chrome Web Store | [`75`](75_hauska_brokerage_workflow_plan.md), [`76c`](76c_operator_master_next_steps.md), [`75c`](75c_property_brief_data_backlog.md) |
+| SmartCity OS | Empressa product | Live on Empressa Neon, 15 integrations, grade YELLOW, island | 31a Bastrop maintenance (M-Stabilize DB hold released 2026-06-06); SmartCity-on-spine is 61 Wave-3 C4 | [`31a`](31a_bastrop_maintenance_sprint.md), [`30a`](30a_smartcity_stabilization_sprint.md) |
 | Revit Connector | Empressa product (bridge) | Compiled add-in, IFC v0.2 | As-needed | [`40d`](40d_cortex_site_context_sprint.md) |
 | Commercial spine (M-HauskaCommercial) | Hauska commerce | Step 1 live | Wave 2 gated on Nick decisions B (pricing) + C (GTM) + Circle rail | [`16`](16_commercialization_roadmap.md), [`14`](14_pricing_framework.md) |
 | GTM + self-healing loops | Infra (designed) | Diagrams only | Roadmap, not a build sprint yet | [`76`](76_empressa_wedge_90d_operating_plan.md), [`76a`](76a_operator_autonomous_loops.md) |
@@ -54,7 +54,7 @@ Status verified against [`00c_portfolio_master_map.md`](00c_portfolio_master_map
 
 | Milestone | Means | Gate |
 |---|---|---|
-| M-Stabilize | SmartCity OS on Empressa Neon, fires closed | **On operator DB hold** — unblocks the rest |
+| M-Stabilize | SmartCity OS on Empressa Neon, fires closed | **DB hold released 2026-06-06** (done; the rest is unblocked) |
 | M-PropIntel | "4 inches of rain" + parcel intel in SmartCity | M-Stabilize + Cortex 40d 2D.2/2D.3 built |
 | M-CortexQA | Cortex functional end-to-end, QA-ready | Partial exit; pending mcp-mode config |
 | M-CodexQA | Codex 1b functional end-to-end, QA-ready | Functional-ready |
@@ -91,5 +91,6 @@ All trace to the calibration and sovereignty roots; each enters via premortem-ch
 
 ## Revision history
 
+- **2026-06-15 (surface-status refresh):** Refreshed the Section 2 table and milestone ladder against live state: gate is 57 tools (was 46), engine corpus stated as 34 juris / 21,126 atoms with the 2-public / 32-internal split, engine extraction marked DONE (engine-api live, C1/C2 cut, C3 merged), M-Stabilize DB hold marked released 2026-06-06 (Codex 1b and SmartCity rows updated), Cortex row reflects the spine seam plus the deploy-pending auth fix, Cotality auth solved (#181/#182), Hauska SDK row reflects the 53a custody re-architecture. Added a pointer to `00_current_state` / `61` / `72b` for live execution detail. `last_updated` 2026-06-15.
 - **2026-06-09 (arrow-two done; moat roadmap added):** Strategic-frame item 1 (wire arrow two) marked DONE — closed end-to-end, I3 satisfied. Added Section 7 routing the moat-building feature set ([`59`](59_spine_moat_and_high_value_features.md)) into the roadmap (user-warm coverage escalation, payment/metering via ICC cutover, uniform provenance, precedence/recon tighten, and the moat builders). Frontmatter `related` extended (58, 59). `last_updated` 2026-06-09.
 - **2026-06-06 (origin):** Created as the honed planned-work roadmap reference. Synthesizes the 00c topology, the 16 commercial spine, the 76c operator queue, and the strategic priority frame from the roadmap alignment audit. Surfaces the arrow-two calibration-capture gap as the top unaddressed strategic item. 11_roadmap superseded and preserved for reconciliation.
