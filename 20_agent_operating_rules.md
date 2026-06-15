@@ -2,7 +2,7 @@
 id: 20_agent_operating_rules
 title: Agent operating rules
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-06-14
 applies_to: portfolio
 supersedes: 13_agent_operating_rules
 ---
@@ -435,6 +435,12 @@ The infrastructure sprint moves us out of those constraints.
   own repos, leaving the portfolio snapshot weeks behind reality.
 - **v2.2 (2026-05-23).** Adds HR-12: Grok model strategy and atom-first
   workflow. Supersedes prior model-agnostic instructions where they conflict.
+- **v2.3 (2026-06-14).** Adds HR-13: integration-tested code requires a local
+  run; "expected green in CI" is not a verification artifact. Added after the
+  anonymous-owner-isolation work surfaced a CI-blind reporting pattern (a merged
+  auth change with a live data leak, then PR #180 opened labeled "expected green"
+  while CI was red). Companion runbook
+  [`90_runbooks/cc_agent_local_test_db.md`](90_runbooks/cc_agent_local_test_db.md).
 
 Future revisions should add a delta section, not rewrite from scratch.
 The history of why specific rules exist is load-bearing — a rule
@@ -469,3 +475,15 @@ Existing skills remain valid. Grok handles structured instructions well. Reduce 
 - Planner owns atom synthesis and reconciliation.
 
 This rule supersedes previous model-agnostic instructions where they conflict.
+
+## HR-13: Integration-tested code requires a local run; "expected green in CI" is not verification (Effective 2026-06-14)
+
+An agent that cannot run the suites a change affects ships on hope. The `legacy-design-tools` api-server integration suites require a `DATABASE_URL`; when the workstation has none, the agent reports "committed, expected green in CI" and the PR opens unverified. On 2026-06-14 this pattern produced a merged per-user-auth change that left a live data leak in production, then a follow-up PR (#180) opened labeled "expected green" while the Test job was red with ~30 failures, including a bug in the agent's own new test. "Expected green" is the tell that the agent did not run the code.
+
+**Operationalization:**
+
+- Every cc-agent workstation that runs DB-touching suites is provisioned with a local test database per [`90_runbooks/cc_agent_local_test_db.md`](90_runbooks/cc_agent_local_test_db.md) (a disposable local pgvector Postgres at the CI-identical URL — never a Neon or deployment host; this is the test-side companion to HR-6).
+- Any change touching api-server routes, DB schema, or integration-tested code MUST run the affected suites locally and paste the actual run output in the report. "Expected green in CI" is not an acceptable verification artifact (this is the integration-suite case of HR-8).
+- If the agent has no local test DB, that is a blocker to report under §Blockers, not a reason to ship. The planner treats a PR with no local run as "code change," not "verified" (HR-9 lineage).
+- The planner, before relaying any agent "done / passing" claim that rests on integration behavior, checks the actual CI Test job status (`gh pr checks`), not the agent's summary. This is the verification-chain step for integration-tested work.
+- The dispatch template ([`_dispatches/_template.md`](_dispatches/_template.md)) carries this as an acceptance criterion.

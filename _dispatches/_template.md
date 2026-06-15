@@ -78,6 +78,7 @@ Optional additive ops atoms (R and D process only):
 
 - {{measurable outcome}}
 - Tests: {{command}}
+- If this touches api-server routes, DB schema, or integration-tested code: run the suites against the local test DB ([`90_runbooks/cc_agent_local_test_db.md`](../90_runbooks/cc_agent_local_test_db.md)) and paste the ACTUAL run output. "Expected green in CI" is not an acceptable verification artifact (HR-13). If you have no local test DB, that is a blocker to report, not a reason to ship.
 - PR held for operator merge (do not merge)
 - Verbatim verification artifacts in report (HR-8)
 

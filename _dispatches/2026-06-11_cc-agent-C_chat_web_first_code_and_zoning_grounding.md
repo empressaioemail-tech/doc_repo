@@ -5,7 +5,7 @@ date: 2026-06-11
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: FIRE-READY — premortem YELLOW cleared with the honest-confidence + spine-capability guardrails baked below
+status: HELD (do not fire yet) — sequence AFTER PR #180 (anonymous-owner isolation) is green + merged. This chat feasibility surface rides the same anonymous session path #180 is rewriting (rebase-collision + double-retest risk), and cc-agent-C is single-owner serial on the legacy-design-tools clone, so the auth fix lands first. Premortem YELLOW cleared with the honest-confidence + spine-capability guardrails baked below
 related: [61_property_intelligence_master_plan, _research/2026-06-11_engine_robustness_audit, _dispatches/2026-06-11_cc-agent-C_C1_findings_persist_and_jurisdiction_keysynth, 08_tiered_access_model, 03a_positioning_framework]
 ---
 

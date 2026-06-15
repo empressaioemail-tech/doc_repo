@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-10
+title: Current state snapshot — 2026-06-15
 status: active
-last_updated: 2026-06-14
+last_updated: 2026-06-15
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -14,6 +14,20 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
+
+## CAPITAL-READINESS AUDIT FILED + CONVERGENT DEPLOY PENDING + COTALITY SOLVED (2026-06-15, this session)
+
+> Capital-readiness pass plus a live-status reconciliation against gh, gcloud, and live endpoints. The pre-diligence checklist is now a tracked doc: [`72b_capital_readiness_audit.md`](72b_capital_readiness_audit.md), ten owner-tagged rows promoting the [`72a`](72a_capital_raise_positioning.md) gaps. Session record: [`_sessions/2026-06-15_capital_readiness_audit_and_roadmap_refresh_claude_code.md`](_sessions/2026-06-15_capital_readiness_audit_and_roadmap_refresh_claude_code.md).
+
+**The Cortex auth data-leak is live and the fix is merged-not-deployed.** A live check (2026-06-15) found unauthenticated `GET /api/engagements` on prod returns 58 real engagements (San Marcos, Miami Beach, Moab, client Revit paths). Root cause: task #29 auth (#167) backfilled all engagements to a single `migration-owner`, and the lockout fix (#168) mapped the anonymous session to that same owner, so anonymous owns everything; the snapshot, sheet, and submission child routes never got ownership predicates. The fix (#180: anonymous resolves to a per-session ephemeral owner, migration 0039 reassigns the backfill off `migration-owner`, child-route predicates added) is MERGED GREEN 2026-06-15 but NOT deployed; prod is still `cortex-api-00169-jep`. The exposed data is the company's own dogfood, test, and warming data, not a paying customer's confidential filing, so the posture is deploy on the next cycle, but it is a hard precondition for any external demo. A process guard was filed to stop the CI-blind reporting that hid this: HR-13 in [`20_agent_operating_rules.md`](20_agent_operating_rules.md) plus the local test-DB runbook [`90_runbooks/cc_agent_local_test_db.md`](90_runbooks/cc_agent_local_test_db.md).
+
+**Cotality is solved end-to-end.** The InvalidClientIdentifier mystery resolved to three compounding problems: per-product token host (Property at `api1.cotality.com`, RiskMeter and SpatialTile at `api.cotality.com`), HTTP Basic auth with `grant_type` in the query and an empty body (not body-form), and two mistyped secrets (a key with an i where the real key has an l, and a wrong SpatialTile secret). PR #181 (api1 host) merged; PR #182 (full Basic-auth shape plus the six secrets wired into `cloud-run-deploy.yml`) is open with typecheck and 13 adapter tests green; all three products verified minting HTTP 200 live. Remaining is merge #182 then the deploy.
+
+**One convergent cortex-api deploy now gates the most.** The next cortex-api deploy ships, together: #178 (spine-flag bake), #179 (C3 thin BFF, the one-way door), #180 (auth and leak fix), and #181 plus #182 (Cotality). Sequence (Option A, canary-gated): deploy main to a 0 percent canary, verify on the canary URL that unauthenticated `GET /api/engagements` denies, the four engines still work through the thinned BFF, the anonymous demo reads only its own engagement, and a Cotality Property token plus parcel call flips `cotality:property` to ok; only then shift traffic. This closes the leak (the [`61`](61_property_intelligence_master_plan.md) Wave 0 security gate), activates C3, and lights up Cotality in one verified shot. Open operator choice: merge #182 first to bundle Cotality, or deploy now for the leak and Cotality second.
+
+**Stale deploy residues found (merged code not on the live services).** retrieval-api `/healthz/` still reports `db:not_configured` (hauska-engine #68 merged 2026-06-10, undeployed); the drift alert policy `8570526367601301438` is still enabled (mcp #27 was to retire it); the #26 GTM collateral shipped a stale "46-tool surface" line (the live gate registers 57); the `mcp.hauska.dev` mapping and gate migration 004 are still pending.
+
+**The roadmap is reconciled across three governing docs:** engine work in [`61`](61_property_intelligence_master_plan.md) (seam-first Waves 0 to 4), product surfaces in [`00d`](00d_portfolio_roadmap_reference.md) (whose surface statuses now lag and owe a refresh), and the capital axis in [`72b`](72b_capital_readiness_audit.md). The cross-domain four-layer thesis (one substrate proven across the building twin at Mox, the city twin at Bastrop, and the well twin at SLB) is the strongest narrative asset surfaced and should graduate to a portfolio doc peer to [`09`](09_post_saas_substrate_thesis.md).
 
 ## OIL AND GAS VERTICAL OPENED; SLB BACKEND BUILT AND SHIPPED (2026-06-14, this session)
 

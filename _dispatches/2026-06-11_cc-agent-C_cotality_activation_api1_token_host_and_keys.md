@@ -5,7 +5,7 @@ date: 2026-06-11
 agent: cc-agent-C
 repo: legacy-design-tools
 kind: dispatch
-status: FIRE-READY — vendor (Amanda Morris) re-confirmed the api1 token host + three-key isolation; demo runs to July 6
+status: SUPERSEDED BY #181 + #182 (build done 2026-06-15). The api1 per-product token host (#181, merged) plus the full Basic-auth shape (HTTP Basic, grant_type in query, empty body) with the six COTALITY secrets wired into cloud-run-deploy.yml (#182, open; typecheck + 13 adapter tests green) close this dispatch's code scope. Root cause was three compounding problems (per-product host, Basic-auth-vs-body shape, two mistyped secrets); all corrected in Secret Manager; all three products (Property, RiskMeter, SpatialTile) verified minting HTTP 200 live 2026-06-15. Remaining: merge #182 then one deliberate cortex-api deploy (converges with #178/#179/#180, ships C3 + auth + Cotality together) plus a canary smoke (Property token + real parcel call, cotality:property no-coverage to ok). Demo runs to July 6
 related: [77b_cotality_integration_strategy, _research/2026-06-06_cotality_api_surface_catalog, 61_property_intelligence_master_plan, 90_runbooks/cotality_mcp_setup]
 ---
 
