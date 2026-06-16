@@ -2,10 +2,10 @@
 id: 58_gtm_readiness_sprint
 title: GTM-readiness sprint — engine lift (app-by-app QA) + Texas code-library + moat-in-flight
 status: active
-last_updated: 2026-06-10
+last_updated: 2026-06-15
 applies_to: portfolio
 owner: nick
-related: [56_engine_extraction_sprint, 57_national_code_warming_sprint, 59_spine_moat_and_high_value_features, 54_tenant_leg_sprint, 04a_arrow_two_calibration_capture, 03a_positioning_framework, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_005_multitenancy, 48_codex_program_plan, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, _decisions/2026-06-10_gtm_readiness_plan]
+related: [56_engine_extraction_sprint, 57_national_code_warming_sprint, 59_spine_moat_and_high_value_features, 54_tenant_leg_sprint, 04a_arrow_two_calibration_capture, 03a_positioning_framework, 76d_gtm_data_package_go_to_market, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_005_multitenancy, 48_codex_program_plan, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, _decisions/2026-06-10_gtm_readiness_plan]
 ---
 
 # GTM-readiness sprint
@@ -149,6 +149,7 @@ Two load-bearing conditions are written into the dispatches as acceptance criter
 
 ## Cross-references
 
+- [`76d_gtm_data_package_go_to_market.md`](76d_gtm_data_package_go_to_market.md) — the complementary GTM-positioning layer (data-package buyer/channel/messaging + capability-matrix honesty + gtm_loop); its launch gate defers to this sprint
 - [`56_engine_extraction_sprint.md`](56_engine_extraction_sprint.md) — the lift this sequences app-by-app
 - [`57_national_code_warming_sprint.md`](57_national_code_warming_sprint.md) — the cold-warm substrate + manifests
 - [`59_spine_moat_and_high_value_features.md`](59_spine_moat_and_high_value_features.md) — the moat features sequenced in
@@ -158,5 +159,6 @@ Two load-bearing conditions are written into the dispatches as acceptance criter
 
 ## Revision history
 
+- **2026-06-15 (cross-link):** Added the back-link to [`76d_gtm_data_package_go_to_market.md`](76d_gtm_data_package_go_to_market.md), the GTM-positioning layer whose launch gate defers to this sprint (the two are complementary: 58 = execution, 76d = data-package positioning + capability honesty). `related` + `last_updated` bumped.
 - **2026-06-10 (fleshed out):** Scaffold turned into the sequenced, premortem-cleared plan with the operator. Resolved the five open questions (SmartCity follows, user-warm thin, provenance rides-the-cut, background loop deferred, Texas-first). Two parallel fronts + convergence; cc-agent-C serialization mitigated by serial ordering; moat features sequenced in (provenance rides the cut, precedence recon-first, user-warm thin, payment to ICC); hard acceptance criteria threaded; deploy/housekeeping folded; dispatch index with the two flips + four new scaffolds + two edits. Pre-mortem cleared GREEN (one operational yellow, acknowledged). Per [`_decisions/2026-06-10_gtm_readiness_plan.md`](_decisions/2026-06-10_gtm_readiness_plan.md).
 - **2026-06-09 (scaffold):** Created at session close to frame the GTM-readiness sprint (engine lift as app-by-app QA + code-library maximization for the FB-group launch).
