@@ -6,7 +6,7 @@ agent: cc-agent-C
 repo: legacy-design-tools
 kind: report
 dispatch: 2026-06-10_cc-agent-C_cortex_artifact_ux
-status: PR-ready — held for operator merge; operator e2e on San Marcos letter pending
+status: MERGED — operator e2e on San Marcos letter pending
 related_pr_wedge: https://github.com/empressaioemail-tech/legacy-design-tools/pull/165
 ---
 
@@ -124,12 +124,43 @@ No live dev session with operator letter in-agent. Operator checklist:
 | **SHA** | `294c5d2dfd96a620a9e5169fc4fa3dc2ba87fd02` |
 | **PR** | https://github.com/empressaioemail-tech/legacy-design-tools/pull/166 |
 | **Paired wedge PR** | https://github.com/empressaioemail-tech/legacy-design-tools/pull/165 |
-| **Merge** | **Held for operator** |
+| **Merge** | **MERGED** — see Operator merge close below |
 
 ## Blockers (verbatim)
 
-None for code/CI proxy. GitHub Actions on PR #166 not observed in-agent. Operator e2e on live San Marcos letter not run in-agent.
+None for code/CI proxy. Operator e2e on live San Marcos letter not run in-agent.
 
 ## Model / escalation
 
 - **Model:** Grok Build 0.1 — no Claude escalation required.
+
+---
+
+## Operator merge close (2026-06-10)
+
+PR #166 merged by operator. Artifact UX is on `main`.
+
+### Merge record
+
+| Field | Value |
+|---|---|
+| **PR** | https://github.com/empressaioemail-tech/legacy-design-tools/pull/166 |
+| **Branch (source)** | `cortex/artifact-ux` |
+| **Merge commit on `main`** | `bf90e85ff10b1e56ba4d814bf5796a5531d9d9de` |
+| **Merged at** | 2026-06-10T18:12:49Z |
+
+### CI (pre-merge, green)
+
+| Check | Run | Result |
+|---|---|---|
+| Typecheck + Test | https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/27293901181 | **PASS** (6m3s) |
+
+Fixup commit on branch: `cec1b48` — stub `artifactNavByEngagement` / `applyArtifactNav` in engagement + chat test mocks (58 design-tools tests green).
+
+### Post-merge deploy
+
+Cloud Run deploy workflow triggered on `main` push at merge (run in flight at report time).
+
+### Operator e2e — still pending
+
+San Marcos triplex letter checklist from §Verification artifacts remains unrun in-agent.

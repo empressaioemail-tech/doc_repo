@@ -6,7 +6,8 @@ agent: cc-agent-C
 repo: legacy-design-tools
 branch: cortex/per-user-auth
 sha: e97549c4cebfd4c4bbf005d7fbb6f717e87f7361
-pr: https://github.com/empressaioemail-tech/legacy-design-tools/pull/new/cortex/per-user-auth
+pr: https://github.com/empressaioemail-tech/legacy-design-tools/pull/167
+status: MERGED — migration 0038 apply pending operator
 worktree: P:/ldt-cortex-per-user-auth
 model: Grok Build 0.1
 ---
@@ -140,14 +141,7 @@ pnpm run typecheck — exit 0 (full workspace, 2026-06-10 worktree)
 | Branch | `cortex/per-user-auth` |
 | SHA | `e97549c4cebfd4c4bbf005d7fbb6f717e87f7361` |
 | PR (operator create) | https://github.com/empressaioemail-tech/legacy-design-tools/pull/new/cortex/per-user-auth |
-| Merge | **Held for operator** |
-
-### Post-merge operator steps
-
-1. Apply migration `0038` to deployment DB.
-2. Ensure `SESSION_SECRET` bound in Cloud Run (already in deploy docs).
-3. Regenerate `lib/db/src/__tests__/__fixtures__/schema.sql.template` via `pnpm db:push:test && pnpm db:dump:test-fixture` in `lib/db` (CI drift test).
-4. Confirm CI integration test output for isolation + no-pool suites; paste verbatim into this report if needed.
+| Merge | **MERGED** — see Operator merge close below |
 
 ---
 
@@ -156,10 +150,53 @@ pnpm run typecheck — exit 0 (full workspace, 2026-06-10 worktree)
 - Main clone alien HEAD (`codewarm/austin-2024-uplift-rewarm`) — refused; used `P:/ldt-cortex-per-user-auth`.
 - Local integration tests blocked: `DATABASE_URL must be set. Did you forget to provision a database?`
 - GCP Secret Manager resolve script failed on workstation (gaxios auth error) — could not pull Neon URL locally.
-- Schema fixture template not refreshed in this PR (requires test DB push) — CI drift job will fail until operator refresh step above.
 
 ---
 
 ## Escalation log
 
 No Claude escalation — Grok Build 0.1 completed on first pass after typecheck fixes.
+
+---
+
+## Operator merge close (2026-06-10)
+
+PR #167 merged by operator. Task #29 per-user auth + ownership isolation is on `main`.
+
+### Merge record
+
+| Field | Value |
+|---|---|
+| **PR** | https://github.com/empressaioemail-tech/legacy-design-tools/pull/167 |
+| **Branch (source)** | `cortex/per-user-auth` |
+| **Merge commit on `main`** | `b1575efc94cdd8c5b891beaab2238f3b81d97ec9` |
+| **Merged at** | 2026-06-10T18:13:04Z |
+
+### CI (pre-merge, green)
+
+| Check | Run | Result |
+|---|---|---|
+| Typecheck + Test | https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/27296107870 | **PASS** (5m48s) |
+
+Includes schema fixture drift **PASS**, `engagement-ownership-isolation` **PASS**, `brokerage-anonymous-history-no-pool` **PASS** (CI Postgres).
+
+### Fixup commits landed before merge (Cursor agent)
+
+| SHA | Summary |
+|---|---|
+| `4399b92` | `chore(db): refresh schema fixture for migration 0038` |
+| `d91b3b9` | `test(db): expect ownership tables in schema integration list` |
+| `c838d05` | `fix(api-server): align ownership checks with legacy test sessions` |
+| `16c857a` | `fix(test): pin NODE_ENV=test and seed ownership on route fixtures` |
+| `0b73b89` | `test(api-server): use x-requestor for ownership isolation suite` |
+| `045c790` | `fix(test): type asUser helper with supertest Test` |
+
+### Post-merge operator steps — **PENDING**
+
+1. **Apply migration 0038** to deployment DB (same workflow as 0036/0037):
+   ```bash
+   gh workflow run cloud-run-deploy.yml -R empressaioemail-tech/legacy-design-tools -f action=run-migrations
+   ```
+2. **`SESSION_SECRET`** — already bound in Cloud Run deploy docs; verify on next cortex-api revision.
+3. Fixture refresh **done in PR** — no follow-up branch needed.
+4. Post-merge `main` PR Checks + Cloud Run deploy triggered at merge push (in flight at report time).
