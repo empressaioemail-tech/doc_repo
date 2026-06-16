@@ -15,7 +15,23 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
 
+## CONVERGENT DEPLOY SHIPPED — LEAK CLOSED, C3 LIVE, COTALITY ACTIVATED (2026-06-15, this session)
+
+> **This section supersedes the "CONVERGENT DEPLOY PENDING" and "the Cortex auth data-leak is live" claims in the section immediately below.** The deploy ran and was verified live against gcloud, the prod endpoints, and the prod Neon. Session record: [`_sessions/2026-06-15_cotality_live_and_convergent_deploy_claude_code.md`](_sessions/2026-06-15_cotality_live_and_convergent_deploy_claude_code.md).
+
+**The convergent cortex-api deploy is done. Prod is `cortex-api-00171-wek` @ 100%.** One canary-gated deploy shipped #178 (spine-flag bake), #179 (C3 thin BFF, the one-way door), #180 (auth and leak fix), and #181 plus #182 (Cotality), together. Sequence: `deploy-canary` of `b19ca089` to a 0% canary, smoke-verified on the canary URL, then `shift-traffic`. No `run-migrations` was needed (the leak fix is code-only; migration 0038 was already applied). Rollback handle: `gcloud run services update-traffic cortex-api --to-revisions cortex-api-00169-jep=100`.
+
+**The data leak is CLOSED, verified.** Unauthenticated `GET /api/engagements` on the prod default URL returns 0 records (was 30 on the pre-deploy `00169`). #180's anonymous isolation is live. The Wave 0 security gate ([`61`](61_property_intelligence_master_plan.md)) is met; the external-demo precondition is cleared.
+
+**Cotality is solved AND deployed.** The `InvalidClientIdentifier` resolved to three compounding causes: per-product token host (Property `api1.cotality.com`, RiskMeter and SpatialTile `api.cotality.com`), HTTP Basic auth with `grant_type` in the query and an empty body (not body-form), and two mistyped secrets (now corrected; all six `COTALITY_*` byte-match the portal). PR #181 and #182 both merged; all three products verified minting HTTP 200 live; the six secrets are mounted on the live revision and the Basic-auth code is deployed. **Remaining: the in-app `generate-layers` flip of `cotality:property` to `ok` on a real parcel is NOT yet run (needs an authenticated session); RiskMeter and SpatialTile are wired but not in-app verified.** Demo keys expire July 6 (rotation deferred to post-dev; `:latest` wiring means a secret-version add, no code change). Memory [[cotality-oauth-three-keys]] holds the verified shape.
+
+**Engagement ownership reassign (operator request).** Post-deploy, the operator's new account (`empressaioemail@gmail.com`, `u_d96ffe5b81e6b487df53c32d`) showed 0 engagements (correct #180 isolation). The 30 demo engagements, cleanly owned by `migration-owner`, were reassigned to the operator's user id via a transactional UPDATE on the prod Neon (verified 30 after, `migration-owner` at 0). Reversible; does not reopen the leak.
+
+**HELD dispatches now unblocked by the deploy:** chat web-first code plus zoning grounding, the Cotality activation dispatch, the deliverable-polish queue. **Deploy residues still open (untouched this session):** retrieval-api `db:not_configured` (hauska-engine #68), drift alert policy `8570526367601301438` to retire (mcp #27), #26 collateral 46 to 57, `mcp.hauska.dev` plus gate migration 004.
+
 ## CAPITAL-READINESS AUDIT FILED + CONVERGENT DEPLOY PENDING + COTALITY SOLVED (2026-06-15, this session)
+
+> **Superseded on deploy + leak status by the section above (2026-06-15, later): the deploy ran, the leak is closed, Cotality is merged and deployed. The capital-readiness audit and roadmap reconciliation below stand.**
 
 > Capital-readiness pass plus a live-status reconciliation against gh, gcloud, and live endpoints. The pre-diligence checklist is now a tracked doc: [`72b_capital_readiness_audit.md`](72b_capital_readiness_audit.md), ten owner-tagged rows promoting the [`72a`](72a_capital_raise_positioning.md) gaps. Session record: [`_sessions/2026-06-15_capital_readiness_audit_and_roadmap_refresh_claude_code.md`](_sessions/2026-06-15_capital_readiness_audit_and_roadmap_refresh_claude_code.md).
 
