@@ -13,6 +13,8 @@ related: [75a_hauska_brief_extension, 75b_brief_coverage_v0, 61_property_intelli
 > **Supersedes the framing in [`75a_hauska_brief_extension.md`](75a_hauska_brief_extension.md)** (which remains the API-contract reference, marked superseded on product framing). 75a described a generic consumer property-brief extension. This doc reframes the same codebase and backend toward a single sharp first actor: the real estate investor.
 >
 > **Approved mockups:** `p:\tmp\extension-proposal\` (deal radar panel, profile workspace, identity + leads). Build plan of record: the approved plan at `C:\Users\cente\.claude\plans\joyful-conjuring-wozniak.md`.
+>
+> **Build spec + scope cuts (2026-06-17):** [`75i_investor_radar_prelaunch_sprint.md`](75i_investor_radar_prelaunch_sprint.md) governs the build. The inverted lead feed is **CUT** (Cotality permits/propensity/owner-occupancy become underwriting depth on the viewed property); provider is **frozen to Cotality** until the contracted surface is consumed; tiers are **Free / Pro / Max**; G2 (Cotality consumer-display license) is **launch-blocking**. Decision: [`_decisions/2026-06-17_investor_radar_scope_cuts.md`](_decisions/2026-06-17_investor_radar_scope_cuts.md).
 
 ## What it is
 
@@ -20,11 +22,11 @@ The browser extension is the ambient surface of the property-intelligence spine.
 
 Three layers, one thesis.
 
-1. **Deal radar (the surface).** Rides on the listing page. Auto-runs a cheap deterministic pass the moment the user lands, returns one headline verdict (deal, conditions, or dead) tuned to the user's buy box, with the deal-killers and the upside cited. The full cited brief runs on click. Keep or pass sharpens the profile.
+1. **Deal radar (the surface).** Rides on the listing page (and any page, via universal capture). Auto-runs a cheap deterministic pass the moment the user lands, returns one headline verdict (deal, worth a look, or dead) tuned to the user's buy box, with the deal-killers and the upside cited, plus a "pencils at $X" basis run from the user's own buy-box math over our cited inputs. The full cited brief runs on click. Keep or pass sharpens the profile.
 
 2. **Profile and running dialogue (the depth).** Every property the user touches is one continuous, never-resetting dialogue. The system translates that dialogue into who they are as an investor: their thesis, their buy box, and their blind spots. The buy box is not just geography and price, it carries the user's game (flip, hold, develop, wholesale) and their underwriting posture (spread tolerance, cap-rate floor, rehab budget, insurance ceiling), which selects which data lens the radar foregrounds.
 
-3. **Owned identity and lead feed (the endgame).** The profile becomes a provenance-backed, portable investor identity the user owns and can carry to lenders and partners, and it inverts into a feed of new properties that fit who they have become.
+3. **Owned profile (optional stretch).** The profile becomes a provenance-backed, portable investor profile the user owns and can carry to lenders and partners. The inverted lead feed is **cut for launch**; profile export is a thin optional stretch, not a blocker (per the 2026-06-17 scope cuts).
 
 ## Why the investor, and why Austin first
 
@@ -57,7 +59,7 @@ The standout investor-unique signals, none yet surfaced, are propensity-to-sell,
 
 **Tenant sovereignty.** The per-user profile is tenant-private and never pools. Only anonymous and public-tier signal feeds shared calibration.
 
-**Tier.** The cheap proactive radar pass is free (Layer 1, the public wedge). The full cited brief, the profile depth, and the lead feed are paid (Layer 2), on a **flat monthly subscription** (provisional, decided 2026-06-16). Per [`08_tiered_access_model.md`](08_tiered_access_model.md) and [`_decisions/2026-06-16_investor_radar_name_and_pricing.md`](_decisions/2026-06-16_investor_radar_name_and_pricing.md).
+**Tier.** Free (radar, Layer 1, the public wedge) / **Pro** (cited brief + profile + comps/rent) / **Max** (subsurface + insurability + minerals), as accessPolicy + package entitlement with a metered depth allowance to protect Cotality COGS. Pro is a flat monthly subscription ($49, provisional). Per [`08_tiered_access_model.md`](08_tiered_access_model.md), [`_decisions/2026-06-16_investor_radar_name_and_pricing.md`](_decisions/2026-06-16_investor_radar_name_and_pricing.md), and the 2026-06-17 scope cuts.
 
 **Brand (decided 2026-06-16).** The consumer investor surface keeps the **Hauska** name, a conscious override of ADR-008's placement of product surfaces under Empressa (the operator's call; logged, not silent). The substrate and engine remain Hauska. Decision: [`_decisions/2026-06-16_investor_radar_name_and_pricing.md`](_decisions/2026-06-16_investor_radar_name_and_pricing.md).
 

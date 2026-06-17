@@ -11,6 +11,8 @@ related: [75g_investor_deal_radar, 76b_gtm_engine_polish_sprint, 76d_gtm_data_pa
 # Investor Deal Radar — GTM engine
 
 > Partially staged by design. Stand up the measurement spine and the early human stages now; defer the automated distribution engine until the funnel converts. Distribution of an unproven product is not automated. Product: [`75g_investor_deal_radar.md`](75g_investor_deal_radar.md).
+>
+> **2026-06-17 scope cut:** the in-app inverted **lead feed is CUT** (per [`_decisions/2026-06-17_investor_radar_scope_cuts.md`](_decisions/2026-06-17_investor_radar_scope_cuts.md)). Cotality permits/propensity/owner-occupancy are underwriting depth on the viewed property, not a feed. Funnel-to-Pipedrive (signup, upgrade, qualified prospect) is unaffected; the `lead_feed_open`/`lead_clicked` event types below are dropped from this sprint's instrumentation.
 
 ## The wedge audience and channels
 

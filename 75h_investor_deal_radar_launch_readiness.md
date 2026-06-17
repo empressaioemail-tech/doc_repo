@@ -47,10 +47,11 @@ G4 packaging kit (narrowed manifest, privacy policy, store copy, build hygiene) 
 
 | Tier | Contents | Gate |
 |---|---|---|
-| Free (Layer 1) | cheap radar pass on every listing (public-record + licensed layers), capped full briefs | G1 + G3 + G4 |
-| Paid (Layer 2, flat monthly) | unlimited briefs, full Cotality underwriting depth (rent, comps, permits, liens, insurance, propensity), profile depth, lead feed | G2 + billing |
+| Free (Layer 1) | radar pass on every listing (public-record + licensed layers), capped full briefs | G1 + G3 + G4 |
+| Pro (flat monthly $49) | unlimited cited briefs, profile depth, comps + rent, pencils-at-$X | G2 + billing |
+| Max | adds subsurface + insurability + minerals | G2 + billing |
 
-Billing: flat monthly recurring subscription (provisional). Confirm the rail when wiring the paid tier (Circle is the decided fiat rail but consumer recurring-card subscriptions may need a subscription processor; the wallet schema can back entitlement). Price point: open.
+Three tiers per the 2026-06-17 scope cuts (Free / Pro / Max), accessPolicy + package entitlement, with a **metered depth allowance to protect Cotality COGS**. The inverted lead feed is **cut** (permits/propensity/owner-occupancy are underwriting depth on the viewed property, not a feed). Billing: flat monthly recurring subscription ($49 Pro, provisional); confirm the rail when wiring (Circle is the decided fiat rail but consumer recurring-card subscriptions may need a subscription processor; the wallet schema can back entitlement).
 
 ## Commercialization (paywall + CRM + GTM engine)
 
@@ -74,7 +75,7 @@ Dispatched 2026-06-16: [`_dispatches/2026-06-16_cc-agent-C_commercialization_pip
 | Gate | Blocks | Owner | State |
 |---|---|---|---|
 | G1 prod brokerage key | everything | cc-agent-C (durable) / operator (hotfix) | open; deploy storm settled, hotfix ready |
-| G2 Cotality consumer-display license | paid Cotality depth (public) | bizops | open; dev-tier pilot proceeds |
+| G2 Cotality consumer-display license | **LAUNCH (paid Pro/Max display Cotality-derived numbers)** | bizops | open; push in parallel from now; dev-tier pilot proceeds |
 | G3 TX legal framing + disclaimers | public valuation display | operator + TX attorney | open; cheap |
 | G4 Web Store readiness | public listing | extension-agent + operator | open |
 

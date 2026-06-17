@@ -11,6 +11,8 @@ blocked_on: Wave 1/2 API shape (investor verdicts + headline + profile) from cc-
 
 # extension-agent — Investor Deal Radar surfaces
 
+> **SUPERSEDED 2026-06-17** by [`2026-06-17_extension-agent_investor_radar_capture_signup.md`](2026-06-17_extension-agent_investor_radar_capture_signup.md). The lead feed is CUT; universal capture (select-to-analyze/auto-detect) + signup added. Execute the 2026-06-17 dispatch.
+
 You are the **extension-agent**, single owner of `hauska-brief-extension` for this run. Product context: [`75g_investor_deal_radar.md`](../75g_investor_deal_radar.md). Build the three approved surfaces.
 
 **Approved mockups (build to these, they are the design contract):** `p:\tmp\extension-proposal\` — `1_deal_radar_panel.html`, `2_profile_workspace.html`, `3_identity_and_leads.html`. They reuse the live tokens (Replit blue `#2196f3`, the green/amber/red verdict system, the confidence meter), so this is a reskin and reframe, not a new design system.

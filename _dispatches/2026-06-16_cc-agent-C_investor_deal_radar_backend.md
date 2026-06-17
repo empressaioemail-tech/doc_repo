@@ -11,6 +11,8 @@ blocked_on: none for build (Wave 1+ run on local/CI). G1 prod-key durable fix is
 
 # cc-agent-C — Investor Deal Radar backend
 
+> **SUPERSEDED 2026-06-17** by [`2026-06-17_cc-agent-C_investor_radar_cotality_depth.md`](2026-06-17_cc-agent-C_investor_radar_cotality_depth.md). The lead engine (Wave 4 below) is CUT; Cotality permits/propensity/owner-occupancy now wire as underwriting depth, not a feed. Execute the 2026-06-17 dispatch.
+
 You are **cc-agent-C**, single owner of `legacy-design-tools` for this run. Product context: [`75g_investor_deal_radar.md`](../75g_investor_deal_radar.md). We are refocusing the Property Brief backend toward the real estate investor: an instant cited deal verdict, a per-user behavioral profile, and a lead engine.
 
 ## Model (HR-12)
