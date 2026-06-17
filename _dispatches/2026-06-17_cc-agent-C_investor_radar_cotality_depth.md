@@ -27,7 +27,10 @@ Model (HR-12): Grok Build 0.1 default.
 6. **Investor verdict reframe** (deal / worth a look / dead) + buy-box tuning + per-user profile (`brokerage_user_profiles` migration, keyed by `ownerUserId`, tenant-private) + the running dialogue, keyed to the canonical Cotality parcel id.
 7. **Universal parcel-key capture (backend)**: address resolves to a canonical Cotality parcel id = the join key for verdict/dialogue/profile; support select-to-analyze, auto-detect, manual paste; adapters are optional enrichment. Build the capture-and-key primitive generically (Mox reuses it).
 8. **Signup + sign-in** server side (today sign-in only; the hosted `/api/auth/extension-login` page is bare — add signup + styling + reset).
-9. **Tier enforcement at the gate**: Free / Pro / Max as accessPolicy + package entitlement, with a **metered depth allowance to protect Cotality COGS**.
+9. **Tier enforcement at the gate**: Free / Pro / Max as accessPolicy + package entitlement, with a **metered depth allowance to protect Cotality COGS**. **The Max tier now includes the site map (task 11).**
+10. **Opportunity Zones**: ingest the QOZ designated-tract set (CDFI Fund / HUD GeoJSON; the parcel's census-tract FIPS likely comes free from Cotality Property V2 — verify, else point-in-polygon against the tract layer). Surface a Parcel-package line: L1 free flag (in/out, tract, round), L2 reasoning (hold + capital-gains implications, cited). **Version the tract list** so OZ 1.0 swaps to 2.0 (designations open Jul 2026); label the round on the verdict. National layer, no per-jurisdiction warm.
+   - **MUD/PID horizontal**: beyond the task-3 per-parcel verification, build the **TX Comptroller special-district registry ingest** so MUD/PID assessment exposure resolves broadly (per [`61a`](../61a_central_tx_coverage_program.md)); feeds the "what kills it" set.
+11. **Map-data consume (Max)**: consume the gate-fronted layer capability that cc-agent-E + cc-agent-M expose (do not re-implement layer assembly cortex-side). Provide the parcel-keyed layer request and the reasoning overlays (verdicts/findings pinned to locations). The render component is the extension's; your half is serving the layers + reasoning through the seam with vintage + confidence on each layer. Gate by Max entitlement + tenant/product scope.
 
 ## Constraints
 
