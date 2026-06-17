@@ -16,6 +16,10 @@ related: [61_property_intelligence_master_plan, 75g_investor_deal_radar, 75i_inv
 
 Coverage is a matrix, jurisdictions by data layer, not one number per city. The national layers (FEMA NFHL, USGS soils and geology, EPA, Cotality parcel and property, Opportunity Zones) are coverage-complete by default and are not where the gaps live. The gaps concentrate in the jurisdiction-specific layers, and each closes by a different mechanism. The code substrate itself is three layers (ADR-019): Layer 3 is local ordinance, zoning, and UDC text (what the corpus and the deployment Neon hold); Layer 1 is the model I-Codes and Layer 2 the local amendments to them (the reasoning layer, web-warmed). "We hold a city's code" usually means Layer 3 only; the building-code adoption layer is essentially un-warmed everywhere except Austin, and Austin is on the wrong edition (warmed 2021, in force 2024). That adoption layer is the largest grounded-value gap and the thing the radar's cited rehab and can-I-build reasoning depends on.
 
+## Every Central TX parcel gets intel today (the national-layer baseline)
+
+Coverage is not binary per jurisdiction, and the radar is never empty anywhere. Every parcel in Central Texas (and the US) already gets the full national-layer brief regardless of local-code coverage: FEMA flood plus floodway, USGS soils (expansive clay) plus geology plus karst, topography, EPA, and the Cotality stack (parcel, owner, sale/tax/AVM, comps, rent, liens, mortgage, building permits, propensity-to-sell, owner-occupancy, perils and insurance), plus Opportunity Zones and MUD/PID special districts. That is the bulk of an investor verdict and it fires on every parcel today, warmed jurisdiction or not. The jurisdiction-specific code/zoning/precedence layer is incremental depth on top of that baseline, not a gate on whether the radar is useful. And where there is no zoning (unincorporated land, no-zoning towns), "no zoning restrictions" is itself a positive build-freedom signal to surface, not an absence to apologize for. So the coverage program closes the local-code layer; it never decides whether a parcel is worth a verdict.
+
 ## Current coverage (from the engine snapshot)
 
 Per the 2026-05-26 engine snapshot re-confirmed live 2026-06-09 (21,126 atoms): roughly 24 Central Texas jurisdictions hold Layer-3 local code (8 on the deployment Neon, ~16 engine-only). Only Austin is reasoning-warmed (725 atoms, 0% verified against section bodies, the driver-quality gap). Portfolio-wide only two jurisdictions are public-free (Bastrop TX, Grand County UT); the rest are platform-internal. Any external-facing figure must carry the public-versus-internal split.
@@ -26,11 +30,23 @@ Amends the 2026-06-10 demand-driven decision (premises changed: the wedge footpr
 
 - **Tier A, proactive warm.** Every incorporated city with zoning and real deal volume across the ten core counties (Travis, Williamson, Hays, Bastrop, Caldwell, Comal, Guadalupe, Bexar, Bell, McLennan), practically the metro core plus the corridor plus the San Antonio suburbs plus Waco metro plus Killeen and Temple. On the order of 40 to 50 jurisdictions. Pre-warmed so the radar is never empty in the wedge's footprint.
 - **Tier B, demand-driven.** The sub-5,000 and no-zoning small-town tail and the rural ring. Warmed on first user hit. The 2026-06-10 logic still holds here.
-- **Not coverage.** County zoning is N-A-by-law (Texas counties cannot zone); permit and AHJ is a connector build; HOA is a parcel-level lookup. None is a per-jurisdiction warm.
+- **Not a per-jurisdiction code warm (but still on the baseline).** County zoning is N-A-by-law (Texas counties cannot zone) and many small towns have none, but those parcels still get the full national-layer brief above, and "no zoning" is itself a build-freedom signal to surface. Permit/AHJ is a connector build; HOA is a parcel-level lookup.
 
 ## Platform recon (2026-06-17)
 
 Resolved all 27 Tier-A cities the enumeration left platform-unverified to a citable code-of-ordinances URL; all have zoning. Result: **18 are Municode-warmable now** (no partnership), including the headline pull-forwards Waco (145k, the largest unwarmed metro) and Temple (81k, has a UDC), plus Seguin, Cibolo, Belton, Universal City. **13 are eCode360/General Code partnership-gated** (the four known corridor cities Pflugerville/Kyle/Buda/Smithville plus net-new Lakeway, Bee Cave, Cedar Park, Liberty Hill, Bulverde, Granite Shoals, Giddings, Cameron, Rockdale), which turns the General Code ask from soft into a quantified 13-city unblock. Zero self-hosted, zero still-unverified in Tier A. (Correction to prior records: Cedar Park is eCode360, not American Legal.) Full table: `p:\tmp\central_tx_coverage\platform_recon.md`.
+
+## Live coverage state (2026-06-17) and the two work classes
+
+A live read of `/api/brokerage/v1/coverage` (the endpoint the extension's Test connection hits) reports **37 jurisdictions, but only 5 are warmed onto the deployment Neon** (Bastrop TX, Cedar Hill TX, Grand County/Moab UT, Miami Beach FL, Miami-Dade FL). The other **32 are `engine_only`** — present in the engine corpus and recognized by the geocoder, but not loaded into the live Neon, so local-code retrieval returns empty until warmed. Everything else in the footprint is missing entirely. That splits the work into two classes:
+
+**Class A — flip `engine_only` to `neon` (cheap, no re-fetch).** Load atoms we already hold into the live Neon. Covers the ~32 (Austin, San Antonio, Round Rock, Georgetown, Hutto, Leander, New Braunfels, Killeen, Schertz, Boerne, Dripping Springs, Lockhart, Manor, Lago Vista, Rollingwood, Wimberley, Elgin, Taylor, Converse, Live Oak, Copperas Cove, plus non-Central-TX snapshot keys). Closes the "covered but thin" feeling fast.
+
+**Class B — onboard net-new deal-volume cities not in the corpus at all (the wide gap).** Split by platform:
+- *Municode, onboard now (no partnership):* Waco (145k), Temple (81k), San Marcos (74k, config-ready, live customer), Seguin (30k), Cibolo (35k), Belton (23k), Universal City (20k). The highest-leverage adds.
+- *eCode360 / General Code, partnership-gated:* Kyle, Buda, Pflugerville, Cedar Park (+9), gated on the General Code partnership below, not engineering.
+
+**Denominator correction.** The full Waco-to-San-Antonio corridor has ~120 incorporated places, but over half are sub-2,000 no-zoning towns (Mart, Moody, Coupland, Thrall, Von Ormy, and dozens more) that are correctly Tier-B demand-driven, and Texas counties cannot zone (N-A-by-law). So "covering 18% of 120" is the wrong metric; the target is the ~40-50 deal-volume Tier-A cities, and the live gap there is the Class-B Municode onboards plus the General Code unblock.
 
 ## The keystone and the workflow
 
@@ -71,3 +87,4 @@ Dependency-ordered, no time estimates. The proof wave validates the keystone and
 ## Revision history
 
 - **2026-06-17 (origin):** Created from the Central TX enumeration and gap analysis. Proactive-within-footprint strategy, the driver-quality keystone, the batched edition-verification workflow, the proof wave, the three horizontals, and partnership routing.
+- **2026-06-17 (update):** Added the national-layer baseline reframe (every parcel gets intel regardless of code coverage; the code layer is incremental, never a gate; "no zoning" is itself a signal), the live coverage-state read (37 reported / 5 neon / 32 engine_only) and the two work classes (Class A flip engine_only->neon; Class B onboard net-new Municode cities Waco/Temple/San Marcos/Seguin/Cibolo/Belton/Universal City), and the denominator correction (target ~40-50 deal-volume Tier-A cities, not the ~120 incorporated places). Dispatch: `_dispatches/2026-06-17_cc-agent-C_central_tx_coverage_warm_and_onboard.md`.
