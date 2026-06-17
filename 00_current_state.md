@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-16
+title: Current state snapshot — 2026-06-17
 status: active
-last_updated: 2026-06-16
+last_updated: 2026-06-17
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -14,6 +14,20 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
+
+## TRACK 1 (SEAL-THE-SEAM) COMPLETE AND LIVE (2026-06-16/17, this session)
+
+> Pre-QA functional-freeze for the spine and Cortex. The [`61`](61_property_intelligence_master_plan.md) Wave 1 (seal the seam) plus the functional half of Wave 2 shipped and verified live against gh, gcloud, and prod endpoints. Close notes: the cc-agent-E and cc-agent-C `track1_finish` and `track1_residues` notes in [`_inbox/`](_inbox). Verdict: the spine and Cortex meet the QA-readiness bar (every path returns a real result or an honest "can't"; nothing mock, nothing silent-degraded).
+
+**The EngineEnvelope seal is live end to end.** hauska-engine #72 (emit) and legacy-design-tools #183 (consume) shipped a uniform EngineEnvelope on every engine-api `/v1` reasoning surface: `confidence{value, kind: calibrated|asserted|deterministic}`, `dataVintage` (acquisition date, not fetch-time), `coverage{degraded, reason}`, `source{adapter, citationIds}`. Verified populated end to end on a real San Marcos review (confidence kind asserted 0.35, degraded true with a named reason, reasoning-atom citations), NOT the conservative fallback. This is the one integration pass the [`robustness audit`](_research/2026-06-11_engine_robustness_audit.md) called for. Serving: `cortex-api-00180-row` and `hauska-engine-api-00006-lap`, both at 100%.
+
+**Mock is dead, the leak stays closed, the deploy is durable.** Live cortex env: `AIR_FINDING_LLM_MODE`, `BRIEFING_LLM_MODE`, `CLASSIFICATION_LLM_MODE` all `anthropic` (no `*_LLM_MODE=mock`). Unauthenticated `GET /api/engagements` returns `[]`. Migrations 41/41 (0039 applied plus the new 0040 `engine_honesty` jsonb at head). Retrieval `/healthz/` `db=up` (#68 deployed). `ENGINE_API_URL` baked to the stable host (not the canary tag) so deploys do not lose the engine connection.
+
+**Residues resolved on the finish (#184 puppeteer/IAM, then #180-row Cotality/vision):** large-PDF presign uploads work (runtime SA `api-server-runtime` granted `serviceAccountTokenCreator`). PDF plan-set vision works via poppler `pdftoppm` plus `--no-cpu-throttling` (root cause was CPU throttling after the 202 starving the fire-and-forget generation, the same class that broke headless Chrome); keystone 404 Remodel_B completes in ~33s with vision NOT degraded. Cotality property geocode fixed (api1 host plus the catalog query shape `streetAddress/city/state/bestMatch`); `cotality:property` flips to `ok` in-app on real TX parcels (San Marcos, Cedar Hill).
+
+**Carried (not QA blockers):** hydrology drainage runs ~45s on the native-D8 path with honest `coverage.degraded=true` (Wave 2 quality; pysheds win pending). The `--no-cpu-throttling` annotation must be baked into legacy-design-tools `cloud-run-deploy.yml` or the next `deploy-canary` regresses the vision/generation fix (regression guard, pending cc-agent-C commit). Rollback handles: `cortex-api-00177-vew`, `hauska-engine-api-00004-xpl`.
+
+**Next:** Track 2 (Cortex surface verification) and Track 3 (Property Brief re-point onto Cotality, code-retrieval-via-MCP, federal layers, extension functional pass) per the QA-readiness roadmap.
 
 ## INVESTOR DEAL RADAR — extension reframed + build dispatched (2026-06-16, this session)
 
