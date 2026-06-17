@@ -15,6 +15,20 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
 
+## RADAR v1 BACKENDS LIVE + CONSENT FIXED; EXTENSION QA + COVERAGE EXECUTION IN FLIGHT (2026-06-17, session close)
+
+> Session record: [`_sessions/2026-06-17_investor_radar_v1_coverage_and_deploys_claude_code.md`](_sessions/2026-06-17_investor_radar_v1_coverage_and_deploys_claude_code.md). This planner-coordinated session drove the radar v1 build plus several prod deploys and locked the coverage program. Supersedes the deploy/QA status in the section below.
+
+**Deploys live (verified):** cortex-api radar backend (#185 Cotality depth + #186 map BFF/Max consume; reached `cortex-api-00185-nom` then `00187-ray`); engine-api map-layers wave-3 (`hauska-engine-api-00008-qaw`); cortex-api GTM consent fix (#189 — `/gtm/consent` accepts the anonymous public key, verified 200). Rollback handle `cortex-api-00187-ray`. The #186 merge conflict was resolved; `BROKERAGE_DEV_API_KEY` dropped from `--set-secrets`; federal-data Docker fix (#188 — ship fixtures + runtime GCS path).
+
+**Consent/auth fixed end to end:** extension uses `brokerageKeyHeaders` for GTM + local-gate-first consent; backend mounts `/gtm` before the service-token gate. Consent records on prod now.
+
+**Extension (v0.6.11):** an interaction-wiring pass shipped (investor chips, research-by-address, auth-state, button audit), but live QA still finds bugs (auth buttons not hiding when signed in; the wallet gate blocks the FIRST brief — should be free-first-then-pay; Deep research stuck on a stale-version refresh banner). A comprehensive wiring + QA pass is dispatched. The extension auth fixes from this session are uncommitted in the extension tree (extension-agent to commit; also default the public key in `public-client.js` so plain builds stop shipping keyless).
+
+**Coverage program ([`61a`](61a_central_tx_coverage_program.md)):** national-layer baseline reframe (every parcel gets intel; the code layer is incremental, never a gate); Class A flip `engine_only`->`neon`, Class B onboard Municode net-news (Waco/Temple/San Marcos/Seguin/Cibolo/Belton/Universal City), then deepen Layer 1/2 verified. **Deepen GATE:** Austin regressed 38.6%->33.2% because the re-warm upsert downgrades verified atoms on a failed re-fetch; fix-and-pause dispatched, plus a safer deepen process specified (monotonic no-downgrade / verified high-water-mark, incremental targeted re-warm of only-unverified atoms, verify-before-promote, auto-rollback if after < before).
+
+**Operator items:** wire ICC `ICC_CODE_CONNECT_*` secrets into GCP (unblocks IFC/IPMC from 0%); the General Code partnership (13-city eCode360 unblock); the Vercel landing + public Web Store listing; push G2 Cotality consumer-display license; Stripe (consumer subscription) + Pipedrive (CRM) account setup.
+
 ## INVESTOR RADAR v1 SCOPE LOCKED + CENTRAL TX COVERAGE PROGRAM FILED (2026-06-17, this session)
 
 > Planning agent (this chat) now coordinates execution; the first agent (which filed [`75i`](75i_investor_radar_prelaunch_sprint.md) + the three radar dispatches at `6dab4e7`) is retired. v1 scope locked and expanded; the Central TX coverage program filed. Pre-mortem cleared green (one load-bearing yellow on commitment #1, resolved by the map reasoning-not-geometry spec).
