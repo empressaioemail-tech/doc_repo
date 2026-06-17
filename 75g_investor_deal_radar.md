@@ -57,9 +57,9 @@ The standout investor-unique signals, none yet surfaced, are propensity-to-sell,
 
 **Tenant sovereignty.** The per-user profile is tenant-private and never pools. Only anonymous and public-tier signal feeds shared calibration.
 
-**Tier.** The cheap proactive radar pass is free (Layer 1, the public wedge). The full cited brief, the profile depth, and the lead feed are paid (Layer 2). Per [`08_tiered_access_model.md`](08_tiered_access_model.md).
+**Tier.** The cheap proactive radar pass is free (Layer 1, the public wedge). The full cited brief, the profile depth, and the lead feed are paid (Layer 2), on a **flat monthly subscription** (provisional, decided 2026-06-16). Per [`08_tiered_access_model.md`](08_tiered_access_model.md) and [`_decisions/2026-06-16_investor_radar_name_and_pricing.md`](_decisions/2026-06-16_investor_radar_name_and_pricing.md).
 
-**Brand (open decision).** The substrate and engine stay Hauska. The consumer investor surface should carry an Empressa product name, resolved in a naming pass before public launch. Flagged, not blocking.
+**Brand (decided 2026-06-16).** The consumer investor surface keeps the **Hauska** name, a conscious override of ADR-008's placement of product surfaces under Empressa (the operator's call; logged, not silent). The substrate and engine remain Hauska. Decision: [`_decisions/2026-06-16_investor_radar_name_and_pricing.md`](_decisions/2026-06-16_investor_radar_name_and_pricing.md).
 
 ### Gates
 
