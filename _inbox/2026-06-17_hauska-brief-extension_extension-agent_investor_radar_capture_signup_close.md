@@ -81,7 +81,13 @@ Record in Chrome with unpacked extension (`chrome://extensions` → Load unpacke
 
 21 modified + 4 new modules (`address-detect`, `envelope-confidence`, `profile-api`, `background/capture.js`). Bundles rebuilt in-place.
 
-## Next when unblocked
+## Update 2026-06-17 — Edition 02 reskin (HOLD cleared)
+
+- **`styles/hauska.css`:** Canonical copy of claude-design Edition 02 tokens (from `Hauska site/hauska.css`).
+- **Deal radar panel:** Shadow DOM loads `hauska.css` + `inject.css`; mockup-aligned structure (`panel`, `verdict`, `factor`, `boxmatch`, `btn`). Asserted-confidence renderer (`hp-conf`) unchanged.
+- **Profile workspace:** `research/research.html` + `research.css` reskinned to mockup 2 (topbar, nav with verdict dots, dialogue thread, who-you-are rail). Free/Pro/Max copy only — no `$49` landing pricing propagated.
+- **Version:** `0.6.9`
+- **Still pending cc-agent-C:** wire live `laySummary.headlineVerdict` + Cotality `parcelId` when close lands (normalizer in `lay-summary.js` already accepts the shape).
 
 - Wire live `laySummary.headlineVerdict` + Cotality parcel id from cc-agent-C `/brief` response.
 - Profile workspace reskin (`research/research.html`) when design tokens stable.
