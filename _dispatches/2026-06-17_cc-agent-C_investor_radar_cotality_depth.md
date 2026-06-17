@@ -7,7 +7,7 @@ repo: legacy-design-tools
 kind: dispatch
 related: [75i_investor_radar_prelaunch_sprint, 61_property_intelligence_master_plan, 08_tiered_access_model, _research/2026-06-06_cotality_api_surface_catalog]
 supersedes: 2026-06-16_cc-agent-C_investor_deal_radar_backend (lead engine cut; scope re-issued)
-blocked_on: task 3+ consume the sealed EngineEnvelope from cc-agent-E (task 2). Coordinate the gate-front contract with E before pouring data.
+blocked_on: none. The sealed EngineEnvelope is DONE and live (#72/#183) — task 3+ pour onto it directly. Task 11 (map-data consume) waits on cc-agent-E's layer-capability extraction + cc-agent-M gate exposure.
 ---
 
 # cc-agent-C — investor radar backend (re-issued per the 2026-06-17 handoff)
