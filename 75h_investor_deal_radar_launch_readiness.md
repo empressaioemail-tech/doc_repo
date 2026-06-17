@@ -33,6 +33,8 @@ Nothing packages until the reframe is built. Waves 1 to 3 are dispatched, not do
 | Store listing assets (Hauska name, icons, screenshots/video, description, category, support contact) | operator + extension-agent | |
 | Hosted privacy policy + Chrome data-use disclosure | operator | mandatory; the extension observes research behavior |
 
+G4 packaging kit (narrowed manifest, privacy policy, store copy, build hygiene) authored and dispatched: [`_dispatches/2026-06-16_extension-agent_g4_webstore_packaging.md`](_dispatches/2026-06-16_extension-agent_g4_webstore_packaging.md). Apply now; hold submission until the build + commercialization land.
+
 ## Gated (access + abuse control)
 
 | Item | Owner | Note |
@@ -49,6 +51,16 @@ Nothing packages until the reframe is built. Waves 1 to 3 are dispatched, not do
 | Paid (Layer 2, flat monthly) | unlimited briefs, full Cotality underwriting depth (rent, comps, permits, liens, insurance, propensity), profile depth, lead feed | G2 + billing |
 
 Billing: flat monthly recurring subscription (provisional). Confirm the rail when wiring the paid tier (Circle is the decided fiat rail but consumer recurring-card subscriptions may need a subscription processor; the wallet schema can back entitlement). Price point: open.
+
+## Commercialization (paywall + CRM + GTM engine)
+
+Dispatched 2026-06-16: [`_dispatches/2026-06-16_cc-agent-C_commercialization_pipedrive_paywall_gtm.md`](_dispatches/2026-06-16_cc-agent-C_commercialization_pipedrive_paywall_gtm.md).
+
+| Item | What | Note |
+|---|---|---|
+| Paywall wired | Free (radar + capped briefs) vs Pro (depth + leads), flat monthly | entitlement on the per-user session; no-lockout on expiry; billing-rail interface stubbed |
+| Pipedrive CRM sync | Funnel into the operator's Pipedrive: person on signup, deal on upgrade-intent, lead on qualified prospect | sovereignty boundary: only the GTM/CRM layer syncs; tenant-private research/profile never does |
+| GTM engine over the top | The observation layer instrumented end to end into an investor-funnel readout; qualified signal auto-pushed to the CRM | new event types + `/gtm/digest` + `/gtm/triage` to Pipedrive |
 
 ## Public (the staged motion)
 
@@ -68,5 +80,6 @@ Billing: flat monthly recurring subscription (provisional). Confirm the rail whe
 
 ## Open decisions remaining
 
-- Paid-tier **price point** (the monthly number).
+- Paid-tier **price point** (the monthly number; the `get.html` mock shows $49/mo as a placeholder).
 - The **billing rail** for consumer recurring subscriptions (Circle vs a subscription processor).
+- Operator inputs needed: the **Pipedrive API token** (for the CRM sync) and the **Pipedrive pipeline/stage mapping** for the upgrade funnel.
