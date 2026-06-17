@@ -80,6 +80,6 @@ Dispatched 2026-06-16: [`_dispatches/2026-06-16_cc-agent-C_commercialization_pip
 
 ## Open decisions remaining
 
-- Paid-tier **price point** (the monthly number; the `get.html` mock shows $49/mo as a placeholder).
-- The **billing rail** for consumer recurring subscriptions (Circle vs a subscription processor).
-- Operator inputs needed: the **Pipedrive API token** (for the CRM sync) and the **Pipedrive pipeline/stage mapping** for the upgrade funnel.
+- Paid-tier price point: **$49/month** (confirmed 2026-06-16).
+- The **billing rail** for consumer recurring subscriptions (Circle vs a subscription processor) — still open.
+- Pipedrive: token **validated** (Empressa Solutions LLC, domain `empressasolutionsllc`); to be stored as the `PIPEDRIVE_API_TOKEN` secret in `legacy-design-tools-prod` (operator-managed; rotate after QA). Still needed: the Pipedrive **pipeline/stage mapping** for the upgrade funnel.

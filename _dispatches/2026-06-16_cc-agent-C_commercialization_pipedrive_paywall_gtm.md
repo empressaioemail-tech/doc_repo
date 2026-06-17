@@ -28,7 +28,7 @@ Tier model per [`_decisions/2026-06-16_investor_radar_name_and_pricing.md`](../_
 
 ## Task 2 — Pipedrive CRM sync (the operator's GTM/sales pipeline)
 
-Link the funnel into the operator's Pipedrive. A backend connector (Pipedrive API token from the operator, stored as a secret) that pushes, on the relevant GTM events:
+Link the funnel into the operator's Pipedrive. A backend connector reading `PIPEDRIVE_API_TOKEN` from Secret Manager (account: Empressa Solutions LLC; company domain `empressasolutionsllc`; base `https://empressasolutionsllc.pipedrive.com/api/v1`; token validated 2026-06-16 against `users/me`, operator rotates after QA) that pushes, on the relevant GTM events:
 
 - a **person** on sign-up (email + install id + acquisition source),
 - a **deal** when a free user hits a Pro-gated action or starts a trial (the upgrade pipeline), with stage transitions on convert/churn,
