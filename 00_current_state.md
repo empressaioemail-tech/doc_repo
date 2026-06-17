@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-15
+title: Current state snapshot — 2026-06-16
 status: active
-last_updated: 2026-06-15
+last_updated: 2026-06-16
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -14,6 +14,18 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
+
+## INVESTOR DEAL RADAR — extension reframed + build dispatched (2026-06-16, this session)
+
+> New product direction for the property-intel browser extension, planned and dispatched. Vision: [`75g_investor_deal_radar.md`](75g_investor_deal_radar.md). GTM: [`76f_investor_deal_radar_gtm.md`](76f_investor_deal_radar_gtm.md). Approved build plan: `C:\Users\cente\.claude\plans\joyful-conjuring-wozniak.md`. Mockups (approved): `p:\tmp\extension-proposal\`.
+
+**The extension is refocused from a generic consumer property-brief tool to an investor deal radar.** First actor: the Austin real estate investor (RENC ~15.7k, Texas REIAs 20k+), decided in [`_decisions/2026-06-16_investor_first_actor.md`](_decisions/2026-06-16_investor_first_actor.md). Three layers: a proactive on-listing deal verdict (deal/conditions/dead) tuned to a learned buy box; a per-user profile built from the running dialogue of the user's research (the "who you are" surface, tenant-private, never pooled); and an owned, provenance-backed investor identity that inverts into a lead feed. The deep dive found the extension was a stranded bet (canonical doc three versions stale, prod `/brief` 503 for weeks, real code unmerged on `extension/unified-signin-v067`).
+
+**The data unlock: Cotality already exposes nearly the whole investor underwriting stack** (rent AVM, comps, building permits, liens, mortgage, tax, HOA, propensity-to-sell, owner-occupancy, roof/weather), most available-but-unwired. So this is mostly a wiring + reframe job, not greenfield. Standout unwired signals (propensity-to-sell, permits, owner-occupancy) are the lead-engine fuel.
+
+**Dispatched 2026-06-16:** backend to cc-agent-C ([`_dispatches/2026-06-16_cc-agent-C_investor_deal_radar_backend.md`](_dispatches/2026-06-16_cc-agent-C_investor_deal_radar_backend.md)) for the Cotality wiring, investor verdict reframe, per-user profile table, and lead engine; extension surfaces to extension-agent ([`_dispatches/2026-06-16_extension-agent_investor_deal_radar_surfaces.md`](_dispatches/2026-06-16_extension-agent_investor_deal_radar_surfaces.md)) on the approved mockups.
+
+**Gates carried:** G1 prod brokerage key (the `/brief` 503; durable one-line `cloud-run-deploy.yml --set-secrets` fix folded into the cc-agent-C dispatch; NOT hand-deployed this session because cortex-api was being actively deployed by another agent, four revisions in ~40 min, collision risk). G2 Cotality consumer-display license ([`_decisions/2026-06-16_cotality_consumer_display_license_gate.md`](_decisions/2026-06-16_cotality_consumer_display_license_gate.md), blocks public display only; dev-tier pilot proceeds). G3 Texas legal framing (informational estimate, never "value"; TX non-disclosure makes the Cotality license the binding constraint on comps). G4 Web Store readiness. Tier: free radar (Layer 1) / paid depth + leads (Layer 2). Brand: consumer surface should be Empressa-named, Hauska stays substrate (open naming decision).
 
 ## CONVERGENT DEPLOY SHIPPED — LEAK CLOSED, C3 LIVE, COTALITY ACTIVATED (2026-06-15, this session)
 
