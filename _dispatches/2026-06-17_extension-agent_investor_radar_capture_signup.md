@@ -12,6 +12,8 @@ blocked_on: live verdict/profile data from cc-agent-C; the UI shell + capture + 
 
 # extension-agent — investor radar surfaces (re-issued per the 2026-06-17 handoff)
 
+> **RESKIN RELEASED 2026-06-17.** The task-6 reskin HOLD clears: claude design delivered stable tokens at `P:\hauska-brief-extension\Hauska site\hauska.css` (editorial palette, Hauska wordmark + radar-sweep mark, verdict colors, 380px-proven). Reskin the panel + profile workspace to `hauska.css` now — the current build is structure-only functional CSS and looks unbranded. Keep the asserted-confidence renderer. The hosted auth page (cortex-api, cc-agent-C task 8) consumes the SAME tokens so the panel and the sign-in/signup page match.
+
 Single owner of `hauska-brief-extension`. Spec: [`75i`](../75i_investor_radar_prelaunch_sprint.md). Mockups (design contract): `p:\tmp\extension-proposal\` (1 deal radar panel, 2 profile workspace; the lead-feed mock `3_identity_and_leads.html` is **deprioritized** — the lead feed is CUT; owned-identity export is an optional stretch only).
 
 Model (HR-12): Grok Build 0.1; grok-code-fast-1 for CSS reskin.
