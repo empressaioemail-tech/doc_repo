@@ -34,7 +34,7 @@ Resolved all 27 Tier-A cities the enumeration left platform-unverified to a cita
 
 ## The keystone and the workflow
 
-The single highest-leverage item is the **driver-quality fix** (UpCodes section-HTML extraction), so warmed building-code atoms verify against real section bodies. It is the prerequisite for trustworthy building-code reasoning anywhere, it is launch-gating for Austin, and it gates the radar's marquee reasoning quality. It is dispatch one of the program.
+The single highest-leverage item is the **driver-quality fix** (UpCodes section-HTML extraction), so warmed building-code atoms verify against real section bodies. **Status (2026-06-17 routing recon): substantially done.** cc-agent-C shipped it 2026-06-10 in legacy-design-tools (PR #163 section-HTML extraction, PR #164 Austin 2024 uplift); Austin moved 0% to ~35% web-verified on the in-force 2024 package at ~$2.55. The full 552-atom flip is not met; deepeners (UMC/UPC chapter-page, ICC-only IFC, TAS deeplink) are queued in the existing `2026-06-10_cc-agent-C_austin_verified_rate_deepeners` dispatch. **The cold-warm harness lives in legacy-design-tools (`lib/codewarm`, `lib/codes/src/webCodeFetch`), not hauska-engine, so all warm work is owned by cc-agent-C** (routing corrected 2026-06-17; the seam seal that gated it is already done).
 
 Going wide is tractable only if the per-jurisdiction human review is batchable. Compute is trivial (one to two dollars each); the real constraint is the one-hour review times forty-plus. So the program builds a **batched edition-verification workflow** that checks the adopted I-Code edition and local amendments systematically against ICC and the SECO statewide floors, instead of forty separate deep reviews. Each jurisdiction still stays inside the under-$200-plus-one-hour commitment (commitment #3); the batched workflow is what keeps the cumulative review labor inside reach.
 
@@ -42,7 +42,7 @@ Going wide is tractable only if the per-jurisdiction human review is batchable. 
 
 Dependency-ordered, no time estimates. The proof wave validates the keystone and the workflow on jurisdictions we already hold or have config-ready, then Tier A fans out by county.
 
-1. Driver-quality fix (cc-agent-E; sequenced after the radar seam seal).
+1. Driver-quality fix and deepeners (cc-agent-C, legacy-design-tools; ~35% web-verified already shipped via #163/#164, deepeners queued).
 2. Austin 2024 edition uplift (correct the flagship edition drift).
 3. San Marcos warm (live customer, config-ready, the first net-new on-demand proof).
 4. San Antonio reasoning-warm plus Neon warmup (largest metro already held in engine Layer 3, adoption verified).

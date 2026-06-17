@@ -11,7 +11,9 @@ blocked_on: none. Seam seal is DONE (#72/#183 live). This is now cc-agent-E's FI
 
 # cc-agent-E — coverage: driver-quality fix + batched verification + proof wave
 
-Single owner of `hauska-engine`. Governing program: [`61a`](../61a_central_tx_coverage_program.md). This is the coverage half of the engine's Wave 3, pulled into a named program because the investor radar's cited code reasoning (75i task 4) depends on it. **First confirm the cold-warm harness lives in hauska-engine** (the prior coverage recons came from cc-agent-C/legacy-design-tools); if it lives in legacy-design-tools, flag it back to the planner before proceeding so routing is corrected.
+> **RE-ROUTED 2026-06-17.** Step-0 recon (close: `_inbox/2026-06-17_hauska-engine_cc-agent-E_coverage_driver_quality_close.md`) found the cold-warm harness lives in **legacy-design-tools** (`lib/codewarm`, `lib/codes/src/webCodeFetch`), NOT hauska-engine, and the keystone was already shipped by cc-agent-C on 2026-06-10 (#163 section-HTML extraction, #164 Austin 2024 uplift; Austin 0% -> ~35% web-verified, ~$2.55). **All coverage warm work moves to cc-agent-C / legacy-design-tools** (deepeners via the existing `2026-06-10_cc-agent-C_austin_verified_rate_deepeners` dispatch, plus the new batched edition-verification workflow and the proof wave). cc-agent-E does NOT execute this; E proceeds to the map layer-capability extraction. Kept for the record.
+
+Governing program: [`61a`](../61a_central_tx_coverage_program.md). This is the coverage half of the engine's Wave 3, pulled into a named program because the investor radar's cited code reasoning (75i task 4) depends on it. **First confirm the cold-warm harness lives in hauska-engine** (the prior coverage recons came from cc-agent-C/legacy-design-tools); if it lives in legacy-design-tools, flag it back to the planner before proceeding so routing is corrected.
 
 Model (HR-12): Grok Build 0.1 default.
 
