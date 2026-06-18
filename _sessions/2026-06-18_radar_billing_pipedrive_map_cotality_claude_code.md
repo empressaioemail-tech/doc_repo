@@ -45,6 +45,10 @@ Current scrapers: Zillow, Redfin, MLS Matrix, plus a generic title-parse + the m
 
 ICC `ICC_CODE_CONNECT_*` secrets (awaiting ICC), General Code partnership (eCode360 cities), G2 Cotality consumer-display license (gates the Cotality map + comps public display), the Vercel landing (copy in 76g) + Web Store listing (G4), Cotality production keys.
 
+## Map: rendering fixed, quality regroup handed off
+
+Late-session the map went blank (MapLibre under the MV3 CSP — worker/wasm/tiles blocked). Fixed in v0.6.24: Carto raster basemap over the brown canvas, CSP allows the MapLibre worker, lazy-init so pins place on real coords, address-clean for the garbled-scrape workspaces, dock/tab/resize. The map now renders, but the operator judged the visual quality a mile below the dataviz bar (reference: Carto 2023 best maps and dataviz, https://carto.com/blog/2023-best-maps-dataviz/ — rent-heat choropleth, fully-saturated full-coverage zoning, dot-density dataviz). The map's live national data is hard-gated on production Cotality (demo tier is 100 req/day, exhausted, expires ~July 6). Handed off to a fresh agent via [`75k_max_map_quality_direction`](../75k_max_map_quality_direction.md): level the visual quality on the fixture now; the national data swaps in with production Cotality keys. Production Cotality keys are now the #1 launch blocker (also keeps the brief's Cotality stack alive past July 6).
+
 ## Memories saved
 
 `always-copy-paste-ready-handoff-blocks`, `brief-coverage-websearch-fallback` (2026-06-17).
