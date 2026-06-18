@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-17
+title: Current state snapshot — 2026-06-18
 status: active
-last_updated: 2026-06-17
+last_updated: 2026-06-18
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -14,6 +14,22 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 > **Orientation band:** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) for verified topology; [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) for the honed planned-work roadmap. The legacy [`11_roadmap.md`](11_roadmap.md) is superseded (2026-06-06) and kept only for backlog reconciliation.
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
+
+## RADAR IS A FREE/PRO/MAX PRODUCT: BILLING + CRM + AREA CHAT + NATIONAL MAP LIVE (2026-06-18, session close)
+
+> Session record: [`_sessions/2026-06-18_radar_billing_pipedrive_map_cotality_claude_code.md`](_sessions/2026-06-18_radar_billing_pipedrive_map_cotality_claude_code.md). Planner-coordinated build-deploy-QA loop (extension v0.6.16->v0.6.22, several cortex-api + one engine-api deploy), every close verified against live prod. Supersedes the deploy/QA status below.
+
+**The radar is now a Free/Pro/Max product, live (test mode).** Tier-aware `/billing/checkout` (Pro $29 / Max $65), Stripe webhook flips `proActive`/`maxActive`, Customer Portal, free-brief cap of 3 before an `upgrade_required` (402, not the legacy wallet). Both Pro and Max checkout verified `mode:"live"` on prod. Map gated on `subscriptionTier=max`. Naming/pricing per [`_decisions/2026-06-16_investor_radar_name_and_pricing`](_decisions/2026-06-16_investor_radar_name_and_pricing.md).
+
+**Pipedrive CRM sync live** (root cause: sync only ran with an install-id header; extension web-auth often lacked it; fixed). **Research chat fixed + area-aware** (`areaContext` answers map/area-level questions without a brief run; verified). **Extension hardened** (logout/session scope, deep-dive tab focus, autocomplete, MV3 dynamic-import SW fix, clean release build) — `d8786b2`, v0.6.22.
+
+**The Max spatial map is built real (MapLibre) on Cotality NATIONAL geometry** ([`_decisions/2026-06-18_map_engine_maplibre_cotality_national`](_decisions/2026-06-18_map_engine_maplibre_cotality_national.md)): dropped the design-agent mockups + the per-county ArcGIS path; fresh MapLibre renderer, Cotality Spatial Tile vector parcels (national mesh PROVEN at 500 features for Bastrop AND Austin), FEMA federal flood, land-use choropleth, small Map tab + collapsible/resizable dock + full-screen + popout chat. Engine `COTALITY_*` secrets mounted (`hauska-engine-api-00017-cuy`) was the real CLIP fix. SmartCity map recon (cc-agent-M): Leaflet island, not extractable, lift styling only.
+
+**Deploys:** cortex-api `00235-sux` (pagination caps), engine-api `00017-cuy`, extension `d8786b2`. Watch the recurring **PowerShell-pipe secret-write truncation** (wrote 2-char garbage twice — phantom "empty" secrets; fix is temp-files not pipes).
+
+**ADR-022 — the deal twin** filed (premortem green): cross-application capture riding the user's authed browser session, events as procedure-execution atoms, generic pin-to-deal, MCP-exposed; build phased/gated, not in this sprint.
+
+**Open data holes (named remainder):** Cotality **production** quota/keys (demo is 429-throttled + expires ~July 6; scoped); the zoning-color geocode bridge (stdAddr->CLIP->site-location); map full-bleed visual confirm (blocked only on the demo-quota cooldown). **Operator-owned:** ICC secrets (awaiting ICC), General Code partnership, G2 Cotality consumer-display license, Cotality production keys, Vercel landing (copy in [`76g`](76g_investor_radar_landing_and_webstore.md)) + Web Store (G4). **Site-adapter roadmap** (Realtor.com/HAR/Google next) captured in the session record, not yet dispatched.
 
 ## NATIONAL-BASELINE COVERAGE + FREE-BRIEF TIER LIVE; EXTENSION v0.6.15 FULL QA LOOP (2026-06-17, later session)
 

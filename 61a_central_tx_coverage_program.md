@@ -2,7 +2,7 @@
 id: 61a_central_tx_coverage_program
 title: Central Texas coverage program — proactive within the wedge footprint
 status: active
-last_updated: 2026-06-17
+last_updated: 2026-06-18
 applies_to: hauska
 owner: nick
 related: [61_property_intelligence_master_plan, 75g_investor_deal_radar, 75i_investor_radar_prelaunch_sprint, 75b_brief_coverage_v0, 08_tiered_access_model, _decisions/2026-06-10_texas_coverage_demand_driven, _decisions/2026-06-17_central_tx_coverage_proactive_within_footprint, icc-contract]
@@ -11,6 +11,22 @@ related: [61_property_intelligence_master_plan, 75g_investor_deal_radar, 75i_inv
 # Central Texas coverage program
 
 > **Purpose.** The execution board for closing jurisdiction-specific data coverage across the investor wedge's transaction footprint. Child of the engine master plan [`61`](61_property_intelligence_master_plan.md) (this is Wave 3 coverage, pulled into a named program because the investor radar's first impression depends on it). Working enumeration and gap matrix: `p:\tmp\central_tx_coverage\registry_and_gaps.md`; platform recon: `p:\tmp\central_tx_coverage\platform_recon.md`. Strategy decision: [`_decisions/2026-06-17_central_tx_coverage_proactive_within_footprint.md`](_decisions/2026-06-17_central_tx_coverage_proactive_within_footprint.md).
+
+## Coverage status tracker (2026-06-18)
+
+Captured vs to-do for the local code/zoning layer (the national layers fire everywhere by default; see the reframe below). Corridor deepen completed cheaply but at ~0% verified because the drivers can't verify those cities yet; ICC secrets + the UMC/UPC chapter driver are the levers that convert the corridor from atoms-present to verified.
+
+| State | Jurisdictions | Verified | Note |
+|---|---|---|---|
+| Deepened, real verified rate | Austin | ~45.5% | Repaired; no-downgrade high-water-mark guard holds |
+| Public-free, on Neon | Bastrop (193), Cedar Hill (206), Grand County/Moab (~285) | cited | Layer-1 public catalog |
+| Deepen complete, ~0% verified | San Antonio, Round Rock, Georgetown, Hutto, Leander, New Braunfels, Dripping Springs, Killeen, Schertz, Boerne | ~0% | Atoms landed (~$23 total, 10 cities); verify-before-promote skipped unverified; **needs ICC secrets + UMC/UPC driver to lift** |
+| Blocked — L3 Municode onboard | Waco, Temple, San Marcos, Seguin, Cibolo, Belton, Universal City | — | Class B; ingest before deepen |
+| Blocked — General Code partnership (operator) | Kyle, Buda, Pflugerville, Cedar Park + ~9 eCode360 | — | Served by labeled websearch meanwhile |
+| Blocked — ICC secrets (operator, awaiting ICC) | IFC/IPMC families, all Tier-A | — | The lever that lifts the corridor ~0% to verified |
+| Everywhere else | all other US | n/a | National baseline + labeled websearch (live) |
+
+**Map (spatial) coverage** rides Cotality national parcels now (not per-county GIS) per [`_decisions/2026-06-18_map_engine_maplibre_cotality_national.md`](_decisions/2026-06-18_map_engine_maplibre_cotality_national.md) — gated on Cotality production quota.
 
 ## The reframe
 
