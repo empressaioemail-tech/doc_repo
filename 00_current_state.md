@@ -15,6 +15,24 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 
 > **Hardware/sovereignty (2026-06-14):** the on-prem and edge AI hardware story has a canonical home at [`19_hardware_sovereignty/`](19_hardware_sovereignty/hardware_sovereignty_overview.md) — internal reference architecture (AMD "agent computer" anchor, tiered menu, pitch-claim corrections) plus a client-facing brief (cloud-by-default, local option, rising-token-cost economics). Seeded from the Mox hardware thread; offer posture is reference-architecture-first, never a hardware product line (spine rule).
 
+## NATIONAL-BASELINE COVERAGE + FREE-BRIEF TIER LIVE; EXTENSION v0.6.15 FULL QA LOOP (2026-06-17, later session)
+
+> Session record: [`_sessions/2026-06-17_radar_national_baseline_qa_loop_deploys_claude_code.md`](_sessions/2026-06-17_radar_national_baseline_qa_loop_deploys_claude_code.md). This planner-coordinated build-deploy-QA loop cleared every app-side blocker against live prod and supersedes the deploy/QA status in the section immediately below.
+
+**The app fires end to end on live prod.** Land on any listing, correct address parsed, run a free brief, real investor verdict with expandable cited cards, inline or deep-dive chat, attach docs, Max map hero. Both hard blockers (address, paywall) and the deep-dive are cleared.
+
+**National-baseline coverage is live ([`decision`](_decisions/2026-06-17_brief_national_baseline_websearch_coverage.md)).** The jurisdiction 403 allowlist is removed; the brief never gates on jurisdiction. Central TX is served by cited engine atoms; everywhere else falls back to a labeled web-scraped websearch (commitment-one compliant, 0.35 asserted). Verified live: Pflugerville 403 to 200 `localCodeSource: websearch`; Bastrop cited corpus; out-of-state baseline plus websearch.
+
+**Free-brief tier wired into the gate.** First 3 briefs free (`BROKERAGE_FREE_BRIEFS_CAP`, env-overridable) before an `upgrade_required` (402, not the legacy $5 wallet top-up). Verified live on a fresh install. Extension shows "N free briefs remaining" with Run enabled.
+
+**Deploys (cortex-api canary):** national-baseline brief, then free-brief gate (`00194-diw`, PR #192, migration 0042), then deep-dive contract + complete-upload 422 + map-data Max (PR #193). **Serving `cortex-api-00197-hex`** (rollback `00194-diw`); ENGINE_API_URL on the stable host.
+
+**Extension v0.6.15** committed/pushed (`96df5ae`, `extension/unified-signin-v067`): Zillow address from URL slug, deep-dive populate + inline chat, attachment upload, panel UX (wider, un-clipped, expandable cards), Max map hero. Operator owes the `chrome-extension://` screen captures.
+
+**Launch collateral drafted:** [`76g_investor_radar_landing_and_webstore`](76g_investor_radar_landing_and_webstore.md) (Vercel landing copy + Web Store listing).
+
+**Open threads:** the Central TX corridor deepen never resumed (cc-agent-C pulled into the deploy chain; PR #190 merged, Austin repaired to 45.5%; re-kick with `-AllowBatch`); commercialization connectors (Stripe/Pipedrive) queued, operator holds creds; operator items: Vercel landing, Web Store, G2 Cotality license, ICC secrets (waiting on ICC), General Code partnership.
+
 ## RADAR v1 BACKENDS LIVE + CONSENT FIXED; EXTENSION QA + COVERAGE EXECUTION IN FLIGHT (2026-06-17, session close)
 
 > Session record: [`_sessions/2026-06-17_investor_radar_v1_coverage_and_deploys_claude_code.md`](_sessions/2026-06-17_investor_radar_v1_coverage_and_deploys_claude_code.md). This planner-coordinated session drove the radar v1 build plus several prod deploys and locked the coverage program. Supersedes the deploy/QA status in the section below.
