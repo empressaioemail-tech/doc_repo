@@ -37,7 +37,7 @@ The spine is compute-light and corpus-heavy. The expensive variable is external 
 | Flood zone | FEMA NFHL | Free | `fema-nfhl.ts` |
 | Environmental/EJ | EPA EJScreen (CalEPA mirror, frozen) | Free | `epa-ejscreen.ts` |
 | Broadband | FCC (gated off, WAF-blocked) | Free | `fcc-broadband.ts` |
-| Parcel + zoning | Regrid (paid) and Cotality (paid, primary) | Paid | `regrid.ts`, `cotality.ts` |
+| Parcel + zoning | Cotality (paid, sole spine; Regrid purged 2026-06-17) | Paid | `cotality.ts` |
 | Property / climate / hazard / replacement-cost / mineral / utility | Cotality 8-pack | Paid (creds pending) | `cotalityExtended.ts` |
 | State/local | UGRC (Utah), Idaho, TCEQ Edwards, Grand County, Lemhi, Bastrop GIS | Free | `state/`, `local/` |
 | Cache | `adapter_response_cache`, 24h TTL, keyed lat/lng @ 5dp | n/a | `cache.ts` |
@@ -126,7 +126,7 @@ Workspace hygiene: WS4 touches `lib/adapters`; WS1/WS2 touch the finding-engine 
 | Compute (Cloud Run) | retrieval-api + mcp-gate (min-1 warm) + cortex-api (2vCPU/8Gi) | $500-875 | Med (configs verified; traffic-dependent) |
 | Data | Neon x3 (substrate small + cortex-prod + smartcity) | $150-350 | Med (tiers not pinned) |
 | Storage | GCS objects + NDJSON logs | $50-150 | Low-Med |
-| External APIs | Cotality (unknown tier), ICC Code Connect (partnership TBD), Regrid (eval); FEMA/USGS/EPA/NOAA/FCC/USDA = $0 | $500-5,650+ | Low, dominant uncertainty |
+| External APIs | Cotality (sole parcel/property spine; unknown tier), ICC Code Connect (partnership TBD); FEMA/USGS/EPA/NOAA/FCC/USDA = $0 | $500-5,650+ | Low, dominant uncertainty |
 | LLM (runtime) | Grok-first + Anthropic fallback; ~$20-60 at launch volume | $20-60 | Med (scales with calls) |
 | Other | Cloud Build, Upstash Redis, Secret Manager, Artifact Registry, domain, logging | $30-90 | Med |
 | Fixed spine total | | ~$1,250-7,200/mo (midpoint ~$3-4k excluding Cotality/ICC) | |

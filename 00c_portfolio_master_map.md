@@ -64,7 +64,7 @@ flowchart TB
         CORPUS[("engine corpus snapshot + substrate Neon")]
         CNEON[("cortex-prod Neon: neondb + api_keys")]
         SNEON[("smartcity Neon (Replit-managed)")]
-        EXT["external APIs: FEMA USGS EPA Regrid (cortex) · ESRI (smartcity)"]
+        EXT["external APIs: FEMA USGS EPA Cotality (cortex) · ESRI (smartcity)"]
     end
 
     DT --> CORTEX
@@ -104,7 +104,7 @@ One product-engine codebase (cortex-api), two logical capabilities. Per ADR-008 
 
 | Engine | Where today | Primary jobs | Key outputs | Consumers |
 |---|---|---|---|---|
-| **Property / parcel** | `@workspace/briefing-engine` + `brokerageSiteContext` + `siteTopographyIngest` in cortex-api | geocode, site-context adapters (FEMA/USGS/EPA/Regrid), briefing composition, topography (DEM/contours, 2D.1 built) | `parcel-briefing`, `briefing-source`, `site-topography`, `brief-run` atoms | Cortex, Brief extension, future SmartCity Parcel Intel |
+| **Property / parcel** | `@workspace/briefing-engine` + `brokerageSiteContext` + `siteTopographyIngest` in cortex-api | geocode, site-context adapters (FEMA/USGS/EPA/Cotality), briefing composition, topography (DEM/contours, 2D.1 built) | `parcel-briefing`, `briefing-source`, `site-topography`, `brief-run` atoms | Cortex, Brief extension, future SmartCity Parcel Intel |
 | **Plan review** | `@workspace/finding-engine` in cortex-api | code retrieval, full-pass findings, adjudication (accept/edit/reject), comment letters | `finding`, `submission`, `decision-event`, deliverable-letter atoms | Codex reviewer-qa, future SmartCity Plan Review |
 
 Plan review **consumes** property/parcel context; the two should compose, not duplicate. The "4 inches of rain" capability (hydrology/rainfall reasoning) is the property engine's missing piece: topography ingest (2D.1) is built, drainage + rainfall simulation (2D.2/2D.3) are not.
@@ -233,7 +233,7 @@ flowchart TB
 
 **The three critical paths.** Codex 1b live at Bastrop and M-PropIntel both gate on M-Stabilize releasing the operator DB hold, then engine-quality eval cycles (not implementation hours). The "4 inches of rain" capability had its Cortex 40d phases 2D.2 (drainage) and 2D.3 (rainfall sim) land in PR #142 (2026-06-06, running on the native D8 fallback; pysheds sidecar bake is a fast-follow); what remains is the port to SmartCity. First revenue gates on Nick's pricing (Decision B) and GTM-channel (Decision C) calls plus the Circle fiat-rail build.
 
-**Substrate v1 status.** Phase 0 decisions all closed. MCP server and retrieval API live on Cloud Run. Corpus (committed snapshot 2026-05-26, per [`_research/2026-06-06_cross_repo_recon.md`](_research/2026-06-06_cross_repo_recon.md)): 34 jurisdictions / 21,126 atoms, all passing — supersedes the earlier 2702/5 figure. Two jurisdictions are public-free (Bastrop 193, Grand County/Moab 285; ~478 atoms); the other 32 are platform-internal. State external figures with that split, never a bare headline. Hard-kill cost checkpoint CLEAR. Cotality 8-adapter data-layer pack merged (PR #141, 2026-06-06) but inert until OAuth tokens clear; Regrid remains the live parcel/zoning baseline. Sync 5 (remaining TX cities) deferred to demand-pull.
+**Substrate v1 status.** Phase 0 decisions all closed. MCP server and retrieval API live on Cloud Run. Corpus (committed snapshot 2026-05-26, per [`_research/2026-06-06_cross_repo_recon.md`](_research/2026-06-06_cross_repo_recon.md)): 34 jurisdictions / 21,126 atoms, all passing — supersedes the earlier 2702/5 figure. Two jurisdictions are public-free (Bastrop 193, Grand County/Moab 285; ~478 atoms); the other 32 are platform-internal. State external figures with that split, never a bare headline. Hard-kill cost checkpoint CLEAR. Cotality 8-adapter data-layer pack merged (PR #141, 2026-06-06); Cotality is the sole parcel/property spine (Regrid purged 2026-06-17). Sync 5 (remaining TX cities) deferred to demand-pull.
 
 **Parked, with reason:** ECI atomization (internal, behind commercial spine), intent atoms ADR-016 (v2 candidacy), firm tenancy ADR-009 / Codex 1a (post-Bastrop-live), Hauska SDK external motion (post-commercial decision), Starlink/IoT (warm only), Jarrell/M9 (P3), 3D site assembly (2D-first).
 
