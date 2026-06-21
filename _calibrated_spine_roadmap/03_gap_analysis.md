@@ -62,3 +62,24 @@ Consolidated from the Wave 1 closes (C, E, M, AC, R, C2, extension, acquisition)
 - Cortex renders maps with Leaflet, not the shared MapLibre renderer; migration deferred (Decision 4).
 
 Plan implication: the base-calibration backtest (K-track) now has a hard prerequisite that was not in the corpus. Historical editions and amendments must be acquired and ingested before K2, and F8's hazard has no fuel until amendments land. The acquisition agent's edition-and-ordinance work plus a new engine ingest task are the K2 unblockers.
+
+## Wave 2 build results (2026-06-21)
+
+Built across all eight agents; product-repo work to be committed/PR'd/merged by the agents.
+
+- F3 rich ledger (C): source-event-type, adjudicator role-at-judgment, model-attribution stamp, finest-grain counts; no derived numbers persisted.
+- F4 read-contract (AC type 1.4.0 published; 1.5.0 local for legacy subpaths): propagated through cortex-api findings/site-context/composite (C), Cortex UI/API/chat (R), the extension map (refuses scalar-only fills, width-as-saturation), and the map console (V4). MCP propagation pending M's filed close.
+- F5 raw-conflict log (C): synthesis.conflict events on atom_events; conflict type derived at read.
+- F9 (C+R): plan-review displayed confidence is the read-contract derived at read; LLM scalar retained ledger-only and deprecated on the wire.
+- Decision 6 (C): uncapped GET /place/:placeKey/atoms shipped.
+- F2 (E): typed consequenceInputs field + parser + atom-trace exposure. Honest correction: the Wave 1 "58 ASCE / 140 IBC" counts were false-positive substring matches; the L3 corpus carries near-zero structural ASCE/IBC classification. Thick coverage needs Layer 1 ICC I-Code ingest. Consequence runs on a conservative asserted default until then.
+- F7 (E): section-plus-dependents invalidation closure shipped.
+- F8 (E): amendment-hazard scaffold at cold-start prior 0.02; zero amendment instances, so it earns out only after amendment ingest.
+- K2 unblocker (E): hauska-edition-bundle/1 contract + ingestEditionBundle + resolveEditionAtDate + CLI. K2 retrodiction itself not built; blocked on acquisition delivery + ingest.
+- S5 (R): consequence-gated routing, labeled asserted, Grok high/low tiers; defaults to routine until F2 thickens.
+- R1 (R): @workspace/map-embed adapter + resolveLayerAllocation; no report embeds yet.
+- Map console (map): V3 registry + per-app allocation, V5 reasoning layers (fixture-live, awaiting real F2/F5 inputs), E1/E7 wired, V9 positioning fix. V6/V7/V8 deferred; Cortex Leaflet migration deferred (Decision 4).
+- Calibration engines (C2): @workspace/calibration-engines scaffold + raw-events collector on derive-at-read; overlay confirmed cache-only. K3/K5/S-track blocked.
+- Acquisition (acquisition): canary-only. Anchors sized: Austin 2,361,893 issued permits (1921-present) + 3,283 BOA; San Antonio ~487k permits + 1,417 BOA. Two edition adoption ordinances acquired (Bastrop 2018 IBC, Austin 2021 IBC). Bulk pulls held on the GCS bucket.
+
+Open critical path to M1: create gs://hauska-calibration-raw/, bulk-acquire permits + edition bundles via the uniform public-record process (no special access, no SmartCity scraper, no Bastrop privilege), ingest editions (E) and run ICC I-Code ingest for consequence coverage, build K2 retrodiction (C), deposit backtest-graded evidence, then M1 measures.
