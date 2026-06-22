@@ -2,7 +2,7 @@
 id: 50_hauska_mcp_server
 title: Hauska MCP Server — v1 sprint and product framing
 status: active
-last_updated: 2026-06-06 (current-offer reconciliation note added linking 52/53; shipped surface is 46 tools, 11 public plus 4 Codex plus 31 Cortex per the 2026-06-06 recon; Business model "Layer 1 only" framing marked superseded by the product-gated tier model. Earlier 2026-05-20 (tool-surface correction per the code-verified 44_mcp_cortex_architecture_map.md: shipped surface is 40 tools, 5 public plus 4 Codex plus 31 Cortex, flat underscore names; the section's "14 new tools" scoping superseded. Earlier: Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
+last_updated: 2026-06-21 (Track C gate rework: four product gates public/codex/reporting/map, 62 tools, +atom_trace/atom_export/read_atom_calibration, atom-contract 1.5.0 conformance, migration 003, Cortex reframed to the reporting function package per the ADR-008 amendment. Earlier 2026-06-06: current-offer reconciliation note added linking 52/53; shipped surface is 46 tools, 11 public plus 4 Codex plus 31 Cortex per the 2026-06-06 recon; Business model "Layer 1 only" framing marked superseded by the product-gated tier model. Earlier 2026-05-20 (tool-surface correction per the code-verified 44_mcp_cortex_architecture_map.md: shipped surface is 40 tools, 5 public plus 4 Codex plus 31 Cortex, flat underscore names; the section's "14 new tools" scoping superseded. Earlier: Sprint 2 tool expansion section added; Cortex + Codex existing-product tools plus L1-L6 surface tools scoped per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md and _dispatches/2026-05-19_cc-agent-M_mcp_tool_surfaces.md; visibility-filter on list_jurisdictions per Lane Foundation v1.1.0)
 applies_to: portfolio
 related: [07_product_line_summary, 08_tiered_access_model, 11_roadmap, 11a_bastrop_live_roadmap, 13_risk_register, 14_pricing_framework, 25_atom_architecture_reference, 27_engine_evolution_plan, 29_mcp_surface_tier_model, 42_design_accelerator_program_plan, 48_codex_program_plan, 49_code_ingestion_pipeline, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_008_engine_factor_out, adr_012_atom_export_format, adr_017_atom_access_control]
 owner: nick
@@ -36,6 +36,24 @@ owner: nick
 > [`53_hauska_sdk_completion_sprint.md`](53_hauska_sdk_completion_sprint.md).
 > The "Layer 1 only" framing in the Business model section below is
 > superseded; see the note there.
+>
+> **Gate rework (2026-06-21, Architecture-Homes Track C).** The monolithic
+> `cortex` product gate is split into four: `public` (catalog, anonymous
+> Layer 1 free), `codex` (plan review), `reporting` (brief, encumbrances,
+> place/workspace, L1-L6 deliverable composition, property intel), and
+> `map` (parcel, drainage, topography, hazard, GIS assembly). Wire total is
+> 62 tools. Three new tools land: `atom_trace` (public, proxies the engine
+> trace), `atom_export` (reporting, returns the `DownloadableAtom` shape,
+> accessPolicy-gated), and `read_atom_calibration` (reporting). Every read
+> envelope validates against the `@hauska/atom-contract@1.5.0` conformance
+> target; no bare scalar confidence. Migration `003_api_keys_product_gate_split`
+> migrates cortex keys to reporting and mints map keys separately; legacy
+> `cortex` normalizes to `reporting` at read. The Codex product still spans
+> the free public-catalog lookup and the paid codex review. Per
+> [`_inbox/2026-06-21_hauska-mcp-server_cc-agent-M_arch-track-c-gate-rework.md`](_inbox/2026-06-21_hauska-mcp-server_cc-agent-M_arch-track-c-gate-rework.md)
+> and the homes standard ([`_architecture_homes/03_mcp_gate_and_agent_surface.md`](_architecture_homes/03_mcp_gate_and_agent_surface.md)).
+> "Cortex" here means the reporting function package, not a product, per the
+> ADR-008 amendment.
 
 ## End state (v1 ship)
 
@@ -375,7 +393,7 @@ non-Hauska-team agent recorded in production logs.
 **Effort:** L (1–2 weeks).
 **Conditional on:** Phase 0 choosing Scenario B or C.
 
-- Stripe integration for Developer Pro / Team tiers.
+- Circle (USDC-native) metered billing for Developer Pro / Team tiers. The v1 fiat rail is Circle, switched off the Stripe Connect placeholder 2026-05-21 (`_decisions/2026-05-21_fiat_rail_circle.md`); metering-to-payment design per `_architecture_homes/03_mcp_gate_and_agent_surface.md`. (Phase-1 Track C metering design referenced Stripe; corrected to Circle.)
 - Self-serve signup flow → automated key issuance.
 - Billing dashboard.
 - Plan upgrade / downgrade.

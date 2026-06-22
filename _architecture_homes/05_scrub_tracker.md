@@ -29,8 +29,8 @@ Legend: DONE (scrubbed) · PENDING (canonical scrub owed) · PHASE1-DEP (waits o
 |---|---|---|
 | 40_design_accelerator.md | reframe Cortex-as-product to AEC-cortex; cortex-api = reporting | PENDING |
 | 42_design_accelerator_program_plan.md | reframe to AEC-cortex program; consume via gate | PENDING |
-| 44_mcp_cortex_architecture_map.md | gate classes public/codex/reporting/map; Cortex framing | PHASE1-DEP (gate rework, M close) |
-| 50_hauska_mcp_server.md | gate-class rework + new tools (atom-trace, atom-export, read-contract on get_atom) | PHASE1-DEP (M close) |
+| 44_mcp_cortex_architecture_map.md | gate classes public/codex/reporting/map; Cortex framing | PENDING (unblocked by M close) |
+| 50_hauska_mcp_server.md | gate-class rework + new tools (atom-trace, atom-export, read-contract on get_atom) | DONE (2026-06-21: four-gate + 62 tools + 1.5.0 conformance + Circle correction) |
 | 52_mcp_offer_and_buildout.md | gate classes; agent-operator onboarding + metering section | PENDING |
 | 56_engine_extraction_sprint.md | reporting=cortex-api; AEC-cortex split; fold R's decomposition map | PENDING (light) |
 | 07_product_line_summary.md | product line: Cortex to reporting, AEC-cortex, Radar | PENDING |
@@ -53,8 +53,6 @@ Legend: DONE (scrubbed) · PENDING (canonical scrub owed) · PHASE1-DEP (waits o
 - Console audit instrument: downloadable-atom inspector, E8 Agent View, report-to-manifest contract (hydrology first case), header-docked window state.
 - Calibration-engines audit: raw-events collector conformant; read-contract emission deferred to Wave 4 S1; 5 backfill gaps flagged for C.
 
-## Outstanding phase-1 closes
+## Phase-1 closes: complete
 
-All filed except MCP. AC, E, C, C2, R, map are in. Engine re-minted the corpus born-correct: 21,126 atoms 0% to 100% conformant (snapshot 2026-06-22; live re-ingest blocked on network this session, mint envelope stamped over existing content; operator runs build-corpus-snapshot when network is available).
-
-- cc-agent-M gate rework (Track C): pastes in chat, not yet in the inbox. The MCP-doc scrub (44/50) is PHASE1-DEP on it so the rework is described as-built, not as-designed.
+All seven filed: AC, E, C, C2, R, map, and M (Track C, mirrored to `_inbox/2026-06-21_hauska-mcp-server_cc-agent-M_arch-track-c-gate-rework.md`). Engine re-minted the corpus born-correct (21,126 atoms 0% to 100% conformant; live re-ingest pending network). M shipped the four-gate rework, the three new tools, 1.5.0 conformance, and migration 003, with the phase-3 onboarding/metering design (its Stripe reference corrected to Circle). Phase-1 audit/cleanup is done; the MCP-doc scrub is unblocked (50 scrubbed as-built 2026-06-21; 44 and 52 owed).
