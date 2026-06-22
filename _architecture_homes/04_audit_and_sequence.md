@@ -23,7 +23,11 @@ Track A, atom conformance. Audit every atom family against the conformance targe
 
 Track B, repo and naming cleanup. Bring the repo topology and naming to the standard in [`01`](01_homes_and_topology.md): scaffold `AEC-cortex` (as a `P:\` folder for the operator to remote), confirm cortex-api as the reporting function package, confirm the Surfaces classification, and resolve the two-Cortex naming overlap. No logic moves yet beyond what sprint 56 already sequences; this track is naming, repo boundaries, and the scaffold.
 
-Track C, MCP gate rework. Re-group the product gates and add the coverage tools per [`03`](03_mcp_gate_and_agent_surface.md): read-contract on get_atom, the agent-callable atom-trace, the calibration reads. One server, many tools.
+Track C, MCP gate rework. Re-group the product gates and add the coverage tools per [`03`](03_mcp_gate_and_agent_surface.md): read-contract on get_atom, the agent-callable atom-trace, the calibration reads, and the atom-export tool. One server, many tools. Also scope (design only, build deferred to phase 3) agent-operator onboarding/key issuance and the metering-to-payment wire.
+
+Track D, surface and contract scaffolds. Scaffold the two new repos as `P:\` folders for the operator to remote: AEC-cortex (architect product) and radar (extract the live deal-radar from cortex-api into its own Surface repo; scaffold and scope the extraction now, full code move sequenced with the cortex-api decomposition). The atom contract authors the downloadable-atom export shape (cc-agent-AC) so Track C's export tool and the console have a shape to speak.
+
+Tenant-leg dependency. The tenant-family conformance in Track A is partly blocked on the tenant leg (sprint 54); the audit marks which conformance and ownership items cannot complete until tenancy lands, rather than claiming user-owned isolation that does not exist yet.
 
 ## Phase 2 — Doc-repo scrub and draft session
 

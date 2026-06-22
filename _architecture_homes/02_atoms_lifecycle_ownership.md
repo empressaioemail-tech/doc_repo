@@ -43,6 +43,12 @@ Every atom, regardless of family, must carry: the read-contract confidence objec
 
 When an atom downloads, you get the portable unit: identity, context summary, the three-axis read-contract, the composition references, the citations, and the signed event chain with a verify-chain check. That is the audit object the operator console renders. It is self-contained and verifiable without trusting the hosting system.
 
+This download is an actual function, not just a console view. The atom contract defines the downloadable-atom shape (cc-agent-AC); the gate exposes an atom-export tool (cc-agent-M) so a tenant or an authorized third-party agent can take the portable atom, which is the data-portability and VDA-ownership story (a tenant can take the atom it owns); and the console renders and downloads it. Export respects accessPolicy: a tenant exports its own tenant-private atoms and the public atoms it composes by reference, never another tenant's private data.
+
+## Dependency: the tenant leg
+
+The entire user-owned story above (tenant-private storage, per-user ownership, the VDA, isolation, the operator key, exporting your own atom) is gated on the tenant leg (sprint 54). Production runs an anonymous default tenant today, so these atoms exist but are not owner-isolated. The conformance audit must mark every tenant-family conformance item that is blocked on the tenant leg, and the standard is honest that user-owned atoms are the target, not the present-tense guarantee, until that build lands.
+
 ## User-generated parcel/project atoms (lifecycle and ownership)
 
 When a user runs a brief or opens a project on a parcel, they do not get one atom; they get a cluster, and the split is the point.

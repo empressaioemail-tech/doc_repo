@@ -49,3 +49,13 @@ This makes the console both the operator health/audit instrument and the place a
 ## Third-party interaction model
 
 A third-party agent speaks MCP over Streamable HTTP, presents an `X-Hauska-Key` (or none for anonymous Layer-1 public), and the gate resolves product and tier, meters the call, and stamps provenance and citation lineage. It never reaches the spine directly; the gate is the only door, which is what lets us enforce accessPolicy, meter for billing, and keep the arrow-two deposit loop intact on everything it pulls.
+
+## Agent-operator onboarding and metering (the commercial front door)
+
+The gate is technically open but not yet commercially buyable, because two pieces are unspecified. They are documented here as the standard; their build is phase 3 (post-audit), scoped in phase 1.
+
+Onboarding and key issuance. An agent operator must be able to sign up, receive an `X-Hauska-Key`, and land a tier, without a human in the loop for the common case. The flow: signup, key provisioning, tier assignment, and key lifecycle (rotate, revoke). Anonymous Layer-1 needs no key; paid tiers need a self-serve issuance path. This is how the buyer (the agent operator) actually buys. Without it the tiers are theoretical.
+
+Metering to payment. The gate already meters calls. The missing wire is from that meter to the SDK payment rail: metered usage feeds the SDK so usage is actually charged (USDC/Circle), tier limits are enforced, and overage is billed. "Payment lives in the SDK" says where; this says how the meter reaches it. Keep the rail quiet under the AI-first pitch (the buyer hears that answers get more trustworthy and that they pay for what they use, not the plumbing).
+
+Atom export tool. The gate exposes an atom-export tool returning the downloadable-atom shape (defined in the atom contract), gated by accessPolicy: a caller exports its own tenant-private atoms plus the public atoms they compose by reference, never another tenant's private data. This is the agent-callable form of the data-portability and VDA-ownership story in [`02`](02_atoms_lifecycle_ownership.md).

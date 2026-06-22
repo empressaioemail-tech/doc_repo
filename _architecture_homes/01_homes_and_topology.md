@@ -41,11 +41,18 @@ FUNCTION PACKAGES
 
 SURFACES (each its own repo, for flexibility)
   hauska-brief-extension     brokerage brief
+  radar (NEW repo)           investor deal radar (Free/Pro/Max); live product, backend in cortex-api today
   AEC-cortex (NEW)           architect product: renders, design tools, deliverable UX
   codex                      plan-review UI over the plan-review function
-  smartcity-os               municipal
+  smartcity-os               municipal; LIVE prod, left untouched until the spine is dialed, then refactored to a spine consumer
   revit-connector            Revit add-in
 ```
+
+Radar is a live billing product whose backend currently sits inside cortex-api; under the standard it becomes its own Surface repo consuming reporting and map through the gate. SmartCity OS is the only other live prod deployment and is explicitly left alone for now; it is refactored into a spine consumer after everything else is dialed.
+
+## Cross-project seam
+
+The gate (hauska-mcp-server) lives in hauska-prod; the spine (hauska-engine retrieval-api and engine-api) is in hauska-prod; cortex-api (reporting) is in legacy-design-tools-prod. So the gate-to-reporting hop is cross-project. The gate-front seam is the transition bridge; once reasoning lifts to the spine (sprint 56) the hop is internal to the spine, and only the reporting BFF remains a cross-project consumer the gate fronts. The audit must confirm the seam's cross-project auth and networking, not assume same-project calls.
 
 ## The decomposition through-line
 
