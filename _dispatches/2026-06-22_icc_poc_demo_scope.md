@@ -36,3 +36,23 @@ Internal/eval only; ICC owns derivative works (keep our reasoning/calibration se
 ## First gate
 
 The ICC access-mechanism answer (same API for PoC and live? section-level vs whole-title? scrape vs API/DB?) is the first critical-path item; operator has asked Ed and is awaiting reply. Citation design is the second.
+
+## Build status (2026-06-22)
+
+Planning produced in the icc-demo repo: `docs/02_execution_plan.md` (workstreams, demo script mapped to the three criteria, citation design, usage and pay-per-query design, open questions, term-anchored timeline), `docs/03_build_plan.md` (the Gate-1-independent build path grounded in a live source read), and `docs/_correspondence/2026-06-22_icc_technical_questions.md` (eight technical questions sent to Ed Cilurso, with an answers log). All committed and pushed to origin/main of icc-demo.
+
+The eight questions to ICC went out 2026-06-22 (access mechanism, citation identifier format, verbatim-display boundary, rate limits, content versioning, caching/storage, derivative-works definition, wind-down mechanics). Question 1 (access mechanism) is the only hard build blocker; awaiting Ed.
+
+Gate-1-independent build dispatched 2026-06-22 to the repo owners: cc-agent-E (hauska-engine: 2018 IBC/IPMC fixtures for an end-to-end dry run, formalize the `icc-model-code` isolated tenant + Administrator + live-ingestion runbook), cc-agent-M (hauska-mcp-server: wire `atom_ids_returned` across read tools, ICC-scoped content-usage view, pay-per-query mechanism), cc-agent-C (legacy-design-tools: the formal reference section in the finding-engine plus the plan-review module formalization). The Brief surfacing and the two plan-review surface shells (municipal IPMC, B2B IBC) are held until cc-agent-C's formal-reference contract is firm, since all three consume it.
+
+Key reframe from the source read: the only action genuinely blocked on Gate 1 is live ingestion (populate ICC OAuth credentials, reconcile the adapter's nine assumed contract fields against ICC's real spec, ingest real 2018 IBC/IPMC). The adapter, the isolation tenant, the provenance and citation lineage, the modular finding-engine, and the gate metering schema all already exist, so a full end-to-end dry run on fixtures and the two genuine net-new builds (the formal reference section, and wiring the usage attribution) proceed now.
+
+## Ground-truth corrections (2026-06-22 source read)
+
+Observations from reading `hauska-engine`, `hauska-mcp-server`, and `legacy-design-tools` on 2026-06-22, for the next session-close reconciliation (these supersede point-in-time figures in the 2026-06-06 recon, which stays as a dated artifact):
+
+- The Hauska MCP gate exposes 62 tools across four products (public, codex, reporting, map), not the 46-across-three recorded in the 2026-06-06 recon.
+- The legacy-design-tools finding-engine runs Grok-first (`AIR_FINDING_LLM_MODE=grok` default; anthropic legacy; mock for CI), consistent with the Property Brief Grok-first note.
+- The IccCodeConnect adapter (`hauska-engine/packages/corpus/src/adapters/icc-code-connect/`) is fully built and credential-gated, running OAuth2 client-credentials against `api.iccsafe.org`; its API contract carries nine `@assumption` tags pending ICC's OpenAPI spec.
+- The model-code extractor never hosts copyrighted verbatim text (it sets `verbatimTextDeepLink` plus a reasoning layer in `bodyText`), so the layer-in-between guarantee is enforced at ingestion.
+- The asserted-confidence baseline for `icc-code-connect` content is 0.78 (interval width 0.35), set in `packages/corpus/src/conformance/mint.ts`.
