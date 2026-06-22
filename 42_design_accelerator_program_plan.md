@@ -10,6 +10,8 @@ owner: nick
 
 # Design Accelerator program plan
 
+> **Architecture-homes reframe (2026-06-21).** This program is the AEC-cortex product (renders, design tools, deliverable UX), per the ADR-008 amendment and [`_architecture_homes/`](_architecture_homes/00_overview.md). Reasoning lifts to the spine (sprint 56), reporting is cortex-api, plan review is Codex; AEC-cortex owns the architect UX and renders and consumes the rest through the gate (four products: public/codex/reporting/map). Read "Design Accelerator" / "Cortex" as AEC-cortex; full rewrite owed in the doc scrub.
+
 > **Purpose.** Phased roadmap from current state through QA-readiness,
 > Moab customer-zero pilot, external pilot, and GA. Replaces ad-hoc
 > planning by capturing phases, parallel streams, gates, and

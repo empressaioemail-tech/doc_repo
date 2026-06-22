@@ -9,6 +9,8 @@ related: [00_current_state, 07_product_line_summary, 09_post_saas_substrate_thes
 
 # Portfolio master map
 
+> **Architecture-homes standard (2026-06-21).** Homes, repo classifications, the Cortex reframe (to the reporting function package), AEC-cortex and Radar as Surfaces, and the four-product MCP gate are the standard at [`_architecture_homes/`](_architecture_homes/00_overview.md). Read the topology below through it; the per-doc scrub is in progress (`_architecture_homes/05_scrub_tracker.md`).
+
 > **Purpose.** One place to see the whole portfolio in focus: every repo and what it actually is today, how the spine fits together, the dev process that produces it, the GTM engine, and the autonomous maintenance engine. Built from a live cross-repo recon on 2026-06-01 (not from the doc set, which had drifted — see [Doc-drift corrections](#doc-drift-corrections)). This is the orientation map (verified topology); [`00d_portfolio_roadmap_reference.md`](00d_portfolio_roadmap_reference.md) is the honed planned-work roadmap, [`00_current_state.md`](00_current_state.md) remains the rolling fires-and-sprints snapshot, and [`07_product_line_summary.md`](07_product_line_summary.md) remains the product value-prop summary.
 >
 > **Recon basis.** Five read-only repo passes on 2026-06-01 against `hauska-engine`, `legacy-design-tools` (cortex-api), `hauska-mcp-server`, `hauska-atom-contract`, `empressaio_tech_smartcity_os`, `hauska-brief-extension`, `Hauska SDK`, `legacy-revit-sensor`. Branch/commit per repo in the ground-truth table.

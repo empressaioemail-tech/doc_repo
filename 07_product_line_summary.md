@@ -10,6 +10,8 @@ owner: nick
 
 # Empressa product line
 
+> **Architecture-homes reframe (2026-06-21).** Product-line naming below predates the homes standard. Per the ADR-008 amendment and [`_architecture_homes/`](_architecture_homes/00_overview.md), the product surfaces are SmartCity OS, Codex, AEC-cortex (the architect product: renders, design tools, deliverable UX), Radar (investor deal radar), the Brief extension, and Revit Connector. "Cortex" is NO LONGER a product; it is the reporting function package (cortex-api). Read the Cortex / Design-Accelerator framing below as AEC-cortex (the product) plus cortex-api (reporting); full rewrite owed in the doc scrub.
+
 > **Purpose.** Standalone bizops-ready summary of the product line and value
 > propositions. Describes the products themselves, not implementation state.
 > Companion to [`05_living_lineage_thesis.md`](05_living_lineage_thesis.md)

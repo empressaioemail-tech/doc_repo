@@ -9,6 +9,8 @@ related: [10_ground_truth, 28_mcp_first_product_design, 29_mcp_surface_tier_mode
 
 # Design Accelerator
 
+> **Architecture-homes reframe (2026-06-21).** This product is now AEC-cortex. Per the ADR-008 amendment and [`_architecture_homes/`](_architecture_homes/00_overview.md), the architect product (renders, design tools, deliverable UX) splits into its own repo `AEC-cortex` and consumes our functions through the gate; "Cortex" / cortex-api is the reporting function package, not this product. Read "Design Accelerator" and "Cortex" throughout this doc as AEC-cortex; full rewrite owed in the doc scrub.
+
 SaaS product for architects mid-design in Revit. Pre-launch; Empressa is
 customer zero. Pilot workload: two adjacent residential lots in Spanish
 Valley near Moab, Utah (Grand County jurisdiction).

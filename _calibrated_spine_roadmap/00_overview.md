@@ -10,6 +10,8 @@ related: [calibration_architecture_addendum, base_calibration_bootstrap, calibra
 
 # Calibrated Spine Roadmap
 
+> **Superseded-home note (2026-06-21).** This program was written with the calibration substrate in cortex-api. Per the architecture-homes standard ([`../_architecture_homes/`](../_architecture_homes/00_overview.md)), the calibration substrate (ledger, overlay, reasoning atoms, engines) lifts to the spine (hauska-engine) and cortex-api is the reporting function package; atoms carry the read-contract conformance target. Build is frozen pending the audit (done) and the doc scrub, which lands the homes correction here.
+
 This folder is a scoped build program, not part of the master roadmap. It exists to take the Hauska spine from its current state to a calibrated, honestly-shaped, warm, and map-legible state, and it is kept deliberately separate so it does not get confused with `00c_portfolio_master_map.md` or `00d_portfolio_roadmap_reference.md`. The program is executed on its own, in parallel with Chris's design work, and only after execution and design land are the results reconciled into the master roadmap. Do not merge this into the master roadmap prematurely. The single explicit tie is this line: when this program completes, its outcomes reconcile into `00d_portfolio_roadmap_reference.md`.
 
 ## Why this program exists

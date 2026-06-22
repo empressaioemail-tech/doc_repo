@@ -10,6 +10,8 @@ owner: nick
 
 # Portfolio roadmap reference
 
+> **Architecture-homes standard (2026-06-21).** Function and surface homes, the Cortex-to-reporting reframe, AEC-cortex and Radar as Surfaces, and the four-product MCP gate are the standard at [`_architecture_homes/`](_architecture_homes/00_overview.md); new building is frozen pending the audit (done) and the doc scrub. Reconcile roadmap items against the homes.
+
 > **Purpose.** The single honed view of what is planned across every product, MCP, and infra component, ranked by the strategic priority frame and checked against the constitution. This is the orientation roadmap. It links out rather than restating.
 >
 > **How it relates to the other orientation docs.** [`00c_portfolio_master_map.md`](00c_portfolio_master_map.md) is the verified topology (what runs where). [`00_current_state.md`](00_current_state.md) is the rolling fires-and-sprints snapshot. [`16_commercialization_roadmap.md`](16_commercialization_roadmap.md) is the commercial-spine detail. [`76c_operator_master_next_steps.md`](76c_operator_master_next_steps.md) is the tactical operator queue. This doc sits above all four as the planned-work frame. [`11_roadmap.md`](11_roadmap.md) is the legacy operational checklist, superseded as of 2026-06-06 and preserved for reconciliation.

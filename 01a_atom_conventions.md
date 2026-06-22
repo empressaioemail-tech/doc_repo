@@ -10,6 +10,8 @@ owner: planner
 
 # Atom conventions for the portfolio
 
+> **Atom conformance target (2026-06-21).** Every atom now carries the read-contract (three axes calibrated/asserted/consequence, each with n/width/provenance), the five-value accessPolicy, and a signed-history layer for data-level atoms, plus a downloadable-atom export shape; conformance target version 1.5.0. "Cortex" is the reporting function package per the ADR-008 amendment. See [`_architecture_homes/02_atoms_lifecycle_ownership.md`](_architecture_homes/02_atoms_lifecycle_ownership.md).
+
 Standardize the Atom pattern across `doc_repo`, Cortex, Empressa, Hauska, and all agents for predictable, low-token, intent-driven context retrieval.
 
 This doc covers **portfolio intelligence atoms** (doc_repo catalog, planner dispatches, session summaries). The Hauska substrate atom contract (`@hauska/atom-contract`, ADR-001) is separate and specified in [`25_atom_architecture_reference.md`](25_atom_architecture_reference.md). Both layers share the `ContextSummary` shape; do not conflate registry namespaces.

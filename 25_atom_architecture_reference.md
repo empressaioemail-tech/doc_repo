@@ -9,6 +9,8 @@ related: [adr_001_atom_architecture, adr_018_atom_contract_substrate_layer, 26_a
 
 # `@hauska/atom-contract` â Architecture reference
 
+> **Atom-contract update (2026-06-21).** Published at 1.5.0 with `/conformance` (validateAtomConformance, target 1.5.0) and `/export` (the DownloadableAtom shape), on top of the `/read-contract` three-axis confidence. The conformance target and the downloadable-atom export are the current shape every consumer co-bumps to; "Cortex" is reframed to the reporting function package per the ADR-008 amendment. See [`_architecture_homes/02_atoms_lifecycle_ownership.md`](_architecture_homes/02_atoms_lifecycle_ownership.md).
+>
 > **Architecture spec.** This is the full reference for the atom
 > contract, its rendering model, its composition rules, and its
 > AI-facing interface. The decision *to* adopt this architecture (and
