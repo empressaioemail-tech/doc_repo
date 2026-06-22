@@ -37,3 +37,4 @@ The Cortex redefinition is a conscious override of ADR-008, granted by the opera
 - [`02_atoms_lifecycle_ownership.md`](02_atoms_lifecycle_ownership.md) — the full atom vision, the conformance-target shape, the user-generated parcel/project atom lifecycle and download
 - [`03_mcp_gate_and_agent_surface.md`](03_mcp_gate_and_agent_surface.md) — the gate-class rework, coverage tools, the third-party agent view and test harness
 - [`04_audit_and_sequence.md`](04_audit_and_sequence.md) — the audit-first plan, repo and naming cleanup, the doc-repo scrub, and the build sequence
+- [`05_scrub_tracker.md`](05_scrub_tracker.md) — the phase-2 doc-scrub worklist and per-doc status

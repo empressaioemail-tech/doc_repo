@@ -2,9 +2,9 @@
 id: adr_008_engine_factor_out
 title: "ADR-008 — Hauska Engine factor-out, naming, and repo placement"
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-06-21
 applies_to: portfolio
-related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, 05_living_lineage_thesis, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review]
+related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, 05_living_lineage_thesis, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review, _decisions/2026-06-21_adr008_cortex_reframe_override, architecture_homes_overview]
 ---
 
 # ADR-008 — Hauska Engine factor-out, naming, and repo placement
@@ -14,6 +14,8 @@ related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, 05_l
 **Accepted, scheduled.** Originated 2026-05-10 during the plan review framing session. Execution sequenced after the Cloud Run + Empressa Neon migration sprint completes (per [`12_migration_sprint.md`](../12_migration_sprint.md)) — splitting a structural refactor onto the same repo as a mid-flight infrastructure migration is the Track B saga pattern this ADR explicitly avoids.
 
 **Committed and operationalized (2026-06-07).** Full extraction is committed per [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](../_decisions/2026-06-07_full_engine_extraction_and_data_packages.md) and operationalized as a sprint in [`56_engine_extraction_sprint.md`](../56_engine_extraction_sprint.md). Two clarifications to this ADR: (1) the engine home is a new `engine-api` service inside the existing `hauska-engine` repo (sibling to the read-only `retrieval-api`), matching the `services/engine-api` layout below; (2) the gate-front seam (per [`_decisions/2026-06-07_adr008_gate_front_seam_scoping.md`](../_decisions/2026-06-07_adr008_gate_front_seam_scoping.md)) is step 1 of the extraction and applies to ALL apps, not only cross-tenant consumers, so cortex-api thins to a product BFF with no ungated path to an engine. The physical lift stays gated behind M-Stabilize Phase 2C; only the engine-home scaffold and the in-flight migration cargo proceed now.
+
+**Brand placement amended (2026-06-21).** Cortex is redefined from the Empressa design-accelerator product surface to the reporting function package: `cortex-api` composes spine reasoning, map layers, and atoms into reports, persists report runs, and is product glue, not a product. The architect tooling that "Cortex the product" denoted (renders, design tools, deliverable UX) splits into a new Empressa product surface, `AEC-cortex` (placeholder name). This is a conscious override of this ADR's brand-placement section, granted by the operator and recorded in [`_decisions/2026-06-21_adr008_cortex_reframe_override.md`](../_decisions/2026-06-21_adr008_cortex_reframe_override.md); the full homes standard is [`_architecture_homes/`](../_architecture_homes/00_overview.md). The Hauska/Empressa layer split is unchanged: cortex-api remains a product-side BFF, not Hauska substrate. The two-Cortex naming overlap (cortex-api reporting vs AEC-cortex) resolves in the phase-2 doc scrub. Everywhere this ADR says "Cortex" as a product surface, read AEC-cortex; everywhere it implies cortex-api is the engine home, read cortex-api as the reporting BFF that consumes the spine through the gate.
 
 ![Hauska fabric overview](diagrams/fabric_overview.svg)
 
@@ -146,4 +148,5 @@ To be tracked in the eventual factor-out sprint plan:
 ## Revision history
 
 - **2026-05-10 (origin):** drafted as ADR-008 during plan review framing session. Establishes Hauska Engine name, Hauska commercial brand placement, and post-migration factor-out timing.
+- **2026-06-21:** Brand placement amended. Cortex reframed from the design-accelerator product surface to the reporting function package (cortex-api); architect tooling splits to the new AEC-cortex product surface. Conscious override per [`_decisions/2026-06-21_adr008_cortex_reframe_override.md`](../_decisions/2026-06-21_adr008_cortex_reframe_override.md); homes standard in [`_architecture_homes/`](../_architecture_homes/00_overview.md). Amendment note added to Status; `last_updated` bumped.
 - **2026-05-18:** atom contract layer placement clarified via [ADR-018](adr_018_atom_contract_substrate_layer.md). Body text at the brand-coherence section, decision section, and brand-summary section reconciled to reflect Hauska substrate placement of the atom contract; the ADR-001 v1.3 ownership-correction note is superseded. Stale "Design Accelerator" product reference corrected to "Cortex" per CLAUDE.md identity section. Package name `@empressaio/atom` updated to `@hauska/atom-contract` per [Decision 2026-05-18](../_decisions/2026-05-18_atom_contract_hauska_namespace.md).
