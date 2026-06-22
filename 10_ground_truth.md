@@ -8,6 +8,8 @@ applies_to: portfolio
 
 # Portfolio ground truth
 
+> **Architecture-homes standard (2026-06-21).** Current architecture homes, the Cortex-to-reporting reframe, AEC-cortex and Radar as Surfaces, and the four-product MCP gate are the standard at [`_architecture_homes/`](_architecture_homes/00_overview.md). Read Cortex / Design-Accelerator framing below through it.
+
 Current state of the active software portfolio: SmartCity OS, Design
 Accelerator (legacy-design-tools), and the Revit Connector
 (legacy-revit-sensor). Rebuilt from a multi-repo recon on 2026-05-05 after

@@ -62,5 +62,5 @@ All seven filed: AC, E, C, C2, R, map, and M (Track C, mirrored to `_inbox/2026-
 Two depths: a standard-pointer banner (dated, stops the stale framing from misleading, points to the homes and the ADR-008 amendment) and a full rewrite (deep line edits). The banner pass is the anti-confusion floor; full rewrites follow as each doc is next substantively touched.
 
 - Fully scrubbed: 50_hauska_mcp_server (four-gate as-built), plus the keystones (ADR-008 amendment, CLAUDE.md identity line, the standard, the Regrid scrub of 55/00c).
-- Banner-scrubbed (standard pointer + key fixes; deep rewrite owed): 44, 52, 07, 40, 42, 00_current_state, 00c, 00d, 01a, 25, and _calibrated_spine_roadmap/00.
-- Still owed (banner then rewrite): 00_README, 00b_doc_repo_guide, 09_post_saas_substrate_thesis, 10_ground_truth, 11_roadmap, 47_codex_plan_review, 48_codex_program_plan, 56 (light), and the deep rewrites of the banner-scrubbed set.
+- Banner-scrubbed (standard pointer + key fixes; deep rewrite owed): 44, 52, 07, 40, 42, 00_current_state, 00c, 00d, 00_README, 10_ground_truth, 01a, 25, and _calibrated_spine_roadmap/00.
+- Still owed (lower-leverage; banner then rewrite): 00b_doc_repo_guide, 09_post_saas_substrate_thesis, 47_codex_plan_review and 48_codex_program_plan (Codex framing is mostly correct; gate-class clarification only), 11_roadmap (already superseded by 00d), 56 (light), and the deep rewrites of the banner-scrubbed set.

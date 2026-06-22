@@ -9,6 +9,8 @@ related: [00b_doc_repo_guide, 01_doc_conventions, 00_current_state]
 
 # Empressa portfolio docs
 
+> **Architecture-homes standard (2026-06-21).** The new standard folder [`_architecture_homes/`](_architecture_homes/00_overview.md) fixes function and surface homes, the Cortex-to-reporting reframe (Cortex is the reporting function package; the architect product is AEC-cortex), Radar as a Surface, the four-product MCP gate, and the atom conformance target. Start there for current architecture; the per-doc scrub is in progress (`_architecture_homes/05_scrub_tracker.md`).
+
 Canonical project knowledge for the software portfolio: SmartCity OS, Design
 Accelerator, Revit Connector, Hauska SDK, ECI. This is the source of truth
 every agent (Cursor Grok cc-agents, doc_repo planner, Cursor manual, Replit
