@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-18
+title: Current state snapshot — 2026-06-22
 status: active
-last_updated: 2026-06-18
+last_updated: 2026-06-22
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,10 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-06-22 — Architecture-homes standard, calibrated-spine program, phase-1 audit
+
+Two programs filed and a standard ratified. Governing docs: the calibrated-spine roadmap ([`_calibrated_spine_roadmap/`](_calibrated_spine_roadmap/00_overview.md)) and the architecture-homes standard ([`_architecture_homes/`](_architecture_homes/00_overview.md)). ADR-008 amended (Cortex is the reporting function package; the architect product splits to AEC-cortex; Radar is its own Surface; the MCP gate is four products, public/codex/reporting/map, 62 tools, 1.5.0 conformance). Phase-1 audit complete across seven agents: corpus re-minted 100% conformant, `@hauska/atom-contract@1.5.0` published, migrations 0044 and 003, AEC-cortex and radar scaffolded as `P:\` folders (GitHub remotes pending operator), console audit instrument built. New feature building is frozen pending the phase-2 doc scrub (at banner-floor; deep rewrites owed per [`_architecture_homes/05_scrub_tracker.md`](_architecture_homes/05_scrub_tracker.md)). Calibrated-spine critical path to the M1 gate: create `gs://hauska-calibration-raw/`, acquire permits + edition bundles via the uniform public-record process (no special access), engine ingests editions + ICC I-Codes, cc-agent-C builds K2 retrodiction, then M1 measures. SmartCity OS untouched (live prod; becomes a spine consumer later). Session record: [`_sessions/2026-06-22_architecture_homes_calibrated_spine_claude_code.md`](_sessions/2026-06-22_architecture_homes_calibrated_spine_claude_code.md).
 
 > **Read me first.** Per [`90_runbooks/current_state_protocol.md`](90_runbooks/current_state_protocol.md). Regenerated at session close. Pointer doc — follow links into canonical docs for full context.
 >
