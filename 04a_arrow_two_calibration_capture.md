@@ -2,13 +2,15 @@
 id: 04a_arrow_two_calibration_capture
 title: Arrow two — calibration capture (build spec for roadmap item 1)
 status: active
-last_updated: 2026-06-09
+last_updated: 2026-06-25
 applies_to: portfolio
 owner: nick
 related: [03_structural_constitution_and_drift_guard, 03a_positioning_framework, 04_roadmap_alignment_audit, 00d_portfolio_roadmap_reference, 50_hauska_mcp_server, 54_tenant_leg_sprint, 57_national_code_warming_sprint, 80_adrs/adr_018_atom_contract_substrate_layer, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_005_multitenancy, _decisions/2026-06-09_codewarm_arrow_two_combined, _research/2026-06-06_cross_repo_recon]
 ---
 
 # Arrow two: calibration capture
+
+> **Superseded-in-part (2026-06-25).** The two-arrow model here is extended into the four-loop calibrated-spine program ([`_calibrated_spine_roadmap/`](_calibrated_spine_roadmap/00_overview.md)): the forward live loop (this doc) plus the backtest/retrodiction loop ([`02_base_calibration_bootstrap.md`](_calibrated_spine_roadmap/02_base_calibration_bootstrap.md)), the model-as-grader loop ([`01_calibration_architecture_addendum.md`](_calibrated_spine_roadmap/01_calibration_architecture_addendum.md)), and the amendment-hazard-plus-event drift loop (same), all over one raw ledger with derive-at-read ("log raw, derive late"). Migration `0037 atom_calibration_overlay` is demoted from source-of-truth to an optional read cache. Earning moved from per-atom to the case grain ([`endstate_A_m1_amendment.md`](_calibrated_spine_roadmap/endstate_A_m1_amendment.md), [`_decisions/2026-06-22_m1_grain_case_recalibration.md`](_decisions/2026-06-22_m1_grain_case_recalibration.md)). **RETRACTION:** the revision-history claim below that "the full deposit loop is closed and invariant I3 (confidence earned, not asserted) is satisfied end-to-end" no longer holds. Confidence today is still asserted (the plan-review number is still LLM-self-emitted; the present-tense violation, task F9, is not closed). Commitment #2 is earned only when the M1 re-run at case grain returns go; until then, calibration falls back to the asserted-with-provenance baseline. Current state: [`_research/2026-06-25_ground_truth_recon.md`](_research/2026-06-25_ground_truth_recon.md).
 
 > **Purpose.** The canonical home and build spec for roadmap item 1 in [`04_roadmap_alignment_audit.md`](04_roadmap_alignment_audit.md), the one genuinely load-bearing build. The audit names it in a line; this doc turns it into something dispatchable. Arrow two is the deposit mechanism that makes confidence earned rather than asserted, satisfying invariant I3 in [`03_structural_constitution_and_drift_guard.md`](03_structural_constitution_and_drift_guard.md). Without it every shipped surface withdraws from the substrate and never deposits, and the trust claim stays rhetorical.
 >

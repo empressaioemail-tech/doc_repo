@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-22
+title: Current state snapshot — 2026-06-25
 status: active
-last_updated: 2026-06-22
+last_updated: 2026-06-25
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,14 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-06-25 — Wave 4 fuel landed, M1 is the live gate, calibration ground-truth corrected
+
+The calibrated-spine critical path advanced to the M1 re-run. Acquisition Wave 4 landed edition-correct fuel for the two metros that carry the gate: Austin (full IBC chain 2012/2015/2021/2024, 2.36M permit rows) and San Antonio (2015/2018/2021/2024, ~487K rows); Bastrop is edition-correct but outcome-thin (~2 rows, excluded from the gate). Uniform public-record, no tenant tooling. Close: [`_inbox/2026-06-22_acquisition_acquisition-agent_wave4-dated-edition-harvest.md`](_inbox/2026-06-22_acquisition_acquisition-agent_wave4-dated-edition-harvest.md). Two dispatches drafted and hand-carried (not yet run): cc-agent-E ingests the edition bundles; cc-agent-C builds K2 edition-correct retrodiction on Austin plus SA and re-runs M1 at the case grain. E then C. Nothing downstream (S-track model tier, warming, map fuel) resources until M1 returns go.
+
+Calibration ground-truth correction. Commitment #2 (confidence earned, not asserted) is currently NOT satisfied; `04a_arrow_two_calibration_capture.md` wrongly claimed it was end-to-end and is now bannered and retracted. Confidence today is asserted (plan-review still LLM-self-emitted, F9 open); migration 0037 is a cache, not source of truth. The calibration model is four loops (forward live, backtest, model-as-grader, drift) over one raw ledger, earned at the case grain. Full recon and the doc-supersession trap list: [`_research/2026-06-25_ground_truth_recon.md`](_research/2026-06-25_ground_truth_recon.md). Session: [`_sessions/2026-06-25_calibration_ground_truth_and_doc_audit_claude_code.md`](_sessions/2026-06-25_calibration_ground_truth_and_doc_audit_claude_code.md).
+
+Doc-cleanup queued (not done; needs a dedicated pass): CLAUDE.md headline corrections (counts 698/4 to 21,126/34, tools 46 to 62, atom-contract 1.5.0, commitment-2 wording); the Cortex-as-product cluster deep rewrites; git hygiene from the 2026-06-19 audit (`.gitattributes` plus renormalize, `_tmp_*` ignore, root probe cleanup). Tracked in [`_architecture_homes/05_scrub_tracker.md`](_architecture_homes/05_scrub_tracker.md) and the recon.
 
 ## 2026-06-22 — Architecture-homes standard, calibrated-spine program, phase-1 audit
 
