@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Feedback loops - how confidence is earned (data flow)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", flowchart: { curve: "basis" } });</script>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif; color:#1a1a18; max-width: 920px; margin: 0 auto; padding: 40px; line-height: 1.55; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 30px 0 8px; border-bottom: 2px solid #e2e0d8; padding-bottom: 5px; }
+  p { font-size: 15px; }
+  .sub { color:#5f5e5a; font-size: 14px; margin: 0 0 18px; }
+  .legend { font-size: 13px; color:#5f5e5a; background:#f7f6f2; border:1px solid #e2e0d8; border-radius:6px; padding:10px 14px; margin:14px 0 22px; }
+  .legend b { color:#1a1a18; }
+  .diagram { padding: 16px; background:#fafaf8; border:1px solid #e2e0d8; border-radius:8px; margin: 8px 0 6px; }
+  .caption { font-size: 13px; color:#5f5e5a; font-weight:600; margin-bottom:6px; }
+  .mermaid { display:flex; justify-content:center; }
+  .note { font-size:13px; color:#5f5e5a; background:#eef3fb; border:1px solid #cfdcf0; border-radius:6px; padding:10px 14px; margin:10px 0 0; }
+</style>
+</head>
+<body>
+
+<h1>How confidence is earned: the feedback loops</h1>
+<p class="sub">Next iteration of the node / edge / atom picture. Same pieces, now showing the data flowing through the loops that turn a guessed confidence into an earned one.</p>
+
+<div class="legend">
+  <b>Box</b> = a step &nbsp;·&nbsp; <b>cylinder</b> = a stored ledger &nbsp;·&nbsp; <b>arrow label</b> = the data that moves &nbsp;·&nbsp; an <b>atom</b> = one cited, timestamped fact with a confidence of <code>{ n, width, basis }</code>
+</div>
+
+<h2>1. The core loop: emit, observe, deposit, re-earn</h2>
+<div class="diagram">
+  <div class="caption">Figure 1 - A claim's confidence sharpens every time the world answers back</div>
+  <div class="mermaid">
+flowchart TB
+  subgraph N["A node (a parcel, a security)"]
+    ATOM["ATOM = a claim<br/>confidence { n, width, basis }<br/>starts basis: asserted"]
+  end
+  ATOM -->|"claim is used"| ACT["ACT + OBSERVE<br/>someone acts on the claim;<br/>the real outcome happens"]
+  ACT -->|"outcome: right / edited / wrong"| DEP["DEPOSIT<br/>outcome saved as a NEW atom,<br/>linked back, filed by claim type<br/>(original atom never changed)"]
+  DEP -->|"one outcome"| LED[("EVIDENCE LEDGER<br/>grouped by claim type,<br/>across every node")]
+  LED -->|"recompute from all outcomes"| EARN["RE-EARN<br/>confidence for this claim type<br/>basis flips asserted &rarr; live"]
+  EARN -->|"the next claim of this type<br/>carries the earned confidence"| ATOM
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class ATOM atom;
+  class ACT,DEP,EARN step;
+  class LED store;
+  </div>
+</div>
+<div class="note"><b>Two rules on this loop.</b> Isolation: a single customer's private outcomes never enter the shared ledger; only public or explicitly-shared outcomes do. Honesty: confidence stays labeled <b>asserted</b> until enough outcomes exist to be trusted, then it becomes <b>earned</b>. It never shows an earned-looking number it has not earned.</div>
+
+<h2>2. The forward engine runs two of these loops at once</h2>
+<div class="diagram">
+  <div class="caption">Figure 2 - A pending event is scored on two separate track records</div>
+  <div class="mermaid">
+flowchart TB
+  EVT["PENDING EVENT atom<br/>(a bill, a filing)<br/>resolution probability"]
+  EVT -->|"would_affect edge"| SUBJ["SUBJECT node<br/>(parcel / security)"]
+  EVT -->|"time passes"| RES["Did it happen as predicted?<br/>(passed / landed on schedule)"]
+  RES -->|"resolution outcome"| L1[("RESOLUTION ledger")]
+  SUBJ -->|"measure the real move,<br/>net of other causes"| EFF["Did the subject move<br/>as expected? (materiality)"]
+  EFF -->|"effect outcome"| L2[("EFFECT-LINKAGE ledger")]
+  L1 -->|"earns"| EVT
+  L2 -->|"earns"| EDG["would_affect probability<br/>re-estimated over time"]
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class EVT,SUBJ atom;
+  class RES,EFF,EDG step;
+  class L1,L2 store;
+  </div>
+</div>
+<div class="note">Two ledgers because two different things can be right or wrong: whether the event <b>happens</b>, and whether, once it does, it actually <b>moves the subject</b>. Keeping them separate stops a mistake in one from hiding inside the other.</div>
+
+<h2>3. The same loop shape runs the autonomous engines</h2>
+<div class="diagram">
+  <div class="caption">Figure 3 - Growth and self-healing are the same feedback loop, pointed at the product</div>
+  <div class="mermaid">
+flowchart LR
+  OBS["OBSERVE<br/>signal off the app<br/>(usage, error, event)"] --> TRI["TRIAGE<br/>classify + route"]
+  TRI --> WRK["WORKER<br/>proposes an action"]
+  WRK --> GATE{"POLICY GATE<br/>auto / propose / hold"}
+  GATE -->|cleared| ACTN["ACT"]
+  ACTN --> VER["VERIFY<br/>re-measure the outcome"]
+  VER -->|"healthy"| OBS
+  VER -->|"regression"| ROLL["ROLL BACK"]
+  ROLL --> OBS
+  GATE -->|"needs a human"| STW["STEWARD"]
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef gate fill:#fff3cf,stroke:#d4a200;
+  class OBS,TRI,WRK,ACTN,VER,ROLL,STW step;
+  class GATE gate;
+  </div>
+</div>
+<div class="note">Every feedback loop in the system is the same move: do something with a stated confidence, watch what actually happens, record it, and let the next attempt be smarter. The earned-confidence loop does it for facts, the forward engine does it for predictions, and the autonomous engines do it for the product itself.</div>
+
+</body>
+</html>

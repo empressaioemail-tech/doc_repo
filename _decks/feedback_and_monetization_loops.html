@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>System loops - feedback and monetization (data flow)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", flowchart: { curve: "basis" } });</script>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif; color:#1a1a18; max-width: 920px; margin: 0 auto; padding: 40px; line-height: 1.55; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 30px 0 8px; border-bottom: 2px solid #e2e0d8; padding-bottom: 5px; }
+  p { font-size: 15px; }
+  .sub { color:#5f5e5a; font-size: 14px; margin: 0 0 18px; }
+  .legend { font-size: 13px; color:#5f5e5a; background:#f7f6f2; border:1px solid #e2e0d8; border-radius:6px; padding:10px 14px; margin:14px 0 22px; }
+  .legend b { color:#1a1a18; }
+  .diagram { padding: 16px; background:#fafaf8; border:1px solid #e2e0d8; border-radius:8px; margin: 8px 0 6px; }
+  .caption { font-size: 13px; color:#5f5e5a; font-weight:600; margin-bottom:6px; }
+  .mermaid { display:flex; justify-content:center; }
+  .note { font-size:13px; color:#5f5e5a; background:#eef3fb; border:1px solid #cfdcf0; border-radius:6px; padding:10px 14px; margin:10px 0 0; }
+  code { background:#f0efe9; padding:1px 4px; border-radius:3px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h1>System loops: feedback and monetization</h1>
+<p class="sub">Builds on the node / edge / atom and feedback-loop diagrams. Same machine, now also showing how a data provider (ICC, for a building code) gets tracked and paid every time its data drives an answer.</p>
+
+<div class="legend">
+  <b>Box</b> = a step &nbsp;·&nbsp; <b>cylinder</b> = a stored ledger &nbsp;·&nbsp; <b>arrow label</b> = the data that moves &nbsp;·&nbsp; an <b>atom</b> = a cited, timestamped fact with confidence <code>{ n, width, basis }</code> and a source tag <code>{ source, license }</code>
+</div>
+
+<h2>1. The core loop: confidence is earned</h2>
+<div class="diagram">
+  <div class="caption">Figure 1 - A claim's confidence sharpens every time the world answers back</div>
+  <div class="mermaid">
+flowchart TB
+  subgraph N["A node (a parcel, a security)"]
+    ATOM["ATOM = a claim<br/>confidence { n, width, basis }<br/>starts basis: asserted"]
+  end
+  ATOM -->|"claim is used"| ACT["ACT + OBSERVE<br/>someone acts on the claim;<br/>the real outcome happens"]
+  ACT -->|"outcome: right / edited / wrong"| DEP["DEPOSIT<br/>outcome saved as a NEW atom,<br/>linked back, filed by claim type<br/>(original atom never changed)"]
+  DEP -->|"one outcome"| LED[("EVIDENCE LEDGER<br/>by claim type, across nodes")]
+  LED -->|"recompute from all outcomes"| EARN["RE-EARN<br/>confidence for this claim type<br/>basis flips asserted &rarr; live"]
+  EARN -->|"next claim of this type<br/>carries earned confidence"| ATOM
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class ATOM atom;
+  class ACT,DEP,EARN step;
+  class LED store;
+  </div>
+</div>
+<div class="note"><b>Two rules.</b> Isolation: a customer's private outcomes never enter the shared ledger. Honesty: confidence stays <b>asserted</b> until enough outcomes exist, then it becomes <b>earned</b>.</div>
+
+<h2>2. The forward engine runs two of these loops at once</h2>
+<div class="diagram">
+  <div class="caption">Figure 2 - A pending event is scored on two separate track records</div>
+  <div class="mermaid">
+flowchart TB
+  EVT["PENDING EVENT atom<br/>(a bill, a filing)<br/>resolution probability"]
+  EVT -->|"would_affect edge"| SUBJ["SUBJECT node<br/>(parcel / security)"]
+  EVT -->|"time passes"| RES["Did it happen as predicted?"]
+  RES -->|"resolution outcome"| L1[("RESOLUTION ledger")]
+  SUBJ -->|"measure real move,<br/>net of other causes"| EFF["Did the subject move<br/>as expected? (materiality)"]
+  EFF -->|"effect outcome"| L2[("EFFECT-LINKAGE ledger")]
+  L1 -->|"earns"| EVT
+  L2 -->|"earns"| EDG["would_affect probability<br/>re-estimated over time"]
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class EVT,SUBJ atom;
+  class RES,EFF,EDG step;
+  class L1,L2 store;
+  </div>
+</div>
+
+<h2>3. The autonomous engines are the same loop, pointed at the product</h2>
+<div class="diagram">
+  <div class="caption">Figure 3 - Growth and self-healing: observe, act, verify, repeat</div>
+  <div class="mermaid">
+flowchart LR
+  OBS["OBSERVE<br/>signal off the app"] --> TRI["TRIAGE<br/>classify + route"]
+  TRI --> WRK["WORKER<br/>proposes an action"]
+  WRK --> GATE2{"POLICY GATE<br/>auto / propose / hold"}
+  GATE2 -->|cleared| ACTN["ACT"]
+  ACTN --> VER["VERIFY<br/>re-measure"]
+  VER -->|"healthy"| OBS
+  VER -->|"regression"| ROLL["ROLL BACK"]
+  ROLL --> OBS
+  GATE2 -->|"needs a human"| STW["STEWARD"]
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef gate fill:#fff3cf,stroke:#d4a200;
+  class OBS,TRI,WRK,ACTN,VER,ROLL,STW step;
+  class GATE2 gate;
+  </div>
+</div>
+
+<h2>4. Monetization: the data provider gets tracked and paid (ICC building code)</h2>
+<div class="diagram">
+  <div class="caption">Figure 4 - Every time ICC's code drives an answer, ICC is metered and paid, with a receipt it can verify</div>
+  <div class="mermaid">
+flowchart TB
+  ICC["DATA PROVIDER: ICC<br/>licenses a building code"]
+  ICC -->|"ingested + wrapped"| CODE["CODE atoms on the code node<br/>each tagged source = ICC,<br/>license { terms, derived_ok }"]
+  CODE -->|"cited in an answer"| GATE["THE GATE<br/>meters every consumption,<br/>attributes it to the source"]
+  GATE -->|"metered event<br/>{ atom, source=ICC, caller, when }"| UL[("USAGE LEDGER<br/>by source")]
+  GATE -.->|"answer was derived from ICC's atom?<br/>attribute back through lineage"| UL
+  UL -->|"compute each source's share"| SET["SETTLEMENT<br/>route ICC its per-use share (USDC)"]
+  SET -->|"payment + tamper-evident usage receipt (anchored)"| ICC
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  classDef owner fill:#f3e3f3,stroke:#c050c0;
+  class CODE atom;
+  class GATE,SET step;
+  class UL store;
+  class ICC owner;
+  </div>
+</div>
+<div class="note">
+  <b>Four things make this work.</b> 1) The source tag rides inside the atom, so ICC's authorship travels with the code wherever it goes. 2) The gate meters every consumption and attributes it. 3) Lineage attribution: if an answer was reasoned <i>from</i> ICC's code (a derived atom), the usage still attributes back to ICC. 4) Settlement pays ICC its per-use share and gives an anchored, tamper-evident receipt it can audit independently.
+  <br/><br/>
+  <b>Built vs designed (honesty):</b> the metering and usage ledger are the mechanism; the automatic per-source payout is designed and partly built (settlement runs through a single wallet today, revenue share is contractually promised). The receipt anchoring reuses the same sealing step as the verifiable track record.
+</div>
+
+<h2>The pattern underneath all four</h2>
+<p>Every loop is the same move: <b>do something, record what happened in a ledger, then act on the ledger.</b> The calibration loop records outcomes and re-earns confidence. The forward engine records resolutions and effects. The autonomous engines record app signals and self-correct. Monetization records consumption and settles payment. One shape, four ledgers: confidence, resolution, effect, and usage.</p>
+
+</body>
+</html>

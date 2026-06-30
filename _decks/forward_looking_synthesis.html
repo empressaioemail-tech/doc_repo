@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Forward-looking synthesis - emerging data into the graph</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", flowchart: { curve: "basis" } });</script>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif; color:#1a1a18; max-width: 940px; margin: 0 auto; padding: 40px; line-height: 1.55; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 30px 0 8px; border-bottom: 2px solid #e2e0d8; padding-bottom: 5px; }
+  p { font-size: 15px; }
+  .sub { color:#5f5e5a; font-size: 14px; margin: 0 0 16px; }
+  .legend { font-size: 13px; color:#5f5e5a; background:#f7f6f2; border:1px solid #e2e0d8; border-radius:6px; padding:10px 14px; margin:14px 0 22px; }
+  .legend b { color:#1a1a18; }
+  .diagram { padding: 16px; background:#fafaf8; border:1px solid #e2e0d8; border-radius:8px; margin: 8px 0 6px; }
+  .caption { font-size: 13px; color:#5f5e5a; font-weight:600; margin-bottom:6px; }
+  .mermaid { display:flex; justify-content:center; }
+  .note { font-size:13px; color:#5f5e5a; background:#eef3fb; border:1px solid #cfdcf0; border-radius:6px; padding:10px 14px; margin:10px 0 0; }
+  .term { font-size:13px; background:#fbf8ee; border:1px solid #e7dcb8; border-radius:6px; padding:10px 14px; margin:0 0 20px; }
+  code { background:#f0efe9; padding:1px 4px; border-radius:3px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h1>Forward-looking synthesis: turning emerging data into graph context</h1>
+<p class="sub">How new, just-happened data from a source gets matched to the entities we already track, becomes forward-looking context on them, and then flips into history and trains the system.</p>
+
+<div class="term">
+  <b>Naming, so it is precise:</b> there is no "forward-looking node." A <b>source</b> (news, EDGAR, a legislature docket) lives in the <b>source registry</b>. Emerging data becomes an <b>event node</b> with <b>anticipatory atoms</b> (a future <code>valid_from</code> + a probability). A <b>would_affect edge</b> links it to the existing <b>subject nodes</b> it could matter to. "Forward-looking" is a property of those atoms and edges, not a kind of node.
+</div>
+
+<div class="legend">
+  <b>Top band</b> = the emerging, unstructured world &nbsp;·&nbsp; <b>bottom band</b> = the structured graph we already hold &nbsp;·&nbsp; they meet at <b>RESOLVE</b>, the synthesis step.
+</div>
+
+<h2>1. The synthesis: where new data meets what we already know</h2>
+<div class="diagram">
+  <div class="caption">Figure 1 - Emerging data is captured, matched to existing entities, and attached as forward-looking context</div>
+  <div class="mermaid">
+flowchart TB
+  subgraph EMERGING["EMERGING - just happened, unstructured"]
+    SRC["SOURCE in the registry<br/>(news / EDGAR / legislature)"] --> RAW["raw item, e.g.<br/>'JERA contracts 4 ammonia carriers'<br/>or 'bill filed: retro-rezone multifamily'"]
+  end
+  RAW -->|"1. CAPTURE (watcher)<br/>persist the moment it appears"| RES{"2. RESOLVE = the synthesis<br/>which existing entities<br/>is this about?"}
+  RES -->|"3. mint"| EVT["EVENT NODE (evt_)<br/>+ anticipatory atom<br/>{ future valid_from, probability, basis: asserted }<br/>cited to the source"]
+  EVT -->|"4. would_affect edge<br/>(+ effect-linkage confidence)"| SUBJ["SUBJECT NODE"]
+  subgraph ESTABLISHED["ESTABLISHED - the graph we already hold"]
+    SUBJ --- HIST["established atoms (history):<br/>price, fundamentals, prior events,<br/>zoning, flood, ownership"]
+  end
+  EVT -.->|"the subject now carries BOTH<br/>its history and this pending context"| SUBJ
+  classDef src fill:#f3e3f3,stroke:#c050c0;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef evt fill:#fff3cf,stroke:#d4a200;
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  class SRC,RAW src;
+  class RES step;
+  class EVT evt;
+  class SUBJ,HIST atom;
+  </div>
+</div>
+<div class="note"><b>RESOLVE is the whole trick.</b> Raw emerging data is useless until it is connected to an entity we track. The resolver answers "what is this about," matching the item to existing subject nodes (or minting new ones). That match, plus the would_affect edge, is the synthesis: it fuses new, unstructured signal into the structured graph of facts we already hold. Emerging data that resolves to nothing we track is noted but not forced onto the graph.</div>
+
+<h2>2. The tense flip: forward-looking becomes fact, and trains the system</h2>
+<div class="diagram">
+  <div class="caption">Figure 2 - A pending item resolves, turns into history, and sharpens the next prediction</div>
+  <div class="mermaid">
+flowchart LR
+  ANT["ANTICIPATORY atom<br/>(pending, future valid_from,<br/>basis: asserted)"] -->|"time passes,<br/>it resolves"| FACT["HISTORICAL atom<br/>(valid_from now in the past,<br/>this is what happened)"]
+  FACT -->|"did it happen as predicted?"| L1[("RESOLUTION ledger")]
+  FACT -->|"did the subject move?<br/>(materiality)"| L2[("EFFECT-LINKAGE ledger")]
+  L1 -->|"earns"| C1["sharper resolution probability"]
+  L2 -->|"earns"| C2["sharper would_affect probability"]
+  C1 & C2 -.->|"next emerging item of this kind<br/>is scored better"| ANT
+  classDef atom fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class ANT,FACT atom;
+  class C1,C2 step;
+  class L1,L2 store;
+  </div>
+</div>
+<div class="note">Today's pending item is tomorrow's historical fact. The same atom that warned you about something forward-looking becomes, once it resolves, the explanation in the record, and its outcome trains the two ledgers so the next emerging item of that kind is scored more accurately. Capture has to start early, because anything not captured can never be explained or learned from later.</div>
+
+<h2>What this shows</h2>
+<p>The system is not two separate things, a database of facts and a news reader. It is one graph that the emerging world continuously feeds into. New data arrives unstructured, gets resolved onto the entities we already track, hangs there as forward-looking context with a probability and a citation, and then, when it resolves, settles into history and trains the prediction. Facts, atoms, nodes, and emerging data are all the same fabric, just at different stages of the same lifecycle.</p>
+
+</body>
+</html>

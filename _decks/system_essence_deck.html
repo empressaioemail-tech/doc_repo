@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>System essence</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", flowchart: { curve: "basis" } });</script>
+<style>
+  :root { --ink:#1a1a18; --muted:#5f5e5a; --line:#e2e0d8; --accent:#2c5aa0; --bg:#ffffff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; }
+  body { font-family: -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif; color:var(--ink); background:#f0efe9; }
+
+  header { position:fixed; top:0; left:0; right:0; height:46px; background:var(--bg); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:0 18px; z-index:10; font-size:13px; color:var(--muted); }
+  header b { color:var(--ink); letter-spacing:.04em; }
+
+  #deck { position:absolute; top:46px; bottom:0; left:0; right:0; }
+  .slide { position:absolute; inset:0; overflow-y:auto; padding:42px 56px 70px; opacity:0; pointer-events:none; transition:opacity .18s ease; background:var(--bg); display:flex; flex-direction:column; }
+  .slide.active { opacity:1; pointer-events:auto; z-index:1; }
+  .slide.center { justify-content:center; align-items:center; text-align:center; }
+
+  .kicker { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); font-weight:700; margin-bottom:6px; }
+  h1 { font-size:30px; margin:0 0 10px; }
+  h2 { font-size:22px; margin:0 0 12px; }
+  p { font-size:16px; line-height:1.5; max-width:820px; margin:8px 0; }
+  ul { font-size:16px; line-height:1.5; max-width:820px; }
+  li { margin:6px 0; }
+  .sub { color:var(--muted); font-size:15px; }
+  .key { background:#eef3fb; border:1px solid #cfdcf0; border-radius:8px; padding:12px 16px; font-size:15px; margin:14px 0; max-width:820px; }
+  .diagram { background:#fafaf8; border:1px solid var(--line); border-radius:10px; padding:14px; margin:10px 0; }
+  .mermaid { display:flex; justify-content:center; }
+  .note { color:var(--muted); font-size:13.5px; max-width:860px; }
+
+  .arch { display:flex; flex-direction:column; gap:12px; width:100%; max-width:1180px; margin:10px auto; }
+  .layer { border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
+  .layer-label { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-bottom:7px; }
+  .modules { display:flex; gap:10px; align-items:stretch; }
+  .mod { flex:1 1 0; display:flex; flex-direction:column; justify-content:center; text-align:center; border:1px solid; border-radius:7px; padding:8px 6px; font-size:13px; font-weight:600; line-height:1.2; background:#fff; }
+  .mod span { display:block; font-weight:400; font-size:10.5px; color:var(--muted); margin-top:3px; }
+  .l1 { background:#f4f8fc; } .l1 .layer-label { color:#2c5aa0; } .l1 .mod { border-color:#3aa0d4; background:#eaf3fa; }
+  .l2 { background:#f4faf4; } .l2 .layer-label { color:#2f6b2f; } .l2 .mod { border-color:#5aa05a; background:#eef7ee; color:#2f6b2f; }
+  .l3 { background:#fdfaf0; } .l3 .layer-label { color:#8a6d1f; } .l3 .mod { border-color:#d4a200; background:#fff7e0; }
+  .l4 { background:#faf4fb; } .l4 .layer-label { color:#8a3f8a; } .l4 .mod { border-color:#c050c0; background:#f7e8f7; }
+  .arr, .plus { display:flex; align-items:center; justify-content:center; flex:0 0 auto; color:var(--muted); font-weight:700; }
+  .arr { font-size:16px; } .plus { font-size:14px; }
+  .flow { text-align:center; font-size:12px; color:var(--muted); margin:0; line-height:1.25; }
+  .flow b { color:var(--accent); font-size:15px; margin-right:6px; }
+  .cards { display:flex; gap:14px; align-items:stretch; width:100%; margin:12px 0; }
+  .card { flex:1 1 0; min-width:0; border:1px solid var(--line); border-radius:10px; padding:12px; background:#fafaf8; display:flex; flex-direction:column; }
+  .card .dom { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); font-weight:700; margin-bottom:8px; }
+  .card .mermaid { flex:1; }
+  .card .mermaid svg { max-width:100%; height:auto; }
+  .diagram .mermaid svg { max-width:100%; height:auto; }
+  .card .cap { font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.3; }
+  code { background:#f0efe9; padding:1px 5px; border-radius:3px; font-size:13px; }
+
+  nav { position:fixed; bottom:14px; right:18px; z-index:10; display:flex; gap:8px; align-items:center; }
+  nav button { font:inherit; font-size:13px; padding:6px 14px; border:1px solid var(--line); background:var(--bg); border-radius:6px; cursor:pointer; color:var(--ink); }
+  nav button:hover { background:#f0efe9; }
+  .hint { position:fixed; bottom:18px; left:18px; z-index:10; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <b>HAUSKA</b>&nbsp;&nbsp;SYSTEM OVERVIEW
+  <span><span id="num">1</span> / <span id="total">13</span></span>
+</header>
+
+<div id="deck">
+
+  <!-- 0 INTRO -->
+  <section class="slide active">
+    <div class="kicker">Introduction</div>
+    <h1>Hauska: making data AI-native</h1>
+    <p class="lead">Most data is built for people and apps: rows, documents, API calls. An AI agent can read it but cannot trust it, because it arrives bare, with no source, no measure of certainty, no terms of use. Hauska fixes that one level down, at the fact itself.</p>
+    <p>It turns every fact into a self-describing, AI-native unit that carries where it came from, how sure it is and how that was earned, a citation, when it is true, and who may use it. Those units connect into a graph, reasoning runs over them, and a settlement layer pays the sources whose data drove an answer. The result is data an agent can <b>consume, trust, verify, and pay for</b> on its own.</p>
+    <div class="key">What you are about to read, in order: the four-layer architecture, the loop that makes its confidence earned and provable, the same machine running across three industries, and a real-estate deep dive that follows one parcel through every layer.</div>
+  </section>
+
+  <!-- 1 SYSTEM ARCHITECTURE (four layers) -->
+  <section class="slide">
+    <div class="kicker">System architecture</div>
+    <h2>The whole system in four layers and their modules</h2>
+    <p>Top to bottom: the intelligence that produces an answer, the self-describing facts it reasons over, the entity graph those facts attach to, and the settlement-and-proof rail underneath. Each layer expands into its own modules.</p>
+    <div class="arch">
+      <div class="layer l1">
+        <div class="layer-label">1 &middot; Intelligence layer &mdash; produces the cited, calibrated read</div>
+        <div class="modules">
+          <div class="mod">Reporting engines<span>domain analytics</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="mod">Forward engine<span>anticipation</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="mod">Calibration<span>earned confidence</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="mod">Synthesis<span>the cited read</span></div>
+        </div>
+      </div>
+      <div class="flow"><b>&#8645;</b> the intelligence reasons over the atoms, and deposits outcomes back as new atoms</div>
+      <div class="layer l2">
+        <div class="layer-label">2 &middot; Atoms &mdash; self-describing facts (append-only, bitemporal)</div>
+        <div class="modules">
+          <div class="mod">Claim</div>
+          <div class="plus">+</div>
+          <div class="mod">Provenance<span>source + method</span></div>
+          <div class="plus">+</div>
+          <div class="mod">Confidence<span>n, width, basis</span></div>
+          <div class="plus">+</div>
+          <div class="mod">Citation</div>
+          <div class="plus">+</div>
+          <div class="mod">Time<span>valid + recorded</span></div>
+          <div class="plus">+</div>
+          <div class="mod">Access + license</div>
+        </div>
+      </div>
+      <div class="flow"><b>&#8645;</b> every atom hangs off a node; a read assembles a node's atoms</div>
+      <div class="layer l3">
+        <div class="layer-label">3 &middot; Nodes + edges &mdash; the entity graph the facts attach to</div>
+        <div class="modules">
+          <div class="mod">Typed nodes<span>any entity</span></div>
+          <div class="mod">Resolver<span>stable id, merge/split</span></div>
+          <div class="mod">Typed edges<span>sourced relationships</span></div>
+          <div class="mod">Identifier index</div>
+        </div>
+      </div>
+      <div class="flow"><b>&#8645;</b> the rail meters every read above and anchors every atom below</div>
+      <div class="layer l4">
+        <div class="layer-label">4 &middot; SDK &mdash; the settlement and proof rail</div>
+        <div class="modules">
+          <div class="mod">Gate<span>meter + attribute use</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="mod">Usage ledger<span>by source</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="mod">Settlement<span>payment</span></div>
+          <div class="arr">&rarr;</div>
+          <div class="mod">Anchoring<span>verifiable proof on a blockchain</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">The same four layers in any domain. A node can be a property, a well, a company, a security, or a supplier; only the node types and the facts change. The SDK rail is drawn at the bottom for simplicity, but it runs alongside everything: it meters the intelligence layer's use and anchors the atoms. Each layer is opened up in the slides that follow.</p>
+  </section>
+
+  <!-- 2 IT IN ACTION across three domains -->
+  <section class="slide">
+    <div class="kicker">It in action</div>
+    <h2>The same machine in three domains</h2>
+    <p>In every domain the shape is the same: a node accumulates facts, the reporting engines turn them into a read, the people in that domain act, and the outcome flows back and compounds the node. Only the node type, the engines, and the actors change.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="dom">Real estate</div>
+        <div class="mermaid">
+flowchart TB
+  N["PARCEL node<br/>123 Main St"]
+  E["reporting engines<br/>hydrology, zoning,<br/>plan review"]
+  A["Investor &rarr; Architect &rarr; City<br/>(three actors, one parcel)"]
+  N --> E --> A
+  A -.each pass deposits atoms.-> N
+  classDef n fill:#dceaf5,stroke:#3aa0d4;
+  classDef e fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef a fill:#fff3cf,stroke:#d4a200;
+  class N n; class E e; class A a;
+        </div>
+        <div class="cap">Each actor enriches the shared parcel; the next inherits the work.</div>
+      </div>
+      <div class="card">
+        <div class="dom">Oil and gas</div>
+        <div class="mermaid">
+flowchart TB
+  N["WELL node<br/>(digital twin)"]
+  E["reporting engines<br/>reserves/DCA, economics,<br/>regulatory"]
+  L["land administration<br/>owners, payouts"]
+  M["marketplace<br/>sell the asset or a right<br/>(ORRI / WI / NPI)"]
+  N --> E --> L --> M
+  M -.sale updates ownership.-> L
+  classDef n fill:#dceaf5,stroke:#3aa0d4;
+  classDef e fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef l fill:#fff3cf,stroke:#d4a200;
+  classDef m fill:#f3e3f3,stroke:#c050c0;
+  class N n; class E e; class L l; class M m;
+        </div>
+        <div class="cap">The twin's record carries the well from production to a tradable interest.</div>
+      </div>
+      <div class="card">
+        <div class="dom">Markets</div>
+        <div class="mermaid">
+flowchart TB
+  T["threads<br/>TradFi, DeFi, wallet graph,<br/>capital flows"]
+  N["COMPANY node<br/>(compounding atoms)"]
+  E["reporting engines<br/>signal/calibration, risk,<br/>event-impact"]
+  X["trader's read<br/>&rarr; execute a trade<br/>(gated, not advice)"]
+  T --> N --> E --> X
+  X -.outcome feeds back.-> N
+  classDef t fill:#fff3cf,stroke:#d4a200;
+  classDef n fill:#dceaf5,stroke:#3aa0d4;
+  classDef e fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef x fill:#f3e3f3,stroke:#c050c0;
+  class T t; class N n; class E e; class X x;
+        </div>
+        <div class="cap">Many threads compound one company node; the trade's outcome sharpens it.</div>
+      </div>
+    </div>
+    <p class="note">Same unit, same loop, same network effects. A domain is just a different node type, a different set of engines, and different actors pointed at the same machine.</p>
+  </section>
+
+  <!-- 3 LOOP part 1: earned + verifiable -->
+  <section class="slide">
+    <div class="kicker">The loop, part 1 of 2</div>
+    <h2>Confidence is earned, and the record is provable</h2>
+    <p>Two mechanisms make a number trustworthy and they run on the same claim. The cycle on the left <b>earns</b> the confidence by comparing past calls to real outcomes. The chain on the right <b>proves</b> it, by sealing the call when it is made. Two guardrails keep both honest.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  EMIT["EMIT a claim<br/>{ n, width, basis: asserted }"] --> USE["acted on"]
+  USE --> OBS["OBSERVE outcome<br/>accept / edit / reject"]
+  OBS --> DEP["DEPOSIT outcome atom<br/>by (claim type, worker)"]
+  DEP --> LED[("EVIDENCE<br/>LEDGER")]
+  LED --> RE["RE-EARN<br/>asserted &rarr; backtest &rarr; live"]
+  RE -->|"next claim earns it"| EMIT
+  EMIT -. fingerprinted .-> SEAL["SEAL + ANCHOR<br/>root to a public chain"]
+  SEAL --> VFY["VERIFY<br/>call predated<br/>its outcome"]
+  ISO["ISOLATION<br/>private stays private"] -. guards .-> LED
+  HON["HONESTY<br/>asserted until earned"] -. guards .-> RE
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  classDef ver fill:#f3e3f3,stroke:#c050c0;
+  classDef guard fill:#f4f3ee,stroke:#9a978f,color:#5f5e5a;
+  class EMIT,USE,OBS,DEP,RE step; class LED store; class SEAL,VFY ver; class ISO,HON guard;
+    </div></div>
+    <p class="note">The confidence is never a bare number: it carries how many observations it rests on (n), how wide the uncertainty is, and how it was earned (basis). Sealing at emission, plus anchoring the whole population of calls (not just the winners), is what makes the track record impossible to backdate or cherry-pick.</p>
+  </section>
+
+  <!-- 4 LOOP part 2: forward + tense flip -->
+  <section class="slide">
+    <div class="kicker">The loop, part 2 of 2</div>
+    <h2>It looks forward, and learns when the future arrives</h2>
+    <p>The top path turns trusted emerging data into forward-looking context attached to the things we track. The bottom path is the tense flip: when a pending item resolves it becomes a historical fact and trains two separate track records, which sharpen the next prediction.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  REG[("CURATED<br/>REGISTRY")] --> SRC["source emits<br/>a raw item"]
+  SRC --> CAP["CAPTURE<br/>persist on arrival"]
+  CAP --> RES{"RESOLVE<br/>what is it about?"}
+  RES --> EVT["EVENT NODE +<br/>ANTICIPATORY atom<br/>{ future date, probability }"]
+  EVT -->|would_affect| SUBJ["SUBJECT NODE<br/>(has its history)"]
+  EVT -->|"resolves"| FACT["HISTORICAL<br/>fact"]
+  FACT --> L1[("RESOLUTION<br/>ledger")]
+  FACT --> MAT["MATERIALITY<br/>net move?"]
+  MAT --> L2[("EFFECT<br/>ledger")]
+  L1 -. sharper .-> EVT
+  L2 -. sharper .-> EVT
+  classDef src fill:#f3e3f3,stroke:#c050c0;
+  classDef step fill:#dceaf5,stroke:#3aa0d4;
+  classDef at fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class REG,SRC src; class CAP,RES,MAT step; class EVT,SUBJ,FACT at; class L1,L2 store;
+    </div></div>
+    <p class="note">Bounded to a curated registry, never open-web guessing; data that matches nothing we track is noted, not forced onto the graph. Two ledgers because two different things can be wrong: whether the event happens, and whether, once it does, it actually moves the subject. The materiality step measures the marginal move, net of everything else happening at the same time.</p>
+  </section>
+
+  <!-- 5 LOOP together: merged graph -->
+  <section class="slide">
+    <div class="kicker">The loop, together</div>
+    <h2>The whole loop in one picture</h2>
+    <p>One closed loop that pulls in every layer: trusted sources feed the node, the engines turn its facts into a sealed call, it is acted on, the outcome trains all three ledgers and is metered for payment, and sharper confidence and predictions flow back into the node.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  REG2[("curated<br/>sources")] -->|"emerging data"| NODE
+  NODE(("THE NODE<br/>history + forward,<br/>compounding"))
+  NODE --> ENG["ENGINES<br/>analytics + calibration<br/>+ forward + materiality"]
+  ENG --> READ["THE READ / CALL<br/>cited, calibrated"]
+  READ --> ACT["acted on"]
+  ACT --> OUT["OUTCOME"]
+  OUT --> LEDG[("LEDGERS<br/>confidence &middot;<br/>resolution &middot; effect")]
+  LEDG -->|"earned + sharper predictions"| NODE
+  READ -. sealed at emission .-> SEAL["SEAL +<br/>ANCHOR"]
+  OUT -. checked vs sealed call .-> SEAL
+  ACT -. metered .-> SDK["SDK<br/>meter, settle,<br/>pay sources"]
+  classDef node fill:#dceaf5,stroke:#3aa0d4;
+  classDef step fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  classDef ver fill:#f3e3f3,stroke:#c050c0;
+  class NODE node; class ENG,READ,ACT,OUT step; class LEDG store; class SEAL,SDK,REG2 ver;
+    </div></div>
+    <p class="note">This is the engine that makes it compound, shown end to end: emerging data comes in, every read and every resolved prediction deposits an outcome, every outcome sharpens the next read and pays the sources whose data drove it, and the sealed record makes the whole thing checkable from the outside. It is the four-layer architecture from slide one, now running.</p>
+  </section>
+
+  <!-- 6 RE DEEP DIVE: overview, all four layers + ICC paid -->
+  <section class="slide">
+    <div class="kicker">Deep dive: real estate</div>
+    <h2>One parcel, all four layers, and ICC gets paid</h2>
+    <p>A real example: an investor evaluating 123 Main St for a duplex with an accessory dwelling unit. The question runs through all four layers and back, and because the answer cites ICC's building code, ICC is metered and paid for the lookup.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  Q["INVESTOR asks<br/>'duplex + ADU at<br/>123 Main St?'"] --> ENG["INTELLIGENCE<br/>zoning + hydrology<br/>+ code engines"]
+  ENG --> AT["ATOMS<br/>parcel facts,<br/>ICC code sections,<br/>pending rezone"]
+  AT --> ND["NODES<br/>parcel &middot; city &middot;<br/>code sections &middot; event"]
+  ENG --> READ["THE READ (cited)<br/>'ADU allowed, 25ft setback,<br/>~+12% if rezone passes,<br/>flood reclass is the risk'"]
+  READ -. cites ICC's code .-> GATE["SDK GATE<br/>meters the lookup,<br/>source = ICC"]
+  GATE --> PAY["SETTLEMENT<br/>pays ICC per use<br/>+ anchored receipt"]
+  PAY -->|USDC| ICC["ICC<br/>code licensor"]
+  classDef i fill:#dceaf5,stroke:#3aa0d4;
+  classDef a fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  classDef n fill:#fff3cf,stroke:#d4a200;
+  classDef s fill:#f3e3f3,stroke:#c050c0;
+  class Q,ENG,READ i; class AT a; class ND n; class GATE,PAY,ICC s;
+    </div></div>
+    <p class="note">Blue is the intelligence layer, green the atoms, gold the nodes, purple the SDK, the same four layers from the architecture slide, now running on one parcel. The next four slides open up each layer for this exact example.</p>
+  </section>
+
+  <!-- 7 RE DEEP DIVE: intelligence layer -->
+  <section class="slide">
+    <div class="kicker">Deep dive: real estate &middot; intelligence layer</div>
+    <h2>How the read is produced for 123 Main St</h2>
+    <p>Four engines each contribute a piece, calibration sets how sure each piece is, and synthesis assembles the cited, hedged answer the investor sees.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  ZON["ZONING engine<br/>R-1, ADU allowed,<br/>25ft rear setback"] --> SYN
+  HYD["HYDROLOGY engine<br/>flood zone X today,<br/>drainage adequate"] --> SYN
+  COD["CODE engine (plan-review)<br/>ICC IRC: ADU egress<br/>+ fire separation"] --> SYN
+  FWD["FORWARD engine<br/>pending rezone bill<br/>(40%, effective 2027)"] --> SYN
+  CAL["CALIBRATION<br/>earned confidence<br/>per claim type"] --> SYN
+  SYN["SYNTHESIS<br/>the cited, calibrated read<br/>with hedges"]
+  classDef e fill:#dceaf5,stroke:#3aa0d4;
+  class ZON,HYD,COD,FWD,CAL,SYN e;
+    </div></div>
+    <p class="note">The code engine is the one that reaches ICC's licensed I-Codes, and that reach is what later triggers ICC's payment. Forward and calibration are why the answer carries a probability on the rezone and an honest confidence on each claim.</p>
+  </section>
+
+  <!-- 8 RE DEEP DIVE: atoms -->
+  <section class="slide">
+    <div class="kicker">Deep dive: real estate &middot; atoms</div>
+    <h2>The actual facts behind the answer</h2>
+    <p>Three of the atoms that feed the read, each carrying its six fields. Note the ICC code atom (licensed, billable) and the anticipatory atom (forward-looking, probabilistic).</p>
+    <div class="cards">
+      <div class="card">
+        <div class="dom">A parcel fact</div>
+        <div class="cap" style="margin-top:0;">
+          <b>Claim:</b> flood zone X<br/>
+          <b>Provenance:</b> FEMA NFHL<br/>
+          <b>Confidence:</b> live, high n<br/>
+          <b>Citation:</b> NFHL panel link<br/>
+          <b>Time:</b> as of 2026<br/>
+          <b>Access:</b> public
+        </div>
+      </div>
+      <div class="card">
+        <div class="dom">An ICC code atom</div>
+        <div class="cap" style="margin-top:0;">
+          <b>Claim:</b> 25 ft rear setback<br/>
+          <b>Provenance:</b> ICC IRC, 2024 ed.<br/>
+          <b>Confidence:</b> asserted (licensor)<br/>
+          <b>Citation:</b> section deeplink<br/>
+          <b>Time:</b> 2024 edition in force<br/>
+          <b>Access + license:</b> ICC, paid
+        </div>
+      </div>
+      <div class="card">
+        <div class="dom">An anticipatory atom</div>
+        <div class="cap" style="margin-top:0;">
+          <b>Claim:</b> rezone to allow triplex<br/>
+          <b>Provenance:</b> legislature docket<br/>
+          <b>Confidence:</b> 40%, basis asserted<br/>
+          <b>Citation:</b> bill number<br/>
+          <b>Time:</b> effective 2027 if passed<br/>
+          <b>Access:</b> public
+        </div>
+      </div>
+    </div>
+    <p class="note">The ICC atom carries its license, which is what lets the SDK bill for it. The anticipatory atom carries a future date and a probability, which is what makes the read forward-looking. Every fact in the answer looks like one of these.</p>
+  </section>
+
+  <!-- 9 RE DEEP DIVE: nodes + edges -->
+  <section class="slide">
+    <div class="kicker">Deep dive: real estate &middot; nodes + edges</div>
+    <h2>The graph behind 123 Main St</h2>
+    <p>The facts hang off typed nodes connected by typed edges. The ICC code sections are their own shared nodes that many parcels point to, so the code is stored once and billed per use.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  P["PARCEL node<br/>123 Main St"] -->|located_in| J["JURISDICTION node<br/>the city"]
+  P -->|governed_by| C["CODE-SECTION nodes<br/>ICC IRC (shared)"]
+  P -->|governed_by| J
+  E["EVENT node<br/>pending rezone bill"] -->|would_affect| P
+  P2["other parcels"] -->|governed_by| C
+  classDef p fill:#fff3cf,stroke:#d4a200;
+  classDef c fill:#f3e3f3,stroke:#c050c0;
+  class P,J,P2,E p; class C c;
+    </div></div>
+    <p class="note">One ICC code node serves every parcel governed by it; amend the code once and all of them see it. Each parcel's own facts (flood, owner, lot) hang off the parcel node, not the shared code node, and the event node fans out to every parcel it would affect.</p>
+  </section>
+
+  <!-- 10 RE DEEP DIVE: SDK, ICC paid -->
+  <section class="slide">
+    <div class="kicker">Deep dive: real estate &middot; SDK</div>
+    <h2>ICC gets tracked and paid for the lookup</h2>
+    <p>The moment the read cites ICC's code, the gate meters it and attributes it to ICC. Usage accrues, settlement pays ICC its per-use share, and ICC gets an anchored receipt it can audit.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  USE["the brief cites ICC code<br/>for 123 Main St"] --> GATE["GATE<br/>meter + attribute<br/>(source = ICC)"]
+  GATE --> UL[("USAGE LEDGER<br/>ICC: +1 lookup")]
+  UL --> SET["SETTLEMENT<br/>route ICC its<br/>per-use share"]
+  SET -->|USDC payment| ICC["ICC"]
+  SET --> ANCH["ANCHOR<br/>tamper-evident receipt"]
+  ANCH -. ICC can audit .-> ICC
+  LIN["LINEAGE: if the read was<br/>derived from ICC's code,<br/>usage still attributes to ICC"] -.-> GATE
+  classDef s fill:#f3e3f3,stroke:#c050c0;
+  classDef store fill:#fff3cf,stroke:#d4a200;
+  class USE,GATE,SET,ANCH,ICC,LIN s; class UL store;
+    </div></div>
+    <p class="note">This is the working monetization example: a code body is paid per use, not per seat, with an independent receipt. The same rail pays any licensed source, a federal feed, a city's records, a data partner, whose data drives an answer.</p>
+  </section>
+
+  <!-- 12 NETWORK EFFECT part 1: the graph (cross-domain method transfer + contribution flywheel) -->
+  <section class="slide">
+    <div class="kicker">Why it compounds, part 1 of 2</div>
+    <h2>The nodes, and the methods, compound together</h2>
+    <p>Every node connects to shared ones (codes, jurisdictions, issuers), one event fans out across domains, and every outcome feeds one shared calibration. Two named effects live in this picture: the data and outcomes compound, and the engines themselves get sharper across every domain at once.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart TB
+  EVT(["EVENT: a regulatory change"])
+  ZONE["ZONING CODE"]
+  JUR["JURISDICTION"]
+  ISS["ISSUER"]
+  SEC["SECTOR / INDEX"]
+  P1["Property A"] --> ZONE
+  P2["Property B"] --> ZONE
+  ZONE --> JUR
+  P1 --> JUR
+  W1["Well #4271"] --> JUR
+  S1["Stock A"] --> ISS
+  S2["Stock B"] --> ISS
+  S1 --> SEC
+  S2 --> SEC
+  EVT -->|would_affect| P1
+  EVT -->|would_affect| W1
+  EVT -->|would_affect| S1
+  CAL[("SHARED CALIBRATION + METHODS<br/>outcomes and engines sharpen<br/>across every domain")]
+  P1 -.outcome.-> CAL
+  S1 -.outcome.-> CAL
+  W1 -.outcome.-> CAL
+  CAL -.sharper confidence.-> P2
+  CAL -.sharper confidence.-> S2
+  classDef sub fill:#dceaf5,stroke:#3aa0d4;
+  classDef hub fill:#fff3cf,stroke:#d4a200;
+  classDef evt fill:#f3e3f3,stroke:#c050c0;
+  classDef cal fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  class P1,P2,W1,S1,S2 sub;
+  class ZONE,JUR,ISS,SEC hub;
+  class EVT evt;
+  class CAL cal;
+    </div></div>
+    <p class="note"><b>Contribution flywheel:</b> usage is contribution; every outcome from anywhere sharpens the confidence of that claim type for everyone, so more use makes it better, not just more nodes. <b>Cross-domain method transfer:</b> the calibration math, the event-impact model, and the resolver improve across domains at once, the model hardened on markets lifts real estate, which almost no data company gets because their methods are domain-locked.</p>
+  </section>
+
+  <!-- 13 NETWORK EFFECT part 2: marketplace for digital assets (two-sided flywheel) -->
+  <section class="slide">
+    <div class="kicker">Why it compounds, part 2 of 2</div>
+    <h2>A marketplace for verifiable digital assets</h2>
+    <p>The same metering and settlement rail opens into a two-sided market. Many sellers list verifiable digital assets; many buyers pay per use; the marketplace verifies, meters, matches, settles, and anchors. More buyers attract more sellers and the reverse, the two-sided flywheel.</p>
+    <div class="diagram"><div class="mermaid">
+flowchart LR
+  subgraph SUP["SELLERS / HOLDERS"]
+    direction TB
+    DP1["Code body (ICC)"]
+    DP2["City / public records"]
+    DP3["Data partner / feed"]
+    DP4["A user's signal or strategy<br/>(verifiable track record)"]
+    DP5["Asset-right holder<br/>(well interest, etc.)"]
+  end
+  subgraph MK["THE MARKETPLACE (the gate)"]
+    direction TB
+    V["verify license + terms"]
+    M["meter + attribute"]
+    X["match + price discovery"]
+    SE["settle in USDC"]
+    AN["anchor receipts"]
+  end
+  subgraph DEM["BUYERS / CONSUMERS"]
+    direction TB
+    B1["AI agents"]
+    B2["Apps (Property Brief, trading)"]
+    B3["Enterprises"]
+    B4["Other users"]
+  end
+  SUP -->|"list verifiable assets"| MK
+  DEM -->|"request + pay per use"| MK
+  MK -->|"cited, licensed answers"| DEM
+  MK -->|"payment + anchored receipt"| SUP
+  classDef sup fill:#f3e3f3,stroke:#c050c0;
+  classDef mk fill:#dceaf5,stroke:#3aa0d4;
+  classDef dem fill:#eef7ee,stroke:#5aa05a,color:#2f6b2f;
+  class DP1,DP2,DP3,DP4,DP5 sup;
+  class V,M,X,SE,AN mk;
+  class B1,B2,B3,B4 dem;
+    </div></div>
+    <p class="note"><b>Two-sided flywheel:</b> more consumers create more usage and revenue, which attracts more data providers because they get paid, which enriches the catalog, which attracts more consumers. Plus a liquidity effect: more buyers and sellers mean better price discovery, which pulls in more of both. Each asset class (data, signals, asset rights) runs its own version of this market.</p>
+  </section>
+
+</div>
+
+<nav>
+  <button id="prev">Prev</button>
+  <button id="next">Next</button>
+</nav>
+<div class="hint">Arrow keys to navigate</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let i = 0;
+  document.getElementById('total').textContent = slides.length;
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    document.getElementById('num').textContent = i + 1;
+  }
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { show(i + 1); e.preventDefault(); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(i - 1); e.preventDefault(); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+  show(0);
+</script>
+
+</body>
+</html>
