@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-06-25
+title: Current state snapshot — 2026-07-01
 status: active
-last_updated: 2026-06-25
+last_updated: 2026-07-01
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,12 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-07-01 — Cortex tile workspace live in local dev; QA in progress
+
+Cortex-reporting configurable tile workspace built and running at `localhost:19592/codex-reviewer-qa/`. Three cc-agent-C PRs landed: tile shell (TileDef registry, GridCanvas CSS-grid layout, SpaceBar preset pills, ResizeHandle), CSS variable and layout fixes, reviewer BFF ownership bypass (PR #207 — `loadReviewerBffEngagement()` replaces owner-scoped `loadEngagementForSession()` on all plan-review BFF engagement routes). Deployed to `cortex-api-00254-tad` at 100% traffic. Queue shows 31 real production engagements; clicking a row loads engagement context into the Compliance Run tile, which shows submissions and findings with IRC 2021 code citations and Accept/Edit/Reject. Four preset spaces registered: Plan Review, Site Analysis, Property Intel, Design Accelerator.
+
+In-flight (cc-agent-C): map tile URL fix (VITE_HAUSKA_MAP_URL not set — iframe shows broken image), confidence NaN% display fix, save-space localStorage wiring. PR pending merge and deploy. Self-contained project reference for the QA sprint lives at [`_projects/cortex_workspace_qa/`](_projects/cortex_workspace_qa/00_status.md). Next: Letter tile dispatch, then full side-by-side QA with hauska-map command center. Spec: [`48_cortex_reporting_function_dashboard_spec.md`](48_cortex_reporting_function_dashboard_spec.md). Session: [`_sessions/2026-07-01_design-accelerator_planner.md`](_sessions/2026-07-01_design-accelerator_planner.md).
 
 ## 2026-06-25 — Wave 4 fuel landed, M1 is the live gate, calibration ground-truth corrected
 
