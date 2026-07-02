@@ -30,10 +30,35 @@ Precedence: already resolved on the live revision (PRECEDENCE_ENGINE_PRODUCTION=
 Phase-1 deploy safety: T1 -> engine-api, T2/T3 -> cortex-api, T4 -> npm — three distinct targets, no
 canary races. Map-overlay end-to-end draw is gated on T4 publishing 0.1.1 + a cortex bump (small follow-up).
 
-## Phase 2 — the experience layer (QUEUED, after Phase 1 verified)
+## Phase 2 — the experience layer (RUNNING 2026-07-02)
 
-- Layout v2: edit/view fuse-together, functions-drawer snap + reflow, non-card/list render, server-persisted shareable spaces (adapt empressa-trading admin + edit-mode).
-- New functions: Dataroom/Files tile (GCS, from IP counsel deck); Module Map surface (what each tile does + persona per module); absorb trading-app admin components into the spine console (operator/admin surface; distinct from the product workspace).
+| Track | Repo | Status | Scope |
+|-------|------|--------|-------|
+| P2-shell | legacy-design-tools / cortex-api | RUNNING | prominent header search + autocomplete; edit/view fuse-together (.fs-seamless); dock-back + template reflow; non-card list/report layout; server-persisted shareable spaces (tenant-private-ready schema); Module Map surface (tile + persona) |
+| P2-spine | hauska-map (console 5174) | RUNNING | lift trading-app admin Control Tower skeleton (ControlCenterLayout + PanelRegistry) into the spine console; wire 2-3 panels live (atoms/runs/calibration) vs our APIs; rest stubbed |
+| Dataroom + file->atom | legacy-design-tools + hauska-engine | DEFERRED to post-deep-review | Dataroom/Files tile (GCS) + the engine unstructured->atom ingestion. Built to the shape the deep review recommends (embed-with-atom vs atom-points-to-blob), not guessed. |
+
+## Deep review (RUNNING 2026-07-02) — feeds Phase 3 shape
+
+3 read-only analyst agents -> planner synthesizes into _research/2026-07-02_ai_native_and_twin_review.md:
+- DR-1 AI-native audit: atoms/MCP/semantic-retrieval/agent-write-back/**unstructured->atom design**/VDA/eval.
+- DR-2 architecture-at-scale: tenancy-auth gap (critical path), spine<->BFF decoupling, calibration loop, cost/caching, failure modes.
+- DR-3 twin/node/customer: node-as-aggregator + tenant-private overlays; **private operational data (utility/3D-BIM/IoT sensors) as atoms**; the **digital-twin-creator customer persona** (pursue/park/shape).
+
+## Phase 3 (tenancy + twin) — shaped by the deep review, not yet built
+
+- Auth/tenancy build (per-user, tenant-private isolation) — the critical path.
+- Property node as first-class aggregator; digital-twin lifecycle (resolve -> public base -> engagement -> private operational overlays -> bitemporal versioning).
+- Per-investor private atom collections on shared nodes.
+- Twin-creator customer persona (if the review says pursue).
+
+## Running pickup / backlog (reconcile later)
+
+Operator-gated: (1) set NPM_TOKEN on hauska-map -> map overlays draw (step-by-step given); (2) bring ICC OpenAPI spec -> real I-Code ingest (step-by-step given).
+Quality follow-ups (work degraded now): hydrology DEM->GeoTIFF; pin Docker wheels; remove cosmetic dead degradedReason on hydrology tile.
+Design/canonical: write the digital-twin lifecycle ADR; refine the twin with private-operational-data + twin-creator persona (deep review).
+Not this wave: ~13 PLANNED tiles (stormwater, cut-fill, solar, viewshed, climate-risk, insurance, pro-forma, deal-score, motivated-seller, rehab, permit-AHJ-precedent, code-change-broadcast, jurisdiction-comparison).
+Map overlays end-to-end: publish 0.1.1 (needs NPM_TOKEN) + one-line cortex bump.
 
 ## Operator items
 
