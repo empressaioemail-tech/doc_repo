@@ -36,7 +36,7 @@ Wave 4:              G (print/export deliverable)          [waits F]
 
 | Track | Repo | Status | PR | Deploy | Notes |
 |-------|------|--------|----|--------|-------|
-| A | hauska-map | RUNNING (v2, React package) | - | - | Operator chose full React package model 2026-07-01. Repo is vanilla JS, so this ports working E6 MapLibre logic into a React+TS @hauska/map-renderer package. OffscreenCanvas worker spiked first (agent flagged it as unproven); falls back to supported CSP-safe render inside the package if the worker path fails. Hard gate: map must actually render before merge. CONSEQUENCE: DNS/CNAME now UNNECESSARY (package = no running server). CONSEQUENCE: Track C MapTile will import the package, overriding the cortex tile dispatch's iframe instruction. |
+| A | hauska-map | COMPLETE — merged | #2 | package-only | @hauska/map-renderer@0.1.0 React+TS package; render proven in headless Chrome (live WebGL2, all fixture layers, zero CSP/worker exceptions). OffscreenCanvas worker spiked and REJECTED (MapLibre v5 Map has no OffscreenCanvas option) -> main-thread canvas fallback (working E6 path). DNS/CNAME confirmed UNNECESSARY. NOT published to npm (no credential available) -> Track C uses Mapbox fallback; publish + import swap is a credential-gated follow-up (see bottom). |
 | B | legacy-design-tools | COMPLETE — merged | #210 | n/a (infra) | 5 @hauska packages scaffolded; CI green (Typecheck+Test); reviewer PASS on all 6 criteria; codex-reviewer-qa still starts. ADR-024 filed. |
 | C | legacy-design-tools | RUNNING (Wave 2) | - | - | tile migration; map tile imports @hauska/map-renderer if published else Mapbox fallback; produces TileDef capability fields for Track E; rebases before merge (shares TILE_REGISTRY with D) |
 | D | legacy-design-tools | RUNNING (Wave 2) | - | - | document-viewer; PDF/DWG/annotation; engagement_annotations DB migration; APS AUTH-001 fallback to LibreOffice; rebases before merge (shares TILE_REGISTRY with C) |
@@ -46,17 +46,33 @@ Wave 4:              G (print/export deliverable)          [waits F]
 
 ## Findings for the operator
 
-1. DNS action is LAST and likely OPTIONAL. Track A makes the map an importable package
-   (`@hauska/map-renderer`), so the cortex workspace map tile needs no running map server.
-   `hauska-map` is not currently deployed as a Cloud Run service. Track A's close report will
-   state definitively whether any service URL exists to CNAME `map.hauska.io` at, or whether the
-   map is package-only and no DNS action is needed. Do nothing on DNS until then.
+1. DNS action is DEAD. Track A shipped the map as an importable React package
+   (`@hauska/map-renderer@0.1.0`), so the cortex workspace map tile needs no running map server
+   and no `map.hauska.io` CNAME. The one manual action you were originally told about no longer
+   exists.
 
-2. Track A "push owed" note was stale — the E6 work is already on origin/main.
+2. Track A "push owed" note was stale — the E6 work was already on origin/main.
 
-## The one manual step (do at the very end, only if Track A says a service exists)
+3. NEW residual (replaces DNS): `@hauska/map-renderer` is not on npm and there is no npm
+   credential in this environment or in CI (org/repo Actions secrets empty; local npm 401), so I
+   cannot publish it autonomously. Track C therefore ships the map tile on the functional Mapbox
+   fallback behind the same TileDef interface, with a one-line import seam. This does not block
+   the sprint — the map works either way. See the follow-up step below.
+
+## The one residual operator action (optional, non-blocking — do whenever)
+
+Not required for the sprint to be done and working. It swaps the workspace map tile from the
+Mapbox fallback to the unified `@hauska/map-renderer` package. Provide an npm credential for the
+`@hauska` scope, then publish and swap:
 
 ```bash
-gcloud run services describe hauska-map --project hauska-prod-497015 --region us-central1 --format 'value(status.url)'
-# then create CNAME:  map.hauska.io -> <that URL without https://>
+# from a machine with npm auth for the @hauska scope:
+cd hauska-map/packages/map-renderer
+npm publish --access public          # publishes @hauska/map-renderer@0.1.0
+# then in legacy-design-tools, the map tile's import seam swaps from the Mapbox fallback
+# to: import { FloatingMap } from "@hauska/map-renderer"   (props: center, visibleLayers,
+# parcel, onParcelSelect, floating={false}; peer deps react/react-dom >=18)
 ```
+
+Alternatively, set an `NPM_TOKEN` Actions secret on hauska-map and I can add a publish workflow
+and automate it on the next session.
