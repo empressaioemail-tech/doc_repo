@@ -8,6 +8,14 @@ applies_to: design-accelerator
 
 # Open items and next waves
 
+> **2026-07-01 — QA paused. Shared Surface Sprint dispatched.**
+>
+> After two QA rounds, the architectural decision was made to extract all reusable UI as versioned npm packages before continuing QA. The map tile, tile shell, and report components must be packages first so fixes propagate everywhere. Seven track dispatches cover the full sprint. Handoff guide at `_dispatches/2026-07-01_shared-surface-sprint-handoff-guide.md`. Architecture at `_architecture_homes/shared_surface_principle.md`.
+>
+> Waves 1-4 below were the pre-sprint QA queue. Waves 1-2 were completed by cc-agent-C (close reports in `_inbox/`). Waves 3-4 are superseded by Track C (tile migration) which addresses L3 route scoping and grid layout as part of the package extraction.
+>
+> Resume QA after all seven tracks close.
+
 Work is ordered: each wave unblocks the next. Do not start Wave 2 until Wave 1 is merged and deployed.
 
 ## Wave 1 (in flight — cc-agent-C)
