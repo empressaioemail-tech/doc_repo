@@ -36,7 +36,8 @@ canary races. Map-overlay end-to-end draw is gated on T4 publishing 0.1.1 + a co
 |-------|------|--------|-------|
 | P2-shell | legacy-design-tools / cortex-api | RUNNING | prominent header search + autocomplete; edit/view fuse-together (.fs-seamless); dock-back + template reflow; non-card list/report layout; server-persisted shareable spaces (tenant-private-ready schema); Module Map surface (tile + persona) |
 | P2-spine | hauska-map (console 5174) | RUNNING | lift trading-app admin Control Tower skeleton (ControlCenterLayout + PanelRegistry) into the spine console; wire 2-3 panels live (atoms/runs/calibration) vs our APIs; rest stubbed |
-| Dataroom + file->atom | legacy-design-tools + hauska-engine | DEFERRED to post-deep-review | Dataroom/Files tile (GCS) + the engine unstructured->atom ingestion. Built to the shape the deep review recommends (embed-with-atom vs atom-points-to-blob), not guessed. |
+| file->atom (engine) | hauska-engine / engine-api | RUNNING | document-ingest stream per the deep-review design: point-to primary + embed-with for small text; per-type adapters (RawPdfAdapter reuse); asserted-baseline confidence; accessPolicy parameterized (blob tenant-private, extracted atoms default tenant-private, public-paid only for marketplace ingests = the firewall); idempotent; POST /v1/document-ingest endpoint |
+| Dataroom tile | legacy-design-tools / cortex-api | QUEUED (after P2-shell merge + engine ingest) | Dataroom/Files workspace tile (GCS uploads) composing files with their extracted cited atoms; consumes the engine ingest endpoint |
 
 ## Deep review (RUNNING 2026-07-02) — feeds Phase 3 shape
 
@@ -45,12 +46,10 @@ canary races. Map-overlay end-to-end draw is gated on T4 publishing 0.1.1 + a co
 - DR-2 architecture-at-scale: tenancy-auth gap (critical path), spine<->BFF decoupling, calibration loop, cost/caching, failure modes.
 - DR-3 twin/node/customer: node-as-aggregator + tenant-private overlays; **private operational data (utility/3D-BIM/IoT sensors) as atoms**; the **digital-twin-creator customer persona** (pursue/park/shape).
 
-## Phase 3 (tenancy + twin) — shaped by the deep review, not yet built
+## Phase 3 (tenancy + twin) — PLAN DRAFTED for operator review (not executing)
 
-- Auth/tenancy build (per-user, tenant-private isolation) — the critical path.
-- Property node as first-class aggregator; digital-twin lifecycle (resolve -> public base -> engagement -> private operational overlays -> bitemporal versioning).
-- Per-investor private atom collections on shared nodes.
-- Twin-creator customer persona (if the review says pursue).
+Plan: _inbox/2026-07-02_phase3_tenancy_sprint_plan.md (extends 54_tenant_leg_sprint). Critical path from DR-2: T1 gate as single reasoning chokepoint -> T2 tenant-private write/owned-collection primitive (54 step 2) -> T3 second real tenant + ADR-005 Layer B zero-cross-leak load test. Supporting: identity/auth (user->tenant), ops hardening (instances/secrets/Neon), node aggregator + twin lifecycle ADR (DR-3). Security-critical: reviewed + load-tested, not rushed. Awaiting operator go before any build.
+Twin-creator persona: pursue-as-embedder (existing motion) / park-as-hosted-twin (Mox proves first).
 
 ## Running pickup / backlog (reconcile later)
 
