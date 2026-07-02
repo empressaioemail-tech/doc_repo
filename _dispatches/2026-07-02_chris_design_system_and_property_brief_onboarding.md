@@ -98,6 +98,19 @@ Hosting status (checked 2026-07-02 — NOT done, this is scope, not built):
 - Contribution flow (from the handoff doc): work on a branch, PR, CI green, squash-merge; the workspace app deploys via a canary sequence. Push branches early. Never `git add -A` in the shared doc_repo.
 - Constraints: keep the Property Brief's colors/brand; one token system; no hardcoded colors in packages; every tile keeps an error boundary and supports render modes.
 
+## Record your work in the repos (same discipline as the engineering fleet)
+
+Everything you and your agent do must be recorded in the repos so the planner and operator can track and reconcile it. This is a hard requirement, not optional:
+
+- Work on a branch; open a PR; get CI green; squash-merge. Never commit straight to main on the product repos. Push your branch to origin right after the first commit (do not leave work only on a local/tmp clone).
+- File a close report to doc_repo `_inbox/` for each meaningful piece of work — a short markdown note: what shipped, the PR link(s), any deploy revision, decisions made, and what remains. Name it `_inbox/<YYYY-MM-DD>_<repo>_<topic>_close.md`. This is how the planner picks your work up.
+- When you change design state, update the canonical docs: the design-system home is `_architecture_homes/shared_surface_principle.md` (the `--h-*` token set lives there); bump its `last_updated`. If the tile registry status changes, reflect it.
+- Log design DECISIONS (the consumer theme, brand choices, token changes, the Property-Brief theme variant) as a decision record in doc_repo `_decisions/<YYYY-MM-DD>_<slug>.md` so they enter company memory rather than living only in chat.
+- Use clear commit messages. Keep the `--h-*` token discipline (no hardcoded colors inside packages). If you touch doc_repo, stage explicit paths (never `git add -A` — it is a shared clone) and check `git log -1` before committing.
+- Every published package change is a version bump plus a re-publish; record which version shipped in your close report.
+
+The planner (this doc_repo agent) will read your close reports and keep `00_current_state.md` current. If you file nothing, your work is invisible to the rest of the fleet.
+
 ## Operator-owed unblocks (so Chris is not stuck)
 
 - Grant Chris/his agent access to the private repos.
