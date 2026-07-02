@@ -40,9 +40,9 @@ Wave 4:              G (print/export deliverable)          [waits F]
 | B | legacy-design-tools | COMPLETE — merged | #210 | n/a (infra) | 5 @hauska packages scaffolded; CI green (Typecheck+Test); reviewer PASS on all 6 criteria; codex-reviewer-qa still starts. ADR-024 filed. |
 | C | legacy-design-tools | COMPLETE — merged | #211,#213 | cortex-api-00267-zol @100% | tile migration; 46/46 TileDef entries have all 4 capability fields; every tile error-boundary-wrapped; map tile on Mapbox fallback (swap seam in MapTile.tsx pending map-renderer publish). Reviewer caught+fixed 2 infra defects (workspace export condition, vite resolver). |
 | D | legacy-design-tools | COMPLETE — merged | #212 | cortex-api-00267-zol @100% | document-viewer; migration 0048_engagement_annotations APPLIED to live Neon (table LIVE -> Track F unblocked); APS fell back to named 501 aps_not_configured (no creds/LibreOffice), DWG-3D deferred. |
-| C-bridge | legacy-design-tools | RUNNING | - | - | Exposes the 46-entry capability registry over HTTP (new /admin/tile-registry route + shared React-free data module) so Track E's compose_workspace can fetch it. Track E dispatch's /admin/functions endpoint is status-only. Blocks E. |
-| E | hauska-mcp-server | QUEUED | - | - | waits C-bridge (needs the live capability-registry endpoint + auth); different service from cortex-api so runs parallel to F |
-| F | legacy-design-tools | QUEUED | - | - | unblocked by D, but waits C-bridge DEPLOY to avoid cortex-api canary race; confidence must be kind:'asserted' |
+| C-bridge | legacy-design-tools | COMPLETE — merged | #214,#216 | cortex-api-00271-hex @100% | Live endpoint GET /api/plan-review/admin/tile-registry returns 46/46 entries with all 4 capability fields. Auth: Bearer SERVICE_API_KEY. Shared React-free TILE_CAPABILITIES in @hauska/cortex-client + drift test; /admin/functions untouched. (Intermediate PR #215 boot-crash caught by canary at 0%, never hit prod; #216 fixed.) |
+| E | hauska-mcp-server | RUNNING (Wave 3) | - | - | compose_workspace under reporting gate; fetches live /admin/tile-registry with Bearer SERVICE_API_KEY at invocation time; parallel to F (different service) |
+| F | legacy-design-tools | RUNNING (Wave 3) | - | - | AI annotation vision->coordinate pipeline; HARD gates: idempotent generation + confidence kind:'asserted'; rebased on d5eace1; APS/3D deferred (creds-gated) |
 | G | legacy-design-tools | QUEUED | - | - | waits Track F; final deliverable export |
 
 ## Findings for the operator
