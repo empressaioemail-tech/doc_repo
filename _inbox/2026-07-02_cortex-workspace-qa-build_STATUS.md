@@ -63,7 +63,7 @@ Operator-gated: (1) set NPM_TOKEN on hauska-map -> map overlays draw (step-by-st
 Quality follow-ups (work degraded now): hydrology DEM->GeoTIFF; pin Docker wheels; remove cosmetic dead degradedReason on hydrology tile.
 Design/canonical: write the digital-twin lifecycle ADR; refine the twin with private-operational-data + twin-creator persona (deep review).
 Not this wave: ~13 PLANNED tiles (stormwater, cut-fill, solar, viewshed, climate-risk, insurance, pro-forma, deal-score, motivated-seller, rehab, permit-AHJ-precedent, code-change-broadcast, jurisdiction-comparison).
-Map overlays end-to-end: publish 0.1.1 (needs NPM_TOKEN) + one-line cortex bump.
+Map overlays end-to-end: DONE 2026-07-02 — NPM_TOKEN set, @hauska/map-renderer@0.1.1 published, cortex bumped (PR #223) + deployed cortex-api-00286-xic. Overlays draw (code+API verified; first live browser open is the only human check). Cosmetic nits: HazardProfileTile pushes no map overlay (hazard flood overlay comes from Hydrology); drainage-zones has no legend entry.
 Spine atom durability: code/reasoning atoms are still in-memory/snapshot in the engine (only document-ingest atoms are now pg-durable) — a separate storage-migration sprint; matters for the durable-spine / AI-native story.
 Engine gate token: ENGINE_API_GATE_TOKEN unset (gate-service bearer dev-disabled) — fold into Phase-3 gate-chokepoint work.
 
