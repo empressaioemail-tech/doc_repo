@@ -43,7 +43,13 @@ Wave 4:              G (print/export deliverable)          [waits F]
 | C-bridge | legacy-design-tools | COMPLETE — merged | #214,#216 | cortex-api-00271-hex @100% | Live endpoint GET /api/plan-review/admin/tile-registry returns 46/46 entries with all 4 capability fields. Auth: Bearer SERVICE_API_KEY. Shared React-free TILE_CAPABILITIES in @hauska/cortex-client + drift test; /admin/functions untouched. (Intermediate PR #215 boot-crash caught by canary at 0%, never hit prod; #216 fixed.) |
 | E | hauska-mcp-server | COMPLETE — merged | #34 | hauska-mcp-server-00008-mcr @100% | compose_workspace live (59 tools); gate is `cortex` NOT `reporting` (dispatch was off — live enum is public/codex/cortex, cortex IS the reporting package per ADR-008; reporting would be unreachable). E2E verified (compliance-run+hazard returned). Fixed a real relevance-scorer bug (stop-word noise) with regression test. No new secrets (reused LEGACY_BACKEND_URL + service key). |
 | F | legacy-design-tools | COMPLETE — merged | #217 | cortex-api-00273-kid @100% | AI annotation vision->coordinate pipeline (claude-haiku-4-5). BOTH hard gates confirmed via DB-backed tests: idempotent (2 runs -> 1 annotation) + confidence kind:'asserted'. Reviewer caught+fixed a HIGH pointer-events bug. APS/3D display wired but creds-gated/deferred. AI annotations in engagement_annotations (author='ai'). |
-| G | legacy-design-tools | RUNNING (Wave 4, FINAL) | - | - | full assembleDeliverable (pdf-lib): title page + annotated plan pages (numbered red circles) + findings summary + letter; GCS presigned 24h URL; replaces Track D stub. Rebased on 0542f581. |
+| G | legacy-design-tools | COMPLETE — merged | #218 | cortex-api-00275-hij @100% | full assembleDeliverable (pdf-lib): title page (brand footer byte-exact) + annotated plan pages (numbered callouts, verified on correct pages) + findings summary + letter; GCS presigned 24h URL; replaces Track D stub. All 4 acceptance checks PASS (export 23ms/10pp). Phase 2 UX (browser download, SpaceBar export, Print preset) shipped same PR. |
+
+## SPRINT DONE — 2026-07-02
+
+All seven tracks (A-G) plus C-bridge closed, merged, and live in production. Verified: 3 repo tips at correct merge commits; all 10 PRs MERGED; cortex-api serving 00275-hij @100% (Ready), hauska-mcp-server serving 00008-mcr @100% (Ready). ADR-024 filed. Session summary: _sessions/2026-07-02_shared_surface_sprint_execution_claude_code.md.
+
+Only residual (non-blocking): publish @hauska/map-renderer to npm (needs a credential) then one-line swap in MapTile.tsx to move the map tile off the Mapbox fallback. The originally-owed DNS action is RETIRED (package model needs no running map server).
 
 ## Findings for the operator
 

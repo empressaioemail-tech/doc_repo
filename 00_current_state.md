@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-07-01
+title: Current state snapshot — 2026-07-02
 status: active
-last_updated: 2026-07-01
+last_updated: 2026-07-02
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -11,11 +11,21 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
 
+## 2026-07-02 — Shared Surface Sprint COMPLETE (all 7 tracks live in prod)
+
+The seven-track sprint shipped end to end, executed autonomously by the planner as master orchestrator (courier model collapsed: one lead agent per track, each spawning its own build + adversarial-review sub-agents, merging its own PR on a green verdict, and deploying). All ten PRs merged; serving in prod: `cortex-api-00275-hij` at 100% (legacy-design-tools: Tracks B, C, D, C-bridge, F, G) and `hauska-mcp-server-00008-mcr` at 100% (Track E). Session: [`_sessions/2026-07-02_shared_surface_sprint_execution_claude_code.md`](_sessions/2026-07-02_shared_surface_sprint_execution_claude_code.md). ADR filed: [`80_adrs/adr_024_shared_surface_package_architecture.md`](80_adrs/adr_024_shared_surface_package_architecture.md). Live tracker + close reports: [`_inbox/2026-07-01_shared-surface-sprint_STATUS.md`](_inbox/2026-07-01_shared-surface-sprint_STATUS.md).
+
+Shipped: `@hauska/map-renderer` React package (hauska-map #2, render-verified WebGL2); the five-package workspace (#210); tile+shell migration with 46/46 capability-field TileDefs and per-tile error boundaries (#211/#213); `@hauska/document-viewer` + DocumentViewerTile + migration 0048_engagement_annotations applied to prod (#212); a live capability-registry endpoint `GET /api/plan-review/admin/tile-registry` (#214/#216); the `compose_workspace` MCP tool under the cortex gate (#34); the AI vision-to-coordinate annotation pipeline with idempotency + confidence kind:'asserted' both test-proven (#217); and the full pdf-lib deliverable export with GCS presigned URL (#218).
+
+Decisions during the run: map built as the React package model (operator call), which RETIRES the map.hauska.io DNS action (a package needs no running map server); OffscreenCanvas worker rejected after a spike (MapLibre v5 has no such option) in favor of a main-thread canvas; a bridge track added the registry HTTP route because Track C kept TILE_REGISTRY app-side; the MCP tool gated under `cortex` (not the dispatch's unreachable "reporting"). The adversarial gate caught real defects pre-merge including a pg-to-ESM boot crash that failed the canary at 0% and never reached prod.
+
+Residual (non-blocking, replaces the DNS action): `@hauska/map-renderer` is unpublished (no npm credential in env or CI), so the workspace map tile runs on the existing Mapbox/iframe fallback behind a swap seam. Publishing the package + a one-line import swap completes the map integration whenever an npm credential is provided. QA at `localhost:19592/codex-reviewer-qa/` can now resume against the packaged surface.
+
 ## 2026-07-01 — Shared Surface Sprint dispatched; QA paused pending package extraction
 
 Seven-track sprint to extract all shared UI into versioned npm packages. Architecture: `_architecture_homes/shared_surface_principle.md`. Governing principle: any UI component appearing in more than one product surface ships as a package. No iframes; auth injected via `createCortexClient`. Six package families: `@hauska/design-tokens`, `@hauska/tile-shell`, `@hauska/map-renderer`, `@hauska/document-viewer`, `@hauska/cortex-client`, `@hauska/cortex-tiles`. One `compose_workspace` MCP tool added to hauska-mcp-server. AI annotation pipeline (vision-to-coordinate via claude-haiku) and print/export deliverable PDF included. Execution order: Track A (map-renderer extraction, hauska-map) + Track B (scaffold, legacy-design-tools) in parallel; then Track C (tile migration) + Track D (document viewer) parallel; then Track E (MCP, cc-agent-M), Track F (AI annotation), Track G (export) sequential. Handoff guide with all copy-paste agent prompts: `_dispatches/2026-07-01_shared-surface-sprint-handoff-guide.md`. QA at `localhost:19592/codex-reviewer-qa/` resumes after all seven tracks close. Session: `_sessions/2026-07-01_shared-surface-sprint-dispatch_claude_code.md`.
 
-Operator action owed: after Track A closes, set `map.hauska.io` DNS CNAME to the hauska-map Cloud Run URL. This unblocks the map tile in production without an env var override.
+Operator action owed: after Track A closes, set `map.hauska.io` DNS CNAME to the hauska-map Cloud Run URL. [RETIRED 2026-07-02 — Track A shipped the map as a package, not a running service; no DNS action needed. See the 2026-07-02 completion section above.]
 
 ## 2026-07-01 — Cortex tile workspace live in local dev; QA in progress
 
