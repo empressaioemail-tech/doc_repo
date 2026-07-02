@@ -2,7 +2,7 @@
 id: adr_024_shared_surface_package_architecture
 title: "ADR-024 — Shared surface package architecture"
 status: accepted
-last_updated: 2026-07-01
+last_updated: 2026-07-02
 applies_to: portfolio
 related: [shared_surface_principle, adr_008_engine_factor_out, adr_018_atom_contract_substrate_layer, 28_mcp_first_product_design, 48_cortex_reporting_function_dashboard_spec, 51_substrate_v1_sprint]
 owner: nick
@@ -43,6 +43,8 @@ A single monolithic UI package was rejected because it forces every consumer to 
 ## Consequences
 
 The `map.hauska.io` CNAME is no longer required for the workspace map tile, because a package needs no running map server. The iframe MapTile path in the cortex tile build dispatch is superseded by the package. Downstream surfaces (the Brief extension, the Mox demo, SmartCity) import the same tile components and inject their own auth strategy. The `compose_workspace` MCP tool reads the live capability registry produced by the tile migration.
+
+**Implementation status (2026-07-02).** `@hauska/map-renderer@0.1.0` is published to npm. The cortex workspace `MapTile` consumes it via `FloatingMap` (legacy-design-tools PR #219, deployed on `cortex-api-00277-gun`). Overlay rendering via the package `overlays` prop is deferred to 0.1.1 (`setOverlays` not yet implemented on the renderer).
 
 ## Reversal criteria
 

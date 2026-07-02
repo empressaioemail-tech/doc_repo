@@ -53,6 +53,16 @@ The adversarial gate was not ceremonial. It caught and forced fixes for: a dangl
 
 Minor: an unauthenticated POST to /export returns HTTP 500 rather than 401/404 for a bogus engagement id, matching pre-existing behavior on the /annotations and /documents routes. Not a sprint regression; a small robustness cleanup for the plan-review BFF anonymous path.
 
+## Addendum (same day) — map-renderer residual closed
+
+The publish + swap + deploy residual above is CLOSED. Close report: [`_inbox/2026-07-02_legacy-design-tools_map-renderer-publish-swap-deploy_close.md`](../_inbox/2026-07-02_legacy-design-tools_map-renderer-publish-swap-deploy_close.md).
+
+- **npm:** `@hauska/map-renderer@0.1.0` published (hauska-sdk account).
+- **Consumer:** legacy-design-tools PR #219 merged (`f69f8c4`); `MapTile` renders `FloatingMap` from the package.
+- **Prod:** `cortex-api-00277-gun` at 100% (canary sequence on merge SHA; healthz smoke passed).
+
+Investigation during swap prep found the iframe path was inert: `map.hauska.io` never read engagement query params and had no `message` listener, so overlay postMessages were no-ops. The package swap is a net improvement (parcel `flyTo` works for the first time). **Remaining open:** wire `overlays` prop in map-renderer 0.1.1 (`setOverlays` on `createMapRenderer`); set `NPM_TOKEN` on hauska-map for CI publish.
+
 ## Verification
 
 All three repo main tips are at the correct merge commits; all ten sprint PRs are MERGED; cortex-api serves 00275-hij at 100% (Ready) and hauska-mcp-server serves 00008-mcr at 100% (Ready), confirmed via gcloud; all eight close reports are filed in _inbox/. Live endpoint curls were not runnable from the planner shell (no HTTPS egress), so endpoint health rests on each deploy workflow's own prod smoke check plus the C-bridge agent's independent registry curl.
