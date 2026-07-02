@@ -38,10 +38,11 @@ Wave 4:              G (print/export deliverable)          [waits F]
 |-------|------|--------|----|--------|-------|
 | A | hauska-map | COMPLETE — merged | #2 | package-only | @hauska/map-renderer@0.1.0 React+TS package; render proven in headless Chrome (live WebGL2, all fixture layers, zero CSP/worker exceptions). OffscreenCanvas worker spiked and REJECTED (MapLibre v5 Map has no OffscreenCanvas option) -> main-thread canvas fallback (working E6 path). DNS/CNAME confirmed UNNECESSARY. NOT published to npm (no credential available) -> Track C uses Mapbox fallback; publish + import swap is a credential-gated follow-up (see bottom). |
 | B | legacy-design-tools | COMPLETE — merged | #210 | n/a (infra) | 5 @hauska packages scaffolded; CI green (Typecheck+Test); reviewer PASS on all 6 criteria; codex-reviewer-qa still starts. ADR-024 filed. |
-| C | legacy-design-tools | RUNNING (Wave 2) | - | - | tile migration; map tile imports @hauska/map-renderer if published else Mapbox fallback; produces TileDef capability fields for Track E; rebases before merge (shares TILE_REGISTRY with D) |
-| D | legacy-design-tools | RUNNING (Wave 2) | - | - | document-viewer; PDF/DWG/annotation; engagement_annotations DB migration; APS AUTH-001 fallback to LibreOffice; rebases before merge (shares TILE_REGISTRY with C) |
-| E | hauska-mcp-server | QUEUED | - | - | waits Track C (needs TileDef capability fields) |
-| F | legacy-design-tools | QUEUED | - | - | waits Track D; confidence must be kind:'asserted' |
+| C | legacy-design-tools | COMPLETE — merged | #211,#213 | cortex-api-00267-zol @100% | tile migration; 46/46 TileDef entries have all 4 capability fields; every tile error-boundary-wrapped; map tile on Mapbox fallback (swap seam in MapTile.tsx pending map-renderer publish). Reviewer caught+fixed 2 infra defects (workspace export condition, vite resolver). |
+| D | legacy-design-tools | COMPLETE — merged | #212 | cortex-api-00267-zol @100% | document-viewer; migration 0048_engagement_annotations APPLIED to live Neon (table LIVE -> Track F unblocked); APS fell back to named 501 aps_not_configured (no creds/LibreOffice), DWG-3D deferred. |
+| C-bridge | legacy-design-tools | RUNNING | - | - | Exposes the 46-entry capability registry over HTTP (new /admin/tile-registry route + shared React-free data module) so Track E's compose_workspace can fetch it. Track E dispatch's /admin/functions endpoint is status-only. Blocks E. |
+| E | hauska-mcp-server | QUEUED | - | - | waits C-bridge (needs the live capability-registry endpoint + auth); different service from cortex-api so runs parallel to F |
+| F | legacy-design-tools | QUEUED | - | - | unblocked by D, but waits C-bridge DEPLOY to avoid cortex-api canary race; confidence must be kind:'asserted' |
 | G | legacy-design-tools | QUEUED | - | - | waits Track F; final deliverable export |
 
 ## Findings for the operator
