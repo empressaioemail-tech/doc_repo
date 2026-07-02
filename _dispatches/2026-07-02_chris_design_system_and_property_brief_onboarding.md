@@ -83,7 +83,21 @@ What the rebuilt brief should consume from the library, lowest-friction first:
 - PropertyBriefTile / HazardProfileTile — via `raw`/headless mode, AFTER the auth seam and the engagement/APN/poll contract are solved. Treat these as phase 2, not the opening move.
 - DataroomTile / document-viewer — only if the consumer brief lets a user attach a plan.
 
-Publish prerequisite (necessary but NOT sufficient): to consume any of these cross-repo, the packages must be published to npm. Today only `@hauska/map-renderer@0.1.1` and `@hauska/atom-contract@1.5.0` are published; `design-tokens`, `tile-shell`, `cortex-client`, `cortex-tiles`, `document-viewer` are workspace-only. Beyond setting NPM_TOKEN: the inner packages carry a `"workspace"` export condition that resolves to `./src` (the repo's vite passes `resolve.conditions:["workspace"]`); an EXTERNAL consumer resolving the published tarball hits the `dist` branch, so each package must be built to a working `dist` (types + import + require), published in dependency order (design-tokens, then tile-shell/cortex-client/map-renderer, then cortex-tiles), with react/react-dom + maplibre-gl as satisfied peers and atom-contract versions aligned. A publish workflow for legacy-design-tools does not exist yet.
+Publish status (DONE 2026-07-02): the whole library is now on npm and externally installable — verified that external consumers resolve to a built `dist` (not the internal `"workspace"`->`src` path). Published: `@hauska/design-tokens@0.1.0`, `@hauska/cortex-client@0.1.0`, `@hauska/tile-shell@0.1.0`, `@hauska/document-viewer@0.1.0`, `@hauska/cortex-tiles@0.1.0`, plus `@hauska/map-renderer@0.1.1` and `@hauska/atom-contract@1.5.0`. A reusable idempotent publish workflow lives at `legacy-design-tools/.github/workflows/publish-packages.yml` for future versions. Install lines:
+
+```
+npm install @hauska/design-tokens
+npm install @hauska/cortex-client
+npm install @hauska/tile-shell react react-dom
+npm install @hauska/document-viewer react react-dom
+npm install @hauska/cortex-tiles react react-dom maplibre-gl
+# CSS in the consumer entry:
+import '@hauska/design-tokens/tokens.css'
+import '@hauska/tile-shell/index.css'
+import 'maplibre-gl/dist/maplibre-gl.css'   // if using the map
+```
+
+Publishing was NECESSARY but NOT SUFFICIENT: the real work of the extension rebuild is still the three constraints above (the React re-platform, the auth seam, and the engagement+APN+report-poll contract). Installing the packages is the easy part; wiring them into a vanilla-JS MV3 extension against the right gate is the actual project.
 
 ## The onboarding flow to build
 
@@ -124,7 +138,7 @@ Everything you and your agent do must be recorded so the planner and operator ca
 ## Operator-owed unblocks
 
 - Grant Chris/his agent access to the private `hauska-brief-extension` repo (the other repos are public).
-- A publish workflow + `NPM_TOKEN` on legacy-design-tools so the component library packages publish to npm with working `dist` in dependency order (NPM_TOKEN is now set; the workflow is not built yet).
+- (DONE) The component library is published to npm (0.1.0) via `legacy-design-tools/.github/workflows/publish-packages.yml`; no longer a blocker.
 - Chrome Web Store publish (or a hosted downloadable zip) for the extension.
 - Stand up the landing origin (hauska.io / Vercel).
 - Resolve the consumer auth model for the workspace-as-dashboard and the extension->plan-review-gate seam.
@@ -132,4 +146,4 @@ Everything you and your agent do must be recorded so the planner and operator ca
 
 ## Live coordinates (2026-07-02)
 
-Repo tips: legacy-design-tools c6ba01f, hauska-map 678517d, hauska-mcp-server 080eb01, hauska-engine 7e15710. Serving: cortex-api-00284-zuq (workspace + BFF), hauska-engine-api-00029-buy (engine + document-ingest), hauska-mcp-server-00008-mcr. Published packages: @hauska/map-renderer@0.1.1, @hauska/atom-contract@1.5.0. Workspace URL: https://cortex-api-tds7av26va-uc.a.run.app/codex-reviewer-qa/.
+Repo tips: legacy-design-tools c6ba01f, hauska-map 678517d, hauska-mcp-server 080eb01, hauska-engine 7e15710. Serving: cortex-api-00284-zuq (workspace + BFF), hauska-engine-api-00029-buy (engine + document-ingest), hauska-mcp-server-00008-mcr. Published packages: @hauska/{design-tokens,cortex-client,tile-shell,document-viewer,cortex-tiles}@0.1.0, @hauska/map-renderer@0.1.1, @hauska/atom-contract@1.5.0. Workspace URL: https://cortex-api-tds7av26va-uc.a.run.app/codex-reviewer-qa/.
