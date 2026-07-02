@@ -15,7 +15,10 @@ later); read empressa-trading directly for layout-v2 parity. Same autonomous pro
 Governing rule: every function returns a real result or an HONEST degraded state — never a hard 500
 (commitment #1). One shared active-parcel context; address-search AND map-click both set it.
 
-## Phase 1 — make it all work (RUNNING)
+## Phase 1 — make it all work (COMPLETE 2026-07-02)
+
+Precedence: already resolved on the live revision (PRECEDENCE_ENGINE_PRODUCTION=1 on cortex-api-00279-boj; tile `live`, real cited reconciliation, 86/86 tests) — the operator screenshot was from an older revision; no change/redeploy needed. Gated residuals to operator: NPM_TOKEN (publishes map-renderer 0.1.1 -> overlays draw via a one-line cortex bump); ICC OpenAPI spec (adapter built vs assumed contract). Quality follow-ups: hydrology DEM->GeoTIFF (works degraded now); pin Docker wheels; cosmetic dead degradedReason on the now-live hydrology tile.
+
 
 | Track | Repo / service | Status | Scope |
 |-------|----------------|--------|-------|
