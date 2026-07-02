@@ -21,7 +21,7 @@ Governing rule: every function returns a real result or an HONEST degraded state
 |-------|----------------|--------|-------|
 | T1 engine fixes | hauska-engine / engine-api | RUNNING | Property Brief no-500 fallback + ANTHROPIC key mount; Hydrology pysheds in worker; Subsurface USDA TLS; ICC contract verify/wire; Precedence prod gate |
 | T2+T3 workspace | legacy-design-tools / cortex-api | RUNNING | shared active-parcel context; address search + map-click select + map-click->summary; finish shell tiles (Findings Library, Local Setbacks, Document Parsing, Product Spec); render Hazard; wire Topography/Drainage; honest status labels |
-| T4 map overlays | hauska-map / npm | RUNNING | @hauska/map-renderer@0.1.1 setOverlays + overlays prop so SpatialProvider overlays draw; publish workflow (needs NPM_TOKEN) |
+| T4 map overlays | hauska-map / npm | CODE MERGED (PR #3, ed63541); PUBLISH PENDING NPM_TOKEN | setOverlays + overlays prop wired (reviewer 15/15, idempotent add/remove); v0.1.1; publish-on-tag workflow added. To publish once NPM_TOKEN set: `git tag map-renderer-v0.1.1 ed63541 && git push origin map-renderer-v0.1.1`. Then bump cortex cortex-tiles to ^0.1.1 + pass overlays in MapTile (small follow-up). |
 | Scout | empressa-trading (read-only) | RUNNING | document admin panel + edit/view fuse-together + docking UX + layout persistence for Phase 2 |
 
 Phase-1 deploy safety: T1 -> engine-api, T2/T3 -> cortex-api, T4 -> npm — three distinct targets, no
