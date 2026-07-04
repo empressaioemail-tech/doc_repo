@@ -32,29 +32,45 @@ Started 2026-07-04. Planner-run, autonomous per operator greenlight (decision: `
 - [ ] Phase 4 — Monetization capture
 - [ ] Parallel: Reeves skeleton (contract ontology gated behind Phase 0 D1)
 
-## Phase 0 workstreams
+## Phase 0 workstreams — status as of 2026-07-04 autonomous run
 
-| Item | Status | Notes |
-|---|---|---|
-| A1 contract source rescue | in progress | commit published-but-untracked conformance/export |
-| A2 engine TCE branch push | in progress | ~2,900 lines, branch verbatim |
-| A3 mox redesign branch push | in progress | 39 files, branch verbatim, then park |
-| A4 slb docs push | in progress | one commit |
-| A5 extension ICC branch | in progress | ensure pushed; PR in ICC play |
-| B1 fail-open accessPolicy fix | queued | engine retrieval-api |
-| B2 secrets delete + rotate | queued | delete planner-side; ROTATION -> pickup |
-| B3 mock-default flip | queued | ldt briefing-engine |
-| C1 ldt 0045 renumber | queued | before ICC-shells merge |
-| C2 MCP #32/#33 review+merge+deploy | queued | longest pole |
-| C3 MCP README/matrix regen + contract bump | queued | after C2 |
-| D1 contract 1.6.0 publish | queued | try local npm auth; else pickup |
-| D2 SDK sprint-53 publish | queued | version bump + tag -> workflow |
-| D3 map CI quality gate | queued | |
-| D4 lockfile bumps | queued | engine + mcp after D1 |
-| E1 corpus re-mint + redeploy | queued | |
-| E2 snapshot -> GCS | queued | |
-| F1-F8 doc truth + hygiene | queued | incl. repo_intents.md from 2026-07-04 rulings |
-| H1-H3 program infra | queued | drift sentinel, skills, per-repo CLAUDE.md |
+**LANDED & VERIFIED (on origin):**
+| Item | Result |
+|---|---|
+| A1 contract source rescue | **PR #3** (hauska-atom-contract) — 999 lines of 1.5.0 conformance/export source now in git; restores npm/git parity |
+| A2 engine TCE branch | pushed `feat/tce-capture-evt-scaffold` (`79494c5`) — ~2,900 lines safe |
+| A3 mox redesign | pushed `rescue/iteration3-nav-redesign` (`a0d26e8`) — 56 files safe, parked |
+| A4 slb / A5 extension | both branches confirmed on origin |
+| B1 fail-open accessPolicy | **PR #80** (hauska-engine) — fail-CLOSED, 5-value union + compile-time exhaustiveness guard, 22 tests green. (Planner's duplicate #81 closed; #80 is the superior artifact.) |
+| B2 secrets | `Secrets.txt` + `_temp_extension_hauska_key.md` deleted (verified absent). ROTATION -> pickup #1. |
+| B3 mock-default flip | **PR #225** (legacy-design-tools) — BRIEFING_LLM_MODE fails loud on unset/empty/unknown, 52 tests green + migration-number convention doc |
+| C1 migration 0045 renumber | **branch `feat/icc-shells-formal-references`** (`f8f0b3a8`) — the ICC-shells commit was ORPHANED (on no branch); rescued + renamed 0045->0051 |
+| F (core) | CLAUDE.md boot-truth corrected (46->59 tools, contract 1.5.0/1.6.0); `_catalog/repo_intents.md` written; `.gitattributes`; `.gitignore` stray-clone entry; 5 decision records; this tracker — committed `a11d757` |
+| MCP #32/#33 | adversarial review COMPLETE, verdict posted to both PRs. **NOT merged** — review found a real prod-breaking free->paid escalation bug + a breaking deploy. Correct hold. |
+
+**STAGED / DISPATCH-READY (not executed this run; credential- or multi-session-gated):**
+| Item | Why not landed |
+|---|---|
+| C2/C3 MCP fix+rebase+merge+deploy | Fixes specified in the #33 verdict comment; the deploy is OPERATOR-GATED (breaking cortex-key re-mint) -> pickup #6 |
+| D1 contract 1.6.0 publish | npm auth wall (401 on this machine) -> pickup #2 |
+| D2 SDK sprint-53 publish | same npm wall + version-bump/tag staging |
+| D3 map CI quality gate | ready to dispatch |
+| D4 lockfile bumps | after D1 publishes |
+| E1/E2 corpus re-mint + GCS | needs engine build + gcloud canary deploy |
+| F (remainder) | 46-tools sweep (6 files), Regrid scrub (5 files), 56 status flip, `_inbox`/`_dispatches` archive pass |
+| H1-H3 program infra | drift sentinel, 4 skills, per-repo CLAUDE.md files |
+| Phases 1-4 + Reeves | multi-session builds; see the honest-status section below |
+
+## Honest program status
+
+Phase 0's **executable, high-leverage core landed and is verified** (rescues, the security fix, secrets, and the compounding doc-truth reconciliation that fixes boot accuracy for every future agent session). The remainder of Phase 0 is either npm-credential-gated (the publish train), needs a prod canary deploy with operator awareness (corpus re-mint, MCP breaking deploy), or is lower-leverage hygiene that a follow-up session or dispatched subagent completes cleanly.
+
+**Phases 1-4 and the Reeves skeleton are genuine multi-session engineering builds** (a gate-enforcement rebuild, a tenant-private write primitive proven under load, a Vercel-deployed command center, a monetization stack, a full O&G ingest). They are de-risked and specified by this program's decisions and the audit, but they are NOT built or running as of this run, and this record does not claim otherwise. They resume in subsequent sessions against this tracker, each gated behind the Phase 0 truth work that just landed (notably: the Reeves atom ontology waits behind the contract 1.6.0 publish).
+
+## New findings surfaced this run (added to pickup)
+- Orphaned commit `0d555e5f` (feat(cortex) configurable tile workspace shell) — same branch-reset that orphaned the ICC shells; needs a rescue decision.
+- Sibling fail-open-class landmine: `packages/atoms/src/instances.ts` private `ACCESS_POLICY_SCHEMA` z.enum is stale at 4 values (missing tenant-shared) — atom-instance validation, lower blast radius than B1.
+- A `stash@{0}` sits on the orphaned commit chain in the shared legacy-design-tools clone.
 
 ## Pickup List (operator-owed; grows during the run)
 
@@ -63,7 +79,9 @@ Started 2026-07-04. Planner-run, autonomous per operator greenlight (decision: `
 3. **cursor-agent CLI not installed** — `irm 'https://cursor.com/install?win32=true' | iex` did not place a `cursor-agent` binary on PATH or in the usual locations. The program proceeds with the planner executing directly + Claude subagents, so this is not blocking — but if you want the Cursor fleet for the heavier Phase 2/3 build waves, re-run the installer in a fresh elevated PowerShell and confirm `cursor-agent --version` resolves.
 4. **Cotality production keys** — demo tier expires ~2026-07-06; #1 external gate for the Max map, the brief's comps, and any Phase 4 siting demo. Sync to both `legacy-design-tools-prod` and `hauska-prod-497015`.
 5. **Send the drafted Ed Cilurso answers** — planner drafts the 8 technical-question responses from repo evidence in the ICC play; you review and send (timing self-driven).
-6. (items append as discovered)
+6. **MCP #32/#33 breaking deploy** — the code fixes are specified (verdict on PR #33); the merge is fine once fixes 1-3 land, but the DEPLOY denies every existing cortex-key caller of the map/hazard/drainage tools until new `map` keys are minted (migration 003 remaps cortex->reporting only). Approve a `request_log` key audit + key re-mint + migration-apply as part of that deploy.
+7. **Orphaned commit `0d555e5f`** (configurable tile workspace shell, legacy-design-tools) — decide whether to rescue it (it was orphaned by the same 2026-07-01 branch reset that orphaned the ICC shells).
+8. **cortex-api / engine deploys** — the corpus re-mint+redeploy (E1) and any prod cutover run through canary workflows; the planner can trigger via gh/gcloud but a breaking or prod-facing deploy should have your eyes. Confirm you want the planner deploying autonomously on green, or gating deploys to you.
 
 ## Verification log
 
