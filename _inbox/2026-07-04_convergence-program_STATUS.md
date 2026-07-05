@@ -10,6 +10,37 @@ Started 2026-07-04. Planner-run, autonomous per operator greenlight (decision: `
 4. Nothing destructive without a captured-elsewhere check. smartcity-os: absolute no-touch. Local folder/clone sweep: out of scope.
 5. Commit messages per convention; doc_repo commits batched at phase boundaries (concurrent-commit hazard rules apply).
 
+## LIVE STATE 2026-07-05 (continuation spine — read this first on any resume)
+
+Execution model CONFIRMED + validated: **cursor-agent (Cursor's limits) executes code; planner (Claude/Max) verifies, reviews, merges, deploys.** cursor-agent invocation: refresh PATH, then `cursor-agent --print --force --model sonnet-4.5 "<task>"` in the target repo dir (background via run_in_background). Verified working on the engine bump.
+
+**DONE + on main/npm:** contract 1.6.1 LIVE; engine fail-open (#80) merged; ldt mock-flip (#225) merged; MCP four-gate (#35) merged (deploy pending); all doc-truth (CLAUDE.md, repo_intents, hygiene sweep, ICC spec) committed+pushed; all at-risk work rescued.
+
+**RUNNING (background Cursor):** WidthedConfidence fix on branch `fix/atom-contract-1.6.1` in `P:\tmp\engine-bump` (finishes the engine 1.6.1 bump; bump itself pushed at `146d18a` but typecheck-broken until this fix lands). Task id buu4eolyt.
+
+**QUEUE (planner drives; Cursor executes code):**
+1. Verify+merge the engine 1.6.1 bump once the WidthedConfidence fix reports green.
+2. **MCP four-gate DEPLOY** (planner; breaking migration 005 — runbook below): request_log audit → apply migration → mint map keys → canary → verify. Authorized (map key cleared).
+3. cortex-api + engine redeploys to pick up #225 / #80.
+4. Phase 1 (own the layer): gate single-chokepoint; metering wired; **atom spec generated** (publish gated on npm token); ICC PoC two-screen build (extension ICC branch + a surface); eval scores generated.
+5. Phase 2: tenancy — BUILD-AND-STAGE only (no prod flip).
+6. Phase 3: command center build + Vercel deploy (Vercel authed); component library rename @hauska/*→@empressaio/* + hardening; Cortex console extraction from ldt.
+7. Phase 4: Stripe test-mode pricing; proof-of-record spec; siting spike memo; certification scaffold.
+
+**OPERATOR-GATED (pickup; do NOT block the run):**
+- **npm publishing NOT autonomous** (planner's "bypass confirmed" was a FALSE POSITIVE — see memory). Needs a **Classic → Automation** npm token in ~/.npmrc. Blocks: SDK sprint-53 (built+staged in `P:\tmp\hauska-sdk-publish`, one command from done), atom-spec publication, future contract/Reeves publishes. Does NOT block build work.
+- Rotate extension key; Cotality new key 2026-07-06; tenancy prod flip; Stripe live.
+
+## Autonomy grant (2026-07-05, operator)
+
+Operator authorized a sustained autonomous run of Phases 0-4 while away, with these rulings:
+- **Gate behavior: best judgment.** Default = skip-and-continue (log the blocked item to pickup, proceed with everything else). Never fake a result; never do a dangerous irreversible op without cause.
+- **Tenancy: BUILD-AND-STAGE, do NOT flip live prod.** The cortex-api anonymous->per-tenant cutover is built, tested, staged with a runbook; the actual prod flip waits for the operator (orphaned-anonymous-data hazard).
+- **Deploys: autonomous on green** (canary + rollback + live verify). Breaking/irreversible prod ops get a read-only blast-radius check first.
+- **Stripe: test-mode only**, live gated to operator.
+- **npm: autonomous** (automation token, 2FA-bypass proven). **Vercel: pending `vercel login`** (command center deploy blocked until then).
+- Publishing, doc work, PRs, safe deploys: proceed. Money-live, prod-auth-flip, external-account submissions: stage + pickup.
+
 ## Tailored premortem (program-level; replaces boilerplate for this run)
 
 | # | Failure mode | Mitigation (built into the run) |
