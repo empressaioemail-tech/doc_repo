@@ -75,7 +75,7 @@ Phase 0's **executable, high-leverage core landed and is verified** (rescues, th
 ## Pickup List — RESOLUTIONS logged 2026-07-05
 
 Operator cleared the majority of the blockers on 2026-07-05:
-- **npm: RESOLVED** — authenticated as `hauska-sdk`; planner + subagents publish directly. Contract 1.6.1 publish in flight (with a hard tarball-verification gate so it doesn't regress 1.5.0's conformance/export).
+- **npm + contract 1.6.1: RESOLVED / LIVE** — `@hauska/atom-contract@1.6.1` PUBLISHED 2026-07-05 (operator OTP), verified live (`dist-tags.latest` 1.6.1, conformance/export advertised, tag `v1.6.1` pushed). Unblocks engine+mcp lockfile bumps and the Reeves 1.7.0 ontology. **Note: the account enforces 2FA-on-publish, so autonomous publishing needs an npm AUTOMATION token in CI (operator to create; then SDK sprint-53 + future publishes run without OTP).**
 - **cursor-agent: RESOLVED** — installed + authenticated; usable for the Phase 2/3 build waves (`--force` for headless).
 - **Ed Cilurso / ICC answers: RESOLVED** — all 8 answered + demo creds received (enabled through 2026-12-30; new creds at live prod, so no security exposure). Filed canonically at `_research/2026-07-05_icc_code_connect_technical_answers.md`. Key: citation format is `<codebook title> Section <n>`; subsection content display allowed; derivative = ICC text directly incorporated (citing + analysis is NOT derivative — the commitment-#1 firewall confirmed); stored content (incl. vector DBs) must be destroyable on termination.
 - **MCP map-key breaking deploy: CLEARED** — operator confirmed NO map-function deployments exist in the field; "do what you need with map key." Planner proceeds autonomously: audit request_log, mint map keys, migrate, deploy on green.
