@@ -98,6 +98,23 @@ Operator cleared the majority of the blockers on 2026-07-05:
 7. **Orphaned commit `0d555e5f`** (configurable tile workspace shell, legacy-design-tools) — decide whether to rescue it (it was orphaned by the same 2026-07-01 branch reset that orphaned the ICC shells).
 8. **cortex-api / engine deploys** — the corpus re-mint+redeploy (E1) and any prod cutover run through canary workflows; the planner can trigger via gh/gcloud but a breaking or prod-facing deploy should have your eyes. Confirm you want the planner deploying autonomously on green, or gating deploys to you.
 
+## MCP four-gate: MERGED, deploy STAGED (runbook)
+
+**Code state:** PR #35 MERGED to `hauska-mcp-server` main (`feat(gate): four-product gate rework — clean rebase + review fixes (#35)`). #32/#33 closed as superseded. Verified: 320 tests pass; planner spot-checked the free-tier fix (`resolveGateAccessTier` final return is `public-free`) and the migration renumber (`005_api_keys_product_gate_split.sql`, no stray 003) on the branch before merge. MCP does NOT auto-deploy on merge (only `ci.yml` in Actions; deploy is Cloud Build via `cloudbuild-mcp.yaml`), so main now carries the verified code un-deployed — safe.
+
+**Why the deploy is staged, not fired:** migration 005 is BREAKING — it remaps `product='cortex'`→`'reporting'` and tightens the CHECK to `('public','codex','reporting','map')`. Map tools then require a `map` key that existing (now `reporting`) keys lack. Deploying safely needs a live blast-radius audit first. Not to be fired on an exhausted context.
+
+**Deploy runbook (execute deliberately, fresh context):**
+1. **request_log audit (read-only, do FIRST):** query the MCP prod Postgres `request_log` for callers of the map tools (`get_parcel_polygon`, `get_hazard_profile`, `assemble_map_layers`, `simulate_site_drainage`, `get_site_drainage`, `get_site_topography`) in the last 30d, grouped by product/key. Determines whether the migration is truly mint-and-go (no current gate callers) or needs a key swap. Operator confirmed no FIELD/shipped keys hold map access, so any callers are our own server-side surfaces (likely cortex-api).
+2. **Apply migration 005** to the deployment's Neon (watch the merged-vs-applied gotcha — a merged migration is NOT auto-applied to the live Cloud Run Neon). Apply via the repo's migrate script against the prod DATABASE_URL.
+3. **Mint `map` keys** for any surface the audit found calling map tools, and update that surface's config (its X-Hauska-Key). If the audit finds zero current map-tool gate callers, skip.
+4. **Canary deploy** the new MCP revision via `cloudbuild-mcp.yaml` (per the recorded deploy method); do NOT shift 100% until smoke passes.
+5. **Verify prod (verbatim):** gate probes — anonymous→public still resolves; malformed/unknown key → 401; a `reporting` key reaches reporting tools; a `map` key reaches map tools; a `reporting` key is DENIED map tools (the intended split); tool count = 63 (62 + compose_workspace). Roll back on any red.
+
+Everything else about #35 is done; this is the only remaining step, and it is bounded and specified.
+
 ## Verification log
 
-(appends as work lands; verbatim outputs per convention)
+- 2026-07-05: `@hauska/atom-contract@1.6.1` published + verified (`dist-tags.latest` 1.6.1, `./conformance`+`./export` exports advertised, `v1.6.1` tag pushed).
+- 2026-07-05: hauska-mcp-server PR #35 merged to main (four-gate rework, 320 tests pass, free-tier + migration fixes spot-checked pre-merge). #32/#33 closed.
+- 2026-07-05: hauska-engine PR #80 (fail-open fix), legacy-design-tools PR #225 (mock-flip) open + mergeable, tests green — awaiting planner merge (next cycle).
