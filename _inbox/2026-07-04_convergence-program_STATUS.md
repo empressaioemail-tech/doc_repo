@@ -72,7 +72,22 @@ Phase 0's **executable, high-leverage core landed and is verified** (rescues, th
 - Sibling fail-open-class landmine: `packages/atoms/src/instances.ts` private `ACCESS_POLICY_SCHEMA` z.enum is stale at 4 values (missing tenant-shared) — atom-instance validation, lower blast radius than B1.
 - A `stash@{0}` sits on the orphaned commit chain in the shared legacy-design-tools clone.
 
-## Pickup List (operator-owed; grows during the run)
+## Pickup List — RESOLUTIONS logged 2026-07-05
+
+Operator cleared the majority of the blockers on 2026-07-05:
+- **npm: RESOLVED** — authenticated as `hauska-sdk`; planner + subagents publish directly. Contract 1.6.1 publish in flight (with a hard tarball-verification gate so it doesn't regress 1.5.0's conformance/export).
+- **cursor-agent: RESOLVED** — installed + authenticated; usable for the Phase 2/3 build waves (`--force` for headless).
+- **Ed Cilurso / ICC answers: RESOLVED** — all 8 answered + demo creds received (enabled through 2026-12-30; new creds at live prod, so no security exposure). Filed canonically at `_research/2026-07-05_icc_code_connect_technical_answers.md`. Key: citation format is `<codebook title> Section <n>`; subsection content display allowed; derivative = ICC text directly incorporated (citing + analysis is NOT derivative — the commitment-#1 firewall confirmed); stored content (incl. vector DBs) must be destroyable on termination.
+- **MCP map-key breaking deploy: CLEARED** — operator confirmed NO map-function deployments exist in the field; "do what you need with map key." Planner proceeds autonomously: audit request_log, mint map keys, migrate, deploy on green.
+- **Orphan commit 0d555e5f: planner-handled** — will rescue to a branch (loss protection), tag likely-superseded, no operator decision needed.
+- **Autonomous deploys: CONFIRMED** — planner deploys on green verdict + canary + rollback, verified against prod; self-imposed exception (external/shipped/embedded consumer breakage) is now moot for the map case.
+
+## Still operator-owed
+1. **Rotate the extension public key** (planner deleted the on-disk secret files; the key they held must be rotated on the prod gate).
+2. **Cotality production keys** — operator getting a new key 2026-07-06 (demo expires that day). Not blocking non-Cotality work.
+3. **CLAUDE.md audit/slim** (operator-flagged) — the boot doc is large and carries stale/historical content; boot-truth counts corrected this run, a fuller slim is a good follow-up.
+
+## Historical pickup (pre-2026-07-05, retained for context)
 
 1. **Rotate the extension public key** — planner deleted `Secrets.txt` and `_temp_extension_hauska_key.md` from doc_repo root (done, verified absent). The key those held must be rotated on the prod gate.
 2. **npm publish credential** — `npm whoami` returns 401 on this machine; the planner cannot publish. Blocks: contract 1.6.0 publish (D1), SDK sprint-53 publish (D2), and everything downstream that consumes the new versions (engine/mcp lockfile bumps land but can't be validated against a published 1.6.0; the Reeves O&G ontology 1.7.0). Planner will stage each publish fully (version bumped, tagged, changelog ready) so your step is a single `npm publish` / tag-push per package. Alternatively add an `NPM_TOKEN` automation secret to the atom-contract + SDK repos (hauska-map already has one) and the planner triggers the workflows.
