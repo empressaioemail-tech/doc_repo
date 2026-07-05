@@ -18,7 +18,11 @@ Execution model CONFIRMED + validated: **cursor-agent (Cursor's limits) executes
 
 **engine 1.6.1 bump: STAGED, NOT merged (planner judgment).** Branch `fix/atom-contract-1.6.1` at `34d42e5` (pushed) — Cursor bumped to 1.6.1 + fixed the WidthedConfidence breakage (workspace-instances.ts, registry.ts, emit.ts); Cursor reports typecheck+build clean on all 15 packages. HELD from merge because the fix changes `BriefRunAtomInstance.confidence` from scalar `number` to structured `WidthedConfidence` — a LIVE atom-schema change. Before merge: (a) planner re-runs typecheck; (b) assess whether any out-of-engine consumer (cortex-api brief generation, retrieval wire) reads brief-run confidence as a scalar — if so, coordinate the shape change. NOT critical path (engine runs fine on 1.3.0), so no rush; merge deliberately after the consumer check.
 
-**RUNNING (background Cursor):** Phase 1 atom-spec generation — language-neutral JSON Schema + conformance validator packaged as the publishable open standard ("own the layer"). Build only; publish gated on the npm token.
+**Phase 1 atom-spec: STAGED as PR #4** (hauska-atom-contract) — language-neutral open standard (7 JSON schemas + SPEC.md + README, additive-safe, planner-reviewed). Held as a PR for operator framing-review since it's a PUBLIC-facing standard (per autonomy grant); merge + external promotion (registries/announcement) gated on operator.
+
+**RUNNING (background Cursor):** Phase 3 component-library rename hauska/* -> empressaio/* for the five ldt packages (design-tokens, tile-shell, document-viewer, cortex-client, cortex-tiles) in `P:\tmp\ldt-rename`, branch feat/empressaio-package-rename. Build-only, no publish; planner verifies rename-completeness + build before any merge. Task bc4wppqyw.
+
+**PROGRESS LOG (this session, chronological):** contract 1.6.1 published + provenance restored; engine fail-open #80 merged; ldt mock-flip #225 merged; MCP four-gate #35 merged (deploy staged); doc-truth + repo_intents + hygiene sweep + ICC binding spec committed; SDK sprint-53 built+staged (OTP-gated); engine 1.6.1 bump built+staged (wire-compat hold); atom-spec staged as PR #4; component-library rename running. Cursor-execution model validated + in use for build work; planner verifies/merges/deploys.
 
 **QUEUE (planner drives; Cursor executes code):**
 1. Verify+merge the engine 1.6.1 bump once the WidthedConfidence fix reports green.
