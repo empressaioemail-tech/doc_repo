@@ -16,7 +16,9 @@ Execution model CONFIRMED + validated: **cursor-agent (Cursor's limits) executes
 
 **DONE + on main/npm:** contract 1.6.1 LIVE; engine fail-open (#80) merged; ldt mock-flip (#225) merged; MCP four-gate (#35) merged (deploy pending); all doc-truth (CLAUDE.md, repo_intents, hygiene sweep, ICC spec) committed+pushed; all at-risk work rescued.
 
-**RUNNING (background Cursor):** WidthedConfidence fix on branch `fix/atom-contract-1.6.1` in `P:\tmp\engine-bump` (finishes the engine 1.6.1 bump; bump itself pushed at `146d18a` but typecheck-broken until this fix lands). Task id buu4eolyt.
+**engine 1.6.1 bump: STAGED, NOT merged (planner judgment).** Branch `fix/atom-contract-1.6.1` at `34d42e5` (pushed) — Cursor bumped to 1.6.1 + fixed the WidthedConfidence breakage (workspace-instances.ts, registry.ts, emit.ts); Cursor reports typecheck+build clean on all 15 packages. HELD from merge because the fix changes `BriefRunAtomInstance.confidence` from scalar `number` to structured `WidthedConfidence` — a LIVE atom-schema change. Before merge: (a) planner re-runs typecheck; (b) assess whether any out-of-engine consumer (cortex-api brief generation, retrieval wire) reads brief-run confidence as a scalar — if so, coordinate the shape change. NOT critical path (engine runs fine on 1.3.0), so no rush; merge deliberately after the consumer check.
+
+**RUNNING (background Cursor):** Phase 1 atom-spec generation — language-neutral JSON Schema + conformance validator packaged as the publishable open standard ("own the layer"). Build only; publish gated on the npm token.
 
 **QUEUE (planner drives; Cursor executes code):**
 1. Verify+merge the engine 1.6.1 bump once the WidthedConfidence fix reports green.
