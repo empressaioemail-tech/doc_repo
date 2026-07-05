@@ -2,7 +2,7 @@
 id: 75b_brief_coverage_v0
 title: Property Brief — pilot coverage list (v0)
 status: active
-last_updated: 2026-05-30
+last_updated: 2026-07-05
 applies_to: portfolio
 related: [75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 76_empressa_wedge_90d_operating_plan, 51_substrate_v1_sprint, 2026-05-28_central-tx-property-brief-scope]
 owner: planner
@@ -78,9 +78,9 @@ Expand to 10+ metros per [`76_empressa_wedge_90d_operating_plan.md`](76_empressa
 | Layer | Backend | Extension UI |
 |-------|---------|----------------|
 | FEMA flood | On `main` (PR #131); prod requires deploy + geocode hit | Step 4c dispatch |
-| Regrid parcel/zoning | On `main`; prod requires `REGRID_API_KEY` on `cortex-api` | Step 4c dispatch |
+| Parcel/zoning (Cotality, sole spine; Regrid purged 2026-06-17) | On `main`; prod requires Cotality Property + SpatialTile credentials on `cortex-api` | Step 4c dispatch |
 
-`REGRID_API_KEY` mount runbook: `legacy-design-tools/docs/deploy.md` § Property Brief — Regrid on prod. Operator confirmed secret missing on prod 2026-05-30 QA; mount pending deploy wave.
+Regrid was purged 2026-06-17 and Cotality is the sole parcel/zoning spine, so the former `REGRID_API_KEY` mount item is retired. Prod parcel/zoning now depends on the Cotality production credentials (Property + SpatialTile + display license), which are the current launch gate for the brief's parcel layer.
 
 Dispatches (2026-05-28): scope [`_dispatches/2026-05-28_central-tx-property-brief-scope.md`](_dispatches/2026-05-28_central-tx-property-brief-scope.md); API layers [`_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md`](_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md); panel [`_dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md`](_dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md).
 

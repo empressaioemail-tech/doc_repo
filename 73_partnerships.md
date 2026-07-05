@@ -2,7 +2,7 @@
 id: 73_partnerships
 title: Partnerships â formalized partnership state
 status: active
-last_updated: 2026-06-09 (partnership-first sourcing retired, reframed to customer/design-partner + content-licensing posture; prior 2026-05-29 Property Brief outreach wave + backlog cross-link. Prior 2026-05-26 Sync 5 TX-metros batch: McAllen confirmed eCode360 added to General Code row; 7 metro-suburb cities + Edinburg added to publisher-TBD bucket with Fort Worth flagged as the strategic anchor for the FW metro. Earlier 2026-05-22: Sync 5 Tier 2 central-Texas recon — Kyle, Buda, Liberty Hill, Bee Cave to General Code, American Legal Publishing logged. Prior 2026-05-22: Pflugerville and Cedar Park added to General Code, EncodePlus / GovOS logged. Prior 2026-05-21: Standards-body licensor partnerships section added.)
+last_updated: 2026-07-05 (Regrid-purged scrub: brief/public-records baseline is Cotality, sole spine since 2026-06-17. Prior 2026-06-09 (partnership-first sourcing retired, reframed to customer/design-partner + content-licensing posture; prior 2026-05-29 Property Brief outreach wave + backlog cross-link. Prior 2026-05-26 Sync 5 TX-metros batch: McAllen confirmed eCode360 added to General Code row; 7 metro-suburb cities + Edinburg added to publisher-TBD bucket with Fort Worth flagged as the strategic anchor for the FW metro. Earlier 2026-05-22: Sync 5 Tier 2 central-Texas recon — Kyle, Buda, Liberty Hill, Bee Cave to General Code, American Legal Publishing logged. Prior 2026-05-22: Pflugerville and Cedar Park added to General Code, EncodePlus / GovOS logged. Prior 2026-05-21: Standards-body licensor partnerships section added.))
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 13_risk_register, 18_stakeholder_graph, 30_smartcity_os, 49_code_ingestion_pipeline, 51_substrate_v1_sprint, 70_bizops_overview, 71_pipeline, 74_commercial_agreements]
 owner: nick
@@ -90,7 +90,7 @@ This bucket joins the prior "roughly eleven small central-Texas towns off Munico
 
 ## County recorder and title encumbrance partnerships (recorded restrictions)
 
-Distinct from municipal code publishers and from Cortex public-records baselines (Regrid). Governs **private recorded instruments** per [ADR-020](80_adrs/adr_020_recorded_instruments_and_restriction_clauses.md) and ingest tracks R1–R3 in [`49b_encumbrance_ingestion_pipeline.md`](49b_encumbrance_ingestion_pipeline.md). Access is via county-clerk MOU or SFTP, not national scrape — an access-methodology necessity (recorded instruments are gated by the clerk), not the retired partnership-first sourcing ethic (retired 2026-06-09).
+Distinct from municipal code publishers and from Cortex public-records baselines (now Cotality; Regrid purged 2026-06-17). Governs **private recorded instruments** per [ADR-020](80_adrs/adr_020_recorded_instruments_and_restriction_clauses.md) and ingest tracks R1–R3 in [`49b_encumbrance_ingestion_pipeline.md`](49b_encumbrance_ingestion_pipeline.md). Access is via county-clerk MOU or SFTP, not national scrape — an access-methodology necessity (recorded instruments are gated by the clerk), not the retired partnership-first sourcing ethic (retired 2026-06-09).
 
 | Counterparty class | Examples | Status | Notes |
 |---|---|---|---|
@@ -136,7 +136,7 @@ When a jurisdiction signs an MOU for operational enrichment (GIS layers, permit 
 | Rule | Detail |
 |---|---|
 | **Enrichment target** | `property-workspace` place node only |
-| **Brief baseline** | FEMA + Regrid national public-records baseline (partnership-first scoping clarifier: out of scope for city operational-data MOU) |
+| **Brief baseline** | FEMA + Cotality national public-records baseline (Regrid purged 2026-06-17, Cotality is the sole spine; out of scope for city operational-data MOU) |
 | **Partner GIS example** | Bastrop city GIS on **Generate Layers** only; not a separate Brief adapter fork |
 | **Dallas city proper** | Blocked (`dallas\|tx`) until AmLegal / eCode360 partnership; Dallas County and Municode suburbs remain fair game |
 | **Revenue share** | Same structural shape as city partnership template; Layer 2 on paid enrichment atoms |

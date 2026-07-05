@@ -2,7 +2,7 @@
 id: 00c_portfolio_master_map
 title: Portfolio master map — verified topology, dev process, spine, GTM, maintenance engine
 status: active
-last_updated: 2026-06-09
+last_updated: 2026-07-05
 applies_to: portfolio
 related: [00_current_state, 07_product_line_summary, 09_post_saas_substrate_thesis, 27_engine_evolution_plan, 44_mcp_cortex_architecture_map, 50_hauska_mcp_server, 54_tenant_leg_sprint, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_005_multitenancy, 08_tiered_access_model, _research/2026-06-01_shared_engines_vision_and_current_state, 90_runbooks/diagrams/gtm_loop.mermaid, 90_runbooks/diagrams/self_healing_loop.mermaid]
 ---
@@ -32,6 +32,8 @@ The one-line takeaway: the **Hauska spine is real and deployed** (contract publi
 
 **Deploy-state update (2026-06-09 recon, [`_research/2026-06-09_cross_repo_recon.md`](_research/2026-06-09_cross_repo_recon.md)).** Three deltas to this table since the 06-01 pass. (1) The gate now registers and serves **57 tools** (main `src/tools.ts`; the 46 figure above is the 06-01 count), deployed rev `hauska-mcp-server-00007-njc`, `/health` ok with all four deps wired. (2) A **second prod service `api-server`** (`api-server-00003-wix`, legacy-design-tools-prod, `/api/healthz` ok) now serves alongside cortex-api; it is not yet characterized (brokerage/brief + snapshot backend vs thin BFF) and the master diagram in §2 predates it. (3) The retrieval API serves the corpus live (21,126 atoms) but its **substrate Neon observability DB is unwired** (`/healthz/` reports `not_configured`); PR #68 wires it. cortex-api is at `00140-dax` serving real anthropic findings (the full build-out + Miami arc #141-156 merged and deployed).
 
+**Gate + contract update (2026-07-05).** The MCP gate is now **62 tools across four product gates** (`public`, `codex`, `reporting`, `map`) after the Track C gate rework landed (PR #35 merged 2026-07-05). The 46-tool figure in the table above is the 06-01 count, the 57-tool figure in the 06-09 note is superseded, and the three-product `public/codex/cortex` split no longer holds: "Cortex" is the reporting function package per the ADR-008 amendment, not a gate value; the reporting-style tools gate under `reporting` and the parcel/drainage/topography/hazard/GIS tools under `map`. `@hauska/atom-contract` is published at **1.6.1** (2026-07-05), superseding the 1.3.0 runtime and published figures in the ground-truth table above.
+
 **Scoped-tenant pattern (2026-06-07).** SmartCity OS, the Mox engagement ([`_prospects/mox/2026-06-07_mox_engagement_plan.md`](_prospects/mox/2026-06-07_mox_engagement_plan.md)), and the brokerage extension are three instances of one shape: a scoped tenant with custom surfaces on the shared, gated spine, same theology (calibration + sovereignty, the deposit loop, the gate). Custom surfaces (a city dashboard, Mox ops-finance apps) are tenant-specific, not forks. Bringing SmartCity onto the spine (it is an island today) is the same work as onboarding Mox. Both force the same dependency chain, which this elevates from roadmap to load-bearing: **ADR-005 multitenancy** (per-tenant private store + tenant `accessPolicy` at the gate; the gate gates by product today, not tenant), **ADR-008 engine extraction** (gate-front the property/parcel + plan-review engines so a tenant consumes through the gate, not by reaching cortex-api directly), and **arrow two** ([`04a`](04a_arrow_two_calibration_capture.md); the deposit loop is the calibration mechanism, and the tenant-partitioned evidence ledger is the sovereignty guardrail). Planned and scaffolded 2026-06-07: the sequenced plan is [`54_tenant_leg_sprint.md`](54_tenant_leg_sprint.md); ADR-005 is scaffolded as the portfolio multitenancy ADR [`80_adrs/adr_005_multitenancy.md`](80_adrs/adr_005_multitenancy.md) (Layer A gate + Layer B storage); the ADR-008 tenant-leg slice is the gate-front seam, distinct from the repo factor-out ([`_decisions/2026-06-07_adr008_gate_front_seam_scoping.md`](_decisions/2026-06-07_adr008_gate_front_seam_scoping.md)). Verified against live source: the gate has no tenant field, `accessPolicy` is declared-but-unenforced, the arrow-2 Phase 1 ledger already partitions on `jurisdictionTenant`.
 
 ## 2. Master system diagram (verified topology)
@@ -54,7 +56,7 @@ flowchart TB
 
     CORTEX["cortex-api (Cloud Run, project smartcity-os)<br/><b>PRODUCT ENGINES</b><br/>@workspace/briefing-engine + @workspace/finding-engine<br/>site-context adapters + L-surface (L1-L6)<br/>21-atom registry · LLM: Grok / Anthropic chat<br/>on @hauska/atom-contract 1.2.0"]
 
-    MCP["hauska-mcp-server (Cloud Run, hauska-prod)<br/><b>GATING BOUNDARY</b> · 46 tools<br/>11 public + 4 Codex + 31 Cortex<br/>gate at call time via X-Hauska-Key"]
+    MCP["hauska-mcp-server (Cloud Run, hauska-prod)<br/><b>GATING BOUNDARY</b> · 62 tools (PR #35, 2026-07-05)<br/>four gates: public / codex / reporting / map<br/>gate at call time via X-Hauska-Key"]
 
     ENGINE["hauska-engine retrieval API (Cloud Run, hauska-prod)<br/><b>READ-ONLY</b> · port 8080 · no reasoning<br/>56MB snapshot · 34 juris / 21,126 atoms"]
 

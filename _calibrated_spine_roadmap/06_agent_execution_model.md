@@ -2,7 +2,7 @@
 id: calibrated_spine_agent_execution_model
 title: Calibrated spine — agent execution model
 status: active
-last_updated: 2026-06-21
+last_updated: 2026-07-05
 applies_to: hauska
 owner: nick
 related: [calibrated_spine_roadmap_overview, calibrated_spine_task_roadmap, base_calibration_bootstrap]
@@ -19,7 +19,7 @@ This program is executed multi-agent. The point of this doc is that the operator
 | cc-agent-E | hauska-engine | F2 consequence metadata, F7 granular invalidation, F8 amendment-hazard drift, edition-correct retrieval for backtest, corpus breadth, subsurface adapters (R5) |
 | cc-agent-C | legacy-design-tools (main clone) | F3 ledger extension, F4 cortex-api side, F5 conflict log, F9 present-tense fix, K1 acquisition wiring, K2 retrodiction harness, W warming and QA, X1 to X3 fuel, S4 refusal, M1 run |
 | cc-agent-C2 | legacy-design-tools-c2 clone | K3 historical de-confound, K5 weak priors, S1 grader, S2 meta-calibration and active learning, S3 model weighting, R5 precedence. Disjoint file sets from C |
-| cc-agent-M | hauska-mcp-server | F1 MCP read attribution, F4 propagation across 46 tools, MCP introspection for the console. No doc_repo access: paste dispatch content and mirror its closes into `_inbox/` |
+| cc-agent-M | hauska-mcp-server | F1 MCP read attribution, F4 propagation across the gate's tools (62 across four gates public/codex/reporting/map, PR #35 merged 2026-07-05), MCP introspection for the console. No doc_repo access: paste dispatch content and mirror its closes into `_inbox/` |
 | cc-agent-AC | hauska-atom-contract | F4 read-contract type, F6 three-axis plus provenance field, K6 calibration provenance, model-attribution fields |
 | cc-agent-R | Cortex runtime | F4 propagation, S5 consequence-gated routing, R1 to R6 reporting surface |
 | map agent | map repo | V1 to V9 white-label map, E1 to E6 spine console. Function only; Chris owns design |

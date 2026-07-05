@@ -51,7 +51,7 @@ Every tool output emits the same provenance envelope: lineage (cited atom-id[s])
 
 The connector dig (parallel planning thread, 2026-06-10) mapped the planned connector set against the residential-designer audience and surfaced unplanned candidates. Captured here so they are not lost; only the permit/AHJ one has a decision.
 
-**Planned / in motion** (condensed): parcel/zoning (Regrid live, Cotality 3-increment), hazard (FEMA live, Cotality climate), topo/soil/subsurface (USGS 3DEP live, SSURGO + USGS geology merged), codes (ICC creds-pending, ADA/FHA/A117.1 live, precedence engine merged), hydrology (NOAA Atlas 14), CAD hosts (Revit GA; ArchiCAD/SketchUp/SoftPlan planned). **Deferred from the planned set:** Shovels permits, MLS, FAA/airspace.
+**Planned / in motion** (condensed): parcel/zoning (Cotality, sole spine since Regrid purged 2026-06-17), hazard (FEMA live, Cotality climate), topo/soil/subsurface (USGS 3DEP live, SSURGO + USGS geology merged), codes (ICC creds-pending, ADA/FHA/A117.1 live, precedence engine merged), hydrology (NOAA Atlas 14), CAD hosts (Revit GA; ArchiCAD/SketchUp/SoftPlan planned). **Deferred from the planned set:** Shovels permits, MLS, FAA/airspace.
 
 **Unplanned candidates** (for the SoftPlan/ArchiCAD residential + light-commercial audience — strong on site/physical/code data, weak on what actually kills projects):
 

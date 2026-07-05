@@ -2,7 +2,7 @@
 id: 75a_hauska_brief_extension
 title: Hauska Property Brief — Chrome extension and API contracts
 status: active
-last_updated: 2026-05-28
+last_updated: 2026-07-05
 applies_to: portfolio
 related: [75_hauska_brokerage_workflow_plan, 50_hauska_mcp_server, 08_tiered_access_model, 28_mcp_first_product_design, _dispatches/2026-05-26_cc-agent-C_brokerage_brief_api]
 owner: nick
@@ -84,7 +84,7 @@ Use `defaultJurisdiction` only when `briefApiUrl` is unset and the extension cal
 
 **Response (step 4 parcel):** `siteContext.layers[]` (`layerKind`, `status`, `summary`, `provider?`); `laySummary.verdicts[]` (consumer traffic-light cards; flood verdict uses FEMA layer when present).
 
-**Response (place graph wave, pending Dispatch A deploy):** `atoms` object — `workspaceDid`, `briefRunDid`, `placeLayers[]`, `inlineRefs[]` (extension Dispatch B consumes `inlineRefs` for chat-native atom chips). `property.llUuid` when Regrid returns parcel.
+**Response (place graph wave, pending Dispatch A deploy):** `atoms` object — `workspaceDid`, `briefRunDid`, `placeLayers[]`, `inlineRefs[]` (extension Dispatch B consumes `inlineRefs` for chat-native atom chips). `property.llUuid` when the parcel adapter returns a parcel (Cotality, sole spine since Regrid was purged 2026-06-17).
 
 **Server:** Geocode → jurisdiction; five code queries via `@workspace/codes` `retrieveAtomsForQuestion`; Grok summary via `getBriefingLlmClient()`; persist `brokerage_brief_runs`.
 
@@ -171,7 +171,7 @@ Operator scope update: `3b/3c/3d/3e` are now part of **V1**.
 3. Smoke on real Bastrop / Cedar Hill addresses.
 4. Ship with retrieval + research chat working and source citations visible.
    - **4a Code + citations** — `sections[]`, `citations[]`, deep research chat (done when prod brief smoke passes).
-   - **4b Parcel layers on brief (API)** — `siteContext.layers` (FEMA + Regrid) on `POST /brief`; prod needs `REGRID_API_KEY` on `cortex-api`. Dispatch: [`_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md`](_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md). Merged backend: PR #131.
+   - **4b Parcel layers on brief (API)** — `siteContext.layers` (FEMA + Cotality parcel) on `POST /brief`; prod parcel/zoning now resolves through the Cotality adapter (Regrid purged 2026-06-17, so the `REGRID_API_KEY` requirement is retired; the live gate is prod Cotality credentials). Dispatch: [`_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md`](_dispatches/2026-05-28_cc-agent-C_brokerage_fema_regrid_brief_layers.md). Merged backend: PR #131.
    - **4c Parcel layers on brief (extension UI)** — panel renders `siteContext` + flood verdict from API `laySummary`. Dispatch: [`_dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md`](_dispatches/2026-05-28_extension_property_brief_parcel_layers_panel.md).
    - **4d Atom UX (wave 7)** — no listing morph; property list nav; inline atom chips from `atoms.inlineRefs`. Scope: [`_dispatches/2026-05-28_central-tx-property-brief-scope.md`](_dispatches/2026-05-28_central-tx-property-brief-scope.md). Dispatch B: [`_dispatches/2026-05-28_dispatch-B_extension_brief-atom-ux.md`](_dispatches/2026-05-28_dispatch-B_extension_brief-atom-ux.md).
 5. Include V1 workspace collaboration, atomization start, paywall-wallet behavior, and admin graph telemetry baseline.

@@ -2,7 +2,7 @@
 id: 76e_platform_observability_sprint
 title: Platform observability sprint — self-healing maintenance loop build
 status: active
-last_updated: 2026-06-08
+last_updated: 2026-07-05
 applies_to: portfolio
 related: [76_empressa_wedge_90d_operating_plan, 76a_operator_autonomous_loops, 76b_gtm_engine_polish_sprint, 76c_operator_master_next_steps, 00c_portfolio_master_map, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 90_runbooks/steward_daily_digest, 90_runbooks/cloud_run_canary_deploy, 90_runbooks/diagrams/self_healing_loop.mermaid, 79a_weekly_moat_scoreboard]
 owner: nick
@@ -41,7 +41,7 @@ Six live Cloud Run services across three projects:
 
 | Service | Project | Latest ready revision | Role |
 |---|---|---|---|
-| `hauska-mcp-server` | `hauska-prod-497015` | `hauska-mcp-server-00004-t5c` | Gating boundary, 46 tools, `X-Hauska-Key` product gate |
+| `hauska-mcp-server` | `hauska-prod-497015` | `hauska-mcp-server-00004-t5c` | Gating boundary, 62 tools across four gates (public/codex/reporting/map) per PR #35 merged 2026-07-05 (was 46 at this 2026-06-07 recon), `X-Hauska-Key` product gate |
 | `hauska-retrieval-api` | `hauska-prod-497015` | `hauska-retrieval-api-00004-m9t` | Read-only corpus retrieval, port 8080 |
 | `cortex-api` | `legacy-design-tools-prod` | `cortex-api-00090-vf9` | Product reasoning monorepo (briefing + finding engines) |
 | `api-server` | `legacy-design-tools-prod` | `api-server-00003-wix` | Brokerage / extension API surface |

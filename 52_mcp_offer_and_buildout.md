@@ -2,14 +2,14 @@
 id: 52_mcp_offer_and_buildout
 title: MCP offer and build-out roadmap (current surface, Tier 1/2 build-out, SDK completion)
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-07-05
 applies_to: hauska
 related: [50_hauska_mcp_server, 51_substrate_v1_sprint, 16_commercialization_roadmap, 14_pricing_framework, 72_hauska_inc_operations, 09_post_saas_substrate_thesis, 08_tiered_access_model, 28_mcp_first_product_design, _research/2026-06-06_cross_repo_recon, _decisions/2026-06-06_v1_tier_pricing_decision_b, _catalog/ops/gtm_launch_channel_plan_v1.yaml]
 ---
 
 # MCP offer and build-out roadmap
 
-> **Architecture-homes reframe (2026-06-21).** The gate surface here predates the Track C rework. The gate is now four products (public, codex, reporting, map), 62 tools, with atom_trace, atom_export, and read_atom_calibration added and 1.5.0 read-contract conformance ([`50_hauska_mcp_server.md`](50_hauska_mcp_server.md), [`_architecture_homes/03_mcp_gate_and_agent_surface.md`](_architecture_homes/03_mcp_gate_and_agent_surface.md)). Agent-operator onboarding/key-issuance and metering-to-payment (on the Circle rail, not Stripe) are designed in `_architecture_homes/03` for phase-3 build. "Cortex" means the reporting function package. Read the offer below through that lens; full rewrite owed in the doc scrub.
+> **Architecture-homes reframe (2026-06-21).** The gate surface here predates the Track C rework. The gate is now four products (public, codex, reporting, map), 62 tools, with atom_trace, atom_export, and read_atom_calibration added and 1.6.1 read-contract conformance (PR #35 merged 2026-07-05, so the four-gate 62-tool model is now live) ([`50_hauska_mcp_server.md`](50_hauska_mcp_server.md), [`_architecture_homes/03_mcp_gate_and_agent_surface.md`](_architecture_homes/03_mcp_gate_and_agent_surface.md)). Agent-operator onboarding/key-issuance and metering-to-payment (on the Circle rail, not Stripe) are designed in `_architecture_homes/03` for phase-3 build. "Cortex" means the reporting function package. Read the offer below through that lens; full rewrite owed in the doc scrub.
 
 > **Purpose.** Capture what the Hauska MCP surface actually offers today, the engines that are built but not yet exposed, the functionality build-out that turns shipped work into sellable Layer 2 surface, and the Hauska SDK completion plan that makes paid revenue possible. Written 2026-06-06 because a wave of cortex-api and engine work has shipped that the commercial surface does not yet express. The recommended sequence at the end is the agreed order: build and test before public launch. Decision C (GTM channels) is ratify-ready but pinned until this build-out lands (`_catalog/ops/gtm_launch_channel_plan_v1.yaml`).
 >
@@ -17,14 +17,14 @@ related: [50_hauska_mcp_server, 51_substrate_v1_sprint, 16_commercialization_roa
 
 ## 1. What the offer is today
 
-46 tools across three gated products, gated at call time by `X-Hauska-Key` (no header resolves to the public tier; a malformed or unknown key returns 401). Deployed on Cloud Run in `hauska-prod`; the `mcp.hauska.dev` domain mapping is still pending.
+The shipped surface is now 62 tools across four gated products (public, codex, reporting, map) after the Track C gate rework merged (PR #35, 2026-07-05); the diagram and enumerations immediately below reflect the earlier 2026-06-06 registry snapshot of the three-product 46-tool surface and have not been re-enumerated tool-by-tool. Tools are gated at call time by `X-Hauska-Key` (no header resolves to the public tier; a malformed or unknown key returns 401). Deployed on Cloud Run in `hauska-prod`; the `mcp.hauska.dev` domain mapping is still pending.
 
 ```
                     AGENT / MCP CLIENT  (Cursor, Claude, SDK agents)
                                |   X-Hauska-Key   (no key -> public tier; bad key -> 401)
                                v
    +---------------------------------------------------------------+
-   |  hauska-mcp-server  ·  GATING BOUNDARY  ·  Cloud Run · 46 tools |
+   |  hauska-mcp-server  ·  GATING BOUNDARY  ·  Cloud Run · 62 tools (four gates) |
    +---------------------------------------------------------------+
         |                       |                          |
    PUBLIC (~11)            CODEX (4)                  CORTEX (31)
@@ -52,7 +52,7 @@ These engines run in cortex-api or the engine today and have zero MCP surface. T
 |---|---|---|
 | Property Brief pipeline (cortex-api `/brokerage/v1/brief`): geocode, corpus retrieve, site-context, reasoning + lay summary | UI / extension only | `generate_property_brief` (Layer 2 reasoning tool, the wedge made agent-callable) |
 | Hydrology / drainage (PR #142, merged 2026-06-06): D8 drainage, NOAA rainfall sim, four-inches-of-rain | inside cortex-api | `get_flood_risk` (public teaser) + `simulate_site_drainage` (Layer 2) |
-| Site-context adapters (FEMA, USGS DEM, EPA, Regrid) | only inside the brief path | `get_flood_zone`, `get_parcel`, `get_elevation`, `get_site_context` |
+| Site-context adapters (FEMA, USGS DEM, EPA, Cotality parcel; Regrid purged 2026-06-17) | only inside the brief path | `get_flood_zone`, `get_parcel`, `get_elevation`, `get_site_context` |
 | Site topography (2D.1 merged): DEM, contours | atom only | `get_site_topography` |
 | Cotality 8-adapter pack (merged, creds-pending): property, parcel polygon, climate, hazard/flood-depth, replacement cost, O&G mineral, utility | inert | a Layer 2 data tier: `get_property_detail`, `get_replacement_cost`, `get_hazard_profile`, `get_parcel_polygon` |
 | Encumbrances (ADR-020/021 atoms) | atoms exist | `search_encumbrances`, `get_restrictions` |
@@ -68,7 +68,7 @@ These engines run in cortex-api or the engine today and have zero MCP surface. T
 
 Specced after a direct read of the engine surfaces, not from the §2 gap table, because the doc set lags the code. Two findings reshaped the build-out and are load-bearing for the dispatches:
 
-First, the site-context adapter set is already exposed at place granularity. The shipped public tools `get_place_layers` and `get_place_dossier` already run `fetchBrokerageSiteContext` over the FEMA, USGS, EPA, and Regrid set (verified `legacy-design-tools/artifacts/api-server/src/routes/brokeragePlace.ts:105-230`). The §2 gap row proposing net-new `get_flood_zone`, `get_parcel`, `get_elevation`, and `get_site_context` is therefore narrower than written: those layers are already Layer 1 public surface. Building single-purpose duplicates would add a bare-data Layer 2 SKU that the sell-reasoning commitment does not want and that the existing place tools already serve. They are de-scoped (see the de-scoped row below).
+First, the site-context adapter set is already exposed at place granularity. The shipped public tools `get_place_layers` and `get_place_dossier` already run `fetchBrokerageSiteContext` over the FEMA, USGS, EPA, and Cotality parcel set (verified `legacy-design-tools/artifacts/api-server/src/routes/brokeragePlace.ts:105-230` at the 2026-06-06 read; Regrid was purged 2026-06-17 and Cotality is the sole parcel spine). The §2 gap row proposing net-new `get_flood_zone`, `get_parcel`, `get_elevation`, and `get_site_context` is therefore narrower than written: those layers are already Layer 1 public surface. Building single-purpose duplicates would add a bare-data Layer 2 SKU that the sell-reasoning commitment does not want and that the existing place tools already serve. They are de-scoped (see the de-scoped row below).
 
 Second, the brief endpoint exists but is not wrapped. `POST /api/brokerage/v1/brief` is live (`brokerageBrief.ts:323`, mounted at `/api/brokerage/v1` via `brokerageBrief.ts:903`) and already produces `reasoningSummary`, `laySummary`, and a cited-atom projection persisted to `brokerage_brief_runs`. But the MCP server's `legacy-client.ts` has `resolvePlace`, place, and workspace methods and no brief method (verified). So the brief wrap is a real Tier 1 item, and it carries a cross-repo seam: the endpoint sits behind `brokerageAuth` plus a wallet paywall (402 at `brokerageBrief.ts:370`), so the MCP gate must call it on a service path, not the extension-public install-id path. That seam is the cortex-api dispatch (cc-agent-C).
 

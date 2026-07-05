@@ -2,7 +2,7 @@
 id: 55_spine_data_intelligence_stack
 title: Spine data-intelligence stack - verified current state, robustness roadmap, COGS
 status: active
-last_updated: 2026-06-07
+last_updated: 2026-07-05
 applies_to: hauska
 owner: nick
 related: [00c_portfolio_master_map, 50_hauska_mcp_server, 52_mcp_offer_and_buildout, 54_tenant_leg_sprint, 04a_arrow_two_calibration_capture, 27_engine_evolution_plan, 47_codex_plan_review, 80_adrs/adr_019_layered_code_substrate, 80_adrs/adr_021_constraint_resolution_and_precedence, 80_adrs/adr_010_atom_graph_traversal, 14_pricing_framework, _research/2026-06-06_cross_repo_recon]
@@ -18,10 +18,10 @@ related: [00c_portfolio_master_map, 50_hauska_mcp_server, 52_mcp_offer_and_build
 
 | Layer | Component | What it is | State |
 |---|---|---|---|
-| Gate | `hauska-mcp-server` | 46 tools; gates by product at `X-Hauska-Key`; min-instance 1 warm, max 10 | LIVE; no tenant field yet (tenant leg adds it, [`54`](54_tenant_leg_sprint.md)) |
+| Gate | `hauska-mcp-server` | 62 tools across four product gates (public/codex/reporting/map, PR #35 merged 2026-07-05); gates by product at `X-Hauska-Key`; min-instance 1 warm, max 10 | LIVE; no tenant field yet (tenant leg adds it, [`54`](54_tenant_leg_sprint.md)) |
 | Product engines | `cortex-api` `@workspace/*` | site-context, hydrology, plan-review/finding, briefing, letters | LIVE; workspace packages; gate-front seam pending |
 | Retrieval API | `hauska-engine` | read-only code corpus, 34-35 juris / ~21k atoms, ~56MB snapshot baked into image | LIVE |
-| Atom contract | `@hauska/atom-contract` 1.3.0 | shape every layer speaks; 5-value accessPolicy | published; accessPolicy declared, unenforced |
+| Atom contract | `@hauska/atom-contract` 1.6.1 | shape every layer speaks; 5-value accessPolicy | published 2026-07-05; accessPolicy declared, unenforced |
 | Commerce | `@hauska-sdk/*` | Circle fiat, USDC crypto, metering | completion merged, dormant |
 | Data | Neon x3, GCS objects, corpus snapshot | api_keys, findings, site-context, IFC/GeoTIFF/renders | LIVE |
 

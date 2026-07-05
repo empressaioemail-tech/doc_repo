@@ -2,7 +2,7 @@
 id: 56_engine_extraction_sprint
 title: Engine extraction sprint - engines out of cortex-api into the spine
 status: active
-last_updated: 2026-06-09
+last_updated: 2026-07-05
 applies_to: hauska
 owner: nick
 related: [80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_full_engine_extraction_and_data_packages, _decisions/2026-06-07_adr008_gate_front_seam_scoping, 55_spine_data_intelligence_stack, 57_national_code_warming_sprint, 54_tenant_leg_sprint, 27_engine_evolution_plan, 30a_smartcity_stabilization_sprint, 00c_portfolio_master_map, _decisions/2026-06-09_codewarm_arrow_two_combined]
@@ -13,6 +13,8 @@ related: [80_adrs/adr_008_engine_factor_out, _decisions/2026-06-07_full_engine_e
 > **What this is.** The operational plan to lift the reasoning engines out of cortex-api into the Hauska spine so the gate is the one control plane and no app reaches an engine ungated. Commits ADR-008 from "accepted, scheduled" into a sequenced sprint. Decision: [`_decisions/2026-06-07_full_engine_extraction_and_data_packages.md`](_decisions/2026-06-07_full_engine_extraction_and_data_packages.md).
 >
 > **Two binding conditions** (from the pre-mortem): packages/engines sell reasoning not raw data; and the physical lift is sequenced behind M-Stabilize Phase 2C (verified not started). Scaffold now, lift after 2C.
+>
+> **Status banner (2026-07-05 hygiene pass).** The extraction cut is substantially LANDED. As of 2026-06-11 the four reasoning engines are lifted onto the spine and serving in prod per [`00_current_state.md`](00_current_state.md); the gate-fronted reasoning path is live, not scaffold-only. The QUEUED and dispatch-scheduling rows in the tables below are historical planning artifacts retained for provenance, not open work. Read the sequencing content as the record of how the lift was scoped, not as a live to-do; individual not-yet-landed slices, if any, are tracked in `00_current_state.md`, which is authoritative over this sprint doc.
 
 ## Target architecture
 
