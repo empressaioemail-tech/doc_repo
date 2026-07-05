@@ -117,4 +117,16 @@ Everything else about #35 is done; this is the only remaining step, and it is bo
 
 - 2026-07-05: `@hauska/atom-contract@1.6.1` published + verified (`dist-tags.latest` 1.6.1, `./conformance`+`./export` exports advertised, `v1.6.1` tag pushed).
 - 2026-07-05: hauska-mcp-server PR #35 merged to main (four-gate rework, 320 tests pass, free-tier + migration fixes spot-checked pre-merge). #32/#33 closed.
-- 2026-07-05: hauska-engine PR #80 (fail-open fix), legacy-design-tools PR #225 (mock-flip) open + mergeable, tests green — awaiting planner merge (next cycle).
+- 2026-07-05: hauska-engine PR #80 (fail-open fix) MERGED to main (22 tests green). legacy-design-tools PR #225 (mock-flip fail-loud) MERGED to main (52 tests green). Neither auto-deploys (both use separate Cloud Build/canary) — code landed, prod unaffected until a deliberate deploy.
+
+## Session checkpoint 2026-07-05 — what is on main now
+
+- **hauska-atom-contract**: 1.6.1 LIVE on npm (conformance/export provenance restored).
+- **hauska-engine main**: fail-open accessPolicy fix landed (#80).
+- **legacy-design-tools main**: mock-LLM-default fail-loud landed (#225).
+- **hauska-mcp-server main**: four-gate rework landed (#35) — deploy staged per the runbook above.
+- **doc_repo**: boot-truth corrected, repo_intents.md, .gitattributes, 6 decision records, ICC binding spec, this tracker.
+- All at-risk work rescued to branches; secrets deleted (key rotation owed).
+
+**Deploys pending (deliberate, next cycle):** MCP four-gate canary (runbook above); optionally cortex-api + engine redeploys to pick up #225/#80 (both are safety fixes; prod unaffected until then).
+**Operator-owed:** rotate extension key; npm automation-token location (for autonomous SDK/future publishing); Cotality key (2026-07-06).
