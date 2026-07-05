@@ -29,6 +29,20 @@ Started 2026-07-04. Planner-run, autonomous per operator greenlight (decision: `
 
 **Probe-key hygiene:** all four probe keys minted during gate verification were revoked (DELETE 200 each). The command-center key (c1fcfe13) is the only key minted this session that remains active, held only in Vercel env.
 
+**SESSION-2 CLOSE ADDENDUM (later same day; session record `_sessions/2026-07-05_convergence_autonomous_run_claude_code.md`):**
+- **Tenancy T1 BUILT AND STAGED across all three repos (no prod flip, per ruling).** Producer: hauska-mcp-server **PR #37** (gate-context.ts, HMAC-SHA256 signed context on every upstream call, 349/349 tests). Consumers (log-only default, byte-identical prod behavior until the flip): hauska-engine **PR #84** (60/60 tests) and legacy-design-tools **PR #227** (all six gate-fronted routes; +12 tests, zero regressions vs a main baseline run). Wire contract cross-checked across all three (seconds-epoch iat/exp, constant-time compare). `GATE_CONTEXT_SIGNING_KEY` v1 staged in Secret Manager (hauska-prod-497015), NOT mounted anywhere yet. **The coordinated flip (mount key -> log mode soak -> enforce -> remove plain-header trust) is the operator-approved next step; all three PRs are marked DO-NOT-MERGE-IN-ISOLATION.**
+- **Console unification MERGED + LIVE (hauska-map PR #6, main 6538365).** The root vanilla-JS spine console retired; five capabilities ported as React panels (McpInspector, ParcelTrace, AgentView, LayerRegistryView, Settings); redeployed to cmdcenter-blush.vercel.app and smoked (Empressa title + proxy healthz 200). Executes the 2026-07-04 master-map/console-unification decision.
+- **Phase 4 Stripe test-mode pricing CREATED** (Decision B, test key verified sk_test_ before any write): products Hauska Layer 2 Builder ($49/mo, prod_UpYRs5Df4yO18R) + Pro Stream ($199/mo, prod_UpYRnNRCeNnFCA); billing meter `layer2_call` (mtr_test_61UzHInRw5N1hYEjh41FjAepSMTX7ItU); metered overage prices $0.04 (Builder) / $0.02 (Pro) per call. Idempotent creation scripts in the session scratchpad; metering wire-up (MCP -> meter events) queued behind T1.
+- **Phase 4 doc drafts FILED to _inbox for operator framing review** (the program never defined these artifacts; each draft says so): `2026-07-05_draft_proof_of_record_spec.md` (rec. slot 62), `2026-07-05_draft_certification_scaffold.md` (rec. slot 63; bakes in a non-vacuousness floor motivated by the eval-scores incident), `2026-07-05_draft_siting_spike_memo.md` (scope self-proposed from the 77 place-graph data-center signal — correct scope first if "siting" meant something else).
+
+**QUEUE (next cycle, dependency order):**
+1. ICC corpus ingest run (IBC2018P6 + IPMC2018P2) + eval + snapshot re-mint + retrieval-api data deploy — then merge extension PR #5 (hauska-brief-extension, ICC formal citation).
+2. Tenancy T1 coordinated flip (operator-approved sequencing): merge #37/#84/#227, mount GATE_CONTEXT_SIGNING_KEY on all three services, soak in log mode, review gate_context_mismatch logs, then enforce + remove plain-header trust. Then T2 (tenant-private write primitive) per the tenancy plan.
+3. MCP metering wire-up: emit `layer2_call` meter events at the tool-call layer for Layer 2 paid calls (Stripe test products exist; @hauska-sdk/payment consumption per 14/29).
+4. Coordinated landings held for operator: component-library rename PR #226 (ldt) + atom-spec PR #4 (atom-contract, framing review); npm CI publish path (NPM_TOKEN secrets for SDK + atom-contract).
+5. Eval-scores: build per-jurisdiction curated queries before any external publication (branch eval/per-jurisdiction-scores preserved).
+6. Upstash replacement (or accept per-instance memory limits): recreate db, update UPSTASH_REDIS_REST_URL env + token secret, redeploy MCP.
+
 
 
 Execution model CONFIRMED + validated: **cursor-agent (Cursor's limits) executes code; planner (Claude/Max) verifies, reviews, merges, deploys.** cursor-agent invocation: refresh PATH, then `cursor-agent --print --force --model sonnet-4.5 "<task>"` in the target repo dir (background via run_in_background). Verified working on the engine bump.

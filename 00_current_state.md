@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-07-02
+title: Current state snapshot — 2026-07-05
 status: active
-last_updated: 2026-07-02
+last_updated: 2026-07-05
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,18 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-07-05 — Convergence autonomous run: deploy chain live, ICC backend live e2e, tenancy T1 staged, Phase 3/4 landed
+
+The convergence program (started 2026-07-04) ran a full autonomous session: cursor-agent executed all code (seven dispatches), the planner did migrations, deploys, secrets, live verification, adversarial review, and merges. Live tracker (read first on any resume): [`_inbox/2026-07-04_convergence-program_STATUS.md`](_inbox/2026-07-04_convergence-program_STATUS.md). Session: [`_sessions/2026-07-05_convergence_autonomous_run_claude_code.md`](_sessions/2026-07-05_convergence_autonomous_run_claude_code.md).
+
+Deployed and verified live: the MCP four-gate rework (migrations 004+005 applied, gate matrix probed; serving `hauska-mcp-server-00010-zuq`; the canary probes exposed and fixed a latent keyed-request outage — the Upstash rate-limit Redis was deleted; ResilientRateLimitStore fallback shipped as PR #36); cortex-api at main with #225 (`cortex-api-00288-lab`); engine-api at main with the atom-contract 1.6.1 bump (`hauska-engine-api-00031-rap`, PR #82, tags repointed, ICC secrets v2 live); retrieval-api with the #80 fail-closed fix (`hauska-retrieval-api-00008-ber`). The MCP gate now enforces four products at call time with 63 tools.
+
+ICC Code Connect is live end to end: real OAuth endpoint found and verified (`/auth/token`, form-body client credentials), demo entitlements confirmed (IBC2018P6 + IPMC2018P2 through 2026-12-30), and the engine adapter reconciled to the real wire contract (PR #83) with a planner live run producing 4,966 IBC section atoms with deep links and reasoning-layer bodyText (ADR-019 boundary held). Next: corpus ingest + snapshot re-mint, then the extension PR #5 merge.
+
+Phase 3: the command center at [cmdcenter-blush.vercel.app](https://cmdcenter-blush.vercel.app) is wired (server-side key proxy, no keys in the browser), Empressa-branded, and unified — the hauska-map root vanilla console retired into five new React panels (PR #6) per the 2026-07-04 unification decision. Phase 2 tenancy T1 is BUILT AND STAGED across all three repos as DO-NOT-MERGE-IN-ISOLATION PRs (mcp #37 producer, engine #84 + legacy-design-tools #227 consumers, log-only default; signing key staged in Secret Manager, unmounted) — the coordinated flip is the next operator-visible step. Phase 4: Stripe test-mode pricing created per Decision B (Builder $49 / Pro $199 + layer2_call meter + metered overage), and three draft docs filed to `_inbox` for framing review (proof-of-record spec, certification scaffold, siting spike memo).
+
+Honesty note: the prior session's eval-scores artifact is not publishable (32 of 34 jurisdictions pass top-3 vacuously with zero queries evaluated); it needs per-jurisdiction curated queries first. Operator-owed: extension key rotation, Cotality production keys (2026-07-06), NPM_TOKEN secrets for CI publishing, Upstash replacement decision, Phase 4 draft reviews, T1 flip approval, rename #226 + atom-spec #4 coordinated landings.
 
 ## 2026-07-02 — Cortex QA Phase 1 + Phase 2 + deep review COMPLETE
 
