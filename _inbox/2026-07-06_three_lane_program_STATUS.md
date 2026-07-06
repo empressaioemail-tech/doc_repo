@@ -1,0 +1,121 @@
+# Three-lane autonomous program — live tracker
+
+Started 2026-07-06. Operator greenlight: fully autonomous build across all three lanes, Cursor executes with adversarial review, planner verifies/merges/deploys. Plan: `_inbox/2026-07-06_three_goal_program_plan.md`. Ratification record: `_inbox/2026-07-06_operator_ratification_package.md` (CLOSED — all answers in). This file is the cross-context state anchor: any continuation session reads this first, then verifies claims against live gh/gcloud/npm before acting (steering docs go stale within hours).
+
+## Operating rules (inherited from the convergence program, plus this run's specifics)
+
+1. cursor-agent CLI (headless, `--print --force --model sonnet-4.5`, PATH refresh first) writes ALL repo code in FRESH P:\tmp task clones (push-immediately-after-first-commit; never the operator's persistent clones). Planner does migrations, deploys, secrets, live verification, adversarial review, merges, doc work directly.
+2. Every merge: adversarial review prompted to refute + WAIT FOR GREEN PR CI (the #227 lesson). Every deploy: canary + rollback handle + live probe. Verification never delegated to executors.
+3. Long native processes run DETACHED (Start-Process + log + Monitor); kill zombies by CommandLine match before trusting artifacts.
+4. smartcity-os: absolute no-touch. doc_repo commits: check git log -3 + status first, stage explicit paths (concurrent-commit hazard).
+5. Blocked items route to the Pickup List and the run continues; nothing waits silently. Never fake a result.
+
+## Grants and constraints (operator, 2026-07-06)
+
+- **Deploys:** autonomous on green (standing). **Stripe:** test-mode only. **T1 enforce:** GRANTED on a clean log-mode soak (fix the producer product-resolution bug first, review gate_context_mismatch, then enforce + remove plain-header trust).
+- **npm: ALL publishes are operator-manual at session end.** Do NOT attempt token automation again. Program bridges: consumers take the new contract via packed tarball (`file:`) or git ref on task branches; final lockfile-bump PRs stage behind the Publish Queue (below). ldt's CI publish path works and MAY be used for ldt-scoped packages (proven: cortex-tiles 0.1.1).
+- **Branding:** Hauska = SDK only; everything else Empressa (decision `2026-07-06_branding_hauska_sdk_only.md`). R1 brand surfaces rename in this program; R2 infra identifiers deliberately lag. Atom spec (PR #4) rebrands BEFORE merge. Contract renames to `@empressaio/atom-contract` at the 1.7.0 publish.
+- **SLB framing retired** (`2026-07-06_slb_framing_retired_operator_overlay.md`): operator-overlay capabilities, one product track.
+- **og-twin repo exists:** github.com/empressaioemail-tech/og-twin. Mockup spec: `_verticals/oil_gas/assets/permian-field-health.html` (keep look/feel/flow; swap synthetic generators for a data-adapter layer).
+- Cotality: operator-handled, never a blocker. Extension key rotation + Upstash: deferred until after QA by ruling.
+
+## ROUND 2 STATE (2026-07-06, after first build round + Herbert answers)
+
+- **Herbert's review answers RECEIVED and APPLIED**: filed at `_verticals/oil_gas/85a_herbert_review_answers.md`; ADR-025 REVVED same day (revenue-allocation-unit first-class with two source adapters, factors operator-asserted + method-tagged, DOI derived-never-source with `reconciles-with` edges, INSTRUMENT_TYPES unit family, county-ingest OCR/grantor-grantee reality note). Pre-freeze residual: Herbert's OPTIONAL Reeves allocation-vs-pooled ratio pull (recommended accept; non-blocking). **Chris provides no further inputs (operator 2026-07-06) — the mockup is the complete external spec.**
+- **A1 (hauska-map PR #10) built + adversarially reviewed: PARTIAL.** Good: MCP JSON-RPC 403 fixed (minimal, safe), 60+ endpoint inventory, proxy contract test, honest excluded-states. Gap found by review + LIVE PROBES: defect #2 (Reviewer Queue HTML) was NOT fixed — root cause is upstream-path mismatch (`/api/spine/cortex/engagements` → cortex-api serves its own SPA index.html 200 text/html; `/api/spine/cortex/api/engagements` → 200 JSON). **A1b RUNNING** on the same branch: baseUrl `/api/spine/cortex/api`, spine.ts mutation-allowlist re-prefix, contract/test updates. Note: `[]` from /api/engagements under the service key needs a data-scoping check before A-exit (queue previously showed 31 engagements via the reviewer BFF).
+- **C1 (atom-contract PR #5) built:** ./og module (11 types), core obligation, 12 prefixes, INSTRUMENT_TYPES, 1.7.0 + @empressaio rename staged, 142/142 tests. **C1b RUNNING** on the same branch: revenue-allocation-unit (+unit_ prefix), unit instrument family, reconciles-with edge, per the revved ADR. Adversarial review happens AFTER C1b lands; publish waits in the Publish Queue.
+- **B1 verify: verdict NO (planner-confirmed trace).** Compliance runs cannot cite the minted IBC atoms — three independent blocks: (1) deployed retrieval mode `neon` never contacts the engine corpus (BRIEF_CODE_RETRIEVAL unset, no BRIEF_RETRIEVAL_API_URL in the deploy workflow); (2) jurisdiction resolution only emits geographic slugs, `icc-model-code` unreachable, exact-match filter upstream with no model-code fallback; (3) engine-api findings strip citations outside the passed codeSections allow-list. **B1-wire RUNNING** (ldt branch `feat/b1-icc-model-code-supplement`): substrate supplement call for icc-model-code merged into codeSections, HONESTLY LABELED as ICC model code (never "the jurisdiction's adopted code" — adoption mapping via the unwired resolveEditionAtDate is named future work), env-gated, deploy-workflow env added. Deploy-time planner step: ensure retrieval URL/key secrets exist in the ldt deploy project.
+- **Today's IRC-2021 citations provenance (honest-state):** grand_county_ut local corpus + the web-first TEXAS_WEB_FIRST_REVIEW_TARGETS path (web-fetched, provenance-tagged) — NOT the minted corpus. Registered corpus jurisdictions get no generic IRC supplement today.
+
+## DONE (this session, 2026-07-06)
+
+- O&G activation decision PROMOTED to `_decisions/2026-07-05_og_vertical_activation.md` (status active; SLB + branding amendments applied; seeded-first BFF baked into step 7).
+- ADR-025 PROMOTED to `80_adrs/adr_025_og_atom_ontology.md` (rulings applied: obligation in core module, interest tenant-private default, @empressaio rename note; status proposed pending Herbert's pooling answer before the 1.7.0 freeze).
+- Decision records filed: branding (Hauska SDK-only, staged rename), SLB retirement (operator-overlay reframe).
+- Chris mockup captured byte-faithful from transcript (262KB) at `_verticals/oil_gas/assets/permian-field-health.html`.
+
+## Lane A — Command center firing on all cylinders
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| A1 | Proxy truth pass: enumerate every panel endpoint vs Vercel proxy allowlist; fix MCP 403 method/path + cortex rewrite HTML-fallthrough; add proxy contract test | QUEUED (first dispatch) | repo hauska-map; exit = every LIVE panel loads real data or a real backend error |
+| A2 | Rename wave R1: rebase + land #226 (@empressaio components); EXPAND per branding decision — atom-spec PR #4 content rebrand then merge; UI strings, READMEs, "Powered by" line, certification name | QUEUED (behind branding-scope enumeration) | publishes ride ldt CI where ldt-scoped; others → Publish Queue |
+| A3 | Shell dissolution: workspace tiles as native command-center panels, one shell, one design language (tokens pushed down); mockup + extension = quality bar; operator screenshots = defect spec | QUEUED (after A2) | the big build |
+| A4 | Engine truth + revenue meter: pysheds into engine worker image; IPMC empty-body adapter fix; honest LIVE/degraded/not-built states; metering wire-up (layer2_call → Stripe test meter) + revenue-meter panel | QUEUED | metering is an ICC acceptance criterion |
+
+## Lane B — Property Brief up and running
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| B1 | Verify plan-review→IBC citation path against the icc-model-code corpus; wire if it fails | QUEUED (first dispatch) | engine-side; serves A and B |
+| B2 | Extension catch-up to revised architecture: four-gate key posture, ICC formal citations live-verified, regressed QA defects, package consumption | QUEUED | key rotation after QA |
+| B3 | Full live-prod QA loop (06-17/18 pattern): listing → parse → cited brief → deep-dive → map | QUEUED | exit = demo-grade on in-corpus property |
+| B4 | ICC walkthrough assembly (extension + command center + revenue meter) per the 2026-07-06 operator answer in the convergence tracker | QUEUED (needs A4+B2) | |
+
+## Lane C — O&G: Reeves twin, backend into Chris's frontend
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| C1 | Contract 1.7.0 authoring in hauska-atom-contract per ADR-025 (./og module + obligation in core; rename to @empressaio/atom-contract) | QUEUED (first dispatch) | Herbert folds in before FREEZE; publish → Publish Queue; consumers bridge via tarball |
+| C2 | og-twin scaffold: mockup in as the app; data-adapter layer replacing synthetic generators; per-surface data contract doc (public-feedable / derived-labeled / operator-overlay-seeded classification) | QUEUED | repo exists; contract doc is the Chris deliverable |
+| C3 | RRC adapters Reeves-first (production PDQ/EBCDIC, H-10 injection/disposal, W-1/P-4/P-5/completions) in hauska-engine | QUEUED (behind C1 shapes) | engine merge queue |
+| C4 | Seeded BFF + O&G MCP tools: fixture atoms conforming to 1.7.0, labeled seeded; Chris integrates against the real contract | QUEUED (behind C1) | swap to live post-mint, zero frontend change |
+| C5 | Adjudication admin panel (native command-center panel family per A3 model) | QUEUED (first atoms) | cost gate + calibration capture |
+| C6 | Reeves corpus mint + non-vacuous eval + cost capture | QUEUED (behind C3) | commitment-3 checkpoint |
+| C7 | Title slice (2-3 Herbert tracts, aggregator-sourced) | QUEUED (Herbert tract names) | |
+| C8 | LAYER_REGISTRY keys + 3D lateral lens | QUEUED (behind C6) | |
+
+## Parallel dispatches
+
+- **M1 calibration run (operator: RUN):** cc-agent-E edition-bundle ingest → K2 retrodiction Austin+SA → M1 gate measure. Dispatches drafted 06-25. Also correct 00d's retracted arrow-two claim.
+- **Doc pass:** promote proof-of-record → slot 62, certification scaffold → slot 63 (rename "Hauska Verified" per branding, keep non-vacuousness floor); park siting memo as exploration; SLB doc-impact edits (80/40); branding scrub additions to the scrub tracker.
+
+## og-twin LIVE (2026-07-06 evening)
+
+**https://og-twin.vercel.app — the Reeves twin viz layer, deployed.** PR #1 merged after THREE rounds: C2 built a good data layer (TwinDataSource seam, contract-validated seeded fixtures, reporting-split negative test) but replaced the mockup with a skeleton; C2b restored the DOM but dropped the drilling-scene/WLC/knowledge-graph implementations (dead shells); C2c fixed it architecturally — the mockup ships VERBATIM (266KB, all subsystems probe-verified PRESENT) with the seam as a build-time injection (`public/twin-data.js`, 18KB seeded Reeves data from the mapping layer, `?source=synthetic|seeded` toggle, guarded splice points) plus a tripwire test that asserts the subsystem code exists as text — the drop-a-subsystem failure mode is now a red test. 28/28 tests planner-verified; deployed via Vercel (project og-twin; note the PS5.1 UTF8-BOM-breaks-vercel.json trap, worked around). Contract consumed via committed vendor tarball pending the npm publish. Fleet lesson memorized: never let a dispatch run non-exiting commands (the C2 runner hung 8h on `pnpm dev`).
+
+## Herbert re-scope (2026-07-06, operator)
+
+Herbert has NO Reeves deals — he cannot name title-slice tracts or serve as the fact oracle. Rulings applied: (1) activation decision step 5 AMENDED — tract selection from recent Reeves allocation-well plats; verification = purchased professional runsheet (1-2 tracts, cost measured into the commitment-3 checkpoint) + dual-source chain consistency + operator cross-signals; Herbert grades METHOD (run-sheet structure) not facts. (2) The Reeves ratio pull: no clean three-way public split exists — RRC W-1 query gives allocation vs PSA directly (Wellbore Completion Type filter, County=Reeves, since 2022); pooled-vs-standalone is inherently a DERIVED attribute resolvable only by our own county ingest (which validates the schema's negative-case rule). The three W-1 count queries fold into the C3 RRC permits adapter dispatch as its FIRST deliverable (the adapter hits that same query surface anyway; the ratio report becomes its smoke test). Nothing blocks on the counts.
+
+## Contention queues (serialize)
+
+- **hauska-engine:** one merge queue across A4 (worker image), B1 (wiring if needed), C3 (adapters), M1 (ingest).
+- **hauska-atom-contract:** spec #4 (rebranded) merges first, then C1 1.7.0 on top.
+- **Rename A2 lands before A3 starts and before C2/C4 consume packages.**
+
+## Publish Queue (operator, manual, session end)
+
+(accumulates; each entry staged as version-bumped, tagged, changelog-ready)
+1. `@empressaio/atom-contract@1.7.0` (after Herbert freeze + C1 merge)
+2. `@hauska-sdk/metering@0.1.1` (staged; behind the SDK main build fix — build fix is a program task)
+3. Any rename republishes not coverable by ldt CI
+
+## Pickup List (operator)
+
+- **RESOLVED ~14:20: npm org created by operator; republish re-run GREEN; all five @empressaio packages LIVE on npm** (design-tokens/tile-shell/cortex-client/document-viewer 0.1.0, cortex-tiles 0.1.1; the interim "staged packages" theory was wrong — plain propagation lag). Token confirmed to cover the new scope → Path A viable. **A3 shell dissolution DISPATCHED** (branch feat/a3-shell-dissolution: nested shell dissolved, native space panels from TILE_CAPABILITIES, @empressaio consumption, command-center design language via tokens, state-legend preserved, nested-shell-DOM-gone test, engagements-scoping investigation folded in). REMAINING OPERATOR PASTE (2 min): the working NPM_TOKEN into `hauska-atom-contract` (new) + `hauska-sdk` (refresh) repo secrets → then planner adds the contract publish workflow + SDK build fix and ALL publishing is autonomous.
+- ~~(superseded) **create the `empressaio` organization on npmjs.com**~~ (Add Organization, free plan, owned by the same account whose NPM_TOKEN the CI uses — the hauska-sdk account). The rename republish failed with npm E404 "Scope not found" (run 28794361910); the workflow is otherwise proven and idempotent — once the org exists I re-run it and the five @empressaio packages publish autonomously. Also gates your `@empressaio/atom-contract@1.7.0` publish and unblocks A2b consumer bumps + the A3 shell rebuild (held to avoid a double-rebase against unpublished names).
+
+- npm publish batch at session end (queue above).
+- Herbert answers → forward (pooling gates 1.7.0 freeze; tract names gate C7).
+- Chris relay: seeded-first ack + touchable-version handback flow (recorded in the SLB-retirement decision).
+- Domains: Empressa domain decision for the public MCP endpoint (replaces the never-launched mcp.hauska.dev) — from the branding decision.
+- Extension key rotation + Upstash replacement: after QA per standing ruling.
+
+## Verification log
+
+(appended as the run executes; every claim traced to live command output)
+
+- 2026-07-06 ~07:30: **A1 COMPLETE AND LIVE.** hauska-map PR #10 (A1+A1b: MCP allowlist fix, baseUrl `/api/spine/cortex/api`, mutation-allowlist re-prefix, 60+ endpoint PROXY_CONTRACT.md, contract test) merged after planner re-ran tests (6/6) + build; deployed to cmdcenter prod. Post-deploy probe caught a THIRD defect the tests missed: empty MCP remainder forwarded to upstream ROOT ("Cannot POST /") — planner hotfix PR #11 (effectivePath mapping) merged + redeployed. LIVE-VERIFIED on cmdcenter-blush.vercel.app: `GET /api/spine/cortex/api/engagements` → 200 JSON; `POST /api/spine/mcp` (Accept: json+event-stream) → 200, **63 tools**. OPEN for Lane A exit: `/api/engagements` returns `[]` under the service key while the reviewer queue previously showed 31 engagements via the reviewer BFF — data-scoping check owed in the A3/quality pass (probably needs the reviewer-BFF listing route or key scoping).
+- 2026-07-06 ~07:37: **C1+C1b built; planner re-verified** (typecheck clean, 152/152 tests on feat/1.7.0-og-ontology). Revenue-allocation-unit + unit instrument family + reconciles-with landed per the revved ADR; ADR + Herbert 85a committed into the contract repo docs. Adversarial review subagent running on PR #5; merge on verdict; publish stays in the Publish Queue (operator).
+- 2026-07-06 ~07:50: **Contract PR #5 adversarial verdict: HOLD — C1c fix round RUNNING.** Review (independent subagent, findings verified against files) refuted the registration claims: (blocker) 13 prefixes never entered the real registry (`src/temporal/common.ts` NodeTypePrefix) — og-local parallel list only, `oblg_` fictional; (blocker) DID derivation/validation not implemented — `wellDid:"banana"` validates, fixture IDs not even hex; (freeze-critical) core obligation hard-codes required `leaseDid` — ADR amended to domain-neutral `anchorDid`+`anchorKind?`, psa-basis source rules also amended (instruments optional, sourceNote); plus 8 should-fixes (branded confidence typing, obligation tenant-private default missing, production-timeseries lacks derived-stream discriminator, pad confidence, anchorless interest, dishonest test titles, rename JSDoc/README hygiene incl. fictional @empressaio/sdk peer). Additivity itself SURVIVED attack (existing exports/unions untouched; bare-scalar confidence genuinely unrepresentable). C1c dispatch carries all findings; re-review after it lands.
+- 2026-07-06 ~07:48: **B1-wire MERGED (#230) on green CI (Test/Typecheck/Rubric all pass) after planner line-review.** Key review facts: supplement fires in ALL primary modes incl. prod's neon (post-branch check, gated on BRIEF_RETRIEVAL_API_URL); honest labeling lands in `toCodeSectionInput` ("<book> <ref> (ICC model code)"); main's --set-secrets ALREADY mounts BRIEF_RETRIEVAL_API_URL/KEY (T1 session added them), so the flag was the only missing wiring. cortex-api deploy workflow triggered on merge SHA `16136ff0` (run 28792685560, watcher set). Post-deploy verify: revision serving + compliance-run e2e probe for an IBC "(ICC model code)" citation rides the walkthrough assembly.
+- 2026-07-06 ~08:35: **ATOM-SPEC MERGED (PR #4)** as the Empressa Atom Specification: rebased onto 1.7.0, rebranded (spec/ files + schema $id URIs; only @hauska-sdk references remain, correctly), module index reconciled (./og, 13 prefixes, unit instrument family), package code untouched, 165/165 green under planner re-run. External promotion (registries/announcement) remains operator-gated per the autonomy grant. Phase-1 "own the layer" spec artifact: DONE on main.
+- 2026-07-06 ~08:50: **T1-fix MERGED (mcp PR #38).** Root cause was NOT async contamination — `legacy-client.ts:76` hardcoded `product: subject.tier === "free_anonymous" ? "public" : "public"` (both ternary branches "public"). Fix: `getCurrentProduct()` per-request threading; 4 regression tests incl. interleaved concurrent map+reporting keys; 353/353 planner-verified. **NEXT CYCLE FIRST ITEM (deliberate, not on exhausted context, per the four-gate precedent): MCP redeploy with the fix (recorded method: cloudbuild-build-only.yaml build+push → gcloud run deploy --no-traffic --tag → canary/anon probes → update-traffic; full env/secret list in the convergence tracker runbook) → log-mode soak → review gate_context_mismatch/product logs → GATE_CONTEXT_MODE=enforce on all three services → remove plain-header trust. Enforce grant already in hand.**
+- 2026-07-06 ~08:40: **T1-fix DISPATCHED** (hauska-mcp-server, branch fix/t1-producer-product-resolution): root-cause the producer stamping product "public" on a map-key call (cross-request contamination class); per-request subject threading by construction; interleaved-concurrent-keys regression test. Enforce grant is in hand — sequence after merge: redeploy MCP, log-mode soak review, then GATE_CONTEXT_MODE=enforce + remove plain-header trust.
+- 2026-07-06 ~08:20: **CONTRACT 1.7.0 MERGED (PR #5).** C1c fixed all 12 findings; independent RE-review runtime-verified every fix (verdict: soft HOLD → C1d fixup: Hauska-SDK branding correction in README/package.json, PSA refinement tests, OG_ACCESS_POLICY_SCHEMA DRY) → planner spot-checked diff + re-ran 165/165 → MERGED 13:13Z. Main = `@empressaio/atom-contract@1.7.0` with full O&G ontology incl. revenue-allocation-unit. DELIBERATELY UNTAGGED — tag+publish is the operator's batch (Publish Queue #1); consumers bridge via `npm pack` tarball (p:/tmp/empressaio-atom-contract-1.7.0.tgz).
+- 2026-07-06 ~08:25: **RENAME LANDED (ldt PR #226 MERGED)** after Cursor rebase onto 16136ff (main's three new report tiles preserved under @empressaio naming), planner grep-zero re-verified, CI green (Test/Typecheck/Rubric). "Publish Packages" workflow_dispatch triggered (run 28794361910, watcher set) → five packages republish under @empressaio via the proven ldt CI path. Next after publish: hauska-map consumer bumps (A2b), then A3 shell dissolution unblocks.
+- 2026-07-06 ~08:25: **C2 og-twin scaffold RUNNING** (branch feat/c2-scaffold): mockup as the app, TwinDataSource seam (synthetic vs seeded Reeves), fixtures validated against contract ./og schemas via the 1.7.0 tarball, operator-overlay honesty badges, reporting-split negative test.
+- 2026-07-06 ~08:15: **B1 DEPLOYED TO PROD.** Canary run 28792958066 green → revision `cortex-api-00293-hud` (B1-wire + T1 secrets fully mounted incl. BRIEF_RETRIEVAL_API_URL/KEY) → smoke healthz 200 → shift-traffic dispatch green → **serving 100%**. Rollback handle: `cortex-api-00290-qol`. The ICC model-code supplement is now live and env-enabled; the definitive e2e probe (a compliance run emitting an "(ICC model code)"-labeled IBC citation) is queued for the walkthrough assembly because the engagements-listing scoping question (service key sees `[]`) gates creating/running an engagement through the proxy.
+- 2026-07-06 ~08:00: **First canary attempt FAILED SAFE at 0% (prod untouched):** run 28792685560 — `BRIEF_RETRIEVAL_API_URL/KEY` secrets referenced by main's --set-secrets did NOT exist in legacy-design-tools-prod (the earlier "already mounted" read was wrong: the secrets line landed on main after the last workflow deploy — the merged-vs-applied class again). Fix applied: verified the engine key works against retrieval-api live (`/search?jurisdiction=icc-model-code` → 200, real IBC atoms, section 402.6.4.2), created both secrets via temp-file discipline (lengths 52/59 verified), granted api-server-runtime@ SA secretAccessor on both, re-triggered deploy (run 28792958066, watcher set). Canary discipline: deploy-canary → smoke → shift as separate dispatches; no migrations in #230.
+- 2026-07-06 ~07:38: **B1-wire PR #230 open** (ldt, feat/b1-icc-model-code-supplement): env-gated icc-model-code substrate supplement merged into findings codeSections with model-code source labeling, graceful degradation, deploy-workflow env lines, 7 unit tests. ldt CI is the merge gate (merge only on green). Deploy-time planner step after merge: verify BRIEF_RETRIEVAL_API_URL + retrieval key secrets exist in the ldt deploy project, then canary deploy + live compliance-run probe for an IBC citation labeled as model code.

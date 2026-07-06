@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-07-05
+title: Current state snapshot — 2026-07-06
 status: active
-last_updated: 2026-07-05
+last_updated: 2026-07-06
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,16 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-07-06 — Three-lane autonomous run: og-twin LIVE, contract 1.7.0 merged, @empressaio published, ICC citations wired, shell dissolved
+
+The three-goal program (Property Brief / command center / O&G into Chris's frontend) ran a full autonomous day: 11 PRs merged across 5 repos, 5 prod deploys, 5 npm packages published, 0 rollbacks, every landing live-verified. Tracker + verification log: [`_inbox/2026-07-06_three_lane_program_STATUS.md`](_inbox/2026-07-06_three_lane_program_STATUS.md). Session: [`_sessions/2026-07-06_three_lane_autonomous_run_claude_code.md`](_sessions/2026-07-06_three_lane_autonomous_run_claude_code.md). Handoff (operator-gated walk-through first): [`_dispatches/2026-07-06_next-planning-agent-handoff.md`](_dispatches/2026-07-06_next-planning-agent-handoff.md).
+
+Ratified and filed: O&G activation + ADR-025 PROMOTED to `_decisions/` and `80_adrs/` (obligation domain-neutral in core; revenue-allocation-unit first-class per Herbert's same-day answers in [`_verticals/oil_gas/85a_herbert_review_answers.md`](_verticals/oil_gas/85a_herbert_review_answers.md)); **branding narrowed: Hauska = SDK only** ([`_decisions/2026-07-06_branding_hauska_sdk_only.md`](_decisions/2026-07-06_branding_hauska_sdk_only.md)) and executed same day (five `@empressaio/*` packages live on npm via ldt CI, Empressa Atom Specification merged, contract renamed `@empressaio/atom-contract` at 1.7.0 — merged, unpublished pending the operator token/batch); **SLB framing retired** to operator-overlay capabilities ([`_decisions/2026-07-06_slb_framing_retired_operator_overlay.md`](_decisions/2026-07-06_slb_framing_retired_operator_overlay.md)). Herbert re-scope: he has no Reeves deals — title-slice verification re-architected in the activation decision (purchased runsheet ground truth + dual-source consistency + operator cross-signals; Herbert grades method, not facts). Chris provides no further inputs; his mockup is captured byte-faithful at `_verticals/oil_gas/assets/permian-field-health.html`.
+
+Live: **og-twin.vercel.app** (Chris's mockup byte-faithful — drilling scene, WLC, knowledge graph intact under a tripwire test — with seeded Reeves atoms validating against contract 1.7.0, `?source` toggle, operator-overlay honesty badges); **cmdcenter-blush.vercel.app** (A3 nested-shell dissolution, native space panels, full provider stack, proxy carrying 63 MCP tools + cortex JSON paths); **cortex-api-00293-hud** (plan-review findings can now cite minted IBC sections labeled "(ICC model code)" — the three-block wiring gap closed; rollback 00290-qol). T1 producer bug fixed (mcp #38 merged: the product ternary hardcoded "public" in both branches; MCP redeploy + soak + enforce is the NEXT CYCLE's first item, enforce grant in hand). Process canon extended: live probes after every deploy (caught three defects green tests missed), adversarial reviews with runtime verification (two HOLDs caught real defects including a freeze-critical core-type shape), tripwire tests for every caught failure mode, never dispatch non-exiting commands.
+
+Operator-gated (walk-through at the handoff top): NPM_TOKEN paste into atom-contract + SDK repos (token proven on the @empressaio scope; ends manual publishing), title-slice runsheet spend approval, optional Herbert ratio relay, og-twin/cmdcenter visual review. Standing: Cotality self-managed, key rotation + Upstash post-QA, Stripe test-mode.
 
 ## 2026-07-05 (evening) — T1 flipped to log mode, ICC LIVE end to end, command center = the single surface at 47-tile parity, O&G activated
 

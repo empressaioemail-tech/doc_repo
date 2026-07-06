@@ -10,6 +10,14 @@ Started 2026-07-04. Planner-run, autonomous per operator greenlight (decision: `
 4. Nothing destructive without a captured-elsewhere check. smartcity-os: absolute no-touch. Local folder/clone sweep: out of scope.
 5. Commit messages per convention; doc_repo commits batched at phase boundaries (concurrent-commit hazard rules apply).
 
+## OPERATOR ANSWERS 2026-07-06 (unblocks the handoff's open gap; read with the 2026-07-06 handoff doc)
+
+**Demo-page expectation ANSWERED.** The ICC walkthrough is NOT a standalone demo page. It is the actual selling surfaces: (1) the Property Brief extension, FIXED and caught up to the revised architecture (four-gate keys, ICC formal citations, current packages), consuming capabilities through the gate that the Empressa command center administers; (2) the command center workspace examples (plan-review compliance run citing minted IBC sections, property/architect views); (3) the revenue-meter leg showing ICC content generating metered Layer-2 calls. icc-demo.vercel.app stays as the agent-market leg; the walkthrough is extension + command center.
+
+**NEW QUALITY FLAG (operator, 2026-07-06): the Cortex workspace mount in the command center is not acceptable as-is.** Operator verbatim: not testable at this point, does not match the look, needs a ton of work. This amends the "47-tile parity" claim — parity was capability count, not presentability or testability. The workspace needs a real QA/quality pass (against the design-tokens look and a testability bar) BEFORE it can carry the ICC walkthrough. Operator can supply more detail; the pass should start with its own audit and collect his notes.
+
+**Revised close-the-gap order (supersedes handoff next-lane item 1):** (a) verify/wire plan-review findings against the IBC corpus (unchanged, still first); (b) metering wire-up + revenue-meter panel; (c) workspace quality pass to the operator's bar; (d) extension catch-up pass to the revised architecture; (e) walkthrough assembly across extension + command center. Ratification package for the operator-owed decision stack: `_inbox/2026-07-06_operator_ratification_package.md`.
+
 ## LIVE STATE 2026-07-05 SESSION 2 (continuation spine — read this first on any resume)
 
 **Deploy chain COMPLETE (2026-07-05 second session, planner-run, all verified live):**
