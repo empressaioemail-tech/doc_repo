@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-07-06
+title: Current state snapshot — 2026-07-07
 status: active
-last_updated: 2026-07-06
+last_updated: 2026-07-07
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,12 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-07-07 — Section-1 walk-through + stack run: T1 ENFORCE LIVE, publish rails autonomous, A4 revenue meter live, reviewer queue live, C3a landed
+
+Continuation per the handoff: operator walk-through first (all answers collected — token confirmed, runsheet self-sourced by Nick, og-twin UI externally gated on Chris/Herbert, **A5 workspace active-context filed as the top Lane A defect gating Nick's cmdcenter QA**), then the queued stack autonomously. 9 PRs merged, 7 deploy/shift cycles, 4 packages published via CI, 2 prod migrations, 2 security holes closed, 0 rollbacks. Tracker + full verification log: [`_inbox/2026-07-06_three_lane_program_STATUS.md`](_inbox/2026-07-06_three_lane_program_STATUS.md). Session: [`_sessions/2026-07-07_section1_walkthrough_and_stack_run_claude_code.md`](_sessions/2026-07-07_section1_walkthrough_and_stack_run_claude_code.md).
+
+Live state deltas: **T1 enforce is LIVE on cortex-api** (`cortex-api-00198-wcx`; forged plain-tenant claims 401, anonymous/session untouched, MCP signed calls verified; engine-api deliberately log-mode; HAZARD: the cortex deploy workflow omits GATE_CONTEXT_MODE from --set-env-vars, so a workflow deploy silently reverts enforce — one-line durable fix owed). **Publishing is fully autonomous**: `@empressaio/atom-contract@1.7.0` LIVE on npm via tag-push, `@hauska-sdk/metering@0.1.1`, `@empressaio/cortex-client@0.1.1`, `@empressaio/cortex-tiles@0.1.2`. **A4 complete**: layer2_call metering live at the MCP tool-call layer (migrations 006/007 on prod Neon; `hauska-mcp-server-00022-zeh`; ICC metering acceptance criterion MET via native truth events; Stripe leg unbilled until STRIPE_SECRET_KEY test mount), Revenue Meter panel live on cmdcenter through a traversal-hardened proxy route, `HAUSKA_ENGINE_API_URL` wired (engine map envelope live: 5/7 layers OK, 2 pending Nick's Cotality keys), MCP GCS audit sink recovered (dead since 05-29). **Reviewer queue live**: 37 engagements through the cmdcenter proxy (ldt #232); the map-side tile consumer bump is owed. **C3a landed** (engine #87: og-sources W-1 adapter on the published ./og shapes; ratio counts honestly UNOBTAINED — live acquisition owed). Docs: proof-of-record filed at slot 62, **Empressa Certified** scaffold at slot 63 (branding rename applied), siting memo parked, branding scrub table added, 00d arrow-two claim corrected.
 
 ## 2026-07-06 — Three-lane autonomous run: og-twin LIVE, contract 1.7.0 merged, @empressaio published, ICC citations wired, shell dissolved
 
