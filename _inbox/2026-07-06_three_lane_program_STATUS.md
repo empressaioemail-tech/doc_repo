@@ -19,6 +19,15 @@ Started 2026-07-06. Operator greenlight: fully autonomous build across all three
 - **og-twin repo exists:** github.com/empressaioemail-tech/og-twin. Mockup spec: `_verticals/oil_gas/assets/permian-field-health.html` (keep look/feel/flow; swap synthetic generators for a data-adapter layer).
 - Cotality: operator-handled, never a blocker. Extension key rotation + Upstash: deferred until after QA by ruling.
 
+## SECTION-1 WALK-THROUGH OUTCOMES (2026-07-07, operator answers in)
+
+1. **NPM_TOKEN: CONFIRMED.** Operator confirmed the NPM_TOKEN secrets live-verified in BOTH `hauska-atom-contract` and `hauska-sdk` (gh secret list, both set 2026-07-05 ~23:00Z) are the proven ldt @empressaio-scope token. Publish automation is now a planner task: atom-contract tag-push workflow (mirror ldt publish.yml, version-exists skip), SDK main build fix, then tag-push `@empressaio/atom-contract@1.7.0` + re-run `@hauska-sdk/metering@0.1.1`. The Publish Queue below converts from operator-manual to planner-automated.
+2. **Runsheet spend: DECLINED — operator self-sources.** No purchased runsheet; Nick will find a Reeves County runsheet himself. C7's graded-ground-truth leg WAITS on his runsheet (operator pickup item); dual-source chain consistency + operator cross-signals proceed; commitment-3 checkpoint records $0 external verification spend.
+3. **Herbert relay: operator handles the role relay himself; no drafted message.** Ratio pull stays the C3 adapter's first deliverable (nothing manual).
+4. **og-twin: APPROVED for now; UI/design rounds EXTERNALLY GATED.** Chris will create the design update before any design work happens on our side; UX/flow direction comes from Herbert, who is collecting opinions from others in the field. Do NOT queue og-twin UI rounds until that input arrives. Backend lanes (C3/C4/C6) unaffected.
+5. **cmdcenter: APPROVED with one MAJOR defect that gates operator QA → NEW A5.** Wiring of active context across cortex workspaces and operator-saved workspaces: set a project or an address once and it is active across ALL nodes and workspaces (persona-lens use case: "this is what 123 Main looks like for a plan reviewer / architect / property investor"). Operator's design + additional-function QA is blocked until A5 lands. Filed as Lane A row A5.
+6. **T1 enforce FYI delivered** (grant already standing; soak review will be announced, not blocked on).
+
 ## ROUND 2 STATE (2026-07-06, after first build round + Herbert answers)
 
 - **Herbert's review answers RECEIVED and APPLIED**: filed at `_verticals/oil_gas/85a_herbert_review_answers.md`; ADR-025 REVVED same day (revenue-allocation-unit first-class with two source adapters, factors operator-asserted + method-tagged, DOI derived-never-source with `reconciles-with` edges, INSTRUMENT_TYPES unit family, county-ingest OCR/grantor-grantee reality note). Pre-freeze residual: Herbert's OPTIONAL Reeves allocation-vs-pooled ratio pull (recommended accept; non-blocking). **Chris provides no further inputs (operator 2026-07-06) — the mockup is the complete external spec.**
@@ -42,6 +51,7 @@ Started 2026-07-06. Operator greenlight: fully autonomous build across all three
 | A2 | Rename wave R1: rebase + land #226 (@empressaio components); EXPAND per branding decision — atom-spec PR #4 content rebrand then merge; UI strings, READMEs, "Powered by" line, certification name | QUEUED (behind branding-scope enumeration) | publishes ride ldt CI where ldt-scoped; others → Publish Queue |
 | A3 | Shell dissolution: workspace tiles as native command-center panels, one shell, one design language (tokens pushed down); mockup + extension = quality bar; operator screenshots = defect spec | QUEUED (after A2) | the big build |
 | A4 | Engine truth + revenue meter: pysheds into engine worker image; IPMC empty-body adapter fix; honest LIVE/degraded/not-built states; metering wire-up (layer2_call → Stripe test meter) + revenue-meter panel | QUEUED | metering is an ICC acceptance criterion |
+| A5 | Workspace-wide active context: set a project/address once, active across ALL nodes/workspaces incl. operator-saved ones; persona-lens views ("123 Main as plan reviewer / architect / investor") | QUEUED (operator defect 2026-07-07) | GATES operator design/function QA of the command center |
 
 ## Lane B — Property Brief up and running
 
@@ -84,11 +94,10 @@ Herbert has NO Reeves deals — he cannot name title-slice tracts or serve as th
 - **hauska-atom-contract:** spec #4 (rebranded) merges first, then C1 1.7.0 on top.
 - **Rename A2 lands before A3 starts and before C2/C4 consume packages.**
 
-## Publish Queue (operator, manual, session end)
+## Publish Queue (PLANNER-AUTOMATED as of 2026-07-07 — NPM_TOKEN confirmed in both repos)
 
-(accumulates; each entry staged as version-bumped, tagged, changelog-ready)
-1. `@empressaio/atom-contract@1.7.0` (after Herbert freeze + C1 merge)
-2. `@hauska-sdk/metering@0.1.1` (staged; behind the SDK main build fix — build fix is a program task)
+1. `@empressaio/atom-contract@1.7.0` — planner adds tag-push publish workflow, then tags
+2. `@hauska-sdk/metering@0.1.1` — behind the SDK main build fix (planner task), then re-run workflow
 3. Any rename republishes not coverable by ldt CI
 
 ## Pickup List (operator)
@@ -96,8 +105,11 @@ Herbert has NO Reeves deals — he cannot name title-slice tracts or serve as th
 - **RESOLVED ~14:20: npm org created by operator; republish re-run GREEN; all five @empressaio packages LIVE on npm** (design-tokens/tile-shell/cortex-client/document-viewer 0.1.0, cortex-tiles 0.1.1; the interim "staged packages" theory was wrong — plain propagation lag). Token confirmed to cover the new scope → Path A viable. **A3 shell dissolution DISPATCHED** (branch feat/a3-shell-dissolution: nested shell dissolved, native space panels from TILE_CAPABILITIES, @empressaio consumption, command-center design language via tokens, state-legend preserved, nested-shell-DOM-gone test, engagements-scoping investigation folded in). REMAINING OPERATOR PASTE (2 min): the working NPM_TOKEN into `hauska-atom-contract` (new) + `hauska-sdk` (refresh) repo secrets → then planner adds the contract publish workflow + SDK build fix and ALL publishing is autonomous.
 - ~~(superseded) **create the `empressaio` organization on npmjs.com**~~ (Add Organization, free plan, owned by the same account whose NPM_TOKEN the CI uses — the hauska-sdk account). The rename republish failed with npm E404 "Scope not found" (run 28794361910); the workflow is otherwise proven and idempotent — once the org exists I re-run it and the five @empressaio packages publish autonomously. Also gates your `@empressaio/atom-contract@1.7.0` publish and unblocks A2b consumer bumps + the A3 shell rebuild (held to avoid a double-rebase against unpublished names).
 
-- npm publish batch at session end (queue above).
-- Herbert answers → forward (pooling gates 1.7.0 freeze; tract names gate C7).
+- ~~npm publish batch at session end~~ (superseded 2026-07-07: token confirmed, planner automates the queue above).
+- **Reeves County runsheet: Nick self-sources** (2026-07-07 ruling — no purchased runsheet); gates C7's graded-truth leg only.
+- **Herbert role relay: Nick handles personally** (method-grading role per 85a re-scope).
+- **og-twin design/UX input: waiting on Chris (design update) + Herbert (flow, field opinions)** — no og-twin UI rounds until it arrives.
+- Herbert answers → forward (pooling gates 1.7.0 freeze; tract names gate C7). [pooling RESOLVED via 85a; tract selection re-architected to allocation-well plats]
 - Chris relay: seeded-first ack + touchable-version handback flow (recorded in the SLB-retirement decision).
 - Domains: Empressa domain decision for the public MCP endpoint (replaces the never-launched mcp.hauska.dev) — from the branding decision.
 - Extension key rotation + Upstash replacement: after QA per standing ruling.
