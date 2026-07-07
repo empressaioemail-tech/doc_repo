@@ -2,7 +2,7 @@
 id: architecture_homes_scrub_tracker
 title: Doc-repo scrub tracker
 status: active
-last_updated: 2026-06-21
+last_updated: 2026-07-07
 applies_to: portfolio
 owner: nick
 related: [architecture_homes_overview, architecture_homes_topology, 80_adrs/adr_008_engine_factor_out]
@@ -64,3 +64,16 @@ Two depths: a standard-pointer banner (dated, stops the stale framing from misle
 - Fully scrubbed: 50_hauska_mcp_server (four-gate as-built), plus the keystones (ADR-008 amendment, CLAUDE.md identity line, the standard, the Regrid scrub of 55/00c).
 - Banner-scrubbed (standard pointer + key fixes; deep rewrite owed): 44, 52, 07, 40, 42, 00_current_state, 00c, 00d, 00_README, 10_ground_truth, 01a, 25, and _calibrated_spine_roadmap/00.
 - Still owed (lower-leverage; banner then rewrite): 00b_doc_repo_guide, 09_post_saas_substrate_thesis, 47_codex_plan_review and 48_codex_program_plan (Codex framing is mostly correct; gate-class clarification only), 11_roadmap (already superseded by 00d), 56 (light), and the deep rewrites of the banner-scrubbed set.
+
+## Branding rename sweep (added 2026-07-07, per `_decisions/2026-07-06_branding_hauska_sdk_only.md`)
+
+Hauska = SDK brand only; every other brand surface is Empressa. R1 (brand surfaces) executes in the three-lane program; R2 (infra identifiers: repo names, service names, secret names, `hauska.dev` references) deliberately lags. Doc-set touch-points owed a brand-language pass when next substantively touched (banner-depth rule applies; historical artifacts stay as-is):
+
+| Doc | Brand touch-point | Status |
+|---|---|---|
+| CLAUDE.md | "Hauska Engine/SDK/MCP Server" brand strings; "Powered by Hauska Engine — hauska.dev" example; core-thesis "Hauska layer" naming | PENDING (operator-gated: CLAUDE.md slim/audit is a named pickup) |
+| 09_post_saas_substrate_thesis.md | thesis-level "Hauska" product naming | PENDING (fold into its owed scrub) |
+| 62_proof_of_record_spec.md | "Hauska record key set" / issuer naming in Proposed sections (Empressa surface when built); Hauska Inc. ENTITY references stand | PENDING (noted in the doc's own revision history) |
+| 63_empressa_certification_program.md | designation renamed Empressa Certified at filing | DONE (2026-07-07) |
+| 08_tiered_access_model.md, 14_pricing_framework.md | product-facing "Hauska" naming vs @hauska-sdk package names (packages stay) | PENDING |
+| 50_hauska_mcp_server.md, 52_mcp_offer_and_buildout.md | server brand naming + `mcp.hauska.dev` → Empressa domain (domain decision itself is an operator pickup) | PENDING |

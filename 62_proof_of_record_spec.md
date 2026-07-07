@@ -1,19 +1,14 @@
 ---
-id: draft_proof_of_record_spec
+id: 62_proof_of_record_spec
 title: Proof-of-record spec — how an atom-backed answer becomes a verifiable record
-status: retired
+status: active
 last_updated: 2026-07-07
-superseded_by: 62_proof_of_record_spec
 applies_to: portfolio
 owner: planner
 related: [09_post_saas_substrate_thesis, 08_tiered_access_model, 14_pricing_framework, 01a_atom_conventions, 25_atom_architecture_reference, 04a_arrow_two_calibration_capture, 80_adrs/adr_012_atom_export_format, 80_adrs/adr_017_atom_access_control, 80_adrs/adr_018_atom_contract_substrate_layer, _decisions/2026-07-04_convergence_program_execution_model, _decisions/2026-07-04_icc_poc_play]
 ---
 
 # Proof-of-record spec
-
-> **PROMOTED 2026-07-07** to `62_proof_of_record_spec.md` (canonical). This draft is retired; read the slot doc.
-
-> **Filing note.** Drafted in scratchpad for review; on filing this takes a root numeric slot. Recommended slot: `62_proof_of_record_spec.md` (62 through 69 are open in the substrate band as of 2026-07-05; 50 through 61 carry the spine and substrate program docs). The `id` field updates to match at filing time per `01_doc_conventions.md`.
 
 > **Status posture.** Spec-level draft, a Phase 4 (monetization capture) artifact of the convergence program per `_decisions/2026-07-04_convergence_program_execution_model.md` and the Phase 4 queue line in `_inbox/2026-07-04_convergence-program_STATUS.md` ("Stripe test-mode pricing; proof-of-record spec; siting spike memo; certification scaffold"). The program docs name the artifact but do not define it; this doc is the definition. The only prior use of the term in the doc set is `_catalog/repo_intents.md`, which flags the Hauska SDK's VDA/IPFS/wallet stack as the "proof-of-record substrate candidate." Nothing described in the "Proposed" sections below exists in code unless the "What exists today" section says it does.
 
@@ -135,3 +130,4 @@ The certification scaffold (companion Phase 4 draft) consumes this mechanism dir
 ## Revision history
 
 - **2026-07-05 (origin, draft):** Drafted in scratchpad as the Phase 4 proof-of-record spec named in the convergence program queue. Defines the record object, issuance, verification flow, licensed-content boundary, retention posture, and tier placement; everything beyond the "What exists today" section is proposal. Filing slot recommendation: 62.
+- **2026-07-07 (promoted to slot 62):** Filed as the canonical proof-of-record definition per the three-lane program doc pass. Content unchanged from the reviewed draft. Two ground-truth deltas since drafting: the contract is now published as `@empressaio/atom-contract@1.7.0` on npm (the 1.6.1 reference in "What exists today" reflects drafting time), and branding narrowed to Hauska = SDK only (`_decisions/2026-07-06_branding_hauska_sdk_only.md`), so the "Hauska record key set" / issuer naming in the Proposed sections will surface under Empressa branding when built; the Hauska Inc. entity references stand. Both flagged in the scrub tracker rather than silently rewritten here.

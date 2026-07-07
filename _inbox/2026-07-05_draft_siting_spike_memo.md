@@ -1,14 +1,16 @@
 ---
 id: draft_siting_spike_memo
 title: Siting spike memo — Phase 4 monetization capture (convergence program)
-status: draft
-last_updated: 2026-07-05
+status: parked
+last_updated: 2026-07-07
 applies_to: portfolio
 owner: planner
 related: [09_post_saas_substrate_thesis, 77_place_graph_strategy, 75m_map_data_visual_benchmark, _catalog/repo_intents, _decisions/2026-07-04_convergence_program_execution_model, _decisions/2026-07-04_master_map_and_console_unification, _inbox/2026-07-04_convergence-program_STATUS, 08_tiered_access_model, 14_pricing_framework]
 ---
 
 # Siting spike memo
+
+> **PARKED as exploration 2026-07-07** per the operator ruling in the 2026-07-06 ratification package (proof-of-record and certification promoted; siting parked). No numeric slot, no sprint line, no dispatches. It re-opens only on a real buyer signal (a data-center-class large-tract prospect) or when the Reeves LAYER_REGISTRY families make the composition test concrete. The scope framing below remains the reference when that happens.
 
 ## Provenance and scope authority
 

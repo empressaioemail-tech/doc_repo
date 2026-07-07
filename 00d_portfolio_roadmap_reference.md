@@ -2,7 +2,7 @@
 id: 00d_portfolio_roadmap_reference
 title: Portfolio roadmap reference — the honed planned-work view
 status: active
-last_updated: 2026-06-15
+last_updated: 2026-07-07
 applies_to: portfolio
 related: [00_current_state, 00c_portfolio_master_map, 03_structural_constitution_and_drift_guard, 04_roadmap_alignment_audit, 16_commercialization_roadmap, 76c_operator_master_next_steps, 58_gtm_readiness_sprint, 59_spine_moat_and_high_value_features, 11_roadmap]
 owner: nick
@@ -24,7 +24,7 @@ The ranked 90-day frame from the roadmap audit. Rank by impact and accelerate; t
 
 | # | Move | Type | Root | Owner | Status |
 |---|---|---|---|---|---|
-| 1 | **Wire arrow two** — capture reviewer edits + finding accuracy into atom confidence | Build (the one load-bearing build) | Calibration | Nick | **DONE 2026-06-09/10 — arrow-two CLOSED end-to-end (Phase 1 ledger, Phase 2 outcomes, Phase 3 calibration overlay `a431e8e`); invariant I3 satisfied. See [`04a`](04a_arrow_two_calibration_capture.md), [`57`](57_national_code_warming_sprint.md)** |
+| 1 | **Wire arrow two** — capture reviewer edits + finding accuracy into atom confidence | Build (the one load-bearing build) | Calibration | Nick | **MACHINERY MERGED, CLOSURE RETRACTED 2026-06-25** — Phases 1–3 (ledger, outcomes, calibration overlay `a431e8e`) are merged and live, so the earning loop EXISTS (I3 at the amended commitment-#2 level: loop live, confidence asserted-with-provenance). But the M1 case-grain re-run has not returned go, so served confidence is NOT yet earned/calibrated; the earlier "CLOSED end-to-end, I3 satisfied" wording overstated it (retraction note in [`04a`](04a_arrow_two_calibration_capture.md)). M1 run is queued in the three-lane program (operator ruled RUN). |
 | 2 | Ship Cortex + Brief extension to beta in parallel | Ship | Calibration | Operator + Valerie | In flight, operator-gated |
 | 3 | Keep the Bastrop municipal funnel running as long money | Run / maintain | Both | Operator + Nick (capture wiring) | Continuous |
 | 4 | Naming pass on the theology — write the two-root thesis into the doc set | Documentation | Both | Operator | Filing pending |
@@ -94,5 +94,6 @@ All trace to the calibration and sovereignty roots; each enters via premortem-ch
 ## Revision history
 
 - **2026-06-15 (surface-status refresh):** Refreshed the Section 2 table and milestone ladder against live state: gate is 57 tools (was 46), engine corpus stated as 34 juris / 21,126 atoms with the 2-public / 32-internal split, engine extraction marked DONE (engine-api live, C1/C2 cut, C3 merged), M-Stabilize DB hold marked released 2026-06-06 (Codex 1b and SmartCity rows updated), Cortex row reflects the spine seam plus the deploy-pending auth fix, Cotality auth solved (#181/#182), Hauska SDK row reflects the 53a custody re-architecture. Added a pointer to `00_current_state` / `61` / `72b` for live execution detail. `last_updated` 2026-06-15.
+- **2026-07-07 (arrow-two claim corrected):** Strategic-frame item 1 amended from "DONE, closed end-to-end, I3 satisfied" to "machinery merged, closure retracted": per 04a's 2026-06-25 retraction the M1 case-grain re-run has not returned go, so the loop exists but served confidence remains asserted-with-provenance. Correction ordered by the three-lane program handoff.
 - **2026-06-09 (arrow-two done; moat roadmap added):** Strategic-frame item 1 (wire arrow two) marked DONE — closed end-to-end, I3 satisfied. Added Section 7 routing the moat-building feature set ([`59`](59_spine_moat_and_high_value_features.md)) into the roadmap (user-warm coverage escalation, payment/metering via ICC cutover, uniform provenance, precedence/recon tighten, and the moat builders). Frontmatter `related` extended (58, 59). `last_updated` 2026-06-09.
 - **2026-06-06 (origin):** Created as the honed planned-work roadmap reference. Synthesizes the 00c topology, the 16 commercial spine, the 76c operator queue, and the strategic priority frame from the roadmap alignment audit. Surfaces the arrow-two calibration-capture gap as the top unaddressed strategic item. 11_roadmap superseded and preserved for reconciliation.

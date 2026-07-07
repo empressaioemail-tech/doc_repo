@@ -1,25 +1,22 @@
 ---
-id: draft_certification_scaffold
-title: Hauska-certified — certification program scaffold
-status: retired
+id: 63_empressa_certification_program
+title: Empressa Certified — certification program scaffold
+status: active
 last_updated: 2026-07-07
-superseded_by: 63_empressa_certification_program
 applies_to: portfolio
 owner: planner
 related: [49_code_ingestion_pipeline, 25a_atom_principle_llm_economics, 08_tiered_access_model, 14_pricing_framework, 09_post_saas_substrate_thesis, 04a_arrow_two_calibration_capture, _decisions/2026-07-04_icc_poc_play, _decisions/2026-07-04_convergence_program_execution_model, _inbox/2026-07-04_convergence-program_STATUS]
 ---
 
-# Hauska-certified: certification program scaffold
+# Empressa Certified: certification program scaffold
 
-> **PROMOTED 2026-07-07** to `63_empressa_certification_program.md` (canonical), renamed **Empressa Certified** per `_decisions/2026-07-06_branding_hauska_sdk_only.md`. This draft is retired; read the slot doc.
-
-> **Filing note.** Drafted in scratchpad for review; on filing this takes a root numeric slot. Recommended slot: `63_hauska_certification_program.md`, adjacent to the proof-of-record spec's recommended slot 62 (62 through 69 open in the substrate band as of 2026-07-05). The `id` field updates to match at filing time per `01_doc_conventions.md`.
+> **Naming note (2026-07-07).** Drafted as "Empressa Certified"; renamed at filing per the branding decision `_decisions/2026-07-06_branding_hauska_sdk_only.md` (Hauska = SDK only; every other brand surface is Empressa). The designation is **Empressa Certified**; the rename is applied throughout.
 
 > **Status posture.** Scaffold, not a spec: sections carry named decisions with options and a recommendation each, per the repo's decision culture. The artifact is named in the convergence program's Phase 4 queue (`_inbox/2026-07-04_convergence-program_STATUS.md` line 7: "Stripe test-mode pricing; proof-of-record spec; siting spike memo; certification scaffold") and the ICC decision names its motion explicitly: the ICC PoC is "depended on by: the certification and licensed-distribution motion in Phase 4" (`_decisions/2026-07-04_icc_poc_play.md`). Beyond those two lines, no certification program exists anywhere in the doc set or, per the docs read for this draft, in code. Nothing here is built. The eval harness the program leans on IS built and has run corpus-wide; its current output is explicitly not publishable (see Decision 2).
 
 ## Why certification, and why now
 
-The substrate thesis sells reasoning with earned trust attached (commitments #1 and #2). A certification designation is the packaging of that trust into a nameable, checkable claim a buyer, a licensor, or a counterparty can rely on without reading the eval harness source: "this jurisdiction corpus is Hauska-certified" should compress "it passed the published eval bar, on real curated queries, against a pinned edition, attested by a named party, and here is the verifiable evidence." Phase 4 is monetization capture; certification is the artifact that lets Layer 2 quality be priced rather than merely claimed, and it is the template the ICC relationship converts into (licensed content in, metered and certified reasoning out, publisher paid, per the ICC decision's reasoning section).
+The substrate thesis sells reasoning with earned trust attached (commitments #1 and #2). A certification designation is the packaging of that trust into a nameable, checkable claim a buyer, a licensor, or a counterparty can rely on without reading the eval harness source: "this jurisdiction corpus is Empressa Certified" should compress "it passed the published eval bar, on real curated queries, against a pinned edition, attested by a named party, and here is the verifiable evidence." Phase 4 is monetization capture; certification is the artifact that lets Layer 2 quality be priced rather than merely claimed, and it is the template the ICC relationship converts into (licensed content in, metered and certified reasoning out, publisher paid, per the ICC decision's reasoning section).
 
 The honesty constraint governs everything below: per commitment #2, a certification is exactly the kind of confidence signal that must be earned and calibratable, never asserted. The program's own recent history makes the point concretely; see Decision 2.
 
@@ -51,7 +48,7 @@ Recommendation: (c). Keep the three thresholds exactly as published (they are ca
 
 Options. (a) Executor self-certification. (b) Planner verification against live systems, operator signs. (c) Independent third-party attestation. (d) Licensor co-attestation for licensed corpora.
 
-Recommendation: (b) as the v1 mechanism, with (d) as the ICC-shaped extension. (a) is already forbidden program-wide: "no self-certified closes" is a standing mitigation in the program premortem, and the execution model rules that verification is never delegated to executors. The same discipline transfers: the eval run is executed by whatever agent runs it, but the certificate issues only on planner verification against the live system (verbatim eval output, pinned corpus snapshot, pinned query-set hash), and the operator signs anything public because public claims are operator-gated per the execution model decision. For licensed corpora, licensor co-attestation is the natural deepening of the ICC relationship: ICC attesting "this is our content, correctly cited, within the derivative boundary" alongside Hauska attesting the retrieval bar converts the licensing relationship into the distribution partnership the ICC decision aims at. (c), true independent attestation, is a mature-program option, not v1; it earns a place if certification acquires regulatory or insurance-adjacent weight.
+Recommendation: (b) as the v1 mechanism, with (d) as the ICC-shaped extension. (a) is already forbidden program-wide: "no self-certified closes" is a standing mitigation in the program premortem, and the execution model rules that verification is never delegated to executors. The same discipline transfers: the eval run is executed by whatever agent runs it, but the certificate issues only on planner verification against the live system (verbatim eval output, pinned corpus snapshot, pinned query-set hash), and the operator signs anything public because public claims are operator-gated per the execution model decision. For licensed corpora, licensor co-attestation is the natural deepening of the ICC relationship: ICC attesting "this is our content, correctly cited, within the derivative boundary" alongside Empressa attesting the retrieval bar converts the licensing relationship into the distribution partnership the ICC decision aims at. (c), true independent attestation, is a mature-program option, not v1; it earns a place if certification acquires regulatory or insurance-adjacent weight.
 
 ## Decision 4: how certification decays and re-runs
 
@@ -81,15 +78,15 @@ Recommendation: (a) as the floor, (c) as the revenue line, (b) narrowly and late
 
 Exists, verified in the doc set: the eval harness with the three-threshold bar, run corpus-wide; real curated query sets for Grand County and Bastrop (Bastrop currently failing on a query-set edition mismatch, not retrieval); real section-retrievability and crossref sampling across 34 jurisdictions; the "declared loaded" gate concept in 49; the calibration ledger and overlay with the M1 gate open; the signed ICC contract and answered technical questions; the four-gate MCP chokepoint deployed with metering staged per the ICC play.
 
-Does not exist: any designation named "Hauska-certified"; any certificate artifact, store, or issuance path; a non-vacuousness floor or minimum query count; per-jurisdiction curated query sets beyond the two named; licensor co-attestation in any agreement; any pricing wiring for certification. This entire scaffold is proposal pending operator review of the six decisions above.
+Does not exist: any designation named "Empressa Certified"; any certificate artifact, store, or issuance path; a non-vacuousness floor or minimum query count; per-jurisdiction curated query sets beyond the two named; licensor co-attestation in any agreement; any pricing wiring for certification. This entire scaffold is proposal pending operator review of the six decisions above.
 
 ## Open questions
 
 1. The minimum curated-query count per jurisdiction (Decision 2 floor value), and who authors curated queries at scale without the authoring cost blowing the per-jurisdiction onboarding budget (structural commitment #3 applies to certification cost too).
-2. Whether the certification mark is a Hauska mark or surfaces under Empressa product branding. The branding canon says Hauska is substrate-only; a corpus certification is a substrate claim, so "Hauska-certified" appears canon-consistent, but marks on product surfaces need the operator's branding ruling before anything public ships.
+2. ~~Whether the certification mark is a Hauska mark or surfaces under Empressa product branding.~~ RESOLVED 2026-07-06 by `_decisions/2026-07-06_branding_hauska_sdk_only.md`: Hauska is the SDK brand only; the mark is **Empressa Certified** (applied at this doc's 2026-07-07 filing).
 3. Whether certification of ICC-derived corpora survives ICC contract termination given the destroyability requirement; the proof-of-record answer (hashes and citations survive, content does not) suggests yes for issued certificates, but this should be confirmed in the licensed-distribution negotiation.
 4. Where the certification registry lives (public catalog on the gate versus the atom-contract repo's published spec surface), checked against the spine topology before building.
-5. Whether "declared loaded" (internal gate) and "Hauska-certified" (public designation) remain two names for one predicate or deliberately diverge (this scaffold's Decision 2 recommendation keeps thresholds identical and adds the evidence floor only to the public designation, which is a divergence; flagging it explicitly).
+5. Whether "declared loaded" (internal gate) and "Empressa Certified" (public designation) remain two names for one predicate or deliberately diverge (this scaffold's Decision 2 recommendation keeps thresholds identical and adds the evidence floor only to the public designation, which is a divergence; flagging it explicitly).
 
 ## Cross-references
 
@@ -101,8 +98,9 @@ Does not exist: any designation named "Hauska-certified"; any certificate artifa
 - `04a_arrow_two_calibration_capture.md` (calibration state; the M1 gate on Decision 1's deferral)
 - `_decisions/2026-07-04_icc_poc_play.md` (the certification and licensed-distribution motion)
 - `_inbox/2026-07-04_convergence-program_STATUS.md` (Phase 4 queue naming this artifact; the eval-scores non-publishable ruling)
-- Companion draft: proof-of-record spec (recommended slot 62), the certificate's substrate per Decision 5.
+- Companion spec: `62_proof_of_record_spec.md` (filed 2026-07-07), the certificate's substrate per Decision 5.
 
 ## Revision history
 
 - **2026-07-05 (origin, draft):** Drafted in scratchpad as the Phase 4 certification scaffold named in the convergence program queue. Six decisions framed with options and recommendations: certification objects, eval bar plus non-vacuousness floor, attestation, decay, certificate-as-proof-of-record, and Layer 2 pricing posture. Filing slot recommendation: 63.
+- **2026-07-07 (promoted to slot 63, renamed):** Filed as the canonical certification-program scaffold per the three-lane program doc pass. Designation renamed "Hauska-certified" → **Empressa Certified** per the 2026-07-06 branding decision (open question 2 resolved). The non-vacuousness floor (Decision 2 recommendation c) is retained unchanged and is cited by the Reeves corpus mint gate (C6 in the three-lane program: mint requires a non-vacuous curated eval plus cost capture).
