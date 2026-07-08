@@ -2,7 +2,7 @@
 id: 00_oil_gas_index
 title: Oil and gas vertical - working index and orientation
 status: exploration
-last_updated: 2026-06-14
+last_updated: 2026-07-07
 applies_to: [hauska, empressa]
 owner: nick
 related: [55_spine_data_intelligence_stack, 53_hauska_sdk_completion_sprint, 09_post_saas_substrate_thesis, 28_mcp_first_product_design, 80_adrs/adr_008_engine_factor_out, _prospects/mox/2026-06-11_mox_master_dossier]
@@ -39,6 +39,9 @@ This is the cross-domain thesis instantiated, the same four-layer offering as Mo
 - `60_data_package_and_providers.md`: the complete external data package and provider landscape (Enverus and alternatives, public records).
 - `70_market_thesis.md`: supporting market research and the thesis for the underserved small and mid operator segment.
 - `80_slb_engagement_and_operator_product_path.md`: SLB is the customer; the `slb_prototype` backend we built and shipped; the two-track strategy (SLB vendor entry vs our own operator product); and the dependency-ordered path to the operator product, gated on a design partner.
+- `85_landman_data_model_review.md` / `85a_herbert_review_answers.md`: the landman review of the data model and Herbert's answers (2026-07-06) that drove ADR-025's revenue-allocation-unit ruling.
+- `85b_title_artifact_exemplars.md`: Herbert's professional title artifacts (DOTO, working-interest report, county index runsheet; PDFs in `assets/title_exemplars/`) — the ground-truth formats the C7 title slice is graded against, plus a flagged Winkler-based option for the graded-truth leg.
+- `86_executive_summary.md`: executive summary of the vertical.
 
 Substrate work this vertical surfaced, filed in the main band because it is not oil-and-gas-specific:
 
