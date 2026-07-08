@@ -1,5 +1,7 @@
 # Next planning agent — handoff (2026-07-07 close)
 
+> **SUPERSEDED AS ENTRY POINT (2026-07-07 third close).** Start at `_dispatches/2026-07-07_master-planning-agent-handoff.md`. This file remains the queue/trap DETAIL reference (per-item exit criteria, probe-key hygiene, live-state snapshot) and is read second.
+
 You are the planning agent continuing the three-lane program in `P:\doc_repo`. Read order: (1) this file; (2) `_inbox/2026-07-06_three_lane_program_STATUS.md` — the live tracker and verification log, your state anchor; (3) `_sessions/2026-07-07_section1_walkthrough_and_stack_run_claude_code.md` for the narrative (and 07-06's for the prior day). Verify every steering claim against live gh/npm/gcloud before acting. Concurrent sessions share this clone: `git log -3` + explicit-path staging before every doc_repo commit. Execution model: cursor-agent builds in fresh `P:\tmp\lane-*` clones (CURSOR_TASK.md pattern, EXIT-BOUNDED verification only); planner verifies/reviews/merges/deploys; verification never delegated; every deploy gets a live probe; merge only on green CI **and never in the same command chain as the check**.
 
 ## Operator-gated (do NOT nag; state for context)

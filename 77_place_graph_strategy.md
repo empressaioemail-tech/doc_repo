@@ -2,7 +2,7 @@
 id: 77_place_graph_strategy
 title: Place graph strategy — country-scale AI-native real estate intelligence
 status: active
-last_updated: 2026-06-06
+last_updated: 2026-07-07
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 11_roadmap, 16_commercialization_roadmap, 27_engine_evolution_plan, 46_smartcity_parcel_intelligence, 49_code_ingestion_pipeline, 49b_encumbrance_ingestion_pipeline, 50_hauska_mcp_server, 75_hauska_brokerage_workflow_plan, 75a_hauska_brief_extension, 76_empressa_wedge_90d_operating_plan, 77b_cotality_integration_strategy, 73_partnerships, 80_adrs/adr_019_layered_code_substrate, 80_adrs/adr_020_recorded_instruments_and_restriction_clauses, 80_adrs/adr_021_constraint_resolution_and_precedence, _sessions/2026-05-27_place_graph_tx_crg_minerals_claude_code]
 owner: nick
@@ -130,3 +130,4 @@ Aligns with [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_op
 ## Revision history
 
 - **2026-05-27:** Initial strategy filed from planner session: place graph north star, competitive recalibration, operator conversation (TX CRG CRM, minerals/legal description, data centers, O&G landing pad horizon).
+- **2026-07-07:** Commercial data sourcing settled for the G6 commercial-graph path: Moody's CRE declined; the commercial persona runs on CAD public record + LoopNet observed through the user's own extension session + Cotality trends, all estimates labeled with provenance. Borrowed-login crawling rejected (premortem red). LoopNet is the first commercial extension adapter (queued). Record: `_decisions/2026-07-07_cre_data_no_moodys_observation_stack.md`.
