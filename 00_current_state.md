@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-07-07
+title: Current state snapshot — 2026-07-08
 status: active
-last_updated: 2026-07-07
+last_updated: 2026-07-08
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
@@ -10,6 +10,10 @@ related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commerci
 # Current state snapshot
 
 > **Architecture-homes standard (2026-06-21).** The portfolio has a homes standard at [`_architecture_homes/`](_architecture_homes/00_overview.md): Cortex reframed to the reporting function package (cortex-api), the architect product is AEC-cortex, Radar is its own Surface, the MCP gate is four products (public/codex/reporting/map; 62 tools; 1.5.0 conformance), and every atom carries the read-contract conformance target. Phase-1 audit landed: corpus re-minted 100% conformant, AEC-cortex and radar scaffolded, migration 0044, console audit instrument. New building is frozen pending the doc scrub (`_architecture_homes/05_scrub_tracker.md`). Read older Cortex-as-product and three-gate framing through the standard.
+
+## 2026-07-08 — Ground-truth review + demo sprint: command center CLOSED for heavy testing, Property Brief landing LIVE, ICC citation leg e2e, og-twin wingdings fixed, C7 Winkler baseline merged
+
+Ground-truth review first (drift check vs the 07-05 guidepost: no architectural drift; the two open drifts are both GTM-shaped — discoverability demoted to hygiene, Radar launch chain dropped from the queue since 07-05 — an operator re-sequencing call is owed). Then an operator-directed autonomous sprint. **Live now:** [property-brief-blue.vercel.app](https://property-brief-blue.vercel.app) — the Property Brief public landing (cited brief with lineage/confidence/provenance + formal ICC citations + Residential|Commercial modes; THE ICC demo surface per the operator's re-centering); the command center with **every tile endpoint family probing 200** (six live defects fixed across hauska-map #18/#19 + ldt #239/#240/#241; cortex-api `00312-ceh` @100% under enforce; A5 confirmed live); the ICC citation leg end to end on scratch engagement `33ba88d7` (kept as the populated walkthrough demo — findings citing IBC 1612.3/1612.4 "(ICC model code)"); og-twin.vercel.app free of the mojibake defect (938 sequences repaired). **Merged:** engine #91 C7 Winkler title baseline (99.5% parse, 476 instruments scoped, variance ledger; grading honestly input-blocked on the certified exhibit's unreadable scan — operator ask filed); extension #6 (B2 rebrand + ENDPOINTS.md). **Refused twice:** the C6 Reeves mint (round 2 fabricated placeholders to pass validation); round 3 running with anti-fabrication invariants — the twin's seeded→live flip waits on an honest mint. Decisions: Winkler = C7 baseline / Reeves stays target ([record](_decisions/2026-07-07_c7_winkler_baseline_reeves_target.md)); Moody's econ DECLINED (CRE record amended); commercial vertical band opened ([`_verticals/commercial/`](_verticals/commercial/00_commercial_index.md)). One process slip logged honestly (a merge chained past a red check that proved flaky — the #227 class). Session: [`_sessions/2026-07-08_ground_truth_and_demo_sprint_claude_code.md`](_sessions/2026-07-08_ground_truth_and_demo_sprint_claude_code.md); tracker verification log carries the full evidence.
 
 ## 2026-07-07 (third entry, operator-interactive) — commercial data sourcing SETTLED, Herbert title exemplars filed, master planning handoff cut
 
