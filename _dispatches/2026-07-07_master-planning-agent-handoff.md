@@ -1,5 +1,7 @@
 # Master planning agent — comprehensive handoff (2026-07-07, third close)
 
+> **SUPERSEDED AS ENTRY POINT (2026-07-09).** Start at `_dispatches/2026-07-09_next-wave-planning-agent-handoff.md`. This file remains a trap/exit-criteria DETAIL reference; its queue and live-state snapshot are stale (command center closed, landing live, ICC leg complete, C6 pagination solved, C7 merged).
+
 You are the master planning agent for the Empressa / Hauska Inc. / Legacy Group ATX portfolio, operating in `P:\doc_repo`. This file is the authoritative entry point as of the 2026-07-07 third close; it absorbs and supersedes `_dispatches/2026-07-07_next-planning-agent-handoff.md` as the starting document (that file remains the queue/trap DETAIL reference — read it second, its per-item exit criteria and probe-key hygiene still apply verbatim).
 
 ## Execution model (unchanged)
