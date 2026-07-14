@@ -1,8 +1,8 @@
----
+﻿---
 id: 55_spine_data_intelligence_stack
 title: Spine data-intelligence stack - verified current state, robustness roadmap, COGS
 status: active
-last_updated: 2026-07-05
+last_updated: 2026-07-13
 applies_to: hauska
 owner: nick
 related: [00c_portfolio_master_map, 50_hauska_mcp_server, 52_mcp_offer_and_buildout, 54_tenant_leg_sprint, 04a_arrow_two_calibration_capture, 27_engine_evolution_plan, 47_codex_plan_review, 80_adrs/adr_019_layered_code_substrate, 80_adrs/adr_021_constraint_resolution_and_precedence, 80_adrs/adr_010_atom_graph_traversal, 14_pricing_framework, _research/2026-06-06_cross_repo_recon]
@@ -37,8 +37,9 @@ The spine is compute-light and corpus-heavy. The expensive variable is external 
 | Flood zone | FEMA NFHL | Free | `fema-nfhl.ts` |
 | Environmental/EJ | EPA EJScreen (CalEPA mirror, frozen) | Free | `epa-ejscreen.ts` |
 | Broadband | FCC (gated off, WAF-blocked) | Free | `fcc-broadband.ts` |
-| Parcel + zoning | Cotality (paid, sole spine; Regrid purged 2026-06-17) | Paid | `cotality.ts` |
-| Property / climate / hazard / replacement-cost / mineral / utility | Cotality 8-pack | Paid (creds pending) | `cotalityExtended.ts` |
+| Parcel geometry + land use | County GIS (Travis/WCAD/Bexar/Bastrop/Caldwell ArcGIS; TxGIO for Hays/Comal in flight) â€” LIVE 2026-07-13; Cotality Spatial Tile dormant behind config | Free | `brokerageTxParcels.ts` |
+| Property attrs / owner / tax / exemptions / absentee | `cad_property` store (free CAD bulk rolls, 1.07M rows, 5 counties) via `cad:*` adapters â€” LIVE 2026-07-13 | Free | `local/cad.ts`, `@workspace/cad-ingest` |
+| Climate / hazard / replacement-cost / mineral / utility (Cotality 8-pack) | DORMANT â€” Cotality dark at OAuth since ~07-06; insurance families descoped; see `_decisions/2026-07-13_cotality_swap_public_record_migration.md` | â€” | `cotalityExtended.ts` (dormant) |
 | State/local | UGRC (Utah), Idaho, TCEQ Edwards, Grand County, Lemhi, Bastrop GIS | Free | `state/`, `local/` |
 | Cache | `adapter_response_cache`, 24h TTL, keyed lat/lng @ 5dp | n/a | `cache.ts` |
 

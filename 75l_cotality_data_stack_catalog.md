@@ -1,14 +1,16 @@
 ---
 id: 75l_cotality_data_stack_catalog
 title: Cotality data stack — master catalog, wiring, access status, and where to use what
-status: active
-last_updated: 2026-06-19
+status: superseded-as-plan-of-record
+last_updated: 2026-07-13
 applies_to: portfolio
 owner: nick
 related: [75g_investor_deal_radar, 75c_property_brief_data_backlog, 75k_max_map_quality_direction, _decisions/2026-06-18_map_engine_maplibre_cotality_national, cotality-oauth-three-keys, cotality-demo-quota-production-gate]
 ---
 
 # Cotality data stack — master catalog
+
+> **2026-07-13: superseded as the plan of record.** Cotality went dark at OAuth (~07-06 demo-key expiry, vendor unresponsive) and the wedge surfaces migrated to public-record providers per [`_decisions/2026-07-13_cotality_swap_public_record_migration.md`](_decisions/2026-07-13_cotality_swap_public_record_migration.md): county-GIS parcel mesh, `cad_property` store (1.07M properties, 5 counties), CAD brief slots, neutral APN+FIPS parcel key. All Cotality adapters remain wired but dormant behind config; this catalog stays accurate as the re-entry reference if production keys ever land.
 
 The full Cotality stack, what each product gives, where we wire it today, the live access status (probed 2026-06-19), and suggestions for the data we are NOT yet using. Goal: full wiring across the data stack. This is also the log of the entitlement findings to take to Cotality Data Implementation Services.
 
