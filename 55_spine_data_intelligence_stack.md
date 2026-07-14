@@ -84,6 +84,8 @@ Path: inputs (code sections + site-context + sheets/IFC) -> LLM reasoning -> fin
 | | | Seismic / fault / design parameters | USGS Earthquake Hazards, free (feeds ASCE 7) |
 | | | Liquefaction / subsidence / karst-sinkhole | USGS + state geological surveys, mostly free |
 
+**Septic / OSSF (noted 2026-07-14, operator ask — not yet scoped):** add On-Site Sewage Facility records as a data layer: pull county/authorized-agent OSSF permit + inspection records (TCEQ program; county development services hold the files), extract and analyze the septic site plan from the permit file (tank/drainfield locations), georeference and overlay it on the parcel map, and reason over it (setbacks from wells/water bodies, drainfield suitability vs the now-live SSURGO drainage class/HSG, replacement risk). Composes with parcels + SSURGO + hydrology already live. Queue behind the current fix/build wave; needs a per-county records-access survey first (some counties expose OSSF permit search portals, others are PIR).
+
 We have topo, hydrology, and flood, but no soils and no geology. SSURGO is the single highest-value subsurface add and it is free federal data (same product-baseline category as FEMA/USGS, clean under the partnership-first scope clarifier). This is workstream 4.
 
 ## 7. Spine-wide intelligence rules (cross-cutting invariants)
