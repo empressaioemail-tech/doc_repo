@@ -28,3 +28,7 @@ CLIP: Find_Property_by_CLIP, Find_Property_by_Full_Address. Analytics: CoreLogic
 - Timing note: signed the same day the REST demo keys expired — the vendor moved the relationship to the MCP eval track; the REST-key darkness was not (only) neglect.
 
 Route to: `74_commercial_agreements.md` (bizops filing), 77b §5 status update, and the eval-adapter dispatch once creds land.
+
+## Update 2026-07-14 (later): UAT credentials arrived and are live-verified
+
+Michelle Taylor delivered UAT creds (client HAUSKA-UAT). Stored in Secret Manager (hauska-prod-497015: COTALITY_MCP_UAT_CLIENT_ID / COTALITY_MCP_UAT_CLIENT_SECRET). Live-verified: JWT mints at api-uat.cotality.com/jwt-auth/token (product list Edgemicro Auth + mcp-gateway); the MCP server itself mints its own opaque token at mcp-uat.cotality.com/oauth/token and answers full streamable-HTTP JSON-RPC at mcp-uat.cotality.com/mcp (initialize handshake OK, protocol 2025-03-26). BLOCKER: tools/list returns EMPTY - zero of the 11 contracted SKUs are provisioned to the UAT account. Operator emailing Michelle to provision. Once tools appear, the federation-eval build (next-wave lane 3) unblocks.
