@@ -52,9 +52,9 @@ Path: DEM (USGS 3DEP, reused) -> D8 flow routing -> rainfall forcing -> flood-de
 | Step | Source/tech | Free/Paid | Note |
 |---|---|---|---|
 | DEM | USGS 3DEP (shared with site-context) | Free | |
-| D8 drainage | pysheds Python sidecar, native TS fallback | Free (compute) | `artifacts/hydrology-worker/`; not baked into the Cloud Run image yet (deploy gap) |
+| D8 drainage | pysheds Python worker (native TS fallback) | Free (compute) | **LIVE 2026-07-14/15** on the ENGINE serving image (hauska-engine PR #94): the numba JIT cache is baked at build time (`NUMBA_CACHE_DIR` + `warm.py`), so a worker spawns in ~2.6s (was 45s+/timeout → native-D8 fallback). Serves real flow lines (78+ at San Marcos). The old "not baked into the cortex Cloud Run image" note was stale — pysheds lives on the engine path, not cortex. |
 | Rainfall | NOAA Atlas 14 PFDS, 24-hr design storms | Free | `noaaAtlas14.ts` |
-| Flood depth | Cotality hazards (50/100/500yr) | Paid | inert v1 (`useCotalityForcing=false`) |
+| Flood depth | own DEM + NOAA Atlas 14 forcing (Cotality hazards descoped) | Free | Cotality forcing inert (`useCotalityForcing=false`); insurance-class hazard descoped per `_decisions/2026-07-13_cotality_swap_public_record_migration.md` |
 
 ## 4. Plan-review stack (verified)
 
