@@ -1,17 +1,25 @@
 ---
 id: 00_current_state
-title: Current state snapshot â€” 2026-07-08
+title: Current state snapshot â€” 2026-07-15
 status: active
-last_updated: 2026-07-13
+last_updated: 2026-07-15
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
 
 # Current state snapshot
 
-## 2026-07-15 (second entry) — Verification wave: audit against LIVE + SYNCED state, stale-clone trap caught, completeness matrix re-grounded, land-records acquisition program adopted
+## 2026-07-15 (second entry) — Verification wave + punch-list closure: stale-clone trap caught, 5 PRs merged, land-records program adopted, mesh/IFC build coordinated
 
-A planning-and-verification wave. No prod deploys; the output is verified truth replacing stale doc-state, plus program direction. Read this before trusting the point-in-time claims in the 2026-07-13/07-15 entries below.
+A planning-verification-and-closure wave. Output: verified truth replacing stale doc-state, five reviewed PRs merged closing the code-side punch list, the land-records acquisition program stood up, and the separate mesh/IFC build coordinated + committed to feature branches. Session record: `_sessions/2026-07-15_verification_wave_and_punchlist_closure_claude_code.md`. Read this before trusting the point-in-time claims in the 2026-07-13/07-15 entries below.
+
+**Punch-list closed (5 PRs merged, all reviewed + CI-verified, none on the builder's word):** hauska-engine #96 (dead Regrid adapters removed, Cotality preserved), legacy-design-tools #260 (workspace deep-links wired), #261 (address-point ingest, `txgio_address` migration 0056), #262 (per-CAD bulk orchestration, WCAD open-fetch + Hays manual, 3,372 real WCAD rows proven). The verified-matrix gaps below (deep-links, dead-Regrid) are now CLOSED by these merges. Remaining gaps are data-runs (below), not code.
+
+**Prod data-runs STAGED but NOT run (code merged; blocked on network + prod-Neon creds; operator-held at close):** WCAD bulk (open-fetch), full statewide address-point crawl (11.7M features), Hays land-use (also needs the WAF-blocked Hays export ZIP from the operator). These light up Brief owner/tax/land-use slots when run. This planner's sandbox has no external network egress, so these must be run by the operator or a network-capable agent with prod creds.
+
+**Mesh/IFC build (separate planning agent):** a four-layer parcel mesh + IFC build committed to four feature branches, no push: hauska-engine + legacy-design-tools `feat/dem-coverage-honesty`, hauska-mcp-server `feat/parcel-terrain-model-tool`, hauska-map `feat/parcel-terrain-tile`. Build-complete handoff at `_inbox/2026-07-15_parcel_mesh_ifc_build_complete_handoff.md`. Merge sequenced behind the engine auth-gate flip; the `@empressaio/cortex-tiles` package location is the one unresolved follow-on keeping the tile dormant. (ldt branch still has 2 uncommitted tracked files, that agent's, flagged.)
+
+A planning-and-verification wave. The output is verified truth replacing stale doc-state, plus program direction. Read the point-in-time claims in the 2026-07-13/07-15 entries below through this correction.
 
 **The load-bearing finding: the doc set was describing stale reality.** All six product clones in `P:\` were 17 to 67 commits behind true origin/main (hauska-mcp-server 21, hauska-map 59, legacy-design-tools 67, hauska-engine 32, hauska-brief-extension 5, hauska-atom-contract 17), several carrying uncommitted tracked work. The stale-clone rewind trap. A first audit pass rendered against these clones produced FALSE gaps (command center picker "does not exist," MCP as three-gate/59-tools, workspace layer half-built), every one a stale-clone artifact. Clones synced to origin/main (dirty work stashed as `planner-audit-preserve-2026-07-15`, not discarded); hauska-engine main is checked out in a worktree so its persistent clone was left untouched (work engine tasks against a fresh tmp clone). Re-audit against synced source flipped the false gaps to GREEN.
 
