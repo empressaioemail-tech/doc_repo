@@ -1,12 +1,14 @@
 ---
 id: 2026-07-21_overpass_road_data_spec
 title: Spec — private Overpass / OSM extract for road-based envelope labeling
-status: proposed
+status: queued-next
 date: 2026-07-21
 applies_to: legacy-design-tools (buildableEnvelope/roads.ts, node-facet Tier-2 bake), infra
 related: [2026-07-20_provable_county_data_pipeline_design, 2026-07-18_property_brief_gtm_critical_path]
 owner: nick
 ---
+
+> SEQUENCING (operator ruled 2026-07-21): this is the SOON-TO-FOLLOW addition, executed AFTER everything currently in flight lands and the operator QAs the browse surface. It is a quality upgrade, independent of the in-flight wave, with a self-hosted-infra dependency that should NOT gate the browse QA. Recommended path confirmed = Option A (self-hosted Overpass). Pick it up as the next deliberate deliverable once the Vercel QA URL is validated. Tier-2 PR #319 is held pending this (its FEMA leg can ship independently sooner if desired).
 
 # Spec — road data for the buildable-envelope front-edge signal
 
