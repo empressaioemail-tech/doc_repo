@@ -1,13 +1,27 @@
 ---
 id: 00_current_state
-title: Current state snapshot â€” 2026-07-15
+title: Current state snapshot â€” 2026-07-21
 status: active
-last_updated: 2026-07-15
+last_updated: 2026-07-21
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
 
 # Current state snapshot
+
+## 2026-07-21 — Map-first program LIVE + integrity pipeline: fabrication caught+killed, land-use recovered, deployed to a Vercel URL
+
+The Property Brief map is now a deployed, map-first, honest, cited web app (property-explorer on Vercel; cortex-api rev 00395-qib at 100%). Verified end-to-end through the deployed web app proxy. Substrate: @hauska/map-renderer 0.1.5 published with a persistent-map API (rebindProperty/resolveSubjectAndFit; never-unmount pushed into the substrate, shared with command-center). App: cold-open sign-up over a live dimmed map, anonymous no-AI browse, click->inspect-in-place; satellite base (Esri), measure/draw/GPS tools, and the DRAWN buildable envelope (the wedge visual). ~2.05M Central-TX parcels baked as nodes (place_layer_snapshots), owner-excluded, monotonic guard, served by an anonymous no-AI facet-read endpoint; honest-absence is a designed "not verified here" state.
+
+THE INTEGRITY OUTCOME (load-bearing): an owner-match join-integrity GATE + a per-county coverage LEDGER (county_facet_coverage) make fabrication structurally impossible — a coverage number is recorded only after the gate proves the join is the same property (owner agreement), block-set ledger-driven so county #100 is auto-checked. This came from a real self-inflicted failure: an earlier "Williamson R-prefix fix" was FABRICATING land-use (~167k parcels, owner-match ~0%); caught by the owner-match cross-check, physically stripped (verified), gate prevents recurrence. Verified coverage baseline filed as the customer-facing artifact.
+
+RECOVERY: Williamson + Hays land-use recovered from fabricated-0% to 89.1% / 81.3% HONEST via an owner-gated situs-ADDRESS join (data we already had; owners now match). ZONING: 10 more cities stamped (6->16; Cedar Park fixes the operator's clicked parcel; Williamson zoning 34->44%); envelopes only where a setback table exists (8 tables owed). FEMA flood: read-path deployed, background fill across 10 counties in progress.
+
+Pipeline hardening: unified jurisdiction onboarding config (zero-behavior-change); deploy runbook filed (4 traps: push-only-builds, boot-crash-on-CLI-import, stale-clone-agent, image-race — each caught by verifying the live endpoint, prod never affected via --no-traffic canary).
+
+Architecture gaps recorded (operator raised at close): (1) node facets are atom-SHAPED not atom-contract atoms -> atomize later (accessPolicy = the clean paywall); (2) paywall-gated functions consume nothing yet -> arrive with the auth/tenant leg (sprint 54); (3) property-explorer shares the spine map substrate with command-center but is a distinct consumer shell.
+
+Carried: FEMA fill completion, San Marcos zoning CRS, 8 setback tables owed, node atomization, auth/tenant + paywall functions, Overpass road upgrade (self-hosted, soon-to-follow — enables high-confidence road-based envelope), per-state abstraction (unblocked), extension #34 (held for MV3 smoke), Comal land-use (paid/bizops) + Comal setbacks/zoning (operator agent -> setback gate). Session: _sessions/2026-07-21_map_first_program_integrity_pipeline_and_deploy_claude_code.md.
 
 ## 2026-07-15 (second entry) — Verification wave + punch-list closure: stale-clone trap caught, 5 PRs merged, land-records program adopted, mesh/IFC build coordinated
 
