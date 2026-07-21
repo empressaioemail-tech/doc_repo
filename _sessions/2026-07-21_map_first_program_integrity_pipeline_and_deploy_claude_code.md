@@ -48,6 +48,10 @@ property-explorer deployed to Vercel (own project, Root Directory apps/property-
 
 The defining pattern of this session: verify against live state, never the surface signal. It caught the planner's own fabrication (the false 91.6%), the bake-summary-says-done-but-store-has-garbage trap, the stale-clone false-negative, and the four deploy traps. Every coverage number now earns its place by passing a gate; every deploy is confirmed by hitting the live endpoint with real data.
 
+## Destination ledger (what "done" looks like)
+
+The operator ratified the v1 destination at close and asked for it as a tracked doc: `75j_property_explorer_destination_ledger.md` — a living DESTINATION-vs-CURRENT ledger (16 dimensions: coverage, the buildable-answer wedge, code/permit depth, feasibility, three-personas, paywalled reports+visualizations, data trustworthiness, genuine calibration, the four surfaces web/MCP/extension/PWA, auth+paywall+tenancy, CRM, GTM-as-a-system modeled on the trading app, architecture reconciled). v1 "done" = Central Texas complete + trustworthy (national is the horizon). Current overall read ~35%: the foundation + the fabrication-proof integrity system are real; the distance left is breadth (calibration at scale, code/permit, feasibility) + the commercialization layer (auth/paywall/atoms/CRM/GTM). Update the ledger's Current column each session the product line moves.
+
 ## Open / carried to next
 
 FEMA fill completion (background, ~hours). San Marcos zoning CRS diagnosis. 8 setback tables owed (Cedar Park/Pflugerville/San-Antonio/etc — zoning shows, envelope null until tables land). Node-facet atomization (arch gap 1). Auth/tenant + paywall-gated functions (arch gap 2; sprint-54). Overpass road upgrade (Option A self-hosted, tagged soon-to-follow — enables the high-confidence road-based envelope front edge). Per-state source-provider abstraction (config now unified — unblocked). Extension migration #34 (held for live MV3 smoke). Comal land-use (paid acquisition, bizops) + Comal setbacks/zoning (operator's probing agent -> our setback JSON schema -> setback gate).
