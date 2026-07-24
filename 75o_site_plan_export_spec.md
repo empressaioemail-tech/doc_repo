@@ -39,10 +39,18 @@ One or two pages, rendering the SAME atoms the CAD site plan draws (same source,
 - The provenance / citation panel (the surveyor's-stamp equivalent): every layer's source + as-of date + confidence. E.g. "Parcel: county GIS. Zoning: [ordinance section]. Elevation: USGS 3DEP, NAVD88. Flood: FEMA panel [X]." This is what makes the PDF defensible for permitting / lending / due-diligence, and it is where the cited-provenance story becomes visible to the decision-makers.
 - The honesty line (formalized): "Derived from public GIS records. Not a boundary survey. Not for legal record." Legally protective AND brand-consistent with the honest-absence discipline everywhere else.
 
-### 3. Prove on a REPRESENTATIVE parcel
+### 3. Terrain as a SOLID MASS (replaces the thin surface) — operator-directed 2026-07-24
+The IFC terrain currently exports as a single IfcTriangulatedFaceSet — a surface, one layer of triangles, which imports into Revit looking paper-thin (a sheet draped over the ground). REPLACE it with a closed SOLID mass so it reads as a real chunk of earth (like a physical topo model / site cut-block):
+- Take the terrain surface as the TOP; drop vertical skirt walls from every boundary edge down to a FLAT bottom plane; cap the bottom. Emit as a CLOSED faceset solid (reuses the existing shared triangulation + NAVD88 elevations + placement — an additive emitter change, not a rewrite; keeps the mesh-parity guarantee).
+- Bottom plane elevation: ~0.5 m (about 1.5 ft) BELOW the lowest terrain vertex (min-Z). UNIT NOTE: elevations are NAVD88 METRES; the "1-2 ft" operator intent converts to ~0.3-0.6 m — do NOT read "1-2" as metres (that would be 3-6 ft, too deep). Emitter converts ft->m explicitly.
+- Flat-bottom block (not constant-thickness underside) — reads cleaner for site presentation.
+- Replace, do not dual-offer: the terrain output is the solid mass. (The thin surface is rarely what an architect wants; drop it.)
+- Sits with the 3D buildable-envelope mass (later-roadmap) — both are "site as solid objects," built together in this program.
+
+### 4. Prove on a REPRESENTATIVE parcel
 NOT the terrain-gold parcel 48021:27303 — it is a P-3 (public) parcel where "setbacks consume the lot, no buildable area." Bad setback demo. Pick a normal residential parcel (a Hays or Williamson SF lot with real F/S/R) so the setback envelope draws clean and the feature proves properly.
 
-### 4. Discipline
+### 5. Discipline
 - Every element cited to its atom (CAD entity metadata + the PDF provenance panel).
 - CAD and PDF emit from ONE source of truth — they cannot diverge.
 - Layered CAD (toggleable feature classes).
