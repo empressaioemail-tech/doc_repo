@@ -60,9 +60,8 @@ Drop / mask chain (read-only trace):
 2. MCP `refresh_parcel_site_plan_export` re-adds `parcelNodeId: parcel_node_id` inside ToolEnvelope `data` (`tools.ts` ~929–939), then `envelopeContent` JSON.stringifies the envelope.
 3. PE `callMcpTool` (`mcp-server-client.ts` 115–127) parses **only** `content[0].text` and **drops MCP `isError`**. Plain-text MCP errors become `{ raw, meta }` → mapper reports "missing parcelNodeId" (false diagnosis).
 4. Same false message is returned when an id is present but fails `isValidParcelNodeId` (missing conflated with invalid — G6).
-5. Same false message is returned when an id is present but fails `isValidParcelNodeId` (missing conflated with invalid — G6).
-6. Regex drift (G6): MCP tool `/^\d{5}:\d+$/` vs PE BFF `/^\d{5}:[^/]+$/`.
-7. Hardening note for site-plan agent (not F1a): PE already validated `parcelNodeId` on POST — mapper can fall back to the **request** id when MCP envelope drifts; MCP tests should assert `data.parcelNodeId`.
+5. Regex drift (G6): MCP tool `/^\d{5}:\d+$/` vs PE BFF `/^\d{5}:[^/]+$/`.
+6. Hardening note for site-plan agent (not F1a): PE already validated `parcelNodeId` on POST — mapper can fall back to the **request** id when MCP envelope drifts; MCP tests should assert `data.parcelNodeId`.
 
 Anon POST live: `POST /api/pe-site-plan-export` → **401 authentication_required** (healthy gate). Paid path not exercised this session (no session). Site-plan agent owns the fix; F1a records the shared-substrate seam.
 
