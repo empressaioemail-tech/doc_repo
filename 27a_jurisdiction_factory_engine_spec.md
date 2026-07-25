@@ -20,7 +20,7 @@ CRITICAL — TWO PRODUCTS, ONE SUBSTRATE (do NOT confuse "preset" with "collapse
 
 The organizing principle: EVERY mechanical guardrail traces to a SPECIFIC failure we hit during the Central-TX hand-build (2026-07-22 to 07-25). The three painful days ARE the requirements document. This spec is the acceptance criteria; NO build until it is approved.
 
-Approval: PENDING. NO code until operator ratifies.
+Approval: RATIFIED 2026-07-25 (operator). F1 program in `27b`; Phase 0 live at Gate A.
 
 ## Why now (the timing is earned, not a retreat)
 
@@ -147,7 +147,7 @@ Frozen at operator approval. Every item is graded PASS / PARTIAL(criteria) / FAI
 The one done-line: an operator opens Command Center and SEES the true state of the spine — a live node/atom/reference ledger tallied from the actual DB (honest gaps included), every panel's LIVE/STUB badge mechanically true, and can click a node → lock the map → inspect every datapoint on that parcel from either direction; and a customer opens property-explorer and gets the same parcel data through a curated customer-safe surface built from the SAME components — all reading ONE spine substrate.
 
 Acceptance items:
-1. PHASE-0 — read path restored + true ground truth. | check: retrieval-api serves from Postgres (not a heap-loaded snapshot), `/health` 200, a known parcel returns its full atom chain LIVE; a per-county live tally of the actual node-graph (nodes / atoms per kind / present vs honest-absent) is committed. The TRUE Central-TX coverage number is known and recorded from a live SELECT, settling the 5.8%-vs-61% question. | grade: [ ]
+1. PHASE-0 — read path restored + true ground truth. | check: retrieval-api serves from Postgres (not a heap-loaded snapshot), `/health` 200, a known parcel returns its full atom chain LIVE; a per-county live tally of the actual node-graph (nodes / atoms per kind / present vs honest-absent) is committed. The TRUE Central-TX coverage number is known and recorded from a live SELECT, settling the 5.8%-vs-61% question. | grade: [MET — 2026-07-25 Gate A: retrieval `00016-ttp` postgres-serve; PE `X-PE-Read-Path: atom-chain`; Travis zoning_present 61.23% live SELECT; check-in `_inbox/2026-07-25_GATE_A_checkin_f1_phase0_retrieval_restore.md`]
 2. F1a CONSOLE AUDIT committed. | check: a doc states, per CC panel, its badge-vs-live-reality (every LIVE claim verified against live state, not trusted), what drifted between the console and the PE leg, and the wiring map for the stubs. No F1b/c code merged before this lands. | grade: [ ]
 3. NODE-GRAPH LEDGER live in Command Center. | check: the `Node & Graph` panel is wired (not STUB) to the live node/atom/reference graph; it tallies like a balance sheet (counts, present vs honest-absent, references); a named node shows its real atoms; an empty node shows honest-0, not an error. | grade: [ ]
 4. THE BINDING, bidirectional, live. | check: click a parcel on the map → its node highlights in the ledger; click a node in the ledger → the map locks to that node-id and its atoms inspect. Proven on named parcels, both directions, on the ONE canonical node-id. | grade: [ ]

@@ -13,7 +13,7 @@ related: [27a_jurisdiction_factory_engine_spec, 2026-07-23_MASTER_WDLL_property_
 
 The build sequence that executes the `27a` spec. The spec is the contract (the WDLL is the acceptance card); this is the ordered program to satisfy it. Read `27a` first — its WDLL items (1-9), the G1-G8 guardrails, the two-products guardrail (CC internal / PE customer / preset = shared substrate not collapse), and the one-substrate through-line are assumed here and NOT restated.
 
-Approval: PENDING. NO code until operator ratifies THIS program (the spec is already ratified). Then the receiving planner runs it.
+Approval: RATIFIED by operator dispatch 2026-07-25 (receiving build planner executing). Phase 0 → Gate A check-in filed; F1a blocked on operator go.
 
 ## The build model (the meta-guardrail: don't rebuild the drift)
 
