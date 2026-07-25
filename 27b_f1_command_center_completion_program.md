@@ -39,7 +39,7 @@ Operator-directed to get full attention. NO wiring code until this lands. Establ
 - 1a.1 PER-PANEL BADGE-VS-REALITY. For every CC panel (Cortex-Workspace, Substrate, Engines, Governance), verify its LIVE/STUB badge against LIVE state. A panel marked LIVE that silently broke (the OOM-class failure) is exactly the drift. Report: real-LIVE / claims-LIVE-but-broken / genuine-STUB, with the live evidence per panel.
 - 1a.2 CC-vs-PE DRIFT MAP. Map where the CC console (built before the PE ramp) and the PE parcel leg duplicate, disagree, or where PE built a thing CC already had a slot for. Name the single node/atom read path each currently uses (find the forks — G6/one-substrate).
 - 1a.3 THE WIRING MAP. For each STUB (starting with `Node & Graph` → its declared `retrieval /atoms/trace/:did`): what it needs to go LIVE, what merges into what, what PE-leg map/inspect work folds into the shared component library. This document is the input to F1b/c.
-- OUTPUT: a committed console-audit doc. No Gate (read-only), but the planner adversarially reviews it as hard as any build deliverable — a wrong console-state read here costs the most downstream. F1b does not start until it lands.
+- OUTPUT → GATE B (operator-added 2026-07-25): a committed console-audit doc + the drift-map + the wiring map. Read-only, but the planner adversarially reviews it AND the operator reviews the drift-map before ANY F1b wiring — a wrong console-state read costs the most downstream. Check-in to the doc_repo planner; operator go before F1b. (Gates renumber: A after phase-0, B after F1a audit, C before the PE customer flip.)
 
 ## F1b — WIRE THE LEDGER + PE CUSTOMER SURFACE + THE BINDING  → WDLL 3, 4, 5, 6
 
@@ -49,7 +49,7 @@ Build on the F1a wiring map. Every piece reads the ONE spine substrate (G6).
 - 1b.2 THE BINDING (WDLL 4). Bidirectional, on the ONE canonical node-id (G6): click a parcel on the map → its node highlights in the ledger; click a node in the ledger → the map locks to that node-id and its atoms inspect. Verify both directions on named parcels.
 - 1b.3 PE CUSTOMER SURFACE (WDLL 5 — the two-products guardrail is load-bearing here). property-explorer gets the Map | Ledger parcel-focused layout built from the SAME shared components + substrate as CC, but PE STAYS THE CUSTOMER-FACING PRODUCT: curated, customer-safe, exposing NO engine/governance/operator panels. DO NOT collapse PE into CC. Verify: a named parcel renders its full chain in PE; a grep/review confirms PE exposes zero internal operator panels.
 - 1b.4 ONE SUBSTRATE, NO FORK (WDLL 6). Consolidate onto a SINGLE node/atom read path used by the ledger, the map, and the PE surface. Remove any second map component / second node model / second read path (F1a named them). A test asserts the single read path. This is the anti-drift core.
-- GATE B — before the PE customer-surface flip goes live to customers: prove the surface is customer-safe (no internal panels), reads the one substrate, and renders on named parcels behind a flag first. Check-in to the doc_repo planner; operator go before the customer-facing flip.
+- GATE C — before the PE customer-surface flip goes live to customers: prove the surface is customer-safe (no internal panels), reads the one substrate, and renders on named parcels behind a flag first. Check-in to the doc_repo planner; operator go before the customer-facing flip.
 
 ## F1c — FORMALIZE THE MECHANICAL HONEST-BADGE  → WDLL 7
 
@@ -72,4 +72,4 @@ CC + PE are `hauska-map/apps/*` (Vercel); retrieval-api + engine via Cloud Build
 
 ## Handoff
 
-This program is dispatch-ready on ratification. The receiving planner runs Phase 0 → Gate A → F1a → F1b (+ dogfooded guardrails) → Gate B → F1c, planner-led / fewer-agents / verification-never-delegated, each dispatch citing its WDLL item or G-guardrail. The doc_repo planner adversarially verifies each gate against live state before the operator's go.
+This program is dispatch-ready on ratification. The receiving planner runs Phase 0 → GATE A → F1a → GATE B → F1b (+ dogfooded guardrails) → GATE C → F1c, planner-led / fewer-agents / verification-never-delegated, each dispatch citing its WDLL item or G-guardrail. The doc_repo planner adversarially verifies each gate against live state before the operator's go. THREE gates: A (phase-0 truth + app restored), B (console audit reviewed before wiring), C (before the PE customer flip).
