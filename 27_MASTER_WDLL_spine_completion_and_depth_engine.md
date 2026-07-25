@@ -1,7 +1,7 @@
 ---
 id: 27_MASTER_WDLL_spine_completion_and_depth_engine
 title: MASTER WDLL — complete the spine, build the depth engine, and give the fleet durable memory
-status: master spec (draft, awaiting operator approval)
+status: master spec (APPROVED 2026-07-25 operator; build launched)
 last_updated: 2026-07-25
 owner: nick
 supersedes_note: does NOT supersede 27a/27b/27c — it is the umbrella they become sub-WDLLs of

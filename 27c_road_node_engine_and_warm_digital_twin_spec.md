@@ -1,7 +1,7 @@
 ---
 id: 27c_road_node_engine_and_warm_digital_twin_spec
 title: The road-node engine, road-type-aware setbacks, and the warm digital-twin layer — WDLL
-status: spec (draft, awaiting operator approval)
+status: spec (APPROVED 2026-07-25 operator; active build — R0 in flight)
 last_updated: 2026-07-25
 applies_to: hauska-engine (supply engines, descriptor, property-reasoning), legacy-design-tools (buildableEnvelope derive), hauska-map/apps/command-center (the ledger), hauska-map/apps/property-explorer (the customer surface), hauska-atom-contract (road node kind)
 owner: nick
