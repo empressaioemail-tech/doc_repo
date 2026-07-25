@@ -39,9 +39,26 @@ related: [2026-07-25_setback_correctness_and_corner_lots_pickup]
 - disclosure: build-to-line / silent axes; **no** "consume the lot"
 - buildableAreaPct omitted (pending honest geometry)
 
-PRs: hauska-map [#67](https://github.com/empressaioemail-tech/hauska-map/pull/67) MERGED+deployed; hauska-engine [#120](https://github.com/empressaioemail-tech/hauska-engine/pull/120) MERGED; LDT [#355](https://github.com/empressaioemail-tech/legacy-design-tools/pull/355) (corner + derive).
+PRs: hauska-map [#67](https://github.com/empressaioemail-tech/hauska-map/pull/67) MERGED+deployed; hauska-engine [#120](https://github.com/empressaioemail-tech/hauska-engine/pull/120) MERGED; LDT [#355](https://github.com/empressaioemail-tech/legacy-design-tools/pull/355) MERGED.
 
-Corner: unit-covered in LDT edgeLabeling; live corner parcel dogfood after cortex redeploy.
+## Cortex deploy + traffic trap (MET)
+
+- Image for merge `b34a0387` was in Artifact Registry as `latest` while prod still served `cortex-api-00432-bob` (Jul 24 digest) — classic trap #1/#traffic.
+- Canary deploy → health 200 on `canary---cortex-api-…` with digest `63b1642c…` (= `#355`).
+- `shift-traffic` → **`cortex-api-00434-nej` @ 100%** (verified via `gcloud run services describe`).
+
+## Live corner-lot verify (MET 2026-07-25)
+
+Product HTTP `buildable-envelope` remains atom-chain-only (anti-zombie); it does not re-run `labelEdges` on request. Live verify therefore ran the **shipped #355 labeling** against **live county GIS ring + live Overpass named roads**:
+
+| Parcel | Situs | Named roads | Result |
+|--------|-------|-------------|--------|
+| `48021:33722` | 1002 MAIN ST | Main, Chestnut, … | `cornerLot=true`; street edges `front` + `side_corner` both street-side inset |
+| `48021:33415` | 1001 MAIN ST | Main, Water, Chestnut | `cornerLot=true`; `front` + `side_corner` both street-side; derive disclosure names corner lot |
+
+Probe: `legacy-design-tools/artifacts/api-server/scripts/live-corner-probe.ts` (operator one-shot).
+
+**Close:** display fix live on PE; cortex serving #355; corner detection live-verified on real Main St corner lots with two street-side setbacks.
 
 ## Discipline
 
