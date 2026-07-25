@@ -29,11 +29,19 @@ related: [2026-07-25_setback_correctness_and_corner_lots_pickup]
 | **Engine** | Port `bastrop-city-tx.json` + `getSetbackTableForZoning`; preserve `not_specified` through descriptor/emit; fix `0` treated as missing row; refuse consume-lot outcome when silent axes. |
 | **LDT derive** | Honor provenance `not_specified` on inset; corner lot: 2+ distinct **named** road frontages → `side_corner` + `side_corner_ft`; unresolved second frontage disclosed, never fabricated. |
 
-## Live verify (post-PE deploy)
+## Live verify (post-PE deploy) — MET 2026-07-25
 
-- Target: `48021:141209` via `GET /api/spine/property-atoms/48021%3A141209/facets`
-- Expect: envelope status `ok` (not consume-lot); setbacks line with "not specified" / build-to-line; no "consume the lot" string.
-- Corner: unit-covered in LDT; live corner parcel dogfood after cortex redeploy with road candidates.
+`GET https://property-explorer-xi.vercel.app/api/spine/property-atoms/48021%3A141209/facets`
+
+- `X-PE-Read-Path: atom-chain`, HTTP 200
+- `envelope.status=ok` (was `no-buildable-area`)
+- `setbacks.not_specified={side,rear,sideCorner:true}`; front 25 retained
+- disclosure: build-to-line / silent axes; **no** "consume the lot"
+- buildableAreaPct omitted (pending honest geometry)
+
+PRs: hauska-map [#67](https://github.com/empressaioemail-tech/hauska-map/pull/67) MERGED+deployed; hauska-engine [#120](https://github.com/empressaioemail-tech/hauska-engine/pull/120) MERGED; LDT [#355](https://github.com/empressaioemail-tech/legacy-design-tools/pull/355) (corner + derive).
+
+Corner: unit-covered in LDT edgeLabeling; live corner parcel dogfood after cortex redeploy.
 
 ## Discipline
 
