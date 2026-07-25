@@ -34,7 +34,7 @@ Source of badge claim: `apps/command-center/src/admin/control/center/PanelRegist
 | Substrate | parcel-trace | LIVE | cortex geocode + place atoms + retrieval `/atoms/trace/:did` | **real-LIVE (code)**; shares Node&Graph's declared retrieval target for the click-through leg | ParcelTrace.tsx L101–165 |
 | Substrate | mcp-inspector | LIVE | MCP admin introspection + live call probe | **claims-LIVE**; admin introspection paths 404'd from this session's guessed URLs — treat as **unverified-live** until operator opens panel | CC `/api/.../introspection/tools` → 404 (wrong path guess) |
 | Substrate | layer-registry | LIVE | GIS layer registry | **claims-LIVE (code)** | LayerRegistryView |
-| Substrate | calibration | LIVE | Calibration tracker (honest-empty allowed) | **claims-LIVE — honest-empty** | CalibrationTracker header comment |
+| Substrate | calibration | LIVE | Calibration tracker (honest-empty allowed) | **claims-LIVE-but-fixture** | `CalibrationTracker.tsx` — hardcoded zeros, no API (not a live probe) |
 | Substrate | lineage-audit | STUB | retrieval-api atom lineage / supersession | **genuine-STUB** | Registry |
 | Engines | resolver | STUB | place/resolve + node resolution | **genuine-STUB** | Registry |
 | Engines | engine-console | STUB | engine action-atom log | **genuine-STUB** | Registry |
@@ -70,7 +70,7 @@ Source of badge claim: `apps/command-center/src/admin/control/center/PanelRegist
 | Provenance stamp | n/a | "Verified · gate-passed · {bakedAt}" | Bake date misread as read-path freshness (QA-1) |
 | Honest absence vocab | State Legend (operator) | "not verified here" on any absent CardFacet | PE over-uses "not verified" for missing % / land-use even when zoning+setbacks live (QA-3) |
 | Site-plan / terrain export | optional CC tile not built | InspectCard SitePlanExportSection + TerrainExportSection | PE-only paid export UX; MCP id-flow bug (QA-2) |
-| Map tiles / layers | LiveMapTile + cortex layers | ExplorerMap + baked layers | Separate map shells; shared renderer package underneath |
+| Map tiles / layers | LiveMapTile + cortex layers | ExplorerMap + baked layers | Separate map shells; shared renderer package underneath; **`liveGis.ts` is a forked copy** in both apps (drift risk) |
 
 ### Named read-path forks (G6 / one-substrate)
 
