@@ -41,6 +41,72 @@ Deploy notes: engine-api deploys = Cloud Build (`cloudbuild.engine-api.yaml` bui
 
 Planner (this seat) verifies both live, then deploys: hauska-map = Vercel prod (repo-root link=cmdcenter for CC; `apps/property-explorer` link for PE); hauska-engine site-plan = engine-api Cloud Build → `gcloud run deploy --image --no-traffic --tag` → smoke → update-traffic. No builder self-grades.
 
+## EXPORT "ENGINE API UNREACHABLE" — RESOLVED (no gate regression; honest-refusal + pre-fix mislabel)
+
+Operator flagged PE "Export site plan" → "Engine API unreachable at .../v1/property-nodes/48021:39282/site-plan-export/refresh". Investigated in depth (planner + 2 agents), reconciled against LIVE logs + Neon:
+- The gate is HEALTHY — NOT a regression. Deployed MCP (`00029-9xn`) signs, deployed engine-api (`00097-pij`) verifies (`gate_context_verified` in logs). `GATE_CONTEXT_SIGNING_KEY` one version, matches both. `GATE_CONTEXT_MODE` unset (log-mode, never rejects). Every logged MCP→engine site-plan error in the last 3+ days is **422**, zero 401/500/timeout.
+- The 422 = engine's honest-absence guardrail (`parcel-terrain.ts:262` `setback_rule_missing` — refuses to fabricate F/S/R for parcels lacking a setback-rule atom; commitment #1). A data-coverage state, not a fault.
+- Planner's original "missing Bearer token" diagnosis was WRONG (owned): engine-api needs a signed gate-front context (only MCP calls it); the 401 the planner saw was a DIRECT header-less hit = gate working as designed. PE's HAUSKA_ENGINE_API_KEY was already set.
+- The screenshot parcel `48021:39282` HAS setback-rule + buildable-envelope atoms (verified Neon) — so it would NOT 422; and there is NO logged 39282 failure. Conclusion: the operator saw the PRE-FIX-1 mislabel (old BFF said "unreachable" for ANY non-2xx). FIX 1 (shipped + deployed PR #86) now distinguishes gate-config / payment / honest-refusal / genuinely-unreachable — so a parcel-with-setbacks now exports (201) or shows an honest message, not "unreachable".
+- Broader: 5,729 setback-rule atoms = 5,729 buildable-envelope atoms in Bastrop (Neon). Parcels WITHOUT a setback-rule (PDD/unstamped) honestly 422 — that's coverage, addressed by zoning/setback stamp expansion (wired-city-stamp gap), NOT a gate/export fix.
+- REMAINING (operator belt-and-suspenders): confirm a live PE export on a setback-having parcel returns 201 through the paid path (needs a paid X-Hauska-Key; planner has it). FIX 2 (the gate) turned out to be a non-issue — nothing to fix.
+
+## QA-TOPO (v2-fidelity BUILD, greenlit 2026-07-27) — real topography ingest, REPLACE-NOT-BREAK
+
+Ranked as a v2-fidelity BUILD (ingest + wire + re-verify consumers), NOT a styling fix. This is QA-STUDY-2 from Bucket C, now greenlit. The operator expected "nice tight topography"; terrain is still USGS 3DEP ~10m (confidence 0.60 asserted). This ADDS real topo as an ADDITIVE fidelity tier with provenance and honest 3DEP fallback — it must not break the downstream consumers.
+
+SWAP SURFACE (scouted by planner 2026-07-27, before dispatch):
+- DEM parse/source: `packages/engine-core/src/site-topography/derivation.ts` (parses a 3DEP GeoTIFF into ParsedDem; derives contours via d3-contour). THE swap point.
+- Integrity gate: `parcel-terrain/elevation.ts` (NAVD88 datum; fail-closed on nodata-as-zero spikes). New topo must pass or extend this gate.
+- Consumers (parcel-terrain public API): `mesh.ts` (GLB), `emitters.ts` (DXF-3dface, DXF-contour, IFC via runIfcWorker/runDxfWorker → Python `artifacts/ifc-worker/run.py` + `dxf-worker/run.py`), `solid-mass.ts` (the IFC solid the terrain sits under), `author.ts` (orchestration).
+- Downstream: site-plan PDF contours (`site-plan/pdf/`), PE terrain export (`hauska-map .../api/pe-terrain-export*` + `TerrainExportSection.tsx`), PE site-plan export, CC `ParcelTerrainTile.tsx`.
+- UNKNOWN until Phase 1: WHERE the DEM bytes come from today (live 3DEP fetch? bboxOverride? synthetic on samples?) — the enumerate agent must establish this; it decides the ingest wiring.
+
+SOURCES TO INGEST (v2-sourcing recon; enumerate what's actually published FIRST):
+- 1-ft/2-ft contours: Bastrop County `RoadAndBridgeMap/Contour1Ft2017` + `Contour2Ft2017` FeatureServers (county-authoritative).
+- LiDAR/higher-res DEM: TxGIO/TNRIS StratMap (free, statewide point cloud).
+- ALSO audit county `Topography/Topography_BP/Hydrography/Imagery` folders — never looked; enumerate published layers before choosing the source.
+
+PIPELINE (gated; planner adversarially reviews each phase before the next):
+1. ENUMERATE-CONSUMERS + SOURCE-RECON (read-only) → verified consumer list + what elevation each reads + where DEM comes from today + a live enumeration of the county topo/hydro FeatureServers (what's actually published, resolution, coverage). PLANNER ADVERSARIALLY VERIFIES this against the code before any ingest. No incomplete map → no swap.
+2. INGEST additive fidelity tier (LiDAR/1ft where available) WITH provenance (source/vintage/resolution), 3DEP honest fallback where absent. Do NOT rip out 3DEP.
+3. PER-CONSUMER RE-VERIFY LIVE on gold parcels (IFC export valid, GLB exports, hydrology computes + improved, contours render, site-plan intact) — before/after per consumer, pasted.
+4. RENDER the now-better terrain (tight contours, clean hillshade) on map + report.
+
+NEGATIVE DONE-LINE (any = NOT done): IFC export breaks/degrades; terrain GLB breaks; hydrology stops/regresses; contours vanish/wrong; new topo shown without honest provenance; 3DEP ripped out leaving gaps where LiDAR absent (must fall back honestly). CTX HELD; deploys planner-owned.
+
+### SCOPE DECISION (operator 2026-07-27, post-recon): Option 1 — batched terrain-fidelity workstream
+
+RECON REFRAME (planner-verified live): 3DEP already serves ~1m (pixelSize 0.9999999900, F32 — verified `.../3DEPElevation/ImageServer?f=json`). The "coarse ~10m terrain" was a CODE-DEFAULT (`resolutionMeters: 10`), NOT a source limit. So the fidelity gap is smaller than the "10m" framing implied. Operator scoped Option 1 (both moves as ONE workstream — touch the terrain pipeline once, verify IFC/hydrology/consumers once):
+1. CONFIG-TO-1M (instant, safe): lower the 3DEP request from 10m toward 1m (source already serves it; adaptive ladder already supports it). Watch `MAX_PIXELS_PER_AXIS=4096` on large bboxes (catchment-scale hydrology fetch especially). Zero new source, zero consumer-source-assumption change.
+2. INGEST 1-FT CONTOURS (the real fidelity): Bastrop `RoadAndBridgeMap/Contour1Ft2017/FeatureServer/0` — VERIFIED LIVE: esriGeometryPolyline, `contour` field (Double), 1,122,076 features, county-wide extent, range 258–765, WKID 2277 (TX State Plane US-feet), vertical NAVD88 **US SURVEY FEET** ("1-ft contours from 2017 StratMap LiDAR"). Additive tier with provenance (source/vintage/resolution), 3DEP fallback outside Bastrop's-plus-9-neighbors footprint. CRITICAL RECONCILIATION: `contour` is US-survey-FEET NAVD88; 3DEP is METRES NAVD88 — must convert ft→m (US survey foot = 1200/3937 m, NOT international foot) or every feature trips `assertTerrainElevationIntegrity` (258–765 ft vs ~120–235 m band). Vector = no nodata risk.
+3. DEFERRED (not this build): raw StratMap 50cm/1m IMG DEM (TxGIO `api.tnris.org` collection `0549d3ba-...`, 470 Bastrop-covering tiles, NAVD88/GEOID12B/UTM14N) — download-and-mosaic (not a live service), marginal grid gain over 3DEP's existing 1m, and UNDOCUMENTED nodata (needs a tile pull + gdalinfo before it can cross the integrity gate). Skipped as low-value/higher-risk; revisit only if the 1m-config + contours don't satisfy.
+
+HYDROLOGY NOTE (from consumer map): hydrology has its OWN separate `fetchUsgs3depDem` and downsamples to 256² — the config-to-1m helps terrain-mesh/contours immediately but does NOT auto-improve hydrology unless the 256² cap is also raised. Decide during ingest whether hydrology is in-scope for this batch or a follow-up (it's a separate cap change, not a source change).
+
+### PHASE 1 CONSUMER MAP — planner-adversarially-verified 2026-07-27 (Phase 2 ingest diffs against THIS)
+
+THE SWAP POINT (single seam for the terrain-mesh/contour/IFC pipeline): `packages/adapters/src/topography/usgs3dep.ts:411` `fetchUsgs3depDem()` → hits `elevation.nationalmap.gov/.../3DEPElevation/ImageServer/exportImage` (line 49), F32 GeoTIFF, no auth, default 10 m/px, adaptive ladder `[10,5,3,2,1]` toward a 1 m floor, hard `MAX_PIXELS_PER_AXIS=4096` cap (line 62). `resolutionMetersActual` is ALWAYS `null` on the `f=image` path (line 170/523) — the honest floor a 1-ft/LiDAR swap must fill in. Parsed by `site-topography/derivation.ts:52` `parseDemBytes` → `ParsedDem{width,height,values(NaN=nodata),minElevation,maxElevation,nodataCount}`. bbox/ring from real parcel store (`parcel-geometry-resolver.ts`), NOT synthetic (synthetic DEM is sample-script + hydrology-warm only, never prod).
+
+CONSUMERS (all must re-verify green post-swap):
+- Terrain MESH/GLB `parcel-terrain/mesh.ts` (O(w·h) vertices — explodes at 1-ft; GLB size scales).
+- IFC export `parcel-terrain/emitters.ts:224` + `solid-mass.ts:79` + Python `artifacts/ifc-worker/run.py` (denser tessellation; solid-mass fails closed if a nodata notch carves the rim — HIGHER RISK at higher res).
+- DXF 3dface + DXF contours `emitters.ts:102,124`; Python `dxf-worker/run.py`.
+- Contour derivation `site-topography/derivation.ts:119` (d3-contour).
+- HYDROLOGY `services/engine-api/src/routes/hydrology.ts:80` — has its OWN separate `fetchUsgs3depDem` @10m and DOWNSAMPLES to ≤256×256 (`MAX_DRAINAGE_CELLS`, line 43-54). CRITICAL: higher-res 3DEP barely helps hydrology unless that cap is raised — "improve hydrology" ≠ automatic from the swap; it's a separate cap change. pysheds worker `artifacts/hydrology-worker/`.
+- Site-plan contours + elevation labels `site-plan/site-model.ts:246,360,475` → PDF `site-plan/pdf/render.ts:329`.
+- parcel-terrain-model ATOM `parcel-terrain/author.ts:145` + `site-plan/author.ts:305` (confidence 0.6 asserted at author.ts:174 / site-plan author.ts:334; `resolutionMetersActual` should become non-null on swap).
+- engine-api routes `parcel-terrain.ts:187,255` (export/site-plan), `topography.ts:37,123` (/contours,/dem), `mapLayersWave3.ts:245,275` (map DEM+topo slots @10m hardcoded).
+- MCP proxy `hauska-mcp-server engine-api-client.ts:367,400` + hardcoded "USGS 3DEP"/"elevation.nationalmap.gov/3dep" strings in `atom-shape.ts:279`,`tool-copy.ts:56,140` (source-RENAME would misattribute — update on swap).
+- PE terrain-export + site-plan-export BFFs (hardcoded format lists), CC `ParcelTerrainTile.tsx:622` (surfaces resolutionMetersActual — changes when populated).
+- NOT a consumer (do not migrate): map-renderer `gis-terrain.js`/`gis-hydrology-flow.js` are SELF-CONTAINED FIXTURES, zero engine DEM read.
+
+INTEGRITY GATES (must stay green): `assertTerrainElevationIntegrity` (`parcel-terrain/elevation.ts:46` — mesh Z within DEM band ±0.05; land-parcel nodata-spike refusals) — HIGHEST-RISK GATE: a 1-ft/LiDAR source with UNTAGGED nodata (e.g. -9999 without GDAL_NODATA) would drag minElevation down and trip the band; probe a real 1-ft sample's nodata encoding EARLY. Plus IFC `assert_complete_spatial_model` (NAVD88 required), DXF NAVD88 assertions, `usgs3dep.test.ts` (default-10m + adaptive-ladder + 4096-cap — a 1-ft default violates the cap for larger bboxes and changes these expectations), solid-mass closed-solid, derivation nodata tests.
+
+PLANNER ADVERSARIAL FINDING (enumeration miss, corrected): the report claimed usgs3dep is the ONLY DEM fetch. Verified FALSE — `packages/adapters/src/federal/usgs-ned.ts` is a SECOND elevation source (USGS EPQS point-query `epqs.nationalmap.gov/v1/json`), wired as `usgsNedAdapter` in the general adapter registry. It is a PARALLEL spot-elevation data atom (per-parcel summary alongside FEMA/EPA/FCC), NOT a terrain-DEM-mesh consumer — so NOT in the break-risk set, but the topo build must NOTE it so two elevation sources don't tell different stories. Terrain-mesh swap seam remains the single `fetchUsgs3depDem`.
+
+UNCERTAIN (resolve in Phase 2 pre-ingest): mcp-server test assertions on the hardcoded 3DEP strings (unread); whether a live cortex-api path still fetches/persists DEM contours independently (no cortex clone under /p/); the TRUE native 3DEP resolution today (needs a live `f=json` probe for the before/after baseline); the actual nodata encoding of a real Bastrop 1-ft sample (the highest-risk unknown for the integrity gate).
+
 ## The three buckets
 
 - **BUCKET A — fixable now** (styling / layout / craft on data that already exists and serves). No new data, no ingest, no hardening-file collision. These can be dispatched immediately.
