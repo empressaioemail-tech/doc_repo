@@ -107,6 +107,21 @@ PLANNER ADVERSARIAL FINDING (enumeration miss, corrected): the report claimed us
 
 UNCERTAIN (resolve in Phase 2 pre-ingest): mcp-server test assertions on the hardcoded 3DEP strings (unread); whether a live cortex-api path still fetches/persists DEM contours independently (no cortex clone under /p/); the TRUE native 3DEP resolution today (needs a live `f=json` probe for the before/after baseline); the actual nodata encoding of a real Bastrop 1-ft sample (the highest-risk unknown for the integrity gate).
 
+## SURFACE-CONNECTION ARC (2026-07-27, post-topo-deploy) — connecting surfaces to real engine truth
+
+After the topo-fidelity engine build deployed, operator testing surfaced two "surface shows stale/fixture data" issues (the program's recurring signature). Both fixed + deployed, each holding the honesty line:
+
+1. EXPORT "unreachable" (real root cause, 3rd diagnosis was the right one): the site-plan PDF is ~432 KiB > MCP's 256 KiB inline cap, so refresh returns a `ref` (no inline bytes); PE's DOWNLOAD second-hop then called engine-api DIRECTLY with a plain Bearer, which the signed gate rejects (`gate_front_context_required`). NOT a paywall, NOT a missing env (planner's first two diagnoses were wrong — owned). Fix: new signed MCP tools `download_parcel_site_plan_export`/`download_parcel_terrain_export` (MCP #50, `00030-56s` live) + PE download routed through them (PE #88, deployed). Proven: signed path returns 442KB PDF / valid DXF+IFC; direct 401s. Dev-bypass was never broken (clears paywall correctly); this makes the download reach engine via the signed hop. The `3388a74` WIP gate-signed commit was unpushed/superseded by #88 (no reconciliation needed).
+
+2. TOPO PANEL fixtures: the PE map's contour/hillshade/hydrology layers were SYNTHETIC FIXTURES (`fixture:true`, "5 m contours from fixture DEM"), never wired to the engine; toggles controlled a hidden fixture stack (PE runs `useFixture=false`). Fix (PE #87, deployed): wired contours to the real engine map-layers slot (live), made toggles bind to real layers, and — HONESTY HELD — did NOT fake hillshade/hydrology (no map endpoint existed): relabeled honest not-live, dropped from panel. Contours labeled "Contours (3DEP)" truthfully (map slot served 3DEP 1m, not the Bastrop 1-ft; 1-ft was export-path-only).
+
+3. ENGINE MAP SLOTS (operator: "build the endpoints now") — closed the honest gap #2 named: two new `wave3` slots on `POST /v1/map-layers/assemble` (engine #161, `a3f92fc`, deployed `00101-riq`):
+   - `topography-1ft`: real Bastrop 1-ft LiDAR contours (live-probed 888 contours, US-survey-foot 1200/3937 EXACT: 368ft→112.167m), 3DEP fallback outside Bastrop (Moab → tier `3dep-fallback`, never mislabeled). `attributes.contourSource.tier` distinguishes per bbox.
+   - `hydrology-flow`: real D8 channels (live-probed 40 channels, 512²-capped), honest-empty (empty FC + reason) on flat/no-channel, never a synthetic meander.
+   - PE-panel rewire IN FLIGHT (branch `qa/topo-panel-1ft-hydro`): repoint contour layer to `topography-1ft` with PER-VIEWPORT honest label (1-ft in Bastrop, 3DEP elsewhere — label follows served tier, never hardcoded); restore live hydrology; hillshade stays honest-not-live.
+
+RECURRING LESSON reinforced: engine work was real, but surfaces showed stale/fixture/mislabeled data. Each fix connected a surface to engine truth; at every honest gap the agents labeled-honestly-and-flagged rather than faked, then the planner built the endpoint to close it for real. Planner diagnosed the export cause wrong twice before the evidence (432KB > inline cap) landed — verify-against-live-state caught it both directions.
+
 ## The three buckets
 
 - **BUCKET A — fixable now** (styling / layout / craft on data that already exists and serves). No new data, no ingest, no hardening-file collision. These can be dispatched immediately.
