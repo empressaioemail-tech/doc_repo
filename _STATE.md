@@ -58,20 +58,13 @@ DISPATCH STATE 2026-07-28 (planner session, six executor agents in parallel work
 - B2 (drawings+aerial with site plan) DONE + LIVE-VERIFIED: #166 (aerial page 3) + #167 (1024px cap) + #168 (cached-LOD resolution floor 0.33 merc-units/px — the REAL constraint: Esri export 500s finer than level 19 ≈ 0.3 units/px, found by live bisection; pixel count alone was a red herring). Gold-parcel smoke on serving revision: refresh 201 with aerialImageryEmbedded:true, 3-page 508KB PDF, embedded 238x263 aerial extracted + visually confirmed (201 Maynard St). Honest-unavailable panel verified working when the fetch fails.
 - Deploy notes: retrieval-api = `gcloud run deploy hauska-retrieval-api --source .` from engine root (env preserved when flags omitted; canary tag + smoke + shift); MCP = cloudbuild-mcp.yaml; migration apply = packages/storage/scripts/apply-migration.mjs w/ DATABASE_URL from Secret Manager (check script covers new migration file).
 
-NEW QA/PORT cluster (2026-07-28, spec: `_inbox/2026-07-28_pe_cc_qa_and_reports_spec.md`):
-- PROPERTY BRIEF INTO PE: PE brief shows raw JSON; port the real "Alder" brief renderer (legacy-design-tools briefingHtml.ts/briefingPdf.ts/parcelBriefings.ts) into PE's container; comprehensive + layman + nice + close/export-PDF. Scrub + verify.
-- SITE-PLAN EXPORT still blocked (gate token / gate-front context on PE→engine) + ADD drawings+aerial export with the site plan.
-- CC MAP LINKAGE: new map lost the old bind — click parcel on map must focus Node&Graph + all bound panels to that node.
-- CC NAV: county→open→roads+parcel-nodes→search-by-many-ids→click-node→atoms→click-atom→inspector→BACK-NAV to county list. (= QA-CC-PORT; likely needs a spine node-LIST endpoint — /nodes 404 today, stranded-data pattern.)
-- "9% ZONED" label: CONFIRMED correct (Bastrop county mostly unincorporated = legitimately unzoned) but reads alarming — fix the LABELING (city-zoned vs county-unincorporated), not the number.
-- HYDROLOGY 504: operator hypothesis = topo-swap byproduct (finer DEM broke D8 flow). Diagnose + fix.
-- LAND USE + ACREAGE: exist in brief atoms (land-use A1/cad-roll) but not on the inspect card — surface both.
+(The 2026-07-28 spec's QA/PORT cluster items A-G + B2 are ALL RESOLVED — see the block above. Spec kept at `_inbox/2026-07-28_pe_cc_qa_and_reports_spec.md` for history.)
 
-QA workstreams in flight / owed (register: `_inbox/2026-07-27_bastrop_qa_defect_register.md`):
-- QA-CC-PORT (major): CC inspector flow is thinner than the Trading Control Tower target; faithful-port owed (reference: `/p/Empressa Trading` NodeGraphBrowser.tsx + AtomInspector.tsx). Branch qa/cc-inspector-port.
-- QA-CC-BUG: CC node inspect on 48021:28286 times out 20s + TALLY STALE. Real defect.
-- QA2.2: site-plan template-match (operator dropped a template; port design into pdf-lib). Branch qa/site-plan-template-match.
-- More QA polish changes (operator flagged, not yet enumerated).
+QA register status (register: `_inbox/2026-07-27_bastrop_qa_defect_register.md`):
+- QA-CC-PORT: SHIPPED (#94 CC nav/linkage + #165 /nodes endpoint; live-verified with screenshots). Residual polish only if operator flags it.
+- QA-CC-BUG: inspect-timeout FIXED (migration 008 indexes; gold-parcel detail 195ms live, was 20s-timeout). Tally freshness: live tally loads (~20-45s cold on the stats query); artifact fallback + STALE banner remain the honest degrade — not reworked, flag if operator wants the stats query made fast.
+- QA2.2 (site-plan template-match): WAS ALREADY DONE — PR #159 squash-merged 2026-07-27 (cf7e700); the ledger's "in-flight branch" read was the squash-merge false-stranded signal (branch showed unmerged commits; `gh pr view` showed MERGED). Remote branch deleted 2026-07-28 to stop the false signal. Verify PR state via gh, not branch commits.
+- More QA polish changes: operator resuming QA 2026-07-28; findings incoming.
 
 PE reports / functions (NEW — needs a plan):
 - The customer app (PE) exposes ~3-4 reports; the spine can back ~15+ (brief, hazard, encumbrance, dossier, plan-review, deliverable letters). Audit: `_inbox/2026-07-27_app_vs_cc_report_audit.md`. DECISION OWED: which reports PE offers + is PE the unified report surface. This is a product+design+data program, not a QA ticket.
