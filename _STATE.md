@@ -17,11 +17,11 @@ Bastrop is APPROVABLE (mold gate passed 2026-07-27) and substantively built (dep
 
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
-- engine-api: `hauska-engine-api-00107-yuc` @100% (no-setback + 4Gi OOM-fix + bbox-guard). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic.
-- retrieval: `hauska-retrieval-api-00041-hed` @100% (or later). Project hauska-prod-497015.
-- MCP: `hauska-mcp-server-00032-gzm` @100%.
+- engine-api: `hauska-engine-api-00109-nur` @100% (hydrology 10m floor #164; 4Gi/300s preserved; envelope-canary tag repointed). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic.
+- retrieval: `hauska-retrieval-api-00043-lay` @100% (GET /nodes roster #165; migration 008 indexes applied+verified on substrate Neon). Project hauska-prod-497015.
+- MCP: `hauska-mcp-server-00033-khs` @100% (site-plan/terrain 50s/45s timeouts #52).
 - cortex-api: `cortex-api-00442-heq` @100% (Cotality-decommissioned envelope path). Project legacy-design-tools-prod.
-- CC: `cmdcenter-blush.vercel.app`. PE: `property-explorer-xi.vercel.app`.
+- CC: `cmdcenter-blush.vercel.app` (CC-nav #94 live). PE: `property-explorer-xi.vercel.app` (brief #93 + honest-timeout #92 + inspect-card #91 live). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI from repo root with `vercel link --yes --project <property-explorer|cmdcenter>` then `vercel deploy --prod` (runbook _inbox/2026-07-21).
 
 ## WHAT IS DONE + LIVE-VERIFIED
 
@@ -35,10 +35,28 @@ Bastrop is APPROVABLE (mold gate passed 2026-07-27) and substantively built (dep
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
 
-Blockers visible on the live PE app (screenshot 2026-07-28):
-1. SITE-PLAN EXPORT still blocked — "needs an engine-api gate token (HAUSKA_ENGINE_API_KEY) / gate-front context not set or not accepted." The customer can't export a site plan. (Distinct from the no-setback fix which is about the CONTENT; this is the gate-token/auth on the PE→engine export path.)
-2. HYDROLOGY DEGRADED — "Flow lines degraded — hydrology: HTTP 504." The hydrology flow layer times out.
-3. LAND USE + ACREAGE not captured — inspect card shows "not verified here" for land use and acreage. Need to capture/surface both.
+2026-07-28 QA cluster RESOLVED (all merged + deployed + live-verified same day; verification evidence in _sessions/2026-07-28):
+- B1 EXPORT: FIXED. MCP timeout 30s→50s deployed (rev 00033-khs); live MCP download of gold-parcel PDF = 200 in 5.8s (591KB real PDF). PE honest-timeout classes live. Residual: customer-click confirm by operator (needs signed-in paid session).
+- F HYDROLOGY: FIXED + live-verified on PE prod, same bbox: 40.6s/1379 channels → 6.3s/169 channels, status ok. Worst-case cold start can still exceed 60s once; UI degrades honestly and recovers.
+- G INSPECT CARD: deployed; live facets payload confirmed carrying landUse (A1 cad-roll) + acreage (0.1886 shoelace-wgs84) on 48021:28286; deriver now renders present values with provenance captions. Visual confirm owed by operator.
+- C+D CC NAV: /nodes live-verified end-to-end THROUGH the CC proxy (q=28286 finds gold parcel in 2.3s; roads roster with display names; gold-parcel detail 195ms — was 20s-timeout). CC bundle carries nav action + list + label changes. Flow-level UI walk owed (browser).
+- A BRIEF: deployed (bundle markers verified). Rendered-brief visual + PDF-export confirm owed by operator (needs paid session).
+- E LABEL: deployed in CC bundle ("unincorporated" framing live).
+
+Original blocker notes (superseded, kept for context):
+1. SITE-PLAN EXPORT block — NOT auth. Root cause (live-verified): MCP engine-api-client DEFAULT_TIMEOUT_MS=30s; warm refresh measured 23.2s live, cold exceeds 30s → abort → "Engine API unreachable … requires engine-api" → PE classifyEngineFailure pattern-matches that string into the GATE class → misleading "needs an engine-api gate token" message. PE prod env + deploy are fine (prod at main tip w/ #88+#90; MCP_PRODUCT_KEY etc. all set; both services share GATE_CONTEXT_SIGNING_KEY secret; engine gate mode defaults to log). Fix in flight: MCP timeout 50s + PE honest-timeout classification (branches fix/siteplan-engine-timeout on hauska-mcp-server, fix/pe-export-honest-timeout on hauska-map).
+2. HYDROLOGY 504 — operator hypothesis CONFIRMED: default DEM went to 1m (usgs3dep.ts), hydrology-flow slot reuses the shared raster plan (fetches 1m it doesn't need), accumulationThreshold fixed at 50 cells regardless of resolution, pysheds worker budget 120s vs PE Vercel fn cap 60s → upstream 504. Fix in flight: hydrology-specific 10m resolution floor + resolution-scaled threshold (branch fix/hydrology-resolution-floor on hauska-engine).
+3. LAND USE + ACREAGE — data IS in the fetched baked payload; deriveBakedCardModel suppresses present values when facetCoverage flag is false; live branch has no acreage row at all. Fix in flight (branch fix/pe-inspect-landuse-acreage).
+
+DISPATCH STATE 2026-07-28 (planner session, six executor agents in parallel worktrees; planner merges on green CI, deploys, live-verifies):
+- W1 fix/siteplan-engine-timeout (mcp) + fix/pe-export-honest-timeout (map) — B1 export unblock.
+- W2 feat/retrieval-node-list (engine) — GET /nodes list endpoint + jsonb expression indexes migration (also hardens gold-parcel inspect timeout). Contract pinned in dispatch; planner must APPLY MIGRATION to substrate Neon (hauska_mcp) before live-verify (merged ≠ applied).
+- W3 qa/cc-nav-linkage (map/CC) — map-click→focus Node&Graph, real node list + multi-id search + back-nav (Trading port), getJson timeout alignment, 9.27%-zoned label reframe. Feature-detects /nodes (honest-empty fallback if endpoint not deployed yet).
+- W4 fix/hydrology-resolution-floor (engine) — hydrology 10m floor + threshold scaling.
+- W5 fix/pe-inspect-landuse-acreage (map/PE) — inspect-card land use + acreage surfacing.
+- W6 feat/pe-brief-alder-render (map/PE) — FLAGSHIP: Alder-style brief renderer replacing raw-JSON dump (4-section R1 contract from cortex propertyExplorer.ts buildR1Brief), close + print-CSS PDF export, no fabrication (field→payload scrub table in PR).
+- B2 (drawings+aerial with site plan) MERGED (#166, engine): aerial-context page 3 in the site-plan PDF — Esri World Imagery (3857 static export, PNG-signature guard, 8s bound) + exact-inverse-transform vector overlay + attribution + always-emit honest-unavailable panel; artifact records aerialImageryEmbedded/UnavailableReason. Engine redeploy for it in flight at session close (image aerial-e73334f → canary → smoke → shift).
+- Deploy notes: retrieval-api = `gcloud run deploy hauska-retrieval-api --source .` from engine root (env preserved when flags omitted; canary tag + smoke + shift); MCP = cloudbuild-mcp.yaml; migration apply = packages/storage/scripts/apply-migration.mjs w/ DATABASE_URL from Secret Manager (check script covers new migration file).
 
 NEW QA/PORT cluster (2026-07-28, spec: `_inbox/2026-07-28_pe_cc_qa_and_reports_spec.md`):
 - PROPERTY BRIEF INTO PE: PE brief shows raw JSON; port the real "Alder" brief renderer (legacy-design-tools briefingHtml.ts/briefingPdf.ts/parcelBriefings.ts) into PE's container; comprehensive + layman + nice + close/export-PDF. Scrub + verify.
