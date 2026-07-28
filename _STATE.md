@@ -88,6 +88,10 @@ Public-data completeness (NEW — recon done):
 - Marketplace / write-back contract (vision).
 - Bastrop infra-twinning (streetlights/traffic — city layer, likely needs city data handoff).
 
+## THE MOLD (engine-build prerequisite — keep it current as QA continues)
+
+`28_THE_BASTROP_MOLD_engine_build_spec.md` = the specification the CTX/national engine build reads. What a complete county contains + every baked decision/gotcha the engine must replicate. LIVING doc: any agent that fixes/builds a COUNTY-GENERAL thing must add the lesson to it (capture protocol at the doc's end). When the operator returns to build the fan-out engine, this doc + _STATE.md + MEMORY.md are the input — no archaeology.
+
 ## KEY DOCS (the map)
 
 - Program: 27_MASTER_WDLL, 27a (engines), 27c (road node), 27d (recipe), 27e (multi-track), 27f (Bastrop-through-v2 stack).
