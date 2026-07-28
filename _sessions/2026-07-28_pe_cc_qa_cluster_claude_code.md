@@ -29,7 +29,7 @@ Planner-manages-subs execution of the 2026-07-28 spec. Four recon agents mapped 
 | #165 | hauska-engine | GET /nodes county roster endpoint (pinned contract) + migration 008 jsonb expression indexes (D; also kills the gold-parcel inspect timeout) |
 | #52 | hauska-mcp-server | Site-plan/terrain export timeouts 50s/45s + EngineApiTimeoutError with honest retry text (B1 MCP leg) |
 
-In flight at close: engine PR for the aerial-context PDF page (B2 — Esri World Imagery embed + vector overlay + attribution + honest fetch-failure path).
+B2 landed as three PRs: #166 (aerial-context page 3: Esri World Imagery embed, exact-inverse overlay transform, attribution, always-emit honest-unavailable panel) plus two planner hot-fixes found ONLY by live smoke — #167 (1024px cap) and #168 (the real constraint: the Esri export op serves only cached LODs and 500s when asked finer than ~0.3 merc-units/px; live bisection 0.300 ok / 0.296 fails; a parcel-scale box at 1024px asked 0.15). Final smoke on the serving revision: refresh 201 with aerialImageryEmbedded:true, 3-page 508KB PDF, embedded 238x263 aerial imagery extracted from the PDF and visually confirmed as the gold parcel (201 Maynard St). The honest-unavailable panel was also live-verified (the #166 revision correctly recorded aerialImageryEmbedded:false with the HTTP 500 reason and still exported a valid 3-page PDF).
 
 ## Deployed (planner-owned)
 
@@ -49,7 +49,7 @@ In flight at close: engine PR for the aerial-context PDF page (B2 — Esri World
 ## Owed / residuals
 
 - Operator visual confirm (needs a signed-in paid session, which the planner cannot mint): brief render + PDF export on a zoned AND an unzoned parcel; site-plan export click; inspect-card values.
-- B2 aerial-page PR: merge + engine redeploy when the executor reports.
+- Engine cold start can exceed the PE function 60s cap on the first hit after a traffic shift (observed once live; warm retry 14.8s ok). Recommendation for operator: min-instances=1 on engine-api (recurring-cost call, not made unilaterally).
 - W2 finding worth keeping: property atom bodies carry no address/APN (search is node-id/propId + road names); the cortex facets DO carry situsAddress — a future enrichment could thread it into the roster.
 - W4 flag: the sibling /dem route still defaults 1m; a caller doing /dem → /drainage at default can feed pysheds a 1m raster (out of scope today).
 - /nodes `total` caps at 10,000 with `total_capped: true` (honest floor, documented).

@@ -17,7 +17,7 @@ Bastrop is APPROVABLE (mold gate passed 2026-07-27) and substantively built (dep
 
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
-- engine-api: `hauska-engine-api-00109-nur` @100% (hydrology 10m floor #164; 4Gi/300s preserved; envelope-canary tag repointed). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic.
+- engine-api: `hauska-engine-api-00114-kiv` @100% (hydrology floor #164 + /nodes #165 + aerial page #166/#167/#168; 4Gi/300s preserved; envelope-canary tag repointed). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic. RESIDUAL: cold start can exceed the PE fn 60s cap once (observed on the traffic shift); consider min-instances=1 (operator cost call).
 - retrieval: `hauska-retrieval-api-00043-lay` @100% (GET /nodes roster #165; migration 008 indexes applied+verified on substrate Neon). Project hauska-prod-497015.
 - MCP: `hauska-mcp-server-00033-khs` @100% (site-plan/terrain 50s/45s timeouts #52).
 - cortex-api: `cortex-api-00442-heq` @100% (Cotality-decommissioned envelope path). Project legacy-design-tools-prod.
@@ -55,7 +55,7 @@ DISPATCH STATE 2026-07-28 (planner session, six executor agents in parallel work
 - W4 fix/hydrology-resolution-floor (engine) — hydrology 10m floor + threshold scaling.
 - W5 fix/pe-inspect-landuse-acreage (map/PE) — inspect-card land use + acreage surfacing.
 - W6 feat/pe-brief-alder-render (map/PE) — FLAGSHIP: Alder-style brief renderer replacing raw-JSON dump (4-section R1 contract from cortex propertyExplorer.ts buildR1Brief), close + print-CSS PDF export, no fabrication (field→payload scrub table in PR).
-- B2 (drawings+aerial with site plan) MERGED (#166, engine): aerial-context page 3 in the site-plan PDF — Esri World Imagery (3857 static export, PNG-signature guard, 8s bound) + exact-inverse-transform vector overlay + attribution + always-emit honest-unavailable panel; artifact records aerialImageryEmbedded/UnavailableReason. Engine redeploy for it in flight at session close (image aerial-e73334f → canary → smoke → shift).
+- B2 (drawings+aerial with site plan) DONE + LIVE-VERIFIED: #166 (aerial page 3) + #167 (1024px cap) + #168 (cached-LOD resolution floor 0.33 merc-units/px — the REAL constraint: Esri export 500s finer than level 19 ≈ 0.3 units/px, found by live bisection; pixel count alone was a red herring). Gold-parcel smoke on serving revision: refresh 201 with aerialImageryEmbedded:true, 3-page 508KB PDF, embedded 238x263 aerial extracted + visually confirmed (201 Maynard St). Honest-unavailable panel verified working when the fetch fails.
 - Deploy notes: retrieval-api = `gcloud run deploy hauska-retrieval-api --source .` from engine root (env preserved when flags omitted; canary tag + smoke + shift); MCP = cloudbuild-mcp.yaml; migration apply = packages/storage/scripts/apply-migration.mjs w/ DATABASE_URL from Secret Manager (check script covers new migration file).
 
 NEW QA/PORT cluster (2026-07-28, spec: `_inbox/2026-07-28_pe_cc_qa_and_reports_spec.md`):
