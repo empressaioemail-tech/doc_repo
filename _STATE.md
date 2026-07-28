@@ -40,6 +40,15 @@ Blockers visible on the live PE app (screenshot 2026-07-28):
 2. HYDROLOGY DEGRADED — "Flow lines degraded — hydrology: HTTP 504." The hydrology flow layer times out.
 3. LAND USE + ACREAGE not captured — inspect card shows "not verified here" for land use and acreage. Need to capture/surface both.
 
+NEW QA/PORT cluster (2026-07-28, spec: `_inbox/2026-07-28_pe_cc_qa_and_reports_spec.md`):
+- PROPERTY BRIEF INTO PE: PE brief shows raw JSON; port the real "Alder" brief renderer (legacy-design-tools briefingHtml.ts/briefingPdf.ts/parcelBriefings.ts) into PE's container; comprehensive + layman + nice + close/export-PDF. Scrub + verify.
+- SITE-PLAN EXPORT still blocked (gate token / gate-front context on PE→engine) + ADD drawings+aerial export with the site plan.
+- CC MAP LINKAGE: new map lost the old bind — click parcel on map must focus Node&Graph + all bound panels to that node.
+- CC NAV: county→open→roads+parcel-nodes→search-by-many-ids→click-node→atoms→click-atom→inspector→BACK-NAV to county list. (= QA-CC-PORT; likely needs a spine node-LIST endpoint — /nodes 404 today, stranded-data pattern.)
+- "9% ZONED" label: CONFIRMED correct (Bastrop county mostly unincorporated = legitimately unzoned) but reads alarming — fix the LABELING (city-zoned vs county-unincorporated), not the number.
+- HYDROLOGY 504: operator hypothesis = topo-swap byproduct (finer DEM broke D8 flow). Diagnose + fix.
+- LAND USE + ACREAGE: exist in brief atoms (land-use A1/cad-roll) but not on the inspect card — surface both.
+
 QA workstreams in flight / owed (register: `_inbox/2026-07-27_bastrop_qa_defect_register.md`):
 - QA-CC-PORT (major): CC inspector flow is thinner than the Trading Control Tower target; faithful-port owed (reference: `/p/Empressa Trading` NodeGraphBrowser.tsx + AtomInspector.tsx). Branch qa/cc-inspector-port.
 - QA-CC-BUG: CC node inspect on 48021:28286 times out 20s + TALLY STALE. Real defect.
