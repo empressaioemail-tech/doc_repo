@@ -43,7 +43,7 @@ A county is a DESCRIPTOR + the engine. Authoring the descriptor is the ONLY per-
 - Inspect card: zoning, setbacks, buildable, flood, LAND USE + ACREAGE, honest-absence where thin.
 - Map: parcels (zoning-colored), roads (viewport network), 1-ft contours, FEMA, hydrology flow, aerial imagery basemap.
 - Property BRIEF (Alder-style): sectioned layman prose, per-fact citations + freshness, honest-absence, close + PDF export.
-- Site-plan EXPORT (PDF): parcel, envelope, setbacks, road, property-line-tags, + aerial-context page.
+- Site-plan EXPORT (PDF): parcel, envelope, setbacks, road, property-line-tags, + aerial-context page. GOVERNED BY THE SHEET STANDARD v1.0 (operator-authored, binding): committed in-repo at `hauska-engine/packages/engine-core/src/site-plan/pdf/SHEET_STANDARD_v1.html` — 20 rules (3-sheet order, header form, layer weights, label collision cascade, draw-once guarantee, honest chips, number/unit form, degenerate treatment, duotone aerial + provenance strip) with the ACCEPTANCE CHECKLIST ENCODED AS TESTS (sheet-standard.test.ts, draw-call MarkRegistry seam, decode-pdf-text string scans) on gold + degenerate fixtures. A fresh county inherits the standard mechanically; do not restyle the sheet outside it.
 - Terrain EXPORT (GLB mesh) + IFC export.
 
 ### 1d. The OPERATOR SURFACE (CC) a complete county serves
