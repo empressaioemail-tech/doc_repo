@@ -75,6 +75,14 @@ PE reports / functions (NEW — needs a plan):
 Public-data completeness (NEW — recon done):
 - Only ingested ~4 of 26 county folders. Ungrabbed public layers: aerial imagery (2019-2024), hydrography (Creeks_Streams), address points, subdivisions, city water/utility CCN. Recon: `_inbox/2026-07-27_bastrop_public_data_completeness_recon.md`. Ingest-prioritization dispatch HELD pending report-set decision.
 
+## PE WORKBENCH BUILD (started 2026-07-29, spec: _inbox/2026-07-29_pe_workbench_concept_spec.md)
+
+DESIGN LAW governs (map stays the star; every capability = bubble in the top-right cluster opening ONE shared dock; one tool at a time; per-property persistent state; NO permanent second surface/split screen — reject violations).
+- WB1 chassis (IN FLIGHT): dock mechanic + bubble cluster + brief hosted as first tool (mechanical move; branch feat/pe-workbench-chassis). Chassis API gets pinned for later waves on merge.
+- W2 (after WB1): verdict line leading the brief + Reports/exports bubble. W3 (after WB1 + chat recon): AI chat bubble — PORT the extension's function/flow (starter chips → chat → {{atom:...}} markup → inline expand w/ freshness; refs P:\hauska-brief-extension src/lib/lay-render.js + inline-atoms.js + atom-freshness.js); recon of the extension chat backend + PE proxy gaps IN FLIGHT. W4 (after WB1): My Properties (cortex peSavedProperties routes exist — surfacing) + Share (link carries brief + drawings + site plan; signed-token design, sharer-scoped).
+- DEFERRED (do not build): extension-as-funnel, county-records-docs, broader report-set decision, atom-seeded starter chips.
+- No conflicts with in-flight data work (W15 rewarm / W16 restamp are engine/data-side; PE surface was quiet post-#99).
+
 ## HELD / NOT STARTED (by design — do not start without operator go)
 
 - CTX / Hays / national county fan-out (until Bastrop QA-done + go).
