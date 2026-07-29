@@ -105,6 +105,8 @@ INFRA / TOPO / HYDROLOGY:
 
 DEPLOY / OPS (all planner-owned):
 - Cloud Run traffic trap (new revision ≠ serving until shift-traffic); engine-api 4Gi is LIVE-SET only; Vercel does NOT auto-deploy on merge (CLI from repo root, vercel link --project first); migration MERGED ≠ APPLIED to the live Neon (apply + verify before a data-run); workflow deploys revert manual env.
+- VERCEL HOBBY 12-FUNCTION CAP — a deploy FAILS (not degrades) at the 13th serverless function; a merged-green PR can be undeployable. Fix pattern: consolidate same-skeleton BFFs into one function dispatching on a query param with rewrites keeping client URLs stable (pe-map-layers 2026-07-29). Budget function slots per app; a new per-layer/per-report BFF is NOT free.
+- COUNTY ARCGIS QUIRKS ARE PER-SERVICE — Bastrop's Creeks_Streams has NO FeatureServer (MapServer/0/query only) and NO pagination (resultRecordCount → 400); probe each service's real capabilities live before wiring, never assume the standard surface (hydrography adapter 2026-07-29).
 - MERGED ≠ CUSTOMER-DONE — grade on the LIVE deployed surface across multiple different-data parcels, never a merged PR.
 
 MEMORY / FLEET:
