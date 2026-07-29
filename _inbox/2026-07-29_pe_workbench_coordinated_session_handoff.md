@@ -9,6 +9,37 @@ governs: [2026-07-29_pe_workbench_concept_spec, 2026-07-29_pe_ai_chat_atom_citat
 
 # PE Workbench — coordinated session handoff
 
+## >>> LOCKED (2026-07-29) — planner review verified against live code; these amendments SUPERSEDE the body below where they conflict. Plan is LOCKED; build to this.
+
+OPERATOR RULING — 3-FREE-MESSAGES = SIGNED-IN-FREE. 3 chat messages per FREE ACCOUNT per property, SERVER-COUNTED (not anonymous). The free INSPECT CARD stays fully anonymous (no-login-to-browse holds); the 3 free chat messages sit behind a free account (sign-up becomes the funnel step). Do NOT build anonymous chat metering (that's the auth-orphan trap — anonymous-tolerant route + anonymous identity PE deliberately didn't port). Update the pricing spec to reflect signed-in-free. If anonymous-taste is ever wanted, it's a separate isolated wave with the auth-orphan checklist, never bundled into R1.
+
+R1 PAYWALL — additions from code review:
+- The property-scoped entitlement check must land SERVER-SIDE on EVERY paid route (requirePePaidDeep on brief/chat, fetchPeEntitlement in the export BFFs, the share mint) — a client-only gate is cosmetic. This means a CORTEX schema (pe_user_entitlements is PK'd on ownerUserId, binary accessTier — cannot express per-property; needs a property-scoped record) + MIDDLEWARE change + a CORTEX DEPLOY inside R1. The hasPeDevPaidBypass pattern is existing precedent for a stubbed entitlement writer (interface, not live payments — boundary holds).
+- SHARE is a PAID bubble (pricing spec) — fold its mint gate into the per-property entitlement semantics in R1.
+- WB6 chat-summary call needs an entitlement classification → part of PAID chat (consistent).
+- TERRAIN-PRO-ONLY vs site-plan (per-property) needs the two-tier gate — part of the R1 rework.
+- SPLIT the chat free-counter slice from the rest of R1 so it's isolated (it was the open decision; now ruled signed-in-free).
+
+R2 CITATION — scope corrections from code review:
+- The atom-fetch endpoint is NOT missing: GET atoms/:did already exists on retrieval, anonymously reachable via PE's spine proxy (spine.ts:170). R2's genuinely-new work = chip FETCH-ON-TAP wiring + BRIEF/FULL accordion + LINEAGE (v1: CLIENT-COMPOSE the envelope←setback←zoning←code walk from the property's existing atom-chain call — no graph route needed; a true lineage/as-of route is a later upgrade) + VERIFY gated-404 uniformity on atoms/:did (make it an R2 CHECK, not an assumption).
+- DISCOVERY (plan missed): chat sends presentationMode:"consumer", and consumer mode STRIPS [n] markers from answers ("do NOT include [n]… for a homebuyer") — this suppresses inline citations for our PRO ICP. R2 MUST switch to PROFESSIONAL mode (or make it a deliberate call) — materially affects chip density.
+- The streaming-safe rule is MOOT for v1 (chat is single-shot JSON, no streaming path) — drop it.
+
+R3 FLOOD & DRAINAGE — additions from code review:
+- (i) needs a PARCEL-SCOPED ENGINE ROUTE (CC's drainage is cortex-side; engine /drainage expects a client-supplied DEM) — the queued H3 already scopes this; adopt it.
+- (ii) decide NOAA Atlas-14 forcing input (lives in ldt ingest path) — engine-side port or parameterized depth.
+- (iii) PDF builds on WB7b's dossier-document scaffolding (STILL UNMERGED — WB7b merge is a dependency) — ONE document pattern, not two.
+- (iv) the report BFF consumes the LAST free Vercel function slot — FOLD it into an existing function or the deploy fails exactly like #108 did.
+- Sheet Standard is at v1.3 now (not v1.0) — reuse the current version.
+
+FUNCTION-SLOT BUDGET (plan missed entirely): PE is on Vercel Hobby 12-function cap, currently 11/12 after #109 consolidated 3 BFFs into pe-map-layers. R1 + R3 each add BFF surface — CONSOLIDATE into existing functions or the deploy fails (this bit #108). Operator: consider Vercel Pro plan as the structural fix (billing call).
+
+SEQUENCING (verified): paywall-reconcile → paid report (right). Plus: WB7b merge → R3 PDF; function-budget gate on R1/R3 BFFs; R1 server-gate → cortex deploy; free-counter split from R1; share-mint gate folded into R1 per-property.
+
+INVENTORY TIME-DRIFT: hydrography now fully live end-to-end (engine #175 + PE, ~660ms). Re-warm partial (envelope re-promote done — 34177 healed to 15,414; facet re-bake running; W16 situs restamp queued) — orthogonal to R1/R2, but R3 live-verify must check POST-restamp data. Copy cleanup: current PaywallGate/ExplorerMap hardcodes Pro-subscription language ("R1–R10… Pro entitlement") — the unified two-choice ($15 property / Pro) flow replaces it. Reserved-atom-color: chips currently use the general accent — small audit to give atoms their reserved color.
+
+## <<< END LOCKED AMENDMENTS
+
 SITUATION (2026-07-29): the PE Workbench build is ALREADY IN FLIGHT and moving fast. The chassis, verdict, reports-into-bubbles, chat port, my-properties/share, dossier/compare/pins, and the HYDROGRAPHY LAYER are DONE + live. WB7a (cortex share route) + WB7b (engine dossier PDF) are in CI; the FLOOD & DRAINAGE report (H3/H4) is ALREADY QUEUED to build on WB7b's document pattern. So this handoff is NOT a restart — it is TWO THINGS THE LIVE BOARD IS MISSING, plus the confirmed model for the report already queued.
 
 You are the PLANNER; continue your live board and ADD the two missing pieces below. Plan, fan background agents, verify LIVE (never sub-agent self-grade), own deploys, keep _STATE.md true. Standing-decisions block into every sub-dispatch.

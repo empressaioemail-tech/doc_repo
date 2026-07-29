@@ -18,7 +18,7 @@ Any professional who analyzes parcel details: real estate agents/brokers, ARCHIT
 FREE (the hook — no login needed):
 - Everything in the UPPER-LEFT INSPECT CARD (zoning, setbacks, buildable, flood, land-use, acreage — whatever is in that card is free; operator may adjust the card contents, but the RULE is fixed: in the left card = free).
 - Map browse + toggle layers (contours, FEMA, Hydrography, parcel, zoning).
-- 3 FREE AI CHAT MESSAGES PER PROPERTY, then the wall.
+- 3 FREE AI CHAT MESSAGES PER PROPERTY (SIGNED-IN-FREE, ruled 2026-07-29) — the free INSPECT CARD + map browse stay fully ANONYMOUS (no-login-to-browse holds), but the 3 free chat messages sit behind a FREE ACCOUNT, server-counted per free-account per property. Sign-up is the funnel step. NOT anonymous chat metering (that's the auth-orphan trap). Then the wall.
 
 PAID (the value — the right-bubble-stack):
 - Property BRIEF (full), AI CHAT (unlimited on the property), FLOOD & DRAINAGE report, SITE-PLAN export, TERRAIN export, SHARE-with-drawings.
