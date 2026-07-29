@@ -91,7 +91,8 @@ GEOMETRY:
 - REAL POLYGON-OFFSET (polygon-clipping), never naive per-edge miter (self-intersects on concave rings).
 - CLEAN CLIP ARTIFACTS before the degeneracy guard (ringHasSelfTouch); never WEAKEN the guard to pass a specimen (would let genuinely-degenerate lots fabricate).
 - GEOMETRY GATE NEEDS POSITIVE-SPACE FIXTURES (good near-rects on every edge PASS), not only bad-shapes-fail — the 28286 near-rect hole.
-- BOUNDARY PRIMITIVE: interior computed ONCE per ring + STORED; the offset CONSUMES it (orientation-invariant), never re-derives per edge.
+- BOUNDARY PRIMITIVE: interior computed ONCE per ring + STORED; the offset CONSUMES it (orientation-invariant), never re-derives per edge. EVERY CONSUMER — depth-warm AND the site-plan export AND any future surface — must consume the SAME primitive; two independent per-edge computations "patched to agree" WILL drift on a future county's ring shape (caught 2026-07-28: the export path still ran its own vertex-count-branched per-edge heuristic — n==4 → geometric front guess, n≠4 → uniform-min fabrication — producing 90%-vs-55% envelopes on same-district parcels and a false degenerate on a jog ring; the fix is routing the export through the primitive, NOT hardening the heuristic). The reconciliation gate (export area == depth-warm area on the same ring+rule) must pass because they are ONE computation.
+- BUILD-TO-LINE RULING (operator-ratified 2026-07-28): a side/rear axis marked not_specified ("build-to-line governs") gets ZERO INSET and the envelope is labeled PROVISIONAL — never fabricate a yard value the code doesn't state (fabrication in the other direction). The descriptor's not_specified flags are load-bearing; consumers must honor fieldProvenance.notSpecified.
 - ADJACENCY at county scale = one-load + cell-grid + PIP, NOT per-edge bbox scan (O(n²); 55h on Bexar). Scales to Bexar (~700k).
 
 INFRA / TOPO / HYDROLOGY:
