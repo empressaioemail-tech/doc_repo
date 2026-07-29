@@ -77,11 +77,13 @@ Public-data completeness (NEW — recon done):
 
 ## PE WORKBENCH BUILD (started 2026-07-29, spec: _inbox/2026-07-29_pe_workbench_concept_spec.md)
 
-DESIGN LAW governs (map stays the star; every capability = bubble in the top-right cluster opening ONE shared dock; one tool at a time; per-property persistent state; NO permanent second surface/split screen — reject violations).
-- WB1 chassis (IN FLIGHT): dock mechanic + bubble cluster + brief hosted as first tool (mechanical move; branch feat/pe-workbench-chassis). Chassis API gets pinned for later waves on merge.
-- W2 (after WB1): verdict line leading the brief + Reports/exports bubble. W3 (after WB1 + chat recon): AI chat bubble — PORT the extension's function/flow (starter chips → chat → {{atom:...}} markup → inline expand w/ freshness; refs P:\hauska-brief-extension src/lib/lay-render.js + inline-atoms.js + atom-freshness.js); recon of the extension chat backend + PE proxy gaps IN FLIGHT. W4 (after WB1): My Properties (cortex peSavedProperties routes exist — surfacing) + Share (link carries brief + drawings + site plan; signed-token design, sharer-scoped).
-- DEFERRED (do not build): extension-as-funnel, county-records-docs, broader report-set decision, atom-seeded starter chips.
-- No conflicts with in-flight data work (W15 rewarm / W16 restamp are engine/data-side; PE surface was quiet post-#99).
+ALL FOUR WAVES SHIPPED + DEPLOYED SAME-DAY (PRs #100 chassis / #101 verdict+reports / #102 chat / #103 properties+share; live-verified on prod):
+- Chassis: top-right bubble cluster + ONE shared dock, per-property persistent tool state (pe:workbench:tool-state:v1, latest-10 cap), honest coming/select-first states. Pinned API: WorkbenchToolDef + useDockToolState + WorkbenchHostActions (types.ts docstring).
+- Brief leads with a deterministic VERDICT LINE (red flags lead; "no red flags" only when all four facts present+clean; absences never earn it). Reports bubble took site-plan+terrain exports off the card.
+- AI CHAT (extension flow port, recon-grounded): verbatim starter chips + id remap, areaContext.subject + visibleParcels eligibility anchor, last-8 history, numbered-citation chips → IN-THREAD expansion + freshness badge (client-side, no fetch), 401/402/400/5xx honest; proxy allowlist +api/brokerage/v1/research/chat (session Bearer; extension's install-id wedge NOT ported). NOTE: {{atom:}} markup is DEPRECATED corpus-wide — chips derive from citations+brief inlineRefs (the spec's markup assumption was stale).
+- My Properties (cortex saved-properties routes surfaced; allowlist TIGHTENED to exact/one-segment; the card's old Save button was DEAD — now unified through one save flow) + SHARE: HMAC-signed 30-day single-parcel token (PE_SHARE_SECRET minted in Vercel prod 2026-07-29 — first mint was a PS5.1 zero-byte trap, caught+replaced), no-account /share#<token> view serving verdict+cited brief (anonymous owner-stripped snapshot projection, buildR1Brief parity-pinned) + site-plan/terrain DOWNLOAD-ONLY; expired≠invalid distinct 403s. Live checks: garbage token 403, unauth mint 401, five tools in bundle.
+- DEFERRED (unchanged): extension-as-funnel, county-records-docs, broader report-set decision, atom-seeded starter chips.
+- OWED: operator's signed-in live pass (chat round-trip, save/reopen, mint+open a share link).
 
 ## HELD / NOT STARTED (by design — do not start without operator go)
 
