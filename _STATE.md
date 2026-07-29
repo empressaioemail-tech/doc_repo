@@ -124,3 +124,18 @@ OPERATOR RULINGS (2026-07-29):
 - MCP VISUAL OFFERING: agents should get VISUAL answers. Achievable-today = return a RENDERED map/site-plan IMAGE (MCP supports image content; ChatGPT/Claude render inline) alongside the cited data — reuses the renderer we built; nobody's property-MCP does this well = the outstanding offering. Frontier (design toward, not v1) = a LIVE INTERACTIVE embedded map (OpenAI Apps SDK / MCP-UI — emerging, platform-specific). Lead with the image (universal), layer interactive as platforms mature.
 
 IN FLIGHT (read-only audits): MCP tool-surface-vs-PE-stack gap audit; ICC actual-live-state + license-compliance verification (agent said done, unverified). Results pending.
+
+## THE NEXT MAJOR PROGRAM (after PE lands) — the fan-out engine / national onboarding
+
+DO NOT LOSE THIS. The single largest roadmap item: build the ENGINE that fans agents to onboard the rest of the nation — CTX first, then all of TX, then national. It has been correctly HELD on ONE gate: "wait until the Bastrop PE build is complete so we fan from a PROVEN, COMPLETE reference county." That gate is about to clear (the 2026-07-29 PE coordinated session is the last piece of Bastrop-market-ready).
+
+STATUS: gated-and-ready, NOT behind.
+- The mold is defined + adversarially hardened: `28_THE_BASTROP_MOLD_engine_build_spec.md`.
+- The recipe generalizes: Caldwell #2 (7/8 gates carried).
+- Bastrop is the proof, now essentially complete.
+
+ENGINE-BUILD PREREQUISITES (from the mold's own review — do before/with the fan-out):
+- Build the PHANTOM GATES: recipe gate 7 (TALLY+COST) and gate 8 (SMOKE/end-to-end-live-availability) are PROSE not mechanical today — a fan-out without a real smoke gate = the scan-fix trap at national scale. Build them fail-closed first.
+- Harden M0 cc-agent-REACH so county-lane agents start warm (standing decisions travel in the recipe dispatch).
+
+SEQUENCE: PE lands (human + agent MCP-v1) -> THEN the fan-out engine (CTX -> TX -> national) becomes the next major program. This is what makes the positioning ("the national property-intelligence layer") TRUE at scale, not just for Bastrop. It runs in parallel with / ahead of the MCP-scale and ICC-plan-review threads.
