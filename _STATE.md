@@ -114,3 +114,13 @@ ALL FOUR WAVES SHIPPED + DEPLOYED SAME-DAY (PRs #100 chassis / #101 verdict+repo
 ## HOW TO USE THIS FILE
 
 Fresh agent: read this + MEMORY.md FIRST, then the specific doc for your task. Update the OPEN and LIVE INFRA sections as you change state. This file is the pickup point — keep it true.
+
+## MCP + ICC thread (2026-07-29 — audits in flight)
+
+The strategic frame: PE made the property-intelligence stack HUMAN-consumable; MCP makes the SAME stack AGENT-consumable + discoverable + metered. ICC is the first licensed SOURCE and the worked example / demo account for the metering model. MCP + ICC share one root: the metered-citation pipe (inbound = what we owe ICC per reference; outbound = what agents pay us per call; both fire on one atom's provenance).
+
+OPERATOR RULINGS (2026-07-29):
+- ICC = an ON/OFF SWITCH. ON = demo mode (show ICC "here's how it works in the app" + "here's how we meter/pay on the backend" — likely a Command Center ICC usage/account screen where ICC logs in and sees usage). OFF = default, so PE commercializes/launches WITHOUT ICC (respects the license: ICC content is NOT customer-facing until the SaaS agreement is signed post-demo; accessPolicy platform-internal until then). The switch elegantly solves the license constraint AND enables the demo.
+- MCP VISUAL OFFERING: agents should get VISUAL answers. Achievable-today = return a RENDERED map/site-plan IMAGE (MCP supports image content; ChatGPT/Claude render inline) alongside the cited data — reuses the renderer we built; nobody's property-MCP does this well = the outstanding offering. Frontier (design toward, not v1) = a LIVE INTERACTIVE embedded map (OpenAI Apps SDK / MCP-UI — emerging, platform-specific). Lead with the image (universal), layer interactive as platforms mature.
+
+IN FLIGHT (read-only audits): MCP tool-surface-vs-PE-stack gap audit; ICC actual-live-state + license-compliance verification (agent said done, unverified). Results pending.
