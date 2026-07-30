@@ -4,7 +4,7 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 ## THE ONE-LINE
 
-BASTROP BDC CERT **REVOKED** (2026-07-30 AMENDMENT 3): downtown drill active — fix F1–F4 in 36-parcel test area, area-sweep re-cert, then expand. Prior cert audit revoked. WDLL: `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL.md`. CTX/national still HELD.
+BASTROP DOWNTOWN DRILL **36/36 rendered-set sweep PASS** (2026-07-30 CLOSE CLASS): R13 repealed fallback removed; R14 cert scope = live-GIS bbox; R15 re-plat complete (8741973 + 8723767 honest-decline). **Operator R6 live block-QA owed** before cert restore. CTX/national still HELD.
 
 ## STANDING DECISIONS (these govern every dispatch — paste into fresh-agent handoffs)
 
@@ -17,11 +17,11 @@ BASTROP BDC CERT **REVOKED** (2026-07-30 AMENDMENT 3): downtown drill active —
 
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
-- engine-api: `hauska-engine-api-00148-zec` @100% tag `bdc` (BDC corpus + setback router + road-decouple; image `…/cloud-run-source-deploy/hauska-engine-api:bdc-20260729-2131`). Prior: `00145-sam` (FD3 #181) kept as `fd3` / `envelope-canary` tags @0%. Project hauska-prod-497015. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic.
+- engine-api: `hauska-engine-api-00152-nuz` @100% tag `bdc-downtown` (#189 R5 geometry gate + scrub + warm fixes; image `…/hauska-engine-api:bdc-downtown-20260730-1315`). Prior: `00150-dak` @0%. Project hauska-prod-497015.
 - retrieval: `hauska-retrieval-api-00045-yek` @100% tag `bdc`. Prior `00043-lay` (`nodelist`) @0%. Project hauska-prod-497015.
 - MCP: `hauska-mcp-server-00034-cr5` @100% (dossier tools; site-plan/terrain 50s/45s timeouts #52).
 - cortex-api: `cortex-api-00446-zij` @100% (WB7a share-dossier; R1 paywall migration 0063). Project legacy-design-tools-prod.
-- CC: `cmdcenter-blush.vercel.app`. PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed 2026-07-30 for BDC cert — customer inspect uses `/api/spine/property-atoms/:id/facets` → atom-chain-warm). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI (runbook _inbox/2026-07-21).
+- CC: `cmdcenter-blush.vercel.app`. PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed 2026-07-30 CLOSE CLASS R13 — `dpl_GcK3dcbqgS5GXG1QrC3o75pgp51M`; inspect `/api/spine/property-atoms/:id/facets` → atom-chain-warm). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI (runbook _inbox/2026-07-21).
 
 ## WHAT IS DONE + LIVE-VERIFIED
 
@@ -35,6 +35,17 @@ BASTROP BDC CERT **REVOKED** (2026-07-30 AMENDMENT 3): downtown drill active —
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
 
+### ⚠ CROSS-SEAT HAZARD — PE PR #118 WOULD REVERT THE FLOOD OVERLAY (flagged 2026-07-30 by the hydro seat)
+
+`hauska-map` PR #118 (`fix/pe-site-plan-no-setback`, BDC setback seat, 100 files, +31,498/-1,160) has **merge-base `d5c175d`** — BEFORE the flood feature existed (pre-#113). It therefore carries `apps/property-explorer/src/browse/flood-map-overlay.ts` **as a NEW FILE containing the OLD FD2 gradient/scrim/animation version**, plus a stale `flood-map-overlay.test.ts`. GitHub already reports it `CONFLICTING` / `DIRTY`, so it cannot merge unrebased. **If it is merged or force-resolved carelessly it silently reverts PRs #114/#116/#117 (and the in-flight FD5 amber restyle).** REQUIRED: rebase #118 onto current `origin/main` and, on conflict in `flood-map-overlay*.ts`, **take main's version wholesale** (the BDC work has no legitimate change to that file — its lane is InspectCard/facets/setback display). Owning seat: BDC/setback. Flagged by: hydro/flood seat.
+
+### HYDRO OVERLAY FD5 (ACTIVE — operator-approved redesign, hydro seat)
+
+Design pack: `P:\tmp\Flood study map rendering redesign` (FloodMap.dc.html + Hydro Overlay Redesign.dc.html). Diagnosis doc: `_inbox/2026-07-30_hydro_vs_fema_rendering_handoff.md` — root cause is GEOMETRY not paint: both mask→GeoJSON converters (`artifacts/hydrology-worker/run.py` `_mask_to_geojson_polygons`, `packages/adapters/src/hydrology/hydrologyNative.ts` `maskToGeoJson`) emit one subsampled SQUARE per grid cell → checkerboard.
+- **FD5-engine** `feat/flood-dissolved-zones` (hauska-engine): full-res mask boundary tracing + dissolve + simplify/smooth + speck filter; 3 nested concentration bands from the D8 accumulation grid; stats-honesty re-verify (areas WILL rise — subsampling under-counted; ponding stays parcel-clipped). Contract unchanged.
+- **FD5-PE** `feat/pe-flood-amber-zones` (hauska-map): hydro moves OFF FEMA blue into the approved AMBER family (`#e8b579`/`#d98a3d`/`#a85f22` bands, `#c46a2b`→`#7a3f12` pooled ponding, dashed `#a85f22` catchment, `#7a3f12` diamond exits) so hydro and FEMA stay legible on the same map; parcel-relevance filter + 6-arrow cap PRESERVED.
+- Lane discipline: engine BDC seat touches setbacks/boundary/corpus ONLY (verified: zero hydrology/flood files in #185-#189); hydro seat touches hydrology/flood ONLY.
+
 ### TX AUTHORITATIVE SOURCE REGISTRY + SCRAPER FLEET (ACTIVE — Batch 1 CAPCOG close)
 
 PRE-onboarding ONLY (no corpus ingest/bake/warm). WDLL: `_inbox/2026-07-29_tx_authoritative_source_registry_and_scraper_fleet_WDLL.md`.
@@ -43,14 +54,21 @@ PRE-onboarding ONLY (no corpus ingest/bake/warm). WDLL: `_inbox/2026-07-29_tx_au
 - Track B2 Pflugerville: **STOPPED** (encodeplus robots Disallow `/regs/`). `muni-site-scraper` pattern landed; city PDF/open-records path owed.
 - Commits not yet cut — await operator go.
 
-### BASTROP DOWNTOWN DRILL — CERT REVOKED, AREA-SWEEP GATE (2026-07-30)
+### BASTROP DOWNTOWN DRILL — CLOSE CLASS (2026-07-30)
 
-**CERT REVOKED:** `_inbox/2026-07-30_BASTROP_CERTIFIED_CLEAN_audit.md` (block-level QA found F1 partial re-warm, F2 blank MU/GC, F3 corrupt geometry, F4 per-parcel vs ordinance-chart mismatch).  
+**CERT REVOKED** (prior 37-list false pass); **rendered-set re-sweep PASS 36/36** after R13/R14/R15 class fixes.  
 **WDLL:** `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL.md` (approved).  
-**Test area:** `_catalog/bastrop_downtown_drill_test_area.json` — 36 parcels, envelope downtown Jefferson/Spring/Pecan/Hill/Chestnut; SF-1 + MU + GC.  
-**Dispatches:** `_dispatches/2026-07-30_BDC_DOWNTOWN_STEP0` … STEP4, STEP7; area-sweep audit template `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_area_sweep_audit.md`.  
-**Authoritative setback numbers (LIVE 2026-07-30):** `Parcels_One_Click/FeatureServer/23` (NOT Zoned_Parcels/83); cite `Ordinance_Link`; corner from SideSetback text.  
-**Sequence:** STEP0 ground-truth → STEP1 F4 source + sideInterior/sideCorner → STEP2 F2 MU/GC → STEP3 F3 geometry ∥ STEP2 → STEP4 F1 area promote → planner deploy → area-sweep EVERY parcel. **No all-Bastrop re-warm until sweep passes.** CTX HELD.
+**Test area:** `_catalog/bastrop_downtown_drill_test_area.json` — **39 seed** / **36 rendered** in bbox (`cert_scope: rendered-set-r14`); 34065 retired → successors 8741972/8741973/8741974; 8723767 split-zoned honest-decline.  
+**Dispatches:** `_dispatches/2026-07-30_BDC_CLOSE_CLASS_R13_R15` **CLOSED-VERIFIED**; prior 2-parcel close `_dispatches/2026-07-30_BDC_2PARCEL_CLOSE`.  
+**Audit:** `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_area_sweep_audit.md` **PASS 36/36 rendered set** (2026-07-30).  
+**Class fixes:** R13 repealed descriptor-fixture path unreachable (fail-closed honest-decline); R14 sweep = BCAD bbox rendered set; R15 full Pecan Place successor set + manifest lookup fail-closed.  
+**8723767:** split-zoned GC+SF-1; warm geometry fails (null inset); PE serves `setback-rule-pending` honest-decline — NOT repealed F15.  
+**Blast radius (flagged):** county-wide ~10k+ parcels now fail-closed without layer-23 atoms — county-wide re-warm is follow-on (all-Bastrop expansion, NOT this pass).  
+**Operator live block-QA (R6) owed** — click non-obvious/successor/split-zoned parcels before cert restore. CTX HELD.
+
+### BASTROP DOWNTOWN DRILL — prior 37-list pass (SUPERSEDED 2026-07-30)
+
+False cert: curated 37-list passed while map rendered 8723767 with repealed code. Superseded by rendered-set gate above.
 
 ### BASTROP BDC + SETBACK CORRECTION — prior cert (REVOKED 2026-07-30)
 
