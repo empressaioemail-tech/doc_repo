@@ -1,10 +1,10 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-07-28.
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-07-29.
 
 ## THE ONE-LINE
 
-Bastrop is APPROVABLE (mold gate passed 2026-07-27) and substantively built (depth 99.59%, sellable UI, legible console, recipe generalizes on Caldwell). Now in QA/polish + finishing PE reports. CTX/national fan-out HELD until QA-done + operator go. Everything else (Track C engine-panel, fidelity-v2 beyond topo, living-layer, marketplace) held/not-started.
+BASTROP BDC CORRECTION PROGRAM ACTIVE (2026-07-29): serving REPEALED B3 — must ingest BDC, fix stamp to SF-x, ordinance-text setbacks, road-decouple values, isolated re-warm, CERTIFIED-CLEAN. CTX/national HELD until certification passes. WDLL: `_inbox/2026-07-29_BASTROP_BDC_setback_correction_WDLL.md`. Sequence MANDATORY: Step 3→1→2→4→5→7.
 
 ## STANDING DECISIONS (these govern every dispatch — paste into fresh-agent handoffs)
 
@@ -17,11 +17,11 @@ Bastrop is APPROVABLE (mold gate passed 2026-07-27) and substantively built (dep
 
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
-- engine-api: `hauska-engine-api-00126-dip` @100% (Sheet Standard v1.3 + #172 export-consumes-boundary-primitive: one envelope truth, uniform-min + vertex-count fork DELETED, header=drawing, attach plausibility, ingest fixture-guard, street-label fallback; envelope-canary repointed). Prior: `00123-muk` (hydrology floor #164 + /nodes #165 + aerial page #166/#167/#168; 4Gi/300s preserved; envelope-canary tag repointed). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic. RESIDUAL: cold start can exceed the PE fn 60s cap once (observed on the traffic shift); consider min-instances=1 (operator cost call).
+- engine-api: `hauska-engine-api-00145-sam` @100% (FD3 #181 flood flowPaths/catchmentSwaths v3 payload — LIVE-SMOKED 12 paths + 12 swaths + gradient on 48021:36249; envelope-canary repointed to 00145). Priors this arc: `00142-fum` (#180 overflow pagination — 1409 SH 95 verified 4 clean sheets), `00139-tuc` (#179 F&D v2 gradient), `00136-kop` (#176/#177 flood report), `00132-mur` (WB7b dossier PDF), `00126-dip` (Sheet Standard v1.3 + #172 export-consumes-boundary-primitive). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic. RESIDUAL: cold start can exceed the PE fn 60s cap once (observed on the traffic shift); consider min-instances=1 (operator cost call).
 - retrieval: `hauska-retrieval-api-00043-lay` @100% (GET /nodes roster #165; migration 008 indexes applied+verified on substrate Neon). Project hauska-prod-497015.
-- MCP: `hauska-mcp-server-00033-khs` @100% (site-plan/terrain 50s/45s timeouts #52).
-- cortex-api: `cortex-api-00442-heq` @100% (Cotality-decommissioned envelope path). Project legacy-design-tools-prod.
-- CC: `cmdcenter-blush.vercel.app` (CC-nav #94 live). PE: `property-explorer-xi.vercel.app` (brief #93 + honest-timeout #92 + inspect-card #91 live). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI from repo root with `vercel link --yes --project <property-explorer|cmdcenter>` then `vercel deploy --prod` (runbook _inbox/2026-07-21).
+- MCP: `hauska-mcp-server-00034-cr5` @100% (dossier tools; site-plan/terrain 50s/45s timeouts #52).
+- cortex-api: `cortex-api-00446-zij` @100% (WB7a share-dossier service route; R1 paywall migration 0063 applied; prior 00444-xak/00442-heq). Project legacy-design-tools-prod.
+- CC: `cmdcenter-blush.vercel.app` (CC-nav #94 live). PE: `property-explorer-xi.vercel.app` (current bundle `index-PTVgYRk_.js`: workbench WB1-7 + R1 paywall #110 + R2 citations #111 + flood bubble #113/#114 + share-funnel #115 + FD3 dominance/ribbons #116 live). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI from repo root with `vercel link --yes --project <property-explorer|cmdcenter>` then `vercel deploy --prod` (runbook _inbox/2026-07-21).
 
 ## WHAT IS DONE + LIVE-VERIFIED
 
@@ -34,6 +34,24 @@ Bastrop is APPROVABLE (mold gate passed 2026-07-27) and substantively built (dep
 - Recipe generalizes: Caldwell #2 (7 held / 1 new-baked). Recipe-proof track CLOSED.
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
+
+### BASTROP BDC + SETBACK CORRECTION (ACTIVE — gates scaling)
+
+Operator-approved program 2026-07-29. Decision: `_decisions/2026-07-29_setback_authoritative_source_and_road_decouple.md` (+ AMENDMENT CORRECTION A/B/C). WDLL approved same day.
+
+Root cause (LIVE-probed): Ord. 2026-06 repealed B3 (2026-04-14); corpus ingested B3 2026-05-26; `currentEditionId` still B3; stamp reads abandoned Zoning_Place_Type/0 (P-x); dual tables describe dead districts. 1010 Jefferson = SF-1 30/10/20/30 (ordinance + Zoned_Parcels/83). GIS card drift ≠ truth.
+
+Fleet (planner-owned deploys + LIVE verify; executors never self-grade):
+- STEP 3 FIRST: BDC setback table + router + kill dual-fork — `hauska-engine` — `_dispatches/2026-07-29_BDC_STEP3_setback_table_router_dualfork.md` (WDLL 1–3) — IN FLIGHT
+- STEP 1: BDC ingest + currentEditionId flip — `hauska-engine` — `_dispatches/2026-07-29_BDC_STEP1_ingest_edition_flip.md` (WDLL 4–5) — after Step 3 — IN FLIGHT
+- STEP 2: stamp → Zoned_Parcels/83 — **legacy-design-tools** PR #365 (`fix/bastrop-zoning-zoned-parcels-83`) — ZoneTypeClass + codeDomainMap (3→SF-1); LIVE prop 105054 confirmed SF-1; **HOLD production stamp until STEP 3 merges** (WDLL 6)
+- STEP 4: road-decouple setback VALUES (twin kept; Caldwell blast radius) — `_dispatches/2026-07-29_BDC_STEP4_road_setback_decouple.md` (WDLL 7) — IN FLIGHT
+- STEP 5: isolated regenerate-then-swap re-warm + LIVE multi-parcel — after 1–4; per `29_scale_warm_architecture.md` (WDLL 8–9) — NOT STARTED
+- STEP 7: mold rewrite + 3 gates — `_dispatches/2026-07-29_BDC_STEP7_mold_gates_draft.md` (WDLL 10) — IN FLIGHT; CERTIFIED-CLEAN audit planner-owned (WDLL 11)
+
+FLAG (separate program, do not fix here): 213,621 placeholder-provenance setback atoms citing `storage-port-proof/phase-1a`. Scope mold gates so they do not fail-closed on them.
+
+### Prior OPEN (still true unless superseded)
 
 2026-07-28 QA cluster RESOLVED (all merged + deployed + live-verified same day; verification evidence in _sessions/2026-07-28):
 - B1 EXPORT: FIXED. MCP timeout 30s→50s deployed (rev 00033-khs); live MCP download of gold-parcel PDF = 200 in 5.8s (591KB real PDF). PE honest-timeout classes live. Residual: customer-click confirm by operator (needs signed-in paid session).
