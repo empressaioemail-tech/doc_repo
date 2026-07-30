@@ -49,3 +49,8 @@ Second source to CITE (R25): layer-83 Revisions — SF-1 30/10(corner20)/30, MU 
 7. SECOND-SOURCE DISCLOSURE (R25): add the layer-83 Revisions conflict callout to property details.
 
 Target: re-run the harness -> 7/7 clean (every field converges PE==OnClick, every envelope measures to its rule, geometry within ~1ft), then operator visual confirm, then replicate the METHOD to a next block.
+
+## RE-GRADE #1 (2026-07-30, after R22/R26/R27 + R28 winding fix merged + prod re-warm)
+6 OF 6 re-warmed parcels now serve CORRECT MEASURED envelopes on the LIVE app (34145 control + 34153/34137/34169/34177/34161). All source = bastrop-per-parcel-record-layer-23 (not repealed). Measured per-edge inset in feet matches OnClick setbacks (interior side 5.0, corner 14.9≈15, front/rear per district). Served sqft == re-warm target, independently shoelace-re-measured within ~1% (honest geometry, not asserted). The R21 measured-geometry gate WORKS on the live app — "setbacks not drawn right" is RESOLVED for these 6. R28 winding fix proven live.
+OUTSTANDING: 34121 (irregular 3-ring split-zone) fails R5 near-rect gate — pending R29 relaxation (convexity-required-iff-lot-near-rect). Split-zone zoning-fact re-stamp (34121/34161/34169 -> dominant). Pickup: /boundary-edges endpoint still serves stale road-class edges (decoupled from envelope, doesn't corrupt the grade, but stale).
+SCORE: 6/7 measured-clean. Finish+extend CONFIRMED (no rebuild; model correct, bugs were coverage/drift/winding).
