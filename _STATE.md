@@ -1,10 +1,10 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-07-29.
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-07-30.
 
 ## THE ONE-LINE
 
-BASTROP BDC CORRECTION PROGRAM ACTIVE (2026-07-29): serving REPEALED B3 — must ingest BDC, fix stamp to SF-x, ordinance-text setbacks, road-decouple values, isolated re-warm, CERTIFIED-CLEAN. CTX/national HELD until certification passes. WDLL: `_inbox/2026-07-29_BASTROP_BDC_setback_correction_WDLL.md`. Sequence MANDATORY: Step 3→1→2→4→5→7.
+BASTROP BDC CERT **REVOKED** (2026-07-30 AMENDMENT 3): downtown drill active — fix F1–F4 in 36-parcel test area, area-sweep re-cert, then expand. Prior cert audit revoked. WDLL: `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL.md`. CTX/national still HELD.
 
 ## STANDING DECISIONS (these govern every dispatch — paste into fresh-agent handoffs)
 
@@ -17,11 +17,11 @@ BASTROP BDC CORRECTION PROGRAM ACTIVE (2026-07-29): serving REPEALED B3 — must
 
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
-- engine-api: `hauska-engine-api-00145-sam` @100% (FD3 #181 flood flowPaths/catchmentSwaths v3 payload — LIVE-SMOKED 12 paths + 12 swaths + gradient on 48021:36249; envelope-canary repointed to 00145). Priors this arc: `00142-fum` (#180 overflow pagination — 1409 SH 95 verified 4 clean sheets), `00139-tuc` (#179 F&D v2 gradient), `00136-kop` (#176/#177 flood report), `00132-mur` (WB7b dossier PDF), `00126-dip` (Sheet Standard v1.3 + #172 export-consumes-boundary-primitive). Project hauska-prod-497015. 4Gi is LIVE-SET only. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic. RESIDUAL: cold start can exceed the PE fn 60s cap once (observed on the traffic shift); consider min-instances=1 (operator cost call).
-- retrieval: `hauska-retrieval-api-00043-lay` @100% (GET /nodes roster #165; migration 008 indexes applied+verified on substrate Neon). Project hauska-prod-497015.
+- engine-api: `hauska-engine-api-00148-zec` @100% tag `bdc` (BDC corpus + setback router + road-decouple; image `…/cloud-run-source-deploy/hauska-engine-api:bdc-20260729-2131`). Prior: `00145-sam` (FD3 #181) kept as `fd3` / `envelope-canary` tags @0%. Project hauska-prod-497015. Deploy = Cloud Build cloudbuild.engine-api.yaml → --no-traffic --tag → smoke → update-traffic.
+- retrieval: `hauska-retrieval-api-00045-yek` @100% tag `bdc`. Prior `00043-lay` (`nodelist`) @0%. Project hauska-prod-497015.
 - MCP: `hauska-mcp-server-00034-cr5` @100% (dossier tools; site-plan/terrain 50s/45s timeouts #52).
-- cortex-api: `cortex-api-00446-zij` @100% (WB7a share-dossier service route; R1 paywall migration 0063 applied; prior 00444-xak/00442-heq). Project legacy-design-tools-prod.
-- CC: `cmdcenter-blush.vercel.app` (CC-nav #94 live). PE: `property-explorer-xi.vercel.app` (current bundle `index-Dmc_ZfJK.js`: workbench WB1-7 + R1 paywall #110 + R2 citations #111 + flood bubble #113 + share-funnel #115 + FD4 FEMA-style flood overlay #117 live — #117 REPLACED the #114/#116 gradient/scrim/ribbon look after operator rejection: crisp categorical zones matched to the live-FEMA palette, parcel-relevant flow arrows only (exit/crossing/15m-buffer filter, ≤6 static arrows), scrim+gradient+swaths+animation deleted; engine v3 flowPaths payload still consumed for relevance/crossings, gradient field now unused by the map overlay). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI from repo root with `vercel link --yes --project <property-explorer|cmdcenter>` then `vercel deploy --prod` (runbook _inbox/2026-07-21).
+- cortex-api: `cortex-api-00446-zij` @100% (WB7a share-dossier; R1 paywall migration 0063). Project legacy-design-tools-prod.
+- CC: `cmdcenter-blush.vercel.app`. PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed 2026-07-30 for BDC cert — customer inspect uses `/api/spine/property-atoms/:id/facets` → atom-chain-warm). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI (runbook _inbox/2026-07-21).
 
 ## WHAT IS DONE + LIVE-VERIFIED
 
@@ -35,26 +35,26 @@ BASTROP BDC CORRECTION PROGRAM ACTIVE (2026-07-29): serving REPEALED B3 — must
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
 
-### TX AUTHORITATIVE SOURCE REGISTRY + SCRAPER FLEET (ACTIVE — Batch 1 CAPCOG)
+### TX AUTHORITATIVE SOURCE REGISTRY + SCRAPER FLEET (ACTIVE — Batch 1 CAPCOG close)
 
-PRE-onboarding collection + tool-building ONLY (no corpus ingest/bake/warm/engine writes). Trigger: Bastrop served repealed B3; registry encodes the currency check at 254-county / ~1,200-city scale. WDLL: `_inbox/2026-07-29_tx_authoritative_source_registry_and_scraper_fleet_WDLL.md`. Seed: `_catalog/tx_capcog_batch1_seed.json` (55 jurisdictions / 6 shards). Preamble: `_dispatches/2026-07-29_TX_REGISTRY_shared_preamble.md`. Fleet (planner-direct, no coordinator): Track A shards 0–5 + Track B1 eCode360/Smithville + Track B2 muni-site/Pflugerville. Planner merges shards → `_catalog/tx_jurisdiction_source_registry.json` and runs fidelity harness. Ethics ceiling: header-first only; STOP on robots disallow / uncleared 403.
+PRE-onboarding ONLY (no corpus ingest/bake/warm). WDLL: `_inbox/2026-07-29_tx_authoritative_source_registry_and_scraper_fleet_WDLL.md`.
+- Track A **DONE**: `_catalog/tx_jurisdiction_source_registry.json` (55/55 attempted; 54 complete / 5 gaps) + `_catalog/tx_jurisdiction_source_registry_coverage_summary.md`. Seed `_catalog/tx_capcog_batch1_seed.json`.
+- Track B1 Smithville eCode360: **PASS** (planner fidelity regrade 100%/0 missing spans; 836 sections; 12,793 blocks). Branch `feat/ecode360-scraper-header-first` uncommitted.
+- Track B2 Pflugerville: **STOPPED** (encodeplus robots Disallow `/regs/`). `muni-site-scraper` pattern landed; city PDF/open-records path owed.
+- Commits not yet cut — await operator go.
 
-### BASTROP BDC + SETBACK CORRECTION (ACTIVE — gates scaling)
+### BASTROP DOWNTOWN DRILL — CERT REVOKED, AREA-SWEEP GATE (2026-07-30)
 
-Operator-approved program 2026-07-29. Decision: `_decisions/2026-07-29_setback_authoritative_source_and_road_decouple.md` (+ AMENDMENT CORRECTION A/B/C). WDLL approved same day.
+**CERT REVOKED:** `_inbox/2026-07-30_BASTROP_CERTIFIED_CLEAN_audit.md` (block-level QA found F1 partial re-warm, F2 blank MU/GC, F3 corrupt geometry, F4 per-parcel vs ordinance-chart mismatch).  
+**WDLL:** `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL.md` (approved).  
+**Test area:** `_catalog/bastrop_downtown_drill_test_area.json` — 36 parcels, envelope downtown Jefferson/Spring/Pecan/Hill/Chestnut; SF-1 + MU + GC.  
+**Dispatches:** `_dispatches/2026-07-30_BDC_DOWNTOWN_STEP0` … STEP4, STEP7; area-sweep audit template `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_area_sweep_audit.md`.  
+**Authoritative setback numbers (LIVE 2026-07-30):** `Parcels_One_Click/FeatureServer/23` (NOT Zoned_Parcels/83); cite `Ordinance_Link`; corner from SideSetback text.  
+**Sequence:** STEP0 ground-truth → STEP1 F4 source + sideInterior/sideCorner → STEP2 F2 MU/GC → STEP3 F3 geometry ∥ STEP2 → STEP4 F1 area promote → planner deploy → area-sweep EVERY parcel. **No all-Bastrop re-warm until sweep passes.** CTX HELD.
 
-Root cause (LIVE-probed): Ord. 2026-06 repealed B3 (2026-04-14); corpus ingested B3 2026-05-26; `currentEditionId` still B3; stamp reads abandoned Zoning_Place_Type/0 (P-x); dual tables describe dead districts. 1010 Jefferson = SF-1 30/10/20/30 (ordinance + Zoned_Parcels/83). GIS card drift ≠ truth.
+### BASTROP BDC + SETBACK CORRECTION — prior cert (REVOKED 2026-07-30)
 
-Fleet (planner-owned deploys + LIVE verify; executors never self-grade):
-- STEP 3: engine PR #183 **MERGED** `a831706` (WDLL 1–3)
-- STEP 1: engine PR #184 **MERGED** (100 BDC sections; currentEditionId→BDC) (WDLL 4–5)
-- STEP 2: LDT PR #365 **MERGED** (Zoned_Parcels/83 + codeDomainMap) — **prod stamp RUN still owed** (WDLL 6)
-- STEP 4: engine PR #182 — rebased; CI re-running after unrelated PDF-decode flake (WDLL 7)
-- STEP 5: isolated re-warm + LIVE multi-parcel — NEXT after #182 merge + stamp RUN + deploy (WDLL 8–9)
-- STEP 7: mold draft filed (WDLL 10); CERTIFIED-CLEAN audit after LIVE (WDLL 11)
-
-
-FLAG (separate program, do not fix here): 213,621 placeholder-provenance setback atoms citing `storage-port-proof/phase-1a`. Scope mold gates so they do not fail-closed on them.
+Superseded by downtown drill above. Prior audit revoked; do not cite CERTIFIED-CLEAN as current.
 
 ### Prior OPEN (still true unless superseded)
 

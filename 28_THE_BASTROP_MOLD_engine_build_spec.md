@@ -1,10 +1,10 @@
 ---
 id: 28_THE_BASTROP_MOLD_engine_build_spec
 title: THE BASTROP MOLD — the engine build specification (what a complete county contains + every baked decision/gotcha the fan-out engine must replicate)
-last_updated: 2026-07-28
+last_updated: 2026-07-30
 status: living spec (the input to the CTX/national engine build; kept current as QA continues)
 owner: nick
-related: [_STATE.md, 27_MASTER_WDLL_spine_completion_and_depth_engine, 27a_jurisdiction_factory_engine_spec, 27d_county_onboarding_recipe_and_fleet_reliability, 27f_bastrop_through_v2_program, 2026-07-27_bastrop_composition_inventory, 2026-07-27_COMPLETE_BASTROP_hardening_audit]
+related: [_STATE.md, 27_MASTER_WDLL_spine_completion_and_depth_engine, 27a_jurisdiction_factory_engine_spec, 27d_county_onboarding_recipe_and_fleet_reliability, 27f_bastrop_through_v2_program, 2026-07-27_bastrop_composition_inventory, 2026-07-27_COMPLETE_BASTROP_hardening_audit, 2026-07-29_setback_authoritative_source_and_road_decouple, 2026-07-29_BASTROP_BDC_setback_correction_WDLL]
 purpose: When we build the engine to fan agents and finish CTX / go national, THIS is the specification. It answers "what does a complete, correct, market-ready county contain, and every decision + gotcha the engine must bake so a fresh county inherits them instead of re-deriving them." Assembled from the whole Bastrop program (depth → boundary primitive → hardening → topo → QA). This is the mold; a new county is this, produced by the engine, from a descriptor.
 ---
 
@@ -17,21 +17,22 @@ Bastrop is the reference county. Everything below is what the engine must PRODUC
 ### 1a. The per-county INPUT (the descriptor — the only per-county human-ish authoring)
 A county is a DESCRIPTOR + the engine. Authoring the descriptor is the ONLY per-county input; everything downstream is mechanical. The GOLDEN SHAPE is `bastrop_tx_descriptor.json` + `caldwell_tx_descriptor.json` — read them verbatim; do not author from this summary alone. The descriptor carries:
 - FIPS, displayName, jurisdictionTenant, parcelFips, defaultAccessPolicy, sourceAdapter.
-- `assumedRowWidthFt` per road class (highway/major_collector/minor_collector/residential/alley/gravel/unclassified).
-- TWO setback tables (verified in code `resolve-road-class-setback.ts`), NOT one:
-  1. `setbackTable` — FLAT, per district (front/rear/side/side_corner) → setback_ft {value, confidence, verification_state, not_specified}.
-  2. `roadClassSetbackTable` — per (district, road_class, edge_role) → setback_ft.
-  RESOLUTION: the resolver PREFERS the `roadClassSetbackTable` cell and FALLS BACK to the flat `setbackTable` (`resolve-road-class-setback.ts:96-127`). The engine bakes this prefer/fallback; the descriptor author supplies both.
-- `match_basis` on rows: `exact` / `prefix` / `fallback` (`resolve-road-class-setback.ts:33-45`) — how the author declares an exact district row vs a catch-all. Bake this.
+- `assumedRowWidthFt` per road class (highway/major_collector/minor_collector/residential/alley/gravel/unclassified) — for the ROAD TWIN only (frontage, rendering, which edge is front). Not a setback-VALUE input.
+- SETBACK MODEL (corrected 2026-07-30 AMENDMENT 2+3; supersedes 2026-07-29 ordinance-text-only path). RETIRED as setback VALUE source: `roadClassSetbackTable`, ordinance-chart-only lookup (`bastrop-development-code.json` rows as numbers), GIS card copy from Zoned_Parcels/83. RIGHT model:
+  1. ONE authoring setback **number** source per jurisdiction: the jurisdiction's authoritative **per-parcel** public record (Bastrop: `Parcels_One_Click/FeatureServer/23`), cited to `Ordinance_Link` on that record. Ordinance text / code-section atoms = verification + citation layer, NOT the number when record differs (gate (d) flags disagreement).
+  2. Flat per-parcel rows parsed to front / sideInterior / sideCorner / rear / height / impervious / min-lot OR honest-decline where the record carries non-scalar conditional text.
+  3. Parcel → district from LIVE zoning GIS (Zoned_Parcels/83); district ONLY from that layer.
+  4. Interior-side and corner-side carried as **distinct fields** end-to-end (atom → warm → PE card).
+  5. Honest-decline for genuinely conditional axes (MU "Reference Building Code/Fire Code", overlay asterisks) — never fabricate a scalar.
 - Every setback carries `confidence` + `verification_state` (human-verified / transcribed) — commitment #2 discipline; not optional.
-- Cited to the code (e.g. B3 §6.5.003) — OR, where a city has no code table, honest-absence: the CALDWELL descriptor declares HARD-HOLD districts with NO rows (PDD/CCB/IH/AO/PI/MH) and OMITS alley-specific feet as honest-absence. The descriptor-author's HONEST-ABSENCE discipline (declare a district present-but-unresolved rather than invent feet) is a general skill, not a Bastrop quirk.
+- Where a city has no code table, honest-absence still applies: the CALDWELL descriptor declares HARD-HOLD districts with NO rows (PDD/CCB/IH/AO/PI/MH). The descriptor-author's HONEST-ABSENCE discipline (declare a district present-but-unresolved rather than invent feet) is a general skill, not a Bastrop quirk.
 
 ### 1b. The DATA LAYERS (sources → atoms) — with provenance on every atom
 | Layer | Source pattern | Atom / node | Provenance rule |
 |---|---|---|---|
 | Parcels | county GIS ArcGIS FeatureServer (BCAD-equivalent) | parcel node (geometry, "not survey grade") | source URL + vintage |
-| Zoning | THE CITY source — per incorporated city. NOT county GIS (counties don't zone unincorporated land). The city source varies: an AGOL layer (Bastrop: PlaceTypeClass), a city ORDINANCE table/PDF (Caldwell/Lockhart: ord_2024-18), or ABSENT. Find the real city source per incorporated city — do NOT assume AGOL. | zoning-fact (district) | MUST cite the real source (AGOL layer URL + codeField + cityKey + stampedAt, OR the ordinance ref) — NEVER the internal bake URL (the commitment-#1 red we fixed) |
-| Setbacks | descriptor setbackTable, cited to code | setback-rule | citation resolves to a real code atom; verification_state recorded |
+| Zoning | THE CITY source — per incorporated city. NOT county GIS (counties don't zone unincorporated land). The city source varies: a LIVE AGOL / FeatureServer layer (Bastrop: Zoned_Parcels/83 ZoneTypeClass coded domain decoded to SF-1 strings — NOT the abandoned Zoning_Place_Type/0), a city ORDINANCE table/PDF (Caldwell/Lockhart: ord_2024-18), or ABSENT. Find the CURRENT live city source per incorporated city — do NOT assume AGOL, and do NOT stamp from a repealed/abandoned layer. Layer maps parcel→district ONLY. When the code field is a coded SmallInteger domain, stamp the domain NAME (SF-1), never the integer code. | zoning-fact (district) | MUST cite the real source (AGOL/FeatureServer layer URL + codeField + cityKey + stampedAt, OR the ordinance ref) — NEVER the internal bake URL (the commitment-#1 red we fixed) |
+| Setbacks | Authoritative **per-parcel** public record (road-DECOUPLED); district from live zoning layer; numbers from per-parcel record cited to Ordinance_Link | setback-rule | per-parcel record URL + Ordinance_Link; verification_state recorded; honest-decline on non-scalar conditional axes |
 | Buildable envelope | derived (real polygon-offset) | buildable-envelope | declines honestly (approximate/pending), never a confident wrong shape |
 | Boundary edges | computed from parcel ring + adjacency | property-boundary-edge (role, adjacency, interior, setback, temporal, GIS bearing+distance tags) | GIS-computed tags labeled "not a survey" |
 | Roads | OSM + county StreetsSurveyed + county comprehensive roadway (city+county) | road node (centerline, class, ROW) | provenance.kind per road: county-authoritative vs osm-best-available |
@@ -65,12 +66,28 @@ Per 27d, the 8-gate recipe. CRITICAL HONESTY (verified in code 2026-07-28): gate
 
 1. DESCRIPTOR IN — validates against contract; golden-descriptor test (REAL: `cook_county_il_stub.json` non-TX + a jurisdiction-literal grep gate).
 2. INTAKE — parcels/zoning/roads onto the substrate. GATE: source-verified + provenance; a 404 is honest-absent, never silent zero. INCLUDES: AUTHORITATIVE-SOURCE-RECON + SCHEMA≠DATA + ENUMERATE-ALL-PUBLISHED-FOLDERS (the recon JSON is an artifact this gate checks — promoted from prose to a gate per the completeness recon).
-3. ROAD + FRONT LABELING — front-labeling fixture gate (REAL: footway-ineligible, local>collector, not-by-accident).
-4. RULE — road-type setback from descriptor; citation resolves to a real code atom (REAL).
+3. ROAD + FRONT LABELING — front-labeling fixture gate (REAL: footway-ineligible, local>collector, not-by-accident). Roads identify WHICH edge is front; they do not supply setback VALUES.
+4. RULE — setbacks from the jurisdiction's authoritative **per-parcel** dimensional record (public GIS), parcel→district from the LIVE zoning layer, road-DECOUPLED. Interior + corner side distinct. Citation via Ordinance_Link on the record. Honest-decline where record text is non-scalar conditional. Dual-fork FORBIDDEN.
 5. REASONING — buildable envelope via real polygon-offset; geometry-correctness gate (REAL: contained/non-self-intersecting/correct-offset, positive-space fixtures).
 6. WARM → VERIFY → PROMOTE — mechanical verify, not re-assertion (REAL: verify-mechanical.ts).
 7. TALLY + COST — **NOT MECHANICAL YET.** Today: ad-hoc `.mjs` tally scripts, NO cost-per-parcel check, NO CI fail-closed. Commitment #3 (cost hard-kill) is NOT measured in code. MUST be built into a real gate before the fan-out (coverage = live SELECT per G1; cost-per-jurisdiction measured + gated).
 8. SMOKE — **NOT MECHANICAL YET.** Today: prose only; no end-to-end live-availability gate in engine-core. This is G5, THE "is the data true and available in the app" benchmark that killed the scan-fix loop. MUST be built as a real fail-closed gate (click N known nodes through the LIVE ledger + map, atoms render, fails loudly) before the fan-out. SEED FROM THE 2026-07-28 QA SESSION (working skeleton, not yet a gate): (a) CC is HASH-DRIVABLE — `#panel=node-graph&county=<fips>`, `&q=<propId>`, `&node=<id>` deep-link every browse state, so browser assertions need NO canvas clicks; the session's headless-Chrome CDP script (spawn chrome --headless=new --remote-debugging-port, Page.navigate, Runtime.evaluate innerText, Page.captureScreenshot — zero deps, Node 24 global WebSocket) walked county-list/search/node-inspect live and asserted content. (b) Per-layer live probes with TIMING against the deployed BFFs (pe-hydrology POST with a fixture bbox; facets GET; MCP tools/call refresh+download asserting real `%PDF` bytes + pageCount) caught what merged code could not (the Esri LOD 500, the cold-start-vs-60s window). (c) Deployed-BUNDLE marker check (fetch index → bundle JS → assert a change-marker string) proves the prod build actually contains the change — catches the Vercel no-auto-deploy trap mechanically.
+
+### NEW MOLD GATES (2026-07-29) — must become mechanical fail-closed (same class as phantom gates 7/8)
+
+These three gates are PROSE TODAY. They MUST be built as real fail-closed mechanical gates before CTX/national fan-out, the same way gates 7 and 8 must. Adversarial-review-derived from the Bastrop BDC / repealed-edition incident (`_decisions/2026-07-29_setback_authoritative_source_and_road_decouple.md` AMENDMENT). Do not treat them as optional hygiene.
+
+**(a) SETBACK-CITES-NUMBER-BEARING-CODE.** A setback-rule atom must cite a code atom that actually CONTAINS the number. A citation to a missing, empty, or placeholder code atom fails the bake. SCOPE EXCLUSION (load-bearing): this gate MUST NOT fail-closed on the 213,621 placeholder-provenance setback atoms that cite `storage-port-proof/phase-1a` (breadth-era smoke-test provenance across 9+ non-Bastrop jurisdictions, ~27.6% of corpus). That is a SEPARATE remediation program. New Bastrop/BDC authoring and every net-new jurisdiction bake MUST pass gate (a); the placeholder cohort is scoped out until that program runs.
+
+**(b) ONE-AUTHORING-SETBACK-SOURCE.** Exactly ONE authoring setback source per jurisdiction. Descriptor `setbackTable` OR adapter table may author values, not both competing (the Bastrop dual-fork: human-verified `bastrop-city-tx.json` vs depth-warm `bastrop_tx_descriptor.json` restamping different numbers for the same dead district). A jurisdiction with two live authoring paths fails the bake.
+
+**(c) EDITION-CURRENCY.** `currentEditionId` must not point at a repealed edition. An edition stub with `sectionIds:[]` fails the bake. SCOPE EXCLUSIONS (load-bearing): (1) legitimately-thin building-code editions (IBC / ICC path) with empty `sectionIds` are OK and must not fail this gate; (2) the 213k placeholder-provenance program (`storage-port-proof/phase-1a`) is scoped out of fail-closed so gate (a)/(c) coupling does not brick 27.6% of corpus. The Bastrop incident (K1 saw `bdc-2026-adopted` stub with `sectionIds:[]` while `currentEditionId` stayed on repealed B3) is the specimen this gate exists to kill.
+
+**(d) RECORD-VS-CHART DISAGREEMENT FLAGGED (2026-07-30).** When the per-parcel authoritative record and the adopted ordinance chart disagree on a numeric axis, the **per-parcel record wins** for the served number; the disagreement is flagged in provenance (not silently resolved). Specimen: Bastrop SF-1 1010 Jefferson — record 25/5/15/25 vs chart 30/10/20/30.
+
+**(e) ENVELOPE-GEOMETRY SANITY (2026-07-30).** A convex/near-rectangular parcel ring must not produce a non-convex inset envelope with interior jogs unless a flagged reason exists (overlay, easement, conditional frontage). Lot-line vertices/bearings/shared-edge joins must be scrubbed from authoritative parcel geometry **before** inset. Specimen: 1006 Jefferson rectangular lot → jagged envelope = FAIL. Rectangular-lot → rectangular-envelope invariant is a cert assertion.
+
+**(f) AREA-SWEEP CERT (2026-07-30, RULING R3).** County re-cert requires sweeping **every** parcel in a defined area (all districts present), asserting internal consistency + current edition + per-parcel record match + no blank district + geometry sanity. **Parcel-sampling cert is RETIRED.** One failure in the area = cert FAIL.
 
 Anti-zombie (REAL, verified): reasoning lives in the engine (jurisdiction-agnostic); jurisdiction lives ONLY in descriptor + adapters + provenance. County #500 is a descriptor a background agent runs.
 
@@ -79,7 +96,13 @@ Anti-zombie (REAL, verified): reasoning lives in the engine (jurisdiction-agnost
 These were discovered by building/fixing Bastrop. If the engine does NOT bake each, the fan-out re-derives it wrong per county. THIS is the highest-value part of the mold.
 
 DATA / PROVENANCE:
-- ZONING SOURCE IS THE CITY AGOL LAYER, cited by URL — never the internal bake URL (commitment-#1 red; hardening A1). County zoning GIS is typically DEAD.
+- ZONING SOURCE IS THE CITY AGOL / FeatureServer LAYER (CURRENT live layer), cited by URL — never the internal bake URL (commitment-#1 red; hardening A1). County zoning GIS is typically DEAD. Stamp from the live district layer; never from an abandoned/repealed place-type layer (Bastrop: Zoned_Parcels/83, not Zoning_Place_Type/0).
+- CORRECTION A (2026-07-29, **superseded for numbers 2026-07-30 AMENDMENT 2**) — Zoned_Parcels/83 maps parcel → district ONLY. Per-parcel record (`Parcels_One_Click/23` for Bastrop) supplies setback NUMBERS; ordinance chart verifies. Historic note: chart-first was wrong about which source plan reviewers honor.
+- AMENDMENT 2 R2 (2026-07-30) — INTERIOR-SIDE + CORNER-SIDE distinct end-to-end. Parse corner from SideSetback text or CornerSideSetbacks field.
+- AMENDMENT 3 (2026-07-30) — AREA-SWEEP cert; lot-line scrub before inset; MU/GC/PDD from per-parcel record; no partial re-warm side-by-side regime splits.
+- CORRECTION C (2026-07-29) — HONEST-DECLINE CONDITIONAL / CONTEXTUAL STANDARDS. The flat scalar setback model (one number per axis) cannot hold conditional BDC-class standards: MU attached vs detached, "abutting residential," highway-corridor cumulative add-on, contextual neighbor-average front, overlay "* unless adjusted by overlay." Serve the practical minimum where the model can hold it HONESTLY; where the district standard is conditional/contextual, honest-decline (existing no-setback-row path) rather than flatten to a wrong number. Do not fabricate a scalar for a conditional rule.
+- SETBACKS ARE ROAD-DECOUPLED (2026-07-29). The road node twin STAYS (centerline, ROW, class, front-edge identity). RETIRED: road-class → setback-VALUE indexing. Roads may identify the front EDGE; they must not supply the setback NUMBER.
+- EDITION CURRENCY IS FIRST-CLASS (CORRECTION B). Serving a repealed edition with a stub `sectionIds:[]` and an unflipped `currentEditionId` is the silent-failure shape that produced Bastrop-on-B3-post-repeal. Bake gate (c); ingest CURRENT code; flip edition boundaries honestly.
 - AUTHORITATIVE SOURCES ARE SPLIT BY JURISDICTION LEVEL — county-road vs comprehensive-roadway vs city-street are different layers; find ALL of them per county.
 - SCHEMA ≠ DATA — a layer can carry owner/surface FIELDS while barely POPULATING them (Bastrop city streets: 67 defined / 994 undefined). Check DATA population, not schema existence. Keep OSM best-available where authoritative is sparse; never fabricate an authoritative label from undefined.
 - UNREACHABLE-CITY-GIS — a city's GIS may not resolve (Lockhart DNS NXDOMAIN); honest-absent → OSM, never invent.
