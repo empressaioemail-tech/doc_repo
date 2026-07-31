@@ -227,5 +227,19 @@ RULING R31 (cert must grade per-edge ORIENTATION, not just magnitudes present). 
 
 BLOCK-13 TRUE STATE: data layer 7/7 correct; DRAWN envelopes MIS-ORIENTED on non-trivially-fronted parcels (road-association picks wrong front). Fix = re-warm with edge-role RE-DERIVED against correct frontage (R30) + tighten cert to grade orientation (R31), then re-measure. NOT 7/7 until orientation is correct.
 
+## AMENDMENT 17 (2026-07-31, block RESOLVED — envelopes correct, the QA HARNESS was lying on non-convex lots)
+
+After R30/R31 re-warm (all 6 promoted verifyPass), 5/7 measured clean but 2 IRREGULAR parcels (34121, 34177) failed a perpendicular-to-nearest-edge re-grade. A read-only disambiguation (measuring in the ENGINE's own frame — index-matched inward-normal, the same frame insetPerEdgeFromPrimitive uses — and VALIDATED by confirming both methods agree on convex controls 34169/34137) proved: THE ENVELOPES ARE CORRECT; the perpendicular-to-nearest measurement was the bug.
+- 34121 (GC): engine-frame recovers front 20 + rear 20 + sides 5 (promoted [20,5,5,5,20,5]). CORRECT.
+- 34177 (MU): front 15 + rear 15 + sides 5. CORRECT.
+- 34137: encodes 25/5/25/corner15; the earlier "corner got 10" was itself a bad measurement. CLEAN.
+- Why nearest-edge lied: on a non-convex L/notch lot, an envelope vertex from an adjacent notch sits physically CLOSEST to a lot edge it was NEVER inset from (34121's real 20-ft frontage measured ~1.9 ft that way). Index-matched inward-normal has no such confusion.
+
+RESOLUTION: Block-13 is EFFECTIVELY 7/7 — envelopes geometrically correct on all 7 parcels. There is NO irregular-lot inset bug. The engine promotes correctly.
+
+RULING R32 (cert measurement MUST be engine-frame, not nearest-edge). The R31 harness must measure per-edge inset by INDEX-MATCHED INWARD-NORMAL (the engine's own insetPerEdgeFromPrimitive frame), NOT perpendicular-to-nearest-edge — the latter false-flags correct non-convex envelopes. This is the measurement-method fix; the CONCEPT (grade per-edge orientation, R31) stands, only the MEASUREMENT method is corrected. Validate any measurement method on convex controls first (both methods must agree on a rectangle).
+
+REMAINING BEFORE CERT-RESTORE: (1) fix the R31 harness to R32 (engine-frame measurement) so it stops false-flagging; (2) operator R6 live block-QA (the block should now look right). The ENGINE work is DONE.
+
 ## MOLD IMPLICATION (revised per AMENDMENT 2)
 The mold's setback model = the jurisdiction's AUTHORITATIVE PER-PARCEL DIMENSIONAL RECORD (public GIS Feature Server, plan-reviewer-grade) as the NUMBER source, cited to the ordinance link that record carries; parcel->district mapped from the live zoning layer; ordinance text ingested as the CITATION/verification layer (and the edition-currency anchor); road-DECOUPLED; multi-value axes (interior/corner side) carried as distinct fields; honest-decline only on genuinely conditional standards no per-axis field can hold. NEW mold gates: (a) a setback-rule atom must cite the authoritative record + its ordinance link; (b) exactly ONE authoritative per-parcel record per jurisdiction (kill dual-fork); (c) EDITION-CURRENCY gate — currentEditionId must not point at a repealed edition, and an edition stub with sectionIds:[] must fail the bake (scoped to exclude legitimately-thin building-code editions); (d) NEW — where the per-parcel record and the ordinance chart DISAGREE, the per-parcel record wins for the number and the disagreement is FLAGGED (not silently resolved). This is a mold-level correction and it GATES scaling. The PRACTICAL per-parcel record a plan reviewer applies is the universal, scalable answer.
