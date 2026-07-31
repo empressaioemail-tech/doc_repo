@@ -54,3 +54,27 @@ Target: re-run the harness -> 7/7 clean (every field converges PE==OnClick, ever
 6 OF 6 re-warmed parcels now serve CORRECT MEASURED envelopes on the LIVE app (34145 control + 34153/34137/34169/34177/34161). All source = bastrop-per-parcel-record-layer-23 (not repealed). Measured per-edge inset in feet matches OnClick setbacks (interior side 5.0, corner 14.9≈15, front/rear per district). Served sqft == re-warm target, independently shoelace-re-measured within ~1% (honest geometry, not asserted). The R21 measured-geometry gate WORKS on the live app — "setbacks not drawn right" is RESOLVED for these 6. R28 winding fix proven live.
 OUTSTANDING: 34121 (irregular 3-ring split-zone) fails R5 near-rect gate — pending R29 relaxation (convexity-required-iff-lot-near-rect). Split-zone zoning-fact re-stamp (34121/34161/34169 -> dominant). Pickup: /boundary-edges endpoint still serves stale road-class edges (decoupled from envelope, doesn't corrupt the grade, but stale).
 SCORE: 6/7 measured-clean. Finish+extend CONFIRMED (no rebuild; model correct, bugs were coverage/drift/winding).
+
+## SESSION-CLOSE STATE (2026-07-30, PAUSED — data layer solid, envelope grade in dispute)
+
+ALL PROD WRITES DONE + STABLE (nothing half-applied):
+- All 7 Block-13 parcels re-warmed + PROMOTED to serving Neon (34145 control + 34153/34137/34169/34177/34161 + 34121-via-R29). Buildable sqft: 34145=9099, 34153=5281, 34137=9350, 34169=6890, 34177=13083, 34161=15673, 34121=15159.
+- Split-zone zoning-facts RE-STAMPED to dominant: 34121→GC, 34161→MU, 34169→SF-1 (applied).
+
+ALL CODE MERGED TO MAIN (green CI each):
+- dd9fc1d Block-13 R22/R25/R26/R27 (fire-code side, split-zone dominant, full fields, envelope invalidation)
+- e7924a5 R28 winding-recompute (the deep two-agent bug — swapped BCAD ring reused CW-built normals → wrong-edge inset → null; PROVEN live)
+- 6399c29 R29 R5-convexity-gated-behind-lot-near-rect (irregular lots get valid non-convex envelope)
+- PE #120 (4398418) card display: interior/corner side split + full-field + second-source disclosure
+
+CONFIRMED 7/7 (both re-grades agree): the SETBACK/ZONING DATA layer. Every parcel serves correct district (dominant for splits) + correct setbacks (25/5/25 etc.) + source=bastrop-per-parcel-record-layer-23 (NOT repealed/descriptor-fixture) + full fields, verified 2026-07-30.
+
+THE OPEN QUESTION (resolve fresh): the DRAWN ENVELOPE grade CONFLICTS.
+- Re-grade #1 (perpendicular-distance): 6/6 clean.
+- Re-grade #2 (independent shapely re-derive + IoU): 3/7 — claims 34169 draws UNIFORM-15ft inset not per-edge 25/5/15/25 (IoU 0.637 to per-edge, 1.000 to uniform); 34121/34161/34177 per-edge mismatch on the irregular/multi-edge lots. The 3 clean per both: 34145/34153/34137 (rectangular lots).
+- The dispute is ONLY the drawn polygon on IRREGULAR/MULTI-EDGE lots; rectangular lots pass both. Facet check: 34169 serves setbacks 25/5/25, envelope status ok, 6890 sqft — but whether the polygon insets per-edge or uniform is UNRESOLVED.
+- RESOLVE VIA TWO INDEPENDENT MEASURERS (blind, like the winding-bug diagnosis): measure 34169 + 34121 served envelope polygon vs true lot ring in feet. If they converge → truth (7/7 or a real per-edge-envelope bug on irregular lots). Do NOT trust either prior grade.
+
+PICKUPS (non-blocking): boundary-edge PRIMITIVE atoms still carry legacy descriptor-fixture/repealed-B3 sourceUrls + road-class-setback-table setback=0 (the authoritative served setback-rule OVERRIDES them, so decoupled + non-corrupting — but stale, worth a cleanup). retrieval-api R27/R13 hardening deploy still pending (current rev 00045-yek already has R13 filter; R27 envelope-invalidation is the redeploy).
+
+METHOD PROVEN: the block-cert harness (three-way convergence PE/SmartCity/GIS + measured-geometry-in-feet) IS the automated visual/geometry QA instrument for the fan-out. Replicate to a next block after Block-13 hits 7/7.
