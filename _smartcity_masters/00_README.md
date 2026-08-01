@@ -28,6 +28,7 @@ Three categories, on one foundation. Everything is built from **smart sites** �
 | [32_smartcity_asset_management.md](32_smartcity_asset_management.md) | Asset Management — the city's physical reality as a durable, access-controlled record. Delivered as a build. Record, then live state, then view. |
 | [33a_smartcity_plan_review.md](33a_smartcity_plan_review.md) | Plan Review — pre-reviewed submittals against the city's own adopted code. Sold on money and staff capacity. Carries a licensed-content constraint. |
 | [34_smartcity_smart_files_and_foundation.md](34_smartcity_smart_files_and_foundation.md) | The data foundation (never named externally, one sentence only) and Smart Files, its customer-facing face. Also covers the Compass rework. |
+| [35_smartcity_positioning_framework.md](35_smartcity_positioning_framework.md) | How the line is positioned: the two-altitude rule, the three-beat pitch, the four uncontested claims, the never-say list, per-audience altitude, and the method for generating the peer-recommendation line. |
 
 ## How to use these
 
@@ -53,10 +54,11 @@ Three categories, on one foundation. Everything is built from **smart sites** �
 - **A city buys a system that becomes the foundation for programs.** Dashboards is a complete deployable system, never described as phase one.
 - **Fleet is both** an asset class and a dashboard lens.
 
-## Owed from this session
+## Owed
 
-1. **Smart reports library** — the fifth artifact. Two live in the property surface: the smart site X-ray and the flood and drainage study. Bastrop's deployment carries more that become library material on rebuild. Do not enumerate beyond the two live ones until this exists.
-2. **Positioning pass** across all four, cashing in the peer-recommendation constraint set recorded in doc 31.
+1. **The peer-recommendation line** — generate candidates against the constraints in doc 35. The line itself is the one piece of positioning still open.
+2. **Smart reports** — mentioned only, deliberately not defined this session. Two are live in the property surface: the smart site X-ray and the flood and drainage study. Bastrop's deployment carries more that become library material on rebuild. Do not enumerate beyond the two live ones.
+3. **Government pricing tiers** — an operator decision gating every pricing-bearing artifact.
 
 ## Reconciliation debt these masters create
 
