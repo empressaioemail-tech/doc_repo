@@ -39,3 +39,8 @@ Isolated worktree off origin/main (this repo has many active worktrees — do NO
 
 ## DELIVER
 The 4 capabilities on the anchored chat, PR(s) base main, CI green, with a note on the attach storage/context path. Operator re-QA. Do NOT deploy/merge (planner-owned).
+
+## SHIPPED 2026-08-01 — PR #138 (e432814) merged + PE deployed
+All 4 v1 capabilities live: new-chat, revisit/switch/delete threads (per-property multi-session, auto-titled, durable via chatThreads[] dossier field, legacy data migrates forward), copy-per-message + native paste, attach PDF/image/text as cited context. Anchored+cited held; PRO citations unchanged; anti-fabrication held. 861 tests pass (+49). Deployed property-explorer-n9uzpdz85.
+ATTACH v1 = CLIENT-SIDE (no backend change): text/md/csv/json read natively; born-digital PDFs best-effort text-extracted; injected as labeled "user-evidence (not municipal code)" block to the model; tenant-private (client-only, never pooled).
+LATER PICKUP (reported, not built): images + scanned/image-only PDFs have NO OCR/vision in v1 — attached as named reference flagged "not read", model told not to invent. True vision/OCR + deep document atomization = a coordinated backend change (document-context field + storage in cortex-api/engine). Owed when the deeper attach-reasoning is wanted.
