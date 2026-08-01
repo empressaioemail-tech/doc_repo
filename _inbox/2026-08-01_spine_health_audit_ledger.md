@@ -57,9 +57,14 @@ Would any current signal have caught the 4-day outage? NO — uptime is liveness
 
 ## ROADMAP FOLD ORDER (no dates)
 1. [DONE] retrieval /search fix + /health/search (#201 deployed).
-2. S-tier alerts: synthetic /search + degraded-body + fix uptime paths + notify. [PLANNER PICKUP — starts with the /health/search alert owed from the incident.]
-3. MCP env: replace HAUSKA_BACKEND_URL / Upstash placeholders; align health probe to HAUSKA_ENGINE_API_URL.
-4. Cortex functional health + LDT alerting project.
-5. Fail-closed caller contract for substrate errors (surface, don't silently Neon/websearch) — harden before #370 is treated as fully citation-proof.
-6. SmartCity calendar/AI empty-success hardening + scraper health.
-DO NOT dispatch: engine/MCP "shift to latest" — already serving latest. DO NOT touch: the retrieval fix (now landed).
+2. [DONE 2026-08-01] S-tier alert #1: functional uptime check on retrieval-api `/health/search` (public, 2xx-required, 300s) + alert policy "Retrieval /search FUNCTIONAL down" wired to the MCP-alerts email channel. THIS would have caught the 4-day outage. (Cloud Run uptime checks see only status codes, so a status-code check on the public /health/search is the right instrument; it returns non-2xx when search fails.)
+3. [DONE 2026-08-01] MCP env/health (findings #5/#6): hauska-mcp-server #54 (MERGED + DEPLOYED) — cloudbuild `_HAUSKA_BACKEND_URL` → real retrieval-api URL; health.ts `probeUpstash` reports the intentionally-parked Upstash as honest `skipped` not `down`. Live MCP /health flipped `degraded`→`ok`, `engine_retrieval_api` down→ok, `upstash` down→skipped(parked). Upstash URL left parked (operator-owned env swap). Tools were never affected (they used the real HAUSKA_ENGINE_API_URL); only health reporting was lying.
+   REMAINING (finding #6 code-fix, not blocking): MCP `/health` still returns HTTP 200 even when body status=degraded, so a status-code uptime check can't catch a genuine MCP degrade. Follow-up: make `/health` return 503 when a CRITICAL dep is down (careful not to alarm on the parked-upstash skipped state). Queued, not urgent (the false-degraded that made this pressing is fixed).
+4. [OPEN] Cortex functional health (bare {"status":"ok"}) + LDT/smartcity-os alerting projects (zero policies/channels today). Next S-M block.
+5. [OPEN] Fail-closed caller contract for substrate errors (finding #7 — surface, don't silently Neon/websearch) — harden before #370 is treated as fully citation-proof. NOTE: #370's citations now WORK live (operator-confirmed [n] chips 2026-08-01), so this is hardening, not a live gap.
+6. [OPEN] SmartCity calendar/AI empty-success hardening + scraper health (findings #9/#10/#11).
+DO NOT dispatch: engine/MCP "shift to latest" — already serving latest. DO NOT touch: the retrieval fix (landed).
+
+## APPLIED 2026-08-01 (planner, items 1+2 of the co-urgent block)
+- retrieval-api uptime check `hauska-retrieval-api-search-functional` on /health/search (period 300s, 2xx required) + alert policy (id 2889743585354385803, enabled) → MCP-alerts email channel. (One MSYS path-mangle mishap during creation — the first check stored `/C:/Program Files/Git/health/search`; caught it, recreated correctly via PowerShell, repointed the policy to the good check id, deleted the mangled one. Lesson: create GCP uptime checks with paths from PowerShell, not Git-Bash, or MSYS mangles the leading-slash path.)
+- MCP #54 merged + Cloud-Build-deployed (build ad983e98 SUCCESS); /health verified honest live.
