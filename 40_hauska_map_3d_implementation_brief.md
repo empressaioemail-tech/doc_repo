@@ -1,8 +1,8 @@
 ---
 id: 40_hauska_map_3d_implementation_brief
 title: Hauska Map 3D Implementation Brief
-status: draft (filed canonical 2026-07-30; Phase 0A near-term, Phase 1 gated on block-cert)
-last_updated: 2026-07-30
+status: draft (filed canonical 2026-07-30; Phase 0A DONE 2026-07-31; Phase 1 gated on block-cert)
+last_updated: 2026-07-31 (T-003 closed; TxGIO terrain wave dispatched)
 applies_to: hauska-map
 related: [30_block_cert_harness_spec, 2026-07-29_setback_authoritative_source_and_road_decouple, map_inventory_report]
 owner: planner
@@ -16,9 +16,15 @@ This brief is the PRODUCT-SURFACE expression of everything the setback/envelope 
 
 TWO SEQUENCING RULINGS on filing:
 
-1. PHASE 0A (visual hierarchy) MOVES NEAR-TERM AND INDEPENDENT of the 3D arc. It is not merely a 3D prerequisite — it fixes a LIVE visual problem seen today: the land-use choropleth painting every parcel at up to 0.92 opacity washes out the flood/subject read (the hydro seat independently flagged this as `LAND_USE_COLORS` in gis-map-paint.js). Phase 0A = "make the map readable"; it can proceed before any dimensional work.
+1. PHASE 0A (visual hierarchy) DONE 2026-07-31 (hauska-map #122+#123+#124). Canonical paint authority: `packages/map-renderer/src/map/layer-role-taxonomy.js` (GROUND / CONTEXT / DATA / SUBJECT / INTERACTION). Live problem (land-use choropleth wash) killed; amber reserved for SUBJECT envelope; cold-open = parcel line-only; Flood/Entitlement/Terrain presets on PE MapToolset + CC LayersControl. Screenshots: `_inbox/2026-07-31_phase0a_screenshots/`. WDLL: `_inbox/2026-07-31_hauska_map_phase0a_visual_hierarchy_WDLL.md`.
 
 2. PHASE 1 (envelope extrusion) IS GATED ON THE TARGET BLOCK BEING CERT-CLEAN. Do NOT extrude a wrong envelope — extruding makes an error 3D AND more authoritative-looking, the opposite of the honesty commitment. Phase 1 ships on a block only after that block passes the block-cert harness (envelope geometry measured-correct per R21). Block-13 is mid-cert (data layer 7/7 correct; drawn-envelope grade being resolved) — Phase 1 waits on cert-clean, not on the brief.
+
+## >>> OPERATOR DECISION 2026-08-01: 3D PUSH PAUSED — DO NOT DISPATCH PHASE 1 <<<
+The whole 3D push (Phase 1 envelope extrusion onward) is PAUSED by operator decision 2026-08-01. Rationale (operator): a 3D map with terrain relief but NO 3D BUILDINGS reads as BROKEN to a normal user, not sophisticated — a buildable-envelope volume floating on bumpy terrain with no buildings around it is a worse experience than a clean 2D map. We do NOT go partway into 3D; we go all the way (buildings + refinement, i.e. through Phase 4) or not yet. And the real priority is COVERAGE, not dimension: a 2D map with the WHOLE STATE OF TEXAS fleshed out (statewide smart-site coverage — the thesis actually delivering) is worth far more than a polished 3D view of one block. 3D is polish on coverage we don't yet have. Also: no appetite to add one more surface to QA right now.
+WHAT STAYS (already shipped, not reverted): Phase 0A visual hierarchy (DONE); the TxGIO terrain LAYER as an OPTIONAL toggle (shipped, clean after the 2026-08-01 nodata/bounds fix) — it enhances topo when a user wants it, but 3D is NOT the default map and NOT the near-term push.
+WHAT'S PAUSED: Phase 1 (T-004..T-007 envelope extrusion), Phase 4 (buildings/footprints), and the camera-tilt/volume-legend work. Do NOT dispatch Phase 1. The extrusion-base-anchors-to-terrain finding (TERRAIN_EXTRUSION_ANCHORING.md, PASS) is BANKED for when 3D resumes — the technical gate is answered, so resuming later is de-risked.
+REVISIT WHEN: statewide 2D coverage is substantially built AND we're ready to go all-the-way on 3D (envelope volumes + real building footprints + refinement together, not partway). Until then the flagship is 2D statewide coverage, not dimension.
 
 The rest of this doc is the original implementation brief, unchanged.
 
@@ -53,18 +59,14 @@ not serve that question is out of scope.
 
 ---
 
-## Phase 0A: Visual hierarchy
+## Phase 0A: Visual hierarchy — DONE 2026-07-31
 
-Run before everything else, including the fetch blockers. The current view renders every
-layer at comparable visual weight, so nothing reads as primary. This is a prerequisite for
-Phase 1, not a polish pass: an extruded amber volume will disappear into a saturated land
-use choropleth. Adding a dimension to an undifferentiated stack produces the same
-undifferentiated stack at an angle.
+Shipped on hauska-map main via #122 (taxonomy + paint + cold-open), #123 (MapToolset presets), #124 (live-parcels line-only). Canonical paint authority: `packages/map-renderer/src/map/layer-role-taxonomy.js`. Do not re-inline role hues.
 
-### T-H01: Layer role taxonomy and channel budget
+### T-H01: Layer role taxonomy and channel budget — MET
 
 **Blocked by:** nothing
-**Files:** new constant module in `packages/map-renderer/src/map/`, consumed by `gis-map-paint.js`, `hauska-map-style.js`, `live-gis.ts`, `envelope-overlay.ts`, `road-overlay.ts`, `flood-map-overlay.ts`
+**Files:** `packages/map-renderer/src/map/layer-role-taxonomy.js` (+ test), consumed by gis-map-paint / hauska-map-style / live-gis / parcel-tiles / envelope-overlay / flood-map-overlay / MapToolset / LayersControl
 
 Paint values are currently defined inline at each layer's definition site, which is why
 they have drifted into collision. Centralize them and assign every layer in the inventory
@@ -86,10 +88,10 @@ every parcel in the viewport by default, which is what is consuming the screen.
 per role, every layer definition reads from it rather than a literal, and a test asserts
 no two Data layers can be simultaneously visible.
 
-### T-H02: Rebalance existing paint against the taxonomy
+### T-H02: Rebalance existing paint against the taxonomy — MET
 
 **Blocked by:** T-H01
-**Files:** `hauska-map-style.js` L29-36; `gis-map-paint.js` L58-77; `live-gis.ts` L699-714, L741-745; `envelope-overlay.ts` L37-39; `flood-map-overlay.ts` L71-93; `satelliteBase.ts` L67-73
+**Files:** (verify paths on current main — brief line refs were stale)
 
 Four specific collisions the inventory exposed, each of which needs a decision:
 
@@ -115,10 +117,10 @@ not.
 opacity budget from T-H01, and a screenshot of the Bastrop default view shows clear
 figure and ground separation.
 
-### T-H03: Progressive disclosure and cold open
+### T-H03: Progressive disclosure and cold open — MET
 
 **Blocked by:** T-H02
-**Files:** `consumer-layers.ts` L11-23; `LiveMapTile.tsx` L148, L366; `sharedMapDefaults.ts` L9-22; CC `DEFAULT_VISIBLE_LAYERS`
+**Files:** consumer-layers / ExplorerMap / MapToolset / sharedMapDefaults / layer-registry DEFAULT_VISIBLE_LAYERS / CC LiveMapTile
 
 The cold open currently turns on parcels, FEMA, hydrography and more simultaneously in PE,
 and CC seeds an even larger default set including `dem-hillshade` and `rent-heat`. Users
@@ -181,21 +183,20 @@ already plumbed to CC chips at `LiveMapTile.tsx` L323-324.
 **Definition of done:** at pitch 60, zoom 15, the fetched ground area is within 1.5x the
 pitch 0 area at the same zoom, and no truncation flag fires under normal panning.
 
-### T-003: Locate the tile build pipeline
+### T-003: Locate the tile build pipeline — DONE 2026-07-31
 
 **Blocked by:** nothing
-**Files:** none in these three repos
+**Canonical doc:** `40j_hauska_map_tile_build_pipeline.md`
 
 The PMTiles archive at `storage.googleapis.com/hauska-map-tiles/parcels.4af31e1901e2.pmtiles`
-is consumed, but the inventory found no tippecanoe, gdal, mbtiles, or rio-rgbify anywhere
-in hauska-map or hauska-engine. The build scripts live outside the three repos read.
+is consumed from hauska-map config. The bake lives in **legacy-design-tools** (not
+hauska-map or hauska-engine): `artifacts/api-server/src/parcelsPmtilesBakeCli.ts`, run via
+`pnpm --filter @workspace/api-server parcels-pmtiles-bake`, manual upload to
+`gs://hauska-map-tiles`. Terrain-RGB adds a sibling Python/GDAL bake in the same repo;
+same bucket discipline. Phase 2 (T-008/T-009) unblocked.
 
-Find them, document them, and record where they run. Phase 2 cannot be planned until this
-is known, because terrain requires adding a second tile artifact to whatever that pipeline
-is.
-
-**Definition of done:** a canonical doc records the pipeline location, its trigger, its
-inputs, and who can run it.
+**Definition of done:** MET — pipeline location, trigger, inputs, and who-can-run recorded
+in `40j_hauska_map_tile_build_pipeline.md`.
 
 ---
 
@@ -456,10 +457,9 @@ Carried forward from the inventory so they are not rediscovered the hard way.
 
 ## Open questions
 
-1. Where does the PMTiles build pipeline live, and can it take a second raster artifact
-   without restructuring. Routes to T-003, blocks Phase 2.
+1. ~~Where does the PMTiles build pipeline live~~ **RESOLVED 2026-07-31** — `40j_hauska_map_tile_build_pipeline.md`; sibling raster bake in legacy-design-tools, same GCS bucket.
 2. Does MapLibre 5.24 anchor `fill-extrusion-base` to terrain elevation in the way T-012
-   requires. Routes to T-010, blocks Phase 3.
+   requires. **Pre-answer (shader):** yes at feature centroid via `get_elevation(a_centroid)` when terrain active; live verify required in T-010. Routes to T-010, blocks Phase 3 if live probe fails.
 3. Is the PMTiles parcel corpus schema documented anywhere outside these repos. The
    inventory found only id and land use referenced, with no assessor fields. Blocks any
    attempt to extrude parcels by value or permit age.
