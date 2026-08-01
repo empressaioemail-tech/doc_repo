@@ -33,3 +33,15 @@ Operator: the map works fine on mobile, but searching a property / using control
 
 ## PLANNER LEGS (after fleets hand back)
 Merge each on green (verify head SHA); deploy PE (Vercel CLI, new-timestamp + bundle marker); operator re-QA. Fix C may need a planner cache/data-op — handle per agent's report. The subjectResolveCleanup fix should ship promptly (live error).
+
+## SHIPPED 2026-08-01 — ALL 3 FLEETS MERGED + DEPLOYED
+- Fleet 3 `aa8db4f` (#134): subjectResolveCleanup declared — ReferenceError killed (7/8→8/8 test).
+- Fleet 1 `d8ef14e` (#135): 3D toggle removed, bubbles below zoom-ctrl, flood flow-line/arrow enlarged (rim-invariant preserved), Compare dropdowns dark, small-in-front-of-large z-index, dossier→X-RAY rename (labels only).
+- Fleet 2 `86f33a1` (#136): expandable report panels (WorkbenchToolDef.expandable opt-out, floating box map-still-visible), AI-chat citations RESTORED (root cause: facets never carried jurisdictionKey → backend skipped code-atom retrieval → no [n]; fix derives key from zoning stamp adapter; anti-fabrication held), stale flood-study client-side fail-closed gate (old-styled studies stop serving + show re-run prompt).
+- MERGE HAZARD CAUGHT: Fleet 2 branch predated Fleet 1 merge; naive squash would have SILENTLY REVERTED Fleet 1's X-ray rename + z-index + dark-dropdown on 5 shared files. Rebased #136 onto main first (server-side update-branch) → diff reduced to Fleet 2's real work only → verified main has BOTH X-ray rename AND expandable. "Mergeable ≠ correct."
+- DEPLOYED: PE prod property-explorer-j2gyg6a8y (main tip 86f33a1) @ property-explorer-xi. Operator re-QA owed.
+
+## OPEN NOTES
+- Fix C: no server-side purge — old flood studies stop serving + re-render current on next run (client gate). If operator wants stale BYTES cleared from engine-api store, that's a separate planner engine-api data-op (not required — client gate makes it safe).
+- MOBILE pass still HELD (own workstream).
+- Another seat is actively building dock-related work in the shared clone (flagged by Fleet 1); coordinate before further Workbench.tsx changes.
