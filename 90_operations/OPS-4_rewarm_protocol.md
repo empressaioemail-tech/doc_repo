@@ -38,6 +38,15 @@ Every promoted atom carries the RECIPE VERSION it was warmed under. Today (verif
 | REFRESH | source staleness (a county publishes a newer parcel/CAD/code vintage) | re-ACQUIRE (stage 1) → new staged snapshot → then warm | new inputs, then deterministic |
 The performance ledger (OPS-6) tracks BOTH: recipe-version drift (rewarm-needed) AND source-staleness (refresh-needed).
 
+## STALENESS SELECTION — THE RETIREMENT RUNG (the Bastrop lesson generalized)
+This is the property spine's named missing rung (per 64_recursive_loop/04_instantiations): today NOTHING actively detects that a jurisdiction amended its code and our stamp is now WRONG — retirement is manual discovery. This is exactly the Bastrop failure: the B3 code was repealed and we served the dead code for weeks because nothing detected the amendment. The edition-currency gate (R13/R16) is REACTIVE — it blocks a KNOWN repealed edition once someone finds it. Staleness selection is the ACTIVE detector. At 254-county scale, source churn (code amendments, re-plats, new editions) is constant; without active staleness selection, honestly-cited-but-silently-wrong stamps accumulate and poison the layer.
+
+THE STALENESS SELECTOR (design; build in Phase C+):
+- SIGNAL — a per-stamped-truth (zoning stamp, setback table, code edition) staleness check that fires on either (a) a re-verification CADENCE (a TTL per facet family — e.g. re-check a city's zoning edition every N days) OR (b) a CODE-EDITION-CHANGE trigger (poll the jurisdiction's published edition marker / adoption date; a change fires immediately). The recent-repeal onboarding-risk register (OPS-1) seeds the watch list — the jurisdictions most likely to amend.
+- ACTION — on a detected change or an expired TTL with no re-verification: DEMOTE the stamp to "unverified as of `<date>`" (honest-absence per OPS-7, NEVER silently keep serving the old value), set the ledger `staleness_flag` + `last_refresh_at`, and flag the jurisdiction refresh-needed. The customer sees "unverified as of X — re-verification pending", never a silently-rotted stamp.
+- LEDGER — `staleness_flag` and `last_refresh_at` already exist on county_facet_coverage (A7). This selector is what SETS them. The CC console (OPS-6) surfaces per-jurisdiction staleness so the operator sees which stamps have rotted.
+- THIS IS SELECTION PRESSURE ON STAMPED TRUTH — it is the retirement rule the recipe's edition-currency gate does not provide. A stamp that cannot be re-verified fresh is retired to honest-absence, not served stale. Build in Phase C+ (after the Bastrop warm proves the line); designed-in now so the ledger + console are built to carry it.
+
 ## THE PERFORMANCE LEDGER FIELDS (R-FND-6; closes gap #7)
 county_facet_coverage exists with: county_fips, facet, honest_coverage_pct, integrity_verdict, owner_match_rate, source, source_vintage, checked_at. OWED (this doc mandates):
 - recipe_version (per jurisdiction, per facet) — the rewarm trigger.

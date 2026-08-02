@@ -123,6 +123,20 @@ The following new docs need to be written at the paths listed:
 
 Each new doc should include frontmatter (`id`, `title`, `status`, `last_updated`, `applies_to`, optional `related` / `supersedes` / `superseded_by`). Use the content provided exactly; don't reformat or "improve."
 
+### 2C-bis. Grade the fleet memory (fired / helped / harmed + trap-recurrence)
+
+The fleet's L3 retirement rung (per `64_recursive_loop/04_instantiations`): a memory or rule that is never graded against outcome can silently rot into a HARMFUL un-retired memory (e.g. the three-gate MCP enum asserted a month after the four-gate rework). Selection pressure on the memory set is what keeps it honest. At session close, the planner records two things — cheap, and the prerequisite for every L3 memory behavior:
+
+1. FIRED / HELPED / HARMED — a one-line stamp per memory or standing rule that actually influenced this session:
+   - `FIRED` — it came up and was applied.
+   - `HELPED` — it prevented a mistake or saved rediscovery (name the mistake avoided).
+   - `HARMED` — it was wrong, stale, or misleading and cost the session something (name the cost). A HARMED memory is RETIRED or corrected same-session (delete/fix the memory file + its MEMORY.md line), never left to rot.
+   A memory that neither helped nor harmed and keeps not-firing is a candidate for retirement (it may be dead weight).
+
+2. TRAP-RECURRENCE QUESTION — "did any recorded trap class recur this session, and which memory should have prevented it?" If a trap recurred, either the memory didn't reach the seat that needed it (a cc-agent-reach gap — embed it in the dispatch) or the memory was wrong (correct it). A recurred trap with an existing memory is a HARMED-memory signal.
+
+Record these in the session summary (Stage 2A). This is a protocol step, not a build — but it is the selection pressure that makes the memory system L3 instead of an ever-growing pile of unverified prose.
+
 ### 2D. Regenerate current-state snapshot
 
 Per [`current_state_protocol.md`](current_state_protocol.md), every session close regenerates `00_current_state.md` with the post-session state. The planner provides the new snapshot content; write it to `00_current_state.md`, overwriting prior content. Keep it under ~150 body lines per the protocol.
