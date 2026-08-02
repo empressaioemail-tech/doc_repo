@@ -1,0 +1,106 @@
+# TxGIO StratMap — Rail C parcel-geometry source-adapter registry (DRAFT)
+# Generated: 2026-08-02
+# Full per-county matrix: _scratch/txgio_stratmap_county_matrix_2026-08-02.json
+# CSV export: _scratch/txgio_stratmap_county_matrix_2026-08-02.csv
+
+registry:
+  id: txgio_stratmap_land_parcels
+  rail: C
+  provider: txgio
+  program: StratMap Land Parcels (stratmap25 collection)
+  license: public_free
+  not_survey_grade: true
+  source_pages:
+    - https://tnris.org/stratmap/land-parcels.html
+    - https://txwaterdatahub.org/dataset/stratmap-land-parcels
+  datahub_collection_id: 0fa04328-872e-481c-b453-126a74777593
+  schema_pdf: https://cdn.tnris.org/documents/tnris-land-parcel-schema.pdf
+
+  coverage_summary:
+    census_county_fips_total: 254
+    stratmap_zip_available: 253
+    stratmap_zip_missing: [48129]  # Donley — HTTP 404 on stratmap25 zip (verified 2026-08-02)
+    stale_gt_1yr_as_of: 2026-08-02
+    stale_count: 249
+    fresh_count: 4
+    fresh_counties:
+      - {fips: "48097", name: Cooke, vintage_yyyymm: "202509"}
+      - {fips: "48223", name: Hopkins, vintage_yyyymm: "202509"}
+      - {fips: "48293", name: Limestone, vintage_yyyymm: "202509"}
+      - {fips: "48363", name: Palo Pinto, vintage_yyyymm: "202509"}
+    high_prop_id_bad_rate_count: 8  # threshold >= 0.25
+    high_prop_id_bad_counties:
+      - {fips: "48127", name: Dimmit, prop_id_bad_rate: 0.3913}
+      - {fips: "48153", name: Floyd, prop_id_bad_rate: 0.4559}
+      - {fips: "48295", name: Lipscomb, prop_id_bad_rate: 0.3765}
+      - {fips: "48345", name: Motley, prop_id_bad_rate: 0.5281}
+      - {fips: "48359", name: Oldham, prop_id_bad_rate: 0.9995}
+      - {fips: "48393", name: Roberts, prop_id_bad_rate: 0.9992}
+      - {fips: "48395", name: Robertson, prop_id_bad_rate: 1.0}
+      - {fips: "48453", name: Travis, prop_id_bad_rate: 0.5147}
+
+  vintage_distribution:  # stratmap25 land-parcel zips, basename YYYYMM suffix
+    "202503": 146
+    "202505": 57
+    "202507": 29
+    "202508": 17
+    "202509": 4
+
+  adapter_routing_rules:
+    - when: in_stratmap && !HIGH_PROP_ID_BAD_RATE && !STALE
+      path: stratmap_bulk_zip
+      join_key: prop_id
+    - when: in_stratmap && STALE
+      path: stratmap_bulk_zip
+      prefer_override_if_present: cad_direct_arcgis_rest
+      note: StratMap annual refresh lags; county ArcGIS often fresher for metro CADs
+    - when: in_stratmap && HIGH_PROP_ID_BAD_RATE
+      path: stratmap_bulk_zip
+      join_key: geo_id_or_address_crosswalk
+      gate: owner_name_match_before_cad_join
+    - when: NOT_COVERED
+      path: cad_direct_arcgis_rest_or_cad_bulk
+      required: true
+
+  access:
+    parcels:
+      mode: per_county_zip_download
+      rest_query_supported: false  # verified: MapServer /query returns 400 "not supported"
+      display_only_mapserver: https://feature.geographic.texas.gov/arcgis/rest/services/Parcels/stratmap_land_parcels_48_most_recent/MapServer/0
+      bulk_url_template: "https://data.geographic.texas.gov/0fa04328-872e-481c-b453-126a74777593/resources/stratmap25-landparcels_{fips}_lp.zip"
+      zip_contents: [shp/, fgdb/, metadata, conversion files]
+      parse_preference: shp/ shapefile (WGS84 GCS_WGS_1984 per .prj)
+      user_agent_required: true  # bare UA gets CloudFront 403
+      auth: none
+      rate_limits: none published; use polite sequential downloads
+    address_points:
+      mode: paginated_arcgis_rest
+      rest_layer: https://feature.geographic.texas.gov/arcgis/rest/services/Address_Points/stratmap_address_points_48_most_recent/MapServer/0
+      max_record_count: 2000
+      county_filter_field: county
+      recommended_rate: 500ms between pages (~2 req/s)
+
+# Per-county rows: import from JSON/CSV (254 rows). Example rows:
+county_examples:
+  - fips: "48021"
+    county_name: Bastrop
+    in_stratmap: true
+    vintage_yyyymm: "202503"
+    feature_count: 74729
+    prop_id_bad_rate: 0.0001
+    flags: [STALE]
+    adapter_path: stratmap_bulk_zip
+  - fips: "48129"
+    county_name: Donley
+    in_stratmap: false
+    flags: [NOT_COVERED]
+    adapter_path: cad_direct_arcgis_rest_or_cad_bulk
+  - fips: "48453"
+    county_name: Travis
+    in_stratmap: true
+    vintage_yyyymm: "202503"
+    prop_id_bad_rate: 0.5147
+    flags: [STALE, HIGH_PROP_ID_BAD_RATE]
+    adapter_path: stratmap_bulk_zip
+    join_override: geo_id_or_address_crosswalk
+    prefer_fresh_override: travis_cad_arcgis_rest  # when fresher Prop_ID needed
