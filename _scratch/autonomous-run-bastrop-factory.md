@@ -46,9 +46,31 @@ The earlier DEAD-END ("background agents defer instead of executing") was HALF-W
 - CC config note: the panel fetches {cortexApiBase}/api/county-ledger; endpoint verified live. Operator can now open CC → Engines → County Ledger and see the (empty) factory floor, ready for Bastrop.
 - PHASE B DONE. STOP per operator scope (Phase B this session, Phase C next fresh session).
 
-## PHASE C — NEXT SESSION START HERE
-- C1: freeze Bastrop's registry row (already in _land_records + engine loader has BASTROP_REGISTRY_ROW); re-measure warm cost on a 150-parcel Bastrop city cohort (--city-cohort --force-repromote, DATABASE_URL+TXGIO_DATABASE_URL, PROPERTY_ATOM_PATH=1) vs $200 gate.
-- C2: run OPS-2 line on Bastrop city district blocks (SF-1 2469 → GC 889 → MU 516 → RR 645 → PI 240 → IND 117), each --force-repromote (R28/R30). PDD 1978 + null 117 → graceful honest-decline (S-10). Block-13 QUARANTINED (never re-run).
-- C3: mechanical area-sweep cert per block (block13-cert-grade.mjs now on main — extend to city roster; R32 + R20 convergence + R9/R10/R13); each block surfaces in CC County Ledger (onboarded/coverage/cert-state populate).
-- GATE C: Bastrop mechanically swept + served on prod PE + visible in CC, STOP for operator R6.
-- Foundation ready: all 7 Phase-A gaps closed on main; recipe-version stamps; registry loader; R7-at-bake; determinism hash; performance ledger + endpoint + CC panel live.
+## PHASE C — IN PROGRESS (2026-08-02 planner pickup)
+
+### C1 DONE — live re-verify + 150-parcel cost dry-run
+- GROUND-TRUTH (2026-08-02): engine main @ b90383c4 confirmed; block13-cert-grade.mjs + depth-warm-bastrop-batch.mjs on main.
+- GROUND-TRUTH (2026-08-02): GET cortex-api /api/county-ledger HTTP 200, onboardedCount=0 (10 CAPCOG rows).
+- GROUND-TRUTH (2026-08-02): retrieval-api /health/search HTTP 200 (functional probe ok).
+- GROUND-TRUTH (2026-08-02): CC County Ledger panel in cmdcenter-blush.vercel.app bundle (grep hit).
+- LESSON: handoff "both DATABASE_URL+TXGIO on prod-cortex-neon" is WRONG for live infra. Correct split: DATABASE_URL=hauska-prod substrate (atoms, 3.67M rows); TXGIO_DATABASE_URL=hauska CORTEX_DATABASE_URL overlay (txgio_parcel 74,729 for 48021; county_facet_coverage 30 rows).
+- LESSON: Windows Node v24 needs NODE_OPTIONS=--use-system-ca for BCAD ArcGIS fetch (UNABLE_TO_VERIFY_LEAF_SIGNATURE without it).
+- C1 cost re-measure (150 city-bbox cohort, --force-repromote): extrapolatedJurisdictionUsd=0.0267 vs $200 gate — CLEAR. msPerParcel=626. Failure map: verifyPass 16, verifyFail 4, no-setback-row 127 (PDD/conditional), superseded 2, front-orientation-unresolved 1.
+- OPEN: city cohort script uses BASTROP_CITY_BBOX (17,217 txgio rows) NOT layer-23 CITY='BASTROP' (~6,972) — prose gap for onboard(fips).
+- OPEN: substrate zoning-fact district mix differs from Phase 1 layer-23 analysis (SF-1 2290 vs 2469).
+
+### C3 SF-1 cert — BLOCK FAIL (STOP)
+- GROUND-TRUTH (2026-08-02): bastrop-district-cert-grade.mjs area-sweep on SF-1 rosterSize=2286, exit code 1 (~54 min wall).
+- Diagnosis: mix of fresh 1444 promotes (this run) + ~842 prior depth-warm promotes with STALE setback numbers (e.g. 48021:31009 served F30/S10 vs layer-23 F25/S5). Cert correctly fail-closed.
+- STOP per recipe: do NOT advance to GC/MU/RR until SF-1 block re-warmed to single recipe_version 1.0.0 cohort + full re-sweep PASS.
+- OPEN: warm batch does not upsert county_facet_coverage → CC ledger still envelope 0% for 48021.
+- OPEN: engine script patches (--district-prefix, quarantine, bastrop-district-cert-grade.mjs) local only — PR to main owed before production factory claim.
+
+
+
+## PHASE C — STOP at SF-1 cert (2026-08-02) — GOOD stop, real defect caught
+- GROUND-TRUTH (2026-08-02): SF-1 warm ran 27min: processed 2285, promoted 1444 recipe-1.0.0, 783 verify-fail (34%), declines no-setback-row 26 + superseded-prop-id 32. Cost gate CLEARS ($0.0267/juris). Mechanical cert FAILED (exit 1): SF-1 roster is MIXED-VINTAGE — 2288 SF-1 promoted envelopes but only 1444 carry recipeVersion=1.0.0; ~844 are stale depth-warm-promoted-v1 from pre-Phase-C warms serving OLD setbacks (F30/S10/R30 layer-83) vs layer-23 authority (F25/S5/R25). This is R10 persisted!=recompute at scale — --force-repromote only overwrote verify-passers, left stale residue.
+- HANDOFF ERRORS I MADE (corrected by planner, now captured): (1) DB env — I said "both URLs on cortex Neon"; LIVE = substrate atoms on hauska-prod DATABASE_URL, txgio_parcel + county_facet_coverage on CORTEX_DATABASE_URL. (2) City boundary — the batch uses BASTROP_CITY_BBOX (17,217 txgio rows) NOT layer-23 CITY='BASTROP' (~6,972) — the cohort was over-broad. (3) Windows BCAD ArcGIS TLS needs NODE_OPTIONS=--use-system-ca.
+- LEDGER-WRITE-PATH MISSING (my Phase B gap): warm promotes atoms to substrate but NEVER upserts county_facet_coverage on cortex Neon → CC County Ledger stays 0%/not-onboarded even after 1444 promotes. I built the console to READ a ledger the warm doesn't WRITE. Phase D mechanism.
+- DELIVERABLE 2 DONE: 90_operations/PHASE_C_mechanism_vs_prose_SPEC.md — 9 self-enforcing mechanisms + 10 prose-interpreted gaps + 2 refactors. This IS the Phase D input.
+- DECISIONS (operator 2026-08-02): (a) SF-1 unblock = force-overwrite ALL SF-1 regardless of prior marker → single vintage → re-sweep; 783 verify-fails → honest-decline. (b) Fix SF-1 + wire the ledger-write-path (county_facet_coverage upsert per block) NOW; defer full onboard(fips) generalization to Phase D. (c) ADDED: diagnose the 783 fail-class distribution FIRST (34% is high — if systematic bug, overwrite just re-fails).
