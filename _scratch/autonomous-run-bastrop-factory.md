@@ -39,3 +39,16 @@ APPLIED: A1 (dispatch, worked — single-step file install) + A2 (direct, worked
 
 ## CORRECTION (2026-08-02): the engine agent did NOT orphan — it was slow-but-working
 The earlier DEAD-END ("background agents defer instead of executing") was HALF-WRONG. The A7 agent AND the A2-A6 engine agent BOTH actually completed — their first "running in background" notifications were premature status, not orphans. They kept working (~40 min) and delivered correct, full-suite-green builds. I concluded orphan too early (checked once, no branch yet) and rebuilt A2-A6 myself in parallel → my PRs won the merge races, theirs superseded+closed. Outcome correct (no dup code on main, they closed their own PRs) but ~335k tokens duplicate effort. LESSON promoted to durable memory: premature-background-notification-not-orphan. Distinguish orphan-vs-slow by checking over TIME, not once; never run 2 dispatches of the same task list on one main.
+
+## PHASE B COMPLETE (2026-08-02) — factory floor live
+- GROUND-TRUTH (2026-08-02): B1 MERGED (ldt #375 county-ledger endpoint GET /api/county-ledger). B2 MERGED (hauska-map #144 CC County Ledger panel, Engines group). B3 DEPLOYED: cortex-api endpoint live on prod (HTTP 200, returns 10 CAPCOG ledger rows, 0 onboarded — correct, no factory run yet); CC deployed to Vercel (command-center-jade-sigma.vercel.app HTTP 200, panel in bundle).
+- TRAPS HIT + HANDLED (verify-before-shift earned its keep): (1) :latest-image-race — first cortex canary served SPA HTML for /api/county-ledger (pre-endpoint image raced the push-build); fixed by SHA-pinning deploy to 2fce729b. (2) migration-not-applied — SHA-pinned canary then 500'd (Failed query: county_facet_coverage missing the A7 columns on cortex Neon); fixed by dispatching the SEPARATE run-migrations action (deploy does NOT migrate; migrate is its own workflow_dispatch). THEN 200. Both caught by curling the actual endpoint before shifting traffic, never on deploy-success.
+- CC config note: the panel fetches {cortexApiBase}/api/county-ledger; endpoint verified live. Operator can now open CC → Engines → County Ledger and see the (empty) factory floor, ready for Bastrop.
+- PHASE B DONE. STOP per operator scope (Phase B this session, Phase C next fresh session).
+
+## PHASE C — NEXT SESSION START HERE
+- C1: freeze Bastrop's registry row (already in _land_records + engine loader has BASTROP_REGISTRY_ROW); re-measure warm cost on a 150-parcel Bastrop city cohort (--city-cohort --force-repromote, DATABASE_URL+TXGIO_DATABASE_URL, PROPERTY_ATOM_PATH=1) vs $200 gate.
+- C2: run OPS-2 line on Bastrop city district blocks (SF-1 2469 → GC 889 → MU 516 → RR 645 → PI 240 → IND 117), each --force-repromote (R28/R30). PDD 1978 + null 117 → graceful honest-decline (S-10). Block-13 QUARANTINED (never re-run).
+- C3: mechanical area-sweep cert per block (block13-cert-grade.mjs now on main — extend to city roster; R32 + R20 convergence + R9/R10/R13); each block surfaces in CC County Ledger (onboarded/coverage/cert-state populate).
+- GATE C: Bastrop mechanically swept + served on prod PE + visible in CC, STOP for operator R6.
+- Foundation ready: all 7 Phase-A gaps closed on main; recipe-version stamps; registry loader; R7-at-bake; determinism hash; performance ledger + endpoint + CC panel live.
