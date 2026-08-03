@@ -2,7 +2,7 @@
 id: 2026-08-03_trust_surface_wave1_dispatch_pack
 title: Dispatch pack — trust-surface wave 1 (D1 ldt, D2 engine, D3 map) + D4 factory foundation queued
 date: 2026-08-03
-status: active
+status: closed (ALL EXECUTED 2026-08-03: 8 PRs merged — ldt #376/#377/#378, map #146, engine #214/#215/#216/#217 — 3 services deployed + live-verified; see _sessions/2026-08-03_trust_surface_wave1_execution_claude_code.md)
 owner: nick
 agent: claude_code planner (executors: 3 sonnet subagents wave 1; D4 wave 2)
 related: [_research/2026-08-03_atoms_citations_authoritative_sources_deep_dive, 90_operations/OPS-8_blocker_free_onboarding_model, _decisions/2026-08-03_cert_scope_annotation_ruling, 43_cortex_qa_backlog]
