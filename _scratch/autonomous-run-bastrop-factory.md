@@ -97,3 +97,10 @@ The earlier DEAD-END ("background agents defer instead of executing") was HALF-W
 - 18 removed parcels: only 3/18 pass as flat-file → the other 15 belong in their DOMINANT-district blocks (GC/MU/RR/IND), graded when those blocks run — not a flat roster.
 - DECISIONS (operator): (a) MERGE the generalized harness + dominant-cohort to main FIRST (reproducibility; it passed the 7/7 regression), then re-warm from on-main. (b) R35 landlocked→honest-decline orientation (ratified). (c) two-blind-measure 28855/30857.
 - DISPATCH: PHASE_C_RESUME_merge_then_rewarm.md.
+
+## PHASE C SF-1 — down to 5 fails, split into 2 classes (2026-08-03)
+- GROUND-TRUTH (2026-08-03): SF-1 re-sweep 1914/1919, 24 stale-residue CLEARED, R35 landlocked 53859 PASS. 5 remain: all VALID served envelopes (verified: 28855=9214sqft, 8741972=3209sqft) but cert RECOMPUTE (computeWarmCandidateFromBoundary) empty. PR #211 merged (b861cc4) — generalized harness + dominant-cohort + R35 on main; Block-13 7/7 regression HELD.
+- TWO CLASSES (opposite fixes): CLASS A = null-situs re-plat successors 8741972/73/74 (34065 re-plat, R15) → R35 EXTENSION: null situs = no frontage → honest-decline orientation = PASS. CLASS B = valid-situs recompute-empty 28855(509 Laurel)/30857 → genuine warm/cert CANDIDATE-recompute divergence R33 didn't cover; DO NOT trust-stored-over-recompute (violates R10) → DIAGNOSE why recompute empty when warm derived a valid candidate, FIX the recompute to match warm.
+- OPERATOR DECISIONS: (a) diagnose-before-fix, keep R10 (never bless stored over recompute); (b) null-situs successors = R35-class honest-decline. R35 extended in recipe.
+- KEY STICKLER: the fleet proposed "cert passes when stored passes R32 even if recompute empty" — REJECTED as R10-violating (would silently bless stale atoms). Fix the recompute, don't trust stored.
+- DISPATCH: PHASE_C_RESUME_recompute_divergence.md.
