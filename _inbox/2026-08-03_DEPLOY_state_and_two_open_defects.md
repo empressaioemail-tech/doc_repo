@@ -14,11 +14,22 @@ related: [PHASE_D_layer23_cohort_full_coverage, REBRAND_IMPL_design_system_wirin
 - PE combined branch `rebrand/combined-deploy` (design-system + Button + map-chrome + citations/PDF + PE serve-fix) merged clean, typecheck green, 133 touched-suite tests pass, DEPLOYED to PE prod (property-explorer-91pv6d2hf, aliased to property-explorer-xi). Prod is STABLE (HTTP 200). No rollback needed.
 - Bundle branding PARTIAL: teal atom #4CC9C0 present, SMART SITE present, old purple #c4b5fd gone.
 
-## OPEN DEFECT 1 — PE serves baked-snapshot, NOT the retrieval atom-chain (the real blocker)
-Live: BOTH 34137 (warmed, should be atom-chain) AND 141364 (superseded) serve `source: baked-snapshot, adapterKey: node-facets:tier1, declineReason: atom_path_pending` on the PE facets path. The PE serverless adapter is NOT reading the (healthy, correct) retrieval atom-chain — it falls back to the cortex node-facets snapshot for EVERY parcel. So the PE serve-fix (mapWarmVerifyDeclineEnvelope) never fires, and 141364 does NOT show the superseded decline; ALL parcels lose their certified atom-chain data on serve.
-- This PREDATES the combined deploy: the 4h-ago branding-only prod deploy (98s9esonv) ALSO snapshot-serves 34137. So it is NOT a combined-branch regression — the PE->retrieval read has been falling back to snapshot since some point today. Earlier this session 34137 served `source: atom-chain` (F25/S5/R25), so the atom-chain read worked earlier and stopped.
-- Retrieval is NOT the cause (verified healthy + correct via direct curl). Env is present + correct (HAUSKA_RETRIEVAL_API_URL -> the right live host, PROPERTY_ATOM_PATH set, HAUSKA_RETRIEVAL_API_KEY set).
-- ROOT CAUSE UNKNOWN from outside — it's inside the PE serverless function runtime: the retrieval call is likely erroring and being caught -> snapshot fallback. Needs Vercel function LOGS or a local run of the api/_lib/atom-chain path against prod retrieval. Candidate causes: an auth/header mismatch on the server-side retrieval call, a response-shape change, a thrown error swallowed to fallback, or a serverless env/timeout. OWNER: the Phase D planner (owns atom-chain-to-facets + can read function logs).
+## OPEN DEFECT 1 — RESOLVED (2026-08-03 ~11:52 CT)
+
+**Root cause:** `atomPathReason: atom-chain HTTP 401` — Vercel `HAUSKA_RETRIEVAL_API_KEY` (set 11d ago) did **not** match retrieval-api rev `00054-wex` `RETRIEVAL_API_KEY`. PE caught 401 as definitive failure → `stripCortexEnvelopeProductTruth` → baked-snapshot + `atom_path_pending` for **every** parcel.
+
+**Not:** response-shape mismatch, timeout, or combined-branch regression. Retrieval direct curl with Cloud Run key = 200.
+
+**Fix applied:**
+1. Synced Vercel Production `HAUSKA_RETRIEVAL_API_KEY` to match Cloud Run `RETRIEVAL_API_KEY`.
+2. Redeployed PE prod (same combined commit + new env).
+3. Pushed `feat/phase-d-pe-serve-fix` @ `acd85f0` — fail-closed on 401 (503 `retrieval_auth_failed`, no snapshot lie) + `mapWarmVerifyDeclineEnvelope`.
+
+**Live verify post-fix:**
+- `48021:34137`: `X-PE-Read-Path: atom-chain-warm`, F25/S5/R25, geojson ok
+- `48021:141364`: `declineReason: superseded-prop-id`, `snapshotAt: 2026-08-03T15:11:03.320Z`
+
+**R6 gate:** PE serves atom-chain again; 141364 shows named superseded decline. Ready for operator merge #213 decision.
 
 ## OPEN DEFECT 2 — slate honest-absence token (#7C8BA0) NOT in the bundle
 The design-system recolor moved honest-absence to `--semantic-absence #7C8BA0` (verified in pe-tokens.css + the 3 recolored files on the branch), but the built prod bundle has 0 hits for 7C8BA0. So the honest-absence recolor is not reaching the built CSS. Likely: the recolors use `var(--semantic-absence)` (a CSS var, not the literal hex), so grepping the JS bundle for the hex won't find it — the hex lives in the imported pe-tokens.css, which may be a separate CSS asset, not index-*.js. THIS MAY BE A FALSE ALARM (grep looked in the wrong asset). Verify by grepping the built CSS asset (not just index.js) for 7C8BA0 / --semantic-absence, OR visually confirm honest-absence renders slate on prod. Low-risk; likely-fine.
@@ -28,3 +39,7 @@ Retrieval (correct+healthy), the R27 fix (verified), the combined branch code (t
 
 ## NEXT (hand-off)
 Phase D planner: diagnose Defect 1 from the PE function's runtime (logs / local run) — why does the server-side retrieval atom-chain call fall back to snapshot for all parcels when retrieval is healthy? That is the last mile of the 141364 R6 gate AND it restores certified atom-chain serving for ALL warmed parcels. Do NOT merge PR #213 until PE serves the atom-chain again (the gate). Planner (doc_repo) holds the deploy; retrieval is done.
+
+## RESOLVED 2026-08-03 (correcting the diagnosis above)
+Defect 1 root cause was NOT "pre-existing/unknown-runtime" — it was an API-KEY DESYNC caused BY the retrieval redeploy. The `gcloud run deploy --source` of retrieval-api (rev 00054-wex) rotated `RETRIEVAL_API_KEY`; Vercel's PE held the 11-day-old key -> PE->retrieval 401 -> PROPERTY_ATOM_PATH=1 fell through to cortex snapshot + atom_path_pending for every parcel. The "4h-ago build also broken" observation was because my FIRST retrieval touch had already desynced the key. Direct curl with the OPERATOR key returned 200, masking the app's 401. Smoking gun: PE runtime exposed atomPathReason: "atom-chain HTTP 401".
+FIX: synced Vercel Production HAUSKA_RETRIEVAL_API_KEY to the Cloud Run key + redeployed PE. VERIFIED live: 34137 atom-chain ok F25/S5/R25; 141364 atom-chain declined superseded-prop-id; GC/MU/RR spot-checks all atom-chain ok. THE R6 GATE IS MET. Guardrail (503-on-401, no silent snapshot fallback) on hauska-map feat/phase-d-pe-serve-fix @ acd85f0 (optional prod deploy). Lesson captured: memory cloud-run-source-deploy-rotates-api-key.
