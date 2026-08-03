@@ -88,3 +88,12 @@ The earlier DEAD-END ("background agents defer instead of executing") was HALF-W
 - PRECISE SCOPE (verified): ENGINES were shared (same adapter/rings/roads/warmThenVerify) — atoms likely fine; only WRAPPERS diverged. No factory revert needed.
 - FIXES DONE: memory FLEET-L3-GAP-template-replication-not-enforced; _decisions/2026-08-02_operate_the_factory_never_rebuild_it (operate-don't-rebuild + divergence gate + flagged-deviation rule); 64_recursive_loop/04 updated with the incident + revised missing rung (the DIVERGENCE GATE); session-close protocol adds the divergence/rebuild check (2C-bis step 3); corrected dispatch PHASE_C_CORRECTED_operate_block13_path.md (extend block13-cert-grade to a roster, dominant-district cohort, retire the divergent wrappers, keep R33+ledger+#210).
 - KEEP (were real): R33 (warm=cert gate), the ledger-write-path, #210 reproducibility fixes.
+
+## PHASE C CORRECTED PATH — PARTIAL PASS (2026-08-02) — the correction WORKED
+- GROUND-TRUTH (2026-08-02): operate-not-rebuild correction succeeded. Block-13 STILL grades 7/7 under the GENERALIZED block13-cert-grade (--roster-from param) — regression HELD = proof we EXTENDED not FORKED. bastrop-district-cert-grade RETIRED (stub exits 2). Dominant-district cohort (R26) replaces the layer-23-field cohort.
+- SF-1 corrected sweep: pass 1892/1919, fail 27, honestDecline 530, staleResidue 24. The 27 = 24 stale-residue (ops gap, need re-warm --force-overwrite) + 3 GENUINE fails.
+- The prior "28 SF-1 fails" resolved: ~23 were COHORT/HARNESS ARTIFACTS (18 not-in-SF-1-dominant + 5 district-mismatch-now-pass), 3 genuine (28855, 30857, 53859). CONFIRMS the failures were the divergent wrappers mis-feeding the machine, exactly as diagnosed.
+- 3 GENUINE FINDINGS: 53859 = LANDLOCKED "LOT BEHIND 2208 PECAN" no street frontage → R35 honest-decline orientation (ratified, in recipe). 28855+30857 = setback-verify+orientation (R32 passes) → two-blind-measure (real disagreement vs 4th unshared gate).
+- 18 removed parcels: only 3/18 pass as flat-file → the other 15 belong in their DOMINANT-district blocks (GC/MU/RR/IND), graded when those blocks run — not a flat roster.
+- DECISIONS (operator): (a) MERGE the generalized harness + dominant-cohort to main FIRST (reproducibility; it passed the 7/7 regression), then re-warm from on-main. (b) R35 landlocked→honest-decline orientation (ratified). (c) two-blind-measure 28855/30857.
+- DISPATCH: PHASE_C_RESUME_merge_then_rewarm.md.
