@@ -20,7 +20,7 @@ The data was never missing. The full adopted Bastrop BDC 2026 is atomized and re
 
 cortex-api held a 59-char `BRIEF_RETRIEVAL_API_KEY`; retrieval-api expected a 40-char key after its out-of-band `gcloud run deploy --source` redeploy. The cortex-to-retrieval `/search` call 401'd on every property-chat turn; the ldt retrieval path catches the SubstrateRetrievalError into `degradedReasons` and continues with ZERO atoms, no visible error (the recurrence of the key-rotation-on-source-deploy class, and precisely the fail-open masking the 2026-08-01 spine ledger flagged). With an empty numbered-sources block, the LLM either emits no markers or markers that resolve to nothing, and honestly reports the code as "not in current sources."
 
-Fix applied by planner: secret version 2 (the 40-char key, sanity-probed 200 before write) on `BRIEF_RETRIEVAL_API_KEY` in legacy-design-tools-prod; cortex-api pinned to explicit secret version `2` (not `latest`, which is deploy-time-resolved); new revision `cortex-api-00292-cbb` smoke-tested via tag, traffic shifted to 100%, health 200. Operator visual confirm owed: a PRO chat turn on a Bastrop parcel should now return teal atom chips citing BDC sections.
+Fix applied by planner: secret version 2 (the 40-char key, sanity-probed 200 before write) on `BRIEF_RETRIEVAL_API_KEY` in legacy-design-tools-prod; cortex-api pinned to explicit secret version `2` (not `latest`, which is deploy-time-resolved); new revision `cortex-api-00292-cbb` smoke-tested via tag, traffic shifted to 100%, health 200. **OPERATOR-VERIFIED 2026-08-03: atom chips render live in PE chat post-fix.** The end-to-end cited-substrate chain (corpus → /search → chat → teal chips) is confirmed working in production.
 
 ## What IS atomized (live inventory)
 
