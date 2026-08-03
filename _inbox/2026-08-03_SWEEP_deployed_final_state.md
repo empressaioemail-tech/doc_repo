@@ -33,3 +33,9 @@ Deployed from `rebrand/design-sweep` (52611070 + the api-narrowing commits). The
 
 ## NEXT
 Operator re-QA on the complete live state. Then: PR #213 merge decision (retrieval/Phase D window); the flagged follow-ups (chat citations upstream, blue Button variant, hydro decision, ChatTool button migration) as a future polish pass; Bastrop county + Elgin + Smithville (the generalization test) built on the onboard(fips)/registry-cohort foundation Phase D laid.
+
+## UPDATE — blue buttons + one-attribution-place DEPLOYED (rebrand/blue-buttons @ efc5f31)
+Two operator-flagged fixes landed + live-verified on prod (deploy exit-255 was the non-blocking api typecheck; alias went Ready — checked live, not the exit code):
+- ZERO GOLD BUTTONS: Button component reworked to blue-primary (all variants blue/neutral); gold #E8963B now survives ONLY on the SmartSite crosshair mark + SITE wordmark + the PDF print doc. Live bundle: 1 gold ref (the mark), brand-blue button fills present. Operator's "no gold buttons" ratified + shipped.
+- ONE ATTRIBUTION PLACE: the doubled/piled bottom-right attribution fixed. MapLibre AttributionControl now GATED (options.suppressAttributionControl) — PE suppresses it + folds the REQUIRED credits (© OSM © CARTO + the exact SATELLITE_ATTRIBUTION Esri line) into the MapSourceInfo ⓘ "Sources" panel. CC's LiveMapTile does NOT suppress (keeps the control for its required credit) — no CC regression (14/14). Bottom-right now = ⓘ + layers bubbles only, no floating strip. No credit dropped.
+Data intact (34137 atom-chain ok). This is the current live prod. Cross-package handled (gated not deleted). Pre-existing CC tsc errors (jest-dom types) confirmed not introduced.
