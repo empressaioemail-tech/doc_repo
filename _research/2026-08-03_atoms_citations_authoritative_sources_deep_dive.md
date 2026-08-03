@@ -72,7 +72,7 @@ All in ONE Postgres `atoms` table discriminated by `entity_type`, with `atom_lin
 6. Citation determinism: a structured atoms-used signal alongside the prose parse; derive confidence from grounding (retrieval hit strength + atom confidence), not marker survival.
 7. Edition filter: /search excludes superseded editions by default (or carries effective flags); the BDC/B3 mix is a wrong-answer risk on any date-sensitive question.
 8. Route subdivision questions to the county tenant where the subject sits in a city inside that county (server-side, accessPolicy respected).
-9. Ruling owed (operator): consumer-mode citation posture. Hiding [n] clutter from homebuyers is defensible UX, but a 0.5 confidence cap and zero attribution on the default mode sits badly against the quality-gate rule. Options: keep markers server-side and render consumer-friendly chips, or keep the strip but attach the structured sources array regardless (fix 6 enables this).
+9. RULED 2026-08-03 (operator accepted planner recommendation): consumer mode keeps markerless prose but ALWAYS carries the grounding-derived structured sources array; confidence derives from grounding, retiring the 0.75/0.5 marker proxy. Implementation folds into fix 6. Decision record: [`_decisions/2026-08-03_consumer_mode_citation_posture.md`](../_decisions/2026-08-03_consumer_mode_citation_posture.md).
 
 ## Cross-checks that held
 
