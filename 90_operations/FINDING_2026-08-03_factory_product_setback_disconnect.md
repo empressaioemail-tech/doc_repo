@@ -1,41 +1,38 @@
 ---
 id: FINDING_2026-08-03_factory_product_setback_disconnect
-title: FINDING — the certified factory output does NOT reach the customer app; PE serves a stale, mis-keyed, hand-curated setback table instead of the recipe atoms
+title: RETRACTED FINDING — the factory-product setback "disconnect" was WRONG (I graded the wrong endpoint); the certified atoms DO reach the customer. The real residual is warm COVERAGE (GC/MU/RR/PI/IND not yet warmed).
 date: 2026-08-03
-status: FINDING (top factory priority; surfaced by operator live-QA of the Smart Site prod deploy; blocks the meaning of "Bastrop city ready for R6")
+status: RETRACTED (adversarial review refuted the original finding; corrected via live verification 2026-08-03)
 owner: nick
-related: [OPS-WDLL_the_factory, OPS-2_county_onboarding_runbook, OPS-5_cert_standard, 2026-08-02_bastrop_recipe_ACCEPTED, PHASE_C_RESUME_full_sweep_then_blocks, post-mortem-scan-fix-loop-drift]
-purpose: Record, with live evidence, that the Phase C certified recipe atoms (SF-1 1919/1919 blockPass) are NOT what the customer PE app serves. The app serves setbacks+envelope from a stale, mis-keyed, hand-curated JSON table in a different repo. This is the single most important factory finding of the session: four green gates (warm, cert, ledger, deploy) did NOT mean the certified data is live in the app — exactly the drift the WDLL "grade the live app" test exists to catch.
+related: [OPS-WDLL_the_factory, OPS-2_county_onboarding_runbook, 2026-08-02_bastrop_recipe_ACCEPTED, PHASE_C_RESUME_full_sweep_then_blocks]
+purpose: Correct the record. The original finding claimed the certified factory output never reaches the customer app (setbacks served from a stale, mis-keyed, hand-curated table). Adversarial review + live re-verification REFUTED it: I graded the wrong endpoint (the cortex node-facets FALLBACK, intentionally envelope-null) instead of PE's real serve path (property-atoms atom-chain), and read a STALE CLI DOCSTRING as live code. The certified per-parcel setbacks + drawn envelope DO reach the customer for warmed parcels. The real residual is narrower: warm COVERAGE (not every district warmed yet).
 ---
 
-# FINDING — factory output does not reach the customer app (setbacks + envelope)
+# RETRACTED — the setback "disconnect" finding was wrong
 
-## HOW IT SURFACED
-Operator QA'd the Smart Site rebrand on live PE prod (property-explorer-xi.vercel.app) and noticed every parcel shows "Setbacks: not verified here / Buildable: not verified here" — including on SF-1, the block that just passed cert 1919/1919. Branding was clean; the DATA was the finding. This is the WDLL good-vs-bad-run test working: grade the live app, not the agent report.
+## THE RETRACTION
+My original finding (that the certified factory output does not reach the customer app) is WRONG. Two errors:
+1. I QA'd the WRONG ENDPOINT. I curled the cortex node-facets FALLBACK `/api/brokerage/v1/place/node/:id/facets` — which is intentionally envelope-null / baseFacts+landUse+flood only. PE does NOT read that for setbacks/envelope. PE reads its OWN BFF `/api/spine/property-atoms/:id/facets` -> the retrieval ATOM-CHAIN (the recipe atoms).
+2. I read a STALE DOCSTRING as live code. The `nodeFacetBakeTier1Cli.ts:21-23` docstring describes a retired getSetbackTable->mapDistrict->deriveBuildableEnvelope path. The actual live function `computeTier1Envelope` (lib/nodeFacetBakeTier1.ts) unconditionally returns `status:"declined"`, `declineReason:"atom_path_pending"` with the comment "Tier-1 bake no longer authors product envelope confidence (anti-zombie). Read buildable-envelope from the property atom chain, or honest-decline." The table path I described was killed months ago.
 
-## THE THREE LAYERED PROBLEMS (all live-verified)
-1. STALE SERVING SNAPSHOT. The PE app reads node-facets `baked-snapshot` with `snapshotAt/bakedAt: 2026-07-30T03:24` — three days BEFORE the SF-1 warm (2026-08-03 03:19). The warm never re-baked the serving snapshot.
-2. THE SERVE PATH READS A HAND-CURATED TABLE, NOT THE RECIPE ATOMS. The node-facet bake (`legacy-design-tools/artifacts/api-server/src/nodeFacetBakeTier1Cli.ts`) derives setbacks+envelope from `getSetbackTable` -> `mapDistrict` (a hand-curated per-jurisdiction JSON, `lib/adapters/src/local/setbacks/bastrop-tx.json`, "locked decision DA-PI-3", read at server boot) inset by `deriveBuildableEnvelope` with skipRoad=true. It does NOT read the hauska-engine Phase C recipe setback/envelope atoms. The recipe (R1: setbacks from the authoritative per-parcel layer-23 record, NOT a table) and the serve path are UNBRIDGED for setbacks+envelope. The entire certified factory output is invisible to the customer.
-3. EVEN THE TABLE IS MIS-KEYED. `bastrop-tx.json` is keyed on Municode ordinance names (`R-MD Residential Medium Density`, `R-LD`, `R-HD` ...) while the served zoning codes are the layer-23/83 codes (`SF-1`, `GC`, `MU`). `mapDistrict` cannot match "GC" against an "R-HD"-keyed table, so it falls through to `envelope: null`, no setbacks facet. Live proof: 48021:33904 (GC) serves `envelope: null`, `facetCoverage.envelope: false`, no `setbacks` key. So a blind re-bake would STILL show "not verified" — the table path is independently broken.
+## THE LIVE TRUTH (verified 2026-08-03 against property-explorer-xi.vercel.app)
+- PE serve path = `/api/spine/property-atoms/48021:<APN>/facets` -> `source: atom-chain`, `readPath: atom-chain-warm`.
+- SF-1 parcel 34137: zoning SF-1; envelope status OK; setbacks front 25 / side 5 / rear 25 / side_corner 15 (the CERTIFIED SF-1 numbers); buildableAreaSqFt 9350; disclosure "Depth-warm verified envelope from promoted ledger — no live re-derive (27c WDLL 8)." THE RECIPE ATOMS REACH THE CUSTOMER.
+- GC parcel 33904 (the screenshot parcel): envelope status DECLINED, declineReason "setback-rule-pending" ("Setbacks pending re-warm from city per-parcel record"). This is HONEST ABSENCE for a NOT-YET-WARMED parcel (GC block not warmed yet), NOT a broken pipe.
+- The recipe -> depth-warm promoted ledger -> atom-chain -> PE BFF bridge ALREADY EXISTS and is live. The warm store cert grades and the surface the customer reads are the SAME promoted ledger.
 
-## WHAT IS ACTUALLY WORKING (do not over-scope the fix)
-- ZONING: served correctly — the bake reads the `zoning_district` stored column verbatim (33904 serves "GC" with layer-83 provenance). Works.
-- LAND-USE: served correctly — CAD-roll join ("A1 Single-family residential", cad-roll 01.14.2026). Works.
-- BASE FACTS + ACREAGE: served correctly.
-- So the disconnect is SPECIFICALLY setbacks + buildable-envelope. Not zoning, not land-use.
+## WHAT THE SCREENSHOT ACTUALLY SHOWED
+The operator clicked a GC parcel (33904). GC is NOT yet warmed (only SF-1 has passed). So "Setbacks: not verified here" is the CORRECT honest-absence for an unwarmed district — the honesty doctrine working, exactly as designed. It was not evidence of a disconnect.
 
-## WHAT THIS MEANS FOR "BASTROP CITY READY FOR R6"
-The Phase C cert (1919/1919 SF-1 blockPass) is TRUE — but it graded the WARM STORE (hauska-engine atoms), NOT the served snapshot the customer reads. "Bastrop city ready for R6" is therefore NOT true at the customer surface: the certified setbacks/envelope do not reach the app. R6 (operator visual QA in CC) would have caught this too — this is what R6 is for — but it surfaced earlier via the PE prod deploy. The cert gate as written has a hole: it does not grade what the customer sees.
+## THE REAL RESIDUAL (the narrow, true task)
+Not a serve-path rewire. The honest residual is WARM COVERAGE: only SF-1 is warmed; GC/MU/RR/PI/IND are not yet warmed, so their parcels honestly decline. The task is simply COMPLETING THE WARM across the remaining district blocks (already the Phase C plan, PHASE_C_RESUME_full_sweep_then_blocks) — after which those parcels serve certified setbacks the same way SF-1 does now.
 
-## THE ROOT GAP (OPS-2 STAGE 5 + OPS-5 CERT)
-- OPS-2 STAGE 5 (PROMOTE) says "promote to the served ledger; customer reads the promoted ledger." But there are TWO served surfaces: the `county_facet_coverage` LEDGER (CC reads — updated by the warm) and the node-facets `place_layer_snapshots` SNAPSHOT (the PE customer reads — baked from a SEPARATE table, not updated). STAGE 5 updates the ledger but not the customer-serving snapshot, and the snapshot's setback source is not the recipe atoms at all.
-- OPS-5 CERT grades the warm store, not the served snapshot. A jurisdiction can pass cert while the app serves stale/wrong/absent setbacks.
+## WHAT WAS UNSAFE IN THE PROPOSED FIX (do NOT do these)
+- "Wire recipe atoms into the node-facet bake" — UNNECESSARY; the atom-chain path PE uses already does this. Re-plumbing node-facets would build a redundant second envelope path (the exact anti-pattern `atom_path_pending` decline exists to prevent).
+- "Retire bastrop-tx.json as a zombie" — UNSAFE. `getSetbackTable`/`getSetbackTableForZoning` are still live in the `brokeragePlaceBuildableEnvelope` fallback, localSetbacks, the property-brief prose engine, and cad-ingest. The table registry also serves ~20 other jurisdictions NOT on the recipe warm (Austin, Grand, Lemhi, San Marcos, Dripping Springs, Kyle, Buda, Georgetown, Round Rock...). It is a FALLBACK, not a zombie.
 
-## THE FIX (scope — to be spec'd next, per operator "investigate first" then spec)
-1. WIRE STAGE 5: the recipe setback + buildable-envelope atoms (hauska-engine, per-parcel, layer-23-sourced) must become the source the node-facet bake serves — either the bake reads the recipe atoms directly, or the warm promotes per-parcel setback/envelope atoms into the store `nodeFacetBakeTier1Cli` reads (the recipe is PER-PARCEL; the table is per-district — the serving shape must carry per-parcel values, not a district lookup). Preserve the monotonic `shouldPromote` guard and honest-absence.
-2. CERT GRADES THE SERVED SNAPSHOT (OPS-5 / WDLL): the area-sweep must grade the customer-served node-facets, not only the warm store. "Green cert + app shows old/absent setbacks" becomes a NAMED BROKEN state in OPS-WDLL.
-3. RETIRE `bastrop-tx.json` (and the per-district table path) for any jurisdiction the recipe has warmed — it is the pre-recipe, mis-keyed derivation. Add to the ZOMBIE_CODE ledger once the wire lands. (Keep the table only as the honest fallback for jurisdictions NOT yet warmed by the recipe, if that path is still wanted.)
-4. RE-BAKE SF-1 to prod once wired, and verify a KNOWN SF-1 parcel serves the certified per-parcel setbacks + a drawn envelope live (not "not verified").
+## ONE LEGITIMATE HARDENING (the salvageable instinct)
+"Cert should verify at the SERVED PE surface, not only the warm store." Even though the app is NOT broken here (warm store == served ledger for warmed parcels), a cert that ends with a live PE-curl on a sample warmed parcel would prove end-to-end serve, and would have prevented THIS false finding (I'd have curled the right endpoint). Worth adding to OPS-5 as an end-to-end serve assertion — modest, not a rewire.
 
-## DISCIPLINE NOTE (why this is the valuable finding)
-Four green gates — warm OK, cert 1919/1919, ledger 74.22%, deploy READY — and the customer app showed stale/absent data. The benchmark is "is the data TRUE + AVAILABLE in the app" (post-mortem-scan-fix-loop-drift). This finding is the proof that the factory's cert must terminate at the SERVED surface, or the fan will replicate a factory whose certified output never reaches customers. This must be fixed BEFORE the GC/MU/RR/PI/IND blocks are treated as "served," and before the county+cities fan.
+## DISCIPLINE LESSON (the real takeaway)
+The valuable thing here was the ADVERSARIAL REVIEW, which caught a wrong finding before it drove a harmful fix (a redundant serve path + retiring live fallback tables). Verify against the RIGHT live endpoint, and never read a docstring as live code — confirm the actual function body. The operator's mental model ("catch the stale map up to the engine output") was reasonable given the screenshot, but the map is NOT stale for warmed parcels; it's honestly absent for unwarmed ones.
