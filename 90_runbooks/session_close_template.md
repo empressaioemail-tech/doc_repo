@@ -135,6 +135,8 @@ The fleet's L3 retirement rung (per `64_recursive_loop/04_instantiations`): a me
 
 2. TRAP-RECURRENCE QUESTION — "did any recorded trap class recur this session, and which memory should have prevented it?" If a trap recurred, either the memory didn't reach the seat that needed it (a cc-agent-reach gap — embed it in the dispatch) or the memory was wrong (correct it). A recurred trap with an existing memory is a HARMED-memory signal.
 
+3. DIVERGENCE / REBUILD CHECK (the fleet L3 gate, per `_decisions/2026-08-02_operate_the_factory_never_rebuild_it`) — "did any executor this session BUILD NEW machinery when a FROZEN, PROVEN artifact already existed, instead of operating/extending it?" (The 2026-08-02 Phase C incident: the fleet re-built the cohort + cert wrappers instead of running the proven block13 path.) If yes and it was NOT a flagged operator-approved deviation, that is a REJECT-and-redo signal + a coherence-carrier gap (the dispatch should have NAMED the frozen artifact to run). The correction: name the frozen artifacts by path in the next dispatch, and treat "operate/extend the proven artifact" as the default, "build new" as a flagged deviation requiring approval.
+
 Record these in the session summary (Stage 2A). This is a protocol step, not a build — but it is the selection pressure that makes the memory system L3 instead of an ever-growing pile of unverified prose.
 
 ### 2D. Regenerate current-state snapshot
