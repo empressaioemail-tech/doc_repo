@@ -48,5 +48,8 @@ Full ledger: [`_inbox/2026-08-01_spine_health_audit_ledger`](_inbox/2026-08-01_s
 ## 6. DONE THIS SESSION (was captured as owed/held; now landed — for the trail, do not re-open)
 - Mobile PE pass — DONE (#139). · Functional /search alert — DONE (wired). · recipe-version field — DONE (A3). · performance-ledger fields — DONE (A7). · MCP readiness signal — DONE (#55). · MCP health honesty — DONE (#54). · fired/helped/harmed + staleness rungs — DESIGNED-IN (this session). · OZ statewide — DONE (#142). · citations chain — DONE + operator-confirmed.
 
+## 7. ZOMBIE CODE CLEANUP (deferred, tracked)
+- **Dead/divergent/duplicate artifacts to retire** 2014 [`_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger`](_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md). The divergent Phase-C wrappers (bastrop-district-cert-grade, layer23-roster, bbox cohort), the parallel command-center/jade Vercel project, orphaned branches, one-off probes. Cleanup GATE: after the corrected Phase C run lands (don't clean mid-flight). One deliberate PR per repo; grep-verify no references before removing.
+
 ## HOW TO USE THIS
 When you come back: read this index → the top item in the theme you want → open its linked doc for detail. When an item lands, move it to §6 with its PR/commit. This is the one place "what did we say we'd return to" lives; keep it current so it never has to be reconstructed from a chat transcript again.
