@@ -59,3 +59,9 @@ The MapSourceInfo ⓘ bubble is currently ABOVE the layers bubble; the operator 
 
 ## STANDING DECISIONS
 Operate/extend (tokens exist — reference them; don't re-invent). Verification never delegated (planner greps + builds). Anti-fabrication (classify absence-vs-warning honestly; don't recolor a warning to absence for a count). Blue=primary/gold=brand is RATIFIED — apply it, don't re-litigate. Isolated worktree. Merge/deploy only on operator go. No timeframe estimates. Paste raw greps + the coverage map + the surface-by-surface before/after.
+
+## ADDENDUM (operator changed the default-layers decision 2026-08-03)
+NEW default on landing: ALL layers ON EXCEPT zoning/land-use, and INCLUDE aerial/satellite ON (was all-but-aerial; aerial-on is a better first impression). Two touch points:
+1. `consumer-layers.ts` `consumerColdOpenVisible()` — return consumerKnownLayers() MINUS the `zoning` key (zoning initializes OFF/unchecked; keep the toggle). All other layers stay ON.
+2. Satellite/aerial basemap default (separate `useState(false)` in MapToolset.tsx) — flip to ON.
+Net: Satellite/aerial ✓ + all layers ✓ EXCEPT Zoning/land use (off). All toggles preserved. Folded into the design-sweep branch.
