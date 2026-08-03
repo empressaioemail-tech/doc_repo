@@ -1,13 +1,17 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-08-01
+title: Current state snapshot — 2026-08-03
 status: active
-last_updated: 2026-08-01
+last_updated: 2026-08-03
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 75o_site_plan_export_spec, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
 
 # Current state snapshot
+
+## 2026-08-03 — Handoff queue CLOSED: PR #213 merged green + block-13 re-verified 7/7, PE attribution/blue-buttons deployed+verified, OPS-8 corrected to live truth
+
+Execution session (planner + 2 sonnet executors, adversarially verified). **hauska-engine main is green again**: PR #213's branch-introduced typecheck red (StoredAtomInstance union narrowing in `envelope-serve-independent.ts` + r27 test types) fixed with a call-site-verified no-op discriminant guard, CI green on `0de2ec5`, **merged `b120d7d`** — main now carries the R27 warm-decline fix prod retrieval-api had been serving out-of-band (prod still on branch SHA `4cdf607`; type-only delta, next routine deploy restores exact parity). **Block-13 cert re-verified 7/7 by planner-run grade against prod** (Secret-Manager creds, verbatim: `pass 7 / fail 0 / staleResidue 0, blockPass true, CERT-RESTORE ELIGIBLE`) — the handoff's unverified claim is now fact. **PE prod (property-explorer-xi.vercel.app) serves `rebrand/blue-buttons` @ `86ba856`**: always-visible "Imagery: Esri…" strip removed (string now feeds only the collapse-only Sources panel — planner-verified in the live `index-BIDxmHP7.js` bundle), blue primary buttons, zero `var(--brand-gold)` in the bundle. Branch is a verified strict superset of hauska-map main; prod deliberately runs ahead of main (same posture as rebrand/smart-site-combined) — merge PR is a clean pickup. **Docs corrected to live truth**: OPS-8 got a FOUNDATION GAP section (registry has ONE Bastrop-city row; `TODO(onboard-fips)`; no unzoned/no-city-filter schema — prerequisite for the Bastrop County proving ground), an 8th mixed-vintage pre-flight check, a pre-flightability caveat, and the cert-with-declined-core-rail question logged as an UNRULED operator call. **QA-37 filed** (Cortex chat endpoint returns citations inconsistently; PE render path correct — backend fix, not UI). 73_partnerships: ecode360-scraper marked named-not-proven (zero demonstrated ingests; likely the same General Code wall) + stale "Cotality sole spine" corrected to the 2026-07-13 reversal. Session: [`_sessions/2026-08-03_handoff_execution_pr213_pe_deploy_ops8_claude_code.md`](_sessions/2026-08-03_handoff_execution_pr213_pe_deploy_ops8_claude_code.md).
 
 ## 2026-08-01 — SPINE INCIDENT: retrieval-api /search was silently DEAD ~4 days (unbounded SELECT); FIXED + PE citations chain deployed; spine-health audit ledger filed
 
