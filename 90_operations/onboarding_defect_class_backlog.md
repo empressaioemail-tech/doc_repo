@@ -49,6 +49,14 @@ Recon caught that a naive re-bake would silently no-op (descriptorForCounty key 
 2. X-RAY RULE DETAILS: the per-field provenance notes (one-vs-two-story side yards, corner-lot cases, formula rears) must render in the detail/X-ray surface. Scalar shows the modeled minimum; the X-ray tells the whole rule.
 3. FORMAT REFINEMENT (queued): story-aware dual scalars (side_1story/side_2story) — would upgrade Bastrop's table too.
 
+## EDGE-ROLE-MISJUDGED (new class, 2026-08-04, stakeholder-reported) + S4 CLAIM NOTE
+
+| Defect class | Members | Fix that clears the class | Status |
+|---|---|---|---|
+| EDGE-ROLE-MISJUDGED | 48021:80578 (605 Mesquite St), 48021:80577 (607 Mesquite St) — flag lots where the served SIDE setback is in reality the REAR (backing orientation misread); reported by Valerie Thompson with screenshots (property-explorer-qna-issues, 2026-08-03); SAME class family as the Elgin cert residuals (edge-role/inset) — cross-jurisdiction pattern | Edge-role classification for flag/irregular lots needs judgment beyond the current geometry pass; likely rides the Elgin CERT-RESTORE residual work (orientation tokens / edge roles). Flag rail for more of these: OPS-10 | OPEN (first members; OPS-10 v1 will feed this class) |
+
+SESSION-CLAIM NOTE (coordination between the two active planner sessions): the OPS-9 planner session CLAIMS the S4 items "rowId-keyed cohort loader" and "cert-path probe wiring" (executor dispatched 2026-08-04, branch feat/s4-rowid-loader-and-cert-probes) plus "cert-wrapper rowId attribution fix". The Elgin session should NOT build these. Elgin session retains: CERT-RESTORE residuals (orientation/rear/inset), Smithville REASON-OVERSTATES re-word, thin C-2/I/R-4 coverage, Travis sliver.
+
 ## Operating rule
 
 Fix by class, in isolation, off the critical path; re-run the gate after each class fix; a class row moves to CLEARED with the gate-run artifact that proves it. The run never waits on this ledger.
