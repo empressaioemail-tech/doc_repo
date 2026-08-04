@@ -1,13 +1,17 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-08-03
+title: Current state snapshot — 2026-08-04
 status: active
-last_updated: 2026-08-03
+last_updated: 2026-08-04
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 75o_site_plan_export_spec, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
 
 # Current state snapshot
+
+## 2026-08-04 — ELGIN PIPELINE THROUGH WARM: gate 8/8, 1,886 depth-promoted; Bastrop cert holds 7/7; Elgin cert residual queued
+
+Operator-greenlit planner pipeline (composer-2.5-fast executors). **STEP 1** Tier-1 re-bake 48021: Elgin zoning facets 3,762 (Bastrop city 5,773 untouched). **STEP 2** engine #226 Option A (elgin-tx setback alias + per-parcel `elgin_tx` map key) + county bake: 3,762 Elgin zoning-facts with code refs + setbacks + envelopes; stale cascade on Elgin **0** (REASON-OVERSTATES Elgin CLEARED). **STEP 3** re-gate: Bastrop/County/Elgin all **8/8**. **STEP 4** #227 warm+descriptor-cert + #228 OSM ingest (2,356 ways after county-undefined roads blocked adjacency): warm promote **1,886/3,762**; Bastrop block-13 **7/7 CERT-RESTORE ELIGIBLE**; Elgin cert sample 2/10 (orientation-token / rear:0 / inset residuals — queued, not table-value changes). Engine main tip `f90aaf5`. Artifacts under `_inbox/2026-08-04_elgin_*` + `_inbox/2026-08-04_preflight_48021_elgin_regate.json`. Session: [`_sessions/2026-08-04_elgin_pipeline_continuation_claude_code.md`](_sessions/2026-08-04_elgin_pipeline_continuation_claude_code.md). NEXT: Elgin cert residual classes → CERT-RESTORE; Smithville REASON-OVERSTATES re-word; Travis Elgin sliver; PE governed_by display.
 
 ## 2026-08-03 (sixth entry) — CITY CODE-REF CHAIN LIVE (cert 7/7) + ELGIN LANDED TO THE STAMP CHECKPOINT
 
