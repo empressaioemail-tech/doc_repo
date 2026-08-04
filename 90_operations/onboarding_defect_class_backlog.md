@@ -33,6 +33,10 @@ Run artifact: `_inbox/2026-08-03_preflight_48021_full_gate.json`. **Bastrop 8/8.
 | COST-GATE | none yet | per commitment #3, engineering review on any breach | EMPTY |
 | MIXED-VINTAGE | none yet (scan PASSed all rows) | enumerate + re-warm plan before running | EMPTY |
 
+## COUNTY ONBOARDED — 2026-08-03 (the first gate-onboarded jurisdiction, end to end)
+
+Full arc same-day: gate 8/8 → recon (zoning honest-absence layer already baked 2026-07-24; real gap = zero envelope/setback atoms for the 56,488-parcel unincorporated cohort) → contract-shape STOP honored (no fabricated setback-rule atoms; planner ruled envelope-decline-only via the R27 persisted-decline precedent, code `unzoned-no-district-basis`) → engine #222 merged green → cascade run against prod: **scanned 62,260, cascaded 56,488, errors 0** (dry-run predicted the exact count; city cohort untouched, verified live: exactly 5,732 non-cascade envelopes remain) → **county cert 20/20 PASS (all honest-decline, rings resolve), blockPass true** (`_inbox/2026-08-03_county_cert_20of20.json`). Every unincorporated parcel now carries: zoning-fact (named absence) + buildable-envelope (named decline, honest reason string) + terrain/flood serve-time rails; setback-rule legitimately absent by regime. KNOWN TOOLING ARTIFACT on the cert: one scopeAnnotation claims Rail A "not runnable" — the cert script's internal preflight lacks the HTTP probe wiring the standalone gate CLI has; the authoritative full-gate artifact shows Rail A PASS. Queued nit: wire probes into the cert-path preflight. Queued ADR: first-class absence variants for setback-rule/buildable-envelope in @empressaio/atom-contract (tonight used the R27 precedent instead of extending the contract).
+
 ## Operating rule
 
 Fix by class, in isolation, off the critical path; re-run the gate after each class fix; a class row moves to CLEARED with the gate-run artifact that proves it. The run never waits on this ledger.

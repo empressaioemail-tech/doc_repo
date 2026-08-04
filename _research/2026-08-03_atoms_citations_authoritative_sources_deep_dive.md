@@ -74,6 +74,8 @@ All in ONE Postgres `atoms` table discriminated by `entity_type`, with `atom_lin
 8. Route subdivision questions to the county tenant where the subject sits in a city inside that county (server-side, accessPolicy respected).
 9. RULED 2026-08-03 (operator accepted planner recommendation): consumer mode keeps markerless prose but ALWAYS carries the grounding-derived structured sources array; confidence derives from grounding, retiring the 0.75/0.5 marker proxy. Implementation folds into fix 6. Decision record: [`_decisions/2026-08-03_consumer_mode_citation_posture.md`](../_decisions/2026-08-03_consumer_mode_citation_posture.md).
 
+10. QUEUED (planner, 2026-08-03 county run): atom-contract ADR for first-class absence variants on setback-rule and buildable-envelope. The contract requires numeric dimensions on setback-rule with no true absence shape, forcing the county cascade to use the R27 warm-verify-decline precedent instead. The precedent is honest and serves correctly, but absence-as-schema is the durable contract-level expression (peer to zoning-fact's absence.kind).
+
 ## Cross-checks that held
 
 - PE hardcoding `pro` (map reader) resolved the cortex reader's open question; consumer-default was ruled OUT as the screenshot mechanism.
