@@ -42,6 +42,12 @@ Full arc same-day: gate 8/8 → recon (zoning honest-absence layer already baked
 
 Recon caught that a naive re-bake would silently no-op (descriptorForCounty key "breadth_48021" never matches the map's "bastrop_tx" seed — latent bug, FIXED in #223 for future bakes). Executed instead as the repo's established UPDATE-in-place backfill idiom (#223, script with --dry-run/--apply/--revert + drift-pin test): dry-run predicted exactly 5,744 patch / 28 honest-miss (legacy P-codes: P-5 6, P-3 10, P-2 9, P-1/P-4/P-EC 1 each — the 6 still-on-repealed-P-5 parcels are a watch item); apply landed exactly that, 0 errors. Live-verified: gold parcel's atom-chain serves `sourceCodeAtomRef → 14-02-003` + both codeSectionRefs. **Acceptance gate: block-13 cert re-run 7/7 CERT-RESTORE ELIGIBLE post-backfill** (`_inbox/2026-08-03_cert_post_refs_backfill_7of7.log`). The SF-1→district-text chip chain is live end to end (engine refs → atom-chain wire → cortex provenanceRefs → PE chips, all deployed earlier tonight). Operator visual check owed.
 
+## PRODUCT WORK ITEMS FROM THE ELGIN RATIFICATION (2026-08-04, operator directives)
+
+1. GOVERNED-BY RENDERING (PE inspect/X-ray + ldt serve): conditional setback cells now carry machine-readable `governed_by` (added at ratification). Display must show the governing district's values with citations (e.g. C-2 adjacent-to-residential → render C-1's F/S/R with both 46-391 and the C-1 row's citations), or at minimum a live citation to the governing table. Never a bare "not specified" where the governing rule is known.
+2. X-RAY RULE DETAILS: the per-field provenance notes (one-vs-two-story side yards, corner-lot cases, formula rears) must render in the detail/X-ray surface. Scalar shows the modeled minimum; the X-ray tells the whole rule.
+3. FORMAT REFINEMENT (queued): story-aware dual scalars (side_1story/side_2story) — would upgrade Bastrop's table too.
+
 ## Operating rule
 
 Fix by class, in isolation, off the critical path; re-run the gate after each class fix; a class row moves to CLEARED with the gate-run artifact that proves it. The run never waits on this ledger.
