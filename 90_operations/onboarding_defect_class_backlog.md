@@ -15,12 +15,16 @@ The class-grouped half of the OPS-8 dual defect ledger: every pre-flight decline
 
 Run artifact: `_inbox/2026-08-03_preflight_48021_baseline.json`. Verdicts: Bastrop 5/8 PASS, Bastrop County (unincorporated) 5/8 PASS (unzoned regime correctly PASSES zoning as expected honest-absence), Elgin 2/8. Zero mid-run stalls; every gap named up front. The inversion works.
 
+## FULL gate run — fips 48021, 2026-08-03 (all 8 checks live, post-#220)
+
+Run artifact: `_inbox/2026-08-03_preflight_48021_full_gate.json`. **Bastrop 8/8. Bastrop County (unincorporated) 8/8 — EARNS THE RIGHT TO RUN** (first jurisdiction through the full gate; unzoned regime PASS, geometry parity holds on sample, serve-path healthy, cost $14.11 est < $200, superseded 0/5732 with a real denominator). Elgin 5/3, declining only its known ADAPTER-NEEDED + PARCEL-LAYER-UNWIRED classes. Annotations: the fips-wide sample checks (geometry/cost/superseded) are county-sample results for Elgin, not Elgin-specific (it has no parcel rail yet); the 0-superseded count carries a measure-vintage watch (live serve demonstrably honest-declines superseded parcels, so run-time honesty is unaffected). Cert machinery re-proven same run: post-refactor block13-cert-grade reproduces **7/7 CERT-RESTORE ELIGIBLE** (`_inbox/2026-08-03_block13_cert_post_refactor.log`). NEXT: the county warm is now a gate-earned run awaiting operator greenlight (run-what-passes: parcels/terrain/flood rails; zoning/setback honest-absence by regime).
+
 ## Class register
 
 | Defect class | Members (rows) | Fix that clears the class | Status |
 |---|---|---|---|
-| PROBE-UNWIRED (geometry parity, serve-path, cost — reported under GEOMETRY-DIVERGE / SERVE-PATH-UNHEALTHY / COST-GATE with "not runnable: probe not configured") | Bastrop, Bastrop County, Elgin (all rows, all 3 probes) | D5 (`feat/preflight-probes-wired`, in flight 2026-08-03): wires all three probes into the CLI | IN FLIGHT |
-| MEASURE-EMPTY-COHORT (superseded check returned 0/0 = could-not-measure masquerading as PASS) | Bastrop, Bastrop County (Elgin excused: no parcel rail) | D5 addendum: 0-denominator on a wired parcel rail becomes a named DECLINE; measurement path diagnosed | IN FLIGHT |
+| PROBE-UNWIRED (geometry parity, serve-path, cost) | ~~all rows~~ | CLEARED by engine #220 (merged e680dc6 after a #218 revert cycle; src/scripts dependency inverted). Full-gate run 2026-08-03 proves it: geometry parity PASS on sample, serve-path PASS, cost $14.10-14.13 < $200 | CLEARED (`_inbox/2026-08-03_preflight_48021_full_gate.json`) |
+| MEASURE-EMPTY-COHORT (superseded 0/0 false-PASS) | ~~Bastrop, Bastrop County~~ | CLEARED by #220 (query keyed countyFips which never exists on envelope bodies → parcelNodeId LIKE; DECLINE backstop added). Full-gate denominator now real: 0/5732. Residual watch: 0 superseded vs the known live superseded-decline parcels (e.g. 48021:141364) — measure-vintage semantics question, run-time honest-decline unaffected | CLEARED (watch note) |
 | ADAPTER-NEEDED | Elgin (Rail A layer + zoning source both unwired; row flagged ZONING_SOURCE_TODO) | Wire Elgin's Municode-based Rail A source + AGOL/zoning layer into the registry row (Elgin was Sync 4.5-ingested for code atoms — the CODE corpus exists; the PARCEL/zoning rails need sources). One registry-row edit + verification, then re-run the gate | OPEN |
 | PARCEL-LAYER-UNWIRED | Elgin (no railPerParcel) | Same registry-row edit as above (county cadastral + CITY=ELGIN filter, mirroring the Bastrop row's shape) | OPEN |
 | SUPERSEDED-GT3PCT | none yet (first honest measures arrive post-D5) | R15 successor re-key (class-backlog per OPS-8, never a run blocker) | EMPTY |
