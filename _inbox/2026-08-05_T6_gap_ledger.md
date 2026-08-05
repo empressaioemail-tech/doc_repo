@@ -41,8 +41,21 @@ Every jurisdiction with NO viable source for a required rail, with probe evidenc
 
 ## City — code text (sample)
 
-Webberville TX — no live code host (CAPCOG registry gap). Smithville — eCode360 403 friction. ~1,118 cities publisher unknown-needs-probe.
+Webberville TX — no live code host (CAPCOG registry gap). Smithville — eCode360 403 friction. ~1,164 cities publisher unknown-needs-probe (top-59 recon complete per `_inbox/t6_city_code_recon_top50.json`).
+
+## City — operator escalation rows (top-59 recon)
+
+| City | Gap | Publisher track | Evidence |
+|---|---|---|---|
+| Pflugerville | robots-blocked-escalation | eCode360 PF6442 + EncodePlus `/regs/` disallow | `_inbox/t6_city_code_recon_top50.json` |
+| Arlington | general-code partnership | Municode NO-RESULT | same |
+| North Richland Hills | general-code partnership | Municode NO-RESULT | same |
+| Harlingen | general-code partnership | Municode NO-RESULT | same |
+| Cedar Park | eCode360 scraper path | CE6271; ZoningHub not standard REST | same |
+| McAllen | eCode360 scraper path | MC6775 | same |
+
+**Corpus-lane readiness:** 48 Municode cities warmable now; Dallas/FW need AmLegal adapter; Bastrop on self-hosted BDC PDF with verified GIS stack.
 
 ## Pending
 
-242 counties cadastral verification pending regional executor probes (2026-08-05).
+211 counties cadastral verification pending BIS bulk probe (2026-08-05; 34 verified as of last merge).
