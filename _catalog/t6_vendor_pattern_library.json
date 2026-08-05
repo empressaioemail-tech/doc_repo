@@ -1,0 +1,155 @@
+{
+  "schema_version": "t6_vendor_pattern_v1",
+  "generated_at": "2026-08-05",
+  "purpose": "CAD vendor field-shape templates for factory registry-row authoring (T6 deliverable 5)",
+  "patterns": [
+    {
+      "id": "bis-consultants",
+      "label": "BIS Consultants CAD-GIS (ArcGIS Online hosted)",
+      "counties_confirmed": ["48021", "48027", "48187", "48309"],
+      "counties_likely": "100+ Texas CADs use this vendor — search bis_{countycad} ArcGIS Online org",
+      "service_name_pattern": "{County}CADWebService",
+      "host_pattern": "services{N}.arcgis.com/{orgId}/arcgis/rest/services/{County}CADWebService/FeatureServer",
+      "layer_index_rule": "ALWAYS probe layer list — Parcels is usually layer 0 but verify (Caldwell lesson: layer 0 can be MUD)",
+      "field_template": {
+        "objectIdField": "ObjectID_1",
+        "prop_id_primary": {"name": "prop_id", "type": "esriFieldTypeInteger"},
+        "prop_id_mirror": {"name": "prop_id_text", "type": "esriFieldTypeString"},
+        "geo_id": {"name": "geo_id", "type": "esriFieldTypeString", "nullable": true},
+        "owner": "file_as_name",
+        "situs": ["situs_address", "situs_num", "situs_street"],
+        "legal": ["legal_acreage", "legal_desc"],
+        "hood": "hood_cd",
+        "city": "city"
+      },
+      "join_key_default": "prop_id",
+      "max_record_count_default": 2000,
+      "footprint_layer": "ABSENT — 0/11 probed BIS counties have building footprint REST (T3 2026-08-05)",
+      "easement_layers": "McLennan only: layers 9-10 Easement Lines/Text",
+      "defect_classes_likely": ["bis-field-template", "cad-layer-index-unverified", "cad-propid-field-casing"],
+      "probe_checklist": [
+        "Service root ?f=json — list ALL layer names",
+        "Identify Parcels layer by name not index alone",
+        "Field list — record exact prop_id casing",
+        "Sample query with known prop_id from StratMap cohort",
+        "returnCountOnly=true count vs StratMap feature_count"
+      ]
+    },
+    {
+      "id": "county-run-bexar",
+      "label": "County-operated ArcGIS Server (Bexar maps.bexar.org pattern)",
+      "counties_confirmed": ["48029"],
+      "service_pattern": "https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer/0",
+      "field_template": {
+        "objectIdField": "OBJECTID",
+        "prop_id_primary": {"name": "PropID", "type": "esriFieldTypeDouble"},
+        "cad_account": {"name": "AcctNumb", "type": "esriFieldTypeString", "example": "05489-000-0010"}
+      },
+      "join_key_default": "PropID",
+      "note": "Also has ArcGIS Online StratMap repackage — prefer county-run for live cadastral"
+    },
+    {
+      "id": "county-run-williamson",
+      "label": "County GIS daily-updated (gis.wilco.org pattern)",
+      "counties_confirmed": ["48491"],
+      "service_pattern": "https://gis.wilco.org/arcgis/rest/services/public/county_wcad_parcels/MapServer/0",
+      "field_template": {
+        "prop_id_primary": {"name": "PropertyID", "type": "esriFieldTypeString", "note": "integer-shaped string — use NOT PARCELID"},
+        "cad_account": {"name": "PARCELID", "type": "esriFieldTypeString", "example": "R008912"},
+        "alt": "PropertyNumber, LOWPARCELID, QuickRefID"
+      },
+      "join_key_default": "PropertyID",
+      "bulk_also": "Socrata data.texas.gov open-fetch"
+    },
+    {
+      "id": "county-run-travis-tnr",
+      "label": "Travis County TNR monthly TCAD assembly",
+      "counties_confirmed": ["48453"],
+      "service_pattern": "https://gis.traviscountytx.gov/server1/rest/services/Boundaries_and_Jurisdictions/TCAD/MapServer/0",
+      "field_template": {
+        "prop_id_primary": {"name": "PROP_ID", "type": "esriFieldTypeInteger"},
+        "geo_id": {"name": "geo_id", "type": "esriFieldTypeString"}
+      },
+      "join_key_override": "geo_id_or_address_crosswalk",
+      "prop_id_bad_rate": 0.5147,
+      "count_caveat": "Live TCAD MapServer ~386k vs StratMap ~835k — structural divergence unresolved",
+      "defect_classes_likely": ["crosswalk-required", "stratmap-vintage-drift"]
+    },
+    {
+      "id": "county-run-tarrant",
+      "label": "Tarrant Appraisal District (mapit.tarrantcounty.com)",
+      "counties_confirmed": ["48439"],
+      "service_pattern": "https://mapit.tarrantcounty.com/arcgis/rest/services/TADParcels/FeatureServer/0",
+      "field_template": {
+        "note": "Probe layer 0 directly — service root may not enumerate sublayers"
+      },
+      "join_key_default": "prop_id"
+    },
+    {
+      "id": "harris-govern-tnris-repack",
+      "label": "Harris Govern / TNRIS StratMap lineage repackage (stale risk)",
+      "counties_confirmed": ["48091"],
+      "service_pattern": "Comal_County_Parcels FeatureServer layer 40",
+      "field_template": {
+        "prop_id_primary": {"name": "PROP_ID", "type": "esriFieldTypeString"},
+        "geo_id": {"name": "GEO_ID", "type": "esriFieldTypeString"},
+        "fips_field": {"name": "FIPS", "type": "esriFieldTypeString"}
+      },
+      "caveat": "2021 acquisition date in layer metadata — count 11% below StratMap 202503",
+      "defect_classes_likely": ["stratmap-vintage-drift"]
+    },
+    {
+      "id": "caldwell-county-agol",
+      "label": "County-run ArcGIS Online (non-BIS)",
+      "counties_confirmed": ["48055"],
+      "service_pattern": "Caldwell_County_Parcel_Map/FeatureServer/1",
+      "field_template": {
+        "prop_id_primary": {"name": "Prop_ID", "type": "esriFieldTypeInteger", "casing": "PascalCase"}
+      },
+      "layer_trap": "Layer 0 = Municipal Utility Districts; Parcels = layer 1"
+    },
+    {
+      "id": "dcad-bulk-only",
+      "label": "Dallas CAD — bulk zip only, no stable public REST",
+      "counties_confirmed": ["48113"],
+      "access": "Year-versioned certified zip via ViewPDFs proxy (~193MB 2026)",
+      "registry_rail_c": "stratmap_bulk_zip",
+      "cadastral_live": "honestly_absent_rest",
+      "defect_classes_likely": ["no-rest"]
+    },
+    {
+      "id": "rockwall-no-rest",
+      "label": "Portal-only SPA — no public ArcGIS REST (Rockwall-class)",
+      "counties_confirmed": ["48397"],
+      "access": "React portal only; bulk export not found",
+      "cadastral_live": "honestly_absent_rest",
+      "defect_classes_likely": ["no-rest"],
+      "factory_fallback": "stratmap_bulk_zip"
+    },
+    {
+      "id": "hays-not-found",
+      "label": "No public CAD REST located (Hays-class)",
+      "counties_confirmed": ["48209"],
+      "candidates_rejected": [
+        "gis.urbaneng.com HaysCountyParcels/FeatureServer/0 — 2020 static snapshot, thin schema, NOT authoritative"
+      ],
+      "follow_up": "hayscad.com/data-downloads bulk shapefile path",
+      "defect_classes_likely": ["no-rest"]
+    },
+    {
+      "id": "harris-hcad-planning",
+      "label": "Harris County / HCAD — separate planning object",
+      "counties_confirmed": ["48201"],
+      "parcel_count_est": 1500000,
+      "sharding_required": true,
+      "note": "Engine keyspace sharding flag required before ingest; do NOT batch with normal counties"
+    },
+    {
+      "id": "donley-no-stratmap",
+      "label": "Donley — StratMap zip 404, CAD direct required",
+      "counties_confirmed": ["48129"],
+      "geometry_source": "cad_direct_arcgis_rest_or_cad_bulk",
+      "defect_classes_likely": ["no-stratmap"]
+    }
+  ]
+}

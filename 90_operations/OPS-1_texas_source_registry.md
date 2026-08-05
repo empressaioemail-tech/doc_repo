@@ -1,8 +1,8 @@
 ---
 id: OPS-1_texas_source_registry
 title: OPS-1 — Texas Source-of-Truth Registry (the baked-in engine input for L-SOURCE)
-date: 2026-08-02
-status: operations doc (gap-closure: R-FND-2 registry-as-engine-input; supersedes the CAPCOG prototype)
+date: 2026-08-05
+status: operations doc (gap-closure: R-FND-2 registry-as-engine-input; T6 statewide expansion in flight)
 owner: nick
 related: [2026-08-02_DAY_ONE_foundation_brief, 2026-08-02_foundation_ground_truth_ACCEPTED, _land_records/source_rail_registry.md, _catalog/tx_jurisdiction_source_registry.json]
 layer: L-SOURCE
@@ -53,3 +53,46 @@ Per jurisdiction (county + city): fips; jurisdiction_key; per-rail source (url/e
 
 ## PREP-TIME AUTHORING (the agent seam, per R-FND-3)
 Registry rows are authored as PRE-FAN PREP: an agent probes a county's sources, determines the adapter/join/currency, and EMITS registry rows → adversarial review → verified → FROZEN + committed. The warm path never authors; it reads frozen rows. New-county onboarding (OPS-2) begins with authoring + freezing its registry row.
+
+## T6 STATEWIDE ROSTER EXPANSION (2026-08-05 — catch-up program TRACK T6)
+
+Machine-readable roster (registry-row-adjacent schema): `_catalog/texas_roster_v1.json` + CSV mirror. Vendor pattern library: `_catalog/t6_vendor_pattern_library.json`. Ingest wave plan: `_inbox/2026-08-05_T6_ingest_wave_plan.md`. Gap ledger: `_inbox/2026-08-05_T6_gap_ledger.md`.
+
+**Coverage checkpoint (2026-08-05 session):**
+- Counties: 254/254 in roster (zero silent blanks on StratMap Rail C — verified from 2026-08-02 matrix).
+- CAD live four-point probes: 21 verified, 3 partial, 3 honestly absent, 227 pending BIS bulk pass (in flight). Adversarial re-probe: 5/5 REPRODUCED (Bastrop, Caldwell, Travis, Hays, Rockwall).
+- Cities: 1,223 incorporated (Census 2020 place file); top-59 code/zoning recon complete (`_inbox/t6_city_code_recon_top50.json` — Municode 48, eCode360 3, American Legal 2, General Code 3, Houston unzoned verified).
+
+**Verified county CAD services (probe artifacts in `_inbox/t6_cad_probe_{fips}.json`):**
+
+| FIPS | County | Service | Layer | prop_id field | Vendor |
+|---|---|---|---|---|---|
+| 48021 | Bastrop | BastropCADWebService/FeatureServer | 0 | prop_id | bis-consultants |
+| 48055 | Caldwell | Caldwell_County_Parcel_Map/FeatureServer | 1 | Prop_ID | county-run-agol |
+| 48057 | Calhoun | CalhounCADWebService/FeatureServer | 0 | prop_id | bis-consultants |
+| 48063 | Camp | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48071 | Chambers | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48089 | Colorado | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48093 | Comanche | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48099 | Coryell | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48103 | Crane | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48109 | Culberson | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48111 | Dallam | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48117 | Deaf Smith | (probe artifact) | 0 | prop_id | bis-consultants |
+| 48027 | Bell | BellCADWebService/FeatureServer | 0 | prop_id | bis-consultants |
+| 48029 | Bexar | maps.bexar.org/Parcels/MapServer | 0 | PropID | county-run |
+| 48091 | Comal | Comal_County_Parcels/FeatureServer | 40 | PROP_ID | harris-govern-tnris-repack (stale 2021) |
+| 48187 | Guadalupe | GuadalupeCADWebService/FeatureServer | 0 | prop_id | bis-consultants |
+| 48309 | McLennan | McLennanCADWebService/FeatureServer | 0 | prop_id | bis-consultants |
+| 48453 | Travis | TCAD/MapServer | 0 | PROP_ID | county-run-tnr (crosswalk required) |
+| 48491 | Williamson | county_wcad_parcels/MapServer | 0 | PropertyID | county-run |
+
+**Honest-absent county CAD REST:** 48209 Hays, 48397 Rockwall, 48113 Dallas (bulk-only), 48129 Donley (no StratMap either).
+
+**Crosswalk HOLD counties (prop_id_bad_rate ≥ 0.25):** 48453 Travis, 48395 Robertson, 48359 Oldham, 48393 Roberts, 48345 Motley, 48153 Floyd, 48127 Dimmit, 48295 Lipscomb.
+
+**Harris (48201):** separate planning object ~1.5M parcels; sharding required before ingest (T5 track).
+
+**Rails availability (T3 feeds):** footprints default ML-derived statewide; easements county honest-absence except McLennan CAD layers 9-10 and City of Bastrop municipal easements (city row).
+
+**Four-point probe rule (permanent):** service root layer list → parcel-id field + exact casing → one Polygon sample query → feature count + owner/org. Adversarial re-probe mandatory before `verified` status. Rate limit ~2 req/s per host.
