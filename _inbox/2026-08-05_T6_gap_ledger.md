@@ -20,6 +20,22 @@ Every jurisdiction with NO viable source for a required rail, with probe evidenc
 | 48113 | Dallas | Bulk zip only | `_inbox/2026-08-04_dfw_phase0_recon.md` | StratMap + DCAD zip |
 | 48439 | Tarrant | REST 404 on re-probe | `_inbox/t6_cad_probe_48439.json` | StratMap bulk |
 | 48129 | Donley | No StratMap zip | StratMap matrix 2026-08-02 | CAD direct required |
+| 48023 | Baylor | BIS service token-gated (499) | `_inbox/t6_cad_probe_48023.json` | StratMap bulk |
+| 48065 | Carson | BIS service token-gated (499) | `_inbox/t6_cad_probe_48065.json` | StratMap bulk |
+| 48009 | Archer | No public REST | `_inbox/t6_cad_batch_north_tx.json` | StratMap bulk |
+| 48011 | Armstrong | No public REST | `_inbox/t6_cad_batch_north_tx.json` | StratMap bulk |
+| 48045 | Briscoe | No public REST | `_inbox/t6_cad_batch_north_tx.json` | StratMap bulk |
+| 48075 | Childress | No public REST | `_inbox/t6_cad_batch_north_tx.json` | StratMap bulk |
+| 48087 | Collingsworth | No public REST | `_inbox/t6_cad_batch_north_tx.json` | StratMap bulk |
+
+## County — cadastral partial / crosswalk risk
+
+| FIPS | County | Issue | Evidence |
+|---|---|---|---|
+| 48001 | Anderson | Parcels layer **5** (not 0); no `prop_id` — join via `GISLINK`/`GISLINK2` | `_inbox/t6_cad_probe_48001.json` |
+| 48077 | Clay | Layer **21**; count 3,728 vs StratMap 13,521 | `_inbox/t6_cad_probe_48077.json` |
+| 48085 | Collin | Parcels layer **4** (not 0); `PROP_ID` string | `_inbox/t6_cad_probe_48085.json` |
+| 48113 | Dallas | REST verified (693k) but **bulk-primary** per DFW recon | `_inbox/t6_cad_probe_48113.json` |
 
 ## County — geometry Rail C
 
@@ -58,4 +74,4 @@ Webberville TX — no live code host (CAPCOG registry gap). Smithville — eCode
 
 ## Pending
 
-211 counties cadastral verification pending BIS bulk probe (2026-08-05; 34 verified as of last merge).
+70 counties cadastral verification still pending (2026-08-05 post-merge: 161 verified, 21 partial, 2 absent, 235 probed total). North TX batch: `_inbox/t6_cad_batch_north_tx.json` (36 verified, 3 partial, 9 absent).
