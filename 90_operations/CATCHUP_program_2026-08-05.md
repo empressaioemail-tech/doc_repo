@@ -19,6 +19,7 @@ Operator-ratified structure, 2026-08-05: get the data right and everything parke
 | T3 Rails | `T3_rails_track.md` | building footprints + public-utility easements: source recon, contract shape, ingest spec, Bastrop pilot | parallel (read-only recon + spec; pilot ingest coordinates with T1 for DB slot) |
 | T4 Infra | `T4_infra_track.md` | rate limiter WITHOUT Upstash (identifier bug first), then load test (76j C4) | parallel (mcp-server + infra, no atoms DB) |
 | T5 Factory throughput | `T5_factory_throughput_track.md` | keyspace sharding flag, engine #254 adoption, certs (Comal/Williamson/Hays/Bell), Bexar via sharding | parallel for code; its data-runs QUEUE BEHIND T1 in the heavy-scan slot |
+| T6 Texas roster recon | `T6_texas_roster_recon_track.md` | complete 254-county + all-incorporated-cities roster: verified sources (four-point probes, adversarially re-probed), zoning regimes, code-text publishers, join quality, rails availability, risk classes, cost-estimated ingest wave plan, gap ledger, vendor pattern library | fully parallel (READ-ONLY; public sources; no prod writes, no heavy-scan slot) |
 
 ## Model mandate (operator directive 2026-08-05)
 
