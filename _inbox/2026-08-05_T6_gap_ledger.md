@@ -74,4 +74,4 @@ Webberville TX — no live code host (CAPCOG registry gap). Smithville — eCode
 
 ## Pending
 
-70 counties cadastral verification still pending (2026-08-05 post-merge: 161 verified, 21 partial, 2 absent, 235 probed total). North TX batch: `_inbox/t6_cad_batch_north_tx.json` (36 verified, 3 partial, 9 absent).
+**CLOSED 2026-08-05** — BIS bulk probe [26ed74e9](26ed74e9-083b-4f55-b831-2fc9c4bdb106): 253/254 counties probed (48209 Hays via adversarial absent row). Final roster: **173 verified / 22 partial / 59 honestly_absent / 0 pending**. Batch: `_inbox/t6_cad_batch_bis_bulk.json`. Follow-up: 22 partial counties need adversarial pass; 48107 Crosby manual re-probe; 48201 Harris separate HCAD track.

@@ -38,7 +38,12 @@ def merge_cadastral(county: dict, probe: dict | None, adv: dict[str, str]) -> No
     fips = county["fips"]
     if probe and probe.get("service_url"):
         status = probe.get("status", "partial")
-        verification = "verified" if status == "verified" else "partial" if status == "partial" else "unverified"
+        if status in ("verified",):
+            verification = "verified"
+        elif status in ("partial",):
+            verification = "partial"
+        else:
+            verification = "partial"
         if fips in adv and adv[fips] == "REPRODUCED" and verification == "verified":
             verification = "verified"
         elif fips in adv and adv[fips] == "DOWNGRADED":
@@ -54,7 +59,7 @@ def merge_cadastral(county: dict, probe: dict | None, adv: dict[str, str]) -> No
             "service_url": probe["service_url"],
             "layer_id": probe.get("layer_id", 0),
             "prop_id_field": prop_field,
-            "vendor_pattern": probe.get("vendor") or ("bis-consultants" if "CADWebService" in probe.get("service_url", "") else "unknown"),
+            "vendor_pattern": probe.get("vendor") or ("bis-consultants" if "CADWebService" in (probe.get("service_url") or "") else "unknown"),
             "live_feature_count": probe.get("live_feature_count"),
             "verification": verification,
             "evidence": f"_inbox/t6_cad_probe_{fips}.json",
@@ -65,6 +70,17 @@ def merge_cadastral(county: dict, probe: dict | None, adv: dict[str, str]) -> No
             ratio = probe["live_feature_count"] / probe["stratmap_feature_count"]
             if ratio < 0.85 or ratio > 1.15:
                 county["cadastral"]["count_divergence"] = round(ratio, 3)
+    elif probe and probe.get("status") in ("honestly_absent", "honestly_absent_rest", "not_found", "probe_failed"):
+        county["cadastral"] = {
+            "service_url": probe.get("service_url"),
+            "verification": "honestly_absent",
+            "vendor_pattern": probe.get("vendor") or "none",
+            "probe_note": probe.get("probe_note") or probe.get("note") or probe.get("error") or f"status={probe.get('status')}",
+            "evidence": f"_inbox/t6_cad_probe_{fips}.json",
+            "adversarial_verdict": adv.get(fips),
+            "stratmap_fallback": county["geometry"].get("in_stratmap"),
+            "discovery_log": probe.get("discovery_log"),
+        }
     elif fips in HONESTLY_ABSENT:
         ha = HONESTLY_ABSENT[fips]
         county["cadastral"] = {
@@ -72,15 +88,15 @@ def merge_cadastral(county: dict, probe: dict | None, adv: dict[str, str]) -> No
             "verification": "honestly_absent",
             "vendor_pattern": ha["vendor"],
             "probe_note": ha["probe_note"],
-            "evidence": f"_inbox/t6_adversarial_review_{fips}.json" if (INBOX / f"t6_adversarial_review_{fips}.json").exists() else None,
+            "evidence": f"_inbox/t6_adversarial_review_{fips}.json" if (INBOX / f"t6_adversarial_review_{fips}.json").exists() else f"_inbox/t6_cad_probe_{fips}.json" if (INBOX / f"t6_cad_probe_{fips}.json").exists() else None,
             "adversarial_verdict": adv.get(fips),
             "stratmap_fallback": county["geometry"].get("in_stratmap"),
         }
-    elif probe and probe.get("status") == "probe_failed":
+    elif probe:
         county["cadastral"] = {
             "service_url": probe.get("service_url"),
-            "verification": "honestly_absent",
-            "probe_note": probe.get("error") or "Four-point probe failed — no viable parcel layer",
+            "verification": "unverified",
+            "probe_note": f"Unclassified probe status: {probe.get('status')}",
             "evidence": f"_inbox/t6_cad_probe_{fips}.json",
         }
 

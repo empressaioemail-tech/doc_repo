@@ -58,10 +58,11 @@ Registry rows are authored as PRE-FAN PREP: an agent probes a county's sources, 
 
 Machine-readable roster (registry-row-adjacent schema): `_catalog/texas_roster_v1.json` + CSV mirror. Vendor pattern library: `_catalog/t6_vendor_pattern_library.json`. Ingest wave plan: `_inbox/2026-08-05_T6_ingest_wave_plan.md`. Gap ledger: `_inbox/2026-08-05_T6_gap_ledger.md`.
 
-**Coverage checkpoint (2026-08-05 session):**
-- Counties: 254/254 in roster (zero silent blanks on StratMap Rail C — verified from 2026-08-02 matrix).
-- CAD live four-point probes: 21 verified, 3 partial, 3 honestly absent, 227 pending BIS bulk pass (in flight). Adversarial re-probe: 5/5 REPRODUCED (Bastrop, Caldwell, Travis, Hays, Rockwall).
-- Cities: 1,223 incorporated (Census 2020 place file); top-59 code/zoning recon complete (`_inbox/t6_city_code_recon_top50.json` — Municode 48, eCode360 3, American Legal 2, General Code 3, Houston unzoned verified).
+**Coverage checkpoint (2026-08-05 BIS bulk close):**
+- Counties: 254/254 in roster; **253/254 CAD probed** (48209 Hays adversarial absent; 48113 Dallas bulk-primary).
+- CAD live four-point probes: **173 verified, 22 partial, 59 honestly absent, 0 pending**. BIS `{County}CADWebService`: 145 verified; GIS hub fallback: 28 verified. Batch: `_inbox/t6_cad_batch_bis_bulk.json`.
+- Adversarial re-probe sample: 5/5 REPRODUCED (Bastrop, Caldwell, Travis, Hays, Rockwall).
+- Cities: 1,223 incorporated; top-59 code/zoning recon complete.
 
 **Verified county CAD services (probe artifacts in `_inbox/t6_cad_probe_{fips}.json`):**
 
