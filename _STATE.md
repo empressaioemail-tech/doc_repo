@@ -1,6 +1,6 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-07-31 (T-008 Bastrop DTM acquired; T-009 terrain-RGB bake next).
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-05 (DFW parcel tile refresh deployed + live-verified).
 
 ## THE ONE-LINE
 
@@ -21,7 +21,7 @@ BASTROP DOWNTOWN DRILL **36/36 rendered-set sweep PASS** (2026-07-30 CLOSE CLASS
 - retrieval: `hauska-retrieval-api-00030-x7r` @100% (2026-07-31 pedestrian `isPedestrianWay` near-bbox enrichment #197). Prior `00045-yek` (`bdc`) tagged. Project hauska-prod-497015.
 - MCP: `hauska-mcp-server-00034-cr5` @100% (dossier tools; site-plan/terrain 50s/45s timeouts #52).
 - cortex-api: `cortex-api-00446-zij` @100% (WB7a share-dossier; R1 paywall migration 0063). Project legacy-design-tools-prod.
-- CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed 2026-07-31 tip `#129` / `dpl_4vtPwHp6…` — Phase 0A + FEMA severity + road hairline/band + pedestrian overlay). Retrieval carries `isPedestrianWay` enrichment (`00030-x7r`). Basemap Carto dashes = GROUND follow-up (`_inbox/2026-07-31_pedestrian_way_distinction_note.md`). Session close: `_sessions/2026-07-31_C6_map_visual_hierarchy_and_pedestrian_close.md`. NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI (runbook _inbox/2026-07-21).
+- CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed **2026-08-05** DFW parcel tiles `dpl_GPY7mk8bw7vsZtwJvdKaSSjoPQmH` / hauska-map #151 — parcel PMTiles `parcels.3431529a2e8d.pmtiles`, 5.15M features / 19 counties incl 9 DFW; rollback `4af31e1901e2`). Prior PE deploy 2026-07-31 Phase 0A. Retrieval carries `isPedestrianWay` enrichment (`00030-x7r`). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI (runbook _inbox/2026-07-21).
 
 ## WHAT IS DONE + LIVE-VERIFIED
 
@@ -34,6 +34,15 @@ BASTROP DOWNTOWN DRILL **36/36 rendered-set sweep PASS** (2026-07-30 CLOSE CLASS
 - Recipe generalizes: Caldwell #2 (7 held / 1 new-baked). Recipe-proof track CLOSED.
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
+
+### SPINE-LEDGER REMAINING FIXES — HANDBACK (2026-08-01) — PLANNER MERGE/DEPLOY OWED
+
+Coordinator handback: `_inbox/2026-08-01_spine_ledger_remaining_fixes_HANDBACK.md`. Monitoring draft (not applied): `_inbox/2026-08-01_spine_ledger_monitoring_draft.md`. Four PRs open, CI green on HEAD, coordinator-verified; **no merges/deploys/traffic/monitoring-apply by coordinator**.
+- Lane 1 MCP `/health/ready`: hauska-mcp-server [#55](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/55) @ `457e26d`
+- Lane 2 cortex functional health: LDT [#371](https://github.com/empressaioemail-tech/legacy-design-tools/pull/371) @ `cdf44f18`
+- Lane 3 substrate fail-closed observable: LDT [#372](https://github.com/empressaioemail-tech/legacy-design-tools/pull/372) @ `b175a0e9`
+- Lane 4 SmartCity empty-success + scraper health: smartcity-os [#32](https://github.com/empressaioemail-tech/smartcity-os/pull/32) @ `65eae19`
+Pre-deploy live: MCP `/health/ready` 404; cortex `/api/health/ready` SPA HTML catch-all; scraper `/health` IAM 403; dark projects still 0 uptime/policies/channels.
 
 ### ⚠ CROSS-SEAT HAZARD — PE PR #118 WOULD REVERT THE FLOOD OVERLAY (flagged 2026-07-30 by the hydro seat)
 
