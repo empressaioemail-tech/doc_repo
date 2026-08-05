@@ -19,4 +19,5 @@
 - Adversarial review [e68f737d](e68f737d-b550-4024-b77f-89b5ea959184): 5/5 REPRODUCED
 - City code recon [82a9f3b2](82a9f3b2-a67c-43fe-bba9-fb17c251bbb3): top-59 merged
 - North TX CAD probe [fd834d81](fd834d81-f27d-4eea-960c-8184c2a07c0f): batch merged
-- BIS bulk CAD probe [26ed74e9](26ed74e9-083b-4f55-b831-2fc9c4bdb106): **253/254 probed, 173v/22p/59a/0 pending** — roster + gap ledger updated; merge script fixed for honestly_absent status
+- BIS bulk CAD probe [26ed74e9](26ed74e9-083b-4f55-b831-2fc9c4bdb106): **253/254 probed, 173v/22p/59a/0 pending** — final roster state
+- Central TX CAD probe [387a0942](387a0942-182f-499c-8d48-9b37ebb40a08): superseded by BIS bulk final merge; batch artifact `_inbox/t6_cad_batch_central_tx.json` kept as provenance (Hardeman 48197 false-positive 2.1M count corrected to honestly_absent in bulk pass)

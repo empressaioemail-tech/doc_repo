@@ -49,7 +49,7 @@ Every jurisdiction with NO viable source for a required rail, with probe evidenc
 
 ## County — planning
 
-48201 Harris — sharding required (~1.5M parcels).
+48201 Harris — sharding required (~1.5M parcels total; StratMap zip is **east shard only** — 536,512 features per `stratmap25-landparcels_48201_harris_east_202508`). HCAD direct REST (`arcgis-web.hcad.org`) unreachable from probe network; bulk/certified roll path. Central TX recon: `_inbox/t6_cad_batch_central_tx.json`.
 
 ## Rails — footprints/easements statewide
 
