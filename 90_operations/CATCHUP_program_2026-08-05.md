@@ -20,6 +20,10 @@ Operator-ratified structure, 2026-08-05: get the data right and everything parke
 | T4 Infra | `T4_infra_track.md` | rate limiter WITHOUT Upstash (identifier bug first), then load test (76j C4) | parallel (mcp-server + infra, no atoms DB) |
 | T5 Factory throughput | `T5_factory_throughput_track.md` | keyspace sharding flag, engine #254 adoption, certs (Comal/Williamson/Hays/Bell), Bexar via sharding | parallel for code; its data-runs QUEUE BEHIND T1 in the heavy-scan slot |
 
+## Model mandate (operator directive 2026-08-05)
+
+Every track planner AND every executor it dispatches runs on CURSOR-hosted models only (per the HR-12 fleet default: Grok Build 0.1 agentic / grok-code-fast-1 for speed) — NOT OpenAI or Anthropic models — to consume the operator's Cursor usage credits. Bake this line into every executor dispatch. The doc_repo master planner session is the standing exception.
+
 ## Coordination rules (bind every track)
 
 1. HEAVY-SCAN SLOT: one heavy scan/bake on the atoms Neon at a time. T1 holds the slot; T5/T3 data-runs reserve it through the master planner. Light reads/certs/sweeps are exempt.
@@ -27,6 +31,7 @@ Operator-ratified structure, 2026-08-05: get the data right and everything parke
 3. Every merge gates on the CI conclusion STRING. Every data-run: dry-run first, apply must match exactly, regression gate (block13 or track-named equivalent), ledger POST. Artifacts UTF-8 to _inbox.
 4. NO city/relationship dependencies. Public-record acquisition only. Honest absence where the record does not resolve.
 5. Track close = master planner verifies acceptance against live state (never the track's own report alone), then flips the track's rows in `QUEUE_parked_work_index.md`.
+6. PERMANENCE RULE: nothing closes as a one-off. Every fix/standard a track establishes must land in the permanent operating docs before track close — warm-time gates and area-sweep certs into `OPS-5_cert_standard.md` + the factory runbook; new rails into the county recipe; Warden checks into the Warden section; process rules into the runbook. Program close includes a master-planner consolidation pass confirming the runbook/OPS docs fully describe the upgraded factory, so future counties get the improved machine by default and no re-comb is ever needed.
 
 ## Parked-work index
 

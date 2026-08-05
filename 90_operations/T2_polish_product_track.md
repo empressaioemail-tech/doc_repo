@@ -17,7 +17,8 @@ Mission: every visual/product polish item done in parallel with the data work. N
 3. REBRAND SET: favicon to Smart Site crosshairs, title, landing, copy (deferred set from the 2026-08-03 rebrand deploy).
 4. PDF SMART SITE BRANDING: Smart Site mark on the site-plan/brief PDF templates per REBRAND_UI_citations_and_pdf.md surface map.
 5. PAYWALL E2E SUPPORT: when the operator runs the four E2E actions (unlock price secret, dev-role grant, promo E2E, claim smoke), fix anything that fails same-pass; re-grade the paywall WDLL items 1-3, 8.
-6. DOMAIN ATTACH: when the operator purchases the Smart Site domain, attach as Vercel custom domain + verify; until then this item stays parked.
+6. PRODUCT-SURFACE SMOKE SUITE (recalibration item 4, pulled in): a small, runnable check-set over the live product — card vs sheet setback consistency on N random certified parcels, envelope-render sanity, export text integrity (rides workstream 1's regression test), chat citation-chip relevance spot checks, /search probes. The goal: operator screenshots stop being the first detector. Wire it as a repeatable script + runbook entry, not a one-time pass.
+7. DOMAIN ATTACH: when the operator purchases the Smart Site domain, attach as Vercel custom domain + verify; until then this item stays parked.
 
 ## Discipline
 
