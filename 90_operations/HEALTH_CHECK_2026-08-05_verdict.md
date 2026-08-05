@@ -57,7 +57,7 @@ Twelve same-block SF-1 parcels serve identical, correct setback RULES but wildly
 3. Roster-wide stamp under-coverage sizing — post-centroid-fix dry-runs across every ZONING_LAYERS city; each city's would-stamp count is its historical under-coverage. Potentially the largest accuracy item on the board. OWNER: factory lane.
 4. ENVELOPE-BEHIND-STAMP enumeration + re-warm (stamped-but-unwarmed city parcels; folds into item 1's re-warm if cohorts overlap). 
 5. Mesquite flag-lot side/rear misread — needs flag-lot orientation judgment (OPS-10 family), explicitly NOT fixed by #255.
-6. Bastrop 7 zoning-coverage-gap parcels — city follow-up (Sylvia channel).
+6. Bastrop 7 zoning-coverage-gap parcels — OPERATOR RULING 2026-08-05: NO city dependencies at any level; resolve from public record only (newer published zoning layers/editions) or serve honest no-district-on-record. T1 workstream 5.
 7. 48021:29431 dup-geometry (R15 parcel-currency handling) + 3 Caldwell CAD-vintage-drift parcels.
 8. Caldwell county cohort-loader-zero (loader query vs its layer; certs unaffected).
 9. Rate-limiter identifier bug (zero 429s even in-memory) — fix BEFORE trusting any Upstash burst proof.
@@ -73,7 +73,11 @@ Polish (parked, not ranked): pedestrian-path style (blue/brighter/dots), favicon
 4. Product-surface smoke suite so operator testing stops being the first detector (screenshots found what instruments missed, twice).
 5. Instruments got materially better this wave (Warden v1.1, honest sampling, calibrated cost gate) — keep investing there; every latent bug found this wave was found by an instrument or an operator, never by luck.
 
-## Restart order (proposed, catch-up-before-scale per operator ruling)
+## EXECUTION PROGRAM (supersedes the restart-order list below; operator-directed deepening 2026-08-05)
+
+The restart order was expanded into a five-track parallel program with per-track reference docs and hand-carried planner prompts: `CATCHUP_program_2026-08-05.md` (master; coordination rules, heavy-scan slot, claims) with tracks `T1_data_accuracy_track.md`, `T2_polish_product_track.md`, `T3_rails_track.md` (footprints + easements, re-prioritized to now), `T4_infra_track.md` (rate limiting WITHOUT Upstash per operator ruling; options analysis inside), `T5_factory_throughput_track.md` (sharding, #254, certs, Bexar). T2/T3/T4 run fully parallel with the data work; T1 owns the atoms-DB heavy-scan slot; T5 code is parallel and its data-runs queue behind T1. The parked-work queue of record is `QUEUE_parked_work_index.md` — every track item is a row there; post-program parked items are listed in the master doc.
+
+## Restart order (original proposal, superseded by the track program above)
 
 1. City envelope re-warm (lead exhibit) as the incremental-rewarm proving run + Warden v1.2 envelope-sanity check.
 2. Propagation bake (40) + Bastrop warden re-verify (~9 expected findings).
