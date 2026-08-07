@@ -27,6 +27,10 @@ Independent from-scratch checker (zero engine code; own point-in-polygon, per-ed
 7. COORDINATE-KEYED REFERENCES: cross-frame/cross-agent geometry references are keyed by vertex coordinates, never indices (three index/frame bugs this saga).
 8. STORE-TRUTH SIZING: cohort operations size from the authoritative store at execution time (already runbook law; reaffirmed).
 
+## OPERATOR CLOSE — 2026-08-07
+
+Operator visually verified ALL TWELVE on the live product, including 31317 after its scoped corner-frontage reopen (engine #275, merged a1989d0: same-street bent-frontage corner semantics; the operator's eye overruled an auditor interpretive excuse and exposed a real labeling defect — the fourth judge earned its gate). Final tally: engine harness 12/12, master planner's naive instrument 12/12, independent auditor 12/12, OPERATOR 12/12. The envelope saga is closed by unanimous measurement.
+
 ## Consequences for the paused program
 
 The Bastrop city cohort (~2,026) and Elgin (~1,977) re-persist MUST run through the bde34ed pipeline (their stored envelopes predate the frame laws; the operator twelve demonstrate the fix). The re-warm may also RECOVER buildable area on parcels the old core falsely emptied (many-collinear-vertex shapes). PARCEL-RING-SOURCE-DIVERGENCE observations feed R15 parcel-currency. The cert lane's historical BCAD grading frame is a NAMED OPEN ITEM: reconcile cert frame with the serve-consistency law before the next county cert wave. Operator visual re-QA of the twelve is the final human gate before the cohort planner is dispatched.
