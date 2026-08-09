@@ -1,10 +1,47 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-05 (DFW parcel tile refresh deployed + live-verified).
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-08 (statewide pivot: canon corrected, L2 unblocked, Rail 1 anchored, wave plan running).
 
 ## THE ONE-LINE
 
-BASTROP DOWNTOWN DRILL **36/36 rendered-set sweep PASS** (2026-07-30 CLOSE CLASS). **Phase 0A visual hierarchy + FEMA/road/pedestrian polish CLOSED** (hauska-map #122–#129; engine #197; PE tip `dpl_4vtPwHp6…`). **BLOCK-13 CERT RESTORED 2026-07-31** — both gates passed: mechanical 7/7 (R32 engine-frame per-edge measurement + road-node front-orientation, cert script `packages/engine-core/scripts/block13-cert-grade.mjs`) + operator R6 live block-QA. Cert audit `_inbox/2026-07-31_BASTROP_BLOCK13_CERT_RESTORED.md` (supersedes revoked 2026-07-30 cert). CTX/national still HELD.
+**Texas is 0.0365 percent complete — one measured cell out of 3,302 — and that is the first honest number this program has had.** The County Manifest went live on the Command Center, then was found to be measuring a definition rather than a finding: the headline read 4.76 percent, of which 4.723 came from a single doctrine string applied identically to all 254 counties. Corrected 2026-08-08 (ldt #395). Every gain from here measures against a floor that means something.
+
+## WHERE THE PROGRAM IS
+
+The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md`): lay the statewide-uniform layers across all of Texas first, then backfill jurisdiction-specific rails into a framework that already has shape. Nine counties were completed jurisdiction-first and 245 were not; the statewide layer inventory found why — NOTHING was statewide-complete, and every layer held was either per-parcel on-demand or per-city hand-scripted. The machine was built to enrich one parcel at a time.
+
+| Layer | State |
+|---|---|
+| L0 seam reconciliation | mechanical, deferred to read time (the tile bucketing IS the spatial index) |
+| L1 city + county boundaries | **DONE, LIVE** — 1,222 city + 254 county polygons |
+| L2 parcel geometry, 235 counties | **UNBLOCKED. Kenedy 48261 proven end to end and live in production. Wave plan running.** |
+| L3 roads statewide | largest new build; needs a way-to-county resolver that does not exist. Overpass OOMs on a bare statewide count; Geofabrik `texas-latest.osm.pbf` (713 MB) is the path |
+| L4 FEMA NFHL | ldt #398 open — `NFHL_48_20260101.zip`, 1.81 GB, one file, ships EPSG:4269 |
+| L4 SSURGO | weakest link; no working gSSURGO bulk URL found |
+| L4 topo | 251 tiles / 64.3 GB via USGS 3DEP; existing pipeline is AOI-scoped and would silently produce a Central-Texas mosaic |
+| PMTiles bake | after L2 |
+
+**THE UNBUILT JOINT — the most important open item.** There are two factories. The statewide factory produces the fabric; the jurisdiction factory (proven, nine jurisdictions certified, block13 held 7/7 through the envelope saga) backfills it. `parcel-node` is the intended seam — contract 1.13.0 published, engine registration merged (#282) — but **nothing writes it**. Consequence: L2 could acquire all 235 counties and the manifest would still read 0.0365 percent. Loading geometry fills `txgio_parcel`; the manifest reads atoms.
+
+## LIVE NUMBERS (verified 2026-08-08; re-verify before quoting)
+
+- **Texas completeness 0.0365 percent.** 3,302 manifest cells: no-atom 2,540, not-yet 489, no-writer 254, satisfied-present 19 (18 of those PARTIAL, contributing zero). One satisfied cell: Bastrop zoning at 99.77 percent coverage.
+- **Parcel store:** 19 counties + Kenedy = 20 loaded. 5,535,897 rows / 4,617,181 true distinct parcels statewide-over-20. Measured **1,124.6 bytes/row**. Projected statewide DB 35 to 37 GB — sizing is a non-issue.
+- **Tile duplication 6.95 percent** (not the 16.6 previously carried). Metro seam factor 1.07; **rural measured 4.46** on Kenedy, so storage projections derived from metro counties are light by roughly 4x on ranch counties.
+- **Source availability:** 253 of 254 StratMap URLs live; Donley 48129 is a 404 and needs a source decision. 4.256 GB for the 235 unloaded. 177 are degree-vintage and ingestible today; **57 are 202505 and ship EPSG:3857**, requiring `--reproject=3857` passed deliberately.
+- **Contract `@empressaio/atom-contract@1.13.0`** live on npm (`parcel-node` family). Engine registers 7 property types (was 4): added `parcel-node`, `building-footprint`, `utility-easement`.
+
+## GOVERNANCE — the canon gate is LIVE
+
+`.claude/hooks/canon-gate.ps1` on the `Agent|Write` matcher blocks (a) dispatches into repos marked retiring or no-touch, and (b) dispatches missing the hash-pinned `CANON-PREAMBLE` marker, with paste-ready text in the block message. Regenerate after editing the standing decisions below: `node P:/doc_repo/scripts/dispatch-preamble.mjs`.
+
+Built because `_catalog/repo_intents.md` went 35 days stale while legacy-design-tools took 387 commits and became the factory repo, and the master planner dispatched ten new database tables into a repo the canon declared retiring. **legacy-design-tools is now ruled the FACTORY REPO** (`_decisions/2026-08-08_ldt_is_the_factory_repo.md`); only the root SPA and the Cortex console still retire.
+
+Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-shaped 0-for-3.** The session-close grading rung ran 0 of 215 sessions and was DELETED rather than repaired, replaced with a grep-able `memory_graded:` frontmatter field.
+
+## PRIOR HEADLINE (superseded, kept for continuity)
+
+**T1 cohort re-persist (2026-08-08):** Recovery re-pair DONE @ `dba7a82`. Apply promoted 1668; block13 7/7, saga twelve 12/12. The "extended parity 2438 == 1668 + 770" framing is RETRACTED — it is arithmetically true but diagnostically empty (`computePassNotPersisted` is defined as the residual), and the pre-fix dry leg was inflated by the 472 parcels the apply refused. The `!dryRun` compute fork that caused it is CLOSED (engine #279): dry-run now predicts apply for the first time in this program. Elgin still queued.
 
 ## STANDING DECISIONS (these govern every dispatch — paste into fresh-agent handoffs)
 
@@ -17,11 +54,11 @@ BASTROP DOWNTOWN DRILL **36/36 rendered-set sweep PASS** (2026-07-30 CLOSE CLASS
 
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
-- engine-api: `hauska-engine-api-00152-nuz` @100% tag `bdc-downtown` (#189 R5 geometry gate + scrub + warm fixes; image `…/hauska-engine-api:bdc-downtown-20260730-1315`). Prior: `00150-dak` @0%. Project hauska-prod-497015.
-- retrieval: `hauska-retrieval-api-00030-x7r` @100% (2026-07-31 pedestrian `isPedestrianWay` near-bbox enrichment #197). Prior `00045-yek` (`bdc`) tagged. Project hauska-prod-497015.
-- MCP: `hauska-mcp-server-00034-cr5` @100% (dossier tools; site-plan/terrain 50s/45s timeouts #52).
-- cortex-api: `cortex-api-00446-zij` @100% (WB7a share-dossier; R1 paywall migration 0063). Project legacy-design-tools-prod.
-- CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed **2026-08-05** DFW parcel tiles `dpl_GPY7mk8bw7vsZtwJvdKaSSjoPQmH` / hauska-map #151 — parcel PMTiles `parcels.3431529a2e8d.pmtiles`, 5.15M features / 19 counties incl 9 DFW; rollback `4af31e1901e2`). Prior PE deploy 2026-07-31 Phase 0A. Retrieval carries `isPedestrianWay` enrichment (`00030-x7r`). NOTE: Vercel does NOT auto-deploy on merge — deploy via CLI (runbook _inbox/2026-07-21).
+- engine-api: `hauska-engine-api-00174-zus` @100% tag `ws1-serve-truth-12` (T1 WS1 2026-08-06: #265 + stale-edge retire + export R28/R30 guard for depth-warm edges; twelve re-persist 12/12 serveTruthOk; image `ws1-serve-truth-12`; `/health` verified). Prior `00171-vol` tag `ws1-fd91b54`. Project hauska-prod-497015.
+- retrieval: `hauska-retrieval-api-00059-lir` @100% tag `pooling-fix` (76j C2: Neon `DATABASE_URL`+`CORTEX_DATABASE_URL` moved to pooled host; `/health/search` functional probe + Bearer auth both verified post-shift). Prior serving was `00034-gmd` tag `canary2` (2026-07-31 pedestrian `isPedestrianWay` enrichment #197 landed further back, at `00030-x7r` — also stale before this session). Project hauska-prod-497015.
+- MCP: `hauska-mcp-server-00040-ctj` @100% tag `postgres-limiter` (T4 catch-up 2026-08-05: Postgres `ResilientRateLimitStore` PR #58 @ `b5f26de`; `/health` `rate_limit_store.state=ok`, `detail=postgres`; migration `010_rate_limit_counters` applied). Prior `00050-fej` tag `ratelimit-smoke` (fail-loud degraded mode PR #57). Project hauska-prod-497015.
+- cortex-api: `cortex-api-00485-huz` @100% tag `canary` (T4 catch-up 2026-08-05: `CORTEX_USER_DAILY_API_LIMIT=10000` via LDT #388 @ `b1ef76de`; posture doc `90_operations/T4_cross_service_limiter_posture.md`). Prior `00483-peg` (76j A paywall). Project legacy-design-tools-prod.
+- CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed **2026-08-06 T2 WS2 reopen** pedestrian v2 `586ef16` / bundle `index-C1Sc6_H7.js` — `#8fd0ff`, opacity 0.9, larger dots; prior T2 `index-h2GW8147.js`). Deploy from hauska-map ROOT linked to Vercel project `property-explorer`. NOTE: Vercel does NOT auto-deploy on merge.
 
 ## WHAT IS DONE + LIVE-VERIFIED
 
@@ -35,7 +72,11 @@ BASTROP DOWNTOWN DRILL **36/36 rendered-set sweep PASS** (2026-07-30 CLOSE CLASS
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
 
-### SPINE-LEDGER REMAINING FIXES — HANDBACK (2026-08-01) — PLANNER MERGE/DEPLOY OWED
+### T3 RAILS — FOOTPRINTS + EASEMENTS (2026-08-05 track close — spec DONE, live BLOCKED)
+
+Catch-up program T3 executed end-to-end for recon/spec/recipe/Phase 2 plan. Close report: `_inbox/2026-08-05_T3_track_close_report.md`. **Key finding:** BCAD operator-visible "footprints" are EagleView ortho + CAMA tabular sqft, not public vector REST; **0/11** onboarded counties have CAD footprint layers — Microsoft Global ML fallback is the default rail (`sourceTier=ml-derived`). Easements: county **honest-absence** everywhere except McLennan CAD easement linework (44k/16k); City of Bastrop municipal easements (148 polys) for city limits only. **ADR-029 ACCEPTED** (`_decisions/2026-08-05_adr029_rails_rulings.md`). **Slot-independent build DONE** (`_inbox/2026-08-05_T3_unblock_build_status.md`): contract **merged main** PR #11 (`335a462`); **npm publish 1.12.0 HELD** — ADR-028 field groups not in published lineage (`_inbox/2026-08-05_T3_adr028_publish_gate_verdict.md`); engine apply mint + retrieval chain on `feat/t3-footprint-easement-overlays`; PE overlays + BFF facets on branches (PRs pending). **Apply BLOCKED:** Slot 1/48021 granted but queued behind T1 WS1 — wait for explicit slot release; `--apply` fail-closed on `T3_SLOT_RELEASED=1`. **Next:** open/merge engine+map+ldt PRs, resolve ADR-028 publish gate, full-county dry-run, then pilot apply → Jones/Higgins cert.
+
+### SPINE-LEDGER REMAINING FIXES — HANDBACK (2026-08-01) — PLANNER MERGE/DEPLOY OWNED
 
 Coordinator handback: `_inbox/2026-08-01_spine_ledger_remaining_fixes_HANDBACK.md`. Monitoring draft (not applied): `_inbox/2026-08-01_spine_ledger_monitoring_draft.md`. Four PRs open, CI green on HEAD, coordinator-verified; **no merges/deploys/traffic/monitoring-apply by coordinator**.
 - Lane 1 MCP `/health/ready`: hauska-mcp-server [#55](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/55) @ `457e26d`

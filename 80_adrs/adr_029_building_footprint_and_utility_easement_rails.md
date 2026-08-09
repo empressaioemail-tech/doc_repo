@@ -1,7 +1,7 @@
 ---
 id: adr_029_building_footprint_and_utility_easement_rails
 title: ADR-029 — Building footprint and utility easement site-layer rails
-status: proposed
+status: accepted
 last_updated: 2026-08-05
 applies_to: portfolio
 related: [adr_008_engine_factor_out, adr_018_atom_contract_substrate_layer, adr_020_recorded_instruments_and_restriction_clauses, adr_021_constraint_resolution_and_precedence, adr_028_contract_cross_vertical_adoption, 27_engine_evolution_plan, 40_hauska_map_3d_implementation_brief, 46_smartcity_parcel_intelligence, 56_engine_extraction_sprint, 90_operations/T3_rails_track]
@@ -28,7 +28,7 @@ Both rails need a contract shape keyed to `parcelNodeId`, honest source tiering 
 
 | Existing type | Covers footprint/easement? | Why not reuse |
 |---|---|---|
-| `parcel-record` | Parcel boundary only (`geometry` = lot polygon) | Legal lot boundary is not improvement geometry; multiple structures per parcel; independent source vintage |
+| `parcel-node` | Parcel identity and ring provenance; geometry by REFERENCE to `txgio_parcel`, not carried on the atom | Legal lot boundary is not improvement geometry; multiple structures per parcel; independent source vintage |
 | `property-boundary-edge` | Lot-line topology for setbacks | Edge atoms, not closed improvement polygons |
 | `constraint-overlay` | Regulatory overlays (FEMA, habitat, zoning overlay districts) | ADR-020 rejected encumbrances-as-overlay; easements are property rights, not adopted regulatory law |
 | `recorded-instrument` + `restriction-clause` (ADR-020) | Easement as `instrumentType: easement` with optional spatial `constrains` | Requires `sourceDocumentCid` (wet PDF); default tenant-private; title/OCR ingest path, not bulk county GIS |
@@ -91,7 +91,7 @@ When the source registry records no published footprint layer for a jurisdiction
 
 **Graph:**
 
-- `parcel-record` / place node ← `improvement-on` — `building-footprint`
+- `parcel-node` / place node ← `improvement-on` — `building-footprint`
 - `buildable-envelope` MAY reference footprint atoms via `inputAtoms` when computing developable gap (future site-plan coherence; not required for v1 registration)
 
 **Identity:**
@@ -150,7 +150,9 @@ ADR-020 remains authoritative for **private title-track encumbrances** (CC&Rs, d
 
 ## Alternatives considered
 
-**Extend `parcel-record.extantImprovements` with footprint polygon.** Rejected. Collapses improvement geometry into the anchor atom; loses per-structure provenance, multi-footprint cardinality, and independent refresh cadence.
+**Extend the parcel anchor (`parcel-node`) with a footprint polygon.** Rejected. Collapses improvement geometry into the anchor atom; loses per-structure provenance, multi-footprint cardinality, and independent refresh cadence. The rejection is now doubly correct: as shipped in contract 1.13.0, `parcel-node` carries NO geometry at all — its `geometryStoreRef` is a `.strict()` pointer to `txgio_parcel`, so an inlined ring is a parse error (Geometry Law rule 1, one ring per parcel).
+
+**CORRECTION 2026-08-08.** This ADR originally named a type called `parcel-record` at three points (the reuse table, the graph, and this alternative). No such type ever existed in any contract or engine version — it was a phantom, and it was described as carrying `geometry` = lot polygon, which the real anchor deliberately does not. The entity it reached for is `parcel-node`, published in `@empressaio/atom-contract@1.13.0` and registered in the engine 2026-08-08. All three references are corrected above. See `_inbox/2026-08-08_ATOM_families_ten_rail_spec.md` and `_inbox/2026-08-08_CONTRACT_coherence_audit.md`.
 
 **Store footprints as `constraint-overlay` with `overlayType: building-footprint`.** Rejected. Overloads regulatory overlay semantics; footprints are observed improvements, not adopted constraints.
 
