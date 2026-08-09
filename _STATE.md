@@ -97,10 +97,11 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 
 | PR | State | What it is |
 |---|---|---|
-| eng **#287** | **CI RED** | Unified city-batch warm runner. Typecheck now clean (`e9cb140` fixed duplicate `WarmRunner*` exports). **The TEST gate fails on its OWN prior commit `9040c45`**, which replaced `depth-warm-bastrop-batch.mjs` and `depth-warm-elgin-batch.mjs` with retirement stubs — while two test suites assert against those files' SOURCE TEXT. Rewrite them against `depth-warm-city-batch.mjs`; do NOT delete, they pin the `!dryRun` fork and bulk-acquisition guards. **THIS BLOCKS ELGIN.** |
-| ldt **#403** | **OPEN** (typecheck follow-up pushed `915d5ea8`) | NFHL backpressure fix; table already loaded to 198,178. |
-| ldt **#393** | **CI RED** | Observability tables (`rail_state_history`, `rail_verification`, run-state, cost metering). Red FIVE times on a `socket hang up` in `lib/portal-ui` — unrelated to its content; its own fixture test passes throughout. Judge on the evidence rather than re-rolling. |
-| map **#118** | unknown | PE corner side interior/corner split. Pre-existing, older program. |
+| eng **#287** | **MERGED 2026-08-09T18:09Z** (`41cfdb4c`, cleanup lane B) | Unified city-batch warm runner. F3/Elgin unblocked; Elgin still owes parcel-node anchors + unified dry-run before apply. |
+| ldt **#404** | **MERGED 2026-08-09T18:05Z** (cleanup lane A) | Multi-shapefile fail-closed reader. |
+| ldt **#403** | OPEN, CI green | NFHL backpressure fix; table already loaded to 198,178. |
+| ldt **#393** | **CI RED — ON ITS OWN TEST** (audit 2026-08-09 corrected the earlier "unrelated flake" story): `manifestObservability.test.ts` "ctx.schema not set" + schema-fixture drift. Needs a real fix, never a rerun-merge. Cleanup lane A owns it. | Observability tables (`rail_state_history`, `rail_verification`, run-state, cost metering). Named dependency of OPS-14 standing-factory cost gates. |
+| map **#118** | OPEN, NO CI checks, CONFLICTING | Revert hazard (would resurrect pre-#113 flood overlay). Cleanup lane C owns rebase-or-close. |
 
 **MERGED 2026-08-09 after the last close:** eng #289 (contract-shaped envelope absence, 1.15.0), #290 (pyosmium PBF worker), #291 (writers for cad-parcel-roll / land-use-fact / flood-hazard-fact), ldt #401 (geometry rail scorer), #402 (decline defective features with identity), map #156 (absenceBasis rendered). Contract `@empressaio/atom-contract@1.15.0` published — merge-then-tag, after a 1.14.0 tag was pushed from an unmerged branch and npm ran ahead of trunk for hours.
 
