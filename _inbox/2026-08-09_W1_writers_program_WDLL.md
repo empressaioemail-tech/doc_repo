@@ -1,7 +1,7 @@
 # WDLL: W1 writers program (the launch-gate ceiling breaker)
 
-Date: 2026-08-09  Status: draft
-Operator approval: pending
+Date: 2026-08-09  Status: approved
+Operator approval: 2026-08-09 (card frozen; changes are amendments from here)
 Governs: OPS-14 workstream W1. Executing brief: Handoff D (dispatched 2026-08-09); D-lane numbers map to acceptance items below. Adversarial review is in-process per OPS-14 dispatch model: every item's evidence includes both reviewer artifacts (post-build and post-apply), never the builder's word alone.
 
 ## Done looks like

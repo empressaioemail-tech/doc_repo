@@ -1,7 +1,7 @@
 # WDLL: W5 depth-factory program (divide and conquer; the engine that outlives Texas)
 
-Date: 2026-08-09  Status: draft
-Operator approval: pending
+Date: 2026-08-09  Status: approved
+Operator approval: 2026-08-09 (card frozen; changes are amendments from here). Amendment 2026-08-09: item 1's "commit and push the scraper branch" precondition was resolved differently by live truth: origin/main already carries the full ecode360-scraper adapter and the local branch is 185 commits behind with no unique delta; branch recorded superseded, work proceeds from main. E-lane close grades: E1 partial (corpus PASS, stamp honest-absent), E2 pass (35 registry rows tranche 1), E3 correctly blocked (zero 48021 parcel-node anchors; runner behaved correctly).
 Governs: OPS-14 workstream W5. Executing brief: Handoff E (dispatched 2026-08-09); E-lane numbers map to acceptance items below. Operator intent on record: not a slow crawl but multiple factory programs running in parallel on the frozen wave machinery, attention-free, because Texas is one of fifty and depth per parcel is what makes the product real.
 
 ## Done looks like
