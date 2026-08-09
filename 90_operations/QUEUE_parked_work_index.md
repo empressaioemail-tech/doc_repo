@@ -97,6 +97,15 @@ Wave plan at `_inbox/2026-08-08_L2_wave_plan.md`; proof at `_inbox/2026-08-08_L2
 | Command Center panel owes two renders: `absenceBasis` (API serves it, panel ignores it) and `isPartial: true` distinctly from fully-satisfied (a consumer reading bare `displayState` misreads partial as done) | ldt #395 close notes | hauska-map lane |
 | Multi-state recipe doc — classify each layer FEDERAL (free reuse) / STATE-PUBLISHED (find the equivalent agency) / ABSENT-AT-STATE-LEVEL (falls through to per-county). The reusable asset is that taxonomy, NOT the TxGIO adapter | memory `statewide-and-jurisdiction-factory-seam` | ONLY after the Texas path succeeds end to end. Documenting an unrun process is the mistake this program just spent a day correcting |
 
+### Memory system (audited 2026-08-08, repaired 2026-08-09)
+
+| Item | Detail | Trigger |
+|---|---|---|
+| **The memory store is NOT version controlled.** `C:\Users\cente\.claude\projects\p--doc-repo\memory\` holds 90 files of institutional memory with no git history, no backup, and no way to recover a bad edit or an accidental deletion. The doc repo tracks decisions; the memory store tracks the operating lessons, and it is the less protected of the two | verified 2026-08-09 | **do this before it bites** — even a periodic snapshot into doc_repo would be enough |
+| **Five Cotality orphans REPAIRED 2026-08-09.** De-indexed from `MEMORY.md` but left intact on disk, so they were invisible to an index scan and fully visible to semantic search. `regrid-purged-cotality-sole-spine.md` still asserted "Cotality is the sole parcel and property data spine" in its description field, four weeks after extinction — that is how a dead vendor resurfaced in planning on 2026-08-08. All five now carry a retirement block | memory audit `_inbox/2026-08-08_MEMORY_system_audit.md` | DONE — but the LESSON generalizes: de-indexing is not retirement |
+| Memory files carry no `created` or `last_fired` field; only 18 of 86 carried any in-file date at audit time. A memory cannot be aged out or graded for dead weight if its own age is unrecorded | memory audit | schema addition; pairs with the grading-rung replacement |
+| Stale memories still owed a refresh: `sdk-metering-seam-unwired` (the fix SHIPPED; only the un-built CI dep-test remains true), `mcp-rate-limit-upstash-dead` (replaced by the Postgres store, PR #58), `bastrop-county-cities-scope` (says "Smithville next"; Smithville went live 2026-08-04) | memory audit | memory refresh pass |
+
 ### Canon enforcement (build rules) — designed 2026-08-08, hook viability PROVEN
 
 Design at `_inbox/2026-08-08_BUILD_RULES_canon_enforcement.md`. The reframing finding: **doc_repo has NO CI and NO git hooks** (verified: no `.github/`, no active `.git/hooks/`), so every mechanism previously specified as "a CI check" carried an unpaid prerequisite. What DOES work is the PreToolUse hook in `.claude/settings.json` — `branch-guard.ps1`, wired 2026-05-16, never disabled. Measured base rate: **hook-shaped controls 1-for-1; protocol-step-shaped controls 0-for-3** (grading rung 0/214 sessions, dispatch template frozen 73 days, FLEET-L3-GAP carrier unbuilt).
