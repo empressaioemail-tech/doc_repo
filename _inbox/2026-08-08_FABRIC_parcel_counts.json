@@ -1,0 +1,1624 @@
+{
+  "title": "Statewide parcel fabric: true parcel counts, duplication classes, corrected acreage, coverage",
+  "date": "2026-08-08",
+  "status": "analysis",
+  "accessMode": "READ-ONLY SELECT only; no writes, no DDL, no data-run",
+  "companionNarrative": "_inbox/2026-08-08_FABRIC_statewide_parcel_analysis.md",
+  "source": {
+    "database": "txgio_parcel (legacy-design-tools-prod Neon, secret DEPLOYMENT_DATABASE_URL)",
+    "primaryKey": "PRIMARY KEY (county_fips, tile_key, feature_index)",
+    "otherIndexes": [
+      "txgio_parcel_prop_idx btree (county_fips, prop_id) -- NON-unique",
+      "txgio_parcel_situs_norm_idx"
+    ],
+    "uniqueConstraintsOtherThanPk": "none",
+    "postgisAvailable": false,
+    "extensionsInstalled": [
+      "plpgsql",
+      "vector"
+    ],
+    "areaMeasure": "WGS84 bounding-box rectangle acres from the precomputed west_lng/south_lat/east_lng/north_lat columns; 1 deg lat ~ 364000 ft, 1 deg lng ~ 364000*cos(lat) ft, 43560 sqft/acre. This is an UPPER BOUND on true polygon area and is the ONLY area measure available in this store: there is no PostGIS, no ST_Area, and no source acreage column in the schema.",
+    "queryDate": "2026-08-08"
+  },
+  "identityKey": {
+    "chosen": "(county_fips, md5(geometry::text))",
+    "rationale": "Verified statewide that (county_fips, feature_index) never maps to more than one geometry, prop_id, or owner_name -- 0 violations across 5,151,394 features -- so it is a SAFE feature key. But feature_index is itself inflated in some counties: Travis 48453 has 423,540 feature_index values under sentinel prop_id '0' that collapse to just 590 distinct geometries. Geometry identity is therefore the tightest defensible parcel key available in this store.",
+    "rejectedKeys": {
+      "prop_id": "non-unique: 4,508 real prop_ids map to 2+ distinct geometries; a further 13,137 parcels carry NULL or sentinel prop_id",
+      "feature_index": "safe as a FEATURE key (0 conflicts) but over-counts parcels where the source stamps many accounts onto one polygon",
+      "geo_id": "unusable: entirely absent (0 distinct values) in Tarrant 48439, Dallas 48113, and Williamson 48491"
+    }
+  },
+  "statewide": {
+    "rows": 5535897,
+    "distinctFeatureIndex": 5151394,
+    "trueParcels": 4617181,
+    "seamDuplicateRows": 384503,
+    "polygonWithHoles": 10926,
+    "multiPolygonMultiPart": 6220,
+    "parcelsNullPropId": 2522,
+    "parcelsSentinelPropId": 10615,
+    "collidingPropIds": 4508,
+    "parcelsUnderCollidingPropIds": 15900,
+    "totalBboxAcres": 20418115.89,
+    "multiPartBboxAcres": 2558186.66,
+    "multiPartPctByCount": 0.3714,
+    "multiPartPctByAcreage": 12.529
+  },
+  "duplicationClasses": {
+    "a_tileSeamDuplicates": {
+      "excessRows": 384503,
+      "pctOfAllRows": 6.9456,
+      "featuresAffected": 334638,
+      "mechanism": "A feature whose bbox touches N tiles of the 0.02-degree grid is stored N times, WHOLE and IDENTICAL: same feature_index, byte-identical geometry, identical bbox, identical attributes. It is a replication, not a split.",
+      "verified": "0 of 334,638 tile-spanning features have more than one distinct geometry hash or more than one distinct bbox",
+      "maxTilesForOneFeature": 180
+    },
+    "b_genuinePropIdCollisions": {
+      "collidingPropIds": 4508,
+      "parcelsInvolved": 15900,
+      "excessBeyondOnePerPropId": 11392,
+      "parcelsWithSentinelPropId": 10615,
+      "parcelsWithNullPropId": 2522,
+      "maxDistinctGeometriesUnderOnePropId": 2187,
+      "tarrantA36_1Correction": "The reported characterization is WRONG in its mechanism. Tarrant 'A 36-1' has 532 rows = 133 distinct feature_index x 4 tiles. All 532 rows carry ONE identical geometry hash and ONE identical bbox. It is 133 leasehold/improvement ACCOUNTS on a single DFW Airport polygon, not 133 parcels and not a seam artifact. It is the INVERSE problem (class N5): one parcel, many accounts."
+    },
+    "c_genuineMultiPartSingleParcels": {
+      "multiPolygonParcels": 6220,
+      "multiPolygonWithClean1to1PropId": 6090,
+      "multiPolygonWithSharedPropId": 84,
+      "polygonWithInteriorRings": 10926,
+      "totalMultiPart": 17146,
+      "singlePartMultiPolygonsAfterDedup": 0,
+      "note": "After de-duplication there are ZERO single-part MultiPolygons statewide. Every MultiPolygon is genuinely multi-part. The prior artifact's third classification branch (single-part MultiPolygon with holes) matches nothing.",
+      "partCountDistribution": {
+        "2": 5212,
+        "3": 598,
+        "4": 203,
+        "5": 82,
+        "6": 46,
+        "7": 13,
+        "8": 10,
+        "9": 13,
+        "10": 9,
+        "tail_max": 54
+      },
+      "ringCountDistributionPolygon": {
+        "2": 9241,
+        "3": 811,
+        "4": 280,
+        "5": 160,
+        "6": 82,
+        "7": 81,
+        "8": 58
+      }
+    }
+  },
+  "correctedAcreage": {
+    "priorArtifact": {
+      "file": "_inbox/2026-08-08_multipart_acreage_weighted_measurement.json",
+      "pctByCount": 0.7436,
+      "pctByAcreage": 59.6949,
+      "totalBboxAcres": 146904868.7,
+      "multiPartCount": 41166,
+      "reproduced": true,
+      "reproductionNote": "A row-based (no de-duplication) re-run reproduces 0.7436 percent / 59.6949 percent / 146,904,868.70 acres / 41,166 EXACTLY, which confirms the prior artifact counted ROWS, not parcels."
+    },
+    "corrected": {
+      "pctByCount": 0.3714,
+      "pctByAcreage": 12.529,
+      "totalBboxAcres": 20418115.89,
+      "multiPartBboxAcres": 2558186.66,
+      "multiPartParcels": 17146,
+      "parcelDenominator": 4617181
+    },
+    "movement": {
+      "acreagePctBefore": 59.6949,
+      "acreagePctAfter": 12.529,
+      "absolutePercentagePointDrop": 47.1659,
+      "relativeFactor": 4.76,
+      "countPctBefore": 0.7436,
+      "countPctAfter": 0.3714,
+      "totalAcreageInflationFactor": 7.19,
+      "cause": "The duplication is CORRELATED with the variable being measured. A large multi-part parcel spans more of the 0.02-degree grid, so it is replicated into more tiles, so its acreage is counted more times. The three most-duplicated geometries alone contributed roughly 67.4 million spurious acres, about 46 percent of the prior 146.9 million total."
+    },
+    "skewAfterCorrection": 33.7,
+    "skewBeforeCorrection": 80.3,
+    "interpretation": "The DIRECTION of the prior finding survives: multi-part parcels are still over-represented by acreage by roughly 34x relative to their count share. The MAGNITUDE does not: 12.53 percent of statewide bbox acreage, not 59.69 percent. The claim that 'fail-closed declines 60 percent of the state's acreage' is not supported by de-duplicated data; the correct figure is about 12.5 percent, and that is itself an upper bound because bbox overstates irregular multi-part shapes more than compact ones."
+  },
+  "seamReconciliation": {
+    "verdict": "a_mechanical_and_safe",
+    "findings": [
+      "The pieces are not pieces. Every tile-touching row carries the COMPLETE geometry, byte-identical (equal md5 of geometry::text).",
+      "All duplicate rows share county_fips, feature_index, prop_id, owner_name, situs_address, and all four bbox columns.",
+      "tile_key parses as 'g0.02:<west_lng>,<south_lat>' -- a regular 0.02-degree grid, fully derivable into a grid position.",
+      "Tile membership is exactly predicted by the bbox: 500 of 500 sampled Bastrop tile-spanning features had n_tiles == (floor(east_lng/0.02)-floor(west_lng/0.02)+1)*(floor(north_lat/0.02)-floor(south_lat/0.02)+1), with 0 mismatches.",
+      "There is no gap and no overlap to reconcile, because no geometry is ever cut at a tile boundary. Reconciliation is a DISTINCT ON, not a geometric union."
+    ],
+    "recommendedOperation": "SELECT DISTINCT ON (county_fips, feature_index) ... FROM txgio_parcel ORDER BY county_fips, feature_index, tile_key",
+    "namedEdgeCases": [
+      "None for the seam operation itself (0 violations statewide).",
+      "Separate, non-seam concern: geometry-keyed de-duplication additionally collapses class N5 (many accounts on one identical polygon). If account multiplicity matters downstream, de-duplicate on feature_index for features and keep the account rows alongside."
+    ]
+  },
+  "nodeIdentityAmbiguityClasses": [
+    {
+      "class": "N1_clean",
+      "description": "{county_fips}:{prop_id} maps to exactly one geometry",
+      "parcels": 4588144,
+      "pctOfParcels": 99.3712,
+      "ambiguous": false
+    },
+    {
+      "class": "N2_sentinel_propid",
+      "description": "prop_id is '0', empty string, or '-1' -- a placeholder, not an account number. Travis 48453 stamps 590 real polygons with utility and personal-property accounts (Atmos Energy, Collings Guitars) all under prop_id '0'; Parker 48367 is worst at 5,049 parcels. The parcel is real; the identifier is not.",
+      "parcels": 10615,
+      "ambiguous": true
+    },
+    {
+      "class": "N3_null_propid",
+      "description": "prop_id IS NULL. Concentrated in Johnson 48251 (1,175) and Parker 48367 (1,018).",
+      "parcels": 2522,
+      "ambiguous": true
+    },
+    {
+      "class": "N4_propid_multiple_geometries",
+      "description": "One real prop_id maps to two or more distinct geometries. Sub-cause NOT separated by this analysis: could be genuine disjoint tracts the source recorded as separate features rather than one MultiPolygon (the shapefile multipart-versus-multifeature ambiguity), or genuinely different parcels sharing an account.",
+      "collidingPropIds": 4508,
+      "parcels": 15900,
+      "maxGeometriesUnderOnePropId": 2187,
+      "ambiguous": true
+    },
+    {
+      "class": "N5_one_geometry_many_accounts",
+      "description": "One identical polygon carried by many rows with different owner_name and situs_address -- leasehold, condo, improvement, or personal-property stacking. Tarrant 'A 36-1' is 133 accounts on one DFW Airport polygon. This is the INVERSE ambiguity: identity COLLAPSES rather than splits, and geometry-keyed de-duplication silently discards the account multiplicity.",
+      "exampleCountyFips": "48439",
+      "examplePropId": "A 36-1",
+      "accountsOnOnePolygon": 133,
+      "rowsForThatPropId": 532,
+      "distinctGeometriesForThatPropId": 1,
+      "ambiguous": true
+    },
+    {
+      "class": "N6_multipart_geometry",
+      "description": "MultiPolygon: one parcel node with disjoint parts. The operator has ruled ONE NODE with multi-part geometry, so this is not an identity ambiguity; listed for completeness of the fabric contract.",
+      "parcels": 6220,
+      "ambiguous": false
+    }
+  ],
+  "coverage": {
+    "texasCountiesTotal": 254,
+    "countiesWithRows": 19,
+    "countiesWithNoRows": 235,
+    "pctCountiesCovered": 7.48,
+    "pctParcelsOfEstimatedStatewide": "not determinable from this store; no statewide parcel-count reference exists here",
+    "present": [
+      {
+        "countyFips": "48453",
+        "countyName": "Travis",
+        "rows": 894657,
+        "trueParcels": 382279
+      },
+      {
+        "countyFips": "48439",
+        "countyName": "Tarrant",
+        "rows": 799524,
+        "trueParcels": 689845
+      },
+      {
+        "countyFips": "48029",
+        "countyName": "Bexar",
+        "rows": 747206,
+        "trueParcels": 708864
+      },
+      {
+        "countyFips": "48113",
+        "countyName": "Dallas",
+        "rows": 726360,
+        "trueParcels": 694156
+      },
+      {
+        "countyFips": "48085",
+        "countyName": "Collin",
+        "rows": 408681,
+        "trueParcels": 387103
+      },
+      {
+        "countyFips": "48121",
+        "countyName": "Denton",
+        "rows": 373635,
+        "trueParcels": 352415
+      },
+      {
+        "countyFips": "48491",
+        "countyName": "Williamson",
+        "rows": 304298,
+        "trueParcels": 282862
+      },
+      {
+        "countyFips": "48027",
+        "countyName": "Bell",
+        "rows": 184470,
+        "trueParcels": 167368
+      },
+      {
+        "countyFips": "48209",
+        "countyName": "Hays",
+        "rows": 131734,
+        "trueParcels": 114140
+      },
+      {
+        "countyFips": "48309",
+        "countyName": "McLennan",
+        "rows": 130650,
+        "trueParcels": 115327
+      },
+      {
+        "countyFips": "48367",
+        "countyName": "Parker",
+        "rows": 118833,
+        "trueParcels": 90025
+      },
+      {
+        "countyFips": "48091",
+        "countyName": "Comal",
+        "rows": 114430,
+        "trueParcels": 103537
+      },
+      {
+        "countyFips": "48251",
+        "countyName": "Johnson",
+        "rows": 113686,
+        "trueParcels": 100957
+      },
+      {
+        "countyFips": "48139",
+        "countyName": "Ellis",
+        "rows": 111274,
+        "trueParcels": 98375
+      },
+      {
+        "countyFips": "48187",
+        "countyName": "Guadalupe",
+        "rows": 106508,
+        "trueParcels": 94203
+      },
+      {
+        "countyFips": "48257",
+        "countyName": "Kaufman",
+        "rows": 106175,
+        "trueParcels": 94635
+      },
+      {
+        "countyFips": "48021",
+        "countyName": "Bastrop",
+        "rows": 74729,
+        "trueParcels": 62963
+      },
+      {
+        "countyFips": "48397",
+        "countyName": "Rockwall",
+        "rows": 56266,
+        "trueParcels": 52550
+      },
+      {
+        "countyFips": "48055",
+        "countyName": "Caldwell",
+        "rows": 32781,
+        "trueParcels": 25577
+      }
+    ],
+    "absent": [
+      {
+        "countyFips": "48001",
+        "countyName": "Anderson"
+      },
+      {
+        "countyFips": "48003",
+        "countyName": "Andrews"
+      },
+      {
+        "countyFips": "48005",
+        "countyName": "Angelina"
+      },
+      {
+        "countyFips": "48007",
+        "countyName": "Aransas"
+      },
+      {
+        "countyFips": "48009",
+        "countyName": "Archer"
+      },
+      {
+        "countyFips": "48011",
+        "countyName": "Armstrong"
+      },
+      {
+        "countyFips": "48013",
+        "countyName": "Atascosa"
+      },
+      {
+        "countyFips": "48015",
+        "countyName": "Austin"
+      },
+      {
+        "countyFips": "48017",
+        "countyName": "Bailey"
+      },
+      {
+        "countyFips": "48019",
+        "countyName": "Bandera"
+      },
+      {
+        "countyFips": "48023",
+        "countyName": "Baylor"
+      },
+      {
+        "countyFips": "48025",
+        "countyName": "Bee"
+      },
+      {
+        "countyFips": "48031",
+        "countyName": "Blanco"
+      },
+      {
+        "countyFips": "48033",
+        "countyName": "Borden"
+      },
+      {
+        "countyFips": "48035",
+        "countyName": "Bosque"
+      },
+      {
+        "countyFips": "48037",
+        "countyName": "Bowie"
+      },
+      {
+        "countyFips": "48039",
+        "countyName": "Brazoria"
+      },
+      {
+        "countyFips": "48041",
+        "countyName": "Brazos"
+      },
+      {
+        "countyFips": "48043",
+        "countyName": "Brewster"
+      },
+      {
+        "countyFips": "48045",
+        "countyName": "Briscoe"
+      },
+      {
+        "countyFips": "48047",
+        "countyName": "Brooks"
+      },
+      {
+        "countyFips": "48049",
+        "countyName": "Brown"
+      },
+      {
+        "countyFips": "48051",
+        "countyName": "Burleson"
+      },
+      {
+        "countyFips": "48053",
+        "countyName": "Burnet"
+      },
+      {
+        "countyFips": "48057",
+        "countyName": "Calhoun"
+      },
+      {
+        "countyFips": "48059",
+        "countyName": "Callahan"
+      },
+      {
+        "countyFips": "48061",
+        "countyName": "Cameron"
+      },
+      {
+        "countyFips": "48063",
+        "countyName": "Camp"
+      },
+      {
+        "countyFips": "48065",
+        "countyName": "Carson"
+      },
+      {
+        "countyFips": "48067",
+        "countyName": "Cass"
+      },
+      {
+        "countyFips": "48069",
+        "countyName": "Castro"
+      },
+      {
+        "countyFips": "48071",
+        "countyName": "Chambers"
+      },
+      {
+        "countyFips": "48073",
+        "countyName": "Cherokee"
+      },
+      {
+        "countyFips": "48075",
+        "countyName": "Childress"
+      },
+      {
+        "countyFips": "48077",
+        "countyName": "Clay"
+      },
+      {
+        "countyFips": "48079",
+        "countyName": "Cochran"
+      },
+      {
+        "countyFips": "48081",
+        "countyName": "Coke"
+      },
+      {
+        "countyFips": "48083",
+        "countyName": "Coleman"
+      },
+      {
+        "countyFips": "48087",
+        "countyName": "Collingsworth"
+      },
+      {
+        "countyFips": "48089",
+        "countyName": "Colorado"
+      },
+      {
+        "countyFips": "48093",
+        "countyName": "Comanche"
+      },
+      {
+        "countyFips": "48095",
+        "countyName": "Concho"
+      },
+      {
+        "countyFips": "48097",
+        "countyName": "Cooke"
+      },
+      {
+        "countyFips": "48099",
+        "countyName": "Coryell"
+      },
+      {
+        "countyFips": "48101",
+        "countyName": "Cottle"
+      },
+      {
+        "countyFips": "48103",
+        "countyName": "Crane"
+      },
+      {
+        "countyFips": "48105",
+        "countyName": "Crockett"
+      },
+      {
+        "countyFips": "48107",
+        "countyName": "Crosby"
+      },
+      {
+        "countyFips": "48109",
+        "countyName": "Culberson"
+      },
+      {
+        "countyFips": "48111",
+        "countyName": "Dallam"
+      },
+      {
+        "countyFips": "48115",
+        "countyName": "Dawson"
+      },
+      {
+        "countyFips": "48117",
+        "countyName": "Deaf Smith"
+      },
+      {
+        "countyFips": "48119",
+        "countyName": "Delta"
+      },
+      {
+        "countyFips": "48123",
+        "countyName": "DeWitt"
+      },
+      {
+        "countyFips": "48125",
+        "countyName": "Dickens"
+      },
+      {
+        "countyFips": "48127",
+        "countyName": "Dimmit"
+      },
+      {
+        "countyFips": "48129",
+        "countyName": "Donley"
+      },
+      {
+        "countyFips": "48131",
+        "countyName": "Duval"
+      },
+      {
+        "countyFips": "48133",
+        "countyName": "Eastland"
+      },
+      {
+        "countyFips": "48135",
+        "countyName": "Ector"
+      },
+      {
+        "countyFips": "48137",
+        "countyName": "Edwards"
+      },
+      {
+        "countyFips": "48141",
+        "countyName": "El Paso"
+      },
+      {
+        "countyFips": "48143",
+        "countyName": "Erath"
+      },
+      {
+        "countyFips": "48145",
+        "countyName": "Falls"
+      },
+      {
+        "countyFips": "48147",
+        "countyName": "Fannin"
+      },
+      {
+        "countyFips": "48149",
+        "countyName": "Fayette"
+      },
+      {
+        "countyFips": "48151",
+        "countyName": "Fisher"
+      },
+      {
+        "countyFips": "48153",
+        "countyName": "Floyd"
+      },
+      {
+        "countyFips": "48155",
+        "countyName": "Foard"
+      },
+      {
+        "countyFips": "48157",
+        "countyName": "Fort Bend"
+      },
+      {
+        "countyFips": "48159",
+        "countyName": "Franklin"
+      },
+      {
+        "countyFips": "48161",
+        "countyName": "Freestone"
+      },
+      {
+        "countyFips": "48163",
+        "countyName": "Frio"
+      },
+      {
+        "countyFips": "48165",
+        "countyName": "Gaines"
+      },
+      {
+        "countyFips": "48167",
+        "countyName": "Galveston"
+      },
+      {
+        "countyFips": "48169",
+        "countyName": "Garza"
+      },
+      {
+        "countyFips": "48171",
+        "countyName": "Gillespie"
+      },
+      {
+        "countyFips": "48173",
+        "countyName": "Glasscock"
+      },
+      {
+        "countyFips": "48175",
+        "countyName": "Goliad"
+      },
+      {
+        "countyFips": "48177",
+        "countyName": "Gonzales"
+      },
+      {
+        "countyFips": "48179",
+        "countyName": "Gray"
+      },
+      {
+        "countyFips": "48181",
+        "countyName": "Grayson"
+      },
+      {
+        "countyFips": "48183",
+        "countyName": "Gregg"
+      },
+      {
+        "countyFips": "48185",
+        "countyName": "Grimes"
+      },
+      {
+        "countyFips": "48189",
+        "countyName": "Hale"
+      },
+      {
+        "countyFips": "48191",
+        "countyName": "Hall"
+      },
+      {
+        "countyFips": "48193",
+        "countyName": "Hamilton"
+      },
+      {
+        "countyFips": "48195",
+        "countyName": "Hansford"
+      },
+      {
+        "countyFips": "48197",
+        "countyName": "Hardeman"
+      },
+      {
+        "countyFips": "48199",
+        "countyName": "Hardin"
+      },
+      {
+        "countyFips": "48201",
+        "countyName": "Harris"
+      },
+      {
+        "countyFips": "48203",
+        "countyName": "Harrison"
+      },
+      {
+        "countyFips": "48205",
+        "countyName": "Hartley"
+      },
+      {
+        "countyFips": "48207",
+        "countyName": "Haskell"
+      },
+      {
+        "countyFips": "48211",
+        "countyName": "Hemphill"
+      },
+      {
+        "countyFips": "48213",
+        "countyName": "Henderson"
+      },
+      {
+        "countyFips": "48215",
+        "countyName": "Hidalgo"
+      },
+      {
+        "countyFips": "48217",
+        "countyName": "Hill"
+      },
+      {
+        "countyFips": "48219",
+        "countyName": "Hockley"
+      },
+      {
+        "countyFips": "48221",
+        "countyName": "Hood"
+      },
+      {
+        "countyFips": "48223",
+        "countyName": "Hopkins"
+      },
+      {
+        "countyFips": "48225",
+        "countyName": "Houston"
+      },
+      {
+        "countyFips": "48227",
+        "countyName": "Howard"
+      },
+      {
+        "countyFips": "48229",
+        "countyName": "Hudspeth"
+      },
+      {
+        "countyFips": "48231",
+        "countyName": "Hunt"
+      },
+      {
+        "countyFips": "48233",
+        "countyName": "Hutchinson"
+      },
+      {
+        "countyFips": "48235",
+        "countyName": "Irion"
+      },
+      {
+        "countyFips": "48237",
+        "countyName": "Jack"
+      },
+      {
+        "countyFips": "48239",
+        "countyName": "Jackson"
+      },
+      {
+        "countyFips": "48241",
+        "countyName": "Jasper"
+      },
+      {
+        "countyFips": "48243",
+        "countyName": "Jeff Davis"
+      },
+      {
+        "countyFips": "48245",
+        "countyName": "Jefferson"
+      },
+      {
+        "countyFips": "48247",
+        "countyName": "Jim Hogg"
+      },
+      {
+        "countyFips": "48249",
+        "countyName": "Jim Wells"
+      },
+      {
+        "countyFips": "48253",
+        "countyName": "Jones"
+      },
+      {
+        "countyFips": "48255",
+        "countyName": "Karnes"
+      },
+      {
+        "countyFips": "48259",
+        "countyName": "Kendall"
+      },
+      {
+        "countyFips": "48261",
+        "countyName": "Kenedy"
+      },
+      {
+        "countyFips": "48263",
+        "countyName": "Kent"
+      },
+      {
+        "countyFips": "48265",
+        "countyName": "Kerr"
+      },
+      {
+        "countyFips": "48267",
+        "countyName": "Kimble"
+      },
+      {
+        "countyFips": "48269",
+        "countyName": "King"
+      },
+      {
+        "countyFips": "48271",
+        "countyName": "Kinney"
+      },
+      {
+        "countyFips": "48273",
+        "countyName": "Kleberg"
+      },
+      {
+        "countyFips": "48275",
+        "countyName": "Knox"
+      },
+      {
+        "countyFips": "48277",
+        "countyName": "Lamar"
+      },
+      {
+        "countyFips": "48279",
+        "countyName": "Lamb"
+      },
+      {
+        "countyFips": "48281",
+        "countyName": "Lampasas"
+      },
+      {
+        "countyFips": "48283",
+        "countyName": "La Salle"
+      },
+      {
+        "countyFips": "48285",
+        "countyName": "Lavaca"
+      },
+      {
+        "countyFips": "48287",
+        "countyName": "Lee"
+      },
+      {
+        "countyFips": "48289",
+        "countyName": "Leon"
+      },
+      {
+        "countyFips": "48291",
+        "countyName": "Liberty"
+      },
+      {
+        "countyFips": "48293",
+        "countyName": "Limestone"
+      },
+      {
+        "countyFips": "48295",
+        "countyName": "Lipscomb"
+      },
+      {
+        "countyFips": "48297",
+        "countyName": "Live Oak"
+      },
+      {
+        "countyFips": "48299",
+        "countyName": "Llano"
+      },
+      {
+        "countyFips": "48301",
+        "countyName": "Loving"
+      },
+      {
+        "countyFips": "48303",
+        "countyName": "Lubbock"
+      },
+      {
+        "countyFips": "48305",
+        "countyName": "Lynn"
+      },
+      {
+        "countyFips": "48307",
+        "countyName": "McCulloch"
+      },
+      {
+        "countyFips": "48311",
+        "countyName": "McMullen"
+      },
+      {
+        "countyFips": "48313",
+        "countyName": "Madison"
+      },
+      {
+        "countyFips": "48315",
+        "countyName": "Marion"
+      },
+      {
+        "countyFips": "48317",
+        "countyName": "Martin"
+      },
+      {
+        "countyFips": "48319",
+        "countyName": "Mason"
+      },
+      {
+        "countyFips": "48321",
+        "countyName": "Matagorda"
+      },
+      {
+        "countyFips": "48323",
+        "countyName": "Maverick"
+      },
+      {
+        "countyFips": "48325",
+        "countyName": "Medina"
+      },
+      {
+        "countyFips": "48327",
+        "countyName": "Menard"
+      },
+      {
+        "countyFips": "48329",
+        "countyName": "Midland"
+      },
+      {
+        "countyFips": "48331",
+        "countyName": "Milam"
+      },
+      {
+        "countyFips": "48333",
+        "countyName": "Mills"
+      },
+      {
+        "countyFips": "48335",
+        "countyName": "Mitchell"
+      },
+      {
+        "countyFips": "48337",
+        "countyName": "Montague"
+      },
+      {
+        "countyFips": "48339",
+        "countyName": "Montgomery"
+      },
+      {
+        "countyFips": "48341",
+        "countyName": "Moore"
+      },
+      {
+        "countyFips": "48343",
+        "countyName": "Morris"
+      },
+      {
+        "countyFips": "48345",
+        "countyName": "Motley"
+      },
+      {
+        "countyFips": "48347",
+        "countyName": "Nacogdoches"
+      },
+      {
+        "countyFips": "48349",
+        "countyName": "Navarro"
+      },
+      {
+        "countyFips": "48351",
+        "countyName": "Newton"
+      },
+      {
+        "countyFips": "48353",
+        "countyName": "Nolan"
+      },
+      {
+        "countyFips": "48355",
+        "countyName": "Nueces"
+      },
+      {
+        "countyFips": "48357",
+        "countyName": "Ochiltree"
+      },
+      {
+        "countyFips": "48359",
+        "countyName": "Oldham"
+      },
+      {
+        "countyFips": "48361",
+        "countyName": "Orange"
+      },
+      {
+        "countyFips": "48363",
+        "countyName": "Palo Pinto"
+      },
+      {
+        "countyFips": "48365",
+        "countyName": "Panola"
+      },
+      {
+        "countyFips": "48369",
+        "countyName": "Parmer"
+      },
+      {
+        "countyFips": "48371",
+        "countyName": "Pecos"
+      },
+      {
+        "countyFips": "48373",
+        "countyName": "Polk"
+      },
+      {
+        "countyFips": "48375",
+        "countyName": "Potter"
+      },
+      {
+        "countyFips": "48377",
+        "countyName": "Presidio"
+      },
+      {
+        "countyFips": "48379",
+        "countyName": "Rains"
+      },
+      {
+        "countyFips": "48381",
+        "countyName": "Randall"
+      },
+      {
+        "countyFips": "48383",
+        "countyName": "Reagan"
+      },
+      {
+        "countyFips": "48385",
+        "countyName": "Real"
+      },
+      {
+        "countyFips": "48387",
+        "countyName": "Red River"
+      },
+      {
+        "countyFips": "48389",
+        "countyName": "Reeves"
+      },
+      {
+        "countyFips": "48391",
+        "countyName": "Refugio"
+      },
+      {
+        "countyFips": "48393",
+        "countyName": "Roberts"
+      },
+      {
+        "countyFips": "48395",
+        "countyName": "Robertson"
+      },
+      {
+        "countyFips": "48399",
+        "countyName": "Runnels"
+      },
+      {
+        "countyFips": "48401",
+        "countyName": "Rusk"
+      },
+      {
+        "countyFips": "48403",
+        "countyName": "Sabine"
+      },
+      {
+        "countyFips": "48405",
+        "countyName": "San Augustine"
+      },
+      {
+        "countyFips": "48407",
+        "countyName": "San Jacinto"
+      },
+      {
+        "countyFips": "48409",
+        "countyName": "San Patricio"
+      },
+      {
+        "countyFips": "48411",
+        "countyName": "San Saba"
+      },
+      {
+        "countyFips": "48413",
+        "countyName": "Schleicher"
+      },
+      {
+        "countyFips": "48415",
+        "countyName": "Scurry"
+      },
+      {
+        "countyFips": "48417",
+        "countyName": "Shackelford"
+      },
+      {
+        "countyFips": "48419",
+        "countyName": "Shelby"
+      },
+      {
+        "countyFips": "48421",
+        "countyName": "Sherman"
+      },
+      {
+        "countyFips": "48423",
+        "countyName": "Smith"
+      },
+      {
+        "countyFips": "48425",
+        "countyName": "Somervell"
+      },
+      {
+        "countyFips": "48427",
+        "countyName": "Starr"
+      },
+      {
+        "countyFips": "48429",
+        "countyName": "Stephens"
+      },
+      {
+        "countyFips": "48431",
+        "countyName": "Sterling"
+      },
+      {
+        "countyFips": "48433",
+        "countyName": "Stonewall"
+      },
+      {
+        "countyFips": "48435",
+        "countyName": "Sutton"
+      },
+      {
+        "countyFips": "48437",
+        "countyName": "Swisher"
+      },
+      {
+        "countyFips": "48441",
+        "countyName": "Taylor"
+      },
+      {
+        "countyFips": "48443",
+        "countyName": "Terrell"
+      },
+      {
+        "countyFips": "48445",
+        "countyName": "Terry"
+      },
+      {
+        "countyFips": "48447",
+        "countyName": "Throckmorton"
+      },
+      {
+        "countyFips": "48449",
+        "countyName": "Titus"
+      },
+      {
+        "countyFips": "48451",
+        "countyName": "Tom Green"
+      },
+      {
+        "countyFips": "48455",
+        "countyName": "Trinity"
+      },
+      {
+        "countyFips": "48457",
+        "countyName": "Tyler"
+      },
+      {
+        "countyFips": "48459",
+        "countyName": "Upshur"
+      },
+      {
+        "countyFips": "48461",
+        "countyName": "Upton"
+      },
+      {
+        "countyFips": "48463",
+        "countyName": "Uvalde"
+      },
+      {
+        "countyFips": "48465",
+        "countyName": "Val Verde"
+      },
+      {
+        "countyFips": "48467",
+        "countyName": "Van Zandt"
+      },
+      {
+        "countyFips": "48469",
+        "countyName": "Victoria"
+      },
+      {
+        "countyFips": "48471",
+        "countyName": "Walker"
+      },
+      {
+        "countyFips": "48473",
+        "countyName": "Waller"
+      },
+      {
+        "countyFips": "48475",
+        "countyName": "Ward"
+      },
+      {
+        "countyFips": "48477",
+        "countyName": "Washington"
+      },
+      {
+        "countyFips": "48479",
+        "countyName": "Webb"
+      },
+      {
+        "countyFips": "48481",
+        "countyName": "Wharton"
+      },
+      {
+        "countyFips": "48483",
+        "countyName": "Wheeler"
+      },
+      {
+        "countyFips": "48485",
+        "countyName": "Wichita"
+      },
+      {
+        "countyFips": "48487",
+        "countyName": "Wilbarger"
+      },
+      {
+        "countyFips": "48489",
+        "countyName": "Willacy"
+      },
+      {
+        "countyFips": "48493",
+        "countyName": "Wilson"
+      },
+      {
+        "countyFips": "48495",
+        "countyName": "Winkler"
+      },
+      {
+        "countyFips": "48497",
+        "countyName": "Wise"
+      },
+      {
+        "countyFips": "48499",
+        "countyName": "Wood"
+      },
+      {
+        "countyFips": "48501",
+        "countyName": "Yoakum"
+      },
+      {
+        "countyFips": "48503",
+        "countyName": "Young"
+      },
+      {
+        "countyFips": "48505",
+        "countyName": "Zapata"
+      },
+      {
+        "countyFips": "48507",
+        "countyName": "Zavala"
+      }
+    ]
+  },
+  "perCounty": [
+    {
+      "countyFips": "48453",
+      "countyName": "Travis",
+      "rows": 894657,
+      "distinctFeatureIndex": 828773,
+      "trueParcels": 382279,
+      "seamDuplicateRows": 65884,
+      "seamDuplicatePctOfRows": 7.3642,
+      "polygonWithHoles": 620,
+      "multiPolygonMultiPart": 593,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 590,
+      "collidingPropIds": 673,
+      "parcelsUnderCollidingPropIds": 1445,
+      "totalBboxAcres": 1543683.05,
+      "multiPartBboxAcres": 247588.56,
+      "multiPartPctByCount": 0.3173,
+      "multiPartPctByAcreage": 16.0388
+    },
+    {
+      "countyFips": "48439",
+      "countyName": "Tarrant",
+      "rows": 799524,
+      "distinctFeatureIndex": 757161,
+      "trueParcels": 689845,
+      "seamDuplicateRows": 42363,
+      "seamDuplicatePctOfRows": 5.2985,
+      "polygonWithHoles": 440,
+      "multiPolygonMultiPart": 1194,
+      "parcelsNullPropId": 3,
+      "parcelsSentinelPropId": 0,
+      "collidingPropIds": 3,
+      "parcelsUnderCollidingPropIds": 7,
+      "totalBboxAcres": 822478.51,
+      "multiPartBboxAcres": 88680.5,
+      "multiPartPctByCount": 0.2369,
+      "multiPartPctByAcreage": 10.7821
+    },
+    {
+      "countyFips": "48029",
+      "countyName": "Bexar",
+      "rows": 747206,
+      "distinctFeatureIndex": 709541,
+      "trueParcels": 708864,
+      "seamDuplicateRows": 37665,
+      "seamDuplicatePctOfRows": 5.0408,
+      "polygonWithHoles": 1513,
+      "multiPolygonMultiPart": 222,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 884,
+      "collidingPropIds": 111,
+      "parcelsUnderCollidingPropIds": 4835,
+      "totalBboxAcres": 1535816.85,
+      "multiPartBboxAcres": 196960.8,
+      "multiPartPctByCount": 0.2448,
+      "multiPartPctByAcreage": 12.8245
+    },
+    {
+      "countyFips": "48113",
+      "countyName": "Dallas",
+      "rows": 726360,
+      "distinctFeatureIndex": 694160,
+      "trueParcels": 694156,
+      "seamDuplicateRows": 32200,
+      "seamDuplicatePctOfRows": 4.4331,
+      "polygonWithHoles": 270,
+      "multiPolygonMultiPart": 382,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 0,
+      "collidingPropIds": 103,
+      "parcelsUnderCollidingPropIds": 705,
+      "totalBboxAcres": 957039.29,
+      "multiPartBboxAcres": 77196.19,
+      "multiPartPctByCount": 0.0939,
+      "multiPartPctByAcreage": 8.0661
+    },
+    {
+      "countyFips": "48085",
+      "countyName": "Collin",
+      "rows": 408681,
+      "distinctFeatureIndex": 387737,
+      "trueParcels": 387103,
+      "seamDuplicateRows": 20944,
+      "seamDuplicatePctOfRows": 5.1248,
+      "polygonWithHoles": 570,
+      "multiPolygonMultiPart": 842,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 366,
+      "collidingPropIds": 29,
+      "parcelsUnderCollidingPropIds": 59,
+      "totalBboxAcres": 795764.13,
+      "multiPartBboxAcres": 75713.88,
+      "multiPartPctByCount": 0.3648,
+      "multiPartPctByAcreage": 9.5146
+    },
+    {
+      "countyFips": "48121",
+      "countyName": "Denton",
+      "rows": 373635,
+      "distinctFeatureIndex": 353631,
+      "trueParcels": 352415,
+      "seamDuplicateRows": 20004,
+      "seamDuplicatePctOfRows": 5.3539,
+      "polygonWithHoles": 241,
+      "multiPolygonMultiPart": 789,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 540,
+      "collidingPropIds": 67,
+      "parcelsUnderCollidingPropIds": 145,
+      "totalBboxAcres": 1028766.47,
+      "multiPartBboxAcres": 244861.51,
+      "multiPartPctByCount": 0.2923,
+      "multiPartPctByAcreage": 23.8015
+    },
+    {
+      "countyFips": "48491",
+      "countyName": "Williamson",
+      "rows": 304298,
+      "distinctFeatureIndex": 282983,
+      "trueParcels": 282862,
+      "seamDuplicateRows": 21315,
+      "seamDuplicatePctOfRows": 7.0046,
+      "polygonWithHoles": 1443,
+      "multiPolygonMultiPart": 60,
+      "parcelsNullPropId": 125,
+      "parcelsSentinelPropId": 0,
+      "collidingPropIds": 286,
+      "parcelsUnderCollidingPropIds": 574,
+      "totalBboxAcres": 1451382.99,
+      "multiPartBboxAcres": 196865.19,
+      "multiPartPctByCount": 0.5314,
+      "multiPartPctByAcreage": 13.564
+    },
+    {
+      "countyFips": "48027",
+      "countyName": "Bell",
+      "rows": 184470,
+      "distinctFeatureIndex": 167412,
+      "trueParcels": 167368,
+      "seamDuplicateRows": 17058,
+      "seamDuplicatePctOfRows": 9.247,
+      "polygonWithHoles": 203,
+      "multiPolygonMultiPart": 344,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 1737,
+      "collidingPropIds": 66,
+      "parcelsUnderCollidingPropIds": 144,
+      "totalBboxAcres": 1597165.66,
+      "multiPartBboxAcres": 96315.84,
+      "multiPartPctByCount": 0.3268,
+      "multiPartPctByAcreage": 6.0304
+    },
+    {
+      "countyFips": "48209",
+      "countyName": "Hays",
+      "rows": 131734,
+      "distinctFeatureIndex": 117427,
+      "trueParcels": 114140,
+      "seamDuplicateRows": 14307,
+      "seamDuplicatePctOfRows": 10.8605,
+      "polygonWithHoles": 263,
+      "multiPolygonMultiPart": 138,
+      "parcelsNullPropId": 80,
+      "parcelsSentinelPropId": 342,
+      "collidingPropIds": 404,
+      "parcelsUnderCollidingPropIds": 866,
+      "totalBboxAcres": 1015532.18,
+      "multiPartBboxAcres": 182392.77,
+      "multiPartPctByCount": 0.3513,
+      "multiPartPctByAcreage": 17.9603
+    },
+    {
+      "countyFips": "48309",
+      "countyName": "McLennan",
+      "rows": 130650,
+      "distinctFeatureIndex": 115362,
+      "trueParcels": 115327,
+      "seamDuplicateRows": 15288,
+      "seamDuplicatePctOfRows": 11.7015,
+      "polygonWithHoles": 389,
+      "multiPolygonMultiPart": 547,
+      "parcelsNullPropId": 10,
+      "parcelsSentinelPropId": 104,
+      "collidingPropIds": 384,
+      "parcelsUnderCollidingPropIds": 1346,
+      "totalBboxAcres": 1654838.12,
+      "multiPartBboxAcres": 238235.51,
+      "multiPartPctByCount": 0.8116,
+      "multiPartPctByAcreage": 14.3963
+    },
+    {
+      "countyFips": "48367",
+      "countyName": "Parker",
+      "rows": 118833,
+      "distinctFeatureIndex": 100548,
+      "trueParcels": 90025,
+      "seamDuplicateRows": 18285,
+      "seamDuplicatePctOfRows": 15.3871,
+      "polygonWithHoles": 251,
+      "multiPolygonMultiPart": 172,
+      "parcelsNullPropId": 1018,
+      "parcelsSentinelPropId": 5049,
+      "collidingPropIds": 583,
+      "parcelsUnderCollidingPropIds": 1233,
+      "totalBboxAcres": 881117.06,
+      "multiPartBboxAcres": 36320.61,
+      "multiPartPctByCount": 0.4699,
+      "multiPartPctByAcreage": 4.1221
+    },
+    {
+      "countyFips": "48091",
+      "countyName": "Comal",
+      "rows": 114430,
+      "distinctFeatureIndex": 103537,
+      "trueParcels": 103537,
+      "seamDuplicateRows": 10893,
+      "seamDuplicatePctOfRows": 9.5194,
+      "polygonWithHoles": 183,
+      "multiPolygonMultiPart": 132,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 162,
+      "collidingPropIds": 137,
+      "parcelsUnderCollidingPropIds": 306,
+      "totalBboxAcres": 805794.85,
+      "multiPartBboxAcres": 95981.03,
+      "multiPartPctByCount": 0.3042,
+      "multiPartPctByAcreage": 11.9113
+    },
+    {
+      "countyFips": "48251",
+      "countyName": "Johnson",
+      "rows": 113686,
+      "distinctFeatureIndex": 101847,
+      "trueParcels": 100957,
+      "seamDuplicateRows": 11839,
+      "seamDuplicatePctOfRows": 10.4138,
+      "polygonWithHoles": 1510,
+      "multiPolygonMultiPart": 323,
+      "parcelsNullPropId": 1175,
+      "parcelsSentinelPropId": 0,
+      "collidingPropIds": 50,
+      "parcelsUnderCollidingPropIds": 102,
+      "totalBboxAcres": 921492.92,
+      "multiPartBboxAcres": 209301.78,
+      "multiPartPctByCount": 1.8156,
+      "multiPartPctByAcreage": 22.7133
+    },
+    {
+      "countyFips": "48139",
+      "countyName": "Ellis",
+      "rows": 111274,
+      "distinctFeatureIndex": 98803,
+      "trueParcels": 98375,
+      "seamDuplicateRows": 12471,
+      "seamDuplicatePctOfRows": 11.2075,
+      "polygonWithHoles": 265,
+      "multiPolygonMultiPart": 32,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 0,
+      "collidingPropIds": 154,
+      "parcelsUnderCollidingPropIds": 379,
+      "totalBboxAcres": 1295827.36,
+      "multiPartBboxAcres": 129551.64,
+      "multiPartPctByCount": 0.3019,
+      "multiPartPctByAcreage": 9.9976
+    },
+    {
+      "countyFips": "48187",
+      "countyName": "Guadalupe",
+      "rows": 106508,
+      "distinctFeatureIndex": 95571,
+      "trueParcels": 94203,
+      "seamDuplicateRows": 10937,
+      "seamDuplicatePctOfRows": 10.2687,
+      "polygonWithHoles": 2000,
+      "multiPolygonMultiPart": 144,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 400,
+      "collidingPropIds": 71,
+      "parcelsUnderCollidingPropIds": 148,
+      "totalBboxAcres": 934124.67,
+      "multiPartBboxAcres": 227013.03,
+      "multiPartPctByCount": 2.2759,
+      "multiPartPctByAcreage": 24.3022
+    },
+    {
+      "countyFips": "48257",
+      "countyName": "Kaufman",
+      "rows": 106175,
+      "distinctFeatureIndex": 94650,
+      "trueParcels": 94635,
+      "seamDuplicateRows": 11525,
+      "seamDuplicatePctOfRows": 10.8547,
+      "polygonWithHoles": 166,
+      "multiPolygonMultiPart": 187,
+      "parcelsNullPropId": 111,
+      "parcelsSentinelPropId": 110,
+      "collidingPropIds": 674,
+      "parcelsUnderCollidingPropIds": 1798,
+      "totalBboxAcres": 1027432.56,
+      "multiPartBboxAcres": 66685.79,
+      "multiPartPctByCount": 0.373,
+      "multiPartPctByAcreage": 6.4905
+    },
+    {
+      "countyFips": "48021",
+      "countyName": "Bastrop",
+      "rows": 74729,
+      "distinctFeatureIndex": 63357,
+      "trueParcels": 62963,
+      "seamDuplicateRows": 11372,
+      "seamDuplicatePctOfRows": 15.2177,
+      "polygonWithHoles": 421,
+      "multiPolygonMultiPart": 4,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 138,
+      "collidingPropIds": 416,
+      "parcelsUnderCollidingPropIds": 985,
+      "totalBboxAcres": 1237316.51,
+      "multiPartBboxAcres": 89311.6,
+      "multiPartPctByCount": 0.675,
+      "multiPartPctByAcreage": 7.2182
+    },
+    {
+      "countyFips": "48397",
+      "countyName": "Rockwall",
+      "rows": 56266,
+      "distinctFeatureIndex": 52739,
+      "trueParcels": 52550,
+      "seamDuplicateRows": 3527,
+      "seamDuplicatePctOfRows": 6.2684,
+      "polygonWithHoles": 27,
+      "multiPolygonMultiPart": 72,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 0,
+      "collidingPropIds": 86,
+      "parcelsUnderCollidingPropIds": 216,
+      "totalBboxAcres": 150772.68,
+      "multiPartBboxAcres": 15880.59,
+      "multiPartPctByCount": 0.1884,
+      "multiPartPctByAcreage": 10.5328
+    },
+    {
+      "countyFips": "48055",
+      "countyName": "Caldwell",
+      "rows": 32781,
+      "distinctFeatureIndex": 26155,
+      "trueParcels": 25577,
+      "seamDuplicateRows": 6626,
+      "seamDuplicatePctOfRows": 20.2129,
+      "polygonWithHoles": 151,
+      "multiPolygonMultiPart": 43,
+      "parcelsNullPropId": 0,
+      "parcelsSentinelPropId": 193,
+      "collidingPropIds": 211,
+      "parcelsUnderCollidingPropIds": 607,
+      "totalBboxAcres": 761770.03,
+      "multiPartBboxAcres": 43329.84,
+      "multiPartPctByCount": 0.7585,
+      "multiPartPctByAcreage": 5.688
+    }
+  ],
+  "limitations": [
+    "Area is bbox-rectangle acreage, not true polygon area. No PostGIS in this store and no source acreage column in the schema, so no better measure is available without reimplementing a spherical shoelace over the jsonb rings.",
+    "Class N4 is not decomposed into 'genuine disjoint tracts stored as separate features' versus 'different parcels sharing an account'. Doing so needs adjacency or containment tests this store cannot do natively.",
+    "'True parcel count' means distinct geometry within a county. Two genuinely different parcels with byte-identical geometry in the same county would be merged; this was not separately measured.",
+    "Only 19 of 254 counties have data, so every statewide figure here is statewide-over-the-loaded-19, not statewide-over-Texas.",
+    "READ-ONLY SELECT only. No writes were made."
+  ]
+}

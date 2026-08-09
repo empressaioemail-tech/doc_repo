@@ -1,0 +1,138 @@
+{
+  "event": "PROBE.depth-warm-hot-path-profile",
+  "probeDate": "2026-08-08",
+  "engineSha": "dba7a8291a4545daa3a14e8aa5779827b9778533",
+  "targetScript": "packages/engine-core/scripts/depth-warm-bastrop-batch.mjs",
+  "instrumentedVia": "temporary copy scripts/_profile-depth-warm-TEMP.mjs (deleted after run; original never edited)",
+  "commandLine": "PROPERTY_ATOM_PATH=1 DATABASE_URL=<atoms-neon> TXGIO_DATABASE_URL=<ldt-deployment-neon> NODE_OPTIONS=--use-system-ca pnpm --filter @hauska-engine/engine-core exec tsx scripts/_profile-depth-warm-TEMP.mjs -- --city-cohort --dry-run --diagnose-failures --limit=500",
+  "dryRun": true,
+  "writesPerformed": "none (dry-run; no apply, no --force-overwrite, no --promote, no --upsert-ledger)",
+
+  "parcelsProcessed": 500,
+  "wallMsTotal": 165037,
+  "scriptWallMsIncludingSetup": 193292,
+  "setupWallMs": 28255,
+  "msPerParcelMean": 330.07,
+  "msPerParcelP50": 644,
+  "msPerParcelP95": 1081,
+  "msPerParcelNote": "wallMsTotal/msPerParcelMean are measured over the parcel loop only (setup: roads load, roster load, cohort query excluded). msPerParcelP50/P95 come from the script's own per-parcel wall samples, which are only pushed on a subset of exit paths (early no-setback-row and already-promoted continues do not push), so P50/P95 describe the deeper-path parcels and run higher than the mean over all 500.",
+
+  "buckets": {
+    "situsQuery": {
+      "totalMs": 45942.1,
+      "callCount": 500,
+      "meanMs": 91.884,
+      "percentOfWall": 27.84,
+      "kind": "txgio Neon DB round-trip",
+      "site": "depth-warm-bastrop-batch.mjs ~line 518"
+    },
+    "bcadCurrencyCheck": {
+      "totalMs": 44813.6,
+      "callCount": 500,
+      "meanMs": 89.627,
+      "percentOfWall": 27.15,
+      "kind": "live HTTP fetch to BCAD ArcGIS",
+      "site": "depth-warm-bastrop-batch.mjs ~line 532 -> assertParcelCurrencyInBcad -> fetchBcadParcelRings"
+    },
+    "bcadDivergenceFetch": {
+      "totalMs": 0,
+      "callCount": 0,
+      "meanMs": 0,
+      "percentOfWall": 0,
+      "kind": "live HTTP fetch to BCAD ArcGIS",
+      "site": "depth-warm-bastrop-batch.mjs ~lines 702 and 715",
+      "note": "zero calls on this run: both branches require --force-repromote or a stored boundary-primitive edge-count mismatch; neither fired on a dry --city-cohort run. Expect this bucket to become non-zero on --force-overwrite/--force-repromote apply legs."
+    },
+    "layer23SetbackProbe": {
+      "totalMs": 39038.3,
+      "callCount": 491,
+      "meanMs": 79.508,
+      "percentOfWall": 23.65,
+      "kind": "live HTTP fetch to Bastrop Parcels_One_Click ArcGIS layer 23",
+      "site": "depth-warm-bastrop-batch.mjs ~line 553 districtHasPerParcelSetbackRow -> buildBastropPerParcelSetbackDescriptor -> fetchBastropPerParcelSetbackRecord",
+      "note": "NOT in the original suspect list. This is an uncached live ArcGIS query, and it is fully redundant with layer23SetbackBuild below (same call, same arguments, same parcel, moments apart)."
+    },
+    "layer23SetbackBuild": {
+      "totalMs": 4100.8,
+      "callCount": 110,
+      "meanMs": 37.28,
+      "percentOfWall": 2.48,
+      "kind": "live HTTP fetch to Bastrop Parcels_One_Click ArcGIS layer 23 (duplicate of the probe above)",
+      "site": "depth-warm-bastrop-batch.mjs ~line 570"
+    },
+    "alreadyPromotedQuery": {
+      "totalMs": 10063.4,
+      "callCount": 110,
+      "meanMs": 91.485,
+      "percentOfWall": 6.1,
+      "kind": "atoms Neon DB round-trip",
+      "site": "depth-warm-bastrop-batch.mjs ~line 600 (skipped under --force-overwrite/--force-repromote)"
+    },
+    "geomResolve": {
+      "totalMs": 6400.8,
+      "callCount": 63,
+      "meanMs": 101.599,
+      "percentOfWall": 3.88,
+      "kind": "txgio Neon DB round-trip",
+      "site": "depth-warm-bastrop-batch.mjs ~line 613 geomResolver.resolve"
+    },
+    "boundaryEdgesRead": {
+      "totalMs": 0,
+      "callCount": 0,
+      "meanMs": 0,
+      "percentOfWall": 0,
+      "kind": "atoms Neon DB round-trip",
+      "site": "depth-warm-bastrop-batch.mjs ~line 655",
+      "note": "zero calls: the read is guarded by !dryRun && storageHandle, so it never fires on a dry leg. Expect a per-parcel atoms-DB round-trip here on apply."
+    },
+    "warmThenVerify": {
+      "totalMs": 10383.8,
+      "callCount": 53,
+      "meanMs": 195.921,
+      "percentOfWall": 6.29,
+      "kind": "in-process compute on the dry leg (storage is undefined when dryRun, so promoteDepthWarmToStorage does not run)",
+      "site": "depth-warm-bastrop-batch.mjs ~line 804"
+    },
+    "otherCompute": {
+      "totalMs": 4294.2,
+      "callCount": 500,
+      "meanMs": 8.588,
+      "percentOfWall": 2.6,
+      "kind": "residual: everything in the loop not inside a named bucket (ring scrub, edge labeling, normals check, relabel, bookkeeping)"
+    }
+  },
+
+  "networkSharePercent": 53.29,
+  "networkShareDefinition": "(bcadCurrencyCheck + bcadDivergenceFetch + layer23SetbackProbe + layer23SetbackBuild) / wallMsTotal * 100 — all live outbound HTTP to ArcGIS endpoints",
+  "bcadOnlySharePercent": 27.15,
+  "layer23ArcgisSharePercent": 26.14,
+  "dbQuerySharePercent": 37.81,
+  "dbQueryShareDefinition": "(situsQuery + alreadyPromotedQuery + geomResolve + boundaryEdgesRead) / wallMsTotal * 100 — Neon round-trips",
+  "allIoSharePercent": 97.4,
+  "allIoShareDefinition": "every named bucket except otherCompute and warmThenVerify... measured as bucketSum/wallMsTotal, i.e. 100 minus otherCompute; warmThenVerify is compute on the dry leg and is included in the geometry share below",
+  "geometryComputeSharePercent": 8.89,
+  "geometryComputeShareDefinition": "(warmThenVerify + otherCompute) / wallMsTotal * 100 — all in-process geometry/verify work on the dry leg",
+
+  "bcadCallsPerParcel": 1.0,
+  "layer23CallsPerParcel": 1.202,
+  "liveHttpCallsPerParcel": 2.202,
+  "liveHttpCallsPerParcelNote": "1 BCAD parcel-currency call + 1 layer-23 setback probe on every parcel, plus a second layer-23 call on the ~22% of parcels that clear the probe and reach the descriptor build. Both layer-23 calls are the identical uncached query.",
+
+  "finding": "Network and DB I/O dominate: 97.4 percent of parcel-loop wall time is blocking I/O and only 8.89 percent is geometry compute. Live ArcGIS HTTP is 53.29 percent of wall (BCAD parcel-currency 27.15 percent at 1.0 calls/parcel, plus Bastrop layer-23 setback lookups 26.14 percent at 1.20 calls/parcel), and Neon DB round-trips are another 37.81 percent, dominated by the per-parcel situs_address query at 27.84 percent. The planner's hypothesis is confirmed in direction but incomplete in scope: BCAD alone is only about a quarter of the cost, and three other per-parcel serial round-trips (situs query at ~92 ms, layer-23 setback probe at ~80 ms, already-promoted check at ~91 ms) each cost about as much as the BCAD call. Every one of these is a single-parcel serial round-trip at roughly 80 to 92 ms, so the pipeline is latency-bound, not compute-bound, and the fix shape is batching plus caching plus concurrency, not geometry optimization. Two specific free wins found in the code: the layer-23 setback record is fetched TWICE per qualifying parcel with identical arguments and no cache (districtHasPerParcelSetbackRow at ~line 553 then buildBastropPerParcelSetbackDescriptor at ~line 570), and the situs_address query is a per-parcel single-row SELECT against txgio_parcel that could be one batched prefetch for the whole cohort. Note two buckets read zero on this dry leg and will add cost on an apply leg: boundaryEdgesRead (guarded by !dryRun) and bcadDivergenceFetch (fires under --force-repromote or an edge-count mismatch), so a --force-overwrite apply will be slower per parcel than the 330 ms measured here.",
+
+  "caveats": [
+    "Dry-run only. No apply-path costs measured: promoteDepthWarmToStorage write-then-verify, promoteHonestVerifyDecline writes, and boundaryEdgesRead all add per-parcel atoms-DB round-trips on an apply leg.",
+    "This run is a --city-cohort dry leg without --force-overwrite, so 390 of 500 parcels exited early at the no-setback-row branch (before geomResolve/warmThenVerify). That is why geomResolve fired 63 times and warmThenVerify 53 times against 500 parcels processed. Deep-path parcels cost more per parcel (P50 644 ms, P95 1081 ms) than the 330 ms all-parcel mean.",
+    "The master planner's 522 ms/parcel figure (3,021,150 ms / 5,785 parcels) is a whole-script number including setup; the comparable figure here is 330 ms/parcel loop-only or 387 ms/parcel including the 28.3 s setup. Same order of magnitude, and the bucket shares are the load-bearing result, not the absolute mean.",
+    "Single-sample run per limit. A limit=200 pre-run produced consistent per-call means (situsQuery 91.9 ms, bcadCurrencyCheck 91.0 ms, layer23SetbackProbe 92.0 ms), so the per-call latencies are stable across runs."
+  ],
+
+  "priorRun": {
+    "limit": 200,
+    "note": "first pass, before the loop-vs-setup split landed; per-call means matched the 500 run closely",
+    "msPerParcelMeanIncludingSetup": 723.01,
+    "situsQueryMeanMs": 91.883,
+    "bcadCurrencyCheckMeanMs": 90.96,
+    "layer23SetbackProbeMeanMs": 91.964
+  }
+}

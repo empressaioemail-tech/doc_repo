@@ -1,12 +1,18 @@
 ---
 id: 61a_central_tx_coverage_program
 title: Central Texas coverage program — proactive within the wedge footprint
-status: active
-last_updated: 2026-06-18
+status: active, "national layers coverage-complete" framing corrected 2026-08-08, see note below
+last_updated: 2026-08-08
 applies_to: hauska
 owner: nick
-related: [61_property_intelligence_master_plan, 75g_investor_deal_radar, 75i_investor_radar_prelaunch_sprint, 75b_brief_coverage_v0, 08_tiered_access_model, _decisions/2026-06-10_texas_coverage_demand_driven, _decisions/2026-06-17_central_tx_coverage_proactive_within_footprint, icc-contract]
+related: [61_property_intelligence_master_plan, 75g_investor_deal_radar, 75i_investor_radar_prelaunch_sprint, 75b_brief_coverage_v0, 08_tiered_access_model, _decisions/2026-06-10_texas_coverage_demand_driven, _decisions/2026-06-17_central_tx_coverage_proactive_within_footprint, icc-contract, _inbox/2026-08-08_STATEWIDE_layer_inventory]
 ---
+
+## CORRECTION 2026-08-08: "coverage-complete by default" conflates live-queryable with statewide-held
+
+The reframe section below (and the "every Central TX parcel gets intel today" section) calls the national layers "coverage-complete by default." Per the 2026-08-08 statewide layer inventory (live-queried directly against the production stores), **no layer is statewide-complete** in the sense of being persisted, statewide-loaded data: FEMA NFHL and USDA SSURGO are live point-in-polygon adapters with a zero-row cache (`adapter_response_cache` has 0 rows), meaning every read is a live federal API round-trip, not a held layer; USGS 3DEP topography is 60 per-parcel on-demand DEM crops, not a statewide raster; Cotality was extinguished 2026-07-13 and this doc's Cotality-national-parcel framing (including the map-coverage line below) is stale.
+
+"Coverage-complete by default" is defensible ONLY under one narrow reading: these are live-queryable federal/state APIs that will answer for any coordinate in Texas (or the US) at request time, so the radar is never structurally blocked from firing on a national layer. It is NOT true that the data is held, cached, or statewide-loaded anywhere. Any external-facing coverage claim from this doc must specify "live-queryable at request time," never "held" or "complete," and must not cite Cotality as the map spine. Source: `_inbox/2026-08-08_STATEWIDE_layer_inventory.md`.
 
 # Central Texas coverage program
 
@@ -26,15 +32,15 @@ Captured vs to-do for the local code/zoning layer (the national layers fire ever
 | Blocked — ICC secrets (operator, awaiting ICC) | IFC/IPMC families, all Tier-A | — | The lever that lifts the corridor ~0% to verified |
 | Everywhere else | all other US | n/a | National baseline + labeled websearch (live) |
 
-**Map (spatial) coverage** rides Cotality national parcels now (not per-county GIS) per [`_decisions/2026-06-18_map_engine_maplibre_cotality_national.md`](_decisions/2026-06-18_map_engine_maplibre_cotality_national.md) — gated on Cotality production quota.
+**Map (spatial) coverage** rode Cotality national parcels (not per-county GIS) per [`_decisions/2026-06-18_map_engine_maplibre_cotality_national.md`](_decisions/2026-06-18_map_engine_maplibre_cotality_national.md) as of 2026-06-18. **SUPERSEDED 2026-08-08: Cotality is extinguished (2026-07-13); this routing is stale.** The current map-coverage spine is not established by this doc; check the live map path before citing spatial coverage from here.
 
 ## The reframe
 
-Coverage is a matrix, jurisdictions by data layer, not one number per city. The national layers (FEMA NFHL, USGS soils and geology, EPA, Cotality parcel and property, Opportunity Zones) are coverage-complete by default and are not where the gaps live. The gaps concentrate in the jurisdiction-specific layers, and each closes by a different mechanism. The code substrate itself is three layers (ADR-019): Layer 3 is local ordinance, zoning, and UDC text (what the corpus and the deployment Neon hold); Layer 1 is the model I-Codes and Layer 2 the local amendments to them (the reasoning layer, web-warmed). "We hold a city's code" usually means Layer 3 only; the building-code adoption layer is essentially un-warmed everywhere except Austin, and Austin is on the wrong edition (warmed 2021, in force 2024). That adoption layer is the largest grounded-value gap and the thing the radar's cited rehab and can-I-build reasoning depends on.
+Coverage is a matrix, jurisdictions by data layer, not one number per city. The national layers (FEMA NFHL, USGS soils and geology, EPA, Cotality parcel and property, Opportunity Zones) are **live-queryable everywhere by default** (see correction block above: this means request-time API availability, not statewide-held data; FEMA/SSURGO in particular are live point-query adapters with zero rows cached anywhere, and Cotality is extinguished as of 2026-07-13) and are not where the gaps live. The gaps concentrate in the jurisdiction-specific layers, and each closes by a different mechanism. The code substrate itself is three layers (ADR-019): Layer 3 is local ordinance, zoning, and UDC text (what the corpus and the deployment Neon hold); Layer 1 is the model I-Codes and Layer 2 the local amendments to them (the reasoning layer, web-warmed). "We hold a city's code" usually means Layer 3 only; the building-code adoption layer is essentially un-warmed everywhere except Austin, and Austin is on the wrong edition (warmed 2021, in force 2024). That adoption layer is the largest grounded-value gap and the thing the radar's cited rehab and can-I-build reasoning depends on.
 
 ## Every Central TX parcel gets intel today (the national-layer baseline)
 
-Coverage is not binary per jurisdiction, and the radar is never empty anywhere. Every parcel in Central Texas (and the US) already gets the full national-layer brief regardless of local-code coverage: FEMA flood plus floodway, USGS soils (expansive clay) plus geology plus karst, topography, EPA, and the Cotality stack (parcel, owner, sale/tax/AVM, comps, rent, liens, mortgage, building permits, propensity-to-sell, owner-occupancy, perils and insurance), plus Opportunity Zones and MUD/PID special districts. That is the bulk of an investor verdict and it fires on every parcel today, warmed jurisdiction or not. The jurisdiction-specific code/zoning/precedence layer is incremental depth on top of that baseline, not a gate on whether the radar is useful. And where there is no zoning (unincorporated land, no-zoning towns), "no zoning restrictions" is itself a positive build-freedom signal to surface, not an absence to apologize for. So the coverage program closes the local-code layer; it never decides whether a parcel is worth a verdict.
+Coverage is not binary per jurisdiction, and the radar is never structurally empty anywhere. Every parcel in Central Texas (and the US) can draw on the full national-layer brief regardless of local-code coverage: FEMA flood plus floodway, USGS soils (expansive clay) plus geology plus karst, topography, EPA, and the Cotality stack (parcel, owner, sale/tax/AVM, comps, rent, liens, mortgage, building permits, propensity-to-sell, owner-occupancy, perils and insurance), plus Opportunity Zones and MUD/PID special districts. This is a claim about live-queryable request-time availability, not statewide-held data (see correction block; Cotality is also extinguished 2026-07-13 and this list needs a fresh pass to identify its replacement). That is the bulk of an investor verdict and it fires live on every parcel today at request time, warmed jurisdiction or not; nothing here is a persisted statewide layer. The jurisdiction-specific code/zoning/precedence layer is incremental depth on top of that baseline, not a gate on whether the radar is useful. And where there is no zoning (unincorporated land, no-zoning towns), "no zoning restrictions" is itself a positive build-freedom signal to surface, not an absence to apologize for. So the coverage program closes the local-code layer; it never decides whether a parcel is worth a verdict.
 
 ## Current coverage (from the engine snapshot)
 

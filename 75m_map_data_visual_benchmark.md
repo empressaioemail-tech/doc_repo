@@ -1,12 +1,16 @@
 ---
 id: 75m_map_data_visual_benchmark
 title: Map data and visual benchmark — every layer, its visual treatment, status, and wiring gap
-status: active
-last_updated: 2026-06-19
+status: active, PARTIALLY SUPERSEDED 2026-08-08 (Cotality path extinguished; see correction note)
+last_updated: 2026-08-08
 applies_to: portfolio
 owner: nick
 related: [75k_max_map_quality_direction, 75l_cotality_data_stack_catalog, 75g_investor_deal_radar, 75c_property_brief_data_backlog, 55_spine_data_intelligence_stack, _decisions/2026-06-18_map_engine_maplibre_cotality_national]
 ---
+
+## CORRECTION 2026-08-08: MUD/PID and Texas RRC "LIVE" status ran through the dead Cotality/extension path
+
+Cotality was extinguished as of 2026-07-13 (per the standing decision that live code hitting Cotality is a wrong-routing defect, not a credential to rotate; Regrid is also dead). This doc's 2026-06-19 "LIVE" markings for TX Comptroller MUD/PID and Texas RRC below were verified against the map/extension stack that existed before that reversal. They have NOT been re-verified against the current (post-Cotality) map path. Do not cite MUD/PID or Texas RRC as LIVE without a fresh live-smoke check against the current deployed map path. Every table row below carrying these two layers is marked SUPERSEDED, not corrected to a new status, because the current state was not re-queried in this pass; that is a follow-up, not something to guess at here. Doctrine: a coverage claim ("LIVE") must name which of code-exists / data-loaded / served-to-product it means and must be checked against the live deployed path, not a session note from a since-reversed architecture.
 
 # Map data and visual benchmark
 
@@ -29,7 +33,7 @@ Render gate cleared. The #1 visual gate (the 2D land-use choropleth + rent-heat 
 Federal layers deployed to cortex-api prod (`cortex-api-00249-fil` @ 100%, PR #197 rebased onto the user-aware fix). Live smoke against the canary, fixture:false:
 - groundwater (USGS NWIS): now LIVE. Root cause of the prior HTTP 400 was `format=json` + bBox; fixed to `format=rdb` + tab parser + 3-attempt retry. Bastrop bbox returned 7 features.
 - edwards-aquifer (TX): now LIVE via the Austin COA mirror chain (the dead TCEQ recharge MapServer was decommissioned, returns 404). 6 features on the COA bbox; Austin layers do not cover the Bastrop viewport.
-- mud-pid and texas-rrc: adapters confirmed working (Austin metro 27 districts; Houston 3493 wells). The earlier Bastrop 404s were valid no-coverage in a tiny viewport, not bugs.
+- mud-pid and texas-rrc: adapters confirmed working as of 2026-06-19 (Austin metro 27 districts; Houston 3493 wells). The earlier Bastrop 404s were valid no-coverage in a tiny viewport, not bugs. **SUPERSEDED 2026-08-08: this verification ran through the Cotality/extension map path, extinguished 2026-07-13. Not re-verified against the current path; treat as unconfirmed until re-checked live.**
 - ssurgo-soils: DEGRADED. Upstream ECONNRESET / TLS reset from Cloud Run to the USDA gSSURGO host; marked `degraded:true` in the layer list, not blocking. Separate USDA-connectivity investigation owed.
 - usgs-geology / usgs-seismic: brief-path adapters only; not exposed on the map `/gis-layers` path. The 75c/75i-vs-55/61 "available vs unwired" conflict is resolved by this: geology/seismic are brief adapters, not map layers, and SSURGO is wired-but-upstream-degraded on the map path.
 - composites (buildable-envelope, constraint-density, oz-deal-crossfilter, motivated-seller): return 200 but are synthetic stubs even at fixture:false; real fill is Cotality-gated.
@@ -58,9 +62,9 @@ Every source that feeds or could feed the map. Map status is specifically on the
 | USGS geology / seismic | Federal | Bedrock, site class, karst/sinkhole | free | brief adapters only; not a map layer |
 | USGS NWIS | Federal | Groundwater table | free | LIVE on map (rdb fix, 2026-06-19) |
 | EPA EJScreen | EPA (frozen mirror) | Environmental-justice context | free | feeds brief; not a layer |
-| TX Comptroller MUD/PID | State | Special-district encumbrance | free | LIVE on map (2026-06-19) |
-| TCEQ Edwards Aquifer | State (TX) | Recharge/contributing zones | free | LIVE on map via Austin COA mirror (TX-only) |
-| Texas RRC | State (TX) | O&G wells, pipelines (public) | free | LIVE on map (2026-06-19) |
+| TX Comptroller MUD/PID | State | Special-district encumbrance | free | SUPERSEDED, was LIVE on map (2026-06-19), verified through the now-dead Cotality/extension path; not re-checked |
+| TCEQ Edwards Aquifer | State (TX) | Recharge/contributing zones | free | LIVE on map via Austin COA mirror (TX-only), not Cotality-dependent per its own adapter chain, but not re-verified in this pass |
+| Texas RRC | State (TX) | O&G wells, pipelines (public) | free | SUPERSEDED, was LIVE on map (2026-06-19), verified through the now-dead Cotality/extension path; not re-checked |
 | Listing scrape (Zillow/Redfin/Unlock MLS) | portals | Address entry + asking price | free | LIVE (input, not layer) |
 | Stripe / Pipedrive | SaaS | Tier gate / CRM | fees | gate + sync, not visual |
 
@@ -156,8 +160,8 @@ Each is sell-reasoning-not-data: a cited verdict, not a raw field dump.
 | Zoning/land-use | Saturated land-use choropleth | FIX | real fill gated | Cotality Property prod |
 | Allowed-height envelope | 3D fill-extrusion by zoning | DEFERRED (next-pass) | 3D explicitly deferred per operator | re-add with terrain in 3D pass |
 | Opportunity Zones | Highlighted tracts | LIVE | none | keep |
-| MUD/PID districts | Special-district overlay | LIVE | none (2026-06-19) | keep |
-| Edwards Aquifer | Recharge-zone overlay (TX) | LIVE | TX-only; Austin COA mirror | keep |
+| MUD/PID districts | Special-district overlay | SUPERSEDED (was LIVE 2026-06-19, via dead Cotality path) | re-verify against current map path | re-check live before citing as LIVE |
+| Edwards Aquifer | Recharge-zone overlay (TX) | LIVE (not Cotality-routed; unconfirmed in this pass) | TX-only; Austin COA mirror | keep, re-verify |
 | ETJ / jurisdiction | City vs ETJ vs unincorporated fill | BACKLOG | no adapter | RiskMeter baseline + AGOL overlay (Cotality-gated) |
 | Constraint density | Encumbrance heat | NEW | composite | stack overlays per parcel |
 
@@ -188,8 +192,8 @@ Each is sell-reasoning-not-data: a cited verdict, not a raw field dump.
 | Insurance cost | Composite cost surface | NEW | composite | compose hazards + RCV |
 | SSURGO soils | Shrink-swell foundation-risk choropleth | DEGRADED | USDA TLS ECONNRESET from Cloud Run | fix USDA connectivity (retry/proxy/alt host) |
 | Geology / karst / sinkhole | Subsurface hazard overlay | BRIEF | brief adapter only; not a map layer | fix Vs30; add map layer if wanted |
-| Groundwater (NWIS) | Water-table overlay | LIVE | none (rdb fix 2026-06-19) | keep; engine deploy owed for brief path |
-| O&G / minerals | Wells + lease overlay | LIVE | none (TX RRC, 2026-06-19) | keep |
+| Groundwater (NWIS) | Water-table overlay | LIVE (not Cotality-routed; unconfirmed in this pass) | none (rdb fix 2026-06-19) | keep; engine deploy owed for brief path; re-verify |
+| O&G / minerals | Wells + lease overlay | SUPERSEDED (was LIVE via TX RRC through dead Cotality path, 2026-06-19) | re-verify against current map path | re-check live before citing as LIVE |
 | EJScreen | EJ context overlay | BRIEF | no layer; frozen mirror | optional layer + freshness flag |
 
 ### Interaction and meta (the polish layer)
@@ -219,7 +223,7 @@ Track 5 — New reporting (rides the same data, surfaces in brief + map click-th
 The status conflict (SSURGO/geology "available-on-engine" vs "unwired/degraded") was resolved by a live smoke against the deployed cortex-api map path, not the doc set:
 - SSURGO is wired on the map path but upstream-DEGRADED (USDA gSSURGO TLS ECONNRESET from Cloud Run). Real issue, separate connectivity fix owed.
 - USGS geology / seismic are brief-path adapters only, not exposed on the map `/gis-layers` path. So "available on engine" (brief) and "no map layer" are both true and not in conflict.
-- groundwater, edwards, mud-pid, texas-rrc are now LIVE on the map path (see Live status above).
+- groundwater, edwards, mud-pid, texas-rrc were verified LIVE on the map path as of 2026-06-19 (see Live status above). **SUPERSEDED 2026-08-08 for mud-pid and texas-rrc specifically: that verification ran through the Cotality/extension path, extinguished 2026-07-13; not re-checked against the current path.** Groundwater and Edwards were not Cotality-routed per their adapter chains but were also not re-verified in this pass.
 
 Remaining durability items (operator wants these built durable, not fixture):
 - SSURGO USDA connectivity fix (retry/proxy/alternate host) so the foundation-risk choropleth is real.

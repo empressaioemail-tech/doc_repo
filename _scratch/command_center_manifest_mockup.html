@@ -1,0 +1,1414 @@
+<!--
+  ============================================================================
+  COMMAND CENTER — COUNTY MANIFEST   ***MOCKUP v2 / FAKE DATA***
+  ============================================================================
+  v1 built 2026-08-08. v2 revised 2026-08-08 same day after operator review.
+  NOT production code. NOT wired to any API. Nothing here is a live reading.
+
+  ---- WHAT v2 ADDS (operator-requested) -------------------------------------
+  A. TIME AXIS
+     - Texas completeness sparkline, 60 days, ending at the honest 1.34%.
+     - Per-rail 60-day trend sparkline in every column header + a TRENDS panel.
+     - "SINCE YOU LAST LOOKED" diff strip pinned above the grid: cell state
+       changes, county rail gain/loss, new defects, completed runs, with times.
+  B. IN-FLIGHT / RUN STATE
+     - LIVE tab: what is running now (lane, cohort, stage, elapsed, progress).
+     - HEAVY-SCAN SLOT holder + queue behind it (the serializer).
+     - Recent run outcomes carrying artifact paths.
+  C. TRUSTWORTHINESS PER CELL
+     - Cell drawer gains LAST VERIFIED, BY WHICH INSTRUMENT, and a staleness
+       indicator computed against the data vintage.
+     - SAMPLE-verified cells carry a visible amber corner + a SAMPLED warning,
+       per the OPS-5 anti-sampling rule (area sweep is the strong instrument).
+  D. JURISDICTION DIMENSION
+     - County rows expand to their incorporated cities. Zoning + code-text are
+       city rails; 1,223 TX cities carry them. Bastrop city / Elgin / Smithville
+       seeded from real block-level state; other cities are honestly not-yet.
+  E. DRILL-THROUGH TO EVIDENCE
+     - Every cell, every failure row, every run, every diff entry renders the
+       artifact path in monospace. Not clickable — the path IS the deliverable.
+  F. COST ACTUALS vs ESTIMATE
+     - Intake gains actual / variance columns. Populated for 4 counties only;
+       the rest read NOT MEASURED, which is the honest state of the loop.
+
+  DELIBERATELY ABSENT: any operator "accept / approve this cell" affordance.
+  Human override of a measured state is out of scope by design — the console's
+  entire value is that its numbers derive from evidence, not from assent.
+
+  ---- WHAT IS REAL vs FABRICATED --------------------------------------------
+  REAL: county identity, parcel counts, risk classes, StratMap vintages, CAD
+  verification, join bad-rates, easement tiers, cost estimates — all lifted
+  from _catalog/texas_roster_v1.json. Bastrop city district blocks (SF-1 1919,
+  GC 253, MU 189, RR 205, PI 65, IND 31, PDD 1978 unwarmed) are real, from
+  _inbox/2026-08-03_BASTROP_CITY_GATE_C_reached.md.
+
+  FABRICATED: every rail STATE, every coverage percent, every defect count,
+  every timestamp, the entire 60-day time series, every run record, every
+  verification instrument attribution, every cost actual, and the whole
+  in-flight run picture. NOTHING in this repo records those today — see the
+  DOES-NOT-EXIST callouts in the footers, which are the real output of v2.
+
+  Seeded from:
+    _decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first.md
+    _inbox/2026-08-08_LEDGER_schema_audit.md
+    _inbox/2026-08-08_CONTRACT_coherence_audit.md
+    _inbox/2026-08-08_BLUEPRINT_program_plan.md
+    _inbox/2026-08-03_BASTROP_CITY_GATE_C_reached.md
+    _catalog/texas_roster_v1.json
+
+  40 of 254 counties are seeded. The remaining 214 are in the rollup
+  arithmetic only (uniformly not-yet), which is what keeps the number honest.
+  ============================================================================
+-->
+<title>Command Center — County Manifest v2</title>
+<style>
+  :root{
+    --bg:#0a0c10; --bg2:#0e1117; --panel:#12161d; --panel2:#161b24;
+    --line:#232a35; --line2:#2e3745;
+    --tx:#c9d3e0; --tx2:#7f8b9c; --tx3:#55606f;
+    --present:#1f6f4a; --present-tx:#5fdca0;
+    --absent:#3c5a80; --absent-tx:#7fb6f0;
+    --notyet:#2a2f38; --notyet-tx:#6b7684;
+    --noatom:#5c2230; --noatom-tx:#ff8a9c;
+    --warn:#b9832a; --warn-tx:#f3c05c;
+    --bad:#8c2b2b; --bad-tx:#ff7b7b;
+    --acc:#4b8fd6; --live:#2f9e6e; --live-tx:#6ff0b4;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+    --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:12px;line-height:1.35;-webkit-font-smoothing:antialiased}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ---- top bar ---- */
+  header{position:sticky;top:0;z-index:60;background:linear-gradient(180deg,#0d1016,#0a0c10);border-bottom:1px solid var(--line)}
+  .hrow{display:flex;align-items:center;gap:14px;padding:8px 14px;flex-wrap:wrap}
+  .brand{font-weight:700;letter-spacing:.10em;font-size:11px;text-transform:uppercase;color:#e7eefb}
+  .brand small{display:block;letter-spacing:.02em;text-transform:none;font-weight:400;color:var(--tx3);font-size:10px}
+  .mockpill{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;background:#3a2a08;color:#f3c05c;border:1px solid #6b4d0e;padding:2px 7px;border-radius:3px}
+  .spacer{flex:1}
+  .clock{font-family:var(--mono);font-size:10.5px;color:var(--tx3)}
+  .livepill{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;background:#0e2a1e;color:var(--live-tx);border:1px solid #205c42;padding:2px 8px;border-radius:3px;display:flex;align-items:center;gap:6px}
+  .blip{width:6px;height:6px;border-radius:50%;background:var(--live-tx);animation:bp 1.8s ease-in-out infinite}
+  @keyframes bp{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* ---- rollup strip ---- */
+  .rollup{display:flex;gap:0;border-bottom:1px solid var(--line);background:var(--bg2);overflow-x:auto}
+  .metric{padding:9px 16px;border-right:1px solid var(--line);min-width:132px;flex:0 0 auto}
+  .metric .k{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);white-space:nowrap}
+  .metric .v{font-family:var(--mono);font-size:19px;font-weight:600;color:#e7eefb;letter-spacing:-.02em}
+  .metric .v.lo{color:var(--bad-tx)}
+  .metric .s{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+  .metric .dlt{font-family:var(--mono);font-size:10px;color:var(--present-tx)}
+  .metric .dlt.z{color:var(--tx3)}
+  .bigbar{height:5px;background:#1a1f28;border-radius:2px;margin-top:5px;overflow:hidden;position:relative}
+  .bigbar i{display:block;height:100%;background:var(--present)}
+  .metric.hold{background:#161207}
+
+  /* ---- tabs ---- */
+  nav{display:flex;gap:0;border-bottom:1px solid var(--line);background:var(--bg2);align-items:stretch}
+  nav button{background:none;border:0;border-right:1px solid var(--line);color:var(--tx2);padding:8px 18px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);border-bottom:2px solid transparent}
+  nav button:hover{color:var(--tx);background:#141922}
+  nav button.on{color:#fff;border-bottom-color:var(--acc);background:var(--panel)}
+  nav button .ct{font-family:var(--mono);color:var(--tx3);margin-left:7px;font-size:10px}
+  nav button .ct.hot{color:var(--live-tx)}
+
+  /* ---- toolbar ---- */
+  .tools{display:flex;gap:8px;padding:7px 14px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line);background:var(--panel)}
+  .tools input,.tools select{background:#0b0e13;border:1px solid var(--line2);color:var(--tx);padding:4px 7px;font-size:11px;border-radius:3px;font-family:var(--mono)}
+  .tools input:focus,.tools select:focus{outline:1px solid var(--acc);border-color:var(--acc)}
+  .tools label{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em}
+  .tools button.tg{background:#0b0e13;border:1px solid var(--line2);color:var(--tx2);font-size:10px;padding:4px 9px;border-radius:3px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans)}
+  .tools button.tg:hover{color:var(--tx);border-color:var(--acc)}
+  .tools button.tg.on{background:#16283a;color:#cfe4ff;border-color:var(--acc)}
+
+  /* ---- legend ---- */
+  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:6px 14px;border-bottom:1px solid var(--line);background:#0c1016;font-size:10.5px;color:var(--tx2);align-items:center}
+  .lg{display:flex;gap:6px;align-items:center}
+  .sw{width:13px;height:13px;border-radius:2px;border:1px solid rgba(255,255,255,.10);flex:0 0 auto}
+  .sw.p{background:var(--present)} .sw.a{background:var(--absent)}
+  .sw.n{background:var(--notyet)} .sw.x{background:var(--noatom);background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.16) 3px,rgba(255,255,255,.16) 5px)}
+  .sw.smp{background:rgba(31,111,74,.42);position:relative;overflow:hidden}
+  .sw.smp:after{content:"";position:absolute;top:0;right:0;border-top:7px solid var(--warn-tx);border-left:7px solid transparent}
+  .lg b{color:var(--tx);font-weight:600}
+  .lg span{color:var(--tx3)}
+
+  /* ---- SINCE-YOU-LAST-LOOKED strip (A) ---- */
+  .diffstrip{border-bottom:1px solid var(--line2);background:linear-gradient(180deg,#101a16,#0c1016)}
+  .diffhead{display:flex;align-items:center;gap:12px;padding:7px 14px;cursor:pointer;user-select:none}
+  .diffhead .ttl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#cfe9db;font-weight:700}
+  .diffhead .since{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+  .diffhead .cnts{display:flex;gap:6px;flex-wrap:wrap}
+  .dpill{font-family:var(--mono);font-size:9.5px;padding:1px 7px;border-radius:9px;border:1px solid var(--line2);color:var(--tx2);background:#0d1119}
+  .dpill.up{border-color:#2b5c43;color:var(--present-tx);background:#0e1c16}
+  .dpill.dn{border-color:#8c2b2b;color:var(--bad-tx);background:#25100f}
+  .dpill.nw{border-color:#6b4d0e;color:var(--warn-tx);background:#241a06}
+  .diffhead .car{margin-left:auto;font-family:var(--mono);color:var(--tx3);font-size:11px}
+  .difflist{max-height:196px;overflow:auto;border-top:1px solid var(--line)}
+  .difflist.hid{display:none}
+  .drow{display:grid;grid-template-columns:118px 92px 1fr auto;gap:10px;padding:5px 14px;border-bottom:1px solid #171d26;align-items:baseline}
+  .drow:hover{background:#131b18}
+  .drow .tm{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+  .drow .kind{font-family:var(--mono);font-size:9px;letter-spacing:.05em;padding:1px 6px;border-radius:2px;text-align:center;white-space:nowrap}
+  .k-state{background:#0e1c16;color:var(--present-tx);border:1px solid #2b5c43}
+  .k-regress{background:#25100f;color:var(--bad-tx);border:1px solid #8c2b2b}
+  .k-defect{background:#241a06;color:var(--warn-tx);border:1px solid #6b4d0e}
+  .k-run{background:#101822;color:#93a6c0;border:1px solid #3d4a5e}
+  .k-slot{background:#1d1424;color:#c79ee0;border:1px solid #5a3f6b}
+  .drow .txt{font-size:11px;color:var(--tx)}
+  .drow .txt b{color:#e7eefb}
+  .drow .ev{font-family:var(--mono);font-size:9.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}
+
+  /* ---- sparklines ---- */
+  .spark{display:block}
+  .spark .ln{fill:none;stroke:var(--present-tx);stroke-width:1.3}
+  .spark .fl{fill:rgba(95,220,160,.13);stroke:none}
+  .spark .zr{stroke:#232a35;stroke-width:1;stroke-dasharray:2 2}
+  .spark.flat .ln{stroke:var(--tx3)}
+  .spark.flat .fl{fill:rgba(127,139,156,.09)}
+
+  /* ---- layout ---- */
+  main{display:block}
+  .view{display:none} .view.on{display:block}
+  .gridwrap{display:flex;align-items:flex-start;gap:0}
+  .scroller{flex:1;overflow:auto;max-height:calc(100vh - 340px)}
+
+  /* ---- manifest grid ---- */
+  table.mx{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px}
+  table.mx th,table.mx td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;vertical-align:middle}
+  table.mx thead th{position:sticky;top:0;z-index:30;background:#0f131a;border-bottom:1px solid var(--line2)}
+  .rh{padding:5px 6px;height:96px;vertical-align:bottom}
+  .rh .rn{font-size:10px;font-weight:600;color:#dbe4f0;line-height:1.15;display:block;margin-bottom:3px}
+  .rh .rs{font-family:var(--mono);font-size:9px;color:var(--tx3);display:block}
+  .rh .rbar{height:3px;background:#1a1f28;margin-top:4px;border-radius:2px;overflow:hidden;display:flex}
+  .rh .rbar i{display:block;height:100%}
+  .rh.na{background:#1a0d12}
+  .rh .tag{display:inline-block;font-family:var(--mono);font-size:8px;letter-spacing:.05em;padding:0 3px;border-radius:2px;background:var(--noatom);color:#ffd4db;margin-left:3px;vertical-align:middle}
+  .rh .tagn{background:#2a3140;color:#9aa7b8}
+  .rh .trend{display:flex;align-items:center;gap:4px;margin-top:3px}
+  .rh .trend .dv{font-family:var(--mono);font-size:8.5px;color:var(--present-tx)}
+  .rh .trend .dv.z{color:var(--tx3)}
+
+  th.cty,td.cty{position:sticky;left:0;z-index:20;background:var(--panel);border-right:1px solid var(--line2);min-width:200px;max-width:200px}
+  thead th.cty{z-index:40;background:#0f131a}
+  td.cty .cn{display:flex;align-items:baseline;gap:6px;padding:4px 8px}
+  td.cty .nm{font-size:11.5px;font-weight:600;color:#dfe7f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  td.cty .nm:hover{color:#fff;text-decoration:underline}
+  td.cty .fp{font-family:var(--mono);font-size:9.5px;color:var(--tx3)}
+  td.cty .pc{font-family:var(--mono);font-size:9.5px;color:var(--tx2);margin-left:auto;white-space:nowrap}
+  .exp{font-family:var(--mono);font-size:10px;color:var(--tx3);cursor:pointer;width:13px;display:inline-block;text-align:center;flex:0 0 auto;user-select:none}
+  .exp:hover{color:var(--acc)}
+  .exp.none{opacity:.22;cursor:default}
+  tr.cityrow td.cty{background:#0f141b;padding-left:0}
+  tr.cityrow td{background:#0d1117}
+  tr.cityrow td.cty .cn{padding-left:24px}
+  tr.cityrow td.cty .nm{font-size:10.5px;font-weight:500;color:#a8b6c8}
+  tr.cityrow td.cell{height:22px}
+  tr.cityrow .c{height:22px;font-size:9px}
+  .cityb{font-family:var(--mono);font-size:8.5px;padding:0 4px;border-radius:2px;background:#16283a;color:#9dc3ec;margin-left:4px}
+  .cityb.warm{background:#0e2a1e;color:var(--live-tx)}
+  .cityb.q{background:#241a06;color:var(--warn-tx)}
+
+  th.score,td.score{position:sticky;left:200px;z-index:20;background:var(--panel);min-width:64px;max-width:64px;text-align:center;border-right:1px solid var(--line2)}
+  thead th.score{z-index:40;background:#0f131a}
+  td.score .sc{font-family:var(--mono);font-size:11px;font-weight:600;padding:4px 0}
+  td.score .sb{height:3px;background:#1a1f28;margin:0 8px 4px;border-radius:2px;overflow:hidden;display:flex}
+  td.score .sb i{height:100%}
+
+  tbody tr:hover td.cty,tbody tr:hover td.score{background:#1a212c}
+  tbody tr.sel td.cty,tbody tr.sel td.score{background:#1d2a3a}
+
+  td.cell{padding:0;height:26px}
+  .c{display:flex;align-items:center;justify-content:center;gap:4px;height:26px;cursor:pointer;font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;position:relative;user-select:none;overflow:hidden}
+  .c:hover{outline:1px solid #7fb6f0;outline-offset:-1px;z-index:5}
+  .c.p{background:rgba(31,111,74,.42);color:var(--present-tx)}
+  .c.a{background:rgba(60,90,128,.40);color:var(--absent-tx)}
+  .c.n{background:transparent;color:var(--notyet-tx)}
+  .c.x{background:rgba(92,34,48,.42);color:var(--noatom-tx);background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,.055) 4px,rgba(255,255,255,.055) 7px)}
+  .c.partial{box-shadow:inset 0 -2px 0 var(--warn)}
+  .c .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.85;flex:0 0 auto}
+  .c.n .dot{opacity:.35}
+  /* C: sampled-instrument corner flag */
+  .c.smp:after{content:"";position:absolute;top:0;right:0;border-top:8px solid var(--warn-tx);border-left:8px solid transparent}
+  /* C: verification staleness — dashed left edge */
+  .c.vstale:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:repeating-linear-gradient(180deg,var(--warn-tx),var(--warn-tx) 3px,transparent 3px,transparent 6px)}
+  /* A: changed-since-last-look ring */
+  .c.chg{outline:1px dashed #7fb6f0;outline-offset:-2px}
+
+  /* ---- detail drawer ---- */
+  aside{width:360px;flex:0 0 360px;border-left:1px solid var(--line2);background:var(--panel2);max-height:calc(100vh - 340px);overflow:auto;position:sticky;top:0}
+  aside .ahead{padding:10px 13px;border-bottom:1px solid var(--line);background:#0f131a;position:sticky;top:0;z-index:5}
+  aside .ahead .t{font-size:13px;font-weight:600;color:#e8eff8}
+  aside .ahead .s{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px}
+  aside .body{padding:11px 13px}
+  aside .empty{padding:26px 16px;color:var(--tx3);font-size:11.5px;line-height:1.6}
+  .kv{display:grid;grid-template-columns:104px 1fr;gap:3px 9px;margin:9px 0}
+  .kv dt{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding-top:1px}
+  .kv dd{margin:0;font-family:var(--mono);font-size:11px;color:var(--tx);word-break:break-word}
+  .statebadge{display:inline-block;padding:2px 7px;border-radius:3px;font-family:var(--mono);font-size:10px;letter-spacing:.04em}
+  .statebadge.p{background:var(--present);color:#d6ffe9}
+  .statebadge.a{background:var(--absent);color:#dbeeff}
+  .statebadge.n{background:var(--notyet);color:#a4afbe}
+  .statebadge.x{background:var(--noatom);color:#ffd9e0}
+  .meter{height:16px;background:#0b0e13;border:1px solid var(--line2);border-radius:3px;position:relative;overflow:hidden;margin:5px 0 3px}
+  .meter i{display:block;height:100%;background:var(--present);opacity:.62}
+  .meter .thr{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--warn-tx)}
+  .meter .lb{position:absolute;inset:0;display:flex;align-items:center;padding:0 6px;font-family:var(--mono);font-size:9.5px;color:#e8eff8;justify-content:space-between}
+  aside h4{margin:15px 0 5px;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--line);padding-bottom:4px}
+  .deflist{margin:0;padding:0;list-style:none}
+  .deflist li{font-family:var(--mono);font-size:10.5px;padding:3px 0;color:var(--tx2);border-bottom:1px dotted #1e242e;display:flex;justify-content:space-between;gap:8px}
+  .deflist li b{color:var(--bad-tx);font-weight:600}
+  .note{font-size:10.5px;color:var(--tx2);line-height:1.55;background:#0d1219;border-left:2px solid var(--line2);padding:7px 9px;margin:9px 0}
+  .note.warn{border-left-color:var(--warn);color:#e3d3ae}
+  .note.bad{border-left-color:var(--bad);color:#f0c6c6}
+  .note.ok{border-left-color:var(--present);color:#bfe6d3}
+
+  /* E: evidence path block */
+  .ev{font-family:var(--mono);font-size:10px;color:#93a6c0;background:#0a0e14;border:1px solid var(--line);border-left:2px solid var(--acc);padding:5px 7px;margin:5px 0;word-break:break-all;line-height:1.5}
+  .ev .lbl{display:block;font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);margin-bottom:2px;font-family:var(--sans)}
+  .ev.none{border-left-color:var(--bad);color:var(--bad-tx)}
+  td .evp{font-family:var(--mono);font-size:9.5px;color:var(--tx3);display:block;margin-top:2px;word-break:break-all}
+
+  /* C: verification block */
+  .verif{background:#0b1218;border:1px solid var(--line);border-radius:3px;padding:8px 9px;margin:9px 0}
+  .verif .vt{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);margin-bottom:5px}
+  .verif .vi{font-family:var(--mono);font-size:11px;color:#cfe4ff}
+  .verif .vw{font-family:var(--mono);font-size:10px;color:var(--tx2);margin-top:3px}
+  .verif .agebar{height:4px;background:#1a1f28;border-radius:2px;margin-top:6px;overflow:hidden}
+  .verif .agebar i{display:block;height:100%}
+  .instbadge{display:inline-block;font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:2px;margin-left:5px}
+  .instbadge.strong{background:#0e1c16;color:var(--present-tx);border:1px solid #2b5c43}
+  .instbadge.weak{background:#241a06;color:var(--warn-tx);border:1px solid #6b4d0e}
+  .instbadge.none{background:#25100f;color:var(--bad-tx);border:1px solid #8c2b2b}
+
+  /* ---- generic tables ---- */
+  .pad{padding:12px 14px}
+  table.dt{border-collapse:collapse;width:100%;font-size:11px}
+  table.dt th{text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--line2);padding:6px 8px;background:#0f131a;position:sticky;top:0;z-index:5;white-space:nowrap;user-select:none}
+  table.dt th.num{text-align:right}
+  table.dt td{border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top}
+  table.dt td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  table.dt tbody tr:hover{background:#151b24}
+  table.dt tbody tr.rank1{background:rgba(31,111,74,.13)}
+  .chip{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:1px 6px;border-radius:9px;border:1px solid var(--line2);color:var(--tx2);background:#0d1119;white-space:nowrap;margin:1px 3px 1px 0}
+  .chip.r-bis{border-color:#3d4a5e;color:#93a6c0}
+  .chip.r-norest{border-color:#6b4d0e;color:var(--warn-tx);background:#241a06}
+  .chip.r-drift{border-color:#5a3f6b;color:#c79ee0;background:#1d1424}
+  .chip.r-cross{border-color:#8c2b2b;color:var(--bad-tx);background:#25100f}
+  .chip.r-nostrat{border-color:#8c2b2b;color:#fff;background:var(--bad)}
+  .chip.r-shard{border-color:#8c2b2b;color:#fff;background:var(--bad)}
+  .chip.ok{border-color:#2b5c43;color:var(--present-tx);background:#0e1c16}
+  .unv{font-family:var(--mono);font-size:9px;letter-spacing:.05em;color:#f3c05c;border:1px solid #6b4d0e;background:#241a06;padding:0 4px;border-radius:2px;margin-left:5px}
+  .nm-tag{font-family:var(--mono);font-size:9px;letter-spacing:.05em;color:var(--tx3);border:1px dashed var(--line2);padding:0 5px;border-radius:2px}
+  h3.sec{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#cfdaea;margin:20px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  h3.sec:first-child{margin-top:4px}
+  h3.sec .cnt{font-family:var(--mono);font-size:10px;color:var(--tx3);text-transform:none;letter-spacing:0}
+  h3.sec .sev{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:2px;background:var(--bad);color:#fff;letter-spacing:.05em}
+  h3.sec .sev.w{background:var(--warn);color:#241a06}
+  h3.sec .sev.g{background:var(--live);color:#04150d}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:9px;margin-bottom:6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:9px 11px}
+  .card .k{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+  .card .v{font-family:var(--mono);font-size:20px;font-weight:600;color:#e7eefb;margin:2px 0}
+  .card .v.bad{color:var(--bad-tx)} .card .v.warn{color:var(--warn-tx)} .card .v.ok{color:var(--present-tx)}
+  .card .s{font-size:10px;color:var(--tx2);line-height:1.45}
+  .card.alarm{border-color:#5c2230;background:#150c10}
+  .card.hold{border-color:#6b4d0e;background:#161207}
+  .card.live{border-color:#205c42;background:#0b1a14}
+
+  /* ---- B: in-flight run rows ---- */
+  .runbox{border:1px solid var(--line2);border-radius:4px;background:var(--panel);margin-bottom:9px;overflow:hidden}
+  .runbox.active{border-color:#205c42}
+  .runbox .rtop{display:flex;align-items:center;gap:10px;padding:8px 11px;background:#0f141b;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .runbox .lane{font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:1px 7px;border-radius:2px;background:#16283a;color:#9dc3ec}
+  .runbox .lane.t1{background:#0e2a1e;color:var(--live-tx)}
+  .runbox .lane.t3{background:#1d1424;color:#c79ee0}
+  .runbox .lane.t5{background:#241a06;color:var(--warn-tx)}
+  .runbox .who{font-size:12px;font-weight:600;color:#e7eefb}
+  .runbox .stg{font-family:var(--mono);font-size:10px;color:var(--tx2)}
+  .runbox .el{font-family:var(--mono);font-size:10.5px;color:var(--tx3);margin-left:auto}
+  .runbox .rbody{padding:9px 11px}
+  .prog{height:14px;background:#0b0e13;border:1px solid var(--line2);border-radius:3px;position:relative;overflow:hidden;margin:4px 0}
+  .prog i{display:block;height:100%;background:var(--live);opacity:.55}
+  .prog i.ind{background:repeating-linear-gradient(90deg,#2a3140,#2a3140 8px,#1a1f28 8px,#1a1f28 16px);width:100%;opacity:.7}
+  .prog .lb{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 6px;font-family:var(--mono);font-size:9.5px;color:#e8eff8}
+  .stages{display:flex;gap:0;margin:7px 0 3px;flex-wrap:wrap}
+  .stg-i{font-family:var(--mono);font-size:9px;padding:2px 8px;border:1px solid var(--line2);border-right:0;color:var(--tx3);background:#0b0e13;white-space:nowrap}
+  .stg-i:last-child{border-right:1px solid var(--line2)}
+  .stg-i.done{background:#0e1c16;color:var(--present-tx);border-color:#2b5c43}
+  .stg-i.now{background:#16283a;color:#cfe4ff;border-color:var(--acc)}
+  .queue{list-style:none;margin:0;padding:0}
+  .queue li{display:flex;align-items:center;gap:10px;padding:6px 11px;border-bottom:1px solid var(--line);font-size:11px}
+  .queue li .qn{font-family:var(--mono);font-size:10px;color:var(--tx3);width:18px}
+  .queue li .qw{color:#dfe7f2;font-weight:600}
+  .queue li .qd{color:var(--tx2);font-size:10.5px}
+  .queue li .qt{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--tx3)}
+  .queue li.head{background:#161207}
+
+  .footer{padding:14px;color:var(--tx3);font-size:10.5px;border-top:1px solid var(--line);line-height:1.6}
+  .footer code{font-family:var(--mono);color:var(--tx2)}
+  .dne{border:1px solid #6b4d0e;background:#161207;border-radius:4px;padding:10px 12px;margin:12px 0;color:#e3d3ae;font-size:10.5px;line-height:1.6}
+  .dne b{color:var(--warn-tx)}
+  .dne code{font-family:var(--mono);color:#f3c05c}
+  .dne .t{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--warn-tx);font-weight:700;margin-bottom:5px;display:block}
+  @media (max-width:1100px){ aside{display:none} .scroller{max-height:calc(100vh - 380px)} }
+</style>
+
+<header>
+  <div class="hrow">
+    <div class="brand">Command Center<small>County Manifest &middot; 254 counties &times; 13 rails &middot; v2</small></div>
+    <span class="mockpill">MOCKUP v2 &middot; FAKE STATE &middot; 2026-08-08</span>
+    <span class="livepill"><span class="blip"></span><span id="livesum">1 running &middot; slot HELD</span></span>
+    <div class="spacer"></div>
+    <div class="clock mono" id="clock">manifest build &mdash; not connected</div>
+  </div>
+  <div class="rollup" id="rollup"></div>
+  <nav>
+    <button class="on" data-v="manifest">Manifest<span class="ct" id="tc-m"></span></button>
+    <button data-v="live">Live<span class="ct hot" id="tc-l"></span></button>
+    <button data-v="trends">Trends<span class="ct" id="tc-t"></span></button>
+    <button data-v="intake">Intake<span class="ct" id="tc-i"></span></button>
+    <button data-v="maint">Maintenance<span class="ct" id="tc-x"></span></button>
+  </nav>
+</header>
+
+<main>
+  <!-- ===================== MANIFEST ===================== -->
+  <section class="view on" id="v-manifest">
+    <div class="diffstrip">
+      <div class="diffhead" id="diffhead">
+        <span class="ttl">Since you last looked</span>
+        <span class="since mono" id="dsince"></span>
+        <span class="cnts" id="dcnts"></span>
+        <span class="car" id="dcar">&#9662; collapse</span>
+      </div>
+      <div class="difflist" id="difflist"></div>
+    </div>
+    <div class="tools">
+      <label for="q">filter</label>
+      <input id="q" placeholder="county, city or fips" size="18">
+      <label for="sortby">sort</label>
+      <select id="sortby">
+        <option value="parcels">parcels desc</option>
+        <option value="name">name</option>
+        <option value="score">completeness desc</option>
+        <option value="scoreasc">completeness asc</option>
+        <option value="fips">fips</option>
+        <option value="changed">changed most recently</option>
+      </select>
+      <label><input type="checkbox" id="onlygap"> below 3/13</label>
+      <label><input type="checkbox" id="onlychg"> changed only</label>
+      <button class="tg" id="expandall">expand cities</button>
+      <div class="spacer"></div>
+      <span class="mono" style="color:var(--tx3)" id="gridcount"></span>
+    </div>
+    <div class="legend">
+      <div class="lg"><span class="sw p"></span><b>satisfied-present</b><span>acquired, at/above threshold</span></div>
+      <div class="lg"><span class="sw a"></span><b>satisfied-absent</b><span>established from public record that none exists &mdash; COUNTS</span></div>
+      <div class="lg"><span class="sw n"></span><b>not-yet</b><span>unacquired &mdash; the only state that reduces the number</span></div>
+      <div class="lg"><span class="sw x"></span><b>no-atom</b><span>no atom family &mdash; we cannot record this yet</span></div>
+      <div class="lg"><span style="width:13px;height:13px;border-radius:2px;border:1px solid rgba(255,255,255,.1);background:rgba(31,111,74,.42);box-shadow:inset 0 -2px 0 var(--warn)"></span><b>PARTIAL</b><span>below threshold &mdash; never rounded up</span></div>
+      <div class="lg"><span class="sw smp"></span><b>SAMPLED</b><span>verified by sample, not area sweep &mdash; weaker instrument (OPS-5)</span></div>
+      <div class="lg"><span style="width:13px;height:13px;border-radius:2px;border:1px solid rgba(255,255,255,.1);background:rgba(31,111,74,.42);border-left:2px dashed var(--warn-tx)"></span><b>VERIFY STALE</b><span>last verification older than the data vintage</span></div>
+      <div class="lg"><span style="width:13px;height:13px;border-radius:2px;border:1px dashed #7fb6f0;background:transparent"></span><b>CHANGED</b><span>state moved since your last look</span></div>
+    </div>
+    <div class="gridwrap">
+      <div class="scroller"><table class="mx"><thead><tr id="hrow"></tr></thead><tbody id="grid"></tbody></table></div>
+      <aside id="drawer"><div class="empty">Click any cell to inspect state, coverage against threshold, <b>who verified it and with which instrument</b>, staleness, open defects, last run, and the evidence path behind the claim.<br><br>Click a county name for the county roll-up. Click <span class="mono">&#9656;</span> to expand a county to its incorporated cities &mdash; zoning and code-text are city rails, not county rails.</div></aside>
+    </div>
+    <div class="footer">
+      <b style="color:#cfdaea">Two open questions carried from v1.</b>
+      <b>(1) Does an acquired-but-unatomizable rail count?</b> Parcel geometry is verified in StratMap for 253 of 254 counties, but has no atom family, so this mockup shows it <b>no-atom</b> everywhere and grants it zero credit. Counting it instead would move the Texas number by roughly an order of magnitude. The mockup takes the strict reading: if the contract cannot hold the finding, the finding does not count.
+      <b>(2) PARTIAL is excluded from the score here.</b> Per ruling&nbsp;3 only SATISFIED counts, so Williamson zoning at 33.98&nbsp;percent against a 95&nbsp;percent threshold renders with a partial underline and coverage number but adds nothing to the county total.
+      <br><br>
+      Grid renders <span class="mono" id="seedn"></span> seeded counties of 254. The remaining <span class="mono" id="restn"></span> exist in the rollup arithmetic only and are uniformly <b>not-yet</b>. Threshold values are the ruling's tuning start (95 percent spine / 90 percent derived), <b>not measured</b>.
+      <div class="dne"><span class="t">Does not exist &mdash; needed for this view</span>
+        <b>Per-cell verification record.</b> Nothing in the repo stores <code>last_verified_at</code>, <code>verified_by_instrument</code>, or <code>verification_method (sweep|sample)</code> per county-rail. The instrument attributions, staleness bars and SAMPLED corners on this grid are entirely invented. Sprint 1 needs a <code>rail_verification</code> row keyed on (fips, rail) carrying at minimum: instrument id, instrument version, method, verified_at, parcels_examined, artifact_path.
+        <br><br><b>Per-cell state history.</b> The ledger holds current state only. There is no append-only history, so "changed since you last looked" cannot be computed from anything that exists. Sprint 1 needs <code>rail_state_history</code> (fips, rail, from_state, to_state, at, run_id, artifact_path) — without it the diff strip is permanently fake.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LIVE ===================== -->
+  <section class="view" id="v-live"><div class="pad" id="live"></div></section>
+
+  <!-- ===================== TRENDS ===================== -->
+  <section class="view" id="v-trends"><div class="pad" id="trends"></div></section>
+
+  <!-- ===================== INTAKE ===================== -->
+  <section class="view" id="v-intake"><div class="pad" id="intake"></div></section>
+
+  <!-- ===================== MAINTENANCE ===================== -->
+  <section class="view" id="v-maint"><div class="pad" id="maint"></div></section>
+</main>
+
+<script>
+/* =========================================================================
+   RAIL DIMENSION — the 13 ruled rails, in ruled order.
+   `atom`   = does an atom family exist in @empressaio/atom-contract today?
+   `writer` = does a scorer emit this facet today? (only 3 do)
+   `scope`  = county | city  — NEW in v2. Zoning and code-text are properties
+              of an incorporated city, not of a county. 1,223 TX cities.
+   ========================================================================= */
+const RAILS=[
+ {id:'geometry',  n:'Parcel geometry',   sh:'GEOM', kind:'spine',   scope:'county', thr:95, atom:false, writer:false, src:'TxGIO StratMap bulk zip per FIPS; county ArcGIS override where fresher', note:'Rail C. S2 in the contract audit: the spine rail has no atom family. ADR-029 builds its graph on a `parcel-record` type that does not exist.'},
+ {id:'cad',       n:'CAD attributes',    sh:'CAD',  kind:'spine',   scope:'county', thr:95, atom:false, writer:false, src:'County CAD (BIS / PACS / Orion / HCAD), joined to Rail C geometry', note:'Rail B. No CAD-attribute atom family anywhere.'},
+ {id:'join',      n:'Join quality',      sh:'JOIN', kind:'spine',   scope:'county', thr:95, atom:false, writer:'partial', src:'Derived; owner_match_gate_required ALWAYS per OPS-1', note:'Measured but stored as the `owner_match_rate` column on the land-use row, not as a peer cell.'},
+ {id:'zoning',    n:'Zoning + setback',  sh:'ZON',  kind:'spine',   scope:'city',   thr:95, atom:true,  writer:true,  src:'Municipal code per incorporated city; unincorporated county is unzoned', note:'Rail A. `zoning-fact` + `setback-rule` carry a typed absence discriminant, so satisfied-absent is first-class here. CITY-SCOPED: a county cell is a roll-up of its cities plus the unzoned unincorporated remainder.'},
+ {id:'roads',     n:'Roads / frontage',  sh:'ROAD', kind:'spine',   scope:'county', thr:95, atom:true,  writer:false, src:'OSM Overpass plus county roadway layers', note:'`road-node` exists and is engine-registered, but roads are not a roster block or an OPS-1 rail — atom without a registry source row.'},
+ {id:'flood',     n:'Flood / terrain',   sh:'FLD',  kind:'spine',   scope:'county', thr:95, atom:'partial', writer:false, src:'FEMA NFHL, USGS 3DEP, USDA SSURGO', note:'Rail D. `parcel-terrain-model` covers terrain only. NO flood atom — NFHL/SSURGO/3DEP are adapters producing no atom.'},
+ {id:'envelope',  n:'Buildable envelope',sh:'ENV',  kind:'derived', scope:'city',   thr:90, atom:true,  writer:true,  src:'Derived from parcel geometry + zoning/setback + roads', note:'S4: envelope absence rides off-contract engine fields (warmVerifyDecline / warmVerifyDeclineCode) that will not survive export or MCP serve. Follows zoning scope: an envelope requires a setback rule, which requires a zoning district, which requires a city.'},
+ {id:'landuse',   n:'Land use',          sh:'LU',   kind:'derived', scope:'county', thr:90, atom:false, writer:true,  src:'CAD roll code', note:'Scored today but NOT atomized. The only live carrier of land_use_code in the engine is the EXTINGUISHED Cotality adapter.'},
+ {id:'footprint', n:'Building footprints',sh:'BFP', kind:'derived', scope:'county', thr:90, atom:'unpublished', writer:false, src:'ML-derived default statewide (Microsoft / Overture / USA Structures)', note:'S6: `building-footprint` is complete in the v1.12.0 working tree but v1.12.0 is UNPUBLISHED (npm latest is 1.11.0). One publish away from existing.'},
+ {id:'easement',  n:'Utility easements', sh:'ESMT', kind:'derived', scope:'county', thr:90, atom:'unpublished', writer:false, src:'County honest-absence default; CAD exception where published', note:'S6 same as footprints. S5: McLennan carries easement_tier `cad-easement-rest`, which is NOT a member of the contract enum and will hard-fail Zod parse.'},
+ {id:'owner',     n:'Owner facet',       sh:'OWN',  kind:'derived', scope:'county', thr:90, atom:false, writer:false, src:'CAD owner_name + mailing, authenticated paid facet', note:'Ruled `public-paid` at the atom level — but there is no owner atom to carry the policy. Gating today would have to be a UI conditional, which the ruling forbids.'},
+ {id:'rrc',       n:'RRC wells / pipe',  sh:'RRC',  kind:'derived', scope:'county', thr:90, atom:'partial', writer:false, src:'RRC public GIS (W-1, H-10, PDQ)', note:'W3 HELD under the 2026-08-01 scale ruling. 12 O&G types exist but key on API-14, with NO contract edge to parcelNodeId. Pipelines have no atom.'},
+ {id:'mud',       n:'MUD / districts',   sh:'MUD',  kind:'derived', scope:'county', thr:90, atom:false, writer:false, src:'TX Comptroller special-district registry', note:'W4 HELD under the 2026-08-01 scale ruling. No atom family anywhere.'}
+];
+
+/* =========================================================================
+   COUNTY SEED — identity/parcels/risk/vintage/CAD/join/easement/cost are REAL
+   values from _catalog/texas_roster_v1.json. Rail STATE is fabricated.
+   ========================================================================= */
+const C=[
+ {f:'48021',n:'Bastrop',   p:63357, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:65285,  bad:0.0022, jk:'prop_id', es:'absent', cost:1.08},
+ {f:'48453',n:'Travis',    p:834936,r:['crosswalk-required'], gv:'202508', cad:'verified',        vend:'unknown',            lfc:386682, bad:0.5147, jk:'geo_id_or_address_crosswalk', es:'absent', cost:14.29},
+ {f:'48029',n:'Bexar',     p:709541,r:[],                     gv:'202507', cad:'verified',        vend:'unknown',            lfc:710772, bad:0.0001, jk:'prop_id', es:'absent', cost:12.14},
+ {f:'48201',n:'Harris',    p:536512,r:['no-rest','harris-sharding-required'], gv:'202508', cad:'honestly_absent', vend:'hcad-planning', lfc:null, bad:0.0, jk:'prop_id', es:'absent', cost:9.18},
+ {f:'48187',n:'Guadalupe', p:95571, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:98925,  bad:0.0042, jk:'prop_id', es:'absent', cost:1.64},
+ {f:'48055',n:'Caldwell',  p:26155, r:[],                     gv:'202503', cad:'verified',        vend:'unknown',            lfc:27445,  bad:0.0074, jk:'prop_id', es:'absent', cost:0.45},
+ {f:'48309',n:'McLennan',  p:115362,r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:116146, bad:0.0010, jk:'prop_id', es:'cad-easement-rest', cost:1.97},
+ {f:'48091',n:'Comal',     p:103537,r:[],                     gv:'202503', cad:'verified',        vend:'unknown',            lfc:92549,  bad:0.0016, jk:'prop_id', es:'absent', cost:1.77},
+ {f:'48209',n:'Hays',      p:117427,r:['no-rest'],            gv:'202503', cad:'honestly_absent', vend:'not-found',          lfc:null,   bad:0.0036, jk:'prop_id', es:'absent', cost:2.01},
+ {f:'48491',n:'Williamson',p:282983,r:[],                     gv:'202507', cad:'verified',        vend:'unknown',            lfc:290344, bad:0.0004, jk:'prop_id', es:'absent', cost:4.84},
+ {f:'48027',n:'Bell',      p:167441,r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:169398, bad:0.0105, jk:'prop_id', es:'absent', cost:2.87},
+ {f:'48085',n:'Collin',    p:387738,r:[],                     gv:'202503', cad:'verified',        vend:'county-run-agol',    lfc:437063, bad:0.0009, jk:'prop_id', es:'absent', cost:6.63},
+ {f:'48113',n:'Dallas',    p:694160,r:[],                     gv:'202508', cad:'verified',        vend:'dcad-bulk-only',     lfc:693520, bad:0.0,    jk:'prop_id', es:'absent', cost:11.88},
+ {f:'48121',n:'Denton',    p:353705,r:[],                     gv:'202503', cad:'verified',        vend:'county-run',         lfc:304723, bad:0.0016, jk:'prop_id', es:'absent', cost:6.05},
+ {f:'48139',n:'Ellis',     p:98803, r:[],                     gv:'202507', cad:'verified',        vend:'county-run',         lfc:101530, bad:0.0,    jk:'prop_id', es:'absent', cost:1.69},
+ {f:'48257',n:'Kaufman',   p:94680, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:99605,  bad:0.0027, jk:'prop_id', es:'absent', cost:1.62},
+ {f:'48251',n:'Johnson',   p:101852,r:['bis-field-template'], gv:'202508', cad:'verified',        vend:'bis-consultants',    lfc:100415, bad:0.0117, jk:'prop_id', es:'absent', cost:1.74},
+ {f:'48367',n:'Parker',    p:100555,r:['bis-field-template'], gv:'202507', cad:'verified',        vend:'bis-consultants',    lfc:102243, bad:0.0644, jk:'prop_id', es:'absent', cost:1.72},
+ {f:'48397',n:'Rockwall',  p:41112, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:41863,  bad:0.0031, jk:'prop_id', es:'absent', cost:0.70},
+ {f:'48439',n:'Tarrant',   p:757171,r:[],                     gv:'202507', cad:'partial',         vend:'county-run',         lfc:null,   bad:0.0,    jk:'prop_id', es:'absent', cost:12.96},
+ {f:'48141',n:'El Paso',   p:407130,r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:401173, bad:0.0122, jk:'prop_id', es:'absent', cost:6.97},
+ {f:'48215',n:'Hidalgo',   p:328333,r:['bis-field-template'], gv:'202508', cad:'verified',        vend:'bis-consultants',    lfc:327503, bad:0.0033, jk:'prop_id', es:'absent', cost:5.62},
+ {f:'48479',n:'Webb',      p:98291, r:['stratmap-vintage-drift'], gv:'202507', cad:'verified',    vend:'discovered-arcgis',  lfc:211,    bad:0.0025, jk:'prop_id', es:'absent', cost:1.68},
+ {f:'48355',n:'Nueces',    p:157198,r:['bis-field-template'], gv:'202507', cad:'verified',        vend:'bis-consultants',    lfc:157032, bad:0.0053, jk:'prop_id', es:'absent', cost:2.69},
+ {f:'48061',n:'Cameron',   p:185069,r:[],                     gv:'202507', cad:'verified',        vend:'county-run-agol',    lfc:187729, bad:0.0014, jk:'prop_id', es:'absent', cost:3.17},
+ {f:'48157',n:'Fort Bend', p:375100,r:['no-rest'],            gv:'202503', cad:'honestly_absent', vend:'none',               lfc:null,   bad:0.0,    jk:'prop_id', es:'absent', cost:6.42},
+ {f:'48339',n:'Montgomery',p:320915,r:['stratmap-vintage-drift'], gv:'202507', cad:'verified',    vend:'discovered-arcgis',  lfc:3817,   bad:0.0,    jk:'prop_id', es:'absent', cost:5.49},
+ {f:'48423',n:'Smith',     p:140245,r:[],                     gv:'202508', cad:'partial',         vend:'discovered-arcgis',  lfc:null,   bad:0.0,    jk:'prop_id', es:'absent', cost:2.40},
+ {f:'48183',n:'Gregg',     p:77876, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:76346,  bad:0.0018, jk:'prop_id', es:'absent', cost:1.33},
+ {f:'48181',n:'Grayson',   p:89350, r:['no-rest'],            gv:'202507', cad:'honestly_absent', vend:'none',               lfc:null,   bad:0.0017, jk:'prop_id', es:'absent', cost:1.53},
+ {f:'48221',n:'Hood',      p:51275, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:52192,  bad:0.0057, jk:'prop_id', es:'absent', cost:0.88},
+ {f:'48231',n:'Hunt',      p:69737, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:70359,  bad:0.0001, jk:'prop_id', es:'absent', cost:1.19},
+ {f:'48041',n:'Brazos',    p:74666, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:77465,  bad:0.0014, jk:'prop_id', es:'absent', cost:1.28},
+ {f:'48477',n:'Washington',p:23475, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:23149,  bad:0.0074, jk:'prop_id', es:'absent', cost:0.40},
+ {f:'48287',n:'Lee',       p:16091, r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:15312,  bad:0.0291, jk:'prop_id', es:'absent', cost:0.28},
+ {f:'48507',n:'Zavala',    p:9744,  r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:9647,   bad:0.0564, jk:'prop_id', es:'absent', cost:0.17},
+ {f:'48173',n:'Glasscock', p:2988,  r:['bis-field-template'], gv:'202503', cad:'verified',        vend:'bis-consultants',    lfc:3065,   bad:0.1295, jk:'prop_id', es:'absent', cost:0.05},
+ {f:'48269',n:'King',      p:2326,  r:['no-rest'],            gv:'202505', cad:'honestly_absent', vend:'none',               lfc:null,   bad:0.0701, jk:'prop_id', es:'absent', cost:0.04},
+ {f:'48101',n:'Cottle',    p:4374,  r:['no-rest'],            gv:'202505', cad:'honestly_absent', vend:'none',               lfc:null,   bad:0.1255, jk:'prop_id', es:'absent', cost:0.07},
+ {f:'48129',n:'Donley',    p:null,  r:['no-rest','no-stratmap'], gv:null,  cad:'honestly_absent', vend:'donley-no-stratmap', lfc:null,   bad:null,   jk:'prop_id', es:'absent', cost:0.00}
+];
+
+const TX_PARCELS=13360496, TX_COUNTIES=254, TX_CITIES=1223;
+
+/* =========================================================================
+   D. CITY SEED — the jurisdiction dimension.
+   Bastrop city block counts (SF-1 1919 / GC 253 / MU 189 / RR 205 / PI 65 /
+   IND 31 warmed, PDD 1978 + null 117 unwarmed) are REAL, from
+   _inbox/2026-08-03_BASTROP_CITY_GATE_C_reached.md. Everything else —
+   rail state, parcel totals for other cities, run history — is fabricated.
+   `stage`: warmed | queued | live-search | unwired
+   ========================================================================= */
+const CITIES=[
+ {f:'48021',id:'bastrop-city', n:'Bastrop (city)',  p:1959, stage:'warmed',
+   blocks:[['SF-1',1919,1919],['GC',253,253],['MU',189,189],['RR',205,205],['PI',65,65],['IND',31,31],['PDD',1978,0]],
+   note:'GATE C reached 2026-08-03. Every warmable district block mechanically area-swept and promoted; PDD (1,978) and null (117) are honest-decline, not failure. Operator R6 is the remaining gate before any certified claim.',
+   ev:'_inbox/2026-08-03_BASTROP_CITY_GATE_C_reached.md'},
+ {f:'48021',id:'elgin',        n:'Elgin',           p:1977, stage:'queued',
+   blocks:[['zoning-fact bake',1977,1977],['setback-rule',1977,0],['envelope warm',1977,0]],
+   note:'Zoning-fact bake landed 2026-08-04; setback + envelope warm are QUEUED behind the heavy-scan slot, which Bastrop holds. Warm stage, gate-onboarded.',
+   ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ {f:'48021',id:'smithville',   n:'Smithville',      p:1642, stage:'live-search',
+   blocks:[['code text acquired',1642,1642]],
+   note:'Live on /search via the scrape posture ruling (eCode360 partnership retired 2026-08-04; zoning is public record). Code text acquired; no district geometry stamped, so no setback or envelope.',
+   ev:'_decisions/2026-08-04_ecode360_partnership_retired_scrape_posture.md'},
+ {f:'48021',id:'bastrop-uninc',n:'Unincorporated',  p:57779, stage:'unzoned',
+   blocks:[], note:'Unincorporated Bastrop County is legitimately unzoned. This is satisfied-absent, not a gap — coverage is a wired-city measure, and 100 percent is not the target.',
+   ev:'_decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first.md'},
+ {f:'48453',id:'austin',       n:'Austin',          p:412300, stage:'unwired', blocks:[], note:'Not wired. Austin is the single largest city zoning surface in the state and nothing has run against it.', ev:null},
+ {f:'48453',id:'pflugerville', n:'Pflugerville',    p:29840, stage:'unwired', blocks:[], note:'Not wired.', ev:null},
+ {f:'48453',id:'travis-uninc', n:'Unincorporated',  p:302410, stage:'unzoned', blocks:[], note:'Unincorporated Travis County is unzoned. Satisfied-absent once a public-record check is actually performed — it has not been.', ev:null},
+ {f:'48029',id:'san-antonio',  n:'San Antonio',     p:520100, stage:'unwired', blocks:[], note:'Not wired. Zoning capture diagnosis exists as a pilot doc only.', ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ {f:'48029',id:'bexar-uninc',  n:'Unincorporated',  p:112300, stage:'unzoned', blocks:[], note:'Unzoned remainder. No public-record check performed.', ev:null},
+ {f:'48187',id:'seguin',       n:'Seguin',          p:12480, stage:'unwired', blocks:[], note:'Not wired. Guadalupe reached warm at the county level only.', ev:null},
+ {f:'48187',id:'schertz',      n:'Schertz',         p:14920, stage:'unwired', blocks:[], note:'Not wired.', ev:null},
+ {f:'48491',id:'georgetown',   n:'Georgetown',      p:38200, stage:'unwired', blocks:[], note:'Not wired. Williamson zoning at 33.98 percent is a county-level partial produced by a stamp roll, not by a wired city.', ev:null},
+ {f:'48491',id:'round-rock',   n:'Round Rock',      p:42600, stage:'unwired', blocks:[], note:'Not wired.', ev:null}
+];
+
+/* =========================================================================
+   STATE ASSIGNMENT — deliberately unflattering.
+   ========================================================================= */
+const WORKED={
+  '48021':'onboarded','48187':'warm','48055':'scored','48029':'partial',
+  '48091':'scored','48209':'scored','48491':'scored','48027':'scored',
+  '48309':'scored','48453':'scored','48257':'scored'
+};
+
+/* =========================================================================
+   C. VERIFICATION LEDGER — *** ENTIRELY INVENTED ***
+   Nothing in the repo records per-cell verification. Key is "fips:railId".
+   method: 'sweep'   = every parcel in the area examined (strong, OPS-5)
+           'sample'  = a sample was examined (WEAK — OPS-5 anti-sampling rule)
+           'probe'   = a single endpoint/feature-count probe (weakest)
+           'derived' = inherited from an upstream rail, never independently checked
+   ========================================================================= */
+const VERIF={
+ '48021:zoning':   {at:'2026-08-03T14:17Z', inst:'area-sweep cert (dominant-district roster)', ver:'OPS-5 cert standard', method:'sweep',  n:2662, ev:'_inbox/2026-08-03_BASTROP_CITY_GATE_C_reached.md'},
+ '48021:envelope': {at:'2026-08-08T06:41Z', inst:'block13-cert-grade + saga plain-geometry', ver:'geometry-law 1.0', method:'sweep',  n:2438, ev:'_inbox/2026-08-08_T1_block13_post_recovery.json'},
+ '48021:roads':    {at:'2026-07-30T09:12Z', inst:'Warden v1.3 serveTruthEdgeLabels',        ver:'v1.3',            method:'sample', n:120,  ev:'_dispatches/2026-07-30_BDC_DOWNTOWN_STEP3_lot_line_geometry_scrub.md'},
+ '48187:zoning':   {at:'2026-08-04T09:02Z', inst:'gate onboard 8/8',                        ver:'onboard(fips) 1.0', method:'sample', n:40, ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ '48187:envelope': {at:'2026-08-04T09:02Z', inst:'gate onboard 8/8',                        ver:'onboard(fips) 1.0', method:'sample', n:40, ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ '48187:roads':    {at:'2026-08-04T09:02Z', inst:'gate onboard 8/8',                        ver:'onboard(fips) 1.0', method:'sample', n:40, ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ '48055:zoning':   {at:'2026-08-02T17:40Z', inst:'coverage score --all',                    ver:'scorer 0.9',      method:'derived',n:null,ev:'_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md'},
+ '48055:envelope': {at:'2026-08-02T17:40Z', inst:'coverage score --all',                    ver:'scorer 0.9',      method:'derived',n:null,ev:'_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md'},
+ '48491:zoning':   {at:'2026-06-28T11:05Z', inst:'zoning stamp roll (ZONING_LAYERS)',       ver:'stamp CLI 0.4',   method:'probe',  n:1,   ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ '48491:envelope': {at:'2026-06-28T11:05Z', inst:'zoning stamp roll (ZONING_LAYERS)',       ver:'stamp CLI 0.4',   method:'derived',n:null,ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ '48091:zoning':   {at:'2026-06-28T11:05Z', inst:'zoning stamp roll (ZONING_LAYERS)',       ver:'stamp CLI 0.4',   method:'probe',  n:1,   ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ '48091:envelope': {at:'2026-06-28T11:05Z', inst:'zoning stamp roll (ZONING_LAYERS)',       ver:'stamp CLI 0.4',   method:'derived',n:null,ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ '48209:zoning':   {at:'2026-06-28T11:05Z', inst:'zoning stamp roll (ZONING_LAYERS)',       ver:'stamp CLI 0.4',   method:'probe',  n:1,   ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ '48209:envelope': {at:'2026-06-28T11:05Z', inst:'zoning stamp roll (ZONING_LAYERS)',       ver:'stamp CLI 0.4',   method:'derived',n:null,ev:'_inbox/2026-07-24_zoning_capture_diagnosis_austin_sa_pilot.md'},
+ '48027:zoning':   {at:'2026-08-02T17:40Z', inst:'coverage score --all',                    ver:'scorer 0.9',      method:'derived',n:null,ev:null},
+ '48309:zoning':   {at:'2026-08-02T17:40Z', inst:'coverage score --all',                    ver:'scorer 0.9',      method:'derived',n:null,ev:null},
+ '48453:zoning':   {at:'2026-08-02T17:40Z', inst:'coverage score --all',                    ver:'scorer 0.9',      method:'derived',n:null,ev:null},
+ '48257:zoning':   {at:'2026-08-02T17:40Z', inst:'coverage score --all',                    ver:'scorer 0.9',      method:'derived',n:null,ev:null},
+ '48029:zoning':   {at:'2026-07-29T03:11Z', inst:'geometry load probe',                     ver:'loader 1.1',      method:'probe',  n:1,   ev:null}
+};
+const METHOD_META={
+  sweep:  {lbl:'AREA SWEEP',  cls:'strong', b:'Every parcel in the area examined. The strong instrument per OPS-5. A sweep is the only method that can find the neighbor-shaped defect a sample walks past.'},
+  sample: {lbl:'SAMPLE',      cls:'weak',   b:'A sample was examined, not the area. OPS-5 anti-sampling rule: sampling once certified a broken Bastrop. Treat a sampled cell as unproven at the area level.'},
+  probe:  {lbl:'PROBE',       cls:'weak',   b:'A single endpoint or feature-count probe. Establishes the source answers, nothing about per-parcel correctness.'},
+  derived:{lbl:'DERIVED',     cls:'weak',   b:'Inherited from an upstream rail. Never independently measured — if the upstream is wrong this is wrong and nothing would say so.'}
+};
+
+function railState(c,rail){
+  const w=WORKED[c.f];
+  if(rail.atom===false) return {s:'x'};
+  if(rail.atom==='unpublished') return {s:'x',sub:'contract v1.12.0 unpublished'};
+  if(rail.atom==='partial'&&(rail.id==='flood'||rail.id==='rrc')) return {s:'x',sub:'half the rail has no atom'};
+
+  if(rail.id==='zoning'){
+    if(w==='onboarded') return {s:'p',cov:99.77};
+    if(w==='warm')      return {s:'p',cov:96.4};
+    if(w==='scored'&&(c.f==='48491')) return {s:'p',cov:33.98,partial:true};
+    if(w==='scored'&&(c.f==='48091')) return {s:'p',cov:25.82,partial:true};
+    if(w==='scored'&&(c.f==='48209')) return {s:'p',cov:3.61,partial:true};
+    if(w)  return {s:'a',basis:'unincorporated county unzoned; incorporated cities not stamped'};
+    return {s:'n'};
+  }
+  if(rail.id==='envelope'){
+    if(w==='onboarded') return {s:'p',cov:99.77};
+    if(w==='warm')      return {s:'p',cov:91.2};
+    if(w==='scored')    return {s:'p',cov:12.4,partial:true};
+    return {s:'n'};
+  }
+  if(rail.id==='roads'){
+    if(w==='onboarded') return {s:'p',cov:97.1};
+    if(w==='warm')      return {s:'p',cov:88.6,partial:true};
+    return {s:'n'};
+  }
+  return {s:'n'};
+}
+
+/* -------- C: attach verification + staleness to every cell -------- */
+const NOW=new Date('2026-08-08T11:30:00Z');
+function vintageDate(gv){ return gv?new Date(+gv.slice(0,4),+gv.slice(4,6)-1,1):null; }
+C.forEach(c=>{
+  c.cells=RAILS.map(r=>{
+    const st=railState(c,r);
+    const v=VERIF[c.f+':'+r.id]||null;
+    st.v=v;
+    if(v){
+      const vd=new Date(v.at), vin=vintageDate(c.gv);
+      st.vAgeDays=Math.round((NOW-vd)/86400000);
+      // staleness: verification predates the data vintage it claims to verify,
+      // OR verification is older than 30 days on a rail that has since re-run.
+      st.vStale = !!(vin && vd < vin) || st.vAgeDays>30;
+      st.sampled = v.method==='sample'||v.method==='probe';
+    }
+    return st;
+  });
+  c.sat=c.cells.filter(x=>(x.s==='p'&&!x.partial)||x.s==='a').length;
+  c.partial=c.cells.filter(x=>x.partial).length;
+  c.na =c.cells.filter(x=>x.s==='x').length;
+  c.ny =c.cells.filter(x=>x.s==='n').length;
+  c.unverified=c.cells.filter(x=>((x.s==='p')||(x.s==='a'))&&!x.v).length;
+  c.weak=c.cells.filter(x=>x.sampled).length;
+});
+
+/* -------- Texas rollup, weighted by parcel_count_est -------- */
+function rollup(){
+  let satW=0;
+  C.forEach(c=>{ satW += (c.p||0)*c.sat; });
+  const seededP=C.reduce((a,c)=>a+(c.p||0),0);
+  const denW=TX_PARCELS*RAILS.length;
+  return {pct:100*satW/denW, satW, denW, seededP, restP:TX_PARCELS-seededP};
+}
+const RU=rollup();
+const cellsTotal=TX_COUNTIES*RAILS.length;
+const naCells=TX_COUNTIES*RAILS.filter(r=>r.atom!==true).length;
+const satCells=C.reduce((a,c)=>a+c.sat,0);
+const weakCells=C.reduce((a,c)=>a+c.weak,0);
+const unverifiedSat=C.reduce((a,c)=>a+c.unverified,0);
+
+/* =========================================================================
+   A. TIME AXIS — *** ENTIRELY FABRICATED ***
+   No history table exists. This series is generated to be plausible and
+   deliberately UNIMPRESSIVE: 60 days, slow climb, two flat weeks, one small
+   regression when Bastrop block-13 was quarantined. It is not a hockey stick
+   because the real trajectory is not one.
+   ========================================================================= */
+function buildSeries(end,days,shape){
+  // shape = array of [dayIndex, valueFraction] control points, monotone-ish
+  const out=[];
+  for(let i=0;i<days;i++){
+    let f=0;
+    for(let k=0;k<shape.length-1;k++){
+      const [d0,v0]=shape[k],[d1,v1]=shape[k+1];
+      if(i>=d0&&i<=d1){ const t=(i-d0)/Math.max(1,(d1-d0)); f=v0+(v1-v0)*t; break; }
+    }
+    if(i>shape[shape.length-1][0]) f=shape[shape.length-1][1];
+    out.push(+(end*f).toFixed(4));
+  }
+  return out;
+}
+const DAYS=60;
+// Texas completeness: 0.31% -> 1.34% over 60 days, with a plateau and a dip.
+const TX_SERIES=buildSeries(1.34,DAYS,[[0,0.231],[8,0.244],[14,0.402],[20,0.418],[27,0.418],[33,0.602],[38,0.598],[41,0.716],[47,0.721],[52,0.903],[55,0.874],[57,0.985],[59,1.0]]);
+const TX_DELTA_7 = +(TX_SERIES[DAYS-1]-TX_SERIES[DAYS-8]).toFixed(3);
+const TX_DELTA_30= +(TX_SERIES[DAYS-1]-TX_SERIES[DAYS-31]).toFixed(3);
+
+// Per-rail statewide satisfied-county counts over the same 60 days.
+// Ten of thirteen rails are dead flat at zero, which is the point.
+const RAIL_SERIES={};
+RAILS.forEach((r,i)=>{
+  const st=railStatewideNow(i);
+  const endv=st.p+st.a;
+  if(endv===0){ RAIL_SERIES[r.id]=new Array(DAYS).fill(0); return; }
+  let shape;
+  if(r.id==='zoning')        shape=[[0,0.181],[12,0.272],[19,0.363],[26,0.363],[34,0.545],[43,0.727],[50,0.909],[56,0.909],[59,1.0]];
+  else if(r.id==='envelope') shape=[[0,0.125],[15,0.25],[24,0.375],[31,0.375],[38,0.625],[46,0.75],[53,0.875],[59,1.0]];
+  else                       shape=[[0,0.0],[22,0.5],[40,0.5],[52,1.0],[59,1.0]];
+  RAIL_SERIES[r.id]=buildSeries(endv,DAYS,shape).map(v=>Math.round(v));
+});
+function railStatewideNow(ri){
+  let p=0,a=0;
+  C.forEach(c=>{ const s=c.cells[ri].s; if(s==='p')p++; else if(s==='a')a++; });
+  return {p,a,n:TX_COUNTIES-p-a};
+}
+
+function sparkSVG(series,w,h,opts){
+  opts=opts||{};
+  const max=Math.max(...series,opts.min||0.0001), min=0;
+  const n=series.length;
+  const pts=series.map((v,i)=>[ (i/(n-1))*(w-2)+1, h-1-((v-min)/(max-min||1))*(h-2) ]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const fill=line+` L${(w-1).toFixed(1)} ${h-1} L1 ${h-1} Z`;
+  const flat=max<=0;
+  return `<svg class="spark ${flat?'flat':''}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <path class="fl" d="${fill}"></path><path class="ln" d="${line}"></path></svg>`;
+}
+
+/* =========================================================================
+   A. DIFF FEED — "since you last looked". *** ENTIRELY FABRICATED ***
+   There is no state-history table, so none of this can be computed today.
+   `t` = kind: state | regress | defect | run | slot
+   ========================================================================= */
+const LAST_LOOK='2026-08-07T09:12:00Z';
+const DIFF=[
+ {tm:'2026-08-08 06:41', t:'state',  f:'48021', rail:'envelope', txt:'<b>Bastrop &middot; Buildable envelope</b> not-yet &rarr; satisfied-present (99.77%) after block-13 post-recovery sweep', ev:'_inbox/2026-08-08_T1_block13_post_recovery.json'},
+ {tm:'2026-08-08 06:41', t:'run',    f:'48021', rail:null,       txt:'<b>run completed</b> &mdash; T1 block-13 recovery sweep, 2,438 examined, 12/12 independent-measurement parity', ev:'_sessions/2026-08-08_master_session_close.md'},
+ {tm:'2026-08-08 05:58', t:'slot',   f:null,    rail:null,       txt:'<b>heavy-scan slot</b> released by T1 block-13, re-acquired 3 minutes later by T1 Bastrop cohort re-warm', ev:'_scratch/cohort-repersist-2026-08-07.md'},
+ {tm:'2026-08-08 04:20', t:'defect', f:'48021', rail:'envelope', txt:'<b>new defect class</b> &mdash; 369 <code>declines.other</code> parcels serving stale envelopes with no honest-decline marker', ev:'_inbox/2026-08-08_BLUEPRINT_program_plan.md'},
+ {tm:'2026-08-07 22:14', t:'regress',f:'48021', rail:'envelope', txt:'<b>Bastrop &middot; envelope</b> coverage 99.77% &rarr; 68.4% mid-run, recovered same night. Store was half-mutated for 8h and the console would not have said so.', ev:'_scratch/bdc-downtown-step4-warm-v2.log'},
+ {tm:'2026-08-07 19:03', t:'defect', f:'48309', rail:'easement', txt:'<b>McLennan</b> easement_tier <code>cad-easement-rest</code> confirmed absent from the contract enum &mdash; hard Zod parse failure on any export', ev:'_inbox/2026-08-08_CONTRACT_coherence_audit.md'},
+ {tm:'2026-08-07 18:02', t:'run',    f:'48021', rail:'envelope', txt:'<b>run completed</b> &mdash; envelope parity by independent instrument, PASS 12/12 (index-locked instrument had given 8/12; the instrument was wrong, not the data)', ev:'_inbox/2026-08-07_envelope_saga_operator_verified.md'},
+ {tm:'2026-08-07 14:31', t:'state',  f:'48187', rail:'roads',    txt:'<b>Guadalupe &middot; Roads</b> satisfied-present at 88.6% &mdash; below the 95% threshold, so it renders PARTIAL and adds nothing to the score', ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ {tm:'2026-08-07 11:20', t:'defect', f:'48453', rail:'join',     txt:'<b>Travis</b> prop_id bad rate re-measured at 51.47% &mdash; 429,706 parcels need the crosswalk key; nothing records which key kind the token is', ev:'_inbox/2026-08-08_CONTRACT_coherence_audit.md'},
+ {tm:'2026-08-07 09:45', t:'run',    f:null,    rail:null,       txt:'<b>run completed</b> &mdash; contract coherence audit, 6 of 13 rails confirmed to have no atom family', ev:'_inbox/2026-08-08_CONTRACT_coherence_audit.md'}
+];
+const CHANGED_KEYS=new Set(DIFF.filter(d=>d.f&&d.rail).map(d=>d.f+':'+d.rail));
+const CHANGED_FIPS=new Set(DIFF.filter(d=>d.f).map(d=>d.f));
+
+/* =========================================================================
+   B. IN-FLIGHT RUN STATE — *** ENTIRELY FABRICATED ***
+   No run-state surface exists. Nothing publishes "what is running now".
+   ========================================================================= */
+const RUNNING=[
+ {lane:'T1', laneCls:'t1', who:'Bastrop cohort re-warm', scope:'48021 &middot; bastrop-city &middot; all districts',
+  stage:'promote', stages:['load','district roster','warm','sweep','promote','ledger'], stageIdx:4,
+  started:'2026-08-08T05:58Z', elapsed:'5h 32m', done:1841, total:2662, holdsSlot:true,
+  artifact:'_scratch/cohort-repersist-2026-08-07.md',
+  note:'Holds the heavy-scan slot. Everything below is blocked on this finishing.'}
+];
+const QUEUE=[
+ {n:1,lane:'T1',who:'Elgin setback-rule + envelope warm', d:'48021 &middot; elgin &middot; 1,977 parcels', wait:'queued 5h 32m', ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ {n:2,lane:'T3',who:'Building-footprint spatial-join pilot', d:'48021 &middot; dry-run cleared, live run queued', wait:'queued 2d 4h', ev:'_scratch/bastrop_footprint_spatial_join_dryrun.json'},
+ {n:3,lane:'T5',who:'Bexar geometry &rarr; atom backfill', d:'48029 &middot; 709,541 features', wait:'queued 4d 1h', ev:'_inbox/2026-08-05_T1_corpus_drift_recon.json'}
+];
+const RECENT=[
+ {tm:'2026-08-08 06:41', lane:'T1', job:'block-13 post-recovery sweep',      who:'Bastrop 48021',  out:'PASS', cls:'ok', a:2438,b:2438,c:0, ev:'_inbox/2026-08-08_T1_block13_post_recovery.json'},
+ {tm:'2026-08-07 22:14', lane:'T1', job:'bulk depth-warm',                   who:'Bastrop 48021',  out:'PARTIAL', cls:'warn', a:2438,b:1668,c:770, ev:'_scratch/bdc-downtown-step4-warm-v2.log'},
+ {tm:'2026-08-07 18:02', lane:'QA', job:'envelope parity, independent instrument', who:'Bastrop 48021', out:'PASS 12/12', cls:'ok', a:12,b:12,c:0, ev:'_inbox/2026-08-07_envelope_saga_operator_verified.md'},
+ {tm:'2026-08-05 11:47', lane:'T1', job:'gate onboard',                      who:'Elgin (city)',   out:'PASS 8/8', cls:'ok', a:null,b:null,c:0, ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ {tm:'2026-08-05 09:12', lane:'T3', job:'footprint spatial join (dry run)',  who:'Bastrop 48021',  out:'DRY OK', cls:'ok', a:1959,b:1959,c:0, ev:'_scratch/bastrop_footprint_spatial_join_dryrun.json'},
+ {tm:'2026-08-04 09:02', lane:'T1', job:'gate onboard',                      who:'Guadalupe 48187',out:'PASS 8/8', cls:'ok', a:null,b:null,c:0, ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ {tm:'2026-08-02 17:40', lane:'T2', job:'coverage score --all',              who:'10 counties',    out:'SCOPED', cls:'warn', a:10,b:10,c:0, ev:'_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md'},
+ {tm:'2026-07-29 03:11', lane:'T5', job:'geometry load',                     who:'Bexar 48029',    out:'OK', cls:'ok', a:709541,b:709541,c:0, ev:'_inbox/2026-08-05_T1_corpus_drift_recon.json'}
+];
+
+/* =========================================================================
+   F. COST ACTUALS — *** MOSTLY EMPTY, WHICH IS THE POINT ***
+   Only four counties have anything resembling a recorded actual, and each
+   figure is reconstructed after the fact from logs, not metered at run time.
+   ========================================================================= */
+const ACTUALS={
+ '48021':{amt:284.40, src:'reconstructed from Cloud Run + Neon line items across 6 warm passes', conf:'low',  ev:'_scratch/autonomous-run-bastrop-factory.md'},
+ '48187':{amt:41.20,  src:'reconstructed from a single gate-onboard pass',                        conf:'low',  ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+ '48055':{amt:12.85,  src:'reconstructed from one coverage-score pass; acquisition not included', conf:'vlow', ev:'_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md'},
+ '48029':{amt:96.70,  src:'geometry load only; no CAD join, no zoning, no envelope',              conf:'vlow', ev:'_inbox/2026-08-05_T1_corpus_drift_recon.json'}
+};
+
+/* -------- header rollup strip -------- */
+const fm=n=>n==null?'—':n.toLocaleString('en-US');
+document.getElementById('rollup').innerHTML=`
+ <div class="metric" style="min-width:236px">
+   <div class="k">Texas complete &mdash; parcel-weighted</div>
+   <div class="v lo">${RU.pct.toFixed(2)}%</div>
+   <div style="margin:3px 0 2px">${sparkSVG(TX_SERIES,214,26)}</div>
+   <div class="s">${fm(Math.round(RU.satW/1000))}k of ${fm(Math.round(RU.denW/1000))}k parcel&middot;rail units</div>
+   <div class="dlt">+${TX_DELTA_30.toFixed(2)} pts in 30d &middot; +${TX_DELTA_7.toFixed(2)} in 7d <span class="nm-tag">series fabricated</span></div>
+ </div>
+ <div class="metric"><div class="k">Counties &ge; 1 rail</div><div class="v">${Object.keys(WORKED).length}<span style="font-size:12px;color:var(--tx3)">/254</span></div><div class="s">${(100*Object.keys(WORKED).length/254).toFixed(1)}% touched</div><div class="dlt">+1 in 30d</div></div>
+ <div class="metric"><div class="k">Counties complete 13/13</div><div class="v lo">0<span style="font-size:12px;color:var(--tx3)">/254</span></div><div class="s">best is Bastrop at 3/13</div><div class="dlt z">no change, 60d</div></div>
+ <div class="metric"><div class="k">Cells satisfied</div><div class="v">${fm(satCells)}<span style="font-size:12px;color:var(--tx3)">/${fm(cellsTotal)}</span></div><div class="s">${(100*satCells/cellsTotal).toFixed(2)}% of the grid</div><div class="dlt">+3 in 30d</div></div>
+ <div class="metric"><div class="k">Satisfied on a weak instrument</div><div class="v warn" style="color:var(--warn-tx)">${weakCells}</div><div class="s">sample or probe, never area-swept</div><div class="dlt z">OPS-5 says treat as unproven</div></div>
+ <div class="metric"><div class="k">Satisfied, never verified</div><div class="v lo">${unverifiedSat}</div><div class="s">no verification record at all</div><div class="dlt z">no instrument attributed</div></div>
+ <div class="metric"><div class="k">Cells un-recordable</div><div class="v" style="color:var(--noatom-tx)">${fm(naCells)}</div><div class="s">${RAILS.filter(r=>r.atom!==true).length} of 13 rails have no atom</div><div class="dlt z">no change, 60d</div></div>
+ <div class="metric hold"><div class="k">Heavy-scan slot</div><div class="v warn">HELD</div><div class="s">T1 Bastrop cohort &middot; 5h 32m</div><div class="dlt z">3 queued behind</div></div>
+`;
+
+/* ===================== A: DIFF STRIP ===================== */
+(function drawDiff(){
+  const kinds={state:0,regress:0,defect:0,run:0,slot:0};
+  DIFF.forEach(d=>kinds[d.t]++);
+  document.getElementById('dsince').textContent='since 2026-08-07 09:12 UTC · 26h 18m ago';
+  document.getElementById('dcnts').innerHTML=
+    `<span class="dpill up">${kinds.state} cell state changes</span>`+
+    `<span class="dpill dn">${kinds.regress} regression</span>`+
+    `<span class="dpill nw">${kinds.defect} new defect classes</span>`+
+    `<span class="dpill">${kinds.run} runs completed</span>`+
+    `<span class="dpill">${kinds.slot} slot handoff</span>`;
+  const KL={state:'STATE',regress:'REGRESSION',defect:'NEW DEFECT',run:'RUN DONE',slot:'SLOT'};
+  document.getElementById('difflist').innerHTML=DIFF.map(d=>`
+    <div class="drow">
+      <span class="tm">${d.tm}</span>
+      <span class="kind k-${d.t}">${KL[d.t]}</span>
+      <span class="txt">${d.txt}</span>
+      <span class="ev mono" title="${d.ev||''}">${d.ev||'<span style="color:var(--bad-tx)">no artifact</span>'}</span>
+    </div>`).join('');
+})();
+document.getElementById('diffhead').addEventListener('click',()=>{
+  const l=document.getElementById('difflist');
+  l.classList.toggle('hid');
+  document.getElementById('dcar').innerHTML=l.classList.contains('hid')?'&#9656; expand':'&#9662; collapse';
+});
+
+/* ===================== MANIFEST GRID ===================== */
+const SLB={p:'satisfied-present',a:'satisfied-absent',n:'not-yet',x:'no-atom'};
+function drawHead(){
+  const r=RAILS.map((rl,i)=>{
+    const st=railStatewideNow(i);
+    const na=rl.atom!==true;
+    const pp=100*st.p/TX_COUNTIES, ap=100*st.a/TX_COUNTIES;
+    let tag='';
+    if(rl.atom===false) tag='<span class="tag">NO ATOM</span>';
+    else if(rl.atom==='unpublished') tag='<span class="tag">UNPUB</span>';
+    else if(rl.atom==='partial') tag='<span class="tag">HALF</span>';
+    if(!rl.writer) tag+='<span class="tag tagn">NO WRITER</span>';
+    if(rl.scope==='city') tag+='<span class="tag tagn">CITY</span>';
+    const detail = rl.id==='geometry'
+      ? '253/254 in StratMap &middot; 0 atomized'
+      : `${st.p+st.a}/254 satisfied`;
+    const ser=RAIL_SERIES[rl.id];
+    const d30=ser[DAYS-1]-ser[DAYS-31];
+    return `<th class="rh ${na?'na':''}" title="${rl.n}">
+      <span class="rn">${rl.n}${tag}</span>
+      <span class="rs">${rl.sh} &middot; thr ${rl.thr}% ${rl.kind}</span>
+      <span class="rs">${detail}</span>
+      <span class="trend">${sparkSVG(ser,58,14)}<span class="dv ${d30?'':'z'}">${d30>0?'+':''}${d30} / 30d</span></span>
+      <span class="rbar"><i style="width:${pp}%;background:var(--present)"></i><i style="width:${ap}%;background:var(--absent)"></i></span>
+    </th>`;
+  }).join('');
+  document.getElementById('hrow').innerHTML=
+    `<th class="cty rh"><span class="rn">Jurisdiction</span><span class="rs">254 counties &middot; 40 seeded</span><span class="rs">1,223 cities &middot; 13 seeded</span><span class="rs">fips &middot; parcel_count_est</span></th>`+
+    `<th class="score rh" style="text-align:center"><span class="rn">Done</span><span class="rs">of 13</span></th>`+r;
+}
+
+const EXPANDED=new Set();
+function visible(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const og=document.getElementById('onlygap').checked;
+  const oc=document.getElementById('onlychg').checked;
+  let a=C.filter(c=>{
+    if(!q) return true;
+    if(c.n.toLowerCase().includes(q)||c.f.includes(q)) return true;
+    return CITIES.some(t=>t.f===c.f&&t.n.toLowerCase().includes(q));
+  });
+  if(og) a=a.filter(c=>c.sat<3);
+  if(oc) a=a.filter(c=>CHANGED_FIPS.has(c.f));
+  const s=document.getElementById('sortby').value;
+  const cmp={parcels:(x,y)=>(y.p||0)-(x.p||0),name:(x,y)=>x.n.localeCompare(y.n),
+    score:(x,y)=>y.sat-x.sat||(y.p||0)-(x.p||0),scoreasc:(x,y)=>x.sat-y.sat||(y.p||0)-(x.p||0),
+    fips:(x,y)=>x.f.localeCompare(y.f),
+    changed:(x,y)=>(CHANGED_FIPS.has(y.f)?1:0)-(CHANGED_FIPS.has(x.f)?1:0)||(y.p||0)-(x.p||0)}[s];
+  return a.slice().sort(cmp);
+}
+
+/* D: a city's cell state for a rail. Only city-scoped rails carry state at
+   the city level; county-scoped rails render as an explicit "county rail"
+   blank so the operator never reads a city as failing a county measure. */
+function cityCell(t,rl){
+  if(rl.scope!=='city') return {s:'county'};
+  if(rl.atom!==true) return {s:'x'};
+  if(t.stage==='warmed')      return {s:'p',cov:rl.id==='zoning'?99.77:98.4};
+  if(t.stage==='queued')      return rl.id==='zoning'?{s:'p',cov:100,sub:'zoning-fact only'}:{s:'n'};
+  if(t.stage==='live-search') return rl.id==='zoning'?{s:'p',cov:41.2,partial:true}:{s:'n'};
+  if(t.stage==='unzoned')     return {s:'a',basis:'unincorporated area is legitimately unzoned'};
+  return {s:'n'};
+}
+
+function drawGrid(){
+  const rows=visible();
+  let cityCount=0;
+  const html=rows.map(c=>{
+    const kids=CITIES.filter(t=>t.f===c.f);
+    const open=EXPANDED.has(c.f);
+    const cells=c.cells.map((st,i)=>{
+      const lbl={p:st.cov!=null?st.cov.toFixed(0)+'%':'ok',a:'absent',n:'',x:''}[st.s];
+      const cls=[st.s, st.partial?'partial':'', st.sampled?'smp':'', st.vStale?'vstale':'',
+                 CHANGED_KEYS.has(c.f+':'+RAILS[i].id)?'chg':''].filter(Boolean).join(' ');
+      return `<td class="cell"><div class="c ${cls}" data-f="${c.f}" data-r="${i}"><span class="dot"></span>${lbl}</div></td>`;
+    }).join('');
+    const pw=100*c.sat/13, aw=100*c.na/13;
+    let out=`<tr data-f="${c.f}">
+      <td class="cty"><div class="cn">
+        <span class="exp ${kids.length?'':'none'}" data-exp="${c.f}">${kids.length?(open?'&#9662;':'&#9656;'):'&middot;'}</span>
+        <span class="nm" data-cty="${c.f}">${c.n}</span><span class="fp">${c.f}</span>
+        <span class="pc">${c.p==null?'no data':fm(c.p)}</span></div></td>
+      <td class="score"><div class="sc" style="color:${c.sat?'var(--present-tx)':'var(--tx3)'}">${c.sat}/13</div>
+        <div class="sb"><i style="width:${pw}%;background:var(--present)"></i><i style="width:${aw}%;background:var(--noatom)"></i></div></td>
+      ${cells}</tr>`;
+    if(open){
+      cityCount+=kids.length;
+      out+=kids.map(t=>{
+        const kc=RAILS.map((rl,i)=>{
+          const st=cityCell(t,rl);
+          if(st.s==='county') return `<td class="cell"><div class="c n" style="opacity:.28" title="${rl.n} is a county rail — cities do not carry it"><span class="dot" style="opacity:.2"></span></div></td>`;
+          const lbl={p:st.cov!=null?st.cov.toFixed(0)+'%':'ok',a:'absent',n:'',x:''}[st.s];
+          return `<td class="cell"><div class="c ${st.s} ${st.partial?'partial':''}" data-city="${t.id}" data-r="${i}"><span class="dot"></span>${lbl}</div></td>`;
+        }).join('');
+        const sb={'warmed':'warm','queued':'q','live-search':'','unzoned':'','unwired':''}[t.stage]||'';
+        const sat=RAILS.filter((rl,i)=>{const s=cityCell(t,rl);return (s.s==='p'&&!s.partial)||s.s==='a';}).length;
+        return `<tr class="cityrow" data-city="${t.id}">
+          <td class="cty"><div class="cn"><span class="nm" data-cityname="${t.id}">${t.n}</span>
+            <span class="cityb ${sb}">${t.stage}</span>
+            <span class="pc">${fm(t.p)}</span></div></td>
+          <td class="score"><div class="sc" style="color:${sat?'var(--present-tx)':'var(--tx3)'};font-size:10px">${sat}/2</div>
+            <div class="sb"><i style="width:${100*sat/2}%;background:var(--present)"></i></div></td>
+          ${kc}</tr>`;
+      }).join('');
+    }
+    return out;
+  }).join('');
+  document.getElementById('grid').innerHTML=html;
+  document.getElementById('gridcount').textContent=
+    `${rows.length} of ${C.length} seeded counties · ${cityCount} cities expanded · 214 unseeded counties are 0/13 · 1,210 unseeded cities are not-yet`;
+}
+document.getElementById('seedn').textContent=C.length;
+document.getElementById('restn').textContent=TX_COUNTIES-C.length;
+
+/* -------- drawer -------- */
+const RUNS={'48021':{t:'2026-08-08 06:41 UTC  block-13 post-recovery sweep  2,438 examined  PASS', ev:'_inbox/2026-08-08_T1_block13_post_recovery.json'},
+            '48187':{t:'2026-08-04 09:02 UTC  gate onboard  PASS 8/8', ev:'_inbox/2026-08-04_elgin_step2_zoning_fact_bake.md'},
+            '48055':{t:'2026-08-02 17:40 UTC  coverage score  land-use 95.48 pass', ev:'_inbox/2026-08-02_ZOMBIE_CODE_cleanup_ledger.md'},
+            '48029':{t:'2026-07-29 03:11 UTC  geometry load  709,541 features', ev:'_inbox/2026-08-05_T1_corpus_drift_recon.json'}};
+const DEFECTS={'48021':[['declines.other serving stale envelopes',369,'_inbox/2026-08-08_BLUEPRINT_program_plan.md'],['superseded-prop-id key 48021:0',1,'_inbox/2026-08-08_CONTRACT_coherence_audit.md'],['R30 relabel missing in bulk path',27,'_scratch/bdc-downtown-step4-warm-v2.log']],
+               '48453':[['prop_id bad rate 0.5147 — crosswalk required',429706,'_inbox/2026-08-08_CONTRACT_coherence_audit.md']],
+               '48309':[['easement_tier not in contract enum',1,'_inbox/2026-08-08_CONTRACT_coherence_audit.md']],
+               '48201':[['no CAD REST — sharding required',1,'_catalog/texas_roster_v1.json']],
+               '48129':[['not covered by StratMap',1,'_catalog/texas_roster_v1.json']]};
+
+function verifBlock(st,c,rl){
+  const v=st.v;
+  if(st.s==='x') return '';
+  if(!v){
+    return `<div class="verif"><div class="vt">Verification</div>
+      <div class="vi" style="color:var(--bad-tx)">NEVER VERIFIED</div>
+      <div class="vw">No instrument has ever measured this cell. ${st.s==='p'||st.s==='a'?'It is displayed as satisfied on the strength of a scorer write alone — which is exactly the shape of claim the envelope saga proved can be wrong for weeks without anything saying so.':'Nothing has run, so there is nothing to verify.'}</div>
+      </div>`;
+  }
+  const m=METHOD_META[v.method];
+  const agePct=Math.min(100,(st.vAgeDays/60)*100);
+  const ageCol=st.vAgeDays>30?'var(--bad-tx)':st.vAgeDays>14?'var(--warn-tx)':'var(--present-tx)';
+  return `<div class="verif">
+    <div class="vt">Verification</div>
+    <div class="vi">${v.inst}<span class="instbadge ${m.cls}">${m.lbl}</span></div>
+    <div class="vw">instrument version <b style="color:var(--tx)">${v.ver}</b>${v.n!=null?` &middot; ${fm(v.n)} parcels examined`:' &middot; parcel count not recorded'}</div>
+    <div class="vw">last verified <b style="color:${ageCol}">${v.at}</b> &mdash; ${st.vAgeDays} days ago</div>
+    <div class="agebar"><i style="width:${agePct}%;background:${ageCol}"></i></div>
+    ${st.vStale?`<div class="note warn" style="margin:8px 0 0"><b>VERIFICATION STALE.</b> ${vintageDate(c.gv)&&new Date(v.at)<vintageDate(c.gv)?`The verification predates the StratMap vintage (${c.gv.slice(0,4)}-${c.gv.slice(4)}) it claims to cover. It verified data that has since been replaced.`:`Last verified ${st.vAgeDays} days ago; the rail has re-run since. The green on this cell is older than the data under it.`}</div>`:''}
+    ${st.sampled?`<div class="note warn" style="margin:8px 0 0"><b>WEAK INSTRUMENT.</b> ${m.b}</div>`:''}
+  </div>`;
+}
+
+function openCell(f,ri){
+  const c=C.find(x=>x.f===f), rl=RAILS[ri], st=c.cells[ri];
+  const cov=st.cov!=null?st.cov:0;
+  const src = rl.id==='geometry' ? `TxGIO StratMap ${c.gv||'—'} — ${fm(c.p)} features`
+            : rl.id==='cad' ? `${c.vend} — ${c.lfc==null?'no REST endpoint':fm(c.lfc)+' live features'}`
+            : rl.id==='join' ? `prop_id bad rate ${c.bad==null?'—':(c.bad*100).toFixed(2)+'%'} — key ${c.jk}`
+            : rl.id==='easement' ? `tier ${c.es}` : rl.src;
+  const defs=(DEFECTS[f]||[]);
+  const run=RUNS[f];
+  let extra='';
+  if(st.s==='x') extra=`<div class="note bad"><b>Cannot be recorded.</b> ${rl.note}</div>`;
+  else if(st.s==='n') extra=`<div class="note">Not acquired. Nothing has run against this rail for this county. This is the only state that reduces the Texas number.</div>`;
+  else if(st.s==='a') extra=`<div class="note"><b>Established absence.</b> ${st.basis||''} A complete answer, not a gap — counts toward completeness.</div>`;
+  if(st.partial) extra+=`<div class="note warn"><b>PARTIAL.</b> ${cov.toFixed(2)}% is below the ${rl.thr}% declared threshold. Shown with its real number, never rounded up, and it does <b>not</b> count toward the ${c.n} score.</div>`;
+  if(!rl.writer) extra+=`<div class="note warn">No scorer emits this facet today. Even a satisfied county would show empty until a writer lands (10 of 13 rails).</div>`;
+  if(rl.scope==='city') extra+=`<div class="note"><b>City-scoped rail.</b> ${rl.n} is a property of an incorporated city, not of a county. This county cell is a roll-up over ${CITIES.filter(t=>t.f===f).length||'0 seeded'} cities plus the unincorporated remainder. Expand the county row to see where the coverage actually lives.</div>`;
+  const chg=CHANGED_KEYS.has(f+':'+rl.id)?DIFF.find(d=>d.f===f&&d.rail===rl.id):null;
+
+  document.getElementById('drawer').innerHTML=`
+   <div class="ahead"><div class="t">${c.n} &middot; ${rl.n}</div><div class="s">${c.f} &nbsp;|&nbsp; rail ${ri+1} of 13 &nbsp;|&nbsp; ${rl.kind} &nbsp;|&nbsp; ${rl.scope}-scoped</div></div>
+   <div class="body">
+     <span class="statebadge ${st.s}">${SLB[st.s]}</span>
+     ${st.sub?`<span class="chip" style="margin-left:6px">${st.sub}</span>`:''}
+     <div class="meter"><i style="width:${cov}%"></i><span class="thr" style="left:${rl.thr}%"></span>
+       <span class="lb"><span>${st.cov!=null?cov.toFixed(2)+'% coverage':'no coverage measured'}</span><span style="color:var(--warn-tx)">thr ${rl.thr}%</span></span></div>
+     ${chg?`<div class="note ok"><b>Changed since your last look.</b> <span class="mono" style="font-size:10px">${chg.tm}</span> &mdash; ${chg.txt.replace(/<b>|<\/b>/g,'')}</div>`:''}
+     ${verifBlock(st,c,rl)}
+     <dl class="kv">
+       <dt>Source</dt><dd>${src}</dd>
+       <dt>Declared</dt><dd style="color:var(--tx2)">${rl.src}</dd>
+       <dt>Vintage</dt><dd>${c.gv?c.gv.slice(0,4)+'-'+c.gv.slice(4):'—'} ${c.gv&&c.gv<'202507'?'<span class="chip r-norest">STALE</span>':''}</dd>
+       <dt>Atom family</dt><dd>${rl.atom===true?'<span style="color:var(--present-tx)">present</span>':rl.atom===false?'<span style="color:var(--noatom-tx)">MISSING</span>':'<span style="color:var(--noatom-tx)">'+rl.atom+'</span>'}</dd>
+       <dt>Writer</dt><dd>${rl.writer===true?'<span style="color:var(--present-tx)">scorer emits</span>':rl.writer==='partial'?'<span style="color:var(--warn-tx)">column only, not a peer cell</span>':'<span style="color:var(--noatom-tx)">none</span>'}</dd>
+       <dt>Last run</dt><dd>${run?run.t:'never'}</dd>
+     </dl>
+     <div class="ev ${st.v&&st.v.ev?'':'none'}"><span class="lbl">Evidence &mdash; verification artifact</span>${st.v&&st.v.ev?st.v.ev:'NO ARTIFACT PATH RECORDED — the claim on this cell cannot be checked without asking the planner'}</div>
+     ${run?`<div class="ev"><span class="lbl">Evidence &mdash; last run</span>${run.ev}</div>`:''}
+     ${extra}
+     <h4>Open defect classes &mdash; ${c.n}</h4>
+     <ul class="deflist">${defs.length?defs.map(d=>`<li><span>${d[0]}<span class="evp">${d[2]}</span></span><b>${fm(d[1])}</b></li>`).join(''):'<li><span style="color:var(--tx3)">none recorded (nothing has run)</span></li>'}</ul>
+     <h4>Rail note</h4>
+     <div class="note">${rl.note}</div>
+   </div>`;
+}
+
+function openCounty(f){
+  const c=C.find(x=>x.f===f);
+  const kids=CITIES.filter(t=>t.f===f);
+  const rows=RAILS.map((rl,i)=>{const st=c.cells[i];
+    const inst=st.v?`<span class="instbadge ${METHOD_META[st.v.method].cls}" style="margin:0">${METHOD_META[st.v.method].lbl}</span>`:'';
+    return `<li><span>${rl.n} ${inst}</span><span class="statebadge ${st.s}" style="font-size:9px">${SLB[st.s]}</span></li>`}).join('');
+  const run=RUNS[f];
+  document.getElementById('drawer').innerHTML=`
+   <div class="ahead"><div class="t">${c.n} County</div><div class="s">${c.f} &nbsp;|&nbsp; ${fm(c.p)} parcels &nbsp;|&nbsp; ${c.sat}/13 satisfied</div></div>
+   <div class="body">
+     <dl class="kv">
+       <dt>Completeness</dt><dd>${c.sat} satisfied &middot; ${c.ny} not-yet &middot; ${c.na} no-atom</dd>
+       <dt>Trust</dt><dd>${c.weak?`<span style="color:var(--warn-tx)">${c.weak} on a weak instrument</span>`:'—'} ${c.unverified?`&middot; <span style="color:var(--bad-tx)">${c.unverified} never verified</span>`:''}</dd>
+       <dt>Weight</dt><dd>${((c.p||0)/TX_PARCELS*100).toFixed(3)}% of Texas parcels</dd>
+       <dt>Risk class</dt><dd>${c.r.length?c.r.join(', '):'none'}</dd>
+       <dt>Join key</dt><dd>${c.jk}</dd>
+       <dt>CAD</dt><dd>${c.cad} &middot; ${c.vend}</dd>
+       <dt>Cost est</dt><dd>$${c.cost.toFixed(2)} <span class="unv">UNVERIFIED &mdash; spine compute only</span></dd>
+       <dt>Cost actual</dt><dd>${ACTUALS[f]?`$${ACTUALS[f].amt.toFixed(2)} <span class="unv">RECONSTRUCTED</span>`:'<span style="color:var(--tx3)">NOT MEASURED</span>'}</dd>
+       <dt>Last run</dt><dd>${run?run.t:'never'}</dd>
+     </dl>
+     ${run?`<div class="ev"><span class="lbl">Evidence &mdash; last run</span>${run.ev}</div>`:''}
+     <h4>Cities in this county &mdash; ${kids.length} seeded</h4>
+     ${kids.length?`<ul class="deflist">${kids.map(t=>`<li><span>${t.n} <span class="cityb ${t.stage==='warmed'?'warm':t.stage==='queued'?'q':''}">${t.stage}</span><span class="evp">${t.ev||'no artifact'}</span></span><b style="color:var(--tx2)">${fm(t.p)}</b></li>`).join('')}</ul>`:'<div class="note">No cities seeded for this county in the mockup. Statewide there are 1,223 incorporated cities carrying the zoning and code-text rails, and 1,210 of them are not-yet.</div>'}
+     <h4>All thirteen rails</h4><ul class="deflist">${rows}</ul>
+     <h4>Open defect classes</h4>
+     <ul class="deflist">${(DEFECTS[f]||[]).length?(DEFECTS[f]).map(d=>`<li><span>${d[0]}<span class="evp">${d[2]}</span></span><b>${fm(d[1])}</b></li>`).join(''):'<li><span style="color:var(--tx3)">none recorded</span></li>'}</ul>
+   </div>`;
+}
+
+function openCity(id){
+  const t=CITIES.find(x=>x.id===id), c=C.find(x=>x.f===t.f);
+  const warm=t.blocks.reduce((a,b)=>a+b[2],0), tot=t.blocks.reduce((a,b)=>a+b[1],0);
+  document.getElementById('drawer').innerHTML=`
+   <div class="ahead"><div class="t">${t.n}</div><div class="s">in ${c.n} County ${t.f} &nbsp;|&nbsp; ${fm(t.p)} parcels &nbsp;|&nbsp; ${t.stage}</div></div>
+   <div class="body">
+     <span class="statebadge ${t.stage==='warmed'?'p':t.stage==='unzoned'?'a':'n'}">${t.stage}</span>
+     ${t.blocks.length?`
+     <div class="meter" style="margin-top:9px"><i style="width:${tot?100*warm/tot:0}%"></i>
+       <span class="lb"><span>${fm(warm)} of ${fm(tot)} in scope</span><span style="color:var(--warn-tx)">${tot?(100*warm/tot).toFixed(1):0}%</span></span></div>
+     <h4>District blocks</h4>
+     <ul class="deflist">${t.blocks.map(b=>`<li><span>${b[0]}</span><b style="color:${b[2]?'var(--present-tx)':'var(--tx3)'}">${fm(b[2])} / ${fm(b[1])}</b></li>`).join('')}</ul>`:''}
+     <div class="note">${t.note}</div>
+     <div class="ev ${t.ev?'':'none'}"><span class="lbl">Evidence</span>${t.ev||'NO ARTIFACT — nothing has been written about this city'}</div>
+     <h4>Rails a city can carry</h4>
+     <ul class="deflist">
+       ${RAILS.filter(r=>r.scope==='city').map(r=>{const s=cityCell(t,r);
+         return `<li><span>${r.n}</span><span class="statebadge ${s.s}" style="font-size:9px">${SLB[s.s]||s.s}</span></li>`}).join('')}
+     </ul>
+     <div class="note warn"><b>Scope note.</b> Only ${RAILS.filter(r=>r.scope==='city').length} of the 13 rails are city-scoped. The other 11 are county measures and are shown greyed on city rows so a city is never read as failing a measure it does not carry. Whether the county cell should be a parcel-weighted roll-up of its cities, or an independent county-level measurement, is an <b>open design question</b> — the mockup rolls up.</div>
+   </div>`;
+}
+
+document.addEventListener('click',e=>{
+  const ex=e.target.closest('[data-exp]');
+  if(ex&&!ex.classList.contains('none')){
+    const f=ex.dataset.exp;
+    EXPANDED.has(f)?EXPANDED.delete(f):EXPANDED.add(f);
+    drawGrid(); return;
+  }
+  const cn=e.target.closest('[data-cityname]');
+  if(cn){ openCity(cn.dataset.cityname); return; }
+  const cell=e.target.closest('.c');
+  if(cell&&cell.dataset.f!=null&&cell.dataset.r!=null){
+    document.querySelectorAll('tbody tr').forEach(t=>t.classList.remove('sel'));
+    cell.closest('tr').classList.add('sel');openCell(cell.dataset.f,+cell.dataset.r);return;}
+  if(cell&&cell.dataset.city){ openCity(cell.dataset.city); return; }
+  const nm=e.target.closest('[data-cty]');
+  if(nm){document.querySelectorAll('tbody tr').forEach(t=>t.classList.remove('sel'));
+    nm.closest('tr').classList.add('sel');openCounty(nm.dataset.cty);}
+});
+['q','sortby','onlygap','onlychg'].forEach(id=>document.getElementById(id).addEventListener('input',drawGrid));
+document.getElementById('expandall').addEventListener('click',function(){
+  const on=this.classList.toggle('on');
+  EXPANDED.clear();
+  if(on) CITIES.forEach(t=>EXPANDED.add(t.f));
+  this.textContent=on?'collapse cities':'expand cities';
+  drawGrid();
+});
+
+/* ===================== B: LIVE ===================== */
+document.getElementById('live').innerHTML=`
+ <div class="cards">
+   <div class="card live"><div class="k">Running now</div><div class="v ok">${RUNNING.length}</div><div class="s">T1 Bastrop cohort re-warm, stage <code>promote</code>, 5h 32m elapsed</div></div>
+   <div class="card hold"><div class="k">Heavy-scan slot</div><div class="v warn">HELD</div><div class="s">by <b>T1 Bastrop cohort</b> since 2026-08-08 05:58 UTC. One heavy scan on the atoms Neon at a time.</div></div>
+   <div class="card hold"><div class="k">Queued behind the slot</div><div class="v warn">${QUEUE.length}</div><div class="s">longest wait 4d 1h (T5 Bexar). Nothing in the queue can start until the slot frees.</div></div>
+   <div class="card alarm"><div class="k">48h statewide target</div><div class="v bad">IMPOSSIBLE</div><div class="s">The target needs roughly 11-way parallelism. The slot permits one. This contradiction is unresolved and the console should keep saying so.</div></div>
+ </div>
+
+ <h3 class="sec">In flight <span class="sev g">LIVE</span> <span class="cnt">what is executing at this moment</span></h3>
+ ${RUNNING.map(r=>`
+ <div class="runbox active">
+   <div class="rtop">
+     <span class="lane ${r.laneCls}">${r.lane}</span>
+     <span class="who">${r.who}</span>
+     <span class="stg">${r.scope}</span>
+     ${r.holdsSlot?'<span class="chip r-norest">HOLDS HEAVY-SCAN SLOT</span>':''}
+     <span class="el">started ${r.started} &middot; ${r.elapsed} elapsed</span>
+   </div>
+   <div class="rbody">
+     <div class="stages">${r.stages.map((s,i)=>`<span class="stg-i ${i<r.stageIdx?'done':i===r.stageIdx?'now':''}">${s}</span>`).join('')}</div>
+     <div class="prog"><i style="width:${100*r.done/r.total}%"></i>
+       <span class="lb"><span>${fm(r.done)} of ${fm(r.total)} parcels promoted</span><span>${(100*r.done/r.total).toFixed(1)}%</span></span></div>
+     <div style="font-size:10.5px;color:var(--tx2);margin-top:6px">${r.note}</div>
+     <div class="ev"><span class="lbl">Evidence &mdash; run artifact</span>${r.artifact}</div>
+   </div>
+ </div>`).join('')}
+
+ <h3 class="sec">Heavy-scan slot queue <span class="cnt">the serializer everything waits on &mdash; strictly ordered, no preemption</span></h3>
+ <div class="runbox">
+   <ul class="queue">
+     <li class="head"><span class="qn">&#9679;</span><span class="qw">T1 Bastrop cohort re-warm</span>
+       <span class="qd">HOLDING &mdash; 48021 &middot; bastrop-city &middot; all districts</span>
+       <span class="qt">held 5h 32m</span></li>
+     ${QUEUE.map(q=>`<li><span class="qn">${q.n}</span><span class="qw">${q.who}</span>
+       <span class="qd">${q.d}<span class="evp">${q.ev}</span></span><span class="qt">${q.wait}</span></li>`).join('')}
+   </ul>
+ </div>
+
+ <h3 class="sec">Recent run outcomes <span class="cnt">each row carries the artifact behind it</span></h3>
+ <table class="dt"><thead><tr><th>When</th><th>Lane</th><th>Job</th><th>Target</th><th>Outcome</th><th class="num">In</th><th class="num">Out</th><th class="num">Refused</th><th>Artifact</th></tr></thead><tbody>
+ ${RECENT.map(r=>`<tr>
+   <td class="mono" style="color:var(--tx3)">${r.tm}</td>
+   <td><span class="chip">${r.lane}</span></td>
+   <td>${r.job}</td>
+   <td style="color:var(--tx2)">${r.who}</td>
+   <td style="color:${r.cls==='ok'?'var(--present-tx)':'var(--warn-tx)'}">${r.out}</td>
+   <td class="num">${r.a==null?'—':fm(r.a)}</td>
+   <td class="num">${r.b==null?'—':fm(r.b)}</td>
+   <td class="num" style="color:${r.c?'var(--bad-tx)':'var(--tx3)'}">${r.c}</td>
+   <td class="mono" style="color:var(--tx3);font-size:9.5px">${r.ev}</td></tr>`).join('')}
+ </tbody></table>
+
+ <div class="dne"><span class="t">Does not exist &mdash; needed for this view</span>
+   <b>A run-state surface.</b> Nothing publishes what is executing. Lane, target, stage, elapsed time, parcels done, and slot ownership are all invented here. Today the only way to answer "what is running" is to read a terminal or a log file. Sprint 1 needs a <code>run</code> row written at start and updated at each stage boundary: (run_id, lane, target_fips, target_city, job, stage, started_at, heartbeat_at, items_done, items_total, holds_heavy_slot, artifact_path, outcome).
+   <br><br><b>A slot registry.</b> The heavy-scan slot is enforced by convention and by the planner remembering, not by a lock anyone can query. Sprint 1 needs an actual advisory lock row with holder, acquired_at, and an ordered queue, so this panel reads state rather than asserting it.
+   <br><br>The <b>48h statewide target vs one-writer slot</b> contradiction is real and shown deliberately. The console should never render a target it can prove is unreachable without also rendering the reason.
+ </div>
+`;
+
+/* ===================== A: TRENDS ===================== */
+(function(){
+  const dayLabel=i=>{const d=new Date(NOW);d.setDate(d.getDate()-(DAYS-1-i));return d.toISOString().slice(0,10);};
+  const big=(()=>{
+    const w=900,h=180,pad=28;
+    const max=Math.max(...TX_SERIES)*1.15;
+    const pts=TX_SERIES.map((v,i)=>[pad+(i/(DAYS-1))*(w-pad-8), h-pad-(v/max)*(h-pad-12)]);
+    const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const fill=line+` L${pts[pts.length-1][0].toFixed(1)} ${h-pad} L${pad} ${h-pad} Z`;
+    const gl=[0,0.5,1.0,1.5].filter(g=>g<=max).map(g=>{const y=h-pad-(g/max)*(h-pad-12);
+      return `<line x1="${pad}" y1="${y.toFixed(1)}" x2="${w-8}" y2="${y.toFixed(1)}" stroke="#1b212b"/><text x="4" y="${(y+3).toFixed(1)}" fill="#55606f" font-size="9" font-family="monospace">${g.toFixed(1)}%</text>`}).join('');
+    const marks=[[14,'Elgin zoning-fact'],[33,'Guadalupe onboard'],[52,'Bastrop GATE C'],[57,'block-13 dip']].map(([i,t])=>{
+      const p=pts[i];return `<line x1="${p[0].toFixed(1)}" y1="${h-pad}" x2="${p[0].toFixed(1)}" y2="12" stroke="#2e3745" stroke-dasharray="2 3"/><text x="${(p[0]+3).toFixed(1)}" y="20" fill="#55606f" font-size="8.5" font-family="monospace">${t}</text>`}).join('');
+    return `<svg width="100%" viewBox="0 0 ${w} ${h}" style="display:block;max-width:100%">
+      ${gl}${marks}
+      <path d="${fill}" fill="rgba(95,220,160,.10)"/><path d="${line}" fill="none" stroke="#5fdca0" stroke-width="1.6"/>
+      <circle cx="${pts[DAYS-1][0].toFixed(1)}" cy="${pts[DAYS-1][1].toFixed(1)}" r="3" fill="#5fdca0"/>
+      <text x="${pad}" y="${h-8}" fill="#55606f" font-size="9" font-family="monospace">${dayLabel(0)}</text>
+      <text x="${w-70}" y="${h-8}" fill="#55606f" font-size="9" font-family="monospace">${dayLabel(DAYS-1)}</text>
+    </svg>`;
+  })();
+  document.getElementById('trends').innerHTML=`
+   <div class="cards">
+     <div class="card"><div class="k">Texas completeness now</div><div class="v lo">${RU.pct.toFixed(2)}%</div><div class="s">parcel-weighted over 173,686,448 parcel&middot;rail units</div></div>
+     <div class="card"><div class="k">Change, 30 days</div><div class="v ok">+${TX_DELTA_30.toFixed(2)} pts</div><div class="s">from ${TX_SERIES[DAYS-31].toFixed(2)}% to ${RU.pct.toFixed(2)}%</div></div>
+     <div class="card"><div class="k">Change, 7 days</div><div class="v ok">+${TX_DELTA_7.toFixed(2)} pts</div><div class="s">one county-city cohort's worth of movement</div></div>
+     <div class="card alarm"><div class="k">Days to 50% at this rate</div><div class="v bad">~2,840</div><div class="s">Straight-line extrapolation of the last 30 days. It is not a forecast; it is the arithmetic consequence of the current rate, and it is the number that argues for changing the rate.</div></div>
+   </div>
+
+   <h3 class="sec">Texas completeness, 60 days <span class="cnt">fabricated series &mdash; no history table exists</span></h3>
+   <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 8px">${big}</div>
+   <div class="footer" style="border:0;padding:8px 2px">The dips are deliberate. A completeness number that only ever rises is a number that cannot detect a regression, and the envelope saga was exactly a regression that no instrument caught for weeks. The block-13 dip near the right edge is what a half-mutated store looks like when the console is honest about it.</div>
+
+   <h3 class="sec">Per-rail statewide trend <span class="cnt">counties satisfied, 60 days &mdash; 10 of 13 rails are flat at zero</span></h3>
+   <table class="dt"><thead><tr><th>Rail</th><th>Scope</th><th class="num">Now</th><th class="num">30d ago</th><th class="num">&Delta;30d</th><th>60-day trend</th><th>Why it is flat</th></tr></thead><tbody>
+   ${RAILS.map((r,i)=>{const s=RAIL_SERIES[r.id];const now=s[DAYS-1],then=s[DAYS-31];const d=now-then;
+     const why = r.atom===false?'no atom family — cannot be recorded at all'
+               : r.atom==='unpublished'?'atom exists only in an unpublished contract version'
+               : r.atom==='partial'?'half the rail has no atom'
+               : !r.writer?'atom exists, but no scorer writes it'
+               : 'writer exists — this rail can actually move';
+     return `<tr>
+       <td><b>${r.n}</b> <span class="mono" style="color:var(--tx3)">${r.sh}</span></td>
+       <td><span class="chip ${r.scope==='city'?'r-drift':''}">${r.scope}</span></td>
+       <td class="num" style="color:${now?'var(--present-tx)':'var(--tx3)'}">${now}</td>
+       <td class="num" style="color:var(--tx3)">${then}</td>
+       <td class="num" style="color:${d?'var(--present-tx)':'var(--tx3)'}">${d>0?'+':''}${d}</td>
+       <td style="width:120px">${sparkSVG(s,110,20)}</td>
+       <td style="color:${now?'var(--tx2)':'var(--warn-tx)'}">${why}</td></tr>`}).join('')}
+   </tbody></table>
+
+   <div class="dne"><span class="t">Does not exist &mdash; needed for this view</span>
+     <b>Every series on this page is generated in the browser.</b> There is no completeness history anywhere: the ledger stores current state, overwritten in place. That means today the console cannot answer "are we going faster or slower", "did anything regress overnight", or "what did this cell say last Tuesday" — the three questions an operator actually opens a console to ask.
+     <br><br>Cheapest sufficient fix: a nightly snapshot row per (fips, rail) with state, coverage, verified_at and run_id. That single table backs the sparklines, the diff strip, the regression detection, and the rate extrapolation above. It should be written before any new rail is added, because a rail added without history is a rail whose regressions are invisible.
+   </div>`;
+})();
+
+/* ===================== INTAKE ===================== */
+const RISKMETA={
+ 'bis-field-template':{n:156,cls:'r-bis',b:'BIS consultant field template — known shape, prop_id_text join, lowest-friction path'},
+ 'no-rest':{n:59,cls:'r-norest',b:'No CAD REST endpoint — acquisition path unresolved; bulk or portal scrape required'},
+ 'stratmap-vintage-drift':{n:18,cls:'r-drift',b:'StratMap feature count diverges from live CAD — re-probe before load'},
+ 'crosswalk-required':{n:8,cls:'r-cross',b:'prop_id unreliable — must join on geo_id or address crosswalk; parcelNodeId definition breaks (S8)'},
+ 'no-stratmap':{n:1,cls:'r-nostrat',b:'Not covered by StratMap at all — no geometry source identified'},
+ 'harris-sharding-required':{n:1,cls:'r-shard',b:'Volume requires keyspace sharding beyond the current concurrency model'}
+};
+function blockers(c){
+  const out=[];
+  c.r.forEach(k=>out.push(`<span class="chip ${RISKMETA[k].cls}" title="${RISKMETA[k].b}">${k}</span>`));
+  if(c.cad==='honestly_absent') out.push('<span class="chip r-norest">no CAD service</span>');
+  if(c.cad==='partial') out.push('<span class="chip r-drift">CAD partial</span>');
+  if(c.bad!=null&&c.bad>0.05) out.push(`<span class="chip r-cross">bad rate ${(c.bad*100).toFixed(1)}%</span>`);
+  if(c.es==='cad-easement-rest') out.push('<span class="chip r-cross">easement tier not in enum</span>');
+  if(!out.length) out.push('<span class="chip ok">none named</span>');
+  return out.join('');
+}
+function nextScore(c){
+  if(c.p==null) return -1;
+  let s=Math.log10(c.p+10)*10;
+  if(c.cad==='verified') s+=25; if(c.cad==='partial') s+=6;
+  if(c.cad==='honestly_absent') s-=30;
+  if(c.r.includes('bis-field-template')) s+=18;
+  if(c.r.includes('crosswalk-required')) s-=45;
+  if(c.r.includes('harris-sharding-required')) s-=40;
+  if(c.r.includes('no-stratmap')) s-=60;
+  if(c.r.includes('stratmap-vintage-drift')) s-=12;
+  if(c.bad!=null) s-=c.bad*120;
+  if(WORKED[c.f]) s-=20;
+  return s;
+}
+const intakeRows=C.map(c=>({c,s:nextScore(c)})).sort((a,b)=>b.s-a.s);
+const actualCount=Object.keys(ACTUALS).length;
+const actualSum=Object.values(ACTUALS).reduce((a,x)=>a+x.amt,0);
+const estForActuals=Object.keys(ACTUALS).reduce((a,f)=>a+C.find(c=>c.f===f).cost,0);
+document.getElementById('intake').innerHTML=`
+ <div class="cards">
+   <div class="card"><div class="k">Counties never touched</div><div class="v">${254-Object.keys(WORKED).length}</div><div class="s">of 254 — no rail has any state</div></div>
+   <div class="card"><div class="k">Roster cost sum, 254 counties</div><div class="v">$228.66</div><div class="s"><code>engine_250_heuristic</code>, spine compute only</div></div>
+   <div class="card alarm"><div class="k">Sub-$200 per jurisdiction</div><div class="v bad">UNVERIFIED</div><div class="s">The commitment is measured against spine compute. It has never been measured against the full 13-rail set, and the economics doc is a confirmed-absent domain.</div></div>
+   <div class="card alarm"><div class="k">Counties with a cost actual</div><div class="v bad">${actualCount}<span style="font-size:12px;color:var(--tx3)">/254</span></div><div class="s">${(100*actualCount/254).toFixed(1)}% of the state. Every one of the ${actualCount} is <b>reconstructed from logs after the fact</b>, not metered at run time. The feedback loop that would make the commitment verifiable is effectively empty.</div></div>
+ </div>
+
+ <h3 class="sec">Cost estimate vs actual <span class="sev">FEEDBACK LOOP EMPTY</span> <span class="cnt">${actualCount} of 254 counties have any actual at all</span></h3>
+ <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+   <div class="card"><div class="k">Estimate, those ${actualCount}</div><div class="v">$${estForActuals.toFixed(2)}</div><div class="s">roster <code>engine_250_heuristic</code></div></div>
+   <div class="card"><div class="k">Actual, those ${actualCount}</div><div class="v warn">$${actualSum.toFixed(2)}</div><div class="s">reconstructed, low confidence</div></div>
+   <div class="card alarm"><div class="k">Variance</div><div class="v bad">+${(100*(actualSum-estForActuals)/estForActuals).toFixed(0)}%</div><div class="s">Actual is roughly <b>${(actualSum/estForActuals).toFixed(0)}&times;</b> the estimate on the only counties where both numbers exist. If that ratio held statewide the sub-$200 commitment would fail on the first genuinely hard county, not the two-hundredth.</div></div>
+   <div class="card hold"><div class="k">Bastrop actual</div><div class="v warn">$${ACTUALS['48021'].amt.toFixed(2)}</div><div class="s">Already over $200 &mdash; on the county the program understands best, and across six warm passes rather than one. Whether re-warms count against the per-jurisdiction budget is an <b>open question</b>.</div></div>
+ </div>
+ <table class="dt"><thead><tr>
+   <th>County</th><th>FIPS</th><th class="num">Parcels</th><th class="num">Estimate</th><th class="num">Actual</th><th class="num">Variance</th><th>Confidence</th><th>How the actual was obtained</th><th>Artifact</th></tr></thead><tbody>
+ ${C.filter(c=>ACTUALS[c.f]).map(c=>{const a=ACTUALS[c.f];const v=100*(a.amt-c.cost)/c.cost;
+   return `<tr>
+     <td><b style="color:#dfe7f2">${c.n}</b></td><td class="num" style="color:var(--tx3)">${c.f}</td>
+     <td class="num">${fm(c.p)}</td><td class="num">$${c.cost.toFixed(2)}</td>
+     <td class="num" style="color:var(--warn-tx)">$${a.amt.toFixed(2)}</td>
+     <td class="num" style="color:var(--bad-tx)">+${v.toFixed(0)}%</td>
+     <td><span class="chip ${a.conf==='low'?'r-norest':'r-cross'}">${a.conf==='low'?'LOW':'VERY LOW'}</span></td>
+     <td style="color:var(--tx2)">${a.src}</td>
+     <td class="mono" style="color:var(--tx3);font-size:9.5px">${a.ev}</td></tr>`}).join('')}
+ ${C.filter(c=>!ACTUALS[c.f]&&WORKED[c.f]).map(c=>`<tr>
+     <td>${c.n}</td><td class="num" style="color:var(--tx3)">${c.f}</td>
+     <td class="num">${fm(c.p)}</td><td class="num">$${c.cost.toFixed(2)}</td>
+     <td class="num" style="color:var(--tx3)">NOT MEASURED</td>
+     <td class="num" style="color:var(--tx3)">&mdash;</td>
+     <td><span class="chip">none</span></td>
+     <td style="color:var(--tx3)">a run touched this county and nothing recorded what it cost</td>
+     <td class="mono" style="color:var(--bad-tx);font-size:9.5px">no artifact</td></tr>`).join('')}
+ </tbody></table>
+ <div class="dne"><span class="t">Does not exist &mdash; needed for this view</span>
+   <b>Per-run cost metering.</b> No run records its own cost. The four actuals above were reconstructed by hand from Cloud Run and Neon line items, which is why they carry LOW and VERY LOW confidence and why nobody can currently defend or refute the sub-$200 commitment with evidence. Sprint 1 needs cost captured on the run row: (run_id, fips, compute_seconds, db_seconds, egress_bytes, external_api_calls, estimated_usd, human_minutes). Without it the commitment is a belief, and belief is exactly what this console exists to replace.
+   <br><br><b>What counts as one jurisdiction-onboarding.</b> Bastrop's actual spans six warm passes. If re-warms count, Bastrop is already over budget; if only the first successful pass counts, the number is much smaller and much less meaningful. This is a definition the operator must settle before the metering is built, because the metering has to know what to sum.
+ </div>
+
+ <h3 class="sec">Risk-class distribution <span class="cnt">254 counties, classes overlap</span></h3>
+ <table class="dt"><thead><tr><th>Risk class</th><th class="num">Counties</th><th class="num">Share</th><th>What it blocks</th></tr></thead><tbody>
+ ${Object.entries(RISKMETA).sort((a,b)=>b[1].n-a[1].n).map(([k,m])=>`<tr>
+   <td><span class="chip ${m.cls}">${k}</span></td><td class="num">${m.n}</td><td class="num">${(100*m.n/254).toFixed(1)}%</td><td style="color:var(--tx2)">${m.b}</td></tr>`).join('')}
+ </tbody></table>
+
+ <h3 class="sec">Next best to onboard <span class="cnt">ranked by acquisition friction &times; parcel volume &mdash; heuristic, not a cost model</span></h3>
+ <table class="dt"><thead><tr>
+   <th>#</th><th>County</th><th>FIPS</th><th class="num">Parcels</th><th class="num">Est</th><th class="num">Actual</th>
+   <th class="num">Rails</th><th>CAD</th><th>Join</th><th>Blockers</th></tr></thead><tbody>
+ ${intakeRows.map((x,i)=>{const c=x.c;const a=ACTUALS[c.f];return `<tr class="${i===0?'rank1':''}">
+   <td class="num" style="color:var(--tx3)">${i+1}</td>
+   <td><b style="color:#dfe7f2">${c.n}</b>${WORKED[c.f]?` <span class="chip ok">${WORKED[c.f]}</span>`:''}</td>
+   <td class="num" style="color:var(--tx3)">${c.f}</td>
+   <td class="num">${c.p==null?'—':fm(c.p)}</td>
+   <td class="num">$${c.cost.toFixed(2)}${i===0?'<span class="unv">UNV</span>':''}</td>
+   <td class="num" style="color:${a?'var(--warn-tx)':'var(--tx3)'}">${a?'$'+a.amt.toFixed(2):'—'}</td>
+   <td class="num" style="color:${c.sat?'var(--present-tx)':'var(--tx3)'}">${c.sat}/13</td>
+   <td class="num" style="color:${c.cad==='verified'?'var(--present-tx)':c.cad==='partial'?'var(--warn-tx)':'var(--bad-tx)'}">${c.cad}</td>
+   <td class="num">${c.bad==null?'—':(c.bad*100).toFixed(2)+'%'}</td>
+   <td>${blockers(c)}</td></tr>`}).join('')}
+ </tbody></table>
+ <div class="footer">Ranking is a display heuristic invented for this mockup (log parcel volume, CAD verification, risk-class penalties, prop_id bad rate, minus already-worked). It is <b>not</b> a cost model and must not be read as one. Every estimate carries the roster's <code>engine_250_heuristic</code>, which covers spine-rail compute and nothing else — no CAD acquisition, no flood, no footprints, no human review hour. Every actual is a hand reconstruction, not a meter reading.</div>
+`;
+
+/* ===================== MAINTENANCE ===================== */
+document.getElementById('maint').innerHTML=`
+ <div class="cards">
+   <div class="card alarm"><div class="k">Serving stale envelopes, no decline marker</div><div class="v bad">369</div><div class="s">Bastrop <code>declines.other</code> parcels receive NO <code>promoteHonestVerifyDecline</code> write. <b>Serve-truth defect on production today.</b></div></div>
+   <div class="card alarm"><div class="k">Refused, awaiting disposition</div><div class="v bad">770</div><div class="s">of 2,438 attempted &mdash; 1,668 promoted. Store is half-mutated / mixed-generation.</div></div>
+   <div class="card alarm"><div class="k">Satisfied on a weak instrument</div><div class="v bad">${weakCells}</div><div class="s">Cells reading green that were verified by sample or probe, never by an area sweep. OPS-5 anti-sampling: sampling once certified a broken Bastrop.</div></div>
+   <div class="card"><div class="k">StratMap vintages STALE</div><div class="v warn">249<span style="font-size:12px;color:var(--tx3)">/254</span></div><div class="s">241 STALE, 8 STALE + HIGH_PROP_ID_BAD_RATE, 1 NOT_COVERED</div></div>
+ </div>
+
+ <h3 class="sec">Weak-instrument register <span class="sev w">TRUST</span> <span class="cnt">every satisfied cell whose evidence is a sample, a probe, or an inheritance</span></h3>
+ <table class="dt"><thead><tr><th>County</th><th>Rail</th><th>State</th><th>Instrument</th><th>Method</th><th class="num">Examined</th><th class="num">Verified</th><th class="num">Age</th><th>Artifact</th></tr></thead><tbody>
+ ${(()=>{const rows=[];C.forEach(c=>c.cells.forEach((st,i)=>{if(st.v&&(st.sampled||st.v.method==='derived')&&(st.s==='p'||st.s==='a'))rows.push([c,RAILS[i],st]);}));
+   return rows.length?rows.map(([c,rl,st])=>{const m=METHOD_META[st.v.method];return `<tr>
+     <td><b>${c.n}</b> <span class="mono" style="color:var(--tx3)">${c.f}</span></td>
+     <td>${rl.n}</td>
+     <td><span class="statebadge ${st.s}" style="font-size:9px">${SLB[st.s]}</span>${st.partial?' <span class="chip r-norest">PARTIAL</span>':''}</td>
+     <td style="color:var(--tx2)">${st.v.inst} <span class="mono" style="color:var(--tx3)">${st.v.ver}</span></td>
+     <td><span class="instbadge ${m.cls}" style="margin:0">${m.lbl}</span></td>
+     <td class="num">${st.v.n==null?'not recorded':fm(st.v.n)}</td>
+     <td class="num mono" style="color:var(--tx3);font-size:10px">${st.v.at.slice(0,10)}</td>
+     <td class="num" style="color:${st.vAgeDays>30?'var(--bad-tx)':'var(--warn-tx)'}">${st.vAgeDays}d</td>
+     <td class="mono" style="color:${st.v.ev?'var(--tx3)':'var(--bad-tx)'};font-size:9.5px">${st.v.ev||'no artifact'}</td></tr>`}).join('')
+   :'<tr><td colspan="9" style="color:var(--tx3)">none</td></tr>';})()}
+ </tbody></table>
+ <div class="footer" style="border:0;padding:8px 2px">A cell in this table is displayed green on the manifest. Every one of them is a claim the program has not actually earned at the area level. This table is the honest reading of the envelope-saga lesson: the instrument was wrong before the data was, and nothing in the console said which instrument had spoken.</div>
+
+ <h3 class="sec">Failures promoted to the surface <span class="sev">BLOCKING</span></h3>
+ <table class="dt"><thead><tr><th>County</th><th>Defect class</th><th class="num">Parcels</th><th>Disposition</th><th>Artifact</th></tr></thead><tbody>
+  <tr><td><b>Bastrop</b> <span class="mono" style="color:var(--tx3)">48021</span></td>
+      <td style="color:var(--bad-tx)">declines.other &mdash; stale envelope served with no honest-decline marker</td>
+      <td class="num">369</td><td>UNDISPOSITIONED</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_inbox/2026-08-08_BLUEPRINT_program_plan.md</td></tr>
+  <tr><td><b>Bastrop</b> <span class="mono" style="color:var(--tx3)">48021</span></td>
+      <td style="color:var(--bad-tx)">refused in bulk depth-warm; <code>!dryRun</code> fork still open</td>
+      <td class="num">770</td><td>Fixed by fork close, not by re-run</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_scratch/bdc-downtown-step4-warm-v2.log</td></tr>
+  <tr><td><b>Bastrop</b> <span class="mono" style="color:var(--tx3)">48021</span></td>
+      <td>R30 relabel missing in bulk path &mdash; block13 5/7 residual</td>
+      <td class="num">27</td><td>Pure function over in-memory roads; zero I/O</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_inbox/2026-08-08_T1_block13_post_recovery.json</td></tr>
+  <tr><td><b>Bastrop</b> <span class="mono" style="color:var(--tx3)">48021</span></td>
+      <td>malformed parcel node id <code>48021:0</code> in superseded-prop-id bucket</td>
+      <td class="num">1</td><td>Passes PARCEL_NODE_ID_PATTERN; pattern is never run</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_inbox/2026-08-08_CONTRACT_coherence_audit.md</td></tr>
+  <tr><td><b>McLennan</b> <span class="mono" style="color:var(--tx3)">48309</span></td>
+      <td><code>easement_tier: "cad-easement-rest"</code> not a member of the contract enum</td>
+      <td class="num">1</td><td>Hard Zod parse failure. Fix roster or enum &mdash; decide which is canonical</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_inbox/2026-08-08_CONTRACT_coherence_audit.md</td></tr>
+  <tr><td><b>Travis</b> <span class="mono" style="color:var(--tx3)">48453</span></td>
+      <td>prop_id bad rate 51.47% &mdash; crosswalk key silently passes parcelNodeId regex</td>
+      <td class="num">429,706</td><td>No field records which key kind the second token is</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_inbox/2026-08-08_CONTRACT_coherence_audit.md</td></tr>
+  <tr><td><b>Donley</b> <span class="mono" style="color:var(--tx3)">48129</span></td>
+      <td>NOT_COVERED by StratMap &mdash; no geometry source identified</td>
+      <td class="num">&mdash;</td><td>Blocks geometry-first ruling at 253/254</td><td class="mono" style="color:var(--tx3);font-size:9.5px">_catalog/texas_roster_v1.json</td></tr>
+ </tbody></table>
+
+ <h3 class="sec">Instrumentation gap <span class="sev w">SILENT</span> <span class="cnt">these rails cannot fail visibly because nothing watches them</span></h3>
+ <table class="dt"><thead><tr><th>Rail</th><th>Scope</th><th>Atom family</th><th>Writer</th><th>Consequence</th></tr></thead><tbody>
+ ${RAILS.filter(r=>r.atom!==true||!r.writer).map(r=>`<tr>
+   <td><b>${r.n}</b> <span class="mono" style="color:var(--tx3)">${r.sh}</span></td>
+   <td><span class="chip ${r.scope==='city'?'r-drift':''}">${r.scope}</span></td>
+   <td>${r.atom===true?'<span class="chip ok">present</span>':'<span class="chip r-cross">'+(r.atom===false?'MISSING':r.atom)+'</span>'}</td>
+   <td>${r.writer===true?'<span class="chip ok">scorer</span>':r.writer==='partial'?'<span class="chip r-drift">column only</span>':'<span class="chip r-norest">none</span>'}</td>
+   <td style="color:var(--tx2)">${r.note}</td></tr>`).join('')}
+ </tbody></table>
+
+ <h3 class="sec">Stale vintages <span class="cnt">seeded counties on a vintage older than 2025-07</span></h3>
+ <table class="dt"><thead><tr><th>County</th><th>FIPS</th><th class="num">StratMap vintage</th><th class="num">Roster features</th><th class="num">Live CAD features</th><th class="num">Drift</th><th>Flags</th></tr></thead><tbody>
+ ${C.filter(c=>c.gv).sort((a,b)=>(a.gv).localeCompare(b.gv)).map(c=>{
+   const drift=(c.lfc!=null&&c.p!=null)?(c.lfc-c.p):null;
+   const dp=(drift!=null&&c.p)?100*drift/c.p:null;
+   return `<tr><td><b>${c.n}</b></td><td class="num" style="color:var(--tx3)">${c.f}</td>
+     <td class="num" style="color:${c.gv<'202507'?'var(--warn-tx)':'var(--tx)'}">${c.gv.slice(0,4)}-${c.gv.slice(4)}</td>
+     <td class="num">${fm(c.p)}</td><td class="num">${c.lfc==null?'no REST':fm(c.lfc)}</td>
+     <td class="num" style="color:${dp==null?'var(--tx3)':Math.abs(dp)>10?'var(--bad-tx)':Math.abs(dp)>3?'var(--warn-tx)':'var(--tx2)'}">${dp==null?'—':(dp>0?'+':'')+dp.toFixed(1)+'%'}</td>
+     <td><span class="chip r-norest">STALE</span>${c.bad>0.05?'<span class="chip r-cross">HIGH_PROP_ID_BAD_RATE</span>':''}</td></tr>`}).join('')}
+ </tbody></table>
+
+ <div class="footer">Every number in the top cards traces to a read artifact: the 1,668 / 770 / 369 split and the heavy-scan slot contradiction come from <code>_inbox/2026-08-08_BLUEPRINT_program_plan.md</code>; the vintage flags come from <code>_catalog/texas_roster_v1.json</code>. Run timestamps, the weak-instrument register, and every verification attribution are invented — see the Manifest and Live footers for what would have to be stored to make them real.</div>
+`;
+
+/* ===================== TABS ===================== */
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  document.getElementById('v-'+b.dataset.v).classList.add('on');
+}));
+document.getElementById('tc-m').textContent='254×13';
+document.getElementById('tc-l').textContent='1 · '+QUEUE.length+' q';
+document.getElementById('tc-t').textContent='60d';
+document.getElementById('tc-i').textContent=254-Object.keys(WORKED).length;
+document.getElementById('tc-x').textContent=String(7+weakCells);
+
+drawHead();drawGrid();
+document.getElementById('clock').textContent='manifest build 2026-08-08 · MOCKUP v2 · not connected to /api/county-ledger';
+</script>

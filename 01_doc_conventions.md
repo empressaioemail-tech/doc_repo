@@ -2,7 +2,7 @@
 id: 01_doc_conventions
 title: Doc conventions — naming, frontmatter, write patterns, lifecycle
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-08-08
 applies_to: docs
 ---
 
@@ -181,6 +181,7 @@ date: 2026-05-05
 agent: cc-agent-1
 repo: smartcity-os
 session_type: recon          # recon | execute | review | planning
+memory_graded: none          # required: none | [<slug>:HELPED|HARMED, ...]
 rolled_up: false             # flips to true after rollup
 rolled_up_into:              # optional: list of canonical doc ids
 ---

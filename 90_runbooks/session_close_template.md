@@ -2,7 +2,7 @@
 id: session_close_template
 title: Session-close courier prompt template
 status: active
-last_updated: 2026-05-23
+last_updated: 2026-08-08
 applies_to: portfolio
 related: [20_agent_operating_rules, 01_doc_conventions, 01a_atom_conventions, current_state_protocol]
 ---
@@ -105,7 +105,7 @@ Content:
 {{SESSION_SUMMARY_CONTENT}}
 ```
 
-The session summary frontmatter must include `id`, `title`, `date`, `agent`, `repo`, `session_type`. If the session's substantive work has been or will be rolled up into other canonical docs, include `rolled_up: true` and `rolled_up_into: [...]`.
+The session summary frontmatter must include `id`, `title`, `date`, `agent`, `repo`, `session_type`, and `memory_graded` (see § 2C-bis). If the session's substantive work has been or will be rolled up into other canonical docs, include `rolled_up: true` and `rolled_up_into: [...]`.
 
 ### 2B. Apply canonical doc updates
 
@@ -123,21 +123,15 @@ The following new docs need to be written at the paths listed:
 
 Each new doc should include frontmatter (`id`, `title`, `status`, `last_updated`, `applies_to`, optional `related` / `supersedes` / `superseded_by`). Use the content provided exactly; don't reformat or "improve."
 
-### 2C-bis. Grade the fleet memory (fired / helped / harmed + trap-recurrence)
+### 2C-bis. Memory grading (frontmatter field, required)
 
-The fleet's L3 retirement rung (per `64_recursive_loop/04_instantiations`): a memory or rule that is never graded against outcome can silently rot into a HARMFUL un-retired memory (e.g. the three-gate MCP enum asserted a month after the four-gate rework). Selection pressure on the memory set is what keeps it honest. At session close, the planner records two things — cheap, and the prerequisite for every L3 memory behavior:
+The session summary frontmatter (Stage 2A) must include a grep-able memory grading field:
 
-1. FIRED / HELPED / HARMED — a one-line stamp per memory or standing rule that actually influenced this session:
-   - `FIRED` — it came up and was applied.
-   - `HELPED` — it prevented a mistake or saved rediscovery (name the mistake avoided).
-   - `HARMED` — it was wrong, stale, or misleading and cost the session something (name the cost). A HARMED memory is RETIRED or corrected same-session (delete/fix the memory file + its MEMORY.md line), never left to rot.
-   A memory that neither helped nor harmed and keeps not-firing is a candidate for retirement (it may be dead weight).
+```yaml
+memory_graded: none   # or: [<memory-slug>:HELPED, <memory-slug>:HARMED]
+```
 
-2. TRAP-RECURRENCE QUESTION — "did any recorded trap class recur this session, and which memory should have prevented it?" If a trap recurred, either the memory didn't reach the seat that needed it (a cc-agent-reach gap — embed it in the dispatch) or the memory was wrong (correct it). A recurred trap with an existing memory is a HARMED-memory signal.
-
-3. DIVERGENCE / REBUILD CHECK (the fleet L3 gate, per `_decisions/2026-08-02_operate_the_factory_never_rebuild_it`) — "did any executor this session BUILD NEW machinery when a FROZEN, PROVEN artifact already existed, instead of operating/extending it?" (The 2026-08-02 Phase C incident: the fleet re-built the cohort + cert wrappers instead of running the proven block13 path.) If yes and it was NOT a flagged operator-approved deviation, that is a REJECT-and-redo signal + a coherence-carrier gap (the dispatch should have NAMED the frozen artifact to run). The correction: name the frozen artifacts by path in the next dispatch, and treat "operate/extend the proven artifact" as the default, "build new" as a flagged deviation requiring approval.
-
-Record these in the session summary (Stage 2A). This is a protocol step, not a build — but it is the selection pressure that makes the memory system L3 instead of an ever-growing pile of unverified prose.
+`none` is legal when no memory influenced the session. Absence of the field means the close is incomplete. Audit: `grep -l "memory_graded:" _sessions/*.md`.
 
 ### 2D. Regenerate current-state snapshot
 

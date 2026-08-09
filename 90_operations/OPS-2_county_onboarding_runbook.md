@@ -2,9 +2,10 @@
 id: OPS-2_county_onboarding_runbook
 title: OPS-2 — County Onboarding Runbook (the deterministic loop: raw sources → certified served parcels)
 date: 2026-08-02
-status: operations doc (the repeatable mechanical procedure; Bastrop-city is its first proof)
+last_updated: 2026-08-08
+status: operations doc (the repeatable mechanical procedure; Bastrop-city is its first proof), STAGE 4 geometry frame corrected 2026-08-08, see note below
 owner: nick
-related: [OPS-1_texas_source_registry, OPS-3_engine_contract_determinism_register, OPS-5_cert_standard, 2026-08-02_bastrop_recipe_ACCEPTED]
+related: [OPS-1_texas_source_registry, OPS-3_engine_contract_determinism_register, OPS-5_cert_standard, 2026-08-02_bastrop_recipe_ACCEPTED, _decisions/2026-08-07_envelope_saga_close_and_geometry_law]
 layer: L-SOURCE → L-ENGINE → L-LEDGER
 closes_gaps: [6 R7-primitive-bake]
 ---
@@ -30,7 +31,10 @@ Deterministically over the staged snapshot: fetch per-parcel record (R1); map di
 GAP #6 CLOSE (R7 at bake): every warmed parcel MUST run the R28/R30 re-warm path (recompute boundary primitive against the ring + re-derive edge roles) so the primitive-bake unmapped-adjacency decline (compute.ts:104) never strands a city parcel. Mandate the re-warm path for all onboarding warms until R7 is closed at bake.
 
 ### STAGE 4 — INSET (mechanical; buildable-envelope atom)
-BCAD rings trusted, no scrub (A5); recompute primitive on ring-swap + winding invariant (R28); edge-role re-derive to frontage (R30); inset per-edge (R0); conditional convexity gate (R29); invalidate stale envelope on source-repeal (R27). OUTPUT: buildable-envelope atom (+ recipe-version).
+
+> **CORRECTION 2026-08-08:** "BCAD rings trusted, no scrub (A5)" below is SUPERSEDED by the Geometry Law (`_decisions/2026-08-07_envelope_saga_close_and_geometry_law.md`, engine PR #273 Serve-Consistency). **txgio is THE truth frame**, the geometry envelopes are constructed from, verified against, and served on. BCAD is demoted to a divergence-reporting instrument (`PARCEL-RING-SOURCE-DIVERGENCE`); it flags currency mismatches, it never silently substitutes as the working ring. This is a named open item in the Geometry Law record: the cert lane's historical BCAD grading frame still needs reconciliation against this rule before the next county cert wave. Do not read "BCAD rings trusted" as current doctrine.
+
+Working ring is txgio (not BCAD; see correction above), no scrub (A5); recompute primitive on ring-swap + winding invariant (R28); edge-role re-derive to frontage (R30); inset per-edge (R0); conditional convexity gate (R29); invalidate stale envelope on source-repeal (R27). OUTPUT: buildable-envelope atom (+ recipe-version).
 
 ### STAGE 5 — PROMOTE (mechanical; to the served ledger)
 Warm → verify → promote: verify persisted == recompute (R10); promote to the served ledger; record in county_facet_coverage (OPS-4/6 performance fields). Customer reads the promoted ledger, not cold re-derive. OUTPUT: served atoms + ledger row.
