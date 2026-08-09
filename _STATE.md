@@ -21,7 +21,7 @@ The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`
 | L4 topo | 251 tiles / 64.3 GB via USGS 3DEP; existing pipeline is AOI-scoped and would silently produce a Central-Texas mosaic |
 | PMTiles bake | after L2 |
 
-**THE UNBUILT JOINT — the most important open item.** There are two factories. The statewide factory produces the fabric; the jurisdiction factory (proven, nine jurisdictions certified, block13 held 7/7 through the envelope saga) backfills it. `parcel-node` is the intended seam — contract 1.13.0 published, engine registration merged (#282) — but **nothing writes it**. Consequence: L2 could acquire all 235 counties and the manifest would still read 0.0365 percent. Loading geometry fills `txgio_parcel`; the manifest reads atoms.
+**THE TWO-FACTORY JOINT — consumption contract drafted 2026-08-08, NOT ratifiable yet.** Statewide produces fabric; jurisdiction factory backfills. Seam crossed once: hauska-engine PR #284 (OPEN) wrote 528 verified `parcel-node` atoms for Kenedy 48261 (pointer-only). Consumption contract report: `_inbox/2026-08-08_CONSUMPTION_CONTRACT_report.md`. Adversarial review: PARTIAL HOLD WITH FATAL GAPS (`_inbox/2026-08-08_CONSUMPTION_CONTRACT_adversarial_review.md`) — synthetic `_feature-*` same-key upsert and missing warm gate/orphan retirement. **Do not re-acquire warmed counties until C3 retirement + C1 warm preflight ship.** Next shape by data arrival: `flood-hazard-fact` when NFHL lands — not more families before contract machinery.
 
 ## LIVE NUMBERS (verified 2026-08-08; re-verify before quoting)
 
@@ -34,6 +34,8 @@ The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`
 ## GOVERNANCE — the canon gate is LIVE
 
 `.claude/hooks/canon-gate.ps1` on the `Agent|Write` matcher blocks (a) dispatches into repos marked retiring or no-touch, and (b) dispatches missing the hash-pinned `CANON-PREAMBLE` marker, with paste-ready text in the block message. Regenerate after editing the standing decisions below: `node P:/doc_repo/scripts/dispatch-preamble.mjs`.
+
+**M2 divergence detector:** `_catalog/canon_divergence.md` (machine report). Checks: `_catalog/repo_intents_checks.json`. Runner: `node P:/doc_repo/scripts/canon-divergence.mjs`. Cadence hook: `.claude/hooks/canon-divergence-run.ps1` refreshes the report on Read of this file when the report is older than 12 hours (fail-open). Historical replay of the ldt failure: `_inbox/2026-08-08_M2_historical_replay.md`.
 
 Built because `_catalog/repo_intents.md` went 35 days stale while legacy-design-tools took 387 commits and became the factory repo, and the master planner dispatched ten new database tables into a repo the canon declared retiring. **legacy-design-tools is now ruled the FACTORY REPO** (`_decisions/2026-08-08_ldt_is_the_factory_repo.md`); only the root SPA and the Cortex console still retire.
 
