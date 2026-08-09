@@ -2,7 +2,7 @@
 id: 76j_smartsite_launch_readiness_program
 title: Smart Site launch readiness program (paywall, distribution, capacity, branding)
 status: active
-last_updated: 2026-08-05
+last_updated: 2026-08-09
 applies_to: [property-explorer, cortex-api, retrieval-api, legacy-design-tools]
 related: [76h_property_explorer_gtm, 76i_smartsite_contribution_economy_roadmap, 90_operations/OPS-10_parcel_flag_spec, 90_operations/REBRAND_UI_citations_and_pdf, 14_pricing_framework, 90_operations/QUEUE_parked_work_index]
 owner: nick
@@ -27,7 +27,7 @@ Acceptance: an invited outside tester with a promo code experiences the full pai
 
 ## Workstream B. Domain, branding, deployment surface
 
-1. Acquire the Smart Site domain (operator action: pick and register; then attach as Vercel custom domain to the property-explorer project). Until the domain exists this workstream is blocked at step 1.
+1. **DONE 2026-08-09: operator purchased `smartsite.cloud` on GoDaddy.** Next: attach as Vercel custom domain to the `property-explorer` project and set the GoDaddy DNS records Vercel specifies at attach time (planner produces the exact records when this runs). Workstream unblocked.
 2. Favicon to the Smart Site crosshairs logo. This joins the already-deferred rebrand set (title, favicon, landing, copy) recorded at the 2026-08-03 rebrand deploy.
 3. Smart Site branding on the PDF generation template. The rebrand band already has the citations-and-PDF surface mapped (`90_operations/REBRAND_UI_citations_and_pdf.md`); this adds the Smart Site mark to the export/brief PDF templates in legacy-design-tools.
 4. Vercel itself is NOT the launch risk and does not need replacing for launch: static frontend plus serverless functions scale with traffic. The custom domain rides on it fine. Revisit hosting only if function limits or costs bite post-launch.
@@ -36,7 +36,7 @@ Acceptance: an invited outside tester with a promo code experiences the full pai
 
 The stack was not deliberately built "lite," but it has never been audited or load-tested for public scale. What it actually is: Vercel frontend (scales), Cloud Run backends (cortex-api, retrieval-api, engine-api; autoscaling but unaudited concurrency/min-instance settings), Neon Postgres (autoscaling tiers, but connection-limit and pooling behavior under concurrent serverless load is the classic failure point). Known weak points on record TODAY, all pre-launch fixes:
 
-1. The MCP/API rate-limit store (Upstash) is DEAD with an in-memory fallback active. In-memory rate limiting across autoscaled instances is not rate limiting. Replacement is launch-blocking. **Status 2026-08-05:** PR #57 shipped fail-loud degraded mode (`hauska-mcp-server-00050-fej`); real Upstash DB still blocked on operator provisioning — update `UPSTASH_REDIS_REST_URL` secret only once DB exists. Adjacent finding: in-process limiter did not enforce 60 rpm in burst test (see `_inbox/2026-08-05_rate_limit_burst_test.log`).
+1. **CLOSED 2026-08-09 (this item was stale as written).** The rate-limit store moved OFF Upstash entirely: Postgres `ResilientRateLimitStore` shipped in hauska-mcp-server PR #58 (`b5f26de`), migration `010_rate_limit_counters` applied, serving revision tagged `postgres-limiter` with `/health` showing `rate_limit_store.state=ok, detail=postgres`. Per OPS-9: "Upstash is not the launch destination." No operator provisioning owed. Residual watch: alert if `rate_limit_store.state != ok` or latency over 500ms sustained.
 2. Connection pooling: serverless functions plus Cloud Run against Neon need the pooled connection string everywhere (or a pooler) or launch traffic will exhaust connections. **Status 2026-08-05 DONE** — all 6 serving DSNs now use `-pooler` host; evidence `_inbox/2026-08-05_neon_pooling_audit.md`.
 3. The anonymous-tenant data model: auth flips orphan anonymous data (recorded trap). The paywall work in Workstream A must include the anonymous-to-account claim flow, and it must NOT be bundled with unrelated fixes.
 4. No load test has ever been run. Deliverable: define a launch SLO (proposal: 1,000 concurrent free sessions, 100 concurrent paid sessions, p95 under 2s on parcel loads), run a load test against a staging deploy, fix what breaks, record measured ceilings.
@@ -52,6 +52,20 @@ Recommendation (v1): use an off-the-shelf Stripe-native affiliate platform (Rewa
 Financial model (deliverable, 70-band bizops doc): inputs are subscription price, affiliate rev-share (industry standard 20 to 30 percent recurring, often capped at 12 months), platform fee, Stripe fees, infra cost per active user (from Workstream C measurements), and funnel assumptions per affiliate audience size. Outputs: effective CAC via rev-share, LTV to CAC, contribution margin per subscriber after affiliate cut, payout cash-flow timing, and the affiliate-count-to-revenue curve. Ties to `14_pricing_framework.md`; the model gates how aggressive the rev-share offer to group owners can be.
 
 Launch gating rule (operator-set): Texas first. No launch outside Texas until the factory has the target states flush with data; state expansion follows factory onboarding, not marketing reach.
+
+## Workstream A residual — Stripe E2E and billing-surface audit (operator progress 2026-08-09)
+
+Operator reached the live Stripe sandbox checkout (Link identity step) on 2026-08-09. The unpacking of the remaining checkout work rides inside this workstream rather than as its own thread. Items observed from the session, to be worked as one billing-surface audit lane:
+
+1. **BRANDING DEFECT (canon violation):** the Stripe product reads "Hauska Pro — Unlimited Property Briefs and full underwriting depth." Hauska is substrate-only per the branding canon (repo-intent rulings 2026-07-04); the customer product is Smart Site. Rename the Stripe product/price to Smart Site branding and align the descriptor copy before any external tester sees checkout. Entity display (Legacy Group ATX LLC) is the operating company and is correct unless the operator rules otherwise.
+2. Complete the promo-code E2E through entitlement resolution (checkout → webhook → paid serving path), then the dev-role grant smoke.
+3. Sweep the price/copy/product-name set in Stripe against the Smart Site rebrand set (title, favicon, landing, PDF) so billing does not lag the rebrand.
+
+## Workstream F. MCP server revival and currency audit (added 2026-08-09, operator-flagged)
+
+Operator observation: the MCP server is "way behind, out of date, and reading wrong information." Known state from record: 63 tools across four gates (public/codex/reporting/map) as of 2026-07-15; Postgres rate limiter live 2026-08-05. Unknown: whether the tools read the statewide fabric (196-county parcel store, NFHL table) or pre-fabric stores; the three new atom families (flood-hazard-fact, cad-parcel-roll, land-use-fact, contract 1.15.0) have NO MCP slots per the 2026-08-08 atom-families report. This matters beyond hygiene: MCP-first is structural commitment 4 and the GTM pivot names owning the MCP market as a priority; a stale MCP server is the substrate contradicting its own thesis.
+
+First step is a recon lane, not a fix lane: live introspection of the deployed tool list, per-tool store/endpoint trace (which database, which table, which contract version), a wrong-information reproduction set from the operator's session, and a gap list against the current rail set. Then scope the revival from evidence.
 
 ## Workstream E. User data flagging (OPS-10)
 

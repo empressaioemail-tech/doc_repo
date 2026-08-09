@@ -25,6 +25,8 @@ Operator ruling 2026-08-09, closing the question 76j left open ("Texas flush" as
 
 Honest absence is a legitimate satisfied state per OPS-7 and INV-17; a launch on measured-everywhere is a launch on the truth the product actually tells per parcel.
 
+**Per-rail refinement (ruled same day).** Measured-everywhere reads differently by rail class. Statewide-uniform rails (parcel geometry, roads, flood, footprints, RRC, MUD) must reach satisfied everywhere: data or honest absence, no `not-yet` cells left. Jurisdiction-depth rails (CAD attributes; zoning and its dependents, envelope and land use) gate on writer-live plus honestly displayed `not-yet` everywhere, with satisfied required in the launch-footprint counties (the Bastrop network plus the initial marketed footprint). Demanding satisfied-everywhere on depth rails would quietly re-import filled-everywhere as the launch gate. The statewide claim this makes honest: every parcel in Texas answers, and tells you exactly what is verified.
+
 **Program completion (filled-everywhere).** All planned data sources live with depth: CAD attribute rolls across the 254 appraisal districts and zoning, setback and code text across the roughly 1,222 incorporated cities. This is the moat and the permanent post-launch engine, not the launch gate. Depth backfill runs continuously after launch; state expansion (out-of-Texas) continues to gate on the target state reaching flush per 76j.
 
 ## Why
