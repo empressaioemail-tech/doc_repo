@@ -3,6 +3,7 @@ id: T1_data_accuracy_track
 title: T1 — Data accuracy track (catch-up program)
 status: active
 owner: nick
+last_updated: 2026-08-06
 related: [CATCHUP_program_2026-08-05, HEALTH_CHECK_2026-08-05_verdict, onboarding_defect_class_backlog, 90_runbooks/factory_onboarding_runbook]
 ---
 
@@ -14,6 +15,7 @@ Mission: every known data defect cleared or honestly classified, verified by the
 
 1. CITY ENVELOPE RE-WARM (lead exhibit). The 2026-08-03 depth-warm-verify-promote wrote first-ever envelopes for the Bastrop city cohort with edge-role misassignment on ordinary lots (evidence: HEALTH_CHECK verdict lead exhibit; twelve-parcel Jones/Higgins block sweep; atoms all sourceAdapter=depth-warm-verify-promote 08-03 03:03, single version). Engine #255 fixed edge roles at EXPORT time (R28 ring recompute + R30 relabel in prepare-boundary-edges-for-export.ts); the same gates must now run at WARM time. Re-warm the city cohort with warm-time R28/R30 + situs fallback, dry-run first, then cert by AREA SWEEP (every parcel on at least the Jones/Higgins block and two more contiguous blocks — not a 7-parcel sample), block13 7/7 before/after, then Warden sweep. Deliver before/after envelope renders for the operator's twelve screenshots. This run is ALSO the incremental-rewarm proving run: record wall time, batch size, and what an incremental (changed-only) mode would need.
 2. WARDEN v1.2 ENVELOPE-SANITY CHECK: new check — envelope within parcel ring, area ratio within regime bounds, inset edges parallel to lot edges; files findings, never fixes. Ship BEFORE closing workstream 1 so the re-warm is verified by the new instrument.
+   **v1.3 SERVE-TRUTH (2026-08-06):** `serveTruthEdgeLabels` — cert-path edge labels vs export-served edgeIndex role agreement; defectClass `CERT-VS-SERVE-EDGE-MISMATCH`. WS1 close verified BY this instrument. Dispatch: `_dispatches/2026-08-06_T1_warden_v13_serve_truth.md`.
 3. STAMP-TO-ATOMS PROPAGATION BAKE for the 40 stamped parcels (backlog: Bastrop-40 STAMP APPLIED note): scoped zoning-fact bake from district store to atoms, then envelope path per regime; Bastrop Warden re-sweep expecting ~50 neighbor findings to drop to ~9 (7 gaps + 1 edge + 29431).
 4. ROSTER-WIDE STAMP UNDER-COVERAGE SWEEP (backlog: STAMP-CENTROID-PRECISION): post-#386 dry-run for EVERY ZONING_LAYERS city; per-city would-stamp count = historical under-coverage; review with master planner, then per-city applies with regression gates, then propagation as in 3.
 5. THE 7 GAP PARCELS (backlog: MIXED-VINTAGE-NEIGHBOR recon) — OPERATOR RULING: NO city follow-up. Resolve from public record only: check newer published zoning layers/editions for coverage; if the public record genuinely does not zone them, serve honest no-district-on-record. Never ask the city; never guess.
@@ -25,7 +27,9 @@ Mission: every known data defect cleared or honestly classified, verified by the
 
 ## Acceptance (master planner verifies live)
 
-Jones/Higgins block renders uniform correct envelopes; area-sweep cert artifacts on 3+ blocks; block13 7/7 held at every data change; Bastrop Warden sweep at ~9 explained findings with v1.2 check active; roster sweep numbers reported per city with applies landed or explicitly held; 7 gaps resolved-or-honestly-declined with public-record evidence; Mesquite lots render correct side/rear; ADU question answered with citations on the live product; all backlog rows updated; every artifact in _inbox UTF-8.
+**WS1 amendment 2026-08-06 — SERVE-TRUTH-BASED:** Option A + Warden v1.3. Sequence: engine fix → scoped re-persist operator twelve → v1.3 12/12 → render pack SERVED → cohort re-persist (**store-derived roster** ~4,003 on 48021, not run counts) **after T3 pilot apply**. Checkpoint: `_inbox/2026-08-06_T1_cohort_repersist_roster_checkpoint.md`.
+
+Jones/Higgins block renders uniform correct envelopes on the **served** path (Warden v1.3, not cert-only); area-sweep cert artifacts on 3+ blocks; block13 7/7 held at every data change; Bastrop Warden sweep with v1.2 + v1.3 active; roster sweep numbers reported per city with applies landed or explicitly held; 7 gaps resolved-or-honestly-declined with public-record evidence; Mesquite lots render correct side/rear; ADU question answered with citations on the live product; all backlog rows updated; every artifact in _inbox UTF-8. verifyFail cohort disposition ledger (fixable-at-warm vs honest-decline; no-setback-row → honest-decline-or-stamp per doctrine).
 
 ## Handoff prompt
 

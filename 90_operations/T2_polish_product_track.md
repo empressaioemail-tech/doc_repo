@@ -1,7 +1,7 @@
 ---
 id: T2_polish_product_track
 title: T2 — Polish + product track (catch-up program)
-status: active
+status: amended-reopen-2026-08-06
 owner: nick
 related: [CATCHUP_program_2026-08-05, HEALTH_CHECK_2026-08-05_verdict, REBRAND_UI_citations_and_pdf, 76j_smartsite_launch_readiness_program]
 ---

@@ -9,7 +9,7 @@ checks: P:/doc_repo/_catalog/repo_intents_checks.json
 
 # Canon divergence (M2)
 
-Generated 2026-08-09. Runtime 661 ms. Window: since=per-row last_verified until=now. Fetch=no.
+Generated 2026-08-09. Runtime 657 ms. Window: since=per-row last_verified until=now. Fetch=no.
 
 **Summary:** 0 divergent · 0 acknowledged · 8 ok · 0 skipped · 10 repos unmonitored · 0 empty-posture rows.
 
@@ -25,12 +25,12 @@ _none_
 
 | Check | Repo | Posture | Commits | Last verified |
 |---|---|---|---:|---|
-| legacy-design-tools::repo | legacy-design-tools | factory | 0 | 2026-08-08 |
+| legacy-design-tools::repo | legacy-design-tools | factory | 15 | 2026-08-08 |
 | ldt-clock1-root-spa | legacy-design-tools | zero-new-work | 0 | 2026-08-08 |
 | ldt-clock2-cortex-console | legacy-design-tools | zero-new-work | 0 | 2026-08-08 |
-| hauska-engine::repo | hauska-engine | active | 0 | 2026-08-08 |
-| hauska-map::repo | hauska-map | active | 0 | 2026-08-08 |
-| hauska-atom-contract::repo | hauska-atom-contract | active | 0 | 2026-08-08 |
+| hauska-engine::repo | hauska-engine | active | 10 | 2026-08-08 |
+| hauska-map::repo | hauska-map | active | 2 | 2026-08-08 |
+| hauska-atom-contract::repo | hauska-atom-contract | active | 5 | 2026-08-08 |
 | hauska-mcp-server::repo | hauska-mcp-server | active | 0 | 2026-08-08 |
 | smartcity-os::repo | smartcity-os | no-touch | 0 | 2026-08-08 |
 

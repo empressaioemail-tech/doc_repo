@@ -4,7 +4,7 @@ title: OPS-INDEX — Operator Manual (START HERE — how an agent operates the f
 date: 2026-08-03
 status: index / front-door (the single entry point into the operations doc set; the prose bridge until onboard(fips) is a mechanism)
 owner: nick
-related: [OPS-WDLL_the_factory, OPS-0_MASTER_game_plan, OPS-1_texas_source_registry, OPS-2_county_onboarding_runbook, OPS-3_engine_contract_determinism_register, OPS-4_rewarm_protocol, OPS-5_cert_standard, OPS-6_command_center_engine_console, OPS-7_coverage_and_honesty_doctrine, 2026-08-02_bastrop_recipe_ACCEPTED, 2026-08-02_operate_the_factory_never_rebuild_it]
+related: [OPS-WDLL_the_factory, OPS-0_MASTER_game_plan, OPS-1_texas_source_registry, OPS-2_county_onboarding_runbook, OPS-3_engine_contract_determinism_register, OPS-4_rewarm_protocol, OPS-5_cert_standard, OPS-6_command_center_engine_console, OPS-7_coverage_and_honesty_doctrine, OPS-11_invariant_register, OPS-12_instrument_inventory, OPS-13_store_topology, 90_runbooks/factory_onboarding_runbook, 2026-08-02_bastrop_recipe_ACCEPTED, 2026-08-02_operate_the_factory_never_rebuild_it, 2026-08-09_factory_spec_precedence_ruling]
 purpose: The SINGLE door an agent walks through to operate the factory. One place that says what to read, in what order, and how to run a jurisdiction through the line — so no one has to hand-relay the recipe or discover the OPS docs by archaeology. This is the prose front-end of the manual; onboard(fips) (Phase D) will make the run itself a mechanism.
 ---
 
@@ -34,6 +34,11 @@ Read these in order the first time; after that, jump by need.
 8. OPS-6_command_center_engine_console — the factory floor (cmdcenter-blush.vercel.app); where you and the operator watch a jurisdiction come online. The CC County Ledger is the live ground truth.
 9. OPS-7_coverage_and_honesty_doctrine — honest-absence at country scale; never present un-warmed as served.
 10. OPS-0_MASTER_game_plan — the build/run charter + the autonomous-run boundary (what runs without the operator, and the R6 stop line).
+11. OPS-13_store_topology: which store holds which truth, the env-var map, the two-databases-one-endpoint split, and the pooler write hazard. Read BEFORE writing any query, dispatching any data lane, or believing any coverage number. Added 2026-08-09.
+12. OPS-12_instrument_inventory: every gate and check in one table with what it CANNOT see. Read when you are about to trust a PASS. Carries the Harris case (a count cannot detect a defect it inherits) and the thirteen defect classes with no instrument. Added 2026-08-09.
+13. OPS-11_invariant_register: the one register reconciling the Geometry Law, OPS-3 I1-I7, the white-paper five, and the five things above, each line naming its enforcing check or marked UNENFORCED. Added 2026-08-09.
+
+PRECEDENCE NOTE (2026-08-09): `90_runbooks/factory_onboarding_runbook.md` governs the pipeline procedure and is now the most complete end-to-end doc; this OPS band governs doctrine and definitions. The root 27-band factory specs are retired per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`, with `27c` (road-node design contract) and `28_THE_BASTROP_MOLD` (living trap register) kept active.
 
 ## HOW TO RUN A JURISDICTION THROUGH THE LINE (the loop — today, by hand; Phase D makes it `onboard(fips)`)
 This is the OPS-2 loop in operator shorthand. Every step has a hard mechanical gate; a failing gate STOPS the lane and you fix root cause — never force past.

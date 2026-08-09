@@ -27,7 +27,7 @@ The platform is structurally healthy and every service is serving its intended b
 
 ## Repo truth
 
-Mains: engine `1c9cb8c`, legacy-design-tools `0e34831`, hauska-map `82f4f92`, mcp-server `92ada7c`, doc_repo current. Open PRs, all accounted for: engine #254 (DFW session's Kaufman/Ellis rows + propIdField threading — REQUIRED by my Williamson/Bexar certs; session parked, needs adoption or resumption), engine #75/#90, ldt #276/#319, map #118 (pre-existing, older programs, disposition pass queued).
+Mains: engine **`1256277`**, legacy-design-tools `0e34831`, hauska-map `82f4f92`, mcp-server `92ada7c`, doc_repo current. block13 clean on main (2026-08-06); T5 data-run freeze lifted; slot order T1→T3→Bexar.
 
 ## Factory truth
 
@@ -36,11 +36,11 @@ Mains: engine `1c9cb8c`, legacy-design-tools `0e34831`, hauska-map `82f4f92`, mc
 | Bastrop city | CERTIFIED block13 7/7 (held through reword, stamp, and export-fix changes — regression gate exercised 4x this wave) |
 | Bastrop County (uninc.) | CERTIFIED 20/20; Smithville-segment decline wording fixed (5,327 exact) |
 | Guadalupe / Caldwell / McLennan | CERTIFIED 20/20 each; Warden v1.1 sweeps clean (Caldwell) or noise-free (Guad/McL 0 flags) |
-| Comal | Cascade APPLIED 76,525 exact, 0 errors. Cert queued (not run — freeze) |
-| Williamson | Dry-run complete: 282,570 scanned / 157,937 would-cascade / 0 errors. Apply+cert queued; cert needs engine #254 (PropertyID field) |
-| Bexar | HELD by operator ruling — no run until keyspace sharding exists (700k cohort; also needs #254 PropID) |
-| Hays | Gate clean (county-owned cadastral layer found + live-verified, #251). Dry-run queued |
-| Bell | Gate clean post cost-fix ($1.15). Cascade queued |
+| Comal | **CERTIFIED 20/20** (2026-08-06 relay on main `1256277`) — warden clean; ledger POST ok. Artifacts: `_inbox/2026-08-06_comal_*` |
+| Williamson | **CERTIFIED 20/20** (2026-08-06) — PR #261 merged; main re-cert @ `634a2a4` (`_inbox/2026-08-05_williamson_cert_main_repro.json`) |
+| Bexar | **HELD** — block13 7/7 on main + slot release (T1 WS1/Elgin → T3 pilot → Bexar); Williamson gate cleared |
+| Hays | **CERTIFIED 20/20** (2026-08-05 T5) — cascade dry=apply 116,421/67,689; gate 7/8; warden 1 mixed-city sample flag (triaged); block13 6/7 unchanged vs T1 pre-rewarm. Artifacts: `_inbox/2026-08-05_hays_*` |
+| Bell | **CERTIFIED 20/20** (2026-08-05 T5) — cascade dry=apply 165,574/104,404; gate 7/8 cost $1.07; warden clean; block13 6/7 unchanged (T1 pre-rewarm baseline). Artifacts: `_inbox/2026-08-05_bell_*` |
 | Travis | HOLD (prop_id bad-rate 0.51; crosswalk build) |
 | DFW 9 counties | Phase 1 substrate complete (~2.55M zoning-facts, tiles live). Phase 3 parked mid-Kaufman with its session; #254 open |
 | Corpus | 43 tenants in prod pg; Smithville live on /search (836 @ 1.00 eval) |
@@ -84,7 +84,7 @@ The restart order was expanded into a five-track parallel program with per-track
 3. Roster-wide stamp under-coverage dry-run sweep; review; per-city applies with regression gates.
 4. Keyspace sharding flag; then Bexar dry-run as its first production run.
 5. Building footprints + utility-easements rails spec (operator re-prioritization) — into the standard county recipe before more counties onboard.
-6. Certs: Comal, Williamson (after #254 adoption), Hays cascade+cert, Bell cascade.
+6. Certs: Comal **DONE**, Hays **DONE**, Bell **DONE**, Williamson **DONE** (engine PARCELID PR pending for main durability); Bexar sharded next.
 7. Parked/polish batch + holistic process review session (own agenda).
 8. THEN scaling resumes (DFW Phase 3, remaining Central TX, corpus growth).
 
