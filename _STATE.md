@@ -4,7 +4,7 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 ## THE ONE-LINE
 
-**The launch gate is ruled and the program is in motion: 196 of 254 counties acquired, OPS-14 governs the path to launch, the writers slot chain (Handoff D) is running, cert truth is 6/7 in the real frame with the fix lane dispatched (G), roads unblock dispatched (H).** Session close 2026-08-09 evening: `_sessions/2026-08-09_launch_gate_and_program_planning_claude_code.md`.
+**The launch gate is ruled and the program is in motion: 196 of 254 counties acquired, OPS-14 governs the path to launch, the writers slot chain (Handoff D) is running, cert truth is 6/7 in the real frame with the fix lane dispatched (G), roads unblock dispatched (H).** Session close 2026-08-09 evening: `_sessions/2026-08-09_launch_gate_and_program_planning_claude_code.md`. **Operator directive 2026-08-09 late: the statewide PMTiles bake (Handoff K, dispatched) fires as soon as the in-flight lanes land — trigger gate is the D planner's sweep-complete + scorer close artifacts. The bake is the store-becomes-product moment.**
 
 ## LAUNCH GATE RULED 2026-08-09 + CLEANUP BATCH IN FLIGHT
 
