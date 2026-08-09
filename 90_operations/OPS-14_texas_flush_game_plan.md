@@ -127,13 +127,15 @@ Mechanics, with the hooks as PRECONDITIONS rather than candidates:
 
 Same manner as the cleanup batch: copy-paste planner briefs, hand-carried by the operator to Cursor-native planner agents, one brief per lane family, subs one level down with the no-nesting clause and the hold-until-subs-close rule, close artifacts at declared paths, and the doc_repo planner verifying at source before anything is marked done. The doc_repo planner plans, reviews, verifies, and merges; it does not execute product-repo changes itself.
 
-## OPEN OPERATOR DECISIONS
+**Adversarial review is baked into the process, not appended at close (operator directive 2026-08-09).** Every brief defines checkpoints where an INDEPENDENT adversarial sub (never the builder) attacks the work before the lane proceeds: post-build before any apply, and post-apply before the lane closes. Reviews carry pre-registered expectations (what the reviewer will check, written before the work runs) and attack from a different frame than the builder's own tests, per the OPS-12 standing rule that four readings of one input are one reading. A lane without its reviewer artifacts is not closed. The model is the cert-frame lane B2, whose in-process honesty rule (report 6/7, do not tune to 7/7) is the required posture.
 
-1. Launch-footprint county list (which counties must reach satisfied on depth rails for launch).
-2. Smart Site pricing confirmation before the billing-surface audit renames the Stripe product (the sandbox price is a placeholder under the Hauska name).
-3. Second-state candidate (informs which Texas assumptions the state template flushes out first).
-4. Ratify the owner and easement rail classifications proposed in the rail table.
-5. The heavy-scan slot ruling: proposed as one write slot per database, reads unrestricted, slot handoff recorded in `_STATE.md`.
+## OPERATOR DECISIONS (all five RESOLVED 2026-08-09 evening)
+
+1. **Launch footprint: all of Central Texas plus the Dallas metro.** The concrete county enumeration is produced by the planner against COG membership (CAPCOG, AACOG adjacency, and the DFW metro counties) and signed off inside the writers WDLL before depth waves aim at it.
+2. **Pricing: settled prior; the ladder of record is `76_empressa_wedge_90d_operating_plan.md` (Free with 5 briefs/mo, Home $20/mo, Pro $40/mo, Team $75/seat/mo).** The Stripe sandbox's $29 "Hauska Pro" matches nothing on record (wrong brand and wrong price); the billing-surface audit aligns Stripe to the settled ladder under Smart Site branding.
+3. **Second-state candidate set: Utah, New Mexico, Colorado, Arizona.** The state template flushes Texas assumptions against this Mountain West set (four different state GIS postures, one region).
+4. **Owner and easement rail classifications: RATIFIED as proposed.**
+5. **Heavy-scan slot: RULED. One write slot per database, reads unrestricted, slot handoff recorded in `_STATE.md`.** This closes the open contradiction named by the layer-first decision.
 
 ## WHAT THIS PLAN QUEUES (focus-queue rule)
 
