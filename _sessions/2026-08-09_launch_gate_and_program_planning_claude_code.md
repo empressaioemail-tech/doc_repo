@@ -35,6 +35,16 @@ related: [_STATE, _decisions/2026-08-09_texas_flush_launch_gate, _decisions/2026
 
 `00_current_state.md` regeneration deliberately deferred: OPS-14's doc-cleanup lane carries the pending decision to ratify `_STATE.md` as the successor snapshot (recommended) and amend CLAUDE.md accordingly. `_STATE.md` was updated throughout this session and at close.
 
+## LATE-SESSION ADDENDUM (after the first close commit; lanes returned fast)
+
+1. **Cert-frame reconciliation DONE:** engine #292 merged (`fb64326e`); block13 LIVE 7/7 in the txgio frame; offline fixture 8/8 post-5-edge re-promote; grep gate proven non-vacuous; situs-threading change adversarially reviewed (fail-closed on null situs; twelve-sweep 12/12). G2b (188 stale-role parcels) queued: adversarial 15-sample, then re-promote in an atoms-slot window; W3 cert re-earn inherits the list.
+2. **W1 slot chain steps 1-2 closed:** Bastrop 48021 minted (62,394 parcel-nodes, orphans 0); scorer applied; **ledger 38→89 satisfied cells, 0.213→0.897 percent**. Slot handed to H for the H6 window; sweep resumes after (~80 counties from 48457).
+3. **MCP P0 CLOSED PASS (Handoff L):** the catalog 401 outage was a key mismatch (40-char plaintext vs 59-char Secret Manager); fixed durably, fail-loud seam added, gold parcel 48021:34145 serves the full GC chain, fabric-only parcels return honest `atom_path_pending`, wrong key 401s loud. Serving: retrieval `00061-bib`, MCP `00041-x56`. **Unmerged PRs owed** (engine cloudbuild/DEPLOY.md; mcp health-probe branch). P1 revival dispatch owed separately.
+4. **Handoff K (statewide PMTiles bake) dispatched with amended trigger gate** (bake reads geometry, not atoms — gate re-verified at store: 196/15,479,206; Harris westmost −95.960827). K1 sizing pass; K2 dedup contract pre-registered (13,710,413 distinct features); K3 full bake running; operator directed continue through K4/K5 in-session; ends ready-for-R6.
+5. **Elgin E3 dry-run post-anchors:** preflight 499/500, warm exercised, cost gate clear, but NOT 0-mismatch vs legacy (75/98 vs 102/72) — E3-ADV re-review owed before any apply.
+6. **Billing audit (Handoff J) returned:** mechanics shipped and CI-tested, but Stripe ($29 Hauska Pro), PE bundle ($99/mo copy), and the settled ladder ($40 Pro) are three-way misaligned; punch list filed; no real-money mode until closed; operator product calls owed ($15 unlock, Home/Team routes, free-tier definition).
+7. **Handoff prompt for the next planner session:** `_inbox/2026-08-09_PLANNER_HANDOFF_next_session.md`.
+
 ## Commits this session
 
 `33dc021` (stranded reconciliation + launch gate), `f3b0ca1` (76h + 64-band adoption), `1dc8ccf` (per-rail split + 76j corrections), `fbd0e67` (OPS-14 v2 + audit artifact), `fdcea29` (five rulings + cleanup close), `231dec0` (footprint + WDLLs), `55f37e6` (WDLL approvals), plus this close commit.

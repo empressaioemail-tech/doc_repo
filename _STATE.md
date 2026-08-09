@@ -1,16 +1,16 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-09 (Harris multi-shp reloaded; PR #404 open; 196 counties; post-apply westmost −95.960827).
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-09 (W1 slot chain steps 1–2 closed; geometry scorer applied; atoms slot with H planner for H6).
 
 ## THE ONE-LINE
 
-**The launch gate is ruled and the program is in motion: 196 of 254 counties acquired, OPS-14 governs the path to launch, the writers slot chain (Handoff D) is running, cert truth is 6/7 in the real frame with the fix lane dispatched (G), roads unblock dispatched (H).** Session close 2026-08-09 evening: `_sessions/2026-08-09_launch_gate_and_program_planning_claude_code.md`. **Operator directive 2026-08-09 late: the statewide PMTiles bake (Handoff K, dispatched) fires as soon as the in-flight lanes land — trigger gate is the D planner's sweep-complete + scorer close artifacts. The bake is the store-becomes-product moment.**
+**Ledger at 0.897 percent (38→89 cells, first measured jump); CERT FRAME RECONCILED AND DONE (#292 merged, block13 honestly 7/7 in the txgio frame); MCP catalog path RESTORED (P0 auth seam fixed, gold parcel serves, fabric-only honest-pending); statewide PMTiles bake IN FLIGHT through K4/K5; atoms slot with H for H6; Elgin dry-run anchors-clear but NOT legacy-parity (E3-ADV re-review owed before apply); billing audit returned a punch list (no real-money mode until closed).** Session close + planner handoff: `_sessions/2026-08-09_launch_gate_and_program_planning_claude_code.md` + `_inbox/2026-08-09_PLANNER_HANDOFF_next_session.md`. Trigger gate amended: verified 196 counties / 15,479,206 rows; Harris 48201 westmost −95.960827. K1 sizing PASS (253 MB / 748s for 1.59M-feature sample; extrapolate ~2.2 GB / ~1.8 h full). K3 full bake running `_scratch/k3_statewide_2026-08-09/` (planner-owned). K5 PE deploy held until K4 checkpoint.
 
 ## LAUNCH GATE RULED 2026-08-09 + CLEANUP BATCH IN FLIGHT
 
 **Texas-flush launch gate = measured-everywhere** (`_decisions/2026-08-09_texas_flush_launch_gate.md`, per-rail split ratified): L2 at 254, statewide roads/NFHL/footprints, all 12 rails with writers, cert frame reconciled, 76j capacity items. Filled-everywhere = program completion, runs post-launch. **Game plan: `90_operations/OPS-14_texas_flush_game_plan.md` (adversarially reviewed v2). All five operator decisions RESOLVED 2026-08-09 evening** (footprint = Central TX + Dallas metro; pricing ladder of record = 76_wedge plan $0/$20/$40/$75; second-state set = UT/NM/CO/AZ; owner+easement classifications ratified; heavy-scan slot = one write slot per database).
 
-**CLEANUP BATCH CLOSED 2026-08-09 + OPS-14 follow-up lanes F1–F6 (2026-08-09 evening):** #404/#403/#406 merged earlier; **#393 MERGED** `a7d8da8a` (Test SUCCESS @ `45cf0e8b`); **cortex-api REDEPLOYED** serving `cortex-api-00494-gok` @100% tag `canary` (shift-traffic run 31331678002) — live ledger now exposes `satisfiedPresentCells=56`, `satisfiedPresentPartialCells=18`, `satisfiedAbsentCells=0`; #118 CLOSED; Bosque idempotency CLEAN. **Nueces 48355:** triangulated SOURCE_DEFECT (store distinct 157,198 = roster = apply read; east wall in source not ingest — report `_inbox/2026-08-09_F4_nueces_48355_extent_report.md`; TxGIO zip re-download blocked HTTP 403 here, ogrinfo bbox still owed on alternate egress). **Donley:** outreach draft at `_inbox/2026-08-09_F6_donley_cad_outreach_draft.md` (operator sends). **Cert 48021:34177:** root cause CONFIRMED (A) stale edge roles on edges 3–4 in promoted atoms; answer key stands; fix = re-promote then merge #292 — report `_inbox/2026-08-09_F3_34177_root_cause.md`. **Roads statewide:** all six unblockers still OPEN — status `_inbox/2026-08-09_F5_roads_unblock_status.md`. Parcel-node sweep STILL WRITING; scorer re-run gated on two identical counts 10 minutes apart.
+**CLEANUP BATCH CLOSED 2026-08-09 + OPS-14 follow-up lanes F1–F6 (2026-08-09 evening):** #404/#403/#406 merged earlier; **#393 MERGED** `a7d8da8a` (Test SUCCESS @ `45cf0e8b`); **cortex-api REDEPLOYED** serving `cortex-api-00494-gok` @100% tag `canary` (shift-traffic run 31331678002). **Geometry scorer APPLIED 2026-08-09T22:12Z:** live ledger `satisfiedCells=89`, `texasCompletenessPct=0.897%` (was 38 / 0.213%); close `_inbox/2026-08-09_W1_D0_geometry_scorer_CLOSE.md`. **Parcel-node sweep HALTED** at 48457 boundary (~80 counties remain); resume after H6 slot return. **Nueces 48355:** SOURCE_DEFECT recorded (`_inbox/2026-08-09_Nueces_48355_manifest_honest_absence.md`). **Donley:** outreach draft at `_inbox/2026-08-09_F6_donley_cad_outreach_draft.md` (operator sends). **Cert 48021:34177:** fix = re-promote then merge #292 — report `_inbox/2026-08-09_F3_34177_root_cause.md`. **Roads statewide:** all six unblockers still OPEN — status `_inbox/2026-08-09_F5_roads_unblock_status.md`.
 
 ## THE FOUR NUMBERS THAT MATTER
 
@@ -18,10 +18,10 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 |---|---|---|
 | Counties with parcel geometry | **196 / 254** | `SELECT count(DISTINCT county_fips) FROM txgio_parcel` on `DEPLOYMENT_DATABASE_URL` |
 | Parcel rows | **~15,479,206** (Harris reload +1,037,083 net; re-verify before quoting) | same table |
-| Counties with `parcel-node` atoms | **79** (796,046 atoms, live 2026-08-09T16:10Z) | `SELECT count(DISTINCT body->>'countyFips') FROM atoms WHERE entity_type='parcel-node'` on `DATABASE_URL` (atoms DB, database `hauska_mcp`) |
-| Texas completeness | **0.2134 percent**, 38 satisfied cells of 3,048 | `GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger` |
+| Counties with `parcel-node` atoms | **119** (~1.66M+ atoms; sweep halted at 48457) | `SELECT count(DISTINCT body->>'countyFips') FROM atoms WHERE entity_type='parcel-node'` on `DATABASE_URL` (atoms DB, database `hauska_mcp`) |
+| Texas completeness | **0.897 percent**, 89 satisfied cells of 3,048 | `GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger` |
 
-**THE CHEAPEST WIN ON THE BOARD:** `countyGeometryScoreCli.ts` (the scorer that turns `parcel-node` atoms into manifest coverage) has been run ONCE, against 49 counties. 77 counties now have atoms. Re-running it should move the number immediately with zero new work. It lives in legacy-design-tools `artifacts/api-server/src/`.
+**Geometry scorer:** applied 2026-08-09 against 119 atom-written counties — 88 geometry cells `satisfied-present`, 31 `not-yet` (below 95%). Re-run on sweep close. Close: `_inbox/2026-08-09_W1_D0_geometry_scorer_CLOSE.md`.
 
 ## MULTI-SHAPEFILE TRUNCATION — HARRIS RELOADED (2026-08-09)
 
@@ -80,8 +80,8 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 ## LIVE INFRA (serving revisions — verify before quoting; they churn)
 
 - engine-api: `hauska-engine-api-00174-zus` @100% tag `ws1-serve-truth-12` (T1 WS1 2026-08-06: #265 + stale-edge retire + export R28/R30 guard for depth-warm edges; twelve re-persist 12/12 serveTruthOk; image `ws1-serve-truth-12`; `/health` verified). Prior `00171-vol` tag `ws1-fd91b54`. Project hauska-prod-497015.
-- retrieval: `hauska-retrieval-api-00059-lir` @100% tag `pooling-fix` (76j C2: Neon `DATABASE_URL`+`CORTEX_DATABASE_URL` moved to pooled host; `/health/search` functional probe + Bearer auth both verified post-shift). Prior serving was `00034-gmd` tag `canary2` (2026-07-31 pedestrian `isPedestrianWay` enrichment #197 landed further back, at `00030-x7r` — also stale before this session). Project hauska-prod-497015.
-- MCP: `hauska-mcp-server-00040-ctj` @100% tag `postgres-limiter` (T4 catch-up 2026-08-05: Postgres `ResilientRateLimitStore` PR #58 @ `b5f26de`; `/health` `rate_limit_store.state=ok`, `detail=postgres`; migration `010_rate_limit_counters` applied). Prior `00050-fej` tag `ratelimit-smoke` (fail-loud degraded mode PR #57). Project hauska-prod-497015.
+- retrieval: `hauska-retrieval-api-00061-bib` @100% tag `mcp-p0-auth` (76j-F-P0 2026-08-09: RETRIEVAL_API_KEY←`HAUSKA_ENGINE_API_KEY:latest`; CORPUS_SNAPSHOT_PATH=`/app/services/retrieval-api/corpus/snapshot.json`; MCP catalog 401 eliminated). Prior `00059-lir` tag `pooling-fix`. Project hauska-prod-497015.
+- MCP: `hauska-mcp-server-00041-x56` @100% (76j-F-P0 2026-08-09: `probeRetrievalCatalogSeam` auth-seam health probe; gold+fabric chain live-verified). Prior `00040-ctj` tag `postgres-limiter`. Project hauska-prod-497015.
 - cortex-api: `cortex-api-00494-gok` @100% tag `canary` (2026-08-09 shift-traffic after deploy-canary 31331609692; picks up #406 ledger breakdown fields — live `satisfiedPresentCells=56`, `satisfiedPresentPartialCells=18`, `satisfiedAbsentCells=0`). Prior serving `cortex-api-00472-web` tag `smoke4`. Project legacy-design-tools-prod.
 - CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed **2026-08-06 T2 WS2 reopen** pedestrian v2 `586ef16` / bundle `index-C1Sc6_H7.js` — `#8fd0ff`, opacity 0.9, larger dots; prior T2 `index-h2GW8147.js`). Deploy from hauska-map ROOT linked to Vercel project `property-explorer`. NOTE: Vercel does NOT auto-deploy on merge.
 
@@ -125,9 +125,7 @@ Dispatch pack: `_dispatches/2026-08-09_W5_depth_factory_dispatch_pack.md`. Progr
 |---|---|---|---|
 | E1 | F2 corpus (Smithville) | **PARTIAL CLOSE** — corpus PASS | `_inbox/2026-08-09_E1_lane_close.json`; stamp honest-absent |
 | E2 | F1 CAD registry tranche 1 | **CLOSED PASS** | 35 rows; `_inbox/2026-08-09_E2_lane_close.json` |
-| E3 | F3 Elgin dry-run | **CLOSED BLOCKED** | E3-ADV confirmed 0 `48021` parcel-nodes; `_inbox/2026-08-09_E3_lane_close.json` |
-
-**Next unblock:** Handoff D releases atoms slot → mint `48021` parcel-node anchors → re-run Elgin unified dry-run → E3-ADV → planner apply go.
+| E3 | F3 Elgin dry-run | **DRY-RUN PASS (apply HOLD)** | Post-anchor run: 499/500 anchors, verifyPass=75 verifyFail=98; `_inbox/2026-08-09_E3_elgin_dryrun_artifact_post_anchors.json`; E3-ADV re-review pending; apply waits H6 slot return + planner go |
 
 ### T3 RAILS — FOOTPRINTS + EASEMENTS (2026-08-05 track close — spec DONE, live BLOCKED)
 
