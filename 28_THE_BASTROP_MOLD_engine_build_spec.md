@@ -10,6 +10,8 @@ purpose: When we build the engine to fan agents and finish CTX / go national, TH
 
 # THE BASTROP MOLD — engine build specification
 
+> **Precedence note 2026-08-09.** This doc stays ACTIVE and LIVING per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. It is authoritative on baked decisions and gotchas (Part 3) and on what a complete county contains (Part 1). It is subordinate to `90_runbooks/factory_onboarding_runbook.md` on pipeline procedure and to the `90_operations/OPS-*` band on doctrine and definitions; where this doc restates either, they win. The capture protocol at the end still binds every agent.
+
 Bastrop is the reference county. Everything below is what the engine must PRODUCE for each new county, and every DECISION/GOTCHA it must bake so county #2..#254 inherit them. This is a LIVING doc — as QA surfaces more, it is updated (see the capture protocol at the end). It is the antidote to re-deriving the county by archaeology.
 
 ## PART 1 — WHAT A COMPLETE COUNTY CONTAINS (the output the engine produces)

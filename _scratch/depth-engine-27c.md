@@ -101,6 +101,13 @@ Working memory for the road-node depth engine build (R0-R4 under `27_MASTER_WDLL
 
 - GROUND-TRUTH (CC-A 2026-07-27T13:50Z planner): Steps 0–5 COMPLETE. Bundle `index-BTKuoNXu.js` (NOT stale eWdGi6qE). Amendment 1 MET on 28286; golds 33512+34785 front-walk MET. WDLL 1–10 MET (9 honest-DEGRADED). WDLL **closed**. Check-in `_inbox/2026-07-27_CC_A_post_deploy_planner_live_verify.md`. CTX HELD. No further CC-A builders.
 - LESSON (CC-A **promoted** M0): Port trading Control Tower `NodeGraphBrowser`+`AtomInspector` (structured card / family pills / `return=` / confidence object) — do **not** invent a second organism. Mechanical guard: `hauska-map/.../NodeGraph.smoke.test.tsx`. Parity ledger 2026-07-27 entry.
+- OPEN (2026-07-27): PROPERTY-LINE-TAGS **MET / CLOSED**. Live 26454/26454; PR #150 merged `933d884`. Planner check-in `_inbox/2026-07-27_PROPERTY_LINE_TAGS_planner_verify_checkin.md`. Depth untouched. CTX HELD.
+- GROUND-TRUTH (2026-07-27 PROPERTY-LINE-TAGS): accidental engine-core `@empressaio/atom-contract`
+  ^1.11.0 bump dual-installed with atoms ^1.9.0 → CI brand clash; pin must stay matched.
+- LESSON (PROPERTY-LINE-TAGS **promoted** M0): `interior.edgeEndpoints` are local-ENU metres
+  from depth-warm `projectRing` (centroid), NOT WGS84 lng/lat — compute bearing/feet
+  from dx/dy directly. Shared module `geometry/gis-property-line-tags.ts` for PDF+atoms.
+- DEAD-END (PROPERTY-LINE-TAGS): row-by-row UPDATE of ~26k edges hung; use Promise.all batches.
 - OPEN (2026-07-27): RECIPE-PROOF track **CLOSED** (operator). Caldwell banked 7/1. Hays/CTX NOT opened. Next priority = **Bastrop market-ready**. Close `_inbox/2026-07-27_RECIPE_PROOF_track_close.md`. UNREACHABLE-CITY-GIS mechanical PR #148.
 - OPEN: WDLL 4 live alley-backed Bastrop parcel (fixture 15′ vs 5′ MET; 714 Spring is corner-street only).
 - OPEN: PDD / P-CS / P-EC — site-specific / overlay; honest no-setback-row; separate wave.

@@ -4,7 +4,7 @@ title: Factory Onboarding Runbook (pipeline, fallbacks, ledger, Warden, regressi
 date: 2026-08-04
 status: active (executor-drafted 2026-08-04, planner-reviewed and promoted same day with the corrections section below; the draft remains in _inbox as provenance)
 owner: nick
-related: [90_operations/OPS-8_blocker_free_onboarding_model, 90_operations/OPS-9_scale_ops_specs_pack, 90_operations/onboarding_defect_class_backlog, 90_operations/OPS-2_county_onboarding_runbook, 90_operations/OPS-5_cert_standard, 90_operations/OPS-7_coverage_and_honesty_doctrine, 90_operations/OPS-4_rewarm_protocol, _dispatches/2026-08-04_elgin_pipeline_planner_handoff, _sessions/2026-08-03_county_onboarded_claude_code, _sessions/2026-08-03_elgin_foundation_and_city_code_refs_claude_code, _sessions/2026-08-04_elgin_pipeline_continuation_claude_code, _sessions/2026-08-04_ops9_wave_execution_claude_code]
+related: [90_operations/OPS-8_blocker_free_onboarding_model, 90_operations/OPS-9_scale_ops_specs_pack, 90_operations/onboarding_defect_class_backlog, 90_operations/OPS-2_county_onboarding_runbook, 90_operations/OPS-5_cert_standard, 90_operations/OPS-7_coverage_and_honesty_doctrine, 90_operations/OPS-4_rewarm_protocol, product_surface_smoke_suite, 80_adrs/adr_029_building_footprint_and_utility_easement_rails, _inbox/2026-08-05_T3_ingest_spec_footprints_easements, _dispatches/2026-08-04_elgin_pipeline_planner_handoff, _sessions/2026-08-03_county_onboarded_claude_code, _sessions/2026-08-03_elgin_foundation_and_city_code_refs_claude_code, _sessions/2026-08-04_elgin_pipeline_continuation_claude_code, _sessions/2026-08-04_ops9_wave_execution_claude_code]
 ---
 
 # Factory Onboarding Runbook
@@ -20,6 +20,16 @@ This draft consolidates and does not contradict `_dispatches/2026-08-04_elgin_pi
 3. `90_operations/OPS-2_county_onboarding_runbook.md`, `OPS-5_cert_standard.md`, `OPS-7_coverage_and_honesty_doctrine.md`, `OPS-4_rewarm_protocol.md` — the mechanical line, the cert law, the honesty doctrine, the rewarm mechanism this pipeline sits on top of.
 4. `00_current_state.md` top two entries, and the most recent `_sessions/` files for the jurisdiction you are about to touch.
 5. Credentials (per the handoff dispatch, item 8): engine/atoms DB via `gcloud secrets versions access latest --secret=DATABASE_URL` (and `CORTEX_DATABASE_URL`) `--project hauska-prod-497015`; ldt/txgio DB via `--secret=DEPLOYMENT_DATABASE_URL --project legacy-design-tools-prod`; retrieval-api key by reading `RETRIEVAL_API_KEY` from the `hauska-retrieval-api` Cloud Run service env (project `hauska-prod-497015`), base URL `https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app`. Warden env contract (learned 2026-08-04, `_sessions/2026-08-04_ops9_wave_execution_claude_code.md`): `DATABASE_URL` = atoms Neon; `TXGIO_DATABASE_URL` = the ldt deployment Neon (`txgio_parcel`); retrieval pair for serve-path.
+
+## STORE-TRUTH PRINCIPLE (permanence, T1 WS1 2026-08-06)
+
+**Any cohort operation sizes from the authoritative store at execution time, never from a process's account of its own work.**
+
+Warm apply logs, promote counters, and dry-run summaries are process memory — useful for parity checks at a pinned engineSha, but not roster authority. The atoms store (and txgio where geometry lives) is truth for: who is promoted, who needs re-persist, who carries stale boundary primitives, heavy-scan slot sizing.
+
+Same failure species as the cert-vs-serve promote-persist gap: trusting process memory over store truth produces cert-pass / serve-fail drift and under-sized re-warm cohorts. Before every cohort re-persist, re-query the store immediately before dry-run and apply; record **both counts** in the artifact pair.
+
+Example (T1 WS1): Bastrop apply reported 2,015 promoted; Elgin re-warm reported 91/91 parity; store query found **~4,003** promoted envelopes needing boundary-edge re-persist. Checkpoint: `_inbox/2026-08-06_T1_cohort_repersist_roster_checkpoint.md`.
 
 ## 1. THE PIPELINE
 
@@ -103,17 +113,31 @@ ABORT/FALLBACK: if `emitErrors > 0` or the dry-run/apply totals do not match exa
 
 **Step Z10 — Depth warm + cert.**
 
-RECON FIRST: does this city need its own warm script? Per-jurisdiction warm scripts are currently hand-authored (`depth-warm-bastrop-batch.mjs`, `depth-warm-caldwell-batch.mjs` precedent; `depth-warm-elgin-batch.mjs` for Elgin, engine PR #227). OPERATE-NOT-REBUILD: reuse `warmThenVerify`, `promoteHonestVerifyDecline`, `cert-grade-core.ts` — do not build parallel machinery. This hand-authored-per-city state is a named gap (OPS-9 S4: "Registry-driven warm... fold the per-city warm scripts into a single registry-parameterized runner"), not yet closed as of this draft.
+RECON FIRST: does this city need its own warm script? Per-jurisdiction warm scripts are currently hand-authored (`depth-warm-bastrop-batch.mjs`, `depth-warm-caldwell-batch.mjs` precedent; `depth-warm-elgin-batch.mjs` for Elgin, engine PR #227). OPERATE-NOT-REBUILD: reuse `warmThenVerify`, `promoteHonestVerifyDecline`, `cert-grade-core.ts` — do not build parallel machinery.
 
-City bbox for road-node loading: derive from the city-limits geometry or OSM live extent, record provenance — never invent coordinates. Elgin: `ELGIN_CITY_BBOX` derived from the AGOL `Elgin_Zoning` extent.
+**City re-warm discipline (T1 catch-up permanence, Bastrop proving run 2026-08-05):** every city-cohort re-warm that fixes stored envelope geometry MUST use `--force-overwrite` so R28 (ring recompute) and R30 (fresh road relabel + situs fallback) run at warm time — not only at export time. Dry-run first. Record wall time and batch size for incremental-rewarm planning. Area-sweep cert the lead exhibit block plus two contiguous blocks (full roster, never sample). block13 7/7 before and after.
 
-Verbatim warm command (from `_inbox/2026-08-04_elgin_warm_promote.log`):
+**Dry/apply parity (write-then-verify era, 2026-08-08 amendment):** depth-warm dry-run **cannot** read back stored bytes, so dry `verifyPass` counts compute + mechanical verify only. Apply `promoted` counts writes that **survived read-back** (`promoteDepthWarmToStorage` write-then-verify + ground-truth gate). Extended parity equation:
 
 ```
-tsx scripts/depth-warm-elgin-batch.mjs "--city-cohort" "--promote" "--limit=10000"
+dryRun.verifyPass == apply.promoted + apply.computePassNotPersisted + apply.skippedIdempotent
 ```
 
-(Note: this is the per-city script's own CLI surface — a different jurisdiction's script may expose the same flags under a different filename; do not assume the filename generalizes, only the flag shape as of this proof.)
+where `computePassNotPersisted` = parcels that passed mechanical verify on dry but did not appear in `apply.promoted` (read-back refused, pre-write ground-truth refused, or compute outcome changed on apply leg). Batch JSON **SHOULD** emit `computePassNotPersisted`, `writeThenVerifyRefused`, `promoteGateRefused`, and `skippedIdempotent` explicitly (today only `promoted`, `verifyPass`, `verifyFail`, `honestDeclines`, `declines.other`). Headline exact-match gate is **`dryRun.verifyPass == apply.promoted + apply.computePassNotPersisted`** with skipped/idempotent named and zero unless documented. Plain-geometry post-verify MUST use the saga closing method (envelope-edge midpoint → nearest txgio parcel edge, **single shared parcel projection frame** via `projectRing` + `projectRingInFrame`) — never block13 R32 cert-grade as a substitute.
+
+Verbatim warm command (Bastrop city cohort, T1 apply):
+
+```
+PROPERTY_ATOM_PATH=1 DATABASE_URL=... TXGIO_DATABASE_URL=... NODE_OPTIONS=--use-system-ca \
+  pnpm --filter @hauska-engine/engine-core run depth-warm-bastrop-batch -- \
+    --city-cohort --force-overwrite --promote --limit=10000 [--dry-run] [--upsert-ledger]
+```
+
+Elgin city-cohort (same R28/R30 gates on `depth-warm-elgin-batch.mjs`):
+
+```
+tsx scripts/depth-warm-elgin-batch.mjs --city-cohort --force-overwrite --promote --limit=10000
+```
 
 FALLBACK — no-road-adjacency spike: Elgin's first warm pilot returned 49/50 `no-road-adjacency` declines. Diagnosis before assuming a bug: check whether the city's OSM road data actually exists in the loaded road-node set, and whether local streets are tagged in a way the warm path treats as "undefined" (Elgin's streets were almost entirely `county-roadway-undefined`, filtered from the warm pool by design; nearest convertible road was ~600m away). FIX: OSM ingest for the city's bbox (Elgin: engine PR #228, prod ingest of 2,356 ways) BEFORE re-attempting the warm, not a warm-path code change.
 
@@ -129,6 +153,56 @@ Cert command shape (per the handoff dispatch step 4, and confirmed by the actual
 These are queued as the `ELGIN-CERT-RESIDUAL` defect class (see section 3 class register) — they do NOT block seeding the ledger with the honest partial state; they DO block calling Elgin's cert "CERT-RESTORE ELIGIBLE" until fixed and re-run.
 
 **Step Z11 — Close.** Session record, `00_current_state.md` top entry, all run artifacts copied to `_inbox/`, defect-class backlog updated (including REASON-OVERSTATES status after the Z8 supersede verification), commit and push doc_repo.
+
+### 1C. FOOTPRINT + EASEMENT RAILS (both lanes, permanent)
+
+Added 2026-08-05 (T3 Workstream 4). Every jurisdiction — unzoned county (1A) or zoned city (1B) — carries these two site-layer rails by default. Contract shapes: `building-footprint` and `utility-easement` per `80_adrs/adr_029_building_footprint_and_utility_easement_rails.md`. Full ingest spec: `_inbox/2026-08-05_T3_ingest_spec_footprints_easements.md`. Evidence: `_inbox/2026-08-05_T3_footprint_source_recon.md`, `_inbox/2026-08-05_T3_easement_source_recon.md`.
+
+**Permanence rule:** future counties inherit this section without a separate dispatch. No Texas-wide re-comb after Phase 2 backfill. Registry row MUST freeze footprint + easement fields before any site-layer apply.
+
+**Registry row fields (freeze-time, adversarial review):**
+
+| Field | Purpose |
+|---|---|
+| `footprintSourceUrl` | REST layer, bulk download, or ML dataset pointer |
+| `footprintSourceTier` | `cad-authoritative` \| `city-gis-authoritative` \| `ml-derived` \| `absent` |
+| `footprintAdapterKind` | Adapter routing key (see ingest spec section 3.1) |
+| `easementSourceUrl` | FeatureServer URL or null when absent |
+| `easementSourceTier` | `plat-gis-authoritative` \| `county-gis` \| `record-extracted` \| `absent` |
+| `easementAdapterKind` | Adapter routing key (see ingest spec section 3.2) |
+
+Optional but recommended when probe finds them: `footprintLayerId`, `footprintJoinField`, `footprintMlPartition`, `easementLayerIds`, `easementScope`, `easementCorridorDefaultWidthFt`, `footprintProvenanceScope`, `easementProvenanceScope`, `utilityAdjacentUrls`, `siteLayerRecipeVersion`. Full schema proposal in ingest spec section 9.
+
+**Step FE1 — Source recon + four-point probe (read-only).** Before freezing the row: run the four-point live probe per rail per `_inbox/2026-08-05_T3_ingest_spec_footprints_easements.md` section 2 — (1) layer list, (2) fields + casing, (3) roster-parcel query, (4) feature count. File probe JSON to `_inbox/<date>_footprint_easement_probe_<fips>.json`. Routing precedence for footprints: CAD REST > bulk export > city GIS > Microsoft Global ML > honest-absence. For easements: CAD/county easement REST > municipal easement (city-scoped row only) > honest-absence. **Never** mint `utility-easement` atoms from utility-adjacent layers (pipelines, CCN, MUD) — record those URLs in `utilityAdjacentUrls` only.
+
+**Current cohort default (2026-08-05 recon):** 0/11 onboarded counties have CAD-authoritative footprint REST; default `footprintAdapterKind: ml-global-building-footprints`, `footprintSourceTier: ml-derived`. Easements: McLennan (48309) = `cad-easement-rest`; City of Bastrop municipal easements = separate city row with `easementScope: municipal-etj`; all other breadth counties = `easementAdapterKind: honest-absence` at county level.
+
+**Step FE2 — Freeze registry row.** Author + adversarially review the footprint/easement fields on the jurisdiction registry row (OPS-1 schema + ingest spec section 9). Fail-closed: if ML fallback is required, `footprintSourceTier: ml-derived` MUST be declared explicitly — never silent fill. Municipal easements MUST NOT ride a county row as county coverage. Merge engine registry row; record `siteLayerRecipeVersion` and `footprintEasementFrozenAt`.
+
+**Step FE3 — Dry-run ingest.** Reserve the **heavy-scan slot** through the master planner before prod apply when the footprint adapter reads bulk ML geometry or large easement linework (see ingest spec section 8; T1 owns the slot; light honest-absence-only sentinel ingests are exempt). Run site-layer ingest dry-run:
+
+```
+pnpm --filter @hauska-engine/engine-core run ingest-site-layers \
+  -- --county=<fips> [--row-id=<registryRowId>] --rails=footprint,easement --dry-run
+```
+
+OPEN: exact script name until adapter lands — grep engine for `site-layer` or T3 dispatch branch; the dry-run JSON event shape in the ingest spec is the acceptance contract. Dry-run totals MUST be explainable (footprints joined, absent sentinels, orphan rejects, easement intersects).
+
+**Step FE4 — Apply (slot reserved).** Apply only when dry-run/apply counts will match exactly and `emitErrors = 0`. Same command without `--dry-run`. ABORT if cost gate flags over $200 sample estimate without planner ruling. File `_inbox/<date>_site_layer_ingest_<fips>_apply.json`.
+
+**Step FE5 — Regression gate.** BEFORE cert: re-run Bastrop block-13 7/7 if shared adapter code was touched (section 5). After apply: block-13 again + product-surface smoke when serve path touched.
+
+**Step FE6 — Warden check.** Post-cert Warden sweep with cert artifact supplied:
+
+```
+pnpm run warden-sweep -- --fips=<fips> --cert-artifact=_inbox/<cert>.json
+```
+
+Warden files, never fixes. Site-layer-specific Warden checks are queued; v1 uses the four shipped checks plus manual review of `sourceVintage` on cert artifact.
+
+**Step FE7 — Cert check (site-layer extensions).** Every cert roster parcel MUST have `building-footprint` present OR `sourceTier: absent` sentinel; same for `utility-easement`. ML footprints MUST carry honest tier chips (never presented as CAD). Bastrop pilot: cert Jones/Higgins block with footprint + envelope on one sheet (pairs with T1 re-warm). File cert JSON; POST ledger (`LEDGER_INGEST_URL` + `LEDGER_INGEST_KEY`, `sourceKind` per ingest wrapper).
+
+**Placement in pipeline:** FE1–FE2 run during registry authoring (OPS-2 Stage 0, parallel to Steps C1/Z1–Z2). FE3–FE4 run after Rail C parcel spine is live and row is frozen — typically after Step C3 (county) or Z8 (city zoning-fact bake), before or alongside Step Z10 depth warm. FE5–FE7 close with the jurisdiction's cert cycle (Steps C6–C7 or Z10–Z11).
 
 ### THE GATE (shared machinery, both lanes)
 
@@ -193,6 +267,8 @@ An executor that stops and reports a contradiction between the dispatch and real
 ### Dry-run-must-predict-apply
 Every apply-capable script must be run dry first, and the dry-run's predicted counts must match the real apply's counts closely enough to be EXPLAINABLE (not merely close). Every dry-run/apply pair in the proven pipeline (Tier-1 rebake, zoning-fact bake, stamp run, cascade run) followed this discipline and every observed discrepancy was tracked down to a named, benign cause (multi-geometry row/parcel ratios, prop_id=0 collisions) rather than shrugged off.
 
+**Identical engine SHA (binding, T1 catch-up permanence 2026-08-05):** a dry-run and its paired apply MUST execute on the **identical engine git SHA**. Record `engineSha` (full 40-char commit) in both artifact JSON summaries. If any merge lands between dry-run and apply (edge-labeling, cert-grade, warm-path gates), the pair is **VOID** — re-run both legs pinned to the apply SHA before any prod write. T1 WS1 observed a 389 promoted-count delta when #256/#258 landed between dry-run (~90dea02) and apply (#260 `6f940d2`); treat as code drift until a pinned pair reproduces.
+
 ### Operate-not-rebuild
 When a per-city or per-county mechanism already exists and works (warm scripts, cert-grade machinery, the cascade builder), REUSE it — parameterize or extend, do not build a parallel implementation. This is named explicitly in OPS-9 S4 as the stated approach for collapsing the current hand-authored-per-city warm scripts into a single registry-parameterized runner, and was the explicit instruction for Elgin's warm step ("reuse warmThenVerify, promoteHonestVerifyDecline, cert-grade-core.ts; build no parallel machinery"). A standing MEMORY.md item (`FLEET-L3-GAP`) records a prior failure where a fleet rebuilt new wrappers instead of running an existing proven path — this is the corrective discipline for that failure class.
 
@@ -238,9 +314,15 @@ Event-triggered: after a jurisdiction's cert lands. Scheduled: a rolling re-swee
 
 `DATABASE_URL` = atoms Neon. `TXGIO_DATABASE_URL` = the ldt deployment Neon (holds `txgio_parcel`). Retrieval pair (same as the gate's serve-path probe) for serve-path checks. This contract was LEARNED during the first live sweep (engine PR #232 fixed a txgio connection wiring bug found by that first sweep) and is now documented into the CLI per the session record.
 
-### Checks (as shipped, v1 — four of the checks named in the OPS-9 S5 spec)
+### Checks (as shipped, v1.1 + v1.2 envelope-sanity — T1 catch-up 2026-08-05)
 
-Confirmed live and run against Bastrop in the first accepted sweep (`_inbox/2026-08-04_warden_sweep_bastrop_accepted.json`): `neighborConsistency`, `servePathTruth`, `crossStoreConsistency`, `certFreshness`. The OPS-9 S5 spec additionally named `edition drift` and `provenance integrity` as intended checks — these were NOT observed as distinct `checkId` values in the one sweep artifact read for this draft (only the four above appear in `checksRun`). OPEN: whether edition-drift and provenance-integrity checks have shipped since, or remain queued, needs a live-code check before a fresh planner assumes six checks run.
+Confirmed live: `neighborConsistency`, `servePathTruth`, `crossStoreConsistency`, `certFreshness`, **`envelopeSanity`** (v1.2, engine #256), **`serveTruthEdgeLabels`** (v1.3, T1 WS1 — ships with promote Option A fix).
+
+**v1.3 `serveTruthEdgeLabels`** (read-only, files-never-fixes): for each sampled promoted parcel, compare cert-path fresh `labelEdgesFromRoads` roles at each edgeIndex vs export-served roles after `prepareBoundaryEdgesForExport`. Flag when cert front edgeIndex != served front edgeIndex or any cert-graded edgeIndex role mismatches. defectClass: `CERT-VS-SERVE-EDGE-MISMATCH`. **Required for WS1 close** on operator twelve (12/12) and post-cert sweeps on zoned cities. Dispatch: `_dispatches/2026-08-06_T1_warden_v13_serve_truth.md`.
+
+**v1.2 `envelopeSanity`** (read-only, files-never-fixes): for each sampled parcel with a promoted buildable-envelope, assert (1) envelope vertices inside txgio parcel ring, (2) envelope area / parcel area within district regime bounds (SF-1 default 0.30–0.95; sliver <0.05 or full-lot ≥0.995 flagged), (3) each envelope edge parallel to a lot edge within 12°. defectClass: `ENVELOPE-SHAPE-ANOMALY`. Honest warm-verify declines produce no flag. **Always include in post-cert sweeps** for zoned cities; supply `--cert-artifact` for certFreshness diff.
+
+The OPS-9 S5 spec additionally named `edition drift` and `provenance integrity` as intended checks — these remain deferred (not omissions).
 
 `neighborConsistency` finding shape (from the accepted sweep artifact): `defectClass: MIXED-VINTAGE-NEIGHBOR`, `evidence: {parcel: {parcelNodeId, district}, districtedFraction, thresholdFraction: 0.75, neighbors: [...]}`, `severity: "flag"`. A parcel flags when its own district is null/stale AND a high fraction (over the 0.75 threshold) of its geographic neighbors carry a current district — this is the "P-5 next to fixed SF-1" class made mechanical. `crossStoreConsistency` and `certFreshness` both returned `severity: "info"` with `defectClass: MEASURE-EMPTY-COHORT` in this run because no `--cert-artifact` was supplied (a grade-only run, not a diff-against-prior-verdict run) — supply `--cert-artifact` on future runs to get the real diff behavior these two checks are meant to provide.
 
@@ -259,6 +341,8 @@ Same event stream as preflight/cert (`onboarding_ledger_event`, same schema, sam
 ### Bastrop block-13 7/7 — the standing acceptance gate
 
 Any change to shared warm/cert code MUST be followed by a re-run of the Bastrop block-13 cert, and it must still return 7/7 CERT-RESTORE ELIGIBLE. This is not optional and not scoped to "changes that look related" — Elgin's pipeline shared code paths with Bastrop's (warm machinery, cert-grade-core) and the discipline was applied literally: after Elgin's full warm run, Bastrop block-13 was re-run and confirmed still 7/7 (`_inbox/2026-08-04_bastrop_block13_post_elgin_warm_path.json`, roster size 7, `blockPass: true`, `certRestore: "7/7 — CERT-RESTORE ELIGIBLE"`). It was checked again after the Bastrop city code-refs backfill (`_inbox/2026-08-03_cert_post_refs_backfill_7of7.log`) and again after the cert-script refactor (`_inbox/2026-08-03_block13_cert_post_refactor.log`). Treat "re-run block-13, confirm 7/7" as a mandatory step appended to every shared-code-touching pipeline stage, not a periodic nice-to-have.
+
+After shared warm/cert or PE/engine/retrieval serve-path changes, also run the product-surface smoke suite (`90_runbooks/product_surface_smoke_suite.md`, script `scripts/product-surface-smoke.mjs`): live GET probes for PE/engine/retrieval health, card-vs-sheet setback consistency on three Bastrop parcels, envelope sanity, and `/search`. Block-13 proves the cert instrument; the smoke suite proves the customer surface still serves coherent setbacks and envelopes.
 
 Verbatim roster/measurer identity captured in the artifact, useful for confirming a re-run used the correct proven configuration: `rosterFrom: "block13"`, `rosterSource: "BLOCK13 constant"`, `measurer: "R32 index-matched inward-normal (measurePerEdgeInsetForRings)"`, `orientationGate: "fresh labelEdgesFromRoads front-edge road-name token-match (R33 normalization)"`, `roadNodesLoaded: 13987`.
 
@@ -292,6 +376,8 @@ The draft flagged ten OPEN items it could not settle from the records. Planner a
 3. Ledger ingest env pair: `LEDGER_INGEST_URL` (the cortex-api base URL) + `LEDGER_INGEST_KEY` (the `SERVICE_API_KEY` secret in legacy-design-tools-prod). Absent env, the report wrappers print-only, byte-identical.
 4. Warden scheduling: the scheduled/periodic trigger did NOT ship — v1 is planner-run (post-cert + periodic by hand). Standing deferred item.
 5. Warden checks: v1 deliberately ships 4 of 6 (neighborConsistency, servePathTruth, crossStoreConsistency, certFreshness); edition-drift and provenance-integrity are deferred by ruling, not omissions.
+6. **CORRECTION 2026-08-09 (read this before the line below):** the parenthetical "NOT in the hauska-prod CORTEX_DATABASE_URL Neon" is FALSE and must not be acted on. `CORTEX_DATABASE_URL` (project hauska-prod-497015) and `DEPLOYMENT_DATABASE_URL` (project legacy-design-tools-prod) are BYTE-IDENTICAL, verified 2026-08-09 by md5 of both secret payloads (`9aca0b98ed20d75ac0fbab387b5173e8`, 124 bytes each). Both resolve to database `neondb` on host `ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech`, so `txgio_parcel` lives in BOTH names simultaneously and the distinction the line draws does not exist. The ONLY real store split is `DATABASE_URL`, which is database `hauska_mcp` and holds `atoms`. Authoritative detail, including the pooler write hazard and the cross-database join constraint, is in `90_operations/OPS-13_store_topology.md`; that doc overrides this runbook on store facts. Original text, kept for provenance:
+
 6. Gate env set (union, correct): `DATABASE_URL` (atoms) always; `TXGIO_DATABASE_URL` = legacy-design-tools-prod `DEPLOYMENT_DATABASE_URL` secret (txgio_parcel lives there, NOT in the hauska-prod CORTEX_DATABASE_URL Neon); `RETRIEVAL_API_URL`/`RETRIEVAL_API_KEY` for serve-path probes; `CORTEX_DATABASE_URL` only for cert grading paths that read per-parcel setback records.
 7. rowId-keyed cohort loader: SHIPPED 2026-08-04 (engine #236, `loadRegistryDistrictCohortByRow`). The county/Elgin registry status flip to active remains BLOCKED until onboard-preflight.mjs and warden-sweep.mjs sample helpers migrate off the fips-keyed resolver (documented at RegistryRowStatus in jurisdiction-registry.ts).
 8. Registry-driven single warm runner: NOT shipped; per-city warm scripts (bastrop/caldwell/elgin) remain the operative pattern. Queued in OPS-9 S4.
@@ -309,3 +395,62 @@ Learned running Guadalupe (48187, certified 20/20 first pass) and Caldwell (4805
 5. **Warden sweeps must pass `--cert-artifact`** (the cert JSON the wrapper wrote) or certFreshness/diff no-op as MEASURE-EMPTY-COHORT noise.
 6. **Warden on mixed-city counties (v1 caveat):** the v1 sweep samples the whole-county cohort and compares against unzoned-cascade expectations; on a county with city district stamps (Guadalupe/Seguin+Cibolo) it emits false `cascade-missing` GEOMETRY-DIVERGE and `zoningFactPresent` SERVE-PATH findings on city-stamped parcels. Triage such findings against the city-aware skip set before treating them as data defects (WARDEN-MIXED-CITY-BLIND-SPOT in the backlog; Warden v1.1 fixes the comparator).
 7. **Preflight wrapper is fips-keyed:** `preflight-and-report.mjs` takes `--fips=<fips>` (NOT `--row-id`) and runs every registry row on that fips.
+
+## CASCADE KEYSPACE SHARDING (T5, 2026-08-05)
+
+Mega-counties and any county whose solo cascade scan exceeds the heavy-scan slot budget run ONLY via keyspace sharding. **Bexar (48029, ~700k) MUST use sharding for its first production cascade run** — never a solo apply.
+
+### Flags
+
+Verbatim invocation (substrate-only; no `CORTEX_DATABASE_URL`):
+
+```
+PROPERTY_ATOM_PATH=1 DATABASE_URL=<atoms Neon> \
+  pnpm --filter @hauska-engine/engine-core run bake-property-atom-county -- \
+    --county=<fips> --cascade-absence-only [--dry-run] [--batch=500] \
+    [--parcel-min=<fips>:<suffix>] [--parcel-max=<fips>:<suffix>] \
+    [--cascade-ids-out=<path.json>]
+```
+
+| Flag | Purpose |
+|---|---|
+| `--parcel-min` | Lower bound (inclusive) on `body->>'parcelNodeId'`, lexicographic |
+| `--parcel-max` | Upper bound (inclusive) on `body->>'parcelNodeId'`, lexicographic |
+| `--batch` | Write/page batch size; **default 500** for county-scale runs (pageSize cap 500) |
+| `--cascade-ids-out` | Optional; writes sorted JSON array of parcel IDs that would be cascaded (dry-run proof) |
+
+Summary JSON on `--cascade-absence-only.done` includes `shardId` (derived from min/max, `"full"` when unbounded), plus `parcelMin`/`parcelMax` when set.
+
+### Sharding procedure
+
+1. **Dry-run solo first** (no bounds) to get baseline `scanned` / `cascaded` counts and optional `--cascade-ids-out` set.
+2. **Compute N shard ranges** by splitting the county `parcelNodeId` keyspace. **Use live SQL `ntile` min/max per quartile** — never fixed zero-padded numeric suffix ranges (Bell 2026-08-05: prop_ids like `48027:5` sort lexicographically *after* `48027:249999999`, so fixed bounds leave gaps). McLennan 48309 proof query:
+
+```sql
+WITH ids AS (
+  SELECT DISTINCT body->>'parcelNodeId' AS pid
+  FROM atoms
+  WHERE entity_type = 'zoning-fact'
+    AND jurisdiction_tenant LIKE 'breadth_<fips>_%'
+    AND body->>'parcelNodeId' IS NOT NULL
+),
+ranked AS (
+  SELECT pid, ntile(4) OVER (ORDER BY pid) AS quartile FROM ids
+)
+SELECT quartile, min(pid) AS parcel_min, max(pid) AS parcel_max, count(*)::int AS n
+FROM ranked GROUP BY quartile ORDER BY quartile;
+```
+
+3. **Run N shard dry-runs** in parallel (one terminal/process per shard) with matching `--parcel-min` / `--parcel-max` and distinct `--cascade-ids-out` paths.
+4. **Prove union-equals-solo:** the union of shard `cascadedParcelIds` must equal the solo set; shard `scanned` sums must equal solo `scanned`. File verbatim diff proof to `_inbox/<date>_<county>_sharding_diff_proof.json` before any sharded apply.
+5. **Sharded apply:** same bounds, no `--dry-run`, one shard per heavy-scan reservation slot if serial; parallel only when slot capacity allows.
+
+### Batch guidance
+
+Default `--batch=500` (raised from 200 per measured county-scale pace). Do not exceed 500 — `pageSize` is capped at `Math.min(args.batch, 500)`.
+
+### Bexar rule
+
+Bexar (48029) first production cascade: **sharded dry-run → review diff proof → sharded apply → cert**. Solo full-county cascade apply is forbidden.
+
+**Proof record (McLennan 48309, 2026-08-05):** `_inbox/2026-08-05_mclennan_sharding_diff_proof.json` — union-equals-solo PASS (scanned 114,255 solo = sum of 4 shards; cascade already complete so cascaded=0 validates partition only). Shipped: engine PR #259.

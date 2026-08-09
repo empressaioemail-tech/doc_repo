@@ -1,12 +1,14 @@
 ---
 id: 75m_map_data_visual_benchmark
 title: Map data and visual benchmark — every layer, its visual treatment, status, and wiring gap
-status: active, PARTIALLY SUPERSEDED 2026-08-08 (Cotality path extinguished; see correction note)
-last_updated: 2026-08-08
+status: superseded
+last_updated: 2026-08-09
 applies_to: portfolio
 owner: nick
 related: [75k_max_map_quality_direction, 75l_cotality_data_stack_catalog, 75g_investor_deal_radar, 75c_property_brief_data_backlog, 55_spine_data_intelligence_stack, _decisions/2026-06-18_map_engine_maplibre_cotality_national]
 ---
+
+> **SUPERSEDED 2026-08-09.** Status flipped from active to superseded. This whole benchmark is framed around "the Cotality split," and Cotality was extinguished 2026-07-13 (live code hitting Cotality is a wrong-routing defect, never a credential to rotate; Regrid is dead too). Every status in this doc was recorded against the Cotality/extension map path, not Smart Site, so no row here is citable as current. The live disposition of the two layers this doc marks LIVE (MUD/PID and Texas RRC) is W4 and W3 in `90_operations/QUEUE_parked_work_index.md`, both HELD under the 2026-08-01 scale-before-new-layers ruling and to be treated as greenfield. Keep this doc as the visual-vocabulary and composite-layer reference; do not read any status column as state of the world.
 
 ## CORRECTION 2026-08-08: MUD/PID and Texas RRC "LIVE" status ran through the dead Cotality/extension path
 

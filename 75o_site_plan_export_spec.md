@@ -1,8 +1,8 @@
 ---
 id: 75o_site_plan_export_spec
 title: Site-plan export — spec (the data-rich, cited, importable site deliverable)
-status: spec
-last_updated: 2026-07-24
+status: in_progress
+last_updated: 2026-07-25
 applies_to: hauska-engine (spine terrain/site emit), hauska-mcp-server (the gate), property-explorer, the paid-export product line
 owner: nick
 related: [75j_property_explorer_destination_ledger, 2026-07-23_MASTER_WDLL_property_reasoning_substrate, 25b_monetization_provenance_storage_stack, 2026-07-23_terrain_export_surfaces_finish_checkin]
@@ -48,7 +48,9 @@ The IFC terrain currently exports as a single IfcTriangulatedFaceSet — a surfa
 - Sits with the 3D buildable-envelope mass (later-roadmap) — both are "site as solid objects," built together in this program.
 
 ### 4. Prove on a REPRESENTATIVE parcel
-NOT the terrain-gold parcel 48021:27303 — it is a P-3 (public) parcel where "setbacks consume the lot, no buildable area." Bad setback demo. Pick a normal residential parcel (a Hays or Williamson SF lot with real F/S/R) so the setback envelope draws clean and the feature proves properly.
+NOT the terrain-gold parcel 48021:27303 — it is a P-3 (public) parcel where "setbacks consume the lot, no buildable area." Bad setback demo. Pick a normal residential parcel with real F/S/R so the setback envelope draws clean and the feature proves properly.
+
+**Locked 2026-07-25 (WDLL):** `48029:105129` — San Antonio R-6, 1127 N PINE ST, F/S/R 10/5/20 cited to `san_antonio_tx/udc/35-310.01`. Backup: `48453:225513` (Austin SF-3). Program artifacts: `_inbox/2026-07-25_site_plan_export_WDLL.md`, `_dispatches/2026-07-25_site_plan_export_sprint.md`.
 
 ### 5. Discipline
 - Every element cited to its atom (CAD entity metadata + the PDF provenance panel).

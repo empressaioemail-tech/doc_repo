@@ -3,11 +3,14 @@ id: cotality_mcp_setup
 title: Cotality MCP server — connection setup (runbook)
 date: 2026-06-06
 kind: runbook
+status: superseded
 related: [_research/2026-06-06_cotality_api_surface_catalog, _research/cotality/2026-06-06_cotality_api_documentation_comet, 77b_cotality_integration_strategy, 50_hauska_mcp_server]
 owner: nick
 ---
 
 # Connecting the Cotality MCP server
+
+> **SUPERSEDED 2026-08-09. Do not run this runbook.** Cotality was extinguished 2026-07-13. The standing rule is explicit: live code reaching Cotality is a wrong-routing defect to be re-pointed at county-GIS or public-record sources, and the credential is never to be rotated or re-minted. That makes every step below, which exists only to mint and configure a Cotality bearer token, a prohibited action rather than a blocked one. Regrid is dead too. Kept for the record only. Public-record migration: `_decisions/2026-07-13_cotality_swap_public_record_migration.md`. Parked map-layer disposition: `90_operations/QUEUE_parked_work_index.md`.
 
 **Status (2026-06-06): NOT connected.** Blocked on the same OAuth credential failure as the REST adapters (`Invalid client identifier`). The MCP authenticates with the same demo client_id/secret and bearer token — so it cannot connect until the token mints. Once the token works, setup is the config below.
 

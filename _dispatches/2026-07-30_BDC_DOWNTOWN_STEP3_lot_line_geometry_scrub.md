@@ -2,7 +2,7 @@
 id: 2026-07-30_BDC_DOWNTOWN_STEP3_lot_line_geometry_scrub
 title: Dispatch — STEP 3 F3 lot-line geometry scrub (test area)
 date: 2026-07-30
-status: dispatched
+status: complete
 repo: hauska-engine
 wdll: 2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL
 wdll_items: [4]

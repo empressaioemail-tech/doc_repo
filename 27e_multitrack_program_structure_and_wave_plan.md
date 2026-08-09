@@ -1,14 +1,16 @@
 ---
 id: 27e_multitrack_program_structure_and_wave_plan
 title: Multi-track program structure — planners, agents, memory, adversarial review, and the wave plan
-last_updated: 2026-07-26
-status: spec (draft, awaiting operator approval)
+last_updated: 2026-08-09
+status: superseded
 owner: nick
 sub_wdll_of: 27_MASTER_WDLL_spine_completion_and_depth_engine
 related: [27_MASTER_WDLL_spine_completion_and_depth_engine, 27a_jurisdiction_factory_engine_spec, 27c_road_node_engine_and_warm_digital_twin_spec, 27d_county_onboarding_recipe_and_fleet_reliability, 90_runbooks/fleet_memory_practice, 2026-07-26_base_layer_connecting_tissue_thesis_and_tracks, 2026-07-26_geom_empty_832_ceiling_verdict]
 ---
 
 # Multi-track program structure + wave plan
+
+> **2026-08-09: superseded as plan of record** by the live `90_operations/T1`-`T6` tracks and the `90_operations/OPS-*` band, per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. Never operator-approved; the waves it planned executed under the T-track structure. The one-owner-per-shared-substrate rule survives in OPS-3.
 
 How the whole program is organized to run as parallel as it safely can, as autonomous as it can, with QA saved for end-states. This is the operating structure under the master WDLL: which tracks run, who owns each, how the agents and memory are wired, where adversarial review sits, and the wave sequence.
 

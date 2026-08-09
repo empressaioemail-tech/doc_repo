@@ -2,7 +2,7 @@
 id: architecture_homes_scrub_tracker
 title: Doc-repo scrub tracker
 status: active
-last_updated: 2026-07-07
+last_updated: 2026-07-20
 applies_to: portfolio
 owner: nick
 related: [architecture_homes_overview, architecture_homes_topology, 80_adrs/adr_008_engine_factor_out]
@@ -77,3 +77,14 @@ Hauska = SDK brand only; every other brand surface is Empressa. R1 (brand surfac
 | 63_empressa_certification_program.md | designation renamed Empressa Certified at filing | DONE (2026-07-07) |
 | 08_tiered_access_model.md, 14_pricing_framework.md | product-facing "Hauska" naming vs @hauska-sdk package names (packages stay) | PENDING |
 | 50_hauska_mcp_server.md, 52_mcp_offer_and_buildout.md | server brand naming + `mcp.hauska.dev` → Empressa domain (domain decision itself is an operator pickup) | PENDING |
+
+## Source-verified corrections (added 2026-07-20, cross-vertical parity session)
+
+Facts proven against source on 2026-07-20 (four audit reports; see `_catalog/thesis_parity_ledger.md`); docs and memories carrying the stale versions get corrected as touched:
+
+- The contract package is `@empressaio/atom-contract` at **1.7.0 on npm** (source `package.json` verified). CLAUDE.md ground-truth paragraph corrected 2026-07-20; other docs still saying `@hauska/atom-contract` or 1.5.0/1.6.0 correct-on-touch (historical records stay as-is per conventions).
+- The MCP gate enum in code is `public | codex | reporting | map` (`src/products.ts`); legacy stored `cortex` normalizes to `reporting`. Deployed main = 63 tools; the unmerged terrain branch adds a 64th (map). Planner memory `hauska-mcp-gate-enum` corrected 2026-07-20.
+- The engine has **no Postgres corpus store and no working job queue** (in-memory JobPort only; corpus is a committed-snapshot re-mint). Docs implying a durable capture plane overstate; 56_engine_extraction_sprint and 55 should reflect this when scrubbed.
+- ldt outcome ledger has **no negative outcome kind** (all three kinds positive; realized scores degenerate at 1) and calibration read-back is live on the findings wire only; docs claiming broader earned-confidence coverage overstate.
+- Gate-context signing **falls back silently to unsigned headers** when `GATE_CONTEXT_SIGNING_KEY` is unset (mcp `index.ts` startup warn only) and minted `keyId` is always null; the T1 story in docs should carry this caveat until the fail-closed fix lands.
+- License/redistribution enforcement is **absent in all spine repos** (ADR-028 proposes the contract field; gate enforcement follows).

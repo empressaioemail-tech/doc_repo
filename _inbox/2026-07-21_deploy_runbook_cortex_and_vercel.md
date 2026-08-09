@@ -23,6 +23,8 @@ The deploy is a MANUAL workflow_dispatch canary sequence. A push to main ONLY bu
 
 Migration note: if the deploy needs a new DB migration, it is NOT auto-applied on the canary unless you run `-f action=run-migrations`. Migrations merged != applied to the live Neon. Apply first (or via the run-migrations action) before the code that needs the new schema takes traffic.
 
+Env note (Wave 1 / WDLL 7): `OVERPASS_URL` (optional). When set (trimmed non-empty), the buildable-envelope road client and Tier-2 road bake use that Overpass interpreter. When unset/empty, they default to the public `https://overpass-api.de/api/interpreter`. For county-scale `--enable-roads` bakes, point this at the self-hosted mirror (see `_inbox/2026-07-21_overpass_road_data_spec.md`); do not rely on the public default. Mount on cortex-api / bake jobs via Cloud Run env or Secret Manager as appropriate — not required for browse-only deploys.
+
 ## Part B — property-explorer (Vercel), the web app
 
 A pnpm-workspace monorepo with TWO apps (command-center + property-explorer) and ONE root `vercel.json` (which is command-center's). This is the whole difficulty.

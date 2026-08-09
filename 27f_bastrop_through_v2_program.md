@@ -1,14 +1,16 @@
 ---
 id: 27f_bastrop_through_v2_program
 title: Bastrop through v2 — the reference county / the mold for the country
-last_updated: 2026-07-26
-status: spec (draft, awaiting operator approval)
+last_updated: 2026-08-09
+status: superseded
 owner: nick
 sub_wdll_of: 27_MASTER_WDLL_spine_completion_and_depth_engine
 related: [27_MASTER_WDLL_spine_completion_and_depth_engine, 27c_road_node_engine_and_warm_digital_twin_spec, 27d_county_onboarding_recipe_and_fleet_reliability, 27e_multitrack_program_structure_and_wave_plan, 2026-07-26_temporal_boundary_primitive_and_living_layer, 2026-07-26_base_layer_connecting_tissue_thesis_and_tracks, 2026-07-26_guard_vs_interior_and_boundary_primitive]
 ---
 
 # Bastrop through v2 — the reference county
+
+> **2026-08-09: superseded as plan of record** by `90_operations/OPS-5_cert_standard.md` (cert), the `90_operations/PHASE_C_*` program (execution), and `90_operations/T3_rails_track.md` (v2 fidelity), per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. Never operator-approved; Stages 1-3 executed. FLAGGED RISK B (v2 may be mostly patches, making the mold a v1.5 mold) is carried forward in the ruling as a live strategic fork.
 
 Operator decision 2026-07-26: drive Bastrop city + county all the way through v2 before scaling. Bastrop is not one county perfected for its own sake — it is the MOLD for the country. Every bug caught here becomes a gate that protects the national fan-out; every capability proven here becomes a recipe stage. Slow on Bastrop is fast on America. This program defines the stack, the market-ready checkpoint, and the discipline that keeps "through v2" from becoming a bottleneck.
 

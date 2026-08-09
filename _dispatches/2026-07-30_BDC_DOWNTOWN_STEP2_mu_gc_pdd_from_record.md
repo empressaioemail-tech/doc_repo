@@ -2,7 +2,7 @@
 id: 2026-07-30_BDC_DOWNTOWN_STEP2_mu_gc_pdd_from_record
 title: Dispatch — STEP 2 F2 build MU / GC / PDD from per-parcel record
 date: 2026-07-30
-status: dispatched
+status: complete
 repo: hauska-engine
 wdll: 2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL
 wdll_items: [3]

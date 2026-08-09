@@ -14,6 +14,8 @@ Planned 2026-08-05 from operator direction. The trigger incident: the dev-mode p
 
 ## Workstream A. Entitlement, paywall, and tester access
 
+**Status: SHIPPED 2026-08-05** — merged LDT [#387](https://github.com/empressaioemail-tech/legacy-design-tools/pull/387) + hauska-map [#152](https://github.com/empressaioemail-tech/hauska-map/pull/152); cortex `00472-web` @100%; PE `property-explorer-xi.vercel.app` bundle `index-DnMQ6bEw.js` (`dpl_8iaoNSPk8C7ifrFZaVUF71PB9HY6`). WDLL: `_inbox/2026-08-05_pe_paywall_stripe_promo_dev_role_WDLL.md`. **Residual:** operator live promo-code E2E (Stripe test/live mode) + dev_role grant smoke on a designated tester account.
+
 The paywall is ready to be finished (operator statement). The plan:
 
 1. Finish the paywall features (the existing paid-tier feature set behind Stripe checkout).
@@ -34,8 +36,8 @@ Acceptance: an invited outside tester with a promo code experiences the full pai
 
 The stack was not deliberately built "lite," but it has never been audited or load-tested for public scale. What it actually is: Vercel frontend (scales), Cloud Run backends (cortex-api, retrieval-api, engine-api; autoscaling but unaudited concurrency/min-instance settings), Neon Postgres (autoscaling tiers, but connection-limit and pooling behavior under concurrent serverless load is the classic failure point). Known weak points on record TODAY, all pre-launch fixes:
 
-1. The MCP/API rate-limit store (Upstash) is DEAD with an in-memory fallback active. In-memory rate limiting across autoscaled instances is not rate limiting. Replacement is launch-blocking.
-2. Connection pooling: serverless functions plus Cloud Run against Neon need the pooled connection string everywhere (or a pooler) or launch traffic will exhaust connections.
+1. The MCP/API rate-limit store (Upstash) is DEAD with an in-memory fallback active. In-memory rate limiting across autoscaled instances is not rate limiting. Replacement is launch-blocking. **Status 2026-08-05:** PR #57 shipped fail-loud degraded mode (`hauska-mcp-server-00050-fej`); real Upstash DB still blocked on operator provisioning — update `UPSTASH_REDIS_REST_URL` secret only once DB exists. Adjacent finding: in-process limiter did not enforce 60 rpm in burst test (see `_inbox/2026-08-05_rate_limit_burst_test.log`).
+2. Connection pooling: serverless functions plus Cloud Run against Neon need the pooled connection string everywhere (or a pooler) or launch traffic will exhaust connections. **Status 2026-08-05 DONE** — all 6 serving DSNs now use `-pooler` host; evidence `_inbox/2026-08-05_neon_pooling_audit.md`.
 3. The anonymous-tenant data model: auth flips orphan anonymous data (recorded trap). The paywall work in Workstream A must include the anonymous-to-account claim flow, and it must NOT be bundled with unrelated fixes.
 4. No load test has ever been run. Deliverable: define a launch SLO (proposal: 1,000 concurrent free sessions, 100 concurrent paid sessions, p95 under 2s on parcel loads), run a load test against a staging deploy, fix what breaks, record measured ceilings.
 

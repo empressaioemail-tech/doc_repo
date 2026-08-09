@@ -2,7 +2,7 @@
 id: 2026-07-30_BDC_DOWNTOWN_STEP1_per_parcel_source_and_side_model
 title: Dispatch — STEP 1 F4 per-parcel setback source + interior/corner side model
 date: 2026-07-30
-status: dispatched
+status: complete
 repo: hauska-engine (+ hauska-map if PE card shape)
 wdll: 2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL
 wdll_items: [1, 2]

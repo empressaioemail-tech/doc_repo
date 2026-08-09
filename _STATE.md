@@ -1,29 +1,31 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-09 (196 counties acquired; atoms wired to the manifest; HARRIS TRUNCATION open).
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-09 (Harris multi-shp reloaded; PR #404 open; 196 counties; post-apply westmost −95.960827).
 
 ## THE ONE-LINE
 
-**196 of 254 counties are acquired (14,442,123 parcel rows), the manifest finally reads atoms instead of a doctrine string, and Harris County is two-thirds empty without a single count-based check noticing.**
+**196 of 254 counties are acquired; Harris west half is finally in the store (westmost −95.960827); the defect that hid it was a count-agreeing truncated reader — fixed fail-closed in PR #404 (open).**
+
+## LAUNCH GATE RULED 2026-08-09 + CLEANUP BATCH IN FLIGHT
+
+**Texas-flush launch gate = measured-everywhere** (`_decisions/2026-08-09_texas_flush_launch_gate.md`): L2 at 254, statewide roads/NFHL/footprints, all 12 rails with writers (no cell left `no-writer`), cert frame reconciled, 76j capacity items. Filled-everywhere (CAD rolls + zoning depth) = program completion, runs post-launch. **Cleanup batch dispatched 2026-08-09 to three Cursor planner lanes:** A (ldt: merge #404/#403, real fix #393, rail declaration post-#291, scorer re-run after sweep, 38-vs-56 ledger seam, cortex 00491/00492 provenance), B (engine: #287 test rewrite, cert-frame reconciliation + block13 fixture re-dump + honest re-sweep, CI grep-gate), C (debt: map #118 rebase-or-close, coastal-extent report, Bosque idempotency, Donley source). Audit of the degraded 2026-08-09 close: lane artifacts trustworthy; close-summary numbers approximate; #393 red is its OWN test, not a flake.
 
 ## THE FOUR NUMBERS THAT MATTER
 
 | Measure | Value | Where to verify |
 |---|---|---|
 | Counties with parcel geometry | **196 / 254** | `SELECT count(DISTINCT county_fips) FROM txgio_parcel` on `DEPLOYMENT_DATABASE_URL` |
-| Parcel rows | **14,442,123** | same table |
-| Counties with `parcel-node` atoms | **77** (748,177 atoms) | `SELECT count(DISTINCT body->>'countyFips') FROM atoms WHERE entity_type='parcel-node'` on `DATABASE_URL` (atoms DB, database `hauska_mcp`) |
+| Parcel rows | **~15,479,206** (Harris reload +1,037,083 net; re-verify before quoting) | same table |
+| Counties with `parcel-node` atoms | **79** (796,046 atoms, live 2026-08-09T16:10Z) | `SELECT count(DISTINCT body->>'countyFips') FROM atoms WHERE entity_type='parcel-node'` on `DATABASE_URL` (atoms DB, database `hauska_mcp`) |
 | Texas completeness | **0.2134 percent**, 38 satisfied cells of 3,048 | `GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger` |
 
 **THE CHEAPEST WIN ON THE BOARD:** `countyGeometryScoreCli.ts` (the scorer that turns `parcel-node` atoms into manifest coverage) has been run ONCE, against 49 counties. 77 counties now have atoms. Re-running it should move the number immediately with zero new work. It lives in legacy-design-tools `artifacts/api-server/src/`.
 
-## THE OPEN DEFECT THAT OUTWEIGHS EVERYTHING ELSE
+## MULTI-SHAPEFILE TRUNCATION — HARRIS RELOADED (2026-08-09)
 
-**Harris County 48201 holds 564,948 parcels and should hold roughly 1.65 million.** `lib/cad-ingest/src/txgio/cli.ts:149` uses `files.find()` to pick a shapefile; the Harris archive ships TWO, and the 213 MB `harris_west` half (larger than the 103 MB east) was silently discarded. Store stops dead at longitude **-95.4364**; real Harris reaches about **-95.96**. Harris is roughly 10 percent of Texas by parcel count.
+**Root cause:** `files.find(/\.shp$/i)` kept the first shapefile; Harris ships east+west; west was discarded silently. Count-based gates could not see it (same truncated input).
 
-**Why it survived every gate:** dry, apply, a second apply, and independent SQL ALL agreed at 564,948, because all four read the same truncated input. The membership file's `parcel_count_est` is 536,512 — exactly the east-only count — so the sizing probe carried the identical bug. A count cannot detect a defect it inherits. Only a GEOGRAPHIC check catches this.
-
-**The 181 baseline counties have never been swept for multi-shapefile archives.** Harris was found by accident, by a reviewer asking a geographic question instead of a counting one.
+**Lane closed with holds.** Report: `_inbox/2026-08-09_MULTI_SHP_TRUNCATION_report.md`. Reader fix PR **#404 OPEN** (`4fafeed3`, `--multi-shp=concat` fail-closed). Sweep of all 254 archives: **Harris is the only multi-`.shp` county** (Donley 404). Harris re-ingested alone: dry=apply **1,523,641** features / **1,602,031** rows. Post-apply geographic proof (`_inbox/multishp_harris_logs/48201_post_apply_geo.json`): westmost **−95.960827** (was −95.4364; Census −95.960733); **769,053** parcels west of −95.44; **26,613** west of −95.80. Atoms: Harris **0** parcel-nodes (no contamination). Adversarial **HOLD** on coastal-as-water narration for eight other short counties (multi-shp ruled out; data holes unresolved) and on `--limit` partial-apply; post-apply geo proof produced after the HOLD. Review: `_inbox/2026-08-09_MULTI_SHP_adversarial_review.md`.
 
 ## WHERE THE PROGRAM IS
 
@@ -33,9 +35,9 @@ The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`
 |---|---|
 | L0 seam reconciliation | mechanical, deferred to read time (the tile bucketing IS the spatial index) |
 | L1 city + county boundaries | **DONE, LIVE** — 1,222 city + 254 county polygons |
-| L2 parcel geometry | **WAVE 3 COMPLETE — 196 counties / 14,442,123 rows.** All 117 degree-vintage members landed across two resumes. Every dry predicted its apply exactly; idempotency per county; zero rows outside Texas. 3,707 declines ALL carry identity. Metros ran solo bytes-ascending, Harris last, Bosque alone. **BUT: Harris is two-thirds empty (see the Harris section above) and the 181 baseline counties are unswept for multi-shapefile archives.** Bosque owes a clean idempotency re-run. Donley 48129 is a 404 at source, never a member, needs a source decision. Reports: `_inbox/2026-08-09_L2_W3R2_RESUME_REPORT.md`, `_inbox/2026-08-08_L2_WAVE3_MASTER_REPORT.md`. **Concurrency: 1-2 ONLY** — 8-way deadlocked (`40P01`) on the shared `txgio_parcel` index; county-disjoint keys do NOT imply index-disjointness. |
+| L2 parcel geometry | **WAVE 3 COMPLETE — 196 counties.** Harris multi-shp truncation **reloaded** 2026-08-09: 1,602,031 rows, westmost −95.960827 (PR #404 open for reader fail-closed). Sweep: only Harris ships N>1 `.shp`. Eight coastal geographic-short counties remain unresolved (not multi-shp). Bosque owes clean idempotency re-run. Donley 48129 is a 404 at source. Reports: `_inbox/2026-08-09_MULTI_SHP_TRUNCATION_report.md`, `_inbox/2026-08-09_L2_W3R2_RESUME_REPORT.md`. **Concurrency: 1-2 ONLY** (`40P01` on shared index). |
 | L3 roads statewide | PBF reader DECIDED (pyosmium sidecar). Product PR **#290 OPEN** (`6ba439a`). Resolver #288 MERGED. One-county Bastrop extract proves PBF≅city Overpass (recall 1.0, +3 service). Peak RSS **2842 MB**. Fixture identity: live Overpass slice = city-bbox (4893). Adversarial **REFUTED** statewide (`_inbox/2026-08-09_STATEWIDE_ROADS_adversarial_review.md`): boundary coin-flip under 1e-18 collinear eps; Node ingest unexecuted; silent upsert would clobber Bastrop; synthetic-id landmine. Report: `_inbox/2026-08-09_STATEWIDE_ROADS_build_prove_report.md`. **No statewide ingest.** |
-| L4 FEMA NFHL | ldt #398 MERGED, **migration 0071 APPLIED**, table exists and is **PARTIALLY LOADED** (~110k of 198,240 `S_FLD_HAZ_AR`; a delete-then-load replace was mid-flight at last check so the count moves both directions). **Root cause of two prior death-by-OOM runs: unbounded backpressure in `streamGdbLayerGeoJson`'s stdout queue racing DB-bound consumption.** Raising heap to 16 GB did NOT fix it. Fix in ldt **#403 (CI RED)**. A full dry-run with no DB writes completes in 417s on default heap, proving it is a write-path backpressure bug, not data. Archive already on disk at `P:\legacy-design-tools\.tmp_nfhl_48.zip` (1,810,100,601 bytes) — do NOT re-download. |
+| L4 FEMA NFHL | ldt #398 MERGED, migration 0071 APPLIED. **LOAD COMPLETE 2026-08-09:** `tx_fema_nfhl_flood_zone` holds **198,178** unique rows (S_FLD_HAZ_AR stream 198,240; 62 source dupes collapsed). Backpressure fix **#403 OPEN** (`streamGeoJsonSeqWithBackpressure` pauses stdout at high-water 32). Primary apply peak RSS **962.6 MB** (flat); crossed prior OOM death line at 116k. Idempotency net change 0. Projection: 0 outside Texas WGS84 degrees envelope. Archive deleted from disk. |
 | L4 SSURGO | weakest link; no working gSSURGO bulk URL found |
 | L4 topo | 251 tiles / 64.3 GB via USGS 3DEP; existing pipeline is AOI-scoped and would silently produce a Central-Texas mosaic |
 | PMTiles bake | after L2 |
@@ -46,7 +48,7 @@ The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`
 
 - **Texas completeness ~0.0395 percent** (live ledger). **12 rails × 254 = 3,048 cells.** displayState: no-atom **1524**, no-writer **1016**, not-yet 489, satisfied-present 19. One satisfied cell: Bastrop zoning.
 - **cad_property LIVE:** **4,599,477 rows / 15 counties** (CORTEX_DATABASE_URL SELECT 2026-08-09). Not 15 rows; not ~1.07M.
-- **NFHL bulk table:** ABSENT (`to_regclass` NULL) despite #398 merge.
+- **NFHL bulk table:** LIVE **198,178** rows on deployment Neon (`tx_fema_nfhl_flood_zone`); backpressure fix #403 open.
 - **Parcel store:** 19 counties + Kenedy = 20 loaded (earlier session; re-verify before wave planning quotes).
 - **Contract `@empressaio/atom-contract@1.14.0`** on npm (tag `v1.14.0`). Engine **main** still registers 7 property types; PR #286 adds three → 10 (not merged).
 
@@ -96,7 +98,7 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 | PR | State | What it is |
 |---|---|---|
 | eng **#287** | **CI RED** | Unified city-batch warm runner. Typecheck now clean (`e9cb140` fixed duplicate `WarmRunner*` exports). **The TEST gate fails on its OWN prior commit `9040c45`**, which replaced `depth-warm-bastrop-batch.mjs` and `depth-warm-elgin-batch.mjs` with retirement stubs — while two test suites assert against those files' SOURCE TEXT. Rewrite them against `depth-warm-city-batch.mjs`; do NOT delete, they pin the `!dryRun` fork and bulk-acquisition guards. **THIS BLOCKS ELGIN.** |
-| ldt **#403** | **CI RED** | NFHL backpressure fix. |
+| ldt **#403** | **OPEN** (typecheck follow-up pushed `915d5ea8`) | NFHL backpressure fix; table already loaded to 198,178. |
 | ldt **#393** | **CI RED** | Observability tables (`rail_state_history`, `rail_verification`, run-state, cost metering). Red FIVE times on a `socket hang up` in `lib/portal-ui` — unrelated to its content; its own fixture test passes throughout. Judge on the evidence rather than re-rolling. |
 | map **#118** | unknown | PE corner side interior/corner split. Pre-existing, older program. |
 

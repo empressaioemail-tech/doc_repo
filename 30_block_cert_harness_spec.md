@@ -1,14 +1,16 @@
 ---
 id: 30_block_cert_harness_spec
 title: The block-cert harness — three-way convergence + measured-geometry setback verification, scoped to one block, driven to 100%
-last_updated: 2026-07-30
-status: spec (active — Block 13 Bastrop first run)
+last_updated: 2026-08-09
+status: superseded
 owner: nick
 related: [2026-07-29_setback_authoritative_source_and_road_decouple, 28_THE_BASTROP_MOLD_engine_build_spec, 29_scale_warm_architecture, 55_spine_data_intelligence_stack]
 purpose: Crack ONE block to provable 100% correctness against the authoritative record, with a mechanical harness that measures the DRAWN envelope geometry (not card text) and triangulates PE vs SmartCity vs city GIS. Then replicate the METHOD to other blocks. This harness is the seed of the mold's automated visual/geometry cert (gate 8 / R19-R24) that removes manual per-parcel QA.
 ---
 
 # The block-cert harness
+
+> **2026-08-09: superseded, fully consumed** by `90_operations/OPS-5_cert_standard.md` (three-way convergence is R20; measured per-edge geometry is R32; area-sweep-not-sampling is R3/R11/R14/R17) and section 5 of `90_runbooks/factory_onboarding_runbook.md` (block-13 7/7 is the standing regression gate), per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. The harness specified here was built as `block13-cert-grade.mjs` and ran.
 
 ## Why this exists
 Repeated R6 QA failures (repealed code, wrong district, broken envelopes, un-swept parcels, and — the deepest — setbacks NOT DRAWN RIGHT even where card numbers were correct) proved that grading card TEXT or a curated LIST or a single SOURCE is insufficient. The block-cert grades the DRAWN geometry against the authoritative record, triangulated across three sources, on every field of every parcel in one block, to 100%. It is the tightest possible proving ground and the replicable method for national cert.

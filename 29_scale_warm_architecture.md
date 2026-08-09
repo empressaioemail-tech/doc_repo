@@ -1,14 +1,16 @@
 ---
 id: 29_scale_warm_architecture
 title: The scale-warm architecture — parallel, re-warm-safe county processing for the national fan-out
-last_updated: 2026-07-29
-status: spec (draft — sketch for refinement)
+last_updated: 2026-08-09
+status: superseded
 owner: nick
 related: [28_THE_BASTROP_MOLD_engine_build_spec, 27d_county_onboarding_recipe_and_fleet_reliability, 27a_jurisdiction_factory_engine_spec, _STATE.md, 2026-07-26_base_layer_connecting_tissue_thesis_and_tracks]
 purpose: The fan-out is not primarily an "onboard new counties" engine — it is a "process counties in PARALLEL at SCALE, safely, repeatedly" engine. This spec is the compute + data architecture that makes national feasible in weeks not years, and makes RE-WARM (regenerating everything after an engine improvement) a first-class, live-data-safe operation.
 ---
 
 # The scale-warm architecture
+
+> **2026-08-09: superseded as plan of record** by the CASCADE KEYSPACE SHARDING section of `90_runbooks/factory_onboarding_runbook.md`, `90_operations/T5_factory_throughput_track.md`, and `90_operations/OPS-4_rewarm_protocol.md`, per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. The shipped throughput mechanism is keyspace sharding writing direct to serving, not the isolated-regenerate-then-swap model below; that model remains the unbuilt alternative to re-open if re-warm-against-live ever proves unsafe.
 
 ## The problem, diagnosed from current code
 

@@ -2,7 +2,7 @@
 id: 2026-07-30_BDC_DOWNTOWN_STEP0_test_area_manifest
 title: Dispatch — STEP 0 downtown drill test-area manifest + ground-truth pull
 date: 2026-07-30
-status: dispatched
+status: complete
 repo: doc_repo + hauska-engine (script only)
 wdll: 2026-07-30_BASTROP_DOWNTOWN_DRILL_WDLL
 wdll_items: [0]

@@ -2,7 +2,7 @@
 id: smartcity_masters_readme
 title: SmartCity category masters — the reference set
 status: active
-last_updated: 2026-08-01
+last_updated: 2026-08-07
 applies_to: smartcity
 owner: nick
 purpose: Index and authority statement for the SmartCity category masters. These four documents are the corrected, current definition of the SmartCity product line. They are the reference set that other docs are weighted and corrected against in the doc reconciliation pass — not the other way around.
@@ -29,6 +29,9 @@ Three categories, on one foundation. Everything is built from **smart sites** �
 | [33a_smartcity_plan_review.md](33a_smartcity_plan_review.md) | Plan Review — pre-reviewed submittals against the city's own adopted code. Sold on money and staff capacity. Carries a licensed-content constraint. |
 | [34_smartcity_smart_files_and_foundation.md](34_smartcity_smart_files_and_foundation.md) | The data foundation (never named externally, one sentence only) and Smart Files, its customer-facing face. Also covers the Compass rework. |
 | [35_smartcity_positioning_framework.md](35_smartcity_positioning_framework.md) | How the line is positioned: the two-altitude rule, the three-beat pitch, the four uncontested claims, the never-say list, per-audience altitude, and the method for generating the peer-recommendation line. |
+**The white-space package.** [whitespace_package/](whitespace_package/) is a self-contained subfolder holding the market white-space argument, the pitfall-to-claim conviction map, the research battery, and five sourced evidence notes, in numbered reading order with its own index ([whitespace_package/00_INDEX.md](whitespace_package/00_INDEX.md)). Channel enablement and internal conviction; carries its own audience rules. Added 2026-08-07; the conviction map is pending ratification alongside the next masters pass.
+
+**Collateral briefs.** [onepager_briefs/](onepager_briefs/) specifies the one-pager set a design agent produces from these masters: a system doc plus placement-ready briefs per artifact (overview, Dashboards, Plan Review, Asset Management, Smart Files, and the channel-only white-space briefing). Added 2026-08-07.
 
 ## How to use these
 

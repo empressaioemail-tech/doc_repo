@@ -1,8 +1,8 @@
 ---
 id: 27_MASTER_WDLL_spine_completion_and_depth_engine
 title: MASTER WDLL — complete the spine, build the depth engine, and give the fleet durable memory
-status: master spec (APPROVED 2026-07-25 operator; build launched)
-last_updated: 2026-07-25
+status: superseded
+last_updated: 2026-08-09
 owner: nick
 supersedes_note: does NOT supersede 27a/27b/27c — it is the umbrella they become sub-WDLLs of
 sub_wdlls:
@@ -15,6 +15,8 @@ pilot: bastrop_city_and_county
 ---
 
 # MASTER WDLL — complete the spine, build the depth engine, and give the fleet durable memory
+
+> **2026-08-09: superseded as plan of record** by `90_runbooks/factory_onboarding_runbook.md` (pipeline) and the `90_operations/OPS-*` band (doctrine), per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. Retained as history; the M0 fleet-memory sub-WDLL shipped to `90_runbooks/fleet_memory_practice.md` and the R0-R4 sequence ran.
 
 One program, one master done-line, four sub-WDLLs. This umbrella exists because 27a (the supply engines + guardrails), 27b (the completed console), 27c (the depth engine + road nodes), the breadth program (61a, done-wide), and the dev-fleet memory are not separate efforts. They are ONE spine being built to completion, plus the meta-layer that keeps the build itself from drifting. Scoping them as one master with sub-WDLLs is the correct structure: the fleet memory is not a side tool, it is how this program avoids becoming the next scan-fix loop.
 

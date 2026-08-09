@@ -2,7 +2,7 @@
 id: 2026-07-29_BASTROP_CERTIFIED_CLEAN_audit
 title: BASTROP CERTIFIED-CLEAN audit — BDC setback correction WDLL
 date: 2026-07-30
-status: certified-clean-passed
+status: revoked
 owner: planner
 wdll: 2026-07-29_BASTROP_BDC_setback_correction_WDLL
 related: [2026-07-29_setback_authoritative_source_and_road_decouple, 28_THE_BASTROP_MOLD_engine_build_spec, _STATE]
@@ -13,7 +13,9 @@ purpose: Item-by-item LIVE grade of the Bastrop BDC correction WDLL. CTX remains
 
 Graded 2026-07-30 by planner against LIVE serving surfaces. Code-done ≠ customer-done: every MET below cites a live probe, not a merged PR.
 
-**Verdict: CERTIFIED-CLEAN PASSED** (with named residuals). CTX remains **HELD** until operator go.
+**Verdict: REVOKED 2026-07-30** — block-level QA (AMENDMENT 3) found F1 partial re-warm, F2 blank MU/GC, F3 corrupt geometry, F4 source mismatch in downtown cluster. Parcel-sampling missed adjacent-regime split. Replacement cert = area-sweep: `_inbox/2026-07-30_BASTROP_DOWNTOWN_DRILL_area_sweep_audit.md`. CTX remains **HELD**.
+
+~~**Verdict: CERTIFIED-CLEAN PASSED** (with named residuals).~~
 
 ## Serving revisions (traffic-shifted)
 

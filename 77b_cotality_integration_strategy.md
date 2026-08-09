@@ -1,14 +1,16 @@
 ---
 id: 77b_cotality_integration_strategy
 title: Cotality integration strategy — multi-plane place-graph feed, hydrology blend, Carfax depth, insurability surface
-status: active
-last_updated: 2026-06-06
+status: superseded
+last_updated: 2026-08-09
 applies_to: portfolio
 related: [77_place_graph_strategy, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 40d_cortex_site_context_sprint, 46_smartcity_parcel_intelligence, 50_hauska_mcp_server, 14_pricing_framework, _research/2026-06-06_cotality_api_surface_catalog, _research/2026-05-30_cotality_property_brief_recon, _decisions/2026-06-06_cotality_parcel_provider, 80_meetings/transcripts/2026-06-cotality_corelogic_gene_sales_engineer_call_otter]
 owner: nick
 ---
 
 # Cotality integration strategy
+
+> **SUPERSEDED 2026-08-09.** Status flipped from active. Cotality was extinguished 2026-07-13: it went dark at OAuth, the wedge surfaces migrated to public-record providers per `_decisions/2026-07-13_cotality_swap_public_record_migration.md`, and the standing rule is that live code hitting Cotality is a wrong-routing defect to re-route to county-GIS or public record, never a credential to rotate. Regrid is dead as well. Nothing in this doc is an implementation sequence anymore; the multi-plane strategy, the MCP federation idea, and the endpoint catalog stay only as the re-entry reference if production keys ever land, matching the posture already recorded in `75l_cotality_data_stack_catalog.md`. Current disposition of the map layers this strategy fed is in `90_operations/QUEUE_parked_work_index.md` (W3 RRC and W4 MUD both HELD; greenfield).
 
 > **Purpose.** Capture the full Cotality opportunity beyond the parcel/zoning swap, and lay out the implementation path the operator wants to leverage as far as possible. Cotality is not a Regrid replacement; it is a multi-plane feed on the [place graph](77_place_graph_strategy.md) plus a governed MCP server (launched 2026-03-31) we can federate under ours. Grounds the brainstorm so it is not lost. Decision basis: [`_decisions/2026-06-06_cotality_parcel_provider.md`](_decisions/2026-06-06_cotality_parcel_provider.md); product map: [`_research/2026-05-30_cotality_property_brief_recon.md`](_research/2026-05-30_cotality_property_brief_recon.md).
 >

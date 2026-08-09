@@ -1,8 +1,8 @@
 ---
 id: 27c_road_node_engine_and_warm_digital_twin_spec
 title: The road-node engine, road-type-aware setbacks, and the warm digital-twin layer — WDLL
-status: spec (APPROVED 2026-07-25 operator; active build — R0 in flight)
-last_updated: 2026-07-25
+status: spec (APPROVED 2026-07-25 operator; active build — FIX 2.1 front-labeling gate)
+last_updated: 2026-07-26
 applies_to: hauska-engine (supply engines, descriptor, property-reasoning), legacy-design-tools (buildableEnvelope derive), hauska-map/apps/command-center (the ledger), hauska-map/apps/property-explorer (the customer surface), hauska-atom-contract (road node kind)
 owner: nick
 extends: 27a_jurisdiction_factory_engine_spec (the ratified supply-engine program — this deepens engines INTAKE + RULE and adds the road node)
@@ -12,6 +12,8 @@ pilot: bastrop_city_and_county
 ---
 
 # The road-node engine, road-type-aware setbacks, and the warm digital-twin layer
+
+> **Precedence note 2026-08-09.** On pipeline and doctrine this doc is subordinate to `90_runbooks/factory_onboarding_runbook.md` and the `90_operations/OPS-*` band per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. It is retained ACTIVE because it is the only statement of the road-node design contract (first-class node identity, centerline, edges, ROW, classification, provenance, digital-twin attach points, the v1 assumed-ROW posture), which is ruled FOLD-THEN-RETIRE: fold that contract into `28_THE_BASTROP_MOLD_engine_build_spec.md` or an OPS row before retiring this doc. The road-class-to-setback-VALUE indexing below is already RETIRED by `_decisions/2026-07-29_setback_authoritative_source_and_road_decouple.md` and must not be folded forward.
 
 WDLL (What Done Looks Like) for the next build arc. This is not a greenfield program. It is a grounded deepening of the ratified supply engines in 27a, forced by a specific, live, customer-facing failure (a jagged buildable-envelope polygon on 714 Spring St) that a code-level diagnosis traced to a poor-memory-architecture root, not a hard-math root. The diagnosis, the road-type correctness gap, the warm-up policy, and the digital-twin foundation that falls out of it are all captured below so the eventual multi-sprint build traces to a contract, not a chat.
 
@@ -167,6 +169,10 @@ Sprint R4 — Bastrop warm + cost gate. Run the loop across Bastrop city + count
 
 Verify against LIVE state, never a report — every grade is a live query or live probe, pasted. Watch the Cloud Run traffic-trap on any cortex/engine redeploy (check the serving revision; the export-gate agent hit the source-deploy-onto-wrong-service trap this same day and cleared it — rebuild via the service's own cloudbuild yaml, canary, shift). Do not re-transcribe setback VALUES (human-verified, correct). Do not re-open F1 (done, 27b). Anti-fabrication holds: an envelope or a road we cannot compute/classify correctly declines honestly, never draws a confident wrong shape. Fewer agents, tighter contracts, harder gates.
 
+## Amendments
+
+- 2026-07-26 FIX 2.1 (operator-approved): WDLL 5 edge-labeling deepened — front labeling must be correct-by-rule (local street over collector among eligible roads; must not depend on footway shadowing `bestByEdge`). M0 durable promotion: FRONT-LABELING FIXTURE GATE (vitest), peer to R0 geometry gate, covering 48021:34785 collector-vs-local, R4.1 footway, R4.3 gravel, and remove-footway invariance. Load-time `isFrontEligibleRoad` batch filter removal is subordinate and ships only with that rule. Place-type residual re-promote + one-path ceiling reclassify; engine-api deploy for FIX 1.1 site-plan HTTP. Central-TX held until gate green + ceiling known. Card: `_inbox/2026-07-26_FIX2_1_front_labeling_WDLL.md`. Dispatch: `_dispatches/2026-07-26_FIX2_1_front_label_road_load.md`.
+
 ## Next step
 
-On operator approval of this WDLL: freeze the acceptance items, sequence R0-R4 into the multi-sprint build program, and write the first sprint (R0 — geometry truth) as a dispatchable contract citing each WDLL item it satisfies. No code until the sprint program is also reviewed. The export-gate session close (engine #121+#122) is the immediately-prior state; this WDLL is the contract for what comes next.
+R0–R4.4 have run; depth at place-type 2345/3657 (64.12%). Execute FIX 2.1 against the approved sub-WDLL above before any Central-TX fan-out.

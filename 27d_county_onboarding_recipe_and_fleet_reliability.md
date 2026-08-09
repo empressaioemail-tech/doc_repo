@@ -1,8 +1,8 @@
 ---
 id: 27d_county_onboarding_recipe_and_fleet_reliability
 title: The county-onboarding recipe + fleet-reliability machine — what makes "start county X" honest
-last_updated: 2026-07-27
-status: spec (draft, awaiting operator approval)
+last_updated: 2026-08-09
+status: superseded
 owner: nick
 sub_wdll_of: 27_MASTER_WDLL_spine_completion_and_depth_engine
 extends: 27a_jurisdiction_factory_engine_spec (the anti-zombie line + golden-descriptor test are the backbone here)
@@ -10,6 +10,8 @@ related: [27_MASTER_WDLL_spine_completion_and_depth_engine, 27a_jurisdiction_fac
 ---
 
 # The county-onboarding recipe + fleet-reliability machine
+
+> **2026-08-09: superseded as plan of record** by `90_runbooks/factory_onboarding_runbook.md` (the two lanes) and the `90_operations/OPS-*` band (the 8-gate recipe by OPS-8 plus OPS-2 stages), per `_decisions/2026-08-09_factory_spec_precedence_ruling.md`. Never operator-approved. The three road-source recon gates survive in `28_THE_BASTROP_MOLD_engine_build_spec.md` Part 3; the thin-console ruling survives in OPS-6.
 
 Operator framing 2026-07-26: what we are building is a series of engines the operator runs from the Command Center that take a brand-new county completely online — verified, scrubbed, accurate, market-ready (the v2 base-layer target) — in waves like the process we are going through now, but WITHOUT the decision-making. The operator says "start county X" and the mechanics, agent rules, and memory execute it reliably, on multiple counties at a time.
 

@@ -1,14 +1,16 @@
 ---
 id: 75k_max_map_quality_direction
 title: Max spatial map — quality direction + fresh-agent handoff
-status: active
-last_updated: 2026-06-18
+status: superseded
+last_updated: 2026-08-09
 applies_to: portfolio
 owner: nick
 related: [75i_investor_radar_prelaunch_sprint, _decisions/2026-06-18_map_engine_maplibre_cotality_national, _decisions/2026-06-17_map_extraction_shared_capability, 80_adrs/adr_022_deal_twin_and_cross_application_capture]
 ---
 
 # Max spatial map — quality direction + handoff
+
+> **SUPERSEDED 2026-08-09.** Status flipped from active. This handoff describes the Cotality/extension map surface (extension v0.6.24), and Cotality was extinguished 2026-07-13; live code hitting Cotality is a wrong-routing defect, never a credential to rotate, and Regrid is dead as well. Every build-status and gating statement below is therefore stale, and the buildable-now versus Cotality-gated split no longer describes any live path. The current disposition of the parked map layers is in `90_operations/QUEUE_parked_work_index.md` (W3 RRC and W4 MUD both HELD; treat as greenfield). The quality bar and visual north-star sections remain useful as direction; nothing here is a status claim.
 
 Handoff doc for a fresh agent to regroup on the Max map. The map now *renders* but is a mile below the dataviz quality bar the operator wants. This captures the current state, the north-star, the gap, and the split between what's buildable now versus what's gated on data.
 

@@ -2,7 +2,7 @@
 id: hardware_sovereignty_overview
 title: Hardware and sovereignty — folder overview
 status: active
-last_updated: 2026-06-14
+last_updated: 2026-08-02
 applies_to: portfolio
 owner: planner
 related: [09_post_saas_substrate_thesis, 08_tiered_access_model, mox_executive_summary_v2]
@@ -29,6 +29,7 @@ Lead with option 1 in any deck. Quote option 2 only when an IT lead pushes on "w
 ## What's in here
 
 - `hardware_reference_architecture.md` — internal one-pager. The tiered hardware menu, the sourced competitive table, the AMD "agent computer" anchor, and the corrections to the claims made loosely in the Mox room. This is the cheat sheet you read before a hardware conversation.
+- `open_weight_cloud_inference_guide.md` — internal research guide. Open-weight models on rented GPU: full weight control, originator update path via Hugging Face Hub, and hosting options (HF Dedicated, Together, RunPod, etc.) when you do not own a datacenter. Complements the on-prem tier menu; does not replace it.
 - `client_brief_local_and_cloud.md` — client-facing. What the hardware does and why, cloud-by-default with a clean local option, and the cost argument for a rising-token-cost world. Written to drop into a pitch.
 
 ## Sourcing note

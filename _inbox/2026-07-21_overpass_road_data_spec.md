@@ -1,14 +1,17 @@
 ---
 id: 2026-07-21_overpass_road_data_spec
 title: Spec — private Overpass / OSM extract for road-based envelope labeling
-status: queued-next
+status: scaffolded-operator-blocked
 date: 2026-07-21
+last_updated: 2026-07-21
 applies_to: legacy-design-tools (buildableEnvelope/roads.ts, node-facet Tier-2 bake), infra
 related: [2026-07-20_provable_county_data_pipeline_design, 2026-07-18_property_brief_gtm_critical_path]
 owner: nick
 ---
 
 > SEQUENCING (operator ruled 2026-07-21): this is the SOON-TO-FOLLOW addition, executed AFTER everything currently in flight lands and the operator QAs the browse surface. It is a quality upgrade, independent of the in-flight wave, with a self-hosted-infra dependency that should NOT gate the browse QA. Recommended path confirmed = Option A (self-hosted Overpass). Pick it up as the next deliberate deliverable once the Vercel QA URL is validated. Tier-2 PR #319 is held pending this (its FEMA leg can ship independently sooner if desired).
+>
+> **2026-07-21 scaffold:** LDT `infra/overpass/` (Compose + Texas Geofabrik import + smoke.sh + GCE/Cloud Run runbook) landed via PR #328. `OVERPASS_URL` env hook already on main (#323). WDLL 8 remains **operator-blocked** until GCP billing/project, persistent disk, VPC connector CIDR, and a private-endpoint smoke query (highway ways) are observed. WDLL 9 (`--enable-roads` county bake) must not start before that smoke.
 
 # Spec — road data for the buildable-envelope front-edge signal
 
@@ -30,7 +33,9 @@ A national, always-hammered public instance cannot serve that. We need a source 
 
 ## The one code hook (do this regardless of option)
 
-`OVERPASS_URL` in `roads.ts:40` is a HARDCODED constant. STEP ZERO of either option: make it env-configurable (`OVERPASS_URL` env var, default to the public instance for dev). Then the bake/service points at our own endpoint via env. Trivial change, unblocks everything below, and lets us switch sources without a code change.
+`OVERPASS_URL` in `roads.ts` is env-configurable (WDLL item 7 / LDT PR #323): trim `process.env.OVERPASS_URL`, default to the public instance (`https://overpass-api.de/api/interpreter`) only when unset or empty. Bake/service points at our own endpoint via env — no code change to switch sources.
+
+**Deploy / bake wiring:** set `OVERPASS_URL` on the cortex-api Cloud Run service (and any bake job env) to the self-hosted interpreter URL once Option A is up. Leave unset in environments that should keep the public default (dev / until private mirror exists). The Tier-2 CLI warns if `--enable-roads` is set while `OVERPASS_URL` is unset/empty because the public instance is 504-saturated for county bakes.
 
 ## Option A — Self-hosted Overpass API instance (RECOMMENDED for the roadmap)
 
