@@ -4,13 +4,13 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 ## THE ONE-LINE
 
-**196 of 254 counties are acquired; Harris west half is finally in the store (westmost −95.960827); the defect that hid it was a count-agreeing truncated reader — fixed fail-closed in PR #404 (open).**
+**The launch gate is ruled and the program is in motion: 196 of 254 counties acquired, OPS-14 governs the path to launch, the writers slot chain (Handoff D) is running, cert truth is 6/7 in the real frame with the fix lane dispatched (G), roads unblock dispatched (H).** Session close 2026-08-09 evening: `_sessions/2026-08-09_launch_gate_and_program_planning_claude_code.md`.
 
 ## LAUNCH GATE RULED 2026-08-09 + CLEANUP BATCH IN FLIGHT
 
 **Texas-flush launch gate = measured-everywhere** (`_decisions/2026-08-09_texas_flush_launch_gate.md`, per-rail split ratified): L2 at 254, statewide roads/NFHL/footprints, all 12 rails with writers, cert frame reconciled, 76j capacity items. Filled-everywhere = program completion, runs post-launch. **Game plan: `90_operations/OPS-14_texas_flush_game_plan.md` (adversarially reviewed v2). All five operator decisions RESOLVED 2026-08-09 evening** (footprint = Central TX + Dallas metro; pricing ladder of record = 76_wedge plan $0/$20/$40/$75; second-state set = UT/NM/CO/AZ; owner+easement classifications ratified; heavy-scan slot = one write slot per database).
 
-**CLEANUP BATCH CLOSED 2026-08-09 (lanes A/B/C reports in, verified):** #404 merged `12b3502c` (+ wave workers wired for 48201); #403 merged `146e9d7f` (follow-up issue #405 filed); #406 merged `d333ff49` (rail declaration cad/flood/landuse hasWriter=true APPLIED to live county_rail + ledger seam explained: satisfiedCells excludes isPartial, 38+18=56, breakdown fields added, **cortex-api redeploy owed** for live fields); #118 CLOSED (revert hazard; BDC content superseded by #120); Bosque idempotency CLEAN (net 0, direct host); coastal report: 7 of 8 honestly coastal, **Nueces 48355 SUSPICIOUS-GAP (2,100-parcel wall) owes source re-pull**; Donley: StratMap dead, recommend CAD bulk request (operator outreach). **THE HEADLINE: cert lane in the TRUE txgio frame is 6/7, not 7/7** — engine PR #292 OPEN DO-NOT-MERGE: 48021:34177 fails per-edge inset with a role/inset swap on edges 3-4 (side_corner expects 5ft measures 15ft; rear expects 15ft measures 5ft); twelve-sweep independent instrument 12/12; root-cause investigation owed before #292 (+ bundled B3 grep gate) merges. #393 fix pushed (`45cf0e8b`, harness + migration renumber 0072/0073) — merge ONLY on Test SUCCESS at that head or later. Parcel-node sweep STILL WRITING at lane-A close (1,363,517 and climbing); scorer re-run gated on two identical counts 10 minutes apart.
+**CLEANUP BATCH CLOSED 2026-08-09 + OPS-14 follow-up lanes F1–F6 (2026-08-09 evening):** #404/#403/#406 merged earlier; **#393 MERGED** `a7d8da8a` (Test SUCCESS @ `45cf0e8b`); **cortex-api REDEPLOYED** serving `cortex-api-00494-gok` @100% tag `canary` (shift-traffic run 31331678002) — live ledger now exposes `satisfiedPresentCells=56`, `satisfiedPresentPartialCells=18`, `satisfiedAbsentCells=0`; #118 CLOSED; Bosque idempotency CLEAN. **Nueces 48355:** triangulated SOURCE_DEFECT (store distinct 157,198 = roster = apply read; east wall in source not ingest — report `_inbox/2026-08-09_F4_nueces_48355_extent_report.md`; TxGIO zip re-download blocked HTTP 403 here, ogrinfo bbox still owed on alternate egress). **Donley:** outreach draft at `_inbox/2026-08-09_F6_donley_cad_outreach_draft.md` (operator sends). **Cert 48021:34177:** root cause CONFIRMED (A) stale edge roles on edges 3–4 in promoted atoms; answer key stands; fix = re-promote then merge #292 — report `_inbox/2026-08-09_F3_34177_root_cause.md`. **Roads statewide:** all six unblockers still OPEN — status `_inbox/2026-08-09_F5_roads_unblock_status.md`. Parcel-node sweep STILL WRITING; scorer re-run gated on two identical counts 10 minutes apart.
 
 ## THE FOUR NUMBERS THAT MATTER
 
@@ -82,7 +82,7 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 - engine-api: `hauska-engine-api-00174-zus` @100% tag `ws1-serve-truth-12` (T1 WS1 2026-08-06: #265 + stale-edge retire + export R28/R30 guard for depth-warm edges; twelve re-persist 12/12 serveTruthOk; image `ws1-serve-truth-12`; `/health` verified). Prior `00171-vol` tag `ws1-fd91b54`. Project hauska-prod-497015.
 - retrieval: `hauska-retrieval-api-00059-lir` @100% tag `pooling-fix` (76j C2: Neon `DATABASE_URL`+`CORTEX_DATABASE_URL` moved to pooled host; `/health/search` functional probe + Bearer auth both verified post-shift). Prior serving was `00034-gmd` tag `canary2` (2026-07-31 pedestrian `isPedestrianWay` enrichment #197 landed further back, at `00030-x7r` — also stale before this session). Project hauska-prod-497015.
 - MCP: `hauska-mcp-server-00040-ctj` @100% tag `postgres-limiter` (T4 catch-up 2026-08-05: Postgres `ResilientRateLimitStore` PR #58 @ `b5f26de`; `/health` `rate_limit_store.state=ok`, `detail=postgres`; migration `010_rate_limit_counters` applied). Prior `00050-fej` tag `ratelimit-smoke` (fail-loud degraded mode PR #57). Project hauska-prod-497015.
-- cortex-api: `cortex-api-00490-vew` @100% tag `canary` (2026-08-08/09 deploy of `de4fc8b906730f3a036b2c9494b22c1acfb03916`: #396–#400 including rail-dimension refresh; live `summary.totalRails=12`, `manifestCells=3048`). Prior serving `00488-qif` (pre-deploy had stale `totalRails=13`). Project legacy-design-tools-prod.
+- cortex-api: `cortex-api-00494-gok` @100% tag `canary` (2026-08-09 shift-traffic after deploy-canary 31331609692; picks up #406 ledger breakdown fields — live `satisfiedPresentCells=56`, `satisfiedPresentPartialCells=18`, `satisfiedAbsentCells=0`). Prior serving `cortex-api-00472-web` tag `smoke4`. Project legacy-design-tools-prod.
 - CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed **2026-08-06 T2 WS2 reopen** pedestrian v2 `586ef16` / bundle `index-C1Sc6_H7.js` — `#8fd0ff`, opacity 0.9, larger dots; prior T2 `index-h2GW8147.js`). Deploy from hauska-map ROOT linked to Vercel project `property-explorer`. NOTE: Vercel does NOT auto-deploy on merge.
 
 ## WHAT IS DONE + LIVE-VERIFIED
@@ -102,7 +102,7 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 | eng **#287** | **MERGED 2026-08-09T18:09Z** (`41cfdb4c`, cleanup lane B) | Unified city-batch warm runner. F3/Elgin unblocked; Elgin still owes parcel-node anchors + unified dry-run before apply. |
 | ldt **#404** | **MERGED 2026-08-09T18:05Z** (cleanup lane A) | Multi-shapefile fail-closed reader. |
 | ldt **#403** | OPEN, CI green | NFHL backpressure fix; table already loaded to 198,178. |
-| ldt **#393** | **CI RED — ON ITS OWN TEST** (audit 2026-08-09 corrected the earlier "unrelated flake" story): `manifestObservability.test.ts` "ctx.schema not set" + schema-fixture drift. Needs a real fix, never a rerun-merge. Cleanup lane A owns it. | Observability tables (`rail_state_history`, `rail_verification`, run-state, cost metering). Named dependency of OPS-14 standing-factory cost gates. |
+| ldt **#393** | **MERGED 2026-08-09** `a7d8da8a` (Test SUCCESS @ head `45cf0e8b`) | Observability tables (`rail_state_history`, `rail_verification`, run-state, cost metering). Standing-factory cost gates unblocked. |
 | map **#118** | OPEN, NO CI checks, CONFLICTING | Revert hazard (would resurrect pre-#113 flood overlay). Cleanup lane C owns rebase-or-close. |
 
 **MERGED 2026-08-09 after the last close:** eng #289 (contract-shaped envelope absence, 1.15.0), #290 (pyosmium PBF worker), #291 (writers for cad-parcel-roll / land-use-fact / flood-hazard-fact), ldt #401 (geometry rail scorer), #402 (decline defective features with identity), map #156 (absenceBasis rendered). Contract `@empressaio/atom-contract@1.15.0` published — merge-then-tag, after a 1.14.0 tag was pushed from an unmerged branch and npm ran ahead of trunk for hours.
@@ -116,6 +116,18 @@ Consequence: **the planner became the reporting layer**, querying stores and mer
 Related: an executor once burned 48,000 tokens writing a briefing for a sub-agent that never ran, and reported it as "dispatched and running." Caught only by checking the live endpoint. Every dispatch now carries a no-nesting clause as its FIRST line.
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
+
+### W5 DEPTH FACTORIES — CLOSED 2026-08-09 (operator-authorized)
+
+Dispatch pack: `_dispatches/2026-08-09_W5_depth_factory_dispatch_pack.md`. Program close: `_inbox/2026-08-09_W5_program_close.json`.
+
+| Lane | Factory | Verdict | Evidence |
+|---|---|---|---|
+| E1 | F2 corpus (Smithville) | **PARTIAL CLOSE** — corpus PASS | `_inbox/2026-08-09_E1_lane_close.json`; stamp honest-absent |
+| E2 | F1 CAD registry tranche 1 | **CLOSED PASS** | 35 rows; `_inbox/2026-08-09_E2_lane_close.json` |
+| E3 | F3 Elgin dry-run | **CLOSED BLOCKED** | E3-ADV confirmed 0 `48021` parcel-nodes; `_inbox/2026-08-09_E3_lane_close.json` |
+
+**Next unblock:** Handoff D releases atoms slot → mint `48021` parcel-node anchors → re-run Elgin unified dry-run → E3-ADV → planner apply go.
 
 ### T3 RAILS — FOOTPRINTS + EASEMENTS (2026-08-05 track close — spec DONE, live BLOCKED)
 
