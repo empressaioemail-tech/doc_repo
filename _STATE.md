@@ -1,10 +1,29 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-08 (statewide pivot: canon corrected, L2 unblocked, Rail 1 anchored, wave plan running).
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-09 (196 counties acquired; atoms wired to the manifest; HARRIS TRUNCATION open).
 
 ## THE ONE-LINE
 
-**Texas is 0.0365 percent complete — one measured cell out of 3,302 — and that is the first honest number this program has had.** The County Manifest went live on the Command Center, then was found to be measuring a definition rather than a finding: the headline read 4.76 percent, of which 4.723 came from a single doctrine string applied identically to all 254 counties. Corrected 2026-08-08 (ldt #395). Every gain from here measures against a floor that means something.
+**196 of 254 counties are acquired (14,442,123 parcel rows), the manifest finally reads atoms instead of a doctrine string, and Harris County is two-thirds empty without a single count-based check noticing.**
+
+## THE FOUR NUMBERS THAT MATTER
+
+| Measure | Value | Where to verify |
+|---|---|---|
+| Counties with parcel geometry | **196 / 254** | `SELECT count(DISTINCT county_fips) FROM txgio_parcel` on `DEPLOYMENT_DATABASE_URL` |
+| Parcel rows | **14,442,123** | same table |
+| Counties with `parcel-node` atoms | **77** (748,177 atoms) | `SELECT count(DISTINCT body->>'countyFips') FROM atoms WHERE entity_type='parcel-node'` on `DATABASE_URL` (atoms DB, database `hauska_mcp`) |
+| Texas completeness | **0.2134 percent**, 38 satisfied cells of 3,048 | `GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger` |
+
+**THE CHEAPEST WIN ON THE BOARD:** `countyGeometryScoreCli.ts` (the scorer that turns `parcel-node` atoms into manifest coverage) has been run ONCE, against 49 counties. 77 counties now have atoms. Re-running it should move the number immediately with zero new work. It lives in legacy-design-tools `artifacts/api-server/src/`.
+
+## THE OPEN DEFECT THAT OUTWEIGHS EVERYTHING ELSE
+
+**Harris County 48201 holds 564,948 parcels and should hold roughly 1.65 million.** `lib/cad-ingest/src/txgio/cli.ts:149` uses `files.find()` to pick a shapefile; the Harris archive ships TWO, and the 213 MB `harris_west` half (larger than the 103 MB east) was silently discarded. Store stops dead at longitude **-95.4364**; real Harris reaches about **-95.96**. Harris is roughly 10 percent of Texas by parcel count.
+
+**Why it survived every gate:** dry, apply, a second apply, and independent SQL ALL agreed at 564,948, because all four read the same truncated input. The membership file's `parcel_count_est` is 536,512 — exactly the east-only count — so the sizing probe carried the identical bug. A count cannot detect a defect it inherits. Only a GEOGRAPHIC check catches this.
+
+**The 181 baseline counties have never been swept for multi-shapefile archives.** Harris was found by accident, by a reviewer asking a geographic question instead of a counting one.
 
 ## WHERE THE PROGRAM IS
 
@@ -14,22 +33,22 @@ The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`
 |---|---|
 | L0 seam reconciliation | mechanical, deferred to read time (the tile bucketing IS the spatial index) |
 | L1 city + county boundaries | **DONE, LIVE** — 1,222 city + 254 county polygons |
-| L2 parcel geometry, 235 counties | **UNBLOCKED. Kenedy 48261 proven end to end and live in production. Wave plan running.** |
-| L3 roads statewide | largest new build; needs a way-to-county resolver that does not exist. Overpass OOMs on a bare statewide count; Geofabrik `texas-latest.osm.pbf` (713 MB) is the path |
-| L4 FEMA NFHL | ldt #398 open — `NFHL_48_20260101.zip`, 1.81 GB, one file, ships EPSG:4269 |
+| L2 parcel geometry | **WAVE 3 COMPLETE — 196 counties / 14,442,123 rows.** All 117 degree-vintage members landed across two resumes. Every dry predicted its apply exactly; idempotency per county; zero rows outside Texas. 3,707 declines ALL carry identity. Metros ran solo bytes-ascending, Harris last, Bosque alone. **BUT: Harris is two-thirds empty (see the Harris section above) and the 181 baseline counties are unswept for multi-shapefile archives.** Bosque owes a clean idempotency re-run. Donley 48129 is a 404 at source, never a member, needs a source decision. Reports: `_inbox/2026-08-09_L2_W3R2_RESUME_REPORT.md`, `_inbox/2026-08-08_L2_WAVE3_MASTER_REPORT.md`. **Concurrency: 1-2 ONLY** — 8-way deadlocked (`40P01`) on the shared `txgio_parcel` index; county-disjoint keys do NOT imply index-disjointness. |
+| L3 roads statewide | PBF reader DECIDED (pyosmium sidecar). Product PR **#290 OPEN** (`6ba439a`). Resolver #288 MERGED. One-county Bastrop extract proves PBF≅city Overpass (recall 1.0, +3 service). Peak RSS **2842 MB**. Fixture identity: live Overpass slice = city-bbox (4893). Adversarial **REFUTED** statewide (`_inbox/2026-08-09_STATEWIDE_ROADS_adversarial_review.md`): boundary coin-flip under 1e-18 collinear eps; Node ingest unexecuted; silent upsert would clobber Bastrop; synthetic-id landmine. Report: `_inbox/2026-08-09_STATEWIDE_ROADS_build_prove_report.md`. **No statewide ingest.** |
+| L4 FEMA NFHL | ldt #398 MERGED, **migration 0071 APPLIED**, table exists and is **PARTIALLY LOADED** (~110k of 198,240 `S_FLD_HAZ_AR`; a delete-then-load replace was mid-flight at last check so the count moves both directions). **Root cause of two prior death-by-OOM runs: unbounded backpressure in `streamGdbLayerGeoJson`'s stdout queue racing DB-bound consumption.** Raising heap to 16 GB did NOT fix it. Fix in ldt **#403 (CI RED)**. A full dry-run with no DB writes completes in 417s on default heap, proving it is a write-path backpressure bug, not data. Archive already on disk at `P:\legacy-design-tools\.tmp_nfhl_48.zip` (1,810,100,601 bytes) — do NOT re-download. |
 | L4 SSURGO | weakest link; no working gSSURGO bulk URL found |
 | L4 topo | 251 tiles / 64.3 GB via USGS 3DEP; existing pipeline is AOI-scoped and would silently produce a Central-Texas mosaic |
 | PMTiles bake | after L2 |
 
-**THE TWO-FACTORY JOINT — consumption contract drafted 2026-08-08, NOT ratifiable yet.** Statewide produces fabric; jurisdiction factory backfills. Seam crossed once: hauska-engine PR #284 (OPEN) wrote 528 verified `parcel-node` atoms for Kenedy 48261 (pointer-only). Consumption contract report: `_inbox/2026-08-08_CONSUMPTION_CONTRACT_report.md`. Adversarial review: PARTIAL HOLD WITH FATAL GAPS (`_inbox/2026-08-08_CONSUMPTION_CONTRACT_adversarial_review.md`) — synthetic `_feature-*` same-key upsert and missing warm gate/orphan retirement. **Do not re-acquire warmed counties until C3 retirement + C1 warm preflight ship.** Next shape by data arrival: `flood-hazard-fact` when NFHL lands — not more families before contract machinery.
+**THE TWO-FACTORY JOINT — consumption FATAL gaps closed in engine #285 (merged).** Kenedy parcel-node writer #284 merged earlier. Atom families BUILD wave 2026-08-08/09: contract **1.14.0** published (`flood-hazard-fact`, `cad-parcel-roll`, `land-use-fact`); engine registration **PR #286 OPEN** (CI green). Adversarial: PARTIAL HOLD WITH FATAL GAPS — shapes on npm, nothing serves them yet (no writers, no NFHL table apply, no manifest refresh, no MCP slots). Report: `_inbox/2026-08-08_ATOM_families_program_report.md`.
 
-## LIVE NUMBERS (verified 2026-08-08; re-verify before quoting)
+## LIVE NUMBERS (re-verified 2026-08-09 where noted)
 
-- **Texas completeness 0.0365 percent.** 3,302 manifest cells: no-atom 2,540, not-yet 489, no-writer 254, satisfied-present 19 (18 of those PARTIAL, contributing zero). One satisfied cell: Bastrop zoning at 99.77 percent coverage.
-- **Parcel store:** 19 counties + Kenedy = 20 loaded. 5,535,897 rows / 4,617,181 true distinct parcels statewide-over-20. Measured **1,124.6 bytes/row**. Projected statewide DB 35 to 37 GB — sizing is a non-issue.
-- **Tile duplication 6.95 percent** (not the 16.6 previously carried). Metro seam factor 1.07; **rural measured 4.46** on Kenedy, so storage projections derived from metro counties are light by roughly 4x on ranch counties.
-- **Source availability:** 253 of 254 StratMap URLs live; Donley 48129 is a 404 and needs a source decision. 4.256 GB for the 235 unloaded. 177 are degree-vintage and ingestible today; **57 are 202505 and ship EPSG:3857**, requiring `--reproject=3857` passed deliberately.
-- **Contract `@empressaio/atom-contract@1.13.0`** live on npm (`parcel-node` family). Engine registers 7 property types (was 4): added `parcel-node`, `building-footprint`, `utility-easement`.
+- **Texas completeness ~0.0395 percent** (live ledger). **12 rails × 254 = 3,048 cells.** displayState: no-atom **1524**, no-writer **1016**, not-yet 489, satisfied-present 19. One satisfied cell: Bastrop zoning.
+- **cad_property LIVE:** **4,599,477 rows / 15 counties** (CORTEX_DATABASE_URL SELECT 2026-08-09). Not 15 rows; not ~1.07M.
+- **NFHL bulk table:** ABSENT (`to_regclass` NULL) despite #398 merge.
+- **Parcel store:** 19 counties + Kenedy = 20 loaded (earlier session; re-verify before wave planning quotes).
+- **Contract `@empressaio/atom-contract@1.14.0`** on npm (tag `v1.14.0`). Engine **main** still registers 7 property types; PR #286 adds three → 10 (not merged).
 
 ## GOVERNANCE — the canon gate is LIVE
 
@@ -43,7 +62,7 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 
 ## PRIOR HEADLINE (superseded, kept for continuity)
 
-**T1 cohort re-persist (2026-08-08):** Recovery re-pair DONE @ `dba7a82`. Apply promoted 1668; block13 7/7, saga twelve 12/12. The "extended parity 2438 == 1668 + 770" framing is RETRACTED — it is arithmetically true but diagnostically empty (`computePassNotPersisted` is defined as the residual), and the pre-fix dry leg was inflated by the 472 parcels the apply refused. The `!dryRun` compute fork that caused it is CLOSED (engine #279): dry-run now predicts apply for the first time in this program. Elgin still queued.
+**T1 cohort re-persist (2026-08-08):** Recovery re-pair DONE @ `dba7a82`. Apply promoted 1668; block13 7/7, saga twelve 12/12. The "extended parity 2438 == 1668 + 770" framing is RETRACTED — it is arithmetically true but diagnostically empty (`computePassNotPersisted` is defined as the residual), and the pre-fix dry leg was inflated by the 472 parcels the apply refused. The `!dryRun` compute fork that caused it is CLOSED (engine #279): dry-run now predicts apply for the first time in this program. **Warm runner consolidation OPEN (engine PR #287):** three per-city scripts collapsed into `depth-warm-city-batch.mjs --row-id=…` with registry `warmRunner` config; Bastrop gate-path dry-run counters match legacy 0-mismatch; adversarial **PARTIAL HOLD**. Elgin still queued — needs merge + parcel-node anchors + unified Elgin dry-run before apply. Report: `_inbox/2026-08-08_WARM_RUNNER_CONSOLIDATION_report.md`.
 
 ## STANDING DECISIONS (these govern every dispatch — paste into fresh-agent handoffs)
 
@@ -59,7 +78,7 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 - engine-api: `hauska-engine-api-00174-zus` @100% tag `ws1-serve-truth-12` (T1 WS1 2026-08-06: #265 + stale-edge retire + export R28/R30 guard for depth-warm edges; twelve re-persist 12/12 serveTruthOk; image `ws1-serve-truth-12`; `/health` verified). Prior `00171-vol` tag `ws1-fd91b54`. Project hauska-prod-497015.
 - retrieval: `hauska-retrieval-api-00059-lir` @100% tag `pooling-fix` (76j C2: Neon `DATABASE_URL`+`CORTEX_DATABASE_URL` moved to pooled host; `/health/search` functional probe + Bearer auth both verified post-shift). Prior serving was `00034-gmd` tag `canary2` (2026-07-31 pedestrian `isPedestrianWay` enrichment #197 landed further back, at `00030-x7r` — also stale before this session). Project hauska-prod-497015.
 - MCP: `hauska-mcp-server-00040-ctj` @100% tag `postgres-limiter` (T4 catch-up 2026-08-05: Postgres `ResilientRateLimitStore` PR #58 @ `b5f26de`; `/health` `rate_limit_store.state=ok`, `detail=postgres`; migration `010_rate_limit_counters` applied). Prior `00050-fej` tag `ratelimit-smoke` (fail-loud degraded mode PR #57). Project hauska-prod-497015.
-- cortex-api: `cortex-api-00485-huz` @100% tag `canary` (T4 catch-up 2026-08-05: `CORTEX_USER_DAILY_API_LIMIT=10000` via LDT #388 @ `b1ef76de`; posture doc `90_operations/T4_cross_service_limiter_posture.md`). Prior `00483-peg` (76j A paywall). Project legacy-design-tools-prod.
+- cortex-api: `cortex-api-00490-vew` @100% tag `canary` (2026-08-08/09 deploy of `de4fc8b906730f3a036b2c9494b22c1acfb03916`: #396–#400 including rail-dimension refresh; live `summary.totalRails=12`, `manifestCells=3048`). Prior serving `00488-qif` (pre-deploy had stale `totalRails=13`). Project legacy-design-tools-prod.
 - CC: `cmdcenter-blush.vercel.app` (redeployed 2026-07-31 Phase 0A `dpl_jxh5onnQ5UsKJGy7uz5DoJhvyyeB`). PE: `property-explorer-xi.vercel.app` with `PROPERTY_ATOM_PATH=1` (redeployed **2026-08-06 T2 WS2 reopen** pedestrian v2 `586ef16` / bundle `index-C1Sc6_H7.js` — `#8fd0ff`, opacity 0.9, larger dots; prior T2 `index-h2GW8147.js`). Deploy from hauska-map ROOT linked to Vercel project `property-explorer`. NOTE: Vercel does NOT auto-deploy on merge.
 
 ## WHAT IS DONE + LIVE-VERIFIED
@@ -71,6 +90,25 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 - Topo fidelity: 1-ft LiDAR contours + hydrology + terrain export live (config-to-1m + Contour1Ft2017).
 - No-setback export fix + Cotality-decommission (envelope 502 gone, honest 404).
 - Recipe generalizes: Caldwell #2 (7 held / 1 new-baked). Recipe-proof track CLOSED.
+
+## OPEN PRs AND THEIR STATE (2026-08-09 — verify with `gh pr checks`, do not trust this list blind)
+
+| PR | State | What it is |
+|---|---|---|
+| eng **#287** | **CI RED** | Unified city-batch warm runner. Typecheck now clean (`e9cb140` fixed duplicate `WarmRunner*` exports). **The TEST gate fails on its OWN prior commit `9040c45`**, which replaced `depth-warm-bastrop-batch.mjs` and `depth-warm-elgin-batch.mjs` with retirement stubs — while two test suites assert against those files' SOURCE TEXT. Rewrite them against `depth-warm-city-batch.mjs`; do NOT delete, they pin the `!dryRun` fork and bulk-acquisition guards. **THIS BLOCKS ELGIN.** |
+| ldt **#403** | **CI RED** | NFHL backpressure fix. |
+| ldt **#393** | **CI RED** | Observability tables (`rail_state_history`, `rail_verification`, run-state, cost metering). Red FIVE times on a `socket hang up` in `lib/portal-ui` — unrelated to its content; its own fixture test passes throughout. Judge on the evidence rather than re-rolling. |
+| map **#118** | unknown | PE corner side interior/corner split. Pre-existing, older program. |
+
+**MERGED 2026-08-09 after the last close:** eng #289 (contract-shaped envelope absence, 1.15.0), #290 (pyosmium PBF worker), #291 (writers for cad-parcel-roll / land-use-fact / flood-hazard-fact), ldt #401 (geometry rail scorer), #402 (decline defective features with identity), map #156 (absenceBasis rendered). Contract `@empressaio/atom-contract@1.15.0` published — merge-then-tag, after a 1.14.0 tag was pushed from an unmerged branch and npm ran ahead of trunk for hours.
+
+## THE PATTERN A FRESH AGENT MUST KNOW
+
+**Five executors on 2026-08-08 and 2026-08-09 did real, correct work and returned with NO REPORT** — one after downloading 1.81 GB and applying a migration, one after loading 36,000 NFHL rows, one after repairing Wilbarger and advancing the sweep seven counties. CI green, work sound, close-out absent. Each armed a Monitor and stopped.
+
+Consequence: **the planner became the reporting layer**, querying stores and merging PRs instead of planning. If you dispatch a long-running data lane, VERIFY AT SOURCE on your own schedule and do not wait for the agent's summary. Every dispatch should carry the constraint explicitly.
+
+Related: an executor once burned 48,000 tokens writing a briefing for a sub-agent that never ran, and reported it as "dispatched and running." Caught only by checking the live endpoint. Every dispatch now carries a no-nesting clause as its FIRST line.
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
 
