@@ -2,7 +2,7 @@
 id: 2026-08-09_launch_footprint_counties
 title: Launch-footprint county enumeration — Central Texas plus Dallas metro
 date: 2026-08-09
-status: provisional (enumeration pending operator sign-off; the ruling itself is settled)
+status: active (enumeration signed off 2026-08-09 evening; see the full-state amendment below)
 owner: nick
 related: [_decisions/2026-08-09_texas_flush_launch_gate, 90_operations/OPS-14_texas_flush_game_plan]
 ---
@@ -22,6 +22,10 @@ Operator ruling 2026-08-09: the launch footprint is all of Central Texas plus th
 ## Verification note (source-required)
 
 FIPS codes and the DFW MSA composition above are from planner knowledge and must be verified against the Census delineation file and the state FIPS table before the first depth wave targets the list. The corridor extension is a judgment call (colloquial Central Texas), included as the most likely operator intent and the easiest tier to strike.
+
+## AMENDMENT 2026-08-09 (operator, same day): the footprint is sequencing, not scope
+
+Operator sign-off on the 28-county enumeration as proposed, with a ruling that changes its meaning: **the operator will move directly into the full 254-county depth list after the footprint.** The footprint is therefore a launch-gate sequencing milestone, never a scope boundary. Depth-factory waves (F1/F2/F3) continue statewide by default once footprint counties reach satisfied; no new decision is required to proceed past the footprint. Planning artifacts must assume full-state depth as the standing program, with the footprint only ordering which counties come first.
 
 ## Reversal criteria
 

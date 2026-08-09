@@ -25,6 +25,8 @@ Three depth factories (F1 CAD rolls, F2 code/zoning corpus, F3 depth warm) run a
 
 ## Amendments
 
+- 2026-08-09 (operator): the launch footprint is sequencing, not scope. Item 7 remains the launch-gate milestone, but factory waves continue statewide by default after footprint counties satisfy; the standing program target is all 254 counties (per the amended footprint decision record). No pause or new decision between footprint and full state.
+
 (none yet)
 
 ## Finish card (graded at close)
