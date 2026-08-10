@@ -49,6 +49,22 @@ WEATHER. The building view carries its own forecast: hourly NWS for the building
 2. Contract order per the header: API and MCP tools first, app as client. No app-only capability; anything the app can do, an agent can do through the contract.
 3. List-first, not 3D-first. The building view is structured nodes with live state, not a floor-plan renderer, matching the asset-management tier order (record over live state over view). A schematic or plan view is an enhancement that consumes drawn plans later; it is not a v1 dependency.
 
+## Onboarding journey (operator vision, stated 2026-08-06)
+
+The full customer journey, operator-stated, with the structural consequence named: the INVENTORY label-capture flow moves from post-install enrichment to the spine of onboarding, because the photos generate the deployment.
+
+1. FREEBIE. Enter address, see the site's public twin, claim it, forecast freeze watch armed. Value on day one before we hold anything private.
+2. WALK AND SHOOT. App-guided capture walk (station-pattern guidance, same interaction DNA as the install guide): photograph equipment labels, panels, risers, shutoffs.
+3. INVENTORY. AI reads the labels; equipment nodes, ages, manuals, and maintenance schedules appear on the twin.
+4. KIT. From the inventory and capture answers the app designs the deployment (which watches, which senses, where) and produces one cart, one source, us. The inventory step is the ORDER GENERATOR.
+5. SHIP. Kit arrives bench-provisioned and station-labeled against the customer's own capture data; the personalized install guide is generated from their capture walk, their photos as the install-here references. Bench provisioning is a fulfillment step, not overhead; it is what keeps self-install zip-tie simple.
+6. INSTALL. Fork: guided self-install (station by station, photo-confirm each) or schedule a third-party install. Recommendation recorded, not yet ruled: v1 ships both buttons with the scheduled path fulfilled concierge-style (we arrange the electrician manually) until volume justifies an installer network.
+7. LIVE. Senses join, watches arm, weather and measured state on one screen; the first alert closes the loop.
+
+The simulator carries this whole journey for testing: claim a demo building, walk a seeded capture, receive a generated kit, watch a simulated freeze night fire alerts. Operator is user zero; Waypoint is client 1.
+
+Open questions from the 2026-08-06 discussion (unanswered at capture): the freebie's friction floor (a pre-claim address-plus-phone SMS teaser versus requiring the claim account), who walks the capture walk for the pilot building (staff-with-app tests the product; operator-on-site tests nothing), and cart transparency (hardware at visible cost with our fee separate, per the pass-through doctrine, versus bundled display).
+
 ## Offline requirement
 
 Mechanical rooms and basements are exactly where phones lose signal, and they are where this app gets used. Photo capture, checklist check-off, and acknowledgment must work offline and sync when signal returns (queued locally, uploaded with original timestamps). This is a hard requirement on the PWA build, not an enhancement.

@@ -2,7 +2,7 @@
 id: 2026-08-06_sensor_program_founding
 title: Session — sensor program founded (65_sensors), Waypoint pilot scoped, Smart Site convergence
 date: 2026-08-06
-status: MID-SESSION CAPTURE (session continuing; app UX design discussion next; final close to follow)
+status: superseded — folded into the final session record at _sessions/2026-08-06_alan_claude_code.md ("ALAN"); read that instead
 applies_to: portfolio
 owner: nick
 related: [65_sensors/sensor_program_overview, 65_sensors/pilot_waypoint, 65_sensors/convergence_smart_site_live_layer, 76i_smartsite_contribution_economy_roadmap, _inbox/2026-08-02_bastrop_scada_infrastructure_intelligence_ask]
