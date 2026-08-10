@@ -23,6 +23,7 @@ Isolated from the numbered canon on the same pattern as `_smartcity_masters/` an
 | Doc | What it covers |
 |---|---|
 | [01_the_layer_and_the_three_doors.md](01_the_layer_and_the_three_doors.md) | The unifying frame: one layer, twinning as deposit, three doors, selling access, the diagram, what each customer thinks they are buying, and what this supersedes. |
+| [02_the_registry_concept_PARKED.md](02_the_registry_concept_PARKED.md) | **PARKED concept, not ratified.** An independent registry where claims are registered before outcomes and graded against ground truth the claimant does not control. Captures the verification-architecture through-line across the property spine and empressa-trading, the neutrality constraints, the tooling shape, and the honest problems. No build, no commitment. |
 
 ## The frame in one paragraph
 
