@@ -1,10 +1,10 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. Last updated: 2026-08-10 (Handoff K statewide PMTiles bake closed through K5 deploy; R6 visual QA owed).
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). This is live state a fresh agent picks up from. Update it as state changes; it is meant to be edited constantly. **Last updated: 2026-08-10 (five rails merged w/ zero coverage; rail split LIVE at 14 rails / 0.7689%; sweep 123 landed / 9 metros left; harvest-completeness ruled).**
 
 ## THE ONE-LINE
 
-**Statewide parcel PMTiles LIVE:** `parcels.b692c6534d26.pmtiles` (13.7M features, 196 counties, 2.96 GiB) on GCS + PE prod (`property-explorer-xi.vercel.app`, bundle `index-NZimi-_b.js`). K4 PASS (0 count mismatches, Harris west −95.960827). Rollback: `VITE_PARCEL_PMTILES_HASH=3431529a2e8d`. **R6 gate:** operator browse statewide map. Atoms slot with H for H6; Elgin dry-run anchors-clear; cert frame reconciled (#292).
+**Sweep at 123/132 counties (9 metros left, ~8 h) after a 4.7x fix that was NOT the write path — it was a verify SELECT seq-scanning 10.7M atoms per batch, solved by `--batch=5000`. FIVE RAILS MERGED (owner / well / rail-corridor / footprint / special-district, PROPERTY_ENTITY_TYPES=14) and ALL have ZERO coverage — every apply is queued behind the atoms slot. R1 rail split LIVE in prod: 14 rails / 3,556 cells / 0.7689%. Harvest completeness RULED (take everything a source carries). Market layer PARKED. Q13 found stranded honesty work whose 0.74 fixture is still serving on ldt main.** Session close: `_sessions/2026-08-10_write_path_rails_and_harvest_claude_code.md` + the mid-session capture `_sessions/2026-08-10_five_rails_and_write_throughput_claude_code.md` (read BOTH). Handoff: `_inbox/2026-08-10_PLANNER_HANDOFF_next_session.md`.
 
 ## LAUNCH GATE RULED 2026-08-09 + CLEANUP BATCH IN FLIGHT
 
