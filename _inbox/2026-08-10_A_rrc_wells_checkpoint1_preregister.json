@@ -1,0 +1,63 @@
+{
+  "checkpoint": 1,
+  "recordedAt": "2026-08-10T12:00:00Z",
+  "purpose": "Pre-register expected dry-run shapes BEFORE code; adversarial review of proximity design and on-vs-near semantics.",
+  "storeSqlEvidence": {
+    "48113": {
+      "parcels": 726360,
+      "features": 694160,
+      "bbox": {
+        "westLng": -97.03869264399998,
+        "southLat": 32.54500737300003,
+        "eastLng": -96.51702546099995,
+        "northLat": 32.98966462000004
+      },
+      "source": "SELECT count(*), count(DISTINCT feature_index), min/max lng/lat FROM txgio_parcel WHERE county_fips='48113' on CORTEX_DATABASE_URL"
+    },
+    "48029": {
+      "parcels": 747206,
+      "features": 709541,
+      "bbox": {
+        "westLng": -98.81000967035551,
+        "southLat": 29.114369773652776,
+        "eastLng": -98.11700804054874,
+        "northLat": 29.760636870649595
+      },
+      "source": "same query for county_fips='48029'"
+    }
+  },
+  "sourceProbeEvidence": {
+    "layerUrl": "https://www.gis.hctx.net/arcgishcpid/rest/services/TXRRC/Wells/MapServer/0",
+    "statewideFeatureCount": 12796,
+    "fields": ["SYMNUM", "API", "RELIAB", "SURFACE_ID", "LONG27", "LAT27", "LONG83", "LAT83", "WELLID"],
+    "wellsInDallasBbox": 0,
+    "wellsInBexarBbox": 0,
+    "note": "Harris County mirror layer; all 12,796 features fall in Harris lat/lon envelope (29.5-30.2, -96 to -94.8). Dallas and Bexar bbox queries return zero features — dry-runs will exercise the honest-absence path, not present-well joins."
+  },
+  "proximityDesign": {
+    "proximityRadiusMeters": 152,
+    "radiusJustification": "500 feet (~152 m). The buyer question is whether a well ON or NEAR the property affects use/value — not whether a centroid falls inside the polygon. Strict PIP misses pad-edge and shared-fence wells whose surface location sits on an adjacent tract boundary. 500 ft is the common Texas surface-impact screening distance cited in county O&G setback ordinances and environmental desktop reviews: close enough to capture the adjacent-lot pad without quarter-mile false positives in urban corridors. The radius is carried IN EVERY atom body so the claim is legible and auditable.",
+    "onParcelSemantics": "Well surface point (LONG83/LAT83) inside parcel polygon via ray-cast PIP on txgio_parcel geometry. parcelRelation=on-parcel, proximityDistanceMeters=0.",
+    "nearParcelSemantics": "Well surface point outside polygon but within proximityRadiusMeters of the parcel boundary (min distance to outer ring). parcelRelation=near-parcel, proximityDistanceMeters= measured meters.",
+    "atomGranularity": "One well-fact atom per (parcel, well) association — 0..N present per parcel. Parcels with zero on-or-near wells emit one typed absence (no-well-on-or-near). Plugged/injection/disposal distinguished via SYMNUM→wellStatus/wellType body fields, never collapsed to counts."
+  },
+  "expectedDryRunFullCounty": {
+    "48113": {
+      "planned": 694160,
+      "present": 0,
+      "absent": 694160,
+      "absentByKind": { "no-well-on-or-near": 694160 }
+    },
+    "48029": {
+      "planned": 709541,
+      "present": 0,
+      "absent": 709541,
+      "absentByKind": { "no-well-on-or-near": 709541 }
+    }
+  },
+  "adversarialReviewCheckpoint1": {
+    "proximityAttack": "ATTEMPTED REFUTE: 152m too narrow for injection/disposal salience — REJECTED for v1: injection/disposal that materially affects a parcel beyond 500ft would still appear in broader O&G vertical (og-twin); this rail is operations-lens public-record at the parcel edge. If a well is >500ft away it is not ON or NEAR the property for the stated buyer question.",
+    "onVsNearAttack": "ATTEMPTED REFUTE: near-parcel could double-count a well on a shared boundary — MITIGATED: on-parcel takes precedence; near-parcel only emitted when PIP is false.",
+    "verdict": "ACCEPTED with noted limitation: Harris mirror returns zero wells for Dallas/Bexar; dry-run validates absence path and planner math, not present-well join density."
+  }
+}

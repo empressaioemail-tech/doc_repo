@@ -1,0 +1,96 @@
+{
+  "rail": "rail-corridor",
+  "completedAt": "2026-08-10T12:12:00Z",
+  "sourceChosen": "NTAD_North_American_Rail_Network_Lines",
+  "sourceEndpoints": {
+    "narnLines": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_North_American_Rail_Network_Lines/FeatureServer/0",
+    "gradeCrossings": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Railroad_Grade_Crossings/FeatureServer/0"
+  },
+  "sourceJustification": "NTAD is the live distribution path for FRA NARN (same lineage, July 21 2026 vintage). FRA direct MapServer (fragis.fra.dot.gov) returned HTTP 500 'Service not started' on all recon probes — unusable for a writer. TxDOT TRIMSRR (maps.dot.state.tx.us) is Texas-only (breaks statewide-uniform OZ pattern), carries 13,155 RailMacro segments vs 16,522 NTAD TX segments, and lacks the NET status taxonomy (abandoned/removed/trail) in one field. NTAD adds companion NTAD_Railroad_Grade_Crossings for at-grade exposure. Licence: US government work (17 U.S.C. § 101), unrestricted public use per NTAD copyrightText.",
+  "rejectedSources": {
+    "fraDirectNarn": {
+      "reason": "fragis.fra.dot.gov ArcGIS REST returned 500 Service not started at recon time; NTAD carries the same NARN with working FeatureServer."
+    },
+    "txdotTrimsrr": {
+      "reason": "Texas-only TRIMS planning layer (13,155 RailMacro polylines); fewer segments than NTAD TX (16,522), no nationwide uniformity, macro/micro scale split not aligned to buyer proximity question at 1:24k NARN resolution."
+    }
+  },
+  "licence": "USDOT/BTS NTAD — US government work, 17 U.S.C. § 101, unrestricted public use",
+  "updateCadence": "NTAD metadata reports dataLastEditDate 2026-07-21 (FRA-sourced NARN refresh); query via ArcGIS REST with maxRecordCount 2000 pagination.",
+  "statewideCompletenessProbe": {
+    "texasNarnSegments": 16522,
+    "texasGradeCrossings": 16102,
+    "texasAbandonedNetA": 123,
+    "texasRemovedNetR": 112,
+    "texasRailTrailNetT": 0,
+    "note": "Rail-trail (NET=T) is zero statewide in NTAD at recon time — CP2 weakness documented honestly."
+  },
+  "bufferMeters": 152.4,
+  "bufferJustification": "500 feet (152.4 m) parcel-edge buffer. Typical railroad ROW is 50–100 ft; FRA quiet-zone and horn-audibility studies use quarter-mile (~402 m) around at-grade crossings — 500 ft captures adjacency/ROW encumbrance and crossing exposure without claiming full horn audibility radius. Matches on-vs-near discipline (buffer-intersect on parcel edge, not centroid-in-polygon). Value is stored on every atom body as bufferMeters.",
+  "contractVersion": "1.17.0",
+  "prUrls": [
+    "https://github.com/empressaioemail-tech/hauska-atom-contract/pull/16",
+    "https://github.com/empressaioemail-tech/hauska-engine/pull/299"
+  ],
+  "liveSourceProbe": {
+    "county": "48021",
+    "narnSegmentCount": 55,
+    "gradeCrossingCount": 159,
+    "abandonedOrTrailCount": 0,
+    "sourceVintage": "2026-07-21"
+  },
+  "dryRun": {
+    "48021": {
+      "mode": "dry-run",
+      "limit": 200,
+      "corridorsFetched": 55,
+      "crossingsFetched": 159,
+      "wouldWriteTotal": 200,
+      "wouldWritePresentNear": 21,
+      "wouldWritePresentOutside": 179,
+      "wouldWriteAbsent": 0,
+      "errors": 0,
+      "wallMs": 20519
+    },
+    "48113": {
+      "mode": "dry-run",
+      "limit": 200,
+      "corridorsFetched": 850,
+      "crossingsFetched": 783,
+      "wouldWriteTotal": 200,
+      "wouldWritePresentNear": 16,
+      "wouldWritePresentOutside": 184,
+      "wouldWriteAbsent": 0,
+      "abandonedOrTrailInCountyIndex": 2,
+      "errors": 0,
+      "wallMs": 11995
+    }
+  },
+  "verification": {
+    "typecheck": "PASS (pnpm -w typecheck exit 0)",
+    "tests": {
+      "atom-contract": "271 passed (vitest run exit 0)",
+      "hauska-engine-atoms": "183 passed",
+      "hauska-engine-rail-corridor": "7 passed (plan + geo unit tests)",
+      "hauska-engine-property-fact-writers": "26 passed (atoms package)"
+    },
+    "apply": "NOT RUN — atoms bulk slot not held; dry-run only per dispatch"
+  },
+  "ciConclusion": "CONTRACT PR #16 — CI re-run after readonly-array test fix (prior fail: TS2345 on createRailCorridorFact). ENGINE PR #299 — install blocked until @empressaio/atom-contract@1.17.0 publishes to npm (expected sequencing; local typecheck + targeted tests PASS).",
+  "adversarialReview": {
+    "CP1_sourceChoice": {
+      "prompt": "Is TxDOT TRIMSRR or live FRA MapServer actually better than NTAD?",
+      "verdict": "REFUTED for v1",
+      "evidence": "FRA direct service down (500). TxDOT is TX-only with fewer segments and no NET abandoned/trail taxonomy. NTAD is the NGDA distribution with working REST + grade-crossing sibling layer + nationwide uniformity."
+    },
+    "CP2_abandonedAndRailTrailCoverage": {
+      "prompt": "Abandoned corridors and rail-trails are where this data is worst — probe exactly there.",
+      "verdict": "PARTIAL — honest limits documented",
+      "evidence": "Statewide NET=T count is 0 in NTAD TX (rail-trail not represented). Abandoned A+R totals 235 segments statewide; Dallas 48113 index shows 2 abandoned/trail segments vs 850 active index rows; Bastrop 48021 shows 0 abandoned/trail in county index. Grade-crossing point layer (159 Bastrop / 783 Dallas) partially covers at-grade exposure independent of corridor NET status. Writer does not claim completeness on abandoned/trail — emits nearest corridor status when nearRailCorridor=true."
+    }
+  },
+  "worktrees": {
+    "contract": "P:/tmp/rail-corridor-contract-wt (branch feat/rail-corridor-fact-1.17.0)",
+    "engine": "P:/tmp/rail-corridor-wt (branch feat/rail-corridor-rail)"
+  }
+}
