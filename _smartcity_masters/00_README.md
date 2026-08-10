@@ -2,7 +2,7 @@
 id: smartcity_masters_readme
 title: SmartCity category masters — the reference set
 status: active
-last_updated: 2026-08-07
+last_updated: 2026-08-10
 applies_to: smartcity
 owner: nick
 purpose: Index and authority statement for the SmartCity category masters. These four documents are the corrected, current definition of the SmartCity product line. They are the reference set that other docs are weighted and corrected against in the doc reconciliation pass — not the other way around.
@@ -61,7 +61,15 @@ Three categories, on one foundation. Everything is built from **smart sites** �
 
 1. **The peer-recommendation line** — generate candidates against the constraints in doc 35. The line itself is the one piece of positioning still open.
 2. **Smart reports** — mentioned only, deliberately not defined this session. Two are live in the property surface: the smart site X-ray and the flood and drainage study. Bastrop's deployment carries more that become library material on rebuild. Do not enumerate beyond the two live ones.
-3. **Government pricing tiers** — an operator decision gating every pricing-bearing artifact.
+3. **Population banding** — the entry price list is set (below); bands for larger cities are owed once there is calibration beyond Bastrop.
+
+## Pricing — SET 2026-08-10
+
+The government list price, the launch gate carried since 2026-06-07, is **set**. Entry prices for a minimum viable deployment at the smallest city band, submitted to Vertosoft as MSRP on 2026-08-10: Dashboards $65,000, Plan Review $42,000, Asset Management $52,000, Smart Files $25,000, Full Program $150,000; annual subscription at 25% of deployment; plus expansion, services and support lines.
+
+Basis, anchors and open items: [Pricing/00_pricing_basis.md](Pricing/00_pricing_basis.md). Submitted workbook: `Pricing/SmartCityOS_PriceList_Vertosoft_2026-08-10.xlsx`.
+
+Standing discipline unchanged: never quote from the list in a customer conversation without the operator, and no cycle-time or savings figure ever accompanies a price.
 
 ## Reconciliation debt these masters create
 

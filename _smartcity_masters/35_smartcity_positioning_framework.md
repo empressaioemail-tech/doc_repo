@@ -2,7 +2,7 @@
 id: 35_smartcity_positioning_framework
 title: SmartCity positioning framework
 status: active
-last_updated: 2026-08-01
+last_updated: 2026-08-10
 applies_to: smartcity
 owner: nick
 related: [31_smartcity_dashboards, 32_smartcity_asset_management, 33a_smartcity_plan_review, 34_smartcity_smart_files_and_foundation, 42_stub_thesis_national_twin_substrate, Master Collateral Folder/2026-07-31_smart_site_smart_city_positioning]
@@ -99,7 +99,9 @@ The comparisons a buyer will raise: Palantir (big government, priced for it), Ty
 
 ## Open
 
-The peer-recommendation line itself, to be generated against the constraints above. Government pricing tiers, which gate every pricing-bearing artifact. Whether "Smart Files" survives contact with cities.
+The peer-recommendation line itself, to be generated against the constraints above. Population banding above the smallest-city entry band. Whether "Smart Files" survives contact with cities.
+
+Pricing is no longer a gate: entry prices were set and submitted to Vertosoft 2026-08-10 ([Pricing/00_pricing_basis.md](Pricing/00_pricing_basis.md)). Pricing-bearing collateral is unblocked, subject to the standing rule that a rep never quotes without the operator.
 
 ## Revision history
 

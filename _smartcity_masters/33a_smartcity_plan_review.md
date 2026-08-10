@@ -2,7 +2,7 @@
 id: 33a_smartcity_plan_review
 title: SmartCity Plan Review — category master
 status: active
-last_updated: 2026-08-01
+last_updated: 2026-08-10
 applies_to: smartcity
 owner: nick
 related: [30_smartcity_os, 31_smartcity_dashboards, 32_smartcity_asset_management, 48_cortex_reporting_plan_review_spec, 75n_icc_code_connect_catalog, 41_three_wedge_spine_strategy, 42_stub_thesis_national_twin_substrate, 47_codex_plan_review]
@@ -187,7 +187,7 @@ Every claim a design agent may print, with its source. A claim not in this table
 5. **Contractor-firm channel.** Out of scope here; needs its own framing pass if revived, not a revival of the host-tool-invited architecture.
 6. **Smart reports library.** A separate cross-category artifact, owed. Two reports are live in the property surface (smart site X-ray, flood and drainage study); Bastrop's SmartCity deployment carries a further set that becomes library material on rebuild. Do not enumerate beyond the two live ones until that artifact exists.
 7. **Reports Center is marketed ahead of build.** In the deployed SmartCity code, the Reports Center lists 21 named reports whose download handler emits a fixed text template rather than generating anything, and `QUICK_REPORTS_GUIDE.md` in that repo documents six of them with illustrative KPI tables and claims PDF download the code does not produce. Same class of problem as the retired GovTitle name. Establish whether that guide has been shown to any city or channel partner, and decide its disposition in the rebuild. Recorded 2026-08-01; not a focus of this pass.
-8. **Pricing.** Government pricing tiers remain an operator decision gating pricing collateral.
+8. **Pricing. SET 2026-08-10** — Plan Review entry deployment $42,000, annual $10,500, at the smallest city band. Basis and open items in [Pricing/00_pricing_basis.md](Pricing/00_pricing_basis.md). The outsourced-review comparables that make this defensible ($250K–$830K/yr fully outsourced building departments) remain context for the buyer's problem, never our result and never attached to a customer. Never quote without the operator.
 
 ## Revision history
 

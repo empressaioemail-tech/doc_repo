@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/smartcity-os-design-system-3a534cb1-d010-4e16-949e-5727d80f18df/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/smartcity-os-design-system-3a534cb1-d010-4e16-949e-5727d80f18df/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/smartcity-os-design-system-3a534cb1-d010-4e16-949e-5727d80f18df/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/smartcity-os-design-system-3a534cb1-d010-4e16-949e-5727d80f18df/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/smartcity-os-design-system-3a534cb1-d010-4e16-949e-5727d80f18df/styles.css">
+  <script src="_ds/smartcity-os-design-system-3a534cb1-d010-4e16-949e-5727d80f18df/_ds_bundle.js"></script>
+  <script src="./doc-page.js"></script>
+  <style id="__om-edit-overrides"></style>
+  <style>
+    doc-page:not(:defined){visibility:hidden}
+    a{color:#0A0E1A}
+    a:hover{color:#E8963B}
+    .wp-h2{font-family:'Oxygen',sans-serif;font-weight:700;font-size:20px;color:#1A3A5C;margin:32px 0 12px;break-after:avoid}
+    .wp-num{color:#E8963B;margin-right:10px}
+    .wp-p{font-family:'Inter',sans-serif;font-size:14px;line-height:1.75;color:#334155;margin:0 0 15px}
+    .wp-li{font-family:'Inter',sans-serif;font-size:14px;line-height:1.75;color:#334155;margin-bottom:10px}
+    .wp-strong{color:#1A3A5C;font-weight:700}
+    code{font-family:'Menlo',monospace;font-size:12.5px;background:#F1F5F9;color:#0A0E1A;padding:1px 5px;border-radius:4px}
+  </style>
+</helmet>
+
+<doc-page margin="0.9in">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;border-bottom:2px solid #0A0E1A;margin-bottom:8px">
+    <div style="font-family:'Oxygen',sans-serif;font-weight:700;font-size:15px;letter-spacing:0.04em;color:#1A3A5C">SMARTCITY OS</div>
+    <div style="font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748B">Technical White Paper · v3 · August 2, 2026</div>
+  </div>
+
+  <div style="display:inline-block;background:rgba(232,150,59,0.12);color:#E8963B;font-family:'Inter',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:5px 12px;border-radius:4px;margin:24px 0 16px">Technical Edition · Engineering / Integration / Diligence</div>
+
+  <h1 style="font-family:'Oxygen',sans-serif;font-weight:700;font-size:34px;line-height:1.12;color:#1A3A5C;margin:0 0 6px">SmartCity OS Architecture</h1>
+  <h2 style="font-family:'Oxygen',sans-serif;font-weight:300;font-size:20px;color:#0A0E1A;margin:0 0 28px">A Technical White Paper</h2>
+
+  <div style="border:1px solid #E2E8F0;border-left:4px solid #E8963B;border-radius:0 6px 6px 0;padding:16px 20px;margin-bottom:26px;background:#FAFBFC;break-inside:avoid">
+    <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#E8963B;margin-bottom:8px">Audience Note</div>
+    <p style="font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.7;color:#475569;margin:0">This paper is written at the internal technical altitude and uses vocabulary that is deliberately absent from customer-facing material. It is for engineers, integration partners, and technical diligence. It is not a document to hand to a city, and its language is not a source for market copy. Buyer-facing language lives in the Market White Paper.</p>
+  </div>
+
+  <h3 class="wp-h2" style="margin-top:0"><span class="wp-num">0</span>Scope</h3>
+  <p class="wp-p">This paper describes the architecture of SmartCity OS: the data contract every component reads and writes against, the assembly and reasoning pipeline, the three systems a city runs on top of that foundation (Dashboards, Plan Review, Asset Management), the guarantees the system makes and the gates that enforce them, the trust and access model, and the verification and settlement substrate that sits beside it. It states tradeoffs and known limits explicitly. Where a capability is partial, this paper says so.</p>
+  <p class="wp-p">One framing point up front, because it determines how everything else reads. SmartCity OS is the system a city buys. Underneath it, the unit of composition is the smart site: a single addressable place, represented by the complete, reconciled, provenance-carrying set of records that govern it. A smart city is a community's worth of smart sites connected into one substrate. The smart site is not a product sold alongside the three systems; it is what the three systems are built from, and it is the reason they agree with each other instead of drifting apart the way three independent products would.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">1</span>Design invariants</h3>
+  <p class="wp-p">The architecture is governed by a small set of invariants. Every component, the foundation and all three systems built on it, is built to satisfy them; violations are treated as defects, not degradations.</p>
+  <ol style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li"><span class="wp-strong">Provenance is intrinsic, not attached.</span> Every fact carries its source, an access policy, a confidence signal, and a timestamp as part of its type. There is no code path that produces a fact without them.</li>
+    <li class="wp-li"><span class="wp-strong">Correctness is verified, not asserted.</span> Computed outputs (buildable envelopes, flood depth, edge roles, plan-review determinations) pass mechanical verification gates before they are promoted to serving. A plausible answer that has not passed its gate is not served.</li>
+    <li class="wp-li"><span class="wp-strong">The system fails honestly.</span> Where governing data is absent, conditional, or in conflict beyond a resolvable rule, the system declines with a stated reason rather than fabricating a scalar. Honest-decline is a first-class output, not an error.</li>
+    <li class="wp-li"><span class="wp-strong">Currency is verified, not trusted.</span> A record's claim to be current is not accepted on its label. Edition, parcel, and layer currency are independently checked; a superseded edition or re-platted parcel is detected and surfaced, never silently served.</li>
+    <li class="wp-li"><span class="wp-strong">One truth, two doors.</span> Human and agent consumers resolve identical facts through a shared reasoning layer. The interface differs; the truth does not.</li>
+  </ol>
+  <p class="wp-p">These are not aspirations. Sections 5 and 7 describe the gates and checks that enforce them.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">2</span>The data contract: the atom</h3>
+  <p class="wp-p">The foundational primitive is the atom: a typed unit of fact. An atom is not a row; it is a fact with an enforced shape. The contract defines:</p>
+  <ul style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li"><span class="wp-strong">A discriminated type</span> (data atoms, execution and procedure atoms, actor atoms, and additional families including encumbrances and workspace) with a validated schema per type. Widening or malforming a type is rejected at registration, enforced at the type layer.</li>
+    <li class="wp-li"><span class="wp-strong">Provenance fields</span> carried on every atom: <code>source</code> (a citation to the originating record or computation), <code>confidence</code>, <code>timestamp</code> and verification state, and an <code>accessPolicy</code>.</li>
+    <li class="wp-li"><span class="wp-strong">An accessPolicy</span> drawn from a fixed five-value union (<code>public-free</code>, <code>public-paid</code>, <code>platform-internal</code>, <code>tenant-private</code>, <code>tenant-shared</code>) that governs who may resolve the atom. Access control is a property of the fact, not a wrapper around it.</li>
+    <li class="wp-li"><span class="wp-strong">Rendering modes</span> and a context interface, so the same atom can present inline, compact, expanded, or as machine context for an agent, from one definition.</li>
+  </ul>
+  <p class="wp-p">Atoms compose into nodes and node-graphs. This is the contract every system in SmartCity OS reads and writes against: a Dashboards lens, an Asset Management record, and a Plan Review adjudication are all atoms and nodes on the same graph, which is why a change in one is visible everywhere it is relevant.</p>
+  <p class="wp-p">The contract is deliberately separated from monetization. The typed-data layer (what makes something an atom) and the verification and payment layer (what monetizes an atom once it exists) are peer substrates with no runtime dependency between them, so a system can enumerate and render atoms without inheriting the commerce stack.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">3</span>The smart site: the unit of composition</h3>
+  <p class="wp-p">A smart site is a single addressable place (a parcel, a right-of-way, a structure, a point) represented as a node-graph: a canonical place with its governing atoms attached, each addressable and each carrying its own provenance. Property lines, zoning, setbacks, flood risk, terrain, codes, and utilities each attach as atoms on that node, keyed to the same place.</p>
+  <p class="wp-p">The structural consequence is the one that matters for this architecture. A parcel node underneath a Dashboards lens, an Asset Management record, and a Plan Review determination is the same node in all three cases. The three systems do not integrate with each other; they resolve against a shared graph. There is no synchronization step to get wrong.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">4</span>Assembly: joining incompatible records to one place</h3>
+  <p class="wp-p">Assembly is the ingestion pipeline that turns fragmented external records into a smart site's node-graph. It is the hardest part of the system and the least glamorous, and it runs once per place, underneath all three systems, rather than once per system.</p>
+  <p class="wp-p">It is worth being direct about where the difficulty is, because the market consistently misplaces it. The value is not in the visualization. A three-dimensional model, a tilted map, and a sensor overlay are well-understood engineering that anyone with the underlying structure can render. The unsolved problem at scale is the assembly: joining incompatible records to one canonical place, reconciling their disagreements by a defensible rule, detecting when any of them has gone stale, computing a correct answer from them, and doing all of it with provenance intact.</p>
+  <p class="wp-p"><span class="wp-strong">Adapters.</span> Each external source class has an adapter that normalizes its records into the atom contract: county and appraisal-district GIS parcels, city zoning layers, FEMA flood, terrain (statewide lidar DTM), building and development codes (from code libraries, direct PDFs, and licensed channels), utilities, and permit records. Adapters emit contract-conformant atoms with source citations intact. Adapters that cannot programmatically reach a source (bot-blocked platforms, credentialed APIs) are handled by dedicated retrieval paths or flagged as manual and partnership dependencies, never silently dropped.</p>
+  <p class="wp-p"><span class="wp-strong">Canonical keying.</span> External records use incompatible identifiers. Assembly resolves them to one canonical place key (county FIPS plus parcel identifier, and geometry for spatial resolution), so that a zoning layer, a flood panel, and a code section all attach to the same node. Where a parcel has been re-platted, the successor set is resolved and the retired identifier is marked superseded rather than left to resolve stale.</p>
+  <p class="wp-p"><span class="wp-strong">Conflict reconciliation.</span> A jurisdiction frequently publishes conflicting versions of the same standard, and a naive system silently picks one and is wrong half the time. The reconciliation rule is explicit and defensible: the record a reviewer actually applies governs the served value; the conflicting source is retained and cited as a disclosed second source. The system draws from one and discloses the other; it never silently picks and hides the conflict.</p>
+  <p class="wp-p"><span class="wp-strong">Currency verification (the anti-staleness gate).</span> Assembly does not trust a source's current label. It cross-checks a code library's current-edition claim against the jurisdiction's own adoption and repeal record; it verifies that a served edition is not repealed; it confirms a parcel still exists in the current cadastral. A repealed code, a superseded edition, or a re-platted parcel is detected and the affected atoms are made unservable (honest-decline) rather than served as fact. This gate exists because records go stale adversarially: a code is repealed but still published as current, a parcel is re-platted but the old identifier still resolves, and a system that trusts the label ships repealed law as fact.</p>
+
+  <h3 class="wp-h2" style="break-before:page"><span class="wp-num">5</span>Reasoning: from atoms to verified answers</h3>
+  <p class="wp-p">A record store returns atoms. SmartCity OS returns computed, verified answers. The reasoning engine is where atoms become a Dashboards figure, an Asset Management condition read, or a Plan Review determination. The distinction is load-bearing: "the zoning is SF-1" is a lookup, while "the buildable envelope on this lot, after setbacks, drawn correctly" is a computed product that must be right on irregular lots and provably correct rather than plausibly correct.</p>
+  <p class="wp-p"><span class="wp-strong">The buildable envelope, as a worked example.</span> The pipeline:</p>
+  <ol style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li"><span class="wp-strong">Boundary primitive.</span> The parcel ring is scrubbed (collinear and degenerate cleanup) and reduced to a boundary node-graph: per-edge geometry, an inward normal per edge, and an edge role. The primitive is computed once against a specific ring and is winding-order-dependent; a swapped ring must have its primitive recomputed, not reused.</li>
+    <li class="wp-li"><span class="wp-strong">Edge-role labeling.</span> Each edge is labeled (front, side, corner-side, rear, alley) from road association. The front edge is resolved by matching the parcel's situs street to an adjacent road, falling back to a proximity heuristic only within a real distance threshold. Pedestrian ways are ineligible for frontage by a shared denylist.</li>
+    <li class="wp-li"><span class="wp-strong">Setback resolution.</span> Each edge receives the setback for its role from the authoritative per-parcel record. A known district and role always resolves to a value; where a jurisdiction defers an axis to building or fire code, the citable code minimum applies. Genuinely conditional standards decline honestly on that axis while the resolvable edges still draw.</li>
+    <li class="wp-li"><span class="wp-strong">Inset.</span> The parcel ring is inset per edge along each edge's inward normal, in a metric frame, producing the buildable polygon.</li>
+    <li class="wp-li"><span class="wp-strong">Verification gate.</span> Before promotion, the envelope passes mechanical gates: the inset ring is non-null, non-self-intersecting, contained in the lot, and positive-area; the per-edge inset matches the resolved setback on the correct edge; and, on a near-rectangular lot, the inset is convex with matching vertex topology. Only an envelope that passes is promoted.</li>
+  </ol>
+  <p class="wp-p">This pattern (compute, verify mechanically against ground truth, promote only on pass) generalizes across every reasoning output in the platform: flood depth against real terrain, compliance reads against cited code sections, and a Plan Review determination against the same city's adopted corpus.</p>
+  <p class="wp-p"><span class="wp-strong">Persisted state must equal recompute.</span> Promoted outputs are cached for serving. A re-warm that leaves stale persisted state disagreeing with a fresh recompute is a defect; certification asserts <code>persisted == recompute</code>.</p>
+  <p class="wp-p"><span class="wp-strong">Why this is the durable asset.</span> Records can be copied and code can be reimplemented. A reasoning layer that is cited, calibrated against real outcomes, and improving with every real decision it sees, including every adjudication a Plan Review reviewer records, is the part that compounds. Calibration is sparse early; the commitment is that the earning loop is live and that confidence carries provenance and verification state rather than being asserted bare.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">6</span>The three systems on the substrate</h3>
+  <p class="wp-p">Dashboards, Asset Management, and Plan Review are not three separate products bolted together. They are three distinct query and write patterns against the same substrate described above.</p>
+  <ul style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li"><span class="wp-strong">Dashboards</span> is a lens family: each view is a query against the shared node-graph, scoped by <code>accessPolicy</code> at resolution (ADR-017). Adding a department is defining a new lens, not standing up a new system, because the permission boundary is a property of the atom rather than a wall between applications. This is also why a resident-facing view and a police-facing view can sit on the same records.</li>
+    <li class="wp-li"><span class="wp-strong">Asset Management</span> twins a city's physical reality into the node-graph: an asset is a node carrying geometry, type, condition, provenance, and access policy, attached to the road, parcel, and flood-zone nodes around it. Live state is telemetry atomized by default, source-agnostic by construction: a connected reading becomes a record on the node rather than a value rendered and discarded. The rendering tier, including 3D, is deliberately last and carries no delivery commitment.</li>
+    <li class="wp-li"><span class="wp-strong">Plan Review</span> writes adjudications back as atoms: a reviewer's determination on a code section is a record attached to the place, citable, timestamped, and carrying the reviewer's override and reasoning. This write-back is what lets the reasoning layer's confidence signal earn its calibration over time, per invariant 1. The system proposes and cites; the reviewer decides. Nothing in the architecture approves, permits, or certifies.</li>
+  </ul>
+  <p class="wp-p">Smart Files is the customer-facing face of the atom contract's workspace family: a document is an atom with attachments, folders are nodes, and a document referenced in many places is one record with many relationships rather than many copies, which is what makes revise-once-current-everywhere a structural property rather than a sync job. History is kept by default across the substrate, so a superseded ordinance, a prior condition assessment, and last year's decision all remain retrievable.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">7</span>The certification harness: grading against ground truth</h3>
+  <p class="wp-p">Correctness claims are not accepted on report. The certification harness grades the <em>served</em> product, what the deployed application actually renders, against authoritative ground truth, per place, per field.</p>
+  <p class="wp-p">For a defined area (a block, extensible to a jurisdiction), the harness sweeps every parcel that renders in the customer's view, not a curated list but the rendered set, and for each asserts: correct district, setbacks matching the authoritative record, the drawn envelope's per-edge inset matching the resolved setback on the correct edge, currency (no repealed edition, no superseded parcel), and no silently-blank or declined-in-error output. A single failing parcel fails the area.</p>
+  <p class="wp-p">Two properties make the harness trustworthy: it grades what renders, so a parcel visible to a customer but absent from an internal list cannot hide, and it measures in the same frame the engine computes in. Sampling a few subjects is explicitly not sufficient; area sweep is the unit. A parallel human review remains a named step, and each catch becomes a new assertion. This dual gate is the unit of trust that lets a place be certified before it is scaled.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">8</span>The dual interface</h3>
+  <p class="wp-p">The same reasoning layer is exposed through two interfaces:</p>
+  <ul style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li"><span class="wp-strong">A human application</span> presents each system, Dashboards, Plan Review, and Asset Management, as an interactive surface, with any answer, layer, or report resolvable and its citation reachable on tap.</li>
+    <li class="wp-li"><span class="wp-strong">A programmatic agent interface</span> exposes the reasoning functions as agent-callable tools, gated by product key at call time and metered, returning the same atoms with the same provenance and confidence. The agent surface exposes only functions a live application has proven.</li>
+  </ul>
+  <p class="wp-p">Both consume the atom contract directly; the contract is the shared substrate. Net-new surfaces are designed agent-first with the human interface second; existing UI-first surfaces carry the agent retrofit as a tracked roadmap item.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">9</span>Trust and access: sovereignty as structure</h3>
+  <p class="wp-p">A durable data layer for the physical world cannot work if it requires its participants to surrender their data into a common pool. Cities will not, and should not, hand their operational records to a vendor who resells them.</p>
+  <p class="wp-p">The model is therefore structural rather than contractual. Access control is enforced at the atom, via <code>accessPolicy</code>, at resolution time. Public-tier atoms pool freely into the shared layer and into public-code calibration. A tenant's private atoms, a city department's records, a company's internal data, a specific adjudication, are isolated to that tenant and the parties it authorizes, and never pool into a shared or public asset. This also defines the calibration boundary: the reasoning layer improves from anonymous and public-tier signal and does not learn from, or leak, tenant-private decisions.</p>
+  <p class="wp-p"><span class="wp-strong">State note.</span> This is the enforced target and the mechanism is in the contract, gated on the tenancy and auth build. A reader doing diligence should verify present-tense isolation against the running system rather than against this paper.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">10</span>The verification and settlement substrate</h3>
+  <p class="wp-p">Beside the reasoning layer sits a verification and payment substrate that operates over atom-shaped assets:</p>
+  <ul style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li"><span class="wp-strong">Verifiable assets and attestation.</span> The substrate wraps atoms as verifiable digital assets with an event-anchoring hash chain: a signed, content-addressed proof of a fact's state at a point in time. This proof is durable and portable, verifiable without a chain and anchorable to one where a downstream consumer requires it. How far the system goes beyond substrate toward an attestation-to-chain bridge is an open decision, not a shipped capability.</li>
+    <li class="wp-li"><span class="wp-strong">Metering and settlement.</span> Consumption is metered at the gate. An inbound per-reference meter accrues obligations to licensed sources on an append-only ledger against a source-actor identity. <em>State note: the metering pipe and inbound accrual are live; per-reference rate-setting and outbound revenue-routing are the remaining implementation, activated by the first licensed-source customer.</em> A crypto and fiat settlement rail (stablecoin on multiple chains, plus a fiat-native provider) underlies payment.</li>
+  </ul>
+  <p class="wp-p">The substrate is a peer to the reasoning layer, not a dependency of it: a system consumes the contract and reasoning directly, and consumes the settlement substrate only where verifiable monetization or attestation is required.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">11</span>Scale: producing places in parallel</h3>
+  <p class="wp-p">A single jurisdiction is assembled by a warm pipeline (assemble, compute, verify, promote). Scale is an orchestration problem rather than an algorithmic one, because places are embarrassingly parallel: one jurisdiction's assembly is independent of another's.</p>
+  <p class="wp-p">The scale architecture is isolated-regenerate-then-swap. Each jurisdiction (giants sharded by offset windows) is assembled into an isolated store, verified by the certification gates, and only then atomically swapped into a partitioned serving store. This makes re-warming a first-class, live-data-safe operation: a jurisdiction regenerates in isolation, is verified, and swaps in only if it passes, so a bad regeneration never touches live data. Terrain is the exception that proves the rule, a single continuous statewide source rather than a per-jurisdiction grind, handled as one additive artifact.</p>
+  <p class="wp-p">The economic constraint on this is explicit and is treated as a kill criterion rather than a target: onboarding a new jurisdiction must stay under a defined compute and human-review budget, and an onboarding that exceeds it is flagged for engineering review rather than absorbed.</p>
+
+  <h3 class="wp-h2"><span class="wp-num">12</span>Known limits and honest state</h3>
+  <ul style="margin:0 0 15px;padding-left:20px">
+    <li class="wp-li">Atom families beyond the current set (skill and behavior atoms, some intent atoms) are architected but staged.</li>
+    <li class="wp-li">The settlement substrate's outbound revenue-routing and per-reference rate-setting are the remaining build on an otherwise-live metering pipe.</li>
+    <li class="wp-li">Conditional and contextual standards that no per-axis scalar can hold are honest-declined by design rather than modeled; extending the model to represent them is future work.</li>
+    <li class="wp-li">Live-sensor and IoT layers on infrastructure twins are a gated extension whose availability depends on a city granting the feed, distinct from the static-record assembly that is the base layer.</li>
+    <li class="wp-li">Content-addressed distributed storage is the target for record portability; identifiers are already carried, and initial deployment is on managed cloud infrastructure. Portability is structural today, not operational.</li>
+    <li class="wp-li">Licensed model-code content is governed by its publisher agreement, carries a restricted access policy, and is not displayed customer-facing before the relevant agreement is executed.</li>
+    <li class="wp-li">Corpus, jurisdiction, and tool counts change continuously and are deliberately not stated in this paper. Verify them against live state.</li>
+  </ul>
+  <p class="wp-p">The architecture's central discipline is that these limits are surfaced, not hidden: the system declines where it cannot answer, flags where a source conflicts, and refuses to serve what it cannot verify. That discipline, mechanical honesty, is what makes a verifiable data layer for the physical world trustworthy enough for a city to run three systems on top of it.</p>
+
+  <div style="margin-top:24px;padding-top:16px;border-top:1px solid #E2E8F0;font-family:'Inter',sans-serif;font-size:11px;color:#94A3B8;display:flex;justify-content:space-between">
+    <span>Owner: Nick</span>
+    <span>Technical Edition · v3</span>
+  </div>
+
+</doc-page>
+
+</x-dc>
+</body>
+</html>

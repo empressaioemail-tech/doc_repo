@@ -2,7 +2,7 @@
 id: 31_smartcity_dashboards
 title: SmartCity Dashboards — category master
 status: active
-last_updated: 2026-08-01
+last_updated: 2026-08-10
 applies_to: smartcity
 owner: nick
 related: [30_smartcity_os, 32_smartcity_asset_management, 07a_smartcity_product_positioning, 41_three_wedge_spine_strategy, 42_stub_thesis_national_twin_substrate, _sales/03_smartcity_os, Master Collateral Folder/2026-07-31_smart_site_MARKET_white_paper]
@@ -162,7 +162,7 @@ Every claim a design agent may print, with its source. A claim not in this table
 2. **Compass AI placement.** The assistant surface (`30_smartcity_os.md`) is not resolved into the four-category model. Working assumption is that it is the conversational door onto the storage layer rather than a category; to be settled in the storage-layer master.
 3. **Ambient capture.** Positioned in `07a` as a fourth surface bundled into the OS ("it learns your city"). Under the four-category model it is a property of the storage layer, not a surface. To be settled in the storage-layer master.
 4. **Fleet boundary.** Vehicles are assets under Asset Management and also appear as a fleet lens here. The same-record-everywhere principle covers it; whether fleet leads as a lens or as an asset class in collateral is unsettled.
-5. **Pricing.** Government pricing tiers remain an operator decision gating the pricing portions of all channel collateral.
+5. **Pricing. SET 2026-08-10** — Dashboards entry deployment $65,000, annual $16,250, additional department dashboard $12,000, at the smallest city band. Basis and open items in [Pricing/00_pricing_basis.md](Pricing/00_pricing_basis.md). Population banding above the entry band is still owed. Never quote without the operator.
 
 ## Revision history
 

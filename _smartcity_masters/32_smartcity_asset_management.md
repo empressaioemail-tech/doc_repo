@@ -2,7 +2,7 @@
 id: 32_smartcity_asset_management
 title: SmartCity Asset Management — category master
 status: active
-last_updated: 2026-08-01
+last_updated: 2026-08-10
 applies_to: smartcity
 owner: nick
 related: [30_smartcity_os, 07a_smartcity_product_positioning, 41_three_wedge_spine_strategy, 42_stub_thesis_national_twin_substrate, 27c_road_node_engine_and_warm_digital_twin_spec, 2026-07-31_tier3_municipal_wedge_thesis_frame, 2026-07-27_bastrop_composition_inventory, Master Collateral Folder/2026-07-31_smart_site_TECHNICAL_white_paper]
@@ -167,7 +167,7 @@ Every claim a design agent may print, with its source. A claim not in this table
 1. **Repeatable engagement shape.** Scoping, pricing, and delivery model for custom-build as a repeatable offering rather than bespoke consulting. Owed on both the municipal side (this category) and the commercial side (Mox-class), per `41_three_wedge_spine_strategy.md` open item 1.
 2. **Durable-record naming.** Capability described plainly; a name may be set once it has been seen in practice. GovTitle retired and not to be reused.
 3. **Chain-bridge boundary.** Substrate-only versus substrate-plus-attestation-bridge remains undecided per `41_three_wedge_spine_strategy.md` open item 2. Until decided, collateral claims the durable record and nothing beyond it.
-4. **Pricing.** Government pricing tiers remain an operator decision gating the pricing portions of all channel collateral (`07a_smartcity_product_positioning.md`).
+4. **Pricing. SET 2026-08-10** — Asset Management entry deployment $52,000, annual $13,000, at the smallest city band. That figure is a FLOOR for a minimum viable deployment, not the price to twin a city's whole asset base; the category is delivered as a build and anything beyond the minimum prices through professional services at $250/hr. Basis and open items in [Pricing/00_pricing_basis.md](Pricing/00_pricing_basis.md). Never quote without the operator.
 
 ## Revision history
 
