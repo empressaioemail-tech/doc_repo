@@ -1,0 +1,60 @@
+---
+id: portfolio_thesis_readme
+title: Portfolio thesis — the reference set
+status: active
+last_updated: 2026-08-10
+applies_to: portfolio
+owner: nick
+purpose: Index and authority statement for the portfolio thesis. The frame that unifies Smart Site, Smart City, Property Watch and custom builds into one layer with several doors. The reference set the portfolio docs reconcile against.
+---
+
+# Portfolio thesis
+
+Ratified in the strategy discussion of 2026-08-10. **This folder is the reference set.**
+
+## Authority
+
+Where these documents and any other doc in the repo disagree about how the product lines relate to each other, or about what the company is fundamentally building, **these win**. Older portfolio docs were written before the doors were named and in several cases describe a structure that no longer holds.
+
+Isolated from the numbered canon on the same pattern as `_smartcity_masters/` and `_smartsite_masters/`, so the reconciliation pass has a fixed point to correct against.
+
+## The set
+
+| Doc | What it covers |
+|---|---|
+| [01_the_layer_and_the_three_doors.md](01_the_layer_and_the_three_doors.md) | The unifying frame: one layer, twinning as deposit, three doors, selling access, the diagram, what each customer thinks they are buying, and what this supersedes. |
+
+## The frame in one paragraph
+
+We build one public layer of verified truth about physical places. Every addressable place exists on it as a **smart site**, assembled from public record, whether or not anyone buys. That layer is thin until somebody deepens it — and depth arrives as a byproduct of customers getting what they actually came for. **Twinning is a deposit, not a product.** Three doors deposit onto it: **Property Watch** (self-serve; an operator claims a site, captures with a phone, puts named watches on it), **Smart City** (municipal product line), and **Empressa Solutions** (custom services for commercial operators). Access to the layer is sold separately through **Smart Site** to professionals, **Smart City** to municipalities, and the **agent channel** to software.
+
+## Rulings made in session (2026-08-10)
+
+- **The layer is the base and exists without customers.** Smart sites are reconstructed from public record. Not created by a sale.
+- **Twinning is a deposit, not a product.** Nobody buys a twin. They buy the thing they came for; the layer gets deeper.
+- **Property Watch is the name** of the self-serve door. Ratifies the candidate name carried in `65_sensors/positioning_and_brand.md` (2026-08-06). Replaces "Twin your home" as the consumer articulation.
+- **Custom builds are services, not a product line.** Per-engagement, relationship-sold, no list price. Empressa Solutions is the delivery vehicle. This resolves the custom-build framing pass that doc 41 flagged as owed.
+- **Property Watch is the general product to market** on the commercial side. Alan is how it was discovered; Mox is the heavy custom version of the same want.
+- **The two-altitude rule holds unchanged.** Alan pulled hard on the capability and had no idea what a twin was. Interest in the capability is not licence to use the word.
+- **The unit of purchase is the watch, per site, never per sensor.** Carried from the 2026-08-06 offer architecture; per-sensor pricing punishes coverage.
+
+## How to use these
+
+**Reasoning about the portfolio.** Start here, then go to the relevant master set.
+
+**Reconciling other docs.** Correct the other doc, not these.
+
+**Producing collateral.** This folder is internal framing, not a source of customer language. External copy comes from the master sets' approved-claims registers (`_smartcity_masters/`, `_smartsite_masters/`) and from `65_sensors/positioning_and_brand.md` for Property Watch.
+
+## Related reference sets
+
+- [_smartcity_masters/](../_smartcity_masters/00_README.md) — the municipal product line; three categories on one foundation; entry prices set 2026-08-10.
+- [_smartsite_masters/](../_smartsite_masters/00_README.md) — the professional product line.
+- [65_sensors/](../65_sensors/sensor_program_overview.md) — the sensor and watch program; Property Watch positioning, the watch contract, and the Waypoint pilot.
+
+## Owed
+
+1. **Property Watch commercial terms.** Offer architecture ratified 2026-08-06; prices not set.
+2. **Tenant isolation** gates the first private-telemetry customer (sprint 54 tenancy leg). Operator call owed on sequencing.
+3. **The 2026-08-06 sensor session close** — never completed; app UX discussion still owed.
+4. **Reconciliation** of docs 41, 42 and 09 to point at this frame.
