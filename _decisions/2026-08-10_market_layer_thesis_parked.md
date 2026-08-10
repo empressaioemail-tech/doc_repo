@@ -89,3 +89,58 @@ Valerie (partner, eXp Realty) holds MLS credentials — the natural first test w
 ## Explicit non-goals while parked
 
 No build lane. No adapter contract drafted. No MLS vendor applications. No competition with the Texas flush, the five unapplied rails, or the launch gate. This document exists so the thinking survives, not to start work.
+
+---
+
+# Operator amendments 2026-08-10 (both sharpen the honesty mechanics)
+
+## A. Perishable facts need a DECAY MODEL, not just a timestamp
+
+The currency-verification gate we have is built for **editions and re-plats** — slow-moving things where "is this the current edition" is the question and the answer changes on the timescale of ordinances. A zoning district cited to a 2025 adoption is true until repealed, and the repeal is itself a citable public event.
+
+Market facts are not like that. **A listing status is true until it isn't, and it can go stale silently within hours.** No event fires on our side. Nothing gets superseded. It simply becomes wrong.
+
+So the market layer needs a **freshness contract per signal class**, not a shared timestamp field:
+
+- How old is too old **for this class**? A sold price is durable-ish once recorded. An active-listing status is stale in days. A pending status can flip in hours. These are not the same number and must not share one.
+- What does the system **DO** when a market fact exceeds its window? The answer is `honest-decline` on the market layer.
+
+**The property that makes this elegant: the parcel does not go dark, the perishable half just goes quiet.** The durable layer keeps answering — zoning, setbacks, envelope, flood are all still true — while the market layer declines with its reason ("listing status last verified 9 days ago; exceeds the 48-hour freshness window for active-listing"). That is a strictly better failure mode than either serving a stale price or blanking the parcel, and it falls straight out of the durable/market split rather than needing new machinery.
+
+This also means **staleness is a first-class field on the market atom**, sized per `signalKind`, and the freshness window belongs in the adapter contract — not in the consumer.
+
+## B. The interested-party problem is a FEATURE, not a labelling chore
+
+The deeper point: provenance labelling ("a seller asserted this") is table stakes. The real payoff is **reconciliation** — putting the interested party's claim next to the record and disclosing the conflict.
+
+> A listing says 2,400 sq ft. The CAD roll says 1,980.
+
+Both are "facts." One is asserted by someone with an interest in the number being larger. **Nobody else can ship the comparison**, because it requires holding the public record independently of the market feed — which is exactly the durable/market split. Portals hold only the listing side; the CAD holds only the record side; we would hold both keyed to one parcel.
+
+This is the reconciliation rule already in the technical white paper — **draw from one, disclose the other** — applied to a new pair. It should be named explicitly as a product capability, not left implicit in the frame.
+
+### THE CONSTRAINT, measured 2026-08-10 — we mostly cannot do this yet
+
+The comparison requires structural facts on the record side. Verified live against `cad_property` (4,599,477 rows / 15 counties):
+
+| Field | Populated | Share |
+|---|---:|---:|
+| `living_area_sqft` | 483,912 | **10.5%** |
+| `year_built` | 467,141 | 10.2% |
+| `land_acres` | 766,214 | 16.7% |
+
+And it is **not thin-everywhere — it is all-or-nothing per county**:
+
+| County | rows | sqft % |
+|---|---:|---:|
+| Williamson 48491 | 319,480 | **76.9%** |
+| Hays 48209 | 265,852 | **69.3%** |
+| Bastrop 48021 | 77,073 | **52.7%** |
+| Caldwell 48055 | 48,382 | 27.9% |
+| **Bexar / Dallas / Tarrant / Travis / Collin / Denton** | ~3.3M | **0.0%** |
+
+**Root cause found, and it is a source-tier gap rather than a defect.** Counties WITH structural facts were ingested from **direct CAD exports** (`DATA-EXPORT-01.14.2026.zip`, `property.csv`). Counties WITHOUT came from **TxGIO StratMap** (`stratmap25-landparcels_*`), which carries `owner_name` and `market_value` but no building characteristics. Bexar shows 703,258 rows with 697,088 owners, 695,443 market values, and **zero** square footage.
+
+**Consequence for the thesis:** the sq-ft reconciliation — the most vivid example of the feature — works today in Williamson, Hays, and Bastrop, and nowhere in the metros where listings actually concentrate. Fixable per county by acquiring the CAD export instead of relying on the StratMap roll, which is a known, bounded acquisition motion (the F1 CAD registry lane already does exactly this). It is NOT a reason to weaken the thesis; it IS a reason to not promise the sq-ft demo in a metro before the export lands.
+
+**Reconciliations that DO work statewide today**, on facts we hold at full coverage: land area (shoelace geometry vs listing lot size), zoning district and permitted use vs listing claims ("zoned commercial", "ADU potential"), flood zone vs silence in a listing, and owner of record vs listing agent's stated seller. Those need no additional acquisition and are arguably harder for a portal to contradict than square footage.
