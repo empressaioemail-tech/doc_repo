@@ -2,7 +2,7 @@
 id: 00_oil_gas_index
 title: Oil and gas vertical - working index and orientation
 status: exploration
-last_updated: 2026-07-08
+last_updated: 2026-08-10
 applies_to: [hauska, empressa]
 owner: nick
 related: [55_spine_data_intelligence_stack, 53_hauska_sdk_completion_sprint, 09_post_saas_substrate_thesis, 28_mcp_first_product_design, 80_adrs/adr_008_engine_factor_out, _prospects/mox/2026-06-11_mox_master_dossier]
@@ -43,6 +43,8 @@ This is the cross-domain thesis instantiated, the same four-layer offering as Mo
 - `85b_title_artifact_exemplars.md`: Herbert's professional title artifacts (DOTO, working-interest report, county index runsheet; PDFs in `assets/title_exemplars/`) — the ground-truth formats the C7 title slice is graded against, plus a flagged Winkler-based option for the graded-truth leg.
 - `85c_og_app_review_meeting_digest.md`: digest of the 2026-07-08 OG app review call (Herbert, Chris, Val; transcript in `assets/transcripts/`): title-opinion taxonomy (drilling opinion vs DOTO/pay decks), the memorandum-grain public-record ceiling, the base-vs-overlay product boundary correction, run-sheet economics, the OPEN wedge-targeting question (spreadsheet operator vs wildcatter), and the named data sources (TexasFile commercial evaluation queued).
 - `86_executive_summary.md`: executive summary of the vertical.
+- `87_og_lifecycle_framework.md`: the 4-stage / 5-connector lifecycle framework from the 2026-08-10 vision ideation close: grain changes (land → well/unit → molecule), the two chains (rights vs molecule), settlement as join/oracle/enforcement, four products with wedges, rails/chain/token posture (incl. XRP and fractional-fuel verdicts), RE and trading branches (TXE operational-nexus index, telemetry-as-lead-gen, warehouse receipts).
+- `88_trade_desk_shape.md`: the stage-4 trade desk product shape (middle-and-back-office-as-software: registry / procedure / documents / decks / settlement-last), derived from the Garrett (Red Sands) material; gated on his artifacts + TradeX verification + counsel. Prospect record: `_prospects/red_sands/2026-07-08_garrett_red_sands_digest.md`.
 
 Substrate work this vertical surfaced, filed in the main band because it is not oil-and-gas-specific:
 

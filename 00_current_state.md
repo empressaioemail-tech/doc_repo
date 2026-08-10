@@ -1,13 +1,17 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-08-04
+title: Current state snapshot — 2026-08-10
 status: active
-last_updated: 2026-08-04
+last_updated: 2026-08-10
 applies_to: portfolio
 related: [00c_portfolio_master_map, 00d_portfolio_roadmap_reference, 16_commercialization_roadmap, 43_cortex_qa_backlog, 75_hauska_brokerage_workflow_plan, 75c_property_brief_data_backlog, 75o_site_plan_export_spec, 30a_smartcity_stabilization_sprint, 31a_bastrop_maintenance_sprint, 48_codex_program_plan, 54_tenant_leg_sprint, 55_spine_data_intelligence_stack, 56_engine_extraction_sprint, 80_adrs/adr_005_multitenancy, 80_adrs/adr_008_engine_factor_out, 01a_atom_conventions, 21c_grok_atom_migration_plan, _decisions/2026-05-23_grok_atom_fleet_migration, _research/2026-06-09_cross_repo_recon]
 ---
 
 # Current state snapshot
+
+## 2026-08-10 — OG/NG VISION IDEATION CLOSED: lifecycle framework + trade desk shape filed; substrate recon captured; AUDIT-BEFORE-BUILD ruled
+
+Record: [`_sessions/2026-08-10_og_vision_ideation_claude_code.md`](_sessions/2026-08-10_og_vision_ideation_claude_code.md). Ideation-only arc (Arc 2 of the conversation whose execution arc closed 2026-07-09 with the next-wave handoff); no build commitments. Filed: [`_verticals/oil_gas/87_og_lifecycle_framework.md`](_verticals/oil_gas/87_og_lifecycle_framework.md) (4 stages / 3 grain changes / two chains / settlement as join+oracle+enforcement / five connectors / four products; XRP no-utility verdict; retail fractional fuel = non-goal, warehouse receipts filed as the institutional surface; TXE operational-nexus index as the first O&G×trading joint product), [`_verticals/oil_gas/88_trade_desk_shape.md`](_verticals/oil_gas/88_trade_desk_shape.md) (registry wedge — Garrett priced it himself; five layers, settlement last, tools-not-broker, hard lines standing), [`_prospects/red_sands/2026-07-08_garrett_red_sands_digest.md`](_prospects/red_sands/2026-07-08_garrett_red_sands_digest.md) (raw transcripts still operator-held). **OPERATOR RULING: a substrate audit runs BEFORE any further substrate building** — recon findings F1-F8 + proposed charter in [`_research/2026-08-10_substrate_recon_audit_inputs.md`](_research/2026-08-10_substrate_recon_audit_inputs.md) (headline: the settled VDA-backed-atom architecture was never wired on the spine; contract scope fork `@hauska`@1.6.1 vs `@empressaio`@1.7.0 with untracked published source; SDK marketplace substrate real but gapped: two-way-only splits, no escrow, in-memory wallet custody, three unreconciled billing systems; findings carry a re-verify-at-audit staleness caveat). Garrett gates open: his artifacts, our TradeX verification pass. Build order across connectors explicitly deferred by the operator.
 
 ## 2026-08-08 — ENVELOPE SAGA CLOSED 12/12 UNANIMOUS (Geometry Law ratified); cohort re-persist in recovery re-pair; LightBox W1/W2 GO as T7, W3/W4 HELD; session closed with successor handoff
 
