@@ -25,7 +25,7 @@ Verify at source (`gh` / SQL / live endpoint) before acting on ANY state claim *
 
 ## THE ONE THING YOU OWN RIGHT NOW
 
-**The sweep.** `P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs`, running in background, 123 landed / 9 remaining / 4,841,548 features / no halts. Queue is ALL metros: 48215 48121 48157 48085 48141 48113 48029 48439 48453. ~8 h at recent rate.
+**The sweep.** `P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs`, running in background. **UPDATED 2026-08-11: 128 landed / 4 remaining — 48113 Dallas, 48029 Bexar, 48439 Tarrant, 48453 Travis.** Halted once on a TRANSIENT `ETIMEDOUT` to Neon on Dallas (4 retries exhausted, not a defect); connectivity re-verified at 323 ms, 48113 had a 525,000-of-693,556 partial, halt cleared and resumed — the re-run is idempotent on `atom_did` so it completes rather than duplicating. That is the SEVENTH cleared halt; all are recorded in `progress.json.haltCleared[]` with reasoning.
 
 - **The sweep tree is `P:/hauska-engine` on branch `sweep/fast-write`. DO NOT EDIT THAT TREE while it runs** — an edit there is a live deploy to a running lane, and it broke the sweep once already this session. Use a worktree.
 - It halts cleanly at county boundaries and re-runs are idempotent on `atom_did`. Cleared halts are recorded in `progress.json.haltCleared[]` with reasoning; add to that array, do not overwrite.
