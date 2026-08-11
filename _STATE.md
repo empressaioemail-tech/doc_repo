@@ -34,6 +34,30 @@ The third needs EVERY atom in a county so a primary-key lookup cannot serve it �
 
 **TWO TRAPS HIT WHILE FIXING IT — both worth knowing:** (1) **`hauska-map` was linked to the `cmdcenter` Vercel project, not `property-explorer`.** The first `vercel env add` landed on the WRONG project and a `vercel deploy` would have pushed PE's build to the Command Center. ALWAYS `vercel link --project property-explorer` first and re-read `.vercel/project.json` before any env or deploy op in this repo. (2) The two projects use DIFFERENT var names — PE reads `HAUSKA_RETRIEVAL_API_KEY` (with a `RETRIEVAL_API_KEY` fallback in code), cmdcenter had `RETRIEVAL_API_KEY`. Key written with `printf '%s'` to a 59-byte file, no trailing newline (the PS5.1 stdin-newline trap). **STANDING FIX OWED: this key is synced by hand in two places and will rotate out of sync again — put it in the deploy workflow or a shared secret reference.**
 
+## 🏁 THE PARCEL-NODE SWEEP IS COMPLETE — 2026-08-11
+
+**132 of 132 counties landed. 11,060,796 atoms written by the runner; store truth: 11,603,489 `parcel-node` atoms across 195 counties, 18,556,547 atoms total.** Queue empty, no halt, runner exited 0. **THE ATOMS BULK-WRITER SLOT IS NOW FREE.**
+
+**The verify-by-primary-key fix is what finished it.** Post-fix rates on the four biggest metros:
+
+| county | atoms | wall | rate |
+|---|---:|---:|---:|
+| 48113 Dallas | 693,556 | 632 s | **1,097/sec** |
+| 48029 Bexar | 703,356 | 533 s | **1,319/sec** |
+| 48439 Tarrant | 693,389 | 586 s | **1,184/sec** |
+| 48453 Travis | 804,457 | 847 s | **950/sec** |
+
+**Aggregate 1,114 atoms/sec across 2,894,758 atoms — 56x the pre-fix ~20/sec.** Those four counties took **43 minutes**; on the old path they would have taken **~40 HOURS**.
+
+**NEXT, in order:** (1) geometry scorer re-run — the metro tail should move the ledger disproportionately because Bexar/Dallas/Tarrant/Travis/Collin already hold ~2.9M zoning-facts that now have parcel-nodes to pair with; (2) OWN apply; (3) the other four rail applies. **Do NOT apply any rail until its writer carries the verify fix** — see below.
+
+**SIBLING WRITER FIX — GROUP B MERGED (eng #303), GROUP A IN FLIGHT (eng #304).** Planner verified #303 at source before merging, and two of its findings are load-bearing:
+
+- **The atom_did rewrite is CONDITIONAL, not unconditional** (`property-atom-batch-write.ts:46` `resolvePropertyAtomDid`): it KEEPS `instance.atomDid` when it already starts with `did:hauska:`, otherwise MINTS from `buildAtomDid(entityType, entityId)`. That is why `parcel-node` column and body agree on all 10.8M rows (passthrough) while cad-roll / land-use / flood diverge (mint). Verified in source — it validates the parcel-node fix already shipped.
+- **`entityId` shape is NOT uniform:** cad-parcel-roll and land-use-fact use `${parcelNodeId}:${taxYear}`; **flood-hazard-fact uses `parcelNodeId` alone**. Verified against live `entity_id` values. A uniform copy-paste across the three would have silently matched zero rows on flood.
+
+**CI FLAKE TO WATCH:** `preflight-probes.test.ts` "cert-path preflight parity" fails intermittently at its 15 s timeout and will keep producing false reds on unrelated PRs until the bound is raised or the probe stubs are made deterministic. Group B saw it, re-ran with no code change, and it went green — but it did NOT assume pre-existing, it checked main at its merge-base first. That is the right handling.
+
 ## ⏭ QUEUED WORK — NOT DISPATCHED, NOT FORGOTTEN (added 2026-08-10)
 
 Everything here is scoped with a written artifact and is waiting on a lane, a slot, or a ruling. **If it is in this list it has NOT been executed.** A fresh agent picks work from here.
