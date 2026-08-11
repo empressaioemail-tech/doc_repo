@@ -1,0 +1,54 @@
+{
+  "dispatch": "VERIFYPK group A",
+  "date": "2026-08-11",
+  "repo": "hauska-engine",
+  "branch": "fix/verify-pk-group-a",
+  "worktree": "/p/tmp/verifypk-a-wt",
+  "files": [
+    "packages/engine-core/scripts/write-owner-fact-county.mjs",
+    "packages/engine-core/scripts/write-well-fact-county.mjs",
+    "packages/engine-core/scripts/write-rail-corridor-fact-county.mjs",
+    "packages/engine-core/scripts/write-building-footprint-county.mjs",
+    "packages/atoms/src/__tests__/cp2-refute.test.ts"
+  ],
+  "change": "write-then-verify locates rows by the atoms PRIMARY KEY (atom_did) instead of the unindexed body->>'atomDid' jsonb expression; dids derived as did:hauska:<entityType>:${a.entityId}. Verification logic itself unchanged: stored body is still SELECTed back and re-validated against schema and plan; storedByDid map and per-atom lookup untouched.",
+  "derivationVerified": {
+    "owner-fact": { "rows": 0, "ok": 0, "note": "not yet applied; zero rows in atoms store" },
+    "well-fact": { "rows": 0, "ok": 0, "note": "not yet applied; zero rows in atoms store" },
+    "rail-corridor-fact": { "rows": 0, "ok": 0, "note": "not yet applied; zero rows in atoms store" },
+    "building-footprint": { "rows": 0, "ok": 0, "note": "not yet applied; zero rows in atoms store" }
+  },
+  "derivationVerifiedBySibling": {
+    "note": "All four target types had ZERO rows, so the derivation could not be confirmed on them directly. Confirmed instead on populated sibling families sharing the same fact-writer-ids.ts helpers and the same persistenceOf shape. ok = rows where atom_did = 'did:hauska:'||entity_type||':'||entity_id. body_didform = rows where body.atomDid is did:hauska-prefixed (expected 0).",
+    "cad-parcel-roll": { "rows": 50, "ok": 50, "body_didform": 0 },
+    "land-use-fact": { "rows": 50, "ok": 50, "body_didform": 0 },
+    "flood-hazard-fact": { "rows": 49, "ok": 49, "body_didform": 0 },
+    "total": { "rows": 149, "ok": 149, "body_didform": 0 }
+  },
+  "entityIdShapes": {
+    "owner-fact": "${parcelNodeId}:${taxYear}",
+    "well-fact": "${parcelNodeId}:${wellKey}",
+    "rail-corridor-fact": "bare parcelNodeId (DIVERGENT: no entityIdOf helper)",
+    "building-footprint": "${parcelNodeId}:footprint:${footprintId}"
+  },
+  "typecheck": "pass",
+  "tests": {
+    "packages/atoms": { "files": 13, "passed": 208, "exit": 0 },
+    "packages/engine-core": {
+      "files": 140,
+      "filesPassed": 138,
+      "filesFailed": 2,
+      "passed": 1079,
+      "skipped": 3,
+      "exit": 1,
+      "note": "2 files failed to LOAD with SyntaxError (not assertion failures): scripts/__tests__/cert-grade-and-report.test.ts and scripts/__tests__/preflight-and-report.test.ts. Verified pre-existing by stashing the change and re-running on pristine origin/main, where they fail identically. Neither file is touched by this change. Windows-checkout CRLF artifact; CI on Linux is green."
+    }
+  },
+  "prUrl": "https://github.com/empressaioemail-tech/hauska-engine/pull/304",
+  "ciConclusion": "SUCCESS",
+  "ciCheck": "typecheck + test",
+  "measurement": "planner-measured on live table: 2000 ids = 311612 ms via body->>'atomDid' vs 129 ms via atom_did column (2416x)",
+  "readOnlyConfirmed": true,
+  "appliedAnyWriter": false,
+  "residualRisk": "With zero rows of these four types in the atoms store, the end-to-end did match is established by mechanism (shared resolvePropertyAtomDid code path plus 149 live sibling rows plus the CP2 unit test), not by observing these four types round-trip. The first --apply run of each writer should be watched for verifyFailures; a systematic 'atom not readable back' would indicate the derivation, not data corruption."
+}
