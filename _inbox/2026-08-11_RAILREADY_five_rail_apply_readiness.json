@@ -1,0 +1,154 @@
+{
+  "runAt": "2026-08-11T15:05:00Z",
+  "engineCheckout": {
+    "localHead": "81344ecf72c45f8c52f684080830889abfb6f0d5",
+    "originMainHead": "34c94ff243a50d6b59b940c1de79001dfc14a695",
+    "behindBy": 4,
+    "readFrom": "origin/main"
+  },
+  "propertyEntityTypesCount": 14,
+  "propertyEntityTypesVerbatim": {
+    "file": "packages/atoms/src/property-instances.ts",
+    "line": 171,
+    "array": [
+      "parcel-node",
+      "zoning-fact",
+      "setback-rule",
+      "buildable-envelope",
+      "parcel-terrain-model",
+      "building-footprint",
+      "utility-easement",
+      "flood-hazard-fact",
+      "cad-parcel-roll",
+      "land-use-fact",
+      "owner-fact",
+      "rail-corridor-fact",
+      "well-fact",
+      "special-district-fact"
+    ],
+    "note": "All five rails under review are registered. Count is 14, not 12."
+  },
+  "rails": [
+    {
+      "rail": "owner-fact",
+      "registered": true,
+      "registrationEvidence": "packages/atoms/src/property-instances.ts:182 \"owner-fact\"",
+      "writerPath": "packages/engine-core/scripts/write-owner-fact-county.mjs",
+      "cliForm": "OWNER_FACT_PATH=1 CORTEX_DATABASE_URL=... pnpm --filter @hauska-engine/engine-core run write-owner-fact-county -- --county=48021 [--apply] [--batch=500] [--limit=0] [--tax-year=2026] [--list-counties] [--out=path]",
+      "envGate": "OWNER_FACT_PATH=1 (write-owner-fact-county.mjs:73)",
+      "dataSource": "cad_property.owner_name joined in app code to txgio_parcel on prop_id (two-table join on ONE neondb pool, no SQL JOIN). SOURCE_ADAPTER=\"cad-property-owner-v1\", SOURCE_URL=\"cad_property.owner_name\" (write-owner-fact-county.mjs:41-42).",
+      "maxCountiesCoverable": 15,
+      "limitingFactor": "cad_property is loaded for only 15 of 254 Texas counties (4,599,477 rows, owner_name 98.4% = 4,525,073 rows; _STATE.md:187, live SELECT 2026-08-09). The writer hard-exits with \"county has zero rows in txgio_parcel\" and produces nothing where CAD is unloaded. txgio_parcel covers 196 counties, so the CAD side is the binding constraint. No hardcoded allowlist — the roster is read at execution time, so coverage grows automatically as CAD counties load.",
+      "verifyFixPresent": true,
+      "verifyFixEvidence": "write-owner-fact-county.mjs:383 `          WHERE atom_did IN ${handle.sql(dids)}` — preceded by the explanatory comment at :375-379 (\"Look rows up by the atoms PRIMARY KEY (`atom_did`), never by the `body->>'atomDid'` jsonb expression: no index serves the expression, so every batch seq-scanned the whole atoms table.\"). Landed via PR #303/#304 (commits 46e5287, 4ebae93) — the 4 commits the local checkout is behind.",
+      "dryRunEvidence": "No dedicated dry-run close artifact found in _inbox for owner-fact. Data availability is established independently: cad_property owner_name 4,525,073/4,599,477 rows (98.4%) across 15 counties per _STATE.md:138,187. Highest-confidence source truth of the five, but the rail itself has NOT been dry-run demonstrated."
+    },
+    {
+      "rail": "rail-corridor-fact",
+      "registered": true,
+      "registrationEvidence": "packages/atoms/src/property-instances.ts:183 \"rail-corridor-fact\"",
+      "writerPath": "packages/engine-core/scripts/write-rail-corridor-fact-county.mjs",
+      "cliForm": "RAIL_CORRIDOR_FACT_PATH=1 CORTEX_DATABASE_URL=... pnpm --filter @hauska-engine/engine-core run write-rail-corridor-fact-county -- --county=48021 [--apply] [--batch=500] [--limit=0] [--probe-only] [--list-counties] [--out=path]",
+      "envGate": "RAIL_CORRIDOR_FACT_PATH=1 (write-rail-corridor-fact-county.mjs:64)",
+      "dataSource": "NTAD North American Rail Network Lines (ArcGIS FeatureServer, live fetch per county bbox) plus NTAD Railroad Grade Crossings. SOURCE_ADAPTER=\"ntad-narn-proximity-v1\" (write-rail-corridor-fact-county.mjs:34-35). Parcels read from txgio_parcel. Buffer 152.4 m (500 ft) parcel-edge intersect.",
+      "maxCountiesCoverable": 196,
+      "limitingFactor": "NTAD is a genuinely statewide/national federal layer — LIVE-VERIFIED 16,522 Texas segments (STATEAB='TX' returnCountOnly, probed 2026-08-11). Source imposes no county ceiling. The binding constraint is txgio_parcel geometry coverage: 196 of 254 counties (_STATE.md:154). Licence is US government work, unrestricted. Caveat: rail-trail (NET=T) is zero statewide in NTAD, so the trail sub-classification will emit no rows — documented honestly in the CP2 close.",
+      "verifyFixPresent": true,
+      "verifyFixEvidence": "write-rail-corridor-fact-county.mjs:308 `          WHERE atom_did IN ${handle.sql(dids)}` with the same PK-lookup comment block at :299-301.",
+      "dryRunEvidence": "_inbox/2026-08-10_C_rail_corridor_close.json — 48021 (Bastrop): limit 200, corridorsFetched 55, crossingsFetched 159, wouldWritePresentNear 21, wouldWritePresentOutside 179, errors 0, wallMs 20519. 48113 (Dallas): corridorsFetched 850, crossingsFetched 783, wouldWritePresentNear 16, wouldWritePresentOutside 184, errors 0, wallMs 11995. Non-zero present on BOTH counties — the only rail of the five with demonstrated present-atom yield on two different counties. apply NOT RUN (atoms bulk slot held)."
+    },
+    {
+      "rail": "well-fact",
+      "registered": true,
+      "registrationEvidence": "packages/atoms/src/property-instances.ts:184 \"well-fact\"",
+      "writerPath": "packages/engine-core/scripts/write-well-fact-county.mjs",
+      "cliForm": "WELL_FACT_PATH=1 CORTEX_DATABASE_URL=... pnpm --filter @hauska-engine/engine-core run write-well-fact-county -- --county=48113 [--apply] [--batch=500] [--limit=0] [--list-counties] [--out=path]",
+      "envGate": "WELL_FACT_PATH=1 (write-well-fact-county.mjs:63)",
+      "dataSource": "https://www.gis.hctx.net/arcgishcpid/rest/services/TXRRC/Wells/MapServer/0 — live per-county-bbox fetch. SOURCE_ADAPTER=\"texas-rrc-wells-v1\" (write-well-fact-county.mjs:34-36). Parcels from txgio_parcel. Radius 152 m (500 ft).",
+      "maxCountiesCoverable": 1,
+      "limitingFactor": "FATAL — the source is a HARRIS COUNTY MIRROR, not a statewide RRC feed. Live-probed 2026-08-11: statewide returnCountOnly = 12,796; the layer's own returnExtentOnly in outSR=4326 is {xmin:-95.9402, ymin:29.5063, xmax:-94.8999, ymax:30.1740} — a single-county box. A Harris-shaped bbox query returns ALL 12,796 features, i.e. 100% of the layer is inside Harris. Layer spatialReference is wkid 2278 (NAD83 Texas South Central FIPS 4204), a Harris-region projection. The engine's own code says so: packages/engine-core/src/well-fact/fetch-wells.ts:2 — \"Fetch Texas RRC surface wells for a county bbox from the Harris County mirror layer.\" Texas actually has roughly a million RRC wells; 12,796 is the Harris subset. Outside Harris this rail writes ONLY absence atoms — it cannot light a single present cell in 253 of 254 counties. Coverage is 1 county (48201), not 254.",
+      "verifyFixPresent": true,
+      "verifyFixEvidence": "write-well-fact-county.mjs:307 `          WHERE atom_did IN ${handle.sql(dids)}` with the PK-lookup comment at :299-301.",
+      "dryRunEvidence": "_inbox/2026-08-10_A_rrc_wells_rail_close.json — CONFIRMED AND EXPLAINED. 48113 (Dallas): planned 693,556, present 0, absent 693,556 (all \"no-well-on-or-near\"). 48029 (Bexar): planned 703,257, present 0, absent 703,257. sourceProbe records statewideCount 12,796 / dallasBboxCount 0 / bexarBboxCount 0. My independent live probe reproduced Dallas bbox count 0. The zero is NOT a writer defect — it is the correct output of a Harris-only source queried outside Harris. The close artifact recorded the zeros but did not diagnose the single-county extent as the cause."
+    },
+    {
+      "rail": "building-footprint",
+      "registered": true,
+      "registrationEvidence": "packages/atoms/src/property-instances.ts:177 \"building-footprint\"",
+      "writerPath": "packages/engine-core/scripts/write-building-footprint-county.mjs",
+      "cliForm": "BUILDING_FOOTPRINT_PATH=1 CORTEX_DATABASE_URL=... pnpm --filter @hauska-engine/engine-core run write-building-footprint-county -- --county=48021 [--apply] [--batch=500] [--limit=0] [--fixture=path/to/ml-footprints.geojson] [--adapter-kind=...] [--ml-probe-only] [--list-counties] [--out=path]",
+      "envGate": "BUILDING_FOOTPRINT_PATH=1 (write-building-footprint-county.mjs:75)",
+      "dataSource": "Microsoft/Bing ML Global Building Footprints — https://minedbuildings.z5.web.core.windows.net/legacy/usbuildings-v2/Texas.geojson.zip, streamed and bbox-filtered per county (no DB table; the whole 394 MB Texas partition is re-streamed each run). sourceTier \"ml-derived\", adapterKind \"ml-global-building-footprints\". Parcels from txgio_parcel.",
+      "maxCountiesCoverable": 196,
+      "limitingFactor": "Source is statewide and live — HEAD probe 2026-08-11 returned HTTP 200, Content-Length 394,135,084, Last-Modified 2024-11-07. No county ceiling from the source; the constraint is txgio_parcel's 196 counties. The REAL limiter is COMPUTE, not coverage: every county run re-streams and re-scans all 10,678,921 Texas features, and the Bastrop dry-run took wallMs 1,762,884 (~29 minutes) for only 200 parcels. The 48113 attempt could not complete a full parcel join at all — the close records \"full parcel join deferred (O(footprints x parcels) prohibitive on 726k parcels)\". Applying this statewide at current algorithmic shape is not viable without a spatial index or a persisted footprint table.",
+      "verifyFixPresent": true,
+      "verifyFixEvidence": "write-building-footprint-county.mjs:347 `          WHERE atom_did IN ${handle.sql(dids)}` with the PK-lookup comment at :339-341.",
+      "dryRunEvidence": "_inbox/2026-08-10_B_footprint_ml_ingest_close.json — 48021 (Bastrop) dry-run: parcelLimit 200, parcelRows 74,729, featuresRead 100,187, featuresScanned 10,678,921, footprintsJoined 188, parcelsWithFootprint 123, parcelsAbsentPerParcel 77, wouldWritePresent 188, atomsBuilt 265, wallMs 1,762,884, regression PASS. 48113 (Dallas) ran ml-probe-only: featuresRead 663,759, wallMs 1,429,215, full join deferred as prohibitive. Real present yield demonstrated on one county; second county never completed a join."
+    },
+    {
+      "rail": "special-district-fact",
+      "registered": true,
+      "registrationEvidence": "packages/atoms/src/property-instances.ts:185 \"special-district-fact\"",
+      "writerPath": "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+      "cliForm": "SPECIAL_DISTRICT_FACT_PATH=1 CORTEX_DATABASE_URL=... pnpm --filter @hauska-engine/engine-core run write-special-district-fact-county -- --county=48201 [--apply] [--batch=500] [--limit=0] [--list-counties] [--out=path]",
+      "envGate": "SPECIAL_DISTRICT_FACT_PATH=1 (write-special-district-fact-county.mjs:63)",
+      "dataSource": "tx_special_district table (PRE-LOADED, not live-fetched) — populated by packages/engine-core/scripts/ingest-tx-special-districts.mjs from TCEQ https://gisweb.tceq.texas.gov/arcgis/rest/services/Public/WaterDistricts/MapServer/0. SOURCE_ADAPTER=\"tceq-water-districts-v1\", SOURCE_URL=\"tx_special_district\" (write-special-district-fact-county.mjs:32-33). Binary point-in-polygon only, no proximity buffer. Parcels from txgio_parcel.",
+      "maxCountiesCoverable": 196,
+      "limitingFactor": "TCEQ layer is statewide — live-probed 2026-08-11 returnCountOnly = 2,796 (close artifact ingested 2,775 with county_fips populated on all 2,775; the ~21 delta is rows whose FIPS could not be derived). Source imposes no county ceiling; constraint is txgio_parcel's 196 counties. Coverage is geographically uneven by nature: water districts concentrate in Gulf Coast / metro counties, so many rural counties will legitimately return all-absent. Secondary gap: Comptroller tax-rate enrichment matched ZERO rows (rateEnrichedCount 0 on both dry-run counties) — the taxRate field ships empty, so the \"tax-relevant\" framing is not yet delivered.",
+      "verifyFixPresent": false,
+      "verifyFixEvidence": "NO read-back verification exists at all — neither the correct `atom_did IN` form nor the broken `body->>'atomDid'` form. grep for \"atom_did IN\" over write-special-district-fact-county.mjs returns ZERO hits (the only other four writers each have exactly one). What the apply path calls at :302-307 is `verifyStoredSpecialDistrictFactAtom(atom, {...})` where `atom` is the in-memory object just built — and packages/engine-core/src/special-district-fact/special-district-fact-atoms.ts:103 confirms that function only runs `SPECIAL_DISTRICT_FACT_SCHEMA.safeParse(stored)` plus field comparisons on the value passed in. It never opens a connection. So `summary.verifyFailures` on this rail is structurally incapable of detecting a failed write; it is a schema self-check wearing a verification name. This rail was NOT covered by the PK-fix PRs #303/#304.",
+      "dryRunEvidence": "_inbox/2026-08-10_D2_special_district_build_close.json — 48201 (Harris): planned 6,312,715, inDistrict 1,523,291, noDistrict 349. 48021 (Bastrop): planned 62,256, inDistrict 10,932, noDistrict 51,324. CP2 review (_inbox/2026-08-10_D2_special_district_cp2_adversarial_review.md) REFUTED the Harris CP1 band (predicted 12-32%, measured 95.09%) and traced it to large regional water-authority polygons blanketing the county; independent random-20k probe 99.97% any-type, MUD-only ~25.2%. Bastrop 14.63% CONFIRMED in band. PIP sanity checks pass (west Texas 0, Galveston Bay 0). Table load is PROVEN by the dry-runs themselves: the writer throws \"tx_special_district missing — run migration + ingest first\" if absent, and both dry-runs read real district rows and completed."
+    }
+  ],
+  "specialDistrict": {
+    "sourceLoaded": true,
+    "tableName": "tx_special_district",
+    "rowsLoaded": 2775,
+    "fetchesLive": false,
+    "evidence": "The writer reads exclusively from the tx_special_district table (write-special-district-fact-county.mjs:151) and throws at :140 if to_regclass('public.tx_special_district') is null. Both the 48201 and 48021 dry-runs completed with real district rows, which proves the table exists and is populated. Load count 2,775 polygons with county_fips populated on all 2,775 per _inbox/2026-08-10_D2_special_district_build_close.json (byType: MUD 1888, WCID 250, MMD 197, FWSD 84, SUD 82, OTH 74, DD 45, LID 35, WID 33, ID 29, RA 29, ND 23, RD 2, SWCD 1, GCD 1, MD 1, NYD 1). Live TCEQ source returns 2,796 today; the ~21-row delta is rows whose county FIPS could not be derived by tceqCountyFips(). Ingest is a separate one-time step (ingest-tx-special-districts.mjs --apply) that has ALREADY been run; the county writer does not re-fetch TCEQ.",
+    "caveat": "rateEnrichedCount 0 — the Comptroller SPDPID CSV join by {countyFips}|{comptrollerEntityType}|{districtName} matched zero TCEQ names, so no tax rate ships on any atom. The '~2,439 tax-relevant polygons' framing in the task prompt is not what is loaded: 2,775 polygons of ALL 17 TCEQ TYPE values are loaded, and ZERO carry a tax rate."
+  },
+  "recommendedApplyOrder": [
+    {
+      "rail": "owner-fact",
+      "rank": 1,
+      "cellsGainedEstimate": 4525073,
+      "reasoning": "Highest present-atom yield per unit of risk and by far the cheapest to run. The data is ALREADY IN THE STORE — a two-table read on one pool, no external API, no streaming, no rate limit, no vintage risk. 4,525,073 rows carry owner_name across 15 counties at 98.4% fill, so nearly every planned atom is a PRESENT atom rather than an absence. Carries the verify-by-PK fix (line 383). It is also the only one of the five that closes a named launch-gate hole: OPS-15 established OWN reads NO ATOM on the County Manifest while the data sat in cad_property unserved. Caveat to hold: owner-fact is public-paid, and the writer has an explicit leak guard at :342 (\"Owner identity must never rest on the free tier\") — confirm the gate honors accessPolicy before exposing. Risk is that it has no dry-run close artifact of its own, so run --limit dry-run on one county first; the store truth is well established but the rail's own behavior is undemonstrated."
+    },
+    {
+      "rail": "special-district-fact",
+      "rank": 2,
+      "cellsGainedEstimate": 1534223,
+      "reasoning": "Second-highest yield with a fully local data path — source is pre-loaded into tx_special_district, so applies are DB-to-DB with no network fetch, the fastest possible apply shape after owner-fact. Demonstrated 1,523,291 in-district present rows on Harris alone plus 10,932 on Bastrop, and coverage extends across all 196 parcel counties. RANKED BELOW OWNER DESPITE COMPARABLE VOLUME because of two real risks the planner must price. First, it is the ONLY rail of the five without any read-back verification — its verify is an in-memory schema self-check that cannot detect a failed write (see verifyFixEvidence), so an apply here is unaudited by construction; recommend porting the atom_did IN block from the sibling writers BEFORE applying, which is a small mechanical change against four working templates. Second, Harris emits ~4.1 memberships per in-district parcel, so 6.3M planned atoms on one county is a bulk-slot event that needs the throughput work (fc5a9c4 multi-row upsert) and a batch plan, not a casual run. Also note taxRate ships empty."
+    },
+    {
+      "rail": "rail-corridor-fact",
+      "rank": 3,
+      "cellsGainedEstimate": 400000,
+      "reasoning": "The safest rail technically and the best-demonstrated: it is the ONLY one of the five with non-zero present yield proven on TWO different counties (Bastrop 21 near / Dallas 16 near per 200-parcel sample), it carries the verify-by-PK fix (line 308), its source is a live federal layer with 16,522 TX segments confirmed by my own probe, and its licence is unrestricted US government work. Ranked third purely on volume, not quality: rail proximity is intrinsically sparse — roughly 8-10% of sampled parcels fall within the 152.4 m buffer — so the present-cell count is an order of magnitude below owner and special-district. Per-county apply requires a live ArcGIS fetch (55 corridors Bastrop, 850 Dallas) which adds a network dependency and ~12-20 s per 200 parcels, meaning statewide is a long but tractable run. Known honest gap: NET=T rail-trail is zero statewide, so that sub-class will never populate from this source."
+    },
+    {
+      "rail": "building-footprint",
+      "rank": 4,
+      "cellsGainedEstimate": 70000,
+      "reasoning": "Real data and a real present yield, but the compute cost per cell is catastrophic at the current algorithmic shape and that is what drops it to fourth. The Bastrop dry-run needed 1,762,884 ms (~29 minutes) to scan all 10,678,921 Texas features and join only 200 parcels; Dallas could not complete a join at all and was recorded as \"O(footprints x parcels) prohibitive on 726k parcels\". Every county re-streams the same 394 MB zip from Azure with no persisted table and no spatial index, so cost scales with statewide-features x county-parcels on EVERY run. Yield when it does run is decent (123 of 200 Bastrop parcels had a footprint, ~61%) and the source is live and statewide, so this rail is genuinely valuable — but it needs an engineering change first: persist the Texas footprints into a table with a GiST index (mirroring exactly what special-district already does with tx_special_district) and the cost collapses. Recommend deferring the apply and dispatching the ingest-table change; do not attempt a statewide apply in the current shape. Also note sourceTier is ml-derived, so confidence framing must not present these as surveyed."
+    },
+    {
+      "rail": "well-fact",
+      "rank": 5,
+      "cellsGainedEstimate": 0,
+      "reasoning": "DO NOT APPLY. This rail gains ZERO present cells in 253 of 254 counties and applying it would write pure absence at enormous volume. The source is a Harris County mirror, not a statewide RRC feed: 12,796 features total, 100% of them inside the Harris bbox, layer extent -95.94/29.51 to -94.90/30.17, projection wkid 2278 (Texas South Central), and the engine's own fetch-wells.ts:2 docstring says \"Harris County mirror layer\". The dry-runs already showed the consequence and it reproduces live — Dallas 693,556 planned / 0 present / 693,556 absent, Bexar 703,257 planned / 0 present / 703,257 absent, my own Dallas bbox probe returns count 0. Applying as-is would write ~1.4M absence atoms across two counties that assert 'no well on or near' as a machine-verified finding, when the truth is 'this source has no coverage here' — that is a correctness hazard, not merely a wasted run, because Texas genuinely has on the order of a million RRC wells and many of those counties DO have wells. The rail is well-built (verify-by-PK present at line 307, radius reasoning sound); only its source is wrong. Fix is a source swap to a genuinely statewide RRC feed, then re-dry-run. Until then this rail is code-done and customer-useless. Optionally apply to Harris (48201) ALONE, where the source is authoritative."
+    }
+  ],
+  "adversarialFindings": [
+    "WELL-FACT'S SOURCE IS SINGLE-COUNTY AND NOTHING IN THE CLOSE ARTIFACT SAYS SO. The close recorded statewideCount 12796 / dallasBboxCount 0 / bexarBboxCount 0 and shipped anyway, treating the zeros as a legitimate absence result. Live probe 2026-08-11 proves the cause: returnExtentOnly in outSR=4326 is {-95.9402,29.5063,-94.8999,30.1740} and a Harris bbox query returns all 12,796 features. The field label 'statewideCount' in that artifact is itself misleading — it is a layer-total count, not statewide coverage. A rail whose absence atoms are indistinguishable from no-coverage is worse than an unbuilt rail.",
+    "SPECIAL-DISTRICT HAS NO READ-BACK VERIFICATION AT ALL AND WAS SILENTLY MISSED BY THE PK-FIX SWEEP. PRs #303/#304 fixed four writers; grep for `atom_did IN` returns hits at owner:383, rail-corridor:308, well:307, footprint:347 and ZERO in write-special-district-fact-county.mjs. Its verifyStoredSpecialDistrictFactAtom call passes the in-memory atom it just built, so verifyFailures can never be non-zero from a write failure. This is more dangerous than the old broken `body->>'atomDid'` form: the broken form was slow but real, this one is fast and fictional. Fix before applying — it is the largest-volume apply of the five (6.3M planned on Harris) and currently the only unaudited one.",
+    "THE PROMPT'S '~2,439 tax-relevant polygons' FIGURE IS WRONG IN BOTH DIRECTIONS. 2,775 polygons are loaded spanning all 17 TCEQ TYPE values (MUD 1888 is the plurality, not the whole), live TCEQ returns 2,796, and rateEnrichedCount is 0 on both dry-run counties — the Comptroller name join matched nothing. So ZERO loaded polygons are tax-enriched. 'Tax-relevant' should not appear in any external framing of this rail until the name reconciliation lands.",
+    "BUILDING-FOOTPRINT IS NOT APPLY-READY DESPITE A PASSING DRY-RUN. 29 minutes for 200 Bastrop parcels, and the Dallas full join was abandoned as prohibitive. The dry-run 'PASS' verdict measured correctness, not feasibility — a green regression line is masking an algorithm that cannot reach statewide. The irony is that the fix pattern already exists in this same PR wave: special-district persists its polygons to a table and queries per county, while footprint re-streams 394 MB and 10.7M features every single run.",
+    "THE ENGINE CHECKOUT AT P:/hauska-engine IS 4 COMMITS BEHIND ORIGIN/MAIN (81344ec vs 34c94ff) AND IS ON A FEATURE BRANCH (sweep/fast-write, ahead 1). The 4 missing commits are precisely the verify-by-PK fixes (4ebae93, 46e5287) and their merges (#303, #304). Anyone reading the working tree instead of origin/main would conclude the PK fix is absent from three writers. All findings in this report were read via `git show origin/main:<path>`. This is the third checkout found stale in this program.",
+    "P:/hauska-engine/.env IS CORRUPTED. The file is 165 bytes with no trailing newline and the value runs `...?sslmode=require` directly into `empressaioemail@cloudshell` — a stray Cloud Shell prompt fragment pasted into the URL. Any process reading LEGACY_DATABASE_URL verbatim gets 'Client network socket disconnected before secure TLS connection was established', which reads as a network fault rather than a malformed URL. Worth fixing regardless of this task.",
+    "NO FACTORY-POOL CREDENTIAL WAS AVAILABLE TO THIS INVESTIGATION. .env holds only LEGACY_DATABASE_URL (the cortex/legacy pool: atom_events, code_atoms, parcel_briefings, code_atom_sources, code_atom_fetch_queue). Neither CORTEX_DATABASE_URL nor DEPLOYMENT_DATABASE_URL nor TXGIO_DATABASE_URL is present in any checkout, and both ldt repos carry only .env.example files. So cad_property's 15-county figure, txgio_parcel's 196-county figure, and tx_special_district's row count are sourced from _STATE.md live-SELECT records and the D2 close artifact, NOT re-verified by me against the live pool. Every external-facing coverage number in this report inherits that caveat.",
+    "FOUR OF THE FIVE RAILS HAVE NEVER HAD --apply RUN. Every close artifact says 'apply NOT RUN — atoms bulk slot held'. Owner-fact additionally has no dry-run artifact of its own in _inbox at all — its readiness rests entirely on cad_property store truth, not on demonstrated writer behavior. Rank 1 should still begin with a --limit dry-run on a single county.",
+    "REGISTRATION IS NOT COVERAGE, AND ALL FIVE ARE REGISTERED. PROPERTY_ENTITY_TYPES now carries 14 types with all five present, so a manifest driven off registration alone would show five green rails when one (well-fact) can light exactly one county, one (building-footprint) cannot finish a metro county, and one (special-district) cannot verify its own writes. If the County Manifest reads registration, it is currently telling a story the sources do not support."
+  ]
+}

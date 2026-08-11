@@ -1,0 +1,652 @@
+{
+  "runAt": "2026-08-11T14:51:09Z",
+  "conventionApplied": "Only PRESENT-TENSE state assertions are flagged. _sessions/* and dated point-in-time paragraphs inside _STATE.md that are explicitly scoped to a past date are treated as HISTORICAL RECORDS and are NOT flagged for correction. _STATE.md's undated 'LIVE NUMBERS' section IS flagged because it asserts present-tense state. _decisions/* are treated as RULINGS: their reasoning-as-of-date is historical, but a criterion stated in the imperative ('the gate is X') is present-tense and IS flagged.",
+  "fiveLayers": {
+    "sourceDoc": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md",
+    "note": "The canonical layer model is L0-L5 (six layers), not five. The decision names L0 seam reconciliation, L1 city+county boundaries, L2 parcel geometry, L3 roads statewide, L4 uniform federal/state layers, L5 jurisdiction backfill. The mission brief's 'five layers' framing omits L5, which is where the moat and the depth factories live. The live status table is maintained in _STATE.md lines 173-180, NOT in the decision record.",
+    "layers": [
+      {
+        "layer": "L0",
+        "claimedState": "Do first; nearly free. DISTINCT ON (county_fips, feature_index) dedup; keep ACCOUNT identity separate from GEOMETRY identity; record ambiguity classes.",
+        "verifiedState": "SUPERSEDED IN PRACTICE, NOT IN THE DECISION DOC. _STATE.md:173 records 'mechanical, deferred to read time (the tile bucketing IS the spatial index)'. The decision doc still reads as a to-do that must run first. No contradiction of substance, but the decision doc was never amended and a fresh agent reading it would schedule work that was deliberately deferred.",
+        "agrees": false,
+        "evidence": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md L0 section vs _STATE.md:173"
+      },
+      {
+        "layer": "L1",
+        "claimedState": "Currently absent entirely. One small adapter against TxGIO City_Boundaries: 1,225 polygons, zero dollars.",
+        "verifiedState": "DONE AND LIVE. _STATE.md:174 records 1,222 city + 254 county polygons loaded. The decision doc's present-tense 'currently absent entirely' and 'no city_limits, incorporated_place, or TIGER source anywhere' are both now FALSE. Note the count also drifted 1,225 (predicted) to 1,222 (actual).",
+        "agrees": false,
+        "evidence": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md L1 section vs _STATE.md:174"
+      },
+      {
+        "layer": "L2",
+        "claimedState": "The spine. Remaining 235 counties. 'Counties with parcel geometry loaded: 19 of 254.'",
+        "verifiedState": "SUBSTANTIALLY DONE, NOT COMPLETE. txgio_parcel covers 196 of 254 counties (planner-verified). Parcel-node atoms across 195 counties, 11,603,489 atoms. Ledger geometry rail: 141 counties satisfied-present, 113 not-yet. Open holds: 8 coastal geographic-short counties, Bosque idempotency re-run, Donley 48129 404 at source. The decision doc's '19 of 254' is now wildly stale as a present-tense figure.",
+        "agrees": false,
+        "evidence": "live GET /api/county-ledger manifestCells geometry rail 141 satisfied-present / 113 not-yet; _STATE.md:175"
+      },
+      {
+        "layer": "L3",
+        "claimedState": "Currently seven hand-authored per-city ingest scripts. Needs a statewide pass (OSM Overpass bulk, plus TxDOT/county roadway).",
+        "verifiedState": "STILL NOT DONE AND ADVERSARIALLY REFUTED. No statewide roads ingest has run. eng #293 is OPEN with CI FAILURE and DO-NOT-MERGE; H6 was never dispatched. All six roads unblockers remain OPEN. The roads rail reads no-writer on all 254 ledger cells. THE CONTRADICTION: the contract publishes a road-node property family (dist/property/road-node.d.ts, entityType 'road-node') but the engine's PROPERTY_ENTITY_TYPES on origin/main does NOT include road-node. The shape exists on npm and is unregistered in the engine.",
+        "agrees": true,
+        "evidence": "ledger roads rail no-writer 254/254; _STATE.md:176 and Q8; contract 1.19.0 dist/property/road-node.d.ts vs hauska-engine origin/main packages/atoms/src/property-instances.ts (14 types, road-node absent)"
+      },
+      {
+        "layer": "L4",
+        "claimedState": "FEMA NFHL, USDA SSURGO, USGS 3DEP, hydrology. Adapters exist for the first three but run as live per-parcel point queries with nothing persisted. Converting them to bulk statewide layers is a retrofit.",
+        "verifiedState": "SPLIT. NFHL DONE: tx_fema_nfhl_flood_zone holds 198,178 rows. SSURGO NOT DONE: no working gSSURGO bulk URL found, named the weakest link. Topo NOT DONE: 251 tiles / 64.3 GB identified but the existing pipeline is AOI-scoped and would silently produce a Central-Texas mosaic. CRITICAL DISTINCTION the docs blur: NFHL data loaded does NOT equal flood rail satisfied. The flood rail has hasWriter=true and atomFamilyState=present yet reads not-yet on all 254 ledger cells, because the flood-hazard-fact writer has never been run statewide. This is exactly the OPS-7 'DATA LOADED vs SERVED TO PRODUCT' gap.",
+        "agrees": false,
+        "evidence": "ledger flood rail not-yet 254/254 with hasWriter=true; _STATE.md:177-179"
+      },
+      {
+        "layer": "L5",
+        "claimedState": "Jurisdiction backfill: zoning, setbacks, code text. Where per-jurisdiction cost lives and where the moat is.",
+        "verifiedState": "BARELY STARTED AND THE MISSION BRIEF OMITS IT. Zoning rail: 19 of 254 counties satisfied-present, 235 not-yet. Of the 28 launch-footprint counties, 19 have zoning satisfied and 9 do not. The F2 code/zoning corpus factory is blocked on an uncommitted local scraper branch (feat/ecode360-scraper-header-first). Smithville is the next scrape target per the 2026-08-04 ruling.",
+        "agrees": true,
+        "evidence": "ledger zoning rail 19 satisfied-present / 235 not-yet; footprint-county intersection computed at 19/28; OPS-14 F2 readiness column"
+      }
+    ],
+    "contradictionsWithPriorRulings": [
+      "THE DENOMINATOR CONTRADICTION. _decisions/2026-08-08_layer_first_statewide_fabric_sequence.md:73 states present-tense: 'The manifest's denominator is unaffected: twelve rails ... across 254 counties.' The R1 rail split ruled 2026-08-09 and applied to production 2026-08-10 took this to 14 rails / 3,556 cells. The layer-first decision was never amended and directly contradicts the later ruling it now sits beside.",
+      "THE SIBLING DECISION _decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first.md is titled and reasoned around THIRTEEN rails (line 14: 'all thirteen rails are REQUIRED'; line 58: 'the remaining twelve rails'). Live is 14. Three decision records in the same folder now assert 12, 13, and (implicitly, via the split) 14 rails. A fresh agent has no way to tell which governs without reading _STATE.md.",
+      "THE HEAVY-SCAN SLOT. The layer-first decision lists it as an unresolved open item. OPS-14 open decision 5 RULED it 2026-08-09 (one write slot per database, reads unrestricted, handoff via _STATE.md). The layer-first doc's Open items section still presents it as open.",
+      "THE COST COMMITMENT. Layer-first flags the sub-200-dollar commitment as unverified with one measured overrun (Bastrop 284.40). The launch-gate decision re-bases the measurement onto depth work. OPS-11 carries it as UNENFORCED. No doc reconciles these three positions into a single current posture."
+    ]
+  },
+  "blueprintDoc": {
+    "path": "90_operations/OPS-14_texas_flush_game_plan.md",
+    "lastUpdated": "2026-08-09",
+    "verdict": "OPS-14 IS the blueprint of record and should be named canonical. It is the only doc that states the gate, the workstreams, the factory structure, the concurrency doctrine, the parallelism map, and the dispatch model in one place, and it carries an adversarial-review stamp. BUT it is not a WDLL: it has no gradable done-card. See adversarialFindings for the structural verdict.",
+    "staleClaims": [
+      {
+        "line": 73,
+        "claim": "contract-shaped atoms (`@empressaio/atom-contract`, 1.15.0 at writing)",
+        "truth": "npm view @empressaio/atom-contract version returns 1.19.0. Four minor versions shipped since (1.16.0 owner-fact, 1.17.0 rail-corridor-fact, 1.18.0 well-fact, 1.19.0 special-district-fact).",
+        "severity": "med"
+      },
+      {
+        "line": 20,
+        "claim": "Rail classification table enumerates TWELVE rails, with 'RRC wells / pipelines' as one row and no 'rail-corridor' row.",
+        "truth": "Live county_rail is 14 rails: rrc split into rrc-wells and rrc-pipelines, rail-corridor added. The blueprint's own classification table cannot be applied to the live grid without a mapping the doc does not provide.",
+        "severity": "high"
+      },
+      {
+        "line": 40,
+        "claim": "W1: 'BUILD the missing writers (roads/frontage, footprints, easements, owner, RRC, MUD)' — presented as unbuilt.",
+        "truth": "Four of six are now BUILT and merged on engine origin/main: owner-fact, rail-corridor-fact, well-fact, special-district-fact (plus building-footprint HOLD-1 closed via #294). PROPERTY_ENTITY_TYPES = 14 on origin/main tip 34c94ff. They are built with ZERO applied coverage — a different problem than the one the blueprint names.",
+        "severity": "high"
+      },
+      {
+        "line": 66,
+        "claim": "F3 depth warm: 'Unblocked; Elgin is the first proof city and still owes parcel-node anchors plus a unified dry-run before apply'",
+        "truth": "Still accurate as to Elgin, but the blocking reason changed: Q9 in _STATE.md records the Elgin dry-run is anchors-clear but NOT legacy-parity (75/98 vs 102/72), awaiting E3-ADV re-review then the slot.",
+        "severity": "low"
+      },
+      {
+        "line": 96,
+        "claim": "'the parcel-node sweep (running)' named as the active atoms bulk lane",
+        "truth": "The sweep COMPLETED 2026-08-11: 132/132 counties, 11,603,489 parcel-node atoms across 195 counties, 18,556,547 atoms total. The atoms bulk-writer slot is FREE. The blueprint's concurrency section still schedules around a lane that closed.",
+        "severity": "high"
+      },
+      {
+        "line": 128,
+        "claim": "Doc cleanup lane item 1: 'Ratify _STATE.md as the successor snapshot and amend CLAUDE.md's session protocol accordingly, or regenerate 00_current_state.md (stale since 2026-08-04). Recommendation: ratify _STATE.md.'",
+        "truth": "STILL OPEN and now worse. 00_current_state.md was touched 2026-08-10 (OG/NG ideation) so it is no longer 'stale since 2026-08-04', but it carries NOTHING about the Texas flush program, the rail split, the sweep, or the launch gate. CLAUDE.md still names 00_current_state.md as read-first. _STATE.md is unratified. The repo has two competing snapshots and the one CLAUDE.md points at is the wrong one for this program.",
+        "severity": "high"
+      },
+      {
+        "line": 111,
+        "claim": "Operator decision 2: 'Pricing: settled prior; the ladder of record is 76_empressa_wedge_90d_operating_plan.md (Free with 5 briefs/mo, Home $20/mo, Pro $40/mo, Team $75/seat/mo).'",
+        "truth": "SUPERSEDED 2026-08-10 by the locked ladder in _inbox/2026-08-10_smartsite_pricing_and_gtm_LOCKED.md (Free $0 / Solo $49 / Studio $129 / Team $299-for-10 / unlock $15-for-30-days). _STATE.md:11 explicitly says the 08-09 figures 'are retired and must not be quoted'. OPS-14 still quotes them as the ladder of record.",
+        "severity": "high"
+      }
+    ]
+  },
+  "staleDocs": [
+    {
+      "path": "_decisions/2026-08-09_texas_flush_launch_gate.md",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        {
+          "line": 22,
+          "claim": "All 12 rails have writers, so every one of the 3,048 ledger cells resolves to data or disclosed honest absence with provenance. No cell left in `no-writer`.",
+          "truth": "The grid is 14 rails / 3,556 cells since the R1 split applied to production 2026-08-10. This is the launch gate's own criterion 3 and its denominator is wrong. Live: 762 cells read no-writer (roads, footprint, easement) and a further 1,016 read no-atom (rrc-wells, rrc-pipelines, rail-corridor, mud) — a state the criterion does not even name.",
+          "severity": "high"
+        },
+        {
+          "line": 34,
+          "claim": "The writers ceiling found 2026-08-09 (8 of 12 rails structurally unable to produce a satisfied cell)",
+          "truth": "Now 7 of 14 rails cannot produce a satisfied cell (roads, footprint, easement at no-writer; rrc-wells, rrc-pipelines, rail-corridor, mud at no-atom). The reasoning survives; the arithmetic does not.",
+          "severity": "med"
+        }
+      ]
+    },
+    {
+      "path": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md",
+      "lastUpdated": "2026-08-08",
+      "staleClaims": [
+        {
+          "line": 30,
+          "claim": "Counties with parcel geometry loaded | 19 of 254 (235 absent, Harris included)",
+          "truth": "txgio_parcel covers 196 of 254 counties; parcel-node atoms across 195. Harris was reloaded 2026-08-09 (1,602,031 rows).",
+          "severity": "high"
+        },
+        {
+          "line": 44,
+          "claim": "L1: 'Currently absent entirely, and the engine's own comment at cascade-unzoned-envelope-decline.ts:62 confirms it: no city_limits, incorporated_place, or TIGER source anywhere.'",
+          "truth": "L1 is DONE AND LIVE: 1,222 city + 254 county polygons.",
+          "severity": "high"
+        },
+        {
+          "line": 73,
+          "claim": "The manifest's denominator is unaffected: twelve rails ... across 254 counties.",
+          "truth": "14 rails / 3,556 cells live since 2026-08-10.",
+          "severity": "high"
+        },
+        {
+          "line": 32,
+          "claim": "Statewide-complete layers today | None",
+          "truth": "L1 boundaries and L4 NFHL are now statewide-complete as DATA LOADED (not as SERVED). L2 is 196/254.",
+          "severity": "med"
+        }
+      ]
+    },
+    {
+      "path": "_decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first.md",
+      "lastUpdated": "2026-08-08",
+      "staleClaims": [
+        {
+          "line": 14,
+          "claim": "Ruling 1 — all thirteen rails are REQUIRED",
+          "truth": "14 rails live. The title and the ruling text both assert thirteen. This doc has no supersede note pointing at the R1 split.",
+          "severity": "high"
+        },
+        {
+          "line": 58,
+          "claim": "then advance the remaining twelve rails behind that statewide footprint",
+          "truth": "Thirteen remaining rails behind geometry.",
+          "severity": "med"
+        }
+      ]
+    },
+    {
+      "path": "90_operations/OPS-13_store_topology.md",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        {
+          "line": 153,
+          "claim": "the ledger's facet vocabulary is four names against twelve declared rails",
+          "truth": "Fourteen declared rails. Presented explicitly as 'the structural fact that does not drift' — it drifted the next day.",
+          "severity": "high"
+        },
+        {
+          "line": 155,
+          "claim": "county_facet_coverage holds 341 cells against the 3,048 the summary counts as possible",
+          "truth": "3,556 possible cells.",
+          "severity": "med"
+        },
+        {
+          "line": 174,
+          "claim": "Twelve rails, four with has_writer = true ... eight rails structurally cannot produce a satisfied cell today. Any completeness percentage computed over 3,048 cells therefore has a hard ceiling near one third",
+          "truth": "Fourteen rails, SEVEN with has_writer = true on ldt origin/main (geometry, cad, zoning, flood, envelope, landuse, owner). Seven cannot produce a satisfied cell. The 'hard ceiling near one third' is now a ceiling near one half (7/14). The full twelve-row table at lines 160-173 is superseded wholesale.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "path": "90_operations/OPS-7_coverage_and_honesty_doctrine.md",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        {
+          "line": 32,
+          "claim": "the summary reads 254 total counties, 12 rails, 3,048 total cells, 38 satisfied cells, and texasCompletenessPct of 0.2133771830027867 ... only 79 counties carrying parcel-node atoms (796,046 atoms)",
+          "truth": "Live now: 14 rails, 3,556 cells, 142 satisfied cells, texasCompletenessPct 4.914570002277076. Parcel-node atoms: 11,603,489 across 195 counties. NOTE: this paragraph is date-stamped 'Verified 2026-08-09' and is arguably a historical record. It is flagged anyway because it is the WORKED EXAMPLE inside a doctrine doc that agents read to learn how to quote numbers — a stale worked example teaches a stale number.",
+          "severity": "med"
+        },
+        {
+          "line": 34,
+          "claim": "Say ... or '0.2134 percent Texas completeness (served, live county-ledger summary),' never '196 counties covered.'",
+          "truth": "The prescribed correct-form example quotes a figure that is now 23x off. The RULE is right and load-bearing; the illustration must be refreshed or genericized to a placeholder.",
+          "severity": "med"
+        }
+      ]
+    },
+    {
+      "path": "_STATE.md",
+      "lastUpdated": "2026-08-11",
+      "staleClaims": [
+        {
+          "line": 7,
+          "claim": "Ledger still reads 0.7689% (14 rails / 3,556 cells / 89 satisfied) — the scorer is RUNNING and has not applied yet.",
+          "truth": "THE SCORER HAS APPLIED. Live GET /api/county-ledger at 2026-08-11T14:51Z: satisfiedCells 142, satisfiedPresentCells 160, texasCompletenessPct 4.914570002277076. This is the single most important correction in this audit: the headline number moved 6.4x and the repo's read-first doc still shows the pre-apply figure. Note the per-rail displayState breakdown the planner supplied (geometry 141/113, zoning 19/235) matches live exactly — only the summary rollup moved.",
+          "severity": "high"
+        },
+        {
+          "line": 11,
+          "claim": "Texas-flush launch gate = measured-everywhere ...: L2 at 254, statewide roads/NFHL/footprints, all 12 rails with writers",
+          "truth": "14 rails. _STATE.md itself records the 12-to-14 split at lines 108 and 126, so the doc contradicts itself in the same file.",
+          "severity": "high"
+        },
+        {
+          "line": 100,
+          "claim": "The manifest reads 0.7689% no matter how many PRs merge.",
+          "truth": "Superseded by the scorer apply; now 4.9146%.",
+          "severity": "med"
+        },
+        {
+          "line": 157,
+          "claim": "| Texas completeness | 0.897 percent, 89 satisfied cells of 3,048 | GET .../api/county-ledger |",
+          "truth": "4.914570002277076 percent, 142 satisfied cells of 3,556. This row sits in a present-tense verification table with the endpoint named as its instrument.",
+          "severity": "high"
+        },
+        {
+          "line": 186,
+          "claim": "LIVE NUMBERS section: 'Texas completeness ~0.0395 percent (live ledger). 12 rails x 254 = 3,048 cells. displayState: no-atom 1524, no-writer 1016, not-yet 489, satisfied-present 19. One satisfied cell: Bastrop zoning.'",
+          "truth": "Live: 4.9146 percent; 14 rails x 254 = 3,556 cells; displayState no-atom 1016, no-writer 762, not-yet 1618, satisfied-present 160. This section is HEADED 'LIVE NUMBERS' and is therefore an unambiguous present-tense assertion — every figure in it is wrong.",
+          "severity": "high"
+        },
+        {
+          "line": 190,
+          "claim": "Contract @empressaio/atom-contract@1.14.0 on npm (tag v1.14.0). Engine main still registers 7 property types; PR #286 adds three -> 10 (not merged).",
+          "truth": "npm 1.19.0. Engine origin/main (tip 34c94ff) registers 14 property types. Same 'LIVE NUMBERS' section.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "path": "00_current_state.md",
+      "lastUpdated": "2026-08-10",
+      "staleClaims": [
+        {
+          "line": 5,
+          "claim": "Frontmatter status: active, last_updated 2026-08-10, titled 'Current state snapshot'. CLAUDE.md 'Read first' item 1 names this the rolling snapshot to read before substantive work.",
+          "truth": "It carries no Texas-flush content: no launch gate, no rail split, no parcel-node sweep, no ledger figure, no layer-first sequence. An agent following CLAUDE.md's read-first instruction gets an accurate-but-irrelevant snapshot and misses the entire active program. This is a STRUCTURAL GAP, not a wrong number.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "path": "25_atom_architecture_reference.md",
+      "lastUpdated": "2026-05-18",
+      "staleClaims": [
+        {
+          "line": 3,
+          "claim": "title: '@hauska/atom-contract — Architecture reference'; the whole doc is written around the package name @hauska/atom-contract (lines 10, 24, 52, 321, 410, 616, 770, 794, 814, 858, 864, 900).",
+          "truth": "The package was renamed @empressaio/atom-contract (2026-07-06 branding decision, confirmed in CLAUDE.md). npm 1.19.0. CLAUDE.md states the @hauska/ name 'appears in historical records only' — but this doc is status: active and is the named authority for the substrate atom contract.",
+          "severity": "high"
+        },
+        {
+          "line": 24,
+          "claim": "Currently staged as workspace-private @workspace/empressa-atom in the legacy-design-tools repo at lib/empressa-atom/.",
+          "truth": "The migration off @workspace/empressa-atom COMPLETED 2026-05-22 (PRs #65/#67); CLAUDE.md records zero live imports remain. The package is published on npm.",
+          "severity": "high"
+        },
+        {
+          "line": 12,
+          "claim": "Published at 1.5.0 ... conformance target 1.5.0 ... 'the current shape every consumer co-bumps to'",
+          "truth": "ATOM_CONFORMANCE_TARGET_VERSION is still literally '1.5.0' in the published 1.19.0 tarball, so the conformance-target claim is CORRECT. But the doc does not carry REASONING_CONFORMANCE_TARGET_VERSION '1.8.0' or PROPERTY_CONFORMANCE_TARGET_VERSION '1.15.0', which are the two targets that actually govern the property spine. There are now THREE conformance targets and the doc documents one.",
+          "severity": "high"
+        },
+        {
+          "line": 811,
+          "claim": "### Package surface (planned v1.0.0)",
+          "truth": "Published surface at 1.19.0 exports 11 subpaths: . ./testing ./encumbrances ./workspace ./read-contract ./conformance ./export ./temporal ./og ./reasoning ./property. The 'planned v1.0.0' section is 18 minor versions behind.",
+          "severity": "med"
+        }
+      ]
+    },
+    {
+      "path": "01a_atom_conventions.md",
+      "lastUpdated": "2026-05-27",
+      "staleClaims": [
+        {
+          "line": 20,
+          "claim": "The Hauska substrate atom contract (`@hauska/atom-contract`, ADR-001) is separate and specified in 25_atom_architecture_reference.md",
+          "truth": "Package renamed to @empressaio/atom-contract. NOTE: this doc governs doc_repo PORTFOLIO atoms (ContextSummary shape), a genuinely different layer from the property spine families. Its portfolio-atom content is not invalidated by the property-rail work; only the cross-reference package name is wrong.",
+          "severity": "med"
+        },
+        {
+          "line": 15,
+          "claim": "Atom conformance target (2026-06-21) ... conformance target version 1.5.0 ... five-value accessPolicy",
+          "truth": "accessPolicy five-value union CONFIRMED CORRECT against published 1.19.0 dist/registration.d.ts:48 ('public-free' | 'public-paid' | 'platform-internal' | 'tenant-private' | 'tenant-shared'). ATOM_CONFORMANCE_TARGET_VERSION 1.5.0 CONFIRMED CORRECT. This doc is the most accurate atom doc in the repo.",
+          "severity": "low"
+        }
+      ]
+    },
+    {
+      "path": "_catalog/atoms_index.md",
+      "lastUpdated": "2026-05-28",
+      "staleClaims": [
+        {
+          "line": 6,
+          "claim": "Index of active portfolio atoms; agent rows list cc-agent-C/C2/R/E as 'idle'; sprint rows list 40e/40d/51/54/55/56 as active.",
+          "truth": "76 days stale. The fleet model changed (planner runs Cursor + Claude subagents per the 2026-07-05 memory). No property-spine atom family appears in this index at all. It is not WRONG about the property spine — it never claimed to cover it — but a reader looking for 'the atom catalog' finds a portfolio-only index with no pointer to PROPERTY_ENTITY_TYPES.",
+          "severity": "med"
+        }
+      ]
+    },
+    {
+      "path": "_inbox/2026-08-09_W1_writers_program_WDLL.md",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        {
+          "line": 9,
+          "claim": "Done looks like: Every one of the 12 rails in county_rail has a live writer",
+          "truth": "14 rails. This is the writers program's own definition of done and its denominator is wrong.",
+          "severity": "high"
+        },
+        {
+          "line": 26,
+          "claim": "Acceptance item 14: county_rail shows has_writer=true on all 12 rails",
+          "truth": "14 rails; currently 7 of 14 carry has_writer=true on ldt origin/main.",
+          "severity": "high"
+        },
+        {
+          "line": 12,
+          "claim": "Acceptance item 1: Parcel-node sweep CLOSED with artifact ... grade: [ ]",
+          "truth": "The sweep IS complete (132/132, 11,603,489 atoms) and item 2 (geometry scorer re-run, ledger rises) IS satisfied (142 satisfied cells / 4.9146%). Two acceptance items are met and ungraded. The whole card is ungraded — every grade box reads [ ].",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "path": "90_operations/OPS-15_owner_and_rrc_rail_gap_analysis.md",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        {
+          "line": 182,
+          "claim": "The Texas-flush launch gate is 'all 12 rails with writers.'",
+          "truth": "Quoting the gate as written, which is itself stale at 12. R1 was RULED YES and applied; this doc's status line still reads 'scoped and PARKED ... R1-R4 owed'.",
+          "severity": "med"
+        },
+        {
+          "line": 191,
+          "claim": "R1 — Rail restructure. Split rrc into rrc-wells + rrc-pipelines and add rail-corridor, taking 12 rails to 14 ...? (Recommend YES)",
+          "truth": "R1 RULED YES and LIVE IN PRODUCTION 2026-08-10 (ldt PR #407, cortex-api 00497-cep at 100%). R4 (owner privacy) is also resolved: the contract SCHEMA pins owner-fact to public-paid and rejects anything else. The doc still presents R1 and R4 as owed rulings.",
+          "severity": "high"
+        },
+        {
+          "line": 202,
+          "claim": "The Command Center County Manifest header reads '254 counties x 13 rails' and 'GRID 254x13' while the API returns totalRails: 12 and 3,048 cells (254x12).",
+          "truth": "API now returns totalRails 14 / 3,556 cells. Whether the CC header was updated to 14 is UNVERIFIED in this audit and should be checked before this correction is applied.",
+          "severity": "med"
+        },
+        {
+          "line": 205,
+          "claim": "satisfiedCells (89) vs satisfiedPresentCells (107) ... 0.897% is correct as quoted.",
+          "truth": "Now 142 vs 160 (delta still exactly satisfiedPresentPartialCells = 18); pct 4.9146%. The STRUCTURAL explanation of the two field names remains correct and valuable — only the figures moved.",
+          "severity": "low"
+        }
+      ]
+    },
+    {
+      "path": "CLAUDE.md",
+      "lastUpdated": "n/a",
+      "staleClaims": [
+        {
+          "line": 96,
+          "claim": "'Read first' item 1: 00_current_state.md — rolling snapshot. Active fires, in-flight sprints, open ADRs...",
+          "truth": "_STATE.md is the de facto read-first doc for the Texas-flush program and says so in its own first line. CLAUDE.md does not mention _STATE.md at all. OPS-14's cleanup lane item 1 flagged this and it is still open. An agent that follows CLAUDE.md literally will not read _STATE.md.",
+          "severity": "high"
+        },
+        {
+          "line": 127,
+          "claim": "The long 'Substrate v1 status as of 2026-05-19' and 'Ground-truth reconciliation (2026-06-06)' paragraphs asserting corpus/tool/contract counts.",
+          "truth": "These are explicitly date-scoped and the doc itself says counts 'must be traced to live gh/npm/gcloud state, not to this doc'. Treated as HISTORICAL per the convention. NOT flagged for correction — but OPS-14 cleanup item 2 ('move CLAUDE.md's dated point-in-time status paragraphs to a historical record; CLAUDE.md keeps rules and pointers only') remains the right and still-open fix.",
+          "severity": "low"
+        }
+      ]
+    }
+  ],
+  "numbersNeedingCorrection": [
+    {
+      "doc": "_STATE.md",
+      "line": 7,
+      "statedNumber": "0.7689% (14 rails / 3,556 cells / 89 satisfied), scorer RUNNING not applied",
+      "liveNumber": "texasCompletenessPct 4.914570002277076; satisfiedCells 142; satisfiedPresentCells 160; totalRails 14; totalCells 3556",
+      "howVerified": "curl GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger at 2026-08-11T14:51:09Z, summary object read directly"
+    },
+    {
+      "doc": "_STATE.md",
+      "line": 157,
+      "statedNumber": "0.897 percent, 89 satisfied cells of 3,048",
+      "liveNumber": "4.914570002277076 percent, 142 satisfied cells of 3,556",
+      "howVerified": "same live endpoint read"
+    },
+    {
+      "doc": "_STATE.md",
+      "line": 186,
+      "statedNumber": "~0.0395 percent; 12 rails x 254 = 3,048; no-atom 1524, no-writer 1016, not-yet 489, satisfied-present 19",
+      "liveNumber": "4.9146 percent; 14 rails x 254 = 3,556; no-atom 1016, no-writer 762, not-yet 1618, satisfied-present 160",
+      "howVerified": "live endpoint; per-cell displayState tallied over all 3,556 manifestCells"
+    },
+    {
+      "doc": "_STATE.md",
+      "line": 190,
+      "statedNumber": "@empressaio/atom-contract@1.14.0; engine main registers 7 property types (PR #286 adds three -> 10)",
+      "liveNumber": "@empressaio/atom-contract@1.19.0; PROPERTY_ENTITY_TYPES = 14 on hauska-engine origin/main tip 34c94ff",
+      "howVerified": "npm view @empressaio/atom-contract version -> 1.19.0; git show origin/main:packages/atoms/src/property-instances.ts"
+    },
+    {
+      "doc": "90_operations/OPS-14_texas_flush_game_plan.md",
+      "line": 73,
+      "statedNumber": "@empressaio/atom-contract 1.15.0",
+      "liveNumber": "1.19.0",
+      "howVerified": "npm view @empressaio/atom-contract version"
+    },
+    {
+      "doc": "_decisions/2026-08-09_texas_flush_launch_gate.md",
+      "line": 22,
+      "statedNumber": "12 rails / 3,048 ledger cells",
+      "liveNumber": "14 rails / 3,556 ledger cells",
+      "howVerified": "live endpoint summary totalRails 14 totalCells 3556; ldt origin/main lib/db/src/schema/countyRailDimension.ts declares 14 rails"
+    },
+    {
+      "doc": "_decisions/2026-08-09_texas_flush_launch_gate.md",
+      "line": 34,
+      "statedNumber": "8 of 12 rails structurally unable to produce a satisfied cell",
+      "liveNumber": "7 of 14 (roads, footprint, easement = no-writer; rrc-wells, rrc-pipelines, rail-corridor, mud = no-atom)",
+      "howVerified": "per-rail displayState tally over live manifestCells"
+    },
+    {
+      "doc": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md",
+      "line": 30,
+      "statedNumber": "19 of 254 counties with parcel geometry loaded",
+      "liveNumber": "196 of 254 in txgio_parcel (planner-verified); 195 counties carry parcel-node atoms; 141 counties score geometry satisfied-present",
+      "howVerified": "planner ground truth supplied this session; ledger geometry rail tally 141 satisfied-present / 113 not-yet"
+    },
+    {
+      "doc": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md",
+      "line": 73,
+      "statedNumber": "twelve rails",
+      "liveNumber": "14 rails",
+      "howVerified": "live endpoint totalRails 14"
+    },
+    {
+      "doc": "90_operations/OPS-13_store_topology.md",
+      "line": 174,
+      "statedNumber": "Twelve rails, four with has_writer = true; hard ceiling near one third",
+      "liveNumber": "Fourteen rails, seven with has_writer = true (geometry, cad, zoning, flood, envelope, landuse, owner); ceiling near one half",
+      "howVerified": "git show origin/main:lib/db/src/schema/countyRailDimension.ts in P:/legacy-design-tools, hasWriter fields read per rail"
+    },
+    {
+      "doc": "90_operations/OPS-7_coverage_and_honesty_doctrine.md",
+      "line": 32,
+      "statedNumber": "12 rails, 3,048 cells, 38 satisfied, 0.2133771830027867; 79 counties / 796,046 parcel-node atoms",
+      "liveNumber": "14 rails, 3,556 cells, 142 satisfied, 4.914570002277076; 195 counties / 11,603,489 parcel-node atoms",
+      "howVerified": "live endpoint + planner-verified sweep close figures"
+    },
+    {
+      "doc": "_inbox/2026-08-09_W1_writers_program_WDLL.md",
+      "line": 9,
+      "statedNumber": "12 rails in county_rail",
+      "liveNumber": "14 rails",
+      "howVerified": "live endpoint + ldt origin/main rail declaration"
+    }
+  ],
+  "atomConventionsAligned": false,
+  "atomFindings": [
+    "CONFIRMED ALIGNED — accessPolicy. The published @empressaio/atom-contract@1.19.0 declares the five-value union at dist/registration.d.ts:48: 'public-free' | 'public-paid' | 'platform-internal' | 'tenant-private' | 'tenant-shared'. This matches CLAUDE.md and 01a_atom_conventions.md exactly. No correction needed.",
+    "CONFIRMED ALIGNED — conformance target. ATOM_CONFORMANCE_TARGET_VERSION is literally '1.5.0' in the published 1.19.0 tarball (dist/conformance/common.d.ts:14). 01a_atom_conventions.md and 25_atom_architecture_reference.md are both CORRECT to say 1.5.0.",
+    "GAP — two conformance targets are undocumented anywhere in doc_repo. The published contract also declares REASONING_CONFORMANCE_TARGET_VERSION = '1.8.0' (common.d.ts:20) and PROPERTY_CONFORMANCE_TARGET_VERSION = '1.15.0' (common.d.ts:25). The property target is the one that actually governs the county rails, and no canonical doc mentions it. An agent told 'the conformance target is 1.5.0' will validate property atoms against the wrong target.",
+    "MISMATCH — PACKAGE NAME. 25_atom_architecture_reference.md is status:active, is titled '@hauska/atom-contract — Architecture reference', and uses the retired name in at least 12 places including the package-surface spec. CLAUDE.md says that name 'appears in historical records only'. This doc is not a historical record; it is the named authority for the substrate contract.",
+    "MISMATCH — REGISTERED FAMILIES. hauska-engine origin/main (tip 34c94ff) PROPERTY_ENTITY_TYPES has 14 members: parcel-node, zoning-fact, setback-rule, buildable-envelope, parcel-terrain-model, building-footprint, utility-easement, flood-hazard-fact, cad-parcel-roll, land-use-fact, owner-fact, rail-corridor-fact, well-fact, special-district-fact. NO doc_repo canonical doc enumerates this list. 01a_atom_conventions.md and _catalog/atoms_index.md cover only the portfolio-atom layer; 25_atom_architecture_reference.md predates every one of these families.",
+    "STRUCTURAL GAP — road-node IS PUBLISHED BUT NOT REGISTERED. The contract 1.19.0 ships dist/property/road-node.{d.ts,js} with entityType 'road-node', a full ROAD_NODE_SCHEMA, road classification enum, ROW provenance and attach points — exported from the ./property barrel (index.d.ts:16). The engine does NOT include road-node in PROPERTY_ENTITY_TYPES. This is the single most important atom finding: the roads rail reads no-writer on 254/254 cells and the atom shape it needs is already published and paid for. Registering it is likely a much smaller job than the roads lane is currently scoped as.",
+    "CONTRADICTION — RAIL DECLARATION vs CONTRACT. ldt origin/main lib/db/src/schema/countyRailDimension.ts declares atomFamilyState: 'missing' for rrc-wells, rrc-pipelines, rail-corridor AND mud. But contract 1.19.0 publishes well-fact (rrc-wells), rail-corridor-fact (rail-corridor) and special-district-fact (mud), and the engine registers all three. Three of those four 'missing' declarations are FALSE — the families exist and are registered. The ledger therefore renders 762 cells as 'no-atom' that should read 'no-writer' or 'not-yet'. This under-reports real progress by up to 762 cells and is exactly the class of two-numbers-that-should-agree the skeleton-hunting method targets. Only rrc-pipelines has a genuinely missing family.",
+    "SOURCE-COMMENT DEFECT (cosmetic but misleading). hauska-engine packages/atoms/src/property-instances.ts, the doc-comment immediately above PropertyEntityType reads 'All eleven are keyed on parcelNodeId' while the union has fourteen members. Low severity, but a reader counting families from the comment gets the wrong number.",
+    "owner-fact accessPolicy posture VERIFIED STRUCTURAL, not merely documented. dist/property/owner-fact.js:53-57 rejects any accessPolicy other than public-paid with the message 'owner-fact must use accessPolicy public-paid (owner identity is the paid facet; a public-free owner atom would leak it)'. parcel-node symmetrically pins public-free (parcel-node.js:145-149). _STATE.md:140's claim that R4 is 'STRUCTURAL, not documented' is CORRECT and independently confirmed."
+  ],
+  "launchGateReconciliation": {
+    "criteriaAsRuled": [
+      "1. L2 parcel geometry at 254 of 254 counties (fabric complete), with the coastal-short and Donley exceptions resolved or ruled honestly absent.",
+      "2. Statewide-uniform layers live: roads, NFHL flood (done 2026-08-09), building footprints (ML-derived default per ADR-029).",
+      "3. All 12 rails have writers, so every one of the 3,048 ledger cells resolves to data or disclosed honest absence with provenance. No cell left in `no-writer`.",
+      "4. Cert frame reconciled to the Geometry Law (cert lane grades the raw txgio ring; block13 fixture re-dumped; certs re-earned in the true frame).",
+      "5. 76j capacity items done: rate-limit store, load test, capacity doc, domain and branding.",
+      "PER-RAIL REFINEMENT (ruled same day): Statewide-uniform rails must reach satisfied everywhere, no `not-yet` cells left. Jurisdiction-depth rails gate on writer-live plus honestly displayed `not-yet` everywhere, with satisfied required in the launch-footprint counties."
+    ],
+    "distanceToSatisfied": [
+      {
+        "criterion": 1,
+        "state": "NOT MET",
+        "distance": "Acquisition: 196 of 254 counties in txgio_parcel (58 counties absent). Scoring: geometry rail satisfied-present at 141/254, so 113 counties short of the ledger reading. Named unresolved exceptions: 8 coastal geographic-short counties, Bosque idempotency re-run, Donley 48129 (404 at source). Of the 113 not-yet geometry cells, 54 already carry a nonzero honestCoveragePct below the 95 threshold — those are threshold misses, not absent data; the remaining 59 carry zero."
+      },
+      {
+        "criterion": 2,
+        "state": "1 OF 3 MET",
+        "distance": "NFHL: data loaded (198,178 rows) — MET as acquisition, NOT MET as a served rail (flood rail is not-yet 254/254 despite hasWriter=true; the writer has never been run statewide). Roads: NOT MET, zero statewide ingest, eng #293 open with CI FAILURE and DO-NOT-MERGE, all six unblockers open, H6 never dispatched. Footprints: NOT MET, writer unbuilt, footprint rail no-writer 254/254."
+      },
+      {
+        "criterion": 3,
+        "state": "NOT MET — AND THE CRITERION IS MIS-SPECIFIED",
+        "distance": "As literally written ('no cell left in no-writer'): 762 cells read no-writer (roads, footprint, easement at 254 each). But the criterion does not name the no-atom state at all, and 1,016 further cells read no-atom (rrc-wells, rrc-pipelines, rail-corridor, mud at 254 each). Total cells that cannot resolve to a provenanced answer: 1,778 of 3,556 — exactly half the grid. The denominator in the criterion (3,048) is also wrong by 508 cells."
+      },
+      {
+        "criterion": 4,
+        "state": "NOT MET",
+        "distance": "Cert-frame reconciliation is OPS-14 workstream W3 off cleanup lane B2. No close artifact for the re-earn was found in this audit. The county-extent instrument (OPS-12's highest-priority missing instrument, and a named DEPENDENCY of the L2 finish waves) is not wired."
+      },
+      {
+        "criterion": 5,
+        "state": "PARTIAL",
+        "distance": "76j Workstream A (paywall/entitlement) SHIPPED 2026-08-05 with a residual operator E2E. Rate-limit store: the MCP Upstash rate-limit db is dead with memory fallback active — recorded as a pickup, not done. Load test, capacity doc: no close artifact found. Branding: FAILING — the Stripe product reads 'Hauska Pro', a branding-canon violation that _inbox/2026-08-11_PLANNER_HANDOFF_finish_line.md names as a hard gate that must not reach an external tester, and it currently sits inside Q11, a lane explicitly labelled 'batched by design'."
+      },
+      {
+        "criterion": "per-rail uniform",
+        "state": "NOT MET — 1,891 of 2,032 cells short",
+        "distance": "geometry 141/254 satisfied (gap 113); roads 0/254 (gap 254); flood 0/254 (gap 254); footprint 0/254 (gap 254); rrc-wells 0/254; rrc-pipelines 0/254; mud 0/254; rail-corridor 0/254. Only geometry has produced a single satisfied uniform cell."
+      },
+      {
+        "criterion": "per-rail depth",
+        "state": "NOT MET — 149 of 168 footprint cells short",
+        "distance": "Against the 28-county launch footprint enumerated in _decisions/2026-08-09_launch_footprint_counties.md: zoning 19/28 satisfied (gap 9 — the best-placed rail); cad 0/28, owner 0/28, envelope 0/28, landuse 0/28, easement 0/28 (gap 28 each). Writer-live sub-criterion: five of six depth rails have hasWriter=true; easement alone reads no-writer on all 254."
+      }
+    ],
+    "criteriaNeedingAnOperatorRuling": [
+      {
+        "id": "GATE-R1",
+        "severity": "high",
+        "finding": "THE DENOMINATOR IS WRONG IN THE GATE ITSELF. Criterion 3 says '12 rails' and '3,048 cells'. The R1 split ruled 2026-08-09 (the DAY AFTER the gate) and applied to production 2026-08-10 made it 14 / 3,556. OPS-15 predicted this exact problem at line 187: 'If the rail count goes 12 to 14, the gate's own denominator moves. Adding rails immediately before a launch gate defined as all rails with writers makes the gate harder by definition.' It was flagged, the split was ruled anyway (correctly, for honesty), and the gate was never amended. RULING OWED: amend criterion 3 to 14 rails / 3,556 cells, and state whether the three rails added after the gate was written are launch-gate scope or post-launch."
+      },
+      {
+        "id": "GATE-R2",
+        "severity": "high",
+        "finding": "THE 'no-atom' STATE IS UNADDRESSED BY THE GATE. Criterion 3 says 'No cell left in no-writer'. It never mentions no-atom, yet 1,016 cells sit there. Read literally, a rail could satisfy the gate by having no atom family at all, because a cell with no family never reaches no-writer. RULING OWED: restate criterion 3 over the union of no-writer AND no-atom, or explicitly exempt the four no-atom rails."
+      },
+      {
+        "id": "GATE-R3",
+        "severity": "high",
+        "finding": "THE OWNER RAIL CANNOT SATISFY A STATEWIDE READING — THE OPERATOR'S OWN SUSPICION, CONFIRMED. owner is classified jurisdiction-depth in OPS-14 (ratified as operator decision 4), so under the per-rail split it only owes satisfied in the 28 footprint counties, NOT 254. That resolves the literal impossibility. BUT the underlying data ceiling is real and unresolved: cad_property holds owner data for 15 counties (4,599,477 rows). Of the 28 launch-footprint counties, the audit did not establish how many are among those 15 — and if fewer than 28, the depth gate is ALSO unsatisfiable as written without new CAD acquisition. RULING OWED: enumerate which of the 28 footprint counties have CAD owner data today, and either (a) fund the acquisition gap, or (b) rule the shortfall honest-absence-satisfied. NOTE: OPS-15 R3 asked precisely this ('Is OWN launch-gate scope? As written the gate requires it. Confirm intended, or amend the gate.') and it was never answered."
+      },
+      {
+        "id": "GATE-R4",
+        "severity": "high",
+        "finding": "'STATEWIDE-UNIFORM' IS ASSERTED FOR RAILS WHOSE DATA IS NOT UNIFORM. Four uniform-classed rails read no-atom on all 254 cells: rrc-wells, rrc-pipelines, rail-corridor, mud. RRC wells and pipelines exist only where oil and gas exists; rail corridors exist only where track exists; MUDs exist only where districts were created. Demanding 'satisfied everywhere, no not-yet cells left' on these means demanding 254 honest-absence atoms per rail — roughly 1,016 absence cells that must be WRITTEN, not merely inferred. That is real engineering effort producing zero customer-visible data. RULING OWED: confirm that mass honest-absence minting is intended launch-gate work, or reclassify these four rails as post-launch."
+      },
+      {
+        "id": "GATE-R5",
+        "severity": "high",
+        "finding": "CRITERION 2 CONFLATES DATA LOADED WITH RAIL SATISFIED — the exact error OPS-7 exists to prevent. It marks NFHL flood 'done 2026-08-09' because the table loaded. The flood RAIL reads not-yet on all 254 cells because flood-hazard-fact has never run statewide. By OPS-7's three-states rule, criterion 2 grades state 2 (DATA LOADED) while the per-rail refinement grades state 3 (SERVED). The gate marks as met something the ledger says is unmet. RULING OWED: restate criterion 2 in terms of the ledger (the gate's own named instrument), not in terms of table loads."
+      },
+      {
+        "id": "GATE-R6",
+        "severity": "med",
+        "finding": "NO CRITERION NAMES THE HEADLINE COMPLETENESS NUMBER. The gate is defined entirely on cell STATES, deliberately, so that honest absence counts. That is coherent. But it means texasCompletenessPct — the number on the operator console, the number every session log leads with, and the number that just moved 6.4x — has NO role in the gate. RULING OWED (low-cost, high-clarity): state explicitly that texasCompletenessPct is a progress instrument and NOT a gate criterion, so nobody mistakes 4.9 percent for distance-to-launch. Without this, the program's most visible number and its actual definition of done are silently disconnected."
+      }
+    ]
+  },
+  "recommendedDocEdits": [
+    {
+      "path": "_STATE.md",
+      "edit": "Correct the ledger figures at lines 7, 100, 157, 186 and 190 to live values (4.914570002277076 pct, 142 satisfied, 160 satisfied-present, 14 rails, 3,556 cells; displayState no-atom 1016 / no-writer 762 / not-yet 1618 / satisfied-present 160; contract 1.19.0; PROPERTY_ENTITY_TYPES 14). Fix line 11's 'all 12 rails' to 14 — the file contradicts itself against its own lines 108 and 126. HIGHEST PRIORITY: line 7 is the first thing every agent reads and it says the scorer has not applied when it has.",
+      "priority": 1
+    },
+    {
+      "path": "_decisions/2026-08-09_texas_flush_launch_gate.md",
+      "edit": "Add a dated AMENDMENT section (do not rewrite the ruling — it is a decision record). Amend criterion 3 to 14 rails / 3,556 cells; extend it over no-atom as well as no-writer; restate criterion 2 against the ledger rather than table loads; record the GATE-R1 through GATE-R6 rulings owed. This doc is the gate and five of its six criteria currently cannot be graded as written.",
+      "priority": 1
+    },
+    {
+      "path": "90_operations/OPS-14_texas_flush_game_plan.md",
+      "edit": "Bump to v3 with last_updated 2026-08-11. Rebuild the rail classification table on the 14 live railKeys. Move owner/rail-corridor/well/special-district from 'BUILD the missing writers' to a new 'BUILT, ZERO COVERAGE, AWAITING APPLY' state — that is the program's actual bottleneck now and no doc names it. Retire the 'parcel-node sweep (running)' concurrency premise; the atoms slot is FREE. Correct the contract to 1.19.0 and the pricing ladder to the 2026-08-10 locked ladder. Add a DEFINITION OF DONE section with gradable checkboxes — see adversarialFindings.",
+      "priority": 1
+    },
+    {
+      "path": "90_operations/OPS-13_store_topology.md",
+      "edit": "Replace the twelve-row rail table (lines 160-174) with the live fourteen-row declaration read from ldt origin/main lib/db/src/schema/countyRailDimension.ts. Correct 'four with has_writer=true' to seven, and the 'hard ceiling near one third' to near one half. Flag the atomFamilyState contradiction: three of the four rails declared 'missing' (rrc-wells, rail-corridor, mud) have families published in contract 1.19.0 and registered in the engine.",
+      "priority": 2
+    },
+    {
+      "path": "_decisions/2026-08-08_layer_first_statewide_fabric_sequence.md",
+      "edit": "Add a dated AMENDMENT: L0 deferred to read time by ruling; L1 DONE (1,222 city + 254 county polygons); L2 at 196/254 acquired and 141/254 scored, not 19; the twelve-rail denominator at line 73 superseded to 14 by the R1 split; the heavy-scan slot listed as open at the bottom was RULED in OPS-14 open decision 5. The layer SEQUENCE itself is sound and needs no change — only the ground-truth table and the denominator.",
+      "priority": 2
+    },
+    {
+      "path": "_decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first.md",
+      "edit": "Add a supersede note at the top pointing at the R1 split. Three decision records in _decisions/ now assert 12, 13 and 14 rails with nothing linking them; this is the cheapest of the three to fix and prevents an agent adopting 'thirteen rails' from a doc whose title asserts it.",
+      "priority": 2
+    },
+    {
+      "path": "25_atom_architecture_reference.md",
+      "edit": "Rename throughout to @empressaio/atom-contract; retire the '@workspace/empressa-atom staging' claim (migration completed 2026-05-22); replace the 'planned v1.0.0 package surface' with the published 1.19.0 surface (11 subpaths); add REASONING_CONFORMANCE_TARGET_VERSION 1.8.0 and PROPERTY_CONFORMANCE_TARGET_VERSION 1.15.0 alongside the correct ATOM target 1.5.0; add the 14-member PROPERTY_ENTITY_TYPES list. This doc is status:active and is the named substrate-contract authority while being 85 days and 18 minor versions behind.",
+      "priority": 2
+    },
+    {
+      "path": "CLAUDE.md",
+      "edit": "Add _STATE.md to the 'Read first' list ahead of or alongside 00_current_state.md, and name which governs which program. This is OPS-14 cleanup item 1, still open, and it is why a fresh agent can read the whole prescribed reading list and never learn the Texas flush exists.",
+      "priority": 2
+    },
+    {
+      "path": "90_operations/OPS-7_coverage_and_honesty_doctrine.md",
+      "edit": "Refresh the worked example at lines 32-34 to live figures, or better, genericize it to placeholders so the doctrine stops carrying a decaying number. The RULE (never a bare number; name the state and the instrument) is correct and load-bearing — only its illustration rots.",
+      "priority": 3
+    },
+    {
+      "path": "_inbox/2026-08-09_W1_writers_program_WDLL.md",
+      "edit": "Amend 12 rails to 14 in the done-statement and acceptance item 14. GRADE items 1 and 2 as met (sweep closed 132/132 with artifact; scorer applied, satisfiedCells 89->142, pct 0.7689->4.9146). This is a frozen approved card with an amendments section built for exactly this and every grade box still reads [ ].",
+      "priority": 3
+    },
+    {
+      "path": "90_operations/OPS-15_owner_and_rrc_rail_gap_analysis.md",
+      "edit": "Flip the status line off 'PARKED, R1-R4 owed'. Record R1 as RULED YES and LIVE 2026-08-10; record R4 as resolved-structurally (contract pins owner-fact to public-paid and rejects otherwise). R2 (pipeline scope) and R3 (is OWN launch-gate scope) remain genuinely open — R3 is now the GATE-R3 ruling owed.",
+      "priority": 3
+    },
+    {
+      "path": "hauska-engine packages/atoms/src/property-instances.ts",
+      "edit": "NOT a doc_repo edit, listed for routing: the doc-comment above PropertyEntityType says 'All eleven' against a fourteen-member union.",
+      "priority": 4
+    }
+  ],
+  "adversarialFindings": [
+    "THERE IS NO SINGLE COHERENT DEFINITION OF DONE FOR THIS LAUNCH. This is the most useful finding in the audit and it is a structural gap, not a stale number. Five documents each hold a PIECE of the definition and no document holds all of it, none of them agree on the denominator, and the one that comes closest is not gradable. (1) _decisions/2026-08-09_texas_flush_launch_gate.md holds the CRITERIA but its arithmetic is one day out of date and five of its six criteria cannot be graded as literally written. (2) 90_operations/OPS-14_texas_flush_game_plan.md holds the PROGRAM SHAPE and is the best single candidate, but it contains no gradable done-card — it says 'the gate is settled, do not relitigate here' and points elsewhere. (3) 90_operations/OPS-WDLL_the_factory.md holds a genuine WDLL with done/broken/kill criteria, but it is scoped to the FACTORY as a machine at the JURISDICTION grain, was written 2026-08-03 before the layer-first pivot, and its status section still reads 'Bastrop city, mid-warm'. It answers 'is one county done', never 'is Texas done'. (4) _inbox/2026-08-09_W1_writers_program_WDLL.md is a real gradable card with 15 acceptance items — the ONLY properly-shaped WDLL in the program — but it covers one workstream, carries the wrong rail count, and every grade box is still empty. (5) _STATE.md holds the live state and is the only doc an agent actually reads, but it is unratified, CLAUDE.md does not mention it, and its own LIVE NUMBERS section is wrong. RECOMMENDATION: make OPS-14 canonical and give it what it lacks — a DEFINITION OF DONE section that restates the six amended gate criteria as gradable rows in the W1 WDLL's shape (claim | instrument | live reading | grade), each naming the query or endpoint that grades it. That single addition would make the launch gate readable in one place for the first time.",
+    "THE GATE'S ARITHMETIC WAS OBSOLETE WITHIN 24 HOURS OF BEING RULED, AND IT WAS PREDICTED. OPS-15 line 187 warned in writing that splitting rails immediately before a gate defined as 'all rails with writers' makes the gate harder by definition. The split was ruled the next day and applied the day after. The gate was never amended. The warning was recorded, ignored in the sense that nobody amended the gate, and is now the top blocker to grading the program. The lesson worth capturing: a gate expressed as a COUNT of a dimension that is still being edited will rot; the gate should have been expressed over the dimension ('every rail in county_rail') rather than over its cardinality ('all 12 rails').",
+    "THE PROGRAM'S HEADLINE NUMBER MOVED 6.4x AND THE READ-FIRST DOC DOES NOT KNOW. _STATE.md line 7 says 'the scorer is RUNNING and has not applied yet' at 0.7689%. It has applied: 4.9146%, 142 satisfied cells. Every downstream doc, handoff and dispatch generated from _STATE.md since that apply carries the pre-apply figure. The per-rail data the planner supplied for this audit matched live EXACTLY (geometry 141/113, zoning 19/235) while the summary did not — which is itself the tell: the manifestCells were re-scored and read fresh, the summary rollup was read from a cached prose figure. Two numbers that should agree and don't.",
+    "SEVEN RAILS OF FOURTEEN CANNOT PRODUCE A SATISFIED CELL — AND FOUR OF THEM ARE MISLABELLED IN A WAY THAT UNDERSTATES REAL PROGRESS. The rail declaration marks rrc-wells, rrc-pipelines, rail-corridor and mud as atomFamilyState 'missing'. Contract 1.19.0 publishes well-fact, rail-corridor-fact and special-district-fact, and hauska-engine origin/main registers all three. So three of those four declarations are FALSE and 762 cells render as 'no-atom' when the family exists. The console is telling the operator that work is unstarted when it is built-but-unapplied. Given the standing rule that honest absence is the product, a ledger that under-reports its own state is a defect of the same class as one that over-reports.",
+    "road-node IS PUBLISHED, PAID FOR, AND UNREGISTERED. Contract 1.19.0 ships a complete road-node property family (schema, classification enum, ROW provenance, attach points) exported from ./property. The engine does not register it. The roads rail is no-writer on 254/254 cells and is the single largest uniform-rail gap after geometry. Whatever the roads INGEST problem is (six unblockers, eng #293 DO-NOT-MERGE), the atom shape is not part of it and no doc records that the shape already exists.",
+    "TWO STALE ldt CHECKOUTS STILL DECLARE 12 RAILS. P:/legacy-design-tools is 19 commits behind origin/main. There are six ldt checkouts on this machine (legacy-design-tools, -c2, -multishp, -r, -wave0, -wt). Any agent dispatched against a stale tree reads a 12-rail declaration and will produce work against the wrong denominator, which is precisely how the stale numbers in these docs got generated in the first place. This is the stale-clone rewind trap in its rail-count costume.",
+    "THE BLUEPRINT'S OWN CLEANUP LANE IDENTIFIED THE WORST DOC PROBLEM AND IT IS STILL OPEN. OPS-14 doc cleanup item 1: ratify _STATE.md or regenerate 00_current_state.md. Two days on, _STATE.md is still unratified, CLAUDE.md still names 00_current_state.md as read-first, and 00_current_state.md (last touched 2026-08-10, so it LOOKS current) contains nothing about the launch gate, the rail split, the sweep, or the ledger. An agent that follows CLAUDE.md's prescribed reading order gets a doc that is fresh, accurate, and about a completely different program. That is worse than a stale doc, because staleness is detectable by date and this is not.",
+    "THE ONE EXTERNAL-FACING RISK IS FILED IN A LANE LABELLED 'DO NOT STOP FOR THESE'. Q11 in _STATE.md is 'batched by design' and contains G1: the Stripe product reads 'Hauska Pro'. Hauska is substrate-only per the branding canon; the product brand is Smart Site. Launch-gate criterion 5 explicitly includes 'domain and branding'. A hard gate is currently inside a batch whose label instructs agents to defer it. The finish-line handoff flags this correctly; the register it lives in does not."
+  ]
+}

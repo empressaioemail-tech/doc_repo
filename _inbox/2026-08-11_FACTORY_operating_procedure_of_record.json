@@ -1,0 +1,91 @@
+{
+  "runAt": "2026-08-11T14:40:00Z",
+  "factory1": {
+    "name": "Statewide fabric factory (jurisdiction-free layer acquisition + county atom writers)",
+    "purpose": "Acquire jurisdiction-free layers (parcel geometry, boundaries, roads, flood, soils, topo, CAD rolls, owner, wells, rail, footprints, special districts) one source / one pass / blanket a state, and write them into the atoms store as county-scoped property atoms. Per-state cost is roughly constant regardless of county count. Produces the FABRIC the jurisdiction factory fills in.",
+    "entryPointPath": "P:/hauska-engine/packages/engine-core/scripts/write-*-county.mjs (nine writers on origin/main), driven at sweep scale by the frozen runner P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs",
+    "exactInvocation": "PARCEL_NODE_PATH=1 DATABASE_URL=<atoms Neon> TXGIO_DATABASE_URL=<ldt deployment Neon> pnpm --filter @hauska-engine/engine-core run write-<rail>-county -- --county=<fips> --out=<abs path>.json --batch=5000 [--apply]   # dry-run is the DEFAULT; --apply writes. For a multi-county sweep, run the frozen runner instead: node P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs",
+    "inputs": [
+      "txgio_parcel (geometry + situs + owner + value) in the ldt deployment Neon, database neondb — TXGIO_DATABASE_URL / DEPLOYMENT_DATABASE_URL / CORTEX_DATABASE_URL are byte-identical per OPS-13",
+      "cad_property (15 CAD counties, 4,599,477 rows) in the same deployment Neon",
+      "_catalog/tx_cad_source_registry.json — 30 arcgis_rest / 1 bulk_export / 4 honest_absent, bulk_primary:true on Dallas 48113 + Tarrant 48439",
+      "sizing.json queue (store-truth, smallest-county-first) for sweep-scale runs",
+      "federal/state layer sources: TCEQ water districts, RRC wells GIS, NTAD rail, FEMA NFHL, Microsoft Global ML footprints"
+    ],
+    "outputs": [
+      "property atoms in the atoms store (DATABASE_URL, database hauska_mcp) — 14 PROPERTY_ENTITY_TYPES",
+      "per-county dry JSON + apply JSON artifacts (--out)",
+      "landed_<fips>.json rows and progress.json when driven by the frozen runner",
+      "county-ledger manifest cell satisfaction, read by Command Center"
+    ],
+    "slotRequired": "atoms-bulk-writer",
+    "proven": true,
+    "provenEvidence": "Parcel-node sweep COMPLETE 2026-08-11T13:27:52.245Z: progress.json reads landed=132, halted=null, failed=3, econnresets=8 (all recovered by idempotent re-run). 11,603,489 parcel-node atoms across 195 counties; 18,556,547 atoms total. 132 landed_<fips>.json files and 132 dry/apply artifact pairs on disk at P:/tmp/parcel_node_sweep_20260809/."
+  },
+  "factory2": {
+    "name": "Jurisdiction backfill factory (county/city onboarding recipe — the proven cert lane)",
+    "purpose": "Backfill what VARIES per jurisdiction — zoning districts, setback tables, code text, buildable envelopes — through the two-lane onboarding pipeline (unzoned county lane C1-C7, zoned city lane Z1-Z11) gated by onboard-preflight, certified by area-sweep cert-grade, swept by the Warden. Cost scales with jurisdiction count. This is where the moat is.",
+    "entryPointPath": "P:/doc_repo/90_runbooks/factory_onboarding_runbook.md is the procedure; the mechanical entry points are P:/hauska-engine/packages/engine-core/scripts/onboard-preflight.mjs (gate), bake-property-atom-county.mjs (zoning-fact + cascade), depth-warm-<city>-batch.mjs (warm), cert-grade-and-report.mjs (cert), warden-sweep.mjs (audit)",
+    "exactInvocation": "PROPERTY_ATOM_PATH=1 DATABASE_URL=<atoms Neon> pnpm --filter @hauska-engine/engine-core run bake-property-atom-county -- --county=<fips> --cascade-absence-only [--dry-run] [--batch=500]   # then: pnpm run cert-grade-and-report -- --grade-mode=unzoned --roster-from=file --roster-file=<roster.txt> \"--preflight-row-id=<rowId>\"",
+    "proven": true
+  },
+  "whichFactoryForBackfill": "factory1",
+  "reasoning": "The upcoming map-backfill work — Q3 harvest take-list, Q4 address-to-parcel, Q5 CAMA structural data — is jurisdiction-FREE payload completeness over sources the factory already visits statewide. None of it needs a zoning district, a ratified setback table, an operator ratification gate, or a cert roster, which is the entire reason factory2 exists. Q3's Class A cluster (GEO_ID 158, BLOCK 151, MAP_ID 147, ABS_SUBDV_CD 143, TRACT_OR_LOT 142) is parcel identity and plat lineage read out of cad_property and txgio_parcel; Q5 is a routing-precedence change so bulk_primary:true actually routes to a CAMA export instead of silently falling back to StratMap; Q4 is a read-only normalization-and-index motion over txgio_parcel.situs_address (99.3% of 15,479,206 rows across 196 counties). All three are the same shape as the parcel-node sweep that just completed: enumerate counties from store truth, dry-run per county, verify counts, apply per county, checkpoint the manifest. The correct vehicle is the existing county writer family plus the frozen run_sweep.mjs driver with its county list and its CLI script name swapped — its input, not its code. Routing this through factory2's onboarding lane would import a ratification gate and a cert roster into work that has neither, and would be the rebuild trap in a new costume.",
+  "rebuildAttempts": [
+    {
+      "what": "The fleet re-built the cohort selector and the cert harness (bastrop-district-cert-grade.mjs) instead of running the proven block13-cert-grade.mjs, then debugged its own new machinery through THREE STOP cycles. Every reported 'finding' was a wrapper-vs-proven divergence, not a data discovery. Operator: 'we were supposed to be getting the factory started and tested with bastrop not building a new factory.'",
+      "where": "P:/doc_repo/_decisions/2026-08-02_operate_the_factory_never_rebuild_it.md; incident log P:/doc_repo/_scratch/autonomous-run-bastrop-factory.md lines 85-93",
+      "evidence": "The correction PROVED the rebuild was the cause: under the GENERALIZED block13-cert-grade (--roster-from as a parameter, one artifact widened) Block-13 still graded 7/7 and the prior '28 SF-1 fails' collapsed to 3 genuine findings — ~23 of the 28 were cohort/harness artifacts of the divergent wrapper mis-feeding the machine. bastrop-district-cert-grade.mjs was RETIRED to a stub that exits 2.",
+      "status": "abandoned"
+    },
+    {
+      "what": "Root-cause record: the fleet's missing L3 rung. 'Operate the template' was PROSE, and prose gets interpreted-away under progress pressure. Memory, instructions and a frozen template were ALL present and it still happened, because none was a mechanism that fails closed on divergence.",
+      "where": "MEMORY.md FLEET-L3-GAP-template-replication-not-enforced; P:/doc_repo/64_recursive_loop/04_instantiations.md (documented the identical gap a month prior and it was never built)",
+      "evidence": "OPS-WDLL_the_factory.md line 42 lists 'The fleet REBUILDS the line (new cohort selector, new cert harness) instead of operating the proven artifact' as a WHAT-BROKEN-LOOKS-LIKE stop condition, root cause named as 'no divergence gate'.",
+      "status": "merged"
+    },
+    {
+      "what": "eCode360 scraper adapter REBUILT from surviving proof artifacts because the original code was never pushed and was genuinely lost. This is the LEGITIMATE case, recorded here so the guidance does not over-apply: rebuild is correct when no frozen artifact survives.",
+      "where": "engine #231, P:/doc_repo/_sessions/2026-08-04_ops9_wave_execution_claude_code.md line 18",
+      "evidence": "Adapter now lives at hauska-engine packages/corpus/src/adapters/ecode360/ on origin/main (41cfdb4). Stale branch feat/ecode360-scraper-header-first superseded, 185 commits behind, zero unique delta.",
+      "status": "merged"
+    },
+    {
+      "what": "cert-grade-core.ts R28+R30 gates were proven but never wired into the site-plan author — a rebuild-adjacent MISS in the other direction: proven machinery existed and a second path did not call it.",
+      "where": "P:/doc_repo/_scratch/edge-role-export-fix.md line 10",
+      "evidence": "Recorded verbatim as 'operate-not-rebuild miss'.",
+      "status": "merged"
+    },
+    {
+      "what": "Registry-driven single warm runner (fold per-city depth-warm-bastrop/caldwell/elgin scripts into one registry-parameterized runner). OPS-9 S4 explicitly frames it as operate-not-rebuild: extract the shared body the existing scripts ALREADY share and parameterize descriptor/roster/bbox from the registry row — do not author a new runner beside them.",
+      "where": "P:/doc_repo/90_operations/OPS-9_scale_ops_specs_pack.md line 53; factory_onboarding_runbook.md corrections item 8",
+      "evidence": "Confirmed NOT SHIPPED. Per-city hand-authored warm scripts remain the operative pattern. An executor asked to warm a new city must copy the nearest per-city script's INPUT, never author a competing generic runner unilaterally.",
+      "status": "open"
+    }
+  ],
+  "doNotRebuildGuidance": [
+    "DO NOT write a new sweep driver. Run P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs with its OUTPUT DIRECTORY, ITS QUEUE FILE and ITS CLI SCRIPT NAME changed — three string edits to a proven 413-line file that carries the halt tripwires, the ECONNRESET idempotent-retry, the dedup tripwire, the resume skip-set and the manifest checkpointing. A fresh driver reproduces none of that and each omission is a silent one-county hole.",
+    "DO NOT author write-harvest-fields-county.mjs, write-cama-county.mjs or any new *-county writer for Q3/Q5. write-cad-parcel-roll-county.mjs already reads cad_property with store-truth county enumeration, no hardcoded allowlist, CROSSWALK_HOLD join-hold absences, verify-by-atom_did, and the exact --county/--apply/--batch/--limit/--out/--tax-year flag set. Q3 extends its PAYLOAD (persist the Class A fields it already reads past); Q5 changes its SOURCE ROUTING so bulk_primary:true resolves to a CAMA export. Both are edits inside one existing writer, not new writers.",
+    "DO NOT build a geocoder for Q4. Photon (api/pe-geocode.ts) keeps the address-to-coordinate path. Q4 is address-to-county:prop_id against parcels we already own — a normalization function plus an index, and the SAME normalization function must run at write and at read with a test pinning that identity.",
+    "DO NOT author a new cert harness for any lane. cert-grade-and-report.mjs / block13-cert-grade.mjs take --roster-from=file. Widen the roster; never fork the grader. bastrop-district-cert-grade.mjs is a retired stub that exits 2 precisely to stop this.",
+    "DO NOT author a new per-city warm runner. Copy the nearest depth-warm-<city>-batch.mjs and change its inputs, or escalate the OPS-9 S4 consolidation as a flagged deviation. Do not build a generic runner beside the three that exist without operator approval.",
+    "DO NOT create a parallel progress/ledger format. progress.json's shape (landed[] / failed[] / econnresets[] / attempted[] / halted / checkpoints[] / transients[]) is what the resume logic reads. A new format means resume silently skips counties.",
+    "DO NOT re-measure cost per jurisdiction. SETTLED well under $200 by operator ruling; re-measuring is spend with no decision attached.",
+    "DO NOT retry the index hypothesis on the verify read. atoms_property_parcel_node_idx EXCLUDES parcel-node and uses text_pattern_ops which does not serve = ANY. Measured alternatives all LOST: enable_seqscan=off 39/sec, unnest() JOIN 57/sec, 100 serial single lookups 20/sec against a ~49 ms Neon round-trip floor. The fix was verify-by-primary-key plus --batch=5000, and it is already merged.",
+    "IF a frozen artifact genuinely cannot be extended: the dispatch must carry an explicit block reading 'DEVIATION: bypassing <frozen artifact path> because <one-line reason>, operator-approved' BEFORE any new file is written. Absent that block the executor operates the named artifact. A new artifact without approval is a REJECT at verify and gets redone against the frozen one."
+  ],
+  "adversarialFindings": [
+    "THE FROZEN RUNNER IS SAFE TO RE-RUN BUT ITS TREE POINTER IS NOT. P:/hauska-engine sits on branch sweep/fast-write, ahead 1 / BEHIND 4 of origin/main, with untracked scratch files (_f3_cert_repromote_34177.mjs, .tmp-block13-live-out.txt, .tmp-f5-neighbor-fallback/). run_sweep.mjs hardcodes ENGINE='P:/hauska-engine' and inherits whatever that tree is checked out to. This EXACT trap already cost the program: the sweep tree sat on fix/buildable-zero-inset-envelope, which predated W1 (#302), and wrote at the old 47 atoms/sec for an unknown period. MANDATORY FIRST STEP of any re-run: cd /p/hauska-engine && git fetch && git checkout main && git pull, then record the 40-char SHA in the run artifact.",
+    "THE VERIFY-BY-PRIMARY-KEY FIX IS MERGED — the runner does NOT predate it. write-parcel-node-county.mjs line 463 reads 'WHERE atom_did IN ${handle.sql(dids)}' with an inline comment measuring 229,382 ms per 5,000-id batch (22 atoms/sec) by jsonb expression versus 399 ms by atom_did (12,531 atoms/sec) — 575x, not the 56x the task prompt estimated. Landed as local commit 81344ec (2026-08-11 07:23:29 -0500) and on origin/main as 34c94ff (PR #304, fix/verify-pk-group-a). Eight of nine county writers carry it. The comment records EXPLAIN BUFFERS read=3,230,674 dirtied=212,124 for the broken form.",
+    "ONE WRITER DOES NOT VERIFY STORED BYTES AT ALL. write-special-district-fact-county.mjs is the only one of the nine county writers with ZERO 'atom_did IN' occurrences. Its apply loop calls verifyStoredSpecialDistrictFactAtom(atom, ...) on the IN-MEMORY object it just constructed — there is no SELECT, no read-back, no storedByDid map. It cannot fail, and summary.verifyFailures is therefore structurally always 0 for this rail. This defeats Geometry Law rule 3 (verify the STORED BYTES) and defeats the planner handoff's own instruction to 'watch verifyFailures on the first --apply' — for special-district that watch is vacuous. MUST BE FIXED BEFORE the special-district apply, and the fix is the four-line pattern already present in the other eight writers.",
+    "THE FIRST APPLY OF FOUR RAILS IS AN UNPROVEN ROUND-TRIP. owner-fact, well-fact, rail-corridor-fact and building-footprint have ZERO rows in the store, so their did-derivation was proven by mechanism plus sibling evidence plus a unit test, never by observing a real write-then-read. A systematic 'atom not readable back' on first apply means the derivation is WRONG, not that data is corrupt. Run ONE county, read the artifact, then proceed. Do not fan five applies.",
+    "THE ATOMS TABLE NOW CARRIES ELEVEN INDEXES on 18.5M rows / 29 GB, two of them added during the verify fix (atoms_parcel_node_lookup_idx 122 MB, atoms_parcel_node_county_idx 61 MB). Every index is maintained on every insert and the backfill is about to write several rails' worth. Q7 (index audit, NOT DISPATCHED) is worth running BEFORE the applies, and it must judge the two new indexes, not only the original nine.",
+    "PROGRESS.JSON BOM TRAP — CURRENTLY CLEAN, RE-INTRODUCED BY ANY POWERSHELL WRITE. Verified this file byte-for-byte: head -c 8 gives 7b0a 2020 2273 7461 ('{\\n  \"sta'), no EF BB BF. But the recorded defect is real (_STATE.md line 15): a PowerShell write put a UTF-8 BOM on the progress file and broke JSON.parse. run_sweep.mjs loadProgress() calls JSON.parse(readFileSync(...,'utf8')) with NO BOM strip, so it will throw on a BOM'd file. If you hand-edit progress.json, write it from node (fs.writeFileSync) or strip ^\\uFEFF on read. Never Set-Content it.",
+    "THE RESUME SKIP-SET HAS A KNOWN ONE-COUNTY-HOLE DEFECT. run_sweep.mjs computes 'already' as landed ∪ halted.countyFips. A county that HALTED but never LANDED is therefore silently skipped on resume — 48457 was exactly that (dry interrupted at the boundary) and would have left a one-county hole in a 254-county fabric that no count-based gate would catch, the same class as the Harris multi-shp truncation. The 2026-08-09 fix was procedural, not code: clear the halted object so the county re-enters the queue, back up progress first, record the clearance in haltCleared[]. THE CODE DEFECT IS STILL PRESENT. Any re-run must, before starting: assert every attempted county appears in landed, and clear halted after backing up progress.json.",
+    "THE HARVEST INVENTORY COUNT IS INTERNALLY INCONSISTENT ACROSS ARTIFACTS — verify before quoting. _STATE.md Q3 cites _catalog/source_field_inventory.json at '1,330 entries'; the report at _inbox/2026-08-10_HARVEST_field_inventory_report.md says '1,434 field rows across 11 sources'. Two of our own numbers that should agree and don't. Query the file, do not quote either.",
+    "STRUCTURAL DATA IS NOT IN THE REST LAYER AND Q3 WILL NOT DELIVER IT. YEAR_BUILT appears in 9 of 176 probed counties, IMPRVMAINAREA in 2 of 176. living_area_sqft is 10.5% and Bexar/Dallas/Tarrant/Travis/Collin/Denton are ALL 0.0% (~3.3M parcels). That data lives in CAMA bulk exports, which is Q5's separate routing motion. Do not let a Q3 close report claim structural coverage.",
+    "STORE TOPOLOGY: only ONE real split exists. CORTEX_DATABASE_URL (hauska-prod-497015) and DEPLOYMENT_DATABASE_URL (legacy-design-tools-prod) are BYTE-IDENTICAL — md5 9aca0b98ed20d75ac0fbab387b5173e8, 124 bytes each, both database neondb on ep-lucky-truth-apodo8hr-pooler. txgio_parcel lives in BOTH names simultaneously. The only real split is DATABASE_URL = database hauska_mcp, which holds atoms. OPS-13_store_topology.md overrides the runbook on store facts. A cross-database join between atoms and txgio_parcel is impossible; the writers page one store and look up in the other.",
+    "ONE BULK-WRITER SLOT PER DATABASE, AND THE SWEEP JUST RELEASED IT. The five queued rail applies were blocked on exactly this slot. Do not run two atoms-bulk-writers concurrently; record the slot handoff in _STATE.md before starting.",
+    "A STATUS IS A CLAIM, INCLUDING IN THIS FILE. Q6 and Q7 were recorded as DISPATCHED when no agent had ever been handed them — the planner wrote the brief and counted that as dispatch; the operator caught it. Before acting on any status here, check for a branch, a PR, or a close artifact."
+  ]
+}
