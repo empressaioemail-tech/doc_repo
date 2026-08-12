@@ -18,23 +18,31 @@ Texas completeness moved **0.7689% to 12.909%** and cells in gate-forbidden stat
 |---|---|---|
 | texasCompletenessPct | 0.7689% | **12.909%** |
 | satisfiedCells | 89 | **405** |
-| Cells in `no-writer` / `no-atom` | 1,778 | **0** |
+| Cells in `no-writer` / `no-atom` | 1,778 (see caveat) | **0** |
 | Parcel fabric | 196/254 | **253/254** |
 | Geometry rail | 141 | **251/254** |
 | Rails with writer + atom family | 11/14 | **14/14** |
 | Registered property atom types | 14 | **16** |
 | satisfiedPresentPartialCells | 18 | **0** |
 
-NOTE ON A MOVING NUMBER: A1 closed at satisfiedCells 423 / 11.8954%. At capture the live read is 405 / 12.909% — fewer cells, higher percentage. Both are correct: `texasCompletenessPct` is PARCEL-WEIGHTED and BINARY per cell, so promoting high-parcel-count counties raises the headline while a concurrent rail re-score can lower the raw cell count. Lane A2 is mid-run. Do not reconcile these two readings as an error.
+The 1,778 baseline matches no single artifact — D3 records 1,016 and 762 as separate quantities, and their sum is asserted rather than measured.
+
+**THE "SESSION START" COLUMN IS SELF-REPORT AND UNFALSIFIABLE.** There is no ledger history table and no start-of-session dump, so every BEFORE figure — and therefore every delta — rests on planner narration. The NOW column is verified live at source. Treat the deltas as directionally sound and precisely unproven. A ledger-history snapshot should be captured at the start of the next arc so this is falsifiable next time.
+
+**"Parcel fabric 253/254" is a `txgio_parcel` STAGING count, not a rail.** It is not a ledger cell state and must not be read as one.
+
+NOTE ON AN 18-CELL DELTA — CORRECTED BY ADVERSARIAL REVIEW. A1 closed at satisfiedCells 423 / 11.8954%. The live read is 405 / 12.909% — fewer cells, higher percentage. The parcel-weighting mechanism is real and confirmed (`texasCompletenessPct` is PARCEL-WEIGHTED and BINARY per cell, so promoting high-parcel-count counties raises the headline while cells drop elsewhere). **BUT THE LEDGER IS NOT MOVING** — two reads ten minutes apart are BYTE-IDENTICAL (405 / 12.909486508370861), so "A2 is mid-run" does NOT explain it. The 18-cell delta is SETTLED and OWED A RAIL-BY-RAIL ATTRIBUTION. An earlier draft of this capture said "do not reconcile these two readings as an error" — that instruction is RETRACTED. This session already had a silent 1,016-cell regression that looked like normal variance; a standing instruction not to reconcile a cell drop is exactly how the second one gets missed.
 
 ## The pattern that dominated the session
 
 **EIGHT instrument-not-data defects.** Every one was a value ASSERTED where it could be DERIVED, or derived with a SILENT FALLBACK that manufactured a confident answer.
 
+**TWO OF THE EIGHT ARE STILL OPEN — #4 and #8.** Do not read this list as a list of fixes.
+
 1. `hasWriter` hand-declared — drifted both directions; up to 762 cells misreported.
 2. special-district verify validated the IN-MEMORY object it had just built — `verifyFailures` structurally incapable of being non-zero, on the largest planned apply.
 3. Zoning satisfaction keyed on `atomFamilyState` — one atom flipped a whole county green. 19 reported satisfied; ONE was real; 15 sat at exactly 0.00% coverage.
-4. `mapSymnumToWellStatus` DEFAULTED unmatched codes to "producing" — would have mislabelled "Canceled / Abandoned Location" across 1.4M wells.
+4. **STILL OPEN.** `mapSymnumToWellStatus` DEFAULTS unmatched codes to "producing" — verified on engine origin/main at `well-fact/symnum.ts:36`, a bare `return "producing"`. It was DETECTED this session, never FIXED, and the blast radius GREW: the statewide RRC source (1,396,049 wells) landed while it stayed open. `mapSymnumToWellType` carries the identical `return "oil"` fallthrough. Both must be fixed before any wells apply.
 5. Warm preflight gate called by 1 of 4 runners, and the PROMOTED runbook handed out an ungated command.
 6. Geometry scorer divided ACCOUNT cardinality by FEATURE cardinality — counties fully written and mis-scored; the ledger UNDERSTATED real coverage.
 7. `resolveLdtRoot()` used `process.cwd()`; a refresh from the wrong directory turned a probe MISS into a confident "no writer" and persisted it. 1,016 cells went dark with 11.6M atoms behind them.
@@ -44,7 +52,7 @@ Two would have shipped CONFIDENTLY WRONG CLAIMS TO CUSTOMERS: well-fact Harris-o
 
 TWO TESTS WERE THEMSELVES THE DEFECT: the Command Center suite asserted the console against the same constant the console rendered from; the manifest derivation test `fileExists` mock was a hardcoded allowlist asserting "easement has no writer" at the moment the writer merged.
 
-**Base rate holds: hook-shaped controls that fail closed work 1-for-1; protocol-step-shaped controls are 0-for-3.** S1 (PR #413) shipped the structural answer: three-state derivation across 14 call sites, a reconciliation gate with 5 fail-closed assertions, a CI binding check across all 14 rails.
+**Base rate holds: hook-shaped controls that fail closed work 1-for-1; protocol-step-shaped controls are 0-for-3.** S1 (legacy-design-tools PR #413 — NOTE: PR numbers in this document span TWO repos; #293/#306/#313/#315/#316/#317/#319 are hauska-engine, #413/#414 are legacy-design-tools) shipped the structural answer: three-state derivation across 14 call sites, a reconciliation gate with 5 fail-closed assertions, a CI binding check across all 14 rails.
 
 ## What landed
 
@@ -70,7 +78,7 @@ The factory model was re-labelled by operator ruling. NOTE THESE ARE REVERSED fr
 
 **The insight that produced it: the one-slot rule is a WRITE constraint, not a throughput ceiling.** Acquisition never needs the slot. Factory 1 already had a dry/apply split but DISCARDED the planned payload (a 1,145-byte artifact for a county that built 62,394 atoms), so acquisition and write were welded together. Factory 1.5 breaks that weld: N parallel acquisition lanes produce validated, write-ready payloads; one writer drains the queue whenever the slot is free. Slot contention then costs LATENCY TO VISIBLE COVERAGE, never THROUGHPUT OF THE EXPENSIVE WORK.
 
-H1 shipped it (PRs #316/#317): `tx_zoning_district_staging`, a normalised payload contract (`packages/engine-core/src/zoning-staging/payload-contract.ts`), a source registry recording WHICH TIER satisfied each city, and a drain interface (`zoning-staging/drain.ts`). Migration `0074_tx_zoning_district_staging.sql`.
+H1 shipped it (hauska-engine PRs #316/#317): `tx_zoning_district_staging`, a normalised payload contract (`packages/engine-core/src/zoning-staging/payload-contract.ts`), a source registry recording WHICH TIER satisfied each city, and a drain interface (`zoning-staging/drain.ts`). Migration `0074_tx_zoning_district_staging.sql`.
 
 Proven on two genuinely divergent schemas — Elgin (parcel-joined, 26 attrs, `Zone_Code` plus a long-name twin, domain map A to R-4, CITY_LIMIT filter, 3,209 rows) and Smithville (bare district polygons, OBJECTID plus ZONING only, no twin, no domain map, 91 rows). Unmapped source fields are RETAINED VERBATIM per the harvest-completeness ruling; empty `source_tier_satisfied` FAILS CLOSED at both the TS and SQL-CHECK layer, because falling back is fine but falling back SILENTLY is the defect.
 
@@ -111,14 +119,17 @@ Two name/extent traps found, both RRC-class: `Parcels_Utah` advertises the state
 
 `_decisions/2026-08-11_texas_flush_launch_gate_amendment.md` — 14 numbered acceptance items, each with a named pass/fail instrument. Before this session there was NO single coherent definition of done; five documents each held a piece and none agreed on the denominator.
 
-**Criterion 3 is structurally closed: zero cells in `no-writer` or `no-atom`.** All 14 rails have a writer and an atom family.
+**Criterion 3 is structurally closed: zero cells in `no-writer` or `no-atom`** — and it survives the harder test: zero cells sit in S1's new `derivation-indeterminate` state, so the tri-state did not become a hiding place.
+
+**CAVEAT ON "14/14 rails have a writer" — the CI test that backs it is weaker than the claim.** It passes when a rail binds a writer **OR declares a `noWriterReason`**, and the ledger's uniform `hasWriter=true` cannot distinguish the two. Both declarers (easement, rrc-pipelines) sit at 0 satisfied cells. "Every rail has a writer bound" is therefore NOT proven by that test alone.
 
 **100% does NOT mean every parcel has every fact.** Large parts of Texas are unincorporated and legitimately unzoned; most parcels have no well within 500 ft. Texas at 100 means every one of 3,556 cells returns either verified data or a disclosed, provenanced absence — measured-everywhere, which is the ruled launch gate. Filled-everywhere (CAD depth across 254 districts, zoning across ~1,222 cities) is program completion and runs post-launch.
 
 ## Open
 
 - MCP atom chain: 12 of 16 families unreachable — BLOCKS the report engine. Dispatch issued.
-- A1 two fixes are UNCOMMITTED LOCAL PATCHES (K5 loss class). Dispatch issued.
+- ~~A1 two fixes uncommitted~~ CLOSED — hauska-engine PR #319 merged.
+- **UNCOMMITTED WORK IS LIVE IN ALL THREE REPOS**, including untracked `well-fact/fetch-wells-staged.ts`. Same K5 class. Sweep and PR before session close.
 - Flood metros: viable at ~31 min for Harris, awaiting the slot.
 - L5 zoning depth: real depth is ONE county. Z1 probing sweep in flight.
 - Second-state portability: parameterise envelope/FIPS/NFHL/ML/Geofabrik, then a UGRC adapter.
