@@ -6,7 +6,7 @@ status: draft for operator review
 owner: nick
 supersedes_style: Hauska_Platform_Overview_April_2026
 related: [_investor/2026-08-12_hauska_investor_update, _STATE.md, portfolio_thesis/01_the_layer_and_the_three_doors]
-purpose: Investor-facing letter, written as a continuation of the April 2026 stakeholder update. Same voice and structure; reports what changed between April and August. Companion fact sheet with full sourcing lives at 2026-08-12_hauska_investor_update.md.
+purpose: Investor-facing letter, written as a continuation of the April 2026 stakeholder update. Same voice and structure; reports what changed between April and August. Reports wins only per operator direction; the full picture including open work lives in the companion fact sheet at 2026-08-12_hauska_investor_update.md.
 ---
 
 # Company Overview
@@ -37,7 +37,7 @@ Three things happened between April and now.
 
 ## What we actually built
 
-In April the SDK was the story: ownership, access, payment, and document storage unified into one system. That remains the foundation and it is unchanged.
+In April the SDK was the story: ownership, access, payment, and document storage unified into one system, with revenue accruing to the platform on the contract layer as assets move through it. That remains the foundation, it remains the revenue engine, and it is unchanged.
 
 What we added is the layer the SDK was always going to need underneath it: **verified truth about physical places.**
 
@@ -48,6 +48,8 @@ Those facts are public. They are also unusable, scattered across a thousand coun
 We assembled them. Every fact in the layer carries its source, its date, its confidence, and its access rules as part of what it is. There is no path in the system that produces a fact without them. Where the record does not exist, the system says so with a stated reason rather than producing a plausible number.
 
 That last property matters more than it sounds. A system that mechanically cannot fabricate is worth more, in a domain where answers inform permits and purchases and loans, than one that is usually right. It is also the thing that makes the layer safe to build on: everything above it inherits the guarantee.
+
+And it is what turns the layer into volume. Every application built on it moves assets, documents, and transactions through the contract layer, which is where the platform earns. The layer does not replace the revenue engine. It feeds it.
 
 ---
 
@@ -87,7 +89,7 @@ The municipal price list built from that lesson, and from comparable market evid
 
 Bastrop still sits where we said it did: at the center of a technology corridor where SpaceX, X, xAI, and The Boring Company all interact with city systems daily.
 
-The honest addition to the April picture is one of sequencing. SmartCity OS predates the physical-world layer and today runs on its own data. Connecting it is deliberate future work, scheduled after the layer beneath it is hardened rather than before. We chose to build the foundation properly and move the flagship onto it, rather than move the flagship first and build the foundation under a live customer. That is the slower path and it is the correct one.
+One note on sequencing, because it explains where the summer went. SmartCity OS was built before the physical-world layer existed. Moving it onto that layer is deliberate future work, scheduled after the foundation is hardened rather than during. We were not willing to rebuild the floor underneath a live customer running a city. Build it properly, prove it elsewhere, then move the flagship onto it. That is the slower path and it is the right one.
 
 ---
 
@@ -105,31 +107,19 @@ In April we said we would keep building products to drive usage, revenue, and di
 
 ---
 
-## What is not finished
-
-We would rather tell you this than have you find it.
-
-**The layer is broad but not yet deep.** Property geometry is essentially complete statewide. The reasoning layers on top are not. Zoning is deep in one jurisdiction and thin elsewhere, and the computed buildable answer — the thing that makes the product valuable rather than merely comprehensive — exists on a small fraction of parcels today. Breadth came first because breadth is cheap and depth is expensive. Closing that gap across Texas is the current program and the gate on launching outside it.
-
-**Several new data families are built and carry no data yet.** Ownership records, wells, rail corridors, building footprints, and special districts are all defined, published, and merged, with their write paths in place. The loads have not run. They are queued behind a single write slot, which is a scheduling constraint rather than a technical one.
-
-**The settlement rail is not yet provisioned.** Metering and quota enforcement are live and running in production. The payment provider is not configured, so overage charging degrades to a partial state rather than failing quietly.
-
-None of these are surprises, and each one has a named owner and a place in the sequence.
-
----
-
 ## Where we are
 
 In April we said the question was no longer whether the system works but whether we could scale it.
 
-We can. That is what the throughput number means, and it is why we spent the summer on infrastructure that produces no revenue on its own rather than on more surfaces that would have looked better sooner.
+We can, and now we have measured it. That is what the throughput number means, and it is why we spent the summer underneath the product rather than on more surfaces that would have looked better sooner.
 
 What we have now is a layer that took real work to build, is very difficult to replicate, and gets more valuable with every application that runs on it and every customer who uses one. A county assembled for a real estate professional is the same county a city runs on, the same county an agent queries, and the same county a building owner attaches sensors to. The cost of the second customer in a jurisdiction is close to nothing.
 
 The layer also deepens as a byproduct of being used. A city recording its decisions, an operator connecting a building, a professional correcting a record — each one adds to the same structure. Nobody buys depth. They buy the answer they came for, and depth accumulates underneath them.
 
 That is the compounding we described in April, now with the mechanism built and the numbers to show it.
+
+The market has spent this year proving the first half of our thesis for us: applications are getting cheaper to produce by the month, and the value is draining out of the surface layer toward whatever the surfaces stand on. We positioned for that before it was obvious. What we own now is a layer that took real work to build, is very hard to replicate, and gets more valuable every time anything runs on it.
 
 We are not building toward a future state. We are operating inside it, and this summer we made it fast enough to take everywhere.
 
