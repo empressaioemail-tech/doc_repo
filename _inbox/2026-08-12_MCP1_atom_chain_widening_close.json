@@ -1,0 +1,125 @@
+{
+  "runAt": "2026-08-12T19:48:00Z",
+  "slotsBefore": 4,
+  "slotsAfter": 15,
+  "typesReachableBefore": [
+    "parcel-node",
+    "zoning-fact",
+    "setback-rule",
+    "buildable-envelope"
+  ],
+  "typesReachableAfter": [
+    "parcel-node",
+    "zoning-fact",
+    "setback-rule",
+    "buildable-envelope",
+    "parcel-terrain-model",
+    "building-footprint",
+    "utility-easement",
+    "flood-hazard-fact",
+    "cad-parcel-roll",
+    "land-use-fact",
+    "owner-fact",
+    "rail-corridor-fact",
+    "well-fact",
+    "special-district-fact",
+    "rrc-pipeline-fact"
+  ],
+  "typesStillUnreachable": [
+    {
+      "type": "road-node",
+      "why": "intentionally-out: roadNodeId-keyed; isPropertyAtomInstance excludes it; not a parcel-keyed chain member"
+    }
+  ],
+  "regexReplaced": true,
+  "derivedFrom": "hauska-engine packages/atoms/src/property-instances.ts:PARCEL_KEYED_PROPERTY_ENTITY_TYPES (PROPERTY_ENTITY_TYPES.filter != road-node); MCP src/property-entity-types.ts mirror + tests/property-entity-types-engine-drift.test.ts",
+  "hardcodedListsRemaining": [
+    "hauska-mcp-server/src/tool-copy.ts:40",
+    "hauska-mcp-server/src/tool-copy.ts:46",
+    "hauska-mcp-server/src/tools.ts:545",
+    "hauska-mcp-server/src/tools.ts:564",
+    "hauska-engine/packages/storage/src/pg-storage.ts:listGraphNodes parcel roster still pins four partial-index types (intentional index safety, not chain path)"
+  ],
+  "crossRepoTestAdded": true,
+  "testFile": "hauska-mcp-server/tests/property-entity-types-engine-drift.test.ts:1",
+  "testProvesDrift": true,
+  "liveProbe": [
+    {
+      "parcelNodeId": "48021:34137",
+      "typesReturned": [
+        "zoning-fact",
+        "setback-rule",
+        "buildable-envelope",
+        "parcel-terrain-model",
+        "flood-hazard-fact",
+        "cad-parcel-roll",
+        "land-use-fact",
+        "owner-fact",
+        "special-district-fact"
+      ],
+      "atomsResolved": 9,
+      "anonOwnerWithheld": true,
+      "entitledOwnerReadable": true
+    },
+    {
+      "parcelNodeId": "48021:27303",
+      "typesReturned": [
+        "zoning-fact",
+        "buildable-envelope",
+        "flood-hazard-fact",
+        "cad-parcel-roll",
+        "land-use-fact",
+        "owner-fact",
+        "special-district-fact"
+      ],
+      "atomsResolved": 7,
+      "anonOwnerWithheld": true,
+      "entitledOwnerReadable": true
+    },
+    {
+      "parcelNodeId": "48021:28286",
+      "typesReturned": [
+        "zoning-fact",
+        "setback-rule",
+        "buildable-envelope",
+        "parcel-terrain-model",
+        "flood-hazard-fact",
+        "cad-parcel-roll",
+        "land-use-fact",
+        "owner-fact",
+        "special-district-fact"
+      ],
+      "atomsResolved": 9,
+      "anonOwnerWithheld": true,
+      "entitledOwnerReadable": true
+    }
+  ],
+  "prNumbers": [318, 320, 59],
+  "ciConclusionString": "engine#318 success; engine#320 success; mcp#59 success",
+  "merged": true,
+  "deployed": true,
+  "deployRevisions": {
+    "hauska-retrieval-api": "hauska-retrieval-api-00067-gow",
+    "hauska-mcp-server": "hauska-mcp-server-00042-25d"
+  },
+  "cp1": {
+    "expectedReachable": 15,
+    "expectedIntentionallyOut": ["road-node"],
+    "recordedAt": "2026-08-12T19:02:00Z",
+    "artifact": "_scratch/mcp1_atom_chain_widening.md"
+  },
+  "cp2": {
+    "measuredVia": "live MCP tools/call get_property_atom_chain X-Hauska-Key vs anonymous",
+    "reconcile": "CP1 15 reachable confirmed as chain slots; live Bastrop parcels return flood+owner+land-use+cad among present rows; absent families (well/rail/footprint/utility/rrc-pipeline/parcel-node slot empty when no row) honest-pending not miss; road-node remains out",
+    "ownerPrivacy": "anon path withholds owner-fact (and parcel-terrain-model public-paid); cortex key reads owner-fact"
+  },
+  "adversarialFindings": [
+    "Engine #318 canary timed out: widening body->>'parcelNodeId' IN-list missed partial atoms_property_parcel_node_idx and parallel-seq-scanned ~18M rows (~17s). Hotfixed in #320 to entity_id = parcel OR LIKE parcel||':' (atoms_entity_composite_unique ~30ms).",
+    "atomsByType else-branch compared setback/envelope after TS narrowing — failed CI typecheck; planner removed dead branches before merge.",
+    "MCP worker wrote UTF-8 BOM + mojibake into hauska-client; planner stripped. Slot atomDid used bare parcel DID for taxYear types — planner now prefers stored atomDid/entityId.",
+    "Cross-repo drift test would fail on GitHub without engine source; planner added sparse checkout of property-instances.ts in MCP CI.",
+    "Both Cloud Run deploys created revisions but left traffic on prior revision until --to-latest; planner shifted traffic after canary probe.",
+    "listGraphNodes must NOT use full PARCEL_KEYED set with body->>'parcelNodeId' — same seq-scan class; roster kept on four partial-index types.",
+    "Drift-negative fixture (inject synthetic engine type) and owner-fact accessPolicy gate covered in MCP unit tests; live anon vs cortex probe confirms no public owner leak."
+  ]
+}

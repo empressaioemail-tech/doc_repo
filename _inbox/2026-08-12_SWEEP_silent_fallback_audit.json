@@ -1,0 +1,1054 @@
+{
+  "runAt": "2026-08-12T21:45:00Z",
+  "mission": "silent-fallback / instrument-not-data sweep across hauska-engine, legacy-design-tools, hauska-mcp-server",
+  "slotDiscipline": "A2 holds atoms bulk-writer slot — READ-ONLY AUDIT; no --apply; no atom writes; no duplicate of W2 symnum fix",
+  "reposAudited": [
+    {
+      "repo": "hauska-engine",
+      "originMainSha": "44a10723312520e9e4cf64f9a1ba1d024e0568ad",
+      "workerAuditedSha": "127f1db7693167eb4a16d452567fbb702c55c260",
+      "shaDriftNote": "PR #320 (list entity_id hotpath) landed after worker pin; planner re-verified findings still present on tip",
+      "filesScanned": 38
+    },
+    {
+      "repo": "legacy-design-tools",
+      "originMainSha": "48c4eb890b655b9bae70cf94590a0ba387167112",
+      "filesScanned": 28
+    },
+    {
+      "repo": "hauska-mcp-server",
+      "originMainSha": "b5f26de4a29deb5fe0e6e2a960a775aeae18f6f8",
+      "filesScanned": 24
+    }
+  ],
+  "cp1": {
+    "preRegisteredBeforeWorkers": true,
+    "expectedFindings": "15-25 across A-H (excluding known open symnum #4 as fix target)",
+    "highestDensityExpect": "legacy-design-tools (instrument/scorer/refresh/ledger)",
+    "secondExpect": "hauska-engine (classifiers + residual writer defaults)",
+    "thirdExpect": "hauska-mcp-server (hardcoded DID lists)",
+    "rationale": "Obvious suspect (county writers) recently got Group A/B verify-by-PK fixes; last three pre-registered suspects were refuted; confidence is manufactured in the instrument layer"
+  },
+  "cp2": {
+    "measuredFindings": 54,
+    "measuredFindingsNote": "counts planner-accepted findings after adversarial cuts; excludes REFERENCE-SPECIMEN symnum as a new fix target; includes it as SF-REF-4",
+    "highestDensityMeasured": "hauska-engine classifiers/fetchers (well-fact, special-district parcel probe, flood Zone-X-by-omission, rail NET defaults) — NOT the 12 county-writer verify paths",
+    "secondDensityMeasured": "legacy-design-tools rail derivation + scorer/test theater",
+    "thirdDensityMeasured": "hauska-mcp-server hardcoded family lists + deny-as-miss + invented confidence",
+    "reconcile": "Underestimated count (~15-25 expected, ~54 accepted). Density expect WRONG on primary: LDT was expected densest; engine classifier/fetch layer beat it on wouldShipWrongClaim. Partial confirm of CP1 intuition: the 12 writers' verify-by-PK row is HEALTHY (uniform atom_did IN); the sick surface is silent classifiers and instrument probes. MCP denser than expected.",
+    "writerCountCorrection": "Dispatch said eleven county writers; origin/main has TWELVE write-*-county.mjs (adds road-node + rrc-pipeline; no zoning/setback/envelope county CLI)"
+  },
+  "findings": [
+    {
+      "id": "SF-REF-4",
+      "file": "packages/engine-core/src/well-fact/symnum.ts:32-46",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "return \"producing\"; … return \"oil\";",
+      "whatItManufactures": "unmatched SYMNUM becomes producing oil well",
+      "blastRadius": "every well-fact whose SYMNUM is missing or off-list; statewide RRC ~1.4M wells staged while open",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "W2 lane owns fix — do not duplicate; REFERENCE SPECIMEN only"
+    },
+    {
+      "id": "SF-1",
+      "file": "packages/engine-core/src/well-fact/fetch-wells.ts:103",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "if (!res.ok) break;",
+      "whatItManufactures": "HTTP mid-fetch failure ends pagination; partial wells returned with truncated often still false → planner emits no-well absences as if layer fully read",
+      "blastRadius": "well-fact apply for any county whose ArcGIS page fails mid-fetch",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "not one-line-safe under W2/well-fact halt; reported"
+    },
+    {
+      "id": "SF-2",
+      "file": "packages/engine-core/src/well-fact/fetch-wells.ts:53",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "symnum: Number(attrs.SYMNUM ?? 0)",
+      "whatItManufactures": "missing SYMNUM → 0 → REF-4 path → producing oil",
+      "blastRadius": "wells with null SYMNUM",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "feeds W2; reported"
+    },
+    {
+      "id": "SF-3",
+      "file": "packages/engine-core/src/well-fact/symnum.ts:50-52",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "/** orphaned is never inferred here */ … return status === \"plugged-abandoned\";",
+      "whatItManufactures": "every plugged well claimed orphaned despite comment forbidding inference and no operator-of-record",
+      "blastRadius": "all plugged well-fact atoms",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "same module as W2; reported for W2 visibility"
+    },
+    {
+      "id": "SF-4",
+      "file": "packages/engine-core/src/well-fact/symnum.ts:54-60",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "padStart(8,\"0\") then 42${digits} then padEnd(14,\"0\")",
+      "whatItManufactures": "incomplete API field becomes a confident 14-digit API number",
+      "blastRadius": "well identity / join key",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-5",
+      "file": "packages/engine-core/scripts/write-well-fact-county.mjs:187 + fetch-wells.ts maxPages",
+      "repo": "hauska-engine",
+      "shape": "extent-only-coverage",
+      "code": "maxPages = 8; truncated logged then plan/write continues",
+      "whatItManufactures": "absences / incomplete on-parcel set after ~16k-feature cap treated as complete layer",
+      "blastRadius": "dense well counties",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-6",
+      "file": "packages/engine-core/scripts/write-special-district-fact-county.mjs:parcel SELECT + centroid",
+      "repo": "hauska-engine",
+      "shape": "bbox-only-spatial",
+      "code": "SELECT prop_id, feature_index, west_lng, south_lat, east_lng, north_lat (no geometry); centroid = ((west+east)/2,(south+north)/2) then PIP",
+      "whatItManufactures": "district membership from parcel bbox center, not parcel geometry centroid / true containment",
+      "blastRadius": "every special-district-fact present/absent membership claim",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "adversarial correction: districts DO SELECT geometry; defect is parcel probe point = bbox midpoint"
+    },
+    {
+      "id": "SF-7",
+      "file": "packages/engine-core/src/special-district-fact/plan-county-special-districts.ts:107-116",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "emptyDistrictIndex → absenceKind \"outside-tceq-source-boundaries\"",
+      "whatItManufactures": "ingest miss / empty county slice reads as evaluated-outside, not no-coverage",
+      "blastRadius": "any county with 0 tx_special_district rows",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-8",
+      "file": "packages/engine-core/scripts/write-special-district-fact-county.mjs:32-34",
+      "repo": "hauska-engine",
+      "shape": "cwd-dependency",
+      "code": "DEFAULT_REGISTRY_CSV = … || \"P:/tmp/mud_recon/spdpid-entity.csv\" then existsSync else skip",
+      "whatItManufactures": "taxRate silently omitted when laptop path absent",
+      "blastRadius": "special-district taxRate enrichment",
+      "severity": "med",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-9",
+      "file": "packages/engine-core/src/flood-hazard-fact/plan-county-flood-hazard.ts:154-164",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "no zone hit → outcome present, inSpecialFloodHazardArea: false (Zone X by omission)",
+      "whatItManufactures": "not-in-SFHA when point missed the LOADED zone set; partial NFHL → Zone X",
+      "blastRadius": "flood-hazard-fact for parcels outside loaded polygons; worse when nfhlFractionOfSourceZip < 1",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "tests lock the omission as intended"
+    },
+    {
+      "id": "SF-10",
+      "file": "packages/engine-core/src/rail-corridor-fact/ntad-source.ts:41-52",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "return \"active\"; / return \"spur\";",
+      "whatItManufactures": "null/unknown NET → active spur (same family as REF-4, different module)",
+      "blastRadius": "every rail-corridor-fact present atom with missing NET",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "tests lock the defaults"
+    },
+    {
+      "id": "SF-11",
+      "file": "packages/engine-core/scripts/write-road-node-county.mjs:377-379",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "hits.length === 0 || hits.some(...)",
+      "whatItManufactures": "way with no countyHits treated as in target county",
+      "blastRadius": "road-node atoms from --skip-extract / worker output missing hits",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-12",
+      "file": "packages/engine-core/src/rrc-pipeline-fact/plan-county-rrc-pipeline.ts:108-110",
+      "repo": "hauska-engine",
+      "shape": "hardcoded-list",
+      "code": "`${seg.t4permit ?? \"\"}|${seg.p5Num ?? \"\"}`",
+      "whatItManufactures": "all null-key segments share \"|\" — nearest-pipe can attach wrong physical line",
+      "blastRadius": "rrc-pipeline-fact present-near atoms",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-13",
+      "file": "packages/engine-core/scripts/write-rrc-pipeline-fact-county.mjs + write-special-district-fact-county.mjs SELECT",
+      "repo": "hauska-engine",
+      "shape": "unordered-nondeterminism",
+      "code": "pipeline/district SELECT without ORDER BY",
+      "whatItManufactures": "nondeterministic membership / nearest-sample on ties",
+      "blastRadius": "rrc-pipeline + special-district rails",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-14",
+      "file": "packages/engine-core/scripts/write-owner-fact-county.mjs ~taxYear fallback",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "args.taxYear ?? (yearRows[0] ?? new Date().getUTCFullYear())",
+      "whatItManufactures": "empty CAD tax years → absences stamped with this UTC year as if that roll was probed",
+      "blastRadius": "owner-fact + land-use-fact when CAD empty",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-15",
+      "file": "packages/engine-core/src/road-intake/classify.ts:40-45",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "empty/unknown OSM highway → \"unclassified\"",
+      "whatItManufactures": "road class from a missing tag",
+      "blastRadius": "road-node classification",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-16",
+      "file": "packages/engine-core/src/building-footprint/resolve-footprint-route.ts:51-57",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "case \"ml-global-building-footprints\": default: → ML Texas zip",
+      "whatItManufactures": "unknown adapterKind silently becomes ML-derived",
+      "blastRadius": "building-footprint source tier",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-17",
+      "file": "packages/engine-core/src/building-footprint/ml-texas-zip-cache.ts:25",
+      "repo": "hauska-engine",
+      "shape": "cwd-dependency",
+      "code": "join(process.cwd(), \".cache\", \"ml-footprint\")",
+      "whatItManufactures": "cache hit/miss depends on invoker cwd",
+      "blastRadius": "ML footprint loader",
+      "severity": "low",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-18",
+      "file": "packages/storage/src/pg-storage.ts resolveAccessPolicy",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "maybePolicy ?? \"public-free\"",
+      "whatItManufactures": "missing accessPolicy on write stored as public-free",
+      "blastRadius": "any property atom that omitted the field",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-19",
+      "file": "packages/atoms/src/owner-fact-writer.ts:80-86",
+      "repo": "hauska-engine",
+      "shape": "silent-default",
+      "code": "prefix has(\"HS\",\"HB\",\"HT\") etc.",
+      "whatItManufactures": "coincidental prefixes → homestead/ag/vet true",
+      "blastRadius": "owner-fact exemptionFlags",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-20",
+      "file": "lib/db/src/railManifestDerivation.ts:171-247",
+      "repo": "legacy-design-tools",
+      "shape": "cwd-dependency",
+      "code": "writerPathsExist → fileExists(engineProbePath); deriveHasWriter from disk",
+      "whatItManufactures": "hasWriter from local working-tree presence, not merged origin/main (E1 residual)",
+      "blastRadius": "county_rail.has_writer + CC grid no-writer vs not-yet",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "resolveLdtRoot process.cwd() FIXED; this residual remains"
+    },
+    {
+      "id": "SF-21",
+      "file": "lib/db/src/railManifestDerivation.ts:459-468",
+      "repo": "legacy-design-tools",
+      "shape": "silent-default",
+      "code": "if (normalized.includes(\"/hauska-engine/\")) return true;",
+      "whatItManufactures": "read-path pretends every engine writer exists → indeterminate overlay never fires",
+      "blastRadius": "countyLedger read overlay",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-22",
+      "file": "lib/db/src/railManifestDerivation.ts:54-70",
+      "repo": "legacy-design-tools",
+      "shape": "cwd-dependency",
+      "code": "return path.resolve(dir, \"..\", \"..\", \"..\"); after walk miss",
+      "whatItManufactures": "guessed LDT root when marker missing",
+      "blastRadius": "derivation without LEGACY_DESIGN_TOOLS_ROOT",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-23",
+      "file": "lib/db/src/railManifestDerivation.ts:164-168",
+      "repo": "legacy-design-tools",
+      "shape": "silent-default",
+      "code": "if (present === \"indeterminate\") return \"partial\";",
+      "whatItManufactures": "lookup failure stored as measured atomFamilyState partial",
+      "blastRadius": "county_rail.atom_family_state if overlay skipped",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-24",
+      "file": "artifacts/api-server/src/countyCoverageScoreCli.ts:194-196,617,628",
+      "repo": "legacy-design-tools",
+      "shape": "silent-default",
+      "code": "sourcePresent: cov.zoningStampedPct > 0; else classification = \"real-at-ceiling\"",
+      "whatItManufactures": "any non-zero stamp → source present + real-at-ceiling; no per-county atom-family check",
+      "blastRadius": "zoning/envelope county_facet_coverage",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "tests bless stamp-as-source"
+    },
+    {
+      "id": "SF-25",
+      "file": "artifacts/api-server/src/countyGeometryScoreCli.ts:196,272",
+      "repo": "legacy-design-tools",
+      "shape": "extent-only-coverage",
+      "code": "count(*) AS n; Math.min(100, (atomCount/featureCount)*100)",
+      "whatItManufactures": "duplicate/stale parcel-node rows inflate coverage; clamp ships satisfied-present at 100%",
+      "blastRadius": "geometry rail_state / Texas rollup",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "denominator DISTINCT fixed earlier; numerator inversion remains; tests bless clamp"
+    },
+    {
+      "id": "SF-26",
+      "file": "lib/db/src/schema/countyRailDimension.ts + railEngineBinding.ts",
+      "repo": "legacy-design-tools",
+      "shape": "hardcoded-list",
+      "code": "COUNTY_RAIL_DECLARATION still hand-sets hasWriter:false on rails that have engineWriterScript",
+      "whatItManufactures": "two truths — refresh derives; declaration+tests pin stale hand list",
+      "blastRadius": "docs/operator reading declaration; depth-gate class drift",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "hand-declare specimen not extinguished"
+    },
+    {
+      "id": "SF-27",
+      "file": "lib/db/src/railCoverageCapability.ts:36-63",
+      "repo": "legacy-design-tools",
+      "shape": "extent-only-coverage",
+      "code": "rrc-wells maxCountiesReachable:1 next to statewide copy; footprint reachPct:1; catch { return null }",
+      "whatItManufactures": "capability numbers from static fiction / silent null on probe fail",
+      "blastRadius": "GET countyLedger railCapabilities",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-28",
+      "file": "artifacts/api-server/src/countyCoverageScoreCli.ts:376+",
+      "repo": "legacy-design-tools",
+      "shape": "unordered-nondeterminism",
+      "code": "DISTINCT ON (feature_index) … ORDER BY feature_index (no vintage/row-id tie-break)",
+      "whatItManufactures": "arbitrary zoning_district among duplicate feature rows",
+      "blastRadius": "zoning + envelope honest coverage",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-29",
+      "file": "artifacts/api-server/src/lib/operatorRunState.ts:177",
+      "repo": "legacy-design-tools",
+      "shape": "silent-default",
+      "code": "parcelsWarmedPct: parcelsWarmed > 0 ? 100 : null",
+      "whatItManufactures": "any snapshot place → 100% warmed (denominator = numerator)",
+      "blastRadius": "Command Center Run Monitor",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-30",
+      "file": "artifacts/api-server/src/lib/warmingHarness.ts:88-92",
+      "repo": "legacy-design-tools",
+      "shape": "unreachable-guard",
+      "code": "const canWarm = present.has(\"cotality:parcels\");",
+      "whatItManufactures": "warm cascade gated on extinguished Cotality — blocks real warm or blesses dead snapshots",
+      "blastRadius": "POST place/warming/run",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "standing decision: Cotality extinguished"
+    },
+    {
+      "id": "SF-31",
+      "file": "lib/cad-ingest/src/nfhl/evaluation.ts:94-108",
+      "repo": "legacy-design-tools",
+      "shape": "bbox-only-spatial",
+      "code": "representativePoint(parcel) in zone OR representativePoint(zone) in parcel",
+      "whatItManufactures": "overlap without either representative point inside → outside-mapped-zones",
+      "blastRadius": "parcel flood evaluation helpers",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "bbox is prefilter; defect is representative-point as containment"
+    },
+    {
+      "id": "SF-32",
+      "file": "artifacts/api-server/src/__tests__/countyLedger.test.ts:278-318",
+      "repo": "legacy-design-tools",
+      "shape": "test-asserts-own-constant",
+      "code": "seedAllRails hardcodes landuse missing / roads no-writer; title '13 cells'",
+      "whatItManufactures": "CI green while live grid semantics change",
+      "blastRadius": "CI",
+      "severity": "high",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-33",
+      "file": "lib/db/src/__tests__/railManifestDerivation.test.ts:28-52 + countyRailRefreshCli.test.ts mockExists",
+      "repo": "legacy-design-tools",
+      "shape": "test-asserts-own-constant",
+      "code": "mock fileExists allowlist / includes(\"hauska-engine\")",
+      "whatItManufactures": "hasWriter=true for substring matches; missing real script still passes",
+      "blastRadius": "CI derivation + refresh tests",
+      "severity": "high",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-34",
+      "file": "lib/db/src/__tests__/countyRailDimension.test.ts:23-71",
+      "repo": "legacy-design-tools",
+      "shape": "test-asserts-own-constant",
+      "code": "pins COUNTY_RAIL_DECLARATION length/hasWriter against itself incl. stale false",
+      "whatItManufactures": "CI lock on stale hand-declare, not engine/git truth",
+      "blastRadius": "CI",
+      "severity": "high",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-35",
+      "file": "lib/db/src/__tests__/railEngineBindingCoverage.test.ts:64-70",
+      "repo": "legacy-design-tools",
+      "shape": "unreachable-guard",
+      "code": "if (!engineRootOnDisk) { return; }",
+      "whatItManufactures": "CI without sibling hauska-engine never verifies writer scripts exist",
+      "blastRadius": "CI writer-existence guard",
+      "severity": "med",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-36",
+      "file": "src/property-atom-chain.ts:23-28,97-104",
+      "repo": "hauska-mcp-server",
+      "shape": "hardcoded-list",
+      "code": "PROPERTY_CHAIN_ENTITY_TYPES four names; /^did:hauska:(?:parcel-node|zoning-fact|setback-rule|buildable-envelope):/",
+      "whatItManufactures": "other registered family DIDs rejected as malformed (specimen #8)",
+      "blastRadius": "get_property_atom_chain atom_did path",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "planner-verified on origin/main"
+    },
+    {
+      "id": "SF-37",
+      "file": "src/tools.ts:163-171 + hauska-client.ts CODE_ENTITY_TYPES",
+      "repo": "hauska-mcp-server",
+      "shape": "hardcoded-list",
+      "code": "CODE_ENTITY_TYPES six code types only in search_atoms z.enum",
+      "whatItManufactures": "property/encumbrance/workspace families unsearchable → looks like no atoms",
+      "blastRadius": "search_atoms public catalog",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-38",
+      "file": "src/product-gates.ts vs tools.ts download_parcel_*",
+      "repo": "hauska-mcp-server",
+      "shape": "hardcoded-list",
+      "code": "PUBLIC_CATALOG_TOOLS omits download_parcel_*; toolGateMetadata default identified_caller",
+      "whatItManufactures": "gate identity for unlisted tools; introspection access_policy count stays 10",
+      "blastRadius": "paid export + operator introspection",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-39",
+      "file": "package.json dual @hauska 1.6.1 + @empressaio 1.9.0",
+      "repo": "hauska-mcp-server",
+      "shape": "hardcoded-list",
+      "code": "imports mostly @hauska/atom-contract@1.6.1 (no ./property); @empressaio 1.9.0 unused for families",
+      "whatItManufactures": "family lists frozen to older contract while newer ships property families",
+      "blastRadius": "every AccessPolicy / type derivation path",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-40",
+      "file": "src/map-layers-contract.ts:47-51",
+      "repo": "hauska-mcp-server",
+      "shape": "hardcoded-list",
+      "code": "localKey: z.enum([\"grand-county-ut\",\"lemhi-county-id\",\"bastrop-tx\"])",
+      "whatItManufactures": "assemble-map rejects other jurisdictions at schema",
+      "blastRadius": "assemble_map_layers",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "adversarial: may be intentional product scope; still C-shape drift risk"
+    },
+    {
+      "id": "SF-41",
+      "file": "src/tools.ts:490-511",
+      "repo": "hauska-mcp-server",
+      "shape": "silent-default",
+      "code": "if (!assertAtomReadable(...)) note: `No atom found at DID ${atom_id}.`",
+      "whatItManufactures": "entitlement miss as corpus miss (empty-success envelope)",
+      "blastRadius": "get_atom public",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "planner-verified"
+    },
+    {
+      "id": "SF-42",
+      "file": "src/read-contract-bridge.ts:26-72",
+      "repo": "hauska-mcp-server",
+      "shape": "silent-default",
+      "code": "estimate: avgScore ?? 0.75; avgScore ?? (catalog ? 0.95 : 0.85); asce7RiskCategory: \"II\"",
+      "whatItManufactures": "calibrated-looking numbers with no outcome loop on miss",
+      "blastRadius": "finalizeReadEnvelope / catalog reads",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": "planner-verified"
+    },
+    {
+      "id": "SF-43",
+      "file": "src/atom-shape.ts provenance defaults",
+      "repo": "hauska-mcp-server",
+      "shape": "silent-default",
+      "code": "site-plan/dossier miss → did:hauska:parcel-terrain-model:… + usgs:3dep-dem",
+      "whatItManufactures": "catalog DID and USGS citation when atom did not carry them",
+      "blastRadius": "refresh/download export envelopes",
+      "severity": "high",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-44",
+      "file": "src/compose-workspace.ts:164-237",
+      "repo": "hauska-mcp-server",
+      "shape": "silent-default",
+      "code": "Zero-score tiles preferred over empty result",
+      "whatItManufactures": "workspace layout on keyword miss",
+      "blastRadius": "compose_workspace",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-45",
+      "file": "src/hauska-client.ts:27-36",
+      "repo": "hauska-mcp-server",
+      "shape": "silent-default",
+      "code": "DEFAULT_BACKEND_URL = \"http://localhost:8080\"; HAUSKA_ENGINE_API_KEY ?? \"\"",
+      "whatItManufactures": "misconfigured deploy talks to localhost with empty bearer",
+      "blastRadius": "all catalog tools",
+      "severity": "med",
+      "wouldShipWrongClaim": true,
+      "fixed": false,
+      "fixEvidence": ""
+    },
+    {
+      "id": "SF-46",
+      "file": "tests/property-atom-chain.test.ts + mcp-introspection + parcel-node-id-g6",
+      "repo": "hauska-mcp-server",
+      "shape": "test-asserts-own-constant",
+      "code": "round-trip only four types; access_policy===10; PE regex mirrored as local string",
+      "whatItManufactures": "green CI while SF-36 remains; PE drift invisible",
+      "blastRadius": "CI",
+      "severity": "high",
+      "wouldShipWrongClaim": false,
+      "fixed": false,
+      "fixEvidence": ""
+    }
+  ],
+  "writersSwept": [
+    {
+      "writer": "parcel-node",
+      "script": "packages/engine-core/scripts/write-parcel-node-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["keyKind ?? \"prop_id\"", "status ?? \"active\" on prior-row"],
+      "guardsPresent": ["PATH env", "FIPS", "orphan S2 assertNoActiveOrphans"],
+      "guardsProvenReachable": ["S2 re-acquisition-contract.test.ts"]
+    },
+    {
+      "writer": "owner-fact",
+      "script": "packages/engine-core/scripts/write-owner-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["taxYear ?? yearRows[0] ?? getUTCFullYear()", "cad.taxYear || opts.taxYear"],
+      "guardsPresent": ["PATH", "paid-tier accessPolicy !== public-paid throw", "dry-run PII omit"],
+      "guardsProvenReachable": ["verify REJECTS free-tier mutation (property-fact-writers.test.ts)", "owner-withheld never-inferred planner tests"]
+    },
+    {
+      "writer": "land-use-fact",
+      "script": "packages/engine-core/scripts/write-land-use-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["taxYear getUTCFullYear fallback"],
+      "guardsPresent": ["PATH", "LANDUSE_JOIN_HOLD"],
+      "guardsProvenReachable": ["hold-set tests (Shape H — assert same export)"]
+    },
+    {
+      "writer": "cad-parcel-roll",
+      "script": "packages/engine-core/scripts/write-cad-parcel-roll-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": [],
+      "guardsPresent": ["PATH", "CROSSWALK_HOLD ∪ LANDUSE_JOIN_HOLD"],
+      "guardsProvenReachable": ["hold tests (Shape H)"]
+    },
+    {
+      "writer": "flood-hazard-fact",
+      "script": "packages/engine-core/scripts/write-flood-hazard-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["geometryCentroid ?? bbox-midpoint", "outside-zone → present inSFHA=false", "NFHL_STATEWIDE_SOURCE_FEATURES hardcoded"],
+      "guardsPresent": ["PATH", "PostGIS force refuses silent JS fallback"],
+      "guardsProvenReachable": []
+    },
+    {
+      "writer": "well-fact",
+      "script": "packages/engine-core/scripts/write-well-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["REF-4 classifiers", "SYMNUM ?? 0", "HTTP !res.ok break", "truncated not fail-closed"],
+      "guardsPresent": ["PATH", "public-free leak gate"],
+      "guardsProvenReachable": []
+    },
+    {
+      "writer": "rail-corridor-fact",
+      "script": "packages/engine-core/scripts/write-rail-corridor-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["mapNetToStatus → active", "mapNetToClass → spur"],
+      "guardsPresent": ["PATH", "fetch throw → sourceFetchFailed typed absence"],
+      "guardsProvenReachable": []
+    },
+    {
+      "writer": "building-footprint",
+      "script": "packages/engine-core/scripts/write-building-footprint-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["resolveFootprintRoute default → ML", "process.cwd() cache"],
+      "guardsPresent": ["PATH", "empty ML bbox → honest county-coverage absence"],
+      "guardsProvenReachable": ["empty-bbox absence tested"]
+    },
+    {
+      "writer": "special-district-fact",
+      "script": "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["parcel bbox-center as centroid", "empty index → outside-tceq-source-boundaries", "P:/tmp CSV skip"],
+      "guardsPresent": ["PATH", "table-missing throw"],
+      "guardsProvenReachable": []
+    },
+    {
+      "writer": "utility-easement",
+      "script": "packages/engine-core/scripts/write-utility-easement-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["classifyEasementStatus → unknown (honest)", "corridorDefaultWidthFt: 10", "hardcoded FIPS subset"],
+      "guardsPresent": ["PATH", "honest-absence default for unknown counties"],
+      "guardsProvenReachable": ["route tests"]
+    },
+    {
+      "writer": "road-node",
+      "script": "packages/engine-core/scripts/write-road-node-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["empty countyHits → in-county", "classifyOsmHighwayTag → unclassified"],
+      "guardsPresent": ["PATH", "PROPERTY_ATOM_PATH+ROAD_PBF_APPLY", "refuse pooler", "collision fail-closed", "PBF orphan assert"],
+      "guardsProvenReachable": ["collision fail-closed tested"]
+    },
+    {
+      "writer": "rrc-pipeline-fact",
+      "script": "packages/engine-core/scripts/write-rrc-pipeline-fact-county.mjs",
+      "hasVerifyReadback": true,
+      "verifyByPrimaryKey": true,
+      "silentDefaults": ["pipelineDedupeKey nulls → \"|\"", "empty index → present nearPipeline=false", "SQL no ORDER BY"],
+      "guardsPresent": ["PATH", "sourceReadFailed typed absence"],
+      "guardsProvenReachable": []
+    }
+  ],
+  "guardReachability": [
+    {
+      "guard": "paid-tier gate (owner-fact verify)",
+      "provenReachable": true,
+      "howProven": "A1 + property-fact-writers.test.ts mutate public-free → verify rejects; wroteToStore=false class",
+      "ifUnproven": ""
+    },
+    {
+      "guard": "paid-tier gate (owner-fact CLI REFUSING TO WRITE)",
+      "provenReachable": false,
+      "howProven": "",
+      "ifUnproven": "Unit-test: build owner atom accessPolicy public-free via object spread; assert CLI filter throws before write. Do not --apply."
+    },
+    {
+      "guard": "PII suppression",
+      "provenReachable": true,
+      "howProven": "reduction tests: exemption codes → flags; mailing never without owner name. Not a throw-guard.",
+      "ifUnproven": ""
+    },
+    {
+      "guard": "owner-withheld never inferred",
+      "provenReachable": true,
+      "howProven": "planner tests: blank name without withheldKeys → no-owner-name. CLI never passes withheldKeys.",
+      "ifUnproven": ""
+    },
+    {
+      "guard": "WGS84 bbox assert",
+      "provenReachable": true,
+      "howProven": "zoning-staging.test.ts State Plane feet fail closed. NOT on the 12 county writers.",
+      "ifUnproven": "Pass State Plane numbers into flood/well bbox fetch and expect throw (today they would query)."
+    },
+    {
+      "guard": "tier-satisfied fail-close",
+      "provenReachable": true,
+      "howProven": "assertSourceTierSatisfied rejects empty/null (H1 zoning-staging). NOT on county writers.",
+      "ifUnproven": ""
+    },
+    {
+      "guard": "warm preflight gate (assertWarmGateApplied)",
+      "provenReachable": true,
+      "howProven": "re-acquisition-contract S3 on depth-warm-city-batch. NOT invoked by write-parcel-node-county.mjs.",
+      "ifUnproven": "grep CLI for assertWarmGateApplied (absent) — proves county writer path ungated."
+    },
+    {
+      "guard": "PATH env accidental-invoke (all 12 CLIs)",
+      "provenReachable": false,
+      "howProven": "",
+      "ifUnproven": "Spawn script without *_PATH=1; expect exit 1."
+    },
+    {
+      "guard": "PostGIS silent-fallback refuse (flood)",
+      "provenReachable": false,
+      "howProven": "",
+      "ifUnproven": "plan-backend=postgis with geomReadiness.ready=false mock; expect throw."
+    },
+    {
+      "guard": "well/rail public-free leak gate",
+      "provenReachable": false,
+      "howProven": "",
+      "ifUnproven": "Tamper accessPolicy to public-free; expect throw (same standard as A1 paid-tier)."
+    },
+    {
+      "guard": "road collision fail-closed",
+      "provenReachable": true,
+      "howProven": "plan-county-road-nodes.test.ts",
+      "ifUnproven": ""
+    },
+    {
+      "guard": "special-district table missing",
+      "provenReachable": false,
+      "howProven": "",
+      "ifUnproven": "Mock to_regclass null; expect throw."
+    },
+    {
+      "guard": "LDT refresh refuse --apply on indeterminate",
+      "provenReachable": true,
+      "howProven": "countyRailRefreshCli.ts:314-331 when real existsSync and engine root missing",
+      "ifUnproven": ""
+    },
+    {
+      "guard": "LDT ledger applyDerivationIndeterminateOverlay",
+      "provenReachable": false,
+      "howProven": "",
+      "ifUnproven": "SF-21 short-circuits engine paths to true — overlay rarely sees indeterminate on read path. Prove by calling overlay with real missing engine without manifestReadProbeOptions."
+    },
+    {
+      "guard": "LDT Cotality canWarm",
+      "provenReachable": true,
+      "howProven": "fires, wrong predicate (SF-30) — observed as BLOCKED message when no cotality:parcels",
+      "ifUnproven": ""
+    }
+  ],
+  "testsThatCannotFail": [
+    {
+      "test": "plan-county-well-facts.test.ts maps SYMNUM 11 → producing",
+      "why": "Locks in REF-4; a correct fail-closed mapper fails this test"
+    },
+    {
+      "test": "rail-corridor-fact plan.test.ts mapNetToClass(\"O\") === spur",
+      "why": "Locks in SF-10 default"
+    },
+    {
+      "test": "planCountyFloodHazard outside zones present inSFHA=false",
+      "why": "Locks in SF-9 Zone-X-by-omission; does not vary nfhlFraction"
+    },
+    {
+      "test": "property-fact-writers CROSSWALK_HOLD_FIPS.size === 8",
+      "why": "Asserts export against itself"
+    },
+    {
+      "test": "countyGeometryScore.test.ts overcount clamps 100% satisfied-present",
+      "why": "Encodes SF-25 manufacturing clamp"
+    },
+    {
+      "test": "countyCoverageScore.test.ts zoning real-at-ceiling",
+      "why": "Encodes SF-24 stamp-as-source"
+    },
+    {
+      "test": "railManifestDerivation CP1 mockExists / includes hauska-engine",
+      "why": "Allowlist cannot see missing real script"
+    },
+    {
+      "test": "countyLedger.test.ts seedAllRails",
+      "why": "Asserts against hardcoded seed not live declaration"
+    },
+    {
+      "test": "countyRailDimension.test.ts COUNT===14 / hasWriter pins",
+      "why": "Same array twice; pins stale hand-declare"
+    },
+    {
+      "test": "railEngineBindingCoverage early-return !engineRootOnDisk",
+      "why": "Guard skipped in typical CI"
+    },
+    {
+      "test": "MCP property-atom-chain.test.ts round-trip four types",
+      "why": "Only feeds types the helper already emits"
+    },
+    {
+      "test": "MCP mcp-introspection access_policy === 10",
+      "why": "Unlisted download_* tools do not increment count"
+    },
+    {
+      "test": "MCP parcel-node-id-g6 PE regex local string",
+      "why": "Does not import PE source; PE drift invisible"
+    },
+    {
+      "test": "railCoverageCapability.test.ts mock n:15 for all tables",
+      "why": "Cannot detect wrong SQL; pins static 1 and 254"
+    }
+  ],
+  "greppablePatternsForCi": [
+    {
+      "name": "ci-no-bare-status-default",
+      "repo": "hauska-engine",
+      "pattern": "return \"(producing|oil|active|spur)\"",
+      "scope": "packages/engine-core/src/**/{symnum,ntad-source,classify}.ts",
+      "action": "fail build unless preceded by unknown/unmapped/throw branch in same function"
+    },
+    {
+      "name": "ci-no-http-break-continue",
+      "repo": "hauska-engine",
+      "pattern": "if\\s*\\(!res\\.ok\\)\\s*break",
+      "scope": "packages/engine-core/src/**/fetch*.ts",
+      "action": "fail; require throw (rail NTAD pattern is allowlist)"
+    },
+    {
+      "name": "ci-verify-by-pk",
+      "repo": "hauska-engine",
+      "pattern": "body->>'atomDid'\\s+IN",
+      "scope": "packages/engine-core/scripts/write-*-county.mjs",
+      "action": "fail on SQL (comments OK)"
+    },
+    {
+      "name": "ci-no-bbox-midpoint-centroid",
+      "repo": "hauska-engine",
+      "pattern": "\\(Number\\(p\\.west_lng\\)\\s*\\+\\s*Number\\(p\\.east_lng\\)\\)\\s*/\\s*2",
+      "scope": "packages/engine-core/scripts/write-*-county.mjs",
+      "action": "fail; require geometryCentroid or fail-closed skip"
+    },
+    {
+      "name": "ci-no-process-cwd-in-writers",
+      "repo": "hauska-engine",
+      "pattern": "process\\.cwd\\(\\)",
+      "scope": "packages/engine-core/src/{well-fact,flood-hazard-fact,special-district-fact,rail-corridor-fact,rrc-pipeline-fact,building-footprint,utility-easement}/**",
+      "action": "fail"
+    },
+    {
+      "name": "ci-truncated-must-throw",
+      "repo": "hauska-engine",
+      "pattern": "truncated",
+      "scope": "write-well-fact-county.mjs",
+      "action": "require sibling if (truncated) throw before buildAtoms"
+    },
+    {
+      "name": "ci-fake-engine-exists",
+      "repo": "legacy-design-tools",
+      "pattern": "includes\\([\"']/hauska-engine/[\"']\\)\\)\\s*return true",
+      "scope": "lib/db/src/railManifestDerivation.ts",
+      "action": "fail"
+    },
+    {
+      "name": "ci-mock-allowlist-hauska-engine",
+      "repo": "legacy-design-tools",
+      "pattern": "includes\\([\"']hauska-engine[\"']\\)",
+      "scope": "**/__tests__/**",
+      "action": "fail mock fileExists that substring-match engine paths"
+    },
+    {
+      "name": "ci-stamp-as-sourcePresent",
+      "repo": "legacy-design-tools",
+      "pattern": "sourcePresent:\\s*cov\\.\\w+Pct\\s*>\\s*0",
+      "scope": "artifacts/api-server/src/countyCoverageScoreCli.ts",
+      "action": "fail"
+    },
+    {
+      "name": "ci-coverage-clamp",
+      "repo": "legacy-design-tools",
+      "pattern": "Math\\.min\\(\\s*100\\s*,\\s*\\(atomCount",
+      "scope": "artifacts/api-server/src/countyGeometryScoreCli.ts",
+      "action": "fail; require DISTINCT atom denominator or fail-closed >100"
+    },
+    {
+      "name": "ci-cotality-warm-gate",
+      "repo": "legacy-design-tools",
+      "pattern": "canWarm\\s*=\\s*present\\.has\\([\"']cotality:",
+      "scope": "artifacts/api-server/src/lib/warmingHarness.ts",
+      "action": "fail (Cotality extinguished)"
+    },
+    {
+      "name": "ci-hand-hasWriter-in-declaration",
+      "repo": "legacy-design-tools",
+      "pattern": "hasWriter:\\s*(true|false)",
+      "scope": "lib/db/src/schema/countyRailDimension.ts",
+      "action": "fail; hasWriter must not be hand-declared"
+    },
+    {
+      "name": "ci-hardcoded-did-type-union",
+      "repo": "hauska-mcp-server",
+      "pattern": "did:hauska:\\(\\?:",
+      "scope": "src/**",
+      "action": "fail unless alternation built from @empressaio/atom-contract registry/property export"
+    },
+    {
+      "name": "ci-dual-atom-contract",
+      "repo": "hauska-mcp-server",
+      "pattern": "@hauska/atom-contract",
+      "scope": "package.json + src/**",
+      "action": "fail if both @hauska and @empressaio declared, or src imports @hauska while package has @empressaio"
+    },
+    {
+      "name": "ci-gate-map-vs-server-tool",
+      "repo": "hauska-mcp-server",
+      "pattern": "structural",
+      "scope": "src/tools.ts server.tool( vs product-gates sets",
+      "action": "extract first-arg names; set-equal against PUBLIC∪CODEX∪MAP∪REPORTING; fail on remainder"
+    },
+    {
+      "name": "ci-deny-as-no-atom-found",
+      "repo": "hauska-mcp-server",
+      "pattern": "No atom found at DID",
+      "scope": "src/tools.ts inside !assertAtomReadable branches",
+      "action": "fail; require access-denied / not-readable distinct from corpus miss"
+    }
+  ],
+  "fixesApplied": [],
+  "fixesDeferredReason": "No candidate met the one-line fail-closed + failing-first-test bar without colliding W2 (symnum/well-fact halt) or A2 (atoms writer slot) or requiring multi-line + test-rewrite of tests that currently LOCK the defect. Inventory is the deliverable; CI patterns above are the proposed hook-shaped controls.",
+  "adversarialFindings": [
+    "Planner-owned review — workers did not self-review.",
+    "CP1 density expect (LDT first) was WRONG for wouldShipWrongClaim severity; engine classifier/fetch layer densest. CP1 intuition that writer verify-by-PK is healthy was RIGHT — all 12 use atom_did IN.",
+    "Dispatch said eleven writers; measured TWELVE on origin/main.",
+    "Engine worker audited SHA 127f1db; tip moved to 44a1072 (#320). Planner re-verified high-severity sites still present.",
+    "SF-6 adversarial correction: worker claimed district SELECT has no geometry — FALSE. Districts SELECT geometry. Defect is parcel probe = bbox midpoint. Finding retained under corrected mechanism.",
+    "MCP SF-40 (3 localKey enum) may be intentional product scope; retained as C-shape with severity med not high.",
+    "gateWarmCohort 1-of-4 specimen NOT in LDT origin/main — LDT warm defect is Cotality-gated harness (SF-30) instead.",
+    "METHOD CANNOT SEE: multi-line ternaries, early returns, default params, Zod .default()/.catch() in @empressaio/atom-contract dependency, runtime distributions (live SYMNUM / nfhlFraction / duplicate parcel-node rate), Python extract_highways.py feeding SF-11, hauska-map CC UI, cortex-api, unread catch swarms in MCP tools.ts (~70), generated Zod volume in LDT.",
+    "estimatedUncounted residue: 25–50 additional Shape A sites across depth-warm / Overpass / brokerage GIS / unread MCP envelope builders. A claim of full coverage would be the ninth defect.",
+    "No production fixes applied this sweep (see fixesDeferredReason)."
+  ],
+  "methodBlindSpots": {
+    "cannotSee": [
+      "ternaries / early returns / default parameters not matching grep",
+      "Zod .default() / .catch() inside dependency packages",
+      "vacuous in-memory verify patterns that do not look like silent defaults",
+      "runtime-only values and live distributions",
+      "code outside the three repos (hauska-map, cortex-api)",
+      "semantic deny-as-miss without shared string literals"
+    ],
+    "estimatedUncounted": "25-50",
+    "coverageClaim": "INCOMPLETE BY DESIGN — full-coverage claim would itself be the defect class under audit"
+  }
+}
