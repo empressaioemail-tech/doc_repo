@@ -42,7 +42,7 @@ NOTE ON AN 18-CELL DELTA — CORRECTED BY ADVERSARIAL REVIEW. A1 closed at satis
 1. `hasWriter` hand-declared — drifted both directions; up to 762 cells misreported.
 2. special-district verify validated the IN-MEMORY object it had just built — `verifyFailures` structurally incapable of being non-zero, on the largest planned apply.
 3. Zoning satisfaction keyed on `atomFamilyState` — one atom flipped a whole county green. 19 reported satisfied; ONE was real; 15 sat at exactly 0.00% coverage.
-4. **STILL OPEN.** `mapSymnumToWellStatus` DEFAULTS unmatched codes to "producing" — verified on engine origin/main at `well-fact/symnum.ts:36`, a bare `return "producing"`. It was DETECTED this session, never FIXED, and the blast radius GREW: the statewide RRC source (1,396,049 wells) landed while it stayed open. `mapSymnumToWellType` carries the identical `return "oil"` fallthrough. Both must be fixed before any wells apply.
+4. **STILL OPEN — 40.4% EXPOSURE MEASURED.** `mapSymnumToWellStatus` DEFAULTS unmatched codes to "producing" — verified on engine origin/main at `well-fact/symnum.ts:36`, a bare `return "producing"`. It was DETECTED this session, never FIXED, and the blast radius GREW: the statewide RRC source (1,396,049 wells) landed while it stayed open. `mapSymnumToWellType` carries the identical `return "oil"` fallthrough. Both must be fixed before any wells apply.
 5. Warm preflight gate called by 1 of 4 runners, and the PROMOTED runbook handed out an ungated command.
 6. Geometry scorer divided ACCOUNT cardinality by FEATURE cardinality — counties fully written and mis-scored; the ledger UNDERSTATED real coverage.
 7. `resolveLdtRoot()` used `process.cwd()`; a refresh from the wrong directory turned a probe MISS into a confident "no writer" and persisted it. 1,016 cells went dark with 11.6M atoms behind them.
@@ -125,10 +125,46 @@ Two name/extent traps found, both RRC-class: `Parcels_Utah` advertises the state
 
 **100% does NOT mean every parcel has every fact.** Large parts of Texas are unincorporated and legitimately unzoned; most parcels have no well within 500 ft. Texas at 100 means every one of 3,556 cells returns either verified data or a disclosed, provenanced absence — measured-everywhere, which is the ruled launch gate. Filled-everywhere (CAD depth across 254 districts, zoning across ~1,222 cities) is program completion and runs post-launch.
 
+
+## Late-session landings (added after the adversarial review)
+
+**W2 CP1 — the symnum exposure is 40.4%, and the halt was correct.** 563,935 of 1,396,049 staged wells
+(40.4%) hit the fallthrough across 43 distinct unmapped SYMNUMs. The breakdown matters more than the
+total: SYMNUM 4 (316,298 "Oil Well"), 5 (126,429 "Gas Well") and 6 (23,269 "Oil/Gas Well") are CORRECT BY
+ACCIDENT — the fallthrough happens to give them the right answer. But **SYMNUM 9 (44,563 "Canceled /
+Abandoned Location") and 21 (25,005 "Injection / Disposal from Oil") would ship as PRODUCING** — roughly
+70,000 wells carrying a confident false status. The fix must do BOTH: map the legitimate values properly
+off `GIS_SYMBOL_DESCRIPTION`, and fail closed on the rest. Contract path: add `unknown` to both
+`WellStatus` and `WellType` unions (neither currently has it), publish from merged main.
+
+**Z1 — the zoning probing gap is real but SMALLER than hoped, and Houston is a structural absence.**
+  Central Texas: 138 cities probed, 26 layers found, 112 searched-and-absent (19% hit rate)
+  Houston:       125 cities probed, 20 layers found, 105 searched-and-absent (16% hit rate)
+Both below the pre-registered band. **The City of Houston itself has NO Euclidean zoning** — a
+deed-restriction regime — recorded as SEARCHED-AND-ABSENT with the reason and an explicit note not to
+invent a layer. That is honest-absence discipline applied to ACQUISITION, and it reframes the metro
+sequence: Houston will never light the zoning rail the way Central Texas can, because the data does not
+exist to find. Elgin proved layers exist that the registry denies; these numbers prove most cities
+genuinely have none. Size L5 against the found counts, not the city counts.
+
+**A1P — all three owed patches RECOVERED, not reconstructed** (hauska-engine PR #319 merged). The A1
+working tree still held the uncommitted diffs at 89d4c08. Hays verified live at 265,852 join-hold
+absences / 0 presents, so the corrected HOLD semantics took without needing the slot. Its CP2 caught a
+DEFECTIVE NEGATIVE TEST: `createOwnerFact` used an illegal `atomDid` and omitted required provenance, so
+a bare `toThrow` would have passed WITHOUT proving the parcelNodeId alphabet failure — a test that could
+not fail for the right reason, caught before merge.
+
+## Lane state at capture close
+
+LANDED: A1, A1P, B2, D1, D2, D3, E1, E2, F1, G1, H1, P0/P1/P2 packs, R1, R2, RPT1, S1, U1, C1, C2,
+CAPREV, W2-CP1, Z1 (Central TX + Houston).
+IN FLIGHT: A2 (holds the atoms bulk-writer slot; halted before well-fact pending W2), MCP1 (atom-chain
+widening), SWEEP (silent-fallback audit), W2 (symnum fix execution), Z1 (Dallas metro).
+
 ## Open
 
 - MCP atom chain: 12 of 16 families unreachable — BLOCKS the report engine. Dispatch issued.
-- ~~A1 two fixes uncommitted~~ CLOSED — hauska-engine PR #319 merged.
+- ~~A1 two fixes uncommitted~~ CLOSED — hauska-engine PR #319 merged, patches RECOVERED not reconstructed.
 - **UNCOMMITTED WORK IS LIVE IN ALL THREE REPOS**, including untracked `well-fact/fetch-wells-staged.ts`. Same K5 class. Sweep and PR before session close.
 - Flood metros: viable at ~31 min for Harris, awaiting the slot.
 - L5 zoning depth: real depth is ONE county. Z1 probing sweep in flight.

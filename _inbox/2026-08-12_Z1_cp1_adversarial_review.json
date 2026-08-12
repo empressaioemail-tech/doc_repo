@@ -1,0 +1,70 @@
+{
+  "checkpoint": "CP1",
+  "lane": "Z1",
+  "reviewedAt": "2026-08-12T16:50:00Z",
+  "reviewer": "planner",
+  "artifact": "P:/doc_repo/_inbox/2026-08-12_Z1_cp1_worklist_prereg.json",
+  "worklist": "P:/tmp/z1_worklist.json",
+  "verdict": "PASS_WITH_CONSTRAINTS",
+  "checks": [
+    {
+      "id": "CP1-A1",
+      "check": "City-county link uses P2.6 parent_county_fips, not re-derived",
+      "result": "PASS",
+      "evidence": "texas_roster_v1.json city_county_join.method = TxGIO City_Boundaries spatial join vs TIGER; derived_at 2026-08-11; cities_linked 1214. Worklist filters on parent_county_fips only."
+    },
+    {
+      "id": "CP1-A2",
+      "check": "Metro county sets cited and justified",
+      "result": "PASS",
+      "evidence": "central-tx 15 counties + dallas 13 from _decisions/2026-08-09_launch_footprint_counties.md; houston 9 = Houston MSA core for L5 probe-ahead. Total cities 466 = 138+203+125."
+    },
+    {
+      "id": "CP1-A3",
+      "check": "Expectations are bands with metro-posture rationale, not hard targets",
+      "result": "PASS",
+      "evidence": "central 45-75 / dallas 50-95 / houston 20-45 with Houston no-zoning callout. Far-below-expectation on CP2 must be explained as data posture."
+    },
+    {
+      "id": "CP1-A4",
+      "check": "Already-staged cities excluded from double-count expectations",
+      "result": "PASS",
+      "evidence": "elgin-tx + smithville-tx already in tx_zoning_district_staging (3209+91). Workers may re-stage same cityKey (REPLACE semantics) but stagedTotalBefore=2."
+    },
+    {
+      "id": "CP1-A5",
+      "check": "cityKey uniqueness in worklist",
+      "result": "PASS",
+      "evidence": "0 duplicate cityKeys across 466 rows; 0 null cityGeoId. ZONING_LAYERS seed overlap = 22 central-tx cities."
+    },
+    {
+      "id": "CP1-F1",
+      "finding": "Roster zoning_layer.source_url is sparse (9 of 466). Prefer richest tier at probe time; roster URL is a seed not authority. ZONING_LAYERS in cad-ingest and P2.6 probedAndFound are richer seeds.",
+      "severity": "required"
+    },
+    {
+      "id": "CP1-F2",
+      "finding": "Houston city itself must be recorded SEARCHED-AND-ABSENT (no Euclidean zoning), not left NULL. Do not invent a zoning layer for Houston proper.",
+      "severity": "required"
+    },
+    {
+      "id": "CP1-F3",
+      "finding": "Staging requires extending ZONING_STAGING_REGISTRY then stage-tx-zoning-district.mjs --apply. Do not invent a parallel table. Registry PR may be large; cityKey on every row is mandatory (trap a).",
+      "severity": "required"
+    },
+    {
+      "id": "CP1-F4",
+      "finding": "Extent trap: verify layer extent covers the target city before staging (U1 / Harris-mirror class). Overlay vs base: set layerRole explicitly; drain refuses overlay when baseOnly.",
+      "severity": "required"
+    }
+  ],
+  "constraintsForWorkers": [
+    "Isolated worktree from origin/main only",
+    "neondb staging only; never hauska_mcp / atoms / --apply on writers",
+    "Take whole payload (outFields=*)",
+    "Record sourceTierSatisfied non-empty",
+    "Reproject State Plane to WGS84 via outSR=4326; record geometry_crs",
+    "Update source registry: URL or SEARCHED-AND-ABSENT with probe notes — never leave NULL after probe",
+    "Exit-bounded: one-shot curl --max-time 30, one-shot SQL, git, grep"
+  ]
+}
