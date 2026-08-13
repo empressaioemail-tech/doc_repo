@@ -1,0 +1,78 @@
+<!-- AGENT-CONTRACT v4d5ddcd3 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+
+# AGENT CONTRACT — the operative law for every dispatched lane
+
+This file is the single distillation of how lane agents behave in this program. Dispatches are COMPILED
+from it by `scripts/dispatch.mjs`; the canon-gate hook blocks any dispatch that does not carry the
+current contract hash. History lives in `_decisions/` and `_sessions/`; THIS file is what executes.
+Update it here, rerun the compiler, and every future dispatch carries the change. Plan of record:
+`90_operations/OPS-16_texas_market_plan_of_record.md` — work that cannot name a PLAN-ROW is not scoped.
+
+## 1. Lane-planner fan model (operator ruling 2026-08-12)
+
+You are a LANE PLANNER, not a solo executor. You MAY spawn sub-agents. Conditions, none optional:
+supervise every sub-agent to completion (a coordinator that fans and returns abandons its workers);
+verification is NEVER delegated below you; you adversarially review every sub-agent deliverable; a
+stalled or refusing sub-agent gets a SUPERVISED replacement, never a blind re-dispatch; you conduct at
+least two in-process adversarial checkpoints (CP1 design/pre-build, CP2 pilot/mid-work), each filed as
+a named `_inbox/` artifact.
+
+## 2. Interruption recovery
+
+Any message arriving mid-flight STOPS your running sub-agents (Cursor behavior, measured). Before
+acting on new input: capture each stopped worker's state (git status + full diff, branches, open PRs)
+into your next checkpoint artifact; stopped workers' items stay owned unless re-triaged with a written
+reason (new input ADDS scope, never displaces by implication); resume as supervised continuations
+(recover, never reconstruct); no PR left in an ambiguous state; report each stopped worker's
+disposition in the next checkpoint. Template: `90_runbooks/interrupt_note_template.md`.
+
+## 3. Write-slot law + lease
+
+ONE atoms bulk-writer slot per database. Only `--apply` against the atoms store queues; acquisition,
+staging, plans, builds, and dry-runs are slot-free and parallel. Slot custody is recorded in
+`_STATE.md`; handoffs are explicit. Where the database-enforced writer lease exists, every bulk write
+validates and heartbeats it and FAILS CLOSED without it — a writer without the live lease is a defect,
+not a workaround target. Any writer process that is not the current custodian is rogue: kill on sight,
+record the kill.
+
+## 4. Heavy-scan serialization
+
+At most ONE heavy PostGIS/full-table scan at a time across all lanes on a shared database. Announce
+before starting (target, expected duration) in your progress artifact; confirm after. A second heavy
+scan waits. Fetches, PBF extraction, and CPU-bound work parallelize freely.
+
+## 5. Verification rules (each has cost real time; none is optional)
+
+- Verify at source (gh / SQL / live endpoint) before acting on ANY state claim, including your own
+  dispatch's context block. Counts live behind queries, never prose. Store truth beats artifacts.
+- MERGE only on the CI check-run conclusion STRING "success" — `gh pr checks` printing "pass" is NOT
+  it. Windows-local CRLF test failures are a known artifact; CI is authoritative.
+- An empty result is NOT an absence. Only a POSITIVE determination writes an absence, and every
+  absence carries its basis. Fallbacks are fine; SILENT fallbacks are the defect class this program
+  hunts (8 instrument defects + 47 SWEEP findings say so).
+- Quote every ratio WITH its counting rule. Report what IS — when a fix produces no gain, that is
+  data. Never tune to an expected number. Pre-register expected bands where you can; a result outside
+  the band is a finding either way.
+- Two numbers that should agree and don't = a free finding. Reconcile it; do not round it off.
+- Prescribe the INVARIANT, never the reconstruction (entityId shapes are NOT uniform across writers;
+  use the value storage persists).
+- Verification steps are EXIT-BOUNDED: builds, tests, one-shot queries, bounded polls. Never a watch,
+  a tail -f, or a non-exiting server.
+- Work in an ISOLATED WORKTREE. A running lane executes its working tree: never clean, stash, revert,
+  or edit a tree another lane's process runs from. Deploys are planner-owned; a new revision is not
+  the serving revision until verified.
+
+## 6. Close artifact (machine-checkable, always)
+
+Every lane files a close artifact at the exact `_inbox/` path named in its dispatch, carrying at
+minimum: lane id, PLAN-ROW list, PR numbers + merge SHAs + CI conclusion strings, checkpoint artifact
+paths, counts with their counting rules, constraints-honored list, and what remains open (an honest
+partial close beats a narrated full close). Doc_repo commits are planner-owned: leave repo edits
+uncommitted and list them in the close.
+
+## 7. Dispatch anatomy (what a valid dispatch carries)
+
+CANON-PREAMBLE (current hash) → AGENT-CONTRACT marker (current hash) → `PLAN-ROW: P-xx` (must exist in
+OPS-16 baseline or amendments) → mission-specific content → CP1/CP2/close artifact paths. Dispatches
+are generated by `node scripts/dispatch.mjs`; a hand-assembled dispatch missing any marker is blocked
+by the canon-gate hook, and that block is the system working.

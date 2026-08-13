@@ -1,6 +1,12 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-13 (L14 utility deep-research CLOSED; prediction 24/30 CONFIRMED).**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-13 (L15 plan-farm HONESTLY_PARTIAL; L1 still holds PostGIS).**
+
+**CONVERGENCE HEADER (read these three before anything below): the plan of record is `90_operations/OPS-16_texas_market_plan_of_record.md` (every dispatch names a PLAN-ROW; the baseline is frozen, changes are amendment rows). The operative agent law is `90_runbooks/AGENT_CONTRACT.md` (fan model, interrupt recovery, slot law + lease, heavy-scan serialization, verification rules, close schema). Dispatches are COMPILED via `node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx>` — hand-assembled dispatches are blocked by the canon-gate hook (M4 contract hash, M5 PLAN-ROW validity, both verified live 2026-08-13).**
+
+## L15 PLAN FARM (OPS-16 PREP HALVES) — HONESTLY PARTIAL 2026-08-13
+
+**Status: HONESTLY_PARTIAL. Did NOT take atoms slot / no `--apply`.** Prep-half staging for P-06/P-07/P-08/P-09/P-11/P-12/P-17 (+ P-02 Ector verify). Work root `P:/tmp/plan_farm_20260813/`. Manifest `_inbox/2026-08-13_L15_plan_farm_manifest.json`. Close `_inbox/2026-08-13_L15_plan_farm_close.json`. **INPUTS READY:** rail NARN 254 + present-rate bands (k=2.0339, halt if `nearTrueRate>0.50`); wells 254 jsonl (null overlay 855/1556 assigned; no `county_fips` UPDATE); pipelines 254 jsonl (491,178); Ector re-key script still ready. **BLOCKED on L1 Harris SD `--plan-only` PID 56316** (alive since 04:38 local): flood metros 0/6, flood remainder roster 77 with 1 smoke plan (Kenedy 48261, `atomsWritten=0`), footprint 0/254 (engine_wt installed, runner ready). **Roads extract IN FLIGHT** (pyosmium PID 34688; ~269k/4.02M highway ways). Flood waiter PID 9192 polling L1 — do not kill. One heavy PostGIS honored (L15 aborted competing Harris flood at 13:04Z).
 
 ## L14 UTILITY DEEP RESEARCH (P-26) — CLOSED 2026-08-13
 
@@ -335,6 +341,10 @@ Consequence: **the planner became the reporting layer**, querying stores and mer
 Related: an executor once burned 48,000 tokens writing a briefing for a sub-agent that never ran, and reported it as "dispatched and running." Caught only by checking the live endpoint. Every dispatch now carries a no-nesting clause as its FIRST line.
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
+
+### L15 PLAN FARM — HONESTLY PARTIAL / RUNNERS LIVE (2026-08-13)
+
+Close `_inbox/2026-08-13_L15_plan_farm_close.json`. Resume: wait for L1 PID 56316 (and any `write-special-district-fact-county`) to exit + 30s quiet, then flood serial `scripts/run_flood_serial.mjs` (PID 9192 may already be waiting). After flood: `run_footprint_serial.mjs` @ engine_wt `28b85a1`. Roads: do not kill extract_roads.mjs / python 34688. Landed-only skip. Never `--apply`.
 
 ### L14 UTILITY DEEP RESEARCH (P-26) — CLOSED 2026-08-13
 

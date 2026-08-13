@@ -1,0 +1,161 @@
+{
+  "artifact": "L15_CP1_plan_farm_design",
+  "lane": "L15",
+  "role": "lane planner",
+  "planRows": ["P-06", "P-07", "P-08", "P-09", "P-11", "P-12", "P-17"],
+  "prepHalves": true,
+  "ops": "OPS-16",
+  "canonPreamble": "v0f465c77",
+  "filedAt": "2026-08-13T12:40:00Z",
+  "workRoot": "P:/tmp/plan_farm_20260813/",
+  "constraints": {
+    "neverApplyAgainstAtomsStore": true,
+    "oneSlotIsWriteConstraintOnly": true,
+    "thisLaneSlotFree": true,
+    "maxOneHeavyPostgisScanAcrossFan": true,
+    "networkAndPbfParallelOk": true,
+    "doNotRebuildWriters": true,
+    "doNotTouchDirtyHauskaEngineTree": "P:/hauska-engine is detached 8d8e880 with A2 dirty files — READ ONLY. Isolated worktree from origin/main for writer CLIs."
+  },
+  "storeTruthAtCp1": {
+    "neonProject": "fancy-fire-06136146",
+    "txgio_parcel": { "rows": 16428786, "counties": 253, "sql": "SELECT count(*)::bigint AS parcel_rows, count(DISTINCT county_fips)::int AS counties FROM txgio_parcel" },
+    "donley_48129": "absent from txgio_parcel (L2 geometry gap) — rail present-rate N/A; NARN still fetched",
+    "tx_county_boundary": { "n": 254, "sql": "SELECT count(*)::int FROM tx_county_boundary" },
+    "tx_rrc_well": { "n": 1396049, "county_null": 1556, "counties": 254, "sql": "SELECT count(*)::bigint, count(*) FILTER (WHERE county_fips IS NULL), count(DISTINCT county_fips) FROM tx_rrc_well", "missionCitedNulls": 1713, "note": "Store wins: 1556 nulls now (A1 residue 1713 has drifted). Partition assigns live nulls via lng/lat bbox." },
+    "tx_rrc_pipeline": { "n": 491178, "county_null": 0, "counties": 254, "sql": "SELECT count(*)::bigint, count(*) FILTER (WHERE county_fips IS NULL), count(DISTINCT county_fips) FROM tx_rrc_pipeline" },
+    "tx_building_footprint": { "n": 10674975, "counties": 254, "geom_populated": 10674975, "sql": "SELECT count(*)::bigint, count(DISTINCT county_fips), count(*) FILTER (WHERE geom IS NOT NULL) FROM tx_building_footprint" },
+    "flood_hazard_fact": { "n": 2524094, "counties": 181, "sql": "SELECT count(*)::bigint, count(DISTINCT left(entity_id,5)) FROM atoms WHERE entity_type='flood-hazard-fact' AND entity_id ~ '^[0-9]{5}:'" },
+    "flood_metros": {
+      "fips": ["48201", "48453", "48439", "48029", "48113", "48085"],
+      "features": { "48029": 709541, "48085": 387737, "48113": 694160, "48201": 1523641, "48439": 757161, "48453": 828773, "sum": 4901013 },
+      "sql": "SELECT county_fips, count(DISTINCT feature_index)::bigint AS features FROM txgio_parcel WHERE county_fips IN ('48201','48453','48439','48029','48113','48085') GROUP BY 1"
+    }
+  },
+  "l1NeonContention": {
+    "observedAt": "2026-08-13T12:35:00Z",
+    "pids": [58656, 58484, 56316],
+    "leafRssBytes": 1132601344,
+    "cpuSeconds": 34.2,
+    "startedLocal": "2026-08-13 04:38:42",
+    "interpretation": "L1 Harris 48201 SD plan/drain tree still alive (1.1 GB RSS, low CPU = blocked on SQL). Occupies the single heavy-PostGIS slot. L15 MUST NOT start flood/footprint/rail ST_DWithin until this tree exits.",
+    "policy": "Poll PID 56316. Announce our first heavy scan only after process gone + 30s quiet."
+  },
+  "planPersistDoctrine": {
+    "rule": "Stage INPUTS the existing writer already consumes. Do not rebuild writers. Copy L1 SD plan/drain JSON only where the writer already has a plan function we can sidecar without editing engine sources.",
+    "flood": "Writer has no --from-plan. Sidecar calls planCountyFloodHazardPostgis and persists compact NDJSON (parcelKey, outcome, zone, sfha, bfe) + summary/digest. Drain still re-plans unless L1 adds --from-plan (out of this lane). Paying Harris 31 min NOW still validates PostGIS and yields the digest gate.",
+    "footprint": "Writer at 28b85a1 (on origin/main, NOT the dirty tree) already consumes tx_building_footprint via planCountyStagedFootprints. Persist --out summaries + compact join counts. Join itself IS the heavy scan; sidecar reuses that function.",
+    "rail": "Writer live-fetches NTAD. Persist per-county NARN + crossings JSON (inputs). Present-rate bands from NARN density now; optional true parcel ST_DWithin when scan slot free.",
+    "wellsPipelines": "Writer reads tx_rrc_well / tx_rrc_pipeline by county_fips. Persist per-county JSONL overlays including bbox-assigned null wells so adjacent parcels cannot read false absence. Do NOT UPDATE production county_fips.",
+    "roads": "Writer/ingest consumes per-county NDJSON. One pyosmium pass over P:/tmp/pbf/texas-latest.osm.pbf with 254-county FeatureCollection, then split by countyHits. Fallback: 2-at-a-time per-county extracts if RSS OOM."
+  },
+  "legs": {
+    "rail_corridor": {
+      "id": "rail_corridor",
+      "planRow": "P-06",
+      "form": "INPUTS + density present-rate bands (not atom payloads)",
+      "inputsPath": "P:/tmp/plan_farm_20260813/rail_corridor/",
+      "method": "NTAD ArcGIS STCNTYFIPS / CountyCode paging; vintage 2026-07-21; URLs from ntad-source.ts",
+      "counties": 254,
+      "presentRateGate": {
+        "metric": "expected nearRailCorridor=true rate (NOT outcome=present)",
+        "cheapMethodId": "narn-buffer-area-over-county-bbox-calibrated",
+        "cheapFormula": "expected = clip( k * (2*152.4*length_m + pi*152.4^2) / bbox_area_m2 , 0, 0.20 ) with k calibrated to L1 samples 48001=0.063, 48453=0.024, 48113=0.043, 48201=0.031",
+        "zeroNarnBand": [0, 0.01],
+        "hasNarnBandPad": "band = [max(0, expected*0.35), min(0.20, expected*2.5 + 0.02)]",
+        "defectClass": "drain nearTrueRate > 0.50 OR outside band by >0.15 AND narn_segments>0 → HALT (99.4% class)",
+        "optionalHeavy": "HS-RAIL-PRESENT: one statewide centroid ST_DWithin 152.4m vs narn_stage after L1 idle — refines bands, not required to catch 99.4%"
+      },
+      "heavyScan": false,
+      "parallel": "network, concurrency 8"
+    },
+    "flood_metros": {
+      "id": "flood_metros",
+      "planRow": "P-07",
+      "form": "compact plan NDJSON + summary (sidecar, no writer edit)",
+      "inputsPath": "P:/tmp/plan_farm_20260813/flood_metros/",
+      "methodId": "postgis-zone-major-st-contains",
+      "writerPin": "origin/main includes F1 #315 + L5 #325 Zone-X a54caf4",
+      "order": ["48201", "48453", "48439", "48029", "48113", "48085"],
+      "harrisExpectedSec": 1862,
+      "heavyScan": true,
+      "gate": "wait for L1 PID 56316 exit"
+    },
+    "flood_remainder": {
+      "id": "flood_remainder",
+      "planRow": "P-08",
+      "form": "store-truth roster UNION logoff cohort; compact plans",
+      "inputsPath": "P:/tmp/plan_farm_20260813/flood_remainder/",
+      "rosterRule": "parcel counties (253) minus flood-atom counties (181) minus metros (6) UNION L4 crash/logoff unique FIPS. Landed-only skip: county with flood atoms AND not in logoff cohort.",
+      "expectedMissingApprox": 66,
+      "logoffSource": "P:/tmp/slot_chain_tee_20260812/flood_crash_codes.json + L4 volume SQL 31 failed-open",
+      "heavyScan": true,
+      "note": "mostly small; serialize after metros"
+    },
+    "footprint": {
+      "id": "footprint",
+      "planRow": "P-09",
+      "form": "staged geometry-true join plans via 28b85a1 planCountyStagedFootprints sidecar",
+      "inputsPath": "P:/tmp/plan_farm_20260813/footprint/",
+      "writerPin": "28b85a1096b3948114e7f518ac49afdbc03936e1",
+      "failClosed": ["STAGED_FOOTPRINT_TABLE_MISSING", "STAGED_FOOTPRINT_GEOM_UNREADY", "STAGED_FOOTPRINT_COUNTY_EMPTY"],
+      "neverMlZip": true,
+      "heavyScan": true,
+      "schedule": "after flood remainder; largest counties last"
+    },
+    "wells": {
+      "id": "wells",
+      "planRow": "P-11",
+      "form": "per-county JSONL from tx_rrc_well + overlay of bbox-assigned nulls",
+      "inputsPath": "P:/tmp/plan_farm_20260813/wells/",
+      "nullAssignment": "lng/lat vs tx_county_bbox; a well may overlay multiple counties if bbox-ambiguous — fail-open to ALL overlapping counties so adjacent parcels cannot read false absence",
+      "doNotUpdateStore": true,
+      "heavyScan": false
+    },
+    "pipelines": {
+      "id": "pipelines",
+      "planRow": "P-12",
+      "form": "per-county JSONL from tx_rrc_pipeline (county_fips already 491178/491178)",
+      "inputsPath": "P:/tmp/plan_farm_20260813/pipelines/",
+      "heavyScan": false
+    },
+    "roads": {
+      "id": "roads",
+      "planRow": "P-17",
+      "form": "per-county highway NDJSON from one pyosmium pass",
+      "inputsPath": "P:/tmp/plan_farm_20260813/roads/",
+      "pbf": "P:/tmp/pbf/texas-latest.osm.pbf",
+      "pbfBytes": 713825447,
+      "sidecar": "hauska-engine artifacts/roads-pbf-worker/extract_highways.py (engine #290 lineage)",
+      "method": "Dump 254 county polygons from tx_county_boundary → one FeatureCollection extract → split NDJSON by countyHits. If RSS OOM, fallback two-at-a-time.",
+      "rssWatch": "~2.8GB per extract",
+      "heavyScan": false,
+      "parallel": "CPU; one extract preferred, else max 2"
+    },
+    "ector": {
+      "id": "ector",
+      "planRow": "P-02",
+      "form": "re-run L4 dry-evidence script against live SQL; copy script+inputs into farm",
+      "inputsPath": "P:/tmp/plan_farm_20260813/ector/",
+      "script": "P:/tmp/slot_chain_tee_20260812/scripts/ector_48135_rekey.mjs",
+      "heavyScan": false
+    }
+  },
+  "heavyScanSchedule": [
+    { "id": "WAIT_L1_HARRIS", "status": "BLOCKING", "target": "PID 56316 exit", "expectedDuration": "unknown (alive since 04:38 local, 34s CPU / 1.1GB RSS)" },
+    { "id": "HS-FLOOD-48201", "status": "QUEUED", "target": "Harris flood zone-major plan", "expectedDuration": "~1862s" },
+    { "id": "HS-FLOOD-48453", "status": "QUEUED", "target": "Travis flood plan", "expectedDuration": "~600-900s (828k features)" },
+    { "id": "HS-FLOOD-48439", "status": "QUEUED", "target": "Tarrant flood plan", "expectedDuration": "~500-800s" },
+    { "id": "HS-FLOOD-48029", "status": "QUEUED", "target": "Bexar flood plan", "expectedDuration": "~500-800s" },
+    { "id": "HS-FLOOD-48113", "status": "QUEUED", "target": "Dallas flood plan", "expectedDuration": "~500-800s" },
+    { "id": "HS-FLOOD-48085", "status": "QUEUED", "target": "Collin flood plan", "expectedDuration": "~300-500s" },
+    { "id": "HS-FLOOD-REMAINDER", "status": "QUEUED", "target": "non-metro remainder + logoff plans serialized", "expectedDuration": "mostly small; skip landed-only" },
+    { "id": "HS-FOOTPRINT", "status": "QUEUED", "target": "staged geometry-true join per county serialized", "expectedDuration": "metros dominate; 10.67M staged rows" },
+    { "id": "HS-RAIL-PRESENT", "status": "OPTIONAL", "target": "statewide centroid ST_DWithin 152.4m vs NARN", "expectedDuration": "~10-20 min if slot remains" }
+  ],
+  "progressSemantics": {
+    "file": "P:/tmp/plan_farm_20260813/progress.json",
+    "resume": "landed-only. halted/failed counties RE-ENTER. never skip from halted set. strip UTF-8 BOM on read."
+  },
+  "cp1Verdict": "PROCEED — start network/CPU/btree partition immediately; hold every heavy PostGIS scan until L1 Harris tree exits"
+}

@@ -21,6 +21,7 @@ Before substantive work, read these in order:
 3. `01a_atom_conventions.md` — portfolio atom catalog and atom-first context rules (HR-12 companion).
 4. `90_runbooks/current_state_protocol.md` — protocol for regenerating the snapshot at session close.
 5. `_catalog/repo_intents.md` — per-repo canonical intent (what each repo IS, is GOING, and DIES), ratified 2026-07-04. Read before planning any work in a product or substrate repo; it is the antidote to re-deriving the portfolio by archaeology, and it carries the branding canon (Hauska = substrate only).
+6. `90_operations/OPS-16_texas_market_plan_of_record.md` (the plan of record; work that cannot name a PLAN-ROW is not scoped) and `90_runbooks/AGENT_CONTRACT.md` (the operative law compiled into every lane dispatch). Dispatches are GENERATED via `node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx>`, never hand-assembled; the canon-gate hook blocks dispatches missing the current preamble/contract hashes or a valid PLAN-ROW.
 
 If today's work touches a specific product or workstream, also read the canonical doc for that work. Cross-reference by slot rather than restating in your responses.
 

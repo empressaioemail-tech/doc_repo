@@ -1,0 +1,253 @@
+{
+  "artifact": "L15_plan_farm_readiness_manifest",
+  "lane": "L15",
+  "planRows": ["P-06", "P-07", "P-08", "P-09", "P-11", "P-12", "P-17", "P-02"],
+  "ops": "OPS-16",
+  "filedAt": "2026-08-13T13:26:00Z",
+  "updatedAt": "2026-08-13T14:07:16Z",
+  "close": "_inbox/2026-08-13_L15_plan_farm_close.json",
+  "workRoot": "P:/tmp/plan_farm_20260813/",
+  "progress": "P:/tmp/plan_farm_20260813/progress.json",
+  "cp1": "_inbox/2026-08-13_L15_cp1_design.json",
+  "cp2": "_inbox/2026-08-13_L15_cp2_midpoint.json",
+  "neverAppliedAtoms": true,
+  "oneSlotIsWriteConstraintOnly": true,
+  "resumeRule": "landed-only. halted/failed re-enter. strip UTF-8 BOM on read.",
+  "neon": {
+    "project": "fancy-fire-06136146",
+    "name": "cortex-prod",
+    "database": "neondb"
+  },
+  "heavyScanPolicy": {
+    "maxConcurrentPostgis": 1,
+    "l1Occupant": {
+      "lane": "L1",
+      "pid": 56316,
+      "cmdline": "write-special-district-fact-county.mjs --county=48201 --plan-only",
+      "startedLocal": "2026-08-13 04:38:42",
+      "observedAt": "2026-08-13T13:25:00Z",
+      "rssMb": 1453,
+      "cpuSec": 50.6,
+      "planJsonPresent": false,
+      "neonLockAge": "~2m keyset-batched ST_Intersects on txgio_parcel + tx_special_district",
+      "l15Action": "wait; do not start flood/footprint/rail ST_DWithin until this tree exits + 30s quiet"
+    },
+    "announced": [
+      { "id": "HS-FLOOD-48261", "at": "2026-08-13T12:53:14Z", "expectedDurationSec": 30 },
+      { "id": "HS-FLOOD-48201", "at": "2026-08-13T12:54:30Z", "expectedDurationSec": 1862 }
+    ],
+    "confirmed": [
+      {
+        "id": "HS-FLOOD-48261",
+        "ok": true,
+        "atomsWritten": 0,
+        "planMs": 1041,
+        "digest": "04a7b4d58754ad4030877e430ddb500b1741173caf71f91df3b82f346a6c3c49",
+        "at": "2026-08-13T12:54:11Z"
+      }
+    ],
+    "aborted": [
+      {
+        "id": "HS-FLOOD-48201",
+        "reason": "serialize_violation_l1_still_holds_slot",
+        "killedPids": [64140, 45696, 64264, 46452],
+        "atomsWritten": 0,
+        "reenter": true,
+        "at": "2026-08-13T13:04:30Z"
+      }
+    ]
+  },
+  "legs": {
+    "rail_corridor": {
+      "planRow": "P-06",
+      "status": "INPUTS_READY",
+      "form": "NTAD NARN + crossings JSON per county; density present-rate bands (NOT atom payloads)",
+      "inputsPath": "P:/tmp/plan_farm_20260813/rail_corridor/",
+      "narnPath": "P:/tmp/plan_farm_20260813/rail_corridor/narn/",
+      "crossingsPath": "P:/tmp/plan_farm_20260813/rail_corridor/crossings/",
+      "counts": {
+        "narnFiles": 254,
+        "crossingFiles": 254,
+        "narnSegmentsSum": 16522,
+        "zeroNarnCounties": 51,
+        "sql": "counts from staged JSON files, not Neon (NTAD fetch). Store parcel denom: SELECT count(*)::bigint AS parcel_rows, count(DISTINCT county_fips)::int AS counties FROM txgio_parcel"
+      },
+      "provenance": {
+        "sourceUrl": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_North_American_Rail_Network_Lines/FeatureServer/0",
+        "sourceVintage": "2026-07-21",
+        "filter": "STCNTYFIPS / CountyCode paging",
+        "methodId": "narn-buffer-area-over-county-bbox-calibrated"
+      },
+      "presentRateBands": {
+        "path": "P:/tmp/plan_farm_20260813/rail_corridor/present_rate_bands.json",
+        "metric": "expected nearRailCorridor=true rate (NOT outcome=present)",
+        "k": 2.0339025013316108,
+        "bufferM": 152.4,
+        "zeroNarnBand": [0, 0.01],
+        "defectHaltIfNearTrueRateAbove": 0.5,
+        "note": "catches rogue 99.4% present class. HS-RAIL-PRESENT ST_DWithin optional; not started while L1 holds slot."
+      },
+      "expectedDrainVolume": {
+        "grain": "parcel-keyed rail-corridor-fact",
+        "parcels": 16428786,
+        "counties": 253,
+        "donley_48129": "no txgio_parcel rows; NARN still fetched; drain N/A until geometry exists",
+        "sql": "SELECT count(*)::bigint AS parcel_rows, count(DISTINCT county_fips)::int AS counties FROM txgio_parcel"
+      },
+      "writerConsumes": "live NTAD fetch OR these staged JSON files if L1 points the writer at them; this lane did not rebuild the writer"
+    },
+    "flood_metros": {
+      "planRow": "P-07",
+      "status": "QUEUED_WAIT_L1",
+      "form": "writer --out summaries (digest/counts). Compact NDJSON sidecar blocked on engine_wt at CP2; engine_wt pnpm install LANDED 2026-08-13T13:06:54Z so sidecar is now available AFTER L1. Cheap honest form until then: flood writer dry-run --out (no --apply).",
+      "inputsPath": "P:/tmp/plan_farm_20260813/flood_metros/",
+      "methodId": "postgis-zone-major-st-contains",
+      "writerPin": "P:/hauska-engine flood writer (F1 #315 + L5 #325 Zone-X). NEVER --apply.",
+      "order": ["48201", "48453", "48439", "48029", "48113", "48085"],
+      "counts": {
+        "features": { "48029": 709541, "48085": 387737, "48113": 694160, "48201": 1523641, "48439": 757161, "48453": 828773, "sum": 4901013 },
+        "sql": "SELECT county_fips, count(DISTINCT feature_index)::bigint AS features FROM txgio_parcel WHERE county_fips IN ('48201','48453','48439','48029','48113','48085') GROUP BY 1"
+      },
+      "expectedDrainVolume": { "parcelFeatures": 4901013, "atomsWrittenThisLane": 0 },
+      "runner": "P:/tmp/plan_farm_20260813/scripts/run_flood_serial.mjs (polling L1)",
+      "landed": []
+    },
+    "flood_remainder": {
+      "planRow": "P-08",
+      "status": "ROSTER_READY_PLANS_QUEUED",
+      "form": "store-truth roster + writer --out summaries",
+      "inputsPath": "P:/tmp/plan_farm_20260813/flood_remainder/",
+      "rosterPath": "P:/tmp/plan_farm_20260813/flood_remainder/roster.json",
+      "counts": {
+        "parcelCounties": 253,
+        "floodAtomCounties": 181,
+        "missingNoAtomsNonMetro": 66,
+        "missionCitedMissing": 67,
+        "logoffUnion": 42,
+        "missionCitedLogoff": 35,
+        "unionToPlan": 77,
+        "skipLanded": 170,
+        "sqlParcels": "SELECT DISTINCT county_fips FROM txgio_parcel",
+        "sqlFlood": "SELECT DISTINCT left(entity_id,5) FROM atoms WHERE entity_type='flood-hazard-fact' AND entity_id ~ '^[0-9]{5}:'"
+      },
+      "note": "Store truth wins over mission prose (66 missing, 42 logoff, union 77).",
+      "landedPlans": ["48261.summary.json"],
+      "expectedDrainVolume": {
+        "counties": 77,
+        "grain": "parcel-keyed flood-hazard-fact",
+        "volumeSql": "SELECT county_fips, count(DISTINCT feature_index)::bigint FROM txgio_parcel WHERE county_fips = ANY($union) GROUP BY 1"
+      }
+    },
+    "footprint": {
+      "planRow": "P-09",
+      "status": "QUEUED_AFTER_FLOOD",
+      "form": "writer dry-run --out from engine_wt @ 28b85a1 (staged-only, fail-closed, no ML zip)",
+      "inputsPath": "P:/tmp/plan_farm_20260813/footprint/",
+      "writerPin": "28b85a1096b3948114e7f518ac49afdbc03936e1",
+      "engineWt": "P:/tmp/plan_farm_20260813/engine_wt",
+      "engineWtInstall": { "ok": true, "at": "2026-08-13T13:06:54Z", "packages": 214 },
+      "failClosed": ["STAGED_FOOTPRINT_TABLE_MISSING", "STAGED_FOOTPRINT_GEOM_UNREADY", "STAGED_FOOTPRINT_COUNTY_EMPTY"],
+      "neverMlZip": true,
+      "counts": {
+        "stagedRows": 10674975,
+        "counties": 254,
+        "geomPopulated": 10674975,
+        "sql": "SELECT count(*)::bigint, count(DISTINCT county_fips), count(*) FILTER (WHERE geom IS NOT NULL) FROM tx_building_footprint"
+      },
+      "expectedDrainVolume": {
+        "stagedFootprints": 10674975,
+        "grain": "parcel-keyed building-footprint-fact via geometry-true join"
+      },
+      "runner": "P:/tmp/plan_farm_20260813/scripts/run_footprint_serial.mjs",
+      "landed": []
+    },
+    "wells": {
+      "planRow": "P-11",
+      "status": "INPUTS_READY",
+      "form": "per-county JSONL from tx_rrc_well + lng/lat bbox overlay of county-null wells (no UPDATE of county_fips)",
+      "inputsPath": "P:/tmp/plan_farm_20260813/wells/",
+      "counts": {
+        "jsonlFiles": 254,
+        "storeWells": 1396049,
+        "countyNullLive": 1556,
+        "missionCitedNulls": 1713,
+        "overlayAssignedWells": 855,
+        "overlayUnassignedWells": 701,
+        "overlayMultiCountyWells": 2,
+        "bboxGapBackfill": ["48071", "48123", "48129", "48133", "48161", "48225", "48289", "48337", "48401"],
+        "sql": "SELECT count(*)::bigint, count(*) FILTER (WHERE county_fips IS NULL), count(DISTINCT county_fips) FROM tx_rrc_well",
+        "sqlNulls": "SELECT count(*) FROM tx_rrc_well WHERE county_fips IS NULL"
+      },
+      "methodId": "lnglat-vs-tx_county_bbox-failopen-multi; gap-9 used tx_county_boundary envelopes",
+      "doNotUpdateStore": true,
+      "expectedDrainVolume": {
+        "grain": "parcel-keyed well-fact",
+        "wellRowsAvailableToWriter": 1396049,
+        "nullsCoveredByOverlay": 855,
+        "nullsUnassignedOutsideBbox": 701,
+        "parcelDenomSql": "SELECT count(*)::bigint FROM txgio_parcel"
+      }
+    },
+    "pipelines": {
+      "planRow": "P-12",
+      "status": "INPUTS_READY",
+      "form": "per-county JSONL from tx_rrc_pipeline",
+      "inputsPath": "P:/tmp/plan_farm_20260813/pipelines/",
+      "counts": {
+        "jsonlFiles": 254,
+        "segments": 491178,
+        "countyNull": 0,
+        "sql": "SELECT count(*)::bigint, count(*) FILTER (WHERE county_fips IS NULL), count(DISTINCT county_fips) FROM tx_rrc_pipeline"
+      },
+      "expectedDrainVolume": {
+        "grain": "parcel-keyed pipeline-fact",
+        "segments": 491178,
+        "parcelDenomSql": "SELECT count(*)::bigint FROM txgio_parcel"
+      }
+    },
+    "roads": {
+      "planRow": "P-17",
+      "status": "IN_FLIGHT",
+      "form": "one-pass pyosmium extract of texas-latest.osm.pbf → statewide NDJSON → split by countyHits",
+      "inputsPath": "P:/tmp/plan_farm_20260813/roads/",
+      "pbf": "P:/tmp/pbf/texas-latest.osm.pbf",
+      "pbfBytes": 713825447,
+      "sidecar": "hauska-engine/artifacts/roads-pbf-worker/extract_highways.py (engine #290)",
+      "geojsonCounties": 254,
+      "observedAt": "2026-08-13T14:07:16Z",
+      "extract": {
+        "kept": 266000,
+        "highwaySeen": 269364,
+        "priorStatewideHighwayWays": 4028297,
+        "sourcePrior": "P:/tmp/statewide-roads/proof-2026-08-09/extract_report.json highwayWays=4028297 (Bastrop-only pass over same PBF class)",
+        "peakRssMb": 2949.5,
+        "statewideNdjsonBytes": 212521386,
+        "etaNote": "highway_seen ~4.2% of 4.02M; one-pass 254-county PIP is the cheaper form vs 254 full-PBF rescans"
+      },
+      "expectedDrainVolume": {
+        "grain": "road-node / highway NDJSON per county",
+        "highwayWaysStatewideApprox": 4028297
+      },
+      "runnerPidHint": "python extract_highways.py under extract_roads.mjs"
+    },
+    "ector": {
+      "planRow": "P-02",
+      "status": "READY",
+      "form": "re-key script + dry-evidence against live SQL",
+      "inputsPath": "P:/tmp/plan_farm_20260813/ector/",
+      "script": "P:/tmp/plan_farm_20260813/ector/ector_48135_rekey.mjs",
+      "verify": "P:/tmp/plan_farm_20260813/ector/VERIFY.json",
+      "stillReady": true,
+      "reranAt": "2026-08-13T12:43:41.348Z",
+      "counts": {
+        "geo_id_distinct": 75464,
+        "prop_id_distinct": 3791,
+        "parcel_node_atoms": 3791,
+        "targetAtomsAfterRekeyApprox": 71673,
+        "sqlStaging": "SELECT count(*)::int AS parcel_rows, count(DISTINCT feature_index)::int AS feature_index_n, count(DISTINCT NULLIF(trim(prop_id), ''))::int AS prop_id_distinct, count(DISTINCT NULLIF(trim(geo_id), ''))::int AS geo_id_distinct FROM txgio_parcel WHERE county_fips = '48135'",
+        "sqlAtoms": "SELECT count(*)::int AS parcel_node_atoms FROM atoms WHERE entity_type = 'parcel-node' AND left(entity_id, 5) = '48135'"
+      },
+      "expectedDrainVolume": { "parcelNodeAtomsAfterRekeyApprox": 71673, "applyThisLane": false }
+    }
+  }
+}

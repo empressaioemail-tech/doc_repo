@@ -239,7 +239,68 @@ To override: add a line CANON_OVERRIDE: <reason>
     }
 }
 
+function Get-ContractHash {
+    $contractPath = Join-Path $DocRepo '90_runbooks/AGENT_CONTRACT.md'
+    if (-not (Test-Path -LiteralPath $contractPath)) { return $null }
+    try { $text = [System.IO.File]::ReadAllText($contractPath) } catch { return $null }
+    if ($text -match 'AGENT-CONTRACT v([a-f0-9]{8})') { return $Matches[1] }
+    return $null
+}
+
+function Test-PlanRows {
+    param([string]$Text)
+    # Returns: 'ok', 'missing' (no PLAN-ROW line), or the first invalid row id.
+    if ($Text -notmatch '(?m)^PLAN-ROW:\s*(.+)$') { return 'missing' }
+    $rowsLine = $Matches[1]
+    $ops16Path = Join-Path $DocRepo '90_operations/OPS-16_texas_market_plan_of_record.md'
+    if (-not (Test-Path -LiteralPath $ops16Path)) { return 'ok' }  # fail open
+    try { $ops16 = [System.IO.File]::ReadAllText($ops16Path) } catch { return 'ok' }
+    $rowIds = [regex]::Matches($rowsLine, 'P-\d+') | ForEach-Object { $_.Value } | Select-Object -Unique
+    if (-not $rowIds) { return 'ok' }  # DC-only or prose reference; preamble/contract still gate
+    foreach ($rid in $rowIds) {
+        $inBaseline = $ops16 -match "(?m)^\| $rid \|"
+        $inAmendment = $ops16 -match "(?m)^\| A-\d+[^\r\n]*\b$rid\b"
+        if (-not ($inBaseline -or $inAmendment)) { return $rid }
+    }
+    return 'ok'
+}
+
 if ($toolName -eq 'Agent' -and (Test-DispatchShaped -Text $inspectText)) {
+    $contractHash = Get-ContractHash
+    if ($contractHash -and ($inspectText -notmatch "AGENT-CONTRACT v$contractHash")) {
+        $msg = @"
+CANON GATE (M4): dispatch missing or stale AGENT-CONTRACT marker (current v$contractHash).
+
+Dispatches are COMPILED, not hand-assembled. Generate this dispatch with:
+  node P:/doc_repo/scripts/dispatch.mjs --lane <ID> --plan-row <P-xx> --mission-file <f>
+which embeds the current contract (90_runbooks/AGENT_CONTRACT.md) and preamble hashes.
+Or add a line: CANON_OVERRIDE: <reason>
+"@
+        Write-BlockMessage -Message $msg.Trim()
+    }
+
+    $planRowResult = Test-PlanRows -Text $inspectText
+    if ($planRowResult -eq 'missing') {
+        $msg = @"
+CANON GATE (M5): dispatch has no PLAN-ROW line.
+
+Every dispatch names its OPS-16 row (work that cannot name a row is not scoped).
+Add: PLAN-ROW: P-xx  — or, for genuinely new scope, add an operator-ruled amendment row to
+90_operations/OPS-16_texas_market_plan_of_record.md first, then compile via scripts/dispatch.mjs.
+Or add a line: CANON_OVERRIDE: <reason>
+"@
+        Write-BlockMessage -Message $msg.Trim()
+    } elseif ($planRowResult -ne 'ok') {
+        $msg = @"
+CANON GATE (M5): PLAN-ROW $planRowResult not found in OPS-16 baseline or amendments.
+
+No row, no dispatch. Add an operator-ruled amendment row to
+90_operations/OPS-16_texas_market_plan_of_record.md, then recompile via scripts/dispatch.mjs.
+Or add a line: CANON_OVERRIDE: <reason>
+"@
+        Write-BlockMessage -Message $msg.Trim()
+    }
+
     $currentHash, $preambleText = Get-PreambleHash
     if ($currentHash) {
         if ($inspectText -notmatch "CANON-PREAMBLE v$currentHash") {

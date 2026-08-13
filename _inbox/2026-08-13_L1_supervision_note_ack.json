@@ -1,0 +1,61 @@
+{
+  "artifact": "L1_supervision_note_ack",
+  "ackedAt": "2026-08-13T12:22:00Z",
+  "interruptCapture": "_inbox/2026-08-13_L1_interrupt_capture.json",
+  "actions": {
+    "1_storeTruthRoster": {
+      "status": "DONE",
+      "query": "SELECT left(entity_id,5), count(*) FROM atoms WHERE entity_type=? AND entity_id ~ '^[0-9]{5}:' GROUP BY 1",
+      "artifact": "P:/tmp/l1_sd_plans_20260812/store_truth_roster.json",
+      "queriedAt": "2026-08-13T12:16:14.484Z",
+      "special_district_fact": {
+        "countyCount": 253,
+        "totalAtoms": 14542213,
+        "vsOperatorCitedRogue": { "counties": 204, "atoms": 18529461 },
+        "note": "Store wins. Atom count lower than rogue cite because L1 undercount delete+drain already rewrote 36 counties (progress file must not drive roster)."
+      },
+      "rail_corridor_fact": {
+        "countyCount": 205,
+        "totalAtoms": 10227600,
+        "vsOperatorCitedRogue": { "counties": 204, "atoms": 9867600 },
+        "note": "Store wins. 205 includes mid-write 48201 residue after rogue kill."
+      },
+      "remediationRule": "delete+drain roster = STORE counties list per family; progress.json is audit-only"
+    },
+    "2_railPresentRateRedFlag": {
+      "status": "PRE_REGISTERED",
+      "metric": "nearRailCorridor=true / atoms (NOT outcome=present)",
+      "whyNotOutcomePresent": "Writer design emits outcome-shaped present for outside-buffer with nearRailCorridor=false; near-universal outcome present is expected. Adjacency is nearRailCorridor=true.",
+      "expectedBand": {
+        "nearTrueRateMin": 0.01,
+        "nearTrueRateMax": 0.08,
+        "basis": "NARN density / A2 honest early counties (single-digit %); samples 48001=6.3%, 48453=2.4%, 48113=4.3%, 48201=3.1%"
+      },
+      "defectGate": "If county drain nearTrueRate outside [0.01, 0.08] OR nearNullRate > 0.05 after re-apply → HALT as writer defect, do not treat as data",
+      "sampleEvidence": "P:/tmp/l1_sd_plans_20260812/rail_near_rate_by_county.json",
+      "storeScan": {
+        "scannedAt": "2026-08-13T12:25:03.745Z",
+        "counties": 205,
+        "atoms": 10227600,
+        "nearTrueRate": 0.03614,
+        "nearNullRate": 0.00609,
+        "nearFalseShare": 0.95777,
+        "interpretation": "Aggregate nearTrueRate 3.6% is INSIDE the 1–8% band. Operator 99.4% 'present' matches near_true+near_false (non-absent atoms) — that is the writer shape, not adjacency. Defect pockets: 48021 nearNull=100% (62,256 atoms missing nearRailCorridor); 48261 nearTrue=24.7% on only 527 atoms (tiny-county density, watch on re-apply)."
+      },
+      "ownedFileBoundary": "rail-corridor-fact/** is OUTSIDE original L1 owned set. Re-apply under main tip (#324 NET mapping) is in scope; if buffer/absence predicate needs code change, STOP and report before editing."
+    },
+    "3_planConcurrency48201": {
+      "status": "NO_KILL_SINGLE_TREE",
+      "pids": [58656, 58484, 56316],
+      "finding": "One plan owner: undercount runner → pnpm → tsx → node leaf. Not three concurrent plans.",
+      "action": "Kept the single tree. No duplicate plan processes found outside that tree.",
+      "harrisPlanFilePresent": false,
+      "note": "Plan still in-flight; atomic write at completion."
+    }
+  },
+  "next": [
+    "Supervise Harris 48201 plan→delete→drain to completion under slot",
+    "Rebuild SD remediation queue from store_truth_roster (253), not undercount_progress",
+    "Rail: after SD Harris lands, re-apply store rail counties under fixed writer with nearTrueRate band gate; STOP if writer edit required"
+  ]
+}
