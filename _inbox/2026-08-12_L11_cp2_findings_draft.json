@@ -1,0 +1,60 @@
+{
+  "lane": "L11",
+  "planRows": ["P-13", "P-38(IDX)"],
+  "cp": "CP2",
+  "recordedAt": "2026-08-12T23:35:00Z",
+  "freshLedgerGet": {
+    "url": "https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+    "http": 200,
+    "timeSec": 8.509,
+    "bytes": 1992402,
+    "artifact": "P:/tmp/county_ledger_l11_fresh.json",
+    "summary": {
+      "satisfiedCells": 406,
+      "satisfiedPresentCells": 405,
+      "satisfiedAbsentCells": 1,
+      "texasCompletenessPct": 12.909486508370861,
+      "totalCells": 3556
+    },
+    "note": "Settled P-13 baseline was 405 present / 0 absent; L7 since added Donley geometry satisfied-absent (+1 cell). Present stack unchanged at 405."
+  },
+  "job1_p13_draft": {
+    "headline": "The 18-cell 'drop' is NOT a store mutation. A1's close counted raw rail_state; the live API demotes 18 zoning cells via jurisdiction-depth threshold gate.",
+    "arithmetic": {
+      "a1CloseClaimed": { "satisfiedCells": 423, "texasCompletenessPct": 11.8954 },
+      "a1PctFormulaBug": "score_cad_rails_fast.mjs set texasCompletenessPct = (satisfied/totalCells)*100 = 423/3556*100 = 11.8954 — cell-share, not parcel-weighted rollup",
+      "naiveSqlStillReturns423Live": true,
+      "apiLikeSatisfiedNow": 406,
+      "settledPresentBaseline": 405,
+      "deltaPresent": 18
+    },
+    "mechanism": {
+      "type": "READ_PATH_DEPTH_GATE_NOT_SCORER_RERUN",
+      "code": "applyDepthRailDisplayGate in countyLedger.ts — zoning is jurisdiction-depth @ 95%; coverage < threshold => displayState not-yet",
+      "storeState": "county_facet_coverage still has zoning.rail_state='satisfied-present' on all 19 counties; 18 were never rewritten to not-yet",
+      "notMechanisms": ["scorer re-run clearing cells", "countyRailRefreshCli blanking", "threshold change on county_rail", "atom deletes"]
+    },
+    "cellsLeavingSatisfied": "see close artifact table — 18 zoning counties; kept cell is Bastrop 48021 @ 99.77%",
+    "artifactGaps": [
+      "P:/tmp/county_ledger_before.json and _after.json are flood-era (0 -> 114 satisfied), NOT the 423/405 pair",
+      "No full A1 cell-level ledger dump at close; gap closed by live reproduction of naive SQL = 423 and live GET display demotion of the same 18 zoning FIPS"
+    ]
+  },
+  "job2_idx_draft": {
+    "table": {
+      "database": "hauska_mcp",
+      "reltuplesEst": 43596480,
+      "heap": "62 GB",
+      "totalRelation": "73 GB",
+      "indexCount": 11
+    },
+    "hotFindings": [
+      "atoms_section_number_idx = 352 MB full btree; section_number null_frac=0.99944; non-null capped count = 28567 (= code-section family). Strongest drop/partialize candidate.",
+      "atoms_parcel_node_lookup_idx = 666 MB / idx_scan=101 — near-zero scans under drain, but EXPLAIN uses it for single-parcel equality; prior session measured 8.7s->3ms. Keep for product reads; do not expect batch verify benefit.",
+      "atoms_parcel_node_county_idx = 80 MB / idx_scan=306 / idx_tup_fetch=10.7M — earns keep for county-scoped parcel-node work; cheap vs lookup idx.",
+      "atoms_pkey + entity_composite dominate size (4.9 GB + 4.0 GB) and are load-bearing; keep.",
+      "atoms_entity_type_idx (358 MB, 276k scans) stays — thinner than composite for type-only filters; EXPLAIN for code-section LIMIT 1 uses it."
+    ]
+  },
+  "verdict": "CP2_DRAFT_READY — attribution mechanism locked; index recommendations drafted for close."
+}

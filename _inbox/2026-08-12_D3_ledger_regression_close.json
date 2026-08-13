@@ -1,0 +1,80 @@
+{
+  "runAt": "2026-08-12T11:40:00Z",
+  "rootCause": "resolveLdtRoot() in railManifestDerivation.ts defaulted to process.cwd(). R2 countyRailRefreshCli --apply was invoked from artifacts/api-server (or equivalent subdirectory cwd), so ldtScorerPath probes resolved to artifacts/api-server/artifacts/api-server/src/*.ts and returned hasWriter=false for geometry, zoning, and envelope despite scorer files and atom data being intact. county_rail.has_writer=false then dominated displayState via countyLedger.ts CASE precedence, blanking 762 cells (3 rails x 254 counties) while county_facet_coverage scores remained.",
+  "evidence": "Repro: node existsSync probe from cwd=artifacts/api-server returns false for countyGeometryScoreCli.ts (double artifacts path); from repo root returns true. Dry-run refresh post-fix showed geometry/zoning/envelope hasWriter false->true. Live GET /api/county-ledger twice 3s apart after --apply: satisfiedCells 309 both reads; geometry satisfied-present 194 + not-yet 60; zoning satisfied-present 1 + not-yet 253; flood satisfied-present 114 + not-yet 140 unchanged. Atoms store SQL (hauska DATABASE_URL): parcel-node 11603489 rows / 195 counties; flood-hazard-fact 2489336 rows / 180 counties.",
+  "introducedBy": {
+    "pr": 408,
+    "commit": "fa7cb28aa066f87dd47425b5f36b304b31868c9a",
+    "when": "2026-08-11T18:59:29Z"
+  },
+  "derivationInputs": [
+    {
+      "rail": "geometry",
+      "expectedWriterScript": "write-parcel-node-county.mjs (engine) + countyGeometryScoreCli.ts (ldt scorer)",
+      "found": true,
+      "whyFalse": "Pre-fix: ldtRoot=cwd artifacts/api-server missed countyGeometryScoreCli.ts; geometry binding lacked explicit engineWriterScript until PR #412. R2 refresh persisted hasWriter=false to county_rail."
+    },
+    {
+      "rail": "zoning",
+      "expectedWriterScript": "countyCoverageScoreCli.ts (ldt scorer only; no bulk writer script exists)",
+      "found": true,
+      "whyFalse": "Pre-fix: same cwd-dependent ldtRoot probe failure; no rail-key filename convention involved."
+    },
+    {
+      "rail": "envelope",
+      "expectedWriterScript": "countyCoverageScoreCli.ts (ldt scorer only)",
+      "found": true,
+      "whyFalse": "Pre-fix: same cwd-dependent ldtRoot probe failure."
+    },
+    {
+      "rail": "easement",
+      "expectedWriterScript": "none bound (confirmed absent)",
+      "found": false,
+      "whyFalse": "No engineWriterScript or ldtScorerPath in railEngineBinding; hasWriter=false is correct and unchanged at no-writer x254."
+    }
+  ],
+  "refreshCliRunNeeded": true,
+  "refreshCliRun": true,
+  "ledgerBefore": {
+    "satisfiedCells": 114,
+    "texasCompletenessPct": 0.9091,
+    "noWriter": 1016
+  },
+  "ledgerAfter": {
+    "satisfiedCells": 309,
+    "texasCompletenessPct": 7.4235,
+    "noWriter": 254
+  },
+  "geometryRestored": true,
+  "zoningRestored": true,
+  "dataLossOccurred": false,
+  "prNumber": 412,
+  "ciConclusionString": "success",
+  "cp1": {
+    "preRegisteredAt": "2026-08-12T11:08:00Z",
+    "hypothesis": "deriveHasWriter builds expected script name from rail key (write-geometry-county.mjs) causing geometry/zoning/envelope to miss writers named for atom types; roads succeeds because write-road-node-county.mjs matches.",
+    "perRailExpectations": {
+      "geometry": "write-geometry-county.mjs lookup miss; actual writer write-parcel-node-county.mjs",
+      "zoning": "write-zoning-county.mjs or similar rail-key convention miss",
+      "envelope": "write-envelope-county.mjs convention miss",
+      "easement": "no writer; should remain false"
+    }
+  },
+  "cp2": {
+    "measuredAt": "2026-08-12T11:40:00Z",
+    "geometry": "REFUTED rail-key filename convention as primary cause; CONFIRMED missing explicit geometry engineWriterScript until #412; CONFIRMED cwd-dependent ldtRoot as trigger that persisted false on R2 refresh",
+    "zoning": "REFUTED rail-key filename convention; CONFIRMED cwd-dependent ldtScorerPath probe failure only",
+    "envelope": "REFUTED rail-key filename convention; CONFIRMED cwd-dependent ldtScorerPath probe failure only",
+    "easement": "CONFIRMED correctly false (no binding); not part of regression"
+  },
+  "adversarialFindings": [
+    "countyLedger.ts displayState CASE gives has_writer=false absolute precedence over honestCoveragePct and verifiedByInstrument — a single stale county_rail boolean overrides measured coverage (smoking gun cell 48001 geometry)",
+    "deriveHasWriter pre-#412 silently returned false on probe miss with generic derivationReason 'no writer/scorer file on disk' — indistinguishable from confirmed-absent; #412 adds 'writer probe failed: <path>' vs 'no writer/scorer bound for rail (confirmed absent)'",
+    "resolveLdtRoot/resolveEngineRoot now walk to countyGeometryScoreCli.ts marker instead of process.cwd(); env overrides LEGACY_DESIGN_TOOLS_ROOT / HAUSKA_ENGINE_ROOT still honored",
+    "R2 close artifact misread geometry/zoning/envelope flip as 'refresh honesty' — it was derivation failure persisting false, not correcting stale hand-true",
+    "county_rail table is write-once-by-refresh-only for hasWriter; live API does not re-derive at read time — display lag until refresh runs after any binding fix",
+    "easement no-writer x254 remains correct; do not conflate with geometry/zoning/envelope regression class",
+    "flood satisfied-present 114 untouched by this fix (B1 scorer data intact)",
+    "Residual: deployed cortex-api image on push rebuilds from main #412; serving revision unchanged required no deploy for DB-backed display restore, but future refresh from wrong cwd in other tooling must use fixed lib/db manifest derivation"
+  ]
+}

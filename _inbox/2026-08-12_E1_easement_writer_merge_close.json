@@ -1,0 +1,124 @@
+{
+  "runAt": "2026-08-12T12:20:00Z",
+  "prNumber": 295,
+  "stateBefore": "OPEN, CONFLICTING, 41 commits behind origin/main; CI conclusion \"success\" but measured against a stale base",
+  "rebasedOntoMain": "11e3fb077cb4cbdd04ff03f4f9f6b8ad5011c993",
+  "ciConclusionString": "success",
+  "merged": true,
+  "mergeCommit": "09e5ea8021d67c59f163b75a7719feb0a2bf5593",
+  "writerPath": "packages/engine-core/scripts/write-utility-easement-county.mjs",
+  "writerExistsOnMain": true,
+  "verifyFixPresent": false,
+  "verifyFixEvidence": "BEFORE (broken, PR head cf5c26c) write-utility-easement-county.mjs:415 -> \"AND body->>'atomDid' IN ${handle.sql(dids)}\" . AFTER (fixed by this dispatch, engine main 09e5ea8) write-utility-easement-county.mjs:424 -> \"WHERE atom_did IN ${handle.sql(dids)}\", with dids built at :423 as \"const dids = slice.map((a) => `did:hauska:utility-easement:${a.entityId}`);\". Post-merge grep on origin/main: 0 occurrences of \"body->>'atomDid' IN\", 1 occurrence of \"atom_did IN\".",
+  "ldtBindingUpdated": true,
+  "railRefreshCliRun": true,
+  "easementDisplayStateBefore": "no-writer x254",
+  "easementDisplayStateAfter": "not-yet x254",
+  "ledgerBefore": {
+    "satisfiedCells": 309,
+    "texasCompletenessPct": 7.423499525338409,
+    "noWriterCells": 254
+  },
+  "ledgerAfter": {
+    "satisfiedCells": 322,
+    "texasCompletenessPct": 7.4918176690446225,
+    "noWriterCells": 0,
+    "note": "satisfied moved 309 -> 322 and pct 7.4235 -> 7.4918 AFTER the easement refresh, entirely from B2's concurrent geometry sweep (geometry satisfied 194 -> 207, +13). easement satisfied count is 0. Easement contributed ZERO satisfied cells, which is the correct and required result."
+  },
+  "cp1": {
+    "registeredBeforeMerge": true,
+    "expectedEasementDisplayStateAfterRefresh": "not-yet x254, conditional on the refresh CLI running where the sibling engine checkout contains the merged writer",
+    "expectedLedgerTriple": {
+      "satisfiedCells": 309,
+      "texasCompletenessPct": 7.4235,
+      "noWriterCells": 0
+    },
+    "expectVerifyFixPresent": false,
+    "expectVerifyFixReason": "writer carried body->>'atomDid' IN on the PR head; predicted absent and applied by this dispatch",
+    "cp1Caveat": "An initial ledger fetch at dispatch start read satisfied=195, pct=6.5144, no-writer={roads:254, easement:254}, contradicting the dispatch's stated 309/7.4235/254 baseline. A later re-fetch converged to 309/7.4235/254 with roads at hasWriter=true/not-yet. The first read caught the API mid-deploy of D3/F5-roads work; the dispatch baseline was correct and the divergence was transient, not a defect. The triple above is the corrected registration."
+  },
+  "cp2": {
+    "easementDisplayState": {
+      "measured": "not-yet x254",
+      "cp1Expected": "not-yet x254",
+      "reconciled": "MATCH"
+    },
+    "easementHasWriter": {
+      "measured": true,
+      "cp1Expected": true,
+      "reconciled": "MATCH - derived via binding + disk probe, never hand-flipped"
+    },
+    "satisfiedCells": {
+      "measuredImmediatelyAfterRefresh": 309,
+      "measuredAtClose": 322,
+      "cp1Expected": 309,
+      "reconciled": "MATCH at the moment of the refresh (309, unchanged). The later 322 is B2's geometry sweep landing concurrently, attributed per-rail: geometry 194 -> 207 (+13), easement 0. No easement-driven movement."
+    },
+    "texasCompletenessPct": {
+      "measuredImmediatelyAfterRefresh": 7.423499525338409,
+      "measuredAtClose": 7.4918176690446225,
+      "cp1Expected": 7.4235,
+      "reconciled": "MATCH at refresh time; later movement is geometry-only, not easement."
+    },
+    "noWriterCells": {
+      "measured": 0,
+      "cp1Expected": 0,
+      "reconciled": "MATCH - easement was the last no-writer rail across all 14 rails"
+    },
+    "verifyFixPresent": {
+      "measured": false,
+      "cp1Expected": false,
+      "reconciled": "MATCH - broken form confirmed on PR head; fixed before merge"
+    },
+    "b2Interference": "OBSERVED and attributed: between the post-refresh read and close, satisfied went 309 -> 322 (+13), all geometry (194 -> 207). Easement satisfied stayed 0 throughout.",
+    "easementSatisfiedCells": {
+      "measured": 0,
+      "required": 0,
+      "reconciled": "MATCH - the honesty constraint held; easement did not become the eighth false-satisfied rail"
+    }
+  },
+  "adversarialFindings": [
+    {
+      "severity": "high",
+      "finding": "hasWriter is DERIVED, but from a filesystem probe against a WORKING-TREE path, not from merged git state. deriveHasWriter -> writerPathsExist calls existsSync on {engineRoot}/packages/engine-core/scripts/{engineWriterScript}, engineRoot defaulting to a module-anchored sibling '../hauska-engine'. Measured directly: the merged easement writer is on engine origin/main (09e5ea8) but ABSENT from the P:/hauska-engine working tree, which sits on another lane's branch (f1dd938). A refresh run there would have derived hasWriter=false for a writer that IS merged. Worked around by pointing HAUSKA_ENGINE_ROOT at a worktree synced to merged main. D3 removed a process.cwd() dependency; this residual working-tree-REVISION dependency is the same defect class one level up, silent in both directions."
+    },
+    {
+      "severity": "high",
+      "finding": "Correctness of the refresh depends on WHERE and on WHICH REVISION the operator runs countyRailRefreshCli. The CLI writes has_writer into county_rail from a local disk probe, and the API serves that stored value (routes/countyLedger.ts:240 reads row.has_writer). A stale or wrong-branch engine checkout silently persists a wrong boolean into the deployment DB, undetectable downstream. Durable fix: derive from the engine's merged git state (a committed writer manifest published by the engine, or git ls-tree origin/main), not from the local working tree."
+    },
+    {
+      "severity": "medium",
+      "finding": "atomFamilyState is ASSERTED, not derived. It comes from ENGINE_PROPERTY_TYPES_SNAPSHOT, a hand-maintained type list in lib/db/src/schema/enginePropertyTypesSnapshot.ts pinned to engineMainSha \"6ccfe8c\", many commits behind engine main (09e5ea8). Nothing verifies the pin against live engine state - the hand-declared pattern already recorded for has_writer, still present on the atom-family half."
+    },
+    {
+      "severity": "medium",
+      "finding": "The CP1 derivation test's fileExists mock is a hardcoded writer allowlist (railManifestDerivation.test.ts). A newly merged writer is invisible to the test until a human adds it, so the suite stays green while asserting a stale world - it asserted 'keeps easement present without writer' at the moment the writer merged. Updated here; the pattern recurs on the next writer merge."
+    },
+    {
+      "severity": "medium",
+      "finding": "The writer merged with a verify-by-jsonb readback (body->>'atomDid' IN) that no index serves - the form measured at 229,382 ms vs 373 ms per 5,000-id batch at 16.2M+ rows. It passed CI green because no test exercises the readback against a real table. Fixed using easement's own entityId shape (parcelNodeId:easement:easementId, uniform across all three builders), derived from its contract rather than copied from a sibling. Recommend a CI grep banning body->>'atomDid' IN across packages/engine-core/scripts/."
+    },
+    {
+      "severity": "low",
+      "finding": "The PR carried CI conclusion \"success\" while 41 commits behind main and CONFLICTING. A stale-base green is not evidence about the merged result; re-read after rebase (a7f80e1 conclusion string \"success\"). Worth a branch-freshness gate before treating CI as a merge signal."
+    },
+    {
+      "severity": "low",
+      "finding": "Merge-resolution defect class confirmed live: all three conflicting files were the documented traps. package.json would have DROPPED 6 write-* script entries under naive resolution (verified 17 deps / 47 scripts / 11 write-* scripts after resolution); fact-writer-ids.ts conflicted MID-FUNCTION, where keep-both-sides would have spliced wellFactAtomDid's body into utilityEasementAtomDid's closing. Both resolved deliberately."
+    },
+    {
+      "severity": "info",
+      "finding": "totalRails (14, a TS constant) and totalCells (3556 = 254 x 14 county_rail rows) agree after the refresh, so the documented silent-disagreement hazard is not currently firing."
+    }
+  ],
+  "ldtPrNumber": 414,
+  "ldtMergeCommit": "d589086e496dc75cef55d73818f07cd55fd965ae",
+  "ldtCiConclusionString": "success",
+  "concurrentLane": {
+    "ldtPr": 413,
+    "title": "feat(manifest): S1 instrument hardening",
+    "mergedDuringThisDispatch": true,
+    "interaction": "#413 merged mid-dispatch and touched the same easement binding block, adding a noWriterReason ('honest no-writer until easement ingest ships') plus a tri-state derivation and new easement assertions. Rebased onto it rather than fighting it. Its noWriterReason was DROPPED (not kept-both) because the writer had shipped, making that reason false; three of its point-in-time easement assertions were flipped to merged truth. Notably #413 also landed 10069854 'read-path probe skips engine tree on deployed surface', which independently addresses the high-severity probe finding below.",
+    "postMergeRefresh": "re-ran countyRailRefreshCli dry-run against merged LDT main d589086: 0 diffs, and #413's new fail-closed reconciliation gate reports PASS"
+  }
+}

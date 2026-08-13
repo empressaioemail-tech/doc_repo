@@ -1,0 +1,626 @@
+{
+  "lane": "L11",
+  "planRows": ["P-13", "P-38(IDX)"],
+  "mode": "STRICTLY_READ_ONLY",
+  "closedAt": "2026-08-12T23:36:30Z",
+  "cpArtifacts": {
+    "cp1": "_inbox/2026-08-12_L11_cp1_query_plan.json",
+    "cp2": "_inbox/2026-08-12_L11_cp2_findings_draft.json"
+  },
+  "standing": {
+    "noSlotTaken": true,
+    "noApply": true,
+    "noDdl": true,
+    "noStoreWrites": true
+  },
+
+  "job1_p13_18_cell_delta": {
+    "verdict": "ATTRIBUTED — instrument mismatch, not a silent store regression",
+    "endpoints": {
+      "a1Close": {
+        "source": "_inbox/2026-08-12_A1_cad_rails_apply_close.json + P:/tmp/a1_cad_rails_20260812/score_summary.json",
+        "satisfiedCells": 423,
+        "texasCompletenessPct": 11.8954,
+        "pctMeaning": "CELL SHARE (423/3556*100) from score_cad_rails_fast.mjs — NOT the parcel-weighted API rollup"
+      },
+      "settledLiveBaseline": {
+        "source": "P:/tmp/a2_staged_rails_20260812/ledger_before_live_summary.json + CAPREV live reads + OPS-16 grade log",
+        "satisfiedCells": 405,
+        "satisfiedPresentCells": 405,
+        "satisfiedAbsentCells": 0,
+        "texasCompletenessPct": 12.909486508370861
+      },
+      "freshGetThisLane": {
+        "url": "https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+        "http": 200,
+        "timeSec": 8.509,
+        "bytes": 1992402,
+        "artifact": "P:/tmp/county_ledger_l11_fresh.json",
+        "satisfiedCells": 406,
+        "satisfiedPresentCells": 405,
+        "satisfiedAbsentCells": 1,
+        "texasCompletenessPct": 12.909486508370861,
+        "deltaVsSettledBaseline": "+1 geometry/48129 satisfied-absent from L7; present stack unchanged"
+      },
+      "naiveSqlReproductionLive": {
+        "satisfiedCells": 423,
+        "totalCells": 3556,
+        "evidence": "D4 query against deploy neondb still returns 423 — the facet rows were never cleared"
+      },
+      "apiLikeSqlReproductionLive": {
+        "satisfiedCells": 406,
+        "evidence": "D5 depth-gate reconstruction matches fresh GET (405 present + 1 absent)"
+      }
+    },
+    "mechanism": {
+      "primary": "READ_PATH_JURISDICTION_DEPTH_GATE",
+      "detail": "A1 score_cad_rails_fast.mjs ledger SQL counted CASE...ELSE c.rail_state with FILTER display_state='satisfied-present', with no applyDepthRailDisplayGate. Live GET /api/county-ledger runs applyDepthRailDisplayGate: for coverageClass=jurisdiction-depth rails (incl. zoning @ 95%), satisfied-present with coverage < threshold becomes displayState not-yet and does not enter isSatisfiedCell.",
+      "secondary": "A1 texasCompletenessPct used cell-share arithmetic, which is why 11.8954% sat next to a higher live parcel-weighted 12.909% even after the present-cell correction.",
+      "excluded": [
+        "Scorer re-run that rewrote the 18 cells to not-yet (rail_state still satisfied-present in county_facet_coverage)",
+        "countyRailRefreshCli blanking",
+        "county_rail threshold change",
+        "Atom deletes / CAD rail loss (owner/landuse/cad remain 13/13/13)"
+      ],
+      "codeEvidence": [
+        "P:/tmp/a1_cad_rails_20260812/score_cad_rails_fast.mjs:164-206 (naive CASE + cell-share pct)",
+        "P:/legacy-design-tools/artifacts/api-server/src/routes/countyLedger.ts:171-181 applyDepthRailDisplayGate",
+        "P:/legacy-design-tools/lib/db/src/schema/countyRailDimension.ts zoning coverageClass jurisdiction-depth thresholdPct 95"
+      ]
+    },
+    "closedForm": {
+      "a1Naive": "geometry251 + flood114 + zoning19 + cad13 + landuse13 + owner13 = 423",
+      "apiCorrectPresent": "geometry251 + flood114 + zoning1 + cad13 + landuse13 + owner13 = 405",
+      "a1SlotTakeNaive": "geometry251 + flood114 + zoning19 = 384 (matches A1 ledgerBeforeLive)",
+      "delta": "423 - 405 = 18 = zoning rows with rail_state=satisfied-present AND honest_coverage_pct < 95"
+    },
+    "cellLevelAttributionTable": [
+      {
+        "railKey": "zoning",
+        "countyFips": "48027",
+        "countyName": "Bell",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 facet row + fresh GET manifestCells"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48029",
+        "countyName": "Bexar",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48055",
+        "countyName": "Caldwell",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48085",
+        "countyName": "Collin",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48091",
+        "countyName": "Comal",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 25.82,
+        "thresholdPct": 95.0,
+        "source": "zoning-stamp",
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48113",
+        "countyName": "Dallas",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48121",
+        "countyName": "Denton",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48139",
+        "countyName": "Ellis",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48187",
+        "countyName": "Guadalupe",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48209",
+        "countyName": "Hays",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 3.61,
+        "thresholdPct": 95.0,
+        "source": "zoning-stamp",
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48251",
+        "countyName": "Johnson",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48257",
+        "countyName": "Kaufman",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48309",
+        "countyName": "McLennan",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48367",
+        "countyName": "Parker",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48397",
+        "countyName": "Rockwall",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48439",
+        "countyName": "Tarrant",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48453",
+        "countyName": "Travis",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 0.0,
+        "thresholdPct": 95.0,
+        "source": null,
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      },
+      {
+        "railKey": "zoning",
+        "countyFips": "48491",
+        "countyName": "Williamson",
+        "a1NaiveDisplay": "satisfied-present",
+        "liveDisplayState": "not-yet",
+        "honestCoveragePct": 33.98,
+        "thresholdPct": 95.0,
+        "source": "zoning-stamp",
+        "mechanism": "applyDepthRailDisplayGate demotion",
+        "evidence": "D2 + fresh GET"
+      }
+    ],
+    "keptZoningCell": {
+      "railKey": "zoning",
+      "countyFips": "48021",
+      "countyName": "Bastrop",
+      "liveDisplayState": "satisfied-present",
+      "honestCoveragePct": 99.77,
+      "thresholdPct": 95.0,
+      "source": "deterministic"
+    },
+    "artifactGapsNamed": [
+      {
+        "requested": "P:/tmp/county_ledger_before.json + _after.json as the 423/405 pair",
+        "actual": "Flood-era dumps: before.summary.satisfiedCells=0, after=114 / pct=0.9091. Not usable for P-13.",
+        "impact": "None on attribution — live naive SQL still equals A1's 423 and names the same 18 FIPS"
+      },
+      {
+        "requested": "A1 full cell-level ledger dump at close",
+        "actual": "Missing; only score_summary.json + close JSON totals",
+        "impact": "Closed by D4 reproduction (423) + D2/D3 zoning list + fresh GET demotion proof"
+      }
+    ],
+    "hygieneOwed": [
+      "Any scorer that reports ledgerAfter must use the same isSatisfiedCell path as GET /api/county-ledger (depth gate + doctrine exclusion + parcel-weighted pct), or label the number as naiveRailStateCount",
+      "Optional store cleanup (out of this read-only lane): rewrite the 18 zoning facet rows to rail_state=not-yet so naive SQL cannot re-inflate totals"
+    ]
+  },
+
+  "job2_p38_idx_audit": {
+    "verdict": "RECOMMENDATIONS_ONLY — no DDL executed",
+    "database": "hauska_mcp @ fancy-fire-06136146 / production",
+    "tableStats": {
+      "reltuplesEst": 43596480,
+      "heapSize": "62 GB",
+      "heapBytes": 66833334272,
+      "totalRelationSize": "73 GB",
+      "totalBytes": 78517084160,
+      "indexCount": 11,
+      "priorExamBaseline": "~29 GB / 18.5M rows / 11 indexes — grown to ~43.6M est rows / 73 GB total"
+    },
+    "perIndexAuditTable": [
+      {
+        "index": "atoms_pkey",
+        "size": "4933 MB",
+        "bytes": 5172387840,
+        "idx_scan": 50717033,
+        "idx_tup_read": 16152830532,
+        "idx_tup_fetch": 1974817938,
+        "def": "UNIQUE btree (atom_did)",
+        "partial": false,
+        "scanClass": "ACTIVE",
+        "writeAmpVsRead": "Required PK; verify-by-PK path depends on it",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_entity_composite_unique",
+        "size": "4018 MB",
+        "bytes": 4212654080,
+        "idx_scan": 169482,
+        "idx_tup_read": 208654863,
+        "idx_tup_fetch": 25355572,
+        "def": "UNIQUE btree (entity_type, entity_id)",
+        "partial": false,
+        "scanClass": "ACTIVE",
+        "writeAmpVsRead": "Uniqueness + natural key lookups; large but load-bearing",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_parcel_node_lookup_idx",
+        "size": "666 MB",
+        "bytes": 698236928,
+        "idx_scan": 101,
+        "idx_tup_read": 101,
+        "idx_tup_fetch": 0,
+        "def": "btree ((body->>'parcelNodeId')) WHERE entity_type='parcel-node'",
+        "partial": true,
+        "scanClass": "NEAR_ZERO",
+        "writeAmpVsRead": "High write cost on every parcel-node insert (~666 MB structure) for 101 recorded scans. EXPLAIN shows Index Scan for single-parcel equality; prior planner note 8700ms->3ms on that shape. Does NOT help 500-value =ANY verify (seq scan still wins).",
+        "recommendation": "KEEP_FOR_PRODUCT_READS — not a drop; monitor. Do not add more parcel-node expression indexes during drain.",
+        "riskIfDropped": "Single-parcel PE/MCP/lookup latency regression on parcel-node body key"
+      },
+      {
+        "index": "atoms_entity_type_idx",
+        "size": "358 MB",
+        "bytes": 375013376,
+        "idx_scan": 276676,
+        "idx_tup_read": 303226174029,
+        "idx_tup_fetch": 7373186809,
+        "def": "btree (entity_type)",
+        "partial": false,
+        "scanClass": "ACTIVE",
+        "writeAmpVsRead": "Hot for family filters; thinner than composite leading column for type-only plans (I5 used it)",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_section_number_idx",
+        "size": "352 MB",
+        "bytes": 369606656,
+        "idx_scan": 12239,
+        "idx_tup_read": 6453971,
+        "idx_tup_fetch": 836,
+        "def": "btree (jurisdiction_tenant, section_number)",
+        "partial": false,
+        "scanClass": "ACTIVE_BUT_MISSCOPED",
+        "writeAmpVsRead": "Maintained on every insert across 43M+ rows. pg_stats.section_number null_frac=0.99944; bounded count of non-null = 28567 (0.065% of reltuples_est; equals code-section family). idx_tup_fetch=836 despite 12k scans — tiny read benefit vs full-table write amp.",
+        "recommendation": "DROP_OR_PARTIALIZE — prefer CREATE INDEX ... WHERE section_number IS NOT NULL (or entity_type='code-section') then DROP full index. RECOMMENDATION ONLY.",
+        "expectedDrainEffect": "Remove ~352 MB index maintenance from every bulk INSERT/UPSERT during L1 drain and subsequent rail applies; write-rate uplift is workload-dependent but this is the largest unjustified amp among secondary indexes.",
+        "risk": "Code-section lookups by (jurisdiction_tenant, section_number) regress until partial replacement lands; family is 28,567 rows so rebuild of a partial is cheap."
+      },
+      {
+        "index": "atoms_jurisdiction_idx",
+        "size": "344 MB",
+        "bytes": 360472576,
+        "idx_scan": 14873,
+        "idx_tup_read": 19563764123,
+        "idx_tup_fetch": 2608211974,
+        "def": "btree (jurisdiction_tenant)",
+        "partial": false,
+        "scanClass": "ACTIVE",
+        "writeAmpVsRead": "Material tup_fetch; serves tenant/jurisdiction filters beyond code-section",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_property_parcel_node_idx",
+        "size": "267 MB",
+        "bytes": 280166400,
+        "idx_scan": 944936,
+        "idx_tup_read": 1046377973,
+        "idx_tup_fetch": 64208,
+        "def": "btree ((body->>'parcelNodeId') text_pattern_ops) WHERE entity_type IN (zoning-fact,setback-rule,buildable-envelope,parcel-terrain-model)",
+        "partial": true,
+        "scanClass": "ACTIVE",
+        "writeAmpVsRead": "Highest secondary scan count; property-atom chain path",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_parcel_node_county_idx",
+        "size": "80 MB",
+        "bytes": 84393984,
+        "idx_scan": 306,
+        "idx_tup_read": 23685144,
+        "idx_tup_fetch": 10679255,
+        "def": "btree ((body->>'countyFips')) WHERE entity_type='parcel-node'",
+        "partial": true,
+        "scanClass": "LOW_SCAN_HIGH_FETCH",
+        "writeAmpVsRead": "Low scan count but 10.7M tup_fetch — county-scoped parcel-node scorers/reads. 80 MB is cheap vs 666 MB sibling.",
+        "recommendation": "KEEP — earns write cost for county partition reads",
+        "riskIfDropped": "County geometry/scorer scans fall back toward entity_type + filter"
+      },
+      {
+        "index": "atoms_road_node_id_idx",
+        "size": "2040 kB",
+        "bytes": 2088960,
+        "idx_scan": 7413,
+        "idx_tup_read": 485120,
+        "idx_tup_fetch": 7345,
+        "def": "btree ((body->>'roadNodeId') text_pattern_ops) WHERE entity_type='road-node'",
+        "partial": true,
+        "scanClass": "ACTIVE",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_boundary_parcel_node_idx",
+        "size": "848 kB",
+        "bytes": 868352,
+        "idx_scan": 98835,
+        "idx_tup_read": 1803349,
+        "idx_tup_fetch": 461720,
+        "def": "btree ((body->>'parcelNodeId') text_pattern_ops) WHERE entity_type='property-boundary-edge'",
+        "partial": true,
+        "scanClass": "ACTIVE",
+        "recommendation": "KEEP"
+      },
+      {
+        "index": "atoms_road_county_fips_idx",
+        "size": "304 kB",
+        "bytes": 311296,
+        "idx_scan": 3904,
+        "idx_tup_read": 68729725,
+        "idx_tup_fetch": 67147457,
+        "def": "btree ((body->>'countyFips')) WHERE entity_type='road-node'",
+        "partial": true,
+        "scanClass": "ACTIVE",
+        "recommendation": "KEEP"
+      }
+    ],
+    "recommendationsSummary": [
+      {
+        "action": "PARTIALIZE_THEN_DROP_FULL",
+        "index": "atoms_section_number_idx",
+        "evidence": "null_frac=0.99944; non-null=28567; 352 MB full index; idx_tup_fetch=836",
+        "expectedDrainWriteEffect": "Eliminate maintenance of a 352 MB always-updated btree on inserts that almost never populate section_number",
+        "risk": "Brief code-section lookup regression until partial exists; mitigate by creating partial CONCURRENTLY first (DDL outside this lane)"
+      },
+      {
+        "action": "KEEP",
+        "index": "atoms_parcel_node_lookup_idx",
+        "evidence": "idx_scan=101 (near-zero) BUT EXPLAIN uses Index Scan for body->>'parcelNodeId' equality; historical 8.7s->3ms",
+        "expectedDrainWriteEffect": "Continue paying ~666 MB index amp on parcel-node writes — accepted for product single-parcel path",
+        "risk": "If dropped for drain speed, product lookup latency regresses; re-create later is a large CONCURRENTLY build"
+      },
+      {
+        "action": "KEEP",
+        "index": "atoms_parcel_node_county_idx",
+        "evidence": "80 MB; 306 scans; 10.7M tup_fetch",
+        "expectedDrainWriteEffect": "Small amp; useful for county-scoped parcel-node work during/after drain",
+        "risk": "Low"
+      },
+      {
+        "action": "KEEP",
+        "indexes": [
+          "atoms_pkey",
+          "atoms_entity_composite_unique",
+          "atoms_entity_type_idx",
+          "atoms_jurisdiction_idx",
+          "atoms_property_parcel_node_idx",
+          "atoms_road_node_id_idx",
+          "atoms_boundary_parcel_node_idx",
+          "atoms_road_county_fips_idx"
+        ],
+        "evidence": "Active scans and/or uniqueness constraints",
+        "expectedDrainWriteEffect": "Status quo",
+        "risk": "N/A"
+      },
+      {
+        "action": "DO_NOT_ADD",
+        "note": "No additional atoms indexes during L1 drain. Write amp already dominates; batch verify does not benefit from more parcelNodeId indexes."
+      }
+    ],
+    "explainEvidence": {
+      "I5_code_section": [
+        "Limit  (cost=0.56..4.58 rows=1 width=44)",
+        "  ->  Index Scan using atoms_entity_type_idx on atoms  (cost=0.56..104722.04 rows=26099 width=44)",
+        "        Index Cond: (entity_type = 'code-section'::text)"
+      ],
+      "I7_parcel_node_lookup": [
+        "Limit  (cost=0.56..20.69 rows=5 width=44)",
+        "  ->  Index Scan using atoms_parcel_node_lookup_idx on atoms  (cost=0.56..262272.20 rows=5 width=44)",
+        "        Index Cond: ((body ->> 'parcelNodeId'::text) = '48021:34137'::text)"
+      ],
+      "I6_code_section_count": 28567,
+      "section_number_nonnull_capped": 28567
+    }
+  },
+
+  "queriesRunVerbatim": [
+    {
+      "id": "D1",
+      "database": "neondb",
+      "sql": "SELECT facet, rail_state, count(*)::int AS n FROM county_facet_coverage GROUP BY 1,2 ORDER BY 1,2;"
+    },
+    {
+      "id": "D2",
+      "database": "neondb",
+      "sql": "SELECT county_fips, rail_state, honest_coverage_pct, threshold_pct, source, verified_by_instrument, artifact_path, last_verified_at FROM county_facet_coverage WHERE facet = 'zoning' AND rail_state = 'satisfied-present' ORDER BY county_fips LIMIT 50;"
+    },
+    {
+      "id": "D3",
+      "database": "neondb",
+      "sql": "SELECT count(*) FILTER (WHERE rail_state = 'satisfied-present')::int AS naive_satisfied_present, count(*) FILTER (WHERE rail_state = 'satisfied-present' AND honest_coverage_pct::numeric >= COALESCE(threshold_pct::numeric, 95))::int AS depth_gate_keeps, count(*) FILTER (WHERE rail_state = 'satisfied-present' AND (honest_coverage_pct IS NULL OR honest_coverage_pct::numeric < COALESCE(threshold_pct::numeric, 95)))::int AS depth_gate_demotes_to_not_yet FROM county_facet_coverage WHERE facet = 'zoning';"
+    },
+    {
+      "id": "D4",
+      "database": "neondb",
+      "sql": "SELECT count(*) FILTER (WHERE display_state = 'satisfied-present')::int AS naive_satisfied, count(*)::int AS total FROM (SELECT CASE WHEN r.atom_family_state <> 'present' THEN 'no-atom' WHEN r.has_writer = false THEN 'no-writer' WHEN c.rail_state IS NULL THEN 'not-yet' ELSE c.rail_state END AS display_state FROM county_manifest m CROSS JOIN county_rail r LEFT JOIN county_facet_coverage c ON c.county_fips = m.county_fips AND c.facet = r.rail_key) x;"
+    },
+    {
+      "id": "D5",
+      "database": "neondb",
+      "sql": "SELECT count(*) FILTER (WHERE kept)::int AS api_like_satisfied FROM (SELECT CASE WHEN r.atom_family_state <> 'present' THEN false WHEN r.has_writer = false THEN false WHEN c.rail_state IS NULL THEN false WHEN c.rail_state = 'satisfied-absent' THEN true WHEN c.rail_state = 'satisfied-present' AND r.rail_key IN ('cad','zoning','envelope','landuse','easement','owner') AND (c.honest_coverage_pct IS NULL OR c.honest_coverage_pct::numeric < COALESCE(c.threshold_pct::numeric, r.threshold_pct)) THEN false WHEN c.rail_state IN ('satisfied-present','satisfied-absent') THEN true ELSE false END AS kept FROM county_manifest m CROSS JOIN county_rail r LEFT JOIN county_facet_coverage c ON c.county_fips = m.county_fips AND c.facet = r.rail_key) x;"
+    },
+    {
+      "id": "D6",
+      "database": "neondb",
+      "sql": "SELECT c.county_fips, m.county_name, c.honest_coverage_pct::numeric AS pct, c.threshold_pct::numeric AS thr, c.source, (c.honest_coverage_pct::numeric < COALESCE(c.threshold_pct::numeric, 95)) AS demoted_by_depth_gate FROM county_facet_coverage c JOIN county_manifest m ON m.county_fips = c.county_fips WHERE c.facet = 'zoning' AND c.rail_state = 'satisfied-present' ORDER BY demoted_by_depth_gate DESC, c.county_fips LIMIT 30;"
+    },
+    {
+      "id": "D7",
+      "database": "neondb",
+      "sql": "SELECT rail_key, atom_family_state, has_writer, threshold_pct FROM county_rail ORDER BY ordinal LIMIT 20;"
+    },
+    {
+      "id": "I1",
+      "database": "hauska_mcp",
+      "sql": "SELECT i.indexrelname, pg_size_pretty(pg_relation_size(i.indexrelid)) AS idx_size, pg_relation_size(i.indexrelid) AS idx_bytes, i.idx_scan, i.idx_tup_read, i.idx_tup_fetch, pg_get_indexdef(i.indexrelid) AS indexdef FROM pg_stat_user_indexes i WHERE i.relname = 'atoms' ORDER BY pg_relation_size(i.indexrelid) DESC;"
+    },
+    {
+      "id": "I2",
+      "database": "hauska_mcp",
+      "sql": "SELECT c.relname, c.reltuples::bigint AS reltuples_est, pg_size_pretty(pg_relation_size(c.oid)) AS heap_size, pg_size_pretty(pg_total_relation_size(c.oid)) AS total_size, pg_relation_size(c.oid) AS heap_bytes, pg_total_relation_size(c.oid) AS total_bytes FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relname = 'atoms';"
+    },
+    {
+      "id": "I3",
+      "database": "hauska_mcp",
+      "sql": "SELECT ic.relname AS index_name, i.indisunique, i.indisprimary, i.indpred IS NOT NULL AS is_partial, pg_get_expr(i.indpred, i.indrelid) AS pred FROM pg_index i JOIN pg_class ic ON ic.oid = i.indexrelid JOIN pg_class tc ON tc.oid = i.indrelid WHERE tc.relname = 'atoms' ORDER BY ic.relname;"
+    },
+    {
+      "id": "I4",
+      "database": "hauska_mcp",
+      "sql": "SELECT tablename, attname, null_frac, n_distinct, correlation FROM pg_stats WHERE schemaname = 'public' AND tablename = 'atoms' AND attname IN ('section_number','jurisdiction_tenant','entity_type','entity_id') ORDER BY attname;"
+    },
+    {
+      "id": "I5",
+      "database": "hauska_mcp",
+      "sql": "EXPLAIN (FORMAT TEXT) SELECT atom_did FROM atoms WHERE entity_type = 'code-section' LIMIT 1;"
+    },
+    {
+      "id": "I6",
+      "database": "hauska_mcp",
+      "sql": "SELECT count(*)::bigint AS code_section_n FROM (SELECT 1 FROM atoms WHERE entity_type = 'code-section' LIMIT 100000) s;"
+    },
+    {
+      "id": "I6b",
+      "database": "hauska_mcp",
+      "sql": "SELECT count(*)::bigint AS section_number_nonnull_capped FROM (SELECT 1 FROM atoms WHERE section_number IS NOT NULL LIMIT 100000) s;"
+    },
+    {
+      "id": "I7",
+      "database": "hauska_mcp",
+      "sql": "EXPLAIN (FORMAT TEXT) SELECT atom_did FROM atoms WHERE entity_type = 'parcel-node' AND body->>'parcelNodeId' = '48021:34137' LIMIT 5;"
+    },
+    {
+      "id": "GET1",
+      "database": null,
+      "sql": null,
+      "cmd": "curl.exe --max-time 300 -sS -o P:/tmp/county_ledger_l11_fresh.json https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger"
+    }
+  ],
+
+  "p13_status_for_ops16": "CLOSEABLE — 18 cells named; mechanism evidenced; not a silent regression",
+  "p38_idx_status_for_ops16": "AUDIT_COMPLETE — recommendations only; operator ruling still required to retire/amend P-38 IDX orphan row",
+  "laneClose": "CLOSED_PASS_READ_ONLY"
+}

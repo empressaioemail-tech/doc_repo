@@ -1,0 +1,151 @@
+{
+  "registeredAt": "2026-08-12T16:05:11.759Z",
+  "checkpoint": "CP1",
+  "mission": "H1 Factory 1.5 zoning staging seam — payload contract pre-registration only",
+  "payloadContractFields": [
+    "cityKey",
+    "cityGeoId",
+    "cityName",
+    "parentCountyFips",
+    "districtCode",
+    "districtName",
+    "geometry",
+    "geometryCrs",
+    "isOverlay",
+    "isBaseDistrict",
+    "sourceUrl",
+    "sourceLayerId",
+    "fetchedAt",
+    "sourceTier",
+    "sourceTierSatisfied",
+    "sourceVintage",
+    "sourceCitation",
+    "passthroughAttributes",
+    "westLng",
+    "southLat",
+    "eastLng",
+    "northLat",
+    "codeFieldRaw",
+    "codeDomainMapApplied",
+    "layerWhere",
+    "objectId",
+    "stagingRowId"
+  ],
+  "schemaFieldsRationale": "Mirror tx_special_district (district identity + GeoJSON geometry + Texas WGS84 bbox + source/vintage/citation + ingested_at) but city-scoped: cityKey/cityGeoId/parentCountyFips replace county-only grain because zoning is a municipal layer that may span or sit inside one county. districtCode/districtName are the normalized stamp contract; codeFieldRaw + codeDomainMapApplied record how the raw ArcGIS value became the code (Elgin A→R-4). geometryCrs + bbox guard projection; isOverlay/isBaseDistrict prevent overlay polygons from being treated as base districts. passthroughAttributes holds the full source attribute bag per the 2026-08-10 harvest-completeness ruling (Elgin exposes ~26 fields; Smithville only ZONING — both must land intact). sourceTier/sourceTierSatisfied track richest-tier honesty. stagingRowId is the primary key for replace/drain semantics analogous to district_row_id.",
+  "stagingTableName": "tx_zoning_district_staging",
+  "stagingTableConvention": "neondb only; Factory 1.5 SLOT-FREE; mirror 0072_tx_special_district.sql (PK + bbox indexes + county index); drain later via write-special-district-fact-county.mjs pattern — NOT this CP",
+  "sourceRegistryFields": [
+    "cityKey",
+    "cityName",
+    "cityGeoId",
+    "parentCountyFips",
+    "layerUrl",
+    "layerId",
+    "codeField",
+    "descriptionField",
+    "codeDomainMap",
+    "codeExtractRegex",
+    "nullDistrictCodes",
+    "layerWhere",
+    "sourceTier",
+    "authPosture",
+    "geometryTypeExpected",
+    "nativeCrsWkid",
+    "probeEvidencePath",
+    "verifiedAt",
+    "confidence"
+  ],
+  "citiesToStage": [
+    {
+      "role": "known-good",
+      "city": "elgin-tx",
+      "cityName": "Elgin",
+      "countyFips": "48021",
+      "cityGeoId": "4823042",
+      "layerUrl": "https://services3.arcgis.com/wdTkTU0MdZbNBEZy/arcgis/rest/services/Elgin_Zoning/FeatureServer/0",
+      "whyKnownGood": "Wired in ZONING_LAYERS (legacy-design-tools lib/cad-ingest zoning-layers.ts) with live-verified Zone_Code string tokens, CITY_LIMIT='ELGIN' filter, and codeDomainMap including A→R-4; P2.6 dry-run cohort member for Bastrop 48021.",
+      "expectedCodeField": "Zone_Code",
+      "expectedDescriptionField": "Zoning",
+      "expectedSchemaShape": "Parcel-joined rich attribute schema (~26 fields): OBJECTID, OID_, CALC_ACRE, PIN, PROP_ID, DICT0, ABST_, ABST_NAME, SUB_NAME, SEC_UNIT, LOT, BLK, CITY, COUNTY, Shape_Leng, DEED, CITY_LIMIT, WARD_No, Dev_Agree, DevAgrDate, Dev_Ord_No, Zoning (string long name), Zone_Code (string district token), Annex, AnnexDate, Zon_Ord_No. Sample attrs Zone_Code=R-1, Zoning=Single Family, CITY_LIMIT=ELGIN, PROP_ID=R77690. Native extent WKID 102739 (Texas Central State Plane ft). Feature count CITY_LIMIT=ELGIN: 3220.",
+      "codeDomainMap": {
+        "R-1": "R-1",
+        "R-2": "R-2",
+        "R-3": "R-3",
+        "A": "R-4",
+        "C-1": "C-1",
+        "C-2": "C-2",
+        "C-3": "C-3",
+        "I": "I"
+      },
+      "layerWhere": "CITY_LIMIT = 'ELGIN'",
+      "liveProbeAt": "2026-08-12T16:05:11.759Z"
+    },
+    {
+      "role": "self-located",
+      "city": "smithville-tx",
+      "cityName": "Smithville",
+      "countyFips": "48021",
+      "cityGeoId": "4868456",
+      "layerUrl": "https://services3.arcgis.com/wdTkTU0MdZbNBEZy/arcgis/rest/services/Smithville_Zoning/FeatureServer/0",
+      "howLocated": "Started from P2.6 probedAndFound Smithville URL (not in ZONING_LAYERS). Live-probed 2026-08-12: (1) GET FeatureServer/0?f=pjson for name/geometryType/extent/fields; (2) GET /query?where=1=1&outFields=*&returnGeometry=false&resultRecordCount=1&f=pjson for sample attributes; (3) GET /query?returnCountOnly=true confirming count=91. Confirmed NOT identically schemed to Elgin.",
+      "expectedCodeField": "ZONING",
+      "expectedDescriptionField": null,
+      "expectedSchemaShape": "Minimal two-field polygon layer: OBJECTID (esriFieldTypeOID) + ZONING (esriFieldTypeString, no coded domain, no description twin). Sample attrs: {OBJECTID:1, ZONING:\"C-3\"}. No PROP_ID/PIN/CITY_LIMIT/acres/ward/annex fields. Native extent WKID 102739. Feature count: 91. NOT wired in ZONING_LAYERS (city #24+ candidate per P2.6).",
+      "whySchemaDivergesFromCity1": "Elgin is a parcel-attribute join with separate Zone_Code (token) + Zoning (long name) plus ~24 CAD/admin columns and a mandatory codeDomainMap; Smithville is a bare district-polygon layer whose single string field ZONING is both code and sole attribute — no descriptionField, no domain map, no parcel identity columns, ~35× fewer features.",
+      "codeDomainMap": null,
+      "layerWhere": "1=1",
+      "liveProbeAt": "2026-08-12T16:05:11.759Z",
+      "liveProbeEvidence": {
+        "metaUrl": "https://services3.arcgis.com/wdTkTU0MdZbNBEZy/arcgis/rest/services/Smithville_Zoning/FeatureServer/0?f=pjson",
+        "layerName": "Smithville Zoning",
+        "geometryType": "esriGeometryPolygon",
+        "nativeExtentWkid": 102739,
+        "featureCount": 91,
+        "fields": [
+          { "name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID" },
+          { "name": "ZONING", "type": "esriFieldTypeString", "alias": "ZONING" }
+        ],
+        "sampleAttributeKeys": ["OBJECTID", "ZONING"],
+        "sampleAttributes": { "OBJECTID": 1, "ZONING": "C-3" }
+      }
+    }
+  ],
+  "divergenceHypothesis": "Elgin FeatureServer/0 exposes a parcel-joined string dual (Zone_Code token + Zoning long name) plus rich CAD/admin columns and requires codeDomainMap (legacy A→R-4); Smithville FeatureServer/0 exposes only OBJECTID+ZONING with no description twin, no coded domain, and no parcel identity fields — proving the staging normalizer cannot assume a fixed ArcGIS field set or that codeField≡descriptionField, and must map city-specific registry rows into the shared payload contract while retaining passthroughAttributes for harvest completeness.",
+  "adversarialTrapCatalog": [
+    {
+      "trap": "district code collision across cities",
+      "catchMechanism": "Composite staging PK stagingRowId = cityKey + ':' + objectId (or hash of cityKey+geometry+districtCode); drain and stamp always filter by cityKey; never unique-index districtCode alone. Both cities can emit C-3 with different ordinance meaning."
+    },
+    {
+      "trap": "polygon wrong CRS",
+      "catchMechanism": "Record geometryCrs from query outSR; assert Texas WGS84 bbox on westLng/southLat/eastLng/northLat after any 102739→4326 reproject (same assertTexasWgs84Bbox posture as txgio). Fail closed if native WKID is neither 4326 nor a registered reproject path; never persist State Plane feet as GeoJSON degrees."
+    },
+    {
+      "trap": "city spanning two counties",
+      "catchMechanism": "parentCountyFips is registry primary (Census/CAPCOG); multi-county span list recorded on registry row when known. Staging rows carry cityKey+cityGeoId as identity; drain may fan out to multiple county parcel rosters via PIP, never assume one FIPS owns all polygons. Elgin already has a named Travis-side FeatureServer/1 follow-on — do not silently merge layers."
+    },
+    {
+      "trap": "overlay mistaken for base district",
+      "catchMechanism": "isOverlay/isBaseDistrict required on every staged row; registry nullDistrictCodes + layerWhere exclude non-districts (ROW/OCL patterns). Default isBaseDistrict=true only when layer is documented as base zoning; overlays require explicit registry flag. Drain refuses to stamp overlays as districtCode without isBaseDistrict=true."
+    }
+  ],
+  "worktreePath": "P:/hauska-engine-worktrees/h1-f15-zoning-staging",
+  "worktreeConfirmation": {
+    "branch": "feat/h1-f15-zoning-staging",
+    "tracks": "origin/main",
+    "headSha": "25842d1a3bda6d614ac6611e20949e7614c95677",
+    "originMainSha": "25842d1a3bda6d614ac6611e20949e7614c95677",
+    "workingTree": "clean",
+    "confirmedAt": "2026-08-12T16:05:11.759Z"
+  },
+  "doNot": [
+    "write atoms",
+    "--apply atoms",
+    "take A1 slot",
+    "build zoning writer",
+    "create migration yet",
+    "open PR yet",
+    "touch hauska_mcp"
+  ],
+  "cp1Status": "COMPLETE — payload contract pre-registered; stop before staging table / drain / writer build"
+}

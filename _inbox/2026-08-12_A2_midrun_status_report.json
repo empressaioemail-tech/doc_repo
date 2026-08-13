@@ -1,0 +1,314 @@
+{
+  "reportAt": "2026-08-12T20:48:00Z",
+  "lane": "A2",
+  "readOnly": true,
+  "answers": {
+    "1_runningCodeMethodTruth": {
+      "gitStatusShort": {
+        "command": "git -C P:/hauska-engine status --short",
+        "stdout": " M packages/engine-core/scripts/write-special-district-fact-county.mjs\n M packages/engine-core/scripts/write-well-fact-county.mjs\n M packages/engine-core/src/well-fact/index.ts\n?? packages/engine-core/src/well-fact/fetch-wells-staged.ts"
+      },
+      "head": {
+        "command": "git -C P:/hauska-engine rev-parse HEAD && git -C P:/hauska-engine log -1 --oneline",
+        "stdout": "8d8e8803550f6f7fdaae42c59a25c4a2d9acc71c\n8d8e880 fix(zoning-staging): refuse county-only drain without allowMultiCity (CP2-F1) (#317)"
+      },
+      "detachedAt8d8e880": true,
+      "runnerExecutesThisWorkingTree": {
+        "evidence": "Live child: pnpm exec tsx scripts/write-special-district-fact-county.mjs --county=48005 from cwd P:/hauska-engine/packages/engine-core (Win32_Process CommandLine). That path is the modified working-tree file, not a separate checkout.",
+        "liveApplyRestPidObserved": 49620,
+        "pid43348Check": {
+          "command": "Get-CimInstance Win32_Process -Filter \"ProcessId=43348\"",
+          "result": "checked ProcessId=43348: not found"
+        },
+        "liveApplyRestProcess": {
+          "command": "Get-CimInstance Win32_Process -Filter \"ProcessId=49620\"",
+          "ProcessId": 49620,
+          "CreationDateLocal": "8/12/2026 3:32:38 PM",
+          "CommandLine": "node P:/tmp/a2_staged_rails_20260812/run_special_district.mjs apply-rest"
+        },
+        "bootLog": {
+          "file": "P:/tmp/a2_staged_rails_20260812/special_district/apply_rest.console.log",
+          "lines": [
+            "{\"event\":\"special-district.apply-rest.boot\",\"at\":\"2026-08-12T20:32:38.212Z\"}",
+            "{\"event\":\"special-district.roster\",\"counties\":253}",
+            "{\"event\":\"special-district.resume\",\"alreadyLanded\":3,\"remaining\":250}",
+            "{\"event\":\"special-district.start\",\"fips\":\"48005\"}"
+          ]
+        },
+        "note": "Dispatch cited PID 43348 @ 20:29:55Z. That PID is gone. The live apply-rest is PID 49620 booted 20:32:38Z with alreadyLanded=3 remaining=250, currently on 48005."
+      },
+      "diffThreeModifiedFiles": {
+        "command": "git -C P:/hauska-engine diff -- packages/engine-core/scripts/write-special-district-fact-county.mjs packages/engine-core/scripts/write-well-fact-county.mjs packages/engine-core/src/well-fact/index.ts",
+        "stdout": "diff --git a/packages/engine-core/scripts/write-special-district-fact-county.mjs b/packages/engine-core/scripts/write-special-district-fact-county.mjs\nindex df00b8f..e7bb82e 100644\n--- a/packages/engine-core/scripts/write-special-district-fact-county.mjs\n+++ b/packages/engine-core/scripts/write-special-district-fact-county.mjs\n@@ -290,8 +290,15 @@ try {\n     console.log(JSON.stringify(payload));\n     if (args.out) writeFileSync(args.out, JSON.stringify(payload, null, 2));\n   } else {\n-    const substrateUrl = resolveSubstrateDatabaseUrl(process.env);\n-    const handle = await createPgStorage(substrateUrl);\n+    const substrateUrl = resolveSubstrateDatabaseUrl();\n+    if (!substrateUrl) {\n+      throw new Error(\n+        \"FATAL: --apply requires DATABASE_URL / SUBSTRATE_DATABASE_URL (the ATOMS store).\",\n+      );\n+    }\n+    // Match sibling writers: options object, not a bare URL string.\n+    // Passing a string made options.databaseUrl undefined and crashed on .includes.\n+    const handle = createPgStorage({ databaseUrl: substrateUrl, maxConnections: 8 });\n     for (let i = 0; i < atoms.length; i += args.batch) {\n       const slice = atoms.slice(i, i + args.batch);\n       await handle.storage.writePropertyAtomsBatch(slice);\ndiff --git a/packages/engine-core/scripts/write-well-fact-county.mjs b/packages/engine-core/scripts/write-well-fact-county.mjs\nindex 8b4da8f..f5e94b1 100644\n--- a/packages/engine-core/scripts/write-well-fact-county.mjs\n+++ b/packages/engine-core/scripts/write-well-fact-county.mjs\n@@ -2,9 +2,9 @@\n /**\n  * write-well-fact-county.mjs — `well-fact` writer (rrc-wells rail).\n  *\n- * Joins txgio_parcel geometry against Texas RRC surface wells fetched live\n- * from the Harris County mirror ArcGIS layer (statewide coverage). Carries\n- * BOTH on-parcel (PIP) and near-parcel (within named radius) associations.\n+ * Joins txgio_parcel geometry against Texas RRC surface wells from staged\n+ * `tx_rrc_well` (first-party statewide; NOT the Harris County ArcGIS mirror).\n+ * Carries BOTH on-parcel (PIP) and near-parcel (within named radius) associations.\n  *\n@@ -23,17 +23,21 @@ import {\n+  STAGED_WELL_ADAPTER,\n+  STAGED_WELL_SOURCE,\n   WELL_FACT_PROXIMITY_RADIUS_METERS,\n   buildAtomsForWellFactPlan,\n-  fetchRrcWellsForBBox,\n+  fetchRrcWellsFromStagedTable,\n   geometryCentroid,\n   planCountyWellFacts,\n+  stagedWellTableExists,\n   verifyStoredWellFactAtom,\n } from \"../src/well-fact/index.ts\";\n-const SOURCE_ADAPTER = \"texas-rrc-wells-v1\";\n-const SOURCE_URL =\n-  \"https://www.gis.hctx.net/arcgishcpid/rest/services/TXRRC/Wells/MapServer/0\";\n+const SOURCE_ADAPTER = STAGED_WELL_ADAPTER;\n+const SOURCE_URL = STAGED_WELL_SOURCE;\n+const FORBIDDEN_HARRIS_MIRROR =\n+  \"gis.hctx.net\";\n@@ -179,13 +183,24 @@ try {\n-    const wellFetch = await fetchRrcWellsForBBox(countyBbox);\n+    if (String(SOURCE_URL).includes(FORBIDDEN_HARRIS_MIRROR)) {\n+      throw new Error(\n+        \"REFUSING TO RUN: well-fact source still points at Harris mirror (gis.hctx.net). Use staged tx_rrc_well.\",\n+      );\n+    }\n+    const hasStaged = await stagedWellTableExists(sql);\n+    if (!hasStaged) {\n+      throw new Error(\"tx_rrc_well missing — run P2.3 staging before well-fact apply\");\n+    }\n+    const wellFetch = await fetchRrcWellsFromStagedTable(sql, countyBbox);\n     summary.sourceProbe = {\n       layerUrl: SOURCE_URL,\n+      source: wellFetch.source,\n       featureCount: wellFetch.wells.length,\n       fieldNames: wellFetch.fieldNames,\n       truncated: wellFetch.truncated,\n       countyBbox,\n+      harrisMirrorForbidden: true,\n     };\n@@ -193,7 +208,7 @@\n-      note: \"on-parcel PIP + near-parcel within named radius; one atom per (parcel, well)\",\n+      note: \"staged tx_rrc_well; on-parcel PIP + near-parcel within named radius; one atom per (parcel, well)\",\n@@ -250,7 +265,7 @@\n-      sourceCitation: \"Texas RRC public GIS (Harris County mirror) surface wells\",\n+      sourceCitation: \"Texas RRC surface wells staged in tx_rrc_well (first-party statewide)\",\ndiff --git a/packages/engine-core/src/well-fact/index.ts b/packages/engine-core/src/well-fact/index.ts\nindex f559899..ff0e034 100644\n--- a/packages/engine-core/src/well-fact/index.ts\n+++ b/packages/engine-core/src/well-fact/index.ts\n@@ -5,6 +5,13 @@ export {\n   type CountyWellFetchResult,\n } from \"./fetch-wells.js\";\n \n+export {\n+  STAGED_WELL_ADAPTER,\n+  STAGED_WELL_SOURCE,\n+  fetchRrcWellsFromStagedTable,\n+  stagedWellTableExists,\n+} from \"./fetch-wells-staged.js\";\n+\n export {\n   bboxContainsPoint,\n   distancePointToPolygonMeters,"
+      },
+      "fetchWellsStagedHead80": {
+        "file": "packages/engine-core/src/well-fact/fetch-wells-staged.ts",
+        "lineCount": 74,
+        "note": "file has 74 lines; head=full file",
+        "lines": [
+          "/**",
+          " * Read Texas RRC surface wells from staged `tx_rrc_well` (first-party statewide).",
+          " * NEVER use the Harris County ArcGIS mirror for apply — it holds ~0.92% of TX.",
+          " */",
+          "",
+          "import type { BBoxInput, CountyWellFetchResult, RrcWellFeature } from \"./fetch-wells.js\";",
+          "",
+          "export const STAGED_WELL_SOURCE = \"tx_rrc_well\";",
+          "export const STAGED_WELL_ADAPTER = \"tx-rrc-well-staged-v1\";",
+          "",
+          "/** Minimal tagged-template SQL handle (postgres.js compatible). */",
+          "type SqlTag = {",
+          "  (strings: TemplateStringsArray, ...values: unknown[]): Promise<ReadonlyArray<Record<string, unknown>>>;",
+          "};",
+          "",
+          "function parseStagedWell(row: Record<string, unknown>): RrcWellFeature | null {",
+          "  const lng = Number(row.lng);",
+          "  const lat = Number(row.lat);",
+          "  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;",
+          "  return {",
+          "    surfaceId: Number(row.uniqid ?? 0),",
+          "    symnum: Number(row.symnum ?? 0),",
+          "    api: String(row.api ?? \"\"),",
+          "    wellId: String(row.gis_well_number ?? row.well_row_id ?? \"\"),",
+          "    lng,",
+          "    lat,",
+          "    reliab: row.reliab != null ? String(row.reliab) : null,",
+          "  };",
+          "}",
+          "",
+          "/** True when the table exists in the connected database. */",
+          "export async function stagedWellTableExists(sql: SqlTag): Promise<boolean> {",
+          "  const rows = await sql`SELECT to_regclass('public.tx_rrc_well') AS reg`;",
+          "  return rows[0]?.reg != null;",
+          "}",
+          "",
+          "/**",
+          " * Fetch wells whose points intersect the county bbox (same shape as the old",
+          " * ArcGIS bbox query). Includes county_fips-null residue via lng/lat.",
+          " */",
+          "export async function fetchRrcWellsFromStagedTable(",
+          "  sql: SqlTag,",
+          "  bbox: BBoxInput,",
+          "): Promise<CountyWellFetchResult & { source: typeof STAGED_WELL_SOURCE }> {",
+          "  const rows = await sql`",
+          "    SELECT well_row_id, uniqid, api, gis_well_number, symnum, reliab, lng, lat",
+          "    FROM tx_rrc_well",
+          "    WHERE west_lng <= ${bbox.eastLng}",
+          "      AND east_lng >= ${bbox.westLng}",
+          "      AND south_lat <= ${bbox.northLat}",
+          "      AND north_lat >= ${bbox.southLat}",
+          "  `;",
+          "  const wells: RrcWellFeature[] = [];",
+          "  for (const row of rows) {",
+          "    const parsed = parseStagedWell(row as Record<string, unknown>);",
+          "    if (parsed) wells.push(parsed);",
+          "  }",
+          "  return {",
+          "    wells,",
+          "    truncated: false,",
+          "    fieldNames: [",
+          "      \"well_row_id\",",
+          "      \"uniqid\",",
+          "      \"api\",",
+          "      \"gis_well_number\",",
+          "      \"symnum\",",
+          "      \"reliab\",",
+          "      \"lng\",",
+          "      \"lat\",",
+          "    ],",
+          "    source: STAGED_WELL_SOURCE,",
+          "  };",
+          "}",
+          ""
+        ]
+      }
+    },
+    "2_pipMethod": {
+      "decisionMethod": "bbox-midpoint point-in-polygon (NOT full parcel-geometry intersection)",
+      "runningCodeCarriesSweepSf6": true,
+      "sweepRef": {
+        "file": "_inbox/2026-08-12_SWEEP_silent_fallback_audit.json",
+        "findingId": "SF-6",
+        "severity": "high",
+        "fixed": false
+      },
+      "citations": [
+        {
+          "file": "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+          "lines": "175-199",
+          "what": "Parcel SELECT is prop_id, feature_index, west_lng, south_lat, east_lng, north_lat — NO geometry column. centroid = ((west+east)/2, (south+north)/2)."
+        },
+        {
+          "file": "packages/engine-core/src/special-district-fact/plan-county-special-districts.ts",
+          "lines": "116-132",
+          "function": "planCountySpecialDistricts",
+          "what": "Membership via index.lookup(parcel.centroid[0], parcel.centroid[1]) — point probe only."
+        },
+        {
+          "file": "packages/engine-core/src/special-district-fact/geo.ts",
+          "lines": "245-265",
+          "function": "buildDistrictGridIndex().lookup",
+          "what": "Candidate filter then pointInPreparedPolygons(lng, lat, d.prepared) — district polygon PIP of the probe point, not parcel-polygon intersection."
+        }
+      ],
+      "postHocReverificationWouldQuery": "For boundary parcels in applied counties: recompute probe = true parcel geometry centroid (or ST_PointOnSurface) AND/OR ST_Intersects/ST_Contains(parcel.geom, district.geom) against tx_special_district; diff present/absent atom outcomes vs atoms where entity_type='special-district-fact' and left(entity_id,5)=county. Flag parcels whose bbox-midpoint membership disagrees with geometry-based membership."
+    },
+    "3_verifySemantics": {
+      "verifiesByStoreReadback": true,
+      "notInMemoryOnly": true,
+      "codePath": {
+        "file": "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+        "lines": "307-335",
+        "mechanism": "After writePropertyAtomsBatch: SELECT body FROM atoms WHERE atom_did IN (canonical did:hauska:special-district-fact:${entityId}); map by body.atomDid; verifyStoredSpecialDistrictFactAtom(back, ...). Missing back → verifyFailures push 'atom not readable back...'."
+      },
+      "proofArtifact": {
+        "file": "P:/tmp/a2_staged_rails_20260812/special_district/verify_can_fail_proof.json",
+        "conclusion": "PASS — newly-ported verify can fail on unreadability; first real apply also proved it can pass at scale",
+        "pkMissOnFakeDid": true,
+        "liveApplyEvidence": "48021 full apply wrote+verified 62256/62256 with verifyFailures=[]"
+      }
+    },
+    "4_railFacetMapping": {
+      "entityType": "special-district-fact",
+      "intendedRailKey": "mud",
+      "intendedFacet": "mud",
+      "notANewRail": true,
+      "scorerScriptPrepared": "P:/tmp/a2_staged_rails_20260812/score_staged_rails_fast.mjs",
+      "scorerExists": true,
+      "scorerNotRun": true,
+      "operatorGate": "mud-vs-special-district duplication UNRULED — no scorer runs until operator rules it (this pass)",
+      "cp1Prereg": "P:/tmp/a2_staged_rails_20260812/cp1_preregister.json expectedCellsAfterScore.mud.facetMustEqual=mud"
+    },
+    "5_pacingData": {
+      "progressFile": "P:/tmp/a2_staged_rails_20260812/special_district/progress.json",
+      "landed": [
+        "48021",
+        "48001",
+        "48003"
+      ],
+      "countiesApplied": 3,
+      "totals": {
+        "atomsWritten": 104402,
+        "present": 20101,
+        "absent": 84301,
+        "verifyFailures": 0
+      },
+      "perCountyWallMs": [
+        {
+          "fips": "48021",
+          "wallMs": 1742913,
+          "source": "P:/tmp/a2_staged_rails_20260812/special_district/48021_apply.log:2 wallMs=1742913",
+          "atomsWritten": 62256,
+          "present": 10925,
+          "absent": 51331
+        },
+        {
+          "fips": "48001",
+          "wallMs": 618992,
+          "source": "P:/tmp/a2_staged_rails_20260812/special_district/48001_apply.log:2 wallMs=618992",
+          "atomsWritten": 31676,
+          "present": 9176,
+          "absent": 22500
+        },
+        {
+          "fips": "48003",
+          "wallMs": null,
+          "source": "checked progress.json countyResults[48003] and directory listing: no 48003_apply.log; 48003_apply.json has no wallMs field",
+          "atomsWritten": 10470,
+          "present": 0,
+          "absent": 10470,
+          "emptyDistrictIndex": true,
+          "districtRowsInCounty": 0
+        }
+      ],
+      "remainingQueue": {
+        "rosterCounties": 253,
+        "source": "apply_rest.console.log roster counties:253; resume alreadyLanded:3 remaining:250",
+        "remaining": 250,
+        "inFlight": "48005",
+        "metrosDeferredToEnd": [
+          "48085",
+          "48113",
+          "48029",
+          "48439",
+          "48453",
+          "48201"
+        ],
+        "metrosOrderSource": "P:/tmp/a2_staged_rails_20260812/run_special_district.mjs:18 METROS_LAST",
+        "fullRemainingFipsListOnDisk": "checked: no remaining-queue dump file on disk; only remaining:250 count in apply_rest.console.log"
+      }
+    },
+    "6_railCorridorPlan": {
+      "writerPath": "P:/hauska-engine/packages/engine-core/scripts/write-rail-corridor-fact-county.mjs",
+      "source": "NTAD NARN Lines live fetch (SOURCE_ADAPTER=ntad-narn-proximity-v1); NOT a staged SQL table",
+      "sourceUrlConstant": "NTAD_NARN_LINES_URL",
+      "buffer": "RAIL_CORRIDOR_DEFAULT_BUFFER_METERS (152.4 documented in writer header/body)",
+      "dependsOnUncommittedEngineCode": false,
+      "a2DryRunEvidence": {
+        "checked": "Get-ChildItem P:/tmp/a2_staged_rails_20260812/rail_corridor",
+        "result": "checked path: directory empty / no rail_corridor artifacts created this lane"
+      },
+      "runnerPreparedNotExecuted": "P:/tmp/a2_staged_rails_20260812/run_rail_corridor.mjs exists on tmp (outside hauska-engine); not run",
+      "status": "queued after special-district apply-rest completes; well-fact will not follow"
+    },
+    "7_slotProtocol": {
+      "closeArtifactExactPath": "_inbox/2026-08-12_A2_staged_rails_apply_close.json",
+      "slotReleaseInStateMd": true,
+      "wellFactApplyUnderThisLane": false,
+      "wellFactHaltAckStands": true,
+      "wellFactHaltAckPath": "P:/tmp/a2_staged_rails_20260812/WELL_FACT_HALT_ACK.json",
+      "cp1F2StillBlocks": true,
+      "reason": "Staged-table writer swap remains uncommitted local code on this tree; SYMNUM fail-closed may be closed elsewhere (W2) but this lane still will not --apply well-fact; halt ack status=NOT_STARTED",
+      "thisPassDidNotTouchSlot": true
+    },
+    "8_uncommittedWorkRegister": {
+      "command": "git -C P:/hauska-engine status --short",
+      "files": [
+        {
+          "path": "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+          "status": "M",
+          "purpose": "Fix createPgStorage to options-object + resolveSubstrateDatabaseUrl(); required for --apply (RUNNING under current apply-rest)."
+        },
+        {
+          "path": "packages/engine-core/scripts/write-well-fact-county.mjs",
+          "status": "M",
+          "purpose": "Swap source from Harris ArcGIS mirror to staged tx_rrc_well (NOT applied this lane)."
+        },
+        {
+          "path": "packages/engine-core/src/well-fact/index.ts",
+          "status": "M",
+          "purpose": "Re-export staged well fetch helpers."
+        },
+        {
+          "path": "packages/engine-core/src/well-fact/fetch-wells-staged.ts",
+          "status": "??",
+          "purpose": "New staged-table reader for tx_rrc_well bbox fetch."
+        }
+      ],
+      "postRunPrPlan": "AFTER run ends: recover these diffs into an isolated worktree/PR (A1P pattern — recover, never reconstruct). Nothing cleaned/stashed/reverted while runner lives; running lane executes this working tree.",
+      "tmpArtifactsOutsideEngineNote": "P:/tmp/a2_staged_rails_20260812/* runners/logs are outside the hauska-engine git tree and are not listed by git status --short"
+    },
+    "9_anythingStateDoesntKnow": [
+      "PID 43348 (cited by dispatcher) is not running; live apply-rest is PID 49620 started 2026-08-12T20:32:38Z — likely a restart after earlier Cursor-shell -1 kills.",
+      "Windows spawnSync often returns exit 4294967295/-1 on clean writer done events; runner was patched to trust cleanArtifact (verifyFailures=0 && atomsWritten>0). 48001 was initially skip-county'd then marked landedFromArtifact after store count matched 31676.",
+      "48003 emptyDistrictIndex=true (0 tx_special_district rows) → 10470 honest-outside absences; SF-7 class (empty slice reads as outside-tceq-source-boundaries) is live in this run.",
+      "rateEnrichedCount=0 on all landed counties — Comptroller tax-rate join still empty; atoms must not be described as tax-relevant.",
+      "SF-6 bbox-midpoint PIP is carried by the running writer (parcel SELECT omits geometry).",
+      "Cursor-backgrounded apply-rest shells repeatedly died with exit -1 while detached node children sometimes continued; pacing interruptions are process-wrapper noise, not verifyFailures.",
+      "ledgerBeforeLive at slot-take was 405/12.9095/3556 (P:/tmp/a2_staged_rails_20260812/ledger_before_live_summary.json); A1 close 423/11.8954 historical; 18-cell drop settled pre-slot.",
+      "No rail-corridor apply or dry-run artifacts exist yet under P:/tmp/a2_staged_rails_20260812/rail_corridor.",
+      "Well-fact only dry-ran 48135 (limit 200): present=171 absent=76 source=tx_rrc_well; never --apply."
+    ]
+  },
+  "progressSnapshot": {
+    "file": "P:/tmp/a2_staged_rails_20260812/special_district/progress.json",
+    "landed": [
+      "48021",
+      "48001",
+      "48003"
+    ],
+    "halted": null,
+    "atomsWritten": 104402,
+    "inFlightFromLog": "48005"
+  }
+}

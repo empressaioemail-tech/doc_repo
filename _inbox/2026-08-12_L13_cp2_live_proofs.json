@@ -1,0 +1,64 @@
+{
+  "artifact": "_inbox/2026-08-12_L13_cp2_live_proofs.json",
+  "planRow": "P-29",
+  "amendment": "A-007",
+  "lane": "L13",
+  "runAt": "2026-08-12T23:44:15Z",
+  "cp1": "_inbox/2026-08-12_L13_cp1_limiter_inventory.json",
+  "proofs": {
+    "a_health_serving": {
+      "instrument": "GET https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/health (DC-11a as the limiter surface; literal cortex URL is the wrong host — see CP1)",
+      "servingRevision": "hauska-mcp-server-00063-fic",
+      "traffic": "100%",
+      "tag": "l13-57fa819",
+      "verbatim": "{\"status\":\"ok\",\"service\":\"hauska-mcp-server\",\"version\":\"0.1.0\",\"env\":\"production\",\"metrics\":{\"started_at\":\"2026-08-12T23:41:21.232Z\",\"uptime_s\":172,\"total_requests\":0,\"total_errors\":0,\"error_rate\":0,\"last_successful_call\":null,\"latency\":{\"count\":0,\"p50_ms\":null,\"p95_ms\":null,\"p99_ms\":null,\"max_ms\":null},\"tool_calls\":{}},\"dependencies\":{\"engine_retrieval_api\":{\"state\":\"ok\",\"latency_ms\":18,\"detail\":\"HTTP 404\"},\"cortex_api\":{\"state\":\"ok\",\"latency_ms\":33},\"postgres\":{\"state\":\"ok\",\"latency_ms\":222},\"rate_limit_store\":{\"state\":\"ok\",\"latency_ms\":223,\"detail\":\"postgres\",\"primary\":\"postgres\",\"memory_fallback\":false,\"outage_policy\":\"fail-degraded\"}}}",
+      "assert": "dependencies.rate_limit_store.state === \"ok\"",
+      "result": "PASS"
+    },
+    "b_429_enforcement": {
+      "target": "https://l13-burst---hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/mcp",
+      "revision": "hauska-mcp-server-00064-yoy",
+      "traffic": "0% (tagged l13-burst; not serving)",
+      "key": {
+        "key_id": "15340dd5-ed09-46ab-b9b4-4358a56fd429",
+        "tier": "free",
+        "product": "public",
+        "owner_email": "l13-limiter-test@hauska.dev",
+        "raw": "REDACTED — minted once, revoked after proofs"
+      },
+      "limit": "HAUSKA_FREE_KEY_DAILY=2 on the burst revision only (parseInt of env value; rpm left at default 120 so daily trips first)",
+      "verbatim": [
+        "req 1 -> HTTP 200 body=event: message\ndata: {\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{\"tools\":{\"listChanged\":true}},\"serverInfo\":{\"name\":\"hauska\",\"version\":\"0.1.0\"}},\"jsonrpc\":\"2.0\",\"id\":1}",
+        "req 2 -> HTTP 200 body=event: message\ndata: {\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{\"tools\":{\"listChanged\":true}},\"serverInfo\":{\"name\":\"hauska\",\"version\":\"0.1.0\"}},\"jsonrpc\":\"2.0\",\"id\":2}",
+        "req 3 -> HTTP 429 body={\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Rate limit exceeded for tier \\\"free\\\" on band \\\"daily\\\".\",\"data\":{\"band\":\"daily\",\"tier\":\"free\"}},\"id\":3}",
+        "req 4 -> HTTP 429 body={\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Rate limit exceeded for tier \\\"free\\\" on band \\\"daily\\\".\",\"data\":{\"band\":\"daily\",\"tier\":\"free\"}},\"id\":4}"
+      ],
+      "result": "PASS"
+    },
+    "c_restart_survival": {
+      "method": "New Cloud Run revision from the same image (fresh process). Same key. Daily window TTL 86400s so a deploy cannot hide behind the 60s rpm bucket.",
+      "beforeRevision": "hauska-mcp-server-00064-yoy (uptime started 2026-08-12T23:42:11.034Z; consumed 2/2 daily)",
+      "afterRevision": "hauska-mcp-server-00065-maq",
+      "afterUrl": "https://l13-restart---hauska-mcp-server-h7gvu7rgcq-uc.a.run.app",
+      "afterHealthStartedAt": "2026-08-12T23:43:23.315Z",
+      "afterHealthUptimeSAtProbe": 13,
+      "afterHealthTotalRequestsBeforeProbe": 0,
+      "verbatim": [
+        "restart-req 1 -> HTTP 429 body={\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Rate limit exceeded for tier \\\"free\\\" on band \\\"daily\\\".\",\"data\":{\"band\":\"daily\",\"tier\":\"free\"}},\"id\":101}",
+        "restart-req 2 -> HTTP 429 body={\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Rate limit exceeded for tier \\\"free\\\" on band \\\"daily\\\".\",\"data\":{\"band\":\"daily\",\"tier\":\"free\"}},\"id\":102}"
+      ],
+      "whyNotMemory": "A per-instance MemoryRateLimitStore on a new revision with uptime_s=13 and total_requests=0 would have reset the counter and returned HTTP 200 for the next two requests. It returned 429 on both. Counter survived the revision change.",
+      "result": "PASS"
+    }
+  },
+  "keyRevoked": {
+    "key_id": "15340dd5-ed09-46ab-b9b4-4358a56fd429",
+    "http": 200,
+    "status": "revoked",
+    "rawDeletedFromDisk": true
+  },
+  "literalDc11aStillFails": {
+    "url": "https://cortex-api-tds7av26va-uc.a.run.app/health",
+    "why": "Returns the Cortex SPA HTML. /api/health is {\"status\":\"ok\"} with no rate_limit_store field. Cortex does not share the MCP limiter seam. Recommended OPS-16 amendment: point DC-11a at MCP /health."
+  }
+}

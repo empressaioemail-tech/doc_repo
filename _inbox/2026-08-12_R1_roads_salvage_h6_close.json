@@ -1,0 +1,91 @@
+{
+  "runAt": "2026-08-12T02:38:00Z",
+  "salvageBranch": "feat/f5-roads-unblock",
+  "salvageHeadSha": "e4723c421370844cf09b6315001852dbde6113bc",
+  "tokenizeImportFixed": true,
+  "fourRefutations": [
+    {
+      "defect": "collinear-boundary-coin-flip",
+      "statusBefore": "OPEN on origin/main (1e-18 dead code); ADDRESSED on feat/f5-roads-unblock only",
+      "statusAfter": "CLOSED on branch post-rebase onto 6ccfe8c",
+      "evidence": "geometry-epsilon.ts collinearOrientationEpsilon max(1e-14, scale*1e-14); way-to-county.ts + extract_highways.py aligned; f5-roads-unblock.test.ts H2 >=99% both-county on 48021/48055 diagonal jitter sweep; CI run 31557225622 conclusion success"
+    },
+    {
+      "defect": "node-ingest-unexecuted",
+      "statusBefore": "OPEN — no product county apply; road-node store had zero rows outside Bastrop warm-path adapters",
+      "statusAfter": "CLOSED — H6 apply executed",
+      "evidence": "write-road-node-county.mjs --apply --county=48261: atomsWritten=1844 verified=1844 verifyFailures=0; artifact P:/tmp/r1-h6-48261-apply.json; PK atom_did verify path (never body->>'atomDid')"
+    },
+    {
+      "defect": "silent-upsert-clobber-bastrop",
+      "statusBefore": "OPEN on main (writePropertyAtomsBatch unconditional ON CONFLICT DO UPDATE); simulate-only on branch",
+      "statusAfter": "CLOSED — supersede skip-protected survives batching; Bastrop untouched by H6",
+      "evidence": "simulate-bastrop-road-supersede.mjs live SELECT: 19907 active 48021 rows, wouldSkip7249=7249 wouldUpsert7249=0 passAllProtected=true; _r1_supersede_batch_adversarial.mjs InMemoryStorage batch of 4 with duplicate PBF attempts against overpass row: preBatchDecision=skip-protected sourceAdapter unchanged; post-H6 Bastrop count still 19907"
+    },
+    {
+      "defect": "synthetic-id-landmine",
+      "statusBefore": "PARTIALLY OPEN — ~1.53M real OSM ids in 700M-999M positive space; legacy positive 800M/900M bands live in Bastrop",
+      "statusAfter": "PARTIALLY CLOSED — new mints negative namespace; narrow reserved-window fail-closed on 48021 only; legacy positive rows retained until migration",
+      "evidence": "classify-county-street.ts COUNTY_*_OFFSET negative for new mints; LEGACY_*_ID_MIN/MAX narrow windows 800000001-800011351 and 900000001-900001307; county-osm-priority.test.ts updated; H6 48261 positiveLegacyBand=0 after narrowing (was 1278 false positives with broad isLegacyCountySyntheticWayId)"
+    }
+  ],
+  "writerCreated": true,
+  "writerPath": "packages/engine-core/scripts/write-road-node-county.mjs",
+  "prNumbers": [293],
+  "ciConclusionString": "success",
+  "ciRunId": 31557225622,
+  "h6County": "48261",
+  "h6CountyName": "Kenedy",
+  "h6IsNonBastrop": true,
+  "h6ExpectedRoadCountCp1": "~170-250 (heuristic from 23954 Bastrop ways scaled by 538/74729 parcels); measured dry-run 1844",
+  "h6Result": {
+    "roadsWritten": 1844,
+    "verified": 1844,
+    "verifyFailures": 0
+  },
+  "supersedeProvenUnderBatching": true,
+  "supersedeBatchingEvidence": [
+    "InMemoryStorage adversarial batch (4 atoms, 3 PBF attempts vs one road-intake-osm-overpass row): skip-protected + sourceAdapter unchanged",
+    "H6 apply used writeRoadAtomsBatch batch=100 across 19 batches with write-then-verify per batch",
+    "Live simulate-bastrop-road-supersede.mjs pass7249 passAllProtected on 19907 rows"
+  ],
+  "bastropRowsBefore": 19907,
+  "bastropRowsAfter": 19907,
+  "bastropUnchanged": true,
+  "bastropCountProvenance": "live SELECT via simulate-bastrop-road-supersede.mjs on DATABASE_URL 2026-08-12T02:38Z",
+  "statewideIngestRun": false,
+  "cp1": {
+    "preRegisteredAt": "2026-08-12T02:22:00Z",
+    "h6County": "48261",
+    "h6ExpectedRoadNodeCount": "~170-250 heuristic; pre-register exact from PBF dry-run",
+    "bastropRoadRowCount": 19907,
+    "bastropCountSource": "_inbox/2026-08-08_elgin_depth_warm_run_record.md (confirmed live 2026-08-12)",
+    "refutationPredictions": {
+      "collinearBoundaryCoinFlip": "CONFIRM ADDRESSED on branch post-rebase; tests pass",
+      "nodeIngestUnexecuted": "PREDICT EXECUTED this dispatch on one non-Bastrop county",
+      "silentUpsertClobber": "PREDICT skip-protected holds under real batching; Bastrop count unchanged after H6",
+      "syntheticIdLandmine": "PREDICT PARTIALLY CLOSED — negative new mints; legacy positive bands remain until 48021 migration"
+    }
+  },
+  "cp2": {
+    "measuredAt": "2026-08-12T02:38:00Z",
+    "refutationOutcomes": {
+      "collinearBoundaryCoinFlip": "CONFIRMED",
+      "nodeIngestUnexecuted": "CONFIRMED",
+      "silentUpsertClobber": "CONFIRMED",
+      "syntheticIdLandmine": "CONFIRMED partial"
+    },
+    "h6MeasuredRoadCount": 1844,
+    "bastropRowsMeasuredAfter": 19907,
+    "ciConclusionString": "success"
+  },
+  "adversarialFindings": [
+    "CP1: broad isPositiveLegacySyntheticBand (isLegacyCountySyntheticWayId) falsely flagged 1278/1844 Kenedy ways — fixed by LEGACY_*_ID_MIN/MAX narrow windows; fail-closed on positive band limited to county 48021",
+    "CP1: pg-storage supersede import swap dropped tokenize — restored both road-ingest-supersede and search-scoring imports (TS2304 root cause of original #293 CI failure)",
+    "CP2: county-osm-priority.test.ts expected positive synthetic ids — updated to countyRoadwaySyntheticWayId helpers matching F5 H4 negative new-mint namespace",
+    "CP2 adversarial supersede batching: constructed 4-atom batch with 3 PBF overwrite attempts against live-shaped overpass row — sourceAdapter remained road-intake-osm-overpass; unrelated 48261 row inserted",
+    "CP2: read-only simulate is necessary but not sufficient alone — H6 apply + InMemory batching adversarial together satisfy 'proven under batching'",
+    "NOT MERGED: PR #293 remains OPEN DO-NOT-MERGE banner; branch feat/f5-roads-unblock at e4723c4 CI success — merge is separate operator action",
+    "Manifest no-writer ×254 clears only after legacy-design-tools railEngineBinding.ts engineWriterScript binding (out of scope this dispatch)"
+  ]
+}

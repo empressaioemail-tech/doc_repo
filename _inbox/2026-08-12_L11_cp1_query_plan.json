@@ -1,0 +1,125 @@
+{
+  "lane": "L11",
+  "planRows": ["P-13", "P-38(IDX)"],
+  "mode": "STRICTLY_READ_ONLY",
+  "cp": "CP1",
+  "recordedAt": "2026-08-12T23:32:00Z",
+  "constraint": "No atoms heap seq scans without LIMIT. Prefer pg_catalog / pg_stat / pg_stats. Every query exit-bounded. No DDL, no --apply, no store writes.",
+  "job1_ledger": {
+    "freshGet": {
+      "cmd": "curl.exe --max-time 180 -sS -o P:/tmp/county_ledger_l11_fresh.json https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+      "statusAtCp1": "FIRST_ATTEMPT_TIMEOUT_180s_0_bytes; will retry once and fall back to SQL reconstruction + settled A2 summary"
+    },
+    "artifactReads": [
+      "P:/tmp/county_ledger_before.json",
+      "P:/tmp/county_ledger_after.json",
+      "P:/tmp/a2_staged_rails_20260812/ledger_before_live_summary.json",
+      "_inbox/2026-08-12_A1_cad_rails_apply_close.json",
+      "P:/tmp/a1_cad_rails_20260812/score_summary.json",
+      "P:/tmp/a1_cad_rails_20260812/score_cad_rails_fast.mjs",
+      "legacy-design-tools/artifacts/api-server/src/routes/countyLedger.ts (applyDepthRailDisplayGate + isSatisfiedCell)"
+    ],
+    "sqlAgainstDeployNeondb": [
+      {
+        "id": "D1",
+        "purpose": "rail_state distribution by facet (catalog-sized table)",
+        "sql": "SELECT facet, rail_state, count(*)::int AS n FROM county_facet_coverage GROUP BY 1,2 ORDER BY 1,2;",
+        "bound": "county_facet_coverage is thousands of rows; GROUP BY is exit-bounded",
+        "seqScanRisk": "none on atoms"
+      },
+      {
+        "id": "D2",
+        "purpose": "name the 19 zoning satisfied-present rows and coverage vs threshold",
+        "sql": "SELECT county_fips, rail_state, honest_coverage_pct, threshold_pct, source, verified_by_instrument, artifact_path, last_verified_at FROM county_facet_coverage WHERE facet = 'zoning' AND rail_state = 'satisfied-present' ORDER BY county_fips LIMIT 50;",
+        "bound": "LIMIT 50 + equality predicates on facet/rail_state",
+        "seqScanRisk": "none on atoms"
+      },
+      {
+        "id": "D3",
+        "purpose": "reconstruct A1-naive vs API-gated zoning counts (prove 19 vs 1)",
+        "sql": "SELECT count(*) FILTER (WHERE rail_state = 'satisfied-present')::int AS naive_satisfied_present, count(*) FILTER (WHERE rail_state = 'satisfied-present' AND honest_coverage_pct::numeric >= COALESCE(threshold_pct::numeric, 95))::int AS depth_gate_keeps, count(*) FILTER (WHERE rail_state = 'satisfied-present' AND (honest_coverage_pct IS NULL OR honest_coverage_pct::numeric < COALESCE(threshold_pct::numeric, 95)))::int AS depth_gate_demotes_to_not_yet FROM county_facet_coverage WHERE facet = 'zoning';",
+        "bound": "single-facet filter; small table",
+        "seqScanRisk": "none on atoms"
+      },
+      {
+        "id": "D4",
+        "purpose": "A1-naive full-grid satisfied count (replicates score_cad_rails_fast.mjs ledger SQL)",
+        "sql": "SELECT count(*) FILTER (WHERE display_state = 'satisfied-present')::int AS naive_satisfied, count(*)::int AS total FROM (SELECT CASE WHEN r.atom_family_state <> 'present' THEN 'no-atom' WHEN r.has_writer = false THEN 'no-writer' WHEN c.rail_state IS NULL THEN 'not-yet' ELSE c.rail_state END AS display_state FROM county_manifest m CROSS JOIN county_rail r LEFT JOIN county_facet_coverage c ON c.county_fips = m.county_fips AND c.facet = r.rail_key) x;",
+        "bound": "254 x rail_count join; no atoms",
+        "seqScanRisk": "none on atoms"
+      },
+      {
+        "id": "D5",
+        "purpose": "API-equivalent satisfied count with jurisdiction-depth gate (zoning/cad/landuse/owner/envelope/easement)",
+        "sql": "SELECT count(*) FILTER (WHERE kept)::int AS api_like_satisfied FROM (SELECT CASE WHEN r.atom_family_state <> 'present' THEN false WHEN r.has_writer = false THEN false WHEN c.rail_state IS NULL THEN false WHEN c.rail_state = 'satisfied-absent' THEN true WHEN c.rail_state = 'satisfied-present' AND r.rail_key IN ('cad','zoning','envelope','landuse','easement','owner') AND (c.honest_coverage_pct IS NULL OR c.honest_coverage_pct::numeric < COALESCE(c.threshold_pct::numeric, r.threshold_pct)) THEN false WHEN c.rail_state IN ('satisfied-present','satisfied-absent') THEN true ELSE false END AS kept FROM county_manifest m CROSS JOIN county_rail r LEFT JOIN county_facet_coverage c ON c.county_fips = m.county_fips AND c.facet = r.rail_key) x;",
+        "bound": "254 x rail_count; no atoms",
+        "seqScanRisk": "none on atoms",
+        "note": "Omits doctrine-source exclusion and derivation-indeterminate overlay; sufficient to attribute the 18-cell zoning demotion"
+      }
+    ]
+  },
+  "job2_index_audit": {
+    "projectId": "fancy-fire-06136146",
+    "database": "hauska_mcp",
+    "sql": [
+      {
+        "id": "I1",
+        "purpose": "list atoms indexes with size + pg_stat scan/tuple counters",
+        "sql": "SELECT i.indexrelname, pg_size_pretty(pg_relation_size(i.indexrelid)) AS idx_size, pg_relation_size(i.indexrelid) AS idx_bytes, i.idx_scan, i.idx_tup_read, i.idx_tup_fetch, pg_get_indexdef(i.indexrelid) AS indexdef FROM pg_stat_user_indexes i WHERE i.relname = 'atoms' ORDER BY pg_relation_size(i.indexrelid) DESC;",
+        "bound": "pg_stat / catalog only",
+        "seqScanRisk": "none"
+      },
+      {
+        "id": "I2",
+        "purpose": "atoms table size + estimated rows (reltuples; no count(*))",
+        "sql": "SELECT c.relname, c.reltuples::bigint AS reltuples_est, pg_size_pretty(pg_relation_size(c.oid)) AS heap_size, pg_size_pretty(pg_total_relation_size(c.oid)) AS total_size, pg_relation_size(c.oid) AS heap_bytes, pg_total_relation_size(c.oid) AS total_bytes FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relname = 'atoms';",
+        "bound": "pg_class only",
+        "seqScanRisk": "none"
+      },
+      {
+        "id": "I3",
+        "purpose": "index predicates / uniqueness / columns from pg_index",
+        "sql": "SELECT ic.relname AS index_name, i.indisunique, i.indisprimary, i.indpred IS NOT NULL AS is_partial, pg_get_expr(i.indpred, i.indrelid) AS pred, pg_get_indexdef(i.indexrelid) AS indexdef FROM pg_index i JOIN pg_class ic ON ic.oid = i.indexrelid JOIN pg_class tc ON tc.oid = i.indrelid WHERE tc.relname = 'atoms' ORDER BY ic.relname;",
+        "bound": "catalog only",
+        "seqScanRisk": "none"
+      },
+      {
+        "id": "I4",
+        "purpose": "column stats for section_number / jurisdiction selectivity (no heap scan)",
+        "sql": "SELECT tablename, attname, null_frac, n_distinct, correlation, most_common_vals::text AS mcv, most_common_freqs::text AS mcf FROM pg_stats WHERE schemaname = 'public' AND tablename = 'atoms' AND attname IN ('section_number','jurisdiction','entity_type','entity_id') ORDER BY attname;",
+        "bound": "pg_stats only",
+        "seqScanRisk": "none"
+      },
+      {
+        "id": "I5",
+        "purpose": "EXPLAIN only: prove a bounded entity_type filter uses an index (no execution of heavy work)",
+        "sql": "EXPLAIN (FORMAT TEXT) SELECT atom_did FROM atoms WHERE entity_type = 'code-section' LIMIT 1;",
+        "bound": "EXPLAIN only + LIMIT 1 in the planned stmt",
+        "seqScanRisk": "abort if plan shows Seq Scan on atoms without a selective filter/LIMIT path we accept"
+      },
+      {
+        "id": "I6",
+        "purpose": "bounded code-section row sample count via index-friendly path",
+        "sql": "SELECT count(*)::bigint AS code_section_n FROM (SELECT 1 FROM atoms WHERE entity_type = 'code-section' LIMIT 100000) s;",
+        "bound": "LIMIT 100000 inside subquery; expected << limit for code-section",
+        "seqScanRisk": "run only after I5 plan is index/bitmap or LIMIT-capped",
+        "note": "If count hits LIMIT ceiling, report as '>=100000' and stop; do not remove LIMIT"
+      },
+      {
+        "id": "I7",
+        "purpose": "EXPLAIN for parcel-node lookup equality (judge atoms_parcel_node_lookup_idx)",
+        "sql": "EXPLAIN (FORMAT TEXT) SELECT atom_did FROM atoms WHERE entity_type = 'parcel-node' AND body->>'parcelNodeId' = '48021:34137' LIMIT 5;",
+        "bound": "EXPLAIN only",
+        "seqScanRisk": "document plan; do not force enable_seqscan"
+      },
+      {
+        "id": "I8",
+        "purpose": "index bloat / write amp proxy: idx_scan vs size ranking",
+        "sql": "SELECT indexrelname, idx_scan, pg_relation_size(indexrelid) AS idx_bytes, CASE WHEN idx_scan = 0 THEN 'ZERO_SCANS' WHEN idx_scan < 100 THEN 'NEAR_ZERO' ELSE 'ACTIVE' END AS scan_class FROM pg_stat_user_indexes WHERE relname = 'atoms' ORDER BY idx_scan ASC, pg_relation_size(indexrelid) DESC;",
+        "bound": "pg_stat only",
+        "seqScanRisk": "none"
+      }
+    ]
+  },
+  "verdict": "CP1_READY — plans contain no unbounded atoms scans; Job1 uses deploy neondb facet tables; Job2 uses hauska_mcp catalog + EXPLAIN-gated bounded probes."
+}

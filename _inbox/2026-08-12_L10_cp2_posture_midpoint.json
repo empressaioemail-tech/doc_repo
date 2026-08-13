@@ -1,0 +1,135 @@
+{
+  "artifact": "L10_cp2_posture_midpoint",
+  "plan_row": "P-26",
+  "lane": "L10",
+  "checkpoint": "CP2",
+  "ts_utc": "2026-08-12T23:20:00Z",
+  "cp1_path": "_inbox/2026-08-12_L10_cp1_probe_plan.json",
+  "raw_artifacts": [
+    "P:/tmp/l10_probe_raw.json",
+    "P:/tmp/l10_probe_summary.json",
+    "P:/tmp/l10_followup.json",
+    "P:/tmp/l10_followup2.json",
+    "P:/tmp/l10_followup3_electric.json"
+  ],
+  "planner_verdict": "PASS_WITH_FINDINGS",
+  "progress": {
+    "statewide_ccn_probed": true,
+    "bastrop_ground_probed": true,
+    "catalogue_municipal_roots_walked": 28,
+    "folder_hunts_on_empty_candidate_hosts": 9,
+    "footprint_counties_with_any_positive_utility_signal": 28,
+    "note": "All 28 footprint counties have PUCT water CCN groupBy hits. Line-geometry positives are sparse and city-scoped."
+  },
+  "adversarial_checks": [
+    {
+      "id": "CP2-A1",
+      "check": "PUCT Water CCN is statewide for footprint, not a name/extent trap",
+      "result": "PASS",
+      "evidence": "FeatureServer/0 count=3812. groupBy COUNTY returns hits for all 28 footprint county names (countiesWithoutHits=[]). COUNTY LIKE filters: Bastrop 22, Dallas 35, Travis 136. Extreme bbox corners can be empty (nw/se=0) while center=23 — empty corners are border/empty-envelope, not UtahRoads local-extent. Coverage instrument is groupBy COUNTY, not corner-of-bbox."
+    },
+    {
+      "id": "CP2-A2",
+      "check": "Reject Liberty Hill / z1org Water_CCNs as statewide",
+      "result": "PASS_REFUTED_CLAIM",
+      "evidence": "services8...qwMz1Ra8Qny9RDxC Water_CCNs count=66 groupBy COUNTY is Williamson-centric; Water_Laterals copyrightText='City of Liberty Hill...Pape-Dawson'; extent State Plane central. NOT statewide. Do not promote."
+    },
+    {
+      "id": "CP2-A3",
+      "check": "Bastrop ground publishes real water/wastewater mains",
+      "result": "PASS",
+      "evidence": "Water_Mains/3 count=3640 center=6; Wastewater_Main/0 count=4955 center=740; sample fields include assettype domain Transmission Main. City AGOL org qOeXJdBtGknaCJC4. County Utilities folder is GP-only (confirms 2026-07-27 recon)."
+    },
+    {
+      "id": "CP2-A4",
+      "check": "Cedar Park publishes mains AND laterals (expectation stress test)",
+      "result": "PASS_SURPRISE_POSITIVE",
+      "evidence": "Water Main 22425 + Water Lateral 27683; Sewer Main 14579 + Sewer Lateral 23209; center probes non-zero. Expectation 'almost none publish laterals' is directionally true statewide but FALSE for Cedar Park — record as municipal exception, not a general rail."
+    },
+    {
+      "id": "CP2-A5",
+      "check": "Electric has a territory answer separate from city GIS",
+      "result": "PASS",
+      "evidence": "PUCT org hosts HIFLD_Electric_Retail_Service_Territories (TX count=139 via STATE='TX'; Bastrop bbox intersects 12) and HIFLD_US_Electric_Power_Transmission_Lines (Bastrop bbox 73). Distribution routing still not found as public statewide."
+    },
+    {
+      "id": "CP2-A6",
+      "check": "False-friend rejection (name-regex traps)",
+      "result": "PASS",
+      "evidence": "Rejected from product posture: San Marcos Impervious Area; McKinney Watering Day Zones / Road Centerlines; Plano waterway cleanup sites; H-GAC hydrography 'Major Waterways'; watershed/boil-water layers on PUCT org; Forney City Limits under Distribution folder."
+    },
+    {
+      "id": "CP2-A7",
+      "check": "Big-metro open-data portals do not hand us mains via catalogue search",
+      "result": "FINDING",
+      "evidence": "data.austintexas.gov Socrata catalog q=water main / wastewater / electric → resultSetSize=0. data.sanantonio.gov CKAN package_search water main / sewer → count=0. Dallas Utilities folder = Geometry/Printing GP servers only. Treat Austin/SA/Dallas line geometry as NOT-FOUND-UNKNOWN-WHY on catalogue paths tried (likely withheld / AUTH posture), not as SEARCHED-AND-ABSENT doctrine."
+    }
+  ],
+  "midpoint_posture_rollup": {
+    "water_ccn_territory": {
+      "status": "LAYER-FOUND",
+      "scope": "statewide",
+      "url": "https://services2.arcgis.com/LYMgRMwHfrWWEg3s/arcgis/rest/services/PUCT_Water_CCN_Service_Areas/FeatureServer/0",
+      "footprint_counties_covered": 28,
+      "product_claim": "who may serve retail water (CCN holder) at this location"
+    },
+    "wastewater_ccn_territory": {
+      "status": "NOT-FOUND-UNKNOWN-WHY",
+      "scope": "statewide_rest",
+      "note": "No PUCT_Sewer_CCN FeatureServer sibling on the catalogue PUCT org root (water CCN + facility lines present). Local sewer CCN layers found (Seguin, Waxahachie, Bastrop city). PUCT download page exists (gis.aspx) — download rail not exercised this probe.",
+      "local_layer_found_examples": ["gis.seguintexas.gov .../Sewer_CCN_Open_Data", "arcgis.waxahachie.com .../PUC_CCN", "bastrop CCNs_City sewer layers"]
+    },
+    "electric_retail_territory": {
+      "status": "LAYER-FOUND",
+      "scope": "statewide_via_hifld_on_puct_org",
+      "url": "https://services2.arcgis.com/LYMgRMwHfrWWEg3s/arcgis/rest/services/HIFLD_Electric_Retail_Service_Territories/FeatureServer/0",
+      "tx_count": 139,
+      "product_claim": "who is the electric retail service territory holder — NOT distribution routing"
+    },
+    "electric_transmission": {
+      "status": "LAYER-FOUND",
+      "scope": "national_hifld",
+      "url": "https://services2.arcgis.com/LYMgRMwHfrWWEg3s/arcgis/rest/services/HIFLD_US_Electric_Power_Transmission_Lines/FeatureServer/0",
+      "bastrop_bbox_count": 73,
+      "product_claim": "high-voltage transmission proximity only"
+    },
+    "water_wastewater_mains_geometry": {
+      "status": "LAYER-FOUND_SPARSE_MUNICIPAL",
+      "examples": [
+        {"city": "Bastrop", "water_mains": 3640, "ww_mains": 4955},
+        {"city": "Cedar Park", "water_mains": 22425, "water_laterals": 27683, "sewer_mains": 14579, "sewer_laterals": 23209},
+        {"city": "Killeen", "water_line": 33161},
+        {"city": "Midlothian", "sewer_main": 3341}
+      ],
+      "dominant_posture_elsewhere": "NOT-FOUND-UNKNOWN-WHY or AUTH-WALLED / SERVICE-LETTER-REQUIRED"
+    },
+    "electric_distribution_geometry": {
+      "status": "ORDINANCE-NO-GIS",
+      "mapped_as": "SERVICE-LETTER-REQUIRED / AUTH-WALLED expected",
+      "evidence": "No public distribution network found on catalogue municipal roots. Georgetown Electric_Pole_MapService returned count=1 (stub). Bastrop Electrical_WFL1 exposes asset points (e.g. Anchor_Guy) not a usable distribution graph. Matches 2026-08-01 expansion-candidate doctrine."
+    }
+  },
+  "sample_jurisdiction_midtable": [
+    {"fips": "48021", "city": "Bastrop", "water": "LAYER-FOUND mains+CCN", "wastewater": "LAYER-FOUND mains+CCN", "electric": "LAYER-FOUND city Electric_BBL territory; distribution NOT-FOUND"},
+    {"fips": "48491", "city": "Cedar Park", "water": "LAYER-FOUND mains+laterals", "wastewater": "LAYER-FOUND mains+laterals", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48491", "city": "Georgetown", "water": "LAYER-FOUND meters (not mains graph)", "wastewater": "LAYER-FOUND sewer service points", "electric": "HOST-STUB poles count=1"},
+    {"fips": "48491", "city": "Round Rock", "water": "NOT-FOUND-UNKNOWN-WHY (storm layers only in utility-hint walk)", "wastewater": "NOT-FOUND-UNKNOWN-WHY", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48027", "city": "Killeen", "water": "LAYER-FOUND Water Line 33161", "wastewater": "NOT-FOUND-UNKNOWN-WHY as dedicated sewer mains (shared Cityworks service; sewer assets present as manhole/liftstation points)", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48187", "city": "Seguin", "water": "LAYER-FOUND CCN territory only", "wastewater": "LAYER-FOUND CCN territory only", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48309", "city": "Waco", "water": "NOT-FOUND-UNKNOWN-WHY", "wastewater": "LAYER-FOUND basins/fixtures — not mains", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48453", "city": "Austin", "water": "NOT-FOUND-UNKNOWN-WHY on catalogue portal search", "wastewater": "NOT-FOUND-UNKNOWN-WHY", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48029", "city": "San Antonio", "water": "NOT-FOUND-UNKNOWN-WHY on catalogue portal search", "wastewater": "NOT-FOUND-UNKNOWN-WHY", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48113", "city": "Dallas", "water": "NOT-FOUND-UNKNOWN-WHY (Utilities=GP tools)", "wastewater": "NOT-FOUND-UNKNOWN-WHY", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48439", "city": "Arlington", "water": "LAYER-FOUND LCRR service-line inventory points 102855", "wastewater": "NOT-FOUND-UNKNOWN-WHY", "electric": "NOT-FOUND-UNKNOWN-WHY"},
+    {"fips": "48139", "city": "Midlothian", "water": "LAYER-FOUND Water Districts polygons", "wastewater": "LAYER-FOUND Sewer Main 3341", "electric": "NOT-FOUND-UNKNOWN-WHY"}
+  ],
+  "emerging_recommendation_preview": {
+    "v1_shape": "CCN / territory who-serves (water PUCT + electric HIFLD) with explicit SERVICE-LETTER-REQUIRED residual for availability",
+    "do_not_assume_rail": "Municipal mains/laterals are opportunistic depth, not a uniform Texas rail",
+    "blocked_for_close": [
+      "Finish per-jurisdiction table for all 28 counties",
+      "State sewer-CCN statewide posture honestly",
+      "Write never-claim list"
+    ]
+  }
+}

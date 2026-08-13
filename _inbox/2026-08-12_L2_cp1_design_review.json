@@ -1,0 +1,281 @@
+{
+  "checkpoint": "CP1",
+  "lane": "L2",
+  "planRow": "P-19",
+  "filedAt": "2026-08-12T21:40:00Z",
+  "status": "DESIGN_LOCKED",
+  "mirrors": {
+    "factory1": "packages/engine-core/scripts/sweep/run_sweep.mjs + run-sweep-lib.mjs",
+    "factory15BackHalf": "packages/engine-core/src/zoning-staging/* (READ-ONLY: payload-contract.ts + drain.ts)",
+    "stageSeam": "packages/engine-core/scripts/stage-tx-zoning-district.mjs (consume via discovery-produced registry entry objects; do not edit payload contract)"
+  },
+  "ownedPaths": [
+    "packages/engine-core/scripts/zoning-discovery/",
+    "packages/engine-core/src/zoning-discovery/"
+  ],
+  "forbiddenEdits": [
+    "packages/engine-core/src/zoning-staging/payload-contract.ts",
+    "packages/engine-core/src/zoning-staging/drain.ts",
+    "packages/engine-core/src/special-district-fact/",
+    "packages/engine-core/src/well-fact/",
+    "any SWEEP-flagged writer paths",
+    "atoms --apply"
+  ],
+  "queueSourceDesign": {
+    "principle": "Catalogue-driven queue from REAL directories. NEVER synthesize hostnames (gis.{slug}tx.gov returned 0/104).",
+    "queueItemShape": {
+      "cityKey": "string slug e.g. deer-park-tx",
+      "cityName": "string",
+      "cityGeoId": "roster geoid when known; empty string forbidden for LAYER-FOUND stage",
+      "parentCountyFips": "5-digit",
+      "jurisdictionKind": "incorporated-city | unincorporated | unknown",
+      "bbox4326": { "xmin": "number", "ymin": "number", "xmax": "number", "ymax": "number" },
+      "seedHostUrls": "optional string[] — ONLY URLs previously returned by a directory probe this run or cited in host-catalogue.json with evidenceUrl; never invented"
+    },
+    "directories": [
+      {
+        "id": "agol-hub-search",
+        "api": "https://www.arcgis.com/sharing/rest/search",
+        "queryTemplate": "(title:zoning OR tags:zoning OR typekeywords:Zoning) AND (Texas OR TX) AND (\"{cityName}\" OR \"{cityKey}\")",
+        "extract": "result.url when type in Feature Service|Map Service; also org/group item URLs",
+        "liveSmoke20260812": "q=zoning texas → total 3353 HTTP 200"
+      },
+      {
+        "id": "txgio-clearinghouse",
+        "api": "https://data.geographic.texas.gov/api/3/action/package_search",
+        "queryTemplate": "zoning OR land use district {cityName}",
+        "extract": "CKAN resource URLs that are ArcGIS REST or downloadable GIS; never invent municipal hosts from package names"
+      },
+      {
+        "id": "cog-holdings",
+        "sources": [
+          {
+            "cog": "CAPCOG",
+            "seedMethod": "Hub org/group search + documented open-data portal URLs recorded in host-catalogue.json with evidenceUrl",
+            "note": "Elgin/Smithville live on services3.arcgis.com/wdTkTU0MdZbNBEZy — catalogue that org from Hub, do not hardcode city→layer"
+          },
+          {
+            "cog": "H-GAC",
+            "seedMethod": "Hub search + H-GAC open data catalogue URLs with evidenceUrl"
+          },
+          {
+            "cog": "NCTCOG",
+            "seedMethod": "Hub search + NCTCOG open data catalogue URLs with evidenceUrl"
+          }
+        ]
+      },
+      {
+        "id": "county-rest-roots",
+        "rule": "host-catalogue.json entries of kind=county-rest-root must carry evidenceUrl proving the root was observed (Hub item, official open-data page, or prior probe log). Empty/unreachable root → search path HOST-BROKEN for that path only, not city absence.",
+        "doNot": "Synthesize gis.{county}tx.gov or maps.{county}countytx.gov"
+      },
+      {
+        "id": "municipal-open-data-portals",
+        "rule": "Portal/base URLs only from Hub results, CKAN, or catalogue evidenceUrl. Recurse ArcGIS REST folders under any discovered root."
+      }
+    ],
+    "hostCatalogueFile": "packages/engine-core/src/zoning-discovery/host-catalogue.json",
+    "hostCatalogueSchema": {
+      "hosts": [
+        {
+          "hostId": "string",
+          "kind": "agol-org | county-rest-root | municipal-rest-root | cog-portal | ckan-portal",
+          "baseUrl": "string absolute https",
+          "evidenceUrl": "string URL or inbox path that observed this host",
+          "observedAt": "ISO-8601",
+          "notes": "string"
+        }
+      ]
+    },
+    "queueFileParam": "--queue=PATH JSON array of queue items (parameterized; no hardcoded cities in runner)",
+    "verificationSetPreRegister": [
+      {
+        "role": "AGOL-hosted city",
+        "cityKey": "bartonville-tx",
+        "why": "Z1 dallas FOUND on services.arcgis.com/.../BartonvilleZoning/FeatureServer/0 — distinct source type from Bastrop AGOL pair"
+      },
+      {
+        "role": "self-hosted folder recursion",
+        "cityKey": "deer-park-tx",
+        "knownTruthDoNotHintRunner": "gis.deerparktx.gov/.../WGS84/Zoning_WGS84/MapServer/0 Code field 301 polys — factory must find via folder recursion from REST root discovered in catalogue/Hub, not via this string in code",
+        "mustStage": true
+      },
+      {
+        "role": "county-hosted enclave city",
+        "cityKey": "RESOLVE_AT_CP2_FROM_CATALOGUE",
+        "selectionRule": "Pick a city whose LAYER-FOUND layerUrl host is a county-rest-root catalogue entry (not municipal, not services*.arcgis.com). If catalogue+Hub yield none in exit budget, record NOT-FOUND-UNKNOWN-WHY for candidates and STOP the county-hosted gate as unmet — do not fake with municipal.",
+        "status": "OPEN_UNTIL_DIRECTORY_HIT"
+      },
+      {
+        "role": "no-Euclidean regime",
+        "cityKey": "houston-tx",
+        "requiredVerdict": "NO-EUCLIDEAN-REGIME",
+        "plannerVerifiedLive20260812": {
+          "mapServer": "https://mycity2.houstontx.gov/pubgis02/rest/services/HoustonMap/Planning_and_Development/MapServer",
+          "layer13": { "name": "Special Minimum Lot Size", "count": 722 },
+          "layer12": { "name": "Special Minimum Building Lines", "count": 195 }
+        },
+        "mustNeverStageAsZoning": true,
+        "outOfScopeNote": "Constraint shapes need their own payload treatment — record need only; touch nothing in payload contract"
+      },
+      {
+        "role": "genuine absence NO-ZONING-AUTHORITY",
+        "cityKey": "unincorporated-harris-tx",
+        "jurisdictionKind": "unincorporated",
+        "requiredVerdict": "NO-ZONING-AUTHORITY",
+        "rule": "Positive determination from jurisdictionKind=unincorporated (TX counties generally lack Euclidean zoning authority). Not an empty-search absence."
+      }
+    ]
+  },
+  "layerIdentificationSignature": {
+    "principle": "GEOMETRY TYPE + FIELD SHAPE, never name regex. /zon/ matched hurricane evacuation and rail blast zones.",
+    "folderRecursion": {
+      "algorithm": "BFS/DFS from ArcGIS REST services root; enqueue folders[]; for each MapServer/FeatureServer fetch ?f=json and inspect layers[]; maxDepth default 4; record every path attempted",
+      "deerParkLesson": "Root returns folders including WGS84; zoning is WGS84/Zoning_WGS84 — top-level services:[] is not absence"
+    },
+    "hardRequirements": {
+      "geometryType": ["esriGeometryPolygon", "esriGeometryEnvelope rejected"],
+      "minFeatureCount": 1,
+      "codeFieldShape": {
+        "mustHave": "at least one field whose sampled distinct values look like district codes (short alphanumeric tokens, cardinality between 2 and 200 inclusive on a sample or returnDistinctValues)",
+        "preferredFieldNameHintsAreNotGates": ["CODE", "ZONE", "ZONING", "DISTRICT", "ZONE_CODE", "ZONING_CODE", "ZONECLASS"]
+      },
+      "rejectFieldShapes": [
+        "numeric-only continuous measures without code-like tokens (e.g. LOTSIZE sqft alone)",
+        "setback feet fields alone (BLD__LINE)",
+        "evac/blast/seed zone vocab when codes match known non-Euclidean patterns WITHOUT a companion district-name field — prefer positive Euclidean evidence"
+      ]
+    },
+    "euclideanPositiveSignals": [
+      "codeField values match common Euclidean token patterns (R-1, SF1, C-2, M1, PUD, etc.) OR",
+      "paired description field carries residential/commercial/industrial district language with codeField present"
+    ],
+    "noEuclideanRegimeSignals": [
+      "Host serves planning constraint layers (min lot size, building lines, historic, conservation) AND",
+      "No layer on the same host/service tree passes euclideanPositiveSignals after full folder recursion",
+      "Houston: layers 12/13 present with LOTSIZE/BLD__LINE shape → NO-EUCLIDEAN-REGIME, never LAYER-FOUND"
+    ],
+    "scoring": {
+      "rankCandidates": "polygon + codeFieldShape + euclideanPositiveSignals; highest score wins; ties break by featureCount proximity to city bbox overlap",
+      "bboxOverlapRequired": "layer extent (reprojected/assumed 4326 when possible) must intersect queue item bbox4326; reject California Pasadena-class extent traps"
+    },
+    "nameRegexForbidden": "No /zon/|/zoning/i gate for inclusion or exclusion. Names may appear in close-artifact notes only."
+  },
+  "outcomeEnum": {
+    "pinned": [
+      "NO-ZONING-AUTHORITY",
+      "NO-EUCLIDEAN-REGIME",
+      "ORDINANCE-NO-GIS",
+      "AUTH-WALLED",
+      "HOST-BROKEN",
+      "NOT-FOUND-UNKNOWN-WHY",
+      "LAYER-FOUND"
+    ],
+    "rules": {
+      "emptySearch": "NOT-FOUND-UNKNOWN-WHY — re-enters queue; never writes absence",
+      "absenceOnlyOnPositiveDetermination": true,
+      "noBooleanFoundAbsent": true,
+      "noPerCityHardcodeBranches": "z1_houston_probe.py:426 is the cautionary corpse — cityKey equality early-returns forbidden"
+    },
+    "landedStatusesForResume": [
+      "NO-ZONING-AUTHORITY",
+      "NO-EUCLIDEAN-REGIME",
+      "ORDINANCE-NO-GIS",
+      "AUTH-WALLED",
+      "LAYER-FOUND"
+    ],
+    "nonLandedReenter": ["NOT-FOUND-UNKNOWN-WHY", "HOST-BROKEN"],
+    "hostBrokenNote": "HOST-BROKEN is a positive determination about a specific endpoint (landed for that probe generation) but the city may still re-enter when catalogue gains alternate hosts — model as landed with verdict HOST-BROKEN; resume skip applies; method-version bump can force re-queue via --force-city"
+  },
+  "resumeModel": {
+    "mirrors": "run-sweep-lib.mjs buildSkipSet / buildQueue",
+    "progressFile": "{outDir}/progress.json",
+    "bom": "strip ^\\uFEFF on read; write UTF-8 no BOM",
+    "skipSet": "landed cityKeys ONLY — halted-never-landed MUST re-enter (48457 lesson)",
+    "progressShape": {
+      "startedAt": "ISO",
+      "updatedAt": "ISO",
+      "runnerVersion": "semver string in package const",
+      "landed": [
+        {
+          "cityKey": "string",
+          "status": "one of seven",
+          "at": "ISO",
+          "layerUrl": "string|null",
+          "searchPathCount": "number",
+          "artifact": "path to per-city verdict json"
+        }
+      ],
+      "attempted": [{ "cityKey": "string", "at": "ISO" }],
+      "halted": { "cityKey": "string", "reason": "string" },
+      "haltCleared": "optional audit array when operator clears halt"
+    },
+    "closeArtifactPerRun": "{outDir}/run_close.json — per-item typed verdicts + every search path attempted"
+  },
+  "runnerCli": {
+    "path": "packages/engine-core/scripts/zoning-discovery/run_zoning_discovery.mjs",
+    "lib": "packages/engine-core/scripts/zoning-discovery/run-zoning-discovery-lib.mjs",
+    "usage": "node run_zoning_discovery.mjs --out-dir=PATH --queue=PATH [--engine-path=PATH] [--stage-apply] [--city=cityKey]",
+    "flags": {
+      "--out-dir": "required progress + artifacts root",
+      "--queue": "required JSON queue path",
+      "--engine-path": "repo root for spawning stage seam",
+      "--stage-apply": "when LAYER-FOUND, write staging via H1 seam (neondb); default dry discovery only",
+      "--city": "optional single-city filter from queue"
+    },
+    "packageJsonScript": "run-zoning-discovery",
+    "env": {
+      "ZONING_DISCOVERY_PATH": "1 required",
+      "CORTEX_DATABASE_URL": "required only with --stage-apply (direct host, strip -pooler)"
+    }
+  },
+  "stagingThroughH1": {
+    "onLayerFound": "Build ZoningCityRegistryEntry-shaped object in memory from discovery (codeField, layerUrl, cityGeoId from queue/roster). Call normalizeZoningFeature + same INSERT path as stage-tx-zoning-district OR spawn stage CLI with --registry-json overlay file written under outDir — prefer overlay file consumed by discovery-owned stage-from-discovery.mjs that imports normalize from zoning-staging without editing registry.ts/payload-contract/drain.",
+    "deerParkMustStageRows": true,
+    "houstonMustNotStage": true
+  },
+  "testsRequiredBeforeMerge": [
+    "resume: halted-not-landed re-enters",
+    "resume: landed skipped",
+    "BOM strip",
+    "outcome enum exhaustiveness — no boolean found/absent helpers",
+    "layer signature rejects LOTSIZE-only and BLD__LINE-only as Euclidean zoning",
+    "folder recursion visits nested folders (unit with fixture JSON)",
+    "no cityKey=== hardcoded branch (grep gate test)"
+  ],
+  "directorySeedsObservedAtCp1": [
+    {
+      "baseUrl": "https://gis.h-gac.com/arcgis/rest/services",
+      "evidenceUrl": "https://www.arcgis.com/sharing/rest/search?q=Zoning%20H-GAC&f=json",
+      "observedVia": "Hub result HGAC_Tax_Increment_Reinvestment_Zones → gis.h-gac.com"
+    },
+    {
+      "baseUrl": "https://geospatial.nctcog.org/map/rest/services",
+      "evidenceUrl": "https://www.arcgis.com/sharing/rest/search?q=Zoning%20NCTCOG&f=json",
+      "observedVia": "Hub NCTCOG On-Demand Zones MapServer URL"
+    },
+    {
+      "baseUrl": "https://services3.arcgis.com/wdTkTU0MdZbNBEZy/arcgis/rest/services",
+      "evidenceUrl": "https://www.arcgis.com/sharing/rest/search?q=orgid:wdTkTU0MdZbNBEZy&f=json",
+      "observedVia": "Hub orgid search; Elgin/Smithville H1 layers live here"
+    },
+    {
+      "baseUrl": "https://gis.deerparktx.gov/arcgis/rest/services",
+      "evidenceUrl": "live GET 2026-08-12 folders=[Hosted,Utilities,WGS84]",
+      "observedVia": "direct REST root probe HTTP 200"
+    },
+    {
+      "baseUrl": "https://mycity2.houstontx.gov/pubgis02/rest/services",
+      "evidenceUrl": "live GET Planning_and_Development/MapServer 2026-08-12",
+      "observedVia": "planner-verified Houston constraint layers"
+    }
+  ],
+  "adversarialReviewChecklist": [
+    "Any hostname constructed from slug? FAIL",
+    "Any /zon/ regex inclusion gate? FAIL",
+    "Empty result → absence status? FAIL",
+    "Houston staged? FAIL",
+    "Skip set includes halted? FAIL",
+    "Payload contract or drain edited? FAIL STOP"
+  ]
+}

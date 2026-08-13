@@ -1,0 +1,157 @@
+{
+  "artifact": "_inbox/2026-08-12_L13_cp1_limiter_inventory.json",
+  "planRow": "P-29",
+  "amendment": "A-007",
+  "lane": "L13",
+  "runAt": "2026-08-12T23:40:00Z",
+  "mission": "Restore the rate-limit store (regression restore, not new Layer 5 work).",
+  "inventoryMethod": "source grep + live Cloud Run describe + live HTTP probes. Docs used only as pointers, never as evidence.",
+  "wdll": {
+    "path": "_inbox/2026-08-05_76j_workstream_C_rate_limit_and_pooling_WDLL.md",
+    "status": "approved 2026-08-05; amended this lane (store = Neon Postgres, not fresh Upstash)",
+    "acceptanceItemsThisLane": [1, 2, 3]
+  },
+  "dc11a": {
+    "instrumentAsWritten": "GET https://cortex-api-tds7av26va-uc.a.run.app/health returns JSON with rate_limit_store.state === \"ok\"",
+    "source": "_decisions/2026-08-11_texas_flush_launch_gate_amendment.md DC-11(a)",
+    "literalProbe2026-08-12T23:33:39Z": {
+      "GET /health": "HTML SPA (Cortex Design Accelerator). No JSON. No rate_limit_store.",
+      "GET /api/health": "{\"status\":\"ok\"} — no rate_limit_store field",
+      "GET /api/health/ready": "components.database/engineApi/retrievalApi only; no rate_limit_store"
+    },
+    "verdict": "LITERAL DC-11a FAILS because cortex /health is the wrong surface, not because the MCP store is on memory. The limiter seam with rate_limit_store lives on hauska-mcp-server GET /health.",
+    "recommendedInstrument": "GET https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/health → dependencies.rate_limit_store.state === \"ok\" on the SERVING revision. File as OPS-16 amendment at close; do not fake the field onto cortex."
+  },
+  "services": [
+    {
+      "service": "hauska-mcp-server",
+      "repo": "empressaioemail-tech/hauska-mcp-server",
+      "project": "hauska-prod-497015",
+      "url": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app",
+      "servingRevisionAtInventory": "hauska-mcp-server-00042-25d",
+      "traffic": "100%",
+      "limiterSeam": true,
+      "citations": {
+        "storeInterface": "src/rate-limit.ts:31-35 RateLimitStore.incrWithTtl",
+        "postgresStore": "src/rate-limit.ts:96-111 PostgresRateLimitStore; SQL upsert src/rate-limit.ts:80-94",
+        "upstashAdapter": "src/rate-limit.ts:41-74 UpstashRateLimitStore + buildUpstashStore (legacy; selected only if HAUSKA_RATE_LIMIT_STORE=upstash)",
+        "kindResolver": "src/rate-limit.ts:133-143 resolveRateLimitStoreKind: explicit env, else production→postgres, else DATABASE_URL→postgres",
+        "resilientWrapper": "src/rate-limit.ts:167-226 ResilientRateLimitStore — fail-degraded to MemoryRateLimitStore; logs rate_limit_store_degraded; sets memoryFallback",
+        "startup": "src/index.ts:219-246 buildPrimaryRateLimitStore or MemoryRateLimitStore + error log in production",
+        "enforcement": "src/auth.ts:155-179 (keyed) and src/auth.ts:196-222 (anonymous IP); 429 via rateLimitErrorResponse src/auth.ts:78-99",
+        "healthField": "src/health.ts:112-152 probeRateLimitStore → dependencies.rate_limit_store",
+        "migration": "migrations/010_rate_limit_counters.sql",
+        "cloudbuildSecrets": "cloudbuild-mcp.yaml:72-87 DATABASE_URL + UPSTASH_REDIS_REST_URL/TOKEN still bound; HAUSKA_RATE_LIMIT_STORE NOT pinned (implicit production default)",
+        "tierBudgets": "src/tiers.ts:77-108 HAUSKA_FREE_IP_RPM default 60 / HAUSKA_FREE_KEY_RPM default 120"
+      },
+      "liveHealthServing": {
+        "revision": "hauska-mcp-server-00042-25d",
+        "status": "ok",
+        "rate_limit_store": {
+          "state": "ok",
+          "latency_ms": 227,
+          "detail": "postgres"
+        },
+        "postgres": { "state": "ok", "latency_ms": 31 },
+        "verbatim": "{\"status\":\"ok\",\"service\":\"hauska-mcp-server\",\"version\":\"0.1.0\",\"env\":\"production\",\"metrics\":{\"started_at\":\"2026-08-12T19:45:33.822Z\",\"uptime_s\":13684,\"total_requests\":22,\"total_errors\":0,\"error_rate\":0,\"last_successful_call\":\"2026-08-12T21:46:56.070Z\",\"latency\":{\"count\":22,\"p50_ms\":52,\"p95_ms\":467,\"p99_ms\":501,\"max_ms\":501},\"tool_calls\":{}},\"dependencies\":{\"engine_retrieval_api\":{\"state\":\"ok\",\"latency_ms\":28,\"detail\":\"HTTP 404\"},\"cortex_api\":{\"state\":\"ok\",\"latency_ms\":32},\"postgres\":{\"state\":\"ok\",\"latency_ms\":31},\"rate_limit_store\":{\"state\":\"ok\",\"latency_ms\":227,\"detail\":\"postgres\"}}}"
+      },
+      "nonServingTags": {
+        "postgres-limiter": {
+          "revision": "hauska-mcp-server-00040-ctj",
+          "rate_limit_store": { "state": "ok", "detail": "postgres" },
+          "note": "T4 PR #58 canary; 0% traffic"
+        },
+        "ratelimit-smoke": {
+          "revision": "hauska-mcp-server-00050-fej",
+          "healthField": "upstash (pre-#58 schema)",
+          "state": "degraded",
+          "detail": "degraded — REPLACE-with placeholder URL, rate-limit on per-instance memory fallback",
+          "note": "THIS is the in-memory fallback OPS-16 P-29 still narrates. It is NOT the serving revision."
+        }
+      },
+      "envOnServing": {
+        "HAUSKA_ENV": "production",
+        "HAUSKA_RATE_LIMIT_STORE": "UNSET (code default production→postgres)",
+        "DATABASE_URL": "Secret Manager DATABASE_URL:latest",
+        "UPSTASH_REDIS_REST_URL": "Secret Manager UPSTASH_REDIS_REST_URL:latest (still bound; unused unless kind=upstash)",
+        "UPSTASH_REDIS_REST_TOKEN": "Secret Manager UPSTASH_REDIS_REST_TOKEN:latest"
+      },
+      "defectClassStillPresent": "ResilientRateLimitStore still fail-degrades to per-instance memory on primary outage. Health reports state=degraded when memoryFallback is true (not silent IF the probe is watched). Request path does not tell the client. auth.ts:160-170 / 201-213 fail-open if checkRateLimit throws; ResilientRateLimitStore never throws, so that path is currently dead."
+    },
+    {
+      "service": "cortex-api",
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "project": "legacy-design-tools-prod",
+      "url": "https://cortex-api-tds7av26va-uc.a.run.app",
+      "limiterSeamSharedWithMcp": false,
+      "citations": {
+        "middleware": "artifacts/api-server/src/middlewares/userRateLimit.ts:59-93 userRateLimitMiddleware",
+        "store": "artifacts/api-server/src/lib/userMetering.ts:52-74 assertUserApiRateAllowed — Postgres table userUsageMetering, daily cap only",
+        "env": ".github/workflows/cloud-run-deploy.yml CORTEX_USER_DAILY_API_LIMIT=10000",
+        "health": "artifacts/api-server/src/routes/health.ts:9-12 /health and /healthz return HealthCheckResponse {status:\"ok\"} only; readiness has database/engineApi/retrievalApi — NO rate_limit_store, NO Upstash"
+      },
+      "upstash": false,
+      "rate_limit_storeHealthField": false,
+      "postureDoc": "90_operations/T4_cross_service_limiter_posture.md — accepted as Cortex daily backstop, not the public/agent meter",
+      "laneAction": "DO NOT TOUCH. Inventory proves it does not share the MCP limiter seam."
+    },
+    {
+      "service": "hauska-retrieval-api",
+      "repo": "empressaioemail-tech/hauska-engine",
+      "project": "hauska-prod-497015",
+      "url": "https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app",
+      "limiterSeamSharedWithMcp": false,
+      "citations": {
+        "grep": "services/retrieval-api/src — zero matches for Upstash / rate_limit_store / RateLimitStore / express-rate-limit",
+        "health": "services/retrieval-api/src/healthz.ts HealthzPayload is status+db+corpus; /health adds spine links. No rate_limit_store."
+      },
+      "upstash": false,
+      "rate_limit_storeHealthField": false,
+      "laneAction": "DO NOT TOUCH. No inbound HTTP limiter. Engine repo is out of scope."
+    }
+  ],
+  "storeProposal": {
+    "choice": "KEEP Neon Postgres (PostgresRateLimitStore on existing MCP DATABASE_URL / rate_limit_counters). Do not re-provision Upstash. Do not add Memorystore. Do not add a new third-party.",
+    "whyNotUpstash": "Dead DB is the regression. Re-provisioning Upstash adds a third-party Redis the Vercel→GCP migration (P-34) would immediately strand. REST client remains in-tree as a legacy adapter behind HAUSKA_RATE_LIMIT_STORE=upstash; production must not select it.",
+    "whyNotMemorystore": "Requires VPC connector + persistent TCP from Cloud Run + a new billed GCP service. MCP already has a working Neon pool. Memorystore is the right long-term GCP Redis if C4 proves hot-path cost on Neon; not justified for a regression restore.",
+    "whyPostgres": "Already merged (hauska-mcp-server #58 @ 9ab0247), migration 010 applied, serving 00042-25d live-probes rate_limit_store.state=ok detail=postgres. Durable across deploys, shared across replicas, sits on the Neon the GCP migration already owns. Zero new vendor.",
+    "costs": {
+      "upstashReprovision": "new vendor account + secret rotation + REST hop; stranded by P-34",
+      "memorystore": "VPC connector + Redis instance monthly; new dependency",
+      "postgresKeep": "counter upserts on existing MCP Neon; T4 burst already proved shared budget on 00040-ctj; hot-path cost is one upsert per window per identity — acceptable at launch rpm"
+    },
+    "failureModes": {
+      "neonBlip": "ResilientRateLimitStore fail-degrades to per-instance memory; /health rate_limit_store.state becomes degraded; budgets split across replicas until primary recovers",
+      "tableMissing": "startup catch → memory primary + production error log rate_limit_store_env_missing; health degraded",
+      "upstashSelectedByEnv": "placeholder URL throws; same memory fallback. Mitigate by pinning HAUSKA_RATE_LIMIT_STORE=postgres in cloudbuild-mcp.yaml"
+    },
+    "outageMode": {
+      "choice": "FAIL-DEGRADED (not fail-closed)",
+      "meaning": "On store outage, requests continue against per-instance MemoryRateLimitStore. /health reports rate_limit_store.state=\"degraded\" with memory_fallback=true and outage_policy=\"fail-degraded\". Never state=\"ok\" on memory. Never a silent skip.",
+      "whyNotFailClosed": "Fail-closed would 503 the public MCP gate on a Neon blip and take Layer-1 free agents offline. The gate's job during an outage is to stay up and scream, not to go dark.",
+      "healthSignal": "dependencies.rate_limit_store.state plus explicit primary / memory_fallback / outage_policy fields (this lane's code change). /health HTTP stays 200 (liveness). /health/ready does NOT treat rate_limit_store as critical (existing design: only engine_retrieval_api + postgres DOWN → 503).",
+      "silentFallbackForbidden": "The current memory fallback may remain ONLY as this explicitly-surfaced degraded mode. A health body that reports ok while serving memory is the defect class this program hunts."
+    },
+    "premortem": {
+      "sellReasoning": "green — infra meter, no product claim",
+      "confidenceEarned": "green — no confidence number",
+      "costPerJurisdiction": "green — no new vendor, existing Neon",
+      "mcpFirst": "green — this IS the MCP meter",
+      "spineRule": "green — Hauska gate",
+      "focusQueue": "green — P-29 A-007 operator-ruled regression restore",
+      "loadBearingYellow": "none. Operational note: fail-degraded under-enforces during Neon outage until health is watched; that is the documented trade."
+    }
+  },
+  "implementationPlan": {
+    "repo": "hauska-mcp-server only",
+    "pr": "Pin HAUSKA_RATE_LIMIT_STORE=postgres in cloudbuild-mcp.yaml; surface outage_policy/primary/memory_fallback on probeRateLimitStore; optional _CANARY=1 → --no-traffic --tag=${_TAG}; tests that memory fallback never reports state=ok.",
+    "notInScope": "cortex-api, retrieval-api, engine repo, atoms writes, X-Hauska-Key auth semantics, load test (DC-11b), capacity doc refresh (DC-11c) beyond this restore",
+    "deploy": "cloudbuild-mcp.yaml with _CANARY=1; smoke tagged URL; 429 + restart-survival on a separate low-daily tagged revision; shift the production-env revision (default rpm/daily) to 100% only after health ok",
+    "liveVerify": [
+      "DC-11a-as-MCP: serving /health rate_limit_store.state === ok",
+      "429: scoped test key past HAUSKA_FREE_KEY_DAILY=2 on canary",
+      "restart survival: same key still 429 after a new revision (daily counter, not rpm window)"
+    ]
+  },
+  "ops16StaleProse": "P-29 / Launch lineage still says 'Upstash dead, MCP runs on in-memory fallback; DC-11a would fail today.' Live serving 00042-25d refutes the memory claim. DC-11a still fails, but because it points at cortex /health, not because the store is memory."
+}

@@ -1,0 +1,145 @@
+{
+  "runAt": "2026-08-12T12:25:00Z",
+  "threeStateDerivation": {
+    "implemented": true,
+    "file": "lib/db/src/schema/derivedTriState.ts:5",
+    "states": ["true", "false", "indeterminate"],
+    "callSitesUpdated": 14
+  },
+  "reconciliationGate": {
+    "implemented": true,
+    "file": "lib/db/src/manifestReconciliationGate.ts:108",
+    "assertions": [
+      "coverage_without_writer: honestCoveragePct > 0 AND hasWriter false",
+      "verified_no_writer: verifiedByInstrument set AND displayState no-writer",
+      "rail_writer_exists_but_false: engine types registered AND writer/scorer on disk AND county_rail.has_writer false",
+      "cell_count_mismatch: totalCells !== totalCounties * totalRails",
+      "depth_satisfied_below_threshold: jurisdiction-depth satisfied-present below threshold"
+    ],
+    "runsWhere": "artifacts/api-server/src/countyRailRefreshCli.ts after diff/apply (dry-run and --apply), fail-closed exit 1",
+    "failsClosed": true
+  },
+  "ciBindingCheck": {
+    "implemented": true,
+    "file": "lib/db/src/__tests__/railEngineBindingCoverage.test.ts:1",
+    "railsCovered": 14,
+    "railsUnbound": []
+  },
+  "auditOfOtherSignals": [
+    {
+      "signal": "deriveHasWriter boolean collapse",
+      "file": "lib/db/src/railManifestDerivation.ts:213",
+      "hasSilentFallback": false,
+      "fixed": true
+    },
+    {
+      "signal": "process.cwd() in manifest probes",
+      "file": "lib/db/src/railManifestDerivation.ts:53",
+      "hasSilentFallback": false,
+      "fixed": true
+    },
+    {
+      "signal": "engine root absent on deployed read path treated as indeterminate",
+      "file": "lib/db/src/railManifestDerivation.ts:459",
+      "hasSilentFallback": true,
+      "fixed": true
+    },
+    {
+      "signal": "Boolean(row.has_writer) SQL precedence",
+      "file": "artifacts/api-server/src/routes/countyLedger.ts:248",
+      "hasSilentFallback": false,
+      "fixed": false
+    },
+    {
+      "signal": "probeRailCapabilities catch returns null reach",
+      "file": "lib/db/src/railCoverageCapability.ts:62",
+      "hasSilentFallback": true,
+      "fixed": false
+    }
+  ],
+  "gateCaughtHistoricalDefects": [
+    {
+      "defect": "#1 hasWriter hand-declared drift",
+      "wouldHaveCaught": true,
+      "how": "rail_writer_exists_but_false + CI binding coverage"
+    },
+    {
+      "defect": "#2 special-district verify in-memory object",
+      "wouldHaveCaught": false,
+      "how": "Writer verify path outside manifest reconciliation gate scope"
+    },
+    {
+      "defect": "#3 zoning satisfied on atomFamilyState alone",
+      "wouldHaveCaught": true,
+      "how": "depth_satisfied_below_threshold catches satisfied-present below threshold per county"
+    },
+    {
+      "defect": "#4 mapSymnumToWellStatus default producing",
+      "wouldHaveCaught": false,
+      "how": "hauska-engine well-fact writer; not in ldt manifest path"
+    },
+    {
+      "defect": "#5 warm preflight gate 1-of-4 runners",
+      "wouldHaveCaught": false,
+      "how": "Runner orchestration; not county-rail refresh reconciliation"
+    },
+    {
+      "defect": "#6 geometry scorer cardinality inversion",
+      "wouldHaveCaught": false,
+      "how": "Scorer formula defect; gate reads stored honestCoveragePct not scorer math"
+    },
+    {
+      "defect": "#7 resolveLdtRoot cwd + silent hasWriter false",
+      "wouldHaveCaught": true,
+      "how": "coverage_without_writer + verified_no_writer + tri-state indeterminate on probe miss + refresh refuses --apply when indeterminate"
+    }
+  ],
+  "ledgerBefore": {
+    "satisfiedCells": 309,
+    "texasCompletenessPct": 7.4235
+  },
+  "ledgerAfter": {
+    "satisfiedCells": 309,
+    "texasCompletenessPct": 7.4235
+  },
+  "prNumbers": [413],
+  "ciConclusionString": "success",
+  "merged": true,
+  "cp1": {
+    "preRegisteredAt": "2026-08-12T11:50:00Z",
+    "assertions": [
+      "coverage_without_writer",
+      "verified_no_writer",
+      "rail_writer_exists_but_false",
+      "cell_count_mismatch",
+      "depth_satisfied_below_threshold"
+    ],
+    "predictions": {
+      "1_hasWriter_hand_declared": "rail_writer_exists_but_false + CI binding",
+      "2_special_district_verify": "SLIP",
+      "3_zoning_atomFamilyState": "depth_satisfied_below_threshold",
+      "4_mapSymnum_producing": "SLIP",
+      "5_warm_preflight": "SLIP",
+      "6_geometry_scorer_cardinality": "SLIP",
+      "7_cwd_hasWriter_false": "coverage_without_writer + verified_no_writer + tri-state"
+    }
+  },
+  "cp2": {
+    "measuredAt": "2026-08-12T12:25:00Z",
+    "1_hasWriter_hand_declared": "CONFIRMED — rail_writer_exists_but_false + railEngineBindingCoverage.test.ts",
+    "2_special_district_verify": "CONFIRMED SLIP — out of manifest gate scope",
+    "3_zoning_atomFamilyState": "CONFIRMED — depth_satisfied_below_threshold; does not catch rail-level atomFamilyState keying without per-county coverage row",
+    "4_mapSymnum_producing": "CONFIRMED SLIP — engine writer path",
+    "5_warm_preflight": "CONFIRMED SLIP — runner orchestration",
+    "6_geometry_scorer_cardinality": "CONFIRMED SLIP — scorer math not gated",
+    "7_cwd_hasWriter_false": "CONFIRMED — tri-state + coverage_without_writer; #412 cwd fix retained"
+  },
+  "adversarialFindings": [
+    "Eighth defect candidate: reconciliation gate reads DB-backed grid without derivation-indeterminate overlay — a stale county_rail.has_writer=true survives gate while read overlay would flag indeterminate if ldt scorer vanished (gate uses SQL has_writer, overlay uses live ldt-only probe)",
+    "Eighth defect candidate: CI engine writer disk probe skipped without hauska-engine checkout — structural noWriterReason passes but script deletion on engine main could slip until planner machine runs full disk test",
+    "atomFamilyState partial used as indeterminate carrier in DB writes — SQL CASE atom_family_state <> present renders no-atom before read overlay; consumers bypassing overlay see wrong state",
+    "Read path manifestReadProbeOptions trusts engine script paths when hauska-engine not colocated — correct for Cloud Run layout but cannot detect engine script deletion at read time",
+    "Indeterminate derivation blocks --apply only; dry-run reconciliation still runs against possibly stale DB — intentional but operator must not treat dry-run PASS as proof after probe env break",
+    "No ledger regression: code-only dispatch, no --apply, satisfiedCells 309 / texasCompletenessPct 7.4235 unchanged"
+  ]
+}

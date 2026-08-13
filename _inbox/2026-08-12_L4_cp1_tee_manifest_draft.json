@@ -1,0 +1,304 @@
+{
+  "checkpoint": "CP1",
+  "lane": "L4",
+  "planRows": ["P-07", "P-08", "P-09", "P-17", "P-02", "P-11", "P-12"],
+  "amendment": "A-003 roads GO",
+  "registeredAt": "2026-08-12T21:45:00.000Z",
+  "constraints": {
+    "neverApplyAgainstAtomsStore": true,
+    "neverTakeAtomsSlot": true,
+    "slotOwner": "L1/A2 (not this lane)",
+    "heavyPostgisScans": "SERIALIZED — no metro plan phases without planner coordination; L1 zone-major SD on same Neon",
+    "engineCode": "READ-ONLY; writer gaps → report to L1/L5",
+    "ownedPaths": [
+      "P:/tmp/slot_chain_tee_20260812/",
+      "ldt countyFloodScoreCli (isolated worktree PR)",
+      "_inbox/2026-08-12_L4_*"
+    ]
+  },
+  "teeOrder": [
+    "flood_metros",
+    "flood_remainder",
+    "footprint",
+    "rrc_wells",
+    "rrc_pipelines",
+    "roads",
+    "ector_rekey"
+  ],
+  "legs": {
+    "flood_metros": {
+      "planRow": "P-07",
+      "counties": ["48201", "48453", "48439", "48029", "48113", "48085"],
+      "writerMergeSha": "25842d1a3bda6d614ac6611e20949e7614c95677",
+      "writerPr": 315,
+      "writerPath": "packages/engine-core/scripts/write-flood-hazard-fact-county.mjs",
+      "planBackend": "postgis zone-major on main; Harris plan ~1862s measured",
+      "runnerPath": "P:/tmp/slot_chain_tee_20260812/runners/flood_metros_runner.mjs",
+      "runnerStatus": "PENDING_TEE",
+      "preflightGate": {
+        "gateWarmCohort": "N/A — county writer path, not depth-warm runner",
+        "legGate": "plan-backend=postgis readiness (geom+GiST on tx_fema_nfhl_flood_zone); --stop-before not applicable (metros ARE the queue); landed-only skip vs P:/tmp/b1_statewide_progress.json",
+        "status": "PENDING_VERIFY_IN_RUNNER"
+      },
+      "dryRun": {
+        "status": "DEFERRED_HEAVY_SCAN",
+        "reason": "Metro plan phases forbidden without planner coordination (same Neon as L1 SD). Small-county dry-run evidence lives under flood_remainder / prior B1 pilots (48261)."
+      },
+      "expectedAtomVolume": {
+        "basis": "1 flood-hazard-fact atom per parcel feature (present or outside-SFHA)",
+        "sql": "SELECT county_fips, count(DISTINCT feature_index)::bigint AS features FROM txgio_parcel WHERE county_fips IN ('48201','48453','48439','48029','48113','48085') GROUP BY 1 ORDER BY 1;",
+        "measured": {
+          "48201": 1523641,
+          "48453": 828773,
+          "48439": 757161,
+          "48029": 709541,
+          "48113": 694160,
+          "48085": 387737,
+          "sumFeatures": 4900013
+        },
+        "storeAlreadyHasFloodAtoms": {
+          "sql": "SELECT left(entity_id,5) AS fips, count(*) FROM atoms WHERE entity_type='flood-hazard-fact' AND left(entity_id,5) IN ('48201','48453','48439','48029','48113','48085') GROUP BY 1;",
+          "note": "metros currently absent from flood atoms (progress metrosInLanded all false)"
+        }
+      },
+      "drainEstimateSec": {
+        "at950_per_s": 5157.9,
+        "at1319_per_s": 3714.9,
+        "plusHarrisPlanSec": 1862,
+        "note": "write-rate band from parcel-node metro measure; plan-phase extra for Harris measured 1862s; other metros plan not pre-run"
+      },
+      "openBlockers": [
+        "atoms bulk-writer slot held by A2/L1 — tee only",
+        "must not pre-run metro PostGIS plan without planner coordination"
+      ]
+    },
+    "flood_remainder": {
+      "planRow": "P-08",
+      "writerMergeSha": "25842d1a3bda6d614ac6611e20949e7614c95677",
+      "writerPr": 315,
+      "runnerPath": "P:/tmp/slot_chain_tee_20260812/runners/flood_remainder_runner.mjs",
+      "runnerStatus": "PENDING_TEE",
+      "progressSource": "P:/tmp/b1_statewide_progress.json",
+      "progressSnapshot": {
+        "landed": 180,
+        "failedMarked": 31,
+        "failedStillNotLanded": 31,
+        "note": "B1 close said 35; live progress now 31 failed + 180 landed (resume recovered some)"
+      },
+      "crashCohortDiagnosis": {
+        "status": "PARTIAL_CP1",
+        "b1Label": "STACK_BUFFER_OVERRUN class",
+        "measuredCodesArtifact": "P:/tmp/slot_chain_tee_20260812/flood_crash_codes.json",
+        "finding": "Do not accept the prose label uncritically. b1_statewide.log contains county.failed events with multiple exit codes including exit 1 (writer JSON/process wrapper false-fails) and Windows NTSTATUS-class codes observed in resume tails (0xC000026B / 0x40010004). Canonical STATUS_STACK_BUFFER_OVERRUN is 0xC0000409 — verify membership in byCode before treating the cohort as GS-cookie stack smash. Several counties that failed in the first pass later county.done on resume (e.g. 48097/48019/48067) — environmental/process-kill class, not permanent data defect.",
+        "reRunPlan": [
+          "1. Use origin/main writer @ 25842d1 (PostGIS plan backend) — reduces JS PIP recursion pressure that motivated the SBO label",
+          "2. Runner: landed-only skip (never skip via failed[]), BOM-strip progress.json",
+          "3. Queue = (TX 253 non-metro) minus landed; prioritize the 31 failedStillNotLanded first",
+          "4. Small-county dry-run first (e.g. 48301 Loving) with --plan-backend=postgis before any apply",
+          "5. On NTSTATUS abort: lower batch, serialize (no parallel county children), capture stderr to per-county artifact",
+          "6. Metros excluded here (P-07)"
+        ]
+      },
+      "below95Diagnosis": {
+        "status": "PARTIAL_CP1",
+        "ledgerAtB1Scorer": { "satisfiedPresent": 114, "notYet": 140, "below95AmongScored": 63 },
+        "countingRule": {
+          "scorerNumerator": "count(flood-hazard-fact) GROUP BY left(entity_id,5) — body.countyFips is NULL on 100% of stored flood atoms (store truth 2524094/2524094)",
+          "scorerDenominator": "count(DISTINCT feature_index) FROM txgio_parcel WHERE county_fips=$1",
+          "threshold": ">=95% => satisfied-present"
+        },
+        "decisionRuleForClass": {
+          "missing_nfhl_honest_absent": "IF county has zero NFHL zones intersecting county bbox AND writer emitted county-coverage absence (or zero atoms) THEN satisfied-absent doctrine applies — NOT scored as not-yet by atom/feature ratio alone",
+          "denominator_or_writer_skip_artifact": "IF atoms ≈ count(DISTINCT usable prop_id) AND atoms << DISTINCT feature_index THEN this is the geometry-scorer accounts-vs-features class: scorer denominator is feature_index while writer emits one atom per usable parcel key. NOT missing NFHL.",
+          "incomplete_apply": "IF atoms << usable prop_ids AND county not in progress.landed THEN re-queue apply"
+        },
+        "sampleEvidenceSql": {
+          "parcelKeyClasses": "SELECT county_fips, count(*) parcel_rows, count(DISTINCT feature_index) distinct_features, count(DISTINCT NULLIF(btrim(prop_id),'')) distinct_nonzero_prop FROM txgio_parcel WHERE county_fips IN (...) GROUP BY 1",
+          "atomCounts": "SELECT left(entity_id,5), count(*) FROM atoms WHERE entity_type='flood-hazard-fact' AND left(entity_id,5) IN (...) GROUP BY 1"
+        },
+        "sampleMeasured": [
+          {
+            "fips": "48007",
+            "name": "Aransas",
+            "atoms": 24991,
+            "distinct_features": 26690,
+            "distinct_nonzero_prop": 24992,
+            "scorePct": 93.63,
+            "class": "denominator_or_writer_skip_artifact",
+            "rationale": "atoms≈prop_ids (24991≈24992) << features(26690); not missing NFHL"
+          },
+          {
+            "fips": "48011",
+            "name": "Armstrong",
+            "atoms": 3558,
+            "distinct_features": 4058,
+            "distinct_nonzero_prop": 3554,
+            "scorePct": 87.68,
+            "class": "denominator_or_writer_skip_artifact",
+            "rationale": "atoms≈prop_ids; 7820/7827 prop_ids non-numeric — writer skip / key-universe mismatch vs feature_index"
+          },
+          {
+            "fips": "48135",
+            "name": "Ector",
+            "distinct_features": 75891,
+            "distinct_nonzero_prop": 3791,
+            "non_numeric_prop": 83202,
+            "class": "denominator_artifact_plus_prop_id_defect",
+            "rationale": "Same accounts-vs-features shape as geometry rail; prop_id mis-mapping is SEPARATE (P-02 geo_id re-key). Do not conflate with flood NFHL absence."
+          }
+        ],
+        "provisionalVerdict": "The 63 below-95 among scored counties are NOT explained by missing NFHL as a class. Dominant pattern in samples is atoms tracking usable prop_id universe while scorer divides by DISTINCT feature_index — geometry-scorer-class denominator artifact. Satisfied-absent doctrine still owed for true NFHL-void counties (not yet exhaustively classified). Full 63-county classification table lands at CP2."
+      },
+      "floodScorerLand": {
+        "status": "PENDING_PR",
+        "localPath": "P:/legacy-design-tools/artifacts/api-server/src/countyFloodScoreCli.ts",
+        "gitState": "untracked (??) — K5 undurable class",
+        "preserve": "numerator keys on left(entity_id,5); body.countyFips NULL on stored atoms",
+        "worktree": "PENDING isolated ldt worktree",
+        "alsoBind": "railEngineBinding / ldtScorerPath for flood if not already pointing at this CLI"
+      },
+      "dryRun": { "status": "PENDING", "candidateCounty": "48301" },
+      "expectedAtomVolume": {
+        "sql": "SELECT count(DISTINCT feature_index) FROM txgio_parcel WHERE county_fips NOT IN ('48201','48453','48439','48029','48113','48085') AND county_fips IN (SELECT county_fips FROM txgio_parcel GROUP BY 1);",
+        "note": "CP2 will compute exact remainder = non-metro features minus already-landed flood atoms"
+      },
+      "openBlockers": [
+        "countyFloodScoreCli not on ldt main",
+        "crash code class needs finalized byCode table (artifact pending parse)",
+        "63-county full classification table pending CP2"
+      ]
+    },
+    "footprint": {
+      "planRow": "P-09",
+      "writerMergeSha": "46e5287de0e348cf26cb29a7c80f84351bfc416f",
+      "writerPath": "packages/engine-core/scripts/write-building-footprint-county.mjs",
+      "runnerPath": "P:/tmp/slot_chain_tee_20260812/runners/footprint_runner.mjs",
+      "runnerStatus": "PENDING_TEE",
+      "stagedTable": {
+        "name": "tx_building_footprint",
+        "rows": 10674975,
+        "counties": 254,
+        "sql": "SELECT count(*)::bigint AS n, count(DISTINCT county_fips)::int AS counties FROM tx_building_footprint;",
+        "geomPopulatedNote": "A2 close: geom populated statewide; 59.5% bbox false-positive rate measured — geometry-true join required"
+      },
+      "writerConsumesStagedGeometryTrueJoin": {
+        "status": "GAP_FINDING",
+        "verdict": false,
+        "evidence": "origin/main write-building-footprint-county.mjs loads ML Texas.geojson.zip via loadMlFootprintsForBbox + planCountyBuildingFootprints → joinFootprintsToParcels (JS). Zero references to tx_building_footprint in packages/engine-core/src/building-footprint/**. Staged geometry-true join is NOT consumed by the merged writer.",
+        "reportTo": "L1/L5 — engine READ-ONLY in this lane"
+      },
+      "preflightGate": {
+        "gateWarmCohort": "N/A",
+        "legGate": "PENDING — check writer for staged-table readiness flag; currently ML-stream path has no gateWarmCohort",
+        "status": "WRITER_GAP_BLOCKS_HONEST_TEE"
+      },
+      "dryRun": { "status": "PENDING", "candidateCounty": "48301" },
+      "expectedAtomVolume": {
+        "sql": "SELECT count(*)::bigint FROM tx_building_footprint;",
+        "stagedRows": 10674975,
+        "note": "Atom volume depends on join cardinality (multi-footprint per parcel). Staged row count is upper-bound input, not atom count."
+      },
+      "openBlockers": [
+        "Merged writer does not consume staged geometry-true join — tee runner can still invoke current writer for dry-run evidence, but apply would re-introduce bbox false-positive class unless L5 lands staged consumer first"
+      ]
+    },
+    "rrc_wells": {
+      "planRow": "P-11",
+      "gatedOn": "P-10 staged-writer swap PR (L1 PR-B)",
+      "writerMergeShaOnMain": "46e5287de0e348cf26cb29a7c80f84351bfc416f",
+      "writerPath": "packages/engine-core/scripts/write-well-fact-county.mjs",
+      "symnumFailClosed": "0dd28e6 (#321) MERGED",
+      "runnerPath": "P:/tmp/slot_chain_tee_20260812/runners/rrc_wells_runner.mjs",
+      "runnerStatus": "PENDING_TEE_GATED",
+      "preflightGate": {
+        "gateWarmCohort": "N/A",
+        "legGate": "P-10 must merge (writer reads tx_rrc_well staged, not Harris mirror); W2 fail-closed already on main",
+        "status": "BLOCKED_ON_P10"
+      },
+      "stagingVolume": {
+        "sql": "SELECT count(*)::bigint AS n, count(*) FILTER (WHERE county_fips IS NOT NULL)::bigint AS with_county FROM tx_rrc_well;",
+        "n": 1396049,
+        "note": "A1 county join 99.88%; well-fact atoms in hauska_mcp currently 0"
+      },
+      "dryRun": { "status": "PENDING_IF_P10_ALLOWS_READONLY", "candidateCounty": "48301" },
+      "openBlockers": [
+        "P-10 uncommitted fetch-wells-staged.ts still dirty in A2 tree — apply forbidden until PR merges"
+      ]
+    },
+    "rrc_pipelines": {
+      "planRow": "P-12",
+      "writerMergeSha": "PENDING_LOOKUP_G1",
+      "writerPr": 314,
+      "writerPath": "packages/engine-core/scripts/write-rrc-pipeline-fact-county.mjs",
+      "runnerPath": "P:/tmp/slot_chain_tee_20260812/runners/rrc_pipelines_runner.mjs",
+      "runnerStatus": "PENDING_TEE",
+      "preflightGate": {
+        "gateWarmCohort": "N/A",
+        "legGate": "verify atom_did IN present; staging tx_rrc_pipeline 491178/491178",
+        "status": "PENDING_VERIFY_IN_RUNNER"
+      },
+      "stagingVolume": {
+        "sql": "SELECT count(*)::bigint FROM tx_rrc_pipeline;",
+        "n": 491178
+      },
+      "atomVolumeNote": "rrc-pipeline-fact is parcel-keyed (bare parcelNodeId); expected atoms ≈ parcel features in counties with pipeline proximity classification, not pipeline segment count",
+      "dryRun": { "status": "PENDING", "candidateCounty": "48043" },
+      "openBlockers": []
+    },
+    "roads": {
+      "planRow": "P-17",
+      "amendment": "A-003 GO 2026-08-12",
+      "writerMergeSha": "e4723c421370844cf09b6315001852dbde6113bc",
+      "writerPath": "packages/engine-core/scripts/write-road-node-county.mjs",
+      "runnerPath": "P:/tmp/slot_chain_tee_20260812/runners/roads_runner.mjs",
+      "runnerStatus": "PENDING_TEE",
+      "keying": "roadNodeId-keyed — NOT parcel-keyed; stays out of MCP parcel chain",
+      "verifiedAlready": { "fips": "48261", "atoms": "1844/1844", "doNotReuseForFreshDryRun": true },
+      "freshDryRunCounty": "PENDING_PICK_NOT_48261",
+      "preflightGate": {
+        "gateWarmCohort": "N/A",
+        "legGate": "legacy positive band cleared (R2); write-road-node-county.mjs bound in LDT #411",
+        "status": "PENDING_VERIFY_IN_RUNNER"
+      },
+      "storeTruth": {
+        "sql": "SELECT count(*)::bigint, count(DISTINCT left(entity_id,5)) FROM atoms WHERE entity_type='road-node';",
+        "atoms": 26922,
+        "counties": 3
+      },
+      "openBlockers": []
+    },
+    "ector_rekey": {
+      "planRow": "P-02",
+      "county": "48135",
+      "scriptPath": "P:/tmp/slot_chain_tee_20260812/scripts/ector_48135_rekey.mjs",
+      "scriptStatus": "PENDING",
+      "separateFrom": "geometry-scorer denominator defect (accounts vs features) — do not conflate with prop_id→geo_id mis-mapping",
+      "storeTruth": {
+        "parcelNodeAtoms": 3791,
+        "sqlAtoms": "SELECT count(*) FROM atoms WHERE entity_type='parcel-node' AND left(entity_id,5)='48135';",
+        "txgio": {
+          "parcel_rows": 83202,
+          "distinct_features": 75891,
+          "distinct_nonzero_prop": 3791,
+          "non_numeric_prop": 83202,
+          "sql": "SELECT count(*), count(DISTINCT feature_index), count(DISTINCT NULLIF(btrim(prop_id),'')) FROM txgio_parcel WHERE county_fips='48135';"
+        },
+        "ops16TargetAtoms": 71673,
+        "note": "3791 atoms match distinct_nonzero_prop — prop_id collapses multi-feature accounts; geo_id re-key targets ~71k"
+      },
+      "dryEvidence": { "status": "PENDING" },
+      "openBlockers": [
+        "re-key touches parcel-node identity — coordinate with slot owner before any apply; this lane delivers script+dry only"
+      ]
+    }
+  },
+  "gateWarmCohortNote": "Warm preflight gate (gateWarmCohort) is wired into 1 of 4 depth-warm runners only. These write-path county runners are a different class — each leg records its own leg-appropriate gate; do not assume gateWarmCohort exists on write-*-county.mjs (grep on those scripts: zero matches).",
+  "nextForCP2": [
+    "Tee all runners under P:/tmp/slot_chain_tee_20260812/runners with progress.json landed-only skip",
+    "Land countyFloodScoreCli via isolated ldt PR; merge only on CI conclusion string success",
+    "Small-county dry-runs: flood 48301, footprint 48301, roads ≠48261, pipelines 48043, wells if P-10 allows read-only dry",
+    "Full SQL volumes + drain estimates",
+    "Complete 63-county flood class table + crash byCode finalize",
+    "Close artifact _inbox/2026-08-12_L4_slot_chain_tee_close.json"
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "artifact": "L1_CP1_design_review",
+  "lane": "L1",
+  "planRows": ["P-03", "P-10", "P-16"],
+  "amendments": ["A-001", "A-002"],
+  "reviewedAt": "2026-08-12T21:35:00Z",
+  "reviewer": "doc_repo lane planner (L1)",
+  "slotCustody": {
+    "status": "HELD_BY_L1",
+    "priorHolder": "A2",
+    "rogueA2HaltedByPlanner": true,
+    "rogueHaltEvidence": {
+      "observedAtLocal": "2026-08-12T16:26-05:00",
+      "foundProcesses": [
+        "solo_seq_apply_rest.mjs PID 52652",
+        "write-special-district-fact-county.mjs --county=48087 then 48089 --apply"
+      ],
+      "action": "force-killed all a2_staged / write-special-district apply processes; remaining=0",
+      "note": "Operator halt at 21:16Z was violated by a later solo_seq runner; L1 took custody and stopped further SF-6 writes before code lands."
+    },
+    "freezeStateAtL1Custody": {
+      "progressFile": "P:/tmp/a2_staged_rails_20260812/special_district/progress.json",
+      "landedCount": 39,
+      "missionCitedFrozenCount": 29,
+      "driftReason": "solo_seq_apply_rest continued after 21:16Z halt until L1 killed it; re-verify set is the LIVE landed set (39), not the earlier freeze prose",
+      "totals": {
+        "atomsWritten": 2171789,
+        "present": 1443161,
+        "absent": 728628,
+        "verifyFailures": 0
+      },
+      "midWriteNotLanded": "48089",
+      "midWriteNote": "48089 was in-flight when killed; not in landed; re-enters on resume (idempotent upserts). Earlier mission cited 48061 mid-write — that county later landed under the rogue runner and IS in landed."
+    }
+  },
+  "recoveredDiffFidelity": {
+    "dirtyTree": {
+      "path": "P:/hauska-engine",
+      "head": "8d8e8803550f6f7fdaae42c59a25c4a2d9acc71c",
+      "detached": true,
+      "statusAfterRecovery": "UNTOUCHED — still M x3 + ?? fetch-wells-staged.ts",
+      "rule": "READ ONLY; never modify/clean/stash/checkout"
+    },
+    "recoveryDir": "P:/tmp/l1_recovery_20260812",
+    "worktree": {
+      "path": "P:/hauska-engine-worktrees/l1-sd-wells-fastpath",
+      "branch": "feat/l1-sd-truegeom-plan-drain",
+      "base": "origin/main @ 0dd28e6 (W2 #321)"
+    },
+    "byteCompareSha256": {
+      "write-special-district-fact-county.mjs": {
+        "dirty": "0A1F106BC3CB056E59659F852F713E34D4847628824E057F86EBADDEC794CDE6",
+        "recover": "0A1F106BC3CB056E59659F852F713E34D4847628824E057F86EBADDEC794CDE6",
+        "worktree": "0A1F106BC3CB056E59659F852F713E34D4847628824E057F86EBADDEC794CDE6",
+        "match": true
+      },
+      "write-well-fact-county.mjs": {
+        "dirty": "6D621016B07D35032F855636217917F3B3736438EEA7A8474923EB456F9613CF",
+        "recover": "6D621016B07D35032F855636217917F3B3736438EEA7A8474923EB456F9613CF",
+        "worktree": "6D621016B07D35032F855636217917F3B3736438EEA7A8474923EB456F9613CF",
+        "match": true
+      },
+      "well-fact/index.ts": {
+        "dirty": "CF3A1B222DB5E52CF90247D14B59F10E50100C9111877B6262DB999F317F75DB",
+        "recover": "CF3A1B222DB5E52CF90247D14B59F10E50100C9111877B6262DB999F317F75DB",
+        "worktree": "CF3A1B222DB5E52CF90247D14B59F10E50100C9111877B6262DB999F317F75DB",
+        "match": true
+      },
+      "fetch-wells-staged.ts": {
+        "dirty": "CBA6D8D0A7D52359B3E1279849D7FA15A74293EF46723D3178B7E6E1FAC5B251",
+        "recover": "CBA6D8D0A7D52359B3E1279849D7FA15A74293EF46723D3178B7E6E1FAC5B251",
+        "worktree": "CBA6D8D0A7D52359B3E1279849D7FA15A74293EF46723D3178B7E6E1FAC5B251",
+        "match": true,
+        "lineCountNote": "worktree file has 73 lines; midrun report listed 74 including a trailing empty array element — content hash matches dirty tree (source of truth)"
+      }
+    },
+    "vsMidrunReportVerbatimDiffs": {
+      "method": "recovered files are byte-identical to dirty working tree; midrun report embedded unified diffs of the three modified files from that same tree; A1P recover-never-reconstruct pattern",
+      "createPgStorageHunkPresent": true,
+      "harrisMirrorGatePresent": true,
+      "stagedReaderPresent": true,
+      "verdict": "PASS"
+    }
+  },
+  "membershipPredicate": {
+    "methodId": "postgis-zone-major-st-intersects-true-geom",
+    "sqlPredicate": "ST_Intersects(d.geom, p.geom)",
+    "parcelGeometry": "txgio_parcel.geometry JSONB via ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326) in parcels MATERIALIZED CTE — live probe 2026-08-12: NO geom column, NO GiST on either table; JSONB is the true-geometry store; NEVER bbox midpoint",
+    "districtGeometry": "tx_special_district.geometry JSONB via same GeomFromGeoJSON in districts MATERIALIZED CTE (2775 rows statewide, 23 in 48021); no schema change in this lane",
+    "loopShape": "district-major (zone-major): districts AS MATERIALIZED (county-attributed + bbox-overlap), parcels AS MATERIALIZED (county geom), CROSS JOIN LATERAL parcels that bbox-overlap then ST_Intersects",
+    "rejectedAlternatives": [
+      {
+        "predicate": "bbox-midpoint PIP (current SF-6)",
+        "whyRejected": "SELECT omits geometry; centroid from bbox; false membership on straddlers"
+      },
+      {
+        "predicate": "ST_Contains(district, ST_PointOnSurface(parcel))",
+        "whyRejected": "Representative-point semantics: a straddling parcel whose POS falls outside the district would be FALSE ABSENT while tax-relevant area is inside — same defect class as SF-6 with a prettier point"
+      },
+      {
+        "predicate": "point-major LATERAL ST_Intersects per parcel",
+        "whyRejected": "Flood #315 measured ~218x slower than zone-major; same answer, wrong cost"
+      }
+    ],
+    "justification": {
+      "howDistrictMembershipBinds": "Texas TCEQ water-district / MUD membership for a customer-facing claim is whether the parcel intersects the district polygon. Tax and service geography attach when any portion of the parcel lies in the district; adjacency without intersection does not.",
+      "straddlingParcelCustomerClaim": "A parcel that straddles a district boundary MUST read as PRESENT for that district (one present atom per intersecting districtId). Emitting ABSENT because a proxy point missed the polygon is a silent false negative — the SF-6 class. ST_Intersects includes the boundary, which is correct for continuous district geography (a parcel on the line is in).",
+      "multiMembership": "Unchanged: one present atom per (parcel, districtId); absence atom only when zero districts intersect.",
+      "mudRail": "A-002: mud is a special-district TYPE; special-district-fact serves the mud rail; district_type is body subcategorization; no mud-specific writer"
+    }
+  },
+  "emptyDistrictSetCountingRule": {
+    "ruleId": "tceq-statewide-zero-districts-positive-determination",
+    "when": "count(*) FROM tx_special_district WHERE county_fips = $county = 0",
+    "interpretation": "TCEQ is a statewide source. Zero district polygons attributed to the county is a POSITIVE determination from that source, not a missing ingest and not an unknown.",
+    "atomBehavior": "Emit one outside-tceq-source-boundaries absence atom per parcel (existing absenceKind kept).",
+    "reasonMustState": "Reason text MUST say the statewide TCEQ layer contains zero district polygons attributed to this county FIPS (positive source finding). An empty result labeled absence WITHOUT that reasoning is the defect class this program keeps finding.",
+    "honestyTsUpdate": "buildOutsideSourceAbsenceReason stays for parcels outside polygons when districts exist; add buildEmptyCountyDistrictAbsenceReason(countyFips) for the empty-index path; never say bare 'no special districts'"
+  },
+  "planDrainDesign": {
+    "pattern": "Factory 1.5 plan/drain split",
+    "plan": {
+      "slotFree": true,
+      "parallelizable": true,
+      "computes": "per-county membership via postgis-zone-major-st-intersects-true-geom",
+      "persists": "JSON payload artifact per county (not discarded); path convention P:/tmp/l1_sd_plans_<date>/{fips}.plan.json",
+      "payloadMustCarry": [
+        "countyFips",
+        "membershipMethodId = postgis-zone-major-st-intersects-true-geom",
+        "plannedAt ISO timestamp",
+        "districtsIndexed",
+        "emptyDistrictIndex",
+        "absenceReasoningRuleId",
+        "planned[] entries (present/absent)",
+        "counts"
+      ],
+      "cliShape": "--plan-only --out=... (or dedicated plan script); never writes atoms"
+    },
+    "drain": {
+      "slotRequired": true,
+      "reads": "persisted plan payload only",
+      "failClosed": "refuse payloads whose membershipMethodId !== postgis-zone-major-st-intersects-true-geom (same class as source_tier_satisfied)",
+      "writePath": "fast multi-row INSERT writePropertyAtomsBatch --batch=5000",
+      "verify": "verify-by-PK atom_did IN (KEEP — already correct on halted writer)",
+      "entityIdRule": "use a.entityId storage persists; NEVER reconstruct DID from parts (present = ${parcelNodeId}:sd:${districtId}; absent = ${parcelNodeId}:sd:outside — shapes differ)",
+      "createPgStorageFix": "recovered: createPgStorage({ databaseUrl, maxConnections: 8 }) not bare URL string"
+    },
+    "legacyJsBboxPath": "retire from --apply path; may remain as test oracle for SF-6 disagreement fixture only"
+  },
+  "testsRequired": [
+    {
+      "id": "T1",
+      "name": "bbox-midpoint vs true-geometry disagree on crafted straddler",
+      "failingFirst": true,
+      "shape": "parcel polygon straddles district; bbox midpoint outside district; true geom intersects → true-geom PRESENT, bbox-midpoint ABSENT"
+    },
+    {
+      "id": "T2",
+      "name": "drain refuses non-true-geometry plan method",
+      "failingFirst": true,
+      "shape": "payload with membershipMethodId=bbox-midpoint-pip (or missing) throws; only postgis-zone-major-st-intersects-true-geom accepted"
+    }
+  ],
+  "prSplit": {
+    "PR-A": "SD plan/drain true-geom + createPgStorage fix + tests; owned files under special-district-fact + write-special-district-fact-county.mjs",
+    "PR-B": "well staged-writer swap recovered verbatim; NO --apply; harris mirror HALT gate kept"
+  },
+  "cp1Verdict": "PASS — proceed to implement PR-A in worktree; no --apply until CP2 pilot on 48021",
+  "ownedFilesBoundary": [
+    "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+    "packages/engine-core/scripts/write-well-fact-county.mjs",
+    "packages/engine-core/src/special-district-fact/**",
+    "packages/engine-core/src/well-fact/**",
+    "packages/engine-core/src/__tests__/special-district-*.test.ts (new/extended)"
+  ],
+  "stopBeforeTouching": "any file outside owned set — report first"
+}

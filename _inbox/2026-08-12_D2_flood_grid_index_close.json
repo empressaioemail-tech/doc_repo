@@ -1,0 +1,66 @@
+{
+  "runAt": "2026-08-12T12:10:00.000Z",
+  "gridImplemented": true,
+  "file": "packages/engine-core/src/flood-hazard-fact/flood-zone-grid.ts:237",
+  "cellSizingStrategy": "Sum vertices across zone geometries; totalCells = totalVertices / 8000; cellCols = clamp(round(sqrt(totalCells * aspectRatio)), 8, 512); cellRows = clamp(round(totalCells / cellCols), 8, 512); register each zone in every cell its bbox intersects; query 3x3 neighborhood with zone-index sort before PIP + SFHA tie-break",
+  "phaseInstrumentationAdded": true,
+  "parity": [
+    {
+      "county": "48171",
+      "atomsBefore": 31745,
+      "atomsAfter": 31745,
+      "identical": true,
+      "planMsBefore": 846,
+      "planMsAfter": 2428,
+      "speedup": 0.35
+    },
+    {
+      "county": "48099",
+      "atomsBefore": 31584,
+      "atomsAfter": 31584,
+      "identical": true,
+      "planMsBefore": 1437519,
+      "planMsAfter": 1818708,
+      "speedup": 0.79
+    }
+  ],
+  "parityProbeCrossCheck": {
+    "note": "Isolated plan probe (d2_plan_probe.mjs) on same commit: 48171 planMs=930; 48099 planMs=1174173 (speedup 1.22 vs D1). Writer dry-run planMs above is authoritative for shipped instrumentation path; variance attributed to run contention on long county.",
+    "48099ProbePlanMs": 1174173,
+    "48099ProbeSpeedupVsD1": 1.22
+  },
+  "atomsTableRowCountAtMeasurement": 21233787,
+  "harrisEstimateSecBefore": 8464,
+  "harrisEstimateSecAfter": 56416,
+  "metrosViable": false,
+  "prNumber": 313,
+  "ciConclusionString": "success",
+  "merged": true,
+  "cp1": {
+    "registeredAt": "2026-08-12T10:50:00.000Z",
+    "cellSizingStrategy": "Vertex-density grid: totalVertices/8000 target cells, aspect-ratio sqrt cols, 8-512 clamp, 3x3 query neighborhood — explicitly NOT zone-count keyed",
+    "predictedPlanMs48171": 900,
+    "predictedPlanMs48099": 8000,
+    "predictionRationale": "Expect 50-180x plan reduction on slow county from shrinking O(parcels×zones) to O(parcels×~50 candidates); expect slight grid-build overhead on fast 48171 (60 zones)."
+  },
+  "cp2": {
+    "registeredAt": "2026-08-12T12:08:00.000Z",
+    "measuredPlanMs48171": 2428,
+    "measuredPlanMs48099Writer": 1818708,
+    "measuredPlanMs48099Probe": 1174173,
+    "verdict48171": "REFUTED — planMs 846→2428 (2.9x slower); grid overhead dominates when zone count is tiny (60 zones)",
+    "verdict48099": "REFUTED — writer planMs 1.44M→1.82M; probe 1.17M yields only 1.22x. Vertex-heavy zones spanning most grid cells leave heavy PIP on nearly every parcel query.",
+    "predictionConfirmed": false
+  },
+  "adversarialFindings": [
+    "Parity gate PASSED both bracket counties — atom counts and SFHA/outside splits identical (48171 31745/1/31744; 48099 31584/1063/30521).",
+    "CP1 adversarial on worker code: grid candidate order could diverge on overlapping SFHA zones vs linear scan — fixed by sorting candidate zone indices before PIP (f1dd938).",
+    "Synthetic adversarial tests pass: cell-boundary point, multi-cell zone registration, polygon hole, bbox-outside-polygon, dual-SFHA array-order tie-break.",
+    "48099 grid 30×26 cells / 1543 zones — mega-zones register in most cells so prefilter barely reduces PIP calls; cost remains vertex-volume dominated (48505-class failure mode confirmed on Coryell).",
+    "Zone-count heuristic would have mis-sized this county (1543 zones looks moderate); vertex-density sizing is correct strategy even though gain is modest until geometry simplification or PostGIS follow-on.",
+    "48171 gridBuildMs=0ms (60 zones); plan overhead is pure query-path cost on low-zone counties.",
+    "PK/write path untouched per dispatch; only plan phase changed.",
+    "atoms table at measurement 21,233,787 rows (D1 used 20,834,403 — cache cliff context still applies).",
+    "Harris extrapolation after fix: ~56,416 s plan-dominated at 48099 probe ms/parcel — metros remain non-viable; defer Harris apply."
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "runAt": "2026-08-12T16:10:29Z",
+  "state": "UT",
+  "stateFips": "49",
+  "counties": 29,
+  "statewideParcelAuthority": {
+    "exists": true,
+    "name": "UGRC (Utah Geospatial Resource Center) / SGID — UtahStatewideParcels FeatureServer (layer StateWideParcels)",
+    "url": "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/UtahStatewideParcels/FeatureServer/0",
+    "featureCount": 1592583,
+    "countiesCovered": 29,
+    "uniformProduct": false,
+    "licence": "No constraints or warranties; attribute State of Utah, SGID. AGOL as-is / no warranty.",
+    "authRequired": false,
+    "evidence": "planner curl returnCountOnly={\"count\":1592583}; groupBy County returns exactly 29 tokens (Beaver..Weber) whose n sum to 1592583; four-corner returnCountOnly NW=1872 SW=84451 SE=119 SaltLake=397208 NE_Daggett_land=3633; prescribed NE envelope (-109.5..-109.05,41.5..42.0)=0 because it sits in Wyoming. Trap: Parcels_Utah FeatureServer returnExtentOnly 4326={xmin:-112.214,ymin:39.776,xmax:-110.858,ymax:40.578} returnCountOnly=284092 (= Utah County token only). UGRC product page: per-county steward updates; Big 5 monthly / rural quarterly-annual; 'Some counties are more complete than others.'; Open SGID exposes per-county tables only (cadastre.{county}_county_parcels), not one SQL table."
+  },
+  "factory1PremiseHolds": true,
+  "premiseReasoning": "Factory 1's kill condition is absence of a statewide parcel authority. Utah has one: UGRC publishes a single hosted FeatureServer that blankets all 29 counties (1,592,583 features; County groupBy 29/29; four-corner land boxes all populated). One acquisition endpoint therefore blankets the state, so cost stays roughly constant regardless of county count — the core premise SURVIVES. Uniformity is weaker than Texas TxGIO StratMap: county stewards feed UGRC on staggered vintages; statewide schema is a reduced concatenation (PARCEL_ID/ADD/CITY/ZIP/OWN_TYPE/RECORDER/ParcelsCur/ParcelNotes/County/CoParcel_URL/ACCOUNT_NUM) missing FIPS and some vintage fields present on per-county basic layers; Kane adds ZONING; LIR is a separate voluntary annual product with known lag (e.g. Box Elder LIR 2020). That is PARTIAL uniformity, not a per-county source hunt. Second-state shape can keep Factory 1; it still needs a UGRC adapter and lifting Texas hardcodes — not a rewrite of the write path.",
+  "layerAvailability": [
+    {
+      "layer": "parcels",
+      "source": "UGRC UtahStatewideParcels (also 29 per-county Parcels_* + Parcels_*_LIR siblings)",
+      "statewide": true,
+      "evidence": "count=1592583; County distinct=29 sum exact; corners NW/SW/SE/SaltLake/Daggett>0. Do NOT use Parcels_Utah (Utah County trap, 284092)."
+    },
+    {
+      "layer": "roads",
+      "source": "UGRC UtahRoads FeatureServer",
+      "statewide": true,
+      "evidence": "returnCountOnly=413311; COUNTY_L groupBy=30 buckets (29 UT FIPS 49001-49057 + 185 blank); San Juan 49037=16160 Daggett 49009=1834. CONTRADICTION: layer extent metadata is Wasatch-Front only (WebMercator xmin/xmax ≈ -12452109/-12426382 → lon ≈ -111.86..-111.63, lat ≈ 40.22..40.51) while attributes prove statewide — same class as RRC wells name/extent lie."
+    },
+    {
+      "layer": "flood",
+      "source": "FEMA NFHL MapServer/28 S_FLD_HAZ_AR (federal; same product Texas uses)",
+      "statewide": true,
+      "evidence": "returnCountOnly where DFIRM_ID LIKE '490%' = 14771. Ports as-is; swap NFHL_48_* archive constant to NFHL_49_*."
+    },
+    {
+      "layer": "footprints",
+      "source": "Microsoft USBuildingFootprints / Global ML (national)",
+      "statewide": true,
+      "evidence": "GitHub README lists Utah.geojson.zip | 1,081,586 buildings (docs only; not downloaded). Ports as-is; engine-core default is still Texas.geojson.zip and must be parameterized."
+    },
+    {
+      "layer": "boundaries",
+      "source": "UGRC UtahCountyBoundaries + UtahMunicipalBoundaries",
+      "statewide": true,
+      "evidence": "counties returnCountOnly=29; returnExtentOnly 4326 matches state box (-114.053..-109.042, 36.998..42.002). Municipals count=261. Utah-specific URLs replace TxGIO Texas_City_Boundaries + TIGER STATE='48'."
+    },
+    {
+      "layer": "terrain",
+      "source": "USGS 3DEPElevation ImageServer (national); optional UGRC 10m/30m DEM mirror via raster.utah.gov",
+      "statewide": true,
+      "evidence": "HEAD 200 on elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer; catalog ∩ Utah envelope returnCountOnly=4469. Ports as-is."
+    }
+  ],
+  "portabilityBlockers": [
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/txgio/parse.ts:185",
+      "whatBreaks": "assertTexasWgs84Bbox throws on any non-Texas WGS84 bbox; Utah lies entirely west of westLng=-107.5 and north of northLat=37. Called per feature at parse.ts:584; also reused by nfhl/parse.ts:145.",
+      "effort": "M"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/txgio/geo.ts:41",
+      "whatBreaks": "TEXAS_WGS84_BOUNDS envelope hardcodes the assert above.",
+      "effort": "S"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/boundary/service.ts:103+158",
+      "whatBreaks": "WHERE STATE='48' on TIGER county fetch/count; Utah FIPS 49 returns zero counties.",
+      "effort": "S"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/boundary/parse.ts:103",
+      "whatBreaks": "Missing STATE defaults to \"48\" — Utah features with dropped STATE stamp Texas.",
+      "effort": "S"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/txgio/counties.ts:82",
+      "whatBreaks": "txgioDownloadUrl builds StratMap zips on data.geographic.texas.gov; no UGRC/AGOL parcel adapter exists.",
+      "effort": "L"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/txgio/cli.ts:315 + counties.ts:424",
+      "whatBreaks": "CLI + isTexasCountyFips reject any 49xxx before fetch.",
+      "effort": "M"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/boundary/service.ts:34 (CITY_LAYER_PATH)",
+      "whatBreaks": "City boundaries pinned to TxGIO Texas_City_Boundaries; Utah needs UtahMunicipalBoundaries.",
+      "effort": "M"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/nfhl/service.ts:36",
+      "whatBreaks": "NFHL_DEFAULT_ARCHIVE = NFHL_48_*.zip; Utah needs NFHL_49_*.",
+      "effort": "S"
+    },
+    {
+      "blocker": "legacy-design-tools/lib/cad-ingest/src/address/service.ts:20",
+      "whatBreaks": "Address points pinned to stratmap_address_points_48; Utah has UGRC address points (not probed beyond inventory).",
+      "effort": "M"
+    },
+    {
+      "blocker": "hauska-engine/packages/engine-core/src/building-footprint/constants.ts:3",
+      "whatBreaks": "GLOBAL_ML_TEXAS_ZIP_URL hardcodes Texas.geojson.zip; Utah partition exists but is never selected. Refutes prior 'engine-core is Texas-clean' claim.",
+      "effort": "S"
+    },
+    {
+      "blocker": "hauska-engine/packages/engine-core/src/road-intake/descriptor-from-registry.ts:23",
+      "whatBreaks": "GEOFABRIK_TEXAS_PBF_URL pinned; Utah roads via Geofabrik utah-latest.osm.pbf or UGRC UtahRoads need a registry row, not a constant.",
+      "effort": "S"
+    },
+    {
+      "blocker": "hauska-engine/packages/engine-core/src/well-fact/fetch-wells.ts:5",
+      "whatBreaks": "Wells rail is Texas RRC Harris-County mirror; Utah DOGM (or equivalent) is a new adapter, not a constant swap.",
+      "effort": "L"
+    },
+    {
+      "blocker": "doc_repo/_inbox/2026-08-09_W5_depth_factory_program_WDLL.md:21 item 9",
+      "whatBreaks": "State template worksheet still grade:[ ]; OPS-14:86 OWED; no UT/NM/CO/AZ recon notes existed before this probe. Second-state discovery procedure is still missing as a durable worksheet.",
+      "effort": "M"
+    }
+  ],
+  "comparedToTexas": {
+    "whatIsSame": [
+      "One statewide GIS authority publishes a free public parcel product that blankets every county from one endpoint.",
+      "Federal layers (FEMA NFHL, Microsoft footprints, USGS 3DEP) port without a new licence motion.",
+      "Write path / atom contract shape still ports; coupling is acquisition + a few engine-core source URL constants.",
+      "No login / paid licence required for the UGRC FeatureServers probed (authRequired=false; CORS *)."
+    ],
+    "whatIsDifferent": [
+      "Texas StratMap = per-county zip archives with known vintage from one producer; Utah = county-steward merge into one hosted service with staggered update cadence and explicit completeness caveats.",
+      "Utah statewide schema is thinner than per-county basic/LIR; LIR tax-roll attributes are voluntary and lag; owner names are not in the public LIR path (HB113 / sales posture).",
+      "Acquisition is ArcGIS REST / Open SGID SQL, not StratMap zip download URLs.",
+      "Naming traps are different: Parcels_Utah means Utah County; UtahRoads extent metadata lies Wasatch-only while COUNTY_L is statewide — same failure class as RRC wells, different costume.",
+      "engine-core is NOT Texas-clean (Texas.geojson.zip, texas-latest.osm.pbf, RRC wells URL); preamble claim overstated write-path cleanliness as whole-package cleanliness."
+    ]
+  },
+  "recommendation": "KEEP the Factory 1 shape for a second state. Utah proves the premise: one authority, one blanket product, cost ~constant in county count. Do not start Utah onboarding (CTX/national remains HELD). When authorised: (1) UGRC parcel adapter against UtahStatewideParcels (or Open SGID per-county with a merge step) — effort L; (2) parameterize assertTexasWgs84Bbox / STATE FIPS / NFHL archive / ML zip / Geofabrik PBF — mostly S–M; (3) UGRC roads+boundaries registry rows — M; (4) wells/DOGM is a separate L if that rail is in scope. File this probe as the UT recon note owed by W5 WDLL item 9. Never trust a statewide-looking service name or layer extent without County/FIPS groupBy + four-corner counts — Parcels_Utah and UtahRoads.extent both fail that test.",
+  "cp1": {
+    "registeredBeforeProbe": true,
+    "expectation": "UGRC publishes a hosted statewide parcel product covering all 29 counties (authority exists), but it is a county-steward merge with variable completeness/vintage rather than a TxGIO-style uniform StratMap archive. Expected factory1PremiseHolds=true on 'one authority blankets state / cost ~constant', with uniformity PARTIAL.",
+    "expectedFactory1PremiseHolds": true,
+    "expectedUniformProduct": false,
+    "skepticism": "Treat any statewide layer as a metro mirror until four-corner + county groupBy prove otherwise; watch for Utah-County naming traps."
+  },
+  "cp2": {
+    "verdict": "CONFIRMED",
+    "detail": "CONFIRMED statewide authority + true 29-county coverage (count, County groupBy sum, four-corner land boxes). CONFIRMED uniformProduct=false (staggered vintage, reduced statewide schema, LIR voluntary). CONFIRMED Parcels_Utah is Utah-County trap (extent+count=284092). CONFIRMED UtahRoads metadata extent contradicts statewide COUNTY_L. REFUTED standing claim that packages/engine-core/src is Texas-clean outside comments. Prescribed NE bbox REFUTED as a Utah land test (Wyoming); in-state Daggett/Rich substitute CONFIRMED populated."
+  },
+  "adversarialFindings": [
+    "Parcels_Utah FeatureServer advertises Utah in the name but returnExtentOnly 4326 is Utah County only and returnCountOnly=284092 equals the statewide County=Utah token — RRC-class name/extent trap.",
+    "UtahRoads layer extent metadata is a Wasatch-Front box (~lon -111.86..-111.63, lat 40.22..40.51) while COUNTY_L groupBy returns all 29 FIPS; trusting extent alone would falsely reject a statewide roads product.",
+    "Prescribed NE four-corner envelope (-109.5..-109.05, 41.5..42.0) is Wyoming (count=0); without the Daggett-land substitute this would have falsely failed the statewide test.",
+    "Planner preamble 'engine-core is TEXAS-CLEAN' is false: GLOBAL_ML_TEXAS_ZIP_URL, GEOFABRIK_TEXAS_PBF_URL, TEXAS_RRC_WELLS_LAYER are production constants. Zero FIPS '48' literals ≠ Texas-clean.",
+    "Planner '26 of 47 cad-ingest files' undercounts; explore worker measured 36/48 production src files with Texas coupling.",
+    "W5 WDLL acceptance item 9 still grade:[ ] with zero worksheet doc and zero prior UT/NM/CO/AZ recon notes — OPS-14:86 claim remains OWED; this file is the first UT recon note.",
+    "returnExtentOnly on UtahStatewideParcels timed out at 30s for the worker; planner used County groupBy + corners + AGOL item extent instead — do not invent a statewideCount from a timed-out extent."
+  ]
+}

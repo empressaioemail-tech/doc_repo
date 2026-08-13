@@ -1,0 +1,193 @@
+{
+  "artifact": "L6_gtm_polish_close",
+  "plan_rows": ["P-28", "P-35"],
+  "lane": "L6",
+  "ts_utc": "2026-08-12T21:56:00Z",
+  "constraints_honored": [
+    "no engine repo",
+    "no cmdcenter project",
+    "no --apply / no atoms slot",
+    "no pricing rebuild / no new billing products / no funnel builds",
+    "display rename only on Stripe price objects"
+  ],
+  "cp_files": {
+    "cp1": "_inbox/2026-08-12_L6_cp1_plan.json",
+    "cp2": "_inbox/2026-08-12_L6_cp2_proofs.json"
+  },
+  "P-28_stripe_branding_hard_gate": {
+    "before_export_active_product_names": [
+      "Hauska Layer 2 - Pro (Stream)",
+      "Hauska Layer 2 - Builder",
+      "Hauska Max",
+      "Hauska Max",
+      "Hauska Pro"
+    ],
+    "before_export_active_price_nicknames": [
+      "Hauska Layer 2 - Pro (Stream) overage per Layer 2 call",
+      "Hauska Layer 2 - Builder overage per Layer 2 call",
+      "Hauska Layer 2 - Pro (Stream) base",
+      "Hauska Layer 2 - Builder base",
+      "Hauska Max monthly (test)",
+      "Hauska Max monthly (test)",
+      "Hauska Pro monthly (test)"
+    ],
+    "subscription_check": {
+      "mission_prose_expected": 0,
+      "verified_active_count": 10,
+      "detail": [
+        {
+          "price_id": "price_1TjidZFjAepSMTX7yQ8FoIQq",
+          "count": 9,
+          "nickname_before": "Hauska Max monthly (test)"
+        },
+        {
+          "price_id": "price_1Tjg4SFjAepSMTX7pJ5GLYBf",
+          "count": 1,
+          "nickname_before": "Hauska Pro monthly (test)"
+        }
+      ],
+      "implication": "Rename display metadata only; retained all price ids"
+    },
+    "actions": [
+      "prod_Uj8Lv5fH9mp6Uz Hauska Pro → Smart Site Solo; price nickname Smart Site Solo monthly",
+      "prod_UjAzP2WP9jIqjE Hauska Max → Smart Site Studio; price nickname Smart Site Studio monthly",
+      "prod_Uj97f4P137sJFZ Hauska Max → Smart Site Team; price nickname Smart Site Team monthly",
+      "archived Layer 2 products + deactivated their prices; cleared hauska_* metadata"
+    ],
+    "after_export_active_products": [
+      { "id": "prod_Uj8Lv5fH9mp6Uz", "name": "Smart Site Solo" },
+      { "id": "prod_UjAzP2WP9jIqjE", "name": "Smart Site Studio" },
+      { "id": "prod_Uj97f4P137sJFZ", "name": "Smart Site Team" }
+    ],
+    "after_export_active_prices": [
+      {
+        "id": "price_1Tjg4SFjAepSMTX7pJ5GLYBf",
+        "nickname": "Smart Site Solo monthly",
+        "unit_amount": 2900
+      },
+      {
+        "id": "price_1TjidZFjAepSMTX7yQ8FoIQq",
+        "nickname": "Smart Site Studio monthly",
+        "unit_amount": 6500
+      },
+      {
+        "id": "price_1TjgpfFjAepSMTX7JrvW0nmU",
+        "nickname": "Smart Site Team monthly",
+        "unit_amount": 9900
+      }
+    ],
+    "hauska_hits_on_active_customer_facing_fields": [],
+    "residuals_out_of_scope": [
+      "unit_amounts still 2900/6500/9900 (not locked 4900/12900/29900) — pricing rebuild is 76j",
+      "Smart Site Unlock $15 / 30 days product not created — no new billing products this lane",
+      "LDT scripts/_stripe-setup-pro-price.mjs still creates Hauska Pro if re-run — not in this lane's owned files"
+    ],
+    "grade": "PASS"
+  },
+  "P-35_retrieval_key_durability": {
+    "key_wiring_diagram": {
+      "source_of_truth": {
+        "where": "GCP Secret Manager",
+        "project": "hauska-prod-497015",
+        "secret": "HAUSKA_ENGINE_API_KEY",
+        "bytes": 59
+      },
+      "readers": [
+        {
+          "consumer": "hauska-retrieval-api (Cloud Run)",
+          "env": "RETRIEVAL_API_KEY",
+          "how": "secretKeyRef HAUSKA_ENGINE_API_KEY:latest"
+        },
+        {
+          "consumer": "hauska-mcp-server (Cloud Run)",
+          "env": "HAUSKA_ENGINE_API_KEY",
+          "how": "cloudbuild-mcp.yaml --set-secrets …:latest (P-35 note merged PR #63)",
+          "code": "src/hauska-client.ts Bearer → HAUSKA_BACKEND_URL"
+        },
+        {
+          "consumer": "property-explorer (Vercel)",
+          "env_primary": "HAUSKA_RETRIEVAL_API_KEY",
+          "env_fallback": "RETRIEVAL_API_KEY",
+          "how": "Both set from SM value; workflow .github/workflows/property-explorer-sync-retrieval-key.yml (PRs #159+#160 merged) authoritative-replaces on dispatch"
+        }
+      ],
+      "rotation_now_requires": [
+        "1. gcloud secrets versions add HAUSKA_ENGINE_API_KEY --data-file=… --project=hauska-prod-497015",
+        "2. Redeploy hauska-retrieval-api (:latest re-resolves)",
+        "3. Redeploy hauska-mcp-server via cloudbuild-mcp.yaml (:latest re-resolves)",
+        "4. Run hauska-map workflow 'PE sync retrieval key' (pulls same SM secret → Vercel both var names → prod deploy → facets probe)",
+        "4a. Operator one-time: set GH secret VERCEL_TOKEN to a personal token from https://vercel.com/account/tokens (CLI OAuth auth.json token is rejected by api.vercel.com Bearer / --token)"
+      ]
+    },
+    "ci_status": {
+      "gcp_sa_created": "hauska-pe-key-sync@hauska-prod-497015.iam.gserviceaccount.com",
+      "sm_accessor_bound": true,
+      "gh_secrets_set": [
+        "GCP_SA_KEY_HAUSKA_PROD",
+        "VERCEL_ORG_ID",
+        "VERCEL_PROJECT_ID",
+        "VERCEL_TOKEN (invalid OAuth — needs dashboard personal token)"
+      ],
+      "workflow_sm_pull": "GREEN",
+      "workflow_vercel_half": "GREEN — operator personal VERCEL_TOKEN set 2026-08-12T22:33Z; run 31647474972 success",
+      "workflow_run_url": "https://github.com/empressaioemail-tech/hauska-map/actions/runs/31647474972",
+      "planner_local_env_sync_and_deploy": "DONE — both env vars present; prod dpl_7hKRRor3TcLAFqFHpPPyen2XWAat aliased to property-explorer-xi.vercel.app; CI redeploy also green"
+    },
+    "live_probes_verbatim": {
+      "pe": {
+        "request": "GET https://property-explorer-xi.vercel.app/api/spine/property-atoms/48021:34137/facets",
+        "http": 200,
+        "body_slim": {
+          "parcelNodeId": "48021:34137",
+          "adapterKey": "property-atom-chain",
+          "source": "atom-chain",
+          "readPath": "atom-chain-warm",
+          "facets": {
+            "parcelNodeId": "48021:34137",
+            "countyFips": "48021",
+            "zoning": {
+              "district": "SF-1",
+              "jurisdictionKey": "bastrop-city-tx"
+            },
+            "baseFacts": {
+              "apn": "34137",
+              "situsAddress": "908 PINE , BASTROP, TX 78602",
+              "landUse": {
+                "code": "A1",
+                "source": "cad-roll"
+              }
+            }
+          }
+        }
+      },
+      "mcp": {
+        "request": "POST https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/mcp tools/call get_property_atom_chain parcel_node_id=48021:34137",
+        "anon": {
+          "http": 200,
+          "owner-fact": {
+            "withheld": true,
+            "accessPolicy": "public-paid",
+            "atom": null
+          }
+        },
+        "keyed_X-Hauska-Key": {
+          "http": 200,
+          "owner-fact.atom.ownerName": "SMITH, RICHARD P & SUSAN J",
+          "withheldSlots": []
+        }
+      }
+    },
+    "grade": "PASS end-to-end including CI"
+  },
+  "prs": {
+    "hauska-map": [
+      "https://github.com/empressaioemail-tech/hauska-map/pull/159",
+      "https://github.com/empressaioemail-tech/hauska-map/pull/160"
+    ],
+    "hauska-mcp-server": [
+      "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/63"
+    ]
+  },
+  "operator_owed_2min": null,
+  "overall": "P-28 PASS. P-35 PASS end-to-end including CI workflow run 31647474972 success."
+}

@@ -1,0 +1,80 @@
+{
+  "runAt": "2026-08-12T15:05:00.000Z",
+  "approachChosen": "postgis-pip",
+  "postgisAvailable": true,
+  "postgisVersion": "3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1",
+  "zoneTableIndexed": true,
+  "gistIndexUsed": true,
+  "explainPlan": "SHIPPED zone-major (100 pts / 48099, planner CP2): CTE zones via Bitmap Index Scan on tx_fema_nfhl_flood_zone_bbox_idx (1543 rows) MATERIALIZED; Nested Loop CTE Scan zones × pts with Join Filter st_contains; Execution Time 798.455 ms. POINT-MAJOR (schema half, GiST): Index Scan using tx_fema_nfhl_flood_zone_geom_gist_idx Index Cond geom ~ point, Filter st_contains — ~17.4 ms/point. GiST exists and is used by point-major/hybrid; the production zone-major win is single-detoast amortization via MATERIALIZED bbox CTE, not per-point GiST probes.",
+  "parity": [
+    {
+      "county": "48171",
+      "atomsBefore": 31745,
+      "atomsAfter": 31745,
+      "identical": true,
+      "planMsBefore": 2428,
+      "planMsAfter": 1411,
+      "sfha": 1,
+      "outside": 31744,
+      "planDigest": "9c68dd792210ebc4e819515e670a323dc13be5d65cdc4ab46a56b3420cfaee1b"
+    },
+    {
+      "county": "48099",
+      "atomsBefore": 31584,
+      "atomsAfter": 31584,
+      "identical": true,
+      "planMsBefore": 1818708,
+      "planMsAfter": 5025,
+      "sfha": 1063,
+      "outside": 30521,
+      "planDigest": "2535f3f2834943eaaa6e4a3911d9ef7a3225ef6ba24e41478f94f3d07da9c6cd",
+      "speedupVsD2": 361.9
+    }
+  ],
+  "harrisEstimateSecBefore": 56416,
+  "harrisEstimateSecAfter": 1862,
+  "harrisEstimateNote": "1862s is MEASURED on Harris (48201) parcel centroids at 1.222 ms/parcel zone-major, not the naive 48099-rate extrapolation (242s). Zone density (Harris ~19.9k bbox zones vs 48099 1543) dominates; plan against 1862.",
+  "metrosViable": true,
+  "atomsTableRowCountAtMeasurement": 25259558,
+  "atomsTableRowCountNote": "CP2 independent count 2026-08-12T15:01Z on DATABASE_URL. D1=20834403 D2=21233787 schema-half=22525477 — A1 CAD rails writing; shelf life applies. Flood NFHL table is static at 198178.",
+  "prNumber": 315,
+  "ciConclusionString": "success",
+  "merged": true,
+  "mergeCommit": "25842d1a3bda6d614ac6611e20949e7614c95677",
+  "cp1": {
+    "registeredAt": "2026-08-12T13:15:00.000Z",
+    "approachExpected": "postgis-pip",
+    "predictionRationale": "D2 grid failed on mega-zones/vertex volume; PostGIS 3.5.0 live (A2); NFHL was jsonb+bbox only — geom+GiST + ST_Contains should clear the plan phase.",
+    "predictedPlanMs48171": 400,
+    "predictedPlanMs48099": 15000,
+    "metrosViablePrediction": true,
+    "simplificationDeferredUnlessPostgisInsufficient": true
+  },
+  "cp2": {
+    "registeredAt": "2026-08-12T15:01:00.000Z",
+    "measuredPlanMs48171": 1411,
+    "measuredPlanMs48099": 5025,
+    "verdict48171": "REFUTED on absolute ms (400→1411) — SQL RTT dominates 60-zone county; parity identical so correctness bracket holds",
+    "verdict48099": "CONFIRMED — 1,818,708→5,025 (362x); beats 15s prediction",
+    "metrosViableVerdict": "CONFIRMED true — Harris plan ~31 min measured",
+    "predictionConfirmed": true,
+    "schemaHalfSubdivideRequiredGate": "REFUTED — that gate assumed point-major (17.4 ms/pt); zone-major on raw geom clears metros without ST_Subdivide",
+    "simplificationNeeded": false,
+    "hybridNeeded": false
+  },
+  "adversarialFindings": [
+    "Parity bit-identical via planDigest sha256 (not just counts): JS grid ≡ PostGIS zone-major ≡ PostGIS point-major on both brackets; SFHA splits match D2 baseline exactly.",
+    "Boundary case: ST_Contains excludes edge points; JS ray-cast includes some (fixture P02). Documented in PIP_EXPECTED_DIVERGENCES; did not fire on real parcel centroids. Hybrid (ST_Intersects + JS PIP) is the escape hatch — built, smoke-tested, unused.",
+    "Multipolygon hole, bbox-outside-polygon (L-shape), dual-SFHA zone_row_id tie-break, SFHA-over-non-SFHA, MultiPolygon second part: all covered in flood-postgis-pip.test.ts — 29/29 pass including live PostGIS fixture table.",
+    "Dual-SFHA distinct-zone overlaps: planner probe on 15k distinct 48099 parcels found 0 parcels with >1 distinct SFHA zone_row_id — tie-break divergence risk low on product attributes.",
+    "JS zone load lacked ORDER BY zone_row_id (heap order ≠ PostGIS DISTINCT ON order) — planner fixed in 8ad9e54 before merge.",
+    "Point-major LATERAL is 218x slower than zone-major on 48099 (detoast mega-polygons per point). MATERIALIZED on both CTEs is load-bearing; dropping it restores the cliff. f1_pip_scaling_probe.mjs guards under statement_timeout.",
+    "Schema half correctly found GiST locates candidates fast but raw ST_Contains on mega-polygons is 17.4 ms/pt point-major; incorrectly elevated ST_Subdivide to a metro gate. Zone-major refutes that gate without changing a single flood answer.",
+    "Geometry simplification NOT used — would move flood lines; parity gate forbids it when PostGIS already holds identical digests.",
+    "Fail-closed readiness: partial geom populate reports not-ready; explicit --plan-backend=postgis errors rather than silently measuring JS.",
+    "SFHA SQL predicate is case-sensitive IN ('T','t','true') matching isSfhaFlag — deliberately not lower().",
+    "No --apply; Lane A1 atoms slot untouched. Only tx_fema_nfhl_flood_zone.geom backfilled (198178 rows).",
+    "atoms table 25.3M at CP2 vs 21.2M at D2 — performance conclusion shelf life named; NFHL geom path is independent of atoms row growth.",
+    "Shared worktree clobber mid-session (both workers) — isolated worktree P:/hauska-engine-worktrees/f1-postgis-pip was the durable path."
+  ]
+}

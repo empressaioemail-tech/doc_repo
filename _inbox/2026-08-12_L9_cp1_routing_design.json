@@ -1,0 +1,201 @@
+{
+  "artifact": "L9_cp1_routing_design",
+  "plan_row": "P-25",
+  "lane": "L9",
+  "ts": "2026-08-12T23:00:00Z",
+  "status": "PASS",
+  "authored_where": {
+    "package": "@workspace/cad-ingest",
+    "repo": "legacy-design-tools",
+    "path": "lib/cad-ingest",
+    "confirmed": true,
+    "note": "empressaio packages are NOT the authoring home; edit LDT only"
+  },
+  "verified_store_baseline": {
+    "neon_project": "cortex-prod (fancy-fire-06136146)",
+    "note": "legacy-design-tools-prod Neon MCP project (shiny-snow-37459644) is NOT the live CAD store — cad_property/txgio_parcel live on cortex-prod. LDT Neon appears wiped/reset (no cad tables).",
+    "sql_ts": "2026-08-12T22:55:00Z",
+    "counties": [
+      {
+        "fips": "48021",
+        "name": "Bastrop",
+        "rows": 77073,
+        "sqft_pct": 52.68,
+        "year_built_pct": 52.67,
+        "land_acres_pct": 81.91,
+        "source_file": "DATA-EXPORT-01.14.2026.zip",
+        "inferred_tier": "cad-export"
+      },
+      {
+        "fips": "48113",
+        "name": "Dallas",
+        "rows": 693556,
+        "sqft_pct": 0.0,
+        "year_built_pct": 0.0,
+        "land_acres_pct": 0.0,
+        "source_file": "stratmap25-landparcels_48113_lp.zip",
+        "inferred_tier": "stratmap-roll"
+      },
+      {
+        "fips": "48439",
+        "name": "Tarrant",
+        "rows": 689838,
+        "sqft_pct": 0.0,
+        "year_built_pct": 0.0,
+        "land_acres_pct": 0.0,
+        "source_file": "stratmap25-landparcels_48439_lp.zip",
+        "inferred_tier": "stratmap-roll"
+      }
+    ]
+  },
+  "routing_design": {
+    "problem": "doc_repo _catalog/tx_cad_source_registry.json flags bulk_primary:true on Dallas 48113 and Tarrant 48439; LDT cad-ingest never reads that registry. DFW Phase 1 loaded stratmap-landuse into cad_property, producing identity/value rows with zero structural fields. Silent StratMap fallback is the defect.",
+    "tiers": [
+      {
+        "id": "cad-export",
+        "meaning": "Direct CAD/CAMA bulk export (PACS / Orion / DCAD comma / TAD pipe / etc.)",
+        "carries_structural": true
+      },
+      {
+        "id": "stratmap-roll",
+        "meaning": "TxGIO StratMap land-parcel DBF via stratmap-landuse",
+        "carries_structural": false
+      },
+      {
+        "id": "arcgis-rest",
+        "meaning": "County ArcGIS REST cadastral attributes (not a CAMA roll)",
+        "carries_structural": false,
+        "note": "Out of scope for this lane's write path; registry may list REST mirrors"
+      }
+    ],
+    "precedence": [
+      "1. Load registry row for county (fips).",
+      "2. If bulk_primary === true OR format === 'bulk_export': preferred_tier = cad-export; resolve adapter_kind → parser + bulk source.",
+      "3. Attempt cad-export ingest. On success: every upserted row records tier=cad-export (and adapter_kind).",
+      "4. Fallback to stratmap-roll is ALLOWED only as a NAMED fallback: CLI must pass --allow-stratmap-fallback (or stratmap-landuse must refuse bulk_primary counties unless that flag is set). Fallback rows record tier=stratmap-roll. Silent fallback is forbidden.",
+      "5. Counties without bulk_primary keep current behavior (explicit CAD county registry OR explicit stratmap-landuse) but still stamp the tier they actually used."
+    ],
+    "modules_to_add_or_change": [
+      "lib/cad-ingest/src/routing.ts — resolveCadRollRoute(fips) from embedded registry slice (Dallas+Tarrant now; full JSON path optional)",
+      "lib/cad-ingest/src/sources.ts — open-fetch entries for 48113 (DCAD ViewPDFs) and 48439 (TAD PropertyData)",
+      "lib/cad-ingest/src/counties.ts — register Dallas + Tarrant with format mapped from adapter_kind",
+      "lib/cad-ingest/src/vendors/tad-propertydata/parser.ts — pipe-delimited PropertyData parser",
+      "lib/cad-ingest/src/vendors/dcad-certified/parser.ts — DCAD comma-delimited certified files parser",
+      "lib/cad-ingest/src/cli.ts — honor route; stamp tier into source_vintage; dispatch by adapter/format",
+      "lib/cad-ingest/src/txgio/landuse-cli.ts — refuse bulk_primary counties without --allow-stratmap-fallback",
+      "lib/cad-ingest/src/tier.ts — formatSourceVintage({tier, adapter, dropLabel}) / parseSourceVintage",
+      "tests for routing precedence + both parsers + landuse gate"
+    ],
+    "tier_recording": {
+      "mechanism": "source_vintage structured prefix (no schema migration this pilot)",
+      "format": "tier:<cad-export|stratmap-roll>;adapter:<adapter_kind|stratmap>;drop:<basename>",
+      "example": "tier:cad-export;adapter:county-run;drop:PropertyData(Delimited)_R.ZIP",
+      "rationale": "cad_property already has source_file + source_vintage; adding source_tier column deferred to avoid cortex-prod migration under L1 PostGIS load. SQL can grade via split_part/like on source_vintage.",
+      "follow_on": "nullable source_tier column + CHECK, same pattern as H1 source_tier_satisfied"
+    },
+    "hard_rules": [
+      "Falling back is fine; falling back SILENTLY is the defect",
+      "Harvest completeness: take whole PropertyData payload fields that map to cad_property (plus ignore extras); do not drop Living_Area/Year_Built/Land_Acres when present",
+      "BULK LOADS INTO cad_property SERIALIZED WITH PLANNER — pilot slice only until announce",
+      "Do not touch hasWriter / read-path files (L5)"
+    ]
+  },
+  "vendor_format_recon": {
+    "tarrant_48439": {
+      "adapter_kind": "county-run",
+      "registry_format": "bulk_export",
+      "bulk_primary": true,
+      "page": "https://www.tad.org/resources/data-downloads",
+      "open_fetch_verified": [
+        {
+          "url": "https://www.tad.org/content/data-download/PropertyData(Delimited)_R.ZIP",
+          "head_status": 200,
+          "bytes": 49545699,
+          "role": "residential slice (pilot)"
+        },
+        {
+          "url": "https://www.tad.org/content/data-download/PropertyData(Delimited).ZIP",
+          "head_status": 200,
+          "bytes": 96974232,
+          "role": "full county (announce before load)"
+        }
+      ],
+      "zip_entry": "PropertyData(Delimited)_R.txt",
+      "delimiter": "|",
+      "header_ncols": 58,
+      "structural_fields": {
+        "prop_id_candidate": "Account_Num",
+        "tax_year": "Appraisal_Year",
+        "year_built": "Year_Built",
+        "living_area_sqft": "Living_Area",
+        "land_acres": "Land_Acres",
+        "land_value": "Land_Value",
+        "improvement_value": "Improvement_Value",
+        "market_value": "Total_Value",
+        "assessed_value": "Appraised_Value",
+        "owner_name": "Owner_Name",
+        "situs_address": "Situs_Address",
+        "property_use_code": "State_Use_Code",
+        "also_present": ["Num_Bedrooms", "Num_Bathrooms", "Gross_Building_Area", "GIS_Link", "PIDN"]
+      },
+      "sample_row_evidence": "Account 1309 Year_Built=1910 Living_Area=2550.00 Land_Acres=0.1148 Total_Value=556381",
+      "layout_doc": "https://www.tad.org/content/forms/PropertyData&PropertyLocationLayouts.pdf",
+      "transition_note": "TAD migrating to True Prodigy; TP residential extract still 'Coming Soon'; TP_Legacy8.0.33-AppraisalExportLayout.zip is PACS 8.0.33 layout docs only. Current open-fetch rail = PropertyData(Delimited)."
+    },
+    "dallas_48113": {
+      "adapter_kind": "dcad-bulk-only",
+      "registry_format": "arcgis_rest",
+      "bulk_primary": true,
+      "page": "https://www.dallascad.org/DataProducts.aspx",
+      "open_fetch_verified": [
+        {
+          "url": "https://www.dallascad.org/ViewPDFs.aspx?type=3&id=\\\\DCAD.ORG\\WEB\\WEBDATA\\WEBFORMS\\DATA PRODUCTS\\DCAD2026_CERTIFIED_07232026.zip",
+          "head_status": 200,
+          "bytes": 193225378,
+          "content_type": "application/x-zip-compressed",
+          "label": "2026 Certified Data Files at Certification (Comma Delimited 07/24/2026)"
+        }
+      ],
+      "shape": "Year-versioned zip via ViewPDFs proxy; comma-delimited certified data files (property.csv-adjacent). Exact in-zip filenames + column map deferred to first extract in implement/CP2 (193MB).",
+      "alt_product": "DCAD2026_CURRENT.ZIP = Certified Data Files with Supplemental Changes (Comma Delimited)"
+    },
+    "bastrop_reference_shape": {
+      "fips": "48021",
+      "proven": "DATA-EXPORT-*.zip / PACS APPRAISAL_INFO.TXT (+ IMPROVEMENT_DETAIL) via existing pacs/parser.ts; store sqft 52.68%",
+      "role": "reference for structural-field presence, not the Dallas/Tarrant on-disk format"
+    }
+  },
+  "pilot_county_pick": {
+    "fips": "48439",
+    "name": "Tarrant",
+    "why": [
+      "bulk_primary:true AND format=bulk_export already in registry (Dallas still format=arcgis_rest despite bulk_primary)",
+      "Open-fetch residential zip ~50MB vs Dallas ~193MB — faster serial blocker discovery (L2 lesson)",
+      "Header recon COMPLETE: Year_Built / Living_Area / Land_Acres present with live sample values",
+      "adapter_kind=county-run → first vendor parser; Dallas dcad-bulk-only parser lands in same PR but pilot proof is Tarrant"
+    ],
+    "pilot_slice": {
+      "file": "PropertyData(Delimited)_R.ZIP",
+      "limit_rows": 5000,
+      "announce_before": "full-county PropertyData(Delimited).ZIP (~97MB / ~690k rows) — do NOT load until planner announces (L1 heavy PostGIS on same Neon/cortex)"
+    },
+    "join_key_risk": "StratMap cad_property.prop_id for Tarrant must match Account_Num (or GIS_Link). CP2 verifies overlap % before claiming coverage lift; mismatch is expected serial blocker #1."
+  },
+  "cp2_pass_instrument": {
+    "before_after_sql": "SELECT county_fips, COUNT(*) rows, ROUND(100.0*COUNT(*) FILTER (WHERE living_area_sqft>0)/COUNT(*),2) sqft_pct, ROUND(100.0*COUNT(*) FILTER (WHERE year_built>1800)/COUNT(*),2) year_built_pct, ROUND(100.0*COUNT(*) FILTER (WHERE land_acres IS NOT NULL)/COUNT(*),2) land_acres_pct, COUNT(*) FILTER (WHERE source_vintage LIKE 'tier:cad-export;%') cad_export_tier_rows FROM cad_property WHERE county_fips='48439' GROUP BY 1;",
+    "pilot_success": "limited upsert shows sqft_pct and year_built_pct > 0 on the touched prop_id set; every touched row carries tier:cad-export in source_vintage; routing unit tests prove bulk_primary refuses silent stratmap fallback"
+  },
+  "remaining_queue_preview": [
+    { "fips": "48113", "name": "Dallas", "adapter_kind": "dcad-bulk-only", "approx_rows": 693556, "blocker": "zip extract + column map" },
+    { "fips": "48029", "name": "Bexar", "adapter_kind": "TBD", "approx_rows": 703258, "note": "0% sqft; not bulk_primary in registry yet" },
+    { "fips": "48453", "name": "Travis", "adapter_kind": "pacs (existing)", "approx_rows": 492848, "note": "parser exists; was StratMap-loaded — re-route to PACS export" },
+    { "fips": "48085", "name": "Collin", "adapter_kind": "TBD/Socrata", "approx_rows": 387334 },
+    { "fips": "48121", "name": "Denton", "adapter_kind": "PACS-like CertifiedDataAll.zip per DFW recon", "approx_rows": 351798 }
+  ],
+  "adversarial_self_check": [
+    "CP1 does NOT claim parser correctness for Dallas until zip listed",
+    "CP1 does NOT authorize full-county load",
+    "Live store project corrected from LDT Neon → cortex-prod",
+    "Pilot is Tarrant not Dallas despite Dallas being listed first in mission — justified by completed format recon + smaller slice"
+  ]
+}

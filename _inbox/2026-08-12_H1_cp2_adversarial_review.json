@@ -1,0 +1,54 @@
+{
+  "reviewedAt": "2026-08-12T16:35:00Z",
+  "checkpoint": "CP2",
+  "verdict": "PASS_WITH_PLANNER_FIX",
+  "liveSqlConfirm": {
+    "elgin": { "n": 3209, "codes": 8, "geo": "4823044", "grain": "parcel-joined", "bad_tier": 0 },
+    "smithville": { "n": 91, "codes": 13, "geo": "4868456", "grain": "district-polygon", "bad_tier": 0 },
+    "c3CollisionRows": 145,
+    "c3Cities": ["elgin-tx", "smithville-tx"],
+    "elginDomainMapped": 15,
+    "divergenceMet": true
+  },
+  "pr316": {
+    "merged": true,
+    "mergeCommit": "fa43c98a2a4aac33f943b3b3f2e43d1cec628cc3",
+    "checkRunConclusion": "SUCCESS"
+  },
+  "adversarialWrongAnswerConstruction": [
+    {
+      "scenario": "C-3 collision drained by countyFips alone",
+      "wouldProduce": "writer treating Elgin C-3 and Smithville C-3 as same ordinance token across 145 mixed rows",
+      "catchBeforeFix": "PARTIAL — stagingRowId prefixes differ but drainZoningStagingRows allowed county-only without cityKey",
+      "plannerFix": "refuse county-only drain unless allowMultiCity=true; test added"
+    },
+    {
+      "scenario": "State Plane feet as GeoJSON degrees",
+      "wouldProduce": "PIP against parcels in wrong hemisphere / absurd coordinates",
+      "catch": "assertTexasWgs84Bbox throws ZoningProjectionError — verified in unit test + live CRS EPSG:4326"
+    },
+    {
+      "scenario": "Elgin A stamped without domain map",
+      "wouldProduce": "districtCode=A which misses R-4 setback row → wrong buildability",
+      "catch": "registry codeDomainMap A→R-4; live 15 rows with code_domain_map_applied=true"
+    },
+    {
+      "scenario": "overlay layer registered as base",
+      "wouldProduce": "overlay polygons stamped as base district codes",
+      "catch": "layerRole registry + drain refuses overlay/unknown; residual: feature-level overlay attrs inside a base layer are not auto-detected (document)"
+    },
+    {
+      "scenario": "city spanning two counties with wrong parent FIPS only",
+      "wouldProduce": "drain-by-county miss for Travis sliver of Elgin",
+      "catch": "cityKey primary; allCountyFips recorded on Elgin registry; unit test CP1-F5"
+    }
+  ],
+  "findingsToFix": [
+    {
+      "id": "CP2-F1",
+      "severity": "high",
+      "finding": "drainZoningStagingRows(countyFips only) silently mixes cities — defeats C-3 collision catch for a future writer",
+      "fix": "require cityKey OR allowMultiCity=true opt-in"
+    }
+  ]
+}

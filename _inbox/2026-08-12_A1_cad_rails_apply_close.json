@@ -1,0 +1,121 @@
+{
+  "runAt": "2026-08-12T18:42:00Z",
+  "engineTipAtRun": "89d4c0820ffbba6ff7b864ab7823edafed148000",
+  "engineTipNote": "Started at 61aa9ff; tip advanced to 89d4c08 (#314 rrc-pipeline) mid-run. Local uncommitted patches retained: isUsablePropId PROP_ID_TOKEN_PATTERN; cad-parcel-roll HOLD = CROSSWALK ∪ LANDUSE_JOIN.",
+  "rails": [
+    {
+      "rail": "owner-fact",
+      "pilotCounty": "48021",
+      "pilotVerifyFailures": 0,
+      "countiesApplied": 15,
+      "atomsWritten": 4250396,
+      "presentAtoms": 3768716,
+      "absenceAtoms": 481680,
+      "cellsBefore": 0,
+      "cellsAfter": 13,
+      "haltedEarly": false,
+      "haltReason": null,
+      "cadAppliedVsNonCadNotYet": {
+        "cadCountiesApplied": 15,
+        "nonCadHonestNotYet": 239,
+        "note": "Owner is jurisdiction-depth CAD-bounded; never reaches 254. Non-CAD not-yets are not failures."
+      },
+      "belowThresholdWithAtoms": [
+        { "fips": "48439", "pct": 89.45, "reason": "space-containing prop_ids skipped by isUsablePropId (~16k); raw features denom leaves 0.55pp under 90%" },
+        { "fips": "48453", "pct": 45.96, "reason": "CAD join covers subset of Travis txgio features" }
+      ]
+    },
+    {
+      "rail": "land-use-fact",
+      "pilotCounty": "48021",
+      "pilotVerifyFailures": 0,
+      "countiesApplied": 15,
+      "atomsWritten": 4250396,
+      "presentAtoms": 3455075,
+      "absenceAtoms": 795321,
+      "cellsBefore": 0,
+      "cellsAfter": 13,
+      "haltedEarly": false,
+      "haltReason": null,
+      "holdCountiesJoinHold": ["48209", "48491"],
+      "belowThresholdWithAtoms": [
+        { "fips": "48439", "pct": 89.45, "reason": "same unusable-token skip as owner" },
+        { "fips": "48453", "pct": 45.96, "reason": "same CAD/feature gap as owner" }
+      ]
+    },
+    {
+      "rail": "cad-parcel-roll",
+      "pilotCounty": "48021",
+      "pilotVerifyFailures": 0,
+      "countiesApplied": 15,
+      "atomsWritten": 4586883,
+      "presentAtoms": 3508703,
+      "absenceAtoms": 1078180,
+      "cellsBefore": 0,
+      "cellsAfter": 13,
+      "haltedEarly": false,
+      "haltReason": null,
+      "crosswalkHoldObserved": ["48453"],
+      "landuseJoinHoldObserved": ["48209", "48491"],
+      "haysReappliedJoinHold": true,
+      "belowThresholdWithAtoms": [
+        { "fips": "48439", "pct": 89.45, "reason": "same unusable-token skip" },
+        { "fips": "48453", "pct": 59.47, "reason": "CROSSWALK_HOLD absences keyed by CAD rows (492848) vs txgio features (828773)" }
+      ]
+    }
+  ],
+  "ledgerBefore": {
+    "satisfiedCells": 366,
+    "texasCompletenessPct": 7.7584,
+    "note": "Dispatch template baseline. Live measured at slot-take was satisfiedCells=384 / texasCompletenessPct=10.7987 (post-B2 geometry 251 + flood 114)."
+  },
+  "ledgerBeforeLive": {
+    "satisfiedCells": 384,
+    "texasCompletenessPct": 10.7987,
+    "totalCells": 3556
+  },
+  "ledgerAfter": {
+    "satisfiedCells": 423,
+    "texasCompletenessPct": 11.8954,
+    "totalCells": 3556,
+    "deltaSatisfiedCells": 39,
+    "deltaNote": "+13 owner +13 landuse +13 cad (Tarrant+Travis not promoted)"
+  },
+  "slotHeldFrom": "2026-08-12T13:14:12Z",
+  "slotReleasedAt": "2026-08-12T18:42:00Z",
+  "cp1": {
+    "preregisteredAt": "2026-08-12T13:21:00Z",
+    "artifact": "P:/tmp/a1_cad_rails_20260812/cp1_preregister.json",
+    "expectedSatisfiedPresentMaxPerRail": 15,
+    "adversarial": "P:/tmp/a1_cad_rails_20260812/cp1_adversarial.json",
+    "verdict": "PASS — pilot unblocked remaining; paid gate proved reachable"
+  },
+  "cp2": {
+    "runAt": "2026-08-12T18:40:18Z",
+    "scorer": "P:/tmp/a1_cad_rails_20260812/score_cad_rails_fast.mjs",
+    "facetKeyFix": "scorer writes facet=rail_key (owner/landuse/cad); countyCoverageScoreCli facet=land-use never joins landuse",
+    "owner": { "cellsBefore": 0, "cellsAfter": 13, "expectedMax": 15, "reconcile": "13/15 CAD promote; 48439 89.45% and 48453 45.96% stay not-yet" },
+    "landuse": { "cellsBefore": 0, "cellsAfter": 13, "expectedMax": 15, "reconcile": "same 13 FIPS as owner" },
+    "cad": { "cellsBefore": 0, "cellsAfter": 13, "expectedMax": 15, "reconcile": "same 13 FIPS; Travis CROSSWALK absences 59.47% vs features" },
+    "verdict": "PASS with recorded gaps — delta +39 cells matches 13×3; CP1 max-15 expectation reduced by Tarrant skip + Travis coverage"
+  },
+  "adversarialFindings": [
+    "PASS: engine was on feat/d2-flood-grid-index; forced origin/main before apply (stale-tree trap class)",
+    "PASS: paid-tier gate REACHABLE — mutated accessPolicy=public-free aborted REFUSING TO WRITE; wroteToStore=false (paid_gate_proof.json)",
+    "PASS: owner store 100% public-paid; owner-withheld=0 (never inferred); dry-run logs use hasOwnerName/hasMailingAddress booleans only — no PII in artifacts",
+    "PASS: entityId shape ${parcelNodeId}:${taxYear} verified in store (e.g. 48021:10001:2025); verify uses atom_did IN not body->>'atomDid'",
+    "PASS: Hays/Williamson owner+landuse = 100% join-hold absences; Travis owner present (CROSSWALK is cad-roll only)",
+    "FIX: Tarrant ZodError — isUsablePropId lacked PARCEL_NODE_ID alphabet gate; spaces in prop_id killed whole county via .map(); patched + test; PR owed",
+    "FIX: cad-parcel-roll HOLD was CROSSWALK-only; Hays wrongly wrote 265852 presents; patched to CROSSWALK∪LANDUSE_JOIN and re-applied Hays as join-hold",
+    "FINDING: countyCoverageScoreCli facet 'land-use' != rail_key 'landuse' — JOIN miss; A1 scorer writes facet=rail_key",
+    "FINDING: Tarrant 89.45% fails 90% on raw feature denom after skipping ~16k illegal tokens — CAD-bounded accounted denominator owed",
+    "FINDING: Travis owner/landuse 45.96% and cad CROSSWALK absences 59.47% vs features — CAD coverage subset of geometry fabric",
+    "NOTE: live ledgerBefore 384/10.80% not dispatch template 366/7.76%; close records both"
+  ],
+  "localPatchesOwedAsPr": [
+    "hauska-engine packages/atoms/src/fact-writer-ids.ts — isUsablePropId PROP_ID_TOKEN_PATTERN",
+    "hauska-engine packages/atoms/src/__tests__/property-fact-writers.test.ts — space/slash rejection cases",
+    "hauska-engine packages/engine-core/src/cad-parcel-roll/plan-county-cad-parcel-roll.ts — HOLD = CROSSWALK ∪ LANDUSE_JOIN"
+  ],
+  "artifactsDir": "P:/tmp/a1_cad_rails_20260812"
+}

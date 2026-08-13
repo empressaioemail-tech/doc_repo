@@ -1,0 +1,48 @@
+{
+  "reviewedAt": "2026-08-12T16:12:00Z",
+  "checkpoint": "CP1",
+  "verdict": "PASS_WITH_BUILD_CONSTRAINTS",
+  "liveProbeConfirm": {
+    "smithvilleFields": ["OBJECTID", "ZONING"],
+    "smithvilleCount": 91,
+    "elginFieldCount": 26,
+    "elginCountCityLimit": 3220,
+    "nativeWkidBoth": 102739,
+    "divergenceReal": true
+  },
+  "findings": [
+    {
+      "severity": "med",
+      "id": "CP1-F1",
+      "finding": "cityGeoId for Elgin listed as 4823042 — verify against texas_roster / TxGIO geo_id before persist; do not invent",
+      "requiredFix": "Lookup roster place_fips / geo_id for elgin-tx and smithville-tx; fail closed if missing"
+    },
+    {
+      "severity": "med",
+      "id": "CP1-F2",
+      "finding": "isOverlay/isBaseDistrict catch is circular if every row defaults isBaseDistrict=true with no registry layerRole",
+      "requiredFix": "Add sourceRegistryFields.layerRole = base|overlay|unknown; drain refuses overlay and refuses unknown when consumer asks for base-only; unit-test the refusal"
+    },
+    {
+      "severity": "med",
+      "id": "CP1-F3",
+      "finding": "Elgin layer is parcel-joined polygons (~3220) vs Smithville dissolved-ish district polygons (91) — different geometric grain, not only field names",
+      "requiredFix": "Contract documents geometryGrain = parcel-joined|district-polygon from registry; passthrough retains all attrs; do not dissolve Elgin"
+    },
+    {
+      "severity": "high",
+      "id": "CP1-F4",
+      "finding": "Harvest ruling: silent tier fallback is the defect — CP1 fields exist but no enforcement trap",
+      "requiredFix": "staging insert FAIL CLOSED if source_tier_satisfied IS NULL OR empty; test covers it"
+    },
+    {
+      "severity": "low",
+      "id": "CP1-F5",
+      "finding": "Both cities share county 48021 — schema divergence still valid; multi-county trap needs synthetic unit test",
+      "requiredFix": "Unit test: payload with parentCountyFips A and geometry bbox in county B still stages under cityKey identity; drain lists city not county as primary key"
+    }
+  ],
+  "approvedCityPair": ["elgin-tx", "smithville-tx"],
+  "approvedTableName": "tx_zoning_district_staging",
+  "goBuild": true
+}

@@ -1,0 +1,142 @@
+{
+  "artifact": "_inbox/2026-08-12_L7_cp1_absence_path_trace.json",
+  "planRow": "P-01",
+  "lane": "L7",
+  "checkpoint": "CP1",
+  "runAt": "2026-08-12T22:55:00Z",
+  "factVerified": {
+    "liveSummary": {
+      "source": "GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+      "totalRails": 14,
+      "totalCounties": 254,
+      "totalCells": 3556,
+      "satisfiedCells": 405,
+      "satisfiedPresentCells": 405,
+      "satisfiedAbsentCells": 0,
+      "texasCompletenessPct": 12.909486508370861
+    },
+    "note": "summary.satisfiedAbsentCells = 0 confirmed live 2026-08-12; program has never served a satisfied-absent cell."
+  },
+  "derivationTrace": {
+    "servePathExists": true,
+    "servePathEvidence": [
+      {
+        "file": "artifacts/api-server/src/routes/countyLedger.ts",
+        "mechanism": "readManifestGrid SQL CASE: when atom_family_state=present AND has_writer=true AND rail_state non-null, display_state = c.rail_state (passes satisfied-absent through unchanged)",
+        "lines": "CASE WHEN r.atom_family_state <> 'present' THEN 'no-atom' WHEN r.has_writer = false THEN 'no-writer' WHEN c.rail_state IS NULL THEN 'not-yet' ELSE c.rail_state END"
+      },
+      {
+        "file": "artifacts/api-server/src/routes/countyLedger.ts",
+        "mechanism": "applyDepthRailDisplayGate leaves satisfied-absent untouched (only downgrades jurisdiction-depth satisfied-present below threshold)",
+        "function": "applyDepthRailDisplayGate"
+      },
+      {
+        "file": "artifacts/api-server/src/routes/countyLedger.ts",
+        "mechanism": "isSatisfiedCell counts satisfied-absent toward rollup; summary.satisfiedAbsentCells counts displayState==='satisfied-absent'",
+        "functions": ["isSatisfiedCell", "summary.satisfiedAbsentCells"]
+      },
+      {
+        "file": "lib/db/src/schema/countyFacetCoverage.ts",
+        "mechanism": "DB CHECK county_facet_coverage_absence_basis_required_check: rail_state='satisfied-absent' requires absence_basis IS NOT NULL",
+        "dc9Note": "DC-9 additionally requires at least one of verifiedByInstrument|source|absenceBasis non-null on any satisfied cell; absence_basis alone satisfies DC-9, but L7 fail-closed rule also requires verifiedByInstrument on write"
+      }
+    ],
+    "writePathExists": false,
+    "writePathFinding": {
+      "severity": "SERVE_PATH_EXISTS_WRITE_PATH_UNREACHABLE",
+      "detail": "No production scorer currently emits rail_state='satisfied-absent' for geometry (or flood). Geometry scorer type union is only satisfied-present|not-yet; counties with null/zero txgio_parcel denominator are skipped in main() rather than written.",
+      "citations": [
+        {
+          "file": "artifacts/api-server/src/countyGeometryScoreCli.ts",
+          "symbol": "GeometryCountyScore.railState",
+          "evidence": "railState: \"satisfied-present\" | \"not-yet\" — satisfied-absent absent from the type"
+        },
+        {
+          "file": "artifacts/api-server/src/countyGeometryScoreCli.ts",
+          "symbol": "scoreGeometry",
+          "evidence": "Threshold gate only chooses satisfied-present vs not-yet; no absenceDetermination input"
+        },
+        {
+          "file": "artifacts/api-server/src/countyGeometryScoreCli.ts",
+          "symbol": "main skip branch",
+          "evidence": "if (!featureInfo) { skippedNoFeatures += 1; continue; } — Donley never gets a county_facet_coverage row"
+        },
+        {
+          "file": "artifacts/api-server/src/countyGeometryScoreCli.ts",
+          "symbol": "upsertLedger",
+          "evidence": "INSERT column list omits absence_basis — even a hand-patched rail_state could not set provenance via this CLI"
+        }
+      ],
+      "testsThatProveServeOnly": [
+        "artifacts/api-server/src/__tests__/countyLedger.test.ts — precedence: jurisdiction-depth satisfied-absent unchanged by gate (inserts facet row directly)",
+        "artifacts/api-server/src/__tests__/countyLedger.test.ts — a satisfied-absent cell requires an absence_basis (DB CHECK)"
+      ]
+    },
+    "failClosedRuleAdopted": "A cell reaches satisfied-absent only on a POSITIVE determination with non-null absenceBasis AND non-null verifiedByInstrument. No evidence => not-yet. Satisfied cell with all provenance null fails DC-9."
+  },
+  "geometryNotYetCellsVerified": {
+    "instrument": "SQL on cortex-prod neondb (project fancy-fire-06136146) + live GET /api/county-ledger",
+    "distribution": {
+      "satisfied-present": 251,
+      "not-yet": 3,
+      "satisfied-absent": 0
+    },
+    "cells": [
+      {
+        "countyFips": "48129",
+        "countyName": "Donley",
+        "displayState": "not-yet",
+        "railState": null,
+        "honestCoveragePct": null,
+        "txgioParcelFeatures": 0,
+        "diagnosis": "StratMap 404 / only txgio gap — no county_facet_coverage row; scorer skip path. Candidate for provenanced satisfied-absent.",
+        "class": "true-source-gap-source-404"
+      },
+      {
+        "countyFips": "48135",
+        "countyName": "Ector",
+        "displayState": "not-yet",
+        "railState": "not-yet",
+        "honestCoveragePct": 5.0,
+        "txgioParcelFeatures": 75891,
+        "txgioParcelRows": 83202,
+        "diagnosis": "Data EXISTS in txgio_parcel (~76k features). Coverage 5% is identity/re-key defect (OPS-16 P-02 geo_id re-key ~71,673 atoms), NOT phenomenon absence. Must NOT be stamped satisfied-absent. Resolve via P-02 re-key then rescore, or scorer key fix if atom county keying is wrong.",
+        "class": "scorer-threshold-below-after-identity-defect",
+        "blockedOn": "P-02"
+      },
+      {
+        "countyFips": "48201",
+        "countyName": "Harris",
+        "displayState": "not-yet",
+        "railState": null,
+        "honestCoveragePct": null,
+        "txgioParcelFeatures": 1523641,
+        "txgioParcelRows": 1602031,
+        "diagnosis": "Data EXISTS (~1.52M features). No facet row — scorer never wrote. Suspect atom count GROUP BY body->>'countyFips' misses Harris if body.countyFips null while entity_id is FIPS-prefixed (flood scorer already uses left(entity_id,5)). Not coastal-short; not honest-absence. Fix: rescore with left(entity_id,5) keying.",
+        "class": "scorer-miss-null-facet-row",
+        "fixInLane": "geometry scorer atom county key -> left(entity_id,5)"
+      }
+    ],
+    "expectationCheck": "Mission expected Donley + two others. Verified: Donley 48129, Ector 48135, Harris 48201. Not assumed."
+  },
+  "donleyDecisionDraftPath": "_decisions/2026-08-12_donley_48129_geometry_honest_absence.md",
+  "donleyDecisionStatus": "provisional — drafted at CP1; planner promotes after live ledger proof",
+  "outreachDraft": "_inbox/2026-08-09_F6_donley_cad_outreach_draft.md",
+  "l5CollisionAvoidance": {
+    "openL5Pr": 419,
+    "l5OwnedDoNotTouch": [
+      "lib/db/src/railManifestDerivation.ts",
+      "lib/db/src/schema/countyRailDimension.ts hasWriter paths",
+      "SF-20/21/24/25/26/30 files"
+    ],
+    "l7Owned": [
+      "artifacts/api-server/src/countyGeometryScoreCli.ts",
+      "artifacts/api-server/src/countyGeometryScore.test.ts",
+      "upsert absence_basis write path",
+      "decision record + doctrine note + inbox artifacts"
+    ]
+  },
+  "worktree": "P:/tmp/l7_absence/ldt",
+  "branch": "feat/l7-honest-absence",
+  "next": "Implement fail-closed write path; diagnose Harris atom keying; draft Donley decision; apply Donley + Harris score; leave Ector to P-02 with written diagnosis"
+}

@@ -1,0 +1,118 @@
+---
+id: OPS-16_texas_market_plan_of_record
+title: OPS-16 — Texas complete and out the door: plan of record
+date: 2026-08-12
+last_updated: 2026-08-12
+status: active
+owner: nick (amendments); doc_repo planner (grading)
+purpose: The single benchmarkable plan for closing the Texas flush launch gate and reaching market. Baseline is frozen; changes are append-only amendment rows. Work that cannot name a row ID here is not scoped.
+related_canonical: [_decisions/2026-08-11_texas_flush_launch_gate_amendment, _decisions/2026-08-09_texas_flush_launch_gate, 90_operations/OPS-14_texas_flush_game_plan, _inbox/2026-08-12_PLANNER_HANDOFF_five_layer_reset, 76j_smartsite_launch_readiness_program]
+---
+
+# OPS-16 — Texas complete and out the door: plan of record
+
+## Why this document exists
+
+Every prior version of "the plan" lived in prose across five documents, and the program's measured base rate is that prose-shaped controls run 0-for-3 while structure-shaped controls run 1-for-1. This document is the structural answer: a frozen baseline table with stable row IDs, each row naming the gate item it serves and the pass/fail instrument that grades it, plus an append-only amendment log. Drift becomes a diff you can read instead of a feeling.
+
+**Definition of done.** All 13 done-card items (DC-1 through DC-13) in `_decisions/2026-08-11_texas_flush_launch_gate_amendment.md` grade PASS via their named instruments, plus the Layer 5 market rows below. Measured-everywhere, not filled-everywhere. `texasCompletenessPct` is informational only (DC-12). A row graded by narration or doc assertion fails.
+
+## Governing rules
+
+1. **The baseline table never gets edited.** Every scope change (add, move, remove, re-層, re-scope) is a dated row in the AMENDMENTS table. What we believed on 2026-08-12 stays visible forever.
+2. **No dispatch without a row.** Every dispatch names `PLAN-ROW: P-xx` in its preamble. Candidate for canon-gate hook enforcement (hook-shaped controls are the only class that has worked here).
+3. **Statuses re-grade only by instrument** (ledger GET, SQL, gh, live probe) at session close. A status changed by narration is a defect. The GRADE LOG below records each grading pass.
+4. **Lane-planner fan model (operator ruling 2026-08-12).** Hand-carried lane agents are planning agents that may spawn sub-agents, DEVIATING from the standing no-nesting default by explicit operator ruling for this program. Conditions that keep the old lesson alive: the lane planner supervises every sub-agent to completion (a coordinator that fans and returns abandons its workers), verification is never delegated below the lane planner, the lane planner adversarially reviews sub-agent output with at least two checkpoints, and the lane delivers a machine-checkable close artifact at a named `_inbox/` path.
+5. **Write-slot law.** One atoms bulk-writer slot per database. Slot handoffs recorded in `_STATE.md`. Acquisition, staging, builds, and dry-runs are slot-free and parallel; only `--apply` against the atoms store queues.
+
+## Lineage — baseline v0 and the A-000 correlation
+
+The five-layer table of ~2026-08-09/10 is baseline v0 of this plan (operator artifact; states quoted verbatim). Its "F1/F2/F3" naming is the pre-relabel scheme; the 2026-08-12 operator ruling renamed the factories (statewide fabric = Factory 1, acquisition/staging = Factory 1.5, county depth = Factory 2). Correlate by function, not by name.
+
+| Layer | v0 state (~08-09/10) | Verified state 2026-08-12 | Verdict |
+|---|---|---|---|
+| Foundation | "Built. 196/254 counties, flood loaded, contract proven in production." | `txgio_parcel` 253/254 (Wave 4 landed 57 reprojection counties; Donley the only gap); geometry rail 251/254 satisfied on the live ledger; NFHL loaded with geom+GiST; contract proven and the Factory 1.5 back half added (eng #316/#317) | Advanced. "Built" at 196/254 was premature then; nearly true now |
+| Measurement | "Running now (Handoff D holds the slot chain: sweep, Bastrop anchors, scorer, three writers statewide)." | That chain completed: sweep 132/132 closed 08-11, scorers applied, writers grew three to twelve; 14/14 rails writer+atom; zero `no-writer`/`no-atom` live. Slot now held by A2 (SD, rail-corridor) | Chain done; a longer chain replaced it |
+| Integrity | "Cert is honestly 6/7; the fix lane (G) and roads unblock (H) are in your hands to dispatch." | block13 reached 7/7 (T1 re-persist) but DC-10 as a whole is UNGRADED this arc. Roads: #293 salvaged, writer built and bound, `not-yet` x254; statewide ingest still awaits operator ruling, the one v0 item still literally open | Half closed; the roads ruling survived two baselines unchanged |
+| Depth | "Started: Smithville corpus live, 35 CAD registry rows, Elgin correctly held. Scales after the slot frees." | The 35 registry rows became A1's 15-county apply (13.1M atoms); Smithville (91 rows) and Elgin (3,209 rows) staged in the Factory 1.5 seam; Elgin apply hold persists unresolved since v0. "Scales after the slot frees" proved false as written: scaling needs the Factory 1.5 FRONT half, which does not exist | Reframed. The bottleneck moved from the slot to acquisition machinery |
+| Launch | "Parallel track; domain bought, limiter done, load test and MCP recon still owed." | Load test still owed; MCP recon became MCP1 (atom chain 15/16 live; five hardcoded lists remain). "Limiter done" is NO LONGER TRUE: the Upstash rate-limit DB died and MCP runs on the in-memory fallback; DC-11a would fail today. New since: Stripe "Hauska Pro" hard gate, pricing ladder lock | One row regressed silently. This is the whole argument for instrument-graded status |
+
+## PLAN OF RECORD v1 — baseline frozen 2026-08-12
+
+Status legend: **LIVE** = verified at source 2026-08-12 by the doc_repo planner. **DOC** = from a close artifact, not re-verified that day. **FLIGHT** = running at baseline time.
+
+| ID | L | Work item | Serves | Pass/fail instrument | Blocked on | Status at baseline |
+|----|---|-----------|--------|---------------------|------------|-------------------|
+| P-01 | 1 | Geometry rail: last 3 counties to satisfied or ruled honest-absent (incl. Donley 48129) | DC-2 | Ledger geometry cells, zero pre-terminal | Donley source ruling | LIVE: 251/254 |
+| P-02 | 1 | Ector 48135 re-key on geo_id (~71,673 atoms) | DC-2/DC-3 | Store query post-re-key | free lane | DOC: queued |
+| P-03 | 2 | A2 special-district apply completes; slot released and recorded | DC-3 (mud) | Close artifact + `_STATE.md` handoff entry | none | FLIGHT: 3/253 landed, PID 43348 alive |
+| P-04 | 2 | Rule mud vs special-district (same subject built twice) + declaration refresh + cortex redeploy | DC-1, DC-3 | `countyRailRefreshCli` + DC-1 coherence check | operator ruling | OPEN; blocks all P-03 output from lighting cells |
+| P-05 | 2 | SD scorer run + rail attribution after P-04 | DC-3 | Ledger mud rail | P-03, P-04 | not started |
+| P-06 | 2 | Rail-corridor apply (A2's second rail) + scorer | DC-3 | Ledger rail-corridor x254 | P-03 sequence | FLIGHT (queued in-lane) |
+| P-07 | 2 | Flood metros apply (6 counties, PostGIS zone-major) | DC-3 | Ledger flood; Harris plan ~31 min proven | atoms slot | DOC: ready |
+| P-08 | 2 | Flood remainder: 63 sub-threshold + 35 crash-cohort counties to satisfied x254 | DC-3 | Ledger flood, zero not-yet | P-07, slot | LIVE: 114 satisfied / 140 not-yet |
+| P-09 | 2 | Footprint apply (10.67M staged rows, geometry-true join) + scorer | DC-3 | Ledger footprint x254 | slot | LIVE: x254 not-yet |
+| P-10 | 2 | Well staged-writer swap PR (recover uncommitted `fetch-wells-staged.ts` + writer diffs; CP1-F2) | DC-3 | PR merged on CI string "success"; writer reads `tx_rrc_well` not Harris mirror | A2 release for the dirty files; recovery build may start read-only | OPEN; wells apply forbidden until landed |
+| P-11 | 2 | rrc-wells apply statewide + scorer (W2 fail-closed merged, eng #321 @ 0dd28e6) | DC-3 | Ledger rrc-wells x254; `unknown` statuses present, zero silent defaults | P-10, slot | LIVE: x254 not-yet |
+| P-12 | 2 | rrc-pipelines apply + scorer (writer built per G1 close) | DC-3 | Ledger rrc-pipelines x254 | slot | LIVE: x254 not-yet |
+| P-13 | 2 | 18-cell delta attribution (405 vs 423, owed from capture) | DC-13 hygiene | Rail-by-rail diff of two ledger dumps | free lane | OPEN |
+| P-14 | 2 | Ledger endpoint performance (10s baseline; 31-145s under load) | DC-13 | Timed GET under write load | free lane | LIVE: 31.5s on 08-12 |
+| P-15 | 2 | SWEEP remediation: high-sev silent fallbacks + 14 tests-that-cannot-fail + 16 CI greppable fail-closed patterns as hooks | all DC | CI checks merged; each fix lands with failing-first test | free lane; must not touch A2-dirty files | DOC: 0 fixes applied |
+| P-16 | 2 | SD midpoint-PIP verdict on the running apply; re-verify pass if confirmed | DC-3 integrity | A2 midrun report + boundary-parcel query | A2 answer | OPEN |
+| P-17 | 3 | Roads statewide ingest GO/NO-GO ruling, then per-county apply + scorer | DC-3 | Ledger roads x254 | operator ruling | LIVE: x254 not-yet, writer bound |
+| P-18 | 3 | Cert frame reconciled: block13 re-earn in true frame, W3 close artifact, OPS-11 cleared marker | DC-10 | The three DC-10 sub-checks | free lane | UNGRADED this arc |
+| P-19 | 4 | Factory 1.5 front half build (handoff Q1 spec: versioned runner, catalogue queue, folder recursion, typed taxonomy, fail-closed, resume, close artifacts) | DC-6 zoning | Proven on 5-source-type verification set per spec | operator go | OPEN; the main gap |
+| P-20 | 4 | Q7: four Z1 corrections + adopt seven-status absence taxonomy (decision record + roster schema). Houston layers planner-verified live 08-12: pubgis02 layer 13 = 722, layer 12 = 195 | DC-6 | Roster diff: Deer Park staged, Houston reclassified never-as-zoning, Webster HOST-BROKEN, 84 rows to NOT-FOUND-UNKNOWN-WHY | operator go | UNBLOCKED (re-probe done) |
+| P-21 | 4 | Z1 re-probe of the 84+ unknowns with the real factory | DC-6 | Per-city typed verdicts artifact | P-19 | BLOCKED by design |
+| P-22 | 4 | Zoning depth: stage, drain, stamp, score across the 28 footprint counties | DC-6 | Ledger zoning satisfied in footprint | P-19, P-20 | LIVE: 1 county real |
+| P-23 | 4 | Envelope depth in footprint (needs zoning + geometry) | DC-6 | Ledger envelope in footprint | P-22 | LIVE: x254 not-yet |
+| P-24 | 4 | Easement rail: satisfied or honest-absent path in footprint (writer merged per E1) | DC-6/DC-7 | Ledger easement | slot + scoping | LIVE: x254 not-yet |
+| P-25 | 4 | CAD depth beyond the 15 counties: bulk_primary routing + CAMA parsers (Dallas/Tarrant 0.0% sqft) + footprint counties without CAD ruled honest-absent | DC-6 cad/owner/landuse | Ledger depth rails in footprint; store sqft % | free lane | DOC: registry knows, ingest ignores |
+| P-26 | 4 | Utility lines probe (water/sewer/electric), probe-first, no rail assumed | feasibility scope | Probe artifact with per-source posture | operator go (Q2 spec) | SCOPED |
+| P-27 | 4 | Address-to-parcel resolver (situs 99.3% populated; blocks API/paste-a-list/MCP lookup) | market surface | exact/ambiguous/not-found verdicts live | in/out of launch: needs ruling | SCOPED |
+| P-28 | 5 | G1 hard gate: Stripe "Hauska Pro" to Smart Site naming (ruled exception, may run now) | DC-11e | Stripe product export, zero "Hauska" strings | free lane | OPEN; hard gate |
+| P-29 | 5 | 76j capacity: rate-limit store (Upstash dead, replacement owed), load test, capacity doc | DC-11a-c | The three DC-11 sub-checks | Layers 1-2 close | OPEN; regressed from v0 "done" |
+| P-30 | 5 | smartsite.cloud domain attach + canonical-URL sweep + Q11 copy/brand batch | DC-11d | `curl -sI` 200/301; QA register zeroed | Layers 1-2 close | OPEN |
+| P-31 | 5 | MCP finish: five remaining hardcoded lists (per MCP1 close) + rate-limit dependency | market surface | MCP1 artifact list zeroed; live probe | Layers 1-2 close | DOC: chain 15/16 live |
+| P-32 | 5 | Report engine + audience profiles + comparison mode | market surface | Per Q10 scope doc | Foundation+Measurement close | SCOPED; do not start |
+| P-33 | 5 | Smart Files artifact store | market surface | Per Q11-handoff scope | P-32 | SCOPED; do not start |
+| P-34 | 5 | Vercel to GCP migration | post-gate | Per Q12 scope | gate close | SCOPED; do not start |
+| P-35 | 5 | Retrieval-key durability (hand-synced in two places; broke MCP once, PE once) | launch stability | Key sourced from workflow/shared secret ref | free lane | OPEN; cheap, hook-shaped |
+| P-36 | 5 | Gate close grading run: DC-1..13 graded by instrument, DC-13 verbatim snapshot, launch sign-off | ALL | The done-card itself | everything above | THE FINISH LINE |
+| P-37 | - | Hygiene: `_STATE.md` regenerated on the five-layer frame with ONE queue register; doc_repo session-close commit; engine uncommitted sweep post-A2 | plan integrity | git log + single register in `_STATE.md` | A2 release (engine part) | OPEN |
+| P-38 | - | Old-register decisions ruled in or explicitly retired: E3 Elgin apply, OZ crossfilter branch, IDX index audit, harvest take-list | plan integrity | Each gets an amendment row here | operator rulings | OPEN; currently orphaned between registers |
+
+## Write-path tee order (advisory; resequencing is not a scope change)
+
+The atoms slot is the long pole. The goal is that slot occupancy is pure write time: every apply enters the slot with a merged writer on main, dry-run evidence, a ready runner, and a preflight gate.
+
+Current chain: A2 SD (FLIGHT) -> A2 rail-corridor -> RELEASE -> flood metros (P-07) -> flood remainder (P-08) -> footprint (P-09) -> rrc-wells (P-11, gated on P-10 merge) -> rrc-pipelines (P-12) -> mud scorer (gated on P-04 ruling) -> easement/envelope applies as they become ready.
+
+## AMENDMENTS (append-only; never edit the baseline)
+
+| # | Date | Row(s) | Change | Why | Operator-ruled |
+|---|------|--------|--------|-----|----------------|
+| A-000 | 2026-08-12 | all | Baseline v0 (the 08-09/10 five-layer table) superseded by v1; deltas recorded in the Lineage section | Program reset on the five-layer frame after drift | Y |
+| A-001 | 2026-08-12 | P-03, P-16 | A2 SD apply HALTED at operator ruling 21:16Z (verified dead 21:17:32Z; 29 counties / 1,245,279 atoms / 0 verifyFailures landed; 48061 mid-write re-enters). P-03 re-scoped: resume only after the SF-6 membership fix lands; the fix is prescribed as PostGIS zone-major true-geometry membership (the flood #315 pattern), which is also the speed fix | SF-6 confirmed in the running writer (A2 midrun report); correction after statewide completion would strand stale wrong-entityId absence atoms | Y |
+| A-002 | 2026-08-12 | P-04, P-05 | RULED: mud is a special-district TYPE. The `mud` rail is served by `special-district-fact` atoms (district_type subcategorization in the body, per the R1 split rule); no separate mud build ever; declaration refresh + refreshCli + cortex redeploy, then the SD scorer may run | Same source and geometry; splitting would build the same subject twice | Y |
+| A-003 | 2026-08-12 | P-17 | RULED: GO on roads statewide ingest. Queued in the write-path tee order after footprint | Writer bound, synthetic-id landmine closed, Bastrop held at 19,907 | Y |
+| A-004 | 2026-08-12 | P-09, P-15 | NEW WORK from L4 tee: the merged footprint writer IGNORES the staged geometry-true join and would reintroduce the 59.5% bbox false-positive rate on apply. Footprint apply is BLOCKED until a staged-table consumer lands; the build is assigned to L5 (addendum) with file ownership over the building-footprint writer | L4 finding (close artifact 2026-08-12_L4_slot_chain_tee_close.json); the bbox join is the exact defect class the staging existed to remove | Y (operator put L4 in flight; blocking finding) |
+| A-005 | 2026-08-12 | P-34 | P-34 decommission scope addition: revoke the hauska-map VERCEL_TOKEN and delete the PE Vercel key-sync workflow leg when PE moves to GCP. Token is bridge material with 60-90 day expiry; the SM-source-of-truth wiring from P-35 is the migration end-state and survives | Keeps the L6 bridge from outliving its purpose | Y |
+| A-006 | 2026-08-12 | P-21 | P-21 scope note: Z1's Dallas metro rows (158 lowercase searched-and-absent, outside L3's owed set) re-enter through the factory re-probe alongside the NOT-FOUND-UNKNOWN-WHY queue | L3 close flagged them; same treatment, same machinery | Y |
+| A-007 | 2026-08-12 | P-29 | RULED: the rate-limit store restore dispatches NOW as a regression restore (v0 recorded it done; the Upstash DB died after), not new Layer 5 work. The layer rule stands for everything else in Layer 5 | DC-11a fails today on the in-memory fallback; restoring a regression is not opening the layer | Y |
+| A-008 | 2026-08-12 | P-38(E3) | RULED: E3 Elgin warm apply SUPERSEDED and retired. Elgin zoning depth flows through the Factory 1.5 staging seam (3,209 rows already staged) and the drain; the old warm-apply path with its unresolved 75/98-vs-102/72 parity anomaly is closed, not fixed. E3-ADV re-review no longer owed | Two paths to the same data is how parity anomalies breed; the staged path is the ruled architecture | Y |
+| A-009 | 2026-08-12 | P-01, P-03 | NEW DRAIN LEG from L7: Harris 48201 has ZERO parcel-node atoms despite the full 1,523,641-feature txgio reload — reloaded after the sweep sizing snapshot, so it never entered the sweep queue and "132/132 complete" hid it. Harris parcel-node apply + geometry rescore added to the write-path tee order (before flood metros, same slot chain) | L7 close; the count-based-gate hole class, caught by the honest-absence instrumentation | Y |
+| A-010 | 2026-08-13 | P-03, P-05, P-06 | ROGUE EVENT: the lost A2 agent resumed after the formal close and ran the SF-6 apply across 204 counties (~18,529,461 special-district-fact atoms, skipping 48439) plus a 5-county rail-corridor partial (~183,575 atoms) on the pre-#324 silent-default classifier, before its planner killed it (~00:50Z) and filed `_inbox/2026-08-12_A2_late_addendum.json` through the tombstone path. BOTH products ruled CONTAMINATED: SD atoms carry bbox-midpoint membership (L1 pilot measured 0.70% parcel flips incl. 340 false absences in one county); rail atoms predate the fail-closed classifier. Remediation = L1's proven delete-then-drain per county (pilot: zero post-drain flips, 1,397 atoms/s); rail partial scrubbed/re-applied under L1 custody with contract 1.22.0 semantics | The tombstone worked (evidence filed, no second restart, rogue runner killed) but not before the write; slot law needs a process-level guard, not only a file | Y (operator-ruled halt lineage; evidence-driven) |
+| A-011 | 2026-08-13 | P-03, P-06 | ROGUE EVENT ESCALATION + NEUTRALIZATION: the rail runner resurrected TWICE more (rekill 08:06Z at 142 counties; third kill ~11:57Z by planner mid-48201 via a PowerShell watchdog). Final rogue rail inventory from its own progress file: **204 counties / 9,867,600 rail-corridor atoms**, present ratio 99.4% — itself anomalous (rail adjacency cannot be near-universal; suspect absence-emission or buffer-predicate defect in the pre-#324 run, on top of the classifier). Rogue SD inventory stands at 204 / 18.53M. Vector neutralized: all seven A2 runner scripts quarantined and replaced with exit-86 stubs. L1's remediation roster MUST derive from store truth (DISTINCT counties per family), never from progress artifacts | Third resurrection proved the file tombstone insufficient against a process that never re-reads it; stubs make relaunch structurally harmless | Y |
+| A-012 | 2026-08-13 | P-10+, P-38(IDX), P-38(OZ), P-26, P-25, P-27, DC-11a | OPERATOR RULINGS BATCH: (0) slot-lease enforcement APPROVED — DB-enforced writer lease added to the drain machinery scope (folded into the drain-chain dispatch, not an interrupt to L1); (1) DC-11a instrument re-pointed to the MCP health endpoint (correction; as-written it could never pass — cortex has no limiter); (2) atoms_section_number_idx partialize-then-drop APPROVED, planner-executed, concurrent build, before the heavy drain legs; (3) L12 OZ rebase APPROVED to merge with the one-line test retarget; (4) utility who-serves territory set APPROVED as ACQUISITION ONLY (stage PUCT water CCN, PUCT sewer CCN zip, HIFLD electric territory, TWDB PWS, TCEQ districts with provenance; NO rail, NO product surface pre-gate; professional-tier product idea NOTED as a post-gate consideration — all post-gate product items get a dedicated consideration pass); (5) L9 vintage-spec PR APPROVED as a small lane; full loads announce-serialized after it merges; (6) P-27 ruled OUT of gate, FIRST post-gate build — planning captured in `_decisions/2026-08-13_p27_address_to_parcel_post_gate.md` so it is never rehashed | Operator walk-through 2026-08-13 | Y |
+| A-013 (renumbered; lane-authored, was duplicate A-007) | 2026-08-12 | P-18 | P-18 / DC-10 CLOSED_PASS by instrument (was UNGRADED). W3 close + named `block13-cert-grade` workflow + OPS-11 CLEARED + session naming block13 re-earn. Live 7/7 in raw txgio frame; eng #327 @ b2a8706 | L8 lane closed the evidence trail the gate amendment grades | Y (operator put L8 in flight) |
+| A-014 (renumbered; lane-authored, was duplicate A-008) | 2026-08-12 | P-26 | P-26 CLOSED (probe-only). Artifact `_inbox/2026-08-12_L10_utility_probe_close.json`. Finding: v1 utility feasibility shape is territory who-serves (PUCT water CCN + HIFLD electric retail) with SERVICE-LETTER-REQUIRED residual; municipal mains/laterals are opportunistic city-scoped depth, not a uniform rail; electric distribution geometry is not a public statewide product. No cells / no writers proposed | Operator Q2 probe-first rule; L10 lane | Y (operator put L10 / P-26 in flight) |
+| A-015 (renumbered; lane-authored, was duplicate A-010) | 2026-08-12 | P-29 | Store restore CLOSED. Serving MCP `00063-fic` `/health` `rate_limit_store.state=ok` (postgres, fail-degraded outage mode). DC-11a as written still points at cortex `/health` (SPA HTML, no field); the limiter instrument is MCP `/health`. DC-11b load test and DC-11c capacity-doc freshness remain. Close `_inbox/2026-08-12_L13_rate_limit_restore_close.json` | L13 live proofs (health + 429 + restart survival); inventory proved cortex/retrieval do not share the seam | Y (operator put L13 / A-007 in flight) |
+
+## GRADE LOG (one row per grading pass; statuses re-graded by instrument only)
+
+| Date | Graded by | Ledger triple (satisfied / pct / cells) | Notes |
+|------|-----------|------------------------------------------|-------|
+| 2026-08-12 | doc_repo planner | 405 / 12.909486508370861 / 3,556 (read 20:34:35Z, 31.5s) | Baseline grading; zero no-writer/no-atom cells confirmed by full-cell parse |
+| 2026-08-12 | L8 lane planner | (ledger not re-read; DC-10 is cert instrument) | P-18 / DC-10 CLOSED_PASS: W3 close `_inbox/2026-08-12_W3_cert_frame_close.json`; `gh … block13-cert-grade` → `[{"conclusion":"success"}]` @ `b2a8706`; OPS-11 CLEARED; session names block13 re-earn |
+| 2026-08-12 | L13 lane planner | (ledger not re-read; DC-11a is health instrument) | P-29 store restore CLOSED: MCP #65 @ `57fa819` CI `success`; serving `00063-fic` `/health` `rate_limit_store.state=ok`; 429 + restart survival on tagged canaries. Literal DC-11a cortex URL still fails (wrong host). DC-11b/c residue. |

@@ -1,0 +1,97 @@
+{
+  "artifact": "_inbox/2026-08-12_L13_rate_limit_restore_close.json",
+  "planRow": "P-29",
+  "amendment": "A-007",
+  "lane": "L13",
+  "status": "CLOSED",
+  "ts_utc": "2026-08-12T23:45:00Z",
+  "mission": "Restore the rate-limit store (regression restore). Durable across deploys, shared across replicas, explicit outage mode, live-proved.",
+  "scope": "hauska-mcp-server limiter + config only. cortex-api and retrieval-api inventoried; they do not share the seam and were not touched. No engine repo. No atoms writes. No slot. X-Hauska-Key auth semantics untouched.",
+  "cp1": "_inbox/2026-08-12_L13_cp1_limiter_inventory.json",
+  "cp2": "_inbox/2026-08-12_L13_cp2_live_proofs.json",
+  "wdll": {
+    "path": "_inbox/2026-08-05_76j_workstream_C_rate_limit_and_pooling_WDLL.md",
+    "itemsThisLane": [1, 2, 3],
+    "regrade": {
+      "1": "met — Neon Postgres store pinned (HAUSKA_RATE_LIMIT_STORE=postgres) and serving /health rate_limit_store.state=ok primary=postgres",
+      "2": "met — scoped free key 15340dd5-ed09-46ab-b9b4-4358a56fd429 past HAUSKA_FREE_KEY_DAILY=2 produced HTTP 429 band=daily; restart revision still 429 (shared store, not per-instance)",
+      "3": "met — memory fallback is fail-degraded: health carries outage_policy=fail-degraded and never reports ok when memory_fallback=true (unit test + live ok path)"
+    },
+    "notThisLane": "items 4-8 already met 2026-08-05 (pooling/capacity report). item 9 program close of full 76j C1/C2 remains partial: DC-11b load test and DC-11c capacity-doc freshness are still P-29 residue, not this restore."
+  },
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/hauska-mcp-server",
+      "number": 65,
+      "url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/65",
+      "title": "fix(rate-limit): pin postgres store and surface fail-degraded outage",
+      "headSha": "a18bd46cdc4e27ad25dd1430eda31bd9a7e2e6e2",
+      "mergeSha": "57fa819fc4912cc18cb63811cb6e2cba2752a752",
+      "mergedAt": "2026-08-12T23:38:36Z",
+      "ci": {
+        "prRun": 31651562262,
+        "prConclusion": "success",
+        "mainPushRun": 31651632731,
+        "mainPushConclusion": "success",
+        "mainPushHeadSha": "57fa819fc4912cc18cb63811cb6e2cba2752a752",
+        "verbatim": "[{\"conclusion\":\"success\",\"databaseId\":31651632731,\"displayTitle\":\"Merge pull request #65 from empressaioemail-tech/fix/l13-postgres-lim…\",\"event\":\"push\",\"headSha\":\"57fa819fc4912cc18cb63811cb6e2cba2752a752\"}]"
+      }
+    }
+  ],
+  "servingRevisions": {
+    "before": {
+      "revision": "hauska-mcp-server-00042-25d",
+      "percent": 100,
+      "note": "MCP1 2026-08-12. Already postgres-ok on /health; pin + outage fields not yet in the image."
+    },
+    "after": {
+      "revision": "hauska-mcp-server-00063-fic",
+      "percent": 100,
+      "tag": "l13-57fa819",
+      "image": "us-central1-docker.pkg.dev/hauska-prod-497015/hauska-mcp/hauska-mcp-server:l13-57fa819",
+      "envPin": "HAUSKA_RATE_LIMIT_STORE=postgres",
+      "noLowDailyOnServing": true
+    },
+    "canariesZeroTraffic": {
+      "l13-burst": "hauska-mcp-server-00064-yoy",
+      "l13-restart": "hauska-mcp-server-00065-maq"
+    }
+  },
+  "liveProofsVerbatim": {
+    "healthServing": "{\"status\":\"ok\",\"service\":\"hauska-mcp-server\",\"version\":\"0.1.0\",\"env\":\"production\",\"metrics\":{\"started_at\":\"2026-08-12T23:41:21.232Z\",\"uptime_s\":172,\"total_requests\":0,\"total_errors\":0,\"error_rate\":0,\"last_successful_call\":null,\"latency\":{\"count\":0,\"p50_ms\":null,\"p95_ms\":null,\"p99_ms\":null,\"max_ms\":null},\"tool_calls\":{}},\"dependencies\":{\"engine_retrieval_api\":{\"state\":\"ok\",\"latency_ms\":18,\"detail\":\"HTTP 404\"},\"cortex_api\":{\"state\":\"ok\",\"latency_ms\":33},\"postgres\":{\"state\":\"ok\",\"latency_ms\":222},\"rate_limit_store\":{\"state\":\"ok\",\"latency_ms\":223,\"detail\":\"postgres\",\"primary\":\"postgres\",\"memory_fallback\":false,\"outage_policy\":\"fail-degraded\"}}}",
+    "429": "req 3 -> HTTP 429 body={\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Rate limit exceeded for tier \\\"free\\\" on band \\\"daily\\\".\",\"data\":{\"band\":\"daily\",\"tier\":\"free\"}},\"id\":3}",
+    "restartSurvival": "restart-req 1 -> HTTP 429 body={\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Rate limit exceeded for tier \\\"free\\\" on band \\\"daily\\\".\",\"data\":{\"band\":\"daily\",\"tier\":\"free\"}},\"id\":101}"
+  },
+  "outageMode": {
+    "choice": "FAIL-DEGRADED",
+    "not": "fail-closed",
+    "behavior": "On primary store outage, ResilientRateLimitStore serves per-instance MemoryRateLimitStore. /health reports rate_limit_store.state=degraded with memory_fallback=true and outage_policy=fail-degraded. Never state=ok on memory. /health HTTP stays 200 (liveness). /health/ready does not treat rate_limit_store as critical.",
+    "whyNotFailClosed": "Fail-closed would 503 the public MCP gate on a Neon blip and take Layer-1 free agents offline.",
+    "silentFallbackForbidden": "The memory fallback remains only as this explicitly-surfaced degraded mode. A health body that reports ok while serving memory is the defect class this program hunts.",
+    "liveSignal": "serving /health rate_limit_store.outage_policy === \"fail-degraded\" and memory_fallback === false"
+  },
+  "inventorySummary": {
+    "mcp": "limiter seam; PostgresRateLimitStore default; Upstash adapter leftover behind explicit env",
+    "cortex-api": "separate Postgres userUsageMetering daily cap; no Upstash; no rate_limit_store health field — not touched",
+    "retrieval-api": "no inbound HTTP limiter — not touched"
+  },
+  "dc11a": {
+    "asWritten": "GET https://cortex-api-tds7av26va-uc.a.run.app/health → rate_limit_store.state === ok",
+    "literalResult": "FAIL (SPA HTML / {status:ok} with no field)",
+    "limiterSurfaceResult": "PASS on serving MCP 00063-fic",
+    "recommendedAmendment": "Point DC-11a at GET https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/health"
+  },
+  "p29Residue": [
+    "DC-11b load-test artifact freshness",
+    "DC-11c capacity doc last_updated vs gate-close date"
+  ],
+  "didNot": [
+    "engine repo",
+    "atoms writes",
+    "atoms bulk-writer slot",
+    "X-Hauska-Key auth path semantics",
+    "cortex-api / retrieval-api limiter implementation",
+    "re-provision Upstash",
+    "add Memorystore"
+  ]
+}

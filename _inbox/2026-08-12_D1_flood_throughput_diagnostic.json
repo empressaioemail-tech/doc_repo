@@ -1,0 +1,72 @@
+{
+  "runAt": "2026-08-12T10:35:00.000Z",
+  "floodRateMeasured": 180,
+  "parcelNodeRateReference": 1114,
+  "gapFactor": 6.19,
+  "phaseSplit": {
+    "planMs": 1087712,
+    "writeMs": 34600,
+    "verifyMs": 51900,
+    "otherMs": 9065,
+    "method": "48099 wallMs residual: load from read-only plan probe (loadParcelsMs+loadZonesMs=9065); write+verify from 48171 wall residual at same atom count (86499, split 40/60); planMs = wallMs - load - write - verify. 48171 probe: planMs=846, loadMs=5845, wallMs=93190."
+  },
+  "dominantPhase": "plan",
+  "rootCause": "O(parcels × zones) in-memory point-in-polygon with no spatial index. findZoneAtPoint() linearly scans every bbox-filtered NFHL zone for every parcel centroid and runs full GeoJSON ray-cast (pointInGeoJson) on each zone whose stored bbox contains the point. Cost scales with zone count AND per-zone geometry payload, not atom write volume. County variance (48171 372/s vs 48099 27/s at ~31.5k atoms) tracks plan phase: probe measured planMs 846 vs 1,437,519 (1,700×). NOT the verify seq-scan trap (PK fix confirmed live). NOT per-parcel NFHL SQL (one county-bbox query per run).",
+  "evidence": "PK fix: write-flood-hazard-fact-county.mjs:368-371 uses atom_did IN, zero body->>'atomDid'; EXPLAIN on atoms at 20,834,403 rows shows Index Scan using atoms_pkey (cost 0.56..39422, rows=5000), not Seq Scan. Plan probe 48171 vs 48099: planMs 846 vs 1,437,519 (planPct 12.6% vs 99.4%), same ~31.7k atoms; apply wallMs 93,190 vs 1,183,277. Zone count alone insufficient: 48259 fast (320/s) with 1,869 zones; 48505 slow (9/s) with 55 zones but avg 1.58 MB/zone geometry. Harris sizing: 1,523,641 features, 19,934 bbox-filtered zones (13× 48099 zone load).",
+  "explainPlans": [
+    {
+      "query": "flood verify SELECT body FROM atoms WHERE atom_did IN (<5000 dids>)",
+      "plan": "Index Scan using atoms_pkey on atoms (cost=0.56..39422.88 rows=5000 width=1127)",
+      "seqScan": false,
+      "rowsRemoved": 0
+    },
+    {
+      "query": "NFHL zone load for 48099 county bbox (+0.02° pad): SELECT ... FROM tx_fema_nfhl_flood_zone WHERE west_lng <= $east AND east_lng >= $west AND south_lat <= $north AND north_lat >= $south",
+      "plan": "Seq Scan on tx_fema_nfhl_flood_zone (cost=0.00..25150.82 rows=15951 width=743) — bbox_idx exists (tx_fema_nfhl_flood_zone_bbox_idx on west_lng,south_lat,east_lng,north_lat) but planner chose seq scan on 198,178-row table; loadZonesMs 6,019 for 48099 vs 505 for 48171, secondary not dominant",
+      "seqScan": true,
+      "rowsRemoved": 0
+    }
+  ],
+  "comparedAgainstParcelNode": {
+    "whatDiffers": [
+      "parcel-node has no spatial join; flood runs planCountyFloodHazard → findZoneAtPoint per parcel (O(parcels × zones) JS ray-cast)",
+      "flood loads full NFHL zone geometries once per county (189 MB for 48099); parcel-node reads parcel geometry only",
+      "flood verify uses computed did:hauska:flood-hazard-fact:${entityId}; parcel-node uses passthrough a.atomDid — both hit atoms_pkey Index Scan post-fix",
+      "flood effective write+verify ~367 atoms/sec (48171 residual); parcel-node ~1,114/sec — ~3× write gap from larger atom bodies + FLOOD_HAZARD_FACT_SCHEMA Zod on every verify, but NOT the 6× headline gap",
+      "flood batch 5000 (B1 runner); parcel-node batch 5000 post-fix — same batch writer",
+      "flood writes ~100% present atoms (outside-SFHA or in-SFHA); absence path rare after prop_id fix — Zod on absence is NOT hot path",
+      "parcel-node has orphan reconcile/retire passes; flood does not",
+      "no per-parcel SQL in either rail; flood's hidden full-table read class is absent on verify — the parcel-node lesson applies to phase naming, not this verify path"
+    ]
+  },
+  "metroViability": {
+    "harrisEstimateSecAtCurrentRate": 8464,
+    "harrisEstimateSecIfFixed": 1905,
+    "recommendation": "DEFER metros until spatial-index code change lands. Harris (1,523,641 features, 19,934 zones) at measured 180 atoms/sec aggregate ≈ 2.35 h IF plan cost matches statewide average — but 48099-class counties run 27 atoms/sec and Harris has 13× the zone load, so realistic worst case exceeds 8 h on plan alone. At fixed rate 800 atoms/sec (fast-county write speed + grid-indexed PIP — optimistic, not parcel-node parity): ≈ 32 min. Do NOT run Harris as-is; Collin 48085 profile (B1 slot) will likely confirm plan-dominated shape."
+  },
+  "proposedFix": "Add per-county spatial grid index (e.g. 0.01° cells → zone id list) built once after bbox zone load; findZoneAtPoint consults 1–9 cells instead of scanning all zones. Optional: ST_Contains via PostGIS on simplified geometries as follow-on. Instrument write-flood-hazard-fact-county.mjs with planMs/loadZonesMs/writeMs/verifyMs in --out JSON (b1_metro_profile.mjs pattern, without requiring a write sample). Expected gain: slow counties from ~27/s toward fast-county ~340/s on plan; combined ~400–800/s county rate, making Harris ~30–60 min.",
+  "fixIsCodeChange": true,
+  "riskOfFix": "Low–medium. Grid index is localized to flood-hazard-fact/geo.ts + planner; no schema migration. Risk: cell size tuning at county bbox edges; must preserve SFHA-preference tie-break in findZoneAtPoint. PostGIS path adds deployment dependency. Wrong index could miss zone hits — needs unit tests on 48171/48099 parity before metro apply.",
+  "cp1": {
+    "registeredAt": "2026-08-12T10:05:00.000Z",
+    "dominantPhaseHypothesis": "plan (JS point-in-polygon), NOT write/verify",
+    "rootCauseHypothesis": "O(parcels × zones) linear zone scan per parcel without spatial index; complex MultiPolygon geometries amplify ray-cast cost per (parcel, zone) pair. Explicitly NOT the jsonb verify seq-scan (PK fix believed on main). Alternative: per-parcel NFHL SQL — to be refuted by code read.",
+    "predictedEffectIfWrong": "If write/verify were dominant, PK EXPLAIN would show Seq Scan on atoms and atom_did grep would fail — measurable refutation path."
+  },
+  "cp2": {
+    "registeredAt": "2026-08-12T10:35:00.000Z",
+    "verdict": "CONFIRMED",
+    "cp1DominantPhase": "CONFIRMED — 48099 planMs 1,437,519 vs 48171 846 (1,700×); planPct 99.4% on slow county",
+    "cp1RootCause": "CONFIRMED — O(parcels×zones) JS PIP; per-parcel NFHL SQL REFUTED (one bbox query lines 279–288); stale PK tree REFUTED (atom_did IN at runtime, Index Scan at 20.8M rows)",
+    "surpriseFinding": "Write+verify residual ~86 s for ~31 k atoms (~367/s) is ~3× slower than parcel-node 1,114/s but uniform across fast/slow counties — the 6× gap is almost entirely plan phase, not the write path the obvious hypothesis names."
+  },
+  "adversarialFindings": [
+    "PK fix trap explicitly checked and cleared — would have been silent 6× if tree were stale; grep + EXPLAIN both pass at 20,834,403 atoms rows measured 2026-08-12.",
+    "Per-parcel NFHL query hypothesis refuted by code — zones loaded once; variance is NOT O(parcels × 198k SQL rows).",
+    "Zone count alone fails as predictor (48259 fast/1,869 zones vs 48505 slow/55 zones) — geometry bytes per zone (48505 avg 1.58 MB) is the secondary multiplier.",
+    "Zod-on-absence hypothesis refuted — flood counties write present-outside-SFHA, not typed absence; prop_id Zod crashes were correctness bugs, not throughput.",
+    "b1_apply_*.json carry wallMs only — phase split required live read-only probe; recommend adding phase fields to writer --out before next statewide rail.",
+    "NFHL EXPLAIN shows Seq Scan despite bbox index — worth ANALYZE tx_fema_nfhl_flood_zone but load is ≤6 s even for 48099; not the metro blocker.",
+    "48099 plan probe (24 min) exceeded apply wallMs (19.7 min) — likely B1 slot contention during probe; apply wallMs used for close artifact residual math."
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "artifact": "L12_oz_disposition_close",
+  "plan_row": "P-38",
+  "lane": "L12",
+  "status": "CLOSED_DECISION_INPUT",
+  "ts_utc": "2026-08-13T00:35:00Z",
+  "cp1": "_inbox/2026-08-12_L12_cp1_rebase_report.json",
+  "mission": "Decision input for stranded origin/feat/oz-crossfilter-derivation (PR #276 CLOSED-NOT-MERGED). Worktree only; no merge to main; no PR without operator ruling.",
+  "repo": "empressaioemail-tech/legacy-design-tools",
+  "rebased_branch": {
+    "name": "inspect/oz-crossfilter-rebase-20260812",
+    "sha": "d29047a2ccbc517fdafca22a4b43644cc1573ff0",
+    "based_on_main": "f1bff70917b387e03b8120fa0ba6e3aee3bd0520",
+    "stranded_source": "origin/feat/oz-crossfilter-derivation@839d81bb52d983c4caaab68477e0fd335badecf3",
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/tree/inspect/oz-crossfilter-rebase-20260812",
+    "pr_opened": false,
+    "worktree": "P:/tmp/l12_oz_rebase_20260812/wt"
+  },
+  "rebase": {
+    "status": "CLEAN_SUCCESS",
+    "conflicts": 0,
+    "commits_behind_at_start": 204,
+    "commits_rebased": 6,
+    "prior_cleanstate_claim": "2026-08-11 CLEANSTATE said brokerageGisCompositeLayers.ts was heavily rewritten and favoured close-deliberately — REFUTED for merge-base..main (zero churn on that file; only brokerageMapData.ts +82/-10)",
+    "semantic_resolutions_performed": 0
+  },
+  "main_still_true_at_start": {
+    "motivatedSellerHeat_0_74_line": "artifacts/api-server/src/lib/brokerageGisCompositeLayers.ts:177",
+    "deriveOzDealCrossfilter_absent": true,
+    "oz_geojson_on_main": {
+      "featureCount": 1,
+      "metadata_note": "Minimal fixture for CI — replace with full CDFI/HUD tract set in prod ingest."
+    },
+    "fixture_severity": "Labelled fixture:true inside buildCompositeLayerFixture; queryCompositeLayer on main ALWAYS routes through the fixture builder — missing-capability gap that still serves synthetic numbers on the composite path"
+  },
+  "test_file_count_comparison": {
+    "repo_wide_test_files": {
+      "main": 529,
+      "rebased": 530,
+      "delta": "+1 artifacts/api-server/src/lib/__tests__/brokerageMotivatedSellerSignals.test.ts"
+    },
+    "api_server_vitest_ran_files": {
+      "main": 234,
+      "rebased": 235,
+      "delta": "+1 (motivated-seller signals test file)"
+    },
+    "api_server_vitest_totals": {
+      "main": {
+        "numTotalTests": 2256,
+        "numPassedTests": 1031,
+        "numFailedTests": 39,
+        "numPendingTests": 1186,
+        "numFailedTestSuites": 148
+      },
+      "rebased": {
+        "numTotalTests": 2283,
+        "numPassedTests": 1057,
+        "numFailedTests": 40,
+        "numPendingTests": 1186,
+        "numFailedTestSuites": 150
+      },
+      "note": "Green-total alone would mislead: passed tests rose (+26) AND failed tests rose (+1). File-count and failure-set diff are the transform-failure check."
+    },
+    "failure_set_diff_vs_main": {
+      "only_failed_on_rebased": [
+        {
+          "file": "src/lib/__tests__/investorRadarDepth.test.ts",
+          "test": "lookupOpportunityZone hits Austin fixture tract",
+          "cause": "Test pins lat/lng 30.25,-97.77 which hit the main 1-feature SYNTHETIC OZ polygon; rebased geojson is 68 real Central-TX tracts and that point is no longer inside an OZ",
+          "fix_shape": "Retarget coordinate to a real Travis tract centroid from bundled set (e.g. 48453001712 ≈ lat 30.22205, lng -97.79682) — one-line test change; do NOT keep-both geometries"
+        }
+      ],
+      "only_failed_on_main": []
+    },
+    "branch_owned_tests": {
+      "files": [
+        "src/lib/__tests__/brokerageGisCompositeLayers.test.ts",
+        "src/lib/__tests__/brokerageMotivatedSellerSignals.test.ts"
+      ],
+      "result": "31 passed / 0 failed (24 + 7)",
+      "main_composite_layers_file_alone": "4 passed (fixture-era suite)"
+    },
+    "typecheck_api_server": {
+      "result": "PASS",
+      "command": "pnpm --filter ./artifacts/api-server run typecheck",
+      "log": "P:/tmp/l12_oz_rebase_20260812/typecheck.log"
+    },
+    "logs": {
+      "vitest_oz": "P:/tmp/l12_oz_rebase_20260812/vitest_oz.log",
+      "vitest_api_server_rebased": "P:/tmp/l12_oz_rebase_20260812/vitest_api_server.json",
+      "vitest_api_server_main": "P:/tmp/l12_oz_rebase_20260812/vitest_api_server_MAIN.json"
+    }
+  },
+  "source_liveness_table": [
+    {
+      "input": "CDFI/HUD OZ tracts (ArcGIS FeatureServer/13)",
+      "url": "https://services.arcgis.com/VTyQ9soqVukalItT/ArcGIS/rest/services/Opportunity_Zones/FeatureServer/13",
+      "probe": "GET ?f=json + returnCountOnly",
+      "live": true,
+      "http": 200,
+      "observed": "name=Opportunity_Zones; count=8765 (matches branch metadata nationalDesignatedTractCount)",
+      "notes": "CDFI landing page also HTTP 200"
+    },
+    {
+      "input": "Bundled oz-1.0.geojson (CI/dev fallback)",
+      "url": "artifacts/api-server/data/opportunity-zones/oz-1.0.geojson",
+      "probe": "parse metadata on rebased tip vs main",
+      "live": true,
+      "http": null,
+      "observed": "rebased: 68 real Central-TX tracts, retrievedAt 2026-07-16, sourceUrl=HUD FS/13; main: 1 synthetic feature",
+      "notes": "Production still expects GCS hydration via BROKERAGE_FEDERAL_DATA_GCS_PREFIX for national set"
+    },
+    {
+      "input": "FEMA NFHL flood (constraint-density)",
+      "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
+      "probe": "GET ?f=json",
+      "live": true,
+      "http": 200,
+      "observed": "name=Flood Hazard Zones",
+      "notes": null
+    },
+    {
+      "input": "USDA SSURGO SDA (constraint-density)",
+      "url": "https://sdmdataaccess.sc.egov.usda.gov",
+      "probe": "GET",
+      "live": true,
+      "http": 200,
+      "observed": "host responds",
+      "notes": "Liveness of host only; WFS query path not re-exercised end-to-end this lane"
+    },
+    {
+      "input": "TCEQ Water Districts / MUD-PID (constraint-density)",
+      "url": "https://gisweb.tceq.texas.gov/arcgis/rest/services/Public/WaterDistricts/MapServer/0",
+      "probe": "GET ?f=json",
+      "live": true,
+      "http": 200,
+      "observed": "name=Water Districts",
+      "notes": null
+    },
+    {
+      "input": "TIGERWeb census tracts (related federal geometry)",
+      "url": "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0",
+      "probe": "GET ?f=json",
+      "live": true,
+      "http": 200,
+      "observed": "name=Census Tracts",
+      "notes": "Supporting federal surface; not the OZ designation source"
+    },
+    {
+      "input": "Buildable-envelope (parcel + zoning + code corpus)",
+      "url": "in-process spine / parcel store / zoning atoms",
+      "probe": "code path review on rebased tip + branch tests",
+      "live": "PARTIAL",
+      "http": null,
+      "observed": "deriveBuildableEnvelope present; depends on live parcel geometry + zoning/code corpus already on main paths",
+      "notes": "Not an external CDFI pull; blocked only if viewport lacks parcel/zoning — honesty path exists"
+    },
+    {
+      "input": "Motivated-seller signals (CAD absentee etc.)",
+      "url": "brokerageMotivatedSellerSignals.ts + CAD roll",
+      "probe": "code path review",
+      "live": "PARTIAL",
+      "http": null,
+      "observed": "Only absentee-owner wired live today; tax-delinquency / equity / other signals remain pendingIngest with honest provenance",
+      "notes": "Retires the 0.74 fabricated heat; does NOT claim full multi-signal model is populated"
+    }
+  ],
+  "four_derivations_status_on_rebased_tip": {
+    "oz_deal_crossfilter": "REAL — deriveOzDealCrossfilter over CDFI/HUD tracts; sync fixture path routes to it",
+    "buildable_envelope": "REAL async — buildCompositeLayerFixture throws if called sync",
+    "constraint_density": "REAL async — severity-weighted stack over live constraint layers; fixture builder throws",
+    "motivated_seller": "REAL async weighted-sum — 0.74 path retired; only absentee-owner evaluated live; other signals pendingIngest"
+  },
+  "recommendation": {
+    "verdict": "REBASE_AND_MERGE_AFTER_ONE_TEST_FIX — not as-is, not close-deliberately",
+    "reject": {
+      "rebase_and_merge_as_is": {
+        "reject": true,
+        "why": "Introduces exactly one new failing test vs main (investorRadarDepth Austin synthetic point). CI api-server suite would go red. That is the transform-failure / fixture-coupling class the mission warned about.",
+        "cost_if_forced": "Land red CI or silent keep of broken radar OZ lookup test; engineer time to notice later"
+      },
+      "close_deliberately_with_fixtures_documented": {
+        "reject": true,
+        "why": "Conflict-cost premise from 2026-08-11 CLEANSTATE is false (0 conflicts, 204-behind rebase was mechanical). Main still serves (1) 1-feature synthetic OZ geojson and (2) composite layers only via fixture builder including motivatedSellerHeat 0.74. Closing deliberately preserves a known defect class (fixture survived its own replacement).",
+        "cost_if_chosen": "Zero eng cost now; synthetic OZ + 0.74 + 78% envelope + 4-overlay constraint remain the composite serve path until a future rewrite; P-38 stays open; honesty debt compounds"
+      },
+      "partial_cherry_pick": {
+        "reject": true,
+        "why": "The six commits are one spine rewrite of brokerageGisCompositeLayers.ts plus shared OZ adapter/geojson. Cherry-picking OZ-only still breaks investorRadarDepth; cherry-picking motivated-seller without OZ/crossfilter leaves the file half-migrated. Partial pick costs nearly a full re-derive with worse reviewability.",
+        "if_operator_insists_order": [
+          "5743ec8a / e19b9793 OZ refresh + deriveOzDealCrossfilter",
+          "60ed32a1 / 66557dc7 tests",
+          "280dc43b / 5917d22c coverage honesty",
+          "then envelope / constraint / motivated-seller — but prefer all-six + radar fix"
+        ]
+      }
+    },
+    "preferred": {
+      "action": "Operator rules GO to open PR from inspect/oz-crossfilter-rebase-20260812 AFTER adding one commit that retargets investorRadarDepth.test.ts to a real Travis OZ centroid (48453001712). Then merge on CI success. Do not open PR until that fix lands or operator explicitly accepts as-is red.",
+      "commits_to_take": "ALL SIX on the rebased tip (d29047a2 and parents)",
+      "mandatory_companion": {
+        "file": "artifacts/api-server/src/lib/__tests__/investorRadarDepth.test.ts",
+        "change": "Replace 30.25,-97.77 with a point inside bundled tract 48453001712 (≈ 30.22205, -97.79682); rename test away from 'Austin fixture tract'",
+        "why_not_done_in_lane": "Lane constraint: decision input only; no semantic fix without flagging; companion is flagged here for operator GO"
+      },
+      "cost": {
+        "eng": "≈ one short PR: already-rebased tip + 1 test line + CI wait",
+        "risk": "Low rebase risk (proven clean). Residual product risk: motivated-seller still partial (absentee-only); national OZ still depends on GCS hydrate outside Central-TX bundle",
+        "what_stops_being_synthetic_in_prod": [
+          "OZ tract geometry in bundled/CI path (1 → 68 real Central-TX)",
+          "oz-deal-crossfilter derivation",
+          "buildable-envelope composite (retires 78% fixture path)",
+          "constraint-density composite (retires 4-overlay fixture path)",
+          "motivated-seller heat number (retires 0.74 / propensity 0.81 path)"
+        ],
+        "what_stays_synthetic_or_incomplete_even_after_merge": [
+          "Motivated-seller signals other than absentee-owner (pendingIngest — honest, not fabricated)",
+          "National OZ outside Central-TX bundle until GCS hydrate is confirmed in the serving revision",
+          "Any composite layer not in the four keys still using buildCompositeLayerFixture if such remain"
+        ]
+      }
+    },
+    "cost_matrix": {
+      "rebase_and_merge_as_is": {
+        "eng_cost": "low (branch ready)",
+        "ci_cost": "FAIL on investorRadarDepth",
+        "stays_synthetic_in_prod_if_blocked": "all four fixtures remain until unblock",
+        "stays_synthetic_if_somehow_forced_merge": "none of the four composite fixtures; radar OZ unit test lies"
+      },
+      "partial_cherry_pick": {
+        "eng_cost": "high (re-conflict / re-review risk on shared file)",
+        "stays_synthetic_in_prod": "whichever of the four commits are deferred — typically envelope/constraint/motivated-seller if OZ-only is taken"
+      },
+      "close_deliberately": {
+        "eng_cost": "near zero now",
+        "stays_synthetic_in_prod": [
+          "OZ geojson 1-feature CI fixture",
+          "oz-deal-crossfilter absent (fixture dealScore path)",
+          "buildable-envelope 78% fixture",
+          "constraint-density 4-overlay fixture",
+          "motivatedSellerHeat 0.74 / propensity 0.81"
+        ],
+        "required_documentation_if_chosen": "QA polish / OPS-16 amendment row stating the four composites are known-synthetic labelled fixtures; P-38 OZ sub-item CLOSED as retired-not-landed"
+      },
+      "preferred_rebase_plus_radar_test_fix": {
+        "eng_cost": "low-medium",
+        "stays_synthetic_in_prod": "only pendingIngest motivated-seller signals + non-hydrated national OZ outside bundle",
+        "unblocks": "P-38 OZ crossfilter branch sub-item"
+      }
+    }
+  },
+  "operator_ruling_needed": [
+    "GO: allow companion commit on inspect/oz-crossfilter-rebase-20260812 retargeting investorRadarDepth, then open PR and merge",
+    "OR FORCE as-is (accept CI red / broken radar test) — not recommended",
+    "OR CLOSE deliberately and document the five synthetic surfaces — not recommended given zero rebase conflict and live HUD 8765"
+  ],
+  "constraints_honored": {
+    "read_only_outside_worktree": true,
+    "no_merge_to_main": true,
+    "no_pr_opened": true,
+    "did_not_touch_L5_ci_checks": true,
+    "pushed_new_branch_name_only": "inspect/oz-crossfilter-rebase-20260812"
+  }
+}

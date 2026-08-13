@@ -1,0 +1,172 @@
+{
+  "artifact": "L9_cama_routing_close",
+  "plan_row": "P-25",
+  "lane": "L9",
+  "ts": "2026-08-12T23:10:00Z",
+  "status": "CLOSED",
+  "verdict": "PASS_WITH_QUEUE",
+  "summary": "CAD ingest now honors bulk_primary with named StratMap fallback. TAD (county-run) and DCAD (dcad-bulk-only) parsers landed. Tarrant pilot 5000-row E2E proved structural field lift and tier stamps. Full-county loads NOT run — drainable queue remains.",
+  "authored_where": {
+    "repo": "legacy-design-tools",
+    "package": "@workspace/cad-ingest",
+    "path": "lib/cad-ingest"
+  },
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "number": 421,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/421",
+      "head_sha": "ceed5b2890533d26749ad061cf7c5627c68e3403",
+      "merge_sha": "a8a8942df7048fc95ef5002affc8d074ad3aab99",
+      "merged_at": "2026-08-12T23:09:09Z",
+      "ci_run": 31649175093,
+      "ci_conclusion": "success",
+      "checks": {
+        "Typecheck": "success",
+        "Test": "success",
+        "L5 SF-30 Cotality warm grep": "success",
+        "L5 SF-24/SF-25 score greps": "success",
+        "L5 silent-fallback greps": "success",
+        "L5 SF-26 hand hasWriter grep": "success"
+      }
+    }
+  ],
+  "checkpoints": {
+    "cp1": "_inbox/2026-08-12_L9_cp1_routing_design.json",
+    "cp2": "_inbox/2026-08-12_L9_cp2_pilot_proof.json"
+  },
+  "pilot_before_after": {
+    "county_fips": "48439",
+    "name": "Tarrant",
+    "slice": "PropertyData(Delimited)_R.ZIP limit=5000",
+    "before": {
+      "rows": 689838,
+      "sqft_pct": 0.0,
+      "year_built_pct": 0.0,
+      "land_acres_pct": 0.0,
+      "cad_export_tier_rows": 0
+    },
+    "after": {
+      "rows": 694838,
+      "sqft_pct": 0.7046,
+      "year_built_pct": 0.7045,
+      "land_acres_pct": 0.7196,
+      "cad_export_tier_rows": 5000,
+      "tax_year_2026_rows": 5000
+    },
+    "cad_export_tier_cohort": {
+      "n": 5000,
+      "sqft_pct": 97.92,
+      "year_built_pct": 97.9,
+      "land_acres_pct": 100.0,
+      "sample_source_vintage": "tier:cad-export;adapter:county-run;drop:propertydata_delimited_r"
+    },
+    "join_overlap_2026_vs_2025_prop_ids": "4991/5000"
+  },
+  "tier_recorded_per_row": {
+    "format": "tier:<cad-export|stratmap-roll>;adapter:<kind>;drop:<basename>",
+    "mechanism": "source_vintage (no schema migration)",
+    "pilot_rows_with_tier": 5000,
+    "stratmap_gate": "stratmap-landuse refuses bulk_primary unless --allow-stratmap-fallback; fallback stamps tier:stratmap-roll"
+  },
+  "serial_blockers": [
+    {
+      "n": 1,
+      "blocker": "Tarrant StratMap prop_id is GIS_Link shape, not Account_Num",
+      "resolution": "parser uses GIS_Link; 4991/5000 overlap proved"
+    },
+    {
+      "n": 2,
+      "blocker": "TAD Appraisal_Year=2026 vs store StratMap tax_year=2025 — upsert adds, does not enrich 2025",
+      "resolution": "honest vintage accepted; report both county % and tier-cohort %"
+    },
+    {
+      "n": 3,
+      "blocker": "legacy-design-tools-prod Neon has no cad_property; live store is cortex-prod",
+      "resolution": "pilot wrote cortex-prod neondb"
+    },
+    {
+      "n": 4,
+      "blocker": "DCAD ViewPDFs over-escaped URL returns HTML error page",
+      "resolution": "correct %5C%5C encoding in sources.ts; fixtures from real zip"
+    },
+    {
+      "n": 5,
+      "blocker": "env.ps1secrets DATABASE_URL line corrupted with urllib3 warning path prefix",
+      "resolution": "regex-extract postgresql://…; point at /neondb"
+    }
+  ],
+  "remaining_counties_queue": [
+    {
+      "fips": "48439",
+      "name": "Tarrant",
+      "adapter_kind": "county-run",
+      "approx_rows": 689838,
+      "status": "pilot_5k_done",
+      "next": "ANNOUNCE then full PropertyData(Delimited).ZIP (~97MB) — residential R zip is only a slice",
+      "volume_note": "~685k remaining structural enrichment at tax_year 2026"
+    },
+    {
+      "fips": "48113",
+      "name": "Dallas",
+      "adapter_kind": "dcad-bulk-only",
+      "approx_rows": 693556,
+      "status": "parser_merged_unproven_on_db",
+      "next": "ANNOUNCE then DCAD2026_CERTIFIED zip (~193MB); join key ACCOUNT_NUM",
+      "open_fetch": "https://www.dallascad.org/ViewPDFs.aspx?type=3&id=%5C%5CDCAD.ORG%5CWEB%5CWEBDATA%5CWEBFORMS%5CDATA%20PRODUCTS%5CDCAD2026_CERTIFIED_07232026.zip"
+    },
+    {
+      "fips": "48029",
+      "name": "Bexar",
+      "approx_rows": 703258,
+      "sqft_pct_now": 0.0,
+      "status": "queued",
+      "note": "not bulk_primary in registry; needs vendor recon + registry flag"
+    },
+    {
+      "fips": "48453",
+      "name": "Travis",
+      "approx_rows": 492848,
+      "sqft_pct_now": 0.0,
+      "status": "queued",
+      "note": "pacs parser already exists; StratMap-loaded — re-route to TCAD PACS export"
+    },
+    {
+      "fips": "48085",
+      "name": "Collin",
+      "approx_rows": 387334,
+      "sqft_pct_now": 0.0,
+      "status": "queued",
+      "note": "DFW recon: Socrata data.texas.gov open-fetch"
+    },
+    {
+      "fips": "48121",
+      "name": "Denton",
+      "approx_rows": 351798,
+      "sqft_pct_now": 0.0,
+      "status": "queued",
+      "note": "DFW recon: CertifiedDataAll.zip PACS-like"
+    }
+  ],
+  "constraints_honored": [
+    "cad-ingest authored in LDT only",
+    "isolated worktree",
+    "no hasWriter/read-path edits",
+    "no full-county load without announce",
+    "merge only after CI conclusion STRING success",
+    "verification by lane planner (SQL + code review), not delegated"
+  ],
+  "announce_before_full_load": {
+    "required": true,
+    "targets": ["48439 full PropertyData(Delimited).ZIP", "48113 DCAD certified zip"],
+    "reason": "L1 heavy PostGIS plans on same Neon/cortex; serialize cad_property bulk loads with planner"
+  },
+  "subagents": [
+    {
+      "id": "a866881c-020c-4089-b26d-aca6db6358b1",
+      "role": "implement routing+parsers",
+      "supervised_to": "commit e27b8880 / rebased ceed5b28",
+      "verification": "planner adversarial review + live pilot SQL"
+    }
+  ]
+}
