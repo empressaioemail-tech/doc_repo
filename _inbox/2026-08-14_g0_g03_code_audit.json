@@ -1,0 +1,504 @@
+{
+  "planRow": "G-03",
+  "auditDate": "2026-08-14",
+  "auditor": "PROGRAM-ZERO lane sub-agent (read-only)",
+  "targetAssertion": {
+    "source": "_smartcity_masters/34_smartcity_smart_files_and_foundation.md, Open items #1, line 138",
+    "quote": "The substrate is built; the city-facing Smart Files surface is a rendering and marketing pass, not a build.",
+    "supportingClaims": [
+      "line 32 (INTERNAL ONLY): 'the foundation is the node-and-graph substrate, built and running in the command center'",
+      "line 60 (INTERNAL ONLY): 'Files are atoms with attachments; folders are nodes... This is the workspace family in the atom contract.'",
+      "line 127 (approved claims register): 'A document lives once, appears everywhere it belongs | Workspace family; substrate built'"
+    ]
+  },
+  "verdict": "BUILD",
+  "verdictRationale": "The workspace family that exists is a BROKERAGE (real-estate-agent) property-workspace feature, not a city file system. It is real and serving on the reporting gate, but it is a different product for a different buyer, and the three load-bearing Smart Files promises (one search across everything a city holds; a document lives once and appears everywhere it belongs; revise once, current everywhere, prior version still there) are each structurally impossible in the schema that exists. There is no city-file substrate to render. Doc 34 open-item 1 is FALSIFIED.",
+  "verdictNotRenderingPassBecause": [
+    "Scope mismatch: every artifact is self-labelled 'Brokerage V1' / domain 'brokerage'. Contract package description: 'Brokerage workspace packaging contract types for V1.' Engine package description: 'Brokerage V1 property-workspace atom emission, indexing, and retrieval.' No city, department, records-retention, or municipal-document concept exists anywhere in the family.",
+    "'A document lives once and appears everywhere it belongs' is structurally impossible: brokerage_workspace_attachments.workspace_id is a single NOT NULL uuid FK with onDelete cascade. One attachment row belongs to exactly ONE workspace. There is no many-to-many join table. Many placements = many copies, the exact problem Smart Files claims to solve.",
+    "'Revise once, current everywhere - and what it was before is still there' has no code path: brokerage_workspace_attachments has NO updated_at column and NO version column, and grep for update(brokerageWorkspaceAttachments across artifacts/api-server/src returns zero hits. The only mutations are insert and delete. Attachments cannot be revised at all, so neither propagation nor history exists for documents.",
+    "'One search across everything the city holds' has no search path: no full-text index, no tsvector column, no search route over attachments. Retrieval is by workspace id or by owner/install listing only.",
+    "The atom-store leg is absent: zero workspace-family atoms exist in the 67.5M-row hauska_mcp.atoms table, and no SQL migration creating a workspace atom table exists in hauska-engine."
+  ],
+  "contract": {
+    "familyExists": true,
+    "package": "@empressaio/atom-contract",
+    "publishedLatestVersion": "1.22.0",
+    "publishedVersionInspected": "1.22.0",
+    "publishedContainsWorkspace": true,
+    "subpathExport": "./workspace -> ./dist/workspace/index.js",
+    "exportedFromMainIndex": false,
+    "exportedFromMainIndexNote": "grep -n 'workspace' src/index.ts src/registry.ts src/registration.ts returned ZERO hits. The workspace family is reachable ONLY via the @empressaio/atom-contract/workspace subpath. It is not part of the main contract surface and is not in the core atom registry.",
+    "entityTypes": [
+      "property-workspace",
+      "brief-run",
+      "workspace-attachment",
+      "workspace-share-edge"
+    ],
+    "exportedTypesAndValidators": [
+      "WORKSPACE_ATOM_ENTITY_TYPES (const tuple)",
+      "WorkspaceAtomEntityType, WorkspaceAtomMetadata, UserRef",
+      "USER_REF_SCHEMA, ACCESS_POLICY_SCHEMA, WORKSPACE_ATOM_METADATA_SCHEMA",
+      "PropertyWorkspace, PropertyAddressIdentity, PROPERTY_WORKSPACE_SCHEMA, PROPERTY_ADDRESS_IDENTITY_SCHEMA, validatePropertyWorkspace",
+      "BriefRun, BriefRunCitationRef, BRIEF_RUN_SCHEMA, BRIEF_RUN_CITATION_REF_SCHEMA, validateBriefRun, createBriefRunAssertedConfidence",
+      "WorkspaceAttachment, WorkspaceAttachmentKind, WORKSPACE_ATTACHMENT_SCHEMA, WORKSPACE_ATTACHMENT_KIND_SCHEMA, validateWorkspaceAttachment",
+      "WorkspaceShareEdge, WorkspaceShareConsentFlags, WORKSPACE_SHARE_EDGE_SCHEMA, WORKSPACE_SHARE_CONSENT_FLAGS_SCHEMA, validateWorkspaceShareEdge",
+      "fixtures (SAMPLE_* constants)"
+    ],
+    "entityIdShape": {
+      "finding": "The workspace family has NO entityId field at the contract layer. Identity is carried on a field named `did`, typed only as z.string().min(1) - an opaque non-empty string with NO format validator, NO did: prefix check, and NO structural constraint.",
+      "verbatimSource": "src/workspace/common.ts lines 30-35: export const WORKSPACE_ATOM_METADATA_SCHEMA = z.object({ did: z.string().min(1), createdAt: z.string().min(1), updatedAt: z.string().min(1), accessPolicy: ACCESS_POLICY_SCHEMA });",
+      "engineDerivation": "hauska-engine/packages/atoms/src/workspace-instances.ts lines 6-8 (file header): 'The contract `did` is canonical; `entityId` is the DID local segment for registry lookup.' Derivation at packages/workspace/src/emit.ts lines 29-31: function entityIdFromDid(did) { return parseAtomDid(did).localId; }",
+      "nonUniformityConfirmed": "hauska-engine/packages/workspace/src/emit.ts lines 94-104 contains an explicit reconciliation shim: 'Contract workspace DIDs use the `workspace` segment; engine entityType is `property-workspace`.' workspaceTargetFromDid() rewrites parsed.entityType === 'workspace' to 'property-workspace'. The contract DID segment and the engine entityType DISAGREE by design and are bridged by this function.",
+      "thirdShape": "The serving path (legacy-design-tools) uses NEITHER. brokerage_workspaces.id is a plain uuid defaultRandom() primary key with no did column at all. Three identity shapes exist across the three layers.",
+      "mcpDocumentedShape": "hauska-mcp-server/src/tools.ts line 5094 documents a fourth, more specific form for a different tool: 'Property workspace DID (did:hauska:property-workspace:<listingKey>). Required.'"
+    },
+    "sourceVsPublishedDivergence": {
+      "divergenceFound": true,
+      "localCloneVersion": "1.20.0",
+      "npmLatest": "1.22.0",
+      "detail": "P:/hauska-atom-contract package.json declares version 1.20.0 at HEAD (292a22b, 2026-08-12); npm dist-tag latest is 1.22.0 (published 2026-08-12T21:41:59Z). Two published versions are ahead of the local clone's declared version. The workspace/ directory contents were compared between local source and the published 1.22.0 dist and are semantically identical (same four entityTypes, same did-based metadata schema), so the divergence does not affect the workspace family's shape. Flagged because the local clone is NOT a safe proxy for published contract state.",
+      "consumerPinDivergence": "hauska-engine/packages/workspace/package.json depends on '@empressaio/atom-contract': '^1.20.0' - satisfied by 1.22.0.",
+      "retiredNameStillImported": "legacy-design-tools/artifacts/api-server/src/atoms/property-workspace.atom.ts line 11 imports from '@hauska/atom-contract' (the RETIRED package name, renamed to @empressaio/atom-contract per the 2026-07-06 branding decision) and its header comment references '@hauska/atom-contract/workspace 1.3' - a contract version 19 minors stale."
+    }
+  },
+  "engine": {
+    "repo": "hauska-engine",
+    "headCommit": "8d8e8803550f6f7fdaae42c59a25c4a2d9acc71c (2026-08-12)",
+    "familyRegistered": true,
+    "registrationPath": "packages/atoms/src/registry.ts lines 819-1030",
+    "registrationDetail": "Line 819 comment: 'Brokerage workspace atoms - V1 per 2026-05-28 dispatch.' Four AtomRegistration objects: property-workspace (line 822, entityType line 826, composition children workspace-attachment line 832 and workspace-share-edge line 844, eventTypes lines 851-853), brief-run, workspace-attachment (line 952), workspace-share-edge (line 1004). Each supplies a contextSummary() renderer.",
+    "instanceShapesPath": "packages/atoms/src/workspace-instances.ts (PropertyWorkspaceAtomInstance line 54, BriefRunAtomInstance line 62, WorkspaceAttachmentAtomInstance line 71, WorkspaceShareEdgeAtomInstance line 80)",
+    "writerExists": true,
+    "writerQualification": "PARTIAL - an emitter exists but it is not wired to any production caller and has no durable storage implementation.",
+    "writerPath": "packages/workspace/src/emit.ts - emitPropertyWorkspace (line 106), emitBriefRun (line 121), emitWorkspaceAttachment (line 155), emitWorkspaceShareEdge (line 184), emitWorkspaceAtom dispatcher (line 210)",
+    "writerIsPureTransform": "emit.ts performs NO I/O. Every function is contract-payload -> in-memory instance + AtomLink[]. It never touches a database.",
+    "storagePortImplementations": {
+      "interfaceDeclaredAt": "packages/workspace/src/port.ts line 27 (WorkspaceStoragePort)",
+      "implementationsFound": 1,
+      "onlyImplementation": "packages/workspace/src/in-memory-storage.ts line 17: 'export class InMemoryWorkspaceStorage implements WorkspaceStoragePort' - backed by 'private readonly byDid = new Map<string, WorkspaceAtomInstance>()' (line 18). File header line 2: 'In-memory WorkspaceStoragePort for tests and retrieval-api dev mode.'",
+      "noPostgresImplementation": true,
+      "command": "grep -rn \"WorkspaceStoragePort\" --include=*.ts . | grep -v node_modules",
+      "rawOutput": "./packages/document-ingest/src/port.ts:6: * `CodeAtomInstance`) and the `WorkspaceStoragePort`, exactly as those\n./packages/workspace/src/in-memory-storage.ts:2: * In-memory WorkspaceStoragePort for tests and retrieval-api dev mode.\n./packages/workspace/src/in-memory-storage.ts:14:  WorkspaceStoragePort,\n./packages/workspace/src/in-memory-storage.ts:17:export class InMemoryWorkspaceStorage implements WorkspaceStoragePort {\n./packages/workspace/src/in-memory-storage.ts:157:  storage: WorkspaceStoragePort,\n./packages/workspace/src/port.ts:27:export interface WorkspaceStoragePort {\n./packages/workspace/src/queries.ts:5:import type { WorkspaceStoragePort } from \"./port.js\";\n./packages/workspace/src/queries.ts:13:  storage: WorkspaceStoragePort,\n./packages/workspace/src/queries.ts:20:export function getWorkspacePackage(storage: WorkspaceStoragePort, workspaceDid: string) {\n./packages/workspace/src/queries.ts:25:  storage: WorkspaceStoragePort,\n./packages/workspace/src/queries.ts:31:export function listShareEdgesByUser(storage: WorkspaceStoragePort, userDid: string) {\n./packages/workspace/src/queries.ts:36:  storage: WorkspaceStoragePort,",
+      "interpretation": "The ONLY implementation is a Map. There is no Postgres-backed workspace storage anywhere in the engine."
+    },
+    "packageHasZeroConsumers": {
+      "finding": "CRITICAL - @hauska-engine/workspace is imported by NOTHING outside its own package.",
+      "command": "grep -rn \"@hauska-engine/workspace\" --include=*.ts --include=*.json . | grep -v node_modules | grep -v \"packages/workspace/\"",
+      "rawOutput": "(zero lines returned)",
+      "positiveBasis": "The same grep WITHOUT the packages/workspace/ exclusion returns hits inside the package itself, so the pattern and search path are correct; the empty result is a determined absence of external consumers, not a failed search.",
+      "interpretation": "No engine service, API, or job imports the workspace package. The emitter is dead code reachable only from its own vitest suite."
+    },
+    "noMigration": {
+      "finding": "No SQL migration creates any workspace atom table in hauska-engine.",
+      "command": "grep -rln \"workspace\" --include=*.sql . | grep -v node_modules",
+      "rawOutput": "(zero lines returned)",
+      "positiveBasis": "find . -name '*.sql' -not -path '*/node_modules/*' returns 8 migration files (packages/document-ingest/migrations/004_document_ingest.sql; packages/engine-core/scripts/migrations/0072_tx_special_district.sql, 0073_tx_fema_nfhl_flood_zone_geom.sql, 0074_tx_zoning_district_staging.sql; packages/storage/migrations/005_atoms_storage_port.sql, 006_spine_health_probe.sql, 007_spine_health_degraded_covered.sql, 008_node_list_indexes.sql). Migrations exist and were searched; none mentions workspace."
+    }
+  },
+  "servingPath": {
+    "exists": true,
+    "servingPathIsNotTheEngine": "The serving path does NOT go through hauska-engine's workspace package. It goes MCP -> legacy-design-tools api-server -> Neon Postgres app tables, bypassing the engine workspace substrate entirely.",
+    "mcpTools": {
+      "repo": "hauska-mcp-server",
+      "headCommit": "4428f61d7f213509f5c6606b3fb402f909a236f7 (2026-08-12)",
+      "toolsDefined": [
+        {
+          "name": "list_property_workspaces",
+          "definedAt": "src/tools.ts line 2067",
+          "comment": "Brokerage tool 1 - List owner/collaborator-visible workspaces, newest-first.",
+          "requiresIdentifiedCaller": true
+        },
+        {
+          "name": "get_property_workspace",
+          "definedAt": "src/tools.ts line 2109",
+          "comment": "Brokerage tool 2 - Fetch full workspace package (owner/collaborator gated).",
+          "requiresIdentifiedCaller": true
+        },
+        {
+          "name": "list_workspace_share_edges",
+          "definedAt": "src/tools.ts line 2145",
+          "comment": "Brokerage tool 3 - Consent-aware share-edge visibility for one workspace.",
+          "requiresIdentifiedCaller": true
+        },
+        {
+          "name": "compose_workspace",
+          "definedAt": "src/compose-workspace.ts",
+          "note": "DIFFERENT SUBJECT - 'Adaptive workspace composition' selects and arranges cortex UI tiles. Not a workspace-family atom tool. Name collision only."
+        }
+      ],
+      "gate": "reporting",
+      "gateSource": "src/product-gates.ts lines 41-43, inside the REPORTING_TOOLS Set (opened line 31)",
+      "gateEnumConfirmed": "public | codex | reporting | map"
+    },
+    "deployedProbe": {
+      "service": "hauska-mcp-server",
+      "url": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app",
+      "note": "mcp.hauska.dev does NOT resolve (curl exit 6, DNS failure). The live host is the Cloud Run URL above.",
+      "healthRaw": "{\"status\":\"ok\",\"service\":\"hauska-mcp-server\",\"version\":\"0.1.0\",\"env\":\"production\",\"metrics\":{\"started_at\":\"2026-08-14T11:17:55.907Z\",\"uptime_s\":36244,\"total_requests\":71,\"total_errors\":0,\"error_rate\":0,\"last_successful_call\":\"2026-08-14T13:59:19.990Z\"...",
+      "introspectionRaw": "{\"total\":71,\"by_product\":{\"public\":13,\"codex\":5,\"reporting\":46,\"map\":7},\"by_gate\":{\"access_policy\":13,\"identified_caller\":0,\"product_codex\":5,\"product_reporting\":46,\"product_map\":7},\"tools\":[{\"name\":...",
+      "workspaceToolsPresentOnDeployedSurface": [
+        "list_property_workspaces",
+        "get_property_workspace",
+        "list_workspace_share_edges",
+        "compose_workspace"
+      ],
+      "liveCallProbe": {
+        "command": "curl -s -X POST -H 'X-Hauska-Admin-Key: <redacted>' -H 'Content-Type: application/json' -d '{\"arguments\":{\"limit\":3}}' https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/admin/introspection/tools/list_property_workspaces/call",
+        "rawOutput": "{\"tool\":\"list_property_workspaces\",\"latency_ms\":13,\"auth\":{\"product\":\"public\",\"tier\":\"free_anonymous\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"Tool \\\"list_property_workspaces\\\" requires a \\\"reporting\\\"-product API key. The caller is on product \\\"public\\\". Contact support@hauska.dev to request access.\"}],\"isError\":true},\"is_error\":true}",
+        "interpretation": "The tool is DEPLOYED and its reporting gate is enforcing fail-closed. This is a positive determination that the tool is live and correctly gated - not a determination that data flows, which the gate prevented this probe from reaching."
+      }
+    },
+    "backingApiRoutes": {
+      "repo": "legacy-design-tools",
+      "headCommit": "10069854f5aa840cc94e6eadbd625c61d3e48010 (2026-08-12)",
+      "routerFile": "artifacts/api-server/src/routes/brokerageWorkspace.ts",
+      "routerHeader": "Brokerage property workspaces - recent, reopen, attachments, share.",
+      "mountedAt": "/api/brokerage/v1/workspaces via artifacts/api-server/src/routes/brokerageBrief.ts line 326: brokerageV1.use(\"/workspaces\", brokerageWorkspaceRouter); (imported line 127)",
+      "routeVerbs": [
+        "get line 109",
+        "get line 145",
+        "post /open line 228",
+        "get /:id line 320",
+        "get line 344",
+        "post line 373",
+        "delete line 424",
+        "post line 452"
+      ],
+      "realWriter": "artifacts/api-server/src/lib/brokerageWorkspace.ts - upsertWorkspaceFromBrief() performs .insert(brokerageWorkspaces) with onConflictDoUpdate targeting [installId, listingKey] (line 102-105). This IS a durable writer, to app tables.",
+      "authModel": "brokerageAuth + install-id claim (brokerageInstallClaim.ts), NOT tenant accessPolicy. Access resolved by ownerUserId / installId / service-caller, not by the atom-contract accessPolicy union."
+    },
+    "engineApiRoute": {
+      "exists": false,
+      "basis": "hauska-engine has zero consumers of @hauska-engine/workspace (see engine.packageHasZeroConsumers), so no engine-api or retrieval-api route can be serving workspace atoms. The in-memory-storage.ts header aspirationally names 'retrieval-api dev mode' but no retrieval-api file imports the package."
+    }
+  },
+  "store": {
+    "reached": true,
+    "atomStore": {
+      "database": "hauska_mcp (Neon, ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech), from GCP secret DATABASE_URL, project hauska-prod-497015",
+      "table": "public.atoms",
+      "countingRule": "SELECT entity_type, count(*) FROM atoms WHERE entity_type IN ('property-workspace','brief-run','workspace-attachment','workspace-share-edge') GROUP BY 1",
+      "rawOutput": "[]",
+      "workspaceAtomCount": 0,
+      "isDeterminedAbsenceNotUnreached": true,
+      "positiveBasisForAbsence": {
+        "command": "select (select count(*) from information_schema.columns where table_name='atoms' and column_name='entity_type') as has_entity_type_col, (select count(*) from atoms where entity_type='code-section') as code_section_sample, (select reltuples::bigint from pg_class where relname='atoms') as approx_total",
+        "rawOutput": "[{\"has_entity_type_col\":1,\"code_section_sample\":28567,\"approx_total\":\"67577192\"}]",
+        "interpretation": "The atoms table exists, the entity_type column exists, the table holds ~67.58M rows, and a control predicate (entity_type='code-section') returns 28,567 rows. The query mechanism demonstrably works and the store is populated. Zero workspace-family atoms is therefore a POSITIVE DETERMINATION of absence."
+      }
+    },
+    "appTables": {
+      "database": "neondb (same Neon host), from GCP secret CORTEX_DATABASE_URL",
+      "countingRule": "SELECT count(*) per table, no predicate - every row in each table as of 2026-08-14",
+      "rawOutput": "[{\"t\":\"brokerage_brief_runs\",\"n\":248},{\"t\":\"brokerage_workspace_attachments\",\"n\":0},{\"t\":\"brokerage_workspace_shares\",\"n\":7},{\"t\":\"brokerage_workspaces\",\"n\":142}]",
+      "counts": {
+        "brokerage_workspaces": 142,
+        "brokerage_brief_runs": 248,
+        "brokerage_workspace_shares": 7,
+        "brokerage_workspace_attachments": 0
+      },
+      "attachmentFinding": "ZERO attachment rows. The 'files' half of the family - the ONLY part that maps to a file system at all - has never been written to in production. Doc 34 line 60 says 'Files are atoms with attachments'; there are no attachments."
+    },
+    "eventStore": {
+      "database": "neondb",
+      "table": "public.atom_events",
+      "countingRule": "SELECT entity_type, count(*) FROM atom_events GROUP BY 1 (all rows, no date filter)",
+      "rawOutputWorkspaceRows": "{\"entity_type\":\"property-workspace\",\"n\":243}, {\"entity_type\":\"brief-run\",\"n\":243}",
+      "eventTypeBreakdown": {
+        "command": "select event_type, count(*) from atom_events where entity_type in ('property-workspace','brief-run') group by 1 order by n desc",
+        "rawOutput": "[{\"event_type\":\"brief-run.generated\",\"n\":243},{\"event_type\":\"property-workspace.created\",\"n\":243}]",
+        "finding": "ONLY .created and .generated events exist. The registry declares property-workspace.updated and property-workspace.shared (registry.ts lines 851-853) but ZERO such events have ever been emitted. There is no revision event in production."
+      },
+      "revisionHistoryTest": {
+        "command": "select entity_type, count(*) entities, sum(case when ev>1 then 1 else 0 end) with_multiple_events, max(ev) max_events_on_one from (select entity_type, entity_id, count(*) ev from atom_events where entity_type in ('property-workspace','brief-run','workspace-attachment','workspace-share-edge') group by 1,2) s group by 1",
+        "rawOutput": "[{\"entity_type\":\"brief-run\",\"entities\":243,\"with_multiple_events\":0,\"max_events_on_one\":1},{\"entity_type\":\"property-workspace\",\"entities\":101,\"with_multiple_events\":44,\"max_events_on_one\":19}]",
+        "interpretation": "44 of 101 property-workspace entities carry more than one event (max 19). But since the ONLY event_type present is property-workspace.created, these repeats are re-creation/re-open events on the same entity_id, NOT revisions of content. No workspace-attachment or workspace-share-edge events exist at all.",
+        "bearingOnDocClaim": "This is the closest thing to the 'what it was before is still there' promise, and it does not support it: the event log records that a workspace was opened, never what a document previously said."
+      }
+    }
+  },
+  "rendering": {
+    "anySurfaceRendersWorkspaceAtoms": false,
+    "surfacesChecked": [
+      {
+        "surface": "command-center (hauska-map/apps/command-center)",
+        "method": "local clone grep",
+        "command": "grep -rln \"property-workspace|workspace-attachment|Smart File|smartFile\" apps/command-center/src --include=*.ts --include=*.tsx",
+        "rawOutput": "(zero lines returned)",
+        "finding": "ZERO hits. This DIRECTLY CONTRADICTS doc 34 line 32: 'the foundation is the node-and-graph substrate, built and running in the command center.' The command-center src tree contains only admin/, main.tsx, test/, vite-env.d.ts. There is no Smart Files console, no file browser, no document surface in the command center.",
+        "contradictsDoc": true
+      },
+      {
+        "surface": "property-explorer / Smart Site (hauska-map/apps/property-explorer)",
+        "method": "local clone grep",
+        "filesWithTheWord": [
+          "src/share/ShareView.tsx",
+          "src/workbench/registry.tsx",
+          "src/workbench/tools/chat-citations.ts",
+          "src/workbench/tools/chat-research.ts",
+          "src/workbench/tools/PropertiesTool.tsx",
+          "src/workbench/workbench-w4.test.tsx"
+        ],
+        "finding": "All hits are the ENGLISH WORD 'workspace' in UI prose and comments for a saved-properties feature (PropertiesTool.tsx line 1: 'MY PROPERTIES - the saved-properties workspace tool (Workbench W4, WB6)'; line 176 'see your workspace across devices'; line 262 'workspace lives on the server, not this browser'; ShareView.tsx line 214 'From the sharer's workspace'). NOT workspace-atom rendering.",
+        "atomRouteCallCheck": {
+          "command": "grep -rn \"brokerage/v1/workspaces|property-workspace|workspace-attachment|workspace-share-edge\" apps/property-explorer/src",
+          "rawOutput": "(zero lines returned)",
+          "interpretation": "PE never calls a workspace atom route or references a workspace entityType. Determined absence; the same grep over api-server returns many hits, so the pattern is valid."
+        }
+      },
+      {
+        "surface": "smartcity-os",
+        "method": "local clone grep (READ-ONLY, no writes performed)",
+        "headCommit": "257fb8da199ac957881aaf2dc0b3256565200027 (2026-06-07)",
+        "command": "grep -rln \"Smart File|smart-file|smartFile|property-workspace|workspace-attachment\" --include=*.ts --include=*.tsx .",
+        "rawOutput": "(zero lines returned)",
+        "finding": "ZERO hits. smartcity-os - the repo that would host a city-facing Smart Files surface - contains no Smart Files code of any kind. Its HEAD is 2026-06-07, over two months stale relative to the other spine repos (2026-08-12)."
+      },
+      {
+        "surface": "api-server atom registry (legacy-design-tools)",
+        "finding": "A property-workspace atom IS registered at artifacts/api-server/src/atoms/registry.ts line 249 (registry.register(makePropertyWorkspaceAtom({ history }))), but line 244 comment reads 'Property Brief brokerage atoms - shape-only until workspace DB lookup' and the atom file header (src/atoms/property-workspace.atom.ts lines 1-4) reads 'Property Brief `property-workspace` atom - shape-only until workspace DB lookup ships.'",
+        "shapeOnlyProof": "makePropertyWorkspaceAtom().contextSummary() returns keyMetrics: [] and relatedAtoms: [] unconditionally, with prose 'Property workspace ${entityId} is registered for Property Brief projections.' It performs NO database read of workspace content; it only queries the history service for a latest event id.",
+        "staleReferences": "Its composition (lines 44-54) declares children 'place-layer-regrid' - Regrid is EXTINGUISHED per standing decision - and it imports from the retired '@hauska/atom-contract' package name."
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "claim": "Published contract 1.22.0 contains the workspace subpath with four entityTypes",
+      "method": "npm install of published package into scratch dir + ls dist",
+      "path_or_command": "npm install --prefix <scratch> @empressaio/atom-contract@1.22.0 && ls node_modules/@empressaio/atom-contract/dist/workspace/",
+      "raw_output": "brief-run.d.ts brief-run.js common.d.ts common.js fixtures.d.ts fixtures.js index.d.ts index.js property-workspace.d.ts property-workspace.js workspace-attachment.d.ts workspace-attachment.js workspace-share-edge.d.ts workspace-share-edge.js (+ .map files); package.json version field: \"version\": \"1.22.0\""
+    },
+    {
+      "claim": "npm latest is 1.22.0; local clone declares 1.20.0",
+      "method": "npm view + local package.json read",
+      "path_or_command": "npm view @empressaio/atom-contract versions --json; npm view @empressaio/atom-contract dist-tags time.modified --json",
+      "raw_output": "[\"1.7.0\",\"1.8.0\",\"1.9.0\",\"1.10.0\",\"1.11.0\",\"1.12.0\",\"1.13.0\",\"1.14.0\",\"1.15.0\",\"1.16.0\",\"1.17.0\",\"1.18.0\",\"1.19.0\",\"1.20.0\",\"1.21.0\",\"1.22.0\"] / {\"dist-tags\":{\"latest\":\"1.22.0\"},\"time.modified\":\"2026-08-12T21:41:59.418Z\"} / local P:/hauska-atom-contract/package.json: \"version\": \"1.20.0\""
+    },
+    {
+      "claim": "Workspace identity field is `did`, an unvalidated opaque string; there is no entityId at the contract layer",
+      "method": "read published .d.ts and local source",
+      "path_or_command": "P:/hauska-atom-contract/src/workspace/common.ts lines 30-35 (identical in published dist/workspace/common.d.ts)",
+      "raw_output": "export const WORKSPACE_ATOM_METADATA_SCHEMA = z.object({\n  did: z.string().min(1),\n  createdAt: z.string().min(1),\n  updatedAt: z.string().min(1),\n  accessPolicy: ACCESS_POLICY_SCHEMA,\n});"
+    },
+    {
+      "claim": "Contract DID entityType segment and engine entityType disagree and are bridged by a shim",
+      "method": "read engine source",
+      "path_or_command": "P:/hauska-engine/packages/workspace/src/emit.ts lines 94-104",
+      "raw_output": "/** Contract workspace DIDs use the `workspace` segment; engine entityType is `property-workspace`. */\nfunction workspaceTargetFromDid(workspaceDid: string): {\n  entityType: string;\n  entityId: string;\n} {\n  const parsed = parseAtomDid(workspaceDid);\n  if (parsed.entityType === \"workspace\") {\n    return { entityType: \"property-workspace\", entityId: parsed.localId };\n  }\n  return { entityType: parsed.entityType, entityId: parsed.localId };\n}"
+    },
+    {
+      "claim": "Workspace family is not exported from the contract main index",
+      "method": "grep local source",
+      "path_or_command": "grep -n \"workspace\" src/index.ts src/registry.ts src/registration.ts (in P:/hauska-atom-contract)",
+      "raw_output": "(zero lines returned) - while grep -ril workspace src/ returns 10 files under src/workspace/ and src/conformance/, confirming the pattern works"
+    },
+    {
+      "claim": "Engine registers all four workspace entityTypes",
+      "method": "grep engine source",
+      "path_or_command": "P:/hauska-engine/packages/atoms/src/registry.ts lines 819-1030",
+      "raw_output": "819:  // Brokerage workspace atoms — V1 per 2026-05-28 dispatch.\n822:  const propertyWorkspace: AtomRegistration<\n823:    \"property-workspace\",\n826:    entityType: \"property-workspace\",\n832:        childEntityType: \"workspace-attachment\",\n844:        childEntityType: \"workspace-share-edge\",\n851:      \"property-workspace.created\",\n852:      \"property-workspace.updated\",\n853:      \"property-workspace.shared\",\n952:  const workspaceAttachment: AtomRegistration<\n1004:  const workspaceShareEdge: AtomRegistration<"
+    },
+    {
+      "claim": "The only WorkspaceStoragePort implementation is in-memory",
+      "method": "grep engine source",
+      "path_or_command": "grep -rn \"WorkspaceStoragePort\" --include=*.ts . | grep -v node_modules (in P:/hauska-engine)",
+      "raw_output": "./packages/workspace/src/in-memory-storage.ts:17:export class InMemoryWorkspaceStorage implements WorkspaceStoragePort {\n./packages/workspace/src/port.ts:27:export interface WorkspaceStoragePort {\n(plus 10 type-import/parameter references; NO second implements clause)"
+    },
+    {
+      "claim": "@hauska-engine/workspace has zero external consumers",
+      "method": "grep engine source",
+      "path_or_command": "grep -rn \"@hauska-engine/workspace\" --include=*.ts --include=*.json . | grep -v node_modules | grep -v \"packages/workspace/\" (in P:/hauska-engine)",
+      "raw_output": "(zero lines returned)"
+    },
+    {
+      "claim": "No workspace SQL migration exists in the engine",
+      "method": "grep engine source",
+      "path_or_command": "grep -rln \"workspace\" --include=*.sql . | grep -v node_modules (in P:/hauska-engine)",
+      "raw_output": "(zero lines returned); control: find . -name '*.sql' -not -path '*/node_modules/*' returns 8 files"
+    },
+    {
+      "claim": "Three workspace MCP tools exist on the reporting gate",
+      "method": "grep MCP source",
+      "path_or_command": "P:/hauska-mcp-server/src/product-gates.ts lines 31,41-43",
+      "raw_output": "31:const REPORTING_TOOLS = new Set([\n41:  \"list_property_workspaces\",\n42:  \"get_property_workspace\",\n43:  \"list_workspace_share_edges\","
+    },
+    {
+      "claim": "Workspace tools are live on the deployed MCP server",
+      "method": "bounded curl against deployed Cloud Run service with admin key",
+      "path_or_command": "curl -s -H 'X-Hauska-Admin-Key: <redacted>' https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/admin/introspection/tools",
+      "raw_output": "{\"total\":71,\"by_product\":{\"public\":13,\"codex\":5,\"reporting\":46,\"map\":7},\"by_gate\":{\"access_policy\":13,\"identified_caller\":0,\"product_codex\":5,\"product_reporting\":46,\"product_map\":7},\"tools\":[... ; grep for tool names returned: \"compose_workspace\" \"get_property_workspace\" \"list_property_workspaces\" \"list_workspace_share_edges\""
+    },
+    {
+      "claim": "list_property_workspaces is deployed and its reporting gate fails closed",
+      "method": "bounded live tool call",
+      "path_or_command": "curl -s -X POST .../admin/introspection/tools/list_property_workspaces/call -d '{\"arguments\":{\"limit\":3}}'",
+      "raw_output": "{\"tool\":\"list_property_workspaces\",\"latency_ms\":13,\"auth\":{\"product\":\"public\",\"tier\":\"free_anonymous\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"Tool \\\"list_property_workspaces\\\" requires a \\\"reporting\\\"-product API key. The caller is on product \\\"public\\\". Contact support@hauska.dev to request access.\"}],\"isError\":true},\"is_error\":true}"
+    },
+    {
+      "claim": "Zero workspace-family atoms in the 67.58M-row atom store",
+      "method": "direct SQL against production Neon (hauska_mcp) via pg client",
+      "path_or_command": "select entity_type, count(*)::int n from atoms where entity_type in ('property-workspace','brief-run','workspace-attachment','workspace-share-edge') group by 1 order by 1",
+      "raw_output": "[]"
+    },
+    {
+      "claim": "Positive basis: the atoms table is populated and the predicate mechanism works",
+      "method": "direct SQL against production Neon (hauska_mcp)",
+      "path_or_command": "select (select count(*)::int from information_schema.columns where table_name='atoms' and column_name='entity_type') as has_entity_type_col, (select count(*)::int from atoms where entity_type='code-section') as code_section_sample, (select reltuples::bigint from pg_class where relname='atoms') as approx_total",
+      "raw_output": "[{\"has_entity_type_col\":1,\"code_section_sample\":28567,\"approx_total\":\"67577192\"}]"
+    },
+    {
+      "claim": "App tables hold 142 workspaces, 248 brief runs, 7 shares, and ZERO attachments",
+      "method": "direct SQL against production Neon (neondb)",
+      "path_or_command": "select 'brokerage_workspaces' t, count(*)::int n from brokerage_workspaces union all select 'brokerage_workspace_attachments', count(*)::int from brokerage_workspace_attachments union all select 'brokerage_workspace_shares', count(*)::int from brokerage_workspace_shares union all select 'brokerage_brief_runs', count(*)::int from brokerage_brief_runs order by 1",
+      "raw_output": "[{\"t\":\"brokerage_brief_runs\",\"n\":248},{\"t\":\"brokerage_workspace_attachments\",\"n\":0},{\"t\":\"brokerage_workspace_shares\",\"n\":7},{\"t\":\"brokerage_workspaces\",\"n\":142}]"
+    },
+    {
+      "claim": "Only .created/.generated events exist; no revision events were ever emitted",
+      "method": "direct SQL against production Neon (neondb)",
+      "path_or_command": "select event_type, count(*)::int n from atom_events where entity_type in ('property-workspace','brief-run') group by 1 order by n desc",
+      "raw_output": "[{\"event_type\":\"brief-run.generated\",\"n\":243},{\"event_type\":\"property-workspace.created\",\"n\":243}]"
+    },
+    {
+      "claim": "An attachment belongs to exactly one workspace; there is no updated_at and no version",
+      "method": "direct SQL information_schema against production Neon (neondb) + drizzle schema read",
+      "path_or_command": "select column_name, data_type from information_schema.columns where table_name='brokerage_workspace_attachments' order by ordinal_position",
+      "raw_output": "id uuid; workspace_id uuid; kind text; uri text; body text; title text; created_by_install_id text; created_at timestamp with time zone -- NOTE: no updated_at, no version, no did, no access_policy, no content_hash. Schema source P:/legacy-design-tools/lib/db/src/schema/brokerageWorkspaces.ts lines 54-76: workspaceId uuid(\"workspace_id\").notNull().references(() => brokerageWorkspaces.id, { onDelete: \"cascade\" })"
+    },
+    {
+      "claim": "No code path updates an attachment",
+      "method": "grep serving repo",
+      "path_or_command": "grep -rn \"update(brokerageWorkspaceAttachments\" artifacts/api-server/src --include=*.ts (in P:/legacy-design-tools)",
+      "raw_output": "(zero lines returned); control: grep for delete(brokerageWorkspaceAttachments returns src/routes/brokerageWorkspace.ts:440, confirming the pattern and path are correct"
+    },
+    {
+      "claim": "The api-server property-workspace atom is self-declared shape-only",
+      "method": "read serving repo source",
+      "path_or_command": "P:/legacy-design-tools/artifacts/api-server/src/atoms/property-workspace.atom.ts lines 1-4 and 85-92; registry.ts line 244",
+      "raw_output": "/**\n * Property Brief `property-workspace` atom — shape-only until workspace DB\n * lookup ships. Event vocabulary matches @hauska/atom-contract/workspace 1.3.\n */ ... return { prose: `Property workspace ${entityId} is registered for Property Brief projections.`, typed: { id: entityId, found: latestEventId !== \"\" }, keyMetrics: [], relatedAtoms: [], ... } ; registry.ts:244:  // Property Brief brokerage atoms — shape-only until workspace DB lookup"
+    },
+    {
+      "claim": "Command center contains no Smart Files or workspace surface",
+      "method": "grep local clone",
+      "path_or_command": "grep -rln \"property-workspace|workspace-attachment|Smart File|smartFile\" apps/command-center/src --include=*.ts --include=*.tsx (in P:/hauska-map)",
+      "raw_output": "(zero lines returned); ls apps/command-center/src returns: admin/ main.tsx test/ vite-env.d.ts"
+    },
+    {
+      "claim": "smartcity-os contains no Smart Files code",
+      "method": "grep local clone (read-only)",
+      "path_or_command": "grep -rln \"Smart File|smart-file|smartFile|property-workspace|workspace-attachment\" --include=*.ts --include=*.tsx . (in P:/smartcity-os)",
+      "raw_output": "(zero lines returned); git log -1: 257fb8da199ac957881aaf2dc0b3256565200027 Sun Jun 7 07:59:37 2026 -0500"
+    }
+  ],
+  "laneAShouldBuild": [
+    {
+      "item": "A city-document domain model",
+      "why": "Every existing artifact is brokerage: a workspace is keyed by (installId, listingKey) - a real-estate listing opened by an agent's browser extension. A city Smart File needs department, record series, retention schedule, and a records-officer owner. None of these concepts exist in any layer.",
+      "size": "new contract family, not a rename"
+    },
+    {
+      "item": "Many-to-many document placement",
+      "why": "The approved claim 'a document lives once and appears everywhere it belongs' requires a join table. brokerage_workspace_attachments.workspace_id is a single NOT NULL FK with cascade delete. This is the single largest gap between the claim and the code.",
+      "size": "schema + contract + write path"
+    },
+    {
+      "item": "Document revision with retained prior versions",
+      "why": "The approved claim 'revise once and it is updated everywhere - and what it was before is still there' has NO implementation: no updated_at, no version column, no update route, and zero .updated events ever emitted despite the event type being declared in the engine registry.",
+      "size": "schema + write path + event emission"
+    },
+    {
+      "item": "Cross-corpus search",
+      "why": "'One search across everything your city holds' has no index and no route. Retrieval today is by workspace id or owner listing only.",
+      "size": "search infrastructure"
+    },
+    {
+      "item": "A durable workspace atom store",
+      "why": "@hauska-engine/workspace's only WorkspaceStoragePort implementation is an in-memory Map, the package has zero consumers, no SQL migration exists, and there are zero workspace atoms in the 67.58M-row atom store. The atom leg of the family is entirely unbuilt.",
+      "size": "migration + Postgres port implementation + wiring"
+    },
+    {
+      "item": "accessPolicy enforcement on documents",
+      "why": "Doc 34 line 44 claims 'access is a property of the record, resolved at read time (ADR-017)'. The serving tables carry NO access_policy column; access is resolved by installId/ownerUserId ownership checks. The lens model the doc promises does not exist on this data.",
+      "size": "schema + gate wiring"
+    },
+    {
+      "item": "A city-facing surface",
+      "why": "Zero surfaces render workspace atoms. command-center (contradicting doc 34 line 32), property-explorer, and smartcity-os all return zero hits. This part IS a rendering build, but it has nothing to render onto yet.",
+      "size": "full surface build"
+    },
+    {
+      "item": "CID / content-addressing",
+      "why": "Doc 34 lines 66 and 129 assert 'atoms and nodes are already programmed with CID identifiers' and rest the portability claim on it. NOT VERIFIED in this audit: no cid or content-address field appears in the workspace contract metadata schema (did/createdAt/updatedAt/accessPolicy only) or in the serving tables. The engine emit.ts computes a sha256 contentHash, which is a hash, not a CID. Treat the CID claim as unsubstantiated for this family.",
+      "size": "unknown; verify before any collateral relies on it"
+    }
+  ],
+  "reconciliations": [
+    {
+      "disagreement": "MCP tool count",
+      "a": "CLAUDE.md (doc-sourced): '63 tools across four gates (public 6 / codex 5 / reporting 46 / map 6) on deployed main as of 2026-07-15'",
+      "b": "Live introspection 2026-08-14: total 71, public 13, codex 5, reporting 46, map 7",
+      "resolution": "Live wins. Public grew 6->13 and map 6->7; reporting unchanged at 46. CLAUDE.md is stale by 8 tools.",
+      "basis": "curl /admin/introspection/tools raw output in evidence"
+    },
+    {
+      "disagreement": "atom-contract published version",
+      "a": "CLAUDE.md (doc-sourced): 'published through v1.7.0 on npm'",
+      "b": "npm dist-tag latest: 1.22.0 (2026-08-12)",
+      "resolution": "Live wins. CLAUDE.md is 15 minor versions stale.",
+      "basis": "npm view output in evidence"
+    },
+    {
+      "disagreement": "atom-contract source vs published",
+      "a": "Local clone P:/hauska-atom-contract package.json at HEAD 292a22b: 1.20.0",
+      "b": "npm latest: 1.22.0",
+      "resolution": "Two published versions are ahead of the local clone's declared version. Workspace family contents are semantically identical between the two, so this does not change the G-03 verdict, but the local clone is not a safe proxy for published state.",
+      "basis": "both read in evidence"
+    },
+    {
+      "disagreement": "Where the substrate is 'built and running'",
+      "a": "Doc 34 line 32: 'built and running in the command center'",
+      "b": "hauska-map/apps/command-center/src contains zero workspace/Smart-Files references; its src tree is admin/, main.tsx, test/, vite-env.d.ts",
+      "resolution": "Doc claim is FALSE as written. The workspace data that exists is served by legacy-design-tools api-server and stored in Neon, and is surfaced through MCP tools, not through the command center.",
+      "basis": "grep raw output in rendering.surfacesChecked"
+    },
+    {
+      "disagreement": "Whether the workspace family is a substrate",
+      "a": "Doc 34 line 60: 'Files are atoms with attachments; folders are nodes... This is the workspace family in the atom contract.'",
+      "b": "Zero attachment rows in production; zero workspace atoms in the atom store; no folder/node concept anywhere in the family (the four entityTypes are property-workspace, brief-run, workspace-attachment, workspace-share-edge - there is no folder or node type)",
+      "resolution": "The mechanics sentence describes a system that does not exist. There are no folders, no nodes, and no files in this family today.",
+      "basis": "SQL counts + contract WORKSPACE_ATOM_ENTITY_TYPES in evidence"
+    },
+    {
+      "disagreement": "brief-run count: app table vs event log",
+      "a": "brokerage_brief_runs table: 248 rows",
+      "b": "atom_events brief-run.generated: 243 events across 243 distinct entity_ids",
+      "resolution": "5-row gap. Not resolved in this audit. Most likely 5 brief runs were written before event anchoring was wired, or 5 failed to emit. Flagged because it means the event log is NOT a complete record of the app table - which undercuts any 'history is kept by default' claim resting on atom_events.",
+      "basis": "both SQL outputs in evidence"
+    },
+    {
+      "disagreement": "property-workspace count: app table vs event log",
+      "a": "brokerage_workspaces table: 142 rows",
+      "b": "atom_events property-workspace: 243 events across 101 distinct entity_ids",
+      "resolution": "Fewer distinct entities in the event log (101) than rows in the table (142) - 41 workspaces have NO event at all. Combined with the brief-run gap, event anchoring covers roughly 71% of workspaces. Any durability or history claim must carry this coverage figure, not assume completeness.",
+      "basis": "both SQL outputs in evidence"
+    },
+    {
+      "disagreement": "Doc 34 'substrate is built' vs the shipping code's own comments",
+      "a": "Doc 34 line 138: 'The substrate is built'",
+      "b": "legacy-design-tools api-server registry.ts line 244 and property-workspace.atom.ts line 2, both in production: 'shape-only until workspace DB lookup ships'",
+      "resolution": "The code says the opposite of the doc, in a comment written by the people who built it.",
+      "basis": "source read in evidence"
+    }
+  ],
+  "openQuestions": [
+    "Is there a SEPARATE city-file substrate somewhere this audit did not reach? This audit searched hauska-atom-contract, hauska-engine, hauska-mcp-server, legacy-design-tools, hauska-map (PE + command-center), and smartcity-os. All local clones. A repo not on P:/ was not searched.",
+    "The CID claim (doc 34 lines 66, 129) is unsubstantiated for this family - no cid field in the contract metadata schema or serving tables; emit.ts computes a sha256 contentHash, not a CID. Where, if anywhere, are CIDs actually programmed? Collateral currently rests the portability claim on this.",
+    "Why do 41 of 142 workspaces have no atom_events row, and why do brokerage_brief_runs (248) and brief-run.generated events (243) disagree by 5? Determines whether 'history is kept by default' can be claimed at all.",
+    "brokerage_workspace_attachments has ZERO rows in production despite the feature shipping. Was the attachment UI ever exposed to users, or is the attachment route dead on arrival? Bears on whether any file-handling code path has ever run in production.",
+    "property-workspace.atom.ts declares a 'place-layer-regrid' composition child. Regrid is EXTINGUISHED per standing decision. Is this dead composition reachable, and does it error at runtime for any caller that requests expanded mode?",
+    "The api-server atom still imports the retired '@hauska/atom-contract' package name against a '1.3' contract vocabulary while the live contract is 1.22.0. Does that package name still resolve in the deployed image, and what breaks when it stops?",
+    "smartcity-os HEAD is 2026-06-07, over two months behind the other spine repos. Is that repo dormant, and if a city Smart Files surface is built, does it land there or in hauska-map?",
+    "Should the brokerage workspace family be RENAMED before a city family is built? Two different products would otherwise both claim the name 'workspace', and the contract DID segment ('workspace') already disagrees with the engine entityType ('property-workspace'), a collision that a second family would worsen."
+  ]
+}

@@ -8,6 +8,7 @@ $DocRepo = 'P:/doc_repo'
 $IntentsPath = Join-Path $DocRepo '_catalog/repo_intents.md'
 $PreamblePath = Join-Path $DocRepo '_catalog/DISPATCH_PREAMBLE.md'
 $OverrideLog = Join-Path $DocRepo '_catalog/canon_overrides.log'
+$PlanRegistryPath = Join-Path $DocRepo '_catalog/plan_registry.json'
 
 function Exit-Open { exit 0 }
 
@@ -86,7 +87,13 @@ function Resolve-RepoFromText {
         return $Matches[1].ToLower()
     }
 
-    if ($Text -match '(?m)[`'']P:[/\\](legacy-design-tools|hauska-engine|hauska-map|hauska-mcp-server|smartcity-os|hauska-sdk|hauska-brief-extension)[/\\]') {
+    # CTRL-2 fix (G0 audit 2026-08-14). The quote/backtick delimiter was REQUIRED here,
+    # so a bare unquoted `Work in P:/smartcity-os` resolved to $null and passed OPEN on
+    # the absolute-no-touch live-Bastrop-production repo, while three other phrasings
+    # blocked. A gate that blocks 3 of 4 phrasings is worse than none: it earns trust it
+    # cannot honor, and the hole was the most natural phrasing in this repo.
+    # The delimiter is now optional, so ANY mention of a known repo path resolves.
+    if ($Text -match '(?m)[`'']?P:[/\\](legacy-design-tools|hauska-engine|hauska-map|hauska-mcp-server|smartcity-os|hauska-sdk|hauska-brief-extension|legacy-design-tools-prod)(?:[/\\]|\b)') {
         return $Matches[1].ToLower()
     }
 
@@ -247,20 +254,100 @@ function Get-ContractHash {
     return $null
 }
 
+function Get-PlanSummaryLines {
+    # Renders "  OPS-17  G-xx  ->  90_operations/OPS-17_...md" from the shared registry,
+    # so a block message never hardcodes one program's name at another program's lane.
+    if (-not (Test-Path -LiteralPath $PlanRegistryPath)) { return @('  (plan registry unavailable)') }
+    try {
+        $reg = [System.IO.File]::ReadAllText($PlanRegistryPath) | ConvertFrom-Json
+    } catch { return @('  (plan registry unreadable)') }
+    $lines = @()
+    foreach ($planId in $reg.plans.PSObject.Properties.Name) {
+        $e = $reg.plans.$planId
+        $lines += "  $planId  $($e.rowPrefix)-xx  ->  $($e.file)"
+    }
+    return $lines
+}
+
 function Test-PlanRows {
     param([string]$Text)
-    # Returns: 'ok', 'missing' (no PLAN-ROW line), or the first invalid row id.
+    # Returns: 'ok', 'missing' (no PLAN-ROW line), or a failure string naming the bad row.
+    #
+    # CTRL-1 fix (G0 audit 2026-08-14). This function previously hardcoded the OPS-16
+    # path and grepped only 'P-\d+'. When OPS-17 added G- rows, the empty match set hit
+    # `if (-not $rowIds) { return 'ok' }` and EVERY OPS-17 dispatch passed unvalidated.
+    # The compiler (scripts/dispatch.mjs) had already learned G- rows, so the gate that
+    # exists to enforce the compiler was weaker than the compiler.
+    #
+    # Both now read _catalog/plan_registry.json. Prefixes are DATA, not code.
+    # This function FAILS CLOSED: an unreadable registry, a missing plan file, an
+    # unknown row prefix, or a row absent from its baseline all BLOCK.
     if ($Text -notmatch '(?m)^PLAN-ROW:\s*(.+)$') { return 'missing' }
     $rowsLine = $Matches[1]
-    $ops16Path = Join-Path $DocRepo '90_operations/OPS-16_texas_market_plan_of_record.md'
-    if (-not (Test-Path -LiteralPath $ops16Path)) { return 'ok' }  # fail open
-    try { $ops16 = [System.IO.File]::ReadAllText($ops16Path) } catch { return 'ok' }
-    $rowIds = [regex]::Matches($rowsLine, 'P-\d+') | ForEach-Object { $_.Value } | Select-Object -Unique
-    if (-not $rowIds) { return 'ok' }  # DC-only or prose reference; preamble/contract still gate
+
+    # Any <LETTER(S)>-<digits> token is a candidate row id. Prefix decides the plan.
+    $rowIds = [regex]::Matches($rowsLine, '\b([A-Za-z]+)-(\d+)\b') | ForEach-Object { $_.Value } | Select-Object -Unique
+    if (-not $rowIds) { return 'ok' }  # prose-only reference; preamble/contract still gate
+
+    if (-not (Test-Path -LiteralPath $PlanRegistryPath)) {
+        return "REGISTRY-MISSING: _catalog/plan_registry.json not found; cannot validate PLAN-ROW"
+    }
+    try {
+        $registry = [System.IO.File]::ReadAllText($PlanRegistryPath) | ConvertFrom-Json
+    } catch {
+        return "REGISTRY-UNREADABLE: _catalog/plan_registry.json failed to parse; cannot validate PLAN-ROW"
+    }
+
+    # prefix (uppercased) -> @{ File; PlanId }
+    $byPrefix = @{}
+    foreach ($planId in $registry.plans.PSObject.Properties.Name) {
+        $entry = $registry.plans.$planId
+        $byPrefix[$entry.rowPrefix.ToUpper()] = @{ File = $entry.file; PlanId = $planId }
+    }
+
+    $planTextCache = @{}
     foreach ($rid in $rowIds) {
-        $inBaseline = $ops16 -match "(?m)^\| $rid \|"
-        $inAmendment = $ops16 -match "(?m)^\| A-\d+[^\r\n]*\b$rid\b"
-        if (-not ($inBaseline -or $inAmendment)) { return $rid }
+        if ($rid -notmatch '^([A-Za-z]+)-(\d+)$') { continue }
+        $prefix = $Matches[1].ToUpper()
+        # A-nnn is the amendment-row convention inside a baseline, not a plan row.
+        if ($prefix -eq 'A') { continue }
+
+        if (-not $byPrefix.ContainsKey($prefix)) {
+            return "UNKNOWN-PREFIX: $rid - no plan in _catalog/plan_registry.json owns the '$prefix-' prefix"
+        }
+        $planId = $byPrefix[$prefix].PlanId
+        $planFile = $byPrefix[$prefix].File
+
+        if (-not $planTextCache.ContainsKey($planId)) {
+            $planPath = Join-Path $DocRepo $planFile
+            if (-not (Test-Path -LiteralPath $planPath)) {
+                return "PLAN-FILE-MISSING: $planId baseline ($planFile) not found; cannot validate $rid"
+            }
+            try {
+                $planTextCache[$planId] = [System.IO.File]::ReadAllText($planPath)
+            } catch {
+                return "PLAN-FILE-UNREADABLE: $planId baseline ($planFile) could not be read; cannot validate $rid"
+            }
+        }
+        $planDoc = $planTextCache[$planId]
+
+        # A row is real if it is DECLARED as a baseline row (first cell of its own row),
+        # or if an amendment ADDS it (row id appears in the amendment's Change cell as a
+        # declaration, e.g. "G-60 ADDED" / "adds G-60").
+        #
+        # SECOND FAIL-OPEN, found while negative-testing the CTRL-1 fix (2026-08-14):
+        # the previous amendment test was `^\| A-\d+[^\r\n]*\b$rid\b`, which scanned the
+        # WHOLE amendment row for the bare token. Amendment A-004 quotes the literal
+        # string "G-9999" in its prose while documenting the CTRL-1 bug, so G-9999 --
+        # a row that exists nowhere -- validated as real. ANY row id merely MENTIONED in
+        # an amendment's prose passed. OPS-16 is unaffected today only by luck (all 38
+        # P- tokens in it happen to be real rows), not by design.
+        # Anchor to a declaration, never to a mention.
+        $inBaseline = $planDoc -match "(?m)^\|\s*$rid\s*\|"
+        $inAmendment = $planDoc -match "(?m)^\|\s*A-\d+\s*\|[^\r\n|]*\|[^\r\n|]*(?:^|[^A-Za-z0-9-])$rid(?:\s+(?:ADDED|added|ADD|NEW|new))"
+        if (-not ($inBaseline -or $inAmendment)) {
+            return "$rid not found as a declared row in $planId baseline or amendments"
+        }
     }
     return 'ok'
 }
@@ -281,21 +368,26 @@ Or add a line: CANON_OVERRIDE: <reason>
 
     $planRowResult = Test-PlanRows -Text $inspectText
     if ($planRowResult -eq 'missing') {
+        $planList = (Get-PlanSummaryLines) -join "`n"
         $msg = @"
 CANON GATE (M5): dispatch has no PLAN-ROW line.
 
-Every dispatch names its OPS-16 row (work that cannot name a row is not scoped).
-Add: PLAN-ROW: P-xx  — or, for genuinely new scope, add an operator-ruled amendment row to
-90_operations/OPS-16_texas_market_plan_of_record.md first, then compile via scripts/dispatch.mjs.
+Every dispatch names its plan-of-record row (work that cannot name a row is not scoped).
+Known plans and their row prefixes:
+$planList
+Add: PLAN-ROW: <prefix>-xx  - or, for genuinely new scope, add an operator-ruled amendment
+row to that plan's baseline first, then compile via scripts/dispatch.mjs.
 Or add a line: CANON_OVERRIDE: <reason>
 "@
         Write-BlockMessage -Message $msg.Trim()
     } elseif ($planRowResult -ne 'ok') {
+        $planList = (Get-PlanSummaryLines) -join "`n"
         $msg = @"
-CANON GATE (M5): PLAN-ROW $planRowResult not found in OPS-16 baseline or amendments.
+CANON GATE (M5): PLAN-ROW rejected - $planRowResult
 
-No row, no dispatch. Add an operator-ruled amendment row to
-90_operations/OPS-16_texas_market_plan_of_record.md, then recompile via scripts/dispatch.mjs.
+No row, no dispatch. Add an operator-ruled amendment row to the owning plan's baseline,
+then recompile via scripts/dispatch.mjs. Known plans:
+$planList
 Or add a line: CANON_OVERRIDE: <reason>
 "@
         Write-BlockMessage -Message $msg.Trim()

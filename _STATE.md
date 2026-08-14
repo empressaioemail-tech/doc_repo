@@ -1,6 +1,6 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-14T20:25:00Z (L21 Dallas FLIPPED via named 2025-fallback; Tarrant+Dallas READY_FOR_L16_TAIL blocked on engine parity; L24 P-08 rem READY / metros HOLD; L20 FAN_IN_FLIGHT; L16 holds atoms slot).**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-14T21:45:00Z (L20 Factory 1.5 fan CLOSED_ACQUISITION_STAGING; L21 Dallas FLIPPED; L24 P-08 rem READY / metros HOLD; L16 holds atoms slot).**
 
 **CONVERGENCE HEADER (read these three before anything below): the plan of record is `90_operations/OPS-16_texas_market_plan_of_record.md` (every dispatch names a PLAN-ROW; the baseline is frozen, changes are amendment rows). The operative agent law is `90_runbooks/AGENT_CONTRACT.md` (fan model, interrupt recovery, slot law + lease, heavy-scan serialization, verification rules, close schema). Dispatches are COMPILED via `node scripts/dispatch.mjs --lane <ID> --plan-row <P-xx>` — hand-assembled dispatches are blocked by the canon-gate hook (M4 contract hash, M5 PLAN-ROW validity, both verified live 2026-08-13).**
 
@@ -16,9 +16,9 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 **Status: P-08 READY; P-07 METROS HOLD.** OFF-SLOT. Worktree `P:/hauska-engine-worktrees/l24-flood-plan-emit` @ `e65baf9`. Work root `P:/tmp/plan_farm_20260813/`. **Did NOT take atoms slot / no `--apply`.** **Remainder 77/77 NDJSON READY** (manifest). Resume of 7 large counties completed `resume.done` @ 2026-08-14T18:28:58Z (48491 feature-budget OK wall 376s). **Metros 0/6 HOLD** until L16 pipelines leg close artifact — then one-at-a-time in gap. Operator rulings ack `_inbox/2026-08-14_l24_operator_rulings_ack.json` (Zone-X accepted; contention standing-rule upgrade accepted). CP1/CP2 + findings filed. Close owed after metros: `_inbox/2026-08-14_l24_close.json`.
 
-## L20 FACTORY 1.5 FIRST PRODUCTION SWEEP (P-21/P-22) — REOPENED 2026-08-14
+## L20 FACTORY 1.5 FIRST PRODUCTION SWEEP (P-21/P-22) — CLOSED 2026-08-14
 
-**Status: FAN_IN_FLIGHT.** Factory repaired in worktree `l20/factory15-prod-sweep` (runner 0.2.1). Permanent stage-apply re-pilot **PASS** (`_inbox/2026-08-14_l20_cp2b_repilot.json` @ `2026-08-14T16:42:37.992Z`). Production fan `P:/tmp/l20_zd_sweep_20260814/fan` over 440-city queue; progress backfilled then resumed at **28** landed (4 LAYER-FOUND incl. Austin preserved / 24 NFUW). NFUW now recorded as processed for this outDir so resume does not loop. Status ping `_inbox/2026-08-14_l20_status_ping.json`. No atoms apply/slot/lease/PostGIS; payload/drain read-only; roster updates deferred to close.
+**Status: CLOSED_ACQUISITION_STAGING.** Fan completed `2026-08-14T21:35:46.140Z`: **440** landed / **497** attempted / halted=null — **LAYER-FOUND 55** / **NFUW 385** (`stageApply=true`, runner 0.2.1). Re-pilot PASS `_inbox/2026-08-14_l20_cp2b_repilot.json`. DC-6 post-roster: footprint **86** staged cities / **291,475** rows / **254** genuinely open / **22/28** counties with staging / candidate-complete **Bastrop+Caldwell** only (still need drain+stamp+score). Roster status-only updates applied (**234** fan + Georgetown store-truth restore); Temple ORDINANCE-NO-GIS no-downgrade; planner commits. Frisco LAYER-FOUND on trail-feasibility Hub layer (124 rows) — quality caveat. Factory repair still in worktree `l20/factory15-prod-sweep` (eng PR owed). Close `_inbox/2026-08-14_l20_close.json` (supersedes CLOSED_PARTIAL_INSTRUMENT_FAIL). **Did NOT take atoms slot / no --apply.**
 
 ## L19 DC-11b/c/d CLOSEOUT (P-29) — CLOSED 2026-08-14
 

@@ -1,0 +1,337 @@
+{
+  "lane": "program-zero",
+  "laneId": "G0",
+  "planRow": ["G-01","G-02","G-03","G-04","G-05"],
+  "planOfRecord": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "date": "2026-08-14",
+  "closeType": "HONEST PARTIAL — G-02/G-03/G-04/G-05 complete; G-01 partial by design with its ambiguous set routed to the operator",
+  "checkpointArtifacts": [
+    "_inbox/2026-08-14_g0_cp1.json",
+    "_inbox/2026-08-14_g0_cp2.json"
+  ],
+  "subAgentArtifacts": [
+    "_inbox/2026-08-14_g0_g03_code_audit.json",
+    "_inbox/2026-08-14_g0_g04_memory_audit.json",
+    "_inbox/2026-08-14_g0_g05_dev_standards.json"
+  ],
+  "prNumbers": [],
+  "mergeShas": [],
+  "ciConclusionStrings": [],
+  "prNote": "No PRs. This lane is a READ-ONLY audit plus one new script; doc_repo commits are planner-owned and are left to the operator.",
+
+  "headline": "The single most consequential result is G-03: OPS-17 assumption 2 is FALSIFIED. Smart Files is a BUILD, not a rendering pass. Three claims currently in doc 34's approved-claims register — cleared for market-facing use today — are not supported by any code that exists. Alongside that, two silently fail-open holes were found and independently reproduced in the canon-gate hook, one of them on the absolute-no-touch live-production repo.",
+
+  "rowResults": [
+    {
+      "row": "G-01",
+      "state": "PARTIAL — deliberately",
+      "delivered": "Per-doc dispositions for every doc the four lanes touch plus the five named docs; the genuinely ambiguous set routed to the operator rather than guessed, per the dispatch instruction.",
+      "whyPartial": "The dispatch said to apply the rulings that already exist. Verified at source, two of the five named docs have NO existing ruling to apply (see finding G01-R1). Manufacturing one and attributing it to 33a would be the exact failure this program audits for."
+    },
+    {
+      "row": "G-02",
+      "state": "COMPLETE",
+      "delivered": "scripts/doc-staleness.mjs — built BY THE PLANNER (verification is never delegated below the lane planner) and PROVEN able to fire on five cases before being trusted."
+    },
+    {
+      "row": "G-03",
+      "state": "COMPLETE — assumption falsified",
+      "delivered": "Verdict BUILD. Independently re-verified by the planner at published npm and at the live schema."
+    },
+    {
+      "row": "G-04",
+      "state": "COMPLETE",
+      "delivered": "104 memories audited, 36 individually probed against live source, 68 classified healthy-by-default with that stated as a scope limit rather than a verification result. Dispositions: keep 27, update 9, retire 2."
+    },
+    {
+      "row": "G-05",
+      "state": "COMPLETE",
+      "delivered": "Five-hook inventory, .cursor config ruling, AGENT_CONTRACT currency measured against 84 close artifacts. Two silently fail-open controls found and planner-reproduced."
+    }
+  ],
+
+  "G03_verdict": {
+    "verdict": "BUILD",
+    "assertionTested": "34_smartcity_smart_files_and_foundation.md open item 1, line 138 verbatim: 'Smart Files rendering. The substrate is built; the city-facing Smart Files surface is a rendering and marketing pass, not a build. Scope it in the rebuild.'",
+    "result": "FALSIFIED",
+    "falsificationIsSuccess": "Per the dispatch and OPS-17 assumption 2, falsifying this is a successful outcome. Lane A grows; that is an amendment, not a surprise.",
+    "coreFinding": "The workspace family is real, published, registered, deployed and serving — but it is a BROKERAGE feature (real-estate agents saving property listings via a browser extension), not a city file system. Every layer self-labels: contract package description 'Brokerage workspace packaging contract types for V1'; engine package 'Brokerage V1 property-workspace atom emission'; engine registry.ts:819 'Brokerage workspace atoms - V1 per 2026-05-28 dispatch'; MCP tool comments 'Brokerage tool 1/2/3'. No city, department, record-series, or retention concept exists in any layer.",
+
+    "plannerIndependentVerification": [
+      {
+        "claim": "workspace ships in the published contract at a subpath, not the main index",
+        "method": "npm view @empressaio/atom-contract version + exports --json (planner-run, not sub-agent-reported)",
+        "rawOutput": "1.22.0\n\"./workspace\": { \"types\": \"./dist/workspace/index.d.ts\", \"import\": \"./dist/workspace/index.js\" }",
+        "verdict": "CONFIRMED — the types are real and published; workspace is reachable only via the /workspace subpath and is not part of the core contract surface"
+      },
+      {
+        "claim": "the serving schema cannot support the three Smart Files promises",
+        "method": "planner read P:/legacy-design-tools/lib/db/src/schema/brokerageWorkspaces.ts:54-76 directly",
+        "rawOutput": "workspaceId: uuid(\"workspace_id\").notNull().references(() => brokerageWorkspaces.id, { onDelete: \"cascade\" })\nkind, uri, body, title, createdByInstallId, createdAt  -- and NOTHING else",
+        "verdict": "CONFIRMED, all four structural absences at once",
+        "detail": {
+          "livesOnceAppearsEverywhere": "IMPOSSIBLE — workspaceId is a SINGLE notNull FK with cascade delete. One attachment belongs to exactly ONE workspace. No many-to-many join table. Many placements = many copies, which is the precise problem Smart Files claims to solve.",
+          "reviseOnceCurrentEverywhere": "NO SCHEMA — there is no updated_at column and no version column; only createdAt. Attachments cannot be revised, so neither propagation nor version history exists for documents.",
+          "notLockedToOneHost": "UNSUBSTANTIATED for this family — no cid column. Sub-agent adds that emit.ts computes a sha256 contentHash, which is a hash, not a CID.",
+          "accessPolicyLens": "ABSENT — no access_policy column on the serving table, so the ADR-017 lens model doc 34 promises does not exist on this data.",
+          "brokerageConfirmation": "createdByInstallId is install-keyed, matching the known radar-entitlement-install-id-not-user-aware memory. This is agent-install-scoped, not city-tenant-scoped."
+        }
+      },
+      {
+        "claim": "doc 34's approved-claims register cites the workspace family as the basis",
+        "method": "planner grep of the register in 34_smartcity_smart_files_and_foundation.md",
+        "rawOutput": "line 127: | A document lives once, appears everywhere it belongs | Stated plainly | Workspace family; substrate built |\nline 126: | Prior versions remain retrievable | \"what it was before is still there\" | Foundation; history kept by default |\nline 129: | Not locked to us or a single host | \"you're not locked to us or to any one host\" | CID identifiers programmed; portability structural |",
+        "verdict": "CONFIRMED — the register names 'Workspace family; substrate built' as the SOURCE for the exact claim the schema cannot support"
+      },
+      {
+        "claim": "doc 34 line 32 says the substrate is built and running in the command center",
+        "method": "planner read of 34_smartcity_smart_files_and_foundation.md line 32",
+        "rawOutput": "INTERNAL ONLY: the foundation is the node-and-graph substrate, built and running in the command center. The external work is rendering and marketing it in a city's own language, not building it. Atoms and nodes carry CID identifiers already.",
+        "subAgentCounterEvidence": "command-center src grep for workspace/Smart File entityTypes returned ZERO lines; its src tree is only admin/, main.tsx, test/, vite-env.d.ts",
+        "verdict": "The doc sentence is FALSE AS WRITTEN. Note this is the sentence that generates the whole 'rendering pass, not a build' conclusion in open-item 1."
+      }
+    ],
+
+    "storeAbsenceIsPositivelyDetermined": {
+      "count": 0,
+      "countingRule": "SELECT entity_type, count(*) FROM public.atoms WHERE entity_type IN ('property-workspace','brief-run','workspace-attachment','workspace-share-edge') GROUP BY 1 — database hauska_mcp (Neon), from GCP secret DATABASE_URL, project hauska-prod-497015",
+      "rawOutput": "[]",
+      "positiveBasis": "has_entity_type_col=1; control predicate entity_type='code-section' returns 28,567 rows; approx_total 67,577,192 rows. The query mechanism demonstrably works and the store is populated.",
+      "contractCompliance": "This satisfies the inherited constraint that an empty result is NOT an absence — only a positive determination writes one. The sub-agent supplied the control predicate unprompted and explicitly flagged isDeterminedAbsenceNotUnreached: true."
+    },
+
+    "servingPathBypassesTheEngine": "The serving path does NOT go through hauska-engine's workspace package. It runs MCP -> legacy-design-tools api-server -> Neon app tables, bypassing the engine workspace substrate entirely. The engine emitter (packages/workspace/src/emit.ts) is a pure in-memory transform performing no I/O; grep for '@hauska-engine/workspace' outside the package itself returns ZERO consumers; the only WorkspaceStoragePort implementation is InMemoryWorkspaceStorage backed by a Map; no SQL migration in hauska-engine mentions workspace (control: 8 migration files exist and were searched). The engine leg is registered but dead.",
+
+    "productionState": {
+      "workspaces": 142,
+      "briefRuns": 248,
+      "shares": 7,
+      "attachments": 0,
+      "significance": "ZERO attachments. The FILES half of the family has never been written to in production. The one thing Smart Files is named for has no production data at all."
+    },
+
+    "laneAShouldBuild": [
+      "city-document domain model (no city/department/record-series/retention concept exists)",
+      "many-to-many document placement (requires a join table that does not exist)",
+      "revision with retained versions (requires updated_at + version + history, none exist)",
+      "cross-corpus search (no full-text index, no tsvector, no search route)",
+      "a durable atom store for the family (migration + Postgres port + wiring; today it is a Map)",
+      "accessPolicy enforcement on documents (no access_policy column on serving tables)",
+      "the city-facing surface",
+      "CID verification (no cid field anywhere in the family)"
+    ],
+    "sizingConsequence": "Lane A must be re-sized as a BUILD. OPS-17 assumption 2 should be reversed by amendment, and G-14/G-44/G-53 re-scoped against eight build items rather than a rendering pass."
+  },
+
+  "operatorRulingsOwed": [
+    {
+      "id": "OR-1",
+      "severity": "HIGHEST",
+      "subject": "Doc 34 approved-claims register — three claims cleared for market-facing use are unsupported by code",
+      "detail": "Lines 127, 126, and 129 of the register clear for external use: 'A document lives once, appears everywhere it belongs' (source cited as 'Workspace family; substrate built'), 'what it was before is still there' (source 'history kept by default'), and 'not locked to us or to any one host' (source 'CID identifiers programmed'). Planner-verified: the schema has a single-parent FK, no updated_at, no version, and no cid. The masters README rule is that a claim not in an approved register is not approved — but these ARE in the register, which makes this a live collateral-risk item rather than a drafting nicety.",
+      "whyOperator": "This touches what may be said to a city and to Vertosoft, at a set price of $25,000 entry. It is a claims decision, not a scoping decision.",
+      "proposedAction": "Suspend the three register rows pending the lane A build, or re-word them to what the substrate does today. Also correct doc 34 line 32 ('built and running in the command center'), which is false as written and is the sentence that generates open-item 1."
+    },
+    {
+      "id": "OR-2",
+      "severity": "HIGH",
+      "subject": "40i and 11a disposition — the dispatch brief attributes rulings to 33a that 33a did not make",
+      "detail": "33a open-item 4 (line 186) names EXACTLY THREE docs: 47, 33, and 'the M4-B/PLR/SD/W vocabulary in 30_smartcity_os.md'. 40i is called superseded in 33a PROSE (line 28) but is deliberately excluded from the retirement item. 11a appears NOWHERE in 33a and nowhere in _smartcity_masters/ (grep -rn '11a_bastrop' _smartcity_masters/ returns zero). No basis exists for the brief's attribution of either.",
+      "whyOperator": "Guessing would manufacture a ruling and attribute it to a master. 11a additionally has 10 inbound references, so retiring it without a supersedes: target orphans them."
+    },
+    {
+      "id": "OR-3",
+      "severity": "HIGH",
+      "subject": "Doc 30 disposition — proposed SCOPED CORRECTION, not a status flip",
+      "detail": "33a scopes its ruling to the VOCABULARY INSIDE doc 30, not to doc 30. The masters cite doc 30 as their LIVE source of record four times (31:62 integrations inventory, 31:152 claims-register source column, 32:62 telemetry basis, 34:76 current Compass basis). Flipping 30 to superseded would break the reference set's own citation chain and would remove the only module/integrations inventory lane B rows G-18 and G-21 have.",
+      "proposedAction": "Excise or explicitly mark the M4-B/PLR-1..28/SD-1..SD-8/W1-W6 section (8 matches, concentrated at lines 84-102) as superseded-in-place; doc 30 stays status: active. This is the in-place-edit path of 01_doc_conventions.md, not the supersession path."
+    },
+    {
+      "id": "OR-4",
+      "severity": "MEDIUM",
+      "subject": "ADR status vocabulary — a genuine convention gap, not agent drift",
+      "detail": "80_adrs/ splits between the ADR lifecycle (accepted x12, proposed x4) and the repo vocabulary (active). 01_doc_conventions.md never rules on ADR status at all. 16 ADRs are affected, including adr_023 which lane C depends on.",
+      "options": "(a) extend the legal vocabulary for 80_adrs/ to the ADR lifecycle, or (b) map accepted->active repo-wide. Either way scripts/doc-staleness.mjs LEGAL_STATUSES or a per-directory exemption changes to match."
+    },
+    {
+      "id": "OR-5",
+      "severity": "MEDIUM",
+      "subject": "premortem-check retired or not",
+      "detail": "The skill is still installed at .claude/skills/premortem-check/ and CLAUDE.md still instructs 'Use the premortem-check skill before any commitment' and 'never let a yellow from premortem-check slide', while memory feedback_premortem_skill_discipline records it RETIRED 2026-07-13. Live config and CLAUDE.md contradict the memory.",
+      "proposedAction": "Either un-retire it, or remove the skill AND both CLAUDE.md instructions. Found independently by the planner; cross-checks G-04 and G-05."
+    },
+    {
+      "id": "OR-6",
+      "severity": "LOW",
+      "subject": ".cursor/settings.json — track or ignore",
+      "detail": "74 bytes holding only a neon-postgres plugin toggle. Leaving it merely-unadded is the worst option because nothing records the intent."
+    }
+  ],
+
+  "controlDefectsFoundAndReproduced": [
+    {
+      "id": "CTRL-1",
+      "severity": "HIGH",
+      "title": "canon-gate M5 PLAN-ROW validation is INERT for every OPS-17 G-row (fail-open)",
+      "plannerReproduced": true,
+      "rawOutput": "M5 real G-05      -> exit 0\nM5 bogus G-9999   -> exit 0\nM5 garbage Q-42   -> exit 0\nM5 bogus P-9999   -> exit 2",
+      "sourceLines": "canon-gate.ps1:258 `$rowIds = [regex]::Matches($rowsLine, 'P-\\d+')`; :259 `if (-not $rowIds) { return 'ok' }`; :256 hardcodes the OPS-16 path; :257-258 return 'ok' if that file is missing or unreadable",
+      "mechanism": "This is a design seam, not a coding slip. OPS-17 governing rule 2 deliberately chose the G- prefix so rows 'never collide with the OPS-16 P- rows in a grep, a hook, or a compiler.' That anti-collision choice is EXACTLY what makes the hook blind to them: the hook only greps P-. The program's own namespace-hygiene rule silently disarmed its own gate.",
+      "whyItLookedAlive": "P-9999 correctly blocks with exit 2, so the gate appears live under casual testing.",
+      "contractImpact": "AGENT_CONTRACT.md section 7 states 'a hand-assembled dispatch missing any marker is blocked by the canon-gate hook.' That guarantee is FALSE for OPS-17 PLAN-ROWs. Every dispatch in this program, INCLUDING this one, passed M5 unvalidated.",
+      "notablyTheCompilerIsStricter": "scripts/dispatch.mjs validates G-rows correctly and fails closed (exit 1). The gate that exists to enforce the compiler is weaker than the compiler.",
+      "proposedFix": "Make Test-PlanRows plan-aware exactly as dispatch.mjs already is: extract [A-Z]-\\d+, resolve the plan file from the row prefix (P- -> OPS-16, G- -> OPS-17), and fail CLOSED on an unknown prefix or a missing plan file instead of returning 'ok'.",
+      "proposedNegativeTest": "G-9999 and Q-42 must exit 2; G-05 and P-25 must exit 0; a deleted or renamed plan file must exit 2, not 0."
+    },
+    {
+      "id": "CTRL-2",
+      "severity": "HIGHEST",
+      "title": "canon-gate M1 no-touch gate passes OPEN on a bare unquoted path to smartcity-os",
+      "plannerReproduced": true,
+      "rawOutput": "M1 bare unquoted path  -> exit 0\nM1 'Working in' form   -> exit 2\nM1 repo: slug         -> exit 2\nM1 gh slug            -> exit 2",
+      "sourceLines": "canon-gate.ps1:85 and :89 both require a backtick-or-quote delimiter before the P: path; a bare `Work in P:/smartcity-os` matches neither and falls through to :99 `return $null`",
+      "stakes": "smartcity-os is ABSOLUTE NO-TOUCH per the 2026-07-04 repo-intent rulings and runs live Bastrop production.",
+      "whyWorseThanNoGate": "A gate that blocks 3 of 4 phrasings reads as protective and earns trust it has not earned, and the one hole is the most natural way to phrase it in this repo.",
+      "proposedFix": "canon-gate.ps1:85 — make the quote/backtick delimiter optional in the bare-path branch.",
+      "proposedNegativeTest": "All six phrasings (bare path, 'Working in', 'repo:' slug, quoted path, gh slug, git -C) must exit 2 for every no-touch repo."
+    },
+    {
+      "id": "CTRL-3",
+      "severity": "MEDIUM",
+      "title": "Hook coverage is PreToolUse-only; close-artifact discipline is protocol-shaped",
+      "detail": "All five hooks are wired with zero orphans (verified against settings.json), but every one is PreToolUse. There is no Stop or PostToolUse hook, so close-artifact filing, schema conformance, and commit discipline are enforced only by prose in AGENT_CONTRACT section 6 — the 0-for-3 category by this repo's own measured base rate.",
+      "measuredConsequence": "G-05 measured it across 84 close artifacts: PLAN-ROW appears under four different key names (planRow/plan_row/planRows/plan_rows), CI conclusion under five, casing splits 38 camel / 6 snake / 2 mixed. Section 6 calls its artifact 'machine-checkable' while pinning no schema and shipping no validator in scripts/.",
+      "proposedFix": "A close-artifact schema validator plus a Stop hook, so the machine-checkable claim becomes true."
+    },
+    {
+      "id": "CTRL-4",
+      "severity": "MEDIUM",
+      "title": "branch-guard.ps1 is the one hook unproven to block, and judges the wrong repo",
+      "detail": "It queries `git -C P:/doc_repo branch --show-current` regardless of the command's target repo, so a foreign-repo commit is judged against doc_repo's branch. G-05 could not prove it fires under the read-only constraints.",
+      "status": "UNPROVEN — reported as untested rather than as passing. An untested control is not a working control."
+    },
+    {
+      "id": "CTRL-5",
+      "severity": "MEDIUM",
+      "title": ".cursor untracking is ACCIDENTAL, and the whole WDLL control chain is unversioned",
+      "detail": ".gitignore lines 5-7 cover only .claude/settings.local.json, .claude/state/, .claude/logs/. No .cursor entry exists and git check-ignore exits 1 with no output for .cursor paths. Meanwhile TWO SIBLING RULES IN THE SAME DIRECTORY ARE TRACKED (fleet-memory.mdc, read-state-first.mdc), so the intent to version .cursor/rules is established and wdll-practice.mdc simply never got added. G-05 escalation: 90_runbooks/wdll_practice.md — the runbook the rule points at — is ALSO untracked, while the practice is demonstrably live (_inbox/2026-08-14_l18_WDLL.md and l19_WDLL.md exist).",
+      "proposedFix": "git add .cursor/rules/wdll-practice.mdc and 90_runbooks/wdll_practice.md; rule on .cursor/settings.json per OR-6."
+    },
+    {
+      "id": "CTRL-6",
+      "severity": "LOW",
+      "title": "AGENT_CONTRACT hashes are CURRENT; the gap is enforcement, not currency",
+      "detail": "Both hashes independently recomputed and matching: contract 4d5ddcd3, preamble 0f465c77. But section 7's blocking guarantee is false per CTRL-1, and section 1's two-checkpoint rule shows an adoption curve: 9 of 49 lanes (18%) filed full CP1+CP2+close triads and all 9 are the 2026-08-14 cohort; all 31 lanes closing 08-12 filed a close with neither checkpoint. PLAN-ROW presence went 0% (38 pre-ruling artifacts) to 65% (46 post-ruling). The one field that DROPPED is CI conclusion strings, 50% -> 33%."
+    }
+  ],
+
+  "G01_docDispositions": {
+    "instruction": "Proposed only. No status flip has been applied. Nothing deleted. No archive directory created — retirement is a status flip per 01_doc_conventions.md.",
+    "tiebreakRule": "_smartcity_masters/00_README.md: where the masters and any other doc disagree, the masters win and the other doc gets corrected. Applied as the governing rule, not planner judgment.",
+    "table": [
+      {"path":"47_codex_plan_review.md","currentStatus":"active","lastUpdated":"2026-05-16","ageDays":90,"proposedStatus":"superseded","basis":"33a:186 open-item 4 names it explicitly for retirement by status flip","supersededBy":"_smartcity_masters/33a_smartcity_plan_review.md","confidence":"unambiguous"},
+      {"path":"33_smartcity_codex_1b_integration.md","currentStatus":"stub","lastUpdated":"2026-05-11","ageDays":95,"proposedStatus":"superseded","basis":"33a:186 names it explicitly; also carries an ILLEGAL status value ('stub')","supersededBy":"_smartcity_masters/33a_smartcity_plan_review.md","confidence":"unambiguous","note":"fixes a vocab violation and applies a ruling in one edit"},
+      {"path":"30_smartcity_os.md","currentStatus":"active","lastUpdated":"2026-05-16","ageDays":90,"proposedStatus":"active (UNCHANGED) + scoped in-place correction","basis":"33a scopes its ruling to the VOCABULARY INSIDE the doc; the masters cite this doc as their live source of record 4x","supersededBy":null,"confidence":"high — but the correction itself is OR-3, an operator call","doNotFlip":"flipping would break the reference set's own citation chain and strand lane B rows G-18/G-21"},
+      {"path":"40i_cortex_dallas_e2e_grok_plan_review_sprint.md","currentStatus":"active","lastUpdated":"2026-05-26","ageDays":80,"proposedStatus":"OPERATOR CALL","basis":"called superseded in 33a PROSE (line 28) but DELIBERATELY EXCLUDED from the open-item-4 retirement list","supersededBy":null,"confidence":"AMBIGUOUS — routed to operator per OR-2"},
+      {"path":"11a_bastrop_live_roadmap.md","currentStatus":"active","lastUpdated":"2026-05-11","ageDays":95,"proposedStatus":"OPERATOR CALL","basis":"NO basis found. Appears nowhere in 33a and nowhere in _smartcity_masters/. Self-describes as Codex 1b generation by title and related-chain, but that is inference, not a ruling","supersededBy":null,"confidence":"AMBIGUOUS — routed to operator per OR-2","citationCost":"10 inbound references would be orphaned by a flip with no supersedes: target"},
+      {"path":"07a_smartcity_product_positioning.md","currentStatus":"draft","lastUpdated":"2026-06-07","ageDays":68,"proposedStatus":"superseded","basis":"masters README 'Reconciliation debt' names it: sells a four-surface line; parcel intelligence and ambient capture both need demoting. Also doc 34 open-item 4 ('07a reconciliation')","supersededBy":"_smartcity_masters/35_smartcity_positioning_framework.md","confidence":"high"},
+      {"path":"_sales/03_smartcity_os.md","currentStatus":"active","lastUpdated":"2026-07-29","ageDays":16,"proposedStatus":"active + correction required","basis":"masters README names it: same four-surface line; its 'infrastructure vision' is now Asset Management and its do-not-claim-live-sensors instruction is SUPERSEDED. Not stale by date, but wrong by content","supersededBy":null,"confidence":"high","note":"a staleness instrument would NEVER catch this one — it is 16 days old and wrong. Recorded to show date-staleness and correctness are different axes"},
+      {"path":"_smartcity_masters/34_smartcity_smart_files_and_foundation.md","currentStatus":"active","lastUpdated":"2026-08-01","ageDays":13,"proposedStatus":"active + CORRECTION REQUIRED (urgent)","basis":"G-03 falsified open-item 1; line 32 is false as written; three approved-claims rows are unsupported by code","supersededBy":null,"confidence":"high — the correction is OR-1","note":"a master requiring correction is not a contradiction of the tiebreak rule: the masters win over OTHER DOCS, not over live code. Live source beats every doc, masters included."},
+      {"path":"_smartcity_masters/33a_smartcity_plan_review.md","currentStatus":"active","lastUpdated":"2026-08-10","ageDays":4,"proposedStatus":"active (UNCHANGED)","basis":"current; is the ruling authority for the plan-review lineage","supersededBy":null,"confidence":"unambiguous"},
+      {"path":"_smartcity_masters/00_README.md","currentStatus":"active","lastUpdated":"2026-08-10","ageDays":4,"proposedStatus":"active (UNCHANGED)","basis":"current; declares the reference set and the tiebreak rule","supersededBy":null,"confidence":"unambiguous"},
+      {"path":"_smartcity_masters/31_smartcity_dashboards.md","currentStatus":"active","lastUpdated":"2026-08-10","ageDays":4,"proposedStatus":"active (UNCHANGED)","basis":"current reference set","supersededBy":null,"confidence":"unambiguous"},
+      {"path":"_smartcity_masters/32_smartcity_asset_management.md","currentStatus":"active","lastUpdated":"2026-08-10","ageDays":4,"proposedStatus":"active (UNCHANGED)","basis":"current reference set; G-24 baseline (zero city assets) traces here","supersededBy":null,"confidence":"unambiguous"},
+      {"path":"_smartcity_masters/35_smartcity_positioning_framework.md","currentStatus":"active","lastUpdated":"2026-08-10","ageDays":4,"proposedStatus":"active (UNCHANGED)","basis":"current reference set; supersession target for 07a","supersededBy":null,"confidence":"unambiguous"},
+      {"path":"48_cortex_reporting_plan_review_spec.md","currentStatus":"active","lastUpdated":"2026-07-01","ageDays":44,"proposedStatus":"active + live-verification required","basis":"inside the 60d threshold so the instrument does NOT flag it, but OPS-17 G-15 already records it as DOC-not-LIVE and G-16 notes it carries a dead Cotality dependency","supersededBy":null,"confidence":"high","note":"second case where a doc is in-threshold but not trustworthy"},
+      {"path":"75n_icc_code_connect_catalog.md","currentStatus":"active","lastUpdated":"2026-07-23","ageDays":22,"proposedStatus":"active (UNCHANGED)","basis":"current; lane D authority","supersededBy":null,"confidence":"unambiguous"},
+      {"path":"01_doc_conventions.md","currentStatus":"active","lastUpdated":"2026-08-08","ageDays":6,"proposedStatus":"active + extension needed","basis":"current, but silent on ADR status (OR-4) and silent on the 129 no-status-field docs","supersededBy":null,"confidence":"high"},
+      {"path":"33_smartcity_codex_1b_integration.md + 65_sensors/approved_sensor_catalog.md + 65_sensors/pilot_waypoint.md + 80_adrs/adr_023 + 6 whitespace_package docs + onepager_briefs/07","currentStatus":"various illegal","lastUpdated":"various","proposedStatus":"vocab normalization","basis":"the 11 lane-set vocab violations reported by scripts/doc-staleness.mjs","supersededBy":null,"confidence":"mechanical once OR-4 is ruled"}
+    ],
+    "ambiguousRoutedToOperator": ["40i_cortex_dallas_e2e_grok_plan_review_sprint.md","11a_bastrop_live_roadmap.md"],
+    "note": "Per the dispatch: flag genuinely ambiguous calls rather than guessing. Two of the five named docs are genuinely ambiguous."
+  },
+
+  "countsWithCountingRules": [
+    {"metric":"root .md docs","value":159,"rule":"ls *.md at repo root","source":"planner, confirms the brief"},
+    {"metric":"distinct status strings, root only","value":16,"rule":"first /^status:/ line within first 15 lines of each root *.md","source":"planner, confirms the brief"},
+    {"metric":"legal status values","value":4,"rule":"01_doc_conventions.md:93 — active|draft|superseded|historical","source":"planner"},
+    {"metric":"markdown files scanned repo-wide","value":846,"rule":"every *.md outside [.git, node_modules, .claude, .cursor, scripts, _inbox, _sessions, _decisions, _research, _catalog, _prospects]","source":"scripts/doc-staleness.mjs"},
+    {"metric":"legal status:active docs repo-wide","value":308,"rule":"as above, status value EXACTLY 'active'","source":"scripts/doc-staleness.mjs"},
+    {"metric":"vocab violations repo-wide","value":366,"rule":"as above; a value is legal only if the ENTIRE value is one of the four","source":"scripts/doc-staleness.mjs"},
+    {"metric":"distinct illegal status values repo-wide","value":148,"rule":"as above, deduplicated by raw string","source":"scripts/doc-staleness.mjs"},
+    {"metric":"docs with a frontmatter block but NO status field","value":129,"rule":"subset of the 366; reported as null. 35% of all violations and the single largest class","source":"scripts/doc-staleness.mjs"},
+    {"metric":"stale-active docs repo-wide","value":131,"rule":"status exactly 'active' AND last_updated older than 60 days from 2026-08-14","source":"scripts/doc-staleness.mjs"},
+    {"metric":"lane-set vocab violations","value":11,"rule":"subset of the 366 matching OPS-17 lane-set path prefixes","source":"scripts/doc-staleness.mjs"},
+    {"metric":"memory files","value":104,"rule":"*.md in the memory dir EXCLUDING MEMORY.md, which is the index","source":"G-04, planner-reconciled"},
+    {"metric":"memory index pointers","value":104,"rule":"COUNT OF LINK TARGETS, not lines — MEMORY.md:3 carries 5 Cotality links on one line, so 99 lines + 5 = 104","source":"planner reconciliation of a 99-vs-104 disagreement"},
+    {"metric":"memories individually probed","value":36,"rule":"every memory carrying a falsifiable external anchor, plus the full superseded set and the index","source":"G-04"},
+    {"metric":"memories NOT probed","value":68,"rule":"process/feedback/environment memories with no external source that can silently change; healthy-by-default. A SCOPE STATEMENT, not a verification result","source":"G-04"},
+    {"metric":"workspace-family atoms in the atom store","value":0,"rule":"see G03_verdict.storeAbsenceIsPositivelyDetermined — positive determination with a working control predicate, not an unreached store","source":"G-03"},
+    {"metric":"production workspace attachments","value":0,"rule":"count over brokerage_workspace_attachments in neondb","source":"G-03"},
+    {"metric":"close artifacts measured for contract currency","value":84,"rule":"_inbox close artifacts split at the 2026-08-12 ruling date: 38 pre, 46 post","source":"G-05"},
+    {"metric":"lanes filing full CP1+CP2+close triads","value":"9 of 49 (18%)","rule":"all 9 are the 2026-08-14 cohort; all 31 lanes closing 08-12 filed a close with neither checkpoint","source":"G-05"}
+  ],
+
+  "reconciliations": [
+    {"id":"REC-1","numbers":"16/159 vs 366/846 vocab violations","resolution":"Both correct; different populations. The brief's figure is ROOT-ONLY; the instrument scans repo-wide. Recorded so the two are never conflated. The repo-wide figure surfaces a class the root figure hides entirely: 129 docs with no status field at all."},
+    {"id":"REC-2","numbers":"staleness threshold — fixed 2026-07-01 vs rolling ~60 days","resolution":"01_doc_conventions.md:114-115 defines a ROLLING ~60 days. The brief used a fixed date. The two diverge every day the repo ages. The instrument implements the convention; boundary proven exact (60d passes, 61d fails)."},
+    {"id":"REC-3","numbers":"memory index pointers 99 (planner) vs 104 (G-04)","resolution":"PLANNER RETRACTED. I counted LINES, G-04 counted LINK TARGETS. MEMORY.md:3 carries 5 Cotality pointers on one line. G-04's instrument was right for the claim; mine was the wrong instrument. Generalizes: line-count and link-count disagree wherever one line carries several pointers."},
+    {"id":"REC-4","numbers":"33a rules on 5 docs (brief) vs 3 (source)","resolution":"Source wins. 33a:186 names exactly three. See OR-2."},
+    {"id":"REC-5","numbers":"CLAUDE.md contract v1.7.0 vs live npm 1.22.0","resolution":"Planner-verified live: npm view @empressaio/atom-contract version returns 1.22.0. CLAUDE.md is 15 minor versions stale. CLAUDE.md's own instruction says counts must trace to live gh/npm/gcloud state, not to the doc — so this is the doc failing its own rule."},
+    {"id":"REC-6","numbers":"CLAUDE.md 63 MCP tools vs 71 live (G-03)","resolution":"G-03 reports 71 live. NOT independently re-verified by the planner because G-04 separately found mcp.hauska.dev unreachable (HTTP 000) and an anonymous tools/list returning empty. Flagged as needing the live-introspection instrument CLAUDE.md actually requires, and NOT quoted as settled."},
+    {"id":"REC-7","numbers":"local atom-contract clone 1.20.0 vs npm latest 1.22.0","resolution":"G-03 finding: the local clone is not a safe proxy for published state. Planner confirmed npm latest is 1.22.0. Any lane reading the clone for contract truth will be two minors behind."},
+    {"id":"REC-8","numbers":"142 workspace rows vs 101 distinct entities in atom_events","resolution":"G-03: event coverage is ~71%, so 41 workspaces have no event at all; brief runs 248 vs 243 events. Any 'history is kept by default' claim must carry this coverage figure — which is the OR-1 collateral risk in numeric form."},
+    {"id":"REC-9","numbers":"doc 34 line 32 'built and running in the command center' vs zero command-center hits","resolution":"The doc sentence is false as written. It is also the sentence that generates open-item 1's 'rendering pass, not a build' conclusion, so the error propagated into the program's sizing assumption."}
+  ],
+
+  "constraintsHonored": [
+    "READ-ONLY on product repos — the planner read only doc_repo, .claude/hooks, the memory dir, published npm metadata, and one legacy-design-tools schema file. Nothing in any product repo was written.",
+    "Verification NEVER delegated below the lane planner: G-02 was built by the planner rather than a sub-agent, and every high-severity sub-agent finding (canon-gate M5, canon-gate M1, the workspace schema, the city-roster inversion, the published contract) was independently reproduced before acceptance.",
+    "All four sub-agents supervised to completion; none abandoned. Every deliverable adversarially reviewed.",
+    "G-03 sequenced FIRST and alone because it sizes lane A; G-01 held until its verdict landed, per the dispatch instruction not to run four blind parallel tracks.",
+    "Every dispatched sub-agent carried CANON-PREAMBLE v0f465c77, the AGENT-CONTRACT binding, a PLAN-ROW, a no-nesting clause as the first line, an exit-bounded verification clause, and an exact machine-checkable close-artifact path.",
+    "Exit-bounded verification throughout: one-shot queries, npm view, greps, bounded hook invocations. No watch, no tail -f, no dev server.",
+    "Every ratio travels with its counting rule (see countsWithCountingRules).",
+    "Nine number-disagreements reconciled rather than rounded off, including one where the PLANNER was wrong and retracted (REC-3).",
+    "An empty result was never treated as an absence: the zero-workspace-atoms finding carries a positive determination with a working control predicate, and the unreachable mcp.hauska.dev was reported as unverified rather than as a changed number.",
+    "NO scope rulings made — findings and PROPOSED rulings only. Six operator rulings routed rather than decided.",
+    "No lane build work started; none of the four build lanes dispatched.",
+    "Nothing deleted. No memory file or MEMORY.md touched. No archive directory created — retirement is a status flip per 01_doc_conventions.md.",
+    "No hook, .cursor file, AGENT_CONTRACT.md, or settings.json modified — the two canon-gate defects were REPORTED with proposed fixes and negative tests, not patched, because the dispatch scope is a read-only audit plus scripts/doc-staleness.mjs.",
+    "doc_repo edits left UNCOMMITTED and listed below; doc_repo commits are planner-owned and this planner does not self-authorize them.",
+    "Negative-test scratch state reverted; _STATE.md confirmed clean. _catalog/canon_divergence.md was ALREADY modified at session start (pre-existing, not caused by this program)."
+  ],
+
+  "uncommittedEdits": [
+    {"path":"scripts/doc-staleness.mjs","state":"NEW","purpose":"G-02 instrument; proven on five negative-test cases"},
+    {"path":"_inbox/2026-08-14_g0_cp1.json","state":"NEW","purpose":"CP1 design/pre-build checkpoint"},
+    {"path":"_inbox/2026-08-14_g0_cp2.json","state":"NEW","purpose":"CP2 mid-work adversarial review of returned deliverables"},
+    {"path":"_inbox/2026-08-14_g0_close.json","state":"NEW","purpose":"this close artifact"},
+    {"path":"_inbox/2026-08-14_g0_g03_code_audit.json","state":"NEW","purpose":"G-03 sub-agent artifact"},
+    {"path":"_inbox/2026-08-14_g0_g04_memory_audit.json","state":"NEW","purpose":"G-04 sub-agent artifact"},
+    {"path":"_inbox/2026-08-14_g0_g05_dev_standards.json","state":"NEW","purpose":"G-05 sub-agent artifact"},
+    {"path":"_catalog/canon_divergence.md","state":"MODIFIED — NOT BY THIS LANE","purpose":"pre-existing modification at session start; canon-divergence-run hook also refreshes it as a read side-effect"}
+  ],
+
+  "proposedAmendmentsToOPS17": [
+    {"target":"Assumption 2 ('Smart Files is a rendering pass, not a build')","change":"REVERSE — G-03 falsified it. Lane A is a build with eight named items.","ruledBy":"operator"},
+    {"target":"Assumption 1 ('the rebuild named in doc 34 open-item 1 IS this program')","change":"REVISIT — open-item 1's premise (line 32, substrate 'built and running in the command center') is false as written, so what the rebuild refers to is now unclear.","ruledBy":"operator"},
+    {"target":"G-14, G-44, G-53 scope","change":"RE-SIZE against the eight build items rather than a rendering pass.","ruledBy":"operator"},
+    {"target":"New Layer-0 row for the canon-gate defects","change":"CTRL-1 and CTRL-2 are unfixed and both are one-line-class fixes with negative tests already specified. They gate the integrity of every future dispatch in this program.","ruledBy":"operator"},
+    {"target":"S-6 (twin node-class and entityId ruling, G-10)","change":"G-03 supplies input: there is NO entityId at the contract layer for this family — identity is `did: z.string().min(1)`, an opaque string with no format validator. Three shapes exist across three layers and emit.ts:94-104 carries an explicit shim because the contract DID segment ('workspace') and the engine entityType ('property-workspace') disagree by design. The serving table uses neither (plain uuid defaultRandom(), no did column). This is inherited constraint 6 in the wild.","ruledBy":"operator"},
+    {"target":"Naming call for lane A","change":"If a city document family is built, the brokerage family likely needs renaming FIRST — the contract DID segment already disagrees with the engine entityType, and a second family claiming 'workspace' would worsen the collision.","ruledBy":"operator"}
+  ],
+
+  "whatRemainsOpen": [
+    "All six operator rulings (OR-1 through OR-6). OR-1 is the urgent one: it governs what may be said to a city at a set $25,000 entry price.",
+    "CTRL-1 and CTRL-2 canon-gate fixes are UNAPPLIED by design (read-only scope). Proposed fixes and negative tests are specified and ready to execute on approval.",
+    "G-01 status flips are PROPOSED, not applied. No doc was edited.",
+    "Memory dispositions are PROPOSED, not applied. 9 update + 2 retire await approval; retire means HISTORICAL marking in the index, never deletion.",
+    "The 129 no-status-field docs need a convention ruling before they can be normalized — 01_doc_conventions.md does not currently address them.",
+    "cortex-api /api/plan-review/admin/tile-registry returned HTTP 200 with NO auth header. Status only was checked; the body was NOT read. If it serves the capability registry anonymously that is an access-policy finding. Flagged, not concluded — a 200 is not a disclosure until the body is read.",
+    "mcp.hauska.dev did not resolve (HTTP 000) and an anonymous tools/list returned empty, so the live tool count is unverified by the instrument CLAUDE.md requires. The 71-vs-63 discrepancy is reported, not settled.",
+    "branch-guard.ps1 remains unproven (CTRL-4).",
+    "CLAUDE.md itself needs a correction pass: contract v1.7.0 vs live 1.22.0, and a tool count that cannot currently be verified by its own required instrument.",
+    "Work belonging to another plan of record was encountered in _inbox (L16-L24 Texas-flush lane artifacts, OPS-16 P-rows). Per the out-of-scope instruction and the thread-scope-is-operator-declared standing decision, it was READ for contract-currency measurement only and otherwise LEFT ALONE."
+  ]
+}

@@ -35,12 +35,21 @@ const missionFile = getArg('mission-file');
 const planRows = planRowArg.split(',').map((s) => s.trim()).filter(Boolean);
 
 // --- 1. Validate PLAN-ROWs against the selected plan of record. Fail closed. ---
-// Two programs run concurrently with disjoint row-ID prefixes (OPS-16 = P-xx, OPS-17 = G-xx).
-const PLANS = {
-  'OPS-16': { file: 'OPS-16_texas_market_plan_of_record.md', rowPrefix: 'P' },
-  'OPS-17': { file: 'OPS-17_govtech_stack_plan_of_record.md', rowPrefix: 'G' },
-};
-const planId = (getArg('plan') || 'OPS-16').toUpperCase();
+// Programs run concurrently with disjoint row-ID prefixes (OPS-16 = P-xx, OPS-17 = G-xx).
+//
+// CTRL-1 fix (G0 audit 2026-08-14): this table used to be hardcoded HERE and again,
+// differently, in .claude/hooks/canon-gate.ps1. They drifted the moment OPS-17 was added
+// and the gate silently stopped validating every G- row. Both now read the shared
+// registry, and scripts/plan-registry-divergence.test.mjs fails if they disagree.
+// Add a plan by editing _catalog/plan_registry.json ONLY.
+const registry = JSON.parse(readFileSync(join(root, '_catalog/plan_registry.json'), 'utf8'));
+const PLANS = Object.fromEntries(
+  Object.entries(registry.plans).map(([id, p]) => [
+    id,
+    { file: p.file.replace(/^90_operations\//, ''), rowPrefix: p.rowPrefix },
+  ]),
+);
+const planId = (getArg('plan') || registry.defaultPlan).toUpperCase();
 const plan = PLANS[planId];
 if (!plan) {
   console.error(`Unknown --plan ${planId}. Known plans: ${Object.keys(PLANS).join(', ')}`);
@@ -55,10 +64,22 @@ for (const row of planRows) {
     console.error(`Pass --plan for the program that owns this row.`);
     process.exit(1);
   }
-  const inBaseline = new RegExp(`^\\| ${row} \\|`, 'm').test(planDoc);
-  const inAmendment = new RegExp(`^\\| A-\\d+[^\\n]*\\b${row}\\b`, 'm').test(planDoc);
+  // A row is real if it is DECLARED as a baseline row (first cell of its own row), or if
+  // an amendment ADDS it (row id followed by an add-verb in the amendment's Change cell).
+  //
+  // SECOND FAIL-OPEN, found 2026-08-14 while negative-testing the CTRL-1 gate fix. The
+  // previous amendment test scanned the WHOLE amendment row for the bare token, so ANY
+  // row id merely MENTIONED in an amendment's prose validated as real. Amendment A-004
+  // quotes "G-9999" while documenting the CTRL-1 bug, and G-9999 -- a row that exists
+  // nowhere -- compiled clean. Same defect existed in canon-gate.ps1 and is fixed there
+  // identically; scripts/plan-registry-divergence.test.mjs guards the pair.
+  const inBaseline = new RegExp(`^\\|\\s*${row}\\s*\\|`, 'm').test(planDoc);
+  const inAmendment = new RegExp(
+    `^\\|\\s*A-\\d+\\s*\\|[^\\n|]*\\|[^\\n|]*(?:^|[^A-Za-z0-9-])${row}(?:\\s+(?:ADDED|added|ADD|NEW|new))`,
+    'm',
+  ).test(planDoc);
   if (!inBaseline && !inAmendment) {
-    console.error(`PLAN-ROW ${row} not found in ${planId} baseline or amendments. No row, no dispatch.`);
+    console.error(`PLAN-ROW ${row} not found as a declared row in ${planId} baseline or amendments. No row, no dispatch.`);
     console.error('Add an amendment row first (operator-ruled), then compile.');
     process.exit(1);
   }

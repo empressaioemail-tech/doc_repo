@@ -1,0 +1,315 @@
+{
+  "artifact": "_inbox/2026-08-14_g0_g05_dev_standards.json",
+  "lane": "G0 / PROGRAM-ZERO sub-agent",
+  "planRow": "G-05",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "status": "CLOSED",
+  "finalized_at": "2026-08-14",
+  "scope": "Three inventories: (1) .claude/hooks five-hook audit with deliberate negative tests, (2) .cursor/ config tracking status, (3) AGENT_CONTRACT.md currency vs observed lane behavior in _inbox/ close artifacts.",
+
+  "hooks": [
+    {
+      "file": "P:/doc_repo/.claude/hooks/canon-gate.ps1",
+      "purpose": "M1 repo-posture gate (blocks dispatches into no-touch/retiring repos), M3 CANON-PREAMBLE freshness, M4 AGENT-CONTRACT hash currency, M5 PLAN-ROW existence in OPS-16.",
+      "wiredIn": ".claude/settings.json PreToolUse matcher 'Agent|Write', timeout 5",
+      "firesVerified": "yes",
+      "failsOpen": true,
+      "evidence": "M4 stale-contract BLOCKED exit 2; M5 missing PLAN-ROW BLOCKED exit 2; M5 bogus P-9999 BLOCKED exit 2; M3 stale preamble vaaaaaaaa BLOCKED exit 2 with current v0f465c77 pasted; M1 no-touch smartcity-os BLOCKED exit 2 via 'repo:' line. Clean compliant input PASSED exit 0. Live proof of production firing: _catalog/canon_overrides.log carries 13 CANON_OVERRIDE entries 2026-08-13..2026-08-14.",
+      "finding": "TWO fail-open defects, both silently-dead-control class. (A) canon-gate.ps1:258 extracts only /P-\\d+/ from the PLAN-ROW line, so any non-P row id skips validation entirely via the 'if (-not $rowIds) { return ok }' fallthrough at :259. PROVEN: PLAN-ROW G-9999, Q-42, and the literal string 'not-a-row-at-all' ALL passed exit 0. This program (OPS-17, 37 G-rows including this dispatch's own G-05) is therefore entirely UNGATED at M5. (B) canon-gate.ps1:85-98 Resolve-RepoFromText requires a 'repo:' line, a 'git -C'/'Working in'/'worktree:' prefix, a QUOTED path, or a gh org slug. A bare unquoted 'P:/smartcity-os' in prose resolves to null and the M1 no-touch gate passes open. PROVEN: bare-path variant exit 0, all five other phrasings exit 2. Bare path is the most natural way to name a repo in a hand-written brief."
+    },
+    {
+      "file": "P:/doc_repo/.claude/hooks/dispatch-template-gate.ps1",
+      "purpose": "OPS-14 precondition 1b. Rejects executor briefs missing any of four ruled clauses: CANON-PREAMBLE marker, no-nesting clause as FIRST line, exit-bounded verification, machine-checkable close artifact.",
+      "wiredIn": ".claude/settings.json PreToolUse matcher 'Agent|Write', timeout 5",
+      "firesVerified": "yes",
+      "failsOpen": true,
+      "evidence": "Deliberate negative test blocked with exit 2 reporting all four clauses missing (raw output in negativeTest below). Clean input with all four clauses passed exit 0. Live proof: _catalog/dispatch_overrides.log carries 21 DISPATCH_OVERRIDE entries 2026-08-09..2026-08-14.",
+      "finding": "Fail-open paths are deliberate and documented (:22). Real weakness is CLAUSE-DETECTION BY SUBSTRING: patterns at :143, :153, :159 match bare phrases anywhere in the text. Measured accidentally during testing - a brief whose prose merely DESCRIBES the missing clauses ('no exit-bounded verification language', 'no named close artifact path') satisfied checks 3 and 4 and reduced a four-clause failure to a one-clause failure. Any brief that mentions the word 'timeout' (in the :153 alternation) satisfies check 3 without carrying an exit-bounded rule. Also :114 exempts every brief under 400 chars from all four checks."
+    },
+    {
+      "file": "P:/doc_repo/.claude/hooks/dirty-tree-close-gate.ps1",
+      "purpose": "OPS-14 precondition 1a. Blocks git push from doc_repo when _STATE.md or MEMORY.md carry uncommitted WORKTREE edits that the push would strand.",
+      "wiredIn": ".claude/settings.json PreToolUse matcher 'Bash', timeout 10",
+      "firesVerified": "yes",
+      "failsOpen": true,
+      "evidence": "Negative test: appended a scratch marker to _STATE.md, fed a 'git push origin main' payload, hook BLOCKED exit 2 naming _STATE.md. CLOSE_OVERRIDE=1 variant passed exit 0 and logged. _STATE.md reverted via git checkout, verified clean.",
+      "finding": "Coverage hole at :90-99. When the command carries no explicit cd, the gate falls back to the SHELL cwd and exits open if that cwd is not doc_repo. PROVEN: with _STATE.md dirty, a bare 'git push origin main' invoked from P:/tmp passed exit 0. Documented as a deliberate tradeoff (:83-89, after it wrongly blocked a hauska-engine worktree push on 2026-08-09), so it is a known-cost design choice rather than an accident - but the gate protects nothing for any agent whose shell is parked outside doc_repo, which per the MEMORY note on persistent shell CWD is a common state."
+    },
+    {
+      "file": "P:/doc_repo/.claude/hooks/branch-guard.ps1",
+      "purpose": "Refuses git commit/push when doc_repo is not on branch main (single-branch workflow), and on detached HEAD.",
+      "wiredIn": ".claude/settings.json PreToolUse matcher 'Bash', timeout 5",
+      "firesVerified": "no",
+      "failsOpen": true,
+      "evidence": "Positive path only: on main, 'git commit -m test' passed exit 0 and benign 'ls -la' passed exit 0. The blocking branch could NOT be exercised without checking out a non-main branch in the live doc_repo working tree, which the constraints forbid (it would mutate operator state and risks the concurrent-commit hazard).",
+      "finding": "UNTESTED for its blocking path - the only hook not proven to fire. Its guard is also weaker than it reads: it queries 'git -C P:/doc_repo branch --show-current' at :24 regardless of which repo the command targets, so a commit inside another repo or a worktree is judged against doc_repo's branch. That is fail-open for other repos (doc_repo on main means any foreign-repo commit passes) and fail-CLOSED-wrongly if doc_repo were ever off main. Low practical risk today (doc_repo is on main), but the control does not measure what its message claims."
+    },
+    {
+      "file": "P:/doc_repo/.claude/hooks/canon-divergence-run.ps1",
+      "purpose": "M2 cadence. On Read of any *_STATE.md, regenerates _catalog/canon_divergence.md when the report is missing or older than 12 hours.",
+      "wiredIn": ".claude/settings.json PreToolUse matcher 'Read', timeout 30",
+      "firesVerified": "yes",
+      "failsOpen": true,
+      "evidence": "Report was 55.8 hours stale (mtime 2026-08-12 08:27, limit 12h). Fed a Read payload for P:/doc_repo/_STATE.md; hook ran the generator and report mtime advanced to 2026-08-14 16:17 with last_updated 2026-08-09 -> 2026-08-14 and refreshed commit counts (hauska-engine 10 -> 71, ldt 15 -> 44, mcp-server 0 -> 11). A Read payload for CLAUDE.md correctly no-opped.",
+      "finding": "Fires correctly and is FAIL-OPEN BY DESIGN on every path (:4, :11 Exit-Open, always exit 0) - appropriate, since it is a detector not a gate. Two notes. (1) It is a control that SILENTLY MUTATES A TRACKED FILE as a side effect of a read, which means canon_divergence.md drifts dirty in the working tree without any agent intent; it was already showing ' M' at session start. (2) Its own staleness had reached 4.6x the 12h limit before this audit triggered it, meaning between 08-12 and 08-14 no agent Read a *_STATE.md path in a way that reached this hook, or the report would have refreshed. The detector's cadence depends on a read that may not happen."
+    }
+  ],
+
+  "negativeTest": {
+    "hook": ".claude/hooks/dispatch-template-gate.ps1",
+    "input": "Agent tool_input.prompt, 692 chars, executor-voiced dispatch brief ('You are an executor agent working the PROGRAM-ZERO lane. Your task is to branch from main and open a PR against the county manifest builder. Work in P:/hauska-engine...'), deliberately carrying NONE of the four ruled clauses and NOT self-describing their absence.",
+    "rawOutput": "########## NEGATIVE TEST 2 (clean, non-self-describing) ##########\n{\"block\": true, \"message\": \"DISPATCH TEMPLATE GATE (OPS-14 precondition 1b): brief is missing required clauses.\\n\\nMISSING:\\n  - CANON-PREAMBLE vXXXXXXXX marker (regenerate: node P:/doc_repo/scripts/dispatch-preamble.mjs)\\n  - no-nesting clause as the FIRST line (e.g. \\\"Do NOT spawn sub-agents. You are the deepest worker; do the work yourself.\\\")\\n  - exit-bounded verification clause (verification commands must terminate: build/test, or bg-start + curl + kill; never a watch/tail/serve)\\n  - machine-checkable close artifact clause (name the exact _inbox/ path the executor must write)\\n\\nThese four were ruled PRECONDITIONS on 2026-08-09. Base rate in this repo:\\nhook-shaped controls 1-for-1; protocol-step-shaped 0-for-3. Add the clauses\\nand re-dispatch.\\n\\nEscape hatch (logged): add a line\\n  DISPATCH_OVERRIDE: <reason>\"}\nEXITCODE=2",
+    "blocked": true,
+    "cleanRunRawOutput": "########## CLEAN RUN: dispatch-template-gate.ps1 ##########\nEXITCODE=0 (0 = passed clean)\n\n########## CLEAN RUN: canon-gate.ps1 (same clean input) ##########\nEXITCODE=0 (0 = passed clean)",
+    "cleanInputDescription": "Same brief with the four clauses added: leading 'Do NOT spawn sub-agents. You are the deepest worker; do the work yourself.', 'CANON-PREAMBLE v0f465c77', 'AGENT-CONTRACT v4d5ddcd3', 'PLAN-ROW: G-05', an exit-bounded verification sentence, and 'Write your close artifact to _inbox/2026-08-14_negtest_close.json.'",
+    "additionalNegativeTests": [
+      {
+        "hook": "canon-gate.ps1",
+        "case": "M4 stale AGENT-CONTRACT vdeadbeef",
+        "blocked": true,
+        "rawOutput": "{\"block\": true, \"message\": \"CANON GATE (M4): dispatch missing or stale AGENT-CONTRACT marker (current v4d5ddcd3).\\n\\nDispatches are COMPILED, not hand-assembled. Generate this dispatch with:\\n  node P:/doc_repo/scripts/dispatch.mjs --lane <ID> --plan-row <P-xx> --mission-file <f>\\nwhich embeds the current contract (90_runbooks/AGENT_CONTRACT.md) and preamble hashes.\\nOr add a line: CANON_OVERRIDE: <reason>\"}\nEXITCODE=2"
+      },
+      {
+        "hook": "canon-gate.ps1",
+        "case": "M5 no PLAN-ROW line",
+        "blocked": true,
+        "rawOutput": "{\"block\": true, \"message\": \"CANON GATE (M5): dispatch has no PLAN-ROW line.\\n\\nEvery dispatch names its OPS-16 row (work that cannot name a row is not scoped).\\nAdd: PLAN-ROW: P-xx  - or, for genuinely new scope, add an operator-ruled amendment row to\\n90_operations/OPS-16_texas_market_plan_of_record.md first, then compile via scripts/dispatch.mjs.\\nOr add a line: CANON_OVERRIDE: <reason>\"}\nEXITCODE=2"
+      },
+      {
+        "hook": "canon-gate.ps1",
+        "case": "M5 bogus P-9999",
+        "blocked": true,
+        "rawOutput": "{\"block\": true, \"message\": \"CANON GATE (M5): PLAN-ROW P-9999 not found in OPS-16 baseline or amendments.\\n\\nNo row, no dispatch. Add an operator-ruled amendment row to\\n90_operations/OPS-16_texas_market_plan_of_record.md, then recompile via scripts/dispatch.mjs.\\nOr add a line: CANON_OVERRIDE: <reason>\"}\nEXITCODE=2"
+      },
+      {
+        "hook": "canon-gate.ps1",
+        "case": "M5 bogus G-9999 (OPS-17 row space)",
+        "blocked": false,
+        "rawOutput": "PLAN-ROW real_G05           : PASSED OPEN (exit 0)\nPLAN-ROW bogus_G            : PASSED OPEN (exit 0)\nPLAN-ROW total_garbage      : PASSED OPEN (exit 0)\nPLAN-ROW empty_ish          : PASSED OPEN (exit 0)\n\n########## RAW: bogus G-9999 (should block, does not) ##########\nEXITCODE=0",
+        "note": "FAIL-OPEN. real_G05=G-05, bogus_G=G-9999, total_garbage=Q-42, empty_ish='not-a-row-at-all'. All four passed."
+      },
+      {
+        "hook": "canon-gate.ps1",
+        "case": "M1 no-touch smartcity-os named via 'repo:' line",
+        "blocked": true,
+        "rawOutput": "{\"block\": true, \"message\": \"CANON GATE (M1): dispatch blocked - repo posture is 'no-touch'.\\n\\nRepo: smartcity-os\\nIntent row: | smartcity-os | Live prod for Bastrop, pre-spine, fully siloed (Leaflet island). | **ABSOLUTE NO-TOUCH** until every other component is solid; then rebuild on the hardened library, adding components as it goes. Even the Compass spine-wire idea is deferred. | Nothing now. |\\n\\nSee _catalog/repo_intents.md and _decisions/ for the ruling.\\nTo override: add a line CANON_OVERRIDE: <reason>\"}\nEXITCODE=2"
+      },
+      {
+        "hook": "canon-gate.ps1",
+        "case": "M1 no-touch smartcity-os named via BARE path 'Work in P:/smartcity-os'",
+        "blocked": false,
+        "rawOutput": "=== A_bare_path    : PASSED OPEN (exit 0)  <-- fail-open\n=== B_repo_line    : BLOCKED (exit 2)\n=== C_working_in   : BLOCKED (exit 2)\n=== D_quoted_path  : BLOCKED (exit 2)\n=== E_gh_slug      : BLOCKED (exit 2)\n=== F_gitC         : BLOCKED (exit 2)\n\n########## RAW: bare path (FAIL-OPEN, exit 0, no output) ##########\nEXITCODE=0",
+        "note": "FAIL-OPEN. Only the bare unquoted path phrasing escapes the resolver."
+      },
+      {
+        "hook": "dirty-tree-close-gate.ps1",
+        "case": "git push with _STATE.md worktree-dirty, cwd=doc_repo",
+        "blocked": true,
+        "rawOutput": "=== _STATE.md now dirty ===\n M _STATE.md\n\n########## dirty-tree-close-gate NEGATIVE TEST (should BLOCK) ##########\n{\"block\": true, \"message\": \"DIRTY-TREE CLOSE GATE (OPS-14 precondition 1a): push would STRAND live-state edits.\\n\\nUncommitted (worktree-dirty) live-state docs:\\n  - _STATE.md\\n\\n_STATE.md is the next agent's pickup point. Pushing without it means the next\\nsession plans against a snapshot that predates this work.\\n\\nFix: stage and commit the state doc with this close --\\n  git add _STATE.md\\n  git commit -m \\\"docs(_STATE): <what changed>\\\"\\nthen push.\\n\\nEscape hatch (logged): prefix the command with CLOSE_OVERRIDE=1\"}\nEXITCODE=2\n\n########## same, with CLOSE_OVERRIDE=1 (should PASS, logged) ##########\nEXITCODE=0\n\n=== REVERTING _STATE.md ===\n(blank = reverted clean)\nREVERT VERIFIED"
+      },
+      {
+        "hook": "dirty-tree-close-gate.ps1",
+        "case": "same, cwd=P:/tmp (no explicit cd in command)",
+        "blocked": false,
+        "rawOutput": "PWD=/p/tmp\n=== _STATE.md dirty again ===\n M _STATE.md\n########## dirty-tree gate invoked from a NON-doc_repo cwd (P:/tmp) ##########\nEXITCODE=0 (0 here = scoped-out by cwd, by design)",
+        "note": "FAIL-OPEN by documented design tradeoff (dirty-tree-close-gate.ps1:83-89)."
+      },
+      {
+        "hook": "scripts/dispatch.mjs (compiler, not a hook)",
+        "case": "three fail-closed plan-row negatives",
+        "blocked": true,
+        "rawOutput": "########## dispatch.mjs: bogus G-9999 with --plan OPS-17 (should FAIL CLOSED, exits before writing) ##########\nPLAN-ROW G-9999 not found in OPS-17 baseline or amendments. No row, no dispatch.\nAdd an amendment row first (operator-ruled), then compile.\nEXITCODE=1\n\n########## dispatch.mjs: G-05 passed WITHOUT --plan (defaults OPS-16, should FAIL format check) ##########\nPLAN-ROW G-05 does not match the OPS-16 row format (P-xx).\nPass --plan for the program that owns this row.\nEXITCODE=1\n\n########## dispatch.mjs: bogus P-9999 default plan (should FAIL CLOSED) ##########\nPLAN-ROW P-9999 not found in OPS-16 baseline or amendments. No row, no dispatch.\nAdd an amendment row first (operator-ruled), then compile.\nEXITCODE=1\n\n=== confirm NO _dispatches file was written by these failed runs ===\nnone (good - fail-closed before write)\n=== confirm AGENT_CONTRACT + PREAMBLE untouched ===\n(clean)"
+      }
+    ]
+  },
+
+  "cursorConfig": {
+    "files": [
+      {
+        "path": "P:/doc_repo/.cursor/rules/fleet-memory.mdc",
+        "tracked": true,
+        "alwaysApply": true,
+        "summary": "Tier-2 scratchpad capture (_scratch/<workstream>.md) with LESSON/DEAD-END/GROUND-TRUTH/OPEN entry kinds; planner-gated promotion to durable memory; prefers a mechanical guard over prose."
+      },
+      {
+        "path": "P:/doc_repo/.cursor/rules/read-state-first.mdc",
+        "tracked": true,
+        "alwaysApply": true,
+        "summary": "Read _STATE.md then MEMORY.md then the task doc before substantive work; restates the five standing decisions; update _STATE.md on handoff."
+      },
+      {
+        "path": "P:/doc_repo/.cursor/rules/wdll-practice.mdc",
+        "tracked": false,
+        "alwaysApply": true,
+        "summary": "Sprint-scale work needs an operator-approved WDLL card before implementation; dispatches/PRs cite acceptance item numbers; re-grade item-by-item at close; thesis_parity_ledger entry when spine-model concepts are touched."
+      },
+      {
+        "path": "P:/doc_repo/.cursor/settings.json",
+        "tracked": false,
+        "summary": "74 bytes; enables only the neon-postgres plugin. Carries no dev standard."
+      }
+    ],
+    "tracked": false,
+    "trackedDetail": "PARTIAL - 2 of 4 tracked. 'git ls-files .cursor/' returns only fleet-memory.mdc and read-state-first.mdc. wdll-practice.mdc and settings.json show '??' in git status.",
+    "gitignoreStatus": "NOT IGNORED. 'git check-ignore -v .cursor/settings.json .cursor/rules/wdll-practice.mdc .cursor/rules/fleet-memory.mdc .cursor/rules/read-state-first.mdc' exited 1 with zero output - no .gitignore rule matches any .cursor path, and .gitignore contains no .cursor entry at all.",
+    "finding": "The untracking is ACCIDENTAL, not deliberate - and that distinction is provable two ways: (1) no .gitignore rule matches, and (2) two SIBLING rules in the same directory ARE tracked, so the intent to version .cursor/rules is already established and wdll-practice.mdc simply never got added. wdll-practice.mdc is the higher-value loss: it is an alwaysApply dev standard governing sprint-scale work (WDLL card before implementation, acceptance-item citation, item-by-item re-grade at close) and it does not travel to another seat or survive a re-clone. That makes it protocol-shaped rather than structure-shaped, which is exactly the 0-for-3 class. Corroborating evidence that the practice IS live despite being untracked: _inbox/2026-08-14_l18_WDLL.md and _inbox/2026-08-14_l19_WDLL.md exist, and 90_runbooks/wdll_practice.md (the runbook the rule points to) is itself untracked ('??' in git status). So the entire WDLL control chain - rule plus runbook - is unversioned.",
+    "recommendation": "git add .cursor/rules/wdll-practice.mdc and 90_runbooks/wdll_practice.md, committing them alongside the two already-tracked rules; the whole .cursor/rules directory should be versioned as dev standards. .cursor/settings.json is a genuine judgment call - it holds only a local plugin toggle (neon-postgres) with no standard in it, so either commit it for seat parity or add an explicit '.cursor/settings.json' line to .gitignore so the exclusion is DECLARED rather than incidental. Leaving it merely-unadded is the worst of the three options because nothing records the intent."
+  },
+
+  "agentContract": {
+    "path": "90_runbooks/AGENT_CONTRACT.md",
+    "hashCurrent": true,
+    "hashEvidence": "Independently recomputed with the same logic as scripts/dispatch.mjs:84-89 (strip the leading marker line via /^<!-- AGENT-CONTRACT v[a-f0-9]{8} [^\\n]*-->\\n/, sha256 the remaining body, slice 8). Result: {\"contractMarkerPresent\":true,\"contractDeclared\":\"4d5ddcd3\",\"contractComputed\":\"4d5ddcd3\",\"contractMatch\":true,\"preambleDeclared\":\"0f465c77\",\"preambleComputed\":\"0f465c77\",\"preambleMatch\":true,\"sdBodyLen\":687}. Both the contract hash and the CANON-PREAMBLE hash (recomputed from the _STATE.md STANDING DECISIONS section per dispatch.mjs:68-75) match their declared markers. The compiler was NOT run in write mode; a read-only reimplementation was used because dispatch.mjs has no dry-run flag.",
+    "compilerInUse": "yes - _dispatches/ carries compiler-shaped output for l16 (08-13) and g0/l17/l18/l19/l20/l21/l22/l23/l24 (08-14). _dispatches/2026-08-14_g0_dispatch.md opens with 'CANON-PREAMBLE v0f465c77', 'AGENT-CONTRACT v4d5ddcd3', and 'PLAN-ROW: G-01, G-02, G-03, G-04, G-05 (90_operations/OPS-17_govtech_stack_plan_of_record.md)'.",
+    "methodology": "Parsed all 84 *_close.json artifacts in _inbox/ dated 2026-07-24..2026-08-14 and tested top-level key presence against the seven contract sections. Split at 2026-08-12, the date contract section 1 was ruled.",
+    "gaps": [
+      {
+        "section": "1. Lane-planner fan model (two adversarial checkpoints, CP1 and CP2, each filed as a named _inbox/ artifact)",
+        "artifact": "_inbox/ triad census across 49 lanes closing 2026-08-12..2026-08-14",
+        "direction": "lanes non-compliant",
+        "detail": "Only 9 of 49 lanes (18%) filed a full CP1+CP2+close triad, and all 9 are the 08-14 L17-L22 cohort (l17, l18, l19, l20, l21, l21_followup3, l21_followup4, l21_followup5, l22). Every one of the 31 lanes closing on 08-12 filed a close with no CP1 and no CP2. 2026-08-12_W2_symnum_failclosed filed cp1 but no cp2. Two lanes (2026-08-13_l16, 2026-08-14_l24) filed both checkpoints but no close as of this audit. The requirement is measurably being adopted rather than met - the trend is sharply correct but the section as written is not yet describing behavior across the window."
+      },
+      {
+        "section": "6. Close artifact (machine-checkable, always) - minimum fields",
+        "artifact": "84 close artifacts, 2026-07-24..2026-08-14",
+        "direction": "lanes non-compliant, improving sharply after the 08-12 ruling",
+        "detail": "Top-level key presence, PRE (38 closes, 07-24..08-11) vs POST (46 closes, 08-12..08-14): lane id 13% -> 67%; PLAN-ROW 0% -> 65%; PR numbers 0% -> 28%; CI conclusion strings 50% -> 33%; checkpoint paths 61% -> 76%; counts 46% -> 48%; constraints-honored 0% -> 46%; open/remaining 13% -> 46%. PLAN-ROW went from literally never present to two-thirds, which is the ruling working. But PR numbers at 28% and CI conclusion strings at 33% are the weak fields, and CI conclusion presence actually DROPPED post-ruling. 2026-08-06_T1_elgin_close.json and 2026-08-09_E3_elgin_builder_close.json carry none of the eight fields."
+      },
+      {
+        "section": "6. Close artifact - the contract names required fields in PROSE and never fixes a key schema",
+        "artifact": "46 closes dated 2026-08-12..2026-08-14",
+        "direction": "contract too loose",
+        "detail": "Because section 6 lists fields as English prose, every lane invents its own keys and nothing can validate a close mechanically. Measured drift: key casing splits 38 camelCase / 6 snake_case / 2 mixed. PLAN-ROW appears as four different keys (planRow, plan_row, planRows, plan_rows). CI conclusion appears as five (ciConclusionString, ciConclusionStrings, ci_conclusion_strings, ldtCiConclusionString, pr293CiConclusionString). A contract that calls its close artifact 'machine-checkable' but pins no schema is protocol-shaped - the very shape the contract's own preamble says runs 0-for-3. There is no validator script in scripts/ that reads these files."
+      },
+      {
+        "section": "7. Dispatch anatomy - 'a hand-assembled dispatch missing any marker is blocked by the canon-gate hook'",
+        "artifact": "canon-gate.ps1:258 + 90_operations/OPS-17_govtech_stack_plan_of_record.md (37 G-rows)",
+        "direction": "contract too loose / claim not true as written",
+        "detail": "The contract asserts the canon-gate hook blocks hand-assembled dispatches. For OPS-17 that assertion is FALSE: canon-gate's Test-PlanRows extracts only /P-\\d+/, so every G-row dispatch - the entire govtech program this artifact belongs to - passes M5 unvalidated, as does any garbage string in the PLAN-ROW slot. Section 7 also says dispatches are 'generated by node scripts/dispatch.mjs' without naming the --plan flag, so a G-row dispatch compiled without '--plan OPS-17' fails the compiler's format check with an error the contract never explains."
+      },
+      {
+        "section": "3. Write-slot law + lease ('slot custody is recorded in _STATE.md')",
+        "artifact": "42 of 76 close artifacts dated 2026-08-1x mention slot or lease",
+        "direction": "lanes partially compliant",
+        "detail": "Slot/lease discipline is visibly present in 55% of recent closes, which is the healthiest section-level adherence measured. Not raised as a defect; recorded so the contrast with sections 1 and 6 is visible - the sections lanes follow best are the ones with a concrete named mechanism (the lease FAILS CLOSED), and the sections they follow worst are the ones expressed as prose obligations."
+      }
+    ]
+  },
+
+  "deadControls": [],
+  "deadControlsNote": "NONE. All five hook files in .claude/hooks/ are referenced by .claude/settings.json: branch-guard.ps1 and dirty-tree-close-gate.ps1 on the Bash matcher, canon-gate.ps1 and dispatch-template-gate.ps1 on the Agent|Write matcher, canon-divergence-run.ps1 on the Read matcher. No orphan hook file, and no settings.json entry pointing at a nonexistent file. settings.local.json contains only a permission allow-rule and declares no hooks. The dead-control risk in this repo is NOT an unreferenced file - it is a wired hook whose predicate silently never matches, which is exactly what ranked findings 1 and 2 are.",
+
+  "rankedFindings": [
+    {
+      "rank": 1,
+      "class": "silently-dead-control",
+      "severity": "high",
+      "title": "canon-gate M5 PLAN-ROW validation is entirely inert for OPS-17 (G-rows) and for any malformed row id",
+      "evidence": "canon-gate.ps1:258 matches only /P-\\d+/; :259 returns 'ok' when the set is empty. PROVEN by negative test: PLAN-ROW G-9999 exit 0, Q-42 exit 0, 'not-a-row-at-all' exit 0, while P-9999 correctly exits 2.",
+      "impact": "The entire govtech program (OPS-17, 37 rows) dispatches with zero PLAN-ROW enforcement, including this dispatch's own G-05. 'No row, no dispatch' is not being enforced for half the active programs. The gate LOOKS live because P-row tests pass.",
+      "recommendedFix": "Make the row-id regex and the plan file selection data-driven from the same PLANS map dispatch.mjs uses (P->OPS-16, G->OPS-17), and change the empty-rowIds fallthrough at :259 from fail-open to a block, since a PLAN-ROW line whose value matches no known program is by definition unscoped."
+    },
+    {
+      "rank": 2,
+      "class": "silently-dead-control",
+      "severity": "high",
+      "title": "canon-gate M1 no-touch gate misses the most natural way to name a repo",
+      "evidence": "Resolve-RepoFromText (canon-gate.ps1:85-98) has no pattern for a bare unquoted 'P:/<repo>'. PROVEN: 'Work in P:/smartcity-os and open a PR' exit 0; the same brief with 'repo: smartcity-os', 'Working in P:/smartcity-os', quoted `P:/smartcity-os/`, 'git -C P:/smartcity-os', or the gh org slug all exit 2.",
+      "impact": "smartcity-os is ABSOLUTE NO-TOUCH (repo_intents.md:69, live prod for Bastrop). A hand-written brief that names it in the ordinary way sails through the gate. The intents parser itself is correct - it resolves smartcity-os=no-touch and the doc is 6 days old against a 30-day limit - so the failure is purely in resolution.",
+      "recommendedFix": "Add an unanchored alternation for bare 'P:[/\\\\]<known-repo>' to Resolve-RepoFromText, and consider resolving on the repo NAME alone anywhere in the text for no-touch repos specifically, accepting false positives on a short no-touch list since CANON_OVERRIDE already exists as the escape hatch."
+    },
+    {
+      "rank": 3,
+      "class": "contract-vs-behavior gap",
+      "severity": "medium-high",
+      "title": "Contract section 6 calls the close artifact 'machine-checkable' but pins no schema, and nothing checks it",
+      "evidence": "Four PLAN-ROW key spellings, five CI-conclusion key spellings, 38/6/2 camel/snake/mixed casing across 46 recent closes. No validator exists in scripts/.",
+      "impact": "The close artifact is the program's primary evidence surface. As written it is machine-READABLE but not machine-CHECKED, so a lane can file a close missing PRs, CI strings, and counts and nothing detects it - measured at 28% and 33% presence for PRs and CI strings post-ruling.",
+      "recommendedFix": "Pin a JSON schema in the contract (fixed key names, one casing) and add scripts/validate-close.mjs that exits non-zero on a missing required key. This converts section 6 from protocol-shaped to hook-shaped, which is the whole thesis of the base-rate argument in dispatch-template-gate.ps1:11-16."
+    },
+    {
+      "rank": 4,
+      "class": "contract-vs-behavior gap",
+      "severity": "medium",
+      "title": "Section 1's two-adversarial-checkpoint requirement is met by 18% of lanes",
+      "evidence": "9 of 49 lanes closing 08-12..08-14 filed full CP1+CP2+close triads; all 9 are the 08-14 L17-L22 cohort. All 31 lanes closing 08-12 filed a close with neither checkpoint.",
+      "impact": "The in-process adversarial check is the contract's main defense against a narrated close. Direction of travel is strongly correct (0% on 08-12 to near-universal on 08-14), so this is an adoption curve rather than a dead rule - but the contract currently describes an aspiration for most of the measured window.",
+      "recommendedFix": "Nothing structural if the 08-14 rate holds; re-measure at the next program close. If it slips, the enforceable version is the same validator as finding 3 refusing a close whose named cp1/cp2 paths do not exist on disk."
+    },
+    {
+      "rank": 5,
+      "class": "untracked-standard",
+      "severity": "medium",
+      "title": "The entire WDLL control chain is unversioned",
+      "evidence": ".cursor/rules/wdll-practice.mdc and 90_runbooks/wdll_practice.md both show '??'. git check-ignore exits 1 with no output - no .gitignore rule matches. Two sibling rules in the same directory ARE tracked.",
+      "impact": "An alwaysApply dev standard governing all sprint-scale work does not travel to another seat and does not survive a re-clone, and neither does the runbook it points at. Protocol-shaped by construction.",
+      "recommendedFix": "Commit both files. Separately decide .cursor/settings.json explicitly - commit it or add a named .gitignore line - so the exclusion is declared rather than incidental."
+    },
+    {
+      "rank": 6,
+      "class": "coverage-hole",
+      "severity": "medium",
+      "title": "dirty-tree-close-gate protects nothing when the shell cwd is outside doc_repo",
+      "evidence": "With _STATE.md worktree-dirty, a bare 'git push origin main' from P:/tmp passed exit 0 (dirty-tree-close-gate.ps1:94-99).",
+      "impact": "The stale-state failure this gate exists to prevent is fully reachable from any non-doc_repo shell. Given the recorded shell-CWD-persists hazard, that is a routine state, not an edge case.",
+      "recommendedFix": "Documented tradeoff (:83-89) so do not simply revert it. Better predicate: resolve the push's actual target with 'git rev-parse --show-toplevel' from the command's own directory rather than inferring from cwd string-matching."
+    },
+    {
+      "rank": 7,
+      "class": "weak-predicate",
+      "severity": "medium",
+      "title": "dispatch-template-gate checks clauses by bare substring, so prose ABOUT a clause satisfies the clause",
+      "evidence": "Measured during testing: a brief stating 'no exit-bounded verification language, and no named close artifact path' satisfied checks 3 and 4, collapsing a four-clause failure to one. The :153 alternation also accepts the bare word 'timeout'.",
+      "impact": "A brief can pass the gate while carrying no actual rule. The gate's block is real (proven) but its pass is weak.",
+      "recommendedFix": "Require the clauses in structural positions the way check 2 already does for no-nesting (first non-empty line) - e.g. an explicit '_inbox/<path>.json' capture for check 4 rather than the loose phrase 'close artifact', and drop 'timeout' from the check-3 alternation."
+    },
+    {
+      "rank": 8,
+      "class": "untested-control",
+      "severity": "low-medium",
+      "title": "branch-guard's blocking path is unproven and it measures the wrong repo",
+      "evidence": "Only the pass path was exercised (on main: commit exit 0, ls exit 0). Blocking would require checking out a non-main branch in the live tree, which constraints forbid. Source :24 queries 'git -C P:/doc_repo branch --show-current' regardless of the command's target repo.",
+      "impact": "The one hook not proven to fire. Its guard is also scoped to doc_repo's branch while matching every Bash command, so foreign-repo commits are judged against doc_repo's state.",
+      "recommendedFix": "Resolve the branch from the command's actual working directory, and exercise the block path once in a throwaway clone rather than the live tree."
+    },
+    {
+      "rank": 9,
+      "class": "detector-cadence",
+      "severity": "low",
+      "title": "canon-divergence report had drifted to 4.6x its own staleness limit, and refreshing it silently dirties a tracked file",
+      "evidence": "Report mtime 2026-08-12 08:27, i.e. 55.8h against a 12h limit, until this audit's Read payload triggered the refresh to 2026-08-14 16:17. The refresh rewrote a tracked file (_catalog/canon_divergence.md, last committed 2026-08-09) as a side effect of a read.",
+      "impact": "The cadence depends on an agent reading a *_STATE.md path through this hook; between 08-12 and 08-14 that did not happen. Refreshed counts were materially different (hauska-engine 10 -> 71 commits), so the report was stale in substance, not just in date. Separately, a read mutating tracked state is a surprising side effect that leaves the tree dirty with no agent intent.",
+      "recommendedFix": "Keep it fail-open, but make staleness visible where it is read - surface the report's age in _STATE.md GOVERNANCE, or write the refreshed report to an ignored path and only promote deliberately."
+    }
+  ],
+
+  "openQuestions": [
+    "Should canon-gate's M5 read the PLANS map from a shared source with scripts/dispatch.mjs so a new program (a future OPS-18) is gated the day it is created rather than silently exempt? Today the compiler knows both plans and the hook knows only one.",
+    "Is the 46-close key drift worth a one-time normalization pass, or only a schema pin going forward? A validator that rejects the existing corpus is a validator nobody will run.",
+    "Was the operator's intent for .cursor/settings.json to be per-seat local (in which case it belongs in .gitignore explicitly) or shared? The file holds only a neon-postgres plugin toggle, which reads local, but nothing records the decision.",
+    "branch-guard has never been proven to block. Is it worth exercising in a throwaway clone, or is the single-branch workflow now enforced well enough by convention that the hook should be retired rather than repaired? The repo has precedent for deleting an unfired rung (the session-close grading rung, 0 of 215).",
+    "CI-conclusion-string presence DROPPED from 50% to 33% after the 08-12 ruling, against every other field rising. Is that a real regression, a shift in what lanes were doing (more DB/data lanes with no PRs), or an artifact of key-name drift? Worth one reconciliation pass - two numbers that should agree and don't."
+  ],
+
+  "constraintsHonored": [
+    "No hook file modified, renamed, or disabled.",
+    "No .cursor/ file, AGENT_CONTRACT.md, settings.json, or product repo modified.",
+    "Nothing committed.",
+    "No sub-agents spawned; all work done directly.",
+    "Every command exit-bounded; no watch, tail -f, or dev server.",
+    "scripts/dispatch.mjs run only in fail-closed negative cases that exit(1) before any write; hash verification done by a read-only reimplementation. AGENT_CONTRACT.md and DISPATCH_PREAMBLE.md verified clean afterward.",
+    "_STATE.md temporarily modified for the dirty-tree negative test, reverted via git checkout, verified clean (git status --porcelain returns empty).",
+    "Scratch files confined to the session scratchpad and deleted."
+  ],
+
+  "repoChanges": [
+    "_inbox/2026-08-14_g0_g05_dev_standards.json - this close artifact (new, uncommitted, planner-owned per contract section 6).",
+    "_catalog/canon_divergence.md - refreshed by canon-divergence-run.ps1 firing during the hook test, NOT edited by hand. It was already showing ' M' at session start (last commit 2026-08-09). Left uncommitted for the planner."
+  ],
+
+  "whatRemainsOpen": [
+    "branch-guard.ps1 blocking path remains unproven (firesVerified: no).",
+    "No fix applied to any finding - this lane is audit-only per its constraints.",
+    "The G-row M5 fail-open (rank 1) is live right now and affects every OPS-17 dispatch the program is about to issue."
+  ]
+}

@@ -1,0 +1,229 @@
+{
+  "planRow": ["G-01","G-02","G-03","G-04","G-05"],
+  "lane": "program-zero",
+  "checkpoint": "CP2",
+  "date": "2026-08-14",
+  "phase": "mid-work / adversarial review of returned sub-agent deliverables",
+  "subAgentStatus": {
+    "G-03": "RUNNING — code audit, sizes lane A; G-01 held pending its verdict",
+    "G-04": "RETURNED — artifact _inbox/2026-08-14_g0_g04_memory_audit.json, JSON-valid, 38 table rows",
+    "G-05": "RETURNED — artifact _inbox/2026-08-14_g0_g05_dev_standards.json, JSON-valid, 18 keys",
+    "G-02": "DONE BY PLANNER — verification not delegated; scripts/doc-staleness.mjs built and proven on 5 cases",
+    "G-01": "NOT DISPATCHED BY DESIGN — waits on G-03 per dispatch instruction"
+  },
+
+  "adversarialReviewByPlanner": [
+    {
+      "target": "G-05 finding 1 — canon-gate M5 PLAN-ROW validation fail-open for all G-rows",
+      "plannerAction": "INDEPENDENTLY REPRODUCED. Did not accept the sub-agent's report.",
+      "method": "read .claude/hooks/canon-gate.ps1:250-266 directly, then piped four synthetic dispatch payloads through the live hook via powershell and captured true exit codes",
+      "rawOutput": "M5 real G-05      -> exit 0\nM5 bogus G-9999   -> exit 0\nM5 garbage Q-42   -> exit 0\nM5 bogus P-9999   -> exit 2",
+      "sourceLines": "canon-gate.ps1:258 `$rowIds = [regex]::Matches($rowsLine, 'P-\\d+')` and :259 `if (-not $rowIds) { return 'ok' }  # DC-only or prose reference`",
+      "verdict": "CONFIRMED, and the mechanism is worse than the sub-agent framed it",
+      "plannerAddition": "The root cause is an interaction between two correct-in-isolation decisions. OPS-17 governing rule 2 deliberately chose the G- prefix so rows 'never collide with the OPS-16 P- rows in a grep, a hook, or a compiler.' That anti-collision choice is EXACTLY what makes the hook blind: the hook only greps P-. The gate also hardcodes the OPS-16 path at :256 and fails open at :257-258 if that file is missing or unreadable. So the program's own namespace-hygiene rule silently disarmed its own gate. This is not a coding slip; it is a design seam between the plan and the control.",
+      "severity": "HIGH — every dispatch in this program, including this one (G-05), passed M5 unvalidated",
+      "contractImpact": "AGENT_CONTRACT.md section 7 states 'a hand-assembled dispatch missing any marker is blocked by the canon-gate hook.' That sentence is FALSE for OPS-17 PLAN-ROWs. The contract asserts a guarantee the code does not provide."
+    },
+    {
+      "target": "G-05 finding 2 — canon-gate M1 no-touch repo gate misses bare unquoted paths",
+      "plannerAction": "INDEPENDENTLY REPRODUCED on the highest-stakes repo.",
+      "method": "read canon-gate.ps1:85-98, then four live phrasings through the hook",
+      "rawOutput": "M1 bare unquoted path  -> exit 0\nM1 'Working in' form   -> exit 2\nM1 repo: slug         -> exit 2\nM1 gh slug            -> exit 2",
+      "sourceLines": "canon-gate.ps1:85 requires a backtick-or-quote delimiter before the P: path; :89 same. A bare `Work in P:/smartcity-os` matches neither and falls through to :99 `return $null`",
+      "verdict": "CONFIRMED",
+      "severity": "HIGHEST IN PROGRAM — smartcity-os is ABSOLUTE NO-TOUCH per the 2026-07-04 repo-intent rulings and runs live Bastrop production. The gate blocks 3 of 4 phrasings, which is worse than blocking none, because it reads as protective."
+    },
+    {
+      "target": "G-04 index pointer count (claimed 104 pointers, 104 files, zero drift)",
+      "plannerAction": "CHALLENGED — my own independent count returned 99, not 104. Two numbers that should agree and did not.",
+      "method": "grep -c '^- \\[' MEMORY.md returned 99; then extracted all (*.md) link targets",
+      "rawOutput": "index lines starting '- [' : 99\ndistinct .md link targets   : 103\nmulti-link line: MEMORY.md:3 HISTORICAL line carries 5 Cotality links on ONE line",
+      "resolution": "RECONCILED IN G-04's FAVOUR. I counted LINES; G-04 counted LINK TARGETS. MEMORY.md:3 is the HISTORICAL line carrying 5 Cotality pointers in a single line, so 99 lines + 5 = 104 targets. G-04's instrument was correct and mine was the wrong instrument for the claim. The 103-unique figure reflects one target linked from two places.",
+      "verdict": "G-04 CONFIRMED; planner count retracted",
+      "note": "Recorded rather than rounded off, per the contract's free-finding rule. The lesson generalizes: line-count and link-count are different instruments over the same file and will disagree wherever a line carries more than one pointer."
+    },
+    {
+      "target": "G-04 retire recommendation for city-roster-has-no-county-link",
+      "plannerAction": "INDEPENDENTLY VERIFIED against the live roster, not the sub-agent's report.",
+      "method": "node read of _catalog/texas_roster_v1.json",
+      "rawOutput": "cities array len: 1223\nparent_county_fips NULL: 9 of 1223\nsample distinct parent_county_name: [\"Hill\",\"Hale\",\"Taylor\",\"Dawson\",\"Dallas\",\"Oldham\",\"Nueces\",\"Hidalgo\"]\ncity_county_join: {\"derived_at\":\"2026-08-11T19:44:51.335Z\",\"method\":\"TxGIO City_Boundaries spatial join vs TIGER State_County (migration 0070 sources)\",\"cities_linked\":1214,\"cities_unlinked\":9,\"txgio_polygons\":1222,\"tiger_counties\":254}",
+      "verdict": "CONFIRMED — the memory asserts 1,223 of 1,223 NULL and garbage names ['A','I']; live state is 9 NULL and real county names, with the join block recording the exact fix the memory prescribed, executed 2026-08-11.",
+      "plannerNote": "The memory is not merely stale, it is INVERTED: it says L5 sizing is silently blocked, when L5 sizing is unblocked. Retire is the correct disposition. Per the standing pattern, retire = mark HISTORICAL in the index (it has 2 inbound links), never delete."
+    }
+  ],
+
+  "plannerFindingsG01Preliminary": [
+    {
+      "id": "G01-R1",
+      "severity": "high",
+      "finding": "THE DISPATCH BRIEF OVERSTATES WHAT 33a RULED. The brief says doc 33a 'names 47_codex_plan_review.md, 33_smartcity_codex_1b_integration.md, 40i_cortex_dallas_e2e_grok_plan_review_sprint.md, the 30_smartcity_os.md M4-B/PLR/SD/W vocabulary, and 11a_bastrop_live_roadmap.md as superseded or misleading.' Verified at source: 33a open-item 4 (line 186) names EXACTLY THREE — 47, 33, and 'the M4-B/PLR/SD/W vocabulary in 30_smartcity_os.md'.",
+      "evidence": "33a:186 quoted verbatim: '47_codex_plan_review.md, 33_smartcity_codex_1b_integration.md, and the M4-B/PLR/SD/W vocabulary in 30_smartcity_os.md all describe the retired generation and should be retired by status flip per doc conventions.'",
+      "detail": {
+        "40i": "Called superseded in 33a PROSE at line 28, but DELIBERATELY EXCLUDED from the open-item-4 retirement list. Prose-characterized, not ruled-for-flip.",
+        "11a": "Appears NOWHERE in 33a and nowhere in _smartcity_masters/ (grep -rn '11a_bastrop' _smartcity_masters/ returns zero matches). No basis exists for the brief's attribution."
+      },
+      "disposition": "40i and 11a route to OPERATOR as genuinely ambiguous. The dispatch instructed me to apply rulings that already exist; for these two, no ruling exists. Guessing would manufacture a ruling and attribute it to 33a."
+    },
+    {
+      "id": "G01-R2",
+      "severity": "high",
+      "finding": "DOC 30 MUST NOT BE FLIPPED TO SUPERSEDED. 33a scopes its ruling to the VOCABULARY INSIDE doc 30, not to doc 30. The masters actively CITE doc 30 as their live source of record in four places.",
+      "evidence": [
+        "_smartcity_masters/31_smartcity_dashboards.md:62 — 'from the live integrations inventory (30_smartcity_os.md)' listing MyGov, Samsara, Spireon, Verkada, FirstDue, OpenGov, ArcGIS/Esri, GoTo Connect, Power BI",
+        "_smartcity_masters/31_smartcity_dashboards.md:152 — approved-claims register cites '30_smartcity_os.md integrations inventory' as the source column",
+        "_smartcity_masters/32_smartcity_asset_management.md:62 — live vendor telemetry basis cites 30_smartcity_os.md",
+        "_smartcity_masters/34_smartcity_smart_files_and_foundation.md:76 — 'current Compass is an Anthropic-driven assistant surface embedded across the suite (30_smartcity_os.md)'"
+      ],
+      "reasoning": "Flipping 30 to superseded would break the reference set's OWN citation chain: the masters would cite a superseded doc as their live source of record. The masters README tiebreak ('correct the other doc, not these') does not license retiring a doc the masters depend on.",
+      "proposedDisposition": "SCOPED CORRECTION — excise or explicitly mark the M4-B/PLR-1..28/SD-1..SD-8/W1-W6 section (8 matches, concentrated at lines 84-102) as superseded-in-place; doc 30 stays status: active. This is the in-place-edit path of 01_doc_conventions.md, not the supersession path.",
+      "alsoBlocks": "Lane B G-18 and G-21 read doc 30 for the module/integrations inventory. Retiring it would remove the only inventory those rows have."
+    },
+    {
+      "id": "G01-R3",
+      "severity": "medium",
+      "finding": "Retiring 11a has an unpriced citation cost: it is referenced by 10 live docs (08_tiered_access_model, 11_roadmap, 18_stakeholder_graph, 27_engine_evolution_plan, 46_smartcity_parcel_intelligence, 48_cortex_reporting_function_dashboard_spec, 48_cortex_reporting_plan_review_spec, 49_code_ingestion_pipeline, 50_hauska_mcp_server, plus self). A status flip with no supersedes: target orphans those references.",
+      "method": "grep -rln '11a_bastrop' --include=*.md ."
+    },
+    {
+      "id": "G01-R4",
+      "severity": "medium",
+      "finding": "ADR STATUS IS A CONVENTION GAP, NOT AGENT DRIFT. 80_adrs/ splits between the standard ADR lifecycle (accepted x12, proposed x4) and the repo vocabulary (active). 01_doc_conventions.md never rules on ADR status at all — grep for adr/accepted/proposed returns only path examples (lines 59,64,69,70,124,250), no status rule.",
+      "proposedRuling": "OPERATOR CALL, two options: (a) extend the legal vocabulary for 80_adrs/ to the ADR lifecycle (accepted|proposed|superseded|deprecated), or (b) map accepted->active repo-wide. NOT a bulk flip either way — 16 ADRs are affected including adr_023 which lane C depends on.",
+      "instrumentImpact": "scripts/doc-staleness.mjs currently reports all 16 as vocab violations. Whichever way this is ruled, LEGAL_STATUSES or a per-directory exemption must change to match."
+    },
+    {
+      "id": "G01-R5",
+      "severity": "high",
+      "finding": "THE VOCAB PROBLEM IS 366/846, NOT 16/159. The brief's figure is ROOT-ONLY. Repo-wide there are 366 violations across 148 distinct values.",
+      "countingRule": "every *.md under P:/doc_repo outside [.git, node_modules, .claude, .cursor, scripts, _inbox, _sessions, _decisions, _research, _catalog, _prospects]; first /^status:/ line within the frontmatter block; a value is legal only if the ENTIRE value is one of active|draft|superseded|historical",
+      "largestClass": "129 docs have a frontmatter block but NO status field at all (reported as null). This is an ABSENCE class the brief did not anticipate and it is 35% of all violations.",
+      "topValues": "null 129, closed 16, ready 15, dispatched 14, exploration 14, accepted 12, complete 7, research 6, GO 5, proposed 4",
+      "laneSetViolations": 11,
+      "note": "Root-only reproduction of the brief's own number: 16 distinct status strings across 159 root docs, CONFIRMED. Both numbers are right; they measure different populations. Recorded so the two are never conflated again."
+    },
+    {
+      "id": "G01-R6",
+      "severity": "medium",
+      "finding": "STALENESS IS A ROLLING ~60 DAYS, NOT A FIXED 2026-07-01. 01_doc_conventions.md:114-115 defines the signal as 'status: active combined with last_updated: older than ~60 days'. The brief used a fixed date. The two instruments diverge every day the repo ages.",
+      "resolution": "scripts/doc-staleness.mjs implements the CONVENTION (rolling 60d, --today pinnable for deterministic tests). Boundary proven exact: 60d passes, 61d fails."
+    },
+    {
+      "id": "G01-R7",
+      "severity": "low",
+      "finding": "The five 33a-named docs all still read active/stub 90-95 days stale, confirming the rulings were never applied: 47 (active, 2026-05-16), 33 (stub, 2026-05-11), 40i (active, 2026-05-26), 30 (active, 2026-05-16), 11a (active, 2026-05-11). The masters reference set itself is current (2026-08-01 to 2026-08-10)."
+    }
+  ],
+
+  "G02_instrumentProof": {
+    "path": "scripts/doc-staleness.mjs",
+    "status": "BUILT AND PROVEN ABLE TO FIRE before being trusted, per inherited constraint 9",
+    "builtBy": "planner — verification is never delegated below the lane planner (AGENT_CONTRACT section 1)",
+    "gates": {
+      "vocab": "fails non-zero on any status value outside {active|draft|superseded|historical}; gates GLOBALLY even in --lane-set mode, because an illegal status is a defect wherever it sits",
+      "staleness": "reports every status:active doc whose last_updated exceeds the rolling threshold from 01_doc_conventions.md:114-115",
+      "laneSet": "--lane-set limits the FAILING staleness set to OPS-17 lane docs; non-lane stale docs are still REPORTED with an explicit not-gating note, so narrowing the gate never hides the number"
+    },
+    "frontmatterParsing": "deliberately NOT a YAML parser. The measured reality is 148 distinct status strings, several carrying prose, parens, quotes and commas. A strict YAML parse either throws or silently coerces those; the raw-line reader captures them verbatim and reports them as illegal. A parser that accepts a legal LEADING TOKEN is precisely how 16 values grew out of 4 without anything ever failing, so prose-after-a-legal-word is classified illegal with its own distinct reason string.",
+    "negativeTestCases": [
+      {"case": "clean control, 2 docs", "expect": 0, "trueExit": 0, "note": "includes a 590-day-old status:superseded doc, correctly NOT flagged — proves the staleness gate keys on status, not age alone"},
+      {"case": "deliberate bad status 'mostly-done (operator said fine)'", "expect": 1, "trueExit": 1, "note": "fired on the exact row with file:line and verbatim value"},
+      {"case": "deliberate stale-active (2026-05-01, 105d) + prose-in-status", "expect": 1, "trueExit": 1, "note": "both gates fired INDEPENDENTLY; prose case correctly distinguished with reason 'prose in status field (leading token \"active\" is legal, remainder is not)'"},
+      {"case": "boundary 60d vs 61d", "expect": "60 pass / 61 fail", "trueExit": "boundary_60 not flagged; boundary_61 flagged at age=61d", "note": "threshold is exact, not approximate"},
+      {"case": "--lane-set with 1 lane-stale + 2 non-lane-stale", "expect": 1, "trueExit": 1, "note": "gating set correctly narrowed to the 1 lane doc; the 2 non-gating still reported; vocab still failed globally as designed"}
+    ],
+    "liveRepoResult": {
+      "scanned": 846,
+      "legalActive": 308,
+      "vocabViolations": 366,
+      "staleActive": 131,
+      "trueExit": 1,
+      "countingRule": "as stated in G01-R5"
+    },
+    "knownOpenDecision": "the 16 ADR lifecycle values (G01-R4) are currently counted as violations pending the operator ruling; LEGAL_STATUSES or a per-directory exemption changes to match whichever way it is ruled"
+  },
+
+  "controlSystemFindings": [
+    {
+      "id": "CTRL-1",
+      "severity": "HIGH",
+      "finding": "canon-gate M5 is inert for every OPS-17 G-row (fail-open). Reproduced by planner. See adversarialReviewByPlanner[0].",
+      "proposedFix": "make Test-PlanRows plan-aware exactly as scripts/dispatch.mjs already is: extract [A-Z]-\\d+, resolve the plan file from the row prefix (P- -> OPS-16, G- -> OPS-17), and fail CLOSED on an unknown prefix or a missing plan file instead of returning 'ok'. Note the compiler is ALREADY stricter than the gate that exists to enforce it — dispatch.mjs validates G-rows and fails closed. The gate should not be weaker than the compiler.",
+      "proposedNegativeTest": "G-9999 and Q-42 must exit 2; G-05 and P-25 must exit 0; a deleted/renamed plan file must exit 2, not 0."
+    },
+    {
+      "id": "CTRL-2",
+      "severity": "HIGHEST",
+      "finding": "canon-gate M1 no-touch gate passes open on a bare unquoted absolute path to smartcity-os, which is ABSOLUTE NO-TOUCH and runs live Bastrop production. Blocks 3 of 4 phrasings. Reproduced by planner.",
+      "whyWorseThanNoGate": "a gate that blocks 3 of 4 phrasings reads as protective and earns trust it has not earned; the one hole is the most natural way to phrase it in this repo",
+      "proposedFix": "canon-gate.ps1:85 — make the quote/backtick delimiter optional in the bare-path branch",
+      "proposedNegativeTest": "all six phrasings (bare path, 'Working in', 'repo:' slug, quoted path, gh slug, git -C) must exit 2 for every no-touch repo"
+    },
+    {
+      "id": "CTRL-3",
+      "severity": "medium",
+      "finding": "Hook coverage is PreToolUse-only. All five hooks are wired (zero orphans, verified against settings.json) but every one is PreToolUse. There is no Stop or PostToolUse hook, so close-artifact filing, schema conformance, and commit discipline are enforced only by prose in AGENT_CONTRACT section 6.",
+      "basisForConcern": "this repo's own measured base rate — hook-shaped controls 1-for-1, protocol-step-shaped 0-for-3. Section 6 calls its artifact 'machine-checkable' while pinning no schema and shipping no validator in scripts/. G-05 measured the consequence: PLAN-ROW appears under four different key names across close artifacts, CI conclusion under five, casing splits 38 camel / 6 snake / 2 mixed.",
+      "note": "This is the same disease as CTRL-1 and CTRL-2 at a different altitude: a control asserted in prose that no code enforces."
+    },
+    {
+      "id": "CTRL-4",
+      "severity": "medium",
+      "finding": "premortem-check skill is STILL INSTALLED at .claude/skills/premortem-check/ despite memory feedback_premortem_skill_discipline recording it RETIRED 2026-07-13. CLAUDE.md also still instructs 'Use the premortem-check skill before any commitment' and 'never let a yellow from premortem-check slide'.",
+      "class": "contradicted — live config and CLAUDE.md vs a retirement memory",
+      "disposition": "operator ruling needed: either un-retire it or remove the skill AND the two CLAUDE.md instructions. Cross-check between G-04 and G-05; found independently by the planner."
+    },
+    {
+      "id": "CTRL-5",
+      "severity": "medium",
+      "finding": "The .cursor untracking is ACCIDENTAL, not policy. .gitignore (lines 5-7) covers only .claude/settings.local.json, .claude/state/, .claude/logs/ — no .cursor entry exists, and git check-ignore exits 1 with no output for .cursor paths. Meanwhile TWO SIBLING RULES IN THE SAME DIRECTORY ARE TRACKED (.cursor/rules/fleet-memory.mdc, .cursor/rules/read-state-first.mdc). The intent to version .cursor/rules is therefore established; wdll-practice.mdc simply never got added.",
+      "escalation": "G-05 found the runbook the rule points at — 90_runbooks/wdll_practice.md — is ALSO untracked. The entire WDLL control chain (rule + runbook) is unversioned while the practice is demonstrably live (_inbox/2026-08-14_l18_WDLL.md and l19_WDLL.md exist).",
+      "proposedFix": "git add .cursor/rules/wdll-practice.mdc and 90_runbooks/wdll_practice.md. For .cursor/settings.json (74 bytes, a neon-postgres plugin toggle) either track it or add an explicit .gitignore line — leaving it merely-unadded is the worst option because nothing records the intent."
+    },
+    {
+      "id": "CTRL-6",
+      "severity": "low",
+      "finding": "AGENT_CONTRACT and preamble hashes are CURRENT (contract 4d5ddcd3, preamble 0f465c77, both independently recomputed and matching). But section 7's blocking guarantee is false for OPS-17 per CTRL-1, and section 1's two-checkpoint rule shows an adoption curve rather than compliance: 9 of 49 lanes (18%) filed full CP1+CP2+close triads, and all 9 are the 2026-08-14 cohort. All 31 lanes closing on 08-12 filed a close with neither checkpoint.",
+      "direction": "sharply improving — PLAN-ROW presence went 0% (38 pre-ruling artifacts) to 65% (46 post-ruling). The one field that DROPPED is CI conclusion strings, 50% -> 33%.",
+      "note": "Contract text is current; the gap is enforcement, not currency."
+    }
+  ],
+
+  "memoryFindingsAccepted": {
+    "auditedIndividually": 36,
+    "notProbed": 68,
+    "notProbedBasis": "process/feedback/environment memories with no external anchor that can silently change; classified healthy-by-default. G-04 stated this as a scope limit rather than a verification result, which is the correct posture and is accepted.",
+    "headline": "the dangerous class is not 'wrong', it is 'FIXED' — five memories are stale because the fix they prescribe has since shipped, and each still reads as an open defect. Pasted into a lane dispatch, each sends an executor to re-fix already-fixed code. This is the memory-specific form of the same failure the whole program is auditing for.",
+    "proposedDispositions": {"keep": 27, "update": 9, "retire": 2},
+    "retireBoth": "city-roster-has-no-county-link (planner-verified INVERTED, see adversarialReviewByPlanner[3]) and mud-rail-duplicates-special-district (resolved by ruling; 1 inbound link). Both retire via HISTORICAL marking in the index, never deletion, per the established Cotality pattern.",
+    "highestOmissionRisk": "rrc-wells-source-is-harris-only is HEALTHY and must NOT be dropped — planner notes the risk here is omission rather than staleness: dropping it permits roughly 1.4M false-absence atoms (Harris mirror 12,796 features vs statewide 1,396,148).",
+    "plannerFlaggedForOperator": [
+      "mcp.hauska.dev did not resolve (HTTP 000) and an anonymous tools/list returned empty, so the 63-tool/four-gate figure is verified at SOURCE but not by live introspection — which is what CLAUDE.md actually requires before quoting it. Treat as unverified-by-the-required-instrument, NOT as a changed number.",
+      "cortex-api /api/plan-review/admin/tile-registry returned HTTP 200 with NO auth header. Status only was checked; the body was not read. If it serves the capability registry anonymously that is an ACCESS-POLICY finding, not a memory finding. Needs a bounded follow-up that reads the response body. Flagged, not concluded — an empty result is not an absence and a 200 is not a disclosure until the body is read.",
+      "4 memory files use underscores while 100 use hyphens, and every wikilink to them is written hyphenated, so they resolve only under normalization: feedback_premortem_skill_discipline, eci_internal_app, mox_prospect, bastrop_pioneer_narrative. Planner independently confirmed the 4. Recommend renaming and updating the 6 inbound links.",
+      "3 genuinely unresolved wikilinks: setback-authoritative-per-parcel-record, user-role, parcel-intelligence-as-wedge. Dangling links are legal (they mark future memories); these are reported, not treated as defects.",
+      "zoning-depth-is-one-county-not-nineteen carries a WRONG-FIPS error: 48091 is Comal, not 'Colorado' (48089). Core claim confirmed live (of 254 zoning facets only 4 are >0, only 1 is >=95: Bastrop 48021 at 99.77%). The FIPS error is a backfill-dispatch hazard."
+    ]
+  },
+
+  "constraintsHonored": [
+    "READ-ONLY on product repos — planner read only doc_repo, .claude/hooks, the memory dir, and _catalog/texas_roster_v1.json",
+    "Verification NEVER delegated: G-02 built by the planner; every high-severity sub-agent finding independently reproduced before acceptance",
+    "Both returned sub-agent deliverables adversarially reviewed; one planner count (99) was CHALLENGED against G-04 and then RETRACTED in G-04's favour after reconciliation",
+    "Every ratio carries its counting rule",
+    "Two numbers that should agree and did not (99 vs 104 pointers) were reconciled, not rounded off",
+    "No scope rulings made — findings and PROPOSED rulings only; 40i, 11a, ADR vocabulary, premortem-check, and .cursor/settings.json all routed to the operator",
+    "No lane build work started; no build lane dispatched",
+    "No archive directory created; retirement is a status flip per 01_doc_conventions.md",
+    "Nothing deleted — memory dispositions are proposals; no memory file or MEMORY.md touched by planner or sub-agents",
+    "doc_repo edits left UNCOMMITTED (commits are planner-owned and this planner does not self-authorize them)",
+    "Negative tests used the documented DISPATCH_OVERRIDE escape hatch where needed and reverted all scratch state; _STATE.md confirmed reverted; _catalog/canon_divergence.md was ALREADY modified at session start (pre-existing, not caused by this program)"
+  ],
+
+  "openAtCP2": [
+    "G-03 STILL RUNNING — the lane A sizing verdict (RENDERING PASS | PARTIAL | BUILD) is the single largest open item in program zero; OPS-17 assumption 2 stands or falls on it",
+    "G-01 not dispatched by design pending G-03; the per-doc table will be completed after the workspace finding lands, since it changes the correct call on doc 34",
+    "OPERATOR RULINGS OWED: (1) 40i and 11a disposition — no 33a basis exists; (2) ADR status vocabulary; (3) premortem-check retired-or-not; (4) .cursor/settings.json track-or-ignore; (5) doc 30 scoped-correction approval",
+    "CTRL-1 and CTRL-2 are unfixed. Both are one-line-class fixes in canon-gate.ps1 but the dispatch scope is READ-ONLY audit plus scripts/doc-staleness.mjs, so the planner did NOT edit the hook. Proposed fixes and their negative tests are specified above for a follow-up row.",
+    "tile-registry anonymous-200 needs a bounded body-read follow-up before it can be called an access-policy defect or dismissed"
+  ]
+}
