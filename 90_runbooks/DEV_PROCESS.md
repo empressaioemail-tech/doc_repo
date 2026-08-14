@@ -1,4 +1,4 @@
-<!-- DEV-PROCESS vae9ea662 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- DEV-PROCESS v6b731fd3 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # DEV PROCESS — how we work
 
@@ -113,9 +113,12 @@ and 4,700 files went unexamined while the close read as complete. "Unmentioned" 
 A pass that both maps and mutates thousands of files is one where a mistake is hard to unwind. The map
 tells you which sweeps are even safe.
 
-**3.5 Every lane carries a frozen acceptance card, written at dispatch and never edited.**
-The lane's own definition of done, in its own words. Drift becomes visible by comparison. From the
-Smart Site v0 practice.
+**3.5 Every lane carries a frozen WDLL card, written at dispatch and never edited, and a graded Finish
+card at close.** WDLL = What Done Looks Like: the lane's own definition of done, in its own words, so
+drift becomes visible by comparison. The full practice is `90_runbooks/wdll_practice.md` and the Cursor
+rule `wdll-practice.mdc`; this is the same artifact OPS-17 A-006 adopted from the Smart Site v0 board.
+**Call it a WDLL card, never an "acceptance card"** — one artifact with two names is how two lanes
+produce non-comparable closes.
 
 **3.6 Every lane and shared leg has a named owner before dispatch.** "Unassigned" is a blocking state,
 not a default. A shared dependency with no owner becomes nobody's.

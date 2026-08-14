@@ -37,7 +37,7 @@ The Hauska layer is the canonical agent data catalog and payment substrate for p
 
 ## Four structural commitments
 
-Every architectural and strategic move checks against these. Use the `premortem-check` skill before any commitment.
+Every architectural and strategic move checks against these. Run an adversarial review of the plan and of any subagent output before committing to it (operator ruling 2026-07-13, which retired the formal `premortem-check` skill: what matters is catching real flaws in plans and in subagent work, not running a ceremony that re-litigates retired rules). The mechanism is `90_runbooks/AGENT_CONTRACT.md` section 1 (CP1/CP2 adversarial checkpoints) and `90_runbooks/DEV_PROCESS.md`.
 
 1. **Sell reasoning, not data.** Every output carries reasoning chain, source citation, confidence score, timestamp regardless of tier. Layer 1 free, Layer 2 paid per `08_tiered_access_model.md`.
 
@@ -61,9 +61,9 @@ When canonical docs and your prior expectations disagree, the doc wins. Acknowle
 
 ## Operating posture
 
-Stay at planning altitude unless explicitly greenlit to execute. Drafting prompts, synthesizing analysis, recommending priorities is planning. Writing files and committing changes is execution. Use plan mode (Shift+Tab) for any multi-file change set, any ADR work, any doc set restructure, any commit. Nick reviews the plan before you execute.
+Propose before you execute, and execute once greenlit. Drafting prompts, synthesizing analysis, recommending priorities is planning. Writing files and committing changes is execution. State what you are about to do and why, then act on Nick's go — a verbal go in-session is sufficient authorization; plan mode is available but not required. Two things are never batched into a go: commits (always presented for review first, per AGENT_CONTRACT section 6, doc_repo commits are planner-owned) and anything destructive or outward-facing. Verify at source before acting on any state claim, including your own.
 
-You do not dispatch external agents. You produce work directly inside this repo. If Nick wants Cursor or a separate terminal agent involved (rare; legacy courier pattern), the `90_runbooks/session_close_template.md` template still works for those dispatches.
+You dispatch hand-carried LANE PLANNERS (operator ruling 2026-08-12, superseding the earlier "you do not dispatch external agents" posture). Dispatches are COMPILED, never hand-assembled: `node scripts/dispatch.mjs --plan <OPS-16|OPS-17> --lane <ID> --plan-row <row>`, which stamps the canon preamble, the agent contract, and the dev process, and refuses any row not in the named plan of record. The canon-gate hook blocks anything missing those markers. Nick hand-carries the compiled dispatch to the lane planner. A lane planner may spawn sub-agents under `90_runbooks/AGENT_CONTRACT.md` section 1; verification never delegates below the lane planner. You also produce work directly inside this repo.
 
 When asked for a recommendation, give one with reasoning. Including binary calls. Do not punt with "you decide" when the question deserves an opinion.
 
@@ -71,9 +71,9 @@ When unsure, ask or read more. Do not fabricate.
 
 ## Skills
 
-Eight skills installed at `.claude/skills/`. Three are stress-tested (premortem-check, source-required, decision-log); the rest are installed and being observed for refinement. Use them when triggers fire. Flag refinement opportunities at session close.
+Seven skills installed at `.claude/skills/`. Two are stress-tested (source-required, decision-log); the rest are installed and being observed for refinement. Use them when triggers fire. Flag refinement opportunities at session close. `premortem-check` was RETIRED and removed 2026-08-14 per the 2026-07-13 operator ruling; adversarial review replaced it.
 
-For load-bearing commitments, never let a yellow from premortem-check slide. For factual claims about doc content, route verification before accepting (per source-required). For decisions resting on unverified claims, log as provisional and promote to active when verification clears.
+For load-bearing commitments, run the adversarial review rather than a checklist. For factual claims about doc content, route verification before accepting (per source-required). For decisions resting on unverified claims, log as provisional and promote to active when verification clears.
 
 ## Session protocol
 
