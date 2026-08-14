@@ -91,3 +91,42 @@ Proposed: a root canonical doc composing what it is, the internal-versus-custome
 **Slot caveat:** the originally proposed `44` is occupied by `44_mcp_cortex_architecture_map.md`, and the entire 40-band integer range is taken. A suffixed slot is the convention-correct choice; verify against the band register before creating, and note item 22 — that register is itself stale.
 
 Three Command Center orphans also need homes: the 120KB operator-reviewed County Manifest mockup parked in `_scratch/` (correctly labelled FAKE DATA, but no read-order reaches it); the operator HOLD on new CC complexity, which currently lives only in one `_inbox` file's frontmatter; and three known CC defects with no owning register.
+
+## Item 25 — P1 — the `brokerage*` rename (operator-backlogged 2026-08-14)
+
+**Size: LARGE. Focused task, its own lane, never ridden inside another lane's work.**
+
+The operator ruled the brokerage CONCEPT irrelevant (an early framing that did not survive). The
+NAME is dead; the CODE under it is the property reasoning substrate and is fully live.
+
+Measured at source 2026-08-14 in `legacy-design-tools` (counting rule: `git ls-files | grep -i
+brokerage`, tracked files only, `main` at time of count):
+
+- **126 tracked files** carry the name; **72 are non-test source**, 54 are tests.
+- **8 database tables**: `brokerage_workspaces`, `brokerage_workspace_attachments`,
+  `brokerage_workspace_shares`, `brokerage_brief_runs`, `brokerage_install_claims`,
+  `brokerage_user_profiles`, `brokerage_wallets`, `brokerage_wallet_ledger` (plus their indexes).
+- **54 NON-brokerage files import brokerage modules**, including `app.ts`, `index.ts`, the atom
+  registry, `spineZoningDistrict.ts`, `encumbranceService.ts`, and `cadPropertyLookup.ts`.
+
+What the name actually covers, which is why this is not a cosmetic rename: federal and composite GIS
+layer ingestion (`brokerageGisFederalLayers`, `brokerageGisCompositeLayers`), parcel keying
+(`brokerageParcelKey`), brief generation and its atoms (`brokerageBriefAtoms`, `brokerageBriefLlm`),
+**metering** (`brokerageMetering` — the ICC money path), entitlement (`brokerageEntitlement`), and
+provenance (`brokerageProvenanceEnvelope`). None of that is about real-estate agents.
+
+**Two known live items sit inside this surface and should be resolved WITH the rename, not before:**
+the 0.74 motivated-seller fixture in `brokerageGisCompositeLayers.ts` (`_STATE.md` Q13 — the honesty
+work written to retire it was never merged), and `brokerage_install_claims`, which the Radar
+entitlement ruling says must become user-aware rather than install-keyed.
+
+**Explicitly NOT part of lane A.** OPS-17 G-10 ruled Smart Files a NEW atom family (operator,
+2026-08-14): the existing schema cannot carry the Smart Files promise regardless — single-parent FK,
+no `updated_at`, no `version`, no `cid`, no `access_policy` — so extending it would mean rebuilding it
+anyway, and an in-place rename across 54 dependents is a high-risk refactor that would compete with
+lane A's real work. `brokerage_workspaces` also holds 142 live rows: dead concept, live data.
+
+**Proposed disposition:** a dedicated rename lane, sequenced after lane A ships, with a name ruled by
+the catalog-thesis check first (the surface is Smart Site's property substrate, so the name should come
+from that vocabulary). Table renames need migrations plus a compatibility window; module renames are
+mechanical but must land as one atomic change with the divergence-test discipline of DEV_PROCESS 2.4.
