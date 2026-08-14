@@ -1,0 +1,89 @@
+{
+  "artifact": "L18_cp1",
+  "lane": "L18",
+  "planRows": ["P-14"],
+  "at": "2026-08-14T12:25:00.000Z",
+  "dispatch": "_dispatches/2026-08-14_l18_dispatch.md",
+  "wdll": "_inbox/2026-08-14_l18_WDLL.md",
+  "verdict": "PASS_DESIGN",
+  "interruptRecovery": {
+    "stoppedWorkers": [],
+    "note": "No sub-agents were running when the operator addendum arrived. Scope added, nothing displaced."
+  },
+  "amendments": [
+    {
+      "at": "2026-08-14T12:22:00.000Z",
+      "source": "operator-carried",
+      "item": "WDLL-6",
+      "text": "CC county manifest page (cmdcenter-blush.vercel.app #panel=county-manifest) is the customer-done probe. After canary shift it must load fully during an active drain. Stale materialization must show computedAt via the existing STALE-banner pattern. Curl-pass + console-timeout = FAIL. Expands repo scope to hauska-map (command-center) in addition to legacy-design-tools."
+    }
+  ],
+  "rootCauseAsFound": {
+    "route": "artifacts/api-server/src/routes/countyLedger.ts GET /",
+    "heavyOnRequest": [
+      "probeRailCapabilities COUNT DISTINCT county_fips on cad_property (~4.6M) + txgio_parcel (~15M) + tx_special_district — this is a heavy scan on every GET",
+      "full county_facet_coverage table scan for counties[]",
+      "readManifestGrid CROSS JOIN 254 x COUNTY_RAIL_COUNT LEFT JOIN coverage (cheap; not the hang)"
+    ],
+    "ccTimeout": {
+      "file": "hauska-map apps/command-center/src/admin/control/panels/CountyManifestGrid.tsx",
+      "getJsonTimeoutMs": 20000,
+      "siblingCountyLedgerTimeoutMs": 12000,
+      "symptom": "page ErrorState 'timed out after 20000ms' while drain holds connections / seq-scans"
+    },
+    "staleGetClass": "a hung GET returns 0 bytes; consumers keep the last successful payload (195 cells: geometry 194 + zoning 1, the pre-08-12 shape) with no computedAt stamp. No in-memory cache in the route — the silent-old-grid is the client holding the last 200."
+  },
+  "design": {
+    "table": {
+      "name": "county_ledger_snapshot",
+      "shape": "singleton id='current' CHECK; computed_at timestamptz; payload jsonb (full GET body minus servedAt)",
+      "migration": "lib/db/drizzle/0074_county_ledger_snapshot.sql",
+      "justificationVsView": "JSONB snapshot of the already-gated ManifestCell[] is byte-identical to the live compute path by construction (same function at write time). A SQL materialized view would re-derive display gates and could drift from applyDepthRailDisplayGate / doctrine exclusion."
+    },
+    "trigger": {
+      "decision": "SKIP at CP1",
+      "reason": "materialize includes COUNT DISTINCT on txgio_parcel (heavy scan). A trigger on county_facet_coverage would fire that on every scorer upsert and serialize with L16 drains. Writer-owned CLI after scoring is the seam. Staleness is visible via computedAt, so a delayed refresh is honest rather than silent."
+    },
+    "computeExtraction": {
+      "module": "artifacts/api-server/src/countyLedgerCompute.ts",
+      "rule": "no main(); route and CLI both import it. Server must NEVER import the CLI (esbuild isDirectRun boot-crash class)."
+    },
+    "getDefault": "SELECT snapshot; stamp servedAt + materializationAgeMs; 503 county_ledger_not_materialized if no row (fail closed, never silently compute)",
+    "liveAuditParam": "?compute=live",
+    "cli": "artifacts/api-server/src/countyLedgerMaterializeCli.ts --dry-run | --apply; DATABASE_URL / gcloud DEPLOYMENT_DATABASE_URL identical to countyRailRefreshCli",
+    "scorerSeam": "export materializeCountyLedger(db) from countyLedgerCompute.ts. Do not change geometry/flood/mud scoring logic. Scorers/planner invoke the CLI after scoring.",
+    "freshnessFields": ["summary.computedAt", "summary.servedAt", "summary.materializationAgeMs"],
+    "cc": {
+      "repo": "hauska-map",
+      "files": [
+        "apps/command-center/src/admin/control/panels/CountyManifestGrid.tsx",
+        "apps/command-center/src/admin/control/panels/countyManifestTypes.ts",
+        "apps/command-center/src/admin/control/panels/CountyManifestGrid.test.tsx"
+      ],
+      "staleBanner": "reuse NodeGraph pattern: warn Pill 'manifest stale' + caption 'STALE — materialized at {computedAt}' (NodeGraph.tsx tallySource==='artifact' Pill + tallyError caption). Always render computedAt in the rollup strip so a silent old grid is impossible. Banner when materializationAgeMs > 15min (LEDGER_STALE_AFTER_MS).",
+      "timeout": "keep 20s; after materialize GET is sub-second so the timeout is not the fix — constant-time GET is."
+    },
+    "deployOrder": [
+      "merge LDT PR",
+      "run-migrations (0074)",
+      "ANNOUNCE heavy scan: countyLedgerMaterializeCli --apply (COUNT DISTINCT txgio_parcel) — wait if L16 drain is mid-scan",
+      "deploy-canary 0% full SHA",
+      "smoke canary GET <2s with computedAt",
+      "shift-traffic",
+      "merge+deploy hauska-map command-center (vercel --prod, project cmdcenter)",
+      "WDLL-6: CC #panel=county-manifest loads during drain; stale shows stamp"
+    ]
+  },
+  "constraints": [
+    "legacy-design-tools + hauska-map command-center only (addendum)",
+    "Do NOT touch scorer CLIs scoring logic",
+    "No atoms-store access, no slot, no lease",
+    "ldt api-server tests not green locally; CI authoritative",
+    "isolated worktrees from origin/main",
+    "materialize CLI COUNT DISTINCT is a heavy scan — announce before prod --apply"
+  ],
+  "worktrees": {
+    "ldt": "P:/legacy-design-tools-worktrees/l18-ledger-materialize @ feat/l18-ledger-materialize",
+    "hauska-map": "P:/hauska-map-worktrees/l18-manifest-stale-banner @ feat/l18-manifest-stale-banner"
+  }
+}

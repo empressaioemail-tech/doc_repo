@@ -1,0 +1,147 @@
+{
+  "event": "L18_ledger_materialize.close",
+  "closedAt": "2026-08-14T13:15:00.000Z",
+  "lane": "L18",
+  "role": "lane planner",
+  "status": "CLOSED",
+  "planRows": ["P-14"],
+  "wdll": "_inbox/2026-08-14_l18_WDLL.md",
+  "checkpoints": {
+    "CP1": "_inbox/2026-08-14_l18_cp1.json",
+    "CP2": "_inbox/2026-08-14_l18_cp2.json"
+  },
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "pr": 425,
+      "mergeSha": "19da3b1b828e5751b419f171cd4a01d0f3c87c58",
+      "ci": "success",
+      "ciRun": 31800703606,
+      "note": "county_ledger_snapshot + GET reads snapshot; CLI --apply; ?compute=live audit"
+    },
+    {
+      "repo": "hauska-map",
+      "pr": 161,
+      "mergeSha": "9477a8f3113f51bc947b41c8e94499970036f1bb",
+      "ci": "success",
+      "ciRun": 31800702938,
+      "note": "County Manifest computedAt stamp + STALE banner (addendum)"
+    }
+  ],
+  "deploys": {
+    "migration": {
+      "workflow": 31801448660,
+      "file": "0074_county_ledger_snapshot.sql",
+      "appliedAt": "2026-08-14T12:42:59.887Z"
+    },
+    "imageBuild": {
+      "workflow": 31801416501,
+      "sha": "19da3b1b828e5751b419f171cd4a01d0f3c87c58"
+    },
+    "backupTag": "backup/pre-l18-ledger-materialize-20260814",
+    "canary": {
+      "workflow": 31801812468,
+      "revision": "cortex-api-00503-yiq",
+      "imageTag": "19da3b1b828e5751b419f171cd4a01d0f3c87c58",
+      "smoke": {
+        "healthz": "http=200 time=0.311s",
+        "countyLedgerBeforeSnapshot": "http=503 time=0.182s error=county_ledger_not_materialized"
+      }
+    },
+    "shift": {
+      "workflow": 31802014518,
+      "traffic": "100% cortex-api-00503-yiq"
+    },
+    "materializeApply": {
+      "computedAt": "2026-08-14T13:10:24.947Z",
+      "durationSec": 1072.2,
+      "totalCells": 3556,
+      "satisfiedCells": 616,
+      "texasCompletenessPct": 18.599212184936846,
+      "log": "P:/tmp/l18_materialize_apply.log"
+    },
+    "commandCenter": {
+      "project": "cmdcenter",
+      "deployment": "dpl_EbbEV3fdix8uajn8cvmWrey8rqru",
+      "alias": "https://cmdcenter-blush.vercel.app",
+      "bundle": "assets/index-IA3I57kN.js",
+      "sha": "9477a8f3113f51bc947b41c8e94499970036f1bb"
+    }
+  },
+  "liveProofs": {
+    "countingRule": "GET /api/county-ledger summary fields; CC DOM data-testid manifest-computed-at / manifest-stale-banner; L16 drain progress current+landed count",
+    "prodGetDuringDrain": {
+      "url": "https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+      "http": 200,
+      "timeSec": 0.773353,
+      "computedAt": "2026-08-14T13:10:24.947Z",
+      "servedAt": "2026-08-14T13:10:37.809Z",
+      "materializationAgeMs": 12862,
+      "satisfiedCells": 616,
+      "totalCells": 3556,
+      "manifestCells": 3556,
+      "drainAtProbe": "L16 pipelines current=48009 landed=4 (started 2026-08-14T12:20:30.139Z)"
+    },
+    "ccProxyDuringDrain": {
+      "url": "https://cmdcenter-blush.vercel.app/api/spine/cortex/api/county-ledger",
+      "http": 200,
+      "timeSec": 1.153263
+    },
+    "ccPageCustomerDone": {
+      "url": "https://cmdcenter-blush.vercel.app/#panel=county-manifest",
+      "inPageFetchMs": 1082,
+      "computedAtVisible": "2026-08-14T13:10:24.947Z",
+      "grid": "254x14 616/3556 18.60%",
+      "staleBannerOnFresh": false,
+      "drainAtProbe": "L16 pipelines still IN FLIGHT (landed 4 then 6 by restore)"
+    },
+    "deliberatelyStale": {
+      "method": "UPDATE county_ledger_snapshot SET computed_at = computed_at - interval '20 minutes' WHERE id='current' then restore",
+      "staleComputedAt": "2026-08-14T12:50:24.947Z",
+      "ccStaleBanner": "STALE — materialized at 2026-08-14T12:50:24.947Z (showing snapshot, not a live recompute).",
+      "ccPill": "manifest stale",
+      "inPageFetchMs": 1114,
+      "restoredComputedAt": "2026-08-14T13:10:24.947Z",
+      "prodGetAfterRestore": "http=200 time=1.010s computedAt=2026-08-14T13:10:24.947Z"
+    }
+  },
+  "wdllGrades": {
+    "1": "met — prod GET 0.773s during L16 drain; no COUNT DISTINCT on request path",
+    "2": "met — CLI --apply upserted county_ledger_snapshot id=current in 1072.2s; scorers invoke the CLI (seam), no DB trigger",
+    "3": "met — computedAt+servedAt on GET; CC always shows computedAt; deliberately-stale 20min backdate showed STALE banner with stamp, still 200",
+    "4": "met — CI Test success on #425; parity test in PR; live default is snapshot not ?compute=live",
+    "5": "met — canary 0% SHA 19da3b1b828e5751b419f171cd4a01d0f3c87c58 revision 00503-yiq then shift 100%",
+    "6": "met — CC #panel=county-manifest loaded fully during drain (in-page fetch 1082ms); stale path showed computedAt via STALE banner. Curl-only would have been a fail; this was a page probe."
+  },
+  "constraintsHonored": [
+    "Did not take atoms bulk-writer slot or DB lease (L16 held them)",
+    "No atoms --apply",
+    "Cotality extinguished / no privileged data / CTX held",
+    "Isolated worktrees from origin/main",
+    "MERGE only on CI conclusion string success",
+    "Deploys planner-owned (canary, shift, vercel cmdcenter)",
+    "Heavy-scan serialization: cancelled leftover GET COUNT DISTINCT pid 18970 after shift; one materialize COUNT DISTINCT then ran; L16 stayed on per-county keyed pipeline apply",
+    "Did not edit geometry/flood/mud scorer scoring logic",
+    "PE hauska-map root .vercel left linked to property-explorer"
+  ],
+  "docRepoUncommitted": [
+    "_inbox/2026-08-14_l18_WDLL.md",
+    "_inbox/2026-08-14_l18_cp1.json",
+    "_inbox/2026-08-14_l18_cp2.json",
+    "_inbox/2026-08-14_l18_close.json",
+    "_scratch/l18_ledger_materialize.md",
+    "_dispatches/2026-08-14_l18_dispatch.md",
+    "_STATE.md",
+    "_catalog/thesis_parity_ledger.md"
+  ],
+  "remainsOpen": [
+    {
+      "item": "scorer auto-invoke",
+      "note": "Seam is countyLedgerMaterializeCli --apply / materializeCountyLedger. Geometry/flood/mud scorers do not call it yet. Snapshot will age past LEDGER_STALE_AFTER_MS (15 min) and CC will honestly show STALE until the next --apply."
+    },
+    {
+      "item": "L16 drain continues",
+      "note": "L18 did not release or steal the lease. Next materialize should be invoked after scoring legs that change county_facet_coverage."
+    }
+  ]
+}

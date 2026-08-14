@@ -1,0 +1,48 @@
+{
+  "artifact": "L18_cp2",
+  "lane": "L18",
+  "planRows": ["P-14"],
+  "at": "2026-08-14T12:32:00.000Z",
+  "verdict": "PASS_MIDWORK",
+  "wdll": "_inbox/2026-08-14_l18_WDLL.md",
+  "adversarial": {
+    "against": ["WDLL-1", "WDLL-2", "WDLL-3", "WDLL-4", "WDLL-6"],
+    "findings": [
+      {
+        "item": "WDLL-1",
+        "status": "built_unproven_live",
+        "note": "Default GET reads county_ledger_snapshot only. Live aggregation (COUNT DISTINCT txgio_parcel) is behind ?compute=live. Route never imports the CLI (boot-crash class)."
+      },
+      {
+        "item": "WDLL-2",
+        "status": "built_unproven_live",
+        "note": "countyLedgerMaterializeCli --dry-run/--apply. Trigger SKIP remains (heavy COUNT DISTINCT must not fire on scorer upserts). Seam is the CLI + exported materializeCountyLedger."
+      },
+      {
+        "item": "WDLL-3",
+        "status": "unit_proven",
+        "note": "stampServedPayload unit test; snapshot route test seeds 2026-08-12 computedAt and asserts servedAt later + materializationAgeMs > 0. CC test renders STALE banner with computedAt when age > 15min; fresh snapshot has no banner. CC tests 16/16 pass."
+      },
+      {
+        "item": "WDLL-4",
+        "status": "unit_proven",
+        "note": "Existing countyLedger tests now hit ?compute=live. New parity test: live cells === snapshot cells on same DB state. Rollup unit tests 14/14 still pass via re-exports."
+      },
+      {
+        "item": "WDLL-6",
+        "status": "built_unproven_live",
+        "note": "CountyManifestGrid always shows computedAt (data-testid=manifest-computed-at). STALE banner reuses NodeGraph warn-caption pattern. Curl-only close is forbidden by addendum — live proof still owed after canary+CC deploy during drain."
+      }
+    ]
+  },
+  "localVerification": {
+    "libDbTsc": "pnpm --filter @workspace/db exec tsc -b — exit 0",
+    "apiServerCountyLedgerTsc": "no countyLedger* errors (remaining api-server tsc is pre-existing dist-not-built)",
+    "unitTests": "countyLedgerCompute.test.ts 1/1; countyLedgerRollup.test.ts 14/14; CountyManifestGrid.test.tsx 16/16",
+    "apiServerRouteTests": "not run locally (ldt api-server tests not green locally; CI authoritative)"
+  },
+  "worktrees": {
+    "ldt": "P:/legacy-design-tools-worktrees/l18-ledger-materialize @ feat/l18-ledger-materialize",
+    "hauska-map": "P:/hauska-map-worktrees/l18-manifest-stale-banner @ feat/l18-manifest-stale-banner"
+  }
+}
