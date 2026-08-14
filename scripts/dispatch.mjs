@@ -4,6 +4,7 @@
  *
  *   node scripts/dispatch.mjs --lane L17 --plan-row P-22,P-23 [--title "Zoning depth wave 1"]
  *                             [--mission-file path/to/mission.md] [--repo hauska-engine]
+ *                             [--plan OPS-16|OPS-17]   (default OPS-16)
  *
  * Assembles: CANON-PREAMBLE (regenerated from _STATE.md) + AGENT-CONTRACT (hash maintained here)
  * + PLAN-ROW line (validated against OPS-16 baseline/amendments) + mission section + auto-named
@@ -33,14 +34,31 @@ const repo = getArg('repo');
 const missionFile = getArg('mission-file');
 const planRows = planRowArg.split(',').map((s) => s.trim()).filter(Boolean);
 
-// --- 1. Validate PLAN-ROWs against OPS-16 (baseline rows or amendment mentions). Fail closed. ---
-const ops16Path = join(root, '90_operations', 'OPS-16_texas_market_plan_of_record.md');
-const ops16 = readFileSync(ops16Path, 'utf8');
+// --- 1. Validate PLAN-ROWs against the selected plan of record. Fail closed. ---
+// Two programs run concurrently with disjoint row-ID prefixes (OPS-16 = P-xx, OPS-17 = G-xx).
+const PLANS = {
+  'OPS-16': { file: 'OPS-16_texas_market_plan_of_record.md', rowPrefix: 'P' },
+  'OPS-17': { file: 'OPS-17_govtech_stack_plan_of_record.md', rowPrefix: 'G' },
+};
+const planId = (getArg('plan') || 'OPS-16').toUpperCase();
+const plan = PLANS[planId];
+if (!plan) {
+  console.error(`Unknown --plan ${planId}. Known plans: ${Object.keys(PLANS).join(', ')}`);
+  process.exit(1);
+}
+const planPath = join(root, '90_operations', plan.file);
+const planDoc = readFileSync(planPath, 'utf8');
 for (const row of planRows) {
-  const inBaseline = new RegExp(`^\\| ${row} \\|`, 'm').test(ops16);
-  const inAmendment = new RegExp(`^\\| A-\\d+[^\\n]*\\b${row}\\b`, 'm').test(ops16);
+  // A row from the wrong program must fail here, not silently miss in the table scan below.
+  if (!new RegExp(`^${plan.rowPrefix}-\\d+$`).test(row)) {
+    console.error(`PLAN-ROW ${row} does not match the ${planId} row format (${plan.rowPrefix}-xx).`);
+    console.error(`Pass --plan for the program that owns this row.`);
+    process.exit(1);
+  }
+  const inBaseline = new RegExp(`^\\| ${row} \\|`, 'm').test(planDoc);
+  const inAmendment = new RegExp(`^\\| A-\\d+[^\\n]*\\b${row}\\b`, 'm').test(planDoc);
   if (!inBaseline && !inAmendment) {
-    console.error(`PLAN-ROW ${row} not found in OPS-16 baseline or amendments. No row, no dispatch.`);
+    console.error(`PLAN-ROW ${row} not found in ${planId} baseline or amendments. No row, no dispatch.`);
     console.error('Add an amendment row first (operator-ruled), then compile.');
     process.exit(1);
   }
@@ -92,7 +110,7 @@ AGENT-CONTRACT v${contractHash} — you are bound by 90_runbooks/AGENT_CONTRACT.
 interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
 Read it before any work; where this dispatch and the contract disagree, STOP and report.
 
-PLAN-ROW: ${planRows.join(', ')} (90_operations/OPS-16_texas_market_plan_of_record.md)
+PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
 ${repo ? `repo: ${repo}\n` : ''}
 # ${title}
 
