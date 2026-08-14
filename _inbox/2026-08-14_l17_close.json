@@ -1,0 +1,101 @@
+{
+  "event": "L17_cad_vintage_read.close",
+  "closedAt": "2026-08-14T03:34:00.000Z",
+  "lane": "L17",
+  "role": "lane planner",
+  "status": "CLOSED",
+  "planRows": ["P-25"],
+  "amendments": ["A-012"],
+  "spec": "_inbox/2026-08-12_L9_vintage_read_spec.md",
+  "checkpoints": {
+    "CP1": "_inbox/2026-08-14_l17_cp1.json",
+    "CP2": "_inbox/2026-08-14_l17_cp2.json"
+  },
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "pr": 424,
+      "mergeSha": "b9480277aeb2c4d62f963b33187f8a60a203f769",
+      "ci": "success",
+      "ciRun": 31766475015,
+      "note": "blessed helper + LDT readers + ci-vintage-predicate"
+    },
+    {
+      "repo": "hauska-engine",
+      "pr": 340,
+      "mergeSha": "70ea6c2c865c0d8c47e9e62142cff191c89eda3f",
+      "ci": "success",
+      "ciRun": 31767012466,
+      "note": "owner/land-use/cad-roll/spot-owner-match declared vintage; no L16 files"
+    }
+  ],
+  "countingRules": {
+    "storeTruthSeed": "Per county: current_tax_year = tax_year with max(count(*)) in cad_property; ties → higher year. current_tier from tier: stamp or sample_vintage heuristics. Tarrant stays 2025 despite 5k 2026 pilot (flip only at full-load completion).",
+    "declaredCounties": 15,
+    "registryPerRowSeeded": 13,
+    "registryTopLevelDeclaredReaderVintages": 15,
+    "missingFromTrancheRows": ["48027", "48309"]
+  },
+  "deliverables": {
+    "registryFields": {
+      "path": "_catalog/tx_cad_source_registry.json",
+      "fields": ["current_tax_year", "current_tier"],
+      "also": "declared_reader_vintages.by_fips (all 15)",
+      "docRepoUncommitted": true
+    },
+    "blessedHelper": "@workspace/cad-ingest resolveDeclaredCadVintage / tryResolveDeclaredCadVintage / classifyCadPropertyMiss / VINTAGE_GAP_ABSENCE_BASIS",
+    "readerSwapsLdt": [
+      "cadPropertyLookup.ts",
+      "txgioParcelStore.ts",
+      "brokerageMotivatedSellerSignals.ts",
+      "parcelsPmtilesBakeCli.ts",
+      "nodeFacetBakeTier1Cli.ts",
+      "joinIntegrityGate.ts",
+      "countyCoverageScoreCli.ts"
+    ],
+    "readerSwapsEngine": [
+      "write-owner-fact-county.mjs",
+      "write-land-use-fact-county.mjs",
+      "write-cad-parcel-roll-county.mjs",
+      "spot-owner-match-county.mjs"
+    ],
+    "failClosedVintageGap": {
+      "classifyCadPropertyMiss": "tested failing-first in lib/cad-ingest/src/__tests__/vintage.test.ts",
+      "enginePlanKind": "vintage-gap",
+      "atomKindSeam": "mapped to no-cad-row until atom-contract OwnerFactAbsenceKind/LandUseAbsenceKind gain vintage-gap; basis retained in absenceReason"
+    },
+    "ciHook": "l17-ci-vintage-predicate (passed on PR 424)"
+  },
+  "constraintsHonored": [
+    "NO --apply against atoms store",
+    "NO cad_property bulk loads",
+    "NO schema migration",
+    "Did not touch special-district/rail/well/footprint (L16)",
+    "Isolated worktrees from origin/main",
+    "MERGE only on CI conclusion string success",
+    "Cotality extinguished / no privileged data / CTX held"
+  ],
+  "unblocks": "Announce-serialized Tarrant + Dallas full CAMA loads (planner-owned after this merge)",
+  "remainsOpen": [
+    {
+      "item": "ATOM_CONTRACT_VINTAGE_GAP_KIND",
+      "note": "Add vintage-gap to OwnerFactAbsenceKind + LandUseAbsenceKind; remove seam map to no-cad-row"
+    },
+    {
+      "item": "REGISTRY_ROWS_BELL_MCLENNAN",
+      "note": "48027/48309 declared in helper + declared_reader_vintages but not in tranche rows"
+    },
+    {
+      "item": "FULL_LOADS_TARRANT_DALLAS",
+      "note": "Announce-serialized with planner; flip current_tax_year/current_tier only at load completion; then queue rail re-applies"
+    }
+  ],
+  "docRepoEditsUncommitted": [
+    "_catalog/tx_cad_source_registry.json",
+    "_inbox/2026-08-14_l17_cp1.json",
+    "_inbox/2026-08-14_l17_cp2.json",
+    "_inbox/2026-08-14_l17_close.json",
+    "_STATE.md"
+  ],
+  "slot": "Did NOT take atoms bulk-writer slot (L16 holds lease)"
+}

@@ -1,0 +1,98 @@
+{
+  "artifact": "L17_cp1",
+  "lane": "L17",
+  "planRows": ["P-25"],
+  "amendments": ["A-012"],
+  "at": "2026-08-14T03:20:00.000Z",
+  "spec": "_inbox/2026-08-12_L9_vintage_read_spec.md",
+  "verdict": "PASS_DESIGN",
+  "invariant": "Every cad_property reader filters to the county's single DECLARED vintage; no silent cross-vintage fallback; gap = vintage-gap absence.",
+  "storeTruthSeed": {
+    "artifact": "P:/tmp/l17_cad_vintage_20260814/declared_seed.json",
+    "queriedAt": "2026-08-13T22:10:00Z",
+    "countyCount": 15,
+    "totalCadPropertyRows": 4604477,
+    "countingRule": "Per county: current_tax_year = tax_year with max(count(*)); ties → higher tax_year. current_tier from tier: stamp if present; else sample_vintage heuristics (stratmap*→stratmap-roll; cad-export|data-export|appraisal export|wcad|socrata|preliminary→cad-export). Tarrant 48439 stays 2025/stratmap-roll despite 5k 2026 pilot rows (rule: flip only at full-load completion).",
+    "counties": [
+      { "fips": "48021", "current_tax_year": 2025, "current_tier": "cad-export" },
+      { "fips": "48027", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48029", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48055", "current_tax_year": 2026, "current_tier": "cad-export" },
+      { "fips": "48085", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48091", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48113", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48121", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48187", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48209", "current_tax_year": 2026, "current_tier": "cad-export" },
+      { "fips": "48257", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48309", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48439", "current_tax_year": 2025, "current_tier": "stratmap-roll" },
+      { "fips": "48453", "current_tax_year": 2026, "current_tier": "cad-export" },
+      { "fips": "48491", "current_tax_year": 2026, "current_tier": "cad-export" }
+    ]
+  },
+  "design": {
+    "blessedHelper": {
+      "package": "@workspace/cad-ingest",
+      "module": "lib/cad-ingest/src/vintage.ts",
+      "exports": [
+        "resolveDeclaredCadVintage",
+        "VINTAGE_GAP_ABSENCE_BASIS",
+        "classifyCadPropertyMiss",
+        "DECLARED_CAD_VINTAGES"
+      ],
+      "failClosed": "unknown/null declared vintage throws; never invent"
+    },
+    "registryFields": {
+      "path": "_catalog/tx_cad_source_registry.json",
+      "fields": ["current_tax_year", "current_tier"],
+      "nullMeans": "no store rows yet / not flipped — readers fail-closed",
+      "flipRule": "only at load completion (never mid-load)"
+    },
+    "enginePr": {
+      "separate": true,
+      "files": [
+        "write-owner-fact-county.mjs",
+        "write-land-use-fact-county.mjs",
+        "write-cad-parcel-roll-county.mjs",
+        "spot-owner-match-county.mjs",
+        "plan-county-*-facts.ts absence kinds (+ vintage-gap)"
+      ],
+      "sync": "engine embeds DECLARED map mirror + parity test vs frozen fixture from LDT seed; no import of @workspace/cad-ingest",
+      "doNotTouch": ["special-district-fact/**", "rail-corridor/**", "well-fact/**", "footprint writers"]
+    },
+    "ciHook": {
+      "name": "ci-vintage-predicate",
+      "workflow": ".github/workflows/pr-checks.yml",
+      "rule": "production files querying cad_property/cadProperty must import resolveDeclaredCadVintage OR carry CAD_PROPERTY_MULTI_YEAR_INVENTORY marker (roster/capability only) OR be allowlisted writers (ingest upsert)"
+    },
+    "failingFirst": "declared vintage miss + other-vintage hit → vintage-gap (never other-vintage row)"
+  },
+  "readerInventory": {
+    "agent": "[Inventory](b5829cb4-1ea0-4ee8-9c78-8b23dfd73b7b)",
+    "ldtTop": [
+      "cadPropertyLookup.ts",
+      "txgioParcelStore.ts",
+      "brokerageMotivatedSellerSignals.ts",
+      "parcelsPmtilesBakeCli.ts",
+      "nodeFacetBakeTier1Cli.ts",
+      "joinIntegrityGate.ts",
+      "countyCoverageScoreCli.ts CTEs"
+    ],
+    "engineTop": [
+      "write-*-county.mjs year resolve + row page",
+      "spot-owner-match-county.mjs"
+    ]
+  },
+  "constraints": [
+    "NO --apply atoms",
+    "NO cad_property bulk loads",
+    "NO schema migration",
+    "isolated worktrees from origin/main",
+    "do not touch L16 writer files"
+  ],
+  "worktrees": {
+    "ldt": "P:/legacy-design-tools-worktrees/l17-cad-vintage @ feat/l17-cad-vintage-read",
+    "engine": "P:/hauska-engine-worktrees/l17-cad-vintage @ feat/l17-cad-vintage-read"
+  }
+}

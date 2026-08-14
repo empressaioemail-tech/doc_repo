@@ -1,0 +1,133 @@
+{
+  "artifact": "L16_CP1_design_review",
+  "lane": "L16",
+  "role": "lane planner / drain custodian",
+  "planRows": ["P-02", "P-03", "P-06", "P-07", "P-08", "P-09", "P-11", "P-12", "P-17"],
+  "amendments": ["A-002", "A-003", "A-009", "A-010", "A-011", "A-012"],
+  "reviewedAt": "2026-08-13T18:35:00Z",
+  "reviewer": "doc_repo lane planner (L16)",
+  "dispatch": "_dispatches/2026-08-13_l16_dispatch.md",
+  "preconditions": {
+    "l1Close": {
+      "path": "_inbox/2026-08-12_L1_sd_wells_fastpath_close.json",
+      "status": "CLOSED_PARTIAL",
+      "slotRelease": {
+        "releasedBy": "L1",
+        "releasedAt": "2026-08-13T17:56:09.291Z",
+        "custodyPassesTo": "L16"
+      },
+      "sdResidue": "81 named counties; 172/253 method-verified",
+      "wells": "PR #323 merged, NEVER applied",
+      "rail": "not touched by L1"
+    },
+    "stateMd": {
+      "lastUpdated": "2026-08-13T17:56:09Z",
+      "oneLine": "ATOMS BULK-WRITER SLOT RELEASED TO L16"
+    },
+    "l15Manifest": {
+      "path": "_inbox/2026-08-13_L15_plan_farm_manifest.json",
+      "close": "_inbox/2026-08-13_L15_plan_farm_close.json",
+      "status": "HONESTLY_PARTIAL",
+      "ready": ["rail_corridor INPUTS_READY", "wells INPUTS_READY", "pipelines INPUTS_READY", "ector READY"],
+      "notReady": {
+        "flood_metros": "BLOCKED_L1, 0 landed summaries; L1 now clear so plan-only is slot-free and may run after lease",
+        "flood_remainder": "PARTIAL 1/77 (48261.summary.json only)",
+        "footprint": "QUEUED (writer pin 28b85a1)",
+        "roads": "IN_FLIGHT PBF extract; consume as they land"
+      },
+      "consumeRule": "READY consumed; missing/stale SKIPPED and reported; never improvise acquisition inside the slot. Flood metro PLAN-ONLY is slot-free (contract section 3) and is a heavy-scan (section 4) — announce before starting."
+    },
+    "rogueSweep": {
+      "observedAt": "2026-08-13T18:32:00Z",
+      "pattern": "special.district|rail_apply|solo_seq|a2_staged|write-.*-county|writePropertyAtoms",
+      "matches": 0,
+      "action": "clean; no kill"
+    }
+  },
+  "slotCustodyAtCp1": {
+    "fileSlot": "released to L16 in _STATE.md; NOT YET TAKEN as live lease (lease table does not exist)",
+    "rule": "FIRST ACT is the database-enforced lease PR. No --apply until merge CI conclusion string success + migration applied + lease TAKEN as L16."
+  },
+  "firstActLeaseDesign": {
+    "ruling": "OPS-16 A-012 (0)",
+    "seam": "PgStorage.writePropertyAtomsBatch — the shared bulk-write boundary all write-*-county.mjs scripts call",
+    "notCoveredAndWhy": {
+      "writePropertyAtom_singular": "request-path / proof writes; slot law is the bulk queue",
+      "InMemoryStorage": "not database-enforced; tests stay slot-free",
+      "upsertPropertyAtomRowsMulti": "primitive used by the seam; county writers do not call it. Differential/benchmark oracles stay oracle-only.",
+      "writeRoadAtomsBatch_writeBoundaryEdgeAtomsBatch": "FUNNEL through writePropertyAtomsBatch and therefore inherit the lease. That is the feature: bulk road/edge writes during drain fail closed without L16."
+    },
+    "table": {
+      "name": "atoms_bulk_writer_lease",
+      "migration": "packages/storage/migrations/009_atoms_bulk_writer_lease.sql",
+      "shape": "single row lock_id=1 CHECK; holder text; taken_at timestamptz; heartbeat timestamptz; expires timestamptz"
+    },
+    "namedError": {
+      "code": "ATOMS_WRITER_LEASE_NOT_HELD",
+      "throwsWhen": [
+        "ATOMS_WRITER_LEASE_HOLDER unset",
+        "no row",
+        "row expired",
+        "row holder mismatch"
+      ]
+    },
+    "takeNamedError": {
+      "code": "ATOMS_WRITER_LEASE_HELD_BY_OTHER",
+      "throwsWhen": "unexpired row exists for a different holder"
+    },
+    "holder": "env ATOMS_WRITER_LEASE_HOLDER (L16 for this chain)",
+    "ttlMs": 3600000,
+    "heartbeat": "every writePropertyAtomsBatch extends expires by ttl; batch=5000 at ~1k atoms/s is ~5s so 1h ttl is not the Harris-risk",
+    "takeSemantics": "INSERT ON CONFLICT lock_id DO UPDATE only if expires <= now() OR holder matches (refresh). Same holder may re-take. Other unexpired holder = HELD_BY_OTHER.",
+    "releaseSemantics": "DELETE WHERE lock_id=1 AND holder=me; 0 rows = fail closed",
+    "cli": "packages/storage/scripts/atoms-writer-lease.mjs take|heartbeat|release|status",
+    "unitTest": "writer without the live lease cannot write — PgStorage.writePropertyAtomsBatch throws ATOMS_WRITER_LEASE_NOT_HELD and never issues INSERT INTO atoms",
+    "adversarialNotes": [
+      "Two processes sharing ATOMS_WRITER_LEASE_HOLDER=L16 both pass the batch check. A-012 specified holder/taken_at/heartbeat/expires — not a PID. The A2 class was writing with NO lease; this kills that class. PID-binding is a later amendment if a same-holder rogue reappears.",
+      "Empty batch (length 0) returns [] without touching the lease — no write occurred.",
+      "Migration MUST be applied to substrate Neon AFTER merge and BEFORE take. Take against a missing table is a defect, not a workaround.",
+      "A-012 (2) atoms_section_number_idx partialize-then-drop is planner-executed concurrent, not this PR."
+    ]
+  },
+  "secondPreSlotBuild": {
+    "item": "flood writer --from-plan (mirror eng #334 NDJSON)",
+    "after": "lease PR merged",
+    "sdMirror": "SD uses --drain --plan=<path> with sd-plan-ndjson-v1 header + one planned entry per line; drain batch-builds atoms (no full atom array). Flood flag is --from-plan per dispatch (not aliased silently to --drain).",
+    "format": "flood-plan-ndjson-v1 header (countyFips, planDigest.sha256, counts, provenance, plannedCount) + one PlannedFloodHazard per line",
+    "failClosed": "header countyFips must match --county; optional --expect-digest=sha256 halt on mismatch (L15 sha-digest parity)",
+    "skipReplan": "--from-plan MUST NOT open a PostGIS plan scan; CORTEX_DATABASE_URL still required only if not --from-plan",
+    "l15Truth": "flood_metros 0 landed; flood_remainder 1/77 (48261). --from-plan is built so later plan-only artifacts drain. Plan-only for metros is slot-free and announced as a heavy scan."
+  },
+  "chainOrderAfterLeaseTaken": [
+    "0 SD residue 81 counties delete+true-geom drain (eng #322/#335/#336); reconcile 253/253 or named residue",
+    "1 rail-corridor remediation + statewide from L15 NARN; present-rate bands halt if nearTrueRate>0.50; Donley 48129 satisfied-absent",
+    "2 Harris 48201 parcel-node + geometry rescore",
+    "3 flood metros via --from-plan (plan-only first if still missing; skip+report if still not READY)",
+    "4 flood remainder + full flood rescore (ldt #420)",
+    "5 RRC-pipelines L15 partitions",
+    "6 Ector 48135 re-key + geometry rescore",
+    "7 footprint writer at/after 28b85a1; staged-only fail-closed; small-county dry first",
+    "8 RRC-wells staged tx_rrc_well ONLY; overlay 855 + named ~701 exclusion as honest unknown; SYMNUM spot-check first county",
+    "9 roads x254 from L15 PBF extracts as they land; Bastrop 19907 tripwire",
+    "THEN L8 G2b 188-parcel re-promote; SD scorer after leg 0 (facet=mud DETERMINATION coverage per L7 sparse-rail doctrine)",
+    "MUD declaration GRANTED — no refresh/redeploy"
+  ],
+  "worktree": {
+    "path": "P:/hauska-engine-worktrees/l16-atoms-writer-lease",
+    "branch": "feat/l16-atoms-writer-lease",
+    "base": "origin/main",
+    "neverTouch": "P:/hauska-engine dirty detached @ 8d8e880"
+  },
+  "constraintsHonored": [
+    "Cotality extinguished",
+    "Deploys planner-owned — none this CP",
+    "No privileged data",
+    "CTX/national HELD",
+    "Code-done != customer-done — lease is not taken until CI conclusion string success + migration applied",
+    "Isolated worktree",
+    "No --apply before lease",
+    "Heavy-scan serialization — none started at CP1"
+  ],
+  "verdict": "PROCEED_LEASE_PR",
+  "next": "engine PR database-enforced writer lease + unit test; merge on gh check-run conclusion success; apply 009; take as L16; record _STATE.md"
+}

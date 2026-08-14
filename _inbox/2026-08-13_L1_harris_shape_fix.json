@@ -1,0 +1,74 @@
+{
+  "artifact": "L1_harris_shape_fix",
+  "at": "2026-08-13T15:53:00Z",
+  "directive": "45-min plan budget breach — halt, EXPLAIN, fix shape",
+  "halt": {
+    "haltedPidsFile": "P:/tmp/l1_sd_plans_20260812/harris_halt_pids.json",
+    "remainingHarrisProcs": 0
+  },
+  "explainArtifacts": [
+    "P:/tmp/l1_sd_plans_20260812/harris_explain_plain.txt",
+    "P:/tmp/l1_sd_plans_20260812/harris_explain_analyze_5dist_5kparc.txt",
+    "P:/tmp/l1_sd_plans_20260812/harris_explain_temp_gist_20dist.txt",
+    "P:/tmp/l1_sd_plans_20260812/harris_explain_pk_keyset.txt"
+  ],
+  "diagnosis": {
+    "class": "SHAPE_DEFECT",
+    "notIrreducible": true,
+    "findings": [
+      "Plain EXPLAIN: Nested Loop districts×parcels cost ~1.2e8 per 15k batch; CTE parcels via Parallel Seq Scan + Sort",
+      "ANALYZE 5 districts × 5k parcels: 4013ms — dominated by Parallel Seq Scan of txgio_parcel (1.7M buffer reads) + external merge Disk ~260MB sorting ALL Harris-matching rows before LIMIT",
+      "Every keyset batch re-scanned/sorted the county universe — 5h wall was this shape × ~100 batches, not irreducible PostGIS cost",
+      "MATERIALIZED was present on both CTEs; defect was parcel access + re-detoast loop, not missing MATERIALIZED keyword",
+      "PK index exists: txgio_parcel_county_fips_tile_key_feature_index_pk — unused by old ORDER BY feature_index,prop_id,ctid"
+    ],
+    "flood315Compare": {
+      "harrisFloodPlanSeconds": 1862,
+      "bastropSdPlanSeconds": 3.4,
+      "oldHarrisSdShape": "parcel-batch keyset with per-batch full-county seq-scan+sort",
+      "newHarrisSdShape": "TEMP once-detoast + GiST; district-major ST_Intersects batches of 40"
+    }
+  },
+  "probe": {
+    "tempGist50k": {
+      "command": "--county=48201 --plan-only --limit=50000",
+      "sqlMs": 11327,
+      "elapsedMs": 18366,
+      "parcelsRead": 50000,
+      "wouldWriteTotal": 195338
+    },
+    "tempGist20distOn50kLoad": {
+      "load50kMs": 2300,
+      "analyze20distMs": 182,
+      "hits": 33838
+    }
+  },
+  "fix": {
+    "pr": 335,
+    "branch": "fix/l1-sd-temp-gist-plan",
+    "commit": "7c51ecb",
+    "preRegisteredHarrisExpectation": {
+      "planMinutesMin": 15,
+      "planMinutesMax": 40,
+      "basis": "linearize 50k@11.3s SQL → ~1.52M ≈ 6 min load/join band + GiST + 16 district batches; NDJSON write (#334) unchanged",
+      "rejectedBasis": "failed-run 5.06h wall"
+    }
+  },
+  "decisionAt30min": "FIXED_PATH_RUNNING_WITH_SUBHOUR_PREREGISTER",
+  "followOn": {
+    "pr335": { "mergeSha": "3f1da0c126fda71d7c4cfb3e64b894341bcf01c4", "ci": "success" },
+    "pr336": { "mergeSha": "c50085cb4d6e499224d4eb7efdcbaf8011215b51", "ci": "success" },
+    "harrisComplete": {
+      "at": "2026-08-13T17:22:31.931Z",
+      "planWallMs": 383772,
+      "planMinutes": 6.4,
+      "parcelsRead": 1602031,
+      "atomsWritten": 7022334,
+      "verifyFailures": 0,
+      "drainRate": 1524.58,
+      "drainWallMs": 4606085,
+      "vsPreregister": "BEAT 15–40 min plan band (6.4 min plan)",
+      "undercountDoneOk": 37
+    }
+  }
+}
