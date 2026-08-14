@@ -119,6 +119,9 @@ Status legend: **LIVE** = verified at source by the doc_repo planner on the date
 | G-04 | 0 | Memory-system review: `MEMORY.md` contents audited for stale, contradicted, and superseded entries | all lanes | Every memory traced to a live artifact or retired; index matches files | none | OPEN |
 | G-05 | 0 | Dev-standards refresh: Cursor rules, `.cursor/settings.json`, AGENT_CONTRACT currency, hook inventory | all lanes | Contract hash current; hooks fire on a deliberate negative test | none | OPEN |
 | G-06 | 0 | Dispatch compiler made plan-aware (`--plan` selects OPS-16 or OPS-17) so both programs compile | all lanes | `node scripts/dispatch.mjs --plan OPS-17 --lane X --plan-row G-01` compiles; an invalid row fails closed | none | OPEN — blocks every dispatch in this program |
+| G-07 | 0 | **Repo cartography** — classify every one of the ~37 top-level directories and ~4,900 files: what it is, who owns it, active/archive/dead, and explicitly in-scope or out-of-scope for this program. Durable artifact `_catalog/repo_map.md`, not a report. | all lanes | The map exists, every top-level directory appears in it with a classification, and every count carries its counting rule | none | OPEN — G-01 covered root `.md` + `_smartcity_masters/` only; 35 directories and ~4,700 files were never examined |
+| G-08 | 0 | **Dev-process file** — one hash-versioned document defining how we work, compiled into every dispatch like the contract | all lanes | A fresh agent with no thread context reaches the same operating conclusions as one with it | G-07 | OPEN |
+| G-09 | 0 | **Process proving run** — three small deliberately-shaped agents (read-only audit, build-with-PR, forced mid-flight handoff) dispatched against the PROCESS, not lane work; close artifacts compared for structural identity | all lanes | Three closes are structurally comparable; divergence is a process defect, not an agent defect | G-08 | OPEN |
 
 ### Layer 1 — foundation
 
