@@ -1,0 +1,64 @@
+{
+  "artifact": "L21_followup3_cp1",
+  "lane": "L21-followup-3",
+  "planRows": ["P-25"],
+  "at": "2026-08-14T18:05:00Z",
+  "verdict": "PASS_DESIGN_COMPANION_TABLE_ONE_SEAM",
+  "ruling": "Tarrant 48439 flips to declared 2026/cad-export only after named 2025 fallback support merges on CI conclusion success.",
+  "invariant": "A Tarrant read resolves exact declared-2026, then one deterministic 2026 crosswalk target, then an explicitly named 2025 fallback entry carrying visible provenance, else vintage-gap. No silent year fallback.",
+  "design": {
+    "storage": "cad_property_vintage_fallback companion table",
+    "whyNotCrosswalk": "The existing crosswalk requires a declared-year to_prop_id and rejects identity no-ops. Encoding a prior-year read as a fake 2026 target would violate its invariant.",
+    "blessedSeam": "lib/cad-ingest/src/vintage.ts chooseCadPropIdResolution",
+    "order": ["exact-declared", "crosswalk-declared", "named-fallback-prior-year", "miss"],
+    "marker": "CadPropertyLookupRow.vintageResolution with kind=named-fallback, declaredTaxYear, servedTaxYear, method, evidenceClass"
+  },
+  "acceptance": [
+    {
+      "id": "F3-1",
+      "check": "Schema uniquely keys county_fips + requested_prop_id + declared_tax_year and records fallback_tax_year, method, evidence_class, source provenance."
+    },
+    {
+      "id": "F3-2",
+      "check": "Load 35,156 Tarrant named fallback entries: 34,298 absent-GIS_Link, 845 exact RP=P-only, 13 norm-only; all method=named-fallback-2025."
+    },
+    {
+      "id": "F3-3",
+      "check": "Resolver tests prove exact beats crosswalk, crosswalk beats fallback, fallback beats miss."
+    },
+    {
+      "id": "F3-4",
+      "check": "A fallback-key lookup returns the 2025 cad_property row with visible prior-vintage marker; exact 2026 lookup returns 2026 without fallback marker."
+    },
+    {
+      "id": "F3-5",
+      "check": "ci-vintage-predicate and full required PR CI conclude with string success before merge."
+    },
+    {
+      "id": "F3-6",
+      "check": "After merge, runtime declaration and doc registry set 48439 to current_tax_year=2026/current_tier=cad-export; Dallas stays unchanged."
+    },
+    {
+      "id": "F3-7",
+      "check": "Tarrant owner/landuse/cad-roll re-applies remain queued for L16 tail and are not executed by L21."
+    }
+  ],
+  "preRegisteredCounts": {
+    "fallbackTotal": 35156,
+    "absentFrom2026GisLink": 34298,
+    "exactRpPOnly": 845,
+    "normOnly": 13,
+    "optionalSuffixCrosswalk": "admit only if one-to-one uniqueness is mechanically proven; not required for close"
+  },
+  "constraints": [
+    "NO atoms writes",
+    "NO atoms slot",
+    "NO cad_property reload",
+    "NO Dallas changes",
+    "NO flip before merge conclusion success",
+    "doc_repo edits remain uncommitted"
+  ],
+  "worktree": "P:/legacy-design-tools-worktrees/l21-tarrant-fallback",
+  "branch": "feat/l21-tarrant-named-fallback",
+  "base": "origin/main@bb3cc7ab"
+}

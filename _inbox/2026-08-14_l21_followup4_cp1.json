@@ -1,0 +1,48 @@
+{
+  "artifact": "L21_followup4_cp1",
+  "lane": "L21-followup-4",
+  "planRows": ["P-25"],
+  "at": "2026-08-14T19:55:00Z",
+  "verdict": "PASS_DESIGN_READ_ONLY_CLASSIFICATION",
+  "mission": "Classify Dallas parcel-linked 2025 residual after accepted crosswalks; run one bounded blank-GIS probe only if the raw 2026 ACCOUNT_INFO file has a meaningful blank GIS_PARCEL_ID mass; recommend mapping-to-0.99 or named 2025 fallback. Planner alone rules the flip.",
+  "sources": {
+    "storeDerivedUniverse": "P:/tmp/l21_parcel_linked_orphans_2025.csv (exported from cortex-prod during L21; Dallas rows are 2025 cad_property misses with txgio_parcel link)",
+    "acceptedCrosswalk": "P:/tmp/l21_dallas_gis_seed_verified.csv (121 deterministic DCAD GIS_PARCEL_ID -> ACCOUNT_NUM maps)",
+    "raw2026": "P:/tmp/l9_full_loads/dcad_extracted/ACCOUNT_INFO.CSV",
+    "priorMeasuredBaseline": "_inbox/2026-08-14_l21_cp2.json"
+  },
+  "countingRules": {
+    "startingUniverse": "Dallas rows in l21_parcel_linked_orphans_2025.csv",
+    "unmappedResidual": "starting universe minus from_prop_id values in the accepted 2025->2026 crosswalk seed",
+    "classHierarchy": [
+      "suffix-family: exactly one raw nonblank GIS_PARCEL_ID is old key plus 1-3 trailing alphanumeric characters, or vice versa, and resolves to exactly one ACCOUNT_NUM",
+      "keyless-row-candidate: exact normalized owner+situs match to at least one raw row with blank GIS_PARCEL_ID; count separately as unique or ambiguous",
+      "other: raw nonblank GIS_PARCEL_ID exact match exists but is ambiguous/refused, or another positive keyed condition not admitted",
+      "real-parcel-absent-from-2026-account-space: none of the prior positive classes"
+    ],
+    "normalization": "uppercase; strip non-alphanumeric for owner and situs; require both owner and situs nonblank",
+    "coverage": "(399965 identical-key hits + 121 accepted crosswalks + any newly proven deterministic suffix maps) / 434674 parcel-linked denominator",
+    "flipThreshold": 0.99
+  },
+  "blankKeyProbe": {
+    "warrantGate": "raw blank GIS_PARCEL_ID count > 0 and at least one blank-GIS row has both owner and situs",
+    "sample": "20 lowest unmapped residual keys with nonblank normalized owner+situs",
+    "hit": "at least one raw blank-GIS row has exact normalized owner+situs",
+    "report": "hits / sampled keys; unique and ambiguous matches separated"
+  },
+  "acceptance": [
+    {"id": "F4-1", "check": "Residual classes are mutually exclusive and sum to the unmapped parcel-linked residual."},
+    {"id": "F4-2", "check": "Raw ACCOUNT_INFO keyed/blank identity counts and counting rule are reported."},
+    {"id": "F4-3", "check": "If warrant gate passes, one 20-key blank-GIS owner+situs probe reports exact hit rate."},
+    {"id": "F4-4", "check": "Coverage is recomputed against 434674 and compared with 0.99."},
+    {"id": "F4-5", "check": "Recommendation pre-registers exact named-fallback evidence-class counts if mapping cannot reach 0.99."}
+  ],
+  "constraints": [
+    "NO flips",
+    "NO database loads or writes",
+    "NO atoms writes or slot",
+    "NO parser changes",
+    "Dallas registry/runtime remains 2025/stratmap-roll",
+    "planner rules any later flip"
+  ]
+}

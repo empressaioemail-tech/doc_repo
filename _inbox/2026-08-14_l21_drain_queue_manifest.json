@@ -3,9 +3,10 @@
   "lane": "L21",
   "planRows": ["P-25"],
   "queuedAt": "2026-08-14T16:26:30Z",
+  "lastUpdated": "2026-08-14T20:20:00Z",
   "status": "QUEUED_NOT_EXECUTED",
   "slotPolicy": "Requires atoms bulk-writer slot; L16 currently holds lease. Do not steal. Do not run from L21.",
-  "gate": "Planner-ruled current_tax_year flip to 2026 for each county AFTER mapped parcel-linked coverage >= 0.99 with residual named (see L21 CP1).",
+  "gate": "Planner-ruled current_tax_year flip to 2026 for each county. Tarrant flipped 2026-08-14 via named 2025-fallback; Dallas flipped 2026-08-14 via named 2025-fallback (follow-up 5).",
   "entries": [
     {
       "id": "P25-48439-owner-landuse-cadroll-reapply",
@@ -17,11 +18,13 @@
         "write-cad-parcel-roll-county.mjs"
       ],
       "declaredVintageAfterFlip": 2026,
-      "reason": "After Tarrant vintage flip, re-apply owner/land-use/cad-roll rails against declared 2026 cad_property (crosswalk-aware via L17/L21 seam).",
+      "status": "READY_FOR_L16_TAIL",
+      "reason": "Tarrant registry + LDT runtime declaration flipped to 2026/cad-export after named 2025-fallback merge (#428). Re-apply owner/land-use/cad-roll rails against declared 2026 cad_property. Engine DECLARED_CAD_VINTAGES mirror still 2025 until a follow-on engine PR; L16 must not apply until engine mirror matches LDT/registry.",
       "dependsOn": [
-        "announce-serialized Tarrant C-inclusive cad_property reload (parser keep R+C)",
-        "re-measure mapped coverage >= 0.99",
-        "planner flip ruling for 48439"
+        "ldt #428 merged and serving (named fallback seam)",
+        "doc_repo registry 48439 current_tax_year=2026 / current_tier=cad-export (uncommitted, planner-owned)",
+        "engine resolveDeclaredCadVintage 48439 -> 2026/cad-export parity PR",
+        "atoms bulk-writer slot custody from L16"
       ],
       "executed": false
     },
@@ -35,17 +38,21 @@
         "write-cad-parcel-roll-county.mjs"
       ],
       "declaredVintageAfterFlip": 2026,
-      "reason": "After Dallas vintage flip, re-apply owner/land-use/cad-roll rails against declared 2026 ACCOUNT_NUM space with crosswalk for StratMap→ACCOUNT_NUM maps.",
+      "status": "READY_FOR_L16_TAIL",
+      "reason": "Dallas registry + LDT runtime declaration flipped to 2026/cad-export after named 2025-fallback merge (#429) with 34,588 companion-table entries (33,094 absent + 1,494 ambiguous-refused). Re-apply owner/land-use/cad-roll rails against declared 2026 cad_property. Engine DECLARED_CAD_VINTAGES[\"48113\"] still 2025 until a follow-on engine PR (same shape as Tarrant / engine #341); L16 must not apply until engine mirror matches LDT/registry.",
       "dependsOn": [
-        "further deterministic Dallas GIS_PARCEL_ID / identity mapping until coverage >= 0.99 OR named residual vintage-gap pre-registration",
-        "planner flip ruling for 48113"
+        "ldt #429 merged and serving (Dallas declared 2026 + named fallback load)",
+        "doc_repo registry 48113 current_tax_year=2026 / current_tier=cad-export (uncommitted, planner-owned)",
+        "engine resolveDeclaredCadVintage 48113 -> 2026/cad-export parity PR (same as Tarrant / engine #341)",
+        "atoms bulk-writer slot custody from L16"
       ],
-      "executed": false
+      "executed": false,
+      "engineMirrorBlocker": "hauska-engine DECLARED_CAD_VINTAGES[48113] parity PR required before --apply (analogous to Tarrant / engine #341)"
     }
   ],
   "constraints": [
     "L21 did not take atoms slot",
     "L21 did not run --apply",
-    "L21 did not flip current_tax_year"
+    "Both counties READY_FOR_L16_TAIL; engine parity is the apply blocker for each"
   ]
 }
