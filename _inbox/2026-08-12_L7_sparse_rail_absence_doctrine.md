@@ -44,3 +44,17 @@ For each sparse rail above, after the writer has run (or after a scorer that rea
 - Running wells/pipelines/rail-corridor/mud `--apply` or scorers from L7
 - Treating Ector geometry 5% coverage as absence (data exists; P-02 re-key)
 - Doctrine-sourced rollup cheating (`source='zoning-regime-doctrine'` remains excluded from Texas rollup per existing guard)
+
+## ADDENDUM 2026-08-14: the `_county_coverage` county-level determination marker
+
+L16's Robertson resolution (48395) established a convention this doctrine now owns: when a county's
+parcels cannot carry per-parcel facts for a structural reason (all 24,016 Robertson prop_ids are
+NULL — no usable keys, and fabricating keys is the banned A2 class), the county's coverage is held by
+ONE marker atom with entityId `<fips>:_county_coverage` carrying the provenanced basis. Rules:
+
+- Scorers treat a `_county_coverage` marker as a COUNTY-LEVEL determination (satisfied-absent path
+  with `honestCoveragePct 0`, never `1/N`); the denominator never shrinks to accommodate it.
+- Parcel-keyed consumers (MCP chain, facets, briefs) ignore it — it is not a parcel and must never
+  render as one.
+- A marker is a bridge, not a terminal: the structural reason it records (Robertson: NULL prop_ids =
+  CROSSWALK_HOLD class) stays on the acquisition queue; the marker retires when per-parcel keys exist.
