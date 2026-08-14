@@ -1,0 +1,88 @@
+{
+  "artifact": "L21_cp1",
+  "lane": "L21",
+  "planRows": ["P-25"],
+  "at": "2026-08-14T15:30:00Z",
+  "contract": "_inbox/2026-08-14_P25_full_loads_reconcile.md",
+  "verdict": "PASS_DESIGN_WITH_TARRANT_LOAD_DEFECT_FINDING",
+  "invariant": "A declared-2026 parcel read may use a cross-vintage key only through the L17 blessed resolver seam, only for a deterministic one-to-one mapping, and never returns an ambiguous or unclassified row.",
+  "recovery": {
+    "scratch": "_scratch/l21_cross_vintage_keys.md",
+    "recoveredState": "Prior lane attempt had announced HS-L21-CAD-KEY-DIAG but had created no checkpoint, code diff, PR, or close artifact.",
+    "workerDisposition": "No stopped worker or ambiguous PR existed. This lane retained ownership and resumed in the existing isolated worktree.",
+    "worktree": "P:/legacy-design-tools-worktrees/l21-cross-vintage @ feat/l21-cross-vintage-keys",
+    "base": "origin/main @ 19da3b1b"
+  },
+  "sourceTruth": {
+    "store": "cortex-prod / cad_property and txgio_parcel",
+    "countingRule": "2025 orphan = cad_property row at tax_year=2025 with no identical (county_fips, prop_id) row at tax_year=2026.",
+    "measuredBaseline": {
+      "48439": {"rows2025": 689838, "identicalKeyOverlap": 605340, "orphans2025": 84498},
+      "48113": {"rows2025": 693556, "identicalKeyOverlap": 399965, "orphans2025": 293591}
+    },
+    "sampleVerification": {
+      "query": "30 deterministic lowest-key orphans, 15 per county, joined by indexed txgio_parcel (county_fips, prop_id)",
+      "result": "30/30 linked to a geometry row by the 2025 prop_id; sampled geometry owner/situs agreed with the 2025 cad row where populated.",
+      "tarrantPublicSource": "P:/tmp/l21_tarrant_source/PropertyData(Delimited).txt",
+      "tarrantFinding": "Sample orphan 10-1-1A is a real commercial parcel in the 2026 public TAD file (RP=C, GIS_Link=10-1-1A, owner/situs/legal agree), but parseTadPropertyLine drops every RP value other than R without a skip count.",
+      "dallasPublicSource": "P:/tmp/l9_full_loads/dcad_extracted/ACCOUNT_INFO.CSV",
+      "dallasFinding": "The 2026 DCAD source carries ACCOUNT_NUM plus GIS_PARCEL_ID; the current parser persists ACCOUNT_NUM only. Mapping coverage must be measured from source identity fields and verified against owner/situs/legal, not inferred from key shape."
+    }
+  },
+  "preRegisteredFlipCriteria": {
+    "denominator": "All parcel-linked 2025 rows: rows with a txgio_parcel geometry link by the stored 2025 prop_id.",
+    "threshold": 0.99,
+    "thresholdReason": "A vintage declaration is county-wide. Requiring at least 99% deterministic one-to-one coverage bounds newly introduced parcel read gaps below 1%, while the residual must still be fully classified and counted; ambiguous mappings never count as covered.",
+    "additionalHardGates": [
+      "100% of parcel-linked 2025 rows are either identical-key hits, deterministic one-to-one mapped hits, or named vintage-gap residuals.",
+      "Zero one-to-many or many-to-one mappings are admitted by the resolver.",
+      "Every residual class has a count and sample evidence from owner/situs/legal/geometry.",
+      "ci-vintage-predicate conclusion remains success.",
+      "Planner rules on each county flip; L21 does not edit current_tax_year."
+    ],
+    "predictionBands": {
+      "48439": {
+        "predictedDeterministicCoverage": "0.87-0.90 without a corrected C/P-class load",
+        "predictedVerdict": "HOLD",
+        "reason": "The first verified orphan exists in the 2026 source under the same GIS_Link but was excluded from the loaded store by the RP=R parser filter; mapping cannot recover a row that was not loaded."
+      },
+      "48113": {
+        "predictedDeterministicCoverage": "0.40-0.80 after source-field and normalized identity joins",
+        "predictedVerdict": "HOLD unless measured coverage reaches 0.99",
+        "reason": "ACCOUNT_NUM and 2025 StratMap prop_id are different namespaces; source GIS_PARCEL_ID and identity columns require measured uniqueness."
+      }
+    }
+  },
+  "design": {
+    "blessedSeam": "lib/cad-ingest/src/vintage.ts",
+    "lookupSeam": "artifacts/api-server/src/lib/cadPropertyLookup.ts",
+    "proposedStore": "cad_property_vintage_crosswalk keyed by county_fips, from_tax_year, from_prop_id, to_tax_year with unique target enforcement, method, evidence class, and source provenance",
+    "resolverRule": "Exact declared-year key first; on miss, resolve one deterministic crosswalk row and read the declared-year target; otherwise classify vintage-gap/not-found. No fuzzy runtime matching.",
+    "analysisOnlyInputs": [
+      "cad_property",
+      "txgio_parcel",
+      "TAD PropertyData(Delimited).txt",
+      "DCAD ACCOUNT_INFO.CSV and ACCOUNT_APPRL_YEAR.CSV"
+    ]
+  },
+  "constraints": [
+    "NO atoms writes",
+    "NO atoms slot",
+    "NO cad_property bulk load",
+    "NO current_tax_year flip",
+    "NO owner/landuse/cad-roll re-apply",
+    "NO second resolver",
+    "engine reader changes only through the existing L17 helper seam",
+    "one heavy shared-database scan at a time"
+  ],
+  "diagnosticEvents": [
+    {
+      "event": "HS-L21-CAD-KEY-DIAG first full geometry aggregation exceeded 6 minutes and was killed",
+      "disposition": "Replaced with exit-bounded indexed samples and source-file verification; no write occurred."
+    },
+    {
+      "event": "Neon MCP run_sql returned fetch failed twice",
+      "disposition": "Used the existing Secret Manager sourced deployment connection with psql; no credential was printed."
+    }
+  ]
+}

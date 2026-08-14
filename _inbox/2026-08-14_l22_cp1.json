@@ -1,0 +1,123 @@
+{
+  "artifact": "l22_cp1",
+  "checkpoint": "CP1",
+  "lane": "L22",
+  "plan_rows": ["P-26"],
+  "status": "PASS_TO_ACQUIRE",
+  "registered_at": "2026-08-14T15:50:00Z",
+  "mission": "Acquire and stage the operator-approved utility who-serves territory set only. No rail, cells, atoms, product surface, or tier work.",
+  "contract_check": {
+    "canon_preamble": "v0f465c77",
+    "agent_contract": "v4d5ddcd3",
+    "dispatch_conflict": false,
+    "notes": "Acquisition and deployment-Neon staging are slot-free. No PostGIS/full-table scan is planned. L16 retains the atoms slot and DB writer lease."
+  },
+  "deployment_target": {
+    "project": "cortex-prod",
+    "project_id": "fancy-fire-06136146",
+    "branch": "production",
+    "branch_id": "br-crimson-feather-aphfmy91",
+    "database": "neondb",
+    "host_fingerprint_expected": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech"
+  },
+  "schema_design": {
+    "table": "tx_utility_territory_staging",
+    "grain": "one source polygon or multipolygon feature",
+    "identity": "source_key:source_object_id",
+    "fields": [
+      "staging_row_id",
+      "source_key",
+      "service_kind",
+      "territory_id",
+      "territory_name",
+      "county_name",
+      "county_fips",
+      "geometry",
+      "geometry_crs",
+      "source_url",
+      "source_layer_id",
+      "fetched_at",
+      "source_tiers",
+      "source_tier_satisfied",
+      "source_vintage",
+      "source_citation",
+      "passthrough_attributes",
+      "west_lng",
+      "south_lat",
+      "east_lng",
+      "north_lat",
+      "object_id",
+      "ingested_at"
+    ],
+    "h1_mirror": "GeoJSON geometry and EPSG:4326 bbox, immutable source identity, full passthrough attribute bag, source URL/layer/fetch/vintage/citation/tier, non-empty source_tier_satisfied check, PK plus source/county/bbox indexes.",
+    "write_pattern": "CREATE TABLE IF NOT EXISTS, then parameterized inserts/upserts in batches no larger than 250 rows. No delete/truncate. Existing source rows, if any, must be reconciled before replacement."
+  },
+  "sources": [
+    {
+      "source_key": "puct-water-ccn",
+      "service_kind": "water",
+      "url": "https://ftp.puc.texas.gov/public/puct-info/industry/water/utilities/PUCT_CCN_WATER_TSMS.zip",
+      "expected_count": 3925,
+      "acquisition_gate": "curl-equivalent retries, HTTP success, non-zero bytes, Python zipfile testzip() is null, shapefile parse count equals source count"
+    },
+    {
+      "source_key": "puct-sewer-ccn",
+      "service_kind": "sewer",
+      "url": "https://ftp.puc.texas.gov/public/puct-info/industry/water/utilities/PUCT_CCN_SEWER_TSMS.zip",
+      "expected_count": 1455,
+      "acquisition_gate": "curl-equivalent retries, HTTP success, non-zero bytes, Python zipfile testzip() is null, shapefile parse count equals source count"
+    },
+    {
+      "source_key": "hifld-electric-retail",
+      "service_kind": "electric",
+      "url": "https://services2.arcgis.com/LYMgRMwHfrWWEg3s/arcgis/rest/services/HIFLD_Electric_Retail_Service_Territories/FeatureServer/0",
+      "where": "STATE = 'TX'",
+      "expected_count": 139,
+      "acquisition_gate": "live returnCountOnly equals fetched feature count; page by object ID; outSR=4326"
+    },
+    {
+      "source_key": "twdb-pws",
+      "service_kind": "water",
+      "url": "https://services.twdb.texas.gov/arcgis/rest/services/PWS/Public_Water_Service_Areas/FeatureServer/0",
+      "where": "1=1",
+      "expected_count": 4621,
+      "acquisition_gate": "live returnCountOnly equals fetched feature count; page by object ID; outSR=4326"
+    },
+    {
+      "source_key": "tceq-water-districts",
+      "service_kind": "water-district",
+      "url": "https://services2.arcgis.com/LYMgRMwHfrWWEg3s/arcgis/rest/services/TCEQ_Water_Districts/FeatureServer/0",
+      "expected_source_count": 2125,
+      "existing_store_truth": {
+        "table": "tx_special_district",
+        "rows": 2775,
+        "distinct_district_ids": 2734,
+        "distinct_counties": 186,
+        "source": "tceq-water-districts-v1",
+        "source_vintage": "2026-08-10"
+      },
+      "reconciliation_rule": "Compare normalized live TCEQ district IDs against tx_special_district district_id. Stage only source features whose district subject is absent. Never copy a district already represented in tx_special_district. Report source rows, represented IDs, additive IDs, and the exact normalization/counting rule."
+    }
+  ],
+  "coverage_proof": {
+    "rule": "Use source-returned county attributes and ArcGIS groupBy/count statistics where available. PUCT shapefile COUNTY values are grouped after integrity-verified parse. Do not use extent metadata. Do not run PostGIS.",
+    "null_county_rule": "Report null/blank/multi-county attribute rows separately; do not infer county from extent.",
+    "counting_rule": "Per-source staged rows count source features after source filter and additive reconciliation. County coverage is COUNT(DISTINCT normalized source county label/FIPS), excluding null/blank; raw group counts are retained."
+  },
+  "pre_registered_acceptance": [
+    {"id": 1, "item": "Both PUCT zips pass HTTP, byte, zipfile testzip, shapefile component, and parsed row-count gates before any PUCT staging write."},
+    {"id": 2, "item": "HIFLD and TWDB live returnCountOnly values equal complete fetched and staged counts; no extent-derived count is accepted."},
+    {"id": 3, "item": "Every staged row has source URL, source layer, fetch timestamp, vintage, citation, non-empty satisfied tier, EPSG:4326 geometry, Texas-valid bbox, and full source attributes."},
+    {"id": 4, "item": "County coverage proof is source-attribute/groupBy based with the counting rule and null/multi-county residue stated per source."},
+    {"id": 5, "item": "TCEQ is reconciled by normalized district subject against tx_special_district; only genuinely additive subjects stage and no second copy of represented subjects is created."},
+    {"id": 6, "item": "No atoms writes, slot, lease, rail declaration, cells, product surface, product/tier work, PostGIS, or heavy scan occurs."}
+  ],
+  "adversarial_traps": [
+    "A valid zip response can still be corrupt or HTML; parse only after zipfile integrity passes.",
+    "ArcGIS maxRecordCount can silently truncate; count, page, and reconcile object IDs.",
+    "PUCT county text may contain multi-county strings; preserve raw attributes and state the normalization rule.",
+    "CCN/PWS/electric territory means who-serves posture, not parcel serviceability.",
+    "TCEQ row count and tx_special_district row count have different grains; reconcile distinct normalized district subjects, not raw polygon rows.",
+    "Never infer coverage from service extent."
+  ]
+}

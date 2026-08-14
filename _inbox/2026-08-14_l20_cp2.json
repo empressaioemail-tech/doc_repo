@@ -1,0 +1,128 @@
+{
+  "checkpoint": "CP2",
+  "lane": "L20",
+  "planRows": ["P-21", "P-22"],
+  "filedAt": "2026-08-14T15:07:09.4690312Z",
+  "status": "FAIL_STOP",
+  "title": "Factory 1.5 production pilot found systematic false-positive and false-negative defects",
+  "cp1": "_inbox/2026-08-14_l20_cp1.json",
+  "interruptionRecovery": {
+    "operatorMessage": "resume",
+    "receivedAtApprox": "2026-08-14T15:06:00Z",
+    "runnerProcessAtCapture": "none",
+    "actualDisposition": "The foreground tool was interrupted after the pilot itself had completed. run_close.json completedAt=2026-08-14T14:04:13.351Z and all five verdict artifacts exist.",
+    "workersStopped": [],
+    "worktree": "P:/hauska-engine-worktrees/l20-factory15-sweep",
+    "branch": "l20/factory15-prod-sweep",
+    "head": "70ea6c2c865c0d8c47e9e62142cff191c89eda3f",
+    "gitStatus": "clean; branch tracks origin/main",
+    "fullDiff": "empty",
+    "payloadContractDiff": "empty",
+    "drainDiff": "empty",
+    "openPrs": [],
+    "ownedItemsDisposition": {
+      "cp2Pilot": "recovered from completed artifacts, not rerun",
+      "productionFan": "re-triaged to STOP because the recovered pilot invalidated the instrument; written reason below",
+      "rosterUpdates": "not applied because invalid verdicts must not overwrite roster truth"
+    }
+  },
+  "pilot": {
+    "queue": "P:/tmp/l20_zd_sweep_20260814/pilot/queue.json",
+    "outDir": "P:/tmp/l20_zd_sweep_20260814/pilot",
+    "runClose": "P:/tmp/l20_zd_sweep_20260814/pilot/run_close.json",
+    "startedAt": "2026-08-14T13:59:14.819Z",
+    "completedAt": "2026-08-14T14:04:13.351Z",
+    "stageApply": true,
+    "verdictCount": 5
+  },
+  "verdicts": [
+    {
+      "cityKey": "elgin-tx",
+      "expected": "LAYER-FOUND; H1 known truth already staged",
+      "actual": "NOT-FOUND-UNKNOWN-WHY",
+      "stageReport": null,
+      "finding": "FALSE_NEGATIVE",
+      "mechanism": "The layer is Texas State Plane Central, WKID 102739/latestWkid 2277. discover.ts extentToBbox treats any coordinate magnitude >180 as Web Mercator, converts State Plane feet with the Mercator formula, and then rejects the true zoning layer as outside the city bbox.",
+      "sourceEvidence": "Live FeatureServer/0 sample returns Zone_Code=R-1 and CITY_LIMIT=ELGIN; store truth still has elgin-tx 3209 rows / 8 district codes from H1."
+    },
+    {
+      "cityKey": "georgetown-tx",
+      "expected": "LAYER-FOUND; Z1 known live match",
+      "actual": "NOT-FOUND-UNKNOWN-WHY",
+      "stageReport": null,
+      "finding": "FALSE_NEGATIVE",
+      "mechanism": "Same projection defect: MapServer/20 is zoning, geometry polygon, ZONE/FULLZONE fields, WKID 102739/latestWkid 2277. The factory misreads State Plane feet as Web Mercator before bbox overlap.",
+      "sourceEvidence": "Live MapServer/20 renderer and sample carry AG/BP/C-1/C-3/CN/IN/MF-1/MF-2/MH/MU-DT/OF/PF/RE/RL/RS/TF/TH. Store truth still has georgetown-tx 1890 rows / 17 district codes from Z1."
+    },
+    {
+      "cityKey": "frisco-tx",
+      "expected": "Honest factory verdict after Z1 searched-and-absent; only zoning polygon may be LAYER-FOUND",
+      "actual": "LAYER-FOUND",
+      "layerUrl": "https://services7.arcgis.com/uFAr0LUPy14bDaLg/arcgis/rest/services/Denton_060326_WFL1/FeatureServer/15",
+      "layerName": "Parks",
+      "codeField": "NAME",
+      "descriptionField": "Class",
+      "stageReport": {
+        "event": "zoning-discovery.stage-error",
+        "error": "frisco-tx: feature missing OBJECTID",
+        "applied": false
+      },
+      "finding": "FALSE_POSITIVE",
+      "mechanism": "Geometry+field-shape gate accepted a Denton Parks layer because park names happened to satisfy district-code token heuristics and the county-scale extent overlaps Frisco. The selected OID field is OBJECTID_1, but normalize.ts only accepts attributes.OBJECTID/objectid/FID, producing a second seam failure.",
+      "storeSafety": "No frisco-tx staging rows were written."
+    },
+    {
+      "cityKey": "alvin-tx",
+      "expected": "Re-probe NFUW",
+      "actual": "NOT-FOUND-UNKNOWN-WHY",
+      "stageReport": null,
+      "finding": "VALID_OPEN",
+      "note": "Hub returned a Floodplain FeatureServer; no positive zoning layer or absence determination."
+    },
+    {
+      "cityKey": "houston-tx",
+      "expected": "NO-EUCLIDEAN-REGIME and zero staging rows",
+      "actual": "NO-EUCLIDEAN-REGIME",
+      "stageReport": null,
+      "finding": "PASS",
+      "sourceEvidence": "constraintLayers=2 after full recurse; no Euclidean candidate",
+      "storeSafety": "No houston-tx staging rows."
+    }
+  ],
+  "grade": {
+    "typedVerdictArtifactPerCity": "MET 5/5",
+    "knownTruthRecall": "FAIL 0/2 LAYER-FOUND (Elgin and Georgetown both false negatives)",
+    "falsePositiveControl": "FAIL (Denton Parks classified as Frisco zoning)",
+    "staging": "FAIL_SAFE for the false positive: stage threw before write; however stage seam does not support the service-declared OID field",
+    "houstonNeverStaged": "MET",
+    "payloadContractAndDrainReadOnly": "MET",
+    "productionReadiness": "FAIL_STOP"
+  },
+  "storeVerification": {
+    "query": "SELECT city_key, count(*), count(DISTINCT district_code) FROM tx_zoning_district_staging WHERE city_key IN (...) GROUP BY city_key",
+    "result": [
+      {"cityKey": "elgin-tx", "rows": 3209, "codes": 8, "provenance": "pre-existing H1"},
+      {"cityKey": "georgetown-tx", "rows": 1890, "codes": 17, "provenance": "pre-existing Z1"}
+    ],
+    "zeroRows": ["frisco-tx", "alvin-tx", "houston-tx"],
+    "interpretation": "Pilot introduced no staging rows. Existing Elgin/Georgetown rows were preserved."
+  },
+  "stopReason": "The dispatch says OPERATE the built factory, not build one. Continuing a 440-city --stage-apply fan after a 5-city pilot produced one non-zoning LAYER-FOUND and missed both known zoning controls would knowingly stage false data and overwrite roster truth. That conflicts with AGENT_CONTRACT verification/fail-closed rules and the dispatch's geometry+field identification requirement. No production fan was started.",
+  "requiredFactoryRepairsBeforeRetry": [
+    "Projection handling must distinguish supported CRS and request/query outSR=4326 or transform known WKIDs; never infer Web Mercator solely from coordinate magnitude.",
+    "Layer identity must require zoning semantics beyond generic code-like values and bbox overlap; a Parks NAME/Class layer must fail.",
+    "Staging must use the service-declared OID field (objectIdFieldName or esriFieldTypeOID), not only OBJECTID/objectid/FID.",
+    "Fail the run, not only emit stage-error, when a LAYER-FOUND city cannot stage; do not mark that city landed."
+  ],
+  "constraintsHonored": [
+    "No atoms --apply",
+    "No atoms slot or lease",
+    "No hostname synthesis",
+    "No PostGIS query or heavy-scan announcement",
+    "tx_zoning_district_staging only, with zero pilot writes",
+    "Houston never staged",
+    "payload-contract.ts and drain.ts unchanged",
+    "no roster mutations from invalid verdicts",
+    "no code changes to repair the factory"
+  ]
+}

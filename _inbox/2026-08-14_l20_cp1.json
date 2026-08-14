@@ -1,0 +1,157 @@
+{
+  "checkpoint": "CP1",
+  "lane": "L20",
+  "planRows": ["P-21", "P-22"],
+  "filedAt": "2026-08-14T14:05:00Z",
+  "status": "DESIGN_LOCKED",
+  "title": "Factory 1.5 first production sweep — queue locked, operate not rebuild",
+  "factory": {
+    "repo": "hauska-engine",
+    "worktree": "P:/hauska-engine-worktrees/l20-factory15-sweep",
+    "branch": "l20/factory15-prod-sweep",
+    "head": "70ea6c2",
+    "merge328Ancestor": true,
+    "merge328Sha": "9ea8fc50215b434ee47b1d340dc4c33bbd2617fb",
+    "cli": "packages/engine-core/scripts/zoning-discovery/run_zoning_discovery.mjs",
+    "envRequired": ["ZONING_DISCOVERY_PATH=1", "CORTEX_DATABASE_URL (direct, no pooler) for --stage-apply"],
+    "payloadContractReadOnly": true,
+    "drainReadOnly": true,
+    "atomsApply": false,
+    "slot": false,
+    "lease": false
+  },
+  "l2ArtifactsRead": [
+    "_inbox/2026-08-12_L2_cp1_design_review.json",
+    "_inbox/2026-08-12_L2_cp2_verification_set.json",
+    "_inbox/2026-08-12_L2_factory15_front_half_close.json"
+  ],
+  "cityCountyJoin": {
+    "exists": true,
+    "path": "_catalog/texas_roster_v1.json#city_county_join",
+    "derived_at": "2026-08-11T19:44:51.335Z",
+    "method": "TxGIO City_Boundaries spatial join vs TIGER State_County (migration 0070 sources)",
+    "cities_linked": 1214,
+    "cities_unlinked": 9,
+    "txgio_polygons": 1222,
+    "tiger_counties": 254,
+    "countingRule": "A roster city is in-footprint iff cities[].parent_county_fips is in the 28-county set from _decisions/2026-08-09_launch_footprint_counties.md. parent_county_fips is the city_county_join product, not a re-derived spatial join this lane. Multi-county cities counted once under parent_county_fips (all_county_fips is not exploded). The 9 unlinked cities have null parent_county_fips and are excluded from the footprint numerator. Historical parent_county breakage is the pre-2026-08-11 field; this join is the replacement Z1 already used (P2.6).",
+    "parentCountyFipsNullLive": 9,
+    "rosterCitiesLive": 1223
+  },
+  "queueCountsLive": {
+    "artifact": "P:/tmp/l20_zd_sweep_20260814/roster_counts.json",
+    "footprintCities": 341,
+    "footprintBand": { "min": 330, "max": 360, "result": "IN_BAND", "matchesZ1": "138 central + 203 dallas = 341" },
+    "nfuw": 210,
+    "nfuwBand": { "min": 208, "max": 212, "result": "IN_BAND exact L3 histogram" },
+    "dallasSaaNoStatusByDallas13Fips": 155,
+    "dallasSaaNoStatusGlobal": 158,
+    "a006Reconciliation": "L3/A-006 prose 158 is the global searched-and-absent AND no zoning_layer.status set (live 158). Of those, 155 have parent_county_fips in the 13 Dallas-metro FIPS. The other 3 are homonyms outside the metro: Lakeside geoid 4840738 fips 48409; Oak Ridge 4853154 fips 48097; Reno 4861592 fips 48277. A-006 re-probe set is the 155 Dallas-metro rows. All 155 are already in the 341 footprint (first-wins). The 3 homonyms are NOT added.",
+    "unionUniqueCityKeys": 440,
+    "unionByReason": { "footprint-28": 341, "nfuw-reprobe": 99 },
+    "unionBand": { "min": 400, "max": 470, "result": "IN_BAND" },
+    "z1WorklistGeoidJoinMisses": 0,
+    "bboxSource": "Census TIGERweb Places_CouSub_ConCity_SubMCD MapServer/4 STATE=48 HTTP GeoJSON (not PostGIS). tigerTotal=1230 mapped=1230. Queue bboxHit=440 bboxMiss=0.",
+    "seeds": "84 items carry seedHostUrls from roster zoning_layer.source_url and/or Z1 layerFound layerUrl (prior live hits). Z1 synthetic gis.{slug}tx.gov tries are NOT seeded. houston-tx is NOT in the 440 (Harris 48201 is outside the 28; status already NO-EUCLIDEAN-REGIME). Pilot appends houston-tx as a never-stage regression."
+  },
+  "sevenStatusPinned": [
+    "NO-ZONING-AUTHORITY",
+    "NO-EUCLIDEAN-REGIME",
+    "ORDINANCE-NO-GIS",
+    "AUTH-WALLED",
+    "HOST-BROKEN",
+    "NOT-FOUND-UNKNOWN-WHY",
+    "LAYER-FOUND"
+  ],
+  "rosterUpdatePolicy": {
+    "pattern": "L3: status fields only; planner commits",
+    "write": [
+      "zoning_layer.status",
+      "zoning_layer.status_set_at",
+      "zoning_layer.status_evidence",
+      "zoning_layer.taxonomy_decision"
+    ],
+    "writeIfLayerFound": [
+      "zoning_layer.source_url",
+      "zoning_layer.verification=verified",
+      "zoning_layer.code_field",
+      "zoning_layer.layer_id"
+    ],
+    "preserve": [
+      "sentinel",
+      "probe_lane",
+      "probe_notes",
+      "notes",
+      "verified_at (historical)",
+      "parent_county_fips",
+      "geoid",
+      "identity fields"
+    ],
+    "noDowngrade": "Do not overwrite ORDINANCE-NO-GIS / NO-EUCLIDEAN-REGIME / LAYER-FOUND / HOST-BROKEN with NOT-FOUND-UNKNOWN-WHY. Houston never LAYER-FOUND and never staged."
+  },
+  "pilotForCp2": {
+    "cities": [
+      { "cityKey": "elgin-tx", "role": "known H1 staged LAYER-FOUND in footprint" },
+      { "cityKey": "georgetown-tx", "role": "Z1 central LAYER-FOUND (AG live match)" },
+      { "cityKey": "frisco-tx", "role": "Z1 Dallas major searched-and-absent; factory Hub re-probe" },
+      { "cityKey": "alvin-tx", "role": "NFUW Houston-MSA re-probe (outside footprint)" },
+      { "cityKey": "houston-tx", "role": "NO-EUCLIDEAN-REGIME regression; must stage 0 rows" }
+    ],
+    "stageApply": true,
+    "outDir": "P:/tmp/l20_zd_sweep_20260814/pilot"
+  },
+  "productionSweep": {
+    "queuePath": "P:/tmp/l20_zd_sweep_20260814/queue.json",
+    "outDir": "P:/tmp/l20_zd_sweep_20260814/run",
+    "shards": 4,
+    "stageApply": true,
+    "skipHoustonStaging": true,
+    "sanAntonioNote": "Z1 found ~766k and did not stage (size follow-on). Factory may LAYER-FOUND; staging that volume is slot-free but slow. Shard will run it last if it appears; do not skip unless the runner errors. Record wall time."
+  },
+  "expectedBandsThisSweep": {
+    "footprintLayerFound": {
+      "min": 90,
+      "max": 170,
+      "rationale": "Z1 already found 84 in footprint (36 central + 48 dallas). Factory Hub+folder-recursion should recover some Z1 majors (Frisco/Denton/Allen class) without synthesizing hosts. Below 84 means factory regression vs Z1. Above 170 would be surprising given Hub-only discovery."
+    },
+    "honestAbsenceCityGrain": {
+      "min": 0,
+      "max": 20,
+      "rationale": "City roster is incorporated places; NO-ZONING-AUTHORITY is mostly unincorporated (not in this queue). Houston is already classified and outside footprint. Factory classify.ts emits ORDINANCE-NO-GIS never — that class stays L3-positive unless GIS is found. NO-EUCLIDEAN-REGIME only with constraint-layer positive evidence."
+    },
+    "remainingOpenFootprint": {
+      "min": 150,
+      "max": 250,
+      "rationale": "AUTH-WALLED + NOT-FOUND-UNKNOWN-WHY + HOST-BROKEN after one factory pass. Empty Hub is NFUW and re-enters, not absence."
+    }
+  },
+  "dc6PriceIntent": {
+    "cellGrain": "28 footprint counties x zoning rail (not city count). Staging LAYER-FOUND is necessary for satisfied-present; not sufficient (drain+stamp+score are P-22 remainder).",
+    "satisfiedViaStagedDepth": "county with enough staged city layers to drain/stamp (priced this sweep as city LAYER-FOUND ready-for-stamp counts per parent_county_fips)",
+    "satisfiedAbsentViaDoctrine": "NO-ZONING-AUTHORITY / NO-EUCLIDEAN-REGIME / ORDINANCE-NO-GIS with citation. Unincorporated county territory is doctrine-ready even when the city queue is empty of that status.",
+    "genuinelyOpen": "AUTH-WALLED, HOST-BROKEN, NOT-FOUND-UNKNOWN-WHY remaining in that county's city set"
+  },
+  "heavyScan": {
+    "read": "L16 leg5_pipelines_progress.json current=48015 (atom writes on hauska_mcp). No L20 PostGIS. Announce nothing.",
+    "l20Queries": "none planned"
+  },
+  "constraints": [
+    "probing + tx_zoning_district_staging only",
+    "NO atoms --apply, no slot, no lease",
+    "NEVER synthesize hostname",
+    "folder recursion + geometry+field identification",
+    "empty result = NOT-FOUND-UNKNOWN-WHY re-enters",
+    "Houston never staged as zoning",
+    "payload-contract.ts and drain.ts READ-ONLY",
+    "isolated worktree; do not touch P:/hauska-engine (detached 8d8e880, stale vs #328)"
+  ],
+  "memoryMd": "MEMORY.md not present in doc_repo at session start; standing decisions taken from _STATE.md + dispatch preamble + AGENT_CONTRACT.md",
+  "adversarialChecklist": [
+    "Any hostname constructed from slug? FAIL",
+    "Any /zon/ regex inclusion gate? FAIL (factory already forbids)",
+    "Empty result → absence status? FAIL",
+    "Houston staged? FAIL",
+    "Payload contract or drain edited? FAIL STOP",
+    "PostGIS / heavy-scan announced? FAIL (must not)"
+  ]
+}

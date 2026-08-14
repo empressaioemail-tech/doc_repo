@@ -1,0 +1,100 @@
+{
+  "artifact": "L19_cp1",
+  "lane": "L19",
+  "planRows": ["P-29"],
+  "at": "2026-08-14T13:55:00.000Z",
+  "dispatch": "_dispatches/2026-08-14_l19_dispatch.md",
+  "wdll": "_inbox/2026-08-14_l19_WDLL.md",
+  "wdllItems": [1, 2, 3, 4, 5, 6],
+  "verdict": "PASS_DESIGN",
+  "interruptRecovery": {
+    "stoppedWorkers": [],
+    "note": "Lane start. No prior workers."
+  },
+  "livePin": {
+    "instrument": "gcloud run services describe hauska-mcp-server --project hauska-prod-497015 --region us-central1",
+    "servingRevision": "hauska-mcp-server-00063-fic",
+    "percent": 100,
+    "tag": "l13-57fa819",
+    "url": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app",
+    "latestReadyRevisionName": "hauska-mcp-server-00065-maq",
+    "latestReadyNote": "tagged l13-restart at 0% traffic; not the serving revision",
+    "healthVerbatim": "{\"status\":\"ok\",\"service\":\"hauska-mcp-server\",\"version\":\"0.1.0\",\"env\":\"production\",\"metrics\":{\"started_at\":\"2026-08-14T11:17:55.907Z\",\"uptime_s\":9410,\"total_requests\":0,\"total_errors\":0,\"error_rate\":0,\"last_successful_call\":null,\"latency\":{\"count\":0,\"p50_ms\":null,\"p95_ms\":null,\"p99_ms\":null,\"max_ms\":null},\"tool_calls\":{}},\"dependencies\":{\"engine_retrieval_api\":{\"state\":\"ok\",\"latency_ms\":35,\"detail\":\"HTTP 404\"},\"cortex_api\":{\"state\":\"ok\",\"latency_ms\":32},\"postgres\":{\"state\":\"ok\",\"latency_ms\":29},\"rate_limit_store\":{\"state\":\"ok\",\"latency_ms\":287,\"detail\":\"postgres\",\"primary\":\"postgres\",\"memory_fallback\":false,\"outage_policy\":\"fail-degraded\"}}}",
+    "wdll1": "MET at CP1 — family 00063+, primary=postgres, memory_fallback=false"
+  },
+  "dc11d_preview": {
+    "command": "curl.exe -sI https://smartsite.cloud",
+    "statusLine": "HTTP/1.1 200 OK",
+    "headersVerbatim": "HTTP/1.1 200 OK\nContent-Type: text/html\nDate: Fri, 14 Aug 2026 13:54:46 GMT\nContent-Length: 114\n",
+    "bodyVerbatim": "<!DOCTYPE html><html><head><script>window.onload=function(){window.location.href=\"/lander\"}</script></head></html>",
+    "dnsA": ["15.197.148.33", "3.33.130.190"],
+    "vercelHeadersPresent": false,
+    "interpretation": "HTTP 200 is a GoDaddy/parking lander (JS redirect to /lander), not Vercel attach. Gate text wants 200 OR 301-to-Vercel (domain attached). Status 200 holds; attach does not. DNS fix is out of scope this lane.",
+    "gradeHint": "REPORT_WHAT_IS — not 301-to-Vercel; 200 is parking HTML"
+  },
+  "design": {
+    "target": "MCP only — https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app",
+    "notTarget": [
+      "cortex-api request paths (parcel, ledger, metering)",
+      "retrieval-api request paths",
+      "PE /api/spine/property-atoms facets",
+      "MCP tool calls (property-atom-chain and siblings fan to retrieval)"
+    ],
+    "incidental": "GET /health dependency probes hit engine /healthz and cortex /api/healthz. Dep cache TTL 15s (hauska-mcp-server/src/health.ts DEP_CACHE_TTL_MS). Health ramps therefore fan downstream at most once per 15s per instance, not at request RPS.",
+    "whyInitialize": "POST /mcp initialize is behind authMiddleware (rate limiter) and does not call retrieval/cortex. It is the limiter seam. GET /health is registered before auth and is not rate-limited — used for latency + postgres-primary proof.",
+    "harness": "_scratch/l19-dc11-loadtest.mjs",
+    "artifact": "_inbox/2026-08-14_76j_C4_loadtest_results.json",
+    "capacityDoc": "_inbox/2026-08-05_launch_capacity_audit.md",
+    "phases": [
+      {
+        "id": "A_health_latency",
+        "endpoint": "GET /health",
+        "tiers": [
+          { "name": "health_1rps_20s", "rps": 1, "duration_s": 20 },
+          { "name": "health_5rps_20s", "rps": 5, "duration_s": 20 },
+          { "name": "health_20rps_15s", "rps": 20, "duration_s": 15 }
+        ]
+      },
+      {
+        "id": "B_limiter_ramps",
+        "endpoint": "POST /mcp initialize (anonymous, no X-Hauska-Key)",
+        "budget": "HAUSKA_FREE_IP_RPM default 60, 60-second fixed window; HAUSKA_FREE_IP_DAILY default 1000",
+        "tiers": [
+          { "name": "mcp_init_1rps_20s", "rps": 1, "duration_s": 20 },
+          { "name": "mcp_init_5rps_20s", "rps": 5, "duration_s": 20 },
+          { "name": "mcp_init_20rps_15s", "rps": 20, "duration_s": 15 }
+        ],
+        "note": "Tiers run back-to-back in one rpm window so cumulative 200s prove the 60 cap. Total initialize ~420, under daily 1000."
+      }
+    ],
+    "healthSampling": "GET /health at phase/tier boundaries plus every 5s during ramps. Record rate_limit_store.{state,primary,memory_fallback,detail,latency_ms}."
+  },
+  "expectedBands": {
+    "countingRule": "n = requests the harness actually fired in that tier. 200_rate = count(status==200)/n. 429_rate = count(status==429)/n. Percentiles computed on ALL completed responses (including 429), plus a second p50/p95/p99 on status==200 only. A result outside a band is a finding either way.",
+    "health_1rps_20s": { "n": [18, 22], "200_rate": [0.99, 1.0], "429": 0, "503": 0, "p95_ms_all": [0, 1500] },
+    "health_5rps_20s": { "n": [90, 110], "200_rate": [0.99, 1.0], "429": 0, "503": 0, "p95_ms_all": [0, 1500] },
+    "health_20rps_15s": { "n": [270, 330], "200_rate": [0.99, 1.0], "429": 0, "503": 0, "p95_ms_all": [0, 2000] },
+    "mcp_init_1rps_20s": { "n": [18, 22], "200_rate": [0.90, 1.0], "429_rate": [0, 0.10], "503": 0, "p95_ms_200": [0, 2000], "note": "Fresh rpm window expected; 20 < 60 so 429s here would mean the window was already warm or daily exhausted." },
+    "mcp_init_5rps_20s": { "n": [90, 110], "429_count_min": 1, "503": 0, "note": "Cumulative with prior 20 ≈ 120 in one window. 429s MUST appear. 200s in this tier expected roughly remaining rpm (~40 if window started at tier 1)." },
+    "mcp_init_20rps_15s": { "n": [270, 330], "429_rate": [0.80, 1.0], "503": 0 },
+    "limiter_threshold": { "first_429_cumulative_init": [50, 70], "band": "rpm", "tier": "free" },
+    "health_throughout": { "primary": "postgres", "memory_fallback": false, "state": "ok", "samples_min": 8 }
+  },
+  "announce": {
+    "kind": "bounded_mcp_load_test",
+    "not": "heavy PostGIS scan",
+    "target": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app GET /health + POST /mcp initialize",
+    "expectedDuration": "about 110s ramps + ~20s drain = under 3 minutes",
+    "peakRps": 20,
+    "atomsSlot": "NOT TAKEN — L16 remains custodian",
+    "cortexNeon": "limiter writes rate_limit_counters on MCP DATABASE_URL only; no atoms table access"
+  },
+  "constraints": [
+    "No atoms slot / no --apply / no heavy scan",
+    "No cortex-api or retrieval-api load fan beyond incidental /health deps",
+    "Exit-bounded fixed durations",
+    "Doc_repo edits uncommitted",
+    "No hauska-mcp-server code change this lane"
+  ],
+  "contractVsDispatch": "NO DISAGREEMENT. Slot law honored (no --apply). Heavy-scan serialization N/A (no PostGIS scan). Verification at source (gcloud + live /health) before load."
+}

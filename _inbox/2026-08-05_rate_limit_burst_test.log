@@ -1,0 +1,133 @@
+76j Workstream C1 — rate-limit burst test
+Dispatch: _dispatches/2026-08-05_76j_C1_rate_limit_store_replacement.md
+WDLL: _inbox/2026-08-05_76j_workstream_C_rate_limit_and_pooling_WDLL.md acceptance item 2
+Run: 2026-08-05, planner/executor session, production hauska-mcp-server (hauska-prod-497015 / us-central1)
+
+=====================================================================
+RESULT: ACCEPTANCE ITEM 2 (distributed budget proven) IS BLOCKED.
+=====================================================================
+
+Item 2 depends on item 1 (a live Upstash Redis database). No Upstash
+account credentials (console login, or an UPSTASH_EMAIL + management
+API key pair) were available in this execution context -- verified:
+no UPSTASH_EMAIL/UPSTASH_API_KEY in the shell env, no UPSTASH_* secret
+in Secret Manager beyond the existing (unpaired) UPSTASH_REDIS_REST_TOKEN,
+no persisted browser session at console.upstash.com (confirmed: fresh
+navigation landed on the login form, not a signed-in dashboard).
+Provisioning a NEW Upstash database requires interactive account access
+this agent does not have. Escalating to the operator; see close note in
+_scratch/76j-workstream-c.md.
+
+What follows is a REAL burst test run against the deployed service in
+its CURRENT state (UPSTASH_REDIS_REST_URL is a Secret-Manager-bound
+placeholder value; PR #57 fail-loud degraded-mode code is live). It
+documents the honest current behavior and one adjacent finding; it does
+NOT and cannot demonstrate a shared cross-instance budget, because there
+is no shared store to demonstrate.
+
+--- /health immediately before burst (production, revision hauska-mcp-server-00050-fej @100%) ---
+{"status":"degraded","service":"hauska-mcp-server","version":"0.1.0","env":"production","metrics":{"started_at":"2026-08-05T14:31:01.246Z","uptime_s":164,"total_requests":2,"total_errors":0,"error_rate":0,"last_successful_call":"2026-08-05T14:33:19.421Z","latency":{"count":2,"p50_ms":71,"p95_ms":71,"p99_ms":71,"max_ms":71},"tool_calls":{}},"dependencies":{"engine_retrieval_api":{"state":"ok","latency_ms":23,"detail":"HTTP 404"},"cortex_api":{"state":"ok","latency_ms":36},"postgres":{"state":"ok","latency_ms":31},"upstash":{"state":"degraded","latency_ms":null,"detail":"degraded — REPLACE-with placeholder URL, rate-limit on per-instance memory fallback"}}}
+
+Confirms: upstash.state=degraded (fail-loud, not the old silent "skipped") — PR #57 acceptance item 3 live-verified.
+
+--- sequential burst: 70 POST /mcp (initialize) requests, single client/IP (50.24.190.247, confirmed constant via Cloud Run httpRequest.remoteIp logs) ---
+Target: https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app/mcp
+Configured anonymous IP limit (HAUSKA_FREE_IP_RPM default, tiers.ts, not overridden in cloudbuild-mcp.yaml): 60 rpm / 1,000 daily
+Store in effect: ResilientRateLimitStore wrapping a MemoryRateLimitStore primary (buildUpstashStore() threw at startup on the placeholder URL, so the "primary" is itself in-process memory from boot -- single Cloud Run instance in this test, so this is the best-case scenario for the CURRENT code, not yet even the multi-instance failure mode item 2 is about).
+
+req 1 -> HTTP 200
+req 2 -> HTTP 200
+req 3 -> HTTP 200
+req 4 -> HTTP 200
+req 5 -> HTTP 200
+req 6 -> HTTP 200
+req 7 -> HTTP 200
+req 8 -> HTTP 200
+req 9 -> HTTP 200
+req 10 -> HTTP 200
+req 11 -> HTTP 200
+req 12 -> HTTP 200
+req 13 -> HTTP 200
+req 14 -> HTTP 200
+req 15 -> HTTP 200
+req 16 -> HTTP 200
+req 17 -> HTTP 200
+req 18 -> HTTP 200
+req 19 -> HTTP 200
+req 20 -> HTTP 200
+req 21 -> HTTP 200
+req 22 -> HTTP 200
+req 23 -> HTTP 200
+req 24 -> HTTP 200
+req 25 -> HTTP 200
+req 26 -> HTTP 200
+req 27 -> HTTP 200
+req 28 -> HTTP 200
+req 29 -> HTTP 200
+req 30 -> HTTP 200
+req 31 -> HTTP 200
+req 32 -> HTTP 200
+req 33 -> HTTP 200
+req 34 -> HTTP 200
+req 35 -> HTTP 200
+req 36 -> HTTP 200
+req 37 -> HTTP 200
+req 38 -> HTTP 200
+req 39 -> HTTP 200
+req 40 -> HTTP 200
+req 41 -> HTTP 200
+req 42 -> HTTP 200
+req 43 -> HTTP 200
+req 44 -> HTTP 200
+req 45 -> HTTP 200
+req 46 -> HTTP 200
+req 47 -> HTTP 200
+req 48 -> HTTP 200
+req 49 -> HTTP 200
+req 50 -> HTTP 200
+req 51 -> HTTP 200
+req 52 -> HTTP 200
+req 53 -> HTTP 200
+req 54 -> HTTP 200
+req 55 -> HTTP 200
+req 56 -> HTTP 200
+req 57 -> HTTP 200
+req 58 -> HTTP 200
+req 59 -> HTTP 200
+req 60 -> HTTP 200
+req 61 -> HTTP 200
+req 62 -> HTTP 200
+req 63 -> HTTP 200
+req 64 -> HTTP 200
+req 65 -> HTTP 200
+req 66 -> HTTP 200
+req 67 -> HTTP 200
+req 68 -> HTTP 200
+req 69 -> HTTP 200
+req 70 -> HTTP 200
+
+Summary: allowed(200)=70 denied(429)=0 other=0 of 70 requests
+Cloud Logging cross-check (jsonPayload.event=auth_rate_limited, revision hauska-mcp-server-00050-fej, 10min freshness): zero matching entries.
+
+--- ADJACENT FINDING (flagged, not fixed -- out of this dispatch's scope) ---
+70 anonymous requests against a 60/min configured cap produced ZERO 429s
+and zero auth_rate_limited log lines, on a single confirmed instance/IP.
+This means the in-process limiter itself did not trip when it should
+have on the CURRENT code, independent of the Upstash question. Not
+diagnosed further here (would require reading req.ip resolution under
+HAUSKA_TRUST_PROXY=1 against Cloud Run's actual proxy hop count, or
+instrumenting the identifier used per request) -- flagged to
+_scratch/76j-workstream-c.md as an OPEN item for the next agent /
+operator decision, since fixing it is a distinct bug from the Upstash
+store-replacement this dispatch scopes.
+
+=====================================================================
+NEXT STEP TO CLOSE ITEMS 1+2: operator provisions a real Upstash Redis
+database (or hands off console/API credentials) -> update the
+UPSTASH_REDIS_REST_URL secret version (no code/deploy change needed,
+already wired via --set-secrets) -> re-run this burst test with two
+forced concurrent instances (e.g. temporarily HAUSKA_FREE_IP_RPM=5 +
+sustained concurrent load to force autoscale past min-instances) and
+confirm the shared cap holds AND the adjacent finding above is resolved
+or independently explained.
+=====================================================================

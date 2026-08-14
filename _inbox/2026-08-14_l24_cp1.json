@@ -1,0 +1,70 @@
+{
+  "artifact": "L24_cp1",
+  "lane": "L24",
+  "role": "lane planner",
+  "planRows": ["P-07", "P-08"],
+  "ops": "OPS-16",
+  "filedAt": "2026-08-14T16:00:00Z",
+  "dispatch": "_dispatches/2026-08-14_l24_dispatch.md",
+  "mission": "Pre-emit drainable flood-plan-ndjson-v1 artifacts (--plan-only) for 6 metros + 77 remainder OFF-SLOT so L16 drains via --from-plan without in-slot re-plan.",
+  "verifiedAtSource": {
+    "l15Summaries": {
+      "metrosOnDisk": ["48029", "48085", "48113", "48201", "48453"],
+      "metrosMissingSummary": ["48439"],
+      "remainderSummaries": 67,
+      "remainderMissingSummary": ["48071", "48167", "48223", "48225", "48253", "48289", "48337", "48363", "48401", "48423", "48491"],
+      "ndjsonOnDisk": 0,
+      "countingRule": "file existence under P:/tmp/plan_farm_20260813/flood_{metros,remainder}/; summaries judged by contents (mode=dry-run, atomsWritten=0, planDigest present) — never by stdout --apply substring"
+    },
+    "writerPin": {
+      "worktree": "P:/hauska-engine-worktrees/l24-flood-plan-emit",
+      "sha": "e65baf9",
+      "includes": "eng #338 --plan-only / --from-plan (e15f7cb ancestor)",
+      "dirtyMainTree": "P:/hauska-engine NOT touched (constraint)"
+    },
+    "heavyScan": {
+      "planFarmOurActive": null,
+      "l16Occupant": "atoms-store pipeline apply Bexar 48029 (NOT PostGIS plan scan on CORTEX)",
+      "contentionRule": "L16 atoms drain does not contend; only CORTEX PostGIS heavy scans serialize",
+      "mutex": "P:/tmp/plan_farm_20260813/progress.json heavyScan"
+    },
+    "l16FloodRule": "Consume digest-matching #338 NDJSON only; never re-plan a matching payload (from L16 interrupt tightening)"
+  },
+  "design": {
+    "emitCommand": "FLOOD_HAZARD_FACT_PATH=1 CORTEX_DATABASE_URL=<deploy> pnpm --filter @hauska-engine/engine-core run write-flood-hazard-fact-county -- --county=<fips> --plan-backend=postgis --plan-only --out=<dir>/<fips>.plan.ndjson",
+    "neverApply": true,
+    "neverTouchAtomsSlotOrLease": true,
+    "artifactPair": {
+      "ndjson": "<fips>.plan.ndjson (flood-plan-ndjson-v1 header + planned[] lines)",
+      "summarySidecar": "<fips>.plan.summary.json (stdout summary captured by runner; digest + wallMs)"
+    },
+    "digestCrossCheck": "Where L15 *.summary.json exists with planDigest.sha256, new plan-only digest MUST equal it. Mismatch = FINDING (data change or nondeterminism).",
+    "readyFlip": "Flip county to READY in _inbox/2026-08-13_L15_plan_farm_manifest.json only when NDJSON exists + summary digest present + (if prior summary) digests match. L16 consumes ONLY manifest-READY.",
+    "serialOrder": {
+      "smoke": "48261 (Kenedy; prior digest 04a7b4d58754ad4030877e430ddb500b1741173caf71f91df3b82f346a6c3c49)",
+      "metros": ["48201", "48453", "48439", "48029", "48113", "48085"],
+      "remainder": "roster.unionToPlan 77 minus landed NDJSON"
+    },
+    "budgetsSec": {
+      "48201": 1862,
+      "48453": 750,
+      "48439": 650,
+      "48029": 650,
+      "48113": 650,
+      "48085": 400,
+      "remainderDefault": 120,
+      "haltAt": "1.5x expected wall; then EXPLAIN, do not queue-wait"
+    },
+    "runner": "P:/tmp/plan_farm_20260813/scripts/run_l24_flood_plan_only.mjs",
+    "verdictPredicate": "Judge by written summary/NDJSON contents (planDigest + mode=plan-only + atomsWritten=0). NEVER fail because stdout mentions --apply hint text."
+  },
+  "cp2Gate": "Smoke 48261 plan-only lands NDJSON; digest matches L15 summary; format=flood-plan-ndjson-v1; then start metro serial.",
+  "constraints": [
+    "zero --apply",
+    "zero atoms-store writes",
+    "zero slot/lease contact",
+    "one heavy PostGIS at a time (announce/confirm in progress.json)",
+    "do not edit P:/hauska-engine dirty tree",
+    "do not edit L16 worktree"
+  ]
+}

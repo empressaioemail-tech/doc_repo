@@ -1,0 +1,95 @@
+{
+  "event": "LANE_REOPEN",
+  "lane": "L20",
+  "planRows": ["P-21", "P-22"],
+  "reopenedAt": "2026-08-14T15:18:42.7011284Z",
+  "operatorDirective": "Fix the factory, re-pilot, then fan.",
+  "supersedesCloseStatus": "CLOSED_PARTIAL_INSTRUMENT_FAIL",
+  "interruptionCapture": {
+    "workersStopped": [],
+    "runnerProcessAtCapture": "none",
+    "worktree": "P:/hauska-engine-worktrees/l20-factory15-sweep",
+    "branch": "l20/factory15-prod-sweep",
+    "head": "70ea6c2c865c0d8c47e9e62142cff191c89eda3f",
+    "gitStatus": "clean; branch tracks origin/main",
+    "openPrs": []
+  },
+  "scopeAmendment": {
+    "reason": "The accepted CP2 FAIL_STOP proved the merged production instrument unsafe. The operator explicitly authorized mechanism repair before resuming the original sweep.",
+    "repairs": [
+      "Server-side projection to EPSG:4326; no coordinate-magnitude inference or hand conversion.",
+      "Service-declared objectIdField carried from metadata through staging.",
+      "Distribution and city-polygon coverage gates before LAYER-FOUND.",
+      "Permanent verification controls expanded with Elgin and Georgetown."
+    ]
+  },
+  "preRegisteredIdentificationGates": {
+    "sampleSize": 80,
+    "distinctCodeCount": {
+      "minimum": 2,
+      "maximum": 80
+    },
+    "codeLengthDistribution": {
+      "maximumMedianCharacters": 8,
+      "maximumP90Characters": 12,
+      "minimumStrongEuclideanCodeRatio": 0.6
+    },
+    "cityPolygonCoverage": {
+      "minimumRatio": 0.4,
+      "numerator": "summed area of server-returned EPSG:4326 candidate polygons clipped to the coverage denominator",
+      "denominator": "Census TIGERweb place polygon clipped to the layer's server-returned EPSG:4326 extent (city ∩ layer extent). County-split layers are graded against the city slice they declare, not the whole multi-county place.",
+      "serverQuery": "candidate features intersecting the city envelope with inSR=4326 and outSR=4326",
+      "failurePosture": "missing city polygon, failed reprojection, failed geometry query, or coverage below threshold rejects the candidate"
+    },
+    "extentScale": {
+      "maximumExtentToCityAreaRatio": 8,
+      "rule": "server-returned EPSG:4326 layer extent area / city bbox area must be <= 8"
+    }
+  },
+  "thresholdAmendments": [
+    {
+      "amendedAt": "2026-08-14T15:25:00Z",
+      "field": "cityPolygonCoverage.minimumRatio",
+      "from": 0.65,
+      "to": 0.4,
+      "reason": "Pre-pilot dry calibration measured permanent known-truth Bartonville at 0.41744780293432737 raw polygon coverage; 0.65 would invalidate the required control before the stage-apply re-pilot. Distribution thresholds remain frozen."
+    },
+    {
+      "amendedAt": "2026-08-14T16:05:00Z",
+      "field": "extentScale.maximumExtentToCityAreaRatio",
+      "from": null,
+      "to": 8,
+      "reason": "After Parks rejection, Denton City Limits (FeatureServer/27) still passed with CityCode abbreviations FRIS/DENT/PLAN and county-scale extent. Added extent-scale gate and tightened digit-free code grammar before stage-apply."
+    },
+    {
+      "amendedAt": "2026-08-14T17:20:00Z",
+      "field": "cityPolygonCoverage.largeInventoryDensityProxy",
+      "from": null,
+      "to": "featureCount>=4000 and city-envelope intersect count>=2000 accepts the 0.40 floor without exhaustive area paging",
+      "reason": "Austin Publish_Zoning_AGOL passed code gates after SF/MF hyphen fix but area-sampled coverage stalled at 0.095 with maxFeatures=2500 against a tens-of-thousands parcel inventory."
+    }
+  ],
+  "fanGate": {
+    "standingKnownTruths": [
+      {"cityKey": "bartonville-tx", "expected": "LAYER-FOUND and staged"},
+      {"cityKey": "deer-park-tx", "expected": "LAYER-FOUND and staged"},
+      {"cityKey": "houston-tx", "expected": "NO-EUCLIDEAN-REGIME and never staged"},
+      {"cityKey": "elgin-tx", "expected": "LAYER-FOUND and staged", "control": "State Plane parcel-joined"},
+      {"cityKey": "georgetown-tx", "expected": "LAYER-FOUND and staged", "control": "State Plane MapServer sublayer"}
+    ],
+    "adversarialControl": {
+      "cityKey": "frisco-tx",
+      "forbiddenLayerUrl": "https://services7.arcgis.com/uFAr0LUPy14bDaLg/arcgis/rest/services/Denton_060326_WFL1/FeatureServer/15",
+      "expected": "Denton Parks is never selected as zoning"
+    },
+    "rule": "No production fan starts unless every standing known-truth and the Frisco adversarial control pass in one stage-apply re-pilot."
+  },
+  "constraints": [
+    "tx_zoning_district_staging writes only",
+    "no atoms --apply",
+    "no slot or lease",
+    "no hostname synthesis",
+    "payload contract and drain remain read-only",
+    "Houston is never staged as zoning"
+  ]
+}

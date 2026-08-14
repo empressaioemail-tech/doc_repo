@@ -1,0 +1,126 @@
+{
+  "event": "L21_cross_vintage_keys.close",
+  "closedAt": "2026-08-14T16:28:00.000Z",
+  "lane": "L21",
+  "role": "lane executor",
+  "status": "CLOSED_PARTIAL_HOLD_FLIPS",
+  "planRows": ["P-25"],
+  "contract": "_inbox/2026-08-14_P25_full_loads_reconcile.md",
+  "dispatch": "_dispatches/2026-08-14_l21_dispatch.md",
+  "checkpoints": {
+    "CP1": "_inbox/2026-08-14_l21_cp1.json",
+    "CP2": "_inbox/2026-08-14_l21_cp2.json"
+  },
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "pr": 426,
+      "mergeSha": "a6207607b2c70d980fc652876eed3d980c2738e0",
+      "headShaBeforeSquash": "65dd2bb777273fff202cfcfd206699e514ee1ba3",
+      "ci": "success",
+      "ciRun": 31818577412,
+      "ciVintagePredicate": "success",
+      "note": "crosswalk table + L17 seam extension + TAD R+C parser + seeds + fixture/integration tests"
+    }
+  ],
+  "deploy": {
+    "service": "cortex-api",
+    "imageSha": "a6207607b2c70d980fc652876eed3d980c2738e0",
+    "buildPushRun": 31819302773,
+    "buildPushConclusion": "success",
+    "canaryRun": 31819683438,
+    "canaryConclusion": "success",
+    "canaryRevision": "cortex-api-00505-tan",
+    "shiftTrafficRun": 31819852130,
+    "shiftTrafficConclusion": "success",
+    "servingRevision": "cortex-api-00505-tan",
+    "traffic": "100%",
+    "migration": "0075 applied on cortex-prod before merge (IF NOT EXISTS); run-migrations dispatch not required for this close",
+    "note": "Code-done != customer-done: flips still HOLD on coverage; deploy only ships the seam + seeds"
+  },
+  "countingRules": {
+    "denominator": "parcel-linked 2025 cad_property rows with txgio_parcel match on prop_id",
+    "coverage": "(identical declared-key hits + deterministic one-to-one crosswalk hits) / denominator",
+    "flipThreshold": 0.99,
+    "thresholdReason": "County-wide vintage declaration; keep newly introduced parcel-read gaps under 1% while residual must still be fully named; ambiguous maps never count as covered"
+  },
+  "measuredCoverage": {
+    "48439_Tarrant": {
+      "parcelLinked2025": 689838,
+      "identicalKeyHit": 605340,
+      "crosswalkSeeded": 550,
+      "mappedCoverage": 0.877849,
+      "formula": "(605340 + 550) / 689838",
+      "flipVerdict": "HOLD",
+      "residualClasses": {
+        "load-filter-defect-RP-C-P-present-in-2026-source-not-loaded": 48971,
+        "whitespace-case-normalize-targets-not-yet-in-store": 679,
+        "absent-from-2026-source-vintage-gap-candidates": 34298
+      }
+    },
+    "48113_Dallas": {
+      "parcelLinked2025": 434674,
+      "identicalKeyHit": 399965,
+      "crosswalkSeeded": 121,
+      "mappedCoverage": 0.920427,
+      "formula": "(399965 + 121) / 434674",
+      "flipVerdict": "HOLD",
+      "nonGeometryOrphansExcludedFromDenom": 258882,
+      "residualClasses": {
+        "gis-parcel-acct-without-2026-account": 34036,
+        "dcad-gis-parcel-id-ambiguous-refused": 1492,
+        "condo-placeholder": 1481
+      }
+    }
+  },
+  "deliverables": {
+    "migration": "lib/db/drizzle/0075_cad_property_vintage_crosswalk.sql (applied cortex-prod)",
+    "schema": "lib/db/src/schema/cadPropertyVintageCrosswalk.ts",
+    "blessedSeam": "lib/cad-ingest/src/vintage.ts chooseCadPropIdResolution (exact → crosswalk → miss; no year fallback)",
+    "crosswalkCli": "pnpm cad-vintage-crosswalk",
+    "reader": "artifacts/api-server/src/lib/cadPropertyLookup.ts uses crosswalk on declared-year miss",
+    "tadParser": "keep RP R+C; named-skip other RP; normalize GIS_Link ws+case",
+    "liveSeedCounts": {"48439": 550, "48113": 121}
+  },
+  "drainQueueManifest": "_inbox/2026-08-14_l21_drain_queue_manifest.json",
+  "constraintsHonored": [
+    "NO atoms writes",
+    "NO atoms slot",
+    "NO cad_property bulk reload",
+    "NO current_tax_year flip",
+    "NO owner/landuse/cad-roll re-apply (queued only)",
+    "NO second resolver",
+    "engine reader changes only via existing L17 helper seam",
+    "ci-vintage-predicate conclusion success",
+    "MERGE only after CI conclusion success",
+    "Cotality extinguished / no privileged data / CTX held"
+  ],
+  "remainsOpen": [
+    {
+      "item": "TARRANT_C_INCLUSIVE_RELOAD",
+      "note": "Announce-serialized reload with R+C parser to recover ~48,971 load-filter orphans; then re-measure vs 0.99"
+    },
+    {
+      "item": "DALLAS_COVERAGE_TO_99",
+      "note": "Additional deterministic maps or named vintage-gap pre-registration for residual parcel-linked orphans"
+    },
+    {
+      "item": "PLANNER_FLIP_RULING",
+      "note": "Do not flip 48439/48113 until coverage gate met; planner rules with measured numbers"
+    },
+    {
+      "item": "DRAIN_QUEUE_AFTER_FLIP",
+      "note": "Manifest queued; execute only under atoms slot after flip"
+    }
+  ],
+  "docRepoEditsUncommitted": [
+    "_inbox/2026-08-14_l21_cp1.json",
+    "_inbox/2026-08-14_l21_cp2.json",
+    "_inbox/2026-08-14_l21_close.json",
+    "_inbox/2026-08-14_l21_drain_queue_manifest.json",
+    "_scratch/l21_cross_vintage_keys.md",
+    "_catalog/thesis_parity_ledger.md",
+    "_STATE.md"
+  ],
+  "slot": "Did NOT take atoms bulk-writer slot (L16 holds lease)"
+}

@@ -2,7 +2,7 @@
 id: 76j_smartsite_launch_readiness_program
 title: Smart Site launch readiness program (paywall, distribution, capacity, branding)
 status: active
-last_updated: 2026-08-09
+last_updated: 2026-08-14
 applies_to: [property-explorer, cortex-api, retrieval-api, legacy-design-tools]
 related: [76h_property_explorer_gtm, 76i_smartsite_contribution_economy_roadmap, 90_operations/OPS-10_parcel_flag_spec, 90_operations/REBRAND_UI_citations_and_pdf, 14_pricing_framework, 90_operations/QUEUE_parked_work_index]
 owner: nick
@@ -39,9 +39,9 @@ The stack was not deliberately built "lite," but it has never been audited or lo
 1. **CLOSED 2026-08-09 (this item was stale as written).** The rate-limit store moved OFF Upstash entirely: Postgres `ResilientRateLimitStore` shipped in hauska-mcp-server PR #58 (`b5f26de`), migration `010_rate_limit_counters` applied, serving revision tagged `postgres-limiter` with `/health` showing `rate_limit_store.state=ok, detail=postgres`. Per OPS-9: "Upstash is not the launch destination." No operator provisioning owed. Residual watch: alert if `rate_limit_store.state != ok` or latency over 500ms sustained.
 2. Connection pooling: serverless functions plus Cloud Run against Neon need the pooled connection string everywhere (or a pooler) or launch traffic will exhaust connections. **Status 2026-08-05 DONE** — all 6 serving DSNs now use `-pooler` host; evidence `_inbox/2026-08-05_neon_pooling_audit.md`.
 3. The anonymous-tenant data model: auth flips orphan anonymous data (recorded trap). The paywall work in Workstream A must include the anonymous-to-account claim flow, and it must NOT be bundled with unrelated fixes.
-4. No load test has ever been run. Deliverable: define a launch SLO (proposal: 1,000 concurrent free sessions, 100 concurrent paid sessions, p95 under 2s on parcel loads), run a load test against a staging deploy, fix what breaks, record measured ceilings.
+4. **Load test RUN 2026-08-14 (L19 / DC-11b).** Dated artifact `_inbox/2026-08-14_76j_C4_loadtest_results.json` against serving MCP `00063-fic`. Bounded 1/5/20 rps on `/health` and anonymous `POST /mcp` initialize. Postgres limiter engaged (429 `band=rpm`; 20 rps after cap 301/301 429; 36/36 health samples `primary=postgres memory_fallback=false`; zero 503). Literal 1,000 concurrent free sessions still not demonstrated (single-IP meter). Capacity doc: `_inbox/2026-08-05_launch_capacity_audit.md` (`last_updated: 2026-08-14`).
 
-Deliverable: a capacity audit doc with measured numbers, not assumptions. Until it exists, the honest answer to "how many users can we handle" is "unknown; probably hundreds of concurrent sessions, with the rate-limiter and connection pooling as the first things to fall over."
+Deliverable (exists): `_inbox/2026-08-05_launch_capacity_audit.md`. Honest answer to "how many users": anonymous MCP is capped at 60 requests per wall-clock minute per IP; `/health` p95 under 100 ms at 20 rps; paid 100-session probe still untested. Soft-launch with stated caps; not a 1k anonymous flash crowd.
 
 ## Workstream D. Affiliate distribution program
 
@@ -79,7 +79,7 @@ The spec exists and is v1-ready: `90_operations/OPS-10_parcel_flag_spec.md` (fla
 | 2 | Rate-limit store replacement + pooling pass (C1, C2) | any real traffic | nothing, ready now |
 | 3 | Domain + favicon + PDF branding (B) | launch polish | domain purchase (operator) |
 | 4 | Anonymous-claim flow (C3) | paywall correctness | rides with A |
-| 5 | Load test + capacity doc (C4) | launch go/no-go | 1 and 2 landed |
+| 5 | Load test + capacity doc (C4) | launch go/no-go | **DONE 2026-08-14 L19** (MCP-only; PE-facet SLO remains the 2026-08-05 historical number) |
 | 6 | Affiliate platform selection + setup (D) | distribution | A live (needs real checkout) |
 | 7 | Financial model (D) | rev-share offers | parallel anytime, bizops |
 | 8 | OPS-10 v1 build (E) | contribution arc | build slot |

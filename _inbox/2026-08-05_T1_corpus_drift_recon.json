@@ -1,0 +1,162 @@
+{
+  "artifact": "2026-08-05_T1_corpus_drift_recon",
+  "workstream": "T1-WS9",
+  "status": "read-only-recon",
+  "probedAt": "2026-08-05T20:25:00Z",
+  "summary": "Three snapshot-build units drift-skip locally/CI while prod Postgres carries stale or partial state. Bastrop edition currency is the highest-impact drift: BDC 2026 indexed in prod but not marked current; committed snapshot is B3-only.",
+  "units": [
+    {
+      "id": "bastrop-udc-municode",
+      "label": "Bastrop UDC (Path C / Municode)",
+      "tenant": "bastrop_tx",
+      "buildUnitRef": "hauska-engine/tools/migrate-legacy-codes/src/build-corpus-snapshot.ts UNITS[0]",
+      "clientId": 1169,
+      "librarySlug": "bastrop",
+      "chapterFilter": "/unified.*development|development code|zoning/i",
+      "driftStatus": "zero-section-skip",
+      "liveProbe": {
+        "command": "path-c-ingest-bastrop-udc",
+        "probedAt": "2026-08-05",
+        "sectionsIngested": 0,
+        "editionEntityId": "bastrop_tx/bastrop-udc-current-supplement",
+        "buildLogErrorShape": "ingest produced 0 sections — likely live-source drift"
+      },
+      "rootCause": "Structural, not transient API failure. Municode Supplement 20 TOC (clientId 1169) has no 'Unified Development Code' product. Chapter 14 is 'BASTROP BUILDING BLOCK (B3) CODE' — three adoption-by-reference sections pointing to bastrop.gov, not full zoning text. chapterFilter regex matches nothing at walk time.",
+      "municodeTocEvidence": {
+        "command": "path-c-probe-toc",
+        "productId": 13586,
+        "jobId": 494812,
+        "jobName": "Supplement 20",
+        "relevantHeadings": [
+          "Chapter 14 - BASTROP BUILDING BLOCK (B3) CODE",
+          "Chapter 10 - PARKLAND DEDICATION AND PARK ENRICHMENT FUND"
+        ],
+        "missingHeading": "Unified Development Code / Bastrop Development Code (BDC)"
+      },
+      "prodState": {
+        "servedViaMunicode": false,
+        "actualBastropCodeSource": "Ord. 2026-06 PDF (bastrop-bdc-chapter14-ingest) + legacy B3 PDF unit",
+        "jurisdictionCorpusCurrentEdition": "bastrop-b3-code-april-2025 (WRONG — should be bdc-2026-adopted)"
+      },
+      "proposedFix": {
+        "evalGateRequired": true,
+        "recommendation": "HONEST_RETIREMENT of Path C Municode unit for bastrop_tx UDC. Replace with explicit BDC PDF unit in build-corpus-snapshot UNITS wired to ingest-bastrop-bdc-chapter14 post-step. Optional: ingest Municode Ch.14 adoption pointers as stub cross-refs only (3 sections), not as UDC corpus.",
+        "doNot": "Do not tune chapterFilter expecting full BDC from Municode — source does not exist there."
+      }
+    },
+    {
+      "id": "icc-model-code",
+      "label": "ICC model codes (Layer 1)",
+      "tenant": "icc-model-code",
+      "buildUnitRef": "hauska-engine/tools/migrate-legacy-codes/src/build-corpus-snapshot.ts UNITS[last]",
+      "driftStatus": "zero-section-skip-in-local-build",
+      "skipMechanism": "IccCodeConnectAdapter.mode === 'unconfigured' when ICC_CODE_CONNECT_CLIENT_ID and ICC_CODE_CONNECT_CLIENT_SECRET unset; runIccModelCodeIngest returns {editions:0, sections:0} without throwing",
+      "committedSnapshot": {
+        "generatedAt": "2026-08-05T01:42:39.752Z",
+        "iccAtomCount": 0,
+        "inJurisdictionStatus": false
+      },
+      "prodState": {
+        "atomCount": 4966,
+        "lastRefreshedAt": "2026-07-06T01:29:08.311Z",
+        "qualityBar": "not-evaluated",
+        "currentEditionDid": null,
+        "driftStatus": "clean",
+        "accessPolicy": "public-free",
+        "note": "Prod ICC corpus from July 2026 bake with credentials present; NOT refreshed by 2026-08-05 snapshot rebuild."
+      },
+      "impact": "Local/CI snapshot builds silently drop ICC (~4.8k sections). Citations leg for building-code lookups depends on prod pg state, not committed snapshot. Re-bake without ICC env reproduces 0-section skip.",
+      "proposedFix": {
+        "evalGateRequired": true,
+        "recommendation": "Document ICC_CODE_CONNECT_* as required env for full snapshot builds (DEPLOY.md addendum). CI: either inject credentials from secret store or mark ICC unit as explicit skip-with-reason in build log (not drift-shaped 0-section). Re-run build-corpus-snapshot with credentials + eval before next pg-load.",
+        "alternative": "Pin prod ICC from last good bake and exclude ICC unit from snapshot rebuild until credentials provisioned (honest hold)."
+      }
+    },
+    {
+      "id": "grand-county-legacy-neon",
+      "label": "Grand County (Path B / legacy Neon)",
+      "tenant": "grand_county_ut",
+      "buildUnitRef": "hauska-engine/tools/migrate-legacy-codes/src/build-corpus-snapshot.ts UNITS grand_county_ut block",
+      "driftStatus": "env-guard-skip",
+      "skipMechanism": "Throws 'LEGACY_DATABASE_URL not set — Path B Grand County skipped' when LEGACY_DATABASE_URL and DATABASE_URL both unset; caught by runUnit as ok:false, 0 sections",
+      "committedSnapshot": {
+        "generatedAt": "2026-08-05T01:42:39.752Z",
+        "grandCountyAtomCount": 0,
+        "inJurisdictionStatus": false
+      },
+      "prodState": {
+        "atomCount": 285,
+        "lastRefreshedAt": "2026-05-26T17:26:12.443Z",
+        "currentEditionDid": "did:hauska:code-edition:grand_county_ut/irc-r301-2-1-irc-2021",
+        "qualityBar": "passing",
+        "top3Score": 0.9,
+        "driftStatus": "clean",
+        "accessPolicy": "public-free",
+        "stalenessNote": "Grand County corpus not refreshed in snapshot rebuild since 2026-05-26 (~10 weeks stale in prod metadata vs 2026-08-05 snapshot bake)"
+      },
+      "impact": "Local/CI snapshot builds cannot verify Grand County eval. Committed snapshot.json omits Moab public-free corpus. Prod still serves 285 atoms from prior pg-load.",
+      "proposedFix": {
+        "evalGateRequired": true,
+        "recommendation": "Either (A) provision LEGACY_DATABASE_URL in snapshot build env (factory runbook secret: legacy Neon read path) and re-migrate Path B on each bake, or (B) HONEST_RETIREMENT: export Grand County to committed JSON artifact like Smithville eCode360 file, remove live Neon dependency.",
+        "doNot": "Do not silently accept 0-section skip as 'clean' in build logs without explicit env-missing reason code."
+      }
+    }
+  ],
+  "snapshotVsProdDivergence": {
+    "committedSnapshotGeneratedAt": "2026-08-05T01:42:39.752Z",
+    "committedSnapshotAtomCount": 27019,
+    "prodAtomCount": 6622432,
+    "bastropEditionMismatch": {
+      "snapshotCurrentEdition": "bastrop-b3-code-april-2025",
+      "prodBdcIndexed": true,
+      "prodCurrentEditionMetadata": "bastrop-b3-code-april-2025",
+      "correctEdition": "bastrop_tx-bdc-2026-adopted",
+      "severity": "P0 — causes ADU and all Ch.14 Euclidean answers to serve repealed B3 under default search"
+    },
+    "provenanceInSnapshot": [
+      "Bastrop B3 Code (Path PDF)",
+      "Bastrop County Subdivision Regulations (Path PDF)",
+      "Elgin development chapters (Path C / Municode)",
+      "Smithville Code of Ordinances (Path eCode360 File)",
+      "... 30+ other TX jurisdictions"
+    ],
+    "missingFromSnapshotProvenance": [
+      "Bastrop BDC 2026 (Ord. 2026-06 Chapter 14)",
+      "ICC model codes (Layer 1)",
+      "Grand County (Path B / legacy Neon)"
+    ]
+  },
+  "buildPipelineNotes": {
+    "zeroSectionSkipPolicy": "runUnit treats sectionsIngested===0 as non-fatal skip (build-corpus-snapshot.ts:1460-1477) to avoid poisoning co-tenant status",
+    "bdcIngestPath": "Separate CLI ingest-bastrop-bdc-chapter14 — not in UNITS array",
+    "reloadCommand": "node packages/storage/scripts/load-snapshot-into-pg.mjs after snapshot regen"
+  },
+  "proposedFixPathSummary": [
+    {
+      "priority": 1,
+      "unit": "bastrop edition",
+      "action": "Flip currentEditionId to bdc-2026-adopted; merge BDC into snapshot build; eval + pg-load",
+      "blocks": "T1-WS10 ADU answer-quality"
+    },
+    {
+      "priority": 2,
+      "unit": "icc-model-code",
+      "action": "Require ICC credentials in snapshot build env OR explicit skip reason; refresh prod ICC on schedule",
+      "blocks": "Citation leg freshness for model code"
+    },
+    {
+      "priority": 3,
+      "unit": "grand_county_ut",
+      "action": "Provision LEGACY_DATABASE_URL for builds OR export static Path B artifact",
+      "blocks": "Moab corpus reproducibility"
+    },
+    {
+      "priority": 4,
+      "unit": "bastrop-udc-municode",
+      "action": "Retire misleading Municode UDC unit; document adoption-pointer-only reality",
+      "blocks": "False expectation that Municode re-ingest fixes Bastrop zoning"
+    }
+  ],
+  "relatedArtifact": "_inbox/2026-08-05_T1_adu_answer_quality_recon.json",
+  "wdllItems": ["T1-WS9", "T1-WS10"]
+}

@@ -1,0 +1,57 @@
+{
+  "artifact": "L19_cp2",
+  "lane": "L19",
+  "planRows": ["P-29"],
+  "at": "2026-08-14T14:00:00.000Z",
+  "dispatch": "_dispatches/2026-08-14_l19_dispatch.md",
+  "wdll": "_inbox/2026-08-14_l19_WDLL.md",
+  "verdict": "PASS_WITH_FINDINGS",
+  "interruptRecovery": {
+    "stoppedWorkers": [],
+    "note": "No interruption. Harness ran to completion twice: TLS-fail then TLS-workaround."
+  },
+  "run": {
+    "artifact": "_inbox/2026-08-14_76j_C4_loadtest_results.json",
+    "tlsFailArtifact": "_inbox/2026-08-14_76j_C4_loadtest_results_tls_fail.json",
+    "harness": "_scratch/l19-dc11-loadtest.mjs",
+    "ts": "2026-08-14T13:57:53.397Z",
+    "target": "https://hauska-mcp-server-h7gvu7rgcq-uc.a.run.app",
+    "servingRevision": "hauska-mcp-server-00063-fic",
+    "tls": "NODE_TLS_REJECT_UNAUTHORIZED=0 (workstation Node fetch; curl.exe TLS is clean). Same class as 2026-08-05 C4."
+  },
+  "bandGrades": {
+    "countingRule": "n = harness-fired requests in that tier. 200_rate = count(status==200)/n. Percentiles on all completed responses. Outside a pre-registered band is a finding either way.",
+    "health_1rps_20s": { "n": 21, "ok": 21, "p50_ms": 68.1, "p95_ms": 99.3, "p99_ms": 99.8, "429": 0, "503": 0, "band": "IN" },
+    "health_5rps_20s": { "n": 101, "ok": 101, "p50_ms": 63.8, "p95_ms": 82.3, "p99_ms": 94.3, "429": 0, "503": 0, "band": "IN" },
+    "health_20rps_15s": { "n": 301, "ok": 301, "p50_ms": 68.8, "p95_ms": 94.5, "p99_ms": 102.6, "429": 0, "503": 0, "band": "IN" },
+    "mcp_init_1rps_20s": { "n": 21, "ok": 21, "p50_ms_200": 149.0, "p95_ms_200": 180.5, "429": 0, "503": 0, "band": "IN" },
+    "mcp_init_5rps_20s": { "n": 101, "ok": 50, "429": 51, "503": 0, "p95_ms": 191.0, "band": "IN (429_count_min=1 met)" },
+    "mcp_init_20rps_15s": { "n": 301, "ok": 0, "429": 301, "429_rate": 1.0, "503": 0, "p95_ms": 158.2, "band": "IN" },
+    "limiter_threshold": { "first_429_cumulative": 72, "expected": [50, 70], "band": "OUT", "429_body_band": "rpm", "429_body_tier": "free_anonymous" },
+    "health_throughout": { "samples": 36, "silent_memory_or_non_postgres": 0, "band": "IN" }
+  },
+  "findings": [
+    {
+      "id": "F1_wall_clock_minute_bucket",
+      "severity": "instrument",
+      "what": "first_429_cumulative=72 is outside pre-registered [50,70] for a 60 rpm cap.",
+      "why": "checkRateLimit uses minuteBucket = Math.floor(now/60000) (calendar UTC minute), not a sliding 60s from first request (hauska-mcp-server/src/rate-limit.ts). HAUSKA_FREE_IP_RPM is unset on 00063-fic so default 60 applies. A 20s 1 rps ramp that straddles :00 UTC admits leftover of the prior minute plus a fresh 60, which is how 71 HTTP 200s landed before the first 429.",
+      "not": "Silent memory fallback. Health 36/36 primary=postgres memory_fallback=false. 429 body band=rpm. 20 rps after cap = 301/301 HTTP 429. Zero HTTP 503.",
+      "doNotTune": "72 is the measurement. The cap is still 60 per wall-clock minute per IP."
+    },
+    {
+      "id": "F2_node_tls",
+      "severity": "harness",
+      "what": "First run 846/846 fetch failed in ~50ms (status 0) without NODE_TLS_REJECT_UNAUTHORIZED=0. curl.exe to the same host succeeded. Artifact preserved at _inbox/2026-08-14_76j_C4_loadtest_results_tls_fail.json.",
+      "why": "Operator workstation Node TLS vs Google Trust Services. Documented 2026-08-05 C4. Not an MCP defect."
+    }
+  ],
+  "adversarial": {
+    "didWeFanCortexRetrieval": "No request paths against cortex-api or retrieval-api except incidental GET /health dep probes (15s cache). No PE facets. No MCP tools.",
+    "didWeTakeAtomsSlot": false,
+    "didLimiterEngage": true,
+    "silentMemory": false,
+    "503_count": 0
+  },
+  "next": ["Refresh capacity audit last_updated 2026-08-14", "DC-11d already probed at CP1 (parking 200)", "Close"]
+}

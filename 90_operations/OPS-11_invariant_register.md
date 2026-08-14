@@ -2,9 +2,10 @@
 id: OPS-11_invariant_register
 title: OPS-11 — The Invariant Register (one register, every rule named with its enforcing check or marked UNENFORCED)
 date: 2026-08-09
+last_updated: 2026-08-12
 status: active
 owner: nick
-related: [2026-08-07_envelope_saga_close_and_geometry_law, 90_operations/OPS-3_engine_contract_determinism_register, 90_operations/OPS-5_cert_standard, 90_operations/OPS-INDEX_operator_manual, _smartsite_masters/04_smart_site_technical_white_paper, CLAUDE.md]
+related: [2026-08-07_envelope_saga_close_and_geometry_law, 90_operations/OPS-3_engine_contract_determinism_register, 90_operations/OPS-5_cert_standard, 90_operations/OPS-INDEX_operator_manual, _smartsite_masters/04_smart_site_technical_white_paper, CLAUDE.md, _inbox/2026-08-12_W3_cert_frame_close.json, _sessions/2026-08-12_L8_block13_cert_frame_reearn_claude_code.md]
 layer: L-ENGINE / L-PORTFOLIO
 ---
 
@@ -56,22 +57,18 @@ These govern the machinery. A violation here is a defect that reaches a customer
 
 ## AMENDMENT 2026-08-09: INV-1 AND INV-2 ARE ENFORCED ON THE SERVE PATH ONLY, AND THE CERT LANE VIOLATES BOTH
 
-INV-1 and INV-2 are recorded above as ENFORCED. That grade is correct for the serve and promote paths and WRONG as a whole-system statement, and the distinction matters enough to correct here rather than silently.
+**Status: CLEARED / CLOSED 2026-08-12 (DC-10 / P-18 / W3 cert-frame re-earn).** Geometry Law reconciliation complete for the cert lane. Do not re-open this paragraph as an active violation without a fresh source-shape fail.
 
-Verified in live source by the planner on 2026-08-09 against `origin/main` of `P:\hauska-engine`: `packages/engine-core/src/registry/cert-grade-core.ts` reads, at lines 335-336, 463-464, and 521-522:
+INV-1 and INV-2 were recorded above as ENFORCED. That grade was correct for the serve and promote paths and, on 2026-08-09, WRONG as a whole-system statement. Verified then against `origin/main` of `P:\hauska-engine`: `packages/engine-core/src/registry/cert-grade-core.ts` graded via scrubbed BCAD (`ring = bcadRing ? scrubLotLineRing(bcadRing) : null`), violating INV-1 and INV-2 on trunk.
 
-```
-const bcadRing = bcad[0]?.ring;
-ring = bcadRing ? scrubLotLineRing(bcadRing) : null;
-```
+**Clearance evidence (2026-08-12 L8 lane):**
+- Engine PR #292 chain (`1f2a6e2` txgio graded frame; `fb1a632` block13 offline fixture re-dump from `txgio_parcel`) already on main.
+- Live `block13-cert-grade.mjs` re-earn 2026-08-12T22:50:01Z: `score.pass === score.total === 7`, `blockPass: true`, CERT-RESTORE ELIGIBLE (raw txgio frame).
+- Offline fixture 8/8 (7 parcels + roster-cover) and source-shape pin test `cert-frame-txgio-graded.test.ts` (BCAD never substitutes as graded ring).
+- Named CI workflow `block13-cert-grade` (engine PR #327) makes the offline re-earn greppable for DC-10(b).
+- Close artifact: `_inbox/2026-08-12_W3_cert_frame_close.json` (path declared in `_STATE.md` OPEN). Session: `_sessions/2026-08-12_L8_block13_cert_frame_reearn_claude_code.md`.
 
-The cert lane therefore grades against the BCAD ring, violating INV-1 (it grades in a frame the product does not serve), and grades against a SCRUBBED ring, violating INV-2 (it measures against a cleaned representation rather than the raw one). Both violations are on trunk, not on an in-flight branch.
-
-The correct reading of the enforcement column for these two rows is ENFORCED ON SERVE AND PROMOTE, VIOLATED IN CERT. The checks named in those rows are real and non-vacuous; they simply do not cover the cert lane, and no check exists that would have caught this, which is itself an instance of INV-5 (instrument independence) being UNENFORCED.
-
-This is the substantive content of the frame reconciliation that `_decisions/2026-08-07_envelope_saga_close_and_geometry_law.md` named as an open item to be closed before the next county cert wave. Full detail, including the fallback path at line 706, is in `90_operations/OPS-12_instrument_inventory.md` under FRAME QUESTION.
-
-The general lesson for this register: an invariant enforced on one code path is not enforced. Enforcement must name the paths it covers, and the next revision of this register should add a coverage column rather than a binary status.
+The historical 2026-08-09 finding stands as the defect record; the CLEARED marker is the reconciliation. Full prior detail remains in `90_operations/OPS-12_instrument_inventory.md` under FRAME QUESTION. The general lesson for this register still holds: an invariant enforced on one code path is not enforced; coverage must be named.
 
 ## TIER 2 — THE PORTFOLIO STRUCTURAL COMMITMENTS
 

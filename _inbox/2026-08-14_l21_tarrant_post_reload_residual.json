@@ -1,0 +1,125 @@
+{
+  "artifact": "L21_tarrant_post_reload_residual_classification",
+  "lane": "L21-followup",
+  "planRows": ["P-25"],
+  "at": "2026-08-14T17:30:00Z",
+  "constraints": [
+    "NO current_tax_year flip",
+    "NO atoms writes",
+    "NO atoms slot",
+    "NO cad_property reload",
+    "classification and measurement only"
+  ],
+  "countingRule": {
+    "denominator": "parcel-linked 2025 cad_property rows: tax_year=2025 AND EXISTS txgio_parcel match on (county_fips, prop_id)",
+    "covered": "identical-key hits at tax_year=2026 PLUS deterministic one-to-one crosswalk hits whose to_prop_id exists at 2026 and whose from_prop_id is not already an identical hit",
+    "flipThreshold": 0.99,
+    "dallasAnalogy": "non-geometry 2025 orphans exit the denominator; parcel-linked residuals stay and are named as vintage-gap (or subclass) candidates"
+  },
+  "baselineConfirmed": {
+    "rows2025": 689838,
+    "rows2026": 939435,
+    "identicalOverlap": 654675,
+    "crosswalkRows": 550,
+    "crosswalkAdditive": 7,
+    "unmapped2025": 35156,
+    "naiveCoverage": 0.949037,
+    "formula": "(654675 + 7) / 689838",
+    "matchesOperatorGateQuote": "94.90%"
+  },
+  "dallasStyleSplit": {
+    "unmappedTotal": 35156,
+    "parcelLinked": 35156,
+    "nonGeometryExitDenom": 0,
+    "full2025ParcelLinkedDenom": 689838,
+    "full2025NonGeometry": 0,
+    "finding": "Unlike Dallas (258,882 non-geometry orphans exited the denom), every Tarrant 2025 cad_property row — including all 35,156 unmapped — has a txgio_parcel geometry hit. The parcel-linked denominator does not shrink."
+  },
+  "sampleVerification": {
+    "ownerSitusGeomAgree": {
+      "n": 15,
+      "rule": "15 lowest prop_id unmapped rows with non-empty owner+situs",
+      "result": "15/15 geom_hit; 15/15 owner_name exact-agree with txgio_parcel",
+      "implication": "These are real parcels, not retired account shells without geometry"
+    },
+    "emptyIdentityShells": {
+      "n": 3841,
+      "rule": "empty owner AND situs AND use_code AND legal",
+      "sample": "12/12 still geom_hit on txgio_parcel; geom owner/situs also empty; source_file=stratmap25-landparcels_48439_lp.zip",
+      "class": "stratmap-geometry-shell-no-identity-attrs",
+      "denomDisposition": "RETAIN in parcel-linked denom (Dallas condo placeholders also stayed inside parcel-linked; geometry proves parcel universe)"
+    }
+  },
+  "sourceClassificationOfUnmapped": {
+    "source": "P:/tmp/l21_tarrant_source/PropertyData(Delimited).txt",
+    "exactGisLinkRpBucket": {
+      "absent": 34311,
+      "P_only": 845,
+      "R_only": 0,
+      "C_only": 0,
+      "R_and_C": 0,
+      "RC_with_P": 0
+    },
+    "normOnlyWhenExactAbsent": {
+      "absent": 34298,
+      "C_only": 3,
+      "RC_with_P": 1,
+      "P_only": 9
+    },
+    "namedResidualClasses": [
+      {
+        "class": "vintage-gap-absent-from-2026-tad-gis-link",
+        "count": 34298,
+        "evidence": "No TAD GIS_Link matches even after whitespace/case normalize; 15/15 owner+situs samples are live geometry parcels",
+        "denomDisposition": "parcel-linked vintage-gap candidate"
+      },
+      {
+        "class": "2026-source-RP-P-only-not-loaded-by-RC-parser",
+        "count": 845,
+        "evidence": "Exact GIS_Link present in 2026 TAD source but only RP=P (personal property); R+C parser intentionally skips P",
+        "denomDisposition": "RETAIN as parcel-linked residual (2025 StratMap row is a parcel polygon; 2026 has no R/C row at that key — named, not exited)"
+      },
+      {
+        "class": "norm-only-RC-present-unseeded",
+        "count": 4,
+        "evidence": "Exact key absent; normalized GIS_Link has C_only(3)+RC_with_P(1) in source — potential future crosswalk, not counted covered in this measurement",
+        "denomDisposition": "parcel-linked residual (not covered)"
+      },
+      {
+        "class": "norm-only-P-only",
+        "count": 9,
+        "evidence": "Normalized GIS_Link present as RP=P only",
+        "denomDisposition": "parcel-linked residual"
+      }
+    ],
+    "identityOverlay": {
+      "owner_and_situs": 31277,
+      "empty_all_identity": 3841,
+      "partial_identity": 38,
+      "note": "Orthogonal to source RP buckets; empty shells remain parcel-linked"
+    }
+  },
+  "recomputedCoverage": {
+    "parcelLinkedDenominator": 689838,
+    "covered": 654682,
+    "formula": "(654675 identical + 7 crosswalk-additive) / 689838",
+    "mappedCoverage": 0.949037,
+    "flipThreshold": 0.99,
+    "flipVerdict": "HOLD",
+    "gapToGate": 0.040963,
+    "residualNamedCount": 35156,
+    "sensitivityIfPonlyExitedDenom": {
+      "note": "NOT recommended — retained above; shown only as bound",
+      "denom": 688993,
+      "coverage": 0.950201,
+      "stillHold": true
+    },
+    "sensitivityIfEmptyShellsExitedDenom": {
+      "note": "NOT recommended — retained above; shown only as bound",
+      "denom": 685997,
+      "coverage": 0.954351,
+      "stillHold": true
+    }
+  },
+  "verdict": "HOLD — parcel-linked coverage 94.9037% vs 0.99; Dallas-style non-geometry exit removes 0 rows; all 35,156 residuals are named parcel-linked vintage-gap (or RP-P / norm-unseeded) candidates"
+}
