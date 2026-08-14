@@ -1,0 +1,91 @@
+{
+  "lane": "G-09",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint - planner verification of all three sub-agent deliverables",
+  "planRows": ["G-09"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "filedAt": "2026-08-14",
+  "repo": "doc_repo",
+
+  "verificationPosture": "AGENT_CONTRACT 1 and DEV_PROCESS 4.2: verification never delegates below the lane planner. Every load-bearing claim below was re-run by the planner at source. Sub-agent assertions were NOT accepted on report.",
+
+  "subAgentsSupervisedToCompletion": [
+    {"id": "SA-1", "shape": "read-only audit", "status": "COMPLETE", "closePath": "_inbox/2026-08-14_g09_sa1_close.json", "closeValidJson": true, "topLevelKeys": 15},
+    {"id": "SA-2", "shape": "build with an edit", "status": "COMPLETE", "closePath": "_inbox/2026-08-14_g09_sa2_close.json", "closeValidJson": true, "topLevelKeys": 24},
+    {"id": "SA-3", "shape": "forced mid-flight handoff", "status": "COMPLETE", "closePath": "_inbox/2026-08-14_g09_sa3_close.json", "closeValidJson": true, "topLevelKeys": 17, "successorSupervised": true, "successorClosePath": "_inbox/2026-08-14_g09_sa3_successor_close.json"}
+  ],
+
+  "plannerReVerification": [
+    {
+      "claim": "SA-1: backlog row 22 points at 01_doc_conventions.md but the band table is in 00_README.md",
+      "plannerCheck": "sed -n '20,22p' 01_doc_conventions.md returns 'NN is a two-digit numeric prefix from the band table in [00_README.md](00_README.md)'; sed -n '49,53p' 00_README.md returns '## Numbering bands' + the table",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "SA-1: the stale date belongs to 00_README.md, not 01_doc_conventions.md",
+      "plannerCheck": "grep -m1 last_updated on both: 01_doc_conventions.md = 2026-08-08; 00_README.md = 2026-05-27",
+      "verdict": "CONFIRMED. Row 22 attributes 00_README.md's date to a different file. An agent actioning row 22 opens the named file, sees a recent date and no band table, and can mark the row resolved while the real register stays stale. The backlog row fails OPEN."
+    },
+    {
+      "claim": "SA-1: _projects/cortex_workspace_qa answers itself in-repo; no external fact needed",
+      "plannerCheck": "_projects/cortex_workspace_qa/04_next_waves.md carries '2026-07-01 - QA paused. Shared Surface Sprint dispatched.' with resume condition; _inbox/2026-07-01_shared-surface-sprint_STATUS.md:48 reads '## SPRINT DONE - 2026-07-02'",
+      "verdict": "CONFIRMED. The brief's premise that this item needed an outside fact was WRONG."
+    },
+    {
+      "claim": "SA-1: mox_demo (the pull-back loop's source) is PARKED",
+      "plannerCheck": "_catalog/repo_intents.md:76 row for mox_demo reads PARKED",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "SA-1: the 40-band has zero free slots and bare-number slots collide",
+      "plannerCheck": "ls | grep -E '^4[0-9]' shows 40_design_accelerator.md AND 40_hauska_map_3d_implementation_brief.md both at bare 40; 41 carries 41_host_connectors_program.md, 41_revit_connector.md, 41_three_wedge_spine_strategy.md",
+      "verdict": "CONFIRMED. Collision finding is real and was not in the backlog."
+    },
+    {
+      "claim": "SA-2: DEV_PROCESS 1.1 says '852 of 1,955' but the G0 close says 846",
+      "plannerCheck": "grep -c '852' _inbox/2026-08-14_g0_close.json returns 0 (852 appears ZERO times). Line 429-430 of that file: metric 'markdown files scanned repo-wide', value 846. Line 522: '16/159 vs 366/846 vocab violations'. DEV_PROCESS.md:27 asserts 852. OPS-17 A-008 also asserts '852 of 1,955'.",
+      "verdict": "CONFIRMED - HIGHEST SEVERITY FINDING OF THE LANE. The rulebook's worked example for rule 1.1 (a coverage figure travels with its denominator) does not itself reconcile. The derived percentage is also wrong: 846/1955 = 43.3%, not the 43.6% stated. Error propagated into DEV_PROCESS 1.1 AND OPS-17 A-008."
+    },
+    {
+      "claim": "SA-2: the fixed instrument reports 1141 violations over a 1955 denominator and exits 1",
+      "plannerCheck": "Planner ran `node scripts/doc-staleness.mjs --json > <scratch>` directly (bare redirect, no pipe): real exit code 1. Parsed output: scanned=1955, vocabViolations array length=1141, scannedStalenessExempt=1461. Human output prints 'EXCLUSION SET (the contract of this instrument; DEV_PROCESS 2.1)' with per-entry reasons; JSON carries exclusions{walkSkip, stalenessSkip, notExcluded, foreignClones, foreignCloneMdFilesExcluded} plus countingRule and vocabRule.",
+      "verdict": "CONFIRMED BY INDEPENDENT RE-RUN. The fix is real, not narrated. DEV_PROCESS 2.1 satisfied at the point of output in BOTH paths. The 1955 denominator independently corroborates the exclusion set."
+    },
+    {
+      "claim": "SA-3 successor: A-003's 'doc 34 line 32' is off by two",
+      "plannerCheck": "SA-3 itself retracted this after three independent instruments (grep -n, sed -n 32p, awk NR) all returned 32.",
+      "verdict": "REFUTED - and correctly self-retracted by SA-3. This is a MANUFACTURED finding, caught by the supervising sub-agent. Recorded as evidence that DEV_PROCESS 3.2 lacks an evidentiary standard."
+    },
+    {
+      "claim": "SA-3: A-002 says 9 columns; actual is 8",
+      "plannerCheck": "sed -n '54,76p' P:/legacy-design-tools/lib/db/src/schema/brokerageWorkspaces.ts counted directly: id, workspaceId, kind, uri, body, title, createdByInstallId, createdAt = 8 columns. OPS-17 asserts '9 columns' twice.",
+      "verdict": "CONFIRMED. A-002 is off by one. CRITICALLY: the load-bearing half survives - no updated_at, no version, no cid, no access_policy, single notNull cascade FK. The BUILD verdict of A-002 STANDS on verified evidence. The correction is to the count only, not to the ruling."
+    },
+    {
+      "claim": "SA-3: A-002/A-008 cite _smartsite_masters/ but the live directory is _smartcity_masters/",
+      "plannerCheck": "ls -d _smart*_masters shows BOTH _smartcity_masters/ and _smartsite_masters/ exist. git ls-files _smartsite_masters/ returns 9 tracked files. OPS-17 A-008 R-B explicitly ruled '_smartsite_masters/ NOW TRACKED'.",
+      "verdict": "REFUTED. SA-3's correction is WRONG. _smartsite_masters/ exists, is tracked (9 files), and A-008 tracked it deliberately. Second manufactured finding in the lane, both from the SA-3 branch."
+    },
+    {
+      "claim": "SA-3: price $25,000 confirmed at 00_README.md:68",
+      "plannerCheck": "sed -n '68p' 00_README.md returns empty; grep -n '25,000' 00_README.md returns nothing. The $25,000 figure IS confirmed, but at OPS-17 A-003 ('Price is already submitted to Vertosoft at $25,000 entry') and OPS-17 row G-53, not at the cited path.",
+      "verdict": "CITATION WRONG, UNDERLYING FACT CORRECT. Third citation defect from the SA-3 branch."
+    }
+  ],
+
+  "adversarialReviewOutcome": {
+    "sa1": "ACCEPTED. Every load-bearing claim re-verified at source and held. Found 7 wrong planner figures including one in its own brief. Correctly refused to infer 'dead' from 62 days of silence (AGENT_CONTRACT 5 honored under pressure to conclude).",
+    "sa2": "ACCEPTED. Fix independently re-run by the planner and reproduces its claimed numbers exactly. Refused a scoped 4-line edit that would have satisfied the brief's literal wording while breaking the gate - correctly treated the brief as fallible per DEV_PROCESS 3.2. Found the rulebook wrong at source.",
+    "sa3": "ACCEPTED WITH CORRECTIONS. The handoff experiment and its 8 recovery gaps are sound and are the lane's structural finding. BUT the SA-3 branch produced THREE citation/figure defects (one manufactured and self-retracted, one manufactured and refuted by the planner, one wrong citation with a correct underlying fact). SA-3 caught its successor's; the planner caught SA-3's own. This is DEV_PROCESS 4.2 working exactly as designed - verification at each level caught the level below."
+  },
+
+  "signalFromTheGate": {
+    "event": "dispatch-template-gate.ps1 BLOCKED all three initial dispatches",
+    "diagnosis": "no-nesting clause present in SA-1/SA-2 briefs but not the FIRST line; hook distinguishes 'present but buried' from 'absent'",
+    "firedOn": "THE PLANNER, not an executor",
+    "significance": "A hook-shaped control caught the compiler of the dispatches. Holds the DEV_PROCESS 0 base rate at hook-shaped 1-for-1. The planner is not exempt from the gates it compiles.",
+    "conflictExposed": "SA-3's shape REQUIRES nesting; the hook forbids it as a ruled precondition; AGENT_CONTRACT 1 is silent on depth. Resolved via logged DISPATCH_OVERRIDE with an explicit depth-1 bound, recorded in _catalog/dispatch_overrides.log at 2026-08-14T18:20:59. CP1 pre-registered this ambiguity BEFORE the hook fired."
+  },
+
+  "status": "PASS - all three sub-agents complete and adversarially reviewed; proceeding to process verdict"
+}

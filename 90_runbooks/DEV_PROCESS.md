@@ -1,4 +1,4 @@
-<!-- DEV-PROCESS v6b731fd3 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- DEV-PROCESS v48da8334 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # DEV PROCESS — how we work
 
@@ -24,7 +24,7 @@ say so explicitly and accept that it will not happen reliably.
 ## 1. Rules for numbers
 
 **1.1 A coverage figure travels with its denominator or it does not ship.**
-*Incident:* G0 reported "366 violations". It had scanned 852 of 1,955 markdown files — 43.6%. G0 did
+*Incident:* G0 reported "366 violations". It had scanned 846 of 1,955 markdown files — 43.3%. (This rule's own illustrative figure was WRONG until 2026-08-14: it read "852 / 43.6%", a number that appears nowhere in the G0 close, whose own metric is "366/846". The G-09 proving run caught it at source. The rule written to stop a number escaping its counting rule did exactly that with its own example — which is the strongest possible argument for the rule.) G0 did
 publish its exclusion list, in both the script and its close; the headline simply travelled without
 it and the planner propagated it into the next brief. The failure was not concealment. It was a
 number that read like full coverage escaping its rule.
@@ -55,6 +55,15 @@ production table measured the SYSTEM. They were 3.9x apart, and a 63x headline w
 work was writing into it.
 
 ## 2. Rules for instruments
+
+**2.0 A permanently-red gate is a dead gate. Scope the gate to the space where the rule applies.**
+*Incident:* unexcluding three directories from the staleness instrument took it to 1,141 violations over
+1,955 — but **1,036 of those sit in append-only trees** (`_decisions`, `_sessions`, `_inbox`), where an
+age check is meaningless because those records are SUPPOSED to be old. The actionable number is 105 over
+494 in canonical doc space. A gate nobody can ever get to green gets ignored, which is rule 0's own
+failure mode wearing a different costume. **Split the contract instead of the file: one predicate for
+the space the rule governs, one explicit "not applicable and why" for the rest.** Report both numbers,
+never the merged one.
 
 **2.1 An instrument's exclusion set is part of its contract and must be stated where its output is read.**
 *Incident:* `scripts/doc-staleness.mjs` silently excludes `_decisions`, `_catalog`, and `_research` —
@@ -103,6 +112,15 @@ one was called superseded in prose but deliberately excluded from the retirement
 appeared nowhere in 33a at all. The lane planner checked and routed both to the operator instead of
 guessing. **Every brief states explicitly that reporting a planner figure as wrong is a successful
 outcome.** A brief that projects false confidence gets believed.
+
+**3.2a A correction carries the same evidentiary standard as the claim it corrects.**
+*Incident:* the G-09 proving run's correction instrument ran **7-for-10**. Three corrections were
+themselves wrong — a manufactured line-number citation (self-retracted), a claim that
+`_smartsite_masters/` does not exist when it holds nine deliberately-tracked files, and a wrong price
+citation. Rule 3.2 rewards finding discrepancies and originally attached no standard to doing so, which
+is an incentive to produce them. All three were caught only because two verification levels sat above
+them; a flatter lane ships them. **A correction quotes the source text and names file and line. An
+unquoted correction is a hypothesis, and must say so.**
 
 **3.3 Name what is out of scope, not just what is in scope.**
 *Incident:* G0's mandate did not exclude the other 35 directories — it simply did not mention them,

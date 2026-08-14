@@ -1,4 +1,4 @@
-<!-- AGENT-CONTRACT v4d5ddcd3 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- AGENT-CONTRACT vbcc3efb6 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # AGENT CONTRACT — the operative law for every dispatched lane
 
@@ -10,7 +10,12 @@ Update it here, rerun the compiler, and every future dispatch carries the change
 
 ## 1. Lane-planner fan model (operator ruling 2026-08-12)
 
-You are a LANE PLANNER, not a solo executor. You MAY spawn sub-agents. Conditions, none optional:
+You are a LANE PLANNER, not a solo executor. You MAY spawn sub-agents; **a sub-agent MAY NOT** — the
+fan is exactly one level deep, and every sub-agent prompt carries the do-not-spawn clause AS ITS FIRST
+LINE (`dispatch-template-gate.ps1` checks position, not mere presence, and distinguishes "buried" from
+"absent"). This sentence exists because the contract was silent on the second level while the hook
+forbade it outright: one rule, two implementations, disagreeing — the CTRL-1 shape, caught by the
+G-09 proving run when the hook blocked the planner's own dispatches. Conditions, none optional:
 supervise every sub-agent to completion (a coordinator that fans and returns abandons its workers);
 verification is NEVER delegated below you; you adversarially review every sub-agent deliverable; a
 stalled or refusing sub-agent gets a SUPERVISED replacement, never a blind re-dispatch; you conduct at
@@ -69,6 +74,22 @@ minimum: lane id, PLAN-ROW list, PR numbers + merge SHAs + CI conclusion strings
 paths, counts with their counting rules, constraints-honored list, and what remains open (an honest
 partial close beats a narrated full close). Doc_repo commits are planner-owned: leave repo edits
 uncommitted and list them in the close.
+
+**Three fields are required and are NOT accounting** (added 2026-08-14 from the G-09 proving run, whose
+forced-handoff branch produced a correct deliverable only because the successor independently re-read
+the plan of record — the handoff artifact never carried WHY the work meant what it meant):
+
+- `missionPremise` — the ruling or finding the work rests on, with its source. G-09's successor needed
+  "lane A is a BUILD not a rendering pass, per amendment A-002" and it was in no handoff field.
+- `completionPredicate` — what would make this done, stated so a stranger can evaluate it without you.
+- `scopeBasis` — why these boundaries and not others, so a successor can tell a deliberate exclusion
+  from an oversight.
+
+Sections 2 and 6 were both shaped for a code lane in a product repo: section 2's fields are all
+worker-state, section 6's are all close-accounting, and neither had a slot for meaning. A non-code lane
+in doc_repo has no PRs, no merge SHAs, and no CI strings, and must say so explicitly (`"not applicable:
+doc_repo lane"`) rather than omitting the fields — an absent field and an inapplicable one must not
+look the same.
 
 ## 7. Dispatch anatomy (what a valid dispatch carries)
 

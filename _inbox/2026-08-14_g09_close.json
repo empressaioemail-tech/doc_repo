@@ -1,0 +1,317 @@
+{
+  "lane": "G-09",
+  "kind": "PROCESS VERDICT - the process proving run",
+  "planRows": ["G-09"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "doc_repo",
+  "closeDate": "2026-08-14",
+  "status": "CLOSED",
+  "rulebookUnderTest": {
+    "agentContract": "90_runbooks/AGENT_CONTRACT.md v4d5ddcd3",
+    "devProcess": "90_runbooks/DEV_PROCESS.md v6b731fd3",
+    "router": "AGENTS.md",
+    "note": "DEV_PROCESS.md was four hours old at dispatch and had never been followed by anyone but its author."
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-08-14_g09_cp1.json",
+    "_inbox/2026-08-14_g09_cp2.json"
+  ],
+  "subAgentCloses": [
+    "_inbox/2026-08-14_g09_sa1_close.json",
+    "_inbox/2026-08-14_g09_sa2_close.json",
+    "_inbox/2026-08-14_g09_sa3_close.json",
+    "_inbox/2026-08-14_g09_sa3_successor_close.json"
+  ],
+
+  "prNumbers": [],
+  "mergeShas": [],
+  "ciConclusionStrings": [],
+  "prCiFieldsBasis": "POSITIVELY EMPTY, not omitted. doc_repo has no CI on doc changes and its commits are planner-owned, so AGENT_CONTRACT 6's PR/SHA/CI minimum has no satisfiable value for any doc_repo lane. Declared empty with basis rather than left absent. That this declaration had to be invented is itself finding PD-1 below.",
+
+  "headlineVerdict": "The rulebook HOLDS as a behavioral control and FAILS as a schema. Every one of its behavioral rules that could fire, fired, and each one caught something real - including two errors in the rulebook's own text and one in the lane's own brief. But the close SCHEMA is shaped for a build lane in a code repo, and all three sub-agents had to invent conventions to file a doc_repo close. Structural comparability is therefore PARTIAL, and every divergence traces to schema underspecification rather than to agent behavior.",
+
+  "deliverable1_structuralComparability": {
+    "verdict": "PARTIAL. The three closes are comparable on FINDINGS and non-comparable on ACCOUNTING.",
+    "comparable": [
+      "All three filed valid JSON at the exact dispatched path (AGENT_CONTRACT 6 / DEV_PROCESS 5.1 held 3-for-3).",
+      "All three carried rulebookSilentAmbiguousOrWrong and rulebookRulesThatFired in the same shape.",
+      "All three carried plannerFiguresChecked and all three found at least one planner figure wrong.",
+      "All three left doc_repo edits uncommitted and listed them (AGENT_CONTRACT 6 held 3-for-3)."
+    ],
+    "nonComparableDivergences": [
+      {
+        "divergence": "Top-level key count: SA-1=15, SA-3=17, SA-2=24.",
+        "cause": "The dispatch named a per-shape minimum key set; the RULEBOOK names one universal minimum written for a build lane. Where the rulebook was silent, each agent extended the schema differently.",
+        "classification": "PROCESS DEFECT - schema underspecification. Not an agent defect.",
+        "fix": "PD-1 below."
+      },
+      {
+        "divergence": "PR/CI fields: SA-2 declared them explicitly empty with a stated basis; SA-1 flagged the absence as a rulebook gap and omitted them; SA-3 did not surface them at all.",
+        "cause": "AGENT_CONTRACT 6 demands PR numbers, merge SHAs, and CI conclusion strings unconditionally. In a repo with no CI, all three available behaviors are defensible and mutually incomparable: omit (fails a presence check), emit empty (indistinguishable from a build lane that forgot), or annotate (prose in a machine-checkable artifact).",
+        "classification": "PROCESS DEFECT - the schema has no shape discriminator.",
+        "fix": "PD-1 below."
+      },
+      {
+        "divergence": "Absence handling: SA-1 needed a state for 'cannot be determined from inside doc_repo' and had no vocabulary for it; SA-2 and SA-3 never hit the case.",
+        "cause": "AGENT_CONTRACT 5 distinguishes empty-result from positive-absence but has no state for unobservable-in-scope.",
+        "classification": "PROCESS DEFECT - vocabulary gap that pressures agents toward the exact collapse the rule exists to prevent.",
+        "fix": "PD-3 below."
+      },
+      {
+        "divergence": "Edit reporting: SA-2 used a structured `edit` object; SA-1 and SA-3 used flat `filesEdited` arrays.",
+        "cause": "Dispatch-driven, not rulebook-driven. The rulebook says only 'list them'.",
+        "classification": "MINOR PROCESS DEFECT."
+      }
+    ],
+    "shapeJustifiedDifferences": "Read-only vs build vs handoff legitimately require different evidence fields (negativeTest exists only for SA-2; recoveryGaps only for SA-3). These are NOT defects and are excluded from the divergence count above."
+  },
+
+  "deliverable2_rulesSilentAmbiguousOrWrong": [
+    {
+      "id": "PD-0",
+      "severity": "HIGHEST",
+      "rule": "DEV_PROCESS 1.1",
+      "problem": "The rulebook is WRONG AT SOURCE in its own worked example. 1.1 states G0 'had scanned 852 of 1,955 markdown files - 43.6%'. The string '852' appears ZERO times in _inbox/2026-08-14_g0_close.json. That file's own metric 'markdown files scanned repo-wide' is 846, and its text reads '366/846'. The true coverage is 846/1955 = 43.3%, not 43.6%.",
+      "propagation": "The same wrong figure appears in OPS-17 amendment A-008. Two authoritative documents carry it.",
+      "irony": "Rule 1.1 exists to stop a number escaping its counting rule. Its own illustrative number did exactly that.",
+      "foundBy": "SA-2, verified independently by the planner (grep -c '852' -> 0; sed of g0_close lines 429-430 -> 846).",
+      "proposedFix": "Correct DEV_PROCESS.md:27 and OPS-17 A-008 to '846 of 1,955 - 43.3%'. Operator ruling required (append-only amendment table; DEV_PROCESS 5.4)."
+    },
+    {
+      "id": "PD-1",
+      "severity": "HIGH",
+      "rule": "AGENT_CONTRACT 6 / DEV_PROCESS 5.1",
+      "problem": "The close schema's required minimum ('PR numbers + merge SHAs + CI conclusion strings') is written for a build lane in a code repo. It is structurally unsatisfiable for any doc_repo lane, and it has no affordance for saying so. This is the single largest source of non-comparability measured in this lane.",
+      "foundBy": "SA-1 and SA-2 independently; predicted by the planner in CP1 before either ran.",
+      "proposedFix": "Add a required `shape` enum (build | audit | handoff | probe) with the PR/CI block conditionally required, plus a `notApplicable` array so omission becomes a positive declaration. This applies to the schema the same principle AGENT_CONTRACT 5 already applies to data: an empty result is not an absence."
+    },
+    {
+      "id": "PD-2",
+      "severity": "HIGH",
+      "rule": "AGENT_CONTRACT 1 vs .claude/hooks/dispatch-template-gate.ps1",
+      "problem": "AGENT_CONTRACT 1 says a LANE PLANNER may spawn sub-agents and is entirely SILENT on whether a sub-agent may. The hook forbids nesting as a blanket ruled precondition. One rule, two implementations, disagreeing - the exact CTRL-1 defect class DEV_PROCESS 2.4 was written about, except here the hook is STRICTER than the prose rather than laxer.",
+      "evidence": "All three G-09 dispatches were blocked; SA-3 required a logged DISPATCH_OVERRIDE (recorded 2026-08-14T18:20:59 in _catalog/dispatch_overrides.log) to execute the shape the operator dispatch ordered.",
+      "alsoNoted": "AGENT_CONTRACT 1's opening line 'You are a LANE PLANNER... You MAY spawn sub-agents' is compiled VERBATIM into leaf-worker briefs whose first line reads 'Do NOT spawn sub-agents.' Section 1 also carries the CP1/CP2 obligation, which a leaf agent could read as binding on itself.",
+      "foundBy": "SA-1 and SA-3 independently; pre-registered by the planner in CP1 before the hook fired.",
+      "proposedFix": "Bound depth explicitly in AGENT_CONTRACT 1: a depth-1 fan from the lane planner is the default; deeper nesting requires a named logged override. Source the hook's depth rule from one data file and add a divergence test, per DEV_PROCESS 2.4. Add role-scoped compilation in scripts/dispatch.mjs so sections 1-2 are marked inapplicable to leaf workers. NOTE: the demonstrated hazard is the ORPHAN, not depth per se - this run supervised its successor and nothing was abandoned."
+    },
+    {
+      "id": "PD-3",
+      "severity": "MEDIUM",
+      "rule": "AGENT_CONTRACT 5 / DEV_PROCESS 4.3",
+      "problem": "The absence rule distinguishes empty-result from positive-absence but has no state for a determination that is unobtainable from within the lane's scope. Without that vocabulary the pressure is to collapse it into 'verified absent', which is exactly what the rule exists to prevent.",
+      "foundBy": "SA-1, hit directly on the 24_adaptive_ui external fact.",
+      "proposedFix": "Add `unobservable-in-scope` as a third state, requiring the agent to name the blocking boundary and who can cross it."
+    },
+    {
+      "id": "PD-4",
+      "severity": "MEDIUM",
+      "rule": "DEV_PROCESS 3.2",
+      "problem": "'Reporting a planner figure as wrong is a successful outcome' creates an incentive to find discrepancies and attaches NO evidentiary standard to doing so. The lane produced THREE bad corrections, all from the SA-3 branch: a manufactured 'A-003 line 32 is off by two' (three independent instruments returned 32; self-retracted by SA-3), a manufactured '_smartsite_masters/ does not exist' (it exists, is tracked with 9 files, and A-008 tracked it deliberately; refuted by the planner), and a wrong citation for the $25,000 price (correct fact, wrong location).",
+      "measuredRate": "Across the lane, 10 planner-figure corrections were asserted and 7 survived verification. The correction instrument ran 7-for-10.",
+      "foundBy": "SA-3 caught its successor's; the planner caught SA-3's own. DEV_PROCESS 4.2 worked exactly as designed - each level caught the level below.",
+      "proposedFix": "A reported planner error must carry the command run and its raw output. Line-number and count corrections require two independent instruments."
+    },
+    {
+      "id": "PD-5",
+      "severity": "MEDIUM",
+      "rule": "AGENT_CONTRACT 2",
+      "problem": "Its required fields are all WORKER-STATE-shaped (git status, diffs, branches, PRs) and AGENT_CONTRACT 6's are all CLOSE-ACCOUNTING-shaped. Neither has a slot for WHY THE WORK MEANS WHAT IT MEANS. That is sufficient when a parent recovers its own worker in-thread - it already holds the premise - and insufficient the instant recovery crosses into a fresh context.",
+      "evidence": "SA-3's successor produced a BUILD card rather than a rendering-pass card ONLY because it independently re-read OPS-17. The handoff artifact did not carry the A-002 BUILD verdict - the entire premise of the lane. It also could not distinguish 'finished' from 'abandoned' (no target item count), and inherited a scope list with G-20 silently omitted.",
+      "recoveryGapsHigh": [
+        {"lost": "the BUILD verdict / A-002 premise", "missingField": "missionPremise"},
+        {"lost": "target item count - could not tell finished from abandoned", "missingField": "completionPredicate"},
+        {"lost": "G-20 omitted from the row list, transmitted as authoritative", "missingField": "scopeBasis (the query, not the list)"}
+      ],
+      "recoveryGapsOther": ["sourcesConsulted", "verificationsAlreadyRun", "constraintsInForce", "knownBlockers", "a change-classification rule for unfrozen artifacts"],
+      "templateVerdict": "90_runbooks/interrupt_note_template.md DOES NOT FIT. It is a prepended instruction block addressed to a parent, not an artifact schema, and its PR/worktree-diff steps were inert on a doc deliverable where the artifact IS the state.",
+      "proposedFix": "Split AGENT_CONTRACT 2 into in-thread recovery and cross-context handoff, and give the latter the seven fields above."
+    },
+    {
+      "id": "PD-6",
+      "severity": "MEDIUM",
+      "rule": "AGENTS.md reading order vs the compiled dispatch",
+      "problem": "AGENTS.md item 1 says _STATE.md is 'always first'. But a COMPILED dispatch delivers CANON-PREAMBLE, AGENT_CONTRACT, and DEV_PROCESS inside the prompt itself, so every lane agent structurally reads items 3 and 4 before item 1. The prescribed reading order has never been the actual reading order for any compiled dispatch.",
+      "foundBy": "planner, at CP1.",
+      "proposedFix": "AGENTS.md states the order for a COLD agent and notes that compiled dispatches front-load items 3-4 by design."
+    },
+    {
+      "id": "PD-7",
+      "severity": "MEDIUM",
+      "rule": "AGENT_CONTRACT 5 vs AGENT_CONTRACT 6",
+      "problem": "Section 5 mandates working in an ISOLATED WORKTREE with no stated exception. Section 6 mandates leaving doc_repo edits uncommitted in place, and the dispatched close path is inside that same tree. For a doc_repo lane the two rules cannot both be satisfied.",
+      "foundBy": "SA-2, which edited in place and reported rather than silently resolving.",
+      "proposedFix": "Scope section 5's worktree rule to code repos, or state the doc_repo exception explicitly."
+    },
+    {
+      "id": "PD-8",
+      "severity": "MEDIUM",
+      "rule": "DEV_PROCESS 2.2",
+      "problem": "It requires proving an indicator can FIRE, but proving a FIX requires a before-instrument, which is unobtainable when the instrument is untracked. scripts/doc-staleness.mjs is untracked, so `git show HEAD:` exits 128 and SA-2 had to reconstruct the pre-fix baseline by hand.",
+      "proposedFix": "Add: an instrument must be tracked in git before it is relied upon as a gate. This is backlog item 5 with a live cost now attached."
+    },
+    {
+      "id": "PD-9",
+      "severity": "LOW-MEDIUM",
+      "rule": "DEV_PROCESS 0 vs this dispatch's own deliverable 4",
+      "problem": "Rule 0 says a control that depends on someone remembering is not a control. Deliverable 4 asked for time-to-first-useful-action, for which no instrument exists - it is self-reported, i.e. it depends on someone remembering. The dispatch asked for a measurement its own rulebook predicts will be unreliable.",
+      "compounding": "SA-1 independently observed that this metric is actively misleading to optimize: three of its seven findings came from reading CAREFULLY, not quickly. An agent optimizing this number would have trusted the brief's summary of backlog row 22 and missed the trap entirely.",
+      "proposedFix": "Either instrument it or drop it. Recommend DROP - the metric rewards the wrong behavior."
+    },
+    {
+      "id": "PD-10",
+      "severity": "LOW",
+      "rule": "DEV_PROCESS 1.3",
+      "problem": "Its four-measured-values prescription (fs / tracked / untracked / ignored) is git-specific and does not generalize to non-file classes, though it is written as a general rule.",
+      "foundBy": "SA-1."
+    },
+    {
+      "id": "PD-11",
+      "severity": "LOW",
+      "rule": "DEV_PROCESS 5.4 vs verify-at-source",
+      "problem": "When an audit finds a control-plane row that is itself WRONG (backlog row 22), 5.4 forbids remediating it, so a known-wrong routing row must be left in place to misroute the next agent. The rule is right about deletions and retirements but has no fast path for a factual correction to a pointer.",
+      "foundBy": "SA-1."
+    },
+    {
+      "id": "PD-12",
+      "severity": "LOW",
+      "rule": "AGENT_CONTRACT 1",
+      "problem": "A spawning sub-agent inherits the CP1/CP2 obligation but its dispatch names no CP paths, so there is no defined location for a sub-lane's checkpoints.",
+      "foundBy": "SA-3."
+    }
+  ],
+
+  "deliverable3_rulesThatFiredAndPrevented": [
+    {
+      "rule": "dispatch-template-gate.ps1 (OPS-14 precondition 1b, hook-shaped)",
+      "firedOn": "THE PLANNER - all three initial dispatches blocked",
+      "prevented": "Three executor briefs in which the most safety-critical clause was buried mid-prompt. The hook distinguished 'present but not leading' from 'absent' and gave the precise diagnosis, which the planner would not have self-caught.",
+      "significance": "A hook-shaped control caught the compiler of the dispatches. The planner is not exempt from the gates it compiles. Holds DEV_PROCESS 0's base rate at hook-shaped 1-for-1."
+    },
+    {
+      "rule": "DEV_PROCESS 3.2 / AGENT_CONTRACT 5 (verify at source, including your own brief)",
+      "prevented": "The highest-value catch of the lane. SA-1 reports that without it, it would have opened 01_doc_conventions.md, found no band table, and reported backlog row 22 as already resolved. It caught 4 of SA-1's 7 wrong figures.",
+      "alsoPrevented": "The planner's own brief was found wrong twice before any sub-agent ran: _projects/ needed no external fact, and the SKIP_DIRS exclusion list was 11 entries, not the 3 named."
+    },
+    {
+      "rule": "DEV_PROCESS 2.1 (exclusion set stated where output is read)",
+      "prevented": "SA-2 would have shipped a fix whose remaining exclusions were still invisible. The instrument now prints its full contract with per-entry reasons in BOTH the human header and --json. Planner-verified by direct re-run."
+    },
+    {
+      "rule": "DEV_PROCESS 2.3 (real exit code, not a pipe's)",
+      "prevented": "A false green. SA-2 captured exit 1 via a bare redirect; the planner re-ran the same way and independently observed exit 1."
+    },
+    {
+      "rule": "DEV_PROCESS 3.2 applied to the brief's literal wording",
+      "prevented": "THE MOST CONSEQUENTIAL SINGLE SAVE. The brief told SA-2 to unexclude three directories. A literal 4-line edit would have satisfied the brief exactly while BREAKING the gate - pulling 102 _decisions and 26 _research append-only records into an age check that is meaningless for them. SA-2 treated the brief as fallible and split one exclusion set into two with different contracts instead."
+    },
+    {
+      "rule": "AGENT_CONTRACT 5 (an empty result is not an absence)",
+      "prevented": "SA-1 concluding 24_adaptive_ui was dead from 62 days of silence. It instead found the loop's SOURCE was superseded (mox_demo PARKED per repo_intents.md:76), which is a different and more actionable failure."
+    },
+    {
+      "rule": "DEV_PROCESS 4.2 (verification never delegates downward)",
+      "prevented": "Three bad corrections from reaching this verdict. SA-3 caught and retracted its successor's manufactured line-32 finding; the planner caught and refuted SA-3's own _smartsite_masters claim and its wrong price citation. Each level caught the level below - the rule's exact design intent, demonstrated live."
+    },
+    {
+      "rule": "AGENT_CONTRACT 'where dispatch and contract disagree, STOP and report'",
+      "prevented": "Either silently stripping the successor spawn from SA-3 (destroying the shape) or silently overriding the hook without recording the conflict. Resolved via a logged override with an explicit depth-1 bound."
+    },
+    {
+      "rule": "DEV_PROCESS 5.4 (propose, do not remediate)",
+      "prevented": "SA-1 unilaterally editing backlog row 22 and 01_doc_conventions.md; SA-3 unilaterally amending A-002's column count. Both routed to the operator instead."
+    },
+    {
+      "rule": "DEV_PROCESS 1.4 (two numbers that should agree and do not)",
+      "prevented": "The 366-vs-1141 delta being reported as a bare number. SA-2 decomposed it into +2 drift and +773 newly-visible with ZERO classifier change, proved by an empty symmetric difference on the old-visible subset (368 paths identical pre- and post-fix), and 368+773=1141 exactly."
+    },
+    {
+      "rule": "DEV_PROCESS 2.6 (character set is a hard constraint)",
+      "prevented": "Em dashes entering tool source that a PowerShell 5.1 hook parses."
+    }
+  ],
+
+  "deliverable4_timeToFirstUsefulAction": {
+    "instrumentationCaveat": "SELF-REPORTED, NOT INSTRUMENTED. No timer exists. Per DEV_PROCESS 0, a measure that depends on someone remembering is not a control, so these figures are testimony, not measurement. Reported as required, with that caveat attached rather than stripped.",
+    "perSubAgent": [
+      {"id": "SA-1", "selfReported": "3 pure-context tool calls, ~324 lines of mandated rulebook plus routing, before the first evidence-producing read", "findingRate": "9 rules fired, 7 planner figures found wrong"},
+      {"id": "SA-2", "selfReported": "read the full rulebook plus the entire instrument before editing", "findingRate": "found the rulebook wrong at source; 57 tool calls"},
+      {"id": "SA-3", "selfReported": "rulebook plus wdll_practice plus four OPS-17 rows plus A-002 before drafting", "findingRate": "8 recovery gaps; 25 tool calls"}
+    ],
+    "plannerReading": "The reading order in AGENTS.md is not wrong, but PD-6 shows it is not what actually happens under a compiled dispatch. More importantly, SA-1's caveat is the finding worth keeping: this metric rewards speed over care, and the lane's three best findings all came from careful reading of exactly the documents a speed-optimizing agent would have skimmed. RECOMMEND RETIRING THIS DELIVERABLE."
+  },
+
+  "deliverable5_proposedDiffs": {
+    "note": "PROPOSED, NOT APPLIED. DEV_PROCESS 5.4 - operator rules. Nothing in this section has been written to either runbook.",
+    "devProcessMd": [
+      "1.1: correct '852 of 1,955 - 43.6%' to '846 of 1,955 - 43.3%' (PD-0). The rule's own example must reconcile.",
+      "2.2: add 'an instrument must be tracked in git before it is relied upon as a gate' (PD-8).",
+      "3.2: add an evidentiary standard - a reported planner error carries its command and raw output; line/count corrections require two independent instruments (PD-4).",
+      "1.3: scope the four-measured-values prescription to file-class measurement, or generalize it (PD-10).",
+      "5.4: add a fast path for factual corrections to control-plane POINTERS, distinct from retirements and deletions (PD-11).",
+      "NEW RULE CANDIDATE: a backlog or routing row that names a file must name the file that actually holds the subject. Incident: backlog row 22 pointed at 01_doc_conventions.md for a table held in 00_README.md, and attributed 00_README.md's stale date to it - a row that fails OPEN by converting an unfinished item into a falsely-closed one."
+    ],
+    "agentContractMd": [
+      "6: add a required `shape` enum (build | audit | handoff | probe); make the PR/SHA/CI block conditional on shape=build; add a `notApplicable` array so omission is a positive declaration (PD-1).",
+      "5: scope the isolated-worktree rule to code repos, or state the doc_repo exception (PD-7).",
+      "5: add `unobservable-in-scope` as a third absence state, requiring the blocking boundary and who can cross it (PD-3).",
+      "1: state nesting depth explicitly - depth-1 fan from the lane planner by default, deeper requires a logged override; source the hook's depth rule from one data file and add a divergence test per DEV_PROCESS 2.4 (PD-2).",
+      "1: mark sections 1-2 inapplicable to leaf workers via role-scoped compilation in scripts/dispatch.mjs (PD-2).",
+      "1: define where a spawning sub-agent files its CP1/CP2 when its dispatch names no CP paths (PD-12).",
+      "2: split into in-thread recovery and cross-context handoff; give the latter missionPremise, completionPredicate, scopeBasis, sourcesConsulted, verificationsAlreadyRun, constraintsInForce, knownBlockers (PD-5)."
+    ],
+    "agentsMd": [
+      "State that the reading order applies to a COLD agent, and note that compiled dispatches front-load items 3-4 by design (PD-6)."
+    ],
+    "ops17": [
+      "A-008: correct '852 of 1,955' to '846 of 1,955' (PD-0).",
+      "A-002: correct '9 columns' to '8 columns' at brokerageWorkspaces.ts:54-76. THE BUILD VERDICT IS UNAFFECTED - the load-bearing evidence (no updated_at, no version, no cid, no access_policy; single notNull cascade FK) is confirmed at source. Count only.",
+      "A-003: the $25,000 price is confirmed in A-003 itself and row G-53. SA-3's citation to 00_README.md:68 is wrong; no amendment needed, recorded to prevent the bad citation propagating."
+    ]
+  },
+
+  "workProducedBySubAgents": {
+    "sa1": "Three dispositions proposed, not applied. _projects/cortex_workspace_qa = DORMANT-SUPERSEDED, resolvable in-repo with no external fact. 24_adaptive_ui = loop source superseded (mox_demo PARKED); the real question is not 'is Chris still designing' but keep/repoint/retire. Band register: 72 occupied / 28 free across 00-99 by independent positive tests, identity 72+28=100 held; the 40-band has ZERO free slots; nine bare-number slots carry 2-3 documents each (new finding, not in the backlog).",
+    "sa2": "scripts/doc-staleness.mjs 295 -> 422 lines, UNCOMMITTED and still untracked. One exclusion set split into WALK_SKIP (never read) and STALENESS_SKIP (read and vocab-checked, age-exempt); _catalog in neither, because a stale control-plane doc is exactly the target defect. Two nested foreign clones found and structurally excluded by name. Negative test: 5 cases including 2 must-pass, real exit 1, counterfactual pre-fix instrument reports PASS/exit 0 on the identical fixture. New count 1141 violations / 1955 denominator, planner-reproduced exactly.",
+    "sa3": "WDLL card for lane A at 10 items with 10 grade markers, drafted to 5 and finished by a supervised fresh successor. Card is NOT dispatchable as it stands: lane A has no named planner and item 1 depends on the unassigned G-10/S-6 ruling - both A-006 blocking states."
+  },
+
+  "constraintsHonored": [
+    "No commits. All 8 artifacts left uncommitted for planner/operator review (AGENT_CONTRACT 6).",
+    "No atoms bulk-writer slot taken; no --apply. L16 holds the slot and lease per _STATE.md and was not touched.",
+    "No heavy PostGIS or full-table scan (AGENT_CONTRACT 4). This lane touched no database.",
+    "No lane A/B/C/D build work. No OPS-17 amendment applied - all proposed (DEV_PROCESS 5.4).",
+    "No work belonging to another program in another chat.",
+    "All verification exit-bounded: file reads, greps, one-shot node invocations. No watches, tails, or servers.",
+    "Every sub-agent supervised to completion; none abandoned (AGENT_CONTRACT 1).",
+    "Verification never delegated below the lane planner; every load-bearing claim re-run at source (DEV_PROCESS 4.2)."
+  ],
+
+  "filesEdited": [
+    {"path": "_inbox/2026-08-14_g09_cp1.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_cp2.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_close.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_sa1_close.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_sa2_close.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_sa3_close.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_sa3_handoff.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_sa3_successor_close.json", "status": "new, uncommitted"},
+    {"path": "_inbox/2026-08-14_g09_wdll_lane_a_smart_files.md", "status": "new, uncommitted"},
+    {"path": "scripts/doc-staleness.mjs", "status": "MODIFIED 295 -> 422 lines, uncommitted, still untracked"}
+  ],
+
+  "remainsOpen": [
+    "OPERATOR RULING OWED (PD-0): correct DEV_PROCESS 1.1 and OPS-17 A-008 from 852 to 846 / 43.6% to 43.3%.",
+    "OPERATOR RULING OWED: A-002 column count 9 -> 8. Append-only amendment table, so this is an amendment not an edit. BUILD verdict unaffected.",
+    "OPERATOR RULING OWED (SA-2): the vocab gate is now effectively ALWAYS-RED - 1036 of 1141 violations sit in append-only trees never authored against the four-value vocabulary. The actionable number is 105 over 494 in canonical doc space. A permanently-red gate gets ignored, which is DEV_PROCESS rule 0's own failure mode. Recommend gating on the canonical subset and merely reporting the rest.",
+    "OPERATOR RULING OWED: whether to accept the PD-1 through PD-12 diffs into AGENT_CONTRACT and DEV_PROCESS. Nothing was applied.",
+    "OPERATOR RULING OWED (SA-1): backlog row 22 is factually wrong on file, date, and count, and fails OPEN. Correction proposed, not applied.",
+    "Lane A WDLL card is not dispatchable: no named lane planner, and item 1 depends on the unassigned G-10/S-6 ruling. Both are A-006 blocking states.",
+    "scripts/doc-staleness.mjs remains UNTRACKED. PD-8 says an instrument must be tracked before it is relied on as a gate. Tracking it is an operator call (backlog item 5).",
+    "Deliverable 4 (time-to-first-useful-action) is self-reported and, on SA-1's evidence, rewards the wrong behavior. Recommend retiring it from future dispatches.",
+    "NOT VERIFIED ABOVE THE LANE: per DEV_PROCESS 4.2 this close is the lane planner's word and awaits the operator's verification. It verifies itself as far as the rule permits and no further."
+  ],
+
+  "honestPartialDeclaration": "This close is COMPLETE against the five dispatched deliverables. It is PARTIAL in one respect stated plainly: the three bad corrections in PD-4 were caught because two verification levels existed above them. A lane with fewer levels would have shipped them. The correction instrument measured 7-for-10 in this lane, and that rate is the honest confidence bound on every figure in this document that was not independently re-run by the planner. Every figure that WAS re-run is marked as such in _inbox/2026-08-14_g09_cp2.json."
+}
