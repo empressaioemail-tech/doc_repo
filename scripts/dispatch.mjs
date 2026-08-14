@@ -113,6 +113,20 @@ if (!contract.startsWith(marker)) {
   writeFileSync(contractPath, contract, 'utf8');
 }
 
+// --- 3b. Hash the DEV_PROCESS body; maintain its marker line in place. ---
+// Same treatment as the contract: the process file must TRAVEL in every dispatch, or it becomes a
+// document living in a folder — which is the 0-for-3 control shape it exists to replace.
+const processPath = join(root, '90_runbooks', 'DEV_PROCESS.md');
+let devProcess = readFileSync(processPath, 'utf8');
+const pMarkerRe = /^<!-- DEV-PROCESS v[a-z0-9]+ [^\n]*-->\n/;
+const processBody = devProcess.replace(pMarkerRe, '');
+const processHash = createHash('sha256').update(processBody, 'utf8').digest('hex').slice(0, 8);
+const pMarker = `<!-- DEV-PROCESS v${processHash} — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->\n`;
+if (!devProcess.startsWith(pMarker)) {
+  devProcess = pMarker + processBody;
+  writeFileSync(processPath, devProcess, 'utf8');
+}
+
 // --- 4. Mission section. ---
 const mission = missionFile
   ? readFileSync(missionFile, 'utf8').trim()
@@ -130,6 +144,12 @@ ${sdBody}
 AGENT-CONTRACT v${contractHash} — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
 interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
 Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS v${processHash} — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
 
 PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
 ${repo ? `repo: ${repo}\n` : ''}
