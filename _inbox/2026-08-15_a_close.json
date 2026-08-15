@@ -1,0 +1,267 @@
+{
+  "lane": "A",
+  "artifact": "CLOSE",
+  "date": "2026-08-15",
+  "planRows": ["G-14", "G-10 (lane A half only)"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "legacy-design-tools",
+  "closeType": "HONEST PARTIAL — the G-14 foundation is built, merged, and its guarantees are proven against a real database in CI. One item of five is partially met and says so; the row is NOT claimed closed.",
+
+  "missionPremise": "Smart Files is a BUILD, not a rendering pass (OPS-17 amendment A-002, line 189), and a NEW atom family that does not extend brokerage_workspaces (A-012, line 199). Doc 34 approved claims are not revised; the build is made true (A-003, line 190). The premise was re-verified by this lane at source on the actual build base rather than inherited: brokerage_workspace_attachments on origin/main @ 4dfb118c (lib/db/src/schema/brokerageWorkspaces.ts:54-76) has 8 columns (id, workspace_id, kind, uri, body, title, created_by_install_id, created_at), a single notNull FK to ONE workspace on cascade delete, and no updated_at, no version, no cid, no access_policy. The premise HOLDS.",
+  "completionPredicate": "G-14 is done when a Smart Files contract type and artifact store exist such that (1) one document row supports N placements with the artifact row count invariant under re-placement, (2) a revision supersedes without destroying and the prior version is retrievable by version identity, (3) every served artifact carries source + computedAt + servedAt with a STALE indicator proven able to fire AND proven silent on a fresh artifact, (4) accessPolicy is a column on the record resolved at read time, and (5) the entityId shape is written down before the first schema PR. A stranger evaluates this by running the probes in the frozen WDLL subset, not by reading a PR. AT CLOSE: 1, 2, 3, 4 and 5 are met and PROVEN in CI. The applied-to-deployment-database half of card item 2 is NOT met.",
+  "scopeBasis": "The dispatch scoped this to G-14 plus lane A's half of G-10 and excluded G-20, G-34, G-44, G-53. The pre-existing ten-item WDLL draft card covered five rows, so it was SUBSET rather than inherited or superseded (DEV_PROCESS 3.3b): inheriting it whole would have graded this lane on rows the dispatch declared out of scope, and authoring a second card would have produced two non-comparable cards for one lane. The boundary is the artifact-store contract: what the store must structurally guarantee is IN; what is put into it, counted from it, served from it, and sold on it are OUT.",
+
+  "checkpoints": [
+    "_inbox/2026-08-15_a_cp1.json",
+    "_inbox/2026-08-15_a_cp2.json"
+  ],
+  "frozenWdllCard": "_inbox/2026-08-15_a_wdll_g14_frozen.md",
+  "wdllCardProvenance": "A G-14-scoped SUBSET of _inbox/2026-08-14_g09_wdll_lane_a_smart_files.md (draft, ten items, five rows). Items 1-5 carried, 6-10 deferred to G-34/G-44/G-20/G-53. Frozen at CP1 and NOT edited thereafter. Two straddles ruled deliberately and recorded in CP1 rather than narrowed silently.",
+
+  "pr": {
+    "number": 430,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/430",
+    "branch": "feat/g14-smart-files",
+    "baseCommit": "4dfb118c",
+    "headCommit": "e7d6c3d2",
+    "mergeSha": "7bb79248fd1c3986289ea0ed5d6cb1745e67a987",
+    "mergeMethod": "squash",
+    "state": "MERGED",
+    "ciConclusionStrings": {
+      "Test": "SUCCESS",
+      "Typecheck": "SUCCESS",
+      "Rubric unit tests": "SUCCESS",
+      "nonSuccessCompletedChecks": 0
+    },
+    "mergeGateBasis": "Merged only after reading the check-run conclusion STRING via `gh pr view 430 --json statusCheckRollup`, which returned SUCCESS for Test and Typecheck. The `pass` printed by `gh pr checks` was NOT treated as sufficient (AGENT_CONTRACT 5).",
+    "filesChanged": 9,
+    "insertions": 2057,
+    "deletions": 0,
+    "verifiedOnMain": "git ls-tree -r origin/main confirms all six new files present; origin/main tip is 7bb79248."
+  },
+
+  "wdllGrading": [
+    {
+      "item": 1,
+      "title": "The entityId shape is DECLARED before the first schema is written",
+      "grade": "MET",
+      "evidence": "Declared as `smartfile:<jurisdictionFips>:<docSlug>` in artifacts/api-server/src/atoms/smart-file.contract.ts with one builder (buildSmartFileEntityId, validating and throwing) and one parser (parseSmartFileEntityId, returning null rather than best-effort guessing). Rationale recorded in the file: a city file is jurisdiction-scoped, not parcel-keyed, and is deliberately NOT keyed by CID because a CID changes per revision and would make revision create a new document. Five reconstruction-trap cases are asserted, including the parcel-keyed shape `parcel:48021:R12345` returning null.",
+      "caveat": "The card required a decision record in _decisions/ cited by the schema PR. The shape is declared in code and in the PR body, but the doc_repo decision record is NOT written — doc_repo commits are planner-owned and this lane leaves repo edits uncommitted. Listed under remainsOpen. The A-012-ruled half (EXTEND vs SUPERSEDE) was already ruled before dispatch and was not re-litigated.",
+      "brokerageUntouched": "CONFIRMED mechanically: `git diff --cached --name-only | grep -ci brokerage` returned 0 on the staged diff."
+    },
+    {
+      "item": 2,
+      "title": "The store schema carries the four columns the brokerage table provably lacks",
+      "grade": "PARTIALLY MET — merged and CI-verified, NOT applied to the deployment database",
+      "evidence": "smart_file_documents carries updated_at and access_policy; smart_file_versions carries version and content_cid. A CI probe reads information_schema.columns against the BUILT schema and asserts all four present. CI conclusion string SUCCESS.",
+      "notMet": "The card explicitly required a live schema read confirming the migration is APPLIED, not merely merged. CI provisions a throwaway database via `drizzle-kit push` and never executes lib/db/drizzle/0078_smart_files_foundation.sql, so the migration FILE has not been executed anywhere. This is the migration-merged-is-not-applied seam the card retained on purpose, and it is reported unmet rather than glossed.",
+      "mitigation": "The 0078 SQL was statically validated: 12 executable statements, all parens balanced, every object guarded by IF NOT EXISTS (idempotent), every index target created in the same file. And the fixture-drift gate reported `Schema fixture matches live DB.` — the drizzle schema, the hand-edited fixture, and the pushed database all agree, which bounds the risk that 0078 diverges from them. But agreement is not execution."
+    },
+    {
+      "item": 3,
+      "title": "A document placed in N locations is stored once, not N times",
+      "grade": "MET AND PROVEN AGAINST A REAL DATABASE",
+      "evidence": "CI probe stores one document, places it in three locations, and asserts documents=1, placements=3, versions=1. A second probe places a FOURTH time and asserts the document count is still 1. Counting rules stated inline at each assertion (rows in the named table matching the declared entityId, measured — never derived by subtraction).",
+      "structuralProof": "Enforced by the DATABASE, not by caller discipline: a unique index on smart_file_documents.entity_id refused a second document row with PG SQLSTATE 23505, and a unique index on (document_id, target_type, target_id) refused a duplicate placement with 23505. Both refusals appear in the CI Postgres server log, so the negative cases fired for the right reason rather than passing vacuously. Without the placement uniqueness, 'placed in three locations' could legitimately have read as four."
+    },
+    {
+      "item": 4,
+      "title": "Revise once, current everywhere, prior version still retrievable",
+      "grade": "MET AND PROVEN AGAINST A REAL DATABASE",
+      "evidence": "CI probe places a document at three targets, revises once, then resolves all three placements through document.current_version and asserts every one reads content_cid `bafydoc-v2`. A second probe fetches version 1 by version identity and asserts the pre-revision content `bafydoc-v1` is intact with superseded_at non-null, and that both versions coexist (count=2). A third asserts re-inserting version 1 is refused with 23505 — history cannot be overwritten.",
+      "structuralProof": "Placements reference the DOCUMENT, never a version, so revise-once-current-everywhere falls out of the schema rather than needing a per-placement fan-out that could partially fail. reviseDocument performs supersede + insert + pointer move in ONE transaction with SELECT FOR UPDATE on the document row.",
+      "note": "Supersession is recorded as a POSITIVE fact (superseded_at) rather than inferred from the pointer."
+    },
+    {
+      "item": 5,
+      "title": "Every served artifact carries source, computedAt and servedAt, and the STALE indicator is PROVEN in BOTH directions",
+      "grade": "MET at the store read path, per the CP1 straddle ruling",
+      "evidence": "23 contract tests pass (real exit code 0). The indicator fires on a stamp backdated 45 days past a 30-day threshold and stays silent on a 1-day-old stamp; the boundary is asserted exclusive (60s = not stale, 61s = stale). Unparseable stamps THROW rather than defaulting to fresh, and a non-positive threshold is rejected. readDocument builds the stamp unconditionally and SMART_FILE_READ_SCHEMA requires it, with a test asserting a stamp-less read is rejected. servedAt is taken as an argument, never read from a clock inside the evaluator — which is what makes the backdate test possible at all.",
+      "mutationTested": "The load-bearing verification. Replacing `isStale: ageSeconds > threshold` with `isStale: true` made the suite fail on REAL EXIT CODE 1 (not a pipe's), and the two failures were exactly the silence-direction cases. A fire-only test would have passed a permanently-firing indicator; this proves the gate can fail for the right reason (DEV_PROCESS 2.2, 2.3). Original expression restored and re-verified at line 273; final run green.",
+      "straddleRuling": "The source card probed 'the deployed serving path'. This dispatch builds and deploys nothing, so that reading was unsatisfiable in scope; the probe was re-pointed to the store read path and the residual obligation recorded, NOT dropped.",
+      "residualObligation": "G-53 must re-probe freshness on the DEPLOYED SERVING REVISION. This store-level pass does NOT satisfy DEV_PROCESS 4.4."
+    }
+  ],
+
+  "countsWithCountingRules": [
+    {"metric": "contract tests passing", "value": 23, "rule": "vitest tests in artifacts/api-server/src/__tests__/smart-file-contract.test.ts; real process exit code 0", "environment": "local worktree and CI"},
+    {"metric": "store probes EXECUTED against real Postgres in CI", "value": 11, "rule": "vitest tests in lib/db/src/__tests__/integration/smartFiles.integration.test.ts. Counted as EXECUTED, not merely reported green: the CI log line reads `✓ src/__tests__/integration/smartFiles.integration.test.ts (11 tests) 9613ms`, and the CI Postgres server log shows six distinct constraint refusals against test schemas. Locally these same 11 SKIPPED (no database), and a skipped probe proves nothing — the local run is not counted."},
+    {"metric": "brokerage files touched", "value": 0, "rule": "git diff --cached --name-only | grep -ci brokerage on the staged diff"},
+    {"metric": "smartcity files touched", "value": 0, "rule": "git diff --cached --name-only | grep -ci smartcity on the staged diff"},
+    {"metric": "typecheck errors in smart-file files", "value": 0, "rule": "npx tsc --noEmit -p tsconfig.json filtered to repo-relative prefixes ^src/(atoms/smart-file|lib/smartFileStore|__tests__/smart-file)"},
+    {"metric": "repo typecheck baseline, unchanged by this branch", "value": 254, "rule": "grep -c 'error TS' over full tsc output, measured BOTH with changes and with all changes stashed. All 254 are TS6305 unbuilt-workspace-dependency errors from a fresh worktree with no dist/. Identical both ways."},
+    {"metric": "lib/db suite, local", "value": "15 failed / 44 passed", "rule": "Measured with changes AND with all changes stashed: IDENTICAL failure set both ways. All 45 error instances are the string 'TEST_DATABASE_URL or DATABASE_URL must be set'. This branch adds 11 skipped and 0 failures. Reported as a non-zero exit, not described as green."},
+    {"metric": "executable statements in migration 0078", "value": 12, "rule": "SQL split on semicolons after stripping line comments; all parens balanced; every object guarded by IF NOT EXISTS"},
+    {"metric": "brokerage_workspace_attachments columns", "value": 8, "rule": "Object-literal keys in lib/db/src/schema/brokerageWorkspaces.ts:54-76, counted at source on 4dfb118c. Agrees with A-002 as corrected and with the draft card. Independently re-counted because the build premise depends on it."}
+  ],
+
+  "findings": [
+    {
+      "id": "A-CP1-F1",
+      "severity": "medium (downgraded from high at operator correction)",
+      "title": "legacy-design-tools consumes a VENDORED tarball of the dead contract name, 16 minor versions behind npm",
+      "evidence": "artifacts/api-server/package.json:19 = `\"@hauska/atom-contract\": \"file:../../vendor/hauska-atom-contract-1.6.0.tgz\"`. npm latest @empressaio/atom-contract = 1.22.0; @hauska/atom-contract = 1.6.1; source repo = 1.20.0.",
+      "correctionAccepted": "I reported this as potentially blocking on a missing tarball. The operator checked and the tarball EXISTS (I confirmed: vendor/hauska-atom-contract-1.6.0.tgz, 95,199 bytes, one of four vendored tarballs; my 'not resolved' observation was about node_modules in a fresh worktree, which is a different claim). The drift is real and nothing is broken. The accurate framing is the operator's: this lane is not blocked on a repair, it is DECLINING TO WIDEN SCOPE. Recorded because a correction carries the same evidentiary standard as the claim it corrects (DEV_PROCESS 3.2a).",
+      "consequence": "OR-A1 ruled: author locally, promote when G-34 closes. Implemented. The cutover goes to the backlog as its own item, adjacent to the backlogged brokerage rename.",
+      "resolvedInLane": "The shared five-value union was confirmed IMPORTABLE from the vendored 1.6.0 root export (AccessPolicy declared at dist/registration.d.ts:48 with the same five values as published 1.22.0), so 'import, do not re-literal' was achievable with no dependency change at all."
+    },
+    {
+      "id": "A-CP1-F2",
+      "severity": "high",
+      "title": "A working CID content-addressing pipeline already existed; the brief presented brokerage_workspace_attachments as the only prior art",
+      "evidence": "dataroom_document_atoms (lib/db/src/schema/dataroomDocumentAtoms.ts) carries atom_did, access_policy, source_document_cid, storage_relation, widthed confidence and verification_status with a unique index on (document_id, atom_did) for idempotent upsert, fed by engine POST /v1/document-ingest. The mechanism is @hauska-engine/document-ingest: pinBlob mints `bafydoc-<sha256>` and dedups on content hash (gcs-blob-store.ts:65-66, in-memory-storage.ts:35); atom DIDs are sha256(`<sourceDocumentCid>:<atomContentHash>`).slice(0,32) (mint.ts:129).",
+      "why_it_matters": "Re-minting content addressing alongside a working deterministic-DID pipeline is the rebuild-instead-of-operate failure. OR-A2 ruled reuse; the store records an engine-minted CID and implements no content addressing of its own.",
+      "importantCaveat": "attached_documents was NOT extendable either — read at source it has the IDENTICAL defect (single notNull engagement FK on cascade, no updated_at, no version, no access_policy) and is engagement-scoped rather than city-scoped. The reusable asset was the MECHANISM, never the parent table. Reuse-the-mechanism / new-parent is exactly what shipped."
+    },
+    {
+      "id": "A-CP1-F3",
+      "severity": "medium",
+      "title": "ACCESS_POLICY_SCHEMA is re-literalled in three subtrees of the atom contract with no divergence test",
+      "evidence": "grep -rln 'ACCESS_POLICY_SCHEMA = z.enum' over hauska-atom-contract/src returns conformance/common.ts, encumbrances/common.ts, workspace/common.ts, against one canonical type at registration.ts:56. encumbrances additionally narrows to a two-value EncumbranceAccessPolicy (common.ts:82).",
+      "why_it_matters": "DEV_PROCESS 2.4: one rule with multiple implementations needs a divergence test, and there is none. A sixth value or a reordering propagates to some subtrees and not others, silently.",
+      "handledInLane": "Smart Files did NOT add a fourth copy. It imports the AccessPolicy type and guards its own value list with `as const satisfies ReadonlyArray<AccessPolicy>`, which is a COMPILE-TIME divergence test: if the contract's union changes, the build fails. That is a mechanism, not a reminder.",
+      "disposition": "The pre-existing triplication is a contract-repo change, out of this lane. Proposed for the durable backlog (DEV_PROCESS 5.3) — operator confirmed it goes there."
+    },
+    {
+      "id": "A-CP1-F4",
+      "severity": "low",
+      "title": "The contract's workspace family is exported on a subpath, so a root-index grep reads as a false absence",
+      "evidence": "package.json exports maps './workspace' to ./dist/workspace/index.js; `grep -n workspace src/index.ts` returns zero lines.",
+      "why_it_matters": "DEV_PROCESS 4.3 — an empty result is not an absence. Recorded so a later lane does not conclude the family is unexported."
+    },
+    {
+      "id": "A-CP1-F5",
+      "severity": "high",
+      "title": "The contract layer already carried three of the four columns; the brief implied both layers were equally bare",
+      "evidence": "WORKSPACE_ATOM_METADATA_SCHEMA (hauska-atom-contract/src/workspace/common.ts) = { did, createdAt, updatedAt, accessPolicy }. Confirmed present in the VENDORED 1.6.0 too (dist/workspace/common.d.ts).",
+      "why_it_matters": "The four-column gap is a DATABASE fact, not a contract fact. Only version identity and content identifier are missing at both layers. A build treating the contract as equally bare would have rebuilt what already exists. Operator called this the most useful correction in CP1."
+    },
+    {
+      "id": "A-CP2-F1",
+      "severity": "medium",
+      "title": "The document-ingest mechanism is reachable only over HTTP, not as a package dependency",
+      "evidence": "@hauska-engine/document-ingest is `\"private\": true`; its blob index writes `document_blobs` in the ENGINE's database (pg-blob-index.ts:2-3). legacy-design-tools has ZERO dependency on any hauska-engine package. dataroomIngest.ts reaches it via postEngineSpine over process.env.ENGINE_API_URL.",
+      "why_it_matters": "OR-A2 is honored, but a later lane must not try to add a package dependency that does not exist. The CID is minted engine-side over the gate-front seam.",
+      "bonus": "port.ts separates DocumentBlobStore (pinBlob/fetchBlob, content-hash idempotent) from DocumentAtomStore (claim atoms), so Smart Files needs only the blob half and does not drag in the classification pipeline."
+    },
+    {
+      "id": "A-CP2-F3",
+      "severity": "medium",
+      "title": "The main legacy-design-tools checkout is on another lane's branch with 55 uncommitted files",
+      "evidence": "git branch --show-current = feat/s1-instrument-hardening at 10069854, 55 modified paths. origin/main advanced 3f680490..4dfb118c during this lane's fetch.",
+      "why_it_matters": "AGENT_CONTRACT 5 forbids editing a tree another lane's process runs from, so this lane built in a fresh isolated worktree and never touched it. Also: the schema premise was FIRST read on 10069854 and RE-VERIFIED on 4dfb118c, because a premise read on the wrong base is not a verified premise. Both reads agree exactly.",
+      "operatorVisibility": "Flagged so the operator knows another lane has substantial uncommitted work in the shared checkout."
+    },
+    {
+      "id": "A-CLOSE-F1",
+      "severity": "medium",
+      "title": "CI never executes the .sql migration files — it pushes the drizzle schema instead",
+      "evidence": ".github/workflows/pr-checks.yml runs `pnpm --filter @workspace/db run push` (= `drizzle-kit push`), then the fixture-drift check. No workflow step references drizzle/*.sql or a migrate command.",
+      "why_it_matters": "A merged migration file has NOT been executed by CI. Green CI proves the drizzle schema, the fixture, and the pushed database agree; it does not prove 0078 runs. Any lane reading a green CI as 'the migration works' would be wrong, and this is the same class as the merged-is-not-applied trap.",
+      "mitigation": "0078 was statically validated (12 statements, balanced, fully idempotent, valid index targets) and is consistent with the drizzle schema by the fixture-drift match. Execution is still owed.",
+      "disposition": "Proposed for the backlog as a process observation; not fixed in this lane."
+    },
+    {
+      "id": "A-CLOSE-F2",
+      "severity": "low",
+      "title": "Two of my own verification instruments produced false positives, caught only by re-checking",
+      "evidence": "(1) A `grep -i smart` over tsc output appeared to show many errors in my files; they were repo-wide TS6305 lines whose ABSOLUTE PATHS contain '/p/ldt-lane-a-smartfiles/'. Re-filtered on repo-relative prefixes: zero. (2) A migration-versus-fixture reconciliation reported DIVERGENT with a phantom 'CHECK' column on two tables; my parser was reading multi-line CONSTRAINT continuations as columns. Corrected parser: CONSISTENT.",
+      "why_it_matters": "Both would have produced a confidently wrong report. Recorded because DEV_PROCESS 3.2a holds a correction to the same evidentiary standard as the claim it corrects, and because the measured correction base rate in this program is 7-for-10. A false divergence report costs as much as a missed one."
+    }
+  ],
+
+  "adversarialReview": {
+    "conducted": "planner at CP1 (design), CP2 (pilot), and again at close against the merged artifact",
+    "challengesAtClose": [
+      {
+        "challenge": "Green CI on a suite whose probes might have skipped would be a vacuous pass. Did the 11 probes actually RUN?",
+        "resolution": "Checked directly rather than trusting the aggregate. The CI log shows `✓ smartFiles.integration.test.ts (11 tests) 9613ms` — 9.6 seconds of real database work, not a skip — and the CI Postgres server log independently records six constraint refusals (three 23505 unique violations, two check-constraint violations, one NOT NULL violation) against distinct test schema names. The negative cases fired for the right reason in the database itself. This was the single most important verification in the lane, because a skipped integration suite is indistinguishable from a passing one in a green checkmark."
+      },
+      {
+        "challenge": "Is the store-once guarantee real, or does it merely reflect disciplined application code?",
+        "resolution": "Real and database-enforced. The probes execute raw SQL against the built tables rather than calling the store module, precisely so that a disciplined store cannot mask a permissive schema. The unique indexes refused the violations at the database layer."
+      },
+      {
+        "challenge": "Does anything in this close overclaim against A-003?",
+        "resolution": "No, and it is stated in three places. The store makes the three doc-34 sentences STRUCTURALLY POSSIBLE; it does not make them true for a customer, which additionally requires a corpus (G-44) and a served surface (G-53). Nothing here is customer-visible, so nothing here satisfies DEV_PROCESS 4.4, and no Smart Files collateral is unblocked by this close."
+      },
+      {
+        "challenge": "The hand-edited fixture was the largest single risk. Was it validated or merely hoped?",
+        "resolution": "Validated three ways and then confirmed by an independent gate. Structurally (ordering, FK targets, paren balance, no duplicate names), by reconciliation against the migration (column parity 9/11/7 and index-name parity 9=9), and finally by CI's own fixture-drift check, which dumped the live pushed database and reported `Schema fixture matches live DB.` That gate is stronger than my validation because it is byte-level against pg_dump output."
+      },
+      {
+        "challenge": "Could a caller mistake a missing document for an honest absence?",
+        "resolution": "readDocument returns null, and the store header plus the PR body state explicitly that this is NOT a typed absence and must not be rendered as a data gap until G-34. That is a DOCUMENTED constraint, not an enforced one — weaker than a mechanism, and reported as such rather than claimed safe. This is the honest weak point of the delivery."
+      }
+    ]
+  },
+
+  "constraintsHonored": [
+    "smartcity-os absolute no-touch: never opened; 0 matches asserted mechanically on the staged diff",
+    "no brokerage rename, no brokerage refactor: brokerageWorkspaces.ts read only; 0 brokerage files in the diff, asserted mechanically",
+    "isolated worktree: built in /p/ldt-lane-a-smartfiles off origin/main; the main checkout (another lane's branch, 55 dirty files) never touched, cleaned, stashed, or edited",
+    "write-slot law: never acquired and not required — no --apply against the atoms store; DDL and tests only",
+    "heavy-scan serialization: no heavy PostGIS or full-table scan run",
+    "fan model: ZERO sub-agents spawned; every verification performed by the lane planner directly, so verification was never delegated downward",
+    "merge gate: merged only on the check-run conclusion STRING SUCCESS, read from statusCheckRollup; `gh pr checks` printing pass was not treated as sufficient",
+    "verification exit-bounded throughout: builds, one-shot test runs, and a bounded 20-iteration poll. No watch, no tail -f, no non-exiting server",
+    "doc_repo commits are planner-owned: the four doc_repo artifacts are left UNCOMMITTED and listed below",
+    "dispatch fallibility honored: the brief's two flagged findings were verified rather than trusted, and three further corrections were reported (A-CP1-F5, plus the operator's own correction accepted at A-CP1-F1)"
+  ],
+
+  "docRepoEditsUncommitted": [
+    "_inbox/2026-08-15_a_cp1.json (new)",
+    "_inbox/2026-08-15_a_wdll_g14_frozen.md (new)",
+    "_inbox/2026-08-15_a_cp2.json (new)",
+    "_inbox/2026-08-15_a_close.json (new, this file)"
+  ],
+
+  "remainsOpen": [
+    {
+      "item": "Apply migration 0078 to the deployment database and refresh the fixture from it",
+      "why": "Closes the applied half of WDLL item 2. CI pushes the drizzle schema and never executes 0078 (A-CLOSE-F1), so the migration file remains unexecuted anywhere. Merged is not applied.",
+      "blocks": "A full MET grade on item 2, and any real write path into the store."
+    },
+    {
+      "item": "Write the entityId shape decision record in _decisions/",
+      "why": "WDLL item 1 asked for a decision record in _decisions/ cited by the schema PR. The shape is declared in code and in the PR body; the doc_repo record is not written because doc_repo commits are planner-owned.",
+      "suggestedPath": "_decisions/2026-08-15_smart_files_entity_id_shape.md",
+      "content": "The declared shape `smartfile:<jurisdictionFips>:<docSlug>`, why it is jurisdiction-scoped rather than parcel-keyed, and why it is deliberately not CID-keyed."
+    },
+    {
+      "item": "OPS-17 amendment recording OR-A1 and OR-A2",
+      "why": "The operator stated both rulings would be recorded as an amendment, with the promotion criterion (type promotes when G-34 closes; an earlier second consumer forces promotion and is a finding, not a violation).",
+      "ownedBy": "operator/planner, not this lane"
+    },
+    {
+      "item": "Two backlog items the operator confirmed",
+      "items": [
+        "The legacy-design-tools atom-contract cutover from the vendored @hauska/atom-contract 1.6.0 tarball to published @empressaio/atom-contract (A-CP1-F1) — adjacent to the backlogged brokerage rename, its own item",
+        "The triplicated ACCESS_POLICY_SCHEMA in the atom-contract source with no divergence test (A-CP1-F3) — a contract-repo change"
+      ],
+      "plusProposed": "A-CLOSE-F1 (CI never executes .sql migrations) as a third, process-level backlog item"
+    },
+    {
+      "item": "G-34 must convert readDocument's null into a typed absence carrying its basis",
+      "why": "Currently a documented constraint rather than an enforced one — the honest weak point of this delivery. Until then callers must not render null as a data gap."
+    },
+    {
+      "item": "G-53 must re-probe freshness on the DEPLOYED SERVING REVISION",
+      "why": "The CP1 straddle ruling re-pointed item 5's probe to the store read path. The store-level pass does NOT satisfy DEV_PROCESS 4.4, and this residual was recorded rather than dropped."
+    }
+  ],
+
+  "driftAgainstFrozenCard": "None on scope: all five carried items were worked and none of the five deferred items was touched. One partial on grading: item 2's applied half is unmet, reported rather than reframed. The card was not edited after freezing at CP1.",
+
+  "notApplicable": {
+    "interruptionRecovery": "not applicable: no sub-agents were running at any point in this lane and no mid-flight interruption occurred. There is no stopped-worker state to capture.",
+    "slotCustody": "not applicable: the atoms bulk-writer slot was never acquired because no --apply ran",
+    "heavyScanAnnouncement": "not applicable: no heavy scan was run",
+    "deployVerification": "not applicable: this dispatch builds no surface and deploys nothing. Deliberate, per the dispatch — and therefore nothing here is customer-done."
+  },
+
+  "rowStatus": {
+    "G-14": "SUBSTANTIALLY MET, not closed. The foundation exists, is merged at 7bb79248, and its four structural guarantees are proven against a real database in CI. Closure is gated on applying 0078 to the deployment database.",
+    "G-10 (lane A half)": "MET in code, decision record owed. The entityId shape is declared with a builder, a parser, and reconstruction-trap tests; no shape is reconstructed from parts anywhere in lane code (the OPS-17:131 instrument). The _decisions/ record is the remaining artifact."
+  }
+}

@@ -130,3 +130,48 @@ lane A's real work. `brokerage_workspaces` also holds 142 live rows: dead concep
 the catalog-thesis check first (the surface is Smart Site's property substrate, so the name should come
 from that vocabulary). Table renames need migrations plus a compatibility window; module renames are
 mechanical but must land as one atomic change with the divergence-test discipline of DEV_PROCESS 2.4.
+
+## Item 26 — P1 — CI never executes `.sql` migration files (found by lane A, 2026-08-15)
+
+**Process-level gap. Any lane can misread green CI as "the migration works."**
+
+Planner-verified at source: no `drizzle-kit` step exists in any `legacy-design-tools` workflow. CI
+builds its test database from the drizzle schema; migrations apply ONLY through the `run-migrations`
+job in `.github/workflows/cloud-run-deploy.yml`, against `_schema_migrations` tracking.
+
+So green CI proves the drizzle schema, the schema fixture, and the pushed test database AGREE. It does
+NOT prove that `lib/db/drizzle/NNNN_*.sql` EXECUTES. Those are different claims, and the second is the
+one a reviewer assumes when they see a merged migration with a green check.
+
+This is the merged-is-not-applied trap generalized from a data question to a schema question. Lane A
+caught it because its WDLL card retained an applied-not-merely-merged check on purpose; a lane without
+that check would have called the row closed.
+
+**Proposed disposition:** a CI step that runs pending `.sql` migrations against a scratch database and
+fails on error, so agreement and execution stop being conflated. Cheap, and it converts a
+remembered discipline into a hook-shaped control per DEV_PROCESS rule 0.
+
+## Item 27 — P2 — `legacy-design-tools` consumes a VENDORED atom-contract tarball, not the published package
+
+`artifacts/api-server/package.json:19` reads `"@hauska/atom-contract":
+"file:../../vendor/hauska-atom-contract-1.6.0.tgz"`. The tarball exists and 1.6.0 is what installs;
+npm latest is `@empressaio/atom-contract@1.22.0` and the source repo is at 1.20.0.
+
+**Nothing is broken** — this is drift, not breakage. The consequence is that a type added to the
+published contract does not reach this repo without a dependency change, and the repo also still uses
+the OLD package name.
+
+Deliberately NOT fixed inside lane A (OPS-17 A-013): the cutover's blast radius is adjacent to the
+backlogged `brokerage*` rename (item 25), and lane A authors its contract type locally with a named
+promotion step instead. **Sequence this with or after item 25**; doing both at once is one migration
+rather than two.
+
+## Item 28 — P2 — `ACCESS_POLICY_SCHEMA` is re-literalled in three subtrees with no divergence test
+
+Found by lane A during CP1. The same access-policy enum is written out independently in three places in
+the atom-contract repo. Per DEV_PROCESS 2.4, one rule with multiple implementations needs a divergence
+test or a single source — this has neither, and the five-value union is exactly the kind of constant
+that gains a value (it went from four to five once already).
+
+Lane A imports the shared enum rather than adding a fourth copy. **Proposed disposition:** collapse to
+one definition and add the divergence test. Contract-repo change, out of any current lane.
