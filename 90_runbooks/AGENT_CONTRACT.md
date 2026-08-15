@@ -63,6 +63,12 @@ scan waits. Fetches, PBF extraction, and CPU-bound work parallelize freely.
   use the value storage persists).
 - Verification steps are EXIT-BOUNDED: builds, tests, one-shot queries, bounded polls. Never a watch,
   a tail -f, or a non-exiting server.
+- STALLS ARE DETECTED BY PROGRESS, NEVER BY PROCESS EXISTENCE. Every long-running runner writes a
+  progress artifact at least every county/unit, registers it in `_catalog/watch_registry.json` with a
+  quiet budget BEFORE it starts, and its heartbeat/babysitting runs detached from any chat (an agent
+  stall must never silently take its monitoring down with it — L16 lost 5.5 hours exactly this way).
+  A runner without a registered watch is not dispatched. Watchers themselves never expire silently:
+  on timeout they alarm or re-arm, loudly.
 - Work in an ISOLATED WORKTREE. A running lane executes its working tree: never clean, stash, revert,
   or edit a tree another lane's process runs from. Deploys are planner-owned; a new revision is not
   the serving revision until verified.
