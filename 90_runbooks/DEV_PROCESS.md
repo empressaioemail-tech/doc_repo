@@ -1,4 +1,4 @@
-<!-- DEV-PROCESS v48da8334 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- DEV-PROCESS vbb19bd34 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # DEV PROCESS — how we work
 
@@ -126,6 +126,26 @@ unquoted correction is a hypothesis, and must say so.**
 *Incident:* G0's mandate did not exclude the other 35 directories — it simply did not mention them,
 and 4,700 files went unexamined while the close read as complete. "Unmentioned" is the failure state;
 "out of scope" is a valid and required classification.
+
+**3.3a A compiled dispatch ships with a COPY-PASTE-READY BLOCK in chat. The file alone is not delivery.**
+`scripts/dispatch.mjs` writes `_dispatches/<date>_<lane>_dispatch.md`. That file is the durable record,
+not the handoff. The operator hand-carries dispatches by pasting them into a fresh agent, so the planner
+**always** posts the full dispatch text in chat, in one fenced block, ready to paste with no editing, no
+assembly, and no "the file is at X" pointer. Post the block even when the file path is also given.
+*Incident:* the lane A dispatch was compiled, committed, and announced by path; the receiving agent did
+not know what to do with it and asked. A dispatch that has to be interpreted before it can be used has
+not been delivered. This generalizes the standing operator preference for copy-paste-ready handoff
+blocks — the operator hand-carries, so the unit of delivery is a pasteable block, never a file
+reference.
+
+**3.3b Before writing a dispatch, search `_inbox/` for prior artifacts of that lane.**
+Check for an existing WDLL card, prior checkpoints, or a predecessor's close covering the same rows.
+*Incident:* the lane A dispatch instructed its planner to author a frozen WDLL card at CP1 while a
+ten-item draft card for lane A already sat in `_inbox/` from the G-09 proving run — scoped to five plan
+rows against the dispatch's one. Authoring a second would have produced two cards for one lane graded
+against different scopes; inheriting it whole would have graded the lane on rows the dispatch declared
+out of scope. Neither is recoverable after the card is frozen. When a prior artifact exists, the
+dispatch says so, says whether to inherit, subset, or supersede it, and says on what basis.
 
 **3.4 Catalog before mutating when the blast radius is large.**
 A pass that both maps and mutates thousands of files is one where a mistake is hard to unwind. The map

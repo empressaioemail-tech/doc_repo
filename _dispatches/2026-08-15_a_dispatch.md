@@ -11,7 +11,7 @@ AGENT-CONTRACT vbcc3efb6 — you are bound by 90_runbooks/AGENT_CONTRACT.md in f
 interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
 Read it before any work; where this dispatch and the contract disagree, STOP and report.
 
-DEV-PROCESS v48da8334 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
 is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
 measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
 proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
@@ -96,11 +96,28 @@ Contract type FIRST, then the store. The freshness and absence requirements need
 and the family shape is the thing three other lanes will consume. Do not build a surface in this
 dispatch; there is no UI in scope. Function before form.
 
-### WDLL card — required before implementation
+### WDLL card — a DRAFT ALREADY EXISTS. Do not author a second one.
 
-Per `90_runbooks/wdll_practice.md` and OPS-17's WDLL card rule: write the frozen What Done Looks Like
-card for G-14 at CP1, before building. Never call it an "acceptance card". It is frozen once written;
-drift is measured against it at close.
+**`_inbox/2026-08-14_g09_wdll_lane_a_smart_files.md`** — a ten-item draft card written during the G-09
+proving run, status `draft`, operator approval pending. It is scoped to FIVE plan rows (G-14, G-20,
+G-34, G-44, G-53); this dispatch is scoped to G-14 plus lane A's half of G-10. **Authoring a fresh card
+would produce two cards for one lane graded against different scopes, and inheriting it whole would
+grade you on rows this dispatch tells you not to build.**
+
+At CP1: **freeze a G-14-scoped SUBSET of that card.** Items 1 through 5 fall inside this dispatch
+(family placement ruling, the four missing columns, store-once-place-many, revise-once-with-history,
+provenance and freshness with a proven STALE indicator). Items 6 through 10 reach into typed absence,
+Bastrop corpus capture, coverage counting, surface deployment, and sellability — **defer them; they are
+later dispatches.** Record explicitly which items you carried and which you deferred, and why.
+
+Read the existing card before you decide. If you judge an item to straddle the boundary, say so and
+rule it deliberately rather than silently. Never call it an "acceptance card". Once frozen it is not
+edited; drift is measured against it at close.
+
+That card's item 2 already did work you would otherwise repeat: it read
+`brokerageWorkspaces.ts:54-76` at source, found **8** columns, and corrected amendment A-002's "9
+columns" — the correction propagated into this brief. Do not re-litigate it; do verify it if you
+depend on it.
 
 ### Constraints
 
@@ -119,6 +136,6 @@ G-20, G-34, G-44, G-53. Any Smart Files UI or collateral. Lane B, C, or D work. 
 Any claim change to doc 34 — the claims are fixed and you are building to them.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-08-14_a_cp1.json
-  CP2: _inbox/2026-08-14_a_cp2.json
-  CLOSE: _inbox/2026-08-14_a_close.json
+  CP1: _inbox/2026-08-15_a_cp1.json
+  CP2: _inbox/2026-08-15_a_cp2.json
+  CLOSE: _inbox/2026-08-15_a_close.json
