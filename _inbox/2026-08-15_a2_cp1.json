@@ -1,0 +1,202 @@
+{
+  "lane": "A",
+  "artifact": "CP1",
+  "date": "2026-08-15",
+  "planRows": ["G-34"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "legacy-design-tools",
+  "dispatchPredecessor": "_inbox/2026-08-15_a_close.json",
+
+  "missionPremise": "G-14 built the Smart Files foundation and left ONE named gap, stated in the store's own header: readDocument returns null for a document that is not held, so 'don't render that as a data gap' is a documented constraint rather than an enforced one. G-34 enforces it. The premise was RE-VERIFIED at source on the actual base rather than inherited from the dispatch: origin/main tip is 7bb79248 (the G-14 squash merge), and artifacts/api-server/src/lib/smartFileStore.ts:23-25 in that commit reads verbatim 'No typed absence. readDocument returns null for a document that is not held; converting that into a typed absence carrying its basis is G-34. Until then callers MUST NOT render a null as a data gap.' The premise HOLDS, and the gap is narrower and sharper than the header states: there are TWO distinct return-null sites (line 307 document-missing, line 322 version-missing) which the single null type conflates into one indistinguishable outcome.",
+
+  "completionPredicate": "G-34 is done when (1) the store's read path can no longer return a bare null, enforced by the TYPE rather than by a comment, and every not-held outcome carries a named status plus a BASIS; (2) only a POSITIVE determination can produce a recorded absent-verified, and an empty or failed lookup is structurally incapable of becoming one; (3) absent-verified is renderable as a real answer, distinct from never-looked and from lookup-failed; (4) the STALE indicator is re-proven in BOTH directions on the present path AND proven in both directions on the ABSENCE path, each on a real exit code; and (5) the contract-promotion call is recorded either way. A stranger evaluates this by running the probes in the frozen card, not by reading a PR.",
+
+  "scopeBasis": "The dispatch scopes this to G-34 and excludes G-20, G-44, G-53, the promotion itself, any surface, and lanes B/C/D. The boundary I am holding: what the read path RETURNS when it does not hold a thing is IN; what puts documents in (G-44), what counts them (G-20), and what serves them to a human (G-53) are OUT. Item 6 of the ten-item source card is carried forward verbatim rather than re-authored; items 7-10 stay deferred.",
+
+  "inheritedNotReDerived": {
+    "frozenG14Card": "_inbox/2026-08-15_a_wdll_g14_frozen.md — read, NOT re-authored and NOT edited. It is frozen.",
+    "predecessorClose": "_inbox/2026-08-15_a_close.json — lane state inherited whole: PR #430 merged at 7bb79248, three-table split, entityId shape, the five CP1/CP2 findings, and the six open residuals.",
+    "carriedForwardItem": "Source card item 6 (typed absence), which the G-14 card deferred to this row. Carried, not re-derived."
+  },
+
+  "premiseVerificationAtSource": [
+    {
+      "claim": "origin/main tip is the G-14 merge",
+      "command": "git log --oneline -1 origin/main",
+      "output": "7bb79248 feat(smart-files): G-14 foundation — new atom family + artifact store (#430)",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "the store returns bare null for not-held",
+      "evidence": "smartFileStore.ts:307 'if (!doc) return null;' and smartFileStore.ts:322 'if (!version) return null;' — return type Promise<SmartFileReadView | null> at line 300.",
+      "verdict": "CONFIRMED, and SHARPENED: two distinct causes, one indistinguishable return value."
+    },
+    {
+      "claim": "the store has no external consumers yet",
+      "command": "grep -rn 'readDocument|smartFileStore' --include=*.ts . (excluding node_modules and the store's own file)",
+      "output": "zero matches",
+      "verdict": "CONFIRMED — and this is load-bearing for the promotion decision (see F-A2-CP1-3)."
+    },
+    {
+      "claim": "the inherited test baseline is green before any G-34 change",
+      "command": "npx vitest run src/__tests__/smart-file-contract.test.ts",
+      "output": "23 passed, EXITCODE=0",
+      "verdict": "CONFIRMED — so any later red is mine, not inherited."
+    }
+  ],
+
+  "statusTaxonomyDerivation": {
+    "instruction": "The dispatch says do NOT copy the spine's seven statuses mechanically — derive what the DOCUMENT layer needs, name each, justify each, and say which spine statuses were deliberately not carried.",
+    "spineTaxonomyReadAtSource": {
+      "where": "artifacts/api-server/src/countyLedgerCompute.ts:38-45 (ManifestCell.displayState) plus lib/db/src/schema/countyFacetCoverage.ts:133-143 (rail_state)",
+      "storedAxis": "THREE values are STORED (satisfied-present | satisfied-absent | not-yet, countyFacetCoverage.ts:133-134). no-atom and no-writer are NOT stored — they are DERIVED at query time from county_rail (countyFacetCoverage.ts:139-140, computed at countyLedgerCompute.ts:213-214).",
+      "fullDisplayUnion": ["derivation-indeterminate", "no-atom", "no-writer", "not-yet", "satisfied-present", "satisfied-absent"],
+      "seventhDiscriminator": "isPartial (countyLedgerCompute.ts:46), a boolean carried alongside displayState rather than a seventh enum value.",
+      "correctionToTheBrief": "The dispatch calls it a 'seven-status taxonomy'. Read at source it is SIX display values plus a boolean partial flag, of which only THREE are stored and the rest derived. This does not change what I owe — it makes the derive-don't-copy instruction easier to honor, because the spine itself separates stored fact from derived presentation, which is exactly the separation the document layer needs."
+    },
+    "derivedDocumentLayerSet": [
+      {
+        "status": "held",
+        "means": "The document is held and this version resolved. The positive case; carries content plus the full G-14 stamp.",
+        "whoProducesIt": "readDocument when both the document row and the requested version row resolve.",
+        "spineAnalogue": "satisfied-present"
+      },
+      {
+        "status": "absent-verified",
+        "means": "We LOOKED for this document in this jurisdiction and positively determined it does not exist. A real answer, renderable as one.",
+        "whoProducesIt": "ONLY an explicit recorded determination — never an empty lookup. This is inherited constraint 2, enforced by making the ONLY way to produce this status a read of a POSITIVELY WRITTEN determination row.",
+        "spineAnalogue": "satisfied-absent",
+        "justification": "The dispatch names it a first-class product state. Without it, 'Bastrop has no short-term-rental ordinance' is unsayable and reads as a coverage hole."
+      },
+      {
+        "status": "not-sought",
+        "means": "We have never looked for this document. Not a data-gap claim in either direction — an honest statement about our own coverage.",
+        "whoProducesIt": "The default for any entityId with no document row and no determination row. This is where an empty lookup lands, which is precisely why an empty lookup can never land on absent-verified.",
+        "spineAnalogue": "not-yet",
+        "justification": "The distinction from absent-verified is the entire point of the constraint. Collapsing them is the defect class."
+      },
+      {
+        "status": "lookup-failed",
+        "means": "We tried to look and the attempt itself failed (source unreachable, fetch errored). We know nothing about whether the document exists.",
+        "whoProducesIt": "A recorded failed-attempt determination.",
+        "spineAnalogue": "derivation-indeterminate",
+        "justification": "The dispatch names this as a third thing that must stay distinct. Historically a probe failure 'wore the costume of a data gap' — this status is the costume removal."
+      },
+      {
+        "status": "held-version-absent",
+        "means": "The document IS held, but the specific version requested is not. A caller asking for version 7 of a 3-version document gets this, never a generic not-found.",
+        "whoProducesIt": "readDocument when the document row resolves but the version row does not.",
+        "spineAnalogue": "NONE — a document-layer state with no spine equivalent, because the spine has no version axis.",
+        "justification": "This is the conflation found at source that the G-14 header did not name: lines 307 and 322 return the identical null for two different facts. Without this status, 'we do not have that document' and 'we have it but not that revision' are indistinguishable, and the second is not an absence at all."
+      }
+    ],
+    "spineStatusesDeliberatelyNotCarried": [
+      {
+        "status": "no-atom",
+        "whyNot": "It answers 'does an atom family exist for this subject at all' — a REGISTRY question about the writer fleet, not about a document. Smart Files is a single declared family; there is no per-document family-existence axis. A status nobody can produce is dead weight (the dispatch's own words), and nothing in this store could ever set it."
+      },
+      {
+        "status": "no-writer",
+        "whyNot": "Same reason one level down: 'the family exists but nothing is wired to produce coverage for this cell'. The Smart Files equivalent would be a jurisdiction with no capture pipeline, which is a G-44 corpus-capture concern and is invisible from the store. Carrying it here would make it permanently unset — a dead value."
+      },
+      {
+        "status": "isPartial (the boolean)",
+        "whyNot": "It means a cell is satisfied but below its coverage threshold — a RATIO over a population of parcels. A single document is not partially held: either the version row is there or it is not. Partiality at the document layer is a G-20 corpus-coverage question (what fraction of a jurisdiction's documents do we hold), explicitly out of scope, and it belongs on a corpus, never on a single read."
+      }
+    ],
+    "netShape": "FIVE statuses: one positive-present, one positive-absent, one version-axis state with no spine analogue, and two honest statements about our own looking. Three spine statuses deliberately dropped with reasons."
+  },
+
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "The read path's return type becomes a DISCRIMINATED UNION with no null member, so a bare null becomes a type error rather than a comment violation.",
+      "why": "DEV_PROCESS: a guardrail that does not survive a clone is not a guardrail. The G-14 constraint lives in a doc comment, which a caller in another file never sees. Making the type unable to express a bare null moves it from reminder to mechanism. Zero existing callers (verified at source) means this reshaping costs no migration."
+    },
+    {
+      "id": "D2",
+      "decision": "Absence determinations are STORED in their own table, and absent-verified can ONLY be produced by reading a positively-written determination row. An empty lookup returns not-sought and writes nothing.",
+      "why": "Inherited constraint 2, structurally rather than by discipline. The rule 'only a positive determination writes an absence' is unenforceable if the read path can synthesize an absence from a zero-row query. The determination must be a row somebody deliberately wrote."
+    },
+    {
+      "id": "D3",
+      "decision": "The determination row carries a NOT-NULL basis, enforced by a DB check constraint, mirroring the spine's absence_basis treatment.",
+      "why": "The spine already does exactly this (countyFacetCoverage.ts:154-158: absence_basis REQUIRED whenever rail_state = 'satisfied-absent', enforced by check constraint, because 'a finding needs its citation or the state is unfalsifiable'). Reusing the proven pattern rather than inventing one. 'Not found' is not a basis; why it is not found is."
+    },
+    {
+      "id": "D4",
+      "decision": "Absences carry the SAME freshness stamp as present reads, via the same evaluateSmartFileFreshness evaluator, with computedAt = when the determination was made.",
+      "why": "The dispatch: 'we verified this is absent' decays exactly like a positive fact does. A 2019 determination that Bastrop had no STR ordinance is not evidence about today. Reusing the evaluator rather than writing a second one also means the both-directions proof covers both paths through one mechanism."
+    },
+    {
+      "id": "D5",
+      "decision": "This lane writes a new migration FILE (0079) and does NOT apply it anywhere. No deployment database is touched.",
+      "why": "Operator HOLD on 0078 (OPS-17 A-014). 0079 depends on 0078's tables, so it is strictly behind the same hold. The fixture template is updated so CI proves the drizzle schema agrees, which is what CI can prove and no more."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F-A2-CP1-1",
+      "severity": "medium",
+      "title": "CORRECTION to the dispatch: CI does execute .sql migrations — on a deliberate operator-triggered path, not on the PR path",
+      "plannerClaimQuoted": "\"CI does not execute `.sql` migrations (backlog item 26, planner-verified: no `drizzle-kit` step in any workflow).\"",
+      "whatIsActuallyTrue": ".github/workflows/cloud-run-deploy.yml:324-332 defines a step 'Plan + apply pending migrations' running 'pnpm --filter @workspace/db run migrate:prod', which resolves to lib/db/scripts/migrate-prod.mjs — a hand-written runner that readdirs lib/db/drizzle/*.sql (line 59), executes each pending file (line 155), and tracks applied state in _schema_migrations (line 82).",
+      "whyThePlannerReachedTheWrongReason": "The planner searched for 'drizzle-kit' and found none. That grep is correct and its conclusion does not follow: the repo deliberately does NOT use drizzle-kit push — migrate-prod.mjs:14-17 states why, that push diffs live schema instead of applying a named reviewable artifact. So the absence of drizzle-kit is evidence of a hand-rolled runner, not of no runner. DEV_PROCESS 4.3: an empty result is not an absence.",
+      "whyTheOperativeConstraintSurvives": "The migrate job is gated 'if: github.event_name == \\'workflow_dispatch\\' && inputs.action == \\'run-migrations\\'' (verified by enumerating every job's if-condition in the file). It is UNREACHABLE from a push or pull_request event, and the file header states this deliberately at lines 28-31: 'Traffic shifts and DB migrations are NEVER coupled to push... unreachable from a push event.' pr-checks.yml contains no migrate step at all. So green PR CI still does NOT mean 0078 was applied, and the dispatch's instruction to me is unchanged and correct.",
+      "correctedFraming": "Not 'CI cannot execute .sql migrations' but 'migrations execute ONLY on an operator-triggered workflow_dispatch, never on the merge path'. That is a stronger and more accurate statement of the same guarantee, and it also tells a successor that the apply mechanism for the held 0078 ALREADY EXISTS and is a one-input operator action — which the original framing hid.",
+      "consequenceForBacklogItem26": "Item 26 should be reworded. As written it asserts a capability gap that is not real; the real property is a deliberate trigger separation that is already designed and documented."
+    },
+    {
+      "id": "F-A2-CP1-2",
+      "severity": "medium",
+      "title": "The store conflates TWO different absences behind one null, which the G-14 header did not name",
+      "evidence": "smartFileStore.ts:307 'if (!doc) return null;' (no document held) and smartFileStore.ts:322 'if (!version) return null;' (document held, requested version not held). Both return the identical value through a Promise<SmartFileReadView | null> signature.",
+      "whyItMatters": "The G-14 header names ONE gap ('returns null for a document that is not held'). The second case is not a document-absence at all — it is a held document with a bad version request, and rendering it as a data gap would be wrong in a different direction than the one the header warned about. A successor implementing only the header's stated gap would have carried this conflation forward.",
+      "disposition": "Resolved in this lane by the held-version-absent status, which exists precisely because of this finding."
+    },
+    {
+      "id": "F-A2-CP1-3",
+      "severity": "low",
+      "title": "The Smart Files store currently has ZERO consumers, which is what makes the G-34 type change free and bears directly on the promotion decision",
+      "evidence": "grep -rn 'readDocument|smartFileStore' --include=*.ts over the worktree, excluding node_modules and the store's own definition, returns zero matches. The store is written, merged, tested, and unconsumed.",
+      "whyItMatters": "Two ways. First, replacing '| null' with a discriminated union is a breaking change to the read signature that costs nothing right now and would cost a coordinated migration once G-44 or G-53 consume it — so doing it in this row rather than later is correct sequencing, not gold-plating. Second, it is direct evidence for the promotion call: OR-A1's criterion is that the shape has stopped moving, and a shape with zero consumers has had zero pressure applied to it.",
+      "disposition": "Feeds the promotion decision recorded at close, per the dispatch's third deliverable."
+    },
+    {
+      "id": "F-A2-CP1-4",
+      "severity": "low",
+      "title": "The spine's 'seven statuses' is six display values plus a boolean, and only three are stored",
+      "evidence": "countyLedgerCompute.ts:38-45 lists six displayState values; isPartial is a separate boolean at line 46. countyFacetCoverage.ts:133-141 stores only three (satisfied-present|satisfied-absent|not-yet) and explicitly notes no-atom/no-writer 'are NOT stored here; they are derived at query time'.",
+      "whyItMatters": "Minor as a count correction, but structurally useful: the spine already separates STORED determination from DERIVED presentation. The document layer needs the same separation (a stored determination row; a derived read status), so the correction reinforced the design rather than merely adjusting a number.",
+      "reportedBecause": "DEV_PROCESS 3.2 — reporting a planner number wrong is a successful outcome, and 3.2a requires the same evidentiary standard for the correction as for the claim."
+    }
+  ],
+
+  "adversarialReviewAtCP1": {
+    "q1_couldAbsentVerifiedBeSynthesized": "Attacked the design by asking: is there ANY path where a zero-row query produces absent-verified? Answer: no, because the status is read from a determination row's own recorded verdict, and no code path constructs that verdict from a count. The failure mode this protects against is the one the constraint names.",
+    "q2_isTheStatusSetOverbuilt": "Attacked each of the five: can something produce it, and does dropping it silently conflate? All five survive. held-version-absent was the one I most suspected of being decoration until I read lines 307/322 and found the live conflation.",
+    "q3_doesTheStaleProofActuallyProve": "The existing suite has both directions plus a boundary case. My concern: the absence path could get a fire-only test and pass a permanently-firing gate. Mitigated by requiring BOTH directions on the absence path too, and by mutation-testing the assertion rather than trusting it.",
+    "q4_amIRebuildingSomething": "Checked for an existing absence-determination mechanism before designing one. The spine's absence_basis + check-constraint pattern is the prior art, and I am REUSING the pattern (not copying the table, which is county/rail-shaped and has no document axis). Recorded so a successor sees the reuse was deliberate."
+  },
+
+  "constraintsAcknowledged": [
+    "0078 NOT applied; no migration run against any deployment database. 0079 authored and left unapplied behind the same HOLD.",
+    "smartcity-os absolute no-touch — nothing in this lane reaches it.",
+    "ACCESS_POLICY_SCHEMA imported, not re-copied — the G-14 import plus 'as const satisfies' compile-time divergence control is reused as-is; no fourth copy.",
+    "Merge only on the statusCheckRollup conclusion STRING 'success'.",
+    "Working in an ISOLATED WORKTREE at /p/tmp/g34_typed_absence on branch feat/g34-typed-absence off origin/main@7bb79248. The main checkout (feat/s1-instrument-hardening, ~55 uncommitted files from another lane) was READ for branch state only and never modified, cleaned, stashed, or built in.",
+    "Doc_repo commits are planner-owned; my doc_repo edits stay uncommitted and are listed at close.",
+    "G-14 is NOT closed by this dispatch and I do not close it.",
+    "The contract promotion is DECIDED and RECORDED, never performed."
+  ],
+
+  "wdllCardFrozenAt": "_inbox/2026-08-15_a2_wdll_g34_frozen.md",
+
+  "notApplicable": {
+    "interruptionRecovery": "not applicable: no sub-agents running, no mid-flight interruption at CP1.",
+    "slotCustody": "not applicable: no bulk-writer slot needed; this lane runs no --apply and no bulk write.",
+    "heavyScanAnnouncement": "not applicable: no heavy scan. The only DB touched is the ephemeral CI/test database.",
+    "deployVerification": "not applicable AT CP1 and expected to remain so at close: this dispatch builds no surface and deploys nothing, so nothing in it satisfies DEV_PROCESS 4.4 and nothing here is customer-done."
+  }
+}

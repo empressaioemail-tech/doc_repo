@@ -1,0 +1,187 @@
+{
+  "lane": "A",
+  "artifact": "CP2",
+  "date": "2026-08-15",
+  "planRows": ["G-34"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "legacy-design-tools",
+  "cp1": "_inbox/2026-08-15_a2_cp1.json",
+  "frozenCard": "_inbox/2026-08-15_a2_wdll_g34_frozen.md",
+
+  "missionPremise": "Unchanged from CP1 and re-verified there at source: G-14 left one named gap (readDocument returns a bare null for a not-held document, so the no-data-gap rule is documented rather than enforced), and G-34 closes it. CP1 additionally found the gap is TWO conflated absences, not one.",
+
+  "completionPredicate": "Unchanged from CP1. At CP2 all five clauses are BUILT and PROVEN locally against a real Postgres; what remains is CI on the merge path, which is authoritative.",
+
+  "scopeBasis": "Unchanged from CP1. Nothing was added to scope during the build. One in-scope adjustment was made (a column rename) and is recorded as F-A2-CP2-2 with its reason.",
+
+  "whatWasBuilt": {
+    "schema": {
+      "file": "lib/db/src/schema/smartFiles.ts",
+      "added": "smart_file_absence_determinations table + SMART_FILE_ABSENCE_VERDICTS closed set + row types. 159 insertions, 0 deletions.",
+      "shape": "id, entity_id, jurisdiction_fips, doc_slug, verdict, basis, determined_at, determined_by, source_uri, access_policy, created_at, updated_at (12 columns).",
+      "constraints": "verdict IN (absent-verified, lookup-failed); basis NOT NULL AND length(btrim(basis)) > 0; determined_by NOT NULL AND non-empty; access_policy in the five-value union; UNIQUE on entity_id.",
+      "deliberateOmission": "NO foreign key to smart_file_documents. In the absent case no document row exists by definition, so an FK would make the common case unrepresentable."
+    },
+    "contract": {
+      "file": "artifacts/api-server/src/atoms/smart-file.contract.ts",
+      "added": "SMART_FILE_READ_STATUSES (the five derived statuses), SmartFileAbsenceBasis, SmartFileAbsence, SmartFilePresent, SmartFileReadResult (the discriminated union), isSmartFileHeld, isSmartFileVerifiedAbsent, validateSmartFileAbsence, plus zod schemas. 233 insertions, 0 deletions.",
+      "keyProperty": "SmartFileReadResult has NO null and NO undefined member."
+    },
+    "store": {
+      "file": "artifacts/api-server/src/lib/smartFileStore.ts",
+      "changed": "readDocument return type Promise<SmartFileReadView | null> -> Promise<SmartFileReadResult>; both return-null sites replaced with typed absences; recordAbsenceDetermination added as the ONLY producer of a recorded absence; buildNotSoughtAbsence added. 297 insertions, 17 deletions.",
+      "headerUpdated": "The G-14 header paragraph advertising the missing typed absence is replaced with what now holds. A stale scope-boundary comment claiming a gap that is closed would mislead the next reader."
+    },
+    "migration": {
+      "file": "lib/db/drizzle/0079_smart_file_absence_determinations.sql",
+      "applied": "NOT APPLIED ANYWHERE except an ephemeral local scratch cluster. Depends on 0078, which is under operator HOLD (OPS-17 A-014), so 0079 is strictly behind the same hold."
+    },
+    "tests": {
+      "contractSuite": "artifacts/api-server/src/__tests__/smart-file-absence.test.ts — 24 new tests",
+      "integrationSuite": "lib/db/src/__tests__/integration/smartFileAbsence.integration.test.ts — 15 new tests against a real Postgres",
+      "schemaTableList": "lib/db/src/__tests__/integration/schema.integration.test.ts — smart_file_absence_determinations added to the expected-tables list",
+      "fixture": "lib/db/src/__tests__/__fixtures__/schema.sql.template — new table DDL, PKEY and three indexes spliced in; verified by replaying the patched template into a clean database (exit 0) AND by the repo's own drift check."
+    }
+  },
+
+  "verificationRun": {
+    "note": "Every figure below is a REAL exit code from a command run in this lane, not a summary of a pipe. Raw output is quoted.",
+    "environment": "An ephemeral local Postgres 18.3 cluster initdb'd at P:/tmp/g34_pg1 on port 55433 for this lane only. NO deployment database was touched at any point. CI provisions pgvector/pgvector:pg14 and is authoritative.",
+    "results": [
+      {
+        "what": "baseline BEFORE any G-34 change (so later red is mine, not inherited)",
+        "command": "npx vitest run src/__tests__/smart-file-contract.test.ts",
+        "output": "Tests 23 passed (23)",
+        "exitCode": 0
+      },
+      {
+        "what": "0079 applies to a database built from the checked-in fixture",
+        "command": "psql -v ON_ERROR_STOP=1 -f lib/db/drizzle/0079_smart_file_absence_determinations.sql",
+        "exitCode": 0
+      },
+      {
+        "what": "the basis check constraint FIRES on empty, whitespace, and an invalid verdict, and PASSES a real citation — proven against the engine, not asserted",
+        "output": "valid insert => INSERT 0 1; empty basis => ERROR ... violates check constraint smart_file_absence_determinations_basis_check; whitespace basis => same ERROR; verdict not-sought => ERROR ... violates check constraint ..._verdict_check; final row count => 1",
+        "verdict": "the constraint can reject AND can accept — a constraint that cannot reject is not a constraint"
+      },
+      {
+        "what": "contract suites (inherited G-14 + new G-34)",
+        "command": "npx vitest run src/__tests__/smart-file-absence.test.ts src/__tests__/smart-file-contract.test.ts",
+        "output": "Test Files 2 passed (2) | Tests 47 passed (47)",
+        "exitCode": 0
+      },
+      {
+        "what": "integration suites (new G-34 + inherited G-14 + schema table list) against real Postgres",
+        "command": "npx vitest run smartFileAbsence.integration.test.ts smartFiles.integration.test.ts schema.integration.test.ts",
+        "output": "Test Files 3 passed (3) | Tests 37 passed (37)",
+        "exitCode": 0
+      },
+      {
+        "what": "typecheck of the whole api-server after a full lib build",
+        "command": "npx tsc --build && (cd artifacts/api-server && npx tsc -p tsconfig.json --noEmit)",
+        "exitCode": 0
+      },
+      {
+        "what": "the repo's own fixture-drift gate, the same one CI runs",
+        "command": "pnpm --filter @workspace/db run push && pnpm --filter @workspace/db run test:fixture:drift",
+        "output": "Schema fixture matches live DB.",
+        "exitCode": 0
+      }
+    ]
+  },
+
+  "mutationTesting": {
+    "why": "DEV_PROCESS 2.2 — a gating indicator is tested for its ability to FIRE before it is trusted, and per the G-14 finding a fire-only test would pass a permanently-firing gate. An assertion that has never been observed failing is not evidence.",
+    "probes": [
+      {
+        "id": "M1",
+        "claim": "the TYPE prevents a bare null, rather than a comment asking callers not to return one",
+        "mutation": "reintroduced `return null;` at the G-14 document-missing site (smartFileStore.ts)",
+        "result": "src/lib/smartFileStore.ts(461,5): error TS2322: Type 'null' is not assignable to type 'SmartFileReadResult'.",
+        "exitCode": 2,
+        "verdict": "PROVEN. The guardrail is the compiler, not a convention. Reverted; typecheck back to exit 0.",
+        "note": "This is the single most important probe in the row: the entire G-34 deliverable is the claim that this is now a mechanism."
+      },
+      {
+        "id": "M2",
+        "claim": "the STALE indicator is not permanently firing",
+        "mutation": "forced `isStale: true` in evaluateSmartFileFreshness",
+        "result": "Tests 3 failed | 44 passed (47)",
+        "exitCode": 1,
+        "verdict": "PROVEN. The silence direction has teeth."
+      },
+      {
+        "id": "M3",
+        "claim": "the STALE indicator is not permanently silent",
+        "mutation": "forced `isStale: false` in evaluateSmartFileFreshness",
+        "result": "Tests 3 failed | 44 passed (47)",
+        "exitCode": 1,
+        "verdict": "PROVEN. The fire direction has teeth. M2 and M3 together are the both-directions proof the dispatch asked to be re-verified and extended, and it now covers the absence path through the same evaluator."
+      }
+    ],
+    "residueCheck": "After reverting all three mutations: contract suites 47/47 pass, typecheck exit 0, and `git diff --stat` on the contract file reports 233 insertions / 0 deletions, confirming no mutation text survived into the committed tree."
+  },
+
+  "findings": [
+    {
+      "id": "F-A2-CP2-1",
+      "severity": "medium",
+      "title": "The fixture-drift gate is PG-VERSION-SENSITIVE, and CI (pg14) differs from any pg17+ machine a lane might build on",
+      "evidence": "The local scratch cluster is PostgreSQL 18.3. `pnpm --filter @workspace/db run test:fixture:drift` failed with exactly one differing line: `determined_by_instrument text NOT NULL` (fixture) vs `determined_by_instrument text CONSTRAINT smart_file_absence_determinat_determined_by_instrument_not_null NOT NULL` (pg18 dump). CI runs `pgvector/pgvector:pg14` (.github/workflows/pr-checks.yml:42), and the checked-in fixture contains ZERO named-not-null constraints across its 4229 lines, confirming it was captured on a pre-17 server.",
+      "rootCause": "PG17+ tracks NOT NULL as named catalog constraints and pg_dump emits the name only when the auto-generated name was TRUNCATED at the 63-char identifier limit. `smart_file_absence_determinations_determined_by_instrument_not_null` is 67 characters, so it truncated and got emitted; every other column's name fit and stayed implicit.",
+      "whyItMatters": "A lane building on a modern local Postgres would either (a) commit a fixture that CI's pg14 rejects as drift, or (b) hand-normalize the line and ship a fixture whose correctness rests on unverifiable reasoning about a server version it cannot run. Both are bad, and the second is worse because it looks green.",
+      "howItWasResolved": "Not by hand-tuning the fixture. The column was RENAMED so no identifier can truncate on any version — see F-A2-CP2-2. After the rename the drift gate prints `Schema fixture matches live DB.` on pg18, and because nothing truncates, pg14 produces byte-identical output.",
+      "durableRecommendation": "Worth a backlog item: the drift script could pin or report the server version, so a future mismatch reports itself as version skew rather than as a schema error. Not fixed in this lane (out of scope, and it is a shared-tooling change)."
+    },
+    {
+      "id": "F-A2-CP2-2",
+      "severity": "low",
+      "title": "In-scope change recorded rather than made silently: the column was renamed determined_by_instrument -> determined_by",
+      "what": "The determination table's attribution column is `determined_by`, not the `determined_by_instrument` name CP1 designed (which mirrored the spine's `verified_by_instrument`).",
+      "why": "Purely to keep the longest auto-generated constraint name under Postgres's 63-character identifier limit, which removes the version-dependent dump behavior in F-A2-CP2-1 at the root. It is a naming change with no semantic effect: the column is still NOT NULL, still check-constrained non-empty, and still carries exactly what did the determining.",
+      "recordedBecause": "CP1 declared the other name. A design changed during the build is a deviation from the frozen record and gets stated, not quietly absorbed — even when the reason is mundane.",
+      "verification": "After the rename: full lib build exit 0, api-server typecheck exit 0, 47/47 contract tests, 37/37 integration tests, drift gate `Schema fixture matches live DB.` exit 0. Zero references to the old name remain in source (`grep -rn` returns only stale `lib/db/dist/` build output, which is generated and gitignored)."
+    },
+    {
+      "id": "F-A2-CP2-3",
+      "severity": "low",
+      "title": "The store's read path now PARSES the entityId, which surfaced a state the CP1 taxonomy had not assigned",
+      "what": "A malformed entityId (one that does not match the declared shape) cannot be a `not-sought` absence, because `not-sought` carries a jurisdictionFips and docSlug that a malformed id cannot supply. It is reported as `lookup-failed` with a basis naming the malformation.",
+      "whyItMatters": "This is the reconstruction trap the family exists to prevent, arriving from the other direction: a malformed id matches zero rows, and without this branch it would have read as an honest `not-sought` — an absence claim derived from a broken request. Reporting it as a failed lookup says the true thing, which is that no lookup happened.",
+      "disposition": "Handled in the store and covered by the type. It did not require a sixth status, which is the outcome I wanted to confirm before adding one."
+    }
+  ],
+
+  "adversarialReviewAtCP2": {
+    "q1_isTheAbsenceActuallyUnforgeable": "Attacked the central claim by asking what it would take to get `absent-verified` out of the store without a deliberate write. Traced every path: readDocument reads the verdict from a determination row and never constructs one; recordAbsenceDetermination is the only writer and validates basis before writing; and the DB check constraint refuses an uncited row even from raw SQL. The integration test `has NO determination row for a document nobody looked for` is the direct probe. I could not construct a forging path.",
+    "q2_didITestTheTestsOrJustWriteThem": "Three mutation probes (M1, M2, M3), each observed FAILING on a real exit code before being reverted. Without M1 in particular, the claim 'the type enforces it' would have been an assertion about my own code that nobody had checked.",
+    "q3_isTheFifthStatusEarningItsPlace": "held-version-absent was the status I was most prepared to drop. It survives because the conflation is live in the merged G-14 code (two return-null sites, lines 307 and 322) and because the correct RENDERING of the two differs: one says we lack a document, the other says we have it and can offer versions 1..N. Also confirmed nothing produces a sixth status (see F-A2-CP2-3).",
+    "q4_whatDidINotProve": "Stated plainly rather than left implied: nothing here is deployed, nothing is served to a customer, and no migration is applied to any deployment database. The freshness probe is on the STORE read path, not a serving revision, so DEV_PROCESS 4.4 is NOT satisfied and G-53 still owes the re-probe. The local Postgres is pg18 while CI is pg14; CI is authoritative and its conclusion string is the merge gate.",
+    "q5_didIWidenScope": "One rename (F-A2-CP2-2), recorded. No corpus capture, no coverage counting, no surface, no promotion performed, no brokerage touch, no smartcity-os touch, no G-14 closure."
+  },
+
+  "constraintsHonored": [
+    "0078 NOT applied to any deployment database. 0079 authored and NOT applied either — the only Postgres it ever touched is an ephemeral local scratch cluster created for this lane.",
+    "No migration was run against any deployment database, and no deployment database was connected to at any point.",
+    "smartcity-os untouched.",
+    "No brokerage rename and no brokerage refactor. Nothing in the diff references brokerage code.",
+    "ACCESS_POLICY_SCHEMA imported, not re-copied — no fourth copy added; the G-14 compile-time divergence control is reused unchanged.",
+    "Built in an ISOLATED WORKTREE at /p/tmp/g34_typed_absence (branch feat/g34-typed-absence off origin/main@7bb79248). The main checkout on feat/s1-instrument-hardening with ~55 uncommitted files from another lane was never cleaned, stashed, reverted, or built in — only read for its branch name.",
+    "G-14 NOT closed by this dispatch.",
+    "The contract promotion is DECIDED and RECORDED at close, not performed.",
+    "The frozen G-14 card was read and NOT edited; item 6 was carried forward, not re-authored.",
+    "Doc_repo edits left uncommitted for the planner."
+  ],
+
+  "remainingAtCP2": [
+    "Push the branch, open the PR, and read the CI check-run conclusion STRINGS from statusCheckRollup. Merge only on 'success'.",
+    "Record the contract-promotion verdict at close (card item 6)."
+  ],
+
+  "notApplicable": {
+    "interruptionRecovery": "not applicable: no sub-agents were spawned in this lane and no mid-flight interruption occurred. There is no stopped-worker state to capture.",
+    "slotCustody": "not applicable: no bulk-writer slot was acquired because this lane runs no --apply and no bulk write.",
+    "heavyScanAnnouncement": "not applicable: no heavy scan was run. The only database touched is an ephemeral local scratch cluster.",
+    "deployVerification": "not applicable: this dispatch builds no surface and deploys nothing. Deliberate per the dispatch — and therefore nothing here is customer-done, and nothing here satisfies DEV_PROCESS 4.4."
+  }
+}

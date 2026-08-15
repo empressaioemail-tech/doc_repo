@@ -1,0 +1,95 @@
+{
+  "artifact": "L16B_CP1_takeover_design",
+  "lane": "L16B",
+  "role": "successor drain custodian",
+  "planRows": ["P-02", "P-07", "P-08", "P-09", "P-11", "P-12", "P-17", "P-25"],
+  "missionPremise": {
+    "ruling": "Prior L16 hung mid-pipelines; lease expired; planner killed hung workers; L16B inherits clean store + staged queue under live lease guard.",
+    "source": "operator successor dispatch 2026-08-14 (CANON-PREAMBLE v0f465c77 / AGENT-CONTRACT vbcc3efb6)"
+  },
+  "completionPredicate": "Pipelines→Ector→wells→footprint pilot→flood from-plan→roads→Tarrant/Dallas tail→G2b re-promote all closed as _inbox/2026-08-14_l16b_leg*_close.json; master close _inbox/2026-08-14_l16b_close.json; lease released in _STATE.md.",
+  "scopeBasis": "Resume L16 chain at pipelines landed=19; do not re-drain closed legs 0-2/mud; flood metros consumed as L24 READY flips; gis.hctx.net wells HALT; footprint one pilot with TEMP+GiST named before run.",
+  "reviewedAt": "2026-08-15T01:54:00Z",
+  "reviewer": "doc_repo lane planner (L16B)",
+  "takeOver": {
+    "verifiedAtSource": {
+      "pipelinesProgress": {
+        "path": "P:/tmp/l16_drain_20260813/leg5_pipelines_progress.json",
+        "landed": 19,
+        "atomsWritten": 1270793,
+        "currentWas": "48039",
+        "lastLanded": "48037",
+        "failed": 0,
+        "halted": null
+      },
+      "closedLegs": [
+        "_inbox/2026-08-13_l16_leg0_sd_residue_close.json",
+        "_inbox/2026-08-13_l16_leg1_rail_corridor_close.json",
+        "_inbox/2026-08-14_l16_mud_scorer_close.json",
+        "_inbox/2026-08-14_l16_leg2_harris_parcel_node_close.json"
+      ],
+      "leaseBefore": {
+        "holder": "L16",
+        "note": "Dispatch said expired@20:29Z; accidental L16 resume had re-armed heartbeat to 2026-08-15T05:51Z — released then retaken as L16B"
+      },
+      "leaseAfter": {
+        "holder": "L16B",
+        "takenAt": "2026-08-15T01:52:20.608Z",
+        "expires": "2026-08-15T05:52:20.608Z"
+      },
+      "detachedHeartbeat": {
+        "pid": 21364,
+        "script": "P:/tmp/l16_drain_20260813/_l16b_detached_heartbeat.mjs",
+        "log": "P:/tmp/l16_drain_20260813/lease_heartbeat.log",
+        "intervalMin": 10,
+        "ttlSec": 14400
+      },
+      "rogueSweep": {
+        "killed": [61796, 68284, 42276, 60636, 41112, 81140, 62084, 50572],
+        "note": "Accidental same-day L16 resume (48039 writer tree) + prior heartbeat shell; post-kill ZERO_ROGUES",
+        "plannerPriorKills": [54744, 68436, 6332]
+      }
+    },
+    "watchRegistry": {
+      "unpaused": ["l16b-drain-progress", "l16b-lease-heartbeat"],
+      "added": ["l16b-pipelines-apply-log"],
+      "path": "_catalog/watch_registry.json"
+    }
+  },
+  "postMortem": {
+    "budgetedMin": 30,
+    "hungContextClarification": "Dispatch named pipe_48037.json; store-truth shows 48037 LANDED clean (53173 atoms, wallMs 131700, VF 0). Hang target is 48039 Brazoria (current at death; no pipe_48039.json).",
+    "evidence": {
+      "pipe_48037": "P:/tmp/l16_drain_20260813/pipe_48037.json DONE apply",
+      "pipelines_apply_log_tail": "heartbeat for 48039 then ~7.5h silence then exit_code=1; zero write progress events",
+      "brazoria_size": { "rows": 304675, "features": 275131, "pipelineTableRows": 491178 },
+      "landedWallMs": { "p50": 407110, "p90": 2447256, "max": 3589544, "bexar_48029": 2292525 }
+    },
+    "hangClass": "PLAN_PHASE_UNBOUNDED_SILENCE",
+    "hangClassDetail": "Writer emits progress only inside writePropertyAtomsBatch. 48039 never reached first batch. Likely unbounded in-memory parcel page+planCountyRrcPipeline buffer-intersect (275k geometries) or host OOM/kill; not a write-path DB wait. Heartbeat-with-agent was a separate failure mode (lease expired while hung).",
+    "remedyArmed": {
+      "perCountyBudgetMs": { "default": 2700000, "large": 5400000 },
+      "killAt": "1.5x budget",
+      "firstCounty": "48039",
+      "firstBudgetMs": 5400000,
+      "firstKillAtMs": 8100000,
+      "runner": "packages/engine-core/scripts/_l16b_pipelines_runner.mjs",
+      "midCountyProgressTouchSec": 300
+    }
+  },
+  "adversarialChecks": [
+    {
+      "claim": "Resume starts at 48037",
+      "finding": "REJECT — 48037 already in landed[]; resume at 48039 with budget armed"
+    },
+    {
+      "claim": "Lease was free/expired at seat time",
+      "finding": "PARTIAL — planner-expired then re-armed by rogue L16 resume; released L16 then take L16B"
+    },
+    {
+      "claim": "90m large budget sufficient vs Bexar 38m",
+      "finding": "PASS band — Brazoria features ~275k < Bexar atoms 703k; if plan hangs, kill at 135m forces diagnose"
+    }
+  ],
+  "next": "Start budgeted pipelines resume; file CP2 after first large county lands or budget-kills with EXPLAIN"
+}
