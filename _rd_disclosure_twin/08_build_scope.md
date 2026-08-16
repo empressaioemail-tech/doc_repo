@@ -6,7 +6,7 @@ last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_05_securities_pivot, rd_dt_06_the_move, rd_dt_07_research_funnel, _decisions/2026-08-15_digital_economies_session_rulings, _decisions/2026-08-15_smart_files_module_identity, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT]
-purpose: The executable build scope for the instrument twin, written for handoff to a planning agent. Records Nick's 2026-08-16 framing rulings, the verified inventory across three repos, three corrections to docs 06 and 07, the twin read contract strawman, and twenty-three numbered work rows with pass/fail instruments. Also records that this is Smart Files' SECOND consumer and therefore its first real generalization test. Structured as a plan of record but NOT registered in _catalog/plan_registry.json; promotion to OPS-18 is an open operator call recorded at the foot of this doc.
+purpose: The executable build scope for the instrument twin, written for handoff to a planning agent. Records Nick's 2026-08-16 framing rulings, the verified inventory across three repos, three corrections to docs 06 and 07, the twin read contract strawman, and twenty-six numbered work rows with pass/fail instruments. The human door is a standalone surface and a client of the twin API, per the 2026-08-16 re-ruling recorded in amendment A-1. Also records that this is Smart Files' SECOND consumer and therefore its first real generalization test. Structured as a plan of record but NOT registered in _catalog/plan_registry.json; promotion to OPS-18 is an open operator call recorded at the foot of this doc.
 ---
 
 # Build scope: the instrument twin
@@ -21,7 +21,19 @@ It is deliberately **not registered** in `_catalog/plan_registry.json`. Register
 
 This is a continuation of the trading platform with Smart Files bolted on for publicly available company documentation, plus one MCP server. It is not a new product build. What exists is a starting point rather than a restriction, so new data sources and new components are in scope where the existing substrate does not reach.
 
-Five framing rulings from 2026-08-16. The R&D cohort is the cockpit trade grid, chosen because its mix of products tests the shape against the wider financial universe rather than against equities alone, with the scaffolding correct first and a handful of instruments run through it. Smart Files is mounted, never merged. The human door is the existing research tab with a new subtab, and the flow inside it is open to rethinking because this is an evolution of that surface rather than a skin on it. The agent door is a new MCP server under Empressa on GCP, and it does not live on the cockpit. The fourteen non-issuer instruments in the grid are inside the R&D scope, not deferred.
+Five framing rulings from 2026-08-16. The R&D cohort is the cockpit trade grid, chosen because its mix of products tests the shape against the wider financial universe rather than against equities alone, with the scaffolding correct first and a handful of instruments run through it. Smart Files is mounted, never merged. The agent door is a new MCP server under Empressa on GCP, and it does not live on the cockpit. The human door was first ruled as a new subtab in the cockpit's research tab and was re-ruled the same day as a standalone surface; see the section below and amendment A-1. The fourteen non-issuer instruments in the grid are inside the R&D scope, not deferred.
+
+## The standalone surface (ruled 2026-08-16)
+
+The human door is a standalone deployment, not a subtab in the cockpit, for now and with the migration cost accepted.
+
+What it is: a small surface, two views to start, that is a human interaction with the MCP data. An instrument view and a search or browse view. It is a client of the twin API and renders nothing the agent door does not return.
+
+Why standalone. The reasons that kept the agent door off the cockpit apply unchanged to a public research UI: the cockpit carries broker connections, billing, and staged trades, and the twin surface serves public-tier research. The claim motion also needs a destination, and an issuer's investor-relations team cannot be sent to a tab inside a Clerk-gated brokerage cockpit. And the flow is being rethought, which is far cheaper on a new surface than inside the existing focus shell.
+
+**The market-structure layer ships as data, not as rendering.** The cockpit already computes and stores zone atoms, regime, and microstructure. Those are structured state. The twin serves them; the standalone surface consumes them; nobody draws a chart. Charting stays where it is built, and the expensive part of that layer is therefore not on this program's critical path at all.
+
+**The merge point is execution.** At some point this surface and the cockpit converge, because a research funnel that cannot place a trade is half a product, and Clerk is what that convergence is for. That is logged as future direction, not scoped here, and the additional migration work it implies is accepted rather than designed around.
 
 ## Definition of done for the R&D phase
 
@@ -31,13 +43,14 @@ A row graded by narration or by doc assertion fails. Every row re-grades only by
 
 ## Governing rules
 
-`90_runbooks/AGENT_CONTRACT.md` is the operative law for lane behaviour and is not restated. Four rules govern here specifically.
+`90_runbooks/AGENT_CONTRACT.md` is the operative law for lane behaviour and is not restated. Six rules govern here specifically.
 
 1. **No silent substitution.** No layer may return another node's data as if it were this node's. A proxy is permitted only when it is marked as a proxy and carries its own provenance. This rule exists because the current implementation violates it, per the drivers finding below.
 2. **Absence is typed, never empty.** Every layer that can be absent returns a verdict of `absent-verified` or `lookup-failed` with the scope that was searched. An empty array is not an answer.
 3. **The contract is declared before it is served.** Row TW-2 blocks the agent door and the human door. A shape discovered by building the UI is the failure mode this rule prevents.
-4. **The cockpit holds no anonymous door.** It carries broker connections and billing. The MCP server fans out to it as an upstream and never inverts that.
-5. **Smart Files is refined, never forked.** This is its second consumer. Anything this build needs that the store does not have goes back into the store as a general change, or gets ruled as genuinely consumer-specific. A private shadow copy of documents inside the cockpit is the failure this rule prevents.
+4. **Research is read-only about the world; execution is authenticated and lives in the cockpit.** This is the boundary, not "the cockpit holds credentials." The standalone surface and the agent door serve state about instruments. The moment an intent becomes an order, it is cockpit territory behind Clerk. Ruled 2026-08-16.
+5. **The human door renders only what the agent door returns.** The standalone surface is a client of the twin API, not a parallel implementation over the same upstreams. This makes two-door parity structural: provenance and typed absence cannot be dropped in the UI, because there is nothing else to render. Ruled 2026-08-16.
+6. **Smart Files is refined, never forked.** This is its second consumer. Anything this build needs that the store does not have goes back into the store as a general change, or gets ruled as genuinely consumer-specific. A private shadow copy of documents inside the cockpit is the failure this rule prevents.
 
 ## What the cohort forces
 
@@ -163,7 +176,8 @@ Three invariants the contract must carry. Every layer can return `Absence` and n
 |---|---|---|
 | `empressa-trading` | node and identity, spine, market structure, synthesis, EDGAR provider, econ catalog, human subtab | TW-3, TW-5, TW-9, TW-10, TW-12, TW-17, TW-18, TW-21 |
 | `smart-files` | the room: enums, identity validator, document and version writes. **Second consumer**, so also the generalization test | TW-4, TW-6, TW-8, TW-11, TW-23 |
-| new Empressa MCP repo | the agent door, fanning out to both upstreams | TW-19, TW-20 |
+| new Empressa union repo | the twin API and MCP door, fanning out to both upstreams, holding no store | TW-19, TW-20 |
+| new standalone surface | the human door, two views, client of the twin API only | TW-21 |
 | `atx-bulls` | read-only reference for the roster pattern; not modified | TW-14, TW-15, TW-16 |
 | `doc_repo` | decision records, this baseline | TW-1, TW-2, TW-16, TW-22 |
 
@@ -174,7 +188,7 @@ Layers are ordered by what blocks what, not by subject. L1 foundation, L2 acquis
 | ID | L | Work item | Pass/fail instrument | Blocked on |
 |---|---|---|---|---|
 | TW-1 | 1 | Ratify the instrument scope identifier and scope-type name | Decision record filed in `_decisions/`; the string appears verbatim in the smart-files validator | none |
-| TW-2 | 1 | Declare the twin read contract across all three shapes, including the absence shape | Contract doc plus machine-readable schema committed; one fixture per shape validates against it in CI | TW-1 |
+| TW-2 | 1 | Declare the twin read contract. **v0.1 APPROVED 2026-08-16, filed at `09_twin_read_contract.md`** | Machine-readable schema committed matching the approved doc; one fixture per shape validates in CI; no schema field exists that the implementation cannot serve at its declared version | TW-1 |
 | TW-3 | 1 | All eighteen grid instruments resolve in the security-master | SQL: eighteen distinct nodes; ticker and CME root both resolve; no duplicate node for one instrument | none |
 | TW-4 | 1 | Smart Files enum widening plus instrument scope validator | Migration applied to the smart-files Neon branch; `identity.test.mjs` green; round-trip write and read of one instrument-scoped document over the HTTP API | TW-1 |
 | TW-5 | 2 | EDGAR document-body fetch extending `edgar.py` | For each of the four operating companies, the latest 10-K primary document is retrieved and byte-identical to the SEC copy | none |
@@ -186,24 +200,27 @@ Layers are ordered by what blocks what, not by subject. L1 foundation, L2 acquis
 | TW-11 | 3 | Honest absence wired through the twin read | `get_twin` for a futures root returns typed issuer-disclosure absence with stated scope; a company missing a form returns `absent-verified`; a failed lookup returns `lookup-failed` and never the former | TW-2, TW-6 |
 | TW-12 | 3 | Retire silent proxy fundamentals | No code path returns proxy fundamentals without a proxy marker and provenance; a test asserts it and fails when the marker is stripped | TW-2 |
 | TW-13 | 3 | Access policy enforced on the twin read | Unauthenticated call returns only `public-free` content; a negative test asserts `tenant-private` content is unreachable without a key | TW-2 |
-| TW-14 | 4 | Roster port: officer and director nodes, tenure edges, role atoms from DEF 14A | For the four companies, board and officer rosters present with tenure edges; a person appearing at two issuers is one node, asserted by SQL | TW-3, TW-16 |
+| TW-14 | 4 | Roster port, **company shape only at v0.1**: officer and director nodes, tenure edges, role atoms from DEF 14A. Fund roster is v0.2 and is not approximated from this shape | For the four companies, board and officer rosters present with tenure edges; a person appearing at two issuers is one node, asserted by SQL | TW-3, TW-16 |
 | TW-15 | 4 | Form 4 insider transaction atoms | Transaction count for a named window reconciles to the SEC count for the same window; each atom carries filing accession and date | TW-14 |
 | TW-16 | 4 | Rule and implement public roster edge scoping, platform-global versus `public-free` | Decision record filed; the implementation matches it; a cross-issuer board query returns without a tenant context | TW-1 |
-| TW-17 | 4 | Market-structure layer composed into the twin read for all eighteen | `get_twin` returns zone and regime state where computed and typed absence where not, for every one of the eighteen | TW-2 |
+| TW-17 | 4 | **Computed-global** market state, `market.computed` at contract **v0.2**: regime, crossover, heatmap. v0.1 serves `market.quotes` only, which is anonymous-reachable today. No rendering, no chart code moved | `market.computed` populated for all eighteen where computed, typed absence where not; the response carries no presentation payload and no user-authored content; the v0.1 schema does not contain the field | TW-2, TW-24 |
 | TW-18 | 4 | Synthesis over the full funnel | Every number in the synthesis text traces to an atom identifier in citations; a test fails on an uncited number | TW-11, TW-17 |
-| TW-19 | 5 | The Empressa MCP server on Cloud Run: resolve, twin read, room and document read, roster, drivers, attestation feed | Live introspection lists the tool set; every response carries the provenance envelope; a malformed key returns 401 and never falls through to public | TW-2, TW-11, TW-13 |
+| TW-19 | 5 | **The union layer.** Twin API plus MCP door on Cloud Run: resolve, twin read, non-persisting document pass-through, roster, drivers, market, attestation feed. Fans out to the cockpit and Smart Files; holds no store | Live introspection lists the tool set; every response carries the provenance envelope; a malformed key returns 401 and never falls through to public; no persistence layer exists; **confused-deputy negative test: an anonymous caller requesting a `tenant-private` document through the pass-through receives 403, proving the union forwards caller entitlement and never substitutes its own service credential** | TW-2, TW-11, TW-13, TW-24 |
 | TW-20 | 5 | Discoverability: registry listing, `llms.txt`, `agents.txt`, developer docs | The server resolves from a public registry entry; both files serve 200 from the deployed host | TW-19 |
-| TW-21 | 5 | Research subtab over the same funnel, absorbing or replacing the drivers surface | The subtab renders a twin for one instrument of each of the three shapes, absences included and visibly distinct from zeros | TW-2, TW-12 |
+| TW-21 | 5 | **Standalone human surface**, two views, client of the twin API only | Renders a twin for one instrument of each of the three shapes with absences visibly distinct from zeros; every rendered value traces to a field the agent door returned; no direct call to the cockpit or to Smart Files from the client | TW-19 |
 | TW-22 | 5 | Eval gate | A scored eval set with the pass threshold declared before the run; an agent answers instrument questions better from the twin than from the raw sources | TW-19 |
 | TW-23 | 3 | Second-consumer findings returned to Smart Files | A divergence report listing every place this build wanted something the store did not have, each ruled general or consumer-specific; every general ruling landed in `smart-files` and reconciled with the first consumer's lane; zero document content stored outside the store | TW-6 |
+| TW-24 | 1 | **Service-caller auth on the cockpit. FIRST BUILD ROW** — one leg unblocks drivers, fundamentals, econ, spine reads, identity resolution, and `market.computed`. No inbound service path exists today: auth is Clerk user-scope, anonymous-tolerant, or operator, and every API key in the backend is an outbound vendor key | A service credential reads instrument-keyed state without a user JWT; a missing or malformed credential returns 401 and never resolves to a user or operator identity | none |
+| TW-25 | 1 | **Identity resolution promoted from ops to a served capability.** The security-master resolver is registered operator-only and labelled ops and debug at `main.py:157`, yet the ratified scope identifier resolves through it | Ticker, CIK, and CME root each resolve to a node identifier through a non-operator path; the operator-only registration is removed or narrowed to genuine debug routes | TW-24 |
+| TW-26 | 3 | **Rule and enforce the treatment of operator-authored zone atoms.** Zone atoms carry `AtomRow.user_id` and all six endpoints run on `get_current_user`; they are drawn analysis, not instrument state | No public twin response contains a user-authored atom; a test asserts it and fails when the exclusion is removed | TW-17 |
 
 ## Sequence
 
-TW-1 and TW-2 first and alone. Everything downstream keys off the scope identifier and the contract, and both are cheap now and expensive after code exists against a guess.
+TW-1 and TW-2 are closed: the scope identifier is ruled and contract v0.1 is approved. TW-24 is now the first build row. One credential check on the cockpit unblocks drivers, fundamentals, econ, spine reads, identity resolution via TW-25, and `market.computed` at v0.2. Nothing else in the plan buys as much.
 
 Then two tracks run in parallel. The issuer track is TW-5, TW-6, TW-8, proving the room on the four companies and two funds. The non-issuer track is TW-3, TW-9, TW-10, proving the authority abstraction on the eleven contracts. They converge at TW-11, which is where the design either holds or does not, because that is the first row where one contract has to answer honestly for both.
 
-The agent door comes before the human door deliberately. A user interface will paper over a mushy contract and an agent door cannot, so TW-19 before TW-21 forces the abstraction into the open while the phase is still cheap to change.
+TW-19 is the spine, not a late surface row. It is the union layer, and both doors are thin clients over it. Building it before any human surface is what forces the contract into the open, because a UI will paper over a mushy contract and an agent door cannot. TW-21 cannot start before it, by governing rule 5.
 
 TW-7 is operations and runs whenever; it gates the continuously-verified claim rather than any build row.
 
@@ -213,14 +230,34 @@ These block the rows named against them and are the first thing the planning age
 
 | Call | Blocks | Recommendation |
 |---|---|---|
-| Instrument scope identifier and scope-type name | TW-1, and through it TW-4, TW-6, TW-19 | `smartfile:instrument:<node_id>:<doc_slug>`, argued above |
+| ~~Instrument scope identifier and scope-type name~~ | TW-1 | **RULED 2026-08-16.** `smartfile:instrument:<node_id>:<doc_slug>`, scope and target type named `instrument`. Record: `_decisions/2026-08-16_instrument_scope_identifier.md` |
 | Public roster edge scoping, platform-global versus `public-free` | TW-16, TW-14 | not yet formed; needs the tenancy read first |
 | Which authority feeds enter the R&D phase | TW-9, TW-10 | CME and CFTC cover all fourteen non-issuer symbols; EIA and Treasury are the depth pass |
-| Does the new subtab absorb the retired drivers surface or rebuild the flow | TW-21 | absorb the catalog, rebuild the flow |
+| ~~Does the new subtab absorb the drivers surface or rebuild the flow~~ | TW-21 | **RULED 2026-08-16 (A-1):** standalone surface, not a cockpit subtab. Absorb the driver catalog as data, rebuild the flow |
 | Migration ordering against Smart Files while Plan Review builds in parallel | TW-4, TW-23 | one ordering owned by the store, not two consumers landing independently. Plan Review is live on the `tenant` scope under OPS-17 G-60; this program must not land a smart-files migration without that lane seeing it |
 | Promotion to OPS-18 as a registered plan of record | all rows becoming dispatchable | see below |
 
 **On promotion.** Registering this as OPS-18 is one entry in `_catalog/plan_registry.json` with a unique row prefix, followed by `node scripts/plan-registry-divergence.test.mjs`. The compiler and the canon-gate hook read that registry and must not be edited. The reason not to do it unilaterally is the focus-queue rule: OPS-16 and OPS-17 are both active with hand-carried lane planners, and a third program needs Nick to name what gets queued to make room. Until then these rows cannot be compiled into a dispatch, and a planning agent working from this doc is doing R&D scoping rather than executing lanes.
+
+## Infrastructure the union layer needs
+
+The union layer holds no store, so **no database is provisioned for it**. If caching later proves necessary that is an explicit decision, not a default.
+
+One repository holding two deployables, the twin API and the standalone surface, versioned together because governing rule 5 makes the client structurally dependent on the contract. Splitting them invites exactly the drift the rule prevents.
+
+`empressa-trading-prod` already exists, and the house pattern is one GCP project per service (`smart-files-505619`, `plan-review-505715`). Creating a new project and linking billing needs operator credentials; deploying into an existing project is the alternative and is a call rather than a constraint. The GitHub repository can be created from this seat.
+
+All three are blocked on naming, which is therefore no longer cosmetic. It gates the repository name, the Cloud Run service name, and the Vercel project name.
+
+## Amendments
+
+The baseline row table above is frozen as of this section. Every subsequent scope change is a dated amendment row here, never an edit to a row's original intent, so that what was believed while work was in flight stays visible.
+
+| ID | Date | Change | Rows touched |
+|---|---|---|---|
+| A-3 | 2026-08-16 | **Contract v0.1 approved** (`09_twin_read_contract.md`) and the four open calls resolved on operator delegation. Establishes the governing principle that the contract declares only what it serves, replacing an earlier draft where unbuilt layers would return `lookup-failed`: that would have made every twin permanently broadcast a false signal about our own backlog using the machinery the product sells. Absence is now reserved for facts about the world; version scope handles the rest. RESTATES TW-2 (approved, schema must not contain unservable fields), TW-14 (company shape only at v0.1), TW-17 (`market.computed` is v0.2, blocked on TW-24), TW-19 (adds the confused-deputy negative test and the non-persisting pass-through), TW-24 (named the first build row). `not-applicable` stays a twin-layer concept and is logged as the first TW-23 divergence finding rather than landed in the store. | TW-2, TW-14, TW-17, TW-19, TW-24 |
+| A-2 | 2026-08-16 | **Reachability map run against the cockpit** (`origin/main` 44664f6c). Three findings. There is NO inbound service-caller path: auth is Clerk user-scope, anonymous-tolerant, or operator, and every backend API key is an outbound vendor key, so TW-19's fan-out to the cockpit has nothing to call today. The security-master resolver is registered operator-only and described as ops and debug, yet the ratified scope identifier depends on it. And zone atoms are operator-authored, keyed on `AtomRow.user_id`, while signal and heatmap cells are global and computed, so the market-structure layer is two different things under one name and serving the drawn half in a public twin would publish the operator's analysis as instrument state. ADDS TW-24 (service auth), TW-25 (resolution as a served capability), TW-26 (zone exclusion, enforced). RESTATES TW-17 to computed-global state only. | TW-17, TW-24, TW-25, TW-26 |
+| A-1 | 2026-08-16 | **Standalone human surface ruled**, replacing the cockpit-subtab plan. Governing rule 4 restated as the research-versus-execution boundary with Clerk as the seam. New governing rule 5: the human door renders only what the agent door returns. TW-19 restated as the union layer and the spine of the plan. TW-21 restated as a standalone two-view client of the twin API, now blocked on TW-19 alone. TW-17 restated to serve market structure as data with no rendering, on the operator's point that the cockpit's zone, regime, and microstructure output is structured state the twin can carry without moving chart code. Convergence with the cockpit at the execution boundary logged as future direction with its migration cost accepted. | TW-17, TW-19, TW-21 |
 
 ## Verification note
 
