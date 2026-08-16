@@ -34,3 +34,19 @@ There is a tension here worth tracking rather than resolving today. Doc 04's sta
 Traction as the primary metric also has a measurement consequence. If traction is the strategy, it needs an instrument, and "usage telemetry becomes the proof artifact" from doc 06 is currently a sentence rather than a mechanism. Whatever the metric is, agent calls, distinct instruments queried, issuers who claim a twin, it should be instrumented in the first release rather than reconstructed later, for the same reason the calibration ledger has to start early.
 
 One open thread this raises and does not answer: incumbent entry is assumed, but nobody has written down who the specific incumbents are for the instrument-twin surface, or what the observable early signals of their entry would look like. That is worth a pass, because "it is only a matter of time" is more actionable with a named list and a set of tripwires than as a general expectation.
+
+---
+
+## 2026-08-16 — Contribute or pay, and where a barter is allowed to sit
+
+**Operator input.** Contribute-or-pay is the right shape, to a certain extent, and we can fine-tune later.
+
+**What was decided.** The Attention layer, the count of participants who have marked a band, is earned either by contributing your own declared levels or by paying. Every other layer keeps the existing tier model. Recorded with reasoning and reversal criteria in `_decisions/2026-08-16_contribute_or_pay_attention_layer.md`.
+
+### Planner commentary
+
+The GTM consequence worth holding on to is that this keeps traction and monetisation from fighting each other. A door gate would have traded discovery for corpus, which is the wrong trade for a strategy whose first entry in this doc says traction is the strategy. Putting the barter one layer in means the free surface stays as findable as it was, while the thing a competitor cannot clone is the thing that costs something.
+
+It also changes what "traction" should be measured as. Under a free read-only funnel the metric is calls and distinct instruments. Under contribute-or-pay there is a second and better metric: the ratio of readers who become contributors. That number is the leading indicator of whether the Attention layer will ever be worth anything, and it is observable long before the layer ships. It should be instrumented with the write path in TW-27, not after.
+
+One thread this leaves open and worth naming: nobody has asked counsel whether publishing aggregate declared intent carries a regulatory characterisation. It is not positioning data in the CFTC sense, because declared intent is not a held position, and that distinction is exactly what makes it novel and therefore untested. Not a blocker at R&D scale, but it belongs on the counsel agenda before the layer is public.

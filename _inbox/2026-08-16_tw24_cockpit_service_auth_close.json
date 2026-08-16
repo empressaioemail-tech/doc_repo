@@ -1,0 +1,89 @@
+{
+  "row": "TW-24",
+  "title": "cockpit backend inbound service-caller auth",
+  "repo": "empressaioemail-tech/empressa-trading",
+  "branch": "feat/tw24-service-caller-auth",
+  "baseBranch": "main",
+  "baseSha": "44664f6c070d0b124f96026ca72c470bc1450914",
+  "headSha": "93ad2c4053077a23f17ddfd4a25e9b7498ee4c70",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/329",
+  "prState": "OPEN (not merged, per acceptance criteria)",
+  "filesChanged": [
+    "apps/cockpit/backend/app/auth.py",
+    "apps/cockpit/backend/app/config.py",
+    "apps/cockpit/backend/app/routers/econ.py",
+    "apps/cockpit/backend/app/routers/fundamentals.py",
+    "apps/cockpit/backend/app/routers/spine.py",
+    "apps/cockpit/backend/.env.example",
+    "apps/cockpit/backend/tests/conftest.py",
+    "apps/cockpit/backend/tests/test_service_caller_auth.py"
+  ],
+  "testOutput": "POST-RULING (commit 93ad2c40) -- authoritative\n\n$ python -m pytest tests/test_service_caller_auth.py -q   (branch)\n28 passed, 8 warnings in 4.98s\n\n$ python -m pytest -q   (origin/main @ 44664f6 -- BASELINE, local Windows/py3.14)\n15 failed, 4086 passed, 1 skipped, 21 deselected, 39152 warnings in 578.90s (0:09:38)\n\n$ python -m pytest -q   (branch @ 93ad2c40 -- local Windows/py3.14)\n15 failed, 4114 passed, 1 skipped, 21 deselected, 39159 warnings in 453.69s (0:07:33)\n\n$ diff (sorted baseline FAILED list) (sorted post-ruling branch FAILED list)\n(identical failure sets vs origin/main baseline)   COUNT=15\n\nCI backend job, main @ 44664f6c (run 30838872609, ubuntu/py3.12):\n13 failed, 4088 passed, 1 skipped, 21 deselected, 38903 warnings in 272.36s (0:04:32)\n\nCI backend job, branch @ 93ad2c40 (run 31973903648, ubuntu/py3.12):\n13 failed, 4116 passed, 1 skipped, 21 deselected, 38903 warnings in 268.30s (0:04:28)\n\nCI failure set byte-identical to main:\n  11 x tests/test_admin_securities.py  (RuntimeError: There is no current event loop in thread MainThread)\n  tests/test_backfill_page_422_timeout.py::test_first_page_end_never_overshoots_and_is_not_dropped\n  tests/test_options_flow.py::test_pick_nearest_monthly_prefers_standard_cycle\nDelta vs baseline: +28 passed (exactly the new tests), 0 new failures.\n\nROUTE INTROSPECTION AFTER THE RULING -- FIVE guarded routes, not six:\n  [GET] /fundamentals/{symbol:path}/panel\n  [GET] /fundamentals/{symbol:path}\n  [GET] /econ/board\n  [GET] /econ/indicator/{indicator_id}/history\n  [GET] /spine/atom/{atom_id}\n  COUNT = 5\n  ANCHOR VERIFIER auth dependencies: NONE (anonymous)\n  ANCHOR VERIFIER all dependencies: [get_db]\n  ATOM SERVE auth dependencies: [get_user_or_service_caller]\n  get_service_caller applied to routes: 0\n  require_operator route count: 76\n\nMUTATION VERIFICATION (each protection removed, suite re-run, then restored):\n  A  combined dependency stripped off all three routers -> 12 failed, 13 passed\n  B  bad credential silently falls through (reproduces the incident) -> 10 failed, 15 passed\n  C  require_operator service guard removed -> 2 failed, 23 passed\n  D  reserved service: namespace guards removed -> 2 failed, 23 passed\n  E  public verifier re-gated (the regression ruling 1 prevents) -> 2 failed, 26 passed\n  restored -> 28 passed\n\nPRIOR RUN, superseded (commit 83992b28, six guarded routes):\n  local branch 15 failed, 4111 passed, 1 skipped, 21 deselected in 535.86s\n  CI  branch   13 failed, 4113 passed, 1 skipped, 21 deselected in 306.12s (run 31973208210)",
+  "ciConclusion": "POST-RULING (commit 93ad2c40, run 31973903648) -- authoritative\n\n$ gh pr checks 329\nPython tests (cockpit backend)\tfail\t5m14s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/31973903648/job/95230401268\nFrontend build (cockpit web)\tpass\t1m1s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/31973903648/job/95230401277\nGitleaks security scan\tpass\t10s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/31973903648/job/95230401331\nWindows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/31973903648/job/95230401745\nEXIT=1\n\n$ gh run view 31973903648 --json conclusion,headSha\nfailure\n93ad2c4053077a23f17ddfd4a25e9b7498ee4c70\n\nBASELINE FOR COMPARISON -- main is ALSO red:\n$ gh run view 30838872609 --json headSha,conclusion,jobs   (main @ 44664f6c)\nfailure\nGitleaks security scan\tsuccess\nPython tests (cockpit backend)\tfailure\nFrontend build (cockpit web)\tsuccess\nWindows .exe (release tags only)\tskipped\n\nVERDICT: the branch CI conclusion string is \"failure\", identical to the \"failure\" on main,\nproduced by the identical 13 pre-existing test failures. No new failures introduced. This is\na no-new-failures claim against a red baseline, NOT a green claim.\n\nPRIOR RUN, superseded (commit 83992b28, run 31973208210): conclusion \"failure\";\nPython tests fail, Frontend build pass, Gitleaks pass, Windows .exe skipping.",
+  "negativeTestsProven": [
+    "no credential and no JWT -> 401 :: test_no_credential_and_no_jwt_is_401 (all 6 guarded routes, dev bypass disabled). Also test_combined_gate_stays_closed_when_service_auth_is_unconfigured -- an UNSET secret closes the path rather than opening the routes. Fails under mutation A.",
+    "malformed credential -> 401 and does NOT resolve to a user or anonymous identity :: test_malformed_credential_is_401 (parametrised over empty / whitespace / 'Bearer <secret>' / '{}'), test_malformed_credential_does_not_fall_through_to_the_dev_identity (dev bypass ACTIVE and X-Dev-User supplied -- still 401, proving no demotion to the dev identity), test_dependency_raises_401_on_malformed_credential_in_dev_mode (unit-level at the dependency). Every 401 body is asserted to be exactly {detail: <auth error>} with no payload key, proving the handler never ran. Fails under mutations A and B.",
+    "wrong credential -> 401 :: test_wrong_credential_is_401, test_wrong_credential_is_401_even_with_the_dev_bypass_active, test_a_prefix_of_the_secret_is_rejected (hmac.compare_digest on the whole value). Fails under mutations A and B.",
+    "valid service credential on an operator-only route -> 403/401, never 200 :: test_service_credential_never_reaches_an_operator_route_prod and the _in_dev_mode variant, over /steward/digest and /spine/confidence (route-level require_operator) and /securities/resolve (ROUTER-level dependencies=[Depends(require_operator)] in main.py). Plus test_service_identity_is_refused_by_the_operator_allowlist (refused even when explicitly allowlisted) and test_service_namespace_is_reserved_from_the_dev_bypass / _from_a_clerk_sub. Fails under mutations C and D.",
+    "valid user JWT still works unchanged on each touched router :: test_user_jwt_still_works_on_every_touched_router (real bearer header through the real gate, Clerk verification stubbed), test_user_jwt_resolves_to_the_user_not_the_service_principal (serve_atom receives user_a, not the service id), test_dev_bypass_user_still_works_on_every_touched_router (harness default path unchanged).",
+    "DOCTRINE (added by ruling 1) -- the public verifier answers with NO credential :: test_anchor_verify_is_public (prod-style auth, zero credentials, 200) and test_anchor_verify_carries_no_auth_dependency (structural -- fails if ANY auth dependency reappears on the route). test_the_atom_serve_sibling_is_still_gated pins the other half. Fails under mutation E."
+  ],
+  "extraGuaranteesProven": [
+    "Service principal is a non-owner: test_service_caller_reaches_atom_serve_as_a_non_owner captures the uid handed to serve_atom and asserts it is service:cockpit, so a shared service secret can never read a tenant's private atoms.",
+    "No committed secret: test_service_secret_has_no_committed_default asserts the config default is the empty string; the Gitleaks CI job passed.",
+    "Blast radius bounded: route introspection confirms exactly FIVE routes carry the combined dependency and no others; the anchor verifier's only dependency is get_db; main.py is untouched (git diff on main.py is empty), so the TW-25 security-master resolver registration is unchanged."
+  ],
+  "remaining": [
+    "require_operator gained an X-Empressa-Service-Key header parameter so the not-an-operator property holds even under the dev bypass. Behaviour is unchanged for any caller that does not send the header; it now appears in the OpenAPI schema of all 76 operator routes.",
+    "get_service_caller (the service-ONLY dependency required by the dispatch) is defined and directly tested but is not yet applied to any route -- the combined dependency is what the routers use. It is the building block for a future service-only surface.",
+    "Deployment: COCKPIT_SERVICE_CALLER_SECRET must be generated per environment and set as a secret before any service caller can authenticate. Unset means the path stays closed (fail-closed), so merging without it changes nothing at runtime.",
+    "TW-25 (security-master resolver registration in main.py) untouched, as instructed.",
+    "No live uvicorn smoke was run. The 28 tests exercise the full ASGI stack (middleware, routing, header decoding) via TestClient, and starting a real server would need the production Postgres URL. Flagging the gap rather than claiming a live check.",
+    "Doctrine candidate for the doc set: gate what you SERVE, never what PROVES you currently lives only as a comment in app/routers/spine.py and in this artifact. Consider promoting it to a canonical rule so a future dispatch cannot repeat the same instruction."
+  ],
+  "blocked": [],
+  "notes": [
+    "Worked from a FRESH clone at P:/tmp/tw24-cockpit branched off origin/main. The stale clone at 'P:/Empressa Trading' (branch fix/zone-mark-death-clip) was not used.",
+    "Baseline discipline: the cockpit suite is red on a clean checkout AND CI on main is red. Every claim here is no-new-failures against that baseline, never green.",
+    "The gh exit code was NOT used as evidence; the conclusion strings (failure on both main and branch, pass for gitleaks and the frontend build) are quoted verbatim in ciConclusion.",
+    "PR is OPEN and NOT merged, per the acceptance criteria.",
+    "Operator rulings 2026-08-16 applied in commit 93ad2c40 on the SAME branch; the PR was updated in place, not reopened. Both rulings are recorded in the rulings[] key."
+  ],
+  "commits": [
+    "83992b28416a032d157bfc805f23d3cec73de28a  feat(auth): inbound service-caller credential for instrument-keyed reads [TW-24]",
+    "93ad2c4053077a23f17ddfd4a25e9b7498ee4c70  fix(spine): revert the anchor-verify gate -- gate what you SERVE, never what PROVES you [TW-24]"
+  ],
+  "rulings": [
+    {
+      "id": "RULING 1",
+      "subject": "GET /spine/anchor/verify/{atom_id}",
+      "ruling": "REVERT the gating. Restore to anonymous, exactly as on origin/main, and remove its _GUARDED entry.",
+      "rationale": "Public verifiability is load-bearing doctrine, not an oversight in the original code. _rd_disclosure_twin/02_cockpit_precedent.md states the expansion path as the Merkle-sealed log becoming the subscriber-facing proof surface, with attestations verifiable without trusting us. Verifiable without trusting us means reachable without our credential; gating it inverts the tamper-evidence claim the whole product rests on. The planner dispatch named the route and should not have.",
+      "principle": "Gate what you SERVE, never what PROVES you. GET /spine/atom/{atom_id} serves content and stays gated; GET /spine/anchor/verify/{atom_id} proves content and must not be.",
+      "status": "IMPLEMENTED in commit 93ad2c40",
+      "implementation": [
+        "app/routers/spine.py: anchor_verify signature restored byte-for-byte to origin/main (atom_id plus db=Depends(get_db)); the get_user_or_service_caller dependency removed.",
+        "The principle is encoded as a DOCTRINE comment block immediately above the route, naming the guard test so nobody re-gates it later; the docstring says ANONYMOUS BY DESIGN.",
+        "tests/test_service_caller_auth.py: the anchor/verify entry removed from _GUARDED and replaced with a _PUBLIC_VERIFIER constant.",
+        "NEW test_anchor_verify_is_public -- prod-style auth (dev bypass OFF), no Authorization, no X-Dev-User, no service key, and the verifier still answers 200 with pass=false and reason=atom not found.",
+        "NEW test_anchor_verify_carries_no_auth_dependency -- structural: walks the route dependency graph and fails if ANY of the six auth dependencies reappears. Stronger than a status assertion, which a gate that still returned 200 for some caller could slip past.",
+        "NEW test_the_atom_serve_sibling_is_still_gated -- pins the other half of the distinction so the two routes cannot drift into one policy.",
+        "Route introspection now reports 5 guarded routes, not 6; the verifier's only dependency is get_db.",
+        "MUTATION E (re-gate the verifier) gives 2 failed, 26 passed. Both new anti-regression tests fire. Restored gives 28 passed."
+      ]
+    },
+    {
+      "id": "RULING 2",
+      "subject": "GET /positions/{symbol}/context",
+      "ruling": "CONFIRMED -- keep it user-only, keep the pinning test.",
+      "rationale": "It reads the caller's own theses and brokerage position, which is tenant-private and not instrument-keyed. Putting it behind one shared service secret would break the tenant-sovereignty rule in CLAUDE.md.",
+      "status": "NO CHANGE NEEDED -- already built this way; test_position_context_stays_user_only retained."
+    },
+    {
+      "id": "KEEP AS BUILT",
+      "subject": "the rest of TW-24",
+      "ruling": "The commit-to-the-service-path property, the require_operator refusal ordering ahead of the dev bypass, the reserved service: namespace, and the mutation-verification of each protection are all confirmed correct and unchanged.",
+      "status": "UNCHANGED"
+    }
+  ]
+}
