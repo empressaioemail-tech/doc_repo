@@ -16,7 +16,7 @@ Read this first. Then the program WDLL. Then the container that owns your items.
 
 Gate is closed on the demo path (WDLL walk/close 2026-08-16). Residuals (store UPDATE, F4 ingest, E6) stay named. Planner executes those only when L26 is quiet or as slot-free optional work. Compiled dispatch if handed off: `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-60`.
 
-DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00006-duj` @100% tag `g60c`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX`). MCP `hauska-mcp-server-00074-tar` @100% tag `g60d` (anon ICC withhold, PR #69 `0316d0a`). Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
+DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00010-cey` @100% tag `g60f`, origin `5952846`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_5rjkGcE44C2FFLVhDHE7C8BUbGr5`). A-031: files UI and applicant view are on this host. Smart Files is the store. Do not planner-seed more files. MCP `hauska-mcp-server-00074-tar` @100% tag `g60d` (anon ICC withhold, PR #69 `0316d0a`). Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
 
 ## Neon DSN on disk (operator)
 
@@ -86,3 +86,6 @@ Superseded: `_inbox/2026-08-16_c_wdll_lane_c_plan_review.md`, `_inbox/2026-08-16
 - PE ICC citations stay off.
 - One MCP server. Codex tools retarget; reporting tools stay; Cotality dies.
 - Circle / DNS / directory / SaaS / public-paid are not this card.
+- Applicant view is `/applicant?token=` on plan-review-app. Not G-52. Not smart-files-app.
+- Existing `icc-demo` files (`site-plan-sheet.txt`, `mcp-g60-probe.txt`) are premature residue. Leave them. Do not DELETE. Do not POST more from the planner.
+- First legitimate write is a reviewer upload in the plan-review Files tab. Share then mints the applicant link.
