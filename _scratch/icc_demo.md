@@ -5,6 +5,7 @@ Date opened: 2026-08-16.
 
 ## GROUND-TRUTH
 
+- 2026-08-16T14:54-05: G-60 walk/close. MCP 00074-tar @100% g60d. plan-review 00006-duj @100% g60c. Queue total=2 A In Review B Submitted. Anon list omits icc-model-code. Anon get_atom corpus DID access-deny. query_jurisdiction icc-model-code atomCount=4966 accessPolicy=public-free. Ledger 200 computedAt=2026-08-14T17:41:22.500Z satisfiedCells=616 (nested under summary; 2,121,656 bytes). Cortex queue unauth 200 x-plan-review-proxied:1. Files 404. Observer read_smart_file tenant-private denied. F4 DID pending:plan-review:f361bc78-6feb-47e9-b594-ae5162a948fe. Close `_inbox/2026-08-16_icc_demo_close.json`.
 - 2026-08-16T13:27-05: MCP PR #69 MERGED squash 0316d0a41e7c7f7dcf5a4908324d1f6d7c09ed5f. Serving hauska-mcp-server-00074-tar @100% tag g60d. Anon list_jurisdictions tenants bastrop_tx, grand_county_ut (icc-model-code omitted; before: 3 tenants including icc). Anon get_atom did:hauska:jurisdiction-corpus:icc-model-code isError access-deny no body. Reviewer key still reads entityId icc-model-code. Health retrieval ok. Anon get_property_atom_chain 48021:28286 status=ready. Store still public-free atomCount 4966. No --apply. Rollback 00072-puy tag g60 @0%.
 - 2026-08-16T12:05-05: Share hotfix + escapeHtml on serving. plan-review-00006-duj @100% tag g60c. HAUSKA_MCP_URL inherited. POST share 201 store=smart-files folder folder:tenant:icc-demo:plan-review-48021-28286. Origin 8cf82e7. Vercel dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX aliased plan-review-app-ten.vercel.app. Unauthed /icc/activity 401.
 - 2026-08-16T11:45-05: Origin clean-spot. MCP PR #68 MERGED squash 12156a024223bf4ec32ce586857e7c3c496a8a3b at 2026-08-16T16:35:43Z. LDT PR #436 MERGED squash 85c5d1a8c12a4a70e81323a907ca252b802266b8 at 2026-08-16T16:45:07Z (Test conclusion success). plan-review origin main was e0c8e9d then 09a4392 atom-chain then 1a6ac83/8cf82e7.
@@ -32,6 +33,8 @@ Date opened: 2026-08-16.
 - Splicing map helpers into `app.js` ate `function escapeHtml`. `node --check web/app.js` before Vercel.
 - PowerShell splits `--substitutions=_TAG=x,_CANARY=1` on the comma. Quote the whole substitutions value.
 - `AtomSearchResult` has no `sourceAdapter`. ICC withhold on search uses `jurisdictionTenant` only.
+- Walk `cited_atom_did = icc:ibc-2018:R311.7` is not a Hauska DID. Probe withhold on `did:hauska:jurisdiction-corpus:icc-model-code`. Do not silently rewrite the fixture.
+- County ledger `computedAt` lives under `summary`. A truncated body parses as empty and looks like a missing stamp.
 
 ## DEAD-END
 
@@ -41,9 +44,9 @@ Date opened: 2026-08-16.
 
 ## OPEN
 
-- A-028 stands. Do not park G-60 on L26 quiet.
-- NEXT: fill walk LIVE. Then honest close.
+- G-60 CLOSED_ON_DEMO_PATH 2026-08-16. Close `_inbox/2026-08-16_icc_demo_close.json`.
 - Store UPDATE (G-30 / G-17 existing atoms) and F4 engine ingest remain residuals. MCP read-path withhold is live on 00074-tar.
 - E6 from a clean hauska-map worktree is slot-free and optional.
 - L26 still holds `--apply`. No second writer. IPMC `--apply` not this card.
 - G-58b DROP still OPEN. Do not do it here.
+- Nested `/engagements/:id/findings` is 501 leftover. F5 path is global `/findings?sectionId=`.

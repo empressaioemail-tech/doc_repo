@@ -139,11 +139,13 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
 
 22. **End-to-end walk.** A planner who was not in this chat runs `_inbox/2026-08-16_icc_demo_walk.md` covering F1-F7, letter, files, MCP Codex tools, and the ICC portal, without asking which parcel or URL.
     | check: walk LIVE block filled. Close records a dry-run.
-    | grade: [ ] | depends on: 4-13, 17, 21
+    | grade: [x] met 2026-08-16 (same-planner caveat) | evidence: LIVE filled 2026-08-16T19:53Z from serving probes. Queue A In Review B Submitted. Matrix R311.7 Uncertain. Letter 832. Anon ICC withheld. Close `_inbox/2026-08-16_icc_demo_close.json` records the dry-run. Same planner as the elevate wave filled LIVE, not a second person. Hard-fail list none fired.
+    | depends on: 4-13, 17, 21
 
 23. **Honest close.** Names IPMC residual. Names G-50 SaaS OPEN. Names Circle/self-serve/directory OPEN. Does not claim customer-facing ICC. Does not claim G-53. Ledger still 200 with `computedAt`. Files isolation seed still lists. Cortex `/api/smart-files` still 404. Names that cortex `/api/plan-review` is a remount proxy, not a 404.
     | check: `_inbox/2026-08-16_icc_demo_close.json`
-    | grade: [ ] | depends on: 22, 24
+    | grade: [x] met 2026-08-16 | evidence: close JSON `honestCloseChecklist` names IPMC G-41 typed-absence, G-50 OPEN, Circle/DNS/directory OPEN, not customer-facing ICC, not G-53. Ledger 200 `summary.computedAt=2026-08-14T17:41:22.500Z` `satisfiedCells=616`. PE g58-probe room lists. Cortex files 404. Cortex queue unauth 200 `x-plan-review-proxied: 1` (remount proxy, not a 404).
+    | depends on: 22, 24
 
 24. **Cortex remount.** After the elevated BFF is live on plan-review Cloud Run, cortex-api `/api/plan-review/*` proxies to that service. Zero in-process BFF writes to cortex-prod for those routes. Existing CC / PE / cortex-tiles / MCP callers keep the cortex URL. Not a 404. Dirty LDT is not the PR vehicle.
     | check: live GET `/api/plan-review/queue` on cortex-api hits plan-review Cloud Run (trace/service header). Cortex `/api/smart-files` still 404.
@@ -174,4 +176,33 @@ A-008 2026-08-16. G-60 does not wait for L26 quiet. Store UPDATE (items 7/18/19)
 
 ## Finish card
 
-Empty until close.
+Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08-16_icc_demo_close.json`. Walk `_inbox/2026-08-16_icc_demo_walk.md`.
+
+| Item | Start | Finish | Evidence |
+|---|---|---|---|
+| 1 | met | met | housing locked; unchanged |
+| 2 | met | met | `plan-review-00006-duj` @100% tag g60c |
+| 3 | met | met | `plan-review-app-ten.vercel.app` unauthed ICC 401 |
+| 4 | met | met | live queue total=2 Submitted=1 In Review=1 |
+| 5 | met | met | A 48021:28286 cotalityCalls=0 |
+| 6 | met | met | matrix n=4 R311.7 Uncertain bodyVerbatim=false |
+| 7 | partial | partial | override live; pending:plan-review:f361bc78-…; no store ingest |
+| 8 | met | met | global findings?sectionId=R311.7 returns A and B. Nested /engagements/:id/findings is 501 leftover |
+| 9 | met | met | IBC seed + UDC + IPMC typed-absence |
+| 10 | met | met | briefing 15 steps ready |
+| 11 | partial | partial | envelope GeoJSON n=1; not hauska-map; parcel-node geom pending |
+| 12 | met | met | letter html_len=832 |
+| 13 | met | met | two sheets + share 201 |
+| 14 | met | met | serving now 00074-tar; chain ready; withhold additive |
+| 15 | met | met | Codex key product-gates get_property_detail; reporting-key extinguished stands |
+| 16 | met | met | list_smart_file_folders tenant icc-demo live |
+| 17 | met | met | Codex tools on plan-review Cloud Run |
+| 18 | partial | partial | ingest #346 + read-path #69 live; store public-free 4966 |
+| 19 | partial | partial | activity actor+book+section live; store atoms not UPDATEd |
+| 20 | met | met | rate 0.01 UI + MCP |
+| 21 | met | met | /icc/activity + icc_activity_list |
+| 22 | open | met (same-planner caveat) | LIVE filled; same planner recorded |
+| 23 | open | met | this close |
+| 24 | met | met | cortex queue unauth 200 x-plan-review-proxied:1; files 404 |
+
+Drift vs Start: items 22 and 23 moved open to met. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar (already graded on item 18). No silent scope add. Residual set unchanged (7/11/18/19).

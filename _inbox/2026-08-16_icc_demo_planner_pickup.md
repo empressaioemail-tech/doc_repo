@@ -1,6 +1,6 @@
 ---
 id: 2026-08-16_icc_demo_planner_pickup
-title: Planner pickup — ICC demo program (G-60 in flight)
+title: Planner pickup — ICC demo program (G-60 CLOSED_ON_DEMO_PATH)
 status: active
 last_updated: 2026-08-16
 applies_to: portfolio
@@ -14,7 +14,7 @@ Read this first. Then the program WDLL. Then the container that owns your items.
 
 ## Gate
 
-Gate is open (WDLL approved, decision active, G-60 in OPS-17). Planner executes in this chat unless a compiled dispatch is handed off: `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-60`.
+Gate is closed on the demo path (WDLL walk/close 2026-08-16). Residuals (store UPDATE, F4 ingest, E6) stay named. Planner executes those only when L26 is quiet or as slot-free optional work. Compiled dispatch if handed off: `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-60`.
 
 DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00006-duj` @100% tag `g60c`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX`). MCP `hauska-mcp-server-00074-tar` @100% tag `g60d` (anon ICC withhold, PR #69 `0316d0a`). Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
 
@@ -64,7 +64,7 @@ Superseded: `_inbox/2026-08-16_c_wdll_lane_c_plan_review.md`, `_inbox/2026-08-16
 6. **DONE 2026-08-16.** Cortex remount (WDLL 24). Serving `cortex-api-00519-muq` @100% tag `g60`. Prod queue `x-plan-review-proxied: 1`. Files still 404. LDT PR **#436 MERGED** squash `85c5d1a8` (Test conclusion `success`). MCP PR **#68 MERGED** squash `12156a02`.
 7. **DONE 2026-08-16 (code half).** G-30 ingest no longer hardcodes public-free. Engine PR **#346 MERGED** squash `ebe6d63` 2026-08-16T17:11:33Z (check-run conclusion SUCCESS). Store UPDATE is a residual (A-008). WDLL 5-6, 8-10, 12-13, 20-21 met on serving. WDLL 7/11/18/19 partial. WDLL 22-23 open.
 8. **DONE 2026-08-16 (read-path).** MCP anon ICC withhold live. PR **#69 MERGED** squash `0316d0a`. Serving `hauska-mcp-server-00074-tar` @100% tag `g60d`. Anon list omits `icc-model-code`. Anon `get_atom` on `did:hauska:jurisdiction-corpus:icc-model-code` holds the body. Reviewer key still reads. Store UPDATE still residual.
-9. **NEXT (slot-free).** Fill walk LIVE. Honest close. Named residuals: store UPDATE, F4 pending DID, E6 not hauska-map compose. No second `--apply`. No G-58b DROP.
+9. **DONE 2026-08-16 (walk/close).** LIVE filled 2026-08-16T19:53Z. Close `_inbox/2026-08-16_icc_demo_close.json`. WDLL 22 met with same-planner caveat. WDLL 23 met. G-60 CLOSED_ON_DEMO_PATH. Residuals: store UPDATE, F4 pending DID, E6 not hauska-map compose. No second `--apply`. No G-58b DROP.
 
 ## Slot / dirty trees
 
