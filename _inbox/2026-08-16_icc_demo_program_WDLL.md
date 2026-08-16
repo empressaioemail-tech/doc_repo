@@ -134,8 +134,8 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
     | grade: [x] met 2026-08-16 | evidence: GET `/api/icc/activity` 200 n=7, every row `rate=0.01`, sources `plan-review-ui` and `mcp:codex_override_write`. Label "PoC fixture, not a quoted SaaS price". This is the plan-review activity table, not a second Circle ledger. Hauska inbound meter on existing ICC atoms still waits G-30 UPDATE.
 
 21. **ICC activity portal.** Gated `/icc/activity` on `plan-review-app`. Observer `icc-demo/observer` sees rows for actor `did:hauska:actor:org:icc`: timestamp, source (`plan-review-ui` or `mcp:<tool>`), book, section, engagement id if any, rate, amount, tier. Includes free-tier. Same data via MCP `icc_activity_list`. Not Command Center. Footer names IPMC residual and purge selectors (`sourceAdapter=icc-code-connect`, `jurisdictionTenant=icc-model-code`).
-    | check: UI after reviewer walk + one MCP `get_atom` on an IBC section. Row count >= 1 from each source.
-    | grade: [x] met 2026-08-16 | evidence: `/icc/activity` on `plan-review-app-ten.vercel.app` gated. API rows accrue to `did:hauska:actor:org:icc` at 0.01 from UI and MCP. Footer names IPMC residual and purge selectors. Unauthed 401 already graded in item 3.
+    | check: UI after reviewer walk + one MCP `get_atom` on an IBC section. Row count >= 1 from each source. Summary n matches table. Unauthed 401. Planner POSTs zero activity rows.
+    | grade: [x] met 2026-08-16 | evidence: A-011. Serving `plan-review-00012-pen` @100% tag `g60g` origin `a864f48`. UI `dpl_8KedsRJVn1UaJ32izvoY8oJQboa2`. GET activity host=plan-review store=plan-review-activity summary n=27 amount=0.27 sources plan-review-ui 24 / mcp:codex_override_write 2 / mcp:codex_finding_generation 1. Observer BFF 200 same n. Unauthed `/icc/activity` and `/icc` 401. Observer gate lands on this route. Planner did not INSERT this wave. Hauska inbound meter still waits G-30.
 
 22. **End-to-end walk.** A planner who was not in this chat runs `_inbox/2026-08-16_icc_demo_walk.md` covering F1-F7, letter, files, MCP Codex tools, and the ICC portal, without asking which parcel or URL.
     | check: walk LIVE block filled. Close records a dry-run.
@@ -178,6 +178,8 @@ A-009 2026-08-16. Map is the live SmartSite surface (`smartsite.cloud/?parcelNod
 
 A-010 2026-08-16. Plan review owns the files UI and the applicant view. Smart Files is the backend store. Share URL is `plan-review-app-ten.vercel.app/applicant?token=`, not `smart-files-app`. Do not planner-seed more files. Existing icc-demo objects are premature residue; no silent DELETE. Decision `_decisions/2026-08-16_plan_review_owns_files_ui.md`. OPS-17 A-031.
 
+A-011 2026-08-16. Plan review owns the ICC activity portal UI. Activity table is the demo store. Observer lands on `/icc/activity`. Command Center is not the portal. Planner does not seed activity rows. Hauska inbound meter waits G-30. Decision `_decisions/2026-08-16_plan_review_owns_icc_portal.md`. OPS-17 A-032.
+
 ## Finish card
 
 Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08-16_icc_demo_close.json`. Walk `_inbox/2026-08-16_icc_demo_walk.md`.
@@ -204,9 +206,9 @@ Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08
 | 18 | partial | partial | ingest #346 + read-path #69 live; store public-free 4966 |
 | 19 | partial | partial | activity actor+book+section live; store atoms not UPDATEd |
 | 20 | met | met | rate 0.01 UI + MCP |
-| 21 | met | met | /icc/activity + icc_activity_list |
+| 21 | met | met (A-011 portal elevate) | observer table + summary n=27 UI+MCP; unauthed 401; no planner INSERT |
 | 22 | open | met (same-planner caveat) | LIVE filled; same planner recorded |
 | 23 | open | met | this close |
 | 24 | met | met | cortex queue unauth 200 x-plan-review-proxied:1; files 404 |
 
-Drift vs Start: items 22 and 23 moved open to met at first close. A-009 moved item 11 partial to met (live SmartSite embed) and elevated item 13 share to a submitter data-room URL. A-010 re-opened item 13 to partial: share host is plan-review applicant view, not smart-files-app; planner must not seed more files. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar. Residual set is now 7/13/18/19.
+Drift vs Start: items 22 and 23 moved open to met at first close. A-009 moved item 11 partial to met (live SmartSite embed) and elevated item 13 share to a submitter data-room URL. A-010 re-opened item 13 to partial: share host is plan-review applicant view, not smart-files-app; planner must not seed more files. A-011 elevated item 21 from a meter pane to the observer portal on the same host. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar. Residual set is now 7/13/18/19.
