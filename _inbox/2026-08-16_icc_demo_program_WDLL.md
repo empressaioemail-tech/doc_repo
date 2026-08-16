@@ -85,18 +85,18 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
     | grade: [x] met 2026-08-16 | evidence: GET briefing 200 status=ready 15 chain steps including zoning-fact / setback-rule / buildable-envelope source atoms plus withheld terrain and pending parcel-node. Confidence objects on source steps. `bodyVerbatim=false`. No fabricated Pass.
     | depends on: 6
 
-11. **E6 map.** On F2, floating map centers on `48021:28286` with parcel boundary. On F3, overlay updates without page navigation. Composed from hauska-map in a **clean worktree**. Never deploy plan-review from dirty `P:\hauska-map`.
-    | check: live map on intake and on matrix. Deploy source is `plan-review-app`, not property-explorer.
-    | grade: [x] partial 2026-08-16 | evidence: intake + matrix + map tabs render MapLibre with live `buildable-envelope` GeoJSON (1 polygon) from atom-chain. Parcel-node geometry slot is pending. Not a hauska-map package import (WDLL asked for a clean hauska-map worktree). Not property-explorer.
+11. **E6 map.** On F2, floating map is the live SmartSite map for `48021:28286` (`?parcelNodeId=`). On F3, the same embed without page navigation. Host remains `plan-review-app`. Never deploy plan-review from dirty `P:\hauska-map`.
+    | check: live iframe or open-in-SmartSite URL on intake and matrix. Deploy source is `plan-review-app`, not property-explorer.
+    | grade: [x] met 2026-08-16 | evidence: A-009. Serving `plan-review-00008-pol` @100% tag `g60e`. GET map-feature `host=smartsite` `smartSiteUrl=https://smartsite.cloud/?parcelNodeId=48021%3A28286`. UI `dpl_GB87Rq19HMiShTRdH9sbWXKa6ixc` embeds that URL. Dirty hauska-map not the deploy vehicle.
 
 12. **Decision letter.** End-to-end on engagement A completes intake to a letter (HTML or PDF) that cites atom IDs, carries the determination, does not reproduce ICC body. Letter is served by plan-review, not cortex `cortex_deliverable_letter_*`.
     | check: live GET letter. Cortex letter tools unused by this surface.
     | grade: [x] met 2026-08-16 | evidence: POST letter/generate on A `aafb9572-…` 200 html length 832 cites atom + R302/R311, no verbatim ICC body. UI generate button live. Cortex letter tables unused.
     | depends on: 7
 
-13. **Smart Files room.** Folder `folder:tenant:icc-demo:<slug>` on engagement A. Upload at least one sheet. Observer sees it. Share token is that room only. Acme/Empressa G-59 rooms not listed.
-    | check: MCP create/upload/list. Vercel files pane. Share GET.
-    | grade: [x] met 2026-08-16 | evidence: intake folder `folder:tenant:icc-demo:plan-review-48021-28286`. Upload + MCP writes already live. POST `/engagements/:id/share` 201 `{store:smart-files,token,folderId}` on g60c `plan-review-00006-duj`. UI share button on files tab.
+13. **Smart Files room.** Folder `folder:tenant:icc-demo:<slug>` on engagement A. Reviewer uploads at least one sheet. Share is a read-only data-room URL on `smart-files-app` (`#share=`) for the submitter (architect, homeowner, or contractor). Token is that room only. Acme/Empressa G-59 rooms not listed. Not an applicant portal.
+    | check: upload then share returns `dataRoomUrl`. Unauthed GET of that URL lists this folder's files only.
+    | grade: [x] met 2026-08-16 | evidence: A-009. POST share 201 `kind=data-room` `audience=submitter` `dataRoomUrl` on `smart-files-app`. Unauthed BFF GET of that token 200 folder `folder:tenant:icc-demo:plan-review-48021-28286` n_files=2 (`mcp-g60-probe.txt`, `site-plan-sheet.txt`). Not an applicant portal.
     | depends on: 3, 16
 
 14. **MCP finished: substrate.** Serving revision re-counted. `search_atoms` / `get_atom` reach retrieval for a public-free non-ICC atom. `get_property_atom_chain` on `48021:28286` is store truth. `/health` retrieval is not ok-on-404. Anon initialize 200. Malformed key 401.
@@ -174,6 +174,8 @@ A-007 2026-08-16. Plan review is Smart Files' first product consumer. Documents,
 
 A-008 2026-08-16. G-60 does not wait for L26 quiet. Store UPDATE (items 7/18/19) is a named residual. Slot-free next: MCP anon ICC withhold, walk, close. No second `--apply`. Decision `_decisions/2026-08-16_g60_does_not_wait_on_l26.md`. OPS-17 A-028.
 
+A-009 2026-08-16. Map is the live SmartSite surface (`smartsite.cloud/?parcelNodeId=`), not an OSM envelope pane and not a deploy from dirty `P:\hauska-map`. Share is a Smart Files data-room URL on `smart-files-app` for the architect, homeowner, or contractor who submitted the plan. Upload stays in the engagement folder. Read-only token, that room only. Applicant portal stays out.
+
 ## Finish card
 
 Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08-16_icc_demo_close.json`. Walk `_inbox/2026-08-16_icc_demo_walk.md`.
@@ -190,9 +192,9 @@ Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08
 | 8 | met | met | global findings?sectionId=R311.7 returns A and B. Nested /engagements/:id/findings is 501 leftover |
 | 9 | met | met | IBC seed + UDC + IPMC typed-absence |
 | 10 | met | met | briefing 15 steps ready |
-| 11 | partial | partial | envelope GeoJSON n=1; not hauska-map; parcel-node geom pending |
+| 11 | partial | met (A-009) | live SmartSite embed `smartsite.cloud/?parcelNodeId=` on `00008-pol` / `dpl_GB87Rq19HMiShTRdH9sbWXKa6ixc` |
 | 12 | met | met | letter html_len=832 |
-| 13 | met | met | two sheets + share 201 |
+| 13 | met | met (A-009 data room) | share 201 dataRoomUrl; unauthed resolve 200 n_files=2 this folder only |
 | 14 | met | met | serving now 00074-tar; chain ready; withhold additive |
 | 15 | met | met | Codex key product-gates get_property_detail; reporting-key extinguished stands |
 | 16 | met | met | list_smart_file_folders tenant icc-demo live |
@@ -205,4 +207,4 @@ Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08
 | 23 | open | met | this close |
 | 24 | met | met | cortex queue unauth 200 x-plan-review-proxied:1; files 404 |
 
-Drift vs Start: items 22 and 23 moved open to met. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar (already graded on item 18). No silent scope add. Residual set unchanged (7/11/18/19).
+Drift vs Start: items 22 and 23 moved open to met at first close. A-009 moved item 11 partial to met (live SmartSite embed) and elevated item 13 share to a submitter data-room URL. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar. Residual set is now 7/18/19.
