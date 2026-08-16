@@ -5,7 +5,7 @@ Date opened: 2026-08-16.
 
 ## GROUND-TRUTH
 
-- 2026-08-16T12:11-05: Engine PR #346 MERGED squash ebe6d63228bdac324960c63b7733d31049f3a14d. Check-run conclusion SUCCESS. No ICC UPDATE. L26 still metro current 48183.
+- 2026-08-16T13:27-05: MCP PR #69 MERGED squash 0316d0a41e7c7f7dcf5a4908324d1f6d7c09ed5f. Serving hauska-mcp-server-00074-tar @100% tag g60d. Anon list_jurisdictions tenants bastrop_tx, grand_county_ut (icc-model-code omitted; before: 3 tenants including icc). Anon get_atom did:hauska:jurisdiction-corpus:icc-model-code isError access-deny no body. Reviewer key still reads entityId icc-model-code. Health retrieval ok. Anon get_property_atom_chain 48021:28286 status=ready. Store still public-free atomCount 4966. No --apply. Rollback 00072-puy tag g60 @0%.
 - 2026-08-16T12:05-05: Share hotfix + escapeHtml on serving. plan-review-00006-duj @100% tag g60c. HAUSKA_MCP_URL inherited. POST share 201 store=smart-files folder folder:tenant:icc-demo:plan-review-48021-28286. Origin 8cf82e7. Vercel dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX aliased plan-review-app-ten.vercel.app. Unauthed /icc/activity 401.
 - 2026-08-16T11:45-05: Origin clean-spot. MCP PR #68 MERGED squash 12156a024223bf4ec32ce586857e7c3c496a8a3b at 2026-08-16T16:35:43Z. LDT PR #436 MERGED squash 85c5d1a8c12a4a70e81323a907ca252b802266b8 at 2026-08-16T16:45:07Z (Test conclusion success). plan-review origin main was e0c8e9d then 09a4392 atom-chain then 1a6ac83/8cf82e7.
 - 2026-08-16T11:33-05: Cortex remount live. Serving cortex-api-00519-muq @100% tag g60. Prod GET /api/plan-review/queue 200 x-plan-review-proxied:1 plan-review fixtures total=2. Files still 404. Ledger 200 satisfiedCells=616. Image sha256:d20815fe45e45306ce1d08d127ba00dde0f21b0bc265282067a26d72fa7eb679. LDT PR https://github.com/empressaioemail-tech/legacy-design-tools/pull/436. Dirty feat/s1-instrument-hardening untouched. Residual: queue shape is buckets not BFF QueueRow[].
@@ -30,6 +30,8 @@ Date opened: 2026-08-16.
 - `rest.endsWith("/share")` does not match `rest === "share"`. Probe the share route with a JSON file; PowerShell `curl.exe -d "{...}"` mangles braces.
 - Cloud Run `--set-env-vars` drops secrets. Use `--update-env-vars` or inherit. Confirm `HAUSKA_MCP_URL` after every deploy.
 - Splicing map helpers into `app.js` ate `function escapeHtml`. `node --check web/app.js` before Vercel.
+- PowerShell splits `--substitutions=_TAG=x,_CANARY=1` on the comma. Quote the whole substitutions value.
+- `AtomSearchResult` has no `sourceAdapter`. ICC withhold on search uses `jurisdictionTenant` only.
 
 ## DEAD-END
 
@@ -39,9 +41,9 @@ Date opened: 2026-08-16.
 
 ## OPEN
 
-- A-028 / decision `_decisions/2026-08-16_g60_does_not_wait_on_l26.md`: do not park G-60 on L26 quiet.
-- NEXT: MCP read-path withhold ICC for anonymous callers (list_jurisdictions omits icc-model-code; get_atom holds the body) while store rows stay public-free. Then walk. Then honest close.
-- Store UPDATE (G-30 / G-17 existing atoms) and F4 engine ingest remain residuals for when L26 releases the slot. Not this close's gate.
-- E6 from a clean hauska-map worktree is slot-free and optional. Current overlay is atom-chain buildable-envelope. Never deploy from dirty `P:\hauska-map`.
+- A-028 stands. Do not park G-60 on L26 quiet.
+- NEXT: fill walk LIVE. Then honest close.
+- Store UPDATE (G-30 / G-17 existing atoms) and F4 engine ingest remain residuals. MCP read-path withhold is live on 00074-tar.
+- E6 from a clean hauska-map worktree is slot-free and optional.
 - L26 still holds `--apply`. No second writer. IPMC `--apply` not this card.
 - G-58b DROP still OPEN. Do not do it here.

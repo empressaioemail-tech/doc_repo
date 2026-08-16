@@ -121,7 +121,7 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
 
 18. **G-30 stamp.** Ingest does not hardcode public-free for ICC. Existing ICC atoms platform-internal. Anon `list_jurisdictions` omits `icc-model-code`. Anon `get_atom` on a cited IBC DID holds the body.
     | check: grep ingest. Store query. Anon list + get.
-    | grade: [x] partial 2026-08-16 | evidence: code half MERGED hauska-engine PR **#346** squash `ebe6d63228bdac324960c63b7733d31049f3a14d` 2026-08-16T17:11:33Z. Check-run conclusion SUCCESS. Ingest no longer hardcodes public-free. Existing ICC row UPDATE not run. L26 metro current 48183. Do not `--apply`.
+    | grade: [x] partial 2026-08-16 | evidence: ingest hardcode gone engine **#346** `ebe6d63`. MCP read-path live **#69 MERGED** squash `0316d0a` serving `hauska-mcp-server-00074-tar` @100% tag `g60d`. Anon `list_jurisdictions` tenants `bastrop_tx`, `grand_county_ut` (icc-model-code omitted). Anon `get_atom` `did:hauska:jurisdiction-corpus:icc-model-code` isError access-deny, no body. Reviewer key still reads that DID. Store rows still `public-free` (query_jurisdiction summary accessPolicy public-free, atomCount 4966). No `--apply`. L26 still holds the slot.
     | slot: bounded UPDATE of ICC rows only; announce; not during live L26 `--apply`.
 
 19. **G-17 hard actor reference.** ICC code-section atoms served in the demo carry `sourceActorDid=did:hauska:actor:org:icc` plus book_id plus section_id. Meter uses those fields, not regex, for those rows.

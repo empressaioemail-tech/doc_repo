@@ -16,7 +16,7 @@ Read this first. Then the program WDLL. Then the container that owns your items.
 
 Gate is open (WDLL approved, decision active, G-60 in OPS-17). Planner executes in this chat unless a compiled dispatch is handed off: `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-60`.
 
-DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00006-duj` @100% tag `g60c`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX`). MCP Codex tools retargeted at plan-review on `hauska-mcp-server-00072-puy`. Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
+DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00006-duj` @100% tag `g60c`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX`). MCP `hauska-mcp-server-00074-tar` @100% tag `g60d` (anon ICC withhold, PR #69 `0316d0a`). Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
 
 ## Neon DSN on disk (operator)
 
@@ -63,7 +63,8 @@ Superseded: `_inbox/2026-08-16_c_wdll_lane_c_plan_review.md`, `_inbox/2026-08-16
 5. **DONE 2026-08-16.** MCP Codex retarget + Smart Files writes + `icc_activity_list` on serving `hauska-mcp-server-00072-puy` @100% tag `g60`. WDLL 14-17 met. Keys minted: reviewer `fda41e99-190b-4d8e-abe8-3048f1e9a1d6`, observer `5f180044-f15c-4800-82da-d281a424aab3` (raw on disk, not git).
 6. **DONE 2026-08-16.** Cortex remount (WDLL 24). Serving `cortex-api-00519-muq` @100% tag `g60`. Prod queue `x-plan-review-proxied: 1`. Files still 404. LDT PR **#436 MERGED** squash `85c5d1a8` (Test conclusion `success`). MCP PR **#68 MERGED** squash `12156a02`.
 7. **DONE 2026-08-16 (code half).** G-30 ingest no longer hardcodes public-free. Engine PR **#346 MERGED** squash `ebe6d63` 2026-08-16T17:11:33Z (check-run conclusion SUCCESS). Store UPDATE is a residual (A-008). WDLL 5-6, 8-10, 12-13, 20-21 met on serving. WDLL 7/11/18/19 partial. WDLL 22-23 open.
-8. **NEXT (slot-free; do not wait on L26).** MCP read-path: anonymous `list_jurisdictions` omits `icc-model-code` and anonymous `get_atom` on a cited IBC DID holds the body, even while store rows stay `public-free`. Then fill walk LIVE and honest close. Named residuals on the close: store UPDATE, F4 pending DID, E6 not hauska-map compose. No second `--apply`. No G-58b DROP.
+8. **DONE 2026-08-16 (read-path).** MCP anon ICC withhold live. PR **#69 MERGED** squash `0316d0a`. Serving `hauska-mcp-server-00074-tar` @100% tag `g60d`. Anon list omits `icc-model-code`. Anon `get_atom` on `did:hauska:jurisdiction-corpus:icc-model-code` holds the body. Reviewer key still reads. Store UPDATE still residual.
+9. **NEXT (slot-free).** Fill walk LIVE. Honest close. Named residuals: store UPDATE, F4 pending DID, E6 not hauska-map compose. No second `--apply`. No G-58b DROP.
 
 ## Slot / dirty trees
 
