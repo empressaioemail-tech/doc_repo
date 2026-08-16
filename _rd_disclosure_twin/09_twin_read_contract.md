@@ -43,7 +43,7 @@ This replaces an earlier draft in which unbuilt layers were to return `lookup-fa
 |---|---|---|
 | Cockpit price, history, chain, depth, tape, volume profile | anonymous-reachable | `market.quotes` ships in v0.1 |
 | Cockpit computed signal: regime, crossover, heatmap | user or operator scoped | `market.computed` deferred to v0.2, gated on TW-24 |
-| Cockpit zone atoms | operator-authored, keyed on `AtomRow.user_id` | excluded from public twins at every version, per TW-26 |
+| Cockpit zone atoms | `user_id` is a PARTITION key with `"system"` as a literal | three-way partition per TW-26: `system`+graded serves with its calibration basis, `system`+ungraded is withheld or marked unearned, `user` never serves. Judgment class, not v0.1 |
 | Cockpit fundamentals, econ, intelligence | user-scoped | drivers gated on TW-24 |
 | Cockpit security-master resolver | operator-only, labelled ops and debug | resolution gated on TW-25 |
 | Cockpit spine atom serve | two user-scoped, two operator, one open | filing and provenance reads gated on TW-24 |
@@ -58,7 +58,8 @@ One missing auth leg, TW-24, gates four of these. That is why it is the first bu
 {
   "contractVersion": "0.1.0",
   "node": {
-    "id": "node:instr:...",
+    "id": "sec_01J...",                 // the ADDRESSED node: security or contract
+    "issuerNodeId": "iss_01J...",        // present only when an issuer node exists
     "kind": "instrument",
     "displayName": "Apple Inc.",
     "assetClass": "equities",
@@ -92,6 +93,29 @@ One missing auth leg, TW-24, gates four of these. That is why it is the first bu
 ```
 
 Every layer carries a `status` of `populated`, `partial`, `absent`, or `not-applicable`. Anything other than `populated` carries an `absence` object explaining why. No layer is ever an empty array with no explanation.
+
+## Issuer and security are separate nodes
+
+Ruled 2026-08-16, amendment A-4. The security-master mints type-prefixed ULIDs: `sec_` for securities, `iss_` for issuers, `opt_` for options. Filings are issuer facts. Prices are security facts. GOOG and GOOGL are two securities with one issuer and one 10-K, so a security-keyed room either stores that filing twice or loses it on one share class.
+
+A twin is **addressed** by its security or contract node, because all eighteen cohort instruments have one and only six have an issuer. It **carries** `issuerNodeId` when an issuer exists, mirroring the `underlying_node_id` the resolver already returns for options.
+
+The room keys off the **issuer** node for the operating-company and fund shapes, and off the addressed node for the contract shape, where no issuer exists and the authority is the exchange. So a filing is filed once under `smartfile:instrument:<iss_...>:<slug>` and both share classes resolve to it. The ratified scope identifier is unchanged in form; only which node a document is filed under changes.
+
+## Provenance classes
+
+Every layer declares its class. The class determines which provenance fields are required, and a proposed layer that cannot be sorted into a class does not ship. This extends ruling 7's measurement-provenance ladder one level up, from a value to a layer.
+
+| Class | What it is | Layers | Honesty obligation |
+|---|---|---|---|
+| Record | an authority published it | filings, contract specs, COT, EIA | cite the authority and the fetch |
+| Observation | it happened and was recorded | price history, volume, trades | state the measurement |
+| Derivation | deterministic function of a record | indicators, moving averages, volume profile | state the formula and inputs; reproducible |
+| Attention | who marked what, aggregated | hive zones, declared intent | state cohort size and composition |
+| Judgment | someone's call, carrying a record | house zones, agent overlays | state the calibration basis, earned or asserted |
+| Synthesis | narration over the above | the read | cite every number |
+
+Two consequences. Layers are requested by name, so the caller names what it wants and that request **is** the response size bound, which is the same grammar the trade grid and the map already use. And declared intent is Attention, never Observation: "I will buy at 220" is a stated intention, not a held position, which is precisely the line between this and CFTC Commitments of Traders. Presenting one as the other would be the single most damaging honesty failure available to this product.
 
 ## Absence semantics
 

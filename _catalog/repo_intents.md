@@ -2,7 +2,7 @@
 id: repo_intents
 title: Repository intents — canonical per-repo direction
 status: active
-last_updated: 2026-08-08
+last_updated: 2026-08-16
 applies_to: portfolio
 related: [00c_portfolio_master_map, _decisions/2026-07-04_branding_canon_hauska_substrate_only, _decisions/2026-07-04_ldt_decomposition_retirement_path, _decisions/2026-08-08_ldt_is_the_factory_repo, _decisions/2026-07-04_master_map_and_console_unification, _decisions/2026-07-04_convergence_program_execution_model, _architecture_homes/00_overview, _inbox/2026-08-08_SURVEY_ldt_decomposition_state]
 ---
@@ -66,6 +66,7 @@ Evidence: `_inbox/2026-08-08_SURVEY_ldt_decomposition_state.md`, `_inbox/2026-08
 | hauska-brief-extension | Consumer product for real estate investors that consumes the spine (Chrome MV3, "Radar"). | Web Store launch; user-aware entitlements post-tenancy; release tags enforced; the ICC PoC runs through it (show ICC how their data is used, protected, monetized — this seeded the command-center concept). | Committed-bundle noise, localhost MCP default in install-defaults. ICC formal-citation branch merges in the ICC play. |
 | radar (repo) | A 4-file extraction-design placeholder for eventually moving the Radar/brokerage BFF out of legacy-design-tools (gated on tenancy). No code. | Leave parked; holds the extraction spec. | Nothing; delete only if the spec is folded elsewhere. |
 | AEC-cortex | Early architect-surface scaffold with the correct typed gate seam. | Completely REWORKED by Chris on the component library, later. Parked behind the program phases. | Parked; do not build on the current scaffold. |
+| smart-files | Empressa product: the private filing-system (file-shaped atoms, folders as nodes, membership as `placed-on` edges). Own repo, own DB, own service. GitHub `empressaioemail-tech/smart-files`. Neon `snowy-bread-83475727`. GCP `smart-files-505619`. | Other products and actors mount it (SmartSite first; later city, title, builder, agent, a la carte, RWA operators). MCP tools stay on hauska-mcp-server and retarget here. Sold (G-53). | Cortex-prod tables 0078-0081 and cortex-api `/api/smart-files` are the disposable prototype (G-56). Do not subtree LDT. Do not share a DSN with the property spine. We do not mint RWAs. Not Hauska substrate. Do not deploy into `hauska-prod-497015` or `smartcity-os-prod`. |
 | smartcity-os | Live prod for Bastrop, pre-spine, fully siloed (Leaflet island). | **ABSOLUTE NO-TOUCH** until every other component is solid; then rebuild on the hardened library, adding components as it goes. Even the Compass spine-wire idea is deferred. | Nothing now. |
 | icc-demo | Docs-only authoritative record of the signed ICC Code Connect contract (180-day term) + PoC plan. The real I-Code ingest lives in hauska-engine. | Drives the ICC PoC play (see `_decisions/2026-07-04_icc_poc_play.md`); Ed Cilurso's 8 technical questions answered (planner drafts, operator sends), timing self-driven. | Nothing; protect the code in the other repos. |
 
@@ -75,7 +76,7 @@ Evidence: `_inbox/2026-08-08_SURVEY_ldt_decomposition_state.md`, `_inbox/2026-08
 |---|---|---|
 | mox_demo | Mox sales demo (real Nelray Revit seed, adaptive shell). iteration-3 redesign rescued to branch `rescue/iteration3-nav-redesign`. | PARKED. |
 | slb_prototype | SLB/Chris field-health backend; the O&G IP seed; informs the Reeves skeleton. Hand-copied atom envelope must swap to the published contract when it joins the spine. | PARKED. |
-| empressa-trading | A separate production venture (Empressa Cockpit — options/risk trading) that independently rebuilt the atom/calibration model in Python. Own infra, own GCP project. | OUT OF SCOPE for the program. Console stays SEPARATE from the command center; shares only the atom spec. Brand/focus decision owed but not blocking. |
+| empressa-trading | A separate production venture (Empressa Cockpit — options/risk trading) that independently rebuilt the atom/calibration model in Python. Own infra, own GCP project. | OUT OF SCOPE for the convergence program, and the console stays SEPARATE from the command center - both still hold. AMENDED 2026-08-16: the cockpit is now an UPSTREAM of Smart Markets (the instrument twin), which is itself separate from the command center. The feed is TWO-DIRECTIONAL: Smart Markets reads market state, identity resolution and spine atoms from the cockpit, and agent-declared levels written through the Smart Markets MCP door render back INTO the cockpit as the market-participant indicator. Requires a service-caller auth leg the cockpit does not have today (row TW-24, `_rd_disclosure_twin/08_build_scope.md`). Brand/focus decision owed but not blocking. |
 | hauska-platform (GitHub, last push Apr 4) | Early conceptual work, pre-factor-out. Nothing live. | PARK; revisit later. |
 | legacy-revit-sensor | Pulls data from the operator's Revit program into the original cortex app. | KEEP FUNCTIONAL; must survive/repoint when the architect app is rebuilt (on the ldt decomposition checklist). |
 

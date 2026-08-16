@@ -24,6 +24,8 @@ purpose: Rally folder for the Disclosure Twin service. Opened 2026-08-15 from th
 | `07_research_funnel.md` | The vision: one full-depth research funnel per company. Node, room, roster, market structure, synthesis. Two doors |
 | `08_build_scope.md` | THE BUILD SCOPE, for handoff to a planning agent. Verified inventory across three repos, three corrections to 06 and 07, the instrument-scope recommendation, the twin read contract strawman, 26 numbered work rows with pass/fail instruments, open calls. Also records that this is Smart Files' second consumer |
 | `09_twin_read_contract.md` | **TW-2 / the WDLL.** What a twin returns across all three shapes, absence semantics, the shape-to-layer applicability matrix, per-layer serving status against verified reachability. Needs operator approval |
+| `10_agent_communication_hub.md` | Captured concept: the authenticated agent communication hub. Origin record; governed by `42b_stub_thesis_agent_communication_hub.md` |
+| `11_gtm_thoughts.md` | Running GTM capture, append-only. Operator input logged as it occurs during the build; planner commentary separated. Not a plan |
 
 Reading order for the current frame: 05, then 07, then 08, then 09. Docs 01 through 04 predate the redirect and describe the tokenized-RWA service the concept started as.
 
