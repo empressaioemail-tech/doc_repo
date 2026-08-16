@@ -29,9 +29,12 @@ activity_url = https://plan-review-app-ten.vercel.app/icc/activity
 observer_key_id = 5f180044-f15c-4800-82da-d281a424aab3
 reviewer_key_id = fda41e99-190b-4d8e-abe8-3048f1e9a1d6
 mcp_revision = hauska-mcp-server-00072-puy @100% tag g60
-plan_review_revision = plan-review-00003-ws8
+plan_review_revision = plan-review-00006-duj @100% tag g60c
 ibc_section_count = <live SQL>
 ipmc_section_count = <live SQL, expect 0>
+vercel_deploy = dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX
+plan_review_origin = 8cf82e7
+engine_g30_pr = https://github.com/empressaioemail-tech/hauska-engine/pull/346 OPEN 835b587
 ```
 
 ## Fixture

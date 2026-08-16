@@ -16,7 +16,7 @@ Read this first. Then the program WDLL. Then the container that owns your items.
 
 Gate is open (WDLL approved, decision active, G-60 in OPS-17). Planner executes in this chat unless a compiled dispatch is handed off: `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-60`.
 
-DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00003-ws8`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app`. MCP Codex tools retargeted at plan-review on `hauska-mcp-server-00072-puy`. Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 still waits L26.
+DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00006-duj` @100% tag `g60c`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX`). MCP Codex tools retargeted at plan-review on `hauska-mcp-server-00072-puy`. Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
 
 ## Neon DSN on disk (operator)
 
@@ -57,13 +57,13 @@ Superseded: `_inbox/2026-08-16_c_wdll_lane_c_plan_review.md`, `_inbox/2026-08-16
 ## Execution order
 
 1. **DONE 2026-08-16.** GitHub `empressaioemail-tech/plan-review`, Neon DSN on disk, GCP `plan-review-505715`, foundation SQL applied.
-2. **DONE 2026-08-16.** Cloud Run live. Serving now `plan-review-00003-ws8` @100% (source header). `GET /` 200 at `https://plan-review-ozx33wafia-ue.a.run.app`. Prior `00002-nbr`.
-3. **DONE 2026-08-16 (API).** Elevate BFF with Smart Files as the document plane (A-027). Live intakes + upload + dataroom-atoms. Files `smart-files-00004-npd` has icc-demo personas.
-4. **DONE 2026-08-16.** Vercel project `plan-review-app` (`prj_zn2fPbov1Egj8hyym8Qu3HTKixQJ`) production `https://plan-review-app-ten.vercel.app`. Unauthed `/icc/activity` 401. WDLL 3 met. WDLL 4 queue met. E6 map still honest-empty.
+2. **DONE 2026-08-16.** Cloud Run live. Serving now `plan-review-00006-duj` @100% tag `g60c`. `GET /` 200 at `https://plan-review-ozx33wafia-ue.a.run.app`. Origin `8cf82e7` (share hotfix `1a6ac83` + escapeHtml). Prior `00004-xez` tag `g60b` @0%, then `00003-ws8`.
+3. **DONE 2026-08-16 (API).** Elevate BFF with Smart Files as the document plane (A-027). Live intakes + upload + dataroom-atoms. Files `smart-files-00004-npd` has icc-demo personas. Share POST 201 `{store:smart-files}`.
+4. **DONE 2026-08-16.** Vercel project `plan-review-app` (`prj_zn2fPbov1Egj8hyym8Qu3HTKixQJ`) production `https://plan-review-app-ten.vercel.app` `dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX`. Unauthed `/icc/activity` 401. WDLL 3 met. WDLL 4 queue met. E6 map is envelope overlay (item 11 partial).
 5. **DONE 2026-08-16.** MCP Codex retarget + Smart Files writes + `icc_activity_list` on serving `hauska-mcp-server-00072-puy` @100% tag `g60`. WDLL 14-17 met. Keys minted: reviewer `fda41e99-190b-4d8e-abe8-3048f1e9a1d6`, observer `5f180044-f15c-4800-82da-d281a424aab3` (raw on disk, not git).
-6. **DONE 2026-08-16.** Cortex remount (WDLL 24). Serving `cortex-api-00519-muq` @100% tag `g60`. Prod queue `x-plan-review-proxied: 1`. Files still 404. LDT PR **#436 MERGED** squash `85c5d1a8` (Test conclusion `success`). MCP PR **#68 MERGED** squash `12156a02`. plan-review origin `e0c8e9d`. Dirty checkout untouched.
-7. **NEXT.** G-30 code fix slot-free. Bounded ICC UPDATE only when L26 `--apply` is not live. Then G-17 + G-23.
-8. Fill remaining walk LIVE. Dry-run. Program close.
+6. **DONE 2026-08-16.** Cortex remount (WDLL 24). Serving `cortex-api-00519-muq` @100% tag `g60`. Prod queue `x-plan-review-proxied: 1`. Files still 404. LDT PR **#436 MERGED** squash `85c5d1a8` (Test conclusion `success`). MCP PR **#68 MERGED** squash `12156a02`.
+7. **DONE 2026-08-16 (code half).** G-30 ingest no longer hardcodes public-free. Engine PR **#346 MERGED** squash `ebe6d63` 2026-08-16T17:11:33Z (check-run conclusion SUCCESS). Store UPDATE is a residual (A-008). WDLL 5-6, 8-10, 12-13, 20-21 met on serving. WDLL 7/11/18/19 partial. WDLL 22-23 open.
+8. **NEXT (slot-free; do not wait on L26).** MCP read-path: anonymous `list_jurisdictions` omits `icc-model-code` and anonymous `get_atom` on a cited IBC DID holds the body, even while store rows stay `public-free`. Then fill walk LIVE and honest close. Named residuals on the close: store UPDATE, F4 pending DID, E6 not hauska-map compose. No second `--apply`. No G-58b DROP.
 
 ## Slot / dirty trees
 

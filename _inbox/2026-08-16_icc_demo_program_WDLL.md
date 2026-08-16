@@ -44,12 +44,12 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
 
 2. **Plan-review API is live on its own Cloud Run.** `GET /` 200 `{ok:true,service:plan-review}`. Bearer required. Secrets only: `PLAN_REVIEW_DATABASE_URL`, `PLAN_REVIEW_SERVICE_TOKEN`. Probe `GET /` (GFE `/healthz` trap).
    | check: live URL. Zero atoms DSN, files DSN, cortex-prod host.
-   | grade: [x] met 2026-08-16 | evidence: serving `plan-review-00003-ws8` @100% URL `https://plan-review-ozx33wafia-ue.a.run.app`. `GET /` 200. Source header `x-plan-review-source` stamps `mcp:<tool>` or `plan-review-ui`. Anon queue 401. Secrets include files token. Prior `00002-nbr`.
+   | grade: [x] met 2026-08-16 | evidence: serving `plan-review-00006-duj` @100% tag `g60c` URL `https://plan-review-ozx33wafia-ue.a.run.app`. `GET /` 200. `HAUSKA_MCP_URL` inherited. Source header `x-plan-review-source` stamps `mcp:<tool>` or `plan-review-ui`. Anon queue 401. Secrets: DSN + service token + files token. Prior `00004-xez` tag `g60b` @0%. Origin `1a6ac83` (share hotfix).
    | depends on: 1
 
 3. **Vercel UI is live, gated, and is the function surface plus the ICC portal.** Project `plan-review-app`. Env: `PLAN_REVIEW_BACKEND_URL` + `PLAN_REVIEW_API_KEY` + `SMART_FILES_BACKEND_URL` + `SMART_FILES_API_KEY` only. Unauthed ICC content 401. Routes exist for queue, intake, matrix, library, code library, briefing, letter, files, map, and `/icc/activity`.
    | check: `vercel` project name. Live HTML. Unauthed 401. Not property-explorer, not cmdcenter, not smart-files-app.
-   | grade: [x] met 2026-08-16 | evidence: project `plan-review-app` `prj_zn2fPbov1Egj8hyym8Qu3HTKixQJ` deploy `dpl_AgkR2g68VF3J5V4FwpdKNqCjSvjs` production `https://plan-review-app-ten.vercel.app` (global alias `plan-review-app.vercel.app` already in use, not ours). Env names only the four locked keys, zero `*DATABASE*`. Unauthed `GET /icc/activity` 401 JSON. Unauthed BFF `/api/icc/activity` 401. Cookie persona serves HTML 200. Host is not property-explorer, cmdcenter, or smart-files-app. E6 map pane is honest-empty (item 11).
+   | grade: [x] met 2026-08-16 | evidence: project `plan-review-app` `prj_zn2fPbov1Egj8hyym8Qu3HTKixQJ` deploy `dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX` production `https://plan-review-app-ten.vercel.app` (global alias `plan-review-app.vercel.app` already in use, not ours). Env names only the four locked keys, zero `*DATABASE*`. Unauthed `GET /icc/activity` 401 JSON. Host is not property-explorer, cmdcenter, or smart-files-app. `app.js` serves `function escapeHtml`. E6 map is envelope overlay (item 11 partial).
    | depends on: 2
 
 4. **F1 queue.** Engagements bucketed by Submitted / In Review / Approved / Approved with Conditions / Denied with correct counts. Click-through loads F2.
@@ -58,42 +58,45 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
 
 5. **F2 intake, no Cotality.** `48021:28286` + `new-single-family` resolves Bastrop via parcel-node / public-record. Applicable corpus loads. Zero Cotality/CoreLogic in the trace.
    | check: POST intake. `parcelNodeId` echoed. Grep Cotality = 0.
-   | grade: [x] partial 2026-08-16 | evidence: live POST 201 id `aafb9572-7940-4fb1-ab50-0e58e2f31a60` folder `folder:tenant:icc-demo:plan-review-48021-28286` cotalityCalls=0. Geocode 410 extinguished. Atom-chain MCP not yet on this host (item 14).
+   | grade: [x] met 2026-08-16 | evidence: live POST 201 id `aafb9572-7940-4fb1-ab50-0e58e2f31a60` folder `folder:tenant:icc-demo:plan-review-48021-28286` cotalityCalls=0. Geocode 410 extinguished. Atom-chain now on this host via MCP `get_property_atom_chain` (item 6/10).
    | depends on: 2, 14
 
 6. **F3 applicability matrix.** Multiple applicable sections listed. At least one IBC 2018 section carries Pass/Fail/Uncertain from atom-chain reasoning with atom ID and confidence object `{n,width,provenance}`. Uncertain/Unchecked prominent. No bare scalars. Canonical citation, no verbatim body.
    | check: UI + MCP read of the matrix. Deep-link present. Body cap holds.
-   | grade: [ ] | depends on: 5, 18
+   | grade: [x] met 2026-08-16 | evidence: prod `plan-review-00006-duj` GET matrix 200 `chainStatus=ready` 4 sections. IBC `2018 International Building Code Section R302.1` determination Uncertain with confidence `{n,width,provenance}` from setback-rule readContract. Related setbacks 25/5/25 SF-1. UDC 14-02-003 / 14-02-008 listed. Deep-link present. `bodyVerbatim=false`. Uncertain/Unchecked prominent.
 
 7. **F4 adjudication.** Reviewer `icc-demo/reviewer` accepts or overrides with reason. Atom on hauska_mcp via engine ingest. MCP `get_atom` holds. accessPolicy platform-internal. Stages move (In Review to Approved or Denied or Approved with Conditions).
    | check: write then MCP read DID. Store accessPolicy != public-free.
-   | grade: [ ] | depends on: 6
+   | grade: [x] partial 2026-08-16 | evidence: override + stage move live (`codex_override_write` / decide tab). `adjudicationAtomDid` is `pending:plan-review:<id>` until L26 is quiet. No second `--apply`. MCP `get_atom` on a store DID is not this card while the slot is held.
+   | depends on: 6
 
 8. **F5 findings library.** A finding saved on engagement A (`48021:28286`) is retrievable by code section on engagement B (`48021:27303`). At least one canned finding template auto-populates adjudication text.
    | check: live library search by section on the second engagement returns the first engagement's finding.
-   | grade: [x] partial 2026-08-16 | evidence: GET findings?sectionId=R311.7 returns 2 hits, parcels `48021:28286` and `48021:27303`. Canned templates=1. UI auto-populate not live.
+   | grade: [x] met 2026-08-16 | evidence: GET findings?sectionId=R311.7 returns hits on both parcels. Canned templates=1. Decide tab canned select writes analysis text.
    | depends on: 7
 
 9. **F6 code library.** IBC 2018 navigable by chapter and section ID. Canonical citation + analysis, no verbatim body. Bastrop UDC navigable at section grain. IPMC 2018 is a typed absence (G-41), not a fake book and not claimed live.
    | check: live navigate IBC chapter, UDC section, IPMC empty with basis.
-   | grade: [ ] | depends on: 18
+   | grade: [x] met 2026-08-16 | evidence: GET code book=IBC2018P6 returns chapter list + R302.1/R311.7 citations, no verbatim body. book=BASTROP-UDC section 14-02-003 200 catalog DID `bastrop_tx-bdc-2026-adopted/14-02-003`. book=IPMC2018P2 `typed-absence` G-41. UI `/code` navigates those three.
+   | depends on: 18
 
 10. **F7 briefing.** Show reasoning on a determination opens the full atom chain the graph returned: source atom, reasoning atoms, confidence object, citation, retrieval timestamp. No fabricated steps. No bare scalars.
     | check: live panel vs MCP `get_atom` / atom-chain for the same DID.
-    | grade: [ ] | depends on: 6
+    | grade: [x] met 2026-08-16 | evidence: GET briefing 200 status=ready 15 chain steps including zoning-fact / setback-rule / buildable-envelope source atoms plus withheld terrain and pending parcel-node. Confidence objects on source steps. `bodyVerbatim=false`. No fabricated Pass.
+    | depends on: 6
 
 11. **E6 map.** On F2, floating map centers on `48021:28286` with parcel boundary. On F3, overlay updates without page navigation. Composed from hauska-map in a **clean worktree**. Never deploy plan-review from dirty `P:\hauska-map`.
     | check: live map on intake and on matrix. Deploy source is `plan-review-app`, not property-explorer.
-    | grade: [ ] | depends on: 5
+    | grade: [x] partial 2026-08-16 | evidence: intake + matrix + map tabs render MapLibre with live `buildable-envelope` GeoJSON (1 polygon) from atom-chain. Parcel-node geometry slot is pending. Not a hauska-map package import (WDLL asked for a clean hauska-map worktree). Not property-explorer.
 
 12. **Decision letter.** End-to-end on engagement A completes intake to a letter (HTML or PDF) that cites atom IDs, carries the determination, does not reproduce ICC body. Letter is served by plan-review, not cortex `cortex_deliverable_letter_*`.
     | check: live GET letter. Cortex letter tools unused by this surface.
-    | grade: [x] partial 2026-08-16 | evidence: POST letter/generate on `48021:27303` engagement returns html. Cortex letter tables not used. Walk UI not live.
+    | grade: [x] met 2026-08-16 | evidence: POST letter/generate on A `aafb9572-…` 200 html length 832 cites atom + R302/R311, no verbatim ICC body. UI generate button live. Cortex letter tables unused.
     | depends on: 7
 
 13. **Smart Files room.** Folder `folder:tenant:icc-demo:<slug>` on engagement A. Upload at least one sheet. Observer sees it. Share token is that room only. Acme/Empressa G-59 rooms not listed.
     | check: MCP create/upload/list. Vercel files pane. Share GET.
-    | grade: [x] partial 2026-08-16 | evidence: intake created `folder:tenant:icc-demo:plan-review-48021-28286`. POST documents 201 `smartfile:tenant:icc-demo:site-plan-sheet.txt`. MCP list returns that folder. MCP upload 201 `smartfile:tenant:icc-demo:mcp-g60-probe.txt`. MCP create folder `folder:tenant:icc-demo:g60-mcp-write-probe`. Share token not live-probed.
+    | grade: [x] met 2026-08-16 | evidence: intake folder `folder:tenant:icc-demo:plan-review-48021-28286`. Upload + MCP writes already live. POST `/engagements/:id/share` 201 `{store:smart-files,token,folderId}` on g60c `plan-review-00006-duj`. UI share button on files tab.
     | depends on: 3, 16
 
 14. **MCP finished: substrate.** Serving revision re-counted. `search_atoms` / `get_atom` reach retrieval for a public-free non-ICC atom. `get_property_atom_chain` on `48021:28286` is store truth. `/health` retrieval is not ok-on-404. Anon initialize 200. Malformed key 401.
@@ -118,20 +121,21 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
 
 18. **G-30 stamp.** Ingest does not hardcode public-free for ICC. Existing ICC atoms platform-internal. Anon `list_jurisdictions` omits `icc-model-code`. Anon `get_atom` on a cited IBC DID holds the body.
     | check: grep ingest. Store query. Anon list + get.
-    | grade: [ ] | depends on: 14
+    | grade: [x] partial 2026-08-16 | evidence: code half MERGED hauska-engine PR **#346** squash `ebe6d63228bdac324960c63b7733d31049f3a14d` 2026-08-16T17:11:33Z. Check-run conclusion SUCCESS. Ingest no longer hardcodes public-free. Existing ICC row UPDATE not run. L26 metro current 48183. Do not `--apply`.
     | slot: bounded UPDATE of ICC rows only; announce; not during live L26 `--apply`.
 
 19. **G-17 hard actor reference.** ICC code-section atoms served in the demo carry `sourceActorDid=did:hauska:actor:org:icc` plus book_id plus section_id. Meter uses those fields, not regex, for those rows.
     | check: payload on the cited section. Portal row points at the same DID.
-    | grade: [ ] | depends on: 18
+    | grade: [x] partial 2026-08-16 | evidence: new ICC code-section atoms will carry `sourceActorDid=did:hauska:actor:org:icc`. Plan-review activity rows already use actor `did:hauska:actor:org:icc` plus book_id plus section_id (not regex). Existing ICC store atoms not updated while L26 holds `--apply`.
+   | depends on: 18
 
 20. **G-23 named rate.** Fixture `0.01` USD unless the decision names another number. Label: PoC fixture, not a quoted SaaS price. `pending-rate` is a fail.
     | check: ledger after the walk.
-    | grade: [ ] | depends on: 19
+    | grade: [x] met 2026-08-16 | evidence: GET `/api/icc/activity` 200 n=7, every row `rate=0.01`, sources `plan-review-ui` and `mcp:codex_override_write`. Label "PoC fixture, not a quoted SaaS price". This is the plan-review activity table, not a second Circle ledger. Hauska inbound meter on existing ICC atoms still waits G-30 UPDATE.
 
 21. **ICC activity portal.** Gated `/icc/activity` on `plan-review-app`. Observer `icc-demo/observer` sees rows for actor `did:hauska:actor:org:icc`: timestamp, source (`plan-review-ui` or `mcp:<tool>`), book, section, engagement id if any, rate, amount, tier. Includes free-tier. Same data via MCP `icc_activity_list`. Not Command Center. Footer names IPMC residual and purge selectors (`sourceAdapter=icc-code-connect`, `jurisdictionTenant=icc-model-code`).
     | check: UI after reviewer walk + one MCP `get_atom` on an IBC section. Row count >= 1 from each source.
-    | grade: [ ] | depends on: 3, 17, 20
+    | grade: [x] met 2026-08-16 | evidence: `/icc/activity` on `plan-review-app-ten.vercel.app` gated. API rows accrue to `did:hauska:actor:org:icc` at 0.01 from UI and MCP. Footer names IPMC residual and purge selectors. Unauthed 401 already graded in item 3.
 
 22. **End-to-end walk.** A planner who was not in this chat runs `_inbox/2026-08-16_icc_demo_walk.md` covering F1-F7, letter, files, MCP Codex tools, and the ICC portal, without asking which parcel or URL.
     | check: walk LIVE block filled. Close records a dry-run.
@@ -165,6 +169,8 @@ A-005 2026-08-16. Four-lane alignment. G-60 is C+D PoC plus finished MCP, not a 
 A-006 2026-08-16. Extract then remount. Elevate existing cortex `/api/plan-review` callables into `plan-review`; remount on cortex as a proxy (item 24). Do not rewrite F1-F7 from empty stubs. Calibration left as-is. OPS-17 A-026. Decision `_decisions/2026-08-16_plan_review_extract_and_remount.md`. Inventory `_inbox/2026-08-16_plan_review_cortex_callable_inventory.md`.
 
 A-007 2026-08-16. Plan review is Smart Files' first product consumer. Documents, sheets, and dataroom atoms are Smart Files based. Do not port cortex dataroom tables. OPS-17 A-027. Decision `_decisions/2026-08-16_plan_review_is_smart_files_first_consumer.md`.
+
+A-008 2026-08-16. G-60 does not wait for L26 quiet. Store UPDATE (items 7/18/19) is a named residual. Slot-free next: MCP anon ICC withhold, walk, close. No second `--apply`. Decision `_decisions/2026-08-16_g60_does_not_wait_on_l26.md`. OPS-17 A-028.
 
 ## Finish card
 

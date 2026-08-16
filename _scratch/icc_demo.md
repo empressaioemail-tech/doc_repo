@@ -5,7 +5,9 @@ Date opened: 2026-08-16.
 
 ## GROUND-TRUTH
 
-- 2026-08-16T11:45-05: Origin clean-spot. MCP PR #68 MERGED squash 12156a024223bf4ec32ce586857e7c3c496a8a3b at 2026-08-16T16:35:43Z. LDT PR #436 MERGED squash 85c5d1a8c12a4a70e81323a907ca252b802266b8 at 2026-08-16T16:45:07Z (Test conclusion success). plan-review origin main e0c8e9d pushed. Serving already matched these SHAs before merge.
+- 2026-08-16T12:11-05: Engine PR #346 MERGED squash ebe6d63228bdac324960c63b7733d31049f3a14d. Check-run conclusion SUCCESS. No ICC UPDATE. L26 still metro current 48183.
+- 2026-08-16T12:05-05: Share hotfix + escapeHtml on serving. plan-review-00006-duj @100% tag g60c. HAUSKA_MCP_URL inherited. POST share 201 store=smart-files folder folder:tenant:icc-demo:plan-review-48021-28286. Origin 8cf82e7. Vercel dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX aliased plan-review-app-ten.vercel.app. Unauthed /icc/activity 401.
+- 2026-08-16T11:45-05: Origin clean-spot. MCP PR #68 MERGED squash 12156a024223bf4ec32ce586857e7c3c496a8a3b at 2026-08-16T16:35:43Z. LDT PR #436 MERGED squash 85c5d1a8c12a4a70e81323a907ca252b802266b8 at 2026-08-16T16:45:07Z (Test conclusion success). plan-review origin main was e0c8e9d then 09a4392 atom-chain then 1a6ac83/8cf82e7.
 - 2026-08-16T11:33-05: Cortex remount live. Serving cortex-api-00519-muq @100% tag g60. Prod GET /api/plan-review/queue 200 x-plan-review-proxied:1 plan-review fixtures total=2. Files still 404. Ledger 200 satisfiedCells=616. Image sha256:d20815fe45e45306ce1d08d127ba00dde0f21b0bc265282067a26d72fa7eb679. LDT PR https://github.com/empressaioemail-tech/legacy-design-tools/pull/436. Dirty feat/s1-instrument-hardening untouched. Residual: queue shape is buckets not BFF QueueRow[].
 - 2026-08-16T11:20-05: MCP PR https://github.com/empressaioemail-tech/hauska-mcp-server/pull/68 opened. CI build-test + four gate greps SUCCESS. Serving already 00072-puy from this branch.
 - 2026-08-16T11:02-05: MCP serving hauska-mcp-server-00072-puy @100% tag g60. Tools 82 = 13/9/53/7. Health retrieval ok no 404. Cotality extinguished. Codex tools hit plan-review-00003-ws8. icc_activity_list live. Keys reviewer fda41e99-190b-4d8e-abe8-3048f1e9a1d6 observer 5f180044-f15c-4800-82da-d281a424aab3. Worktree P:\hauska-mcp-server-worktrees\g60-codex-plan-review branch g60/codex-plan-review.
@@ -25,6 +27,9 @@ Date opened: 2026-08-16.
 - A one-engagement meter pane is not an ICC activity portal.
 - "Basic UI" means housing/visual, not cutting F5/F6/F7/map/letter.
 - Vercel project name is the housing lock. The `*.vercel.app` short alias can already be taken globally (`plan-review-app.vercel.app` was). Grade the project name, then record the actual production URL.
+- `rest.endsWith("/share")` does not match `rest === "share"`. Probe the share route with a JSON file; PowerShell `curl.exe -d "{...}"` mangles braces.
+- Cloud Run `--set-env-vars` drops secrets. Use `--update-env-vars` or inherit. Confirm `HAUSKA_MCP_URL` after every deploy.
+- Splicing map helpers into `app.js` ate `function escapeHtml`. `node --check web/app.js` before Vercel.
 
 ## DEAD-END
 
@@ -34,6 +39,9 @@ Date opened: 2026-08-16.
 
 ## OPEN
 
-- G-30 code fix slot-free. Bounded ICC UPDATE only when L26 `--apply` is not live. E6 map from a clean hauska-map worktree. Origin PRs merged (MCP #68, LDT #436, plan-review e0c8e9d).
-- L26 still holds `--apply`. G-30 bounded UPDATE waits if a drain is live. IPMC `--apply` not this card.
+- A-028 / decision `_decisions/2026-08-16_g60_does_not_wait_on_l26.md`: do not park G-60 on L26 quiet.
+- NEXT: MCP read-path withhold ICC for anonymous callers (list_jurisdictions omits icc-model-code; get_atom holds the body) while store rows stay public-free. Then walk. Then honest close.
+- Store UPDATE (G-30 / G-17 existing atoms) and F4 engine ingest remain residuals for when L26 releases the slot. Not this close's gate.
+- E6 from a clean hauska-map worktree is slot-free and optional. Current overlay is atom-chain buildable-envelope. Never deploy from dirty `P:\hauska-map`.
+- L26 still holds `--apply`. No second writer. IPMC `--apply` not this card.
 - G-58b DROP still OPEN. Do not do it here.
