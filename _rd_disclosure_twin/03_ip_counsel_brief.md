@@ -2,7 +2,7 @@
 id: rd_dt_03_ip_counsel_brief
 title: IP counsel brief — agenda and questions for Hullihan
 status: draft
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_01_service_concept, rd_dt_02_cockpit_precedent]
@@ -10,6 +10,13 @@ purpose: Working agenda for the conversation with Hullihan (IP counsel) on the D
 ---
 
 # IP counsel brief: questions for Hullihan
+
+> **Scope note, 2026-08-16.** Ruling 9 redirected the service from tokenized RWAs to publicly traded
+> companies, so the freedom-to-operate question against the Securitize and tZERO families is now
+> background rather than a channel gate. Two items to add to the triage when this conversation
+> happens: the instrument-scope identity design in doc `08`, and publishing verified absence as a
+> finding about a named public company, which no incumbent does and which is therefore unprecedented
+> rather than merely conservative. Neither is on the critical path per the standing rule.
 
 ## Context counsel should have
 

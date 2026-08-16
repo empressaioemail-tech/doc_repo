@@ -2,7 +2,7 @@
 id: rd_dt_07_research_funnel
 title: The research funnel — full-depth company research, two doors, and the sports symmetry
 status: active
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_06_the_move, rd_dt_02_cockpit_precedent, _prospects/atx_bulls/15_financial_umbrella]
@@ -10,6 +10,13 @@ purpose: Nick's 2026-08-15 structure for the securities MCP server - one full-de
 ---
 
 # The research funnel
+
+> **CORRECTION, 2026-08-16.** The funnel table below assumes every node is an issuer. The R&D cohort
+> ruled 2026-08-16 is the cockpit trade grid, and fourteen of its eighteen symbols are futures
+> contracts with no issuer, no CIK, and no filings, while two more are funds whose disclosure shape
+> is neither. The data-room layer therefore has three shapes, not one, and the working resolution is
+> that the twin is keyed to the node while the room is keyed to the authority that publishes state
+> about it. Company node, market structure, and synthesis generalize unchanged. See doc `08`.
 
 ## The structure (Nick, verbatim shape)
 

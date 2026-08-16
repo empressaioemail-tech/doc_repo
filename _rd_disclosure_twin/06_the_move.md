@@ -2,7 +2,7 @@
 id: rd_dt_06_the_move
 title: The move — build issuer twins, serve them over MCP, let agents find them
 status: active
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_05_securities_pivot, rd_dt_04_gtm_capture_plan]
@@ -10,6 +10,21 @@ purpose: The concrete opening move, confirmed with Nick 2026-08-15. Issuer twins
 ---
 
 # The move
+
+> **THREE CORRECTIONS, 2026-08-16,** from the source read recorded in doc `08`. Read them before
+> acting on the numbered move below.
+>
+> 1. **The EDGAR adapter is not new.** It exists at `apps/cockpit/backend/app/providers/edgar.py`,
+>    406 lines, and filings are already atomized into the spine via `capture_filing_atom`. What is
+>    missing is document-body fetch, which is an extension to a running provider.
+> 2. **Public filings and issuer material share one room.** Step 5 below implies two stores. The
+>    Smart Files schema says otherwise: filings are file atoms, and compiled-public versus
+>    issuer-verified is `access_policy` plus provenance resolved at read time.
+> 3. **The cohort is not all issuers.** The chosen cohort is the cockpit trade grid, where fourteen
+>    of eighteen symbols have no issuer, no CIK, and no filings. The twin is keyed to the node and
+>    the room to the authority; issuer is one authority class, not the premise.
+>
+> Doc `08` is the executable plan. This doc remains the statement of the move.
 
 **Build the twins. Serve them over MCP. Make them findable. Let the claim motion follow the traffic.**
 

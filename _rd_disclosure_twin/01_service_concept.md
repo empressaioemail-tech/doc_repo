@@ -1,8 +1,8 @@
 ---
 id: rd_dt_01_service_concept
 title: The Disclosure Twin service — tiers, channel, inventory
-status: draft
-last_updated: 2026-08-15
+status: superseded
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_00_readme, rd_dt_02_cockpit_precedent]
@@ -10,6 +10,12 @@ purpose: The service concept as discussed 2026-08-15. Three tiers, the platform 
 ---
 
 # The Disclosure Twin service
+
+> **SUPERSEDED 2026-08-15 by ruling 9 and doc 05, scoped 2026-08-16 by doc 08.** This document
+> describes the tokenized-RWA service the concept started as. The three-tier structure and the
+> platform-channel logic survive the redirect. The asset-class framing, the sequencing, and the
+> built-versus-needed inventory do not: the target is publicly traded companies, and the inventory
+> was written before the source read in doc 08. Current frame: `05`, `07`, `08`.
 
 ## The market moment (from this session's sourced research)
 

@@ -2,7 +2,7 @@
 id: rd_dt_02_cockpit_precedent
 title: The birth of the idea — what empressa-trading already runs
 status: active
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_01_service_concept]
@@ -10,6 +10,10 @@ purpose: Nick's observation 2026-08-15 - the trading app already does a shape of
 ---
 
 # The cockpit precedent
+
+> **Re-verified 2026-08-16** against `empressa-trading` `origin/main` at `44664f6c`. The mechanism
+> map below holds. Doc `08` carries the file-level inventory, three corrections to the assumptions
+> in docs `06` and `07`, and the expansion path restated as numbered work rows.
 
 Nick's read is correct: empressa-trading already runs a Disclosure Twin - of a brokerage portfolio, at single-operator scale. The mechanism map (verified against source in the 2026-08-13 deep sweep):
 

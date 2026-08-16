@@ -1,8 +1,8 @@
 ---
 id: rd_dt_04_gtm_capture_plan
 title: GTM capture plan — first, loudest, and the standard
-status: draft
-last_updated: 2026-08-15
+status: superseded-in-part
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_01_service_concept, rd_dt_03_ip_counsel_brief, _thought_leadership/00_README]
@@ -10,6 +10,13 @@ purpose: The market-capture plan for the Disclosure Twin - sequence, marketing m
 ---
 
 # Capture plan: own the category
+
+> **SUPERSEDED IN PART 2026-08-15 by ruling 9.** The four-stage sequence (own the words, build the
+> exhibit, channel and anchor, become the standard) and the marketing motion survive. The target
+> table does not: it lists tokenization platforms and transfer agents, which are the RWA channel.
+> The public-company channel, meaning investor-relations platforms, wire services, and the retail
+> research tools where a claim motion actually lands, has never been enumerated. Doing that is not
+> scheduled and is not a build row in doc `08`.
 
 ## The claim being staked
 

@@ -2,7 +2,7 @@
 id: rd_dt_05_securities_pivot
 title: Operator redirect — securities, not RWA-deal services; Magma noted
 status: active
-last_updated: 2026-08-15
+last_updated: 2026-08-16
 applies_to: portfolio
 owner: nick
 related: [rd_dt_01_service_concept, rd_dt_04_gtm_capture_plan]
@@ -10,6 +10,10 @@ purpose: Records Nick's 2026-08-15 redirect - the Disclosure Twin aims at SECURI
 ---
 
 # Redirect: securities
+
+> **Scoped 2026-08-16 in doc `08`,** which converts this redirect into a verified inventory and a
+> numbered work plan. The Magma capture noted at the foot of this doc is still open and is still
+> unverified; nothing in doc `08` depends on it.
 
 **The ruling:** the target is the securities market - tokenized securities and the market infrastructure moving onchain - not RWA asset-twin services deal by deal. Docs 01/04's platform-channel logic survives but the product reframes.
 
