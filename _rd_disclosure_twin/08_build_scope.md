@@ -93,6 +93,8 @@ target_type   'folder' | 'parcel' | 'project' | 'asset'             -> add 'inst
 
 Nick's note, 2026-08-16: the app being built in parallel is the first consumer of Smart Files, and this build is the second. That reframes the mount rows. They are not only a bolt-on for this product, they are the first real generalization test the store gets, and both consumers are chances to refine it.
 
+The first consumer is **Plan Review**, per `_STATE.md` as of 2026-08-16 (OPS-17 row G-60, amendment A-027). It is already in production at `plan-review-00002-nbr` in GCP project `plan-review-505715`, calling the files service over `SMART_FILES_BACKEND_URL`, with live documents at identifiers of the form `smartfile:tenant:icc-demo:site-plan-sheet.txt` and folders at `folder:tenant:icc-demo:plan-review-48021-28286`. So the first consumer uses `tenant` scope, which means the `instrument` scope proposed in row TW-1 will be the third scope type in use and the first one whose identifier is not a tenant slug or a FIPS code. That is the sharpest single test of whether the scope-and-validator design generalizes.
+
 A second consumer is the only thing that reliably separates a general store from a store shaped by its first customer. Three tells are already visible in the schema and this build will press on all of them.
 
 `smart_file_documents` carries a `jurisdiction_fips` column alongside the generic `scope_type` and `scope_id`. That is a first-consumer artifact sitting in a table that claims to be general. An instrument-scoped document has no FIPS, so either the column is nullable and vestigial, or it wants to become a typed scope attribute.
@@ -215,7 +217,7 @@ These block the rows named against them and are the first thing the planning age
 | Public roster edge scoping, platform-global versus `public-free` | TW-16, TW-14 | not yet formed; needs the tenancy read first |
 | Which authority feeds enter the R&D phase | TW-9, TW-10 | CME and CFTC cover all fourteen non-issuer symbols; EIA and Treasury are the depth pass |
 | Does the new subtab absorb the retired drivers surface or rebuild the flow | TW-21 | absorb the catalog, rebuild the flow |
-| Migration ordering against Smart Files while the first consumer builds in parallel | TW-4, TW-23 | one ordering owned by the store, not two consumers landing independently. The first consumer's app name and lane are not captured in canon and need capturing before this can be sequenced |
+| Migration ordering against Smart Files while Plan Review builds in parallel | TW-4, TW-23 | one ordering owned by the store, not two consumers landing independently. Plan Review is live on the `tenant` scope under OPS-17 G-60; this program must not land a smart-files migration without that lane seeing it |
 | Promotion to OPS-18 as a registered plan of record | all rows becoming dispatchable | see below |
 
 **On promotion.** Registering this as OPS-18 is one entry in `_catalog/plan_registry.json` with a unique row prefix, followed by `node scripts/plan-registry-divergence.test.mjs`. The compiler and the canon-gate hook read that registry and must not be edited. The reason not to do it unilaterally is the focus-queue rule: OPS-16 and OPS-17 are both active with hand-carried lane planners, and a third program needs Nick to name what gets queued to make room. Until then these rows cannot be compiled into a dispatch, and a planning agent working from this doc is doing R&D scoping rather than executing lanes.
