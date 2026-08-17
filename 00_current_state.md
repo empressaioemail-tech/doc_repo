@@ -20,7 +20,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 ## 2. In-flight sprints
 
 - **OPS-16 / L26** Texas flush to launch-gate grade. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
-- **OPS-17 Lane B** G-61 housing `empressaioemail-tech/smartcity-dashboards`. Scaffold at `P:\smartcity-dashboards`, not deployed. Item 6 MCP not on serving server. `P:\smartcity-os` no-touch.
+- **OPS-17 Lane B** G-61 Neon+GCP exist, not deployed. GCP `smartcity-dashboards` `666199866241`. MCP PR 70 not serving. `P:\smartcity-os` no-touch.
 - **OPS-17 G-60** CLOSED_ON_DEMO_PATH STOP. ICC-demo https://icc-demo.vercel.app. Plan-review `00012-pen` @100% tag `g60g`. Applicant `/applicant?token=` met. Smart Files QA personas restored. Held: store UPDATE, F4, G-58b, G-50.
 - **OPS-17 Lane A Smart Files.** G-58/G-59 CLOSED serving path. G-58b OPEN. `smart-files-app` is G-59 QA plus icc-demo rooms. Plan-review owns the review files UI.
 - **L25** not seated. **L24** flood remainder banked. Do not redo flood.

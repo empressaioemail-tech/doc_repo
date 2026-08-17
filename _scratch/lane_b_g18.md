@@ -14,5 +14,5 @@ Workstream: G-18 SmartCity keep/mount/kill inventory. Read-only. WDLL approved 2
 - OPEN: G-24 rogue entity_type COUNT not run (L26 holds slot; no heavy scan).
 - OPEN: G-61 housing `empressaioemail-tech/smartcity-dashboards` main `01a6cfe`. MCP [PR #70](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/70), not serving. Cutover WDLLs not started.
 - GROUND-TRUTH (2026-08-17): G-13 CLOSED caller-split contract. G-61 items 1-2 met.
-- GROUND-TRUTH (2026-08-17): GitHub `empressaioemail-tech/smartcity-dashboards` created; cloned to `P:\smartcity-dashboards`. Live `P:\smartcity-os` still dirty `secrets_scan.yml` + `mygov.ts` on `ci/dast-issues-write-permission`.
+- GROUND-TRUTH (2026-08-17): Neon tenant-registry on disk gitignored; host `ep-still-wave-avbwm4yc-pooler`, db `neondb`, SELECT 1 connected. GCP `smartcity-dashboards` / `666199866241` billing on. Not deployed.
 - LESSON: G-18 as-found and the product-line overlay are different jobs. Cloning live wallpaper is not a Dashboards template.
