@@ -12,7 +12,7 @@ Workstream: G-18 SmartCity keep/mount/kill inventory. Read-only. WDLL approved 2
 - DEAD-END: do not treat /api/calendar HTML 200 as the calendar API. Real probes are /api/calendar/status and /api/calendar/events/public.
 - OPEN: G-21 on the same rows. Staff session would grade Spireon/Verkada/FirstDue/GoTo/Power BI. Reconcile 340 vs 12599 and 64 vs 0.
 - OPEN: G-24 rogue entity_type COUNT not run (L26 holds slot; no heavy scan).
-- OPEN: G-61 housing `empressaioemail-tech/smartcity-dashboards`. Scaffold local `P:\smartcity-dashboards`. Item 6 MCP names not on serving server. Cutover WDLLs not started. Wire `_decisions/2026-08-17_g13_consumer_contract.md`. Housing `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
+- OPEN: G-61 housing `empressaioemail-tech/smartcity-dashboards` main `01a6cfe`. MCP [PR #70](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/70), not serving. Cutover WDLLs not started.
 - GROUND-TRUTH (2026-08-17): G-13 CLOSED caller-split contract. G-61 items 1-2 met.
 - GROUND-TRUTH (2026-08-17): GitHub `empressaioemail-tech/smartcity-dashboards` created; cloned to `P:\smartcity-dashboards`. Live `P:\smartcity-os` still dirty `secrets_scan.yml` + `mygov.ts` on `ci/dast-issues-write-permission`.
 - LESSON: G-18 as-found and the product-line overlay are different jobs. Cloning live wallpaper is not a Dashboards template.

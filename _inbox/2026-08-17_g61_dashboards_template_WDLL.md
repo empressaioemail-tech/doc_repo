@@ -61,7 +61,7 @@ A Dashboards template exists as a composition surface: the doc 31 lens family (c
 
 6. **Dual interface.** MCP tools plus UI, per 28. Tools live on the existing Hauska MCP server.
    | check: named MCP tools on serving `hauska-mcp-server`; UI second or same wave; no new MCP process.
-   | grade: [ ] partial 2026-08-17 | evidence: names `dashboards_list_lenses` and `dashboards_get_city_pack` in this repo; `/api/mounts` reports `mcp.serving=false`. Not on serving Hauska MCP. No second MCP process.
+   | grade: [ ] partial 2026-08-17 | evidence: tools exist on hauska-mcp-server branch `g61/dashboards-mcp-tools` (`dashboards_list_lenses` public/anon; `dashboards_get_city_pack` identified). Not on serving `00074-tar`. No second MCP process. Fail closed if `DASHBOARDS_BACKEND_URL` unset.
    | depends on: 2
 
 7. **Live Bastrop unchanged.** `P:\smartcity-os` porcelain matches the G-18 pin dirty set. This wave's Cloud Run / Vercel deploy count to `smartcity-os-prod` / `smartcityos.io` is zero.
