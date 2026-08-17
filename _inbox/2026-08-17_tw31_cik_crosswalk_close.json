@@ -1,0 +1,181 @@
+{
+  "branch": "tw31/cik-crosswalk-issuer-identity",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/331",
+  "commit": "1086901830a41b5fc0cefe8c1a9c4a9f436f8e3a",
+  "baseCommit": "c18a036f0c5e5058c53a47bb54f677807d06844c",
+  "baseNote": "origin/main was at c18a036 (one docs-only commit past the f285b8c3 named in the dispatch). Local baseline before any change: 4413 passed, 0 real failures; the 2 reds were a missing local `alembic` module (CI installs it from requirements.txt), which I installed, after which the baseline was 4428 passed / 0 failed.",
+  "migration": {
+    "file": "apps/cockpit/backend/migrations/versions/0058_identifier_index_cik.py",
+    "revision": "0058_identifier_index_cik",
+    "downRevision": "0057_ratchet_telemetry",
+    "applied": false,
+    "appliedNote": "NOT applied to production. Merged is not applied; applying is a separate operator decision.",
+    "design": "identifier_type is a bare VARCHAR(8) with no domain constraint, so 'adding cik to the domain' would otherwise have been a comment. The migration states the domain as a real CHECK constraint including cik. On PostgreSQL it is added NOT VALID: new and updated rows are enforced, existing rows are neither scanned nor rewritten, so the ALTER takes no long lock and cannot fail on legacy data. Validating it is a separate deliberate operator step (ALTER TABLE identifier_index VALIDATE CONSTRAINT ck_identifier_index_type) and is not done here. SQLite (test-only; its schema comes from Base.metadata, which carries the same CheckConstraint) is a deliberate no-op rather than a batch table rebuild.",
+    "domain": ["figi", "cusip", "isin", "cik", "lei", "accn", "waddr", "taddr", "caddr"],
+    "domainSource": "Exactly what the code writes today: the resolver's _GENERIC_ID_TYPES plus the new cik. A test asserts the migration's list equals app.models.IDENTIFIER_TYPES so the two cannot drift.",
+    "verified": "tests/test_billing.py::test_single_alembic_head and ::test_migration_upgrade_and_downgrade both pass with 0058 in the chain (15 passed)."
+  },
+  "filesChanged": [
+    "apps/cockpit/backend/migrations/versions/0058_identifier_index_cik.py (NEW) — cik joins the identifier_type domain as a PG NOT VALID CHECK",
+    "apps/cockpit/backend/app/models.py — IDENTIFIER_TYPES named once + CheckConstraint on IdentifierIndex; docstring corrected",
+    "apps/cockpit/backend/app/securities/cik_crosswalk.py (NEW) — the SEC crosswalk builder (prestaging)",
+    "apps/cockpit/backend/app/securities/issuer_rebuild.py (NEW) — dry-run-by-default rebuild + the per-CIK fan-out guardrail",
+    "apps/cockpit/backend/app/securities/resolver.py — CIK path ranked above LEI/name; match-method constants; issuer_link_provenance(); match_method_filter(); issuer_node_for_cik() pure read; match_method REQUIRED on link_security_to_issuer; _ensure_edge takes provenance; cik added to _GENERIC_ID_TYPES above lei",
+    "apps/cockpit/backend/app/providers/edgar.py — local-only SEC artifact readers (parse_company_ticker_records, local_company_ticker_records with bundled_only, local_submissions_for_cik, local_symbol_to_cik) that never issue HTTP",
+    "apps/cockpit/backend/app/securities/router.py — /securities/resolve-issuer gains ?cik=, still OPERATOR-gated (it mints)",
+    "apps/cockpit/backend/app/jobs/base_library_backfill.py — the one production issued_by writer now resolves CIK-first and labels the link",
+    "apps/cockpit/backend/app/routers/admin_securities.py — identifier-type filter description widened",
+    "apps/cockpit/backend/scripts/rebuild_issuer_links.py (NEW) — operator CLI, dry run unless --apply AND --yes-write, always exits",
+    "apps/cockpit/backend/tests/test_cik_crosswalk.py (NEW) — 23 tests covering all six required groups",
+    "apps/cockpit/backend/tests/test_securities_resolver.py — existing issuer test updated for the now-required match_method and asserts the recorded provenance"
+  ],
+  "cohortProof": [
+    "GOOG -> CIK 0001652044 and GOOGL -> CIK 0001652044, both linked to ONE issuer node named 'Alphabet Inc.' (SEC's registered name); exactly one issuer node exists in the graph afterwards and the CIK is claimed in identifier_index (test_goog_and_googl_resolve_to_one_issuer_node)",
+    "NVDA -> 0001045810, issuer resolved cik-exact, one issued_by edge, matchMethod cik-exact",
+    "AAPL -> 0000320193, issuer resolved cik-exact, one issued_by edge, matchMethod cik-exact",
+    "MSFT -> 0000789019, issuer resolved cik-exact, one issued_by edge, matchMethod cik-exact",
+    "TSLA -> 0001318605, issuer resolved cik-exact, one issued_by edge, matchMethod cik-exact",
+    "SPY  -> 0000884394, issuer resolved cik-exact, one issued_by edge, matchMethod cik-exact",
+    "QQQ  -> 0001067839, issuer resolved cik-exact, one issued_by edge, matchMethod cik-exact",
+    "Six distinct CIKs produced six distinct issuer nodes — no collapse (test_cohort_symbols_resolve_to_expected_cik_and_issuer)",
+    "Committed SEC artifact re-measured at source and asserted: 10,433 tickers over 8,021 CIKs; per-CIK ticker distribution 1->6548, 2->965, 3->371; global max 27 (CIK 0000927971, BANK OF MONTREAL /CAN/, 27 ETN tickers). Matches the planner's measurement.",
+    "Deliberately wrong name proof: security 'ZZZQ' (not listed by SEC) carrying the name 'Alphabet Holdings Incorporated' produced NO link on the CIK path; Alphabet's issuer kept exactly its two share classes; the same name on the NAME path still resolves but is labelled name-fuzzy, so fuzzy is visible rather than forbidden",
+    "Mechanism is built for all 8,021 CIKs — scope is a parameter (--symbols / --all / ciks=), not a second code path. Proven on the cohort's six plus GOOG/GOOGL per the planner ruling."
+  ],
+  "guardrailDesign": {
+    "rule": "For every issuer node, the securities linked to it must not exceed the EXACT number of tickers SEC lists for that node's CIK. Not a flat cap.",
+    "whyNotAFlatCap": "SEC's own file shows 6,548 CIKs with 1 ticker, 965 with 2, 371 with 3, and a legitimate tail reaching 27. Any cap loose enough to admit 27 would have admitted the 183-security node; any cap tight enough to catch 183 would reject thousands of real issuers.",
+    "bound": "len(union of the ticker-file tickers and the submissions tickers for that CIK). A union of two SEC lists, because refusing a ticker SEC itself publishes would manufacture false violations.",
+    "reasonCodes": {
+      "multi-cik-fanout": "linked securities span more than one SEC CIK — the node is at least two issuers wearing one id",
+      "cik-mismatch": "the node claims a CIK and holds securities SEC assigns to a different one",
+      "exceeds-sec-ticker-bound": "more securities than SEC lists tickers for the CIK — this is the check that catches the 183-node (6.8x the observed global maximum of 27)",
+      "unbounded-fanout": "no CIK determinable for the node at all and it still holds more than one security — the shape the whole name-derived graph is in"
+    },
+    "failClosed": "The bound is enforced AT THE WRITE in apply mode (a link that would breach it is refused and counted, never written), not only as a post-hoc report. A post-hoc report would have told us about the 183-node only once it existed.",
+    "scopeHonesty": "A crosswalk filtered to a few tickers does not know that SEC omits the rest — that is ignorance, not absence. Under a filtered crosswalk the check will not claim unbounded-fanout and measures the bound against recognised securities only, so it under-reports rather than inventing violations. Run --guardrail-only with --all for the full verdict.",
+    "provenBy": "The clean-graph test and the synthetic-violation test share ONE guardrail assertion helper. test_guardrail_fails_on_synthetic_over_collapsed_node introduces 5 securities on Apple's issuer node (SEC lists 1 AAPL ticker, bound = 1) and asserts that shared assertion RAISES AssertionError. test_guardrail_catches_multi_cik_collapse proves the multi-CIK half. test_apply_refuses_a_link_that_would_breach_the_bound proves the fail-closed write."
+  },
+  "dryRunReport": {
+    "note": "Run against a LOCAL SQLite reproduction of the production shape (name-derived unlabelled edges, one over-collapsed node holding 12 similarly-named leveraged products, 2 symbols SEC does not list). ZERO production reads and ZERO production writes were performed by this lane, and nothing was deployed.",
+    "reproductionSeed": "22 security nodes / 22 legacy unlabelled issued_by edges / 2 issuer nodes (the fuzzy name path collapsed 8 differently-named cohort issuers into ONE node by itself, reproducing the defect without being asked to)",
+    "cohortScopedDryRun": {
+      "command": "python scripts/rebuild_issuer_links.py --symbols NVDA,AAPL,MSFT,TSLA,SPY,QQQ,GOOG,GOOGL --bundled-only",
+      "disagreementCounts": { "agrees": 0, "disagrees": 8, "no_opinion": 0 },
+      "guardrailViolations": 1,
+      "guardrailReasons": ["multi-cik-fanout (crosswalk_scope: filtered)"],
+      "idempotency": "two consecutive runs produced BYTE-IDENTICAL JSON (diff -q clean)"
+    },
+    "fullGraphDryRun": {
+      "command": "python scripts/rebuild_issuer_links.py --all --bundled-only",
+      "securityNodesScanned": 22,
+      "existingLinksTotal": 22,
+      "existingLinkProvenance": { "unlabelled": 22, "by_match_method": {} },
+      "disagreementCounts": { "agrees": 0, "disagrees": 20, "no_opinion": 2 },
+      "unlistedSymbols": 2,
+      "planned": {
+        "ciks_in_scope": 8,
+        "issuer_nodes_to_create": 8,
+        "links_to_create": 20,
+        "links_to_retire": 0,
+        "retire_note": "edges are append-only and enforced (app.spine.immutability); disagreements are reported for an operator ruling, never rewritten here"
+      },
+      "guardrailViolations": 1,
+      "guardrailDetail": "issuer 'NVDA Holdings Group', 8 linked securities, no CIK claimed, reasons ['multi-cik-fanout','unbounded-fanout'], crosswalk_scope full",
+      "crosswalk": { "ciks": 8021, "tickers": 10433, "max_ticker_bound": 27 },
+      "writesPerformed": 0,
+      "writesProof": "node / edge / identifier_index row counts identical before and after two dry runs (asserted in test_dry_run_is_idempotent_and_writes_nothing)"
+    },
+    "applyProofOnLocalCopy": {
+      "command": "python scripts/rebuild_issuer_links.py --all --bundled-only --apply --yes-write   (against a COPY of the local reproduction DB only)",
+      "firstRun": { "issuer_nodes_created": 8, "links_created": 20, "links_refused_by_guardrail": 0 },
+      "secondRun": { "issuer_nodes_created": 0, "links_created": 0, "links_refused_by_guardrail": 0 },
+      "secondRunCounts": { "agrees": 20, "disagrees": 20, "no_opinion": 2 },
+      "secondRunProvenance": { "cik-exact": 20, "unlabelled": 22 },
+      "interpretation": "Apply is additive and idempotent. The 20 legacy unlabelled edges still disagree and the legacy collapsed node is still flagged, because nothing existing was deleted, mutated, or restamped — by canon and because edges are append-only with an ORM before_update guard enforcing it.",
+      "refusalGuard": "python scripts/rebuild_issuer_links.py --symbols AAPL --apply  (without --yes-write) -> 'REFUSED: --apply requires --yes-write. Nothing was read or written.' exit 2"
+    }
+  },
+  "disagreementCounts": {
+    "cohortScoped": { "agrees": 0, "disagrees": 8, "no_opinion": 0 },
+    "fullGraphBeforeApply": { "agrees": 0, "disagrees": 20, "no_opinion": 2 },
+    "fullGraphAfterApply": { "agrees": 20, "disagrees": 20, "no_opinion": 2 },
+    "legacyUnlabelledEdges": 22,
+    "semantics": {
+      "agrees": "the existing edge already points at the CIK-keyed issuer for that symbol",
+      "disagrees": "SEC gives the symbol a CIK and the edge points somewhere else (usually a name-collapsed node)",
+      "no_opinion": "SEC does not list the symbol, so the crosswalk has no standing to judge the link — an honest absence, not a pass and not a fail"
+    }
+  },
+  "testOutput": {
+    "newSuite": "python -m pytest tests/test_cik_crosswalk.py -v  ->  23 passed, 8 warnings in 10.53s",
+    "newTests": [
+      "test_sec_ticker_file_shape_measured_at_source PASSED",
+      "test_crosswalk_resolves_cohort_tickers_to_ciks PASSED",
+      "test_ticker_file_fields_carry_sec_authority_and_fetch_date PASSED",
+      "test_submissions_fields_extracted_with_authority_and_fetch_date PASSED",
+      "test_missing_submissions_is_an_honest_absence PASSED",
+      "test_crosswalk_path_has_no_vendor_and_no_name_matching PASSED",
+      "test_normalize_cik_is_strict PASSED",
+      "test_blank_cik_falls_through_to_the_weaker_paths PASSED",
+      "test_migration_and_model_identifier_domains_are_in_lockstep PASSED",
+      "test_identifier_type_domain_admits_cik_and_rejects_junk PASSED",
+      "test_goog_and_googl_resolve_to_one_issuer_node PASSED",
+      "test_cohort_symbols_resolve_to_expected_cik_and_issuer PASSED",
+      "test_wrong_company_name_produces_no_link_on_cik_path PASSED",
+      "test_guardrail_passes_on_a_correctly_built_graph PASSED",
+      "test_guardrail_fails_on_synthetic_over_collapsed_node PASSED",
+      "test_guardrail_catches_multi_cik_collapse PASSED",
+      "test_a_scoped_crosswalk_does_not_invent_violations PASSED",
+      "test_apply_refuses_a_link_that_would_breach_the_bound PASSED",
+      "test_match_method_is_always_populated_and_fuzzy_is_queryable PASSED",
+      "test_an_unlabelled_or_bogus_issuer_link_is_impossible PASSED",
+      "test_legacy_unlabelled_edges_are_reported_as_unlabelled PASSED",
+      "test_dry_run_is_idempotent_and_writes_nothing PASSED",
+      "test_apply_is_idempotent PASSED"
+    ],
+    "requiredGroupCoverage": {
+      "goog_googl_one_issuer_node": "test_goog_and_googl_resolve_to_one_issuer_node",
+      "cohort_six_ciks_and_issuers": "test_cohort_symbols_resolve_to_expected_cik_and_issuer",
+      "wrong_name_no_link_on_cik_path": "test_wrong_company_name_produces_no_link_on_cik_path",
+      "guardrail_fails_on_synthetic_over_collapse": "test_guardrail_fails_on_synthetic_over_collapsed_node (asserts the shared guardrail assertion RAISES)",
+      "match_method_always_populated_and_fuzzy_queryable": "test_match_method_is_always_populated_and_fuzzy_is_queryable + test_an_unlabelled_or_bogus_issuer_link_is_impossible + test_legacy_unlabelled_edges_are_reported_as_unlabelled",
+      "rebuild_dry_run_idempotent": "test_dry_run_is_idempotent_and_writes_nothing (+ test_apply_is_idempotent, + byte-identical CLI reports on the reproduction DB)"
+    },
+    "fullLocalSuite": "python -m pytest -q  ->  4438 passed, 2 skipped, 21 deselected, 39017 warnings in 514.23s (0:08:34). Zero failures.",
+    "bugsFoundByTheseTests": [
+      "normalize_cik used zfill(10), which cannot SHORTEN: '0000000000320193' survived as a 16-character string and would have become a SECOND identifier_index key for the same issuer — the precise failure the function exists to prevent. Fixed to strip leading zeros before padding, and to reject a CIK with more than 10 significant digits.",
+      "The operator CLI printed its report and then HUNG: app.db.engine was never disposed and aiosqlite holds a non-daemon thread per connection. Fixed with a finally-dispose, so every command exits."
+    ]
+  },
+  "ciConclusion": {
+    "runId": "32034318595",
+    "headSha": "1086901830a41b5fc0cefe8c1a9c4a9f436f8e3a",
+    "runConclusionString": "success",
+    "ghPrChecksVerbatim": [
+      "Frontend build (cockpit web)\tpass\t1m1s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32034318595/job/95401057350",
+      "Gitleaks security scan\tpass\t11s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32034318595/job/95401057426",
+      "Python tests (cockpit backend)\tpass\t4m36s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32034318595/job/95401057485",
+      "Windows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32034318595/job/95401058842"
+    ],
+    "conclusionStrings": {
+      "Frontend build (cockpit web)": "SUCCESS",
+      "Python tests (cockpit backend)": "SUCCESS",
+      "Gitleaks security scan": "SUCCESS",
+      "Windows .exe (release tags only)": "SKIPPED"
+    },
+    "prState": "OPEN",
+    "mergeable": "MERGEABLE",
+    "merged": false
+  },
+  "remaining": [
+    "OPERATOR DECISION: apply migration 0058 to production. It is additive and PG-side NOT VALID, so it neither scans nor rewrites existing rows, but applying is explicitly a separate operator decision and was not done here.",
+    "OPERATOR DECISION: run scripts/rebuild_issuer_links.py --all against production as a DRY RUN first to get the real disagreement counts over the live 8,334 edges / 1,323 issuer nodes / 35,918 security nodes. The numbers in this artifact are from a local reproduction of the production SHAPE, not from production itself.",
+    "OPERATOR RULING NEEDED on the legacy collapsed edges. Apply is additive by design, so after a production apply a security can carry BOTH a legacy unlabelled name-derived edge and an authoritative cik-exact one. Each is labelled and a consumer can prefer cik-exact, but retiring the legacy ones needs a ruling — and edges are append-only with an ORM guard, so retirement is not a mechanical change this lane could make.",
+    "The 1,323 legacy issuer nodes were left untouched. Deduping or merging them (merge_links already exists for exactly this) is separate work.",
+    "The per-CIK submissions cache is a deploy-time artifact. Without it the crosswalk's submissions fields are honestly absent, so entity_type / exchanges / sic / ein / stateOfIncorporation / formerNames will be empty in any environment that has no cache (CI included). Populating it on the VM is an ops step, not a code change.",
+    "resolve_issuer's response deliberately still omits `created` (adding it would change /securities/resolve* for every caller); the rebuild derives mint counts from the pre-existing CIK-owner map instead. If a caller ever needs `created`, that is a deliberate response-shape change.",
+    "NOT IN SCOPE and untouched, per the dispatch: the CME/futures root crosswalk; GLEIF or LEI sourcing; any entityType-based fund-shape inference."
+  ],
+  "blocked": []
+}
