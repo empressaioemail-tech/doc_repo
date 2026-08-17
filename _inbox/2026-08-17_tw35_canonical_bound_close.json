@@ -1,0 +1,221 @@
+{
+  "status": "COMPLETE. Both code halves shipped in one PR with CI success, and the three remaining pairs deduped in production. Every one of the coordinator's stated expectations matched exactly, including the trusted-link count of 7.",
+  "branch": "tw35/canonical-bound-and-trust-narrowing",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/333",
+  "commit": "d73e5e79c8d883ee4bdef1831350d137a471aea5",
+  "baseCommit": "786b35ad5a445c0a98df52ebf2449b856170220f",
+  "prState": "OPEN, not merged",
+  "ciConclusion": {
+    "runId": "32050727583",
+    "headSha": "d73e5e79c8d883ee4bdef1831350d137a471aea5",
+    "ghPrChecksVerbatim": [
+      "Frontend build (cockpit web)\tpass\t58s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32050727583/job/95449192230",
+      "Gitleaks security scan\tpass\t12s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32050727583/job/95449192171",
+      "Python tests (cockpit backend)\tpass\t7m14s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32050727583/job/95449192277",
+      "Windows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32050727583/job/95449193017"
+    ],
+    "conclusionStrings": {
+      "Python tests (cockpit backend)": "success",
+      "Frontend build (cockpit web)": "success",
+      "Gitleaks security scan": "success",
+      "Windows .exe (release tags only)": "skipped"
+    },
+    "localSuite": "python -m pytest -q on the PR head: 4475 passed, 2 skipped, 21 deselected, 0 failed, in 600.51s",
+    "note": "GitHub's GraphQL endpoint returned HTTP 503 intermittently during this run, so CI completion was polled through the REST check-runs endpoint. Both surfaces agree: success on all three real checks."
+  },
+  "verdictOnHalfB": {
+    "askedBefore": true,
+    "verdict": "(b) is RIGHT, and I said so before implementing it.",
+    "reasoning": "It is a NARROWING, so it can only withhold a trusted link and can never serve an untrusted one; its failure mode is the honest absence the module already prefers. Canonicalizing from_node would have been a WIDENING of the only thing standing between a consumer and a 93.6%-wrong graph, and a widening should earn its way in with a measurement.",
+    "condition": "(b) must not ship without (a). Alone it would make the AAPL/QQQ/SPY orphan links unreachable with nothing replacing them, which is information loss. (a) is what lets the survivor mint its own link, so the fact moves to the live node rather than being lost with the orphan. Both are in this one PR, so the condition holds.",
+    "extensionIAdded": "The same defect existed in issuer_fanout_violations, which also counted retired-node edges. Left unfixed, the post-dedup graph would have reported Apple/SPY/QQQ as exceeds-sec-ticker-bound violations. The writer and the scan must agree by construction, so the exclusion is applied in both."
+  },
+  "boundFixDescription": {
+    "defect": "merge_nodes retires a duplicate security node by status flip and performs ZERO edge rewrites, so the loser's issued_by edges stay recorded against a node that no longer represents anything live. The per-CIK bound counted them. After the TW-34 dedup, Apple's issuer node held one edge from the retired venue-less duplicate, so a bound of 1 was already spent and the SURVIVING node could never acquire a cik-exact link — a permanently stuck state produced by counting a dead node's edge against a live issuer.",
+    "fix": "Edges whose from_node is a retired security node are excluded from the per-CIK bound computation.",
+    "appliedInTwoPlaces": [
+      "rebuild_issued_by — the write-time check. held_all is filtered against symbol_by_security_node (active-only), and orphan_links_excluded_from_bound is reported.",
+      "issuer_fanout_violations — the scan. Edges from non-active securities are skipped when building by_issuer, and orphan_links_excluded_graph_wide is reported on each violation."
+    ],
+    "whyBoth": "A guardrail that disagreed with the writer would either refuse a legal link or admit an illegal one. Same consistency requirement as TW-32's designation-versus-guardrail rule.",
+    "boundNotLoosened": "The bound itself is unchanged. This narrows what counts against it. A dedicated test (test_the_bound_itself_is_not_loosened) pins that two ACTIVE nodes on a one-ticker issuer are still refused with exceeds-sec-ticker-bound.",
+    "orphansReportedNotDropped": "orphan_links_excluded_from_bound and orphan_links_excluded_graph_wide surface the count, and the constant ORPHAN_RETIRED_FROM_NODE names the condition.",
+    "productionEffect": "The re-apply for AAPL/SPY/QQQ reported orphan_links_excluded_from_bound: 3 and created exactly the 3 links that were previously refused."
+  },
+  "trustNarrowingDescription": {
+    "change": "trusted_issuer_links (and therefore trusted_issuer_node_id) now also excludes edges whose from_node is a RETIRED security node, via a new _live_security_from_node_clause() predicate passed through _scope_clauses(exclude_retired_securities=True).",
+    "narrowingNotWidening": "Strictly fewer rows. It can only withhold a link, never serve an untrusted one. Canonicalizing from_node was deliberately NOT done — that would widen the trust read.",
+    "edgeUntouched": "The retired node's edge is still recorded, still valid_to NULL, still classifies as cik-exact under is_trusted/edge_trust_state, and remains reachable by direct query as evidence through its merge link. A test pins all of that (test_the_retired_link_is_still_RECORDED_and_still_trusted_in_itself).",
+    "splitStaysACensus": "issuer_link_trust_split deliberately still counts every recorded edge and adds three fields rather than shrinking its total: from_retired_security_nodes, trusted_but_from_a_retired_security_node, and servable_by_trusted_issuer_links. Subtracting orphans from the total would conceal exactly the rows the accessor now withholds.",
+    "astControlUntouched": "The new helper reads the NODE store, names no edge type and does no unscoped select(Edge), so it needs no allowlist entry. tests/test_issuer_link_trust.py passes unchanged in its structural sections, and TRUSTED_MATCH_METHODS is still ('cik-exact',).",
+    "productionEffect": "10 cik-exact edges are recorded; 3 of them sit on retired nodes and are excluded, so exactly 7 are served."
+  },
+  "testsProvenByRemoval": [
+    {
+      "control": "test_a_retired_nodes_edge_does_not_consume_the_bound_at_the_write",
+      "pins": "the held-set filter in rebuild_issued_by",
+      "removal": "replaced the filtered held set with the raw one",
+      "observedFailure": "assert 0 == 1 — links_created drops to 0 and the survivor is refused",
+      "restored": "passes"
+    },
+    {
+      "control": "test_a_retired_nodes_edge_does_not_trip_the_guardrail",
+      "pins": "the orphan skip in issuer_fanout_violations",
+      "removal": "removed the `if e.from_node not in active_security_ids: continue` guard",
+      "observedFailure": "AssertionError listing a violation with issuer_name 'seeded', claimed_cik 0000320193, linked_securities 2 against a bound of 1, reason exceeds-sec-ticker-bound",
+      "restored": "passes"
+    },
+    {
+      "control": "test_a_retired_securitys_trusted_link_is_not_served + test_the_trust_split_reports_orphans_without_hiding_them",
+      "pins": "the exclude_retired_securities=True argument in trusted_issuer_links",
+      "removal": "deleted the argument",
+      "observedFailure": "assert ['sec_aapl', 'sec_aapl_retired_duplicate'] == ['sec_aapl'] (one extra item), and assert 1 == 2 on the served count",
+      "restored": "passes"
+    },
+    {
+      "control": "test_the_bound_itself_is_not_loosened",
+      "pins": "that the narrowing did not become a loosening",
+      "removal": "n/a — this is the inverse control: two ACTIVE nodes on a one-ticker issuer must still be refused",
+      "observedFailure": "n/a",
+      "restored": "passes"
+    },
+    {
+      "control": "test_the_narrowing_never_widens_what_is_served",
+      "pins": "an untrusted link on an ACTIVE node stays unserved",
+      "removal": "n/a — inverse control",
+      "observedFailure": "n/a",
+      "restored": "passes"
+    },
+    {
+      "summary": "All three positive controls were demonstrated failing with their exclusion removed and passing with it restored, in the same session. 58 tests pass across the two suites after restoration."
+    }
+  ],
+  "symbolsDeduped": [
+    { "symbol": "AAPL", "survivor": "sec_01KW9M9AHG6KH27D3XB1RHQC7E", "survivor_venue": "XNAS", "retired": "sec_01KW87FBFGR1BFNMXBG1KCEH0Y", "retired_held_cik_exact": true, "survivor_gained_cik_exact": true, "survivor_trusted_issuer": "iss_01M089R4AK4Q2AHVY6GJ96H7E8" },
+    { "symbol": "QQQ", "survivor": "sec_01KW8C3BE8505XW1DEH055136G", "survivor_venue": "ARCX", "retired": "sec_01KW87FCA3H0AH3RYFJ4F59TCE", "retired_held_cik_exact": true, "survivor_gained_cik_exact": true, "survivor_trusted_issuer": "iss_01M089R4F785PH3YV4TWM8DXKT" },
+    { "symbol": "SPY", "survivor": "sec_01KW8C3B5YM6KE5P3PA597MS5V", "survivor_venue": "ARCX", "retired": "sec_01KW87FCBH8HCFVS3KR3D8RR84", "retired_held_cik_exact": true, "survivor_gained_cik_exact": true, "survivor_trusted_issuer": "iss_01M089R4GNJHW1MEF9KJYZG6T2" }
+  ],
+  "survivorRule": "venue-qualified survives, as ruled and unchanged. Chosen by the resolver's own _tie_break, not hand-picked. All 11 of the 11 pairs across TW-34 and TW-35 kept the venue-qualified node, so the heterogeneity the coordinator wanted to avoid did not arise.",
+  "beforeCounts": {
+    "note": "state as left by TW-34 (8 of 11 deduped)",
+    "nodes_total": 37414,
+    "active_security_nodes": 9984,
+    "merge_links_total": 25934,
+    "merge_links_venue_dedup": 8,
+    "edges_total": 8507,
+    "issued_by_live": 8341,
+    "cik_exact_edges_recorded": 7,
+    "cik_exact_edges_from_retired_nodes": 0,
+    "trusted_links_served": 7,
+    "identifier_index_total": 174,
+    "identifier_index_cik_rows": 7,
+    "identifier_index_max_id": 175,
+    "issuer_nodes_with_links": 1330,
+    "symbols_with_more_than_one_active_node": ["AAPL", "QQQ", "SPY"]
+  },
+  "afterCounts": {
+    "nodes_total": 37414,
+    "active_security_nodes": 9981,
+    "merge_links_total": 25937,
+    "merge_links_max_id": 25938,
+    "merge_links_venue_dedup": 11,
+    "edges_total": 8510,
+    "issued_by_live": 8344,
+    "cik_exact_edges_recorded": 10,
+    "cik_exact_edges_from_retired_nodes": 3,
+    "trusted_links_served": 7,
+    "identifier_index_total": 174,
+    "identifier_index_cik_rows": 7,
+    "identifier_index_max_id": 175,
+    "issuer_nodes_with_links": 1330,
+    "symbols_with_more_than_one_active_node": [],
+    "nodes_deleted": 0
+  },
+  "expectationCheck": {
+    "activeSecurities": { "expected": 9981, "actual": 9981, "match": true },
+    "mergeLinks": { "expected": 25937, "actual": 25937, "match": true },
+    "nodesDeleted": { "expected": 0, "actual": 0, "match": true },
+    "symbolsWithMoreThanOneActiveNode": { "expected": 0, "actual": 0, "match": true },
+    "trustedLinksServed": { "expected": 7, "actual": 7, "match": true },
+    "verdict": "Every stated expectation matched. The coordinator's arithmetic on the trusted count was right: 3 new links on survivors plus 4 untouched, with 3 orphans excluded, giving 10 recorded and 7 served."
+  },
+  "trustedLinkCount": {
+    "served": 7,
+    "recordedCikExactEdges": 10,
+    "excludedBecauseFromNodeRetired": 3,
+    "trustSplit": {
+      "total": 8344,
+      "trusted": 10,
+      "from_retired_security_nodes": 12,
+      "trusted_but_from_a_retired_security_node": 3,
+      "servable_by_trusted_issuer_links": 7
+    },
+    "perSymbol": {
+      "AAPL": "iss_01M089R4AK4Q2AHVY6GJ96H7E8",
+      "QQQ": "iss_01M089R4F785PH3YV4TWM8DXKT",
+      "SPY": "iss_01M089R4GNJHW1MEF9KJYZG6T2",
+      "MSFT/NVDA/TSLA/GOOGL": "unchanged from TW-33",
+      "DIA/IWM/XLE/XLF/XLK/XLP/XLV/XLY": "None — those eight are not in the seven-CIK cohort and have no cik-exact link, which is correct"
+    },
+    "note": "from_retired_security_nodes is 12 rather than 3 because the eleven retired nodes also carried legacy UNLABELLED links; only 3 of the retired-node edges were trusted."
+  },
+  "canonicalResolution": {
+    "verdict": "PASS for the three merged here, and the eight from TW-34 remain resolvable",
+    "threeMergedThisTask": [
+      { "loser": "sec_01KW87FCBH8HCFVS3KR3D8RR84", "canonical": "sec_01KW8C3B5YM6KE5P3PA597MS5V", "resolves": true, "loser_exists": true, "loser_status": "merged" },
+      { "loser": "sec_01KW87FCA3H0AH3RYFJ4F59TCE", "canonical": "sec_01KW8C3BE8505XW1DEH055136G", "resolves": true, "loser_exists": true, "loser_status": "merged" },
+      { "loser": "sec_01KW87FBFGR1BFNMXBG1KCEH0Y", "canonical": "sec_01KW9M9AHG6KH27D3XB1RHQC7E", "resolves": true, "loser_exists": true, "loser_status": "merged" }
+    ],
+    "allElevenTagged": "merge_links with reason venue_normalization_dedup now totals 11"
+  },
+  "guardrailResult": {
+    "scopedViolationsAfter": 0,
+    "note": "Zero for the three CIKs after the dedup and re-apply. Without the (a) guardrail half this would have reported three exceeds-sec-ticker-bound violations, since each issuer now legitimately holds one live edge plus one orphan."
+  },
+  "idempotencySecondRun": {
+    "secondDedup": { "duplicate_symbols_found": [], "merged": 0, "merge_links_total": 25937, "active_security_nodes": 9981, "nodes_total": 37414 },
+    "secondReapply": { "issuer_nodes_created": 0, "links_created": 0, "links_refused_by_guardrail": 0, "orphan_links_excluded_from_bound": 0, "disagreement_counts": { "agrees": 3, "disagrees": 0, "no_opinion": 0 } },
+    "differingKeysBetweenFirstAndSecond": {},
+    "sequenceProof": "merge_links.id is sequence-backed and max(id) held at 25,938 across the repeat run, so no repeat merge was even ATTEMPTED — an attempted-and-discarded insert would have consumed a sequence value. identifier_index max(id) likewise held at 175. Same proof shape as TW-33 and TW-34.",
+    "secondReapplyNowAgrees": "the scoped verdicts moved to agrees 3 / disagrees 0, confirming the survivors' links are the ones the crosswalk expects"
+  },
+  "backupTimestamp": {
+    "gate": "PASS — checked before any write, as required.",
+    "instance": "cockpit-pg (POSTGRES_16, project empressa-trading-prod)",
+    "mostRecentAutomatedBackup": {
+      "id": "1786950000000",
+      "windowStartTime": "2026-08-17T07:00:00.000+00:00",
+      "endTime": "2026-08-17T09:40:43.274Z",
+      "type": "AUTOMATED",
+      "status": "SUCCESSFUL"
+    },
+    "pointInTimeRecoveryEnabled": true,
+    "transactionLogRetentionDays": 7
+  },
+  "constraintsHonoured": {
+    "writesPerformed": "3 merge_links rows, 3 node status flips to 'merged', and 3 issued_by cik-exact edges. Nothing else.",
+    "noNodesDeleted": "nodes_total held at 37,414 throughout; all three retired nodes verified as still existing with status 'merged'",
+    "boundNotLoosened": "unchanged; pinned by test_the_bound_itself_is_not_loosened",
+    "trustNotWidened": "TRUSTED_MATCH_METHODS still ('cik-exact',); the change is strictly a narrowing",
+    "astControlUntouched": "passes unchanged; the new helper needs no allowlist entry",
+    "remaining181NotApplied": "confirmed — only AAPL, SPY and QQQ were re-applied",
+    "containerNotRestarted": { "restartCount": 0, "startedAt": "2026-08-13T16:19:49.413379948Z", "identicalBeforeAndAfter": true },
+    "noDeploy": "deployed /app/app/securities/resolver.py mtime still 2026-06-29 12:21:02 +0000",
+    "noMigration": "alembic_version still ['0057_ratchet_telemetry']; 0058 remains unapplied",
+    "everyCommandExited": "all invocations wrapped in explicit timeouts; every script disposes the async engine in a finally block",
+    "tempPathsRemoved": ["host: /tmp/tw35*, /tmp/tw34*, /tmp/_tw3*.py", "container: /tmp/tw35, /tmp/tw35_*.json"],
+    "cleanupVerified": "ls -d /tmp/*tw3[45]* returned nothing on BOTH host and container",
+    "secretsHandling": "COCKPIT_DATABASE_URL never echoed, decoded or written. No secret value appears in this file."
+  },
+  "remaining": [
+    "PR #333 is OPEN and UNMERGED at d73e5e79 with all three real CI checks success. It needs merging before any further apply run, because the production graph now DEPENDS on the fix: three cik-exact edges sit on retired nodes, and code without the (a) fix would count them against the bound and refuse legitimate links, while code without the (b) fix would serve them and report 10 trusted links instead of 7.",
+    "That dependency is worth stating plainly: production is currently running deployed code (2026-06-29) that predates TW-31 entirely, so nothing serving reads issued_by today and the inconsistency is latent. But the next deploy should carry this PR.",
+    "The eleven duplicate pairs are now fully resolved. TW-36 (the seam that mints them, in both ULID orders) remains the root cause and is logged separately — not addressed here.",
+    "The 8 XL*/DIA/IWM survivors have no cik-exact link because their CIKs are outside the seven-CIK cohort. They will get one whenever the remaining 181 CIKs are applied.",
+    "The remaining 181 CIKs are still NOT applied and remain a separate operator decision. The plan as of the last full dry run was 181 issuer nodes and 261 links, 0 to retire, and it should be re-measured after this PR merges since the bound fix may change the refusal count.",
+    "Migration 0058 remains unapplied and deploy-coupled.",
+    "The ops scripts used across TW-34 and TW-35 (_tw34_dedup.py with its --tw35 flag, and the verification probes) were staged and deleted, not committed. If dedup becomes routine it should be a committed CLI with tests, like scripts/rebuild_issuer_links.py.",
+    "Carried forward, untouched: the 914 unbounded-fanout nodes needing a non-SEC identity authority, and the 08_build_scope A-8 ticker-bound head-count drift."
+  ],
+  "blocked": []
+}

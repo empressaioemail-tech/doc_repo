@@ -53,6 +53,29 @@ CIK coverage          2.99%  (1,075 of 35,918; 188 distinct CIKs of 8,021)
 
 CIK coverage at 3% rather than the planner's ~25% estimate **empirically confirms the three-shapes thesis at graph scale**: of 34,843 unresolved, 13,419 are foreign by suffix and the 21,424 unsuffixed are dominated by futures, FX and crypto, which SEC's file structurally cannot cover.
 
+
+## Production writes done (TW-33, TW-34, TW-35) — and a live coupling
+
+Three scoped production writes landed 2026-08-17, each behind a backup gate, each with expectations stated in advance, each planner-reverified.
+
+```
+                       start      now
+nodes (total)         37,407   37,414    +7, ZERO deletions throughout
+active securities      9,992    9,981    -11 (all merged, none deleted)
+merge_links           25,926   25,937    +11, tagged venue_normalization_dedup
+identifier_index         167      174    cik rows 0 -> 7
+issuer nodes           1,323    1,330    +7, minted fresh, SEC registered names
+cik-exact edges            0       10    3 sit on RETIRED nodes and are excluded
+cik-exact SERVED           0        7
+multi-node symbols        11        0
+```
+
+**THE COUPLING, and it is the most important line in this file.** Production DATA now depends on code merged as PR #333 (cockpit main `f3087daa`). Three `cik-exact` edges sit on retired nodes. Code WITHOUT the bound fix counts them against the per-CIK bound and refuses legitimate links; code WITHOUT the trust narrowing serves them and reports 10 trusted links instead of 7. It is latent only because the deployed image predates TW-31 entirely and nothing serving reads `issued_by`. **The next cockpit deploy must carry #333. Never deploy a cockpit image older than `f3087daa` from here on.**
+
+The two halves are not separable: shipping the trust narrowing without the bound fix would make those orphans unreachable with nothing replacing them, which is information loss. The executor caught that when the planner proposed the narrowing alone.
+
+Remaining 181 CIKs deliberately NOT applied. Re-measure that plan after #333 is deployed, because the bound fix changes the refusal count.
+
 ## Open
 
 **TW-32 MERGED 2026-08-17T16:34:39Z, cockpit main now `786b35ad`** (was PR #332, CI `success` @ `a2f55232`, 4468 passed / 0 failed, `writesPerformed: 0` proven five ways.** Expected-issuer now derives from the crosswalk artifact rather than from the empty `identifier_index`. Re-measurement against the live graph, read-only, `identifier_index` cik rows still 0:
