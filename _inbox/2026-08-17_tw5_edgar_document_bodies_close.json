@@ -1,0 +1,183 @@
+{
+  "row": "TW-5",
+  "status": "COMPLETE. Body retrieval, hashing and provenance shipped on a PR against main with CI conclusion 'success' on all three real checks. Byte-identity proven live on all four operating companies against four independent legs, on this (non-datacenter) host, and committed as a manifest that CI re-derives offline. PR is OPEN and NOT merged.",
+  "repo": "empressaioemail-tech/empressa-trading",
+  "branch": "tw5/edgar-document-bodies",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/334",
+  "prState": "OPEN, not merged (mergeable: MERGEABLE, mergedAt: null)",
+  "baseCommit": "dce74071ec8a361b3b9ba315cafddb949d23de0a",
+  "commits": [
+    "c26b681064e76692292fa7e6cc4cc8885b9710c7 \u2014 feat(TW-5): EDGAR filing document bodies \u2014 retrieval, hashing, and provenance",
+    "27c40ebf64477d4c70d63fa643f88c0a20d0cde2 \u2014 fix(TW-5): a malformed cache sidecar must be a miss, not an exception"
+  ],
+  "headSha": "27c40ebf64477d4c70d63fa643f88c0a20d0cde2",
+  "ciConclusion": {
+    "runId": "32065702763",
+    "headSha": "27c40ebf64477d4c70d63fa643f88c0a20d0cde2",
+    "runLevel": "status=completed conclusion=success head_sha=27c40ebf64477d4c70d63fa643f88c0a20d0cde2 event=push",
+    "conclusionStringsVerbatim": {
+      "Frontend build (cockpit web)": "success",
+      "Python tests (cockpit backend)": "success",
+      "Gitleaks security scan": "success",
+      "Windows .exe (release tags only)": "skipped"
+    },
+    "ghPrChecksVerbatim": [
+      "Frontend build (cockpit web)\tpass\t59s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32065702763/job/95497176056",
+      "Gitleaks security scan\tpass\t7s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32065702763/job/95497176286",
+      "Python tests (cockpit backend)\tpass\t6m11s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32065702763/job/95497176237",
+      "Windows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32065702763/job/95497176856"
+    ],
+    "gatedOn": "the conclusion STRING from the GitHub jobs API, not the gh exit code",
+    "localSuite": "python -m pytest -q on the FINAL head 27c40eb: 4512 passed, 2 skipped, 21 deselected, 0 failed, in 1015.49s. Baseline on main per the TW-35 close was 4475 passed, so the delta is +37 \u2014 exactly the tests added here, zero regressions. An earlier run on the pre-hardening tree gave 4506 (+31, the count at that point). CI on the final head is the authoritative green.",
+    "greenBar": "main's baseline is zero failures and this PR holds it. No test was skipped, xfailed or marked to get there."
+  },
+  "filesChanged": [
+    "apps/cockpit/backend/app/providers/edgar.py \u2014 +479/-4. Split _http_get into _http_get_with_headers plus a body-only wrapper so bodies carry SEC's own Content-Type while the transport (fair-access UA, ~1-2/s pacing, Retry-After backoff, gzip) stays in one place. Added the FilingDocument dataclass, filing_document_url, normalize_accession, _safe_document_name, the hash-validated disk cache, fetch_filing_document, local_filing_document, latest_filing_of_form, fetch_latest_filing_document.",
+    "apps/cockpit/backend/scripts/verify_edgar_document_bodies.py \u2014 NEW, 358 lines. The live proof. Runs only on a non-datacenter host; exits 0 all-pass, 1 a-leg-failed, 2 SEC-unreachable.",
+    "apps/cockpit/backend/tests/test_edgar_documents.py \u2014 NEW, 542 lines, 37 tests, all offline.",
+    "apps/cockpit/backend/tests/fixtures/edgar_document_bodies_proof.json \u2014 NEW, 8 KB. The committed proof manifest (metadata and digests, NOT the bodies).",
+    "apps/cockpit/docs/EDGAR_NIGHTLY_RUNBOOK.md \u2014 +43. New section documenting body retrieval, the cache, the prod-VM posture, and how to re-run the proof."
+  ],
+  "diffStat": "5 files changed, 1530 insertions(+), 4 deletions(-)",
+  "cacheDesign": {
+    "mirrors": "the existing per-CIK submissions cache pattern in the same module",
+    "root": "COCKPIT_SEC_DOCUMENTS_DIR, default /var/lib/cockpit/sec_documents",
+    "layout": "CIK<zero-padded>/<accession-no-dashes>/<document>, with a sibling <document>.meta.json provenance sidecar",
+    "expiry": "NONE, deliberately. A filing is immutable once SEC accepts it, so accession-addressed content cannot go stale. Freshness is not the risk; corruption is.",
+    "validation": "hash-validated on EVERY read. SHA-256 is recomputed over the cached bytes and compared to the digest recorded at fetch time.",
+    "missConditions": [
+      "digest mismatch (tampered or truncated body)",
+      "length mismatch",
+      "sidecar missing source_url or fetched_at (provenance is not optional; an entry that cannot say where it came from is unusable as a citation)",
+      "sidecar naming a different (cik, accession, document) than the derived path it sits on \u2014 i.e. something wrote to the wrong key",
+      "malformed or non-JSON sidecar"
+    ],
+    "missBehaviour": "return None and refetch. A cache read NEVER raises and NEVER serves bytes it cannot vouch for.",
+    "noRefetch": "a second call for the same document is served from disk; pinned by a test whose transport raises if touched",
+    "writes": "atomic via a .part temp file then replace; best-effort, so a read-only cache directory degrades to refetching rather than failing a retrieval that already succeeded",
+    "sizeGuard": "COCKPIT_SEC_DOCUMENT_MAX_BYTES, default 96 MB. Headroom, not a limit anything real hits (largest of the four is MSFT at 8.6 MB)."
+  },
+  "provenanceFields": {
+    "shape": "FilingDocument.provenance() \u2014 modelled on the per-field provenance in app/securities/cik_crosswalk.py (SEC named as authority WITH a fetch date), extended with the digest and length that make 'byte-identical' checkable rather than asserted",
+    "fields": {
+      "authority": "always 'sec.gov' (module constant SEC_AUTHORITY)",
+      "source_url": "the EDGAR archive URL the bytes came from",
+      "fetched_at": "UTC ISO8601 instant SEC was actually REACHED \u2014 not the cache read time",
+      "retrieved_from": "'sec-live' or 'disk-cache'",
+      "cik": "zero-padded",
+      "accession": "dashes stripped, archive-path form",
+      "document": "primary document file name",
+      "content_type": "SEC's declared Content-Type, or an extension fallback when SEC sends none",
+      "content_sha256": "SHA-256 over exactly the returned bytes",
+      "byte_length": "len(content), carried explicitly so provenance survives the bytes"
+    },
+    "fetchTimeRule": "A cache hit REPLAYS the original fetch time rather than restamping. Restamping would quietly convert a stale body into a fresh-looking citation, which is the failure that makes provenance worthless. Pinned by test."
+  },
+  "offlineTestStrategy": {
+    "file": "apps/cockpit/backend/tests/test_edgar_documents.py",
+    "count": "37 tests, zero network",
+    "structuralGuard": "an autouse fixture replaces urllib.request.urlopen with a raiser for EVERY test in the module. Network access is not merely avoided, it is impossible. This is what makes 'the test passed' mean 'the logic is right' rather than 'SEC 403'd and the code coped'.",
+    "explicit403Test": "test_a_blocked_fetch_returns_absence_not_an_empty_document asserts the failed-fetch path returns None. A zero-byte 200 is separately refused, so an empty answer can never pose as a retrieved filing.",
+    "noTrimmedFixtures": "the synthetic body is obviously synthetic. A truncated copy of a real 10-K was rejected as a fixture because it would be a byte-identity claim false by construction.",
+    "mechanismPinned": [
+      "the digest is taken over exactly the returned bytes",
+      "the cache round-trips those bytes unchanged and does not refetch",
+      "cache replay preserves the ORIGINAL fetch time",
+      "tampered body, wrong-key sidecar, provenance-less sidecar, junk length and non-JSON sidecar each yield a miss rather than an answer or an exception",
+      "oversized body refused",
+      "traversal and non-bare document names refused rather than sanitized (they become both a URL segment and a cache path)",
+      "10-K/A is never returned for 10-K",
+      "an unreachable body still returns the filing row, so 'no such filing' stays distinguishable from 'body unreachable' \u2014 the distinction TW-11's read contract needs",
+      "content type comes from SEC's header, falling back to the extension only when SEC sends none"
+    ],
+    "bridgeTest": "test_url_builder_still_produces_every_url_that_was_proven_against_sec re-derives each proven URL from the committed manifest's (cik, accession, document) and compares it to the URL actually fetched, from BOTH the dashed and dashless accession forms. Drift in padding, dash handling, path shape or escaping turns CI red without a single request. This is the one thing a manifest alone could not catch.",
+    "manifestConsistencyTests": "the four CIKs are asserted present; byte_length is asserted equal to sec_published_size and content_sha256 equal to independent_fetch_sha256, so a future proof run committed with disagreeing legs fails in CI rather than shipping a manifest that says 'pass' over numbers that do not."
+  },
+  "liveFetchProof": {
+    "whyNotInCi": "SEC returns HTTP 403 to datacenter IPs \u2014 both GitHub Actions runners and the prod VM (confirmed 2026-07-01, apps/cockpit/docs/EDGAR_NIGHTLY_RUNBOOK.md). CI cannot reach SEC at all. A test that tried would either fail permanently or, worse, 'pass' by swallowing the 403.",
+    "where": "run on the operator's Windows box at P:\\tmp\\tw5-edgar-bodies (residential/office IP), the same host class the runbook's Part A already designates for SEC sync",
+    "how": "cd apps/cockpit/backend && python scripts/verify_edgar_document_bodies.py",
+    "hermetic": "runs entirely inside a TemporaryDirectory with _DOCUMENT_CACHE_DIR, _PER_CIK_CACHE_DIR and _BULK_CACHE all redirected, so no body already on the box can satisfy a leg and nothing is left behind",
+    "failLoud": "exit 2 when SEC is unreachable or 403s, so running it from a blocked host fails loudly and can NEVER look like a pass. Exit 1 on any leg disagreement.",
+    "legs": {
+      "L1_sec_published_size": "the provider's byte length must equal the 'size' SEC itself publishes for that document in the accession's index.json. This expected value is authored entirely outside this codebase \u2014 it is the strongest leg.",
+      "L2_independent_code_path": "SHA-256 must equal a bare urllib GET issued by the script, sharing no transport, no cache and no helper with the provider. Fetching twice through the same helper would only prove the helper is deterministic.",
+      "L3_independent_index_selection": "the accession and primary-document name resolved independently from data.sec.gov must agree with the provider's own latest-10-K selection, so the proof cannot be about the wrong document.",
+      "L4_cache_fidelity_and_repeat": "cache replay must be byte-identical and preserve the original fetch time; a forced live refetch must reproduce the digest."
+    },
+    "results": [
+      {
+        "symbol": "AAPL",
+        "cik": "0000320193",
+        "filed": "2025-10-31",
+        "accession": "0000320193-25-000079",
+        "document": "aapl-20250927.htm",
+        "bytes": 1520208,
+        "secPublishedSize": 1520208,
+        "sha256": "548ae59778cf08ee0f2ee088e7ece20d947076c3c01f74d2d65db4c2777e436a",
+        "legs": "L1 L2 L3 L4 all pass"
+      },
+      {
+        "symbol": "NVDA",
+        "cik": "0001045810",
+        "filed": "2026-02-25",
+        "accession": "0001045810-26-000021",
+        "document": "nvda-20260125.htm",
+        "bytes": 1967816,
+        "secPublishedSize": 1967816,
+        "sha256": "73d81f5a111abcf72426c840871e76f5f5edc9631f436d495a86b6f87306d58b",
+        "legs": "L1 L2 L3 L4 all pass"
+      },
+      {
+        "symbol": "MSFT",
+        "cik": "0000789019",
+        "filed": "2026-07-29",
+        "accession": "0001193125-26-323660",
+        "document": "msft-20260630.htm",
+        "bytes": 8585501,
+        "secPublishedSize": 8585501,
+        "sha256": "4bcf2da2871acc19e32c5a62f36f6d83d6aae03cdc4aaa9a86a9a21ee8223f02",
+        "legs": "L1 L2 L3 L4 all pass"
+      },
+      {
+        "symbol": "TSLA",
+        "cik": "0001318605",
+        "filed": "2026-01-29",
+        "accession": "0001628280-26-003952",
+        "document": "tsla-20251231.htm",
+        "bytes": 2391529,
+        "secPublishedSize": 2391529,
+        "sha256": "90d5d2bc4057df41c645f85dcebe575af9b0953a6a1902d189297bec17fd440a",
+        "legs": "L1 L2 L3 L4 all pass"
+      }
+    ],
+    "reproducibility": "three full runs (one pre-hardening, two post-) produced identical digests for all four documents",
+    "artifact": "apps/cockpit/backend/tests/fixtures/edgar_document_bodies_proof.json \u2014 the manifest, 8 KB. The BODIES are not committed: 14.5 MB of filings in the repo buys nothing the digests do not, and a trimmed copy would be a false byte-identity claim.",
+    "refreshPolicy": "re-run the script and commit the refreshed fixture when the cohort files a new 10-K; the runbook says so"
+  },
+  "adversarialReviewFindings": [
+    "CAUGHT AND FIXED (second commit): int(meta.get('byte_length') or -1) sat OUTSIDE the try block, so a sidecar carrying a non-numeric length raised ValueError straight out of a cache read. Exactly backwards for a function whose whole contract is present-or-absent. Found on re-read, not by a failure. Fixed with a defensive parse and pinned by six new cases.",
+    "CAUGHT AND FIXED: the first proof run was not hermetic \u2014 it left _BULK_CACHE at the module default, so a submissions miss silently pulled the 1.5 GB nightly ZIP. Now the script seeds the per-CIK cache from its OWN independent SEC fetch, which both prevents the download and sharpens L3 into a comparison of SELECTION LOGIC over identical bytes rather than two separate downloads.",
+    "CAUGHT AND FIXED: the test transport collapsed headers={} into the default header dict via truthiness, so the 'SEC sent no Content-Type' fallback was never actually exercised. Now keyed on 'is None'.",
+    "CAUGHT AND HARDENED: the cache sidecar did not cross-check its own (cik, accession, document) against the derived path it sat on. A sync process writing to the wrong key would have served one filing's bytes under another's identity. Now a miss.",
+    "CONSIDERED AND REJECTED: object.__setattr__ on the frozen dataclass to attach cache_path. Replaced with dataclasses.replace.",
+    "SCOPE CHECK: grepped the whole diff for store writes, sessions, inserts, Node/Edge construction, migrations and Smart Files. Zero hits. Retrieval and provenance only."
+  ],
+  "remaining": [
+    "PROD BODIES ARE NOT POPULATED. fetch_filing_document honours prefer_local_sec exactly as fetch_submissions_for_cik does, so the prod VM reads cache or returns honest absence and never fetches from its datacenter IP. Getting bodies onto the VM needs the same Part A / Part B GCS shape the submissions sync uses (non-datacenter host writes to GCS, VM pulls). That leg is NOT built. Flagged in the runbook. It is a prerequisite for anything that wants bodies in production, including TW-6's serving path.",
+    "SUBMISSIONS 'recent' WINDOW ONLY. latest_filing_of_form reads the submissions 'recent' block, which SEC caps at roughly 1,000 filings. A filer prolific enough to push its last 10-K out of that window needs the older filings.files shards, which are not read. Current behaviour is an honest None, never an older filing dressed as the latest. All four cohort companies are comfortably inside the window.",
+    "NO EXTRACTION. This returns bytes and a content type. Turning a 1.5-8.6 MB inline-XBRL 10-K into answerable text is not this row and was not attempted.",
+    "STRAY ARTIFACT ON THE OPERATOR BOX: the first (pre-hardening) proof run downloaded /var/lib/cockpit/sec_submissions.zip, 1.5 GB, to the P: drive. It is fresh, legitimate data at the module's own default cache path (a directory that already held the operator's SEC artifacts), so it was left in place rather than deleted. Delete it if it is not wanted. The script can no longer cause this.",
+    "DOC_REPO COMMIT NOT MADE. This artifact is written but not committed \u2014 doc_repo commits are planner-owned per AGENT_CONTRACT section 6."
+  ],
+  "blocked": [],
+  "constraintsHonoured": {
+    "noSmartFilesWrites": "confirmed by grep over the full diff \u2014 zero store writes, zero sessions, zero inserts, zero migrations. TW-6 untouched.",
+    "noDeploy": "nothing deployed",
+    "noProductionWrites": "none",
+    "noMigration": "none",
+    "everyCommandExits": "no server, no watch. The proof script is bounded and exits with a status; the test suite exits; the only long-running thing was pytest itself.",
+    "notMerged": "PR 334 is OPEN, mergedAt null",
+    "freshClone": "P:/tmp/tw5-edgar-bodies, cloned from origin at dce7407 (ahead of the f3087daa named in the dispatch). P:/Empressa Trading was not touched."
+  }
+}
