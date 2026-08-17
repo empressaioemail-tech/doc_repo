@@ -94,6 +94,10 @@ One missing auth leg, TW-24, gates four of these. That is why it is the first bu
 
 Every layer carries a `status` of `populated`, `partial`, `absent`, or `not-applicable`. Anything other than `populated` carries an `absence` object explaining why. No layer is ever an empty array with no explanation.
 
+**`partial` means the populated layer PLUS a verified-absence block covering exactly the missing slice.** It is never a badge on the header and never a softened `populated`. A consumer must be able to see both what was found and precisely what was not, with the absence carrying its own authority and searched scope. Rendering `partial` as `populated` is the worst honesty failure available in this contract, because it is the one case where real data is present to lend credibility to a gap. Specified 2026-08-17 after the design pass found the status declared but never defined.
+
+**There is no `omitted` verdict, and there must not be.** A layer not served at a version is absent from the schema entirely, so omission is a CLIENT-SIDE INFERENCE from `contractVersion` plus the served-layer set - not a determination anybody made. A rendered omission therefore carries no authority and no searched scope, because no authority was consulted. **Open consequence: the served-layer set currently lives in a package constant rather than in the response, which is a drift hazard. It should be served by the endpoint - TW-19.**
+
 ## Issuer and security are separate nodes
 
 Ruled 2026-08-16, amendment A-4. The security-master mints type-prefixed ULIDs: `sec_` for securities, `iss_` for issuers, `opt_` for options. Filings are issuer facts. Prices are security facts. GOOG and GOOGL are two securities with one issuer and one 10-K, so a security-keyed room either stores that filing twice or loses it on one share class.
