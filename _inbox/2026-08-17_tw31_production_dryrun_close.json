@@ -1,0 +1,2095 @@
+{
+  "mechanism": "Option 2 (docker exec with branch code at a container temp path). Host python3.11 on empressa-bot has no sqlalchemy/psycopg/pydantic_settings, so Option 1 (a /tmp clone run with host python) would have required installing packages and risked version drift from production. The cockpit-api container already carries the exact production deps (python 3.12.13, sqlalchemy 2.0.36), has /var/lib/cockpit bind-mounted at the same path so the on-host SEC cache is readable unchanged, carries COCKPIT_DATABASE_URL in its process env, and has proven reachability to the empressa-cloud-sql-proxy sidecar. Procedure: git archive of PR #331 head 10869018 (apps/cockpit/backend) built locally, scp to the VM, extracted to /tmp/tw31 on the host, docker cp to /tmp/tw31 INSIDE the container, line endings normalised to LF, then run as: docker exec -w /tmp/tw31 empressa-cockpit-api timeout 900 nice -n 19 python scripts/rebuild_issuer_links.py --all --json-out ... --sample-limit 40. The container image was NOT modified, the container was NOT restarted (RestartCount=0, StartedAt=2026-08-13T16:19:49Z, identical before and after), no deploy, no migration, and the deployed tree under /opt/empressa was never written (mtimes still 2026-06-29). All temp paths removed afterwards on both host and container. NOTE: the dispatch asked for '--all --dry-run'; there is no --dry-run flag on this CLI. Dry run is the DEFAULT and a write requires BOTH --apply and --yes-write, so the run was --all alone and neither write flag was ever passed. Staged code verified byte-identical to PR head: LF-normalised sha256 of cik_crosswalk.py, issuer_rebuild.py, rebuild_issuer_links.py, edgar.py, resolver.py and models.py all match the git blobs at 10869018.",
+  "agreeCount": 0,
+  "disagreeCount": 147,
+  "noOpinionCount": 8187,
+  "verdictInterpretation": {
+    "linksJudged": 8334,
+    "linksJudgedEqualsLiveIssuedBy": true,
+    "allExistingLinksUnlabelled": 8334,
+    "existingByMatchMethod": {},
+    "agreeCountIsStructuralNotMeasured": "agrees=0 is FORCED, not a coincidence. issuer_rebuild builds its expected-issuer map from identifier_index rows of type 'cik', and production holds ZERO such rows (166 accn + 1 lei only, migration 0058 unapplied). expected_issuer is therefore always None, the e.to_node == expected_issuer branch is unreachable, and no live edge can score 'agrees' on this database. Every one of the 147 disagreements carries expected_issuer_node_id=null for the same reason. The real split is: SEC has an opinion on 147 of the 8,334 links and none of them point at a CIK-keyed issuer, and SEC has no standing on the other 8,187.",
+    "noOpinionSharePct": 98.2
+  },
+  "guardrailViolations": {
+    "totalViolatingIssuerNodes": 935,
+    "issuerNodesWithLiveLinks": 1323,
+    "shareOfIssuerNodesViolatingPct": 70.7,
+    "linksSittingOnViolatingNodes": 7797,
+    "shareOfLiveLinksOnViolatingNodesPct": 93.6,
+    "crosswalkScope": [
+      "full"
+    ],
+    "reasonCounts": {
+      "unbounded-fanout": 914,
+      "exceeds-sec-ticker-bound": 21,
+      "multi-cik-fanout": 17
+    },
+    "reasonCombinationCounts": {
+      "unbounded-fanout": 897,
+      "exceeds-sec-ticker-bound": 21,
+      "multi-cik-fanout + unbounded-fanout": 17
+    },
+    "nodesClaimingACik": 0,
+    "excessComputableOnlyFor": 21,
+    "excessNotComputableFor": 914,
+    "excessNotComputableReason": "914 of 935 violations are 'unbounded-fanout': SEC lists none of the node's symbols, so no CIK and therefore no per-CIK ticker bound is determinable, so no numeric excess exists. The dispatch phrasing ('linked-security count exceeds the tickers SEC lists for that CIK, with the excess') is only computable for the 21 nodes in exceedsSecTickerBound.",
+    "exceedsSecTickerBound": [
+      {
+        "issuerNodeId": "iss_01KW8DCMKS4H7RVDW6QSHWBVX1",
+        "issuerName": "iShares MSCI USA Size Factor ETF",
+        "claimedCik": null,
+        "linkedSecurities": 92,
+        "cikSet": [
+          "0001332174"
+        ],
+        "secTickerBound": 2,
+        "measuredAgainstBound": 92,
+        "excess": 90,
+        "unrecognizedSymbolCount": 91,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "0Y8Z.L",
+          "AAXJ",
+          "ACWF",
+          "ACWI",
+          "ACWV",
+          "BKF",
+          "CEA1.L",
+          "CEMA.L",
+          "CEU1.L",
+          "CEUG.L",
+          "CNYA",
+          "CSJP.L",
+          "ECH",
+          "EDEN",
+          "EFG",
+          "EFNL",
+          "EIDO",
+          "EIRL",
+          "EIS",
+          "ENOR",
+          "ENZL",
+          "EPHE",
+          "ERUS",
+          "ESMV",
+          "EUFN",
+          "EUSA",
+          "EWH",
+          "EWI",
+          "EWK",
+          "EWL"
+        ],
+        "symbolsTruncated": true
+      },
+      {
+        "issuerNodeId": "iss_01KW8CFG6R9JF7GHY927YY2B5E",
+        "issuerName": "ProShares - Ultra PLTR",
+        "claimedCik": null,
+        "linkedSecurities": 59,
+        "cikSet": [
+          "0001415311"
+        ],
+        "secTickerBound": 16,
+        "measuredAgainstBound": 59,
+        "excess": 43,
+        "unrecognizedSymbolCount": 51,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "AGQ",
+          "BITU",
+          "COIA",
+          "CSM",
+          "DIG",
+          "EFO",
+          "ETHD",
+          "ETHT",
+          "EUO",
+          "EZJ",
+          "GLL",
+          "MVV",
+          "PLTA",
+          "PSQ",
+          "QID",
+          "QLD",
+          "QQDN",
+          "QQUP",
+          "QQXL",
+          "RALS",
+          "REK",
+          "ROM",
+          "RXD",
+          "SAA",
+          "SDOW",
+          "SDP",
+          "SDS",
+          "SKYU",
+          "SLON",
+          "SMDD"
+        ],
+        "symbolsTruncated": true
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7Z8YNHKX2MM5GVFBJQRF",
+        "issuerName": "iShares S&P 100 ETF",
+        "claimedCik": null,
+        "linkedSecurities": 37,
+        "cikSet": [
+          "0002061626"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 37,
+        "excess": 36,
+        "unrecognizedSymbolCount": 36,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "AIA",
+          "ASPY",
+          "BRIC.L",
+          "CBQ.TO",
+          "CNDX.L",
+          "CNX1.L",
+          "CSP1.L",
+          "CSPX.L",
+          "CUKX.L",
+          "EWJ",
+          "IEV",
+          "IOO",
+          "ISF.L",
+          "ISFD.L",
+          "ISFU.L",
+          "IVPEF",
+          "IVV",
+          "IVW",
+          "IWB",
+          "IWC",
+          "IWL",
+          "JPXN",
+          "MBB",
+          "NIWM",
+          "NSPL",
+          "NSPY",
+          "OEF",
+          "R1VL.L",
+          "SMMD",
+          "SPXE"
+        ],
+        "symbolsTruncated": true
+      },
+      {
+        "issuerNodeId": "iss_01KW8CDQEND17WC9Y5RZYBKWWP",
+        "issuerName": "iPath Series B Bloomberg Platinum Subindex Total Return ETN",
+        "claimedCik": null,
+        "linkedSecurities": 32,
+        "cikSet": [
+          "0000312070"
+        ],
+        "secTickerBound": 9,
+        "measuredAgainstBound": 32,
+        "excess": 23,
+        "unrecognizedSymbolCount": 31,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BAL",
+          "BALB",
+          "BALTF",
+          "BJJN",
+          "BJO",
+          "COW",
+          "COWB",
+          "COWTF",
+          "DJCB",
+          "DJCI",
+          "DJP",
+          "GAZ",
+          "JJMTF",
+          "JJN",
+          "JJNTF",
+          "JJOFF",
+          "JJP",
+          "JJPB",
+          "JJS",
+          "JJSB",
+          "JJT",
+          "JJTB",
+          "JJTFF",
+          "JJU",
+          "JJUB",
+          "JJUFF",
+          "NIB",
+          "PGM",
+          "PGMB",
+          "SGG"
+        ],
+        "symbolsTruncated": true
+      },
+      {
+        "issuerNodeId": "iss_01KW8CEPV847BMRC81CA0B37T4",
+        "issuerName": "Invesco Water Resources ETF",
+        "claimedCik": null,
+        "linkedSecurities": 24,
+        "cikSet": [
+          "0001995569"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 24,
+        "excess": 23,
+        "unrecognizedSymbolCount": 23,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "GRES",
+          "IHYD",
+          "MKUW.L",
+          "PHO",
+          "PLW",
+          "PRAC.L",
+          "PRFD.L",
+          "PRFP.L",
+          "PSJ",
+          "PSRE.L",
+          "PXJ",
+          "QETH",
+          "RDXS.L",
+          "TAN",
+          "TBLL",
+          "TIGB.L",
+          "TREX.L",
+          "TRGB.L",
+          "TRIA.L",
+          "TRIS.L",
+          "TRSG.L",
+          "TRXG.L",
+          "TRXS.L",
+          "TURF"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8C9T96C2C5FVNT9FZ2X09A",
+        "issuerName": "VanEck Merk Gold ETF",
+        "claimedCik": null,
+        "linkedSecurities": 20,
+        "cikSet": [
+          "0001546652"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 20,
+        "excess": 19,
+        "unrecognizedSymbolCount": 19,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BBH",
+          "BIZD",
+          "BJK",
+          "CBON",
+          "CLOB",
+          "CLOI",
+          "CNXT",
+          "EGPT",
+          "EINC",
+          "GDXJ",
+          "GRNB",
+          "IBOT",
+          "KOL",
+          "OUNZ",
+          "RAAX",
+          "RSX",
+          "RTH",
+          "SLX",
+          "VNM",
+          "WARP"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8D3BW445EHNSSSM59R7PM3",
+        "issuerName": "State Street SPDR Dow Jones Global Real Estate ETF",
+        "claimedCik": null,
+        "linkedSecurities": 19,
+        "cikSet": [
+          "0001041130"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 19,
+        "excess": 18,
+        "unrecognizedSymbolCount": 18,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "CRIB",
+          "DGT",
+          "DIA",
+          "GAL",
+          "GII",
+          "GIN.L",
+          "GLDV.L",
+          "GLRA.L",
+          "GLRE.L",
+          "GYLD",
+          "MMK",
+          "RWO",
+          "RWR",
+          "RWX",
+          "SPAB",
+          "SPSM",
+          "SPTB",
+          "WDIV",
+          "XRT"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8C97G8QB5RR9T5H7S9CAVJ",
+        "issuerName": "Fidelity Nasdaq Composite Index ETF",
+        "claimedCik": null,
+        "linkedSecurities": 16,
+        "cikSet": [
+          "0002031069"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 16,
+        "excess": 15,
+        "unrecognizedSymbolCount": 15,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "FBTC.TO",
+          "FCCL.TO",
+          "FCCM.TO",
+          "FCCQ.TO",
+          "FCCV.TO",
+          "FCUL.TO",
+          "FENY",
+          "FHLC",
+          "FIDU",
+          "FLTB",
+          "FMAT",
+          "FSTB",
+          "FUTY",
+          "NCIQ",
+          "ONEQ",
+          "QQC"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8C95SBHSNPNZ6BNMH6WK9B",
+        "issuerName": "ProShares - On-Demand ETF",
+        "claimedCik": null,
+        "linkedSecurities": 15,
+        "cikSet": [
+          "0002028834"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 15,
+        "excess": 14,
+        "unrecognizedSymbolCount": 14,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BITI",
+          "BITO",
+          "CTEX",
+          "DAT",
+          "OND",
+          "OVT",
+          "PAWZ",
+          "RINF",
+          "SETH",
+          "SPXB",
+          "TINY",
+          "TSOL",
+          "TXXD",
+          "VERS",
+          "WGLD"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8CBKTHKVQ6YX2Q8S8S10ZN",
+        "issuerName": "Invesco Food & Beverage ETF",
+        "claimedCik": null,
+        "linkedSecurities": 12,
+        "cikSet": [
+          "0001383062"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 12,
+        "excess": 11,
+        "unrecognizedSymbolCount": 11,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "DBE",
+          "IMVP",
+          "KBWB",
+          "PBJ",
+          "PCEF",
+          "PGF",
+          "PGJ",
+          "PGX",
+          "PIN",
+          "PKW",
+          "QQA",
+          "RGLB"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8CFAQ295HT34VZPNQPVM29",
+        "issuerName": "GraniteShares Autocallable PLTR ETF",
+        "claimedCik": null,
+        "linkedSecurities": 12,
+        "cikSet": [
+          "0001690842"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 12,
+        "excess": 11,
+        "unrecognizedSymbolCount": 11,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "ACYN",
+          "AHD",
+          "ANV",
+          "ATCL",
+          "CAIE",
+          "MRA",
+          "PLA",
+          "PLTM",
+          "SCA",
+          "TLA",
+          "VAIE",
+          "XOUT"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8DAATYN78TSMJ5KS6EWT62",
+        "issuerName": "Invesco Physical Gold ETC",
+        "claimedCik": null,
+        "linkedSecurities": 12,
+        "cikSet": [
+          "0001708646"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 12,
+        "excess": 11,
+        "unrecognizedSymbolCount": 11,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "AAAU",
+          "EGLN.L",
+          "IGLG.L",
+          "IGLN.L",
+          "SGLD.L",
+          "SGLN.L",
+          "SGLP.L",
+          "SGLS.L",
+          "SPAL.L",
+          "SPPP.L",
+          "SPPT.L",
+          "SSLV.L"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7YZSN1RB1VAH1WH8JYXB",
+        "issuerName": "VegaShares SPX NDX RTY Premium Income ETF",
+        "claimedCik": null,
+        "linkedSecurities": 8,
+        "cikSet": [
+          "0002089969"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 8,
+        "excess": 7,
+        "unrecognizedSymbolCount": 7,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BALI",
+          "BALQ",
+          "BITA",
+          "GPIX",
+          "ODTE",
+          "PAPI",
+          "SEPI",
+          "XSPC"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA5X6343XP1RA27XJZN6Y37",
+        "issuerName": "Franklin Responsibly Sourced Gold ETF",
+        "claimedCik": null,
+        "linkedSecurities": 6,
+        "cikSet": [
+          "0001858258"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 6,
+        "excess": 5,
+        "unrecognizedSymbolCount": 5,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "FGDL",
+          "FGLD",
+          "FLEH",
+          "FLGV",
+          "RMAP.L",
+          "XDAT"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA84SBF8KSAQG0TY9WBMN59",
+        "issuerName": "State Street SPDR S&P MIDCAP 400 ETF Trust",
+        "claimedCik": null,
+        "linkedSecurities": 6,
+        "cikSet": [
+          "0000936958"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 6,
+        "excess": 5,
+        "unrecognizedSymbolCount": 5,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "MDY",
+          "MDYG",
+          "SLYG",
+          "SLYV",
+          "SPX5.L",
+          "XPH"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA0R6K8VZV9F5XYEYT72ACT",
+        "issuerName": "CI Galaxy Bitcoin ETF",
+        "claimedCik": null,
+        "linkedSecurities": 5,
+        "cikSet": [
+          "0001838028"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 5,
+        "excess": 4,
+        "unrecognizedSymbolCount": 4,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BTCX-B.TO",
+          "DIME",
+          "ETHX-B.TO",
+          "HODL",
+          "LTCC"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW9ZVMJSHWH61VR3H8S1YHW5",
+        "issuerName": "Fidelity MoneyBuilder Dividend Fund",
+        "claimedCik": null,
+        "linkedSecurities": 3,
+        "cikSet": [
+          "0002000046"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 3,
+        "excess": 2,
+        "unrecognizedSymbolCount": 2,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "0P0000VE06.L",
+          "FCUD.TO",
+          "FETH"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA0NFAB4H7P9H2BM3AZP431",
+        "issuerName": "Grayscale Bitcoin Premium Income ETF",
+        "claimedCik": null,
+        "linkedSecurities": 3,
+        "cikSet": [
+          "0002015034"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 3,
+        "excess": 2,
+        "unrecognizedSymbolCount": 2,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BPI",
+          "BTC",
+          "MNRS"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA68G7F0D3A53S73RCN0KH2",
+        "issuerName": "Invesco CurrencyShares Swedish Krona Trust",
+        "claimedCik": null,
+        "linkedSecurities": 3,
+        "cikSet": [
+          "0001353613"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 3,
+        "excess": 2,
+        "unrecognizedSymbolCount": 2,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "FXS",
+          "FXSG",
+          "FXY"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8DG7ZB4JAKPCT8NJ29R0V8",
+        "issuerName": "Canary Marinade Solana ETF",
+        "claimedCik": null,
+        "linkedSecurities": 2,
+        "cikSet": [
+          "0002041869"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 2,
+        "excess": 1,
+        "unrecognizedSymbolCount": 1,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "SOLC",
+          "VAW"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8DG8JDD7JSJK6ADF2919NZ",
+        "issuerName": "3iQ Solana Staking ETF",
+        "claimedCik": null,
+        "linkedSecurities": 2,
+        "cikSet": [
+          "0002045872"
+        ],
+        "secTickerBound": 1,
+        "measuredAgainstBound": 2,
+        "excess": 1,
+        "unrecognizedSymbolCount": 1,
+        "reasons": [
+          "exceeds-sec-ticker-bound"
+        ],
+        "symbols": [
+          "BSOL",
+          "SOLQ.TO"
+        ],
+        "symbolsTruncated": false
+      }
+    ],
+    "multiCikFanout": [
+      {
+        "issuerNodeId": "iss_01KW8F88051EANZNP4JQY62N97",
+        "issuerName": "Franklin BSP CLO ETF",
+        "claimedCik": null,
+        "linkedSecurities": 22,
+        "cikSet": [
+          "0001992870",
+          "0002011535",
+          "0002033807",
+          "0002057388"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 22,
+        "excess": null,
+        "unrecognizedSymbolCount": 18,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "BUYZ",
+          "EZBC",
+          "EZET",
+          "EZPZ",
+          "FLAU",
+          "FLAX",
+          "FLBL",
+          "FLBR",
+          "FLCA",
+          "FLCB",
+          "FLCH",
+          "FLEE",
+          "FLEU",
+          "FLFR",
+          "FLJP",
+          "FLKR",
+          "FLLV",
+          "FLMX",
+          "FLZA",
+          "FRUE.L",
+          "SOEZ",
+          "YCLO"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8C96WVXGY9G0W6XTPZ1FKY",
+        "issuerName": "TrueShares Equity Hedge ETF",
+        "claimedCik": null,
+        "linkedSecurities": 12,
+        "cikSet": [
+          "0001992508",
+          "0002090011"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 12,
+        "excess": null,
+        "unrecognizedSymbolCount": 10,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "EQRR",
+          "ONEH",
+          "OVF",
+          "SQEW",
+          "TEQI",
+          "TETH",
+          "TEXN",
+          "THU.TO",
+          "THYP",
+          "TPU.TO",
+          "TSPA",
+          "ZHDG"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8CB2CBZQR0A77D9PHX756X",
+        "issuerName": "abrdn Physical Palladium Shares ETF",
+        "claimedCik": null,
+        "linkedSecurities": 9,
+        "cikSet": [
+          "0001450922",
+          "0001450923",
+          "0001459862",
+          "0001460235",
+          "0001483386"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 9,
+        "excess": null,
+        "unrecognizedSymbolCount": 4,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "GLTR",
+          "IPDM.L",
+          "PALL",
+          "PPLT",
+          "SGOL",
+          "SIVR",
+          "SPDM.L",
+          "SPLT.L",
+          "TPAL.L"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8E8Q16R2R7WA0YMYNKGX7D",
+        "issuerName": "United States Natural Gas Fund LP",
+        "claimedCik": null,
+        "linkedSecurities": 7,
+        "cikSet": [
+          "0001376227",
+          "0001405528",
+          "0001479247"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 7,
+        "excess": null,
+        "unrecognizedSymbolCount": 3,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "CPER",
+          "DNO",
+          "UNG",
+          "USCI",
+          "USL",
+          "USOD",
+          "USOU"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8EK6DQ4PKP6X1GNVZ72TB8",
+        "issuerName": "BetaPro S&P 500 VIX Short-Term Futures ETF",
+        "claimedCik": null,
+        "linkedSecurities": 7,
+        "cikSet": [
+          "0000019617",
+          "0000312070"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 7,
+        "excess": null,
+        "unrecognizedSymbolCount": 4,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "IVOP",
+          "VOLX.TO",
+          "VXX",
+          "VXXB",
+          "VXZ",
+          "VXZB",
+          "VYLD"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA0J944GSCGF4DVGR4HCVHX",
+        "issuerName": "BetaPro Inverse Bitcoin ETF",
+        "claimedCik": null,
+        "linkedSecurities": 6,
+        "cikSet": [
+          "0001841175",
+          "0001855781"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 6,
+        "excess": null,
+        "unrecognizedSymbolCount": 4,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "BITI.TO",
+          "BRRR",
+          "BTCC.TO",
+          "BTCO",
+          "BTCY-B.TO",
+          "BTCY-U.TO"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA0XBZY321XQFNYA0QSQHSG",
+        "issuerName": "21Shares Core Ethereum ETF",
+        "claimedCik": null,
+        "linkedSecurities": 6,
+        "cikSet": [
+          "0001860788",
+          "0002000638",
+          "0002099103"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 6,
+        "excess": null,
+        "unrecognizedSymbolCount": 3,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "CETH",
+          "ETHA",
+          "ETHB",
+          "ETHV",
+          "EVNT",
+          "IRTR"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA19J474TV5MW3CTG6C5T28",
+        "issuerName": "Invesco DB Agriculture Fund",
+        "claimedCik": null,
+        "linkedSecurities": 6,
+        "cikSet": [
+          "0001383058",
+          "0001383082",
+          "0001383084"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 6,
+        "excess": null,
+        "unrecognizedSymbolCount": 3,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "DBA",
+          "DBB",
+          "DBO",
+          "DBS",
+          "DBV",
+          "DGL"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8DQRK2C5WXX96GG3DF7C88",
+        "issuerName": "-1x Short VIX Futures ETF",
+        "claimedCik": null,
+        "linkedSecurities": 5,
+        "cikSet": [
+          "0001415311",
+          "0001793497"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 5,
+        "excess": null,
+        "unrecognizedSymbolCount": 1,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "SVIX",
+          "SVXY",
+          "UVIX",
+          "VIXM",
+          "VMIN"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8E6RS1TJ1SE8M7Z62A9Q0C",
+        "issuerName": "Invesco DB US Dollar Index Bearish Fund",
+        "claimedCik": null,
+        "linkedSecurities": 5,
+        "cikSet": [
+          "0001328237",
+          "0001383057",
+          "0001383149"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 5,
+        "excess": null,
+        "unrecognizedSymbolCount": 2,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "ADRU",
+          "DBC",
+          "DBP",
+          "UDN",
+          "UUP"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA09FRVF4SEVGBY98XJ6VQ8",
+        "issuerName": "ARK 21Shares Active Bitcoin Futures Strategy ETF",
+        "claimedCik": null,
+        "linkedSecurities": 5,
+        "cikSet": [
+          "0001869699",
+          "0001985840"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 5,
+        "excess": null,
+        "unrecognizedSymbolCount": 3,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "ARKA",
+          "ARKB",
+          "ARKZ",
+          "CRYP",
+          "DEFI"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7NFDVKT741X3G5NGGJTQ",
+        "issuerName": "Osprey Bitcoin Trust",
+        "claimedCik": null,
+        "linkedSecurities": 4,
+        "cikSet": [
+          "0001763415",
+          "0001767057",
+          "0001980994",
+          "0002103612"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 4,
+        "excess": null,
+        "unrecognizedSymbolCount": 0,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "BITB",
+          "IBIT",
+          "MSBT",
+          "OBTC"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8F3XZ6FP95AGQSMZF7B3DK",
+        "issuerName": "Bitwise XRP ETF",
+        "claimedCik": null,
+        "linkedSecurities": 4,
+        "cikSet": [
+          "0002013744",
+          "0002039525",
+          "0002086017"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 4,
+        "excess": null,
+        "unrecognizedSymbolCount": 1,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "BAVA",
+          "BWEB",
+          "ETHW",
+          "XRP"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KW8EE3NVN2XN4VWKEGBY1ZWS",
+        "issuerName": "VanEck BNB ETF Common Shares of Beneficial Interest",
+        "claimedCik": null,
+        "linkedSecurities": 3,
+        "cikSet": [
+          "0002060703",
+          "0002066824",
+          "0002082889"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 3,
+        "excess": null,
+        "unrecognizedSymbolCount": 0,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "CLNK",
+          "SUIS",
+          "VBNB"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA56B9TNV12TF2824P22DW3",
+        "issuerName": "Purpose Ether Staking Corp. ETF",
+        "claimedCik": null,
+        "linkedSecurities": 3,
+        "cikSet": [
+          "0001725210",
+          "0002107730"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 3,
+        "excess": null,
+        "unrecognizedSymbolCount": 1,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "DTSRF",
+          "ETHE",
+          "HYPG"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA5KH0R4RQ95SK7F8FWBNH2",
+        "issuerName": "Grayscale Ethereum Classic Trust",
+        "claimedCik": null,
+        "linkedSecurities": 3,
+        "cikSet": [
+          "0001705181",
+          "0002020455"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 3,
+        "excess": null,
+        "unrecognizedSymbolCount": 1,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "ETCG",
+          "ETCO",
+          "ETH"
+        ],
+        "symbolsTruncated": false
+      },
+      {
+        "issuerNodeId": "iss_01KWA6YVRT60X3X1F4ZRDP0AK6",
+        "issuerName": "iShares Gold Trust Micro",
+        "claimedCik": null,
+        "linkedSecurities": 2,
+        "cikSet": [
+          "0001330568",
+          "0001759124"
+        ],
+        "secTickerBound": null,
+        "measuredAgainstBound": 2,
+        "excess": null,
+        "unrecognizedSymbolCount": 0,
+        "reasons": [
+          "multi-cik-fanout",
+          "unbounded-fanout"
+        ],
+        "symbols": [
+          "IAUM",
+          "SLV"
+        ],
+        "symbolsTruncated": false
+      }
+    ],
+    "unboundedFanoutTop40": [
+      {
+        "issuerNodeId": "iss_01KW8C93FZRTHY5RW66TJC50E0",
+        "issuerName": "Leverage Shares 2x Long OKTA Daily ETF",
+        "claimedCik": null,
+        "linkedSecurities": 183,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 183,
+        "excess": null,
+        "unrecognizedSymbolCount": 183,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CRNAMED2QC34E5RC1XSVA",
+        "issuerName": "Leverage Shares - 3x US Tech 100",
+        "claimedCik": null,
+        "linkedSecurities": 174,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 174,
+        "excess": null,
+        "unrecognizedSymbolCount": 174,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8EV28MEZ5K35C0Z3DBWA0K",
+        "issuerName": "Xtrackers CSI300 Swap UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 105,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 105,
+        "excess": null,
+        "unrecognizedSymbolCount": 105,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CB23H0E6FAEY641311XVT",
+        "issuerName": "Direxion Daily PANW Bear 1X ETF",
+        "claimedCik": null,
+        "linkedSecurities": 75,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 75,
+        "excess": null,
+        "unrecognizedSymbolCount": 75,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7EFJ7JFSAF7TENV2DDWB",
+        "issuerName": "OneAscent Emerging Markets ETF",
+        "claimedCik": null,
+        "linkedSecurities": 67,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 67,
+        "excess": null,
+        "unrecognizedSymbolCount": 67,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KWA6Z5AJ6QWTWDGNDW243NWJ",
+        "issuerName": "iShares iBonds Dec 2035 Term Corporate ETF",
+        "claimedCik": null,
+        "linkedSecurities": 67,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 67,
+        "excess": null,
+        "unrecognizedSymbolCount": 67,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CF8RPHBXBVN3RWBSA3M39",
+        "issuerName": "Innovator U.S. Equity Power Buffer ETF - June",
+        "claimedCik": null,
+        "linkedSecurities": 62,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 62,
+        "excess": null,
+        "unrecognizedSymbolCount": 62,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8C95G39RV4THHYWR2058X6",
+        "issuerName": "iShares OMX Stockholm Capped UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 57,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 57,
+        "excess": null,
+        "unrecognizedSymbolCount": 57,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CYB53Y936QNC2GWV3MZVM",
+        "issuerName": "Amundi MSCI Brazil UCITS ETF Acc",
+        "claimedCik": null,
+        "linkedSecurities": 57,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 57,
+        "excess": null,
+        "unrecognizedSymbolCount": 57,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CW49APW9348YRF60NQYG9",
+        "issuerName": "Leverage Shares -1x Short Royal Dutch Shell ETP",
+        "claimedCik": null,
+        "linkedSecurities": 51,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 51,
+        "excess": null,
+        "unrecognizedSymbolCount": 51,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7K9G15FPP9ECS8YDZAGY",
+        "issuerName": "YieldMax Innovation Option Income Strategy ETF",
+        "claimedCik": null,
+        "linkedSecurities": 50,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 50,
+        "excess": null,
+        "unrecognizedSymbolCount": 50,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DA7KEVBX0YMJ8JF0HSZVY",
+        "issuerName": "iShares Emerging Asia Local Govt Bond UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 47,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 47,
+        "excess": null,
+        "unrecognizedSymbolCount": 47,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8D94A30P2Z94TA39XABB1D",
+        "issuerName": "State Street SPDR Bloomberg 0-3 Year Euro Corporate Bond UCITS ETF (Dist)",
+        "claimedCik": null,
+        "linkedSecurities": 46,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 46,
+        "excess": null,
+        "unrecognizedSymbolCount": 46,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7SBPW1FB1W95RF6DPHQZ",
+        "issuerName": "AllianzIM U.S. Equity Buffer10 Oct ETF",
+        "claimedCik": null,
+        "linkedSecurities": 45,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 45,
+        "excess": null,
+        "unrecognizedSymbolCount": 45,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KWA12GHDNTWJM810BEQ5T9QB",
+        "issuerName": "iShares Nikkei 225 UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 43,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 43,
+        "excess": null,
+        "unrecognizedSymbolCount": 43,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CAYCQN4MJX99CK9XWHDJC",
+        "issuerName": "Amundi S&P Eurozone Climate Paris Aligned UCITS ETF Acc",
+        "claimedCik": null,
+        "linkedSecurities": 41,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 41,
+        "excess": null,
+        "unrecognizedSymbolCount": 41,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CBMZAWDST8MEJNXZ4EF22",
+        "issuerName": "Invesco S&P 500 BuyWrite ETF",
+        "claimedCik": null,
+        "linkedSecurities": 41,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 41,
+        "excess": null,
+        "unrecognizedSymbolCount": 41,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CQVRAGES97PNY3D77WSC8",
+        "issuerName": "WisdomTree U.S. High Yield Corporate Bond Fund",
+        "claimedCik": null,
+        "linkedSecurities": 39,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 39,
+        "excess": null,
+        "unrecognizedSymbolCount": 39,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CPZFZWEE1THPDKNMWMJ60",
+        "issuerName": "Invesco QQQ Equal Weight ETF",
+        "claimedCik": null,
+        "linkedSecurities": 37,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 37,
+        "excess": null,
+        "unrecognizedSymbolCount": 37,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DR02YMSZBSSTTCS6GRWF7",
+        "issuerName": "State Street SPDR S&P U.S. Materials Select Sector UCITS ETF (Acc)",
+        "claimedCik": null,
+        "linkedSecurities": 36,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 36,
+        "excess": null,
+        "unrecognizedSymbolCount": 36,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8EF7X2ZAERFPM76EY27VME",
+        "issuerName": "Vanguard FTSE Emerging Markets UCITS ETF (USD) Distributing",
+        "claimedCik": null,
+        "linkedSecurities": 36,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 36,
+        "excess": null,
+        "unrecognizedSymbolCount": 36,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW89VF6EKR8CH8PSXYJ5E14D",
+        "issuerName": "iShares € Govt Bond 20yr Target Duration UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 34,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 34,
+        "excess": null,
+        "unrecognizedSymbolCount": 34,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8D72PW60R05N6NKK10DS8J",
+        "issuerName": "WisdomTree Copper 1x Daily Short",
+        "claimedCik": null,
+        "linkedSecurities": 34,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 34,
+        "excess": null,
+        "unrecognizedSymbolCount": 34,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DD0R5DVF6KAHDAN43ZS17",
+        "issuerName": "iShares 0-5 Year Investment Grade Corporate Bond ETF",
+        "claimedCik": null,
+        "linkedSecurities": 34,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 34,
+        "excess": null,
+        "unrecognizedSymbolCount": 34,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8C97V5EKE0VW5JZS02R722",
+        "issuerName": "CI Global Core Plus Equity ETF",
+        "claimedCik": null,
+        "linkedSecurities": 33,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 33,
+        "excess": null,
+        "unrecognizedSymbolCount": 33,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KWA0PCB3ZPSAH4TV6BJ80BW6",
+        "issuerName": "Invesco BulletShares 2022 Corporate Bond ETF",
+        "claimedCik": null,
+        "linkedSecurities": 33,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 33,
+        "excess": null,
+        "unrecognizedSymbolCount": 33,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KWA1DRAY56YFQNE4Z5ZE8M2J",
+        "issuerName": "WisdomTree Emerging Markets Quality Dividend Growth Fund",
+        "claimedCik": null,
+        "linkedSecurities": 33,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 33,
+        "excess": null,
+        "unrecognizedSymbolCount": 33,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8C7956XGR8ZJ7BT810J03Z",
+        "issuerName": "GraniteShares YieldBOOST NVDA ETF",
+        "claimedCik": null,
+        "linkedSecurities": 32,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 32,
+        "excess": null,
+        "unrecognizedSymbolCount": 32,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DMA08AY9PX2T1SYVXTZ56",
+        "issuerName": "UBS MSCI USA Socially Responsible UCITS ETF USD dis",
+        "claimedCik": null,
+        "linkedSecurities": 32,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 32,
+        "excess": null,
+        "unrecognizedSymbolCount": 32,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CRP3S7PB55D0XVPTS8F8R",
+        "issuerName": "WisdomTree NASDAQ 100 3x Daily Leveraged",
+        "claimedCik": null,
+        "linkedSecurities": 31,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 31,
+        "excess": null,
+        "unrecognizedSymbolCount": 31,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CJ8NMA753S4P37BMT7HWJ",
+        "issuerName": "Amundi Core EUR Corporate Bond -UCITS ETF DR- Distribution",
+        "claimedCik": null,
+        "linkedSecurities": 30,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 30,
+        "excess": null,
+        "unrecognizedSymbolCount": 30,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CPJSHK095NK8XA1XZWSTF",
+        "issuerName": "Mackenzie Canadian Equity Index ETF",
+        "claimedCik": null,
+        "linkedSecurities": 30,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 30,
+        "excess": null,
+        "unrecognizedSymbolCount": 30,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DM54RPKXJQKM6H5DW2BMH",
+        "issuerName": "FT Vest U.S. Equity Quarterly Max Buffer ETF",
+        "claimedCik": null,
+        "linkedSecurities": 30,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 30,
+        "excess": null,
+        "unrecognizedSymbolCount": 30,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8D12G6F51QZFZ4SEV99XM1",
+        "issuerName": "RBC Target 2017 Corporate Bond ETF",
+        "claimedCik": null,
+        "linkedSecurities": 29,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 29,
+        "excess": null,
+        "unrecognizedSymbolCount": 29,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DB8WX1D2T2JCJ1X1D8CC8",
+        "issuerName": "iShares Trust iShares 0-1 Year Treasury Bond ETF",
+        "claimedCik": null,
+        "linkedSecurities": 29,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 29,
+        "excess": null,
+        "unrecognizedSymbolCount": 29,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8DJ8Q6N7XAH1VM7AM57CJ0",
+        "issuerName": "iShares Edge S&P 500 Minimum Volatility UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 29,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 29,
+        "excess": null,
+        "unrecognizedSymbolCount": 29,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KWA0E6MXB0RB9KJV2A1T7KGY",
+        "issuerName": "JPMorgan ETFs (Ireland) ICAV - BetaBuilders US Treasury Bond 0-3 Months UCITS ETF",
+        "claimedCik": null,
+        "linkedSecurities": 29,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 29,
+        "excess": null,
+        "unrecognizedSymbolCount": 29,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8CYDTQ0SPDCBVGP3998QCS",
+        "issuerName": "iShares Fallen Angels High Yield Corp Bond UCITS ETF USD (Dist)",
+        "claimedCik": null,
+        "linkedSecurities": 28,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 28,
+        "excess": null,
+        "unrecognizedSymbolCount": 28,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW8EX5J033E6WG4P5KGMDM8R",
+        "issuerName": "iShares J.P. Morgan USD Emerging Markets Bond Index ETF (CAD-Hedged)",
+        "claimedCik": null,
+        "linkedSecurities": 28,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 28,
+        "excess": null,
+        "unrecognizedSymbolCount": 28,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      },
+      {
+        "issuerNodeId": "iss_01KW9ZZW4PT9Z03VAMCAZZY5J6",
+        "issuerName": "GraniteShares 3x Short BAE Systems Daily ETP",
+        "claimedCik": null,
+        "linkedSecurities": 28,
+        "cikSet": [],
+        "secTickerBound": null,
+        "measuredAgainstBound": 28,
+        "excess": null,
+        "unrecognizedSymbolCount": 28,
+        "reasons": [
+          "unbounded-fanout"
+        ]
+      }
+    ],
+    "unboundedFanoutRemainingCount": 857,
+    "violatingNodeFanoutBuckets": {
+      "1": 0,
+      "2-3": 351,
+      "4-10": 392,
+      "11-50": 180,
+      "50+": 12
+    },
+    "fullReportNote": "The complete 935-violation report with every symbol array is 758,778 bytes and was NOT committed. It regenerates byte-identically in about 37s: two independent --all runs both produced sha256 9cce4b4ba7d0b51219cb4db13c2531f891072a9a2a474aeeac7b22ed4e2567f0."
+  },
+  "topCollapsedNodes": [
+    {
+      "issuerNodeId": "iss_01KW8C93FZRTHY5RW66TJC50E0",
+      "issuerName": "Leverage Shares 2x Long OKTA Daily ETF",
+      "linkedSecurities": 183
+    },
+    {
+      "issuerNodeId": "iss_01KW8CRNAMED2QC34E5RC1XSVA",
+      "issuerName": "Leverage Shares - 3x US Tech 100",
+      "linkedSecurities": 174
+    },
+    {
+      "issuerNodeId": "iss_01KW8EV28MEZ5K35C0Z3DBWA0K",
+      "issuerName": "Xtrackers CSI300 Swap UCITS ETF",
+      "linkedSecurities": 105
+    },
+    {
+      "issuerNodeId": "iss_01KW8DCMKS4H7RVDW6QSHWBVX1",
+      "issuerName": "iShares MSCI USA Size Factor ETF",
+      "linkedSecurities": 92
+    },
+    {
+      "issuerNodeId": "iss_01KW8CB23H0E6FAEY641311XVT",
+      "issuerName": "Direxion Daily PANW Bear 1X ETF",
+      "linkedSecurities": 75
+    },
+    {
+      "issuerNodeId": "iss_01KWA6Z5AJ6QWTWDGNDW243NWJ",
+      "issuerName": "iShares iBonds Dec 2035 Term Corporate ETF",
+      "linkedSecurities": 67
+    },
+    {
+      "issuerNodeId": "iss_01KW8C7EFJ7JFSAF7TENV2DDWB",
+      "issuerName": "OneAscent Emerging Markets ETF",
+      "linkedSecurities": 67
+    },
+    {
+      "issuerNodeId": "iss_01KW8CF8RPHBXBVN3RWBSA3M39",
+      "issuerName": "Innovator U.S. Equity Power Buffer ETF - June",
+      "linkedSecurities": 62
+    },
+    {
+      "issuerNodeId": "iss_01KW8CFG6R9JF7GHY927YY2B5E",
+      "issuerName": "ProShares - Ultra PLTR",
+      "linkedSecurities": 59
+    },
+    {
+      "issuerNodeId": "iss_01KW8CYB53Y936QNC2GWV3MZVM",
+      "issuerName": "Amundi MSCI Brazil UCITS ETF Acc",
+      "linkedSecurities": 57
+    },
+    {
+      "issuerNodeId": "iss_01KW8C95G39RV4THHYWR2058X6",
+      "issuerName": "iShares OMX Stockholm Capped UCITS ETF",
+      "linkedSecurities": 57
+    },
+    {
+      "issuerNodeId": "iss_01KW8CW49APW9348YRF60NQYG9",
+      "issuerName": "Leverage Shares -1x Short Royal Dutch Shell ETP",
+      "linkedSecurities": 51
+    },
+    {
+      "issuerNodeId": "iss_01KW8C7K9G15FPP9ECS8YDZAGY",
+      "issuerName": "YieldMax Innovation Option Income Strategy ETF",
+      "linkedSecurities": 50
+    },
+    {
+      "issuerNodeId": "iss_01KW8DA7KEVBX0YMJ8JF0HSZVY",
+      "issuerName": "iShares Emerging Asia Local Govt Bond UCITS ETF",
+      "linkedSecurities": 47
+    },
+    {
+      "issuerNodeId": "iss_01KW8D94A30P2Z94TA39XABB1D",
+      "issuerName": "State Street SPDR Bloomberg 0-3 Year Euro Corporate Bond UCITS ETF (Dist)",
+      "linkedSecurities": 46
+    }
+  ],
+  "cikCoverage": {
+    "securityNodesTotal": 35918,
+    "securityNodesActive": 9992,
+    "securityNodesMerged": 25926,
+    "statusComposition": {
+      "active": 9992,
+      "merged": 25926,
+      "null": 0
+    },
+    "resolveToCikOverAllNodes": 1075,
+    "pctOverAllNodes": 2.99,
+    "resolveToCikOverActiveNodes": 268,
+    "pctOverActiveNodes": 2.68,
+    "distinctCiksHit": 188,
+    "secCrosswalkCiks": 8021,
+    "secCrosswalkTickers": 10433,
+    "secCrosswalkSubmissionsPresent": 8021,
+    "secCrosswalkSubmissionsMissing": 0,
+    "plannerExpectation": "roughly a quarter (about 25%, about 9,000 securities)",
+    "verdict": "EXPECTATION WRONG BY ABOUT 8x. Actual coverage is 2.99% of all 35,918 security nodes (1,075) and 2.68% of the 9,992 active ones (268), hitting only 188 distinct CIKs out of the 8,021 SEC publishes. The graph barely overlaps SEC's universe.",
+    "whyLow": {
+      "unresolvedAllNodes": 34843,
+      "byExchangeSuffixAllNodes": {
+        ".L (London)": 10067,
+        ".TO (Toronto)": 3262,
+        ".NE (NEO Canada)": 90,
+        "no-dot-suffix": 21424
+      },
+      "unresolvedActiveNodes": 9724,
+      "byExchangeSuffixActiveNodes": {
+        ".L (London)": 2816,
+        ".TO (Toronto)": 932,
+        ".NE (NEO Canada)": 24,
+        "no-dot-suffix": 5952
+      },
+      "noSuffixCompositionSample": [
+        "/YM",
+        "/XC",
+        "/MHG",
+        "/MCL",
+        "/XW",
+        "/MNQ",
+        "/M2K",
+        "/MET",
+        "/SIL",
+        "/M6C",
+        "/MBT",
+        "/RB",
+        "/ZT",
+        "MNQ",
+        "MCL",
+        "M6E",
+        "M6C",
+        "M6B",
+        "ZT",
+        "ZB",
+        "ZL",
+        "RB",
+        "EURUSD",
+        "USDJPY",
+        "EUR/USD",
+        "USDCHF",
+        "BTCUSD",
+        "ETHUSD",
+        "SOLUSD",
+        "XRPUSD",
+        "ADAUSD",
+        "BNBUSD",
+        "LINKUSD",
+        "DXY",
+        "AIX",
+        "BNDC",
+        "STTX",
+        "DSCO"
+      ],
+      "reading": "13,419 of the 34,843 unresolved symbols are foreign-listed by exchange suffix alone (.L / .TO / .NE). The 21,424 with no suffix are dominated by instruments SEC's company_tickers.json structurally cannot cover: CME/COMEX futures (/YM, /MNQ, /MCL, /ZT, M6E, ZB), FX pairs (EURUSD, USDJPY, USDCHF) and crypto (BTCUSD, ETHUSD, SOLUSD). This CONFIRMS the 08_build_scope cohort thesis empirically at graph scale: most of this instrument universe has no SEC registrant, so a CIK crosswalk is the right key for the minority that does and can never be the identity backbone for the rest."
+    }
+  },
+  "writesPerformed": 0,
+  "writesVerification": {
+    "method": "Four independent proofs. (1) A BEFORE/AFTER row-count probe run through the same ORM against the same live Cloud SQL database immediately before and immediately after the --all run, comparing nodes total and by node_type, edges total, issued_by total and live, identifier_index total and by identifier_type, the securities-per-issuer fan-out distribution, and the top-15 collapsed nodes: DIFFERING_KEYS = 0. A third probe after the second --all run also returned DIFFERING_KEYS = 0. (2) identifier_index.id is an autoincrement integer and max(id) held at 168 across all three probes, so not even an inserted-then-deleted row is possible there. (3) Two independent --all runs produced BYTE-IDENTICAL reports (sha256 9cce4b4b...67f0, cmp silent); had the first run minted an issuer node or a cik identifier row, the second report's planned and agrees figures would necessarily have moved. (4) Code-path audit: rebuild_issued_by only reaches resolver.resolve_issuer and link_security_to_issuer under apply=True, apply is bool(args.apply and args.yes_write), neither flag was passed, the session is never committed, and build_crosswalk is pure local-file reads with no network.",
+    "beforeCounts": {
+      "edges_max_id": "fffeff4240eb4048b7ebd69a486dac3a",
+      "edges_total": 8500,
+      "fanout_buckets": {
+        "1": 364,
+        "11-50": 185,
+        "2-3": 357,
+        "4-10": 405,
+        "50+": 12
+      },
+      "identifier_index_by_type": {
+        "accn": 166,
+        "lei": 1
+      },
+      "identifier_index_max_id": 168,
+      "identifier_index_total": 167,
+      "issued_by_live": 8334,
+      "issued_by_total": 8334,
+      "issuer_nodes_with_links": 1323,
+      "links_on_nodes_11_plus": 4638,
+      "nodes_by_type": {
+        "event": 166,
+        "issuer": 1323,
+        "security": 35918
+      },
+      "nodes_total": 37407
+    },
+    "afterCounts": {
+      "edges_max_id": "fffeff4240eb4048b7ebd69a486dac3a",
+      "edges_total": 8500,
+      "fanout_buckets": {
+        "1": 364,
+        "11-50": 185,
+        "2-3": 357,
+        "4-10": 405,
+        "50+": 12
+      },
+      "identifier_index_by_type": {
+        "accn": 166,
+        "lei": 1
+      },
+      "identifier_index_max_id": 168,
+      "identifier_index_total": 167,
+      "issued_by_live": 8334,
+      "issued_by_total": 8334,
+      "issuer_nodes_with_links": 1323,
+      "links_on_nodes_11_plus": 4638,
+      "nodes_by_type": {
+        "event": 166,
+        "issuer": 1323,
+        "security": 35918
+      },
+      "nodes_total": 37407
+    },
+    "differingKeys": [],
+    "containerNotRestarted": {
+      "restartCount": 0,
+      "startedAt": "2026-08-13T16:19:49.413379948Z",
+      "statusBeforeAndAfter": "Up 3 days"
+    },
+    "deployTreeUntouched": {
+      "app/securities/resolver.py": "mtime 2026-06-29 12:21:02 +0000",
+      "app/providers/edgar.py": "mtime 2026-06-29 15:54:00 +0000"
+    },
+    "tempPathsRemoved": [
+      "host:/tmp/tw31*",
+      "container:/tmp/tw31*"
+    ],
+    "secretsHandling": "COCKPIT_DATABASE_URL was never echoed, decoded, or written anywhere. Only its presence in the container env was confirmed. No secret value appears in this file."
+  },
+  "confirmations": {
+    "note": "Every figure the planner asked me to confirm or correct came back CONFIRMED.",
+    "securityNodes": {
+      "claimed": 35918,
+      "measured": 35918,
+      "verdict": "CONFIRMED"
+    },
+    "issuerNodes": {
+      "claimed": 1323,
+      "measured": 1323,
+      "verdict": "CONFIRMED"
+    },
+    "eventNodes": {
+      "claimed": 166,
+      "measured": 166,
+      "verdict": "CONFIRMED"
+    },
+    "identifierIndex": {
+      "claimed": {
+        "accn": 166,
+        "lei": 1
+      },
+      "measured": {
+        "accn": 166,
+        "lei": 1
+      },
+      "verdict": "CONFIRMED - nothing else, 167 rows total, zero cik rows"
+    },
+    "issuedByEdges": {
+      "claimed": 8334,
+      "measured": 8334,
+      "verdict": "CONFIRMED - and all 8,334 are live (valid_to IS NULL); the edges table holds 8,500 rows total, the other 166 are not issued_by"
+    },
+    "fanoutDistribution": {
+      "claimed": {
+        "1": 364,
+        "2-3": 357,
+        "4-10": 405,
+        "11-50": 185,
+        "50+": 12
+      },
+      "measured": {
+        "1": 364,
+        "2-3": 357,
+        "4-10": 405,
+        "11-50": 185,
+        "50+": 12
+      },
+      "verdict": "CONFIRMED exactly, sums to 1,323"
+    },
+    "worstNode": {
+      "claimed": "Leverage Shares 2x Long OKTA Daily ETF at 183",
+      "measured": "Leverage Shares 2x Long OKTA Daily ETF (iss_01KW8C93FZRTHY5RW66TJC50E0) at 183",
+      "verdict": "CONFIRMED"
+    },
+    "secTickerFile": {
+      "claimed": {
+        "tickers": 10433,
+        "ciks": 8021
+      },
+      "measured": {
+        "tickers": 10433,
+        "ciks": 8021
+      },
+      "verdict": "CONFIRMED"
+    },
+    "a8FiftySixPercentClaim": {
+      "claimed": "56% of links on nodes holding 11 or more securities",
+      "measured": "4,638 of 8,334 = 55.7%",
+      "verdict": "CONFIRMED"
+    }
+  },
+  "remaining": [
+    "Migration 0058 is still UNAPPLIED to the production database: identifier_index holds zero 'cik' rows. This is what forces agreeCount=0 and expected_issuer_node_id=null on all 147 disagreements. Until 0058 is applied and an --apply run mints the CIK-keyed issuers, the crosswalk can only ever disagree or abstain, never agree.",
+    "PR #331 remains OPEN and UNMERGED at head 10869018 with all four CI checks SUCCESS (Python tests, Frontend build, Gitleaks; Windows .exe skipped).",
+    "--apply was never run and is not authorized by this dispatch. A future apply is planned as purely additive: 188 issuer nodes to create, 268 links to create, 0 to retire.",
+    "Operator ruling owed on the 147 disagreements. issuer_rebuild reports them and deliberately never rewrites them, because edges are append-only under a before_update mapper guard, so links_to_retire is structurally 0.",
+    "Operator ruling owed on the 914 unbounded-fanout nodes, which are the larger half of the defect and are NOT fixable by TW-31. SEC lists none of their symbols, so a CIK crosswalk gives them no identity at all. They need a non-SEC identity authority (LSE/TSX listing data for the 13,419 suffixed foreign lines, CME/CFTC for futures, and a ruling on whether FX pairs and crypto get issuer nodes at all).",
+    "Doc nit for 08_build_scope A-8 and the cik_crosswalk docstring: the per-CIK ticker-bound distribution they quote (6,548 CIKs with 1 ticker, 965 with 2, 371 with 3) does not match what the committed artifact yields once submissions tickers are unioned in: 6,505 with 1, 998 with 2, 377 with 3, 141 CIKs at 4 or more, max 27. The max-27 claim and the flat-cap-is-wrong argument both hold; only the three head counts drift.",
+    "Doc correction to this dispatch's own premise: the VM is NOT without git metadata. /opt/empressa/.git exists. I did not read a SHA from it or touch it, but the 'tarball deploy with NO .git' line should be corrected before someone relies on it.",
+    "The host has no /var/lib/cockpit/sec_company_tickers.json, so the crosswalk fell back to the repo-committed artifact at app/providers/data/company_tickers.json (10,433 rows). That is the reproducible path and matches SEC's committed file exactly, but it means the production run is NOT reading a fresher operator-synced ticker file, because none exists on the host.",
+    "All 8,021 per-CIK submissions artifacts were present in /var/lib/cockpit/sec_submissions (654MB), so with_submissions=8021 and without_submissions=0. The honest-absence path in the crosswalk was never exercised on this host and remains untested against production."
+  ],
+  "blocked": [
+    "Nothing blocked the measurement itself. The full --all dry run completed in 37s with exit 1, which is the CLI's documented non-zero-on-guardrail-violation contract and not a failure.",
+    "PARTIAL BLOCK on one clause of the ask: a numeric 'excess over the tickers SEC lists for that CIK' is only computable for 21 of the 935 violations. For the other 914 no CIK is determinable from any of their symbols, so there is no SEC bound to exceed and no excess to report. Reported as reason-coded classes instead of a single excess column.",
+    "The 25,926 security nodes with status='merged' are outside --all by design (the query filters status != 'merged'), so the rebuild plan covers only the 9,992 active nodes. I initially suspected a SQL NULL trap here and checked: zero security nodes have a NULL status, so the filter is correct and this is not a defect. CIK coverage is reported both ways above so the denominator is never ambiguous."
+  ]
+}

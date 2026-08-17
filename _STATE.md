@@ -393,6 +393,8 @@ Related: an executor once burned 48,000 tokens writing a briefing for a sub-agen
 
 ## OPEN — ACTIVE (what a fresh agent picks up)
 
+**SMART MARKETS (instrument twin) — pickup lives in `_inbox/2026-08-17_smart_markets_pickup.md`.** Kept out of line here because this file is under heavy concurrent write and a read-modify-write lost that block once on 2026-08-17. Summary: cockpit TW-24 + TW-25 MERGED (main `f285b8c3`, CI green, baseline zero); Smart Markets PR #1 and cockpit PR #331 open and green, unmerged; migration 0058 NOT applied; production UNCHANGED. The measured defect: 935 of 1,323 issuer nodes violate the per-CIK guardrail, holding 93.6% of the graph.
+
 ### OPS-17 LANE B PRODUCT LINE THEN BASTROP ONBOARDING — ACTIVE 2026-08-17
 
 **Status: G-61 scaffold on GitHub. Neon and GCP exist. Not closed. Not deployed.** Dashboards tenant Neon pooled `ep-still-wave-avbwm4yc-pooler` / `neondb` live SELECT 1. GCP `smartcity-dashboards` `666199866241` billing on. MCP [PR #70](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/70) not serving. Item 6 partial. Item 8 cutover not started. Live pin `smartcity-api-00118-qox` @100% tag `lane4`. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.**
