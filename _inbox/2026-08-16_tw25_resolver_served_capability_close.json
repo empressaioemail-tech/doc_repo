@@ -1,0 +1,308 @@
+{
+  "row": "TW-25",
+  "title": "Identity resolution promoted from ops to a served capability",
+  "repo": "empressa-trading",
+  "scope": "cockpit backend only (apps/cockpit/backend); smartcity-os, hauska-*, legacy-design-tools and smart-markets untouched",
+  "date": "2026-08-16",
+  "canonOverride": "TW-25 — Smart Markets stays UNREGISTERED R&D; bounded PR, no PLAN-ROW by design. Planner (doc_repo) owns and verifies.",
+  "branch": "feat/tw25-resolver-served-capability",
+  "baseBranch": "feat/tw24-service-caller-auth (rebased onto main)",
+  "baseHead": "a713a08763a4be9f3be6967ce5f0f940fce34c0a",
+  "head": "a192cc62297d3b17f99ba38ecf41ce87fe075ee4",
+  "commits": [
+    "72b16b5 feat(securities): split the resolver router into a served read half and an operator mint half [TW-25]",
+    "a192cc6 test(securities): pin that no SERVED resolution read ever commits [TW-25]"
+  ],
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/330",
+  "prBase": "feat/tw24-service-caller-auth",
+  "merged": false,
+  "routeSplit": [
+    {
+      "method": "GET",
+      "path": "/securities/lookup",
+      "dependency": "get_user_or_service_caller",
+      "status": "NEW ROUTE — the single judgment call in this PR, flagged for review",
+      "justification": "Pure resolution read: symbol in, node id out. It is resolve_security(mint=False) — the same alias era-walk, the same bitemporal as-of gate, the same ambiguity tie-break as /securities/resolve, with the step-5 provisional mint replaced by an honest absence. It exists because TW-25's stated capability (ticker or CME root to a node id, for a service caller) collides with the rule that anything minting stays operator: /securities/resolve is read-then-mint-on-miss, so serving it would hand a service caller the power to create identity through a GET, and would break TW-24's test that pins /securities/resolve as unreachable by a service caller. Splitting the read half out satisfies both."
+    },
+    {
+      "method": "GET",
+      "path": "/securities/canonical/{node_id}",
+      "dependency": "get_user_or_service_caller",
+      "justification": "The dispatch's named example: a merge-following lookup, node id in, terminal-survivor node id out. It does contain a write (spec-2.8 path compression rewrites intermediate merge links and flushes) but nothing on this request path commits, and get_db closes the session without committing — pinned by test_no_served_route_commits_anything rather than asserted."
+    },
+    {
+      "method": "GET",
+      "path": "/securities/current-symbol/{node_id}",
+      "dependency": "get_user_or_service_caller",
+      "justification": "Pure read: node id in, its currently-open alias-era symbol out. Calls canonical() first, so it carries the same non-committing property."
+    },
+    {
+      "method": "GET",
+      "path": "/securities/resolve",
+      "dependency": "require_operator",
+      "justification": "MINTS. Spec 2.2 step 5 creates a provisional node when nothing matches, writes a symbol-alias atom, and commits. Also the route TW-24's test pins as unreachable by a service caller, so widening it would have changed TW-24's behaviour."
+    },
+    {
+      "method": "GET",
+      "path": "/securities/resolve-option",
+      "dependency": "require_operator",
+      "justification": "MINTS, and writes on a HIT as well as a miss: an existing option node still gets _ensure_edge('derives_from') plus a commit, and the underlying is resolved through resolve_security which may itself mint."
+    },
+    {
+      "method": "GET",
+      "path": "/securities/resolve-issuer",
+      "dependency": "require_operator",
+      "justification": "MINTS an issuer node on every miss (resolved when keyed on LEI, provisional on the name-fuzzy fallback) and CLAIMS the LEI in the global identifier index. Identifier claiming is identity creation."
+    }
+  ],
+  "routeSplitNotes": [
+    "Six routes total: the five that existed on the securities router plus /securities/lookup.",
+    "The blanket 'app.include_router(securities_router, dependencies=[Depends(require_operator)])' in main.py is REMOVED, not narrowed. Nothing is protected by inheritance any more.",
+    "Sorted by the rule as given: mixed read-then-mint routes were sorted as MUTATING, per 'when in doubt, it stays operator'.",
+    "Nothing widened to anonymous. Every route is behind operator or user-or-service.",
+    "GET /spine/anchor/verify/{atom_id} untouched. Its two TW-24 guards (status + dependency-graph) still pass.",
+    "Adjacent operator surface deliberately NOT touched: the 10 /admin/nodes + /admin/resolver/* routes in app/routers/admin_securities.py read the same Node/Edge/IdentifierIndex/MergeLink substrate and keep their own router-level require_operator. A test asserts a service caller gets 403 on all 10."
+  ],
+  "filesChanged": [
+    {
+      "path": "apps/cockpit/backend/app/main.py",
+      "change": "+8 -3",
+      "detail": "Removed the router-level dependencies=[Depends(require_operator)] on securities_router; replaced with a comment naming the per-route split. Dropped the now-unused 'Depends' and 'require_operator' imports (no other main.py registration used them)."
+    },
+    {
+      "path": "apps/cockpit/backend/app/securities/router.py",
+      "change": "+108 -26",
+      "detail": "Per-route dependencies via two named module constants (SERVED / OPERATOR); new GET /securities/lookup; module docstring rewritten to state the split and why each resolve* route is a write."
+    },
+    {
+      "path": "apps/cockpit/backend/app/securities/resolver.py",
+      "change": "+28 -2",
+      "detail": "resolve_security gains a KEYWORD-ONLY 'mint: bool = True'. Default is the historical behaviour byte for byte; mint=False returns an honest absence at step 5 instead of minting. All 20 existing call sites pass venue/asof/asset_class by keyword and are unaffected."
+    },
+    {
+      "path": "apps/cockpit/backend/tests/test_tw25_resolver_served_capability.py",
+      "change": "+526 (new)",
+      "detail": "30 tests: the five required negatives, the write-proofs, three structural guards, and the cross-repo ULID contract pin."
+    }
+  ],
+  "tw24FilesTouched": "none — app/auth.py and tests/test_service_caller_auth.py are byte-identical to the base branch",
+  "negativeTests": [
+    {
+      "required": "service credential on a resolution read -> 200",
+      "tests": [
+        "test_service_credential_is_served_on_every_resolution_read",
+        "test_service_caller_resolves_a_ticker_to_a_node_id",
+        "test_lookup_miss_is_an_honest_absence_not_an_error"
+      ],
+      "mutationProof": "MUTATION A — served reads re-gated to require_operator: 7 failed, 22 passed"
+    },
+    {
+      "required": "service credential on a mutating or ops route -> 401 or 403, never 200",
+      "tests": [
+        "test_service_credential_never_reaches_a_minting_route_prod",
+        "test_service_credential_never_reaches_a_minting_route_in_dev_mode",
+        "test_service_credential_never_reaches_the_admin_resolver_ops_routes",
+        "test_an_operator_presenting_a_service_key_is_still_refused_the_writes"
+      ],
+      "mutationProof": "MUTATION B — minting routes widened to get_user_or_service_caller: 5 failed, 24 passed"
+    },
+    {
+      "required": "no credential at all on a resolution read -> 401",
+      "tests": [
+        "test_no_credential_on_a_resolution_read_is_401",
+        "test_a_wrong_service_credential_on_a_resolution_read_is_401",
+        "test_a_wrong_service_credential_is_401_even_with_the_dev_bypass_active"
+      ],
+      "mutationProof": "MUTATION C — served reads widened to anonymous (dependency removed): 4 failed, 25 passed"
+    },
+    {
+      "required": "valid user JWT on a resolution read -> unchanged from today",
+      "tests": [
+        "test_user_jwt_is_served_on_every_resolution_read",
+        "test_dev_bypass_user_is_unchanged_on_every_securities_route",
+        "test_a_non_operator_user_is_still_refused_the_minting_routes"
+      ],
+      "mutationProof": "covered by MUTATIONS A and B (both flip these)",
+      "note": "In the harness (dev bypass) a user already reached these routes through require_operator, so the status is literally unchanged. In PRODUCTION a non-operator user goes 403 -> 200 on the three served reads. That widening is intended and is what 'get_user_or_service_caller' means; it is called out because it is a real behaviour change for users, not just for services. The minting routes are unchanged for a non-operator user (still 403)."
+    },
+    {
+      "required": "operator on every route -> unchanged from today",
+      "tests": [
+        "test_operator_reaches_every_route_unchanged",
+        "test_the_operator_route_still_mints"
+      ],
+      "mutationProof": "MUTATION B also breaks test_operator_reaches_every_route_unchanged; MUTATION D (below) breaks the mint proof"
+    }
+  ],
+  "additionalProofs": [
+    {
+      "test": "test_lookup_never_writes_a_node",
+      "claim": "the served read cannot grow the security master — Node row count is identical across three served reads of unknown symbols",
+      "mutationProof": "MUTATION D — /securities/lookup reconnected to the minting path (mint=True): 2 failed, 27 passed"
+    },
+    {
+      "test": "test_no_served_route_commits_anything",
+      "claim": "no served route reaches a commit at all (AsyncSession.commit patched to raise; all three served routes still answer 200). Second half proves the guard is NOT vacuous: with the same patch armed the minting route does hit the commit and raises.",
+      "mutationProof": "MUTATION F — a db.commit() added to the served lookup path: 1 failed, 29 passed"
+    },
+    {
+      "test": "test_no_securities_route_is_ungated_and_the_blanket_is_gone / test_the_router_carries_no_blanket_dependency / test_main_does_not_re_gate_the_securities_router",
+      "claim": "every /securities route carries exactly one of the two gates; a route added later cannot land ungated (under the old blanket it was safe by inheritance, now it would be anonymous), and the blanket cannot be quietly re-introduced",
+      "mutationProof": "MUTATION E — router-level blanket require_operator re-introduced in main.py: 8 failed, 21 passed"
+    }
+  ],
+  "testOutput": {
+    "bar": "GREEN on each PR's own ref, zero failures. No baseline comparison — the reconciled trunk made the no-new-failures framing obsolete.",
+    "pr329CiSummary": "4385 passed, 2 skipped, 21 deselected, 38903 warnings — 0 failed",
+    "pr330CiSummary": "4415 passed, 2 skipped, 21 deselected, 38903 warnings — 0 failed",
+    "passDelta": "+30 on #330 over #329 (4385 -> 4415), exactly the 30 tests in the TW-25 module.",
+    "ghPrChecks329Verbatim": [
+      "Frontend build (cockpit web)\tpass\t56s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023177907/job/95366934580",
+      "Gitleaks security scan\tpass\t11s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023177907/job/95366934640",
+      "Python tests (cockpit backend)\tpass\t5m24s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023177907/job/95366934648",
+      "Windows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023177907/job/95366935357"
+    ],
+    "ghPrChecks330Verbatim": [
+      "Frontend build (cockpit web)\tpass\t53s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023299390/job/95367296530",
+      "Gitleaks security scan\tpass\t10s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023299390/job/95367296569",
+      "Python tests (cockpit backend)\tpass\t5m36s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023299390/job/95367296585",
+      "Windows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023299390/job/95367297150"
+    ],
+    "localTargeted": "134 passed on the rebased TW-25 head across tests/test_tw25_resolver_served_capability.py, test_service_caller_auth.py, test_admin_gate.py, test_admin_securities.py, test_options_flow.py and test_zone_atoms.py — deliberately including the clusters main fixed, to confirm the rebase did not reintroduce them.",
+    "localFullSuiteNote": "The local full suite was started and then deliberately stopped rather than run to completion. Local is Windows / Python 3.14 and carried 4 environment-only failures at the old baseline; the bar is CI on each ref (ubuntu / Python 3.12), now green with zero failures on both. Triaging Windows-only noise would have added nothing.",
+    "liveServerCheck": "not run — no uvicorn, no --reload, no watch, no foreground server. Every command exited."
+  },
+  "baselineComparison": {
+    "status": "SUPERSEDED 2026-08-17 by the trunk reconciliation. Do not read the figures below as current.",
+    "why": "This block was written against a red trunk, when the bar was no-new-failures against a 13-failure base. main is now 6c04e848 with CI success and zero failures, so both PRs are held to GREEN on their own ref instead. See testOutput and rebase.",
+    "supersededContent": {
+      "claim": "NO NEW FAILURES. Never green — the cockpit suite is red at baseline on the base branch and on main.",
+      "ciFailureSetEquality": "IDENTICAL. Set-diff of the 13 CI failures on feat/tw24-service-caller-auth against the 13 on feat/tw25-resolver-served-capability is empty in both directions: zero new failures, zero incidentally fixed.",
+      "ciPassDelta": "+30 passed (4116 -> 4146), exactly the 30 tests in the new module.",
+      "localFailureSetEquality": "IDENTICAL. Set-diff of the 17 local failures on the base against the 17 on the branch is empty in both directions.",
+      "localPassDelta": "+30 passed (4112 -> 4142).",
+      "sharedFailureSet": [
+        "tests/test_admin_securities.py::test_corp_actions_seeded",
+        "tests/test_admin_securities.py::test_merge_already_merged_is_guarded",
+        "tests/test_admin_securities.py::test_merge_appends_action_atom_and_does_not_mutate",
+        "tests/test_admin_securities.py::test_merge_chain_seeded",
+        "tests/test_admin_securities.py::test_merge_self_is_honest_error",
+        "tests/test_admin_securities.py::test_node_atoms_seeded_and_family_filter",
+        "tests/test_admin_securities.py::test_node_detail_resolves_loser_to_survivor",
+        "tests/test_admin_securities.py::test_node_detail_seeded",
+        "tests/test_admin_securities.py::test_nodes_seeded_and_filters",
+        "tests/test_admin_securities.py::test_resolver_identifiers_seeded",
+        "tests/test_admin_securities.py::test_resolver_queues_seeded",
+        "tests/test_backfill_page_422_timeout.py::test_first_page_end_never_overshoots_and_is_not_dropped",
+        "tests/test_options_flow.py::test_pick_nearest_monthly_prefers_standard_cycle"
+      ],
+      "localOnlyExtraFailures": [
+        "tests/test_billing.py::test_single_alembic_head",
+        "tests/test_billing.py::test_migration_upgrade_and_downgrade",
+        "tests/test_base_library_backfill.py::test_invariant_f_vendor_cap_returns_resumable_not_crash",
+        "tests/test_market_iv_history.py::test_iv_snapshot_job_persists_and_is_idempotent"
+      ],
+      "localOnlyNote": "These 4 fail identically on the base branch and are Windows/Python-3.14 environment artefacts, not branch effects. CI is the authoritative comparison.",
+      "preexistingFailureNote": "The 11 test_admin_securities.py failures are pre-existing on the base branch ('RuntimeError: There is no current event loop in thread MainThread') and sit on the SAME security-master substrate this row touches. They were red before TW-25 and are red after, unchanged. Worth a separate row: the resolver admin console has no working test coverage today."
+    }
+  },
+  "ulidFormatCheck": {
+    "verdict": "MATCH — the resolver mints exactly what the contract validates. No resolver change was needed and none was made.",
+    "contractSource": "smart-markets packages/contract/src/primitives.ts on branch scaffold/initial (main is empty). ULID_BODY = \"[0-9A-HJKMNP-TV-Z]{26}\"; prefixedUlid(\"sec\"|\"iss\"|\"opt\") -> /^(sec|iss|opt)_[0-9A-HJKMNP-TV-Z]{26}$/. Read via gh api; the repo was not cloned, modified, or touched.",
+    "cockpitSource": "apps/cockpit/backend/app/securities/ulid.py",
+    "alphabet": "cockpit _CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ' (32 chars, 32 unique). Character set is EQUAL to the contract class as a set; I, L, O and U excluded in both.",
+    "length": "new_ulid = _encode(ts,10) + _encode(rand,16) = 26 chars, always. _encode zero-pads, so the body is 26 at ts_ms=0 and at the 48-bit maximum 281474976710655 alike.",
+    "prefixes": "_PREFIX maps security->sec_, issuer->iss_, option->opt_ — the three the contract accepts.",
+    "provisionalPath": "CHECKED. Provisional minting is not a separate id path: resolve_security step 5 -> get_or_create_node -> new_node_id('security') -> sec_ + 26. Verified through the live route, not just the generator: GET /securities/resolve?symbol=TW25PROV returns resolution_status 'provisional' with a contract-matching node_id (test_a_provisionally_minted_node_id_matches_the_contract).",
+    "evidence": [
+      "cockpit alphabet : 0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+      "contract alphabet: 0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+      "SETS EQUAL       : True",
+      "security  sample = sec_01M06KBFT7A4N3HK3RWQS2RBBT   len=30  contract_match=True",
+      "issuer    sample = iss_01M06KBFT75EPW4ZD649E9RCZ6   len=30  contract_match=True",
+      "option    sample = opt_01M06KBFT7283BQJAVKRSD8M6X   len=30  contract_match=True",
+      "ts_ms=0                sec_0000000000NKNYX58Q8EVD14KZ  len_body=26  match=True",
+      "ts_ms=281474976710655  sec_7ZZZZZZZZZX7F55SXDK2DK4Z7T  len_body=26  match=True",
+      "5000 sec_ mints, all match contract: True",
+      "all bodies exactly 26 chars       : True"
+    ],
+    "flaggedNotAChange": "The cockpit can also mint evt_, wallet_, token_ and contract_ ids via get_or_create_typed_node. All four are REJECTED by the contract's NodeIdSchema, which is correct today because none is an instrument. But note the name trap: the cockpit's 'contract_' prefix means an ON-CHAIN CONTRACT ADDRESS (crypto), while smart-markets' 'contract' SHAPE is a futures contract addressed by a sec_ id (TwinNodeSchema.id = SecurityNodeIdSchema for all three shapes). A futures node in the cockpit is minted through resolve_security as kind 'security', so it is sec_-prefixed and correct — but do not wire the cockpit's contract_ kind to the twin's contract shape. Reported, not acted on."
+  },
+  "remaining": [
+    "ISSUER LOOKUP IS NOT SERVED. Only the minting /securities/resolve-issuer exists, and it stays operator-only. Contract amendment A-4 keys the disclosure room off the ISSUER node for operating-company and fund shapes, so a served iss_ read may be needed. Deliberately out of scope here: a non-minting issuer lookup is a route addition, and one was already the judgment call in this PR. Own row.",
+    "The served lookup resolves only symbols already present in the security master. A cold symbol returns an honest absence (node_id null, resolution_status not_found) rather than minting. Warming stays an operator or backfill action, which is the intended shape.",
+    "TW-24 test comment drift, NOT fixed on purpose. tests/test_service_caller_auth.py describes its /securities/resolve entry as covering 'the ROUTER-level dependencies=[Depends(require_operator)] registration in main.py, so both wiring styles are covered'. After TW-25 that route is gated per route, so the comment's claim about wiring style is stale. The assertion itself still passes unchanged. Left untouched under 'do not change TW-24's tests' — flagged for the planner to fix in a follow-up, or when #329 lands.",
+    "main.py no longer imports Depends or require_operator; both were removed as unused after the blanket came off. No other registration in main.py used them (verified by grep).",
+    "The 11 pre-existing test_admin_securities.py failures leave the resolver admin console effectively untested on both branches. Not caused here, not fixed here; worth its own row given this substrate is now load-bearing for Smart Markets.",
+    "PR #330 is OPEN and NOT merged, per instruction. It is stacked on #329 — merging #329 first will retarget or fast-forward it."
+  ],
+  "blocked": [
+    {
+      "item": "CIK -> node id",
+      "severity": "blocks one third of TW-25's own acceptance criterion",
+      "detail": "_rd_disclosure_twin/08_build_scope.md row TW-25 requires 'Ticker, CIK, and CME root each resolve to a node identifier through a non-operator path.' Ticker and CME root are delivered (both are symbols; GET /securities/lookup resolves them, and a futures node is sec_-prefixed via the same path). CIK IS NOT, and cannot be delivered by any gating change, because CIK -> node resolution does not exist in the security master for ANY principal, operator included.",
+      "evidence": [
+        "app/models.py:1102 — IdentifierIndex docstring: 'identifier_type in {figi,cusip,isin,lei}'; column comment on line 1112 the same.",
+        "The Node model has no cik column (columns: node_id, node_type, asset_class, current_symbol, primary_venue, identifiers_json, lei, name, status, resolution_status, contract_json, created_at).",
+        "_index_identifier is called with 'figi', 'cusip', 'isin', 'lei' only (resolver.py 381, 1273, 1391, 1502; jobs/resolver_backfill.py 217). Never with 'cik'.",
+        "'cik' appears in app/ only inside app/providers/edgar.py (a ticker->CIK map used to fetch EDGAR submissions) and on filing rows in the backfill jobs. It is never indexed against a node."
+      ],
+      "recommendation": "Its own build row, not a re-gate. edgar.symbol_to_cik() already provides ticker->CIK, so the cheap shape is: index 'cik' into IdentifierIndex during the base-library backfill, widen the documented identifier_type set, then expose an id_type/value form on the served /securities/lookup. Left entirely alone here — inventing a CIK index inside a gating PR would have been the wrong call.",
+      "note": "This is a contract/scope question for the planner, in the same spirit as the ULID instruction: report it loudly, do not bend the resolver to fit."
+    }
+  ],
+  "judgmentCallForReview": {
+    "what": "Added GET /securities/lookup rather than only re-gating the five existing routes.",
+    "why": "The dispatch's two rules collide on this router. 'Resolution READS (identifier in, node id out) become get_user_or_service_caller' describes /securities/resolve exactly. 'Anything that MUTATES or mints stays require_operator, when in doubt it stays operator' also describes /securities/resolve exactly, because it is read-then-mint-on-miss. Serving it as-is would have (a) let a service caller create identity through a GET, breaking the hard constraint that a service caller must never reach a mutating route, and (b) broken TW-24's test that pins /securities/resolve as unreachable by a service caller, which the dispatch forbids. Sorting it to operator and stopping there would have satisfied both rules and delivered nothing: no service caller could resolve a ticker, which is the entire point of the row and the reason _decisions/2026-08-16_instrument_scope_identifier.md names TW-25 as a prerequisite.",
+    "shape": "The addition is minimal and reversible: one route, one keyword-only resolver parameter defaulting to today's behaviour, zero changes to any existing route's semantics. Deleting the route and the mint parameter restores a pure re-gate.",
+    "strike": "If the planner disagrees, strike /securities/lookup and the mint parameter; the remaining split (canonical + current-symbol served, three resolve* routes operator) stands on its own and needs no rework."
+  },
+  "preRebaseHeads": {
+    "tw24": "93ad2c4053077a23f17ddfd4a25e9b7498ee4c70",
+    "tw25": "40dfaa6d6fb81605ac4f6adb37350f05bdf92dbc",
+    "note": "History rewritten by the rebase. Both branches force-pushed with --force-with-lease pinned to these SHAs, so a concurrent write by anyone else would have refused the push rather than clobbering it."
+  },
+  "rebase": {
+    "baseSha": "6c04e848f7d8dfbefbe531d2f4cff07807a2405c",
+    "baseVerification": [
+      "origin/main = 6c04e848f7d8dfbefbe531d2f4cff07807a2405c (fetched and read, not taken on trust).",
+      "CI run 31990252565 on that exact headSha: status=completed, conclusion=success, workflow=CI.",
+      "deploy/p2d-p4 (2e4ac167d633282511c3c80a2b812929e8fe965a) confirmed an ancestor of main via git merge-base --is-ancestor.",
+      "CORRECTION to the dispatch: main is 178 commits ahead of 44664f6c by git rev-list --count, not 169 (it is 8 ahead on --first-parent). Reporting the number measured here rather than repeating the one given."
+    ],
+    "order": [
+      "1. feat/tw24-service-caller-auth rebased onto origin/main -> a713a08; force-pushed; PR #329 base retargeted to main (verified base=main).",
+      "2. feat/tw25-resolver-served-capability rebased --onto tw24-rebase from 93ad2c4 -> a192cc6; force-pushed; PR #330 base left as feat/tw24-service-caller-auth (verified)."
+    ],
+    "conflictsResolved": [],
+    "conflictsExpectedButDidNotOccur": {
+      "claim": "ZERO conflicts. Both rebases reported 'Successfully rebased and updated' with no conflict stage. Reported as-is rather than manufacturing a resolution narrative, because the dispatch expected conflicts and named conftest.py as the likely collision.",
+      "whyNoneOccurred": [
+        "conftest.py did NOT collide: TW-24's change there is a 4-line additive insert near the top of the os.environ block (COCKPIT_SERVICE_CALLER_SECRET set to empty), in a region the red-fix sweep did not touch. git diff origin/main..a713a08 -- tests/conftest.py shows ONLY that 4-line addition, so none of main's test-infra work was displaced.",
+        "TW-24's other files (app/auth.py, app/routers/econ.py, app/routers/fundamentals.py, app/routers/spine.py, .env.example) were not touched by main between 44664f6c and 6c04e848.",
+        "app/config.py was the ONE file where content actually merged (main added settings; TW-24 adds its own block). git diff origin/main..a713a08 on it shows only TW-24's additive block, nothing of main's removed. service_caller_secret and service_auth_enabled are both present and test_service_secret_has_no_committed_default passes.",
+        "TW-25 could not conflict at all: main changed NEITHER app/main.py NOR anything under app/securities/ between 44664f6c and main. git diff --stat on those paths is empty and app/main.py is byte-identical at 44664f6c and main."
+      ],
+      "mainsFixesConfirmedIntact": "Spot-checked the sweep the dispatch named: the options-expiry fixture computing next month's third Friday, the CME-session re-keying, the zone frozen-clock helper, and the module-owned event loop are all present. Nothing of the operator's was reverted to make these tests pass. Strongest evidence: tests/test_admin_securities.py (11 of the old 13 CI failures, 'RuntimeError: There is no current event loop') now PASSES on the rebased tree.",
+      "backtestFixLeftAlone": "The POST /bots/backtest admin_cfg/gate_bars fix on main (df4c6ff) is untouched. Neither TW-24 nor TW-25 modifies app/routers/backtest.py or the engine it calls."
+    },
+    "contentPreservation": {
+      "tw25": "All four TW-25 files are byte-identical pre- and post-rebase (40dfaa6 vs a192cc6): app/main.py, app/securities/router.py, app/securities/resolver.py, and tests/test_tw25_resolver_served_capability.py. The rebase moved the commits; it did not alter the change.",
+      "tw24": "app/auth.py, tests/test_service_caller_auth.py and app/routers/spine.py are byte-identical pre- and post-rebase. app/config.py differs only by line offset from main's own additions, with TW-24's block intact.",
+      "mutationProofsStillValid": "The six mutation proofs recorded in this artifact were run against source and tests the rebase left byte-identical, so they carry over unchanged. Nothing in the split, the mint=False read, or the negative tests was re-litigated."
+    },
+    "preservedProperties": [
+      "TW-24: presenting X-Empressa-Service-Key commits the request to the service path (pass or 401, never a fall-through) — intact, app/auth.py byte-identical.",
+      "TW-24: require_operator refuses the service header BEFORE the dev bypass — intact, still proven by test_service_credential_never_reaches_a_minting_route_in_dev_mode.",
+      "TW-24: the service: namespace stays reserved against both X-Dev-User and a Clerk sub — intact.",
+      "TW-25: per-route split with the router-level blanket removed — intact, still pinned by the three structural tests.",
+      "TW-25: /securities/lookup at mint=False — intact, still pinned by the Node row count and the no-commit proof.",
+      "GET /spine/anchor/verify/{atom_id} stays anonymous — untouched; both TW-24 guards (status and dependency-graph) pass."
+    ],
+    "pr329Conclusion": "success",
+    "pr330Conclusion": "success",
+    "pr329Run": "https://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023177907 (headSha a713a08763a4be9f3be6967ce5f0f940fce34c0a)",
+    "pr330Run": "https://github.com/empressaioemail-tech/empressa-trading/actions/runs/32023299390 (headSha a192cc62297d3b17f99ba38ecf41ce87fe075ee4)",
+    "deploy": "NONE. No backend deploy attempted or staged, per the standing hard rule. No COCKPIT_SERVICE_CALLER_SECRET write (already inert on the VM). No deployed-SHA read attempted (tarball deploy, no .git)."
+  }
+}
