@@ -1,0 +1,246 @@
+{
+  "backupTimestamp": {
+    "gate": "PASS — a recent successful automated backup exists, so the write proceeded.",
+    "instance": "cockpit-pg (POSTGRES_16, RUNNABLE, project empressa-trading-prod)",
+    "mostRecentAutomatedBackup": {
+      "id": "1786950000000",
+      "windowStartTime": "2026-08-17T07:00:00.000+00:00",
+      "endTime": "2026-08-17T09:40:43.274Z",
+      "type": "AUTOMATED",
+      "status": "SUCCESSFUL"
+    },
+    "priorBackup": {
+      "id": "1786863600000",
+      "windowStartTime": "2026-08-16T07:00:00.000+00:00",
+      "endTime": "2026-08-16T09:14:33.891Z",
+      "type": "AUTOMATED",
+      "status": "SUCCESSFUL"
+    },
+    "pointInTimeRecoveryEnabled": true,
+    "backupStartTime": "07:00",
+    "retainedBackups": 7,
+    "transactionLogRetentionDays": 7,
+    "note": "The backup completed at 2026-08-17T09:40:43Z, roughly five hours before the write at ~14:43Z. PITR is enabled with 7 days of transaction logs, so the window immediately before the write is recoverable as well as the backup itself."
+  },
+  "migration0058Status": {
+    "applied": false,
+    "evidence": "alembic_version on the live database reads exactly ['0057_ratchet_telemetry'], read through the same ORM inside the production container. 0058 is not in the chain.",
+    "blocksTheWrite": false,
+    "reasoningVerifiedAtSource": "I did not take the reasoning on faith — I queried pg_constraint and information_schema on the live database. identifier_index carries exactly TWO constraints, identifier_index_pkey (PRIMARY KEY (id)) and uq_identifier_index_type_val (UNIQUE (identifier_type, identifier_value)). The CHECK-constraint list is EMPTY, so there is no domain constraint to violate and identifier_type='cik' writes fine today. The column is character varying(8), and 'cik' is 3 characters, so it fits.",
+    "futureApplyIsSafeForTheseRows": "Two independent reasons. (1) 0058 adds the constraint NOT VALID on PostgreSQL, which by definition does not scan existing rows, so the 7 rows written today cannot be scanned by it. (2) Even under a full VALIDATE, 'cik' is an enumerated member of the domain 0058 declares, so these rows would pass anyway.",
+    "sequenceState": "identifier_index.id defaults to nextval('identifier_index_id_seq'), and the sequence last_value was 168 before the write, consistent with max(id)=168.",
+    "notApplied": "I did not apply 0058 and did not run alembic. It stays deploy-coupled for a soak-safe window."
+  },
+  "ciksApplied": [
+    { "cik": "0001045810", "ticker": "NVDA", "sec_registered_name": "NVIDIA CORP", "issuer_node_id": "iss_01M089R4DQFZ14AGQN36QB9VV2", "cik_index_id": 172, "links_created": 1 },
+    { "cik": "0000320193", "ticker": "AAPL", "sec_registered_name": "Apple Inc.", "issuer_node_id": "iss_01M089R4AK4Q2AHVY6GJ96H7E8", "cik_index_id": 170, "links_created": 1, "links_refused": 1 },
+    { "cik": "0000789019", "ticker": "MSFT", "sec_registered_name": "MICROSOFT CORP", "issuer_node_id": "iss_01M089R4C69N8Y8SX61H8DZZT4", "cik_index_id": 171, "links_created": 1 },
+    { "cik": "0001318605", "ticker": "TSLA", "sec_registered_name": "Tesla, Inc.", "issuer_node_id": "iss_01M089R4JC41F5QD2WPWTZE0D3", "cik_index_id": 175, "links_created": 1 },
+    { "cik": "0000884394", "ticker": "SPY", "sec_registered_name": "SPDR S&P 500 ETF TRUST", "issuer_node_id": "iss_01M089R4GNJHW1MEF9KJYZG6T2", "cik_index_id": 174, "links_created": 1, "links_refused": 1 },
+    { "cik": "0001067839", "ticker": "QQQ", "sec_registered_name": "INVESCO QQQ TRUST, SERIES 1", "issuer_node_id": "iss_01M089R4F785PH3YV4TWM8DXKT", "cik_index_id": 173, "links_created": 1, "links_refused": 1 },
+    { "cik": "0001652044", "ticker": "GOOGL (GOOG has no security node)", "sec_registered_name": "Alphabet Inc.", "issuer_node_id": "iss_01M089R489MEJDD3TN8HQFHZ9C", "cik_index_id": 169, "links_created": 1 }
+  ],
+  "scopeAndCommand": {
+    "command": "python scripts/rebuild_issuer_links.py --symbols NVDA,AAPL,MSFT,TSLA,SPY,QQQ,GOOG,GOOGL --apply --yes-write --json-out ... --sample-limit 40",
+    "symbolsPassed": ["NVDA", "AAPL", "MSFT", "TSLA", "SPY", "QQQ", "GOOG", "GOOGL"],
+    "ciksInScope": 7,
+    "securityNodesInScope": 10,
+    "adoptFlag": "none exists — the operator ruled MINT FRESH, and all 7 issuer nodes were newly minted (resolution_status 'resolved', named from SEC's registered name). Zero legacy nodes were adopted.",
+    "mechanism": "The documented path from _inbox/2026-08-17_tw31_production_dryrun_close.json: git archive of cockpit main 786b35ad (apps/cockpit/backend) built locally, gcloud compute scp to empressa-bot (project empressa-trading-prod, zone us-east4-a), extracted to /tmp/tw33 on the host, LF-normalised with sed over every .py, docker cp into empressa-cockpit-api at /tmp/tw33, run via docker exec -w /tmp/tw33 with an explicit timeout and nice -n 19. Staged code verified byte-identical to main's git blobs: issuer_rebuild.py abde87adf5d326ef, rebuild_issuer_links.py 90d32e52c3122478. No new path was invented.",
+    "preflightDryRun": "Before writing, I ran the SAME scoped invocation as a read-only dry run to obtain a prediction to check the write against: planned issuer_nodes_to_create 7, links_to_create 10, security_nodes 10, agrees 1. The write then matched the prediction exactly once the bound guardrail is accounted for (10 candidate links minus 3 refused = 7)."
+  },
+  "beforeCounts": {
+    "nodes_total": 37407,
+    "nodes_by_type": { "event": 166, "issuer": 1323, "security": 35918 },
+    "edges_total": 8500,
+    "edges_by_type": { "issued_by": 8334, "would_affect": 166 },
+    "issued_by_live": 8334,
+    "identifier_index_total": 167,
+    "identifier_index_by_type": { "accn": 166, "lei": 1 },
+    "identifier_index_cik_rows": 0,
+    "identifier_index_max_id": 168,
+    "issuer_nodes_with_links": 1323,
+    "fanout_buckets": { "1": 364, "2-3": 357, "4-10": 405, "11-50": 185, "50+": 12 },
+    "links_on_nodes_11_plus": 4638
+  },
+  "afterCounts": {
+    "nodes_total": 37414,
+    "nodes_by_type": { "event": 166, "issuer": 1330, "security": 35918 },
+    "edges_total": 8507,
+    "edges_by_type": { "issued_by": 8341, "would_affect": 166 },
+    "issued_by_live": 8341,
+    "identifier_index_total": 174,
+    "identifier_index_by_type": { "accn": 166, "cik": 7, "lei": 1 },
+    "identifier_index_cik_rows": 7,
+    "identifier_index_max_id": 175,
+    "issuer_nodes_with_links": 1330,
+    "fanout_buckets": { "1": 371, "2-3": 357, "4-10": 405, "11-50": 185, "50+": 12 },
+    "links_on_nodes_11_plus": 4638
+  },
+  "deltas": {
+    "nodes_total": "+7 (all issuer)",
+    "security_nodes": "+0",
+    "event_nodes": "+0",
+    "edges_total": "+7",
+    "issued_by": "+7",
+    "would_affect": "+0",
+    "identifier_index_total": "+7",
+    "identifier_index_max_id": "168 -> 175, exactly +7 with ids 169..175 contiguous — no sequence gaps, so no insert was attempted and rolled back",
+    "fanout_bucket_1": "+7 (each new issuer node holds exactly one security)",
+    "links_on_nodes_11_plus": "+0 — the legacy collapse was not touched"
+  },
+  "newIssuerNodes": {
+    "count": 7,
+    "expected": 7,
+    "matchesExpectation": true,
+    "allNewlyMinted": true,
+    "adopted": 0,
+    "nodeIds": [
+      "iss_01M089R489MEJDD3TN8HQFHZ9C (Alphabet Inc.)",
+      "iss_01M089R4AK4Q2AHVY6GJ96H7E8 (Apple Inc.)",
+      "iss_01M089R4C69N8Y8SX61H8DZZT4 (MICROSOFT CORP)",
+      "iss_01M089R4DQFZ14AGQN36QB9VV2 (NVIDIA CORP)",
+      "iss_01M089R4F785PH3YV4TWM8DXKT (INVESCO QQQ TRUST, SERIES 1)",
+      "iss_01M089R4GNJHW1MEF9KJYZG6T2 (SPDR S&P 500 ETF TRUST)",
+      "iss_01M089R4JC41F5QD2WPWTZE0D3 (Tesla, Inc.)"
+    ],
+    "allResolutionStatus": "resolved",
+    "namesFrom": "SEC's registered name in company_tickers.json — no vendor name, no fuzzy match"
+  },
+  "newCikIdentifierRows": {
+    "count": 7,
+    "expected": "0 to 7",
+    "matchesExpectation": true,
+    "indexIds": { "0001652044": 169, "0000320193": 170, "0000789019": 171, "0001045810": 172, "0001067839": 173, "0000884394": 174, "0001318605": 175 },
+    "cikRowsAreExactlyTheSeven": true
+  },
+  "newCikExactLinks": {
+    "count": 7,
+    "expected": "at most 9",
+    "matchesExpectation": true,
+    "withinEnvelope": "yes — 7 is below the stated maximum of 9",
+    "refusedByGuardrail": 3,
+    "refusals": [
+      { "symbol": "AAPL", "cik": "0000320193", "sec_ticker_bound": 1, "already_linked": 1, "reason": "exceeds-sec-ticker-bound" },
+      { "symbol": "SPY", "cik": "0000884394", "sec_ticker_bound": 1, "already_linked": 1, "reason": "exceeds-sec-ticker-bound" },
+      { "symbol": "QQQ", "cik": "0001067839", "sec_ticker_bound": 1, "already_linked": 1, "reason": "exceeds-sec-ticker-bound" }
+    ],
+    "refusalExplanation": "AAPL, SPY and QQQ each have TWO active security nodes in production (a venue-less node and an XNAS/ARCX one), while SEC lists one ticker for each of those CIKs. The fail-closed bound check therefore linked the first and REFUSED the second, writing 7 links instead of 10 candidates. This is the guardrail doing exactly its designed job and it kept the write BELOW the authorised maximum, so the deviation is conservative. It is not a silent reconciliation: it is reported here and in the run report's applied.refused list.",
+    "provenanceOfNewLinks": "all 7 carry matchMethod cik-exact; confirmed by the post-apply full dry run reporting existing_link_provenance {cik-exact: 7, unlabelled: 8334}"
+  },
+  "legacyIntact": {
+    "verdict": "INTACT — nothing legacy was created, closed, mutated or deleted.",
+    "legacyIssuerNodesStillPresent": 1323,
+    "legacyIssuerNodesExpected": 1323,
+    "legacyIssuedByEdgesStillPresent": 8334,
+    "legacyIssuedByEdgesExpected": 8334,
+    "proofs": [
+      "issuer nodes went 1323 -> 1330, a pure +7; no decrease, so no legacy node was replaced or removed.",
+      "issued_by went 8334 -> 8341, a pure +7; the post-apply full dry run reports existing_link_provenance.unlabelled = 8334, i.e. every one of the original unlabelled legacy edges is still present and still unlabelled.",
+      "issued_by_live equals the issued_by total (8341 = 8341), so NOTHING was closed via valid_to. Had any legacy edge been retired, live would be lower than total.",
+      "links_on_nodes_11_plus held at 4638 and the 11-50 and 50+ fan-out buckets were unchanged, so the collapsed cohort was not disturbed.",
+      "guardrail violations on the full crosswalk held at 935, identical to the TW-32 measurement.",
+      "security nodes (35918), event nodes (166) and would_affect edges (166) all unchanged.",
+      "No allow_atom_backfill, no Core UPDATE, no DELETE, no valid_to write. The apply path only calls resolve_issuer and link_security_to_issuer, and _ensure_edge returns early on a HIT rather than restamping."
+    ]
+  },
+  "googShareClassProof": {
+    "verdict": "PROVEN AT THE IDENTITY LEVEL, BUT NOT DEMONSTRABLE AS TWO-SECURITIES-TO-ONE-NODE — and this is a deviation from the stated expectation that I am reporting rather than absorbing.",
+    "deviation": "GOOG does not exist as a security node in production AT ALL — zero active and zero merged. Only GOOGL exists (1 active, 166 merged). So the assertion 'GOOG and GOOGL resolve to ONE issuer node' cannot be made at the node level, because there is no GOOG node to resolve.",
+    "whatIsProven": {
+      "crosswalk_cik_for_GOOG": "0001652044",
+      "crosswalk_cik_for_GOOGL": "0001652044",
+      "both_tickers_map_to_one_cik": true,
+      "issuer_nodes_holding_that_cik": ["iss_01M089R489MEJDD3TN8HQFHZ9C"],
+      "exactly_one_issuer_node_for_the_cik": true,
+      "issuer_name": "Alphabet Inc.",
+      "GOOGL_active_node": "sec_01KW8393ZYCSDB2C65VWBF88XR",
+      "GOOGL_trusted_issuer_node_id": "iss_01M089R489MEJDD3TN8HQFHZ9C",
+      "sec_ticker_bound_for_the_cik": 4,
+      "sec_tickers_for_the_cik": ["GOOG", "GOOGL", "GOOGM", "GOOGN"]
+    },
+    "interpretation": "The substance of the ruling holds: one CIK, exactly one issuer node, and both share-class tickers resolve to that one CIK deterministically with no name matching. What cannot be shown on today's data is two DISTINCT security nodes converging on it, because only one share class was ever minted as a node. The proof is weaker in evidence, not contradicted.",
+    "alsoNoted": "SEC lists four tickers for this CIK (GOOG, GOOGL, GOOGM, GOOGN); GOOGM and GOOGN likewise have no security nodes. The coordinator's expectation of three tickers for 1652044 is off by one against the committed artifact, which is why the bound is 4."
+  },
+  "guardrailResult": {
+    "scopedViolationsAfterApply": 0,
+    "verdict": "PASS for all seven CIKs",
+    "perCikCheck": "Each of the 7 new issuer nodes holds exactly 1 inbound live link against SEC ticker bounds of 1 (six CIKs) and 4 (Alphabet), so every node is within its exact per-CIK bound.",
+    "fullCrosswalkViolationsUnchanged": 935,
+    "failClosedProven": "The bound check also fired constructively during the write, refusing 3 links that would have breached a bound of 1. That is the first time the fail-closed write path has run against Postgres.",
+    "trustFilter": {
+      "trustedLinksPerNewIssuerNode": { "0000320193": 1, "0000789019": 1, "0000884394": 1, "0001045810": 1, "0001067839": 1, "0001318605": 1, "0001652044": 1 },
+      "trustedIssuerNodeIdNonNullForTheFirstTime": [
+        "AAPL sec_01KW87FBFGR1BFNMXBG1KCEH0Y -> iss_01M089R4AK4Q2AHVY6GJ96H7E8",
+        "GOOGL sec_01KW8393ZYCSDB2C65VWBF88XR -> iss_01M089R489MEJDD3TN8HQFHZ9C",
+        "MSFT sec_01KW87FC7ANAK9DS7KEPGTE1JY -> iss_01M089R4C69N8Y8SX61H8DZZT4",
+        "NVDA sec_01KW87FC84X4S5AVKHK8E09H8W -> iss_01M089R4DQFZ14AGQN36QB9VV2",
+        "QQQ sec_01KW87FCA3H0AH3RYFJ4F59TCE -> iss_01M089R4F785PH3YV4TWM8DXKT",
+        "SPY sec_01KW87FCBH8HCFVS3KR3D8RR84 -> iss_01M089R4GNJHW1MEF9KJYZG6T2",
+        "TSLA sec_01KW87FCCJV8MA8GVA8TJBQ23J -> iss_01M089R4JC41F5QD2WPWTZE0D3"
+      ],
+      "stillNullForTheRefusedDuplicates": [
+        "AAPL sec_01KW9M9AHG6KH27D3XB1RHQC7E -> None",
+        "QQQ sec_01KW8C3BE8505XW1DEH055136G -> None",
+        "SPY sec_01KW8C3B5YM6KE5P3PA597MS5V -> None"
+      ],
+      "controlSet": "400 non-cohort ACTIVE security nodes scanned via trusted_issuer_node_id(): ZERO returned a non-None value. The trust filter still refuses everything outside these seven.",
+      "notWeakened": "TRUSTED_MATCH_METHODS is untouched at ('cik-exact',). No code was changed by this task at all — the run used cockpit main 786b35ad as merged."
+    }
+  },
+  "dryRunAgreesDelta": {
+    "basis": "full --all dry run, same invocation as the TW-32 measurement, before vs after this apply",
+    "before": { "agrees": 44, "disagrees": 103, "no_opinion": 8187 },
+    "after": { "agrees": 50, "disagrees": 104, "no_opinion": 8187 },
+    "delta": { "agrees": "+6", "disagrees": "+1", "no_opinion": "0" },
+    "decomposition": "+7 then -1. The 7 new cik-exact links all score agrees. The ONE previously-agreeing legacy link — a QQQ link whose target the cohort inference had designated — flipped to disagrees, because an identifier_index cik row now exists for QQQ's CIK naming the newly minted node, and an explicit index claim wins over a cohort inference. Net +6.",
+    "predictedInAdvance": "I predicted 50 / 104 / 8187 from the scoped pre-flight dry run (44 + 7 - 1) before running the full re-measurement, and it matched exactly.",
+    "movedOnlyForTheseCiks": "YES. index_concurrence went from {no-index-row: 188} to {concurs: 6, differs: 1, no-index-row: 181} — exactly 7 CIKs gained an index row and 181 still have none. expected_issuer.source_counts moved from {identifier-index: 0, crosswalk-cohort: 15, crosswalk-mint-required: 173} to {identifier-index: 7, crosswalk-cohort: 14, crosswalk-mint-required: 167}. no_opinion did not move at all (8187 both times), and existing_link_provenance shows the 8,334 legacy links still unlabelled.",
+    "theOneDiffers": "QQQ (0001067839). Its cohort inference still points at the legacy node while the index names the new one, so concurrence is reported as 'differs' rather than hidden. Under the operator's MINT FRESH ruling this is the expected and correct state.",
+    "remainingPlanShrankConsistently": "planned.issuer_nodes_to_create 188 -> 181 and links_to_create 268 -> 261, i.e. exactly the seven CIKs and seven links now done."
+  },
+  "idempotencySecondRunDeltas": {
+    "verdict": "NO-OP CONFIRMED AGAINST POSTGRES — the property only SQLite had tested until now.",
+    "command": "the identical scoped invocation, re-run with --apply --yes-write",
+    "issuer_nodes_created": 0,
+    "links_created": 0,
+    "new_identifier_rows": 0,
+    "links_refused_by_guardrail": 3,
+    "differingKeysBetweenAfterFirstAndAfterSecond": {},
+    "countsAfterSecondRun": {
+      "nodes_total": 37414,
+      "edges_total": 8507,
+      "identifier_index_total": 174,
+      "identifier_index_max_id": 175,
+      "identifier_index_cik_rows": 7
+    },
+    "strongestProof": "identifier_index_max_id held at 175 across the second run. The id column is sequence-backed, so an INSERT ... ON CONFLICT DO NOTHING that had been ATTEMPTED would have consumed a sequence value and pushed max(id) or the sequence's last_value past 175 even though no row landed. It did not move, so the second run did not even attempt a duplicate insert — it resolved the existing CIK from the index and returned.",
+    "scopedVerdictsOnSecondRun": { "agrees": 7, "disagrees": 1, "no_opinion": 0 },
+    "secondRunRefusalsUnchanged": "the same three duplicate-node refusals recurred identically, so the fail-closed path is also idempotent"
+  },
+  "writesConfinedToScope": {
+    "writesPerformed": "7 issuer nodes, 7 identifier_index cik rows, 7 issued_by cik-exact edges. Nothing else.",
+    "containerNotRestarted": { "restartCount": 0, "startedAtBefore": "2026-08-13T16:19:49.413379948Z", "startedAtAfter": "2026-08-13T16:19:49.413379948Z", "status": "running" },
+    "noDeploy": "The image was not modified and the deployed tree was never written: /app/app/securities/resolver.py mtime is still 2026-06-29 12:21:02 +0000 after all writes.",
+    "noMigration": "alembic_version still reads ['0057_ratchet_telemetry'] after the writes.",
+    "anonymousEndpointUntouched": "No router, auth or spine code was touched; GET /spine/anchor/verify/{atom_id} is unchanged.",
+    "tempPathsRemoved": [
+      "host: /tmp/tw33, /tmp/tw33.tar, /tmp/tw33_*.json, /tmp/tw33_*.log, /tmp/tw33_bundle.tgz, /tmp/_tw33_schema.py, /tmp/_tw33_nodes.py, /tmp/_tw33_verify.py, /tmp/_tw33_show.py, /tmp/_tw32_probe.py",
+      "container: /tmp/tw33, /tmp/tw33_*.json"
+    ],
+    "cleanupVerified": "ls -d /tmp/*tw33* /tmp/*tw32* returned nothing on BOTH host and container after cleanup.",
+    "secretsHandling": "COCKPIT_DATABASE_URL was never echoed, decoded or written anywhere. No secret value appears in this file.",
+    "everyCommandExited": "Every invocation was wrapped in an explicit timeout and exited. The CLI disposes the async engine in a finally block."
+  },
+  "remaining": [
+    "STOPPED AS INSTRUCTED. The remaining 181 CIKs were NOT applied. The current plan for them is 181 issuer nodes and 261 links, 0 to retire — a separate operator decision.",
+    "OPERATOR DECISION OWED on the duplicate-active-node pattern, which is the most useful thing this run surfaced. AAPL, SPY and QQQ each have TWO active security nodes (one venue-less, one XNAS/ARCX) while SEC lists a single ticker, so the bound guardrail refused the second link for each. Extrapolated across a full run this will leave a share of securities without a trusted issuer purely because a duplicate node exists. The fix is node dedup (merge_links already exists and dedup_provisional_nodes already ships), not a looser bound — loosening the bound would re-admit the collapse the guardrail exists to stop. Recommend running the dedup for these venue-less duplicates BEFORE the remaining 181.",
+    "OPERATOR DECISION OWED on QQQ's index_concurrence 'differs'. QQQ's legacy issuer node was clean and the cohort inference still designates it, while the index now names the freshly minted node. Under MINT FRESH that is correct, but it means QQQ's security carries both an unlabelled legacy link to the old node and a cik-exact link to the new one, and the old node still exists. That duplicate-issuer state is the predicted consequence of the no-adopt ruling and will occur for all 14 remaining adoptable CIKs.",
+    "GOOG, GOOGM and GOOGN have no security nodes at all, so the Alphabet issuer node holds one link where SEC's bound is 4. If those share classes are expected to be tradable in the master, that is a universe-ingest gap rather than an identity gap, and it is not fixable by this rebuild.",
+    "Migration 0058 remains UNAPPLIED, deliberately. Note that the 7 cik rows now in production were written WITHOUT it, which confirms the column's bare String(8) accepts them; when 0058 eventually rides a deploy its NOT VALID clause will skip these rows.",
+    "The 8,334 legacy unlabelled links are all still present and still untrusted, exactly as ruled. Nothing in this run reduced that number and no ruling on retiring them was taken.",
+    "The full post-apply --all report (744KB, including all 104 disagreements and 935 guardrail violations) was pulled to the local scratchpad but is not committed anywhere durable. If the full detail is wanted for the remaining-181 decision it should be regenerated with --json-out to a retained path.",
+    "Carried forward and still unresolved: the 914 unbounded-fanout nodes need a non-SEC identity authority, and the 08_build_scope A-8 / cik_crosswalk docstring ticker-bound head counts still drift from the committed artifact (max 27 and the flat-cap argument both hold)."
+  ],
+  "blocked": []
+}
