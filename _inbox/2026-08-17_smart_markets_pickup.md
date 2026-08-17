@@ -27,9 +27,9 @@ Cockpit `main` reconciled 2026-08-17 and now equals production reality; CI basel
 
 **Production is unchanged.** The VM runs the pre-merge image and that secret is unread, so the service path is closed in production regardless of main.
 
-## TW-31: code done, defect measured
+## TW-31: MERGED
 
-PR **#331** open, unmerged, CI `success`, local 4438 passed / 0 failed. Migration **0058** makes `identifier_type` a real CHECK domain including `cik` — it was a bare `String(8)` with the enum only in a code comment. `NOT VALID`, so no row scan. **Not applied to production.**
+PR **#331** MERGED 2026-08-17T14:28:47Z. Cockpit main is **`d7d56b2b`**, CI `success` (confirmed twice through Actions-API 404 flakiness; the legacy `/status` endpoint reports `pending` with `total_count: 0` because this repo is Actions-only, so that endpoint is a NON-SIGNAL here). Main now carries the crosswalk, migration 0058, the CIK-ranked resolver, and the read-time trust filter. Migration **0058** makes `identifier_type` a real CHECK domain including `cik` — it was a bare `String(8)` with the enum only in a code comment. `NOT VALID`, so no row scan. **Not applied to production.**
 
 Production dry run complete, read-only, `writesPerformed: 0` proven four ways and planner-reverified (`nodes=37407 edges=8500 identifier_index=167 max_id=168`, unchanged).
 
@@ -55,11 +55,11 @@ CIK coverage at 3% rather than the planner's ~25% estimate **empirically confirm
 
 ## Open
 
-**TW-32 (new).** `agrees: 0` in the dry run is structural, not measured: the rebuild reads expected issuers from `identifier_index` rows of type `cik`, of which production has zero, so the agreement branch is unreachable. The measurement is blocked on the fix it exists to validate. Fix is to derive expected-issuer from the crosswalk artifact.
+**TW-32 (IN FLIGHT).** `agrees: 0` in the dry run is structural, not measured: the rebuild reads expected issuers from `identifier_index` rows of type `cik`, of which production has zero, so the agreement branch is unreachable. The measurement is blocked on the fix it exists to validate. Fix is to derive expected-issuer from the crosswalk artifact.
 
-**Collapsed-edge resolution.** Planner recommends a read-time trust filter on `match_method` (consumers read `cik-exact`, ignore `name-fuzzy`) rather than Core-DML closure of `valid_to`. Consequence: **TW-6 must read only `cik-exact` links.** An agent is implementing the filter plus a structural test on PR #331.
+**Collapsed-edge resolution — RULED AND SHIPPED.** Read-time trust filter, merged. `trusted_issuer_links()` admits `cik-exact` only; `lei-exact` is also excluded because exactly one `lei` row exists in the whole index, so that path is unexercised at any scale that would earn trust, and widening is an operator ruling pinned by test. `trusted_issuer_node_id()` returns `None` across the entire legacy cohort rather than falling back to fuzzy, and raises rather than picking a winner on two trusted issuers. An AST structural test fails if any code path reads `issued_by` outside the boundary, with TWO detectors, because a `select(Edge)` constraining no `Edge.type` returns issuer links without naming them. Legacy links untouched: closure is reachable only inside `allow_atom_backfill()`, since `immutability.py`'s PRIMARY `do_orm_execute` guard rejects Core UPDATE/DELETE too. **TW-6 must read only `cik-exact` links and render honest absence on empty, which for the whole legacy cohort is always.**
 
-**Migration 0058 apply.** Sequenced after #331 merges, not before, so production never carries a constraint whose code is unmerged.
+**Migration 0058 apply — NO SEPARATE STEP EXISTS.** Migrations are deploy-coupled by design: `docker compose ... exec -T cockpit-api alembic upgrade head` is a line inside both `scripts/_eq_deploy_remote.sh` and `scripts/deploy-cockpit-api-gcp.ps1`. 0058 applies automatically on the next deploy, inside a soak-safe window. Do not build a standalone apply path around it.
 
 **Contribute-or-pay parameters** (rate, decay, calibration-modified rate, paid price, whether any cohort figure shows at Layer 1) — deliberately open until TW-29.
 
