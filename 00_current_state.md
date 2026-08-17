@@ -13,13 +13,13 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 1. Active fires
 
-- **Fire 1: L26 Texas ingest.** Lease L26 holds the atoms writer. Pickup `_inbox/2026-08-15_l26_gotomarket_pickup.md`. Do not start a second writer. Do not DROP cortex-prod `smart_file_*` while this is live. Do not ICC store UPDATE.
+- **Fire 1: GTM / checkout, not L26 fill.** Operator 2026-08-17: QA the live map at `https://smartsite.cloud`. Stripe checkout mechanically works; polish owed. Pipedrive with `smartsite` + tier tags. Pricing popup like lander signup. Hobby stays. Stand `_inbox/2026-08-17_l26_backfill_and_gtm_stand.md`. Do not restart Harris statewide-PBF. L26 lease heartbeat still live; do not start a second writer. Do not DROP cortex-prod `smart_file_*`.
 - **Fire 2: G-60 demo path STOP.** Closed on demo path. ICC-demo https://icc-demo.vercel.app. WDLL 13 met. Residuals 7/18/19 held with L26. Pickup `_inbox/2026-08-16_icc_demo_planner_pickup.md`.
 - **Fire 3: Doc_repo dirty tree.** Many uncommitted files from prior sessions. Commits are a named list, never the whole working tree.
 
 ## 2. In-flight sprints
 
-- **OPS-16 / L26** Texas flush to launch-gate grade. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
+- **OPS-16 / L26** Fill factory stopped. QA/launch on current map (A-017). Backfill redesign later. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
 - **OPS-17 Lane B** G-61 Dashboards serving `https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app` (`00001-92j`). MCP PR 70 not serving. `P:\smartcity-os` no-touch.
 - **OPS-17 G-60** CLOSED_ON_DEMO_PATH STOP. ICC-demo https://icc-demo.vercel.app. Plan-review `00012-pen` @100% tag `g60g`. Applicant `/applicant?token=` met. Smart Files QA personas restored. Held: store UPDATE, F4, G-58b, G-50.
 - **OPS-17 Lane A Smart Files.** G-58/G-59 CLOSED serving path. G-58b OPEN. `smart-files-app` is G-59 QA plus icc-demo rooms. Plan-review owns the review files UI.
@@ -43,11 +43,12 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 5. Recent session summaries
 
+- 2026-08-17 L26 GTM rulings (Pipedrive, popup, Hobby): `_sessions/2026-08-17_l26_gtm_rulings_planner.md`
+- 2026-08-17 L26 QA/launch on current map: `_sessions/2026-08-17_l26_qa_launch_current_map_planner.md`
 - 2026-08-16 G-60 ICC-demo stop: `_sessions/2026-08-16_g60_icc_demo_session_close_planner.md`
 - 2026-08-16 ICC-demo separate portal: `_sessions/2026-08-16_icc_demo_separate_portal_planner.md`
 - 2026-08-16 G-60 ICC observer portal (reversed): `_sessions/2026-08-16_g60_icc_portal_planner.md`
 - 2026-08-16 G-60 files UI + applicant view: `_sessions/2026-08-16_g60_files_ui_applicant_view_planner.md`
-- 2026-08-15 Smart Files isolation + QA rooms: `_sessions/2026-08-15_smart_files_isolation_and_qa_rooms_claude_code.md`
 
 ## 6. Cross-cutting watch list
 

@@ -2,7 +2,7 @@
 id: OPS-16_texas_market_plan_of_record
 title: OPS-16 — Texas complete and out the door: plan of record
 date: 2026-08-12
-last_updated: 2026-08-14
+last_updated: 2026-08-17
 status: active
 owner: nick (amendments); doc_repo planner (grading)
 purpose: The single benchmarkable plan for closing the Texas flush launch gate and reaching market. Baseline is frozen; changes are append-only amendment rows. Work that cannot name a row ID here is not scoped.
@@ -110,6 +110,7 @@ Current chain: A2 SD (FLIGHT) -> A2 rail-corridor -> RELEASE -> flood metros (P-
 | A-014 (renumbered; lane-authored, was duplicate A-008) | 2026-08-12 | P-26 | P-26 CLOSED (probe-only). Artifact `_inbox/2026-08-12_L10_utility_probe_close.json`. Finding: v1 utility feasibility shape is territory who-serves (PUCT water CCN + HIFLD electric retail) with SERVICE-LETTER-REQUIRED residual; municipal mains/laterals are opportunistic city-scoped depth, not a uniform rail; electric distribution geometry is not a public statewide product. No cells / no writers proposed | Operator Q2 probe-first rule; L10 lane | Y (operator put L10 / P-26 in flight) |
 | A-015 (renumbered; lane-authored, was duplicate A-010) | 2026-08-12 | P-29 | Store restore CLOSED. Serving MCP `00063-fic` `/health` `rate_limit_store.state=ok` (postgres, fail-degraded outage mode). DC-11a as written still points at cortex `/health` (SPA HTML, no field); the limiter instrument is MCP `/health`. DC-11b load test and DC-11c capacity-doc freshness remain. Close `_inbox/2026-08-12_L13_rate_limit_restore_close.json` | L13 live proofs (health + 429 + restart survival); inventory proved cortex/retrieval do not share the seam | Y (operator put L13 / A-007 in flight) |
 | A-016 | 2026-08-14 | P-29 | DC-11b load test and DC-11c capacity-doc freshness CLOSED. Dated artifact `_inbox/2026-08-14_76j_C4_loadtest_results.json` on serving `00063-fic`; capacity doc `_inbox/2026-08-05_launch_capacity_audit.md` `last_updated: 2026-08-14`. DC-11d (P-30) probed same lane: HTTP 200 is GoDaddy parking lander, not Vercel attach; DNS fix out of scope. Close `_inbox/2026-08-14_l19_close.json` | L19 live proofs (1/5/20 rps + 429 band=rpm + 36/36 postgres primary); first_429 cumulative 72 is a wall-clock minute-bucket finding, not a store miss | Y (operator put L19 / P-29 residue in flight) |
+| A-017 | 2026-08-17 | P-17, P-25, P-36 | RULED: QA and launch on the current map. Remaining statewide PBF roads and CAMA loads are post-launch backfill. Do not restart Harris statewide-PBF. Do not treat roads 254/254 or Dallas sqft/year as launch blockers. DC-3 uniform-rail 254/254 for roads is no longer the L26 close condition. Decision `_decisions/2026-08-17_qa_launch_current_map.md` | Operator: marketing and checkout first; redesign backfill later. Three Harris PBF extracts wrote 0 atoms | Y |
 
 ## GRADE LOG (one row per grading pass; statuses re-graded by instrument only)
 

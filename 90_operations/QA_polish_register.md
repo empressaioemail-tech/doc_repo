@@ -26,6 +26,27 @@ Entry rules: one line per item, name the surface and the exact string or behavio
 | Q1 | Flood & drainage PDF | Sheet header reads `FLOOD & DRAINAGE · SHEET 1 OF 2` but omits the `SMART SITE` brand prefix the site-plan sheet carries (`SMART SITE · SITE PLAN · SHEET 1 OF 4`) | Both report families lead with the same `SMART SITE ·` prefix; one shared header composer, not two | 2026-08-10 operator |
 | Q2 | PE AI chat | Markdown is not rendered — replies show literal `**Identify the current zoning district**` asterisks instead of bold | Chat renders markdown bold/lists (the brief pane already does); no raw `**` reaches the user | 2026-08-10 operator |
 
+## GTM readiness — surface polish carried in this register (added 2026-08-10)
+
+Operator ruling 2026-08-10: **GTM readiness surface items batch here with the rest of the polish.** Same rules apply — one line, name the exact string or surface, say what done looks like, and promote anything load-bearing out of the register rather than batching it.
+
+Scope of this section: brand strings, link and URL correctness, copy that contradicts a locked ruling, and CRM/tooling wiring. It is **not** the GTM build. The launch-blocking builds (funnel events with consent flags, activation instrumentation, the self-serve pricing popup, dunning, team seat management, share-loop attribution) are program work under `76j` and the humanless handoff, NOT polish — they never enter this table.
+
+Source of truth for every item below: `_inbox/2026-08-10_smartsite_pricing_and_gtm_LOCKED.md` and `_inbox/2026-08-10_smartsite_humanless_gtm_handoff.md`.
+
+| # | Surface | Item | Done looks like | Found |
+|---|---|---|---|---|
+| G1 | Stripe product catalog | ~~Product reads **"Hauska Pro"**~~ **CLOSED 2026-08-12 L6** — active catalog is Smart Site Solo / Studio / Team; zero active Hauska strings (P-28). Unlock $15 product not created (no new billing products this lane; 76j). | Product and price nicknames read Smart Site, matching the locked ladder (Solo / Studio / Team / unlock). Rides the operator branding scope | 2026-08-10 GTM lock; closed L6 |
+| G2 | `_smartsite_masters/06` line 58 | Copy reads "qualified signal flows to the **sales CRM**" — describes a motion the humanless ruling forbids (no sales team on this product, ever) | Funnel copy names the affiliate + share-loop motion; CRM language either removed or scoped explicitly to Empressa Solutions / SmartCity OS, which DO get a sales team | 2026-08-10 planner, reading 06 against the lock |
+| G3 | `_smartsite_masters/06` line 54 + pricing page | Coverage answer is "**confirmed on request**" — a human in the loop by definition, and the exact gap the humanless handoff names as condition 1 | A self-serve coverage answer: checkable map or a plain statement of how rolling coverage works, with per-parcel honest-absence named as the safeguard. No "ask us" path | 2026-08-10 GTM lock |
+| G4 | CRM / GTM tooling | **RULED 2026-08-17:** Pipedrive is the Smart Site subscriber CRM. Stripe webhook writes a person with tag `smartsite` plus user tier (`free` / `solo` / `studio` / `team`). Not a city feed (G-63 stands). Affiliate platform (Rewardful class) remains the unpaid-acquisition tool. | Pipedrive person exists after checkout with both tags; no Pipedrive secret in the PE bundle; Dashboards still has zero Pipedrive city feed | 2026-08-10 open; closed-as-decision 2026-08-17 |
+| G5 | Domain / URLs | `smartsite.cloud` is purchased but canonical-URL usage is not swept — collateral, share links, Stripe receipts, and PE/CC surfaces may still carry older hosts | One canonical public URL, used identically in share links, billing receipts, affiliate links and collateral; no stale host reaches a user | 2026-08-10 planner |
+| G6 | Share link copy | Share is a **free function** and the loop is the acquisition channel; the recipient path is built to display, not to convert | Recipient-facing copy states the shared analysis is full-fidelity and names what the recipient would need an account to do themselves. Copy only — the attribution BUILD is program work, not polish | 2026-08-10 GTM lock |
+| G7 | Unlock expiry copy | The 30-day unlock must surface as a **freshness property**, never as a paywall — "verified on [date]", because data changes (Bastrop repealed its zoning and the corpus served the dead version for six weeks) | No expiry string in the product reads as billing pressure; expiry presents as verification recency with a renewal that reads obvious rather than punitive | 2026-08-10 GTM lock |
+| G8 | Tier naming sweep | Product, entitlement map, paywall copy and collateral still carry the retired ladder (Browse / Free account / Pro $149-99 / $15-forever unlock) | Every surface reads Free / Solo $49 / Studio $129 / Team $299 / unlock $15-for-30-days. The entitlement-map and Stripe REBUILD are program work; this row is the copy sweep behind it | 2026-08-10 GTM lock |
+
+**Two of these are not really polish and are marked so deliberately.** G1 is a hard gate — it is small to fix and batched here for that reason, but it blocks external testers, so it does not wait for a batch window. G3 is the copy half of a launch-blocking condition; the copy fix belongs here, the self-serve coverage surface behind it does not. G4 is decided (Pipedrive + tags); the webhook is program work.
+
 ## Open — NOT polish, load-bearing (do not batch with the above)
 
 _(none open — L1 resolved 2026-08-10, see below)_
