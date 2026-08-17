@@ -1,0 +1,155 @@
+{
+  "status": "PARTIAL BY DESIGN — 8 of 11 merged. Stopped on AAPL, QQQ and SPY and did not decide silently, per the standing instruction on the survivor rule. One acceptance item is unmet and one stated expectation is, I believe, wrong; both are reported below with the evidence.",
+  "backupTimestamp": {
+    "gate": "PASS — checked before any write.",
+    "instance": "cockpit-pg (POSTGRES_16, project empressa-trading-prod)",
+    "mostRecentAutomatedBackup": {
+      "id": "1786950000000",
+      "windowStartTime": "2026-08-17T07:00:00.000+00:00",
+      "endTime": "2026-08-17T09:40:43.274Z",
+      "type": "AUTOMATED",
+      "status": "SUCCESSFUL"
+    },
+    "pointInTimeRecoveryEnabled": true,
+    "transactionLogRetentionDays": 7,
+    "note": "Same backup that gated TW-33. PITR covers the window between it and these writes."
+  },
+  "symbolsDeduped": [
+    { "symbol": "DIA", "survivor": "sec_01KW8C3BM1TGV4J3Q3VSGXWY", "survivor_venue": "ARCX", "retired": "sec_01KW8BMK0DQKB542C64SHE7P", "merged": true },
+    { "symbol": "IWM", "survivor": "sec_01KW8C3BGMZJG2KG00PNPGXQ", "survivor_venue": "ARCX", "retired": "sec_01KW8BPQH3Y1KX2JT22N5ZSF", "merged": true },
+    { "symbol": "XLE", "survivor": "sec_01KW8C3BYX9G6K4GV9TA96MY", "survivor_venue": "ARCX", "retired": "sec_01KW8F0812E2D5QBGDZ9TB1A", "merged": true },
+    { "symbol": "XLF", "survivor": "sec_01KW8C3BWKVXG3T5TB3C7WZA", "survivor_venue": "ARCX", "retired": "sec_01KW8F0D0ZCK7Y62M9404DC8", "merged": true },
+    { "symbol": "XLK", "survivor": "sec_01KW8C3BRCH1VMJWGK9T5PQY", "survivor_venue": "ARCX", "retired": "sec_01KW8F0KZW3TRMX6ZZNPFVA6", "merged": true },
+    { "symbol": "XLP", "survivor": "sec_01KW8C3C36BYNSFF1A19X7D4", "survivor_venue": "ARCX", "retired": "sec_01KW8F0Q50WKW4X57WVJB1Q3", "merged": true },
+    { "symbol": "XLV", "survivor": "sec_01KW8C3C0JDV1PHN86FYBE5V", "survivor_venue": "ARCX", "retired": "sec_01KW8F0ZTYCA6P4HPCHFFJJD", "merged": true },
+    { "symbol": "XLY", "survivor": "sec_01KW8C3C246Z3SYGPPAPS82S", "survivor_venue": "ARCX", "retired": "sec_01KW8F123S98P58FW9MSY74E", "merged": true },
+    { "symbol": "AAPL", "survivor_would_be": "sec_01KW9M9AHG6KH27D3XB1RHQC7E", "survivor_venue": "XNAS", "would_retire": "sec_01KW87FBFGR1BFNMXBG1KCEH0Y", "merged": false, "refused_reason": "the node the survivor rule retires HOLDS the cik-exact link written in TW-33" },
+    { "symbol": "QQQ", "survivor_would_be": "sec_01KW8C3BE8505XW1DEH055136G", "survivor_venue": "ARCX", "would_retire": "sec_01KW87FCA3H0AH3RYFJ4F59TCE", "merged": false, "refused_reason": "same — and the retiring node also holds a legacy unlabelled link" },
+    { "symbol": "SPY", "survivor_would_be": "sec_01KW8C3B5YM6KE5P3PA597MS5V", "survivor_venue": "ARCX", "would_retire": "sec_01KW87FCBH8HCFVS3KR3D8RR84", "merged": false, "refused_reason": "same" }
+  ],
+  "survivorChoice": {
+    "rule": "venue-qualified survives, venue-less retires — as ruled",
+    "howItWasApplied": "NOT hand-picked. The survivor was taken from the resolver's own SecurityResolver._tie_break, and for all ELEVEN pairs it independently selected the venue-qualified node. A venue-less node's primary_venue is '' or NULL, which _tie_break maps to the '\\uffff' sentinel and ranks last, so venue rank (XNAS 0 / ARCX 2) always wins. The operator's rule and the resolver's existing precedence agree, so no override was needed and none was written.",
+    "machineryUsed": "resolver.merge_nodes(loser, survivor, reason='venue_normalization_dedup') — one merge_links row plus a status flip to 'merged'. No edge or atom rewritten, nothing deleted, no new merge logic written.",
+    "reversalReported": "For AAPL, QQQ and SPY I did NOT apply the rule and did not reverse it either. It needs an operator decision — see the reversal analysis below.",
+    "reversalAnalysisForTheThree": {
+      "problem": "In all three, the cik-exact link written in TW-33 sits on the VENUE-LESS node, which is the node the survivor rule retires. merge_nodes deliberately performs ZERO edge rewrites, and trusted_issuer_links deliberately does not canonicalize Edge.from_node (its docstring: 'canonicalize upstream if you need merge-link following'). So retiring that node would leave the authoritative cik-exact link attached to a retired node, and the SURVIVING node would have no trusted issuer at all.",
+      "andItCouldNotBeRepaired": "The apply path could not restore it. rebuild_issued_by's fail-closed bound check counts held = live edges to the issuer node, which would be {the retired node}; the survivor is not in that set, so 1 + 1 > bound 1 and the link is refused. The surviving node would be permanently unable to acquire a trusted issuer without a code change.",
+      "optionA_keepTheRuleAndAcceptStranding": "Rejected. Leaves production in a stuck state for AAPL, SPY and QQQ — the three highest-value symbols in the cohort.",
+      "optionB_reverseTheRuleForTheseThree": "Venue-less survives, venue-qualified retires. The cik-exact link stays valid on the survivor and trusted_issuer_node_id keeps working. Cost: the survivor carries less information (no venue), which contradicts the rule's stated rationale. Outcome: one active node per symbol, cik-exact total stays 7.",
+      "optionC_canonicalizeTheBoundCheck": "Make rebuild_issued_by canonicalize the held set before the bound comparison, so a retired node's edge resolves to its survivor. This is arguably a genuine defect in the bound check — it currently counts edges from RETIRED nodes against a live bound. With it, the rule stands, the merge is safe, and the apply reports 'already linked' rather than a spurious refusal. Cost: a code change to a ratified guardrail, needing its own PR and CI. Note it still yields ZERO new links.",
+      "myRecommendation": "Option C, as its own PR. It fixes the underlying defect (a retired node's edge should not consume a live issuer's bound) rather than bending the survivor rule, and it also removes the three spurious refusals that will otherwise recur on every future apply. Option B is the fast path if you want the 11 closed out today without touching guardrail code."
+    }
+  },
+  "mergeLinksCreated": {
+    "count": 8,
+    "expected": 11,
+    "matchesExpectation": false,
+    "shortfallReason": "3 refused pending the operator decision above",
+    "reason_tag": "venue_normalization_dedup",
+    "merge_links_total_before": 25926,
+    "merge_links_total_after": 25934,
+    "merge_links_max_id_after": 25935,
+    "reasonTaggedCount": 8
+  },
+  "nodesDeleted": {
+    "count": 0,
+    "expected": 0,
+    "matchesExpectation": true,
+    "proof": "nodes_total held at 37,414 across the dedup, the re-apply and both idempotency runs. All 8 retired nodes still exist and were verified individually: loser_still_exists true and loser_status 'merged' for every one. Retire via status flip, never delete."
+  },
+  "beforeCounts": {
+    "nodes_total": 37414,
+    "active_security_nodes": 9992,
+    "merge_links_total": 25926,
+    "duplicate_symbols": 11,
+    "symbols_with_more_than_one_active_node": ["AAPL", "DIA", "IWM", "QQQ", "SPY", "XLE", "XLF", "XLK", "XLP", "XLV", "XLY"],
+    "issued_by_total": 8341,
+    "cik_exact_links": 7,
+    "identifier_index_cik_rows": 7
+  },
+  "afterCounts": {
+    "nodes_total": 37414,
+    "active_security_nodes": 9984,
+    "merge_links_total": 25934,
+    "duplicate_symbols": 3,
+    "symbols_with_more_than_one_active_node": ["AAPL", "QQQ", "SPY"],
+    "issued_by_total": 8341,
+    "cik_exact_links": 7,
+    "identifier_index_cik_rows": 7,
+    "expectedActiveSecurityNodes": 9981,
+    "activeNodeDeviation": "9,984 not 9,981 — exactly the three unmerged pairs. Every other delta is as expected."
+  },
+  "canonicalResolution": {
+    "verdict": "PASS for all 8",
+    "allResolveToSurvivor": true,
+    "allLosersStillExist": true,
+    "allLosersStatusMerged": true,
+    "allSurvivorsAreTerminal": true,
+    "pairs": [
+      { "loser": "sec_01KW8BMK0DQKB542C64SHE7P", "canonical": "sec_01KW8C3BM1TGV4J3Q3VSGXWY", "symbol": "DIA" },
+      { "loser": "sec_01KW8BPQH3Y1KX2JT22N5ZSF", "canonical": "sec_01KW8C3BGMZJG2KG00PNPGXQ", "symbol": "IWM" },
+      { "loser": "sec_01KW8F0812E2D5QBGDZ9TB1A", "canonical": "sec_01KW8C3BYX9G6K4GV9TA96MY", "symbol": "XLE" },
+      { "loser": "sec_01KW8F0D0ZCK7Y62M9404DC8", "canonical": "sec_01KW8C3BWKVXG3T5TB3C7WZA", "symbol": "XLF" },
+      { "loser": "sec_01KW8F0KZW3TRMX6ZZNPFVA6", "canonical": "sec_01KW8C3BRCH1VMJWGK9T5PQY", "symbol": "XLK" },
+      { "loser": "sec_01KW8F0Q50WKW4X57WVJB1Q3", "canonical": "sec_01KW8C3C36BYNSFF1A19X7D4", "symbol": "XLP" },
+      { "loser": "sec_01KW8F0ZTYCA6P4HPCHFFJJD", "canonical": "sec_01KW8C3C0JDV1PHN86FYBE5V", "symbol": "XLV" },
+      { "loser": "sec_01KW8F123S98P58FW9MSY74E", "canonical": "sec_01KW8C3C246Z3SYGPPAPS82S", "symbol": "XLY" }
+    ],
+    "transitivity": "Each chain is length 1 here, so path compression had nothing to compress (canonical() only rewrites when the chain exceeds two hops). canonical(survivor) == survivor was asserted for all 8, confirming the survivors are terminal and no chain was accidentally extended."
+  },
+  "reapplyNewLinks": {
+    "command": "python scripts/rebuild_issuer_links.py --symbols AAPL,SPY,QQQ --apply --yes-write",
+    "newLinksCreated": 0,
+    "expected": 3,
+    "matchesExpectation": false,
+    "issuerNodesCreated": 0,
+    "linksRefusedByGuardrail": 3,
+    "cikExactTotalBefore": 7,
+    "cikExactTotalAfter": 7,
+    "immediateReason": "Those three pairs were not merged, so each still has two active nodes and the bound of 1 still refuses the second.",
+    "deeperFinding": "The +3 expectation cannot hold under EITHER survivor choice, and I think the premise is wrong. After a successful dedup each symbol has exactly ONE active security node, and that node either already holds the cik-exact link (if the venue-less node survives) or cannot acquire one (if it retires, because the bound is consumed by the retired node's edge). Either way the cik-exact total stays 7. The three TW-33 refusals were never lost capacity to recover: they were the guardrail correctly refusing to attach a SECOND node of the same security to a one-ticker issuer. Dedup reveals those nodes as duplicates rather than freeing room for more links. So the correct post-dedup expectation is 7 cik-exact links and 11 securities each with exactly one, not 10 links.",
+    "whatWouldChangeIt": "Only option C (canonicalizing the bound check) changes the reported outcome, and it changes it from 'refused' to 'already linked' — still zero new links, but no spurious refusal on every future run."
+  },
+  "idempotencySecondRun": {
+    "verdict": "NO-OP CONFIRMED, proven the same way as TW-33",
+    "runsPerformed": "the dedup was run with --apply twice more after the first application (three applies total)",
+    "secondRunDuplicatesFound": ["AAPL", "QQQ", "SPY"],
+    "secondRunMerged": 0,
+    "thirdRunMerged": 0,
+    "countsIdentical": {
+      "nodes_total": 37414,
+      "active_security_nodes": 9984,
+      "merge_links_total": 25934
+    },
+    "sequenceProof": "merge_links.id is a sequence-backed autoincrement integer and max(id) held at 25,935 across the repeat runs. An INSERT that had been ATTEMPTED and discarded would have consumed a sequence value and pushed it past 25,935. It did not move, so no repeat merge was even attempted — the second run found one active node per deduped symbol and had nothing to group.",
+    "whyItIsIdempotentByConstruction": "The duplicate scan filters status != 'merged' and requires HAVING count > 1, so a deduped symbol drops out of the candidate set entirely on the next run.",
+    "reapplyAlsoIdempotent": "the AAPL/SPY/QQQ re-apply produced the same three refusals as TW-33, so the fail-closed path is stable too"
+  },
+  "constraintsHonoured": {
+    "containerNotRestarted": { "restartCount": 0, "startedAt": "2026-08-13T16:19:49.413379948Z", "status": "running", "identicalBeforeAndAfter": true },
+    "noDeploy": "deployed /app/app/securities/resolver.py mtime still 2026-06-29 12:21:02 +0000",
+    "noMigration": "alembic_version still ['0057_ratchet_telemetry'] after all writes; 0058 remains unapplied",
+    "perCikBoundNotLoosened": "untouched. It refused three links again and that is it working, not failing.",
+    "trustFilterAndAstControlUntouched": "no repo code was changed by this task at all; the run used cockpit main 786b35ad (staged resolver.py sha256 7cce0503d404ea7a) plus read-only/ops scripts that only CALL existing resolver methods",
+    "remaining181NotApplied": "confirmed — only AAPL, SPY and QQQ were re-applied, all refused, zero new links",
+    "writesPerformed": "8 merge_links rows and 8 node status flips to 'merged'. Nothing else. No node, edge, atom or identifier row was created, deleted or otherwise mutated.",
+    "tempPathsRemoved": ["host: /tmp/tw34, /tmp/tw34.tar, /tmp/tw34_*.json, /tmp/tw34_*.log, /tmp/tw34_bundle.tgz, /tmp/_tw34_*.py", "container: /tmp/tw34, /tmp/tw34_*.json"],
+    "cleanupVerified": "ls -d /tmp/*tw34* returned nothing on BOTH host and container",
+    "everyCommandExited": "every invocation wrapped in an explicit timeout; every script disposes the async engine in a finally block",
+    "secretsHandling": "COCKPIT_DATABASE_URL never echoed, decoded or written. No secret value appears in this file."
+  },
+  "remaining": [
+    "OPERATOR DECISION OWED on AAPL, QQQ and SPY — the one thing blocking TW-34 from closing. Three options are laid out under survivorChoice.reversalAnalysisForTheThree with a recommendation (option C: canonicalize the held set in rebuild_issuer_links' bound check, as its own PR). Until then those three symbols keep two active nodes each and the re-apply keeps refusing.",
+    "FINDING: dedup_provisional_nodes CANNOT perform this dedup and was not the right instrument. It groups by (symbol, coalesce(venue,'')) with HAVING count > 1, so a venue-less + venue-qualified pair is two groups of ONE and the helper sees nothing to merge. Confirmed empirically against production: the grouping query returned []. The work was done with resolver.merge_nodes directly, which is still existing machinery. If this dedup shape recurs, dedup_provisional_nodes should be widened to fold venue-less nodes into a venue-qualified sibling — that is a code change with its own PR, not an ops run.",
+    "FINDING: the eight retired nodes carried legacy UNLABELLED issued_by links, which are now attached to retired nodes. Nothing is lost (they were already untrusted and unread, and remain reachable through the merge link as evidence), but the same stranding mechanic that blocks AAPL/QQQ/SPY applies to them in principle. It only bites when the link is one you want to TRUST.",
+    "FINDING on the seam itself: every one of the 11 pairs is one venue-less node plus one venue-qualified node, and the venue-less node is consistently the OLDER ULID for AAPL, QQQ, SPY, DIA and IWM but the NEWER one for the six XL* symbols. So the seam produces duplicates in both orders and node age is not a safe survivor proxy — venue presence is, which is what _tie_break already uses.",
+    "The root cause was not fixed, only its 11 instances. _normalize_provisional_venue collapses NULL and '' for the provisional dedup index, but a venue-less mint and a later venue-qualified mint of the SAME symbol still land as two nodes. Preventing recurrence means resolve_security folding a venue-less provisional into a venue-qualified sibling at mint time. Worth a ticket; note the operator's observation that duplicates cluster where the most code paths touch a symbol.",
+    "The 3 unmerged pairs mean 9,984 active security nodes rather than the expected 9,981. Every other delta matched exactly.",
+    "The ops scripts used here (_tw34_dedup.py, _tw34_verify.py, _tw34_probe.py) were staged and deleted, not committed. If dedup becomes routine it should be a committed CLI with tests, like scripts/rebuild_issuer_links.py.",
+    "Carried forward, untouched: the remaining 181 CIKs, migration 0058, the 914 unbounded-fanout nodes needing a non-SEC identity authority, and the 08_build_scope A-8 ticker-bound head-count drift."
+  ],
+  "blocked": [
+    "AAPL, QQQ and SPY dedup is BLOCKED pending the operator decision described above. Not blocked by any technical obstacle — blocked because the mandated survivor rule collides with where TW-33 placed the cik-exact link, and the instruction was to report rather than decide."
+  ]
+}
