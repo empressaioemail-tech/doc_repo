@@ -1,0 +1,122 @@
+{
+  "row": "TW-13",
+  "repo": "smart-markets",
+  "branch": "scaffold/initial",
+  "prUrl": "https://github.com/empressaioemail-tech/smart-markets/pull/1",
+  "prState": "OPEN, not merged",
+  "headSha": "caa3cb1daf6feb440cbfdd7a594812520d33ad7e",
+  "commit": "caa3cb1 feat(access): TW-13, access policy enforced at read on the twin",
+  "ciConclusion": "success",
+  "ciEvidence": {
+    "ghRunView": "{\"conclusion\":\"success\",\"headSha\":\"caa3cb1daf6feb440cbfdd7a594812520d33ad7e\",\"status\":\"completed\"}",
+    "ghPrChecks": "[{\"name\":\"build-test\",\"state\":\"SUCCESS\"},{\"name\":\"structural-gates\",\"state\":\"SUCCESS\"}]",
+    "runUrl": "https://github.com/empressaioemail-tech/smart-markets/actions/runs/32065052099",
+    "localSuite": "52 pass / 0 fail (contract), 39 pass / 0 fail (api)"
+  },
+
+  "enforcementPoint": {
+    "principle": "Access policy is a property of the RECORD, resolved at read time (ADR-017). Nothing under apps/api/src/access keys off a route, a path, or a method; the only inputs are a record's own accessPolicy and the caller's resolved entitlement.",
+    "decision": "apps/api/src/access/policy.ts -> reachable({ policy, owningTenant, entitlement }). Two checks: a POLICY CEILING (the policy must be in the entitlement) and, for tenant-scoped policies, a TENANT MATCH (the record's owning tenant must be known and must equal the caller's). Unknown owner is withheld: fail closed.",
+    "singleCompositionPoint": "apps/api/src/twin/build.ts -> buildTwin() calls applyRoomAccessPolicy() over the room before it enters the twin. The HTTP door and the MCP door both arrive at buildTwin, so neither can be entitled differently from the other and a future door inherits the gate by construction.",
+    "entitlementChokePoint": "apps/api/src/routes/twin.ts -> entitlementGate() is mounted once via router.use() ahead of every /v0.1 route; the resolved context is stashed in a WeakMap and readContextOf() THROWS when the gate did not run, so a route mounted outside the gate fails loudly rather than serving an unresolved caller. apps/api/src/app.ts resolves the same context before constructing the MCP server.",
+    "passThroughGate": "apps/api/src/routes/twin.ts GET /v0.1/document/:entityId and the fetch_room_document tool call passThroughDecision(); a record the entitlement does not reach gets 403 with the upstream stream cancelled, never a 404 claiming it is not there. The files service remains the authority and receives the caller's credential verbatim; this is the second gate, not the only one.",
+    "substitutionGuard": "apps/api/src/upstreams/smart-files.ts -> forwardedHeaders() applies call-site headers ON TOP of the caller's credential and then runs assertForwardsCallerIdentity() over the whole set, so an injected service credential is REFUSED rather than quietly scrubbed. Scrubbing would hide the attempt and leave the next one to chance. The error never carries the credential value.",
+    "ceilingNotFloor": "applyRoomAccessPolicy only removes documents from what an upstream returned. There is no branch that adds one.",
+    "unresolvedCredential": "401, never a silent downgrade to the anonymous path. A revoked, mistyped, or wrong-header key answered with public content reads to its holder as a working key over a thin catalog.",
+
+    "withholdingSemantics": {
+      "problem": "A withheld record is not absent-verified (that would be a lie about the world), not lookup-failed (the lookup succeeded), and not not-applicable (the category applies). Withholding is a fact about the CALLER and the contract deliberately has no verdict for it.",
+      "resolution": "No fourth verdict was invented. The absence states a scope that NAMES the entitlement bound ('... bounded to records reachable by an anonymous caller, which reaches public-free records only'), and absent-verified against that stated scope is true and re-runnable: same entitlement, same answer; broader entitlement, possibly more. That is exactly what the absence-semantics section asks a scope to be.",
+      "statusMapping": "Some records survive -> partial (payload plus the entitlement-bounded absence). No records survive -> absent. An empty documents array remains unexpressible, so withholding can never produce an unexplained emptiness.",
+      "verdictPreservation": "An upstream verdict is never upgraded while trimming. A room that arrived partial with lookup-failed stays lookup-failed; only a room with no upstream absence mints absent-verified.",
+      "disclosureLine": "The basis states the COUNT withheld, because a trimmed room reading as a complete one is the silent substitution this product refuses. It does NOT name the policies withheld, because 'there is more here' must not become 'a tenant holds private material on this instrument'."
+    },
+
+    "callerVisibility": "GET /v0.1/entitlement and the describe_caller_entitlement MCP tool report what this credential reaches, in machine-readable form, so a caller can distinguish 'I am not entitled to see it' from 'it is not there'. Responses also carry an x-twin-entitlement header of anonymous|keyed."
+  },
+
+  "negativeTestsProvenByRemoval": [
+    {
+      "claim": "an anonymous caller cannot reach public-paid or tenant-private",
+      "checkRemoved": "the policy ceiling: `if (!entitlement.policies.has(policy)) return false;` in apps/api/src/access/policy.ts reachable()",
+      "resultWithCheckRemoved": "9 of 21 tests in apps/api/tests/access-policy.test.ts FAILED (pass 12 / fail 9)",
+      "failingTests": [
+        "an anonymous caller reaches public-free and nothing else",
+        "NEGATIVE: an anonymous room read serves public-free only",
+        "a withheld record is reported as a bound on the caller, not as a fact about the world",
+        "a room whose every record is withheld goes absent, never empty",
+        "an upstream lookup-failed is never upgraded to absent-verified while trimming",
+        "NEGATIVE: a tenant's key reaches its own private records and not another tenant's",
+        "the gate runs inside buildTwin, so both doors are entitled identically",
+        "the HTTP twin read is bounded by the caller's entitlement",
+        "the pass-through refuses a document the caller's entitlement does not reach"
+      ],
+      "restored": "yes, 21 pass / 0 fail after restore"
+    },
+    {
+      "claim": "a keyed caller cannot reach another tenant's tenant-private",
+      "checkRemoved": "the tenant match: `if (entitlement.tenantId === null) return false; return owningTenant !== null && owningTenant === entitlement.tenantId;` in apps/api/src/access/policy.ts reachable()",
+      "resultWithCheckRemoved": "8 of 21 tests FAILED (pass 13 / fail 8)",
+      "verbatimEvidence": "AssertionError: Expected values to be strictly deep-equal: + 'smartfile:instrument:iss_01KHERM996T9JWB4KCD06Y9525:tenant-b-memo' -- tenant A's read received tenant B's memo",
+      "failingTests": [
+        "a keyed caller reaches its own tenant's private records and not another's",
+        "holding tenant-private without a tenant reaches no tenant's records",
+        "NEGATIVE: a tenant's key reaches its own private records and not another tenant's",
+        "the mirror case holds: tenant B reaches its own record and not tenant A's",
+        "the gate runs inside buildTwin, so both doors are entitled identically",
+        "the HTTP twin read is bounded by the caller's entitlement",
+        "the pass-through refuses a document the caller's entitlement does not reach",
+        "the pass-through decision is a property of the record, not of the route"
+      ],
+      "restored": "yes, 21 pass / 0 fail after restore"
+    },
+    {
+      "claim": "the union never substitutes its own credential on a pass-through",
+      "checkRemoved": "`assertForwardsCallerIdentity(headers, caller);` inside forwardedHeaders() in apps/api/src/upstreams/smart-files.ts",
+      "resultWithCheckRemoved": "3 of 21 tests FAILED (pass 18 / fail 3)",
+      "verbatimEvidence": "AssertionError: Expected values to be strictly deep-equal: + [ 'Bearer smart-markets-service-account' ] -- the fake files service was presented a service credential on behalf of a caller that presented nothing; and 'Missing expected exception (ServiceCredentialSubstitutionError)'",
+      "failingTests": [
+        "NEGATIVE: outbound headers carrying a credential the caller did not present are refused",
+        "the substitution guard never leaks the credential into its error",
+        "NEGATIVE: a substituted service credential stops the pass-through before it leaves"
+      ],
+      "restored": "yes, 21 pass / 0 fail after restore"
+    }
+  ],
+
+  "fixtureDiscipline": {
+    "source": "packages/contract/fixtures/aapl.operating-company.json, loaded in apps/api/tests/access-policy.test.ts and parsed through SyntheticFixtureSchema (its $fixture.synthetic is z.literal(true)) on the way in.",
+    "mutation": "the room's documents are spread across all five access policies; the mutated twin is asserted to still satisfy TwinSchema BEFORE any gate runs over it, so no test can pass against a room the contract would have rejected.",
+    "containment": "no fixture data reaches apps/api/src. Every fake lives in apps/api/tests. No upstream was invented and no stub in src returns anything that looks like live data; the unwired adapters still return typed lookup-failed."
+  },
+
+  "contractPackageUntouched": "packages/contract has zero diff. Nothing compiler-enforced by it was weakened: no verdict meaning not-built was added, no empty array can stand for an absence, the fund roster is still omitted, a proxy still cannot validate as a series, and the provenance-class requirements are unchanged.",
+
+  "filesChanged": [
+    "apps/api/src/access/entitlement.ts (new) — Entitlement, ANONYMOUS_ENTITLEMENT, keyedEntitlement, EntitlementResolver, UnwiredEntitlementResolver, ReadContext, resolveReadContext, describeEntitlement",
+    "apps/api/src/access/policy.ts (new) — reachable, applyRoomAccessPolicy, passThroughDecision",
+    "apps/api/src/routes/twin.ts — entitlementGate middleware, readContextOf WeakMap accessor, 401 on unresolved credential, GET /v0.1/entitlement, 403 + stream cancel on the pass-through",
+    "apps/api/src/twin/build.ts — buildTwin takes a ReadContext and applies the room gate at the single composition point",
+    "apps/api/src/mcp/tools.ts — tools bind a ReadContext, new describe_caller_entitlement tool, pass-through decision on fetch_room_document",
+    "apps/api/src/app.ts — AppDeps.entitlements, defaultDeps wires UnwiredEntitlementResolver, /mcp resolves the context and 401s before constructing the server",
+    "apps/api/src/upstreams/types.ts — RoomRead { layer, owningTenants }, DocumentStream gains accessPolicy and owningTenant",
+    "apps/api/src/upstreams/smart-files.ts — assertForwardsCallerIdentity, forwardedHeaders(caller, extra) with call-site headers applied last, room() returns RoomRead, authorityForShape and roomScopeSearched exported",
+    "apps/api/tests/access-policy.test.ts (new) — 21 tests including the three removal-proven negatives",
+    "apps/api/tests/fakes.ts — FakeEntitlementResolver, tenantResolver, TenantAwareFilesService, SERVICE_CREDENTIAL",
+    "apps/api/tests/twin.test.ts — call sites moved to ReadContext",
+    ".github/workflows/ci.yml — new structural gate: the union layer must mint no credential of its own",
+    "README.md — access policy at read, and the 'withholding is not absence' section"
+  ],
+
+  "remaining": [
+    "TW-23 DIVERGENCE, the load-bearing one: packages/contract RoomDocument carries accessPolicy and NO tenant, so the union cannot verify whose a tenant-private record is. The need is carried on the union's own upstream interface as RoomRead.owningTenants, which the unwired adapter leaves empty, so in the running service TODAY every tenant-scoped record is withheld from every caller. Fail closed and visibly so, but over-strict once Smart Files is wired. Fix: Smart Files states the owning tenant per record, or the contract gains a tenant field at its next version. The rule itself is tested and correct; only its input is missing.",
+    "The contract has no machine-readable declaration of withholding. It is expressed as an entitlement-bounded scope plus a count in the absence basis. A first-class withheld status or an envelope-level entitlement field would be cleaner, but LAYER_STATUSES is an enum and doc 09's own versioning rule makes an enum addition a major bump, while an additive field is a minor bump; both land on 0.2.0, which the version-scope table has already promised to market.computed and the fund roster. Announcing those layers as a side effect of this row would be dishonest. Escalated as a planner/operator call rather than resolved unilaterally.",
+    "Only room documents carry accessPolicy at v0.1. Roster, drivers, and market are entitlement-scoped solely by the credential the union forwards to the upstream that owns them; there is no union-side second gate on those layers because there is no per-record policy to gate on. Revisit if any of those layers ever carries tenant-scoped records.",
+    "Keyed-caller behaviour is proven against a test resolver only. UnwiredEntitlementResolver refuses every presented credential, because mapping a key to a tenant and a policy set belongs to an upstream and the union holds no store. Wiring a real resolver is a separate row; the seam is EntitlementResolver.",
+    "apps/web renders no entitlement bound. The human door cannot currently show a reader that a read was entitlement-limited. TW-21 item; the API side is ready (x-twin-entitlement header and GET /v0.1/entitlement).",
+    "Two deliberate disclosure tradeoffs, both flagged rather than hidden. The 403 on the pass-through discloses that an entity id resolves to something, which TW-19 mandates and which is the honest choice over a 404. The withheld count in a trimmed room discloses that non-public records exist on an instrument. If either is judged too much, the fix is a policy call, not a code bug.",
+    "A room where nothing was withheld returns unchanged, so a caller cannot distinguish 'nothing was withheld' from 'no gate ran' by reading the twin alone. The entitlement endpoint and the response header cover it; a per-layer 'gate applied' marker would need the contract change above."
+  ],
+
+  "blocked": []
+}
