@@ -1,0 +1,100 @@
+{
+  "branch": "tw31/cik-crosswalk-issuer-identity",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/331",
+  "prState": "OPEN, NOT MERGED (mergedAt: null), head 07255d1086b6cff297e1dc16665a1798caa62001",
+  "commit": "07255d10 feat(TW-31): read-time issuer-link trust filter — sanctioned accessor + the structural control that holds it",
+  "accessor": {
+    "symbol": "app.securities.issuer_links.trusted_issuer_links",
+    "file": "apps/cockpit/backend/app/securities/issuer_links.py",
+    "trustRule": "TRUSTED_MATCH_METHODS = (\"cik-exact\",) — one member. name-fuzzy excluded (the defect), unlabelled legacy excluded (all 8,334 pre-TW-31 edges), and lei-exact excluded too: exactly ONE lei row exists in identifier_index so that path is unexercised at any scale that would earn trust. Widening the tuple is an operator ruling, pinned by test_lei_exact_is_deliberately_not_trusted.",
+    "companions": [
+      "trusted_issuer_node_id() — one trusted issuer or None (honest absence for the whole legacy cohort, never a fallback to the fuzzy link); raises AmbiguousIssuerLink on two distinct trusted issuers rather than picking one",
+      "issuer_link_trust_split() — the queryable split",
+      "edge_match_method / trust_state / edge_trust_state / is_trusted — classification helpers (edge_match_method relocated here from issuer_rebuild and re-exported, so its existing importers are unchanged)"
+    ],
+    "noMutation": "Pure read. No mint, no write, no commit, no valid_to closure, no Core update() bypass. A test (test_the_withheld_links_are_still_there_nothing_was_retired) asserts all four seeded edges remain live with valid_to NULL after both a read and a split."
+  },
+  "structuralTest": {
+    "file": "apps/cockpit/backend/tests/test_issuer_link_trust.py",
+    "primary": "test_nothing_outside_the_accessor_may_read_the_issuer_edge",
+    "second": "test_no_undeclared_generic_reader_of_the_edge_table",
+    "mechanism": "AST walk over apps/cockpit/backend/{app,scripts,migrations}/**/*.py (tests/ excluded by the ruling). Two detectors, because there are two ways to read the edge. (1) NAMING it: a string constant containing issued_by as a WORD (catches the bare literal, an f-string fragment, and raw text(\"... type = 'issued_by'\") that an equality check would miss, while not firing on rebuild_issued_by in an __all__), an import of EDGE_TYPE_ISSUED_BY, or any Name/Attribute reference to it. (2) TAKING IT GENERICALLY: a select(Edge) whose enclosing statement constrains no Edge.type, which returns issuer links without ever naming them — the literal walk is blind to those.",
+    "allowlistGranularity": "(file, enclosing scope), not file. Allowlisting all of resolver.py would leave a hole the size of the module, so the writer is admitted at exactly SecurityResolver.link_security_to_issuer. 9 naming sites allowed: models.py <module> (the definition), issuer_links.py <module>/_scope_clauses/issuer_link_trust_split (the accessor), issuer_rebuild.py <module>/_live_issued_by/rebuild_issued_by (the rebuild routine), resolver.py <module>/SecurityResolver.link_security_to_issuer (the writer). 3 unscoped-reader sites DECLARED: admin_securities.inspect_node (operator-gated raw evidence view that renders each edge's provenance) plus the two accessor functions.",
+    "prose": "Docstrings and bare doc-comment strings are excluded, and # comments are discarded by the parser, so prose can neither satisfy nor trip the control.",
+    "cannotPassVacuously": "test_the_allowlist_is_exhaustive_so_the_control_cannot_pass_vacuously asserts the walker found sites at all and that every allowlisted site still exists; the same applies to the unscoped-reader declaration.",
+    "limitation": "Not claimed as adversary-proof: \"issued\" + \"_by\" splicing or a runtime-assembled name would slip past. Aimed at how the defect actually happens (someone writing the obvious query because nothing stopped them), not at deliberate evasion.",
+    "testCount": "19 tests in the file (22 test items with parametrisation)"
+  },
+  "introduceAViolationExercise": {
+    "how": "A second, unfiltered reader was added to a real serving module — async def _issuer_of() in apps/cockpit/backend/app/routers/admin_securities.py doing select(Edge.to_node).where(Edge.from_node == ..., Edge.type == \"issued_by\", Edge.valid_to.is_(None)) — the control was run, then the function was removed and the control re-run.",
+    "redVerbatim": "E       AssertionError: these code paths name the issued_by edge type outside the trust boundary; read it through app.securities.issuer_links.trusted_issuer_links instead: app/routers/admin_securities.py:288 in _issuer_of (string-literal)\nE       assert not [{'file': 'app/routers/admin_securities.py', 'scope': '_issuer_of', 'line': 288, 'kind': 'string-literal'}]\ntests\\test_issuer_link_trust.py:239: AssertionError\n1 failed, 17 passed, 8 warnings in 9.01s",
+    "greenAfterRemoval": "18 passed, 8 warnings in 8.06s (grep -c _issuer_of app/routers/admin_securities.py == 0)",
+    "alsoCaughtALiveOmission": "The first run of the control caught a real site the author had missed — app/securities/issuer_links.py:353 in issuer_link_trust_split (constant-reference) — before any synthetic violation was introduced. The control found a naming site its own author had not tracked.",
+    "madePermanent": "Five synthesized violations are parametrised into the suite (direct query, literal via a module constant, raw SQL, importing the constant, unscoped select(Edge) dump) plus two negative cases (a prose-only module that reads through the accessor, and a member_of-scoped query), so the proof re-runs on every CI pass instead of being a one-off."
+  },
+  "trustStateSplit": {
+    "python": "app.securities.issuer_links.issuer_link_trust_split(db, security_node_id=None, issuer_node_id=None, include_closed=False)",
+    "http": "GET /admin/resolver/issuer-link-trust (operator-gated at the admin_securities router level; query params security_node_id, issuer_node_id, include_closed; pure read)",
+    "states": ["cik-exact", "lei-exact", "name-fuzzy", "unlabelled-legacy", "unrecognised-label"],
+    "honesty": "Every state is a key reporting 0 rather than being omitted, so a consumer sees the split instead of inferring it. unlabelled-legacy is kept separate from name-fuzzy on purpose (label missing vs label admits a guess); collapsing them would report the pre-TW-31 cohort as if it had been assessed. Classification is on the PARSED label, not the SQL substring predicate, so an unknown label lands in unrecognised-label instead of inflating a known bucket by arithmetic. Report also carries total, trusted, untrusted, trusted_match_methods, and distinct issuer/security node counts overall and trusted-only."
+  },
+  "tw31NotWeakened": [
+    "match_method is still a REQUIRED keyword on link_security_to_issuer (pinned again in the new file: pytest.raises(TypeError) on an unlabelled call)",
+    "per-CIK fan-out guardrail untouched (issuer_fanout_violations, four reason codes, fail-closed at the write)",
+    "crosswalk no-vendor / no-network / no-name-matching import-graph assertion untouched (cik_crosswalk.py not modified)",
+    "resolve_issuer CIK-over-LEI-over-name ranking untouched",
+    "GET /spine/anchor/verify/{atom_id} untouched and still anonymous (governing rule 6); its pin in tests/test_service_caller_auth.py passes",
+    "edge_match_method relocated to issuer_links and re-exported from issuer_rebuild.__all__, so existing importers (tests/test_cik_crosswalk.py) are unchanged"
+  ],
+  "filesChanged": [
+    "apps/cockpit/backend/app/securities/issuer_links.py (NEW, 402 lines) — the trust boundary: trusted_issuer_links, trusted_issuer_node_id, issuer_link_trust_split, TRUSTED_MATCH_METHODS, trust-state vocabulary, classification helpers",
+    "apps/cockpit/backend/tests/test_issuer_link_trust.py (NEW, 884 lines) — the structural control (both walkers, allowlists, synthesized-violation proofs) plus accessor behaviour tests",
+    "apps/cockpit/backend/app/models.py (+15) — EDGE_TYPE_ISSUED_BY defined once next to the Edge model, with the read rule and a pointer to the control",
+    "apps/cockpit/backend/app/routers/admin_securities.py (+56) — IssuerLinkTrust/IssuerLinkTrustScope models and GET /admin/resolver/issuer-link-trust",
+    "apps/cockpit/backend/app/securities/issuer_rebuild.py (+/-34) — names the edge type through the constant, edge_match_method relocated and re-exported, docstring records the read-time ruling",
+    "apps/cockpit/backend/app/securities/resolver.py (+/-24) — write names the constant; match_method_filter docstring demoted to a building block pointing at the accessor; link_security_to_issuer docstring names the read side",
+    "apps/cockpit/backend/tests/test_admin_securities.py (+61) — route tests (empty/honest-zero, legacy-cohort counting, scoped, withheld link still present) and the new path added to the non-operator 403 sweep"
+  ],
+  "testOutput": {
+    "baselineBeforeChange": "4438 passed, 2 skipped, 21 deselected, 38962 warnings in 947.01s (0:15:47)",
+    "fullSuiteAfterChange": "4462 passed, 2 skipped, 21 deselected, 38948 warnings in 628.81s (0:10:28)",
+    "delta": "+24 test items (22 from the new file, 2 admin route tests); zero failures, zero regressions",
+    "touchedFilesRerun": "python -m pytest tests/test_issuer_link_trust.py tests/test_cik_crosswalk.py tests/test_securities_resolver.py tests/test_admin_securities.py -q -> 90 passed, 8 warnings in 26.01s",
+    "command": "cd apps/cockpit/backend && python -m pytest -q -p no:cacheprovider (Windows, Python 3.14.0, pytest 9.1.1)"
+  },
+  "ciConclusion": "success",
+  "ciEvidence": {
+    "run": "https://github.com/empressaioemail-tech/empressa-trading/actions/runs/32038430910",
+    "runApi": "{\"conclusion\":\"success\",\"head_sha\":\"07255d1086b6cff297e1dc16665a1798caa62001\",\"status\":\"completed\"}",
+    "ghPrChecks331": [
+      "Frontend build (cockpit web)\tpass\t1m1s",
+      "Gitleaks security scan\tpass\t9s",
+      "Python tests (cockpit backend)\tpass\t6m30s",
+      "Windows .exe (release tags only)\tskipping\t0"
+    ],
+    "rollup": [
+      "Python tests (cockpit backend)\tCOMPLETED\tSUCCESS",
+      "Frontend build (cockpit web)\tCOMPLETED\tSUCCESS",
+      "Gitleaks security scan\tCOMPLETED\tSUCCESS",
+      "Windows .exe (release tags only)\tCOMPLETED\tSKIPPED"
+    ]
+  },
+  "noProductionSideEffects": {
+    "productionWrites": "none",
+    "migrationsApplied": "none (0058 remains unapplied; it was not touched)",
+    "deploys": "none",
+    "nonExitingCommands": "none — every command run was exit-bounded (pytest, git, gh)"
+  },
+  "remaining": [
+    "TW-6 must call trusted_issuer_links (or trusted_issuer_node_id) and must render honest absence when it returns nothing. Nothing consumes the accessor yet — this PR builds the boundary and the control, it does not yet have a customer.",
+    "Migration 0058 (identifier_index cik domain) is still NOT applied to production, and the rebuild's production dry run is still owed. Both were explicitly out of scope here.",
+    "Possible tightening not built, for a ruling: trusted_issuer_links trusts the recorded cik-exact LABEL and does not additionally verify that the target issuer node still claims that CIK in identifier_index. A label-plus-claim agreement check would be strictly stronger; it costs a join and was not in the ruling.",
+    "The operator evidence view (GET /admin/nodes/{node_id}) is the one declared generic reader and still returns fuzzy and unlabelled links unfiltered by design. That is now DECLARED and tested (operator-gated, provenance rendered) rather than implicit, but if any non-operator surface ever needs node edges, it must not reuse that shape.",
+    "The frontend gate is a text scan with zero current hits; it is not an AST control. A TS reader would be caught, but the check is coarser than the Python one."
+  ],
+  "blocked": [],
+  "notes": [
+    "Correction to the planner's note in _rd_disclosure_twin/08_build_scope.md (the collapsed-edge resolution section): app/spine/immutability.py enforces append-only on edges at TWO layers, and the primary one is a do_orm_execute statement guard that rejects ORM-issued Core UPDATE/DELETE against the edges table as well as the before_update mapper event. The doc says Core update() is 'intentionally NOT blocked' and that 'closure IS available'; in fact closure is only available inside the allow_atom_backfill contextvar exemption, which only app.securities.backfill_legacy_atoms enters. The real boundary is 'inside the backfill context vs not', not 'Core vs ORM'. This makes the read-time filter more clearly the right option, not less — but the doc's premise for option two is inaccurate.",
+    "Working copy was a dedicated git worktree at P:/tmp/tw31-readtime on tw31/cik-crosswalk-issuer-identity, so the shared P:/Empressa Trading clone (on fix/zone-mark-death-clip) was never disturbed."
+  ]
+}
