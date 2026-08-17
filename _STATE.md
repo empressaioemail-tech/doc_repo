@@ -1,6 +1,6 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-17 (G-11 IN FLIGHT. WDLL approved. Dashboards 00004-zsq. MCP 00080-voc @100% tag g63. City 00118-qox @100% lane4 no-touch. L26 holds atoms writer.)**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-17 (G-11 IN FLIGHT. Branches pushed. GitHub PR API 503. Serving Dashboards 00004-zsq. MCP 00080-voc @100% tag g63. City 00118-qox @100% lane4 no-touch. L26 holds atoms writer.)**
 
 **DRAIN STATUS 2026-08-15: L26 IN FLIGHT, GO-TO-MARKET OBJECTIVE.** Operator: complete the remaining Texas atom ingest so the launch gate can grade. Pickup: `_inbox/2026-08-15_l26_gotomarket_pickup.md`. Lease **L26**. Work root `P:/tmp/l26_flood_drain_20260815/`. **Flood 84/84 done** including Harris 48201 (1,523,640 written/verified, 0 VF, no `_outside`). Banked flood 9,465,995 + Harris = **10,989,635**. 48001 pipeline parity **FAIL** 62/211 = 29.4% raw and after key-normalize. Remaining ingest phase **pipelines-redrain**: PostGIS `--apply` of all 254 (overwrite the 19 JS-landed + 235 remaining incl. 48039). Then wells → footprints → roads → CAD 48439/48113/48135 → gate-grade. Do NOT start a second atoms writer. PR **#345** unmerged. PR **#344** unmerged. L25 not seated. Done+verified stands: SD 253/253, rail 254/254, Harris parcel-node, mud scored. The 19 JS pipeline counties are stale pending overwrite.
 
@@ -399,7 +399,7 @@ Related: an executor once burned 48,000 tokens writing a briefing for a sub-agen
 
 ### OPS-17 LANE B PRODUCT LINE THEN BASTROP ONBOARDING — ACTIVE 2026-08-17
 
-**Status: G-11 IN FLIGHT 2026-08-17.** WDLL approved. Decision active. Dispatch `_dispatches/2026-08-17_b_dispatch.md` (G-63 copy at `_dispatches/2026-08-17_b_g63_dispatch.md`). Dashboards `00004-zsq` @100%. MCP `00080-voc` @100% tag `g63`. City pin `00118-qox` @100% lane4. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.**
+**Status: G-11 IN FLIGHT 2026-08-17.** WDLL approved. Decision active. Dispatch `_dispatches/2026-08-17_b_dispatch.md` (G-63 copy at `_dispatches/2026-08-17_b_g63_dispatch.md`). Implementation is on pushed branches: Dashboards `g11-city-pack-tenancy` `ec50715`, MCP `g11-city-pack-tenancy` `4a41499`. GitHub Pull Requests API 503 (incident 2026-08-17); PRs not opened. CP2 HOLD `_inbox/2026-08-17_g11_cp2.json`. Serving still Dashboards `00004-zsq` @100%. MCP `00080-voc` @100% tag `g63`. City pin `00118-qox` @100% lane4. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.** No merge. No deploy.
 
 ### OPS-17 LANE B G-18 SMARTCITY INVENTORY — CLOSED 2026-08-17
 
