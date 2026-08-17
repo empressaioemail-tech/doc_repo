@@ -1,0 +1,193 @@
+{
+  "row": "TW-36",
+  "title": "The venue seam — a venue-qualified resolve ADOPTS the venue-less node",
+  "repo": "empressaioemail-tech/empressa-trading",
+  "date": "2026-08-17",
+  "branch": "fix/tw36-venue-seam-adoption",
+  "baseCommit": "dce74071ec8a361b3b9ba315cafddb949d23de0a",
+  "headCommit": "9d9b98c",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/336",
+  "merged": false,
+  "ciConclusion": "success",
+  "ciDetail": {
+    "runUrl": "https://github.com/empressaioemail-tech/empressa-trading/actions/runs/32066439922",
+    "runConclusion": "success",
+    "checks": [
+      {
+        "name": "Python tests (cockpit backend)",
+        "conclusion": "SUCCESS",
+        "duration": "5m12s"
+      },
+      {
+        "name": "Frontend build (cockpit web)",
+        "conclusion": "SUCCESS",
+        "duration": "58s"
+      },
+      {
+        "name": "Gitleaks security scan",
+        "conclusion": "SUCCESS",
+        "duration": "8s"
+      },
+      {
+        "name": "Windows .exe (release tags only)",
+        "conclusion": "SKIPPED",
+        "note": "tag-gated, not run on branches"
+      }
+    ]
+  },
+  "rootCause": {
+    "summary": "Two independent holes in app/securities/resolver.py, either one sufficient to produce a venue-less + venue-qualified pair for one security. The partial-unique (current_symbol, primary_venue) WHERE provisional index was believed to be the dedup control, but the venue-less key and a venue key are DIFFERENT keys, so it never fired across the venue boundary.",
+    "hole1_mintFellThroughTheVenueBoundary": "resolve_security step 3 walks alias eras under the bitemporal gate knowledge_time <= asof. A caller reading at a HISTORICAL as-of is correctly blind to a node minted later and falls to the step-5 provisional mint. get_or_create_node then inserted a second node because ('SPY','') and ('SPY','ARCX') are distinct index keys. Live callers on that path: app/routers/backtest.py:604 and :675 (asof=window_end), app/spine/outcomes.py:195 (asof=scoring date).",
+    "hole2_venueNeverRecordedOnTheLivePath": "With a fresh as-of the era walk DID find the venue-less node, the venue filter matched nothing, and step 4 returned that node unchanged. Correct answer, no duplicate — but the record never improved. The venue-less half of a pair stayed venue-less through thousands of qualified resolves, which is exactly what kept the two halves separable and re-mintable.",
+    "reproducedBefore": "Six scenarios reproduced on origin/main at dce7407 (both orders, live and historical as-of, interleaved) — every one produced two active nodes. Same six produce exactly one node after the fix.",
+    "callerAsymmetry": "Venue-qualified callers: app/jobs/phase2_backfill.py (venue=venue / 'ARCX') and app/universe/sync.py:312 (row.venue). Venue-less callers: spine/capture.py, jobs/base_library_backfill.py, bots/runner.py, routers/backtest.py, routers/zone_atoms.py, signal/propagation.py, signal/service.py. The pair is produced by the two families meeting on one symbol, which is why it concentrated on the most-traded symbols.",
+    "ageIsNotADiscriminator": "Confirmed and encoded in the tests: venue-less node OLDER for AAPL/DIA/IWM/QQQ/SPY, NEWER for XLE/XLF/XLK/XLP/XLV/XLY. The fix consults venue PRESENCE only; ULID order is never read as a signal."
+  },
+  "adoptionDesign": {
+    "principle": "A node with no venue is an incomplete record of the same security, never a different security. A venue-qualified resolve that lands on one ATTACHES the venue to it. A venue-less resolve folds into an existing venue-qualified node and never demotes it.",
+    "mechanismOrderOfWrites": "The load-bearing record is append-only: the (symbol, venue) binding is written as an ordinary symbol-alias atom (family=reference, claim_type=identity.symbol) stamped provenance_source='venue-adoption', with valid_from = knowledge_time = now. That atom is what makes the NEXT venue-qualified era walk match the node at step 3. Node.primary_venue is then filled in as the cache it has always been — and only when the partial-unique slot is free, because a retired loser still occupies that slot and convergence must not depend on winning the write.",
+    "twoCallSites": [
+      "resolve_security era-walk half — _adoptable_live_node(), fires when the venue filter matches nothing but a live venue-less provisional node carries the symbol. Gated on mint=True.",
+      "get_or_create_node mint half — _venue_seam_node(), fires when the era walk was bitemporally blind and the call fell through to the provisional mint."
+    ],
+    "concurrencyHalf": "A pre-check is a READ and cannot see a sibling a concurrent caller has not committed. After a provisional mint the later minter RECONCILES: _venue_seam_node(exclude=self) finds the rival, both sides rank the pair with the same deterministic 2.10a tie-break so they agree on the survivor and can never merge in opposite directions, and the loser is RETIRED by status flip through a merge link (reason='venue_seam'). Nothing is deleted; reads on the loser canonicalize to the survivor with zero atom rewrites.",
+    "boundsOnAdoption": [
+      "ACTIVE nodes only — a delisted node released its symbol (spec 2.4 invariant 1), so a reused symbol mints a new identity.",
+      "PROVISIONAL nodes only — a resolved node's identity came from an identifier and the identifier index dedups it; the two no-lookahead repros both stand on resolved nodes.",
+      "Venue-less only for a qualified mint — a node carrying a DIFFERENT venue is a different listing, and a dual listing must not collapse.",
+      "The exact venue bucket is untouched — that case stays with the pre-existing partial-unique convergence, byte for byte.",
+      "mint=False never adopts — the served GET /securities/lookup half reads the security master and never edits it.",
+      "The primary_venue column write is best-effort — declined when the slot is occupied by a retired loser; the atom still records the binding, so convergence holds."
+    ],
+    "newSymbols": [
+      "ADOPTION_SOURCE = 'venue-adoption' (module constant)",
+      "SecurityResolver._venue_seam_node(symbol, venue, *, exclude=None)",
+      "SecurityResolver._adoptable_live_node(live_nodes, venue)",
+      "SecurityResolver._provisional_venue_slot_taken(symbol, venue)",
+      "SecurityResolver._adopt_venue(node, symbol, venue)"
+    ]
+  },
+  "acceptanceEvidence": {
+    "adoptionProvenInBothOrders": "test_venue_qualified_resolve_adopts_the_venueless_node (venue-less first, AAPL order) and test_venueless_resolve_does_not_mint_beside_a_venue_qualified_node (venue-qualified first, XL* order), plus test_adoption_holds_at_the_historical_asof_that_actually_minted_the_pairs which runs both orders against a 2020 as-of.",
+    "theElevenDoNotReappear": "test_the_eleven_production_pairs_do_not_reappear_in_either_order — the exact cohort by name with its production venue and its production mint order, replayed twice (production order and mirror) on a clean store each pass, eight resolves per symbol covering fresh and historical as-of in both directions. Asserts exactly one active node per symbol AND that the survivor carries its venue.",
+    "noNewPairCanBeCreated": "test_no_ordering_of_resolves_can_create_a_second_node — exhaustive over 256 orderings (four call shapes: {venue-less, venue-qualified} x {now, past}, four calls deep), each on a clean store. Plus test_a_venue_less_and_a_venue_qualified_caller_racing_converge for the concurrent case.",
+    "testCount": 11,
+    "localRun": "11 passed in ~36s (tests/test_tw36_venue_seam.py). 175 passed across the securities, resolver-backfill, TW-25 served-capability, issuer-link-trust, CIK-crosswalk, admin-securities and service-caller-auth suites on the FINAL file. Full backend suite locally: 4486 passed, 2 skipped, 0 failed in 16m15s. CI ran the exact pushed commit and is the authority: conclusion string 'success'."
+  },
+  "testsProvenByRemoval": [
+    {
+      "id": "R1",
+      "guard": "the mint-path adoption guard in get_or_create_node",
+      "removal": "deleted the `if venue_seam_applies:` adopt-or-return block",
+      "failsWithGuardRemoved": [
+        "test_adoption_holds_at_the_historical_asof_that_actually_minted_the_pairs",
+        "test_the_eleven_production_pairs_do_not_reappear_in_either_order",
+        "test_no_ordering_of_resolves_can_create_a_second_node"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0
+    },
+    {
+      "id": "R2",
+      "guard": "the read-path venue ATTACHMENT in resolve_security",
+      "removal": "replaced the _adoptable_live_node adopt-and-return with `adoptee = None`",
+      "failsWithGuardRemoved": [
+        "test_venue_qualified_resolve_adopts_the_venueless_node"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0,
+      "note": "convergence still held with this removed — the node was still returned, it just never gained its venue. That is precisely hole 2, and this proof is what pins it."
+    },
+    {
+      "id": "R3",
+      "guard": "post-mint reconciliation (the concurrency half)",
+      "removal": "short-circuited the reconciliation branch to `if False:`",
+      "failsWithGuardRemoved": [
+        "test_a_venue_less_and_a_venue_qualified_caller_racing_converge"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0
+    },
+    {
+      "id": "R4",
+      "guard": "the ACTIVE-only bound in _venue_seam_node",
+      "removal": "relaxed `Node.status == \"active\"` to `Node.status != \"merged\"`",
+      "failsWithGuardRemoved": [
+        "test_adoption_never_reaches_a_delisted_node"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0
+    },
+    {
+      "id": "R5",
+      "guard": "the PROVISIONAL-only bound in _venue_seam_node",
+      "removal": "dropped the `Node.resolution_status == \"provisional\"` predicate",
+      "failsWithGuardRemoved": [
+        "test_adoption_never_reaches_a_resolved_node"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0,
+      "note": "this is the no-lookahead contract; removing the bound folds a resolved node into a read from before it existed."
+    },
+    {
+      "id": "R6",
+      "guard": "the different-venue exclusion in _venue_seam_node",
+      "removal": "deleted the venue-less-only filter for a qualified mint",
+      "failsWithGuardRemoved": [
+        "test_adoption_never_crosses_two_different_venues"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0
+    },
+    {
+      "id": "R7",
+      "guard": "the taken-index-slot guard in _adopt_venue",
+      "removal": "wrote primary_venue unconditionally",
+      "failsWithGuardRemoved": [
+        "test_convergence_does_not_depend_on_winning_the_index_write"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0
+    },
+    {
+      "id": "R8",
+      "guard": "the mint=False gate on read-path adoption",
+      "removal": "changed `elif mint:` to `elif True:`",
+      "failsWithGuardRemoved": [
+        "test_the_served_read_never_adopts"
+      ],
+      "removedExit": 1,
+      "restoredExit": 0,
+      "note": "this proof was VACUOUS on the first pass — the test used a historical as-of that never reached the branch. The test was rewritten to use inputs that DO adopt, and it now runs the operator half on the identical inputs at the end so the branch is provably reachable. Reported rather than quietly re-run."
+    }
+  ],
+  "removalProofSummary": "8 of 8 non-vacuous on the final pass (first pass: 7 of 8, R8 vacuous and fixed). Harness restored app/securities/resolver.py byte-for-byte after every proof (86,485 chars verified).",
+  "notWeakened": {
+    "trusted_issuer_links": "untouched — test_issuer_link_trust.py green (both AST structural-control walkers and the behaviour half)",
+    "astStructuralControl": "untouched — no module outside the accessor/rebuild/writer names the issuer edge type; no new select(Edge) introduced",
+    "perCikBound": "untouched — test_cik_crosswalk.py green",
+    "cikOverLeiOverNameRanking": "untouched — ISSUER_MATCH_METHODS and resolve_issuer not modified",
+    "anonymousAnchorVerify": "GET /spine/anchor/verify/{atom_id} untouched and still anonymous — test_service_caller_auth.py green, including the dependency-graph pin at line 476",
+    "servedReadPurity": "TW-25 mint=False remains a pure read — test_tw25_resolver_served_capability.py green, and R8 now proves the gate rather than asserting it"
+  },
+  "filesChanged": [
+    "apps/cockpit/backend/app/securities/resolver.py (+224 lines, 0 deletions — purely additive: 1 module constant, 4 new methods, 1 named condition, 2 call sites, 1 post-mint reconciliation block, docstring/comment updates)",
+    "apps/cockpit/backend/tests/test_tw36_venue_seam.py (new, 533 lines, 11 tests)"
+  ],
+  "constraintsHonoured": {
+    "noNodeDeleted": "true — the only retirement path added is a status flip via merge_links (reason='venue_seam'); no db.delete was introduced",
+    "noDeploy": "true",
+    "noProductionWrite": "true — all work ran against in-memory SQLite in a fresh clone under P:/tmp",
+    "noMigrationApplied": "true — no migration was written or applied; the fix uses the existing schema",
+    "noContainerRestart": "true",
+    "everyCommandExited": "true — no non-exiting command was run; long runs were backgrounded with bounded waits",
+    "notMerged": "true — PR 336 is open against main"
+  },
+  "remaining": [
+    "dedup_provisional_nodes still groups by (symbol, venue), so it cannot fold an EXISTING cross-venue pair — it only folds within a bucket. The 11 were folded by hand under TW-34/TW-35. If a legacy cross-venue pair is ever found again it needs the same hand fold, or dedup_provisional_nodes needs widening to the venue-seam relation. Not changed here because it is a repair tool, not the seam; worth its own row.",
+    "Pre-existing and untouched: a DELISTED provisional node still occupies its (current_symbol, primary_venue) partial-unique slot, so a later venue-less provisional mint of the same symbol conflicts and _provisional_node (status != merged) returns the dead node. Symbol reuse therefore works on a new venue but not on the venue-less slot. Out of TW-36 scope, flagged because the delisted bound test sits next to it.",
+    "By design, not a defect: a venue-less resolve at a HISTORICAL as-of against an existing RESOLVED venue-qualified node still mints a fresh provisional node. That is the no-lookahead contract (two existing repro tests pin it), so a resolved node and a provisional node can legitimately coexist for one symbol. Adoption is deliberately scoped to provisional nodes and does not touch this.",
+    "No production data was inspected or written, so this artifact makes no claim about the current state of the 11 nodes in production. The claim is only that the seam that minted them is closed."
+  ],
+  "blocked": []
+}
