@@ -16,7 +16,7 @@ Read this first. Then the program WDLL. Then the container that owns your items.
 
 Gate is closed on the demo path (WDLL walk/close 2026-08-16). Residuals (store UPDATE, F4 ingest, E6) stay named. Planner executes those only when L26 is quiet or as slot-free optional work. Compiled dispatch if handed off: `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-60`.
 
-DSN is on disk. Foundation SQL applied. Cloud Run live 2026-08-16 (`plan-review-00012-pen` @100% tag `g60g`, origin `a864f48`, `GET /` 200). Vercel `plan-review-app` live at `https://plan-review-app-ten.vercel.app` (`dpl_8KedsRJVn1UaJ32izvoY8oJQboa2`). A-031: files UI and applicant view on this host. A-032: ICC observer portal on `/icc/activity`. Smart Files is the files store. Activity table is the ICC demo store. Do not planner-seed files or activity. MCP `hauska-mcp-server-00074-tar` @100% tag `g60d` (anon ICC withhold, PR #69 `0316d0a`). Extract-remount A-026 DONE on serving `cortex-api-00519-muq` (WDLL 24). G-30 ingest hardcode gone on engine main **#346** `ebe6d63`. Store UPDATE is a residual (A-008 / A-028). Do not wait on L26.
+DSN is on disk. Foundation SQL applied. Cloud Run live (`plan-review-00012-pen` @100% tag `g60g`). Vercel plan-review `https://plan-review-app-ten.vercel.app` `dpl_2BAdcdp5LfpuQLZjqWRhncqpURRg`. ICC-demo alias `https://icc-demo.vercel.app` (project `icc-portal-app`, also `icc-portal-app.vercel.app`) `dpl_F5xuVvtp1i1vRV3FBMqNdZQiq5Vg`. Repo `empressaioemail-tech/icc-portal`. Apex DNS held. A-031 files UI on plan-review. A-032 reversed. A-033/A-034 ICC-demo host. WDLL 13 met. Residuals 7/18/19 held with L26. Do not planner-seed files or activity. Do not vercel-deploy plan-review from repo root. Local `P:\icc-portal\web\.vercel\project.json` may still say `web`; confirm `icc-portal-app` before deploy.
 
 ## Neon DSN on disk (operator)
 
@@ -33,7 +33,7 @@ node scripts\apply-sql.mjs sql\001_foundation.sql
 
 ## Equation
 
-Complete plan review (spec 48 F1-F7 + E6 + letter + Smart Files, basic visual, own Vercel) plus a finished MCP (dead ends gone, catalog true, Smart Files writes, Codex tools retargeted at that surface) **is** the ICC offer. ICC watches it on `/icc/activity`.
+Complete plan review (spec 48 F1-F7 + E6 + letter + Smart Files, basic visual, own Vercel) plus a finished MCP (dead ends gone, catalog true, Smart Files writes, Codex tools retargeted at that surface) **is** the ICC offer. Paying IP-access users watch it on ICC-demo (`https://icc-demo.vercel.app`).
 
 A one-engagement stub with a meter pane is not this card.
 
@@ -82,12 +82,13 @@ Superseded: `_inbox/2026-08-16_c_wdll_lane_c_plan_review.md`, `_inbox/2026-08-16
 - Personas share tenant `icc-demo`.
 - Rate `0.01` fixture unless the decision says otherwise.
 - IBC live, IPMC typed absence in the code library. Do not claim two books populated.
-- ICC portal is `/icc/activity`, not Command Center, not a pane glued to one engagement.
+- ICC-demo is https://icc-demo.vercel.app, not `/icc/activity` on plan-review, not Command Center.
 - PE ICC citations stay off.
 - One MCP server. Codex tools retarget; reporting tools stay; Cotality dies.
 - Circle / DNS / directory / SaaS / public-paid are not this card.
 - Applicant view is `/applicant?token=` on plan-review-app. Not G-52. Not smart-files-app.
 - Existing `icc-demo` files (`site-plan-sheet.txt`, `mcp-g60-probe.txt`) are premature residue. Leave them. Do not DELETE. Do not POST more from the planner.
 - First legitimate write is a reviewer upload in the plan-review Files tab. Share then mints the applicant link.
-- Observer gate lands on `/icc/activity`. Reviewer lands on `/queue`. Applicant lands on `/applicant`.
+- Observer gate lands on `/queue` on plan-review. ICC-demo is https://icc-demo.vercel.app `/gate` as paying IP access.
 - Do not INSERT activity rows from the planner. Accrual is reviewer UI and MCP Codex calls.
+- Apex DNS for ICC-demo is held. Alias `icc-demo.vercel.app` is live. Do not steal `mcp.hauska.dev`. Do not vercel-deploy `P:\plan-review` from repo root.

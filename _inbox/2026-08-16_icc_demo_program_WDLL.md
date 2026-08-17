@@ -33,7 +33,7 @@ Complete plan review (spec 48 F1-F7 + map + letter + files, function over form) 
 
 ## Done looks like
 
-A reviewer runs a real plan review on gated Vercel with zero SmartCity session and zero mock corpus: queue by stage, intake of `48021:28286` / `new-single-family` with no Cotality, applicability matrix with atom-chain determinations, override that persists, findings library reused on a second engagement (`48021:27303`), IBC 2018 navigable in the code library (IPMC honest-empty), atom-chain briefing, parcel map, decision letter, Smart Files sheets room. An agent with the reviewer key does the same actions through finished MCP tools. An ICC observer opens `/icc/activity` on that same host and sees the activity those two surfaces produced, accruing to `did:hauska:actor:org:icc` at the named rate, free-tier included. Anon cannot see ICC bodies. Cortex-api is not the host. Command Center is not the portal. Texas ingest was not touched.
+A reviewer runs a real plan review on gated Vercel with zero SmartCity session and zero mock corpus: queue by stage, intake of `48021:28286` / `new-single-family` with no Cotality, applicability matrix with atom-chain determinations, override that persists, findings library reused on a second engagement (`48021:27303`), IBC 2018 navigable in the code library (IPMC honest-empty), atom-chain briefing, parcel map, decision letter, Smart Files sheets room. An agent with the reviewer key does the same actions through finished MCP tools. Paying IP-access users open ICC Demo on its own host (`icc-portal-app`, custom DNS owed) and see the activity those two surfaces produced, accruing to `did:hauska:actor:org:icc` at the named rate, free-tier included. Anon cannot see ICC bodies. Plan-review is not the portal. Cortex-api is not the host. Command Center is not the portal. Texas ingest was not touched.
 
 ## Acceptance items
 
@@ -47,7 +47,7 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
    | grade: [x] met 2026-08-16 | evidence: serving `plan-review-00006-duj` @100% tag `g60c` URL `https://plan-review-ozx33wafia-ue.a.run.app`. `GET /` 200. `HAUSKA_MCP_URL` inherited. Source header `x-plan-review-source` stamps `mcp:<tool>` or `plan-review-ui`. Anon queue 401. Secrets: DSN + service token + files token. Prior `00004-xez` tag `g60b` @0%. Origin `1a6ac83` (share hotfix).
    | depends on: 1
 
-3. **Vercel UI is live, gated, and is the function surface plus the ICC portal.** Project `plan-review-app`. Env: `PLAN_REVIEW_BACKEND_URL` + `PLAN_REVIEW_API_KEY` + `SMART_FILES_BACKEND_URL` + `SMART_FILES_API_KEY` only. Unauthed ICC content 401. Routes exist for queue, intake, matrix, library, code library, briefing, letter, files, map, and `/icc/activity`.
+3. **Vercel UI is live, gated, and is the plan-review function surface.** Project `plan-review-app`. Env: `PLAN_REVIEW_BACKEND_URL` + `PLAN_REVIEW_API_KEY` + `SMART_FILES_BACKEND_URL` + `SMART_FILES_API_KEY` only. Routes exist for queue, intake, matrix, library, code library, briefing, letter, files, map, and applicant. ICC Demo is item 21 on a separate host (A-012).
    | check: `vercel` project name. Live HTML. Unauthed 401. Not property-explorer, not cmdcenter, not smart-files-app.
    | grade: [x] met 2026-08-16 | evidence: project `plan-review-app` `prj_zn2fPbov1Egj8hyym8Qu3HTKixQJ` deploy `dpl_GKnnEH6Z38yPDfJQB9NtuX3FkwzX` production `https://plan-review-app-ten.vercel.app` (global alias `plan-review-app.vercel.app` already in use, not ours). Env names only the four locked keys, zero `*DATABASE*`. Unauthed `GET /icc/activity` 401 JSON. Host is not property-explorer, cmdcenter, or smart-files-app. `app.js` serves `function escapeHtml`. E6 map is envelope overlay (item 11 partial).
    | depends on: 2
@@ -96,7 +96,7 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
 
 13. **Smart Files room.** Folder `folder:tenant:icc-demo:<slug>` on engagement A when a reviewer loads a file in plan review. Plan-review is the UI. Smart Files is the store. Applicant view is `/applicant?token=` on plan-review-app. `smart-files-app` is G-59 QA, not this room. Planner does not seed more files.
     | check: upload from plan-review Files tab. Share URL host is plan-review-app. Unauthed `/applicant` without token is honest empty. Unauthed `/applicant?token=` lists that folder only. Zero new planner POSTs to files.
-    | grade: [x] partial 2026-08-16 | evidence: A-010 live on `plan-review-00010-cey` @100% tag `g60f` origin `5952846`. UI `dpl_5rjkGcE44C2FFLVhDHE7C8BUbGr5`. Unauthed `/applicant` 200 with Applicant nav. BFF `/applicant/room` no token 400. Bogus token `share_not_found`. Share URL constructor is `plan-review-app-ten.vercel.app/applicant?token=`. Planner POSTed zero new files or shares this wave. Premature `site-plan-sheet.txt` / `mcp-g60-probe.txt` remain. Token-room list after a reviewer share is still owed.
+    | grade: [x] met 2026-08-16 | evidence: Operator 2026-08-16: done and verified. Live re-probe: unauthed `/applicant` HTML 200. BFF no token 400 `token is required`. Bogus token 404 `share_not_found`. Reviewer-minted share `i8dyXw…` created 2026-08-17T00:20:48Z by `icc-demo/reviewer` on folder `folder:tenant:icc-demo:plan-review-48021-28286`. GET applicant/room 200 host=plan-review store=smart-files role=applicant. Files include operator `01_executive_summary.md` plus residue `mcp-g60-probe.txt` / `site-plan-sheet.txt`. Engagement A `aafb9572-…` In Review `48021:28286`. Share constructor is `plan-review-app-ten.vercel.app/applicant?token=`. Planner POSTed zero files or shares this close. `00_README.md` lives on engagement B folder.
     | depends on: 3, 16
 
 14. **MCP finished: substrate.** Serving revision re-counted. `search_atoms` / `get_atom` reach retrieval for a public-free non-ICC atom. `get_property_atom_chain` on `48021:28286` is store truth. `/health` retrieval is not ok-on-404. Anon initialize 200. Malformed key 401.
@@ -133,9 +133,9 @@ A reviewer runs a real plan review on gated Vercel with zero SmartCity session a
     | check: ledger after the walk.
     | grade: [x] met 2026-08-16 | evidence: GET `/api/icc/activity` 200 n=7, every row `rate=0.01`, sources `plan-review-ui` and `mcp:codex_override_write`. Label "PoC fixture, not a quoted SaaS price". This is the plan-review activity table, not a second Circle ledger. Hauska inbound meter on existing ICC atoms still waits G-30 UPDATE.
 
-21. **ICC activity portal.** Gated `/icc/activity` on `plan-review-app`. Observer `icc-demo/observer` sees rows for actor `did:hauska:actor:org:icc`: timestamp, source (`plan-review-ui` or `mcp:<tool>`), book, section, engagement id if any, rate, amount, tier. Includes free-tier. Same data via MCP `icc_activity_list`. Not Command Center. Footer names IPMC residual and purge selectors (`sourceAdapter=icc-code-connect`, `jurisdictionTenant=icc-model-code`).
-    | check: UI after reviewer walk + one MCP `get_atom` on an IBC section. Row count >= 1 from each source. Summary n matches table. Unauthed 401. Planner POSTs zero activity rows.
-    | grade: [x] met 2026-08-16 | evidence: A-011. Serving `plan-review-00012-pen` @100% tag `g60g` origin `a864f48`. UI `dpl_8KedsRJVn1UaJ32izvoY8oJQboa2`. GET activity host=plan-review store=plan-review-activity summary n=27 amount=0.27 sources plan-review-ui 24 / mcp:codex_override_write 2 / mcp:codex_finding_generation 1. Observer BFF 200 same n. Unauthed `/icc/activity` and `/icc` 401. Observer gate lands on this route. Planner did not INSERT this wave. Hauska inbound meter still waits G-30.
+21. **ICC Demo portal.** Separate host and domain. People paying to access licensed IP enter here. Plan review is a citing surface, not this portal. Gated. Same activity via MCP `icc_activity_list`. Footer names IPMC residual and purge selectors.
+    | check: live host is not plan-review-app. Unauthed `/activity` 401. Accessor sees entitled IBC, IPMC typed-absence, accrual to `did:hauska:actor:org:icc`. Planner POSTs zero activity rows.
+    | grade: [x] met 2026-08-16 | evidence: A-012. https://icc-portal-app.vercel.app project `icc-portal-app` `prj_PAuYyEaNwATL7hdVAaPZhIFiFdW0` `dpl_F5xuVvtp1i1vRV3FBMqNdZQiq5Vg`. Unauthed `/activity` 401. Accessor BFF n=27 amount=0.27 store=plan-review-activity. Plan-review nav has no ICC link. Custom DNS owed.
 
 22. **End-to-end walk.** A planner who was not in this chat runs `_inbox/2026-08-16_icc_demo_walk.md` covering F1-F7, letter, files, MCP Codex tools, and the ICC portal, without asking which parcel or URL.
     | check: walk LIVE block filled. Close records a dry-run.
@@ -178,7 +178,9 @@ A-009 2026-08-16. Map is the live SmartSite surface (`smartsite.cloud/?parcelNod
 
 A-010 2026-08-16. Plan review owns the files UI and the applicant view. Smart Files is the backend store. Share URL is `plan-review-app-ten.vercel.app/applicant?token=`, not `smart-files-app`. Do not planner-seed more files. Existing icc-demo objects are premature residue; no silent DELETE. Decision `_decisions/2026-08-16_plan_review_owns_files_ui.md`. OPS-17 A-031.
 
-A-011 2026-08-16. Plan review owns the ICC activity portal UI. Activity table is the demo store. Observer lands on `/icc/activity`. Command Center is not the portal. Planner does not seed activity rows. Hauska inbound meter waits G-30. Decision `_decisions/2026-08-16_plan_review_owns_icc_portal.md`. OPS-17 A-032.
+A-011 2026-08-16. **REVERSED by A-012.** Had put the ICC portal on plan-review `/icc/activity`.
+
+A-012 2026-08-16. ICC-demo is a separate portal and domain for people paying to access licensed IP. Alias https://icc-demo.vercel.app on project `icc-portal-app`. Plan review cites. Activity mounts plan-review GET `/api/icc/activity`. Unauthed `/activity` 401. Apex DNS held. Decision `_decisions/2026-08-16_icc_demo_is_separate_portal.md`. OPS-17 A-033 / A-034.
 
 ## Finish card
 
@@ -188,7 +190,7 @@ Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08
 |---|---|---|---|
 | 1 | met | met | housing locked; unchanged |
 | 2 | met | met | `plan-review-00006-duj` @100% tag g60c |
-| 3 | met | met | `plan-review-app-ten.vercel.app` unauthed ICC 401 |
+| 3 | met | met (A-012: ICC off this host) | plan-review-app is the citing UI; ICC Demo is item 21 |
 | 4 | met | met | live queue total=2 Submitted=1 In Review=1 |
 | 5 | met | met | A 48021:28286 cotalityCalls=0 |
 | 6 | met | met | matrix n=4 R311.7 Uncertain bodyVerbatim=false |
@@ -198,7 +200,7 @@ Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08
 | 10 | met | met | briefing 15 steps ready |
 | 11 | partial | met (A-009) | live SmartSite embed `smartsite.cloud/?parcelNodeId=` on `00008-pol` / `dpl_GB87Rq19HMiShTRdH9sbWXKa6ixc` |
 | 12 | met | met | letter html_len=832 |
-| 13 | met | partial (A-010) | share host reversed to plan-review `/applicant?token=`. Live pin after g60f. Premature files residue left in place. Planner not seeding more. |
+| 13 | met | met (A-010 + operator share) | `/applicant?token=` on plan-review-app lists 28286 room including `01_executive_summary.md` |
 | 14 | met | met | serving now 00074-tar; chain ready; withhold additive |
 | 15 | met | met | Codex key product-gates get_property_detail; reporting-key extinguished stands |
 | 16 | met | met | list_smart_file_folders tenant icc-demo live |
@@ -206,9 +208,9 @@ Re-graded 2026-08-16T19:54Z against the same item numbers. Close `_inbox/2026-08
 | 18 | partial | partial | ingest #346 + read-path #69 live; store public-free 4966 |
 | 19 | partial | partial | activity actor+book+section live; store atoms not UPDATEd |
 | 20 | met | met | rate 0.01 UI + MCP |
-| 21 | met | met (A-011 portal elevate) | observer table + summary n=27 UI+MCP; unauthed 401; no planner INSERT |
+| 21 | met | met (A-012 separate host) | icc-portal-app.vercel.app unauthed /activity 401; accessor n=27; not plan-review |
 | 22 | open | met (same-planner caveat) | LIVE filled; same planner recorded |
 | 23 | open | met | this close |
 | 24 | met | met | cortex queue unauth 200 x-plan-review-proxied:1; files 404 |
 
-Drift vs Start: items 22 and 23 moved open to met at first close. A-009 moved item 11 partial to met (live SmartSite embed) and elevated item 13 share to a submitter data-room URL. A-010 re-opened item 13 to partial: share host is plan-review applicant view, not smart-files-app; planner must not seed more files. A-011 elevated item 21 from a meter pane to the observer portal on the same host. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar. Residual set is now 7/13/18/19.
+Drift vs Start: items 22 and 23 moved open to met at first close. A-009 moved item 11 partial to met (live SmartSite embed) and elevated item 13 share to a submitter data-room URL. A-010 re-opened item 13 to partial: share host is plan-review applicant view, not smart-files-app; planner must not seed more files. Operator 2026-08-16 then verified a real reviewer share: item 13 met. A-011 elevated item 21 from a meter pane to an observer route on plan-review, then A-012 reversed that: ICC-demo is its own host at https://icc-demo.vercel.app. Queue counts moved Submitted=2 to Submitted=1 In Review=1 because F4 override landed. MCP pin moved 00072-puy to 00074-tar. Residual set is now 7/18/19, held with L26.

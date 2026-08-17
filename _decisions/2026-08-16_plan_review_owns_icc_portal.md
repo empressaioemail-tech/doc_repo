@@ -2,7 +2,8 @@
 decision_id: 2026-08-16_plan_review_owns_icc_portal
 date: 2026-08-16
 owner: nick
-status: active
+status: reversed
+superseded_by: 2026-08-16_icc_demo_is_separate_portal
 related_canonical: [_decisions/2026-08-16_plan_review_owns_files_ui, _inbox/2026-08-16_icc_demo_program_WDLL, 90_operations/OPS-17_govtech_stack_plan_of_record, _inbox/2026-08-16_blueprint_icc_compliance]
 ---
 
@@ -13,6 +14,8 @@ Plan review owns the ICC activity portal UI. The plan-review activity table is t
 ## Context
 
 Operator 2026-08-16: capture the files-UI state, then do the ICC portal in the same manner. Same manner means the function lives on plan review, plan review has its own UI, the backing store is not the product surface, and the planner does not write seed data. A-031 already did that for files. This is the observer half.
+
+**Reversed 2026-08-16.** Operator: ICC Demo is a path for all people paying for intellectual-property access. It is a separate portal and a separate domain. Gluing `/icc/activity` onto plan-review-app was the same class of miss as sending the applicant to smart-files-app. Successor `_decisions/2026-08-16_icc_demo_is_separate_portal.md`.
 
 ## Structural commitment check
 
@@ -29,6 +32,8 @@ A one-line dump of activity ids is a meter pane, not a portal. ICC needs actor, 
 ## Reversal criteria
 
 Reverse only if the operator names Command Center as the ICC portal, or if a live inbound ledger on hauska_mcp becomes the store and this table is retired by a named amendment. Do not copy activity onto cortex-prod to look more official.
+
+Fired 2026-08-16: operator named a separate ICC Demo portal and domain, not a plan-review route.
 
 ## Dependencies
 

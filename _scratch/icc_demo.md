@@ -5,7 +5,9 @@ Date opened: 2026-08-16.
 
 ## GROUND-TRUTH
 
-- 2026-08-16T16:23-05: A-032 live. plan-review-00012-pen @100% tag g60g origin a864f48. UI dpl_8KedsRJVn1UaJ32izvoY8oJQboa2. GET activity host=plan-review summary n=27 amount=0.27 bySource plan-review-ui 24 / mcp:codex_override_write 2 / mcp:codex_finding_generation 1. Unauthed /icc/activity and /icc 401. Observer BFF 200 n=27. HAUSKA_MCP_URL inherited. Planner INSERTed zero activity rows this wave. Rollback 00010-cey tag g60f @0%. No --apply.
+- 2026-08-16T21:20-05: G-60 STOP. ICC-demo alias https://icc-demo.vercel.app -> icc-portal-app. WDLL 13 met: unauthed /applicant 200; BFF no token 400; bogus 404 share_not_found; reviewer share i8dyXw… 200 host=plan-review store=smart-files folder plan-review-48021-28286 files include 01_executive_summary.md. Smart Files QA dpl_8rLUZ2rQtP8YqEpXzcJcyDn9aeRh icc-demo personas restored. Residuals 7/18/19 held with L26. No --apply. No G-58b DROP.
+- 2026-08-16T19:35-05: Smart Files QA UI restored icc-demo personas. https://smart-files-app.vercel.app dpl_8rLUZ2rQtP8YqEpXzcJcyDn9aeRh. Store untouched: acme Closing+Jane rooms still listed; icc-demo 28286 has 01_executive_summary.md + residue; 27303 has 00_README.md. No DELETE. No --apply.
+- 2026-08-16T16:39-05: A-033 live. ICC Demo https://icc-portal-app.vercel.app project icc-portal-app prj_PAuYyEaNwATL7hdVAaPZhIFiFdW0 dpl_F5xuVvtp1i1vRV3FBMqNdZQiq5Vg. Unauthed /activity 401. Accessor BFF n=27 amount=0.27. Repo empressaioemail-tech/icc-portal e7a36a5. Plan-review UI dpl_2BAdcdp5LfpuQLZjqWRhncqpURRg origin 3615ee1, no ICC nav, /icc/activity is SPA 200. Accidental Vercel project `plan-review` from repo-root deploy DELETED. Custom DNS owed. No --apply.
 - 2026-08-16T16:11-05: A-031 live. plan-review-00010-cey @100% tag g60f origin 5952846. UI dpl_5rjkGcE44C2FFLVhDHE7C8BUbGr5. GET / 200. GET applicant/room no token 400. Bogus token share_not_found. Unauthed /applicant 200 Applicant nav. Unauthed /icc/activity 401. HAUSKA_MCP_URL inherited. Planner POSTed zero new files or shares. Premature site-plan-sheet.txt and mcp-g60-probe.txt still listed on engagement A (read only). Rollback 00008-pol tag g60e @0%. No --apply.
 - 2026-08-16T16:00-05: A-009/A-030 live. plan-review-00008-pol @100% tag g60e origin 534589d. UI dpl_GB87Rq19HMiShTRdH9sbWXKa6ixc. map-feature host=smartsite smartSiteUrl smartsite.cloud/?parcelNodeId=48021:28286. Share kind=data-room dataRoomUrl smart-files-app #share=. Unauthed BFF resolve 200 folder plan-review-48021-28286 n_files=2. Dirty hauska-map not touched. No --apply. **A-031 reverses the share host.**
 - 2026-08-16T14:54-05: G-60 walk/close. MCP 00074-tar @100% g60d. plan-review 00006-duj @100% g60c. Queue total=2 A In Review B Submitted. Anon list omits icc-model-code. Anon get_atom corpus DID access-deny. query_jurisdiction icc-model-code atomCount=4966 accessPolicy=public-free. Ledger 200 computedAt=2026-08-14T17:41:22.500Z satisfiedCells=616 (nested under summary; 2,121,656 bytes). Cortex queue unauth 200 x-plan-review-proxied:1. Files 404. Observer read_smart_file tenant-private denied. F4 DID pending:plan-review:f361bc78-6feb-47e9-b594-ae5162a948fe. Close `_inbox/2026-08-16_icc_demo_close.json`.
@@ -39,17 +41,19 @@ Date opened: 2026-08-16.
 - Walk `cited_atom_did = icc:ibc-2018:R311.7` is not a Hauska DID. Probe withhold on `did:hauska:jurisdiction-corpus:icc-model-code`. Do not silently rewrite the fixture.
 - County ledger `computedAt` lives under `summary`. A truncated body parses as empty and looks like a missing stamp.
 - Plan review owns the files UI. Smart Files is the store. Sending the applicant to smart-files-app makes plan review not the product. Planner POSTs into the files store are premature residue.
-- Plan review owns the ICC portal. Command Center is not the portal. Planner INSERTs into the activity table would fake accrual.
+- ICC Demo is a separate portal for people paying to access licensed IP. Plan review cites. Do not glue `/icc/activity` onto plan-review-app.
+- Taking icc-demo off the Smart Files persona dropdown hides live rooms. The store still has them. Restore the personas; do not DELETE.
 
 ## DEAD-END
 
 - Morning WDLL `_inbox/2026-08-16_c_wdll_lane_c_plan_review.md`: too wide (full spec 48) and too narrow (LDT housing). Do not execute.
 - Morning WDLL `_inbox/2026-08-16_mcp_wdll_monetizable_tested_discoverable.md`: buyable-gate altitude (Circle, DNS, directory). Wrong for this demo. Do not execute.
 - First-pass ICC WDLL that stubbed spec 48 functions. Operator rejected. Do not re-stub.
+- A-032 ICC portal as a plan-review route. Operator: separate portal and domain. Reversed.
 
 ## OPEN
 
-- G-60 CLOSED_ON_DEMO_PATH 2026-08-16 plus A-031 and A-032. Close `_inbox/2026-08-16_icc_demo_close.json`. Files UI + applicant view + ICC observer portal on plan-review. Token-room after reviewer share still owed for WDLL 13.
+- G-60 CLOSED_ON_DEMO_PATH STOP. ICC-demo https://icc-demo.vercel.app. WDLL 13 met. Residuals 7/18/19 held with L26. Apex DNS held. Token-room after reviewer share is met.
 - Store UPDATE (G-30 / G-17 existing atoms) and F4 engine ingest remain residuals. MCP read-path withhold is live on 00074-tar.
 - E6 from a clean hauska-map worktree is superseded by A-009: live SmartSite embed.
 - L26 still holds `--apply`. No second writer. IPMC `--apply` not this card.

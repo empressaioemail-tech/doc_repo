@@ -8,7 +8,7 @@ related_canonical: [75n_icc_code_connect_catalog, 48_cortex_reporting_plan_revie
 
 # Decision
 
-MCP + complete plan review **are** the ICC offer. ICC's surface is a portal of the activity those two generate. The done line is a live PoC: functionally complete gated plan-review, finished Hauska MCP, `/icc/activity` accruing to `did:hauska:actor:org:icc`. It is not a SmartCity consumer pass, not a one-engagement stub, and not a buyable catalog (Circle/DNS/directory).
+MCP + complete plan review **are** the ICC offer. The people paying to access licensed IP watch that offer on ICC-demo, a separate portal. The done line is a live PoC: functionally complete gated plan-review, finished Hauska MCP, ICC-demo at https://icc-demo.vercel.app accruing to `did:hauska:actor:org:icc`. It is not a tab on plan-review-app, not a SmartCity consumer pass, not a one-engagement stub, and not a buyable catalog (Circle/directory). Apex DNS is held.
 
 ## Context
 
@@ -27,9 +27,9 @@ Operator 2026-08-16: "mcp + plan review = ICC", then correction: plan review mus
 
 2. **What lives where.** Engagements, findings, reviewer session, demo keys: plan-review Neon. File bytes: smart-files Neon (already live). Code-section / ICC atoms: hauska_mcp via MCP (already the catalog). Cortex-prod gets no new plan-review writes.
 
-3. **Demo format.** Amends `_decisions/2026-07-04_icc_poc_play.md` format only. Screens: (a) complete gated plan-review, (b) finished MCP Codex+files+catalog, (c) ICC activity portal `/icc/activity` on the same Vercel host. Not PE ICC citations on. Not Command Center as the portal.
+3. **Demo format.** Amends `_decisions/2026-07-04_icc_poc_play.md` format only. Screens: (a) complete gated plan-review, (b) finished MCP Codex+files+catalog, (c) ICC-demo on its own host https://icc-demo.vercel.app. Not a path on plan-review-app. Not PE ICC citations on. Not Command Center as the portal. Amended 2026-08-16 by `_decisions/2026-08-16_icc_demo_is_separate_portal.md`.
 
-4. **Fixture.** Engagement A `48021:28286`. Engagement B `48021:27303` (required for F5). Project type `new-single-family`. IBC2018P6 required. IPMC2018P2 typed absence until L26 quiet. Tenant `icc-demo`. Personas `icc-demo/reviewer` and `icc-demo/observer`. Rate `0.01` USD fixture.
+4. **Fixture.** Engagement A `48021:28286`. Engagement B `48021:27303` (required for F5). Project type `new-single-family`. IBC2018P6 required. IPMC2018P2 typed absence until L26 quiet. Tenant `icc-demo`. Personas `icc-demo/reviewer` on plan-review and `icc-demo/accessor` on ICC Demo. Rate `0.01` USD fixture.
 
 5. **SaaS is not this card.** accessPolicy stays platform-internal. No public-paid flip. G-50 signed half stays OPEN.
 

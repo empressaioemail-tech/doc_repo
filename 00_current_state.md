@@ -14,38 +14,39 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 ## 1. Active fires
 
 - **Fire 1: L26 Texas ingest.** Lease L26 holds the atoms writer. Pickup `_inbox/2026-08-15_l26_gotomarket_pickup.md`. Do not start a second writer. Do not DROP cortex-prod `smart_file_*` while this is live. Do not ICC store UPDATE.
-- **Fire 2: G-60 elevate remaining residuals.** Files UI, applicant view, and ICC observer portal are live (A-031 / A-032). Still owed: reviewer share of the applicant token-room (WDLL 13), ICC store UPDATE, F4 ingest. Pickup `_inbox/2026-08-16_icc_demo_planner_pickup.md`.
+- **Fire 2: G-60 demo path STOP.** Closed on demo path. ICC-demo https://icc-demo.vercel.app. WDLL 13 met. Residuals 7/18/19 held with L26. Pickup `_inbox/2026-08-16_icc_demo_planner_pickup.md`.
 - **Fire 3: Doc_repo dirty tree.** Many uncommitted files from prior sessions. Commits are a named list, never the whole working tree.
 
 ## 2. In-flight sprints
 
 - **OPS-16 / L26** Texas flush to launch-gate grade. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
-- **OPS-17 G-60** CLOSED_ON_DEMO_PATH plus A-031 and A-032. Serving plan-review `00012-pen` @100% tag `g60g` origin `a864f48`. UI `https://plan-review-app-ten.vercel.app` `dpl_8KedsRJVn1UaJ32izvoY8oJQboa2`. Smart Files is the files store. Applicant `/applicant?token=`. ICC portal `/icc/activity`. WDLL `_inbox/2026-08-16_icc_demo_program_WDLL.md`.
-- **OPS-17 Lane A Smart Files.** G-58/G-59 CLOSED serving path. G-58b OPEN. `smart-files-app` is G-59 QA, not the plan-review room.
+- **OPS-17 G-60** CLOSED_ON_DEMO_PATH STOP. ICC-demo https://icc-demo.vercel.app. Plan-review `00012-pen` @100% tag `g60g`. Applicant `/applicant?token=` met. Smart Files QA personas restored. Held: store UPDATE, F4, G-58b, G-50.
+- **OPS-17 Lane A Smart Files.** G-58/G-59 CLOSED serving path. G-58b OPEN. `smart-files-app` is G-59 QA plus icc-demo rooms. Plan-review owns the review files UI.
 - **L25** not seated. **L24** flood remainder banked. Do not redo flood.
 
 ## 3. Open ADRs to be aware of
 
-- ADR-008: Hauska substrate, Empressa products. Plan review is Codex. Smart Files is the files product and store.
+- ADR-008: Hauska substrate, Empressa products. Plan review is Codex. Smart Files is the files product and store. ICC-demo is the licensed-IP access portal.
 - ADR-017 accessPolicy. Files default `tenant-private`.
 - ADR-018 atom contract is Hauska substrate.
 
 ## 4. Agent fleet assignments
 
-- Doc_repo planner (this seat): G-60 elevate, named commits, dispatch compile.
+- Doc_repo planner (this seat): G-60 stop / named session close. Do not steal L26.
 - L26 detached Node jobs: work root `P:/tmp/l26_flood_drain_20260815/`.
 - Dirty `P:\legacy-design-tools` on `feat/s1-instrument-hardening`: never clean or stash.
 - Dirty `P:\hauska-map` linked to Vercel `property-explorer`: never deploy Command Center or plan-review from it.
 - `P:\smartcity-os` is no-touch.
+- `P:\smart-files` has uncommitted `src/actors.mjs` + `web/` persona restore (live on Vercel). Do not lose it.
+- `P:\icc-portal\web\.vercel\project.json` may still say `web`. Confirm `icc-portal-app` before deploy.
 
 ## 5. Recent session summaries
 
-- 2026-08-16 G-60 ICC observer portal: `_sessions/2026-08-16_g60_icc_portal_planner.md`
+- 2026-08-16 G-60 ICC-demo stop: `_sessions/2026-08-16_g60_icc_demo_session_close_planner.md`
+- 2026-08-16 ICC-demo separate portal: `_sessions/2026-08-16_icc_demo_separate_portal_planner.md`
+- 2026-08-16 G-60 ICC observer portal (reversed): `_sessions/2026-08-16_g60_icc_portal_planner.md`
 - 2026-08-16 G-60 files UI + applicant view: `_sessions/2026-08-16_g60_files_ui_applicant_view_planner.md`
 - 2026-08-15 Smart Files isolation + QA rooms: `_sessions/2026-08-15_smart_files_isolation_and_qa_rooms_claude_code.md`
-- 2026-08-15 L16B overnight recovery: `_sessions/2026-08-15_l16b_overnight_recovery_session_close.md`
-- 2026-08-15 drain program and control plane: `_sessions/2026-08-15_drain_program_and_control_plane_claude_code.md`
-- 2026-08-14 govtech program standup: `_sessions/2026-08-14_govtech_program_standup_claude_code.md`
 
 ## 6. Cross-cutting watch list
 
