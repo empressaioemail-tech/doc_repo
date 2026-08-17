@@ -10,6 +10,7 @@ related:
     2026-08-17_g18_smartcity_inventory_WDLL,
     2026-08-17_g18_lane_b_planner_pickup,
     2026-08-17_smartcity_product_line_then_bastrop_onboarding,
+    2026-08-17_dashboards_ui_then_one_feed,
     90_operations/OPS-17_govtech_stack_plan_of_record,
     _smartcity_masters/31_smartcity_dashboards,
     _smartcity_masters/32_smartcity_asset_management,
@@ -125,7 +126,7 @@ Do not DROP, do not migrate, do not "small fix."
 
 ## Product-line overlay (operator 2026-08-17)
 
-G-18 as-found stands. These dispositions replace keep/kill as the build plan. Live `tenant_id=2` stays no-touch until a named cutover.
+G-18 as-found stands. These dispositions replace keep/kill as the build plan. Live `tenant_id=2` stays no-touch until a named island replacement. Destination still "Bastrop as city one of the machine." Path as of A-052 is UI then one feed, not a city-wide cutover (`_decisions/2026-08-17_dashboards_ui_then_one_feed.md`).
 
 | Name | As-found | Build plan |
 |---|---|---|
@@ -137,11 +138,11 @@ G-18 as-found stands. These dispositions replace keep/kill as the build plan. Li
 | Compass | keep welded assistant | Rework to doc 34 sidebar. Live chatbot stays until the rework is staff path. |
 | Vendor feeds | keep most; kill Pipedrive | Templated adapters that write records. Not products. Pipedrive stays out. |
 
-Next cards: G-13 (WDLL draft `_inbox/2026-08-17_g13_consumer_contract_WDLL.md`), then G-61 (WDLL draft `_inbox/2026-08-17_g61_dashboards_template_WDLL.md`). Both pending operator approval before work.
+Next cards as of A-052: G-66 Dashboards UI (draft `_inbox/2026-08-17_g66_dashboards_ui_WDLL.md`), then one source onto `template-city`. G-13 and G-61 through G-65 are CLOSED. Do not dispatch a Bastrop cutover.
 
 ## What this card does not do
 
-No mounts. No rebuild. No deploy. No G-52. No G-11. No G-24 ingest. No G-45 cutover. No G-60 resume. Product-line overlay is `_decisions/2026-08-17_smartcity_product_line_then_bastrop_onboarding.md`. Next cards G-13 then G-61. This inventory does not start them.
+No mounts. No rebuild. No deploy. No G-52. No G-11. No G-24 ingest. No G-45 cutover. No G-60 resume. Product-line overlay is `_decisions/2026-08-17_smartcity_product_line_then_bastrop_onboarding.md`. Path amendment `_decisions/2026-08-17_dashboards_ui_then_one_feed.md`. This inventory does not start G-66.
 
 ## Grade coverage
 

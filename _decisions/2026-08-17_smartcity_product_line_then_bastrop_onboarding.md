@@ -66,10 +66,12 @@ These overlay G-18 as-found. They do not rewrite the probe table.
 
 ## Next cards
 
-1. **G-13** (shared leg): consumer contract shape, once, for spine / SmartSite / Smart Files. WDLL draft `_inbox/2026-08-17_g13_consumer_contract_WDLL.md`. Operator approval required before the ruling session.
-2. **G-61** (new, A-035): Dashboards product template. WDLL draft `_inbox/2026-08-17_g61_dashboards_template_WDLL.md`. Operator approval required before build. Blocked on G-13. Live Bastrop unchanged on this row.
+G-13 and G-61 through G-65 are CLOSED. Operator 2026-08-17 rejected "Bastrop cutover" as the next card. Path amendment `_decisions/2026-08-17_dashboards_ui_then_one_feed.md`.
 
-G-21 honesty remains OPEN on the G-18 rows and does not block the template. Later named WDLLs, not this decision: PermitFlow cutover after G-51 is the staff path; Compass rework; G-45 SmartSite parcel; feed adapter contract; Bastrop tenant cutover.
+1. **G-66** (A-052): Dashboards product UI on `template-city`. Four lead lenses as views, not four cards under a compose form. WDLL draft `_inbox/2026-08-17_g66_dashboards_ui_WDLL.md`. Operator approval required before build. Live Bastrop unchanged.
+2. **One source onto template-city** (later named WDLL after G-66 graded): one adapter grant, or a copied scraper that imports through that adapter. Not a city-wide cut. First feed should be public or already-honest, not MyGov private ops.
+
+G-21 honesty remains OPEN on the G-18 rows and does not block the UI. Later named WDLLs, not this decision: Compass sidebar; live Leaflet island cut; live PermitFlow island cut; G-24 ingest; next-city pack. None of those is a single "Bastrop cutover" card.
 
 ## Reversal criteria
 
