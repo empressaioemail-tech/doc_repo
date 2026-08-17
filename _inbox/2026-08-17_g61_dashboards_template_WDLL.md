@@ -1,7 +1,7 @@
 ---
 id: 2026-08-17_g61_dashboards_template_WDLL
 title: WDLL — Lane B G-61 Dashboards product template
-status: approved
+status: graded
 last_updated: 2026-08-17
 applies_to: smartcity
 owner: nick
@@ -21,7 +21,7 @@ related:
 
 # WDLL: Lane B G-61 Dashboards product template
 
-Date: 2026-08-17  Status: approved
+Date: 2026-08-17  Status: graded
 Operator approval: 2026-08-17 (operator: both are approved)
 
 Plan row: **G-61** (OPS-17, inserted by A-035). G-13 CLOSED 2026-08-17. Instrument: frozen WDLL approved; template mounts spine + SmartSite + Smart Files; live Bastrop unchanged.
@@ -56,12 +56,12 @@ A Dashboards template exists as a composition surface: the doc 31 lens family (c
 
 5. **Mounts, not merges.** Template consumes spine, SmartSite, and Smart Files over the G-13 contract. It does not copy parcels into a second stack, files into `pf_documents`, or review into PermitFlow.
    | check: no new parcel store; no PermitFlow; no local blob table; SmartSite is the map mount; Smart Files is the files mount.
-   | grade: [x] met 2026-08-17 | evidence: `src/mounts.mjs` atom-read-http / embed / service-http; `assertNoSupplierDsn` refuses tiny-art and any DATABASE_URL; SmartSite URL is `/?parcelNodeId=`; no pg dependency.
+   | grade: [x] met 2026-08-17 | evidence: live `00002-sxq` compose mounts retrieval atom-chain + SmartSite `/?parcelNodeId=` + files HTTP. Neon `city_packs` only (health `packsStore=neon`). No parcel table. Gold `48021:34137` atomCount 11, files honest empty `no folders for tenant:template-city`. `assertNoSupplierDsn` still refuses tiny-art / city / cortex.
    | depends on: 2
 
 6. **Dual interface.** MCP tools plus UI, per 28. Tools live on the existing Hauska MCP server.
    | check: named MCP tools on serving `hauska-mcp-server`; UI second or same wave; no new MCP process.
-   | grade: [ ] partial 2026-08-17 | evidence: tools exist on hauska-mcp-server branch `g61/dashboards-mcp-tools` (`dashboards_list_lenses` public/anon; `dashboards_get_city_pack` identified). Not on serving `00074-tar`. No second MCP process. Fail closed if `DASHBOARDS_BACKEND_URL` unset.
+   | grade: [x] met 2026-08-17 | evidence: serving `hauska-mcp-server-00076-veq` @100% tag `g61`. PR #70 squash `a62a579` CI run 32038562070 all conclusions `success`. Live `POST /mcp` anon `dashboards_list_lenses` returns four lenses; anon `dashboards_get_city_pack` isError refused; identified caller returns `template-city`. `DASHBOARDS_BACKEND_URL` is the Dashboards Cloud Run. No second MCP.
    | depends on: 2
 
 7. **Live Bastrop unchanged.** `P:\smartcity-os` porcelain matches the G-18 pin dirty set. This wave's Cloud Run / Vercel deploy count to `smartcity-os-prod` / `smartcityos.io` is zero.
@@ -71,7 +71,7 @@ A Dashboards template exists as a composition surface: the doc 31 lens family (c
 
 8. **Cutover is not this card.** A later named WDLL covers Bastrop tenant migration, PermitFlow kill, Leaflet retirement, Compass rework, G-45 parcel, and feed adapters.
    | check: close artifact names those WDLLs as not started; G-52 not started; G-24 not filled.
-   | grade: [ ]
+   | grade: [x] met 2026-08-17 | evidence: close `_inbox/2026-08-17_g61_close.json` names as not started: feed adapter contract, G-11, G-45 Leaflet die, PermitFlow kill, Compass sidebar, Bastrop cutover, AM housing, G-24 ingest, G-52. Live city unchanged.
    | depends on: 7
 
 ## Out of scope
@@ -85,4 +85,15 @@ G-13 implementation (separate card). G-21 close. G-42 Bastrop-specific lenses (n
 
 ## Finish card (graded at close)
 
-(not yet)
+Re-graded 2026-08-17 against the same item numbers. Close `_inbox/2026-08-17_g61_close.json`. Serving Dashboards `00002-sxq`, MCP `00076-veq` tag `g61`. City `00118-qox` tag `lane4`.
+
+1. met: operator approved
+2. met: G-13 cited
+3. met: four lead lenses, citizen not a SKU
+4. met: not a wallpaper clone
+5. met: live compose mounts, Neon packs not parcels
+6. met: MCP tools on serving `00076-veq`
+7. met: live city pin unchanged, dirty set unchanged, zero city deploys
+8. met: cutover WDLLs named as not started
+
+Drift vs Start: item 5 evidence dropped "no pg dependency" because tenant Neon holds packs (allowed). Item 6 moved from branch-only to serving. Compose and packs persist were operator finish grades on this card, not silent scope.

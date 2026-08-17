@@ -12,7 +12,11 @@ Workstream: G-18 SmartCity keep/mount/kill inventory. Read-only. WDLL approved 2
 - DEAD-END: do not treat /api/calendar HTML 200 as the calendar API. Real probes are /api/calendar/status and /api/calendar/events/public.
 - OPEN: G-21 on the same rows. Staff session would grade Spireon/Verkada/FirstDue/GoTo/Power BI. Reconcile 340 vs 12599 and 64 vs 0.
 - OPEN: G-24 rogue entity_type COUNT not run (L26 holds slot; no heavy scan).
-- OPEN: G-61 housing `empressaioemail-tech/smartcity-dashboards` main `01a6cfe`. MCP [PR #70](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/70), not serving. Cutover WDLLs not started.
+- GROUND-TRUTH (2026-08-17T14:32Z): G-61 CLOSED. Dashboards `00002-sxq` @100% health packsStore=neon. Compose 48021:34137 atoms ok 11 types, files empty tenant:template-city. MCP `00076-veq` list_lenses still live. City `00118-qox` @100% lane4. Dirty secrets_scan.yml + mygov.ts only.
+- GROUND-TRUTH (2026-08-17T14:59Z): G-62 CLOSED. Dashboards `00003-jc2` compose omits owner-fact. MCP `00078-xuv` @100% tag g62 anon dashboards_compose_city_manager atomCount 9. City `00118-qox` @100% lane4.
+- OPEN: G-11 WDLL drafted, pending operator approval (`_inbox/2026-08-17_g11_tenancy_WDLL.md`). Not dispatched. G-45, PermitFlow kill, Compass, Bastrop cutover, G-24 ingest not started. G-21 honesty still OPEN.
+- GROUND-TRUTH (2026-08-17): G-63 CLOSED. Dashboards `00004-zsq` GET /api/adapter-kinds seven kinds, samsara writesTo files, template-city grantedAdapters []. MCP `00080-voc` @100% tag g63 anon dashboards_list_adapter_kinds. City `00118-qox` @100% lane4. Close `_inbox/2026-08-17_g63_close.json`.
+- GROUND-TRUTH (2026-08-17T14:30:55.899Z): unauth compose `48021:34137` types include `owner-fact` (public-paid). G-62 fail. Artifact `_scratch/g61_dashboards_live_probe.json`.
 - GROUND-TRUTH (2026-08-17): G-13 CLOSED caller-split contract. G-61 items 1-2 met.
 - GROUND-TRUTH (2026-08-17): Dashboards Cloud Run `smartcity-dashboards-00001-92j` @100% `https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app` health 200 db=connected name=neondb. City-packs 401 unauthed. Live city still `00118-qox` @100% tag lane4.
 - LESSON: G-18 as-found and the product-line overlay are different jobs. Cloning live wallpaper is not a Dashboards template.
