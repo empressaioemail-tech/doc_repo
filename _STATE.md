@@ -395,7 +395,7 @@ Related: an executor once burned 48,000 tokens writing a briefing for a sub-agen
 
 ### OPS-17 LANE B PRODUCT LINE THEN BASTROP ONBOARDING — ACTIVE 2026-08-17
 
-**Status: G-61 scaffold on GitHub. Not closed.** Dashboards main `01a6cfe` (CI + mount refuse + optional Bearer). MCP tools on PR branch `g61/dashboards-mcp-tools`, not serving `00074-tar`. Item 6 partial. Item 8 cutover not started. Live pin `smartcity-api-00118-qox` @100% tag `lane4`. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.**
+**Status: G-61 scaffold on GitHub. Not closed.** Dashboards main `01a6cfe` (CI + mount refuse + optional Bearer). MCP tools on [PR #70](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/70), not serving `00074-tar`. Item 6 partial. Item 8 cutover not started. Live pin `smartcity-api-00118-qox` @100% tag `lane4`. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.**
 
 ### OPS-17 LANE B G-18 SMARTCITY INVENTORY — CLOSED 2026-08-17
 
