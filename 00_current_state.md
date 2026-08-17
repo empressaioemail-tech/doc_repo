@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-08-16
+title: Current state snapshot — 2026-08-17
 status: active
-last_updated: 2026-08-16
+last_updated: 2026-08-17
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -20,6 +20,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 ## 2. In-flight sprints
 
 - **OPS-16 / L26** Texas flush to launch-gate grade. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
+- **OPS-17 Lane B** G-61 housing `empressaioemail-tech/smartcity-dashboards`. Scaffold at `P:\smartcity-dashboards`, not deployed. Item 6 MCP not on serving server. `P:\smartcity-os` no-touch.
 - **OPS-17 G-60** CLOSED_ON_DEMO_PATH STOP. ICC-demo https://icc-demo.vercel.app. Plan-review `00012-pen` @100% tag `g60g`. Applicant `/applicant?token=` met. Smart Files QA personas restored. Held: store UPDATE, F4, G-58b, G-50.
 - **OPS-17 Lane A Smart Files.** G-58/G-59 CLOSED serving path. G-58b OPEN. `smart-files-app` is G-59 QA plus icc-demo rooms. Plan-review owns the review files UI.
 - **L25** not seated. **L24** flood remainder banked. Do not redo flood.
@@ -32,7 +33,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 4. Agent fleet assignments
 
-- Doc_repo planner (this seat): G-60 stop / named session close. Do not steal L26.
+- Doc_repo planner (this seat): G-61 housing locked, scaffold local. Do not steal L26. Do not touch `P:\smartcity-os`.
 - L26 detached Node jobs: work root `P:/tmp/l26_flood_drain_20260815/`.
 - Dirty `P:\legacy-design-tools` on `feat/s1-instrument-hardening`: never clean or stash.
 - Dirty `P:\hauska-map` linked to Vercel `property-explorer`: never deploy Command Center or plan-review from it.
