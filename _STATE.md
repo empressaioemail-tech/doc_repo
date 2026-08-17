@@ -1,6 +1,6 @@
 # _STATE — living program state (read this FIRST, every session)
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-17 (G-62 CLOSED. G-63 WDLL draft pending approval: feed adapter contract, not G-11, not live ingest. Dashboards 00003-jc2. MCP 00078-xuv @100% tag g62. City 00118-qox @100% lane4 no-touch. L26 holds atoms writer.)**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-17 (G-63 WDLL approved. Feed adapter catalog in flight. Not G-11, not live ingest. Dashboards 00003-jc2. MCP 00078-xuv @100% tag g62. City 00118-qox @100% lane4 no-touch. L26 holds atoms writer.)**
 
 **DRAIN STATUS 2026-08-15: L26 IN FLIGHT, GO-TO-MARKET OBJECTIVE.** Operator: complete the remaining Texas atom ingest so the launch gate can grade. Pickup: `_inbox/2026-08-15_l26_gotomarket_pickup.md`. Lease **L26**. Work root `P:/tmp/l26_flood_drain_20260815/`. **Flood 84/84 done** including Harris 48201 (1,523,640 written/verified, 0 VF, no `_outside`). Banked flood 9,465,995 + Harris = **10,989,635**. 48001 pipeline parity **FAIL** 62/211 = 29.4% raw and after key-normalize. Remaining ingest phase **pipelines-redrain**: PostGIS `--apply` of all 254 (overwrite the 19 JS-landed + 235 remaining incl. 48039). Then wells → footprints → roads → CAD 48439/48113/48135 → gate-grade. Do NOT start a second atoms writer. PR **#345** unmerged. PR **#344** unmerged. L25 not seated. Done+verified stands: SD 253/253, rail 254/254, Harris parcel-node, mud scored. The 19 JS pipeline counties are stale pending overwrite.
 
@@ -343,7 +343,7 @@ Measured base rate in doc_repo: **hook-shaped controls 1-for-1; protocol-step-sh
 - CTX / national HELD until Bastrop QA-done + operator go.
 - CODE-DONE != CUSTOMER-DONE — a grade is a live probe on the deployed surface across multiple different-data parcels, never a merged PR.
 - SMARTCITY PRODUCT LINE THEN BASTROP CUTOVER — template Dashboards (doc 31), then migrate city one. Do not rewrite `tenant_id=2` in place. Kill PermitFlow after Lane C is the staff path. CitizenConnect is the citizen lens, not a SKU. Feeds are adapters that write records. Decision `_decisions/2026-08-17_smartcity_product_line_then_bastrop_onboarding.md`.
-- FEED ADAPTER CONTRACT (G-63, draft until WDLL approved) — kinds are a catalog; grants are per city pack. Write spine or files with provenance. Never a Dashboards vendor table. Never Pipedrive as a city feed. Samsara fleet copies are not G-24. No live MyGov/Samsara on this card. Decision `_decisions/2026-08-17_g63_feed_adapter_contract.md`.
+- FEED ADAPTER CONTRACT (G-63, WDLL approved) — kinds are a catalog; grants are per city pack. Write spine or files with provenance. Never a Dashboards vendor table. Never Pipedrive as a city feed. Samsara fleet copies are not G-24. No live MyGov/Samsara on this card. Decision `_decisions/2026-08-17_g63_feed_adapter_contract.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named cutover. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
 
@@ -398,7 +398,7 @@ Related: an executor once burned 48,000 tokens writing a briefing for a sub-agen
 
 ### OPS-17 LANE B PRODUCT LINE THEN BASTROP ONBOARDING — ACTIVE 2026-08-17
 
-**Status: G-62 CLOSED 2026-08-17. Next card G-63 WDLL draft pending operator approval.** Dashboards `smartcity-dashboards-00003-jc2` @100% `https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app`. Live compose `48021:34137` atomCount 9, types omit `owner-fact`. MCP `hauska-mcp-server-00078-xuv` @100% tag `g62`. G-62 close `_inbox/2026-08-17_g62_close.json`. G-63 WDLL `_inbox/2026-08-17_g63_feed_adapter_contract_WDLL.md` status draft. Decision `_decisions/2026-08-17_g63_feed_adapter_contract.md`. Do not start G-63 build until approved. Do not dispatch as G-11. Do not fill G-24. Do not scrape live MyGov/Samsara. Live city pin `smartcity-api-00118-qox` @100% tag `lane4`. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.**
+**Status: G-63 IN FLIGHT 2026-08-17.** WDLL `_inbox/2026-08-17_g63_feed_adapter_contract_WDLL.md` approved. Decision `_decisions/2026-08-17_g63_feed_adapter_contract.md`. Catalog of kinds, empty grants, MCP list-kinds. Not live MyGov/Samsara. Not G-11. Not G-24. Serving still Dashboards `00003-jc2` / MCP `00078-xuv` tag `g62` until this wave deploys. Live city pin `smartcity-api-00118-qox` @100% tag `lane4`. `P:\smartcity-os` **ABSOLUTE NO-TOUCH**. **Did NOT take atoms slot.**
 
 ### OPS-17 LANE B G-18 SMARTCITY INVENTORY — CLOSED 2026-08-17
 
