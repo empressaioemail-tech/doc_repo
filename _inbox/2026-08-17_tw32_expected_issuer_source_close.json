@@ -1,0 +1,304 @@
+{
+  "branch": "tw32/expected-issuer-from-crosswalk",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/332",
+  "commits": [
+    "4469e4937dff52b24015cfe307553c0bd04d279c \u2014 derive the expected issuer from the crosswalk, not from an empty identifier_index",
+    "a2f552327be54c403ae49132d1f3793286e91500 \u2014 designate over the ACTIVE graph only (merged security nodes are superseded)"
+  ],
+  "baseCommit": "d7d56b2b0bf311c59b6b841c41b461b5765171eb",
+  "prState": "OPEN, not merged",
+  "fixDescription": {
+    "defect": "rebuild_issued_by built its expected-issuer map from identifier_index rows of type cik. Production holds ZERO such rows (migration 0058 unapplied), so expected_issuer was always None, the agreement branch was unreachable, and all 147 disagreements carried expected_issuer_node_id: null for the same reason. agrees:0 was STRUCTURAL, not measured \u2014 the measurement could not validate the fix until the fix had already been applied.",
+    "fix": "The expected issuer is now designated from the crosswalk's own CIK partition, which is derived from SEC's ticker file and therefore exists on a completely empty database. identifier_index is a cross-check, never the primary source.",
+    "algorithm": [
+      "1. SEC's ticker file assigns each symbol to exactly one CIK, partitioning the security nodes into per-CIK cohorts. No name matching anywhere.",
+      "2. A CIK's candidate issuer nodes are whatever its cohort's live links already point at.",
+      "3. A candidate is DISQUALIFIED if it holds a security SEC assigns to another CIK (holds-securities-of-another-cik) or if its fan-out exceeds the tickers SEC lists for the CIK (exceeds-sec-ticker-bound) \u2014 the same two computable rules issuer_fanout_violations enforces. Designating a collapsed node would bless the 183-security collapse, so designation and guardrail cannot disagree by construction.",
+      "4. The surviving candidate holding the most cohort members wins; tie-break on the lowest node id, so designation is deterministic.",
+      "5. An explicit identifier_index cik row wins when one exists, and concurrence with the cohort inference is reported either way (concurs / differs / cohort-inconclusive / no-index-row). On a clean database there are none and the measurement still works."
+    ],
+    "purity": "designate_expected_issuers() takes the already-fetched (security_node_id, issuer_node_id) link pairs, touches no database, and never names an edge type. The trust boundary's single sanctioned read therefore stays the only place that query lives, and tests/test_issuer_link_trust.py is untouched and unweakened \u2014 TRUSTED_MATCH_METHODS is still ('cik-exact',) and app/securities/issuer_links.py is not modified by this PR.",
+    "semanticsMadeExplicit": "agrees now means the existing link ALREADY GROUPS the security the way SEC's CIK partition does \u2014 the rebuild would not move it. It does NOT mean the link is trusted: a legacy edge carries no match_method, so trusted_issuer_links() still excludes it, and a test pins that so the two facts cannot blur. The report states two bases: disagreement_counts measures GROUPING against the crosswalk partition, planned measures what an --apply would actually WRITE (still a mint through identifier_index, because that is what resolve_issuer does).",
+    "newReportFields": [
+      "verdict_basis \u2014 states the basis in the report itself",
+      "expected_issuer.{ciks_designated, ciks_mint_required, source_counts, index_cik_rows, index_concurrence, adoptable_ciks}",
+      "planned.basis \u2014 states that planned uses a DIFFERENT basis from disagreement_counts",
+      "per-disagreement: expected_issuer_source, disagreement_reason, mint_required_reason, cik_candidate_issuer_nodes",
+      "samples.designations \u2014 the per-CIK designation records"
+    ],
+    "secondDefectFoundWhileMeasuring": "The first re-run reported cohort_size 99 for a CIK whose SEC ticker bound is 27. I checked the obvious explanation first and it was WRONG: duplicate security nodes per ticker account for only 11 extra nodes across 9,981 distinct symbols (max 2 nodes for any one symbol), so duplication could not produce 99. The real cause was that _symbol_by_security_node had no status filter and counted the 25,926 MERGED security nodes alongside the 9,992 active ones. A merged node is superseded (canonical() redirects reads to its survivor), so its stale links must not define the current grouping. Fixed in commit a2f5523: the designator reasons over active securities only, matching _security_nodes, and applies that definition to BOTH the cohorts and the purity test. links_skipped_not_active_securities makes the exclusion visible rather than silent.",
+    "secondDefectVerification": "After the correction: BANK OF MONTREAL cohort_size 26 against bound 27 (was 99), JPMORGAN CHASE 2 against 9, BARCLAYS BANK 7 against 9 \u2014 all sane. links_skipped_not_active_securities is 0, which PROVES the correction fixed a reporting artifact without moving the measurement: agrees/disagrees/no_opinion are 44/103/8187 both before and after it.",
+    "alsoCorrected": "planned.retire_note now states that immutability is enforced at TWO layers in app.spine.immutability \u2014 a do_orm_execute statement guard that rejects Core UPDATE/DELETE as well as a before_update mapper guard \u2014 so closure is only reachable inside allow_atom_backfill(). The earlier note named only the mapper guard.",
+    "filesChanged": [
+      "apps/cockpit/backend/app/securities/issuer_rebuild.py",
+      "apps/cockpit/backend/tests/test_cik_crosswalk.py"
+    ]
+  },
+  "agreeCount": 44,
+  "disagreeCount": 103,
+  "noOpinionCount": 8187,
+  "measurementContext": {
+    "before": {
+      "agrees": 0,
+      "disagrees": 147,
+      "no_opinion": 8187
+    },
+    "after": {
+      "agrees": 44,
+      "disagrees": 103,
+      "no_opinion": 8187
+    },
+    "acceptanceMet": "YES. agrees is 44 (non-zero) with NO prior --apply and with identifier_index cik rows still at 0, and expected_issuer_node_id is populated from the crosswalk (expected_issuer_source: crosswalk-cohort) on every cik-split disagreement.",
+    "linksJudged": 8334,
+    "securityNodesInScope": 9992,
+    "unlistedSymbols": 9724,
+    "existingLinkProvenance": {
+      "unlabelled": 8334,
+      "by_match_method": {}
+    },
+    "expectedIssuer": {
+      "ciks_in_scope": 188,
+      "ciks_designated": 15,
+      "ciks_mint_required": 173,
+      "source_counts": {
+        "identifier-index": 0,
+        "crosswalk-cohort": 15,
+        "crosswalk-mint-required": 173
+      },
+      "index_cik_rows": 0,
+      "index_concurrence": {
+        "no-index-row": 188
+      },
+      "adoptable_ciks": 15
+    },
+    "planned": {
+      "ciks_in_scope": 188,
+      "issuer_nodes_to_create": 188,
+      "links_to_create": 268,
+      "links_to_retire": 0
+    },
+    "guardrailViolations": 935,
+    "idempotency": "Two consecutive --all dry runs produced BYTE-IDENTICAL reports (cmp silent, sha256 8f7f802ee056b659f22172fb66579575). Verified for both the first commit (sha256 b112c20448577ed60312d3f5f850e84f) and the corrected one.",
+    "designatedCiks": [
+      {
+        "cik": "0000019617",
+        "registered_name": "JPMORGAN CHASE & CO",
+        "expected_issuer_node_id": "iss_01KWA07DEC3R9RZGX6AJ69AQEA",
+        "expected_issuer_name": "JPMorgan Alerian MLP Index ETN",
+        "cohort_size": 2,
+        "candidate_count": 2,
+        "sec_ticker_bound": 9
+      },
+      {
+        "cik": "0000312070",
+        "registered_name": "BARCLAYS BANK PLC",
+        "expected_issuer_node_id": "iss_01KW8D5MJQSA5H7ZD780XCDWSS",
+        "expected_issuer_name": "iPath Silver ETN",
+        "cohort_size": 7,
+        "candidate_count": 5,
+        "sec_ticker_bound": 9
+      },
+      {
+        "cik": "0000927971",
+        "registered_name": "BANK OF MONTREAL /CAN/",
+        "expected_issuer_node_id": "iss_01KW8C84BT8XX92TP5WN1E5BPV",
+        "expected_issuer_name": "MicroSectors Oil & Gas Exp. & Prod. -3x Inverse Leveraged ETN",
+        "cohort_size": 26,
+        "candidate_count": 5,
+        "sec_ticker_bound": 27
+      }
+    ],
+    "disagreementReasonCountsInSample": {
+      "sampleSize": 40,
+      "cik-has-no-clean-issuer-node": 28,
+      "cik-split-across-issuer-nodes": 12,
+      "note": "sample_limit was 40; the full 103 are in the report on the container, which was deleted per the cleanup constraint. The sample is the first 40 in deterministic (security_node_id, issuer_node_id, edge id) order, not a random draw, so it is not a representative estimate of the 103."
+    },
+    "mechanism": "Exactly the documented path from _inbox/2026-08-17_tw31_production_dryrun_close.json: git archive of the branch head (apps/cockpit/backend) built locally, gcloud compute scp to empressa-bot (project empressa-trading-prod, zone us-east4-a), extracted to /tmp/tw32b on the host, LF-normalised with sed over every .py, docker cp into empressa-cockpit-api at /tmp/tw32b, then run as: docker exec -w /tmp/tw32b empressa-cockpit-api timeout 900 nice -n 19 python scripts/rebuild_issuer_links.py --all --json-out ... --sample-limit 40. Container python 3.12.13. Staged code verified byte-identical to the git blobs: LF sha256 prefixes for issuer_rebuild.py (abde87adf5d326ef), cik_crosswalk.py (7bfd990386f6a32b), issuer_links.py (dd59e41b3c10488f) and rebuild_issuer_links.py (90d32e52c3122478) all match. No new path was invented. As documented, there is no --dry-run flag: dry run is the DEFAULT and a write needs BOTH --apply and --yes-write, neither of which was ever passed. The host still has no /var/lib/cockpit/sec_company_tickers.json, so the crosswalk fell back to the repo-committed artifact.",
+    "cliExitCode": "1 on every run, which is the CLI's documented non-zero-on-guardrail-violation contract (935 violations), not a failure."
+  },
+  "sampleDisagreements": [
+    {
+      "symbol": "SLV",
+      "expected_cik": "0001330568",
+      "expected_registered_name": "iShares Silver Trust",
+      "linked_issuer_node_id": "iss_01KWA6YVRT60X3X1F4ZRDP0AK6",
+      "expected_issuer_node_id": null,
+      "expected_issuer_source": "crosswalk-mint-required",
+      "disagreement_reason": "cik-has-no-clean-issuer-node",
+      "cik_candidate_issuer_nodes": 1,
+      "mint_required_reason": "every candidate issuer node is disqualified: exceeds-sec-ticker-bound, holds-securities-of-another-cik"
+    },
+    {
+      "symbol": "AAAU",
+      "expected_cik": "0001708646",
+      "expected_registered_name": "Goldman Sachs Physical Gold ETF",
+      "linked_issuer_node_id": "iss_01KW8DAATYN78TSMJ5KS6EWT62",
+      "expected_issuer_node_id": null,
+      "expected_issuer_source": "crosswalk-mint-required",
+      "disagreement_reason": "cik-has-no-clean-issuer-node",
+      "cik_candidate_issuer_nodes": 1,
+      "mint_required_reason": "every candidate issuer node is disqualified: exceeds-sec-ticker-bound"
+    },
+    {
+      "symbol": "AGQ",
+      "expected_cik": "0001415311",
+      "expected_registered_name": "ProShares Trust II",
+      "linked_issuer_node_id": "iss_01KW8CFG6R9JF7GHY927YY2B5E",
+      "expected_issuer_node_id": "iss_01KW8CVJSXXZ4B7M4738RC037W",
+      "expected_issuer_source": "crosswalk-cohort",
+      "disagreement_reason": "cik-split-across-issuer-nodes",
+      "cik_candidate_issuer_nodes": 5,
+      "mint_required_reason": null
+    },
+    {
+      "symbol": "AIQD",
+      "expected_cik": "0000927971",
+      "expected_registered_name": "BANK OF MONTREAL /CAN/",
+      "linked_issuer_node_id": "iss_01KW8CZVTM0861DNQ1BP05RRDV",
+      "expected_issuer_node_id": "iss_01KW8C84BT8XX92TP5WN1E5BPV",
+      "expected_issuer_source": "crosswalk-cohort",
+      "disagreement_reason": "cik-split-across-issuer-nodes",
+      "cik_candidate_issuer_nodes": 5,
+      "mint_required_reason": null
+    },
+    {
+      "symbol": "AIQU",
+      "expected_cik": "0000927971",
+      "expected_registered_name": "BANK OF MONTREAL /CAN/",
+      "linked_issuer_node_id": "iss_01KW8CZVTM0861DNQ1BP05RRDV",
+      "expected_issuer_node_id": "iss_01KW8C84BT8XX92TP5WN1E5BPV",
+      "expected_issuer_source": "crosswalk-cohort",
+      "disagreement_reason": "cik-split-across-issuer-nodes",
+      "cik_candidate_issuer_nodes": 5,
+      "mint_required_reason": null
+    },
+    {
+      "symbol": "ARKB",
+      "expected_cik": "0001869699",
+      "expected_registered_name": "Ark 21Shares Bitcoin ETF",
+      "linked_issuer_node_id": "iss_01KWA09FRVF4SEVGBY98XJ6VQ8",
+      "expected_issuer_node_id": null,
+      "expected_issuer_source": "crosswalk-mint-required",
+      "disagreement_reason": "cik-has-no-clean-issuer-node",
+      "cik_candidate_issuer_nodes": 1,
+      "mint_required_reason": "every candidate issuer node is disqualified: exceeds-sec-ticker-bound, holds-securities-of-another-cik"
+    }
+  ],
+  "writesPerformed": 0,
+  "writeProofMethod": {
+    "method": "Five proofs, all read-only.",
+    "proof1_beforeAfterRowCounts": "A row-count probe run through the SAME ORM against the SAME live Cloud SQL database immediately before and immediately after the runs. Every key identical, DIFFERING KEYS = 0.",
+    "beforeCounts": {
+      "nodes_total": 37407,
+      "nodes_by_type": {
+        "event": 166,
+        "issuer": 1323,
+        "security": 35918
+      },
+      "edges_total": 8500,
+      "edges_by_type": {
+        "issued_by": 8334,
+        "would_affect": 166
+      },
+      "issued_by_live": 8334,
+      "identifier_index_total": 167,
+      "identifier_index_by_type": {
+        "accn": 166,
+        "lei": 1
+      },
+      "identifier_index_cik_rows": 0,
+      "identifier_index_max_id": 168,
+      "issuer_nodes_with_links": 1323,
+      "fanout_buckets": {
+        "1": 364,
+        "2-3": 357,
+        "4-10": 405,
+        "11-50": 185,
+        "50+": 12
+      },
+      "links_on_nodes_11_plus": 4638
+    },
+    "afterCounts": {
+      "nodes_total": 37407,
+      "nodes_by_type": {
+        "event": 166,
+        "issuer": 1323,
+        "security": 35918
+      },
+      "edges_total": 8500,
+      "edges_by_type": {
+        "issued_by": 8334,
+        "would_affect": 166
+      },
+      "issued_by_live": 8334,
+      "identifier_index_total": 167,
+      "identifier_index_by_type": {
+        "accn": 166,
+        "lei": 1
+      },
+      "identifier_index_cik_rows": 0,
+      "identifier_index_max_id": 168,
+      "issuer_nodes_with_links": 1323,
+      "fanout_buckets": {
+        "1": 364,
+        "2-3": 357,
+        "4-10": 405,
+        "11-50": 185,
+        "50+": 12
+      },
+      "links_on_nodes_11_plus": 4638
+    },
+    "differingKeys": [],
+    "proof2_identifierIndexMaxId": "identifier_index.id is an autoincrement integer and max(id) held at 168 across the before and after probes, matching the required baseline, so not even an inserted-then-deleted row is possible. cik rows stayed at 0 throughout.",
+    "proof3_byteIdenticalReports": "Two independent --all runs produced byte-identical reports (cmp silent). Had the first run minted an issuer node or a cik identifier row, the second report's agrees, expected_issuer.source_counts and planned figures would necessarily have moved.",
+    "proof4_codePathAudit": "rebuild_issued_by only reaches resolver.resolve_issuer and link_security_to_issuer under apply=True; apply is bool(args.apply and args.yes_write); neither flag was passed on any invocation; the session is never committed on the dry-run path; build_crosswalk is pure local-file reads with no network; and the new designate_expected_issuers() is a pure function with no database handle at all.",
+    "proof5_baselineMatch": "The required comparison baseline (nodes=37407 edges=8500 identifier_index=167, identifier_index max(id)=168) was reproduced exactly by the before probe and still held in the after probe.",
+    "containerNotRestarted": {
+      "restartCount": 0,
+      "startedAtBefore": "2026-08-13T16:19:49.413379948Z",
+      "startedAtAfter": "2026-08-13T16:19:49.413379948Z",
+      "statusBeforeAndAfter": "running"
+    },
+    "deployTreeUntouched": "/app/app/securities/resolver.py mtime still 2026-06-29 12:21:02 +0000 inside the container. The image was not modified, the container was not restarted, no migration was applied, and nothing was deployed.",
+    "tempPathsRemoved": [
+      "host: /tmp/tw32, /tmp/tw32b, /tmp/tw32.tar, /tmp/tw32b.tar, /tmp/_tw32_probe.py, /tmp/tw32*_run*.log, /tmp/tw32b_report_1.json, /tmp/tw32b_summary.json",
+      "container: /tmp/tw32, /tmp/tw32b, /tmp/tw32_report_1.json, /tmp/tw32_report_2.json, /tmp/tw32b_report_1.json, /tmp/tw32b_report_2.json, /tmp/_tw32_probe.py"
+    ],
+    "cleanupVerified": "ls -d /tmp/*tw32* returned nothing on BOTH host and container after cleanup.",
+    "secretsHandling": "COCKPIT_DATABASE_URL was never echoed, decoded, or written anywhere. No secret value appears in this file.",
+    "everyCommandExited": "Every invocation was wrapped in an explicit timeout and exited. The CLI disposes the async engine in a finally block, so it cannot hang."
+  },
+  "ciConclusion": {
+    "runId": "32040476926",
+    "headSha": "a2f552327be54c403ae49132d1f3793286e91500",
+    "runConclusionString": "success",
+    "ghPrChecksVerbatim": [
+      "Frontend build (cockpit web)\tpass\t53s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32040476926/job/95418779554",
+      "Gitleaks security scan\tpass\t1m19s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32040476926/job/95418779552",
+      "Python tests (cockpit backend)\tpass\t6m31s\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32040476926/job/95418779544",
+      "Windows .exe (release tags only)\tskipping\t0\thttps://github.com/empressaioemail-tech/empressa-trading/actions/runs/32040476926/job/95418780259"
+    ],
+    "conclusionStrings": {
+      "Python tests (cockpit backend)": "SUCCESS",
+      "Gitleaks security scan": "SUCCESS",
+      "Frontend build (cockpit web)": "SUCCESS",
+      "Windows .exe (release tags only)": "SKIPPED"
+    },
+    "localSuite": "python -m pytest -q on the FINAL commit a2f5523: 4468 passed, 2 skipped, 21 deselected, 0 failed, in 798.39s. The first commit's tree also ran 4468 passed / 0 failed. CI on the exact head SHA a2f5523 is the authoritative gate and returned success.",
+    "prState": "OPEN",
+    "merged": false
+  },
+  "remaining": [
+    "THE HEADLINE FINDING, and it is not what the numbers first suggest: only 15 of 188 in-scope CIKs have an existing issuer node clean enough to designate. 173 are mint-required. So the legacy graph agrees with SEC's partition on 44 of 147 judgeable links (30%) and is structurally unusable for the other 70%.",
+    "OPERATOR RULING OWED \u2014 ADOPTION. adoptable_ciks is 15: those CIKs already have an existing issuer node that matches SEC's partition and is clean by the guardrail's computable rules, yet --apply would MINT A SECOND node for each, leaving two issuer nodes for the same real issuer. Adopting the existing node (claiming the CIK on it, which is purely additive: one identifier_index row) is the better graph but it hands a legacy name-derived node an authoritative identity. I did NOT change apply's behaviour and did NOT add an --adopt flag, because an unexercised write path is worse than an explicit open question. The count is now in the report so the ruling can be made with numbers.",
+    "OPERATOR RULING OWED \u2014 the 12-of-40 cik-split-across-issuer-nodes cases. ProShares Trust II and BANK OF MONTREAL each have their ticker family spread across 5 issuer nodes. Designation picks the node holding the most cohort members, which is deterministic but arbitrary in the sense that merging the 5 (merge_links already exists for exactly this) would be the real fix. The rebuild deliberately does not merge.",
+    "The 28-of-40 cik-has-no-clean-issuer-node cases are driven by exceeds-sec-ticker-bound, and the pattern is worth a ruling of its own: the nodes hold one SEC-recognised symbol plus dozens of symbols SEC does not list (e.g. iShares MSCI USA Size Factor ETF: 92 securities, 91 unrecognised, bound 2). I verified this is NOT a node-duplication artifact \u2014 only 11 symbols in the whole active master have more than one node. It is the foreign-line cohort colliding with US ETF issuers under fuzzy name match, which is the same root as the 914 unbounded-fanout nodes and is not fixable by a SEC CIK crosswalk.",
+    "Migration 0058 remains UNAPPLIED and I did not apply it. It is deploy-coupled (alembic upgrade head runs inside the deploy scripts) so it rides the next deploy in a soak-safe window. Note that the TW-32 fix means the measurement no longer DEPENDS on 0058 being applied \u2014 that was the point.",
+    "--apply was never run and is not authorized by this dispatch. The plan is unchanged and purely additive: 188 issuer nodes to create, 268 links to create, 0 to retire.",
+    "The report's samples are capped at sample_limit (40 used). The 103 disagreements and 935 guardrail violations exist in full only in the container report, which was deleted per the cleanup constraint. A future run needing the full set should write --json-out to a host path and pull it before cleanup.",
+    "Carried forward unresolved from TW-31: the doc nit in 08_build_scope A-8 and the cik_crosswalk docstring, where the quoted per-CIK ticker-bound head counts (6,548 / 965 / 371) drift from what the committed artifact yields once submissions tickers are unioned in (6,505 / 998 / 377). The max-27 figure and the flat-cap-is-wrong argument both still hold. I did not touch it because it is outside this fix and would have put doc churn in a defect PR.",
+    "Carried forward unresolved from TW-31: the 914 unbounded-fanout nodes need a non-SEC identity authority (LSE/TSX listing data for the suffixed foreign lines, CME/CFTC for futures, and a ruling on whether FX pairs and crypto get issuer nodes at all)."
+  ],
+  "blocked": []
+}

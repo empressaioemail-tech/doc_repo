@@ -55,7 +55,22 @@ CIK coverage at 3% rather than the planner's ~25% estimate **empirically confirm
 
 ## Open
 
-**TW-32 (IN FLIGHT).** `agrees: 0` in the dry run is structural, not measured: the rebuild reads expected issuers from `identifier_index` rows of type `cik`, of which production has zero, so the agreement branch is unreachable. The measurement is blocked on the fix it exists to validate. Fix is to derive expected-issuer from the crosswalk artifact.
+**TW-32 DONE — PR #332 OPEN, unmerged, CI `success` @ `a2f55232`, 4468 passed / 0 failed, `writesPerformed: 0` proven five ways.** Expected-issuer now derives from the crosswalk artifact rather than from the empty `identifier_index`. Re-measurement against the live graph, read-only, `identifier_index` cik rows still 0:
+
+```
+                before   after
+agrees               0      44     (0 was structural, not measured)
+disagrees          147     103
+no_opinion        8187    8187
+```
+
+**THE HEADLINE IS NOT 44.** Only **15 of 188 in-scope CIKs** have an existing issuer node clean enough to designate; **173 are mint-required**. The legacy graph agrees with SEC's partition on ~30% of judgeable links and is structurally unusable for the other ~70%. The 40-row sample splits 28 `cik-has-no-clean-issuer-node` / 12 `cik-split-across-issuer-nodes`; ProShares Trust II and BANK OF MONTREAL each have their ticker family spread across FIVE issuer nodes.
+
+A second defect was found and fixed while measuring: a reported `cohort_size: 99` against a SEC bound of 27. The executor tested the duplicate-nodes-per-ticker hypothesis FIRST and found it WRONG (only 11 symbols in the entire active master have more than one node); the real cause was its own missing status filter counting the 25,926 `merged` nodes. `links_skipped_not_active_securities: 0` proves the fix corrected a reporting artifact without moving the measurement.
+
+A subtle and important test was added: **an AGREEING legacy link is still refused by the trust boundary**, so grouping-equivalence and trustworthiness cannot blur. Agreeing with SEC's partition is not the same as being trustworthy. `designate_expected_issuers()` is pure and adds no second read of `issued_by`, so the AST structural control still holds.
+
+**OPEN RULING — the adoptable 15.** Those CIKs already have a clean matching legacy node, yet `--apply` as written would mint a SECOND node for each, leaving two issuer nodes per real issuer. The executor deliberately did NOT add an `--adopt` flag, on the grounds that an unexercised write path is worse than an explicit open question. **Planner recommendation: MINT FRESH for all 188, do not adopt.** The trust filter makes the duplicate inert (only `cik-exact` is ever read, so the legacy node is unreachable); adoption would require trusting a name-derived match at exactly the moment we have established name-derived matches are ~70% structurally unusable, and 15 that look clean is evidence they are not obviously dirty rather than evidence they are right; minting keeps provenance UNIFORM (every cik-indexed issuer node has the same story: SEC, this date, cik-exact) instead of creating two classes of cik-indexed node; and the cost is 15 inert nodes out of 1,323.
 
 **Collapsed-edge resolution — RULED AND SHIPPED.** Read-time trust filter, merged. `trusted_issuer_links()` admits `cik-exact` only; `lei-exact` is also excluded because exactly one `lei` row exists in the whole index, so that path is unexercised at any scale that would earn trust, and widening is an operator ruling pinned by test. `trusted_issuer_node_id()` returns `None` across the entire legacy cohort rather than falling back to fuzzy, and raises rather than picking a winner on two trusted issuers. An AST structural test fails if any code path reads `issued_by` outside the boundary, with TWO detectors, because a `select(Edge)` constraining no `Edge.type` returns issuer links without naming them. Legacy links untouched: closure is reachable only inside `allow_atom_backfill()`, since `immutability.py`'s PRIMARY `do_orm_execute` guard rejects Core UPDATE/DELETE too. **TW-6 must read only `cik-exact` links and render honest absence on empty, which for the whole legacy cohort is always.**
 
