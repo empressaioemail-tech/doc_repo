@@ -1,0 +1,220 @@
+{
+  "row": "TW-11 (fixture half)",
+  "repo": "smart-markets",
+  "date": "2026-08-17",
+  "branch": "tw11/absence-fixtures",
+  "baseCommit": "123b431",
+  "headCommit": "5ee95ea",
+  "prUrl": "https://github.com/empressaioemail-tech/smart-markets/pull/2",
+  "prState": "OPEN, NOT MERGED — planner merges after verification",
+  "ciConclusion": "gh pr checks 2 verbatim: 'build-test\tpass\t44s' and 'structural-gates\tpass\t6s'; statusCheckRollup conclusion strings: build-test SUCCESS, structural-gates SUCCESS; mergeable MERGEABLE",
+
+  "fixturesAdded": [
+    {
+      "file": "packages/contract/fixtures/khrb.partial.operating-company.json",
+      "shape": "operating-company",
+      "proves": "partial at three altitudes: room layer, roster layer, and the market.quotes.history sub-block",
+      "statesExercised": ["partial", "populated"],
+      "verdictsExercised": ["absent-verified"],
+      "syntheticLabel": "$fixture.synthetic z.literal(true) present; issuer, venue and people are fictional rather than a real ticker with fabricated values"
+    },
+    {
+      "file": "packages/contract/fixtures/cvrb.adjacent-absences.operating-company.json",
+      "shape": "operating-company",
+      "proves": "absent-verified and lookup-failed adjacent in ONE payload, twice: roster beside drivers at layer level, option chain beside book depth inside the market layer",
+      "statesExercised": ["absent", "populated"],
+      "verdictsExercised": ["absent-verified", "lookup-failed"],
+      "syntheticLabel": "$fixture.synthetic z.literal(true) present; issuer, venue and filings are fictional"
+    }
+  ],
+
+  "verdictCoverage": {
+    "before": {
+      "absent-verified": "no fixture anywhere",
+      "lookup-failed": "no fixture anywhere",
+      "not-applicable": "gc.contract.json only (roster layer plus one room authorityDetermination)"
+    },
+    "after": {
+      "absent-verified": "khrb room, khrb roster, khrb market.history, cvrb roster, cvrb market.chain",
+      "lookup-failed": "cvrb drivers, cvrb market.depth",
+      "not-applicable": "gc roster, gc room authorityDeterminations"
+    },
+    "layerStatesAfter": {
+      "populated": "all five fixtures",
+      "partial": "khrb room, khrb roster, khrb market.history",
+      "absent": "cvrb roster, cvrb drivers, cvrb market.chain, cvrb market.depth",
+      "not-applicable": "gc roster"
+    },
+    "enforcedBy": "two corpus tests walk every committed fixture at any depth and assert all four LAYER_STATUSES and all three ABSENCE_VERDICTS appear; deleting or downgrading a fixture fails the build",
+    "noFourthVerdict": "confirmed — nothing meaning 'not built yet' was added; version scope still carries that case and spy.fund.json remains its fixture"
+  },
+
+  "partialDesign": {
+    "definition": "the populated layer PLUS a verified-absence block covering exactly the missing slice; never a badge on a header, never a softened populated",
+    "roomSlice": "two filings held; absence names form 10-Q, 2025-01-01..2025-12-31 in the CIK 0009000001 submissions index, and no held document is a 10-Q",
+    "rosterSlice": "board and officer edges held; absence names form 4, 2026-01-01..2026-08-16, and insiderTransactions is OMITTED rather than sent as an empty array, which is the roster schema's own stated rule and had no payload behind it before",
+    "marketSlice": "bars held either side of 2026-08-11..2026-08-12; absence names exactly those two sessions and no held bar falls inside the window, so the series and its absence agree",
+    "degenerateFormsRejected": {
+      "partialWithNoAbsence": "REJECTED — pre-existing guard (layerOf partial branch requires DeterminedAbsenceSchema). Now pinned by test.",
+      "partialWhoseAbsenceHasNoScope": "REJECTED — pre-existing guard (scopeSearched z.string().min(1)); both the missing key and the empty string are covered. Now pinned by test.",
+      "partialCarryingNotApplicable": "REJECTED — pre-existing guard (DeterminedAbsenceSchema excludes it). Now pinned by test.",
+      "partialWithEmptyPopulatedHalf": "REJECTED — pre-existing .min(1) on documents and people. Now pinned by test.",
+      "honestNote": "MEASURED, NOT ASSUMED: all four were already rejected before this PR. The tests added for them are real regression detectors, but they pin existing guards. They are not new guards and must not be counted as such."
+    }
+  },
+
+  "newSchemaGuard": {
+    "what": "MarketLayerSchema refuses a populated OR partial header when all six quote blocks are unpopulated",
+    "why": "every other layer refuses an empty claim through .min(1) on its payload collection. The market payload has no collection — it is a fixed record of six sub-blocks — so a market layer could claim to hold content while all six blocks underneath were absent, and validate. This is the softened-populated failure reached through the one door .min(1) does not cover.",
+    "bothStatusesOnPurpose": "guarding only partial would have left populated as the cheaper way to make the same false claim, making the guard cosmetic",
+    "floorNotCeiling": "a positive test pins that one populated block over five absences still parses",
+    "file": "packages/contract/src/layers/market.ts",
+    "alsoExported": "QUOTE_BLOCK_KEYS"
+  },
+
+  "testsProvenByRemoval": [
+    {
+      "protection": "market content floor (superRefine, packages/contract/src/layers/market.ts)",
+      "classification": "NEW GUARD (added in this PR)",
+      "removalResult": "exit 1, pass 76 fail 2",
+      "testsThatFailed": [
+        "a market layer claiming populated while every quote block is absent FAILS",
+        "a market layer claiming partial while every quote block is absent FAILS"
+      ]
+    },
+    {
+      "protection": "partial branch requires an absence (packages/contract/src/layer.ts)",
+      "classification": "PRE-EXISTING guard, now pinned",
+      "removalResult": "exit 1, pass 76 fail 2",
+      "testsThatFailed": [
+        "a partial layer with no absence FAILS: partial is never a softened populated",
+        "a partial market sub-block with no absence FAILS"
+      ]
+    },
+    {
+      "protection": "absence.scopeSearched required and non-empty (packages/contract/src/absence.ts)",
+      "classification": "PRE-EXISTING guard, now pinned",
+      "removalResult": "exit 1, pass 76 fail 2",
+      "testsThatFailed": [
+        "a partial layer whose absence states no scope FAILS",
+        "an absent layer's absence cannot drop the scope it searched"
+      ]
+    },
+    {
+      "protection": "DeterminedAbsenceSchema excludes not-applicable",
+      "classification": "PRE-EXISTING guard, now pinned",
+      "removalResult": "exit 1, pass 76 fail 2",
+      "testsThatFailed": [
+        "a determined absence cannot carry the not-applicable verdict",
+        "a partial layer cannot carry the not-applicable verdict"
+      ]
+    },
+    {
+      "protection": "NotApplicableAbsenceSchema verdict literal",
+      "classification": "PRE-EXISTING guard, PREVIOUSLY UNTESTED, now pinned",
+      "removalResult": "exit 1, pass 77 fail 1",
+      "testsThatFailed": ["a not-applicable layer cannot carry a determined verdict"]
+    },
+    {
+      "protection": "room documents .min(1)",
+      "classification": "PRE-EXISTING guard, now additionally pinned on the partial branch",
+      "removalResult": "exit 1, pass 76 fail 2",
+      "testsThatFailed": [
+        "an empty documents array where an absence is required FAILS",
+        "a partial layer cannot drop its populated half"
+      ]
+    },
+    {
+      "protection": "roster people .min(1)",
+      "classification": "PRE-EXISTING guard, now additionally pinned on the partial branch",
+      "removalResult": "exit 1, pass 76 fail 2",
+      "testsThatFailed": [
+        "an empty people array where an absence is required FAILS",
+        "a partial layer cannot drop its populated half"
+      ]
+    },
+    {
+      "protection": "the partial fixture itself (dropped from the loader manifest)",
+      "classification": "NEW corpus-coverage guard",
+      "removalResult": "exit 1, pass 62 fail 14",
+      "testsThatFailed": [
+        "every JSON file in fixtures/ is declared synthetic and validates",
+        "the committed corpus exercises all four layer states",
+        "KHRB: a partial room holds documents AND states the slice it does not hold",
+        "KHRB: a partial roster holds its board AND states the Form 4 window a sweep found empty",
+        "KHRB: a partial market sub-block holds bars AND states the gap between them",
+        "KHRB: every partial in the file carries both halves, and none is a bare badge",
+        "plus the eight negative tests that mutate a clone of it, which fail loudly on their setup precondition rather than skipping"
+      ]
+    },
+    {
+      "protection": "the adjacency fixture itself (dropped from the loader manifest)",
+      "classification": "NEW corpus-coverage guard",
+      "removalResult": "exit 1, pass 66 fail 10",
+      "testsThatFailed": [
+        "the committed corpus exercises all four layer states",
+        "the committed corpus exercises all three absence verdicts",
+        "the corpus invents no fourth verdict meaning not-built-yet",
+        "every JSON file in fixtures/ is declared synthetic and validates",
+        "CVRB: absent-verified and lookup-failed sit adjacent at layer level",
+        "CVRB: absent-verified and lookup-failed sit adjacent inside the market layer",
+        "CVRB: the absent-verified claims are re-runnable and the lookup-failed ones claim nothing",
+        "CVRB: the synthesis composes only over layers that hold something",
+        "an absent layer's absence cannot drop the scope it searched",
+        "THE SCHEMA CANNOT TELL absent-verified FROM lookup-failed: only the payload can"
+      ]
+    },
+    {
+      "protection": "fixture integrity: the partial room softened to a plain populated one (status flipped, absence deleted, file still valid)",
+      "classification": "NEW fixture-integrity guard",
+      "removalResult": "exit 1, pass 72 fail 6",
+      "testsThatFailed": [
+        "KHRB: a partial room holds documents AND states the slice it does not hold",
+        "KHRB: every partial in the file carries both halves, and none is a bare badge",
+        "a partial layer with no absence FAILS: partial is never a softened populated",
+        "a partial layer whose absence states no scope FAILS",
+        "a partial layer cannot carry the not-applicable verdict",
+        "a partial layer cannot drop its populated half"
+      ],
+      "note": "the last four fail on their setup precondition, by design — they throw rather than silently skipping when the fixture stops being partial, matching the repo's existing narrowing-helper idiom"
+    }
+  ],
+
+  "notAGuard": {
+    "test": "THE SCHEMA CANNOT TELL absent-verified FROM lookup-failed: only the payload can",
+    "classification": "CHARACTERIZATION TEST, explicitly labelled in the source as a limit rather than a protection",
+    "finding": "the two determined verdicts share one field set, so swapping them on the adjacency fixture still validates. The schema knows a determination was made, not whether a search ran. Structural distinguishability is carried by the committed payload — a searched scope with an answer about the world, against an unsearched scope with a degraded upstream — not by the type system.",
+    "consideredAndRejected": "adding a required field to the lookup-failed branch (e.g. the named leg that did not answer) would make the two shapes differ. REJECTED for now on two grounds: it diverges from doc 09's absence block, which shows one uniform shape for all three verdicts; and apps/api already emits a legitimate lookup-failed from an unbuilt synthesis adapter where no upstream leg is involved and both upstreams report ok, so a corroboration rule would false-positive on live behaviour. Flagged for the planner as a contract-level call rather than taken unilaterally on a fixture row."
+  },
+
+  "filesChanged": [
+    "packages/contract/fixtures/khrb.partial.operating-company.json (new, 320 lines)",
+    "packages/contract/fixtures/cvrb.adjacent-absences.operating-company.json (new, 238 lines)",
+    "packages/contract/fixtures/README.md (new section describing the two absence files and the fictional-entity default)",
+    "packages/contract/src/layers/market.ts (the one new guard, plus QUOTE_BLOCK_KEYS)",
+    "packages/contract/tests/fixtures.ts (loaders for the two new fixtures; the mutate-a-clone property is preserved)",
+    "packages/contract/tests/fixtures.test.ts (file manifest, shape map, corpus-coverage tests, per-fixture proof tests)",
+    "packages/contract/tests/contract.test.ts (11 negative and boundary tests, all mutating clones of committed fixtures)",
+    "apps/web/src/styles.css (.badge--partial and a --partial token; adjacent fix, flagged as separable in the PR body)"
+  ],
+
+  "verification": {
+    "typecheck": "npm run typecheck clean across all three workspaces",
+    "lint": "npm run lint clean",
+    "format": "npm run format:check clean",
+    "test": "contract 78 pass / 0 fail (was 45); api 39 pass / 0 fail (unchanged)",
+    "structuralGates": "all four CI greps re-run locally, clean",
+    "nothingWeakened": "discriminated unions, .min(1) collections, DeterminedAbsence/NotApplicableAbsence split, superRefine applicability matrix and the room governing-node rule all untouched; the only schema edit is additive",
+    "noRealData": "both new fixtures name fictional issuers, venues and people; no real ticker carries a fabricated value in anything added here, and the fixtures README states this as the default for new fixtures",
+    "constraints": "no deploy, no production writes, nothing outside the smart-markets repo, every command exit-bounded, PR left OPEN for the planner to merge"
+  },
+
+  "remaining": [
+    "TW-11 wiring half is NOT in this PR: get_twin returning these verdicts from live upstreams is still owed, and the row's acceptance criteria name that behaviour.",
+    "apps/web has no test suite and CI runs no frontend assertion for smart-markets, so nothing asserts that AbsenceBlock renders the four states distinctly. The fixtures now exist to render against; the assertion does not. Recommend a web test job before TW-21, on the TW-12 precedent where a backend-sealed marker was dropped by two UIs while main stayed green.",
+    "Contract-level call for the planner: whether lookup-failed should become structurally distinguishable from absent-verified by field set rather than by enum value alone. Reasoning and the rejected implementation are recorded under notAGuard above.",
+    "doc 09 line 97 says partial's absence is a 'verified-absence block'. The schema permits either determined verdict on partial, which is the right behaviour (a partial whose missing slice failed to look is more honest than discarding held data), but the doc's wording and the schema's permission are not identical. Worth one line in doc 09 rather than a schema change."
+  ],
+
+  "blocked": []
+}
