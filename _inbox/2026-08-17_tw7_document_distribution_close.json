@@ -1,0 +1,194 @@
+{
+  "row": "TW-7",
+  "title": "EDGAR filing document bodies reach the VM the way submissions do",
+  "plan": "_rd_disclosure_twin/08_build_scope.md (unregistered R&D; no PLAN-ROW by design, CANON_OVERRIDE TW-7)",
+  "repo": "empressa-trading",
+  "branch": "tw7/sec-document-distribution",
+  "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/338",
+  "baseCommit": "ba40aa3c5112fafec00b6cfd77a414ce8093fd8d",
+  "headSha": "0049a25f0bc13d9cdf8e58143d5c09963e9f05bb",
+  "merged": false,
+  "ciConclusion": "success",
+  "ciEvidence": {
+    "runId": 32083559508,
+    "runHeadSha": "0049a25f0bc13d9cdf8e58143d5c09963e9f05bb",
+    "runConclusion": "conclusion=success status=completed headSha=0049a25f0bc13d9cdf8e58143d5c09963e9f05bb",
+    "ghPrChecks": "[{\"bucket\":\"pass\",\"name\":\"Python tests (cockpit backend)\",\"state\":\"SUCCESS\"},{\"bucket\":\"pass\",\"name\":\"Frontend build (cockpit web)\",\"state\":\"SUCCESS\"},{\"bucket\":\"pass\",\"name\":\"Gitleaks security scan\",\"state\":\"SUCCESS\"},{\"bucket\":\"skipping\",\"name\":\"Windows .exe (release tags only)\",\"state\":\"SKIPPED\"}]",
+    "perJobConclusions": [
+      "Gitleaks security scan :: success",
+      "Python tests (cockpit backend) :: success",
+      "Frontend build (cockpit web) :: success",
+      "Windows .exe (release tags only) :: skipped"
+    ],
+    "backendJobDuration": "5m29s",
+    "note": "The Windows installer job is tag-gated and skips on every branch push; it is skipped on main's baseline too, so the bar is zero failures and it is met."
+  },
+
+  "whyTheRowGrew": "TW-5 proved bodies are retrievable and revealed production has none. Read on the VM before writing anything: /var/lib/cockpit/sec_documents DOES NOT EXIST. sec_submissions is 654M across 8,021 CIK JSONs and sec_submissions.zip is 1.5G, so the metadata leg has been running for months while the body leg was never built. The VM reads its cache or returns honest absence, so the twin could cite a 10-K and never answer from inside it.",
+
+  "distributionDesign": {
+    "shape": "The submissions Part A / Part B shape, extended to bodies. Same bucket, new prefix.",
+    "partA": "non-datacenter host: SEC -> local stage -> gs://empressa-sec/documents/",
+    "partB": "empressa-bot VM: gs://empressa-sec/documents/ -> /var/lib/cockpit/sec_documents, then VERIFY",
+    "layout": "CIK<padded>/<accession>/<document> with a <document>.meta.json provenance sidecar beside each body -- exactly what app.providers.edgar reads.",
+    "oneWriterOfTheSidecar": "Part A retrieves every body THROUGH app.providers.edgar.fetch_filing_document, so the body and its sidecar are written by the same code the VM reads with. Fetching independently would mean authoring the sidecar twice, and a drifted sidecar reads as a cache MISS in production, silently.",
+    "oneReaderOfTheSidecar": "Part B verifies with scripts/sec_documents_verify.py, which calls edgar.local_filing_document rather than re-implementing the cache rules. It compares digest, byte length, source URL, the ORIGINAL fetch instant, and retrieved_from == disk-cache. Source URL and fetch instant are the sidecar-survival claim: bytes alone cannot produce them.",
+    "additiveNotMirrored": "The documents rsync carries NO -d, both halves. Submissions mirror deletions on purpose (regenerated nightly, bucket lifecycle rotates the submissions/ prefix at 14 days). Bodies are immutable, expensive, only refetchable off-VM, and the lifecycle rule does not match documents/. Mirroring deletions there would let a bucket rotation delete bodies the VM already holds. Do NOT extend scripts/empressa-sec-lifecycle.json to documents/.",
+    "submissionsUntouched": "The submissions rsync, the bulk-zip fallback and their -d mirroring are unchanged. Pinned by test, including an assertion that the submissions line STILL deletes, so the two cannot be normalised into each other."
+  },
+
+  "partAChanges": {
+    "file": "scripts/sec_documents_sync.py (new, 469 lines)",
+    "entryPoint": "python scripts/sec_documents_sync.py [--dry-run]",
+    "exitCodes": "0 success, 1 sync failure (a SEC block included, loudly), 2 configuration error",
+    "steps": [
+      "probe SEC and fail loudly on 403 rather than staging an empty corpus",
+      "fetch each cohort CIK's submissions index FRESH from SEC and seed the staging per-CIK cache, so the run is both fresh and hermetic",
+      "select the bounded corpus: form set per issuer shape, three-year window, per-form caps, newest first",
+      "fetch each primary document through edgar.fetch_filing_document (body + sidecar written by the production writer)",
+      "sweep any *.part leftovers so a half-written body with no sidecar can never ship",
+      "write documents_manifest.json INSIDE the tree, carrying the declared bound verbatim plus a typed skipped[] and failures[]",
+      "verify the staged tree locally BEFORE uploading -- if sidecars are not readable here, shipping them cannot make them readable there",
+      "rsync to gs://empressa-sec/documents/ (skipped under --dry-run)"
+    ],
+    "threeSilentGreensClosed": [
+      "A blocked host. Every body fetch returns None on a 403 and None is routine in the provider, so without the probe gate a 403 host would stage nothing and report a clean run. Probe first; and zero staged documents is a refusal, not a no-op.",
+      "A production .env in the clone. prefer_local_sec defaults ON in production and would make Part A fetch nothing while succeeding. Part A PINS it off rather than inheriting it, along with the User-Agent and pacing -- three config seams moved, retrieval and sidecar format untouched. This also keeps the script pure-stdlib, so the operator host needs no backend dependencies.",
+      "The 1.5 GB nightly bulk ZIP. A stray submissions miss would otherwise pull it as a side effect of a sync run. It is made unreachable from this path."
+    ],
+    "typedAbsence": "A filing naming no primary document, or one naming an SEC XSL-rendered viewer path, lands in manifest.skipped with its reason instead of vanishing. A body its own index named but that could not be retrieved is a FAILURE (default tolerance 0), never a smaller corpus."
+  },
+
+  "partBChanges": {
+    "file": "scripts/sec_sync_from_gcs.sh (extended, +79 lines)",
+    "behaviour": "After the unchanged submissions legs, pulls gs://empressa-sec/documents/ into /var/lib/cockpit/sec_documents (creating it with sudo mkdir + chmod 0777, matching sec_submissions, since /var/lib/cockpit is root-owned), counts bodies vs sidecars, then runs the verifier.",
+    "exitCodes": "0 fine, 2 gsutil missing, 3 bodies landed but failed verification. A missing documents/ prefix is a WARN, not a failure, because the first run happens before the operator's first Part A.",
+    "verifier": "scripts/sec_documents_verify.py (new, 250 lines). Imports app.providers.edgar, which is stdlib-only at module level -- confirmed by running it on the VM's Python 3.11.2 against the deployed tree, read-only with -B so no bytecode was written.",
+    "deployWiring": "scripts/sec_documents_verify.py added to BOTH deploy tar lists (scripts/_eq_deploy_local.sh and scripts/deploy-cockpit-api-gcp.ps1) and pinned by test. A verification step that is not on the box is not a verification step, and a file in one tar list and absent from the other has bitten this repo before (D-080). Both remote scripts untar BEFORE calling sec_sync_from_gcs.sh, so one deploy ships the new script and runs it in the same pass.",
+    "runsWhen": "Every backend deploy, and standalone or on a cron: bash scripts/sec_sync_from_gcs.sh"
+  },
+
+  "sizingEstimate": {
+    "method": "Not extrapolated. Every selected filing's primary-document size was read from SEC's own accession index.json on 2026-08-17, then confirmed by an actual --dry-run stage of the whole corpus. The two agree byte for byte.",
+    "cohort": "the six issuer-bearing instruments of the R&D trade grid: NVDA, AAPL, MSFT, TSLA, SPY, QQQ",
+    "excludedByConstruction": "the twelve contract instruments have no issuer and no CIK, so no SEC document exists to carry -- a typed absence one layer up, not a gap here",
+    "formsOperatingCompany": {"10-K": 3, "10-Q": 8, "8-K": 24, "DEF 14A": 3},
+    "formsFundTrust": {"NPORT-P": 12, "N-CSR": 4, "N-CSRS": 4, "485BPOS": 3, "497": 8},
+    "windowDays": 1095,
+    "documentsPerFiling": "primary document only, not the full accession",
+    "filingsSelected": 195,
+    "documentsFetched": 171,
+    "skippedXslViewerPath": 24,
+    "failures": 0,
+    "bytes": 165948963,
+    "mib": 158.3,
+    "sidecarBytesApprox": 70000,
+    "perSymbol": {"NVDA": 38, "AAPL": 38, "MSFT": 38, "TSLA": 37, "SPY": 10, "QQQ": 10},
+    "vmHeadroom": "79G total, 25G used, 51G free, 34% used (read live before writing anything)",
+    "shareOfHeadroom": "0.30% of the 51G free",
+    "whyBounded": "The same form set and window across the 8,021 CIKs already in the submissions sync extrapolates to roughly 209 GB, about four times the free disk. 'All filings for all CIKs' is not a larger version of this, it is a different and unbuildable thing.",
+    "fundFinding": "SPY and QQQ file NONE of the operating-company forms -- checked against SEC, not assumed. Their 24 NPORT-P filings are skipped as xsl-viewer-path (see remaining)."
+  },
+
+  "proofs": {
+    "ciOffline": "23 tests. Network access is made STRUCTURALLY IMPOSSIBLE for the module, not merely unused: urllib.request.urlopen, the SEC reachability probe, and the gsutil runner all raise. Nothing can pass by swallowing a 403. Same pattern TW-5 established.",
+    "roundTripPositive": "Faithful transfer of the real 171-document corpus, read back through the production cache reader: 'documents: 171/171 verified (failed 0, sidecars missing 0)', exit 0.",
+    "roundTripNegative": "Same corpus with *.meta.json filtered in transit -- every byte arrives: 'documents: 0/171 verified (failed 171, sidecars missing 171)', exit 1, each row named. The cache would never have hit and nothing else would have said so.",
+    "partBRehearsed": "The shipped sec_sync_from_gcs.sh run end to end with gsutil stubbed to a local bucket. Faithful: 171 bodies, 171 sidecars, 159M on disk, 'document verification PASSED', PART_B_EXIT=0. Sidecar-dropping: 'ERROR: document verification FAILED -- bodies present but not readable as cache entries', PART_B_EXIT=3.",
+    "mutationChecked": "A verify gate rewritten to always pass turns 4 tests red. A transfer rewritten to silently filter *.meta.json turns 4 tests red including the positive round trip. The gate can fail, so its passing means something.",
+    "dryRunAgainstRealSec": "Part A --dry-run on this residential host: {ok: true, documents: 171, skipped: 24, bytes: 165948963, verified_locally: 171, uploaded: false}. Nothing was pushed to GCS.",
+    "fullSuiteLocal": "4582 passed, 2 skipped, 21 deselected on the branch"
+  },
+
+  "operatorSteps": [
+    {
+      "n": 1,
+      "what": "Review and merge PR 338. The planner does not merge.",
+      "where": "GitHub",
+      "cmd": "gh pr view 338 --repo empressaioemail-tech/empressa-trading --web"
+    },
+    {
+      "n": 2,
+      "what": "On the NON-DATACENTER host (residential/office IP -- the Windows box), pull merged main. SEC 403s datacenter IPs, so this cannot be automated from GCP or GitHub Actions.",
+      "where": "PowerShell, working clone",
+      "cmd": "cd <your empressa-trading clone>; git checkout main; git pull"
+    },
+    {
+      "n": 3,
+      "what": "Set the SEC and GCS credentials. Same GCS-writer service account as the submissions sync (roles/storage.objectAdmin on gs://empressa-sec), or gcloud auth application-default login.",
+      "where": "PowerShell",
+      "cmd": "$env:SEC_GCS_BUCKET = \"empressa-sec\"; $env:SEC_USER_AGENT = \"Empressa contact@empressa.pro\"; $env:GOOGLE_APPLICATION_CREDENTIALS = \"<path-to-sa.json>\""
+    },
+    {
+      "n": 4,
+      "what": "DRY RUN first: stages and verifies locally, uploads nothing. Takes a few minutes (paced at SEC fair-access rates) and downloads ~158 MiB.",
+      "where": "PowerShell, repo root",
+      "cmd": "python scripts\\sec_documents_sync.py --dry-run",
+      "expect": "\"ok\": true, \"documents\": 171 (approximately -- it moves as the cohort files), \"skipped\": 24, \"verified_locally\" equal to \"documents\", \"uploaded\": false. Exit 0. If it exits 1 naming a 403, the host is not on a residential IP."
+    },
+    {
+      "n": 5,
+      "what": "REAL RUN: same command without --dry-run. Uploads to gs://empressa-sec/documents/. Cached bodies replay from the stage dir, so this does not refetch what the dry run already pulled.",
+      "where": "PowerShell, repo root",
+      "cmd": "python scripts\\sec_documents_sync.py",
+      "expect": "\"uploaded\": true and \"gcs_prefix\": \"gs://empressa-sec/documents/\". Exit 0."
+    },
+    {
+      "n": 6,
+      "what": "Confirm the objects landed in the bucket.",
+      "where": "PowerShell or Cloud Shell",
+      "cmd": "gsutil du -sh gs://empressa-sec/documents/; gsutil ls gs://empressa-sec/documents/ | head"
+    },
+    {
+      "n": 7,
+      "what": "Deploy the backend. Part B is inside the deploy: the tar is extracted BEFORE sec_sync_from_gcs.sh runs, so one deploy both ships the new scripts and pulls the bodies. Observe the D-080 cutover checklist in the script header (never before a 15m bar close, avoid 00:00-00:30 and 21:00-22:00 UTC).",
+      "where": "PowerShell, repo root",
+      "cmd": "powershell -File scripts/deploy-cockpit-api-gcp.ps1",
+      "expect": "In the deploy output: '=== SEC document bodies ===', 'local bodies: N  sidecars: N' with the two EQUAL, and 'document verification PASSED'. 'document verification FAILED' means bodies landed without readable provenance -- do not treat it as cosmetic."
+    },
+    {
+      "n": 8,
+      "what": "Verify on the VM independently of the deploy.",
+      "where": "bash, via gcloud ssh",
+      "cmd": "gcloud compute ssh empressa-bot --zone us-east4-a --project empressa-trading-prod --command=\"cd /opt/empressa && python3 -B scripts/sec_documents_verify.py --dir /var/lib/cockpit/sec_documents --json\"",
+      "expect": "\"ok\": true with \"verified\" equal to \"rows\" and \"missing_sidecars\": 0. Exit 0."
+    },
+    {
+      "n": 9,
+      "what": "OPTIONAL: schedule Part A daily on the same host and at the same time as the submissions sync (Windows Task Scheduler). Bodies then track new filings; re-runs are cheap because cached entries replay.",
+      "where": "Windows Task Scheduler",
+      "cmd": "(same command as step 5, with the step 3 environment set in the task)"
+    }
+  ],
+
+  "filesChanged": [
+    "scripts/sec_documents_sync.py (new, +469) -- Part A",
+    "scripts/sec_documents_verify.py (new, +250) -- the shared round-trip gate, used by both sides",
+    "scripts/sec_sync_from_gcs.sh (+79/-6) -- Part B, documents leg added, submissions leg untouched",
+    "apps/cockpit/backend/tests/test_sec_documents_sync.py (new, +577) -- 23 offline tests",
+    "scripts/_eq_deploy_local.sh (+2/-1) -- ship the verifier to the VM",
+    "scripts/deploy-cockpit-api-gcp.ps1 (+1) -- ship the verifier to the VM",
+    "apps/cockpit/docs/EDGAR_NIGHTLY_RUNBOOK.md (+123) -- the TW-7 section: design, bound, sizing, both parts",
+    "apps/cockpit/docs/OPERATOR_TODO.md (+1) -- first Part A run on the operator queue",
+    "apps/cockpit/backend/.env.example (+4) -- COCKPIT_SEC_DOCUMENTS_DIR and the bodies refresh path"
+  ],
+
+  "remaining": [
+    "NPORT-P bodies are NOT carried. SEC names their primary document xslFormNPORT-P_X01/primary_doc.xml and edgar._safe_document_name refuses any name with a separator -- correctly, since rewriting it would cache one document under another's key. 24 filings (12 SPY, 12 QQQ) land in manifest.skipped with reason xsl-viewer-path. This costs the fund holdings layer. Fixing it is a PROVIDER change (resolve SEC's rendered-viewer path to the underlying document, verified against the accession index) and belongs to its own row, not a distribution row.",
+    "Only the PRIMARY document per filing is carried. Exhibits, XBRL and the rest of each accession are not. Adding them multiplies the corpus by roughly 6x on the measured submission-vs-primary ratio and should be a declared decision, not a default.",
+    "Part A has no schedule. It runs when the operator runs it (step 9 is optional). Bodies do not track new filings until it is scheduled.",
+    "Nothing consumes the bodies yet. This row puts them on the host; the twin read contract (TW-2) and Smart Files mounting are what turn them into answers.",
+    "The 8-K cap of 24 is a judgement, not a measurement. It covers roughly the last 18 months for this cohort; a filer with a busier 8-K cadence would silently lose older ones inside the three-year window. The cap is in the manifest so the corpus can say so."
+  ],
+
+  "blocked": [],
+
+  "constraintsHonoured": {
+    "noDeploy": true,
+    "noProductionWrites": "true -- the VM was read only (df, du, find, ls, and one python3 -B import check that writes no bytecode)",
+    "noContainerRestart": true,
+    "noGcsPush": "true -- Part A was exercised with --dry-run only; gs://empressa-sec/documents/ does not exist yet and the operator creates it in step 5",
+    "notMerged": true,
+    "everyCommandExits": "true -- Part A, Part B and the verifier are all exit-bounded; the verifier's exit codes are the contract Part B branches on and are asserted through main() in CI"
+  }
+}
