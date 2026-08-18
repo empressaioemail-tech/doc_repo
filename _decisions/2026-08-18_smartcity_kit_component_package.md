@@ -50,7 +50,9 @@ The package is conformant only while all of these hold, and a test enforces each
 1. The package declares no `--sc-` token of its own. It may carry the canonical token block, and if it does that block is byte-identical to `30b_smartcity_design_system.md` section 4.1; every other token declaration is a fork.
 2. No component file contains a hex color, an `rgb()` value, or a hardcoded px radius or duration.
 3. Every class a component emits exists in `sc-kit.css` or the product stylesheet.
-4. The package adds no CSS rule of its own. It ships the kit and renders its classes; a stylesheet that styles a component is the second source of truth this decision exists to prevent.
+4. The package adds no CSS rule of its own, with one bounded exception: it may ship `@font-face` rules, and only those, for families the canonical token block already names in `--sc-font-*`. It ships the kit and renders its classes; a stylesheet that styles a component is the second source of truth this decision exists to prevent.
+
+**Amended again 2026-08-18, during the first design sync.** The kit's CSS names Inter and IBM Plex Mono and shipped neither, because item 4 forbade the `@font-face` rule that would carry them. The product gets away with it by loading them from a font host in its own HTML; nothing built from the package does, so every such design renders in a fallback font and the type ramp is lost silently. A font file is not a design decision being forked — the families are already declared in the canonical token block, and shipping them fulfils that declaration rather than competing with it. The exception is bounded so it cannot widen: only `@font-face`, only families `--sc-font-*` already names, and a test asserts both. Third wording correction in as many days; the pattern is that a gate written as an absolute keeps forbidding the compliant case, and each time the fix is to name the boundary rather than loosen the rule.
 
 A package that fails any of these has forked the system and is a defect, not a variant.
 
