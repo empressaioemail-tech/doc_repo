@@ -1,0 +1,97 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint, taken after the build and the negative suite and before the PR",
+  "planRow": "G-82",
+  "repo": "empressaioemail-tech/smartcity-kit",
+  "branch": "g82/kit-wrapper",
+  "date": "2026-08-18",
+  "subAgents": "none. This card was run solo by the lane agent; the dispatch forbade spawning and nothing was delegated. Verification was performed by the same agent that built, which is the known weakness of a solo lane and is why the negative suite below exists as evidence rather than assertion.",
+
+  "measured": {
+    "shippedVocabularyDenominator": 109,
+    "classesEmittedByComponents": 109,
+    "coverage": "109 of 109 (100 percent). Denominator: distinct class-selector tokens in vendor/sc-kit.css + vendor/shell.css with CSS comments stripped, including state modifiers and element-scoped children. Measured by RENDERING every gallery entry and parsing class attributes out of the output, never from a hand list.",
+    "exportedComponents": 73,
+    "galleryEntries": 73,
+    "sourceModules": 9,
+    "testsTotal": 66,
+    "testsPassing": 65,
+    "testsSkipped": "1 (vendor-parity arm B, when SC_DASHBOARDS_DIR is unset; it PASSES when set, and CI sets it and fails the job if it skips)",
+    "runtimeClassSet": "demo has-value is-max is-presented nm on open p-crit p-info p-ok p-quiet p-warn pill prov rail srcreg t-data word (18 classes app.js assigns at runtime, all covered)"
+  },
+
+  "negativeSuite": {
+    "how": "scripts/prove-gates.mjs injects one real violation per gate into a temporary COPY of the repo, runs that gate against it, and requires the gate both to FAIL and to NAME the violation in its message. The working tree is never mutated.",
+    "result": "16 of 16 injected violations caught and named",
+    "cases": [
+      "gate 1a  - a component file declares its own token: FIRED",
+      "gate 1b  - the carried token file is edited: FIRED",
+      "gate 1c  - a token is invented inside the carried block: FIRED",
+      "gate 2   - a component hardcodes a colour: FIRED",
+      "gate 2   - a component hardcodes a radius: FIRED",
+      "gate 3   - a component emits a class no stylesheet defines: FIRED",
+      "gate 3   - a new export is not registered in the gallery: FIRED",
+      "gate 4   - the package authors a stylesheet: FIRED",
+      "gate 4   - a component imports a stylesheet: FIRED",
+      "law 3    - the quiet default is flipped to a loud one: FIRED",
+      "law 1.6  - Panel gains an elevation prop: FIRED",
+      "parity   - a component adds a wrapper the product does not have: FIRED",
+      "vendor   - upstream moves away from the copy: FIRED",
+      "needles  - a forbidden string reaches a file: FIRED",
+      "runtime  - the product assigns a class no stylesheet defines: FIRED",
+      "runtime  - the kit stops covering a class the product builds at runtime: FIRED"
+    ],
+    "twoWereSilentFirst": "The first run scored 13 of 15: two cases FAILED the test but did not NAME the violation, which means my expected-message strings were wrong, not the gates. Both were corrected and re-run. Recording it because a negative suite that is tuned until it reads clean is worth nothing; what makes it evidence is that it caught its own two bad expectations."
+  },
+
+  "adversarialReviewOfMyOwnWork": [
+    {
+      "id": "R-1",
+      "challenge": "Gate 3 could be satisfied by a component that emits a valid class in the wrong element.",
+      "answer": "True, and gate 3 alone does not catch it. That is what markup parity is for: 17 comparisons against vendor/index.html plus three composed comparisons (top bar, sidebar, whole Overview lens), each asserting tag, class, element order, nesting and text. The MountNote case proves the point: gate 3 was green while the heading rendered as b > span.t-data instead of the product b.t-data, and only the parity comparison caught it."
+    },
+    {
+      "id": "R-2",
+      "challenge": "The composed screen was made to match by editing the composition, so the parity test proves I can copy markup, not that the components are right.",
+      "answer": "Partly fair, and it is the reason four component-level defects were fixed rather than papered over during that alignment: MountNote wrapped its heading wrongly; Prov wrapped its detail in a span the product does not always have (5 shipped instances carry bare text, 1 a span, 1 two spans); Grow was span-only where the top bar ships a div; and the ShellNav open state was declared as covered while never being rendered. Each of those is a component change, not a composition change. Where I DID change the composition it was to reproduce the product identity markers and the middot separator, which are caller content."
+    },
+    {
+      "id": "R-3",
+      "challenge": "Every test imports ../dist/index.mjs by relative path, which is not what a consumer does.",
+      "answer": "Correct, which is why test/consumer.test.mjs packs the package, extracts the tarball into a temporary tree, and imports it BY NAME through the exports map as both ESM and CJS, resolves both stylesheet subpaths, and typechecks a consumer TSX file against the emitted declarations. It also runs 10 must-not-compile programs and requires the compiler to reject each ON THE OFFENDING LINE, so a rejection caused by an unrelated error does not score."
+    },
+    {
+      "id": "R-4",
+      "challenge": "The 10 must-not-compile cases first passed while react types were unresolvable, meaning tsc was failing for the wrong reason.",
+      "answer": "This actually happened. A paths mapping shadowed @types/react, so tsc errored on every file including the good one. The good-file typecheck failing is what exposed it. Fixed by removing the mapping, and the reject check was tightened to require the error to cite reject<N>.tsx line 3. Both halves now hold: the good program compiles clean and each bad program is rejected at its own line."
+    },
+    {
+      "id": "R-5",
+      "challenge": "Pinned hashes do not survive upstream moving, so the copy guarantee is weaker than it reads.",
+      "answer": "Stated rather than implied. Arm A (pin) survives a clone and catches edits here. Arm B (byte-compare against a live checkout) catches upstream moving and runs only where a checkout exists. CI checks out the public smartcity-dashboards and greps its own log to FAIL if arm B skipped, so the two cannot silently collapse into one."
+    },
+    {
+      "id": "R-6",
+      "challenge": "The harness page carries an authored style block, which looks like the package styling itself.",
+      "answer": "It carries six rules that lay out a listing and label it: .h-page, .h-entry, .h-name, .h-from, .h-demo. It declares no --sc- token, styles no kit class, lives in harness/ which is never published, and gate 4 scans src/ for authored styling while scanning EVERY .css file in the repo. The harness block is inline in a generator script rather than a .css file, so it is worth naming explicitly here rather than letting the reader discover it: it is a real, deliberate exception and the reason it is acceptable is that it styles nothing the design system owns."
+    },
+    {
+      "id": "R-7",
+      "challenge": "Screenshot comparison is my eye, not a diff.",
+      "answer": "Correct and not dressed up. The automated half is markup parity. The visual half is two 1600x1000 renders of the same lens, one composed from kit components and one from the shipped page, through the same two stylesheets, read side by side. They are indistinguishable after the four fixes above; before them, the compass icon, the nav-footer chip and the compass scope separator were visibly different, which is what the screenshots were for."
+    }
+  ],
+
+  "componentDefectsFoundByRenderingRatherThanTyping": [
+    "MountNote heading rendered b > span.t-data; the product ships b.t-data. Fixed in src/regions.tsx.",
+    "Prov wrapped detail in a span; the shipped chip is not uniform. Now rendered as given. Fixed in src/status.tsx.",
+    "Grow rendered span only; the top bar ships div.grow. `as` prop added.",
+    "ShellNav declared `open` as covered while no example rendered it. The covers-equals-rendered test caught it.",
+    "Six gallery entries declared coverage that did not match what they rendered. Same test."
+  ],
+
+  "openAtCP2": [
+    "PR not yet opened. No CI run has executed, so no conclusion string exists yet.",
+    "LICENSE names Legacy Group ATX LLC as the copyright holder and grants nothing. The repo was created public with no licence, so stating proprietary terms is the conservative fill; the entity name needs operator confirmation and is flagged in the close rather than assumed correct."
+  ]
+}
