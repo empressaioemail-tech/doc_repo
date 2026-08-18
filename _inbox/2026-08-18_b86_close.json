@@ -1,0 +1,197 @@
+{
+  "row": "G-86",
+  "title": "Kit preview cards present correctly and ship; the upload is blocked on a missing tool",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "lane": "B",
+  "repo": "empressaioemail-tech/smartcity-kit",
+  "branch": "g86/preview-cards-and-conventions",
+  "prUrl": "https://github.com/empressaioemail-tech/smartcity-kit/pull/5",
+  "baseCommit": "8ef0203f376107306595b26ccd75171965c66d51",
+  "headSha": "c935ad07dae7c7320c3eb37f68c2548632194108",
+  "merged": false,
+  "ciConclusion": "success",
+  "ciEvidence": {
+    "runId": 32194013389,
+    "runHeadSha": "c935ad07dae7c7320c3eb37f68c2548632194108",
+    "runConclusion": "conclusion=success status=completed headSha=c935ad07dae7c7320c3eb37f68c2548632194108",
+    "ghPrChecks": "[{\"bucket\":\"pass\",\"name\":\"test\",\"state\":\"SUCCESS\"}]",
+    "perStepConclusions": [
+      "check out the upstream product :: success",
+      "move the upstream checkout out of the workspace :: success",
+      "npm run typecheck :: success",
+      "npm test :: success",
+      "npx tsc --noEmit -p tsconfig.examples.json :: success",
+      "prove the typefaces actually load :: success",
+      "assert the upstream drift check actually ran :: success"
+    ],
+    "note": "CI sets SC_DASHBOARDS_DIR, so vendor-parity arm B RAN here — the byte-comparison against the live smartcity-dashboards checkout that is skipped locally. The final step asserts that the drift check actually ran rather than declaring itself unrun, so a green here is not a silent skip."
+  },
+
+  "headline": "Steps 1 and 3 are done. Step 2, the upload, is BLOCKED and was not attempted: DesignSync is not available in this session. The Claude Design project f5e5465e-943f-4f68-b52f-608925bc07b0 is still empty and unchanged.",
+
+  "theBlocker": {
+    "what": "The dispatch's premise does not hold. It states 'You have the DesignSync tool; the previous session did not, which is the only reason this is being handed to you.' This session carries the same three MCP servers the previous one did: cursor-ide-browser, plugin-neon-postgres-neon, and user-hauska-cortex (in error state).",
+    "howVerified": "Full MCP catalog listed, plus two pattern searches — (?i)designsync|design_sync|finalize_plan returned zero matches, and (?i)sync|upload|write_files|project returned only Neon project tools.",
+    "noLocalFallback": ".ds-sync/resync.mjs documents the upload as agent-side MCP calls ('fetch the anchor before this (DesignSync get_file -> a local file)'). There is no HTTP client, no API token and no CLI upload path anywhere in .ds-sync. Nothing local can drive the transfer.",
+    "whyNothingWasImprovised": "The dispatch's own stop rule is that a half-applied upload with a fresh anchor is permanent while an un-anchored project merely re-verifies. Reaching a live design project by an unsanctioned route is the strictly worse failure, and it is outward-facing. Stopping and reporting is the correct outcome here.",
+    "whatIsNeeded": "A seat that actually carries the DesignSync MCP server. The scratch file's OPEN entry from the previous session said the same thing and it is still true.",
+    "whatIsReadyForThatSeat": "Everything. ds-bundle/ is built, validated and coherent with the PR sources. The upload is a mechanical replay of STEP 2 with no judgement left in it."
+  },
+
+  "uploadRunbookForTheNextSeat": {
+    "preflight": "cd P:\\tmp\\g82v on branch g86/preview-cards-and-conventions. If the clone is gone, re-clone, npm ci, npm run build, then package-build + package-validate and confirm exit 0 before touching the project.",
+    "approvalExplanationOwedToNick": "One approval now covers everything this run uploads plus cleanup of anything a later rebuild drops. He will not be prompted again, and components appear in the picker as they land rather than all at once at the end.",
+    "finalizePlan": {
+      "localDir": "./ds-bundle",
+      "writes": ["components/**", "tokens/**", "fonts/**", "_vendor/**", "_preview/**", "guidelines/**", "_ds_bundle.js", "_ds_bundle.css", "styles.css", "README.md", "_ds_sync.json", "_ds_needs_recompile"],
+      "deletes": ["components/**", "tokens/**", "fonts/**", "_vendor/**", "_preview/**", "guidelines/**"]
+    },
+    "order": [
+      "1. write _ds_needs_recompile FIRST — the sentinel fences the app's manifest machinery against a half-uploaded state",
+      "2. all content writes EXCEPT _ds_sync.json, chunked <=256 files per call, smaller chunks for fonts/ (44 files, and the server bounds bytes not just file count). On a 500, halve the chunk and retry.",
+      "3. no deletes — the project started empty",
+      "4. re-write _ds_needs_recompile",
+      "5. write _ds_sync.json LAST, in its own call. It is the anchor that vouches for everything else."
+    ],
+    "stopRule": "Any write failure that retries do not clear means STOP. No sentinel re-arm, no _ds_sync.json.",
+    "expectedPayload": "417 files: components 292, fonts 44, _preview 73, _vendor 2, plus _ds_bundle.js, _ds_bundle.css, styles.css, README.md, _ds_sync.json, _ds_needs_recompile. tokens/ and guidelines/ are EMPTY and that is correct — cfg.tokensGlob is a no-op without cfg.tokensPkg and the 63 tokens ship inside kit.css. Do not treat the two empty directories as a build fault.",
+    "thenConfirm": "DesignSync list_files, count against 417, then give Nick https://claude.ai/design/p/f5e5465e-943f-4f68-b52f-608925bc07b0"
+  },
+
+  "whatWasDone": {
+    "step1": "The 15 components package-validate flagged [GRID_OVERFLOW] now present correctly. 11 that rendered wider than their grid cell got cardMode column (full card width per story, nothing dropped); 4 that positioned content outside any cell got cardMode single with an explicit primaryStory. The three shell entries kept their 1100x700 viewport, which matters because viewport IS in the grade key and cardMode deliberately is not. The targeted preview-rebuild succeeded — no CONFIG_STALE, so no fallback build was needed for the remedy itself.",
+    "twoDefectsFoundByLooking": "cardMode single fixed the geometry of CompassScrim and StageScrim and left both rendering as an empty white box, because each composes a Region without the ColStack rail height home and .region-canvas collapses to height 0. Separately, conventions.md named four vendor brands inside a refusal guard, in a file that ships. Both fixed. Full detail in the CP2.",
+    "step3": "Kit PR #5 open and green with the durable set only: 70 previews, conventions.md, config.json. 72 files. No grades, no .cache, no LICENSE."
+  },
+
+  "wdllRegrade": [
+    {
+      "item": 1,
+      "text": "Operator approves this card",
+      "grade": "met",
+      "evidence": "_inbox/2026-08-18_g86_previews_WDLL.md carries status approved and an operator approval dated 2026-08-18."
+    },
+    {
+      "item": 2,
+      "text": "Seventy remaining components have owned previews",
+      "grade": "met",
+      "evidence": "73 files in .design-sync/previews, 70 of them new on this branch and 3 calibration previews already on main. package-build reports '73 user-owned, 0 generated', so every component resolves to an owned preview and none falls back."
+    },
+    {
+      "item": 3,
+      "text": "Planner grades every new sheet this iteration",
+      "grade": "met",
+      "evidence": "73 grade files, 155 cells, zero non-good. The 31 cells this session touched were re-graded from sheets Read this iteration: ShellRecede, ShellRegions, ShellTop, DataBody, DataCell, DataHead, DataHeadCell, DataRow, DataTable, Prov, Stage, CompassScrim, CompassSheet, StageEsc, StageScrim. CompassScrim and StageScrim were re-captured after their ColStack edit and re-read, so no verdict rests on a sheet predating the change it describes. The other 58 carry forward from the prior session with zero cleared.",
+      "caveat": "I cleared those 15 grade files unnecessarily by passing --force to package-capture; cardMode is not in the grade key so 12 of them would have carried. Logged as SELF-1 in the CP2. It cost a re-grade and changed no outcome."
+    },
+    {
+      "item": 4,
+      "text": "Conventions header is authored and stitched",
+      "grade": "met",
+      "evidence": ".design-sync/conventions.md exists, cfg.readmeHeader points at it, and package-build logs 'readmeHeader: stitching .design-sync/conventions.md'. The header states dark is the staff default, that it is set with data-theme=\"dark\" on the root, and that Theme mode=\"dark\" must never be used as a page provider — which is the standing answer to the handoff's open question 1. Classes and tokens in it verify against dist/.",
+      "note": "Amended this session: the fixture-content paragraph no longer names vendor brands. See D-2 in the CP2."
+    },
+    {
+      "item": 5,
+      "text": "Verified batches upload incrementally",
+      "grade": "dropped",
+      "evidence": "Not attempted. DesignSync is absent from this session's MCP server list and there is no local upload path. The project is still empty. Its named check — 'DesignSync list_files component count rises in named batches' — is untestable from here. Everything upstream of it is done and verified; a runbook for a seat that has the tool is in this file."
+    },
+    {
+      "item": 6,
+      "text": "Standing constraints hold",
+      "grade": "met, with one violation found and fixed",
+      "evidence": "The five absolute needles (permitflow, citizenconnect, leaflet, pipedrive, stripe.com) grep clean across the durable set AND across the entire 417-file ds-bundle payload. bastrop and chestnut appear nowhere in the durable set. npm test's constraints suite passes. No adapter grant, no G-52, no G-24, grantedAdapters untouched. The smartcity-dashboards repo was never opened and no deploy was run. Live Bastrop untouched on smartcityos.io.",
+    "whatWasProbedVsInferred": "The demo surface was probed live: GET / , /shell.css and /?cityKey=empty-city all return HTTP 200. The serving REVISION string was not re-read — gcloud could not resolve the service from this shell's project/region defaults and it was not worth chasing, because the constraint is a negative one and nothing in this session touched that repo or ran a deploy. If a reader needs the revision confirmed as 00017-vx4, that is still an unrun check. Note for the next prober: HEAD returns 404 on this service, so probe with GET.",
+      "theViolation": "conventions.md named four vendor brands in a refusal guard. Fixed before the PR. The kit's own gate could not have caught it because walk() skips .design-sync — see D-3."
+    }
+  ],
+
+  "finishCard": "Four met, one met-with-a-fixed-violation, one dropped. The dropped item is the whole point of the dispatch and it is dropped for a tooling reason rather than a work reason: every input it needs is built, validated and on a green PR.",
+
+  "followUpRowsProposed": [
+    {
+      "id": "F-1",
+      "what": "The constraint gate cannot see the directory that now holds shipping source.",
+      "detail": "walk() in test/_lib.mjs skips ds-bundle, .ds-sync and .design-sync at ROOT as TOOL_OUTPUT_DIRS, so constraints.test.mjs scans neither conventions.md nor the 73 previews. conventions.md travels verbatim into the uploaded README. The skip was correct when .design-sync held only converter input; the directory changed character at G-85. Widening it touches three scans and re-opens the gate-4 stylesheet false positive it was recorded to prevent, so this wants its own row and its own verification rather than a drive-by. A guard beats the prose note in the PR body.",
+      "size": "small"
+    },
+    {
+      "id": "F-2",
+      "what": "No committed instrument shows what the component picker actually renders.",
+      "detail": "Grading reads per-story sheets captured through ?story=, which are unaffected by cardMode. The card render — the thing Nick QA-walks — is only visible by loading the component HTML at its declared viewport. That gap is why two cards reached this session rendering as empty white boxes with every check green. I built a throwaway script to see it and deleted it; it should be a committed capture mode instead.",
+      "size": "small"
+    },
+    {
+      "id": "F-3",
+      "what": "Stage renders Max and Presented identically.",
+      "detail": "Byte-identical captures. Authored content, graded good twice, outside this row's remedy scope, but the two cells buy nothing as a variant axis.",
+      "size": "trivial"
+    },
+    {
+      "id": "F-4",
+      "what": "Product CSS for mx*, cite and atomchip.",
+      "detail": "Carried forward unchanged from the handoff. Two of the five components 30b section 3.1 calls load-bearing, plus the atom chip, have no CSS in any shipped stylesheet, so the kit cannot wrap them and a design agent will invent them. conventions.md tells the agent not to. This is a card against smartcity-dashboards, not the kit, and it should exist before anyone designs a Plan Review surface.",
+      "size": "not sized; product work"
+    }
+  ],
+
+  "operatorSteps": [
+    {
+      "n": 1,
+      "what": "Review and merge kit PR #5. The planner does not merge.",
+      "where": "GitHub",
+      "cmd": "gh pr view 5 --repo empressaioemail-tech/smartcity-kit --web"
+    },
+    {
+      "n": 2,
+      "what": "Decide how the upload gets a DesignSync seat. That is the only thing standing between the current state and the picker being walkable.",
+      "where": "operator call",
+      "options": "Hand the STEP 2 runbook in this file to a seat that carries DesignSync, or add the server to this workspace and re-dispatch G-86 for the upload leg only."
+    },
+    {
+      "n": 3,
+      "what": "Review the doc_repo commit plan and give the go. doc_repo is left uncommitted.",
+      "where": "this session"
+    },
+    {
+      "n": 4,
+      "what": "The live demo city is a different surface and is already walkable — it needs nothing from this row.",
+      "where": "browser",
+      "cmd": "https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app",
+      "expect": "Development services shows 14 fixture cases sorted unresolved-first; ?cityKey=empty-city shows the same screen honest-empty. Hard-refresh for CSS: /shell.css ships with no cache-control and no fingerprint, so a returning browser can hold a stale stylesheet."
+    }
+  ],
+
+  "filesChanged": {
+    "kit_onPR5": [
+      ".design-sync/previews/*.tsx (70 new) — owned preview cards",
+      ".design-sync/conventions.md (new) — the header stitched into the bundle README",
+      ".design-sync/config.json (modified) — cfg.overrides merged with the 15 grid remedies"
+    ],
+    "doc_repo_uncommitted": [
+      "_inbox/2026-08-18_b86_cp2.json (new)",
+      "_inbox/2026-08-18_b86_close.json (new)",
+      "_inbox/2026-08-18_g86_previews_WDLL.md (modified) — finish card graded",
+      "_scratch/g86_design_sync.md (modified) — ground-truth, lessons, the still-open upload thread"
+    ]
+  },
+
+  "blocked": [
+    "Acceptance item 5. The incremental upload to Claude Design project f5e5465e-943f-4f68-b52f-608925bc07b0 requires the DesignSync MCP server, which this session does not have and which no local script can substitute for."
+  ],
+
+  "constraintsHonoured": {
+    "noDocRepoCommit": true,
+    "noMerge": true,
+    "noNpmPublish": true,
+    "noDeploy": true,
+    "liveBastropUntouched": true,
+    "dashboardsUntouched": "true — the smartcity-dashboards repo was never opened and no deploy was run. The live surface answers 200 on /, /shell.css and /?cityKey=empty-city. The revision string itself was not re-read; see whatWasProbedVsInferred on WDLL item 6.",
+    "noAdapterGrantNoG52NoG24": true,
+    "noLicenseAdded": true,
+    "forbiddenStringsAbsent": "true — verified over the durable set and over all 417 files of the upload payload",
+    "noSubAgents": true,
+    "previewsNotReAuthored": "true except for the two ColStack rail wrappers in CompassScrim and StageScrim, named as a boundary call in CP2 D-1"
+  }
+}
