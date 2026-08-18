@@ -1,0 +1,78 @@
+{
+  "lane": "B76",
+  "planRow": "G-76",
+  "repo": "smartcity-dashboards",
+  "checkpoint": "CP2 pilot / mid-work, after the CSS pass and the visual verification, before push",
+  "date": "2026-08-18",
+  "branch": "g76/type-conformance",
+  "subAgents": "none — solo lane per dispatch; nothing to recover, no stopped workers",
+  "filesTouched": {
+    "modified": ["web/shell.css"],
+    "added": ["src/type-conformance.test.mjs"],
+    "note": "web/index.html was NOT touched. The dispatch allowed top-bar and left-nav markup edits if a size change forced one; none did, because the nav problem was solved in CSS. web/app.js, web/sc-kit.css and every pre-existing src/ file are untouched, verified by `git diff --name-only` returning web/shell.css alone."
+  },
+  "tests": {
+    "baselineOnMain": "98 pass / 0 fail",
+    "afterChange": "117 pass / 0 fail (98 pre-existing + 19 new)",
+    "newTestFile": "src/type-conformance.test.mjs"
+  },
+  "gateProvenAbleToFire": {
+    "rule": "DEV_PROCESS 2.2 and 2.3 — a gating indicator is tested for its ability to fire, on the real exit code",
+    "syntheticProofs": "13 negative fixtures inside the test file, one per violation class, each asserting the returned selector and value rather than a boolean. Plus a positive control asserting a conformant fixture returns zero, so a checker that always fired would fail too.",
+    "realFileProof": "Two regressions were injected into web/shell.css itself (.navgroup > .gl back to 10px, .panel-head .t back to 620 13px/18px). `npm test` reported 114 pass / 3 fail and exited 1, naming: 'shell.css:468  .navgroup > .gl  [floor]  10px' and 'shell.css:159  .panel-head .t  [ramp]  620 13px/18px — is not the head step, which is 620 15px/22px'. The file was then restored and the suite returned to 117/0.",
+    "exitCodeChecked": "1 on the negative run, 0 on the restored run, read from the node --test process, not from a pipe"
+  },
+  "measuredNotEstimated": {
+    "instrument": "a harness page serving the real top bar and nav markup against the real sc-kit.css and shell.css, driven by headless Chrome with --dump-dom, reading getBoundingClientRect and offsetHeight",
+    "navContentWidthPx": 211.0,
+    "navRowsThatWrap": ["Development services", "People and access"],
+    "navRowsTotal": 15,
+    "countingRule": "a row wraps when labelWidth + 2 x columnGap(9px) + badgeWidth > 211.0; there are three flex items on the row (text, .grow spacer, .badge) so two gaps apply, not one",
+    "tightestSingleLineRow": "Records search, 205.5 of 211.0, 5.5px slack",
+    "widestWrappedRow": "People and access, needs 227.2 of 211.0",
+    "topBarOverflow": "none at 1600, 1280, 1100, 1000, 960, 940, 820, 700 or 620 CSS px",
+    "searchBadgeGutter": "the Not built badge inside the search field cleared the placeholder by 0.7px at padding-right 92px; raised to 100px for 8.7px clearance, re-measured"
+  },
+  "adversarialFindingsThisPhase": [
+    {
+      "finding": "My own verification check reported the metrics two-column rule present when it was not.",
+      "cause": "The grep string `repeat(2, minmax(0, 1fr))` also matches the pre-existing rule inside the 900px media query, so it could never return false. A check that cannot fail is not a check — the same defect class the guard test was written to avoid, committed by me while writing it.",
+      "consequence": "The rule had in fact been reverted by a before/after CSS swap used to capture comparison screenshots, and the false-positive check hid it. Caught by reading `git diff`, which showed the 1180 block unchanged.",
+      "fix": "Re-applied and re-verified by extracting the 1180 media block specifically and asserting the rule is inside THAT block, then confirming the file-wide count is 2 (900 block plus 1180 block)."
+    },
+    {
+      "finding": "The measurement harness reported a 500px floor on window widths of 390 and 480.",
+      "cause": "Its own output <pre> sat in normal flow and forced a minimum body width, and separately headless Chrome on this machine clamps window.innerWidth at about 500 CSS px.",
+      "consequence": "The narrow-width top-bar comparison was contaminated and could not have supported the conclusion I was about to draw from it.",
+      "fix": "Took the output block out of flow, re-measured, and restricted the reported conclusion to widths the instrument can actually reach: 620px and above. Below roughly 545px the top bar now overflows where it previously fit, which is reported as a finding rather than presented as verified at 390px."
+    },
+    {
+      "finding": "The four metric keys were already being destroyed on main at 960px.",
+      "evidence": "P:/tmp/g76-shots/before-960-metrics.png, captured from origin/main's shell.css, shows NEED..., OVER..., PERM..., MEET... — the label is gone, not shortened.",
+      "consequence": "Raising the key to the 12px floor would have made a pre-existing information-loss defect worse.",
+      "fix": "Dropped white-space: nowrap and the ellipsis so the key wraps, and dropped the metric strip to two columns at the existing 1180px breakpoint. Every key now reads in full at 960px."
+    },
+    {
+      "finding": "Two heredoc-written scripts silently had their backslash escapes collapsed into real newlines, producing a broken multi-line string in one case and a JavaScript syntax error in the other.",
+      "consequence": "The first failed loudly because every replacement asserts exactly one match. The second failed SILENTLY: the harness rendered, reported nothing, and would have been read as 'no measurements available'.",
+      "fix": "Replaced every escape with String.fromCharCode, and the test file itself now carries a CRLF fixture so the same class of bug cannot reach the guard."
+    },
+    {
+      "finding": "A port probe returned HTTP 200 on 8098 from another lane's Plan Review server.",
+      "consequence": "One screenshot captured another lane's application. No write, no kill, no interference — but it proves a 200 is not proof of whose server answered.",
+      "fix": "Moved to a verified-free port and confirmed the served content contained the expected markup before trusting any capture."
+    }
+  ],
+  "screenshotsRead": [
+    "P:/tmp/g76-shots/before-1600.png and before-820.png (origin/main baseline)",
+    "P:/tmp/g76-shots/before-960-metrics.png (main, keys ellipsised to four characters)",
+    "P:/tmp/g76-shots/final-1600.png, final-1100.png, final-960.png, final-820.png",
+    "P:/tmp/g76-shots/after-topbar.png and after-nav.png (2x crops)",
+    "P:/tmp/g76-shots/after-citizen.png, after-assets.png, after-connections.png, after-finance.png, after-ds.png",
+    "P:/tmp/g76-shots/after-820-navopen.png and after-390-navopen.png (mobile nav forced open)"
+  ],
+  "openAtThisCheckpoint": [
+    "PR not yet opened; CI conclusion string not yet read",
+    "top bar min-content width grew from 500px to 545px, so it overflows below roughly 545px viewport where it previously fit — reported, not fixed"
+  ]
+}

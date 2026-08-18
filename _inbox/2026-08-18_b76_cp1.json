@@ -1,0 +1,76 @@
+{
+  "lane": "B76",
+  "planRow": "G-76",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "smartcity-dashboards",
+  "checkpoint": "CP1 design / pre-build",
+  "date": "2026-08-18",
+  "branch": "g76/type-conformance",
+  "baseSha": "34b307b",
+  "clone": "P:/tmp/g76-type",
+  "subAgents": "none — dispatch forbids spawning; lane executed solo, verification retained at this level",
+  "missionPremise": "30b_smartcity_design_system.md section 1.3 is the type law: eight ramp steps, two faces, 12px absolute floor in this product (the one named 10px exception is the evidence chip, and that component does not exist here). Fourteen declarations in web/shell.css render below the floor and four ramp steps are off, which is why the serving build reads flat: .panel-head .t ships at 13px/620 while body ships at 14px/400, so a section head is SMALLER than the text it heads.",
+  "completionPredicate": "web/shell.css contains zero font declarations below 12px; the four named ramp selectors match their steps exactly; src/type-conformance.test.mjs fails with a named selector and value on each of those classes of defect and is proven able to fire; npm test is green including the 98 pre-existing tests; headless screenshots at 1600x1000 and 820x900 show no clipped nav item, no badge overlapping a label, no truncated text; CI check-run conclusion string is 'success'.",
+  "scopeBasis": "web/shell.css is mine in full. web/index.html is mine ONLY in the top bar and left nav. Lane B77 (g77/fixture-pack) owns every <section class=\"lens\"> and all of src/ except the one test file I add. web/app.js and web/sc-kit.css are untouchable.",
+  "verifiedAtSource": {
+    "subFloorDeclarationCount": 14,
+    "subFloorLines": [89, 129, 200, 244, 265, 304, 322, 346, 419, 432, 463, 496, 631, 728],
+    "plannerListMatched": true,
+    "note": "Re-derived by grepping every font-size and font: shorthand in web/shell.css and reading the px size out of each. The planner's line list is correct at all fourteen positions; nothing was added or removed.",
+    "baselineTests": "98 pass / 0 fail on origin/main before any edit",
+    "baselineScreenshots": ["P:/tmp/g76-shots/before-1600.png", "P:/tmp/g76-shots/before-820.png"]
+  },
+  "adversarialReview": [
+    {
+      "risk": "The obvious fix for the nav badge is to change the nav markup so the badge sits in its own row. src/ui.test.mjs lines 99 and 257 assert the exact byte sequence >LABEL<span class=\"grow\"></span><span class=\"badge\">STATE</span> for fifteen nav rows, and src/ is owned by lane B77.",
+      "consequence": "Any markup solution to the width problem either breaks a test I am forbidden to edit, or forces me to edit another lane's file.",
+      "resolution": "Solve it in CSS only. .navitem gets flex-wrap: wrap with a 2px row-gap, auto height via vertical padding, and the badge gets margin-left: auto so that when it does not fit beside the label it drops to a second line inside the same nav item and right-aligns there. The markup byte sequence is untouched, so both B77 assertions keep passing, and no nav row loses its state word."
+    },
+    {
+      "risk": "Wrapping could be the wrong mental model: the flex line-breaking algorithm might wrap the LABEL internally instead of moving the badge down.",
+      "consequence": "A two-line label with the badge stranded beside it reads worse than the defect being fixed.",
+      "resolution": "Line breaking uses each item's outer hypothetical main size. The label is an anonymous flex item with flex-basis auto, so its hypothetical size is its max-content width; .grow is flex: 1 with basis 0, so its hypothetical size is 0. The badge is therefore the item that gets pushed to line two, and the label only wraps internally if the label alone exceeds 212px, which no label does. This is a prediction, and it is checked against the rendered screenshot rather than asserted."
+    },
+    {
+      "risk": "Raising .metric .k from 11px to 12px in a strip that already sets white-space: nowrap with text-overflow: ellipsis.",
+      "consequence": "MEETINGS THIS WEEK already ellipsizes at the 1180px breakpoint where the rail narrows; at 12px more keys truncate. Truncating a label loses information, which the card forbids.",
+      "resolution": "Drop nowrap/ellipsis on .metric .k and let the key wrap. The four metrics are grid items and stretch to a common height, so wrapping costs alignment nothing and no key is ever cut."
+    },
+    {
+      "risk": "The Compass top-bar control is a 32px-high button holding a two-line stack. Raising b to body-em 14/20 and em to data 13/18 makes the stack 38px, which no longer fits.",
+      "consequence": "Clipped or overlapping text in the top bar, which is the most visible chrome in the product.",
+      "resolution": "Give .cp-source auto height with min-height 32px and 2px vertical padding, landing it at roughly 44px inside the 52px top bar. The single-row alternative was measured and rejected: at data 13px the scope string Template - Development services alone runs about 234px, so a single row makes the control roughly 346px wide."
+    },
+    {
+      "risk": ".cz sets 15px body copy, which is not a ramp step, so a naive conformance sweep would pull the citizen surface down to 14px.",
+      "consequence": "That would contradict 30c_smartcity_platform_ia.md line 66, which grants the citizen lens a comfortable 16px base and 44px targets as a deliberate public-surface decision.",
+      "resolution": "Leave .cz body copy, buttons and inputs at 15px. Fix only .cz h1, which the dispatch names, to the display step. Record the 15-versus-16 gap against 30c as a finding I do not fix rather than silently normalising it."
+    },
+    {
+      "risk": "A guard test that only asserts the current file passes is a test that has never been shown to fail (DEV_PROCESS 2.2).",
+      "consequence": "A permanently-green gate is worth nothing, and this one is the entire durability of the card.",
+      "resolution": "The checker is a pure function over CSS text, exported, and the test file feeds it synthetic bad CSS for every violation class it claims to catch and asserts the exact violation comes back. Fire-ability becomes a permanent part of the suite instead of a one-time manual demonstration."
+    },
+    {
+      "risk": "The parser could silently fail to read a font declaration it does not recognise and report zero violations for it.",
+      "consequence": "A silent fallback, which is the defect class the contract names explicitly. An unparsed declaration would read as a conformant one.",
+      "resolution": "Any font or font-size value that is not inherit/initial/unset and from which no px size can be read is reported as an 'unparsed' violation naming the selector and the raw value. An empty result is never treated as an absence."
+    }
+  ],
+  "deliberateExclusions": [
+    ".inp keeps line-height 30px: it is the vertical-centering device for a 32px control, not a text ramp step; its size is already body 14px.",
+    ".btn-sm keeps font-size 12px: it sits exactly on the floor and is a compact control variant.",
+    ".metric .v keeps 26px/32px mono: display-step size carrying a numeral.",
+    "weight 500 is kept on .btn, .navitem and .tabs a: the ramp has no 500-weight UI step, and dropping controls to body's 400 is an emphasis change with no floor or step defect behind it. Recorded as a finding, not fixed.",
+    ".cz 15px body copy per 30c line 66, above."
+  ],
+  "constraintsToHonor": [
+    "zero hex, zero rgb()/rgba(), zero --sc-* declarations in web/shell.css",
+    "no color, radius, duration or easing change",
+    "no new component, class family or token",
+    "--sc-nav stays 248px",
+    "environment badge still reads Demo",
+    "web/app.js and web/sc-kit.css untouched",
+    "no <section class=\"lens\"> edited; no src/ file edited except the new test"
+  ]
+}
