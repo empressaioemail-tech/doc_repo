@@ -1,0 +1,180 @@
+{
+  "row": "TW-19",
+  "title": "The union layer: room wired to Smart Files, deployed to Cloud Run, serving",
+  "repo": "empressaioemail-tech/smart-markets",
+  "date": "2026-08-18",
+  "canonOverride": "TW-19 — Smart Markets is unregistered R&D and its work is bounded PRs, so no PLAN-ROW exists by design. Row TW-19 in _rd_disclosure_twin/08_build_scope.md. Planner owns this fan and verifies.",
+  "authorization": "Nick (operator) 2026-08-18: continue until there is a DEPLOYED surface. Greenfield project, nothing running, no users. Deploy authorized; merge is NOT.",
+
+  "branch": "tw19/union-layer-deploy",
+  "baseBranch": "main",
+  "baseSha": "123b431",
+  "headSha": "6b196b4",
+  "prUrl": "https://github.com/empressaioemail-tech/smart-markets/pull/3",
+  "merged": false,
+  "worktree": "P:\\smart-markets-worktrees\\tw19-union-layer (detached from origin/main; P:\\smart-markets left untouched, still dirty on tw11/absence-fixtures)",
+
+  "ciConclusion": {
+    "runUrl": "https://github.com/empressaioemail-tech/smart-markets/actions/runs/32093239714",
+    "verbatim": [
+      "build-test\tpass\t43s\thttps://github.com/empressaioemail-tech/smart-markets/actions/runs/32093239714/job/95579484356",
+      "structural-gates\tpass\t5s\thttps://github.com/empressaioemail-tech/smart-markets/actions/runs/32093239714/job/95579484417"
+    ],
+    "conclusionStrings": ["build-test COMPLETED SUCCESS", "structural-gates COMPLETED SUCCESS"],
+    "structuralGates": [
+      "web-no-upstream-calls OK",
+      "api-no-database OK",
+      "no-v0.2-stubs OK",
+      "api-mints-no-credential OK"
+    ],
+    "tests": "56 pass / 0 fail (was 39 on main)"
+  },
+
+  "roomAdapter": {
+    "class": "HttpSmartFilesUpstream (apps/api/src/upstreams/smart-files.ts)",
+    "storeRevisionReadAgainst": "smart-files-00006-xwp",
+    "endpointsUsed": [
+      "GET /  (health, no credential)",
+      "GET /api/smart-files/folders  (parameterless: the credential probe)",
+      "GET /api/smart-files/folders?scopeType=instrument&scopeId=<governingNode>",
+      "GET /api/smart-files/folders/:folderId/files",
+      "GET /api/smart-files/files/:entityId",
+      "GET /api/smart-files/blobs/:contentCid  (byte size from content-length; body cancelled on a listing read, streamed only on the pass-through)"
+    ],
+    "absenceSemantics": {
+      "storeRefusedThisCaller": "absent-verified, scopeSearched appended with 'bounded to records the files service serves to this caller's credential', basis states it is about the caller and not the world",
+      "storeAnsweredAndHoldsNothing": "absent-verified, scope actually searched, basis 'the files service answered and holds no documents under this scope'",
+      "storeUnreachableOr5xxOrUndescribableDocument": "lookup-failed via upstreamUnreachable. NEVER either of the above",
+      "someDocumentsDescribable": "partial, carrying the documents plus a lookup-failed absence naming what could not be described"
+    },
+    "entitlementResolver": "StoreAttestedEntitlementResolver — asks the store, which owns the credential, with a parameterless call that reads no record. accepted -> keyed; rejected -> 401; unreachable -> 503 (never 401, which would tell a caller its working key is bad)",
+    "credentialHeld": "none. forwardedHeaders is the only outbound header builder and refuses anything but a verbatim forward of the caller's Authorization"
+  },
+
+  "serviceAccountUsed": "smart-markets-run@smart-markets-118998.iam.gserviceaccount.com",
+  "serviceAccountVerification": {
+    "command": "gcloud run services describe smart-markets-api --project=smart-markets-118998 --region=us-east1 --format='value(spec.template.spec.serviceAccountName)'",
+    "output": "smart-markets-run@smart-markets-118998.iam.gserviceaccount.com",
+    "projectLevelIamOnThatSa": "none (per-secret secretAccessor only; the flattened project IAM filter returned zero rows)",
+    "mechanism": "deploy/cloud-run-deploy.sh refuses to run when RUNTIME_SERVICE_ACCOUNT is unset and reads the identity back off the deployed revision, comparing it and exiting non-zero on mismatch. The address is stated in .github/workflows/deploy.yml as an env var the workflow passes in."
+  },
+
+  "revision": "smart-markets-api-00001-h88",
+  "serviceUrl": "https://smart-markets-api-znwrqyxmqa-ue.a.run.app",
+  "imagePinnedByDigest": "us-east1-docker.pkg.dev/smart-markets-118998/smart-markets/smart-markets-api@sha256:6ce2ff4bddac0ebdf2fd401f7f7800c4a892419e4553975a82ea518c453f4bb7",
+  "cloudBuildId": "c42c54b8-c0b5-419b-bc92-17de4590ce9d",
+  "traffic": "smart-markets-api-00001-h88 at 100 percent, latestRevision true",
+
+  "secrets": {
+    "mounted": [
+      "SMART_FILES_BASE_URL <- secret SMART_FILES_BACKEND_URL:latest (43 bytes)",
+      "COCKPIT_BASE_URL <- secret COCKPIT_BACKEND_URL:latest (24 bytes)"
+    ],
+    "deliberatelyNotMounted": [
+      "SMART_FILES_API_KEY (present, 44 bytes)",
+      "COCKPIT_SERVICE_API_KEY (present, 64 bytes)"
+    ],
+    "reasonNotMounted": "DEVIATION FROM THE DISPATCH, flagged rather than silent. The dispatch said deploy with the four secrets; the scaffold's CI gate 'the union layer must mint no credential of its own' greps apps/api/src for exactly these names and the union has no code path that could read one. Mounting a credential the process cannot use only widens what a compromise of this revision reaches. Both are one flag away if a future leg needs them. No secret value was printed at any point.",
+    "envVarsOnTheRevision": "SMART_MARKETS_ENV, SMART_FILES_BASE_URL, COCKPIT_BASE_URL. No database connection string, by construction."
+  },
+
+  "liveProbe": {
+    "health": "GET /health -> 200 {\"ok\":true,\"service\":\"smart-markets-api\",\"env\":\"production\"}",
+    "readiness": "GET /health/ready -> 200 ready:false; upstreams [{cockpit, unreachable, 'adapter not implemented'}, {smart-files, ok}]",
+    "keyedRoomReadOfTheE2ENode": {
+      "request": "GET /v0.1/room/sec_01JCZK8QW9V4T6XH2NBGRPY5MD with the caller's Authorization",
+      "status": 200,
+      "roomStatus": "populated",
+      "entityId": "smartfile:instrument:sec_01JCZK8QW9V4T6XH2NBGRPY5MD:smart-markets-e2e-probe",
+      "contentIdentifier": "sha256:e3a4524d6730e982e9bd65fe639beef25d9ffc027ecf68c2ad6e52da015b0196",
+      "byteSize": 73,
+      "accessPolicy": "tenant-private",
+      "provenance": "source smart-files, authority 'Smart Files', upstreamRef the exact files-service call, retrievedAt stamped",
+      "note": "contentIdentifier and byte count match the operator's own end-to-end exactly"
+    },
+    "keyedRoomReadOfADifferentValidNode": {
+      "request": "GET /v0.1/room/iss_01KHERM996T9JWB4KCD06Y9525",
+      "status": 200,
+      "verdict": "absent-verified",
+      "basis": "the files service answered and holds no documents under this scope",
+      "note": "distinct basis from the refusal case, which is the point: this one is a fact about the world"
+    },
+    "malformedKey": "GET /v0.1/room/<node> with a bogus credential -> 401 {reason: unresolved-credential, detail: 'the files service did not accept this credential (HTTP 401)'}. Never falls through to public.",
+    "malformedKeyOnTheAgentDoor": "POST /mcp with a bogus credential -> 401",
+    "keyedPassThrough": "GET /v0.1/document/<entityId> -> 200, content-type text/plain, Content-Length 73, body 'Smart Markets instrument-scope end-to-end probe. Synthetic, not a filing.'",
+    "mcpToolList": "POST /mcp tools/list -> 6 tools: describe_twin_contract, describe_caller_entitlement, get_instrument_twin, get_instrument_room, search_instruments, fetch_room_document",
+    "mcpRoomToolKeyed": "tools/call get_instrument_room on the E2E node -> populated, byte-identical payload to the HTTP door"
+  },
+
+  "confusedDeputyProof": {
+    "claim": "The union forwards the caller's entitlement and never substitutes its own credential. An anonymous caller must not receive the tenant-private E2E document.",
+    "httpDoorSameNodeAnonymous": {
+      "request": "GET /v0.1/room/sec_01JCZK8QW9V4T6XH2NBGRPY5MD with no Authorization",
+      "status": 200,
+      "roomStatus": "absent",
+      "verdict": "absent-verified",
+      "scopeSearched": "Smart Files documents under smartfile:instrument:sec_01JCZK8QW9V4T6XH2NBGRPY5MD:*, bounded to records the files service serves to this caller's credential",
+      "basis": "the files service refused this caller's entitlement for this scope (HTTP 401). This is a statement about the caller and not about the world: records may exist here, and a broader entitlement may reach them.",
+      "documentsReturned": 0
+    },
+    "agentDoorSameNodeAnonymous": "tools/call get_instrument_room, no Authorization -> byte-identical absence to the HTTP door. Both doors reach the room through composeRoom, the single point the access gate runs at, so neither can be entitled differently.",
+    "passThroughAnonymous": {
+      "request": "GET /v0.1/document/smartfile:instrument:sec_01JCZK8QW9V4T6XH2NBGRPY5MD:smart-markets-e2e-probe with no Authorization",
+      "status": 403,
+      "body": "{error: forbidden, basis: 'the files service, which is the authority on this record, did not accept this caller's entitlement (HTTP 401)', note: 'this is a statement about your entitlement, not about whether the document exists'}",
+      "note": "TW-19's named acceptance test. 403 and not 404: a refusal says you may not have this, never that it does not exist."
+    },
+    "sameCredentialSideBySide": "identical URL, identical node, identical revision, one probe with the caller's credential and one without: populated with the document, versus absent with zero documents. The difference is the caller and nothing else.",
+    "codeSideMechanism": "assertForwardsCallerIdentity runs on every outbound header set and throws ServiceCredentialSubstitutionError rather than scrubbing an injected credential. Unit-proven by removal: 'NEGATIVE: a substituted service credential stops the pass-through before it leaves' and 'every outbound call carries the caller's credential verbatim and nothing else'."
+  },
+
+  "divergenceFindings": {
+    "file": "docs/tw23-divergence-findings.md (on the PR branch)",
+    "count": 5,
+    "summary": [
+      "1. No tenant on a record and no principal-identity endpoint. LOAD-BEARING: the union's ceiling for a KEYED caller is therefore not narrower than the store's, and the entitlement label says so rather than simulating one. Owning tenant and caller tenant are both a one-way sha256 handle over the presented credential (sf-principal:<16 hex>), so they match records the store served to that caller and no others. The anonymous determination remains fully independent.",
+      "2. No originating publishing authority on a document version. RECORD class obligates citing the publisher; the adapter cites the custodian ('Smart Files') plus the exact fetch, and does NOT print SEC or CME on a record whose publisher the store never stated.",
+      "3. Neither the file listing nor the file read carries byteSize, which the contract requires. Adapter reads content-length off the blob and cancels the body: one extra round trip per document per room read. store.mjs already writes byte_size at upload.",
+      "4. GET /files/:entityId is a catch-all, so /files/<id>/content answers HTTP 200 with status 'not-sought' instead of 404. The adapter never probes, so it is not bitten; the next consumer will be.",
+      "5. The store speaks a parallel absence vocabulary (status 'not-sought', a bare basis, no verdict/authority/scope/timestamp). The adapter translates rather than passes through, which is correct, but the two vocabularies should be reconciled on purpose."
+    ]
+  },
+
+  "remaining": [
+    "The cockpit adapter is still unwired. resolve, search, market and drivers return typed lookup-failed absences and get_instrument_twin returns a 503 typed absence rather than a twin. The room is the only layer wired.",
+    "The web surface (TW-21) was not touched and still renders against the unwired shape.",
+    "TW-20 discoverability (registry entry, llms.txt, agents.txt) not started.",
+    "The deploy workflow cannot run yet: secrets GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_DEPLOY_SERVICE_ACCOUNT are not configured on the repo. This deploy was run by invoking the same script (deploy/cloud-run-deploy.sh) by hand, so the flags and the fail-closed checks that ran are the ones the workflow will run.",
+    "The five TW-23 findings need to reach the smart-files lane; nothing was changed in that repo.",
+    "The per-document blob round trip (finding 3) is O(documents) on every room read. Fine at one document, wants finding 3 closed before a real filing set.",
+    "PR #3 is open and NOT merged, per the dispatch. The planner merges."
+  ],
+
+  "blocked": [
+    {
+      "what": "get_instrument_twin for sec_01JCZK8QW9V4T6XH2NBGRPY5MD",
+      "why": "The twin envelope requires node shape, asset class, display name and at least one identifier, and only the security master can state them. It cannot for this node: GET /securities/current-symbol/sec_01JCZK8QW9V4T6XH2NBGRPY5MD returns {node_id, symbol: null}, and GET /securities/canonical/{node_id} echoes ANY well-formed identifier back including sec_00000000000000000000000000, so it is not an existence check. The E2E node exists as an identifier, not as a described node.",
+      "whatWasDoneInstead": "The room got its own address at GET /v0.1/room/:nodeId and the get_instrument_room MCP tool, through the same composeRoom gate. Fabricating a shape to have something to render would fabricate the single fact every layer keys off.",
+      "unblockedBy": "a described node for this identifier in the security master, or a room-first twin variant ruled into the contract"
+    },
+    {
+      "what": "Wiring the cockpit fan-out at all",
+      "why": "Anonymous reads on api.empressa.pro return 401 'Missing bearer token', so the cockpit cannot be reached with a forwarded anonymous identity. The union may hold no credential of its own (CI gate, and the whole confused-deputy property). Separately: COCKPIT_SERVICE_API_KEY does NOT authenticate as a Bearer token — api.empressa.pro answers {\"detail\":\"Invalid token\"}. The working form is the header x-empressa-service-key, per the TW-24 route signatures.",
+      "unblockedBy": "either an anonymous-tolerant resolution read on the cockpit, or a ruling that callers present a cockpit credential alongside their files credential which the union forwards per-upstream verbatim (still no credential of its own). Also note the security master resolved nothing for AAPL, SPY, MSFT, ES, CL or GC through /securities/lookup on the service-caller path — resolution_status not_found for all six — so wiring it today would buy nothing."
+    },
+    {
+      "what": "An independent tenant ceiling on a keyed caller",
+      "why": "Divergence finding 1. The store exposes no tenant on a record and no principal-identity endpoint, so the union has zero independent tenancy information about a keyed caller. It states that in the entitlement label rather than fabricating a narrower policy set that no authority ever stated.",
+      "unblockedBy": "a tenant field on the document record, or a credential-to-tenant resolution endpoint on smart-files"
+    }
+  ],
+
+  "constraintsHonoured": [
+    "empressa-trading not touched (read-only probes of the deployed API and its openapi.json only)",
+    "smart-files not touched (read-only probes of the deployed service; the local clone was read, never written)",
+    "nothing deployed to Vercel",
+    "every command exited; no server, watch or reload left running",
+    "no secret value printed at any point; presence and byte length only",
+    "PR opened against main and NOT merged"
+  ]
+}
