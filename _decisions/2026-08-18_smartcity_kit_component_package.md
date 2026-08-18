@@ -47,12 +47,14 @@ The wrapper is also the cheaper artifact to keep honest. A component that only c
 
 The package is conformant only while all of these hold, and a test enforces each:
 
-1. No CSS file in the package declares a `--sc-` token.
+1. The package declares no `--sc-` token of its own. It may carry the canonical token block, and if it does that block is byte-identical to `30b_smartcity_design_system.md` section 4.1; every other token declaration is a fork.
 2. No component file contains a hex color, an `rgb()` value, or a hardcoded px radius or duration.
 3. Every class a component emits exists in `sc-kit.css` or the product stylesheet.
-4. The token block in the package is byte-identical to `30b_smartcity_design_system.md` section 4.1, or absent.
+4. The package adds no CSS rule of its own. It ships the kit and renders its classes; a stylesheet that styles a component is the second source of truth this decision exists to prevent.
 
 A package that fails any of these has forked the system and is a defect, not a variant.
+
+**Amended 2026-08-18, same day, before implementation.** As first written, item 1 forbade any `--sc-` token declaration while item 4 required the canonical token block to be byte-identical or absent. A package that ships `sc-kit.css` satisfies 4 and fails 1, so the gate was unsatisfiable for the only shape the package can usefully take. Item 1 now forbids *inventing* a token rather than *carrying* the canonical one, and item 4 covers the rule the old pair left unguarded: the package styles nothing. Same intent, stated so it can actually pass. This is the second clause in two days whose wording forbade the compliant case (see the `Bastrop` refusal-guard finding in `_inbox/2026-08-18_g76_g79_fixture_city_and_type.md`); a gate is only a gate if the correct implementation can satisfy it.
 
 # Scope
 
