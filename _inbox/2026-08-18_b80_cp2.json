@@ -1,0 +1,161 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review, taken after build and local verification, before the PR",
+  "lane": "B80",
+  "planRow": "G-80",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g80/chrome-follows-pack",
+  "baseCommit": "23154be",
+  "date": "2026-08-18",
+  "subAgents": "none: dispatch forbids spawning. No worker to recover, no interruption to report.",
+  "cp1": "_inbox/2026-08-18_b80_cp1.json",
+
+  "built": {
+    "newFiles": ["src/city-identity.mjs", "src/city-identity.test.mjs"],
+    "changedFiles": [
+      "src/server.mjs",
+      "web/index.html",
+      "web/app.js",
+      "scripts/bake-connections.mjs",
+      "src/server.test.mjs",
+      "src/ui.test.mjs",
+      "src/shell-homes.test.mjs"
+    ],
+    "diffstat": "7 files changed, 270 insertions(+), 54 deletions(-) plus 2 new files",
+    "cssTouched": "none"
+  },
+
+  "testCounts": {
+    "baselineOnMain": { "tests": 149, "pass": 149, "fail": 0 },
+    "afterBuild": { "tests": 163, "pass": 163, "fail": 0 },
+    "added": 14,
+    "countingRule": "node --test src/*.test.mjs, one count per node:test `it`, run on Windows node v24.11.1"
+  },
+
+  "controlsProvenAbleToFire": [
+    {
+      "control": "G-80 static markup names no city, plus the crumb-hook, fallback-vocabulary, no-new-class and one-writer controls",
+      "method": "fresh clone at origin/main, g80 src/ and scripts/ copied in, web/index.html and web/app.js left at origin/main, then `node --test src/city-identity.test.mjs`",
+      "result": "7 of 13 failed. The 6 that passed are the pure-module tests that do not read the markup, which is the correct split.",
+      "verbatim": "ℹ tests 13 / ℹ pass 6 / ℹ fail 7"
+    },
+    {
+      "control": "production-condition identity read",
+      "method": "same clone, /api/city-identity repointed from packContentReadStatus to packReadStatus, then `node --test src/server.test.mjs`",
+      "result": "the new test failed exactly where G-78 failed in production",
+      "verbatim": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal: 401 !== 200"
+    }
+  ],
+
+  "productionConditionRun": {
+    "gateSetLocally": "src/server.test.mjs sets DASHBOARDS_API_KEY=scaffold-test-key for the identity test, because no local run sets it and the deployed service always does",
+    "assertedUnderTheKey": [
+      "anonymous GET /api/city-identity?cityKey=template-city 200",
+      "anonymous GET /api/city-identity?cityKey=empty-city 200",
+      "anonymous GET /api/city-identity?cityKey=fixture-city 401 (tenant-private still refuses)",
+      "anonymous GET /api/city-identity?cityKey=no-such-city 404",
+      "anonymous GET /api/city-packs 401 (enumeration stays shut)",
+      "tenant subject with x-hauska-key reads fixture-city identity 200",
+      "wrong x-hauska-key on fixture-city 401"
+    ],
+    "sqlPathRun": "src/city-identity.test.mjs resolves identity from getCityPack with an injected query, on a Neon-shaped DSN, from a stored row carrying jurisdiction_fips 48021, environment live and a granted adapter. It asserts stateCode TX, badge Live, isDemo false and 1 of 7 sources granted, and asserts a SELECT actually ran. A local run has no DSN and would otherwise never execute that path.",
+    "columnGuard": "the G-79 structural guard is generalised: every pack property parsed out of city-identity.mjs source must map to a column named in PACK_COLUMNS, so it cannot go stale as columns are added"
+  },
+
+  "liveProbeOnTheLocalServer": {
+    "howRun": "PORT=8199 node src/server.mjs started detached, probed, screenshotted, then killed; the kill was verified by a failing curl",
+    "identityTemplate": "{\"cityKey\":\"template-city\",\"displayName\":\"Template city\",\"seal\":\"TC\",\"environmentBadge\":\"Demo\",\"stateCode\":null,\"documentTitle\":\"Template city · SmartCity Dashboards\",\"sources\":{\"granted\":0,\"total\":7,\"label\":\"0 of 7 sources granted\"}}",
+    "identityEmpty": "{\"cityKey\":\"empty-city\",\"displayName\":\"Empty city\",\"seal\":\"EC\",\"environmentBadge\":\"Demo\",\"stateCode\":null,\"documentTitle\":\"Empty city · SmartCity Dashboards\",\"sources\":{\"granted\":0,\"total\":7,\"label\":\"0 of 7 sources granted\"}}",
+    "renderedDomTemplateCity": {
+      "title": "Template city · SmartCity Dashboards",
+      "shellDataCityKey": "template-city",
+      "seal": "TC",
+      "brandcity": "Template city",
+      "brandState": "hidden, no state asserted",
+      "envBadge": "Demo",
+      "compassEnvBadge": "Demo",
+      "compassScope": "Template city · Overview",
+      "compassSheetCity": "Template city",
+      "navSources": "0 of 7 sources granted",
+      "navSourcesRule": "distinct adapter kinds granted on this pack, of 7 in the catalog",
+      "unresolvedFallbacksLeft": 0
+    },
+    "renderedDomEmptyCity": {
+      "title": "Empty city · SmartCity Dashboards",
+      "shellDataCityKey": "empty-city",
+      "seal": "EC",
+      "brandcity": "Empty city",
+      "envBadge": "Demo",
+      "compassEnvBadge": "Demo",
+      "compassScope": "Empty city · Overview",
+      "compassSheetCity": "Empty city",
+      "navSources": "0 of 7 sources granted",
+      "occurrencesOfTemplateInTheWholeRenderedDocument": 0,
+      "unresolvedFallbacksLeft": 0
+    },
+    "screenshots": [
+      "P:/tmp/g80_shots/template_ds.png",
+      "P:/tmp/g80_shots/empty_ds.png",
+      "P:/tmp/g80_shots/empty_overview.png",
+      "P:/tmp/g80_shots/empty_assets.png"
+    ]
+  },
+
+  "adversarialReviewOfTheBuild": [
+    {
+      "q": "Does the whole-document count of zero Template occurrences on empty-city actually cover the surfaces I did not screenshot?",
+      "a": "Yes, and that is why it is the strongest evidence here. Every lens and Work section ships in one document and is toggled by class, so the resolved DOM dump covers Assets, Connections, People, Finance, Citizen and the roster lenses in the same measurement, not only the two screenshotted views."
+    },
+    {
+      "q": "Is 'Demo' as the static badge a dishonest fallback?",
+      "a": "It names no city, and it fails safe: a live city briefly under-labelled as Demo understates, while a fixture pack briefly labelled Live is the exact labelling-gate failure the fixture ruling exists to prevent. A test asserts Live and Staging resolve correctly and that the demo carrier class is toggled off for them."
+    },
+    {
+      "q": "Two ratios now sit two clicks apart, 0 of 7 in the footer and 1 of 12 on Connections. Is that the DEV_PROCESS 1.4 trap?",
+      "a": "They are different classes, not two measurements of one class, so reconciling them to one number would be the error. They are held apart three ways: different verb (granted vs connected), different denominator, and each carries its counting rule inline at the point of use. The Connections figure gained its rule in this card, which it did not have before."
+    },
+    {
+      "q": "Did anything get worse for the reader?",
+      "a": "The nav footer is now four wrapped lines in a 248px sidebar instead of one. That is the cost of carrying the counting rule at the point of use, and it is quiet ink at 13px. Named rather than trimmed away."
+    },
+    {
+      "q": "Is anything left that a pack switch does not switch?",
+      "a": "Yes, and it is named in the close: the browser tab favicon, the SmartSite and Plan Review and Smart Files mounts (foreign products with their own identity), and the gold demo parcel 48021:34137, which is a product-level demo fixture rather than a pack field."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F1",
+      "finding": "The dispatch forbids the strings Bastrop and Chestnut anywhere in web/ or src/ outside tests. origin/main already carries 15 such occurrences outside tests, in src/adapters.mjs, src/city-pack.mjs, src/fixtures.mjs and src/municode-calendar.mjs.",
+      "disposition": "Reported, not remediated. Every one of them is a REFUSAL guard: the held clerk host, the identity-hold basis strings, the pack-name rejection, and the fixture leak-detector needles. Deleting them would delete the control the G-74 identity ruling put there. This card introduced zero new occurrences, proven by grepping only the added lines of the diff.",
+      "planner": "worth a wording amendment to the constraint: forbid ASSERTING those names, allow REFUSING them"
+    },
+    {
+      "id": "F2",
+      "finding": "scripts/bake-connections.mjs cannot run on a Windows checkout at all, on main as well as on this branch: it locates the register close with a literal newline, and an autocrlf checkout has CRLF.",
+      "disposition": "Pre-existing and environmental, not introduced here. Proven by running origin/main's script against origin/main's index.html taken from git (LF) where it succeeds, and against the Windows working tree where it throws. The modified script was verified idempotent on the LF form, which is what git stores and what CI would run.",
+      "evidence": "baked 70 (67 Homes-table + 3 addenda) | 1 of 12 sources connected, with an empty diff afterwards and nav-sources left at the per-pack value"
+    },
+    {
+      "id": "F3",
+      "finding": "web/app.js had a second hardcoded default city, `|| \"template-city\"`, in loadPipeline, on top of the one in staff-map.mjs.",
+      "disposition": "Removed. resolveStaffMapQuery already guarantees a non-empty key, so the client now names no city at all, and the test that catches it is structural rather than a needle."
+    }
+  ],
+
+  "constraintsHonoredAtCp2": {
+    "noCssFileEdited": "web/shell.css ef3eaccc72f83778646405bec1c992ec4056b606 and web/sc-kit.css 54339204691415d5ee817117699322ed0826c768 match origin/main blob for blob",
+    "noNewCssClass": "asserted by test; the city name uses a <data> element rather than a class",
+    "grantsStayEmpty": "no shipped pack's grantedAdapters changed; the only grant in this card is a synthetic row inside a test",
+    "g24StaysZero": "Assets remains honest-empty on every pack",
+    "noRealCitySeeded": "no city data read, no adapter run",
+    "labellingGate": "item 1 now resolves from pack.environment instead of being baked; items 2 to 5 untouched and still passing"
+  },
+
+  "remainingBeforeClose": [
+    "commit, push, open the PR",
+    "gate on the CI check-run conclusion string success",
+    "write the close artifact"
+  ]
+}

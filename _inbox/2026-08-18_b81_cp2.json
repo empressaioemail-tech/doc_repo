@@ -1,0 +1,108 @@
+{
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial review, after build and after measurement, before PR",
+  "planRow": "G-81",
+  "lane": "B-81",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g81/hidden-works",
+  "date": "2026-08-18",
+  "subAgents": "none",
+  "built": {
+    "rule": "[hidden]:not([hidden=\"until-found\" i]) { display: none !important; }",
+    "file": "web/shell.css line 51, unconditional, placed after the base reset",
+    "retired": [".stage[hidden] { display: none; }", ".stage-esc[hidden] { display: none; }"],
+    "newTest": "src/hidden-rule.test.mjs, 22 tests",
+    "boundaryCrossing": "src/ui.test.mjs, one assertion and the comment above it (see CP1 conflictFound)"
+  },
+  "npmTest": {
+    "before": { "tests": 149, "pass": 149, "fail": 0 },
+    "after": { "tests": 171, "pass": 171, "fail": 0 },
+    "countingRule": "node --test src/*.test.mjs, summary line, Node v24.11.1 on Windows"
+  },
+  "guardProvenAbleToFire": {
+    "method": "three mutations applied to the real web/shell.css, not to a fixture; the guard was watched fail, then watched pass on restore",
+    "mutation1_reAddPerComponentPatch": { "result": "FAIL 3 of 22", "message": "shell.css:735  .stage[hidden]  [per-component]  scopes the hidden attribute to a component..." },
+    "mutation2_dropImportant": { "result": "FAIL 2 of 22", "message": "shell.css:51  [hidden]:not([hidden=\"until-found\" i])  [not-important]  declares display without !important..." },
+    "mutation3_deleteGlobalRule": { "result": "FAIL 3 of 22", "message": "shell.css:0  [hidden]  [missing]  no rule selects the bare hidden attribute..." },
+    "restored": { "result": "PASS 22 of 22" },
+    "fixtureLevel": "every violation class also carries a negative fixture in the test file, plus two cry-wolf fixtures (a patch that exists only in a comment, an unrelated !important declaration)"
+  },
+  "renderProof": {
+    "why": "a grep-based test proves the rule's text exists, not that the attribute works; only getComputedStyle in a browser proves the cascade",
+    "harness": "node src/server.mjs on PORT=8181, plus a scratchpad-only same-origin proxy on 8182 serving a probe page. Same origin so the probe can also reach into an iframe of the real page. Chrome 'C:/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --dump-dom --virtual-time-budget=9000 --window-size=1600,1000; the probe writes its measurements into the DOM and they are read back out of the dumped HTML. Both servers killed after; netstat shows no LISTENING socket on either port.",
+    "design": "paired control. The SAME harness was run twice, once with origin/main's shell.css served and once with the branch's, so every number below is a base-to-fixed pair rather than a single reading.",
+    "syntheticComponents": {
+      "note": "the four components rendered with no inline style at all, so the only thing under measurement is the stylesheet cascade",
+      "pill": { "hidden_base": "inline-flex", "hidden_fixed": "none", "shown_base": "inline-flex", "shown_fixed": "inline-flex" },
+      "prov": { "hidden_base": "inline-flex", "hidden_fixed": "none", "shown_base": "inline-flex", "shown_fixed": "inline-flex" },
+      "state": { "hidden_base": "flex", "hidden_fixed": "none", "shown_base": "flex", "shown_fixed": "flex" },
+      "metric": { "hidden_base": "flex", "hidden_fixed": "none", "shown_base": "flex", "shown_fixed": "flex" }
+    },
+    "sourceOrderControl": {
+      "what": "a <style> block declaring .pill and .state display AFTER the linked shell.css, which is the exact case a source-order or specificity fix loses",
+      "pill_hidden_late": { "base": "inline-flex", "fixed": "none" },
+      "state_hidden_late": { "base": "flex", "fixed": "none" },
+      "reading": "the chosen form holds against a later component rule; a heavier selector or a rule placed last would not have"
+    },
+    "retirementSafety": {
+      "stage_hidden": { "base": "none", "fixed": "none", "reading": ".stage declares no display of its own, so its private patch was already redundant; deleting it changed nothing, measured" },
+      "stage_esc_hidden": { "base": "none", "fixed": "none", "reading": ".stage-esc is display: flex, so its patch was load bearing; the global rule now does that job, measured on the real page as well as synthetically" },
+      "stage_esc_shown": { "base": "flex", "fixed": "flex" }
+    },
+    "realPageElements": {
+      "method": "same-origin iframe of the running page; the G-77 inline display:none belt and braces was removed before reading, so what is measured is the attribute plus the stylesheet",
+      "overview-meetings-honesty": { "component": "pill", "hidden": true, "base": "flex", "fixed": "none", "reading": "THE defect element. On base it renders once the inline style is removed, which is the amber Partial pill beside 'No meeting packet has been read'. On the branch the stylesheet alone hides it." },
+      "unchanged": {
+        "overview-meetings-list": "none -> none",
+        "record-search-note": "none -> none",
+        "cp-sheet": "none -> none",
+        "cp-scrim": "none -> none",
+        "stage-scrim": "none -> none",
+        "stage-esc": "none -> none",
+        "ds-pipeline-mark": "flex -> flex (hidden already cleared by show())",
+        "ds-pipeline-prov": "flex -> flex",
+        "map-stage / review-stage / files-stage": "block -> block (mounted, hidden already cleared)"
+      },
+      "note": "pills and provs inside .panel-head compute flex rather than inline-flex because a flex container blockifies its items. That is CSS doing its job, not a divergence."
+    },
+    "census": {
+      "countingRule": "every element carrying each class in the live DOM of the running page, both lenses, hidden and not; computedNone counts elements whose OWN display computes to none, so an element inside a display:none lens is not counted",
+      "cityManagerLens": {
+        "pill": { "total": 136, "withHiddenAttr": 1, "computedNone_base": 1, "computedNone_fixed": 1, "computedNoneWithoutHiddenAttr": 0, "renderedBoxes_base": 15, "renderedBoxes_fixed": 15 },
+        "prov": { "total": 35, "withHiddenAttr": 0, "computedNone_base": 0, "computedNone_fixed": 0, "computedNoneWithoutHiddenAttr": 0, "renderedBoxes_base": 4, "renderedBoxes_fixed": 4 },
+        "state": { "total": 16, "withHiddenAttr": 1, "computedNone_base": 1, "computedNone_fixed": 1, "computedNoneWithoutHiddenAttr": 0, "renderedBoxes_base": 2, "renderedBoxes_fixed": 2 },
+        "metric": { "total": 8, "withHiddenAttr": 0, "computedNone_base": 0, "computedNone_fixed": 0, "computedNoneWithoutHiddenAttr": 0, "renderedBoxes_base": 4, "renderedBoxes_fixed": 4 }
+      },
+      "developmentServicesLens": {
+        "pill": { "total": 136, "withHiddenAttr": 1, "computedNone_base": 1, "computedNone_fixed": 1, "renderedBoxes_base": 16, "renderedBoxes_fixed": 16 },
+        "prov": { "total": 35, "withHiddenAttr": 0, "computedNone_base": 0, "computedNone_fixed": 0, "renderedBoxes_base": 2, "renderedBoxes_fixed": 2 },
+        "state": { "total": 16, "withHiddenAttr": 1, "computedNone_base": 1, "computedNone_fixed": 1, "renderedBoxes_base": 0, "renderedBoxes_fixed": 0 },
+        "metric": { "total": 8, "withHiddenAttr": 0, "computedNone_base": 0, "computedNone_fixed": 0, "renderedBoxes_base": 4, "renderedBoxes_fixed": 4 }
+      },
+      "reading": "40 paired values, 40 identical. computedNoneWithoutHiddenAttr is 0 everywhere, base and fixed: no element without the attribute computes display none in any of the four component classes. The rule reaches exactly the elements carrying the attribute and nothing else."
+    }
+  },
+  "screenshots": {
+    "size": "1600x1000, headless Chrome, branch shell.css served",
+    "looked": true,
+    "overview": "renders in full. Four metric tiles reading Not read with their basis lines, What needs you today with its basis block, Public meetings showing the 'City clerk calendar | unread' prov chip and NO amber Partial pill beside 'No meeting packet has been read', SmartSite panel, Sources panel, full nav with every badge.",
+    "developmentServices": "renders in full. Tiles 3 / 5 / 4 / 2 over 'of 14 generated cases in flight', 14 rows with coloured status pills, and both the amber 'Demo records' pill and the 'Generated fixture | MyGov output contract' prov chip VISIBLE. Those two are revealed by show(el, true), so this is the divergence test for the rule: the same component class hides when the attribute is set and shows when it is cleared, on one page.",
+    "citizen": "renders in full and light, which is the .cz lens design, not a regression. Four panels, Not built and None on file pills present, payment basis line present.",
+    "assets": "renders in full. Honest-empty inventory with its basis, Counter panel with the zero pill, five Unread pills in the record-shape list, two Excluded pills.",
+    "connections": "renders in full. 67 of 67 Homes-table row chip, the counting rule paragraph, and the register rows with their Mounted, Empty, Killed and Not built pills.",
+    "verdict": "nothing that should be visible became hidden on any of the five. Every pill, prov chip, state block and metric that is not carrying the attribute renders."
+  },
+  "adversarialReview": {
+    "q1": "Could !important strand an element that show() reveals? No. show() sets el.hidden = false before clearing the inline display, and the DS screenshot shows both a pill and a prov revealed that way, rendering.",
+    "q2": "Could the rule hide something whose visibility is driven by a class rather than the attribute? Only if that element also carried the attribute. The census answers it by measurement: computedNoneWithoutHiddenAttr is 0 in all four classes on both lenses.",
+    "q3": "Is deleting .stage[hidden] safe? Measured yes, and for a reason worth recording: .stage declares no display of its own, so that patch never did anything. .stage-esc's did, and the global rule replaces it, measured to none on the real page.",
+    "q4": "Does the rule survive a later component rule? Measured yes, with a <style> block after the stylesheet. That is the property the card asked for and the only one the per-component form never had.",
+    "q5": "Does the guard actually guard? It was watched fail three times against the real file before being watched pass.",
+    "q6": "What does the guard NOT cover? It never renders. If the kit or a future browser changed how the cascade resolves, the tests would still pass. Recorded in the close as an unexercised path, not papered over."
+  },
+  "openAtCp2": [
+    "commit, push, PR, CI conclusion string",
+    "web/app.js show() is now redundant belt and braces; it belongs to G-80 this wave and stays. Follow-up, not this card.",
+    "the CSS scanner is duplicated between src/type-conformance.test.mjs and src/hidden-rule.test.mjs because a shared src/ module belongs to the other lane. Follow-up."
+  ]
+}
