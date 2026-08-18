@@ -199,7 +199,7 @@ Layers are ordered by what blocks what, not by subject. L1 foundation, L2 acquis
 | TW-9 | 2 | **DONE 2026-08-17** (PR #335 merged, cockpit main `5db1ade4`, DEPLOYED). CME contract specs and CFTC Commitments of Traders behind the econ-catalog pattern | All eleven futures roots resolve to a contract-spec record and a COT series; every new catalog row carries source, series identifier, transform, and units | TW-3 |
 | TW-10 | 2 | EIA for /CL and /NG, Treasury for /ZB /ZN /ZT | Each named symbol carries at least one non-proxy driver series with provenance | TW-9 |
 | TW-11 | 3 | Honest absence wired through the twin read. **PLUS the fixture gap found by the design pass 2026-08-17: the three committed fixtures exercise ONLY `not-applicable`. Nothing anywhere produces `absent-verified`, `lookup-failed` or `partial`, so those paths have no realistic payload behind them in the contract's own tests either.** This row owes a fixture for each | `get_twin` for a futures root returns typed issuer-disclosure absence with stated scope; a company missing a form returns `absent-verified`; a failed lookup returns `lookup-failed` and never the former | TW-2, TW-6 |
-| TW-12 | 3 | Retire silent proxy fundamentals | No code path returns proxy fundamentals without a proxy marker and provenance; a test asserts it and fails when the marker is stripped | TW-2 |
+| TW-12 | 3 | **DONE 2026-08-17** (PR #337 merged, cockpit main `a15a85d0`). FIVE surfaces, not the one named: the root map, the Drivers CTA, the web Trade Grid 1W cell (backend sealed `proxy` into the payload and a test asserted it was there "so the UI can say via GLD" - the UI never did, so `/CL`'s weekly cell was painted from USO's bars in silence), the mobile grid repeating it, and `GET /fundamentals/{symbol}` which was NOT a proxy but a WRONG-ENTITY COLLISION - `lstrip("/")` turned the CME root `/GC` into the equity ticker `GC` and returned another issuer's forward P/E as the gold contract's; removed rather than marked. **CI RAN ZERO FRONTEND ASSERTIONS** - `vite build` compiles and asserts nothing, and the vitest suite existed ungated, which is exactly how a backend-sealed marker was dropped by two UIs while main stayed green; a `test-frontend` job now gates it. Retire silent proxy fundamentals | No code path returns proxy fundamentals without a proxy marker and provenance; a test asserts it and fails when the marker is stripped | TW-2 |
 | TW-13 | 3 | **DONE 2026-08-17** (on smart-markets PR #1, CI green, PR NOT yet merged). Access policy enforced on the twin read | Unauthenticated call returns only `public-free` content; a negative test asserts `tenant-private` content is unreachable without a key | TW-2 |
 | TW-14 | 4 | Roster port, **company shape only at v0.1**: officer and director nodes, tenure edges, role atoms from DEF 14A. Fund roster is v0.2 and is not approximated from this shape | For the four companies, board and officer rosters present with tenure edges; a person appearing at two issuers is one node, asserted by SQL | TW-3, TW-16 |
 | TW-15 | 4 | Form 4 insider transaction atoms | Transaction count for a named window reconciles to the SEC count for the same window; each atom carries filing accession and date | TW-14 |
@@ -276,6 +276,21 @@ Three options, planner recommendation first.
 ## Naming hazard: two meanings of "contract"
 
 Flagged 2026-08-16 by the TW-25 executor. In the cockpit, the `contract_` node-id prefix means an **on-chain contract address**. In Smart Markets, the `contract` **shape** means a futures contract, which is addressed by a `sec_` id. They are correct and disjoint today. Never wire one to the other, and never infer a shape from a node-id prefix.
+
+## The session's central technical finding: one bug, four disguises
+
+Every live defect this program surfaced on 2026-08-17 has the same root cause. **A human-readable string used as a key across a namespace boundary.**
+
+| Surface | The string | What it collided with |
+|---|---|---|
+| Issuer graph | fuzzy company NAME | 93.6% of links collapsed; 183 securities on one node |
+| COT panel | `contract_market_name LIKE` | ICE Futures Europe's book served as NYMEX's; a defunct exchange; a cross-rate |
+| Venue seam | symbol with vs without a venue | two nodes for one security, in both mint orders |
+| `/fundamentals` | `lstrip("/")` on `/GC` | the CME root became an equity ticker and returned a different issuer entirely |
+
+None was found by testing. All four were found by having to state, precisely, where a fact comes from and under whose authority. The fix is the same in every case: key on the authority's own stable identifier, and never let a display string cross a namespace.
+
+That is the strongest argument this program has produced for its own doctrine, and it was produced as a by-product rather than as a demonstration.
 
 ## Logged future (carry in planning, do not build now)
 
