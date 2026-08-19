@@ -1,0 +1,58 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "OPS-17 Lane B, G-88 item 8",
+  "planRow": "G-88",
+  "repo": "smartcity-dashboards",
+  "date": "2026-08-19",
+  "clone": "P:/tmp/g88-cache",
+  "baseSha": "cdfca39c9ed3fd7c61a13984e41b3ec1e9b6f77b",
+  "missionPremise": "The queued A-061 claim that a returning browser holds stale CSS was MEASURED with a real Chrome against the live service and is FALSE (_inbox/2026-08-18_g88_shell_css_cache.md). The real defect is the inverse: sendFile emits no cache-control and no validator, a 304 is structurally impossible, and every navigation re-transfers the full static set. This item is a performance and correctness fix, explicitly NOT a blocker (WDLL item 8).",
+  "asFoundMeasured": {
+    "npmTest": "185 pass, 0 fail, 33 suites",
+    "beforeProbeLocal": {
+      "leg1_plain_GET_shell_css": "HTTP/1.1 200 OK; content-type: text/css; NO cache-control; NO etag",
+      "leg2_If_None_Match_star": "HTTP/1.1 200 OK (strongest possible conditional returns a full body)",
+      "leg3_stale_etag": "HTTP/1.1 200 OK; still no etag on the response, so leg 2 cannot even be constructed from a real validator"
+    },
+    "sendFileCallSites": 6
+  },
+  "design": {
+    "helper": "etagFor(buf) = '\"' + sha256(buf).digest('base64url') + '\"' — strong validator, computed inside the fs.readFile callback, i.e. from the bytes just read, on EVERY request.",
+    "signature": "sendFile(req, res, filePath, contentType) — req threaded first, idiomatic Node order.",
+    "headers200": "content-type, cache-control: no-cache, etag",
+    "headers304": "cache-control: no-cache, etag (content-type deliberately omitted; RFC 9110 15.4.5 does not list it, and a 304 carries no representation)",
+    "ifNoneMatch": "RFC 9110 weak comparison: '*' matches any existing representation; a comma list is split; an optional W/ prefix is stripped from both sides before comparing opaque tags.",
+    "notNoStore": "no-store is correct for the JSON helper and wrong here — it forbids storage and throws away the whole 304 benefit.",
+    "dependencies": "none added; node:crypto is built in"
+  },
+  "adversarialReview": [
+    {
+      "risk": "A constant, hardcoded or startup-computed ETag. Causes PERMANENT staleness, strictly worse than the defect being fixed.",
+      "finding": "THE DISPATCH'S LEG 3, AS LITERALLY WORDED, DOES NOT CATCH IT. Leg 3 sends If-None-Match: \"stale-from-a-previous-deploy\" and passes on '200, full body, and a DIFFERENT etag'. A server with a constant ETag \"K\" returns exactly that: 200, full body, etag \"K\", which differs from the stale tag supplied. Leg 3 catches a different bug class — a server that 304s on the mere PRESENCE of If-None-Match — which is worth catching but is not the constant-ETag failure. The browser measurement in the investigation is what actually discriminates, because there the etag sent back MATCHES and the content has CHANGED.",
+      "mitigation": "Three assertions, not one. (a) all six routes return pairwise DISTINCT etags — kills a constant etag; (b) a temp file is served through the exported sendFile, its bytes are rewritten in-process, and the previously-matching etag must then produce 200 with a different etag — kills a startup-computed etag, which (a) alone would not; (c) the dispatch's own three legs are kept verbatim over real HTTP.",
+      "disposition": "reported as a planner-figure correction per DEV_PROCESS 3.2; the leg is kept and supplemented, never dropped"
+    },
+    {
+      "risk": "Proving (b) by mutating a served repo file races the parallel test processes. node --test runs each *.test.mjs in its OWN process concurrently, and ui.test.mjs / type-conformance.test.mjs readFileSync web/shell.css and web/sc-kit.css at module load.",
+      "mitigation": "No repo file is ever mutated. sendFile is exported and driven directly against a file in os.tmpdir() with a fake res. Zero race surface, and it exercises the exact function all six routes call."
+    },
+    {
+      "risk": "Signature change collides with WDLL item 3, which derives its scan list from server.mjs's sendFile calls and may be in flight in a sibling clone right now.",
+      "mitigation": "Cannot be fixed from here — the hard constraint limits me to src/server.mjs and src/server.test.mjs. Flagged to the planner: item 3's extractor must anchor on path.join(...), not on the literal prefix 'sendFile(res,'. A break here fails loudly at CI on their PR, it does not fail silent.",
+      "disposition": "escalated in the close, not remediated"
+    },
+    {
+      "risk": "304 responses accidentally carrying a body or a content-length.",
+      "mitigation": "Node suppresses the body for 304 by status; the test asserts an empty body over real HTTP rather than trusting that."
+    },
+    {
+      "risk": "Scope creep into HEAD support. The service 404s HEAD today and WDLL item 10 depends on that.",
+      "mitigation": "Route method guards are untouched."
+    }
+  ],
+  "completionPredicate": "All six static routes serve cache-control: no-cache plus a per-request content-derived strong ETag and honour If-None-Match with a bodiless 304; npm test >= 185 pass / 0 fail with the new assertions; the three HTTP legs pass against a local run of the patched build; a PR is open against main with a CI conclusion string of success; nothing deployed.",
+  "scopeBasis": "WDLL item 8 only. src/server.mjs and src/server.test.mjs only, because two siblings hold web/shell.css and src/ui.test.mjs. No filename fingerprinting, no build step, no HTML rewriting, no dependency — all four were considered and rejected in the investigation.",
+  "constraintsHonored": ["no deploy", "no merge", "no doc_repo commit", "no new dependency", "no asset content changed", "own fresh clone at P:/tmp/g88-cache"],
+  "status": "design accepted, proceeding to build"
+}

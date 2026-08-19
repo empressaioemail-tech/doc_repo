@@ -1,0 +1,75 @@
+{
+  "checkpoint": "CP1",
+  "lane": "b88-3",
+  "planRows": ["G-88"],
+  "date": "2026-08-19",
+  "phase": "design / pre-build",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/g88-gate",
+  "baseCommit": "cdfca39c9ed3fd7c61a13984e41b3ec1e9b6f77b",
+  "subAgents": "none — this lane was dispatched with an explicit NO NESTING clause and ran as the deepest worker",
+  "dispatchClaimsVerifiedAtSource": [
+    {
+      "claim": "the product's counting rule does not strip CSS comments, and six words appearing only inside comments are counted",
+      "verdict": "CONFIRMED at source",
+      "method": "ran both rules over web/shell.css + web/sc-kit.css at cdfca39",
+      "result": "weak rule 115 tokens, kit rule 109 tokens, difference exactly ['css','hidden','html','md','mjs','test'], and the strict set is a subset of the weak set with zero tokens gained"
+    },
+    {
+      "claim": "the scan covers two of five markup sources",
+      "verdict": "CONFIRMED at source",
+      "method": "read src/ui.test.mjs:352-380 at cdfca39; it reads web/index.html and web/app.js only",
+      "result": "src/shell-homes.mjs, src/staff-map.mjs and src/staff-review.mjs are unscanned; web/app.js:1-2 imports the latter two as browser ES modules, and scripts/bake-connections.mjs is the only path shell-homes markup takes into index.html"
+    },
+    {
+      "claim": "there is no injected-violation arm",
+      "verdict": "CONFIRMED at source",
+      "method": "read the test; it asserts a clean stray list and nothing else"
+    }
+  ],
+  "designDecisionsAndTheirBasis": [
+    {
+      "decision": "port stylesheetClasses() into src/ui.test.mjs rather than import it from the kit",
+      "basis": "dispatch instruction plus the stated reason: the rule is not in the kit's package exports and depending on the kit would add an npm dependency to a repo whose only dependency is pg"
+    },
+    {
+      "decision": "derive the scan list by parsing server.mjs's sendFile call sites, partition it into stylesheets (the DEFINED side) and markup (the USED side), and add src/shell-homes.mjs explicitly as a named bake source",
+      "basis": "shell-homes.mjs is not a sendFile call site — it reaches the browser only through the bake — so folding it into the derived list would make the derivation dishonest. Named separately with its basis instead."
+    },
+    {
+      "decision": "add a tripwire asserting parsed-site count equals sendFile call-site count minus its one definition",
+      "basis": "DEV_PROCESS 2.2 and the silent-fallback defect class. A sibling executor (b88-8) is editing src/server.mjs to add ETag headers this session; if that refactor changes sendFile's signature the derivation could match nothing and the gate would scan nothing, silently. The tripwire converts that into a loud failure."
+    },
+    {
+      "decision": "add NO size pin for the defined set in the product",
+      "basis": "WDLL item 4 pins the recounted denominator in the kit's gate3-classes.test.mjs. Pinning it here as well would create a second implementation of one rule, which is the exact shape (DEV_PROCESS 2.4) this card exists to remove. Also avoids a guaranteed collision with b88-2, which is adding ~26 CSS rules to shell.css right now."
+    },
+    {
+      "decision": "run both probes against all five sources rather than one probe against one source",
+      "basis": "the dispatch asks for two arms; per-source arms additionally prove the widening works, which two arms on index.html would not"
+    }
+  ],
+  "adversarialReviewOfOwnPlan": [
+    {
+      "risk": "the probe classes could become real classes when b88-2 lands the mx family",
+      "check": "grepped 30b_smartcity_design_system.html and 30c_smartcity_platform_ia.html for every .mx* selector: .mx, .mx-fail, .mx-pass, .mx-unc, .mx-unchecked, .mxgroup, .mxrow. 'mx-card' appears zero times in both.",
+      "mitigation": "shipped a guard that fails with an explicit instruction if either probe ever becomes defined, rather than letting the arm quietly stop proving anything"
+    },
+    {
+      "risk": "widening the extractor could weaken the existing assertion by dropping a form the old one caught",
+      "check": "planned an explicit superset measurement of old-used-set vs new-used-set before committing"
+    },
+    {
+      "risk": "file collision with two sibling executors in the same repo",
+      "check": "read both sibling dispatches. b88-2 owns web/shell.css, b88-8 owns src/server.mjs and src/server.test.mjs, and b88-8's own constraint line names src/ui.test.mjs as this lane's. No overlap; this lane changes src/ui.test.mjs only."
+    }
+  ],
+  "constraintsAccepted": [
+    "no change to web/index.html, web/shell.css, web/sc-kit.css",
+    "no weakened assertion",
+    "no exclusion beyond roster-lens",
+    "a real stray surfaced by the stricter rule is a STOP-and-report, never an exclusion-list entry",
+    "every verification command exit-bounded; no server, no watch",
+    "no merge, no deploy, no doc_repo commit"
+  ]
+}

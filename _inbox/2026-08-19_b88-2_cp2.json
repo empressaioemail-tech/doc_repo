@@ -1,0 +1,85 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint",
+  "lane": "OPS-17 Lane B",
+  "planRow": "G-88",
+  "wdllItem": "acceptance item 2",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g88/css-families-cite-mx-atomchip-finding",
+  "clone": "P:/tmp/g88-css",
+  "date": "2026-08-19",
+
+  "state": "port complete in the working tree, all local gates green, not yet committed at the time this checkpoint was written",
+
+  "transcriptionProof": {
+    "method": "parsed 30b_smartcity_design_system.html's own style block and the shipped web/shell.css with the same crude rule parser, normalized selectors and whitespace, and diffed every declaration of all 45 ported selectors key by key",
+    "selectorsChecked": 45,
+    "selectorsMissingFromEitherSide": 0,
+    "unintendedDeltas": 0,
+    "intendedDeltas": 7,
+    "countingRule": "one delta = one (selector, property) pair whose normalized value differs between 30b and the shipped file; leading-zero and comma-spacing differences are normalized away as formatting",
+    "deltaList": [
+      ".cite em font-size: spec 11px, ship 12px (G1)",
+      ".cite.model .corpus font: spec 400 10px/13px, ship 400 12px/13px (G1)",
+      ".mxgroup .lic font: spec 500 10px/1, ship 500 12px/1 (G1)",
+      ".atomchip font: spec 500 10px/14px, ship 500 12px/14px (CP1-A, not named by G1)",
+      ".atomchip .did font: spec 400 10px/14px, ship 400 12px/14px (CP1-A, not named by G1)",
+      ".basisline font: spec 400 11px/16px, ship 400 12px/16px (CP1-A, not named by G1)",
+      ".finding align-items: spec start, ship flex-start (CP2-A below, forced by an existing guard)"
+    ],
+    "whatThisProves": "every other value in all four families - every colour, radius, gap, padding, grid template, line-height, weight and tracking - is 30b's byte-for-byte. The port introduced no design decision beyond the seven listed.",
+    "whatThisDoesNotProve": "nothing here is a visual check. No browser rendered any of it. The 132px section column at raised type, the focus ring on .cite and .atomchip.web's 999px radius, and the hatch at real row density are all still unverified by eye, exactly as the investigation left them."
+  },
+
+  "adversarialFindings": [
+    {
+      "id": "CP2-A",
+      "severity": "medium",
+      "title": "An existing G-75 guard is a whole-file substring test and it fired on 30b's own .finding value. It fired twice.",
+      "detail": "src/ui.test.mjs:179 asserts /align-items: start/.test(shell) === false. It is scoped to nothing: it reads the entire stylesheet as one string. 30b's .finding declares align-items:start, so the verbatim port failed the suite at 184/185 on the first run.",
+      "secondFiring": "The first fix wrote a comment explaining the swap, and the comment quoted the literal string align-items: start, so the guard fired again on prose. That is a real property of a substring guard and worth recording: it cannot tell a declaration from a sentence about a declaration. The comment was reworded rather than the guard touched.",
+      "resolution": "Shipped align-items: flex-start on .finding. On a grid container flex-start is defined to behave as start (CSS Box Alignment level 3 treats the flex-relative keywords as start/end outside flex layout), so rendering is unchanged. .cite.model already carries flex-start from 30b itself, so the file is now internally consistent on the keyword.",
+      "whyNotFixTheGuard": "The guard is over-broad by construction, but it is a G-75 layout invariant this row was not scoped to touch, and weakening a live guard to admit a cosmetically-equivalent value is the wrong trade. A behaviourally-identical keyword costs nothing. Recorded so the planner can decide whether to scope the guard to .shell-regions in its own row.",
+      "backlogCandidate": "scope ui.test.mjs:179 to the selectors G-75 actually governs, rather than the whole file"
+    },
+    {
+      "id": "CP2-B",
+      "severity": "low",
+      "title": "The predicted denominator was 138 and the measured one is 139. Reconciled, not rounded off.",
+      "detail": "The investigation predicted 109 + 29 = 138 for four families. Measured after the port: 139, i.e. 30 tokens added, not 29.",
+      "reconciliation": "The gap is entirely in the fourth family and the investigation's own text flagged it as a conditional: 'finding, crit, fid, fbody, ftitle, fmeta, fact, basisline, conf, meter; the meter fill f makes 11 if .f is not already counted'. The CP1 collision check measured .f at zero occurrences in both stylesheets, so it is not already counted and the family is 11 tokens, not 10. The three-family figure of 19 was exact: cite 4, mx 11, atomchip 4. 19 + 11 = 30. The 138 headline took the low branch of its own stated conditional.",
+      "note": "The WDLL already says 138 is an estimate and not the acceptance value, and that the recount is the only authority. This is that recount, taken in the product repo; the kit-side pin is WDLL item 4 and is a different lane's arithmetic on the same rule."
+    },
+    {
+      "id": "CP2-C",
+      "severity": "low",
+      "title": "The sub-12px greps pass, but the shipped font-size set is the strongest form of that check and it is unchanged.",
+      "detail": "Both dispatch greps exit 1. Stronger check: the complete set of px font sizes in shell.css after the port is 12 13 14 15 16 18 19 20 22 26 30 32, which is byte-identical to the set the investigation measured on main before any of this work. The port added 12 font declarations and moved the floor not at all.",
+      "countingRule": "grep -oE of every font and font-size value, then every px integer in it, sorted unique"
+    },
+    {
+      "id": "CP2-D",
+      "severity": "low",
+      "title": "The class gate runs one-directional, so CSS with no markup cannot trip it, and that is by design.",
+      "detail": "ui.test.mjs's 'composes existing kit classes and declares no new one' builds a defined set from shell + kit and asserts used minus defined is empty. Adding definitions with no users grows the permissive side only. Verified by the suite passing at 185. The reverse direction - a defined class nobody uses - is not gated in this repo and this PR ships 30 of them deliberately, because the screens that use them are WDLL item 9.",
+      "consequence": "Between this merge and item 9 the product carries 30 classes with rules and no markup. That is the intended intermediate state, but it is the state in which a coverage claim of the form 'every shipped class is used' would be false. Recorded so nobody reads the gate's silence as a claim."
+    }
+  ],
+
+  "gatesGreenAtCp2": {
+    "npmTest": "185 pass, 0 fail, 33 suites",
+    "scKitBlobBefore": "54339204691415d5ee817117699322ed0826c768",
+    "scKitBlobAfter": "54339204691415d5ee817117699322ed0826c768",
+    "scKitVerdict": "byte-unchanged, verified by git blob hash against origin/main, not by eye",
+    "subTwelvePxGrep": "exit 1, no hits",
+    "hexRgbGrep": "exit 1, no hits",
+    "tokenDeclarationsAdded": 0,
+    "filesChanged": "web/shell.css only, 217 insertions, 0 deletions",
+    "markupUntouched": "web/index.html, web/app.js and every src/*.mjs are unmodified; git status --porcelain shows a single M web/shell.css"
+  },
+
+  "remainingAtCp2": [
+    "commit, push, open the PR, read the CI check-run conclusion string",
+    "the PR is not to be merged; the planner verifies and merges"
+  ]
+}

@@ -1,0 +1,240 @@
+{
+  "lane": "b88-3",
+  "title": "G-88 item 3: harden the product class gate before any screen ships",
+  "date": "2026-08-19",
+  "status": "complete",
+  "planRows": ["G-88"],
+  "planOfRecord": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "wdll": "_inbox/2026-08-18_g88_design_into_apps_WDLL.md (acceptance item 3)",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/g88-gate (own clone; P:/tmp/g88-css, P:/tmp/g88-cache, P:/tmp/g75-dash and P:/tmp/b82-dash were never touched)",
+  "checkpoints": [
+    "_inbox/2026-08-19_b88-3_cp1.json",
+    "_inbox/2026-08-19_b88-3_cp2.json"
+  ],
+
+  "missionPremise": "The gate at src/ui.test.mjs, the test named 'composes existing kit classes and declares no new one', is the instrument the whole G-88 design pass rests on: every shipped screen uses only vendored classes. It passed today and it had three measured defects, so that assertion was decorative. The finding is not this lane's: it was established by the read-only investigation at _inbox/2026-08-18_g88_translation_boundary.md, which proved the comment hole by injection in memory, both arms, and enumerated the five markup sources against the two scanned. The card's own words: this is a HARDENING job, not a build, and it must land BEFORE screens ship, because a gate hardened after the fact never sees the screens it was meant to gate.",
+
+  "completionPredicate": "A stranger can verify this by checking out the branch and running four things. (1) `npm test` is 191 pass, 0 fail, exactly one more test than main's 190. (2) Appending `<div class=\"hidden\"></div>` to web/index.html makes the suite fail naming 'hidden'; at 30abefe the same injection is 190 pass, 0 fail. (3) Appending a JS-safe `class=\"mx-card\"` probe to src/shell-homes.mjs, src/staff-map.mjs or src/staff-review.mjs makes the suite fail naming 'mx-card'; at 30abefe each is 190 pass, 0 fail. (4) `git hash-object` on web/index.html, web/shell.css, web/sc-kit.css, src/server.mjs and src/server.test.mjs equals their 30abefe blob hashes. If all four hold, the gate strips comments, scans every served source, and is watched firing.",
+
+  "scopeBasis": "One file changed: src/ui.test.mjs. The three files the dispatch forbids (web/index.html, web/shell.css, web/sc-kit.css) are byte-unchanged, and so are src/server.mjs and src/server.test.mjs, which sibling b88-8 owns and which this lane only READS. No size pin was added to the product's defined set: recounting the denominator is WDLL item 4 and it pins the KIT's gate3-classes.test.mjs, so pinning here too would manufacture a second implementation of one rule — the exact CTRL-1 shape this card exists to remove — and would collide by construction with PR #21, which is adding ~26 CSS rules to shell.css. The runtime-class extractor's blindness to classes passed as function arguments (web/app.js passes \"id\" and \"subj\" into a td(text, className) helper) is named out of scope by the WDLL and was left alone; both tokens are defined classes, so nothing strays through it today. src/city-identity.test.mjs was left untouched despite carrying the same defect, and that is reported below as finding F1 rather than silently fixed.",
+
+  "plannerCorrectionsReceivedMidLaneAndHowTheyWereResolved": [
+    {
+      "correction": "1. The anchor is about to break. Item 8 (PR #20) changed sendFile(res, filePath, contentType) to sendFile(req, res, filePath, contentType). An extractor anchored on the literal 'sendFile(res,' would find zero call sites the moment it merged and the gate would silently scan nothing. Anchor on the path.join argument or the function name alone, never on the argument list.",
+      "status": "ALREADY SATISFIED, then VERIFIED AT SOURCE rather than assumed",
+      "detail": "The derivation regex as built is /sendFile\\([^)]*?path\\.join\\(\\s*(WEB|__dirname)\\s*,\\s*\"([^\"]+)\"\\s*\\)/g: it anchors on the function name plus the path.join argument, and [^)]*? absorbs any number of leading arguments without being able to escape the call. Rather than reason about it, PR #20 was fetched and read at source (gh api contents/src/server.mjs?ref=b79c83a), confirmed to be `export function sendFile(req, res, filePath, contentType)` with all six call sites as `sendFile(req, res, path.join(...), ...)`. PR #20 turned out to be ALREADY MERGED as 30abefe, so this branch was rebased onto it and every measurement re-run. The derivation resolves all six assets against the merged signature and the suite is green.",
+      "hardened": "the measurement is now recorded in the comment beside the rule, so the next reader knows the anchor choice was paid for rather than guessed. A second control was already present and covers the case the regex genuinely cannot read: parsed sites must equal sendFile( occurrences minus its one definition, so a path passed as a variable fails loudly instead of shrinking the gate."
+    },
+    {
+      "correction": "2. 'Purely sendFile-derived' was never accurate. Derive the SERVED set from sendFile call sites and add shell-homes.mjs explicitly as a separate named entry with its reason in a comment. Two sources of truth, both stated, neither implicit.",
+      "status": "ALREADY BUILT THIS WAY",
+      "detail": "SERVED_ASSETS is derived from the call sites. BAKE_SOURCES = ['src/shell-homes.mjs'] is a separate named constant carrying its reason in a comment: it generates class markup as a server template string and reaches the browser only through scripts/bake-connections.mjs, whose output is never byte-asserted. MARKUP_SOURCES is the union. The new test asserts all three lists separately so neither source of truth is implicit. This matched the planner's prescription exactly and was kept."
+    },
+    {
+      "correction": "Do NOT edit src/server.mjs.",
+      "status": "HONORED",
+      "detail": "src/server.mjs and src/server.test.mjs are byte-identical to 30abefe by git blob hash. This lane only reads server.mjs."
+    }
+  ],
+
+  "pr": {
+    "number": 22,
+    "url": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/22",
+    "branch": "g88-item3-class-gate",
+    "base": "main",
+    "headSha": "13c4f18f64ebe7b05526e7bb29d12d5f063a421c",
+    "baseCommit": "30abefe (fix(g88): give every static asset a revalidation contract (#20))",
+    "rebase": "originally cut from cdfca39 and pushed as 53b7709; rebased onto 30abefe after PR #20 merged, force-pushed with --force-with-lease as 13c4f18, and every measurement in this close re-run against the new base",
+    "state": "OPEN",
+    "mergeable": "MERGEABLE",
+    "merged": false,
+    "mergeSha": "not applicable: the planner verifies and merges; this lane did not merge and did not deploy",
+    "diffstat": "1 file changed, 283 insertions(+), 16 deletions(-) — src/ui.test.mjs"
+  },
+
+  "ci": {
+    "conclusionString": "success",
+    "checkRunName": "test",
+    "status": "completed",
+    "headSha": "13c4f18f64ebe7b05526e7bb29d12d5f063a421c",
+    "readVia": "gh api repos/empressaioemail-tech/smartcity-dashboards/commits/13c4f18/check-runs --jq '.check_runs[] | {name, status, conclusion, head_sha}'",
+    "rawOutput": "{\"conclusion\":\"success\",\"head_sha\":\"13c4f18f64ebe7b05526e7bb29d12d5f063a421c\",\"name\":\"test\",\"status\":\"completed\"}",
+    "priorHeadForTheRecord": "53b7709 also returned conclusion 'success' before the rebase",
+    "note": "read as the conclusion STRING per AGENT_CONTRACT section 5, not from `gh pr checks` printing 'pass' and not from a gh exit code"
+  },
+
+  "testCounts": {
+    "beforeOnMain30abefe": "tests 190, pass 190, fail 0",
+    "afterOnBranch": "tests 191, suites 34, pass 191, fail 0",
+    "delta": "+1 test, as the dispatch predicted",
+    "newTest": "derives the scanned source list from server.mjs's sendFile call sites",
+    "hardenedInPlace": "composes existing kit classes and declares no new one — clean arm and injected arms now live in this one test",
+    "priorBaseForTheRecord": "at cdfca39 the counts were 185 before / 186 after; PR #20 added 5 tests"
+  },
+
+  "definedSetBeforeAndAfter": [
+    {
+      "which": "before",
+      "size": 115,
+      "countingRule": "new Set([...(shell + kit).matchAll(/\\.([a-zA-Z][a-zA-Z0-9_-]*)/g)].map(m => m[1])) over web/shell.css + web/sc-kit.css concatenated raw, CSS COMMENTS NOT STRIPPED, no CRLF normalization",
+      "source": "src/ui.test.mjs at cdfca39 / 30abefe (unchanged by PR #20)"
+    },
+    {
+      "which": "after",
+      "size": 109,
+      "countingRule": "the served stylesheets (DERIVED from server.mjs's sendFile call sites: web/sc-kit.css, web/shell.css), each CRLF-normalized, joined, CSS COMMENTS STRIPPED via /\\/\\*[\\s\\S]*?\\*\\//g, then every match of /\\.(-?[_a-zA-Z][\\w-]*)/g, deduplicated",
+      "source": "ported verbatim from the SmartCity kit's stylesheetClasses() in test/_lib.mjs:174-182; ported and NOT imported because the rule is not in the kit's package exports and depending on the kit would add an npm dependency to a repo whose only dependency is pg. The kit is named as the source in the comment."
+    }
+  ],
+
+  "sixCommentOnlyWordsNoLongerCounted": {
+    "words": ["css", "hidden", "html", "md", "mjs", "test"],
+    "measurement": "115 - 109 = 6, and the six ARE the whole difference: the set difference weak-minus-strict is exactly this list, and strict-minus-weak is empty, so the stricter rule loses nothing real",
+    "consequence": "an injected class=\"hidden\" did not fire the gate because 'hidden' was counted as a defined class. That is now the second probe and it fires on all five sources."
+  },
+
+  "fiveSourcesNowScannedAndHowTheListIsDerived": {
+    "shape": "TWO stated sources of truth, neither implicit, per the planner's correction 2",
+    "sourceOfTruth1_derived": {
+      "what": "the SERVED set",
+      "derivation": "servedAssets() parses src/server.mjs for /sendFile\\([^)]*?path\\.join\\(\\s*(WEB|__dirname)\\s*,\\s*\"([^\"]+)\"\\s*\\)/g and maps WEB->web/, __dirname->src/",
+      "anchor": "the FUNCTION NAME plus the path.join argument, never the argument list. [^)]*? absorbs any number of leading arguments without escaping the call.",
+      "anchorProvenAgainstTheRealRefactor": "PR #20 changed the helper to sendFile(req, res, filePath, contentType). Read at source, then the branch was rebased onto the merged 30abefe and the derivation still resolves all six assets. An extractor anchored on the literal 'sendFile(res,' would have resolved zero and the gate would have scanned nothing, silently.",
+      "result": [
+        "src/staff-map.mjs",
+        "src/staff-review.mjs",
+        "web/app.js",
+        "web/index.html",
+        "web/sc-kit.css",
+        "web/shell.css"
+      ],
+      "partition": "the two .css files are the DEFINITION side and are asserted to be exactly the stylesheets stylesheetClasses() reads, so a newly served stylesheet cannot go uncounted. The other four are markup."
+    },
+    "sourceOfTruth2_namedExplicitly": {
+      "what": "the BAKE set",
+      "value": ["src/shell-homes.mjs"],
+      "basis": "it is served by nobody, so it is not and cannot be a sendFile call site. It emits the connections register as a server template string (src/shell-homes.mjs:141 renders class=\"srcreg\", class=\"rail\", class=\"nm\", class=\"pill ${pill}\") and reaches the browser only through scripts/bake-connections.mjs writing into web/index.html. That bake's output is never byte-asserted, so a class renamed there without a re-bake ships stale and passes every test. Named separately with its reason in a comment rather than folded into the derived list, so the derivation stays honestly derived.",
+      "note": "this resolves the planner's own flagged error: the dispatch asked for a purely sendFile-derived list AND named shell-homes.mjs, and those two instructions cannot both be satisfied by one derivation"
+    },
+    "markupSourcesScanned": [
+      "src/shell-homes.mjs",
+      "src/staff-map.mjs",
+      "src/staff-review.mjs",
+      "web/app.js",
+      "web/index.html"
+    ],
+    "whyTheTwoStaffModulesCount": "web/app.js:1-2 imports them as browser ES modules (`import { resolveStaffMapQuery } from \"/staff-map.mjs\"`), and server.mjs serves both. They assign zero classes today, which is exactly why nobody noticed they were unscanned; that zero is now written as a positive determination in the new test rather than left as an empty result nobody looked at.",
+    "antiDodgeControls": [
+      "SERVED_ASSETS.length === (count of /\\bsendFile\\(/g) - (count of /function sendFile\\(/g), and the definition count must be 1. This is the backstop for what the regex genuinely cannot read — a call site whose path is a variable rather than an inline path.join — and for any future refactor that leaves the derivation matching nothing.",
+      "the derived served list is asserted element-for-element, so a newly served asset fails the tripwire and forces an explicit decision about whether it is scanned",
+      "the served .css set is asserted to equal the stylesheets the counting rule reads"
+    ]
+  },
+
+  "usedSetCountingRule": {
+    "size": 98,
+    "rule": "across the five markup sources: every whitespace-separated token in class=\"...\", class=`...`, className=\"...\", className=`...`, with ${...} spans blanked; plus string literals from classList.add/remove/toggle, where add() and remove() contribute EVERY quoted argument and toggle() contributes only its first (the second is a force boolean)",
+    "supersetProof": "ran the pre-existing extraction and the new extraction over the same tree and diffed the used-sets: old 98, new 98, LOST [], GAINED []. Nothing the old rule caught is lost, so no assertion was weakened. Identical today because the three newly scanned sources emit only classes index.html already carries (shell-homes emits srcreg/rail/nm/pill, which the bake has already put into index.html) and the two staff modules emit none. The widening is proven real by the injected arms firing on all three previously unscanned sources."
+  },
+
+  "injectedArmsRawOutput": {
+    "note": "run in scratch copies (P:/tmp/g88-gate-scratch against cdfca39, P:/tmp/g88-gate-scratch2 against the rebased 30abefe base), restored after every arm, both scratch directories deleted at close. No violation was ever left in the working tree; `git status --short` on the real clone showed only ` M src/ui.test.mjs` throughout, and the final tree is committed and clean.",
+
+    "armA_hidden_into_index_html_HARDENED_rebased": "########## HARDENED (rebased on 30abefe) :: inject class=\"hidden\" into web/index.html ##########\nnpm test exit: 1\nℹ tests 191\nℹ pass 190\nℹ fail 1\n✖ failing tests:\n\ntest at src\\ui.test.mjs:499:3\n✖ composes existing kit classes and declares no new one (3.4017ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n  + [\n  +   'hidden'\n  + ]\n  - []\n  \n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: [ 'hidden' ],\n    expected: [],\n    operator: 'deepStrictEqual',\n    diff: 'simple'\nrestored web/index.html",
+
+    "armB_mxcard_into_index_html_HARDENED_rebased": "########## HARDENED (rebased on 30abefe) :: inject class=\"mx-card\" into web/index.html ##########\nnpm test exit: 1\nℹ tests 191\nℹ pass 189\nℹ fail 2\n✖ failing tests:\n\ntest at src\\city-identity.test.mjs:184:3\n✖ adds no CSS class and edits no stylesheet to do it (3.0825ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n  + [\n  +   'mx-card'\n  + ]\n  - []\n  \n    actual: [ 'mx-card' ],",
+
+    "armC_mxcard_into_shell_homes_HARDENED_rebased": "########## HARDENED (rebased on 30abefe) :: inject class=\"mx-card\" into src/shell-homes.mjs ##########\nnpm test exit: 1\nℹ tests 191\nℹ pass 190\nℹ fail 1\n✖ failing tests:\n\ntest at src\\ui.test.mjs:499:3\n✖ composes existing kit classes and declares no new one (3.5408ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n  + [\n  +   'mx-card'\n  + ]\n  - []\n  \n    generatedMessage: true,",
+
+    "armD_hidden_into_staff_map_HARDENED_atCdfca39Base": "########## ARM: inject class=\"hidden\" into src/staff-map.mjs (JS-safe, syntax stays valid) ##########\nsyntax: OK\nnpm test exit: 1\nℹ tests 186\nℹ pass 184\nℹ fail 2\n--- raw failure block ---\n✖ failing tests:\n\ntest at src\\ui.test.mjs:485:3\n✖ composes existing kit classes and declares no new one (3.6195ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n  + [\n  +   'hidden'\n  + ]\n  - []\n  \n    actual: [ 'hidden' ],\n    expected: [],\n    operator: 'deepStrictEqual',\n    diff: 'simple'\n  }",
+
+    "armE_mxcard_into_staff_review_HARDENED_atCdfca39Base": "########## ARM: inject class=\"mx-card\" into src/staff-review.mjs (JS-safe, syntax stays valid) ##########\nsyntax: OK\nnpm test exit: 1\nℹ tests 186\nℹ pass 184\nℹ fail 2\n--- raw failure block ---\n✖ failing tests:\n\ntest at src\\ui.test.mjs:485:3\n✖ composes existing kit classes and declares no new one (3.6428ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  \n  + [\n  +   'mx-card'\n  + ]\n  - []\n  \n    actual: [ 'mx-card' ],\n    expected: [],\n    operator: 'deepStrictEqual',\n    diff: 'simple'\n  }\n\ntest at src\\ui.test.mjs:559:3\n✖ derives the scanned source list from server.mjs's sendFile call sites (1.0599ms)\n  AssertionError [ERR_ASSERTION]: src/staff-review.mjs has started assigning classes",
+
+    "regressionProof_sameInjections_againstTheOldGateOnCurrentMain": "########## OLD GATE on main 30abefe :: inject class=\"hidden\" into web/index.html ##########\nnpm test exit: 0\nℹ tests 190\nℹ pass 190\nℹ fail 0\n\n########## OLD GATE on main 30abefe :: inject class=\"mx-card\" into src/shell-homes.mjs ##########\nnpm test exit: 0\nℹ tests 190\nℹ pass 190\nℹ fail 0\n\n########## OLD GATE on main 30abefe :: inject class=\"mx-card\" into src/staff-review.mjs ##########\nnpm test exit: 0\nℹ tests 190\nℹ pass 190\nℹ fail 0",
+
+    "regressionProof_alsoRunAgainstCdfca39BeforeTheRebase": "########## OLD GATE (cdfca39) vs inject class=\"hidden\" into web/index.html ##########\nnpm test exit: 0\nℹ tests 185\nℹ pass 185\nℹ fail 0\nrestored\n\n########## OLD GATE (cdfca39) vs inject class=\"mx-card\" into src/shell-homes.mjs ##########\nnpm test exit: 0\nℹ tests 185\nℹ pass 185\nℹ fail 0\nrestored\n\n########## OLD GATE (cdfca39) vs inject class=\"mx-card\" into src/staff-map.mjs ##########\nnpm test exit: 0\nℹ tests 185\nℹ pass 185\nℹ fail 0\nrestored",
+
+    "readingOfTheRegressionProof": "Three real violations, all green on current main, all red on this branch. That is the difference the card asked for, measured rather than asserted, and it holds against both bases. Note that class=\"mx-card\" in index.html DID fire on main — via src/city-identity.test.mjs, not via the gate — which is why mx-card alone was never sufficient evidence and why 'hidden' is the arm that proves the comment hole."
+  },
+
+  "realStraySurfacedByTheStricterRule": {
+    "answer": "NONE",
+    "basis": "the stray list across all five markup sources under the 109-token defined set is exactly ['roster-lens'], the one permitted exclusion, which was already excluded before this card. The stricter rule removed six tokens from the defined set and no product class depended on any of them. No STOP condition was triggered.",
+    "rosterLensDisposition": "exclusion kept, now carrying a DELETION TICKET in the comment rather than permanent amnesty: the fix is removing roster-lens from the five sections of web/index.html that carry it (lines 377, 404, 421, 447, 473), at which point the exclusion set becomes empty. The WDLL already names this under 'Out of scope' as its own row."
+  },
+
+  "oneFalsePositiveFoundAndFixedNotExcluded": {
+    "symptom": "the widened extractor failed its own clean arm on first run with actual: [ 'max', 'presented' ]",
+    "cause": "classList.toggle(cls, force) takes a class name only in its first argument. web/app.js calls classList.toggle(\"is-presented\", state === \"presented\") and classList.toggle(\"is-max\", state === \"max\"), so the state values read as class names.",
+    "fix": "per-method DOM semantics: add() and remove() contribute every quoted argument (so classList.remove(\"is-presented\", \"is-max\") still contributes both), toggle() contributes only its first",
+    "whyNotAnExclusion": "the dispatch forbids new exclusions, and a false positive in the instrument is not a stray in the product. Excluding them would have shipped a gate that ignores two class-shaped tokens forever.",
+    "significance": "the clean arm caught a defect in the very instrument being built to run it, on its first execution. That is the strongest available argument for the dispatch's requirement that both arms live in one test."
+  },
+
+  "constraintsHonored": [
+    "web/index.html byte-unchanged vs 30abefe: 5464a16fa1f83208e4f820192460428b8213ba95",
+    "web/shell.css byte-unchanged vs 30abefe: 72710a00b00f234d1bea1b21c70a0198c7702846",
+    "web/sc-kit.css byte-unchanged vs 30abefe: 54339204691415d5ee817117699322ed0826c768",
+    "src/server.mjs byte-unchanged vs 30abefe (sibling b88-8 owns it; this lane only reads it): 5b3faef815af6e092a01e035d0147bec39793068",
+    "src/server.test.mjs byte-unchanged vs 30abefe: 1b6c5b55b9b6dbbf3335f2f42662452efd11fcad",
+    "one file changed: src/ui.test.mjs, 283 insertions, 16 deletions",
+    "no existing assertion weakened — proven by the old-vs-new used-set diff, LOST []",
+    "no exclusion added beyond the pre-existing roster-lens",
+    "no dependency added; package.json untouched",
+    "own clone at P:/tmp/g88-gate; sibling clones never touched",
+    "branch pushed immediately after the first commit, and force-pushed with --force-with-lease after the rebase",
+    "every verification command exit-bounded: npm test, node --check, git hash-object, gh api. No server, no watch, no tail -f",
+    "no merge, no deploy",
+    "no doc_repo commit: the three artifacts below are written and left uncommitted for the planner",
+    "no sub-agents spawned (dispatched with an explicit NO NESTING clause)"
+  ],
+
+  "docRepoFilesWrittenUncommitted": [
+    "_inbox/2026-08-19_b88-3_cp1.json",
+    "_inbox/2026-08-19_b88-3_cp2.json",
+    "_inbox/2026-08-19_b88-3_close.json"
+  ],
+
+  "findingsForThePlanner": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "title": "A second, weaker implementation of the same rule is still live at src/city-identity.test.mjs:184",
+      "detail": "The test 'adds no CSS class and edits no stylesheet to do it' builds its defined set with the same unstripped regex the gate used to use, and carries its own copy of the roster-lens exclusion. Measured directly in the arms above: with class=\"hidden\" injected into web/index.html the hardened suite reports fail 1 and the only failing test is ui.test.mjs — city-identity.test.mjs stays green on the same violation. With class=\"mx-card\" it reports fail 2 and both fire, because mx-card is undefined under either rule.",
+      "whyNotFixedHere": "outside this item's named scope, and other executors are in this repo simultaneously. DEV_PROCESS 5.4 (propose, do not unilaterally remediate) over a file no dispatch assigned to this lane.",
+      "recommendation": "This is not a live fail-open at the product level — the binding gate is now the hardened one — but it is a drift hazard of exactly the CTRL-1 shape DEV_PROCESS 2.4 names: one rule, two implementations, disagreeing. Measured to be a safe change today: the stray list under the strict rule is roster-lens only, which that test already excludes, so pointing it at the same comment-stripping rule stays green. Recommend folding it into whichever surface PR under WDLL item 9 next touches that file, rather than a standalone row.",
+      "evidence": "src/city-identity.test.mjs:184-203; arm B raw output above"
+    },
+    {
+      "id": "F2",
+      "severity": "low",
+      "title": "The gate is still blind to classes passed as function arguments",
+      "detail": "web/app.js assigns classes through a td(text, className) helper: td(record.recordId, \"id\") and td(record.subject, \"subj\"). Neither reaches any extractor. Both 'id' and 'subj' ARE defined classes, so nothing strays today.",
+      "whyNotFixedHere": "the WDLL names this out of scope explicitly (it is the same blindness that makes the kit's runtime extractor report 18 where the true set is 20)",
+      "recommendation": "leave it; it becomes real only if a design pass introduces a new helper-passed class. Worth one line in whichever row picks up the kit-side extractor."
+    },
+    {
+      "id": "F3",
+      "severity": "informational",
+      "title": "This gate reads src/server.mjs, so future server changes are now tripwired",
+      "detail": "The scan-list derivation parses server.mjs's sendFile call sites and the new test tripwires both the derived list and the call-site count. PR #20's signature change was absorbed cleanly and is proven on the rebased branch. A FUTURE change that adds a served asset, or that passes a path as a variable rather than an inline path.join, will fail this test.",
+      "recommendation": "that failure is the gate working, not a conflict — it forces an explicit decision about whether the new asset is scanned. Expect it, do not route around it."
+    },
+    {
+      "id": "F4",
+      "severity": "informational",
+      "title": "PR #21 (item 2, the CSS families) will change the defined-set size and this PR does not pin it",
+      "detail": "The 109 figure is measured on the current stylesheets and is stated as a counting rule wherever it appears, not asserted as a test. Nothing in PR #22 pins a size, so PR #21 can land in either order without a merge conflict on this file.",
+      "recommendation": "the recount belongs to WDLL item 4 and to the kit's gate3-classes.test.mjs, as the card specifies. Re-quote 109 from this close only as the PRE-item-2 figure."
+    }
+  ],
+
+  "whatRemainsOpen": [
+    "PR 22 is OPEN and unmerged by design. The planner verifies and merges; verification never delegates below the planner.",
+    "No deploy was performed and none is implied by this item.",
+    "WDLL item 3 is code-complete on this branch. Its acceptance line is graded by the planner against the four completionPredicate checks above.",
+    "F1 (the duplicate weaker gate) is unrouted and needs a planner decision.",
+    "The roster-lens deletion ticket is stated in the comment but not filed as a row; the WDLL already carries it under 'Out of scope'."
+  ]
+}

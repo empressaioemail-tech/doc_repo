@@ -1,0 +1,96 @@
+{
+  "row": "G-87",
+  "title": "The constraint gate can see .design-sync",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "planRows": ["G-87"],
+  "lane": "B",
+  "repo": "empressaioemail-tech/smartcity-kit",
+  "scopedAt": "A-067",
+  "closePathNote": "The three-leg dispatch named no checkpoint or close paths for legs 2 and 3, unlike the b86u dispatch which named all three. Path chosen by house convention rather than instruction; flagged so a successor does not read the absence as a skipped artifact.",
+
+  "missionPremise": "A-066 found a real vendor-brand violation sitting in .design-sync/conventions.md with CI green, and A-067 scoped the fix. walk() in test/_lib.mjs skipped ds-bundle, .ds-sync and .design-sync by directory NAME at the repo root. The skip was correct at kit PR #2, when .design-sync held only converter output, and went stale at G-85 when authored source moved into it. conventions.md ships verbatim inside the uploaded README and the 73 previews ship as the preview cards, so the gate had stopped covering files that ship.",
+  "completionPredicate": "A forbidden string planted in .design-sync/conventions.md and one planted in a .design-sync/previews/*.tsx each turn npm test red AND name the file; gate 4 still does not read converter output as package-authored CSS; toolOutputSkipped() still reports whatever remains skipped. Each proven by watching it fire, not by a passing suite.",
+  "scopeBasis": "The row is the gate, not the content. No preview, no conventions text and no config was edited. The fix deliberately does NOT widen the skip to a git-tracked-files scan, which would be a larger behavioural change than the row scoped; it narrows the existing skip from a directory to the generated paths inside it.",
+
+  "prs": [
+    {
+      "number": 6,
+      "url": "https://github.com/empressaioemail-tech/smartcity-kit/pull/6",
+      "title": "G-87: the constraint gate can see .design-sync",
+      "branch": "g87/constraint-gate-sees-design-sync",
+      "base": "d4f7b615b25f5ec79c3058ea28dfbae1b4515fa3",
+      "head": "830fbe3e007e05f2357b9da0a330f6a525469248",
+      "merged": false,
+      "ciConclusion": "success",
+      "ciEvidence": "check-run test: status=completed conclusion=success on head 830fbe3e007e05f2357b9da0a330f6a525469248, polled to completion",
+      "mergeNote": "NOT merged. Leg 1 carried an explicit operator greenlight to merge PR #5; this leg carried none, and a merge to main is outward-facing. Held for the operator call."
+    }
+  ],
+
+  "theFix": {
+    "before": "const TOOL_OUTPUT_DIRS = new Set([\"ds-bundle\", \".ds-sync\", \".design-sync\"]) matched by directory NAME and only at the repo root",
+    "after": "const TOOL_OUTPUT_PATHS = new Set([\"ds-bundle\", \".ds-sync\", \".design-sync/.cache\", \".design-sync/learnings\", \".design-sync/node_modules\"]) matched by PATH",
+    "effect": "76 authored files now enter the repo-wide scans that could not see them before: conventions.md, config.json, NOTES.md and the 73 previews. Verified directly: 76 files under .design-sync now walked, 73 of them previews, conventions.md included, zero .cache entries leaked in.",
+    "whyGate4IsNotReopened": "ds-bundle/ and .ds-sync/ remain skipped, and those are where the converter's generated stylesheets live. Confirmed no .css exists anywhere under .design-sync, so widening to it cannot introduce a stylesheet the gate would read as package-authored.",
+    "whyTheListMatchesGitignore": "Every path on the skip list is also in .gitignore, and that is load-bearing rather than incidental. A gitignored path exists locally and NOT in a fresh CI clone, so a scan that walks one reports violations only one of the two environments can ever see. .design-sync/learnings was added to the skip list for exactly this reason even though it does not currently exist on disk."
+  },
+
+  "provenNotAsserted": {
+    "harnessGap": "scripts/prove-gates.mjs did not copy .design-sync into its scratch at all, so a violation planted there could not have fired for want of the file. A case that cannot fire is indistinguishable from a gate that does not work. The copy was added, filtered to exclude the generated paths.",
+    "secondHarnessGap": "The scratch is a plain tmpdir, not a clone, so the new gitignore-based guard would have reported itself UNRUN and passed. The harness now git-inits the scratch and copies .gitignore, so that guard runs for real.",
+    "result": "27 of 27 injected violations caught and named (was 24). 1 of 1 legitimate-payload controls stayed green. prove:gates exit 0.",
+    "countingRule": "The denominator counts every case and the two kinds are NOT interchangeable: an injection passes by FIRING and naming its file, a control passes by STAYING GREEN. Reported as two numbers so a control that never fires cannot be mistaken for a gate that works.",
+    "newCases": [
+      {"case": "forbidden string in .design-sync/conventions.md", "requiredVerdict": "red, and names the file", "expectString": ".design-sync/conventions.md", "result": "FIRED"},
+      {"case": "forbidden string in .design-sync/previews/Button.tsx", "requiredVerdict": "red, and names the file", "expectString": ".design-sync/previews/Button.tsx", "result": "FIRED"},
+      {"case": "stylesheet payload created under ds-bundle/", "requiredVerdict": "STAYS GREEN", "result": "CLEAN"},
+      {"case": "the same bytes created under .design-sync/", "requiredVerdict": "red", "expectString": "authored by this package", "result": "FIRED"},
+      {"case": "tracked authored source (src) added to the skip list", "requiredVerdict": "red", "expectString": "NOT gitignored", "result": "FIRED"}
+    ],
+    "whyExpectIsThePath": "For the two cases A-067 names, the expect string is the FILE PATH rather than the generic failure banner, because the requirement is that the suite turns red AND names the file. A gate that fails without saying where gets debugged by bisection.",
+    "divergencePair": "Cases 3 and 4 plant the SAME bytes, held in one constant so that claim is a fact about the code rather than a comment, in two locations with opposite required verdicts. A single case proves a verdict; a pair proves the boundary sits where it is claimed to. If anyone drops ds-bundle from the skip list, case 3 goes red and says why.",
+    "rootCauseGuard": "Case 5 is the root cause rather than the symptom. The skip list was not wrong when written; it went stale and nothing was watching. Everything skipped must be gitignored, so authored source hidden from its own gate now fails. git is the instrument because .gitignore semantics are git's and a second implementation here would drift from the first; if git is unreachable it reports UNRUN rather than passing, on the same rule as vendor-parity arm B."
+  },
+
+  "counterVerification": {
+    "why": "Watching a case fire on the FIXED tree proves the detector works now. It does not prove the fix is what made it fire.",
+    "how": "test/_lib.mjs was backed up, .design-sync was restored to the skip list, and the harness re-run.",
+    "result": "Both new constraints cases went SILENT, the .design-sync boundary case went SILENT, and prove:gates exited 1 at 23 of 26 with 0 of 1 controls green. The fix is what makes them fire.",
+    "sideObservation": "On the broken tree the stays-clean control also failed, because the new .design-sync-must-not-be-skipped-whole assertion fires there. That is the regression guard doing its job, not a misfire of the control.",
+    "restored": "test/_lib.mjs restored from the backup and re-verified: .design-sync absent from the skip set, suite and harness green."
+  },
+
+  "toolOutputSkippedStillReports": {
+    "requirement": "A-067: toolOutputSkipped() must keep reporting whatever remains skipped, because an empty result is not an absence.",
+    "howItIsHeld": "It still logs what it refused to walk. Its ASSERTION is conditional and that is deliberate: every declared skip path is gitignored, so on a fresh CI clone none of them exist and toolOutputSkipped() is legitimately empty. An unconditional non-empty assertion would be a gate that only ever passes on a developer's machine. The assertion that holds in both environments is: if a declared path EXISTS, the walk must have recorded refusing it. Locally that fires on all three present; in CI it is vacuous and the test says so in its output.",
+    "localObservation": "declared tool output present in this checkout: .design-sync/.cache, .ds-sync, ds-bundle — all three recorded as skipped."
+  },
+
+  "tests": {
+    "npmTest": "74 pass, 0 fail, 1 skipped. The 74th is the new skip-list staleness guard; the skip is vendor-parity arm B which needs SC_DASHBOARDS_DIR and is unset locally. CI sets it and it ran there.",
+    "baselineBefore": "73 pass, 0 fail, 1 skipped — unchanged by the widened scan, which is the evidence that turning the gate on did not turn CI red on legitimate content.",
+    "preflightThatMattered": "Before changing anything, all seven needles were grepped across .design-sync: permitflow, citizenconnect, leaflet, pipedrive, stripe.com, bastrop, chestnut — all CLEAN. And the gate-1a token-declaration pattern was checked against conventions.md, which names tokens in backticks and never with a trailing colon, so widening the scan does not trip gate 1a either. A fix that turns CI red on legitimate content is not a fix."
+  },
+
+  "constraintsHonoured": {
+    "noDocRepoCommit": true,
+    "noMerge": "true — PR #6 left open and green for the operator call",
+    "noPreviewOrConventionsEdits": true,
+    "noSubAgents": true,
+    "liveBastropUntouched": true,
+    "dashboardsUntouched": true,
+    "noAdapterGrantNoG52NoG24": true,
+    "noNpmPublish": true,
+    "noDeploy": true
+  },
+
+  "remainsOpen": [
+    "PR #6 is green and unmerged, awaiting the operator merge call.",
+    "Proposed follow-up, NOT built: the guard asserts every SKIPPED path is gitignored. The inverse — that no gitignored directory inside the workspace is silently walked — is not asserted. Building it would mean reconciling the scan against git ls-files, a larger behavioural change than A-067 scoped, so it is named rather than smuggled in."
+  ],
+
+  "docRepoUncommitted": [
+    "_inbox/2026-08-18_g87_close.json (new) — this file",
+    "90_operations/OPS-17_govtech_stack_plan_of_record.md (modified) — A-069 added"
+  ]
+}
