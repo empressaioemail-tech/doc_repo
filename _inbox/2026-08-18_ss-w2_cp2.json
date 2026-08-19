@@ -1,0 +1,87 @@
+{
+  "lane": "SS-W2",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial review, post-build pre-PR",
+  "date": "2026-08-18",
+  "planRows": ["P-40"],
+  "repo": "hauska-map",
+  "branch": "ss/w2-consumer-voice",
+  "commits": [
+    { "sha": "f90d1e8", "summary": "repair double-encoded source and guard it in CI" },
+    { "sha": "794fc4d", "summary": "consumer voice on the inspect card (I3+I4)" }
+  ],
+
+  "gatesRunVerbatim": {
+    "typecheck": "pnpm --filter property-explorer exec tsc --noEmit -> TSC_EXIT=0",
+    "tests": "pnpm --filter property-explorer test -> Test Files 80 passed (80) / Tests 1015 passed (1015). Baseline before this lane was 79 files / 975 tests.",
+    "build": "pnpm --filter property-explorer build -> vite built in 3.08s, BUILD_EXIT=0",
+    "encodingGuardSelfTest": "node scripts/check-source-encoding.mjs --self-test -> PASSED (6 fire cases, 8 no-fire cases), SELFTEST_EXIT=0",
+    "encodingGuardScan": "node scripts/check-source-encoding.mjs -> scanned 386 of 386 tracked files, PASS, GUARD_EXIT=0"
+  },
+
+  "gateProvenToFire": {
+    "why": "DEV_PROCESS 2.2 and 2.3 — an indicator is tested for its ability to FIRE before it is trusted, and the negative case is proven on the real exit code rather than a pipe's.",
+    "method": "Wrote a two-occurrence mojibake file, `git add -N` so it entered `git ls-files`, ran the guard, then removed it.",
+    "result": "PROBE_SCAN_EXIT=1 with both hits reported by line and codepoint (U+00C2 U+00B7 and U+00E2 U+20AC).",
+    "ratchetDivergenceTest": "The baseline is a CEILING, so all three of its branches were exercised against the same 2-occurrence probe using temp copies of the script: ceiling 1 -> exit 1 (a file getting worse fails); ceiling 2 -> exit 0 silent (at ceiling); ceiling 3 -> exit 0 plus a NOTICE naming the file and telling the reader to lower the ceiling (a file getting cleaner never breaks the lane that cleaned it). Probe and temp copies deleted; clean re-scan confirmed exit 0.",
+    "selfExemption": "None. Every signature and sample in the guard is a \\uXXXX escape, so the guard is scanned by its own rule. The first draft used literal samples and correctly flagged itself, which is DEV_PROCESS 2.6 earning its place again."
+  },
+
+  "workItems": [
+    { "id": 1, "item": "delete hardcoded ICC/WDLL-31 roadmap note", "state": "done", "evidence": "data-testid=\"icc-hold\" removed; test asserts the card contains no \"WDLL\", \"ICC ingest\" or \"credentials pending\"" },
+    { "id": 2, "item": "remove SmartFilesMountStub from the consumer surface", "state": "done", "evidence": "verified at source that InspectCard.tsx held the only import and only usage in the repo, so the component file was deleted too. api/pe-smart-files-mount.ts and its 4 passing tests untouched — the probe stays reachable without shipping." },
+    { "id": 3, "item": "I3 provenance demoted into a disclosure", "state": "done", "evidence": "splitWeldedProvenance + toFactPresentation + SourcesDisclosure; 8 tests including the negative cases" },
+    { "id": 4, "item": "I4 three distinct absence treatments", "state": "done", "evidence": "FactRow renders 5 states; tests assert data-state distinctness, style-string distinctness, error hue exclusivity, and that grey italic is gone" },
+    { "id": 5, "item": "saved-property state with unsave in place", "state": "done with a named seam", "evidence": "isSaved + onUnsaveProperty props, self-resolving default; 6 tests. The ExplorerMap call sites (lines 1497 and 1514) still pass neither prop — that file is P-39's." },
+    { "id": 6, "item": "source-encoding fix and CI guard", "state": "done", "evidence": "7 mojibake occurrences plus a BOM repaired in TerrainExportSection.tsx; scripts/check-source-encoding.mjs and .github/workflows/source-encoding.yml added" },
+    { "id": 7, "item": "vacant-parcel header no longer a bare double quote", "state": "done", "evidence": "resolveCardHeading; 6 tests including the literal '\"' case" }
+  ],
+
+  "adversarialFindingsAgainstOwnWork": [
+    {
+      "finding": "The buildable row would have contradicted the declined-consume block.",
+      "checkedAtSource": "Read mapBuildableDisplay in src/lib/buildable-display-vocab.ts rather than assuming. declined-consume returns cardState:'present' with cardLabel '0% — setbacks consume lot', so there is NO contradiction. The only absent buildable case is envelopeStatus==='declined'.",
+      "butFound": "In that declined case the coverage block would have read 'buildable fills in from zoning setbacks for this parcel' beside the zoning and setbacks rows already saying exactly that — circular, and it inflates a one-cause gap into a three-item list.",
+      "fix": "Coverage claims are now opt-in per row (FactRowSpec.inCoverageBlock). Exactly land use, zoning and setbacks claim coverage — the same three fields the retired bakedHasHonestAbsence used, so the SCOPE is unchanged and only the treatment moved. Derived rows (buildable) and identity rows (apn, county) render their state without claiming a coverage gap. Pinned by a test that asserts the set is exactly [landUse, setbacks, zoning]."
+    },
+    {
+      "finding": "The provenance splitter could mangle a value whose description legitimately ends in parentheses, e.g. 'A1 — Vacant (rural)'.",
+      "fix": "The trailing parenthetical must look like a machine key (hyphen/underscore/dot separated, or a middle-dot-joined list) to be split. A single plain word never matches. The failure mode is therefore a MISSED demotion, never a mangled fact. Both directions are pinned by tests.",
+      "residual": "A source key that is a single bare lowercase word would not be demoted. Accepted: this shim is deleted when P-39 lands the typed split."
+    },
+    {
+      "finding": "The shim could double-split after P-39 lands a real provenance sibling.",
+      "fix": "Splitting is opt-in per row via spec, and FactRow consumes a FactPresentation that already carries provenance as a separate field, so once the sheet supplies it the shim path is simply not taken."
+    },
+    {
+      "finding": "One pre-existing test broke, and it broke for the right reason.",
+      "detail": "InspectCard.test.tsx asserted the card face contains 'Source: Bastrop County GIS'. Under I3 the provider key is exactly what must move behind the disclosure. The assertion was rewritten to pin the new contract (verification line and record date visible on the face, the provider key present only when the disclosure is open) rather than deleted. Recorded here because a broken assertion that is silently deleted is indistinguishable from a regression."
+    }
+  ],
+
+  "findingsRoutedRatherThanTaken": [
+    {
+      "finding": "The dispatch says api/spine.ts carries two more mojibake occurrences. At source there are TWO spine.ts files with two occurrences each, and all three of the double-saved files (both spine.ts plus TerrainExportSection.tsx) also carried a UTF-8 BOM, which the dispatch does not mention.",
+      "disposition": "Both spine.ts files are P-39's. Not edited. Both are baselined in the guard with counts measured at source, so P-39 fixing them lowers the count and passes."
+    },
+    {
+      "finding": "PropertyBriefPanel.tsx renders a `brief-provenance` header block on the paid brief reading Parcel / Baked at / Run / Source: baked snapshot / Report — five lines of pipeline vocabulary including a raw run id and report-family key. Same defect class as work item 1, in a file this lane owns.",
+      "disposition": "NOT taken. It is an eighth work item the dispatch did not scope, it needs a copy ruling on what a customer may see (is a run id ever customer-facing?), and the file has its own 13-test suite. Proposed to the planner rather than remediated unilaterally, per DEV_PROCESS 5.4.",
+      "size": "small, roughly the SourcesDisclosure treatment applied to one block"
+    }
+  ],
+
+  "constraintsHonored": [
+    "No file outside the lane's ownership was edited. Verified: git show --stat on both commits touches only apps/property-explorer/src/browse/*, scripts/, and .github/workflows/source-encoding.yml.",
+    "src/lib/** was READ and IMPORTED but never modified.",
+    "Branch pushed immediately after the first commit, then work continued.",
+    "Every verification command exit-bounded. No dev server, no watch, no tail.",
+    "The frozen contract was not edited. Two deliberate divergences from it (display-string values at the render boundary, and the extra `pending` state) are documented in the code rather than smuggled."
+  ],
+
+  "openAtCp2": [
+    "PR not yet opened at the time of writing this checkpoint.",
+    "ExplorerMap.tsx does not pass isSaved / onUnsaveProperty. The self-resolving default makes the feature work today; P-39 taking the prop is strictly better.",
+    "PropertyBriefPanel provenance header awaits a planner ruling."
+  ]
+}

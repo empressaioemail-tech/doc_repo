@@ -1,0 +1,162 @@
+{
+  "lane": "SS-W6",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "planRows": ["P-44"],
+  "repo": "hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w6-cc-truth-console",
+  "branch": "ss/w6-cc-truth-console",
+  "baseSha": "5bf06ec",
+  "writtenAt": "2026-08-18T23:05:00Z",
+
+  "missionPremise": "Operator ruling 2026-08-18 (OPS-16 amendment A-018): the statewide serving sweep renders as a panel in Command Center under the County Manifest subtab, and the County Manifest itself is stale and must be refreshed to current state. Command Center is a read and sandbox surface over spine data and a consumer of Smart Site, not a second product. The frozen record is _catalog/parcel_fact_sheet_contract/serving-sweep.ts; the six binding invariants are CONTRACT_RULES.md in the same folder. Lane P-43 (SS-W5, hauska-engine) produces the sweep data; this lane renders it and must not wait on it.",
+
+  "completionPredicate": "On the County Manifest panel a stranger can (a) see when the manifest was materialized and re-read it on demand, with the console saying plainly whether the re-read moved computedAt; (b) read which parts of the manifest are derived from the API, which are hand-declared upstream, and which are presentation-only client lookups, from the console itself rather than from prose; (c) open a Serving sweep subtab that renders CountyServingSweep/StatewideServingSweep per the frozen type, showing present / absentCovered / absentUncovered / unresolved as four separately-measured classes with their denominator, unresolved styled as an outage and never folded into an absence; (d) see the rail reading and the served reading for the same county and field SIDE BY SIDE with their gap in points, ranked worst first; (e) click an absence tally and get the underlying exampleParcelNodeIds. Suite green, PR open against main, not merged, not deployed.",
+
+  "scopeBasis": "File ownership is apps/command-center/** only; five other lanes edit this repo in parallel. apps/property-explorer/** (P-39, P-40) and packages/map-renderer/** (P-41, P-42) are out of scope and any need there is reported to the planner, not made. The server-side recompute of county_facet_coverage lives in hauska-engine (packages/engine-core/scripts/upsert-county-facet-ledger.mjs) and the endpoint lives in cortex-api; both are outside this repo, so refresh here means a repeatable console-side RE-READ plus a derivation audit, never a recompute. Emitting sweep data is P-43 work, not this lane.",
+
+  "liveStateEstablishedAtSource": {
+    "probe": "curl -sS https://cmdcenter-blush.vercel.app/api/spine/cortex/api/county-ledger",
+    "http": 200,
+    "bytes": 2121656,
+    "summary": {
+      "computedAt": "2026-08-14T17:41:22.500Z",
+      "servedAt": "2026-08-18T22:54:58.818Z",
+      "materializationAgeMs": 364416318,
+      "materializationAgeHuman": "4d 5h 13m",
+      "totalCounties": 254,
+      "totalRails": 14,
+      "totalCells": 3556,
+      "satisfiedCells": 616,
+      "satisfiedPresentCells": 540,
+      "satisfiedPresentPartialCells": 0,
+      "satisfiedAbsentCells": 76,
+      "texasCompletenessPct": 18.599212184936846,
+      "onboardedCount": 1,
+      "staleCount": 0,
+      "rewarmUnsafeCount": 0
+    },
+    "countingRules": {
+      "satisfiedCells": "616 of 3556 cells = 17.32% raw cell completeness; denominator is 254 counties x 14 rails. Distinct from texasCompletenessPct 18.599% which is parcel-weighted and binary per cell (each rail 1/14).",
+      "displayStateTotals": "satisfied-present 540, satisfied-absent 76, not-yet 2940, no-writer 0, no-atom 0; denominator 3556 cells",
+      "coverageCarrying": "1720 of 3556 cells carry a non-null honestCoveragePct; by rail geometry 254, cad 254, zoning 254, landuse 254, owner 254, mud 254, flood 177, envelope 19"
+    }
+  },
+
+  "findingsAtSourceBeforeBuild": [
+    {
+      "id": "F1",
+      "claim": "The console two gating indicators CANNOT FIRE on the live payload. hasWriter is true on 3556 of 3556 cells and atomFamilyState is present on 3556 of 3556 cells, so the NO WRITER and NO ATOM column tags and the no-writer / no-atom legend entries are dead.",
+      "rule": "DEV_PROCESS 2.2 — a gating indicator is tested for its ability to FIRE before it is trusted",
+      "consequence": "The console advertises five display states in its legend; the payload contains three."
+    },
+    {
+      "id": "F2",
+      "claim": "Column header tags are computed from railCells[0] — ONE county cell decides the tag for the whole 254-county column. Sorted-first county wins.",
+      "location": "CountyManifestGrid.tsx railStats sample",
+      "consequence": "A rail where one county lacks a writer and 253 have one would show, or hide, NO WRITER for all of them."
+    },
+    {
+      "id": "F3",
+      "claim": "The filter checkbox label reads 'below 3/13' while the API serves 14 rails. A hardcoded rail count survived in the same file whose header comment records the 13-vs-14 defect it was written to prevent.",
+      "location": "CountyManifestGrid.tsx onlyGap label",
+      "rule": "DEV_PROCESS 1.2 — every ratio carries its counting rule inline, at the point of use"
+    },
+    {
+      "id": "F4",
+      "claim": "Rail column headers print satisfied/totalCounties using 254 as the denominator for every rail, but railCapabilities serves a reachable ceiling per rail: rrc-wells maxCountiesReachable 1, owner 15, mud 186, rail-corridor 253, footprint 254, and 9 of 14 rails null with sourceBasis 'no capability probe defined for this rail'. rrc-wells at 0/254 reads as a statewide hole when its honest ceiling is 1 county.",
+      "rule": "DEV_PROCESS 1.1 — a coverage figure travels with its denominator",
+      "note": "Consistent with the standing memory that the RRC wells source is Harris-only."
+    },
+    {
+      "id": "F5",
+      "claim": "The manifest contradicts itself on 1 of 3556 cells: 48021 (Bastrop) rail envelope carries honestCoveragePct 99.77 against thresholdPct 90 while displayState is not-yet.",
+      "rule": "DEV_PROCESS 1.4 — two numbers that should agree and do not is a free finding",
+      "disposition": "surfaced in the console as a machine-computed contradiction list, not silently reconciled"
+    },
+    {
+      "id": "F6",
+      "claim": "244 of 254 counties are served with countyName null; only the 10 counties carrying registry rows have names (48021 Bastrop, 48027 Bell, 48029 Bexar, 48055 Caldwell, 48091 Comal, 48187 Guadalupe, 48209 Hays, 48257 Kaufman, 48309 McLennan, 48491 Williamson). The grid therefore renders 244 rows of bare FIPS."
+    },
+    {
+      "id": "F7",
+      "claim": "The API serves substantially more than the console reads. counties[].rows[] carries cert (label, gradedAt, blockPass, scopeAnnotations) and gate (checks with id/outcome/reason, passCount, declineCount); counties[].facets[] carries honestCoveragePct, integrityVerdict, costUsd, certState, onboarded, recipeVersion, ownerMatchRate; railCapabilities carries maxCountiesReachable, reachPct, sourceBasis, limitation. The console types declare none of the cert/gate fields and the panel renders none of the capability fields. The manifest is stale against the API in the read direction as well as the write direction.",
+      "reconciliation": "counties[].facets[].honestCoveragePct vs manifestCells honestCoveragePct for the same county+rail: 1720 agree, 0 disagree, 19 facet rows have no matching rail cell — the 19 are facet key 'land-use' (hyphen) against rail key 'landuse' (no hyphen), a naming divergence, not a data disagreement."
+    },
+    {
+      "id": "F8",
+      "claim": "There is no recompute endpoint and no serving-sweep endpoint on the deployed cortex-api. Probed via the console own proxy: /api/county-ledger/recompute, /api/county-ledger/refresh and /api/serving-sweep all return HTTP 200 text/html 918 bytes, which is the documented SPA fallthrough meaning the route does not exist. /api/county-ledger?refresh=1 returns the identical 2,121,656-byte materialized snapshot.",
+      "consequence": "Command Center cannot trigger a recompute. Repeatable refresh in this lane is a repeatable RE-READ that reports whether computedAt moved. The console must not present a re-read as a recompute."
+    }
+  ],
+
+  "designDecisions": [
+    {
+      "decision": "Subtabs live inside CountyManifestGrid rather than in a new wrapper panel registered separately.",
+      "why": "One fetch of a 2.1MB payload serves both instruments, the reconciliation needs both in one component tree, the PanelRegistry entry and its liveness probe are unchanged, and the existing 484-line test file keeps testing the shipped composition instead of a code path only tests reach."
+    },
+    {
+      "decision": "The sweep loader has two origins and can never mislabel them: live-endpoint (probed URL + HTTP status recorded and displayed) and loaded-artifact (filename + the artifact own sweptAt/resolverVersion displayed).",
+      "why": "P-43 delivers a dated report ARTIFACT first (its dispatch work item 7), and no sweep endpoint exists today (F8). A fixture rendered as LIVE is forbidden by the PanelRegistry liveness contract; an honest not-served state naming the exact URL and status is the alternative to inventing an endpoint."
+    },
+    {
+      "decision": "The rail-to-field pairing is declared explicitly with a basis per pair, and every unpaired rail and unpaired field is listed as a named class rather than dropped.",
+      "why": "DEV_PROCESS 1.3 — measure the class you are reporting, never derive it by subtraction; DEV_PROCESS 3.3 — unmentioned is the failure state, out of scope is a valid and required classification. cad pairs to two fields (situsAddress, apn) and zoning pairs to two (zoning, setbacks), which is stated so a reader does not read it as double counting."
+    },
+    {
+      "decision": "County names: API countyName wins; a static roster fills the rest; the console COUNTS and displays how many names came from each origin.",
+      "why": "F6 leaves 244 of 254 rows as bare FIPS, and the follow-on work is per-county source review. The roster is copied from the canonical _catalog/texas_roster_v1.csv (schema t6_roster_v1, generated 2026-08-12, 254 of 254 counties) with source and vintage in the file header and a generator script beside it, and it is presentation-only: no measurement reads it. Showing the split on screen is what keeps the hand-declared half visible."
+    },
+    {
+      "decision": "servedPct is computed as present / (present + absentCovered + absentUncovered + unresolved), with the denominator rendered next to the number, and unresolved additionally rendered as its own outage figure.",
+      "why": "Frozen record and CONTRACT_RULES I4 — failure is not an absence. Folding unresolved into an absence is what made a correct Travis County card read as broken."
+    }
+  ],
+
+  "adversarialReview": [
+    {
+      "risk": "Adding a 254-row county-name table re-introduces exactly the hand-declared drift the lane exists to fight.",
+      "mitigation": "Scoped to presentation only and never read by any measurement; sourced from a canonical dated artifact rather than typed from memory; generated by a committed script so it is reproducible; asserted complete by test (exactly 254 entries, every key matching the 48xxx FIPS pattern, every live FIPS covered); and the console displays the api-vs-roster split so the declared portion is counted on screen. Accepted with those five conditions."
+    },
+    {
+      "risk": "A refresh button that only re-reads could read as a recompute and make the operator believe the manifest is current.",
+      "mitigation": "The control is labelled re-read, and after each one the console states whether computedAt moved, with the unchanged value and its age. A re-read that does not move computedAt is displayed as evidence of upstream staleness, not as success."
+    },
+    {
+      "risk": "Building against a frozen type with no data yet means the panel could ship untested against real shapes.",
+      "mitigation": "A runtime validator parses unknown into the frozen type and reports every problem it finds by path; tests drive it with a well-formed payload, a payload missing required fields, and a payload whose tallies do not sum, so the validator is proven able to fail."
+    },
+    {
+      "risk": "The disagreement view could average the two instruments together and destroy the finding.",
+      "mitigation": "No combined score is computed anywhere. The two readings sit in adjacent columns with a signed gap in points, ranked by gap descending, and a rail with no sweep counterpart renders as no counterpart rather than as zero."
+    },
+    {
+      "risk": "Planner briefing errors carried into the build.",
+      "checked": "The briefing said DEFAULT_FACETS is only zoning and envelope. Consistent with what the payload shows: envelope carries a coverage number on 19 of 254 cells. But zoning carries one on 254 of 254, and geometry/cad/landuse/owner/mud each carry 254 with lastVerifiedAt and a named verifying instrument, so the ledger is NOT only fed by that script default facets — other scorers write it too (B2_cp2_geometry_scorer_apply.mjs, score_cad_rails_fast.mjs, countyFloodScoreCli.ts, l16-score-mud.mjs). The briefing is right about the mechanism and understates the writer set. Reported, not silently corrected."
+    }
+  ],
+
+  "filesPlanned": [
+    "apps/command-center/src/admin/control/panels/servingSweepTypes.ts (frozen record mirror + validator + tally math)",
+    "apps/command-center/src/admin/control/panels/servingSweepSource.ts (endpoint probe / artifact load, origin-labelled)",
+    "apps/command-center/src/admin/control/panels/railFieldMap.ts (explicit pairing + named unpaired classes)",
+    "apps/command-center/src/admin/control/panels/manifestDerivation.ts (derived vs hand-declared audit, dead-indicator detection, self-contradiction detection)",
+    "apps/command-center/src/admin/control/panels/texasCountyNames.ts (presentation-only roster, generated)",
+    "apps/command-center/scripts/gen-texas-county-names.mjs (generator, records source + vintage)",
+    "apps/command-center/src/admin/control/panels/ServingSweepPanel.tsx (sweep render + side-by-side reconciliation)",
+    "apps/command-center/src/admin/control/panels/CountyManifestGrid.tsx (subtabs, re-read control, derivation strip, denominator fixes)",
+    "tests beside each"
+  ],
+
+  "baselineSuite": "pnpm --filter command-center test — Test Files 24 passed (24), Tests 195 passed | 1 skipped (196), duration 12.30s, run before any edit",
+  "constraintsHonored": [
+    "worktree isolated, branch ss/w6-cc-truth-console off origin/main 5bf06ec",
+    "no edits outside apps/command-center/**",
+    "no merge, no deploy, no push to main",
+    "every verification command exit-bounded (curl, pnpm test, pnpm build)"
+  ],
+  "openAtCp1": [
+    "No sweep data exists yet (P-43 in flight); the panel ships with a live probe and an artifact loader and an honest not-served state.",
+    "Server-side recompute and the cert/gate fields the console does not read are cortex-api and hauska-engine work, routed to the planner, not made here."
+  ]
+}

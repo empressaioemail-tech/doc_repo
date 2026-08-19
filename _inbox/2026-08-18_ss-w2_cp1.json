@@ -1,0 +1,113 @@
+{
+  "lane": "SS-W2",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "date": "2026-08-18",
+  "planRows": ["P-40"],
+  "repo": "hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w2-consumer-voice",
+  "branch": "ss/w2-consumer-voice",
+  "baseSha": "5bf06ec",
+
+  "missionPremise": "Smart Site ships internal engineering language to consumers and styles correct behaviour so it reads as failure. Operator QA pass 2026-08-18: 'there is a lot of irrelevant text in the black box, most of the info (inside the parenthesis) is not valuable to the consumer... it seems to be our personal info where we pull the data from' and 'the data box on the left of the screen looks like its displaying error messages'. The second is the load-bearing one: the Travis County card was CORRECT. Grey italic 'not verified here' is the system refusing to invent facts outside stamped coverage, styled as a failure. Binding source: _catalog/parcel_fact_sheet_contract/CONTRACT_RULES.md invariants I3 and I4, FROZEN 2026-08-18.",
+
+  "completionPredicate": "On a parcel card a stranger can (a) find no internal work-item, gate, or pipeline vocabulary anywhere on the consumer surface; (b) read a value without its sourcing string concatenated into it, and still reach that sourcing in one interaction; (c) tell an honest absence apart from a failure without being told which is which; (d) see an already-saved property offer Unsave rather than Save; and (e) a fresh clone's CI fails if any source file reintroduces double-encoded mojibake.",
+
+  "scopeBasis": "Six lanes edit this repo in parallel. This lane owns RENDERING of InspectCard plus TerrainExportSection / PropertyBriefPanel / SmartFilesMountStub / SitePlanExportSection, and the CI guard. Lane P-39 owns InspectCard's DATA SOURCE, src/lib/**, SearchBar.tsx, ExplorerMap.tsx and api/**. Everything below is presentation-side or a net-new file. Where a fix requires a P-39 file, it is reported, not taken.",
+
+  "verifiedAtSource": [
+    "worktree clean at 5bf06ec, branch ss/w2-consumer-voice tracking origin/main (git status + git log --oneline -3)",
+    "no ss/w1 branch pushed yet (git branch -r after fetch --prune); packages/parcel-fact-sheet does NOT exist in the repo, so the frozen contract type has no import path yet",
+    "InspectCard.tsx:532-538 renders data-testid=\"icc-hold\" UNCONDITIONALLY with the WDLL-31 sentence",
+    "InspectCard.tsx:585 renders <SmartFilesMountStub />; grep across the repo shows exactly one import and one usage, both in InspectCard.tsx",
+    "baked-facets.ts formatLandUseDisplay (line 229) and formatAcreageDisplay (line 250) concatenate provenance into the value string, as CONTRACT_RULES I3 states",
+    "CardFacet today is {state: present|absent|pending|unknown, value} with NO provenance sibling and NO absent-covered/absent-uncovered/unresolved split",
+    "seven mojibake occurrences in TerrainExportSection.tsx (lines 84,113,157,203,234,243,246) — matches the dispatch count exactly",
+    "the dispatch says api/spine.ts has two more; at source there are TWO such files, ./api/spine.ts (lines 3,21) and ./apps/property-explorer/api/spine.ts (lines 3,31) — four occurrences across two files, not two. Reported, not edited (P-39 owns api/**)",
+    "three files also carry a UTF-8 BOM (efbbbf): api/spine.ts, apps/property-explorer/api/spine.ts, apps/property-explorer/src/browse/TerrainExportSection.tsx — the same double-save defect, not mentioned in the dispatch",
+    "InspectCard is constructed in ExplorerMap.tsx:1497 and :1514; onSaveProperty={handleSaveProperty} is passed unconditionally at both sites and no saved-state is held there"
+  ],
+
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "Model the four contract Fact states as a render-level union declared inside InspectCard.tsx, not as a new package.",
+      "why": "packages/parcel-fact-sheet does not exist and lane W1 (ss/w1-subject-factsheet) is the subject/fact-sheet lane. Creating a second home for the frozen type would be DEV_PROCESS 2.4 exactly: one rule, two implementations. The render union is structurally identical to Fact<T> so the import swaps when the package lands."
+    },
+    {
+      "id": "D2",
+      "decision": "A shim maps today's CardFacet<string> onto the four states at the RENDER boundary and splits the trailing parenthetical provenance out of the value string.",
+      "why": "I3 says the UI physically cannot separate fact from sourcing today. P-39 is fixing that in baked-facets.ts. Until then the split has to happen somewhere, and the render boundary is the only place this lane owns. Per-row, explicit, and deleted when P-39 lands — never a generic regex over every row."
+    },
+    {
+      "id": "D3",
+      "decision": "pending stays its own treatment and is NOT folded into any absence.",
+      "why": "baked-facets documents pending as 'upstream facts live, derived field not computed' and warns NEVER to say 'not verified' for it (the Gate C bounce bug). The contract has no pending state; folding it into an absence would reintroduce a defect the codebase already paid for."
+    },
+    {
+      "id": "D4",
+      "decision": "Three absence treatments: absent-covered = quiet roman muted text ('nothing on record'); absent-uncovered = hatched/dashed cooler treatment naming wouldBeFilledBy; unresolved = true error tone (--semantic-error) with a retry affordance. Italic grey is retired for all three.",
+      "why": "I4. Italic grey currently signals all three identically, which is the reported defect. Inverted applicability (quiet pass, hatched unchecked) is the portfolio's own idiom for 'not checked here'."
+    },
+    {
+      "id": "D5",
+      "decision": "The always-visible provenance line loses 'gate-passed' and the raw source keys; all of it moves into one Sources disclosure reusing the SetbackXrayDetail toggle idiom.",
+      "why": "I3 demotes, never deletes. 'gate-passed' is internal vocabulary and is precisely the 'our personal info where we pull the data from' the operator flagged."
+    },
+    {
+      "id": "D6",
+      "decision": "isSaved / onUnsaveProperty land as props (authoritative), and when isSaved is NOT supplied InspectCard self-resolves saved state via the already-exported getSavedProperty + subscribeSavedPropertiesChanged.",
+      "why": "The isSubject pattern the dispatch points at is wired from ExplorerMap.tsx, which this lane may not edit. Prop-only would ship a dead prop and fix nothing the operator can see. Self-resolution imports src/lib without modifying it, is skipped the moment P-39 passes the prop, and is the only path to an observable fix inside this lane's ownership."
+    },
+    {
+      "id": "D7",
+      "decision": "The CI guard is ONE script (scripts/check-source-encoding.mjs) with a self-test mode plus a workflow that runs on all PR paths, carrying a per-file BASELINE COUNT for the two api/spine.ts files this lane may not edit.",
+      "why": "DEV_PROCESS 2.0: a permanently-red gate is a dead gate. A repo-wide zero-tolerance guard would be red on merge for files this lane is forbidden to touch. A count baseline ratchets: a file getting dirtier fails, a file getting cleaner passes, so P-39's later fix cannot break this gate. DEV_PROCESS 2.2 + 2.3: --self-test proves the detector can FIRE, and the negative case is proven on the script's own exit code, never a pipe's."
+    }
+  ],
+
+  "adversarialReview": {
+    "note": "The dispatch forbids spawning sub-agents (deepest-worker clause), so this checkpoint is a self-adversarial review. That is compatible with AGENT_CONTRACT s1, which makes the fan permissive (MAY) and the two checkpoints mandatory.",
+    "challenges": [
+      {
+        "challenge": "Splitting provenance out of the value string at render is RE-DERIVING, which invariant I2 forbids.",
+        "answer": "I2 forbids a surface issuing its own LOOKUP for something the sheet carries. This issues no lookup; it unpacks a string the current deriver welded together, which is the exact defect I3 names. It is a shim with a named deletion condition, not a second derivation path.",
+        "residualRisk": "If P-39 lands Fact.provenance while the shim is still applied, provenance could be split twice. Mitigated by making the shim inert when a provenance sibling is already present."
+      },
+      {
+        "challenge": "Self-resolving saved state adds a network read to InspectCard, and P-39 owns InspectCard's data source.",
+        "answer": "P-39's ownership is the PARCEL FACT source (baked-facets / fact sheet). Saved-property state is user state on a different service, already exported for exactly this call site (savedPropertiesClient's header names the InspectCard Save button as one of its entry points). No lib file is modified.",
+        "residualRisk": "One extra GET per parcel selection, 401 for anonymous users. Fired only when the Save affordance is rendered, and a 401 resolves quietly to not-saved. Flagged for the planner as a seam P-39 can take over by passing the prop."
+      },
+      {
+        "challenge": "The mojibake baseline is an allowlist, and allowlists rot.",
+        "answer": "It is a count ceiling, not an exemption. Any NEW occurrence anywhere fails. It cannot rot into permission because it can only ever be met by a file getting no worse."
+      },
+      {
+        "challenge": "Deleting SmartFilesMountStub removes a live probe someone may depend on.",
+        "answer": "Verified at source: one import, one usage, both inside InspectCard.tsx. Nothing else in the repo consumes it. The BFF route it calls is untouched, so the probe remains reachable without shipping it to customers."
+      },
+      {
+        "challenge": "renderToStaticMarkup never runs effects, so a full-card render cannot reach the baked branch — the new absence treatments could ship untested.",
+        "answer": "Same constraint the existing suite already lives with. The renderers are exported as direct test seams (the chipsForRow / FacetRow / SetbackXrayDetail precedent) so all four states are pinned without driving the card past source==='loading'."
+      }
+    ]
+  },
+
+  "contradictionsToDispatch": [
+    "Dispatch item 6 says api/spine.ts carries two more mojibake occurrences. At source there are two SEPARATE spine.ts files (./api/spine.ts and ./apps/property-explorer/api/spine.ts), two occurrences each. Four, in two files, both owned by P-39.",
+    "The dispatch does not mention the UTF-8 BOM. Three files carry one, including TerrainExportSection.tsx. Same double-save defect; the guard covers it and the owned file is fixed."
+  ],
+
+  "outOfScope": [
+    "ExplorerMap.tsx wiring of isSaved / onUnsaveProperty (P-39)",
+    "baked-facets.ts Fact.value / Fact.provenance split (P-39)",
+    "api/spine.ts and apps/property-explorer/api/spine.ts mojibake + BOM (P-39) — reported, baselined in the guard",
+    "packages/parcel-fact-sheet creation (lane W1)",
+    "I5 geometry-as-navigation-authority (W1 / P-39) — this lane fixes only the DISPLAY of a missing address"
+  ],
+
+  "openAtCp1": [
+    "Whether the planner wants the saved-state self-resolution kept or replaced by P-39 prop wiring once P-39 lands."
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "artifact": "CP2 — pilot / mid-work adversarial checkpoint",
+  "lane": "SS-W4",
+  "planRows": ["P-42"],
+  "repo": "hauska-map",
+  "branch": "ss/w4-tools-mobile",
+  "commits": ["c685db1", "146dad4"],
+  "date": "2026-08-18",
+  "cp1": "_inbox/2026-08-18_ss-w4_cp1.json",
+
+  "whatWasPiloted": "The instrument rebuild landed and was then attacked: the new tests were re-run against deliberately broken implementations to prove they can fail for the right reason. DEV_PROCESS 2.2 — a gate that has never been shown to fire is not a gate — and 2.3, prove the negative case on the real exit code, not on a pipe's.",
+
+  "gateFireProofs": [
+    {
+      "injection": "onMapDblClick measure branch reverted to the pre-W4 body (pop a vertex, re-render, never commit)",
+      "command": "pnpm --filter property-explorer exec vitest run src/browse/map-tools-instrument.test.ts",
+      "result": "Tests 11 failed | 17 passed (28)",
+      "failedIncluded": [
+        "two finished measurements coexist with their own values",
+        "double-click FINISHES: the draft is cleared and the next click starts a new one",
+        "removeMeasurement takes ONE and leaves the rest",
+        "getDrawings captures BOTH committed measurements, not just one",
+        "setHighlight marks exactly one committed feature, and only via a plain property"
+      ],
+      "reverted": "git checkout -- packages/map-renderer/src/chrome/mapToolsController.ts"
+    },
+    {
+      "injection": "undo() changed to pop-and-discard the last committed measurement instead of un-finishing it",
+      "result": "Tests 1 failed | 27 passed (28) — exactly the un-finish case, nothing else",
+      "note": "A narrow injection failing exactly one case is the evidence that the case tests what it claims to test rather than passing incidentally.",
+      "reverted": "git checkout -- packages/map-renderer/src/chrome/mapToolsController.ts"
+    },
+    {
+      "injection": "shouldDismissSheetOnClick forced to return false always",
+      "result": "Tests 4 failed | 13 passed (17) — the four positive-dismissal cases",
+      "reverted": "file restored from a pre-injection copy; grep for the injection marker returns 0"
+    }
+  ],
+
+  "verificationRun": {
+    "countingRule": "Every command below was run to completion on the worktree at 146dad4. No watch mode, no dev server, no non-exiting process.",
+    "propertyExplorerVitest": "81 test files / 1020 tests passed (baseline 79 / 975; +2 files, +45 tests, 0 regressions)",
+    "commandCenterVitest": "24 test files / 195 passed, 1 skipped (196) — unchanged from baseline",
+    "commandCenterViteBuild": "112 modules transformed, built in 3.20s, exit 0",
+    "propertyExplorerViteBuild": "159 modules transformed, built in 2.68s, exit 0",
+    "mapRendererNodeTest": "52 pass, 0 fail — unchanged from baseline",
+    "mapRendererTypecheck": "tsc --noEmit exit 0",
+    "propertyExplorerTypecheck": "tsc --noEmit exit 0"
+  },
+
+  "commandCenterVerdict": {
+    "claim": "packages/map-renderer is consumed by BOTH apps, so Command Center had to be checked.",
+    "evidence": "pnpm --filter command-center test rebuilds the package with tsup and runs the jsdom suite: 24/24 files, 195 passed. pnpm --filter command-center build produces a clean production bundle including the rewritten chrome.",
+    "honestLimit": "apps/command-center/src/admin/workspace/tiles/LiveMapTile.test.tsx MOCKS LayersControl and MapTools, so the CC suite does NOT render the real chrome. The bundle build proves the module graph compiles; it does not prove the panel paints. A live probe on the deployed CC surface is the only thing that would, and this lane does not deploy.",
+    "stackingCheck": "LayersControl and MapTools move from a hand-written zIndex 9 to MAP_PANEL_Z.toolset = 11. grep zIndex across apps/command-center/src (non-test) returns 5/5/5/6 inside LiveMapTile (the tile that hosts them) and 20/20/30/40/40 inside CountyManifestGrid (a different panel tree). Nothing sits between 9 and 11, so relative order is unchanged."
+  },
+
+  "adversarialFindingsThisPhase": [
+    {
+      "id": "B1",
+      "finding": "The first draft imported EMPTY_TOOLS_SNAPSHOT from MapToolset.tsx into MapTools.tsx, which would have dragged the whole layers/registry module graph into Command Center's simpler toolbar for one constant.",
+      "disposition": "FIXED — the constant now lives in mapToolsController.ts, which is the snapshot's actual home, and both toolbars import from there."
+    },
+    {
+      "id": "B2",
+      "finding": "A `keepOpen` marker only protected the exact element that carried it, so marking a REGION did nothing for the controls inside it.",
+      "disposition": "FIXED — the rule now scans the whole path for keepOpen before walking, so one attribute opts out a whole region. Pinned by a test."
+    },
+    {
+      "id": "B3",
+      "finding": "The context's toggle/dismiss logic sat inline in the provider, where this app's node-only vitest cannot reach it.",
+      "disposition": "FIXED — extracted to nextSheetOnToggle / nextSheetOnDismiss in mobile-layout.ts. The navigation guard is now proven by test, including the case where it must NOT fire."
+    },
+    {
+      "id": "B4",
+      "finding": "Test values could pass for the wrong reason if the geometry maths were wrong in a compensating way.",
+      "disposition": "MITIGATED — distance and area assertions carry PRE-REGISTERED BANDS with their derivation stated inline (0.01 deg of latitude on a 6371008.8 m sphere is 1112.0 m, asserted 1111-1113; a 0.01 x 0.01 deg box at latitude 30 is about 1.07e6 m², asserted 0.9e6-1.2e6). A result outside the band is a finding either way rather than a silent pass."
+    }
+  ],
+
+  "seamsExposedForOtherLanes": [
+    {
+      "for": "P-39 (ExplorerMap.tsx)",
+      "seam": "MapToolset prop `onLocated?: (p: { longitude, latitude, accuracyMeters }) => void`",
+      "purpose": "Fires on every GPS fix. This is the hook for resolving the parcel the user is standing on. The map already flies to the fix (LOCATE_ZOOM = 17, matched to the control's own fitBoundsOptions.maxZoom); the parcel resolve needs P-39's subject state."
+    },
+    {
+      "for": "P-39 (ExplorerMap.tsx)",
+      "seam": "MapToolset prop `noteScope?: { id: string | null; label: string | null }`",
+      "purpose": "Stamps each note with the parcel it was recorded against. Without it a note still works but records no parcel."
+    },
+    {
+      "for": "P-39 (ExplorerMap.tsx)",
+      "seam": "MapToolset prop `onRequestClose?: () => void`",
+      "purpose": "The clean way to collapse the mobile layers sheet on tool activation. Until it is wired the component falls back to hiding its own sheet plus a window dismiss event, which MobilePanelProvider already listens for — so the behaviour works today, just less precisely."
+    },
+    {
+      "for": "P-40 (InspectCard.tsx)",
+      "seam": "`data-sheet-keep-open` / `data-sheet-dismiss` attributes",
+      "purpose": "Opt any control out of (or into) mobile auto-collapse. Controls carrying aria-expanded or aria-pressed, and all form controls, are already exempt. The one control likely to want the opt-out is Save property, which currently collapses the sheet along with everything else."
+    },
+    {
+      "for": "P-39 / P-40",
+      "seam": "MAP_PANEL_Z from packages/map-renderer/src/chrome/panelLayering.ts, re-exported by mobile-layout.ts",
+      "purpose": "Workbench.tsx still hand-writes zIndex 9 / 11 / 15 and App.tsx writes 40 / 15. Those are the last hand-written literals; adopting the table finishes the single-source-of-truth."
+    }
+  ],
+
+  "remainingAtCp2": [
+    "Open the PR against main (no merge, no deploy)",
+    "File the close artifact with the resize-flicker verdict"
+  ]
+}

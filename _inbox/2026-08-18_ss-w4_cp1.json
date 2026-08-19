@@ -1,0 +1,212 @@
+{
+  "artifact": "CP1 — design / pre-build adversarial checkpoint",
+  "lane": "SS-W4",
+  "laneTitle": "Smart Site instruments and mobile",
+  "planRows": [
+    "P-42"
+  ],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "repo": "hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w4-tools-mobile",
+  "branch": "ss/w4-tools-mobile",
+  "baseSha": "5bf06ec",
+  "date": "2026-08-18",
+  "missionPremise": "The map tools are demos rather than instruments. Operator QA verbatim: 'the measuring tool there are a few issues. There is no stop or go back. Once you measure in one direction there is a continuation of measuring and it keeps going. If you hit trash it deletes all measurements that you made. There needs to be an undo section. You can not measure length and width together its a single measurement... Even when you double click it does not allow you to place a new line.' Dispatch _dispatches/2026-08-18_ss-w4_dispatch.md under OPS-16 amendment A-018, ruled 2026-08-18.",
+  "rootCauseVerifiedAtSource": [
+    {
+      "claim": "Measure can hold exactly one measurement",
+      "verified": true,
+      "evidence": "packages/map-renderer/src/chrome/mapToolsController.ts@5bf06ec: state has `drawShapes: []` and a commitDraw(), but measure has only `measureVerts: LngLat[]` and no committed array and no commit function. Read at source before editing."
+    },
+    {
+      "claim": "Double-click never finishes a measurement",
+      "verified": true,
+      "evidence": "onMapDblClick measure branch was `if (state.active === 'measure' && state.measureVerts.length > 1) { state.measureVerts.pop(); renderMeasure(); }` — pops, re-renders, never commits, never clears the draft."
+    },
+    {
+      "claim": "The only removal operation is clear-everything",
+      "verified": true,
+      "evidence": "The returned controller exposed exactly `clear: clearAll` for removal; clearAll() resets measureVerts, drawVerts, drawShapes and markers together."
+    },
+    {
+      "claim": "The readout promised behaviour the tool did not have",
+      "verified": true,
+      "evidence": "renderMeasure() set 'Click to add points. Double-click or Esc to finish.' while dblclick did not finish and Esc called deactivate()."
+    },
+    {
+      "claim": "Shape area maths exists and is unused",
+      "verified": true,
+      "evidence": "chrome/geoMeasure.ts exports ringAreaSqMeters and formatArea; before this pass mapToolsController imported them but called them ONLY for the in-progress measure area readout. Nothing measured drawShapes at all."
+    },
+    {
+      "claim": "MobilePanelContext exposes no close primitive",
+      "verified": true,
+      "evidence": "MobilePanelContextValue@5bf06ec = { isMobile, activeSheet, searchFocused, openSheet, setSearchFocused }. Repo-wide grep for openSheet found exactly one return-to-map call site: ExplorerMap.tsx:1520 inside the mobile property sheet's onClose."
+    },
+    {
+      "claim": "z-index literals are scattered with no table",
+      "verified": true,
+      "evidence": "MEASURED at base 5bf06ec, counting rule: occurrences of the string 'zIndex:' in non-test .ts/.tsx files under apps/ and packages/ — 33 occurrences across 15 files. In map-chrome space specifically (PE browse chrome, PE workbench/App overlays, and the shared renderer chrome) it is 17 across 7 files; the remaining 16 sit in Command Center's CountyManifestGrid and LiveMapTile and in PE's paywall / sign-up / share / chat overlays. This lane converted 13 sites in the 5 files it owns onto MAP_PANEL_Z (mobile-layout 7 of 8 — the eighth is the literal string \"auto\", not a stacking value; MobilePanelContext 2; MapToolset 2; MapTools 1; LayersControl 1). Still hand-written and OUT of this lane's ownership: MapCornerChrome.tsx 2, Workbench.tsx 1, App.tsx 2.",
+      "correctedAtClose": "SELF-CORRECTION at close. CP1 and the first draft of this artifact said 'eleven hand-written z-index literals across eight files'. That figure was the planner-style eyeball count off a single grep that had excluded apps/command-center, and it was WRONG. Re-measured with an explicit counting rule it is 33 across 15 files. Reporting the number as wrong is the successful outcome here (DEV_PROCESS 3.2), and the correction quotes its own counting rule so the next reader can re-run it (DEV_PROCESS 3.2a)."
+    }
+  ],
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "Measurements become a committed list with ids; the draft is separate.",
+      "why": "This is the single change that makes length AND width possible. Everything else (per-item remove, undo, a results list, capture of more than one measurement in the dossier) falls out of it."
+    },
+    {
+      "id": "D2",
+      "decision": "undo() UN-FINISHES rather than deletes: pop the draft's last point; if the draft is empty, pop the most recent committed item back into the draft.",
+      "why": "Finishing is an action, so undo reverses the action. Consequence stated plainly: after a finish it takes two undos to lose a point. The alternative (undo deletes a whole measurement) makes undo a destructive verb, which is what the operator complained about."
+    },
+    {
+      "id": "D3",
+      "decision": "Esc FINISHES an in-progress geometry and only puts the tool away on a second press; Enter finishes; Backspace/Delete/Ctrl-Z undo.",
+      "why": "The readout has always promised 'Esc to finish'. Making the promise true is cheaper than editing the promise."
+    },
+    {
+      "id": "D4",
+      "decision": "Draw shapes are measured with the same helper as measurements; a closed ring reports area + perimeter, a 2-point shape reports length.",
+      "why": "Operator asked directly whether shape should give area and square footage; planner ruled yes. Same code path so the two tools cannot disagree about the same polygon."
+    },
+    {
+      "id": "D5",
+      "decision": "Highlight is a layer FILTER on a plain `hl` property, on the existing source, with its own halo layer added under the main line.",
+      "why": "The file's paint discipline forbids feature-state-driven paint (the blank-map crash rule). A data-expression filter on properties is what the file already does for geometry-type and is not feature-state."
+    },
+    {
+      "id": "D6",
+      "decision": "Notes get their OWN tool slot, their own source and their own colour, and round-trip through the existing getDrawings() dossier seam with text + scope.",
+      "why": "Dispatch item 5 says its own slot, not Location's. Using the dossier seam means the note persists per-property through machinery that already exists rather than a second store."
+    },
+    {
+      "id": "D7",
+      "decision": "ONE z-order table (packages/map-renderer/src/chrome/panelLayering.ts), re-exported by apps/property-explorer/src/browse/mobile-layout.ts.",
+      "why": "DEV_PROCESS 2.4 — one rule with two implementations and nothing keeping them in step is the divergence shape. A shared data table beats eleven careful edits."
+    },
+    {
+      "id": "D8",
+      "decision": "Cross-package dismissal travels as a window CustomEvent, not a prop chain.",
+      "why": "The map chrome lives in @hauska/map-renderer and the mobile sheet state lives in Property Explorer; neither may import the other, and ExplorerMap.tsx belongs to lane P-39. The event is inert when nothing listens, so Command Center is unaffected."
+    },
+    {
+      "id": "D9",
+      "decision": "Auto-collapse is deferred one tick and applied with a functional state update that only collapses if the active sheet is STILL the one that was open.",
+      "why": "See adversarial finding A1 — without this it is a regression, not a feature."
+    },
+    {
+      "id": "D10",
+      "decision": "Layer checkbox toggles do NOT collapse the mobile sheet; tool activation does.",
+      "why": "Collapsing on a layer toggle makes turning two layers on impossible. Activating a tool must collapse, because you cannot click the map through the sheet you activated the tool in."
+    }
+  ],
+  "adversarialReview": [
+    {
+      "id": "A1",
+      "finding": "A blanket 'any button inside a sheet collapses it' would fire AFTER in-sheet handlers that navigate. InspectCard's Research button calls onResearch, which calls openSheet('research'); a naive dismissal would then set the sheet back to 'map' and the Research navigation would silently fail.",
+      "severity": "would have shipped a regression",
+      "disposition": "FIXED IN DESIGN — dismissSheetIfUnchanged(from) defers a tick and uses a functional update that only collapses when the sheet id is unchanged. A handler that navigated always wins."
+    },
+    {
+      "id": "A2",
+      "finding": "Two camera drivers: maplibre's GeolocateControl flies on a fix via fitBounds, and the new explicit flyTo also flies. Different zoom targets would read as a stutter.",
+      "severity": "visible defect",
+      "disposition": "MITIGATED — the control is constructed with fitBoundsOptions.maxZoom = LOCATE_ZOOM and the explicit flyTo uses the same LOCATE_ZOOM, so both agree on the destination. Residual: a possible double ease on the very first fix. Not verifiable without a device GPS fix; named rather than claimed clean."
+    },
+    {
+      "id": "A3",
+      "finding": "Auto-collapse will also fire on InspectCard's 'Save property' button, which is a plain button with no aria-pressed. The user loses sight of any save confirmation.",
+      "severity": "judgement call on another lane's surface",
+      "disposition": "ACCEPTED AND REPORTED — the opt-out is one attribute (`data-sheet-keep-open`) and it is documented in the component. Flagged to lane P-40 in the close rather than edited into InspectCard.tsx, which is theirs."
+    },
+    {
+      "id": "A4",
+      "finding": "'Hide all panels' cannot actually hide the workbench dock or the inspect card, because both live in files owned by P-39/P-40.",
+      "severity": "partial feature",
+      "disposition": "HONEST PARTIAL — the control collapses the toolset, fires the dismiss event, and calls the optional onRequestClose. On mobile the provider listens and collapses the sheet, so hide-all is real there. On DESKTOP it currently hides only the toolset. Reported as a seam, not narrated as done."
+    },
+    {
+      "id": "A5",
+      "finding": "Moving LayersControl and MapTools from z-index 9 to the table's toolset=11 changes Command Center stacking.",
+      "severity": "cross-app risk",
+      "disposition": "CHECKED AT SOURCE — grep zIndex across apps/command-center/src (non-test) returns 20/20/40/40/30 in CountyManifestGrid (a different panel tree) and 5/5/5/6 in LiveMapTile, which is the tile that hosts these two controls. Nothing in that tile sits between 9 and 11, so relative order is unchanged."
+    },
+    {
+      "id": "A6",
+      "finding": "setMeasureMode mid-draft used to silently reinterpret the vertices (a 2-point line becoming an area draft). Changing it to commit-then-switch could surprise a user who wanted to discard.",
+      "severity": "minor semantics change",
+      "disposition": "DELIBERATE — committing preserves work and is now undoable. Stated in the code comment at the call site."
+    },
+    {
+      "id": "A7",
+      "finding": "Notes are captured by getDrawings() but the dossier overlay is READ-ONLY by contract, so a restored note redraws as a violet point and is not editable again.",
+      "severity": "known gap",
+      "disposition": "NOT CLOSED IN THIS LANE — re-hydrating live tool state from a dossier is a different seam (the host owns the dossier). Named in the close as remaining open."
+    },
+    {
+      "id": "A8",
+      "finding": "clear() still removes everything.",
+      "severity": "by design, but it is the operator's exact complaint",
+      "disposition": "It is no longer the ONLY removal operation, it is now labelled 'Clear everything on the map', and it is disabled when there is nothing to clear. Per-item removal and undo are the everyday verbs."
+    },
+    {
+      "id": "A9",
+      "finding": "Adding required props to ToolsetToolsSection would have broken map-toolset-geolocate.test.tsx, which renders it directly, and CC's simpler toolbar.",
+      "severity": "would have broken a green suite",
+      "disposition": "FIXED IN DESIGN — every new prop on ToolsetToolsSection is optional with a default. Confirmed by re-running the suite: 79 files / 975 tests still pass."
+    },
+    {
+      "id": "A10",
+      "finding": "map-toolset-geolocate.test.tsx SOURCE-PINS three strings in MapToolset.tsx: no addControl(geolocate, must not contain \"bottom-right\", must contain geolocateRef.current?.trigger() and display = \"none\".",
+      "severity": "silent breakage risk during a rewrite",
+      "disposition": "Read before editing; all four pins preserved verbatim in the rewritten file."
+    }
+  ],
+  "ownershipHonored": {
+    "mine": [
+      "packages/map-renderer/src/chrome/mapToolsController.ts",
+      "packages/map-renderer/src/chrome/MapTools.tsx",
+      "packages/map-renderer/src/chrome/MapToolset.tsx",
+      "packages/map-renderer/src/chrome/LayersControl.tsx",
+      "packages/map-renderer/src/chrome/geoMeasure.ts",
+      "apps/property-explorer/src/browse/MobilePanelContext.tsx",
+      "apps/property-explorer/src/browse/mobile-layout.ts"
+    ],
+    "newFilesAdded": [
+      "packages/map-renderer/src/chrome/panelLayering.ts (new, inside my chrome/ area; does not collide with P-41's map/** or satelliteBase.ts)"
+    ],
+    "alsoTouched": [
+      "packages/map-renderer/src/chrome/index.ts (the chrome barrel — additive exports only, needed to make the new symbols reachable)"
+    ],
+    "notTouched": [
+      "packages/map-renderer/src/map/** and chrome/satelliteBase.ts (lane P-41)",
+      "apps/property-explorer/src/browse/ExplorerMap.tsx (lane P-39)",
+      "apps/property-explorer/src/browse/InspectCard.tsx (lane P-40)",
+      "apps/property-explorer/src/workbench/** (lane P-39/P-40)"
+    ]
+  },
+  "baselineBeforeAnyEdit": {
+    "countingRule": "Full suite runs on the untouched worktree at 5bf06ec, after pnpm install --frozen-lockfile.",
+    "propertyExplorerVitest": "79 test files / 975 tests passed",
+    "commandCenterVitest": "24 test files / 195 passed, 1 skipped (196)",
+    "mapRendererNodeTest": "52 pass, 0 fail",
+    "mapRendererTypecheck": "tsc --noEmit exit 0",
+    "propertyExplorerTypecheck": "tsc --noEmit exit 0"
+  },
+  "stateAfterFirstCommit": {
+    "commit": "c685db1",
+    "pushed": true,
+    "remoteBranch": "origin/ss/w4-tools-mobile",
+    "suiteAfterCommit": "PE 79 files / 975 tests passed; renderer typecheck exit 0; PE typecheck exit 0"
+  },
+  "completionPredicate": "A stranger can, on the deployed Smart Site map: take a length and a width as two separate measurements; finish a measurement by double-click, Enter or Esc; undo the last point; delete one measurement without losing the others; read a drawn shape's area in square feet; collapse or hide the floating panels; record a note against a spot and come back to it; and, on a phone, make a selection inside a sheet and have the sheet get out of the way.",
+  "scopeBasis": "Bounded by the file-ownership list in the dispatch because five other lanes are editing this repo concurrently. Item 7 (resize flicker) is DIAGNOSIS ONLY by instruction, since ExplorerMap.tsx belongs to P-39. Anything the work needed inside P-39/P-40 files is exposed as a seam and reported, never edited.",
+  "remainingAtCp1": [
+    "Unit tests for the new controller behaviour and the pure sheet-dismissal rule",
+    "Command Center render verification (the shared package is consumed by both apps)",
+    "Resize-flicker verdict with evidence",
+    "PR against main (no merge, no deploy)"
+  ]
+}

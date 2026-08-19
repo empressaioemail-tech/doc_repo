@@ -1,0 +1,125 @@
+{
+  "lane": "SS-W3",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint (build landed, verification run, PR not yet opened)",
+  "date": "2026-08-18",
+  "planRows": ["P-41"],
+  "repo": "hauska-map",
+  "branch": "ss/w3-map-legibility",
+  "baseSha": "5bf06ec",
+  "commitSha": "9b3cdaf",
+  "pushed": true,
+  "merged": false,
+  "deployed": false,
+
+  "workItemStatus": {
+    "1-street-labels-over-satellite": "DONE",
+    "2-land-use-palette-and-legend": "DONE",
+    "3-flood-palette-and-legend": "DONE",
+    "4-subject-and-compare-markers": "DONE (rendering + seam; camera fly stays with P-39)"
+  },
+
+  "verificationRun": {
+    "note": "Every command exit-bounded. No dev server, no watch, no tail.",
+    "mapRendererTests": { "command": "pnpm --filter @hauska/map-renderer test", "tests": 98, "pass": 98, "fail": 0 },
+    "mapRendererBuild": { "command": "pnpm --filter @hauska/map-renderer build", "result": "CJS + ESM + DTS build success" },
+    "propertyExplorerTests": { "command": "pnpm --filter property-explorer test", "files": 79, "tests": 975, "pass": 975, "fail": 0 },
+    "commandCenterTests": { "command": "pnpm --filter command-center test", "files": 24, "tests": 196, "skipped": 1, "pass": 196, "fail": 0 },
+    "propertyExplorerTypecheck": { "command": "pnpm --filter property-explorer exec tsc --noEmit", "exit": 0 }
+  },
+
+  "twoGatesMyOwnWorkFailedFirst": [
+    {
+      "gate": "reserved-hue clearance (land-use palette vs the FEMA blues)",
+      "failure": "the first honest-absence neutral, #606a75, measured 13.6 OKLab dE from the FEMA 100-year fill — under the 14 floor the test asserts",
+      "fix": "re-stepped to a NEUTRAL dark grey #5a5852; nearest reserved hue is now 14.4 dE and the two land-use greys sit 17.2 dE apart",
+      "significance": "the gate fired on its author before it ever saw a reviewer, which is what a gate proven able to fire looks like (DEV_PROCESS 2.2)"
+    },
+    {
+      "gate": "the existing Command Center liveGis suite",
+      "failure": "an assertion required the FEMA opacity expression to contain the literal string 'X500'",
+      "finding": "'X500' is NOT a published NFHL FLD_ZONE value. The 500-year band is FLD_ZONE 'X' with ZONE_SUBTY '0.2 PCT ANNUAL CHANCE FLOOD HAZARD' — 86 of 204 features in the live Bastrop probe. The old paint matched a zone code that does not exist, and the test locked that in.",
+      "fix": "assertion re-pointed at the real fields (0.2 PCT, MINIMAL, SFHA_TF) and a second CC test added asserting minimal-hazard land paints at opacity 0",
+      "scopeNote": "this is a one-test edit inside apps/command-center, which the dispatch did not assign to me. It is a test asserting on paint I own and it was asserting something false. Flagged rather than silently absorbed."
+    }
+  ],
+
+  "correctionToTheDispatchsOwnPremise": {
+    "dispatchSaid": "Real Texas district codes (C, D, E, F, GC, SF-1, MU) match nothing and all fall through to C.other.fill. They are orange because they are all classed unclassified.",
+    "atSource": "Partly true, and the difference matters. The CODE ladder does miss everything — none of P-5/P-4/P-2/SFR/R-1/MF/COM/AG occurs in the corpus. But a DESCRIPTION keyword ladder runs underneath it and catches roughly 74% of a real Bastrop tile: 'Commercial real property' hits the 'commercial' keyword, 'Single-family residential' hits 'single', and so on.",
+    "measuredOnTheBastropTile": {
+      "tile": "z16/15051/27015, 203 features, every feature counted",
+      "fellThroughToOther": 53,
+      "fellThroughPct": "26.1% of 203",
+      "whichOnes": "XV exempt (40), C1 vacant (8), no-code (5)",
+      "theRealDefects": [
+        "C1 vacant #c98f5e and F1 commercial #ff8c1a are 9.7 OKLab dE apart — the operator's 'all orange', two near-identical oranges rather than one",
+        "E1 rural painted IDENTICALLY to A1 single-family, because 'Rural single-family residential (farm/ranch improvement)' also contains 'single'",
+        "XV exempt (a positive determination, 40 features) painted IDENTICALLY to the 5 features with no code at all"
+      ]
+    },
+    "alsoWrongInTheCodesNamed": "GC, SF-1 and MU are municipal zoning district codes. The browse corpus does not carry municipal zoning; it carries county CAD state category codes. The layer is labelled 'Zoning / land use' but paints assessor classification, which is itself worth an operator ruling.",
+    "consequence": "The remedy is unchanged and if anything more urgent. Reporting a planner figure as wrong is a successful outcome per DEV_PROCESS 3.2, and this correction quotes the file and carries its counts (3.2a)."
+  },
+
+  "adversarialReviewOfTheBuild": [
+    {
+      "challenge": "Seven land-use classes is fewer than the eight the data has. Is folding exempt a quiet quality loss?",
+      "answer": "It is a loss and it is stated, not quiet. The measured ceiling over the legal gamut is worst all-pairs CVD 8.9 / normal 16.9 at N=7 and 8.3 / 14.5 at N=8; the normal-vision floor is 15, so eight cannot pass. Exempt keeps a named legend row inside 'Exempt, utility and other classified'. If the operator would rather have exempt as its own hue, the trade is naming which class loses one — that is a ruling, not a lane call, and it is in the close as an open item."
+    },
+    {
+      "challenge": "Minimal-hazard flood land now paints nothing. Does that read as a broken layer?",
+      "answer": "Mitigated three ways: the polygon keeps a hairline outline, the legend row says 'Minimal hazard — outside the mapped floodplain' and carries an explicit OUT badge, and the badge column has THREE states so 'no determination' (Zone D) never reads as 'outside'. It remains the item most worth an eyeball on a real screen, which this lane cannot do without deploying."
+    },
+    {
+      "challenge": "The renderer now mounts DOM chrome (the legend). Does that collide with either app's own chrome?",
+      "answer": "It mounts collapsed as one small chip at left:12 bottom:52 (bottom:106 under 640px), above PE's SmartSiteBadge at bottom:12/68, and it is hidden entirely unless zoning or a flood layer is visible — which on PE cold-open means hidden, because zoning defaults OFF. It is also the residual risk I cannot close from here: position against live chrome is a screen question."
+    },
+    {
+      "challenge": "Two new classifier implementations each. Is the divergence test real or decorative?",
+      "answer": "Real, and it needed an instrument: `map/expr-eval.js` actually EVALUATES the MapLibre expressions rather than string-matching them. It throws on any operator it does not implement, so it cannot fail open. The land-use divergence test runs 118 corpus codes through both paths; the FEMA one runs all six measured live combinations plus twelve more of the published NFHL set."
+    },
+    {
+      "challenge": "Are the new tests actually enforced, or are they a guardrail nobody runs?",
+      "answer": "They were NOT enforced. No workflow ran `pnpm --filter @hauska/map-renderer test` — the package's node:test suite had never been a CI gate, so every guard already in it was decorative. Added as a step in command-center-ci.yml, which already triggers on packages/map-renderer/**. Found by asking the question, not by the suite failing."
+    },
+    {
+      "challenge": "Did anything else change that the dispatch did not ask for?",
+      "answer": "Three things, all named: the CC test correction above; the CI step above; and a data-driven `line-width` on the FEMA layer (severity-weighted), which is how zone identity survives a fill capped at 20% opacity over imagery. ROLE_BUDGET was NOT touched — no opacity constant was raised anywhere."
+    }
+  ],
+
+  "backlogFindingsNotFixedHere": [
+    {
+      "id": "W3-B1",
+      "where": "packages/map-renderer/src/map/gis-map-render.js, upsertGisLayer",
+      "finding": "the `meshMode && layerKey === 'parcel-polygon'` branch does `fillOpacityExpr(layerKey, true) * saturation`, unguarded. That call returns a MapLibre `case` ARRAY for parcel-polygon, so the multiply yields NaN and setPaintProperty receives NaN. The two neighbouring branches DO guard with `typeof baseOpacity === 'number'`.",
+      "status": "pre-existing, latent, fixture-stack only (PE runs useFixture=false). Left alone deliberately: it is outside the four work items and the fixture mesh path is shared with CC.",
+      "proposedDisposition": "one-line guard mirroring the branch six lines below it"
+    },
+    {
+      "id": "W3-B2",
+      "where": "the LAYERS panel row labelled 'Zoning / land use'",
+      "finding": "it paints county CAD state-category codes, which are an assessor classification, not a municipal zoning district. The fixture inspect card already says so in small print ('Assessor land-use codes on parcel — not municipal district boundaries'), and the new legend note repeats it, but the row label still says Zoning.",
+      "proposedDisposition": "operator ruling on whether to rename the row"
+    },
+    {
+      "id": "W3-B3",
+      "where": "ROLE_BUDGET.CONTEXT.dimWhenDataVisible",
+      "finding": "the taxonomy defines a 0.45 dim factor for CONTEXT layers when a DATA layer is on, and `contextFillOpacity()` implements it, but nothing on the live path calls it with dataVisible=true. Turning zoning on therefore does not dim the flood layer as designed.",
+      "proposedDisposition": "wire it, or delete the constant — a rule with no caller is the shape this repo keeps finding"
+    },
+    {
+      "id": "W3-B4",
+      "where": "the whole browse corpus",
+      "finding": "61.3% of 15,286 sampled features across eight z14 tiles carry no landUseCode, and the absence is whole-county (Houston 48201 4061/4061, Midland 48329 2715/2715). The map now says so honestly, but the underlying coverage gap is an acquisition question, not a rendering one.",
+      "proposedDisposition": "route to the Texas plan of record"
+    }
+  ],
+
+  "remainingAtCp2": [
+    "Open the PR against main. DO NOT MERGE, DO NOT DEPLOY.",
+    "Wait for CI conclusion strings and record them in the close.",
+    "File the close artifact at _inbox/2026-08-18_ss-w3_close.json."
+  ]
+}

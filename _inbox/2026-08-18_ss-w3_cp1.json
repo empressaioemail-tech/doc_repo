@@ -1,0 +1,214 @@
+{
+  "lane": "SS-W3",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-18",
+  "planRows": ["P-41"],
+  "repo": "hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w3-map-legibility",
+  "branch": "ss/w3-map-legibility",
+  "baseSha": "5bf06ec",
+
+  "missionPremise": "Operator QA pass on https://smartsite.cloud: 'I cant see street names I think this is important I have to click on a house to see the name of the street'; 'In Zoning C-D-E-F are all orange there is no variance in the colors so how can I tell?'; 'The current flood map is a little hard to read could you color code it... so that we can quickly identify the sections that are in and out of the zones'; 'when I hit find I can not find the property, it will not zoom in or place an arrow on the lot'. Command Center is a CONSUMER of Smart Site per operator ruling, so the fix lands in packages/map-renderer and CC inherits it. Dispatch _dispatches/2026-08-18_ss-w3_dispatch.md under OPS-16 amendment A-018.",
+
+  "completionPredicate": "On the Smart Site surface in satellite mode a stranger can (a) read street names without clicking, (b) tell a C parcel from a D from an E from an F by colour and name each from a legend, (c) tell at a glance which land is inside a FEMA flood zone and which is outside, and (d) see a marker at the resolved subject parcel plus a distinguishable second marker for compare property B. Package builds, both app suites stay green, CC render path unbroken, PR open against main, not merged, not deployed.",
+
+  "scopeBasis": "Dispatch file ownership. MINE: packages/map-renderer/src/map/** and src/chrome/satelliteBase.ts. NOT MINE: chrome/mapToolsController.ts, chrome/MapTools.tsx, chrome/MapToolset.tsx, chrome/LayersControl.tsx (lane P-42); apps/property-explorer/** (P-39/P-40); apps/command-center/** (unassigned, read-only for me). src/map-renderer.js, src/FloatingMap.tsx and src/index.ts are unassigned by the dispatch and take MINIMAL ADDITIVE edits only, because a renderer-internal feature cannot reach either app otherwise. Camera fly and subject state stay with P-39; I expose the marker seam only.",
+
+  "groundTruthEstablishedAtSource": {
+    "note": "Every number below came from a command run in this session, not from the dispatch prose.",
+
+    "femaLiveProbe": {
+      "command": "POST https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/map-data/gis-layer {layer:fema, bbox:{west:-97.36,south:30.08,east:-97.28,north:30.14}}",
+      "http": 200,
+      "provider": "FEMA NFHL",
+      "featureCount": 204,
+      "countingRule": "one Bastrop viewport, 204 polygon features, all counted, none sampled",
+      "FLD_ZONE": { "X": 122, "AE": 68, "AO": 3, "A": 11 },
+      "ZONE_SUBTY": { "0.2 PCT ANNUAL CHANCE FLOOD HAZARD": 86, "(null)": 75, "FLOODWAY": 7, "AREA OF MINIMAL FLOOD HAZARD": 36 },
+      "crossTab": {
+        "X | 0.2 PCT ANNUAL CHANCE FLOOD HAZARD | SFHA=F": 86,
+        "AE | null | SFHA=T": 61,
+        "X | AREA OF MINIMAL FLOOD HAZARD | SFHA=F": 36,
+        "A | null | SFHA=T": 11,
+        "AE | FLOODWAY | SFHA=T": 7,
+        "AO | null | SFHA=T": 3
+      },
+      "finding": "SIX distinct real classes in one viewport render as THREE colours today, effectively two: femaNfhlFillColorExpr matches only X and X500 to fillX and sends everything else to fillAe. The 86 shaded-X polygons (0.2 percent annual chance, a real hazard) and the 36 minimal-hazard X polygons (definitively OUT) are painted the same #93c5fd at the same 0.07 opacity. That is exactly the operator's 'cannot tell what is in and out'. SFHA_TF, values 'T' and 'F', is published on every feature and is the authoritative in/out flag; nothing in the renderer reads it."
+    },
+
+    "parcelPmtilesCorpus": {
+      "archive": "https://storage.googleapis.com/hauska-map-tiles/parcels.b692c6534d26.pmtiles",
+      "method": "PMTiles v3 header + directory decode, then MVT decode of named tiles, in-session",
+      "vectorLayerFields": ["apn", "countyName", "county_fips", "landUseCode", "landUseDescription", "landUseSource", "landUseVintage", "parcel_node_id", "situsAddress"],
+      "tilestatsDistinctLandUseCode": 141,
+      "tilestatsDistinctLandUseDescription": 14,
+      "codesAreTexasPtadStateCategory": "A/A1..A9, B/B1..B9, C/C1..C7, D1..D6, E/E1..E11, F1/F2/F3/F4/F5/F10/F20, G3/G30, J1..J5, plus EX/EX1..EX9 and XV/XA/XG for exempt. NOT the P-5/P-4/P-2/SFR/R-1/MF/COM/AG codes the hardcoded ladder matches.",
+      "singleTileMeasurement": {
+        "tile": "z16/15051/27015 (downtown Bastrop)",
+        "features": 203,
+        "landUseCodePresent": 198,
+        "landUseCodeAbsent": 5,
+        "codes": { "F1": 81, "A1": 56, "XV": 40, "C1": 8, "B2": 6, "E1": 4, "A2": 1, "A3": 1, "E2": 1 },
+        "countingRule": "every feature in that one tile, no sampling"
+      },
+      "eightTileScan": {
+        "tiles": "z14 tiles at Bastrop 3762/6753, Austin 3743/6745, Houston 3851/6772, Dallas 3786/6611, Midland 3546/6653, Caldwell 3747/6775, Hays-west 3727/6757, San Antonio 3709/6789",
+        "features": 15286,
+        "landUseCodeAbsent": 9368,
+        "landUseCodeAbsentPct": "61.3 percent of 15,286 features across those 8 tiles",
+        "absenceIsWholeCounty": "Houston 48201 4061 of 4061 absent, Midland 48329 2715 of 2715 absent, Austin 48453 2090 of 3458 absent. Whole counties publish no CAD land-use at all.",
+        "ptadLetterClassCounts": { "(absent)": 9368, "F": 2401, "A": 2032, "C": 916, "B": 302, "X": 124, "E": 62, "D": 42, "J": 35, "G": 1, "O": 1, "BD": 1, "BF": 1 },
+        "descriptionAbsent": 9369,
+        "reconciliation": "descriptionAbsent 9369 vs codeAbsent 9368. Exactly one feature carries a code with no description. Keying paint on the CODE loses zero features; keying on the description loses one. Paint keys on the code."
+      }
+    },
+
+    "measuredDefectsInTheCurrentPaint": {
+      "countingRule": "OKLab delta-E times 100, unsimulated vision, computed in-session. The dataviz skill's normal-vision floor is 15.",
+      "pairs": [
+        { "pair": "DATA_LAND_USE_COLORS.multiFamily #3f8efc vs CONTEXT_FEMA.fillAe #3b82f6", "deltaE": 3.2, "meaning": "a multifamily parcel is the same colour as the 100-year floodplain" },
+        { "pair": "DATA_LAND_USE_COLORS.commercial #ff8c1a vs SUBJECT_AMBER #f2a23c", "deltaE": 4.9, "meaning": "every commercial parcel wears the hue this same file reserves for the subject parcel" },
+        { "pair": "other #c98f5e vs commercial #ff8c1a", "deltaE": 9.7, "meaning": "the operator's 'all orange' expressed as one number" },
+        { "pair": "agricultural #b6d24a vs SUBJECT_AMBER_BRIGHT #ffe14d", "deltaE": 11.2 },
+        { "pair": "industrial #f0562a vs commercial #ff8c1a", "deltaE": 12.0 },
+        { "pair": "singleFamily #2fd07a vs agricultural #b6d24a", "deltaE": 11.7 }
+      ],
+      "summary": "Six pairs below the 15 floor, three below 10, in a palette that is also breaking its own file's reserved-hue rule twice."
+    },
+
+    "keywordLadderTrace": {
+      "note": "The dispatch says every real code falls through to C.other.fill. At source it is subtler, and the correction is a finding rather than a contradiction: after the code ladder misses, a DESCRIPTION keyword ladder underneath it catches some classes.",
+      "onTheBastropTile": {
+        "F1 (81) -> commercial #ff8c1a": "description 'Commercial real property' contains 'commercial'",
+        "A1/A2/A3 (58) -> singleFamily #2fd07a": "description contains 'single'",
+        "E1 (4) -> singleFamily #2fd07a": "description 'Rural single-family residential (farm/ranch improvement)' also contains 'single', so rural E1 renders IDENTICALLY to urban A1",
+        "B2 (6) -> multiFamily #3f8efc": "description contains 'multi'",
+        "E2 (1) -> agricultural #b6d24a": "description contains 'farm'",
+        "XV (40) -> other #c98f5e": "no keyword matches 'Exempt property'",
+        "C1 (8) -> other #c98f5e": "no keyword matches 'Vacant lot or tract'",
+        "absent (5) -> other #c98f5e": "no code and no description"
+      },
+      "measuredConsequence": "53 of 203 features on that tile, 26.1 percent, paint the single 'other' orange-brown. C (vacant) at #c98f5e and F (commercial) at #ff8c1a are delta-E 9.7 apart, two near-identical oranges, which is the operator's report verbatim. Separately a POSITIVE classification (XV exempt, 40 features) renders identically to an ABSENCE (5 features), which is DEV_PROCESS 4.3 violated in paint."
+    },
+
+    "cartoLabelTiles": {
+      "light_only_labels": "HTTP 200. Glyph #697b89 (luminance 120) fully opaque, halo #f6f6f6 (luminance 246) at alpha 203-249: mid-slate text in a white halo.",
+      "dark_only_labels": "HTTP 200. Glyph #6f6f6f (luminance 111) fully opaque, halo #232323 (luminance 35) at alpha about 204: grey text in a near-black halo.",
+      "esriImageryOverBastrop": "mean luminance 120.5; luminance buckets [0-51, 51-102, 102-153, 153-204, 204-255] = 10.5 / 29.3 / 32.6 / 20.3 / 7.3 percent",
+      "choice": "light_only_labels. Its internal text-to-halo contrast is 4.14:1 against 3.13:1 for dark_only_labels, and its white halo wins over the 72.4 percent of imagery below luminance 153, losing only over the brightest 7.3 percent. Same provider, same attribution, drop-in."
+    },
+
+    "glyphEndpoint": {
+      "configured": "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+      "probe": "'Noto Sans Regular' 200, 'Noto Sans Medium' 200, 'Open Sans Regular' 404, 'Noto Sans Bold' 404",
+      "consequence": "the A/B marker labels use text-font ['Noto Sans Medium']. Nothing in the repo uses a symbol text layer today, so this is the first one, and the marker must still read if the glyph fetch fails."
+    }
+  },
+
+  "designDecisions": [
+    {
+      "item": "1 - street labels over satellite",
+      "decision": "Add a CARTO light_only_labels raster source and layer in chrome/satelliteBase.ts, inserted directly ABOVE the Esri imagery layer and BELOW every data layer, visible only while satellite is on. Off when satellite is off, because CARTO light_all already bakes labels into the basemap and a second labels raster would double-print them.",
+      "risk": "a third raster source on the style; mitigated by reusing the idempotent ensure-plus-visibility pattern the satellite layer already uses, with static paint only."
+    },
+    {
+      "item": "2 - land-use palette",
+      "decision": "Replace the hardcoded code ladder and the description keyword ladder with a data-driven classification on the PTAD state-category letter class read off landUseCode. SEVEN categorical classes (A, B, C, D, E, F1, F2) plus a deliberately low-chroma 'exempt and other classified' bucket plus a structurally distinct 'not classified here' absence state.",
+      "whySeven": "MEASURED, not chosen. A max-min search over the legal gamut (SUBJECT-amber band 52-104 degrees and INTERACTION-cyan plus FEMA-blue band 224-276 degrees excluded, chroma at least 0.10, OKLCH light band, every slot at least 14 normal delta-E and 7 CVD delta-E clear of all eight reserved hues) gives this ceiling for the worst ALL-PAIRS pair, which is the pairlist a choropleth must pass: N=4 CVD 13.1 / normal 24.8; N=5 11.4 / 21.6; N=6 10.0 / 19.2; N=7 8.9 / 16.9; N=8 8.3 / 14.5; N=9 7.5 / 14.0. Eight classes cannot clear the normal-vision floor of 15 under semantic hue anchoring. Seven can.",
+      "whichClassFolds": "X (exempt) folds into 'Exempt and other classified' together with G, J, L, M, O and S. Exempt is real and common (40 of 203 on the Bastrop tile) but it is the one class that is not transactable, so on a site-research surface it is the cheapest fold. Every class the operator named (C, D, E, F) keeps its own hue, and F keeps its commercial versus industrial split.",
+      "escalation": "If the operator wants exempt as its own hue, the honest options are (a) drop a different class or (b) accept a normal-vision delta-E of 14.5 with mandatory secondary encoding. That is an operator ruling, not a lane call."
+    },
+    {
+      "item": "3 - flood palette",
+      "decision": "An ORDINAL severity ramp (one hue, monotone lightness) for the mapped hazard classes, plus off-ramp states. Nine legend rows against today's two. In versus out is carried by the presence or absence of fill rather than by a hue difference: unshaded Zone X (minimal hazard, OUT) gets NO fill at all, only a hairline outline. That is the single biggest legibility win and it costs nothing from the role budget.",
+      "classifierKeys": "FLD_ZONE, ZONE_SUBTY and SFHA_TF only, all three verified present on every one of the 204 live features. SFHA_TF equal to 'T' is the honest catch-all for any SFHA zone code not explicitly listed, so a zone we forgot still renders as IN rather than as unknown.",
+      "defaultChange": "Today the flood match defaults unknown zones to CONTEXT_FEMA.legendAe, so an unrecognised zone is painted as 100-year floodplain, which OVER-claims hazard. The new default is a neutral 'zone not stated' grey."
+    },
+    {
+      "item": "4 - subject marker",
+      "decision": "A new map/subject-marker.js drawing a GeoJSON point source with a halo circle, a core circle and an optional label symbol. Primary (subject) is a filled SUBJECT amber bullseye; secondary (compare property B) is a hollow ring in the same reserved amber family, so the taxonomy's SUBJECT reservation is not broken by inventing a second reserved hue. Shape, not colour alone, carries A versus B, so it survives the glyph endpoint failing.",
+      "seam": "renderer.setSubjectMarkers(markers) where markers is Array of { id, longitude, latitude, role: 'primary' or 'secondary', label }, re-exported on FloatingMapHandle. Idempotent, order-independent, safe to call before style load. P-39 owns the camera and the subject state and calls this; this lane never moves the camera."
+    }
+  ],
+
+  "roleBudgetPosture": {
+    "decision": "ROLE_BUDGET is NOT changed. No opacity constant is raised.",
+    "reasoning": "The operator could plainly see the orange at DATA.baseFillOpacity 0.22, so the complaint is that the hues were identical, not that they were faint. CONTEXT.fillOpacityMax 0.2 stays, and the flood in/out signal is delivered by removing the fill from the OUT class instead of raising the fill on the IN classes. Category identity is additionally carried on the line channel at full opacity, which the CONTEXT budget explicitly permits.",
+    "residual": "If the operator still finds the choropleth faint over imagery after this lands, the next move is a named focus-opacity constant, not a change to the shared budget. Logged, not done."
+  },
+
+  "adversarialReviewOfMyOwnPlan": [
+    {
+      "challenge": "The dispatch asserts every real Texas code falls through to one unclassified orange. Is that true at source?",
+      "finding": "Partly. The code ladder misses everything, but a description keyword ladder underneath it catches roughly 74 percent of the Bastrop tile. Reporting a planner figure as wrong is a successful outcome per DEV_PROCESS 3.2, and the correction quotes the file and the measured counts above. The remedy is unchanged and arguably more urgent, because the surviving failure mode is that C and F land on two oranges delta-E 9.7 apart and E collides with A exactly."
+    },
+    {
+      "challenge": "Is a 7-class choropleth even legal under the dataviz skill, which caps all-pairs forms at three slots for its reference palette?",
+      "finding": "That cap is a property of that palette's fixed hexes, not a universal. This repo has its own paint authority in layer-role-taxonomy.js, so the correct move is to onboard it as a design system and hold it to the same gates, which is what the search does. Seven clears both hard gates measurably. Secondary encoding ships anyway: the legend, the per-class stroke, and click-to-inspect naming the class."
+    },
+    {
+      "challenge": "Does painting minimal-hazard X with no fill read as 'the layer is off'?",
+      "finding": "Real risk. Mitigated by keeping a hairline outline on those polygons and by a legend row that names the state explicitly. An area that looks empty with a legend row saying 'outside the mapped floodplain' is honest; an area painted the same pale blue as the 0.2 percent zone is not."
+    },
+    {
+      "challenge": "61.3 percent of sampled parcels have no land-use code at all. Does a prettier palette hide that?",
+      "finding": "It would if absence stayed folded into 'other'. It does not: 'not classified here' is its own legend row with its own neutral, and it names what would fill it, namely the county CAD land-use roll. This is invariant I4 applied to paint."
+    },
+    {
+      "challenge": "packages/map-renderer is consumed by Command Center too. What breaks there?",
+      "finding": "CC LiveMapTile mounts the same SHARED_PARCEL_TILES and the same live FEMA overlay, so it inherits both palettes by design per the operator ruling. The residual risk is the renderer-mounted legend colliding with CC tile chrome; mitigated by mounting it collapsed, bottom-left, only when a layer that has a legend is visible, and by CC's own suite running in CI."
+    },
+    {
+      "challenge": "One rule, two implementations: the classifier exists as a JS function for the legend and as a MapLibre expression for paint. DEV_PROCESS 2.4 says that is the CTRL-1 shape.",
+      "finding": "Accepted, and answered the way 2.4 prescribes: a DIVERGENCE TEST is the control. A minimal expression evaluator runs the paint expression over every code in the corpus and asserts it agrees with the JS classifier, so the two cannot drift silently."
+    }
+  ],
+
+  "filesPlanned": {
+    "new": [
+      "packages/map-renderer/src/map/land-use-classes.js",
+      "packages/map-renderer/src/map/fema-zones.js",
+      "packages/map-renderer/src/map/subject-marker.js",
+      "packages/map-renderer/src/map/map-legend.js",
+      "packages/map-renderer/src/map/expr-eval.js (test helper: minimal MapLibre expression evaluator)",
+      "packages/map-renderer/src/map/land-use-classes.test.js",
+      "packages/map-renderer/src/map/fema-zones.test.js",
+      "packages/map-renderer/src/map/subject-marker.test.js",
+      "packages/map-renderer/src/map/map-legend.test.js"
+    ],
+    "modified": [
+      "packages/map-renderer/src/map/layer-role-taxonomy.js",
+      "packages/map-renderer/src/map/gis-map-paint.js",
+      "packages/map-renderer/src/map/hauska-map-style.js",
+      "packages/map-renderer/src/map/parcel-tiles.js",
+      "packages/map-renderer/src/chrome/satelliteBase.ts",
+      "packages/map-renderer/src/map-renderer.js (additive: marker plus legend wiring)",
+      "packages/map-renderer/src/FloatingMap.tsx (additive: setSubjectMarkers on the handle)",
+      "packages/map-renderer/src/index.ts (additive: exports)"
+    ],
+    "notTouched": [
+      "packages/map-renderer/src/chrome/mapToolsController.ts",
+      "packages/map-renderer/src/chrome/MapTools.tsx",
+      "packages/map-renderer/src/chrome/MapToolset.tsx",
+      "packages/map-renderer/src/chrome/LayersControl.tsx",
+      "apps/property-explorer/**",
+      "apps/command-center/**"
+    ]
+  },
+
+  "verificationPlan": [
+    "pnpm --filter @hauska/map-renderer test  (node --test, exit-bounded)",
+    "pnpm --filter @hauska/map-renderer build (tsup, exit-bounded)",
+    "pnpm --filter property-explorer test     (vitest run, exit-bounded)",
+    "pnpm --filter command-center test        (vitest run, exit-bounded)",
+    "pnpm --filter property-explorer exec tsc --noEmit",
+    "no dev server, no watch mode, no tail"
+  ],
+
+  "status": "design frozen; implementation starting",
+  "openAtCp1": [
+    "Whether the operator accepts exempt folded into 'exempt and other classified' rather than dropping a different class. Escalation named above.",
+    "Whether the renderer-mounted legend position collides with PE or CC chrome on a real screen. Cannot be settled without a live probe, and this lane must not deploy."
+  ]
+}

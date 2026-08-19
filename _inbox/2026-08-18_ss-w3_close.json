@@ -1,0 +1,344 @@
+{
+  "lane": "SS-W3",
+  "title": "Smart Site map legibility",
+  "date": "2026-08-18",
+  "planRows": ["P-41"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md (amendment A-018)",
+  "repo": "empressaioemail-tech/hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w3-map-legibility",
+  "branch": "ss/w3-map-legibility",
+  "baseSha": "5bf06ec",
+  "headSha": "9b3cdaf",
+  "checkpointArtifacts": [
+    "_inbox/2026-08-18_ss-w3_cp1.json",
+    "_inbox/2026-08-18_ss-w3_cp2.json"
+  ],
+
+  "missionPremise": "Operator QA pass on the live surface https://smartsite.cloud, verbatim: 'I cant see street names I think this is important I have to click on a house to see the name of the street'; 'In Zoning C-D-E-F are all orange there is no variance in the colors so how can I tell?'; 'The current flood map is a little hard to read could you color code it... so that we can quickly identify the sections that are in and out of the zones'; 'when I hit find I can not find the property, it will not zoom in or place an arrow on the lot'; 'I am comparing 2 properties and I have no idea where they are, there should be some point of visual reference to show each location'. Command Center is a CONSUMER of Smart Site per operator ruling, so all four fixes land in packages/map-renderer and CC inherits them. Contract read first and built against: _catalog/parcel_fact_sheet_contract/CONTRACT_RULES.md, invariants I4 (failure is not an absence) and I6 (a parcel can be in more than one flood zone at once).",
+
+  "completionPredicate": "In satellite mode a stranger can (a) read street names without clicking, (b) tell a C parcel from a D from an E from an F by colour and name each from a legend, (c) tell at a glance which land is inside a FEMA flood zone and which is outside, and (d) see a marker at the resolved subject parcel plus a distinguishable second marker for compare property B. Package builds, both app suites green, Command Center render path unbroken, PR open against main, not merged, not deployed.",
+
+  "scopeBasis": "Dispatch file ownership across six parallel lanes in one repo. MINE: packages/map-renderer/src/map/** and src/chrome/satelliteBase.ts. NOT MINE and NOT TOUCHED: chrome/mapToolsController.ts, chrome/MapTools.tsx, chrome/MapToolset.tsx, chrome/LayersControl.tsx (lane P-42); apps/property-explorer/** (lanes P-39/P-40). Files the dispatch left unassigned took MINIMAL ADDITIVE edits only, because a renderer-internal feature cannot reach either app otherwise: src/map-renderer.js, src/FloatingMap.tsx, src/index.ts, src/chrome/index.ts, src/live-gis.ts. Two edits fall outside the four work items entirely and are named as such below (a Command Center test assertion and a CI workflow step). Camera fly and subject state remain lane P-39's; this lane exposes the marker seam and renders, and never moves the camera.",
+
+  "prs": [
+    {
+      "number": 171,
+      "url": "https://github.com/empressaioemail-tech/hauska-map/pull/171",
+      "base": "main",
+      "head": "ss/w3-map-legibility",
+      "headSha": "9b3cdaf",
+      "state": "OPEN",
+      "merged": false,
+      "mergeSha": "not applicable: NOT MERGED per dispatch hard rule",
+      "ciCheckRuns": [
+        { "name": "Test", "status": "completed", "conclusion": "success" },
+        { "name": "Typecheck", "status": "completed", "conclusion": "success" },
+        { "name": "test", "status": "completed", "conclusion": "success" }
+      ],
+      "ciNote": "Conclusion STRINGS read from the GitHub check-runs API against the head SHA, not from a `gh pr checks` pass/fail column."
+    }
+  ],
+  "deployed": false,
+  "deployNote": "DO NOT DEPLOY was a dispatch hard rule. Nothing was deployed and no serving revision was touched. Consequence, stated plainly: per DEV_PROCESS 4.4 this lane is CODE-DONE, not CUSTOMER-DONE. None of the four fixes has been seen on a live surface.",
+
+  "workItems": [
+    {
+      "id": 1,
+      "item": "Street labels over satellite",
+      "status": "done",
+      "rootCauseAtSource": "packages/map-renderer/src/map/hauska-map-style.js defines ONE raster source (CARTO light_all) whose tiles have street names baked into the image, and chrome/satelliteBase.ts setSatelliteBase() sets that layer's visibility to none whenever satellite is on. Satellite mode therefore had zero street labels by construction.",
+      "fix": "New packages/map-renderer/src/map/basemap-labels.js holds the source spec, the layer spec and the measurement that chose them. chrome/satelliteBase.ts mounts it directly ABOVE the Esri imagery and BELOW the first data layer, and binds its visibility to the satellite toggle. Anchored on layerAfter(SATELLITE_LAYER_ID), NOT on firstDataLayerId() — the satellite layer already occupies that slot after the first insert, so re-using it would have put the labels UNDER the imagery.",
+      "measurementBehindTheChoice": {
+        "countingRule": "both candidate label tiles and the Esri imagery decoded at 16/15051/27015 (downtown Bastrop), every opaque pixel counted",
+        "light_only_labels": "glyph #697b89 luminance 120 fully opaque, halo #f6f6f6 luminance 246 at alpha 203-249, glyph-on-halo contrast 4.14:1",
+        "dark_only_labels": "glyph #6f6f6f luminance 111 fully opaque, halo #232323 luminance 35 at alpha ~204, glyph-on-halo contrast 3.13:1",
+        "esriImagery": "mean luminance 120.5; buckets [0-51,51-102,102-153,153-204,204-255] = 10.5 / 29.3 / 32.6 / 20.3 / 7.3 percent",
+        "conclusion": "light_only_labels. The white halo separates over the 72.4 percent of imagery below luminance 153 and fails only over the brightest 7.3 percent, and it also carries the higher internal contrast.",
+        "endpointProbe": "light_only_labels 200 image/png 15,684 bytes; dark_only_labels 200 image/png 15,161 bytes"
+      },
+      "offWhenSatelliteOff": "Deliberate. With satellite off the CARTO light_all basemap is showing and already carries baked labels; a second labels raster would double-print every street name."
+    },
+    {
+      "id": 2,
+      "item": "Land-use palette and legend",
+      "status": "done",
+      "rootCauseAtSource": "gis-map-paint.js landUseFillColorExpr matched a hardcoded ladder of P-5 / P-4 / P-2 / SFR / R-1 / MF / COM / AG and then keyword-scanned landUseDescription. None of those codes occurs in the live browse corpus.",
+      "fix": "New packages/map-renderer/src/map/land-use-classes.js: a data-driven classifier on the Texas PTAD state-category letter class read off landUseCode, seven categorical classes plus an 'exempt, utility and other classified' bucket plus a structurally distinct 'not classified here' absence state, with the palette and the legend rows defined next to the rule that paints them.",
+      "palette": {
+        "singleFamily": { "code": "A", "label": "Single-family residential", "fill": "#e492c9", "stroke": "#ffc4f3" },
+        "multiFamily": { "code": "B", "label": "Multifamily residential", "fill": "#c952cf", "stroke": "#f78afb" },
+        "vacant": { "code": "C", "label": "Vacant lot or tract", "fill": "#28b093", "stroke": "#7cddc2" },
+        "agricultural": { "code": "D", "label": "Agricultural / open space", "fill": "#1b6a00", "stroke": "#559647" },
+        "rural": { "code": "E", "label": "Rural land and improvements", "fill": "#958802", "stroke": "#c1b760" },
+        "commercial": { "code": "F1", "label": "Commercial", "fill": "#b93c4e", "stroke": "#e4747d" },
+        "industrial": { "code": "F2", "label": "Industrial", "fill": "#7c41ae", "stroke": "#a674d7" },
+        "otherClassified": { "code": "X / G / J / L / M / O / S", "label": "Exempt, utility and other classified", "fill": "#938875", "stroke": "#c1b6a4" },
+        "unclassified": { "code": "-", "label": "Not classified here", "fill": "#5a5852", "stroke": "#88867f", "wouldBeFilledBy": "county CAD land-use roll" }
+      },
+      "paletteGates": {
+        "countingRule": "OKLab delta-E x100. CVD is the WORSE of protanopia and deuteranopia under Machado-Oliveira-Fernandes 2009 severity 1.0. ALL-PAIRS list, not adjacent, because a choropleth can put any two classes side by side.",
+        "worstAllPairsCvd": 8.6,
+        "cvdTarget": 8,
+        "worstAllPairsNormalVision": 15.6,
+        "normalVisionFloor": 15,
+        "reservedClearance": "every slot at least 14 normal-vision delta-E from SUBJECT amber (#f2a23c, #ffe14d, #fff2b0), INTERACTION cyan (#7dd3fc) and the three FEMA fills",
+        "excludedHueBands": "52-104 degrees (SUBJECT amber) and 224-276 degrees (INTERACTION cyan plus the FEMA blues), so a land-use fill can never impersonate the subject parcel or the flood layer",
+        "chromaFloor": "the seven categorical slots are at or above OKLCH chroma 0.10; the two states are deliberately BELOW it so they read as grey rather than as an identity, and sit 17.2 delta-E apart from each other"
+      },
+      "whySevenAndNotEight": {
+        "countingRule": "max-min search over the legal gamut, worst ALL-PAIRS pair, measured in-session",
+        "ceilingByCategoryCount": { "N=4": "CVD 13.1 / normal 24.8", "N=5": "11.4 / 21.6", "N=6": "10.0 / 19.2", "N=7": "8.9 / 16.9", "N=8": "8.3 / 14.5", "N=9": "7.5 / 14.0" },
+        "conclusion": "Eight classes cannot clear the normal-vision floor of 15 under semantic hue anchoring. Seven can. The exempt family therefore folds into 'other classified' - it is the one common class that is not transactable, which makes it the cheapest fold on a property-research surface. This is a measured ceiling, not a preference."
+      },
+      "secondaryEncoding": "The legend (mandatory past three classes in an all-pairs form), the per-class STROKE at full opacity (identity survives a 22 percent fill over imagery), and click-to-inspect naming the class."
+    },
+    {
+      "id": 3,
+      "item": "Flood palette and legend",
+      "status": "done",
+      "rootCauseAtSource": "femaNfhlFillColorExpr matched only FLD_ZONE 'X' and 'X500' to the light step and sent everything else to the mid step, so six real classes in one viewport rendered as three, and effectively two. It also defaulted any unrecognised zone to the 100-year fill, which OVER-CLAIMED hazard.",
+      "fix": "New packages/map-renderer/src/map/fema-zones.js: nine classes keyed on FLD_ZONE, ZONE_SUBTY and SFHA_TF, with the in/out signal carried by fill-versus-no-fill rather than by a hue difference, and a nine-row legend.",
+      "palette": {
+        "floodway": { "label": "Regulatory floodway", "zones": "AE + FLOODWAY", "fill": "#21458f", "line": "#7ba3e0", "fillOpacity": 0.2, "lineWidth": 2.6, "inSfha": true },
+        "coastal": { "label": "Coastal high hazard (wave action)", "zones": "V, VE", "fill": "#2a5cad", "line": "#86adde", "fillOpacity": 0.2, "lineWidth": 2.2, "inSfha": true },
+        "sfhaBfe": { "label": "1% annual chance, base flood elevation set", "zones": "AE, AH", "fill": "#3576cc", "line": "#93bce8", "fillOpacity": 0.18, "lineWidth": 2, "inSfha": true },
+        "sfhaSheet": { "label": "1% annual chance, sheet flow", "zones": "AO", "fill": "#5f96dd", "line": "#a8caee", "fillOpacity": 0.16, "lineWidth": 1.8, "inSfha": true },
+        "sfhaNoBfe": { "label": "1% annual chance, no elevation set", "zones": "A, A99, AR", "fill": "#92b8ea", "line": "#c0d8f4", "fillOpacity": 0.14, "lineWidth": 1.6, "inSfha": true },
+        "shadedX": { "label": "0.2% annual chance (500-year)", "zones": "X shaded", "fill": "#c5dbf6", "line": "#7f9bba", "fillOpacity": 0.1, "lineWidth": 1.2, "inSfha": false },
+        "openWater": { "label": "Open water", "zones": "OPEN WATER", "fill": "#3f8696", "line": "#74afbe", "fillOpacity": 0.18, "lineWidth": 1.2, "inSfha": null },
+        "undetermined": { "label": "Hazard undetermined / not analysed", "zones": "D, area not included", "fill": "#acaba7", "line": "#d2d1cd", "fillOpacity": 0.1, "lineWidth": 1.2, "inSfha": null },
+        "minimal": { "label": "Minimal hazard - outside the mapped floodplain", "zones": "X unshaded", "fill": "none", "line": "#9fa5ac", "fillOpacity": 0, "lineWidth": 0.8, "inSfha": false }
+      },
+      "rampProperties": "floodway through shadedX is ONE ordinal ramp: OKLCH hue spread 11 degrees, monotone lightness, every adjacent step at least 0.06 delta-L. It validates as an ordinal ramp against the dark map canvas #16110c AND against a mid-tone satellite surface #787878. openWater and undetermined are deliberately OFF the ramp; undetermined is the only achromatic swatch in the layer.",
+      "howInVersusOutIsCarried": "Fill versus no fill. Unshaded Zone X resolves to fill-opacity 0, so land outside the mapped floodplain is drawn EMPTY with only a hairline outline. This buys the contrast the operator asked for without spending any of ROLE_BUDGET.CONTEXT.fillOpacityMax, which exists because of a documented wash-out incident.",
+      "honestyFixes": [
+        "SFHA_TF == 'T' is the honest catch-all, so an SFHA zone code we did not enumerate still renders as IN rather than as unknown.",
+        "The match default is now a neutral 'zone not stated' grey. It used to be the 100-year fill.",
+        "In/out is THREE states, never two: null means FEMA published no determination, which is not the same as 'outside'.",
+        "I6 multiplicity is stated on the legend: 'A parcel can sit in more than one zone at once.'"
+      ]
+    },
+    {
+      "id": 4,
+      "item": "Subject and compare markers",
+      "status": "done (rendering plus the seam; camera fly stays with lane P-39)",
+      "rootCauseAtSource": "Nothing drew a marker anywhere in the renderer. The subject parcel does get a feature-state amber glow via parcel-tiles.js, but only once its vector tile has painted, it is invisible at low zoom, and it cannot mark a comparison property at all.",
+      "fix": "New packages/map-renderer/src/map/subject-marker.js: a GeoJSON point source with halo, ring, core and label layers, SUBJECT role.",
+      "theSeamForP39": {
+        "call": "renderer.setSubjectMarkers(markers)",
+        "reExportedOn": "FloatingMapHandle.setSubjectMarkers (plus getSubjectMarkers), and from the package barrel as the SubjectMarker type",
+        "signature": "setSubjectMarkers(markers: Array<{ id?: string|number; longitude?: number; latitude?: number; lng?: number; lat?: number; role?: 'primary'|'secondary'; label?: string }>): void",
+        "contract": [
+          "The argument is the COMPLETE marker set. Passing [] or omitting it clears every marker.",
+          "Idempotent and order-independent.",
+          "Safe to call before the style loads - the set is stashed and replayed on the map `load` event, the same way overlays are.",
+          "Entries without finite coordinates are DROPPED rather than drawn at 0,0.",
+          "role defaults to 'primary'; label defaults to 'A' for primary and 'B' for secondary; an explicit label always wins.",
+          "This lane NEVER moves the camera and never reads parcel feature-state. P-39 owns the fly and the subject state and calls this with resolved coordinates."
+        ],
+        "zOrder": "raiseSubjectMarkers() re-lifts the four layers after applyOverlays and applyLayerVisibility, because reconcileOverlays and reorderGisLayers both call moveLayer and would otherwise bury the SUBJECT role."
+      },
+      "aVersusB": "Property A is a solid amber bullseye; property B is a hollow ring (zero-radius core, thicker ring stroke). SHAPE carries the distinction, not hue, so the pair survives the glyph endpoint being unavailable and so the taxonomy's reserved SUBJECT amber is not duplicated into a second reserved colour. text-font is ['Noto Sans Medium'], probed 200 at the configured protomaps endpoint on 2026-08-18 ('Open Sans Regular' and 'Noto Sans Bold' both return 404 there, so a wrong stack would have drawn nothing silently)."
+    }
+  ],
+
+  "filesChanged": {
+    "new": [
+      { "path": "packages/map-renderer/src/map/land-use-classes.js", "why": "the PTAD classifier, the DATA palette, and the legend rows, defined together so a palette edit cannot leave a stale key" },
+      { "path": "packages/map-renderer/src/map/fema-zones.js", "why": "the NFHL classifier, the nine-class zone table, the ordinal ramp, and isInSfha" },
+      { "path": "packages/map-renderer/src/map/basemap-labels.js", "why": "the labels raster source/layer spec and the measurement that chose light_only_labels, split out of the .ts so it is unit-testable by node:test" },
+      { "path": "packages/map-renderer/src/map/subject-marker.js", "why": "marker rendering plus the P-39 seam" },
+      { "path": "packages/map-renderer/src/map/map-legend.js", "why": "the legend model plus a self-contained DOM control the renderer mounts, so both apps get the key from the same table that paints the map" },
+      { "path": "packages/map-renderer/src/map/color-metrics.js", "why": "the instrument the palette gates are measured with (OKLab delta-E, Machado CVD simulation, OKLCH, WCAG contrast)" },
+      { "path": "packages/map-renderer/src/map/expr-eval.js", "why": "a minimal MapLibre expression evaluator so the divergence tests actually RUN the paint expressions instead of string-matching them; throws on any unsupported operator so it cannot fail open" },
+      { "path": "packages/map-renderer/src/map/land-use-classes.test.js", "why": "divergence test over 118 corpus codes plus the palette gates" },
+      { "path": "packages/map-renderer/src/map/fema-zones.test.js", "why": "divergence test over the six measured live combinations plus twelve more of the published NFHL set, plus the ramp and budget gates" },
+      { "path": "packages/map-renderer/src/map/subject-marker.test.js", "why": "marker geometry, A/B shape distinction, z-order re-assertion, crash guard" },
+      { "path": "packages/map-renderer/src/map/map-legend.test.js", "why": "legend model, HTML escaping, and the labels-raster spec" }
+    ],
+    "modified": [
+      { "path": "packages/map-renderer/src/map/layer-role-taxonomy.js", "why": "DATA_LAND_USE_COLORS and CONTEXT_FEMA now derive from the two new tables so there is ONE paint authority; adds femaNfhlLineColorExpr and femaNfhlLineWidthExpr" },
+      { "path": "packages/map-renderer/src/map/gis-map-paint.js", "why": "landUse/flood expressions delegate to the new classifiers; LAND_USE_LEGEND and FEMA_LEGEND derive from the same tables; flood-zone gains a per-zone fill-opacity and a lineWidthExpr" },
+      { "path": "packages/map-renderer/src/map/gis-map-render.js", "why": "the fixture line layer honours paint.lineWidthExpr when present (data-driven line-WIDTH is safe; dasharray and gradient are not)" },
+      { "path": "packages/map-renderer/src/chrome/satelliteBase.ts", "why": "mounts the labels raster above the imagery and binds its visibility to the satellite toggle; adds layerAfter() so the labels anchor correctly" },
+      { "path": "packages/map-renderer/src/map-renderer.js", "why": "ADDITIVE: marker state, applySubjectMarkers, applyLegend, setSubjectMarkers/getSubjectMarkers, teardown, and the z-order re-lifts" },
+      { "path": "packages/map-renderer/src/FloatingMap.tsx", "why": "ADDITIVE: the SubjectMarker type and setSubjectMarkers/getSubjectMarkers on the handle" },
+      { "path": "packages/map-renderer/src/index.ts", "why": "ADDITIVE: barrel exports for the four new modules" },
+      { "path": "packages/map-renderer/src/chrome/index.ts", "why": "ADDITIVE: three label-id exports" },
+      { "path": "packages/map-renderer/src/live-gis.ts", "why": "the live FEMA overlay now takes its line-color and line-width from the per-zone expressions; the fill and opacity were already repointed via the taxonomy" }
+    ],
+    "outsideTheFourWorkItems": [
+      { "path": "apps/command-center/src/admin/workspace/tiles/liveGis.test.ts", "why": "an assertion required the FEMA opacity expression to contain the literal 'X500'. FEMA does not publish that FLD_ZONE value - the 500-year band is FLD_ZONE 'X' with ZONE_SUBTY '0.2 PCT ANNUAL CHANCE FLOOD HAZARD' (86 of 204 features in the live probe). The old paint matched a zone code that does not exist and the test locked it in. Re-pointed at the real fields, plus a second CC test asserting minimal-hazard land paints at opacity 0. FLAGGED because apps/command-center was not assigned to this lane." },
+      { "path": ".github/workflows/command-center-ci.yml", "why": "no workflow ran `pnpm --filter @hauska/map-renderer test`, so the shared package's node:test suite had never been a CI gate and every guard in it was decorative. Added as a step to the workflow that already triggers on packages/map-renderer/**. FLAGGED as outside the four work items." }
+    ],
+    "notTouched": [
+      "packages/map-renderer/src/chrome/mapToolsController.ts (lane P-42)",
+      "packages/map-renderer/src/chrome/MapTools.tsx (lane P-42)",
+      "packages/map-renderer/src/chrome/MapToolset.tsx (lane P-42)",
+      "packages/map-renderer/src/chrome/LayersControl.tsx (lane P-42)",
+      "apps/property-explorer/** (lanes P-39 and P-40)",
+      "ROLE_BUDGET in any form - no opacity constant was raised anywhere"
+    ]
+  },
+
+  "verificationVerbatim": {
+    "note": "Every command exit-bounded. No dev server, no watch mode, no tail.",
+    "mapRendererTest": {
+      "command": "pnpm --filter @hauska/map-renderer test",
+      "output": "ℹ tests 98\nℹ suites 6\nℹ pass 98\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0"
+    },
+    "mapRendererBuild": {
+      "command": "pnpm --filter @hauska/map-renderer build",
+      "output": "CJS dist\\index.cjs 237.45 KB\nCJS ⚡️ Build success in 50ms\nESM dist\\index.js 226.08 KB\nESM ⚡️ Build success in 50ms\nDTS ⚡️ Build success in 1651ms\nDTS dist\\index.d.ts 92.32 KB"
+    },
+    "propertyExplorerTest": {
+      "command": "pnpm --filter property-explorer test",
+      "output": " Test Files  79 passed (79)\n      Tests  975 passed (975)"
+    },
+    "commandCenterTest": {
+      "command": "pnpm --filter command-center test",
+      "output": " Test Files  24 passed (24)\n      Tests  196 passed | 1 skipped (197)"
+    },
+    "propertyExplorerTypecheck": {
+      "command": "pnpm --filter property-explorer exec tsc --noEmit",
+      "output": "(no output)",
+      "exitCode": 0
+    },
+    "ciCheckRuns": {
+      "command": "gh api repos/empressaioemail-tech/hauska-map/commits/9b3cdaf/check-runs --jq '.check_runs[] | \"\\(.name)\\t\\(.status)\\t\\(.conclusion)\"'",
+      "output": "test\tcompleted\tsuccess\nTypecheck\tcompleted\tsuccess\nTest\tcompleted\tsuccess"
+    }
+  },
+
+  "countsWithTheirCountingRules": [
+    { "count": 204, "of": "FEMA NFHL polygon features", "rule": "one live POST to /brokerage/v1/map-data/gis-layer with bbox west -97.36 south 30.08 east -97.28 north 30.14; every returned feature counted, none sampled" },
+    { "count": 6, "of": "distinct FLD_ZONE + ZONE_SUBTY + SFHA_TF combinations in that viewport", "rule": "cross-tabulated over all 204 features; previously rendered as 3 colours, now 6 distinct paint buckets" },
+    { "count": 203, "of": "parcel features on tile z16/15051/27015", "rule": "MVT decode of the single tile covering downtown Bastrop; every feature counted" },
+    { "count": 53, "of": "features on that tile that fell through to the old 'other' orange-brown", "rule": "26.1 percent of 203; comprises XV exempt 40, C1 vacant 8, no-code 5" },
+    { "count": 15286, "of": "parcel features scanned for land-use coverage", "rule": "MVT decode of eight named z14 tiles (Bastrop 3762/6753, Austin 3743/6745, Houston 3851/6772, Dallas 3786/6611, Midland 3546/6653, Caldwell 3747/6775, Hays-west 3727/6757, San Antonio 3709/6789); every feature in each tile counted" },
+    { "count": 9368, "of": "those features carrying NO landUseCode", "rule": "61.3 percent of 15,286; the absence is whole-county (Houston 48201 4061 of 4061, Midland 48329 2715 of 2715)" },
+    { "count": 141, "of": "distinct landUseCode values in the archive", "rule": "PMTiles tilestats for parcels.b692c6534d26.pmtiles; the published value list is capped at 100, the distinct count is 141" },
+    { "count": 118, "of": "codes run through the land-use divergence test", "rule": "the union of the tilestats-published values and the 51 distinct codes measured in the eight-tile scan" },
+    { "count": 9.7, "of": "OKLab delta-E between the old vacant #c98f5e and the old commercial #ff8c1a", "rule": "unsimulated vision, delta-E x100, against a floor of 15" },
+    { "count": 8.6, "of": "worst all-pairs CVD delta-E across the new seven categorical land-use slots", "rule": "min of protanopia and deuteranopia, Machado 2009 severity 1.0, all 21 pairs; target is 8" },
+    { "count": 15.6, "of": "worst all-pairs normal-vision delta-E across the same seven", "rule": "unsimulated vision, all 21 pairs; hard floor is 15" }
+  ],
+
+  "constraintsHonored": [
+    "Read _catalog/parcel_fact_sheet_contract/CONTRACT_RULES.md in full before touching anything, invariant I6 especially.",
+    "Read 90_runbooks/AGENT_CONTRACT.md and 90_runbooks/DEV_PROCESS.md in full before any work.",
+    "Worked in the isolated worktree /p/hauska-map-worktrees/ss-w3-map-legibility on branch ss/w3-map-legibility, based on origin/main 5bf06ec.",
+    "Pushed the branch immediately after the first commit, then kept working.",
+    "Opened a PR against main. DID NOT MERGE. DID NOT DEPLOY. DID NOT push to main.",
+    "Every verification command exit-bounded: builds, test runs, one-shot HTTP probes, and a bounded 40-iteration CI poll. No watch, no tail, no server.",
+    "Did not touch any file the dispatch assigned to lanes P-39, P-40 or P-42.",
+    "Verified Command Center's render path: its suite runs the renderer build first and is green at 196 passed.",
+    "Two CP artifacts filed at the exact dispatch paths before this close.",
+    "Verified at source rather than trusting the dispatch's context block - and reported where the dispatch was wrong.",
+    "No sub-agents spawned. This lane executed as the deepest worker in its own context, as instructed."
+  ],
+
+  "correctionsToTheDispatch": [
+    {
+      "dispatchClaim": "Real Texas district codes (C, D, E, F, GC, SF-1, MU) match nothing and all fall through to C.other.fill. They are orange because they are all classed unclassified, not because anyone chose orange four times.",
+      "quotedSource": "packages/map-renderer/src/map/gis-map-paint.js at 5bf06ec, landUseFillColorExpr: after the eight `[\"==\", code, ...]` branches the expression continues with `[\"!=\", [\"index-of\", \"commercial\", desc], -1], C.commercial.fill` and fifteen further description keyword branches before reaching `C.other.fill`.",
+      "correction": "The CODE ladder does miss everything, but a DESCRIPTION keyword ladder underneath it catches roughly 74 percent of a real Bastrop tile. Measured on z16/15051/27015: F1 (81 features) hits 'commercial'; A1/A2/A3 (58) hit 'single'; B2 (6) hits 'multi'; E2 (1) hits 'farm'. Only 53 of 203 features (26.1 percent) actually reach C.other.fill.",
+      "whyItStillMatters": "The surviving defects are arguably worse than the one described. C1 vacant lands on #c98f5e and F1 commercial on #ff8c1a - two oranges 9.7 delta-E apart, which is literally 'C-D-E-F are all orange'. E1 rural paints IDENTICALLY to A1 single-family because 'Rural single-family residential (farm/ranch improvement)' also contains 'single'. And XV exempt (a positive determination, 40 features) paints IDENTICALLY to the 5 features with no code at all, which is DEV_PROCESS 4.3 violated in paint. The remedy is unchanged."
+    },
+    {
+      "dispatchClaim": "Real Texas district codes (C, D, E, F, GC, SF-1, MU)",
+      "correction": "GC, SF-1 and MU are municipal zoning district codes. The browse corpus does not carry municipal zoning at all; the PMTiles vector layer's only land-use field is `landUseCode`, which carries county CAD state-category codes. Verified from the archive's own tilestats and from decoded tiles.",
+      "consequence": "The LAYERS row is labelled 'Zoning / land use' but paints assessor classification. Logged as backlog item W3-B2 for an operator ruling on the label."
+    },
+    {
+      "dispatchClaim": "Only AE and X_500 currently have distinct subcodes in GIS_LAYER_PAINT.",
+      "correction": "True of the FIXTURE table in hauska-map-style.js, but that table is not what Smart Site renders. The live FEMA overlay is painted by femaNfhlFillColorExpr in layer-role-taxonomy.js, whose match keys 'X' and 'X500'. 'X500' is not a value FEMA publishes; the real 500-year band is FLD_ZONE 'X' with ZONE_SUBTY '0.2 PCT ANNUAL CHANCE FLOOD HAZARD'. So the live surface matched a zone code that does not exist, and a Command Center test asserted on that same non-existent code."
+    }
+  ],
+
+  "gatesThatFiredOnTheirOwnAuthor": [
+    {
+      "gate": "the reserved-hue clearance test in land-use-classes.test.js",
+      "firedOn": "my first honest-absence neutral #606a75, which measured 13.6 delta-E from the FEMA 100-year fill against a 14 floor",
+      "resolution": "re-stepped to a NEUTRAL dark grey #5a5852; nearest reserved hue is now 14.4 delta-E and the two land-use greys sit 17.2 apart",
+      "significance": "DEV_PROCESS 2.2 - a gate is trusted only once it has been seen to fire for the right reason. This one fired on its author before a reviewer saw it."
+    },
+    {
+      "gate": "the existing Command Center liveGis suite",
+      "firedOn": "the 'X500' assertion described above",
+      "resolution": "assertion corrected to the real published fields, plus a new test asserting the OUT class paints at opacity 0"
+    }
+  ],
+
+  "whatRemainsOpen": [
+    {
+      "id": "OPEN-1",
+      "item": "CODE-DONE is not CUSTOMER-DONE",
+      "detail": "Nothing here has been seen on a live surface. The dispatch forbade deploying, so no grade exists. The four items most worth an eyeball once this is deployed: (a) whether the CARTO label glyphs actually read over Bastrop rooftops, since both candidate label sets have MID-luminance text and only the halo does the separating; (b) whether the seven-class choropleth reads at DATA fill-opacity 0.22 over imagery, or whether the stroke ends up carrying all of it; (c) whether empty minimal-hazard land reads as 'outside the floodplain' rather than as 'the layer is off'; (d) whether the legend chip collides with PE or CC chrome on a real screen."
+    },
+    {
+      "id": "OPEN-2",
+      "item": "Exempt folded into 'other classified' - operator ruling owed",
+      "detail": "Exempt is 40 of 203 features on the downtown Bastrop tile, so it is visually chunky, and it now shares a low-chroma warm grey with utility, minerals, personal property, mobile home and inventory. Seven categorical classes is the measured ceiling. If the operator wants exempt as its own hue the honest options are (a) name which of the seven loses its hue, or (b) accept a normal-vision delta-E of 14.5 against a floor of 15 with mandatory secondary encoding. This is a ruling, not a lane call."
+    },
+    {
+      "id": "OPEN-3",
+      "item": "The marker seam is exposed but nothing calls it yet",
+      "detail": "renderer.setSubjectMarkers exists, is tested, and is re-exported on FloatingMapHandle, but lane P-39 owns the camera fly and the subject/compare state and has to bind to it. Until P-39 lands, the operator's 'I hit find and cannot find the property' is only half answered: the marker CAN be drawn, but nothing asks for it."
+    },
+    {
+      "id": "OPEN-4",
+      "item": "PR 171 is open and unmerged by instruction",
+      "detail": "All three CI check-runs report the conclusion string 'success'. Merge is the planner's call."
+    }
+  ],
+
+  "backlogFindings": [
+    {
+      "id": "W3-B1",
+      "where": "packages/map-renderer/src/map/gis-map-render.js, upsertGisLayer",
+      "finding": "the `meshMode && layerKey === 'parcel-polygon'` branch computes `fillOpacityExpr(layerKey, true) * saturation` with no type guard. That call returns a MapLibre `case` ARRAY for parcel-polygon, so the multiply yields NaN and setPaintProperty receives NaN. The two neighbouring branches DO guard with `typeof baseOpacity === 'number'`.",
+      "status": "pre-existing and latent; fixture-stack only, and PE runs useFixture=false",
+      "leftAloneBecause": "outside the four work items, and the fixture mesh path is shared with Command Center",
+      "proposedDisposition": "one-line guard mirroring the branch six lines below it",
+      "size": "trivial"
+    },
+    {
+      "id": "W3-B2",
+      "where": "the LAYERS panel row labelled 'Zoning / land use'",
+      "finding": "it paints county CAD state-category codes, which are an assessor classification rather than a municipal zoning district. The fixture inspect card already says so in small print and the new legend note repeats it, but the row label still says Zoning.",
+      "proposedDisposition": "operator ruling on whether to rename the row",
+      "size": "small"
+    },
+    {
+      "id": "W3-B3",
+      "where": "ROLE_BUDGET.CONTEXT.dimWhenDataVisible in layer-role-taxonomy.js",
+      "finding": "the taxonomy defines a 0.45 dim factor for CONTEXT layers when a DATA layer is visible, and contextFillOpacity() implements it, but NOTHING on the live path calls it with dataVisible=true. Turning zoning on therefore does not dim the flood layer as the taxonomy says it should.",
+      "proposedDisposition": "wire it or delete the constant - a rule with no caller is the shape this repo keeps finding",
+      "size": "small"
+    },
+    {
+      "id": "W3-B4",
+      "where": "the browse parcel corpus",
+      "finding": "61.3 percent of 15,286 sampled features carry no landUseCode, and the absence is whole-county rather than scattered (Houston 48201 4061 of 4061; Midland 48329 2715 of 2715; Austin 48453 2090 of 3458). The map now says so honestly instead of painting it as 'other', but the coverage gap itself is an acquisition question.",
+      "proposedDisposition": "route to the Texas plan of record",
+      "size": "programme-level"
+    },
+    {
+      "id": "W3-B5",
+      "where": "packages/map-renderer test wiring",
+      "finding": "the shared package's node:test suite ran in NO workflow before this PR. Fixed here for command-center-ci.yml, but property-explorer-ci.yml still does not run it, so the gate depends on a CC-triggering path change.",
+      "proposedDisposition": "add the same step to property-explorer-ci.yml, which already triggers on packages/map-renderer/**",
+      "size": "trivial"
+    }
+  ],
+
+  "docRepoEdits": {
+    "note": "Doc_repo commits are planner-owned per AGENT_CONTRACT section 6. These files are written and left UNCOMMITTED.",
+    "files": [
+      "_inbox/2026-08-18_ss-w3_cp1.json",
+      "_inbox/2026-08-18_ss-w3_cp2.json",
+      "_inbox/2026-08-18_ss-w3_close.json"
+    ]
+  }
+}

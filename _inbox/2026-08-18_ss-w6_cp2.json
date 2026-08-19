@@ -1,0 +1,104 @@
+{
+  "lane": "SS-W6",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint — build landed, suite green, PR pending",
+  "planRows": ["P-44"],
+  "repo": "hauska-map",
+  "branch": "ss/w6-cc-truth-console",
+  "commits": ["b2be70c feat(command-center): County Manifest subtabs, derivation audit, serving-sweep panel (P-44)", "b6a5e9a test(command-center): pin the County Manifest and serving-sweep instruments (P-44)"],
+  "writtenAt": "2026-08-18T23:35:00Z",
+
+  "suite": {
+    "baselineBeforeAnyEdit": "Test Files 24 passed (24), Tests 195 passed | 1 skipped (196)",
+    "afterBuild": "Test Files 29 passed (29), Tests 274 passed | 1 skipped (275)",
+    "command": "pnpm --filter command-center test",
+    "productionBuild": "pnpm --filter command-center build — vite v6.4.3, 119 modules transformed, built in 3.39s",
+    "typecheck": "apps/command-center/node_modules/.bin/tsc --noEmit -p tsconfig.json — zero errors in any file this lane added or edited; the only remaining errors are the pre-existing debt the CI workflow already names (ActiveContextBar, map-renderer .js declaration files) plus the repo-wide jest-dom matcher typing gap that predates this lane"
+  },
+
+  "measuredAgainstLivePayload": {
+    "source": "GET https://cmdcenter-blush.vercel.app/api/spine/cortex/api/county-ledger, 2026-08-18, 2,121,656 bytes, HTTP 200",
+    "denominator": "3556 manifest cells = 254 counties x 14 rails",
+    "deadIndicators": {
+      "count": 3,
+      "detail": "hasWriter distinct values ['true']; atomFamilyState distinct values ['present']; isPartial distinct values ['false'] — each constant across all 3556 cells, so the NO WRITER tag, the NO ATOM tag and the partial legend entry cannot fire",
+      "consequence": "three controls that look on and are off. The console now says so on the same screen."
+    },
+    "selfContradictions": {
+      "count": 2,
+      "denominator": 3556,
+      "detail": "48021:envelope — honestCoveragePct 99.77 clears thresholdPct 90 while displayState is not-yet; 48021:zoning — displayState satisfied-present with verifiedByInstrument null",
+      "zeroClassesAlsoMeasured": "satisfied-present-below-threshold 0 of 3556; satisfied-absent-with-no-basis 0 of 3556 (all 76 established absences carry a basis) — measured, not assumed"
+    },
+    "advertisedButAbsentDisplayStates": ["no-atom"],
+    "railCeilingsBelowTheGridDenominator": {
+      "gridDenominator": 254,
+      "rows": [
+        { "rail": "owner", "ceiling": 15, "basis": "cad_property DISTINCT county_fips (CAD roll ingest)" },
+        { "rail": "rrc-wells", "ceiling": 1, "basis": "RRC public GIS Harris County mirror (lib/adapters/src/federal/texas-rrc.ts)" },
+        { "rail": "rail-corridor", "ceiling": 253, "basis": "txgio_parcel DISTINCT county_fips" },
+        { "rail": "mud", "ceiling": 186, "basis": "tx_special_district DISTINCT county_fips (TCEQ WaterDistricts ingest)" }
+      ],
+      "note": "9 of 14 rails carry maxCountiesReachable null with sourceBasis 'no capability probe defined for this rail'. The console shows the ceiling only where a probe defines one and says nothing where none does, rather than defaulting to 254."
+    },
+    "countyNameOrigins": { "api": 10, "rosterFilled": 244, "unresolved": 0, "denominator": 254 },
+    "rosterDivergenceTest": "roster vs API on the 10 counties the API names: 10 agree, 0 disagree. Roster covers all 254 live FIPS with 0 extras."
+  },
+
+  "adversarialReviewOfOwnWork": [
+    {
+      "found": "Importing buildPanelHash from useActivePanel dragged PanelRegistry, and therefore every panel Component and map-renderer's stylesheet, into the County Manifest unit test. The suite went from 24 passed to 1 failed suite with 'Unknown file extension .css' — a REGRESSION I introduced, caught by running the suite rather than by reasoning about it.",
+      "fix": "Extracted the hash format to panelHash.ts, which imports nothing, and re-exported it from useActivePanel. ONE implementation, two import paths — deliberately not two implementations, because a duplicated hash format is a paired control that needs a divergence test to stay honest.",
+      "rule": "DEV_PROCESS 2.4"
+    },
+    {
+      "found": "My first dead-indicator test asserted 2 indicators on a payload where 3 are constant. The test was wrong and the detector was right.",
+      "fix": "Corrected the test to 3 and to name isPartial explicitly, after confirming against the live payload that isPartial is false on all 3556 cells."
+    },
+    {
+      "found": "My first rail-ceiling test used a single-county payload, where a ceiling of 1 equals the grid denominator of 1, so the ceiling correctly did not render and the test failed.",
+      "fix": "Set totalCounties to 254 to mirror the live grid denominator. The predicate is right: a ceiling equal to the denominator is not worth screen space, one below it is."
+    },
+    {
+      "found": "The parcel-open test found three buttons for one id, because the same example ids render in the opened absence card, the county contradiction list and the statewide contradiction list.",
+      "fix": "Scoped the assertion and pinned the count at 3 — one id with three routes in is intended, and now asserted rather than accidental."
+    },
+    {
+      "risk": "The reconciliation could still be read as a single score if a future edit adds a summary number.",
+      "standing": "buildReconciliation returns rows only; there is no combined figure anywhere in ServingSweepPanel.tsx, and the test asserts a 100% rail and a 12% served reading both survive with an +88.0 pt gap. An averaged 56% would pass a naive render test, so the test asserts against the average by value."
+    },
+    {
+      "risk": "Rendering the reconciliation for 254 counties x 9 paired fields is 2286 rows.",
+      "handled": "The table renders the worst 60 by gap and states 'showing 60 of N rows' with the full count; the ranking is computed over all rows, so the top of the list is the true worst, not the first 60 sorted."
+    }
+  ],
+
+  "briefingContradictions": [
+    {
+      "briefingSaid": "GET /api/county-ledger is served from county_facet_coverage, written as a side effect of block runs by upsert-county-facet-ledger.mjs whose DEFAULT_FACETS is only ['zoning','envelope'].",
+      "atSource": "The mechanism is right and the writer set is understated. envelope carries a coverage number on 19 of 254 cells, consistent with the named script. But geometry, cad, landuse, owner and mud each carry 254 coverage numbers with lastVerifiedAt and a NAMED verifying instrument that is not that script: B2_cp2_geometry_scorer_apply.mjs, score_cad_rails_fast.mjs (cad, landuse, owner), countyFloodScoreCli.ts and l16-score-mud.mjs. zoning carries 254 with verificationMethod 'roster-load' and no lastVerifiedAt at all.",
+      "disposition": "Reported, not silently corrected. It does not change the console work; it does change who has to run what to move the manifest."
+    },
+    {
+      "briefingSaid": "hasWriter and atomFamilyState are HAND-DECLARED, so the manifest drifts against the engine in both directions.",
+      "atSource": "Confirmed and worse than stated: both are not merely hand-declared, they are UNIFORM. Every one of the 3556 cells says hasWriter true and atomFamilyState present. The declaration currently carries no information at all, and the console controls driven by it cannot fire."
+    },
+    {
+      "briefingSaid": "Lane P-43 produces the sweep data; build against the frozen type and do not wait on them.",
+      "atSource": "P-43's own dispatch (work item 7) delivers the statewide report as a dated ARTIFACT first, and no sweep route exists on the deployed cortex-api — /api/serving-sweep returns HTTP 200 text/html 918 bytes, the SPA fallthrough. So an endpoint-only consumer would have had nothing to render even after P-43 closes. The panel takes both an endpoint probe and a loaded artifact, each labelled."
+    }
+  ],
+
+  "openAtCp2": [
+    "PR not yet opened at the time of writing; opened immediately after this artifact.",
+    "No sweep data exists yet, so the sweep subtab has been exercised against fixtures and a hand-loaded artifact, never against P-43 output.",
+    "Items for the planner that live outside apps/command-center are listed in the close artifact, not fixed here."
+  ],
+
+  "constraintsHonored": [
+    "only apps/command-center/** touched — git status shows no file outside it",
+    "branch pushed immediately after the first commit, then work continued",
+    "no merge, no deploy, no push to main",
+    "every verification exit-bounded: curl, pnpm test, pnpm build, tsc, node one-shots. No watch, no dev server, no tail"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "lane": "SS-W5",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "planRow": "P-43",
+  "repo": "hauska-engine",
+  "branch": "ss/w5-serving-sweep",
+  "worktree": "/p/hauska-engine-worktrees/ss-w5-serving-sweep",
+  "at": "2026-08-18T23:35:00Z",
+  "subAgents": "NONE. The dispatch's first line forbids spawning, nesting or delegating. Both adversarial checkpoints are therefore self-review against the contract and the dev process, not sub-agent review, and this field says so rather than leaving the absence to look like an omission.",
+
+  "missionPremise": "OPS-16 amendment A-018 (2026-08-18) opened P-43 as a statewide sweep of what the product SERVES, explicitly distinct from the County Manifest's did-a-writer-run question, after the operator REFUSED a golden-parcel regression set because sampling narrowed scope on Bastrop and certified a broken county. The lane's opening contradiction: OPS-16 row P-27 records situs as 99.3% populated while the operator has missing addresses on single-family parcels in Bastrop (48021:36521 = 1503 Farm St on the CAD roll) and Travis (17005 Simsbrook Dr, Pflugerville). Both cannot be true.",
+
+  "servingPathTraced": {
+    "verifiedAtSource": true,
+    "chain": [
+      "browser -> GET /api/spine/property-atoms/:parcelNodeId/facets (Vercel serverless, hauska-map apps/property-explorer/api/_lib/pe-property-atoms.ts)",
+      "PROPERTY_ATOM_PATH=1 -> retrieval-api GET /property-nodes/:id/atom-chain (hauska-engine services/retrieval-api/src/server.ts:349 -> HybridRetrieval.getPropertyAtomChain, packages/retrieval/src/index.ts:330)",
+      "in parallel -> cortex-api GET /api/brokerage/v1/place/node/:id/facets (legacy-design-tools artifacts/api-server/src/routes/brokerageNodeFacets.ts) reading place_layer_snapshots tier1+tier2",
+      "adaptAtomChainToBakedFacets -> mergeBakedBaseFacts -> wire body",
+      "browser deriveBakedCardModel (hauska-map apps/property-explorer/src/lib/baked-facets.ts:273) -> card facet states"
+    ],
+    "productionModeProof": "GET https://property-explorer-xi.vercel.app/api/spine/property-atoms/48021:36521/facets returned HTTP 200 with X-Pe-Read-Path: atom-chain-warm on 2026-08-18. PROPERTY_ATOM_PATH=1 is VERIFIED, not assumed.",
+    "stores": {
+      "atoms": "hauska_mcp @ ep-lucky-truth (zoning-fact, setback-rule, buildable-envelope, flood-hazard-fact, parcel-node, cad-parcel-roll)",
+      "cortex": "neondb @ ep-lucky-truth (place_layer_snapshots node-facets:tier1 4,606,751 rows / node-facets:tier2 608,414 rows; txgio_parcel 16,428,786 rows)"
+    }
+  },
+
+  "designDecision": {
+    "chosen": "Bulk-read both stores per county and run the REAL serving transforms in process, vendored verbatim from hauska-map@d3510a6, validated by a live-wire parity control.",
+    "rejected": "Driving the sweep over HTTP against the deployed endpoint. Rejected on arithmetic: roughly 10M Texas parcels at one round trip each is not a sweep, it is a denial-of-service against our own production surface. Rejected alternative two: querying the store directly and calling that the answer, which the dispatch forbids by name because the store-to-serve gap IS the measurement.",
+    "howTheShortcutIsAvoided": "Nothing in the sweep re-implements a serving decision. src/serving-sweep/vendor/ holds byte-identical copies of the five files that decide what is served, with a README naming the source SHA and the only four edits (import specifiers, each marked VENDOR-PATH-REWRITE inline). The retrieval half imports isStaleBastropCitySetbackRule from @hauska-engine/adapters and envelopeServeIndependentOfStaleSetback from packages/retrieval, the same modules the live service imports."
+  },
+
+  "controlsBuiltAndPROVENABLETOFIRE": [
+    {
+      "control": "live-wire parity (src/serving-sweep/__tests__/live-parity.test.ts)",
+      "asserts": "the offline composition equals the DEPLOYED wire body, on 10 parcels spanning 3 counties (48021 Bastrop, 48453 Travis, 48055 Caldwell) and all 3 read paths (atom-chain, atom-chain-warm, atom-pending)",
+      "result": "12 tests passed",
+      "negativeTest": "mutating one fixture's served zoning district made it fail with 1 failed / 11 passed, then restoring made it pass again. The control is proven able to fire, per DEV_PROCESS 2.2.",
+      "notAGoldenSet": "This certifies the INSTRUMENT, not a county. A golden set certifies a county from a handful of parcels, which is exactly what the operator refused. The sweep it validates has no scope knob to narrow: it visits every parcel on the roster."
+    },
+    {
+      "control": "assembly divergence (src/serving-sweep/__tests__/assembly-divergence.test.ts)",
+      "asserts": "the bulk chain assembly and the live HybridRetrieval.getPropertyAtomChain agree on every slot across 7 branch cases including the R13/R27 stale-setback suppression, the depth-warm survival carve-out, the Elgin non-suppression case, a retired atom and a prefix collision",
+      "result": "9 tests passed",
+      "negativeTest": "deleting the R27 dependent-envelope invalidation made the stale-breadth-bake case fail, then restoring made it pass. Proven able to fire.",
+      "why": "DEV_PROCESS 2.4 — one rule with two implementations needs a divergence test, not two careful edits. CTRL-1 was this exact shape."
+    }
+  ],
+
+  "declaredDeviationsFromTHELIVEPATH": [
+    "No read-time calibration overlay (applyPropertyCalibrationAtRead). It is a per-parcel read against a separate cortex-side table, seeded only for the Hays calibration set. Named in the resolverVersion string so it travels with every record.",
+    "Envelope geojson is replaced by a feature-count stand-in. Every read of geojson on the serving path is a null-ness test and no coordinate is ever inspected, so the substitution is behaviour-preserving by inspection; the parity test additionally asserts the feature COUNT matches the live body.",
+    "The three transport failure branches (retrieval HTTP 401, transient upstream, JSON parse failure) are UNREACHABLE offline, so the sweep never emits `unresolved` from them. Stated in bff-flow.ts so a zero unresolved count is never read as evidence that the live path does not fail.",
+    "atomsByType and attachingRoads are assembled by the live chain and read by NO consumer on this endpoint, so the sweep does not assemble them. Named as a scope boundary, not omitted."
+  ],
+
+  "adversarialFindingsAgainstMYOWNDESIGN": [
+    {
+      "finding": "First cut counted each contradiction occurrence, so a parcel raising field-unavailable-but-present-upstream twice (dropped flood AND unnamed county) counted twice and could push a per-parcel rate above 100%.",
+      "fix": "contradictions are now deduped per parcel before tallying."
+    },
+    {
+      "finding": "First cut attached a tier2 overlay whenever a Tier-2 row existed. The real route (extractTier2Overlay) treats a Tier-2 row with no flood OBJECT as no overlay at all, so the sweep would have counted flood as served where the route would not.",
+      "fix": "the runner now mirrors extractTier2Overlay exactly."
+    },
+    {
+      "finding": "Counting a served situsAddress of \", ,\" as PRESENT would have reproduced the exact lie the lane exists to expose. Counting it as ABSENT without publishing the card's own verdict would have hidden a definitional choice inside a headline.",
+      "fix": "both numbers are emitted — the sweep's legibility rule and the card's own present-count — so the divergence is a published figure rather than a definition chosen quietly."
+    }
+  ],
+
+  "constraintsHonored": {
+    "oneCountyEndToEndBeforeWaves": "48021 Bastrop is running as the single proving county; no wave is scoped until it lands and its lessons are reported.",
+    "neverSample": "The county roster is the UNION of two independently measured id sets (62,257 baked Tier-1 snapshots, 62,398 parcel-node atoms, union 62,399, in-both 62,256). Every id on it is resolved. Denominators are measured, never subtracted, per DEV_PROCESS 1.3.",
+    "heavyScanSerialization": "One scan at a time. pg_stat_activity showed 0 non-idle queries on the cortex database at announce time. The one full-table scan run so far (txgio_parcel situs reconciliation) was announced in the progress artifact before it started and confirmed after.",
+    "writeSlot": "NONE TAKEN. The lane is read-only on both databases; it issues no INSERT, UPDATE, DELETE or DDL.",
+    "watchRegistered": "ss-w5-serving-sweep in _catalog/watch_registry.json, path P:/tmp/ss_w5_20260818/progress.json, maxQuietMin 30, registered BEFORE the first long runner started.",
+    "exitBounded": "Every command run so far terminates on its own. No watch mode, no tail -f, no non-exiting server. Every unbounded-shaped query carries a county filter or a statement_timeout."
+  },
+
+  "earlyFindingsPENDINGFULLCOUNTY": [
+    "The 99.3% figure reproduces under its own counting rule and is misleading as a statement about served addresses. txgio_parcel statewide, 2026-08-18, 16,428,786 rows across 253 counties: 16,284,417 non-null (99.12%), 16,284,417 non-null-and-non-blank (identical — the sentinel is not a blank), 14,974,137 legible (91.14%), 1,310,280 non-null with ZERO alphanumeric characters (7.98%).",
+    "The sentinel is the literal string \", ,\" and it originates in the TxGIO StratMap 2025 source column itself, not in our bake. Bastrop txgio_parcel prop 36521 carries situs_address = \", ,\" with null city and null state.",
+    "The address IS in our system. The cad-parcel-roll atom for 48021:36521 carries situsAddress \"1503 FARM ST\", situsCity \"BASTROP\", situsZip \"78602\", vintage data-export-01.14.2026. It rides the served atom chain and the PE adapter never reads it.",
+    "The Tier-2 FEMA flood overlay is DROPPED on the production read path. mergeBakedBaseFacts composes from the atom response and never copies tier2 across, so the live body for 48021:36521 has no tier2 key at all while the store holds flood status in-sfha zone AO.",
+    "Two flood code paths disagree on the same parcel. place_layer_snapshots tier2 (adapterKey fema:nfhl-flood-zone, vintage 2026-07-21) says zone AO for 48021:36521; the flood-hazard-fact atom (sourceAdapter fema-nfhl-bulk-v1, sourceVintage NFHL_48_20260101) says AE. This is the X-ray PDF defect the frozen contract quotes, reproduced at source."
+  ],
+
+  "openAtCP1": [
+    "Full 48021 sweep in flight; all field tallies, contradiction counts and absence clusters below are provisional until it lands.",
+    "Second county (48453 Travis) not started; the dispatch requires the one-county lesson to be reported first.",
+    "Statewide per-county situs aggregate not yet run; it is the next announced heavy scan."
+  ]
+}

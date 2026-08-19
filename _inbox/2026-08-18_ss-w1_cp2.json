@@ -1,0 +1,42 @@
+{
+  "lane": "SS-W1",
+  "checkpoint": "CP2",
+  "planRows": ["P-39"],
+  "repo": "hauska-map",
+  "branch": "ss/w1-subject-factsheet",
+  "at": "2026-08-18",
+  "missionPremise": "The 2026-08-18 QA pass filed 21 defects that trace to one root: Smart Site has no single subject, and five code paths answer the same parcel questions independently. Sources: _dispatches/2026-08-18_ss-w1_dispatch.md, _catalog/parcel_fact_sheet_contract/CONTRACT_RULES.md (frozen).",
+  "completionPredicate": "See CP1. At CP2 the package, resolver, subject store, geometry centring, export seam, SearchBar fix, US geocode filter and verdict unification are landed on the branch with the suite green; what remains is the PR and the close.",
+  "scopeBasis": "SS-W1 owns packages/parcel-fact-sheet/**, apps/property-explorer/src/lib/**, SearchBar.tsx, ExplorerMap.tsx, api/**, and the verdict formatters it deletes. SS-W2 owns InspectCard/PropertyBriefPanel/SitePlanExportSection/TerrainExportSection RENDERING.",
+  "commits": [
+    "714df0f feat(parcel-fact-sheet): frozen contract as a workspace package",
+    "33696e9 feat(property-explorer): one resolver, one subject",
+    "79defa3 feat(property-explorer): exports resolve by sheet id; search carries the full target",
+    "e9def76 feat(property-explorer): the map follows geometry, and every entry point sets the subject",
+    "b2e56e3 refactor(property-explorer): one verdict composer, four deleted",
+    "ffd2ced ci(property-explorer): gate on the frozen fact-sheet contract"
+  ],
+  "verification": {
+    "packageTests": "pnpm --filter @hauska/parcel-fact-sheet test -> Test Files 1 passed (1) / Tests 15 passed (15)",
+    "appTests": "pnpm --filter property-explorer test -> Test Files 81 passed (81) / Tests 1009 passed (1009)",
+    "baselineForComparison": "origin/main at 5bf06ec: Test Files 79 passed (79) / Tests 975 passed (975)",
+    "typecheck": "pnpm --filter property-explorer exec tsc --noEmit -> clean (exit 0, no output)",
+    "build": "pnpm --filter property-explorer build -> vite built in 2.72s, 163 modules transformed",
+    "note": "Test count moved 975 -> 1009 and file count 79 -> 81 because two verdict-module suites were DELETED with their modules (brief-verdict.test.ts, share-verdict.test.ts) while five suites were added (fact-sheet package, resolver, geometry, subject store, export target)."
+  },
+  "adversarialReview": {
+    "cp2": [
+      "The geometry chain can still fail: a parcel with no baked envelope polygon, no situs address, and no live-parcel ring resolves to no centroid, and the contract makes geometry REQUIRED, so resolve() rejects and the card does not open. Today's code opens the card and leaves the map still. This is a deliberate behaviour trade named by invariant I5 and reported to the planner, not an oversight. The chain was widened (caller seed hint, baked polygon, authoritative placeKey, live ring, demoted address geocode) so the surface of that case is small.",
+      "Map clicks paint their card instantly and adopt the sealed sheet a moment later. Between those two moments the subject is the PREVIOUS parcel, so an export fired in that window is REFUSED with a target mismatch rather than run. Refusal is the correct failure, but it is a new user-visible state and the planner should know it exists.",
+      "Flood multiplicity is representable but NOT populated: the served tier2 facet is a scalar floodZone. The resolver widens it to a one-element set and stamps provenance.method 'single-zone-from-scalar' so the areaShare is never read as measured. The dispatch's item 9 cannot be fully satisfied client-side; it needs an engine-side multi-zone determination.",
+      "The InspectCard data-source swap was NOT done, on a source-grounded reason rather than time: the frozen contract cannot express what that card renders today. Provenance carries one source/sourceUrl and no atom DID list, so the AtomChip provenance popovers have no home; Setbacks has no per-axis governedBy or fieldNotes, so the setback X-ray disclosure has no home. Swapping the card onto the sheet as frozen would silently delete two shipped features. Reported, not worked around.",
+      "Compare's per-fact CELLS still read deriveBakedCardModel over a facets payload the compare tool fetches itself. Its headline now comes from the sealed sheet, and the R1-shaped adapter that fed the second composer is deleted, but the cell derivation is a remaining I2 gap. Named rather than hidden.",
+      "The US-only geocode filter drops features with NO countrycode, not only non-US ones. That exclusion set is stated in the module and covered by a test, per DEV_PROCESS ('an instrument's exclusion set is part of its contract'). If Photon ever omits countrycode for US addressable results this filter is too strict, and the single predicate isServedCountry is the one place to loosen it."
+    ]
+  },
+  "open": [
+    "PR not yet opened at CP2.",
+    "InspectCard still issues its own facets and buildable-envelope reads (I2 gap, blocked on a contract gap, see adversarialReview).",
+    "Compare per-fact cells still derive from a facets payload rather than the sheet."
+  ]
+}
