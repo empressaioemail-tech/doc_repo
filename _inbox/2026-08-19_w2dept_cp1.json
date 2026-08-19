@@ -1,0 +1,188 @@
+{
+  "artifact": "CP1",
+  "lane": "W2DEPT",
+  "planRow": "G-92",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "date": "2026-08-19",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/w2dept-dash",
+  "branchedFrom": "main @ c7d7980b98752fe6625e07da1e4e9b9921f67950",
+  "branch": "g92/department-domains",
+  "checkpointKind": "design / pre-build adversarial checkpoint",
+
+  "baseline": {
+    "command": "node --test src/*.test.mjs",
+    "result": "tests 273, suites 56, pass 273, fail 0",
+    "note": "measured on the clone at the dispatched SHA before any edit, so every red below this line is mine"
+  },
+
+  "seamAsRead": {
+    "gatingIsMandatory": "src/fixture-seam.mjs:268-279 assertDomainShape requires a non-empty gatedBy AND adapterKindById(gatedBy) to resolve; src/fixture-seam.mjs:372 composeDomain generates only when pack.fixtureGrants includes domain.gatedBy. There is no ungated generation path.",
+    "guardsRunAtTheSeam": "src/fixture-seam.mjs composeDomain runs assertRecordShape, assertNoRealWorldContent and assertDeclaredVocabulary over every returned record, and assertNoRealWorldContent over extras. A generator calls no guard. Extras deliberately skip the vocabulary guard because counting rules are prose.",
+    "formatsReplaceRatherThanExtend": "defineDomain is { formats: DEFAULT_FORMATS, ...spec } — a domain that declares formats REPLACES the default pair, so any domain using place must re-declare PLACE_LABEL_FORMAT itself.",
+    "fourStates": "ok, granted-empty, ungranted, no-fixture-source (DOMAIN_STATUSES). not-registered is the fifth and lives in composeDomainById, and is the only surviving meaning of \"not built\".",
+    "catalogAlreadyCorrected": "The build sheet says the adapter catalog is short by three (spireon, goto, powerbi). At source it is NOT: G-91 already added all three, src/adapters.mjs ADAPTER_KINDS.length === 10, asserted in src/adapters.test.mjs. This lane adds ZERO adapter kinds. Reporting a planner figure as wrong: the build sheet section \"Adapter catalog is short by three\" is stale as of c7d7980."
+  },
+
+  "domainsToBuild": [
+    {
+      "id": "police-cameras",
+      "lensId": "police",
+      "region": "Camera inventory",
+      "gatedBy": "verkada",
+      "recordType": "camera-device",
+      "recordIdFormat": "^FIX-CAM-\\d{4}$",
+      "plannedCount": 18,
+      "plannedCountingRule": "one record per generated verkada camera-device on the pack; plan is offline 1 + signal-loss 2 + firmware-due 3 + online 12",
+      "recordFields": [
+        "recordId", "kind", "recordType", "cityKey", "origin", "fixture", "fixtureBasis", "accessPolicy",
+        "deviceLabel", "status", "siteRef", "placement", "occupancyBand", "identityBasis", "inventoryBasis", "provenance"
+      ],
+      "newStatusSet": "DEVICE_STATUS_VALUES = offline(crit) / signal-loss(warn) / firmware-due(info) / online(ok, resolved)",
+      "declaredVocabulary": [
+        "offline", "signal-loss", "firmware-due", "online",
+        "occupancy not measured", "light", "moderate", "busy",
+        "Template Commons", "Fixture Ridge", "Example Crossing", "Sample Bend", "Placeholder Heights", "Specimen Yard",
+        "<CAMERA_IDENTITY_BASIS>", "<NOT_AN_INVENTORY_NODE_BASIS>"
+      ],
+      "declaredFormats": ["^FIX-CAM-\\d{4}$", "^[A-Z][A-Za-z ]+ camera \\d{2}$", "^SITE-\\d{2}$"],
+      "extras": ["metrics (per status, counted off records)", "sites (per siteRef, counted off records)", "excludedFamilies (positive statement of what is not generated, with basis)", "inventoryBasis"],
+      "privacyExclusion": "verkada lpr/plates and persons-of-interest are NOT generated and are declared in RECORD_SHAPES.verkada as required:false fields carrying a basis, so the exclusion sits in the contract and not only in prose"
+    },
+    {
+      "id": "fire-apparatus",
+      "lensId": "fire-ems",
+      "region": "Apparatus and stations",
+      "gatedBy": "firstdue",
+      "recordType": "fire-apparatus",
+      "recordIdFormat": "^FIX-FA-\\d{4}$",
+      "plannedCount": 12,
+      "plannedCountingRule": "one record per generated firstdue fire-apparatus on the pack; plan is out-of-service 1 + inspection-due 2 + in-shop 1 + in-service 8",
+      "recordFields": [
+        "recordId", "kind", "recordType", "cityKey", "origin", "fixture", "fixtureBasis", "accessPolicy",
+        "unitLabel", "apparatusType", "status", "stationRef", "stationLabel", "crewBasis", "provenance"
+      ],
+      "statusSet": "reuses VEHICLE_STATUS_VALUES rather than declaring a near-duplicate; apparatus readiness is the same four-band shape and a second set for one subject is the CTRL-1 shape (DEV_PROCESS 2.4)",
+      "declaredVocabulary": [
+        "out-of-service", "inspection-due", "in-shop", "in-service",
+        "Engine", "Ladder", "Rescue", "Tanker", "Brush truck", "Ambulance", "Command",
+        "<CREW_BASIS>"
+      ],
+      "declaredFormats": ["^FIX-FA-\\d{4}$", "^[A-Z][A-Za-z ]+ unit \\d{2}$", "^[A-Z][A-Za-z ]+ station \\d{2}$", "^STN-\\d{2}$"],
+      "extras": ["metrics (per status)", "stations (per stationRef, apparatus counted off records)"],
+      "personRule": "a granted FirstDue feed carries assigned crew; a generated record names nobody and says so in crewBasis, mirroring the operatorBasis pattern in src/domains/fleet-vehicles.mjs"
+    },
+    {
+      "id": "cip-projects",
+      "lensId": "public-works",
+      "region": "Capital projects",
+      "gatedBy": "powerbi",
+      "recordType": "capital-project",
+      "recordIdFormat": "^FIX-CIP-\\d{4}$",
+      "plannedCount": 16,
+      "plannedCountingRule": "one record per generated powerbi capital-project on the pack; plan is stalled 2 + at-risk 3 + in-progress 7 + complete 4",
+      "recordFields": [
+        "recordId", "kind", "recordType", "cityKey", "origin", "fixture", "fixtureBasis", "accessPolicy",
+        "subject", "phase", "status", "place", "scheduleOffsetDays", "scheduleLabel", "budgetBasis", "provenance"
+      ],
+      "newStatusSet": "PROJECT_STATUS_VALUES = stalled(crit) / at-risk(warn) / in-progress(info) / complete(ok, resolved)",
+      "newPhaseSet": "PROJECT_PHASE_VALUES = planning, design, bid, construction, closeout",
+      "declaredVocabulary": [
+        "stalled", "at-risk", "in-progress", "complete",
+        "planning", "design", "bid", "construction", "closeout",
+        "Drainage improvement", "Street resurfacing", "Water line replacement", "Wastewater lift station rebuild",
+        "Sidewalk connectivity", "Signal upgrade", "Park restroom rebuild", "Fleet facility expansion",
+        "Trail extension", "Bridge deck repair",
+        "Template Commons", "Fixture Ridge", "Example Crossing", "Sample Bend", "Placeholder Heights", "Specimen Yard",
+        "<BUDGET_BASIS>"
+      ],
+      "declaredFormats": ["^FIX-CIP-\\d{4}$", "^[A-Z][A-Za-z ]+ Block \\d+, Lot \\d+$", "^(due today|due in \\d+ days?|\\d+ days? past due)$"],
+      "extras": ["metrics (per status)", "phases (per phase, counted off records)", "budgetBasis"],
+      "moneyRule": "a CIP register is the one domain on this lane that naturally carries money, and it carries NONE. The absence is written positively in budgetBasis and declared in RECORD_SHAPES.powerbi as a required:false budget field with a basis. The seam's money guard would reject a figure anyway; stating it in the contract means a later lane sees why."
+    },
+    {
+      "id": "call-analytics",
+      "lensId": "public-works",
+      "region": "Call analytics",
+      "gatedBy": "goto",
+      "recordType": "call-volume",
+      "recordIdFormat": "^FIX-CV-\\d{4}$",
+      "plannedCount": 25,
+      "plannedCountingRule": "one record per queue per relative day; 5 declared queues x 5 relative days, aggregate buckets and never a call",
+      "recordFields": [
+        "recordId", "kind", "recordType", "cityKey", "origin", "fixture", "fixtureBasis", "accessPolicy",
+        "queueRef", "queueLabel", "dayOffset", "dayLabel", "callsOffered", "callsAnswered", "callsAbandoned", "identityBasis", "provenance"
+      ],
+      "statusSet": "none. A volume bucket has no in-flight status; RECORD_SHAPES.goto declares statusValuesBasis saying so rather than leaving the field blank.",
+      "declaredVocabulary": [
+        "Main city line", "Permit desk line", "Utility billing line", "Public works line", "Records line",
+        "<CALL_IDENTITY_BASIS>"
+      ],
+      "declaredFormats": ["^FIX-CV-\\d{4}$", "^QUE-\\d{2}$", "^(today|in \\d+ days?)$"],
+      "extras": ["totals {offered, answered, abandoned, measured, countingRule}", "byQueue[]", "byDay[]", "excludedFamilies (with basis)"],
+      "subtractionRule": "callsAnswered and callsAbandoned are each drawn from the PRNG and callsOffered is their SUM. No reported class is derived by subtracting another (DEV_PROCESS 1.3); a reconciliation test asserts byQueue, byDay and totals all count the same record array.",
+      "privacyExclusion": "goto call-history individual call detail, call recordings and extension-to-person mapping are NOT generated, and are declared in RECORD_SHAPES.goto as required:false fields carrying a basis"
+    }
+  ],
+
+  "vendorlessQuestion": {
+    "subject": "Parks facilities and Court docket, which the build sheet records as \"gates: none yet — sources arrive per city\"",
+    "finding": "PROVISIONAL AT CP1, to be re-proven at CP2 against the branch: a vendorless domain is NOT expressible in the seam as it stands.",
+    "evidenceRun": "probe executed against the clone at c7d7980",
+    "evidence": [
+      "src/fixture-seam.mjs:270-273 — defineDomain({...}) with gatedBy omitted, \"\" or null throws `a domain requires gatedBy`",
+      "src/fixture-seam.mjs:275-277 — gatedBy \"none\" throws `domain parks-facilities is gated by none, which is not a catalogued adapter kind`; gatedBy \"parks\" throws the same",
+      "src/city-pack.mjs:317-320 — fixtureGrants: [\"parks\"] throws `fixtureGrants names parks, which is not a catalogued adapter kind`, so even a pack cannot name a non-vendor source",
+      "src/adapters.mjs:341-342 — assertRecordShape throws `no record shape declared for kind X` unless RECORD_SHAPES is keyed by a catalogued kind, and every generated record carries that vendor id in its `kind` field",
+      "src/fixture-seam.mjs:372-380 — the only non-generating outcome for a built region is `ungranted`, whose basis sentence is literally `<VendorDisplayName> is not granted on <cityKey>`"
+    ],
+    "consequenceIfForced": "Registering Parks or Court would require inventing an adapter kind with no live vendor behind it, which this dispatch forbids and which would print a fictitious vendor name into every generated record's `kind` field and into the customer-visible ungranted basis line.",
+    "plannedDisposition": "Do not register parks-facilities or court-docket. Land the finding as a machine-checkable test rather than prose, so a later lane cannot re-derive it by archaeology, and route the design question to the operator.",
+    "sideEffectToPreserve": "src/domains.test.mjs already uses composeDomainById(TEMPLATE_CITY, \"parks-facilities\") as its not-registered exemplar. Registering that id would have silently deleted that assertion's subject. Leaving it unregistered keeps it."
+  },
+
+  "packChange": {
+    "file": "src/city-pack.mjs",
+    "field": "TEMPLATE_CITY.fixtureGrants",
+    "from": ["mygov", "samsara"],
+    "to": ["mygov", "samsara", "verkada", "firstdue", "powerbi", "goto"],
+    "grantedAdaptersStays": [],
+    "whyThisIsNotAFeedGrant": "fixtureGrants is the DEMONSTRATION axis, declared at src/fixture-seam.mjs:300-315 and src/city-pack.mjs:30-44; it carries adapter kind ids only, never a sourceUrl, and assertCityPackShape refuses any grantedAdapters entry on a generating pack. No network, no vendor, no city rows are read by this lane. spireon is deliberately still absent so the ungranted exemplar stays reachable."
+  },
+
+  "adversarialReview": [
+    {
+      "risk": "Adding fixtureGrants reads as connecting a feed, violating the dispatch's `no adapter is granted`.",
+      "disposition": "Held. The two axes are structurally separate and assertCityPackShape enforces it. grantedAdapters stays [] on all three packs and the existing assertion in src/domains.test.mjs proving that is left untouched."
+    },
+    {
+      "risk": "A camera inventory region reads as filling Assets, breaking the standing `G-24 stays zero`.",
+      "disposition": "Mitigated. recordType is camera-device, lensId is police, and every record carries an inventoryBasis saying vendor camera telemetry is not a city-owned inventory node — the same shape src/domains/fleet-vehicles.mjs uses for trucks. The registry-wide assertion that no domain has lensId assets or region Assets stays green."
+    },
+    {
+      "risk": "Reusing VEHICLE_STATUS_VALUES for fire apparatus overloads a set named for vehicles.",
+      "disposition": "Accepted deliberately. Apparatus readiness is the same four bands; a second identical set for one subject is two implementations of one rule (DEV_PROCESS 2.4). Stated at the domain so a reader is not left guessing."
+    },
+    {
+      "risk": "Four new domains land in src/domains.mjs which the Development services lane also edits, and in four shared test files.",
+      "disposition": "Accepted, and minimised. New assertions go in a NEW file src/department-domains.test.mjs which no sibling touches; only the unavoidable literals in the four existing test files are edited, and registry additions are appended contiguously after PATROL_VEHICLES_DOMAIN. Rebase expected; DS merges first."
+    },
+    {
+      "risk": "The privacy exclusion is prose and a later lane adds LPR because nothing stopped it.",
+      "disposition": "Mitigated. The exclusion is written into RECORD_SHAPES as required:false fields with a basis, and asserted by a test that scans every generated record of the two domains for the excluded classes. A control that depends on someone remembering is not a control (DEV_PROCESS 0)."
+    }
+  ],
+
+  "filesPlanned": [
+    "src/domains/police-cameras.mjs (new)",
+    "src/domains/fire-apparatus.mjs (new)",
+    "src/domains/cip-projects.mjs (new)",
+    "src/domains/call-analytics.mjs (new)",
+    "src/department-domains.test.mjs (new, this lane's assertions)",
+    "src/adapters.mjs (declare four record shapes and two new value sets; ZERO new adapter kinds)",
+    "src/domains.mjs (four appended registry lines)",
+    "src/city-pack.mjs (TEMPLATE_CITY.fixtureGrants only)",
+    "src/domains.test.mjs, src/city-pack.test.mjs, src/fixtures.test.mjs (pinned literals only)"
+  ],
+  "filesForbidden": ["web/** — owned by lane W2FIX; git diff --stat origin/main -- web/ must be empty at close"]
+}

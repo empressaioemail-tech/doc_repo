@@ -1,0 +1,181 @@
+{
+  "lane": "W2DS",
+  "artifact": "cp1",
+  "kind": "adversarial checkpoint 1, design and pre-build",
+  "date": "2026-08-19",
+  "planRows": ["G-92"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/w2ds-dash",
+  "branch": "g92/dev-services-domains",
+  "baseSha": "c7d7980b98752fe6625e07da1e4e9b9921f67950",
+
+  "missionPremise": "The operator's requirement, carried in the dispatch in his words: Development services must match the data the PRODUCTION Bastrop dashboard displays today, because it monitors the MyGov system the city already runs. _inbox/2026-08-19_template_city_lens_build_sheet.md entry 2 lists MyGov across sixteen endpoints; the product models two of them, permits (as permits-pipeline) and work-orders. This lane adds the three that close the named gap. It rests on the G-91 seam, whose own premise is RULING 1: 'not built' describes a SURFACE that is absent from the registry, and everything registered states its emptiness as a fact about SOURCES with a basis attached.",
+
+  "evidenceBasisForTheShapes": {
+    "whatIsRead": [
+      "_inbox/2026-08-19_template_city_lens_build_sheet.md:84 — the sixteen MyGov endpoint names, including inspections, code-violations, code-violations/stats and business-licenses",
+      "_inbox/2026-08-19_template_city_lens_build_sheet.md:85 — 'Pack generates: permit pipeline (exists today), inspections queue, work-order queue with SLA and daily queue, code violations, business licenses'",
+      "_inbox/2026-08-19_template_city_lens_build_sheet.md:87 — DS tabs become Pipeline, Place, Inspections, Work orders, Code enforcement, Licenses; Review leaves DS",
+      "_inbox/2026-08-17_bastrop_dashboard_layout_inventory.md:87 — the six live hero metrics, of which 'Expiring' is the licence one",
+      "_inbox/2026-08-17_bastrop_dashboard_layout_inventory.md:93 — 'Permits: lists, inspections, code enforcement, reviews, inspector load table, SLA table, manager load'",
+      "_inbox/2026-08-17_bastrop_dashboard_layout_inventory.md:95 — 'Business Licenses: license roll'",
+      "30c_smartcity_platform_ia.md:62 — the DS metric strip is four states and the tab roster names Inspections, Code enforcement, Licenses; 'Expiring and Active projects become stage filters'"
+    ],
+    "whatIsNotRead": "NO live payload. Live Bastrop is NO-TOUCH and read-only on this card and this lane made no request to it, so no endpoint response body was inspected. The record shapes are therefore designed FROM the documented evidence above, not transcribed from a live schema.",
+    "whatIsInferred": [
+      "The four in-flight states per domain are designed against the 30c metric-strip pattern (four states, loud first) that permits and work orders already follow. The endpoint list proves the DATA exists; it does not name the states.",
+      "'unscheduled' as an inspection state is an inference from permitting practice plus the live inspector load table, not a documented MyGov value.",
+      "The escalation ladder rungs (courtesy notice, formal notice, final notice, hearing referral) are the standard code-enforcement ladder, inferred; live code-violations/stats is evidence that an aggregate exists, not evidence of these rungs.",
+      "Consequence, stated so a successor does not read design as transcription: when a real MyGov grant lands, these enum values are the FIRST thing that has to be reconciled against the vendor payload. The record ENVELOPE and the four-state seam behaviour are contract; the enum members are the product's own vocabulary until a feed disagrees."
+    ]
+  },
+
+  "recordShapes": [
+    {
+      "domainId": "inspections",
+      "lensId": "development-services",
+      "region": "Inspections",
+      "tab": "inspections",
+      "gatedBy": "mygov",
+      "recordType": "inspection",
+      "liveEndpoint": "mygov/inspections",
+      "shapeIs": "a queue with a PAIRED second axis: the result only exists once the inspection has happened",
+      "declaredShapeFields": "inspectionType*, status*, result*, place*, inspectorRef*, dayOffset?, inspectorName?, inspectedOn? (* required)",
+      "recordFields": "recordId, kind, recordType, cityKey, origin, fixture, fixtureBasis, accessPolicy, inspectionType, status, result, resultBasis (only when not inspected), place, inspectorRef, inspectorBasis, dayOffset, dayLabel, scheduleBasis (only when unscheduled), provenance",
+      "statusValues": "past-due (crit), unscheduled (warn), scheduled (info), completed (ok, resolved)",
+      "secondAxis": "result: failed (crit, inspected), corrections (warn, inspected), passed (ok, inspected), not-inspected (quiet, NOT inspected)",
+      "pairingRule": "a completed inspection carries an inspected result; an uncompleted one carries not-inspected. Enforced in BOTH directions in the tests, and declared in the plan rather than drawn, so the property is not a probability.",
+      "absencesStatedPositively": [
+        "not-inspected is a declared value with resultBasis on the record, never a null result",
+        "an unscheduled inspection carries dayOffset null plus scheduleBasis, never a zero that would render as 'today'",
+        "inspectorName is declared on the shape as the field a GRANTED feed carries, with its basis; the record carries an opaque INS-nn reference"
+      ],
+      "vocabularyDeclared": [
+        "12 inspection types: Foundation inspection, Framing inspection, Electrical rough-in, Plumbing rough-in, Mechanical rough-in, Insulation inspection, Drywall inspection, Final building inspection, Fire alarm inspection, Backflow inspection, Erosion control inspection, Driveway approach inspection",
+        "6 seam place names (PLACE_VOCABULARY, reused not redeclared)",
+        "4 status ids + 4 result ids",
+        "3 basis strings: inspector, result-pending, unscheduled"
+      ],
+      "vocabularySize": 29,
+      "formatsDeclared": [
+        "/^FIX-IN-\\d{4}$/ record id",
+        "/^[A-Z][A-Za-z ]+ Block \\d+, Lot \\d+$/ place label",
+        "/^INS-\\d{2}$/ inspector reference",
+        "/^(today|in \\d+ days?|\\d+ days? ago)$/ relative day"
+      ],
+      "extras": "metrics (4 status tiles), results (4 result tiles including not-inspected), inspectorLoad (per opaque ref, total and open)"
+    },
+    {
+      "domainId": "code-violations",
+      "lensId": "development-services",
+      "region": "Code enforcement",
+      "tab": "code-enforcement",
+      "gatedBy": "mygov",
+      "recordType": "code-violation",
+      "liveEndpoint": "mygov/code-violations and mygov/code-violations/stats",
+      "shapeIs": "a case queue with an ORDERED second axis, plus the stats companion the live surface reads separately",
+      "declaredShapeFields": "violationType*, status*, escalation*, escalationStep*, place*, dueOffsetDays*, assessedPenalty?, complianceDate?",
+      "recordFields": "recordId, kind, recordType, cityKey, origin, fixture, fixtureBasis, accessPolicy, violationType, status, escalation, escalationStep, place, dueOffsetDays, dueLabel, penaltyBasis, provenance",
+      "statusValues": "past-compliance (crit), awaiting-reinspection (warn), notice-issued (info), closed-compliant (ok, resolved)",
+      "secondAxis": "escalation ladder, ORDERED: courtesy-notice step 1, formal-notice step 2, final-notice step 3, hearing-referral step 4. `step` is declared data on the value and carried on the record, never the array index, so a rung inserted later cannot renumber the ones above it.",
+      "pairingRule": "ESCALATION_FLOOR and ESCALATION_CEILING are asserted at generation, not commented: past-compliance sits at rung 3 or above, notice-issued at rung 2 or below. The generator THROWS if the plan is later edited to violate it.",
+      "absencesStatedPositively": [
+        "penaltyBasis on every record and on the stats block: no assessed figure is presented and a granted feed plus a city ledger is where one would come from",
+        "assessedPenalty and complianceDate are declared on the shape as feed-side fields with their basis"
+      ],
+      "vocabularyDeclared": [
+        "12 violation types: Tall grass and weeds, Junked vehicle, Illegal dumping, Outdoor storage, Fence in disrepair, Unpermitted structure, Sign without permit, Property maintenance, Overgrown lot, Trash container placement, Inoperable vehicle, Obstructed walkway",
+        "6 seam place names",
+        "4 status ids + 4 escalation ids",
+        "1 basis string: penalty"
+      ],
+      "vocabularySize": 27,
+      "formatsDeclared": [
+        "/^FIX-CE-\\d{4}$/ record id",
+        "/^[A-Z][A-Za-z ]+ Block \\d+, Lot \\d+$/ place label",
+        "/^(due today|due in \\d+ days?|\\d+ days? past due)$/ relative compliance deadline"
+      ],
+      "extras": "metrics (4 status tiles), escalation (4 rungs in step order), stats (open, closed, measured, penaltyBasis)"
+    },
+    {
+      "domainId": "business-licenses",
+      "lensId": "development-services",
+      "region": "Licenses",
+      "tab": "licenses",
+      "gatedBy": "mygov",
+      "recordType": "business-license",
+      "liveEndpoint": "mygov/business-licenses",
+      "shapeIs": "a roll with a CONTINUOUS second axis: expiry is an integer on every record and the bands are derived from it rather than assigned",
+      "declaredShapeFields": "licenseCategory*, status*, place*, holderRef*, expiryOffsetDays*, holderName?, expiresOn?",
+      "recordFields": "recordId, kind, recordType, cityKey, origin, fixture, fixtureBasis, accessPolicy, licenseCategory, status, place, holderRef, holderBasis, expiryOffsetDays, expiryLabel, chargesBasis, provenance",
+      "statusValues": "expired (crit), expiring (warn), renewal-submitted (info), active (ok, resolved)",
+      "secondAxis": "expiry windows, DERIVED from expiryOffsetDays through one shared expiryWindowFor: expired (to -1), within-30 (0..30), within-90 (31..90), beyond-90 (91 and beyond). Inclusive, non-overlapping, no remainder bucket.",
+      "pairingRule": "the plan declares an expiry RANGE per status rather than drawing free, so all four bands are guaranteed populated on the shipped pack. A band that is empty because a random draw missed it is a band nobody has ever seen render.",
+      "absencesStatedPositively": [
+        "a LICENSEE IS A BUSINESS, so no business name is invented: an opaque HLD-nn reference plus holderBasis, the same discipline the fleet roster applies to a driver. Inventing plausible business names would put fabricated commercial entities on a demo surface.",
+        "chargesBasis on every record and in extras: no renewal charge is presented",
+        "holderName and expiresOn declared on the shape as feed-side fields with their basis"
+      ],
+      "vocabularyDeclared": [
+        "10 licence categories: Food establishment, Mobile food vendor, General contractor registration, Electrical contractor registration, Plumbing contractor registration, Short term rental, Solicitor registration, Alarm registration, Child care facility, Salon and barber",
+        "6 seam place names",
+        "4 status ids",
+        "2 basis strings: holder, charges"
+      ],
+      "vocabularySize": 22,
+      "formatsDeclared": [
+        "/^FIX-BL-\\d{4}$/ record id",
+        "/^[A-Z][A-Za-z ]+ Block \\d+, Lot \\d+$/ place label",
+        "/^HLD-\\d{2}$/ holder reference",
+        "/^(expires today|expires in \\d+ days?|expired \\d+ days? ago)$/ relative expiry"
+      ],
+      "extras": "metrics (4 status tiles), expiry (4 bands), chargesBasis"
+    }
+  ],
+
+  "adversarialReviewOfThisDesign": [
+    {
+      "challenge": "Three domains on one lens is three copies of one generator. Why not one parameterised DS domain?",
+      "answer": "Because the three second axes are genuinely different mechanisms — a paired axis, an ordered ladder, and a continuous band — and a parameterised generator would have to express all three, which is how src/fixtures.mjs became the file every lane had to edit. G-91 extracted the seam for exactly this. What IS shared is shared: PLACE_VOCABULARY, the place block, seedFor, and the guards, all reused from the seam rather than copied.",
+      "residualRisk": "the four severityRank helpers across the five domain files are now near-identical. Named as a backlog candidate, not fixed here: hoisting it to the seam would mean editing the seam, which two other lanes are building against right now."
+    },
+    {
+      "challenge": "escalationStep duplicates escalation. That is two numbers that must agree (DEV_PROCESS 1.4).",
+      "answer": "Deliberate and reconciled. It is carried so a renderer can order the ladder without a lookup table, and the test asserts record.escalationStep === CODE_ESCALATION_VALUES.find(escalation).step for every record. If they ever drift the test is the finding."
+    },
+    {
+      "challenge": "A relative day label reaching BACKWARD ('3 days ago') is close to invented freshness, which the visual law forbids.",
+      "answer": "It is content about the inspection, not about the data. The freshness guard's needles are 'last sync/synced/read/updated' and provenance.readAt stays null with its basis on every record, so the product still says nothing was read. The precedent is work-orders' '1 day past due', which reaches backward for the same reason. relativeDayLabel is declared IN the inspections domain rather than widened on the seam, because a helper loosened for one lens is loosened for every lens that inherits it."
+    },
+    {
+      "challenge": "Why does business-licenses get a place when fleet does not?",
+      "answer": "Because a licence roll on the live surface is per premises and a fleet roster is not. Shape variety is not a design goal; matching what the product would receive is."
+    },
+    {
+      "challenge": "The three new shapes are attached with Object.assign rather than written into the RECORD_SHAPES.mygov.variants literal. Is that two tables for one rule, the CTRL-1 shape?",
+      "answer": "No. It is one table assembled in two statements, with one reader (recordShapeFor) and one flattener (declaredRecordShapes), and the bidirectional divergence test in src/fixtures.test.mjs proves the table and the registry agree. Attaching rather than editing is what makes the concurrent lane's rebase mechanical."
+    },
+    {
+      "challenge": "You edited three literals in two test files that the sibling lane will also edit.",
+      "answer": "Unavoidable and stated. src/domains.test.mjs's id list and carries() list and src/fixtures.test.mjs's declared-shape list are explicit BY DESIGN — a length check would let a domain arrive unnoticed. One of the three, the empty-city counting rule, WAS convertible and was converted to derive its denominator from DOMAIN_REGISTRY.length, so it will not collide again. The numerator stays literal because zero-on-the-unconnected-city is the claim."
+    }
+  ],
+
+  "constraintsHonoredSoFar": [
+    "src/ only. Nothing under web/ opened for write.",
+    "No feed connected, no adapter granted. All three domains gate on mygov, which template-city already demonstrates on the fixtureGrants axis; grantedAdapters stays [] on every pack.",
+    "No new adapter kind. The catalog stays at ten and the '0 of 10 sources granted' figure is untouched.",
+    "No Math.random, no Date.now, no new Date, no toISOString in any new file — measured by the directory-derived source scan in src/domains.test.mjs, which picks up the three new files automatically.",
+    "No calendar date, no money, no bare confidence, no held identity in any composed payload — measured by the per-pack payload assertions that now cover seven domains.",
+    "Live Bastrop untouched and unread.",
+    "P:/tmp/w2dept-dash and P:/tmp/w2fix-dash never opened."
+  ],
+
+  "statusAtCp1": {
+    "suite": "node --test src/*.test.mjs — 273 tests, 273 pass, 0 fail on the branch with all three domains registered",
+    "baseline": "273 tests, 273 pass, 0 fail on the base SHA c7d7980; the three new domains are additive and the +N test file lands after this checkpoint",
+    "recordCounts": "inspections 21, code-violations 19, business-licenses 17 on template-city",
+    "remaining": "the lane's own test file, the four-state per-domain proof, the guard-rejection matrix, the cross-process determinism proof, and the HTTP end-to-end for CP2"
+  }
+}

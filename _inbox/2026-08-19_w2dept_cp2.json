@@ -1,0 +1,146 @@
+{
+  "artifact": "CP2",
+  "lane": "W2DEPT",
+  "planRow": "G-92",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "date": "2026-08-19",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g92/department-domains",
+  "checkpointKind": "pilot / mid-work adversarial checkpoint, one domain end to end",
+  "cp1": "_inbox/2026-08-19_w2dept_cp1.json",
+
+  "pilotDomain": "police-cameras",
+  "whyThisOne": "It is the domain carrying the hardest constraint on the lane — a live vendor whose adjacent families are surveillance records about identifiable people — so if the exclusion discipline holds anywhere it has to hold here first.",
+
+  "endToEnd": {
+    "command": "composeAllDomains(TEMPLATE_CITY)[\"police-cameras\"]",
+    "rawOutput": [
+      "status= ok granted= true generated= true",
+      "recordCount= 18",
+      "countingRule= 18 generated verkada camera-device records on template-city, one row per record",
+      "basis= generated from the Verkada adapter output contract; no city rows were read",
+      "--- metrics ---",
+      "  offline       crit  count=1",
+      "  signal-loss   warn  count=2",
+      "  firmware-due  info  count=3",
+      "  online        ok    count=12",
+      "--- sites ---",
+      "  SITE-01 Placeholder Heights   cameras=4",
+      "  SITE-02 Example Crossing      cameras=4",
+      "  SITE-03 Specimen Yard         cameras=4",
+      "  SITE-04 Template Commons      cameras=3",
+      "  SITE-05 Fixture Ridge         cameras=3",
+      "--- occupancy ---",
+      "  occupancy not measured   count=3",
+      "  light                    count=4",
+      "  moderate                 count=6",
+      "  busy                     count=5",
+      "  measured= 18",
+      "--- reconciliation ---",
+      "  tiles sum   = 18",
+      "  sites sum   = 18",
+      "  bands sum   = 18",
+      "  recordCount = 18"
+    ],
+    "reconciliation": "Three independently computed extras each sum to 18, and 18 is the length of the array composeDomain returned rather than a declared plan total. No class is derived by subtracting another; `occupancy not measured` is COUNTED (3 records whose status means they cannot report) rather than inferred as the remainder.",
+    "oneRecordVerbatim": {
+      "recordId": "FIX-CAM-1007",
+      "kind": "verkada",
+      "recordType": "camera-device",
+      "cityKey": "template-city",
+      "origin": "fixture",
+      "fixture": true,
+      "fixtureBasis": "generated from the Verkada adapter output contract; no city rows were read",
+      "accessPolicy": "public-free",
+      "deviceLabel": "Mobile trailer camera 11",
+      "status": "offline",
+      "siteRef": "SITE-01",
+      "placement": "Placeholder Heights",
+      "occupancyBand": "occupancy not measured",
+      "identityBasis": "a generated record carries no plate read and no person of interest; those are surveillance records about identifiable people and a fixture pack does not carry one",
+      "inventoryBasis": "vendor camera telemetry is not a city-owned inventory node, so nothing here counts toward the city inventory",
+      "provenance": {
+        "source": "Verkada output contract",
+        "basis": "generated from the Verkada adapter output contract; no city rows were read",
+        "readAt": null,
+        "readAtBasis": "nothing was read; this record was generated"
+      }
+    }
+  },
+
+  "guardsWatchedFiring": {
+    "howProven": "Each real domain is CLONED (same vocabulary, same formats, same generator), one value in its real output is poisoned, and the clone is composed. Nothing is registered, so proving a gate fires cannot ship a bad domain. Test: src/department-domains.test.mjs, suite \"G-92 both guards fire on every new domain\".",
+    "contentGuard": [
+      "police-cameras: occupancyBand = \"Bastrop city yard\" -> throws, held-identity",
+      "fire-apparatus: apparatusType = \"Station at 1200 Main Street\" -> throws, street-address",
+      "cip-projects: subject = \"$1,200 change order\" -> throws, money",
+      "call-analytics: queueLabel = \"last synced from the vendor\" -> throws, invented-freshness"
+    ],
+    "vocabularyGuard": "all four: the same field set to \"Something nobody declared\" -> throws, undeclared string",
+    "forbiddenKeyGuard": "all four: confidence = 0.92 -> throws, no confidence field",
+    "excludedFamilyGuard": [
+      "police-cameras: plateReads = \"ABC1234\" -> throws, undeclared string",
+      "police-cameras: personsOfInterest = \"Watchlist match\" -> throws, undeclared string",
+      "call-analytics: recording = \"call clip 004\" -> throws, undeclared string",
+      "call-analytics: extensionOwner = \"Extension 214 owner\" -> throws, undeclared string"
+    ],
+    "cleanArm": "The unpoisoned clone of every domain composes status ok with recordCount > 0, so each rejection above is the poison and not the clone."
+  },
+
+  "findingDuringBuild": {
+    "id": "false-positive needle on the pack's own name",
+    "what": "The record-value exclusion scan was first written as bare /plate/i and went RED on every camera record. The hit was `template-city`: the letters p-l-a-t-e sit inside the word template.",
+    "whyItMatters": "The obvious repair is to exclude cityKey from the scan, and that exclusion would have been the real hole — the next lane adds a field, the needle never sees it, and the gate reads green forever. Fixed by word-bounding every needle instead, which keeps every field in scope. Same defect class as a scan that reads a comment as code (DEV_PROCESS 2.2), and it was caught only because the scan was run rather than assumed.",
+    "state": "fixed on the branch; the reason is written at the constant so it is not re-broken"
+  },
+
+  "vendorlessAnswerConfirmed": {
+    "cp1Was": "provisional",
+    "cp2Is": "CONFIRMED against the branch, and pinned as a test rather than left as prose",
+    "answer": "The seam CANNOT express a vendorless domain. Parks facilities and Court docket are therefore NOT registered by this lane, and no adapter kind was invented to make them fit.",
+    "provenBy": "src/department-domains.test.mjs, suite \"G-92 the vendorless finding: Parks and Court are not expressible\" — three tests, all green",
+    "gatePointsMeasured": [
+      "src/fixture-seam.mjs:270-273 — gatedBy omitted / \"\" / null throws `a domain requires gatedBy`",
+      "src/fixture-seam.mjs:275-277 — gatedBy \"none\" and gatedBy \"parks\" both throw `... is not a catalogued adapter kind`",
+      "src/city-pack.mjs:317-320 — fixtureGrants: [\"parks\"] throws `fixtureGrants names parks, which is not a catalogued adapter kind`",
+      "src/adapters.mjs:341-342 — assertRecordShape throws `no record shape declared for kind X` for any kind not in RECORD_SHAPES, and every generated record carries the vendor id in its own `kind` field"
+    ],
+    "designedToGoRed": "The test is written to FAIL when the seam grows a vendorless path. Whoever adds one deletes it deliberately and reads why it was there, rather than finding an unexplained absence."
+  },
+
+  "adversarialReviewAtCp2": [
+    {
+      "checked": "Did adding four domains make the ungranted state unreachable?",
+      "result": "No. spireon stays off template-city's demonstration axis, patrol-vehicles still composes `ungranted`, and each of the four new domains is additionally proven to reach `ungranted` on a probe pack that grants it nothing. 7 of 8 registered domains carry records on template-city; the 8th is the exemplar."
+    },
+    {
+      "checked": "Is `fixtureGrants` growth a feed connection in disguise?",
+      "result": "No. grantedAdapters is [] on all three shipped packs and assertCityPackShape refuses any grant on a generating pack. No network call, no vendor endpoint, no sourceUrl exists anywhere on this branch. The existing assertion proving grantedAdapters is empty was left untouched rather than adjusted."
+    },
+    {
+      "checked": "Do the extras assert figures rather than count them?",
+      "result": "No. Every extra on all four domains is computed by filtering the returned record array, and four reconciliation tests sum each dimension back to recordCount. call-analytics is the sharpest case: answered and abandoned are drawn independently and offered is their sum, so the per-record identity is capable of disagreeing."
+    },
+    {
+      "checked": "Does the money rule survive the one domain that would break it?",
+      "result": "Yes. The CIP register carries no figure at all; the absence is written positively on every record (budgetBasis) and declared in RECORD_SHAPES.powerbi as a required:false `budget` field with its reason. The seam's money guard is the second control, not the first."
+    },
+    {
+      "checked": "Was anything under web/ touched?",
+      "result": "No. `git diff --cached --stat origin/main -- web/` returns empty output."
+    }
+  ],
+
+  "testState": {
+    "command": "node --test src/*.test.mjs",
+    "baselineAtDispatchedSha": "tests 273, suites 56, pass 273, fail 0",
+    "onBranch": "tests 295, suites 62, pass 295, fail 0",
+    "delta": "+22 tests, +6 suites, all in src/department-domains.test.mjs which no sibling lane edits",
+    "note": "local only at CP2; the CI check-run conclusion string is the authoritative gate and is reported in the close"
+  },
+
+  "remainingAtCp2": [
+    "commit, push, open the PR, report the CI conclusion string",
+    "rebase onto the Development services lane once it merges first, and re-green"
+  ]
+}

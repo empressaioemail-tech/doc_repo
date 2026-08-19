@@ -145,10 +145,23 @@ The build adds one generator per domain above, all keyed off the same pack seed 
 
 **Design constraint carried from the visual law:** on `empty-city` there are no exceptions, so every pill renders quiet and the tension mechanism switches off. That is the one input under which this design is guaranteed to look flat, and it stays the regression target for every lens built.
 
-## Adapter catalog is short by three
+## Adapter catalog — CLOSED at G-91, and this section was stale within hours
 
-`src/adapters.mjs` declares seven kinds: `mygov`, `samsara`, `opengov`, `esri`, `municode`, `firstdue`, `verkada`. Live Bastrop integrates eleven vendor families. Missing: **`spireon`** (police vehicles), **`goto`** (phones), **`powerbi`** (CIP and reporting). The nav footer's "0 of 7 sources granted" is therefore a denominator that is short against reality, and it is a counted figure so it corrects itself once the catalog grows.
+**Superseded 2026-08-19.** When this sheet was written the catalog declared seven kinds and this section
+said it was short by three. **G-91 added `spireon`, `goto` and `powerbi` the same day**, so as of
+dashboards main `c7d7980` the catalog is **ten**, pinned in `src/adapters.test.mjs`. Lane W2DEPT read
+this section, checked it at source rather than trusting it, and reported it stale — trusting it would have
+declared three duplicate kinds.
 
+Kept rather than deleted, because the failure is the point and it is the same one this whole sheet exists
+to correct: a true statement that nothing was watching go false. The G-18 register's `Not built` did
+exactly this over three handoffs. A build sheet is not a live instrument, so **every count in it is a
+snapshot with a date, and the source of truth is the code**: the catalog is `ADAPTER_KINDS` in
+`src/adapters.mjs`, the vocabulary is `stylesheetClasses()`, the domain list is `DOMAIN_REGISTRY`.
+
+The eleventh live vendor family named earlier in this sheet is **`vfd`**, and it is NOT a missing
+adapter: `/vfd` is Bastrop's own volunteer fire department route, a first-party city surface rather than
+a third-party integration. FirstDue is the vendor behind Fire and EMS.
 ## Sequencing
 
 The shell functions and the pack extension gate everything else, and the two are independent of each other, so they run in parallel first. Then lenses fan wide — each department lens is independent of every other once its generator exists. Overview and Finance come last of the data lenses because both compose across departments and want the others' shapes settled. Connections re-bakes at the end because its disposition column is a function of everything above it.

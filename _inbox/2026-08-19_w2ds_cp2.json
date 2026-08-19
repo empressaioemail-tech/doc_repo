@@ -1,0 +1,164 @@
+{
+  "lane": "W2DS",
+  "artifact": "cp2",
+  "kind": "adversarial checkpoint 2, pilot and mid-work",
+  "date": "2026-08-19",
+  "planRows": ["G-92"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/w2ds-dash",
+  "branch": "g92/dev-services-domains",
+  "cp1": "_inbox/2026-08-19_w2ds_cp1.json",
+
+  "pilotDomainEndToEnd": {
+    "domain": "inspections",
+    "why": "the paired-axis shape, which is the one of the three that could not be expressed by copying work-orders: an inspection's result only exists once the inspection has happened, so the second axis is defined for every record and meaningful for a subset.",
+    "leg1_registryEntry": "src/domains/inspections.mjs exports INSPECTIONS_DOMAIN via defineDomain, which validates the descriptor at MODULE LOAD; src/domains.mjs imports it and appends it to DOMAIN_REGISTRY. A malformed descriptor never registers.",
+    "leg2_declaredShape": "recordShapeFor('mygov','inspection') resolves the variant attached in src/adapters.mjs. The bidirectional divergence test in src/fixtures.test.mjs proves the shape table and the registry agree in both directions: every registered domain resolves to a declared shape, and every declared shape is reachable from a registered domain.",
+    "leg3_generation": "generateInspectionRecords draws from mulberry32(seedFor('mygov:inspection')). seedFor is the pack-keyed factory; no clock and no Math.random is reachable, measured by the directory-derived source scan in src/domains.test.mjs which picked up the three new files because they exist.",
+    "leg4_seamGuards": "composeDomain runs assertRecordShape, assertNoRealWorldContent and assertDeclaredVocabulary over every returned record and assertNoRealWorldContent over extras. The generator calls none of them. Watched firing below.",
+    "leg5_composedPayload": "status ok, recordCount 21, basis 'generated from the MyGov adapter output contract; no city rows were read', countingRule '21 generated mygov inspection records on template-city, one row per record'.",
+    "leg6_http": "GET /api/city-domains?cityKey=template-city lists it as one of 7 regions; GET /api/domains/inspections?cityKey=template-city serves it in full; GET /api/domains/inspections?cityKey=empty-city serves the fourth state.",
+    "rawHttpProbe": {
+      "command": "node -e \"import('./src/server.mjs').then(async (m) => { await new Promise((r)=>m.server.listen(0,'127.0.0.1',r)); const port=m.server.address().port; ... m.server.close(); });\"",
+      "exitBounded": "the probe closes the server itself and the process exits; no watch, no tail, no non-exiting server",
+      "cityDomains": "GET /api/city-domains?cityKey=template-city -> 7 regions; '6 of 7 registered domains carry records on template-city; a registered domain is a built region, and a region absent from the registry is not built and is not counted here'",
+      "domainEnvelope": {
+        "domainId": "inspections",
+        "lensId": "development-services",
+        "region": "Inspections",
+        "cityKey": "template-city",
+        "kind": "mygov",
+        "recordType": "inspection",
+        "gatedBy": "mygov",
+        "granted": true,
+        "generated": true,
+        "status": "ok",
+        "basis": "generated from the MyGov adapter output contract; no city rows were read",
+        "recordCount": 21,
+        "countingRule": "21 generated mygov inspection records on template-city, one row per record"
+      },
+      "firstRecordRaw": {
+        "recordId": "FIX-IN-1007",
+        "kind": "mygov",
+        "recordType": "inspection",
+        "cityKey": "template-city",
+        "origin": "fixture",
+        "fixture": true,
+        "fixtureBasis": "generated from the MyGov adapter output contract; no city rows were read",
+        "accessPolicy": "public-free",
+        "inspectionType": "Plumbing rough-in",
+        "status": "past-due",
+        "result": "not-inspected",
+        "resultBasis": "no result is recorded because this inspection is not completed; a result accrues when it is",
+        "place": {
+          "label": "Fixture Ridge Block 6, Lot 6",
+          "parcelNodeId": null,
+          "parcelBasis": "a generated record is not attached to a parcel, because a parcel is a real record"
+        },
+        "inspectorRef": "INS-01",
+        "inspectorBasis": "a generated record names no person; the inspector is an opaque reference and a granted feed is where a name would come from",
+        "dayOffset": -3,
+        "dayLabel": "3 days ago",
+        "provenance": {
+          "source": "MyGov output contract",
+          "basis": "generated from the MyGov adapter output contract; no city rows were read",
+          "readAt": null,
+          "readAtBasis": "nothing was read; this record was generated"
+        }
+      },
+      "extrasRaw": {
+        "metrics": "past-due=2 (crit), unscheduled=3 (warn), scheduled=6 (info), completed=10 (ok, resolved) — 'inspections whose status equals this tile, over the generated mygov inspection records on this pack'",
+        "results": "failed=2 (crit, inspected), corrections=3 (warn, inspected), passed=5 (ok, inspected), not-inspected=11 (quiet, NOT inspected, and it carries its own basis) — 'inspections whose result equals this tile, over the generated mygov inspection records on this pack, one row per record'",
+        "inspectorLoad": "INS-01 total 6 open 3, INS-02 total 5 open 3, INS-03 total 5 open 3, INS-04 total 5 open 2 — 'inspections whose inspectorRef equals this inspector, over the generated mygov inspection records on this pack, one row per record'"
+      },
+      "emptyCityArm": "GET /api/domains/inspections?cityKey=empty-city -> {\"status\":\"no-fixture-source\",\"recordCount\":0,\"basis\":\"empty-city generates no records and no adapter is granted on it\"}",
+      "reconciliation": "status tiles 2+3+6+10 = 21; result tiles 2+3+5+11 = 21; inspector load 6+5+5+5 = 21; queue = 21. Four figures that must agree and do. not-inspected 11 = past-due 2 + unscheduled 3 + scheduled 6, measured by filter and never as the remainder of the other three result classes."
+    }
+  },
+
+  "guardsWatchedFiring": {
+    "how": "a probe domain built FROM each shipped domain — same gating kind, same record type, same declared vocabulary and formats — whose generator calls the real generator and mutates ONE record. Composed directly, never registered, so proving the gate can fire cannot ship a bad domain. Neither generator calls a guard.",
+    "cleanProbePasses": "inspections status=ok recordCount=21; code-violations status=ok recordCount=19; business-licenses status=ok recordCount=17 — so every rejection below is the value and not the probe",
+    "rawRejections": [
+      "inspections | inspectionType=\"Bastrop city hall remodel\" -> a generated record carries no held city identity and no real person (held-identity at inspectionType)",
+      "inspections | inspectionType=\"Addition at 1200 Main Street\" -> a generated record carries no street address (street-address at inspectionType)",
+      "inspections | inspectionType=\"Fee $1,200\" -> a generated record presents no money and no completed payment (money at inspectionType)",
+      "inspections | inspectionType=\"Account 448812 renewal\" -> a generated record carries no vendor account identifier (vendor-account at inspectionType)",
+      "inspections | inspectionType=\"last synced from the vendor\" -> a generated record invents no freshness (invented-freshness at inspectionType)",
+      "inspections | inspectionType=\"Something nobody declared\" -> undeclared string on a generated record: Something nobody declared at inspectionType",
+      "inspections | confidence=0.92 -> a generated record carries no confidence field",
+      "inspections | assignee=\"a named reviewer\" -> a generated record carries no assignee field",
+      "inspections | status=\"issued\" -> status must be one of past-due, unscheduled, scheduled, completed",
+      "code-violations | violationType=\"Bastrop city hall remodel\" -> a generated record carries no held city identity and no real person (held-identity at violationType)",
+      "code-violations | violationType=\"Addition at 1200 Main Street\" -> a generated record carries no street address (street-address at violationType)",
+      "code-violations | violationType=\"Fee $1,200\" -> a generated record presents no money and no completed payment (money at violationType)",
+      "code-violations | violationType=\"Account 448812 renewal\" -> a generated record carries no vendor account identifier (vendor-account at violationType)",
+      "code-violations | violationType=\"last synced from the vendor\" -> a generated record invents no freshness (invented-freshness at violationType)",
+      "code-violations | violationType=\"Something nobody declared\" -> undeclared string on a generated record: Something nobody declared at violationType",
+      "code-violations | confidence=0.92 -> a generated record carries no confidence field",
+      "code-violations | assignee=\"a named reviewer\" -> a generated record carries no assignee field",
+      "code-violations | status=\"issued\" -> status must be one of past-compliance, awaiting-reinspection, notice-issued, closed-compliant",
+      "business-licenses | licenseCategory=\"Bastrop city hall remodel\" -> a generated record carries no held city identity and no real person (held-identity at licenseCategory)",
+      "business-licenses | licenseCategory=\"Addition at 1200 Main Street\" -> a generated record carries no street address (street-address at licenseCategory)",
+      "business-licenses | licenseCategory=\"Fee $1,200\" -> a generated record presents no money and no completed payment (money at licenseCategory)",
+      "business-licenses | licenseCategory=\"Account 448812 renewal\" -> a generated record carries no vendor account identifier (vendor-account at licenseCategory)",
+      "business-licenses | licenseCategory=\"last synced from the vendor\" -> a generated record invents no freshness (invented-freshness at licenseCategory)",
+      "business-licenses | licenseCategory=\"Something nobody declared\" -> undeclared string on a generated record: Something nobody declared at licenseCategory",
+      "business-licenses | confidence=0.92 -> a generated record carries no confidence field",
+      "business-licenses | assignee=\"a named reviewer\" -> a generated record carries no assignee field",
+      "business-licenses | status=\"issued\" -> status must be one of expired, expiring, renewal-submitted, active"
+    ],
+    "rejectionCountingRule": "27 rejections = 3 domains x 9 planted classes. Each is a separate compose call against a separately constructed probe domain; none is a repeat of the same throw.",
+    "neuterControl": {
+      "what": "both content guards in src/fixture-seam.mjs neutered with an early return, to prove the tests read the guard and not a coincidence",
+      "rawResult": "with assertNoRealWorldContent and assertDeclaredVocabulary neutered: 21 tests, 19 pass, 2 fail. The two failures are 'can fire: every forbidden class is rejected, on every one of the three' (AssertionError: Missing expected exception: inspections: inspectionType=Bastrop city hall remodel did not fire the seam) and 'can fire: none of the three can smuggle a held identity through extras either'.",
+      "restored": "src/fixture-seam.mjs restored from a pre-edit copy; git diff --stat on that file is EMPTY and the suite returns 21 of 21 on the lane file"
+    }
+  },
+
+  "defectsFoundInMyOwnWorkAtThisCheckpoint": [
+    {
+      "defect": "the escalation floor/ceiling rule was written INLINE in the generator and COPIED into the test",
+      "class": "CTRL-1, two implementations of one rule (DEV_PROCESS 2.4). The test's copy would have kept passing while the generator's copy drifted, which is precisely the failure that let every OPS-17 dispatch pass PLAN-ROW validation unvalidated.",
+      "fix": "extracted assertEscalationBand(status, escalation) in src/domains/code-violations.mjs. The generator calls it and the test calls the SAME function. Verified: 'sits at or above rung' appears in exactly one non-test file and once in the test as an expectation regex.",
+      "strengthened": "the test now also asserts the rule does NOT fire on any legal pairing in the shipped plan, so it is not a gate that refuses everything"
+    },
+    {
+      "defect": "inspectorLoad measured its open count as status !== \"completed\", a literal string",
+      "class": "a count that reads correctly today and silently starts meaning something else the moment a fifth status is declared",
+      "fix": "measured against the DECLARED resolved flag on INSPECTION_STATUS_VALUES instead",
+      "proofItChangedNothingElse": "the composed payload sha256 is 795ff32fccbe33eb310aec9e8e7c131f543489285902a48653b5bad38654e119 both before and after, so this is a behaviour-preserving correction of a fragile rule and not a data change"
+    }
+  ],
+
+  "shapeEvidencePerDomain": {
+    "code-violations": {
+      "recordCount": 19,
+      "metricsRaw": "past-compliance=3, awaiting-reinspection=3, notice-issued=9, closed-compliant=4",
+      "escalationLadderRaw": "courtesy-notice(step 1)=9, formal-notice(step 2)=4, final-notice(step 3)=5, hearing-referral(step 4)=1",
+      "statsRaw": "{\"open\":15,\"closed\":4,\"measured\":19}",
+      "reconciliation": "tiles 3+3+9+4 = 19; ladder 9+4+5+1 = 19; open 15 + closed 4 = 19 = measured. open and closed are each measured by filtering against the declared resolved flag; neither is the other subtracted.",
+      "firstRecordRaw": "{\"recordId\":\"FIX-CE-1004\",\"violationType\":\"Inoperable vehicle\",\"status\":\"past-compliance\",\"escalation\":\"hearing-referral\",\"escalationStep\":4,\"dueOffsetDays\":-20,\"dueLabel\":\"20 days past due\",\"penaltyBasis\":\"a generated record presents no assessed figure; a granted feed and a city ledger are where one would come from\"}"
+    },
+    "business-licenses": {
+      "recordCount": 17,
+      "metricsRaw": "expired=2, expiring=4, renewal-submitted=3, active=8",
+      "expiryBandsRaw": "expired=2, within-30=4, within-90=3, beyond-90=8",
+      "reconciliation": "tiles 2+4+3+8 = 17; bands 2+4+3+8 = 17. ALL FOUR bands are populated, which the plan's declared expiry ranges exist to make true: a band empty because a random draw missed it is a band nobody has ever seen render.",
+      "firstRecordRaw": "{\"recordId\":\"FIX-BL-1006\",\"licenseCategory\":\"Electrical contractor registration\",\"status\":\"expired\",\"holderRef\":\"HLD-01\",\"holderBasis\":\"a generated record names no business; the holder is an opaque reference and a granted feed is where a name would come from\",\"expiryOffsetDays\":-29,\"expiryLabel\":\"expired 29 days ago\",\"chargesBasis\":\"a generated record presents no renewal charge; a granted feed and a city ledger are where one would come from\"}"
+    }
+  },
+
+  "suiteAtCp2": {
+    "raw": "node --test src/*.test.mjs -> tests 294, suites 64, pass 294, fail 0",
+    "baseline": "273 pass 0 fail on base SHA c7d7980",
+    "delta": "+21, all additions in src/domains-dev-services.test.mjs, zero deletions",
+    "webDiff": "git diff --stat origin/main -- web/ is EMPTY"
+  },
+
+  "openAtCp2": [
+    "The three regions reach no pixel. web/ belongs to a sibling lane on this card, so nothing renders these domains yet; the seam and the routes carry them.",
+    "PR not yet opened at the time this checkpoint was written; the number, head SHA and CI conclusion string land in the close artifact."
+  ]
+}

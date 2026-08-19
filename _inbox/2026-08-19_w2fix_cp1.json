@@ -1,0 +1,209 @@
+{
+  "lane": "W2FIX",
+  "artifact": "cp1",
+  "checkpoint": "design / pre-build adversarial review",
+  "date": "2026-08-19",
+  "planRows": ["G-93"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/w2fix-dash",
+  "branch": "g93/granted-vs-demonstrated",
+  "baseSha": "c7d7980b98752fe6625e07da1e4e9b9921f67950",
+
+  "baselineVerifiedAtSource": {
+    "command": "node -e import('./src/adapters.mjs') ... (composed against the base SHA, in the clone)",
+    "rawOutput": [
+      "ADAPTER_KINDS 10 mygov,samsara,opengov,esri,municode,firstdue,verkada,spireon,goto,powerbi",
+      "template-city generates true fixtureGrants [\"mygov\",\"samsara\"] -> {\"granted\":0,\"total\":10,\"grantCount\":0,\"unknownKinds\":[],\"label\":\"0 of 10 sources granted\",\"rule\":\"distinct adapter kinds granted on this pack, of 10 in the catalog\"}",
+      "empty-city generates false fixtureGrants [] -> {\"granted\":0,\"total\":10,...,\"label\":\"0 of 10 sources granted\"}",
+      "fixture-city generates false fixtureGrants [] -> {\"granted\":0,\"total\":10,...,\"label\":\"0 of 10 sources granted\"}",
+      "SHELL_HOMES 67 ADDENDA 3 ALL 70",
+      "sourcesConnectedLabel 1 of 12 sources connected"
+    ],
+    "testsBaseline": "node --test src/*.test.mjs on c7d7980: tests 273, pass 273, fail 0"
+  },
+
+  "item1": {
+    "problem": "template-city renders three populated regions beside a nav footer reading `0 of 10 sources granted`. Both are true. The prospect reads a contradiction.",
+    "ruling": "distinguish, do not collapse. grantedAdapters stays [] on every pack and assertCityPackShape keeps throwing `a pack that generates fixtures grants no adapter`.",
+
+    "phrasingBefore": {
+      "navSourcesStatic": "Sources not read",
+      "navSourcesRuleStatic": "no grant count has been read for this pack",
+      "resolvedOnTemplateCity": "0 of 10 sources granted | template-city distinct adapter kinds granted on this pack, of 10 in the catalog",
+      "resolvedOnEmptyCity": "0 of 10 sources granted | empty-city distinct adapter kinds granted on this pack, of 10 in the catalog",
+      "note": "one figure, one rule. Nothing on the footer says the populated regions are generated."
+    },
+
+    "phrasingAfter": {
+      "navSourcesStatic": "Sources not read",
+      "navDemonstratedStatic": "Demonstration not read",
+      "navSourcesRuleStatic": "no grant count has been read for this pack",
+      "navDemonstratedRuleStatic": "no demonstration count has been read for this pack",
+      "resolvedOnTemplateCity": "0 of 10 sources granted | 2 of 10 demonstrated with fixture records | template-city distinct adapter kinds granted on this pack, of 10 in the catalog | distinct adapter kinds this pack generates fixture records for, of 10 in the catalog; a demonstration connects no source",
+      "resolvedOnEmptyCity": "0 of 10 sources granted | 0 of 10 demonstrated with fixture records | empty-city distinct adapter kinds granted on this pack, of 10 in the catalog | this pack generates no records, so no adapter kind is demonstrated on it",
+      "resolvedOnFixtureCity": "same as empty-city; fixture-city generates nothing either"
+    },
+
+    "whyTheseWords": [
+      "`granted` is unchanged, so the claim a prospect already read does not silently change meaning, and the Connections register's separate product-wide `1 of 12 sources connected` keeps its own verb.",
+      "`demonstrated with fixture records` reuses the chrome's own shipped vocabulary - web/index.html already carries `Generated fixture`, `generated fixture records` and `Demo records` - rather than inventing a fifth word for the same thing.",
+      "Same denominator, 10, on both figures, because both count DISTINCT ADAPTER KINDS out of the same catalog. Comparable units are what makes the two numbers legible side by side; a regions-populated numerator (3) against a kinds denominator (10) would be a ratio with two counting rules.",
+      "Both figures carry a denominator inline (DEV_PROCESS 1.1) and each carries its own counting rule at the point of use (DEV_PROCESS 1.2).",
+      "The demonstrated RULE branches on the pack rather than the label, so a pack that generates nothing states the positive determination `this pack generates no records` instead of leaving a bare 0 (AGENT_CONTRACT s5: an empty result is not an absence)."
+    ],
+
+    "derivation": {
+      "where": "src/city-identity.mjs packSources(), the SAME resolver that already derives the granted figure. One resolver, so there is nothing to diverge (DEV_PROCESS 2.4).",
+      "numerator": "distinct entries of pack.fixtureGrants intersected with the ADAPTER_KINDS catalog, and only when pack.generatesFixtures === true",
+      "denominator": "ADAPTER_KINDS.length, the same catalog size the granted figure uses",
+      "hardcodedAnywhere": "no. The proof required by the dispatch is a scratch-copy run that moves the catalog and the grants and watches both numbers move with no source edit; it lands in CP2.",
+      "neonPath": "packSources will read pack.fixtureGrants and pack.generatesFixtures. Both are already in PACK_COLUMNS (fixture_grants, generates_fixtures), and city-identity.test.mjs's structural guard - every pack property city-identity.mjs reads must be a column the SELECT names - covers the new reads automatically."
+    },
+
+    "cssDecision": {
+      "newClasses": 0,
+      "vocabularyCount": 143,
+      "why": "`.nav-foot .prov` is already `display:flex; flex-wrap:wrap; white-space:normal; row-gap:2px`, so a second `<b>` and two more `<span>`s wrap inside the existing chip. The new content composes `.prov`, `.sep` and bare `<b>`/`<span>`, all defined. No kit re-vendor is triggered and web/sc-kit.css is not opened."
+    },
+
+    "adversarialReview": [
+      "RISK: changing `sources.rule` would silently change notificationState's `rule` field, which src/shell-state.test.mjs:206 asserts equals it and server.test.mjs:391 pins by regex. MITIGATED: `rule` is left byte-identical and `demonstratedRule` is a NEW field.",
+      "RISK: a combined single rule sentence would be one string carrying two counting rules, which is the shape rule 1.2 exists to prevent. MITIGATED: two rules, two spans, each beside its own figure.",
+      "RISK: adding a field to the identity payload could trip shell-parity.test.mjs's `identity.<key>` consumed/unconsumed deepEqual. CHECKED: that assertion enumerates top-level identity keys, and `sources` is already in the consumed list; demonstrated lives INSIDE sources, so the key set does not move.",
+      "RISK: static fallback text naming a city. CHECKED: `Demonstration not read` and `no demonstration count has been read for this pack` name no pack, and neither contains the string `Template`, which city-identity.test.mjs forbids in the markup outright.",
+      "RISK: a new id in markup that no served script addresses is dead markup. MITIGATED: web/app.js writes both new ids through setText(), which the addressability resolver follows, so both become REQUIRED ids and the gate fires if either is removed.",
+      "REJECTED ALTERNATIVE: hide the demonstrated figure when it is zero. It would make the honest-empty pack, which is the regression target for every absence state, the one pack that renders no basis for the absence."
+    ]
+  },
+
+  "item2": {
+    "problem": "two register rows bundle jobs whose dispositions differ, and the vocabulary is closed at six values, so no single value is true of either row.",
+    "ruling": "split each into one row per job, each with its own honest disposition.",
+
+    "rowsBefore": [
+      {
+        "where": "SHELL_HOMES, table `other`",
+        "job": "Auth / session / notifications / theme / sign out",
+        "home": "Top bar; People and access",
+        "disposition": "Not built"
+      },
+      {
+        "where": "SHELL_HOMES_ADDENDA",
+        "job": "Feedback with screenshot and category",
+        "home": "Top bar; People and access",
+        "disposition": "Not built"
+      }
+    ],
+
+    "rowsAfter": [
+      {
+        "where": "SHELL_HOMES, table `other`",
+        "job": "Auth and session actions",
+        "home": "Top bar account menu; the actions arrive with the People and access build",
+        "disposition": "Not built",
+        "splitFrom": "Auth / session / notifications / theme / sign out",
+        "basis": "G-90 shipped the account menu with every entry honest-disabled and no identity provider configured; shellCapabilities().signIn.available is false on every deployment today"
+      },
+      {
+        "where": "SHELL_HOMES, table `other`",
+        "job": "Notifications",
+        "home": "Top bar notifications tray; empty with its basis, and it prints no count",
+        "disposition": "Empty",
+        "splitFrom": "Auth / session / notifications / theme / sign out",
+        "basis": "G-90 shipped #notif-btn/#notif-pop/#notif-empty/#notif-basis/#notif-rule; notificationState() deliberately carries no count field. Home exists, nothing in it, which is what Empty means everywhere else in this register (Overview metric tiles, City calendar, Compass chatbot, City-owned assets)"
+      },
+      {
+        "where": "SHELL_HOMES, table `other`",
+        "job": "Theme, light and dark",
+        "home": "Top bar theme toggle, persisted per device and resolved before first paint",
+        "disposition": "Mounted",
+        "splitFrom": "Auth / session / notifications / theme / sign out",
+        "basis": "G-90 shipped #theme-toggle with localStorage persistence and pre-first-paint resolution, asserted by src/first-paint.test.mjs"
+      },
+      {
+        "where": "SHELL_HOMES, table `other`",
+        "job": "Sign out",
+        "home": "Top bar account menu; ending a session needs the People and access build",
+        "disposition": "Not built",
+        "splitFrom": "Auth / session / notifications / theme / sign out",
+        "basis": "shellCapabilities().signOut.available is false with basis `there is no staff session to end`"
+      },
+      {
+        "where": "SHELL_HOMES_ADDENDA",
+        "job": "Feedback",
+        "home": "Top bar account menu composer; delivery is reported per send and never assumed",
+        "disposition": "Mounted",
+        "splitFrom": "Feedback with screenshot and category",
+        "basis": "G-90 shipped #feedback-form/#feedback-text/#feedback-send/#feedback-result and POST /api/feedback, where `accepted` means DELIVERED and nothing else sets it true"
+      },
+      {
+        "where": "SHELL_HOMES_ADDENDA",
+        "job": "Feedback screenshot attachment",
+        "home": "Top bar account menu composer; the composer takes text only",
+        "disposition": "Not built",
+        "splitFrom": "Feedback with screenshot and category",
+        "basis": "the composer is a textarea; no capture path exists anywhere in the served scripts"
+      },
+      {
+        "where": "SHELL_HOMES_ADDENDA",
+        "job": "Feedback category",
+        "home": "Top bar account menu composer; the composer takes text only",
+        "disposition": "Not built",
+        "splitFrom": "Feedback with screenshot and category",
+        "basis": "deliverFeedback() forwards message, surface and cityKey; there is no category field in the request or the composer"
+      }
+    ],
+
+    "homeTextIsStaleProof": "every new home text states a STRUCTURAL fact (which build the action waits on, what the composer accepts) rather than a deployment-configuration fact. `SHELL_IDENTITY_PROVIDER is unset` would have been true the day it was typed and silently false the day a variable is set, which is the stale-claim shape G-90's own capability resolver was built to avoid.",
+
+    "countsAfter": {
+      "SHELL_HOMES": { "before": 67, "after": 70, "rule": "register rows; table `other` goes 11 to 14 because one source row splits into four" },
+      "SHELL_HOMES_ADDENDA": { "before": 3, "after": 5, "rule": "register rows; one source row splits into three" },
+      "ALL_HOME_ROWS": { "before": 70, "after": 75, "rule": "SHELL_HOMES + SHELL_HOMES_ADDENDA" },
+      "sourceRowsHomesTables": { "before": 67, "after": 67, "rule": "MEASURED as the distinct values of (splitFrom ?? job) across SHELL_HOMES, never as a subtraction (DEV_PROCESS 1.3). Equals the Homes-table rows in _inbox/2026-08-17_g18_shell_homes.md, which this work does not change." },
+      "sourceRowsAddenda": { "before": 3, "after": 3, "rule": "same measure across SHELL_HOMES_ADDENDA" }
+    },
+
+    "newCountingRule": "one row per JOB. The G-18 function-homes file carries 67 Homes-table rows (primary 31, review-product 7, products 6, feeds 12, other 11) plus 3 layout-inventory jobs the Homes tables never named. A source row that bundled jobs with different dispositions is split into one row per job, each naming its source row in splitFrom, so the register renders 70 and 5. Both figures are measured; neither is derived from the other by subtraction.",
+
+    "bakeDiscipline": {
+      "generator": "connectionsRegisterHtml() in src/shell-homes.mjs",
+      "reBake": "node scripts/bake-connections.mjs, then `G-88 the bake is fresh / leaves web/index.html unchanged when the bake is run again` must be green. The dispatch's own named test is the proof, and CP2/close carry it watched FAILING on a planted hand edit.",
+      "handTypedCountsFound": "web/index.html carries `<b>67 of 67</b> | Homes-table row` and `<b>3</b> | layout-inventory addendum` in the Connections panel head, plus a t-caption restating the counting rule in prose. NONE of the three is baked today - they are hand-typed copies of a rule that lives in src/shell-homes.mjs. That is the drift shape this repo has already paid for twice (`7 integrations`, `0 of 4`). PROPOSAL: give them ids and bake them from the register, so the fixed-point test covers them and no future split can leave a stale count on the page.",
+      "scopeJustification": "this is not scope creep away from G-93; it is the only way the new count can be stated on the page without hand-typing it, which the dispatch forbids for the footer figure and which would be no more defensible here."
+    },
+
+    "adversarialReview": [
+      "RISK: splitting changes SHELL_HOMES.length, and src/shell-homes.test.mjs pins 67 and the per-table breakdown, and src/server.test.mjs:288-289 pins `/67 of 67/` and 70 baked rows over the SERVED document. Both move with the rule, and both keep a per-table assertion so a split cannot hide in a total.",
+      "RISK: `splitFrom` is a new field that nothing enforces, so a future split could omit it and the source-row count would silently rise. MITIGATED: a test asserts every splitFrom value names a job that is NOT itself a register row, and that every split group has more than one member - so a stray or self-referential splitFrom fails rather than resolving quietly.",
+      "RISK: calling Feedback `Mounted` while this deployment cannot deliver. CHECKED: Mounted is used in this register for surfaces that are mounted (Reviewer queue, Citizen service requests), not for surfaces whose dependencies are configured; and the composer reports the destination's real answer rather than a fabricated success, so the mounted claim is true independent of configuration.",
+      "RISK: `Empty` for Notifications could be read as `no notifications exist` rather than `no source can raise one`. MITIGATED: the home text carries the nuance, which is what the file's own header comment says the home column is for.",
+      "REJECTED ALTERNATIVE: move the nuance into the home text and set the disposition from the unbuilt leg, which is the other option the G-90 lane offered. It keeps 67 and needs no counting-rule change, but it makes the register's disposition column report the WORST leg of a bundle rather than the state of a job - so the built theme toggle and the built notifications tray would both read `Not built` on the page whose entire purpose is to be the honest build map."
+    ]
+  },
+
+  "filesToTouch": [
+    "web/index.html (footer markup, Connections panel-head ids, re-baked register)",
+    "web/app.js (render the two new footer ids)",
+    "src/shell-homes.mjs (row split, splitFrom, derived count helpers, bake extension)",
+    "src/city-identity.mjs (packSources gains the demonstrated figure and its rule; IDENTITY_FALLBACK gains the two fallback strings)",
+    "src/shell-homes.test.mjs, src/city-identity.test.mjs, src/server.test.mjs (gates that pin the changed figures)"
+  ],
+  "filesNotTouched": [
+    "web/sc-kit.css - forbidden by the dispatch and by the cross-repo byte-identity rule",
+    "src/domains/*, src/domains.mjs, src/fixture-seam.mjs, src/adapters.mjs - the two sibling lanes' territory, forbidden by the dispatch",
+    "src/type-conformance.test.mjs, src/hidden-rule.test.mjs, src/addressability.test.mjs - the gates that look at this lane are not edited by it"
+  ],
+  "siblingCollisionCheck": "read _dispatches/2026-08-19_w2ds_dispatch.md and _dispatches/2026-08-19_w2dept_dispatch.md at source: both are `src/` ONLY, both append to src/domains.mjs and add files under src/domains/, and neither names src/city-identity.mjs, src/shell-homes.mjs or web/. No file on this lane's list is on either sibling's list.",
+
+  "constraintsCarried": [
+    "no invented freshness; no `last sync` / `last read` / `last updated` string",
+    "every empty region keeps a .basis line",
+    "no real city asserted as content; live Bastrop no-touch",
+    "12px type floor with its one named evidence-chip exception, owned by src/type-conformance.test.mjs and not re-implemented here",
+    "no second `display: !important`",
+    "no feed connected, no adapter granted, grantedAdapters stays [] on every pack",
+    "open the PR, do not merge, do not deploy"
+  ]
+}
