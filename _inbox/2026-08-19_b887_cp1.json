@@ -1,0 +1,100 @@
+{
+  "lane": "B887",
+  "checkpoint": "CP1",
+  "date": "2026-08-19",
+  "planRow": "G-88",
+  "planOfRecord": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "item": "item 7, the addressability instrument",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/b887-dash",
+  "branchedFrom": "main @ 6a4580d1a4845df54a32d376abdbf36b9f3591fb",
+  "branch": "g88/addressability-gate",
+  "cloneVerification": {
+    "command": "git rev-parse HEAD",
+    "output": "6a4580d1a4845df54a32d376abdbf36b9f3591fb",
+    "note": "fresh clone, working tree clean, matches the SHA the dispatch named"
+  },
+  "baselineSuite": {
+    "command": "node --test src/*.test.mjs",
+    "tests": 199,
+    "pass": 199,
+    "fail": 0,
+    "note": "199, not the 185 the WDLL recorded at cdfca39; PRs #20/#21/#22 landed since"
+  },
+
+  "missionPremise": "A kit composition emits zero id attributes, zero hidden branches and zero data-* hooks (G-88 translation-boundary investigation, _inbox/2026-08-18_g88_translation_boundary.md). test/_markup.mjs in the kit normalises away exactly id, hidden and every non-class attribute before comparing, so the nineteen green parity tests are silent about the gap by construction. A screen that renders perfectly and cannot be driven passes every gate in both repos today.",
+
+  "extractionDesign": {
+    "principle": "Resolve every addressing expression to a set of concrete strings through NAMED rules, and FAIL THE TEST on any expression no rule resolves. An unresolvable expression is never skipped. This is the anti-vacuity property: the instrument cannot silently shrink the way a getElementById-only regex would.",
+    "sourceListDerivation": "Scripts and markup are derived, not hardcoded, exactly as src/ui.test.mjs already does: SERVED_ASSETS comes from server.mjs's sendFile call sites (regex anchored on the function name plus the path.join argument), plus BAKE_SOURCES = src/shell-homes.mjs which reaches the browser only through scripts/bake-connections.mjs. Scripts = served assets ending .js/.mjs (web/app.js, src/staff-map.mjs, src/staff-review.mjs). Markup = served non-css assets plus the bake source. Stylesheets = served assets ending .css. Trap 3 closed by derivation, not by a list.",
+    "commentStrip": "JS comments are stripped from every scanned script before extraction, with string and template-literal contents preserved by a character scanner rather than a regex. MEASURED NEED, not hygiene: web/app.js lines 68, 69 and 654 mention [data-pack-name] and [data-pack-key] inside prose comments. Without the strip those read as addressed. This is the same defect class as the CSS comment-strip hole G-88 item 3 closed one layer up.",
+    "idAddressingForms": [
+      "F1  document.getElementById(<expr>)",
+      "F2  #identifier tokens inside selector strings passed to querySelector / querySelectorAll / closest / matches  (catches #ds-metrics, which a getElementById-only scan misses entirely)",
+      "F3  .id === <expr> and .id.startsWith(<expr>) route-family comparisons  (catches the 24 lens-/work-/tab-/atab- section ids that drive routing and that no getElementById ever names)",
+      "F4  ARIA IDREF wiring in served markup: aria-describedby / aria-labelledby / aria-controls / aria-owns / aria-activedescendant / for / list / headers. The markup addresses itself; a dropped target dangles the wiring silently. Measured: 3 references (record-search-note, cp-sheet, citizen-lookup-basis)."
+    ],
+    "valueResolutionRules": [
+      "R1  string literal -> itself",
+      "R2  template literal -> cross-product of the literal chunks with the value set of each ${ident} / ${this.ident}",
+      "R3  identifier bound by for (const X of [ literals ]) -> those literals",
+      "R4  identifier that is a function or class-constructor PARAMETER -> union of the resolved arguments at that position across every call site, fn(...) and new Class(...), resolved recursively",
+      "R5  identifier destructured from a call to a function imported from another SERVED script -> the vocabulary that function's own source constrains the field to via ARRAY.includes(x) ? x : fallback, where ARRAY resolves through export const array literals and ...spreads",
+      "FAIL  anything else -> assertion failure naming the unresolved expression and its source line"
+    ],
+    "helperResolutionMethod": "TRAP 1, and it is the whole difference between a real instrument and a green one. A regex for getElementById(\"literal\") finds 27 of the 40 ids app.js addresses through getElementById alone. The resolver walks parameters back to call sites (R4) and loop bindings forward to their literals (R3), transitively. Three concrete chains it must and does resolve: (a) function setText(id, value) { document.getElementById(id) } -> setText is an id-taking helper at argument index 0 -> 11 distinct ids recovered from its call sites; (b) for (const id of [\"env-badge\", \"cp-env-badge\"]) { document.getElementById(id) } -> 2 ids from a for-of over an array literal; (c) class MountStage { constructor(name) { document.getElementById(`${name}-stage`) } } -> constructor parameter -> new MountStage(name, {...}) -> name is itself a for-of loop variable over [\"map\",\"review\",\"files\"] -> 3 ids, two hops deep. The id-taking-helper set is DERIVED by fixed point (a function is an id helper if its body passes one of its own parameters to getElementById or to an already-known id helper), never declared.",
+    "r5ProvenBeforeCP1": "Prototyped against the real sources before this checkpoint was filed. src/staff-review.mjs resolves WORK_IDS=6, ALL_LENS_IDS=9 (via a ...spread of LEAD_LENS_IDS and ROSTER_LENS_IDS), DS_TABS=6, ASSET_TABS=3; the four returned fields resolve to those same vocabularies; all 24 composed ids (lens-* 9, work-* 6, tab-* 6, atab-* 3) are present in web/index.html, so the clean arm is green rather than hoped-green. The empty string is dropped from every vocabulary with its rule stated: it is resolveStaffLensQuery's no-selection fallback, composes the id 'tab-' which matches no element, and the code guards it with Boolean(work)."
+  },
+
+  "trap2Classification": {
+    "problem": "An id that app.js both CREATES and addresses must not be required in the static document, or the gate is permanently red, and a permanently red gate is a dead gate (DEV_PROCESS 2.0).",
+    "approach": "DERIVED, not a hand-written allow-list. The instrument scans the same comment-stripped served scripts for id-WRITING expressions: <expr>.id = , setAttribute(\"id\", ...), and id=\" inside template literals. Anything a served script creates is subtracted from the required set automatically, so a future change that starts creating ids updates the exclusion set on the next run with nothing to remember. That is the answer to the has_writer defect class: a declaration nothing recomputes is the thing being avoided.",
+    "measuredToday": "EMPTY. web/app.js makes 13 document.createElement calls and assigns className, textContent and dataset on them; it assigns .id on none, and calls setAttribute only with aria-selected and aria-expanded. Positive determination, not an empty result: the set is empty because no served script writes an id, and the instrument asserts that derivation rather than asserting the empty set.",
+    "contractStatement": "The exclusion set and its basis are stated in the test body where the output is read, per DEV_PROCESS 2.1, not buried in a helper module."
+  },
+
+  "hookExtraction": {
+    "listIsDerived": "The dispatch's eight-name list was written from a grep and is explicitly not authoritative. Derived instead from two reader populations, kept as separate sets with separate bases and unioned for the diff.",
+    "readByScript": "[data-*] tokens in selector strings, plus .dataset.X reads with camelCase mapped to kebab. Measured 10: data-atab, data-lens, data-metric, data-pack-key, data-pack-name, data-stage, data-stage-max, data-stage-present, data-tab, data-work.",
+    "readByStylesheet": "[data-*] attribute selectors in the served stylesheets, CSS comments stripped. Measured 2: data-disposition, data-theme. This population exists because the class rule counts classes and never looks at attribute selectors, and shell.css colours the connections register (446 elements, the largest section of the page) entirely off data-disposition. That hole was named in the translation-boundary investigation and nothing covers it today.",
+    "createdByScript": "DERIVED exclusion, same shape as trap 2: any X.dataset.Y = assignment in a served script. Measured 2: data-src (this.frame.dataset.src) and data-city-key (shell.dataset.cityKey). Both are written by app.js and must not be required in static markup.",
+    "required": "12 = (10 script-read UNION 2 stylesheet-read) MINUS 2 script-created; the created pair intersects neither read set, so the union is 12.",
+    "presenceNotValue": "The rule is attribute PRESENCE, not attribute-value presence, and the basis is measured: sc-kit.css line 29 selects :root:not([data-theme=\"light\"]), so data-theme=\"light\" is styled and is deliberately never attached in static markup. A value-level rule would be red on day one, which DEV_PROCESS 2.0 forbids. Presence is also the property a React translation actually loses, since a kit composition emits zero data-* attributes of any value."
+  },
+
+  "hiddenArm": {
+    "rule": "Every element carrying a bare hidden attribute in any scanned markup source, pinned as a NAMED SET rather than a count, so a dropped branch fails and names itself. Measured 14, all in web/index.html, and every one of the 14 carries an id.",
+    "reachability": "Second derived classification: each hidden id is either toggled by a served script (via the resolved getElementById/show path or a direct .hidden = assignment) or referenced by an ARIA IDREF. Reported positively; an element that ships hidden and that nothing can ever show is dead markup and a finding. record-search-note is the one that is not script-toggled, and it is legitimate: web/index.html:24 wires aria-describedby=\"record-search-note\" on the disabled #record-search input. F4 exists partly because of it."
+  },
+
+  "measuredAgainstPlannerFigures": {
+    "94 distinct ids page-wide": "CONFIRMED. 94 id= occurrences in web/index.html, 94 distinct, zero duplicates. src/shell-homes.mjs, src/staff-map.mjs and src/staff-review.mjs emit zero ids, so page-wide equals index.html.",
+    "14 hidden elements": "CONFIRMED. 14 in web/index.html, 0 in the bake source.",
+    "33 getElementById calls": "CONFIRMED. Counting rule: occurrences of getElementById( in web/app.js including the two inside helper bodies.",
+    "10 querySelectorAll calls": "CONFIRMED, and it is an understatement of reach: there are a further 10 querySelector and 3 closest call sites carrying selector strings, one of which addresses an id (#ds-metrics).",
+    "the eight data-* names": "PENDING FINAL RECONCILIATION. data-disposition is in the dispatch's list but is read by shell.css, not by web/app.js; the other seven named are script-read. Derivation adds data-metric, data-stage-max and data-theme, which the list omits."
+  },
+
+  "foldsPlanned": {
+    "foldA": "src/city-identity.test.mjs:184 'adds no CSS class and edits no stylesheet to do it' re-implements the shipped-class rule with no CSS comment strip, two markup sources instead of five, and only the classList extractor. Extract the ONE rule to a shared module and have both ui.test.mjs and city-identity.test.mjs call it, per DEV_PROCESS 2.4: one implementation needs no divergence test, two need one forever. Watched failing on an injected class=\"hidden\" before the fix, passing after.",
+    "foldB": "src/shape.test.mjs:16 walks /\\.(mjs|js|html)$/, so a vendor name in a web/shell.css comment ships green, on the exact file G-88 item 2 just grew. Widen to .css and give the gate its first firing arm: inject each of the five forbidden strings into each scanned extension and assert it fires and names the file.",
+    "cityNameGateClaim": "To verify at source, not assumed: the surface inventory reports the city-name gate as case-sensitive and scoped to web/index.html alone. Report with evidence; fix only if contained to test space."
+  },
+
+  "staleCommentToCorrect": "src/ui.test.mjs around line 510 states the class gate's denominator as '115 tokens under the old rule, 109 under this one'. G-88 item 2 landed four CSS families in web/shell.css and falsified it. Recount both numbers under both rules, correct the live statement, and keep 115-versus-109 as the historical illustration rather than deleting the reasoning.",
+
+  "completionPredicate": "A stranger can check this without me: the branch carries a test in src/ that (a) resolves the addressed-id set through the named rules with a hard failure on anything unresolved, (b) diffs ids, hidden branches and behaviour hooks against the derived served-source list, (c) contains, in the SAME test run, an injected arm per category that removes one member from an in-memory copy and asserts the diff NAMES the removed member, (d) asserts each probe target is real before injecting. Folds A and B are watched failing before and passing after. A PR is open against main, not merged, and its CI check-run conclusion string is 'success'.",
+
+  "scopeBasis": "TEST-ONLY plus the two named gate fixes. web/index.html, web/shell.css and web/app.js are off limits because a sibling lane is editing them in this same repository this session; defects found in them are REPORTED, not fixed. web/sc-kit.css is byte-identical across three repos and is untouched. roster-lens is not deleted; a later lane owns that. The instrument covers what app.js and the served stylesheets ADDRESS, which is narrower than everything the markup contains, because addressability is the property the React-to-static translation loses and the property no existing gate measures.",
+
+  "constraintsHonoredSoFar": [
+    "no edits to web/index.html, web/shell.css, web/app.js, web/sc-kit.css",
+    "own clone P:/tmp/b887-dash, no other lane's clone opened",
+    "no deploy, no merge, no live Bastrop, no G-52, no G-24, L26 untouched",
+    "doc_repo edits left uncommitted; this file is one of them"
+  ],
+  "openAtCP1": [
+    "the instrument itself is not yet written; this checkpoint is the design",
+    "the three injected arms are not yet watched firing (CP2 owes the id arm)"
+  ]
+}

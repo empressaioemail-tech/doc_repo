@@ -1,0 +1,271 @@
+{
+  "artifact": "Lane B close — G-89 shipped, G-88 items 4/5/7 shipped, items 6/9/10 held",
+  "date": "2026-08-19",
+  "lane": "Lane B (doc_repo planner)",
+  "plan": "OPS-17",
+  "planRows": ["G-89", "G-88"],
+  "seat": "doc_repo planner, Claude Code",
+
+  "missionPremise": "Three cards in one session on operator authority: G-89 the lens flash first because it is what a prospect sees, G-88 items 4 and 5 as one coupled lane because the kit's SHIPPED.size===109 pin was passing on a stale vendored stylesheet, and G-88 items 6/7/9/10 the design pass, of which item 7 was the only acceptance item in the eleven-item WDLL with no instrument behind it. The governing habit carried in from the prior session: three premises the work was scoped on had been measured false, each caught by an executor measuring rather than reasoning. When a card tells you WHY, check the why before you build the what.",
+
+  "completionPredicate": "G-89 merged, deployed and proven by a probe watched failing on the pre-fix build. G-88 item 4 recounted rather than forecast. Item 5 wrapped and re-synced with sentinel first and _ds_sync.json last and alone. Item 7 merged with a test that fails on a removed id. Items 6, 9 and 10 shipped surface by surface and walked. The last three did not happen and are held, not dropped.",
+
+  "scopeBasis": "Items 1, 2, 3, 8 and 11 of the WDLL were already done or standing. Item 6 depends on item 5, so the design pass could not start until the kit wrapped the four families; item 7 depends only on item 3, which was done, so it parallelised. That dependency reading is what made three concurrent executors correct rather than two serial ones.",
+
+  "prs": [
+    {
+      "repo": "smartcity-dashboards",
+      "number": 23,
+      "row": "G-89",
+      "branch": "g89/lens-first-paint",
+      "headSha": "e01c192847475c7a0e82b17ea85b5a4c954cba16",
+      "ciConclusionString": "success",
+      "mergedSquashSha": "ecfae70ba7e0ea308f74c8589e1ac6713cef7e86"
+    },
+    {
+      "repo": "smartcity-kit",
+      "number": 7,
+      "row": "G-88 items 4 and 5",
+      "branch": "g88/recount-and-wrap-four-families",
+      "headSha": "77473c4040b08029e2af0c8a55d801d9be24186a",
+      "ciConclusionString": "success",
+      "mergedSquashSha": "d6bd9a1d7e29a0306fd5b331282a0483ef110e61",
+      "note": "First head 60996cac was verified and NOT merged; it vendored product main at 6a4580d and the G-89 merge moved product main to ecfae70 underneath it. Re-vendored and re-greened before merge."
+    },
+    {
+      "repo": "smartcity-dashboards",
+      "number": 24,
+      "row": "G-88 item 7",
+      "branch": "g88/addressability-gate",
+      "headSha": "baf04b2abd6d1aad6323113e9bd798baa20df0d9",
+      "ciConclusionString": "success",
+      "mergedSquashSha": "e11155246196a82224e4d291d53ba63bd7735849",
+      "note": "Two earlier heads (13259b52, ad64ceca) were verified and NOT merged; each was sent back on a defect found by planner verification rather than by CI."
+    }
+  ],
+
+  "deploy": {
+    "service": "smartcity-dashboards",
+    "project": "smartcity-dashboards",
+    "region": "us-east1",
+    "method": "gcloud run deploy --source . --tag g89b --no-traffic, smoked, then update-traffic to 100",
+    "revisionDeployed": "smartcity-dashboards-00021-yap",
+    "servingAt100": true,
+    "trafficReadBack": "{'revisionName': 'smartcity-dashboards-00017-vx4', 'tag': 'pre'}; {'revisionName': 'smartcity-dashboards-00018-kiw', 'tag': 'g88'}; {'percent': 100, 'revisionName': 'smartcity-dashboards-00021-yap', 'tag': 'g89b'}",
+    "00017vx4LeftAlone": "yes, still tagged pre at 0 percent as the operator required",
+    "smokeBeforeTrafficShift": [
+      "GET /health 200 {\"ok\":true,...,\"db\":\"connected\",\"name\":\"neondb\"}",
+      "GET /api/city-packs without Bearer -> 401, so the Secret Manager key still resolves and the --source deploy did not rotate it",
+      "all four served assets sha256-match the merged tree"
+    ],
+    "noSecondDeployOwed": "PR #24 is test-only; git diff --stat origin/main ecfae70 -- web/ is empty, so the serving revision is still current after that merge.",
+    "revisionNumberGap": "generations 00019 and 00020 were consumed without producing revisions. Observed and not explained; recorded rather than given a cause."
+  },
+
+  "g89": {
+    "whatShipped": "An inline classless script in <head> resolves the query string before the parser reaches the body and stamps data-surface, data-tab and data-atab on the root; web/shell.css keys visibility off those attributes. 27 enumerated selectors (15 surfaces, 6 DS tabs, 3 Assets tabs, 3 presence-keyed hide rules).",
+    "acceptanceMeasuredOnTheDeployedSurface": {
+      "instrument": "30-target Playwright walk, nine lenses plus six work views on each of template-city and empty-city, with the request for /app.js aborted at the route level, which reproduces the pre-paint state with no race",
+      "before00018kiw": "30/30 reachable, correct lens 2/30, 28 mismatches, and the distinct visible set across ALL 28 was exactly [\"lens-city-manager\"]",
+      "after00021yap": "30/30 reachable, correct lens 30/30, 0 mismatches",
+      "theTwoThatPassedBefore": "the two ?lens=city-manager requests, one per pack",
+      "artifacts": [
+        "_inbox/2026-08-19_g89_prefix_walk_blocked.json",
+        "_inbox/2026-08-19_g89_postfix_walk_blocked.json",
+        "_inbox/2026-08-19_g89_postfix_walk_live.json",
+        "_inbox/2026-08-19_g88_prefix_walk_baseline.json"
+      ]
+    },
+    "renderedStateUnchanged": "The unblocked walk was diffed target by target before and after: 0 of 30 surfaces showed any rendered difference in visible lens, .basis count, .state count, DOM id count or pill text. The fix changed first paint only, which is what it was supposed to do.",
+    "rootAttributeCorrectLive": "0 of 30 rows where the root data-surface disagreed with the requested surface. Sample: /?work=assets -> surface=\"work-assets\" tab=\"\" atab=\"inventory\".",
+    "edgeCasesOnTheDeployedSurface": "9 of 9. Unknown lens, unknown work, unknown tab, empty lens value and no query all fall back to Overview rather than painting nothing. JS disabled: exactly 1 of 15 sections reachable and data-surface is null, identical to the pre-fix behaviour, because the hide rules gate on attribute PRESENCE.",
+    "instrumentMutationTestedByThePlanner": [
+      "delete the inline head script -> fires, actual ['lens-city-manager'] vs expected ['lens-finance']",
+      "delete one show selector -> fires twice, and Finance paints NOTHING (actual: []), plus the three-way set-equality test names the missing id",
+      "add an id to the head script only -> divergence test fires, naming script=\"lens-bogus-lens\" module=\"lens-city-manager\"",
+      "add an id to staff-review.mjs only -> divergence test fires in the other direction"
+    ],
+    "plannerMutationThatWasWrong": "One mutation removed the lens-finance selector from a CSS COMMENT rather than the rule and produced a false all-clear. Caught by checking the byte count removed against the selector's length. Recorded because a green result from a mutation that did not apply is indistinguishable from a broken instrument."
+  },
+
+  "g88Item4": {
+    "recount": 139,
+    "countingRule": "stylesheetClasses() in test/_lib.mjs: distinct class-selector tokens matching /[.](-?[_a-zA-Z][\\w-]*)/g across vendor/sc-kit.css + vendor/shell.css, CRLF-normalized, CSS comments stripped first. State modifiers, element-scoped children and both theme classes count. Pseudo-classes, attribute selectors and element selectors are not classes and are not counted.",
+    "before": 109,
+    "added": 30,
+    "removed": 0,
+    "measuredNotDerived": "before set from `git show HEAD:vendor/*.css`, after set from the re-vendored tree. Both measured; nothing derived by subtraction.",
+    "reconciliationAgainstTheEstimates": "The three scoping investigations predicted 117, 128 and 138 by three different methods and all three were wrong. 139 reconciles exactly as 109 + 19 for the three named families + 11 for the finding family, where the eleventh token is the meter fill `f`. The css-families investigation flagged `f` in a parenthesis and then dropped it from its own headline total. The gap between the parenthesis and the total was the whole discrepancy.",
+    "gateWatchedRed": "npm test went 74 pass / 0 fail to 72 pass / 2 fail on re-vendor: the size pin (139 !== 109) and the coverage assertion naming exactly the thirty added classes, 109 of 139 covered, 78.4 percent. The uncovered list WAS the work list.",
+    "recountHeldAcrossTheG89Merge": "Re-measured against product main at ecfae70 after G-89 landed 88 new lines in shell.css: still 139. The class tokens in those lines, comments stripped, are exactly .lens, .ds-tab, .assets-tab and .on, all already in the set."
+  },
+
+  "g88Item5": {
+    "componentsWrapped": 9,
+    "componentCount": "73 -> 82",
+    "previewCount": "73 -> 82",
+    "coverageRestated": "139 of 139, with its denominator, in README.md",
+    "exports": "82 function exports verified by importing the built dist/index.mjs",
+    "noExclusionSetAdded": true,
+    "inversionTrapsHeldAtTheTypeAndVerifiedByThePlanner": [
+      "ModelCite rejects children: TS2322, 'children' does not exist on Omit<AnchorBase, \"children\">. The licensed-model-code leak the missing slot exists to prevent is structurally impossible rather than merely undocumented.",
+      "MatrixRow has no default applicability: TS2741, 'applicability' is missing but required. An unreviewed row cannot silently read as clean by omission.",
+      "Confidence rejects a bare value: TS2353, 'value' does not exist in type Confidence. And there is no Meter export at all, verified: Meter exported false.",
+      "Method: a scratch tsconfig pointing at the built dist/index.d.mts, compiling a file that attempts all three violations. All three rejected."
+    ],
+    "gates": {
+      "npmTest": "81 tests, 81 pass, 0 skipped, with SC_DASHBOARDS_DIR set so vendor-parity arm B actually ran",
+      "proveGates": "31 of 31 injected violations caught and named, 1 of 1 legitimate-payload control green",
+      "proveGatesNowRunsInCI": "added this round; previously the only instrument that proves a gate can fire ran only when someone remembered"
+    },
+    "designSyncResync": {
+      "projectId": "f5e5465e-943f-4f68-b52f-608925bc07b0",
+      "planId": "plan_f5e5465e943f4f68_a343b06c1c3a",
+      "localDir": "P:/tmp/g82v/ds-bundle",
+      "toolProof": "get_project read BEFORE any write returned name SmartCity Product Kit, type PROJECT_TYPE_DESIGN_SYSTEM, canEdit true",
+      "bundleBuild": "package-build.mjs wrote 82 component previews; package-validate.mjs exit 0 with 82/82 previews rendering cleanly, _ds_sync.json anchor matching the bundle, 82 render hashes recomputed against disk, 63 tokens defined",
+      "onlyWarning": "[FONT_MISSING] \"Inter Variable\", \"Cascadia Mono\" — the known triaged warn, both are fallback-stack entries rather than primary faces",
+      "deltaMeasuredNotGuessed": "The previous bundle was snapshotted by sha256 before rebuilding, so the delta is a diff rather than an assumption: 45 added (36 component files = 9 components x 4, plus 9 previews), 5 changed, 0 removed, 226,101 bytes.",
+      "oneUnexplainedChangeResolvedBeforeUploading": "components/general/Basis/Basis.prompt.md changed and nothing in the PR touched Basis. Fetched the remote copy with get_file and diffed: the generator appended a '## Related -> BasisLine' cross-reference, 25 bytes, because the new component is a name-prefix relative. Benign, and established rather than waved through.",
+      "sequenceHeld": [
+        "1. _ds_needs_recompile written FIRST and alone",
+        "2. 49 content files in three chunks sized by BYTES: 51,684 (_ds_bundle.js alone) / 79,393 / 72,242",
+        "3. no deletes",
+        "4. remote LISTED and reconciled BEFORE the anchor was armed",
+        "5. _ds_needs_recompile re-armed",
+        "6. _ds_sync.json written LAST, in its own call"
+      ],
+      "writeFailures": 0,
+      "retries": 0,
+      "remoteReconciliation": {
+        "countingRule": "files only, directory entries excluded; the nine new components verified present by name with all four files each, and the nine new previews verified present by name",
+        "plannerManagedFiles": 462,
+        "appGeneratedFiles": 2,
+        "appGeneratedNames": ["_ds_manifest.json", "_adherence.oxlintrc.json"],
+        "total": 464,
+        "before": 417,
+        "honestLimit": "The total is reconciled as 462 planner-managed plus 2 app-generated by arithmetic against the enumerated delta, and the 18 new paths were each verified present by name. It is not an exact machine recount of every one of the 464 remote paths, because the listing is a tool result rather than a file on disk."
+      }
+    }
+  },
+
+  "g88Item7": {
+    "headline": "32 of the 70 addressed ids can be deleted from web/index.html with the entire pre-existing 199-test suite still green. Measured by 70 delete-run-restore iterations with the file hash verified, not inferred. A literal grep said 36 and was wrong in both directions. All six Development-services tab ids and the entire stage-escape control were uncovered.",
+    "measuredSets": {
+      "requiredIds": 70,
+      "idsBasis": "43 via getElementById, 1 via #ds-metrics, 24 via el.id route comparisons, 3 via ARIA IDREFs",
+      "hiddenBranches": 14,
+      "behaviourHooks": 12,
+      "hooksBasis": "10 script-read UNION 2 stylesheet-read MINUS script-created; the created pair intersects neither read set"
+    },
+    "plannerFiguresCorrected": [
+      "94 ids and 14 hidden CONFIRMED, and page-wide-equals-index.html was established positively by measuring that the three other served or baked sources emit zero ids",
+      "33 getElementById is a CALL-SITE count and is correct; it resolves to 43 DISTINCT ids once helpers, loop variables and constructor parameters are followed. Both travel with their counting rule: 33 alone under-scopes a re-attach job by ten, 43 alone misdescribes the file.",
+      "the planner's eight data-* names were wrong in both directions: data-disposition is stylesheet-read rather than script-read, and the list omitted data-metric, data-stage-max and data-theme"
+    ],
+    "twoHolesFoundByPlannerVerificationAfterCIWasGreen": [
+      "The gate fired on the COMBINATION with G-89 and neither PR was wrong alone. data-surface is stylesheet-read and stamped at runtime, but the created-by-script derivation recognised only X.dataset.Y = and not setAttribute(\"data-...\"). data-tab and data-atab escaped only because they already exist in static markup, which is passing by luck rather than by rule. Fixed by widening the DERIVATION, and the excused set is pinned so the derivation cannot self-heal into silence.",
+      "The attached-ness diff unioned the served documents with the BAKE SOURCE, so removing data-disposition from web/index.html alone left the gate green at 10 pass / 0 fail while the 446-element connections register lost its entire severity colouring. Fixed by splitting the population: attached-ness diffs served documents only, the class rule keeps the union, and the split is asserted rather than described."
+    ],
+    "safeByLuckMadeConcrete": "The planner's claim that the id arm was safe only because the bake source happens to emit zero ids was hypothetical. The executor made it concrete: removed a helper-reached id from index.html AND made shell-homes.mjs emit it, confirmed the union contained it, and the arm fires anyway. A first probe that passed was discarded rather than reported, because that id is in the markup but addressed by no script and was therefore never required.",
+    "bakeFreshnessClosedToo": "web/index.html is now asserted to be a FIXED POINT of the bake, using the transform extracted out of scripts/bake-connections.mjs so the script and the test call one implementation rather than two. This closes a hole the translation-boundary investigation named and nothing covered: the bake output was never byte-asserted, so a stale bake shipped and passed every test in the repo, in either direction. Verified by the planner: changing the generator alone now fails 'G-88 the bake is fresh / leaves web/index.html unchanged when the bake is run again'.",
+    "foldsDelivered": [
+      "Fold A: the second weaker copy of the class rule in city-identity.test.mjs is gone; the rule is extracted to src/served-surface.mjs and both callers use it. One implementation needs no divergence test.",
+      "Fold B: the forbidden-string gate now scans .css and has its first firing arm. Before the fix its walk found 0 hits on an injected `leaflet` in a shell.css comment; after, it names web/shell.css: leaflet.",
+      "The city-name gate claim was verified by injection rather than by reading: lowercase `bastrop` in index.html AND \"Bastrop\" in app.js both shipped green through all 209 tests. Fixed in test space, watched firing, green on merge with zero occurrences today.",
+      "The stale 115/109 comment is now measured in the assertion (139 with the comment strip, 145 without, same six words), so it cannot go stale again."
+    ],
+    "finalSuite": "219 tests, 219 pass, 0 fail",
+    "shippedBytes": "none — git diff --stat origin/main -- web/ is empty at the merged head, so no deploy is owed for this item"
+  },
+
+  "findingsWorthKeeping": [
+    {
+      "id": "F1",
+      "title": "WDLL item 10's acceptance walk cannot see what it is written to check",
+      "detail": "The served document is byte-identical across every lens and every pack — six URL forms, one sha256. Item 10 as written is thirteen identical GETs then thirteen more, and would pass identically on a redesigned build and an untouched one. Replaced with three legs: deployed-bytes hash against the merged tree, pack checks moved to /api/*, and a real browser walk, which is the only leg that can grade a design pass.",
+      "artifact": "_inbox/2026-08-19_g88_item10_walk_is_vacuous.md"
+    },
+    {
+      "id": "F2",
+      "title": "A green check-run plus a CLEAN merge state is not a merge gate",
+      "detail": "Demonstrated twice in one hour, once inside a repo and once across two. A check-run conclusion is a statement about the PR's tree; CLEAN is a statement about textual conflict; neither is a statement about the tree that exists after the merge. Merging either PR on its own green would have broken main.",
+      "artifact": "_inbox/2026-08-19_finding_green_ci_plus_clean_is_not_a_merge_gate.md"
+    },
+    {
+      "id": "F3",
+      "title": "The kit's injection harness was proving the wrong arm",
+      "detail": "The case labelled `vendor parity arm B` edits vendor/shell.css, which breaks the PIN — arm A — and its needle was arm A's own message. Arm B is the only guardrail that can see the PRODUCT move, it is the one that went red for real this session, and it had no injection at all. Relabelled, and a real arm B case added that edits nothing and builds a divergent upstream checkout instead."
+    },
+    {
+      "id": "F4",
+      "title": "conventions.md was telling the design agent the four families had no CSS",
+      "detail": "That claim ships verbatim inside the uploaded README to the Design project. It went false the moment G-88 item 2 merged and would have steered a design agent away from precisely what this row delivers. Same shape as the stale SHIPPED.size===109 pin: a true statement that nothing was watching go false. Corrected in the same PR, and the correction is now live in the synced bundle."
+    },
+    {
+      "id": "F5",
+      "title": "Two data-* hooks are emitted into shipped markup and read by nothing",
+      "detail": "data-home-table (70 occurrences) and data-source (1) are emitted by src/shell-homes.mjs, appear in web/index.html, and are referenced by no script, no stylesheet and no test. data-home-row looked identical but IS read, by two test files, so it is live. Same shape as roster-lens. Carried to the design pass, where the Connections PR edits connectionsRegisterHtml() anyway."
+    },
+    {
+      "id": "F6",
+      "title": "A browser probe that reads the DOM before the render-blocking stylesheet applies reports total CSS failure",
+      "detail": "The planner's own edge probe, run with javaScriptEnabled false and waitUntil domcontentloaded, reported all 15 sections visible — indistinguishable from a catastrophic regression. document.styleSheets.length was 1 instead of 3 and body background was transparent. Waiting for load fixed it and the case passes. The product was never wrong. Recorded because this is the second planner instrument this session that measured something other than what it was written to measure."
+    },
+    {
+      "id": "F7",
+      "title": "A mutation that does not apply is indistinguishable from an instrument that does not fire",
+      "detail": "Three planner mutations this session silently failed to apply: one hit a CSS comment rather than the rule, one hit a generator rather than the served document, and one used an LF regex against a CRLF checkout. Each produced a green result that reads exactly like a working system. The habit that caught all three was echoing the byte count or occurrence count the mutation claimed to change."
+    }
+  ],
+
+  "rulingsTaken": [
+    {
+      "id": "R1",
+      "ruling": "The root attribute ships as data-surface, not A-072's data-lens.",
+      "why": "data-lens already exists in the document on the fifteen nav anchors carrying a different value vocabulary — the bare lens id, where the root needs the section id. Two vocabularies under one attribute name is the naming trap, and html[data-lens] would start matching any future querySelectorAll for [data-lens]. A-072's wording was planner scoping language, not an operator ruling on the name."
+    },
+    {
+      "id": "R2",
+      "ruling": "The G-89 fix extends to the six Development-services tabs and the three Assets tabs.",
+      "why": "Same mechanism one altitude down: #tab-pipeline and #atab-inventory also carry class=\"on\" statically, so ?lens=development-services&tab=review — the dispatch's own acceptance input — would have painted the right lens and then still swapped a populated Pipeline table out for Review."
+    },
+    {
+      "id": "R3",
+      "ruling": "`rail` keeps its three meanings and is not renamed.",
+      "why": "It now covers the .srcreg severity rail, the .colstack.rail 380px layout modifier, and the new .mxrow > .rail and .finding > .rail. No CSS conflict, every rule scoped. Renaming a shipped class is a product-line change across three byte-locked repos, not a kit PR."
+    }
+  ],
+
+  "constraintsHonoured": [
+    "Live Bastrop no-touch — no smartcity-os clone opened, city-pack.mjs throw untouched",
+    "grantedAdapters not modified on any pack",
+    "no G-52 started",
+    "no G-24 filled; Assets stays at zero across all three tabs",
+    "L26 untouched",
+    "permitflow / citizenconnect / leaflet / pipedrive / stripe.com: zero hits across web/ and src/ shipping files, verified after every merge",
+    "no city name asserted as content; static markup carries only the fallback vocabulary",
+    "18 .basis lines and 16 .state blocks before and after, on every merged head",
+    "94 distinct ids and 14 hidden attributes preserved",
+    "web/sc-kit.css byte-identical across three repos, blob 54339204691415d5ee817117699322ed0826c768, untouched",
+    "zero :root, hex, rgb() or --sc-* declarations added to web/shell.css",
+    "exactly one display:!important rule in shell.css, the bare [hidden] rule, so src/hidden-rule.test.mjs check 4 still holds",
+    "dark stays data-theme on the ROOT",
+    "roster-lens left in place; its deletion belongs to the design pass's first PR",
+    "revision 00017-vx4 left tagged pre at 0 percent",
+    "doc_repo commits planner-owned; every executor left its artifacts uncommitted"
+  ],
+
+  "remainsOpen": [
+    "G-88 items 6, 9 and 10 — the design pass. NOT started. The mission is drafted and ready to compile. Held deliberately: item 6 depends on item 5, which only completed at the end of this session, and dispatching a long serial design pass that could not be supervised to completion inside the remaining budget is the nested-fan orphan trap. Scaling this down was not a call to make silently.",
+    "The Design picker walk is still owed by the OPERATOR and is still recorded as unrun. The bundle is now 464 files with the sentinel armed, so the app has a fresh card index to build. https://claude.ai/design/p/f5e5465e-943f-4f68-b52f-608925bc07b0",
+    ".prov.stale is absent from every shipped stylesheet and every component in both repos — grep for 'stale' returns nothing in web/shell.css, kit vendor/shell.css, kit src/, web/app.js or web/index.html. A stale source renders identical to a current one. Rowed separately rather than folded, because shipping it is a three-step cross-repo chain and a drive-by would land half of it.",
+    "The kit's counting rule and the product's counting rule are still two implementations of one rule with no divergence test. CTRL-1 shape. Named by the executor, rowed rather than drive-by fixed.",
+    "roster-lens still ships on five sections and is defined nowhere; folded into the design pass's first PR.",
+    "data-home-table and data-source are emitted and read by nothing; folded into the design pass's Connections PR.",
+    ".design-sync/NOTES.md line 64 says the gallery covers 'all 73' components while line 35 says 82. Internal note only, not part of the synced bundle. Folded into the design pass, whose executor reads that exact section.",
+    "Cloud Run generations 00019 and 00020 were consumed without producing revisions. Observed, unexplained, recorded."
+  ],
+
+  "executorPerformanceNote": "All three executors corrected a planner figure at CP1, which is what the briefs asked for. Two of them pushed back on a planner instruction and were right to: B887 refused a global subtraction of script-written hooks because it would have dropped six tab anchors out of coverage to fix one false positive, and B89 diverged on an attribute name because the one A-072 specified was already taken. Both flagged rather than absorbed. The two defects that mattered most this session were found by planner verification AFTER CI was green, and both were in an instrument rather than in a product."
+}
