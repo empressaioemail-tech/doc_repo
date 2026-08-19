@@ -1,0 +1,190 @@
+{
+  "lane": "t1kit",
+  "artifact": "cp1",
+  "checkpoint": "after the re-vendor and the recount, before any component is written",
+  "date": "2026-08-19",
+  "planRows": ["G-90"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-kit",
+  "clone": "P:/tmp/t1kit-kit",
+  "readOnlyClone": "P:/tmp/t1kit-dash",
+  "branch": "g90/revendor-143-shell-chrome",
+  "branchedFrom": "d6bd9a1d7e29a0306fd5b331282a0483ef110e61",
+  "commitAtThisCheckpoint": "5333d278f6761e1cca2c8914ce1c29c17d6db26a",
+
+  "plannerFiguresVerifiedAtSource": {
+    "verdict": "ALL FOUR CONFIRMED. Nothing to reconcile on the premise.",
+    "countingRule": "git rev-parse <ref>:<path> in each clone, which is the object hash git itself stores, not a re-hash of the working tree",
+    "productWebShellCss": "1c0529d671916e33a887cffe7d5a5a60f9223c91 at c7d7980 - matches the dispatch",
+    "kitVendorShellCss": "aa655b2021bcf1133a38b706f5884078ac7f51f2 at d6bd9a1 - matches the dispatch. STALE.",
+    "scKitCssBothSides": "54339204691415d5ee817117699322ed0826c768 on both - matches the dispatch, and it did not move in the refresh",
+    "alsoStaleAndNotNamedInTheDispatch": "vendor/index.html 5121d296 vs product 8fdd5e57, and vendor/app.js 8e644c1a vs product 1479047a. The dispatch predicted both would move and both did."
+  },
+
+  "premiseWatchedFailingBeforeAnyEdit": {
+    "why": "the mission premise is that the kit's green was perishable and had expired. That is a claim about a test run, so it was RUN rather than reasoned about, on the untouched clone at d6bd9a1 with SC_DASHBOARDS_DIR pointed at live product main.",
+    "command": "SC_DASHBOARDS_DIR=/p/tmp/t1kit-dash npm test   (on kit main, d6bd9a1, nothing edited)",
+    "rawOutput": [
+      "tests 81",
+      "pass 80",
+      "fail 1",
+      "skipped 0",
+      "FAIL arm B: vendored copies byte-match the live upstream checkout (10.6622ms)",
+      "  AssertionError [ERR_ASSERTION]: vendor/shell.css has drifted from empressaioemail-tech/smartcity-dashboards/web/shell.css. Upstream is canonical; run npm run refresh:vendor."
+    ],
+    "reading": "kit main was RED against live product main before this lane touched anything. The G-90 lane's 'no kit re-vendor owed' conclusion was wrong on this axis, and the detector that says so is the one G-88 built and proved able to fire earlier today."
+  },
+
+  "step1_revendor": {
+    "command": "npm run refresh:vendor -- P:/tmp/t1kit-dash",
+    "upstreamCommit": "c7d7980b98752fe6625e07da1e4e9b9921f67950",
+    "rawOutput": [
+      "vendor/sc-kit.css <- web/sc-kit.css (4329 bytes, 2cdd0bf876ee)",
+      "vendor/shell.css <- web/shell.css (43831 bytes, c1036a74c464)",
+      "vendor/index.html <- web/index.html (84900 bytes, 39f13bfc7390)",
+      "vendor/app.js <- web/app.js (42507 bytes, 834ff3d68b20)",
+      "3 upstream file(s) changed. Run npm test: a class rename will surface as a gate-3 or markup-parity failure, which is the point."
+    ],
+    "scKitCssMoved": false,
+    "scKitCssEvidence": "git status --porcelain after the refresh lists vendor/UPSTREAM.json, vendor/app.js, vendor/index.html, vendor/shell.css and NOT vendor/sc-kit.css. git diff --stat HEAD -- vendor/sc-kit.css is empty and the blob is 54339204691415d5ee817117699322ed0826c768 before and after. No product-line event.",
+    "blobParityAfterRefresh": {
+      "countingRule": "git hash-object vendor/<f> in the kit vs git rev-parse HEAD:web/<f> in the dashboards clone at c7d7980",
+      "sc-kit.css": "MATCH 54339204691415d5ee817117699322ed0826c768",
+      "shell.css": "MATCH 1c0529d671916e33a887cffe7d5a5a60f9223c91",
+      "index.html": "MATCH 8fdd5e578dc429bc4e561fad8f8fb6a8fa6502b8",
+      "app.js": "MATCH 1479047a5323fbbf36aca498a5d09430429529a5"
+    }
+  },
+
+  "freeFinding_theSpanIsThreeCommitsNotOne": {
+    "what": "the dispatch frames this as a G-90 re-vendor. The kit was vendoring ecfae70, and smartcity-dashboards main has moved THREE commits since: e111552 (G-88 item 7), 3d4c9e8 (G-91), c7d7980 (G-90).",
+    "measured": "git log --oneline ecfae70..c7d7980 returns 3 commits. git diff --stat ecfae70 c7d7980 -- web/sc-kit.css web/shell.css web/index.html web/app.js returns 3 files, +435 lines.",
+    "reconciliation": "checked per commit rather than assumed. git show --stat <c> -- <the four vendored paths> returns EMPTY for e111552 and for 3d4c9e8, and the full 435-line stat for c7d7980. So the span is three commits and exactly one of them touched anything the kit vendors. The dispatch's framing survives; it is stated here because 'three commits, one re-vendor' reads like an oversight until it is measured.",
+    "consequence": "none for the vocabulary. The four added classes are all G-90's."
+  },
+
+  "step2_recount": {
+    "answer": 143,
+    "plannerFigureWas": 143,
+    "agreement": true,
+    "reportedAsRun": "the rule was RUN and it RETURNED 143. Not agreed with, and not derived.",
+    "countingRule": "stylesheetClasses() in test/_lib.mjs: distinct class-selector tokens across vendor/sc-kit.css + vendor/shell.css concatenated, read CRLF-normalized with CSS comments stripped first. State modifiers, element-scoped children and the two theme classes count. Pseudo-classes, attribute selectors and element selectors are not classes and are not counted.",
+    "before": 139,
+    "beforeHowMeasured": "the SAME rule run over `git show HEAD:vendor/sc-kit.css` and `git show HEAD:vendor/shell.css`. Both classes measured; neither derived by subtraction (DEV_PROCESS 1.3).",
+    "added": 4,
+    "addedSorted": "pop pop-group pop-item topmenu",
+    "removed": 0,
+    "pinUpdated": "test/gate3-classes.test.mjs, 139 -> 143, with the counting rule and the reason for the move written at the assertion",
+    "freeFindingOnTheCountingRule": {
+      "what": "the comment-stripping half of the rule is load-bearing on this delta too, not merely theoretical.",
+      "measured": "same two copies counted WITHOUT stripping comments returns 150. The seven phantom tokens are: css hidden html js md mjs test.",
+      "reading": "all seven appear only inside prose comments. A weaker rule would publish a denominator of 150 and a coverage claim that can never reach it, which is DEV_PROCESS 2.0 (a permanently-red gate is a dead gate) arriving by way of a sloppy regex."
+    }
+  },
+
+  "coverageGateWatchedGoingRedOnExactlyTheFour": {
+    "why": "the dispatch says the redness IS the work list, so it is recorded as raw output rather than described. DEV_PROCESS 2.2: a gating indicator is proven able to fire before it is trusted, and this one just fired for the right reason on a real product merge.",
+    "command": "SC_DASHBOARDS_DIR=/p/tmp/t1kit-dash node --test test/gate3-classes.test.mjs",
+    "rawOutput": [
+      "OK   gate 3: every class the components emit exists in the shipped stylesheets (60.1465ms)",
+      "FAIL gate 3: the vocabulary denominator is the shipped stylesheet class set (0.6021ms)",
+      "FAIL coverage: the package covers the whole shipped vocabulary (56.7416ms)",
+      "OK   gate 3: every export of the package appears in the gallery (0.2087ms)",
+      "OK   gate 3: every gallery entry names a real export (0.1115ms)",
+      "OK   gate 3: each entry's declared coverage equals what it renders (46.523ms)",
+      "tests 6 / pass 4 / fail 2",
+      "",
+      "test at test/gate3-classes.test.mjs:47:1",
+      "FAIL gate 3: the vocabulary denominator is the shipped stylesheet class set",
+      "  AssertionError [ERR_ASSERTION]: the shipped class vocabulary changed size",
+      "  143 !== 139",
+      "",
+      "test at test/gate3-classes.test.mjs:60:1",
+      "FAIL coverage: the package covers the whole shipped vocabulary",
+      "  AssertionError [ERR_ASSERTION]: 139 of 143 classes covered (97.2 percent). Uncovered: pop, pop-group, pop-item, topmenu",
+      "  + actual - expected",
+      "  + [",
+      "  +   'pop',",
+      "  +   'pop-group',",
+      "  +   'pop-item',",
+      "  +   'topmenu'",
+      "  + ]",
+      "  - []"
+    ],
+    "uncovered": ["pop", "pop-group", "pop-item", "topmenu"],
+    "matchesTheDispatchPrediction": true,
+    "coverageAtThisCheckpoint": "139 of 143 (97.2 percent), counting rule as stated above: the denominator is stylesheetClasses().size and the numerator is the classes actually emitted by rendering every GALLERY entry and every SCREEN through react-dom/server."
+  },
+
+  "aMarkupParityCaseMOVED_andItIsNotOneOfTheFour": {
+    "why": "the dispatch said to MEASURE this rather than assume none moved. One moved.",
+    "case": "markup parity: the composed top bar matches the shipped top bar",
+    "selector": ".shell-top",
+    "command": "node --test test/markup-parity.test.mjs  (tests 19, pass 18, fail 1)",
+    "rawFirstDifference": [
+      "line 27",
+      "  kit      : (end)",
+      "  product  :   <button .btn.btn-ghost.btn-sm>"
+    ],
+    "whatTheProductGainedAndTheComposedScreenLacks": [
+      "<button .btn.btn-ghost.btn-sm>  <svg><circle><path>  <span> \"Light\"   (the theme toggle)",
+      "<div .topmenu>  <button .btn.btn-ghost.btn-sm>  <svg><path><path>   (notifications)",
+      "<div .topmenu>  <button .btn.btn-ghost.btn-sm>  <svg><circle><path>  (account)"
+    ],
+    "instrumentNote": "test/_markup.mjs drops any element carrying the hidden attribute, and the product ships BOTH popover panels hidden. So the shape the parity case compares contains the .topmenu wrapper and its trigger button and NOT the .panel.pop inside it. That is why the diff shows three added controls and no popover body, and it is a constraint on what a parity case can prove about .pop at all. Named here so the close does not read as if .pop were parity-covered when it is not.",
+    "disposition": "examples/screens.tsx TopBar must gain the three controls. That work belongs to the wrap commit, not to the re-vendor."
+  },
+
+  "fullSuiteAtThisCheckpoint": {
+    "command": "SC_DASHBOARDS_DIR=/p/tmp/t1kit-dash npm test",
+    "tests": 81,
+    "pass": 78,
+    "fail": 3,
+    "skipped": 0,
+    "failing": [
+      "gate 3: the vocabulary denominator is the shipped stylesheet class set",
+      "coverage: the package covers the whole shipped vocabulary",
+      "markup parity: the composed top bar matches the shipped top bar"
+    ],
+    "armBNowGreen": "yes. vendor-parity arm B passes against live product main after the refresh, which is the one failure that was red BEFORE the refresh and is the whole reason this lane exists."
+  },
+
+  "designReadBeforeAPI": {
+    "why": "the dispatch says to read what the four classes DO before designing an API, so the component shape follows the markup the product actually serves.",
+    "sourcesRead": [
+      "smartcity-dashboards web/shell.css at c7d7980, the 81-line G-90 block",
+      "smartcity-dashboards web/index.html at c7d7980, lines 145-215, the two shipped topmenus"
+    ],
+    "whatTheProductServes": {
+      "topmenu": "<div class=\"topmenu\"> - a position:relative flex:none anchor. Two instances, both in .shell-top, each wrapping exactly one trigger .btn.btn-ghost.btn-sm and one panel.",
+      "pop": "<div class=\"panel pop\" role=\"group\" aria-label=\"...\" hidden> - ALWAYS composed with .panel, never alone. Both shipped instances carry role=group plus an aria-label and both ship hidden.",
+      "pop-group": "<div class=\"pop-group\"> - five shipped instances inside .panel-body.flush. Every single one carries at least one .basis line.",
+      "pop-item": "<button type=\"button\" class=\"pop-item\" disabled> - seven shipped instances, ALL SEVEN disabled, each with a .basis line in its group stating why."
+    },
+    "theRuleTheCSSItselfStates": "shell.css, at .pop-item[disabled]: 'An unavailable entry reads as unavailable rather than merely unresponsive. Its reason is the .basis line its group carries, filled from the server.' index.html, above the block: 'a control that has not yet heard from the server must not look available.' That is the honest-absence law in the product's own words, and it is the rule the wrap has to make unrepresentable to violate.",
+    "theShippedFormsAreNotUniform": {
+      "measured": "five .pop-group instances under #account-pop, read at source",
+      "group1": "basis only, no items",
+      "group2": "three disabled items then ONE shared trailing basis",
+      "group3": "item, basis, item, basis - interleaved, no trailing group basis",
+      "group4": "hidden feedback form: label, textarea, actionbar, trailing basis",
+      "group5": "item, basis, item, basis - interleaved",
+      "consequence": "no single API renders all five byte-for-byte. Groups 1/2/4 want a trailing group basis, groups 3/5 want a per-item basis. This is the one real design decision in the wrap and CP2 records which way it went and what it cost."
+    }
+  },
+
+  "constraintsHonoredSoFar": [
+    "vendor/sc-kit.css not edited and not moved by the refresh; blob unchanged",
+    "no token added or overridden",
+    "ds-bundle/, .ds-sync/ and .render-check.json untouched; none exists in this fresh clone",
+    "no DesignSync upload",
+    "no PR merged; no PR opened yet at this checkpoint",
+    "P:/tmp/t1kit-dash is read only - git status --porcelain empty, still at c7d7980",
+    "no other lane's clone touched",
+    "no sub-agents spawned; this lane is the deepest worker",
+    "every verification step exit-bounded: one-shot git queries, one-shot builds, one-shot test runs. No watch, no tail, no server.",
+    "doc_repo edits left uncommitted"
+  ],
+
+  "nextAtCP2": "wrap the four classes as components, register one GALLERY entry each with a covers list that equals what it renders, write one .design-sync preview each, fix the composed TopBar so the moved parity case goes green, and add real markup-parity cases against the product's shipped topmenu and account-menu group. CP2 files after the first family is wrapped and gate 3 is green for it."
+}

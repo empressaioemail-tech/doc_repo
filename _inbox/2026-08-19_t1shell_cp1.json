@@ -1,0 +1,155 @@
+{
+  "lane": "T1SHELL",
+  "checkpoint": "CP1",
+  "planRow": "G-90",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "date": "2026-08-19",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/t1shell-dash",
+  "branch": "g90/shell-function-parity",
+  "baseSha": "e11155246196a82224e4d291d53ba63bd7735849",
+
+  "missionPremise": "The operator walked the deployed Dashboards surface and found the new shell missing functions the live Bastrop shell has. The mission is FUNCTION parity, not layout or look parity: a staff member must not lose a capability by moving to this product. Source: _inbox/2026-08-19_template_city_lens_build_sheet.md, 'Shell function parity' table, operator-approved 2026-08-19; shell evidence _inbox/2026-08-17_bastrop_dashboard_layout_inventory.md section 'Shell'.",
+
+  "baselineVerified": {
+    "headSha": "e11155246196a82224e4d291d53ba63bd7735849",
+    "testRun": "node --test src/*.test.mjs",
+    "tests": 219,
+    "pass": 219,
+    "fail": 0,
+    "note": "measured in this clone before any edit"
+  },
+
+  "measuredBeforeBuild": [
+    {
+      "claim": "The served surface outside the kit carries zero hardcoded colours, so a light theme is reachable by token swap alone with no restyling pass.",
+      "countingRule": "grep for /#[0-9a-fA-F]{3,8}\\b/ and for /rgba?\\(|hsla?\\(/ across web/shell.css, web/index.html, web/app.js",
+      "result": "0 matches in all three files; every colour resolves through var(--sc-*). sc-kit.css is the only file carrying colour values and it is not edited by this lane."
+    },
+    {
+      "claim": "The kit already implements the three-state theme contract; nothing in it needs to change.",
+      "evidence": "web/sc-kit.css:9 ':root, .sc-light' defines the light palette, :28 '@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) }' handles the system default, :49 ':root[data-theme=\"dark\"]' handles the explicit choice. Stamping data-theme on the root is the entire mechanism.",
+      "consequence": "This lane ships NO token change and NO edit to web/sc-kit.css, which stays byte-identical across the three repos."
+    },
+    {
+      "claim": "Defined class vocabulary before this lane.",
+      "countingRule": "the served stylesheets (web/sc-kit.css + web/shell.css, derived from server.mjs sendFile call sites), CRLF-normalized, CSS comments stripped, every '.' followed by an identifier, deduplicated - the rule in src/served-surface.mjs stylesheetClasses()",
+      "count": 139
+    },
+    {
+      "claim": "Two Connections register rows are made partly false by this work and this lane will NOT edit them.",
+      "rows": [
+        "src/shell-homes.mjs 'other' table: 'Auth / session / notifications / theme / sign out', disposition 'Not built'",
+        "SHELL_HOMES_ADDENDA: 'Feedback with screenshot and category', disposition 'Not built'"
+      ],
+      "reason": "The disposition vocabulary is closed at six values and both rows BUNDLE built and unbuilt legs (theme built, session not). The counting rule is pinned to a doc_repo markdown this lane cannot commit, and the build sheet sequences the Connections re-bake to the END of the fan ('its disposition column is a function of everything above it'). DEV_PROCESS 5.4: propose, do not unilaterally remediate. Carried to the close as an open item for the planner."
+    }
+  ],
+
+  "theEight": [
+    {
+      "n": 1,
+      "function": "Theme toggle, light/dark",
+      "decision": "BUILD",
+      "shape": "Resolved BEFORE first paint by EXTENDING the existing G-89 inline head script (no second script). Persisted in localStorage under key 'theme'. Defaults dark. web/index.html keeps data-theme=\"dark\" on <html> as the static default so a scripting-disabled browser is not regressed and the script OVERWRITES it only when a stored preference says otherwise - the toggle does not fight the hardcoded attribute, it supersedes it, which is exactly localStorage.theme || 'dark'.",
+      "singleSourceOfTruth": "new src/theme.mjs (pure, no DOM) declaring THEMES, FALLBACK_THEME, THEME_STORAGE_KEY, resolveTheme(), nextTheme(). Served at /theme.mjs and imported by web/app.js. The head script cannot import (importing makes it a module and a module is deferred, which IS the G-89 defect), so it carries a SECOND copy and src/first-paint.test.mjs whitelistDivergences() is extended to be the divergence test over both - DEV_PROCESS 2.4."
+    },
+    {
+      "n": 2,
+      "function": "Account / user menu",
+      "decision": "BUILD as chrome, entries honest-disabled",
+      "shape": "A top-bar menu carrying My account, My profile, Account settings, Support and Feedback. Each entry's enabled state is DERIVED from a server capability answer, never hardcoded in markup, so an entry enables itself the day its dependency exists. Every disabled entry states WHY."
+    },
+    {
+      "n": 3,
+      "function": "Sign in / sign out / session",
+      "decision": "BUILD the session STATE, DEFER the sign-in/out ACTIONS",
+      "shape": "New GET /api/shell reports the resolved caller from the EXISTING src/tenancy.mjs resolveCaller() - anonymous, tenant or service. That is a real read of a real mechanism, not an invented one. The menu header states the session honestly. Sign in and sign out are honest-disabled with basis: this deployment configures no identity provider and the auth build is a separate plan row (G-11 tenancy closed as SEQUENCING, People and access is gated on the auth build).",
+      "anonymousPath": "Anonymous stays the DEFAULT and only path. Nothing in this lane stores per-visitor state on the server, so there is no anonymous work for a future sign-in to strand. The single piece of client state introduced - the theme preference in localStorage - is device-scoped and survives a future sign-in untouched. The known auth-flip/orphan defect class is therefore avoided by construction rather than by a claim, and this is stated so a successor can check it."
+    },
+    {
+      "n": 4,
+      "function": "Notifications",
+      "decision": "BUILD",
+      "shape": "A tray with an honest empty state and NO count anywhere - no badge, no number, no dot. Its basis is DERIVED and counted, not written: packSources() already computes distinct granted adapter kinds for the active pack, so the tray states 'N of 7 sources granted on this pack, so no source can raise a notification' with its counting rule. That is a positive determination, not an empty result."
+    },
+    {
+      "n": 5,
+      "function": "Tenant branding",
+      "decision": "ALREADY WIRED except accent; accent DEFERRED",
+      "shape": "Seal, display name, state suffix, environment badge, document title and Compass scope all already resolve from the pack through src/city-identity.mjs and web/app.js applyIdentity(). Measured, not assumed. A per-pack ACCENT is deferred for two independent reasons: an accent is a token VALUE and web/sc-kit.css must stay byte-identical across three repos (a new colour is a product-line decision, not this PR), and the pack schema lives in src/city-pack.mjs which is the sibling lane's file."
+    },
+    {
+      "n": 6,
+      "function": "Record search",
+      "decision": "KEEP HONESTLY STUBBED - stated, not silently left",
+      "shape": "The input stays disabled, keeps its 'Not built' badge and keeps #record-search-note naming its home. Reason: there is no search index and no records backend; the Records search lens (work-records) is itself Not built; the build sheet lists 'Records search: build a register, or keep it honestly Not built' as an OPEN OPERATOR QUESTION, and making it real would mean inventing an index. Its capability entry is wired to the same derived mechanism as the rest, so it stops being a stub the day a backend exists."
+    },
+    {
+      "n": 7,
+      "function": "Help / support",
+      "decision": "BUILD as chrome, action honest-disabled",
+      "shape": "A Support entry in the account menu whose enabled state is derived from the server capability answer. Disabled today with basis: no support channel is configured for this deployment. No invented help content, no fabricated contact."
+    },
+    {
+      "n": 8,
+      "function": "Feedback",
+      "decision": "BUILD, fail-closed and honest",
+      "shape": "POST /api/feedback exists and answers truthfully rather than silently accepting: with no destination configured it returns 503 with accepted=false and a basis naming what is missing. The menu entry's enabled state is derived from the same server answer, so the UI's claim is READ from the server rather than hand-written beside it. It never says thanks for something it did not deliver."
+    }
+  ],
+
+  "headScriptPlan": {
+    "rule": "ONE inline head script. It is extended, never duplicated.",
+    "order": "The existing data-surface / data-tab / data-atab stamps run FIRST and unchanged; theme resolution is appended after them, so no failure in the new code can take the G-89 fix down with it.",
+    "storageGuard": "The localStorage read is wrapped in try/catch. A blocked or partitioned storage context throws SecurityError on getItem, and an unguarded throw inside this script would abort it and un-stamp the surface attributes - reintroducing the exact defect G-89 closed, through the door this change opens. Tested: a throwing storage must still leave data-surface correct AND fall back to dark.",
+    "classDiscipline": "The script stays classless (src/first-paint.test.mjs asserts no class attribute, classList or className token appears in it), so the class gate stays satisfied by construction.",
+    "attribute": "data-theme is stamped on the ROOT element (document.documentElement) and on nothing else. No page-level provider."
+  },
+
+  "firstPaintProofPlan": {
+    "instrument": "src/first-paint.test.mjs is EXTENDED, not paralleled. Today it resolves the CSS cascade to a display value for panels; it gains a resolver for a custom property on the root so it can answer the question that actually matters - which PALETTE paints, not whether an attribute is present.",
+    "modelExtensions": [
+      ":root is taught to the compound matcher as matching the root element only. It is currently an unknown pseudo-class, which the model correctly throws on rather than guessing.",
+      "@media (prefers-color-scheme: dark|light) is evaluated against a declared environment. Every OTHER at-rule keeps throwing by name. The model's refusal to guess is preserved."
+    ],
+    "armA": "The real build: stored 'light' resolves to the light canvas EVEN WHEN the OS prefers dark (this is what the kit's :root:not([data-theme=\"light\"]) guard exists for and it has never been proven); stored empty resolves dark; stored 'dark' resolves dark.",
+    "armB": "The SAME acceptance predicate run against a mutated build whose head script does not stamp theme - i.e. theme resolved late, in app.js - asserted to THROW naming the dark canvas where light was stored. This is the 'watched failing' arm the dispatch requires and it is the flash it models.",
+    "armC": "The frozen pre-fix fixture test-fixtures/g89-pre-fix/ (a real historical build with no head script at all) resolves dark for a stored light preference. Free second failing arm over real bytes."
+  },
+
+  "gatesExpectedToFire": {
+    "note": "These are tripwires designed to fire on exactly this kind of change. Each firing is the system working; each is a decision recorded here BEFORE the build rather than discovered during it.",
+    "items": [
+      "src/ui.test.mjs SERVED_ASSETS deepEqual and the sendFile call-site count: a new served asset /theme.mjs is added, so both pins move by one.",
+      "src/addressability.test.mjs SCRIPT_SOURCES / MARKUP_SOURCES / SERVED_DOCUMENTS deepEqual pins: same reason.",
+      "src/addressability.test.mjs HOOKS_WRITTEN deepEqual: the head script and app.js both setAttribute('data-theme', ...), so the written-hook set grows from five to six. data-theme stays REQUIRED rather than excused, because it is attached in web/index.html; the pinned excused set is unchanged."
+    ]
+  },
+
+  "constraintsHonored": [
+    "web/sc-kit.css untouched - byte-identical across three repos.",
+    "No token value added, changed or overridden. No new colour, no new type step.",
+    "Live Bastrop no-touch. Nothing in this lane reads or writes tenant_id=2 or smartcity-os.",
+    "No invented freshness: no 'last sync', 'last read' or 'last updated' string ships.",
+    "No fabricated count anywhere, and specifically no notification count.",
+    "No real city asserted as content.",
+    "Every empty region carries a .basis line.",
+    "src/fixtures.mjs, src/adapters.mjs, src/city-pack.mjs and src/compose.mjs are NOT touched - sibling lane P:/tmp/t1pack-dash.",
+    "12px type floor: every new rule uses the existing font steps.",
+    "No merge, no deploy."
+  ],
+
+  "outOfScope": [
+    "Building an identity provider, a login form or a session cookie. Anonymous is the default path and stays it.",
+    "A real record-search index or backend.",
+    "A per-pack accent token.",
+    "Editing the Connections register dispositions or re-baking it - sequenced to the end of the fan.",
+    "The Compass answer engine.",
+    "Any lens content - this lane is the shell only."
+  ],
+
+  "completionPredicate": "A stranger can verify this without me: (1) each of the eight functions is either present on the served top bar or named in the close as deferred with its reason - no silent omissions; (2) node --test src/*.test.mjs is green in the clone and the CI check-run conclusion STRING is 'success'; (3) the extended first-paint arm is watched FAILING on a late-theme build in the same test run as it passes on the real one, with raw output in the close; (4) the class vocabulary count is stated with its counting rule; (5) the addressability gate and the bake-freshness assertion are both green and what was attached to keep them so is named; (6) a PR is open, unmerged, undeployed, with its number and head SHA reported.",
+
+  "scopeBasis": "These boundaries follow the dispatch's own division of the repo (web/ is this lane, four named src/ files are the sibling's) and the build sheet's sequencing, which runs the shell functions and the fixture-pack extension in PARALLEL as the two things that gate everything else. Functions are built where the mechanism already exists and honestly deferred where building would mean inventing a backend - because the visual law's honest-absence rule makes a stated absence a valid deliverable and a fabricated presence a defect. src/server.mjs is edited because the dispatch permits it and because a capability state read from the server is the only way the UI's disabled-with-a-reason claim can be true rather than hand-written."
+}

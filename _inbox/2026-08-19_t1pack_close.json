@@ -1,0 +1,186 @@
+{
+  "lane": "T1PACK",
+  "artifact": "close",
+  "date": "2026-08-19",
+  "planRows": ["G-91"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/t1pack-dash",
+  "checkpointArtifacts": [
+    "_inbox/2026-08-19_t1pack_cp1.json",
+    "_inbox/2026-08-19_t1pack_cp2.json"
+  ],
+
+  "missionPremise": "RULING 1, operator-approved 2026-08-19 in _inbox/2026-08-19_template_city_lens_build_sheet.md: 'not built' moves down one level, from describing the SURFACE to describing SOURCES. The finding it rests on is that the G-18 register's `Not built` disposition column was read as a destination rather than as a starting state, and across three agent handoffs 'this surface does not exist yet' hardened into 'this surface is meant to be empty'. The product could not distinguish 'we did not build Parks' from 'your city has no Parks data', and those are different sentences to a customer. This lane is the SEAM that makes the distinction expressible plus three exemplar domains that prove it works on shapes that differ; it is explicitly NOT all nineteen lenses, because over-building here would serialise what wave 2 should fan.",
+
+  "completionPredicate": "A stranger can evaluate this without me by running four things. (1) `node --test src/*.test.mjs` in the clone returns 237/237. (2) `GET /api/city-domains?cityKey=template-city` returns four regions in three distinct states, with `patrol-vehicles` reading `ungranted` and a basis that says the region is built and has no source, containing no 'not built' string. (3) `GET /api/city-domains?cityKey=empty-city` returns all four regions `no-fixture-source` with a basis, and zero records. (4) Composing the whole registry twice in two separate node processes produces byte-identical output. All four are recorded below with their raw results. Anything a wave-2 lane needs is then present: a domain descriptor to copy, a registry line to add, and guards it cannot skip.",
+
+  "scopeBasis": "Boundaries and why they are these and not others. IN: the seam, the registry, three exemplar domains chosen because they differ in shape (compound, flat-with-a-dimension, built-but-ungranted), the adapter catalog, the pack's demonstration axis with its Neon column, two read routes, and the re-scope of every gate ruling 1 forces. OUT and deliberately so: the other fifteen lenses on the build sheet, because wave 2 fans one lane per lens and building them here would serialise that fan; anything under `web/`, because a sibling lane owns it on this card and a collision there costs both lanes; any lens RENDERING of the four-state model, for the same reason; connecting any feed or granting any adapter, which the dispatch places out of scope and the standing decisions forbid; deploying and merging, which are planner-owned. NOT out of scope but NOT DONE, stated so it is not mistaken for an exclusion: the four states reach no pixel yet.",
+
+  "pr": {
+    "number": 25,
+    "url": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/25",
+    "branch": "g91/fixture-pack-seam",
+    "baseSha": "e11155246196a82224e4d291d53ba63bd7735849",
+    "headSha": "1841ebd2398ceba39a1ecbb0ca35488d3e7ff4f4",
+    "state": "OPEN",
+    "mergeable": "MERGEABLE",
+    "mergeSha": "not applicable: this lane does not merge",
+    "ciCheckRunRaw": "{\"conclusion\":\"success\",\"name\":\"test\",\"status\":\"completed\"}",
+    "ciConclusionString": "success",
+    "ciCountingRule": "the check-run conclusion STRING on the head SHA, read from the GitHub API, never a gh exit code"
+  },
+
+  "registry": [
+    { "domainId": "permits-pipeline", "lensId": "development-services", "region": "Pipeline", "gatedBy": "mygov", "recordType": "permit-case", "generatedOn": ["template-city"], "recordCount": 14 },
+    { "domainId": "work-orders", "lensId": "development-services", "region": "Work orders", "gatedBy": "mygov", "recordType": "work-order", "generatedOn": ["template-city"], "recordCount": 15 },
+    { "domainId": "fleet-vehicles", "lensId": "fleet", "region": "Vehicle roster", "gatedBy": "samsara", "recordType": "fleet-vehicle", "generatedOn": ["template-city"], "recordCount": 14 },
+    { "domainId": "patrol-vehicles", "lensId": "police", "region": "Patrol roster", "gatedBy": "spireon", "recordType": "patrol-vehicle", "generatedOn": [], "recordCount": 0, "note": "built and deliberately ungranted; granting spireon on a throwaway pack yields 10 records" }
+  ],
+  "registryCountingRule": "a domain carries records on a pack when the pack generates fixtures AND the domain's gating adapter kind is in that pack's fixtureGrants. 3 of 4 on template-city; 0 of 4 on empty-city and on fixture-city, neither of which generates.",
+
+  "counts": {
+    "testsBaseline": { "value": 219, "rule": "node --test src/*.test.mjs on base SHA e111552, pass 219 fail 0" },
+    "testsHead": { "value": 237, "rule": "node --test src/*.test.mjs on 1841ebd, pass 237 fail 0; +18 net, all additions, zero deletions" },
+    "adapterKindsBefore": { "value": 7, "rule": "entries in ADAPTER_KINDS on the base SHA" },
+    "adapterKindsAfter": { "value": 10, "rule": "entries in ADAPTER_KINDS on the branch; +spireon +goto +powerbi" },
+    "sourcesGrantedFigure": { "value": "0 of 10 sources granted", "rule": "DISTINCT adapter kinds GRANTED on the pack, over the kinds in the catalog. Denominator moved 7 to 10 because the catalog grew. Numerator stayed 0 because no feed was connected; fixtureGrants deliberately does not enter this figure." },
+    "domainsRegistered": { "value": 4, "rule": "entries in DOMAIN_REGISTRY" },
+    "recordsOnTemplateCity": { "value": 43, "rule": "14 permit-case + 15 work-order + 14 fleet-vehicle, summed over the three domains whose gating kind template-city demonstrates; patrol-vehicles contributes 0 because it is ungranted, not because it is empty" },
+    "recordsOnEmptyCity": { "value": 0, "rule": "every registered domain on empty-city, derived from the registry rather than from a maintained list" },
+    "webFilesChanged": { "value": 0, "rule": "git diff e111552 --name-only -- web/ | wc -l" }
+  },
+
+  "determinismProof": {
+    "command": "for i in 1 2; do node -e \"import('./src/domains.mjs').then(async(d)=>{const cp=await import('./src/city-pack.mjs');const out={};for (const pack of [cp.TEMPLATE_CITY, cp.EMPTY_CITY, cp.FIXTURE_CITY]) out[pack.cityKey]=d.composeAllDomains(pack);process.stdout.write(JSON.stringify(out));});\" > .det-run-$i.json; done; sha256sum .det-run-1.json .det-run-2.json; cmp .det-run-1.json .det-run-2.json",
+    "rawOutput": [
+      "run1 sha256: 53f127cf966cb5039c37a44701a42bdce2a03994db0782c7f956d760fe9127f1",
+      "run2 sha256: 53f127cf966cb5039c37a44701a42bdce2a03994db0782c7f956d760fe9127f1",
+      "BYTE-IDENTICAL (cmp exit 0)",
+      "46004 bytes"
+    ],
+    "note": "TWO SEPARATE NODE PROCESSES, not two calls in one, so a module-level memo cannot fake the result. A second arm scans src/fixture-seam.mjs and every file under src/domains/ for Math.random, Date.now, new Date and toISOString, because the runtime arm catches a clock only if the two runs straddle a tick."
+  },
+
+  "noBehaviourMoved": {
+    "claim": "the shipped Development services pipeline payload is byte-identical to the base SHA",
+    "baseSha256": "879b90c248a7242a6cdaa1e7c5728464d54e2657be8e51002c6d36a00cf75c29",
+    "headSha256": "879b90c248a7242a6cdaa1e7c5728464d54e2657be8e51002c6d36a00cf75c29",
+    "rule": "sha256 of JSON.stringify over the legacy key set the browser reads, composed on TEMPLATE_CITY, measured on a git worktree of e111552 and on the branch"
+  },
+
+  "seamGuardRejectionRaw": {
+    "how": "throwaway domains registered into an INJECTED registry, never the shipped one, whose generators call NO guard at all",
+    "cleanProbePasses": "status ok, recordCount 1 - so every rejection below is the value and not the probe",
+    "watchedRejections": [
+      "subject 'Bastrop city hall remodel' -> Error: a generated record carries no held city identity and no real person (held-identity at subject)",
+      "subject 'Addition at 1200 Main Street' -> Error: a generated record carries no street address (street-address at subject)",
+      "subject 'Fee $1,200' -> Error: a generated record presents no money and no completed payment (money at subject)",
+      "subject 'Account 448812 renewal' -> Error: a generated record carries no vendor account identifier (vendor-account at subject)",
+      "subject 'last synced from the vendor' -> Error: a generated record invents no freshness (invented-freshness at subject)",
+      "confidence 0.92 -> Error: a generated record carries no confidence field",
+      "subject 'Something nobody declared' -> Error: undeclared string on a generated record: Something nobody declared at subject",
+      "extras { note: 'Bastrop is the source' } -> Error: a generated record carries no held city identity and no real person (held-identity at note)",
+      "generate returning {} -> Error: domain p1 returned no records array",
+      "generate returning a samsara record from a mygov-gated domain -> Error: domain p3 returned a samsara record but is gated by mygov",
+      "generate returning a record for another cityKey -> Error: domain p5 returned a record for other-city on pack probe-city"
+    ]
+  },
+
+  "ungrantedCaseRaw": {
+    "probe": "GET /api/domains/patrol-vehicles?cityKey=template-city",
+    "httpStatus": 200,
+    "body": {
+      "domainId": "patrol-vehicles",
+      "lensId": "police",
+      "region": "Patrol roster",
+      "cityKey": "template-city",
+      "kind": "spireon",
+      "recordType": "patrol-vehicle",
+      "gatedBy": "spireon",
+      "granted": false,
+      "generated": true,
+      "status": "ungranted",
+      "basis": "Spireon is not granted on template-city; the Patrol roster region is built and has no source",
+      "recordCount": 0,
+      "countingRule": "no records: Spireon is not granted on template-city; the Patrol roster region is built and has no source",
+      "records": []
+    },
+    "contrastNoFixtureSource": "GET /api/city-domains?cityKey=empty-city -> every region status no-fixture-source, basis 'empty-city generates no records and no adapter is granted on it'",
+    "contrastGrantedEmpty": "a granted domain returning zero records -> status granted-empty, basis 'MyGov is granted on probe-city and produced no permit-case records'",
+    "contrastNotBuilt": "GET /api/domains/parks-facilities?cityKey=template-city -> HTTP 404, status not-registered, basis 'parks-facilities is not a registered domain, so this surface is not built'",
+    "provenNotAStub": "composing patrol-vehicles on a throwaway pack whose fixtureGrants includes spireon yields status ok, recordCount 10, countingRule '10 generated spireon patrol-vehicle records on probe-city'. Nothing else changes. If it were a stub, ungranted and not-built would be indistinguishable one layer down, which is how the original misreading survived three handoffs."
+  },
+
+  "gatesRescoped": [
+    { "gate": "src/adapters.test.mjs 'catalogues the seven named kinds'", "change": "renamed to 'the ten named kinds'; explicit id list updated 7 to 10 plus a length assertion", "populatedArm": "the route and the catalog both return the same 10 ids", "emptyArm": "not applicable: the catalog is pack-invariant", "weakened": false },
+    { "gate": "src/server.test.mjs /api/adapter-kinds 7-id pin", "change": "explicit list updated AND a new divergence assertion that the route serves ADAPTER_KINDS rather than a copy", "populatedArm": "route ids deepEqual catalog ids", "emptyArm": "not applicable", "weakened": false },
+    { "gate": "src/server.test.mjs '0 of 7 sources granted'", "change": "derived from ADAPTER_KINDS.length instead of a literal, plus granted===0 and length===10 asserted separately", "populatedArm": "template-city, which generates, still reports granted 0", "emptyArm": "empty-city reports the same, because neither grants a feed", "weakened": false },
+    { "gate": "src/fixtures.test.mjs deepEqual(declared, ['mygov'])", "change": "replaced with a BIDIRECTIONAL divergence test: every registered domain resolves to a declared shape and every declared shape is reachable from a registered domain", "populatedArm": "4 registry entries match 4 declared shapes", "emptyArm": "a shape declared for nobody, or a domain generating an undeclared type, both fail - neither of which the literal could see", "weakened": false },
+    { "gate": "src/fixtures.test.mjs assertRecordShape kind 'samsara' expecting /undeclared/", "change": "re-pointed to esri, which is still undeclared, and split into three arms plus two positive assertions", "populatedArm": "recordShapeFor('mygov','work-order').declared === true", "emptyArm": "esri throws /undeclared/; samsara+permit-case throws 'declares no permit-case record type'", "weakened": false },
+    { "gate": "src/fixtures.test.mjs 'keeps G-24 at zero' via RECORD_SHAPES.samsara.declared === false", "change": "the proxy is gone because samsara declares a shape now; the RULE is asserted directly and registry-wide instead", "populatedArm": "no registered domain's recordType matches /asset|inventory/ and none fills the Assets surface", "emptyArm": "the pipeline payload still contains no /asset/i string", "weakened": false, "note": "stronger than what it replaced: measured over the whole registry rather than implied by one kind's silence" },
+    { "gate": "src/fixtures.test.mjs assertDeclaredVocabulary called with one argument", "change": "the vocabulary is per DOMAIN now, so the call passes the domain's declaration; a global list would have every wave-2 lens widening one shared set until it permitted everything", "populatedArm": "every template-city pipeline record passes under its own domain's vocabulary", "emptyArm": "a valid record FAILS under another domain's vocabulary, and 'Something nobody declared' still fails under its own", "weakened": false },
+    { "gate": "src/fixtures.test.mjs gate 4 money rule, one pack one domain", "change": "widened to every registered domain on every shipped pack, in the new src/domains.test.mjs", "populatedArm": "template-city, 43 records across 3 domains, carries no $ and no $0", "emptyArm": "empty-city, 0 records, carries no $ and no $0 either - four zeros in a header would be four false claims", "weakened": false },
+    { "gate": "src/city-pack.test.mjs injected-Neon query stub", "change": "gained a branch for the fixture_grants ALTER and carries the column through the stub row; a new test gates the demonstration axis with four firing arms", "populatedArm": "template-city round-trips fixtureGrants ['mygov','samsara'] through the SQL path", "emptyArm": "a row predating the column reads back as [] under a stated rule, asserted rather than defaulted quietly", "weakened": false }
+  ],
+  "gatesNotChangedAndWhy": {
+    "gate": "the six $0 assertions in src/ui.test.mjs and src/server.test.mjs",
+    "verdict": "PLANNER FIGURE CORRECTED - these do not block wave 2",
+    "evidence": "all six read web/index.html or a served response of it. The server sends the same index.html bytes for every cityKey; fixture figures arrive over /api/... into the DOM at runtime. A markup assertion is therefore pack-invariant by construction and cannot be made per-pack.",
+    "consequence": "the gate that actually needed the pack dimension is the composed-payload money rule, which was widened as listed above"
+  },
+
+  "plannerFiguresReportedWrong": [
+    {
+      "figure": "template-city's grantedAdapters names the kinds that gate the exemplar domains",
+      "verdict": "wrong at source",
+      "quotedEvidence": "src/city-pack.mjs base SHA: `grantedAdapters: [],` on TEMPLATE_CITY; and in assertCityPackShape, `if (pack.grantedAdapters.length > 0) { throw new Error(\"a pack that generates fixtures grants no adapter\"); }`",
+      "resolution": "a THIRD pack axis, fixtureGrants, holding adapter kind ids. grantedAdapters stays [] on all three packs, the G-74 gate still throws, and no feed is connected. The dispatch's own instruction to keep generatesFixtures and grantedAdapters orthogonal is what this implements."
+    },
+    {
+      "figure": "adapter catalog goes 7 to 11",
+      "verdict": "wrong arithmetic",
+      "quotedEvidence": "ADAPTER_KINDS had 7 entries; the dispatch names exactly three additions, spireon, goto and powerbi. 7 + 3 = 10.",
+      "resolution": "the catalog is 10. The eleventh live vendor family in the build sheet's own list is Anthropic, which _inbox/2026-08-17_g18_shell_homes.md dispositions as 'Chrome only' with the instruction not to put it on Dashboards; a kind that writes no record is not an adapter. Reported rather than silently absorbed."
+    }
+  ],
+
+  "defectsFoundByTheNewGates": [
+    { "defect": "the clock scan flagged src/fixture-seam.mjs on its own PROSE explaining that no generator may reach Math.random", "class": "prose counted as behaviour, the G-88 item 3 defect one layer down", "fix": "the scan strips comments with the repo's existing stripJsComments rather than being excluded, and carries five arms proving it fires on code and does not fire on a comment or on Math.imul" },
+    { "defect": "the patrol vocabulary entry 'K9 transport' failed its own unit-label format on the digit", "class": "a format and a vocabulary disagreeing", "fix": "the vocabulary entry was renamed, not the format widened; a format loosened to admit one string is loosened for every domain that inherits it" }
+  ],
+  "preExistingHoleClosed": {
+    "what": "assertDeclaredVocabulary listed record.dueLabel among its own allowed strings, so the field authorised itself: any string at all written into dueLabel passed the guard",
+    "fix": "a declared DUE_LABEL_FORMAT replaces the self-reference, with a firing arm asserting 'last synced an hour ago' in dueLabel is now rejected",
+    "severity": "the field is rendered on the Development services queue, so this was a live path for arbitrary text into a demo surface"
+  },
+
+  "constraintsHonored": [
+    "web/index.html, web/app.js, web/shell.css and web/sc-kit.css never opened for write; git diff against the base SHA shows 0 files under web/",
+    "web/sc-kit.css byte-identical after CRLF normalization, sha256 2cdd0bf876ee24224eb0e976c4c29f1f79bb37324a53aac50d3d78feec113ef2 on both sides",
+    "no feed connected and no adapter granted; grantedAdapters is [] on all three packs and assertCityPackShape still refuses a grant on a generating pack, watched in a test",
+    "src/city-pack.mjs still throws 'Bastrop is not a pack on this card', watched in the untouched base test",
+    "no invented freshness: no last sync / last read / last updated string in any composed payload on any pack, and the seam now REJECTS one at the guard",
+    "no calendar date in any composed payload on any pack",
+    "every empty region carries a basis; four distinct absence states, each with its own sentence",
+    "live Bastrop untouched; no deploy; no merge; the sibling lane's clone at P:/tmp/t1shell-dash never opened",
+    "12px type floor and the visual law not touched, because this lane wrote no markup and no CSS"
+  ],
+
+  "whatRemainsOpen": [
+    "THE FOUR STATES REACH NO PIXEL. web/ belongs to the sibling lane on this card, so the shell still renders the pipeline's two-value ok/empty. The seam carries sourceStatus beside the shipped status so a wave-2 lane can read the fourth state without a contract change, but until a lens reads it the customer-visible sentence is unchanged. Code-done is not customer-done.",
+    "Fifteen of the eighteen lens regions on the build sheet have no domain. That is the deliberate exclusion, not an oversight: wave 2 fans one lane per lens onto this seam.",
+    "The three new adapter kinds carry no declared record shape except spireon. goto and powerbi state their basis for being undeclared, so a wave-2 Public works lane declares them when it builds that lens.",
+    "PR 25 is OPEN and MERGEABLE and this lane does not merge it. CI conclusion string is success on head 1841ebd2398ceba39a1ecbb0ca35488d3e7ff4f4.",
+    "OPEN QUESTION FOR THE OPERATOR, decided provisionally rather than missed: the nav footer counts GRANTED sources and deliberately excludes fixtureGrants, so template-city reads '0 of 10 sources granted' while demonstrating two kinds. That is honest but it may read as a contradiction beside three populated regions. The alternative is a second counted figure beside it, which needs markup this lane may not write."
+  ],
+
+  "docRepoEdits": {
+    "note": "doc_repo commits are planner-owned; these three files are written and left UNCOMMITTED",
+    "files": [
+      "_inbox/2026-08-19_t1pack_cp1.json",
+      "_inbox/2026-08-19_t1pack_cp2.json",
+      "_inbox/2026-08-19_t1pack_close.json"
+    ]
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "lane": "T1PACK",
+  "checkpoint": "CP1",
+  "planRow": "G-91",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/t1pack-dash",
+  "baseSha": "e11155246196a82224e4d291d53ba63bd7735849",
+  "branch": "g91/fixture-pack-seam",
+  "date": "2026-08-19",
+  "stage": "design, before any generator is written",
+
+  "baselineMeasured": {
+    "command": "node --test src/*.test.mjs",
+    "tests": 219,
+    "pass": 219,
+    "fail": 0,
+    "countingRule": "node:test summary over the 20 files matching src/*.test.mjs on the base SHA"
+  },
+
+  "plannerFiguresChecked": [
+    {
+      "figure": "template-city's grantedAdapters contains the kinds that gate the exemplar domains",
+      "verdict": "WRONG at source",
+      "evidence": "src/city-pack.mjs:23 TEMPLATE_CITY.grantedAdapters = []; src/city-pack.mjs:261 assertCityPackShape throws 'a pack that generates fixtures grants no adapter'; src/adapters.mjs assertGrantedAdapterShape requires a live https sourceUrl. A generating pack structurally CANNOT carry a grant.",
+      "consequence": "Read literally, every domain would be ungranted and none of the three exemplars could populate. The dispatch's own instruction to keep generatesFixtures and grantedAdapters orthogonal is the resolution: a THIRD axis is required.",
+      "resolution": "New pack field fixtureGrants: adapter KIND IDS this demo pack demonstrates. grantedAdapters stays empty on every pack, the G-74 gate keeps throwing, and no feed is connected."
+    },
+    {
+      "figure": "adapter catalog goes 7 to 11",
+      "verdict": "WRONG arithmetic",
+      "evidence": "src/adapters.mjs ADAPTER_KINDS has 7 entries. The dispatch names exactly three additions: spireon, goto, powerbi. 7 + 3 = 10.",
+      "consequence": "The eleventh vendor family in the build sheet's live-Bastrop list is Anthropic, which the G-18 register dispositions as Chrome only and explicitly not a city feed. Cataloguing it would assert an adapter kind that writes no records.",
+      "resolution": "Catalog goes 7 to 10. The nav footer denominator returns 'of 10'. Reported, not silently absorbed."
+    }
+  ],
+
+  "registryDesign": {
+    "newFiles": [
+      "src/fixture-seam.mjs - determinism primitives, both content guards, the domain descriptor validator, and composeDomain. No domain file is imported back, so there is no cycle.",
+      "src/domains/permits-pipeline.mjs - the existing pipeline, unchanged in output, expressed as a domain descriptor.",
+      "src/domains/work-orders.mjs - MyGov work orders, compound.",
+      "src/domains/fleet-vehicles.mjs - Samsara vehicles with a driver dimension.",
+      "src/domains/patrol-vehicles.mjs - Spireon patrol vehicles, the gated-but-ungranted exemplar.",
+      "src/domains.mjs - the registry: DOMAIN_REGISTRY, listDomains, getDomain, composeDomainById, composeAllDomains.",
+      "src/domains.test.mjs - the seam's own gates."
+    ],
+    "changedFiles": [
+      "src/fixtures.mjs becomes a facade re-exporting the seam and the pipeline domain, so every existing import keeps working.",
+      "src/adapters.mjs gains 3 kinds, record-shape VARIANTS so one kind can declare more than one recordType, and a two-argument recordShapeFor.",
+      "src/city-pack.mjs gains fixtureGrants on the pack plus its column, ALTER, upsert param, PACK_COLUMNS entry and rowToPack mapping.",
+      "src/server.mjs gains two read routes so the ungranted state is probeable."
+    ],
+    "domainDescriptor": {
+      "id": "stable domain id",
+      "lensId": "which lens region it fills",
+      "region": "the named region inside that lens",
+      "gatedBy": "adapter kind id that gates it",
+      "recordType": "the declared record type it emits",
+      "vocabulary": "every string its records may carry",
+      "formats": "regexes any remaining string must match",
+      "generate": "(pack, seedFor) => { records, extras } - takes NO clock and NO Math.random"
+    }
+  },
+
+  "seamEnforcesGuards": {
+    "mechanism": "The generator RETURNS raw records. composeDomain, not the generator, then runs assertRecordShape, assertNoRealWorldContent and assertDeclaredVocabulary over every returned record, and assertNoRealWorldContent over the extras object as well. A generator that forgets to call a guard is impossible, because a generator never calls one.",
+    "vocabularyIsPerDomain": "assertDeclaredVocabulary takes the DOMAIN's declared vocabulary plus the record's own self-describing envelope fields. A wave-2 lane that emits an undeclared string fails at the seam.",
+    "extrasCovered": "Compound domains return extras (sla, dailyQueue, drivers). Records-only guarding would leave a hole a real city name could walk through, so the content guard runs on extras too. The vocabulary guard does not, because counting rules are prose by design, and that asymmetry is stated where it is read.",
+    "provenIt": "domains.test.mjs registers throwaway domains into an INJECTED registry, never the shipped one, and watches the seam reject: a real city name, a street address, a money string, an undeclared string, and a non-array return."
+  },
+
+  "determinismPlan": {
+    "runtime": "For every registered domain, on every shipped pack, compose twice and assert JSON.stringify equality. Derived from the registry, not from a maintained list.",
+    "source": "A source-level gate scans src/fixture-seam.mjs and every file under src/domains/ for Math.random, Date.now, new Date and toISOString. Mechanized, because a rule that depends on a wave-2 lane remembering is not a control (DEV_PROCESS section 0).",
+    "seedPreserved": "The pipeline domain's seed stays fnv1a of cityKey:mygov:permit-case byte for byte, so the 14 existing records do not move."
+  },
+
+  "statesModelled": [
+    { "status": "ok", "means": "pack generates, kind is in fixtureGrants, generator returned records" },
+    { "status": "granted-empty", "means": "pack generates, kind IS in fixtureGrants, generator returned nothing - a real emptiness with its own basis" },
+    { "status": "ungranted", "means": "pack generates but this kind is NOT in fixtureGrants - the region is BUILT and has no source. This is ruling 1 in code." },
+    { "status": "no-fixture-source", "means": "the pack generates nothing at all - empty-city" },
+    { "notRegistered": "a domain id absent from the registry is not built, and that is the only surviving meaning of Not built" }
+  ],
+
+  "rescopePlan": [
+    {
+      "gate": "src/adapters.test.mjs 'catalogues the seven named kinds' - deepEqual on 7 ids",
+      "why": "the catalog grows to 10",
+      "action": "update the id list to the 10 and keep it explicit, so a silent eleventh addition still fails; keep every per-kind shape assertion"
+    },
+    {
+      "gate": "src/server.test.mjs '0 of 7 sources granted'",
+      "why": "counted denominator moves to 10",
+      "action": "derive the expected string from ADAPTER_KINDS.length so it can never be re-pinned to a literal"
+    },
+    {
+      "gate": "src/fixtures.test.mjs deepEqual(declared, ['mygov'])",
+      "why": "samsara and spireon shapes become declared",
+      "action": "replace the literal with a DIVERGENCE test: every registered domain's kind and recordType must resolve to a declared shape, and every declared shape must be reachable from the registry"
+    },
+    {
+      "gate": "src/fixtures.test.mjs assertRecordShape with kind samsara expecting /undeclared/",
+      "why": "samsara is no longer undeclared, so this arm would stop firing for its stated reason",
+      "action": "re-point the undeclared arm at esri, which is still undeclared, and ADD a new arm for a kind and recordType mismatch. Two arms where there was one."
+    },
+    {
+      "gate": "src/fixtures.test.mjs 'keeps G-24 at zero' asserting RECORD_SHAPES.samsara.declared === false",
+      "why": "the assertion used 'samsara is undeclared' as a PROXY for 'nothing generates a city asset'. The proxy dies; the rule must not.",
+      "action": "assert the rule directly and registry-wide: no registered domain emits an asset record type, and the fleet domain states in its own basis that vendor telemetry is not a city-owned asset node. G-24 stays zero and is now measured rather than implied."
+    },
+    {
+      "gate": "src/fixtures.test.mjs gate 4, JSON.stringify(template) contains no dollar sign",
+      "why": "this is the per-pack shape the dispatch asks for and it is currently applied to ONE pack and ONE domain",
+      "action": "widen to every registered domain on every shipped pack. Both arms: template-city populated payloads carry no dollar sign and no dollar-zero; empty-city payloads carry neither either. Strengthened, not weakened."
+    },
+    {
+      "gate": "src/city-pack.test.mjs injected-Neon query stub",
+      "why": "a new ALTER for fixture_grants would hit its 'unexpected sql' throw",
+      "action": "add the branch and carry fixture_grants through the stub row, so the column-drift gate keeps covering the new column. This gate firing on the new column is the gate working."
+    },
+    {
+      "gate": "src/city-pack.test.mjs 'round-trips generatesFixtures' fixed row with no fixture_grants",
+      "why": "an old stored row has no such column",
+      "action": "rowToPack resolves an absent column to empty under a STATED rule (a pack that declares no fixtureGrants demonstrates nothing), asserted in a test rather than left as a silent default; and the SELECT is asserted to name fixture_grants"
+    },
+    {
+      "gate": "src/ui.test.mjs and src/server.test.mjs dollar-zero assertions (6 sites)",
+      "why": "the dispatch predicted these block wave 2",
+      "action": "NO CHANGE, and this is a planner-figure correction. All six read web/index.html or a served response of it. index.html is pack-INVARIANT: the server sends the same bytes for every cityKey and the fixture figures arrive over the API into the DOM at runtime. A markup assertion therefore cannot be made per-pack and does not block a populated lens. The gate that actually needs the pack dimension is the composed-payload one, listed above."
+    }
+  ],
+
+  "constraintsHonored": [
+    "web/index.html, web/app.js, web/shell.css and web/sc-kit.css are not opened for write",
+    "no feed connected, no adapter granted, grantedAdapters stays empty on all three packs",
+    "src/city-pack.mjs keeps throwing on cityKey bastrop",
+    "no invented freshness: no last sync, last read or last updated string, and no calendar date on any generated record",
+    "every empty region carries a basis",
+    "live Bastrop untouched; this lane does not deploy and does not merge"
+  ],
+
+  "openAtCp1": [
+    "Whether the nav footer should ever count fixtureGrants. Current answer is NO: a demonstrated shape is not a granted source, and counting it would put a false sources-granted figure beside a city name. Stated so a successor can see it was decided rather than missed."
+  ]
+}

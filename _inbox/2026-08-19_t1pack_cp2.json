@@ -1,0 +1,128 @@
+{
+  "lane": "T1PACK",
+  "checkpoint": "CP2",
+  "planRow": "G-91",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g91/fixture-pack-seam",
+  "date": "2026-08-19",
+  "stage": "pilot, one domain end to end, before push",
+
+  "pilotDomain": {
+    "id": "work-orders",
+    "why": "the compound one, and the operator priority. If the seam could only carry a flat list it would look correct on the pipeline and fail on the first lens that is not a queue, so the compound case is the one worth watching end to end.",
+    "lensId": "development-services",
+    "region": "Work orders",
+    "gatedBy": "mygov",
+    "recordType": "work-order",
+    "probe": "GET /api/domains/work-orders?cityKey=template-city  (HTTP 200)"
+  },
+
+  "pilotRawOutput": {
+    "status": "ok",
+    "granted": true,
+    "basis": "generated from the MyGov adapter output contract; no city rows were read",
+    "recordCount": 15,
+    "countingRule": "15 generated mygov work-order records on template-city, one row per record",
+    "firstRecord": {
+      "recordId": "FIX-WO-1006",
+      "kind": "mygov",
+      "recordType": "work-order",
+      "cityKey": "template-city",
+      "origin": "fixture",
+      "fixture": true,
+      "fixtureBasis": "generated from the MyGov adapter output contract; no city rows were read",
+      "accessPolicy": "public-free",
+      "subject": "Pothole repair",
+      "stage": "triaged",
+      "status": "past-sla",
+      "place": {
+        "label": "Fixture Ridge Block 6, Lot 21",
+        "parcelNodeId": null,
+        "parcelBasis": "a generated record is not attached to a parcel, because a parcel is a real record"
+      },
+      "dueOffsetDays": -3,
+      "dueLabel": "3 days past due",
+      "dayOffset": 2,
+      "dayLabel": "in 2 days",
+      "slaTargetHours": 72,
+      "slaElapsedHours": 120,
+      "slaState": "breached",
+      "provenance": {
+        "source": "MyGov output contract",
+        "basis": "generated from the MyGov adapter output contract; no city rows were read",
+        "readAt": null,
+        "readAtBasis": "nothing was read; this record was generated"
+      }
+    },
+    "sla": {
+      "targetHours": 72,
+      "breached": 2,
+      "atRisk": 3,
+      "within": 10,
+      "measured": 15,
+      "countingRule": "work orders whose slaElapsedHours falls in this band, over the generated mygov work-order records on this pack, against a declared 72 hour target"
+    },
+    "dailyQueue": [
+      { "dayOffset": 0, "dayLabel": "today", "count": 1 },
+      { "dayOffset": 1, "dayLabel": "in 1 day", "count": 2 },
+      { "dayOffset": 2, "dayLabel": "in 2 days", "count": 6 },
+      { "dayOffset": 3, "dayLabel": "in 3 days", "count": 4 },
+      { "dayOffset": 4, "dayLabel": "in 4 days", "count": 2 }
+    ],
+    "statusTiles": [
+      { "id": "past-sla", "count": 2 },
+      { "id": "at-risk", "count": 3 },
+      { "id": "scheduled", "count": 6 },
+      { "id": "closed", "count": 4 }
+    ]
+  },
+
+  "pilotReconciliation": {
+    "queueLength": 15,
+    "statusTilesSum": 15,
+    "slaBandsSum": 15,
+    "dailySliceSum": 15,
+    "declaredPlanSum": 15,
+    "countingRule": "four independently MEASURED classes over one array plus the declared plan; none is derived by subtraction (DEV_PROCESS 1.3). Five numbers that must agree, and they do.",
+    "bandDiscipline": "every past-sla record measured slaState breached and every scheduled record measured within, so a status can never render against an SLA figure that contradicts it"
+  },
+
+  "adversarialReview": {
+    "gatesWeakened": "none. Every re-scoped gate gained arms rather than losing them; the base suite's test names are all still present, with one RENAME (adapters.test 'catalogues the seven named kinds' to 'the ten named kinds') and no deletion, verified by diffing the it() names against the base SHA.",
+    "twoDefectsFoundByMyOwnGates": [
+      {
+        "found": "the clock scan flagged src/fixture-seam.mjs on the sentence explaining that no generator may reach Math.random",
+        "class": "prose counted as behaviour, which is the G-88 item 3 defect one layer down",
+        "fix": "the scan strips comments using the repo's existing stripJsComments rather than being excluded, and now carries four arms proving it fires on code and does NOT fire on a comment or on Math.imul"
+      },
+      {
+        "found": "the patrol vocabulary entry 'K9 transport' failed its own unit-label format on the digit",
+        "class": "a format and a vocabulary disagreeing",
+        "fix": "renamed the vocabulary entry, not widened the format. A format loosened to admit one string is loosened for every domain that inherits it."
+      }
+    ],
+    "preExistingHoleClosed": {
+      "what": "assertDeclaredVocabulary listed record.dueLabel among its own allowed strings, so the field authorised itself: any string at all could be written into dueLabel and the guard permitted it",
+      "fix": "a declared DUE_LABEL_FORMAT replaces the self-reference, with a firing arm asserting that 'last synced an hour ago' in dueLabel is now rejected"
+    },
+    "residualRisk": "The four-state model reaches no pixel. web/ is another lane's this card, so the shell still renders the pipeline's two-value ok/empty. The seam carries sourceStatus beside it, so wave 2 can read the fourth state without a contract change, but until a lens reads it the customer-visible sentence is unchanged. Named rather than implied."
+  },
+
+  "constraintsReVerified": [
+    "web/ has zero files in the diff against the base SHA; web/sc-kit.css is byte-identical after CRLF normalization (sha256 2cdd0bf876ee24224eb0e976c4c29f1f79bb37324a53aac50d3d78feec113ef2 on both sides)",
+    "grantedAdapters is [] on all three packs and assertCityPackShape still throws on a grant over a generating pack, watched in a test",
+    "src/city-pack.mjs still throws on cityKey bastrop, watched in the untouched base test",
+    "no last sync, last read or last updated string anywhere in any composed payload on any pack, and the seam now REJECTS one at the guard",
+    "no calendar date in any composed payload on any pack",
+    "no dollar sign and no $0 in any composed payload on any pack, populated or empty",
+    "no feed connected, no adapter granted, no deploy, no merge"
+  ],
+
+  "suiteAtCp2": {
+    "command": "node --test src/*.test.mjs",
+    "tests": 237,
+    "pass": 237,
+    "fail": 0,
+    "baseline": "219/219 on the base SHA; +18 net, all additions"
+  }
+}

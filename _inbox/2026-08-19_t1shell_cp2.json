@@ -1,0 +1,129 @@
+{
+  "lane": "T1SHELL",
+  "checkpoint": "CP2",
+  "planRow": "G-90",
+  "date": "2026-08-19",
+  "clone": "P:/tmp/t1shell-dash",
+  "branch": "g90/shell-function-parity",
+  "subject": "theme end to end, with the first-paint arm watched FAILING on a real neutered build",
+
+  "whatWasBuiltAtThisPoint": {
+    "themeResolver": "src/theme.mjs - THEMES, FALLBACK_THEME, THEME_STORAGE_KEY, resolveTheme(), nextTheme(), themeToggleLabel(), themeToggleTitle(). Pure, no DOM. Served at /theme.mjs.",
+    "headScript": "web/index.html - the EXISTING G-89 inline head script extended, not duplicated. It stamps data-surface / data-tab / data-atab first and unchanged, then reads localStorage inside try/catch and stamps data-theme on the ROOT. It never writes.",
+    "toggle": "web/app.js bindTheme() - the only writer. Reads the current theme off the ROOT rather than out of storage, because the root is what the head script actually resolved including the case where storage was unreadable.",
+    "staticDefault": "web/index.html keeps data-theme=\"dark\" on <html>. The script overwrites it only when a stored preference disagrees, which makes the whole mechanism exactly localStorage.theme || \"dark\" and leaves a scripting-disabled browser unregressed."
+  },
+
+  "instrument": {
+    "file": "src/first-paint.test.mjs, EXTENDED - no parallel test file was written",
+    "extensions": [
+      ":root taught to the compound matcher as tag html, with the basis for why that equivalence is exact in this model and would not be in a real document",
+      "@media (prefers-color-scheme: dark|light) evaluated against a declared environment; every OTHER at-rule still throws by name, and that refusal is itself tested",
+      "resolveRootProperty() - the same cascade as resolveDisplay (importance, then specificity, then source order) over the stylesheets the document links, IN LINK ORDER read out of the markup",
+      "firstPaintPalette() - resolves --sc-canvas, --sc-surface, --sc-ink and color-scheme on the root at first paint, with the head script executed and the module NOT executed",
+      "stampedAttrs() given a three-state storage: a value, no value, and a getItem that THROWS; setItem is instrumented so 'the head script must not write storage' is measured rather than assumed",
+      "whitelistDivergences() extended with the theme vocabulary - THEMES, FALLBACK_THEME and the storage KEY - textually and behaviourally over eleven stored-value probes"
+    ],
+    "expectedValuesAreDerived": "The light and dark palettes are read out of web/sc-kit.css's own .sc-light and .sc-dark blocks rather than pinned as hex literals in the test. A pinned hex would be this repo holding a second copy of a token value, which is the fork the kit header forbids.",
+    "freeReconciliation": "The kit states the dark palette twice - under the system-preference media query and under the explicit attribute. The test asserts the two are the same palette (DEV_PROCESS 1.4). They are."
+  },
+
+  "watchedFailing": {
+    "method": "The theme stamp was REMOVED from the head script in the real working tree - not a string mutation inside the test, an actual neutered build - and the suite was run against it. Then restored and re-run.",
+    "mutation": "removed the line root.setAttribute(\"data-theme\", pick(THEMES, storedTheme, FALLBACK_THEME)); from web/index.html",
+    "rawOutputFailing": [
+      "▶ G-89 first paint",
+      "  ✔ paints the requested surface, and the pre-fix build painted Overview instead (59.4025ms)",
+      "  ✔ keeps the tab panels on the same rule, so the right lens does not swap tables (7.4939ms)",
+      "  ✔ leaves the scripting-disabled document exactly as it was (15.4088ms)",
+      "  ✖ holds the whitelist to the module's, and the divergence check is watched firing (25.234ms)",
+      "  ✔ keeps the CSS enumeration in step with the panels, in three directions (13.2567ms)",
+      "  ✔ keeps applyLens live rather than decorative (0.2997ms)",
+      "  ✔ stamps before the parser reaches the body, and adds no class (0.3776ms)",
+      "  ✖ G-90: resolves the THEME before first paint too, and the late build is watched failing (6.3972ms)",
+      "  ✔ G-90: keeps the static default so a scripting-disabled browser still has a theme (5.2029ms)",
+      "  ✔ G-90: the palette instrument refuses to guess, and is proven able to refuse (7.1479ms)",
+      "  ✔ freezes the pre-fix fixture so a helpful refresh fails loudly (1.5308ms)",
+      "✖ G-89 first paint (143.4556ms)",
+      "ℹ tests 11",
+      "ℹ pass 9",
+      "ℹ fail 2",
+      "",
+      "✖ G-90: resolves the THEME before first paint too, and the late build is watched failing (3.6806ms)",
+      "  AssertionError [ERR_ASSERTION]: stored light, OS prefers light",
+      "  + actual - expected",
+      "  + '#0C1116'",
+      "  - '#EEF1F4'",
+      "    actual: '#0C1116',",
+      "    expected: '#EEF1F4',",
+      "    operator: 'strictEqual',",
+      "",
+      "✖ holds the whitelist to the module's, and the divergence check is watched firing (25.234ms)",
+      "  AssertionError [ERR_ASSERTION]: arm A: the two implementations agree",
+      "  + actual - expected",
+      "  + [",
+      "  +   'stored undefined: data-theme script=undefined module=\"dark\"',",
+      "  +   'stored \"\": data-theme script=undefined module=\"dark\"',",
+      "  +   'stored \" \": data-theme script=undefined module=\"dark\"',",
+      "  +   'stored \"light\": data-theme script=undefined module=\"light\"',",
+      "  +   'stored \"dark\": data-theme script=undefined module=\"dark\"',",
+      "  +   'stored \" light \": data-theme script=undefined module=\"light\"',",
+      "  +   'stored \"LIGHT\": data-theme script=undefined module=\"dark\"',",
+      "  +   'stored \"system\": data-theme script=undefined module=\"dark\"',",
+      "  +   'stored \"sepia\": data-theme script=undefined module=\"dark\"'",
+      "  + ]",
+      "  - []"
+    ],
+    "reading": "#0C1116 is the kit's dark canvas and #EEF1F4 is its light canvas. A staff member who had chosen light got the dark page ground painted at first paint. That is the flash, measured as a colour rather than as a missing attribute. Two independent instruments fired on one defect - the palette resolver and the paired-control divergence check - which is what a second implementation of a rule is supposed to buy.",
+    "rawOutputAfterRestore": [
+      "  ✔ G-90: keeps the static default so a scripting-disabled browser still has a theme (2.4922ms)",
+      "  ✔ G-90: the palette instrument refuses to guess, and is proven able to refuse (2.8624ms)",
+      "  ✔ freezes the pre-fix fixture so a helpful refresh fails loudly (1.1289ms)",
+      "✔ G-89 first paint (248.2529ms)",
+      "ℹ tests 11",
+      "ℹ pass 11",
+      "ℹ fail 0"
+    ]
+  },
+
+  "armsInsideTheTest": {
+    "armA": "the real build, five cases: stored light on a light OS, stored light on a DARK OS, stored dark on a light OS, nothing stored on a light OS, and a storage that throws. Canvas, surface, ink and color-scheme all asserted, canvas first and as a scalar so a failure reports a colour.",
+    "armB": "the SAME predicate against a build whose head script does not stamp theme, asserted to throw naming the dark canvas where the light one was stored. The probe is asserted to have changed the document, and asserted to leave the G-89 surface fix intact so it tests one thing.",
+    "armC": "the frozen pre-fix fixture at 6a4580d - real historical bytes, no head script at all - resolves the dark canvas for a stored light preference.",
+    "refusalArms": "an unevaluable at-rule (@media (min-width: 900px)) and an unknown linked stylesheet each assert the instrument throws by name rather than returning a quiet no-match."
+  },
+
+  "thingThatWasNeverProvenBefore": "stored light on a DARK-preferring operating system must paint light. That is precisely what web/sc-kit.css's ':root:not([data-theme=\"light\"])' guard exists for, it has been in the kit since G-67, and nothing in any of the three repos that vendor the kit had ever exercised it. It passes.",
+
+  "exclusionSet": {
+    "rule": "cross-origin stylesheets are excluded from the palette resolution",
+    "basis": "they are not served by this product - src/served-surface.mjs derives the served set from server.mjs's own sendFile call sites and it holds exactly two stylesheets - so there are no bytes to read and inventing some would be modelling a third party",
+    "measured": "exactly one linked stylesheet is excluded today, the Google Fonts sheet, which declares no custom property and no colour. The test pins that set at one rather than letting it grow quietly."
+  },
+
+  "adversarialReviewOfMyOwnWork": [
+    {
+      "concern": "The instrument could pass on a build that stamps the attribute but where the CSS does not respond to it.",
+      "answer": "It resolves token VALUES through the cascade, not the attribute. The attribute is asserted last and is the mechanism; the canvas is asserted first and is the outcome. A stamped attribute with no matching rule returns the light default and fails."
+    },
+    {
+      "concern": "The test could pass because the expected values were copied from the same file the product reads.",
+      "answer": "That is true and it is deliberate - the alternative is a second copy of the kit's colours in this repo, which the kit header calls forking the system. What the test can still catch, and did, is the first paint landing on the WRONG one of two derived palettes. It also asserts the two palettes differ, so a kit that collapsed them would fail rather than pass vacuously."
+    },
+    {
+      "concern": "The head script now does more, so it has more ways to break the G-89 fix.",
+      "answer": "Ordered against exactly that: the surface stamps run first and untouched, the storage read is inside try/catch, and the arm-B probe asserts the G-89 surface predicate still passes on the neutered build so the two fixes cannot be confused for each other. The storage-throws case is one of the five accepted cases, not an afterthought."
+    },
+    {
+      "concern": "A browser test would be stronger than a modelled cascade.",
+      "answer": "It would, and it is deliberately not here for the reason the file already states: CI is npm ci plus npm test on a bare Node image, and a test that skips when Chrome is absent is a control that never fires. The model's compensating discipline is that it throws on anything it has not been taught, and both refusals are tested."
+    }
+  ],
+
+  "remainingAtThisCheckpoint": [
+    "src/shell-state.test.mjs - session, capability both-states, notifications, feedback delivery",
+    "shell parity assertions over the served markup - the eight functions, no fabricated count, no invented freshness",
+    "server route tests for GET /api/shell and POST /api/feedback",
+    "full suite, push, PR, CI conclusion string"
+  ]
+}
