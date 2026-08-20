@@ -10,6 +10,12 @@ owner: operator
 
 # T-25 admissibility enumeration, property substrate
 
+**Forty eight distinct verified checks. Three hold. One carries a second derivation.**
+
+Those are two different properties and collapsing them overstates the list. All three of the
+checks that hold REFUSE rather than defaulting. Only one of the three can evidence that a
+source is right.
+
 The complete row set. Every check in the property substrate's write, resolution and scoring
 paths that was read, with the cheapest value that satisfies it and whether that value carries
 meaning.
@@ -113,7 +119,7 @@ disposition. Read from source beats grep and is weaker than running the code.
 | W-26 | all six `write-*-county.mjs`, the `if (!back)` branch | `storedByDid.get(atom.atomDid)` after `SELECT body FROM atoms WHERE atom_did IN (...)` | any stored row whose `body.atomDid` matches | **Partially** | 3. **Strongest in the family**, see the W-26 note |
 | W-27 | `document_ingest_atoms`, `migrations/004_document_ingest.sql:32-46` + live | `entity_id text NOT NULL` and nothing else. **No pair-unique index either** | any non null string, including `""` | No | 4, absent. **Strictly weaker than `atoms`** |
 | W-28 | `document-ingest/src/pg-atom-store.ts:73-105` | NONE on the binding. `entityId` flows unchecked into `buildAtomDid` at `:76`, which becomes the PK at `:105` | any non null string | No | 4, self authored |
-| W-29 | `@empressaio/atom-contract@1.20.0`, `dist/property/flood-hazard-fact.js:26-32`, `FLOOD_HAZARD_FACT_SCHEMA` | all four finding fields OPTIONAL: `inSpecialFloodHazardArea: z.boolean().optional()`, `floodZone: z.string().nullable().optional()`, `zoneSubtype`, `baseFloodElevation`. The `superRefine` constrains only the absence side | an atom with `entityType`, `atomDid`, `parcelNodeId`, a non-absent `sourceTier`, `accessPolicy: "public-free"` and **none of the four finding fields**. A contentless claim | **No** | 4, none exists, absent. **Type-expressible.** See below |
+| W-29 | `@empressaio/atom-contract@1.20.0`, `dist/property/flood-hazard-fact.js:26-32`, `FLOOD_HAZARD_FACT_SCHEMA`. **Optionality confirmed family-wide across all five property schemas; flood additionally an OUTLIER on domain constraints** | all four finding fields OPTIONAL, and `floodZone` uniquely carries no `.min(1)` where four siblings do: `inSpecialFloodHazardArea: z.boolean().optional()`, `floodZone: z.string().nullable().optional()`, `zoneSubtype`, `baseFloodElevation`. The `superRefine` constrains only the absence side | an atom with `entityType`, `atomDid`, `parcelNodeId`, a non-absent `sourceTier`, `accessPolicy: "public-free"` and **none of the four finding fields**. A contentless claim | **No** | 4, none exists, absent. **Type-expressible.** See below |
 
 ### W-29, the type permits a contentless claim, and it is upstream of the whole family
 
@@ -134,36 +140,84 @@ The remedy is a type, not a check: a discriminated union over determined and abs
 determined arm requires the finding fields and the absent arm forbids them. The `superRefine`
 already enforces exactly that shape in one direction. It was never written in the other.
 
-### The cross-substrate pattern, found independently by two seats
+### What survived the test: optionality is family-wide
 
-The markets seat found the same shape in a completely different contract, before this schema
-was opened and through no channel connecting the two: **ten numbers entirely unbounded, and
-they are the price, the strike, the bar fields and the driver value, while eight other numeric
-fields carry a minimum.**
+**Every claim field across all five property schemas is `.optional()`.** Only identifiers and
+one decision parameter escape. So a `special-district-fact` atom carrying no district name, no
+district id and no district type parses clean, exactly as the flood atom does.
 
-Two substrates, two seats, two unrelated schemas, one result: **the fields carrying the claim
-are the least constrained fields in their own type.**
+**The type never requires an atom to carry its own claim, while constraining the claim's
+domain once carried.** That is the finding, and it is narrower than the one first written.
 
-**The mechanism explains why it recurs rather than being bad luck.** Structural and identifier
-fields have constraints that are cheap to write: non-empty, matches a pattern, one of a closed
-set. Semantic fields do not. Nobody can express *is a plausible price* or *is a real hazard
-zone* as a type annotation, so the easy constraints get written and the hard ones stay open.
-**Constraint effort concentrates where it is cheap and thins out where the meaning is.**
+The remedy follows from it and is cheaper than a constraint audit: a discriminated union whose
+determined arm requires the finding fields. **Four siblings already demonstrate the shape**, so
+the flood fix does not have to be designed from scratch.
 
-**Search heuristic, worth more than either row.** When auditing a schema, read the
-claim-bearing fields first. That is where the gaps are, and it is the last place a reader
-looks.
+### What died: the constraint-thinning mechanism, falsified 2026-08-20
 
-**The same pattern from the other side.** The W-13 access-policy correction shows it
-inverted: `well-fact` and `rail-corridor-fact` both check `accessPolicy` explicitly while the
-schema already enforces it. Two writers carrying a check the type had covered. Constraint
-duplicated where it was cheap, absent where it was hard, in one family.
+A cross-substrate generalisation was written into canon and is now retired. It held that
+**constraint effort concentrates where it is cheap and thins out where the meaning is**, on the
+theory that nobody can express *is a plausible price* or *is a real hazard zone* as a type
+annotation while everybody can write *matches this pattern*. Two instances supported it: flood's
+unconstrained fields here, and ten entirely unbounded numbers in an unrelated markets contract
+where eight other numeric fields carried a minimum.
 
-**Instruction for the four remaining provisional rows.** Whoever opens
+**Tested against the four sibling schemas. Four authors did the opposite of what the mechanism
+predicts.**
+
+```
+special-district  districtName / districtId / districtType   z.string().min(1).optional()
+well-fact         operatorName                                z.string().min(1).optional()
+                  proximityRadiusMeters                       z.number().positive().optional()
+                  proximityDistanceMeters                     z.number().nonnegative().optional()
+utility-easement  holderLabel                                 z.string().min(1).optional()
+                  corridorWidthFt                             z.number().positive().optional()
+rail-corridor     bufferMeters                                z.number().positive()   <- REQUIRED
+                  nearestCorridorDistanceMeters               z.number().nonnegative().optional()
+```
+
+Minimum lengths on names and identifiers, positivity on radii and widths, non-negativity on
+distances, and one decision parameter both required and positive. **Semantic fields carry domain
+constraints throughout.**
+
+**So flood is an outlier inside its own contract rather than an exemplar of a tendency.**
+`floodZone: z.string().nullable().optional()` carries no `.min(1)` while `districtName`,
+`districtId`, `districtType`, `holderLabel` and `operatorName` all do. The markets contract's ten
+unbounded numbers stand as a finding about that contract and not as evidence of anything general.
+Two instances that looked like a pattern were two instances.
+
+**The flood-zone defect is therefore sharper and smaller than a contract-wide one, and cheaper to
+fix.**
+
+### Instrument asymmetry, which applies to this pass's own tooling
+
+The four schemas above were read through a **filtered search over primitive `z.<type>`
+declarations**, not the full schema bodies as flood was. Fields typed through imported schemas
+and any `superRefine` are invisible to it.
+
+**That instrument is reliable in one direction only.** It finds constraints that are really
+there, so it disproves a claim of *unconstrained* soundly. It cannot establish absence.
+
+The result above is safe in exactly the direction it needs to be, because it is a falsification
+and falsification is the direction the instrument supports. **Where an instrument is asymmetric,
+say which direction it supports, and do not carry its confirmations at the same weight as its
+refutations.**
+
+### The access-policy inversion travels with the dead mechanism, not beside it
+
+`well-fact` and `rail-corridor-fact` both check `accessPolicy` explicitly while the schema
+already enforces it: two writers carrying a check the type had covered. That was filed as the
+same pattern seen from the other side, duplicated where cheap and absent where hard. **It was
+evidence for the mechanism, so it retires with it.** It remains true as an observation about
+redundancy and is no longer evidence of a tendency.
+
+### Status of the four rows this test touched
+
 `SPECIAL_DISTRICT_FACT_SCHEMA`, `WELL_FACT_SCHEMA`, `UTILITY_EASEMENT_SCHEMA` and
-`RAIL_CORRIDOR_FACT_SCHEMA` reads them **for this property**, not only for the rows that turn
-on them. If those four also declare their claim fields optional or unconstrained, that is four
-more instances and it stops being a flood-specific defect.
+`RAIL_CORRIDOR_FACT_SCHEMA` are now **partially read**: field declarations seen, refinements and
+imported-schema fields not. **W-14, W-15, W-16 and W-26 stay provisional.** The optionality
+property is established for them; their own cheapest satisfiers are not, because those turn on
+`safeParse` behaviour a filtered grep cannot see.
 
 ### W-9, confirmed, and the two things that do not shrink it
 
@@ -545,11 +599,12 @@ the cheapest satisfier of the default itself. Schema-unread does not weaken thes
 
 ### Input type NOT READ, grade provisional
 
-**W-14, W-15, W-16, W-26.** All four turn on `SCHEMA.safeParse(stored)` against schemas that
-were **not read**: `SPECIAL_DISTRICT_FACT_SCHEMA`, `WELL_FACT_SCHEMA`,
-`UTILITY_EASEMENT_SCHEMA`, `RAIL_CORRIDOR_FACT_SCHEMA`. The schema is upstream and decisive for
-every one of them. Given what reading the flood schema changed about W-13, expect these four to
-move too, and expect the movement in both directions.
+**W-14, W-15, W-16, W-26.** All four turn on `SCHEMA.safeParse(stored)` against schemas now
+**PARTIALLY read** (2026-08-20): field declarations seen, refinements and imported-schema fields
+not. The optionality property is established for all four; their own cheapest satisfiers are not,
+because those turn on `safeParse` behaviour a filtered grep cannot see. Given what reading the
+flood schema fully changed about W-13, expect these four to move, and expect movement in both
+directions.
 
 **W-28.** The type of `DocumentDerivedAtomInstance.entityId` was not read.
 
