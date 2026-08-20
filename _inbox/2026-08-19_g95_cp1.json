@@ -1,0 +1,77 @@
+{
+  "lane": "G-95",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRow": "G-95 (90_operations/OPS-17_govtech_stack_plan_of_record.md)",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/g95-dash",
+  "branch": "g95/a11y-baseline-and-gate",
+  "branchedFrom": "main @ 1b271c8c3dc7bf361c09f00a095cc8e9022a6946",
+  "filedLate": "This CP1 records the design as executed. It was written after the first build pass rather than before it, which is a process miss and is stated rather than backdated.",
+
+  "planForTheTitle": {
+    "criterion": "2.4.2 Page Titled (WCAG 2.0 A / Rev508). Also answers 2.4.6 Headings and Labels indirectly by naming the surface.",
+    "whyAxeCannotSeeIt": "axe scans one page at a time and a title is present on every page. Nav items and tabs are real <a href> full navigations, so each is a distinct page, and the criterion fails only under a comparison ACROSS surfaces.",
+    "shape": "<surface> [ · <parent surface> ] · <city> · SmartCity Dashboards. Most specific first, because a screen reader announces the title on arrival and reads left to right.",
+    "whereItIsResolved": [
+      "src/staff-review.mjs surfaceTitle() is the ONE resolver. The three label maps moved there out of web/app.js rather than being copied.",
+      "The EXISTING G-89 inline head script in web/index.html carries the forced second copy and stamps document.title before the parser reaches the body. No second script is added.",
+      "web/app.js appends the pack name once GET /api/city-identity resolves, passing identity.documentTitle as the tail. The surface part is never late; only the city, which this product does not assert unread."
+    ],
+    "howTheSecondCopyIsHeld": "src/first-paint.test.mjs whitelistDivergences() extended to compare PRODUCT_TITLE, TITLE_SEP and all four label maps textually AND to compare the resolved title behaviourally for every query probe. Maps are compared by value, not by key set, because a RENAMED label puts a word in the title that appears nowhere on the screen while every id still resolves.",
+    "watchedFailing": "A late-title build is constructed inside the test by deleting the document.title line from the head script; the same acceptance predicate is asserted to throw with actual 'SmartCity Dashboards' and expected 'Overview · SmartCity Dashboards'. The whole test file was additionally run against a mutated web/index.html and its raw failure recorded.",
+    "staticTitleKept": "web/index.html keeps <title>SmartCity Dashboards</title>. With scripting off nothing stamps data-surface, every URL paints Overview, and the document really is one page - so one product-level title is the honest answer there, not a fallback claiming a surface the browser is not showing."
+  },
+
+  "planForTheGate": {
+    "entryPoint": "scripts/a11y-scan.mjs, npm run test:a11y",
+    "ci": ".github/workflows/ci.yml gains a second REQUIRED job `a11y` running npm ci, npx playwright-core install --with-deps chromium, npm run test:a11y",
+    "whyASeparateJob": "npm test is `node --test src/*.test.mjs` on a bare Node image, and src/hidden-rule.test.mjs and src/first-paint.test.mjs both already rule that a check which quietly skips when Chrome is absent is a control that never fires. The browser check therefore does not join that suite pretending to be optional.",
+    "noSkipPath": "A missing or unlaunchable browser exits 2 with the install command in the message. There is no branch in the file that can exit 0 without having scanned.",
+    "survivesAFreshClone": [
+      "axe comes from the axe-core devDependency, not from P:/tmp/VPAT/axe.min.js on one machine",
+      "the browser comes from playwright-core plus an explicit install step; playwright-core is chosen over playwright precisely because it downloads no browser on npm install, so the ordinary test job stays cheap",
+      "the server under test is this repo's own src/server.mjs started in-process on an ephemeral port; nothing deployed, no port hardcoded, process exits"
+    ],
+    "derivedNotHardcoded": "Targets are built in src/a11y-surfaces.mjs from ALL_LENS_IDS, DS_TABS, WORK_IDS, ASSET_TABS (src/staff-review.mjs) and the packs in src/city-pack.mjs; themes from THEMES in src/theme.mjs. A lens or a theme added later is scanned with no edit here.",
+    "surfaceDenominator": "23 surfaces, not the 16 the baseline used. Every tab is a real href, so a tab is a surface exactly as a lens is. BASELINE_SURFACES names the 16-surface subset so the before/after figures stay comparable against the recorded baseline.",
+    "exitBounded": "fixed target list, browser closed in a finally, server closed in a finally, process exits with a code."
+  },
+
+  "adversarialReview": [
+    {
+      "risk": "The gate can never be green, because color-contrast is a sibling lane's fix.",
+      "ruling": "DEV_PROCESS 2.0: a permanently-red gate is a dead gate. The contract is SPLIT - zero tolerance everywhere, one named waiver with its owner, its basis and its removal condition. The waiver is a RATCHET: above the pin fails, below the pin prints a loud STALE line, zero on every theme FAILS with an instruction to delete the entry. An exception that can only ever be satisfied is the control that never fires."
+    },
+    {
+      "risk": "A waiver stated as one total lets a dark regression hide behind a light improvement.",
+      "ruling": "Pinned PER THEME. Two pins cannot be compensated against each other."
+    },
+    {
+      "risk": "A green gate that never actually ran the palette it claims to have scanned.",
+      "ruling": "Two guards. Every scan asserts document.documentElement's data-theme is the one it asked for. The run asserts the two themes PAINT differently, and fails if every surface renders both identically - the divergence test for the lever itself."
+    },
+    {
+      "risk": "Class discipline. A markup fix that needs a new class triggers a kit re-vendor.",
+      "ruling": "Zero new classes. The defined vocabulary stays at 143 (src/shell-parity.test.mjs counting rule: served stylesheets, CRLF-normalized, comments stripped, every dot-identifier, deduplicated). The heading fix reuses .state h2, which web/shell.css already styled; the scrollable fix is a tabindex attribute; the status fix is an aria-live attribute."
+    },
+    {
+      "risk": "web/sc-kit.css is the sibling lane's and a token edit forks the system.",
+      "ruling": "Not touched. Verified by git diff: the file is not in this branch's change set."
+    }
+  ],
+
+  "constraintsAccepted": [
+    "web/sc-kit.css not touched",
+    "no invented freshness; no last sync / last read / last updated added",
+    "every .basis line preserved",
+    "no real city asserted as content",
+    "live Bastrop no-touch; G-52 not started; G-24 not filled; L26 untouched",
+    "no merge, no deploy"
+  ],
+
+  "openAtCp1": [
+    "Whether the waiver pin survives G-94 merging first. If it does not, the pin is re-measured and re-pinned; that is the designed forcing function, not a defect."
+  ]
+}

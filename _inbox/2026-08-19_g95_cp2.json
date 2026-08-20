@@ -1,0 +1,119 @@
+{
+  "lane": "G-95",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint: the gate is live and firing",
+  "date": "2026-08-19",
+  "planRow": "G-95 (90_operations/OPS-17_govtech_stack_plan_of_record.md)",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g95/a11y-baseline-and-gate",
+  "headSha": "e647b51afb2fcb82cb08b4a0d95fd910ee10ccb7",
+  "pr": 31,
+  "prUrl": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/31",
+  "merged": false,
+  "deployed": false,
+
+  "gateIsLive": {
+    "entryPoint": "npm run test:a11y -> scripts/a11y-scan.mjs",
+    "ciJob": ".github/workflows/ci.yml job `a11y`, required, alongside the existing `test` job",
+    "localVerdict": "a11y gate PASSED: 0 unwaived conformance node(s) and 1002 waived over 46 surfaces, 0 title findings, 0 focus findings over 1058 keyboard stops",
+    "denominator": "23 surfaces x 2 themes = 46 scans, 46/46 scanned",
+    "unitSuite": "npm test 345 pass / 0 fail (320 on main before this branch)"
+  },
+
+  "correctionAcceptedMidLane": {
+    "from": "sibling lane G-94, delivered as a mid-flight interrupt",
+    "claim": "the color-contrast baseline in the G-95 dispatch is DARK ONLY; light is 643 on the same 16 surfaces",
+    "whatMyGateWasDoing": "not colorScheme emulation - the scanner used a default browser context, so localStorage was empty and the G-89 head script fell to FALLBACK_THEME. Every scan was dark. The figure was right and the coverage was half.",
+    "statedPlainly": "The gate was dark-only. Confirmed by reading the scanner rather than by reasoning about it, and fixed rather than rationalised.",
+    "mechanismUsed": "playwright context.addInitScript seeds window.localStorage[THEME_STORAGE_KEY] before any document script runs, so the value is present at the moment the head script reads it. THEMES and THEME_STORAGE_KEY are imported from src/theme.mjs rather than written down.",
+    "guardsAdded": [
+      "every scan asserts document.documentElement's data-theme equals the theme it asked for; a mismatch is recorded as a FAILED scan and fails the build, so 'light is clean' can never look like 'light was never scanned'",
+      "the run asserts the two themes PAINT differently - body background recorded per scan - and fails if every surface renders both identically. That is the divergence test for the lever itself, and it is what a colorScheme-emulating run would trip on immediately",
+      "the waiver is pinned PER THEME, so a dark regression cannot hide behind a light improvement under an unchanged total"
+    ],
+    "reconciliation": {
+      "rule": "16-surface subset of this scanner's 23-surface run, matching the wave-3 baseline's denominator",
+      "thisLane": { "light": 643, "dark": 54, "headingOrder": 11, "scrollableRegionFocusable": 4 },
+      "siblingLane": { "light": 643, "dark": 54 },
+      "verdict": "exact agreement, two independent instruments in two lanes"
+    }
+  },
+
+  "defectsFoundInMyOwnInstrument": [
+    {
+      "defect": "the keyboard walk de-duplicated stops by CSS path string",
+      "consequence": "fifteen nav links share one path because none carries an id, so the walk saw a repeat on the second nav item and stopped after 5 stops per surface, reporting ZERO focus findings",
+      "detectedBy": "the stop count looking implausibly low against a document with a fifteen-item nav",
+      "fix": "identity tracked by NODE in a WeakSet; stops went from 123 to 542 on the single-theme run"
+    },
+    {
+      "defect": "a cross-origin mount scored as a focus stop with no indicator",
+      "consequence": "23 false 2.4.7 findings, one per surface, and an iframe:focus CSS rule drafted to fix them",
+      "detectedBy": "probing el.matches(':focus') on #map-site with document.activeElement === #map-site: both :focus and :focus-visible false, because focus crossed into the mounted document and the element carrying it lives there",
+      "fix": "crossings are classified as UNMEASURED and reported by name; the iframe:focus rule was deleted before it shipped, because a rule that cannot fire is decorative and would have read as a fix in the diff"
+    },
+    {
+      "defect": "the multi-pass walk shared one Set for 'have I looped' and 'have I recorded this'",
+      "consequence": "pass two ended on its first element - already seen in pass one - so everything after the first mount was never walked, while the run reported no early ending at all",
+      "fix": "a fresh per-pass Set; the run went from discovering 1 cross-origin mount to discovering all 3 (map-site, review-site, files-site) with the same 1058 stops, which turns 'the tail is empty' from an assumption into a measurement"
+    },
+    {
+      "defect": "the planted violations were appended to a body inside an overflow:hidden shell",
+      "consequence": "they rendered outside the visible area, axe correctly declined to judge them, and three plants reported 'gate PASSED, WHICH IS THE BUG' while the gate was working perfectly and the PLANTS were the broken half",
+      "fix": "plants are position:fixed; and the scrollable plant was rewritten to REMOVE THE FIX (strip tabindex from the real scroll containers) rather than invent a synthetic region, because axe 4.13 returned INAPPLICABLE for a synthetic overflow div with scrollHeight 428 in a 40px box"
+    }
+  ],
+
+  "defectFoundInTheProduct": {
+    "what": "one scan of 46 rendered with a transparent body background: its stylesheet request never landed",
+    "why it matters": "that scan reported ZERO contrast failures, because unstyled text cannot fail a contrast rule, and 20 focus stops with no indicator, because the :focus-visible rule was not there. A gate reading only the contrast number would have recorded it as the cleanest scan of the run.",
+    "fix": "every scan asserts the page painted - an opaque body background and at least one readable stylesheet - and a scan that did not paint is retried once, then recorded as FAILED, which fails the build"
+  },
+
+  "correctionToTheBrief": {
+    "rule": "DEV_PROCESS 3.2a - a correction quotes the source text and names file and line",
+    "briefSays": "the color-contrast finding 'cannot be fixed in a Dashboards PR' because the failing selectors are kit classes (_inbox/2026-08-19_wave3_surfaces_and_vpat_WDLL.md, 'The escalation')",
+    "atSource": [
+      "web/shell.css:162  .p-quiet { color: var(--sc-quiet); background: var(--sc-quiet-wash); }",
+      "web/shell.css:632  .navitem .badge { ... color: var(--sc-ink-3); ... }",
+      "web/shell.css:643  .navitem.roster { color: var(--sc-ink-3); }",
+      "web/sc-kit.css contains no .badge, .p-quiet or .navitem rule at all"
+    ],
+    "measuredRatios": [
+      "dark  #7b8b99 on #1a2d34 = 4.08:1, needs 4.5:1, 14px  (a[data-lens=\"public-works\"])",
+      "dark  #7b8b99 on #212930 = 4.2:1,  needs 4.5:1, 12px  (.p-quiet.pill)",
+      "light #6c7e8e on #e9eef2 = 3.58:1, needs 4.5:1, 12px  (.p-quiet.pill)",
+      "light #6c7e8e on #ffffff = 4.18:1, needs 4.5:1, 13px  (.basis)"
+    ],
+    "ruling": "The CONCLUSION holds - every failure resolves to --sc-ink-3 / --sc-quiet, the tokens carry the same value and fail identically wherever the kit is vendored, so the product-line token pass is the right owner. The REASON does not: the declarations are in this repo's own stylesheet and a re-pairing was possible. It was declined on scope, not on capability, and a successor should know which."
+  },
+
+  "adversarialReviewOfMyOwnWork": [
+    {
+      "question": "Is the gate green because it is scoped to what already passes?",
+      "answer": "No. It refuses any conformance node with exactly one named waiver, and the waiver is a ratchet that fails above the pin AND at zero. Every refusal class has a plant."
+    },
+    {
+      "question": "Could the gate pass without having run?",
+      "answer": "No. Missing browser exits 2. A scan that did not load, did not land its theme, or did not paint is a FAILED scan and fails the build. There is no process.exit(0) in the file, asserted by a test."
+    },
+    {
+      "question": "Is 'both themes were scanned' a measured claim or a described one?",
+      "answer": "Measured twice over: the theme is read back off the document per scan, and the run fails if the palettes are identical."
+    },
+    {
+      "question": "Does the 2.4.2 fix survive the label maps drifting?",
+      "answer": "The maps MOVED rather than being copied, so web/app.js and the resolver are one implementation. The head script's forced copy is compared by VALUE, not by key set, and watched failing on both a dropped label and a renamed one."
+    },
+    {
+      "question": "Did anything in this branch touch web/sc-kit.css?",
+      "answer": "No. git diff --stat web/sc-kit.css is empty and the file is not in the commit."
+    }
+  ],
+
+  "openAtCp2": [
+    "The plant suite is still running locally; results go in the close.",
+    "CI conclusion string pending; goes in the close.",
+    "The waiver pin is coupled to G-94. Whichever lane merges second edits WAIVERS in scripts/a11y-scan.mjs. Flagged in the PR body as an ordering dependency, not left to be discovered by a red main."
+  ]
+}

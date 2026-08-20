@@ -1,0 +1,203 @@
+{
+  "lane": "R1",
+  "artifact": "cp1",
+  "checkpoint": "design / pre-build, per AGENT_CONTRACT section 1 (CP1)",
+  "date": "2026-08-19",
+  "planRows": ["G-97"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/r1-dash",
+  "branch": "g97/render-development-services",
+  "baseSha": "78a2b9a72e76197d144a7cdc695fa4b1b7ef4e22",
+  "baseSuite": "node --test src/*.test.mjs -> tests 320 suites 70 pass 320 fail 0",
+
+  "missionPremise": "A-081 (OPS-17, 2026-08-19): eleven domains are registered and generate deterministic fixture data and they REACH NO PIXEL. Four consecutive waves built everything underneath the lenses and never the lenses. Underneath that sits RULING 1 (A-076, operator-approved in _inbox/2026-08-19_template_city_lens_build_sheet.md): 'not built' moved down one level from describing the SURFACE to describing SOURCES, because the product could not distinguish 'we did not build Parks' from 'your city has no Parks data'. G-91 built the seam that makes the distinction expressible and W2DS/W2DEPT filled it; this lane makes it VISIBLE. Operator priority, in his words carried in the dispatch: Development services must match the data the PRODUCTION Bastrop dashboard shows today, because it monitors the MyGov system the city already runs.",
+
+  "sourcesReadAtSource": {
+    "rule": "every figure below was measured in the clone at 78a2b9a, not taken from the dispatch",
+    "domainsRegistered": "11, DOMAIN_REGISTRY in src/domains.mjs",
+    "dsDomains": "5 of 11 carry lensId development-services: permits-pipeline, work-orders, inspections, code-violations, business-licenses. All gatedBy mygov.",
+    "recordsOnTemplateCity": "permits-pipeline 14, work-orders 15, inspections 21, code-violations 19, business-licenses 17 = 82 records. Counting rule: composeDomainById(TEMPLATE_CITY, id).recordCount, one row per generated record.",
+    "recordsOnEmptyCity": "0 for all five, status no-fixture-source, each carrying the basis 'empty-city generates no records and no adapter is granted on it'",
+    "classVocabulary": "143, stylesheetClasses() over web/sc-kit.css + web/shell.css, CRLF-normalized, CSS comments stripped, every '.' followed by an identifier, deduplicated - the same rule src/shell-parity.test.mjs pins at 143",
+    "reachesPixelToday": "1 of 5. Only permits-pipeline renders, through renderPipeline() in web/app.js off /api/lenses/development-services/pipeline. The other four have server routes (/api/domains/<id>) and no consumer."
+  },
+
+  "plannerFiguresChecked": [
+    {
+      "figure": "the dispatch's 'Eleven domains are registered ... They reach no pixel'",
+      "verdict": "CORRECT for ten of eleven, WRONG for one, and the exception matters to this lane",
+      "quotedEvidence": "web/app.js:717 `async function loadPipeline(cityKey)` fetching `/api/lenses/development-services/pipeline?cityKey=`, and web/index.html:369 `<tbody id=\"ds-pipeline-rows\"></tbody>`. permits-pipeline HAS reached the pixel since G-77.",
+      "consequence": "this lane RENDERS FOUR and EXTENDS ONE. renderPipeline is pinned in eight places by src/ui.test.mjs (the loadPipeline call site, the endpoint string, `if (records.length === 0) {`, show(empty,true), show(wrap,false), the two basis writes, and `of ${pipeline.recordCount} generated cases in flight`), so it is extended in place rather than replaced by a generic renderer."
+    },
+    {
+      "figure": "the dispatch's 'all carrying records on template-city'",
+      "verdict": "CORRECT at source, 82 records across the five, measured above"
+    },
+    {
+      "figure": "the dispatch's four-source-states requirement, 'walk ?cityKey=empty-city for every region and show it honest'",
+      "verdict": "REACHABLE FOR TWO OF FOUR ON THE SHIPPED PACKS, and this is a finding rather than an omission",
+      "quotedEvidence": "src/city-pack.mjs:48 `fixtureGrants: [\"mygov\", \"samsara\", \"verkada\", \"firstdue\", \"powerbi\", \"goto\"],` on TEMPLATE_CITY; EMPTY_CITY carries generatesFixtures false and fixtureGrants []. Every DS domain is gatedBy mygov, mygov IS in template-city's fixtureGrants, and every DS generator returns a non-empty array.",
+      "consequence": "on the three shipped packs a DS region can only ever be `ok` (template-city) or `no-fixture-source` (empty-city / fixture-city). `ungranted` and `granted-empty` are UNREACHABLE THROUGH A SHIPPED PACK for this lens. patrol-vehicles is the product's only ungranted region and it sits on the Police lens, which is R2's.",
+      "howThisLaneHandlesIt": "the RENDERER is made status-driven rather than emptiness-driven, and the two unreachable states are proven at the pixel by fulfilling the real /api/domains/<id> route in a real browser with the REAL seam's output for a probe pack - composed in node by composeDomain() against a constructed pack, never hand-written JSON. The renderer, the route shape and the payload are all real; only the pack is a probe. No pack is added to src/city-pack.mjs, because adding a fourth shipped identity is an operator ruling and the three identities are a standing decision."
+    },
+    {
+      "figure": "the dispatch's 'class vocabulary is 143 - if you need CSS that does not exist, ship it in web/shell.css ... and STATE the new count, which triggers a planner-owned kit re-vendor'",
+      "verdict": "CORRECT at 143, and this lane intends to ADD ZERO CLASSES",
+      "consequence": "the 143-token vocabulary already carries every carrier this composition needs (the .dt, .srcreg, .metrics, .state, .panel, .kv, .reg-group, .prov, .basis and .pill families). Adding none keeps src/shell-parity.test.mjs:360 `assert.equal(defined.size, 143)` untouched, which is also the one line all three rendering lanes would otherwise collide on. If that changes it will be stated in CP2 with the new count."
+    }
+  ],
+
+  "compositionPlan": {
+    "principle": "one data path. The regions consume the SEAM's composed payload through the routes that already exist. No fetch of a vendor, no second generator, no shape the generators do not return, no server route added.",
+    "dataPath": {
+      "pipeline": "unchanged: GET /api/lenses/development-services/pipeline?cityKey= -> composePipeline(), which already carries `sourceStatus` (one of the four) alongside `generated`",
+      "otherFour": "GET /api/domains/<id>?cityKey= -> composeDomainById(), which carries status, granted, generated, basis, recordCount, countingRule, records[] and extras{}. Four parallel fetches at boot beside loadPipeline. NO new endpoint: the route has shipped since G-91 and src/server.test.mjs:543 already gates it."
+    },
+    "tabs": {
+      "before": ["pipeline", "place", "review", "inspections", "code-enforcement", "licenses"],
+      "after": ["pipeline", "place", "inspections", "work-orders", "code-enforcement", "licenses"],
+      "reviewLeaves": "A-076 / A-081: Plan review is its own Work lens because DS mirrors what MyGov already runs and Plan review is the native console that aspirationally replaces it. #tab-review and #anchor-ds-review are deleted; the `review` STAGE survives untouched because #anchor-work-review (web/index.html:706) is a second anchor carrying data-stage=\"review\", so the stage still resolves and G-64's live mount is not cut.",
+      "filesTouchedByTheTabChange": [
+        "web/index.html - the inline head script's DS_TABS second copy, the .tabs anchors, the panel ids",
+        "src/staff-review.mjs - DS_TABS, the module copy the head script mirrors",
+        "web/shell.css - the html[data-tab=...] show enumeration, which src/first-paint.test.mjs holds equal to DS_TABS and to the panel ids in three directions",
+        "web/app.js - TAB_LABELS",
+        "src/first-paint.test.mjs - the tab=review literals at 875/936/937/948/978/979 and the mis-map probe at 1137",
+        "src/server.test.mjs:269 and src/staff-review.test.mjs:52 - tab=review probes"
+      ]
+    },
+    "regions": [
+      {
+        "tab": "pipeline",
+        "domain": "permits-pipeline",
+        "records": 14,
+        "keeps": "the four metric tiles (#ds-metrics) and the queue table (#ds-pipeline-records) exactly as they are",
+        "adds": "the source-state sentence. The empty branch stops saying one sentence for four states and reads its kicker and headline from the shared four-state map keyed on pipeline.sourceStatus."
+      },
+      {
+        "tab": "inspections",
+        "domain": "inspections",
+        "records": 21,
+        "shape": "QUEUE WITH A PAIRED SECOND AXIS",
+        "regionsRendered": [
+          "metric strip, 4 tiles from extras.metrics (past-due, unscheduled, scheduled, completed)",
+          "queue table from records: Inspection / Type / Result / Place / When / Status. `When` prints dayLabel, or the record's scheduleBasis when dayOffset is null - an absence with its basis, never a blank cell",
+          "Result register from extras.results, four measured classes INCLUDING not-inspected, which carries its own basis line",
+          "Inspector load table from extras.inspectorLoad, keyed on the opaque inspectorRef with inspectorBasis printed once - the dimension survives, the person does not"
+        ]
+      },
+      {
+        "tab": "work-orders",
+        "domain": "work-orders",
+        "records": 15,
+        "shape": "COMPOUND: records plus three extras, which is what the live surface reads across work-orders/{daily-queue,sla,stats}",
+        "regionsRendered": [
+          "metric strip from extras.metrics (past-sla, at-risk, scheduled, closed)",
+          "queue table: Order / Subject / Stage / Place / Due / Status",
+          "SLA block from extras.sla: breached / at risk / within, against the declared 72 hour target, with `measured` and the counting rule printed",
+          "Daily queue from extras.dailyQueue: five relative days, no calendar date"
+        ]
+      },
+      {
+        "tab": "code-enforcement",
+        "domain": "code-violations",
+        "records": 19,
+        "shape": "CASE QUEUE WITH AN ORDERED SECOND AXIS",
+        "regionsRendered": [
+          "metric strip from extras.metrics",
+          "case table: Case / Violation / Escalation / Place / Compliance / Status",
+          "escalation ladder from extras.escalation, rendered in the order the payload returns (already sorted by the declared `step`), each rung printing its step so the ORDER is visible rather than implied by array position",
+          "stats from extras.stats: open, closed and measured as three printed figures with the counting rule, plus penaltyBasis - no assessed figure is printed anywhere"
+        ]
+      },
+      {
+        "tab": "licenses",
+        "domain": "business-licenses",
+        "records": 17,
+        "shape": "ROLL WITH A CONTINUOUS SECOND AXIS",
+        "regionsRendered": [
+          "metric strip from extras.metrics",
+          "licence roll: Licence / Category / Holder / Place / Expiry / Status, holder as the opaque HLD-nn reference with holderBasis printed once",
+          "expiry bands from extras.expiry, four bands with their inclusive bounds and the counting rule",
+          "chargesBasis printed once: no renewal charge is presented"
+        ]
+      },
+      {
+        "tab": "place",
+        "domain": null,
+        "disposition": "UNCHANGED. Place is the G-45 SmartSite parcel mount, not a generated domain. The G-24 asset row (Assets ... Empty) stays exactly as pinned by src/ui.test.mjs."
+      }
+    ],
+    "fourStateRenderer": {
+      "why": "the four states are four SENTENCES and collapsing any pair re-creates the defect ruling 1 exists to fix",
+      "implementation": "ONE map in web/app.js keyed on the payload's status, consumed by every region including the pipeline. One rule, one implementation (DEV_PROCESS 2.4) - a per-region copy is the CTRL-1 shape.",
+      "sentences": {
+        "ok": "records render; the queue, the tiles and the second axis all populate",
+        "ungranted": "kicker 'Built, no source'. The region is built and this pack has granted no source for it. The payload's own basis names the vendor and the pack.",
+        "granted-empty": "kicker 'Source returned nothing'. DIFFERENT WORDS from ungranted at every level - kicker, headline and basis - and a test asserts the three sentences are three distinct strings rather than three labels over one.",
+        "no-fixture-source": "kicker 'No source'. The pack generates nothing and grants nothing; the region stays reachable and quiet.",
+        "read-failed": "a failed fetch is NOT an empty city. It renders as a stated failure with its own basis, the same discipline loadPipeline already applies."
+      }
+    }
+  },
+
+  "accessibilityPlanIsAMergeGate": {
+    "headings": "exactly one h1 per surface (the pagehead h1 already there). Every honest-empty headline this lane writes is an <h2>, not an <h5>. web/shell.css:304 already styles `.state h2, .state h5` identically, so h2 is correct on this base AND converges with G-95 (PR 31, unmerged) which turns the existing 16 h5 into h2 and drops h5 from that selector.",
+    "scrollableRegions": "every .colstack this lane adds carries tabindex=\"0\". .colstack declares overflow-y:auto (web/shell.css:685), so a new column is a new scrollable region and would ADD to the 4 nodes the dispatch says not to add to. tabindex is exactly G-95's fix, so the rebase is a union rather than a contradiction.",
+    "accessibleNames": "every control added carries a name. The tab anchors carry text and the tablist already carries aria-label.",
+    "contrast": "both themes, driven by data-theme on the root and NOT prefers-color-scheme. Scanned with a local copy of P:/tmp/g82v/.ds-sync/_axescan.mjs extended with the six DS tab URLs, which the shipped copy does not target - stated because a scanner that does not visit a surface reports zero for it.",
+    "noNewClasses": "so no new colour, no new token, and no kit re-vendor triggered."
+  },
+
+  "adversarialReviewOfThisPlan": [
+    {
+      "risk": "rendering 82 records at once turns a quiet surface into a wall, which is the visual law's first rule broken by the lane meant to honour it",
+      "mitigation": "register-not-card-deck throughout: one metric strip plus tables and registers, existing carriers only. Severity reaches the pixel through the kit pill families the payload's own `severity` field names, so exceptions are loud because the DATA says so, not because markup decorates them."
+    },
+    {
+      "risk": "the addressability gate and the hidden-branch gate. Every new hidden branch must carry an id AND be reachable by a served script, or the gate reports a dead branch.",
+      "mitigation": "every records wrapper is toggled by getElementById in web/app.js with a literal id, which is exactly what the gate's F1 rule resolves. The 14 BASELINE_HIDDEN entries are a superset assertion, so adding branches is allowed; dropping one is not, and ds-pipeline-mark, ds-pipeline-prov and ds-pipeline-records all survive."
+    },
+    {
+      "risk": "src/ui.test.mjs asserts ds.includes(\"$\") === false - the WHOLE Development services section must contain no dollar sign, and this lane adds five tables and four registers to it",
+      "mitigation": "no money is printed anywhere by design (penaltyBasis and chargesBasis are the stated absences) and no template literal lives in markup. Checked as a build step, not as a hope."
+    },
+    {
+      "risk": "removing the Review tab collides with standing decision G-64, which says Dashboards development-services mounts plan-review-app",
+      "mitigation": "the newer operator ruling governs (A-076, 2026-08-19, and the dispatch states it explicitly). The mount is NOT cut: it keeps its home at Work / Plan review, the stage element and the embed URL are untouched, and #anchor-work-review keeps data-stage=\"review\" resolvable. What leaves is a duplicate second door, not the product."
+    },
+    {
+      "risk": "three rendering lanes and G-95 all editing web/index.html and web/shell.css",
+      "mitigation": "R1 writes only inside <section id=\"lens-development-services\">, plus the DS-only html[data-tab] enumeration in shell.css and the DS-only DS_TABS/TAB_LABELS. R2's and R3's sections are not opened. The G-95 collision surface is enumerated file-by-file in the close so the planner gets an answer rather than a search."
+    },
+    {
+      "risk": "the empty-city walk is the input under which this design is guaranteed to look flat, so it is the one nobody checks",
+      "mitigation": "it is a named deliverable and every region is walked on it, with raw output pasted."
+    }
+  ],
+
+  "outOfScopeAndWhy": [
+    "R2's Police / Fire and EMS sections and R3's Fleet / Public works sections - other lanes' clones and other lanes' <section> blocks.",
+    "web/sc-kit.css - byte-identical across three product repos; a token edit here forks the system.",
+    "Connecting a feed, granting an adapter, adding an adapter kind. No adapter is granted by this work and grantedAdapters stays [] on every pack.",
+    "G-52. G-24 stays at zero: no DS region renders an asset record and the Place tab's Assets row stays an honest Empty.",
+    "Adding a city pack. The three identities are a standing decision; making ungranted reachable by shipping a fourth pack would be a product decision this lane does not own, so it is raised in the close as a recommendation instead.",
+    "Merging and deploying - planner-owned. Live Bastrop is untouched and unread. L26 untouched.",
+    "The Finance $0 re-scope the build sheet flags: that is the Finance lens, not this one."
+  ],
+
+  "completionPredicateDraft": "A stranger can evaluate this by: (1) npm test green with the suite count stated either side; (2) five DS regions rendering their record counts on template-city through the served document; (3) all four source states shown rendering with raw evidence, ungranted and granted-empty side by side; (4) ?cityKey=empty-city walked for all five regions showing no-fixture-source with a basis; (5) axe clean of color-contrast, heading-order and scrollable-region-focusable on the six DS surfaces in BOTH themes with data-theme driven and asserted to have landed; (6) git diff naming only the DS section, the DS-only enumerations, and the tests that pinned the removed tab.",
+
+  "constraintsAcknowledged": [
+    "No feed connected. No adapter granted. mygov_permits is never copied into Dashboards Neon.",
+    "Live Bastrop no-touch and read-only. Not read in this lane.",
+    "One Demo chip, top-left, not per region.",
+    "Every .basis line survives. No invented freshness; no last sync / last read / last updated.",
+    "No city name as content beyond IDENTITY_FALLBACK (This city, this pack).",
+    "web/sc-kit.css untouched. 12px type floor. Class vocabulary 143 and no addition intended.",
+    "Verification exit-bounded: builds, one-shot node scripts, a self-closing HTTP probe, a browser closed in a finally.",
+    "I open the PR. I do not merge. I do not deploy.",
+    "P:/tmp/r2-dash and P:/tmp/r3-dash are not opened."
+  ]
+}

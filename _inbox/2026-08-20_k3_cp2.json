@@ -1,0 +1,146 @@
+{
+  "lane": "K3",
+  "planRow": "G-100",
+  "checkpoint": "CP2",
+  "checkpointKind": "pilot / mid-work adversarial review, one badge derived end to end",
+  "date": "2026-08-20",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "branch": "g100/retire-not-built-claims",
+  "cp1": "_inbox/2026-08-20_k3_cp1.json",
+
+  "oneBadgeEndToEnd": {
+    "subject": "the Public works nav badge",
+    "chosenBecause": "it is the claim R3 routed rather than fixed, it is the lens with TWO regions so the rollup is exercised, and it appears in all three renderings the paired control now covers",
+    "chain": [
+      {
+        "step": 1,
+        "layer": "registry",
+        "file": "src/domains.mjs",
+        "fact": "CIP_PROJECTS_DOMAIN and CALL_ANALYTICS_DOMAIN both declare lensId public-works",
+        "consequence": "public-works is in REGISTERED_LENS_IDS, so it is not the fifth state, so Not built is not available to it. src/fixture-seam.mjs: absent from the registry means the surface does not exist, which is the only surviving meaning of Not built."
+      },
+      {
+        "step": 2,
+        "layer": "seam",
+        "file": "src/fixture-seam.mjs composeDomain",
+        "fact": "on template-city, powerbi and goto are both in fixtureGrants and both generators return records, so both regions resolve status ok with recordCount 16 and 25",
+        "verifiedAt": "GET /api/city-domains?cityKey=template-city, raw output in this artifact"
+      },
+      {
+        "step": 3,
+        "layer": "route",
+        "file": "src/server.mjs",
+        "fact": "web/app.js loadPublicWorksLens fetches /api/domains/cip-projects and /api/domains/call-analytics for the active cityKey; a non-ok response becomes unreadRegion, a positive did-not-read determination with its own basis, never an empty city"
+      },
+      {
+        "step": 4,
+        "layer": "resolution",
+        "file": "web/app.js lensStatus then sourcedLabel",
+        "fact": "the two region statuses resolve by LENS_BADGE_ORDER (the seam's DOMAIN_STATUSES plus did-not-read) to ok, and LENS_BADGE.ok is the word Demo records"
+      },
+      {
+        "step": 5,
+        "layer": "render",
+        "file": "web/app.js applyLensState",
+        "fact": "one label writes three elements: #pw-state-chip, .navitem[data-lens=public-works] .badge, and [data-lens-row=public-works] .pill. They cannot diverge because there is one write."
+      },
+      {
+        "step": 6,
+        "layer": "counting rule",
+        "file": "web/app.js sourcedRule",
+        "fact": "#pw-region-rule prints 2 of 2 regions sourced with the rule inline, beside the chip, so the single word is never the whole claim"
+      },
+      {
+        "step": 7,
+        "layer": "static fallback",
+        "file": "web/index.html",
+        "fact": "before any of the above resolves the document says Not read in all three places. It states that nothing has been read; it makes no claim about the surface or the pack."
+      },
+      {
+        "step": 8,
+        "layer": "gate",
+        "file": "src/lens-claims.test.mjs",
+        "fact": "the static partition is recomputed from DOMAIN_REGISTRY on every run, so the day a domain is added to or removed from public-works and the markup is not touched, the gate goes red naming the lens"
+      }
+    ],
+    "renderedProof": {
+      "template-city": "nav=Demo records chip=Demo records reg=Demo records, rule '2 of 2 regions sourced'",
+      "empty-city": "nav=Empty chip=Empty reg=Empty, rule '0 of 2 regions sourced'",
+      "failedRead": "nav=Not read chip=Not read reg=Not read, kicker 'Region did not read', basis 'the Vehicle roster region did not read for template-city' (arm run on fleet, the single-region lens, by aborting its route)"
+    }
+  },
+
+  "fourSourceStatesDrivingTheBadge": {
+    "countingRule": "each state composed from a real pack and a real registered domain, then passed through the SHIPPED sourcedLabel sliced out of web/app.js and executed in a vm sandbox. Not a copy of the rule written in a test.",
+    "ok": {
+      "how": "composeDomain(TEMPLATE_CITY, FLEET_VEHICLES_DOMAIN)",
+      "word": "Demo records",
+      "reachableOnAShippedPack": true
+    },
+    "ungranted": {
+      "how": "composeDomain(TEMPLATE_CITY, PATROL_VEHICLES_DOMAIN) - spireon is deliberately absent from template-city fixtureGrants so this state stays reachable",
+      "word": "No source",
+      "reachableOnAShippedPack": true,
+      "renderedProof": "Police lens on template-city, patrol-vehicles region: kicker 'No source', head 'No source is granted for the Patrol roster region on template-city.', basis 'Spireon is not granted on template-city; the Patrol roster region is built and has no source'"
+    },
+    "no-fixture-source": {
+      "how": "composeDomain(EMPTY_CITY, FLEET_VEHICLES_DOMAIN)",
+      "word": "Empty",
+      "reachableOnAShippedPack": true
+    },
+    "granted-empty": {
+      "how": "composeDomain on a probe pack granting mygov, with a generator returning zero records",
+      "word": "No records",
+      "reachableOnAShippedPack": false,
+      "statedPlainly": "no shipped pack reaches granted-empty: template-city grants six kinds and every granted generator returns records, and empty-city grants nothing. The state is constructed in src/lens-claims.test.mjs exactly so the word is not unreachable code. It becomes reachable the day a real adapter returns zero, which is the day it matters."
+    },
+    "did-not-read": {
+      "how": "a failed fetch, produced in the browser by aborting the domain route",
+      "word": "Not read",
+      "reachableOnAShippedPack": true,
+      "note": "a fifth DETERMINATION rather than a fourth state: a read that failed is not an empty city"
+    },
+    "distinctness": "five determinations, five words, asserted equal in count to their set size so a future edit cannot collapse two"
+  },
+
+  "adversarialReviewOfTheWorkSoFar": [
+    {
+      "checked": "did the fix move the lie rather than remove it",
+      "finding": "no. Walked on template-city AND empty-city, dark AND light, six lenses each, plus a failed-read arm. Every one of the 24 pack/theme/lens cells reads a word the seam produced for that pack. empty-city renders Empty, which is what it rendered before this lane, so the honest-empty pack is unchanged."
+    },
+    {
+      "checked": "is the Police rollup a new flattening",
+      "finding": "it is a rollup and it is declared. Police on template-city has one ok region and one ungranted region and the badge says Demo records. The ungranted region says so in full on the lens, in three separate strings, and the page header prints '1 of 2 regions sourced' beside the chip. A test pins the mixed case, so a future change that makes both regions read the same fails."
+    },
+    {
+      "checked": "did any test get weakened to pass",
+      "finding": "three were rewritten and all three are stricter. ui.test 'names Parks...' went from a typed list of seven Not built to a derived partition. ui.test paired control went from two renderings to three and now asserts the second label function is GONE. ui.test badge-chip agreement gained the four lenses it never covered. 402 tests before, 418 after; nothing removed."
+    },
+    {
+      "checked": "is the register grouping still hand-written",
+      "finding": "the ROWS are, and that is stated rather than hidden. What is not hand-written is which group a roster lens sits in: src/lens-claims.test.mjs recomputes the partition from DOMAIN_REGISTRY and fails naming the lens if a row is filed against it. The pill text itself is written at runtime by applyLensState."
+    },
+    {
+      "checked": "did the bake get bypassed",
+      "finding": "no, and it was verified rather than assumed. bakeConnectionsInto anchors on id=connections-register; the Overview register is id=overview-source-register. Re-ran scripts/bake-connections.mjs after the edit: it reported 'baked 75 (70 Homes-table + 5 addenda)' and left web/index.html CONTENT IDENTICAL, byte-compared after CRLF normalization. src/shell-homes.test.mjs 11 of 11 pass."
+    },
+    {
+      "checked": "did the addressability gate see the new hook",
+      "finding": "yes. data-lens-row is read by a selector string in web/app.js and attached in web/index.html; the gate's own injection arm detaches every required hook one at a time and requires the failure to name it. 10 of 10 pass."
+    }
+  ],
+
+  "gatesGreenAtCP2": {
+    "npm test": "tests 418 / suites 96 / pass 418 / fail 0",
+    "addressability": "10 of 10",
+    "bake freshness (src/shell-homes.test.mjs)": "11 of 11",
+    "class vocabulary": "143 defined, unchanged; no class added; web/sc-kit.css untouched"
+  },
+
+  "findingRoutedNotFixed": {
+    "what": "the accessibility gate fails LOCALLY on unmodified main",
+    "measurement": "npm run test:a11y on a worktree at 3452b31 (origin/main, no changes) produces the identical failure string as on this branch: color-contrast 44 unresolved nodes per theme, sample #nav-demonstrated and #nav-sources-rule, reason elmPartiallyObscuring",
+    "soWhat": "this branch adds zero a11y failures - the two runs are byte-identical in their failure message - and the same commit's a11y job on GitHub Actions concluded success (run 32326231384). Local and CI disagree on a required gate. Two numbers that should agree and do not is a free finding (DEV_PROCESS 1.4), and it is routed rather than chased here: CI is authoritative for merge, and the PR's own a11y conclusion string is what this lane reports.",
+    "notMyScope": "the nav footer elements it names are not touched by G-100"
+  }
+}

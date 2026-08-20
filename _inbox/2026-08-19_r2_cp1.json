@@ -1,0 +1,131 @@
+{
+  "artifact": "CP1 — composition plan, before any markup was written",
+  "lane": "R2",
+  "planRow": "G-97",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-dashboards",
+  "clone": "P:/tmp/r2-dash",
+  "branch": "g97/render-public-safety",
+  "date": "2026-08-19",
+  "baseSha": "78a2b9a (main at clone time; PR #30 G-94 kit contrast already merged)",
+
+  "readBeforeWork": [
+    "P:/doc_repo/_dispatches/2026-08-19_r2_dispatch.md",
+    "P:/doc_repo/_catalog/DISPATCH_PREAMBLE.md",
+    "P:/doc_repo/90_runbooks/AGENT_CONTRACT.md",
+    "P:/doc_repo/90_runbooks/DEV_PROCESS.md",
+    "OPS-17 A-078 / A-079 / A-080 / A-081 (the four amendments that produced this row)",
+    "src/domains.mjs, src/fixture-seam.mjs, src/adapters.mjs, src/city-pack.mjs",
+    "src/domains/police-cameras.mjs, src/domains/patrol-vehicles.mjs, src/domains/fire-apparatus.mjs",
+    "src/served-surface.mjs, src/addressability.test.mjs, src/ui.test.mjs, src/type-conformance.test.mjs, src/hidden-rule.test.mjs, src/shell-parity.test.mjs",
+    "origin/g95/a11y-baseline-and-gate (PR #31, open) — read so this lane's markup is written in the shape that gate will require"
+  ],
+
+  "sourceStateAtSource": {
+    "note": "Verified by GET against a local server on the clone, not read from the dispatch prose.",
+    "probe": "GET /api/domains/<id>?cityKey=<pack>",
+    "police-cameras@template-city": { "status": "ok", "recordCount": 18, "granted": true, "generated": true },
+    "police-cameras@empty-city": { "status": "no-fixture-source", "recordCount": 0 },
+    "patrol-vehicles@template-city": { "status": "ungranted", "recordCount": 0, "granted": false, "generated": true },
+    "patrol-vehicles@empty-city": { "status": "no-fixture-source", "recordCount": 0 },
+    "fire-apparatus@template-city": { "status": "ok", "recordCount": 12, "granted": true, "generated": true },
+    "fire-apparatus@empty-city": { "status": "no-fixture-source", "recordCount": 0 },
+    "granted-empty": "NOT REACHABLE ON ANY SHIPPED PACK. No pack grants a kind whose generator returns zero records. This is stated as a finding rather than worked around: the state is real in the seam (src/fixture-seam.mjs composeDomain, records.length === 0 branch) and it must render, so the renderer is proven against it by (a) a Node test over a seam-composed granted-empty payload and (b) a browser route-interception that serves that same seam-composed payload to the shipped renderer. Neither invents a pack and neither grants an adapter."
+  },
+
+  "axeBaselineBeforeAnyChange": {
+    "scanner": "P:/tmp/r2-axe.mjs, derived from P:/tmp/g82v/.ds-sync/_axescan.mjs; drives data-theme via localStorage and ASSERTS the attribute landed before recording",
+    "denominator": "four R2 surfaces: ?lens=police, ?lens=fire-ems, and each with cityKey=empty-city",
+    "countingRule": "a VIOLATION is one axe rule failing on at least one of the four; NODES sums failing DOM elements across the four; conformance = rule tagged wcag2a/wcag2aa/wcag21a/wcag21aa",
+    "dark": { "conformanceRules": 0, "bestPracticeRules": 1, "heading-order": "4 nodes" },
+    "light": { "conformanceRules": 0, "bestPracticeRules": 1, "heading-order": "4 nodes" },
+    "reading": "the 4 heading-order nodes are the h1 -> h5 skip inside each section's .state block, one per surface. They are part of the 11 the product-wide baseline counted. This lane must not add to that count and intends to remove its own."
+  },
+
+  "compositionPlan": {
+    "dataPath": "the existing one, not a second one. GET /api/domains/<id>?cityKey=<key> (src/server.mjs:271) returns the seam's composed payload verbatim: status, granted, generated, basis, recordCount, countingRule, records, extras. web/app.js renders it. No new endpoint, no vendor fetch, no field the generator does not return.",
+    "regions": [
+      {
+        "lens": "lens-police",
+        "region": "Camera inventory",
+        "domain": "police-cameras",
+        "gatedBy": "verkada",
+        "renders": "4 status tiles from extras.metrics (offline / signal loss / firmware due / online), a .dt record table (device, status, site, placement, occupancy band), a site roster from extras.sites (siteRef, placement, camera count) and the occupancy summary from extras.occupancy with its three MEASURED classes. Every count carries its counting rule from the payload.",
+        "privacy": "no plate, no person of interest, no counted occupancy. occupancyBand is a BAND the generator returns and 'occupancy not measured' is rendered as itself, never as 0. extras.excludedFamilies renders as a basis line, so the exclusion is a positive statement on the surface and not a silent gap."
+      },
+      {
+        "lens": "lens-police",
+        "region": "Patrol roster",
+        "domain": "patrol-vehicles",
+        "gatedBy": "spireon",
+        "renders": "the ungranted state, and this is the most important pixel in the lane. The region is BUILT and named, the vendor and the pack are named, and the basis is the seam's own sentence rendered verbatim. It is visually distinct from granted-empty and from no-fixture-source and each has its own label, headline and pill."
+      },
+      {
+        "lens": "lens-fire-ems",
+        "region": "Apparatus and stations",
+        "domain": "fire-apparatus",
+        "gatedBy": "firstdue",
+        "renders": "4 status tiles from extras.metrics, a .dt record table (unit, type, status, station), and the station roster from extras.stations (stationRef, label, apparatus count, ready count) with READY_COUNTING_RULE beside it. extras crewBasis renders as a basis line: a granted feed carries crew, a generated record names nobody."
+      }
+    ],
+    "fourStates": {
+      "implementation": "ONE resolver, in a new shared module src/domain-render.mjs, imported by web/app.js from /domain-render.mjs and imported directly by a Node test. Not two implementations: the sentence a customer reads and the sentence a test asserts are the same function call. Same pattern as src/staff-review.mjs and src/theme.mjs, which are already src/ modules served to the browser.",
+      "ok": "records render; the state block hides; the provenance chip says Generated fixture and names the vendor output contract",
+      "ungranted": "label 'No source granted', pill p-quiet 'No source', headline naming the region as built, basis verbatim: '<Vendor> is not granted on <pack>; the <region> region is built and has no source'",
+      "granted-empty": "label 'Source granted, nothing returned', pill p-info 'Nothing returned', headline naming the vendor as granted, basis verbatim: '<Vendor> is granted on <pack> and produced no <recordType> records'. A DIFFERENT SENTENCE from ungranted at every one of label, pill, headline and basis.",
+      "no-fixture-source": "label 'No source on this pack', pill p-quiet 'Empty', headline saying the pack generates nothing, basis verbatim. The region stays reachable and quiet on empty-city.",
+      "not-registered": "the fifth state keeps its meaning. The jobs on each lens that are absent from the registry (Police: incident log, regional operations map; Fire and EMS: occupancies, volunteer response, county dispatch, flood and weather) stay named in a roster panel whose basis says they are absent from the domain registry, which is the only surviving meaning of 'not built'."
+    }
+  },
+
+  "constraintsAndHowEachIsMet": {
+    "classVocabulary143": "TARGET: no new class. Both sections compose only classes the served stylesheets already define (.panel, .panel-head, .panel-body, .state, .st-k, .basis, .metrics, .metric, .k/.v/.n, .dt, .id, .subj, .prov, .sep, .pill, .p-*, .t, .t-caption, .grow, .colstack, .shell-regions, .roster-note, .roster-list, .srcreg, .rail, .nm, .crumb, .titlerow, .pagehead, .lede). Any CSS added to web/shell.css is scoped by id (#lens-police / #lens-fire-ems) and uses only existing class names and var(--sc-*) tokens, so stylesheetClasses() cannot move. The new count will be STATED in the close either way.",
+      "scKitCss": "untouched, byte-identical",
+      "basisLines": "every region keeps a .basis line in every state; the basis text is the seam's, rendered verbatim, never re-authored in markup",
+      "inventedFreshness": "none. No last sync / last read / last updated string is written anywhere. The seam's own content guard already rejects those in a payload; this lane adds none in markup.",
+      "demoChip": "one env demo chip stays in the top bar. Regions carry the DS-established per-region generated mark (pill p-warn 'Demo records') plus the provenance chip, which is the pattern shipped at G-77 and reviewed; no second 'Demo' chip class is added. Called out here as a judgment call rather than buried.",
+      "cityName": "no real city is named. Pack keys (template-city, empty-city) travel from the payload exactly as the DS pipeline already renders them.",
+      "liveBastrop": "untouched. This lane never leaves the smartcity-dashboards clone.",
+      "feeds": "no feed connected, no adapter granted. fixtureGrants and grantedAdapters are read, never written. G-52 not started. G-24 not filled.",
+      "accessibility": "sequential headings (h1 in .pagehead, h2 in every .state, which is what origin/g95 does product-wide and what the type ramp already pins with '.state h2, .state h5'); every colstack carries tabindex=0 so no scrollable region is unreachable; no new control without an accessible name; both themes scanned with the data-theme lever."
+  },
+
+  "adversarialReviewOfThisPlan": [
+    {
+      "risk": "The nav badge for Police and Fire and EMS reads 'Not built' and the lens will render records. That is the exact collapse this lane exists to end, one line above the surface that ends it.",
+      "call": "CHANGE IT, and declare the ownership stretch. The dispatch scopes this lane to two <section> blocks; the nav is shared chrome and belongs to nobody. Leaving it would ship two numbers that should agree and do not (DEV_PROCESS 1.4) in the most visible place on the product. The change is exactly two badge literals ('Not built' -> 'Empty', the pre-read state DS already ships) plus one runtime writer driven from the same resolver as the page chip, so the pair cannot diverge. src/ui.test.mjs line 168 pins those two literals and must move with them; R1 and R3 will need the same edit for their lenses, so this is flagged to the planner as a three-way seam rather than discovered at merge."
+    },
+    {
+      "risk": "A new served asset (src/domain-render.mjs) moves a pinned tripwire in src/ui.test.mjs (SERVED_ASSETS, MARKUP_SOURCES) — a file R1 and R3 also touch.",
+      "call": "ACCEPT. The tripwire's own comment says a new served asset is a decision to record rather than a nuisance. The alternative is the state-to-sentence mapping living in browser-only code where the bare-Node suite cannot reach it, which is how granted-empty would ship unproven. Stated in the close so the planner can offer the module to R1 and R3 instead of three lanes writing three copies."
+    },
+    {
+      "risk": "granted-empty is unreachable on any shipped pack, so a lane could quietly render it as ungranted and nothing would catch it.",
+      "call": "This is the defect ruling 1 exists to close, so it is proven twice: a Node test over a seam-composed granted-empty payload asserting all four states differ at label, pill, headline and basis; and a browser run that routes a seam-composed granted-empty payload into the shipped renderer and reads the rendered text back. Both are reported with the caveat stated, never as 'a pack shows it'."
+    },
+    {
+      "risk": "The metrics strip could print a runtime 0 for a status band with no records, which the visual law calls a claim the city has not made.",
+      "call": "A count over generated records is a MEASURED value with a counting rule, which is what the DS pipeline already renders. The 'Not read' word state is kept for the unread and absent states, and every tile carries its counting rule beside it. Static markup ships 'Not read' on every tile, so src/ui.test.mjs's metric rule holds."
+    },
+    {
+      "risk": "PR #31 (G-95) rewrites h5 to h2 inside these two sections and adds tabindex to colstacks, so a rebase is certain.",
+      "call": "Write the markup in G-95's shape NOW (h2, tabindex=0), so the rebase resolves to the same text rather than a semantic conflict. Verified against origin/g95/a11y-baseline-and-gate rather than assumed."
+    },
+    {
+      "risk": "The addressability gate requires every hidden branch to carry an id and be reachable, and forbids a served script from creating ids.",
+      "call": "Every hidden branch gets an id and is toggled through getElementById with a string literal or a resolvable template. No .id assignment, no setAttribute('id'), no id=\" inside any string in app.js, so CREATED.forms stays empty."
+    }
+  ],
+
+  "outOfScope": [
+    "R1's development-services section and R3's fleet / public-works sections — not read, not edited",
+    "web/sc-kit.css — untouched",
+    "any feed, adapter grant, or vendor connection (G-52 not started)",
+    "G-24 assets inventory — stays zero",
+    "Parks and Court, which are NOT registerable on this seam (the W2DEPT vendorless finding); this lane does not invent a kind to reach them",
+    "live Bastrop / smartcity-os — never opened",
+    "merging and deploying — planner-owned"
+  ],
+
+  "completionPredicateDraft": "A stranger opens /?lens=police and /?lens=fire-ems on template-city and sees records with their counting rules and provenance; sees the Patrol roster stating it is built and sourceless with Spireon and the pack named; opens the same two URLs with cityKey=empty-city and sees every region reachable, quiet, and carrying its own basis; and can tell ungranted from granted-empty by reading the screen alone. CI conclusion string is 'success' and axe on the four R2 surfaces is clean of conformance rules in BOTH themes with no added heading-order node."
+}

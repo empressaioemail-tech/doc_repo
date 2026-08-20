@@ -1,0 +1,88 @@
+{
+  "artifact": "CP2 — one domain rendering end to end, plus the two findings the pilot produced",
+  "lane": "R2",
+  "planRow": "G-97",
+  "date": "2026-08-19",
+  "clone": "P:/tmp/r2-dash",
+  "branch": "g97/render-public-safety",
+  "cp1": "_inbox/2026-08-19_r2_cp1.json",
+
+  "pilotDomain": "police-cameras",
+  "howItWasVerified": "a real Chromium walk against a local server on the branch, reading the DOM back rather than the payload: P:/tmp/r2-render-walk.mjs, raw log P:/tmp/r2-walk-dark.log, raw json P:/tmp/r2-walk-dark.json. A region that renders the right words from the wrong state fails there.",
+
+  "rawRead": {
+    "surface": "?lens=police (template-city, theme dark, data-theme asserted landed)",
+    "police-cameras": {
+      "pill": "Demo records",
+      "caption": "18 generated camera-device records",
+      "rows": 18,
+      "recordsVisible": true,
+      "stateVisible": false,
+      "basis": "Basis: generated from the Verkada adapter output contract; no city rows were read",
+      "countingRule": "Counting rule: 18 generated verkada camera-device records on template-city, one row per record",
+      "provenance": "Verkada output contract",
+      "metrics": "Offline:1 | Signal loss:2 | Firmware due:3 | Online:12, each noted 'of 18 generated camera-device records'",
+      "metricsReconcile": "1 + 2 + 3 + 12 = 18, which equals the record count the caption and the counting rule both quote",
+      "firstRow": "Mobile trailer camera 11 | Offline | SITE-01 | Placeholder Heights | occupancy not measured",
+      "sites": "SITE-01 Placeholder Heights 4 / SITE-02 Example Crossing 4 / SITE-03 Specimen Yard 4 / SITE-04 Template Commons 3 / SITE-05 Fixture Ridge 3  (4+4+4+3+3 = 18)",
+      "occupancy": "occupancy not measured 3 / light 4 / moderate 6 / busy 5  (3+4+6+5 = 18; the not-measured class is COUNTED, never derived by subtracting the other three)",
+      "privacyBasis": "Basis: the plate-read and persons-of-interest families are excluded from generation, not merely absent from it; the record shape declares both as fields a generated record never carries",
+      "inventoryBasis": "Basis: vendor camera telemetry is not a city-owned inventory node, so nothing here counts toward the city inventory"
+    }
+  },
+
+  "fourStatesAllReachedThePixel": {
+    "ok": "?lens=police -> police-cameras: pill 'Demo records', 18 rows, provenance chip visible",
+    "ungranted": "?lens=police -> patrol-vehicles: label 'No source granted', pill 'No source', headline 'The Patrol roster region is built, and template-city has no source for it.', basis 'Spireon is not granted on template-city; the Patrol roster region is built and has no source'",
+    "granted-empty": "?lens=police with the police-cameras route answering a SEAM-COMPOSED granted-empty payload: label 'Source granted, nothing returned', pill 'Nothing returned', headline 'Verkada is granted on template-city and returned no camera-device records.', basis 'Verkada is granted on template-city and produced no camera-device records'",
+    "no-fixture-source": "?lens=police&cityKey=empty-city -> both regions: label 'No source on this pack', pill 'Empty', headline 'empty-city generates no records and grants no adapter, so <region> is empty.'",
+    "sideBySide": "the granted-empty surface carries BOTH: police-cameras reads 'Source granted, nothing returned' and patrol-vehicles reads 'No source granted' in the same viewport, with four different strings each (label, pill, headline, basis). That is the difference a customer sees, rendered.",
+    "stagingDisclosed": "granted-empty is reachable on NO shipped pack. The payload is composed by the real seam (composeDomain, all guards run) over the real police-cameras domain with a generator returning zero records; only the pack's emptiness is staged. Builder: P:/tmp/r2-granted-empty.mjs, payload P:/tmp/r2-granted-empty.json. This is stated rather than presented as a pack that shows it."
+  },
+
+  "findingsFromThePilot": [
+    {
+      "id": "R2-F1",
+      "severity": "product defect, found and fixed",
+      "what": "renderPublicSafety read its regions IN SERIES, so the last region on a lens painted three round trips late. On the Police lens the late one is the Patrol roster - the single region this row exists to make visible - and it sat reading 'Not read' beside a fully populated Camera inventory.",
+      "why it matters": "a failure state dressed as a loading state, on the one region that proves ruling 1.",
+      "howFound": "the rendered walk's first pass read the roster as unrendered; the diagnosis was the loop order, not the markup.",
+      "fix": "the three regions are read concurrently and rendered after. Comment in web/app.js records the incident rather than just the change."
+    },
+    {
+      "id": "R2-F2",
+      "severity": "instrument defect in this lane's own walk, fixed",
+      "what": "the walk waited on the FIRST region's caption only, so it read the DOM before the rest of the lens had painted and would have reported a green surface with an unrendered roster.",
+      "why it matters": "it is the same shape as R2-F1 one layer up: an instrument that stops measuring before the thing it measures has happened. It nearly certified the defect it was built to catch.",
+      "fix": "the walk waits for EVERY region on the lens."
+    },
+    {
+      "id": "R2-F3",
+      "severity": "environment, worked around and stated",
+      "what": "web/index.html loads a render-blocking Google Fonts stylesheet, and a module script cannot execute until that resolves. On this machine that link was taking tens of seconds, which timed out three consecutive walks and looked exactly like a product hang - the first two diagnoses were both wrong.",
+      "measured": "with the third-party stylesheet answered by an empty 200, first paint to committed navigation is 29 to 91 ms; without it, page.goto exceeded 30 s.",
+      "carriedForward": "the walk intercepts THIRD-PARTY ONLY, by URL predicate. A catch-all route that merely continues local requests stalls them, which produced two more false negatives before it was measured. Not a product change: the font link is pre-existing and belongs to nobody on this wave, but a lane that reads 'the product hangs' from it would be wrong, so it is recorded."
+    },
+    {
+      "id": "R2-F4",
+      "severity": "gate interaction, fixed in this lane",
+      "what": "three product gates fired on this lane's own PROSE rather than on its behaviour: `typeof kind.id === \"string\"` read as an element-id comparison to the addressability gate and required an id named 'string'; the words 'no rgb()' inside a CSS comment tripped the no-colour-function rule; and a comment in domain-render.mjs quoting the three forbidden freshness strings tripped the freshness rule.",
+      "reading": "all three are DEV_PROCESS 2.6 - a source file parsed by a tool has a character set, and these gates read comments. Every one is the gate working. Recorded because the next rendering lane will hit at least one of them."
+    }
+  ],
+
+  "constraintState": {
+    "classVocabulary": "143, unchanged. Measured with stylesheetClasses() after the CSS landed. No kit re-vendor owed.",
+    "scKitCss": "untouched",
+    "suite": "320 of 320 passing at the time of this checkpoint (see the close for the CI conclusion string)",
+    "newServedAsset": "src/domain-render.mjs, and all four pinned source lists moved together, which is the tripwire working",
+    "navBadges": "Police and Fire and EMS moved from 'Not built' to 'Empty' (pre-read) and are now written at runtime from the same resolver as the page chip. Declared in CP1 as an ownership stretch; R1 and R3 will need the same edit for their lenses.",
+    "feeds": "none connected, no grant written, G-24 untouched, live Bastrop never opened"
+  },
+
+  "openAtThisCheckpoint": [
+    "axe on the four R2 surfaces, both themes, after the change (before: 0 conformance rules, heading-order 4 nodes)",
+    "the Node test file for the four states and the two lenses' markup",
+    "PR open, CI conclusion string"
+  ]
+}

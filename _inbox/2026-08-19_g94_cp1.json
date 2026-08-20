@@ -1,0 +1,123 @@
+{
+  "lane": "G-94",
+  "checkpoint": "CP1",
+  "kind": "adversarial checkpoint, pre-edit: measured pairs and proposed values",
+  "date": "2026-08-19",
+  "planRow": "G-94 (90_operations/OPS-17_govtech_stack_plan_of_record.md, amendment A-080)",
+  "state": "no file in any repo has been edited at CP1 time",
+
+  "byteIdentityBefore": {
+    "countingRule": "git ls-tree HEAD <path> on a fresh clone of each repo's main; the value is git's blob sha1 over the checked-in bytes, so it is checkout-independent and unaffected by autocrlf",
+    "smartcity-dashboards web/sc-kit.css": "54339204691415d5ee817117699322ed0826c768",
+    "smart-files web/sc-kit.css": "54339204691415d5ee817117699322ed0826c768",
+    "plan-review web/sc-kit.css": "54339204691415d5ee817117699322ed0826c768",
+    "smartcity-kit vendor/sc-kit.css": "54339204691415d5ee817117699322ed0826c768",
+    "verdict": "IDENTICAL in all four. Matches the hash the dispatch named. The system has not forked; this card is the right card.",
+    "headSha": {
+      "smartcity-dashboards": "1b271c8c3dc7bf361c09f00a095cc8e9022a6946",
+      "smart-files": "cdf141cfb944e62720aa155dd836496f4f9d122a",
+      "plan-review": "4330ac8533d116da2e1899e208c65b40de4642ee",
+      "smartcity-kit": "17eccfade057c0f8a835b8731be834cd4b828166"
+    }
+  },
+
+  "hazard_crossRepoAtomicity": {
+    "question": "what actually ASSERTS that web/sc-kit.css is byte-identical across the three product repos",
+    "answer": "NOTHING ASSERTS IT. Measured, not inferred.",
+    "evidence": [
+      "smart-files: the only reference to sc-kit.css anywhere in the repo is the link rel=stylesheet href=/sc-kit.css at web/index.html:24. Its CI (.github/workflows/test.yml, jobs unit + roundtrip) never reads the file. Zero comparison against any other repo.",
+      "plan-review: has NO .github directory at all, so no CI, no check runs, and no test script in package.json. Its only mentions are web/index.html:7 (the link tag) and a PROSE comment at web/styles.css:1, 'Tokens come from sc-kit.css. No local token fork.' A comment is not a control.",
+      "smartcity-dashboards: src/first-paint.test.mjs and src/ui.test.mjs read web/sc-kit.css and assert its INTERNAL properties (a --sc-atom declaration exists, shell.css declares no tokens, light and dark blocks declare the same names). src/shape.test.mjs asserts the file is in the source list. None of these compares against another repo. The 'byte-identical across three repos' claim appears only in comments (first-paint.test.mjs:680, shell-parity.test.mjs:80) and in the file's own header.",
+      "doc_repo: no script or catalog entry references sc-kit at all.",
+      "smartcity-kit: this is the ONLY real control, and it is one-directional. test/vendor-parity.test.mjs arm A pins vendor/sc-kit.css to a sha256 in vendor/UPSTREAM.json; arm B byte-compares it against a smartcity-dashboards checkout, and .github/workflows/ci.yml checks that repo out and sets SC_DASHBOARDS_DIR so arm B cannot silently skip. So kit-to-dashboards IS asserted. dashboards-to-smart-files and dashboards-to-plan-review are NOT, in either direction."
+    ],
+    "consequence": "The product line's stated invariant is enforced on one of three edges. Two of the three product repos could drift indefinitely and every CI in the program would stay green. This is the defect class DEV_PROCESS rule 0 and AGENT_CONTRACT section 5 name; it is reported rather than fixed, because adding a cross-repo check is a new control and a separate card.",
+    "sequencingConstraint": "smartcity-kit CI checks out empressaioemail-tech/smartcity-dashboards at ref: main, NOT at the PR head. The kit PR therefore CANNOT go green until the dashboards PR is merged to main: arm B will byte-compare a re-vendored copy against an un-updated upstream and fail. Merge order is forced: dashboards first, then the kit. smart-files and plan-review are order-free because nothing checks them."
+  },
+
+  "baselineMeasurement": {
+    "instrument": "P:/tmp/g94-scan/contrastscan.mjs, the same 16 targets and the same axe build (P:/tmp/VPAT/axe.min.js) as P:/tmp/g82v/.ds-sync/_axescan.mjs, extended to keep axe's per-node color-contrast data (fgColor, bgColor, contrastRatio, expectedContrastRatio, fontSize, fontWeight) instead of only the node count",
+    "target": "local server from the g94-dash clone at main 1b271c8, PORT=8791, cross-origin requests aborted so the run is hermetic and bounded",
+    "countingRule": "NODES = DOM elements failing the color-contrast rule, summed across the 16 surfaces within one theme; the same element on two surfaces counts twice, because a surface is the unit a conformance report is written against",
+    "dark": { "color-contrast": 54, "scrollable-region-focusable": 4, "heading-order": 11 },
+    "light": { "color-contrast": 643, "scrollable-region-focusable": 4, "heading-order": 11 },
+    "reconciliation": "dark 54 reproduces the A-080 figure exactly, so the planner's number is right for the theme it was taken in.",
+
+    "PLANNER_FIGURE_INCOMPLETE": {
+      "claim": "A-080: 'color-contrast 54 nodes (wcag2aa)' presented as the product's color-contrast baseline",
+      "measured": "54 is DARK ONLY. Light is 643 nodes, 11.9x larger. The real baseline is 697 nodes across the two themes.",
+      "whyTheEarlierRunCouldNotSeeIt": "the theme lever on this product is data-theme on the html element, resolved at first paint from localStorage key 'theme' (web/index.html:36 THEME_KEY, :115 root.setAttribute). web/index.html:2 ships data-theme=dark statically. Emulating prefers-color-scheme does NOT move this palette, so a scan that sets Playwright colorScheme gets the dark palette twice and reads as if both themes were covered. Verified: an unpatched colorScheme run returned an identical 54 for light and dark, pair for pair.",
+      "instrumentFix": "the scanner now seeds localStorage and then ASSERTS document.documentElement's data-theme equals the requested theme after load, throwing if it does not, so an unapplied theme can never be reported as a scanned theme",
+      "bearingOnTheLane": "the standing decision is that light is first-class ('light = paper'). Sizing the fix on the dark figure alone would have produced a value tuned to dark and left the larger half of the defect in place."
+    }
+  },
+
+  "measuredPairs": {
+    "countingRule": "one row per (theme, fgColor, bgColor, requiredRatio) collapsed from axe's failing nodes; ratio is axe's own computed contrastRatio; required is axe's expectedContrastRatio, which is 4.5:1 for every failing node here because every one is normal-weight text at 12-15px, so the 3:1 large-text and non-text allowance applies to none of them",
+    "dark": [
+      { "fg": "#7b8b99", "bg": "#212930", "ratio": 4.20, "required": "4.5:1", "nodes": 29, "classes": ["pill p-quiet"], "bgOrigin": "--sc-quiet-wash rgba(123,139,153,.14) composited over --sc-surface #12191F" },
+      { "fg": "#7b8b99", "bg": "#1a2d34", "ratio": 4.08, "required": "4.5:1", "nodes": 22, "classes": ["badge", "navitem roster on"], "bgOrigin": "--sc-accent-wash rgba(78,175,194,.13) composited over --sc-surface #12191F" },
+      { "fg": "#6c7e8e", "bg": "#e9eef2", "ratio": 3.58, "required": "4.5:1", "nodes": 2, "classes": ["pill p-quiet"], "bgOrigin": "inside the .sc-light citizen scroll region (web/index.html:521), so the LIGHT palette applies even in a dark document" },
+      { "fg": "#6c7e8e", "bg": "#ffffff", "ratio": 4.18, "required": "4.5:1", "nodes": 1, "classes": ["basis"], "bgOrigin": "same .sc-light region" }
+    ],
+    "light": [
+      { "fg": "#6c7e8e", "bg": "#ffffff", "ratio": 4.18, "required": "4.5:1", "nodes": 494, "classes": ["gl","badge","navitem roster","crumb","lede","k","v word","n","t-caption","st-k","basis","t","t-label"] },
+      { "fg": "#6c7e8e", "bg": "#f6f8fa", "ratio": 3.93, "required": "4.5:1", "nodes": 92, "classes": ["badge-off","prov"] },
+      { "fg": "#6c7e8e", "bg": "#e9eef2", "ratio": 3.58, "required": "4.5:1", "nodes": 31, "classes": ["pill p-quiet"] },
+      { "fg": "#6c7e8e", "bg": "#dfeff2", "ratio": 3.54, "required": "4.5:1", "nodes": 22, "classes": ["badge","navitem roster on"] },
+      { "fg": "#6c7e8e", "bg": "#e7ebee", "ratio": 3.49, "required": "4.5:1", "nodes": 2, "classes": ["mount-note"] },
+      { "fg": "#6c7e8e", "bg": "#dde3e8", "ratio": 3.23, "required": "4.5:1", "nodes": 2, "classes": ["mount-note"] }
+    ],
+    "attribution": "every failing foreground in both themes is ONE value per theme, and that value is declared by exactly two token names which currently carry the same hex: --sc-ink-3 and --sc-quiet. Light #6C7E8E, dark #7B8B99. No other token appears as a failing foreground. Confirmed against web/shell.css: 42 var(--sc-ink-3) usages, all of them color:; --sc-quiet appears at shell.css:151 (.p-quiet color), :1061 (color) and :1063 (a color-mix border at 40%)."
+  },
+
+  "completeBackgroundSet": {
+    "why": "axe reports only nodes that FAIL, so the failing-pair list is not the set of backgrounds a token lands on: a background where the token currently passes is invisible to it, and a token change judged only against failures can silently regress a passing pair",
+    "instrument": "P:/tmp/g94-scan/tokenprobe.mjs, same 16 surfaces x 2 themes, enumerating every element with a direct non-empty text child whose computed color equals the value its own scope resolves for --sc-ink-3 or --sc-quiet, then walking to the nearest opaque ancestor background and compositing any wash on the way",
+    "countingRule": "one row per (surface, theme, element). This deliberately includes elements inside a display:none lens, which axe skips, so these counts are a SUPERSET of axe's node counts and are not comparable to them; the purpose is the background SET, not the count",
+    "elementsMatched": 13346,
+    "unresolvableBackground": 0,
+    "pageErrors": 0,
+    "lightBackgrounds": ["#dde3e8 (3.23)", "#e7ebee (3.49)", "#dfeff2 (3.54)", "#e9eef2 (3.58)", "#f6f8fa (3.93)", "#ffffff (4.18)"],
+    "darkBackgrounds": ["#1a2d34 (4.08)", "#212930 (4.20)", "#18212a (4.64)", "#182027 (4.70)", "#141c23 (4.91)", "#12191f (5.06)"],
+    "finding": "the theoretically possible wash-over-surface-2 and wash-over-surface-3 dark composites (#1f333e, #243a46, #26303a, #2b3641, all of which would fail even after the fix) DO NOT OCCUR. Measured, not assumed. The binding constraint is therefore #dde3e8 in light and #1a2d34 in dark.",
+    "regressionInvariant": "the light value moves strictly darker and every light background it lands on is lighter than it; the dark value moves strictly lighter and every dark background it lands on is darker than it. Contrast against every measured background therefore moves monotonically upward, so no currently-passing pair can be made to fail by this change. The post-change scan is the proof, not this argument."
+  },
+
+  "proposedValues": {
+    "method": "hold hue and saturation exactly, move lightness only, and take the step that clears EVERY measured background at 4.5:1 or better with margin. Ratios are WCAG 2.x sRGB relative luminance, (Llighter+0.05)/(Ldarker+0.05), truncated to 2dp so a printed 4.57 is never a rounded-up 4.495.",
+    "changes": [
+      { "token": "--sc-ink-3", "theme": "light (:root, .sc-light)", "before": "#6C7E8E", "after": "#576672", "hsl": "hue 208.2 and sat 13.6% unchanged, lightness 49.0% to 39.5%", "worstMeasuredRatioBefore": "3.23 on #DDE3E8", "worstMeasuredRatioAfter": "4.57 on #DDE3E8" },
+      { "token": "--sc-quiet", "theme": "light (:root, .sc-light)", "before": "#6C7E8E", "after": "#576672", "note": "same value as --sc-ink-3 before and after; the two tokens are kept locked because they are locked today and unlocking them is a design change this card is not scoped for" },
+      { "token": "--sc-ink-3", "theme": "dark (@media prefers-color-scheme, :root[data-theme=dark], .sc-dark)", "before": "#7B8B99", "after": "#8594A1", "hsl": "hue 208.0 and sat 12.8% unchanged, lightness 54.1% to 57.6%", "worstMeasuredRatioBefore": "4.08 on #1A2D34", "worstMeasuredRatioAfter": "4.59 on #1A2D34" },
+      { "token": "--sc-quiet", "theme": "dark", "before": "#7B8B99", "after": "#8594A1", "note": "kept locked to --sc-ink-3, as today" }
+    ],
+    "declarationSites": "6 lines total: the light block declares --sc-ink-3 and --sc-quiet once each, and the dark palette is declared TWICE in the file (the prefers-color-scheme media block and the :root[data-theme=dark]/.sc-dark block), so the dark pair changes in both. Both dark blocks must move together or the media-query and explicit-toggle paths disagree.",
+    "notChanged": "no token is added, no token is renamed, no rule and no selector is touched, and no wash, surface, radius, duration, spacing or type token moves.",
+    "hierarchyCost": "--sc-ink-2 must stay louder than --sc-ink-3. Light on #FFFFFF: ink-2 7.33 vs ink-3 5.91 after (was 4.18), separation 1.42. Dark on #12191F: ink-2 8.15 vs ink-3 5.55 after (was 5.06), separation 2.60. The quiet tier stays a visible step below body ink in both themes; it is narrower in light than before, and that is the unavoidable price of a 4.5:1 floor against --sc-doc-ground #DDE3E8."
+  },
+
+  "knownDownstreamBreaks": [
+    {
+      "where": "smartcity-kit test/gate1-tokens.test.mjs, gate 1c",
+      "what": "it pins the delta between vendor/sc-kit.css and vendor/30b-section-4.1.css (a copy of doc_repo 30b_smartcity_design_system.md section 4.1) to exactly ONE declaration line, the Compass spring constants. Changing a token VALUE puts the changed lines into both the added and dropped sets and gate 1c goes red.",
+      "disposition": "PINNED_ADDED_LINES is widened to carry the changed declaration lines, with the reason stated in the test, which is what the test's own comment says the kit is for: 'the right place to notice if the gap ever widens'. The kit's copy of the doc extract is NOT hand-edited, because that would make the kit assert a doc_repo state that doc_repo does not have.",
+      "owedToPlanner": "doc_repo 30b_smartcity_design_system.md and .html section 4.1 still carry #6C7E8E and #7B8B99 and are now out of date with the product. Editing a canonical doc is planner-owned and this lane does not do it. Until it is done, the kit gate honestly records a widened delta instead of a one-line delta."
+    },
+    {
+      "where": "smartcity-kit test/vendor-parity.test.mjs arm B and gate 1b",
+      "what": "both pin vendor/sc-kit.css by sha256 from vendor/UPSTREAM.json; arm B additionally byte-compares against smartcity-dashboards at ref main",
+      "disposition": "vendor is refreshed with scripts/refresh-vendor.mjs, never by hand, which rewrites the pins. Arm B stays red in the kit PR until the dashboards PR merges, and that is the sequencing constraint recorded above, not a defect to work around."
+    }
+  ],
+
+  "constraintsHonored": [
+    "token VALUES only; no token added, renamed or removed; no rule, no selector, no type ramp, no geometry, no spacing",
+    "web/index.html and web/shell.css untouched in every repo (G-95 owns those in P:/tmp/g95-dash)",
+    "both themes measured and both must pass; light is not sacrificed to dark",
+    "every ratio quoted with its counting rule at the point of use",
+    "no merge, no deploy, live Bastrop untouched and unread, G-52 not started, G-24 not filled, L26 untouched"
+  ],
+
+  "nextAtCP2": "dashboards edited, its own test suite run, the axe scanner re-run in both themes, color-contrast expected at 0 nodes in each"
+}
