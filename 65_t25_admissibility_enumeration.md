@@ -119,9 +119,47 @@ disposition. Read from source beats grep and is weaker than running the code.
 | W-26 | all six `write-*-county.mjs`, the `if (!back)` branch | `storedByDid.get(atom.atomDid)` after `SELECT body FROM atoms WHERE atom_did IN (...)` | any stored row whose `body.atomDid` matches | **Partially** | 3. **Strongest in the family**, see the W-26 note |
 | W-27 | `document_ingest_atoms`, `migrations/004_document_ingest.sql:32-46` + live | `entity_id text NOT NULL` and nothing else. **No pair-unique index either** | any non null string, including `""` | No | 4, absent. **Strictly weaker than `atoms`** |
 | W-28 | `document-ingest/src/pg-atom-store.ts:73-105` | NONE on the binding. `entityId` flows unchecked into `buildAtomDid` at `:76`, which becomes the PK at `:105` | any non null string | No | 4, self authored |
-| W-29 | `@empressaio/atom-contract@1.20.0`, `dist/property/flood-hazard-fact.js:26-32`, `FLOOD_HAZARD_FACT_SCHEMA`. **Optionality confirmed family-wide across all five property schemas; flood additionally an OUTLIER on domain constraints** | all four finding fields OPTIONAL, and `floodZone` uniquely carries no `.min(1)` where four siblings do: `inSpecialFloodHazardArea: z.boolean().optional()`, `floodZone: z.string().nullable().optional()`, `zoneSubtype`, `baseFloodElevation`. The `superRefine` constrains only the absence side | an atom with `entityType`, `atomDid`, `parcelNodeId`, a non-absent `sourceTier`, `accessPolicy: "public-free"` and **none of the four finding fields**. A contentless claim | **No** | 4, none exists, absent. **Type-expressible.** See below |
+| W-29 | **RETRACTED 2026-08-20, see below.** `@empressaio/atom-contract@1.20.0`, `dist/property/flood-hazard-fact.js`. The contentless-claim claim is FALSE; the superRefine at `:89` requires `inSpecialFloodHazardArea` on a non-absent tier. **Only the flood-outlier half survives** | all four finding fields OPTIONAL, and `floodZone` uniquely carries no `.min(1)` where four siblings do: `inSpecialFloodHazardArea: z.boolean().optional()`, `floodZone: z.string().nullable().optional()`, `zoneSubtype`, `baseFloodElevation`. The `superRefine` constrains only the absence side | an atom with `entityType`, `atomDid`, `parcelNodeId`, a non-absent `sourceTier`, `accessPolicy: "public-free"` and **none of the four finding fields**. A contentless claim | **No** | 4, none exists, absent. **Type-expressible.** See below |
 
-### W-29, the type permits a contentless claim, and it is upstream of the whole family
+### W-29 RETRACTED 2026-08-20. The type does NOT permit a contentless claim
+
+**This row was wrong and the error was mine.** It claimed an atom whose purpose is to record a
+flood hazard determination validates cleanly carrying no determination. **False.**
+`FLOOD_HAZARD_FACT_SCHEMA`'s `superRefine` ends with:
+
+```js
+    else {
+        if (data.inSpecialFloodHazardArea === undefined) {
+            ctx.addIssue({ message: "fema-nfhl tier requires inSpecialFloodHazardArea when no absence" });
+        }
+    }
+```
+
+A non-absent flood atom MUST carry `inSpecialFloodHazardArea`. Confirmed by execution across all
+five property schemas: a bare atom on a non-absent `sourceTier` FAILS in every one, each with a
+named per-tier message. The only atom validating without a claim is one that DECLARES its
+absence. That is honest absence, not a claimless claim. **The `.optional()` markers are
+conditional-by-tier, not free.**
+
+**How the error was made, because it is the transferable part.** The superRefine was read as
+`sed -n '39,85p'`. The rule is at line 89. An absence was asserted from a view that stopped four
+lines short of the thing it claimed was missing. This is the enumeration's own standing rule
+turned on its author: **distrust your own negative results most**, and read the artifact rather
+than a window onto it.
+
+**What survives, and it is the smaller finding.** `floodZone: z.string().nullable().optional()`
+carries no `.min(1)`, and flood is the only one of the five using `.nullable()` at all. VERIFIED
+by violation: `floodZone: ""` and `floodZone: null` both PASS on an otherwise valid present flood
+atom, while the equivalent empty string FAILS on `districtId`, `districtName`, `easementId` and
+`operatorName`. **The flood-outlier finding stands and is strengthened.**
+
+**The W-5 composition is unaffected and is now better evidenced.** W-5 emits `false`, a valid
+boolean, which SATISFIES the new-found presence requirement exactly. A presence requirement
+defeats a missing field and not a wrong one, which was the predicted mechanism.
+
+### SUPERSEDED TEXT, retained so the error is legible
+
+The following was the filed claim and is retracted.
 
 Filed as its own row rather than as context for W-13, **because a reader fixing the verify
 would leave this in place.**
