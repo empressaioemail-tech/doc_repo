@@ -689,6 +689,46 @@ Also named rather than implied: the six `plan-county-*.ts` planners, where `abse
 `reason` are chosen before the writers receive them; the six zod schemas, which set the floor
 for every `safeParse` in W-13 through W-26; and `document_ingest_atoms` callers, unenumerated.
 
+
+## packages/retrieval: 158 CANDIDATE rows, one verified, NOT in the totals
+
+A delegated read-only pass returned rows **S-25 through S-182** over `packages/retrieval` at
+hauska-engine `d3f3794`, 23 files read in full and every unopened file named. **They are
+CANDIDATE, not verified.** This seat reviewed one row at source; 157 remain unread by anyone
+but their author, and a subagent reporting a finding is a claim. **They do not enter the 48.**
+
+**The one verified, and it is the most serious in the set. Filed as W-30.**
+
+| # | Location | Predicate | Cheapest satisfier | Valid | Derivation state |
+|---|---|---|---|---|---|
+| W-30 | `packages/retrieval/src/index.ts:402` and `:484` | NONE. `accessPolicy: payload.accessPolicy ?? "public-free"` | **OMISSION** | **No** | 4, none exists, self authored |
+
+Verified verbatim at both sites. An atom carrying **no** access policy is served as the **most
+permissive value in the five-value ADR-017 union**. This is a read-site default over a field the
+write site could have made a required discriminated type, and it sits on the property and road
+chains. `listJurisdictions`' docblock at `:666` declares the behaviour intentional **for
+jurisdiction snapshots**; it does not cover these two sites. Bears directly on the
+tenant-sovereignty commitment, which is enforced at the gate via `accessPolicy`.
+
+**Named as the highest-value unsettled item in the candidate set**, quoted because this seat
+agrees with the reasoning and did not run it: the centroid guard at `serving-sweep.mjs:323` and
+`three-layer-sweep.mjs:413` runs `Number.isFinite(geo.lat)` over `(south_lat + north_lat) / 2.0`
+selected from `txgio_parcel` with **no cast**. If those columns are `numeric`, postgres.js
+returns a string, every centroid resolves null, and `absenceClusters` is `[]` for every county —
+a starved mechanism reporting as a clean zero, on precisely the question it exists to answer.
+If they are `double precision` the guard is correct. `txgio_parcel` has no DDL in hauska-engine;
+it is cortex-owned. **One `\d+ txgio_parcel` against cortex settles it.**
+
+Two of the candidate set's structural remarks are worth carrying regardless of row status: nothing
+derives `CellMeasurement.measured`, so the package's flagship unmeasured-is-not-zero guard rests
+on a caller-asserted boolean whose "never inferred" is a comment rather than a mechanism; and the
+package's only exit-1 divergence control is opt-in per invocation and invoked by no workflow.
+
+**The dispatch's prediction for this package was half wrong, which is a result.** Sentinel
+defaults on serving-sweep field tallies: **FALSE**. `tally.ts` carries zero validity checks, its
+zeros are exhaustive-sweep zeros, and unmeasurability is carried out of band. The `?? 0` collapse
+is real but lives in `duplicate-subject/classify.ts`, not the predicted file.
+
 ## Standing instrument rules
 
 Graph walker for structural questions. Reachability, ownership and identity are not answerable
