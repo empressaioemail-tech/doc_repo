@@ -442,6 +442,12 @@ family is real and is not the producer.
 
 **Wording to preserve: NOT RECOVERABLE FROM ANYTHING REACHABLE HERE, not "gone".**
 
+**POPULATION CORRECTED 2026-08-20 by live query.** The rows are **254 over 254 distinct
+county FIPS**, one per Texas county, zero non-county entities. **Not 253.** That figure was a
+different rail's and was carried here by inheritance and repeated for weeks unchecked. Same
+query confirms `land-use` (19 counties) and `landuse` (254) both live as facet keys, so the
+scorer-key orphaning is real and strands 19 rows.
+
 **The 253 rows are RETIRED, not superseded.** Superseding implies the new number corrects the
 old along a known dimension. Here an unknown quantity is being replaced by a known one. The
 honest record is that the prior figures were **unreproducible rather than wrong**, and the new
@@ -710,7 +716,7 @@ chains. `listJurisdictions`' docblock at `:666` declares the behaviour intention
 jurisdiction snapshots**; it does not cover these two sites. Bears directly on the
 tenant-sovereignty commitment, which is enforced at the gate via `accessPolicy`.
 
-**Named as the highest-value unsettled item in the candidate set**, quoted because this seat
+**FALSIFIED 2026-08-20 by live query: the bbox columns are `double precision` and the quotient types `double precision`, so the kill path required a type production does not use. The guard is fine and absence clustering is not starved. Retained because naming it highest-value and being wrong is the record. Original text follows.** Formerly named as the highest-value unsettled item in the candidate set, quoted because this seat
 agrees with the reasoning and did not run it: the centroid guard at `serving-sweep.mjs:323` and
 `three-layer-sweep.mjs:413` runs `Number.isFinite(geo.lat)` over `(south_lat + north_lat) / 2.0`
 selected from `txgio_parcel` with **no cast**. If those columns are `numeric`, postgres.js
