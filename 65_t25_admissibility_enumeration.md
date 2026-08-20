@@ -437,6 +437,54 @@ implicit.
 **H-3**, `BUILDING_FOOTPRINT_SCHEMA` read at the installed contract.
 **W-9** and **W-27**, the input type is the column type, read from DDL and confirmed by live
 query.
+**W-13**, **W-5** and **W-24**, `FLOOD_HAZARD_FACT_SCHEMA` read 2026-08-20. Promoted out of
+provisional. See the resolution below.
+
+### W-13 resolved: the composition survives, and one filed claim was wrong
+
+The flag raised against W-13 was that if the schema required a zone or a hazard flag on a
+non-absence atom, W-13 would be stronger than filed and the W-5 plus W-13 composition would
+weaken. **Tested against `@empressaio/atom-contract` `dist/property/flood-hazard-fact.js`.
+Confirmed which schema `safeParse` actually runs first: `packages/atoms/src/property-instances.ts:107`
+re-exports the contract's, it is not an engine-local definition.**
+
+**Result one, the composition survives, by the predicted mechanism.**
+`inSpecialFloodHazardArea: z.boolean().optional()`. A boolean, **not an enumerated domain**,
+which was the named falsifier and it did not occur. W-5 does not produce an absent value, it
+produces a well typed wrong one: an equality test against three literals returns `false` for
+anything else, and `false` is a valid boolean. A presence requirement defeats a missing field.
+It does not defeat a wrong field, and W-5's output is the second.
+
+**Result two, which extends further than the prediction claimed.**
+`floodZone: z.string().nullable().optional()` is equally unconstrained: any string is a valid
+flood zone. So **W-24's zone-selection failure is invisible to the schema too.** The
+composition survives on both halves of W-5's blast radius, the boolean and the zone string,
+not only the boolean.
+
+**Result three, the flag's other half is FALSE.** W-13 is not stronger against absence either.
+Every branch of the `superRefine` constrains the absence side: claim-fields-and-absence
+mutually exclusive, `sourceTier: "absent"` requiring `verifiedAbsence` and forbidding claim
+fields and per-parcel absence. **There is no rule requiring a claim field when the atom is not
+absent.** An atom with `sourceTier: "fema-nfhl"`, no absence, and none of the four finding
+fields parses cleanly. W-13's cheapest satisfier stands exactly as filed.
+
+**Result four, a correction to W-13 in the schema's favour, and it is the third instance of the
+same error.** W-13 was filed saying `accessPolicy` is "never compared to anything," and the row
+contrasted flood unfavourably with `well-fact` and `rail-corridor-fact`, which check it
+explicitly. That is true of the verify function and **false of the path**. The schema's
+`superRefine` enforces `accessPolicy === public-free` and raises otherwise, and the verify runs
+`safeParse` first. **Access policy IS enforced on the flood path, by the schema.** The two
+siblings check it redundantly; flood inherits it.
+
+W-13's substance is unchanged and is still the row reported: the flood write-then-verify cannot
+see the hazard **value**, which is the half the composition turns on. What is corrected is the
+sibling contrast. Flood is weaker than its siblings on values, not on access policy.
+
+This is the H-3 lesson running a third time, in the third direction: a check graded alone,
+credited with a weakness the schema had already covered. H-3 was a sound check nearly dismissed.
+W-13 against absence was a weak check nearly credited with strength. W-13 on access policy was a
+covered property scored as uncovered. **Grading a check without its schema is wrong in every
+direction, not merely optimistic or merely pessimistic.**
 
 ### Input type NOT decisive, grade stands regardless
 
@@ -446,23 +494,17 @@ the cheapest satisfier of the default itself. Schema-unread does not weaken thes
 
 ### Input type NOT READ, grade provisional
 
-**W-13, W-14, W-15, W-16, W-26.** All five turn on `SCHEMA.safeParse(stored)` against schemas
-that were **not read**: `FLOOD_HAZARD_FACT_SCHEMA`, `SPECIAL_DISTRICT_FACT_SCHEMA`,
-`WELL_FACT_SCHEMA`, `UTILITY_EASEMENT_SCHEMA`, `RAIL_CORRIDOR_FACT_SCHEMA`. The schema is
-upstream and decisive for every one of them.
-
-**W-5 and W-24.** Both turn on `sfhaTf`, whose type on `FloodZoneFeature` was not read. If it
-is a closed enum upstream, W-5 is weaker than filed.
+**W-14, W-15, W-16, W-26.** All four turn on `SCHEMA.safeParse(stored)` against schemas that
+were **not read**: `SPECIAL_DISTRICT_FACT_SCHEMA`, `WELL_FACT_SCHEMA`,
+`UTILITY_EASEMENT_SCHEMA`, `RAIL_CORRIDOR_FACT_SCHEMA`. The schema is upstream and decisive for
+every one of them. Given what reading the flood schema changed about W-13, expect these four to
+move too, and expect the movement in both directions.
 
 **W-28.** The type of `DocumentDerivedAtomInstance.entityId` was not read.
 
-**W-13 is the highest-value re-read in the enumeration and it is one of the two rows reported
-as mattering most.** Its filed grade says the cheapest satisfier is any atom parsing the
-schema with the right `parcelNodeId` and no absence marker. **If
-`FLOOD_HAZARD_FACT_SCHEMA` requires `floodZone` or `inSpecialFloodHazardArea` on a
-non-absence atom, W-13 is materially stronger than filed and the W-5-plus-W-13 composition
-reported as the headline weakens.** That has not been checked. Anyone acting on W-13 reads
-the schema first.
+**W-13 was the highest-value re-read and it has been done.** It resolved against the flag in
+three of four parts and produced one correction. See the W-13 resolution above. It is the
+worked example for the four rows still in this set.
 
 ### Rows 1 to 30 inherit the caveat, unverified
 
