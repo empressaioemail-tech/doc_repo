@@ -49,7 +49,7 @@ positional and are mapped into the canonical scheme here.
   separate row.
 - Continuation rows 31 to 46 are assigned **W-13 through W-28**.
 
-Distinct verified checks: **44**. The gap against 46 is the two duplicates above, and it is
+Distinct verified checks: **47**. The gap against 46 is the two duplicates above, and it is
 recorded rather than quietly closed.
 
 ## Derivation states
@@ -277,7 +277,9 @@ predicate preserved here because retirement destroys the evidence otherwise.
 | S-19 | `railScoring/run.ts:169` | `Number(row.honest_coverage_pct ?? 0)` | null column, 0%, indistinguishable from measured zero | No | 3 |
 | S-20 | `railScoring/registry.ts:222` | `denominator: { kind: "none", basis: "no measurement spec yet" }` | the declaration | Honestly no | 4, correctly declared unmeasurable |
 | S-21 | `railScoring/registry.ts:197` | 253 live geometry rows scored against an "accounted features" denominator | — | — | **RESOLVED 2026-08-20: NOT FOUND. Rows RETIRED, re-derivation ordered.** See below |
-| S-22 | `railScoring/registry.ts:197` | asserts the denominator is reconstructible from checked-in source | — | **No, the assertion is FALSE and it is in canon** | 4. Same class as a test asserting a value no authority recognises, one level up |
+| S-22 | `railScoring/registry.ts:195` | **CORRECTED 2026-08-20.** The machine-readable field `denominator: PARCEL_FEATURE_DENOMINATOR` on the `geometry` rule, while its 253 live rows were computed against a different denominator | the declaration itself | **No.** The structured field and the live data disagree | 4, self authored. See the S-22 correction below |
+| S-23 | `railScoring/registry.test.ts:77-78` | `expect(rule.denominator.kind).toBeTruthy()` and `expect(rule.denominator.basis.trim().length).toBeGreaterThan(10)` | `kind: "x"`, `basis: "eleven chars"` | No | 4, absent. **The only guard on the declaration, and it is presence-shaped over a meaning-shaped property.** It cannot see that geometry's declared denominator does not describe geometry's rows |
+| S-24 | `railScoring/registry.ts:182-186` vs `railScoring/measure.ts:95,201,241,286` | NONE. The declaration carries a `kind` and prose `basis`; `measure.ts` implements the counting query independently | any divergence between the two | No | 1, available now. **Two implementations of one rule with no divergence test.** `rule.denominator` is only ever copied into a provenance string (`engine.ts:189`, `run.ts:303`, `countyRailScoreCli.ts:193`); it never computes anything, so the declared basis can drift from the executed query silently |
 
 ### S-21 disposition: NOT FOUND, rows RETIRED, re-derivation ordered
 
@@ -301,6 +303,36 @@ family is real and is not the producer.
 old along a known dimension. Here an unknown quantity is being replaced by a known one. The
 honest record is that the prior figures were **unreproducible rather than wrong**, and the new
 run is not reconciled against them because there is nothing to reconcile against.
+
+### S-22 corrected: the prose is honest, the structured field is not
+
+S-22 was filed as "the file asserts the denominator is reconstructible from checked-in
+source, and that assertion is FALSE." **That reading does not survive reading the note.**
+
+The `notes` string at `:197` says the rule "declares the denominator that IS reconstructible
+from checked-in source." That is a contrast against the lost accounted-features denominator,
+which the same sentence explicitly says is not in the repo. The note names the missing
+producer, names the verify script that regexes its output, states that the rule will NOT
+reproduce the live values where `foldedExtraFeatures > 0`, and routes the resolution to the
+planner. It is one of the more honest artifacts in the estate, and deleting it would destroy
+S-21's evidence trail.
+
+**The defect is one level down and worse than the version filed.** The `geometry` rule
+declares `denominator: PARCEL_FEATURE_DENOMINATOR` as a machine-readable field while its 253
+live rows embody a different denominator. A consumer reading the structured field is misled;
+only a human reading the prose is warned. The reconciliation exists solely as prose that
+nothing enforces, which is the doctrine's governing case: declared is not enforced.
+
+Second mechanism considered and rejected: that the prose is a false claim and the structured
+field is incidental. Rejected because the prose disclaims precisely what it is accused of
+asserting, and because the structured field is the half that consumers read.
+
+**Disposition.** The prose stays. The machine-readable field is the false half. Since the 253
+rows are RETIRED, the honest declaration for `geometry` is a retired or unmeasured state
+until the re-derived scorer lands, so that no consumer reads a denominator describing rows
+that no longer stand. S-23 and S-24 must move with it: a presence-shaped test cannot detect
+this class, and a declared basis that never computes anything can drift from the executed
+query in silence.
 
 ## The sibling table, corrected
 
@@ -332,18 +364,18 @@ further axis this table does not show.
 ## Counts
 
 ```
-Available now, two independent sources       14
+Available now, two independent sources       15
 Available now, source vs our derivation       4
 Available once a dependency lands             0   <- looked for explicitly on three passes
 Internal consistency only                    14
-None exists                                  15
+None exists                                  17
    of which foreclosed                        0
-   of which absent                            5
-   of which self authored                     5
+   of which absent                            6
+   of which self authored                     6
    (5 carried from rows 3-30, unsubdivided)
 Flagged, not filed                            0   <- W-12 and S-21 both resolved
                                             ----
-distinct verified checks                     44
+distinct verified checks                     47
 duplicate ordinals reconciled                 2   (SS-W16 rows 1 and 2)
 carried in                                   10
 type-expressible                              9
@@ -351,7 +383,7 @@ CHECKS THAT HOLD                              3   (S-15, S-18, and building-foot
                                                    present-requires-geometry refusal)
 ```
 
-**Three checks hold in forty four rows.** All three REFUSE rather than defaulting. That is the
+**Three checks hold in forty seven rows.** All three REFUSE rather than defaulting. That is the
 shape everything else is being converted toward.
 
 **Zero dependency-pending rows means the entire remediable set is buildable now.** Nothing
