@@ -47,9 +47,9 @@ positional and are mapped into the canonical scheme here.
 - SS-W16 row 1 is the same check as **R-3**. Not a separate row.
 - SS-W16 row 2 is the tier2 tile predicate, carried in the scoring-path prose below. Not a
   separate row.
-- Continuation rows 31 to 46 are assigned **W-13 through W-28**.
+- Continuation rows 31 to 46 are assigned **W-13 through W-28**. W-29 was added after, from reading a schema rather than a call site.
 
-Distinct verified checks: **47**. The gap against 46 is the two duplicates above, and it is
+Distinct verified checks: **48**. The gap against 46 is the two duplicates above, and it is
 recorded rather than quietly closed.
 
 ## Derivation states
@@ -113,6 +113,57 @@ disposition. Read from source beats grep and is weaker than running the code.
 | W-26 | all six `write-*-county.mjs`, the `if (!back)` branch | `storedByDid.get(atom.atomDid)` after `SELECT body FROM atoms WHERE atom_did IN (...)` | any stored row whose `body.atomDid` matches | **Partially** | 3. **Strongest in the family**, see the W-26 note |
 | W-27 | `document_ingest_atoms`, `migrations/004_document_ingest.sql:32-46` + live | `entity_id text NOT NULL` and nothing else. **No pair-unique index either** | any non null string, including `""` | No | 4, absent. **Strictly weaker than `atoms`** |
 | W-28 | `document-ingest/src/pg-atom-store.ts:73-105` | NONE on the binding. `entityId` flows unchecked into `buildAtomDid` at `:76`, which becomes the PK at `:105` | any non null string | No | 4, self authored |
+| W-29 | `@empressaio/atom-contract@1.20.0`, `dist/property/flood-hazard-fact.js:26-32`, `FLOOD_HAZARD_FACT_SCHEMA` | all four finding fields OPTIONAL: `inSpecialFloodHazardArea: z.boolean().optional()`, `floodZone: z.string().nullable().optional()`, `zoneSubtype`, `baseFloodElevation`. The `superRefine` constrains only the absence side | an atom with `entityType`, `atomDid`, `parcelNodeId`, a non-absent `sourceTier`, `accessPolicy: "public-free"` and **none of the four finding fields**. A contentless claim | **No** | 4, none exists, absent. **Type-expressible.** See below |
+
+### W-29, the type permits a contentless claim, and it is upstream of the whole family
+
+Filed as its own row rather than as context for W-13, **because a reader fixing the verify
+would leave this in place.**
+
+**An atom whose entire purpose is to record a flood hazard determination validates cleanly
+carrying no determination.** Source tier present, no absence, none of the four finding fields,
+parses clean. The verify cannot compare a value the type never required to exist, so W-13 is
+downstream of this and not the cause of it.
+
+**The schema does not merely fail to catch W-5 and W-24. It is the reason both are
+expressible.** `floodZone` being an unconstrained nullable string is what makes an arbitrary
+zone string a valid flood zone; `inSpecialFloodHazardArea` being a bare optional boolean is
+what makes a manufactured `false` indistinguishable from a measured one.
+
+The remedy is a type, not a check: a discriminated union over determined and absent, where the
+determined arm requires the finding fields and the absent arm forbids them. The `superRefine`
+already enforces exactly that shape in one direction. It was never written in the other.
+
+### The cross-substrate pattern, found independently by two seats
+
+The markets seat found the same shape in a completely different contract, before this schema
+was opened and through no channel connecting the two: **ten numbers entirely unbounded, and
+they are the price, the strike, the bar fields and the driver value, while eight other numeric
+fields carry a minimum.**
+
+Two substrates, two seats, two unrelated schemas, one result: **the fields carrying the claim
+are the least constrained fields in their own type.**
+
+**The mechanism explains why it recurs rather than being bad luck.** Structural and identifier
+fields have constraints that are cheap to write: non-empty, matches a pattern, one of a closed
+set. Semantic fields do not. Nobody can express *is a plausible price* or *is a real hazard
+zone* as a type annotation, so the easy constraints get written and the hard ones stay open.
+**Constraint effort concentrates where it is cheap and thins out where the meaning is.**
+
+**Search heuristic, worth more than either row.** When auditing a schema, read the
+claim-bearing fields first. That is where the gaps are, and it is the last place a reader
+looks.
+
+**The same pattern from the other side.** The W-13 access-policy correction shows it
+inverted: `well-fact` and `rail-corridor-fact` both check `accessPolicy` explicitly while the
+schema already enforces it. Two writers carrying a check the type had covered. Constraint
+duplicated where it was cheap, absent where it was hard, in one family.
+
+**Instruction for the four remaining provisional rows.** Whoever opens
+`SPECIAL_DISTRICT_FACT_SCHEMA`, `WELL_FACT_SCHEMA`, `UTILITY_EASEMENT_SCHEMA` and
+`RAIL_CORRIDOR_FACT_SCHEMA` reads them **for this property**, not only for the rows that turn
+on them. If those four also declare their claim fields optional or unconstrained, that is four
+more instances and it stops being a flood-specific defect.
 
 ### W-9, confirmed, and the two things that do not shrink it
 
@@ -368,14 +419,14 @@ Available now, two independent sources       15
 Available now, source vs our derivation       4
 Available once a dependency lands             0   <- looked for explicitly on three passes
 Internal consistency only                    14
-None exists                                  17
+None exists                                  18
    of which foreclosed                        0
-   of which absent                            6
+   of which absent                            7
    of which self authored                     6
    (5 carried from rows 3-30, unsubdivided)
 Flagged, not filed                            0   <- W-12 and S-21 both resolved
                                             ----
-distinct verified checks                     47
+distinct verified checks                     48
 duplicate ordinals reconciled                 2   (SS-W16 rows 1 and 2)
 carried in                                   10
 type-expressible                              9
@@ -383,7 +434,7 @@ CHECKS THAT HOLD                              3   (S-15, S-18, and building-foot
                                                    present-requires-geometry refusal)
 ```
 
-**Three checks hold in forty seven rows.** All three REFUSE rather than defaulting. That is the
+**Three checks hold in forty eight rows.** All three REFUSE rather than defaulting. That is the
 shape everything else is being converted toward. This is the smallest and most useful list in
 the enumeration, so it is named in full.
 
