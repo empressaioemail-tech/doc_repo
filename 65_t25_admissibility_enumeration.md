@@ -417,6 +417,63 @@ cleanly as present with no geometry.
 waits on a source, a feed or another lane. The purchasing list is one line: **NFHL at parcel
 resolution rather than tile.**
 
+## Confidence split: which rows were graded with their input type read
+
+**A check's cheapest satisfier is determined by the type of the value reaching it, not by its
+own predicate.** H-3 established this the hard way: read alone it looks presence-shaped and
+would not have made the list of checks that hold; read together with the schema typing its
+field as a union of two geometry shapes, an empty object fails validation before the check is
+reached and the cheapest satisfier is a real polygon.
+
+The schema and the check are one unit. Grading either alone produces a confident wrong answer
+**in either direction**: a sound check dismissed as presence-shaped, or a weak check credited
+with protection its input type actually provides.
+
+So the rows below carry two different confidences, and the split is stated rather than left
+implicit.
+
+### Input type READ, grade verified
+
+**H-3**, `BUILDING_FOOTPRINT_SCHEMA` read at the installed contract.
+**W-9** and **W-27**, the input type is the column type, read from DDL and confirmed by live
+query.
+
+### Input type NOT decisive, grade stands regardless
+
+Every default and coalescing row: **W-17** through **W-23**, and **W-25**. A default fires
+*before* any schema validation, so the schema is downstream of the defect and cannot change
+the cheapest satisfier of the default itself. Schema-unread does not weaken these.
+
+### Input type NOT READ, grade provisional
+
+**W-13, W-14, W-15, W-16, W-26.** All five turn on `SCHEMA.safeParse(stored)` against schemas
+that were **not read**: `FLOOD_HAZARD_FACT_SCHEMA`, `SPECIAL_DISTRICT_FACT_SCHEMA`,
+`WELL_FACT_SCHEMA`, `UTILITY_EASEMENT_SCHEMA`, `RAIL_CORRIDOR_FACT_SCHEMA`. The schema is
+upstream and decisive for every one of them.
+
+**W-5 and W-24.** Both turn on `sfhaTf`, whose type on `FloodZoneFeature` was not read. If it
+is a closed enum upstream, W-5 is weaker than filed.
+
+**W-28.** The type of `DocumentDerivedAtomInstance.entityId` was not read.
+
+**W-13 is the highest-value re-read in the enumeration and it is one of the two rows reported
+as mattering most.** Its filed grade says the cheapest satisfier is any atom parsing the
+schema with the right `parcelNodeId` and no absence marker. **If
+`FLOOD_HAZARD_FACT_SCHEMA` requires `floodZone` or `inSpecialFloodHazardArea` on a
+non-absence atom, W-13 is materially stronger than filed and the W-5-plus-W-13 composition
+reported as the headline weakens.** That has not been checked. Anyone acting on W-13 reads
+the schema first.
+
+### Rows 1 to 30 inherit the caveat, unverified
+
+**W-1 through W-12, R-1 through R-8, and S-10 through S-22** were graded before this
+principle was established. Their input types were not systematically read and this pass
+cannot vouch for whether any were. They carry the provisional confidence by default, not by
+finding.
+
+Re-reading forty seven rows is not the next task. Stating which set a row belongs to before
+anyone makes it load-bearing is.
+
 ## Type-expressible subset, cheapest coverage, outside every failure state
 
 R-3 and R-4 (discriminated route selector, exhaustive branch); S-11, S-14, S-16, S-19
