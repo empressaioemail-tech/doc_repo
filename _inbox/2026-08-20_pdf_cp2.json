@@ -1,0 +1,46 @@
+{
+  "checkpoint": "CP2",
+  "phase": "mid-work adversarial review, forced by an operator scope change",
+  "lane": "G-103/G-104 tagged PDF render (504.2.2)",
+  "planRow": ["G-103", "G-104"],
+  "at": "2026-08-20",
+  "trigger": "planner relayed an operator ruling mid-flight: the site-plan generator is working software, is not to be modified or repointed, and all tagged-PDF work must be additive and opt-in. Other agents are live in hauska-engine (PR #351, the ss/* programme).",
+  "stateAtInterrupt": {
+    "note": "no sub-agents were running; this lane ran as a single agent under the do-not-spawn clause, so nothing was stopped and nothing was orphaned",
+    "workInProgress": [
+      "packages/engine-core/src/site-plan/pdf/render.ts MODIFIED IN PLACE (tracked-text Tc rewrite, tagger attach, heading roles, figure tagging, title/lang/struct tree)",
+      "packages/engine-core/src/site-plan/pdf/dossier.ts MODIFIED IN PLACE (tagger attach, copied-page re-adoption)",
+      "packages/engine-core/src/site-plan/pdf/tagging.ts NEW (in-place tagger)"
+    ],
+    "measuredResultOfThatWork": "65.08% -> 2.52% single-character extracted lines, structure tree present, 0 reading-order inversions on all three pages, 246 of 246 pre-existing site-plan tests green"
+  },
+  "conflictsWithTheRuling": [
+    "render.ts was modified in place and its glyph-by-glyph tracked-run drawing had been replaced with a Tc-based single-run draw: a behaviour change to the existing generator, forbidden",
+    "the tagging was ON BY DEFAULT for every caller rather than opt-in, forbidden",
+    "dossier.ts was modified in place, forbidden"
+  ],
+  "actionTaken": {
+    "revert": "git checkout -- render.ts dossier.ts; deleted tagging.ts",
+    "verification": "git rev-parse HEAD:packages/engine-core/src/site-plan/pdf/render.ts == 53366de8a88e1387a274abf84ed096538f0417f8, which is the blob the planner named as the pre-change restore point on d3f3794. Verified by comparing against `git rev-parse d3f37949...:<same path>`; the two hashes are identical.",
+    "replan": "the same six acceptance properties are now reached by POST-PROCESSING the renderer's finished bytes in a new directory, so the renderer is untouched by construction rather than by discipline"
+  },
+  "adversarialReviewOfTheReplan": [
+    {
+      "q": "does a post-processor actually reach the single-character metric, or does it only add a structure tree over fragmented text?",
+      "a": "it reaches it, but only because of a specific property of pdf-lib's output: every glyph is its own `q BT .. ET Q` with a trailing `T*`, and it is the `T*` that makes an extractor emit a line break. Merging the blocks into one BT/ET while keeping each glyph's own ABSOLUTE Tm removes the line breaks without moving any ink. Verified: 458 of 458 glyph-show operations identical in position, size and glyph."
+    },
+    {
+      "q": "what stops the merge from welding two unrelated words that happen to share a baseline?",
+      "a": "a positive continuation test, not a proximity test: same font size, same Tm orientation, same baseline to 0.01pt, strictly increasing x, and an x step at most 1.25x the font size. A letter step is 0.5x to 0.9x the size; a word-to-word step is the whole preceding word. Covered by a standing negative test."
+    },
+    {
+      "q": "is the grammar assumption safe?",
+      "a": "measured, not assumed: 458 of 458 text blocks across all three sheets match the single canonical shape, and every other line is a vector operator. The parser REFUSES anything else rather than passing it through, so a future renderer change surfaces as an exception instead of a silently half-tagged PDF."
+    },
+    {
+      "q": "what did the replan lose relative to the in-place version?",
+      "a": "heading levels and figure alt text. A finished content stream carries no heading semantics and no image description; inferring either would be a guess written into a binding structure. Both are declared in the result object at runtime, not buried in a comment, and both are listed as leave-behind."
+    }
+  ],
+  "goNoGo": "GO on the additive path. Item 3 (repointing the legacy SmartCity jsPDF export) is NOT reachable under the ruling and is reported as not done rather than worked around."
+}

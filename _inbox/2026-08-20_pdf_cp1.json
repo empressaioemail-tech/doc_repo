@@ -1,0 +1,45 @@
+{
+  "checkpoint": "CP1",
+  "phase": "design / pre-build adversarial review",
+  "lane": "G-103/G-104 tagged PDF render (504.2.2)",
+  "planRow": ["G-103", "G-104"],
+  "at": "2026-08-20",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-engine",
+    "baseCommit": "d3f37949003fae5a99a82b62956352b7dcaa1022",
+    "worktree": "P:/tmp/g103-engine",
+    "instrumentEnv": "pypdf 6.7.5, CPython 3.14.0, Windows"
+  },
+  "whatWasReviewed": "the acceptance instrument itself, before any code was written, on the grounds that a measurement taken with a broken instrument is worse than no measurement",
+  "findings": [
+    {
+      "id": "CP1-F1",
+      "severity": "instrument defect, fail-CLOSED",
+      "finding": "the first version of the /MarkInfo check tested `deref(mi.get('/Marked')) is True`. pypdf returns a BooleanObject, which is never IDENTICAL to Python True, so the check reported all six of the planner's own conformant reference PDFs as unmarked.",
+      "howFound": "ran the instrument against six PDFs already known to be conformant and got the wrong answer for all six; the dispatch's own claim of '/MarkInfo /Marked true' on those files disagreed with my output, and the disagreement was the finding",
+      "resolution": "compare with `== True`, which BooleanObject implements correctly in both directions",
+      "verifiedBy": "BooleanObject(True) == True -> True; BooleanObject(False) == True -> False"
+    },
+    {
+      "id": "CP1-F2",
+      "severity": "instrument defect, fail-OPEN, caught before it shipped",
+      "finding": "the obvious repair for CP1-F1 is `bool(x)`. pypdf's BooleanObject defines no __bool__, so bool(BooleanObject(False)) is True: a PDF explicitly declaring /Marked false would have read as marked.",
+      "howFound": "probed both repairs against both values instead of only against the value I expected",
+      "resolution": "rejected; `== True` used instead",
+      "verifiedBy": "bool(BooleanObject(False)) -> True, printed and recorded"
+    },
+    {
+      "id": "CP1-F3",
+      "severity": "counting-rule divergence with the dispatch",
+      "finding": "the dispatch states 413 extracted lines of which 268 single-character (64.9%). My rule counts 416 lines / 268 single-character (64.42%) on the same file. The numerator agrees exactly; the denominator differs by 3 blank lines.",
+      "resolution": "not rounded off. Both denominators are reported everywhere the ratio appears (all lines, and non-blank lines).",
+      "planner_figure_status": "substantially correct; the difference is a stated counting rule, not an error"
+    }
+  ],
+  "designDecisionsTaken": [
+    "the order check walks /StructTreeRoot /K depth-first and locates each MCID by evaluating the page content stream's CTM and text matrix, because a tree in the wrong order passes every other check",
+    "the order check must be shown PASSING on a real conformant file before it is trusted, or it is a permanently-red gate (DEV_PROCESS 2.0). Confirmed: 0 inversions on all three pages of the planner's remediation-plan PDF",
+    "every one of the six checks must be observed failing in isolation on a deliberately broken input before any of them is reported as working"
+  ],
+  "goNoGo": "GO. Instrument discriminates: known-bad site plan PASS=false at 64.42%, six known-good references PASS=true at 0.0 to 1.12%."
+}

@@ -1,4 +1,4 @@
-<!-- CANON-PREAMBLE v664d6256 generated 2026-08-19 from _STATE.md -->
+<!-- CANON-PREAMBLE v664d6256 generated 2026-08-20 from _STATE.md -->
 
 ## STANDING DECISIONS (paste into every executor dispatch)
 
