@@ -8,6 +8,30 @@ related: [65_t25_admissibility_enumeration, 61_enforcement_doctrine]
 
 # Property seat handover, 2026-08-20
 
+> **AMENDED 2026-08-20, AFTER A LIVE DB PROBE. READ THIS BLOCK BEFORE THE BODY.**
+> Four statements below were written before the probe and are now wrong. Full results in
+> `_inbox/2026-08-20_db_probe_five_answers.md`; canon is `65_t25_admissibility_enumeration.md`.
+>
+> 1. **The population is 254, not 253, and it is settled.** 254 rows over 254 distinct county
+>    FIPS, complete, zero non-county entities. Everywhere the body says the population is
+>    unverified or gating, it is neither. S-21 scoping is unblocked.
+> 2. **R-7 is FALSIFIED, not the highest-value open item.** The bbox columns are
+>    `double precision`; the kill path required `numeric`. Absence clustering was never
+>    starved. Do not spend a minute on it.
+> 3. **Item 3's database half cannot be built as specified.** There is no `parcel-node`
+>    table — it is an entity_type inside `atoms`, so a foreign key has nothing to reference.
+>    It becomes a self-referential check, or it waits on a per-family key grammar. The
+>    grammar is the real prerequisite and it does not exist. Also: any figure describing 46M
+>    unresolved bindings is an artifact of a badly specified query that conflates key-shape
+>    mismatch with orphaning, and must not be quoted as an orphan count.
+> 4. **Two corrections to the flood and stamp plans.** The reconciliation target is
+>    zone-versus-X, **36,723** cases where one store names a hazard zone and the other says
+>    outside it — NOT AO-versus-AE, which is 129. And Bastrop holds **5** multi-part parcels
+>    of 74,729, so a Bastrop-only stamp gate would almost entirely miss the second geometric
+>    failure mode: **add a second, high-multi-part county.** Statewide multi-part is 69,058
+>    and the unmeasurable population is 4,354,603 null-geom rows, 26.5%.
+
+
 Filed rather than left in conversation, because F-0 established that a handover existing only
 in a transcript is the defect this programme documents. This is the third artifact in a week
 to be lost that way and the practice is now to file first.
