@@ -1,0 +1,119 @@
+GROUP B — the flood chain. STRICTLY SEQUENTIAL. Do not parallelise 5→6→7.
+======================================================================
+
+B5. W-5, W-3, W-4 together. hauska-engine
+    `packages/engine-core/src/flood-hazard-fact/geo.ts`.
+    - W-5 `:167` `isSfhaFlag` is `sfhaTf === "T" || "t" || "true"`. ANYTHING else reads
+      FALSE — a hazard flag that FAILS OPEN. Replace with a parsed enum over the SFHA
+      domain where an unrecognised value RAISES.
+      Its blast radius is larger than the boolean: `:198-200`
+      `const sfha = candidates.find(isSfhaFlag); return sfha ?? candidates[0]!` means an
+      encoding change also silently loses SFHA preference and returns an arbitrary
+      overlapping zone by array order. Fix both.
+    - W-3 `:142` `ringCentroid` and W-4 `:157-163` MultiPolygon-reads-`coordinates[0]`.
+      Build a THIRD implementation, not a winner. Neither existing copy is uniformly
+      correct: flood DE-DUPLICATES the closing vertex (correct) where well-fact does not;
+      well-fact RETURNS NULL on MultiPolygon (correct, honest) where flood silently
+      answers for part one of N without declaring the degradation.
+    - Scope note that changes the work: of three `geometryCentroid` definitions only
+      flood's is invoked. well-fact's is imported and never called; special-district's
+      is not imported at all. Verify that yourself before acting on it.
+
+B6. The containment check. Proven to fail TWO distinct ways: an out-of-parcel point,
+    and a missing ring.
+    GATE, non-negotiable: the check must read the parcel ring from the PARCEL STORE, not
+    from the atom under test. If the ring travels with the atom the check is
+    contaminated exactly as an earlier harness was, and reports clean for the same
+    reason. Demonstrate which store it reads from.
+
+B7. Corpus stamp. PREPARE AND DRY-RUN ONLY. See the hard stop.
+    Per county, serialized, reversible in slices. Three states NEVER collapsed:
+    contained / not-contained / unmeasurable.
+    Sizes are settled and are your gate, not something to re-derive:
+      statewide multi-part 69,058 of 16,428,786; null-geom 4,354,603 (26.5%, the
+      unmeasurable population); Bastrop 48021 has 5 multi-part of 74,729 and 0 null.
+    Bastrop first because it is adjudicated — the stamper must reproduce 229
+    out-of-parcel points EXACTLY or the stamper is wrong.
+    GATE CHANGE: Bastrop alone is NOT sufficient. Five multi-part rows is presence, not
+    exercise. Select a SECOND, high-multi-part county and name why you chose it.
+
+  ####################################################################
+  HARD STOP, GROUP B AND A4. NO PRODUCTION WRITES.
+  The corpus stamp is the first production WRITE of this programme. Any migration,
+  backfill, stamp --apply, UPDATE, INSERT or DDL is OUT OF SCOPE for every agent in
+  this dispatch. Prepare it, dry-run it, produce the diff and the three counts, and
+  STOP. The operator authorises the apply separately. An agent that runs a write has
+  exceeded this dispatch regardless of how correct the write was.
+  ####################################################################
+
+======================================================================
+GROUP C — two independent items. Fan both in parallel with A and B.
+======================================================================
+
+C10. Flood store reconciliation. READ-ONLY.
+    The target is ZONE-VERSUS-X, not AO-versus-AE. Measured: 533,867 parcels in both
+    stores across 10 counties, 496,536 agree, 37,331 disagree. Of those, 36,723 are one
+    store naming a hazard zone and the other saying X (outside an SFHA): AE/X 16,022,
+    A/X 9,145, X/AE 6,732, X/A 4,824. AO/AE is 129 — the case everyone has been citing
+    and it is not the mass.
+    Stores: bake = neondb.place_layer_snapshots where adapter_key='node-facets:tier2',
+    10 counties only, not statewide. Atoms = hauska_mcp.atoms where
+    entity_type='flood-hazard-fact'. Different databases; they share the logical key
+    parcelNodeId / entity_id.
+    Also present and NOT joinable to a parcel: adapter_key='fema:nfhl-flood-zone', 176
+    rows keyed coord:{lat}:{lng}.
+    Deliver: which store is right, per disagreement class, with the evidence. Adjudicate
+    a sample against FEMA NFHL at the true parcel location. Do not assume the atom is
+    right because it won the tier2 adjudication — that was a different question.
+
+C12. Verify the 157 candidate rows. READ-ONLY. hauska-engine d3f3794.
+    A prior pass returned rows S-25 through S-182 over `packages/retrieval`. Exactly ONE
+    (W-30, now A1) was verified at source. The other 157 are one agent's unreviewed
+    claims and are explicitly NOT in canon's count of 48.
+    Your job is not to re-enumerate. It is to VERIFY, and to report how many survive.
+    Sample hard on the rows that would change a decision — the state-1 rows, the rows
+    marked "Yes" in the valid column, and every row whose location is in a serving path.
+    Report per row: confirmed / corrected / rejected, with the source evidence.
+    Two structural remarks in that set matter regardless of row status and should be
+    checked directly: nothing derives `CellMeasurement.measured`, so the package's
+    flagship unmeasured-is-not-zero guard rests on a caller-asserted boolean whose
+    "never inferred" is a comment rather than a mechanism; and the package's only exit-1
+    divergence control is opt-in per invocation and invoked by no workflow.
+
+======================================================================
+YOUR ADVERSARIAL REVIEW — THIS IS THE JOB, NOT AN ADDENDUM
+======================================================================
+
+For every subagent return, before you accept anything:
+  - When it reports something DONE, read the diff. Not the summary of the diff.
+  - When it reports something VERIFIED, ask what it VIOLATED to establish that, and
+    confirm the violation actually failed. A check observed only passing has not been
+    observed working.
+  - Re-derive at least one load-bearing number yourself, from source. Three instruments
+    this week produced defects that only their own authors caught, and no subagent
+    audits itself unprompted.
+  - Check the snapshot it declared against the snapshot it actually read.
+  - For any negative result — "no callers", "no constraint", "not present" — establish
+    what instrument produced it and whether that instrument can establish absence at
+    all. A filtered grep finds constraints that are there, so it disproves
+    "unconstrained" soundly; it CANNOT establish absence. Reliable in one direction only.
+  - This session produced a retracted canon row because someone read lines 39-85 of a
+    function and asserted an absence that lived at line 89. Check for windows.
+
+WHAT TO SEND BACK — ONE REPORT, FOR OPERATOR VERIFICATION
+
+  1. Per item: what landed, with the commit SHA and PR number. What is prepared but not
+     applied. What is blocked and on what.
+  2. Per item: what was VIOLATED to prove it, and what the violation did. If nothing was
+     violated, say so — that item is unproven regardless of its tests.
+  3. Every number a reader could act on, with the query or command that produced it.
+  4. What each subagent got WRONG and how you caught it. If you caught nothing, say
+     that plainly — it means either the work was clean or your review was, and the
+     operator needs to know which you are claiming.
+  5. What YOU got wrong.
+  6. Anything that outranks the work you were given, flagged and NOT acted on.
+
+Do not report anything as further along than it is. A position that reads honestly is
+worth more than a position that reads well.
+
+</user_query>
