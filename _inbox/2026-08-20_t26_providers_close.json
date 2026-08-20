@@ -1,0 +1,98 @@
+{
+  "lane": "t26-providers",
+  "repo": "empressa-trading",
+  "base_sha": "205e7865259a154fe173f95a8d5d845e4bc46232",
+  "head_sha": "50a2be9066eebdb2b19aba4adb84b76c33667a43",
+  "branch": "t26/providers",
+  "pr": 362,
+  "ci_conclusion": "success",
+  "ci_run_id": 32390989410,
+  "ci_head_sha_verified": "50a2be9066eebdb2b19aba4adb84b76c33667a43",
+  "fetch_call_sites_measured": {"lossy": 23, "rich": 1},
+  "holdings_call_sites_measured": {"lossy": 3, "rich": 1},
+  "call_sites_brief_mismatch": "brief said 26 of 27 for _fetch; measured 23 lossy / 1 rich = 24 app-code sites excluding the wrapper's own body. Holdings 3-of-4 MATCHES. Instrument verified against a synthetic fixture covering 11 import forms and 4 grep-false-positive decoys before use.",
+  "rich_sites_handle_reason": true,
+  "rich_sites_evidence": "app/routers/market.py:807 destructures, :848 branches (live_answered = live_status in ('ok','empty')), :861 records fallback_reason live_empty vs live_unavailable",
+  "fork_taken": "A — reference implementation existed; migrated the rest to match it",
+  "lossy_wrappers_deleted": [
+    "fmp._fetch",
+    "fmp.fetch_etf_holdings",
+    "fmp.fetch_us_listings",
+    "fmp.fetch_movers",
+    "fmp.fetch_stock_list",
+    "fmp.fetch_etf_list",
+    "finnhub._get"
+  ],
+  "unresolved_refs_after_deletion": 0,
+  "fred_states": ["ok", "empty", "no_api_key", "http_error", "network_error", "bad_json", "bad_shape"],
+  "fred_states_note": "SEVEN, not the three the brief assumed. http_error also covers an unknown/renamed series id (FRED answers 400). FRED's '.' missing marker is classified as a real observation of absence (empty), never a parse failure. Enumerated by reading the write path.",
+  "finnhub_states": ["ok", "no_api_key", "http_error", "network_error", "bad_json", "bad_shape", "unknown_symbol"],
+  "finnhub_states_note": "Different union from FMP on purpose: no array endpoints here so no empty-array state, and it has unknown_symbol (an empty profile OBJECT) which FMP expresses as an empty array. http_error covers both a 401 bad token and a 429 exhausted free tier.",
+  "equity_universe_fixed": true,
+  "equity_universe_log_level": "warning",
+  "sole_consumer_refuses_empty": true,
+  "sole_consumer_refuses_empty_note": "LITERALLY TRUE BUT CANNOT FIRE, which changes the severity upward. app/jobs/handlers.py:_run_equity_backfill does return {available:false, reason:'no tickers resolved'} on an empty list. But the watchlist (_WATCHLIST_CORE + _THEME_UNIVERSE = 63 symbols, measured) is unioned in unconditionally BEFORE the liquid legs, so a vendor outage never produced an empty universe for that guard to catch. It produced a plausible SHORT one that backfilled the wrong symbols and reported success. The prior seat's fail-safe reading does not hold. Fixed by refusing at the assembler.",
+  "getattr_default_count": 138,
+  "getattr_sizing_note": "138 getattr(x, attr, DEFAULT) calls (third positional arg only) under app/, tests excluded. Zero local rebindings of the getattr builtin, so no false positives from shadowing. 49 are getattr(settings|get_settings(), ...) = config-default. Hand-classified the 28 with a non-None/bool/empty default: 20 config-default, 6 claim-default, 2 structural adapters. The 6 claim-defaults: app/intelligence/news_feed.py:48 getattr(resp,'status',200) treats a missing status as HTTP 200 (fail-open); app/governance/licensing.py:287 and :313 classify an atom with no family as Family.reference for a LICENSING decision; app/marketdata/microstructure.py:718,719,744 turn a missing book size / trade size into a fabricated 0 that enters imbalance and volume math. NOT extrapolated: the 92 None/False/''-defaulted sites are a different population and need their own read. Not fixed in this lane.",
+  "pytest_baseline": "4968 passed, 2 skipped, 21 deselected (exit 0, 1019s, on unmodified 205e7865)",
+  "pytest_after": "4990 passed, 2 skipped, 21 deselected (exit 0, 937s, on 50a2be90)",
+  "pytest_environment_note": "Local is Python 3.14.0 on win32; CI is Python 3.12 on ubuntu-latest running `python -m pytest -q` from apps/cockpit/backend. All 21 changed .py files re-parsed against the 3.12 grammar (ast feature_version) — zero incompatibilities. Provider tests re-run under a plugin that raises on any non-loopback socket connect, across both FMP_API_KEY unset and set-to-junk: 192 passed, no verdict changed by either variable. CI green is the authoritative cross-environment evidence.",
+  "defects_reintroduced": [
+    {
+      "defect": "restored the one-line _fetch wrapper and fetch_etf_holdings on fmp",
+      "test": "test_provider_failure_vs_empty.py::test_lossy_wrappers_are_not_reintroduced and test_etf_holdings.py::test_rows_only_wrappers_are_GONE",
+      "went_red": true,
+      "red_output": "AssertionError: fmp._fetch returned rows without the reason and was deleted; use the _result/_status form / assert not True where True = hasattr(fmp_mod, '_fetch') — 2 failed"
+    },
+    {
+      "defect": "restored the `or []` fallback in equity_universe._liquid_symbols (return extract(rows or []) instead of raising)",
+      "test": "test_provider_failure_vs_empty.py::test_universe_REFUSES_when_spy_holdings_is_a_vendor_failure, ::test_universe_failure_is_logged_at_WARNING_not_debug, test_equity_universe_and_handler.py::test_assemble_equity_universe_REFUSES_when_a_leg_is_unobserved",
+      "went_red": true,
+      "red_output": "Failed: DID NOT RAISE EquityUniverseUnavailable (x3) — 3 failed, 30 passed"
+    },
+    {
+      "defect": "lowered the vendor-failure log from warning back to debug, keeping the refusal intact, to prove the log-level guard is independently load-bearing",
+      "test": "test_provider_failure_vs_empty.py::test_universe_failure_is_logged_at_WARNING_not_debug",
+      "went_red": true,
+      "red_output": "AssertionError: the record must be at WARNING or above; DEBUG is below the production level and leaves no trace. Got: ['DEBUG', 'DEBUG'] — 1 failed"
+    }
+  ],
+  "additional_defects_found_and_fixed": [
+    "app/universe/sync.py mass-delisted the ENTIRE universe off one FMP failure: fetch_stock_list returned [] on any error, everything absent from `incoming` was set is_active=False with its alias era closed, and the function returned available:true with a delisted count in the thousands. Durable destructive mutation driven by a fabricated empty. HIGHEST SEVERITY finding of the lane.",
+    "fmp.fetch_quotes cached a fabricated absence: a batch-quote 5xx wrote None ('known absent') for every requested symbol, blanking the whole watchlist for the cache TTL.",
+    "fred.latest/series wrote failures into the 3h in-process cache, pinning a macro series blank long after FRED recovered — directly beneath a comment promising failures were never persisted (true of Redis, false of the process cache beside it).",
+    "equity_universe._extract_symbols_from_holdings read symbol/ticker but not `asset`; FMP /etf/holdings answers {symbol: <the ETF>, asset: <the holding>} on some responses, so a full 500-row SPY payload yielded the fund's own ticker rather than its holdings and looked exactly like an empty fund.",
+    "phase2_backfill wrote reason:'no_holdings' into a DURABLE job cursor for a 5xx, a timeout and a genuinely empty basket alike.",
+    "test_movers_honest_empty_without_fmp fired a real HTTPS request to financialmodelingprep.com every run and passed because the unauthenticated response carried no rows. Reproduced on 205e7865 to confirm pre-existing.",
+    "pre-existing import cycle equity_universe -> jobs/__init__ -> handlers -> equity_universe_seed -> equity_universe made app.marketdata.equity_universe unimportable as a first app import; broken by deferring one import."
+  ],
+  "regression_i_introduced_and_fixed": "market_rates was repointed from fred.latest to fred.latest_result, which moved it off the seam test_rates_board.py patched, so the test silently fell through to the LIVE FRED API and went red. Caught by running the full suite, not by reasoning. Fixed in 50a2be90, then swept with the ast instrument for every other test patching a seam this branch moved (test_adaptive, test_fred, test_point_in_time still call the value-only forms and are unaffected; nothing patches finnhub.fetch_panel).",
+  "instrument_false_negatives_found": [
+    "files with a UTF-8 BOM failed to parse and were silently skipped (2 files); fixed with utf-8-sig",
+    "monkeypatch.setattr(<other_module>.fmp, 'name', ...) — target reached through another module's re-export — was invisible to a binding-resolved visitor",
+    "unittest.mock.patch('app.marketdata.equity_universe.fmp.fetch_us_listings') dotted STRING targets were invisible",
+    "the last two hid 21 real references; the hardened instrument found them and the migration would otherwise have shipped a broken suite"
+  ],
+  "leave_behind": [
+    {
+      "item": "fmp.fetch_splits and fmp.fetch_splits_calendar still return [] on failure. They feed the split-correction backfill in app/jobs/equity_deep_daily_backfill.py, which DOES mutate durable state: a vendor outage reads as 'no splits' and leaves prices unadjusted. Internals were migrated to _fetch_list but the public contract is unchanged, because the consumer is outside this lane and adding an uncalled _result variant would only be a dormant mechanism.",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "Test-suite hermeticity is unswept. Two tests were found firing live vendor requests (FMP movers, FRED rates board) by running 10 test files under a socket guard that raises on non-loopback connects; roughly 90 further test files were never swept. CI has network, so CI green does not prove hermeticity. The guard is 60 lines and lives at the session scratchpad as nonet.py (deliberately NOT committed: wiring it into CI without a full sweep would red an unknown number of pre-existing tests).",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "138 getattr(x, attr, DEFAULT) sites sized but not fixed, per the brief. Six named claim-defaults listed in getattr_sizing_note; the 92 None/False-defaulted sites are unread.",
+      "owner": "another lane (enumeration owner)",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "app/routers/fundamentals.py still returns price/high52w/low52w as fabricated 0.0 in its last-resort shell. Now DECLARED (available:false, unavailable_reason, placeholder_numbers:true) but the numbers themselves remain, because the frontend types those fields as numbers and retyping them is a frontend change outside this lane.",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "lane": "t26-refusal",
+  "repo": "smart-markets",
+  "base_sha": "a346524426f448ceac8b8102447e47974c81b32f",
+  "head_sha": "468be6c7d6b47639c6a4dc9fb97b7bb440806560",
+  "branch": "t26/refusal",
+  "pr": 23,
+  "ci_conclusion": "success",
+  "finding_upheld": true,
+  "rebuttal": null,
+  "401_verdict": "lookup-failed",
+  "403_verdict": "lookup-failed",
+  "split_justification": "Same verdict because the verdict axis is 'did we look' and neither searched a record; different basis because a 401 was never identified and is answered by presenting a credential while a 403 was identified and refused and is not, so a consumer cannot otherwise tell a retry from an entitlement request.",
+  "absent_verified_call_sites": [
+    {
+      "file": "apps/api/src/upstreams/smart-files.ts",
+      "line": 262,
+      "lookup_happened": false,
+      "verdict": "incorrect",
+      "fixed": true,
+      "reason": "refusedRoom. The store refused on 401/403 before searching, so nothing was looked at. The scope was additionally narrowed to the caller's own entitlement, making the absence true by shrinking it to the empty set. Now lookup-failed with the entitlement narrowing removed and the honest 'statement about the caller' sentence preserved."
+    },
+    {
+      "file": "apps/api/src/upstreams/smart-files.ts",
+      "line": 488,
+      "lookup_happened": false,
+      "verdict": "incorrect",
+      "fixed": true,
+      "reason": "room, the empty branch. Correct when the store genuinely answered empty, but a per-folder refusal at line 443 was dropped with a bare continue recording nothing, so a scope whose every folder was refused fell through to 'the files service answered and holds no documents under this scope'. Refusals are now recorded; this branch is reached only with a ServedAnswer and no recorded refusal."
+    },
+    {
+      "file": "apps/api/src/upstreams/smart-files.ts",
+      "line": 674,
+      "lookup_happened": false,
+      "verdict": "incorrect",
+      "fixed": true,
+      "reason": "fetchDocument. Conflated two states in one condition: 'status is not held' (a real determination, stays absent-verified) and 'status IS held but the payload omits accessPolicy or contentCid' (the lookup did not complete). The second said 'holds no served version' about a record the store had just called held. Split; the second is now lookup-failed, matching describeDocument's treatment of the identical shape."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 582,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "priceBlock empty-history branch, gated behind history.ok. A refusal maps to failure kind 'refused' which routes to lookupFailed, so it cannot reach here."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 676,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "liveQuoteDetermination, quote route answered HTTP 200 with last: null. A determination against a served answer."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 682,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "liveQuoteDetermination, route served a last with no observation timestamp. Basis relays what was served rather than claiming nothing exists."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 715,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "historyBlock, gated behind history.ok, zero bars returned from a served answer."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 865,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "depthBlock, gated behind depth.ok, HTTP 200 with the route's own empty shape and no levels."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 922,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "tapeBlock, gated behind tape.ok, HTTP 200 with no prints."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 1007,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "volumeProfileBlock, gated behind profile.ok, HTTP 200 with no price levels."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit.ts",
+      "line": 251,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "resolveSymbol's absent helper, reached only after lookup.ok. security-master maps 401/403 to failure kind 'credential-rejected' which routes to lookupFailed, and the docstring states that downgrading a refusal would publish an absence never established. This file is the model the room read should have followed."
+    },
+    {
+      "file": "apps/api/src/access/policy.ts",
+      "line": 121,
+      "lookup_happened": true,
+      "verdict": "correct",
+      "fixed": false,
+      "reason": "NOT an absentVerified call site and therefore invisible to the compiler enumeration; it builds the verdict as a literal with a ?? default. Read anyway. Correct: it returns early on absent/not-applicable so it runs only when a lookup demonstrably succeeded, it inherits rather than upgrades an upstream lookup-failed, and its basis discloses the withheld count so a trimmed room cannot read as an empty one. This disclosure is what separates it from the refusedRoom defect."
+    }
+  ],
+  "enumeration_method": "TypeScript compiler API over apps/api/tsconfig.check.json, resolving each CallExpression's callee to its declaration symbol via the type checker and dealiasing imports. Required rather than optional: smart-files.ts declares a module-local function named lookupFailed that shadows the imported constructor's name, and a text search conflates the two. 11 absentVerified call sites found across 3 files; line numbers above are as of base_sha.",
+  "type_level_constraint": "landed",
+  "type_level_reason": "verifiedAbsence requires a ServedAnswer whose brand is a module-private unique symbol minted only by servedAnswer(response) on a response the upstream actually served, so a refusal branch cannot construct one and fails to compile; smart-files.ts no longer imports absentVerified at all.",
+  "type_level_verified_by_violation": "Putting verifiedAbsence back into refusedRoom fails typecheck with: src/upstreams/smart-files.ts(335,14): error TS2554: Expected 2 arguments, but got 1.",
+  "type_level_limits": "The witness stops accidental construction, not a deliberate `as ServedAnswer` cast, and the constraint is repo-wide only for smart-files.ts: absentVerified remains exported and callable without a witness from cockpit-market.ts and cockpit.ts, which this lane may not edit. See handoff.",
+  "starved_predicate_shipped": false,
+  "starved_predicate_note": "verifiedAbsence and servedAnswer are both in gating positions on every path that can emit the verdict, not exported detectors awaiting a caller. isRefusalAnswer is a type guard consumed at six branch points in the same file. No exported predicate was shipped uncalled, avoiding a third repeat of TW-67 and TW-69.",
+  "test_asserted_the_defect": true,
+  "test_asserted_where": "apps/api/tests/smart-files-adapter.test.ts:143",
+  "test_asserted_detail": "The test was named 'a store refusal is absent-verified in an entitlement-bounded scope, never lookup-failed' and asserted verdict === 'absent-verified' plus a scopeSearched matching /bounded to records the files service serves/. It passed, so the suite pinned the defect in place and fixing the adapter would have read as a regression. Replaced with tests whose expected values are derived from the contract's own stated definitions in packages/contract/src/absence.ts rather than from current output. Note the same file already asserted the CORRECT rule 124 lines later, at 'a store refusal on the pass-through is a refusal, not an absence'.",
+  "unwired_upstream_constant_basis": "left, because the verdict lookup-failed is correct so no false claim about the world is served (this is not the defect class); the declared-but-never-serving state is already ratified practice recorded twice in packages/contract/src/version.ts for the drivers layer; the correct remedy for the constant basis is the version scope table in packages/contract/src/version.ts which is outside this lane's file boundary; and the drivers lane is concurrently changing this function's user set.",
+  "handoff": "Two items, both in files this lane was told not to edit. (1) DURABILITY, NOT A BUG: all eight remaining absentVerified call sites (cockpit-market.ts:582,676,682,715,865,922,1007 and cockpit.ts:251) are correct today but are not held to the witness. To make the constraint repo-wide, migrate them to verifiedAbsence by threading a ServedAnswer out of the ok-branch of MarketOutcome and SecurityMasterResult (both already discriminate a refusal into a distinct failure kind, so the witness has a natural mint point), then un-export absentVerified from apps/api/src/absence.ts so verifiedAbsence is the only way to reach the verdict. Until that happens the constraint binds only in smart-files.ts and the rest is convention. (2) packages/contract/src/version.ts: to retire unwiredUpstream's constant basis properly, the version scope table needs to distinguish a layer that is declared-and-unwired at this version from one that is wired and failing right now, so the basis can name the version instead of repeating a fixed string; today a consumer cannot tell 'synthesis is permanently unwired at v0.1' from 'synthesis broke this morning' and only the second is retryable. No change to either file was required for this lane's fix, which codes against their current shape.",
+  "defects_reintroduced": [
+    {
+      "defect": "absentVerified restored in refusedRoom with the original narrowed scope and original basis string, reproducing the production behaviour verbatim",
+      "test": "apps/api/tests/smart-files-adapter.test.ts: 'a 401 is lookup-failed, because a refusal searched nothing'; 'a 401 says the caller was never authenticated, and a 403 says they were'; 'NEGATIVE: no refusal anywhere in the adapter can produce absent-verified'",
+      "went_red": true,
+      "red_output": "tests 203 / pass 200 / fail 3. AssertionError [ERR_ASSERTION]: the folder listing is refused with 401: a refusal was reported as a verified absence { actual: 'absent-verified', expected: 'absent-verified', operator: 'notStrictEqual' }"
+    },
+    {
+      "defect": "bare `continue` restored in the folder fan-out so a listed-then-refused folder is swallowed without record",
+      "test": "apps/api/tests/smart-files-adapter.test.ts: 'folders listed and then refused are never reported as a verified emptiness'; 'a room missing a refused folder is partial, never populated'; 'NEGATIVE: no refusal anywhere in the adapter can produce absent-verified'",
+      "went_red": true,
+      "red_output": "tests 203 / pass 200 / fail 3, the three tests named above"
+    },
+    {
+      "defect": "verifiedAbsence called from refusedRoom without a ServedAnswer, to confirm the type-level constraint is not decorative",
+      "test": "tsc --noEmit -p apps/api/tsconfig.check.json",
+      "went_red": true,
+      "red_output": "src/upstreams/smart-files.ts(335,14): error TS2554: Expected 2 arguments, but got 1."
+    }
+  ],
+  "verification": {
+    "typecheck": "pass",
+    "lint": "pass",
+    "format_check": "pass on the three changed files; the repo-wide run reports 115 files locally because this Windows checkout has core.autocrlf=true and no .gitattributes, so the working tree is CRLF while prettier defaults to endOfLine lf. Confirmed a working-tree artifact rather than a real failure: the committed blob for an untouched file (README.md) is LF-clean, and CI on ubuntu ran format:check green. Prettier did find and fix four REAL formatting defects in my files underneath that noise, so the CRLF diagnosis was not used to skip the check.",
+    "api_tests": "203 pass / 0 fail",
+    "contract_tests": "86 pass / 0 fail",
+    "ui_tests": "9 pass",
+    "ui_build": "pass",
+    "web_tests": "21 pass",
+    "web_build": "pass",
+    "structural_gates": "all six greps from .github/workflows/ci.yml executed verbatim locally, all OK",
+    "ci_jobs": "build-test: success; structural-gates: success (run 32385914719, headSha 468be6c7d6b47639c6a4dc9fb97b7bb440806560)"
+  },
+  "files_changed": [
+    "apps/api/src/absence.ts",
+    "apps/api/src/upstreams/smart-files.ts",
+    "apps/api/tests/smart-files-adapter.test.ts"
+  ],
+  "forbidden_files_touched": [],
+  "leave_behind": []
+}

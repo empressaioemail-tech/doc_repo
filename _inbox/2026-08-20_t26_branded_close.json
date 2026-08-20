@@ -1,0 +1,67 @@
+{
+  "lane": "t26-branded",
+  "repo": "smart-markets",
+  "base_sha": "234b828a935eea15ffea181d391b98b08dc95b7d",
+  "head_sha": "95af94a",
+  "branch": "t26/branded",
+  "pr": 27,
+  "ci_conclusion": "SUCCESS",
+  "shape_rows_measured": 74,
+  "matches_73": false,
+  "how_measured": "TypeScript AST over packages/contract/src counting every syntactic position holding a string-valued schema (object property, array element, union member), cross-checked against a traversal of the compiled Zod graph; 72 if the two union members inside GoverningNodeIdSchema's own declaration are excluded, so 73 is bracketed but not exactly reproducible",
+  "brands_added": [
+    "NonEmptyString",
+    "IsoDateTime",
+    "IsoDate",
+    "SecurityNodeId",
+    "IssuerNodeId",
+    "OptionNodeId",
+    "SmartFileEntityId",
+    "CitationRef"
+  ],
+  "defeat_attempts": 27,
+  "defeat_successes": 5,
+  "defeats_that_worked": [
+    "\"\" as NonEmptyString (direct cast)",
+    "{ ...doc, title: \"\" as NonEmptyString } (spread plus cast)",
+    "JSON.parse(\"\\\"\\\"\") as NonEmptyString (cast through unknown JSON)",
+    "\"iss_...\" as unknown as SecurityNodeId (double cast defeats identifier separation)",
+    "Object.assign({}, doc, { title: \"\" }) (intersection return type satisfies the branded field)"
+  ],
+  "adoption_sites": 195,
+  "transposition_bug_made_unrepresentable": true,
+  "transposition_evidence": "packages/contract/tests/contract.test.ts :: 'a SecurityNodeId and an IssuerNodeId are not interchangeable to the compiler'; the live site is describeNode in apps/api/src/upstreams/cockpit.ts, which reads both node ids out of one security-master payload one field apart and assigned each to the other's field with no compiler objection before this change. Both directions were written into the adapter and refused: TS2322 'Property SecurityNodeId is missing in type { IssuerNodeId: true; }' and its mirror.",
+  "payload_neutral": true,
+  "neutrality_evidence": "the schema's decision boundary was enumerated over 3,435 payloads (every string, number and boolean leaf of all five committed fixtures mutated one at a time to \"\", \" \", \"x\", 0, -1, 1e309, null, plus the safeBar boundary) before and after the change; the two result files are byte-identical under diff",
+  "value_constraints_claimed": false,
+  "format_check_baseline": "120 files (whole tree, CRLF working-copy noise; established on the unmodified tree before any edit)",
+  "format_check_after": "88 files; exactly the 32 files this lane touched dropped out of the list, and prettier --check over the LF index blobs of all 32 (the byte content CI checks out) reports 'All matched files use Prettier code style!'",
+  "defects_reintroduced": [
+    {
+      "defect": "removed .min(1) from NonEmptyStringSchema, keeping the brand, so an empty string satisfies the type at runtime",
+      "test": "packages/contract :: 'a partial layer whose absence states no scope FAILS' and 'frequency and releaseMatch take a value or a stated absence, and nothing else'",
+      "went_red": true
+    },
+    {
+      "defect": "removed the brand from NonEmptyStringSchema, so the empty string is assignable to a contract field again",
+      "test": "npm run typecheck :: contract.test.ts(925,3): error TS2578: Unused '@ts-expect-error' directive",
+      "went_red": true
+    },
+    {
+      "defect": "gave IssuerNodeIdSchema the SecurityNodeId brand, making the two identifiers interchangeable again",
+      "test": "npm run typecheck :: three TS2578 unused-directive errors at contract.test.ts 649, 651, 653 on the transposition test",
+      "went_red": true
+    },
+    {
+      "defect": "transposed node.id and node.issuerNodeId in describeNode (apps/api/src/upstreams/cockpit.ts), both directions",
+      "test": "npm run typecheck --workspace @smart-markets/api :: TS2322 on each direction",
+      "went_red": true
+    },
+    {
+      "defect": "added a `computed:` key to packages/contract/src, to confirm the CI structural gate can fail rather than only observing it pass",
+      "test": "structural-gates :: 'v0.1 must not define a computed market layer'",
+      "went_red": true
+    }
+  ],
+  "leave_behind": []
+}

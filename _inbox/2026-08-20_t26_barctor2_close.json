@@ -1,0 +1,391 @@
+{
+  "lane": "t26-barctor2",
+  "repo": "empressa-trading",
+  "base_sha": "d61644b4412ad98fccac582e99b7cfec1901e7f1",
+  "base_sha_at_branch_creation": "506fdf76ffa40a4270255b1edf6e992c412618c9",
+  "base_moved_during_lane": "origin/main advanced to 5ba6a398 (PR #361, the grader-abstention lane) WHILE my CI was green against 506fdf76. Green against a stale base is not sufficient, so the branch was updated via gh api update-branch (rebase is blocked) to merge commit a058590b and CI re-run against the current base. #361 touched app/bots/runner.py, the one file we both edited; the merge was clean and both changes survived, verified by reading the merged file.",
+  "head_sha": "f022d6fcee326106a75d04ed1bfb8f681be04427",
+  "branch": "t26/barctor2",
+  "pr": 364,
+  "ci_conclusion": "SUCCESS -- head f022d6fc, all five checks: Python tests (cockpit backend) SUCCESS/pass, Frontend build (cockpit web) SUCCESS/pass, Frontend tests (cockpit vitest) SUCCESS/pass, Gitleaks security scan SUCCESS/pass, Windows .exe SKIPPED (release tags only). This is the first green that was taken WITH the NETGUARD hermeticity guard armed; the earlier greens on 7548047f/a058590b predated PR #363 and so had not established hermeticity for the tests this lane added.",
+  "bar_predicate_clauses": [
+    "prices finite: inf/-inf/nan refused via allow_inf_nan=False; pydantic's bare float ACCEPTS all three, verified on 2.10.4 (CI) and 2.12.5 (local), so this is a real tightening and not a decoration",
+    "low <= min(open, close)",
+    "high >= max(open, close)",
+    "high >= low is a THEOREM of the two ordering clauses, kept only for its message when it co-fires, explicitly NOT counted as a guard because a check that cannot fire alone is dormant",
+    "volume finite and non-negative (ge=0.0)",
+    "volume EXEMPT from the zero clause: a forming session legitimately reports zero traded and a naive rule would refuse live served data",
+    "zero clause, CONDITIONAL: if no price field is negative, every price field must be strictly positive. Conditional because WTI May-2020 settled negative and the exchange cleared it. Stated as positivity rather than sibling disagreement because a literal disagreement reading would ADMIT an all-zero bar. -0.0 is caught since -0.0 == 0 is true while -0.0 < 0 is false",
+    "domain clause (second derivation): a non-negative-capable asset class may not carry a price <= 0"
+  ],
+  "diverged_from_twin_predicate": "Two divergences, both stated with reasons. (1) NO BRAND. The twin needs one because TypeScript is structural, so an object literal satisfying the shape IS the type and only a brand forces every route through the predicate. Python classes are nominal and pydantic runs validators on __init__, so Bar(...) is already the only door; the single documented bypass, model_construct, appears nowhere in app/ or tests/ and a test keeps it that way. (2) VOLUME IS REQUIRED, not optional. The twin made v optional to keep absent and zero apart. Widening it here is 45 read sites plus the bar_store DB column plus the served JSON contract, beyond this lane; safe_bar therefore REFUSES a None volume rather than substituting 0.0, and the absent-vs-zero gap is named in the model docstring and in leave_behind.",
+  "second_derivation": "bar_domain_refusal(bar, asset_class). The asset class is derived from the SYMBOL, which this process asked for and which comes from the securities/config side; the prices are derived from the VENDOR payload. Two parties: a vendor fabricating an all-zero bar cannot also change the symbol it was requested under, and the registry cannot invent a price. Weaker than the twin's security-master because the symbol is our request rather than an independent master record, but it is genuinely two upstreams and neither can satisfy both sides alone. It is FED (not starved) at app/providers/fmp.py x4, app/backtest/data.py and app/marketdata/crypto_history.py, and a test asserts some app/ caller supplies asset_class. The universal predicate _bar_refusals is internal consistency only, and says so.",
+  "bar_construction_sites": [
+    {
+      "file": "app/providers/fmp.py",
+      "line": 645,
+      "disposition": "refuses",
+      "note": "fetch_intraday; was `_as_float(...) or 0.0`"
+    },
+    {
+      "file": "app/providers/fmp.py",
+      "line": 697,
+      "disposition": "refuses",
+      "note": "fetch_intraday_day; was `or 0.0`"
+    },
+    {
+      "file": "app/providers/fmp.py",
+      "line": 942,
+      "disposition": "refuses",
+      "note": "fetch_daily; was `or 0.0`"
+    },
+    {
+      "file": "app/providers/fmp.py",
+      "line": 1496,
+      "disposition": "refuses",
+      "note": "fetch_eod_full_history; was `or 0.0`"
+    },
+    {
+      "file": "app/backtest/data.py",
+      "line": 205,
+      "disposition": "refuses",
+      "note": "_fmp_rows_to_bars; was `float(r.get('open') or 0.0)`"
+    },
+    {
+      "file": "app/marketdata/crypto_history.py",
+      "line": 89,
+      "disposition": "refuses",
+      "note": "_fmp_rows_to_bars duplicate; was `float(... or 0.0)`"
+    },
+    {
+      "file": "app/marketdata/bar_store.py",
+      "line": 168,
+      "disposition": "refuses",
+      "note": "read_bars; STORE read-back, where a zero written before the predicate existed would arrive. Skips + logs rather than raising"
+    },
+    {
+      "file": "app/research/bar_cache.py",
+      "line": 59,
+      "disposition": "refuses",
+      "note": "_df_to_bars; persisted frame read-back, same reasoning"
+    },
+    {
+      "file": "app/marketdata/client.py",
+      "line": 400,
+      "disposition": "refuses",
+      "note": "safe_bar_row delegating to safe_bar (factory internal)"
+    },
+    {
+      "file": "app/marketdata/client.py",
+      "line": 372,
+      "disposition": "factory",
+      "note": "the Bar(...) inside safe_bar (factory internal)"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 375,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 449,
+      "disposition": "factory",
+      "note": "settlement overlay; real code widens high/low so it cannot violate ordering"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 485,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 564,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 663,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1121,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1182,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1257,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1262,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1544,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1625,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1635,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1681,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_client.py",
+      "line": 1691,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_equities.py",
+      "line": 114,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_equities.py",
+      "line": 186,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/databento_equities.py",
+      "line": 405,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/equity_sameday.py",
+      "line": 231,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/equity_sameday.py",
+      "line": 234,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/equity_sameday.py",
+      "line": 306,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/equity_session.py",
+      "line": 109,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/equity_session.py",
+      "line": 114,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/crypto_history.py",
+      "line": 126,
+      "disposition": "factory",
+      "note": "_resample_4h aggregation over validated bars"
+    },
+    {
+      "file": "app/marketdata/backfill.py",
+      "line": 109,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/macro_sources.py",
+      "line": 70,
+      "disposition": "factory",
+      "note": "DXY/VIX close-only; high=max(open,close) so coherent by construction, both series strictly positive"
+    },
+    {
+      "file": "app/marketdata/marketdataapp_client.py",
+      "line": 185,
+      "disposition": "factory"
+    },
+    {
+      "file": "app/marketdata/fake_client.py",
+      "line": 89,
+      "disposition": "factory",
+      "note": "offline test fixture"
+    },
+    {
+      "file": "app/jobs/equity_deep_daily_backfill.py",
+      "line": 528,
+      "disposition": "factory",
+      "note": "reads rows already validated by fetch_eod_full_history"
+    },
+    {
+      "file": "app/signal/heatmap.py",
+      "line": 235,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/signal/heatmap.py",
+      "line": 240,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/signal/anticipation.py",
+      "line": 571,
+      "disposition": "factory",
+      "note": "aggregation over validated bars"
+    },
+    {
+      "file": "app/research/bar_cache.py",
+      "line": 53,
+      "disposition": "refuses",
+      "note": "counted once above; listed for completeness"
+    }
+  ],
+  "bar_construction_sites_note": "42 sites enumerated with Python ast resolving aliased imports; app/backtest/types.Bar is a RE-EXPORT of app/marketdata/client.Bar, which a text search would have counted as a second type. 33 construct through the validating model, 9 route through the refusing factory. 23 of the model sites are not inside a try/except that catches the refusal; all but the two store read-backs aggregate over ALREADY-VALIDATED bars, which was not merely asserted but fuzzed: 200,000 random aggregations (including negative-price and zero-volume members) produced zero refusals. The two store read-backs were converted to skip-and-log because persisted data can carry a zero written before the predicate existed.",
+  "refusal_log_level": "WARNING, emitted from INSIDE the model validator rather than from callers. Load bearing: pydantic ValidationError subclasses ValueError and most adapters wrap construction in `except (TypeError, ValueError): continue`, so a caller-side record would be missing on exactly the paths that need it. main.py sets the root logger to WARNING, so anything lower leaves no trace in production. A test reproduces the caller-side swallow and asserts the record survives it.",
+  "paper_engine_fixed": true,
+  "runner_1271": "fixed",
+  "iv_surface_fixed": true,
+  "iv_absence_shape": "surface cells are JSON null where the solver returned no solution; atm_strike and underlying_price are null when the price lookup failed, and the empty payload carries null rather than 0.0 for both.",
+  "atm_strike_fallback_fixed": true,
+  "point_values_keys": 51,
+  "micros_present": true,
+  "hermeticity_checked_on_touched_seams": true,
+  "pytest_baseline": "5019 passed, 0 failed (2 skipped, 21 deselected, 868s)",
+  "pytest_after": "5111 passed, 0 failed (2 skipped, 21 deselected, 791s), run ALONE on py3.14 against commit f022d6fc with __pycache__ cleared and the working tree untouched for the duration of the run. Count differs from the earlier 5060 because PR #363 (hermeticity) merged in and added its own tests. CI is the authoritative environment (py3.12) and is green on the same commit.",
+  "defects_reintroduced": [
+    {
+      "defect": "Bar fields back to bare float and the validator neutered (annotation, not validated construction)",
+      "test": "tests/test_t26_value_fabrication.py -k 'bar_refuses or bar_validator'",
+      "went_red": true,
+      "detail": "10 failed, 3 passed"
+    },
+    {
+      "defect": "fmp.fetch_daily substitutes a missing vendor price with `or 0.0`",
+      "test": "tests/test_t26_value_fabrication.py -k 'fmp_fetch_daily or no_price_position'",
+      "went_red": true,
+      "detail": "3 failed, including the structural write-path check"
+    },
+    {
+      "defect": "paper engine _point_value returns POINT_VALUES.get(sym, 1.0)",
+      "test": "tests/test_t26_value_fabrication.py -k 'point_value or place_rejects or apply_position_fill'",
+      "went_red": true,
+      "detail": "4 failed, 3 passed"
+    },
+    {
+      "defect": "runner._own_realized sizes an unknown root at 1.0 $/point",
+      "test": "tests/test_t26_value_fabrication.py::test_own_realized_returns_an_absence_for_an_unknown_root",
+      "went_red": true,
+      "detail": "1 failed"
+    },
+    {
+      "defect": "IV surface serves an unsolved cell as iv_map.get(k, 0.0)",
+      "test": "tests/test_t26_value_fabrication.py::test_unsolvable_iv_is_served_as_an_absence_not_as_zero",
+      "went_red": true,
+      "detail": "1 failed"
+    },
+    {
+      "defect": "IV surface asserts strikes[0] is ATM when the spot lookup failed",
+      "test": "tests/test_t26_value_fabrication.py::test_atm_strike_is_an_absence_when_the_price_lookup_failed",
+      "went_red": true,
+      "detail": "1 failed"
+    },
+    {
+      "defect": "the known-root fill test asserts only that the rejection reason omits 'point value', so it passes whether or not the order fills",
+      "test": "tests/test_t26_value_fabrication.py::test_place_still_fills_a_known_futures_root",
+      "went_red": true,
+      "detail": "two independent violations, both RED: no-quote vendor, and multiplier forced to 1.0"
+    }
+  ],
+  "instrument_failures_caught": [
+    "The first ast enumerator silently skipped two BOM-prefixed files (utf-8 vs utf-8-sig), so its negative result was wrong before it was fixed.",
+    "The reintroduction harness reported pytest EXIT 4 for three defects and I initially printed that as RED. Exit 4 is a pytest USAGE error from -k quoting under shell=True on Windows, not a test failure. Re-run with argv as a list; all three then went genuinely red. A convenient-looking exit code is a reason to distrust the instrument.",
+    "The same harness left STALE BYTECODE: shutil.move restores the backup's older mtime, and one full-suite run then executed cached .pyc for runner.py, reporting a false failure of my own test while inspect.getsource showed the new source. Clearing __pycache__ resolved it. All reported numbers come from runs with __pycache__ cleared.",
+    "A `gh pr checks` wait loop compared state against 'PENDING' when the real in-flight value is 'IN_PROGRESS', so it exited immediately without waiting. Caught before its output was read as a CI result.",
+    "One full-suite run exited with code 0 but its output stopped at 64% with no summary line: the pipeline exit code was tail's, not pytest's, and pytest had died under contention. Re-run with full output captured to a file.",
+    "My own test asserted nothing about the path it named, and I did not catch it -- NETGUARD did, after landing mid-lane. My baseline and after runs both predated the guard, so 'green' had not established hermeticity for the tests I added."
+  ],
+  "handoff": "runner.py carries SEVEN more POINT_VALUES.get(sym, 1.0) fabrications that no lane owns, at approximately lines 1010 (unrealized MTM accumulation feeding the daily-loss breaker), 1067 (risk-at-stop as a fraction of NAV), 1177 (R-multiple), 1433 (realized P&L), 2005 (daily-loss-limit check), 2481 and 2916 (sizing/signal context). The coordinator verified 1010 and 1067 at source and they are real: 1067 computes total += abs(price - st.stop_price) * pv * abs(qty) then returns total / nav. CORRECTION TO MY EARLIER REPORT, which was OVERSTATED: I wrote 'a /ES position's risk is understated 50x'. That is WRONG and I verified the correction at source rather than accepting it. /ES IS in POINT_VALUES at 50.0, so the default never applies to it; /ES is not even in the bot universe. The exposure is any futures symbol ABSENT from the 51-key table, not /ES. BOUND, verified at runtime: ALLOWED_SYMBOLS has 23 entries (15 futures roots, all micro/mini), ALL 23 are present in POINT_VALUES, normalize_universe keeps only ALLOWED_SYMBOLS, and the only BotPositionState write site (runner.py:2886) takes its symbol from the runner's normalized-universe iteration. So for any symbol currently in the catalog the 1.0 default is STRUCTURALLY UNREACHABLE and the defect is LATENT. THE OPEN QUESTION, stated rather than answered by assumption: whether a PERSISTED BotPositionState row can carry a symbol that is no longer in POINT_VALUES. It is live, and more concretely than 'an external reconcile' -- at runner.py:2771-2772 the state load applies `symbol.in_(universe)` ONLY when risk_v2 is off, so under risk_v2 state rows for symbols that have left the bot's universe ARE loaded into `states`, and `states` is precisely what feeds the 1010/1067 risk computations and _reconcile_external_closes. Reaching the default therefore requires a symbol to leave ASSET_CATALOG or POINT_VALUES while a BotPositionState row for it survives. I did NOT establish whether catalog entries have ever been removed, so I do not claim the path has been taken -- only that the filter which would have bounded it is deliberately not applied on that branch. Not fixed here because each site needs a trading-policy decision about what the bot does when it cannot size a position, and another lane is active in the file. SECOND (NOW RESOLVED, not by me): _deposit_exit_outcome did float(realized or 0.0), which would have converted the absence _own_realized now returns into a fabricated 0.0 R-multiple. I left it untouched per the dispatch because another lane was editing that function. That lane's PR #361 merged into main mid-flight and replaced it with r_multiple_or_decline(realized, ...) which branches on `is None` explicitly (their comment: '`is None`, never `or`: realized == 0.0 is a REAL observation'). Verified by reading the merged file, not assumed: the two changes COMPOSE -- my absence now becomes an RUnmeasurable decline carrying its own basis instead of a break-even verdict on a trade whose result was never observed. Refusing to reach into the other lane's function was the right call and cost nothing. THIRD: the frontend deriveVolRegime and atmIvForExpiry apply `?? 0` to surface cells, re-fabricating the zero downstream of the API fix; behaviour-preserving and left alone because deciding what a chart shows for an unsolved cell is a UI decision. FOURTH: finnhub.py fabricates quote fields (price/change/changePct/high52w/low52w `or 0.0`) and compat.py fabricates spot (`... or 0.0`, lines ~310-315) -- same defect family, different subject, out of this lane's bar scope. The dispatch named finnhub.py and compat.py as carrying the bar shape; they do not construct bars at all.",
+  "leave_behind": [
+    {
+      "item": "Bar.volume remains a required float, so absent and zero volume stay indistinguishable; safe_bar refuses a None volume rather than substituting 0.0. Widening to float | None is 45 read sites, the bar_store DB column and the served JSON contract.",
+      "owner": "unassigned",
+      "plan_row": "backlog: T-26 bar volume optionality"
+    },
+    {
+      "item": "Frontend null-safety edits (types/options.ts, optionsBetaData.ts, VolSurfaceImpl.tsx, VolMiniCharts.tsx, ClaudePanel.tsx) are verified only by TS parse and the cockpit vite build; no vitest test covers the vol-surface path, and CI does not run the repo's `typecheck` script.",
+      "owner": "unassigned",
+      "plan_row": "backlog: vol-surface frontend test coverage"
+    },
+    {
+      "item": "Bar.time is unvalidated; a time of 0 is the same fabrication family and was left out of scope.",
+      "owner": "unassigned",
+      "plan_row": "backlog: T-26 bar time validation"
+    }
+  ],
+  "netguard": {
+    "guard_landed_after_my_tests_were_written": "PR #363 (hermeticity lane) merged mid-lane and added tests/netguard.py, a socket/DNS seam guard with modes off/report/block/strict plus a frozen 22-entry baseline ratchet.",
+    "my_tests_that_reached_out": 1,
+    "my_tests_total": 40,
+    "which": "tests/test_t26_value_fabrication.py::test_place_still_fills_a_known_futures_root",
+    "seam": "app/providers/fmp.py:161 _fetch_status <- :198 _fetch_list <- :887 fetch_quotes <- :767 fetch_quote, to financialmodelingprep.com:443",
+    "why_it_was_invisible": "resolve_last wraps its whole vendor chain in `except Exception` and logs a warning, so the blocked connect was swallowed, place() rejected with 'no quote available', and my assertion (that the reason did not mention a point value) passed anyway. The test produced an IDENTICAL verdict with and without a working vendor while its name claimed it proved a known futures root still fills. Same defect class as this lane's subject, one level out: a check that cannot fail is not a check.",
+    "fix": "Stubbed fmp.fetch_quote and the databento leg resolve_quote (has_source('/CL') routes there first, so leaving it unstubbed would make routing depend on whether an API key is present). Assertions moved onto the FILL and its SIZE: the order fills at the quoted price and a one-point move on one /CL realizes one CME Mult of P&L, read from the exchange attribute rather than from what the code emits.",
+    "baseline_modified": false,
+    "baseline_entries": 22,
+    "baseline_note": "NOT touched, and none of my tests are on it. The baseline is frozen debt that may only shrink; adding an entry to silence the guard is the bypass this programme keeps warning about.",
+    "after": "COCKPIT_NETGUARD=strict over the whole file: 'no outbound network attempts recorded', 40 passed.",
+    "verified_by_violation": [
+      {
+        "violation": "stub the vendor to return no quote -- the exact condition that used to pass silently",
+        "went_red": true,
+        "detail": "fails on the fill assertion"
+      },
+      {
+        "violation": "force the contract multiplier to 1.0",
+        "went_red": true,
+        "detail": "'a one-point move on /CL realized 1.0, expected 1000.0 from the CME Mult attribute'"
+      }
+    ],
+    "full_suite_accounting": {
+      "tests_reaching_out": 26,
+      "distinct_hosts": 11,
+      "baseline_frozen": 22,
+      "baseline_stale_this_run": 0,
+      "guard_self_tests_markered_allow_network": 4,
+      "mine": 0,
+      "reconciliation": "26 = 22 frozen baseline (all reached out, 0 stale) + 4 tests in tests/test_netguard_armed.py that carry @pytest.mark.allow_network and probe RFC-5737 TEST-NET (192.0.2.x) and .invalid hostnames, which never leave the host, because proving the guard is armed requires attempting a call. The coordinator observed 27 before this fix: 22 + 4 + my one unhermetic test. The delta from 27 to 26 is exactly that test.",
+      "note": "No non-baselined, non-markered test reaches out. The ratchet did not need to be widened and was not."
+    }
+  },
+  "merged": {
+    "by": "coordinator, not this lane -- I never ran gh pr merge",
+    "merge_commit": "ab438e41849d93d89616c9cddb3deb6775c0743a",
+    "style": "squash, which is why f022d6fc is not an ancestor of origin/main",
+    "content_verified_in_main": [
+      "tests/test_t26_value_fabrication.py carries the repaired known-root fill test",
+      "app/marketdata/client.py carries _bar_refusals / safe_bar / bar_domain_refusal",
+      "app/paper/engine.py carries UnknownPointValueError",
+      "app/routers/market.py serves iv_map.get(k) (null, not 0.0)",
+      "tests/netguard_baseline.txt still 22 entries -- the ratchet was not widened"
+    ]
+  }
+}

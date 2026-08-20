@@ -1,0 +1,62 @@
+{
+  "lane": "t26-gatedepth",
+  "repo": "empressa-trading",
+  "base_sha": "5ba6a39851320d9df58f17910aea841c7325799f",
+  "head_sha": "cc4c4090ae34028f2372d2f7b3a9fb9e2bc4fd3c",
+  "branch": "t26/gatedepth",
+  "pr": 365,
+  "ci_conclusion": "pass (Deploy gate pass, Python tests (cockpit backend) pass, Frontend build pass, Frontend tests pass, Gitleaks security scan pass, Windows .exe skipping)",
+  "history_dependent_checks": 4,
+  "starved_under_depth_1": [
+    {
+      "check": "gate.py evidence_state() last-touch comparison",
+      "state_returned": "unverifiable for all 5 controls, and the suite assertion accepted unverifiable, so it could not fail where it ran"
+    },
+    {
+      "check": "gate.py evaluate() runtime branch, not-deployed verdict via anchor_present(deployed, ...)",
+      "state_returned": "not-deployed for all 3 runtime controls; the full checkout says not-deployed, live, stale, so 2 of 3 were determinate and wrong. Worse than unverifiable: it fails loudly for a reason that is not true"
+    },
+    {
+      "check": "gate.py evaluate() runtime branch, stale-vs-live verdict via blob_sha(deployed, ...) != blob_sha(head, ...)",
+      "state_returned": "unreachable; the not-deployed branch short-circuits before it under depth 1"
+    },
+    {
+      "check": "tests/test_deploy_gate.py::test_a_control_absent_from_the_deployed_tree_reads_not_deployed",
+      "state_returned": "skipped (569adaca absent from a depth-1 checkout). Already honest AND already counted, in pytest's own skip total: CI on main at base reported 3 skipped, CI on this branch reports 2. This was the one history-dependent check in the file that left a countable record, twenty lines above the one that did not"
+    }
+  ],
+  "chosen_fix": "other",
+  "justification": "Both: the hard failure lives in the full-history deploy-gate job (which alone runs on a schedule, and evidence staleness arises with time rather than with an event), and test-backend is also deepened because the measured cost is trivial (1391 commits, 32 MB .git) and only one file in the entire suite invokes git.",
+  "three_states_preserved": true,
+  "unverifiable_is_counted": true,
+  "counted_by": "Three mechanisms, all running today. (1) EVIDENCE CENSUS: one unconditional greppable line from gate.py carrying current/stale/undated/unverifiable counts plus the clone depth and head it was taken at, written to $GITHUB_STEP_SUMMARY on every deploy-gate run, red or green. (2) pytest's own skip total in test-backend: a shallow checkout asserts unverifiable and then skips, so the undetermined population appears as a number instead of inside a green tick (verified: 3 skipped at base under depth 1, 2 skipped on this branch under depth 0). (3) gate.py --evidence-check REFUSES with exit 2 in a shallow checkout, so no shallow environment can emit a green for this determination at all.",
+  "verified_in_shallow_clone": true,
+  "verified_in_full_clone": true,
+  "deliberately_staled_control": "backstamp-static-guard",
+  "went_red": true,
+  "three_question_gate": {
+    "executes": "the 'Evidence staleness' step in .github/workflows/deploy-gate.yml running `python tools/deploy_gate/gate.py --evidence-check`; and tests/test_deploy_gate.py::test_declared_evidence_is_not_older_than_the_control_it_describes inside the test-backend job of .github/workflows/ci.yml",
+    "triggers": "deploy-gate on schedule (cron 20 13 * * 1-5), workflow_dispatch, and pull_request for a paths filter that now covers every control path in controls.yaml. CI test-backend on push to every branch (the CI workflow has no pull_request trigger, so it runs against the branch head, not the merge ref; deploy-gate runs on pull_request and therefore against the merge ref). Both run before merge.",
+    "runs_on_pull_request": true,
+    "fails": "non-zero exit. Exit 1 on stale or undated evidence or on a control path outside the trigger filter; exit 2 when the checkout cannot make the determination. Observed red in GitHub Actions on throwaway PR #366: '##[error]Process completed with exit code 1' with 'EVIDENCE STALE: backstamp-static-guard'. Stale evidence also now fails the main gate's exit code, which it did not before: it printed EVIDENCE STALE OR UNDATED and returned 0.",
+    "blocks_merge": false,
+    "bypasses": "Branch protection on main has ZERO required status checks (verified at source today: the protection endpoint returns 200 with enforce_admins true and no required_status_checks key, and there are 0 active rulesets), so a red check merges anyway. Other paths to the same state: deleting fetch-depth: 0 from either workflow (now pinned by a test that reads both workflow files, so deletion turns them red rather than silent); pointing --manifest at another file; a control that nobody adds to controls.yaml at all, which remains open and is stated in that file; and editing a control path in a PR that starts neither job, which is closed for the five declared controls and stays closed because adding a control necessarily edits controls.yaml, which matches tools/deploy_gate/**.",
+    "is_a_control": true
+  },
+  "other_controls_weakened": false,
+  "pytest_baseline": "5061 passed, 2 skipped, 21 deselected (local, full clone, at base 5ba6a398). CI at base under depth 1: 5060 passed, 3 skipped, 21 deselected; the one-test difference is exactly the deploy-comparison test moving between passed and skipped with clone depth.",
+  "pytest_after": "5074 passed, 2 skipped, 21 deselected (local, full clone, at cc4c4090) and 5074 passed, 2 skipped, 21 deselected in CI on Python 3.12 at the same commit. An earlier after-run reported 1 failed; that was self-inflicted (a git checkout for the red-proof probe ran in the same worktree mid-suite) and did not reproduce on a quiescent tree.",
+  "handoff": "Two things for other lanes. (1) Any PR that commits a change to apps/cockpit/backend/app/spine/{backstamp,immutability,store}.py or apps/cockpit/backend/tests/test_backstamp_{static_guard,boundary}.py will now go red on evidence staleness until controls.yaml's evidence_date for that control is re-gathered and moved. That is the intended burden and PR #361 already set the precedent, but it is new teeth and the network-hermeticity lane owns tests/. (2) The red-proof probe touched apps/cockpit/backend/tests/test_backstamp_static_guard.py, named here per the scope rule; that change lived only on a throwaway branch, never merged, and the branch is deleted from origin. A second staling probe touched apps/cockpit/backend/app/spine/immutability.py, also throwaway-only. Neither path is modified on t26/gatedepth. Separately: attaching even one required status check to main is now worth more than it was, because before this row the check reported green over a real violation and no amount of protection would have helped.",
+  "leave_behind": [
+    {
+      "item": "local-only git branch t26/stale-probe at 34d90a07 in worktree P:/empressa-trading-worktrees/t26-gatedepth (deliberate-staling probe for app/spine/immutability.py). Never pushed, not an ancestor of t26/gatedepth. `git branch -D` was refused by the permission system and I did not route around a denied control.",
+      "owner": "operator",
+      "plan_row": "backlog: delete after review"
+    },
+    {
+      "item": "local-only git branch t26/gatedepth-redproof at 94b604b6 in the same worktree (red-proof probe for tests/test_backstamp_static_guard.py). Its remote branch and PR #366 are both closed and deleted; only the local ref remains, for the same permission reason.",
+      "owner": "operator",
+      "plan_row": "backlog: delete after review"
+    }
+  ]
+}

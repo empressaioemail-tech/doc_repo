@@ -1,0 +1,100 @@
+{
+  "lane": "t26-bar",
+  "repo": "smart-markets",
+  "base_sha": "a346524426f448ceac8b8102447e47974c81b32f",
+  "head_sha": "6cc7ac6db9426d3171b5eb108330c9c5c4d02326",
+  "branch": "t26/bar",
+  "pr": 24,
+  "ci_conclusion": "success",
+  "bar_predicate_clauses": [
+    "low <= min(open, close)",
+    "high >= max(open, close)",
+    "high >= low (IMPLEMENTED BUT NOT INDEPENDENT: it is a theorem of the two clauses above, since l <= min <= max <= h. No input violates it alone; its test asserts an over-determined refusal and says so rather than counting it as a fourth guard)",
+    "open, high, low, close each finite (a genuine tightening: z.number() ACCEPTS Infinity and -Infinity and refuses only NaN, verified empirically against zod 3.25.76)",
+    "volume, when present, finite and non-negative",
+    "ZERO CLAUSE: if no price field is negative, every price field must be strictly positive"
+  ],
+  "zero_sibling_rule": "If no price field is negative, every price field must be strictly positive; if any is negative the bar itself evidences an instrument trading at or through zero and zeros are admitted. ADMITS: volume 0 beside real OHLC (the committed CAPTURED_HISTORY_GC forming session is exactly this, so refusing it would refuse real served data); any zero once a sibling is negative; a four-way-equal nonzero bar. REFUSES: a zero low beside real open/high/close (the target defect, and the one shape the ordering clauses cannot see, because zero is a legitimate minimum); an all-zero OHLC bar (a literal reading of 'no field zero while its siblings are not' would ADMIT this, which is why the rule is stated as a positivity requirement rather than a disagreement requirement); negative zero, since -0 === 0 is true while -0 < 0 is false. KNOWN FALSE REFUSAL, not widened for: an intraday bar bracketing a zero crossing from above whose window never goes negative and whose low is exactly 0.00. The shape that would have to be admitted to let it through is indistinguishable from the fabricated zero, and the consequence is a declared absence rather than a fabricated number. NOT A MEANING-SHAPED CHECK: all four prices arrive in one payload from one upstream, so this is internal consistency; it catches a per-field substitution between upstream and contract, not an upstream fabricating all four consistently. The assetClass argument to safeBar is the only part that qualifies as a second derivation.",
+  "negative_price_decision": "admitted because AssetClassSchema names futures, commodities and rates, and the `contract` node shape exists precisely for exchange-traded futures; WTI crude for May 2020 delivery settled below zero on 2020-04-20 and the exchange cleared it, so a strictly-positive floor on o/h/l/c would refuse a real bar. Refusing real data to tidy a column is the same defect family as admitting fabricated data. The tightness lost is recovered by the conditional zero clause and by the asset-class tightening.",
+  "brand_sealed": false,
+  "defeat_attempts": 6,
+  "defeat_successes": 2,
+  "defeat_detail": "SEALED against four cast-free routes, each confirmed by a compiler error (TS2322, \"Property '[BRAND]' is missing ... but required in type 'BRAND<\\\"Bar\\\">'\"): a plain object literal; the unbranded BarFields shape; an array of literals assigned to Bar[]; a JSON serialization round trip. DEFEATED by two: (1) a SPREAD of a valid Bar, `{ ...valid, l: 0 }`, which compiles because TypeScript's spread type copies the brand marker; this is a general property of the technique, and the only genuinely nominal alternative is a class with a private field, which would stop Bar being plain JSON-shaped data and was not taken. (2) an explicit `as unknown as Bar` cast, the escape hatch every brand has, which is at least visible in review. WHAT ACTUALLY STOPS THE SPREAD REACHING A CONSUMER: buildTwin ends in TwinSchema.parse(candidate) on every success path, reaching every bar through z.array(BarSchema); both halves are asserted in the test suite. PROCESS FINDING: the first pass of the test file carried a @ts-expect-error over the spread and typecheck PASSED, because the directive was consuming an unused-variable error (TS6133) rather than a brand error. Every attempt variable is now read so a directive can only be consuming the brand mismatch.",
+  "construction_sites": [
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 737,
+      "site": "historyBlock, bars.push of a wire row",
+      "routed_through_factory": true,
+      "note": "The only Bar construction site in the repository. Enumerated by the TypeScript compiler after branding, not by text search; both packages/contract/tsconfig.check.json and apps/api/tsconfig.check.json include tests/**/*, and apps/web and packages/ui typecheck src/**/* which contains their __tests__ trees, so the compiler's single error is complete coverage rather than an excluded directory."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 645,
+      "site": "priceBlock, `last: latest.close` read straight off the wire",
+      "routed_through_factory": true,
+      "note": "NOT a Bar construction site, so the compiler could not name it, but a BYPASS: a second path to the same served number that skipped the factory. Found by reading the write path. It now constructs the backing bar through safeBar and reads the close off the validated bar. It gates this branch ONLY: the live-last branch is served from a different route and store, and refusing a good live price because a bar was corrupt would be a control reaching past what it can speak to."
+    },
+    {
+      "file": "apps/api/src/upstreams/cockpit-market.ts",
+      "line": 637,
+      "site": "priceBlock, `last: liveLast` from the quote route",
+      "routed_through_factory": false,
+      "note": "A scalar price with no siblings, so the bar predicate cannot speak to it. Gated instead by liveLastRefusal, which applies the same asset-class second derivation: a share, fund unit, currency pair or token cannot transact at or below zero, so a quote route serving one disagrees with the security master."
+    }
+  ],
+  "other_unbounded": [
+    {
+      "field": "strike",
+      "constraint": "finite, and nothing tighter. Positivity is NOT asserted because it is not established rather than because it is inconvenient: this cohort includes options on futures whose underlying can settle below zero, and whether an exchange has listed a negative or zero strike is a question for the exchange, not for this schema. An invented positivity bound would be a fabricated constraint. NOTE no producer exists: chainBlock returns an absence on every path at v0.1, so nothing in the repository constructs an OptionContract; the constraint is armed at every parse and currently has no write path feeding it."
+    },
+    {
+      "field": "price",
+      "constraint": "finite, applied to PriceBlock.last, DepthLevel.price, TapePrint.price and VolumeProfileBin.price. Not floored at zero in the schema, because the cohort includes negative-capable instruments and the schema does not know which one it is holding. The instrument-aware floor is applied at the adapter, where the asset class is known. Extended beyond the named three: bid, ask, DepthLevel.size, TapePrint.size and VolumeProfileBin.volume carried .nonnegative() without .finite(), which admits Infinity; each now carries both. Honest nuance: JSON cannot represent Infinity, so .finite() guards the in-process construction path rather than the wire path."
+    },
+    {
+      "field": "sharesDelta",
+      "constraint": "finite, and that is the ONLY constraint that is true of it. Three were considered and rejected. NOT non-negative: the field is a signed delta by construction, so a minimum would refuse every Form 4 disposition. NOT .int(): fractional share counts reach Form 4 through dividend reinvestment and employee purchase plans, so an integer constraint would refuse real filings. NOT non-zero: a zero delta is not established to be impossible, and absence already carries 'the filing did not state one', so a stated zero and an unstated value are distinguishable without pressing zero into service as a sentinel. Where nothing is established, nothing is asserted."
+    }
+  ],
+  "driver_value_left_to_other_lane": true,
+  "external_market_payload_holder": "POSSIBLE AND NOT RULED OUT, unlike drivers. Established structurally, in three parts. (1) No external TYPE consumer can exist: packages/contract/package.json is `private: true`, read directly, and npm view returns 404, so no code outside the repository holds the Bar type or any contract schema. (2) An external PAYLOAD holder cannot be ruled out: I fetched https://smart-markets-api-znwrqyxmqa-ue.a.run.app/v0.1/twin/AAPL anonymously with no credential and received HTTP 200, 28714 bytes, market.status 'partial' with history 'populated' carrying 250 real bars. There is no CORS middleware in apps/api/src/app.ts, so browsers cannot call it cross-origin, but any non-browser client can, and the MCP tool surface in apps/api/src/mcp/tools.ts is a second agent-facing door onto the same buildTwin. (3) Whether any non-repo caller has actually held one is NOT answerable from the repository; it would need request logs, and even those could not separate first-party web-app traffic from external. So the drivers exemption's ground, that the layer has never served, is unavailable here. The change is nonetheless safe for holders on a different and narrower ground: it only ever removes values from the valid set, every removed value was already a defect rather than a datum, and all 250 bars production served on the day of the change satisfy the new predicate, checked rather than assumed. All four committed fixtures pass with zero violations.",
+  "version_note_needed": "TW-26 (2026-08-20) TIGHTENED THE MARKET LAYER'S NUMBERS WITHOUT A MAJOR BUMP, and it cannot rest on the no-adopter ground the two exemptions above use, because the market layer HAS served: an anonymous fetch of /v0.1/twin/AAPL against revision smart-markets-api-00007-hcq on 2026-08-20 returned market.status \"partial\" with 250 populated bars. The ground here is narrower and different. The change only ever REMOVES values from the valid set, and every value it removes was already a defect rather than a datum: an OHLC ordering that contradicts itself, an infinite price, a negative volume, and a zero price standing beside real ones. Any payload a consumer holds that still validates under 0.1.0 validates unchanged here, and the 250 bars production served on the day of the change all satisfy the new predicate, verified rather than assumed, as do all four committed fixtures. What a consumer can observe is a history or price block reporting a typed absence where it previously reported a fabricated number, which is the intended correction rather than a shape change. The `Bar` TYPE is separately breaking, since it is branded and no longer constructible from an object literal, and that costs nothing outside this repository for the same reason the drivers exemption relies on: this package is `private: true` and unpublished, so no external code holds the type. When this package publishes, that half of the ground is spent.",
+  "defects_reintroduced": [
+    {
+      "defect": "factory replaced with a plain z.object({ t, o, h, l, c, v }) of bare z.number(), brand and predicate both removed",
+      "test": "the whole contract suite plus the compile-time brand assertions",
+      "went_red": true,
+      "red_output": "11 of 108 tests failed (pass 97, fail 11): every CLAUSE test, the fabricated-zero LOW test, the ALL-ZERO test, the negative-zero test, the fail-closed factory test, and the spread/runtime test. Typecheck additionally reported 4 errors, all `error TS2578: Unused '@ts-expect-error' directive.` at tests/bar.test.ts lines 316, 323, 329 and 337, which is the brand-sealing mechanism proving it is armed: unsealing the brand turns CI red on its own."
+    },
+    {
+      "defect": "brand and ordering clauses kept, zero clause alone disabled by forcing its guard false",
+      "test": "the zero-clause tests",
+      "went_red": true,
+      "red_output": "5 of 108 tests failed (pass 103, fail 5): 'CLAUSE no zero price beside real ones: a fabricated zero LOW is refused', 'an ALL-ZERO bar is refused', 'negative zero is refused beside real prices', 'the factory refuses rather than repairing', and the spread runtime test. Precisely the zero-clause set and nothing else, which is what isolates the clause."
+    }
+  ],
+  "verification": {
+    "full_gate_run_locally": true,
+    "steps": "npm install; npm run typecheck; npm run lint; format check; npm test; ui test; ui build; web test; web build; plus all six structural-gates greps executed verbatim, including the `^[[:space:]]*computed[[:space:]]*:` gate, all OK",
+    "test_counts": "contract 108/108, api 203/203, web 21/21, ui 9/9",
+    "format_check_note": "The repo-wide `prettier --check .` fails on 115 files on this Windows checkout, INCLUDING files untouched by this lane such as README.md and vercel.json. Diagnosed rather than assumed: core.autocrlf is true and README.md carries CRLF terminators, and the whole repo passes `prettier --check --end-of-line auto .`, so every one of the 115 is a line-ending artifact and none is a content-formatting defect. The staged blobs for this lane were verified LF via `git show :<file> | file -`, so CI on ubuntu-latest sees LF and passes, which it did."
+  },
+  "leave_behind": [
+    {
+      "item": "The spread hole in the Bar brand: `{ ...validBar, l: 0 }` compiles and produces an unvalidated Bar. Closed at runtime by TwinSchema.parse in buildTwin, open at compile time. Closing it properly needs a nominal type (a class with a private field), which would stop Bar being plain JSON-shaped data.",
+      "owner": "unassigned",
+      "plan_row": "backlog, no PLAN-ROW exists for this repo"
+    },
+    {
+      "item": "The third volume state. Absent and zero are distinguishable via the optional `v` key; UNMEASURED is not distinguishable from absent in the current shape. Named in the code rather than papered over with a sentinel.",
+      "owner": "unassigned",
+      "plan_row": "backlog, no PLAN-ROW exists for this repo"
+    },
+    {
+      "item": "OptionContractSchema.strike carries a constraint with no producer: chainBlock returns an absence on every path at v0.1, so nothing constructs an OptionContract. Armed at parse, unfed by any write path until the chain is served.",
+      "owner": "unassigned",
+      "plan_row": "backlog, no PLAN-ROW exists for this repo"
+    }
+  ]
+}

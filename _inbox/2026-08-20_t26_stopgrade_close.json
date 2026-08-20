@@ -1,0 +1,97 @@
+{
+  "lane": "t26-stopgrade",
+  "repo": "empressa-trading",
+  "base_sha": "205e7865259a154fe173f95a8d5d845e4bc46232",
+  "head_sha": "a6e981c60a83f1cee9a101fcd8cab3ea6fe0bc74",
+  "branch": "t26/stopgrade",
+  "pr": 357,
+  "ci_conclusion": "success",
+
+  "qty_coercion_removed": true,
+  "point_value_default_removed": true,
+  "refusal_branch_now_reachable": true,
+  "reachability_evidence": "tests/test_intervention_stop_grade_refusals.py::test_qty_refusal_branch_is_reachable_from_stop_grade",
+  "reachability_method": "sys.settrace line trace through the REAL r_multiple_from_pnl; the qty guard's body lines are located structurally with ast (never a hard-coded line number, because spine/outcomes.py is the ledger lane's file). Before: qty=1.0 reached the call, executed lines [86,88,89], guard body [87] NOT executed. After: qty=0.0 with entry_risk_per_unit=1.0 (positive, so qty is the only disjunct that can trip it), executed lines [86,87] -> guard body executed.",
+  "refusal_leaves_record": true,
+  "refusal_log_level": "WARNING",
+  "refusal_log_level_before": "DEBUG (starved: main.py sets root=WARNING and the 'app' logger=INFO, so the pre-existing entry-risk refusal was discarded in the environment where it runs)",
+  "refusal_record_fields": ["missing", "symbol", "event_atom_id", "detail", "timestamp_utc"],
+
+  "point_values_keys": 51,
+  "micro_futures_absent": [],
+  "micro_futures_claim_verdict": "FALSIFIED at source. The dispatch stated POINT_VALUES is 28 hand-transcribed symbols with /MES /MNQ /M2K /MYM absent. POINT_VALUES is a MERGE: FULL_SIZE_POINT_VALUES (28) ** plus ** every ASSET_CATALOG symbol, totalling 51 keys. All four named micros are present and correct against exchange contract specs: /MES=5.0, /MNQ=2.0, /M2K=5.0, /MYM=0.5. The 28 figure describes FULL_SIZE_POINT_VALUES only. Verified by importing the module, not by reading the literal.",
+
+  "traded_symbols_outside_table": "unmeasured: no database reachable from this lane. localhost:5432 and 127.0.0.1:5432 both refused (ConnectionRefusedError WinError 10061); no .env present (only .env.example); no DATABASE_URL/POSTGRES credentials in the environment; no sqlite artifact anywhere in the tree. I did NOT substitute a proxy for this. What would be needed to answer it: read access to the cockpit Postgres, then SELECT DISTINCT claim_value_json->>'symbol' FROM atoms WHERE claim_type='trade.entry' (and the family='event' loop-closing rows carrying risk_engine='v2' AND exit_basis='stop' for the graded stop population specifically), checked for membership against presets.POINT_VALUES.",
+  "measurement_db": null,
+
+  "structural_bound_not_a_measurement": "SEPARATE, WEAKER claim than the traded set, stated as its own thing: bot symbols are constrained at every write path. presets.normalize_universe keeps ONLY symbols in ALLOWED_SYMBOLS, and all three BotConfig write paths (routers/bots.py:343, :777, :896) route through normalize_config. ALLOWED_SYMBOLS is 23 symbols, ALL of which are in POINT_VALUES (by construction, since POINT_VALUES merges the same ASSET_CATALOG). MICRO_SWAP targets are all present too. So for the bot-sourced stop-grade population the 1.0 default was structurally unreachable. This BOUNDS the risk; it does not MEASURE the traded set, because it cannot see rows written before a catalog change or by any path that bypasses normalize_config.",
+
+  "impact_finding_contradicts_the_brief": "The dispatch's central impact claim is ALGEBRAICALLY FALSE at this call site. It stated both fabrications corrupt both sides of delta_r so the sign survives and the magnitude is fiction. In fact BOTH pv AND qty CANCEL EXACTLY in counterfactual_r: cf_pnl = move*pv*qty is divided by entry_risk_per_unit*abs(qty) = |entry-stop|*pv*qty, leaving counterfactual_r = move/|entry_px-stop_px|, independent of both. Verified over 600,000 randomised input combinations against an independently derived closed form (the definition of R), with ZERO divergences. realized_r is not touched by this call site at all (it is read from the event atom's score, computed in bots/runner). CONSEQUENCE: the emitted magnitudes were CORRECT, the defect was LATENT (an unreachable guard and an unrepresentable unknown state), and NO historical repair is required from this call site. Consuming the post-fix 0.0 would have been a REGRESSION, which is why the refusal after the guard is mandatory rather than optional.",
+  "repair_scope": "none required from this call site (see impact_finding_contradicts_the_brief). Not run in this lane either way.",
+
+  "unobservable_populations": [
+    "UNREAD PATH (work remaining, NOT a permanent limit): the set of symbols actually traded/graded. It IS recorded, in atoms.claim_value_json->>'symbol'. It is unread only because no database was reachable from this lane.",
+    "PERMANENT LIMIT: for an entry claim whose qty was absent, the true position size exists nowhere in the atom record, so it can never be recovered from the atom store. Moot here, because qty cancels out of R.",
+    "NOT unobservable despite looking it: the pv and qty actually applied at grading time are not persisted on the intervention.stop outcome atom (meta_extra carries counterfactual_r, realized_r, symbol, but not pv or qty). They are nonetheless RECONSTRUCTIBLE, because pv is a pure function of symbol plus the git-versioned POINT_VALUES table. Recording this so it is not later mistaken for a permanent limit."
+  ],
+
+  "point_value_call_sites": [
+    {"file": "app/interventions/stop_grade.py", "line": 326, "disposition": "fixed", "note": "now resolve_point_value() returning KnownPointValue | UnknownPointValue"},
+    {"file": "app/routers/trade.py", "line": 557, "disposition": "already-correct", "note": "get() with NO default; _size_order refuses unknown futures with a size_error. This was the existing correct idiom I followed."},
+    {"file": "app/routers/bots.py", "line": 638, "disposition": "already-correct", "note": "membership gate: `sym in POINT_VALUES`"},
+    {"file": "app/routers/bots.py", "line": 639, "disposition": "already-correct", "note": "default only reached when is_fut is False, i.e. the non-futures unit multiplier"},
+    {"file": "app/paper/engine.py", "line": 149, "disposition": "handoff", "note": "REAL SAME-CLASS DEFECT, half-fixed. Line 145 already returns 1.0 early for non-futures (the correct split), but a /-rooted symbol ABSENT from the table still falls back to 1.0. Here pv does NOT cancel: it scales paper fill P&L directly. Highest-value remaining site."},
+    {"file": "app/bots/runner.py", "line": 1271, "disposition": "handoff", "note": "_own_realized_pnl = move*pv*qty - commission. pv is LOAD-BEARING here (it is the dollar output, it does not cancel) and this figure feeds realized_r. Currently safe only because bot symbols are constrained to ALLOWED_SYMBOLS."},
+    {"file": "app/bots/runner.py", "line": 1177, "disposition": "out-of-scope", "note": "(move*pv)/st.entry_risk; entry_risk = |fill-stop|*pv so pv cancels. Inert."},
+    {"file": "app/bots/runner.py", "line": 1010, "disposition": "out-of-scope", "note": "bot runner sizing; separate lane"},
+    {"file": "app/bots/runner.py", "line": 1067, "disposition": "out-of-scope", "note": "bot runner sizing; separate lane"},
+    {"file": "app/bots/runner.py", "line": 1419, "disposition": "out-of-scope", "note": "bot runner; separate lane"},
+    {"file": "app/bots/runner.py", "line": 1991, "disposition": "out-of-scope", "note": "bot runner; separate lane"},
+    {"file": "app/bots/runner.py", "line": 2467, "disposition": "out-of-scope", "note": "bot runner; separate lane"},
+    {"file": "app/bots/runner.py", "line": 2902, "disposition": "out-of-scope", "note": "bot runner; separate lane"},
+    {"file": "app/bots/runner.py", "line": 2911, "disposition": "out-of-scope", "note": "bot runner; separate lane"},
+    {"file": "app/counterfactual/engine.py", "line": 100, "disposition": "out-of-scope", "note": "_approx_r scales both move and risk by pv, so pv cancels. Carries its own separate `or 1.0` coercion on risk."},
+    {"file": "app/routers/backtest.py", "line": 365, "disposition": "out-of-scope", "note": "backtest sizing; separate lane"},
+    {"file": "app/routers/staged_trades.py", "line": 197, "disposition": "out-of-scope", "note": "DECLARED degradation: the docstring states unknown futures fall back to 1.0, that loss is display-only for a manual stage, and that qty is user-set so it cannot oversize. Declared degradation is permitted; left alone."}
+  ],
+  "second_source_authority": {
+    "verdict": "A REAL EXTERNAL AUTHORITY IS ALREADY IN THIS REPO, and for the roots it covers the hand-transcribed table is now VERIFIED, not merely trusted. But it covers 11 of 41 futures roots, and NONE of the four micros.",
+    "file": "apps/cockpit/backend/app/data/cme_contract_specs.json",
+    "verified_myself": "tracked at base 205e7865 (git cat-file -e succeeds); added by 7708184d; 12,997 bytes; authority block declares CME Group FPRF over anonymous FTP at ftp.cmegroup.com/fprf, record_path FIXML/Batch/SecDef/Instrmt, values copied verbatim from the exchange XML, with per-file sha256 + byte count + business date; retrieved_at 2026-08-17T20:09:15+00:00.",
+    "specs_count": 11,
+    "roots_covered": ["CL", "GC", "M6A", "M6B", "M6E", "NG", "RB", "SI", "ZB", "ZN", "ZT"],
+    "micros_present_in_extract": false,
+    "cross_check_result": "MEANING-SHAPED CHECK RUN, TWO INDEPENDENT DERIVATIONS: the hand-transcribed presets.POINT_VALUES versus the CME FPRF `Mult` attribute. All 11 overlapping roots AGREE EXACTLY (/CL 1000, /GC 100, /M6A 10000, /M6B 6250, /M6E 12500, /NG 10000, /RB 42000, /SI 5000, /ZB 1000, /ZN 1000, /ZT 2000). agree=11 disagree=0. No sentinel can satisfy this: one side is the exchange's own XML, the other is a hand-typed dict.",
+    "three_populations": {
+      "A_covered_and_cross_checked": {"count": 11, "status": "VERIFIED against the exchange authority; the 'hand-transcribed, operator-verify' caveat is retired for these"},
+      "B_obtainable_by_re_running": {"count": 30, "symbols": ["/6A", "/6B", "/6C", "/6E", "/6J", "/BZ", "/ES", "/HG", "/HO", "/M2K", "/M6C", "/MCL", "/MES", "/MGC", "/MHG", "/MNQ", "/MYM", "/NQ", "/PL", "/RTY", "/SIL", "/XC", "/XK", "/XW", "/YM", "/ZC", "/ZF", "/ZL", "/ZS", "/ZW"], "status": "UNREAD PATH, work remaining, NO PURCHASE REQUIRED. The extractor scripts/refresh_cme_contract_specs.py IS committed at base and runnable (--check mode included). It downloads the WHOLE FPRF files (cmeg.cbt/cme/comex/nymex.fut.prf.xml) over anonymous FTP and then filters to the symbols named by app/providers/futures_reference.load_catalog(). That catalog names exactly 11 roots, which is WHY the extract has 11 - the limit is the catalog, not the feed. Adding a root plus its series_id and feed_file to that catalog and re-running captures it.", "honest_limit_on_this_claim": "I did NOT run the FTP fetch (no network operation attempted from this lane; it is also unbounded). So the presence of MES/MNQ/M2K/MYM inside cmeg.cme.fut.prf.xml is INFERRED from them being CME equity-index products, not verified by me. What would have to be true: the FTP host reachable, and those Sym values present in that file."},
+      "C_wrong_authority_by_construction": {"count": 10, "symbols": ["DXY", "VIX", "ADAUSD", "AVAXUSD", "BTCUSD", "DOGEUSD", "ETHUSD", "LINKUSD", "SOLUSD", "XRPUSD"], "status": "PERMANENT LIMIT FOR THIS SOURCE, not unobtainable in general. DXY is ICE Futures U.S. and VIX is Cboe/CFE, so a CME feed structurally cannot cover either; they need an ICE/Cboe reference. The eight crypto SPOT pairs are not futures at all, so 1.0 is a definitional unit multiplier and a futures reference file is the wrong authority rather than a missing one."}
+    },
+    "scope": "Reported, not acted on. Wiring POINT_VALUES to this authority is not this lane's file and not this lane's row; it belongs with whoever owns presets/providers. My fix consumes POINT_VALUES as-is and refuses when it has no entry for a /-rooted symbol, which is correct regardless of which authority later populates the table."
+  },
+  "point_value_call_sites_method": "ast, not grep. Resolves aliased imports (`import presets as X`, `from ..bots import presets`, `from . import presets` with module=None+level>=1, `from ..bots.presets import POINT_VALUES as Y`) and finds Subscript, .get() and membership uses. My FIRST version of the walker returned a FALSE NEGATIVE on all nine app/bots/runner.py sites because it did not handle `from . import presets` (relative import with module None), and it crashed on two BOM-prefixed files; both were fixed and the count went 24 -> 33 (17 app + 16 test).",
+
+  "handoff_to_ledger": "1) MINE IS ONE OF TWO CALLERS. Confirmed independently and consistent with the dead-guard lane (PR #360): the qty<=0 refusal is unreachable from BOTH callers. The second is app/bots/runner.py:1293-1296, qty=st.qty_total or 1.0, and the coordinator established the domain is {None} u [0, inf) with runner.py:1200 the only write (st.qty_total = float(abs(qty))) and models.py:543 nullable, so the `or` exists purely to convert None. I did NOT edit runner.py; you own it. My row fixes the stop_grade caller only. 2) WHAT I NEED FROM #361: I am aware you have landed r_multiple_or_decline returning RMeasured | RUnmeasurable plus a fourth `declined` label with a closed basis enum. I coded against the CURRENT signature as instructed, so stop_grade still calls r_multiple_from_pnl and then duplicates the qty check after the call, because the bare 0.0 return cannot express a refusal. WHEN #361 MERGES: replace that call with r_multiple_or_decline and delete the block guarded by `isinstance(qty_res, UnknownQuantity)` in grade_stop_event, consuming RUnmeasurable directly. resolve_quantity already returns UnknownQuantity(reason=<string>) which can feed your basis enum; the three reasons it produces are no-qty, non-numeric, and not-a-positive-size. If your `declined` label should be written as an outcome row rather than leaving the event pending, say so, because my current behaviour is to leave it PENDING and write nothing. 3) MY TEST WILL SURVIVE YOUR EDIT: it locates the qty guard via ast (any `if` whose test compares `qty` against a zero literal) rather than by line number, and asserts its BODY executes, so a discriminated return instead of 0.0 keeps it green. If the guard is deleted entirely it fails LOUDLY with a named AssertionError rather than silently passing. 4) DO NOT SCOPE A DATA REPAIR FROM THE T26 BRIEF'S PREMISE: pv and qty cancel exactly in counterfactual_r (600k combinations, zero divergences), and the fabricated 0.0 you are removing was never consumed as a score from stop_grade. No stop-grade magnitude was corrupted and no historical repair is owed from this call site.",
+
+  "pytest_baseline": "4967 passed, 3 skipped, 21 deselected (CI run 32376512254, base 205e7865, ubuntu-latest py3.12 - the authoritative environment). Local corroboration, base tree in a separate worktree, py3.12 matching requirements.txt, RUN ALONE: 4968 passed, 2 skipped, 0 failed.",
+  "pytest_after": "4983 passed, 3 skipped, 21 deselected (CI run 32385625148, head a6e981c6). Delta vs CI baseline = +16 passed, exactly the 16 tests added; zero regressions. Local corroboration, branch tree, py3.12, RUN ALONE: 4984 passed, 2 skipped, 0 failed (delta +16 on the same machine, same interpreter).",
+  "pytest_local_note": "CORRECTED TWICE, recorded because both wrong turns are instructive. An intermediate local py3.12 full run showed 624 failures. My first explanation was 'local env artifact, py3.14 is authoritative' - WRONG, py3.12 matches requirements.txt exactly and py3.14 carries newer unpinned versions. My second explanation was 'pre-existing Windows full-suite ordering effect' - ALSO WRONG: the base tree run ALONE is clean (0 failed). The actual mechanism is CONTENTION: I was running other pytest processes concurrently during that run, on a machine that also hosts ~30 sibling lane worktrees. Proven by running base alone (4968 passed, 0 failed) and branch alone (4984 passed, 0 failed), both py3.12, nothing else running. A local full-suite run on this machine is not a trustworthy instrument unless it is the only thing running; CI is the authority.",
+
+  "defects_reintroduced": [
+    {"defect": "qty coercion: `qty_value = ... else 1.0` (the original `abs(float(qty or 0.0)) or 1.0`)", "test": "tests/test_intervention_stop_grade_refusals.py::test_qty_refusal_branch_is_reachable_from_stop_grade", "went_red": true, "red_output": "AssertionError: the caller COERCED the absent quantity before the call (qty=1.0) - the refusal cannot fire / assert 1.0 <= 0", "confirmed_under_py312": true, "note": "IMPORTANT: this defect is caught ONLY by the line-trace test. The two return-value tests (test_absent_qty_writes_no_outcome, test_absent_qty_refusal_leaves_a_record) stayed GREEN with the coercion reintroduced, because the post-call refusal still fires. That is the concrete demonstration of the dispatch's point that a test checking only the return value does not establish reachability."},
+    {"defect": "point value default: `presets.POINT_VALUES.get(sym, 1.0)`", "test": "tests/test_intervention_stop_grade_refusals.py::test_unknown_futures_point_value_refuses", "went_red": true, "red_output": "AssertionError: graded a futures row with an unknown multiplier / assert True is False", "confirmed_under_py312": true}
+  ],
+
+  "prereg": [
+    {"failure_mode": "FM1: the brief's impact claim may be algebraically false because pv and/or qty cancel, making the coercions inert for the emitted score", "outcome": "CONFIRMED. Both cancel exactly; 600,000 randomised combinations, zero divergences. The brief's 'calibration magnitude is fiction' is wrong for this call site and the defect is latent, not a corrupt population."},
+    {"failure_mode": "FM2: the 'micro futures absent' claim may be false at source (key space, slash prefix, or the 28-symbol count describing a different dict)", "outcome": "CONFIRMED FALSE-BRIEF. POINT_VALUES has 51 keys, not 28; all four named micros are present with values correct against exchange contract specs. The 28 describes FULL_SIZE_POINT_VALUES, which POINT_VALUES merges with ASSET_CATALOG."}
+  ],
+
+  "things_i_got_wrong": [
+    "My first ast walker silently missed all nine app/bots/runner.py call sites because it did not resolve `from . import presets` (ImportFrom with module=None, level=1), and it crashed on two BOM-prefixed files. Caught only by cross-checking against grep, which is the opposite of the usual direction. Fixed; 24 -> 33 sites.",
+    "I initially wrote resolve_quantity with abs(float(raw)) BEFORE the sign check, which silently repaired a negative quantity into a positive one - the same coercion class I was sent to remove. Caught by my own parametrised test. Sign is now checked before any abs().",
+    "I first declared the local py3.12 failures an irrelevant environment artifact and the py3.14 run authoritative. That was backwards: py3.12 matches requirements.txt EXACTLY and py3.14 has newer unpinned versions. I corrected it, installed the missing orjson pin, and then established the real explanation (a Windows full-suite ordering effect present with and without my change) instead of stopping at the first plausible one."
+  ],
+
+  "leave_behind": []
+}

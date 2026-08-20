@@ -1,0 +1,96 @@
+{
+  "lane": "t26-hermetic",
+  "repo": "empressa-trading",
+  "base_sha": "506fdf76ffa40a4270255b1edf6e992c412618c9",
+  "head_sha": "4f5b08e0f255e6f6bea9e635a2268ba6460c8028",
+  "branch": "t26/hermetic",
+  "pr": 363,
+  "ci_conclusion": "SUCCESS",
+  "guard_mechanism": "plugin",
+  "transports_covered": [
+    "httpx (sync)",
+    "httpx (async)",
+    "urllib.request",
+    "socket.socket.connect / connect_ex",
+    "socket.create_connection",
+    "socket.getaddrinfo / gethostbyname",
+    "asyncio BaseEventLoop.create_connection",
+    "asyncio BaseSelectorEventLoop.sock_connect",
+    "asyncio BaseProactorEventLoop.sock_connect",
+    "ftplib",
+    "redis (sync)",
+    "redis.asyncio",
+    "databento",
+    "psycopg / libpq",
+    "requests / urllib3",
+    "snaptrade-python-sdk"
+  ],
+  "transports_not_covered": [
+    "subprocess / any child process (measured: LEAKED)",
+    "stripe, pywebpush, youtube_transcript_api (absent from the local venv, so not directly measured; all three sit on requests/urllib3, which IS covered)",
+    "any C extension calling connect(2) without going through Python's socket module (psycopg was measured as caught, but that is not a general guarantee)",
+    "a socket opened before tests/conftest.py line 41 executes",
+    "a test that saves and restores socket.getaddrinfo itself, which would unpatch the guard for its duration"
+  ],
+  "tests_attempting_network": 51,
+  "hosts_reached": [
+    "financialmodelingprep.com",
+    "publicreporting.cftc.gov",
+    "hist.databento.com",
+    "api.stlouisfed.org",
+    "finance.yahoo.com",
+    "apewisdom.io",
+    "feeds.content.dowjones.io",
+    "www.cnbc.com"
+  ],
+  "bucket_broken_without_network": 0,
+  "bucket_passing_because_call_fails": 51,
+  "bucket_legitimate_local": 1934,
+  "fixed": 29,
+  "left": 22,
+  "left_owner": "T-26 follow-up lane, frozen in apps/cockpit/backend/tests/netguard_baseline.txt (test_qa_sweep 11, test_adaptive 5, test_intelligence 2, test_market 1, test_live_exec 1, test_analytics 1, test_crypto_holdings 1)",
+  "truncation_logged": true,
+  "guard_verified_by_violation": true,
+  "loopback_still_allowed": true,
+  "guard_fails_loud_if_uninstallable": true,
+  "three_question_gate": {
+    "executes": "tests/conftest.py imports tests/netguard.py and calls install() at conftest import time (a conftest IS a pytest plugin). Enforcement of the swallowing class is an autouse fixture, _netguard_strict, in the same conftest.",
+    "triggers": "every pytest run of apps/cockpit/backend, unconditionally. testpaths=tests means tests/conftest.py is always imported. Default mode is strict; it is NOT opt-in and needs no flag.",
+    "fails": "a test reaching a non-loopback host gets socket.gaierror (NetworkBlocked). If it needs the call it fails; if it swallows the error the autouse fixture errors it at teardown. Either way pytest exits non-zero and the 'Python tests (cockpit backend)' job fails. Running in production CI today: .github/workflows/ci.yml runs `python -m pytest -q` from apps/cockpit/backend with no COCKPIT_NETGUARD override, so the strict default applies. Verified on CI run 32395620227 that the guard armed on ubuntu-latest and reported its count.",
+    "bypasses": "1) a child process (measured, leaks); 2) COCKPIT_NETGUARD=off, an explicit recorded env choice; 3) @pytest.mark.allow_network, used only by the guard's own probes; 4) the 22 nodeids frozen in tests/netguard_baseline.txt; 5) a socket opened before conftest line 41; 6) any harness that does not load tests/conftest.py; 7) a test that itself patches and restores socket.getaddrinfo.",
+    "is_a_control": true,
+    "dormant": false
+  },
+  "test_asserted_a_defect": false,
+  "test_asserted_where": null,
+  "pytest_baseline": "5023 passed, 0 failed, 7 skipped, 21 deselected (COCKPIT_NETGUARD=off, 981.82s)",
+  "pytest_after": "CI (authoritative, uncontended): 5069 passed, 0 failed, 3 skipped, 21 deselected under COCKPIT_NETGUARD=strict on ubuntu-latest/py3.12, run 32400770817, 394.86s. Local Windows strict run on the pre-merge commit: 2 failed, 5026 passed, 2 skipped, 1355.36s; both failures traced to a working-tree mutation mid-run and both pass on a stable tree. Baseline for comparison was 5023 passed / 0 failed with the guard off; the merged head is higher because current main brought in PR #361's tests.",
+  "leave_behind": [
+    {
+      "item": "22 tests still reaching live vendors, frozen in apps/cockpit/backend/tests/netguard_baseline.txt",
+      "owner": "T-26 follow-up lane",
+      "plan_row": "backlog: t26-hermetic-remainder"
+    },
+    {
+      "item": "the 29 fixed modules cover the vendor-UNAVAILABLE path only; none covers the priced path and none of their names says so. Real quote fixtures are unwritten.",
+      "owner": "T-26 follow-up lane",
+      "plan_row": "backlog: t26-vendor-available-path-coverage"
+    },
+    {
+      "item": "guard does not cover child processes; if a test ever shells out to a network client it will not be caught",
+      "owner": "T-26 follow-up lane",
+      "plan_row": "backlog: t26-subprocess-netguard"
+    }
+  ],
+  "notes": {
+    "count_method": "Enumerated under block mode, not report mode. Report mode found only 17 because successful calls populate an in-process cache and the remaining 38 tests never touch the socket (test_zone_atoms alone collapses 21 -> 1). Blocking is the sound enumerator; a passive sweep under-counts this suite threefold.",
+    "cross_validation": "The 51 were derived independently on two platforms, GitHub ubuntu-latest/py3.12 (CI run 32395620227) and Windows 3.12.10, and the nodeid sets were IDENTICAL.",
+    "bucket_legitimate_local_caveat": "1934 is tests that touched LOOPBACK, dominated by asyncio's self-pipe via socket.socketpair on Windows, not by deliberate local services. Deliberate local-service tests number 3. On Linux socketpair is AF_UNIX and would not be counted at all, so this figure is platform-specific and is a must-not-block population, not a debt.",
+    "sweep_not_truncated": "The sweep was not bounded: the full suite ran in every mode. The only reduction is dedup of repeat attempts by (nodeid, host, transport), declared in netguard.py.",
+    "residual_after_fixes": "CI on the merged head reports 26 tests attempting network: the 22 baselined plus the guard's own 4 deliberate probes. 0 stale baseline entries, so the frozen list is exactly the current population.",
+    "moved_base": "origin/main moved from 506fdf76 to 5ba6a398 (PR #361) during the lane. The branch was updated via gh api update-branch and CI re-greened against the CURRENT base; #361's five new test files were checked under strict and reach no network (93 passed, 0 attempts).",
+    "local_strict_run_CORRECTION": "An earlier version of this artifact said the full local strict run was killed and produced no result. THAT WAS WRONG. It ran to completion: '2 failed, 5026 passed, 2 skipped, 21 deselected in 1355.36s', and reported 26 tests attempting network, matching CI's 26 exactly. I issued a Stop-Process against two PIDs believing they were mine and believed it had worked; the run demonstrably finished afterwards, so the kill did not take. Whether it terminated a sibling lane's run instead is unresolved.",
+    "local_strict_two_failures_explained": "Both failures were SELF-INFLICTED by running `git merge --ff-only` ~10 minutes into a 22-minute suite, mutating the working tree under a running instrument. Proof rather than assertion: at the pre-merge commit 7e84e736, app/spine/outcomes.py defined r_multiple_from_pnl at line 79; at the merged head that function is RETIRED (line 224 is a retirement comment left by a sibling T-26 lane). The run therefore held the OLD test module in memory while reading NEW source from disk. test_deploy_gate's staleness case is the same shape: it compared an in-memory control declaration (evidence 2026-08-19) against a git last-touch recomputed from the mutated tree (2026-08-20). Both PASS on the stable merged tree: 22 passed, 0 network attempts. This is a 'state your snapshot' violation committed by me: the snapshot changed mid-flight, so the output was confidently wrong.",
+    "deploy_gate_control_is_silent_on_ci": "Pre-existing and already declared in the codebase, not a discovery, but worth naming: tools/deploy_gate/gate.py:297 returns 'unverifiable' when `git rev-parse --is-shallow-repository` is true, and CI clones shallow. So the evidence-staleness control can only ever fire in a full local clone, never in CI. Outside this lane's scope; not touched."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "lane": "t26-drivers",
+  "repo": "smart-markets",
+  "base_sha": "a346524426f448ceac8b8102447e47974c81b32f",
+  "head_sha": "fadfb3200aba5f8cf7f13ae14c74181da4028309",
+  "branch": "t26/drivers",
+  "pr": 25,
+  "ci_conclusion": "success",
+  "contract_absence_shape": "DriverAbsenceSchema = AbsenceSchema.extend({verdict: absent-verified|lookup-failed|not-served}); the observation is a DriverObservationSchema discriminated union whose observed branch takes ObservationSchema + DerivationProvenance and whose unobserved branch takes a DriverObservationAbsence (servedElsewhere required, withheldNote and blockedBy optional) + RecordProvenance",
+  "not_served_collapsed": false,
+  "provenance_constraint": "type",
+  "scheduled_check_trigger": null,
+  "futures_node_name_blocker": "open",
+  "futures_node_name_evidence": "Not a naming gap: the security master classifies CL/GC/ES/SI/NG/ZB/M6E as asset_class \"equity\", resolution_status \"provisional\", name null, identifiers [], issuer withheld (\"no trusted issuer link\"); no node resolves for CLZ25/GCZ25/ESZ25, so it holds no futures nodes at all. AAPL is the control: same equity class and null name, but issuer_available true with issuer.name \"Apple Inc.\", which is why its twin builds and CL's 503s. No honest fix in this repo, since a name would be synthesised from a symbol whose equity meaning is Colgate-Palmolive.",
+  "defects_reintroduced": [
+    {
+      "defect": "lastObservation: ObservationSchema restored as a required field on DriverRowBaseSchema",
+      "test": "apps/api/tests/drivers.test.ts 'a covered futures root serves PARTIAL' (DriversLayerSchema.safeParse -> false !== true); 16 api tests and 62 contract tests red",
+      "went_red": true
+    },
+    {
+      "defect": "observed branch of DriverObservationSchema widened to z.union([DerivationProvenanceSchema, RecordProvenanceSchema])",
+      "test": "packages/contract/tests/contract.test.ts 'an observation with Record provenance FAILS: a value must state its derivation' (true !== false)",
+      "went_red": true
+    },
+    {
+      "defect": "adapter maps the upstream not-served verdict onto lookup-failed, per row and at layer level",
+      "test": "apps/api/tests/drivers.test.ts 'not-served is NEVER mapped onto lookup-failed or absent-verified' (actual 'lookup-failed') and 'the layer absence carries not-served and names TW-59'",
+      "went_red": true
+    },
+    {
+      "defect": "not-served dropped from LAYER_ABSENCE_VERDICTS while DriverAbsenceVerdict still carries it",
+      "test": "contract build: src/layer-absence.ts(60,3) error TS2344: Type 'false' does not satisfy the constraint 'true'",
+      "went_red": true
+    },
+    {
+      "defect": "docstring in apps/api/src/upstreams/drivers.ts named the cockpit service header literal (found on first local run, not deliberately introduced)",
+      "test": "structural-gates step 'The cockpit service credential is confined to three files' -> FAIL: the cockpit service credential leaked into: apps/api/src/upstreams/drivers.ts",
+      "went_red": true
+    }
+  ],
+  "window_spent": true,
+  "leave_behind": []
+}

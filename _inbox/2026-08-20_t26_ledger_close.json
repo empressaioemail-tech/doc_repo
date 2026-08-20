@@ -1,0 +1,305 @@
+{
+  "lane": "t26-ledger",
+  "repo": "empressa-trading",
+  "base_sha": "12746ff258522fb03a42d63200c31f3d5590cb1c (merge of main into t26/ledger; original base 205e7865)",
+  "head_sha": "069d9f571b537bb095e7c1c7d8e6a247d8103446",
+  "branch": "t26/ledger",
+  "pr": 361,
+  "ci_conclusion": "success",
+  "fourth_label": "declined",
+  "abstention_expressible": true,
+  "consumers_found": [
+    {
+      "file": "apps/cockpit/backend/app/spine/types.py",
+      "kind": "other",
+      "handled": true,
+      "note": "OutcomeLabel definition; gained `declined`. New OutcomeDeclineBasis enum defines the discriminated origins."
+    },
+    {
+      "file": "apps/cockpit/backend/app/models.py",
+      "kind": "db-enum",
+      "handled": true,
+      "note": "AtomOutcomeRow. label is String(16) with NO enum and NO constraint - the column domain was never closed. Added decline_basis String(32), made score nullable, added two CheckConstraints. Deliberately did NOT constrain the label domain: `void`/`approved`/`rejected` are written by live paths."
+    },
+    {
+      "file": "apps/cockpit/backend/migrations/versions/0059_outcome_decline_basis.py",
+      "kind": "migration",
+      "handled": true,
+      "note": "New. Tested upgrade AND downgrade against real PostgreSQL 18.3."
+    },
+    {
+      "file": "apps/cockpit/backend/app/spine/outcomes.py",
+      "kind": "other",
+      "handled": true,
+      "note": "Removed `meta.label or label_from_r(score)`. TradeOutcomeMeta validates the abstention invariant at construction. r_multiple_from_pnl now raises; r_multiple_or_decline returns the discriminated union."
+    },
+    {
+      "file": "apps/cockpit/backend/app/spine/store.py",
+      "kind": "other",
+      "handled": true,
+      "note": "append_outcome takes decline_basis, fails closed on a malformed abstention, persists it and echoes it onto the loop-closing event atom (declined rows only, so other outcome atoms stay byte-identical and anchored leaves do not move)."
+    },
+    {
+      "file": "apps/cockpit/backend/app/spine/calibration.py",
+      "kind": "query",
+      "handled": true,
+      "note": "THE load-bearing consumer. _fetch_outcome_scores now excludes declined at the query. This was the fabricated zero's actual path into r_expectancy_mean and into the MIN_N gate via n. _hit_counts additionally raises on an abstention rather than coercing it."
+    },
+    {
+      "file": "apps/cockpit/backend/app/routers/admin_gov.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Three sites. (1) Zone summary else-branch was literally commented `# partial = untested / context` - the read path knew it was merging two populations; now a separate declined bucket, not counted as graded. (2) _VERDICT_SCORES `.get(..., 0.5)` would have minted a neutral 0.5 for a declined verdict; _verdict_score now refuses it and the endpoint returns an honest reason. (3) Propagation summary catch-all else would have filed an abstention as a loss; now skipped explicitly."
+    },
+    {
+      "file": "apps/cockpit/backend/app/routers/zone_atoms.py",
+      "kind": "query",
+      "handled": true,
+      "note": "_by_kind_tf counted every row in `n` while only right/wrong could be a win or loss; a declined row would report a larger sample than was ever graded. Now counted separately."
+    },
+    {
+      "file": "apps/cockpit/backend/app/zones/agreement.py",
+      "kind": "query",
+      "handled": true,
+      "note": "summarize_auto_quality: declined filtered once before any count. mean_r would otherwise raise on a NULL score, and reaction_n would overstate the graded population."
+    },
+    {
+      "file": "apps/cockpit/backend/app/routers/spine.py",
+      "kind": "other",
+      "handled": true,
+      "note": "User-facing POST /spine/outcome. `declined` is intentionally absent from _LABEL_SCORE (a mapping there would mint a score for a row defined by having none); the endpoint refuses it with 422 before the lookup, so the missing key is unreachable rather than a latent KeyError/500."
+    },
+    {
+      "file": "apps/cockpit/backend/app/routers/experiments.py",
+      "kind": "query",
+      "handled": true,
+      "note": "_CANON_LABELS seeded with `declined` so a zero count is STATED rather than the key being omitted. _aggregate already skipped None scores, so nullable score needed no change there."
+    },
+    {
+      "file": "apps/cockpit/backend/app/zones/grade.py",
+      "kind": "other",
+      "handled": true,
+      "note": "PRODUCER, and itself a collapse: one else-branch swept both `untested` (measured: horizon elapsed, no touch, no break) and `context` (no band geometry, unmeasurable) into partial. Split via _reaction_verdict, which raises on an unknown reaction rather than defaulting. Two call sites, both converted."
+    },
+    {
+      "file": "apps/cockpit/backend/app/composition/grade.py",
+      "kind": "other",
+      "handled": true,
+      "note": "PRODUCER. Carried a SECOND instance of the same `zone_r.label or label_from_r(score)` collapse. AGREEMENT_NEUTRAL_UNAVAILABLE now declines instead of scoring a flat 0.0; a new branch propagates an upstream zone.r decline rather than laundering it into a measurement."
+    },
+    {
+      "file": "apps/cockpit/backend/app/bots/runner.py",
+      "kind": "other",
+      "handled": true,
+      "note": "PRODUCER, and the site of THREE fabrications, all now removed. (1) DENOMINATOR: st.entry_risk is Optional and None in practice; it fed r_multiple_from_pnl, got a fabricated 0.0 and was labelled partial -> now declines with no_risk_denominator. (2) NUMERATOR (second pass): pnl = float(realized or 0.0) fabricated a zero PnL for an unpriced exit and stored a break-even verdict -> now declines with no_realized_pnl, tested with `is None` so a genuine 0.0 break-even still stores partial. (3) SIZE (second pass): qty=st.qty_total or 1.0 fabricated a one-lot -> now passed through as Optional and refused. All three deposit rather than raise, because the enclosing bare except Exception would otherwise drop the row."
+    },
+    {
+      "file": "apps/cockpit/frontend/src/focus/FocusShell.tsx",
+      "kind": "frontend",
+      "handled": true,
+      "note": "L1638 `type OutcomeLabelValue = 'right' | 'wrong' | 'partial' | 'dismissed'`. DELIBERATELY NOT EXTENDED: it is a producer of human feedback, and the backend now refuses `declined` on that endpoint, so adding it would offer a UI option the API rejects. PRE-EXISTING DRIFT NOTED, NOT FIXED: the union is already missing `edited`, and CI runs vite/esbuild (no tsc gate), so no frontend type check would ever catch this. Flagged in leave_behind."
+    },
+    {
+      "file": "apps/cockpit/backend/app/interventions/stop_grade.py",
+      "kind": "other",
+      "handled": true,
+      "note": "ADJACENT LANE - NOT TOUCHED, and no change is forced. Read-only analysis: it guards `if risk_per_unit <= 0: return False` BEFORE calling r_multiple_from_pnl and coerces `qty = abs(float(qty or 0.0)) or 1.0`, so the unmeasurable branch is unreachable there. Signature and runtime behaviour unchanged. SECOND PASS RECHECK: r_multiple_or_decline's signature widened to accept Optional qty and Optional realized_pnl, which is a WIDENING and cannot break this caller - it passes a guaranteed-positive float for both. Confirmed by ast that its call has no enclosing try, so a refusal would propagate rather than be swallowed. Still untouched; handoff remains null."
+    },
+    {
+      "file": "apps/cockpit/backend/app/signal/regime_grade.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Unreached: produces only right/wrong, so no declined row can enter its claim_type. Verified, not changed."
+    },
+    {
+      "file": "apps/cockpit/backend/app/signal/propagation.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Unreached producer (right/wrong only). Its admin consumer catch-all was hardened anyway - see admin_gov note 3."
+    },
+    {
+      "file": "apps/cockpit/backend/app/signal/regime_record.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Unreached. SQL `sum(case when score > 0 ...)` over regime claim types, which no declined writer targets. Verified, not changed."
+    },
+    {
+      "file": "apps/cockpit/backend/app/routers/interventions.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Unreached (intervention.stop claim type). Its _aggregate already skips None scores regardless. Verified, not changed."
+    },
+    {
+      "file": "apps/cockpit/backend/app/advisor/state.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Reuses experiments._aggregate, which already skips None scores and buckets labels dynamically. No change needed."
+    },
+    {
+      "file": "apps/cockpit/backend/app/spine/anchoring/verify.py",
+      "kind": "query",
+      "handled": true,
+      "note": "Reads only outcome existence and timing, never label or score. No change needed."
+    },
+    {
+      "file": "apps/cockpit/backend/app/engines/proposals.py",
+      "kind": "other",
+      "handled": true,
+      "note": "Writes free-form labels `approved`/`rejected` with real scores. Unaffected, and a regression test asserts the constraint still admits them."
+    },
+    {
+      "file": "tools/deploy_gate/controls.yaml",
+      "kind": "other",
+      "handled": true,
+      "note": "atom-mutation-refusal evidence re-gathered by violation and re-dated 2026-08-20 after commit 8ea3bd88 touched its declared path. See deploy_gate_finding."
+    }
+  ],
+  "r_multiple_unmeasurable_representation": "RMultipleResult = RMeasured | RUnmeasurable, a discriminated union of two frozen slotted dataclasses returned by r_multiple_or_decline. RUnmeasurable carries a closed-enum `basis` (the discriminant) plus free-text `detail` (audit only, explicitly never the discriminant). SECOND PASS: the signature is now (realized_pnl: float | None, *, entry_risk_per_unit: float | None, qty: float | None) - BOTH ends of the fraction are Optional, so a missing numerator and a missing size refuse at the function instead of being coerced by the caller. r_multiple_from_pnl keeps its float return but fails closed with UnmeasurableRError.",
+  "basis_is_discriminated": true,
+  "preexisting_partial_rows": "uncounted: no reachable database. Production is Cloud SQL instance empressa-trading-prod:us-east4:cockpit-pg, database `cockpit`, user `cockpit_api`, reachable only via the Cloud SQL Auth Proxy running on the deploy-sensitive production VM. `gcloud sql instances list` confirms the instance is RUNNABLE and visible to the active account, but `gcloud secrets list --project=empressa-trading-prod` returns only `cockpit-pii-master-key` - no database credential exists in Secret Manager; the password lives in the VM's .env, so obtaining it would require SSHing the production VM, which is far beyond a read-only count. No local Postgres server, no Docker daemon, and no local *.db file exists in the tree. TO COUNT, one of these must become true: (a) the cockpit_api password or an IAM database credential is supplied so a local cloud-sql-proxy can connect read-only, or (b) someone with VM access runs: SELECT count(*) FROM atom_outcomes WHERE label='partial' AND decline_basis IS NULL; alongside SELECT label, decline_basis, count(*) FROM atom_outcomes GROUP BY 1,2 ORDER BY 1,2; NOTE: whatever that number is, the pre-existing portion of it can never be split - see distinction_boundary.",
+  "distinction_boundary": "0059_outcome_decline_basis (authored 2026-08-20). Rows carry the distinction only from the moment the migration is APPLIED to a given database, which is NOT the authoring date and NOT the merge date - merged is not applied, and this PR does not apply it. `alembic_version` stores no timestamp, so the applied-at instant must be recorded per environment. A future query must use `decline_basis IS NOT NULL` as the positive test for a row that carries the distinction, NEVER created_at against the authoring date, because a database migrated later will have written ambiguous rows after it. Every atom_outcomes row with label='partial' AND decline_basis IS NULL written before application is permanently ambiguous: this is the fifth derivation state, discarded at the moment of writing. The distinguishing fact existed in the grader's control flow and the write destroyed it, so no backfill was attempted and none is possible - a guessed basis would be indistinguishable from a measured one once written.",
+  "handoff_to_stopgrade": "CORRECTED FROM null. It should never have been null, and the reasoning that produced it was wrong in a specific way: I wrote that 'widening the signature to Optional is a widening and cannot break that caller'. I checked the TYPE direction and never checked the CONTROL FLOW direction. Optional-ing a parameter is a widening; converting a return into a raise is not. stop_grade.py had no enclosing try at that call and its docstring says 'Never raises', so UnmeasurableRError propagated out of a function contractually forbidden to emit one. I had even recorded the 'no enclosing try' fact in swallow_audit and read it as reassuring (a refusal would 'propagate loudly') when it was the hazard. Separately I reasoned only about the branch being UNREACHABLE under the code as I read it, and #357 then deliberately MADE it reachable - so my conclusion was tied to a caller detail another lane was actively changing. WHAT IT SHOULD HAVE SAID: 'r_multiple_from_pnl now raises instead of returning 0.0. stop_grade.py:356 calls it with no enclosing try inside a function documented Never raises. If your row makes the qty branch reachable, that raise escapes. Consume r_multiple_or_decline and delete the duplicate UnknownQuantity check.' That collapse is what commit 069d9f57 performs, and it is what the comment at stop_grade.py:478 asked for by name.",
+  "sqlite_vs_postgres_enum_checked": true,
+  "pytest_baseline": "4968 passed, 2 skipped, 21 deselected (original base 205e7865). NOTE the final count is not comparable to it: the branch was rebased onto a main carrying #357/#358/#359/#360/#362, which brought their tests with them.",
+  "pytest_after": "5061 passed, 2 skipped, 21 deselected",
+  "defects_reintroduced": [
+    {
+      "defect": "r_multiple_from_pnl returns 0.0 for an unmeasurable input (the fabricated zero)",
+      "test": "tests/test_outcome_abstention.py::test_unmeasurable_r_raises_instead_of_returning_zero",
+      "went_red": true,
+      "red_output": "E Failed: DID NOT RAISE UnmeasurableRError - 5 failed, 24 passed (all five parametrisations: risk None/0.0/-2.0 and qty 0.0/-1.0)"
+    },
+    {
+      "defect": "record_trade_outcome derives via `meta.label or label_from_r(score)`, with TradeOutcomeMeta again permitting an empty label so omission is the only way to abstain",
+      "test": "tests/test_outcome_abstention.py::test_empty_label_is_an_error_not_a_derivation_trigger",
+      "went_red": true,
+      "red_output": "E Failed: DID NOT RAISE ValueError - 1 failed, 28 passed"
+    },
+    {
+      "defect": "zone reaction ternary collapses `untested` (measured) and `context` (unmeasurable) into one partial label",
+      "test": "tests/test_outcome_abstention.py::test_zone_context_declines_but_untested_stays_a_measurement and tests/test_zone_atoms_sr_grade.py::test_sr_atr_at_draw_none_grades_context_honest",
+      "went_red": true,
+      "red_output": "E AssertionError: assert ('partial', 0.0, None) == ('declined', ...ne_geometry'>) / At index 0 diff: 'partial' != 'declined'"
+    },
+    {
+      "defect": "runner._deposit_exit_outcome fabricates the R NUMERATOR: pnl = float(realized or 0.0). With a real entry_risk this takes the MEASURABLE branch and stores a break-even verdict for a trade whose PnL was never observed. A fifth origin of the partial population, distinct from the fabricated DENOMINATOR, and it never reached r_multiple_or_decline at all.",
+      "test": "tests/test_outcome_abstention.py::test_deposit_missing_pnl_stores_declined_not_a_breakeven_verdict",
+      "went_red": true,
+      "red_output": "E AssertionError: assert 'partial' == 'declined'  (- declined / + partial) - 1 failed, 36 passed"
+    },
+    {
+      "defect": "runner._deposit_exit_outcome fabricates the position SIZE: qty=st.qty_total or 1.0, converting both None and a genuine 0.0 into a one-lot.",
+      "test": "tests/test_outcome_abstention.py::test_deposit_missing_qty_stores_declined_not_a_one_lot_score",
+      "went_red": true,
+      "red_output": "E AssertionError: assert 'right' == 'declined'  (- declined / + right) - 1 failed, 36 passed. NOTE the severity: the coercion did not merely mislabel, it produced a CONFIDENT WINNING verdict, score 4.0 = 100/(25*1), scaled off a size nobody recorded."
+    },
+    {
+      "defect": "stop_grade coerces an absent quantity back to 1.0 (the other lane's defect), proving MY change did not quietly destroy THEIR property",
+      "test": "tests/test_intervention_stop_grade_refusals.py::test_qty_refusal_branch_is_reachable_from_stop_grade (+ test_absent_qty_writes_no_outcome, test_absent_qty_refusal_leaves_a_record)",
+      "went_red": true,
+      "red_output": "E AssertionError: the caller COERCED the absent quantity before the call (qty=1.0) - the absence must travel as an absence / E AssertionError: graded a row on an absent quantity / E AssertionError: refusal left no record at WARNING or above - 3 failed, 14 passed"
+    },
+    {
+      "defect": "r_multiple_or_decline returns RMeasured(0.0) for an unmeasurable quantity (MY defect), proving THEIR reconciliation did not quietly destroy MY property",
+      "test": "12 tests across BOTH files, incl. tests/test_outcome_abstention.py::test_deposit_missing_qty_stores_declined_not_a_one_lot_score and tests/test_intervention_stop_grade_refusals.py::test_absent_qty_writes_no_outcome",
+      "went_red": true,
+      "red_output": "E AssertionError: a fabricated number came back for an unmeasurable input: RMeasured(r=0.0) - 12 failed, 46 passed. The cross-file spread is the point: after reconciliation neither lane's property can be lost without the other lane's tests firing."
+    }
+  ],
+  "constraint_verified_by_violation": {
+    "postgresql": "PostgreSQL 18.3, scratch cluster on port 55432. Four violations rejected: declined with no basis, declined carrying a score, unknown basis value, basis on a non-declined row. Legal declined row and legacy free-form labels (void/approved/rejected) accepted. pg_constraint.convalidated = f confirms NOT VALID, so existing rows are not scanned or rewritten.",
+    "sqlite": "Four equivalent raw-ORM violations rejected with IntegrityError in tests/test_outcome_abstention.py, plus a test asserting both constraint names appear in the sqlite_master DDL - so the control is not vacuous in the environment CI actually runs.",
+    "why_check_not_native_enum": "There is no native enum anywhere: `label` is a bare String(16). Using CHECK rather than a PostgreSQL ENUM type makes both engines enforce the identical guarantee, removing the divergence rather than assuming it away. A native PG enum would have been enforced in production and absent from SQLite tests - a control that passes review and cannot fail where it is exercised."
+  },
+  "migration_tested_both_directions": "Yes, against real PostgreSQL 18.3. Full chain `alembic upgrade head` from empty to 0059 (exit 0), then `downgrade -1` to 0058 with a declined row present - the downgrade must delete declined rows before restoring score NOT NULL, and did (exit 0; column dropped, constraints dropped, score NOT NULL restored, alembic_version back to 0058), then `upgrade head` again (exit 0, both constraints back). Local runs required a WindowsSelectorEventLoopPolicy wrapper; psycopg async is incompatible with the Windows ProactorEventLoop. CI is ubuntu and unaffected.",
+  "environment_notes": "Local Python is 3.14; CI runs 3.12 on ubuntu-latest with `python -m pytest -q` from apps/cockpit/backend. CI conclusion for the full workflow run 32387757070 is the string \"success\"; Deploy gate run 32387818906 is also \"success\". Frontend CI is vite/esbuild build plus vitest with NO standalone tsc, so frontend type unions are not gated - relevant to the FocusShell drift noted in leave_behind.",
+  "leave_behind": [
+    {
+      "item": "apps/cockpit/frontend/src/focus/FocusShell.tsx L1638 OutcomeLabelValue union is missing `edited`, a pre-existing drift from the backend OutcomeLabel enum. Not caused by this lane and not fixed here (out of scope, and `declined` is deliberately excluded from that union). CI has no tsc gate on the frontend, so nothing will ever catch this drift automatically.",
+      "owner": "Nick",
+      "plan_row": "backlog - frontend/backend label vocabulary drift"
+    },
+    {
+      "item": "Migration 0059 is merged-not-applied. It must be applied to the production Cloud SQL database, and the applied-at timestamp recorded per environment, before any query can scope itself on the distinction boundary. The two CHECK constraints are added NOT VALID; VALIDATE is a separate deliberate operator step (safe at any time - no pre-existing row can violate either).",
+      "owner": "Nick",
+      "plan_row": "backlog - apply 0059 + record applied-at + optional VALIDATE"
+    },
+    {
+      "item": "The pre-existing `partial` population was never counted (no reachable database). The count itself is still worth taking once, to size how much of the ledger is permanently ambiguous.",
+      "owner": "Nick",
+      "plan_row": "backlog - count ambiguous partial rows, query given in preexisting_partial_rows"
+    },
+    {
+      "item": "app/routers/bots.py:1089 total_realized += float(realized or 0.0) is the SAME coercion shape on the same nullable value, one line above a now-fixed call site. It feeds a flatten RESPONSE TOTAL, not the calibration ledger, so it is outside this lane's scope and was deliberately not changed rather than silently expanded into. It does mean a flatten whose engine returned no realized_pnl reports a total that silently omits that leg.",
+      "owner": "Nick",
+      "plan_row": "backlog - audit display totals for the same absent-vs-zero collapse"
+    },
+    {
+      "item": "The deploy gate's evidence-staleness check returns 'unverifiable' in CI's shallow checkout and the test accepts it, so it can only ever fail on a full clone. A control that cannot fire where it runs. Found because it DID fire locally on a full clone.",
+      "owner": "Nick",
+      "plan_row": "backlog - deploy gate: make evidence staleness determinable in CI (fetch depth or a committed last-touch record)"
+    },
+    {
+      "item": "The `qty <= 0` guard in r_multiple_or_decline is no longer reachable from stop_grade.py (resolve_quantity maps 0 and negatives to UnknownQuantity, so they arrive as None). It remains reachable from bots/runner.py, whose st.qty_total domain is {None} u [0, inf). Pinned by test_the_nonpositive_qty_refusal_still_exists_for_its_own_caller so it is not read as dead and deleted, but the dead-guard scan lane (#360) should confirm that runner reachability independently rather than trusting my read.",
+      "owner": "Nick",
+      "plan_row": "backlog - dead-guard scan: confirm qty<=0 reachability from bots/runner.py"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "8ea3bd88957e152d8ee799288c6786e332fa3978",
+      "summary": "first pass - declined label, discriminated basis, migration, consumers"
+    },
+    {
+      "sha": "24d76726610c4d06c2181311e611bb816d7eb409",
+      "summary": "second pass - fabricated R numerator and fabricated position size; deploy-gate evidence re-dated"
+    },
+    {
+      "sha": "069d9f571b537bb095e7c1c7d8e6a247d8103446",
+      "summary": "third pass - reconcile with merged stop-grade row #357: consume the union, collapse the duplicate check, retire the raising variant"
+    }
+  ],
+  "decline_bases": [
+    "no_risk_denominator",
+    "no_realized_pnl",
+    "no_zone_geometry",
+    "no_composition_agreement",
+    "grader_abstained"
+  ],
+  "second_pass_caller_enumeration": {
+    "method": "ast walk with a parent map, resolving the enclosing function of every Call node; NOT grep",
+    "finding": "14 call sites of _deposit_exit_outcome. The coordinator's grep returned nothing and was wrong. 13 are inside runner.py (_exit, _breaker_v2, _enforce_orphan_stops, _close_own, _reconcile_external_closes, and 8 in _tick_one) and ONE IS CROSS-MODULE: app/routers/bots.py:1090 in _close_own_positions_via_engine.",
+    "realized_domain": "Every site passes a nullable expression. 12 pass own_pnl = _own_realized(...), declared -> float | None, which returns the nullable r.get('realized_pnl') on its fallback path. runner.py:1449 sets realized = None and only overwrites it when BOTH exit_px and st.entry_price are non-None (its own log string is 'no manual fill found'). routers/bots.py:1088 is r.get('realized_pnl') with no default. So the None is live on real paths, not theoretical.",
+    "qty_domain": "st.qty_total is Mapped[float | None] (models.py:543) and runner._record_entry is the ONLY write, setting float(abs(qty)). Domain is {None} u [0, inf), so the `or 1.0` existed solely to convert the None."
+  },
+  "swallow_audit": {
+    "question": "does any caller of r_multiple_or_decline / r_multiple_from_pnl wrap it in a bare except Exception that would swallow the new refusal and re-fabricate a value one level up",
+    "method": "ast; for every Call to the R functions and to record_trade_outcome, walked the ancestor chain for enclosing Try nodes and reported each handler's type, body and whether it re-raises",
+    "result": "NO starved refusal. runner.py:1293 IS a bare except Exception with a log-only body and no re-raise, and it wraps BOTH the r_multiple_or_decline call and the record_trade_outcome call - which is exactly why the fix DEPOSITS a declined row rather than raising. A raise inside that block would be swallowed and the row dropped, which reads as 'the grader never ran', a different fact again. stop_grade.py:356 (r_multiple_from_pnl) has NO enclosing try, so a refusal there would propagate loudly; it is unreachable there anyway. outcomes.py:229 is the internal delegation, no try. routers/bots.py calls neither R function directly.",
+    "residual_declared": "If the declined DEPOSIT itself fails inside runner.py:1293, the row is lost. That is pre-existing best-effort behaviour (one bot must not kill the tick) and it is a DECLARED degradation, not a silent one: logger.warning with exc_info=True. Not changed here; changing exception policy in the bot tick loop is a separate concern. The end-to-end tests assert the row EXISTS precisely so this swallow cannot hide a failure from them."
+  },
+  "deploy_gate_finding": {
+    "what": "The full local suite after the second pass showed 1 failure: test_deploy_gate.py::test_declared_evidence_is_not_older_than_the_control_it_describes[atom-mutation-refusal]. NOT a flake and NOT pre-existing.",
+    "mechanism": "The control declares path app/spine/store.py, which commit 8ea3bd88 modified. Its evidence was dated 2026-08-19; git last-touch became 2026-08-20. gate.evidence_state returned 'stale' with detail 'evidence 2026-08-19, but the control changed 2026-08-20'.",
+    "second_mechanism_rejected": "A time-based decay crossing a threshold. Rejected: evidence_state compares the declared date against git's last-touch of the path (the detail names the file's change date, not an age), and the same test passed in the FIRST local full run when the identical edits were uncommitted - uncommitted edits do not move git's last-touch, which a clock-based decay would not explain.",
+    "resolution": "Evidence RE-GATHERED BY VIOLATION before the date was touched: stored an atom, edited claim_value_json in place, committed, confirmed AtomMutationError raised; tests/test_atom_immutability.py 11 passed. Only then was evidence_date advanced to 2026-08-20 and the evidence text amended to say it was re-gathered and how. Bumping the date without re-gathering would have been asserting evidence not collected.",
+    "collateral_finding": "This staleness check CANNOT FIRE IN CI. CI uses a shallow checkout, where evidence_state returns 'unverifiable', which the test explicitly accepts (documented in its own docstring). It can only ever fail on a full clone. PR #361's first CI run was green WITH stale evidence for this reason. Reported, not fixed - it is the deploy-gate lane's call.",
+    "next_commit_checked": "Intersected all control paths against the pending change set before committing the second pass: NONE matched, so no further control was staled."
+  },
+  "reconciliation_third_pass": {
+    "trigger": "PR #361 went red after rebase onto main carrying stop-grade row #357 (43b488f4). CI run 32393854556, 3 failures in tests/test_intervention_stop_grade_refusals.py.",
+    "why_it_broke": "#357 removed the qty coercion so an absent quantity reaches the shared refusal, and pinned that with a LINE-TRACE test locating the `qty <= 0` guard by ast and asserting its BODY executes. My change deleted that early-return shape and made the function raise instead.",
+    "what_changed_in_stop_grade": "It now CONSUMES the discriminated result instead of calling the raising variant and separately re-deriving UnknownQuantity. The duplicate check is deleted: one refusal, decided in one place, reason travelling on the result. The event still stays PENDING via _refuse returning False, which is unchanged behaviour.",
+    "qty_none_not_zero": "It passes qty=None rather than 0.0. The 0.0 existed only to TRIP the `qty <= 0` disjunct because the old signature could not express a refusal. Keeping it would have left a second fabrication: cf_pnl is move x pv x qty, so a 0.0 size manufactures a 0.0 counterfactual PnL - a fabricated numerator handed to the function whose job is refusing fabricated inputs.",
+    "guard_precedence": "r_multiple_or_decline now checks the DENOMINATOR before the NUMERATOR. Load bearing when both are absent: a caller that cannot resolve a size also cannot compute that position's PnL and must pass None for both, so attributing to the numerator would name the symptom and send an operator to exit pricing when the entry claim is what is broken. Pinned by test_denominator_is_attributed_before_numerator_when_both_are_absent.",
+    "pinning_test_updated_not_weakened": "tests/test_intervention_stop_grade_refusals.py keeps its line-trace character: it still locates a guard structurally by ast and asserts the guard BODY executes. It now targets r_multiple_or_decline and the `qty is None` refusal that actually fires, asserts BOTH qty guards exist so neither can be quietly deleted, and additionally asserts the NUMERATOR arrived absent - a check the old version could not make. A new test pins that the `qty <= 0` guard is still live for its own caller (bots/runner.py, whose st.qty_total domain is {None} u [0, inf)).",
+    "cancellation_reverified": "The stop-grade lane's algebraic result (pv and qty cancel, so counterfactual_r = move / |entry_px - stop_px|) was re-verified INDEPENDENTLY through the new code path rather than taken on trust: 200,000 randomised (entry, stop, pv, qty, cf) combinations, 0 mismatches. A known quantity still yields the correct R, so consuming a post-fix 0.0 is not reintroduced.",
+    "schema_moved": "No. models.py, spine/types.py and the migration are untouched in this pass, so the migration was not re-run; it was already verified up and down against PostgreSQL 18.3 in the second pass."
+  },
+  "retired": {
+    "symbol": "app.spine.outcomes.r_multiple_from_pnl (and UnmeasurableRError)",
+    "why": "Consuming the union left stop_grade.py as its last caller. After reconciliation it had ZERO callers and nothing anywhere caught the exception. A function that raises where nothing catches is a refusal nothing consumes - the starved shape this lane exists to remove, relocated. Keeping it 'just in case' would keep alive exactly the convenience (a bare float) that produced the fabricated zero.",
+    "retirement_proven_by": "Absence, not a comment: test_the_retired_raising_variant_stays_retired asserts hasattr(outcomes, 'r_multiple_from_pnl') is False and likewise for UnmeasurableRError, so a re-add must argue for a consumer.",
+    "consumers_repointed_first": "Yes - stop_grade.py was repointed to r_multiple_or_decline in the SAME commit that removed the function, per the repoint-then-retire ordering."
+  }
+}
