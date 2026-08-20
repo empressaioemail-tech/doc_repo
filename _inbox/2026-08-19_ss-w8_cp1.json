@@ -1,0 +1,121 @@
+{
+  "lane": "SS-W8",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "planRows": ["P-44"],
+  "repo": "hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w8-cc-live-feed",
+  "branch": "ss/w8-cc-live-feed",
+  "baseSha": "51e6f95ddfd1cf3f6ed110e9a03ba730677429ed",
+  "writtenAt": "2026-08-19T14:20:00Z",
+
+  "missionPremise": "Operator ruling 2026-08-18 / 2026-08-19 (OPS-16 amendments A-018, A-019): the County Manifest must be a LIVE FEED, not a four-day-old snapshot, and the console exists so defects are spotted rather than hand-found. There are THREE layers, not two, and all three disagree independently: WRITTEN (atoms in the store), SCORED (county_facet_coverage via GET /api/county-ledger), SERVED (what Smart Site shows a human). The divergences between them ARE the defect list. This lane continues SS-W6 inside apps/command-center/** only.",
+
+  "completionPredicate": "On the County Manifest panel a stranger can (a) read WRITTEN, SCORED and SERVED side by side for the same county and rail, with each layer carrying its own origin, its own timestamp and its own denominator, and with no cross-layer arithmetic anywhere; (b) find the subtabs without being told where they are, and land on one directly from a URL; (c) see the ledger's staleness as an alarm that names what it invalidates, not a banner; (d) see the three dead indicators either derived from live payload or deleted, with the deletion stated on screen; (e) read every rail against its own reachable ceiling rather than against 254. Suite green, PR open against main, not merged, not deployed.",
+
+  "scopeBasis": "File ownership is apps/command-center/** only; four other lanes are running in this repo. The serving-sweep ENDPOINT is SS-W7 (legacy-design-tools/cortex-api) and the sweep DATA is P-43 (hauska-engine); neither is attempted here. The county_facet_coverage recompute lives in hauska-engine. No route, no proxy allowlist rule (root api/spine.ts) and no server code is touched: both new reads are GETs, which the proxy already allows for the cortex and retrieval segments.",
+
+  "liveStateEstablishedAtSource": {
+    "note": "Every figure below is VERIFIED by this lane at source on 2026-08-19 through the deployed console proxy, and every figure names its layer and its timestamp.",
+    "scored": {
+      "probe": "curl -s -o ledger.json -w '%{http_code} %{content_type} %{size_download}' https://cmdcenter-blush.vercel.app/api/spine/cortex/api/county-ledger",
+      "http": 200,
+      "contentType": "application/json; charset=utf-8",
+      "bytes": 2121656,
+      "computedAt": "2026-08-14T17:41:22.500Z",
+      "servedAt": "2026-08-19T13:53:28.783Z",
+      "materializationAgeMs": 418326283,
+      "materializationAgeHuman": "4d 20h 12m",
+      "grid": "3556 cells = 254 counties x 14 rails — the denominator for every cell figure here",
+      "displayStateTotals": "not-yet 2940, satisfied-present 540, satisfied-absent 76; no-writer 0, no-atom 0, derivation-indeterminate 0; denominator 3556",
+      "deadIndicatorsConfirmed": "hasWriter true on 3556 of 3556; atomFamilyState 'present' on 3556 of 3556; isPartial false on 3556 of 3556",
+      "railCapabilities": "footprint 254 (reachPct 1), rail-corridor 253, mud 186, owner 15, rrc-wells 1; the other 9 of 14 serve maxCountiesReachable null with sourceBasis 'no capability probe defined for this rail'",
+      "perRailSatisfiedAgainstPayloadDenominator254": "geometry 253, mud 209, flood 114, cad 13, landuse 13, owner 13, zoning 1, roads 0, envelope 0, footprint 0, easement 0, rrc-wells 0, rrc-pipelines 0, rail-corridor 0"
+    },
+    "written": {
+      "probe": "curl -s https://cmdcenter-blush.vercel.app/api/spine/retrieval/stats/central-tx-node-graph",
+      "http": 200,
+      "bytes": 6177,
+      "generatedAt": "2026-08-04T13:02:36.327Z",
+      "instrumentSource": "live SELECT against substrate Neon atoms/atom_links (serving DB)",
+      "coverageSet": "10 counties (48021 Bastrop, 48027 Bell, 48029 Bexar, 48055 Caldwell, 48091 Comal, 48187 Guadalupe, 48209 Hays, 48309 McLennan, 48453 Travis, 48491 Williamson) of 254; roadRollup.byCounty carries road_nodes for a smaller subset still",
+      "reliability": "SLOW AND FLAKY: a second identical probe with --max-time 240 returned HTTP 000, 0 bytes, at 240.011s. The written probe must therefore be on demand, never on mount, and its failure must be a named absence."
+    },
+    "served": {
+      "probe": "curl -s https://cmdcenter-blush.vercel.app/api/spine/cortex/api/serving-sweep",
+      "http": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 918,
+      "reading": "the documented cortex-api SPA fallthrough — the route does NOT exist as of 2026-08-19T13:5xZ. SS-W7 is building it. The SERVED layer therefore renders from a loaded artifact until then, labelled ARTIFACT, never live."
+    }
+  },
+
+  "findingsAtSourceBeforeBuild": [
+    {
+      "id": "W8-F1",
+      "layerJoin": "WRITTEN(2026-08-04) vs SCORED(2026-08-14)",
+      "claim": "On 5 of the 10 counties the written instrument covers, the store was observed carrying zoning atoms while the ledger scores the zoning rail not-yet at 0.00%: Travis 48453 233,249 written, Bexar 48029 416,451, McLennan 48309 48,441, Guadalupe 48187 30,613, Bell 48027 61,170. Denominator: 10 counties in the written instrument's coverage set.",
+      "rule": "the two readings are in DIFFERENT UNITS (atom counts vs percent of parcels), so the console compares presence against zero and NEVER differences them",
+      "consequence": "this is the generalized shape of the footprint case the operator hit, and it is visible today on live data without waiting for any lane"
+    },
+    {
+      "id": "W8-F2",
+      "layerJoin": "WRITTEN vs SCORED",
+      "claim": "Bastrop 48021 roads: 17,551 road nodes written (observed 2026-08-04) while the roads rail carries NO scored number anywhere in the payload — 0 of 254 cells carry honestCoveragePct, 0 carry a verifying instrument, 0 carry a source.",
+      "consequence": "roads is written and entirely unscored; the manifest cannot distinguish that from never acquired"
+    },
+    {
+      "id": "W8-F3",
+      "layerJoin": "SCORED",
+      "claim": "6 of 14 rails carry ZERO scoring evidence on all 254 counties — no coverage number, no verifying instrument, no source: roads, footprint, easement, rrc-wells, rrc-pipelines, rail-corridor. The other 8 carry 254, 254, 254, 254, 254, 254, 177 and 19 coverage values (geometry, cad, zoning, landuse, owner, mud, flood, envelope).",
+      "disposition": "this is the DERIVED, live replacement for the dead hand-declared hasWriter tag: it fires on 6 of 14 rails today and stays quiet on 8, so it is proven able to fire in both directions on the live payload"
+    },
+    {
+      "id": "W8-F4",
+      "layerJoin": "SCORED",
+      "claim": "The three dead indicators are confirmed at source, denominator 3556 cells each: hasWriter constant true, atomFamilyState constant 'present', isPartial constant false. The NO WRITER tag, the NO ATOM tag and the partial treatment cannot fire.",
+      "disposition": "isPartial is DERIVABLE client-side (coverage vs threshold) and will be derived; hasWriter and atomFamilyState are not derivable from this payload, so the controls they drive are DELETED and the deletion is stated on screen with its reason and denominator"
+    },
+    {
+      "id": "W8-F5",
+      "layerJoin": "SCORED",
+      "claim": "cortex-api's ManifestCell union includes a sixth displayState, 'derivation-indeterminate' (routes/countyLedger.ts), which the console's type union does not declare. A cell in that state currently falls through to the default and renders as the same dot as not-yet.",
+      "consequence": "an indeterminate derivation would read to an operator as an unacquired rail. Zero such cells on today's payload, so this is a latent mis-render, not an active one",
+      "evidenceKind": "VERIFIED by reading legacy-design-tools/artifacts/api-server/src/routes/countyLedger.ts at source"
+    },
+    {
+      "id": "W8-F6",
+      "layerJoin": "SCORED",
+      "claim": "Rail columns are scored against the payload's 254 counties. rrc-wells has a served ceiling of 1 county, owner 15, mud 186, rail-corridor 253. Scoring rrc-wells 0/254 manufactures a 253-county hole that does not exist.",
+      "disposition": "the ceiling becomes the PRIMARY denominator where a probe defines one, with the payload denominator shown beside it and the 9 rails with no probe saying so rather than borrowing 254"
+    },
+    {
+      "id": "W8-F7",
+      "layerJoin": "instrument reliability",
+      "claim": "The written instrument's own generatedAt is 2026-08-04, ten days older than the ledger it is being compared against. No layer in this console is 'now'.",
+      "consequence": "the three-layer view renders three timestamps, never one clock, and the staleness alarm ranks them"
+    }
+  ],
+
+  "designDecisions": [
+    "THIRD SUBTAB 'Three layers' renders WRITTEN | SCORED | SERVED side by side per county per rail. Nothing is averaged; the only arithmetic across layers is the scored-vs-served gap in points, which is legal because both are percentages of parcels. Written counts are compared as presence-vs-zero only.",
+    "A layer with no instrument for a cell renders as NOT MEASURED naming the instrument's coverage set, never as zero (DEV_PROCESS 1.3, 3.3).",
+    "STALENESS becomes an alarm bar present on every subtab, carrying the age, the consequence sentence, and two derived checks: (1) evidence horizon — any observation the console can see that POSTDATES computedAt; (2) declared work horizon — a small, explicitly hand-declared, dated list of landed work with its doc_repo artifact path, of which the L26 footprint claim is the worked example. The declared list is rendered as declared-upstream provenance so it can never pass for a measurement.",
+    "SUBTAB AFFORDANCE: role=tablist/tab segmented control with visible borders, per-tab status badges, keyboard arrows, and a URL param (#panel=county-manifest&view=three-layer) so a subtab is linkable and survives reload.",
+    "LIVE FEED: the ledger re-reads on an interval while the panel is open, with the re-read verdict from SS-W6 preserved. A re-read that does not move computedAt continues to be reported as upstream staleness, never as a refresh. The written probe is NOT put on the interval — it is slow and flaky (W8-F7) and one 240s hang would freeze the feed.",
+    "The sweep endpoint is auto-probed once when the SERVED layer is first needed, so the operator does not have to find a button; the artifact origin stays a labelled fallback."
+  ],
+
+  "risksAndMitigations": [
+    { "risk": "A new declared list (work horizon) is exactly the hand-declared rot class this lane is deleting elsewhere.", "mitigation": "it is rendered as declared-upstream, carries a per-entry doc_repo artifact path and a declaredAt, and sits beside two derived checks that need no declaration. The wells half of the same source line is NOT declared because the rrc-wells capability probe and standing memory contradict it." },
+    { "risk": "An interval re-read could hammer the endpoint or leak a timer.", "mitigation": "60s floor, cleared on unmount, toggleable, and the read path is the single readLedger() SS-W6 already established." },
+    { "risk": "Rendering an artifact as if it were live.", "mitigation": "origin labelling is retained from SS-W6 for the sweep and reused for the written layer; both carry locator + HTTP status + notServedReason." }
+  ],
+
+  "constraintsAcknowledged": [
+    "apps/command-center/** only",
+    "push branch immediately after first commit; PR against main; DO NOT MERGE, DO NOT DEPLOY, no push to main",
+    "exit-bounded verification only",
+    "no sub-agents; this lane is the deepest worker"
+  ]
+}

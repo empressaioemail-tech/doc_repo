@@ -1,0 +1,144 @@
+{
+  "lane": "SS-W12",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review",
+  "planRows": ["P-47"],
+  "repo": "legacy-design-tools",
+  "pr": 438,
+  "prUrl": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/438",
+  "branch": "ss/w12-scorer-harness",
+  "writtenAt": "2026-08-19",
+
+  "whatCp2Tested": {
+    "instrument": "artifacts/api-server/src/countyRailScoreCli.ts --dry-run (the CLI default; --apply was never passed)",
+    "stores": "READ-ONLY against DEPLOYMENT_DATABASE_URL (legacy-design-tools-prod/neondb) and ATOMS_DATABASE_URL (hauska-prod-497015/hauska_mcp)",
+    "scope": "6 counties x 7 scoreable rails = 42 cells",
+    "counties": ["48003 Andrews", "48007 Aransas", "48021 Bastrop", "48055 Caldwell", "48129 Donley", "48135 Ector"],
+    "heavyScanDecision": {
+      "ruling": "AGENT_CONTRACT s4 serialization was honored by keeping the run SMALL rather than by taking the heavy-scan slot",
+      "detail": "No statewide GROUP BY was issued. Atom counts use an entity_id prefix RANGE per county (index-usable); the parcel denominator is a per-county count(DISTINCT feature_index) and is now memoised once per county per run instead of once per (rail, county). Whole run: 6.9s wall.",
+      "notWatchRegistered": "the run is not long-running (single-digit seconds) so no watch_registry entry was created; a statewide --all-scoreable run WOULD need one and that is named in the close as a precondition"
+    },
+    "preRegistration": "P:/tmp/ss-w12-prereg.md, written BEFORE the run (DEV_PROCESS 4.5). Five bands, including one that predicted a defect in this lane's own work."
+  },
+
+  "bandResults": [
+    {
+      "band": 1,
+      "claim": "flood reproduces the stored values EXACTLY",
+      "label": "VERIFIED by SS-W12",
+      "result": "CONFIRMED 4 of 4",
+      "detail": "48003 99.76 = 99.76 | 48007 93.63 = 93.63 | 48021 98.26 = 98.26 | 48055 95.54 = 95.54. flood is the one rail whose live rows came from a checked-in instrument (countyFloodScoreCli.ts) on a reconstructible denominator, so this is the load-bearing equivalence check.",
+      "countingRule": "harness numerator = count(atoms WHERE entity_type='flood-hazard-fact' AND entity_id prefix = fips); denominator = count(DISTINCT feature_index) in txgio_parcel for the fips"
+    },
+    {
+      "band": 2,
+      "claim": "cad/landuse/owner may read HIGHER than stored where the one-off's Math.min(100,..) clamp bit",
+      "label": "VERIFIED by SS-W12",
+      "result": "CONFIRMED, and larger than predicted",
+      "detail": "48021 cad: stored 100.00 satisfied-present; unclamped 77,073/63,357 = 121.65%. 48055 cad: stored 100.00 satisfied-present; unclamped 48,382/26,155 = 184.98%. Both now fail closed to not-yet carrying the honest ratio. landuse and owner reproduced EXACTLY on all 6 counties (cellsCoverageMoved = 0), so the clamp bit only the cad rail in this sample.",
+      "implication": "two live cells render satisfied-present on a number that is really 1.22x and 1.85x the parcel count. That is duplicate or stale cad-parcel-roll atoms, and the clamp is what hid it. NOT fixed here: re-scoring those rows is a write to the live ledger and belongs to the planner."
+    },
+    {
+      "band": 3,
+      "claim": "geometry reads LOWER than stored by a known amount, because the live denominator is an 'accounted features' rule whose producer is not in this repo",
+      "label": "VERIFIED by SS-W12",
+      "result": "CONFIRMED, within band",
+      "detail": "predicted from the stored artifact_path strings, actual from the harness: 48003 99.76/99.76 exact | 48007 97.31/97.31 exact | 48021 98.48 predicted vs 98.49 actual | 48055 96.28/96.28 exact | 48135 5.00/5.00 exact. The 48021 0.01pp miss is explained: the harness counted 62,398 parcel-node atoms where B2_cp2_geometry_scorer_apply.mjs saw 62,394 on 2026-08-12, i.e. 4 atoms were added since.",
+      "deRisking": "all four counties still clear the 95 threshold on the raw denominator, so adopting it would NOT demote them. The accounted-vs-raw question changes the NUMBER, not the state, for these counties. That is a finding, not a resolution: geometry's denominator still needs recovering or re-ruling before geometry is re-scored, and the registry says so in its own notes field."
+    },
+    {
+      "band": 4,
+      "claim": "PREDICTED DEFECT IN THIS LANE'S OWN WORK: the harness will demote Donley 48129's operator-established geometry absence to not-yet",
+      "label": "VERIFIED by SS-W12",
+      "result": "FIRED, then FIXED, then RE-VERIFIED",
+      "detail": "Run 1 reported geometry states {satisfied-present:4, not-yet:2}, the second not-yet being 48129 whose stored cell is satisfied-absent with basis 'stratmap-txgio-parcel-universe-404-county-confirmed;cad-outreach-pending' and artifact '_decisions/2026-08-12_donley_48129_geometry_honest_absence.md'. Cause: the geometry rail declares no absence probe, so the engine had no instrument capable of contradicting the finding, and its no-denominator branch scored not-yet. Run 2 after the fix reports {satisfied-present:4, satisfied-absent:1, not-yet:1} and logs 'ABSENCE PRESERVED 48129'.",
+      "fix": "runRailScore now preserves a stored satisfied-absent unless the rail has an absence probe whose reach covers the county, or reassessAbsences is passed explicitly. Every preserved cell is reported in absencesPreserved. Two tests cover it plus a negative case proving the guard releases when asked.",
+      "whyItMatters": "an --apply run of the first draft would have destroyed a human determination backed by a decision doc, and reported it as ordinary work"
+    },
+    {
+      "band": 5,
+      "claim": "zoning and envelope diverge by design (roster-doctrine and legacy rows vs a parcel stamp measurement)",
+      "label": "VERIFIED by SS-W12",
+      "result": "CONFIRMED, and it surfaced a finding that is NOT by design",
+      "detail": "see findingsFromCp2 F5"
+    }
+  ],
+
+  "findingsFromCp2": [
+    {
+      "id": "F5",
+      "severity": "high",
+      "label": "VERIFIED by SS-W12 (the disagreement). NOT ESTABLISHED: which number is right, or what produced 99.77.",
+      "finding": "Bastrop 48021's zoning cell reads honest_coverage_pct 99.77, rail_state satisfied-present, threshold 95. Measured today against txgio_parcel, 9,642 of 63,357 features carry a non-null zoning_district = 15.22%.",
+      "storedRowProvenance": "checked_at 2026-08-05T01:43:15Z, source 'deterministic', verified_by_instrument NULL, artifact_path NULL",
+      "causeHunt": "The counting rule is NOT the explanation, which was the first hypothesis and was checked rather than assumed: DISTINCT ON (feature_index) could in principle pick an unstamped duplicate row for a feature that is stamped on another row. Measured both ways on the live store: features with ANY stamped row = 9,642; features stamped under DISTINCT ON = 9,642. They agree exactly, so the measurement is not hiding stamps. Raw rows 74,729, raw stamped rows 10,287, features 63,357.",
+      "notEstablished": "what wrote 99.77. The row names no instrument. Note that 48021's envelope row carries the identical 99.77 with the identical source 'deterministic', so both came from one legacy pass, but that is an observation about the two rows, not an identification of the pass.",
+      "whyItMatters": "standing portfolio understanding is that Bastrop 48021 is the ONE county with real zoning depth. If 15.22% is the honest wired-city stamp, the only real-depth zoning cell in the ledger is satisfied-present on a number nothing currently reproduces. This is a planner/SS-W13 item; SS-W12 reports it and changes nothing.",
+      "ownedBy": "planner"
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "label": "VERIFIED by SS-W12",
+      "finding": "The existing CI gate 'ci-coverage-clamp' greps for the clamp in exactly two named files (countyGeometryScoreCli.ts, countyCoverageScoreCli.ts). It guards the FILES the defect was found in, not the RULE. A clamp introduced in the new shared engine would reach all 14 rails at once with the gate still green.",
+      "disposition": "FIXED in this PR: a new step scopes the SF-25 rule to artifacts/api-server/src/lib/railScoring.",
+      "twoDefectsInTheGateItself": [
+        "The first draft of the new grep was PERMANENTLY RED, because the engine's own header quotes 'Math.min(100, (n/feat)*100)' while documenting the defect it prevents. A gate nobody can get to green is a dead gate (DEV_PROCESS 2.0) and this is CTRL-3 mirrored: there, a defect report's prose granted a bad row authority. Comment lines are now excluded and the grep matches CODE.",
+        "The second draft was FAIL-OPEN: the whole pipeline was wrapped in '|| true', so when ripgrep was not on PATH the gate printed 'clean' and exited 0. Caught by running it, not by reading it. The exit code is now taken from rg itself, never from the pipe (DEV_PROCESS 2.3), and >1 is a hard failure."
+      ],
+      "provenAbleToFire": "both predicates exercised on real exit codes: rg exit 0 and 1 proceed, 2 and 127 fail the gate; the line filter drops 4 comment forms (leading *, //, /*, and a doc line) and keeps the 1 real code line"
+    },
+    {
+      "id": "F7",
+      "severity": "medium",
+      "label": "VERIFIED by SS-W12",
+      "finding": "cellsChanged is a misleading headline on a first run. The flood rail reproduced all four stored percentages EXACTLY and still reported 6 of 6 cells changed, because source, verified_by_instrument and artifact_path were all rewritten by the new instrument.",
+      "disposition": "FIXED in this PR: the report now carries cellsCoverageMoved alongside cellsChanged. On the live dry run they read 41 and 16 respectively. A reader of cellsChanged alone would have concluded the scorer moved all of Texas; it moved 16 cells, and 6 of those 16 are cells that simply had no prior row.",
+      "perRailCoverageMoved": {"geometry": 4, "cad": 2, "zoning": 2, "flood": 2, "envelope": 6, "landuse": 0, "owner": 0}
+    },
+    {
+      "id": "F8",
+      "severity": "low",
+      "label": "VERIFIED by SS-W12",
+      "finding": "The parcel-feature denominator was being re-measured once per (rail, county) rather than once per county: a 14-rail statewide run would have issued 14 count(DISTINCT feature_index) scans per county for one unchanging number. The per-rail-CLI pattern paid this cost invisibly because each CLI only knew about its own rail.",
+      "disposition": "FIXED in this PR: memoised per run, never at module level, so a run always sees the store as it is now."
+    }
+  ],
+
+  "adversarialReviewAtCp2": [
+    {
+      "challenge": "The dry run reported 41 of 42 cells changed. Does that mean the harness disagrees with the ledger almost everywhere?",
+      "answer": "No, and the fact that the question is askable was itself the defect (F7). 16 cells moved on coverage; 25 changed only their provenance strings. Of the 16: 6 are cells with no prior row at all, 4 are the geometry accounted-vs-raw denominator difference (state unchanged), 2 are the cad clamp, 2 are zoning, 2 are envelope legacy rows. landuse and owner moved zero of twelve."
+    },
+    {
+      "challenge": "You claim the capability reproduces existing scorers, but you tested 6 counties out of 254.",
+      "answer": "Stated with its denominator rather than generalized. The claim is: on 6 counties x 7 rails, flood reproduced 4 of 4 stored values exactly and landuse/owner reproduced 12 of 12 exactly. It is NOT a statewide equivalence claim and the close does not make one. A statewide dry run is cheap to add and is named as the precondition for any apply."
+    },
+    {
+      "challenge": "Preserving absences by default could hide a genuinely stale absence forever.",
+      "answer": "It could, and that is the deliberate trade. The asymmetry: a wrongly-preserved absence is visible in the report on every single run (absencesPreserved), while a wrongly-destroyed absence is invisible and unrecoverable. The escape hatch exists and is one flag, and a test proves the guard releases rather than being stuck closed."
+    },
+    {
+      "challenge": "The route cannot score atom-count rails in production and you shipped it anyway.",
+      "answer": "It fails closed and NAMED (railsUnavailable / atoms_store_not_configured), with a test asserting zero writes on that path. The gap is now readable from the route's own response instead of being invisible. Wiring ATOMS_DATABASE_URL onto the service is a planner deploy decision and is listed in the close, not done here."
+    }
+  ],
+
+  "constraintsHonored": [
+    "READ-ONLY against both production stores: zero ledger writes at any point (cellsWritten 0 on every run; the CLI requires an explicit --apply that was never passed, and the report has an invariant check that fails if a dry run ever reports a write)",
+    "no heavy statewide scan; per-county index-usable queries only; 6.9s total",
+    "no other lane's worktree touched",
+    "countyCoverageScoreCli.ts / countyGeometryScoreCli.ts / countyFloodScoreCli.ts NOT edited (SS-W13 owns them)",
+    "no drizzle migration added (SS-W7 holds 0082)",
+    "countyLedger.ts NOT edited (SS-W7's PR #437 owns it)",
+    "every command exit-bounded; nothing left running"
+  ],
+
+  "openAtCp2": [
+    "CI conclusion string on PR 438 (recorded in the close, not here)",
+    "F5 Bastrop zoning disagreement needs a planner ruling",
+    "F2 county_rail drift vs the checked-in declaration needs a planner ruling",
+    "whether the two clamped cad cells get re-scored is a write decision, not this lane's"
+  ]
+}

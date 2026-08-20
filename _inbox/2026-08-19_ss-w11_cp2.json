@@ -1,0 +1,143 @@
+{
+  "lane": "SS-W11",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint — measurement complete, retirement recommendation pending",
+  "date": "2026-08-19",
+  "planRows": ["P-45"],
+  "repo": "hauska-engine",
+  "branch": "ss/w11-reconciliation",
+  "commits": ["be9c4d0", "e63d3c3"],
+  "cp1": "_inbox/2026-08-19_ss-w11_cp1.json",
+
+  "layerDiscipline": "Every figure below is the WRITTEN layer: atoms actually in hauska_mcp and snapshot rows actually in neondb place_layer_snapshots, read directly. Nothing here is SCORED (county_facet_coverage / GET /api/county-ledger was not consulted, and the live ledger's materialisation is stale by more than the work it describes) and nothing here is SERVED (SS-W5 established under P-43 that the tier2 overlay reaches no browser; this lane did not re-probe it).",
+
+  "theDetectorWorks": {
+    "claim": "VERIFIED. The registry-versus-store divergence check EXITED 1 on its first run against 20 real unclassified live stores, then exited 0 after each was classified. It is a control that has been proven able to fire, not a control asserted to work.",
+    "firstRun": "unclassifiedLiveStores: atoms:building-footprint, atoms:rail-corridor-fact, atoms:rrc-pipeline-fact, atoms:setback-rule, atoms:special-district-fact, atoms:well-fact, pls:cad:property, pls:cad:tax, pls:cotality:{comparables,hoa,liens-mortgage-tax,owner-occupancy,parcels,permits,propensity,property,rent-avm}, pls:permits:record, pls:regrid:{parcels,zoning} — 20 keys, exit 1",
+    "secondRun": "deadDeclarations: [], unclassifiedLiveStores: [], clean: true, exit 0",
+    "command": "node --import tsx packages/retrieval/scripts/duplicate-subject-detector.mjs --inventory --check-registry --out artifacts/ss-w11"
+  },
+
+  "selfCorrection": {
+    "label": "VERIFIED — this lane correcting its own CP1",
+    "cp1Claim": "F7 said the subject 'zoning district' is held in at least FOUR places, including pls:cotality:zoning.",
+    "correction": "cotality:zoning holds 65 rows and ALL 65 are the empty object. It holds no zoning value, so it is not a store of zoning-district. The correct count is THREE stores that hold a value: atoms:zoning-fact, tier1 payload_json.zoning.district, and txgio_parcel.zoning_district.",
+    "evidence": "SELECT adapter_key, count(*), count(*) FILTER (WHERE payload_json = '{}'::jsonb) FROM place_layer_snapshots WHERE adapter_key NOT IN ('node-facets:tier1','node-facets:tier2') GROUP BY 1 -> cotality:zoning 65/65 empty; cotality:parcels 54/54; cotality:rent-avm 12/12; cotality:propensity 12/12; regrid:parcels 2/2; regrid:zoning 2/2.",
+    "howItWasCaught": "The drift check forced every live store to be classified, and classifying cotality:zoning required looking at what it contains rather than what its key says. F7 had been asserted from the adapter-key enumeration alone. A correction carries the same evidentiary standard as the claim it corrects, so the measurement is quoted rather than the conclusion."
+  },
+
+  "measurement": {
+    "subject": "flood-zone",
+    "storeA": "atoms:flood-hazard-fact",
+    "storeB": "pls:node-facets:tier2",
+    "groundTruth": "tx_fema_nfhl_flood_zone, edition NFHL_48_20260101, 198,178 rows ingested 2026-08-09",
+    "neverSampled": "Both counties were resolved in full over the union roster of both stores.",
+
+    "denominatorCorrection": {
+      "label": "VERIFIED — the finding that removes the premise",
+      "text": "SS-W5's Travis rate of 0.04 percent was taken over 804,458 parcels. Only 27,584 Travis parcels carry a tier2 row at all, and only 4,145 of those name a zone; 23,438 carry status 'unavailable' with reason 'FEMA fetch skipped (--skip-fema)'. A disagreement is arithmetically impossible on the remainder, so the roster denominator measures tier2's COVERAGE and not its AGREEMENT.",
+      "bastrop": { "disagreements": 5424, "comparable": 62249, "pct": 8.7134, "rosterUnion": 62257, "pctOverRoster": 8.7123 },
+      "travis": { "disagreements": 332, "comparable": 4145, "pct": 8.0097, "rosterUnion": 380918, "pctOverRoster": 0.0872 },
+      "countingRule": "comparable = entities where BOTH stores NAME a value. One entity contributes at most one count.",
+      "consequence": "0.70 percentage points apart, not 200x. The claim that the disagreement tracks the snapshot rather than the geography rested entirely on a contrast that the denominators remove. Both numerators were re-derived independently by this lane and match SS-W5's 5,424 and 332 exactly — SS-W5's counting was right; only its denominator travelled without its rule."
+    },
+
+    "verdictOnThePrediction": {
+      "predicted": "Bastrop's 8.69 percent is mostly staleness and collapses on refresh; Travis's 0.04 percent is mostly split parcels.",
+      "measured": "FALSIFIED IN BOTH HALVES. Staleness accounts for 0 of 5,424 Bastrop disagreements, so a refresh moves nothing. Split parcels account for 0 of 332 Travis disagreements; all 42 split parcels found anywhere are in Bastrop.",
+      "preRegisteredBand": "CP1 pre-registered, before the run, that the two counties would land within a few points of each other and that the tile-sampling artifact would dominate in both. The result is inside that band: 8.71 against 8.01, with the artifact at 99.08 percent.",
+      "note": "Reporting a planner figure as wrong is a successful outcome per DEV_PROCESS 3.2. The measurement was not tuned toward the pre-registered expectation; the classifier's own firing tests were written before any county was run."
+    },
+
+    "causeOfEveryDisagreement": {
+      "adjudicated": 5756,
+      "countingRule": "every disagreement in both counties, adjudicated against NFHL_48_20260101 by re-running BOTH stores' sample points and the parcel polygon in PostGIS. Nothing was sampled and nothing was extrapolated.",
+      "classes": {
+        "explained-by-sampling-point": { "bastrop": 5371, "travis": 332, "total": 5703, "pctOfDisagreements": 99.08 },
+        "split-subject": { "bastrop": 42, "travis": 0, "total": 42, "pctOfDisagreements": 0.73 },
+        "vintage-undecidable": { "bastrop": 11, "travis": 0, "total": 11, "pctOfDisagreements": 0.19 },
+        "edition-differs": { "bastrop": 0, "travis": 0, "total": 0, "pctOfDisagreements": 0.0 },
+        "genuine-conflict": { "bastrop": 0, "travis": 0, "total": 0, "pctOfDisagreements": 0.0 }
+      },
+      "mechanism": "The tier2 bake quantises each parcel centroid to a 0.005-degree tile, issues ONE live FEMA ArcGIS point query at the tile CENTRE, and reuses that answer for every parcel in the tile. Measured separation between the two stores' sample points over adjudicated disagreements: Bastrop min 12.4 m, median 226.5 m, max 366.4 m; Travis min 31.1 m, median 202.2 m, max 357.7 m. The Bastrop maximum lands on the half-diagonal of a 0.005-degree tile at 30N, which is what the mechanism predicts and is the strongest confirmation available that the reconstruction is right."
+    },
+
+    "whoIsRightAboutTheParcel": {
+      "label": "VERIFIED — the number the retirement decision turns on",
+      "text": "Ground truth at the parcel centroid matches the ATOM in 5,703 of 5,703 sampling-point cases and 11 of 11 vintage-undecidable cases. It matches TIER2 in ZERO cases of either class. The 42 split parcels are genuinely both (truth at the centroid falls on store A's side in 10, store B's in 30, and on a third zone in 2 — which is what a split parcel looks like, not a tie-break).",
+      "countingRule": "'truth' is the NFHL zone at store A's sample point under NFHL_48_20260101, over adjudicated disagreements only.",
+      "consequence": "There is no case in either county where tier2 is right about the parcel and the atom is wrong. That is not a close call between two stores; it is one store answering the question and one store answering a nearby question."
+    },
+
+    "customerFacingCost": {
+      "label": "VERIFIED",
+      "text": "1,995 parcels across the two counties where tier2 names a zone OUTSIDE the special flood hazard area and the atom names one inside it. Bastrop 1,940, Travis 55.",
+      "countingRule": "over disagreements only; SFHA membership decided by the leading letter of the FEMA zone code (A and V families inside, X and D outside).",
+      "otherDirection": "3,670 parcels where tier2 overstates the hazard (Bastrop 3,393, Travis 277), plus 91 where both are inside the SFHA but name different zones.",
+      "topValuePairs": "Bastrop: X->A 2,170, A->X 1,448, X->AE 1,210, AE->X 489, AO->AE 32. Travis: X->AE 141, X->A 136, AE->X 46, A->X 6, AO->X 3.",
+      "why_it_matters": "Understating is the dangerous direction: it tells a reader there is no flood risk on a parcel whose centroid is in the floodplain. This is not currently reaching a browser (SS-W5, P-43), which is the only reason it is a finding rather than an incident — and it means the serving bug SS-W5 found was, accidentally, the thing preventing it."
+    },
+
+    "instrumentSelfCheck": {
+      "label": "VERIFIED",
+      "declaredDeviation": "The flood-hazard-fact atom does not record the point it evaluated, so this instrument uses the centroid the tier2 bake recorded as a stand-in for store A's sample point. The two are computed by different ringCentroid implementations in different repos.",
+      "check": "Ground truth at the stand-in point reproduces the atom's OWN recorded zone in 5,392 of 5,424 Bastrop adjudications (99.41 percent) and 332 of 332 Travis adjudications (100 percent).",
+      "reading": "A low rate here would have invalidated every explained-by-sampling-point verdict in this report. It is high, and the residual 0.59 percent is almost exactly the split-subject plus vintage-undecidable population, which is where a centroid legitimately falls in a different zone than the stored value. The deviation is sound on evidence, not on hope."
+    },
+
+    "tier2VintageFieldAudit": {
+      "label": "VERIFIED",
+      "text": "89,841 tier2 rows across the two counties carry a provenance.vintage, and 89,841 of them are ISO instants equal to the bake's own clock. Not one is an NFHL edition string.",
+      "consequence": "The dispatch's vintage-versus-split fork is undecidable on the tier2 side by construction. A lane that applied it mechanically would have read two unlike strings as two different editions and reported 5,424 Bastrop staleness cases that do not exist."
+    }
+  },
+
+  "freeFindings": [
+    {
+      "id": "X1",
+      "label": "VERIFIED",
+      "text": "pnpm-lock.yaml on main does not list postgres under packages/retrieval, but packages/retrieval/package.json has declared postgres@^3.4.5 since PR #347. `pnpm install --frozen-lockfile` therefore FAILS on a clean checkout of main. CI never noticed because both workflows pass --frozen-lockfile=false. The one-line lockfile sync is included in this branch; the guardrail question (a lockfile that is advisory is not a lockfile) is a backlog item, not this lane's to rule on.",
+      "evidence": "ERR_PNPM_OUTDATED_LOCKFILE on `pnpm install --frozen-lockfile` at commit d455c82 with a clean tree; .github/workflows/ci.yml:34 and block13-cert-grade.yml:53 both read `pnpm install --frozen-lockfile=false`."
+    },
+    {
+      "id": "X2",
+      "label": "VERIFIED",
+      "text": "Three concurrent full-table count(*) scans over `atoms` filtering on body->>'countyFips' for entity_type='parcel-node' were running from another session during this lane's inventory pass, in parallel with each other. AGENT_CONTRACT section 4 permits at most ONE heavy scan at a time across all lanes on a shared database. Reported, not acted on: killing another lane's work is destructive and not this lane's call.",
+      "evidence": "pg_stat_activity on hauska_mcp showed pids 2339, 2340, 2341 all active 00:01:58 with the same query text and the same query_start."
+    },
+    {
+      "id": "X3",
+      "label": "VERIFIED",
+      "text": "A duplicate subject can live INSIDE one record, which this detector's shape cannot see. The setback-rule atom for 48021:36521 carries displayMeta.secondSource stating that the city's GIS layer 83 specifies corner side 10 for district GC while the atom's own layer-23 reading says 5, with the note 'the two city schedules conflict — verify which is in effect with the city'. One store, two values, an unresolved conflict shipped as a display note.",
+      "disposition": "backlog; named in the registry's exclusion list so it reads as deliberate rather than missed"
+    },
+    {
+      "id": "X4",
+      "label": "VERIFIED",
+      "text": "The parcel-node atom for 48021:36521 is status RETIRED (retiredAt 2026-08-11, reason: absent from the current stratmap25-landparcels_48021_bastrop_202503 plan), while its tier1 snapshot row is still live and still carries apn, acreage, land use and zoning. tier1 has no retirement path at all. The store with a lifecycle says the parcel is gone; the store without one keeps answering.",
+      "disposition": "registered as the parcel-existence subject; measurement pass not yet written"
+    }
+  ],
+
+  "adversarialReviewOfThisLaneSOwnWork": [
+    "The strongest objection to the sampling-point verdict is that the instrument reconstructs the tier2 bake's tiling rule from another repo's source rather than reading a recorded sample point. That objection is answered by evidence and not by argument: the reconstruction predicts a maximum separation of one tile half-diagonal, and the measured Bastrop maximum is 366.4 m against a predicted ~366 m. A wrong reconstruction would not land on its own bound.",
+    "The second objection is that 'explained-by-sampling-point' could absorb a genuine conflict by construction. It cannot: the class requires ground truth at BOTH points to reproduce BOTH stores independently, which is a two-sided test. A case where truth matched only one side falls through to edition-differs or vintage-undecidable, and a case matching neither falls through to genuine-conflict. Both of those paths have firing tests and both returned non-zero or zero for stated reasons.",
+    "The third objection is that the classifier could be folding FEMA zone families to shrink the disagreement count. It does not, and there is a test asserting AE is not folded into A and X is not folded into X500.",
+    "Where this lane is WEAKEST: the measurement covers 2 of the 10 counties that carry tier2 rows, chosen because they are the two the dispatch names. The remaining 8 (48209, 48309, 48091, 48187, 48029, 48027, 48055, 48491) hold 516,573 tier2 rows and are unmeasured. Nothing here should be read as a statewide flood-divergence rate; it is a two-county rate whose mechanism is statewide because the mechanism is in the bake, not in the geography.",
+    "Also weak: 7 of the 8 registered duplicate subjects have no measurement pass. The detector NAMES them and the runner refuses them with an explicit error rather than returning zero, which is the honest failure mode, but 'inventoried' is not 'measured' and the close must not blur the two."
+  ],
+
+  "openAtCp2": [
+    "The retirement recommendation per subject — drafted at close, not here.",
+    "8 tier2 counties unmeasured; 7 registered subjects with no measurement pass.",
+    "The 11 vintage-undecidable Bastrop cases: the atom matches ground truth at every point tested and the parcel lies wholly in one zone, so tier2 is simply wrong there. It cannot be attributed to an edition because tier2 records none. Five of the eleven are consecutive prop ids (8727948, 8727992, 8727993, 8727994, 8727996), which suggests one bad tile rather than eleven independent errors — untested."
+  ],
+
+  "constraintsHonored": [
+    "read-only: no INSERT, UPDATE, DELETE or DDL issued against either database; no atoms writer slot taken",
+    "heavy scans serialized: one county at a time, announced on start and confirmed on completion in the runner's own output",
+    "exit-bounded verification: every command terminated on its own; no watch, no tail, no server",
+    "isolated worktree; branch pushed immediately after the first commit",
+    "no sub-agents spawned"
+  ]
+}

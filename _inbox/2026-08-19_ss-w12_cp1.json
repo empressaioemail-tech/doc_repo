@@ -1,0 +1,164 @@
+{
+  "lane": "SS-W12",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "planRows": ["P-47"],
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/ss-w12-scorer-harness",
+  "branch": "ss/w12-scorer-harness",
+  "baseSha": "85c5d1a8c12a4a70e81323a907ca252b802266b8",
+  "writtenAt": "2026-08-19",
+
+  "missionPremise": {
+    "ruling": "OPS-16 amendment A-020, ruled 2026-08-19. Scoring was never a standing capability in this portfolio: twelve county writers exist in hauska-engine and three scorer CLIs in legacy-design-tools, and every other ledger row that exists was produced by a one-off lane script run once. There was no recompute route until this week because there was nothing to re-run.",
+    "sourceRead": [
+      "_dispatches/2026-08-19_ss-w12_dispatch.md (in full, incl. EVIDENCE DISCIPLINE)",
+      "90_runbooks/AGENT_CONTRACT.md v7b714e95",
+      "90_runbooks/DEV_PROCESS.md vbb19bd34"
+    ]
+  },
+
+  "premiseVerifiedAtSource": {
+    "label": "VERIFIED by SS-W12",
+    "layer": "SCORED",
+    "instrument": "read-only SQL against DEPLOYMENT_DATABASE_URL (legacy-design-tools-prod), P:/tmp/ss-w12-probe-ledger.mjs",
+    "countingRule": "one row per (county_fips, facet) in county_facet_coverage; rails from county_rail joined on facet = rail_key",
+    "railsWithZeroCoverageRows": ["roads", "footprint", "easement", "rrc-wells", "rrc-pipelines", "rail-corridor"],
+    "railsWithZeroCoverageRowsCount": 6,
+    "railTotal": 14,
+    "cellsAffected": 1524,
+    "cellsAffectedCountingRule": "6 rails x 254 counties in county_manifest (county_manifest count VERIFIED = 254)",
+    "gridPct": "42.9% of 3,556 cells",
+    "ledgerSnapshotComputedAt": "2026-08-14T17:41:22.500Z",
+    "verdict": "dispatch premise CONFIRMED at source, not relayed"
+  },
+
+  "instrumentProvenanceVerified": {
+    "label": "VERIFIED by SS-W12",
+    "note": "which instrument actually wrote each live ledger row -- this is the evidence that scoring was never a capability",
+    "rows": [
+      {"instrument": "score_cad_rails_fast.mjs:landuse", "rows": 254, "lastCheckedAt": "2026-08-12T18:34:36Z", "checkedIn": false},
+      {"instrument": "score_cad_rails_fast.mjs:owner", "rows": 254, "lastCheckedAt": "2026-08-12T18:34:27Z", "checkedIn": false},
+      {"instrument": "score_cad_rails_fast.mjs:cad", "rows": 254, "lastCheckedAt": "2026-08-12T18:40:18Z", "checkedIn": false},
+      {"instrument": "l16-score-mud.mjs", "rows": 254, "lastCheckedAt": "2026-08-14T04:03:47Z", "checkedIn": false},
+      {"instrument": "B2_cp2_geometry_scorer_apply.mjs", "rows": 252, "lastCheckedAt": "2026-08-12T12:43:36Z", "checkedIn": false},
+      {"instrument": "roster-load", "rows": 235, "lastCheckedAt": "2026-08-08T18:48:16Z", "checkedIn": false},
+      {"instrument": "countyFloodScoreCli.ts", "rows": 177, "lastCheckedAt": "2026-08-12T10:51:43Z", "checkedIn": true},
+      {"instrument": "countyGeometryScoreCli.ts", "rows": 1, "lastCheckedAt": "2026-08-12T23:15:48Z", "checkedIn": true},
+      {"instrument": "l16-score-geometry-48201.mjs", "rows": 1, "lastCheckedAt": "2026-08-14T06:36:42Z", "checkedIn": false},
+      {"instrument": null, "rows": 57, "lastCheckedAt": "2026-08-05T01:43:15Z", "checkedIn": false}
+    ],
+    "summary": "1,561 of 1,739 live county_facet_coverage rows (89.8%) were written by an instrument that is NOT checked into any repo. Counting rule: numerator = rows whose verified_by_instrument is a .mjs one-off (254+254+254+254+252+1 = 1,269), plus 'roster-load' (235), plus NULL (57) = 1,561. Denominator = every row in county_facet_coverage = 1,739 (which reconciles both ways: by facet 254+19+177+254+19+254+254+254+254 = 1,739; by instrument 1,561 + 177 countyFloodScoreCli.ts + 1 countyGeometryScoreCli.ts = 1,739).",
+    "onlyOneOffScriptFoundOnDisk": "P:/tmp/a1_cad_rails_20260812/score_cad_rails_fast.mjs -- read in full. l16-score-mud.mjs and B2_cp2_geometry_scorer_apply.mjs are NOT on this machine (searched P:/ to depth 4). Their ledger rows therefore cannot be reproduced from source at all, which is the sharpest available statement of the problem."
+  },
+
+  "freeFindingsAtCp1": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "label": "VERIFIED by SS-W12",
+      "finding": "countyCoverageScoreCli.ts writes facet 'land-use'. No rail_key 'land-use' exists; the rail is 'landuse'. readManifestGrid joins county_facet_coverage on c.facet = r.rail_key, so those 19 rows join to NOTHING and have never rendered a cell.",
+      "evidence": "live: facet 'land-use' has 19 rows, last_checked 2026-08-05, rail_state NULL on all 19; facet 'landuse' has 254 rows written by score_cad_rails_fast.mjs. county_rail has rail_key 'landuse', no 'land-use'.",
+      "implication": "the only checked-in land-use scorer has been a silent no-op on the grid since the rail dimension was written. A scorer whose facet key does not match a rail key must be a hard failure, not a silent orphan.",
+      "ownedBy": "SS-W13 (correctness in existing CLIs) -- SS-W12 mechanizes the GUARD, does not edit that file"
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "label": "VERIFIED by SS-W12",
+      "finding": "live county_rail says atom_family_state='present' AND has_writer=true for all 14 rails, including rrc-wells, rrc-pipelines and rail-corridor. The checked-in COUNTY_RAIL_DECLARATION (lib/db/src/schema/countyRailDimension.ts) declares those three atomFamilyState 'missing' with writerRef null.",
+      "implication": "the DB dimension has drifted stale-OPTIMISTIC against the checked-in declaration -- the exact drift class that file's own header says it exists to prevent. Consequence: those cells render 'not-yet' (a promise) rather than 'no-atom' (an honest absence).",
+      "ownedBy": "reported, not fixed here -- a declaration refresh is a ruling, not a lane side effect (DEV_PROCESS 5.4)"
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "label": "VERIFIED by SS-W12",
+      "finding": "score_cad_rails_fast.mjs clamps with Math.min(100, (n/feat)*100) and classifies every below-threshold cell 'needs-crosswalk'. countyGeometryScoreCli.ts's own header names the clamp as defect SF-25 and fails overcount closed to not-yet with the honest unclamped ratio.",
+      "implication": "two live instruments disagree on the same rule. 762 owner/landuse/cad rows carry clamped values and a classification that means 'the join key is too thin to prove', which is not what a below-threshold atom count means.",
+      "ownedBy": "SS-W12 mechanizes the correct behaviour in the shared engine so a rail declaration cannot reintroduce the clamp; re-scoring those rows is SS-W13/SS-W14 territory"
+    },
+    {
+      "id": "F4",
+      "severity": "low",
+      "label": "VERIFIED by SS-W12",
+      "finding": "naming footgun: in the scorer CLIs, env DATABASE_URL means the ATOMS store (hauska-prod-497015/hauska_mcp); in api-server, DATABASE_URL means the DEPLOYMENT store (legacy-design-tools-prod/neondb).",
+      "implication": "one env name, two opposite meanings, in one repo. New code in this lane uses ATOMS_DATABASE_URL explicitly and never relies on the overloaded name."
+    }
+  ],
+
+  "design": {
+    "oneLine": "A rail becomes scoreable by DECLARING how it is measured, in checked-in data, against a small set of named measurement kinds; one shared engine turns a declaration plus a measurement into a ledger row; one generic CLI and one HTTP route trigger it.",
+    "parts": [
+      {
+        "name": "railScoringRegistry.ts",
+        "role": "DATA. One entry per rail key, covering ALL 14 rails -- including the six with no measurement spec, declared kind 'unspecified' with a reason and a spec owner (SS-W14). Unmentioned is the failure state; out-of-scope is a required classification (DEV_PROCESS 3.3).",
+        "carries": ["railKey (== facet written, by construction)", "measurement kind + params", "denominator spec: kind + prose counting rule (REQUIRED)", "instrument id", "verificationMethod"],
+        "doesNotCarry": ["thresholdPct -- derived from COUNTY_RAIL_DECLARATION by railKey so thresholds have exactly one home (DEV_PROCESS 2.4)"]
+      },
+      {
+        "name": "railScoreEngine.ts",
+        "role": "PURE core plus one shared upsert. Turns (rule, threshold, measurement, optional absence determination) into a ledger row. Enforces, in ONE place, the rules every per-rail scorer would otherwise re-implement: no clamping (overcount fails closed to not-yet with the honest unclamped ratio, SF-25); satisfied-absent only on a positive determination carrying a basis (L7 / DEV_PROCESS 4.3); facet always equals railKey; threshold always from the rail declaration.",
+        "classifier": "imports classifyFacet from countyCoverageScoreCli.ts (the existing single definition, already imported by the geometry and flood CLIs) rather than duplicating it (DEV_PROCESS 6.2). SS-W13 owns that file, so this lane pins the behaviours it depends on in its OWN test file -- if SS-W13 changes the classifier, SS-W12's tests fail loudly instead of SS-W12's behaviour drifting silently."
+      },
+      {
+        "name": "railScoreProvenance.ts",
+        "role": "The denominator travels WITH the number (DEV_PROCESS 1.1/1.2). Canonical provenance string written into the existing artifact_path column, with a formatter, a parser and a round-trip test -- a contract, not a convention. NO schema change: see scopeBasis."
+      },
+      {
+        "name": "countyRailScoreCli.ts",
+        "role": "One generic CLI replacing the per-rail CLI pattern. --rail=<key> (repeatable, or --all-scoreable), --county=<fips>, --dry-run. Reports per-rail numerator/denominator/basis and a VALUE delta."
+      },
+      {
+        "name": "routes/countyRailScore.ts",
+        "role": "POST /api/county-ledger/score, service token, advisory lock, dryRun -- deliberately the SAME shape as SS-W7's POST /api/county-ledger/recompute, mounted under the SAME /county-ledger prefix as a second router so countyLedger.ts is not touched at all (PR #437 is open and owns that file)."
+      }
+    ],
+    "idempotencyContract": "Re-runnable is not 'the upsert has ON CONFLICT'. checked_at/last_verified_at move every run, so an upsert always looks like a change. The engine reads the existing row BEFORE writing and diffs by VALUE (excluding the two timestamps), reporting cellsChanged / cellsUnchanged. A second run against unchanged sources must report cellsChanged = 0. That is the machine-checkable claim, and it is tested. Same discipline as SS-W7's rule that a re-read must never masquerade as a recompute.",
+    "twoLegsNotOne": "SS-W7's recompute is the SCORED to SERVED leg (county_facet_coverage -> county_ledger_snapshot). SS-W12's scorer is the WRITTEN to SCORED leg (atoms/parcel tables -> county_facet_coverage). They compose; they are not rivals. Coordination is: same auth, same lock discipline, same dryRun semantics, same before/after readback, same prefix -- a sibling route, not a second entry point."
+  },
+
+  "adversarialReview": [
+    {
+      "challenge": "Is a registry actually data, or is it code wearing a data costume?",
+      "answer": "Honest split, stated plainly: adding a rail whose measurement kind ALREADY EXISTS is a declaration edit and nothing else. Adding a rail that needs a NEW kind is a new function against a narrow interface plus a declaration edit. Claiming otherwise would be the failure mode DEV_PROCESS 0 names. The registry says which of the two a given rail is."
+    },
+    {
+      "challenge": "The route cannot score atom-count rails in production today -- api-server has no connection to the ATOMS store (verified: no ATOMS_DATABASE_URL, no atoms pool anywhere in artifacts/api-server/src). Shipping it risks a permanently-red control (DEV_PROCESS 2.0).",
+      "answer": "It fails CLOSED and NAMED: rails it cannot measure are reported as railsUnavailable with reason 'atoms_store_not_configured', never scored as zero and never silently skipped. The response tells the operator exactly what to wire. The moment ATOMS_DATABASE_URL exists on the service, every atom-count rail becomes scoreable with no code change. An invisible gap becomes a visible one."
+    },
+    {
+      "challenge": "Proving the capability by writing to the live ledger would be the fastest proof.",
+      "answer": "Refused. Proof is a READ-ONLY dry run: the harness recomputes rails that already have ledger rows and is compared against what the one-off scripts stored. Pre-registered band: harness == stored for geometry and flood; harness >= stored for owner/landuse/cad wherever the one-off's Math.min clamp bit. A result outside the band is a finding either way (DEV_PROCESS 4.5)."
+    },
+    {
+      "challenge": "Why not port the three existing CLIs onto the harness and delete them?",
+      "answer": "SS-W13 is fixing correctness bugs in exactly those files this week. Rewriting them underneath that lane is a guaranteed collision and would make both closes unreadable. This lane is ADDITIVE: new files only, plus a two-line mount. The port is named as the follow-on, with its owner, in the close."
+    }
+  ],
+
+  "scopeBasis": {
+    "inScope": ["the scoring capability: registry, engine, provenance contract, generic CLI, HTTP route, tests, and a read-only equivalence proof against the live ledger"],
+    "outOfScope": [
+      {"item": "the six missing rail scorers (roads, footprint, easement, rrc-wells, rrc-pipelines, rail-corridor)", "why": "SS-W14 owns their measurement specs; this lane builds what they plug into. Declared in the registry as kind 'unspecified' with owner SS-W14 so they are named, not omitted."},
+      {"item": "editing countyCoverageScoreCli.ts / countyGeometryScoreCli.ts / countyFloodScoreCli.ts", "why": "SS-W13 owns those files this week; the dispatch forbids editing blind."},
+      {"item": "any schema migration on county_facet_coverage", "why": "two other lanes have open PRs in this repo and drizzle migrations are sequentially numbered (SS-W7 already took 0082); a third concurrent migration is a merge-order hazard, and it would also require refreshing the schema fixture template and the hardcoded-list CI. The denominator requirement is met without one, via the checked-in declaration plus a parseable provenance contract in the existing artifact_path column."},
+      {"item": "re-scoring the 762 clamped owner/landuse/cad rows", "why": "a write to the live ledger; this lane proves the capability read-only and hands the apply decision to the planner."},
+      {"item": "refreshing county_rail to match the checked-in declaration (finding F2)", "why": "a declaration refresh is an operator ruling, not a lane side effect (DEV_PROCESS 5.4)."}
+    ]
+  },
+
+  "completionPredicate": "A stranger can add a new rail's coverage measurement by editing one declaration file (when its measurement kind exists) and running one command, and can re-run any rail's scoring at will and see, from the run's own report, what moved and what did not. Mechanized guards exist for: registry-vs-rail-dimension divergence, facet-key-equals-rail-key, no clamping, absence-requires-a-basis, and threshold-from-one-source. Nothing merged, nothing deployed, nothing written to the live ledger.",
+
+  "constraintsHonored": [
+    "isolated worktree; no other lane's tree touched",
+    "read-only against production databases",
+    "no heavy statewide scan started (see CP2 for the serialization decision on the equivalence proof)",
+    "exit-bounded commands only"
+  ],
+
+  "openAtCp1": [
+    "whether the equivalence proof samples counties or sweeps statewide -- heavy-scan serialization (AGENT_CONTRACT s4) decided at CP2",
+    "F2 (county_rail drift) needs an operator ruling; not actionable in this lane"
+  ]
+}

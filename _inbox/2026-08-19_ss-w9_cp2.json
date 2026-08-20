@@ -1,0 +1,85 @@
+{
+  "lane": "SS-W9",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial review, after the WRITTEN and SCORED layers landed",
+  "planRows": ["P-43"],
+  "repo": "hauska-engine",
+  "branch": "ss/w9-statewide-audit",
+  "pr": "https://github.com/empressaioemail-tech/hauska-engine/pull/348",
+  "at": "2026-08-19T14:40:00Z",
+
+  "whatIsMeasuredSoFar": {
+    "WRITTEN": "VERIFIED by this lane 2026-08-19T14:03Z-14:21Z. 15 atom families, one serialized index scan each against hauska_mcp.atoms. 17 scans, all rc=0, elapsed 0s to 356s each.",
+    "SCORED": "VERIFIED by this lane. county_facet_coverage read directly, and GET /api/county-ledger probed live: HTTP 200, computedAt 2026-08-14T17:41:22.500Z, servedAt 2026-08-19T13:58:13.985Z, materializationAgeMs 418611485 (116.3 hours).",
+    "SERVED": "NOT YET RUN statewide. Verified for ONE parcel against the deployed surface as a structural check on the served field set. The statewide sweep is the background job and is reported as not-measured until it lands."
+  },
+
+  "preRegisteredExpectationsScored": [
+    {
+      "expectation": "footprint WRITTEN in roughly 174 counties, SCORED not-yet on 254 of 254",
+      "result": "BOTH CONFIRMED — 174 counties / 3,495,678 atom rows / 2,829,513 parcels carrying a footprint:primary slot; ledger not-yet on 254 of 254.",
+      "butTheReasonIsWorse": "The ledger has NO footprint row at all, so the cells read not-yet by display precedence and a RECOMPUTE WOULD NOT MOVE THEM. The dispatch framed this as staleness; staleness is real (4.84 days) but is not the mechanism here. The remediation is a scorer that does not exist, not a refresh."
+    },
+    {
+      "expectation": "rrc-wells WRITTEN in far more than 1 county despite a stated ceiling of 1",
+      "result": "CONFIRMED — 174 counties, 2,041,196 well-presence atoms plus 2,297,099 positive-absence atoms. Harris 48201, the one county the ceiling names, holds ZERO.",
+      "unresolvedByDesign": "Either the hardcoded ceiling is wrong or 173 counties of well atoms are wrong. This lane files the contradiction and does not pick a side."
+    },
+    {
+      "expectation": "at least one rail is written-unscored with no scorer to run at all",
+      "result": "CONFIRMED AND LARGER THAN EXPECTED — SIX of fourteen rails have zero rows in county_facet_coverage (roads, footprint, easement, rrc-wells, rrc-pipelines, rail-corridor), which is 1,524 of 3,556 cells, 42.9% of the grid. 851 of those county-cells are WRITTEN, carrying 43,159,990 atom rows with no ledger cell."
+    }
+  ],
+
+  "adversarialReviewOfTheWorkSoFar": [
+    {
+      "risk": "The county key is a reconstruction and every WRITTEN figure depends on it.",
+      "state": "CHECK IN FLIGHT, AND THE RUN IS GATED ON IT",
+      "detail": "three-layer-audit.mjs runs the parcel-node prefix vs body.countyFips comparison FIRST and THROWS if the disagreement is non-zero, rather than footnoting it. The reconnaissance psv figures quoted in the report were taken before that gate cleared and must be re-stated against the gated run if it diverges."
+    },
+    {
+      "risk": "'174 counties' is a presence test being read as coverage.",
+      "state": "MITIGATED AND THE MITIGATION FOUND SOMETHING",
+      "detail": "Reporting county count beside atom count surfaced that NOT ONE metro is among footprint's 174 counties — Bastrop, Travis, Harris, Dallas, Williamson and Bexar are all zero. A presence percentage alone would have read as 68.5% done."
+    },
+    {
+      "risk": "Atom rows silently read as parcels.",
+      "state": "MITIGATED BY MEASUREMENT",
+      "detail": "A suffix-structure pass ran per family. cad-parcel-roll / land-use-fact / owner-fact carry TWO tax years (2025 and 2026); building-footprint carries footprint:primary plus accessory-1..11; special-district-fact carries sd:outside plus one suffix per district; well-fact carries none plus one per API number. Only six families key one row per parcel and only those quote a parcel figure."
+    },
+    {
+      "risk": "The instrument's own zeros could be dead gates.",
+      "state": "MITIGATED",
+      "detail": "17 tests in packages/retrieval/src/statewide-audit/__tests__/classify.test.ts prove every GapClass can fire and that mutating one input moves the verdict. Run green: 17 passed. Typecheck on the retrieval package: exit 0."
+    },
+    {
+      "risk": "This lane restating SS-W5's magnitudes as its own.",
+      "state": "MITIGATED",
+      "detail": "The address ladder figures are labelled RELAYED until this lane's own re-measurement lands. Nothing else in the report is taken from SS-W5."
+    },
+    {
+      "risk": "A malformed probe read as evidence.",
+      "state": "MITIGATED",
+      "detail": "The ledger probe asserts BOTH status and content-type and treats an SPA HTML fallthrough as a failure rather than an empty ledger. The served probe was read for its 69 key paths and its X-Pe-Read-Path header, not for a status code."
+    },
+    {
+      "risk": "An instrument defect of my own making, unnoticed.",
+      "state": "ONE FOUND AND FIXED, RECORDED HERE",
+      "detail": "The first reconnaissance scan issued `SET statement_timeout` as its OWN psql -c, which is a separate transaction, so the timeout never applied to the query it was meant to bound — every scan ran unbounded. Caught while writing the runner; the runner now sets it as a CONNECTION STARTUP parameter. Also: the first version of that scan had an invalid GROUP BY and failed 25 of 25 queries while the script still printed WRITTEN SCAN DONE. The script now fails loudly on any non-zero rc. Both are the same defect class this programme hunts: a control that cannot fail is not a control."
+    }
+  ],
+
+  "constraintsHonored": [
+    "Read-only: no INSERT, UPDATE, DELETE or DDL issued against either database.",
+    "No atoms bulk-writer slot, no lease, no --apply.",
+    "Heavy scans strictly serialized; each announced in the progress artifact before it started and confirmed after.",
+    "Two watches registered in _catalog/watch_registry.json (ss-w9-statewide-audit, ss-w9-served-sweep) before their runners started.",
+    "Branch pushed immediately after the first commit; PR #348 opened against main and NOT merged, NOT deployed."
+  ],
+
+  "openAtCp2": [
+    "county-key divergence gate still running",
+    "statewide SERVED sweep not yet launched",
+    "this lane's own address-ladder re-measurement not yet landed"
+  ]
+}

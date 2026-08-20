@@ -43,6 +43,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 5. Recent session summaries
 
+- 2026-08-19 Smart Site QA to enforcement doctrine (18 lanes; tier2 retired and deployed; branch protection gap): `_sessions/2026-08-19_smartsite_qa_to_enforcement_claude_code.md`
 - 2026-08-18 Smart Site QA remediation (OPS-16 A-018, P-39..P-44; six lanes; fact-sheet contract): `_sessions/2026-08-18_smartsite_qa_remediation_claude_code.md`
 - 2026-08-17 Lane B G-64/G-65 plus UI-then-one-feed: `_sessions/2026-08-17_lane_b_dashboards_g64_g65_planner.md`
 - 2026-08-17 L26 GTM rulings (Pipedrive, popup, Hobby): `_sessions/2026-08-17_l26_gtm_rulings_planner.md`

@@ -1,0 +1,75 @@
+{
+  "lane": "SS-W17",
+  "artifact": "cp1",
+  "kind": "design + pre-registration, filed BEFORE any measurement",
+  "date": "2026-08-19",
+  "planRows": ["P-45"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "amendment": "A-019 (operator ruling 2026-08-19)",
+  "repo": "hauska-engine",
+  "branch": "ss/w17-containment",
+  "worktree": "/p/hauska-engine-worktrees/ss-w17-containment",
+
+  "snapshot": {
+    "codeBase": "d3f37949003fae5a99a82b62956352b7dcaa1022 (= origin/main = gh api repos/.../commits/main .sha; all three checked and equal)",
+    "atomsStore": "hauska_mcp @ ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech (DATABASE_URL secret, project hauska-prod-497015)",
+    "cortexStore": "neondb @ ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech (CORTEX_DATABASE_URL secret, same host)",
+    "nfhlGroundTruth": "tx_fema_nfhl_flood_zone: 198,178 rows, 198,178 with geom, ONE edition NFHL_48_20260101 (single SELECT run 2026-08-19)",
+    "txgioParcel": "16,428,786 estimated rows / 27 GB; carries BOTH a `geometry` jsonb column AND a `geom` PostGIS column (information_schema, 2026-08-19)"
+  },
+
+  "missionPremise": "Operator ruling in the SS-W17 dispatch: tier2 flood is retired for being wrong, and NO consumer is repointed to the flood-hazard-fact atom until that atom carries a containment check. SS-W11 scored the atom 5,714 of 5,714 against NFHL; that is evidence, not a guarantee, and tier2 would also have passed an adjudication of one parcel that happened to sit near a tile centre. Sources: P:/doc_repo/_dispatches/2026-08-19_ss-w17_dispatch.md and P:/doc_repo/_inbox/2026-08-19_ss-w11_close.json.",
+
+  "defectReadFromTheWritePath": {
+    "rule": "Code reading outranks output measuring (enforcement.mdc). This finding came from reading the write path, not from measuring atoms.",
+    "file": "packages/engine-core/scripts/write-flood-hazard-fact-county.mjs, parcel load loop",
+    "text": "const centroid = geometryCentroid(p.geometry) ?? (Number.isFinite(p.west_lng) && Number.isFinite(p.south_lat) ? [(west+east)/2, (south+north)/2] : null)",
+    "twoDefectsInOneExpression": [
+      "SILENT BBOX FALLBACK. When the parcel has no usable ring the query point becomes the centre of its bounding box. That is the SAME SHAPE as the tier2 defect, a determination made at a point that is not the parcel, one order of magnitude smaller. Nothing in the emitted record says which derivation produced the point.",
+      "A VERTEX-AVERAGE CENTROID IS NOT GUARANTEED TO LIE INSIDE THE RING. packages/engine-core/src/flood-hazard-fact/geo.ts ringCentroid() returns the arithmetic mean of the outer ring's vertices. For a concave parcel (L, C, crescent, flag lot) that point can lie outside the parcel entirely. It is vertex-density weighted, so a ring with many vertices along one edge pulls the mean toward that edge. For a MultiPolygon it takes the FIRST part's outer ring only."
+    ],
+    "atomCarriesNoPoint": "VERIFIED at source: jsonb_object_keys over a stored 48021 flood-hazard-fact body returns 23 keys and none of them is a sample point or a geometry. The determination point is unrecoverable from the record, which is exactly why SS-W11 had to borrow tier2's recorded centroid as a stand-in.",
+    "secondMechanismRejected": "The observation 'the atom scored 5,714 of 5,714' could also be explained by the writer being structurally sound and its centroid always landing inside the parcel. REJECTED as evidence of soundness: SS-W11 adjudicated ONLY the 5,756 entities where the two stores DISAGREED, and it took store A's sample point from store B's record. Parcels where the two stores agreed were never point-checked, and no parcel outside the ten tier2 counties was checked by anything. A perfect score over a disagreement subset in two counties is not a statement about the writer's sampling rule."
+  },
+
+  "design": {
+    "containmentCheck": {
+      "shape": "MEANING-SHAPED: two independently derived inputs that must agree. Input one is the FEMA query point. Input two is the parcel's own geometry ring. The predicate is point-in-ring by ray casting, a different computation from the vertex mean that produced the point; and where the point came from the bbox columns it is a genuinely separate derivation from the geometry jsonb. No sentinel satisfies both, because a tile centre, a bbox centre, a zero-zero or a NaN fails containment, and a degenerate ring produces no verdict at all.",
+      "threeStatesNeverCollapsed": {
+        "contained": "ring usable AND point inside it, holes respected, every MultiPolygon part tested",
+        "not-contained": "ring usable AND point outside it, which FAILS",
+        "unmeasurable": "no usable ring: geometry null, non-polygonal, or a degenerate outer ring. Neither a failure nor a pass."
+      },
+      "gateIsSeparateFromTheState": "The three states are MEASURED. The policy over them is a separate pure function, so the policy can never collapse the states. Policy: not-contained REFUSES and emits no atom. unmeasurable REFUSES when the point derivation is bbox-centre or absent, because then neither derivation ties the point to the parcel, which is the tier2 failure shape at parcel scale. unmeasurable where the source publishes a Point geometry EMITS and is marked, because that point is the parcel's own published location.",
+      "failClosed": "A refused determination emits NO atom and is written to a refusal artifact with its basis. It does not get a lower confidence score. Per enforcement.mdc: never emit a value computed without a required input.",
+      "contractLimitation": "The published contract FLOOD_HAZARD_FACT_SCHEMA has exactly ONE absence kind, the literal no-flood-coverage. Recording a refusal AS an absence would be a lie, because we do have coverage and it is our point we cannot trust, and it would collapse two states into one. So a refusal is not an absence atom; it is a non-emission plus a named artifact row. The contract needs a second absence kind and a sampling-point field, which is a hauska-atom-contract change, named in the close as owed rather than shipped here."
+    },
+    "harnessPromotion": {
+      "whatItIsToday": "packages/retrieval/scripts/duplicate-subject-detector.mjs measureFloodPair is a PAIR comparator. It adjudicates against NFHL only the entities where two stores disagree, and it takes store A's sample point out of store B's record. Retire tier2 and it cannot run at all: there is no store B and the point stand-in disappears with it.",
+      "promotion": "Convert it from a pair-divergence adjudicator into a SINGLE-STORE standing adjudicator: flood-hazard-fact against tx_fema_nfhl_flood_zone directly, over the full county roster rather than over a disagreement subset, with the sample point read from the atom once the writer stamps it and re-derived from txgio_parcel where it is absent.",
+      "secondLeg": "The standing check also re-runs containment in PostGIS, ST_Contains against txgio_parcel.geom, a second independent implementation of the rule the writer implements in JS. Per DEV_PROCESS 2.4, when one rule has two implementations the DIVERGENCE TEST is the control. Any parcel where the two implementations disagree fails the run."
+    }
+  },
+
+  "preRegisteredBands": {
+    "note": "Registered before any of these were measured. A result outside a band is a finding either way, per DEV_PROCESS 4.5.",
+    "P1": "txgio_parcel.geometry (jsonb) is populated far more widely than txgio_parcel.geom (PostGIS). SS-W15's 189-of-253 zero-geom finding is about geom. I expect Bastrop 48021 to carry usable Polygon or MultiPolygon geometry on more than 99 percent of its features, so the unmeasurable state should be rare there rather than dominant.",
+    "P2": "The vertex-average centroid falls OUTSIDE its own parcel ring on between 0.1 percent and 5 percent of Bastrop features. Predicted mechanism: concave and flag-lot parcels, plus multi-part parcels.",
+    "P3": "The bbox-centre fallback fires on fewer than 1 percent of Bastrop features.",
+    "P4": "The JS containment verdict and the PostGIS ST_Contains verdict agree on at least 99.5 percent of features. Residual disagreement should be boundary semantics, since ST_Contains is false on the boundary while the JS ray cast is direction-dependent there.",
+    "P5": "At least one real Bastrop parcel exists whose centroid lies outside its own ring. If P2 measures zero the check still ships, and the close says the live violation set is empty, because a check proven only on a synthetic fixture is weaker evidence and must be labelled as such."
+  },
+
+  "constraintsHonoredSoFar": [
+    "READ-ONLY against both production databases: only SELECTs against information_schema, pg_class, pg_indexes, a tx_fema_nfhl_flood_zone aggregate, and one jsonb_object_keys probe on atoms",
+    "one query at a time, no parallel database work",
+    "every probe carries a server-side statement_timeout, so a probe that does not return is recorded as not-measured rather than as an empty result",
+    "no sub-agents spawned, this lane is the deepest worker per its dispatch",
+    "an unbounded LIMIT 2 probe on atoms was started, did not return inside 120 s, and was KILLED rather than left running; every probe since carries statement_timeout"
+  ],
+
+  "openAtCp1": [
+    "Whether a CI executor can exist for the LIVE leg of the standing check. Neither .github/workflows/ci.yml nor .github/workflows/block13-cert-grade.yml references any secret (grep for 'secrets.' over .github/workflows returns nothing), so this repo has no database credentials in CI today. If that holds, the live leg has no automatic trigger and the close must say so rather than claim one.",
+    "The dispatch says NINE engine instruments reference tier2. A grep at d3f3794 returns SIXTEEN files, eleven non-test and five test. To be re-derived and reported per DEV_PROCESS 3.2."
+  ]
+}

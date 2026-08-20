@@ -1,0 +1,145 @@
+{
+  "lane": "SS-W7",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint (self-review; the dispatch forbids spawning sub-agents)",
+  "planRows": ["P-44"],
+  "repo": "legacy-design-tools",
+  "worktree": "/p/tmp/ss-w7-sweep-endpoint",
+  "branch": "ss/w7-sweep-endpoint",
+  "baseSha": "85c5d1a8c12a4a70e81323a907ca252b802266b8",
+  "writtenAt": "2026-08-19T14:35:00Z",
+  "honestyNoteOnTiming": "Written after the design pass and the first implementation commit (11b75ad6), before any test was written or any verification run. The design decisions recorded below were all taken before code was written; the artifact is filed late, not reconstructed.",
+
+  "missionPremise": "OPS-16 amendments A-018 and A-019. The serving sweep answers a different question from the County Manifest — what the product SERVES a human per parcel, versus whether a writer ran — and the two are kept side by side because their disagreement is the finding. Command Center shipped the consumer (SS-W6, hauska-map) and hauska-engine shipped the producer (SS-W5 / P-43); the record was frozen at doc_repo _catalog/parcel_fact_sheet_contract/serving-sweep.ts so both could run in parallel, and nobody was assigned the route between them. That is a planner seam error, named as such in the dispatch. This lane is the pipe. The second half of the mission is that the county ledger has no recompute route at all, so the live manifest is materialized 2026-08-14T17:41:22.500Z and predates the work it describes.",
+
+  "completionPredicate": "A stranger can (1) start cortex-api against a database and GET /api/serving-sweep, receiving either a StatewideServingSweep that parses cleanly under Command Center's own parseStatewideSweep, or a NAMED not-ingested state — never an empty envelope; (2) address one county at /api/serving-sweep/:countyFips and get that county's frozen record, or a named 404 that cannot be confused with a sweep that found nothing; (3) POST a P-43 sweep artifact to /api/serving-sweep/ingest with a service token and have it land, with a malformed artifact rejected listing every problem by path; (4) POST /api/county-ledger/recompute and receive a fresh computedAt READ BACK FROM THE STORE plus a per-rail delta of what actually moved, with a dry-run proving the freshness fields are read from the store rather than echoed from memory. Typecheck and the existing suite green, PR open against main, not merged, not deployed.",
+
+  "scopeBasis": "Repo is legacy-design-tools and the surface is artifacts/api-server plus the lib/db schema it needs. Explicitly OUT of scope and routed to the planner rather than attempted: (a) the Command Center panel itself and the hauska-map proxy allowlist that would let the console POST a recompute — different repo, and SS-W6 already owns that surface; (b) producing sweep data for the other 252 counties, which is P-43 work; (c) deploying, which is a separate planner-owned act and without which none of this is customer-done; (d) running the recompute against production, which is a write to live operator-facing state and is proposed, not taken.",
+
+  "liveStateEstablishedAtSource": {
+    "verificationLabel": "VERIFIED by me, 2026-08-19, direct curl against the deployed cortex-api",
+    "base": "https://cortex-api-tds7av26va-uc.a.run.app",
+    "probes": [
+      {
+        "probe": "GET /api/serving-sweep",
+        "http": 200,
+        "contentType": "text/html; charset=utf-8",
+        "bytes": 918,
+        "reading": "SPA catch-all. The route does not exist. Confirms the dispatch."
+      },
+      {
+        "probe": "GET /api/serving-sweep/48021",
+        "http": 200,
+        "contentType": "text/html; charset=utf-8",
+        "bytes": 918,
+        "reading": "same catch-all"
+      },
+      {
+        "probe": "POST /api/county-ledger/recompute with -d '{}'",
+        "http": 404,
+        "body": "Cannot POST /api/county-ledger/recompute",
+        "reading": "CORRECTION TO THE DISPATCH. The dispatch says recompute and refresh 'both return the SPA fallthrough'. They do on GET; on POST they return Express's own 404, because the SPA catch-all is GET-only. Both readings agree that the route does not exist, so nothing downstream changes — but the instrument matters and the dispatch's description of it was wrong."
+      },
+      {
+        "probe": "POST /api/county-ledger/recompute with NO body",
+        "http": 411,
+        "reading": "the malformed probe the dispatch warns about, reproduced. 411 is the Cloud Run frontend and says nothing about the route."
+      },
+      {
+        "probe": "GET /api/county-ledger",
+        "http": 200,
+        "bytes": 2121656,
+        "summaryComputedAt": "2026-08-14T17:41:22.500Z",
+        "summaryServedAt": "2026-08-19T13:55:56.025Z",
+        "materializationAgeMs": 418473525,
+        "materializationAgeHuman": "4d 20h 14m",
+        "footprintRail": "254 of 254 cells displayState=not-yet",
+        "reading": "SCORED layer. The ledger's own claim about itself, at its own timestamp. It is NOT evidence about what is written today."
+      }
+    ]
+  },
+
+  "evidenceLayerDiscipline": {
+    "WRITTEN": "Not measured by this lane. Whether footprint atoms exist in the store for 174 counties is L26's claim and I have not verified it; I do not restate its magnitude.",
+    "SCORED": "Measured above: the live ledger reports footprint not-yet on all 254 cells at computedAt 2026-08-14T17:41:22.500Z.",
+    "SERVED": "Not measured by this lane for parcels. The only SERVED facts I establish are about the API routes themselves."
+  },
+
+  "designDecisionsAndTheirBasis": [
+    {
+      "decision": "The statewide envelope is ASSEMBLED at read time from per-county rows. There is no stored statewide row.",
+      "basis": "countiesSwept can then never be a stored claim that drifts from the array actually served. Command Center's parser cross-checks exactly those two values and reports a mismatch as a problem; a stored count makes that check able to fail on our side for no reason.",
+      "cost": "The statewide sweptAt and resolverVersion have to be derived. Rules: sweptAt = MAX over the counties present (the envelope must never look fresher than any sweep inside it); resolverVersion = the single value when unanimous, else 'mixed: a | b'. Both stated at the assembly site."
+    },
+    {
+      "decision": "Read-time metadata (assembly clock, counties swept) rides RESPONSE HEADERS, not the body.",
+      "basis": "The record is frozen. Adding a root key would be a shape change negotiated inside a lane, which the freeze forbids. Headers carry it without touching the shape and without a consumer needing to know."
+    },
+    {
+      "decision": "GET reads are anonymous; POST ingest and POST recompute require the Bearer service token.",
+      "basis": "Parity with the neighbouring GET /api/county-ledger, which is anonymous today and exposes the same class of internal factory-floor data on the same service. Command Center reaches cortex-api through a Vercel proxy that attaches Authorization: Bearer CORTEX_SERVICE_API_KEY, so a token-gated GET would also have worked from the console — the choice is consistency with the route next door, and it is one middleware line to reverse. FLAGGED FOR THE OPERATOR rather than decided silently: the sweep body carries example parcel node ids and per-county defect tallies."
+    },
+    {
+      "decision": "Ingest validates strictly against the frozen record and rejects, rather than storing and validating at read.",
+      "basis": "An unvalidated blob is served to a human later, when the producer's run is gone. The door is the only point where the producer can still act on the problem. The validator rejects everything Command Center's own parser would flag — missing FieldKey, unknown FieldKey, exampleParcelNodeIds over 20, non-FieldKey key in sourcesByField, countiesSwept disagreeing with counties.length — so anything this endpoint serves parses cleanly there."
+    },
+    {
+      "decision": "Recompute reports THREE separate freshness facts and never merges them: the payload's own computedAt, the store's computedAt read back on a fresh query AFTER commit, and the per-rail delta of what moved.",
+      "basis": "Dispatch work item 4, and the standing lesson that the special-district writer's verify was vacuous because it verified the in-memory atom instead of a store readback. computedAt moves on every call by construction, so on its own it proves a job ran and nothing else. A write that did not land answers 500 recompute_not_persisted."
+    },
+    {
+      "decision": "Dry-run is the divergence test for that readback, not a convenience flag.",
+      "basis": "Under dryRun nothing is written, so a store-read must report the store UNMOVED while the in-memory computedAt is fresh. If the verify were vacuous — comparing the computed object to itself — dry-run would report the store as moved. The test asserts the unmoved reading, so the control is proven able to fire (DEV_PROCESS 2.2)."
+    },
+    {
+      "decision": "The recompute runs under withClusterSweepLock, and a contender gets 409 rather than a second scan.",
+      "basis": "AGENT_CONTRACT section 4: at most one heavy PostGIS/full-table scan at a time on a shared database. The compute runs COUNT DISTINCT on cad_property and txgio_parcel. An anonymous or unserialized recompute route would be a way for anyone to start a second heavy scan on the production database from a browser."
+    },
+    {
+      "decision": "probe=skip exists, and the skip is stamped into the payload rather than filled from the previous snapshot.",
+      "basis": "Cloud Run cuts the request at 300s (--timeout=300, verified in .github/workflows/cloud-run-deploy.yml) and the COUNT DISTINCT probes are the part that may not finish; everything else in the compute is small. Carrying the previous snapshot's capabilities forward would be a silent stale fallback, which is the defect class this program hunts, so the skip writes railCapabilities=null with railCapabilitiesProbeReason naming it. A statement_timeout of 240s inside the transaction makes the database fail loudly before the request timeout can leave a write the client cannot observe."
+    },
+    {
+      "decision": "/api/county-ledger/refresh is a named 404 tombstone, not an alias for /recompute.",
+      "basis": "One action with two names is how two callers get graded against different contracts (DEV_PROCESS 3.5's shape). The tombstone exists at all because an unmatched GET /api/* answers HTML 200 through the SPA catch-all, which reads as 'served' — the exact fallthrough that made this lane's missing route look like a data problem. Same precedent as the G-58 Smart Files tombstone in routes/index.ts."
+    }
+  ],
+
+  "adversarialReviewOfMyOwnPlan": [
+    {
+      "risk": "Three copies of one frozen shape now exist: the planner's record, Command Center's mirror, and this repo's validator. Paired implementations diverge (DEV_PROCESS 2.4, the CTRL-1 shape).",
+      "disposition": "PARTIALLY MITIGATED, and I am not claiming more. The validator is written to reject what the console's parser flags, and the tests assert those invariants directly, but there is no automated divergence test across repos because the two files live in different repositories. Routed to the planner as an open item rather than papered over."
+    },
+    {
+      "risk": "app.ts mounts express.json() at body-parser's DEFAULT 100kb limit while the test harness builds its app at 10mb. A large ingest could pass every test and 413 in production.",
+      "disposition": "MEASURED, NOT ASSUMED, and left as a stated bound rather than fixed by widening a global limit. The two P-43 county artifacts are 32,725 and 32,899 bytes, so a per-county post has roughly 3x headroom. A 254-county statewide body would NOT fit and must be posted county by county. Stated in the route doc where it is read."
+    },
+    {
+      "risk": "A new table breaks the schema-fixture drift gate in CI, and the drift gate is version-sensitive to pg_dump.",
+      "disposition": "CLOSED with a baseline-difference control rather than by hoping. A throwaway Postgres cluster was built locally, the schema pushed, and the drift check run BEFORE any change: it passed, proving the committed fixture is byte-identical to what this toolchain emits. The check was then re-run after the table was added and produced a diff containing my table and nothing else, and the regenerated fixture is 21 inserted lines."
+    },
+    {
+      "risk": "A recompute that always stamps new Date() makes computedAt a decorative number — the fresh timestamp becomes the new lie in place of the stale one.",
+      "disposition": "This is the real hazard in work item 3 and it is why the delta exists. computedAt is explicitly labelled in the response as proving only that a job ran. The question 'did the footprint work reach the ledger' is answered by delta.cells.byRailKey and by nothing else."
+    },
+    {
+      "risk": "The route cannot be graded live, because grading it requires a deploy and deploys are out of this lane.",
+      "disposition": "ACCEPTED AND STATED. Verification here is local: typecheck, the real-Postgres route suite, and a background-started server probed with curl and killed. Code-done is not customer-done (DEV_PROCESS 4.4) and this lane does not claim otherwise."
+    }
+  ],
+
+  "constraintsHonoredSoFar": {
+    "writeSlot": "NONE TAKEN. No atoms store write, no bulk writer, no DDL against any shared database.",
+    "heavyScanSerialization": "No heavy scan run yet on any shared database. All schema work ran against a throwaway local Postgres cluster on port 55432 created for this lane.",
+    "isolatedWorktree": "/p/tmp/ss-w7-sweep-endpoint, branch ss/w7-sweep-endpoint off 85c5d1a8. No other lane's tree touched.",
+    "pushedAfterFirstCommit": "HONORED. 11b75ad6 pushed to origin/ss/w7-sweep-endpoint immediately.",
+    "noSubAgents": "HONORED. The dispatch forbids spawning, nesting and delegating. None occurred; both checkpoints are self-review and say so.",
+    "exitBounded": "HONORED so far. Every command has terminated on its own; the local Postgres is a started server and is scheduled for an explicit stop before this lane closes."
+  },
+
+  "openAtCP1": [
+    "Tests not yet written.",
+    "The recompute has not been run against any real ledger data.",
+    "PR not yet opened."
+  ]
+}

@@ -1,0 +1,267 @@
+{
+  "lane": "SS-W16",
+  "artifact": "close",
+  "filedAt": "2026-08-19",
+  "planRow": ["P-45"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md, amendment A-019",
+  "repo": "legacy-design-tools",
+  "checkpoints": [
+    "_inbox/2026-08-19_ss-w16_cp1.json",
+    "_inbox/2026-08-19_ss-w16_cp2.json"
+  ],
+
+  "missionPremise": "A wrong FEMA flood determination was being served on an unauthenticated route. GET /api/brokerage/v1/place/node/48021:36521/facets returned HTTP 200 with tier2.flood.floodZone = \"AO\" and inSpecialFloodHazardArea = true, no API key required. The determination came from a bake that never asks FEMA about the parcel: nodeFacetBakeTier2Cli quantises the parcel centroid onto a 0.005-degree tile and issues one NFHL point query at the TILE CENTRE, then stamps that answer onto every parcel in the tile, a measured median 227 m and maximum 366 m from the parcel it answers for. Lane SS-W11 adjudicated 5,756 disagreements against FEMA NFHL: the flood-hazard-fact atom was right in 5,714 of 5,714 non-split cases and this instrument in zero, including 1,995 parcels told they were outside a Special Flood Hazard Area whose centroid is inside one. Ruled by the operator via the doc_repo planner: tier2.flood and its fema:nfhl-flood-zone provenance retire as a pair, because they are one bake behind one quantiser rather than two stores. Source: _dispatches/2026-08-19_ss-w16_dispatch.md.",
+
+  "completionPredicate": "No flood value leaves the node-facets read path on any code path, for any input, to any of its consumers; the refusal is distinguishable from 'no Tier-2 row baked'; a CI control fails on reintroduction and has been observed doing so; and the endpoint continues to serve every other facet unchanged.",
+  "completionPredicateStatus": "MET IN CODE, NOT MET IN PRODUCTION. See productionStatus.",
+
+  "scopeBasis": "The dispatch scoped this narrowly and the narrow scope was independently correct. The brokerage facets route is NOT removed: other consumers depend on it for zoning, land use, acreage and base facts, and an over-broad removal creates its own outage. The cut is made inside the file the dispatch names, at extractTier2Overlay, which is the single point where a Tier-2 flood value enters the API surface. The Tier-2 BAKE is deliberately untouched: its stored rows are the evidence SS-W11 adjudicated against, and enforcement doctrine sequences repoint-consumers-first then retire-the-store. The live fema:nfhl-flood-zone map-layer adapter (brokerageGisLayers, engineSpineMapLayers, planReviewLayerRun, warmingHarness, workspacePreferences) is untouched: it queries FEMA at a real point rather than through the tile quantiser, so it is a different instrument that happens to share an adapter-key string, and retiring it on the string match would be exactly the syntactic reasoning this item exists to remove.",
+
+  "productionStatus": {
+    "deployed": false,
+    "exposureOpen": true,
+    "statement": "The wrong determination is STILL BEING SERVED. This lane produced a merged-pending, undeployed control, which enforces nothing in production. The exposure closes when cortex-api deploys, not when this PR merges.",
+    "whyNotDeployedHere": "Deploy is planner-owned by explicit dispatch instruction: deploying cortex-api ships every other merged PR in this repo alongside this change, and the operator must see that blast radius first.",
+    "liveProbeAtCloseTime": "GET /api/brokerage/v1/place/node/48021%3A36521/facets still returns HTTP 200 with tier2.flood.floodZone \"AO\", inSpecialFloodHazardArea true, adapterKey fema:nfhl-flood-zone."
+  },
+
+  "pr": {
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/441",
+    "number": 441,
+    "branch": "ss/w16-tier2-stop",
+    "baseCommit": "3de86ffdb4eadf154161e9aa2b016d9ad2463333",
+    "headCommit": "935118956870a1835bdf0e03529301a1bae196d6",
+    "headCommitShort": "93511895",
+    "state": "OPEN",
+    "merged": false,
+    "mergeSha": "not applicable: DO NOT MERGE per dispatch; merge is planner-owned",
+    "deployed": false
+  },
+
+  "ciCheckRunConclusionStrings": {
+    "source": "gh api repos/empressaioemail-tech/legacy-design-tools/commits/935118956870a1835bdf0e03529301a1bae196d6/check-runs",
+    "note": "Conclusion STRINGS, not gh exit codes.",
+    "runs": {
+      "SS-W16 tier2 flood not served": "success",
+      "Typecheck": "success",
+      "L5 SF-30 Cotality warm grep": "success",
+      "L5 SF-24/SF-25 score greps": "success",
+      "L5 silent-fallback greps": "success",
+      "L5 SF-26 hand hasWriter grep": "success",
+      "L17 ci-vintage-predicate": "success",
+      "Test": "success"
+    },
+    "allGreen": true,
+    "baselineOnMain": "PR Checks on main at the base commit 3de86ffd concluded success, so a failure here would have been attributable to this change rather than to a pre-existing red.",
+    "prStateAtClose": "state=OPEN mergedAt=null mergeStateStatus=CLEAN"
+  },
+
+  "whatChanged": {
+    "files": [
+      "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+      "artifacts/api-server/src/routes/propertyExplorer.ts",
+      "artifacts/api-server/src/__tests__/brokerageNodeFacets.test.ts",
+      "artifacts/api-server/src/__tests__/pe-entitlement-gate.test.ts",
+      ".github/workflows/pr-checks.yml"
+    ],
+    "diffstat": "5 files changed, 631 insertions(+), 78 deletions(-)",
+    "shape": "STRIPPED with a typed refusal, not thrown, not 404.",
+    "whyThatShape": "A throw inside extractTier2Overlay would take down the whole facets response for every node holding a Tier-2 row, including zoning, land use and acreage. That is the over-broad removal the dispatch forbids, reached by a different route. A 404 would tell the card the parcel is not baked, which is false, and would send the web app into its live-fetch fallback for a node that IS baked. The refusal native to this consumption path is a field inside a 200 body.",
+    "mechanism": "Tier2Overlay.flood is declared as the literal TypeScript type null. A sibling floodDisposition carries a typed refusal. extractTier2Overlay no longer inspects the flood facet to decide whether a caller receives a determination; it branches on the facet's SELF-DECLARED provenance.adapterKey, by exact string equality against a closed const producer set, in a switch whose default assigns to `const unhandled: never`.",
+    "whyThatIsNotASecondPresenceGuard": "The branch input is an identity (which instrument authored this value), not a shape (does a key exist and is it an object). It is exact equality, never substring containment. It is total: recognised producer, unrecognised producer, absent provenance, missing facet and malformed row all resolve to a refusal, so no input yields a value. And it is exhaustive at COMPILE time: adding a producer without ruling on it fails tsc.",
+    "twoIndependentMechanisms": "The runtime switch AND the null type. The type holds even if the switch were edited away; the switch holds for producer values the type cannot see. Neither alone is a single point of failure.",
+    "threeStatesKeptDistinct": {
+      "tier2 is null": "no Tier-2 row exists for this node",
+      "tier2.flood null + floodDisposition.code retired-instrument": "a row exists and its determination is withdrawn, with the reason and the replacement named",
+      "floodDisposition.code no-flood-facet or unrecognised-producer": "a row exists but never carried a rulable facet"
+    },
+    "degradationDeclaredInOutput": "The R1 brief keeps its Flood section and carries the refusal in a new `refusal` field rather than going silently blank. The R1 layer manifest degrades with a reason that names the refusal instead of implying nothing was ever measured. Collapsing refused into absent would hide the retirement from every consumer, which is the tier1-envelope failure mode: correct prose over a live store with consumers unable to tell.",
+    "widerThanTheDispatchSentence": "The dispatch said strip from the response in brokerageNodeFacets.ts. loadBakedNodeFacetSnapshot feeds THREE consumers, not one: the anonymous route (brokerageNodeFacets.ts:271), the PAID R1 brief (propertyExplorer.ts:627) and the R1 layer manifest (propertyExplorer.ts:707). Cutting at res.json would have satisfied the sentence and left the paid brief serving the identical wrong determination. The cut is at extractTier2Overlay, still inside the named file, and closes all three.",
+    "testThatSpecifiedTheDefect": "pe-entitlement-gate.test.ts asserted the paid R1 brief CITES the retired instrument (expected citation https://example.test/flood) and that the layer manifest emits a flood layer. A test asserting a value the system should never have emitted converts a defect into a specification and makes the fix read as a regression, so both assertions were INVERTED with the reason recorded inline, not deleted."
+  },
+
+  "t25Rows": [
+    {
+      "row": 1,
+      "repo": "hauska-map",
+      "snapshot": "d3510a6",
+      "check": "apps/property-explorer/src/lib/baked-facets.ts:430  base.includes(\"/property-atoms\")",
+      "predicate": "substring containment on a configuration string",
+      "cheapestSatisfier": "ANY string containing \"/property-atoms\" anywhere in it, at any position: \"/x/property-atoms/y\", \"https://elsewhere.example/property-atoms-mirror\", \"./property-atoms.bak\"",
+      "valid": "NO — it selects the route by which a hazard determination is obtained, using string shape",
+      "secondDerivationState": "4 — NONE EXISTS, and building one would be the wrong remedy",
+      "secondDerivationReasoning": "This predicate is not validating a value against reality; it is a route selector. There is no second party who could independently attest that a given base string means the property-atoms BFF, so there is nothing to cross-derive. The remedy is a TYPE fix, not a check: replace the string parameter with a discriminated route selector (a closed union such as {kind:\"pe-bff\"} | {kind:\"cortex-direct\"}) and switch exhaustively over it, so the compiler refuses to build until every call site names its route. Enforcement with no trigger that can be missing and no call site that can be absent, which puts it structurally outside both the dormant and starved categories. That is the same mechanism used for the tier2 producer set in this lane's own fix.",
+      "callSiteEnumerationBeforeScoringRemediable": {
+        "productionCallSitesPassingABase": 5,
+        "countingRule": "non-test call sites under apps/property-explorer/src that pass a base to fetchBakedNodeFacets or fetchBakedNodeFacetsOrNull; the two library wrappers that merely forward the parameter are not counted as call sites",
+        "sites": [
+          "src/browse/InspectCard.tsx:227 — passes PE_FACETS_PROXY_BASE directly",
+          "src/lib/parcel-lookup.ts:148 — passes facetsBase = opts?.facetsBase ?? PE_FACETS_PROXY_BASE",
+          "src/lib/parcel-lookup.ts:255 — same facetsBase",
+          "src/workbench/tools/chat-research.ts:374 — passes PE_FACETS_PROXY_BASE directly",
+          "src/workbench/tools/compare-facts.ts:314 — passes PE_FACETS_PROXY_BASE directly"
+        ],
+        "productionCallersOverridingTheDefault": 0,
+        "onlyCallerOfResolveParcelLookup": "src/browse/ExplorerMap.tsx:639, resolveParcelLookup(q) with no opts",
+        "overridesAppearOnlyIn": "src/lib/parcel-lookup.test.ts",
+        "consequence": "Removing the parameter default would change NOTHING: three of five sites pass the constant explicitly and the other two resolve to the same constant. The default is defended in depth, so a fix that removes the signature default would read as remediation while changing no behaviour. This is the trap named in the standing rule, confirmed by enumeration rather than assumed."
+      },
+      "findingThatContradictsTheBriefing": "PE_FACETS_PROXY_BASE is the compile-time constant \"/api/spine/property-atoms\" (src/lib/config.ts:22). Every production call site therefore takes the property-atoms branch, and the else-branch that builds the direct cortex URL is DEAD for every shipped caller. Line 430 never selects between two flood answers at runtime, so it is not the guard the briefing describes and it is not what keeps tier2.flood off Smart Site."
+    },
+    {
+      "row": 2,
+      "repo": "legacy-design-tools",
+      "snapshot": "3de86ffd",
+      "check": "artifacts/api-server/src/nodeFacetBakeTier2Cli.ts:126 (FEMA_TILE_DEG = 0.005), :287-291 (tileKey), :666 (femaTile), :507-508 (fetchFemaTiles -> tileCenter -> arcgisPointQuery)",
+      "predicate": "NONE — the quantised point is used unchecked",
+      "cheapestSatisfier": "any coordinate within one 0.005-degree tile of the parcel; measured median displacement 227 m, maximum 366 m",
+      "valid": "NO — it answers for a point that is not the parcel",
+      "secondDerivationState": "1 — AVAILABLE NOW, with a caveat that I believe is a defect in the rule rather than in this row. See reasoning.",
+      "secondDerivationProposed": "the FEMA query point must fall inside the parcel ring",
+      "secondDerivationReasoning": "Applying the strict two-party test literally: the ring and the centroid both originate in the same parcel record (the TxGIO stratmap parcel fabric), so one party supplies the raw material for both sides, and the row would be filed state 3, internal consistency. I judge that reading wrong, for a reason the rule as worded does not capture. The two inputs are not two fields from one payload. They are (a) the source's ring and (b) OUR OWN lossy transformation of the source's centroid — round to 0.005 degrees, take the tile centre. The transformation is a genuinely non-coordinating second contribution in the only sense that determines catching power: the source cannot produce it, cannot anticipate it, and cannot make it agree. A parcel source that is wrong in every field still cannot make our rounding land inside its own ring. The check is therefore meaning-shaped with respect to the error class that actually caused this incident (our transformation error, 0 correct in 5,714) and presence-shaped with respect to a different error class (a wrong source ring, where the point sits inside the wrong ring and the check passes).",
+      "feedbackOnTheRule": "The state should be assigned PER ERROR CLASS, not per check. A single state per row hides that one check can be state 1 for one failure mode and state 4 for another, and it hides which failure mode a row is actually protected against. Recommend the column read state plus the error class it covers — this row is '1 (our transformation) + 4 (source geometry)'. Under the current single-state rule this row files as 3 and the strongest available check gets discouraged, which is the opposite of the intent. Corroborating evidence that the axis is wrong: the check that ACTUALLY established this defect was not containment at all, it was adjudication against FEMA NFHL at the true parcel location (SS-W11). FEMA supplies both answers there, so under the strict two-party test that adjudication also reads as state 3 — yet it is what produced the finding.",
+      "secondDerivationForTheUncoveredErrorClass": "State 2 — AVAILABLE ONCE A NAMED DEPENDENCY LANDS. To catch a wrong source ring, cross-check the parcel geometry against an independent one: the county CAD's own mapped parcel geometry versus the TxGIO statewide fabric. Dependency: a loaded county-CAD geometry source alongside lib/cad-ingest's TxGIO landparcels tables. Not built today. That would be a genuine two-party check.",
+      "noteOnEvidencePreservation": "Recorded here because retirement destroys the evidence otherwise. The bake code is deliberately left in place by this lane, so the predicate above is still readable at source at the snapshot named."
+    }
+  ],
+
+  "fourQuestionGate": {
+    "control": "ci-tier2-flood-not-served (job ss-w16-tier2-flood-not-served in .github/workflows/pr-checks.yml), plus the compile-time null floor and the exhaustive producer switch, plus the vitest cases.",
+    "q1_whatExecutesIt": "GitHub Actions job ss-w16-tier2-flood-not-served running ripgrep; the existing Typecheck job running tsc; the existing Test job running vitest. No role, no person, no review step.",
+    "q2_whatTriggersIt": "Every pull_request and every push to main, via the workflow's existing on: block.",
+    "q3_whatFailsAndIsItRunningInProductionToday": "Non-zero exit reds a check and blocks the merge; tsc fails if the null floor or the exhaustiveness assertion is broken; vitest fails if a flood value reaches the wire. IN PRODUCTION TODAY: NO. These controls gate the repo, not the deployed service. The strip itself is merged-pending and undeployed, so the wrong determination is still being served right now. The control that matters for the customer is the deploy, and it has not happened.",
+    "q4_whatBypassesIt": "A NEW read path under a DIFFERENT name serving the same place_layer_snapshots rows. The grep matches a string in ONE named file; it does not match a rename, a second route, or a new service. It is also bypassed by anything that does not pass through CI: a direct push to a branch with checks disabled, an admin merge, or a deploy built from a tree that CI never saw. And it does not reach the Tier-2 bake, which keeps writing the same wrong rows. The grep is a regression tripwire and is reported as such, not as coverage. The semantic guarantee is the type and the exhaustive switch, which travel with the code wherever it is copied.",
+    "scopeVersusClaim": "The gate claims exactly one thing — on the node-facets read path, in one named file, the flood key may only be assigned the literal null — and its scope is that one file. It deliberately does not reach the live fema:nfhl-flood-zone map-layer adapter, which is a different instrument sharing a string. A control broader than its claim teaches the fleet to reach for the bypass flag."
+  },
+
+  "toolingFailsLoudNotClosed": {
+    "outcomes": ["clean (exit 0, RESULT=clean)", "violation (exit 1, RESULT=violation)", "did-not-run (exit 2, marker GATE-DID-NOT-RUN, RESULT=did-not-run)"],
+    "didNotRunTriggers": ["ripgrep not installed", "ripgrep errors (exit > 1) on any scan", "the target file is missing, i.e. the read path was renamed or removed", "either self-test fails"],
+    "selfTestBothDirections": "Before any verdict on the real file is trusted, the predicate is run against a fixture that MUST be flagged and a fixture that MUST NOT be. A predicate flagging nothing is a starved gate; a predicate flagging everything is a dead gate. Either reports did-not-run rather than a verdict. This wires 'a check seen only passing has not been seen working' into every single run, in production CI, rather than into a one-time local observation.",
+    "verbatimFromRealCI": "2026-08-19T22:54:43.5074664Z ci-tier2-flood-not-served: self-test passed in both directions / 2026-08-19T22:54:43.5167819Z ci-tier2-flood-not-served: clean / 2026-08-19T22:54:43.5168217Z RESULT=clean"
+  },
+
+  "verificationObservedFailingBeforeReportedWorking": [
+    {
+      "control": "compile-time null floor on Tier2Overlay.flood",
+      "violationInjected": "flood: p.flood in extractTier2Overlay",
+      "observed": "TSC_EXIT=2 / src/routes/brokerageNodeFacets.ts(319,5): error TS2322: Type 'unknown' is not assignable to type 'null'.",
+      "restoredResult": "TYPECHECK_EXIT=0 across all 7 workspace projects"
+    },
+    {
+      "control": "exhaustiveness gate on the producer set",
+      "violationInjected": "added \"fema:nfhl-flood-zone-v2\" to TIER2_FLOOD_PRODUCERS with no case",
+      "observed": "TSC_EXIT=2 / src/routes/brokerageNodeFacets.ts(263,13): error TS2322: Type '\"fema:nfhl-flood-zone-v2\"' is not assignable to type 'never'.",
+      "note": "A second, independent tripwire also fires: the unit case asserting the producer set holds exactly the retired instrument."
+    },
+    {
+      "control": "vitest suite over the read path",
+      "violationInjected": "flood: p.flood as unknown as null, casting past the type floor",
+      "observed": "VITEST_EXIT=1, 6 failed / 14 passed, including the end-to-end integration case: 'SERVES NO FLOOD DETERMINATION even though a real in-SFHA row is seeded' — AssertionError: expected { status: 'in-sfha', ...(5) } to be null",
+      "restoredResult": "VITEST_EXIT=0, 20 passed, run against a live PostgreSQL 18 cluster with pgvector and the real pushed schema"
+    },
+    {
+      "control": "ci-tier2-flood-not-served",
+      "scenariosObserved": 8,
+      "results": [
+        "clean tree -> RESULT=clean, exit 0",
+        "value reintroduced via cast -> RESULT=violation, exit 1, offender printed",
+        "assignment deleted with the type field left behind -> RESULT=violation, exit 1",
+        "type floor widened to unknown -> RESULT=violation, exit 1",
+        "nested value smuggled elsewhere in the file -> RESULT=violation, exit 1",
+        "assignment split onto a continuation line -> RESULT=violation, exit 1",
+        "target file renamed away -> GATE-DID-NOT-RUN, exit 2",
+        "ripgrep absent from PATH -> GATE-DID-NOT-RUN, exit 2"
+      ]
+    }
+  ],
+
+  "defectsFoundInMyOwnControlBeforeShipping": [
+    "The gate was a DEAD GATE, permanently red on a clean tree: the comment-strip regex was anchored on ':LINE:', but rg given a single file argument omits the filename and prints 'LINE:content', so the route's own header documentation matched the gate the header describes. Caught by running the gate against a clean tree and expecting a PASS. This is the exact failure mode ci-coverage-clamp-shared-engine in this same workflow already records in its header, reproduced while implementing the doctrine written against it.",
+    "The 'cannot pass on its own absence' guard was SENTINEL-SATISFIABLE: a single probe for flood:\\s*null was satisfied by the Tier2Overlay TYPE FIELD alone, so deleting the object-literal assignment read as clean. Now two markers are required and checked separately.",
+    "The compliant-file self-test fixture did not match the predicate: the permitted-assignment pattern is end-anchored, so flood: null must sit on its own line, and the fixture inlined it. The fixture was corrected to mirror the real formatting and the constraint documented, rather than un-anchoring the pattern — un-anchoring would swallow 'flood: null, legacy: p.flood', smuggling a value past the gate on the tail of a compliant head."
+  ],
+
+  "contradictionsToTheBriefing": [
+    {
+      "briefingClaim": "What currently keeps this off Smart Site is baked-facets.ts:430, base.includes(\"/property-atoms\"), a substring test on a config string deciding which of two semantically different flood answers a caller receives.",
+      "verdict": "FALSE AS STATED. Verified at hauska-map d3510a6.",
+      "why": "PE_FACETS_PROXY_BASE is a compile-time constant containing that substring, so line 430 always takes the property-atoms branch and its else-branch is dead for every shipped caller. It never selects between two flood answers at runtime. Worse, the /api/spine/property-atoms BFF ITSELF calls cortex GET /api/brokerage/v1/place/node/:id/facets, and stripCortexEnvelopeProductTruth (api/_lib/pe-property-atoms.ts) spreads tier2 and nulls ONLY envelope, explicitly preserving tier2.flood, on two response paths that return the cortex body with HTTP 200: the flag-off path and the definitive-empty / adapt-failed path. What actually drops tier2 is mergeBakedBaseFacts, which copies only bakedBody.facets, and only on the atom.ok path.",
+      "theRealGuard": "PROPERTY_ATOM_PATH === \"1\" (an environment variable) AND atomChainIsUsable(chain) for that specific parcel. Both are runtime and data conditions with no test. That is worse than the briefing states, because an env flip or an unwarmed parcel reopens the path.",
+      "measurementHonesty": "Code path VERIFIED by reading. A live instance was NOT observed: 13 nodes probed on property-explorer-xi.vercel.app, of which 8 carried a cortex tier2 row, and all 8 also had a usable atom chain so PE took the atom-chain path. That is UNMEASURED, not absent, and it is a parcel sample rather than an area sweep, so it establishes nothing about prevalence."
+    },
+    {
+      "briefingImplication": "tier2.flood is confined to the cortex anonymous route and the inspect card.",
+      "verdict": "FALSE. PE has LIVE consumers of tier2.flood beyond the inspect card, and two read the anonymous cortex route as their documented contract.",
+      "sites": [
+        "apps/property-explorer/api/_lib/pe-share-brief.ts:140 — `data: tier2?.flood ?? null` builds the ANONYMOUS share view's Flood section; its own header names cortex buildR1Brief as its contract source of truth",
+        "apps/property-explorer/src/workbench/tools/compare-facts.ts:201 — floodCell(tier2) renders a flood cell in the Compare tool; its header notes it deliberately keeps 'the tier2 sibling the chat path drops'"
+      ],
+      "consequenceForPlacement": "This makes cutting at cortex the ONLY single-point fix. A hauska-map-side fix would have to be replicated across at least four consumers in two repos, each able to regress independently. Retiring at the producer closes all of them at once, which is what this lane did."
+    }
+  ],
+
+  "countsWithCountingRules": {
+    "consumersOfTheTier2Overlay": "3. Counting rule: distinct call sites under artifacts/api-server/src that read .tier2 off loadBakedNodeFacetSnapshot. Excludes lib/buildableEnvelope/spineZoningDistrict.ts:95, which reads only .facets.",
+    "hauskaMapProductionCallSitesPassingAFacetsBase": "5, with 0 overriding the default. Counting rule in t25Rows[0].callSiteEnumerationBeforeScoringRemediable.",
+    "testsInTheReadPathSuite": "20 cases in brokerageNodeFacets.test.ts. 20 pass on the fix; 6 fail on the injected reintroduction. Counting rule: vitest cases in that one file. The 6 are those asserting no value on the wire; the disposeTier2Flood totality case passes under that injection because the injection was at the overlay, not at the disposition function, which is the correct behaviour for two independent assertions.",
+    "gateScenariosObserved": "8. 2 clean, 4 violation, 2 did-not-run.",
+    "peProductionNodesProbed": "13, of which 8 carried a cortex tier2 row and 0 leaked it. Counting rule: single-node GETs against property-explorer-xi.vercel.app. This is a parcel sample, NOT an area sweep, and is reported as unmeasured rather than as evidence of safety."
+  },
+
+  "constraintsHonored": [
+    "did not merge",
+    "did not deploy",
+    "did not remove the brokerage facets route",
+    "did not build a second presence-shaped guard",
+    "did not retire the live fema:nfhl-flood-zone map-layer adapter on a string match",
+    "did not stop the Tier-2 bake, preserving SS-W11's evidence and honouring repoint-before-retire",
+    "pushed the branch immediately after the first commit",
+    "exit-bounded verification only",
+    "snapshot commits declared for both repos read",
+    "every check observed failing before being reported as working",
+    "second mechanism stated and rejected for every finding",
+    "scope held narrower than the claim"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "store",
+      "detail": "The Tier-2 bake (artifacts/api-server/src/nodeFacetBakeTier2Cli.ts) still writes tile-quantised flood facets into place_layer_snapshots under node-facets:tier2. Serving is stopped; writing is not. Deliberate: the rows are SS-W11's adjudication evidence and enforcement doctrine sequences repoint-consumers-first then retire-the-store.",
+      "owner": "planner",
+      "plan_row": "P-45 follow-on"
+    },
+    {
+      "item": "adapter",
+      "detail": "hauska-map has two consumers that read tier2.flood and know nothing about floodDisposition: api/_lib/pe-share-brief.ts:140 (the anonymous share view's Flood section) and src/workbench/tools/compare-facts.ts:201 (the Compare tool's flood cell). Once this deploys they will render an EMPTY flood section rather than the refusal, which collapses 'refused' into 'absent' on those two surfaces. pe-share-brief.ts's own header already names cortex buildR1Brief as its contract source of truth, so the drift is a documented maintenance obligation there.",
+      "owner": "planner, to route a hauska-map lane",
+      "plan_row": "backlog, unassigned"
+    },
+    {
+      "item": "doc",
+      "detail": "The real guard keeping tier2.flood off PE is the PROPERTY_ATOM_PATH environment variable plus per-parcel atom-chain warmth, not baked-facets.ts:430. Any canon or briefing repeating the line-430 claim should be corrected, and the env-plus-warmth dependency has no test.",
+      "owner": "planner",
+      "plan_row": "backlog, unassigned"
+    },
+    {
+      "item": "branch",
+      "detail": "ss/w16-tier2-stop and PR 441 are open, unmerged and undeployed by instruction. The worktree /p/tmp/ss-w16-tier2-stop remains on disk with its node_modules installed.",
+      "owner": "planner",
+      "plan_row": "P-45"
+    },
+    {
+      "item": "parallel project",
+      "detail": "A temporary PostgreSQL 18 cluster was initialised under the session scratchpad on port 55432 to run the real integration suite locally. It is stopped and its data directory left in the session scratchpad, which is session-scoped and not in any repo. Nothing was written to the machine's disabled postgresql-x64-18 service, which was left disabled.",
+      "owner": "SS-W16, resolved at close",
+      "plan_row": "none"
+    }
+  ],
+
+  "whatRemainsOpen": [
+    "THE EXPOSURE ITSELF. Until cortex-api deploys, the wrong flood determination is still served unauthenticated. Re-probed at close time: HTTP 200, tier2.flood.floodZone \"AO\", inSpecialFloodHazardArea true, adapterKey fema:nfhl-flood-zone, floodDisposition absent. This close does not claim the exposure is fixed; it claims the fix is built, proven and staged.",
+    "Merge and deploy, both planner-owned by instruction. All 8 CI check runs concluded success and mergeStateStatus is CLEAN, so nothing technical blocks the merge.",
+    "The hauska-map refusal mirror (leave_behind item 2) — until it lands, two PE surfaces will show an unexplained empty flood section post-deploy.",
+    "The Tier-2 bake retirement (leave_behind item 1).",
+    "Whether the second-derivation column should be assigned per error class rather than per check — raised as feedback on the rule in t25Rows[1].feedbackOnTheRule, needs an operator or coordinator ruling."
+  ]
+}

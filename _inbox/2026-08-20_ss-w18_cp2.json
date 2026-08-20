@@ -1,0 +1,117 @@
+{
+  "lane": "SS-W18",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": ["P-47"],
+  "repo": "legacy-design-tools",
+  "branch": "ss/w18-boot-fix",
+  "commitsSoFar": ["f31fdd16bb3f623d128973e847a684b1844b1858"],
+  "baselineCommit": "5688aa3120eb80e92175b58e3aaabb034faaf394",
+
+  "violationProof": {
+    "claim": "Both controls were run against unfixed origin/main BEFORE the fix existed and both reported a violation. Neither has only ever been observed passing.",
+    "bootSmokeAtUnfixedMain": {
+      "commitPrinted": "5688aa3120eb80e92175b58e3aaabb034faaf394",
+      "selfTest": "passed in both directions",
+      "serverOutputVerbatim": "[coverage-score] ERROR: pass --county=<fips> or --all",
+      "verdict": "RESULT=violation",
+      "exit": 1
+    },
+    "graphGuardAtUnfixedMain": {
+      "commitPrinted": "5688aa3120eb80e92175b58e3aaabb034faaf394",
+      "selfTest": "passed in both directions",
+      "modulesWalked": 344,
+      "violationsFound": 1,
+      "chain": [
+        "artifacts/api-server/src/index.ts",
+        "artifacts/api-server/src/app.ts",
+        "artifacts/api-server/src/routes/index.ts",
+        "artifacts/api-server/src/routes/countyRailScore.ts",
+        "artifacts/api-server/src/lib/railScoring/index.ts",
+        "artifacts/api-server/src/lib/railScoring/engine.ts",
+        "artifacts/api-server/src/countyCoverageScoreCli.ts"
+      ],
+      "verdict": "RESULT=violation",
+      "exit": 1
+    },
+    "independentCorroboration": "The walker reproduced the planner's hand-traced chain without being told it, including the lib/railScoring/index.ts barrel hop that a per-file grep over routes/ would have missed."
+  },
+
+  "afterTheFix": {
+    "commitPrinted": "f31fdd16bb3f623d128973e847a684b1844b1858 (tree also carries the uncommitted fix at the time of the run)",
+    "bootSmoke": "RESULT=pass, exit 0, 'server listened on 8123 and was killed'",
+    "graphGuard": "RESULT=clean, exit 0, 344 modules walked, 0 violations",
+    "moduleCountUnchangedAt344": "Expected, not suspicious: the walk stops AT a violating CLI without descending into it, so exactly one graph node was swapped (countyCoverageScoreCli -> lib/countyCoverageClassification, a leaf whose only import is a type import).",
+    "bundleCheck": "grep -c 'coverage-score' artifacts/api-server/dist/index.mjs returns 0 after the fix. The CLI is no longer compiled into the server bundle at all."
+  },
+
+  "findingSurfacedByTheNewGate": {
+    "what": "On its first post-fix run the boot smoke test did NOT pass. It failed later and differently: 'ENGINE_API_URL is required — cortex-api routes all reasoning through spine engine-api', thrown by validateEngineSpineEnvAtBoot at src/index.ts:178.",
+    "whyItMatters": "This is the discrimination proof. The instrument moved from a module-evaluation exit to a boot-validator refusal, which is only possible if the first defect was actually removed. A gate that reported pass at that moment would have been telling us nothing.",
+    "disposition": "Not an application defect. ENGINE_API_URL is set by the deploy workflow's --set-env-vars. The smoke env was incomplete and now supplies an unroutable host, chosen so the check cannot pass by reaching something real.",
+    "secondMechanism": "The alternative reading is that the fix broke engine-spine wiring. Rejected: the deploy workflow at .github/workflows/cloud-run-deploy.yml already sets ENGINE_API_URL in production, the validator only tests presence, and nothing in this lane touches engineSpineClient.ts."
+  },
+
+  "didNotRunOutcomesProvenToFire": [
+    {"gate": "ci-api-server-boot-smoke", "trigger": "--entry pointing at a missing bundle", "observed": "GATE-DID-NOT-RUN ... does not exist; build the server first", "exit": 2},
+    {"gate": "ci-api-server-boot-smoke", "trigger": "probe port already occupied by another listener", "observed": "GATE-DID-NOT-RUN ... a listening observation could not be attributed to the server under test", "exit": 2},
+    {"gate": "ci-boot-graph-no-cli-import", "trigger": "--root pointing at a missing entry", "observed": "GATE-DID-NOT-RUN ... root entry ... does not exist", "exit": 2}
+  ],
+  "whyThatMatters": "Tooling fails LOUD, not closed. The did-not-run branch is the one that turns a control into a wish, so it was violated deliberately rather than assumed. All three refusals were reached only AFTER the self-test passed, which is the intended order: the instrument proves itself before it refuses or rules.",
+
+  "changeSet": {
+    "newPureModule": "artifacts/api-server/src/lib/countyCoverageClassification.ts",
+    "movedSymbols": ["classifyFacet", "sourcePresentForStampFacet", "resolveStampFacetMeasurability", "Classification", "FacetScore", "ClassifyInput", "StampFacetMeasurability"],
+    "callSitesEnumeratedAndRepointed": [
+      "artifacts/api-server/src/lib/railScoring/engine.ts (THE boot-graph edge)",
+      "artifacts/api-server/src/countyFloodScoreCli.ts",
+      "artifacts/api-server/src/countyGeometryScoreCli.ts",
+      "artifacts/api-server/src/countyCoverageScore.test.ts",
+      "artifacts/api-server/src/countyStampFacetMeasurability.test.ts",
+      "artifacts/api-server/src/lib/railScoring/engine.test.ts"
+    ],
+    "deliberatelyLeftOnTheCli": {
+      "symbols": ["railThresholdPct", "deriveRailState", "LANDUSE_JOIN_FACET_KEY"],
+      "onlyConsumer": "artifacts/api-server/src/countyCoverageRailState.test.ts",
+      "reason": "They read COUNTY_RAIL_DECLARATION from @workspace/db/schema and nothing in the boot graph imports them."
+    },
+    "noReExportLeftBehind": "The CLI does NOT re-export the moved symbols. A re-export would put the CLI back on the import path that broke production while every test kept passing.",
+    "staleProseCorrected": [
+      "artifacts/api-server/src/countyRailScoreCli.ts — two headers asserted that the dynamic import and the direct registry import were REQUIRED because engine.ts imports classifyFacet from the CLI. That chain no longer exists. Both are now recorded as removed reasons rather than live constraints.",
+      "artifacts/api-server/src/lib/railScoring/engine.test.ts and registry.test.ts — comments naming the old import path."
+    ]
+  },
+
+  "verificationRun": {
+    "rootTypecheck": "pnpm run typecheck (what CI runs) exit 0",
+    "typecheckCaveat": "The per-package 'pnpm --filter @workspace/api-server run typecheck' fails with TS6305 on this machine because it skips the 'tsc --build' of lib/*. That is a known local baseline artifact, not a finding: the root script runs typecheck:libs first and passes.",
+    "tests": "5 affected suites, 62 tests, all passing: countyCoverageScore, countyStampFacetMeasurability, countyCoverageRailState, railScoring/engine, railScoring/registry",
+    "build": "pnpm --filter @workspace/api-server run build exit 0",
+    "exitBounded": "Confirmed. netstat after the runs shows only TIME_WAIT client sockets on 8123/8125 and no LISTENING socket. No server was left running."
+  },
+
+  "adversarialReviewOfTheWorkSoFar": [
+    {
+      "challenge": "Does the boot smoke test prove production boots?",
+      "answer": "No, and it does not claim to. It proves the process reaches app.listen under a well-formed synthetic env with dummy secrets and an unreachable DATABASE_URL. A production-only failure caused by a wrong secret VALUE is out of its reach. Stated as scope, not mitigated."
+    },
+    {
+      "challenge": "Could the graph guard be green while a CLI still reaches boot?",
+      "answer": "Yes, by three named routes: a bare workspace-package specifier (measured: all 13 *Cli.ts files in this repo are under artifacts/api-server/src and none is in a workspace package, so the gap is currently empty and reopens the moment one lands in lib/); a dynamic await import(), which is deliberately allowed because it does not evaluate at module load; and a require() or computed specifier. All three are written into the script header, not just into this artifact."
+    },
+    {
+      "challenge": "Is the comment-and-string masking in the walker itself a risk?",
+      "answer": "It is the classic dead-gate hazard in reverse. The clean fixture deliberately contains a header that quotes the forbidden import verbatim plus an 'import type' from the same CLI, so the self-test fails if masking regresses in either direction. Both were exercised on every run above."
+    },
+    {
+      "challenge": "Both controls are CI checks. Do they block anything?",
+      "answer": "No. This repo's main is not branch-protected, so under gate question three the honest answer today is that nothing fails. They are in the sixth state, advisory, per doctrine revision 7. Their evidentiary value is real and already banked; their protective value is nil until required status checks are enabled."
+    }
+  ],
+
+  "openAtCP2": [
+    "CI wiring added to .github/workflows/pr-checks.yml as job ss-w18-api-server-boot; YAML parses and the job registers, but it has not yet run on GitHub. Its first real run is the PR.",
+    "The dynamic import in countyRailScoreCli.ts is now unnecessary and is retained deliberately. Recorded as a leave-behind."
+  ]
+}

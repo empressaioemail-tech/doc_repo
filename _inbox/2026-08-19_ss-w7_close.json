@@ -1,0 +1,273 @@
+{
+  "lane": "SS-W7",
+  "title": "The sweep endpoint and a real manifest recompute",
+  "planRows": ["P-44"],
+  "repo": "legacy-design-tools",
+  "branch": "ss/w7-sweep-endpoint",
+  "worktree": "/p/tmp/ss-w7-sweep-endpoint",
+  "baseSha": "85c5d1a8c12a4a70e81323a907ca252b802266b8",
+  "closedAt": "2026-08-19T15:20:00Z",
+  "status": "COMPLETE AS CODE, NOT AS CUSTOMER. Both routes built, tested, CI green, PR open and unmerged. Not deployed, so no live grade exists — and the lane's most important finding is that the recompute, once deployed, will move ZERO cells, for a reason the dispatch did not have.",
+
+  "missionPremise": "OPS-16 amendments A-018 and A-019. The statewide serving sweep answers what the product SERVES a human per parcel, which is a different question from the County Manifest's did-a-writer-run, and the two are kept side by side because their disagreement is the finding. The record was FROZEN by the planner at _catalog/parcel_fact_sheet_contract/serving-sweep.ts so the producer (SS-W5 / P-43, hauska-engine) and the consumer (SS-W6 / P-44, hauska-map Command Center) could run in parallel. Nobody was assigned the route between them; the dispatch names that as a planner seam error. Separately the county ledger has no recompute route at all, so the deployed manifest was materialized 2026-08-14T17:41:22.500Z and could only be refreshed by a human running a CLI.",
+
+  "completionPredicate": "A stranger can (1) GET /api/serving-sweep from a running cortex-api and receive either a StatewideServingSweep that parses cleanly under Command Center's own parseStatewideSweep, or a NAMED not-ingested state, never an empty envelope; (2) address one county and get its frozen record or a named 404 that cannot be confused with a sweep that found nothing; (3) POST a P-43 artifact with a service token and have it land, with a malformed one rejected listing every problem by path and storing nothing; (4) POST a recompute and receive a fresh computedAt READ BACK FROM THE STORE plus a per-rail delta of what actually moved, with a dry-run proving the freshness fields come from the store rather than from memory. All four hold, exercised over real HTTP against a real Postgres with the actual P-43 artifacts.",
+
+  "scopeBasis": "Repo is legacy-design-tools; surface is artifacts/api-server plus the lib/db schema it needs. Deliberately OUT of scope, each for a stated reason rather than by omission: the Command Center panel and the hauska-map proxy POST allowlist (different repo, SS-W6 owns that surface); producing sweep data for the other 252 counties (P-43 work); deploying (planner-owned, and named as the reason no live grade exists); running the recompute against production (a write to live operator-facing state, so it is proposed, not taken); and fixing the swallow inside lib/db's probeRailCapabilities itself, which is guarded at this call site and routed to the planner as a class.",
+
+  "prs": [
+    {
+      "number": 437,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/437",
+      "state": "OPEN",
+      "headRefOid": "12691f4cccb0b5711fd71546a9515ba77efccbf8",
+      "mergeable": "MERGEABLE",
+      "mergeStateStatus": "CLEAN",
+      "mergeSha": "not applicable: DO NOT MERGE per lane rule; left open for the planner",
+      "ciConclusionStrings": {
+        "Typecheck": "success",
+        "Test": "success",
+        "Rubric unit tests": "success",
+        "L17 ci-vintage-predicate": "success",
+        "L5 SF-24/SF-25 score greps": "success",
+        "L5 SF-26 hand hasWriter grep": "success",
+        "L5 SF-30 Cotality warm grep": "success",
+        "L5 silent-fallback greps": "success"
+      },
+      "ciNote": "Read from the check-runs API conclusion field, not from `gh pr checks` printing 'pass'. 8 of 8 completed with conclusion 'success' on head 12691f4c."
+    }
+  ],
+
+  "commits": [
+    "11b75ad6 feat(serving-sweep): GET /api/serving-sweep and a real ledger recompute (P-44)",
+    "c559e16f test(serving-sweep): pin the record validator, the assembly rules and the recompute verify (P-44)",
+    "12691f4c test(db): declare serving_sweep_county in the expected-tables list (P-44)"
+  ],
+  "diffSize": "14 files, 2,230 insertions, 6 deletions",
+  "deployed": "NOTHING. No deploy, no merge, no push to main. No write of any kind to the production database.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-08-19_ss-w7_cp1.json",
+    "_inbox/2026-08-19_ss-w7_cp2.json"
+  ],
+
+  "theFindingThatMATTERSMOST": {
+    "label": "VERIFIED by me at source, 2026-08-19, read-only psql against DEPLOYMENT_DATABASE_URL (legacy-design-tools-prod)",
+    "headline": "A county-ledger recompute run today would move ZERO of 3,556 cells. The 4-day-old snapshot is cell-for-cell identical to what a fresh compute produces.",
+    "andTheFootprintPart": "county_facet_coverage holds ZERO rows for facet 'footprint'. All 254 footprint cells read not-yet before a recompute and would read not-yet after one. The ledger reports footprint as not-yet because nothing has SCORED footprint, not because the snapshot is stale.",
+    "correctionToTheDispatch": "The dispatch says the ledger reports footprint as not-yet 'because it was computed 67 hours earlier'. The staleness is real as a timestamp and is not the cause. This is the successful-outcome case DEV_PROCESS 3.2 describes: a planner figure reported wrong.",
+    "measurements": {
+      "footprintCoverageRows": {
+        "query": "SELECT count(*) FROM county_facet_coverage WHERE facet='footprint'",
+        "value": 0
+      },
+      "facetsPresentInCoverage": {
+        "countingRule": "rows per facet in county_facet_coverage / rows whose rail_state is satisfied-present, pre display gate",
+        "cad": "254 / 13",
+        "envelope": "19 / 0",
+        "flood": "177 / 114",
+        "geometry": "254 / 252",
+        "land-use": "19 / 0",
+        "landuse": "254 / 13",
+        "mud": "254 / 134",
+        "owner": "254 / 13",
+        "zoning": "254 / 19",
+        "absentEntirely": ["footprint", "roads", "easement", "rrc-wells", "rrc-pipelines", "rail-corridor"],
+        "note": "Nine facets have rows out of fourteen rails. Six rails have never been scored at all. 'land-use' and 'landuse' are two different facet strings in one table, which is its own smell and is filed to the backlog below."
+      },
+      "wouldMove": {
+        "method": "the exact grid SQL from countyLedgerCompute.readManifestGrid run against the live coverage tables, compared cell by cell with the manifestCells of the served snapshot, then applyDepthRailDisplayGate applied in the same form as the code",
+        "cells": "3,556 both sides (254 counties x 14 rails)",
+        "rawDifferences": "18, all zoning, all not-yet -> satisfied-present",
+        "afterTheDepthGate": "0. Only 1 of the 19 zoning rows sits at or above its threshold, so 17 of the 18 are re-suppressed to not-yet and the 18th already reads satisfied-present in the snapshot.",
+        "derivationIndeterminateCells": "0 in the snapshot, so the overlay is a no-op and this comparison is exact",
+        "costNote": "small join over county_manifest / county_rail / county_facet_coverage with statement_timeout set. NOT a heavy scan. The COUNT DISTINCT capability probes were deliberately not run against production."
+      },
+      "theMissingLeg": {
+        "railDeclaration": "county_rail.footprint: atom_family_state='present', has_writer=true, writer_ref='hauska-engine write-building-footprint-county.mjs', updated_at 2026-08-11",
+        "quotedComparison": "geometry's writer_ref names BOTH a writer and a scorer ('hauska-engine write-parcel-node-county.mjs; countyGeometryScoreCli.ts facet geometry'). zoning, envelope and landuse name 'countyCoverageScoreCli.ts facet ...'. footprint names a writer and NO scorer.",
+        "atSource": "artifacts/api-server/src/countyCoverageScoreCli.ts writes facets 'land-use' (line 578), 'zoning' (line 631) and 'envelope' (line 642). footprint appears nowhere in that file.",
+        "reading": "The gap is the WRITTEN-to-SCORED leg for the footprint rail. A recompute route was the right thing to build and it does not close that gap."
+      }
+    },
+    "whatIDidNOTMeasure": "Whether footprint atoms exist in the atoms store for 174 counties. That is the WRITTEN layer, it lives in a different store, it is L26's claim, and I did not verify it. I do not restate its magnitude."
+  },
+
+  "evidenceLayers": {
+    "WRITTEN": "not measured by this lane, and no figure from it is repeated here",
+    "SCORED": "measured directly against the deployment database, as above",
+    "SERVED": "measured for the API surface only: on deployed cortex-api, GET /api/serving-sweep and GET /api/serving-sweep/48021 both returned HTTP 200 text/html 918 bytes (the SPA catch-all); POST /api/county-ledger/recompute with a body returned 404 'Cannot POST'; the same POST with NO body returned 411. No parcel-level SERVED measurement was taken by this lane."
+  },
+
+  "routesDelivered": [
+    {
+      "route": "GET /api/serving-sweep",
+      "auth": "anonymous",
+      "body": "StatewideServingSweep, frozen shape, no extra keys",
+      "absence": "503 serving_sweep_not_ingested with a named reason",
+      "headers": "X-Sweep-Assembled-At (the read clock), X-Sweep-Counties-Swept, X-Sweep-Swept-At"
+    },
+    {
+      "route": "GET /api/serving-sweep/counties",
+      "auth": "anonymous",
+      "body": "additive index: countyFips, countyName, sweptAt, ingestedAt, resolverVersion, parcelsTotal. NOT part of the frozen record and labelled so.",
+      "absence": "200 with countiesSwept 0 — 'which counties are swept' always has an answer"
+    },
+    {
+      "route": "GET /api/serving-sweep/:countyFips",
+      "auth": "anonymous",
+      "body": "one CountyServingSweep, frozen shape",
+      "absence": "404 county_not_swept; 400 invalid_county_fips for a non-5-digit segment"
+    },
+    {
+      "route": "POST /api/serving-sweep/ingest",
+      "auth": "Bearer service token (the POST /api/onboarding-ledger/ingest idiom)",
+      "accepts": "one CountyServingSweep OR a whole StatewideServingSweep, told apart by the presence of `counties`, never by guessing",
+      "rejects": "400 invalid_serving_sweep listing every problem BY PATH in one pass; a statewide body with one bad county stores none of it",
+      "bodySizeBound": "app.ts mounts express.json() at body-parser's DEFAULT 100kb. The two P-43 county artifacts measure 32,725 and 32,899 bytes, so a per-county post has roughly 3x headroom and the 66,955-byte two-county statewide artifact fits. A 254-county statewide body does NOT fit and must be posted county by county. Stated in the route doc where it is read."
+    },
+    {
+      "route": "POST /api/county-ledger/recompute",
+      "auth": "Bearer service token",
+      "query": "dryRun=1 (compute and diff, write nothing); probe=skip (skip the COUNT DISTINCT probes, stamping railCapabilities=null with a named reason)",
+      "concurrency": "withClusterSweepLock advisory lock; a contender gets 409 recompute_in_progress, never a second heavy scan",
+      "timeouts": "statement_timeout 240s inside the transaction, under Cloud Run's 300s request timeout (--timeout=300, verified in the deploy workflow)",
+      "reports": "computedAt (moves every call by construction), store.computedAtBefore and store.computedAtAfter (both read from county_ledger_snapshot, the second on a fresh read after commit), store.computedAtMovedInStore, store.persistedAsComputed, store.stalenessBeforeMs, and delta (payloadChanged, summaryChanges, cells.{before,after,changed,added,removed,byRailKey})",
+      "failsClosed": "500 recompute_not_persisted when applied and the store does not carry the computed timestamp"
+    },
+    {
+      "route": "/api/county-ledger/refresh",
+      "auth": "any method",
+      "body": "404 no_such_route naming /recompute",
+      "why": "a named tombstone, NOT a second name for the recompute. Unmatched GET /api/* falls through to the SPA catch-all and answers HTML 200, which reads as served — the same fallthrough that made this lane's missing route look like a data problem."
+    }
+  ],
+
+  "howARecomputeIsTriggeredAndByWhom": {
+    "today": "Any holder of the cortex-api SERVICE_API_KEY: `curl -X POST -H \"Authorization: Bearer $SERVICE_API_KEY\" -H 'Content-Type: application/json' -d '{}' https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger/recompute`. The -d '{}' is not optional: a bodyless POST is rejected by the Cloud Run frontend with 411 before Express sees it, and 411 says nothing about whether the route exists.",
+    "intendedProducerSeam": "hauska-engine's scorers call it after scoring, the same shape as POST /api/onboarding-ledger/ingest. The existing countyLedgerMaterializeCli --apply remains valid and is the fallback when a compute would exceed the request timeout.",
+    "fromCommandCenter": "NOT POSSIBLE without a change in another repo. The console reaches cortex-api through hauska-map's Vercel proxy (api/spine.ts), which allowlists POST paths explicitly and defaults to GET/HEAD only; /api/county-ledger/recompute is not on that list. The GET routes need no proxy change and will work as soon as this is deployed.",
+    "afterDeploy": "the recompute should be run once, and its `delta` read rather than its `computedAt`. Per the finding above the expected delta is all-zero; that is the correct result and must not be reported as a failure OR as a refresh."
+  },
+
+  "defectsFoundAndFixed": [
+    {
+      "id": "D1",
+      "severity": "high",
+      "finding": "probeRailCapabilities swallows a failed COUNT DISTINCT per rail and returns null with a limitation string. Local on a pooled connection; NOT local inside a transaction, where the first failing probe aborts everything after it — including the snapshot write — with an error naming only the write.",
+      "reachable": "the mud probe reads tx_special_district (lib/db/src/railCoverageCapability.ts:145), which is not in the drizzle schema and so exists in no test schema and no fresh database. Reproduced: the first recompute integration test failed with 'current transaction is aborted, commands ignored until end of transaction block'.",
+      "fix": "each capability probe runs in its own SAVEPOINT, and computeCountyLedgerPayload gained an explicit capabilityDb option so the guard is visible at the call site.",
+      "stillOpen": "the swallow in lib/db is untouched. Any FUTURE caller wrapping this compute in a transaction inherits the same trap."
+    },
+    {
+      "id": "D2",
+      "severity": "medium",
+      "finding": "the payload diff compared JSON.stringify output. The BEFORE payload comes out of a jsonb column and the AFTER payload is a fresh JS object; jsonb does not preserve key order, so two identical recomputes reported EVERY cell as changed.",
+      "howCaught": "the test asserting a BORING result — 'a second recompute with nothing changed reports an all-zero delta, not a win'. A suite that only asserted interesting outcomes ships this.",
+      "fix": "key-sorted comparison with the reason recorded at the function."
+    }
+  ],
+
+  "controlsAndTheirNegativeTests": [
+    {
+      "control": "the recompute's freshness verify reads the STORE, not the object it just built",
+      "provedAbleToFire": "the dryRun case IS the divergence test: nothing is written, so the store must report UNMOVED while computedAt is fresh. Asserted in the suite and reproduced over HTTP: computedAt 2026-08-19T14:40:44.508Z, store.computedAtAfter 2026-08-19T14:40:44.322Z, computedAtMovedInStore false, persistedAsComputed false. A vacuous verify reports this as moved."
+    },
+    {
+      "control": "the frozen-record validator can reject",
+      "provedAbleToFire": "11 rejection cases, each a shape Command Center's own parser flags: missing FieldKey, unknown FieldKey, contradiction kind outside the union, more than 20 exampleParcelNodeIds, bbox that is not four numbers, negative tally, malformed FIPS, unparseable sweptAt, countiesSwept disagreeing with counties.length, a duplicated county, and a non-object body. Plus: ok=false with an empty problem list is asserted impossible."
+    },
+    {
+      "control": "a rejected ingest stores nothing",
+      "provedAbleToFire": "row count asserted 0 after a malformed single-county post and after a statewide post whose second county is bad"
+    },
+    {
+      "control": "one heavy scan at a time",
+      "provedAbleToFire": "a peer connection holds pg_advisory_lock on the same derived key; the route answers 409 and the store is asserted still empty. Releasing the peer and re-running answers 200."
+    },
+    {
+      "control": "the delta names the rail that moved",
+      "provedAbleToFire": "coverage is landed AFTER a materialization, the ledger is asserted still reading not-yet, and the next recompute reports cells.changed 1 with byRailKey.footprint 1 and the GET then reads satisfied-present"
+    },
+    {
+      "control": "the schema fixture matches what pg_dump produces",
+      "provedAbleToFire": "run BEFORE any change against a freshly pushed throwaway cluster: PASSED, proving the committed fixture is byte-identical to this toolchain's output. Re-run after adding the table: FAILED with a diff containing my table and nothing else. Regenerated: 21 inserted lines, then PASSED."
+    }
+  ],
+
+  "verificationCommands": {
+    "typecheck": "pnpm run typecheck -> REAL EXIT 0",
+    "apiServerSuite": "npx vitest run (artifacts/api-server) -> 2,335 passed, 14 skipped, 2 failed",
+    "libDbSuite": "npx vitest run (lib/db) -> 89 passed, 1 failed",
+    "newTests": "56 across three files: servingSweepRecord.test.ts 22, __tests__/servingSweep.test.ts 20, __tests__/countyLedgerRecompute.test.ts 14. All pass.",
+    "fixtureDrift": "bash lib/db/scripts/check-fixture-drift.sh -> REAL EXIT 0, 'Schema fixture matches live DB.'",
+    "exitCodeNote": "Every exit code above was captured from the command itself, never from a pipe (DEV_PROCESS 2.3).",
+    "theTwoLocalFailures": [
+      {
+        "test": "countyLedger.test.ts > returns 254 x COUNTY_RAIL_COUNT cells once the manifest is fully seeded",
+        "error": "read ECONNRESET",
+        "baselined": "REPRODUCES ON UNMODIFIED origin/main. The four touched files were checked out from origin/main, the whole file re-run, and it failed identically; restored afterwards. This branch touches no engine or rail-binding file.",
+        "ciResult": "CI 'Test' concluded success, so it does not reproduce there."
+      },
+      {
+        "test": "railEngineBindingCoverage (CI) > engine writer scripts exist on disk when declared",
+        "error": "missing engine writer for geometry: P:/tmp/hauska-engine/packages/engine-core/scripts/write-parcel-node-county.mjs",
+        "cause": "a STALE sibling hauska-engine clone exists at that path (HEAD 265e6a9) and lacks the declared writer scripts, so the test finds a root and fails closed instead of skipping. CI does a fresh sparse checkout.",
+        "baselined": "reproduces with the only lib/db test file this branch touches reverted to origin/main",
+        "ciResult": "CI 'Test' concluded success."
+      }
+    ],
+    "liveHttpProbe": {
+      "how": "a scratch harness under a gitignored tmp/ mounted only this lane's two routers on a throwaway Postgres; background-started, curled, killed, port confirmed closed, harness deleted. Never committed.",
+      "emptyStore": "GET /api/serving-sweep -> 503 serving_sweep_not_ingested, application/json",
+      "unauthenticatedIngest": "POST /api/serving-sweep/ingest -> 401, nothing stored",
+      "realArtifactIngest": "POST the actual 66,955-byte _catalog/serving_sweep_2026-08-18/statewide.json -> 200 {shapeRead statewide, countiesIngested 2, added [48021,48453]}",
+      "assembledEnvelope": "GET /api/serving-sweep -> 200 application/json 39,058 bytes; sweptAt 2026-08-19T00:00:48.244Z, resolverVersion ss-w5/1.0.0+atomPath=1+vendor=hauska-map@d3510a6+noCalibrationOverlay+geojsonCountOnly, countiesTotal 254, countiesSwept 2, parcelsTotal 866,857. Headers X-Sweep-Assembled-At 2026-08-19T14:39:53.785Z, X-Sweep-Counties-Swept 2.",
+      "fidelity": "the served counties[] is DEEP-EQUAL to the source artifact's counties, per-county. countiesSwept equals counties.length. parcelsTotal equals the sum over the served counties and matches the artifact's own 866,857.",
+      "freshnessRule": "the artifact's own statewide sweptAt is 2026-08-19T00:01:03.846Z (its assembly clock); the served envelope reports 2026-08-19T00:00:48.244Z, the newest county sweep (Bastrop; Travis is older at 2026-08-18T23:58:08.463Z). The envelope never claims a freshness newer than any sweep inside it.",
+      "perCountyAndAbsences": "GET /48021 -> 200 the frozen county record; GET /48113 -> 404 county_not_swept; GET /bastrop -> 400 invalid_county_fips; GET /api/does-not-exist -> the HTML 200 catch-all, which is the state this lane replaces",
+      "recompute": "no token -> 401; with token -> 200 applied true, store.persistedAsComputed true, computedAtAfter equal to computedAt; then ?dryRun=1 -> 200 applied false with the store UNMOVED; POST /api/county-ledger/refresh -> 404 no_such_route"
+    }
+  },
+
+  "constraintsHonored": {
+    "writeSlot": "NONE TAKEN. No atoms store write, no bulk writer, no DDL against any shared database.",
+    "productionWrites": "NONE. Every query against the deployment database was a read-only SELECT. The recompute was never run against production.",
+    "heavyScanSerialization": "HONORED BY AVOIDANCE. No COUNT DISTINCT or full-table scan against the shared deployment database. The one production read was a 3,556-row join plus two small aggregates, each with statement_timeout set.",
+    "exitBounded": "HONORED. Builds, tests, one-shot queries and bounded polls. The local probe server and the throwaway Postgres were both explicitly stopped and confirmed down; no watch, no tail, no serve left running.",
+    "isolatedWorktree": "/p/tmp/ss-w7-sweep-endpoint. No other lane's tree touched. The stale sibling clone at /p/tmp/hauska-engine was read for diagnosis only.",
+    "pushedAfterFirstCommit": "HONORED. Pushed immediately after 11b75ad6 and after every commit since.",
+    "doNotMergeDeployOrPushToMain": "HONORED. PR 437 OPEN, MERGEABLE, CLEAN, all 8 checks conclusion=success. Nothing merged, nothing deployed, nothing pushed to main.",
+    "noSubAgents": "HONORED. The dispatch forbade spawning, nesting and delegating; none occurred. Both checkpoints are self-review and say so.",
+    "canonPreamble": "No no-touch repo was entered. smartcity was not touched. Cotality was not touched. Nothing in this lane routes to a retired source."
+  },
+
+  "docRepoEditsLeftUNCOMMITTED": {
+    "note": "doc_repo commits are planner-owned per AGENT_CONTRACT section 6",
+    "added": [
+      "_inbox/2026-08-19_ss-w7_cp1.json",
+      "_inbox/2026-08-19_ss-w7_cp2.json",
+      "_inbox/2026-08-19_ss-w7_close.json"
+    ],
+    "modified": [],
+    "preexistingUnrelated": "the doc_repo working tree already carried many modified files when this lane started; none were touched"
+  },
+
+  "backlogItemsForThePlanner": [
+    "probeRailCapabilities swallows per-probe errors in lib/db. Guarded at this call site with a SAVEPOINT; the swallow itself is unchanged, so the next transactional caller inherits the trap. Either make the helper savepoint-aware or make it declare that it must not run inside a transaction.",
+    "tx_special_district is read by the mud capability probe and is not part of the drizzle schema, so it is absent from every test schema and every fresh database and its probe errors on each run. Either add it to the schema or make the probe check to_regclass first.",
+    "county_facet_coverage carries BOTH 'land-use' (19 rows) and 'landuse' (254 rows) as facet strings. One subject, two keys, in the table the ledger reads. Worth a ruling.",
+    "Six of fourteen rails have never been scored at all: footprint, roads, easement, rrc-wells, rrc-pipelines, rail-corridor. Their county_rail rows nonetheless declare has_writer=true, which is the hand-declared-drift class already on record.",
+    "The frozen serving-sweep record now has THREE copies: the planner's, Command Center's mirror, and this repo's validator. There is no automated divergence test across repos because they are three repositories. This is the CTRL-1 shape and it is not mitigated, only stated.",
+    "hauska-map's api/spine.ts must allowlist POST /api/county-ledger/recompute before the console can trigger a recompute. The GET sweep routes need no proxy change."
+  ],
+
+  "whatRemainsOPEN": [
+    "NOT DEPLOYED. Code-done is not customer-done; there is no live grade and this lane does not claim one. The Command Center panel will keep rendering its honest not-served state until cortex-api is deployed from this branch.",
+    "PR 437 is open and unmerged by lane rule, CI green on head 12691f4c.",
+    "No sweep data is ingested anywhere. The store ships empty and the endpoint will answer 503 serving_sweep_not_ingested until a producer posts. The two P-43 counties can be loaded with one curl of _catalog/serving_sweep_2026-08-18/statewide.json once deployed.",
+    "The recompute has never run against production. Expected result when it does: computedAt moves, delta is all-zero, and footprint stays not-yet on all 254 cells. That is the honest outcome, not a failure and not a refresh.",
+    "The claim 'whatever this endpoint serves parses cleanly under Command Center's parser' is enforced by mirroring its rules and asserting them here; it is NOT proven end to end, because the console's parser lives in another repo and cannot be imported.",
+    "The 100kb express.json body cap means a 254-county statewide ingest must be posted county by county. Measured against the two real artifacts, not assumed, and stated at the route."
+  ]
+}

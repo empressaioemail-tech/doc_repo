@@ -1,0 +1,366 @@
+{
+  "lane": "SS-W17",
+  "artifact": "close",
+  "date": "2026-08-19",
+  "planRows": ["P-45"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "amendment": "A-019 (operator ruling 2026-08-19)",
+  "repo": "hauska-engine",
+  "branch": "ss/w17-containment",
+  "worktree": "/p/hauska-engine-worktrees/ss-w17-containment",
+  "baseCommit": "d3f37949003fae5a99a82b62956352b7dcaa1022",
+
+  "missionPremise": "Operator ruling in the SS-W17 dispatch: tier2 flood is retired for being wrong, and NO consumer is repointed to the flood-hazard-fact atom until that atom carries a containment check. SS-W11 scored the atom 5,714 of 5,714 against FEMA NFHL; that is evidence, not a guarantee, and tier2 would also have passed an adjudication of one parcel that happened to sit near a tile centre. Without the check the retirement swaps one unchecked hazard determination for another that currently happens to be right, and buys a better number rather than a better instrument. Sources: P:/doc_repo/_dispatches/2026-08-19_ss-w17_dispatch.md, P:/doc_repo/_inbox/2026-08-19_ss-w11_close.json, P:/tmp/data fix/61_enforcement_doctrine.md, P:/tmp/data fix/enforcement.mdc.",
+
+  "completionPredicate": "A stranger can (a) point at the code that refuses a flood determination whose query point is not inside the parcel it answers for, (b) run one command that observes that refusal firing on real production parcels, (c) name the executor, trigger, failure mode and BYPASSES of the standing check without being told, and (d) see that item 1.0 did not run and why. MET for (a) through (d). NOT MET, and deliberately so, for the thing a reader might assume follows: no stored atom carries a containment stamp, so the corpus is still unchecked and no consumer was repointed.",
+
+  "scopeBasis": "The dispatch scopes this lane to repo hauska-engine and one worktree, and gates item 1.0 on 0.7 passing. Deliberately EXCLUDED and named so the omission reads as deliberate: (1) the hauska-map and legacy-design-tools repoints and the tier2 writer retirement, which are other repos with no worktree, no branch and no PR provided by this dispatch — the ORPHAN is named explicitly below per the paired-retirement rule; (2) the flood corpus re-bake, which takes the atoms writer slot and is an operator-sequenced apply while this lane is read-only; (3) any deploy, per the hard rules; (4) the contract change that would make the sampling stamp a first-class atom-contract field, which lives in hauska-atom-contract.",
+
+  "gateVerdict": {
+    "verdict": "0.7 IS BUILT AND PROVEN IN CODE. 0.7 IS NOT SATISFIED IN DATA. ITEM 1.0 THEREFORE DID NOT RUN.",
+    "reasoning": "The dispatch gates 1.0 on the containment check existing and the promoted harness having run against the replacement. Both happened. But the harness's verdict on the replacement is FAIL: 5,750 of 5,750 sampled Bastrop atoms carry no sample point and no containment state, because every stored flood atom predates the gate. Repointing consumers now would point them at determinations that have never been containment-checked, which is precisely what the operator ruled against. The CODE carries the check; the DATA does not. The gate opens after a re-bake under the gate, which this lane cannot run.",
+    "whatWouldOpenIt": "Re-bake flood-hazard-fact for the target counties with the merged writer, then run the standing check live; the stamp leg goes from 5,750-of-5,750 failing to zero failing, and the zone leg gains a denominator for the first time because it finally has stamped points to adjudicate."
+  },
+
+  "snapshot": {
+    "codeBase": "branch ss/w17-containment, tip 6c820af, off origin/main d3f3794 (checked equal to gh api repos/.../commits/main .sha)",
+    "atomsStore": "hauska_mcp @ ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech, read 2026-08-19",
+    "cortexStore": "neondb @ same host, read 2026-08-19",
+    "groundTruth": "tx_fema_nfhl_flood_zone, 198,178 rows, 198,178 with geom, ONE edition NFHL_48_20260101",
+    "populationMeasured": "county 48021 Bastrop, first 6,000 DISTINCT ON (feature_index) rows of txgio_parcel by feature_index. 138 skipped for an unusable prop_id and 112 dropped as duplicate keys, leaving 5,750 PLANNABLE parcels. That is 9.2 percent of Bastrop's 62,256 flood atoms and 0 percent of every other county. NOT a statewide figure and must never be quoted as one."
+  },
+
+  "deliverable_0_7a_containmentCheck": {
+    "module": "packages/engine-core/src/flood-hazard-fact/containment.ts",
+    "whatItChecks": "The FEMA query point must fall inside the parcel ring it answers for. Ray cast against the outer ring, holes respected, EVERY MultiPolygon part tested rather than only the first.",
+    "whyItIsMeaningShaped": "Two inputs that must agree, and the predicate that joins them is a different computation from the one that produced the point. No sentinel satisfies both: a tile centre, a bounding-box centre, a (0,0), a NaN, or a point copied from a neighbouring parcel all fail containment, and a fabricated ring yields no verdict rather than a passing one.",
+    "threeStatesNeverCollapsed": "contained, not-contained, unmeasurable. The policy over them is a SEPARATE pure function (floodDeterminationGate), so a policy change cannot quietly redefine a state.",
+    "policy": "not-contained REFUSES. unmeasurable REFUSES when the derivation is bbox-centre, declared or none, because then neither derivation ties the point to the parcel. unmeasurable EMITS and is marked when the source publishes a Point geometry, because that point IS the parcel's own published location.",
+    "enforcedByTypeNotOnlyByCheck": [
+      "PlannedPresentFloodHazard and PlannedAbsentFloodHazard are stamped EmittableContainmentState = Exclude<ContainmentState,'not-contained'>. A determination made outside its parcel cannot be CONSTRUCTED as a published record, at any consumer, with no trigger to be missing and no call site to be skipped. TypeScript proved the runtime guard unreachable, which is how we know the type is load-bearing: tsc raised TS2367 on the guard.",
+      "Refusals live in plan.refused, a DIFFERENT ARRAY from the one buildAtomsForFloodHazardPlan iterates, so a refusal cannot become an atom by omission or by a future edit.",
+      "FloodDeterminationGateResult is a DISCRIMINATED UNION on decision, so { decision:'emit', reasonCode:'sample-point-outside-parcel' } is a compile error rather than a review responsibility.",
+      "FloodParcelInput.geometry is REQUIRED, so 'this caller never thought about the ring' is a compile error rather than a silent third state."
+    ],
+    "otherFailClosedEdges": [
+      "Both plan backends skip refused parcels before querying, so the value is never computed rather than computed and discarded.",
+      "verifyStoredFloodHazardFactAtom now reads the STORED BYTES and fails on a missing stamp or a not-contained stamp; the writer throws on the first verify failure in a batch.",
+      "digestFloodPlan covers the refusal set, so a plan that stops refusing gets a different hash and cannot replay under a matching digest.",
+      "drainFloodPlanPayload FAILS CLOSED on any --from-plan artifact written before the gate existed."
+    ],
+    "provenAbleToFail": {
+      "rule": "every check reported as working was FIRST observed failing against a known violation",
+      "cases": [
+        "a real concave C-shaped parcel, using the SHIPPING geometryCentroid to produce the point: not-contained, gate refuses",
+        "a 0.005-degree tile centre near but not in the parcel (the tier2 shape): not-contained",
+        "(0,0) and NaN: not-contained and unmeasurable respectively, both refused",
+        "a point inside a hole: not-contained",
+        "a point in the gap between two MultiPolygon parts: not-contained",
+        "a parcel wholly inside an AE zone whose ring is C-shaped: an ungated planner would have produced a confident present-in-SFHA record; the gated planner produces zero present records and one refusal",
+        "grep gate branch 1: re-introduced the bbox fallback into the writer, exit 1",
+        "grep gate branch 2: renamed floodDeterminationGate out of the plan, exit 1",
+        "grep gate branch 3: widened the published stamp back to ContainmentState, exit 1",
+        "sole-write-path gate: added a bypassing import of buildPresentFloodHazardFactAtom, exit 1",
+        "fixture gate: flipped one recorded PostGIS verdict, removed one ring, changed one claimed zone; each fires"
+      ]
+    },
+    "liveResult": {
+      "notContained": 229,
+      "contained": 5521,
+      "unmeasurable": 0,
+      "denominator": 5750,
+      "pct": 3.983,
+      "countingRule": "one count per PLANNABLE parcel, i.e. after the writer's own key rules. contained + notContained + unmeasurable = 5,750, measured never subtracted.",
+      "howFarOutside": "median 15.27 m, p95 80.24 m, max 164.36 m, by ST_Distance via geography cast over the 229. Buckets: 1 exactly on the boundary, 15 within a metre, 76 between 1 and 10 m, 108 between 10 and 50 m, 29 over 50 m. Only 16 of 229 are within a metre, so this is not boundary arithmetic.",
+      "consequence": "In 229 of 229 the zone found at the outside point is at least one of the zones the parcel genuinely touches, so no parcel was handed a zone absent from its own footprint. For 40 of 229 the SFHA class at the point differs from whether ANY zone intersecting the parcel is SFHA. That 40 is an UPPER BOUND on wrong answers, not a count of them: 'any intersecting zone is SFHA' is stricter than 'this parcel is in an SFHA'. What it does establish is that for 40 parcels the in-or-out-of-hazard answer depends on which point you ask about, which is the property a determination is not allowed to have.",
+      "theSentence": "The atom's recorded zone matches NFHL at the re-derived centroid on 5,750 of 5,750, INCLUDING all 229 whose centroid is outside the parcel. Those 229 are correct about the point and wrong about the parcel. That is the tier2 sentence word for word, at one fifteenth the magnitude: tier2's median separation was 226.5 m, this is 15.3 m."
+    }
+  },
+
+  "independentlyDerivedClassification": {
+    "question": "Under the narrowed rule, is the containment check meaning-shaped or is it internal consistency?",
+    "myClassification": "MEANING-SHAPED, but by a narrower and weaker claim than the phrase usually carries, and the strict two-party test is right to be suspicious.",
+    "reasoning": "The two sides are not two fields from one upstream. The RING is TxGIO's assertion about the parcel; the POINT is OUR arithmetic mean of that ring's vertices. One party did not produce both: the source produced one and our transformation produced the other, and TxGIO acting alone cannot make our vertex mean land outside its own concave ring, because that is a property of our algorithm. So the check catches OUR TRANSFORMATION ERROR, and it caught it: 229 real parcels.",
+    "whatItCannotCatch": "It cannot catch SOURCE error. If TxGIO published the wrong ring for a parcel, our centroid would sit happily inside that wrong ring and the check would pass. Every verdict here is conditional on the ring being the right parcel's ring, and nothing in this lane tests that.",
+    "whereTheStrictTestBites": "The bbox-centre branch. There, both the bbox columns and the geometry column come from the same ingest of the same source, so containment against a bbox-derived point WOULD be one derivation wearing two hats. That branch is exactly the branch the gate REFUSES rather than passing, which is a consistency worth noting: the case where the two-party test fails is the case where the check declines to answer.",
+    "feedbackOnTheRule": "The rule as narrowed would classify this check as internal consistency if 'same upstream record' is the test, and that would be the wrong call, because the error class it catches is real, is ours, and is invisible to every presence-shaped check. I would widen the rule to name SOURCE-VERSUS-OUR-DERIVATION as a third admissible shape, with the explicit caveat that it catches our error and not theirs, so it is never quoted as evidence the source is right. A genuinely two-party version of this check exists and is not built: compare the ring's area against the CAD roll's recorded acreage for the same parcel, which are two parties describing one thing.",
+    "aSecondImplementationIsNotASecondDERIVATION": "The PostGIS ST_Contains leg is a second IMPLEMENTATION of one predicate, not a second derivation of one fact. It catches our coding error, not our sampling error. It is reported as a divergence test and never as independent corroboration."
+  },
+
+  "deliverable_0_7b_promotedHarness": {
+    "what": "SS-W11's measureFloodPair converted from a pair-divergence adjudicator into a single-store standing check.",
+    "files": [
+      "packages/retrieval/src/flood-adjudication/types.ts",
+      "packages/retrieval/src/flood-adjudication/grade.ts",
+      "packages/retrieval/src/flood-adjudication/index.ts",
+      "packages/retrieval/src/flood-adjudication/__tests__/grade.test.ts (17 tests)",
+      "packages/retrieval/src/flood-adjudication/__tests__/fixture.test.ts (7 tests)",
+      "packages/retrieval/src/flood-adjudication/__fixtures__/flood-containment-48021.json (300 real Bastrop parcels, 120 of them genuine containment failures)",
+      "packages/retrieval/scripts/flood-adjudication-standing-check.mjs"
+    ],
+    "threeChangesInThePromotion": [
+      "PAIR to SINGLE STORE. The original needed a second store and adjudicated only where the two disagreed, so a parcel both stores got wrong the same way was never checked by anything. This grades the whole roster.",
+      "BORROWED POINT to RECORDED POINT. The original took store A's sample point out of store B's record because the atom recorded none, and measured its own stand-in at 99.41 percent. The writer now stamps the point. Where the stamp is missing the stand-in is LABELLED and routed to an unbanded bucket, never silently substituted.",
+      "ONE IMPLEMENTATION to TWO. Containment is computed in JS by the writer and re-computed in PostGIS by the check. Per DEV_PROCESS 2.4 the divergence test is the control."
+    ],
+    "declaredBands": "maxUnstamped 0, maxNotContainedStamped 0, maxContainmentDivergences 0, maxZoneDisagreements 0. All four zero, declared as data in types.ts and asserted by a test so a later relaxation is visible in a diff.",
+    "unbandedOnPurpose": "Zone verdicts taken against a RE-DERIVED stand-in point are reported and NOT banded. A corpus written before the stamp existed would make that leg permanently red, and a gate nobody can get to green gets ignored (DEV_PROCESS 2.0). It becomes banded the moment the corpus carries stamps, because then it stops being a stand-in.",
+    "liveVerdictOnTheReplacement": {
+      "stampPresent": "5,750 of 5,750 FAIL. No stored flood-hazard-fact atom carries a sample point or containment state. Confirmed independently by jsonb_object_keys over a stored 48021 body: 23 keys, none of them a point.",
+      "stampEmittable": "0 checked, 5,750 unmeasurable. Nothing can be checked for a bad stamp when nothing has a stamp.",
+      "containmentDivergence": "5,750 checked, 0 failed. Two implementations agree on every parcel.",
+      "zoneAdjudicationOnAtomPoint": "0 checked. There are no stamped points to adjudicate yet.",
+      "zoneAdjudicationOnStandInPoint": "5,750 checked, 0 failed."
+    }
+  },
+
+  "theFourQuestionGate": {
+    "note": "Answered per the revised rules file. Question three carries the deployment half; question four is new.",
+    "1_whatExecutesIt": {
+      "writeTimeGate": "assembleCountyFloodHazardPlan inside packages/engine-core/scripts/write-flood-hazard-fact-county.mjs. Not a role, not a review: the writer physically cannot build an atom for a refused parcel because refusals are in a different array.",
+      "typeLevel": "tsc, via `pnpm typecheck` in the existing `ci` workflow. EmittableContainmentState and the discriminated gate result are enforced at every typed consumer.",
+      "codeLegs": "GitHub Actions job `flood-containment-gate / containment gate + offline adjudication` in .github/workflows/flood-containment-gate.yml — four vitest invocations, the runner CLI in --fixture mode, and two shell grep gates.",
+      "liveStoreLegs": "packages/retrieval/scripts/flood-adjudication-standing-check.mjs --county <fips>. NO AUTOMATED EXECUTOR EXISTS. A human runs it."
+    },
+    "2_whatTriggersIt": {
+      "writeTimeGate": "every invocation of the flood county writer, dry-run or --apply. Nothing to remember.",
+      "codeLegs": "push to main and pull_request against main touching the flood paths, plus workflow_dispatch. VERIFIED live: the job ran on this PR and returned conclusion 'success'.",
+      "liveStoreLegs": "NOTHING. This is the honest answer the gate asks for: today a human has to remember. There is no scheduled workflow, and this repository has no database credentials in CI — grep for 'secrets.' across .github/workflows returns nothing, so the live leg cannot be scheduled here as the repo stands. Naming it rather than shipping it as a control."
+    },
+    "3_whatFailsWhenViolated_andIsItRunningInProductionToday": {
+      "whatFails": "The write-time gate refuses the parcel and emits no atom; a not-contained stamp reaching the store fails write-then-verify and throws the batch; the CI job exits non-zero on any breached band or any grep violation; tsc refuses to compile a not-contained published record.",
+      "andHereIsTheHonestHalf": "NONE OF IT IS RUNNING IN PRODUCTION TODAY. Three separate reasons, each of which alone is sufficient: (a) the PR is OPEN and unmerged by the dispatch's hard rule, so the writer change is not on main; (b) no flood atom in the store carries a stamp, so every consumer reading production today reads determinations the gate never saw; (c) NOTHING IS DEPLOYED, and the deploy is planner-owned. A control that is merged, correct and undeployed enforces nothing.",
+      "andOneMore": "`main` is NOT branch-protected. VERIFIED at source: gh api repos/empressaioemail-tech/hauska-engine/branches/main/protection returns 404 'Branch not protected'. So a failing check-run shows a red X and BLOCKS NOTHING. Calling this CI job a blocking merge gate would be false. It is a loud, correctly-triggered, non-blocking signal, and turning it into a block is an operator action on repository settings, not a code change this lane can make."
+    },
+    "4_whatBypassesIt": {
+      "note": "The answer is not none. Enumerated rather than reported as coverage.",
+      "closedByThisLane": [
+        "--from-plan replay of a pre-gate artifact. Now FAILS CLOSED when refused[] is absent; test pins it.",
+        "A second caller of the atom builders. Today there is exactly one non-test caller and it is the gated one, but nothing structural said so. A CI grep now makes a second caller a build failure; observed firing against a deliberately added bypassing import.",
+        "An edit to packages/atoms/src/flood-hazard-fact-writer.ts would not have triggered the gate that guards it. Added to the workflow path filter."
+      ],
+      "stillOpen": [
+        "EVERY EXISTING STORED ATOM. The whole flood corpus predates the gate. This is the largest bypass by far and it is the reason item 1.0 stayed gated.",
+        "PARCELS WITH NO RING. Containment is unmeasurable. The gate refuses bbox-centre, declared and none, but EMITS for a source-published Point geometry, marked. Zero such parcels in Bastrop; UNMEASURED statewide, and SS-W15's 189-of-253 zero-PostGIS-geom finding says the statewide picture is not Bastrop's.",
+        "PARCELS THE LIVE CHECK NEVER SAMPLES. There is no county roster and no scheduler. Measured so far: 5,750 of Bastrop's 62,256, and zero of every other county.",
+        "EVERY CONSUMER READING THE ATOM. hauska-map and legacy-design-tools read body->>'floodZone' directly; nothing makes them look at samplePointContainment, and nothing makes them decline on a missing stamp. Until a reader fails closed on an unstamped atom, the stamp is decoration on the read side. This is the single most important follow-on item.",
+        "DIRECT SQL against the atoms table. Nothing in this lane constrains it.",
+        "THE CI JOB'S PATH FILTER generally. A change outside the listed paths that alters behaviour — for example in packages/storage's write path — does not run this job."
+      ]
+    }
+  },
+
+  "engineInstrumentDisposition": {
+    "plannerFigureCorrection": {
+      "dispatchSaid": "hauska-engine, 9 files, all audit instruments",
+      "atSource": "At d3f3794, `git grep -l tier2` over TRACKED files returns TWENTY paths: eleven non-test source files, five test files, three SS-W11 measurement artifacts under artifacts/ss-w11/, and one serving-sweep test fixture.",
+      "verdict": "The figure 9 is NOT REPRODUCIBLE at d3f3794 under any grouping I could construct. Files 20; non-test files 11; non-test excluding JSON 11; distinct instruments 5. Reported per DEV_PROCESS 3.2, which makes reporting a planner figure as wrong a successful outcome, and per 3.2a, which requires a correction to name its source: the command is `git grep -l tier2 d3f3794` run in this worktree and its twenty paths are listed in the dispatchAudit block below.",
+      "materialityForTheRuling": "None. The three-bucket ruling is about SUBJECTS surviving retirement, and it survives the count being wrong. But the dispatch also framed the detector and the harness as two separate instruments, and that IS material: see below."
+    },
+    "structuralCorrectionToTheThreeBucketFraming": "The dispatch reads as though the duplicate-subject DETECTOR and the adjudication HARNESS are two instruments to be bucketed separately. They are ONE FILE. packages/retrieval/scripts/duplicate-subject-detector.mjs contains runInventory (the detector, --inventory) and measureFloodPair (the harness, --county) as two subcommands of one script sharing one registry and one classifier. So the split is INSIDE a file, not between files, and 'repoint one, promote the other' cannot be executed as a file-level move. This lane promoted the harness by writing a new module rather than by carving the old script, and left the old script intact.",
+    "buckets": {
+      "REPOINT": [
+        {
+          "instrument": "duplicate-subject detector (--inventory) — duplicate-subject-detector.mjs runInventory, subject-registry.ts, classify.ts, types.ts, plus two test files",
+          "why": "Its subject, two answers existing for one thing, survives this retirement entirely and will be needed for the next. Seven of its eight registered duplicate subjects have no measurement pass yet.",
+          "repointNeeded": "On tier2 retirement, the pls:node-facets:tier2 store entries in subject-registry.ts become DEAD DECLARATIONS and its own --check-registry drift test will exit 1. That is the registry working. The repoint is to remove the two tier2 store rows (flood-zone, buildable-envelope-status) and re-run --inventory --check-registry until it exits 0.",
+          "notDoneHere": "Because 1.0 is gated, the store still exists and removing its declaration now would itself create drift in the other direction."
+        }
+      ],
+      "PROMOTE": [
+        {
+          "instrument": "adjudication harness (--county) — duplicate-subject-detector.mjs measureFloodPair",
+          "status": "DONE. Promoted into packages/retrieval/src/flood-adjudication/ plus flood-adjudication-standing-check.mjs, with a CI executor. The original subcommand is left in place and untouched, because deleting it before tier2 is actually retired would remove the only instrument able to measure the store being retired."
+        }
+      ],
+      "RETIRE": [
+        {
+          "instrument": "capture-live-parity-fixtures.mjs — captures tier1 and tier2 payloads into a parity fixture",
+          "why": "Its subject and its method both go with tier2. The tier2 half of the capture becomes a capture of nothing.",
+          "note": "The fixture it produces, packages/retrieval/src/serving-sweep/__tests__/__fixtures__/live-parity.json, carries tier2 payloads and is asserted on by live-parity.test.ts. Retire the capture and the fixture together, or the test asserts on a shape nothing produces."
+        },
+        {
+          "instrument": "serving-sweep tier2 probes — serving-sweep.mjs TIER2 constant and tier2ByParcel, src/serving-sweep/project-sheet.ts servedTier2 and its three tier2-named flood states, src/serving-sweep/bff-flow.ts tier2 envelope stripping",
+          "why": "These probe whether the tier2 overlay reaches a browser. Once tier2 is gone the question is void.",
+          "partialSurvival_readCarefully": "The SUBJECT does not fully die. 'Does the served payload carry a flood determination at all' survives and must be REPOINTED at the atom, not deleted with the probe. project-sheet.ts currently encodes three distinct flood states whose reason strings are all tier2-named (served-tier2, tier2-served-status-unavailable, tier2-dropped-by-bff-merge). Deleting them wholesale removes the only thing that can tell a repointed reader from a silently broken one. This is a REPOINT-THEN-RETIRE, not a retire.",
+          "correctionToTheDispatch": "The dispatch bucketed the sweep probes as pure RETIRE. At source they are mixed: the tier2 plumbing retires, the served-flood question repoints."
+        },
+        {
+          "instrument": "three-layer-sweep.mjs tier2 slot handling",
+          "why": "Same shape as the serving sweep. Its comment already records that gaining or losing tier2 changes the served slot set, which is exactly the assertion that goes void."
+        },
+        {
+          "instrument": "statewide-audit rail-served.ts flood key matcher",
+          "why": "flood: ['flood','tier2','sfha','femazone'] — 'tier2' becomes a dead token in the matcher. types.ts carries a comment recording that mergeBakedBaseFacts never copies tier2 into the served payload; that comment becomes historical.",
+          "note": "This is a one-token removal, and it is the cheapest of the retirements. It is also the one most likely to be forgotten, because nothing fails when a matcher carries a token that never matches."
+        }
+      ]
+    },
+    "dispatchAudit": {
+      "twentyPathsAtBase": [
+        "artifacts/ss-w11/flood-48021.json",
+        "artifacts/ss-w11/flood-48453.json",
+        "artifacts/ss-w11/inventory.json",
+        "packages/retrieval/scripts/capture-live-parity-fixtures.mjs",
+        "packages/retrieval/scripts/duplicate-subject-detector.mjs",
+        "packages/retrieval/scripts/serving-sweep.mjs",
+        "packages/retrieval/scripts/three-layer-sweep.mjs",
+        "packages/retrieval/src/duplicate-subject/__tests__/classify.test.ts",
+        "packages/retrieval/src/duplicate-subject/__tests__/subject-registry.test.ts",
+        "packages/retrieval/src/duplicate-subject/classify.ts",
+        "packages/retrieval/src/duplicate-subject/subject-registry.ts",
+        "packages/retrieval/src/duplicate-subject/types.ts",
+        "packages/retrieval/src/serving-sweep/__tests__/__fixtures__/live-parity.json",
+        "packages/retrieval/src/serving-sweep/__tests__/detectors-fire.test.ts",
+        "packages/retrieval/src/serving-sweep/__tests__/live-parity.test.ts",
+        "packages/retrieval/src/serving-sweep/bff-flow.ts",
+        "packages/retrieval/src/serving-sweep/project-sheet.ts",
+        "packages/retrieval/src/statewide-audit/__tests__/rail-served.test.ts",
+        "packages/retrieval/src/statewide-audit/rail-served.ts",
+        "packages/retrieval/src/statewide-audit/types.ts"
+      ]
+    }
+  },
+
+  "item_1_0_repointAndRetire": {
+    "executed": false,
+    "why": "GATED, and the gate is not open. See gateVerdict above. The atom does not yet carry the containment check in DATA, so repointing consumers to it would swap an unchecked determination for an unchecked determination, which is the exact outcome the operator ruling forbids.",
+    "consumerSetVerifiedAtSource": {
+      "note": "The dispatch listed bare filenames. Every one RESOLVES to a real path at the named commit, checked via the GitHub trees API. The planner's set is correct; only the paths were unqualified.",
+      "hauska-map@204789f": [
+        "apps/property-explorer/api/_lib/pe-property-atoms.ts",
+        "apps/property-explorer/api/_lib/pe-share-brief.ts",
+        "apps/property-explorer/api/pe-share-view.ts",
+        "apps/property-explorer/src/lib/fact-sheet-resolver.ts",
+        "apps/property-explorer/src/workbench/tools/compare-facts.ts"
+      ],
+      "legacy-design-tools@3de86ffd": [
+        "artifacts/api-server/src/lib/nodeFacetBakeTier2.ts",
+        "artifacts/api-server/src/lib/nodeFacetTier2Constants.ts",
+        "artifacts/api-server/src/nodeFacetBakeTier2Cli.ts (THE WRITER)",
+        "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+        "artifacts/api-server/src/routes/propertyExplorer.ts"
+      ]
+    },
+    "ORPHAN_DECLARATION": "Per the paired-retirement rule, which requires an amendment naming the orphan when a migration and its retirement split across lanes: the tier2 WRITER (legacy-design-tools nodeFacetBakeTier2Cli.ts) and the five hauska-map readers are ORPHANED by this lane. This dispatch scoped SS-W17 to repo hauska-engine and supplied one worktree, one branch and one PR, so those two repos could not be touched. Retiring readers while the writer keeps generating tile-quantised determinations produces wrong data behind a closed door, which looks resolved and is worse than the current state. They need a named owner and their own plan row.",
+    "shapeOfTheRepointWhenItRuns": "SS-W11 recorded that the shapes differ and it is not a field rename: the tier2 facet carries status / floodZone / zoneSubtype / provenance while the atom carries floodZone / zoneSubtype / inSpecialFloodHazardArea / sourceVintage and no status field. Add to that, from this lane: the atom will ALSO carry samplePoint / samplePointDerivation / samplePointContainment once re-baked, and the repointed readers should DECLINE on a missing or non-contained stamp rather than rendering the zone. A reader that ignores the stamp reduces this whole lane to decoration."
+  },
+
+  "prs": [
+    {
+      "number": 351,
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/351",
+      "base": "main",
+      "head": "ss/w17-containment",
+      "headSha": "6c820afd45623061d12aeeaf707e8a6bc225474c",
+      "state": "OPEN",
+      "mergeSha": "not applicable: NOT MERGED by hard rule of the dispatch",
+      "commits": [
+        "07097fc feat(flood-containment): sample-point containment gate, fail closed (P-45, SS-W17)",
+        "d8c1c10 feat(flood-adjudication): promote SS-W11's harness to a standing check (P-45, SS-W17)",
+        "6c820af ci(flood-containment): close the sole-write-path bypass (P-45, SS-W17)"
+      ]
+    }
+  ],
+  "ciConclusionString": "success",
+  "ciEvidence": "VERBATIM, at the branch tip 6c820afd45623061d12aeeaf707e8a6bc225474c: `gh api repos/empressaioemail-tech/hauska-engine/commits/6c820afd45623061d12aeeaf707e8a6bc225474c/check-runs` returned exactly two check runs -- \"containment gate + offline adjudication: status=completed conclusion=success\" and \"typecheck + test: status=completed conclusion=success\". `gh pr view 351` returned \"#351 state=OPEN mergeable=MERGEABLE head=6c820afd45623061d12aeeaf707e8a6bc225474c\". The conclusion STRING is quoted, not a gh exit code and not a 'pass' bucket label. Green CI is a fact about the branch, NOT a merge authorisation, and in this repository it is not even a block: main is unprotected (see free finding W17-1). This lane does not merge.",
+
+  "checkpoints": [
+    "_inbox/2026-08-19_ss-w17_cp1.json",
+    "_inbox/2026-08-19_ss-w17_cp2.json"
+  ],
+
+  "verification": {
+    "newTests": "engine-core src/__tests__/flood-sample-point-containment.test.ts 20 tests; retrieval src/flood-adjudication 24 tests (17 grader + 7 fixture). Flood suite in engine-core: 64 passed, 8 skipped across five files.",
+    "typecheck": "pnpm --filter @hauska-engine/engine-core run typecheck clean; pnpm --filter @hauska-engine/retrieval run typecheck clean; root pnpm typecheck clean in CI.",
+    "negativeSuiteRerun": "After adding the sole-write-path gate, the earlier grep-gate branches were re-run and still fire, per DEV_PROCESS 2.5 (fixing one fail-open can expose another).",
+    "localTestBaselineCaveat": "The full engine-core suite has pre-existing local failures unrelated to this lane: parcel-terrain/site-plan emitter timeouts that need the Python DXF/IFC workers, and a preflight-probes case. CI installs those workers and returned conclusion 'success', and CI is authoritative per the merge rule."
+  },
+
+  "freeFindings": [
+    {
+      "id": "W17-1",
+      "severity": "high",
+      "text": "`main` is NOT branch-protected on empressaioemail-tech/hauska-engine. VERIFIED: the protection endpoint returns 404 'Branch not protected'. Every CI check in this repository, including the ones this lane added and the ones that predate it, is a red X rather than a block. Any close in this program that has described a CI check as a 'blocked merge' has overstated it. This is a repository-settings action for the operator, not a code change."
+    },
+    {
+      "id": "W17-2",
+      "severity": "high",
+      "text": "229 of 5,750 sampled Bastrop parcels (3.98 percent) carry a flood determination made at a point outside the parcel, a median 15.3 m out and up to 164 m out. Extrapolated naively to Bastrop's 62,256 flood atoms that is roughly 2,480 parcels, but that extrapolation is NOT measured and the first 6,000 features by feature_index are not a random sample. The measured claim is 229 of 5,750."
+    },
+    {
+      "id": "W17-3",
+      "severity": "medium",
+      "text": "The tier2 retirement's own consumer set includes a hazard the dispatch did not name: packages/retrieval/src/serving-sweep/project-sheet.ts encodes THREE distinct served-flood states whose reason strings are all tier2-named. Deleting them with the tier2 plumbing removes the only mechanism that can distinguish a correctly repointed reader from a silently broken one. Repoint before retire applies inside this file, not only across repos."
+    },
+    {
+      "id": "W17-4",
+      "severity": "medium",
+      "text": "The dispatch's 'nine engine instruments' is not reproducible at d3f3794: twenty tracked files match, and the detector and the harness it asks to bucket separately are two subcommands of ONE script. A file-level three-bucket move cannot be executed as described."
+    },
+    {
+      "id": "W17-5",
+      "severity": "medium",
+      "text": "138 of the first 6,000 Bastrop parcel features carry an unusable prop_id (blank or all-zero) and are silently skipped by the writer, so they have no flood atom and no record anywhere that they were skipped. skippedUnusableKey is counted in the plan summary but never persisted. A parcel that exists in txgio_parcel and has no atom is indistinguishable, from the store, from one that was never processed."
+    },
+    {
+      "id": "W17-6",
+      "severity": "low",
+      "text": "geometryCentroid takes the FIRST part of a MultiPolygon only, so a multi-part parcel's determination is made about whichever part happens to be first in the coordinate array. The containment check makes this SAFE (the point is verified inside that part) but does not make it REPRESENTATIVE: a two-part parcel gets an answer about one part with nothing recording which. The stamp now records the point, so this is at least recoverable after the fact."
+    },
+    {
+      "id": "W17-7",
+      "severity": "low",
+      "text": "The bbox-centre fallback fired ZERO times in Bastrop because every parcel has a ring, so the branch most similar to the tier2 defect is entirely unexercised by the only county measured. Its behaviour under the new gate (refuse) is proven only by unit test, never against production data."
+    }
+  ],
+
+  "constraintsHonored": [
+    "READ-ONLY against both production databases: SELECT only. No INSERT, UPDATE, DELETE or DDL was issued against hauska_mcp or neondb. No atoms writer slot taken. No re-bake run.",
+    "heavy scans SERIALIZED: pg_stat_activity was checked for concurrent active queries before the first scan (empty result), then one county run at a time, announced on start and confirmed on completion in the runner's own stderr, never in parallel",
+    "exit-bounded verification only: every command terminated on its own. The one probe that did not return inside 120 s was KILLED rather than left running, and every database probe since carries a server-side statement_timeout so a probe that does not return is recorded as not-measured rather than as an empty result",
+    "isolated worktree; branch pushed immediately after the first commit",
+    "PR opened against main; NOT MERGED, NOT DEPLOYED, nothing pushed to main",
+    "no sub-agents spawned — this lane was dispatched as the deepest worker and did all of the work in its own context",
+    "doc_repo edits left uncommitted for the planner: the three artifacts in _inbox/"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch ss/w17-containment and PR #351, open and unmerged by the dispatch's hard rule",
+      "owner": "planner",
+      "plan_row": "P-45"
+    },
+    {
+      "item": "worktree /p/hauska-engine-worktrees/ss-w17-containment, with node_modules installed",
+      "owner": "planner",
+      "plan_row": "P-45"
+    },
+    {
+      "item": "packages/retrieval/src/flood-adjudication/__fixtures__/flood-containment-48021.json — 467 KB of real Bastrop geometry committed as a CI fixture. Public-record parcel rings and FEMA zones only; no owner names, no addresses, no tenant data.",
+      "owner": "planner",
+      "plan_row": "P-45"
+    },
+    {
+      "item": "the ORPHANED tier2 writer (legacy-design-tools nodeFacetBakeTier2Cli.ts) and five hauska-map readers, untouched because this dispatch scoped the lane to one repo",
+      "owner": "UNASSIGNED — blocking state, needs an owner before the retirement can be dispatched",
+      "plan_row": "needs a new row under P-45"
+    },
+    {
+      "item": "the atom-contract change that would make samplePoint / samplePointDerivation / samplePointContainment first-class contract fields plus a second flood absence kind, so a refusal can be represented rather than merely not-emitted",
+      "owner": "UNASSIGNED",
+      "plan_row": "needs a new row; repo hauska-atom-contract"
+    }
+  ],
+
+  "whatRemainsOpen": [
+    "THE CORPUS IS UNCHECKED. Every stored flood-hazard-fact atom predates the gate. Until a re-bake runs under the merged writer, the containment check protects future writes and nothing else, and the standing check's stamp leg is red by design.",
+    "NOTHING IS DEPLOYED. The PR is open. The deploy is planner-owned. A merged, correct, undeployed control enforces nothing.",
+    "The live leg of the standing check has NO automatic trigger and cannot get one in this repository as it stands, because there are no database credentials in CI.",
+    "`main` is not branch-protected, so no CI check in this repo blocks anything.",
+    "No reader fails closed on a missing containment stamp. Until one does, the stamp is decoration on the read side and the gate protects only the write side.",
+    "Measured coverage is 5,750 of Bastrop's 62,256 flood atoms and zero of every other county. The 3.98 percent not-contained rate is a Bastrop-partial rate.",
+    "The unmeasurable branch is entirely unexercised by production data, because every Bastrop parcel has a ring. SS-W15's 189-of-253 zero-PostGIS-geom finding suggests the statewide picture differs, and it is unmeasured for the geometry jsonb column that actually drives this writer.",
+    "Item 1.0 did not run, and the retirement recommendations in SS-W11's close remain PROPOSALS. Retirements and deletions are operator rulings per DEV_PROCESS 5.4."
+  ]
+}

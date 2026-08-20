@@ -1,0 +1,103 @@
+{
+  "lane": "SS-W15",
+  "checkpoint": "CP1",
+  "kind": "first-test result / pre-build adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": ["P-47"],
+  "amendment": "A-020",
+  "repo": "legacy-design-tools",
+  "worktree": "/p/tmp/ss-w15-zoning-denominator",
+  "branch": "ss/w15-zoning-denominator",
+  "baseSha": "ea28ebb87f070059e94b529ddd92988e3277b873",
+  "missionPremise": "Bastrop's zoning cell reads 99.77% satisfied-present off a cell carrying its ENVELOPE facet's measurement; the stamp really measures 15.22% (9,642 of 63,357). The planner's falsifiable hypothesis: 15.22% is not a coverage failure but the wrong denominator, because unincorporated Texas has no zoning authority and nothing to stamp. Source: _dispatches/2026-08-19_ss-w15_dispatch.md, OPS-16 amendment A-020 ruled 2026-08-19.",
+  "completionPredicate": "A stranger can (a) read the measured incorporated-parcel share of Bastrop and the stamped share of THAT set, both with their counting rules; (b) see a denominator rule declared into SS-W12's scorer capability rather than built as a fourth one-off scorer; (c) tell a county that was MEASURED BELOW BAR from a county that was NEVER MEASURED, on the console, without reading source.",
+  "scopeBasis": "The zoning denominator and the class it forces on the console. Excluded: running --apply against the live ledger (not this lane's to run); merging or deploying anything; building the six unspecified rail scorers (SS-W12/SS-W14 own those); re-wiring city zoning layers (an acquisition job, not a measurement job); a second migration path if the new class needs one (coordinate with SS-W12 per dispatch).",
+
+  "firstTestRunBeforeAnyBuild": true,
+
+  "theAnswer": {
+    "question": "How many Bastrop parcels fall inside an incorporated city boundary in tx_city_boundary, and what share of THOSE carry a zoning_district?",
+    "incorporatedParcels": 11968,
+    "countyParcels": 63357,
+    "incorporatedSharePct": 18.89,
+    "stampedInsideIncorporated": 9526,
+    "stampedShareOfIncorporatedPct": 79.60,
+    "countingRule": "denominator = count of DISTINCT feature_index in txgio_parcel WHERE county_fips='48021' whose ST_PointOnSurface(geom) is ST_Contains-ed by any ST_MakeValid(ST_GeomFromGeoJSON(tx_city_boundary.geometry)) whose bbox overlaps the county parcel extent. numerator = THAT SAME SET filtered to zoning_district IS NOT NULL. Numerator is a subset of the denominator by construction, never two independent counts.",
+    "layer": "WRITTEN (txgio_parcel in the deployment store) joined to WRITTEN (tx_city_boundary). No ledger figure is used.",
+    "label": "VERIFIED"
+  },
+
+  "verdictOnPlannerHypothesis": {
+    "verdict": "PARTIALLY CONFIRMED - the denominator IS defective, but the conclusion drawn from it is wrong.",
+    "confirmed": "15.22% is the wrong denominator. Only 18.89% of Bastrop's parcels sit inside an incorporated city boundary (11,968 of 63,357), inside the planner's pre-registered 15-25% band. The county-wide denominator charges Bastrop for 51,389 parcels no municipality has authority to zone.",
+    "falsified": "The 'near 100%, remediation is nothing' branch is FALSE. On the corrected denominator Bastrop is 79.60%, not ~100%. The 20.40% shortfall is not diffuse: it is ONE named city.",
+    "whatTheShortfallIs": "Smithville - 2,397 incorporated parcels, 0 stamped, 20.03% of the incorporated denominator on its own. Smithville is the eCode360 city structurally deferred since 2026-05-19 and re-ruled 2026-08-04 to a scrape posture. So the remediation for Bastrop is NOT nothing; it is one already-known, already-owned acquisition item, and the corrected denominator is what makes it visible as 20 points instead of hiding it inside a 15.22% that looked like a systemic failure.",
+    "label": "VERIFIED"
+  },
+
+  "perCityMeasurement": {
+    "countingRule": "centroid rule as above; zoningLayerWired = the city has an entry in ZONING_LAYERS (lib/cad-ingest/src/txgio/zoning-layers.ts) with countyFips 48021",
+    "rows": [
+      { "city": "Bastrop",     "geoId": "4805864", "zoningLayerWired": true,  "incorporatedParcels": 5813,  "stamped": 5801, "pct": 99.79 },
+      { "city": "Elgin",       "geoId": "4823044", "zoningLayerWired": true,  "incorporatedParcels": 3753,  "stamped": 3725, "pct": 99.25 },
+      { "city": "Smithville",  "geoId": "4868456", "zoningLayerWired": false, "incorporatedParcels": 2397,  "stamped": 0,    "pct": 0.00 },
+      { "city": "Webberville", "geoId": "4876924", "zoningLayerWired": false, "incorporatedParcels": 5,     "stamped": 0,    "pct": 0.00 },
+      { "city": "TOTAL",       "geoId": null,      "zoningLayerWired": null,  "incorporatedParcels": 11968, "stamped": 9526, "pct": 79.60 }
+    ],
+    "note": "Austin and Mustang Ridge bbox-overlap the county extent but contain ZERO Bastrop parcels by the centroid rule (Austin 0 intersecting, Mustang Ridge 2 intersecting / 0 centroid-in). They are candidates the bbox prefilter admitted and the geometry rejected - reported so the prefilter's behaviour is visible, not hidden.",
+    "label": "VERIFIED"
+  },
+
+  "threeDenominatorsOneSubject": {
+    "why": "DEV_PROCESS 1.1/1.2 - a coverage figure travels with its denominator. Three different questions were being answered by one number.",
+    "county":       { "denominator": 63357, "numerator": 9642, "pct": 15.22, "question": "of every parcel in the county, how many are stamped", "defect": "charges the county for land no municipality can zone" },
+    "incorporated": { "denominator": 11968, "numerator": 9526, "pct": 79.60, "question": "of the parcels that SHOULD have zoning, how many do", "defect": "none - this is the coverage question" },
+    "wiredCity":    { "denominator": 9566,  "numerator": 9526, "pct": 99.58, "question": "of the parcels this instrument is wired to see, how many are stamped", "defect": "measures the instrument's reach, not the county - must never be the headline" },
+    "label": "VERIFIED"
+  },
+
+  "theTrapReVerifiedAtSource": {
+    "claim": "The zoning_jurisdiction shortcut is a tautology on Bastrop, exactly as lane SS-W13 measured on six counties.",
+    "evidence": "SELECT over DISTINCT ON (feature_index) for 48021: zoning_district IS NOT NULL = 9642; zoning_jurisdiction IS NOT NULL = 9642; zoning_jurisdiction IS NOT NULL AND zoning_district IS NULL = 0. Ratio 9642/9642 = 100.00%.",
+    "consequence": "The denominator is taken from tx_city_boundary and never from any column the stamp writes. Declared as a machine kind so it cannot be re-derived from the stamp by a later edit.",
+    "label": "VERIFIED (independently re-measured on Bastrop; the six-county magnitude is RELAYED from SS-W13 and is not restated as mine)"
+  },
+
+  "secondCauseFound": {
+    "id": "C2",
+    "claim": "The numerator is NOT a subset of a naively-counted denominator: 116 stamped Bastrop parcels (1.20% of the numerator) sit outside every incorporated city boundary, and 65 of them do not even touch one.",
+    "evidence": "zoned=9642, zoned_and_centroid_in_city=9526, zoned_but_centroid_out=116, zoned_but_no_touch=65. Breakdown of the 65 no-touch: elgin-tx R-1 x52, bastrop-city-tx RR x11, bastrop-city-tx MU x1, bastrop-city-tx GC x1. The other 51 touch a boundary but their representative point falls outside - ordinary boundary-straddling parcels.",
+    "whyItMatters": "If the rule were written as two independent counts (all stamped parcels over incorporated parcels) Bastrop would read 9642/11968 = 80.56% instead of 79.60%. Here that is small. It is the SAME SHAPE as lane SS-W8's 'mud 209/186', a ratio above 100% produced by a numerator that escaped its denominator. The rule must intersect, and the engine must fail closed on overcount rather than clamp.",
+    "probableCause": "city zoning layers published over the ETJ (elgin-tx R-1 dominates), plus annexation-vintage drift between the zoning layer and tx_city_boundary source_vintage txgio_city_boundaries_202508. NOT established here; stated as the leading hypothesis, not as a finding.",
+    "label": "VERIFIED (the counts) / INFERRED (the cause)"
+  },
+
+  "thirdCauseFound": {
+    "id": "C3",
+    "claim": "The ledger's zoning rail_state and its coverage number have no consistency constraint between them, and the divergence is live on counties beyond Bastrop.",
+    "evidence": "county_facet_coverage facet='zoning': 48029 Bexar honest_coverage_pct 0.00 with rail_state 'satisfied-present' and threshold_pct 95.00; 48209 Hays 3.61 with rail_state 'satisfied-present'; 48021 Bastrop 99.77 with source_vintage 'layer-23-city-mu' (the envelope facet's own value, 99.77, is identical). WRITTEN-layer truth for the same counties: 48029 418,604 of 709,541 stamped (59.00%); 48209 49,204 of 117,427 (41.90%); 48021 9,642 of 63,357 (15.22%).",
+    "whyItMatters": "Fixing the denominator alone does not fix the display, because the display column is written by a different author than the number. SS-W13 merged the derivation into countyCoverageScoreCli.ts; SS-W12's engine derives it centrally. This lane must not add a fourth author.",
+    "label": "VERIFIED"
+  },
+
+  "designDecisionForCP2": {
+    "whereTheRuleLands": "SS-W12's capability, PR #438, branch ss/w12-scorer-harness at b69095828e2804a49425a67ff534db4737456e9a - read at source before designing, per dispatch. Its DenominatorKind union today is exactly two values ('txgio-parcel-distinct-feature-index' | 'none') and DenominatorSpec is a REQUIRED field on every rule. The zoning rail is declared there as parcel-column-stamp-rate on PARCEL_FEATURE_DENOMINATOR - i.e. SS-W12 declared the defective denominator, faithfully, because nobody had measured the right one yet. This lane supplies the third kind and re-declares zoning against it.",
+    "notAFourthScorer": "No new scorer CLI, no new route, no new migration. A DenominatorKind, its measurement function, and a declaration edit.",
+    "prPolicy": "#438 is OPEN and not merged. This lane builds on origin/main (ea28ebb8) and writes the rule so it lands cleanly on #438's contract, stating the rebase explicitly rather than assuming a merge order.",
+    "openQuestionForCP2": "Whether 'measured-below-bar' needs a schema value or can be derived from (row exists AND rail_state='not-yet' AND coverage is non-null). Deriving needs no migration and no coordination with SS-W12; a schema value needs both. Resolve at CP2 against the actual manifest-grid read path, not by preference."
+  },
+
+  "constraintsHonored": [
+    "First test run and reported BEFORE any scorer rule was written or any file changed. Zero commits on the branch at the time of this checkpoint.",
+    "Read-only against the production database throughout. No write attempted, no --apply.",
+    "Every query exit-bounded: single psql -c invocations, longest 3.9s wall clock.",
+    "No heavy multi-county spatial scan started yet; it will be announced before it runs, per AGENT_CONTRACT section 4.",
+    "SS-W13's resolveStampFacetMeasurability read at source on the base commit; not duplicated."
+  ],
+
+  "openAtCP1": [
+    "The same incorporated-denominator measurement for the other 9 wired counties has not been run yet (it is the heavy scan and needs announcing first).",
+    "How many of the 254 counties become NOT MEASURABLE under the corrected rule, and what the console renders for them.",
+    "Whether tx_city_boundary's 1,222 rows are exactly the incorporated municipalities of Texas - asserted by the dispatch and consistent with the row count and the TxGIO/CPA source string, but not positively established by me."
+  ]
+}

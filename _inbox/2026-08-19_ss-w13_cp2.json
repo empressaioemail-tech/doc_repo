@@ -1,0 +1,113 @@
+{
+  "lane": "SS-W13",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": [
+    "P-47"
+  ],
+  "repo": "legacy-design-tools",
+  "branch": "ss/w13-scorer-correctness",
+  "headSha": "ee76bdd4a0e2269307bf25b1a9ee169ed0f9ed3b",
+  "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/439",
+  "whatWasBuilt": [
+    "lib/db/src/schema/facetKeyRegistry.ts — rail keys derived from COUNTY_RAIL_DECLARATION, declared non-rail diagnostic keys, retired keys, a collision normal form, and a fail-closed assertWritableFacetKeys.",
+    "lib/db/src/__tests__/facetKeyRegistry.test.ts — 13 cases including the near-miss rejections a set-equality control cannot make.",
+    "artifacts/api-server/src/countyCoverageScoreCli.ts — resolveStampFacetMeasurability (pure), refusal-aware scoreCounty, facet key landuse-cad-join, fail-closed upsert, provenance columns, search-path-scoped columnExists, refusals counted in the summary.",
+    "artifacts/api-server/src/countyStampFacetMeasurability.test.ts — 6 cases, each refusal proven able to fire on the exact input shape that produced the bad production row.",
+    "artifacts/api-server/src/countyFacetKeyReconcileCli.ts — dry-run-first re-key of the 19 retired rows to the diagnostic key, printing the counter-evidence against a merge on every run.",
+    "artifacts/api-server/src/countyCoverageScoreCli.ts — deriveRailState + railThresholdPct (pure, exported); the upsert now writes rail_state and threshold_pct, matching countyFloodScoreCli.ts and countyGeometryScoreCli.ts.",
+    "artifacts/api-server/src/countyCoverageRailState.test.ts (new) — 7 cases pinning the threshold source, the inclusive boundary on both sides, the unreachability of satisfied-absent, and a NULL rail_state for the diagnostic facet."
+  ],
+  "pilotVerbatim": {
+    "note": "All runs --dry-run; the CLI's dry-run path does not reach upsertLedger. DATABASE_URL is the production DEPLOYMENT_DATABASE_URL.",
+    "48055_Caldwell": "landuse-cad-join 95.5% real-at-ceiling | zoning 25.0% real-at-ceiling | envelope 25.0% real-at-ceiling | NOT MEASURED 0",
+    "48021_Bastrop": "landuse-cad-join 98.0% real-at-ceiling | zoning 15.2% real-at-ceiling | envelope 15.2% real-at-ceiling | NOT MEASURED 0",
+    "48113_Dallas": "landuse-cad-join 57.5% real-at-ceiling | zoning NOT MEASURED (no-wired-layer) | envelope NOT MEASURED (no-wired-layer) | NOT MEASURED 2",
+    "48453_Travis": "landuse-cad-join 46.8% real-at-ceiling | zoning 33.3% real-at-ceiling | envelope 33.3% real-at-ceiling | NOT MEASURED 0",
+    "reconcile_dry_run": "retired-key rows found: 19; 0 conflicts; 'merging these rows into rail landuse would overwrite 19 rail cells, 13 of them satisfied-present with a HIGHER number'; DRY-RUN — no rows changed.",
+    "railStateDerivation": "48021 Bastrop zoning 15.2% -> rail_state=not-yet | 48453 Travis zoning 33.3% -> rail_state=not-yet | landuse-cad-join -> rail_state=n/a non-rail (all --dry-run)"
+  },
+  "consequencesOfTheFix": [
+    {
+      "id": "C1",
+      "severity": "operator decision required",
+      "claim": "Applying the fixed scorer would take Texas from 1 satisfied zoning cell to 0, and now does so through the scorer's own rail_state rather than leaving a stale display value behind.",
+      "basis": "Bastrop 48021 is the only zoning cell above its 95% threshold, at 99.77%. VERIFIED: that value is byte-identical to Bastrop's envelope row (same source 'deterministic', same classification, same checked_at 2026-08-03T15:16:48.373Z) and cannot have come from classifyFacet, which forces coverage to 0 on true-source-gap. The fixed scorer measures Bastrop zoning at 15.22%. That is a CORRECTION - the 99.77 was never a zoning measurement - but it moves a launch-gate number and is not a lane's call.",
+      "label": "VERIFIED"
+    },
+    {
+      "id": "C2",
+      "severity": "expected, stated so it is not read as coverage",
+      "claim": "Under the refusal rule, a statewide --all run would measure zoning/envelope in 10 counties and refuse them in 243.",
+      "basis": "county_manifest holds 254 rows; txgio_parcel holds 253 counties (1 skipped for no parcels); ZONING_LAYERS wires 23 city layers across exactly 10 counties (48021 48027 48029 48055 48091 48187 48209 48309 48453 48491); all 10 currently carry a non-zero stamp count, so none hits stamp-not-rolled. 243 x 2 facets = 486 refused cells, 10 x 2 = 20 measured cells. Counting rule: cells, not counties.",
+      "label": "VERIFIED"
+    },
+    {
+      "id": "C3",
+      "severity": "honest partial",
+      "claim": "The fix stops NEW false absences; it does not rewrite the 15 existing false true-source-gap rows or the 235 zoning-regime-doctrine rows.",
+      "basis": "A refusal writes no row, so a re-run leaves a pre-existing wrong row exactly as it is. Deleting or rewriting them is a production write and an operator ruling (DEV_PROCESS 5.4). Named rather than quietly deferred.",
+      "label": "VERIFIED"
+    },
+    {
+      "id": "C4",
+      "severity": "none - display unchanged",
+      "claim": "No county ledger cell changes its DISPLAYED state as a result of the refusal rule.",
+      "basis": "manifestGridRead resolves c.rail_state IS NULL to 'not-yet' by precedence, and every cell the rule refuses is already displaying not-yet. The ledger stops asserting a source gap; the grid renders the same thing either way.",
+      "label": "VERIFIED"
+    }
+  ],
+  "adversarialReviewOfTheBuild": [
+    {
+      "challenge": "Is the refusal rule a permanently-red gate (DEV_PROCESS 2.0)?",
+      "answer": "No, and the distinction is load-bearing. It is not a gate that must be driven green; it is a REFUSAL TO ASSERT. It has a named, reachable remediation per county (wire a city zoning layer, or establish the county's unincorporated status positively), and it changes no displayed state. What it removes is a false claim, not a passing grade."
+    },
+    {
+      "challenge": "Does refusing to write LOSE information the ledger had?",
+      "answer": "It loses a 0.00% that meant nothing and was actively misleading - the Travis cell steered a portfolio-level reading of jurisdiction depth for four weeks. Nothing measured is discarded: a wired, stamped county still writes its real number, and the refusal itself is counted and printed per run."
+    },
+    {
+      "challenge": "Is 'real-at-ceiling' at 33.32% for Travis still a false claim?",
+      "answer": "Partly, and it is disclosed rather than papered over. Travis has two wired city layers out of roughly eighteen incorporated cities, so 33.32% is not the county's achievable ceiling. The classification enum is constrained by a database CHECK to four values and has no member meaning 'measured, below the instrument's own reach'. Rather than migrate the enum inside a correctness lane - and inside a table lane SS-W12 may also be changing - the counting rule is written INTO the row: source now reads 'zoning-stamp;denom=distinct-feature_index-in-county;table=txgio_parcel;wired-city-layers=2'. A fifth enum value is proposed to the operator, not taken."
+    },
+    {
+      "challenge": "Could the near-miss check reject a legitimate future key?",
+      "answer": "Yes, by design, and that is the point. Any key that collapses onto a rail key under hyphen/underscore/case normalisation is refused, because such a key is unreadable by the grid join. The escape hatch is to declare it in DIAGNOSTIC_FACET_DECLARATIONS with a non-colliding name, which forces an author to state what it measures and why it is not a rail."
+    },
+    {
+      "challenge": "Does the reconcile CLI's dry-run act on the same rows its apply would?",
+      "answer": "Yes - planFromRows is pure and both paths consume the identical query result. A dry-run that computes a different set from the apply proves nothing, so the plan is built once."
+    },
+    {
+      "challenge": "Was the local test failure baseline actually checked, or assumed?",
+      "answer": "Checked. The worktree was switched to detached origin/main (85c5d1a8) and the two failing suites re-run: the SAME 5 tests fail (clusterLock x4, which need a real Postgres for advisory locks; railEngineBindingCoverage x1, which stats sibling-repo engine writer paths absent from an isolated worktree). Zero new failures are attributable to this branch. The branch was then restored."
+    },
+    {
+      "challenge": "Do the L5 CI grep gates fire on these edits?",
+      "answer": "Checked at source in .github/workflows/pr-checks.yml. ci-stamp-as-sourcePresent greps for 'sourcePresent: cov.*Pct > 0' in this CLI - not introduced; sourcePresentForStampFacet is unchanged and still ignores the stamp rate. ci-hand-hasWriter-in-declaration greps countyRailDimension.ts, which this branch does not touch. The silent-fallback greps target railManifestDerivation.ts and test globs, untouched."
+    }
+  ],
+  "constraintsHonored": [
+    "Read-only against production: every CLI invocation used --dry-run; every SQL statement was a SELECT. No --apply was run.",
+    "Exit-bounded: longest single command 100.3s; no watch, tail, or serve started at any point.",
+    "Heavy-scan serialization: county scans run strictly one at a time.",
+    "Branch pushed immediately after the first commit (1bb432d5), PR #439 opened against main, NOT merged, NOT deployed, nothing pushed to main.",
+    "No sub-agents spawned."
+  ],
+  "openAtCp2": [
+    "CI conclusion strings for PR #439 (pending at the time of writing; recorded in the close).",
+    "Operator ruling on C1 (Bastrop 99.77 -> 15.22 takes satisfied zoning cells to zero).",
+    "Operator ruling on the 19 retired rows: re-key via the dry-run-proven CLI, or delete.",
+    "Operator ruling on a fifth classification enum value for 'measured, below the instrument's own reach'.",
+    "Unresolved from CP1: why 9 counties scored hasZoning=false on 2026-08-04/05."
+  ],
+  "selfCorrection": {
+    "retracted": "CP2 and CP1 asserted that NOTHING checked in writes county_facet_coverage.rail_state.",
+    "correction": "WRONG. countyFloodScoreCli.ts writes rail_state and threshold_pct at line 210, and countyGeometryScoreCli.ts at line 445. The grep that produced the claim filtered on insert/update/set/values and missed both SQL blocks.",
+    "accurateFinding": "THREE checked-in scorers; TWO write the display field beside their number; ONE does not — and the one that does not owns zoning, envelope and land-use. So for exactly those facets the coverage number and the field the display reads had different authors with no consistency constraint. That is how Travis held rail_state='satisfied-present' at honest_coverage_pct=0.00 with verified_by_instrument NULL.",
+    "consequence": "The finding is SHARPER, not softer, and it became fixable: the sibling pattern was already established, so this lane implemented it rather than routing it to the operator.",
+    "standard": "DEV_PROCESS 3.2a — a correction carries the same evidentiary standard as the claim it corrects, so file and line are named.",
+    "label": "VERIFIED"
+  }
+}

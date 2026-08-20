@@ -1,0 +1,82 @@
+{
+  "lane": "SS-W14",
+  "checkpoint": "CP2 — pilot / mid-work adversarial checkpoint",
+  "planRows": ["P-47"],
+  "repo": "hauska-engine",
+  "branch": "ss/w14-rail-scorer-specs",
+  "commit": "a6bccb1",
+  "filedAt": "2026-08-19T18:20:00Z",
+  "whatLandedSinceCP1": "The six specs are frozen as a typed checked-in record at packages/retrieval/src/rail-scoring-spec/, with a pure scoring function, seven guards, and 37 tests. Nothing outside that directory was touched.",
+
+  "pilotResults": {
+    "instrument": "scoreCell() fed the live figures this lane measured on 2026-08-19, run on the repo-pinned vitest 2.1.9, the same version CI installs",
+    "cells": [
+      {
+        "cell": "48201 Harris rrc-pipelines",
+        "measured": "covered 278,787 nearPipeline=true, established-absent 1,244,853 nearPipeline=false, denominator 1,523,640 parcel-node atoms, orphans 0",
+        "scored": "100.00%, satisfied-present, zero guard violations, publishable",
+        "note": "denominator, writer-reach denominator and determination count are all exactly 1,523,640 — three independent measures agreeing to the parcel"
+      },
+      {
+        "cell": "48021 Bastrop rail-corridor",
+        "measured": "covered 3,637, established-absent 58,619, denominator 62,398",
+        "scored": "99.77%, satisfied-present",
+        "note": "the 142-parcel shortfall is entirely parcel-node atoms that are not usable txgio prop_ids"
+      },
+      {
+        "cell": "48497 Wise footprint",
+        "measured": "covered 23,799, established-absent 24,629, denominator 48,428",
+        "scored": "100.00%, satisfied-present",
+        "note": "MORE absences than presences and the cell is still fully satisfied. A rail can be completely measured and mostly empty; that is a satisfied cell, not a gap, and it is the single result most likely to be misread as a coverage failure"
+      },
+      {
+        "cell": "48103 Crane rrc-wells",
+        "measured": "covered 3,728, established-absent 1,839, denominator 5,805",
+        "scored": "95.90%, satisfied-present"
+      },
+      {
+        "cell": "48201 Harris rrc-wells",
+        "measured": "covered 0, established-absent 0, denominator 1,523,640, inside the re-derived ceiling",
+        "scored": "0.00%, NOT-YET — and explicitly not out-of-reach",
+        "note": "under the published ceiling of 1, Harris would be the ONLY reachable county in Texas and the 174 written counties would all read out-of-reach. Under the re-derived ceiling of 254, Harris is simply a county the writer has not reached"
+      }
+    ]
+  },
+
+  "controlsProvenAbleToFail": [
+    "Seven guards, each asserted to FIRE on constructed input and to STAY SILENT on the neighbouring input, because a guard that always fires is as dead as one that never does: over-100, orphan-determination, absence-without-basis, negative-input, unscorable-rail, ceiling-claims-out-of-reach-but-set-says-in, ceiling-claims-in-but-set-says-out.",
+    "THREE MUTATION TESTS ON THE REAL EXIT CODE, not on a pipe's exit code. (1) over-100 threshold changed from >100 to >1000: EXIT=1, Tests 1 failed | 36 passed. (2) the unmeasured-is-not-zero branch disabled: EXIT=1, Tests 2 failed | 35 passed. (3) the unscorable-rail branch disabled: EXIT=1, Tests 2 failed | 35 passed. Each reverted, and the clean re-run reported EXIT=0, Tests 37 passed (37).",
+    "Divergence tests assert that satisfied-present and satisfied-absent never read the same, and that not-yet and not-measured never read the same. One is a writer run and the other is a scorer run; they cost different money and a console that renders them identically invites the wrong remediation.",
+    "The over-100 test uses the REAL Crane 48103 numbers under the REAL rejected denominator, so it reproduces the mud 209/186 defect at parcel scale (5,567/5,553 = 100.25%) and then proves the adopted denominator (5,805) resolves it to 95.90% with no violations."
+  ],
+
+  "adversarialReviewOfWhatLanded": [
+    "MY OWN VERIFICATION WAS WEAK AND I CAUGHT IT. The first test run used `npx vitest`, which fetched vitest 4.1.11 from the network while the package pins ^2.1.8. A green run on a different major than CI installs is not evidence. I ran pnpm install and re-ran on the repo-pinned 2.1.9 binary; still 37 passed, EXIT=0. Both runs are reported rather than only the good one.",
+    "THE INSTALL TRIED TO DRAG IN ANOTHER LANE'S FIX. `pnpm install --frozen-lockfile=false` regenerated pnpm-lock.yaml to add the missing `postgres ^3.4.5` entry — which is exactly SS-W9's F12, already fixed on ITS branch in commit 06e442d. Committing it would have duplicated their fix and conflicted their PR. Reverted with git checkout before staging; the final commit touches six new files and nothing else.",
+    "The specs assert facts about legacy-design-tools source (railCoverageCapability.ts, railEngineBinding.ts). Those are quoted with file path and content read at source on 2026-08-19, and nothing in either file was edited. If SS-W12 changes them, the spec's ledgerPublishesToday strings go stale, which is why each carries the timestamp it was read at.",
+    "Weakness I am NOT papering over: the four scorable rails have never been scored, so no spec claim is validated end-to-end against a scorer. What IS validated is that every rule can fire, that the arithmetic reproduces five live counties, and that the denominator choice is backed by five exact matches. The first real scorer run is where the spec earns or loses its keep.",
+    "Second weakness: my false-absence findings for rrc-pipelines and rail-corridor are proven by reading the planner source and by an eight-county sample showing zero typed absences. That is 8 of 254. I did NOT scan the family statewide for typed absences, because a body-field predicate over 12.5 million rows is a heavy scan and two lighter statewide scans had already exceeded the 300-second timeout in this session. The claim is therefore 'has not fired in the sample', never 'has never fired'."
+  ],
+
+  "findingsForThePlannerNotFixedHere": [
+    "F1 the rrc-wells published ceiling of 1 is a hardcode citing a retired adapter; re-derived to 254 against staged tx_rrc_well (1,396,049 wells, 254 counties, Harris 12,850 = 0.92%). Applying it as published would manufacture 173 false out-of-reach cells.",
+    "F2 the footprint ceiling of 254 is also a hardcode. It is correct, and it should still become the same DISTINCT county_fips probe the mud rail uses, against tx_building_footprint (10,674,975 rows, 254 counties), so it can move when staging does.",
+    "F3 a ceiling is published as a COUNT and must be a SET. rail-corridor written in 252 against a ceiling of 253 forced two cells to out-of-reach when at most one can be.",
+    "F4 rrc-pipelines absence.kind 'no-pipeline-coverage' fires only on a source READ FAILURE. rail-corridor's 'no-rail-coverage' is the same shape. Both should be renamed; until then a scorer must exclude them from established-absence.",
+    "F5 footprint absence.kind 'no-footprint-feature' covers both a real determination and a missing-parcel-ring input failure, distinguishable only by free-text reason. Split the kind.",
+    "F6 easement carries THREE disagreeing declarations: the LDT binding says no writer, live county_rail says has_writer true with notes reading 'No writer yet.', and hauska-engine ships write-utility-easement-county.mjs.",
+    "F7 running the easement honest-absence path across 254 counties writes 254 atoms and makes the entire rail satisfied-absent at county granularity. It is the cheapest coverage gain visible from this lane, and it is a writer decision.",
+    "F8 SS-W9's close names 48103 'Callahan'. county_manifest says 48103 = Crane, 48059 = Callahan. No number moves; the label is wrong in a document the planner is quoting from."
+  ],
+
+  "constraintsHonored": [
+    "Read-only on both production databases throughout. No INSERT, UPDATE, DELETE or DDL, no writer slot, no lease, no --apply.",
+    "Heavy scans serialized. Three exceeded the statement timeout and were abandoned rather than retried wider or in parallel.",
+    "Branch pushed immediately after the first commit.",
+    "No file touched in packages/retrieval/src/statewide-audit/, packages/retrieval/scripts/, artifacts/three-layer-audit/, .gitignore or pnpm-lock.yaml.",
+    "Nothing merged, nothing deployed, nothing pushed to main.",
+    "No sub-agents spawned; this lane ran as the deepest worker end to end."
+  ],
+
+  "remainingBeforeClose": "Open the PR against main, wait for the CI conclusion STRING, and file the close artifact."
+}

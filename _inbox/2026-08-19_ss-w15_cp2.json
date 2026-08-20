@@ -1,0 +1,191 @@
+{
+  "lane": "SS-W15",
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": ["P-47"],
+  "amendment": "A-020",
+  "repo": "legacy-design-tools",
+  "worktree": "/p/tmp/ss-w15-zoning-denominator",
+  "branch": "ss/w15-zoning-denominator",
+  "baseSha": "ea28ebb87f070059e94b529ddd92988e3277b873",
+  "stackedOn": {
+    "pr": 438,
+    "branch": "ss/w12-scorer-harness",
+    "sha": "b69095828e2804a49425a67ff534db4737456e9a",
+    "state": "OPEN at the time of this checkpoint",
+    "why": "The dispatch requires the denominator to be DECLARED into SS-W12's capability rather than built as a fourth one-off scorer. registry.ts does not exist on main, so creating it here would have collided catastrophically with #438. The branch carries an explicit merge of ss/w12-scorer-harness: git records the dependency, #438 merges first, and this PR's diff then reduces to its own three commits. Stated rather than assumed, per the dispatch's instruction to say so.",
+    "risk": "This PR's diff-vs-main carries 3,684 lines of another lane's code that is still under adversarial review. If the planner rejects part of #438, this PR carries it. Named as a review hazard rather than hidden."
+  },
+
+  "pr": {
+    "number": 440,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/440",
+    "base": "main",
+    "state": "OPEN, not merged, not deployed"
+  },
+
+  "heavyScanConfirmed": {
+    "announced": "_inbox/2026-08-19_ss-w15_progress.md before starting, per AGENT_CONTRACT section 4",
+    "completed": true,
+    "shape": "8 counties in one serialized psql loop, 5m25s wall clock; Travis 48453 run separately at 4m33s; Bastrop 48021 at 3.9s. One heavy scan at a time throughout. Read-only.",
+    "note": "ST_Subdivide on the city geometry is load-bearing, not tuning: without it the Travis query did not return inside a 2-minute budget. With it the parcel GiST index does the work."
+  },
+
+  "whatWasBuilt": {
+    "notAFourthScorer": "No new scorer CLI, no new route, no migration. One new DenominatorKind, its measurement function, a per-county refusal rule, and one shared display-state module.",
+    "files": [
+      "artifacts/api-server/src/lib/railScoring/cityBoundaryDenominator.ts (new) — the incorporated-city denominator, its counting rule, and the single query that measures numerator and denominator together",
+      "artifacts/api-server/src/lib/railScoring/countyMeasurability.ts (new) — per-county refusal, CALLING SS-W13's resolveStampFacetMeasurability rather than copying it",
+      "artifacts/api-server/src/lib/railScoring/registry.ts — third DenominatorKind; zoning re-declared against it; denominatorNeedsCityBoundary exhaustive over the union",
+      "artifacts/api-server/src/lib/railScoring/measure.ts — the declared denominator is now LOAD-BEARING; incorporated-city measurement path; per-county refusal raised",
+      "artifacts/api-server/src/lib/railScoring/run.ts — a refused cell writes NO ROW, is counted by code, and is reported",
+      "artifacts/api-server/src/countyRailScoreCli.ts — NOT MEASURED printed with per-code counts and a worked example carrying its basis",
+      "lib/db/src/manifestDisplayState.ts (new) — the display CASE, the is_partial CASE and the depth-gate demotion target, in ONE home",
+      "lib/db/src/manifestGridRead.ts + artifacts/api-server/src/countyLedgerCompute.ts — both consume the shared module; neither keeps a private copy",
+      "tests: countyMeasurability.test.ts, cityBoundaryDenominator.test.ts, manifestDisplayState.test.ts (new); depthRailGateDivergence.test.ts re-pinned to the new ruling"
+    ]
+  },
+
+  "sixCausesNotOne": [
+    {
+      "id": "C1",
+      "label": "VERIFIED",
+      "claim": "The denominator was the county parcel count, which charges a county for land no municipality can zone.",
+      "evidence": "Bastrop 9,642/63,357 = 15.22% vs 9,526/11,968 = 79.60%. Only 18.89% of the county's parcels are inside an incorporated boundary."
+    },
+    {
+      "id": "C2",
+      "label": "VERIFIED",
+      "claim": "The numerator escapes a naively-counted denominator, which is the mud 209/186 shape.",
+      "evidence": "116 stamped Bastrop parcels (1.20% of the numerator) and 16,308 Travis ones (5.9%) sit outside every municipal boundary; 65 of Bastrop's do not touch one, mostly elgin-tx R-1. Two independent counts give Bastrop 80.56%; the filtered rule gives 79.60%.",
+      "fix": "Numerator is a FILTER on the denominator set inside one query, so num <= den holds by construction."
+    },
+    {
+      "id": "C3",
+      "label": "VERIFIED",
+      "claim": "rule.denominator was DECLARED AND NEVER READ. measureColumnStamp called readParcelFeatureCount unconditionally, so the registry's required denominator field was documentation rather than control.",
+      "evidence": "Read at source on ss/w12-scorer-harness b6909582: measureColumnStamp has no reference to rule.denominator. A rule could declare any denominator and get the parcel-feature count.",
+      "fix": "denominatorNeedsCityBoundary is exhaustive over DenominatorKind with a `never` assignment, so adding a kind without deciding this is a type error."
+    },
+    {
+      "id": "C4",
+      "label": "VERIFIED",
+      "claim": "SS-W13's per-county refusal never reached SS-W12's capability, because #438 was authored before #439 merged.",
+      "evidence": "measureColumnStamp on the #438 branch has no wired-layer check. Run over county_manifest it would write zoning 0.00% not-yet for the 244 counties with no wired layer, which is exactly the defect SS-W13 merged a fix for one PR earlier.",
+      "fix": "countyMeasurability.ts CALLS resolveStampFacetMeasurability. One authoritative copy (DEV_PROCESS 6.2); the engine already imports classifyFacet from the same file for the same reason."
+    },
+    {
+      "id": "C5",
+      "label": "VERIFIED",
+      "claim": "Caldwell 48055 holds 26,155 parcel features with a PostGIS geom on ZERO of them, and it is not alone: 189 of the 253 counties holding parcels are in the same state.",
+      "evidence": "SELECT per county over txgio_parcel: 48055 features=26155 with_geom=0; every other wired county 100.00%. Statewide: counties_with_parcels=253, counties_zero_geom=189, counties_partial_geom=0. Caldwell's jsonb geometry and bbox columns are both populated, so nothing about it looks empty; only the PostGIS column was never backfilled.",
+      "whyItMatters": "A spatial denominator over Caldwell is silently zero while the store holds 6,527 stamped parcels. Refused with a basis naming the backfill, never scored."
+    },
+    {
+      "id": "C6",
+      "label": "VERIFIED",
+      "claim": "The refusal ORDER was wrong on first write, and running the CLI caught it where reading the code had not.",
+      "evidence": "With geometry checked before the instrument's reach, Anderson 48001 reported no-parcel-geometry. True, and it names work that would not make Anderson measurable, because it has no wired zoning layer either. At 189 zero-geom counties that would have published 189 spurious backfill items and buried the one county where geometry IS the binding constraint.",
+      "fix": "Order is now no-parcels, then reach (SS-W13's three), then the denominator's own source, then geometry. Both directions pinned by tests."
+    }
+  ],
+
+  "nineWiredCountiesMeasured": {
+    "countingRule": "denominator = DISTINCT feature_index whose ST_PointOnSurface(geom) is contained by an incorporated boundary in tx_city_boundary; numerator = that same set filtered to zoning_district IS NOT NULL. WRITTEN layer (txgio_parcel + tx_city_boundary in the deployment store); no ledger figure used.",
+    "threshold": "95.00 (COUNTY_RAIL_DECLARATION, zoning is jurisdiction-depth). None of the nine clears it.",
+    "rows": [
+      { "fips": "48021", "name": "Bastrop",    "countyParcels": 63357,  "incorporated": 11968,  "stamped": 9526,   "oldPct": 15.22, "newPct": 79.60, "outsideBoundary": 116 },
+      { "fips": "48453", "name": "Travis",     "countyParcels": 828773, "incorporated": 399609, "stamped": 259860, "oldPct": 33.32, "newPct": 65.03, "outsideBoundary": 16308 },
+      { "fips": "48029", "name": "Bexar",      "countyParcels": 709541, "incorporated": 507179, "stamped": 416644, "oldPct": 59.00, "newPct": 82.15, "outsideBoundary": 1960 },
+      { "fips": "48209", "name": "Hays",       "countyParcels": 117427, "incorporated": 54018,  "stamped": 48249,  "oldPct": 41.90, "newPct": 89.32, "outsideBoundary": 955 },
+      { "fips": "48491", "name": "Williamson", "countyParcels": 282983, "incorporated": 177447, "stamped": 123609, "oldPct": 44.07, "newPct": 69.66, "outsideBoundary": 1112 },
+      { "fips": "48091", "name": "Comal",      "countyParcels": 103537, "incorporated": 34678,  "stamped": 26667,  "oldPct": 25.82, "newPct": 76.90, "outsideBoundary": 67 },
+      { "fips": "48309", "name": "McLennan",   "countyParcels": 115362, "incorporated": 82190,  "stamped": 47931,  "oldPct": 42.20, "newPct": 58.32, "outsideBoundary": 755 },
+      { "fips": "48187", "name": "Guadalupe",  "countyParcels": 95571,  "incorporated": 59031,  "stamped": 30913,  "oldPct": 32.61, "newPct": 52.37, "outsideBoundary": 256 },
+      { "fips": "48027", "name": "Bell",       "countyParcels": 167412, "incorporated": 130302, "stamped": 61130,  "oldPct": 36.62, "newPct": 46.91, "outsideBoundary": 179 },
+      { "fips": "48055", "name": "Caldwell",   "countyParcels": 26155,  "incorporated": null,   "stamped": null,   "oldPct": 24.96, "newPct": null,  "outsideBoundary": null, "refused": "no-parcel-geometry" }
+    ],
+    "label": "VERIFIED"
+  },
+
+  "preRegisteredBandForTheStatewideDryRun": {
+    "why": "DEV_PROCESS 4.5: pre-register the expected band; a result outside it is a finding either way. Written BEFORE the statewide run finished.",
+    "countiesMeasured": 9,
+    "countiesRefused": 245,
+    "expectedRefusalSplit": {
+      "no-wired-layer": "approximately 243",
+      "no-parcels": "1 (253 of 254 manifest counties hold parcels)",
+      "no-parcel-geometry": "1 (Caldwell 48055)",
+      "stamp-not-rolled": "0 (the 10 counties with any stamp are exactly the 10 wired counties)",
+      "no-zoning-column": "0 (all 10 wired counties resolve to txgio_parcel, never to staging)"
+    },
+    "expectedRailStates": "{\"not-yet\": 9} — no wired county clears the 95% bar even on the corrected denominator",
+    "expectedWrites": 0
+  },
+
+  "whatTheConsoleNowSays": {
+    "ruling": "Operator ruling 4: measured-below-bar is its own class.",
+    "notMeasured": "no county_facet_coverage row. An INSTRUMENT gap; the answer is wiring a source.",
+    "measuredBelowBar": "a row exists and sits below its bar. A COVERAGE gap; the answer is acquisition.",
+    "onTheZoningRail": "9 of 254 counties measured-below-bar, 245 not-measured. 23 city zoning layers are wired across 10 counties against 1,222 incorporated Texas municipalities, so the not-measurable share is the honest picture and it was previously indistinguishable from measured-at-zero.",
+    "noMigration": "The never-measured case has NO ROW, so the distinction was already in the data as c.rail_state IS NULL. rail_state's CHECK constraint is untouched. This resolves CP1's open question in favour of deriving, and removes the need to coordinate a migration with SS-W12.",
+    "arithmeticNeutral": "PROVEN, not asserted: manifestDisplayState.test.ts drives isSatisfiedCell and computeTexasRollup directly with the old and new labels over the same grid; texasCompletenessPct and totalParcelWeight are identical. Two new summary counts, notMeasuredCells and measuredBelowBarCells, are measured rather than derived by subtraction.",
+    "divergenceControl": "The display CASE and the demotion target were each written out twice with nothing comparing them. Both consumers now read lib/db/src/manifestDisplayState.ts, and the test fails if either grows a private copy — including a proof that its own file-reading control can fail."
+  },
+
+  "adversarialReviewOfMyOwnWork": [
+    {
+      "finding": "I have created a paired-control divergence: TWO checked-in instruments now claim facet 'zoning' with DIFFERENT denominators.",
+      "detail": "countyCoverageScoreCli.ts writes facet 'zoning' over the county parcel count; countyRailScoreCli.ts writes it over the incorporated count. Both upsert the same (county_fips, facet) primary key, so the last one run wins the cell: on Bastrop that is 15.22% versus 79.60% depending on which CLI ran most recently.",
+      "disposition": "NAMED, NOT RESOLVED. Retiring or re-denominating a live instrument in another lane's file is an operator ruling (DEV_PROCESS 5.4), and countyCoverageScoreCli.ts is SS-W13's. The conflict is written into the registry's zoning note so it cannot be discovered by accident. Neither instrument was applied. OPERATOR RULING REQUESTED.",
+      "label": "VERIFIED"
+    },
+    {
+      "finding": "The corrected denominator is expensive where the old one was free.",
+      "detail": "count(DISTINCT feature_index) is a single aggregate; the spatial join is 4m33s on Travis. The cost is bounded only because measurability is resolved BEFORE the join, so only wired counties pay it: 9 counties today, not 254. If wiring grows to hundreds of cities this becomes a real runtime and will need a precomputed parcel-to-city assignment.",
+      "disposition": "Stated in the module header rather than discovered later. Backlog candidate, not built here.",
+      "label": "VERIFIED"
+    },
+    {
+      "finding": "The 116 Bastrop and 16,308 Travis parcels outside every boundary are EXCLUDED from the numerator, which lowers the reported number.",
+      "detail": "They are real stamps on real parcels. Counting them would be counting a numerator the denominator does not contain. The alternative reading — that tx_city_boundary's 202508 vintage lags the cities' own annexations, so some of those parcels ARE incorporated — is plausible and unestablished.",
+      "disposition": "The escape count travels in the provenance detail as `outside=`, so the exclusion is visible at the point of use and a later ruling can act on it. Named as INFERRED, not resolved.",
+      "label": "VERIFIED (the counts) / INFERRED (the cause)"
+    },
+    {
+      "finding": "tx_city_boundary being exactly the incorporated municipalities of Texas is still not POSITIVELY established by me.",
+      "detail": "1,222 rows, source string TxGIO/CPA txgio_city_boundaries_202508, consistent with the roughly 1,220 incorporated Texas municipalities and with the dispatch's figure. I have not verified it against an authoritative roster.",
+      "disposition": "Carried forward as an open item rather than asserted. If the table were to include CDPs or ETJs the denominator would be too large and every figure here too low.",
+      "label": "INFERRED"
+    },
+    {
+      "finding": "The envelope facet was deliberately NOT re-denominated.",
+      "detail": "envelope is a conjunction of zoning_district AND geometry, measuring whether a deterministic Tier-1 envelope can be DERIVED. That is legitimately a county-wide question: one would want an envelope for a rural parcel too. Its county denominator is correct for its own question, so changing it would have been a blanket edit rather than a measured one.",
+      "disposition": "Out of scope by decision, not by omission (DEV_PROCESS 3.3).",
+      "label": "VERIFIED"
+    },
+    {
+      "finding": "Bastrop's ledger cell still reads 99.77% off the envelope facet's measurement, and this PR does not move it.",
+      "detail": "Nothing here was applied. The cell moves when the planner runs the capability with --apply, which is explicitly not this lane's to run.",
+      "disposition": "Stated so nobody reads a merged PR as a fixed cell (DEV_PROCESS 4.4: code-done is not customer-done).",
+      "label": "VERIFIED"
+    }
+  ],
+
+  "constraintsHonored": [
+    "First test run and reported at CP1 before any file was changed.",
+    "Read-only against the production database throughout. Zero writes. --apply never run.",
+    "Branch pushed immediately after the first commit; PR #440 opened against main; NOT merged, NOT deployed, nothing pushed to main.",
+    "Heavy scan announced before it ran and confirmed complete afterwards.",
+    "Every verification step exit-bounded: builds, one-shot queries, and dry-runs that terminate. No watch, no tail, no server left running.",
+    "SS-W13's measurability rule imported, never duplicated.",
+    "Baseline captured before attributing any test failure to my change."
+  ],
+
+  "openAtCP2": [
+    "The statewide dry-run over all 254 counties was still running when this checkpoint was written; its result is recorded in the close artifact against the band pre-registered above.",
+    "The two-instrument zoning conflict needs an operator ruling on which instrument owns the facet.",
+    "189 counties with zero PostGIS geom is a finding well outside this lane's scope and belongs on the backlog."
+  ]
+}

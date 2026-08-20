@@ -1,0 +1,242 @@
+{
+  "lane": "SS-W18",
+  "title": "cortex-api does not boot",
+  "date": "2026-08-19",
+  "planRows": ["P-47"],
+  "repo": "legacy-design-tools",
+  "status": "COMPLETE — awaiting planner merge and deploy, both deliberately not done",
+
+  "missionPremise": "A canary deploy of cortex-api at 5688aa31 failed with the Cloud Run message 'The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout.' Production was unaffected only because the canary sits at 0% traffic by design. Dispatched by the doc_repo planner under OPS-16 amendment A-020, ruled 2026-08-19. This lane BLOCKS the deploy that closes a live public exposure, so it is critical path. Operating law: 61_enforcement_doctrine revision 7 and enforcement.mdc, both read at 'P:/tmp/data fix/' under their real filenames '61_enforcement_doctrine (7).md' and 'enforcement (3).mdc'.",
+
+  "completionPredicate": "A stranger can evaluate this without me by running, at the PR head, these four things in order: (1) git checkout 5688aa31, build, and run scripts/bootSmokeTest.mjs — it must print RESULT=violation and exit 1 with the server output '[coverage-score] ERROR: pass --county=<fips> or --all'; (2) at the same commit run scripts/checkBootGraphNoCliImports.mjs — it must print RESULT=violation and name the seven-module chain; (3) at the PR head repeat both — they must print RESULT=pass and RESULT=clean; (4) confirm no *Cli module is imported by anything reachable from src/index.ts. Done means the defect is removed AND both instruments were observed failing before they were observed passing.",
+
+  "scopeBasis": "The lane is bounded to removing the CLI from the server boot graph and to the two controls that would have caught it. Explicitly OUT: any behaviour change to the scorer CLIs, the ENGINE_API_URL boot requirement (a correct existing fail-fast, not a defect), the retirement of the dynamic import in countyRailScoreCli.ts (now unnecessary but a behaviour change to a file this lane was not scoped to alter), and branch protection (a repo-admin act, planner and operator owned). Boundaries chosen so a successor can tell a deliberate exclusion from an oversight: everything excluded is named with its reason.",
+
+  "pr": {
+    "number": 442,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/442",
+    "branch": "ss/w18-boot-fix",
+    "base": "main",
+    "headSha": "47edb28f24bfa678174185e731705f4c5c9231b0",
+    "mergeSha": "NOT MERGED — planner-owned, deliberately not merged",
+    "deployed": "NOT DEPLOYED — planner-owned, deliberately not deployed",
+    "commits": [
+      {"sha": "f31fdd16bb3f623d128973e847a684b1844b1858", "what": "the two instruments, committed and pushed BEFORE the fix so the failing runs are attributable"},
+      {"sha": "47edb28f24bfa678174185e731705f4c5c9231b0", "what": "the pure-module extraction, the six repointed call sites, the corrected stale prose, and the CI job"}
+    ],
+    "ciConclusionStrings": [
+      {"name": "SS-W18 api-server boots", "status": "completed", "conclusion": "success"},
+      {"name": "Typecheck", "status": "completed", "conclusion": "success"},
+      {"name": "Test", "status": "completed", "conclusion": "success"},
+      {"name": "L17 ci-vintage-predicate", "status": "completed", "conclusion": "success"},
+      {"name": "L5 SF-26 hand hasWriter grep", "status": "completed", "conclusion": "success"},
+      {"name": "SS-W16 tier2 flood not served", "status": "completed", "conclusion": "success"},
+      {"name": "L5 SF-30 Cotality warm grep", "status": "completed", "conclusion": "success"},
+      {"name": "L5 SF-24/SF-25 score greps", "status": "completed", "conclusion": "success"},
+      {"name": "L5 silent-fallback greps", "status": "completed", "conclusion": "success"}
+    ],
+    "ciConclusionSource": "gh api repos/.../commits/47edb28f/check-runs — the conclusion STRING, not a `gh pr checks` 'pass' rendering"
+  },
+
+  "checkpoints": [
+    "_inbox/2026-08-20_ss-w18_cp1.json",
+    "_inbox/2026-08-20_ss-w18_cp2.json"
+  ],
+
+  "theDefect": {
+    "observedAtSource": "Reproduced locally at 5688aa31: build the bundle, run `node --enable-source-maps ./dist/index.mjs` with a complete boot env, and the process prints '[coverage-score] ERROR: pass --county=<fips> or --all' and exits 1 without listening.",
+    "mechanism": "countyCoverageScoreCli.ts DOES carry an entrypoint guard, `if (isDirectRun())` at line 1156, which compares realpathSync(argv[1]) against realpathSync(fileURLToPath(import.meta.url)). The guard is correct under tsx and is defeated by bundling: build.mjs folds every module into one dist/index.mjs, so inside the bundle import.meta.url IS the bundle's own URL, and the container's `node artifacts/api-server/dist/index.mjs` makes argv[1] the same path. The guard read TRUE at server boot, main() ran with an empty argv, and fail('pass --county=<fips> or --all') called process.exit(1) before Express listened.",
+    "dispatchCorrection": "The dispatch located the defect at line 115 (`import { argv }`) and line 183 (`process.exit(1)`), describing the module as evaluating and exiting at import. Line 183 is inside function fail(), not at top level, and the entrypoint guard is present rather than missing. The correction matters operationally: a fix aimed at the argv import or the process.exit line would have changed nothing, because the guard is defeated by the BUNDLER, not absent from the source.",
+    "chainVerifiedByTheWalkerIndependently": [
+      "artifacts/api-server/src/index.ts",
+      "artifacts/api-server/src/app.ts",
+      "artifacts/api-server/src/routes/index.ts",
+      "artifacts/api-server/src/routes/countyRailScore.ts",
+      "artifacts/api-server/src/lib/railScoring/index.ts",
+      "artifacts/api-server/src/lib/railScoring/engine.ts",
+      "artifacts/api-server/src/countyCoverageScoreCli.ts"
+    ],
+    "precedent": "artifacts/api-server/src/lib/nodeFacetTier2Constants.ts exists because 'a misfire ran the bake at server boot and process.exit(1)'d before the server could listen'. That rule lived as a comment in one file's header. The rail-scoring capability reintroduced the same shape through a different import. Prose does not enforce, which is the whole finding of 61_enforcement_doctrine.",
+    "secondMechanismsConsideredAndRejected": [
+      {"mechanism": "A missing or invalid boot env var — the server's own validators call process.exit(1) on unset secrets.", "rejected": "Hit twice on the way to the reproduction (SNAPSHOT_SECRET, then AI_INTEGRATIONS_ANTHROPIC_BASE_URL). Each produced a different, differently worded exit, and supplying each advanced the failure rather than removing it. The final failure carries the coverage-score message with a full env supplied."},
+      {"mechanism": "Some other module's top-level side effect exiting the process.", "rejected": "The literal '[coverage-score]' is emitted only by countyCoverageScoreCli.ts across the whole tree, and on the empty-argv path that string is reachable only through fail() from main(), which is called only from the isDirectRun() block."},
+      {"mechanism": "Cloud Run cold-start timeout or memory pressure — a slow boot rather than an exited one.", "rejected": "Reproduced locally with no Cloud Run involved; the process exits within seconds. A timeout leaves the process alive."}
+    ]
+  },
+
+  "theFix": {
+    "newModule": "artifacts/api-server/src/lib/countyCoverageClassification.ts",
+    "why": "Same move as nodeFacetTier2Constants.ts, one level up, and its header mirrors that file's so the next reader understands why the file exists — including the bundling mechanism, which the earlier header did not spell out.",
+    "moved": ["classifyFacet", "sourcePresentForStampFacet", "resolveStampFacetMeasurability", "type Classification", "type FacetScore", "type ClassifyInput", "type StampFacetMeasurability"],
+    "purity": "Its only import is `import type { JoinIntegrityReport } from './joinIntegrityGate'`, which TypeScript and esbuild erase, so it creates no runtime edge. Duplicating the verdict union locally was rejected: that is the two-definitions-disagreeing shape the railScoring engine header exists to prevent.",
+    "callSitesEnumeratedBeforeScoringTheFixComplete": [
+      {"file": "artifacts/api-server/src/lib/railScoring/engine.ts", "note": "THE boot-graph edge. Repointed."},
+      {"file": "artifacts/api-server/src/countyFloodScoreCli.ts", "note": "CLI importing a CLI — not a boot problem, but a call site. Repointed."},
+      {"file": "artifacts/api-server/src/countyGeometryScoreCli.ts", "note": "CLI importing a CLI — not a boot problem, but a call site. Repointed."},
+      {"file": "artifacts/api-server/src/countyCoverageScore.test.ts", "note": "Repointed."},
+      {"file": "artifacts/api-server/src/countyStampFacetMeasurability.test.ts", "note": "Repointed."},
+      {"file": "artifacts/api-server/src/lib/railScoring/engine.test.ts", "note": "Repointed."},
+      {"file": "artifacts/api-server/src/countyCoverageRailState.test.ts", "note": "NOT repointed, deliberately. It imports deriveRailState, railThresholdPct and LANDUSE_JOIN_FACET_KEY, which stay on the CLI."}
+    ],
+    "deliberatelyLeftOnTheCli": {
+      "symbols": ["railThresholdPct", "deriveRailState", "LANDUSE_JOIN_FACET_KEY"],
+      "reason": "They read COUNTY_RAIL_DECLARATION from @workspace/db/schema, nothing in the boot graph imports them, and moving them would widen the change without removing a hazard."
+    },
+    "noReExport": "The CLI does NOT re-export the moved symbols. A re-export would put the CLI back on the import path that broke production while every test kept passing — the exact silent-restoration shape this lane exists to prevent.",
+    "staleProseCorrected": [
+      "countyRailScoreCli.ts carried two headers asserting that its dynamic import and its direct registry import were REQUIRED because engine.ts imports classifyFacet from the CLI. That chain no longer exists. Both now read as removed reasons rather than live constraints, with the retained dynamic import declared as a choice.",
+      "lib/railScoring/engine.ts, engine.test.ts and registry.test.ts comments naming the old import path."
+    ]
+  },
+
+  "controls": [
+    {
+      "id": "ci-api-server-boot-smoke",
+      "file": "artifacts/api-server/scripts/bootSmokeTest.mjs",
+      "whatItDoes": "Spawns the built bundle, polls the port, kills the child in a finally under a hard deadline.",
+      "gateQ1_whatExecutesIt": "node artifacts/api-server/scripts/bootSmokeTest.mjs, run by the step named ci-api-server-boot-smoke in job ss-w18-api-server-boot in .github/workflows/pr-checks.yml.",
+      "gateQ2_whatTriggersIt": "Every pull_request event and every push to main, per that workflow's existing `on:` block. Confirmed firing: it ran on PR #442 and completed in 26s.",
+      "gateQ3_whatFailsWhenViolated": "NOTHING FAILS TODAY, and that is the honest answer. The script exits 1 on violation and 2 on did-not-run, and the workflow step turns both into a red job. But `gh api repos/empressaioemail-tech/legacy-design-tools/branches/main/protection` returns 404 'Branch not protected' and `.../rulesets` returns `[]`, both checked at source on 2026-08-19. No required status check consumes this verdict, so a red run does not block a merge. This is the sixth state in 61_enforcement_doctrine revision 7 — advisory — and it is the state this control ships in.",
+      "gateQ4_whatBypassesIt": [
+        "Merging on red. Nothing prevents it while main is unprotected.",
+        "Any deploy path that does not go through a PR. The workflow also runs on push to main, but the Cloud Run deploy workflow is separate and does not consume this job's result.",
+        "A boot failure that depends on a real secret VALUE rather than its presence. The harness supplies dummy secrets and an unreachable DATABASE_URL, so it proves the process reaches app.listen with a well-formed env, not that production's secret set is correct.",
+        "A boot failure that depends on the container image rather than the bundle — a missing native module, a wrong base image, a Dockerfile change. The harness runs the bundle on the runner's Node, not the image.",
+        "A failure that appears only after listen (a route that throws on first request). Out of scope by construction: this measures boot, not health."
+      ],
+      "provenByViolation": "Run against unfixed origin/main at 5688aa31 BEFORE the fix existed. Output: 'FAIL ci-api-server-boot-smoke: the server process exited (code 1, signal null) before listening on 8123', captured server output '[coverage-score] ERROR: pass --county=<fips> or --all', RESULT=violation, exit 1. This is a real production-main violation, not a simulation.",
+      "didNotRunProvenToFire": ["missing bundle -> exit 2", "probe port already occupied -> exit 2"],
+      "selfTest": "Runs its probe against an entry that exits without listening (must be flagged) and one that listens (must pass) before any verdict on the real bundle is trusted. Observed in both directions on every run recorded here, including in CI."
+    },
+    {
+      "id": "ci-boot-graph-no-cli-import",
+      "file": "artifacts/api-server/scripts/checkBootGraphNoCliImports.mjs",
+      "whatItDoes": "Walks the static import graph from src/index.ts and flags any reachable *Cli module, printing the full path from the root.",
+      "gateQ1_whatExecutesIt": "node artifacts/api-server/scripts/checkBootGraphNoCliImports.mjs, run by the step named ci-boot-graph-no-cli-import in job ss-w18-api-server-boot in .github/workflows/pr-checks.yml.",
+      "gateQ2_whatTriggersIt": "Every pull_request event and every push to main. Confirmed firing on PR #442.",
+      "gateQ3_whatFailsWhenViolated": "NOTHING FAILS TODAY. Same answer and same evidence as above: main is not branch-protected (404 at source) and there are no rulesets, so the verdict binds nothing. Advisory, sixth state.",
+      "gateQ4_whatBypassesIt": [
+        "Merging on red, as above.",
+        "A bare specifier. The walker follows only relative imports, so a *Cli reached through a workspace package (@workspace/*) or an npm package is invisible to it. MEASURED 2026-08-19: all 13 *Cli.ts files in this repo live under artifacts/api-server/src and there are none in any workspace package, so the gap is currently EMPTY. It reopens the moment a *Cli.ts lands in lib/.",
+        "A dynamic `await import(...)`. Deliberately allowed: a dynamic import does not evaluate at module load and so cannot exit the process during boot. countyRailScoreCli.ts uses exactly this escape.",
+        "A require() or a computed specifier built from a string.",
+        "Renaming the offending module so it no longer ends in Cli. The control keys on a filename convention; a CLI called `countyCoverageScoreRunner.ts` would pass. The convention is the scope, and it is stated rather than claimed away.",
+        "Re-export through an intermediate module is NOT a bypass, and that is the point of building a graph walk rather than a grep. The live defect sat three hops from routes/index.ts behind the lib/railScoring barrel; a grep over routes/ would have been green through the whole outage."
+      ],
+      "provenByViolation": "Run against unfixed origin/main at 5688aa31. Walked 344 modules, found exactly 1 violation, and printed the seven-module chain — which it derived independently of the planner's hand trace and which matches it exactly. RESULT=violation, exit 1.",
+      "didNotRunProvenToFire": ["missing walk root -> exit 2", "any relative specifier that resolves to no file on disk -> exit 2, because a walk with a blind spot must not report a clean tree"],
+      "selfTest": "Two fixture trees walked on every run. The violating one reaches a CLI THROUGH A BARREL RE-EXPORT, reproducing the live shape. The clean one deliberately contains a header quoting the forbidden import verbatim and an `import type` from the same CLI, so a regression in comment masking or in type-import handling turns the gate permanently red and is caught as did-not-run rather than shipped as a verdict."
+    }
+  ],
+
+  "counts": [
+    {"number": 344, "countingRule": "distinct files reached by a breadth-first walk of STATIC RELATIVE imports and re-exports from artifacts/api-server/src/index.ts, excluding statement-level `import type`, excluding bare specifiers, and NOT descending into a flagged CLI. Identical before and after the fix because exactly one graph node was swapped: countyCoverageScoreCli (walk stops there) for lib/countyCoverageClassification (a leaf with no runtime edges)."},
+    {"number": 1, "countingRule": "CLI modules statically reachable from src/index.ts at 5688aa31, by the definition above."},
+    {"number": 0, "countingRule": "the same, at PR head 47edb28f."},
+    {"number": 13, "countingRule": "files matching *Cli.ts anywhere in the repo excluding node_modules, all of them under artifacts/api-server/src. This is the denominator for the bare-specifier bypass being currently empty."},
+    {"number": 62, "countingRule": "vitest assertions passing across the 5 suites that import the moved symbols or comment on the old import path: countyCoverageScore, countyStampFacetMeasurability, countyCoverageRailState, railScoring/engine, railScoring/registry."},
+    {"number": 6, "countingRule": "call sites repointed to the new module. A seventh site (countyCoverageRailState.test.ts) imports symbols that deliberately did not move and is unchanged."},
+    {"number": 0, "countingRule": "occurrences of the string 'coverage-score' in artifacts/api-server/dist/index.mjs after the fix, versus 6 before. The CLI is no longer compiled into the server bundle at all."}
+  ],
+
+  "verification": {
+    "commitsDeclared": "Every run above declares the commit it ran against, and both harnesses print it themselves.",
+    "ciCommitIdentityNote": "In CI both gates printed commit 9b5106c6bc8341c8471b0a7b1e0b205dbbc7f1c7, which is NOT the head SHA. Verified at source: that is the PR's merge_commit_sha, which is what actions/checkout@v4 checks out for a pull_request event. The harness is naming the tree it actually tested, which is correct; it is recorded here so a reader does not read it as a disagreement.",
+    "rootTypecheck": "pnpm run typecheck (the script CI runs) exit 0.",
+    "typecheckLocalCaveat": "Running `pnpm --filter @workspace/api-server run typecheck` alone fails with TS6305 across lib/*. That is the known missing `tsc --build` prerequisite on a fresh worktree, not a finding: the root script runs typecheck:libs first and passes, and CI is green.",
+    "build": "pnpm --filter @workspace/api-server run build exit 0.",
+    "exitBounded": "Every step was exit-bounded. No watch, no tail -f, no non-exiting server. After all local runs, netstat showed only TIME_WAIT client sockets on 8123/8125 and zero LISTENING sockets — checked, not assumed, because a boot test that leaves a server running is itself a defect.",
+    "branchProtection": "Checked at source, not relayed: `gh api .../branches/main/protection` returns 404 'Branch not protected'; `gh api .../rulesets` returns []."
+  },
+
+  "findings": [
+    {
+      "id": "F1",
+      "finding": "The boot smoke test's first post-fix run did not pass. It failed later and differently, on 'ENGINE_API_URL is required — cortex-api routes all reasoning through spine engine-api' from validateEngineSpineEnvAtBoot at src/index.ts:178.",
+      "disposition": "Not an application defect. ENGINE_API_URL is set by cloud-run-deploy.yml's --set-env-vars; the smoke env was incomplete and now supplies an unroutable host, chosen so the check cannot pass by reaching something real.",
+      "whyItIsReportedRatherThanQuietlyFixed": "It is the discrimination proof. The instrument moved from a module-evaluation exit to a boot-validator refusal, which is only possible if the first defect was genuinely removed. A gate that had reported pass at that moment would have been telling us nothing.",
+      "secondMechanism": "The alternative reading is that the fix broke engine-spine wiring. Rejected: the deploy workflow already sets ENGINE_API_URL in production, the validator only tests presence, and nothing in this lane touches engineSpineClient.ts."
+    },
+    {
+      "id": "F2",
+      "finding": "cortex-api boots to a listening socket with an unreachable DATABASE_URL. Both the local runs and the CI job (which has no postgres service) confirm it.",
+      "whyItMatters": "It settles the CP1 open question and it means the boot gate costs a database-free job. The boot-time DB work (autopilot reconciliation, GCS federal-data bootstrap) is inside try/catch and non-fatal by design.",
+      "secondMechanism": "The alternative is that the DB calls silently succeeded against something real on the runner. Rejected: port 5599 on 127.0.0.1 has no listener in either environment, and the CI job declares no services."
+    },
+    {
+      "id": "F3",
+      "finding": "countyRailScoreCli.ts carried two headers asserting that its dynamic import and its direct registry import were REQUIRED because engine.ts imports classifyFacet from the CLI, which reaches @workspace/db and throws without DATABASE_URL. After this fix the whole lib/railScoring barrel reaches only @workspace/db/schema, a pure subpath export with no DATABASE_URL guard.",
+      "disposition": "The dynamic import is RETAINED (behaviour unchanged; converting it is out of this lane's scope) and both headers are rewritten to record a removed reason rather than assert a live constraint. Recorded as a leave-behind.",
+      "secondMechanism": "The alternative is that some other member of the barrel still reaches @workspace/db root. Rejected by reading all six members: measure, run, lock and provenance import only siblings; registry imports @workspace/db/schema; engine now imports the pure leaf module."
+    },
+    {
+      "id": "F4",
+      "finding": "The dispatch's two doctrine paths did not exist. The folder uses Windows download-dedup suffixes and is rewritten in place; the live files were '61_enforcement_doctrine (7).md' and 'enforcement (3).mdc'. The revision I first read, '(6)', was deleted during the lane.",
+      "whyItIsInTheClose": "It is the same defect class as the lane's subject — a documented reference that is not a live one — and the doctrine's own rule is that a snapshot must be declared. Both files were re-read at their live names and revision 7's additions (the sixth advisory state, the protection split, reopening conditions, field-by-field degradation) are reflected in this close.",
+      "secondMechanism": "The alternative is that I mistyped the path. Rejected: `ls` of the directory showed the suffixed names and no unsuffixed ones, and the coordinator independently issued the same correction."
+    }
+  ],
+
+  "advisoryStateDeclaration": {
+    "claim": "Both controls run, produce correct verdicts, and block nothing.",
+    "basis": "main is not branch-protected in this repo (404 at source) and there are no rulesets. Under gate question three the honest answer for both is that nothing fails.",
+    "evidentiaryVersusProtective": "Their EVIDENTIARY value is real and already banked: each was deliberately run against a known violation and observed failing, which shows it load-bearing regardless of whether anything blocks a merge. Their PROTECTIVE value — the guarantee that a future regression cannot land — is nil until required status checks exist. That evidentiary value is also time-bound: it describes the code as of 47edb28f, not as of whenever this is read.",
+    "recommendationForProtectionSequencing": "AGREED with the coordinator, and stated as an input rather than an action. ci-api-server-boot-smoke is the strongest candidate for the first required-status-check set, because it is the only check in the estate proven to fire against a real production-main violation rather than a simulated one, it costs 26 seconds, it needs no services, and its failure mode is unambiguous. ci-boot-graph-no-cli-import is a good second: it runs in under a second and has a self-test in both directions. Both should be added as required BEFORE any check whose flakiness is unmeasured, because a protection rule that blocks legitimate work on day one produces the bypass habit the doctrine exists to prevent. Enabling force-push and branch-deletion protection is separable, costs nothing, and does not wait on this.",
+    "notDoneByThisLane": "Enabling protection is a repo-admin act and is not in this lane's scope. It is named here so the gap is visible, not left implied."
+  },
+
+  "stateChangeRecord": {
+    "note": "61_enforcement_doctrine revision 7 adds that a control changing state must record what it changed. Neither control here changes durable state: the graph walker only reads, and the boot harness spawns a child, kills it, and removes its own temp fixture directory. Both name the entry, the ports, the commit and the outcome on every run, so their transient actions are attributable. The requirement is noted as not triggered rather than silently skipped."
+  },
+
+  "constraintsHonored": [
+    "Isolated worktree at P:/tmp/ss-w18-boot-fix on branch ss/w18-boot-fix. No other lane's working tree was cleaned, stashed, reverted or edited.",
+    "Branch pushed immediately after the first commit, before the fix existed.",
+    "PR opened against main. NOT MERGED and NOT DEPLOYED — both planner-owned.",
+    "Verification exit-bounded throughout; confirmed no listening socket left behind.",
+    "The commit under test is declared in every output, and both harnesses print it themselves.",
+    "Every finding states a second mechanism that would produce the same observation and why it was rejected.",
+    "Merge readiness judged on the CI conclusion STRING 'success' read from the check-runs API, not on a `gh pr checks` rendering.",
+    "No sub-agents spawned; this lane was executed in one context as instructed."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch ss/w18-boot-fix and worktree P:/tmp/ss-w18-boot-fix",
+      "owner": "planner",
+      "plan_row": "P-47",
+      "note": "Delete both after merge. The worktree is registered under P:/legacy-design-tools/.git/worktrees and needs `git worktree remove`, not just an rmdir."
+    },
+    {
+      "item": "the now-unnecessary dynamic import of ./lib/railScoring in countyRailScoreCli.ts",
+      "owner": "unassigned",
+      "plan_row": "backlog",
+      "note": "Its stated reason was removed by this lane and its header now says so. Converting it to a static import is a behaviour change to a CLI outside this lane's scope. Low value, zero urgency; recorded so it does not become a mystery."
+    },
+    {
+      "item": "branch protection with required status checks on legacy-design-tools main",
+      "owner": "operator / planner",
+      "plan_row": "unassigned — needs one",
+      "note": "Until this exists, both controls this lane shipped are advisory, as is every other CI check in the repo. This is the single change that converts the whole class at once."
+    },
+    {
+      "item": "the same boot-graph guard for the other artifacts (design-tools, plan-review, qa, codex-reviewer-qa)",
+      "owner": "unassigned",
+      "plan_row": "backlog",
+      "note": "This lane's guard is rooted at artifacts/api-server/src/index.ts only. Whether the sibling artifacts have server entrypoints with the same exposure was NOT measured, and the guard's scope is stated at api-server rather than claimed repo-wide."
+    }
+  ],
+
+  "whatRemainsOpen": [
+    "Merge of PR #442 and the blocked deploy. Both planner-owned and deliberately untouched.",
+    "Branch protection. Until it lands, the honest answer to gate question three for both new controls is that nothing fails.",
+    "Whether cortex-api's other artifacts carry the same boot-graph exposure. Not measured by this lane.",
+    "The boot harness proves the process listens under a synthetic env. It does not prove the production secret VALUES are correct, and it does not exercise any route. Anyone reading a green boot check as 'the deploy is healthy' would be over-reading it."
+  ],
+
+  "contradictionsWithTheBriefing": [
+    "The dispatch's line-level mechanism (line 115 argv import, line 183 process.exit at module scope) is not what the source says. The entrypoint guard exists at line 1156 and is defeated by bundling. The conclusion the dispatch drew was right; the mechanism was not, and the difference changes which fix works.",
+    "The dispatch's two doctrine file paths did not exist; the live ones carry Windows dedup suffixes. Corrected mid-lane by the coordinator and independently by directory listing.",
+    "The dispatch asked for 'a CI grep forbidding route-graph modules from importing anything matching *Cli.ts'. A grep was deliberately NOT built. The live defect is invisible to a grep over routes/ — it is three hops away behind a barrel re-export — so a grep would have shipped green against the very violation it was written for. An import-graph walk was built instead, and the re-export bypass the dispatch anticipated does not exist in it."
+  ]
+}

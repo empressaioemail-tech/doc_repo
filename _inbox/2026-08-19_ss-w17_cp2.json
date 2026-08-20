@@ -1,0 +1,110 @@
+{
+  "lane": "SS-W17",
+  "artifact": "cp2",
+  "kind": "pilot measurement + adversarial review of the lane's own instrument",
+  "date": "2026-08-19",
+  "planRows": ["P-45"],
+  "repo": "hauska-engine",
+  "branch": "ss/w17-containment",
+  "cp1": "_inbox/2026-08-19_ss-w17_cp1.json",
+
+  "snapshot": {
+    "codeBase": "branch ss/w17-containment off d3f37949003fae5a99a82b62956352b7dcaa1022, first commit 07097fc pushed",
+    "cortexStore": "neondb @ ep-lucky-truth-apodo8hr-pooler.c-7.us-east-1.aws.neon.tech, read 2026-08-19",
+    "atomsStore": "hauska_mcp @ same host, read 2026-08-19",
+    "nfhlEdition": "NFHL_48_20260101, the single edition in tx_fema_nfhl_flood_zone (198,178 rows, 198,178 with geom)",
+    "populationRead": "county 48021 Bastrop, first 6,000 DISTINCT ON (feature_index) rows of txgio_parcel by feature_index; 138 skipped for an unusable prop_id and 112 dropped as duplicate keys, leaving 5,750 PLANNABLE parcels. NOT a county-complete figure: Bastrop holds 62,256 flood atoms."
+  },
+
+  "preRegisteredBandsVerdict": {
+    "P1": "CONFIRMED and then some. All 5,750 plannable Bastrop parcels carry a usable Polygon/MultiPolygon in txgio_parcel.geometry AND a PostGIS geom. SS-W15's 189-of-253 zero-geom finding is about a different column and does not describe Bastrop.",
+    "P2": "CONFIRMED, near the top of the band. The vertex-mean centroid falls OUTSIDE its own parcel on 229 of 5,750 plannable parcels = 3.983 percent. Band was 0.1 to 5 percent.",
+    "P3": "CONFIRMED trivially and therefore uninformative here: the bbox-centre fallback fired 0 times in Bastrop, because every parcel has a ring. The fallback is still live code and is still the tier2 shape wherever geometry is absent; Bastrop simply does not exercise it.",
+    "P4": "OUTSIDE THE BAND, in the good direction, and only after a defect in my own instrument was fixed. Final: JS ray cast and PostGIS ST_Contains agree on 5,750 of 5,750, i.e. 100 percent against a predicted floor of 99.5 percent. The FIRST run reported 19 divergences in 2,000 and that number was wrong; see instrumentDefectsFoundInThisLane below.",
+    "P5": "CONFIRMED. The live violation set is not empty: 229 real Bastrop parcels. The check is proven on production data, not only on a synthetic fixture."
+  },
+
+  "measurement": {
+    "containmentStates": {
+      "contained": 5521,
+      "notContained": 229,
+      "unmeasurable": 0,
+      "denominator": 5750,
+      "countingRule": "one count per PLANNABLE parcel, i.e. after the writer's own key rules (blank and all-zero prop_id skipped, first occurrence of a key wins). contained + notContained + unmeasurable = 5,750, measured never subtracted."
+    },
+    "writerGateDecision": {
+      "emit": 5521,
+      "refuse": 229,
+      "refusalReason": "sample-point-outside-parcel on all 229; zero refusals for any other reason in this population"
+    },
+    "howFarOutside": {
+      "medianM": 15.27,
+      "p95M": 80.24,
+      "maxM": 164.36,
+      "buckets": {
+        "exactlyOnBoundary_0m": 1,
+        "over0mUpTo1m": 15,
+        "over1mUpTo10m": 76,
+        "over10mUpTo50m": 108,
+        "over50m": 29
+      },
+      "countingRule": "ST_Distance(point, parcel geom) via geography cast, over the 229 not-contained parcels only",
+      "reading": "Only 16 of 229 are within a metre of their parcel, so this is not a boundary-arithmetic artifact. It is the same defect class as tier2 at roughly one fifteenth the magnitude: tier2's median separation was 226.5 m, this is 15.3 m, and 29 parcels are more than 50 m outside."
+    },
+    "consequence": {
+      "zoneAtPointNotInTheParcelsOwnZoneSet": 0,
+      "sfhaClassFlipPointVsParcel": 40,
+      "denominator": 229,
+      "countingRule": "the zone at the outside point compared against the DISTINCT set of NFHL zones the parcel polygon actually intersects. The SFHA figure compares the point's SFHA class against whether ANY intersecting zone is SFHA.",
+      "honestReading": "The good news is real: in 229 of 229 the zone found at the outside point is at least one of the zones the parcel genuinely touches, so no parcel was handed a zone absent from its own footprint. The 40 SFHA flips are an UPPER BOUND, not a count of wrong answers: 'any intersecting zone is SFHA' is a stricter reading than 'this parcel is in an SFHA', so a parcel clipping an AE zone at one corner counts as a flip here while a point determination of X may still be the better single answer. What the 40 does establish is that for 40 parcels the in-or-out-of-hazard answer depends on which point you ask about, which is exactly the property a determination is not allowed to have."
+    },
+    "adjudicationLegs": {
+      "stampPresent": "5,750 of 5,750 FAIL. No flood-hazard-fact atom in the store carries a sample point or a containment state, confirmed independently by jsonb_object_keys over a stored 48021 body (23 keys, none of them a point). The corpus is UNCHECKED, which is a different state from checked-and-passing.",
+      "stampEmittable": "0 checked, 5,750 unmeasurable. Nothing can be checked for a bad stamp when nothing has a stamp.",
+      "containmentDivergence": "5,750 checked, 0 failed. Two independent implementations of the containment rule agree on every parcel.",
+      "zoneAdjudicationOnAtomPoint": "0 checked. There are no stamped points to adjudicate against yet.",
+      "zoneAdjudicationOnStandInPoint": "5,750 checked, 0 failed. The atom's recorded zone equals the NFHL zone at the re-derived centroid for every parcel, INCLUDING all 229 whose centroid is outside the parcel. This is the load-bearing observation of the lane: those 229 atoms are correct about the point and wrong about the parcel, which is the tier2 sentence word for word at a smaller scale."
+    }
+  },
+
+  "instrumentDefectsFoundInThisLane": [
+    {
+      "id": "OWN-1",
+      "text": "The grader inferred 'has a testable ring' from a containment verdict that had already short-circuited on a null point. With no atom stamped, every point was null, so the first live run reported withParcelRing 0 of 2,000 and 2,000 of 2,000 phantom containment divergences.",
+      "fix": "countTestableRings is now called on the geometry directly, independently of whether a point exists, and a regression test pins it.",
+      "secondMechanismRejected": "The same observation would be produced by Bastrop genuinely having no parcel geometry in the jsonb column. REJECTED at source: the same run reported parcelsWithPostgisGeom 2,000 of 2,000 and samplePointDerivation ring-centroid 2,000, and a ring-centroid derivation is only reachable when geometryCentroid parsed a ring. Two fields in the same report contradicted each other, which is the free finding DEV_PROCESS 1.4 describes."
+    },
+    {
+      "id": "OWN-2",
+      "text": "The PostGIS leg resolved the parcel by prop_id with bool_or over every matching row, while the JS leg tested the single DISTINCT ON (feature_index) row it had read. For a multi-row parcel the two legs were answering different questions, and for the sentinel key prop_id '0' they were aggregating over unrelated parcels entirely. That produced 19 reported divergences in 2,000, of which zero were real.",
+      "fix": "The PostGIS leg now joins on the FULL primary key (county_fips, tile_key, feature_index), so both implementations are asked about exactly the same row. After the fix: 0 divergences in 5,750.",
+      "secondMechanismRejected": "A genuine boundary-semantics difference between ST_Contains and the JS crossing-number ray cast would also produce a small divergence count, and postgis-flood-plan.ts documents exactly that difference for the ZONE predicate. REJECTED because the divergences went to zero once the row identity was fixed; a real boundary difference would have survived it. It remains a live hypothesis for any future non-zero divergence and must not be assumed away."
+    },
+    {
+      "id": "OWN-3",
+      "text": "The harness graded parcels the writer does not write. It skipped only a null prop_id, while the writer also skips blank and all-zero keys and dedupes on first occurrence. 138 unusable-key rows and 112 duplicates were being adjudicated as if they were missing atoms, which is how a check reports a defect the writer had already handled correctly.",
+      "fix": "The harness's population is now produced by the SHIPPING selectPlannableParcels, with two assertions that FAIL CLOSED if the local pre-filter and the shipping rule ever disagree about which parcels exist. parcelsWithNoFloodAtom went from 138 to 0."
+    }
+  ],
+
+  "adversarialReviewOfThisLanesOwnWork": [
+    "Every one of the three defects above was found by the instrument failing loudly on production data, not by reading its output and being satisfied. Had the first run printed a clean pass, all three would have shipped.",
+    "The 100 percent containment agreement is NOT evidence the JS predicate is right. It is evidence the two implementations agree. Both could share a wrong convention about boundary points, and only one parcel in 229 sits exactly on a boundary, so the population barely exercises the case where they would differ.",
+    "The 5,750-parcel population is 9.2 percent of Bastrop's 62,256 flood atoms and 0 percent of every other county. The 3.983 percent not-contained rate is a Bastrop-partial rate and must never be quoted as statewide.",
+    "The zone leg currently proves nothing about the atom's own sampling, because it adjudicates a re-derived stand-in point. It only becomes evidence about the writer once the corpus carries stamps."
+  ],
+
+  "constraintsHonored": [
+    "READ-ONLY against both production databases: SELECT only, no INSERT, UPDATE, DELETE or DDL, no atoms writer slot taken",
+    "heavy scans SERIALIZED: pg_stat_activity checked for concurrent active queries before starting (empty), then one county run at a time, announced on start and confirmed on completion in the runner's own stderr",
+    "exit-bounded: every run terminated on its own; the one probe that did not return inside 120 s was killed and every probe since carries a server-side statement_timeout",
+    "isolated worktree; branch pushed immediately after the first commit",
+    "no sub-agents spawned"
+  ],
+
+  "openAtCp2": [
+    "The CI fixture and workflow are not yet written. Without them the containment check is merged code with no executor, which is the exact defect class the enforcement doctrine names.",
+    "The re-bake of the flood corpus under the gate is NOT this lane's to run: it takes the atoms writer slot and is an operator-sequenced apply. Until it runs, every consumer repointed at the atom reads UNCHECKED determinations.",
+    "The nine-versus-sixteen engine instrument count is still to be re-derived and reported."
+  ]
+}

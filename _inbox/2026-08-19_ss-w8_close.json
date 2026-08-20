@@ -1,0 +1,258 @@
+{
+  "lane": "SS-W8",
+  "artifact": "CLOSE",
+  "planRows": ["P-44"],
+  "repo": "hauska-map",
+  "branch": "ss/w8-cc-live-feed",
+  "worktree": "/p/hauska-map-worktrees/ss-w8-cc-live-feed",
+  "baseSha": "51e6f95ddfd1cf3f6ed110e9a03ba730677429ed",
+  "closedAt": "2026-08-19T15:55:00Z",
+
+  "missionPremise": "Operator ruling 2026-08-18 / 2026-08-19, dispatched under OPS-16 amendments A-018 and A-019: the County Manifest must be a LIVE FEED, not a four-day-old snapshot, and the console exists so defects are spotted rather than hand-found. The operator opened it, could not find the sweep behind its subtab, and separately had to ask whether footprints were ingested — a question the console should have answered on sight. There are THREE layers, not two, and all three disagree independently: WRITTEN (atoms in the store), SCORED (county_facet_coverage via GET /api/county-ledger), SERVED (what Smart Site shows a human). The divergences between them ARE the defect list.",
+
+  "completionPredicate": "On the County Manifest a stranger can (a) read WRITTEN, SCORED and SERVED side by side for the same county and rail, each carrying its own origin, timestamp and denominator, with no cross-layer arithmetic; (b) find the subtabs without being told and land on one from a URL; (c) see staleness as an alarm that names what it invalidates; (d) find the three dead indicators either derived or deleted, with the deletion stated on screen; (e) read every rail against its own reachable ceiling rather than against 254. ALL MET, with one half of (a) bounded by a lane dependency named below.",
+
+  "scopeBasis": "File ownership was apps/command-center/** only; four other lanes are running in this repo. `git diff --name-only origin/main...HEAD | grep -v '^apps/command-center/' | wc -l` returns 0. No server route, no proxy allowlist rule (root api/spine.ts) and no package outside the app was touched: both new reads are GETs the proxy already allows on the cortex and retrieval segments. The serving-sweep ENDPOINT is SS-W7 and the sweep DATA is P-43; neither was attempted.",
+
+  "pr": {
+    "number": 173,
+    "url": "https://github.com/empressaioemail-tech/hauska-map/pull/173",
+    "state": "OPEN",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "fb7f155d0d22ba2db2d6d2ba12243ffa65574ca1",
+    "mergeSha": "not applicable: DO NOT MERGE per dispatch — planner review pending",
+    "ciConclusionString": "success",
+    "ciEvidence": "gh api repos/empressaioemail-tech/hauska-map/commits/fb7f155d0d22ba2db2d6d2ba12243ffa65574ca1/check-runs --jq '.check_runs[] | {name,status,conclusion}' -> {\"conclusion\":\"success\",\"name\":\"No double-encoded source\",\"status\":\"completed\"} {\"conclusion\":\"success\",\"name\":\"test\",\"status\":\"completed\"}",
+    "commits": [
+      "c61c10c feat(command-center): three-layer console, staleness alarm, derived controls (P-44)",
+      "e97ebef test(command-center): pin the three-layer console and its derived controls (P-44)",
+      "fb7f155 fix(command-center): poll verdict off a ref, memoize the alarm walk (P-44)"
+    ]
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-08-19_ss-w8_cp1.json",
+    "_inbox/2026-08-19_ss-w8_cp2.json"
+  ],
+
+  "evidenceDiscipline": {
+    "instruction": "every figure names its layer and its timestamp, and every claim is labelled VERIFIED at source by this lane, INFERRED by this lane, or RELAYED from another lane",
+    "probesRunByThisLane": [
+      {
+        "layer": "SCORED",
+        "label": "VERIFIED",
+        "command": "curl -s -o ledger.json -w 'HTTP %{http_code} ct=%{content_type} bytes=%{size_download} time=%{time_total}' --max-time 120 https://cmdcenter-blush.vercel.app/api/spine/cortex/api/county-ledger",
+        "verbatimOutput": "HTTP 200 ct=application/json; charset=utf-8 bytes=2121656 time=1.067146",
+        "computedAt": "2026-08-14T17:41:22.500Z",
+        "servedAt": "2026-08-19T13:53:28.783Z",
+        "materializationAgeMs": 418326283
+      },
+      {
+        "layer": "WRITTEN",
+        "label": "VERIFIED",
+        "command": "curl -s -o tally.json -w 'HTTP %{http_code} ct=%{content_type} bytes=%{size_download}' --max-time 90 https://cmdcenter-blush.vercel.app/api/spine/retrieval/stats/central-tx-node-graph",
+        "verbatimOutput": "HTTP 000 ct= bytes=0   (the body arrived complete: 6,177 bytes on disk, parsed, generatedAt 2026-08-04T13:02:36.327Z; curl reported no status)",
+        "secondProbe": "the identical request with --max-time 240 returned: HTTP 000 ct= bytes=0 time=240.011644 — nothing at all",
+        "reading": "the instrument is SLOW and FLAKY. That is why it is on demand and never on the feed interval, and why its failure renders as a named absence."
+      },
+      {
+        "layer": "SERVED",
+        "label": "VERIFIED",
+        "command": "curl -s -o sweep.out -w 'HTTP %{http_code} ct=%{content_type} bytes=%{size_download}' --max-time 60 https://cmdcenter-blush.vercel.app/api/spine/cortex/api/serving-sweep",
+        "verbatimOutput": "HTTP 200 ct=text/html; charset=utf-8 bytes=918",
+        "reading": "the documented cortex-api SPA fallthrough — the route does NOT exist as of 2026-08-19. A 200 that is HTML is not a route. SS-W7 is building it."
+      }
+    ],
+    "labelledClaims": {
+      "VERIFIED_by_this_lane": [
+        "SCORED, computedAt 2026-08-14T17:41:22.500Z: 3,556 cells = 254 counties x 14 rails. displayState totals not-yet 2,940, satisfied-present 540, satisfied-absent 76; no-writer 0, no-atom 0, derivation-indeterminate 0.",
+        "SCORED: hasWriter is true on 3,556 of 3,556 cells; atomFamilyState is 'present' on 3,556 of 3,556; isPartial is false on 3,556 of 3,556. All three controls confirmed dead at source.",
+        "SCORED: 120 of 3,556 cells carry 0 < honestCoveragePct < thresholdPct — by rail mud 44, flood 63, zoning 3, envelope 3, cad 2, landuse 2, owner 2, geometry 1. These rendered as blank dots before this lane.",
+        "SCORED: 6 of 14 rails carry ZERO coverage numbers, ZERO sources and ZERO verifying instruments across all 254 counties — roads, footprint, easement, rrc-wells, rrc-pipelines, rail-corridor. The other 8 carry 254, 254, 254, 254, 254, 254, 177 and 19 coverage values.",
+        "SCORED: railCapabilities serves footprint 254, rail-corridor 253, mud 186, owner 15, rrc-wells 1; the other 9 of 14 serve null with sourceBasis 'no capability probe defined for this rail'.",
+        "SCORED: mud carries 134 acquisitions and 75 established absences against a reachable ceiling of 186. Counting them together reads 209/186.",
+        "WRITTEN, observed 2026-08-04T13:02:36.327Z: the tally covers 10 counties of 254, and its road rollup fewer still.",
+        "WRITTEN vs SCORED, the finding this lane exists to surface: on 5 of the 10 counties the written instrument covers, the store was observed holding zoning atoms while the ledger scores the zoning rail not-yet at 0.00% — Travis 48453 233,249 written, Bexar 48029 416,451, McLennan 48309 48,441, Guadalupe 48187 30,613, Bell 48027 61,170. Bastrop 48021 shows 62,220 buildable-envelope atoms written against an envelope cell reading not-yet, and 17,551 road nodes written against a roads rail with no scored number anywhere in Texas.",
+        "cortex-api's ManifestCell union carries a sixth displayState, 'derivation-indeterminate' (legacy-design-tools/artifacts/api-server/src/routes/countyLedger.ts), which the console did not declare — an unknown state fell through to the same treatment as not-yet."
+      ],
+      "RELAYED_not_verified_by_this_lane": [
+        "That footprints landed in 174 counties closing 2026-08-17. Source read at its own artifact but not verified against the store by this lane: _inbox/2026-08-17_l26_backfill_and_gtm_stand.md, table row 'Wells / footprints | 174 landed each.' It is declared in the console as a DECLARED work record with that path attached, never as a measurement.",
+        "The same source line's wells claim. Deliberately NOT declared: the ledger's own capability probe serves rrc-wells maxCountiesReachable 1 with sourceBasis 'RRC public GIS Harris County mirror', and standing memory records the Harris-only finding. A contested claim is not put in a console's mouth."
+      ],
+      "INFERRED": [
+        "That the written-vs-scored divergences above are scorer gaps rather than store errors. The console does NOT assert this: it renders both readings with both timestamps and names the disagreement. Which side is wrong is an engine question."
+      ]
+    }
+  },
+
+  "whatIsDerivedVersusStillHandDeclared": {
+    "instruction": "the dispatch asked this be said plainly",
+    "nowDerivedFromLivePayload": [
+      "PARTIAL — 0 < honestCoveragePct < thresholdPct, computed per cell. Replaces the served isPartial, which is false on every cell. Fires on 120 of 3,556 live cells and puts a number on work that rendered as an empty dot. The served field is still read and its disagreement with the derivation is COUNTED on screen rather than resolved silently.",
+      "RAIL SCORING EVIDENCE — does ANY county in the payload carry a coverage number, a source or a verifying instrument for this rail. Replaces the hand-declared NO WRITER tag. Fires on 6 of 14 rails and stays quiet on 8, so it is proven able to do both on live data.",
+      "STALENESS AGE and EVIDENCE HORIZON — computedAt against the console clock, and against every other observation on screen. The horizon check fires only when an observation postdates computedAt, which is the one thing that proves the ledger is behind the world.",
+      "RAIL DENOMINATORS — acquisition scored against railCapabilities[].maxCountiesReachable where a probe defines one, absences counted beside it, and a flag where acquisition alone exceeds the ceiling.",
+      "LAYER COVERAGE — how many rows of the join each layer actually measured, with its named non-measurements.",
+      "DIVERGENCE CLASSES — five classes, each tallied over the whole join so a zero is a measured zero."
+    ],
+    "stillHandDeclaredAndSaidToBeSo": [
+      "hasWriter and atomFamilyState — declared in the engine manifest, uniform across all 3,556 cells, recomputed by nothing. The controls they drove are DELETED; the raw values remain visible in the cell drawer marked declared-upstream. This console cannot fix them.",
+      "thresholdPct — a policy number per rail. Correctly hand-set; named as declared so nobody reads it as measured.",
+      "DECLARED_WORK — the work-horizon list introduced by this lane. One entry, carrying its completedAt, its doc_repo artifact path and a declaredAt, rendered with provenance 'declared'. It rots by design and says so.",
+      "RAIL_LABELS, texasCountyNames.ts, railFieldMap.ts and the new WRITTEN_SIGNALS map — presentation and correspondence judgements declared in this repo. WRITTEN_SIGNALS carries a basis per row and every rail it does not speak for is enumerated as its own class, so a rail with no signal renders as UNMEASURED and never as empty."
+    ]
+  },
+
+  "howStalenessIsSurfaced": {
+    "shape": "an alarm bar at the top of EVERY subtab, not a banner on one. Collapsed to a headline when nothing is firing, expanded by default at danger.",
+    "eachAlarmCarries": "a severity, a provenance chip reading derived or declared, a headline, a 'proves' clause stating what it does and does NOT establish, and a basis naming the field, URL or repo path it came from.",
+    "theThreeChecks": [
+      "AGE (derived) — fires warn at 15 minutes and danger at 24 hours. On the live payload it reads 'the ledger is 4d 20h 12m old — every one of the 3,556 cell states below is a claim about 2026-08-14T17:41:22.500Z, not about now'. Its proves clause says only that the snapshot is old.",
+      "EVIDENCE HORIZON (derived) — fires when any observation the console can see postdates computedAt, naming the instrument, what it saw and when. Its proves clause states that the snapshot cannot contain them and explicitly that it does not prove any particular cell is wrong. On today's data it stays quiet, because both other instruments are OLDER than the ledger; it fires the moment SS-W7's sweep lands.",
+      "DECLARED WORK HORIZON (declared) — fires when a declared work record postdates computedAt and the ledger still reports that rail unacquired. On the live payload it reads that the ledger predates declared work on footprint and reports it unacquired on 254 of 254 cells."
+    ],
+    "alsoInTheHeader": "the panel's right-hand pill reads 'ledger 4d 20h 12m old' instead of a satisfied count whenever anything is firing."
+  },
+
+  "countsWithCountingRules": {
+    "suiteAtHead": "33 test files, 353 passed, 1 skipped (354) — command: pnpm --filter command-center test",
+    "suiteWhenThisLaneStarted": "29 files, 276 tests, observed in this lane's first full run — taken AFTER the source edits, so 4 of the 276 were failing against controls this lane had deliberately changed. A clean pre-lane run was not observed and is not asserted.",
+    "testsAdded": "78 = 354 - 276. Four new files: threeLayerTypes.test.ts 22, ledgerStaleness.test.ts 18, ThreeLayerPanel.test.tsx 12, writtenLayerSource.test.ts 7. Twelve cases appended to CountyManifestGrid.test.tsx and eight to manifestDerivation.test.ts; four existing cases reworked where they pinned a control this lane deleted.",
+    "diffstat": "17 files changed, 3,542 insertions(+), 137 deletions(-) against origin/main",
+    "filesOutsideOwnership": "0 of 17",
+    "typecheck": "0 errors in any file this lane touched; 12 pre-existing errors remain in files it did not open (ActiveContextBar 6, jest-dom matcher typings 4, map-renderer .js declarations 2)",
+    "build": "pnpm --filter command-center build — built in 6.35s. Bundle markers verified present: 'Three layers' 1, 'NO SCORING EVIDENCE' 1, 'never averaged' 1, 'STALE — READ THIS' 1, 'predates declared work' 1"
+  },
+
+  "workItemsAgainstTheDispatch": [
+    {
+      "item": "1. Render written / scored / served side by side per rail per county",
+      "state": "DONE",
+      "detail": "New Three layers subtab. Nothing averaged, nothing blended. The ONLY subtraction across layers is scored-minus-served in points, where both sides are percentages of parcels; a written ATOM COUNT is never differenced against a scored PERCENTAGE and the reading says so in words. Five divergence classes, each measured over the whole join. A layer with no instrument for a cell renders a named non-measurement in four distinct flavours per layer, never a zero."
+    },
+    {
+      "item": "2. Wire the live sweep feed once SS-W7 lands GET /api/serving-sweep; keep the artifact origin labelled",
+      "state": "DONE, waiting on SS-W7",
+      "detail": "The console auto-probes the sweep once, the first time a view needs the SERVED layer, so the operator does not have to find a button. Today that probe returns the SPA fallthrough and renders a named not-served state carrying the URL and status. SS-W6's two labelled origins are preserved and a loaded artifact is asserted by test never to carry the word LIVE."
+    },
+    {
+      "item": "3. Discoverability — fix the subtab affordance",
+      "state": "DONE",
+      "detail": "A labelled, bordered segmented control with a '3 views' lead-in, raised active segment, per-tab status badge, role=tablist / role=tab with aria-selected, arrow-key navigation, and a URL param so a view is linkable and survives reload (#panel=county-manifest&view=three-layer). A hash naming a view that does not exist falls back rather than blanking the panel."
+    },
+    {
+      "item": "4. Staleness as a first-class alarm",
+      "state": "DONE",
+      "detail": "See howStalenessIsSurfaced above. The footprint case is the worked example and fires on the live payload."
+    },
+    {
+      "item": "5. The three dead indicators — derive them or delete them",
+      "state": "DONE",
+      "detail": "isPartial DERIVED (fires on 120 of 3,556). hasWriter's NO WRITER tag DELETED and replaced by derived scoring evidence (fires on 6 of 14 rails). atomFamilyState's NO ATOM tag DELETED with no manifest replacement — atom presence is a WRITTEN-layer question, answered on the Three layers subtab by an instrument that reads the store. Both deletions are rendered on screen with their driver, their reason, their denominator and their replacement, because a control that vanishes silently leaves the state it named looking monitored."
+    },
+    {
+      "item": "6. Score every rail against its railCapabilities reachable ceiling, never against 254",
+      "state": "DONE, with a correction the dispatch did not anticipate",
+      "detail": "Acquisition scores against the ceiling: rrc-wells now reads 0/1, not 0/254. The correction: counting established absences inside that fraction read mud 209/186. An absence is not bounded by how far an acquisition source reaches, so absences are counted beside acquisition, and a case where acquisition ALONE exceeds the ceiling is flagged, since then the capability probe and the coverage scorer cannot both be right."
+    }
+  ],
+
+  "contradictsThisBriefing": [
+    {
+      "briefing": "SCORED footprint 0/254, computed 2026-08-14, 67h BEFORE the writes.",
+      "atSource": "Confirmed as to the ledger reading and the ordering. One correction of emphasis: footprint's own capability probe serves maxCountiesReachable 254 with reachPct 1 and a limitation string, so 0 of 254 is the honest denominator for that rail — footprint is one of the few rails where 254 is right. The manufactured-hole problem the dispatch names is real but lands on rrc-wells (ceiling 1), owner (15), mud (186) and rail-corridor (253).",
+      "evidence": "railCapabilities on the live payload"
+    },
+    {
+      "briefing": "The console renders WRITTEN from atoms in the store.",
+      "atSource": "It renders what the ONE reachable written instrument reports, and that instrument covers 10 counties of 254, speaks for 4 rails of 14, and was itself generated 2026-08-04 — ten days OLDER than the ledger it is compared against. There is no statewide written instrument the console can reach. Every non-covered cell says so by name. The layer is real and it is thin, and the console states the thinness rather than implying statewide coverage."
+    },
+    {
+      "briefing": "hasWriter, atomFamilyState and isPartial are uniform, so their controls can never fire.",
+      "atSource": "Confirmed at source on 3,556 cells. One of the three turned out to be DERIVABLE from fields that do vary, and deriving it surfaced 120 cells of acquired-but-below-threshold work that the grid had been drawing as empty dots. The dead control was hiding real progress, not just failing to warn."
+    },
+    {
+      "briefing": "SERVED: tier2 flood, 10.99M rows written, reaches nobody.",
+      "atSource": "Not verifiable from this repo and NOT asserted by this lane. The console can express that shape — scored satisfied beside served zero is one of its five divergence classes, proven able to fire — but no sweep exists to populate it. RELAYED, not verified."
+    },
+    {
+      "briefing": "The County Manifest must become a LIVE FEED.",
+      "atSource": "Half of that is not in this repo. county_facet_coverage moves only when an engine block or scorer runs, and no recompute route exists on the deployed cortex-api. What this lane delivers is a console that re-reads every 60 seconds, states plainly that a re-read which does not move computedAt is staleness rather than a refresh, and will show a fresh materialization the moment SS-W7's route lands. Calling the current state 'live' without that caveat would be the exact defect the programme is hunting."
+    }
+  ],
+
+  "filesChanged": [
+    { "path": "apps/command-center/src/admin/control/panels/threeLayerTypes.ts", "why": "NEW — the three-layer model: the written signal map with a basis per row, per-layer readings with named non-measurement states, five divergence classes, the join, and the tallies. The no-cross-unit-arithmetic rule lives here." },
+    { "path": "apps/command-center/src/admin/control/panels/ThreeLayerPanel.tsx", "why": "NEW — renders the three layers side by side with three origins and three timestamps, the divergence tallies with their denominator, and the per-layer coverage summary." },
+    { "path": "apps/command-center/src/admin/control/panels/writtenLayerSource.ts", "why": "NEW — the WRITTEN probe through the shared retrieval client, with the coverage set, the instrument's own observedAt, and a named absence on failure. The static tally artifact in public/ is deliberately NOT read." },
+    { "path": "apps/command-center/src/admin/control/panels/ledgerStaleness.ts", "why": "NEW — the three staleness checks, each carrying what it proves, and the declared work horizon with its artifact path." },
+    { "path": "apps/command-center/src/admin/control/panels/CountyManifestGrid.tsx", "why": "three subtabs with real tab semantics and a hash param; the alarm bar on every view; the live-feed interval; derived scoring-evidence tags replacing the deleted ones; acquisition scored against reach with absences beside it; removed-controls and derived-controls sections in the derivation strip" },
+    { "path": "apps/command-center/src/admin/control/panels/countyManifestTypes.ts", "why": "derivation-indeterminate declared; derivedIsPartial and the paired-control divergence; cellVisualState and cellSev follow the derivation" },
+    { "path": "apps/command-center/src/admin/control/panels/manifestDerivation.ts", "why": "railScoringEvidence, REMOVED_CONTROLS, provenance rows rewritten for the derived replacements, and rail denominators split into acquisition and established absence" },
+    { "path": "apps/command-center/src/admin/control/center/panelHash.ts", "why": "readPanelHashParam / withPanelHashParam — still zero imports, so a leaf panel can be sub-addressable without dragging PanelRegistry and map-renderer's stylesheet behind it" },
+    { "path": "apps/command-center/src/admin/control/primitives.tsx", "why": "Pill gains an optional testId, matching Card and Button" },
+    { "path": "apps/command-center/PROXY_CONTRACT.md", "why": "the three County Manifest reads, each with what it actually returned when probed on 2026-08-19" },
+    { "path": "apps/command-center/src/admin/api/proxyContract.test.ts", "why": "the same three rows in the enforced inventory" },
+    { "path": "apps/command-center/src/admin/control/panels/threeLayerTypes.test.ts", "why": "NEW — 22 cases; every divergence class fires and stays quiet; a non-measurement never becomes a zero; the cross-unit subtraction is asserted absent by value" },
+    { "path": "apps/command-center/src/admin/control/panels/ledgerStaleness.test.ts", "why": "NEW — 18 cases; each check fires and goes quiet, the age check refuses to over-claim, and the declared list is asserted to carry its artifact path" },
+    { "path": "apps/command-center/src/admin/control/panels/ThreeLayerPanel.test.tsx", "why": "NEW — 12 cases; three origins and three timestamps on screen at once, adjacent columns for the same cell, artifact never labelled live" },
+    { "path": "apps/command-center/src/admin/control/panels/writtenLayerSource.test.ts", "why": "NEW — 7 cases; a failed or empty probe is a named absence, never an empty store" },
+    { "path": "apps/command-center/src/admin/control/panels/CountyManifestGrid.test.tsx", "why": "12 SS-W8 cases plus four reworked; tablist semantics, hash addressing, alarm on every view, feed on and off, derived partial, deleted controls stated, slow probe kept off mount and interval" },
+    { "path": "apps/command-center/src/admin/control/panels/manifestDerivation.test.ts", "why": "8 cases; derived rail evidence in both directions, the removed-controls declaration, and the mud 209/186 case that forced the denominator split" }
+  ],
+
+  "constraintsHonored": [
+    "isolated worktree /p/hauska-map-worktrees/ss-w8-cc-live-feed on branch ss/w8-cc-live-feed off origin/main 51e6f95",
+    "only apps/command-center/** touched — 0 of 17 changed files sit outside it",
+    "branch pushed immediately after the first commit, then work continued",
+    "PR #173 opened against main; NOT merged, NOT deployed, nothing pushed to main",
+    "every verification command exit-bounded: curl with --max-time, vitest run, tsc --noEmit, vite build, gh api. No watch mode, no dev server, no tail, nothing left running",
+    "no sub-agents spawned; this lane executed as the deepest worker in its own context",
+    "doc_repo edits left uncommitted for the planner: the three artifacts named above"
+  ],
+
+  "docRepoEditsLeftUncommitted": [
+    "_inbox/2026-08-19_ss-w8_cp1.json",
+    "_inbox/2026-08-19_ss-w8_cp2.json",
+    "_inbox/2026-08-19_ss-w8_close.json"
+  ],
+
+  "openAndRoutedToThePlanner": [
+    {
+      "item": "The ledger cannot be recomputed from any console. Until SS-W7's route lands, the live feed is a live READ of a frozen snapshot and the console says so on every view. The moment that route exists, the feed picks up a moving computedAt with no further console change.",
+      "owner": "SS-W7 (legacy-design-tools / cortex-api)"
+    },
+    {
+      "item": "There is no statewide WRITTEN instrument. The only one reachable covers 10 counties of 254 and speaks for 4 rails of 14, and it took 240s to fail on one of two probes. A statewide store-contents endpoint — even a slow, cached, per-county count by atom family — would turn the three-layer view from a Central-Texas sample into the statewide defect list the operator asked for.",
+      "owner": "planner ruling, then hauska-engine or retrieval-api",
+      "consoleDisposition": "the thinness is rendered, not hidden; every uncovered cell says which instrument does not reach it"
+    },
+    {
+      "item": "6 of 14 rails carry ZERO scoring evidence on all 254 counties — roads, footprint, easement, rrc-wells, rrc-pipelines, rail-corridor. Bastrop has 17,551 road nodes in the store and the roads rail has no scored number anywhere in Texas. These columns are unscored, not unacquired, and the manifest cannot tell them apart.",
+      "owner": "hauska-engine",
+      "consoleDisposition": "surfaced as a derived per-rail tag"
+    },
+    {
+      "item": "The zoning rail scores 0.00% not-yet in counties where the store was observed holding hundreds of thousands of zoning atoms (Travis 233,249; Bexar 416,451). Either the scorer does not run for those counties or it is reading a different key. Two live instruments disagree and one of them is wrong.",
+      "owner": "hauska-engine",
+      "consoleDisposition": "rendered as a divergence with both timestamps; the console does not adjudicate it"
+    },
+    {
+      "item": "cortex-api can serve displayState 'derivation-indeterminate' and the console did not declare it, so it rendered as the same dot as not-yet. Declared now. Worth confirming upstream whether any county is expected to enter that state, since zero cells carry it today.",
+      "owner": "cortex-api"
+    },
+    {
+      "item": "hasWriter and atomFamilyState remain uniform and recomputed by nothing. Their console controls are now deleted rather than dark. If the engine ever derives them from the writer registry, the console should get a NEW control rather than the old one back.",
+      "owner": "hauska-engine"
+    },
+    {
+      "item": "Switching to another panel and back drops the &view param, because the shell's selectPanel preserves only the reserved context keys. A subtab link still works; a round trip through another panel lands on the default view. Deliberately not fixed here — CONTEXT_PARAM_KEYS is shell-wide and shared with four running lanes.",
+      "owner": "a follow-on Command Center lane"
+    }
+  ],
+
+  "notApplicable": {
+    "mergeSha": "not applicable: dispatch forbids merging",
+    "deployment": "not applicable: dispatch forbids deploying"
+  }
+}

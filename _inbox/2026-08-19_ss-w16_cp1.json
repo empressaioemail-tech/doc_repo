@@ -1,0 +1,118 @@
+{
+  "lane": "SS-W16",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "filedAt": "2026-08-19",
+  "planRow": ["P-45"],
+  "repo": "legacy-design-tools",
+  "worktree": "/p/tmp/ss-w16-tier2-stop",
+  "branch": "ss/w16-tier2-stop",
+  "baseCommit": "3de86ffdb4eadf154161e9aa2b016d9ad2463333",
+  "baseCommitSubject": "Merge pull request #438 from empressaioemail-tech/ss/w12-scorer-harness",
+
+  "missionPremise": "A wrong FEMA flood determination is served on an unauthenticated route. Lane SS-W11 adjudicated 5,756 disagreements against FEMA NFHL: the flood-hazard-fact atom was right in 5,714 of 5,714 non-split cases and tier2 in zero, including 1,995 parcels told they are outside a Special Flood Hazard Area when the parcel centroid is inside one. Cause: the Tier-2 bake quantises the parcel centroid onto a 0.005-deg tile and queries FEMA once at the TILE CENTRE (measured median 227 m, max 366 m from the parcel). Ruling: tier2.flood and its fema:nfhl-flood-zone provenance retire as a pair, because they are one bake behind one quantiser, not two stores. Source: _dispatches/2026-08-19_ss-w16_dispatch.md under OPS-16 amendment A-019.",
+
+  "completionPredicate": "GET /api/brokerage/v1/place/node/{id}/facets returns NO flood value under tier2 for any node on any code path, and the same holds for every other consumer of loadBakedNodeFacetSnapshot (the paid R1 brief and the R1 layer manifest). The refusal is distinguishable from 'no Tier-2 row baked'. A CI grep fails if a flood value is reintroduced, and that grep has been OBSERVED FAILING against a deliberate reintroduction before being reported as working. The route continues to serve every other facet unchanged.",
+
+  "scopeBasis": "Narrow by explicit dispatch instruction. The brokerage facets route is NOT removed, because other consumers depend on it for zoning, land use, acreage and base facts, and an over-broad removal creates its own outage. The cut is made at extractTier2Overlay inside artifacts/api-server/src/routes/brokerageNodeFacets.ts, which is both the file the dispatch names and the single point where a Tier-2 flood value enters the API surface. The Tier-2 BAKE (nodeFacetBakeTier2Cli.ts) is deliberately NOT touched: it writes to place_layer_snapshots, and stopping that write is a separate retirement item whose stored rows are the evidence SS-W11 adjudicated against. The live fema:nfhl-flood-zone map-layer adapter (brokerageGisLayers, engineSpineMapLayers, planReviewLayerRun, warmingHarness) is NOT touched: those query FEMA at a real point rather than through the tile quantiser, so they are a different instrument that happens to share an adapter-key string. Killing them on the string match would be exactly the substring-shaped reasoning this item forbids.",
+
+  "sourceVerifiedFacts": [
+    {
+      "claim": "The live exposure is real and unauthenticated.",
+      "method": "curl with no auth header, exit-bounded via --max-time 30",
+      "verbatim": "HTTP_STATUS=200 with body fragment: \"tier2\":{\"flood\":{\"status\":\"in-sfha\",\"floodZone\":\"AO\",\"provenance\":{\"layer\":\"flood-hazard-zones\",\"source\":\"fema-nfhl\",\"vintage\":\"2026-07-21T16:59:52.146Z\",\"adapterKey\":\"fema:nfhl-flood-zone\"},\"zoneSubtype\":null,\"baseFloodElevation\":null,\"inSpecialFloodHazardArea\":true}",
+      "label": "VERIFIED"
+    },
+    {
+      "claim": "The quantiser is real: FEMA is asked at the tile centre, not at the parcel.",
+      "method": "code read",
+      "evidence": "artifacts/api-server/src/nodeFacetBakeTier2Cli.ts:126 declares FEMA_TILE_DEG = 0.005; lines 287-291 tileKey() rounds lat/lng onto that grid; line 666 computes femaTile = tileKey(centroid.lat, centroid.lng, FEMA_TILE_DEG); lines 507-508 in fetchFemaTiles do const c = tileCenter(key) then arcgisPointQuery({latitude: c.lat, longitude: c.lng}). No predicate anywhere tests that c falls inside the parcel ring.",
+      "label": "VERIFIED"
+    },
+    {
+      "claim": "tier2 reaches THREE consumers, not one. The dispatch names only the anonymous route.",
+      "method": "repo-wide grep for loadBakedNodeFacetSnapshot and tier2, node_modules excluded",
+      "evidence": "artifacts/api-server/src/routes/brokerageNodeFacets.ts:271 is the anonymous route response; artifacts/api-server/src/routes/propertyExplorer.ts:627 calls buildR1Brief(snapshot.facets, snapshot.tier2) which builds the PAID R1 brief Flood section; artifacts/api-server/src/routes/propertyExplorer.ts:707 calls manifestLayers(snapshot.facets, snapshot.tier2) which emits an R1 flood layer. A fourth caller, lib/buildableEnvelope/spineZoningDistrict.ts:95, reads only .facets and is unaffected.",
+      "consequence": "Cutting only at the route res.json would satisfy the dispatch sentence and leave the paid brief still serving the wrong determination. Cutting at extractTier2Overlay closes all three at once and stays inside the file the dispatch names.",
+      "label": "VERIFIED"
+    },
+    {
+      "claim": "No frontend in this repo reads tier2, so the response-shape blast radius inside legacy-design-tools is exactly the three server call sites above.",
+      "method": "repo-wide grep for tier2 excluding node_modules and the bake modules",
+      "label": "VERIFIED"
+    }
+  ],
+
+  "theGuardBeingReplaced": {
+    "file": "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+    "line": 134,
+    "code": "if (!p.flood || typeof p.flood !== \"object\") return null;",
+    "predicate": "presence plus typeof — one input, no second derivation",
+    "whyItIsTheSameDefectClass": "It decides whether a caller receives a hazard determination by asking whether a key exists and is object-shaped. It never asks which instrument produced the value or whether that instrument is fit to answer. Any object satisfies it, including the tile-quantised one. This is the same shape as hauska-map baked-facets.ts:430 base.includes(\"/property-atoms\") one repo over: a cheap syntactic test standing in for a semantic question."
+  },
+
+  "designDecision": {
+    "shape": "STRIPPED, not thrown. tier2.flood becomes the literal TypeScript type null, and a sibling typed disposition field carries the refusal with its reason.",
+    "whyNotAThrow": "A throw inside extractTier2Overlay would take down the entire facets response for every node that has a Tier-2 row, including zoning, land use and acreage. That is the over-broad removal the dispatch forbids, reached by a different route.",
+    "whyNot404": "Stated by the dispatch and independently correct. The consumption path is a field inside a 200 body, not a resource. A 404 would tell the card this parcel is not baked, which is false, and would send the web app into its live-fetch fallback for a node that IS baked.",
+    "whyNotTier2Null": "tier2:null already means no Tier-2 row exists for this node. Reusing it for 'the row exists and its flood facet is refused' collapses two distinct states, which enforcement.mdc forbids explicitly: absent, zero and unmeasured are three different states. The refusal therefore gets its own representable state.",
+    "theReplacementGuard": {
+      "mechanism": "An explicit, exhaustive, typed disposition over the PRODUCING INSTRUMENT, read from the flood facet's own provenance.adapterKey.",
+      "notPresenceShaped": "The branch input is an identity (which instrument wrote this) rather than a shape (does a key exist), and it is an exact string equality against a closed const array, never a substring test.",
+      "exhaustive": "Recognised producers live in an `as const` array; the switch over the resulting union ends in a default that assigns to `const unhandled: never`. Adding a producer to the array without adding a case is a TYPECHECK FAILURE, not a silent pass-through. This will be observed failing before it is reported as working.",
+      "failsClosed": "An unrecognised producer, a missing adapterKey, a non-object flood facet and a malformed row all resolve to a refusal that returns no value. There is no input for which a flood value is emitted.",
+      "typeLevelFloor": "Tier2Overlay.flood is declared as the literal type null. Any future assignment of a value to it fails tsc independently of the runtime switch. Two mechanisms, not one."
+    }
+  },
+
+  "threeQuestionGate": {
+    "control": "New CI job carrying the ci-tier2-flood-not-served grep, plus the typed-null floor, plus unit tests over extractTier2Overlay.",
+    "whatExecutesIt": "GitHub Actions job l5-ss-w16-tier2-flood-grep running ripgrep; the existing Typecheck job running pnpm run typecheck; the existing Test job running pnpm test.",
+    "whatTriggersIt": "Every pull_request and every push to main, via the workflow's existing on: block.",
+    "whatFailsWhenViolated": "Non-zero exit from the grep step, which reds a check and blocks merge. Non-zero exit from tsc if the null floor or the exhaustiveness assertion is broken. Failing vitest cases if a flood value reaches the wire.",
+    "humanInTheLoop": "None. No step of this control depends on anyone remembering anything."
+  },
+
+  "adversarialReviewOfThisPlan": [
+    {
+      "objection": "Cutting at extractTier2Overlay is wider than the dispatch's literal words, which say strip from the response in brokerageNodeFacets.ts.",
+      "response": "extractTier2Overlay and loadBakedNodeFacetSnapshot both live in brokerageNodeFacets.ts, so the edit is inside the named file. The dispatch's stated hazard is a wrong determination reaching a customer, and the paid R1 brief reaches customers too. Cutting only at res.json would satisfy the sentence and miss the hazard.",
+      "disposition": "Proceed with the wider cut, inside the named file, and declare it."
+    },
+    {
+      "objection": "Always emitting a tier2 object, even when the row carries no flood facet at all, changes behaviour for malformed or legacy rows that previously produced tier2:null.",
+      "response": "Verified consumer by consumer. manifestLayers gates on if (flood), which stays falsy. buildR1Brief uses ?? null. The anonymous route passes the object through. No consumer in this repo branches on tier2 truthiness alone. The change is what removes the last presence-shaped branch from the flood path.",
+      "residualRisk": "An out-of-repo consumer doing if (res.tier2) showFlood() would render an empty flood section instead of hiding it. That is a cosmetic regression in the direction of honesty, not a wrong determination, and hauska-map's own guard at baked-facets.ts:430 already keeps this payload off Smart Site.",
+      "disposition": "Proceed, residual risk recorded."
+    },
+    {
+      "objection": "Leaving the Tier-2 bake running means wrong values keep accumulating in place_layer_snapshots.",
+      "response": "True and deliberate. Stopping the serve is the safety cut and is reversible. Deleting the store destroys the evidence SS-W11 adjudicated against, and the enforcement doctrine sequences repoint-consumers-first then retire-the-store. The bake stop is declared as leave_behind rather than silently skipped.",
+      "disposition": "Declare as leave_behind with an owner."
+    },
+    {
+      "objection": "A grep is itself a cheap syntactic control, which is the thing being criticised.",
+      "response": "A grep is acceptable as a REGRESSION tripwire where the semantic guarantee is carried by the type system and the tests. It is not acceptable as the guarantee itself. Here the guarantee is flood typed as null plus the exhaustive switch; the grep exists so a reintroduction is loud rather than silent. The grep is also written to the rule (no non-null flood value on this read path) and excludes comment lines, following the precedent set by ci-coverage-clamp-shared-engine in this same workflow, whose header records why a naive grep that matches its own documentation becomes a permanently-red dead gate."
+    }
+  ],
+
+  "plannedEdits": [
+    "artifacts/api-server/src/routes/brokerageNodeFacets.ts — typed refusal, exhaustive producer switch, flood typed as null, header doc rewritten to state the retirement",
+    "artifacts/api-server/src/routes/propertyExplorer.ts — R1 brief flood section and layer-manifest degrade reason carry the refusal instead of a bare null, so the cut does not collapse refused into absent on the paid path",
+    "artifacts/api-server/src/__tests__/brokerageNodeFacets.test.ts — replace the tests that assert a served flood value with tests that assert refusal, including a case seeded from a real in-SFHA payload",
+    ".github/workflows/pr-checks.yml — new job l5-ss-w16-tier2-flood-grep"
+  ],
+
+  "openAtCp1": [
+    "The T-25 second-derivation state for baked-facets.ts:430 requires reading hauska-map at source. If that repo is not reachable from this worktree the row is labelled RELAYED from the dispatch and the gap is declared rather than guessed."
+  ],
+
+  "constraintsHonored": [
+    "no merge",
+    "no deploy",
+    "brokerage facets route not removed",
+    "no second presence-shaped guard",
+    "exit-bounded verification only",
+    "snapshot commit declared"
+  ]
+}

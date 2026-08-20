@@ -1,0 +1,90 @@
+{
+  "lane": "SS-W10",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint — built, pushed, PR open, CI green",
+  "planRows": ["P-46"],
+  "repo": "hauska-map",
+  "branch": "ss/w10-map-layers",
+  "commit": "2187f341a46cf0f29d53d96f98ef5f8c32a41167",
+  "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/172",
+  "writtenAt": "2026-08-19",
+  "cp1": "_inbox/2026-08-19_ss-w10_cp1.json",
+
+  "whatChangedSinceCP1": "The CP1 build plan executed for work items 1, 3 and 4. Work item 2 (RRC grouping) remains PROPOSED and unbuilt, exactly as CP1 committed. One material self-correction, below.",
+
+  "selfCorrection": {
+    "id": "SC1",
+    "severity": "would have shipped a dead gate",
+    "claimLabel": "VERIFIED by deliberate mutation",
+    "what": "The first version of the honest-empty test was VACUOUS. It asserted that layerEmptyBasis() returns a non-empty string. That accessor falls back to a generic sentence when a registry row declares nothing, so the assertion passes for every row unconditionally and can never fail for the reason it was written.",
+    "howFound": "Ran the negative suite before trusting the gate, per DEV_PROCESS 2.2. Deliberately stripped emptyBasis from the ssurgo-soils row and re-ran: 110 tests, 110 pass, 0 fail. The gate did not notice its own subject being removed. The paired ceiling mutation (ceiling: null changed to 254) DID fire, 109 pass / 1 fail, which is what made the silence on the other one legible.",
+    "fix": "The assertion now reads entry.emptyBasis on the registry row rather than the accessor's return value. The runtime fallback stays, because a user must never meet silence, but the fallback must not be what ships and only an assertion on the declared field can tell those apart. A second test covers the fallback path so both halves are pinned.",
+    "proofItNowFires": "Same mutation re-applied after the fix: 111 tests, 110 pass, 1 fail, failing test 'gives every draws-nothing row a DECLARED basis, not the fallback'. Command exit code 1, read from the command itself and not through a pipe (DEV_PROCESS 2.3).",
+    "note": "This is the same defect class as the special-district writer whose verify could never return non-zero. It was caught here only because the negative run happened before the report, not after."
+  },
+
+  "negativeSuiteResults": [
+    {
+      "gate": "honest-empty declared basis",
+      "mutation": "strip emptyBasis from the ssurgo-soils registry row",
+      "beforeFix": "110 pass / 0 fail — DEAD GATE",
+      "afterFix": "110 pass / 1 fail, exit 1 — fires"
+    },
+    {
+      "gate": "unknown ceiling must not render as the denominator",
+      "mutation": "texas-rrc reach.ceiling changed from null to 254",
+      "result": "109 pass / 1 fail, exit 1 — fires"
+    },
+    {
+      "gate": "LayersControl renders empty basis and reach on the row",
+      "mutation": "regress emptyBasisFor / reachSummaryFor to return null (the pre-fix behaviour)",
+      "result": "5 of 9 render assertions fail — fires"
+    }
+  ],
+
+  "verificationVerbatim": {
+    "note": "Raw command output, not summarized, per the verbatim-artifact requirement.",
+    "mapRendererSuite": "ℹ tests 111\nℹ suites 9\nℹ pass 111\nℹ fail 0",
+    "propertyExplorerSuite": " Test Files  88 passed (88)\n      Tests  1153 passed (1153)",
+    "commandCenterSuite": " Test Files  29 passed (29)\n      Tests  275 passed | 1 skipped (276)",
+    "mapRendererTypecheck": "> @hauska/map-renderer@0.1.5 typecheck\n> tsc --noEmit\n\ntypecheck exit=0",
+    "propertyExplorerBuild": "✓ 168 modules transformed.\n✓ built in 3.94s\nPE build exit=0",
+    "commandCenterBuild": "✓ 121 modules transformed.\n✓ built in 4.03s\nCC build exit=0",
+    "ciCheckRunConclusionStrings": "Test: status=completed conclusion=success\nNo double-encoded source: status=completed conclusion=success\nTypecheck: status=completed conclusion=success\ntest: status=completed conclusion=success",
+    "ciCounting": "Read from the GitHub check-runs API on the head SHA, taking the conclusion STRING. `gh pr checks` printing 'pass' is not the gate.",
+    "prState": "{\"baseRefName\":\"main\",\"headRefName\":\"ss/w10-map-layers\",\"headRefOid\":\"2187f341a46cf0f29d53d96f98ef5f8c32a41167\",\"mergeable\":\"MERGEABLE\",\"number\":172,\"state\":\"OPEN\"}"
+  },
+
+  "baselineComparison": {
+    "counting": "Same three commands run before any edit and after the last one, in the same worktree.",
+    "mapRenderer": "98 pass / 0 fail  ->  111 pass / 0 fail (+13 new, 0 regressed)",
+    "propertyExplorer": "86 files / 1134 pass  ->  88 files / 1153 pass (+2 files, +19 tests, 0 regressed)",
+    "commandCenter": "29 files / 275 pass / 1 skipped  ->  identical. CC consumes the changed package and is unaffected."
+  },
+
+  "mechanismVerifiedAtSource": {
+    "claim": "Setting spec.visible false actually hides the layer rather than being an inert field.",
+    "claimLabel": "VERIFIED at source",
+    "evidence": "packages/map-renderer/src/map/overlay-render.js:129-130 computes `const visible = spec.visible !== false` then `const vis = visible ? \"visible\" : \"none\"`, and lines 168 / 191 / 216 / 245 apply it via map.setLayoutProperty(id, \"visibility\", vis) on the UPDATE path as well as at creation. upsertOverlay is idempotent per layerKey, so a toggle updates in place rather than leaking a second layer.",
+    "whyChecked": "A toggle wired to a field the renderer ignores would pass every unit test in this branch and do nothing on a real map. That is the malformed-probe failure the dispatch names."
+  },
+
+  "honestLimitsOfThisVerification": [
+    "CODE-DONE IS NOT CUSTOMER-DONE. Nothing here is a live probe of a deployed surface. This lane is forbidden to deploy and did not. The road-nodes toggle is verified at the unit level (streetVisible defaults false; the band spec carries visible:false), at the render level (the row and its label appear in static markup), and at the mechanism level (the renderer honours the flag on both paths). It is NOT verified by a human clicking it on a served map. That check belongs to whoever deploys the merge.",
+    "The rrc-wells ceiling is RELAYED from the county-ledger's own railCapabilities, re-probed live by this lane. This lane did not independently confirm that the upstream adapter is Harris-only; it quotes the ledger's sourceBasis string and labels it as such.",
+    "WRITTEN-layer truth for the RRC rails is not established and is not claimed. No atoms-store access from this repo.",
+    "The honest-empty mechanism reads registry declarations. If a layer were wired to a source but declared live:false, it would be labelled empty when it is not. All six affected rows were checked for a fetch path and none has one, but the mechanism's dependence on an accurate declaration is a real constraint, not an assumed-away one. This is the same has_writer-is-hand-declared shape."
+  ],
+
+  "boundariesHeld": {
+    "commandCenterFilesTouched": 0,
+    "evidence": "git diff --stat lists 8 modified files and 3 new files; none is under apps/command-center/**. Modified: apps/property-explorer/src/browse/{ExplorerMap.tsx, consumer-layers.ts, road-overlay.ts, road-overlay.test.ts}, packages/map-renderer/src/{chrome/LayersControl.tsx, index.ts, layer-registry.js, map/layer-role-taxonomy.js}. New: apps/property-explorer/src/browse/{consumer-layers.test.ts, layers-control-honesty.test.tsx}, packages/map-renderer/src/layer-registry.honesty.test.js.",
+    "peJustification": "PE was edited because the road-node street band is rendered there and carried a hardcoded visible:true. A road toggle that does not touch PE cannot exist. Stated in CP1 before building, not rationalized after."
+  },
+
+  "openAtThisCheckpoint": [
+    "RRC grouping option C vs B awaits the operator. Nothing is built for it.",
+    "Whether RRC rows belong on Property Explorer at all, or stay Command-Center-only until a data path exists. Lane recommends CC-only.",
+    "PR 172 is OPEN and NOT MERGED, per the dispatch. All four CI check-runs report conclusion 'success'."
+  ]
+}

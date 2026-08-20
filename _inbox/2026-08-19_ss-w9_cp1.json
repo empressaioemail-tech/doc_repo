@@ -1,0 +1,76 @@
+{
+  "lane": "SS-W9",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "planRows": ["P-43"],
+  "repo": "hauska-engine",
+  "branch": "ss/w9-statewide-audit",
+  "worktree": "/p/hauska-engine-worktrees/ss-w9-statewide-audit",
+  "at": "2026-08-19T14:05:00Z",
+
+  "missionPremise": "OPS-16 amendments A-018/A-019. P-43 delivered two counties of 253 (SS-W5). The operator's L26 screenshots corrected the planner: the audit is THREE layers (WRITTEN atoms / SCORED ledger cells / SERVED sheet), not two, and all three disagree independently. The divergences ARE the defect list, and the ordering decides what remediation costs: written-unscored is a scorer run, written-unserved is a merge fix, only genuinely unwritten is a re-ingest.",
+
+  "designUnderReview": {
+    "writtenLayer": "Per (entity_type, county) atom counts from hauska_mcp.atoms, index-only via atoms_entity_composite_unique, ONE entity type at a time, strictly serialized. Plus a suffix-structure pass per family so an atom count is never silently read as a parcel count.",
+    "scoredLayer": "cortex neondb county_facet_coverage x county_rail x county_manifest, and the LIVE GET /api/county-ledger response, each figure carrying its own computedAt.",
+    "servedLayer": "The SS-W5 instrument (merged to main at d455c82) run statewide as a background job with a registered watch. It is the only thing here that costs hours.",
+    "output": "StatewideServingSweep (frozen record, unchanged) PLUS an additive top-level threeLayer field, so lane SS-W7's GET /api/serving-sweep serves it without a second shape."
+  },
+
+  "adversarialReview": [
+    {
+      "risk": "The county key is a RECONSTRUCTION. split_part(entity_id,':',1) assumes a fips prefix, and the standing rule is that entityId shapes are NOT uniform across writers.",
+      "state": "PARTIALLY MITIGATED, one check still owed",
+      "mitigation": "First and last entity_id sampled for all 17 entity types at source: the 15 property families are all '48xxx:' prefixed; code-section and code-cross-reference are jurisdiction-slug keyed and are NOT county rails. OWED BEFORE THE NUMBER IS TRUSTED: a divergence test on parcel-node comparing split_part(entity_id,':',1) against body->>'countyFips' (a partial index exists for exactly that expression). If they disagree, the prefix derivation is wrong for at least one writer and every WRITTEN figure is suspect."
+    },
+    {
+      "risk": "'Counties with at least one atom' is a PRESENCE test wearing a coverage test's clothes. A county with 3 footprint atoms would count identically to one with 300,000.",
+      "state": "MITIGATED BY CONSTRUCTION",
+      "mitigation": "Every WRITTEN figure carries both the county count AND the atom count AND the parcel-roster denominator for that county. Presence and depth are reported as two different numbers and never collapsed."
+    },
+    {
+      "risk": "Classifying unwritten vs written-unscored against a ledger materialized 2026-08-14T17:41:22.500Z, which is 4.8 days stale and staler than the work it describes.",
+      "state": "MITIGATED, AND IT IS THE POINT",
+      "mitigation": "WRITTEN is measured live by this lane; SCORED travels with its computedAt everywhere it appears. The stale-vs-live comparison IS the finding, not a contaminant."
+    },
+    {
+      "risk": "The SERVED sweep over ~13.4M parcels will not finish inside one session, and a partial run could be reported as if statewide.",
+      "state": "MITIGATED",
+      "mitigation": "Background job, progress artifact registered in _catalog/watch_registry.json BEFORE start (id ss-w9-statewide-audit, 30 min quiet budget). The SERVED layer is reported with the exact county and parcel denominator swept AT REPORT TIME, and marked not-measured elsewhere. not-measured is a stated class, never an inferred zero."
+    },
+    {
+      "risk": "Scoring every rail against 254 manufactures holes that do not exist (the standing rrc-wells finding: its source is a Harris-only mirror, reachable ceiling 1 county).",
+      "state": "MITIGATED",
+      "mitigation": "railCapabilities is read LIVE off /api/county-ledger and every rail carries its ceiling and the ceiling's basis. Cells above the ceiling classify out-of-reach, which is explicitly NOT a gap."
+    },
+    {
+      "risk": "The gap classifier's zeros could be dead gates, which is the defect class this programme exists to hunt.",
+      "state": "MITIGATION PLANNED",
+      "mitigation": "A test that proves EVERY GapClass value can fire on constructed input, plus a divergence test that mutates one input and asserts the class moves. A classifier that cannot be shown to produce a class must not be trusted to report its absence."
+    },
+    {
+      "risk": "Reporting another lane's magnitudes as this lane's findings.",
+      "state": "MITIGATED",
+      "mitigation": "Every figure in the report is labelled VERIFIED (run by this lane at source), INFERRED, or RELAYED. SS-W5's two-county tallies are RELAYED unless re-run here."
+    }
+  ],
+
+  "preRegisteredExpectations": [
+    "footprint: WRITTEN in roughly 174 counties (L26 close 2026-08-17), SCORED not-yet on 254 of 254. A result outside that is a finding either way.",
+    "rrc-wells: WRITTEN in far MORE than 1 county despite a stated capability ceiling of 1 county. If true, either the ceiling or the write is wrong, and that contradiction is a free finding.",
+    "At least one rail will be written-unscored with no scorer to run at all, i.e. a recompute of the ledger would NOT move it. That is a materially more expensive class than the dispatch's staleness framing and must be reported as its own thing."
+  ],
+
+  "constraintsHonored": [
+    "Read-only against both production databases: no INSERT/UPDATE/DELETE/DDL issued.",
+    "No atoms bulk-writer slot taken, no lease, no --apply.",
+    "Heavy scans serialized: one entity type at a time inside one script, never two in parallel.",
+    "Watch registered in _catalog/watch_registry.json before the first long scan started.",
+    "Isolated worktree; nothing merged, deployed, or pushed to main."
+  ],
+  "openAtCp1": [
+    "parcel-node prefix-vs-body countyFips divergence test not yet run",
+    "SERVED statewide job not yet started",
+    "gap classifier not yet written"
+  ]
+}

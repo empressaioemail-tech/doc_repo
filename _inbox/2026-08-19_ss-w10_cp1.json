@@ -1,0 +1,151 @@
+{
+  "lane": "SS-W10",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "planRows": ["P-46"],
+  "repo": "hauska-map",
+  "worktree": "/p/hauska-map-worktrees/ss-w10-map-layers",
+  "branch": "ss/w10-map-layers",
+  "baseCommit": "51e6f95",
+  "writtenAt": "2026-08-19",
+
+  "missionPremise": "Operator request 2026-08-19 (verbatim in the dispatch): road nodes need an on/off control defaulted OFF, and RRC data needs toggles across its several layers. Ruled into OPS-16 as P-46 under amendment A-019 (VERIFIED at source: 90_operations/OPS-16_texas_market_plan_of_record.md line 116 carries 'P-46 ADDED: map layer controls - road nodes toggle defaulted OFF, and RRC layer toggles across its several layers').",
+
+  "completionPredicate": "A stranger opens the LAYERS panel on Property Explorer and on Command Center and can (a) turn the Hauska road-node overlay off and on, finding it OFF on a cold open, and (b) read, without asking anyone, which layers will draw nothing and why. The RRC grouping is REPORTED, not shipped, until the operator has seen it.",
+
+  "scopeBasis": "Dispatch names packages/map-renderer/src/chrome/LayersControl.tsx and the layer registry as owned. apps/command-center/** belongs to lane SS-W8 and is NOT touched. apps/property-explorer/** is neither granted nor forbidden; road-node rendering physically lives there (apps/property-explorer/src/browse/road-overlay.ts hardcodes visible:true on the street band), so a road toggle that does not touch PE cannot exist. PE edits are therefore in scope and are held to the minimum that wires the registry key through.",
+
+  "baselineVerified": {
+    "mapRenderer": "98 pass / 0 fail (node --test)",
+    "propertyExplorer": "86 files, 1134 tests passed (vitest)",
+    "commandCenter": "29 files, 275 passed / 1 skipped (vitest)",
+    "claimLabel": "VERIFIED - all three run by this lane before any edit"
+  },
+
+  "findingsAgainstTheBriefing": [
+    {
+      "id": "F1",
+      "severity": "material - changes what gets built",
+      "claimLabel": "VERIFIED at source",
+      "briefingSaid": "'The registry today carries rrc-wells, rrc-pipelines and texas-rrc as separate keys with different reach.'",
+      "sourceSays": "There are TWO different registries and they do not overlap. The MAP LAYER registry (packages/map-renderer/src/layer-registry.js line 51) carries exactly ONE RRC key: { key: \"texas-rrc\", label: \"Texas RRC O&G\", group: \"subsurface\", fixture: false, live: false, fuelGated: false }. The keys rrc-wells and rrc-pipelines are COUNTY-LEDGER RAIL keys, declared at apps/command-center/src/admin/control/panels/countyManifestTypes.ts lines 142-143 ('rrc-wells': { label: 'RRC wells', short: 'WELL', kind: 'derived' } and 'rrc-pipelines': { label: 'RRC pipelines', short: 'PIPE', kind: 'derived' }). Neither string appears anywhere in packages/map-renderer.",
+      "consequence": "The RRC work is not a regrouping of three existing map layers. It is a DECOMPOSITION of one inert map key into subjects that so far exist only as coverage rails. That is a bigger change than the briefing implies and it is the reason the grouping question is real."
+    },
+    {
+      "id": "F2",
+      "severity": "material - the layer draws nothing at all",
+      "claimLabel": "VERIFIED at source",
+      "finding": "texas-rrc has NO data path in this repo. It has a registry row, a paint style (packages/map-renderer/src/map/gis-map-paint.js line 353), a stack position (same file line 474) and a CONTEXT role (packages/map-renderer/src/map/layer-role-taxonomy.js line 242) - and no fetch, no fixture, no API route. grep for 'rrc' across api/ and apps/property-explorer/api/ returns zero hits; live-gis.ts LiveLayerKey is 'parcels' | 'fema' | topo | hydro only; gis-fixture-data.js has no rrc slot.",
+      "consequence": "On the SERVED layer, RRC coverage on the map today is zero everywhere, not 1 county. The 1-county ceiling is a property of the ingest source, not of anything a user can currently see. Any RRC toggle shipped now is a toggle over an empty set and must say so on its face."
+    },
+    {
+      "id": "F3",
+      "severity": "moderate",
+      "claimLabel": "VERIFIED at source",
+      "finding": "texas-rrc IS already listed as a live checkbox on Command Center and is NOT listed on Property Explorer. CC seeds known = the entire LAYER_REGISTRY (apps/command-center/src/admin/workspace/tiles/LiveMapTile.tsx lines 181-183). PE filters to live-wired rows only (apps/property-explorer/src/browse/consumer-layers.ts consumerKnownLayers), and texas-rrc has live:false and is not in the explicit keep-list, so it never renders a row there.",
+      "consequence": "A CC operator can already tick 'Texas RRC O&G' today and get nothing, with no explanation. This is the exact defect work item 4 names, and it is live now, before any RRC grouping ships. It is not RRC-specific: six registry rows are fixture:false + live:false (ssurgo-soils, groundwater, mud-pid, edwards-aquifer, texas-rrc, etj) and all six behave this way on CC."
+    },
+    {
+      "id": "F4",
+      "severity": "moderate - defines the road work",
+      "claimLabel": "VERIFIED at source",
+      "finding": "There is no road-node toggle to default OFF; there is no toggle at all. apps/property-explorer/src/browse/road-overlay.ts sets 'visible: true' as a literal on the street ROW band spec (ROAD_ROW_BAND_LAYER_KEY) with no visibility parameter. Only the PEDESTRIAN child is switchable, via the existing registry key 'pedestrian-ways' (label 'Sidewalks / footpaths'), and that key is currently ON by default because consumerColdOpenVisible() turns on everything except zoning.",
+      "consequence": "Work item 1 is an ADD (new registry key + wire + default), not a default flip."
+    },
+    {
+      "id": "F5",
+      "severity": "informational - confirms the briefing",
+      "claimLabel": "VERIFIED at source by live probe",
+      "finding": "The rrc-wells 1-county ceiling re-verified as the dispatch instructed. Live probe of GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger returned HTTP 200. railCapabilities carries verbatim: {\"railKey\":\"rrc-wells\",\"reachPct\":0.003937007874015748,\"limitation\":\"Point layer mirrored from Harris endpoint; not per-county ingest\",\"sourceBasis\":\"RRC public GIS Harris County mirror carries statewide well coverage (lib/adapters/src/federal/texas-rrc.ts)\",\"maxCountiesReachable\":1} and {\"railKey\":\"rrc-pipelines\",\"reachPct\":null,\"sourceBasis\":\"no capability probe defined for this rail\",\"maxCountiesReachable\":null}.",
+      "ledgerComputedAt": "2026-08-14T17:41:22.500Z",
+      "ledgerServedAt": "2026-08-19T13:50:11.903Z",
+      "ledgerMaterializationAgeHours": 116.1,
+      "caveat": "Per the dispatch evidence discipline: this is a claim about 2026-08-14, not about now. The ledger is 116 hours stale and is known to have missed at least one landed rail (L26 footprints). The rrc-wells ceiling of 1 is nonetheless a SOURCE property (a Harris-only endpoint mirror) rather than a coverage snapshot, so staleness does not soften it."
+    },
+    {
+      "id": "F6",
+      "severity": "informational",
+      "claimLabel": "VERIFIED at source by live probe",
+      "finding": "SCORED state of both RRC rails at that materialization: rrc-wells displayState 'not-yet' on 254 of 254 counties; rrc-pipelines 'not-yet' on 254 of 254. Counting rule: one manifestCells row per (county, rail); 3556 cells over 14 rails x 254 counties. Both rails carry hasWriter:true, atomFamilyState 'present', absenceBasis null.",
+      "threeLayerReading": "WRITTEN: not established by this lane - no store access from this repo, and not claimed. SCORED: 0 of 254 for both RRC rails as of 2026-08-14T17:41:22.500Z. SERVED (on the map): 0 everywhere, per F2, and that one is structural rather than a snapshot."
+    }
+  ],
+
+  "rrcGroupingProposal": {
+    "status": "PROPOSED - NOT BUILT. Reported for operator decision per the dispatch instruction 'do not ship a structure the operator has not seen'.",
+    "problemStatement": "RRC is not one subject. Wells are points from a Harris-County endpoint mirror with a reachable ceiling of 1 county of 254. Pipelines are lines with no capability probe at all, so their ceiling is unknown rather than large. One toggle labelled 'Texas RRC O&G' makes those two facts invisible: a user turning it on over Midland and seeing nothing concludes there is no oil and gas in Midland, when what actually happened is that the well source only ever covered Harris.",
+    "optionsConsidered": [
+      {
+        "option": "A - keep one flat toggle 'Texas RRC O&G'",
+        "verdict": "REJECT",
+        "why": "It is the status quo and it is the thing that asserts something false. It also cannot express two different denominators with one row."
+      },
+      {
+        "option": "B - two independent flat toggles, 'RRC wells' and 'RRC pipelines', texas-rrc retired",
+        "verdict": "Viable fallback",
+        "why": "Honest and simple; each row carries its own reach. Costs the operator a single on/off for oil and gas, and puts two more rows in a panel that already runs long."
+      },
+      {
+        "option": "C - one parent row 'Texas RRC (oil & gas)' with indented children 'Wells' and 'Pipelines'",
+        "verdict": "RECOMMENDED",
+        "why": "Gives the operator the one-click on/off he asked for without collapsing two different reaches into one claim. The parent is a control only and carries NO coverage language; every coverage statement lives on a child, where the denominator is real. Extends cleanly when a third RRC subject arrives."
+      }
+    ],
+    "recommendation": "Option C, with four conditions, none of them cosmetic",
+    "conditions": [
+      "C1. The PARENT never states or implies coverage. It is a bulk on/off and a disclosure affordance. All reach language sits on children.",
+      "C2. Each CHILD carries its reachable ceiling with its denominator inline, and the ceiling's own timestamp. Proposed wells row secondary text: 'Wells - source reaches 1 of 254 counties (Harris mirror), as of 2026-08-14'. Proposed pipelines row: 'Pipelines - reachable ceiling unknown; no capability probe defined'. Unknown is written as unknown and never rendered as 254.",
+      "C3. Because neither child has a map data path today (F2), both ship as honest-empty rows: the checkbox works, and the row says what it would draw and why it currently draws nothing. A checkbox that silently does nothing is the defect, not the absence of data.",
+      "C4. texas-rrc is not deleted. It is RE-POINTED as the parent group id so its paint style, its stack slot at gis-map-paint.js line 474 and its CONTEXT role survive for the children, and no consumer breaks on a missing key."
+    ],
+    "operatorDecisionNeeded": "Approve C (parent + children), or fall back to B (two flat rows). Second question either way: should the RRC rows appear on Property Explorer at all, or stay Command-Center-only until a data path exists? This lane's recommendation is CC-only until then, because a consumer-facing row that can never draw anything is a support burden with no upside.",
+    "notBuiltInThisLane": "No RRC restructuring is in the branch. The only RRC-adjacent change shipped is the honest-empty treatment of work item 4, which makes the EXISTING inert texas-rrc row (and the other five inert rows) state their own emptiness."
+  },
+
+  "buildPlanThisLane": [
+    {
+      "item": 1,
+      "title": "Road-nodes toggle, defaulted OFF",
+      "status": "BUILD - operator asked for it now",
+      "plan": "New registry key 'road-nodes' (label 'Road nodes (ROW)'), group parcel, CONTEXT role, live:true. Added to COLD_OPEN_OFF_BY_DEFAULT in PE so a cold open lands with it OFF; already off on CC, whose cold-open set is parcel-polygon only. roadOverlaysFromAttachingRoads gains a streetVisible flag on its existing RoadOverlayVisibility argument, defaulting FALSE, replacing the hardcoded visible:true. ExplorerMap threads visibleLayers.has('road-nodes') into it exactly as it already does for pedestrian-ways."
+    },
+    {
+      "item": 4,
+      "title": "Honest-empty rows",
+      "status": "BUILD - it is the mechanism work item 2 will need, and it fixes a live CC defect (F3) on its own",
+      "plan": "LayersControl reads the registry status it already computes but never displays (layerStatusForGates / registryEntry) and renders a no-data row as honestly empty: dimmed label, an explicit basis line, checkbox still operable. Registry rows gain an optional emptyBasis string so the reason is data, not a hardcoded UI string, and lives next to the layer it describes."
+    },
+    {
+      "item": 3,
+      "title": "Score against reach, not against 254",
+      "status": "BUILD as a mechanism, applied where a ceiling is known",
+      "plan": "Registry rows gain an optional reach descriptor { ceiling, denominator, basis, asOf }. LayersControl renders it inline on the row. Populated for texas-rrc from the verified probe in F5, carrying its 2026-08-14 timestamp. Any layer with no probe renders 'unknown', never a filled-in 254."
+    },
+    {
+      "item": 2,
+      "title": "RRC grouping",
+      "status": "PROPOSED ONLY - not built, per dispatch instruction"
+    }
+  ],
+
+  "adversarialReviewOfThisPlan": [
+    "Risk: adding 'road-nodes' with live:true puts it in PE consumerKnownLayers automatically, and if COLD_OPEN_OFF_BY_DEFAULT is missed the operator gets the opposite of what he asked for. Mitigation: a test asserts the key is absent from consumerColdOpenVisible() and present in consumerKnownLayers(). The default is then enforced by a failing test rather than by care.",
+    "Risk: the street band currently paints unconditionally, so defaulting it OFF is a visible regression to anyone who liked seeing streets. That is exactly what the operator asked for ('defaulted to off for now'), and the satellite basemap still shows roads. Recorded so it is a decision, not a surprise.",
+    "Risk: LayersControl is shared, so a rendering change lands on CC without SS-W8 asking for it. Mitigation: additive only - no row disappears, no checkbox stops working, and the CC suite is run to confirm. No file under apps/command-center/** is edited.",
+    "Risk of the honest-empty mechanism itself: it reads registry status, so a layer that IS wired but happens to be declared live:false would be libelled as empty. Checked all six fixture:false+live:false rows; none has a fetch path in this repo. Stated as a constraint of the mechanism rather than assumed away.",
+    "What would make this plan wrong: if road-node street geometry is consumed by anything other than the PE map overlay - a report, an export - defaulting it off could starve that consumer. Checked: roadOverlaysFromAttachingRoads has exactly one non-test caller, ExplorerMap.tsx line 567, and it feeds the overlays array only. Render filter is not data filter; the twin still holds the geometry."
+  ],
+
+  "constraintsHonored": [
+    "No sub-agents spawned; this lane is the deepest worker as instructed.",
+    "No file under apps/command-center/** touched.",
+    "All verification exit-bounded: node --test, vitest run, one-shot curl. No watch, tail or serve.",
+    "Baseline suites run BEFORE any edit so a regression is attributable.",
+    "Live ledger figures carry computedAt and are labelled as claims about their timestamp."
+  ],
+
+  "openAtThisCheckpoint": [
+    "Operator ruling on RRC grouping option C vs B, and on whether RRC rows belong on Property Explorer at all.",
+    "WRITTEN-layer truth for the RRC rails is not established by this lane and is not claimed; no atoms-store access from this repo."
+  ]
+}

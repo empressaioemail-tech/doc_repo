@@ -1,0 +1,106 @@
+{
+  "lane": "SS-W7",
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint (self-review; the dispatch forbids spawning sub-agents)",
+  "planRows": ["P-44"],
+  "repo": "legacy-design-tools",
+  "branch": "ss/w7-sweep-endpoint",
+  "headSha": "12691f4cccb0b5711fd71546a9515ba77efccbf8",
+  "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/437",
+  "writtenAt": "2026-08-19T14:50:00Z",
+
+  "stateAtCP2": "Routes built, tested, PR open, CI running. Two defects found by writing the tests and fixed. One correction to the dispatch established at source in the deployment database, and it is the most important thing this lane produced.",
+
+  "theCorrectionToTheDISPATCH": {
+    "label": "VERIFIED by me at source, 2026-08-19, read-only psql against the DEPLOYMENT_DATABASE_URL of legacy-design-tools-prod",
+    "whatTheDispatchSaid": "'The L26 effort landed footprints in 174 counties closing 2026-08-17 12:43Z; the ledger reports footprint as not-yet on all 254 cells BECAUSE it was computed 67 hours earlier.' The causal claim is the part that is wrong.",
+    "whatIsTrue": "The ledger reports footprint as not-yet because county_facet_coverage holds ZERO rows for facet 'footprint'. The 4-day-old materialization has nothing to do with it.",
+    "measurements": [
+      {
+        "query": "SELECT count(*) FROM county_facet_coverage WHERE facet='footprint'",
+        "result": 0
+      },
+      {
+        "query": "SELECT facet, count(*), count(*) FILTER (WHERE rail_state='satisfied-present') FROM county_facet_coverage GROUP BY facet",
+        "result": "cad 254/13, envelope 19/0, flood 177/114, geometry 254/252, land-use 19/0, landuse 254/13, mud 254/134, owner 254/13, zoning 254/19. NINE facets. footprint is absent from the table entirely, as are roads, easement, rrc-wells, rrc-pipelines and rail-corridor.",
+        "countingRule": "rows in county_facet_coverage per facet; the second number is rows whose rail_state is satisfied-present, before the display gate"
+      },
+      {
+        "query": "the exact grid SQL from countyLedgerCompute.readManifestGrid, run against the live coverage tables, compared cell by cell against the manifestCells of the served snapshot",
+        "result": "3,556 cells both sides. 18 raw differences, all on the zoning rail, all not-yet -> satisfied-present. After applyDepthRailDisplayGate (zoning is jurisdiction-depth) 17 of those 18 are below threshold and are re-suppressed to not-yet: only 1 of the 19 zoning rows in the coverage table sits at or above its threshold. POST-GATE CELLS THAT A RECOMPUTE WOULD MOVE: ZERO.",
+        "countingRule": "cell identity countyFips|railKey, 254 counties x 14 rails; 'would move' = displayState after the gate differs from the stored snapshot's displayState. No snapshot cell is derivation-indeterminate, so the overlay is a no-op and this comparison is exact.",
+        "costNote": "This is a 3,556-row join over small tables, NOT a heavy scan. The COUNT DISTINCT capability probes were deliberately not run against production."
+      },
+      {
+        "query": "SELECT rail_key, atom_family_state, has_writer, writer_ref FROM county_rail",
+        "footprintRow": "atom_family_state='present', has_writer=true, writer_ref='hauska-engine write-building-footprint-county.mjs', updated_at 2026-08-11",
+        "reading": "footprint declares a WRITER and names no SCORER. Compare geometry, whose writer_ref names both 'write-parcel-node-county.mjs' AND 'countyGeometryScoreCli.ts facet geometry', and zoning/envelope/landuse, which name 'countyCoverageScoreCli.ts facet ...'. The facets countyCoverageScoreCli writes are visible at artifacts/api-server/src/countyCoverageScoreCli.ts lines 578, 631 and 642: land-use, zoning, envelope. Footprint is not among them."
+      }
+    ],
+    "consequence": "The missing leg is WRITTEN to SCORED for the footprint rail. Whatever L26 wrote, it did not write into county_facet_coverage, and the county ledger can only ever show what has been SCORED. A recompute route was the right thing to build and it will not, on its own, move footprint one cell. Saying otherwise after deploying it would be the exact failure the dispatch's work item 4 forbids.",
+    "whatIDidNOTVerify": "Whether footprint atoms exist in the atoms store for 174 counties. That is L26's claim, it is the WRITTEN layer, it lives in a different store, and I did not measure it. I do not restate its magnitude."
+  },
+
+  "evidenceLayers": {
+    "WRITTEN": "not measured by this lane",
+    "SCORED": "measured directly: county_facet_coverage has 0 footprint rows; the live snapshot (computedAt 2026-08-14T17:41:22.500Z) and a fresh compute agree cell for cell",
+    "SERVED": "measured for the API surface only: /api/serving-sweep returned HTTP 200 text/html 918 bytes on deployed cortex-api before this branch; POST to the recompute path returned 404 'Cannot POST', and a bodyless POST returned 411"
+  },
+
+  "defectsFoundByWritingTheTests": [
+    {
+      "id": "D1",
+      "severity": "high",
+      "finding": "probeRailCapabilities swallows a failed COUNT DISTINCT per rail and returns null with a limitation string. That is honest on a pooled connection. Inside a TRANSACTION it is not: the first failing probe aborts the transaction and every later statement, including the snapshot write, fails with 'current transaction is aborted' carrying no hint of the probe that caused it.",
+      "reachableToday": "the mud probe reads tx_special_district, which is queried by lib/db/src/railCoverageCapability.ts:145 and is NOT part of the drizzle schema, so it exists in no test schema and in no fresh database. Reproduced: the first recompute integration test failed with exactly that message.",
+      "fix": "the recompute wraps each capability probe in its own SAVEPOINT, which is what the swallow already claimed to be. computeCountyLedgerPayload gained an explicit capabilityDb option so the guard is visible at the call site rather than hidden.",
+      "notFixedHere": "the swallow itself in lib/db is untouched, so any FUTURE caller that wraps this compute in a transaction inherits the same trap. Routed to the planner."
+    },
+    {
+      "id": "D2",
+      "severity": "medium",
+      "finding": "the payload diff compared JSON.stringify output. The BEFORE payload comes back out of a jsonb column and the AFTER payload is a fresh JS object; Postgres jsonb does not preserve key order, so two identical recomputes reported EVERY cell as changed.",
+      "howItWasCaught": "the test that asserts a BORING result — 'a second recompute with nothing changed reports an all-zero delta, not a win'. A test suite that only asserted interesting outcomes would have shipped this.",
+      "fix": "key-sorted comparison, with the reason recorded at the function."
+    }
+  ],
+
+  "adversarialReviewOfTheBUILD": [
+    {
+      "question": "Is the recompute's verify actually a verify, or does it check the object it just built?",
+      "answer": "It reads county_ledger_snapshot again after the transaction commits. The divergence test is the dryRun case, which must report the store UNMOVED while computedAt is fresh, and does: computedAt 14:40:44.508 with store.computedAtAfter 14:40:44.322 and computedAtMovedInStore false, captured over real HTTP."
+    },
+    {
+      "question": "Can the frozen-record validator actually reject?",
+      "answer": "Eleven rejection cases, each a shape Command Center's own parser flags: missing FieldKey, unknown FieldKey, contradiction kind outside the union, more than 20 exampleParcelNodeIds, bbox that is not four numbers, negative tally, malformed FIPS, unparseable sweptAt, countiesSwept disagreeing with counties.length, a duplicated county, and a non-object body. A statewide body with ONE bad county stores none of it, asserted by counting rows after."
+    },
+    {
+      "question": "Does the endpoint serve anything the console would reject?",
+      "answer": "Not by construction: the validator rejects at ingest everything the console flags, and countiesSwept is measured from the array rather than stored. NOT PROVEN END TO END, because the console's parser lives in another repo and cannot be imported here. The invariants are asserted directly instead, and the gap is named below."
+    },
+    {
+      "question": "Is the anonymous GET right?",
+      "answer": "It matches GET /api/county-ledger on the same service, which is anonymous today and carries the same class of internal data. The sweep body does carry example parcel node ids and per-county defect tallies, so this is flagged for the operator rather than settled. One middleware line reverses it."
+    },
+    {
+      "question": "What happens if the recompute exceeds the request timeout?",
+      "answer": "Cloud Run cuts at 300s (--timeout=300, verified in the deploy workflow). The transaction sets statement_timeout to 240s so the database fails loudly first, and probe=skip removes the COUNT DISTINCT probes, which are the only part that scans a large table. Not measured against production: doing so would have meant running the heavy scan on the shared deployment database, which this lane deliberately did not do."
+    }
+  ],
+
+  "constraintsHonored": {
+    "writeSlot": "NONE TAKEN. No atoms store write, no DDL against any shared database.",
+    "productionWrites": "NONE. Every query against the deployment database was read-only SELECT. The recompute was never run against production; it cannot be until the branch is deployed, which is out of this lane.",
+    "heavyScanSerialization": "HONORED by avoidance. No COUNT DISTINCT or full-table scan was run against the shared deployment database. The one production read was a 3,556-row join over county_manifest / county_rail / county_facet_coverage with statement_timeout set, plus two small aggregates.",
+    "exitBounded": "HONORED. Builds, tests and one-shot queries. The local probe server was background-started, curled, and killed with the port confirmed closed; the throwaway Postgres is stopped at close.",
+    "isolatedWorktree": "/p/tmp/ss-w7-sweep-endpoint. No other lane's tree touched. The stale sibling clone at /p/tmp/hauska-engine was read for diagnosis only.",
+    "pushedAfterFirstCommit": "HONORED. Pushed immediately after 11b75ad6 and after every commit since.",
+    "noSubAgents": "HONORED. No spawning, no nesting, no delegation."
+  },
+
+  "openAtCP2": [
+    "CI running on head 12691f4c; the conclusion string is not yet known and nothing is claimed about it.",
+    "The route is not deployed, so there is no live grade. Code-done is not customer-done.",
+    "The console cannot POST a recompute: the hauska-map Vercel proxy allowlists POST paths explicitly and /api/county-ledger/recompute is not on that list. That change lives in another repo."
+  ]
+}

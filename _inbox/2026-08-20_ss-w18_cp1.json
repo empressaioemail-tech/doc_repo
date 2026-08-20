@@ -1,0 +1,106 @@
+{
+  "lane": "SS-W18",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": ["P-47"],
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/ss-w18-boot-fix",
+  "branch": "ss/w18-boot-fix",
+  "commitUnderTest": "5688aa3120eb80e92175b58e3aaabb034faaf394",
+  "originMainAtStart": "5688aa3120eb80e92175b58e3aaabb034faaf394",
+
+  "missionPremise": "cortex-api does not boot. A canary deploy of 5688aa31 failed with Cloud Run 'container failed to start and listen on PORT=8080'. Dispatched by the doc_repo planner under OPS-16 amendment A-020 (2026-08-19). Operating law for the lane is 61_enforcement_doctrine revision 7 and enforcement.mdc, both read at 'P:/tmp/data fix/' under their real names '61_enforcement_doctrine (7).md' and 'enforcement (3).mdc'; the unsuffixed paths named in the dispatch do not exist.",
+
+  "defectReproduced": {
+    "status": "VERIFIED",
+    "how": "pnpm --filter @workspace/api-server run build at 5688aa31, then node --enable-source-maps ./dist/index.mjs with a complete boot env",
+    "observedVerbatim": "[coverage-score] ERROR: pass --county=<fips> or --all",
+    "exitCode": 1,
+    "listened": false
+  },
+
+  "dispatchCorrection": {
+    "claim": "The dispatch states the chain as countyCoverageScoreCli.ts:115 'import { argv } from node:process' plus countyCoverageScoreCli.ts:183 'process.exit(1)', i.e. the module evaluates at import and exits.",
+    "verifiedAtSource": "Line 183 sits inside function fail(), not at top level. The CLI DOES carry an entrypoint guard at line 1156, 'if (isDirectRun())'. isDirectRun() compares realpathSync(argv[1]) against realpathSync(fileURLToPath(import.meta.url)).",
+    "actualMechanism": "esbuild bundles every module into dist/index.mjs, so inside the bundle import.meta.url IS the bundle's own URL. The container runs 'node artifacts/api-server/dist/index.mjs', so argv[1] is that same path. isDirectRun() therefore returns TRUE at server boot, main() runs, process.argv.slice(2) is empty, and main() reaches fail('pass --county=<fips> or --all') which calls process.exit(1) before Express listens.",
+    "whyThisMatters": "A fix aimed only at the argv import or at the process.exit line would change nothing. The guard is not missing; it is defeated by bundling. artifacts/api-server/src/lib/nodeFacetTier2Constants.ts already records this in its header: the entrypoint guard 'is unreliable in the production bundle'. The only fix that holds is removing the CLI from the boot graph."
+  },
+
+  "competingMechanismsForTheSameObservation": [
+    {
+      "mechanism": "A missing or invalid boot env var. The server's own fail-fast validators call process.exit(1) on unset secrets.",
+      "rejectedBecause": "It was hit twice on the way here and each time produced a different, differently worded exit (SNAPSHOT_SECRET refusal, then an AI_INTEGRATIONS_ANTHROPIC_BASE_URL throw). Supplying those advanced the failure rather than removing it. The final observed failure carries the coverage-score message with a full env supplied."
+    },
+    {
+      "mechanism": "Some other module's top-level side effect exiting the process.",
+      "rejectedBecause": "The literal string '[coverage-score]' is emitted only by countyCoverageScoreCli.ts across the whole tree, and on the empty-argv path that string is reachable only through fail() from main(), which is called only from the isDirectRun() block."
+    },
+    {
+      "mechanism": "Cloud Run cold-start timeout or memory pressure, i.e. a slow boot rather than an exited one.",
+      "rejectedBecause": "Reproduced locally with no Cloud Run involved. The process exits 1 within seconds. A timeout would leave the process alive."
+    }
+  ],
+
+  "design": {
+    "fix": {
+      "shape": "Extract the pure classification surface into a side-effect-free leaf module, mirroring the precedent at src/lib/nodeFacetTier2Constants.ts, and repoint every consumer at it. No re-export is left behind on the CLI, so the hazardous import path cannot be reintroduced by habit.",
+      "newModule": "artifacts/api-server/src/lib/countyCoverageClassification.ts",
+      "moves": ["classifyFacet", "sourcePresentForStampFacet", "resolveStampFacetMeasurability", "type Classification", "type FacetScore", "type ClassifyInput", "type StampFacetMeasurability"],
+      "deliberatelyNotMoved": ["railThresholdPct", "deriveRailState", "LANDUSE_JOIN_FACET_KEY"],
+      "whyNotMoved": "They read COUNTY_RAIL_DECLARATION from @workspace/db/schema. Nothing in the boot graph imports them; only countyCoverageRailState.test.ts does. Moving them would widen the change without removing any hazard.",
+      "typeOnlyDependency": "The moved types reference JoinIntegrityReport['verdict'] from ./joinIntegrityGate, which imports @workspace/cad-ingest. It is taken as a statement-level 'import type', which esbuild erases, so no runtime edge is created. Duplicating the verdict union locally was rejected: that is the two-definitions-disagreeing shape the railScoring engine header exists to prevent."
+    },
+    "controls": [
+      {
+        "id": "ci-api-server-boot-smoke",
+        "shape": "A Node harness that spawns the already-built bundle, polls the port, and kills the child under a hard deadline in a finally block.",
+        "threeOutcomes": "pass exit 0 / violation exit 1 / GATE-DID-NOT-RUN exit 2 with a loud marker. Tooling fails LOUD, not closed.",
+        "selfTest": "Runs its own predicate against a fixture entry that exits without listening (must be flagged) and a fixture entry that listens (must pass) before any verdict on the real bundle is trusted. Mirrors the ci-tier2-flood-not-served idiom already in pr-checks.yml.",
+        "violationProof": "Run against unfixed 5688aa31 and shown FAILING before the fix. A real production-main violation, not a simulated one."
+      },
+      {
+        "id": "ci-boot-graph-no-cli-import",
+        "shape": "An import-graph walker rooted at src/index.ts that follows static relative imports and flags any reached module matching *Cli.ts, printing the full path from the root.",
+        "whyAGraphWalkAndNotAGrep": "The live defect reaches the CLI through the lib/railScoring/index.ts BARREL: routes/countyRailScore.ts imports ../lib/railScoring, which re-exports ./engine, which imports ../../countyCoverageScoreCli. A per-file grep over routes/ finds nothing. Re-export through an intermediate module is named in the dispatch as the obvious bypass of a grep, so the control is built not to have it.",
+        "threeOutcomes": "same as above",
+        "selfTest": "Two fixture trees, one violating and one clean, both walked on every run."
+      }
+    ]
+  },
+
+  "adversarialReviewOfThisDesign": [
+    {
+      "risk": "The boot smoke test could pass for the wrong reason, e.g. an entry that listens but is not the real server.",
+      "mitigation": "The real run targets dist/index.mjs by path and the harness prints the entry it ran and the commit. Fixtures are used only in the self-test phase and are reported separately."
+    },
+    {
+      "risk": "The boot smoke test needs a reachable database and would then be testing the database rather than boot.",
+      "mitigation": "DATABASE_URL is pointed at an unreachable local port on purpose. If boot cannot complete without a live DB, that is itself a finding and will be reported rather than papered over by adding a postgres service."
+    },
+    {
+      "risk": "The smoke env uses dummy secrets, so it can diverge from the real deploy env and miss a boot failure only production sees.",
+      "mitigation": "Stated as a scope limit rather than claimed away. The harness proves the process reaches listen with a well-formed env. It does not prove the production secret set is correct."
+    },
+    {
+      "risk": "The graph walker over-approximates. An inline 'import { type X } from ./fooCli' is erased by esbuild but would still be flagged.",
+      "mitigation": "Accepted and documented. It errs toward flagging, and the remedy (write 'import type') is the correct form anyway. A control that under-flags is the failure mode this lane exists for."
+    },
+    {
+      "risk": "Both controls are CI checks in a repo whose main is not branch-protected, so neither blocks anything.",
+      "mitigation": "Not mitigated. Reported as the sixth state, advisory, in the close, per doctrine revision 7."
+    }
+  ],
+
+  "constraintsHonored": [
+    "Isolated worktree P:/tmp/ss-w18-boot-fix. No other lane's tree touched.",
+    "Every verification step exit-bounded. No watch, no tail -f, no non-exiting server.",
+    "No merge and no deploy. Both are planner-owned.",
+    "Commit under test declared in every output."
+  ],
+
+  "openAtCP1": [
+    "Whether the server can reach app.listen with an unreachable DATABASE_URL. Unknown at CP1 because the CLI exit happens during module evaluation, before bootAndListen() is ever reached.",
+    "Whether the graph walk flags anything besides the known defect."
+  ]
+}

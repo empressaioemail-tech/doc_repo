@@ -1,0 +1,95 @@
+{
+  "lane": "SS-W14",
+  "checkpoint": "CP1 — design / pre-build adversarial checkpoint",
+  "planRows": ["P-47"],
+  "repo": "hauska-engine",
+  "branch": "ss/w14-rail-scorer-specs",
+  "worktree": "/p/hauska-engine-worktrees/ss-w14-rail-scorer-specs",
+  "baseSha": "d455c82e8f843aa5cc06afb0753c4c42ed8e70f8",
+  "filedAt": "2026-08-19T17:05:00Z",
+  "missionPremise": "OPS-16 amendment A-020. Six of fourteen rails carry zero rows in county_facet_coverage and are therefore permanently not-yet on the console regardless of the store. This lane writes the MEASUREMENT SPEC for each — unit, covered vs established-absence vs not-yet, denominator with its rule — so the scorer capability lane SS-W12 is building has something correct to plug into. The split exists because the last comparable programme built twelve writers and three scorers and nobody wrote down what scoring meant.",
+
+  "premiseVerifiedAtSource": {
+    "claim": "the six rails carry zero cells with a source AND zero with a coverage pct across all 254 counties",
+    "label": "VERIFIED by this lane",
+    "instrument": "psql against CORTEX_DATABASE_URL: SELECT facet, count(*), count(DISTINCT county_fips), max(checked_at) FROM county_facet_coverage GROUP BY facet ORDER BY facet",
+    "readAt": "2026-08-19T16:20Z",
+    "verbatimResult": "cad|254|254|2026-08-12 18:40:18.206435+00 :: envelope|19|19|2026-08-05 01:43:15.359246+00 :: flood|177|177|2026-08-12 10:51:43.954265+00 :: geometry|254|254|2026-08-14 06:36:42.306217+00 :: land-use|19|19|2026-08-05 01:43:15.263488+00 :: landuse|254|254|2026-08-12 18:34:36.219819+00 :: mud|254|254|2026-08-14 04:03:47.01346+00 :: owner|254|254|2026-08-12 18:34:27.77882+00 :: zoning|254|254|2026-08-08 18:48:16.677643+00 :: (9 rows)",
+    "verdict": "PREMISE HOLDS. Nine facet values exist and none of the six is among them. The six rails have no ledger row of any kind, so a recompute cannot move them; only a scorer that does not exist can."
+  },
+
+  "theTwoTrapsCheckedNotInherited": [
+    {
+      "trap": "reach ceilings are not trustworthy as briefed",
+      "whatIFound": "The rrc-wells ceiling of 1 is not a probe result at all. VERIFIED at source: /p/legacy-design-tools/lib/db/src/railCoverageCapability.ts declares STATIC_RAIL_CAPABILITIES with rrc-wells maxCountiesReachable hardcoded to 1 and reachPct 1/254, citing lib/adapters/src/federal/texas-rrc.ts. That adapter is the RETIRED path.",
+      "reDerivation": "VERIFIED by this lane. The live apply path is packages/engine-core/src/well-fact/fetch-wells-staged.ts, whose header reads 'NEVER use the Harris County ArcGIS mirror for apply — it holds ~0.92% of TX', and write-well-fact-county.mjs REFUSES TO RUN if the source still points at gis.hctx.net. The real source is staged table tx_rrc_well in cortex: 1,396,049 wells, count(DISTINCT county_fips) = 254, plus 1,556 rows with NULL county_fips still reachable by lng/lat bbox. Harris 48201 holds 12,850 of those 1,396,049 — 0.92%, exactly the figure the code comment names and within 0.4% of the standing memory's '12,796 features, extent is one county'. The memory measured the MIRROR. The mirror is not the source.",
+      "verdict": "RE-DERIVED CEILING FOR rrc-wells IS 254, NOT 1. Applying the briefed ceiling would have manufactured 253 false out-of-reach cells. The standing memory 'RRC wells source is HARRIS-ONLY' is true of a retired adapter and false of the live writer; it needs re-adjudication by the operator, not silent carry-forward."
+    },
+    {
+      "trap": "an established absence is not bounded by an acquisition source's reach (mud 209/186)",
+      "whatIFound": "The same shape exists at PARCEL scale and I reproduced it. Crane 48103 holds 5,805 parcel-node atoms: 5,553 with geometryLoaded true and 252 with geometryLoaded false. rrc-pipeline-fact determinations there number 5,567 = all 5,553 geometry-true nodes PLUS 14 of the geometry-false ones. A denominator of 'geometry-true nodes' would score 5,567/5,553 = 100.25%.",
+      "ruleAdopted": "The per-parcel denominator is EVERY parcel-node atom in the county, with the geometryLoaded-false subcount published beside it as a measured exclusion class, never subtracted from it. Determinations are counted only where they JOIN a parcel-node; orphan determinations are counted and reported separately. Under that rule the ratio cannot exceed 100% by construction, and the shortfall is explained rather than hidden.",
+      "orphanCheckRun": "VERIFIED: Bastrop 48021 rrc-pipeline-fact, 62,256 determinations, 0 with no matching parcel-node atom.",
+      "incidentalCorrection": "SS-W9's close labels 48103 'Callahan'. county_manifest says 48103 = Crane and Callahan = 48059. A naming error that moves no number; SS-W9's 60,396 / 1,839 / 58,557 well figures for 48103 reproduce exactly under my own query."
+    }
+  ],
+
+  "denominatorRuleEstablished": {
+    "statement": "For every parcel-keyed depth rail the county figure is (determinations joined to a parcel-node) / (parcel-node atoms in the county), and it travels with a second measured figure: (determinations) / (DISTINCT usable prop_id in txgio_parcel for the county), which is the writer-reach number.",
+    "whyTwoNumbers": "They differ, and the difference is the finding. The writer-reach denominator is the set the depth writers actually iterate; the parcel-node denominator is what a customer's sheet is drawn from. Publishing only the first lets a rail read 100% while spine parcels carry nothing.",
+    "usablePropIdPredicate": "packages/atoms/src/fact-writer-ids.ts isUsablePropId + normalizeForJoin, expressed in SQL: prop_id non-null, non-blank, not all-zero, and matching ^[A-Za-z0-9._-]+$ after leading-zero strip.",
+    "fiveIndependentExactMatchesVerifiedByThisLane": [
+      "48201 Harris: usable prop_ids 1,523,640 = parcel-node atoms 1,523,640 = rrc-pipeline-fact 1,523,640 = rail-corridor-fact 1,523,640",
+      "48001 Anderson: usable prop_ids 31,676 = parcel-node 31,676 = rrc-pipeline-fact 31,676",
+      "48103 Crane: usable prop_ids 5,567 = rrc-pipeline-fact 5,567 = well-fact distinct parcels touched 5,567; parcel-node 5,805",
+      "48497 Wise: usable prop_ids 48,428 = parcel-node 48,428 = rrc-pipeline-fact 48,428",
+      "48021 Bastrop: usable prop_ids 62,256 = rrc-pipeline-fact 62,256 = rail-corridor-fact 62,256; parcel-node 62,398"
+    ],
+    "rejectedDenominator": "county_manifest.parcel_count_est. VERIFIED: it diverges from the parcel-node count by more than 20% in 19 of 253 counties and by 184% on Harris (est 536,512 against 1,523,640 atoms). Statewide sums agree to within 2.7%, which is exactly how a bad per-county denominator hides."
+  },
+
+  "retractedByMeBeforeItShipped": {
+    "hypothesis": "I suspected count(DISTINCT feature_index) in txgio_parcel was unsound, because the primary key is (county_fips, tile_key, feature_index) so feature_index looked per-tile.",
+    "test": "min/max feature_index per county against max features in any single tile.",
+    "result": "48021 max feature_index 63,356 against 2,498 features in the largest tile; 48261 max 537 against 171 in the largest tile. feature_index is a COUNTY-GLOBAL contiguous index 0..N-1, not per-tile.",
+    "verdict": "HYPOTHESIS RETRACTED. countyGeometryScoreCli.ts's denominator is sound and its Kenedy 2,400-rows-for-538-features multiplier is real (4.46x, matching the standing rural-seam memory). Recorded because a correction carries the same evidentiary standard as the claim it corrects (DEV_PROCESS 3.2a) and this one failed its own test."
+  },
+
+  "perRailSkeletonAtCP1": {
+    "roads": "Unit is the OSM way, NOT the parcel. road-node entity_id is <fips>:road:<osmWayId> and PARCEL_KEYED_PROPERTY_ENTITY_TYPES explicitly EXCLUDES road-node (packages/atoms/src/property-instances.ts:213).",
+    "footprint": "Unit is the parcel. Present and per-parcel-absence atoms COLLIDE on the same entity_id suffix :footprint:primary and are distinguishable only in the body.",
+    "easement": "Unit is the COUNTY for 252 of 254 counties by construction. The routing table default is one county-coverage absence atom, explicitly 'not millions of per-parcel sentinels'. Hybrid unit.",
+    "rrc-wells": "Unit is the parcel. Absence is a real atom with entity_id suffix :none.",
+    "rrc-pipelines": "Unit is the parcel. There is NO absence atom in the normal path; 'no pipeline near' is encoded as PRESENT with nearPipeline false.",
+    "rail-corridor": "Unit is the parcel. Same present-with-flag-false shape as pipelines."
+  },
+
+  "cannotBeScoredTodayProvisional": [
+    "roads — the denominator (ways the pinned Geofabrik PBF yields inside the county boundary, post-taxonomy-filter) exists only inside a writer run and is persisted NOWHERE. VERIFIED: write-road-node-county.mjs computes waysRead into an optional --out summary JSON; cortex pg_tables carries no road table at all, and there is no county-coverage road atom family. Roads can be scored as a binary presence today and as a percentage only after a census is persisted.",
+    "footprint — a covered-vs-absent split cannot be read from entity_id. VERIFIED in Wise 48497: :footprint:primary splits 24,629 rows carrying an absence body against 23,799 without, same suffix. An index-only prefix scorer would count all of them as covered."
+  ],
+
+  "adversarialReviewOfMyOwnPlan": [
+    "The brief told me 'rrc-pipelines is bound to an empty atom family while 12.5M of its atoms exist'. I did not relay it. VERIFIED both halves at source: railEngineBinding.ts gives rrc-pipelines atomEntityTypes [] with noWriterReason 'Atom family not registered in engine PROPERTY_ENTITY_TYPES — no writer until pipeline atom ships', and packages/atoms/src/property-instances.ts line 204 lists 'rrc-pipeline-fact' in PROPERTY_ENTITY_TYPES. The noWriterReason is false at source. The same binding also gives easement no writer while hauska-engine ships write-utility-easement-county.mjs.",
+    "The brief told me utility-easement is the only genuinely empty family. VERIFIED independently: SELECT count(*) WHERE entity_type='utility-easement' returned zero rows in 0.49 seconds.",
+    "I am NOT recounting the WRITTEN layer. SS-W9 measured it four hours before this lane started, and the two figures I re-measured (parcel-node per county for 48021/48261/48497, and well-fact Crane 60,396 = 1,839 absence + 58,557 present) reproduce to the atom. The two statewide scans I did attempt (road-node DISTINCT county, atoms GROUP BY entity_type) both exceeded a 300-second statement timeout, which is itself why that audit is a background job and not a checkpoint step.",
+    "Risk I am accepting: my spec cannot be validated end-to-end without the scorer SS-W12 is building. Mitigation is that every rule is expressed as a predicate with a test that proves the rule can FIRE on constructed input, so a dead rule is visible before a scorer ever runs."
+  ],
+
+  "outOfScopeDeliberately": [
+    "Building any scorer. That is SS-W12 in legacy-design-tools.",
+    "The other eight rails. geometry, cad, zoning, flood, envelope, landuse, owner and mud already carry ledger rows and are not this lane's subject.",
+    "Editing railEngineBinding.ts or railCoverageCapability.ts. Both are legacy-design-tools files, both are wrong, both are findings for the planner, neither is mine to edit.",
+    "Re-adjudicating the standing RRC-wells memory. I supply the evidence; the ruling is the operator's."
+  ],
+
+  "constraintsHonored": [
+    "Read-only on both production databases. No INSERT, UPDATE, DELETE or DDL. No atoms bulk-writer slot, no lease, no --apply.",
+    "Heavy scans serialized, never parallel. Two exceeded the statement timeout and were abandoned rather than retried wider.",
+    "Every query carried an explicit statement_timeout as a connection startup parameter (PGOPTIONS), never as a separate -c statement — SS-W9's F11 records that the separate form silently never applies.",
+    "No file touched in packages/retrieval/src/statewide-audit/, packages/retrieval/scripts/, artifacts/three-layer-audit/, .gitignore or pnpm-lock.yaml — the paths SS-W9's open PR #348 holds.",
+    "Nothing merged, nothing deployed, nothing pushed to main."
+  ],
+
+  "nextAtCP2": "Freeze the six specs as a typed checked-in record with a test suite that proves each rule can fire, then pilot the predicates against live store slices and report what the numbers actually are."
+}

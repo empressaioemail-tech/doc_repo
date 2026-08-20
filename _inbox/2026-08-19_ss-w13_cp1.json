@@ -1,0 +1,167 @@
+{
+  "lane": "SS-W13",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": [
+    "P-47"
+  ],
+  "repo": "legacy-design-tools",
+  "worktree": "/p/tmp/ss-w13-scorer-correctness",
+  "branch": "ss/w13-scorer-correctness",
+  "baseSha": "85c5d1a8c12a4a70e81323a907ca252b802266b8",
+  "missionPremise": "Two defects in scorers that DO run (distinct from lane SS-W12's six-rails-with-no-scorer gap): (1) the zoning cell reads 0.00% not-yet for counties Smart Site serves zoning for today; (2) countyCoverageScoreCli.ts writes facet 'land-use' while the rail key is 'landuse', orphaning 19 live rows. Source: _dispatches/2026-08-19_ss-w13_dispatch.md, OPS-16 amendment A-020 ruled 2026-08-19.",
+  "completionPredicate": "A stranger can (a) name the mechanism for every zoning cell that reads 0.00% and check it at source, (b) see a checked-in control that fails when a scorer writes a facet key no rail can join, and (c) see a stated, evidence-backed disposition for the 19 orphaned rows that does not silently regress the 13 counties currently satisfied on the correctly-keyed 'landuse' rail.",
+  "scopeBasis": "Correctness of instruments that already run. Excluded: building the six missing rail scorers (SS-W12/SS-W14), re-denominating the zoning rail in production (operator ruling; it moves the Texas launch-gate arithmetic), deleting or merging any existing ledger row (DEV_PROCESS 5.4).",
+  "verifiedFindings": [
+    {
+      "id": "V1",
+      "label": "VERIFIED",
+      "claim": "SERVED and SCORED share one substrate: the txgio_parcel.zoning_district stamp. The atom chain is baked from it.",
+      "evidence": "GET https://smartsite.cloud/api/spine/property-atoms/48453:149405/facets -> HTTP 200, X-Pe-Read-Path: atom-chain, facets.zoning={\"district\":\"SF-2\"}, facets.facetCoverage.zoning=true, bakedAt 2026-07-24T20:57:30.744Z. SQL on the same parcel: SELECT zoning_district, zoning_jurisdiction FROM txgio_parcel WHERE county_fips='48453' AND prop_id='149405' -> SF-2 / austin-tx.",
+      "note": "This kills the tempting first mechanism ('the scorer reads a different database from the atoms'). The scorer reads the right column."
+    },
+    {
+      "id": "V2",
+      "label": "VERIFIED",
+      "claim": "The zoning scorer produces a correct non-zero number for Travis TODAY. The live ledger row is stale by roughly four weeks.",
+      "evidence": "tsx countyCoverageScoreCli.ts --county=48453 --dry-run -> zoning coverage 33.3% real-at-ceiling. SQL: 828,773 distinct (county_fips,feature_index) parcels, 276,168 with zoning_district NOT NULL = 33.32%. Live cell: honest_coverage_pct 0.00, source NULL, classification true-source-gap, checked_at 2026-07-21T03:36:13.345776Z."
+    },
+    {
+      "id": "V3",
+      "label": "VERIFIED",
+      "claim": "txgio_parcel_staging has NO zoning_district column, and locateCounty() silently falls back to it.",
+      "evidence": "information_schema.columns: txgio_parcel has zoning_district; txgio_parcel_staging does not. PARCEL_TABLES = ['txgio_parcel','txgio_parcel_staging']; hasZoning = columnExists(resolvedTable,'zoning_district'); sourcePresentForStampFacet(false,_) -> false -> classifyFacet -> 'true-source-gap', honestCoveragePct forced to 0, source null. That is exactly the shape of the 15 source-NULL zoning rows."
+    },
+    {
+      "id": "V4",
+      "label": "INFERRED (mechanism fits; the 2026-07-21 run cannot be re-run)",
+      "claim": "The 6 counties in the 2026-07-21 03:35-03:36 run that scored source-NULL are exactly 6 of the 8 counties present in txgio_parcel_staging.",
+      "evidence": "staging counties = 48021,48027,48029,48055,48187,48309,48453,48491. 07-21 source-NULL zoning = 48027,48029,48055,48187,48309,48453 (all 6 in staging). Comal 48091, scored one second after Caldwell 48055 in the same run and never present in staging, got source 'zoning-stamp' 25.82%. A table-level column check cannot vary within one second; the resolved TABLE can.",
+      "unresolved": "The other 9 source-NULL rows (48085,48113,48121,48139,48251,48257,48367,48397,48439, dated 2026-08-04/05) are not in staging today. Their hasZoning=false is NOT explained. The only migration log in the database (_system.replit_database_migrations_v1) stops at 2026-05-19, so the historical schema state is not recoverable. Stated as unresolved rather than guessed."
+    },
+    {
+      "id": "V5",
+      "label": "VERIFIED",
+      "claim": "Even a correct re-score leaves every named county reading not-yet, because the denominator is county-wide parcels against a 95% threshold.",
+      "evidence": "county_rail: zoning thresholdPct 95.00, coverageClass jurisdiction-depth. manifestGridRead.applyDepthRailDisplayGate demotes satisfied-present to not-yet when coverage < threshold. Travis re-scores 33.32%. 33.32 < 95."
+    },
+    {
+      "id": "V6",
+      "label": "VERIFIED",
+      "claim": "23 wired city zoning layers exist, across 10 counties, against 1,222 incorporated-city boundaries and 254 counties.",
+      "evidence": "Object.values(ZONING_LAYERS).length = 23; counties 48021=2 48027=2 48029=1 48055=1 48091=1 48187=2 48209=4 48309=1 48453=2 48491=7. SELECT count(*) FROM tx_city_boundary = 1222. So 244 of 254 counties can only ever score 0.00% on this instrument."
+    },
+    {
+      "id": "V7",
+      "label": "VERIFIED",
+      "claim": "For an unwired county the scorer today writes 0.00% classified real-at-ceiling, which asserts the achievable ceiling is zero.",
+      "evidence": "tsx countyCoverageScoreCli.ts --county=48113 --dry-run -> zoning coverage 0.0% -> real-at-ceiling. Dallas has 30-plus incorporated, zoned cities; none is in ZONING_LAYERS."
+    },
+    {
+      "id": "V8",
+      "label": "RETRACTED AND CORRECTED at close — see close artifact selfCorrection",
+      "claim": "SUPERSEDED. Original claim: 'No checked-in code writes county_facet_coverage.rail_state.' That is WRONG. countyFloodScoreCli.ts writes it at line 210 and countyGeometryScoreCli.ts at line 445. The accurate finding: countyCoverageScoreCli.ts — the scorer owning zoning, envelope and land-use — is the ONE of three siblings that does not, so for those facets the coverage number and the display field have different authors and no consistency constraint. Fixed in commit ee76bdd4.",
+      "evidence": "upsertLedger() writes 9 columns; rail_state, threshold_pct, absence_basis, verified_by_instrument, verification_method, artifact_path are untouched. grep for rail_state writers outside __tests__ returns nothing. Travis zoning row: rail_state='satisfied-present', honest_coverage_pct=0.00, verified_by_instrument NULL. The two halves of the cell have different authors and no consistency constraint."
+    },
+    {
+      "id": "V9",
+      "label": "VERIFIED",
+      "claim": "Bastrop's zoning cell - the only zoning cell in Texas that displays satisfied - carries the envelope facet's number, not a zoning measurement.",
+      "evidence": "48021 zoning and 48021 envelope rows are identical: honest_coverage_pct 99.77, source 'deterministic' (the envelope source string in this CLI), classification 'true-source-gap', checked_at both 2026-08-03T15:16:48.373Z. classifyFacet can never emit true-source-gap with non-zero coverage, so neither row came from classifyFacet. Bastrop's measured zoning stamp rate is 9,642/63,357 = 15.22% county-wide.",
+      "note": "This is the single data point the 'zoning depth is ONE county' reading rests on."
+    },
+    {
+      "id": "V10",
+      "label": "VERIFIED",
+      "claim": "All 19 orphaned 'land-use' rows have a live 'landuse' row that measures a DIFFERENT subject, and a rename would regress 13 counties.",
+      "evidence": "19-row LEFT JOIN: hyphen rows are source 'cad-roll' / 'cad-roll-address-join' (a CAD-roll JOIN RATE, dated 2026-07-21..08-05); live rows are source 'land-use-fact-atom-count' (atom coverage, 2026-08-12, written by score_cad_rails_fast.mjs). 13 of 19 live rows are satisfied-present and all 13 carry a HIGHER number than their hyphen row (48027 77.76 vs 98.90, 48091 0.00 vs 99.68, 48113 92.83 vs 99.91, 48491 89.14 vs 99.85, ...). PK is (county_fips,facet), so a rename is an overwrite."
+    },
+    {
+      "id": "V11",
+      "label": "VERIFIED (no gain - reported because it is data)",
+      "claim": "The DISTINCT ON (feature_index) arbitrary row pick does NOT undercount the Travis zoning stamp.",
+      "evidence": "GROUP BY feature_index over 48453: bool_or(zoning_district IS NOT NULL) = 276,168; first-row-by-ctid pick = 276,168. Identical. Pre-registered as a suspected undercount; it is not one."
+    },
+    {
+      "id": "V12",
+      "label": "VERIFIED (instrument defect found in my own first query, published per DEV_PROCESS 1.4)",
+      "claim": "feature_index is unique only WITHIN a county, not across counties.",
+      "evidence": "DISTINCT ON (feature_index) across ten counties returned Travis 394,928; DISTINCT ON (county_fips, feature_index) returned 828,773, matching count(DISTINCT feature_index) GROUP BY county_fips. The scorer itself is safe because it filters WHERE county_fips = $1 before the DISTINCT ON; any cross-county query is not."
+    }
+  ],
+  "rootCauseSummary": "The zoning zeros are FOUR stacked causes, not one. (1) A silent table fallback converts 'the table I happened to read has no zoning column' into true-source-gap, a POSITIVE absence claim, at 0.00% - contract s5 / DEV_PROCESS 4.3. (2) Those rows then went stale for four weeks because nothing re-runs the scorer. (3) Even re-scored, the number is measured against all county parcels while only 23 of 1,222 Texas city zoning layers are wired, so no county can approach the 95% depth threshold and the depth gate correctly refuses to call it satisfied. (4) The one county that does display satisfied is satisfied on a number copied from its envelope facet. Written-and-served is real; scored-zero has an independent cause at every layer of the cell.",
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "Kill the silent fallback: when the resolved parcel table cannot carry zoning_district, the zoning and envelope facets are NOT MEASURABLE and the scorer refuses to write them, counting and printing the refusal. It must never write true-source-gap from a missing column.",
+      "why": "true-source-gap is defined in the file's own header as 'the facet has no data because the SOURCE has none - an honest absence'. Deriving that from a schema accident is the exact defect class this programme hunts."
+    },
+    {
+      "id": "D2",
+      "decision": "Bound the claim by the instrument's own reach: a county with zero wired ZONING_LAYERS entries is not measurable for zoning/envelope by this instrument. Refuse the write; do not emit real-at-ceiling 0.00%.",
+      "why": "real-at-ceiling asserts the achievable ceiling is reached. For 244 of 254 counties the instrument has no city layer at all, so it is measuring its own wiring, not the county."
+    },
+    {
+      "id": "D3",
+      "decision": "Make the counting rule travel with the number: write source as a self-describing basis, and populate verified_by_instrument / verification_method / artifact_path so a cell's author and denominator are readable at the point of use.",
+      "why": "DEV_PROCESS 1.1/1.2. A 0.00% cell asserting satisfied-present with a NULL author survived four weeks precisely because nothing on the row said who wrote it or what it counted."
+    },
+    {
+      "id": "D4",
+      "decision": "One registry of facet keys (rail keys from COUNTY_RAIL_DECLARATION plus explicitly declared NON-RAIL diagnostic keys), a fail-closed assertion in the scorer, and a divergence test that also rejects near-miss collisions (hyphen/underscore/case-normalised) with any rail key.",
+      "why": "DEV_PROCESS 2.4: one rule with two implementations is the CTRL-1 shape. 'land-use' vs 'landuse' is a near-miss no equality check would ever catch."
+    },
+    {
+      "id": "D5",
+      "decision": "Emit the CAD-roll join rate under the declared non-rail key 'landuse-cad-join'. Do NOT rename the 19 existing rows into 'landuse', do NOT alias at read time, do NOT delete them. Supply a dry-run-first reconcile that re-keys them to the diagnostic name and leave the apply for the operator.",
+      "why": "V10 proves the two facets measure different subjects and a merge regresses 13 counties. Join quality was RULED not-a-rail on 2026-08-08 (_decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first.md, cited in countyRailDimension.ts). Deletions are operator rulings per DEV_PROCESS 5.4."
+    }
+  ],
+  "adversarialReviewOfOwnDesign": [
+    {
+      "candidate": "Re-denominate zoning as stamped / parcels-with-a-zoning_jurisdiction (the 'in-jurisdiction' rate).",
+      "verdict": "REJECTED",
+      "reason": "It is a tautology. zoning_jurisdiction is written BY the same PIP that writes zoning_district, so in-jurisdiction coverage is 100.00% by construction. MEASURED: 48021 100.00, 48027 100.00, 48029 100.00, 48187 100.00, 48309 100.00, 48453 100.00 (276,168 stamped vs 276,163 in-jurisdiction; the 5-parcel excess is stamp residue predating migration 0062). Shipping 100% for Travis zoning would be strictly worse than the honest 33.32%."
+    },
+    {
+      "candidate": "Re-denominate against incorporated-city parcels from tx_city_boundary.",
+      "verdict": "CORRECT IN PRINCIPLE, OUT OF SCOPE FOR THIS LANE",
+      "reason": "tx_city_boundary exists in this database (1,222 rows) but stores geometry as jsonb with only a bbox index, so the denominator needs a real point-in-polygon pass, and changing the zoning denominator moves the Texas launch-gate arithmetic. Named as the unblock and routed to the operator, not shipped here."
+    },
+    {
+      "candidate": "Alias land-use to landuse at read time in manifestGridRead.",
+      "verdict": "REJECTED",
+      "reason": "The join is 1:1 on facet = rail_key. Aliasing makes two rows candidates for one cell with no rule for which wins, and the older, lower join-rate row would displace or race the newer atom-coverage row in 19 counties."
+    },
+    {
+      "candidate": "Treat the 19-vs-1 depth gate as the third defect.",
+      "verdict": "NOT A DEFECT IN ITS REFUSAL; DEFECTIVE IN WHAT IT ERASES",
+      "reason": "V8 shows rail_state is written by nothing checked in, so a cell can assert satisfied-present at 0.00%. The gate is the only thing standing between that row and a customer-facing 'satisfied'. It is load-bearing safety. Its real defect is that it sets isPartial=false while demoting, so 'measured at 33.98% below a 95% bar' renders identically to 'never scored at all' - two classes collapsed into one display state, which is what made the zeros invisible for four weeks."
+    },
+    {
+      "candidate": "Fix the missing schema filter in columnExists (information_schema.columns has no table_schema predicate while tableExists uses search_path-aware to_regclass).",
+      "verdict": "REAL BUT NOT THE CAUSE HERE",
+      "reason": "The asymmetry can only produce FALSE POSITIVES (a same-named table in another schema making the column look present). Only public and _system exist in this database and _system holds one Replit migration table, so it cannot explain hasZoning=false. Fixed anyway as a paired-control divergence, and explicitly NOT claimed as the root cause."
+    }
+  ],
+  "constraintsHonored": [
+    "Read-only against production: every database statement so far is SELECT; the only CLI runs were --dry-run, whose code path skips upsertLedger.",
+    "Exit-bounded: every command terminated on its own; no watch, tail, or serve was started.",
+    "Heavy-scan serialization: parcel scans were run one at a time, longest 100.3s (48453 dry-run), 75s (ten-county stamp census). No concurrent heavy scan.",
+    "Isolated worktree /p/tmp/ss-w13-scorer-correctness, branch ss/w13-scorer-correctness off 85c5d1a8.",
+    "No sub-agents spawned (dispatch instruction; AGENT_CONTRACT s1 makes the fan optional, so this is a permitted narrowing, not a conflict)."
+  ],
+  "fileOwnershipCoordination": {
+    "sharedWith": "lane SS-W12 (scorer capability, same repo)",
+    "verifiedAtSource": "gh pr list --state open -> only #437 (ss/w7-sweep-endpoint). git ls-remote --heads origin 'ss/*' -> only ss/w7-sweep-endpoint. SS-W12 has pushed nothing as of this checkpoint.",
+    "pr437Overlap": "none with this lane: #437 touches countyLedgerCompute.ts, routes/countyLedger.ts, servingSweep*, servingSweepCounty schema. It does not touch countyCoverageScoreCli.ts or manifestGridRead.ts.",
+    "myEdits": "countyCoverageScoreCli.ts (surgical, additive), plus NEW files for the facet registry and its divergence test so SS-W12's capability can consume the registry rather than duplicating it.",
+    "risk": "SS-W12 was dispatched against countyCoverageScoreCli.ts as the worked example of the pattern it replaces. If both lanes edit it, the planner adjudicates; my edits are confined to classification, absence handling, provenance and the facet key, and add no new entry point."
+  },
+  "openAtCp1": [
+    "Why 9 counties scored hasZoning=false on 2026-08-04/05 when they are not in staging today (V4 unresolved).",
+    "What 99.77 actually counted on Bastrop 2026-08-03 (V9 establishes what it is NOT).",
+    "Whether the operator wants the zoning denominator changed to incorporated-city parcels."
+  ]
+}

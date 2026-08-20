@@ -1,0 +1,116 @@
+{
+  "lane": "SS-W11",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-19",
+  "planRows": ["P-45"],
+  "repo": "hauska-engine",
+  "worktree": "/p/hauska-engine-worktrees/ss-w11-reconciliation",
+  "branch": "ss/w11-reconciliation",
+  "baseCommit": "d455c82",
+
+  "missionPremise": {
+    "ruling": "Operator ruling 2026-08-19 (OPS-16 amendment A-019): two stores holding one subject is a by-product of an evolving product, so the answer is a statewide reconciliation PROGRAMME, not a per-case adjudication. Same shape as OPS-16 A-002 (mud is a special-district TYPE, not its own rail).",
+    "source": "P:/doc_repo/_dispatches/2026-08-19_ss-w11_dispatch.md",
+    "caseOne": "parcel 48021:36521 is AO on node-facets:tier2 and AE on the flood-hazard-fact atom",
+    "caseOneStatus": "VERIFIED at source by this lane, see verifiedFindings F1"
+  },
+
+  "completionPredicate": "A stranger can run one command per county and get (a) the full list of subjects held in more than one store, derived from the stores rather than hand-declared, (b) for each duplicate pair a per-entity classification into agree / one-sided / explained-by-sampling-point / split-subject / edition-differs / genuine-conflict, each with its own denominator and counting rule printed beside it, and (c) a named loser per pair with the evidence that makes retiring it safe. The programme is not done when the flood numbers are known; it is done when the second store is retired or scheduled for retirement by an operator ruling.",
+
+  "scopeBasis": "The dispatch names the detector as the first deliverable and flood as case one, not the case list. Scope is therefore every store-pair in the spine that holds the same subject for the same entity, measured where BOTH stores actually hold data. Deliberately EXCLUDED, named so the omission reads as deliberate per DEV_PROCESS 3.3: (1) writing any fix to either store, because this lane is read-only and a retirement is an operator ruling per DEV_PROCESS 5.4; (2) the SERVED layer, because SS-W5 already established under P-43 that the tier2 overlay reaches no browser and re-probing it would duplicate that lane; (3) atom families with no second store (road-node, code-section, code-edition, code-amendment, code-cross-reference, jurisdiction-corpus, property-boundary-edge).",
+
+  "verifiedFindings": [
+    {
+      "id": "F1",
+      "label": "VERIFIED",
+      "claim": "The case-one divergence is real and reproduced at source.",
+      "evidence": "psql against hauska_mcp: atoms.flood-hazard-fact entity_id 48021:36521, body.floodZone = AE, sourceAdapter fema-nfhl-bulk-v1, sourceVintage NFHL_48_20260101, fetchedAt 2026-08-11T23:13:43.774Z. psql against neondb: place_layer_snapshots adapter_key node-facets:tier2, place_key node:48021:36521, payload_json.flood.floodZone = AO, provenance.adapterKey fema:nfhl-flood-zone, provenance.vintage 2026-07-21T16:59:52.146Z, snapshot_at 2026-07-21 17:08:37.309+00.",
+      "layer": "WRITTEN"
+    },
+    {
+      "id": "F2",
+      "label": "VERIFIED",
+      "claim": "The two flood stores do not sample the same POINT, and one of them does not sample the parcel at all. The tier2 flood facet is TILE-SAMPLED: the bake quantises each parcel centroid to a 0.005 degree tile (about 555 m north-south and 480 m east-west at 30N), issues ONE FEMA ArcGIS point query at the tile CENTRE, and reuses that single answer for every parcel whose centroid rounds into the tile. A parcel centroid can therefore sit up to about 366 m from the point that decided its flood zone.",
+      "evidence": "P:/legacy-design-tools/artifacts/api-server/src/nodeFacetBakeTier2Cli.ts line 126 'export const FEMA_TILE_DEG = 0.005;'; lines 43-45 comment 'FEMA tile: rounded to FEMA_TILE_DEG (0.005 deg ~ 550 m). FEMA flood polygons are large + change on a multi-year cadence, so one point-query per FEMA tile is reused across the tile parcels.'; lines 287-295 tileKey and tileCenter both use Math.round(v/deg)*deg; line 666 femaTile = tileKey(centroid.lat, centroid.lng, FEMA_TILE_DEG); lines 513-514 the FEMA query is issued at the tile centre c.lat / c.lng. Counterpart: packages/engine-core/scripts/write-flood-hazard-fact-county.mjs lines 5-8, 'Evaluates parcel centroids against bbox-filtered FEMA NFHL tx_fema_nfhl_flood_zone polygons'.",
+      "consequence": "This is a sampling-method difference of a coarser class than the dispatch anticipated (it named centroid vs majority vs any-intersect). It is centroid against a point up to 366 m away. It predicts divergence concentrated along flood-zone boundaries and it is independently testable per parcel, which the detector does.",
+      "layer": "code mechanism, not a store layer"
+    },
+    {
+      "id": "F3",
+      "label": "VERIFIED",
+      "claim": "The tier2 flood record CANNOT NAME ITS SOURCE EDITION, so the dispatch's vintage-versus-split fork is undecidable from the record on the tier2 side. tier2 provenance.vintage carries the BAKE TIMESTAMP, never an NFHL edition.",
+      "evidence": "Bastrop node:48021:36521 tier2 provenance.vintage = 2026-07-21T16:59:52.146Z, equal to its own bakedAt. Travis node:48453:0 and node:48453:100008 tier2 provenance.vintage = 2026-07-22T17:30:51.328Z. Both are ISO instants, not NFHL edition strings. The atom side by contrast carries sourceVintage NFHL_48_20260101.",
+      "consequence": "A pair where one side names no edition must be classified vintage-UNDECIDABLE, never vintage-differs. Classifying it as differs would manufacture the staleness finding the prediction expects.",
+      "layer": "WRITTEN"
+    },
+    {
+      "id": "F4",
+      "label": "VERIFIED - correction to a RELAYED figure",
+      "claim": "The 8.69 percent versus 0.04 percent Bastrop/Travis contrast that the dispatch's vintage thesis rests on is substantially a DENOMINATOR artifact. Travis's 0.04 percent was taken over 804,458 parcels, but only 27,584 Travis parcels have a tier2 row at all, and only 4,146 of those name a flood zone; the other 23,438 (84.97 percent) carry status unavailable with reason 'FEMA fetch skipped (--skip-fema)'. A disagreement is arithmetically impossible on 800,312 of the 804,458.",
+      "evidence": "psql neondb: SELECT split_part(place_key,':',2), payload_json->'flood'->>'status', payload_json->'flood'->>'floodZone' IS NOT NULL, count(*) FROM place_layer_snapshots WHERE adapter_key='node-facets:tier2' GROUP BY 1,2,3. Travis 48453: flood-zone/named 3847, in-sfha/named 299, unavailable/unnamed 23438. Bastrop 48021: flood-zone/named 56779, in-sfha/named 5473, unavailable/unnamed 5.",
+      "arithmetic": "Re-based on the population where the comparison can occur, SS-W5's own 332 Travis disagreements become 332/4146 = 8.01 percent, against Bastrop's 5424/62252 = 8.71 percent. Those are the same rate to within 0.7 points. The 332 and 5,424 are RELAYED from SS-W5 and are re-derived independently by this lane before any of this is reported as a result.",
+      "consequence": "There is no Bastrop-versus-Travis contrast left for a vintage story to explain. Pre-registered expectation for the measurement, per DEV_PROCESS 4.5: the two counties land within a few points of each other and the dominant class in BOTH is the tile-sampling artifact of F2. A result outside that band is a finding either way.",
+      "layer": "WRITTEN"
+    },
+    {
+      "id": "F5",
+      "label": "VERIFIED",
+      "claim": "The duplicate-subject population is far smaller than the spine. node-facets:tier1 exists for 19 counties and 4,606,751 rows; node-facets:tier2 for 10 counties and 608,414 rows. Every other adapter_key in place_layer_snapshots holds between 2 and 176 rows.",
+      "evidence": "psql neondb per-adapter counts: tier1 4606751 (max snapshot 2026-08-06), tier2 608414 (max 2026-07-23), fema:nfhl-flood-zone 176, national:opportunity-zone 170, cad:owner-occupancy 145, cad:property 145, cad:tax 145, permits:record 142, cotality:zoning 65, usgs:ned-elevation 58, epa:ejscreen 58, cotality:parcels 54, cotality propensity/permits/property/owner-occupancy/liens-mortgage-tax/rent-avm 12 each, cotality hoa/comparables 2 each, regrid parcels/zoning 2 each. tier2 counties: 48209 116421, 48309 114255, 48091 103207, 48187 93728, 48021 62257, 48029 29991, 48027 29984, 48453 27584, 48055 24989, 48491 5998.",
+      "consequence": "Any statewide divergence figure for flood has a hard ceiling of 608,414 parcels and the honest denominator is smaller again. The cotality and regrid stores are vestigial caches of EXTINGUISHED sources and are a retirement question, not a reconciliation one.",
+      "layer": "WRITTEN"
+    },
+    {
+      "id": "F6",
+      "label": "VERIFIED",
+      "claim": "Duplicate subjects fall into three structurally different classes, and treating them as one produces a wrong retirement recommendation. Class A INDEPENDENT DOUBLE DERIVATION: two stores derived separately from the same authority, as flood is. Class B COPY / TRANSFORM: one store is a snapshot copy of the other. Class C VESTIGIAL CACHE: 2 to 176 row caches of extinguished sources.",
+      "evidence": "psql hauska_mcp, Bastrop 48021 by sourceAdapter. zoning-fact: cortex-tier1-snapshot-breadth-bake 52700, txgio-zoning-stamp:bastrop-city-tx 5798, txgio-zoning-stamp:elgin-tx 3762. buildable-envelope: cortex-tier1-snapshot-breadth-bake 54489, depth-warm-verify-promote 3935, bastrop-per-parcel-record-layer-23 3836. A sample zoning-fact sourceCitation ends 'PIP stamp; breadth bake is TRANSFORM only' and its sourceUrl is https://hauska.dev/internal/breadth-atom-bake/cortex-snapshot.",
+      "consequence": "Class B cannot diverge by method, only by refresh lag, and it is the class where retiring the loser is cheapest and safest. Class A is where an adjudication against ground truth is actually required. Class C needs no reconciliation at all, only a delete ruling."
+    },
+    {
+      "id": "F7",
+      "label": "VERIFIED",
+      "claim": "The subject 'zoning district' is held in at least FOUR places, not two: atoms.zoning-fact.district, tier1 payload_json.zoning.district, txgio_parcel.zoning_district (a column on the raw parcel fabric), and the cotality:zoning / regrid:zoning caches. This is a case the dispatch could not name, which is the reason it asked for a detector rather than a fix.",
+      "evidence": "information_schema.columns for txgio_parcel lists zoning_district and zoning_jurisdiction; tier1 payload for node:48021:36521 carries zoning.district = GC; atoms zoning-fact body carries district; the adapter_key enumeration carries cotality:zoning (65 rows) and regrid:zoning (2 rows)."
+    }
+  ],
+
+  "detectorDesign": {
+    "principle": "The store-by-subject matrix is DERIVED from the live stores, never hand-declared. Hand-declared manifests drift both ways against the engine, which is the has_writer/atomFamilyState precedent. The declared registry exists only to name the canonical subject a field path belongs to; a --check-registry run compares derived against declared and EXITS 1 on drift, so the declaration cannot silently rot. That is the DEV_PROCESS 2.4 divergence-test shape: one data file, one derivation, and a test between them.",
+    "partA_inventory": "Loose index scan for distinct entity_type over atoms (index atoms_entity_type_idx) and distinct adapter_key over place_layer_snapshots (index place_layer_snapshots_adapter_place_uidx); sampled body and payload key sets to depth 2 per type and key; information_schema column sets for the cortex raw geo tables; then map field paths to canonical subjects and emit every subject held by two or more stores.",
+    "partB_divergence": "Per county, per duplicate pair, read BOTH stores in full for that county and classify every entity. It never samples: sampling certified a broken Bastrop once.",
+    "classification": [
+      "one-sided: only one store holds a value. NOT a disagreement. Counted separately, with the two directions distinguished.",
+      "agree: normalised values equal.",
+      "explained-by-sampling-point: the two stores demonstrably queried different points and each store's value is CORRECT for the point it queried. Decided by re-running both sample points against the same NFHL edition in PostGIS. This class did not exist in the dispatch's fork and is expected to dominate.",
+      "split-subject: the entity's own geometry intersects more than one zone, so both values are true of part of it. Decided by ST_Intersects of the parcel polygon against the NFHL zone set. Per the frozen fact-sheet contract this is not a disagreement at all.",
+      "edition-differs: both stores sampled the SAME point and disagree, and re-running that point against the current edition matches exactly one of them. The other is stale.",
+      "vintage-undecidable: one side names no source edition, per F3. Reported as its own class, never folded into edition-differs.",
+      "genuine-conflict: survives all of the above. This and only this goes to FEMA NFHL for adjudication."
+    ],
+    "denominatorRule": "Every rate is quoted over the population where the comparison is ARITHMETICALLY POSSIBLE, meaning both stores hold a row for the entity and both name a value, and that denominator is printed beside the rate at the point of use per DEV_PROCESS 1.2. The full-roster denominator is also printed so a reader can see the F4 gap instead of inheriting one side of it.",
+    "instrumentSelfTest": "Every classifier is proven able to FIRE on a constructed case before any count is trusted, per DEV_PROCESS 2.2. A classifier that returns zero without a firing test is reported as untested, not as zero."
+  },
+
+  "adversarialReviewOfTheDispatch": [
+    "The dispatch's PREDICTION is offered as falsifiable, and the premise behind it is already contradicted at source before the measurement runs (F4). Reporting that is the successful outcome per DEV_PROCESS 3.2, not a refusal to do the work. The measurement runs anyway and is not tuned toward this expectation.",
+    "The dispatch's fork - vintages DIFFER means staleness, vintages MATCH means sampling or split - assumes both stores name a vintage. One does not (F3). A lane that applied the fork mechanically would have classified every Bastrop case as vintage-differs on the strength of two unlike strings, and every Travis case as vintage-matches on the strength of a claim (that both carry NFHL_48_20260101) which is false for the tier2 side in both counties.",
+    "'RETIRE the loser' is correct as a programme rule but under-specified for Class B: where one store is a TRANSFORM of the other, retiring the copy is a serving change and the copy is what the atom chain serves today. The retirement recommendation must therefore name the consumer that breaks, not only the store that loses.",
+    "Read-only is honoured absolutely: this lane issues no INSERT, UPDATE, DELETE or DDL against either database and takes no atoms writer slot."
+  ],
+
+  "constraintsHonored": [
+    "read-only against both production databases",
+    "heavy scans serialized - one at a time, never parallel",
+    "exit-bounded verification only - no watch, no tail, no non-exiting server",
+    "isolated worktree /p/hauska-engine-worktrees/ss-w11-reconciliation",
+    "no sub-agents spawned: this lane is the deepest worker by dispatch instruction"
+  ],
+
+  "openAtCp1": [
+    "The 5,424 and 332 disagreement counts are still RELAYED from SS-W5. They are re-derived independently before CP2.",
+    "Whether the tile-sampling artifact F2 or edition drift dominates is measured, not assumed.",
+    "The other duplicate pairs - zoning four-way, land use, situs, apn, envelope, owner, parcel existence - are inventoried but not yet measured."
+  ]
+}
