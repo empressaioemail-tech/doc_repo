@@ -81,14 +81,20 @@ difference between a correct sweep and a second incident.
 NO DURABLE RECORD EXISTS ON THE DESTRUCTIVE PATH. The sweep returns a `delisted`
 integer in an HTTP response and writes nothing that survives the request. A
 count is not a record. That absence is the whole reason this question needed a
-three-witness database forensic instead of a log read, and it is being closed on
-branch `t27/delist-record`.
+three-witness database forensic instead of a log read.
 
-THE ALIAS CLOSE IS SWALLOWED. The close is wrapped in a bare `except Exception`
-that logs at `logger.debug`, which is below the production log level, since
-`main.py` sets root to WARNING and `app` to INFO. So a symbol can be marked
-delisted while its alias era silently stays open, and nothing says so. Handed to
-the same branch.
+CLOSED 2026-08-20 as `98059077` (PR #369). The sweep now writes a `job_runs` row
+of kind `universe_delist_sweep` NAMING the symbols, committed BEFORE the first
+`is_active` flip, and a record that cannot be written aborts the sweep rather
+than letting it proceed unrecorded. All three refusal paths record too.
+
+THE ALIAS CLOSE WAS SWALLOWED. The close was wrapped in a bare `except
+Exception` logging at `logger.debug`, below the production log level, so a
+symbol could be marked delisted while its alias era silently stayed open. CLOSED
+in the same commit: a failed alias close now rolls back that row's delist, so the
+two stores cannot disagree, names the symbol in the durable record, and logs at
+error. Per-row rather than fatal, so one unresolvable ticker cannot strand the
+sweep.
 
 ## Method note
 

@@ -1,0 +1,55 @@
+{
+  "lane": "t27-delist-record",
+  "repo": "empressa-trading",
+  "base_sha": "4b60775ed9e15cd6d6f8bafc940ffa35d9195ef4",
+  "head_sha": "0d0a5b33367059978bb0a935ef147aedc5f69811",
+  "branch": "t27/delist-record",
+  "pr": 369,
+  "ci_conclusion": "success",
+  "record_mechanism": "job_runs",
+  "names_the_symbols": true,
+  "refusals_recorded": true,
+  "refusal_kinds": [
+    "fmp_not_configured",
+    "vendor_not_observed",
+    "stock_list_observed_empty"
+  ],
+  "record_failure_aborts_mutation": true,
+  "ordering": "pure at-risk scan, then the intent record is committed, then the first is_active flip; a failed record write raises DelistRecordUnavailable and the sweep never starts",
+  "alias_close_swallow": "recorded",
+  "alias_log_level": "error",
+  "commit_boundary_note": "per row the delist is staged, the alias closed, and one commit covers both; on failure db.rollback() reverts that row's uncommitted delist and any node the resolver minted, leaving rows committed earlier in the loop untouched",
+  "three_question_gate": {
+    "executes": "_write_delist_record inside app/universe/sync.py sync_universe, a db.add plus commit of a job_runs row of kind universe_delist_sweep",
+    "triggers": "every invocation of sync_universe (job kind universe_sync, sole production call site app/jobs/phase2_backfill.py run_universe_sync); the sweep loop is gated on the intent write returning",
+    "fails": "DelistRecordUnavailable propagates, the sweep does not run, and through the job runner the job lands status=failed; NOT running in production today because this is unmerged and undeployed, so what enforces it today is CI only",
+    "bypasses": "out-of-band SQL against universe_symbols (psql or the Cloud SQL console); an AST scan confirms sync.py is the only in-repo writer of is_active=False/delisted_at and the only raw UPDATE universe_symbols is migration 0033 which touches is_tradable alone, so the control's scope matches its claim; cancel_job can still move a running intent row to cancelled mid-sweep, but result_json naming the symbols survives that",
+    "is_a_control": true
+  },
+  "netguard_clean": true,
+  "pytest_baseline": "5124 passed, 0 failed, 2 skipped, 21 deselected",
+  "pytest_after": "5132 passed, 0 failed, 2 skipped, 21 deselected",
+  "defects_reintroduced": [
+    {
+      "defect": "removed the intent record write entirely",
+      "test": "test_delist_sweep_writes_a_record_NAMING_the_symbols / test_the_record_is_committed_BEFORE_a_single_symbol_is_mutated",
+      "went_red": true
+    },
+    {
+      "defect": "refusals return without leaving a record",
+      "test": "test_refusal_on_an_UNOBSERVED_vendor_list_is_recorded_by_name / test_refusal_on_an_OBSERVED_EMPTY_stock_list_names_the_symbols_it_spared / test_refusal_on_an_UNCONFIGURED_vendor_is_recorded",
+      "went_red": true
+    },
+    {
+      "defect": "record write failure caught and swallowed so the mutation proceeds (fail open)",
+      "test": "test_a_record_that_cannot_be_written_ABORTS_the_sweep",
+      "went_red": true
+    },
+    {
+      "defect": "restored the bare logger.debug swallow on the alias close with no rollback",
+      "test": "test_a_failed_alias_close_ROLLS_BACK_the_delist_and_is_named",
+      "went_red": true
+    }
+  ],
+  "leave_behind": []
+}
