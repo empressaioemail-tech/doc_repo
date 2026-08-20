@@ -34,7 +34,7 @@ The incidents were not merge failures. Git handles concurrent writers well. They
 
 **One worktree and one branch per seat.** `git worktree add` gives each seat its own checkout and index against the same object store. Index collisions become impossible rather than unlikely. Two worktrees cannot share a branch, which is why the branch follows from the worktree.
 
-**Merge to main is self service.** Each seat merges its own branch. Gating merges on the operator makes the operator the bottleneck the moment three seats run concurrently, and the branch protection already in place is the real gate.
+**Merge to main is self service.** Each seat merges its own branch. Gating merges on the operator makes the operator the bottleneck the moment three seats run concurrently. GitHub branch protection is the merge gate. Stage 1 landed 2026-08-20; current state is in `_inbox/2026-08-20_branch_protection_close.json`, not in this sentence.
 
 **Product repositories are exclusive.** One seat writes to a repository. Where two seats need one repository, either split by path with the split declared, or name one owner and have the other request changes. Unowned is how index collisions return.
 
@@ -59,7 +59,21 @@ namespace       its directory under _state/ and its _inbox/ prefix
 authority       what it may do without asking
 ```
 
-The register is the input to any control that needs to know what a seat is, including the branch prune, which must treat every registered seat branch as live.
+The register is the input to any control that needs to know what a seat is, including the branch prune, which must treat every registered seat branch as live. Extra worktrees that are not seats (`otherWorktrees` in the register) are named so they are not "unregistered" by accident. They are not writer seats. SEAT-01 refuses writes from them.
+
+## Dual-home documents
+
+Numbered-band and `90_runbooks/` files are canon. Matching names under `OPS/` are dispatch-package pointers. Edit the canon path. A second body at the OPS path is a defect. 62, 90, and 91 follow this. 61 follows this.
+
+## Uncommitted estate
+
+Seat worktrees materialise the commit. They do not carry integration untracked files. That is the topology working. It also means the uncommitted estate is invisible from `git status` in a seat worktree.
+
+Query it from any seat: `node scripts/hygiene/untracked-estate.mjs`. That script runs `git status` against the integration checkout named in the register. Default output is counts. Pass `--full` for porcelain lines. It does not copy files into seat worktrees.
+
+Remaining many-writer files this pass did not split: OPS-16 and OPS-17 amendment tables (dispatch.mjs still reads those files; splitting them without changing the compiler is a starved split). `_catalog/thesis_parity_ledger.md` stays planner-owned for the table; new findings may still append there until a findings directory has a write path. Flagged, not split.
+
+Anything a tracked document cites must itself be tracked. `scripts/enforcement/cited-untracked.mjs` fails when a tracked file names a path that exists on disk and is not in git. That is how a clone is prevented from missing the doctrine a vehicle claims to be derived from.
 
 ## Session bootstrap
 
@@ -87,5 +101,7 @@ Subagents can still produce wrong artifacts, and the planner reviewing them is t
 Harness coverage remains partial. Seats running on harnesses that load neither vehicle file are unreached by the rules layer entirely, and the honest position is to name that set rather than assume the fleet is covered.
 
 ## Revision history
+
+2026-08-20, topology finish: extra worktrees named in the register, dual-home pointers, uncommitted-estate query, cited-untracked control.
 
 2026-08-20, drafted following three concurrent write events in one repository in one day, two of which could have destroyed work. Establishes three layers, the only planners commit rule, worktree and branch isolation, and the seat register.

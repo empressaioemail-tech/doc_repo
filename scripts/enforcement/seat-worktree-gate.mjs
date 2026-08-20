@@ -23,7 +23,7 @@
  * _git-repo-target.ps1, not a determination.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, appendFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -34,10 +34,10 @@ import {
   pathsEqual,
   normalizePath,
 } from './seat-register.mjs';
+import { appendOverride } from './override-log.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DOC_REPO = join(__dirname, '../..');
-const OVERRIDE_LOG = join(DOC_REPO, '_catalog/dispatch_overrides.log');
 
 function gitShowToplevel(cwd) {
   try {
@@ -108,6 +108,14 @@ export function evaluate({ worktree, branch, paths = [], command = '' }) {
       allow: false,
       code: 'unregistered_worktree',
       message: `SEAT-01: worktree ${wt} is not in _catalog/seat_register.json. A shared checkout is the failure this control exists to make impossible. Work in a registered seat worktree.`,
+    };
+  }
+
+  if (entry.kind === 'extra') {
+    return {
+      allow: false,
+      code: 'extra_worktree_no_writes',
+      message: `SEAT-01: worktree ${wt} is named in otherWorktrees and is not a writer seat. Writes refused.`,
     };
   }
 
@@ -251,8 +259,7 @@ function isGitWriteCommand(command) {
 
 function logOverride(worktree, cwd) {
   try {
-    const line = `${new Date().toISOString()}\tSEAT_GATE_OVERRIDE\ttarget=${worktree || '-'}\tcwd=${cwd || '-'}\n`;
-    appendFileSync(OVERRIDE_LOG, line, 'utf8');
+    appendOverride({ kind: 'SEAT_GATE_OVERRIDE', cwd, worktree });
   } catch {
     /* still allow; acknowledgment write failed is its own finding */
   }

@@ -41,9 +41,9 @@ gh api repos/OWNER/REPO/branches/main/protection 2>&1 | head -5
 gh api repos/OWNER/REPO/rulesets --jq 'length'
 ```
 
-Expected before this pass: a 404 with "Branch not protected" and a ruleset count of zero, on all six.
+Expected **before Stage 1** (snapshot in the close): a 404 with "Branch not protected" and a ruleset count of zero, on all six. That is not the present state. After Stage 1, GET `/branches/main/protection` returns 200. Verify at the API; do not copy this paragraph forward as current.
 
-**Repositories in scope.** doc_repo, hauska-map, hauska-engine, legacy-design-tools. The markets repositories, empressa-trading and smart-markets, are also unprotected and are handled in the same pass if the operator has admin there.
+**Repositories in scope.** doc_repo, hauska-map, hauska-engine, legacy-design-tools, plus empressa-trading and smart-markets when admin is present. Stage 1 on those six is recorded in the close. This runbook does not claim they are unprotected.
 
 ## Configuration A, doc_repo. History protection only.
 
@@ -182,5 +182,7 @@ Stage 2, not Stage 1, is the action that would make existing checks binding.
 ## Revision history
 
 2026-08-20, Stage 1 applied on six repositories and verified by violation. JSON `--input` payloads used. Markets included because admin was present. Stage 2 not applied.
+
+2026-08-20, Stage 1 landed. Present-tense "are unprotected" removed from the in-scope paragraph. Verify GitHub at the API; do not copy pre-Stage-1 expectations forward as current.
 
 2026-08-19, drafted following the discovery that no repository in the estate carries branch protection and every continuous integration check is therefore advisory.

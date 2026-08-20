@@ -48,10 +48,9 @@ Before generating the prompt, the planner determines:
    change is small.
 5. **New docs produced this session** — full content of any new files
    that need to be committed (with target paths and frontmatter).
-6. **Current-state snapshot regeneration** — updated `00_current_state.md`
-   content per [`current_state_protocol.md`](current_state_protocol.md).
-   May be "no change this session" for purely tactical sessions; still
-   bump `last_updated` regardless.
+6. **Current-state snapshot regeneration** — update `_state/<seat>/STATE.md`
+   and run `node scripts/state/generate-combined.mjs`. Do not overwrite
+   `00_current_state.md` as the serving snapshot. That file is a pointer.
 7. **Post-commit verifications** — specific items the doc_repo agent
    should check after pushing to confirm the changes landed correctly
    (e.g., "confirm `11_roadmap.md` Phase 1A item now shows status
@@ -135,11 +134,11 @@ memory_graded: none   # or: [<memory-slug>:HELPED, <memory-slug>:HARMED]
 
 ### 2D. Regenerate current-state snapshot
 
-Per [`current_state_protocol.md`](current_state_protocol.md), every session close regenerates `00_current_state.md` with the post-session state. The planner provides the new snapshot content; write it to `00_current_state.md`, overwriting prior content. Keep it under ~150 body lines per the protocol.
+Per [`current_state_protocol.md`](current_state_protocol.md), every session close updates `_state/<seat>/STATE.md` and regenerates `_STATE.md`. Do not overwrite `00_current_state.md` as the serving snapshot.
 
 {{CURRENT_STATE_SNAPSHOT}}
 
-If the session's work didn't materially change the snapshot (e.g., a small tactical session that didn't move any fires, sprints, ADRs, or agent assignments), the planner may pass `{{CURRENT_STATE_SNAPSHOT}}` = "no change this session" and Stage 2D is a no-op. Bump `last_updated` in the snapshot frontmatter to reflect the session date regardless.
+If the session's work didn't materially change seat state (e.g., a small tactical session that didn't move any fires, sprints, ADRs, or agent assignments), Stage 2D may be a timestamp bump on that seat's STATE file plus regenerate. Do not rewrite `00_current_state.md` as the live ledger.
 
 ### 2E. Verify before commit
 
@@ -151,7 +150,8 @@ git diff --stat
 Report verbatim. Confirm:
 - All listed canonical docs show as modified
 - All listed new docs show as untracked / added
-- `00_current_state.md` shows as modified (or untracked if first-time creation)
+- `_STATE.md` shows as modified after generate-combined, or the seat STATE file does
+- `00_current_state.md` is not the serving snapshot; do not expect it to change every close
 - No unexpected modifications to other files
 - Diff stats are roughly the size you'd expect from the changes
 

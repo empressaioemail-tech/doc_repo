@@ -101,6 +101,18 @@ check(
   'unregistered_worktree',
 );
 
+check(
+  'named extra worktree refused as non-writer',
+  evaluate({
+    worktree: 'P:/worktrees/doc-repo-l23-gate-grade',
+    branch: '',
+    paths: ['README.md'],
+    command: 'git add README.md',
+  }),
+  false,
+  'extra_worktree_no_writes',
+);
+
 const live = liveSeatBranches(register);
 const hasPropertyLdt = live.some(
   (b) => b.branch === 'seat/property' && /legacy-design-tools/i.test(b.repo),

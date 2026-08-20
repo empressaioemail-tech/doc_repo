@@ -1,4 +1,4 @@
-<!-- AGENT-CONTRACT vbcc3efb6 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- AGENT-CONTRACT v7b714e95 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # AGENT CONTRACT — the operative law for every dispatched lane
 
@@ -64,7 +64,7 @@ scan waits. Fetches, PBF extraction, and CPU-bound work parallelize freely.
 - Verification steps are EXIT-BOUNDED: builds, tests, one-shot queries, bounded polls. Never a watch,
   a tail -f, or a non-exiting server.
 - STALLS ARE DETECTED BY PROGRESS, NEVER BY PROCESS EXISTENCE. Every long-running runner writes a
-  progress artifact at least every county/unit, registers it in `_catalog/watch_registry.json` with a
+  progress artifact at least every county/unit, registers it as `_catalog/watch_registry/<id>.json` with a
   quiet budget BEFORE it starts, and its heartbeat/babysitting runs detached from any chat (an agent
   stall must never silently take its monitoring down with it — L16 lost 5.5 hours exactly this way).
   A runner without a registered watch is not dispatched. Watchers themselves never expire silently:

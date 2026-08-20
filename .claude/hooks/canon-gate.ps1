@@ -7,7 +7,8 @@
 $DocRepo = 'P:/doc_repo'
 $IntentsPath = Join-Path $DocRepo '_catalog/repo_intents.md'
 $PreamblePath = Join-Path $DocRepo '_catalog/DISPATCH_PREAMBLE.md'
-$OverrideLog = Join-Path $DocRepo '_catalog/canon_overrides.log'
+$OverrideLib = Join-Path $PSScriptRoot '_override-log-target.ps1'
+if (Test-Path -LiteralPath $OverrideLib) { . $OverrideLib }
 $PlanRegistryPath = Join-Path $DocRepo '_catalog/plan_registry.json'
 
 function Exit-Open { exit 0 }
@@ -128,7 +129,12 @@ function Append-OverrideLog {
         $snippet = if ($Prompt.Length -gt 200) { $Prompt.Substring(0, 200) } else { $Prompt }
         $snippet = $snippet -replace '\s+', ' '
         $line = "$stamp`t$Repo`t$Reason`t$snippet"
-        Add-Content -LiteralPath $OverrideLog -Value $line -Encoding utf8
+        $path = if (Get-Command Get-OverrideLogPath -ErrorAction SilentlyContinue) {
+            Get-OverrideLogPath -Cwd (Get-Location).Path
+        } else {
+            Join-Path $DocRepo '_catalog/canon_overrides.log'
+        }
+        Add-Content -LiteralPath $path -Value $line -Encoding utf8
     } catch {
         # logging failure must not block
     }

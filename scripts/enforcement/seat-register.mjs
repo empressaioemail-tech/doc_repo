@@ -60,6 +60,20 @@ export function allWorktreeEntries(register) {
       repoPath: normalizePath(register.integration.worktree),
     });
   }
+  for (const extra of register.otherWorktrees || []) {
+    const norm = normalizePath(extra.path);
+    const slug = norm.split('/').filter(Boolean).pop() || 'extra';
+    rows.push({
+      kind: 'extra',
+      name: slug,
+      worktree: norm,
+      branch: extra.branch || '',
+      namespace: null,
+      repoName: 'doc_repo',
+      repoPath: norm,
+      writes: false,
+    });
+  }
   for (const seat of register.seats) {
     rows.push({
       kind: 'seat-doc',
@@ -90,6 +104,32 @@ export function findByWorktree(register, worktreePath) {
   return rows.find((r) => pathsEqual(r.worktree, worktreePath)) || null;
 }
 
+/** Longest registered worktree that equals cwd or is a prefix of it. */
+export function findByCwd(register, cwd) {
+  const c = normalizePath(cwd).toLowerCase();
+  if (!c) return null;
+  let best = null;
+  let bestLen = -1;
+  for (const row of allWorktreeEntries(register)) {
+    const w = row.worktree.toLowerCase();
+    if (!w) continue;
+    if (c === w || c.startsWith(w + '/')) {
+      if (w.length > bestLen) {
+        best = row;
+        bestLen = w.length;
+      }
+    }
+  }
+  return best;
+}
+
+export function seatNameFromCwd(register, cwd) {
+  const row = findByCwd(register, cwd);
+  if (!row) return 'unknown';
+  if (row.kind === 'extra') return 'extra';
+  return row.name || 'unknown';
+}
+
 export function ownerOfRepoPath(register, repoPath) {
   const rows = allWorktreeEntries(register);
   const hit = rows.find((r) => r.kind === 'seat-product' && pathsEqual(r.repoPath, repoPath));
@@ -100,7 +140,7 @@ export function ownerOfRepoPath(register, repoPath) {
 export function liveSeatBranches(register) {
   const out = [];
   for (const row of allWorktreeEntries(register)) {
-    if (row.kind === 'integration') continue;
+    if (row.kind === 'integration' || row.kind === 'extra') continue;
     out.push({
       repo: row.kind === 'seat-doc' ? 'P:/doc_repo' : row.repoPath,
       branch: row.branch,

@@ -22,8 +22,8 @@
 # Escape hatch: `CLOSE_OVERRIDE=1 git push ...` (logged with target repo).
 
 $DocRepo = 'P:/doc_repo'
-$OverrideLog = Join-Path $DocRepo '_catalog/dispatch_overrides.log'
 $Lib = Join-Path $PSScriptRoot '_git-repo-target.ps1'
+$OverrideLib = Join-Path $PSScriptRoot '_override-log-target.ps1'
 
 $LiveStateDocs = @('_STATE.md', 'MEMORY.md')
 $LiveStatePrefix = '_state/'
@@ -32,6 +32,7 @@ function Exit-Open { exit 0 }
 
 if (-not (Test-Path -LiteralPath $Lib)) { Exit-Open }
 . $Lib
+if (Test-Path -LiteralPath $OverrideLib) { . $OverrideLib }
 
 function Write-BlockMessage {
     param([string]$Message)
@@ -46,7 +47,12 @@ function Append-OverrideLog {
         $stamp = (Get-Date).ToString('o')
         $t = if ($TargetRepo) { $TargetRepo } else { '-' }
         $c = if ($ToolCwd) { $ToolCwd } else { '-' }
-        Add-Content -LiteralPath $OverrideLog -Value "$stamp`tCLOSE_OVERRIDE`ttarget=$t`tcwd=$c" -Encoding utf8
+        $path = if (Get-Command Get-OverrideLogPath -ErrorAction SilentlyContinue) {
+            Get-OverrideLogPath -Cwd $ToolCwd
+        } else {
+            Join-Path $DocRepo '_catalog/dispatch_overrides.log'
+        }
+        Add-Content -LiteralPath $path -Value "$stamp`tCLOSE_OVERRIDE`tseat-log`ttarget=$t`tcwd=$c" -Encoding utf8
     } catch { }
 }
 

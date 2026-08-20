@@ -21,10 +21,11 @@
 #
 # FAILS OPEN on any parse or IO error so a hook bug never blocks routine work.
 # Escape hatch: a line `DISPATCH_OVERRIDE: <reason>` anywhere in the text,
-# logged to _catalog/dispatch_overrides.log.
+# logged to _catalog/override_logs/<seat>.log.
 
 $DocRepo = 'P:/doc_repo'
-$OverrideLog = Join-Path $DocRepo '_catalog/dispatch_overrides.log'
+$OverrideLib = Join-Path $PSScriptRoot '_override-log-target.ps1'
+if (Test-Path -LiteralPath $OverrideLib) { . $OverrideLib }
 
 function Exit-Open { exit 0 }
 
@@ -41,7 +42,12 @@ function Append-OverrideLog {
         $stamp = (Get-Date).ToString('o')
         $first = ($Text -split "`n" | Select-Object -First 1).Trim()
         if ($first.Length -gt 120) { $first = $first.Substring(0, 120) }
-        Add-Content -LiteralPath $OverrideLog -Value "$stamp`tDISPATCH_OVERRIDE`t$Reason`t$first" -Encoding utf8
+        $path = if (Get-Command Get-OverrideLogPath -ErrorAction SilentlyContinue) {
+            Get-OverrideLogPath -Cwd (Get-Location).Path
+        } else {
+            Join-Path $DocRepo '_catalog/dispatch_overrides.log'
+        }
+        Add-Content -LiteralPath $path -Value "$stamp`tDISPATCH_OVERRIDE`t$Reason`t$first" -Encoding utf8
     } catch { }
 }
 

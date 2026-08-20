@@ -4,8 +4,8 @@
  *
  * Every stall in this program (L16 pipelines 5.5h, flood waiter, silent watcher expiry) shared one
  * root: liveness was inferred from a process existing, monitored by something that could die with
- * it. This watchdog inverts both: it reads _catalog/watch_registry.json entries
- * {id, path(file|glob), maxQuietMin, note} and checks the newest mtime behind each entry every 60s.
+ * it. This watchdog inverts both: it reads _catalog/watch_registry/<id>.json
+ * entries {id, path(file|glob), maxQuietMin, note} and checks the newest mtime behind each entry every 60s.
  * When any entry goes quiet past its budget, it prints the ALARM and EXITS NON-ZERO — run it as a
  * planner background task so its exit WAKES the planner for immediate triage (never a silent
  * timeout: on reaching maxCycles it exits 0 with WATCH-EXPIRED-REARM so the planner re-arms).
@@ -16,14 +16,33 @@
  * skipped (use for legs between runs). A missing path older than maxQuietMin also alarms — a runner
  * that never started is a stall too.
  */
-import { readFileSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs';
 import { globSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const registryPath = join(root, '_catalog', 'watch_registry.json');
+const registryDir = join(root, '_catalog', 'watch_registry');
 const maxCycles = parseInt(process.argv[2] || '240', 10);
+
+function loadWatches() {
+  if (!existsSync(registryDir)) {
+    throw new Error(`watch registry directory missing: ${registryDir}`);
+  }
+  const files = readdirSync(registryDir).filter((f) => f.endsWith('.json'));
+  if (files.length === 0) {
+    throw new Error('watch registry directory has no json files');
+  }
+  const entries = [];
+  for (const f of files) {
+    const w = JSON.parse(readFileSync(join(registryDir, f), 'utf8'));
+    if (!w.id || !w.path || typeof w.maxQuietMin !== 'number') {
+      throw new Error(`watch file ${f} missing id, path, or maxQuietMin`);
+    }
+    entries.push(w);
+  }
+  return entries;
+}
 
 function newestMtime(pattern) {
   let files = [];
@@ -40,7 +59,7 @@ function newestMtime(pattern) {
 for (let cycle = 1; cycle <= maxCycles; cycle++) {
   let entries = [];
   try {
-    entries = JSON.parse(readFileSync(registryPath, 'utf8')).watches || [];
+    entries = loadWatches();
   } catch (e) {
     console.log(`ALARM REGISTRY-UNREADABLE: ${e.message}`);
     process.exit(1);
