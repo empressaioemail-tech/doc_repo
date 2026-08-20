@@ -1,38 +1,65 @@
 # Branch-protection hook for git commit / git push tool calls.
-# Refuses commit/push when working tree is not on `main` (single-branch workflow per CLAUDE.md).
+# Refuses commit/push when doc_repo working tree is not on `main`.
 # Invoked from .claude/settings.json PreToolUse hook on Bash matcher.
 # Claude Code passes the tool payload as JSON on stdin (verified 2026-05-16 via diag log).
-# Fails open on any parse error so a hook bug never breaks routine Bash use.
+#
+# SCOPE (2026-08-20). Applies ONLY when the command mutates the integration
+# checkout P:/doc_repo (branch main). Seat worktrees under
+# P:/seat-worktrees/*/doc_repo are a different worktree of the same object
+# store; SEAT-01 (seat-worktree-gate) owns those. Target repo is git -C,
+# then cd, then tool working_directory / payload cwd, then hook-process
+# Get-Location.
+#
+# The matcher below remains presence-shaped: it cannot distinguish a command
+# that commits from a command that mentions committing. That is
+# HOOK-branch-guard-literal-word, not this scope fix.
+#
+# Fails open on parse errors so a hook bug never breaks routine Bash use.
+
+$DocRepo = 'P:/doc_repo'
+$Lib = Join-Path $PSScriptRoot '_git-repo-target.ps1'
+
+function Exit-Open { exit 0 }
+
+if (-not (Test-Path -LiteralPath $Lib)) { Exit-Open }
+. $Lib
 
 $stdin = [Console]::In.ReadToEnd()
-if ([string]::IsNullOrWhiteSpace($stdin)) { exit 0 }
+if ([string]::IsNullOrWhiteSpace($stdin)) { Exit-Open }
 
 try {
     $payload = $stdin | ConvertFrom-Json
 } catch {
-    exit 0
+    Exit-Open
 }
 
-$command = $payload.tool_input.command
-if ([string]::IsNullOrWhiteSpace($command)) { exit 0 }
+$extracted = Get-ToolCommandAndCwd -Payload $payload
+$command = $extracted.Command
+if ([string]::IsNullOrWhiteSpace($command)) { Exit-Open }
 
-# Match `git ... commit` or `git ... push` within a single shell-command segment.
-# The [^&|;]*? guards against crossing into a chained sub-command (e.g. `cd foo && git status`
-# where the second segment is what we care about; here we only care if commit/push appears
-# in the same segment as the git invocation).
-if ($command -match '\bgit\b[^&|;]*?\b(commit|push)\b') {
-    $branch = (git -C P:/doc_repo branch --show-current 2>$null)
-    if ($branch) { $branch = $branch.Trim() }
+# Presence-shaped: word commit or push after git in this shell segment.
+# Own hygiene row. Do not "fix" here without replacing the predicate.
+if ($command -notmatch '\bgit\b[^&|;]*?\b(commit|push)\b') { Exit-Open }
 
-    if ($branch -and $branch -ne 'main') {
-        [Console]::Error.WriteLine('{"block": true, "message": "git commit/push refused: current branch is ' + $branch + ', not main. Switch to main explicitly or override."}')
-        exit 2
-    }
+$targetRepo = Resolve-GitRepoFromCommand -Command $command -ToolCwd $extracted.ToolCwd
+if (-not (Test-IsDocRepo -RepoPath $targetRepo)) { Exit-Open }
 
-    if (-not $branch) {
-        [Console]::Error.WriteLine('{"block": true, "message": "git commit/push refused: detached HEAD. Check out a branch first."}')
-        exit 2
-    }
+# Seat worktrees end in doc_repo too. Only the integration checkout must be on main.
+$targetNorm = Normalize-RepoPath $targetRepo
+$integrationNorm = Normalize-RepoPath $DocRepo
+if ($targetNorm -ne $integrationNorm) { Exit-Open }
+
+$branch = (git -C $DocRepo branch --show-current 2>$null)
+if ($branch) { $branch = $branch.Trim() }
+
+if ($branch -and $branch -ne 'main') {
+    [Console]::Error.WriteLine('{"block": true, "message": "git commit/push refused: doc_repo current branch is ' + $branch + ', not main. Switch doc_repo to main explicitly or override."}')
+    exit 2
+}
+
+if (-not $branch) {
+    [Console]::Error.WriteLine('{"block": true, "message": "git commit/push refused: doc_repo detached HEAD. Check out a branch first."}')
+    exit 2
 }
 
 exit 0

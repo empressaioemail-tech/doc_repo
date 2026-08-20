@@ -1,0 +1,59 @@
+{
+  "lane": "systems-seat-topology",
+  "snapshot": {
+    "startedOn": "b3fa27f99c25e1fe7d20f4384ec0ea48a0d7eb3c",
+    "mainMovedUnderUs": "e6de1eb1f98c9f65857b25f8d1a1efc5554d038d",
+    "mainMovedAt": "2026-08-20T09:46:12-05:00",
+    "mainMovedSubject": "docs(t25): packages/retrieval returns 158 CANDIDATE rows; W-30 verified and filed",
+    "secondMechanismRejected": "this session committed. Rejected: no git commit was run by this seat before the close. The new tip is another writer on the shared checkout, which is the defect the topology exists to make structurally impossible."
+  },
+  "leave_behind": [
+    {
+      "item": "OPS/62_seat_topology.md and root 62_seat_topology.md are copies",
+      "owner": "systems",
+      "plan_row": "retire OPS copy to a pointer after the package is absorbed"
+    },
+    {
+      "item": "00_current_state.md still has many overwriting writers",
+      "owner": "systems",
+      "plan_row": "generate from _state/<seat>/ or declare a single owner"
+    },
+    {
+      "item": "C-00 has no push trigger; doc_repo has no GitHub Actions workflow",
+      "owner": "systems",
+      "plan_row": "wire C-00 to a push/CI job"
+    },
+    {
+      "item": "_catalog/watch_registry.json is still a shared mutable file",
+      "owner": "systems",
+      "plan_row": "split per seat or give it one writer"
+    },
+    {
+      "item": "This landing commit used SEAT_GATE_OVERRIDE=1 from the integration checkout to file the initial _state split. That override is the bootstrap hole. Do not reuse it for seat work.",
+      "owner": "systems",
+      "plan_row": "none after this commit"
+    }
+  ],
+  "controls": {
+    "SEAT-01": {
+      "executor": "scripts/enforcement/seat-worktree-gate.mjs via .cursor/hooks.json (beforeShellExecution, preToolUse Write) and .claude/settings.json PreToolUse",
+      "trigger": "git add/commit/push in the agent shell, or Write/StrReplace/Delete",
+      "fails": "exit 2 / permission deny",
+      "bypasses": "editors outside the harness; git GUI; SEAT_GATE_OVERRIDE=1 (logged); harnesses that load neither Cursor hooks nor Claude PreToolUse; native git with no hooksPath"
+    },
+    "C-00": {
+      "executor": "scripts/enforcement/c-00-vehicle-sync.mjs",
+      "trigger": "manual/CLI; not wired to push",
+      "fails": "exit 1 on body drift",
+      "bypasses": "any edit path that does not run the script; harnesses that load neither file"
+    }
+  },
+  "proofs": {
+    "SEAT-01_unit": "scripts/enforcement/seat-worktree-gate.test.mjs allOk true",
+    "SEAT-01_live_unregistered_LDT": "exit 2 unregistered_worktree",
+    "SEAT-01_live_systems_ok": "exit 0",
+    "SEAT-01_live_foreign_namespace": "exit 2 foreign_namespace",
+    "C-00_violation": "deliberate mdc drift exit 1, restore exit 0; proof row not written to dispatch_overrides.log",
+    "index_isolation": "two worktrees on doc_repo object store; SEAT_INDEX_PROOF.txt staged in A; B cached empty and porcelain empty; proof branches deleted"
+  }
+}
