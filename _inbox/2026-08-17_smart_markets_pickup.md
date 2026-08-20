@@ -9,6 +9,22 @@ owner: nick
 
 # Smart Markets pickup
 
+> **2026-08-20 — T-25 ENUMERATION HANDOVER IS THE CURRENT PICKUP.**
+> Read `_sessions/2026-08-20_t25_enumeration_handover.md` FIRST. 513 rows
+> enumerated across both repositories, 93 read, 58 cleared structurally, 44
+> remaining, with the instruments to regenerate any of it.
+>
+> **Top of the next reader's list, above the 44:** TW-74 (PR #355, cockpit)
+> corrects a false green the deploy gate began reporting on 2026-08-20 when
+> branch protection Stage 1 landed. `protection exists` is not `checks are
+> required`, `required_status_checks.contexts` is 0 on both repositories, and
+> **until Stage 2 attaches a required check every green is a courtesy and not a
+> gate.** Do not cite one as a gate in any close.
+>
+> Ranked findings, the two unobservable populations that bound what the counts
+> mean, and the rules established during the pass are all in the handover.
+
+
 Living pickup for the instrument-twin program. Kept here rather than inline in `_STATE.md` because that file is under heavy concurrent write by the OPS-17 G-61 lane and a read-modify-write there silently lost this block once on 2026-08-17. `_STATE.md` carries a one-line pointer to this file.
 
 Baseline and rows: `_rd_disclosure_twin/08_build_scope.md` (32 rows, 9 amendments). Contract: `09_twin_read_contract.md` v0.1 approved.
