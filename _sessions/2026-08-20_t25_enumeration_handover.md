@@ -41,6 +41,19 @@ been missed by reading.
     cleared structurally        58   (categorical-score graders)
     REMAINING                   44   (see the handover set below)
 
+513 IS A CANDIDATE COUNT, NOT A MEASUREMENT. It rests on an AST instrument that
+has had ONE pass under its own criteria. That pass found one false-positive
+class (identity-map lookups, 2 rows, 260 -> 258); the sibling shapes of the same
+family are UNAUDITED, and a false-NEGATIVE class (`getattr(x, "a", default)`) is
+named and unsized.
+
+The programme's own standard applied to its own headline: no number should be
+quoted before the instrument that produced it has had a pass under its own
+criteria. Where an instrument has had none, its output is a list of CANDIDATES
+rather than a measurement. This one has had one, so 513 is a candidate count
+with a known correction of 0.4% and at least one unsized gap in the other
+direction.
+
 ## THE TWO NUMBERS THAT MUST TRAVEL TOGETHER
 
 Found: 13 fabricated price bars, confirmed in production, one vendor lane
@@ -350,7 +363,24 @@ gate.
 The generalisation is not that the instrument is bad. It is that AN INSTRUMENT
 BUILT QUICKLY TO MEASURE A DEFECT CLASS EXHIBITS THAT CLASS, RELIABLY — and the
 only thing that caught any of the four was the author auditing their own tool
-under the same rules applied to the subject. NOTHING EXTERNAL FOUND ANY OF THEM.
+under the same rules applied to the subject.
+
+NOTHING EXTERNAL FOUND ANY OF THEM FIRST, which is the precise claim and is
+stronger than "nothing external found them". CI caught two — but downstream of a
+verification ALREADY ASSERTED and already wrong. The external check worked; what
+failed was the verification.
+
+    A verification asserted before the check that could falsify it has run is a
+    CLAIM, not a verification.
+
+This programme treated those as verifications throughout, in this seat's returns
+and in the dispatches to it. The remedy is therefore NOT more external review —
+the review existed and it fired. It is not declaring a thing verified until the
+check that could falsify it has run.
+
+And CI caught those two only because its environment differed from this seat's BY
+ACCIDENT rather than by design: evidence nobody commissioned, arriving because
+nobody arranged it.
 
 So: every instrument this programme produced gets one pass under its own
 criteria before its output is trusted as a count. The gate has had four. The AST
