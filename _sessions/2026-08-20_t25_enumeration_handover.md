@@ -285,3 +285,110 @@ Of 182 available-now cockpit rows:
 Down from 43 to 14 rows that are a real vendor ask, and 29 of the reduction came
 from recognising that a check thought to need a second source needs a
 constructor instead.
+
+
+# ADDENDUM — closing rulings, 2026-08-20
+
+## TW-74 landed
+
+Merged as `205e7865`. The false green is closed: the gate now reports
+`protected-no-required-checks` as its own state and says plainly that a red
+check still merges. The abandoned branch carrying the `git add -A` sweep is
+deleted.
+
+It took FOUR attempts to land a one-predicate fix. That is the signal, and it is
+recorded rather than smoothed over.
+
+## VERIFY BY VIOLATING HAS AN ENVIRONMENT DIMENSION
+
+Two of the four attempts failed because "it passes locally" was treated as
+evidence about CI. The local tree is a full clone; CI's is depth-1. Two tests
+had their verdict decided by that difference and neither assertion was about the
+thing it named.
+
+What settled it was BUILDING THE FAILING ENVIRONMENT: `git clone --depth 1`,
+confirm `git log -1 --format=%cs` returns the wrong date there, copy the fix in,
+run the suite in that state.
+
+    Proving a suite can fail SOMEWHERE is not proving it fails WHERE IT RUNS.
+
+Signature, narrow and greppable: a test calling a function that shells out to
+git, the filesystem, or the network, and asserting on the result. Three of the
+four evidence tests on this row had it.
+
+Sits beside the other version from the same row: after correcting a defect,
+reintroduce it and confirm a test fails — which tests the SUITE rather than the
+fix. A suite that cannot fail on the reintroduced defect is not a suite for that
+defect, whatever its coverage says.
+
+## STARVATION BY ENVIRONMENT — a mechanism the category did not have
+
+The gate's evidence-staleness check now returns `unverifiable` for every control
+on every CI run, because CI is always shallow. Code correct, caller correct,
+verdict truthful, control doing nothing.
+
+Harder to see than a parameter no caller supplies, because there is NOTHING
+WRONG TO FIND IN THE CODE. The precondition is simply never satisfied where it
+actually runs.
+
+    Ask whether the RUNTIME can supply the input, not only whether a caller does.
+
+## EVERY INSTRUMENT GETS ONE PASS UNDER ITS OWN CRITERIA
+
+Four defects in two days in the deploy gate, each a shape this programme
+catalogued, appearing in the control built to catalogue them:
+
+  - single-derivation attestation that would have read a lying oracle
+  - an on-deploy trigger starved by the condition it detects
+  - a false green conflating protection-present with checks-required
+  - a staleness check unverifiable where it runs
+
+And it is the THIRD instrument to do this. Two text-search passes gave wrong
+structural answers. The AST rule produced two false-positive classes. Now the
+gate.
+
+The generalisation is not that the instrument is bad. It is that AN INSTRUMENT
+BUILT QUICKLY TO MEASURE A DEFECT CLASS EXHIBITS THAT CLASS, RELIABLY — and the
+only thing that caught any of the four was the author auditing their own tool
+under the same rules applied to the subject. NOTHING EXTERNAL FOUND ANY OF THEM.
+
+So: every instrument this programme produced gets one pass under its own
+criteria before its output is trusted as a count. The gate has had four. The AST
+instrument has had ONE, on the identity-map shape, and the other shapes of that
+family (`environ.get`, `cache.get`, `queue.get`, and the `getattr` false
+NEGATIVE) are UNAUDITED.
+
+## WHAT SEVEN MERGES BOUGHT, STATED HONESTLY
+
+    f691a71  TW-67  record kind split off the transform enum
+    a346524  TW-69  second starved detector deleted, typed instead
+    236c1be2 TW-68  deploy gate, two-party attestation, scheduled
+    45bef4bb TW-70  the sixth state, self-reporting
+    fe3a9106 TW-72  macro snapshot capture halted
+    b03e6c2b TW-73  capture the reading, not the rendering, and cite it
+    205e7865 TW-74  protection present is not checks required
+
+Seven merged rows reads like progress on the product. It is not. THE TWIN STILL
+SERVES ONE POPULATED LAYER OF FIVE and three still report `lookup-failed`.
+
+What these bought is a substrate that REPORTS ITS OWN STATE HONESTLY rather than
+one that works better. That is the correct thing to have bought at this stage
+and it should be scoped and funded as that, not as product progress.
+
+Drivers is the first item on the list that adds a layer rather than a guarantee.
+
+## HANDED TO SYSTEMS, NOT PURSUED
+
+A contradiction between two seats about `branch-guard.ps1`. This seat observed
+an explicit fail-open (`catch { exit 0 }`, header: "Fails open on any parse
+error") and a commit succeeding while a push refused seconds later. The systems
+seat investigated the same discrepancy and closed it as a two-hook split.
+
+Both can be true. But the systems finding on the unattributed force-delete of
+135 refs rejected a fail-open as one of two candidate mechanisms. If the
+fail-open is real, that conclusion is not necessarily wrong but the reasoning
+that produced it is incomplete and was filed as complete.
+
+Both readings with evidence are with the operator. NOT PURSUED FURTHER by this
+seat: probing a guard to learn when it lets you through is bypass-hunting, and
+it is systems' control.
