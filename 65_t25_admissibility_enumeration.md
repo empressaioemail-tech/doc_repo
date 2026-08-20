@@ -384,7 +384,34 @@ CHECKS THAT HOLD                              3   (S-15, S-18, and building-foot
 ```
 
 **Three checks hold in forty seven rows.** All three REFUSE rather than defaulting. That is the
-shape everything else is being converted toward.
+shape everything else is being converted toward. This is the smallest and most useful list in
+the enumeration, so it is named in full.
+
+| # | Location | What it does | Derivation state |
+| --- | --- | --- | --- |
+| S-15 | `railScoring/measure.ts:78-79` | identifier regex `/^[a-z_][a-z0-9_]*$/i`, then **throws** | 3, internal consistency only |
+| S-18 | `railScoring/engine.ts:149` | `absenceProbeCoversCounty(probe, countyFips)`, **refuses** | **1, two independent sources** |
+| H-3 | `building-footprint-atoms.ts:160-161` | `if (storedOutcome === "present" && !atom.footprintGeometry) return fail(...)`, **refuses** | 3, internal consistency only |
+
+**Only S-18 carries a second derivation.** S-15 and H-3 hold in *shape*, refusing rather than
+defaulting, but neither can evidence that a source is right. Quoting the three without that
+split overstates two of them.
+
+**H-3's grade was verified rather than assumed, and it nearly was not.** Its cheapest satisfier
+is any truthy `footprintGeometry` *as admitted by* `BUILDING_FOOTPRINT_SCHEMA`, which was on
+the unread list. Read at the installed contract: `footprintGeometry:
+FOOTPRINT_GEOMETRY_SCHEMA.optional()` where `FOOTPRINT_GEOMETRY_SCHEMA =
+z.union([GEOJSON_POLYGON_SCHEMA, GEOJSON_MULTI_POLYGON_SCHEMA])`. Shape-typed, so `{}` fails
+`safeParse` before reaching the check and the cheapest satisfier is a real GeoJSON polygon.
+**It holds.** Had the schema been a loose passthrough, `{}` would have satisfied it and H-3
+would not belong on this list at all.
+
+**H-3 is complementary to the schema rather than redundant with it.** The schema makes
+`footprintGeometry` optional and its `superRefine` constrains only the absent side
+(`hasGeometry && hasAbsence` mutually exclusive, `hasGeometry && isAbsentTier` forbidden). The
+schema cannot know that "present" was expected, because that expectation lives at the call
+site. H-3 closes exactly the hole the schema structurally cannot see: an atom that parses
+cleanly as present with no geometry.
 
 **Zero dependency-pending rows means the entire remediable set is buildable now.** Nothing
 waits on a source, a feed or another lane. The purchasing list is one line: **NFHL at parcel
