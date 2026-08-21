@@ -51,6 +51,7 @@ this twelve days earlier and changed nothing.
 | R-06 | Build the governance tooling | hooks, CI jobs, types | each new control proven by violating it, never by watching it pass | OPEN |
 | R-07 | Data audit | nodes, edges and atoms graded against the mesh | every atom family scored; unresolvable bindings COUNTED, never estimated | OPEN |
 | R-08 | Data remediation plan | the fix plan | every defect class has an owner, a rule, and a control that would prevent recurrence | OPEN |
+| R-09 | Launch gate instrument repair | the County Manifest indicators can return a red | `hasWriter`, `atomFamilyState` and `isPartial` each demonstrably take more than one value, proven by producing a cell that reads negative; the two launch criteria graded by them become capable of failing | OPEN |
 
 ## Standing constraints on every row
 
@@ -81,3 +82,17 @@ underway.
 Retire this plan when R-08 closes, or when an operator ruling folds the remaining rows into
 `OPS-16` or `OPS-17`. Do not let it become a permanent third program. A governance plan that
 outlives its own repair is the artifact class it was built to remove.
+
+## R-09 scope fence, because this row touches the launch gate
+
+R-09 repairs an INSTRUMENT. It does not change what the gate requires and it does not close
+a single cell. Two of the five Texas-flush launch criteria are graded by `hasWriter` and
+`atomFamilyState`, both constant across all 3,556 manifest cells on live read 2026-08-20, so
+those criteria cannot fail. A criterion that cannot fail is not a criterion.
+
+Making them capable of failing is the opposite of a shortcut to launch. Minting absence atoms
+to close cells would be the shortcut and was rejected by operator ruling.
+
+Changing the launch criteria themselves is an OPS-16 amendment and is operator-ruled. R-09 may
+not do it. If R-09 finds that a criterion is wrong rather than merely ungradeable, it files
+that for the operator and stops.

@@ -146,6 +146,3 @@ CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
   CP1: _inbox/2026-08-21_r01-blueprint_cp1.json
   CP2: _inbox/2026-08-21_r01-blueprint_cp2.json
   CLOSE: _inbox/2026-08-21_r01-blueprint_close.json
-
-
-[dispatch.mjs] wrote P:\doc_repo\_dispatches\2026-08-21_r01-blueprint_dispatch.md (CANON-PREAMBLE v6c68a963, AGENT-CONTRACT v92aa194c)
