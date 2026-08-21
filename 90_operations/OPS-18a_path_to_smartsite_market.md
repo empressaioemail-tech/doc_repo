@@ -13,15 +13,21 @@ related:
   - _decisions/2026-08-17_smartsite_gtm_pipedrive_popup_hobby
   - _decisions/2026-08-09_texas_flush_launch_gate
   - _blueprint/00_WDLL
+  - 90_operations/OPS-18b_data_remediation_plan
+  - 90_operations/OPS-18c_parallel_execution
+  - _decisions/2026-08-21_all_board_parallel_execution
+  - _inbox/2026-08-21_ops18_all_board_WDLL.md
 ---
 
 # Path to Smart Site market
 
 This is the standing sequence from the 2026-08-21 regroup. Refer here, not to chat.
 
-Desired end: Smart Site selling in Texas on a measured-everywhere claim that can fail. Honest absence is a legitimate launch state. Filled-everywhere is program completion, not the gate.
+Desired end: Smart Site **sellable** in Texas, then Texas-flush remaining DCs honest. Sellable is not GTM chrome and is not Texas-flush 254/254. Operator 2026-08-21: (1) a live heartbeat on the Command Center County Manifest, (2) every property-spine atom we already store serving its parcel on SmartSite. Decision `_decisions/2026-08-21_sellable_is_cc_heartbeat_and_atoms_on_parcels.md`. WDLL `_inbox/2026-08-21_sellable_WDLL.md`.
 
-Dashboards is parked. G-103 and G-104 are not this wave.
+Operator 2026-08-21 evening: sellable met is not program complete. All remaining work is on the board. Fan plan `90_operations/OPS-18c_parallel_execution.md`. Program WDLL `_inbox/2026-08-21_ops18_all_board_WDLL.md`. Decision `_decisions/2026-08-21_all_board_parallel_execution.md`.
+
+Texas flush measured-everywhere remains the later launch claim. Filled-everywhere remains program completion. Dashboards is parked. G-103 and G-104 are not this wave.
 
 ## Why this order
 
@@ -32,11 +38,12 @@ Chasing GTM fires hid operational and data defects. The defects were ungradable:
 | Step | What | Plan row | Status 2026-08-21 |
 | --- | --- | --- | --- |
 | 1 | Standard binds. Blueprint passes its own WDLL. | R-01 | CLOSED. Listing 238 = mesh 238. |
-| 2 | Thin wiring. Three R-06 controls, proven by violation. | R-06 | THIS REGROUP. Three scripts landed, self-tests ok, no baselineExit raised. CI still cannot see a live canon-divergence alarm (no sibling clones). |
-| 3 | Launch instrument live. Traffic, then recompute, then binding wire. | R-09 | CLOSED live 2026-08-21. Serving `cortex-api-00527-yic` @100% digest `sha256:83fd0dc6` (merge `f67c11f9`, PR 448). GET `computedAt` 2026-08-21T15:53:02.907Z. `derivation-indeterminate` 0. |
-| 4 | Grade the store you already audited. No second census. | R-07 | THIS REGROUP. `_inbox/2026-08-21_r07_store_grade.md`: 31 Qs, 9 launch-critical. |
-| 5 | Remediation plan ordered by what the now-honest launch DCs fail on. | R-08 | CLOSED. `90_operations/OPS-18b_data_remediation_plan.md`. DC-4/5/14 pass. Wave A is DC-2/DC-3 uniform `not-yet`. |
-| 6 | Sell on the current map. Pipedrive tags, pricing popup, Stripe amounts. | OPS-16 / 76j | Parallel with step 5 launch-critical items. Does not wait for filled-everywhere. |
+| 2 | Thin wiring. Three R-06 controls, proven by violation. | R-06 | PARTIAL. Three scripts landed, self-tests ok, no baselineExit raised. CI still cannot see a live canon-divergence alarm (no sibling clones). |
+| 3 | Launch instrument live. Traffic, then recompute, then binding wire. | R-09 | CLOSED live. Serving `cortex-api-00527-yic` @100% digest `sha256:83fd0dc6` (merge `f67c11f9`, PR 448). Latest GET `computedAt` 2026-08-21T18:05:57.209Z after the flood-score recompute. `derivation-indeterminate` 0. |
+| 4 | Grade the store you already audited. No second census. | R-07 | CLOSED as the grade. `_inbox/2026-08-21_r07_store_grade.md`: 31 Qs, 9 launch-critical. No second census. |
+| 5 | Remediation plan ordered by what the now-honest launch DCs fail on. | R-08 | PLAN CLOSED. Execution in flight. Flood 76 missing-row FIPS scored (P-08). Ector parcel-nodes re-keyed geo_id (P-02 apply 75859 active / 3791 retired). DC-2 still FAIL: geometry `48135` not rescored. DC-3 still FAIL on roads/footprint/wells/pipelines/rail 254, flood 92, mud 45, geometry 1. |
+| 6 | Sellable as redefined. CC heartbeat plus existing atoms on SmartSite parcels. | OPS-18a / P-08 serve | MET as the slice. Heartbeat live. Flood inspect live. Land-use inspect live (LDT [450](https://github.com/empressaioemail-tech/legacy-design-tools/pull/450) serving `cortex-api-00531-fus`, hauska-map [176](https://github.com/empressaioemail-tech/hauska-map/pull/176) PE `dpl_JHohCzrJs4JRnbTjy7HFg9eqNBuc`). Gold Land use cites `land-use-fact`. Empty Manifest cells are coverage. Checkout polish is not this gate. Not program complete. |
+| 7 | Remaining board. HOLD families, Wave A/B/C, R-06 armed. Four teams. | P-48..P-56, R-06 | THIS WAVE. Plan OPS-18c. COVER holds `--apply`. First compiles not yet run. |
 
 R-02b (quarantine against the bounded canon set) rides with this regroup because it was gated on R-01. It is not a new program.
 
@@ -45,10 +52,12 @@ R-02b (quarantine against the bounded canon set) rides with this regroup because
 1. Traffic then recompute. 100% to `cortex-api-00525-bev` first. Confirm GET still shows the pre-R-09 `computedAt`. Then non-dry recompute from that revision with `probe=skip`. Do not recompute while `00522-row` is serving. Decision `_decisions/2026-08-21_r09_traffic_then_recompute.md`.
 2. Unmeasured stays distinct. Do not fold `derivation-indeterminate` into DC-4 `no-atom` or DC-5 `no-writer`. Decision `_decisions/2026-08-21_dc4_dc5_unmeasured_stays_distinct.md`.
 3. ADR-028 accepted-partial. Verified-absence pair is real. `knowledge_atoms` is not production bitemporal proof. Follow-on ADR owed for 1.9.0 through 1.22.0. Decision `_decisions/2026-08-21_adr028_accept_partial.md`.
+4. Sellable is CC heartbeat plus existing atoms on parcels. Decision `_decisions/2026-08-21_sellable_is_cc_heartbeat_and_atoms_on_parcels.md`.
+5. All remaining work on the board as four teams. Wave A `--apply` in. Harris PBF out. S7 owner identified inspect only. A2 honest-absent held until L7 vs pair. Decision `_decisions/2026-08-21_all_board_parallel_execution.md`.
 
 ## What this wave is not
 
-Not Dashboards. Not a hasWriter planner chase (the binding table already ships; CI already proves the scripts exist; that wire is property after traffic). Not minting absence atoms. Not a new store audit that re-runs COUNT(*) on 100M atoms. Not folding R-06 into OPS-16. Not retiring OPS-18 before R-08.
+Not Dashboards. Not a hasWriter planner chase (the binding table already ships; CI already proves the scripts exist; that wire is property after traffic). Not minting absence atoms (A2 held). Not a new store audit that re-runs COUNT(*) on 100M atoms. Not folding R-06 into OPS-16. Not retiring OPS-18 before R-08. Not Harris PBF. Not treating Pipedrive or Stripe amounts as sellable. Not treating sellable WDLL 1-6 as OPS-18 done.
 
 ## Launch-critical defect classes waiting for step 5
 
@@ -83,3 +92,7 @@ Done looks like: the path above is a tracked file, steps 1-4 have artifacts a st
 ### Amendments
 
 - 2026-08-21: opened with operator go on the path and on rulings 1-3.
+- 2026-08-21 afternoon: flood 76 scored, P-02 applied, ledger recomputed to 18:05Z.
+- 2026-08-21 afternoon: sellable redefined as CC heartbeat plus existing atoms on parcels. Step 6 is that gate, not GTM chrome.
+- 2026-08-21 evening: land-use pair live. Cortex `00531-fus`, PE deploy `dpl_JHohCzrJs4JRnbTjy7HFg9eqNBuc`. Manifest cells unchanged, as expected.
+- 2026-08-21 evening: remaining board opened. Step 7. OPS-18c plus program WDLL plus OPS-16 A-021 (P-48 through P-56). Compiles not yet run.

@@ -5,15 +5,17 @@ status: active
 last_updated: 2026-08-21
 applies_to: portfolio
 owner: nick
-related: [_blueprint/00_WDLL, 61_enforcement_doctrine, ENFORCEMENT, 51_ingestion_pipeline_reference, 90_runbooks/fleet_memory_practice, _catalog/plan_registry, 90_operations/OPS-18a_path_to_smartsite_market, 90_operations/OPS-18b_data_remediation_plan]
+related: [_blueprint/00_WDLL, 61_enforcement_doctrine, ENFORCEMENT, 51_ingestion_pipeline_reference, 90_runbooks/fleet_memory_practice, _catalog/plan_registry, 90_operations/OPS-18a_path_to_smartsite_market, 90_operations/OPS-18b_data_remediation_plan, 90_operations/OPS-18c_parallel_execution]
 ---
 
 # OPS-18 — Canon reconciliation and governance plan of record
 
 `90_operations/OPS-18a_path_to_smartsite_market.md` is the standing sequence to Smart Site
-market (structural then data). Refer there, not to chat. Operator approved that path and
+market (structural then data). Remaining execution is
+`90_operations/OPS-18c_parallel_execution.md`. Refer there, not to chat. Operator approved that path and
 the three rulings (traffic then recompute; unmeasured stays distinct; ADR-028
-accepted-partial) on 2026-08-21.
+accepted-partial) on 2026-08-21, sellable that afternoon, and the remaining board
+(four teams, Wave A apply in, Harris PBF out) that evening.
 
 
 ## Why this is a plan of record and not a workstream

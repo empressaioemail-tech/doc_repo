@@ -48,6 +48,29 @@ const selfTests = [
   ["predicate is not vacuous (empty doc rejects)", () => isDeclaredRow("", "R-01") === false],
 ];
 
+/** Mirrors scripts/dispatch.mjs: amendment ADDS a row (id + add-verb in the Row(s) cell). */
+function isAddedByAmendment(planText, rowId) {
+  const escaped = rowId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(
+    String.raw`^\|\s*A-\d+\s*\|[^\n|]*\|[^\n|]*(?:^|[^A-Za-z0-9-])` +
+      escaped +
+      String.raw`(?:\s+(?:ADDED|added|ADD|NEW|new))`,
+    "m",
+  ).test(planText);
+}
+
+function isDispatchableRow(planText, rowId) {
+  return isDeclaredRow(planText, rowId) || isAddedByAmendment(planText, rowId);
+}
+
+const FIX_ADD = "| A-021 | 2026-08-21 | P-48 ADDED, P-56 ADDED | prose that mentions P-57 is not enough |";
+selfTests.push(
+  ["amendment accepts P-48 ADDED in the Row(s) cell", () => isAddedByAmendment(FIX_ADD, "P-48") === true],
+  ["amendment accepts P-56 ADDED in the same cell", () => isAddedByAmendment(FIX_ADD, "P-56") === true],
+  ["amendment rejects P-57 mentioned only in Change prose", () => isAddedByAmendment(FIX_ADD, "P-57") === false],
+  ["amendment is not vacuous (empty doc rejects)", () => isAddedByAmendment("", "P-48") === false],
+);
+
 const results = [];
 let failed = 0;
 for (const [name, fn] of selfTests) {
@@ -93,6 +116,18 @@ for (const [planId, plan] of Object.entries(registry.plans)) {
   const negOk = isDeclaredRow(text, bogus) === false;
   results.push([negOk, `${planId} REJECTS ${bogus} (negative case)`]);
   if (!negOk) failed += 1;
+
+  if (planId === "OPS-16") {
+    const added = ["P-48", "P-49", "P-50", "P-51", "P-52", "P-53", "P-54", "P-55", "P-56"];
+    for (const rid of added) {
+      const okAdd = isDispatchableRow(text, rid) === true;
+      results.push([okAdd, `OPS-16 A-021 makes ${rid} dispatchable`]);
+      if (!okAdd) failed += 1;
+    }
+    const notAdded = isDispatchableRow(text, "P-57") === false;
+    results.push([notAdded, "OPS-16 REJECTS P-57 (A-021 negative case)"]);
+    if (!notAdded) failed += 1;
+  }
 }
 
 console.log("\nrow-declaration test — mirrors canon-gate.ps1 M5\n");
