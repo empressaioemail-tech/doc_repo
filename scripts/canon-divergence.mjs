@@ -13,14 +13,22 @@
  * Usage:
  *   node scripts/canon-divergence.mjs
  *   node scripts/canon-divergence.mjs --no-fetch
+ *   node scripts/canon-divergence.mjs --check-only --no-fetch --no-stamp
  *   node scripts/canon-divergence.mjs --since 2026-07-04 --until 2026-08-09 \
  *     --checks _catalog/repo_intents_checks.2026-07-04.json --no-fetch --no-stamp \
  *     --out _inbox/2026-08-08_M2_historical_replay.md
+ *
+ * --check-only (R-06): compare, exit 1 on ALARM, write nothing under _catalog/.
+ * --out to _inbox/ is allowed. Default (no flag) still writes the catalog file
+ * and stays fail-open exit 0 so the Read hook does not break work.
+ * CI must invoke the wrapper, never this file without --check-only.
  */
-import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_CHECKS = join(root, '_catalog', 'repo_intents_checks.json');
@@ -37,16 +45,23 @@ function parseArgs(argv) {
     fetch: true,
     stamp: true,
     stdout: false,
+    checkOnly: false,
+    outExplicit: false,
+    selfTest: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--checks') out.checks = resolve(argv[++i]);
-    else if (a === '--out') out.out = resolve(argv[++i]);
-    else if (a === '--since') out.since = argv[++i];
+    else if (a === '--out') {
+      out.out = resolve(argv[++i]);
+      out.outExplicit = true;
+    } else if (a === '--since') out.since = argv[++i];
     else if (a === '--until') out.until = argv[++i];
     else if (a === '--no-fetch') out.fetch = false;
     else if (a === '--no-stamp') out.stamp = false;
     else if (a === '--stdout') out.stdout = true;
+    else if (a === '--check-only') out.checkOnly = true;
+    else if (a === '--self-test') out.selfTest = true;
     else if (a === '--help' || a === '-h') {
       console.log(`Usage: node scripts/canon-divergence.mjs [options]
   --checks <path>   checks JSON (default _catalog/repo_intents_checks.json)
@@ -55,11 +70,50 @@ function parseArgs(argv) {
   --until <date>    git --until (default: now)
   --no-fetch        skip git fetch
   --no-stamp        do not rewrite last_verified on OK active rows
-  --stdout          also print report to stdout`);
+  --stdout          also print report to stdout
+  --check-only      compare; exit 1 on ALARM; write no tracked catalog file
+  --self-test       fixture no-touch clone must fail, then pass; catalog untouched`);
       process.exit(0);
     }
   }
+  if (out.checkOnly) out.stamp = false;
   return out;
+}
+
+function toRepoRelative(p) {
+  const abs = resolve(p);
+  const rel = relative(root, abs);
+  if (!rel) return '.';
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    const norm = abs.replace(/\\/g, '/');
+    const m = norm.match(/(_catalog\/.*)$/i) || norm.match(/(_inbox\/.*)$/i);
+    if (m) return m[1];
+    return norm.split('/').pop();
+  }
+  return rel.replace(/\\/g, '/');
+}
+
+function isInboxPath(p) {
+  const rel = toRepoRelative(p).replace(/\\/g, '/');
+  return rel === '_inbox' || rel.startsWith('_inbox/');
+}
+
+function isCatalogPath(p) {
+  const rel = toRepoRelative(p).replace(/\\/g, '/');
+  return rel === '_catalog' || rel.startsWith('_catalog/');
+}
+
+function mayWriteUnderCheckOnly(outPath) {
+  if (isCatalogPath(outPath)) return false;
+  if (isInboxPath(outPath)) return true;
+  const abs = resolve(outPath);
+  const rel = relative(root, abs);
+  return rel.startsWith('..') || isAbsolute(rel);
+}
+
+function fileSha256(p) {
+  if (!existsSync(p)) return null;
+  return createHash('sha256').update(readFileSync(p)).digest('hex');
 }
 
 function todayISO(d = new Date()) {
@@ -194,7 +248,7 @@ function renderReport({
   lines.push(`status: ${status}`);
   lines.push(`last_updated: ${asOf}`);
   lines.push('generated_by: scripts/canon-divergence.mjs');
-  lines.push(`checks: ${args.checks.replace(/\\/g, '/')}`);
+  lines.push(`checks: ${toRepoRelative(args.checks)}`);
   lines.push('---');
   lines.push('');
   lines.push('# Canon divergence (M2)');
@@ -364,9 +418,107 @@ function expandRepoRows(repo) {
   return rows;
 }
 
+function selfTest() {
+  const catalog = DEFAULT_OUT;
+  const beforeHash = fileSha256(catalog);
+  const beforeMtime = existsSync(catalog) ? statSync(catalog).mtimeMs : null;
+  const dir = mkdtempSync(join(tmpdir(), 'r06-canon-'));
+  const script = fileURLToPath(import.meta.url);
+  try {
+    execFileSync('git', ['init'], { cwd: dir, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.email', 'r06-selftest@invalid'], { cwd: dir, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.name', 'r06-selftest'], { cwd: dir, stdio: 'pipe' });
+    execFileSync('git', ['config', 'commit.gpgsign', 'false'], { cwd: dir, stdio: 'pipe' });
+    execFileSync('git', ['config', 'core.hooksPath', join(dir, '.git', 'hooks')], { cwd: dir, stdio: 'pipe' });
+    writeFileSync(join(dir, 'README'), 'r06 fixture\n', 'utf8');
+    execFileSync('git', ['add', 'README'], { cwd: dir, stdio: 'pipe' });
+    execFileSync('git', ['commit', '-m', 'r06 fixture'], { cwd: dir, stdio: 'pipe' });
+
+    const failChecks = join(dir, 'fail-checks.json');
+    writeFileSync(
+      failChecks,
+      JSON.stringify(
+        {
+          schema_version: 1,
+          repos: [
+            {
+              id: 'fixture-no-touch',
+              clone: dir,
+              posture: 'no-touch',
+              last_verified: '2000-01-01',
+            },
+          ],
+        },
+        null,
+        2,
+      ) + '\n',
+      'utf8',
+    );
+    const passChecks = join(dir, 'pass-checks.json');
+    writeFileSync(
+      passChecks,
+      JSON.stringify(
+        {
+          schema_version: 1,
+          repos: [
+            {
+              id: 'fixture-no-touch',
+              clone: dir,
+              posture: 'no-touch',
+              last_verified: '2099-01-01',
+            },
+          ],
+        },
+        null,
+        2,
+      ) + '\n',
+      'utf8',
+    );
+
+    const failRun = spawnSync(
+      process.execPath,
+      [script, '--check-only', '--no-fetch', '--no-stamp', '--checks', failChecks],
+      { cwd: root, encoding: 'utf8', timeout: 60000 },
+    );
+    const passRun = spawnSync(
+      process.execPath,
+      [script, '--check-only', '--no-fetch', '--no-stamp', '--checks', passChecks],
+      { cwd: root, encoding: 'utf8', timeout: 60000 },
+    );
+
+    const afterHash = fileSha256(catalog);
+    const afterMtime = existsSync(catalog) ? statSync(catalog).mtimeMs : null;
+    const catalogUnchanged = beforeHash === afterHash && beforeMtime === afterMtime;
+    const failOk = failRun.status === 1;
+    const passOk = passRun.status === 0;
+    const report = {
+      control: 'canon-divergence-check-only',
+      selfTest: true,
+      failExit: failRun.status,
+      passExit: passRun.status,
+      catalogUnchanged,
+      beforeHash,
+      afterHash,
+    };
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    if (!failOk || !passOk || !catalogUnchanged) {
+      process.stderr.write('canon-divergence --self-test FAILED\n');
+      if (failRun.stderr) process.stderr.write(String(failRun.stderr).slice(0, 800) + '\n');
+      if (passRun.stderr) process.stderr.write(String(passRun.stderr).slice(0, 800) + '\n');
+      process.exit(2);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function main() {
   const started = Date.now();
   const args = parseArgs(process.argv.slice(2));
+  if (args.selfTest) {
+    selfTest();
+    return;
+  }
   const asOf = args.until ? String(args.until).slice(0, 10) : todayISO();
 
   const loaded = loadChecks(args.checks);
@@ -384,15 +536,17 @@ function main() {
       `SKIPPED (fail-open): ${loaded.err}`,
       '',
     ].join('\n');
-    try {
-      mkdirSync(dirname(args.out), { recursive: true });
-      writeFileSync(args.out, report, 'utf8');
-    } catch {
-      // fail open
+    if (!args.checkOnly) {
+      try {
+        mkdirSync(dirname(args.out), { recursive: true });
+        writeFileSync(args.out, report, 'utf8');
+      } catch {
+        // fail open
+      }
     }
     if (args.stdout) process.stdout.write(report);
-    console.error(`[m2] fail-open: ${loaded.err}`);
-    process.exit(0);
+    console.error(`[m2] ${args.checkOnly ? 'check-only unmeasured' : 'fail-open'}: ${loaded.err}`);
+    process.exit(args.checkOnly ? 2 : 0);
   }
 
   const meta = loaded.data;
@@ -622,15 +776,26 @@ function main() {
     escalated,
   });
 
-  try {
-    mkdirSync(dirname(args.out), { recursive: true });
-    writeFileSync(args.out, report, 'utf8');
-  } catch (err) {
-    console.error(`[m2] fail-open write: ${err.message || err}`);
+  const wantWrite = args.checkOnly
+    ? args.outExplicit && mayWriteUnderCheckOnly(args.out)
+    : true;
+  if (args.checkOnly && args.outExplicit && !mayWriteUnderCheckOnly(args.out)) {
+    console.error(
+      `[m2] REFUSING: --check-only will not write tracked catalog/in-repo files (${toRepoRelative(args.out)})`,
+    );
+  }
+  if (wantWrite) {
+    try {
+      mkdirSync(dirname(args.out), { recursive: true });
+      writeFileSync(args.out, report, 'utf8');
+    } catch (err) {
+      console.error(`[m2] fail-open write: ${err.message || err}`);
+    }
   }
 
   // Optional stamp of last_verified on OK rows (live runs only; historical uses --no-stamp)
-  if (args.stamp && stampTargets.length && args.checks === resolve(DEFAULT_CHECKS)) {
+  // --check-only forces stamp off so repo_intents_checks.json is never a side effect of CI.
+  if (args.stamp && !args.checkOnly && stampTargets.length && args.checks === resolve(DEFAULT_CHECKS)) {
     try {
       stampLastVerified(args.checks, stampTargets);
     } catch (err) {
@@ -640,10 +805,17 @@ function main() {
 
   if (args.stdout) process.stdout.write(report);
 
-  const divCount = resultRows.filter((r) => r.verdict.startsWith('DIVERGENT')).length;
-  console.error(
-    `[m2] wrote ${args.out} — status=${reportStatus(resultRows.filter((r) => r.verdict.startsWith('DIVERGENT')), resultRows.filter((r) => r.verdict === 'SKIPPED' || r.verdict === 'ERROR'), escalated)} · ${divCount} divergent · ${resultRows.length} rows · ${runtimeMs} ms`,
+  const status = reportStatus(
+    resultRows.filter((r) => r.verdict.startsWith('DIVERGENT')),
+    resultRows.filter((r) => r.verdict === 'SKIPPED' || r.verdict === 'ERROR'),
+    escalated,
   );
+  const divCount = resultRows.filter((r) => r.verdict.startsWith('DIVERGENT')).length;
+  const dest = wantWrite ? toRepoRelative(args.out) : '(no write)';
+  console.error(
+    `[m2] ${args.checkOnly ? 'check-only' : 'wrote'} ${dest} — status=${status} · ${divCount} divergent · ${resultRows.length} rows · ${runtimeMs} ms`,
+  );
+  if (args.checkOnly && status === 'ALARM') process.exit(1);
   process.exit(0);
 }
 
@@ -696,8 +868,10 @@ function writeFatalSkipped(err) {
 try {
   main();
 } catch (err) {
-  // Absolute fail-open: never break a calling loop; do not leave a stale clear report.
+  // Default (hook) stays fail-open. --check-only must not write the catalog and must
+  // not collapse unmeasured into pass.
   console.error(`[m2] fatal fail-open: ${err && err.stack ? err.stack : err}`);
-  writeFatalSkipped(err);
-  process.exit(0);
+  const checkOnly = process.argv.includes('--check-only') || process.argv.includes('--self-test');
+  if (!checkOnly) writeFatalSkipped(err);
+  process.exit(checkOnly ? 2 : 0);
 }

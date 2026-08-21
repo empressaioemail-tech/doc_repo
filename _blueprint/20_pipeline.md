@@ -107,7 +107,7 @@ Read paths:
 
 **Tier2 flood retirement:** Atoms may exist; served payload omits flood if consumer not repointed (V9).
 
-**Situs address facet:** Served `", ,"` passes non-null checks (V6).
+**Situs address facet:** Served `", ,"` passes non-null checks (V6). `_inbox/2026-08-20_audit_programme_handover_planner_variant.md` (2026-08-20) records situs 99.3% populated vs 89.90% real street coverage of 13,071,975, with 1,248,412 parcels counting as populated on `", ,"` and `", TX 78660"`. `_inbox/2026-08-20_c12_retrieval_candidate_rows.md` S-166: `baked-facets.ts:285` `typeof bf.situsAddress === "string" && bf.situsAddress.trim()` treats `", ,"` as present.
 
 ## Adapter contract (summary)
 

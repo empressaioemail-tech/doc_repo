@@ -27,8 +27,9 @@ Every governing rule with executor, trigger, failure mode, bypass, and status. S
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | BP-ADAPT-01 | Adapters emit candidates only; never write canonical graph directly. | 51 §2 | per-writer scripts (partial) | ingest job | throw | Bulk writers skipping adapter boundary | **UNENFORCED** |
 | BP-RESOLVE-01 | Assign node type explicitly; refuse silent default. | 51 §3 | NONE | resolution | — | Default entity_type in writer | **UNENFORCED** |
+| BP-PROMOTE-01 | Record adjudication outcome and measure queue depth before promoting Provisional to Resolved. Monotonic growth of the Provisional population is a gate fail. | 51 §4 / 30_lifecycle | NONE | operator or auto-adjudication | monotonic Provisional growth | Promote without recorded outcome or queue measurement | **UNENFORCED** |
 | BP-LAND-01 | Honor manifest retention class on landing. | 51 §1 | acquisition scripts | fetch complete | refuse write | Ad-hoc landings | **UNENFORCED** |
-| BP-FACTORY-01 | Every factory run must have a defined termination condition and off-ramp. | OPS-18 V10 | NONE | factory start | — | Operator kill only | **MISSING → R-04** |
+| BP-FACTORY-01 | Every factory run must have a defined termination condition and off-ramp. | OPS-18 V10 | NONE | factory start | — | Operator kill only | **UNENFORCED** |
 
 ## Graph and edges
 
@@ -46,7 +47,7 @@ Every governing rule with executor, trigger, failure mode, bypass, and status. S
 | BP-ADDRESS-01 | Reject situsAddress that is punctuation-only or empty tokens. | 51 meaning § | NONE | serve / index | — | Non-null string check | **UNENFORCED** |
 | BP-RECON-01 | Emit conflict when two authoritative stores disagree on same parcel fact. | 51 §5 | NONE | reconciliation | — | Probe-only discovery | **STARVED** |
 | BP-ABSENCE-01 | Assert verified absence only with evaluated true and non-empty provenanceScope. | ADR-028; contract verifiedAbsence | NONE | absence write | — | Typed absence object without pair | **STARVED** |
-| BP-MEANING-01 | Prefer meaning-shaped checks (two independent derivations) over presence checks. | 51 § governing | `three-layer-audit.mjs` (county in body vs binding) | audit run | non-zero exit | Presence-only CI | **ENFORCED** (narrow scope) |
+| BP-MEANING-01 | Prefer meaning-shaped checks (two independent derivations) over presence checks. | 51 § governing | `three-layer-audit.mjs` (no register row) | none | — | Presence-only CI | **DORMANT** |
 
 ## Access, license, serve
 
@@ -84,14 +85,14 @@ Every governing rule with executor, trigger, failure mode, bypass, and status. S
 | V7 flood store disagreement silent | BP-RECON-01 | `40_rule_register` | "Emit conflict when two authoritative stores disagree on same parcel fact." |
 | V8 verified-absence unfed | BP-ABSENCE-01 | `10_model` Absence | "Absence claims that must read as checked and none require the verified pair." |
 | V9 tier2 retired no repoint | BP-SERVE-01 | `30_lifecycle` Retirement | "Repoint all L4 consumers when a fact store retires." |
-| V10 factory no off-ramp | **BP-FACTORY-01 MISSING** | — | See R-04 item below |
+| V10 factory no off-ramp | BP-FACTORY-01 | `40_rule_register` | "Every factory run must have a defined termination condition and off-ramp." UNENFORCED; R-06 builds the consumer. |
 | V11 atom_links property starved | BP-EDGE-01 | `10_model` Edges | "Volatile relation half should live on edges (applies-to)." |
 | V12 dual parcel grammars | BP-PARCEL-KEY-01 | `10_model` Nodes | "Normalized form: integer prop_id, no decimal padding." |
 | V13 sentinels in keys | BP-KEY-SENTINEL-01 | `10_model` Edges | "Production encodes volatile half in entity_id suffix — violates BP-KEY-SENTINEL-01." |
 | V14 dual atomDid namespaces | BP-DID-01 | `10_model` Atoms | "body.atomDid must equal column atom_did namespace." |
 | V15 ADR-028 cites empty table | BP-BITEMP-01 | `10_model` Time | "Do not cite knowledge_atoms as production bitemporal proof until populated." |
 
-### V10 — MISSING RULE (R-04 build item)
+### V10 — BP-FACTORY-01 UNENFORCED (R-06 build item)
 
 | Field | Value |
 | --- | --- |
@@ -105,10 +106,10 @@ Every governing rule with executor, trigger, failure mode, bypass, and status. S
 
 | Status | Count |
 | --- | ---: |
-| ENFORCED | 1 |
-| UNENFORCED | 14 |
-| DORMANT | 2 |
-| STARVED | 8 |
-| MISSING (R-04) | 1 |
+| ENFORCED | 0 |
+| UNENFORCED | 16 |
+| DORMANT | 3 |
+| STARVED | 6 |
+| OVER-SCOPED | 0 |
 
 Naming a rule UNENFORCED or STARVED is a pass per D3. Claiming enforcement without executor is a fail.

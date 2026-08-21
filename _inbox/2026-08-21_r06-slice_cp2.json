@@ -1,0 +1,51 @@
+{
+  "lane": "R06-slice",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "planRows": ["R-06"],
+  "plan": "90_operations/OPS-18_canon_reconciliation_plan_of_record.md",
+  "seat": "integration",
+  "worktree": "P:/doc_repo",
+  "branch": "main",
+  "snapshotAtStart": "e022436908248c9d378fd9358f062a0b39cf5bee",
+  "missionPremise": "Same as CP1. Controls exist only if they can fail. Never raise baselineExit.",
+  "completionPredicate": "Each control violated then restored; catalog hash unchanged; no baselineExit raised; baseline rows retargeted/added.",
+  "scopeBasis": "Same as CP1. Default canon-divergence (the write path) was not run against live catalog.",
+
+  "predictionScores": [
+    {"id": "P1", "verdict": "CONFIRMED", "evidence": "Live tooling-register-schema exit 0, rowCount 46, hits []"},
+    {"id": "P2", "verdict": "CONFIRMED", "evidence": "Live factory-termination exit 0, factoryHits [], 7 store NONE ignored including hauska_mcp.atoms"},
+    {"id": "P3", "verdict": "CONFIRMED", "evidence": "Live --check-only --no-fetch --no-stamp exit 0, 0 divergent, 8 rows. sha256 f7e24c1d9b034c3b8bb1a206d16a7b851f4c0bf1c5ff8df485fd3beddd5c07d2 and mtimeMs 1787320563397.8064 identical before and after."},
+    {"id": "P4", "verdict": "CONFIRMED", "evidence": "--self-test failExit 1 passExit 0 catalogUnchanged true, same sha256"},
+    {"id": "P5", "verdict": "CONFIRMED", "evidence": "Inject factory NONE exit 1 hit inject-factory-none, store hauska_mcp.atoms ignored. Inject real factory + store NONE exit 0. Tmp deleted."},
+    {"id": "P6", "verdict": "CONFIRMED", "evidence": "Prior nine baselineExit values unchanged. raised []. Two new rows at 0 matching live exit 0."}
+  ],
+
+  "secondMechanism": [
+    {
+      "observation": "check-only did not change canon_divergence.md",
+      "first": "the write gate skipped _catalog/",
+      "alternative": "it rewrote identical bytes so the hash matched",
+      "rejectedBecause": "mtimeMs was identical to sub-millisecond precision; a rewrite bumps mtime. stderr printed '(no write)'. --out _catalog/canon_divergence.md printed REFUSING and still left hash/mtime identical."
+    },
+    {
+      "observation": "factory-termination live exit 0",
+      "first": "four factories have real termination conditions",
+      "alternative": "zero factory rows so the check is vacuous",
+      "rejectedBecause": "live JSON named 7 store NONE ignored and factoryHits []. --self-test includes empty-parts (zero hits) AND factory NONE (must fail). The NONE fixture failed. Vacuous would pass the NONE fixture."
+    },
+    {
+      "observation": "tooling-register-schema live exit 0",
+      "first": "all 46 controls[] rows have consumer/trigger/failure/bypass",
+      "alternative": "the scanner reads the wrong array (controlsNotNamedInMission) which has no those fields and should fail",
+      "rejectedBecause": "injected fixture used controls[] missing consumer and failed on INJECT-MISS. controlsNotNamedInMission is not evaluated. DUPLICATE-ID-GAP string None did not fail, which is the named mapping."
+    }
+  ],
+
+  "powershellBomNote": "First on-disk inject via Set-Content -Encoding utf8 wrote a UTF-8 BOM; parser exit 2 unparseable. That was the fixture writer, not the control. Re-ran with node writeFileSync (no BOM).",
+
+  "openAtCp2": [
+    "canon-divergence stays REPORTING: CI ubuntu-latest has no P:/ sibling clones, live ALARM cannot fire there",
+    "planner-owned commit of the uncommitted scripts and baseline"
+  ]
+}

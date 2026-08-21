@@ -2,7 +2,7 @@
 id: blueprint_00_wdll
 title: Master blueprint — what done looks like
 status: draft
-last_updated: 2026-08-20
+last_updated: 2026-08-21
 applies_to: portfolio
 owner: nick
 related: [80_adrs/adr_001_atom_architecture, 80_adrs/adr_010_atom_graph_traversal, 80_adrs/adr_011_atom_identity_across_versions, 80_adrs/adr_020_recorded_instruments_and_restriction_clauses, 80_adrs/adr_021_constraint_resolution_and_precedence, 80_adrs/adr_028_contract_cross_vertical_adoption, 51_ingestion_pipeline_reference, 77_place_graph_strategy, 25_atom_architecture_reference, 61_enforcement_doctrine, ENFORCEMENT]
@@ -83,13 +83,43 @@ Each criterion below is falsifiable. An agent that cannot demonstrate one has no
 
 ### D1. The mesh classifies every canon document
 
+The canon set is the set of paths that satisfy the inclusion rule below, plus one non-file
+row for the published npm `@empressaio/atom-contract` type surface. The set is enumerated in
+`_blueprint/canon_set_listing.json`. A curated subset is not the canon set. Classification
+is against that listing, not against a remembered sixty.
+
+Inclusion rule (operator-approved 2026-08-21):
+
+IN:
+
+1. Markdown files directly in the repo root (not recursive) whose names match
+   `/^[0-9]{2}[a-zA-Z]?_.*\.md$/`
+2. `80_adrs/*.md` (files only, not subdirs unless they are `adr_*.md`)
+3. `_blueprint/00_WDLL.md` only
+4. `_smartcity_masters/**/*.md`
+5. `_smartsite_masters/**/*.md`
+6. Exactly these three plans: `90_operations/OPS-16_texas_market_plan_of_record.md`,
+   `OPS-17_govtech_stack_plan_of_record.md`, `OPS-18_canon_reconciliation_plan_of_record.md`
+7. `90_runbooks/AGENT_CONTRACT.md`, `DEV_PROCESS.md`, `fleet_memory_practice.md`
+8. `ENFORCEMENT.md` (repo root)
+9. `AGENTS.md`, `CLAUDE.md`
+10. `_catalog/repo_map.md`, `_catalog/repo_intents.md`
+11. Non-file row: published npm `@empressaio/atom-contract` type surface (cite the fetched
+    latest, currently 1.22.0)
+
+OUT (do not list, do not classify): `_inbox`, `_sessions`, `_dispatches`, `_decisions`,
+`_scratch`, `OPS/` shadow copies, `_blueprint/10_model.md` through `50_grading.md`,
+`_blueprint/diagrams`, `_blueprint/00_README.md` (the mesh itself), `node_modules`,
+anything gitignored.
+
 The canon set includes the published `@empressaio/atom-contract` type surface, which is not
 a document and is nonetheless the most authoritative artifact in the estate, because it is
 the only one that refuses to compile. The mesh classifies it, compiles from it, and rules
 explicitly on which wins where the contract and an ADR disagree. A mesh that indexes only
 markdown has missed the one thing that binds.
 
-`00_README.md` lists every document in the canon set and assigns each exactly one status:
+`00_README.md` lists every path in `canon_set_listing.json` and assigns each exactly one
+status:
 
     AUTHORITATIVE   the blueprint compiles from it; it governs
     SUBORDINATE     it elaborates an authoritative source and may not contradict it
@@ -97,9 +127,14 @@ markdown has missed the one thing that binds.
     QUARANTINE      it contradicts the blueprint; P2 moves it; the contradicted rule is named
     REFERENCE       narrative, strategy, or history; governs nothing
 
-Every entry names the blueprint section that governs its subject. Zero documents
-unclassified. A count of documents at each status is printed, and that count is
-reconcilable against a file listing.
+Every listing row has exactly one status. Every entry names the blueprint section that
+governs its subject. Zero listing paths unclassified. A count of paths at each status is
+printed, and those counts are reconcilable against `canon_set_listing.json` (`countFiles`,
+`countNpm`, `countTotal`).
+
+#### Amendments
+
+- 2026-08-21: D1 was uncloseable because 'the canon set' was unbounded; a curated 60 is a subset of nothing statable.
 
 ### D2. The four-way model conflict is resolved by ruling
 
@@ -113,7 +148,9 @@ Four canon documents describe the model and do not agree.
 `10_model.md` states one model. For each of the four, it states whether the framing is
 adopted, adopted in part, or superseded, and why. The disagreement is not cosmetic: it
 decides where the volatile half of a relation lives, which is the question that produced
-20,844,039 special-district rows against 13,717,341 parcels.
+21,586,428 special-district-fact rows against 14,182,900 parcel-node rows
+(`_inbox/2026-08-20_store_audit_atom_graph.md` Q3, hauska_mcp UTC 2026-08-20T23:05:00Z,
+reltuples estimates, not COUNT(*)).
 
 Silence on any of the four is a fail.
 
@@ -163,7 +200,9 @@ must identify it as failing and name the rule id it breaks.
          evidence: live GET /api/county-ledger, 2026-08-20
 
     V6   situsAddress ", ," passes a non-null test and is served to a customer
-         evidence: live GET smartsite.cloud property-atoms facets, 2026-08-20
+         evidence: `_inbox/2026-08-20_audit_programme_handover_planner_variant.md`
+         (2026-08-20; 1,248,412 parcels counted populated on `", ,"` / `", TX 78660"`);
+         `_inbox/2026-08-20_c12_retrieval_candidate_rows.md` S-166 (baked-facets.ts:285)
 
     V7   two flood stores disagreed on 37,331 of 533,867 parcels and the disagreement was
          found by probe rather than emitted as a conflict

@@ -3,10 +3,11 @@ decision_id: 2026-08-11_texas_flush_launch_gate_amendment
 id: 2026-08-11_texas_flush_launch_gate_amendment
 title: Texas flush launch gate amendment — gradable denominator, all displayStates, ledger-native criteria
 date: 2026-08-11
+last_updated: 2026-08-21
 status: active
 owner: nick
 amends: _decisions/2026-08-09_texas_flush_launch_gate
-related_canonical: [_decisions/2026-08-09_texas_flush_launch_gate, _decisions/2026-08-09_launch_footprint_counties, 90_operations/OPS-7_coverage_and_honesty_doctrine, 90_operations/OPS-11_invariant_register, 90_operations/OPS-12_instrument_inventory, 90_operations/OPS-14_texas_flush_game_plan, 90_operations/OPS-15_owner_and_rrc_rail_gap_analysis, 76j_smartsite_launch_readiness_program]
+related_canonical: [_decisions/2026-08-09_texas_flush_launch_gate, _decisions/2026-08-09_launch_footprint_counties, _decisions/2026-08-21_dc4_dc5_unmeasured_stays_distinct, 90_operations/OPS-7_coverage_and_honesty_doctrine, 90_operations/OPS-11_invariant_register, 90_operations/OPS-12_instrument_inventory, 90_operations/OPS-14_texas_flush_game_plan, 90_operations/OPS-15_owner_and_rrc_rail_gap_analysis, 76j_smartsite_launch_readiness_program]
 ---
 
 **Amends:** [`_decisions/2026-08-09_texas_flush_launch_gate.md`](_decisions/2026-08-09_texas_flush_launch_gate.md). The 2026-08-09 record remains authoritative for launch-vs-program intent and per-rail class split; this amendment patches criteria, denominator, displayState coverage, and gradable instruments only. The original doc should carry an `amended-by: 2026-08-11_texas_flush_launch_gate_amendment` pointer (planner-owned edit to the original).
@@ -82,6 +83,8 @@ The five criteria from the 2026-08-09 gate stand in structure; items 2 and 3 are
 
 **3. All rails measured — no structural blockers.** For every row in `county_rail` × every county in the Texas roster: zero cells in `no-atom`; zero cells in `no-writer`. Remaining work shows as `not-yet` (depth, outside footprint) or progresses to satisfied. Denominator is `summary.totalCells` from the live ledger, not a hardcoded 3,556 or 14.
 
+**3e. Unmeasured is a third state (added 2026-08-21, R-07).** Cells stamped `derivation-indeterminate` or otherwise overlay-indeterminate are not `no-atom` and not `no-writer`. They must be 0 at launch. Graded by DC-14. Do not fold them into DC-4 or DC-5. Cite `_decisions/2026-08-21_dc4_dc5_unmeasured_stays_distinct.md`. The R-07 dispatch labeled this draft DC-9. Existing DC-9 (satisfied cells carry provenance) is unchanged, so the new card is DC-14.
+
 **4. Cert frame reconciled.** Cert lane grades the raw txgio ring per Geometry Law; block13 fixture re-dumped; certs re-earned in the true frame. OPS-11 invariant register: no UNENFORCED invariant on the correctness path blocking launch (cert-frame amendment cleared).
 
 **5. 76j capacity and branding.** Rate-limit store, load test, capacity doc, domain and branding per `76j_smartsite_launch_readiness_program.md`. Branding aligns to Smart Site product naming (not Hauska on customer-facing Stripe surfaces).
@@ -147,6 +150,8 @@ Each item is pass/fail via the named instrument only. Grade the deployed product
 
 **DC-13. Progress headline recorded at close.** At gate close, paste live `summary` block from `GET /api/county-ledger` (totalRails, totalCounties, totalCells, displayState counts, texasCompletenessPct) into session close artifact for drift audit. **Pass:** verbatim snapshot attached. **Instrument:** curl/httpie one-shot to production county-ledger endpoint.
 
+**DC-14. Unmeasured / `derivation-indeterminate` / overlay-indeterminate cells must be 0 at launch.** (R-07 draft. Dispatch R-07 called this DC-9. Existing DC-9 provenance is unchanged. DC-4 still counts `displayState === "no-atom"` only. DC-5 still counts `displayState === "no-writer"` only.) On `GET /api/county-ledger`, count cells where `displayState === "derivation-indeterminate"` or where the served overlay records the cell as unmeasured / overlay-indeterminate (hasWriter or atomFamilyState carrying an indeterminate stamp). **Pass:** 0. **Fail:** any positive count. Do not fold these cells into DC-4 or DC-5. Cite `_decisions/2026-08-21_dc4_dc5_unmeasured_stays_distinct.md`. Until the `RAIL_ENGINE_BINDINGS` wire converts unmeasured to measured, this card is the honest gate. **Instrument:** same GET; full `manifestCells` parse; no sampling.
+
 ---
 
-**Done-card summary:** 13 numbered acceptance items (DC-1 through DC-13). Primary instruments: `GET /api/county-ledger` (DC-1 through DC-9, DC-13), `SELECT COUNT(*) FROM county_rail` (DC-1 cross-check), OPS-11 register + engine CI block13 (DC-10), 76j WDLL artifacts + Stripe probe (DC-11), gate close template review (DC-12).
+**Done-card summary:** 14 numbered acceptance items (DC-1 through DC-14). Primary instruments: `GET /api/county-ledger` (DC-1 through DC-9, DC-13, DC-14), `SELECT COUNT(*) FROM county_rail` (DC-1 cross-check), OPS-11 register + engine CI block13 (DC-10), 76j WDLL artifacts + Stripe probe (DC-11), gate close template review (DC-12).

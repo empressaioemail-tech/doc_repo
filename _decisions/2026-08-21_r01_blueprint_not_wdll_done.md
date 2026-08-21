@@ -33,3 +33,8 @@ R-02 classification cannot close D1 by moving files. R-06 cannot close D4 by bui
 ## Counterparties
 
 Internal. Planner owns the re-grade. Operator owns a WDLL bound if one is wanted.
+
+## Amendment 2026-08-21 remainder
+
+Operator approved the inclusion-rule bound and the mermaid/T3 D5 call. Remainder closed the same day. This record stays as the R-05 grade that refused the unearned seven-MET close. It is not reversed: that close was unearned. The earned close is `_inbox/2026-08-21_r01-close_close.json`.
+

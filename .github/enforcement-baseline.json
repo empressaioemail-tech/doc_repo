@@ -2,7 +2,7 @@
   "_purpose": "Pinned exit code per enforcement control. scripts/enforcement/ci-baseline.mjs fails the job when a control does WORSE than its baseline, or when a control cannot be measured at all. Known debt is permitted and pinned here; new debt is not. This is the ratchet that replaces continue-on-error, which reported success on a failing control.",
   "_howToChange": "Lower a baselineExit when the debt is actually cleared, in the same commit that clears it. Never RAISE a baselineExit to make a red build green — that converts a defect into a specification and makes the eventual fix read as a regression.",
   "_tiers": "BLOCKING means the control has been verified by violation: it was made to fail on an injected defect and observed passing again after a byte-identical restore. REPORTING means it runs and is ratcheted but has not been violation-verified, so its green is weaker evidence.",
-  "snapshot": "2026-08-20 doc_repo 7f9f7e7",
+  "snapshot": "2026-08-21 doc_repo e022436 R-06 three-control slice (no baselineExit raised)",
   "controls": [
     {
       "name": "c-00-vehicle-sync",
@@ -29,11 +29,12 @@
     },
     {
       "name": "canon-divergence",
-      "script": "scripts/canon-divergence.mjs",
+      "script": "scripts/enforcement/canon-divergence-check.mjs",
       "tier": "REPORTING",
       "baselineExit": 0,
-      "violationVerified": null,
-      "graduationItem": "needs a check-only mode; it currently writes _catalog/canon_divergence.md as a side effect, and a control that mutates state cannot block cleanly"
+      "violationVerified": "2026-08-21 R-06: --self-test tmp no-touch clone last_verified=2000-01-01 exit 1; last_verified=2099-01-01 exit 0; _catalog/canon_divergence.md sha256 f7e24c1d9b034c3b8bb1a206d16a7b851f4c0bf1c5ff8df485fd3beddd5c07d2 unchanged (mtimeMs identical). Live --check-only --no-fetch --no-stamp exit 0, 0 divergent. --out _catalog/canon_divergence.md refused. --out _inbox/ wrote repo-relative checks: _catalog/repo_intents_checks.json. Wrapper exit 0. ci-baseline has no argv so the wrapper is the CI path.",
+      "knownScopeLimit": "ubuntu-latest has no P:/ sibling clones, so live ALARM is SKIPPED fail-open in CI. Same class as cited-untracked: BLOCKING on a control that cannot fire where it gates is a green that means nothing. Stay REPORTING until clones or a portable fixture is how CI observes alarm.",
+      "graduationItem": "BLOCKING only when CI can observe a live ALARM (sibling clones present, or a checked-in fixture clone the wrapper points at). Do not graduate on local-only fixture proof."
     },
     {
       "name": "cited-untracked",
@@ -77,6 +78,22 @@
       "baselineExit": 0,
       "violationVerified": "2026-08-21: restored the broken seat-gate import, observed exit 1 naming ERR_MODULE_NOT_FOUND on both registered matchers; restored the fix, observed exit 0",
       "why": "SEAT-01 was registered on shell and write, crashed on every invocation with ERR_MODULE_NOT_FOUND, and exited 0. It had never fired. Nothing checked that a registered hook could load."
+    },
+    {
+      "name": "tooling-register-schema",
+      "script": "scripts/enforcement/tooling-register-schema.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-08-21 R-06: --self-test 6 cases ok. Injected BOM-free fixture missing consumer: exit 1 hits INJECT-MISS. Complete fixture: exit 0. Restored (tmp deleted). Live _catalog/tooling_register.json: 46 rows, hits [], exit 0. Real keys are consumer/trigger/failure/bypass; executor maps to consumer. String None on DUPLICATE-ID-GAP is present, not missing.",
+      "knownScopeLimit": "gates controls[] only, not controlsNotNamedInMission. Empty controls array has zero missing fields and passes."
+    },
+    {
+      "name": "factory-termination",
+      "script": "scripts/enforcement/factory-termination.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-08-21 R-06: --self-test 7 cases ok. Injected factory terminationCondition NONE plus store hauska_mcp.atoms NONE: exit 1, hit inject-factory-none only, storeNoneIgnored hauska_mcp.atoms. Same store with a real factory term: exit 0. Restored (tmp deleted). Live: 4 factories, 0 hits, 7 store NONE ignored including hauska_mcp.atoms, exit 0.",
+      "knownScopeLimit": "kind===factory only. Stores, services, apps, jobs, instruments, controls with NONE are ignored by contract."
     }
   ]
 }

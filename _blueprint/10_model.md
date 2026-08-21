@@ -18,7 +18,7 @@ A **canonical place node** (`parcel-node` in property; other node types in other
 
 ## Four-way conflict — rulings
 
-The disagreement decides **where the volatile half of a relation lives** (membership in a district, flood zone attachment, instrument scope). Wrong placement produced 20,844,039 `special-district-fact` rows keyed with `:sd:{districtId}` on the atom identity instead of edges from parcel to district (`store audit Q3`).
+The disagreement decides **where the volatile half of a relation lives** (membership in a district, flood zone attachment, instrument scope). Wrong placement produced 21,586,428 `special-district-fact` rows against 14,182,900 `parcel-node` rows, the district facts keyed with `:sd:{districtId}` on the atom identity instead of edges from parcel to district (`_inbox/2026-08-20_store_audit_atom_graph.md` Q3, snapshot `hauska_mcp` UTC 2026-08-20T23:05:00Z, `reltuples` = 100,025,152; method `pg_stats.most_common_vals` × `pg_class.reltuples`, estimate, not `COUNT(*)`).
 
 ### `77_place_graph_strategy`
 

@@ -5,13 +5,16 @@ status: active
 last_updated: 2026-08-21
 applies_to: portfolio
 owner: nick
-related: [_blueprint/00_WDLL, 61_enforcement_doctrine, ENFORCEMENT, 51_ingestion_pipeline_reference, 90_runbooks/fleet_memory_practice, _catalog/plan_registry]
+related: [_blueprint/00_WDLL, 61_enforcement_doctrine, ENFORCEMENT, 51_ingestion_pipeline_reference, 90_runbooks/fleet_memory_practice, _catalog/plan_registry, 90_operations/OPS-18a_path_to_smartsite_market, 90_operations/OPS-18b_data_remediation_plan]
 ---
 
 # OPS-18 — Canon reconciliation and governance plan of record
 
-Third plan of record, row prefix `R`. `OPS-16` (`P`) is the Texas market. `OPS-17` (`G`) is
-the govtech stack. This one is the operation governing itself.
+`90_operations/OPS-18a_path_to_smartsite_market.md` is the standing sequence to Smart Site
+market (structural then data). Refer there, not to chat. Operator approved that path and
+the three rulings (traffic then recompute; unmeasured stays distinct; ADR-028
+accepted-partial) on 2026-08-21.
+
 
 ## Why this is a plan of record and not a workstream
 
@@ -43,15 +46,15 @@ this twelve days earlier and changed nothing.
 | Row | Phase | Deliverable | Exit criterion | Status |
 | --- | --- | --- | --- | --- |
 | R-00 | Blueprint WDLL | `_blueprint/00_WDLL.md` | operator accepts the definition of done and the fifteen-item violation set | CLOSED `c6399e8` |
-| R-01 | Canon reconciliation | `_blueprint/` and the mesh README | the blueprint correctly FAILS all fifteen violations, naming the rule each breaks; where it cannot fail one, that names a missing rule and is filed as an R-04 item | OPEN. Tree landed. R-05 grade 2026-08-21: D1 FAIL, D2 MET, D3 PARTIAL, D4 MET, D5 FAIL, D6 MET, D7 PARTIAL. Close claiming seven MET is unearned. Decision `_decisions/2026-08-21_r01_blueprint_not_wdll_done.md`. |
-| R-02 | Doc catalog and quarantine | every doc classified; contradictions moved to `_quarantine/` | zero unclassified docs; every quarantined doc names the blueprint rule it contradicts; nothing deleted | OPEN. Census half landed (`_catalog/doc_census.*`). Quarantine started (`_quarantine/README.md`, three duplicate-id bodies moved). Canon set still unbounded (D1). Accepted ADRs that contradict the blueprint were not moved. |
-| R-03 | Parts inventory | every part documented; dead and zombie parts quarantined | every running part has an owner, a purpose and a TERMINATION CONDITION; parts without one are quarantined | OPEN. Inventory landed (`_catalog/parts_inventory.*`). R-05 triage split the ten NONE parts (do not quarantine `hauska_mcp.atoms`). UNASSIGNED repos are operator-stamped. |
-| R-04 | Governance gap analysis | the tooling register | every blueprint rule names a consumer, or is listed UNENFORCED with a build item against it | OPEN. Register half landed. Mapping half done 2026-08-21: 24 rules, zero armed register consumers, every rule has an R-06 (or R-09) build item. Do not land the R-04 `canon_divergence.md` / `repo_intents_checks.json` copies (worktree path leak). |
-| R-05 | Adversarial review | refutation pass over R-01 to R-04 | every finding states a second mechanism and why it was rejected; the factory off-ramp gap resolved or filed | CLOSED 2026-08-21. Report `_inbox/2026-08-21_R-lanes_consolidated_report.md`. Factory off-ramp remains MISSING RULE BP-FACTORY-01, filed R-06. OPS-18 not retired; decision `_decisions/2026-08-21_ops18_keep_through_r08.md`. |
-| R-06 | Build the governance tooling | hooks, CI jobs, types | each new control proven by violating it, never by watching it pass | OPEN |
-| R-07 | Data audit | nodes, edges and atoms graded against the mesh | every atom family scored; unresolvable bindings COUNTED, never estimated | OPEN |
-| R-08 | Data remediation plan | the fix plan | every defect class has an owner, a rule, and a control that would prevent recurrence | OPEN |
-| R-09 | Launch gate instrument repair | the County Manifest indicators can return a red | `hasWriter`, `atomFamilyState` and `isPartial` each demonstrably take more than one value, proven by producing a cell that reads negative; the two launch criteria graded by them become capable of failing | OPEN. PR 447 OPEN, CI SUCCESS, occupancy UNCERTAIN. Leave alone. Claimed firings are a Cloud Run probe script, not a live GET. Live GET still 2026-08-14 snapshot. |
+| R-01 | Canon reconciliation | `_blueprint/` and the mesh README | the blueprint correctly FAILS all fifteen violations, naming the rule each breaks; where it cannot fail one, that names a missing rule and is filed as an R-04 item | CLOSED 2026-08-21 remainder. Re-grade: D1 MET (inclusion rule + listing 238 = mesh 238, instrument `_inbox/2026-08-21_r01_d1_reconcile.mjs` failed on npm-path decoration then passed), D2 MET, D3 MET (25 BP-* = 25 status sum; BP-MEANING-01 DORMANT; BP-FACTORY-01 UNENFORCED), D4 MET, D5 MET (ASCII agrees with mermaid/T3), D6 MET, D7 MET (Q3 reltuples + V6 handover/S-166). Close `_inbox/2026-08-21_r01-close_close.json`. |
+| R-02 | Doc catalog and quarantine | every doc classified; contradictions moved to `_quarantine/` | zero unclassified docs; every quarantined doc names the blueprint rule it contradicts; nothing deleted | OPEN. Census half landed. R-02b remainder against bounded set: README cites listing 238; zero new moves; ADR-028 not quarantined (accepted-partial). Full-estate classification still open. Close `_inbox/2026-08-21_r02b_close.json`. |
+| R-03 | Parts inventory | every part documented; dead and zombie parts quarantined | every running part has an owner, a purpose and a TERMINATION CONDITION; parts without one are quarantined | OPEN. Inventory landed (`_catalog/parts_inventory.*`). R-05 triage split the ten NONE parts (do not quarantine `hauska_mcp.atoms`). UNASSIGNED repos were operator-stamped 2026-08-21 (property + substrate seat). Seat assignment landed. |
+| R-04 | Governance gap analysis | the tooling register | every blueprint rule names a consumer, or is listed UNENFORCED with a build item against it | OPEN. Both halves landed. Register half + mapping half (R-05 W4: 24 rules then; BP-PROMOTE-01 added on R-01 remainder, unique BP-* now 25; zero armed register consumers). Do not land the r04-controls copies of `canon_divergence.md` / `repo_intents_checks.json` (worktree path leak). Decision `_decisions/2026-08-21_r04_divergence_report_do_not_land.md`. |
+| R-05 | Adversarial review | refutation pass over R-01 to R-04 | every finding states a second mechanism and why it was rejected; the factory off-ramp gap resolved or filed | CLOSED 2026-08-21. Report `_inbox/2026-08-21_R-lanes_consolidated_report.md`. Factory off-ramp is BP-FACTORY-01 UNENFORCED, consumer owed R-06. OPS-18 not retired; decision `_decisions/2026-08-21_ops18_keep_through_r08.md`. |
+| R-06 | Build the governance tooling | hooks, CI jobs, types | each new control proven by violating it, never by watching it pass | OPEN. Thin slice landed 2026-08-21: `--check-only` canon-divergence, tooling-register schema, factory-termination. Each self-test ok. No baselineExit raised. Remaining blueprint rules still UNENFORCED. Close `_inbox/2026-08-21_r06-slice_close.json`. |
+| R-07 | Data audit | nodes, edges and atoms graded against the mesh | every atom family scored; unresolvable bindings COUNTED, never estimated | CLOSED 2026-08-21 as grade of the existing 2026-08-20 audit. `_inbox/2026-08-21_r07_store_grade.md`: 31 Qs, 9 launch-critical. No new COUNT(*). |
+| R-08 | Data remediation plan | the fix plan | every defect class has an owner, a rule, and a control that would prevent recurrence | CLOSED 2026-08-21. Plan `90_operations/OPS-18b_data_remediation_plan.md`. Ordered by live GET DCs on `00527-yic` at `2026-08-21T15:53:02.907Z`: DC-4/5/14 pass; DC-2/3/6 fail. Wave A uniform not-yet, Wave B footprint depth, Wave C store identity. |
+| R-09 | Launch gate instrument repair | the County Manifest indicators can return a red | `hasWriter`, `atomFamilyState` and `isPartial` each demonstrably take more than one value, proven by producing a cell that reads negative; the two launch criteria graded by them become capable of failing | CLOSED 2026-08-21 live wire. PR 448 MERGED `f67c11f9`. Serving `cortex-api-00527-yic` @100% digest `sha256:83fd0dc6`. Live GET `computedAt` 2026-08-21T15:53:02.907Z: `derivation-indeterminate` 0, DC-4=0, DC-5=0, DC-14 unmeasured 0. `hasWriter` is capability true on 3556/3556. Close `_inbox/2026-08-21_r09-wire_live_close.json`. |
 
 ## Standing constraints on every row
 

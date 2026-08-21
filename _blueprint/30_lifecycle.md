@@ -16,10 +16,10 @@ States and gates for data from acquisition through customer serve. Gates name **
 
 ```
 ACQUIRED → LANDED → CANDIDATE → RESOLVED → RECONCILED → INDEXED → SERVED
-                ↓                    ↓
-            (retention           PROVISIONAL
-             expires)                ↓
-                              ADJUDICATED → promoted to RESOLVED
+                ↓           ↓
+           (retention   PROVISIONAL
+            expires)        ↓
+                       (BP-PROMOTE-01) → RESOLVED
 ```
 
 | State | Meaning | Store evidence |
@@ -28,7 +28,7 @@ ACQUIRED → LANDED → CANDIDATE → RESOLVED → RECONCILED → INDEXED → SE
 | **LANDED** | Immutable raw retained per class | `neondb` staging, GCS |
 | **CANDIDATE** | Adapter output, no canonical binding | Pre-write buffer (often skipped in practice) |
 | **RESOLVED** | Canonical node id assigned | `entity_id` on atom |
-| **PROVISIONAL** | Resolved but identity unconfirmed | Flag + queue (underfed) |
+| **PROVISIONAL** | Candidate that failed resolution; identity unconfirmed; T3 adjudication queue. | Flag + queue (underfed) |
 | **RECONCILED** | Coexists with prior atoms without silent conflict | Conflict atoms or supersession |
 | **INDEXED** | Row in `atoms` + optional `atom_links` | `hauska_mcp` |
 | **SERVED** | Read path returns value to customer | Live GET |

@@ -1,0 +1,112 @@
+{
+  "lane": "R06-slice",
+  "artifact": "cp1",
+  "date": "2026-08-21",
+  "planRows": ["R-06"],
+  "plan": "90_operations/OPS-18_canon_reconciliation_plan_of_record.md",
+  "pathDoc": "90_operations/OPS-18a_path_to_smartsite_market.md",
+  "acceptanceItem": 3,
+  "seat": "integration",
+  "worktree": "P:/doc_repo",
+  "branch": "main",
+  "snapshotAtStart": "e022436908248c9d378fd9358f062a0b39cf5bee",
+  "missionPremise": "OPS-18a acceptance item 3: three R-06 controls exist as files, each shown to fail, none implemented by raising baselineExit. Check-only must not write _catalog/canon_divergence.md. Tooling schema refuses a controls[] row missing consumer/trigger/failure/bypass (the real keys; executor maps to consumer). Factory detector refuses kind=factory with terminationCondition missing, empty, or NONE, and must not treat hauska_mcp.atoms (a store) as a factory miss.",
+  "completionPredicate": "Three scripts on disk; each violated then restored; canon_divergence.md hash unchanged across --check-only; enforcement-baseline.json rows added or retargeted; no baselineExit raised versus the 2026-08-20 pin; CP1/CP2/close filed. A stranger can re-run the three --self-test (or fixture) commands and see fail then pass.",
+  "scopeBasis": "R-06 only. ci-baseline.mjs spawns `node script` with no extra args, so flags go through wrappers, not a ci-baseline argv change. Do not edit _blueprint/, _quarantine/, 80_adrs/, OPS-16 amendments, C-00 / plan-registry / memory-promotion / hooks-loadable workflow steps. Do not git add/commit/push. Do not run default canon-divergence against live catalog (that write is the defect). Subagents forbidden.",
+
+  "jsonShapeNamed": {
+    "tooling_register.controls[]": {
+      "keys": ["id", "scope", "name", "location", "statement", "consumer", "trigger", "failure", "bypass", "violationVerified", "derivationClass", "status"],
+      "bpEnf01Mapping": {
+        "executor": "consumer",
+        "trigger": "trigger",
+        "failure": "failure",
+        "bypass": "bypass"
+      },
+      "notInvented": "no executor field exists; schema check uses consumer",
+      "liveAtSnapshot": "46 rows, 0 missing the four keys, DUPLICATE-ID-GAP carries string None (present, not missing)"
+    },
+    "parts_inventory.parts[]": {
+      "factoryCount": 4,
+      "factoryNone": [],
+      "storeNoneIncludesHauskaMcpAtoms": true,
+      "storeNoneNames": [
+        "hauska_mcp.atoms",
+        "smart-files-neon",
+        "hauska_mcp.document_blobs",
+        "neondb.county_manifest",
+        "neondb.county_rail",
+        "neondb.code_atoms",
+        "neondb.reasoning_atoms"
+      ]
+    }
+  },
+
+  "design": {
+    "canonDivergence": {
+      "flag": "--check-only",
+      "writes": "nothing under _catalog/; --out under _inbox/ allowed; stamp forced off",
+      "exit": "1 on ALARM (divergent); 2 if checks file missing/unparseable (unmeasured is not zero); 0 on clear or clone-SKIPPED",
+      "defaultUnchanged": "no flag still writes _catalog/canon_divergence.md and stays fail-open exit 0 so the Read hook does not break work",
+      "pathLeak": "report checks: field is repo-relative via path.relative(root), never P:/tmp/r04-controls or P:/doc_repo absolute",
+      "ci": "wrapper scripts/enforcement/canon-divergence-check.mjs spawns --check-only --no-fetch --no-stamp; baseline script path points at wrapper",
+      "tier": "keep REPORTING. GitHub ubuntu-latest has no P:/ sibling clones, so live alarm is SKIPPED fail-open there. Graduating to BLOCKING on a control that cannot fire where it gates is the cited-untracked class. Violation proof is local fixture."
+    },
+    "toolingRegisterSchema": {
+      "script": "scripts/enforcement/tooling-register-schema.mjs",
+      "failWhen": "controls[] row missing consumer, trigger, failure, or bypass (undefined/null/whitespace). String None is an answer, not an absence.",
+      "selfTest": "in-memory fixture missing one field fails; complete fixture passes. Default mode runs fixtures first, then live.",
+      "livePrediction": "exit 0, baselineExit 0, BLOCKING after violation"
+    },
+    "factoryTermination": {
+      "script": "scripts/enforcement/factory-termination.mjs",
+      "failWhen": "kind===factory AND terminationCondition missing, empty, or NONE (case-insensitive trim)",
+      "mustNotFail": "kind===store with NONE, including hauska_mcp.atoms",
+      "selfTest": "factory NONE fails; store NONE plus factory with real term passes",
+      "livePrediction": "exit 0 (4 factories, 0 NONE), baselineExit 0, BLOCKING after violation"
+    },
+    "baseline": {
+      "neverRaise": true,
+      "canonDivergenceRow": "retarget script to wrapper; baselineExit stays 0; tier stays REPORTING",
+      "newRows": "tooling-register-schema and factory-termination at baselineExit 0 only if live actually exits 0"
+    }
+  },
+
+  "preRegisteredPredictions": [
+    {
+      "id": "P1",
+      "claim": "Live tooling-register-schema exits 0 against _catalog/tooling_register.json (46 rows, four keys present)",
+      "falsifier": "any controls[] row missing consumer/trigger/failure/bypass, or treating string None as missing so DUPLICATE-ID-GAP fails"
+    },
+    {
+      "id": "P2",
+      "claim": "Live factory-termination exits 0; zero kind=factory with blank/NONE termination",
+      "falsifier": "a factory row whose terminationCondition is missing, empty, or NONE"
+    },
+    {
+      "id": "P3",
+      "claim": "Live --check-only --no-fetch --no-stamp exits 0 and does not change _catalog/canon_divergence.md hash",
+      "falsifier": "non-zero exit, or hash/mtime change, or a write to repo_intents_checks.json"
+    },
+    {
+      "id": "P4",
+      "claim": "Fixture no-touch clone with a commit since last_verified makes --check-only exit 1; catalog hash still unchanged",
+      "falsifier": "exit 0 on that fixture, or catalog mutation"
+    },
+    {
+      "id": "P5",
+      "claim": "Factory NONE fixture exits non-zero; store NONE fixture exits 0",
+      "falsifier": "factory NONE passes, or store NONE fails"
+    },
+    {
+      "id": "P6",
+      "claim": "No baselineExit in enforcement-baseline.json is higher than the 2026-08-20 pin for that named control",
+      "falsifier": "any existing control's baselineExit increased, or a new control pinned above its live exit"
+    }
+  ],
+
+  "openBeforeBuild": [
+    "Whether --check-only against this dirty integration tree still reports 0 divergent (catalog file says clear; not re-run yet)",
+    "Whether default-mode path-leak fix should regenerate the tracked report (NO: that write is out of proof scope)"
+  ]
+}
