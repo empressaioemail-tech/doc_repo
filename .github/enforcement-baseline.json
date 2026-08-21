@@ -1,0 +1,57 @@
+{
+  "_purpose": "Pinned exit code per enforcement control. scripts/enforcement/ci-baseline.mjs fails the job when a control does WORSE than its baseline, or when a control cannot be measured at all. Known debt is permitted and pinned here; new debt is not. This is the ratchet that replaces continue-on-error, which reported success on a failing control.",
+  "_howToChange": "Lower a baselineExit when the debt is actually cleared, in the same commit that clears it. Never RAISE a baselineExit to make a red build green — that converts a defect into a specification and makes the eventual fix read as a regression.",
+  "_tiers": "BLOCKING means the control has been verified by violation: it was made to fail on an injected defect and observed passing again after a byte-identical restore. REPORTING means it runs and is ratcheted but has not been violation-verified, so its green is weaker evidence.",
+  "snapshot": "2026-08-20 doc_repo ee4ea4a",
+  "controls": [
+    {
+      "name": "c-00-vehicle-sync",
+      "script": "scripts/enforcement/c-00-vehicle-sync.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-08-20: injected one line into .cursor/rules/enforcement.mdc, observed exit 1 status=drift, restored byte-identical, observed exit 0",
+      "knownScopeLimit": "compares exactly two vehicles and self-declares derivationClass internal-consistency, which is the weaker kind"
+    },
+    {
+      "name": "plan-registry-divergence",
+      "script": "scripts/plan-registry-divergence.test.mjs",
+      "tier": "BLOCKING",
+      "baselineExit": 0,
+      "violationVerified": "2026-08-20: added a plan claiming row prefix P, observed exit 1 duplicate prefix, restored byte-identical, observed exit 0"
+    },
+    {
+      "name": "seat-register",
+      "script": "scripts/enforcement/seat-register.mjs",
+      "tier": "REPORTING",
+      "baselineExit": 0,
+      "violationVerified": null,
+      "graduationItem": "run it against an unregistered seat, confirm non-zero, then move to BLOCKING"
+    },
+    {
+      "name": "canon-divergence",
+      "script": "scripts/canon-divergence.mjs",
+      "tier": "REPORTING",
+      "baselineExit": 0,
+      "violationVerified": null,
+      "graduationItem": "needs a check-only mode; it currently writes _catalog/canon_divergence.md as a side effect, and a control that mutates state cannot block cleanly"
+    },
+    {
+      "name": "cited-untracked",
+      "script": "scripts/enforcement/cited-untracked.mjs",
+      "tier": "REPORTING",
+      "baselineExit": 2,
+      "violationVerified": null,
+      "knownDebt": "tracked canon cites untracked _inbox targets. ENFORCEMENT.md calls cited-and-untracked the worst state, so this is real. Pinned at 2 so it cannot get worse while it is being cleared.",
+      "graduationItem": "clear the hits, lower baselineExit to 0, move to BLOCKING"
+    },
+    {
+      "name": "doc-staleness",
+      "script": "scripts/doc-staleness.mjs",
+      "tier": "REPORTING",
+      "baselineExit": 1,
+      "violationVerified": null,
+      "knownDebt": "canon docs missing last_updated, plus 365 files with no frontmatter reported but not gated",
+      "graduationItem": "backfill last_updated across canon, lower baselineExit to 0, move to BLOCKING"
+    }
+  ]
+}
