@@ -49,6 +49,7 @@ const results = [];
 let regressed = 0;
 let improved = 0;
 let missing = 0;
+let starvedEnv = 0;
 
 for (const c of controls) {
   const scriptPath = join(ROOT, c.script);
@@ -73,6 +74,21 @@ for (const c of controls) {
   if (actual === null) {
     verdict = "UNMEASURED";
     missing += 1;
+  } else if (c.environmentStarved && !(c.starvationNote && c.graduationItem)) {
+    // The exemption is not free. environmentStarved suppresses a regression, so an agent
+    // could set it to buy a green. It is honoured ONLY when the entry also carries the
+    // evidence (starvationNote) and the way out (graduationItem). Without both, the flag is
+    // treated as an unjustified exemption and fails.
+    verdict = "UNJUSTIFIED-EXEMPTION";
+    regressed += 1;
+  } else if (c.environmentStarved && actual > c.baselineExit) {
+    // DECLARED degradation, never silent. The control cannot fire where it gates (CI), and
+    // its local exit reflects working-tree noise rather than the thing it claims to measure.
+    // It is printed loudly and does not count as a regression, because a regression it cannot
+    // have. This is NOT continue-on-error: that hid a failing control; this names one, with
+    // the reason and the graduation item carried in the baseline entry.
+    verdict = "STARVED-ENV";
+    starvedEnv += 1;
   } else if (actual > c.baselineExit) {
     verdict = "REGRESSED";
     regressed += 1;
@@ -99,7 +115,7 @@ for (const r of results) {
   );
 }
 lines.push("");
-lines.push(`regressed=${regressed}  improved=${improved}  unmeasured/missing=${missing}`);
+lines.push(`regressed=${regressed}  improved=${improved}  unmeasured/missing=${missing}  starved-by-environment=${starvedEnv}`);
 
 if (improved > 0) {
   lines.push("");
@@ -109,6 +125,13 @@ if (improved > 0) {
 if (regressed > 0) {
   lines.push("");
   lines.push("FAIL: a control did worse than its recorded baseline. This is new debt, not old debt.");
+}
+if (starvedEnv > 0) {
+  lines.push("");
+  lines.push("STARVED-ENV: a control cannot fire in the environment that gates it. Its green there");
+  lines.push("means nothing. It is declared here rather than hidden, and each carries a");
+  lines.push("graduationItem naming the semantic change that would let it fail. Do not read these");
+  lines.push("as passing.");
 }
 if (missing > 0) {
   lines.push("");
@@ -128,7 +151,7 @@ if (process.env.GITHUB_STEP_SUMMARY) {
     "|---|---|---:|---:|---|",
     ...results.map((r) => `| ${r.name} | ${r.tier} | ${r.baselineExit} | ${r.actual ?? "n/a"} | ${r.verdict} |`),
     "",
-    `regressed **${regressed}** · improved **${improved}** · unmeasured **${missing}**`,
+    `regressed **${regressed}** · improved **${improved}** · unmeasured **${missing}** · starved-by-env **${starvedEnv}**`,
   ].join("\n");
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + "\n");
 }
