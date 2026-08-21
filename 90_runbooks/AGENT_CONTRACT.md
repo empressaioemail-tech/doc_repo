@@ -1,4 +1,4 @@
-<!-- AGENT-CONTRACT v7b714e95 — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- AGENT-CONTRACT v92aa194c — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # AGENT CONTRACT — the operative law for every dispatched lane
 
