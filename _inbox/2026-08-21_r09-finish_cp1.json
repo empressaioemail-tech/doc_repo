@@ -1,0 +1,67 @@
+{
+  "checkpoint": "CP1",
+  "planRow": "R-09",
+  "lane": "r09-finish",
+  "seat": "property",
+  "timestamp": "2026-08-21T13:02:00Z",
+  "snapshot": {
+    "cursorSessionWorktree": "P:/doc_repo",
+    "cursorSessionBranch": "main",
+    "cursorSessionCommit": "1ff4040f42d00318ad21d93001faa92b7f3d912a",
+    "cursorSessionSeatHook": "integration",
+    "operatorAssignment": "this session executes as property for R-09 finish",
+    "productWorktree": "P:/seat-worktrees/property/legacy-design-tools",
+    "productBranch": "seat/property",
+    "productCommit": "164378da2b09c68e8c1797e7b796538aae39dd4f",
+    "propertyDocRepoWorktree": "P:/seat-worktrees/property/doc_repo",
+    "propertyDocRepoHead": "56f06800533f7bfa465aaca7feb71d08e06e7329",
+    "note": "SEAT-01 hook identified this Cursor checkout as integration on main. Operator assigned the session as property executor. Product writes stay in the property LDT worktree. Shared checkout P:/legacy-design-tools is not touched. Doc artifacts land at the dispatch-named _inbox paths; commits remain planner-owned."
+  },
+  "subAgentDisposition": [
+    {
+      "agent": "none",
+      "status": "n/a",
+      "evidence": "No sub-agents. Direct execution of the compiled dispatch."
+    }
+  ],
+  "interruptionRecovery": {
+    "stoppedWorkers": 0,
+    "uncommittedDiffCaptured": false,
+    "limboPRs": "none",
+    "note": "No in-flight workers. Shared LDT checkout remains dirty on feat/s1-instrument-hardening; this lane will not clean or stash it."
+  },
+  "missionPremise": "R-09 is merged (PR 447 @ 4a52dee1, PR HEAD 164378da) and deployed as canary cortex-api-00524-pit at 0%. Every recompute so far ran on the serving pre-R-09 revision, so every stored snapshot and every read of it is old compute. The row is unproven until R-09 compute itself produces a non-constant indicator. Source: _dispatches/2026-08-21_r09-finish_dispatch.md.",
+  "completionPredicate": "Either (a) a firing: name a county+rail whose hasWriter, atomFamilyState, or isPartial is negative under canary compute, with the payload and resource.labels.revision_name from that request's log line; or (b) a disproof naming the mechanism (hand-declared, erased in transit, or starved). State whether DC4/DC5 can fail.",
+  "scopeBasis": "dryRun query param on the canary recompute route diffs R-09 compute against the stored snapshot and writes nothing. No traffic shift. No non-dry recompute from canary against the shared snapshot. No absence minting, no --apply, no migrations. Residual 504/statement-timeout defect is filed and out of this row.",
+  "design": {
+    "request": "POST https://canary---cortex-api-tds7av26va-uc.a.run.app/api/county-ledger/recompute?dryRun=1",
+    "body": "{} (Cloud Run 411 without a body; dryRun is NOT in the body — planner error 2026-08-21)",
+    "auth": "Authorization: Bearer $SERVICE_API_KEY (secret SERVICE_API_KEY, project legacy-design-tools-prod)",
+    "lock": "dryRun still takes COUNTY_LEDGER_RECOMPUTE_LOCK via withClusterSweepLock; it is a heavy scan. Lock is expected to clear on connection reap. Announce before fire.",
+    "timeout": "Cloud Run cuts the client at 300s; that is not failure. Client max-time 600s. If the body is lost to 504, retry with documented probe=skip escape hatch so overlay compute can return a delta inside the request. probe=skip still runs readManifestGrid (the overlay). Full capability probes are the residual defect, not this row's fix.",
+    "revisionAuthority": "resource.labels.revision_name on the request log line, not latestReadyRevisionName, not semicolon-aligned gcloud value() output. Traffic read via --format=json status.traffic[].",
+    "fences": [
+      "no traffic shift",
+      "no non-dry recompute from canary",
+      "no absence minting",
+      "no --apply",
+      "no store writes",
+      "no migrations",
+      "do not clean P:/legacy-design-tools"
+    ]
+  },
+  "heavyScanAnnouncement": {
+    "target": "POST canary /api/county-ledger/recompute?dryRun=1",
+    "database": "shared deployment Postgres (neondb) via canary cortex-api",
+    "expectedDuration": "minutes; prior full recomputes exceeded Cloud Run 300s and still committed",
+    "writes": "none (dryRun skips INSERT)",
+    "lock": "COUNTY_LEDGER_RECOMPUTE_LOCK held for the compute",
+    "status": "announced, not yet fired"
+  },
+  "codeRead": {
+    "dryRunSource": "artifacts/api-server/src/routes/countyLedger.ts firstQueryValue(req, 'dryRun') line 185",
+    "writeSkippedWhen": "if (!dryRun) INSERT county_ledger_snapshot",
+    "overlayPath": "computeCountyLedgerPayload -> readManifestGrid -> effectiveRailFieldsByKey(manifestReadProbeOptions())",
+    "deltaDoesNotNameCells": "diffCountyLedgerPayloads returns counts by railKey, not cell ids. A firing with a cell id needs either compute=live (same 300s trap, no probe=skip) or a named negative in summaryChanges plus a follow-up read of overlay-derived cells. CP2 records which path actually returned evidence."
+  }
+}

@@ -43,8 +43,9 @@ here with a link back to the scratch origin so provenance survives.
 | M-003 | A read probe must require the PRODUCTION shape, not the shape of the tree it runs in. A dev worktree with a colocated sibling repo derives different values than Cloud Run, which has none, so a probe that passes locally can be starved where it actually runs | prose | `manifestReadProbeOptions requireEngineRoot`, R-09 | `_scratch/r09_gate_repair.md` 2026-08-21 | no |
 | M-004 | A close artifact's `commit` field is NOT the PR HEAD. Compare them before merging; a divergence is a live-agent signal even when CI reads success, and merging on the close SHA merges a tree CI never graded | prose | R-05 w5; LDT PR 447 | `_scratch/r05_w5.md` 2026-08-21 | no |
 | M-005 | A frontmatter or fence detector requiring a literal `---` newline counts every CRLF and UTF-8-BOM file as unfenced. Two honest instruments then report different totals for the same tree and neither is wrong about what it measured | prose | R-05 w2 | `_scratch/r05_w2.md` 2026-08-21 | no |
+| M-006 | Deploying a canary by a floating tag (`image_tag=latest`) freezes whatever digest the tag pointed at when the REVISION was created. A build finishing seconds later moves the tag and the revision keeps the old digest. Pin the SHA, and verify the digest ON THE CREATED REVISION, not the tag you asked for | prose | R-09 finish; cortex-api 00524-pit vs 00525-bev | `_scratch/r09_finish.md` 2026-08-21 | no |
 
-Five rows. All prose, all unenforced. M-001 and M-002 were promoted before this file existed
+Six rows. All prose, all unenforced. M-001 and M-002 were promoted before this file existed
 and are recorded retroactively so the count is honest rather than flattering. M-003 is the
 first entry to arrive through the gate: the backlog grew past its pin on 2026-08-21 when three
 lanes wrote lessons, the build failed, and triage happened because the build failed. That is
