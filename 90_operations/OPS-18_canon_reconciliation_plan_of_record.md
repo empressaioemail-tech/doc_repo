@@ -2,7 +2,7 @@
 id: OPS-18_canon_reconciliation_plan_of_record
 title: OPS-18 — Canon reconciliation and governance plan of record
 status: active
-last_updated: 2026-08-20
+last_updated: 2026-08-21
 applies_to: portfolio
 owner: nick
 related: [_blueprint/00_WDLL, 61_enforcement_doctrine, ENFORCEMENT, 51_ingestion_pipeline_reference, 90_runbooks/fleet_memory_practice, _catalog/plan_registry]
@@ -43,15 +43,15 @@ this twelve days earlier and changed nothing.
 | Row | Phase | Deliverable | Exit criterion | Status |
 | --- | --- | --- | --- | --- |
 | R-00 | Blueprint WDLL | `_blueprint/00_WDLL.md` | operator accepts the definition of done and the fifteen-item violation set | CLOSED `c6399e8` |
-| R-01 | Canon reconciliation | `_blueprint/` and the mesh README | the blueprint correctly FAILS all fifteen violations, naming the rule each breaks; where it cannot fail one, that names a missing rule and is filed as an R-04 item | OPEN |
-| R-02 | Doc catalog and quarantine | every doc classified; contradictions moved to `_quarantine/` | zero unclassified docs; every quarantined doc names the blueprint rule it contradicts; nothing deleted | OPEN |
-| R-03 | Parts inventory | every part documented; dead and zombie parts quarantined | every running part has an owner, a purpose and a TERMINATION CONDITION; parts without one are quarantined | OPEN |
-| R-04 | Governance gap analysis | the tooling register | every blueprint rule names a consumer, or is listed UNENFORCED with a build item against it | OPEN |
-| R-05 | Adversarial review | refutation pass over R-01 to R-04 | every finding states a second mechanism and why it was rejected; the factory off-ramp gap resolved or filed | OPEN |
+| R-01 | Canon reconciliation | `_blueprint/` and the mesh README | the blueprint correctly FAILS all fifteen violations, naming the rule each breaks; where it cannot fail one, that names a missing rule and is filed as an R-04 item | OPEN. Tree landed. R-05 grade 2026-08-21: D1 FAIL, D2 MET, D3 PARTIAL, D4 MET, D5 FAIL, D6 MET, D7 PARTIAL. Close claiming seven MET is unearned. Decision `_decisions/2026-08-21_r01_blueprint_not_wdll_done.md`. |
+| R-02 | Doc catalog and quarantine | every doc classified; contradictions moved to `_quarantine/` | zero unclassified docs; every quarantined doc names the blueprint rule it contradicts; nothing deleted | OPEN. Census half landed (`_catalog/doc_census.*`). Quarantine started (`_quarantine/README.md`, three duplicate-id bodies moved). Canon set still unbounded (D1). Accepted ADRs that contradict the blueprint were not moved. |
+| R-03 | Parts inventory | every part documented; dead and zombie parts quarantined | every running part has an owner, a purpose and a TERMINATION CONDITION; parts without one are quarantined | OPEN. Inventory landed (`_catalog/parts_inventory.*`). R-05 triage split the ten NONE parts (do not quarantine `hauska_mcp.atoms`). UNASSIGNED repos are operator-stamped. |
+| R-04 | Governance gap analysis | the tooling register | every blueprint rule names a consumer, or is listed UNENFORCED with a build item against it | OPEN. Register half landed. Mapping half done 2026-08-21: 24 rules, zero armed register consumers, every rule has an R-06 (or R-09) build item. Do not land the R-04 `canon_divergence.md` / `repo_intents_checks.json` copies (worktree path leak). |
+| R-05 | Adversarial review | refutation pass over R-01 to R-04 | every finding states a second mechanism and why it was rejected; the factory off-ramp gap resolved or filed | CLOSED 2026-08-21. Report `_inbox/2026-08-21_R-lanes_consolidated_report.md`. Factory off-ramp remains MISSING RULE BP-FACTORY-01, filed R-06. OPS-18 not retired; decision `_decisions/2026-08-21_ops18_keep_through_r08.md`. |
 | R-06 | Build the governance tooling | hooks, CI jobs, types | each new control proven by violating it, never by watching it pass | OPEN |
 | R-07 | Data audit | nodes, edges and atoms graded against the mesh | every atom family scored; unresolvable bindings COUNTED, never estimated | OPEN |
 | R-08 | Data remediation plan | the fix plan | every defect class has an owner, a rule, and a control that would prevent recurrence | OPEN |
-| R-09 | Launch gate instrument repair | the County Manifest indicators can return a red | `hasWriter`, `atomFamilyState` and `isPartial` each demonstrably take more than one value, proven by producing a cell that reads negative; the two launch criteria graded by them become capable of failing | OPEN |
+| R-09 | Launch gate instrument repair | the County Manifest indicators can return a red | `hasWriter`, `atomFamilyState` and `isPartial` each demonstrably take more than one value, proven by producing a cell that reads negative; the two launch criteria graded by them become capable of failing | OPEN. PR 447 OPEN, CI SUCCESS, occupancy UNCERTAIN. Leave alone. Claimed firings are a Cloud Run probe script, not a live GET. Live GET still 2026-08-14 snapshot. |
 
 ## Standing constraints on every row
 
@@ -82,6 +82,10 @@ underway.
 Retire this plan when R-08 closes, or when an operator ruling folds the remaining rows into
 `OPS-16` or `OPS-17`. Do not let it become a permanent third program. A governance plan that
 outlives its own repair is the artifact class it was built to remove.
+
+R-05 answered this on 2026-08-21 (`_decisions/2026-08-21_ops18_keep_through_r08.md`): do not
+retire at R-05; do not fold R-06 into OPS-16 or OPS-17. R-07 and R-08 may fold after R-06 has
+landed. R-09 stays until a live GET fires.
 
 ## R-09 scope fence, because this row touches the launch gate
 

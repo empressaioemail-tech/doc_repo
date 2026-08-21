@@ -1,0 +1,23 @@
+diff --git a/scripts/enforcement/cited-untracked.mjs b/scripts/enforcement/cited-untracked.mjs
+--- a/scripts/enforcement/cited-untracked.mjs
++++ b/scripts/enforcement/cited-untracked.mjs
+@@ -12,7 +12,10 @@
+  * What bypasses: citations that are not backtick or markdown-link paths;
+- * URLs; paths under _scratch/; P:/tmp; node_modules; allowlist below.
++ * URLs; paths under _scratch/; P:/tmp; node_modules; git metadata paths
++ * (.git and .git/...), which every clone has and which are not untracked
++ * working-tree content a stranger clone would miss; allowlist below.
+  *
+  * Prove by violation: a tracked file citing an untracked path must fail.
+  * Pass --self-test to write and remove a fixture.
+@@ -45,6 +48,10 @@
+   if (!s || s.length < 3 || s.length > 240) return false;
+   if (s.includes('://')) return false;
+   if (s.startsWith('#')) return false;
++  const norm = s.replace(/\\/g, '/').replace(/\/+$/, '');
++  // Exact .git or .git/... only. Do not use startsWith('.git'): that would
++  // also skip .github/, which is tracked canon and a real citation surface.
++  if (norm === '.git' || norm.startsWith('.git/')) return false;
+   if (ALLOW_PREFIX.some((a) => s.startsWith(a) || s.replace(/\\/g, '/').startsWith(a.replace(/\\/g, '/')))) {
+     return false;
+   }
