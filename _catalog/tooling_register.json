@@ -1,0 +1,830 @@
+{
+  "_schemaVersion": 1,
+  "_purpose": "R-04 first half: control census register. Maps controls to what they enforce, not blueprint rules. Second half (R-04b) maps blueprint rules onto these rows when R-01 lands.",
+  "snapshot": {
+    "repo": "P:/doc_repo",
+    "commit": "4b174d1b129fa9eee54464967fe7da2b03828a72",
+    "branch": "detached",
+    "worktree": "P:/tmp/r04-controls",
+    "censusDate": "2026-08-21",
+    "plannerSeat": "integration (Cursor ad-hoc; dispatch compiled R-04)"
+  },
+  "preRegisteredWrongChecks": [
+    {
+      "check": "grep-only enumeration",
+      "risk": "Miss hook registrations in .claude/settings.json matchers; count scripts/ files without reading whether they have main() or are libraries",
+      "mitigation": "Read settings.json hook table and each script entry point; seat-register classified FALSE-GREEN because node seat-register.mjs is vacuous"
+    },
+    {
+      "check": "treat instruction vehicles as ENFORCED",
+      "risk": "Classify .mdc alwaysApply rules as ENFORCED when they have no mechanical failure mode",
+      "mitigation": "Four source .mdc files marked UNENFORCED (soft-policy); only enforcement.mdc has C-00 backstop"
+    }
+  ],
+  "preFiledFindings": [
+    {
+      "item": 1,
+      "claim": "No duplicate-id check exists; 20 ids claimed by 2+ files",
+      "verdict": "CONFIRMED mechanism; REFUTE count at this snapshot",
+      "evidence": "No duplicate-id control in scripts/; frontmatter id: scan at 4b174d1 finds 8 duplicate ids (1373 total), not 20 (R-02 baseline at e1fdc92) or 18 (worker recount)"
+    },
+    {
+      "item": 2,
+      "claim": "cited-untracked pinned at exit 2, 1108 hits, needs graduation",
+      "verdict": "CONFIRMED",
+      "evidence": "baselineExit 2 tier REPORTING; live exit 2 with 1176 hits at 4b174d1; --self-test passes"
+    },
+    {
+      "item": 3,
+      "claim": "doc-staleness pinned at exit 1, needs graduation",
+      "verdict": "CONFIRMED",
+      "evidence": "baselineExit 1 tier REPORTING; live exit 1 (1223 vocab + 155 gating stale at 4b174d1)"
+    },
+    {
+      "item": 4,
+      "claim": "C-00 compares two vehicles; third existed until 2026-08-20 and was invisible",
+      "verdict": "CONFIRMED",
+      "evidence": "c-00-vehicle-sync.mjs compares ENFORCEMENT.md vs .cursor/rules/enforcement.mdc only; OPS/enforcement.mdc is pointer stub not in compare set"
+    },
+    {
+      "item": 5,
+      "claim": "canon-divergence writes a file, needs check-only mode before blocking",
+      "verdict": "CONFIRMED",
+      "evidence": "canon-divergence.mjs always exit 0; writes _catalog/canon_divergence.md; baseline graduationItem documents check-only requirement"
+    },
+    {
+      "item": 6,
+      "claim": "seat-register passes but never violation-verified",
+      "verdict": "CONFIRMED; WORSE than filed",
+      "evidence": "Library with no main(); ci-baseline subprocess gets vacuous exit 0 PASS; loadSeatRegister() throws on corrupt JSON when called by consumers"
+    },
+    {
+      "item": 7,
+      "claim": "memory promotion gate counts files not individual lessons",
+      "verdict": "CONFIRMED",
+      "evidence": "Scans _scratch/*.md for LESSON marker; triage keyed by filename; baseline knownScopeLimit documents gap"
+    },
+    {
+      "item": 8,
+      "claim": "M4 internal-consistency problem",
+      "verdict": "CONFIRMED",
+      "evidence": "dispatch.mjs hashes AGENT_CONTRACT body and writes marker into same file; canon-gate reads marker from that file; derivationClass internal-consistency"
+    },
+    {
+      "item": 9,
+      "claim": "canon gate hand-carry bypass",
+      "verdict": "CONFIRMED",
+      "evidence": "M3/M4/M5 gated on toolName=Agent only (canon-gate.ps1:361); Write to _dispatches/ bypasses compiled-dispatch checks; verified 2026-08-21 mock stdin"
+    }
+  ],
+  "counts": {
+    "byStatus": {
+      "ENFORCED": 38,
+      "UNENFORCED": 8,
+      "DORMANT": 9,
+      "STARVED": 0,
+      "OVER-SCOPED": 1,
+      "FALSE-GREEN": 1
+    },
+    "byDerivationClass": {
+      "two-independent-sources": 4,
+      "source-vs-our-derivation": 8,
+      "internal-consistency": 9,
+      "presence-shaped": 26
+    },
+    "docRepoControls": 57,
+    "productRepoControlsAnnex": 43,
+    "nonEmptyBypass": 55,
+    "violationVerifiedNonNull": 18,
+    "gapsFiled": 12
+  },
+  "controls": [
+    {
+      "id": "REG-PRE-BASH-BRANCH",
+      "scope": "doc_repo",
+      "name": "PreToolUse Bash branch-guard registration",
+      "location": ".claude/settings.json hooks.PreToolUse[0]",
+      "statement": "Run branch-guard.ps1 before every Bash tool call.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name=Bash",
+      "failure": "branch-guard exit 2 blocks tool with JSON deny",
+      "bypass": "Non-Bash tools; harness without Claude PreToolUse; hook timeout/crash fail-open in branch-guard",
+      "violationVerified": null,
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-PRE-BASH-DIRTY",
+      "scope": "doc_repo",
+      "name": "PreToolUse Bash dirty-tree-close-gate registration",
+      "location": ".claude/settings.json hooks.PreToolUse[0]",
+      "statement": "Run dirty-tree-close-gate.ps1 before every Bash tool call.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name=Bash",
+      "failure": "Exit 2 blocks git push when _STATE.md, MEMORY.md, or _state/** dirty in doc_repo",
+      "bypass": "CLOSE_OVERRIDE=1; push non-doc_repo; clean tree; parse fail-open",
+      "violationVerified": "2026-08-21: CLOSE_OVERRIDE=1 git push mock exit 0",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-PRE-BASH-SEAT",
+      "scope": "doc_repo",
+      "name": "PreToolUse Bash seat-gate registration",
+      "location": ".claude/settings.json hooks.PreToolUse[0]",
+      "statement": "Run seat-gate.mjs shell before every Bash tool call.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name=Bash",
+      "failure": "Intended exit 2 on unregistered worktree",
+      "bypass": "Hook import crash (current state); non-git shell commands pass in shell mode; SEAT_GATE_OVERRIDE=1",
+      "violationVerified": "2026-08-21: node .cursor/hooks/seat-gate.mjs write ERR_MODULE_NOT_FOUND ../scripts resolves to .cursor/scripts",
+      "derivationClass": "presence-shaped",
+      "status": "DORMANT"
+    },
+    {
+      "id": "REG-PRE-AGENTWRITE-CANON",
+      "scope": "doc_repo",
+      "name": "PreToolUse Agent|Write canon-gate registration",
+      "location": ".claude/settings.json hooks.PreToolUse[1]",
+      "statement": "Run canon-gate.ps1 before Agent or Write tools.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name matches Agent|Write",
+      "failure": "Exit 2 on M1/M3/M4/M5 violations (scoped)",
+      "bypass": "CANON_OVERRIDE; Write outside _dispatches/; hand-carried Write to _dispatches skips M3/M4/M5; non-dispatch Agent; parse fail-open",
+      "violationVerified": "2026-08-21: Agent missing PLAN-ROW exit 2; Write same text exit 0",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-PRE-AGENTWRITE-TEMPLATE",
+      "scope": "doc_repo",
+      "name": "PreToolUse Agent|Write dispatch-template-gate registration",
+      "location": ".claude/settings.json hooks.PreToolUse[1]",
+      "statement": "Run dispatch-template-gate.ps1 before Agent or Write tools.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name matches Agent|Write",
+      "failure": "Exit 2 when dispatch-shaped brief missing ruled clauses",
+      "bypass": "DISPATCH_OVERRIDE; text under 400 chars; no dispatch heuristics; Write outside _dispatches/",
+      "violationVerified": "2026-08-21: missing exit-bounded clause exit 2",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REG-PRE-AGENTWRITE-SEAT",
+      "scope": "doc_repo",
+      "name": "PreToolUse Agent|Write seat-gate write registration",
+      "location": ".claude/settings.json hooks.PreToolUse[1]",
+      "statement": "Run seat-gate.mjs write before Agent or Write tools.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name matches Agent|Write",
+      "failure": "Intended exit 2 on namespace/worktree violation",
+      "bypass": "Broken import path; harness without hook; editors outside agent",
+      "violationVerified": "2026-08-21: same ERR_MODULE_NOT_FOUND as shell mode",
+      "derivationClass": "presence-shaped",
+      "status": "DORMANT"
+    },
+    {
+      "id": "REG-PRE-READ-DIVERGENCE",
+      "scope": "doc_repo",
+      "name": "PreToolUse Read canon-divergence-run registration",
+      "location": ".claude/settings.json hooks.PreToolUse[2]",
+      "statement": "Run canon-divergence-run.ps1 before Read tool.",
+      "consumer": "Claude Code PreToolUse harness",
+      "trigger": "tool_name=Read",
+      "failure": "Never blocks; always exit 0",
+      "bypass": "Read paths other than _STATE.md; fresh report under 12h; node missing fail-open",
+      "violationVerified": "2026-08-21: Read _STATE.md payload exit 0; report timestamp refreshed",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-M1-POSTURE",
+      "scope": "doc_repo",
+      "name": "Canon gate repo posture block",
+      "location": ".claude/hooks/canon-gate.ps1",
+      "statement": "Block dispatch text targeting repo_intents row with posture retiring or no-touch.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "Agent or Write _dispatches/ with resolved repo in repo_intents",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "CANON_OVERRIDE; repo not resolved; Write outside _dispatches/",
+      "violationVerified": "2026-08-21: smartcity-os no-touch exit 2",
+      "derivationClass": "source-vs-our-derivation",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-M1-STALE",
+      "scope": "doc_repo",
+      "name": "Canon gate repo_intents staleness",
+      "location": ".claude/hooks/canon-gate.ps1",
+      "statement": "Block when repo_intents.md last_updated is older than 30 days and repo resolved.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "Same as CANON-M1-POSTURE when repo resolved",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "CANON_OVERRIDE; last_updated within 30 days (currently 2026-08-17); repo unresolved",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-M4-CONTRACT",
+      "scope": "doc_repo",
+      "name": "Canon gate M4 AGENT-CONTRACT marker",
+      "location": ".claude/hooks/canon-gate.ps1 Get-ContractHash; line 361 Agent-only",
+      "statement": "Dispatch-shaped Agent prompts must contain AGENT-CONTRACT v{hash} matching marker in 90_runbooks/AGENT_CONTRACT.md.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "toolName=Agent AND Test-DispatchShaped=true",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "CANON_OVERRIDE; Write to _dispatches/ hand-carried bypass; non-dispatch Agent; dispatch.mjs with override",
+      "violationVerified": "2026-08-21: v00000000 marker exit 2",
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-M5-PLANROW",
+      "scope": "doc_repo",
+      "name": "Canon gate M5 PLAN-ROW validation",
+      "location": ".claude/hooks/canon-gate.ps1 Test-PlanRows; line 361 Agent-only",
+      "statement": "Dispatch-shaped Agent prompts must declare PLAN-ROW tokens that exist in plan_registry.json.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "toolName=Agent AND Test-DispatchShaped=true",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "CANON_OVERRIDE; Write _dispatches/ hand-carried bypass; non-dispatch Agent; prose PLAN-ROW with no row tokens",
+      "violationVerified": "2026-08-21: missing PLAN-ROW exit 2; G-9999 exit 2; Write same text exit 0",
+      "derivationClass": "two-independent-sources",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-M3-PREAMBLE",
+      "scope": "doc_repo",
+      "name": "Canon gate M3 CANON-PREAMBLE freshness",
+      "location": ".claude/hooks/canon-gate.ps1 Get-PreambleHash; line 361 Agent-only",
+      "statement": "Dispatch-shaped Agent prompts must contain CANON-PREAMBLE v{hash} matching _catalog/DISPATCH_PREAMBLE.md.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "toolName=Agent AND Test-DispatchShaped=true",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "CANON_OVERRIDE; Write _dispatches/ hand-carried bypass; non-dispatch Agent",
+      "violationVerified": "2026-08-21: stale preamble hash exit 2",
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-OVERRIDE",
+      "scope": "doc_repo",
+      "name": "CANON_OVERRIDE escape hatch",
+      "location": ".claude/hooks/canon-gate.ps1",
+      "statement": "CANON_OVERRIDE line skips all canon-gate blocks and appends to override log.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "CANON_OVERRIDE line in inspected text",
+      "failure": "Does not fail; logs and exits open",
+      "bypass": "N/A — is the bypass mechanism",
+      "violationVerified": "2026-08-21: no-touch repo + CANON_OVERRIDE exit 0",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-SCOPE-WRITE",
+      "scope": "doc_repo",
+      "name": "Canon gate Write path scope",
+      "location": ".claude/hooks/canon-gate.ps1 lines 199-203",
+      "statement": "Write tool inspected only when file_path matches _dispatches/; other Write exits open immediately.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "toolName=Write",
+      "failure": "Non-_dispatches Write never evaluated for M3/M4/M5",
+      "bypass": "Any Write outside _dispatches/",
+      "violationVerified": "2026-08-21: Write _inbox/foo.md exit 0",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CANON-FAILOPEN",
+      "scope": "doc_repo",
+      "name": "Canon gate global fail-open",
+      "location": ".claude/hooks/canon-gate.ps1",
+      "statement": "Malformed or empty stdin exits 0 without blocking.",
+      "consumer": "canon-gate.ps1",
+      "trigger": "Hook payload parse failure",
+      "failure": "Never blocks on hook errors",
+      "bypass": "Malformed stdin by design",
+      "violationVerified": "2026-08-21: empty stdin exit 0",
+      "derivationClass": "presence-shaped",
+      "status": "UNENFORCED"
+    },
+    {
+      "id": "TPL-001-PREAMBLE",
+      "scope": "doc_repo",
+      "name": "Dispatch template CANON-PREAMBLE presence",
+      "location": ".claude/hooks/dispatch-template-gate.ps1 check 1",
+      "statement": "Dispatch-shaped briefs must contain CANON-PREAMBLE v{8-hex} marker.",
+      "consumer": "dispatch-template-gate.ps1",
+      "trigger": "Agent or Write _dispatches/ length>=400 with dispatch heuristics",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "DISPATCH_OVERRIDE; below heuristics threshold; Write outside _dispatches/",
+      "violationVerified": null,
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "TPL-003-EXITBOUND",
+      "scope": "doc_repo",
+      "name": "Dispatch template exit-bounded verification",
+      "location": ".claude/hooks/dispatch-template-gate.ps1 check 3",
+      "statement": "Brief must contain exit-bounded verification language.",
+      "consumer": "dispatch-template-gate.ps1",
+      "trigger": "Dispatch-shaped brief",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "DISPATCH_OVERRIDE; heuristics bypass under 400 chars",
+      "violationVerified": "2026-08-21: unbounded forever exit 2",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "TPL-HEURISTIC-BYPASS",
+      "scope": "doc_repo",
+      "name": "Dispatch template not-a-dispatch heuristics",
+      "location": ".claude/hooks/dispatch-template-gate.ps1 lines 117-134",
+      "statement": "Skip gate when text under 400 chars or lacks dispatch signal patterns.",
+      "consumer": "dispatch-template-gate.ps1",
+      "trigger": "Short Agent tasks",
+      "failure": "Exit 0 without checking four clauses",
+      "bypass": "By design for non-dispatch Agent use",
+      "violationVerified": "2026-08-21: short Write _dispatches/ exit 0 despite missing clauses",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "BRANCH-MAIN",
+      "scope": "doc_repo",
+      "name": "Branch guard integration main-only",
+      "location": ".claude/hooks/branch-guard.ps1",
+      "statement": "Refuse git commit/push when target is integration P:/doc_repo and branch is not main.",
+      "consumer": "branch-guard.ps1",
+      "trigger": "Bash git commit|push targeting integration doc_repo",
+      "failure": "JSON block exit 2",
+      "bypass": "Seat worktrees; non-doc_repo targets; parse fail-open",
+      "violationVerified": "2026-08-21: git -C P:/hauska-engine commit mock exit 0",
+      "derivationClass": "source-vs-our-derivation",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "BRANCH-MATCHER",
+      "scope": "doc_repo",
+      "name": "Branch guard presence-shaped git matcher",
+      "location": ".claude/hooks/branch-guard.ps1 line 42",
+      "statement": "Fires on command segment containing git...commit|push substring.",
+      "consumer": "branch-guard.ps1",
+      "trigger": "Regex git commit|push in command string",
+      "failure": "Can block non-git commands mentioning commit/push on non-main",
+      "bypass": "On main branch passes through",
+      "violationVerified": null,
+      "derivationClass": "presence-shaped",
+      "status": "OVER-SCOPED"
+    },
+    {
+      "id": "DIRTY-STATE-PUSH",
+      "scope": "doc_repo",
+      "name": "Dirty-tree close gate stranded live-state",
+      "location": ".claude/hooks/dirty-tree-close-gate.ps1",
+      "statement": "Block git push of doc_repo when _STATE.md, MEMORY.md, or _state/** have uncommitted changes.",
+      "consumer": "dirty-tree-close-gate.ps1",
+      "trigger": "git push subcommand targeting doc_repo",
+      "failure": "Write-BlockMessage exit 2",
+      "bypass": "CLOSE_OVERRIDE=1; push non-doc_repo; clean tree",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "M2-DIVERGENCE-REFRESH",
+      "scope": "doc_repo",
+      "name": "M2 canon divergence cadence refresh",
+      "location": ".claude/hooks/canon-divergence-run.ps1",
+      "statement": "On Read of _STATE.md, refresh canon_divergence.md if older than 12h.",
+      "consumer": "canon-divergence-run.ps1",
+      "trigger": "Read tool path ends with _STATE.md",
+      "failure": "Never blocks; always exit 0",
+      "bypass": "Read other files; fresh report; node missing",
+      "violationVerified": "2026-08-21: Read _STATE.md refreshed report",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "SEAT-01",
+      "scope": "doc_repo",
+      "name": "Seat worktree gate",
+      "location": "scripts/enforcement/seat-worktree-gate.mjs",
+      "statement": "Refuse git writes and path mutations in unregistered worktrees, wrong branch, or foreign _state namespace.",
+      "consumer": "seat-gate.mjs (intended); CLI direct",
+      "trigger": "git add/commit/push or Write with path in registered repo",
+      "failure": "exit 2 permission deny",
+      "bypass": "seat-gate.mjs import crash (DORMANT in hooks); SEAT_GATE_OVERRIDE=1; git GUI; editors outside harness",
+      "violationVerified": "2026-08-21: CLI --worktree P:/not-a-seat exit 2; P:/doc_repo allow true",
+      "derivationClass": "two-independent-sources",
+      "status": "DORMANT"
+    },
+    {
+      "id": "C-00",
+      "scope": "doc_repo",
+      "name": "C-00 vehicle sync",
+      "location": "scripts/enforcement/c-00-vehicle-sync.mjs",
+      "statement": "Refuse when ENFORCEMENT.md body differs from .cursor/rules/enforcement.mdc body below frontmatter.",
+      "consumer": "enforcement.yml blocking step; ci-baseline.mjs",
+      "trigger": "CI push/PR; manual",
+      "failure": "exit 1 status=drift",
+      "bypass": "Edit only ENFORCEMENT.md and skip CI; Claude Code loads @ENFORCEMENT.md not mdc; OPS/enforcement.mdc not compared",
+      "violationVerified": "2026-08-20: injected line into mdc exit 1; restored exit 0",
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "REGEN-MDC",
+      "scope": "doc_repo",
+      "name": "regenerate-mdc",
+      "location": "scripts/enforcement/regenerate-mdc.mjs",
+      "statement": "Regenerate enforcement.mdc body from ENFORCEMENT.md preserving frontmatter.",
+      "consumer": "Operator manual; upstream of C-00",
+      "trigger": "Manual node scripts/enforcement/regenerate-mdc.mjs",
+      "failure": "exit 1 if mdc missing frontmatter",
+      "bypass": "Skip regeneration; hand-edit mdc (C-00 catches on CI)",
+      "violationVerified": null,
+      "derivationClass": "presence-shaped",
+      "status": "DORMANT"
+    },
+    {
+      "id": "CTRL-1",
+      "scope": "doc_repo",
+      "name": "Plan registry divergence test",
+      "location": "scripts/plan-registry-divergence.test.mjs",
+      "statement": "Row-ID prefixes must not collide; dispatch.mjs and canon-gate.ps1 must resolve paths from plan_registry.json.",
+      "consumer": "enforcement.yml blocking step; ci-baseline.mjs",
+      "trigger": "CI push/PR",
+      "failure": "exit 1 on duplicate prefix or consumer divergence",
+      "bypass": "Hand-assembled dispatch; commits without CI; hook bypass flags",
+      "violationVerified": "2026-08-20: duplicate prefix exit 1; restored exit 0",
+      "derivationClass": "two-independent-sources",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "MEMORY-PROMOTION-GATE",
+      "scope": "doc_repo",
+      "name": "Memory promotion gate",
+      "location": "scripts/enforcement/memory-promotion-gate.mjs",
+      "statement": "Refuse when untriaged Tier-2 scratch LESSON files exceed maxUntriagedLessonFiles pin.",
+      "consumer": "enforcement.yml blocking step; ci-baseline.mjs",
+      "trigger": "CI push/PR",
+      "failure": "exit 1 with backlog report",
+      "bypass": "Remove pin file; add LESSON to already-triaged file; _scratch/ subdirs gitignored",
+      "violationVerified": "2026-08-20: lowered pin exit 1; removed pin refusal; restored exit 0",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "CI-ENFORCEMENT-RATCHET",
+      "scope": "doc_repo",
+      "name": "CI enforcement ratchet",
+      "location": "scripts/enforcement/ci-baseline.mjs + .github/enforcement-baseline.json",
+      "statement": "Refuse when any baseline control exits worse than pinned baselineExit or is missing.",
+      "consumer": "enforcement.yml final step",
+      "trigger": "CI push/PR",
+      "failure": "exit 1 REGRESSED or MISSING",
+      "bypass": "Controls not in baseline (SEAT-01); raise baselineExit to absorb debt; merge without CI",
+      "violationVerified": "2026-08-20: pinned at 0 REGRESSED; deleted script MISSING; no baseline refusal",
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "cited-untracked",
+      "scope": "doc_repo",
+      "name": "Cited-and-untracked gate",
+      "location": "scripts/enforcement/cited-untracked.mjs",
+      "statement": "Refuse when tracked text cites repo paths that exist on disk but are not in git ls-files.",
+      "consumer": "ci-baseline.mjs",
+      "trigger": "CI ratchet; manual --self-test",
+      "failure": "exit 2 with hit count",
+      "bypass": "URLs; _scratch/; P:/tmp; prose paths without /; merge without CI",
+      "violationVerified": "2026-08-20 --self-test pass; live 1176 hits exit 2 at 4b174d1",
+      "derivationClass": "two-independent-sources",
+      "status": "UNENFORCED"
+    },
+    {
+      "id": "doc-staleness",
+      "scope": "doc_repo",
+      "name": "Doc staleness and vocabulary gate",
+      "location": "scripts/doc-staleness.mjs",
+      "statement": "Active canon docs must have legal status vocabulary and last_updated within threshold.",
+      "consumer": "ci-baseline.mjs",
+      "trigger": "CI ratchet; manual",
+      "failure": "exit 1 when vocab or gating stale non-empty",
+      "bypass": "STALENESS_SKIP trees; --lane-set; merge without CI",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "UNENFORCED"
+    },
+    {
+      "id": "canon-divergence",
+      "scope": "doc_repo",
+      "name": "Canon-vs-reality divergence detector",
+      "location": "scripts/canon-divergence.mjs",
+      "statement": "Compare repo_intents_checks.json postures against git activity; emit divergence report.",
+      "consumer": "ci-baseline.mjs; canon-divergence-run.ps1 hook",
+      "trigger": "CI ratchet; Read _STATE.md if stale",
+      "failure": "Always exit 0 fail-open",
+      "bypass": "Entire control fail-open; missing clones SKIPPED; mutates report file",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "UNENFORCED"
+    },
+    {
+      "id": "seat-register",
+      "scope": "doc_repo",
+      "name": "Seat register loader (misregistered)",
+      "location": "scripts/enforcement/seat-register.mjs",
+      "statement": "Library: parse and validate _catalog/seat_register.json for consumers.",
+      "consumer": "ci-baseline.mjs (vacuous); seat-worktree-gate.mjs",
+      "trigger": "Subprocess node seat-register.mjs exits 0 silently",
+      "failure": "loadSeatRegister throws when called by consumers on bad JSON",
+      "bypass": "Baseline entry runs library as script with no main() — vacuous PASS",
+      "violationVerified": null,
+      "derivationClass": "internal-consistency",
+      "status": "FALSE-GREEN"
+    },
+    {
+      "id": "ROW-DECLARATION",
+      "scope": "doc_repo",
+      "name": "Row declaration test",
+      "location": "scripts/enforcement/row-declaration.test.mjs",
+      "statement": "Plan-row predicate accepts only first-cell table rows not prose mentions.",
+      "consumer": "ci-baseline.mjs",
+      "trigger": "CI ratchet",
+      "failure": "exit 1 on vacuous regex or missing rows",
+      "bypass": "Shell regex verification; merge without CI",
+      "violationVerified": "2026-08-20: plan with no rows exit 1",
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "dispatch-plan-row-gate",
+      "scope": "doc_repo",
+      "name": "Dispatch compiler PLAN-ROW validation",
+      "location": "scripts/dispatch.mjs",
+      "statement": "Compiled dispatch must name PLAN-ROW(s) existing in plan of record.",
+      "consumer": "dispatch.mjs CLI; indirectly canon-gate",
+      "trigger": "Manual dispatch compile",
+      "failure": "exit 1",
+      "bypass": "Hand-assembled dispatch without compiler",
+      "violationVerified": null,
+      "derivationClass": "two-independent-sources",
+      "status": "DORMANT"
+    },
+    {
+      "id": "dispatch-contract-hash-stamp",
+      "scope": "doc_repo",
+      "name": "AGENT_CONTRACT hash marker maintenance",
+      "location": "scripts/dispatch.mjs",
+      "statement": "Maintains hash marker on AGENT_CONTRACT.md for compiled dispatch embedding.",
+      "consumer": "dispatch.mjs; canon-gate M4",
+      "trigger": "dispatch compile when marker stale",
+      "failure": "Mutates canon file in-place; no exit failure",
+      "bypass": "Hand-edit marker without recompile satisfies M4 internal-consistency",
+      "violationVerified": null,
+      "derivationClass": "internal-consistency",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "BP-DOC-REPO-STAGE1",
+      "scope": "doc_repo",
+      "name": "doc_repo main branch protection Stage 1",
+      "location": "GitHub empressaioemail-tech/doc_repo branch protection",
+      "statement": "Block force-push and branch deletion on main; no required status checks.",
+      "consumer": "GitHub merge path",
+      "trigger": "push/merge to main",
+      "failure": "GH006 on force-push",
+      "bypass": "No required checks — enforcement CI is advisory; direct push allowed",
+      "violationVerified": "Stage 1 force-push refusal per 91_branch_protection_runbook.md",
+      "derivationClass": "presence-shaped",
+      "status": "ENFORCED"
+    },
+    {
+      "id": "MDC-ENF",
+      "scope": "doc_repo",
+      "name": "enforcement.mdc Cursor rule",
+      "location": ".cursor/rules/enforcement.mdc",
+      "statement": "Fail-closed agent operating law; alwaysApply; body generated from ENFORCEMENT.md.",
+      "consumer": "Cursor IDE agents",
+      "trigger": "Cursor session alwaysApply injection",
+      "failure": "No mechanical failure; C-00 detects drift on CI",
+      "bypass": "Claude Code @ENFORCEMENT.md path; non-Cursor harnesses; ad-hoc chat",
+      "violationVerified": "Indirect via C-00",
+      "derivationClass": "presence-shaped",
+      "status": "UNENFORCED"
+    },
+    {
+      "id": "MDC-STATE",
+      "scope": "doc_repo",
+      "name": "read-state-first.mdc",
+      "location": ".cursor/rules/read-state-first.mdc",
+      "statement": "Agents must read _STATE.md and MEMORY.md before substantive work.",
+      "consumer": "Cursor IDE agents",
+      "trigger": "Cursor alwaysApply",
+      "failure": "None mechanical",
+      "bypass": "Claude Code; agents ignoring rules; no CI gate",
+      "violationVerified": null,
+      "derivationClass": "presence-shaped",
+      "status": "UNENFORCED"
+    },
+    {
+      "id": "state-generated-check",
+      "scope": "doc_repo",
+      "name": "_STATE.md generated drift check",
+      "location": "scripts/state/check-generated.mjs",
+      "statement": "On-disk _STATE.md must match renderCombined() output.",
+      "consumer": "Manual per _state/README.md",
+      "trigger": "Manual node scripts/state/check-generated.mjs",
+      "failure": "exit 1 status drift",
+      "bypass": "Hand-edit _STATE.md; skip check; not in CI",
+      "violationVerified": null,
+      "derivationClass": "internal-consistency",
+      "status": "DORMANT"
+    },
+    {
+      "id": "hy-proof-by-violation",
+      "scope": "doc_repo",
+      "name": "Hygiene proof-by-violation runner",
+      "location": "scripts/hygiene/proof-by-violation.mjs",
+      "statement": "HY-02, HY-01, HY-03 must fail/pass on known fixtures before reported working.",
+      "consumer": "Systems hygiene verification",
+      "trigger": "Manual",
+      "failure": "exit 1 if any proof case fails",
+      "bypass": "Do not run proof suite",
+      "violationVerified": "2026-08-20 systems arc",
+      "derivationClass": "source-vs-our-derivation",
+      "status": "DORMANT"
+    },
+    {
+      "id": "hy-01-branch-prune-report",
+      "scope": "doc_repo",
+      "name": "HY-01 branch prune measurement",
+      "location": "scripts/hygiene/branch-prune-report.mjs",
+      "statement": "Delete-eligible only when content-merged + prune-safe + no worktree + gh verified.",
+      "consumer": "proof-by-violation.mjs; systems ops",
+      "trigger": "Manual; --arm-delete requires confirm",
+      "failure": "exit 1 eligible remain; exit 4 log write failed blocks delete",
+      "bypass": "Measurement mode only; manual git branch -D",
+      "violationVerified": "2026-08-20 systems arc",
+      "derivationClass": "source-vs-our-derivation",
+      "status": "DORMANT"
+    },
+    {
+      "id": "hy-02-nested-clone-detect",
+      "scope": "doc_repo",
+      "name": "HY-02 nested clone detector",
+      "location": "scripts/hygiene/nested-clone-detect.mjs",
+      "statement": "Non-zero when nested .git dirs or ruled full clones exist under scan root.",
+      "consumer": "proof-by-violation.mjs",
+      "trigger": "Manual",
+      "failure": "exit 1 when violationCount > 0",
+      "bypass": "Not in enforcement-baseline.json; merge without scan",
+      "violationVerified": "2026-08-20 systems arc",
+      "derivationClass": "presence-shaped",
+      "status": "DORMANT"
+    },
+    {
+      "id": "gate-grade",
+      "scope": "doc_repo",
+      "name": "Texas flush launch gate grader",
+      "location": "scripts/gate-grade.mjs",
+      "statement": "Grades DC-1..DC-13 via live probes; overall PASS only if all PASS.",
+      "consumer": "Operator manual",
+      "trigger": "Manual node scripts/gate-grade.mjs",
+      "failure": "exit 1 when overall not PASS",
+      "bypass": "Do not run; stale ledger snapshot",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "DORMANT"
+    },
+    {
+      "id": "product-surface-smoke",
+      "scope": "doc_repo",
+      "name": "Product surface smoke suite",
+      "location": "scripts/product-surface-smoke.mjs",
+      "statement": "Live GET probes for engine health, PE facets, envelope sanity on Bastrop parcels.",
+      "consumer": "90_runbooks/product_surface_smoke_suite.md",
+      "trigger": "Manual after serve-path changes",
+      "failure": "exit 1 strict mode",
+      "bypass": "--dry-run; skip RETRIEVAL_API_KEY",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "DORMANT"
+    },
+    {
+      "id": "stall-watchdog",
+      "scope": "doc_repo",
+      "name": "Stall watchdog",
+      "location": "scripts/stall-watchdog.mjs",
+      "statement": "Alarm if watched path mtime exceeds maxQuietMin.",
+      "consumer": "Planner background task",
+      "trigger": "60s poll loop until maxCycles",
+      "failure": "exit 1 on STALL",
+      "bypass": "Do not run; paused:true in registry entry",
+      "violationVerified": null,
+      "derivationClass": "source-vs-our-derivation",
+      "status": "DORMANT"
+    },
+    {
+      "id": "DUPLICATE-ID-GAP",
+      "scope": "doc_repo",
+      "name": "Duplicate frontmatter id check (absent)",
+      "location": "NOT PRESENT — gap filed",
+      "statement": "Should refuse when two tracked markdown files claim the same frontmatter id.",
+      "consumer": "None",
+      "trigger": "None",
+      "failure": "None",
+      "bypass": "Entire doc_repo — 8 duplicate id pairs at 4b174d1",
+      "violationVerified": null,
+      "derivationClass": "two-independent-sources",
+      "status": "UNENFORCED"
+    }
+  ],
+  "controlsNotNamedInMission": [
+    {
+      "id": "TPL-002-NONEST",
+      "note": "Dispatch template no-nesting first line check — present in dispatch-template-gate.ps1"
+    },
+    {
+      "id": "TPL-004-CLOSE",
+      "note": "Dispatch template close artifact clause — present in dispatch-template-gate.ps1"
+    },
+    {
+      "id": "DISPATCH-OVERRIDE-LOG",
+      "note": "_override-log-target.ps1 routes override events to per-seat logs — infra control"
+    },
+    {
+      "id": "GIT-REPO-TARGET",
+      "note": "_git-repo-target.ps1 resolves mutated repo for branch-guard and dirty-tree gates"
+    },
+    {
+      "id": "hy-03-backlog-expiry-dryrun",
+      "note": "HY-03 backlog expiry dry-run — DISARMED in proof-by-violation defaults"
+    },
+    {
+      "id": "hy-04-worktree-audit",
+      "note": "HY-04 worktree audit — reporting only exit 0"
+    },
+    {
+      "id": "untracked-estate",
+      "note": "Integration checkout untracked estate probe for seat audits"
+    },
+    {
+      "id": "ldt-runtime-gate-context",
+      "note": "legacy-design-tools gate context HMAC middleware in enforce mode — product runtime control"
+    },
+    {
+      "id": "sm-ci-structural-gates",
+      "note": "smart-markets four grep structural gates — CI runs but branch protection has no required checks"
+    },
+    {
+      "id": "ac-type-accessPolicy",
+      "note": "@empressaio/atom-contract AccessPolicy five-value Zod union — compile/parse time"
+    },
+    {
+      "id": "WF-FALSE-GREEN-HISTORY",
+      "note": "enforcement.yml ee4ea4a continue-on-error false-green — fixed at 2b3dc71 ratchet model"
+    },
+    {
+      "id": "CURSOR-SEAT-GATE-IMPORT-BUG",
+      "note": "seat-gate.mjs line 9 import path ../scripts resolves to .cursor/scripts not repo scripts — hooks DORMANT"
+    }
+  ],
+  "productControlsAnnexSummary": {
+    "note": "Read-only scan of six product repos + atom-contract. Full rows in tooling_register.md annex. No pre-commit hooks anywhere.",
+    "branchProtection": {
+      "hauska-engine": "required typecheck + test",
+      "legacy-design-tools": "required SS-W18, Typecheck, Test, SS-W16",
+      "hauska-map": "required No double-encoded source, test",
+      "smart-markets": "protected but zero required checks",
+      "smartcity-dashboards": "not protected",
+      "smart-files": "not protected; no CI workflows"
+    },
+    "dormantCiBecauseNoRequiredChecks": ["smart-markets", "smartcity-dashboards", "smart-files"],
+    "typeLevelControls": [
+      "ac-type-accessPolicy",
+      "ac-type-literal-entityType",
+      "ac-zod-owner-public-paid",
+      "ac-zod-reasoning-discriminated",
+      "sm-contract-layer-discriminated"
+    ]
+  },
+  "gapsFiled": [
+    "No duplicate-frontmatter-id control (8 pairs at snapshot)",
+    "seat-register falsely in enforcement-baseline as executable control",
+    "SEAT-01 not in CI ratchet; hook path broken",
+    "C-00 ignores OPS/enforcement.mdc third vehicle",
+    "canon-divergence needs check-only before BLOCKING",
+    "doc_repo branch protection Stage 1 only — enforcement CI advisory",
+    "Cursor seat-gate.mjs import path bug",
+    "C-00b runtime doctrine-reach probe designed not built",
+    "Hand-carried Write bypasses M3/M4/M5 canon gate checks",
+    "M4 internal-consistency not source-vs-our-derivation",
+    "memory-promotion-gate file-level not lesson-level triage",
+    "Product repos smart-files/smartcity-dashboards unprotected merges"
+  ]
+}
