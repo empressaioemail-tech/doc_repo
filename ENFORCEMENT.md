@@ -85,6 +85,22 @@ If an output looks convenient, that is a reason to distrust the instrument, not 
 
 A control verified by violation generates events indistinguishable from the ones being counted. Note and exclude them explicitly.
 
+## The instrument that produced a claim is part of the claim
+
+Added 2026-08-21 after the planner made ten wrong load-bearing statements in one session. Every one was an ad hoc instrument built in a shell, under context pressure, whose failure mode was to return a plausible answer. Not one was caught by re-reading the conclusion; they were caught by a lane, by a seat, or by a control. The four rules below each kill a specific instance and are stated with it.
+
+**A load-bearing claim needs a file-based instrument that has been shown to fail.** If a statement reaches the operator or a commit message, it is not verified by a shell one-liner. The instrument lives in a file and self-tests in both directions before it is trusted. Instance: a plan-row predicate built by shell string concatenation lost its backslashes and compiled to `^|s*R-99s*|`, an alternation with an empty branch that matches every input. It reported the negative case passing and that went into a commit message. The one verification that session which did not fail was the one written as a file with four self-test fixtures, including an explicit not-vacuous case.
+
+**Never read multi-field CLI output through a positional formatter.** `--format="value(a,b,c)"` aligns by semicolons and a blank field shifts every column after it. Use JSON and read fields by name. Instance: `gcloud run services describe --format="value(status.traffic[].revisionName,status.traffic[].percent)"` returned `...00522-row;...00524-pit` against `;;;100;`, which reads as 100 percent on the last revision and means 100 percent on the fourth. The planner reported the wrong serving revision to the operator twice on that one misread, while claiming to have checked the traffic split.
+
+**Read the authoritative record, never a proxy for it.** The revision that served a request is on that request's log line, not in `latestReadyRevisionName`. The image a revision runs is its digest, not the tag that was requested. Whether a table exists is in the catalog, not in the shape of somebody else's query. Instances: a canary deployed with `image_tag=latest` froze a digest seven seconds before the intended image was pushed, so a dry-run against it read as an overlay no-op when it was running older code; and a link table holding 33,066 rows was declared absent because its absence was inferred from an orphan query rather than by enumerating tables.
+
+**Pre-register the falsifier for your own checks, not only for other agents' work.** The same session pre-registered sixteen predictions against five lane returns, scored them honestly, and lost most of them, which was the correct outcome. Not one of the planner's own verifications got the same treatment, and that is exactly where the failures were. Before running a check, state what result would prove it wrong. If no result would, it is not a check.
+
+The common shape across all ten: **the check returned the answer that was expected, so it was not interrogated.** A convenient result is a reason to distrust the instrument, not a result. That sentence already appears above this section; it did not bind, because it was a maxim rather than a procedure. These four are procedures.
+
+**And one operational note that is not a rule.** The planner's error rate rose sharply in the last third of a very long session. Verification-heavy work degrades with context depth. The correct response is to checkpoint and hand off, not to push through. Relying on downstream lanes to catch a planner's confident claims is not a control.
+
 ## Code reading outranks output measuring
 
 Every real defect in this operation to date was found by reading a write path. None were found by measuring output. Measuring output applies the same predicates that admitted the defect.
