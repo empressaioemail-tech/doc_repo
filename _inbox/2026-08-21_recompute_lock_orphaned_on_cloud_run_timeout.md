@@ -83,3 +83,42 @@ leave_behind:
   - item: recompute route cannot complete within Cloud Run timeoutSeconds=300
     owner: property
     plan_row: R-09
+
+---
+
+## AMENDMENT 2026-08-21 — the mechanism above is wrong in two ways, corrected here
+
+**The lock is NOT held forever.** The body says the advisory lock "was never released" and
+that recomputes are blocked fleet-wide. A later probe found `pg_locks WHERE
+locktype='advisory'` returning **zero rows** on `neondb`, and a subsequent POST no longer
+returned 409 — it acquired the lock and began scanning. The lock is released when the pooled
+connection is reaped. The window is minutes, not forever. "Orphaned permanently" was an
+overstatement built on two 409s taken minutes apart.
+
+**And the real defect is better than the one filed.** `SET LOCAL statement_timeout = 240000`
+bounds **one statement**, not a transaction. The recompute runs MANY: `computeCountyLedgerPayload`
+executes a capability probe per rail, each inside its own SAVEPOINT, plus the snapshot read
+and write. A transaction of N statements each individually under 240s runs unbounded past
+Cloud Run's 300s ceiling.
+
+The route's own comment states the intended reasoning: the database is "given less than
+that and fails LOUDLY inside the request rather than the client seeing a 504." That reasoning
+is sound and its premise is false. It holds only if the work is a single statement. It is not,
+and the 504 at exactly 300.000552909s is the proof.
+
+So this is not a slow query to tune. It is a guard that cannot bound what it was written to
+bound. Raising `statement_timeout` would not help; lowering it would not either. The fix is a
+transaction-level or request-level deadline, or moving the scan off the request path.
+
+## A planner error, recorded
+
+While probing the lock the planner sent `{"dryRun":true}` in the request BODY. `dryRun` is read
+by `firstQueryValue(req, "dryRun")` — a QUERY parameter. The body was ignored and a full real
+recompute was started unintentionally. Read the parameter source before assuming a flag is
+honoured; a silently-ignored flag turns a probe into a write.
+
+## What still stands from the body above
+
+The served ledger is unchanged, the R-09 repair remains unproven on the served surface, and
+the recompute cannot complete through this route as built. Those are unaffected by the
+correction. Only the mechanism and the permanence were wrong.
