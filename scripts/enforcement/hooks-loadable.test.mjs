@@ -66,8 +66,16 @@ if (hooks.length === 0) {
   process.exit(1);
 }
 
+// Whether a .ps1 can be parse-checked at all here. Established once, by asking, rather than
+// inferred from the platform string.
+const HAS_POWERSHELL = (() => {
+  const r = spawnSync("powershell", ["-NoProfile", "-Command", "exit 0"], { encoding: "utf8", timeout: 20_000 });
+  return !r.error && r.status === 0;
+})();
+
 const results = [];
 let failed = 0;
+let notParsed = 0;
 
 for (const { settings, command } of hooks) {
   const script = scriptOf(command);
@@ -79,7 +87,19 @@ for (const { settings, command } of hooks) {
     continue;
   }
 
-  const abs = isAbsolute(script) ? script : join(ROOT, script);
+  // Hook commands are registered with ABSOLUTE paths from the machine that wrote settings
+  // (P:/doc_repo/.claude/hooks/...). Those do not exist on a Linux CI runner, so a naive
+  // isAbsolute check reported all seven hooks MISSING on the first CI run of this control.
+  // That is this control failing by environment, which is the exact class it was built to
+  // catch. Re-root any absolute path onto the actual repo root by its repo-relative tail.
+  let abs = isAbsolute(script) ? script : join(ROOT, script);
+  if (!existsSync(abs)) {
+    const m = script.replace(/\\/g, "/").match(/(?:^|\/)((?:\.claude|\.cursor|scripts)\/.+)$/);
+    if (m) {
+      const rerooted = join(ROOT, m[1]);
+      if (existsSync(rerooted)) abs = rerooted;
+    }
+  }
   if (!existsSync(abs)) {
     results.push([false, label, `registered but file does not exist: ${script}`]);
     failed += 1;
@@ -99,6 +119,21 @@ for (const { settings, command } of hooks) {
     const broken = /ERR_MODULE_NOT_FOUND|Cannot find module|SyntaxError/.test(err);
     results.push([!broken, label, broken ? err.split("\n").find((l) => /Error/.test(l)) ?? "load error" : "loads"]);
     if (broken) failed += 1;
+  } else if (!HAS_POWERSHELL) {
+    // PowerShell is absent on the Linux CI runner, so a .ps1 cannot be parse-checked there.
+    // DO NOT let that read as a pass: unmeasured and passing are different states and this
+    // control exists because collapsing them hid a dead hook for weeks. Check what CAN be
+    // checked here (registered, present, non-empty) and DECLARE the parse check as not run.
+    let bytes = 0;
+    try {
+      bytes = readFileSync(abs).length;
+    } catch {
+      bytes = 0;
+    }
+    const ok = bytes > 0;
+    results.push([ok, label, ok ? `present ${bytes}B — PARSE NOT RUN (no powershell on ${process.platform})` : "unreadable or empty"]);
+    if (!ok) failed += 1;
+    notParsed += 1;
   } else {
     // PowerShell hooks: parse-only, no execution, so nothing is mutated by the test.
     const r = spawnSync(
@@ -115,5 +150,11 @@ for (const { settings, command } of hooks) {
 console.log("\nhook loadability — every registered hook must be capable of deciding\n");
 for (const [ok, label, note] of results) console.log(`  ${ok ? "PASS" : "FAIL"}  ${label.padEnd(30)} ${note}`);
 console.log(`\n${hooks.length} registered hooks checked`);
+if (notParsed > 0) {
+  console.log(`DECLARED LIMIT: ${notParsed} PowerShell hook(s) were checked for presence only.`);
+  console.log("PowerShell is unavailable here, so a syntax error in a .ps1 would NOT be caught");
+  console.log("by this run. That is a real gap in the coverage, not a pass, and it is stated");
+  console.log("rather than absorbed. The Windows run is where the parse check actually fires.");
+}
 console.log(`RESULT: ${failed === 0 ? "PASS" : `FAIL (${failed})`} — exit ${failed === 0 ? 0 : 1}`);
 process.exit(failed === 0 ? 0 : 1);
