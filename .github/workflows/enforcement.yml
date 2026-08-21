@@ -1,0 +1,134 @@
+name: enforcement
+
+# doc_repo had NO .github directory until 2026-08-20. Seven enforcement scripts existed in
+# scripts/ with no trigger anywhere, which is the dormant-mechanism class this repo's own
+# ENFORCEMENT.md opens by naming. This workflow is the trigger.
+#
+# Controls are split into two tiers and the split is declared rather than implied.
+#
+# BLOCKING   verified by violation on 2026-08-20: the control was made to fail on an
+#            injected defect, then restored byte-identical and observed passing again.
+#            A check observed only passing has not been observed working.
+#
+# REPORTING  runs, prints, records its exit code, and does NOT fail the job. Either it has
+#            not been violation-verified yet, or it is failing today on pre-existing debt
+#            and turning it blocking on arrival would teach the fleet to reach for the
+#            bypass. Each one carries a named build item to graduate it.
+#
+# Silent degradation is prohibited. The summary step below prints every exit code, so a
+# reporting control that starts failing is visible rather than absorbed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  enforcement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # cited-untracked and canon-divergence read git history.
+                           # A shallow clone makes them answer confidently and wrongly:
+                           # that is the starvation-by-environment failure recorded in
+                           # _sessions/2026-08-20_t25_enumeration_handover.md.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # A workflow that cannot run and silently passes is the defect. Fail loudly instead.
+      - name: Preflight — every named script must exist
+        run: |
+          set -euo pipefail
+          missing=0
+          for s in \
+            scripts/enforcement/c-00-vehicle-sync.mjs \
+            scripts/plan-registry-divergence.test.mjs \
+            scripts/enforcement/seat-register.mjs \
+            scripts/enforcement/cited-untracked.mjs \
+            scripts/canon-divergence.mjs \
+            scripts/doc-staleness.mjs ; do
+            if [ ! -f "$s" ]; then echo "MISSING: $s"; missing=1; fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "A control named by this workflow is absent. Refusing to report green."
+            exit 1
+          fi
+          echo "all six controls present"
+
+      # ---------- BLOCKING ----------
+
+      - name: C-00 vehicle sync (BLOCKING)
+        # ENFORCEMENT.md and .cursor/rules/enforcement.mdc must not diverge. Claude Code
+        # loads canon by @import; Cursor loads the regenerated copy. Drift means one half of
+        # the fleet is running different rules from the other.
+        # Violation-verified 2026-08-20: injected one line into the mdc -> exit 1 "drift".
+        # Known scope limit: it compares exactly two files, and it self-declares
+        # derivationClass internal-consistency, which is the weaker kind.
+        run: node scripts/enforcement/c-00-vehicle-sync.mjs
+
+      - name: Plan registry divergence, CTRL-1 (BLOCKING)
+        # Row-ID prefixes must never collide across plans, and the compiler and the canon
+        # gate must both resolve paths from the registry rather than hardcoding them.
+        # Violation-verified 2026-08-20: added a plan claiming prefix P -> exit 1
+        # "duplicate prefix(es): P".
+        run: node scripts/plan-registry-divergence.test.mjs
+
+      # ---------- REPORTING ----------
+
+      - name: Seat register (REPORTING)
+        # Passes today. NOT violation-verified yet.
+        # Graduate to BLOCKING once a violation run is recorded.
+        continue-on-error: true
+        run: node scripts/enforcement/seat-register.mjs
+
+      - name: Canon divergence, M2 (REPORTING)
+        # Passes today, status=clear over 8 rows. NOT violation-verified yet, and it WRITES
+        # _catalog/canon_divergence.md, so its CI behaviour needs a check-only mode before
+        # it can block.
+        continue-on-error: true
+        run: node scripts/canon-divergence.mjs
+
+      - name: Cited but untracked (REPORTING)
+        # FAILS today, exit 2, on pre-existing debt: tracked canon citing untracked _inbox
+        # targets. ENFORCEMENT.md calls cited-and-untracked the worst state, so this one
+        # matters and is deliberately not being made to pass by weakening it.
+        # Build item: clear the hits, then graduate to BLOCKING.
+        continue-on-error: true
+        run: node scripts/enforcement/cited-untracked.mjs
+
+      - name: Doc staleness (REPORTING)
+        # FAILS today, exit 1: canon docs missing last_updated, plus 365 files with no
+        # frontmatter reported but not gated.
+        # Build item: backfill last_updated across canon, then graduate to BLOCKING.
+        continue-on-error: true
+        run: node scripts/doc-staleness.mjs
+
+      # ---------- honest summary ----------
+
+      - name: Summary
+        if: always()
+        run: |
+          set +e
+          echo "### enforcement control status" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| control | tier | exit |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          run_one () {
+            node "$1" >/dev/null 2>&1
+            echo "| $2 | $3 | $? |" >> "$GITHUB_STEP_SUMMARY"
+          }
+          run_one scripts/enforcement/c-00-vehicle-sync.mjs "c-00-vehicle-sync" "BLOCKING"
+          run_one scripts/plan-registry-divergence.test.mjs "plan-registry-divergence" "BLOCKING"
+          run_one scripts/enforcement/seat-register.mjs "seat-register" "REPORTING"
+          run_one scripts/canon-divergence.mjs "canon-divergence" "REPORTING"
+          run_one scripts/enforcement/cited-untracked.mjs "cited-untracked" "REPORTING"
+          run_one scripts/doc-staleness.mjs "doc-staleness" "REPORTING"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "REPORTING controls do not fail this job. A non-zero exit above is real and unfixed." >> "$GITHUB_STEP_SUMMARY"
