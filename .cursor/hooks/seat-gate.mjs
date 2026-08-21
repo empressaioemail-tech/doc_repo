@@ -6,8 +6,8 @@
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { evaluate } from '../scripts/enforcement/seat-worktree-gate.mjs';
-import { normalizePath } from '../scripts/enforcement/seat-register.mjs';
+import { evaluate } from '../../scripts/enforcement/seat-worktree-gate.mjs';
+import { normalizePath } from '../../scripts/enforcement/seat-register.mjs';
 
 function gitToplevel(cwd) {
   try {

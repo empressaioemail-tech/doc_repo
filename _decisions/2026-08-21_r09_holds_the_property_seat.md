@@ -70,3 +70,28 @@ this row.
 ## Counterparties
 
 Internal. Operator granted the seat. Planner files. R-09 executes.
+
+---
+
+## AMENDMENT 2026-08-21 — the control this decision rested on was dormant
+
+The body above says R-09 has "exactly one legal path" because
+`scripts/enforcement/seat-worktree-gate.mjs` refuses a write from an unregistered worktree.
+
+**That protection did not exist when the ruling was made.** The R-04 control census found
+`.cursor/hooks/seat-gate.mjs` importing from `../scripts/enforcement/`, which resolves from
+`.cursor/hooks/` to `.cursor/scripts/enforcement/`; the real path is `scripts/enforcement/`.
+Registered on both the shell and write matchers, it threw ERR_MODULE_NOT_FOUND on every
+invocation and exited 0. It had never fired once.
+
+So the reasoning in this decision was sound and its premise was false. R-09 stayed in the
+correct worktree because the agent complied, not because anything enforced it.
+
+Fixed and armed 2026-08-21, verified by violation: a write from an unregistered worktree now
+returns `permission: deny` with a block message, and the registered tree on main returns
+`permission: allow`. `scripts/enforcement/hooks-loadable.test.mjs` was added so a registered
+hook that cannot load fails the build instead of passing silently.
+
+The operator consequence in the body stands unchanged and is now actually enforced: this
+remains the only property-seat work that may be in flight, because the gate checks the
+worktree and branch and does not prevent two agents sharing one registered worktree.
