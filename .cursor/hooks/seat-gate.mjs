@@ -17,7 +17,15 @@ function gitToplevel(cwd) {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
   } catch {
-    return cwd;
+    // NOT A GIT REPOSITORY. Returning cwd here manufactured a fake worktree root out of
+    // any directory, so a write to plain scratch space (P:/tmp) was refused as an
+    // "unregistered worktree" on 2026-08-21, minutes after this hook was armed. That is a
+    // control whose scope is broader than its claim, which ENFORCEMENT.md ranks as worse
+    // than a narrow one because it teaches the fleet to reach for the bypass flag.
+    // A path outside every git repository has no seat to violate. Return null and let the
+    // caller treat it as out of scope, explicitly, rather than falling back to a value that
+    // reads as an answer.
+    return null;
   }
 }
 
@@ -85,7 +93,13 @@ if (mode === 'shell' && command && !isGitWrite(command)) {
   process.exit(0);
 }
 
-const worktree = gitToplevel(filePath ? dirname(filePath) : cwd) || cwd;
+const worktree = gitToplevel(filePath ? dirname(filePath) : cwd);
+if (!worktree) {
+  // Out of scope: the target is not inside any git repository. SEAT-01 governs which
+  // worktree a repository is written from; it does not govern scratch space.
+  process.stdout.write(JSON.stringify({ permission: 'allow' }));
+  process.exit(0);
+}
 const branch = gitBranch(worktree);
 const paths = filePath ? [filePath] : [];
 if (/\bgit\b[^&|;]*?\bcommit\b/i.test(command)) {
