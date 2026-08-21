@@ -8,6 +8,15 @@ related: [50_atom_architecture_reference]
 owner: Nick
 ---
 
+> **Reconciled 2026-08-20.** Two diverged copies of this document existed with the same `id`
+> and the same frontmatter: one at repo root, one under `OPS/`. Root was committed at `492a452`
+> as though it were the only one. Neither was a superset. This file is the union: the `OPS/`
+> body as the base, since it carried five sections and substantially richer treatment of the
+> derivation states, the harness self-validation failure, and starvation granularity, plus the
+> three passages that existed only at root (the `OMISSION` column, the 2026-08-19 pull-forward
+> row, and the specific naming of the stale-tree incident). `OPS/51_ingestion_pipeline_reference.md`
+> is now a pointer. Do not maintain a second body.
+
 # Ingestion Pipeline Reference Architecture
 
 ## Purpose
@@ -54,6 +63,22 @@ Internal consistency is not worthless. It catches transcription errors, partial 
 
 **Where a type can express the constraint, prefer the type over any check.** The markets substrate replaced a widened enum with a discriminated union, and the compiler then refused to build until the consumer narrowed on the discriminant. That is enforcement no one can forget to call, applied at every consumer at once, and it did the work a purpose built detector had never done because nothing invoked it. A type constraint has no trigger to be missing and no call site to be absent, which removes it from the dormant and starved categories entirely.
 
+**But an annotation is not a validated construction, and the difference decides whether the type helps.** A field declared as a number accepts any number, including one we fabricated. The same substrate serves price bars through a schema declaring an observation as a date and a number, and a zero substituted for a missing close passes it, because a zero is a number. The type is doing exactly what it says and what it says is insufficient.
+
+Constraints that hold between fields, or that depend on a domain rather than a shape, are not expressible by annotation. They are expressible by construction: a branded type reachable only through a factory that validates, so an instance that violates the constraint cannot exist. A bar type whose constructor enforces that the low does not exceed the open or close is a type carrying the constraint. A record of four numbers is not.
+
+The test: can an invalid instance of this type be constructed? If yes, the type documents the shape and enforces nothing about the meaning.
+
+**A generic substrate cannot validate domain semantics, and that is correct rather than a defect.** An atom carrying its claim as an untyped map can hold a parcel fact, a well production figure, or a price. That genericity is what lets one engine serve every domain. It also means the atom layer has no construction path that could refuse a bar with a zero close, because the atom does not know what a bar is.
+
+So the layering is fixed by the architecture. The substrate validates the envelope: provenance completeness, temporal validity, binding resolution, access. Domain constraints must be enforced in the typed value before it becomes an atom, and there is no second chance afterwards.
+
+Two consequences follow, and the second is a hypothesis worth testing rather than a conclusion.
+
+Where the typed layer above the substrate is thin, meaning annotations rather than validated constructions, nothing validates domain values anywhere in the system. Not because a check was forgotten, but because the only layer that could hold it was never built. A substrate audit will report health throughout, correctly, since the envelope is sound.
+
+And the absence of a natural home for domain logic may explain the estate's dominant habit rather than culture explaining it. A generic substrate invites every writer to carry its own domain handling, because there is no shared place the architecture points to. Six sibling writers each holding a divergent copy of the same geometry helper is what that looks like from below. If this is right, the remedy is a per domain typed layer that writers are required to construct through, not exhortation about duplication.
+
 **A default copied into its callers survives its own removal.** Where a check or a default is defended in depth, meaning the signature carries a default and every caller independently supplies the same value, removing the signature default reads as a fix and changes nothing. Enumerate call sites before scoring any default as remediable.
 
 The template instance is from the property substrate, at three-layer-audit.mjs:168, which compares a county code carried in an atom body against the county code parsed out of that atom's entity binding and fails on disagreement. It ran against 13,717,341 atoms, found zero disagreements, and was made to throw rather than report. It is the only check found in either substrate that cannot be satisfied by a value carrying no meaning, and it is the shape every other check should be converted toward.
@@ -67,6 +92,100 @@ Any instrument that cannot distinguish these three is defective, and the defect 
 A fabricated zero is worse than an absence, because a zero is arithmetically usable. An absence propagates as an absence and forces a decision downstream. A zero enters an average, a coverage percentage, a ratio, and a customer facing number without ever announcing that it was invented. The property substrate carries this at six rails across all 254 counties, where a scored zero is indistinguishable from never measured, and carried it as an area share asserting that none of a parcel lies in a zone the same record lists.
 
 The rule: an unrepresentable state is made representable, never encoded in a sentinel. Not zero, not an empty string, not a not a number value, not a boolean default. If the type cannot express the state, the type is wrong.
+
+### A type that never requires an atom to carry its own claim
+
+**Status: tested and narrowed. The broader hypothesis it replaces was falsified.**
+
+Across five sibling schemas in one contract, every claim bearing field is optional. Only identifiers and a single buffer parameter escape. So an atom of any of these types parses cleanly while carrying no claim at all: a hazard atom with no hazard finding, a district atom with no district name, identifier or type.
+
+The type constrains the claim's domain once a claim is carried, and never requires one to be carried. That is the hole, and it is narrower and more actionable than what was written here before. The remedy is a discriminated union whose determined arm requires the finding fields, which is a type change rather than a check. In the flood case the refinement machinery already enforces exactly that shape in the absence direction and was never written in the other.
+
+**What was falsified, recorded because the falsification is the more useful result.** An earlier version of this section proposed that constraint effort concentrates where it is cheap and thins out where the meaning lives, on the theory that nobody can express is a plausible price as a type annotation while everybody can express matches this pattern. Two instances supported it and a four schema test did not.
+
+Those four authors did write domain constraints on semantic fields: minimum lengths on names and identifiers, positivity on radii and widths, non negativity on distances. One decision parameter is both required and positive. The mechanism predicts the opposite of what they did.
+
+So the flood schema is an outlier within its own contract rather than an exemplar of a tendency, which makes its unconstrained zone string a smaller and sharper finding with a cheaper fix, since four siblings already demonstrate the shape. And the ten unbounded numbers in the other substrate stand as a finding about that contract rather than as evidence of anything general.
+
+The general lesson is about the claim rather than the schemas. Two instances plus a mechanism that explains them is a hypothesis, and a mechanism good enough to feel explanatory is precisely when the sample size stops being checked.
+
+### An instrument can be reliable in one direction only
+
+The test above was run with a filtered search over primitive type declarations rather than a full read of each schema body, so fields typed through imported schemas and any refinements were invisible to it.
+
+That asymmetry matters and it does not invalidate the result. The constraints it found are real, so the falsification is sound: a claim that these fields are unconstrained is disproved by finding constraints on them. But the same instrument cannot establish absence, because it could not see everything that might constrain a field.
+
+A clean falsification and an unreliable confirmation, from one pass. Where an instrument is asymmetric, say which direction it supports and do not carry its confirmations at the same weight as its refutations.
+
+**Collapses compose, and the composite is invisible to each layer's author.** Where one substitution feeds another, the states lost multiply rather than add, and every layer looks locally defensible.
+
+The instance: a scoring function returns zero when its risk denominator is missing, non positive, or the quantity is zero. That zero flows into a deposit path which derives a verdict from the sign of the score, and a zero derives to the scratch label. So a grader that declined, a grader that judged flat, and a trade whose risk was never established all arrive as the same row with the same label. Three states, one record, nothing distinguishing them.
+
+Neither author could see it. The first wrote a function returning zero for an unmeasurable input, which is a defect but a local one. The second wrote a derivation from a score, which is sound if the score means what it says. The collapse lives in the composition and is visible only to a reader holding both.
+
+The diagnostic: for any substitution, trace what consumes its output and ask what that consumer does with the substituted value specifically. A fail open feeding a derivation is the shape to look for.
+
+**A guard can be disarmed by a substitution in its caller.** This is the inverse of every failure state catalogued so far. The guard exists, is correct, is armed, is deployed, and its verdict is consumed. It is unreachable, because a caller normalises the input past the condition the guard tests.
+
+The instance: a scoring function refuses and returns zero when a quantity is not positive. One caller coerces a missing or zero quantity to one before calling it, so the refusal branch can never fire from that path. The guard's honest refusal is unreachable, and what arrives instead is a value computed over a fabricated quantity.
+
+The diagnostic is cheap and nobody runs it: for every guard, ask whether its trigger condition can actually be produced by its callers. A refusal on a condition that no caller can present is dead code wearing a guard's name, and it will pass any audit that asks whether the guard exists.
+
+**Symmetric corruption preserves the sign and destroys the magnitude.** Where a fabricated value feeds both sides of a difference, the difference keeps its direction and loses its size.
+
+That splits the exposure by consumer rather than reducing it. A consumer reading the sign sees a verdict that looks correct. A consumer reading the magnitude is reading fiction. In the observed case the stored label is a sign test and survives, while the stored score does not, so a ledger's verdict population is clean and its magnitude population is corrupt in the same rows.
+
+This is the least visible failure mode in this document. Every other one produces something that looks wrong to somebody. This one produces a correct looking answer next to a fabricated number, and only a consumer of the second is harmed.
+
+**Immunity upstream does not prevent contamination downstream.** Where several producers converge on one deposit path, the collapse happens at the deposit, so a producer that cannot fabricate still contributes to the ambiguous population if its honest output is indistinguishable from a fabricated one.
+
+The instance: of six graders feeding one ledger, three form their score from a boolean and are structurally incapable of carrying a fabricated magnitude. One of those three nonetheless emits zero for a legitimately neutral outcome, and zero derives to the same label a fabricated zero derives to. So the stored population carries at least four distinct origins under one label: a grader that declined, a grader that judged genuinely flat, a computation whose denominator was missing, and a categorical outcome that was honestly neither.
+
+Count the origins converging on a value, not the producers capable of fabricating it. The second number is smaller and it is not the one that determines how much the stored population means.
+
+**Narrow domains resist fabrication; continuous ones do not.** A score that can only be plus one or minus one has no magnitude to invent, which is why those three graders are immune. That is a type property rather than a check, and it suggests a remediation available nowhere else: where a value's meaningful range is small and discrete, making the type reflect that removes the fabrication class entirely rather than detecting it.
+
+The immunity is narrow and should not be overstated. A categorical score cannot be fabricated. It can still be wrong, since a grader can decide held when it broke, and nothing in this section touches that.
+
+**A sentinel in a key does not produce one bad record, it merges an unknown number of good ones.** Where an empty string or a default participates in a deduplication or primary key, every record carrying the sentinel collides into a single row. The corruption is compressed rather than repeated, so it presents as one benign looking record, and the count of what was merged into it is unrecoverable. Check every key component for a sentinel before checking anything else, because this class destroys the evidence of its own size.
+
+### Store the value, never its rendering
+
+A claim substrate holds claims. A formatted display string is a rendering of a claim, and storing one in place of the claim destroys the claim permanently.
+
+The instance: a captured macro atom stores a price as a currency formatted string, a change as a percentage formatted string, and a classification computed from that change. The underlying number, the revision it was taken at, and the source series vintage are not stored. Nothing can be recomputed from it, so no later correction job can repair it the way a supersession pass repaired an earlier population of observations. The defect is not merely present, it is unfixable in every row already written.
+
+Two consequences follow, both sharper than the general rule.
+
+**The accrual rate matters more than the population size.** Where each new row is permanently unrepairable, the cost is a flow rather than a stock. Stopping the write is separable from fixing the shape and far cheaper, so stop first, fix second, resume third.
+
+**Formatting also collapses states.** The same instance returns an identical em dash cell for a fetch that failed and a series that genuinely holds nothing, so two states the substrate exists to distinguish become byte identical once stored, and the em dash passes every non null check applied to it. Rendering is lossy by design, which is correct at the display layer and fatal at the claim layer.
+
+The check to apply: could this stored value be recomputed, compared, or corrected without re-fetching the source? If not, a rendering has been stored where a value belonged.
+
+### A measurement whose method is unrecoverable is not a measurement
+
+Distinct from storing a rendering, and in one way worse. There, the value was destroyed and the loss is visible once you look at the row. Here the values are intact, plausible, and served, and what is missing is the definition of what they count.
+
+The instance: 253 live geometry coverage rows produced by a scorer that exists in no repository in the estate. What survives is a verify script that matches the producer's output by pattern, and a rule declaring the denominator reconstructible from checked in source, which it is not. The counting rule exists only inside a string emitted by code nobody holds. Every geometry coverage figure in the ledger rests on it.
+
+Such a number cannot be reproduced, audited, corrected, or compared against a re-run. It has the form of evidence without the substance, and nothing about it looks wrong.
+
+The test: could this number be reproduced from what we hold today? If not, it is an assertion rather than a measurement, however it was originally produced.
+
+Two consequences. Provenance that points at a producer which no longer exists is a broken chain at the method rather than at the value, and a provenance field can be fully populated while the chain is severed. And a verifier built against a producer's output format rather than against its method passes for as long as the format holds, entirely independent of whether the counting is right.
+
+Disposition is recover, re-derive, or retire. Reconciling new numbers against old ones is not available, because there is nothing to reconcile against.
+
+### Present tense atoms accumulate into an apparent history
+
+An atom whose knowledge time is now, asserting what is currently believed, is honest row by row. A sequence of such atoms is not a history, and will be read as one.
+
+Each row says as of now. The collection looks like a time series. A reader asking what the regime looked like in June, answered from a June row, receives values that were current in June only in the sense that they were the then current revisions, and the row carries no statement of that. Any judgment computed inside the row inherits the same property.
+
+This is not a defect in any row. It is a property of the collection that no row declares, and it is the mechanism by which a substrate of honest present tense claims becomes a hindsight contaminated record without anyone writing a false one.
+
+Two requirements. Every present tense atom states its revision policy explicitly, so a later reader can tell which question it answers. And any consumer treating a sequence of them as a time series is a separate claim requiring its own adjudication, not a free read over existing rows.
 
 ### Instruments state their snapshot
 
@@ -221,8 +340,6 @@ Report orphans separately for fact atoms and for judgment atoms, meaning any ato
 
 Pass: no check can be satisfied by a value that carries no meaning. Failure instances observed across both substrates include a concatenated separator string passing a non null address check, a default node type substituting for an unassigned one, a raw source key passing a node binding check, an empty identifier collection passing a populated field check, a road reference stored in a city column passing non null, non blank, and alphanumeric checks, and an identifier pattern check validating the form of a binding without asking whether it resolves. This test is the direct instrument for the governing principle and should be run before any data measuring test, because its failures explain why the data measuring tests return clean.
 
-**Pull-forward row (2026-08-19):** where a field carries a declared formula and its declared inputs are both available, recompute the formula from the inputs and treat disagreement as a finding. No new source and no dependency. Cheapest actionable meaning shaped check either substrate has produced. Run before the remaining enumeration rows where this applies (provenance and authority fields completed first; formula-plus-inputs rows next).
-
 **Adjudication on knowingly admitted values.** Where a check is deliberately widened to admit a value that does not satisfy its own meaning, this is a permitted state only under one condition, and naming the defect is not that condition. Prose does not enforce, and a named defect is prose with a function attached.
 
 The permitted state is **admitted with an enforced boundary**, not admitted with a named defect. A detector for the admitted value must exist, and something must fail when the admitted value reaches a consumer that treats it as valid. A detector that is exported but never called in a gating position is a starved mechanism under T-24, and the widened check scores as an undetected failure regardless of how carefully it was documented at the time.
@@ -231,12 +348,68 @@ Report per instance: the widened check, the admitted value, the detector, the ga
 
 Preferred remedy where the admitted value is a different kind of thing rather than an edge case of the same kind: split the type rather than widen the check. A record kind admitted into a transform enum is the sentinel pattern relocated to the type layer, where it is harder to see and equally satisfiable. Two branches cost more to write and cannot be satisfied by the wrong thing.
 
+**Pull-forward row (2026-08-19):** where a field carries a declared formula and its declared inputs are both available, recompute the formula from the inputs and treat disagreement as a finding. No new source and no dependency. Cheapest actionable meaning shaped check either substrate has produced. Run before the remaining enumeration rows where this applies (provenance and authority fields completed first; formula-plus-inputs rows next).
+
+**A row cannot be graded without reading what constrains the check's input.** The cheapest satisfier of a check is determined by the type of the value reaching it, not by the check's own predicate, so a row graded from the predicate alone may be wrong in either direction.
+
+The instance: a check refusing an atom that claims presence while carrying no geometry. Read alone, its cheapest satisfier looks like any truthy value, which would make the check presence shaped and not worth listing. Read together with the schema governing that field, which types it as a union of two geometry shapes, an empty object fails validation before the check is reached and the cheapest satisfier is a real polygon. The check holds. Had the schema been a permissive passthrough, it would not.
+
+So the schema and the check are one unit. Grading either alone produces a confident wrong answer, and the error runs both ways: a sound check can be dismissed as presence shaped, and a weak check can be credited with protection its input type actually provides.
+
+**The unit holds only where the schema runs first.** Where a default fires before validation, the schema sits downstream of the defect and cannot change the cheapest satisfier of the default itself, so that row's grade stands without reading it.
+
+That gives three states rather than two when auditing an existing enumeration. Rows whose input type was read and confirmed. Rows where the ordering makes the input type irrelevant, which stand as filed. And rows that turn on a schema nobody opened, which are provisional in both directions. Marking the middle set provisional would be false modesty that costs the next reader a re-read for nothing.
+
+**And note where each constraint can live.** A schema knows shape and cannot know intent. In the same instance, the schema's own refinement constrained only the absent case, because the expectation that this atom should carry geometry exists at the call site rather than in the type. Some constraints are structurally unavailable to a schema, and a check that closes a hole a schema cannot see is complementary rather than redundant.
+
+**A known blind spot, and it is structural rather than a matter of thoroughness.** This test enumerates checks and asks what each admits. A check that does not exist has no row, so the method finds weak checks by construction and finds missing checks only when a reader happens to notice an absence.
+
+Several of the most consequential findings in both substrates were absences: no validation at an atom append boundary, no database constraint on a binding, no country filter on a geocode query. Every one surfaced because someone remarked on it, not because the enumeration reached it.
+
+The inversion that closes the gap is field driven rather than check driven: for each field carrying a claim, ask what validates it, and record nothing as a row rather than skipping the field. That is a larger pass than this one and should be scoped separately.
+
+Until it is run, a completed T-25 states coverage honestly as the weak checks that exist, not as every place the substrate can accept garbage.
+
+**Track unobservable populations separately from unread paths.** A path not yet read is work remaining. A population the diagnostic structurally cannot see is a permanent limit, and conflating them lets a report read as nearly complete when part of it is unmeasurable.
+
+Two instances from one substrate. Fabrication at a one minute grain is invisible beyond forty eight hours, because a second vendor rewrites that whole window on a two day lookback, so a query can only ever see the last two days regardless of what occurred. And a fetch function that writes to no store leaves nothing to query at all, so its output is unobservable at every horizon.
+
+Report the count of what was found, and beside it the named populations that could not have been found. The second list is what determines how much the first means.
+
 **The derivation column, four states.** Every failing check carries one of the following, and the distinction between the last two was previously collapsed and is the most commonly mistaken.
 
-1. **Available now.** A second independently derived value exists today and the check can be written this week.
+1. **Available now.** A second independently derived value exists today and the check can be written this week. Subdivide this state by what the check can catch, because the two are not equivalent. **Two independent sources** catches an error in either source and is the only shape that evidences a source being right. **Source against our own derivation** catches our transformation error and never evidences the source being correct, since a wrong input passes cleanly. Both are worth building and only the first closes the source question.
 2. **Available once a named dependency lands.** The second derivation is possible in principle but its input is not collected yet. Name the dependency and the file. This is the actionable sequencing queue and it disappears under a binary.
 3. **Internal consistency only.** Two values are comparable but both originate from the same upstream. Record it as its own category. It catches transcription errors, partial writes, and schema drift, and it does not catch a wrong source. Do not count it toward meaning shaped coverage.
-4. **None exists.** No second derivation is obtainable from anything currently held. This is the purchasing list, not the backlog.
+
+**One case where internal consistency is the right instrument rather than a weak one.** It cannot catch a wrong upstream, because a wrong upstream is wrong consistently. It does catch substitutions *we* perform, because a value we fabricate is not constrained by the relationships the real values satisfy.
+
+Price bars are the worked example. Open, high, low and close stand in arithmetic relation: the low cannot exceed the open or close, the high cannot fall below them. A vendor returning bad prices returns internally consistent bad prices. A zero substituted for a missing close breaks the relation immediately and detectably. So for any field group carrying internal arithmetic or logical constraints, an internal consistency check is sufficient against our own fabrications and should be built before reaching for a second source.
+4. **None exists.** No second derivation is obtainable from anything currently held. This subdivides into three kinds with entirely different remedies, and collapsing them produces a purchasing list containing things that cannot be purchased.
+
+**Foreclosed.** A publisher exists and a control forbids reaching it. Not a data gap. The remedy is one of the three escapes below, and only the last is a control change.
+
+**Absent.** No witness exists in the world at an obtainable price. This is the purchasing list.
+
+**Self authored.** The claim is a statement about what we did rather than a relayed fact: what scope was searched, on what basis, at what time, what status was assigned. There is no external witness by construction and there should not be. These rows are permanently none exists, correctly so, and no purchase, escape or control change touches them. Report them separately or they will be costed as a data gap that can never close.
+
+**Discarded at the moment of writing.** The distinguishing fact existed and was destroyed by the write itself, so no witness survives anywhere. The instance: a deposit path that derives a verdict when a grader supplies none, so a grader that declined and a grader that agreed produce identical rows. Neither a purchase nor a control change reaches it, because there is nothing to buy or unblock. Only a schema change going forward, and every row already written stays ambiguous permanently.
+
+This is the unrepairable property appearing in a calibration ledger, and it has a diagnostic signature worth recognising: **the question about it cannot be answered by any query over the stored data.** Where a defect makes its own measurement impossible, that impossibility is a stronger statement of the defect than any number would have been. Record the unanswerable question rather than substituting an answerable proxy for it.
+
+One asymmetry worth stating, because it is the cleanest statement of what an isolation control does. The same defect can be unverifiable in one repository and verifiable in another with identical data, where the only difference is which layer is permitted to make the call. That is a control determining verifiability, not the data.
+
+Two things that look like second derivations and are not. A second implementation of the same computation over the same input is one derivation written twice; agreement proves the implementations match, not that the input is right. And a branch that falls back to a differently computed value inside the same function is one derivation wearing two hats, which is why a fallback is so often the thing a containment check refuses.
+
+A third, and the most deceptive: **an identifier derived from a value cannot verify that value.** A decentralised identifier, a hash, a checksum or a signature computed over a binding inherits whatever the binding was. It is well formed for a fabricated key exactly as it is for a correct one, and any check comparing the derived identifier against its source is internal consistency that cannot fail.
+
+This one deceives because the artifact carries the appearance of attestation. Cryptographic machinery attests to the integrity of transmission and storage, meaning that what was written is what is read. It says nothing about whether what was written was right. A substrate whose verifiability rests on derived identifiers has proven only that it has not corrupted its own mistakes.
+
+**A validation harness must derive its own inputs.** Where any input flows from the artifact under test into the harness that tests it, that dimension is unvalidated and the harness will report clean regardless.
+
+The worked instance is the most instructive failure this programme has produced. An adjudication harness compared a flood determination against the federal authority and reported 5,714 correct out of 5,714, which was read as the replacement instrument being sound. The harness queried the authority at the same coordinate the atom had used. It could therefore only ever confirm that the authority agreed with itself at a given point, and could never detect that the point was in the wrong parcel. When a containment check was built afterward, 229 of 5,750 parcels carried a query point outside their own boundary, median 15.3 metres out, with 40 flipping hazard class. Every one of those had passed the earlier adjudication.
+
+The instrument and the disease shared a definition of valid, one level below where the same defect had already been found twice. Before trusting any harness, state which inputs it derives independently and which it accepts from the artifact, and treat the second list as the set of things the harness cannot see.
 
 **T-26 Test as lock audit.** Does any test in the suite assert a value that the system produces but that no source authority recognises? Such a test converts a defect into a specification and prevents its correction by making the fix look like a regression. The property substrate carried an assertion against a FEMA zone code that does not exist. In markets the equivalent would be any test asserting that an index fund carries the node type of an operating company.
 
@@ -258,17 +431,31 @@ This applies equally to any instrument reporting portfolio state, coverage, or c
 
 **Starved.** The mechanism has a trigger and is correct, but its input precondition is never populated, so it runs and does nothing. Found by evaluating the mechanism's gating predicate against actual data. This is the harder of the two and the easier to mistake for success, because the mechanism reports a clean run.
 
-Report per mechanism: exists, armed, and non vacuous. A mechanism must satisfy all three to count. Both failure modes are distinct from absent and score worse than absent in one specific way: you cannot prioritise fixing what you believe you already have. A dormant or starved mechanism passes code review, passes design review, and answers the question "do we handle this" affirmatively while handling nothing.
+**Starvation has a granularity, and a coarse unit of analysis hides it.** A function that is called looks alive at the function level. An optional parameter that no caller ever supplies, guarding a branch inside that function, is invisible to any audit that stops at the call site.
+
+**And starvation can come from the environment rather than from a caller.** A control whose precondition is never satisfied where it actually runs is starved even when every caller supplies its arguments correctly.
+
+The instance: a staleness check requiring deep repository history, running almost entirely in continuous integration, where checkouts are shallow by default. It answers unverifiable on every control on every run. The answer is honest and the control does nothing, because the environment never provides what it needs. It can only fire locally or in a job configured for full history.
+
+This is the harder variant to see, because the code is correct, the caller is correct, and the verdict is truthful. Ask not only whether the input is supplied but whether the runtime where the control executes can supply it.
+
+The instance: a capture function accepts an optional list of input atom identifiers and, when supplied, records lineage from the derived atom to its inputs. The single caller passes none, so the lineage branch has never executed. The atom was designed to cite its inputs and has never cited one, while every audit at the function level reports the function as live.
+
+Two consequences. Audit at the argument level, not only the call level, for any parameter that gates a branch. And note that a starved parameter means the code behind it is also unexercised, so supplying it for the first time is not enabling tested behaviour, it is running untested behaviour in production. Treat it as new code and verify accordingly.
+
+Report per mechanism: exists, armed, and non vacuous. A mechanism must satisfy all three to count.
+
+**Method: prove starvation by removal, not by search.** A starved mechanism is precisely a thing whose removal breaks nothing, so removal is the direct test and enumerating call sites is a proxy for it. Delete the mechanism, rebuild, and run the suite. A clean build is the proof; a break is the disproof and the reference it names is the gating call site the search was looking for.
+
+This is verify by violating arriving from the other direction. Violating a check and removing a control are the same experiment run against the two different things a control can be, and the two rules collapse into one: exercise the negative case rather than observing the positive one.
+
+One qualification by language. In a compiled or statically typed codebase the build catches every reference, so removal plus rebuild is sufficient. In dynamically dispatched code removal can build clean and fail at runtime, so removal must be paired with the full suite and a runtime exercise of the paths that would use it. State which regime applies when reporting the result.
+
+Both failure modes are distinct from absent and score worse than absent in one specific way: you cannot prioritise fixing what you believe you already have. A dormant or starved mechanism passes code review, passes design review, and answers the question "do we handle this" affirmatively while handling nothing.
 
 Test suites are mechanisms for this purpose. A package carrying ninety eight tests that run in no CI workflow is dormant, and it is a common instance because a suite that exists satisfies the question "is this tested" while enforcing nothing.
 
 The markets substrate carries three dormant mechanisms and one starved one. Its promotion job is armed, has an operator route, and would still promote nothing, because it gates on external identifiers that no node carries. Both failure modes are the expected residue of building multiple ingest factories under time pressure, so the property substrate should be assumed to carry instances until this test says otherwise.
-
-**Removal as proof (standard method, ruled 2026-08-19).** A starved mechanism is precisely a thing whose removal breaks nothing. Delete the mechanism, rebuild, run the suite. Clean build is the proof. A break is the disproof and names the gating call site the caller search was looking for. Enumerating call sites is a proxy; removal is the direct test.
-
-This unifies with verify-by-violating (doc 61): violating a check and removing a control are the same experiment against the two things a control can be, and both collapse into exercising the negative case.
-
-**Language regime.** In statically typed code the build catches every reference; removal plus rebuild is sufficient. In dynamically dispatched code removal can build clean and fail at runtime; pair removal with the full suite and a runtime exercise of paths that would use the mechanism. State the regime when reporting a T-24 result.
 
 ### Layer 3, reconciliation
 
