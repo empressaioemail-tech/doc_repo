@@ -12,13 +12,11 @@
 
 | requestId | title | priority | status |
 | --- | --- | --- | --- |
-| substrate-req-property-001 | Branded NodeId (mint/parse) | P1 | **open — pickup now** |
-| substrate-req-property-002 | accessPolicy CHECK generator + CI | P1 | **open — pickup now** |
-| substrate-req-property-003 | Write-refusal at store boundary | P1 | **open — pickup now** |
+| substrate-req-property-001 | Branded NodeId (mint/parse) | P1 | **done** — PR open |
+| substrate-req-property-002 | accessPolicy CHECK generator + CI | P1 | **done** — PR open |
+| substrate-req-property-003 | Write-refusal at store boundary | P1 | **done** — PR open; deploy pending |
 
-**Sequencing:** 001 gates property T1.1/P-68. 002 gates P-72 close (import-only may start without publish). 003 ordering preference before Dallas/Tarrant CAMA bulk_primary.
-
-**Property does not write** hauska-atom-contract or hauska-mcp-server. Close artifacts cite published npm version + serving revision.
+**Close:** `_inbox/2026-08-23_substrate_lane_g_close.json` (CLOSED_PENDING_PUBLISH). Merge atom-contract first, publish 1.21.0, then MCP.
 
 ## OPEN (not substrate-owned)
 
