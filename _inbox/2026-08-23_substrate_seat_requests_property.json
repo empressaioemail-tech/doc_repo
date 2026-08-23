@@ -1,0 +1,68 @@
+{
+  "artifact": "substrate-seat-requests",
+  "filedAt": "2026-08-23T03:45:00Z",
+  "fromSeat": "property",
+  "toSeat": "substrate",
+  "repos": ["hauska-atom-contract", "hauska-mcp-server"],
+  "propertyReposNotInScope": [
+    "legacy-design-tools",
+    "hauska-engine",
+    "hauska-map",
+    "smart-files",
+    "smartcity-dashboards",
+    "plan-review",
+    "icc-portal",
+    "smartcity-os"
+  ],
+  "operatorGo": "filed — not dispatchable until OPS amendment and operator go per 24_instrument_conformance_program",
+  "governingDocs": [
+    "24_instrument_conformance_program",
+    "_inbox/2026-08-22_property_seat_instrument_brief.md",
+    "_inbox/2026-08-22_substrate_seat_instrument_brief.md",
+    "19_the_instrument_contract.md"
+  ],
+  "requests": [
+    {
+      "id": "substrate-req-property-001",
+      "programItem": "T1.2",
+      "track2Item": "2.1",
+      "title": "Branded NodeId type — minted opaque id enforced at write boundary",
+      "whatPropertyNeeds": "A branded `NodeId` constructible only by `mint()` or validating `parse()`, exported from `@empressaio/atom-contract`, so every property-side write path (engine ingest, Smart Files, cortex serve adapters) can type-check opaque node identity before T1.1 alias migration and before Dallas/Tarrant CAMA bulk_primary apply lands millions of natural-key rows.",
+      "whyBlocked": "T1.1 node minting and Track A identity-alias work (P-55 / property 2b) cannot start: natural keys (`txgio`, `prop_id`/`geo_id`, `entity_id`) remain the only compile-time id shape. Both tracks declare the rule in docstrings and enforce it nowhere. Every metro row written before the type exists is another row the migration must absorb.",
+      "whatSubstrateDelivers": "Ship `NodeId` as a branded opaque type in atom-contract (program item 2.1) with `mint()` and `parse()` as the only constructors. Publish a minor bump consumers can adopt without waiting on gate deploy. Property seat will adopt the type at engine and surface write boundaries; substrate does not touch property repos.",
+      "acceptanceObservable": "1) `mint()` returns a value assignable to `NodeId`; a bare `string` does not compile at any exported write-signature call site in a reference consumer fixture. 2) `parse()` rejects malformed input with a typed refusal (not silent coercion). 3) Contract package exports the type on a documented subpath. 4) Substrate seat cites the published npm version in close artifact.",
+      "priority": "P1",
+      "sequencingNote": "T1.2 gates T1.1 per 24 §Sequencing. Not a CAMA load gate; pairs with substrate-req-property-003 for ordering preference."
+    },
+    {
+      "id": "substrate-req-property-002",
+      "programItem": "T2.20",
+      "track2Item": "2.20",
+      "title": "Generated accessPolicy CHECK from atom-contract with CI equality test",
+      "whatPropertyNeeds": "A single contract-derived source of truth for the five-value `accessPolicy` union (`public-free`, `public-paid`, `platform-internal`, `tenant-private`, `tenant-shared`) that property repos import to generate SQL CHECK constraints and TypeScript allow-lists, with a CI equality test that fails on drift.",
+      "whyBlocked": "Smart Files reproduces the union as literal SQL CHECK constraints in two migrations and is missing `tenant-shared`. Engine `instances` list is also missing `tenant-shared` (thesis parity ledger 2026-08-22). Property cannot safely write tenant-shared rows or assert ADR-017 completeness while each store copies the vocabulary by hand. T2.20 is property-owned for adoption but the generator must live in atom-contract.",
+      "whatSubstrateDelivers": "Export a machine-readable `accessPolicy` vocabulary artifact from `@empressaio/atom-contract` (array or const object matching the Zod enum). Ship a small reference script or test helper that emits the SQL CHECK fragment and the TS union. Include a CI self-test in atom-contract that asserts the exported list equals the Zod schema registration enum — test fails if a sixth value is added to one side only.",
+      "acceptanceObservable": "1) `npm test` in atom-contract includes an equality test: exported vocabulary === `z.enum([...])` registration values, including `tenant-shared`. 2) Test is shown failing when `tenant-shared` is removed from the export (violation run per enforcement doctrine). 3) Published tarball carries the export on a documented path. Property seat will wire Smart Files migrations and engine instances list to import it; that adoption is a separate property dispatch.",
+      "priority": "P1",
+      "sequencingNote": "Independent of CAMA ordering. Blocks correct tenant-shared custody on Smart Files and engine parity claims."
+    },
+    {
+      "id": "substrate-req-property-003",
+      "programItem": "T1.2",
+      "track3Probe": "3.1",
+      "title": "Write-refusal boundary before Dallas/Tarrant CAMA loads",
+      "whatPropertyNeeds": "A cheap, armed store write boundary on the MCP gate (and any shared atom write path property ingest uses) that refuses malformed or non-minted ids on new writes only, deployed before Dallas (48113) and Tarrant (48439) `bulk_primary` CAMA metro loads begin.",
+      "whyBlocked": "Track A CAMA ingest is P0 and proceeding, but every row landing before the boundary is keyed on natural keys the T1.1 alias migration must later absorb. Property brief and interruption CP1 record this as an ordering preference, not a gate — load anyway if the boundary slips — but the cost of deferral compounds with metro row volume.",
+      "whatSubstrateDelivers": "Arm probe 3.1 (write refusal) at the MCP gate store boundary for new writes: malformed id refused, not stored. Prefer a lightweight gate-side check in front of `bulk_primary` apply rather than a full historical backfill. Historical rows untouched; new-write-only scope per T1.2. Document the deploy revision and the refusal HTTP/status shape.",
+      "acceptanceObservable": "1) Known-violation fixture: write with malformed id is refused at the store boundary (non-2xx or explicit refuse record); same id is absent from `hauska_mcp.atoms` after attempt. 2) Known-good minted id write succeeds on a test fixture path. 3) Violation run observed failing before passing run is reported (probe 3.1 doctrine). 4) Property seat can quote serving revision and timestamp in Track A CAMA dispatch close. If boundary cannot ship before CAMA, property loads anyway and records the slip in close.",
+      "priority": "P0",
+      "sequencingNote": "Ordering preference in front of Dallas/Tarrant `bulk_primary` CAMA apply — not a hard gate. Cheap substrate delivery preferred; if not cheap, property proceeds and files drift cost."
+    }
+  ],
+  "propertyCommitment": "Property seat will not write to hauska-atom-contract or hauska-mcp-server. Adoption of delivered artifacts (NodeId types, accessPolicy generator, write-boundary behavior) happens in property-owned repos via separate dispatches citing these request ids.",
+  "leave_behind": {
+    "item": "substrate seat request queue (three items)",
+    "owner": "substrate seat planner",
+    "plan_row": "pending OPS amendment — program items T1.2, T2.20, probe 3.1"
+  }
+}
