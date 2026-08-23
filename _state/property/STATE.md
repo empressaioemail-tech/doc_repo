@@ -2,7 +2,23 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23. Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23 (Phase 1 master program in flight). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+
+## PHASE 1 MASTER PROGRAM — IN FLIGHT 2026-08-23
+
+**Canvas:** `canvases/phase1-master-program.canvas.tsx` (execute). **Phase 2 locked doc:** `_inbox/2026-08-23_phase2_data_ingest_program.md` (do not start ingest until operator QA gate).
+
+| Lane | Status | Evidence |
+| --- | --- | --- |
+| A hotfix | PE deployed `dpl_Dra8jsMXspZvmwb2yJ83FaFeijQX` @ smartsite.cloud (#187 wedge+owner) | `_inbox/2026-08-23_p60_setback_hotfix_close.json` — live-derive still open |
+| B atom surface | PARTIAL close | `_inbox/2026-08-23_atom-full-surface_close.json` |
+| C instrument P-66 | draft registry | `_catalog/instrument_entity_type_classifications.json` |
+| D R-06 | plan filed | `_inbox/2026-08-23_r06_ci_arm_plan.json` — systems seat fixtures owed |
+| E SERVE sweep | gold+3 pass; Harris atom-chain empty | `_inbox/2026-08-23_serve_live_regression_sweep.json` |
+| F mud scorer | LDT PR **#462** open | `_inbox/2026-08-23_p59_mud_scorer_spec.json` |
+| G substrate | open (all three reqs) | `_inbox/2026-08-23_substrate_lane_g_status.json` |
+
+**Open Phase 1:** merge LDT #462 + deploy cortex; setback live-derive; P-62 cad/zoning manifest honesty; systems R-06 fixtures; operator Phase 1 exit QA before Phase 2.
 
 **LANE B 2026-08-19 (waves 1 and 2 SHIPPED): TEMPLATE CITY BUILD IS RUNNING.** Read `_inbox/2026-08-19_template_city_lens_build_sheet.md` and OPS-17 rows **A-073 to A-079**. **THE CORRECTION THAT OPENED THIS: the G-18 register's `Not built` meant THIS SURFACE DOES NOT EXIST YET, and three agent handoffs hardened it into THIS SURFACE IS MEANT TO BE EMPTY.** Rulings: honest absence is now about SOURCES per region, not screens; the department roster matches live and GROWS; demo data on every lens with one `Demo` chip. Dashboards main **`1b271c8c3dc7bf361c09f00a095cc8e9022a6946`**, serving **`smartcity-dashboards-00025-mam` @100%**, suite **320/320**. Kit main **`17eccfade057c0f8a835b8731be834cd4b828166`**, vocabulary **143**, components **86**, Design project **482** files. **Registry: 11 domains, 10 carrying on `template-city`, 0 of 11 on `empty-city`; `patrol-vehicles` stays the single `ungranted` region on purpose** — granting everything deletes the state that proves ruling 1. Footer now carries two claims: `0 of 10 sources granted` beside `6 of 10 demonstrated with fixture records`. Connections register split to **70 rows / 5 addenda**. **WAVE 3 SHIPPED 2026-08-20** under OPS-17 rows **A-080 to A-084**. Every department lens now renders its domain. Conformance instrument is live and is the reason wave 3 grew: 92 scans over 23 surfaces DERIVED from route definitions (the hand-built list of 16 was 30% short), 0 unwaived nodes, 132 adjudicated, bound stated as JUDGED not CONTAINED. Vertosoft handoff bundle assembled at `P:/tmp/VPAT/vertosoft_handoff_2026-08-20/` (tagged PDFs + CSV, verified against an untagged control). Heads and serving revisions are in the L1/L2 closes, not restated here. **OPEN and dispatchable: G-103 shared tagged-PDF render service, G-104 SmartSite title + glyph fix.** Both compile through `scripts/dispatch.mjs`; a fabricated row refuses. The eleven domains reach no pixel; all fifteen lenses share one `web/index.html` and one unpartitioned `web/shell.css`, so lens rendering merges one at a time. **Open, operator-owed:** Parks and Court are NOT expressible on the seam (four gate points, pinned to go red if a vendorless path appears) and four build-sheet lenses have no vendor — W2DEPT-F2; the register's disposition column is still hand-declared and can drift; the Design picker walk is STILL unrun. Closes `_inbox/2026-08-19_w2ds_close.json`, `_w2dept_close.json`, `_w2fix_close.json`.
 
@@ -16,11 +32,11 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 ## OPS A-025 + P-59 SCORER SPECS — CLOSED_PARTIAL 2026-08-23
 
-**Status: CLOSED_PARTIAL (WDLL item 4 partial).** PR **#461** merged to LDT main. Close `_inbox/2026-08-23_p59-scorer-specs_close.json`; CP2 `_inbox/2026-08-23_p59-scorer-specs_cp2.json`. **Open:** rrc-wells Harris absence probe; `mud` scorer unspecified.
+**Status: mud PR open.** PR **#461** merged. LDT PR **#462** (`p59/mud-scorer-spec`) open — 14/14 scoreable in branch. Close `_inbox/2026-08-23_p59-scorer-specs_close.json`. **Open:** merge #462; rrc-wells Harris absence probe.
 
-## P-60 SMARTSITE MAP LAYERS — CP1 DONE 2026-08-23
+## P-60 SMARTSITE MAP LAYERS — CP2 DEPLOYED 2026-08-23
 
-**Status: CP1 filed; CP2 not started.** Dispatch `_dispatches/2026-08-23_p60-map-layers_dispatch.md`. CP1 `_inbox/2026-08-23_p60-map-layers_cp1.json` @ hauska-map `df745c6`. **Top 3 flips:** building-footprint, buildable-envelope, special-district-fact (`mud-pid` districtType policy). **Hold:** rail-corridor-fact (P-52 scout). **Hardest:** flood-hazard-fact (flood-zone live NFHL GIS).
+**Status: CP2 deployed + hotfix.** hauska-map **#186/#187** merged. PE prod **`dpl_Dra8jsMXspZvmwb2yJ83FaFeijQX`** @ smartsite.cloud 2026-08-23. retrieval-api **00071-fat**. Close `_inbox/2026-08-23_p60-map-layers_cp2_close.json`, `_inbox/2026-08-23_p60_setback_hotfix_close.json`. **Open:** setback live-derive (depth-warm vs atom-chain rule); building-footprint near-bbox auth probe.
 
 ## L21 CROSS-VINTAGE KEY MAPPING (P-25) — CLOSED_BOTH_FLIPPED 2026-08-14
 

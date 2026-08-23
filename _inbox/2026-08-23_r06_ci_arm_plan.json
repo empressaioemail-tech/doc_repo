@@ -1,0 +1,234 @@
+{
+  "artifact": "r06-ci-arm-plan",
+  "date": "2026-08-23",
+  "planRow": "R-06",
+  "lane": "D",
+  "wdllItem": 12,
+  "wdll": "_inbox/2026-08-21_ops18_all_board_WDLL.md",
+  "pathDoc": "90_operations/OPS-18a_path_to_smartsite_market.md",
+  "snapshot": {
+    "repo": "P:/doc_repo",
+    "branch": "main",
+    "commit": "7c8ffe1cc1018c87d269ccf067c0aaffc66b0f84",
+    "baselineSnapshot": "2026-08-21 doc_repo 1470560 R-06 armed (fixture clone + ci-baseline inject; no baselineExit raised)",
+    "priorClose": "_inbox/2026-08-21_gov-r06_close.json",
+    "priorProof": "_inbox/2026-08-21_gov-r06_proof.json"
+  },
+  "summary": {
+    "step2Status": "PARTIAL",
+    "wdllItem12Grade": "partial",
+    "threeControlsExist": true,
+    "ciTriggerWired": true,
+    "githubAlarmObserved": false,
+    "fixtureBundleCommitted": false,
+    "blockingRegressionsBlockingMerge": ["memory-promotion-gate", "row-declaration"],
+    "headline": "All three R-06 scripts are in enforcement-baseline and run via ci-baseline.mjs on push/PR/workflow_dispatch. tooling-register-schema and factory-termination are BLOCKING and violation-proven act-less. canon-divergence is REPORTING: fixture path works locally but _catalog/fixtures/ is still untracked and no GitHub Actions run has observed ALARM. WDLL item 12 stays partial until both gaps close."
+  },
+  "workflow": {
+    "file": ".github/workflows/enforcement.yml",
+    "workflowName": "enforcement",
+    "jobId": "enforcement",
+    "ratchetStep": "Enforcement ratchet (all controls, fails on regression)",
+    "argv": "node scripts/enforcement/ci-baseline.mjs",
+    "trigger": ["push branches:[main]", "pull_request (all branches)", "workflow_dispatch"],
+    "status": "wired-not-dormant",
+    "note": "A row in enforcement-baseline.json with no workflow would be dormant. This workflow exists and invokes ci-baseline.mjs. Separate named steps run four other BLOCKING controls; the three R-06 controls run only through the ratchet step."
+  },
+  "controls": [
+    {
+      "name": "canon-divergence",
+      "status": "exists-partial-armed",
+      "tier": "REPORTING",
+      "dormant": false,
+      "starved": "partial",
+      "starvationDetail": "Live P:/ sibling clones are SKIPPED fail-open on ubuntu-latest (by design in scripts/canon-divergence.mjs). The portable fixture bundle compensates, but the bundle and checks file are untracked locally (?? _catalog/fixtures/) and no GitHub Actions enforcement run has yet observed fixture ALARM. Graduation to BLOCKING is explicitly blocked until GitHub observes ALARM.",
+      "executes": "scripts/enforcement/canon-divergence-check.mjs",
+      "executesNote": "Wrapper spawns scripts/canon-divergence.mjs with --check-only --no-fetch --no-stamp. Never invoke scripts/canon-divergence.mjs without --check-only in CI (default write path bypasses the control).",
+      "trigger": "scripts/enforcement/ci-baseline.mjs via .github/workflows/enforcement.yml on push/PR/workflow_dispatch",
+      "failsHow": "exit 1 when fixture or live check reports status=ALARM (divergent rows). exit 2 if fixture bundle/checks missing or unparseable, or spawn fails. ci-baseline REGRESSED when actual > baselineExit (0).",
+      "bypassPaths": [
+        "Invoke scripts/canon-divergence.mjs without --check-only (writes _catalog/canon_divergence.md, exits 0 fail-open)",
+        "Skip enforcement.yml or ci-baseline.mjs entirely",
+        "Remove or omit _catalog/fixtures/r06-canon-clone.bundle from checkout (wrapper exits 2; ratchet counts as worse than baseline if baseline expects 0)",
+        "Raise baselineExit to absorb ALARM without fixing divergence"
+      ],
+      "targets": {
+        "liveChecks": "_catalog/repo_intents_checks.json",
+        "mustNotWrite": "_catalog/canon_divergence.md"
+      },
+      "violationTest": {
+        "instrument": "scripts/enforcement/canon-divergence-check.mjs",
+        "instrumentType": "file-based wrapper (exists, committed)",
+        "passFixture": "_catalog/fixtures/r06-canon-checks.json",
+        "passFixtureState": "repos[0].last_verified=2099-01-01 (commit in bundle is 2026; fixture OK)",
+        "violationFixtureProposed": "_catalog/fixtures/r06-canon-checks-violation.json",
+        "violationFixtureSpec": "Same schema as pass fixture; repos[0].last_verified=2000-01-01 so no-touch fixture commit is after since → ALARM",
+        "bundleFixture": "_catalog/fixtures/r06-canon-clone.bundle",
+        "bundleStatus": "exists locally, NOT committed (untracked ?? _catalog/fixtures/)",
+        "passCommand": "node scripts/enforcement/canon-divergence-check.mjs",
+        "passExpectedExit": 0,
+        "violationCommand": "node scripts/enforcement/canon-divergence-check.mjs with checks file where last_verified=2000-01-01 (or dedicated violation JSON via wrapper --checks support if added)",
+        "violationExpectedExit": 1,
+        "ciBaselineInject": "Edit _catalog/fixtures/r06-canon-checks.json last_verified to 2000-01-01; run node scripts/enforcement/ci-baseline.mjs; named row must read REGRESSED actual 1; restore 2099-01-01",
+        "priorProof": "_inbox/2026-08-21_gov-r06_proof.json steps V-CANON",
+        "graduationItem": "Move tier to BLOCKING in enforcement-baseline.json only after a GitHub Actions enforcement run observes ALARM (PR inject or scheduled fail fixture). Do not graduate on local-only ci-baseline proof."
+      }
+    },
+    {
+      "name": "tooling-register-schema",
+      "status": "exists-armed",
+      "tier": "BLOCKING",
+      "dormant": false,
+      "starved": false,
+      "starvationDetail": "Fires on every ci-baseline run against _catalog/tooling_register.json controls[]. Violation proven via ci-baseline inject 2026-08-21; not starved in CI.",
+      "executes": "scripts/enforcement/tooling-register-schema.mjs",
+      "executesNote": "Maps executor→consumer, trigger, failure, bypass. Empty string or absent key = missing. String 'None' = present.",
+      "trigger": "scripts/enforcement/ci-baseline.mjs via .github/workflows/enforcement.yml on push/PR/workflow_dispatch",
+      "failsHow": "exit 1 listing each (id, missing field) in controls[]. exit 2 if register unreadable, controls not an array, or --self-test fails.",
+      "bypassPaths": [
+        "Edit controlsNotNamedInMission only (array not gated)",
+        "Answer four questions with literal 'None' (counts as present, not missing)",
+        "Harness that does not run ci-baseline.mjs or this script",
+        "Raise baselineExit instead of fixing missing fields"
+      ],
+      "targets": {
+        "register": "_catalog/tooling_register.json",
+        "requiredFields": ["consumer", "trigger", "failure", "bypass"]
+      },
+      "violationTest": {
+        "instrument": "scripts/enforcement/tooling-register-schema.mjs",
+        "instrumentType": "file-based script with embedded --self-test (6 cases, both directions)",
+        "passFixture": "_catalog/tooling_register.json",
+        "violationFixtureProposed": "_catalog/fixtures/r06-tooling-register-violation.json",
+        "violationFixtureSpec": "Copy of tooling_register.json with one appended controls[] row: id=INJECT-R06-MISS, missing consumer (other three fields present)",
+        "passCommand": "node scripts/enforcement/tooling-register-schema.mjs",
+        "passExpectedExit": 0,
+        "violationCommand": "node scripts/enforcement/tooling-register-schema.mjs --register _catalog/fixtures/r06-tooling-register-violation.json",
+        "violationExpectedExit": 1,
+        "selfTestCommand": "node scripts/enforcement/tooling-register-schema.mjs --self-test",
+        "selfTestExpectedExit": 0,
+        "ciBaselineInject": "Append controls[] row id=INJECT-R06-MISS missing consumer to _catalog/tooling_register.json; run ci-baseline; named row REGRESSED actual 1; byte-identical restore",
+        "priorProof": "_inbox/2026-08-21_gov-r06_proof.json steps V-TOOLING",
+        "unifiedHarnessNote": "Optional: scripts/enforcement/r06-violation-suite.mjs runs pass+fail fixtures for all three controls in one file with four-direction self-test per ENFORCEMENT.md instrument rule"
+      }
+    },
+    {
+      "name": "factory-termination",
+      "status": "exists-armed",
+      "tier": "BLOCKING",
+      "dormant": false,
+      "starved": false,
+      "starvationDetail": "Fires on every ci-baseline run against _catalog/parts_inventory.json. kind=factory with blank/NONE terminationCondition fails; kind=store with NONE is ignored (hauska_mcp.atoms etc.).",
+      "executes": "scripts/enforcement/factory-termination.mjs",
+      "executesNote": "BP-FACTORY-01. Stores with NONE are storeNoneIgnored, not hits.",
+      "trigger": "scripts/enforcement/ci-baseline.mjs via .github/workflows/enforcement.yml on push/PR/workflow_dispatch",
+      "failsHow": "exit 1 listing factory ids with blank/NONE terminationCondition. exit 2 if inventory unreadable, parts not an array, or --self-test fails.",
+      "bypassPaths": [
+        "Rename kind away from factory",
+        "Edit store rows with NONE (out of contract)",
+        "Harness that does not run ci-baseline.mjs or this script",
+        "Raise baselineExit instead of adding terminationCondition"
+      ],
+      "targets": {
+        "inventory": "_catalog/parts_inventory.json",
+        "contract": "kind===factory AND terminationCondition in {missing, empty, NONE case-insensitive} → fail"
+      },
+      "violationTest": {
+        "instrument": "scripts/enforcement/factory-termination.mjs",
+        "instrumentType": "file-based script with embedded --self-test (7 cases, both directions)",
+        "passFixture": "_catalog/parts_inventory.json",
+        "violationFixtureProposed": "_catalog/fixtures/r06-factory-termination-violation.json",
+        "violationFixtureSpec": "Copy of parts_inventory.json with appended parts[] row: name=inject-r06-factory-none, kind=factory, terminationCondition=NONE; retain hauska_mcp.atoms store NONE row to prove storeNoneIgnored",
+        "passCommand": "node scripts/enforcement/factory-termination.mjs",
+        "passExpectedExit": 0,
+        "violationCommand": "node scripts/enforcement/factory-termination.mjs --inventory _catalog/fixtures/r06-factory-termination-violation.json",
+        "violationExpectedExit": 1,
+        "selfTestCommand": "node scripts/enforcement/factory-termination.mjs --self-test",
+        "selfTestExpectedExit": 0,
+        "ciBaselineInject": "Append parts[] inject-r06-factory-none kind=factory terminationCondition=NONE; run ci-baseline; named row REGRESSED actual 1; byte-identical restore",
+        "priorProof": "_inbox/2026-08-21_gov-r06_proof.json steps V-FACTORY",
+        "unifiedHarnessNote": "Optional: scripts/enforcement/r06-violation-suite.mjs"
+      }
+    }
+  ],
+  "proposedInstruments": {
+    "priority1_commitFixtures": {
+      "paths": [
+        "_catalog/fixtures/r06-canon-checks.json",
+        "_catalog/fixtures/r06-canon-clone.bundle"
+      ],
+      "why": "Without these tracked, ubuntu-latest wrapper exits 2 (bundle missing) and canon-divergence cannot arm in CI at all.",
+      "owner": "systems seat (planner merge)"
+    },
+    "priority2_violationFixtures": {
+      "paths": [
+        "_catalog/fixtures/r06-canon-checks-violation.json",
+        "_catalog/fixtures/r06-tooling-register-violation.json",
+        "_catalog/fixtures/r06-factory-termination-violation.json"
+      ],
+      "why": "Checked-in fail fixtures let violation proof be repeatable without mutating live _catalog/*.json. Each pairs with pass fixture; run direct script with --register/--inventory/--checks before relying on ci-baseline inject.",
+      "owner": "systems seat"
+    },
+    "priority3_unifiedHarness": {
+      "path": "scripts/enforcement/r06-violation-suite.mjs",
+      "why": "Single file-based instrument per ENFORCEMENT.md: runs pass+fail for all three controls, self-tests both directions, exits non-zero on any miss. Can run in enforcement.yml as a named BLOCKING step after individual controls graduate, or on workflow_dispatch only until GitHub ALARM is observed.",
+      "spec": "For each control: spawn pass argv (expect 0), spawn fail argv with violation fixture (expect 1), assert _catalog/canon_divergence.md hash unchanged after canon pass+fail. Embed four fixtures inline or read from _catalog/fixtures/r06-*-violation.json.",
+      "owner": "systems seat"
+    },
+    "priority4_githubAlarmProof": {
+      "path": ".github/workflows/enforcement.yml or new enforcement-violation-probe.yml",
+      "why": "WDLL item 12 and canon-divergence graduationItem require a running GitHub job to observe ALARM, not only act-less local ci-baseline.",
+      "options": [
+        "workflow_dispatch input runViolationProbe=true that temporarily swaps r06-canon-checks.json last_verified (must not land on main green)",
+        "Scheduled weekly job on a dedicated branch that runs r06-violation-suite.mjs and expects exit 0 from the suite (suite passes when it correctly detects violations)",
+        "PR-only: require enforcement workflow on a branch that commits violation fixture run as a separate non-merge probe"
+      ],
+      "owner": "systems seat + planner approval for workflow shape"
+    }
+  },
+  "localRatchetSnapshot2026-08-23": {
+    "command": "node scripts/enforcement/ci-baseline.mjs",
+    "overallExit": 1,
+    "r06Rows": {
+      "canon-divergence": { "baseline": 0, "actual": 0, "verdict": "PASS" },
+      "tooling-register-schema": { "baseline": 0, "actual": 0, "verdict": "PASS" },
+      "factory-termination": { "baseline": 0, "actual": 0, "verdict": "PASS" }
+    },
+    "unrelatedRegressions": {
+      "memory-promotion-gate": { "baseline": 0, "actual": 1, "verdict": "REGRESSED", "note": "untriaged 65 > pin 64; do not raise baselineExit" },
+      "row-declaration": { "baseline": 0, "actual": 1, "verdict": "REGRESSED", "note": "OPS-16 REJECTS P-63 (A-023 negative case) failed — P-63 may have been ADDED; fix plan or test" }
+    },
+    "starvedEnv": {
+      "cited-untracked": "STARVED-ENV by design in baseline"
+    }
+  },
+  "actionableNextSteps": {
+    "systemsSeat": [
+      "Commit _catalog/fixtures/r06-canon-checks.json and r06-canon-clone.bundle (currently untracked). Without this, CI canon-divergence wrapper cannot materialize the portable clone.",
+      "Add checked-in violation fixtures at the three proposed _catalog/fixtures/r06-*-violation.json paths. Verify each with direct script invocation (expect exit 1) before any ci-baseline inject.",
+      "Implement scripts/enforcement/r06-violation-suite.mjs as the file-based both-directions instrument. Run it locally; attach output to _inbox/ close artifact.",
+      "Open a PR that triggers .github/workflows/enforcement.yml on ubuntu-latest. Confirm canon-divergence row PASS with fixtures present. Then run violation inject on a throwaway commit (last_verified=2000-01-01) and confirm named row REGRESSED in GitHub step summary — screenshot or run URL in close JSON.",
+      "Do not raise baselineExit on any R-06 control. Do not graduate canon-divergence to BLOCKING until GitHub observes ALARM.",
+      "Do not occupy P:/doc_repo integration main; use P:/seat-worktrees/systems/doc_repo on seat/systems."
+    ],
+    "propertySeat": [
+      "No product-repo changes for R-06. Property lane is unblocked once systems merges fixtures and enforcement workflow is green.",
+      "If planning P-63 row: reconcile with row-declaration.test.mjs — current main fails OPS-16 REJECTS P-63 (A-023 negative case). Either P-63 is not yet ADDED in the amendment cell or the test needs an amendment fix. This blocks the whole enforcement ratchet, not only R-06.",
+      "After R-06 merge: re-run local node scripts/enforcement/ci-baseline.mjs and confirm three R-06 rows PASS before claiming WDLL item 12 met."
+    ],
+    "planner": [
+      "Merge systems seat R-06 bundle: scripts (already on main), fixtures (not yet), violation suite (proposed), gov-r06 inbox artifacts if still uncommitted.",
+      "Triage memory-promotion-gate overflow (65 > pin 64) — one file triaged or declined; do not raise baselineExit to 1.",
+      "Grade WDLL item 12 met only when: (a) GitHub enforcement run URL shows canon-divergence ALARM on inject, (b) three controls REGRESSED on inject in that environment, (c) _catalog/canon_divergence.md unchanged by --check-only path.",
+      "Update OPS-18a step 2 status from PARTIAL to CLOSED when item 12 grades met."
+    ]
+  },
+  "constraints": [
+    "No baselineExit raised to go green",
+    "canon-divergence stays REPORTING until GitHub observes ALARM",
+    "_catalog/canon_divergence.md must not be written by --check-only or wrapper",
+    "Do not treat --self-test alone as WDLL item 12 met",
+    "Do not fold OPS-18 into OPS-16",
+    "hauska_mcp.atoms store NONE is not a factory miss"
+  ]
+}

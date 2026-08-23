@@ -1,0 +1,142 @@
+{
+  "artifact": "p59-mud-scorer-spec",
+  "planRow": "P-59",
+  "filedAt": "2026-08-23T14:00:00Z",
+  "status": "proposed",
+  "supersedes": "registry.ts mud UnspecifiedRule (lines 332-341, legacy-design-tools PR #461 branch p59/scorer-specs)",
+  "authoritativeRulings": [
+    "OPS-16 A-002: mud is a special-district TYPE on special-district-fact; no second GIS build",
+    "_inbox/2026-08-12_L7_sparse_rail_absence_doctrine.md (mud row + _county_coverage addendum)",
+    "_inbox/2026-08-14_l16_mud_scorer_close.json (254/254 historical apply; counting rule)"
+  ],
+  "railKey": "mud",
+  "displayName": "Special districts",
+  "atomFamily": "special-district-fact",
+  "entityType": "special-district-fact",
+  "instrument": "countyRailScoreCli.ts:mud",
+  "verificationMethod": "sweep",
+  "kind": "atom-count-over-parcel-features",
+  "numeratorMode": "distinct-parcel-keys",
+  "thresholdPct": 90,
+  "thresholdSource": "COUNTY_RAIL_DECLARATION.thresholdPct for railKey mud (countyRailStatic.ts; not duplicated in registry.ts per P-59 design)",
+  "sourceLabelPresent": "special-district-fact-determination-over-txgio-feature-index",
+  "denominator": {
+    "kind": "txgio-parcel-distinct-feature-index",
+    "stores": ["deployment: txgio_parcel", "deployment: txgio_parcel_staging (fallback)"],
+    "query": "SELECT count(DISTINCT feature_index)::int AS features FROM {parcel_table} WHERE county_fips = $1",
+    "basis": "count(DISTINCT feature_index) in txgio_parcel for the county (falling back to txgio_parcel_staging). The FEATURE is the real-world parcel; raw row count understates coverage when multiple rows share a feature_index.",
+    "nullDenominatorOutcome": "railState=not-yet; never satisfied-absent from a null denominator alone"
+  },
+  "numerator": {
+    "mode": "distinct-parcel-keys",
+    "stores": ["atoms: atoms.entity_type = special-district-fact"],
+    "query": "SELECT count(DISTINCT split_part(entity_id, ':', 1) || ':' || split_part(entity_id, ':', 2))::int AS parcels_determined FROM atoms WHERE entity_type = 'special-district-fact' AND entity_id >= $countyFips AND entity_id < $countyFipsUpperBound",
+    "basis": "DISTINCT parcel keys with at least one special-district-fact atom (entity_id FIPS prefix before the :sd: family suffix). Determination coverage, NOT raw atom row count — a parcel may carry present membership, typed sd:outside absence, or multiple district rows.",
+    "excludeFromNumerator": [
+      {
+        "pattern": "entity_id = '{countyFips}:_county_coverage'",
+        "reason": "County-level marker is not a parcel; L7 addendum — never enter a parcel ratio"
+      }
+    ],
+    "overcountRule": "numerator > denominator => railState=not-yet with honest unclamped ratio (SF-25; same engine path as footprint and pipelines)"
+  },
+  "absenceProbe": {
+    "kind": "source-table-zero-rows",
+    "table": "tx_special_district",
+    "fipsColumn": "county_fips",
+    "reach": { "kind": "statewide" },
+    "basis": "tceq-tx_special_district-statewide-zero-districts-for-fips",
+    "outcome": "railState=satisfied-absent, honestCoveragePct=0, absence_basis=basis string",
+    "refusal": "Counties outside reach refuse absence (N/A for statewide). Empty basis or missing table => not-yet, not absent."
+  },
+  "honestEmptyRules": [
+    {
+      "id": "zero-districts-statewide",
+      "when": "tx_special_district has zero rows for county_fips AND absenceProbe covers county",
+      "outcome": "satisfied-absent via absenceProbe",
+      "evidence": "74 live mud rows (L16 absentByBasis.zeroDistricts)"
+    },
+    {
+      "id": "county-coverage-marker",
+      "when": "atoms store holds entity_id '{countyFips}:_county_coverage' with special-district-fact typed county determination (e.g. Robertson 48395 CROSSWALK_HOLD)",
+      "outcome": "satisfied-absent, honestCoveragePct=0, source=special-district-fact:_county_coverage; NEVER read as 1/N parcel ratio",
+      "evidence": "_inbox/2026-08-14_l16_mud_scorer_close.json robertson48395"
+    },
+    {
+      "id": "features-zero-districts-positive",
+      "when": "parcel denominator features=0 AND tx_special_district count for FIPS > 0",
+      "outcome": "not-yet (fail-closed; Donley 48129 — geometry may already be satisfied-absent separately)",
+      "evidence": "L16 namedNotYet includes 48129"
+    },
+    {
+      "id": "below-threshold-with-data",
+      "when": "0 < numerator/denominator*100 < thresholdPct AND numerator <= denominator",
+      "outcome": "not-yet with honest pct stored (45 live counties; e.g. Travis 45.96%, Tarrant 89.45%)",
+      "evidence": "_inbox/2026-08-14_l16_mud_scorer_close.json namedNotYet"
+    },
+    {
+      "id": "at-or-above-threshold",
+      "when": "numerator/denominator*100 >= thresholdPct AND numerator <= denominator",
+      "outcome": "satisfied-present",
+      "evidence": "Bastrop 48021 live ledger honestCoveragePct=98.26 (l16-score-mud.mjs); matches rrc-pipelines+rail-corridor 98.26% post-P-59 apply"
+    },
+    {
+      "id": "no-fabricate-zero",
+      "when": "numerator=0, denominator>0, districts exist, no county marker, no applicabilityVerdict",
+      "outcome": "not-yet — zero atoms without a positive absence determination is not satisfied-absent (DEV_PROCESS 4.3)",
+      "falsifier": "Scorer writes satisfied-present at 0% or satisfied-absent without probe/marker"
+    }
+  ],
+  "gapVsPipelinesRailCorridor": {
+    "summary": "Bastrop coverage is already ~98.26% on mud (historical l16). P-59 closed pipelines+rail with atom-count + standard denominator only. Mud completion is spec + checked-in scorer plumbing, not new Bastrop data.",
+    "differences": [
+      "numeratorMode distinct-parcel-keys (mud) vs atom-count default (rrc-pipelines, rail-corridor)",
+      "threshold 90% all three; pipelines/rail use per-parcel atom ratio approximation for linear adjacency — mud uses parcel-key determinations",
+      "mud requires absenceProbe on deployment tx_special_district (statewide); pipelines/rail have no absenceProbe in registry",
+      "mud requires _county_coverage marker branch and features-zero+districts-positive guard — not in measure.ts today",
+      "present source label differs: special-district-fact-determination-over-txgio-feature-index vs *-atom-count"
+    ],
+    "alreadyDone": [
+      "254/254 mud cells in county_facet_coverage from l16-score-mud.mjs (134 present, 75 absent, 45 not-yet)",
+      "Bastrop 48021 satisfied-present 98.26% verified_by_instrument=l16-score-mud.mjs",
+      "countyRailScoreCli --list shows mud as only rail awaiting measurement spec (cp2 2026-08-23)"
+    ],
+    "stillMissing": [
+      "registry.ts: mud kind=unspecified → scoreable AtomCountRule per this spec",
+      "measure.ts: optional pre-classify hooks for _county_coverage marker and features-zero+districts-positive (or dedicated mud numerator query excluding marker entity_ids)",
+      "registry.test.ts + engine.test.ts: mud scoreable partition; absence/marker/Donley falsifiers",
+      "Dry-run 48021 via countyRailScoreCli --rail=mud reproduces ~98.26% and artifact_path cites countyRailScoreCli.ts:mud",
+      "Optional bounded apply 48021 to refresh verified_by_instrument off l16-score-mud.mjs orphan"
+    ]
+  },
+  "acceptanceChecks": [
+    {
+      "check": "countyRailScoreCli.ts --list scoreable: 14 of 14 (mud no longer listed as awaiting spec)",
+      "falsifier": "list still prints awaiting measurement spec: mud"
+    },
+    {
+      "check": "--rail=mud --county=48021 --dry-run exit 0; railState satisfied-present; honest ratio within 0.5pt of 98.26",
+      "falsifier": "exit 2 unspecified; or not-yet/overcount on Bastrop"
+    },
+    {
+      "check": "48395 dry-run satisfied-absent via county marker or zero-district probe, never 1/16935 present ratio",
+      "falsifier": "satisfied-present or parcel-ratio absent on Robertson"
+    },
+    {
+      "check": "48113 dry-run tx_special_district zero-row counties classify satisfied-absent when districts=0",
+      "falsifier": "satisfied-present at 0% without basis"
+    }
+  ],
+  "productRepoPR": {
+    "required": true,
+    "repo": "legacy-design-tools",
+    "paths": [
+      "artifacts/api-server/src/lib/railScoring/registry.ts",
+      "artifacts/api-server/src/lib/railScoring/measure.ts",
+      "artifacts/api-server/src/lib/railScoring/registry.test.ts",
+      "artifacts/api-server/src/lib/railScoring/engine.test.ts"
+    ],
+    "note": "Doc_repo spec alone cannot move registry or measure.ts. PR #461 merged six A-020 rails; mud was explicitly out of scope per dispatch."
+  },
+  "docRepoInstrument": "scripts/p59-mud-scorer-spec-instrument.mjs"
+}
