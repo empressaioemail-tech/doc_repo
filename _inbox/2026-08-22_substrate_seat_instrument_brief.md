@@ -56,7 +56,11 @@ Each of these deletes a rule from the ruleset by making the violation not compil
 
 ## The six probes
 
-These cannot be typed and constitute the behavioural suite. A conformance package is the natural home; each surface runs it against its own store and publishes the result stamped with the fixture-set hash and the commit.
+These cannot be typed and constitute the behavioural suite.
+
+**Do not build a new conformance package for them.** A self-test harness with directional cases including explicit failure cases already exists and is being implemented (`scripts/verdict-layer-serve-selftest.mjs`, landed in `a911921`). The probes extend that, in the repo where it already lives. The standing ruling is to run the proven artifact rather than build a parallel wrapper beside it, and two harnesses for one job is how a fleet ends up with two answers and no authority. Coordinate with the property seat on where it lives rather than starting a second one.
+
+Each surface runs the suite against its own store and publishes the result stamped with the fixture-set hash and the commit.
 
 | # | Probe | Asserts |
 |---|---|---|
