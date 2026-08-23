@@ -14,9 +14,9 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 **Status: CLOSED customer-done.** Cortex `121f576`, PE hauska-map `#185` deployed smartsite.cloud. Live instrument `scripts/verdict-layer-serve-selftest.mjs` **livePass true**. Gold probes: `48021:34137`, metro `48439:14437-2-1` lookup-failed, unincorporated `48055:1` not-applicable. Close `_inbox/2026-08-23_p63-verdict-serve_close.json`. Interim applicability table `_inbox/2026-08-23_p63_interim_applicability_table.json`.
 
-## OPS A-025 + P-59 SCORER SPECS — IN FLIGHT 2026-08-23
+## OPS A-025 + P-59 SCORER SPECS — CLOSED_PARTIAL 2026-08-23
 
-**Status: IN FLIGHT.** Operator go 2026-08-23: OPS-16 **A-025** filed (P-63 closed, P-64–P-72 added). Substrate requests operator-approved `_inbox/2026-08-23_substrate_seat_requests_property.json`. **P-59** dispatch `_dispatches/2026-08-23_p59-scorer-specs_dispatch.md`; WDLL `_inbox/2026-08-23_p59_scorer_specs_WDLL.md`. LDT branch **`p59/scorer-specs`** (staged, not merged): six A-020 rails scoreable in registry; `mud` still unspecified; `applicabilityVerdict` semantics in engine; unit tests **42 passed**. CP1 `_inbox/2026-08-23_p59-scorer-specs_cp1.json`. **Open:** dry-run + bounded apply 48021 (rrc-pipelines, rail-corridor), CP2/close, PR merge.
+**Status: CLOSED_PARTIAL (WDLL item 4 partial).** PR **#461** `p59/scorer-specs` @ `f02d2ba4` (test fix pushed). Close `_inbox/2026-08-23_p59-scorer-specs_close.json`; CP2 `_inbox/2026-08-23_p59-scorer-specs_cp2.json`. Six A-020 rails scoreable; `mud` still unspecified. Bastrop apply: **rrc-pipelines** + **rail-corridor** @ 98.26% satisfied-present. **Open:** merge #461 after CI green; rrc-wells Harris absence probe needs deployment table; P-60 map layers next.
 
 ## L21 CROSS-VINTAGE KEY MAPPING (P-25) — CLOSED_BOTH_FLIPPED 2026-08-14
 
