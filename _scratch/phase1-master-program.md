@@ -1,19 +1,26 @@
 # Phase 1 master program scratch
 
-## GROUND-TRUTH 2026-08-23T13:40Z
+## GROUND-TRUTH 2026-08-23T15:00Z
 
-- PE prod: `dpl_Dra8jsMXspZvmwb2yJ83FaFeijQX` (hauska-map #187 wedge+owner)
-- LDT mud PR: #462 open
-- Phase 2 doc: `_inbox/2026-08-23_phase2_data_ingest_program.md`
+- **Operator QA PASS** on gold `48021:34137` (signed owner vs anonymous gating)
+- **P-66 CLOSED** — 21/21 entity types decided (`_decisions/2026-08-23_p66_entity_type_operator_rulings.md`)
+- Phase 2 ingest **unlocked**
 
 ## OPEN
 
-- Lane A: setback **live-derive** (depth-warm F15/S5/R15 vs atom-chain setback-rule) — data/wiring, not map fallback
-- Lane B: atom surface close PARTIAL until map falsifiers + mud merge
-- Lane D: systems must commit R-06 fixtures + violation suite
-- Lane E: Harris `48201:412831` atom-chain empty — Phase 2 ingest or atom write, not SERVE wiring
-- Lane G: substrate all three open; property P-72 import can start, close waits generator
+- Lane D: R-06 GitHub ALARM proof (systems seat)
+- Lane G: substrate 3 open items
+- **boundary-edge contemporaneous** — engineering debt: live re-derive or refuse batch edges (operator ruling)
+- gold footprint/well atom-miss — Phase 2 data
+- Harris `48201:412831` empty chain — Phase 2 ingest
 
 ## LESSON
 
-- Haysel setbacks F15/S5/R15 on live facets are **depth-warm MU ledger**, not client defaults. Operator "default setbacks" report may mean live-derive not wired, not wrong numbers for MU.
+- Haysel setbacks F15/S5/R15 on live facets are **depth-warm MU ledger values served via atom-chain live-derive**, not client defaults. Disclosure string is the grade signal.
+- p47 `HONEST_NOT_SCORED_RAILS` exempts cad/zoning/landuse/owner from phantom scorer check — instrument amendment in `543f0ba`.
+
+## CLOSED THIS SESSION
+
+- LDT #462 merged + cortex deploy (mud 14/14 scoreable)
+- Setback hotfix close filed (`_inbox/2026-08-23_p60_setback_hotfix_close.json`)
+- P-59 close re-graded with #462 + 00551-cor

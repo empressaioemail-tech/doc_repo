@@ -2,23 +2,23 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23 (Phase 1 master program in flight). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T14:30Z (Phase 1 master program — near exit). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
 
-## PHASE 1 MASTER PROGRAM — IN FLIGHT 2026-08-23
+## PHASE 1 MASTER PROGRAM — OPERATOR QA PASS 2026-08-23
 
-**Canvas:** `canvases/phase1-master-program.canvas.tsx` · **Phase 2:** `_inbox/2026-08-23_phase2_data_ingest_program.md`
+**Canvas:** `canvases/phase1-master-program.canvas.tsx` · **Phase 2:** `_inbox/2026-08-23_phase2_data_ingest_program.md` · **QA close:** `_inbox/2026-08-23_phase1_operator_qa_close.json`
 
 | Lane | Status | Evidence |
 | --- | --- | --- |
-| A hotfix | **setback live-derive merged** | engine #359 + map #188; PE redeployed; retrieval deploy in flight |
-| B atom surface | live audit **pass** (p47 fix) | `atom-full-surface-audit.mjs --live` exit 0 |
-| C P-66 | draft registry | `_catalog/instrument_entity_type_classifications.json` (6 types open) |
-| D R-06 | suite pushed `543f0ba` | `r06-violation-suite.mjs` 9/9; GitHub ALARM proof still owed |
-| E SERVE | gold+3 pass; Harris empty chain | `_inbox/2026-08-23_serve_live_regression_sweep.json` |
-| F mud | LDT **#462** merging (Test slow) | PR open; 14/14 scoreable in branch |
-| G substrate | open | `_inbox/2026-08-23_substrate_lane_g_status.json` |
+| A hotfix | **CLOSED** | engine #359 + map #187/#188; live 48021:35433 atom-chain derive |
+| B atom surface | live audit **pass** | `atom-full-surface-audit.mjs --live` exit 0 |
+| C P-66 | **CLOSED** | operator rulings `_decisions/2026-08-23_p66_entity_type_operator_rulings.md`; registry active 21/21 |
+| D R-06 | suite pushed `543f0ba` | GitHub ALARM proof still owed (systems) |
+| E SERVE | **wiring done** | Harris empty chain = Phase 2 data |
+| F mud | **CLOSED_PARTIAL** | LDT #461+#462; cortex **00551-cor** @100% |
+| G substrate | open (3 items) | `_inbox/2026-08-23_substrate_lane_g_status.json` |
 
-**Open:** retrieval-api deploy post-359; merge LDT #462; operator Phase 1 QA gate.
+**Phase 2:** unlocked by operator QA pass on gold `48021:34137`. **Open:** R-06 GitHub ALARM (systems); substrate lane G; boundary-edge contemporaneous engineering debt (P-67).
 
 **LANE B 2026-08-19 (waves 1 and 2 SHIPPED): TEMPLATE CITY BUILD IS RUNNING.** Read `_inbox/2026-08-19_template_city_lens_build_sheet.md` and OPS-17 rows **A-073 to A-079**. **THE CORRECTION THAT OPENED THIS: the G-18 register's `Not built` meant THIS SURFACE DOES NOT EXIST YET, and three agent handoffs hardened it into THIS SURFACE IS MEANT TO BE EMPTY.** Rulings: honest absence is now about SOURCES per region, not screens; the department roster matches live and GROWS; demo data on every lens with one `Demo` chip. Dashboards main **`1b271c8c3dc7bf361c09f00a095cc8e9022a6946`**, serving **`smartcity-dashboards-00025-mam` @100%**, suite **320/320**. Kit main **`17eccfade057c0f8a835b8731be834cd4b828166`**, vocabulary **143**, components **86**, Design project **482** files. **Registry: 11 domains, 10 carrying on `template-city`, 0 of 11 on `empty-city`; `patrol-vehicles` stays the single `ungranted` region on purpose** — granting everything deletes the state that proves ruling 1. Footer now carries two claims: `0 of 10 sources granted` beside `6 of 10 demonstrated with fixture records`. Connections register split to **70 rows / 5 addenda**. **WAVE 3 SHIPPED 2026-08-20** under OPS-17 rows **A-080 to A-084**. Every department lens now renders its domain. Conformance instrument is live and is the reason wave 3 grew: 92 scans over 23 surfaces DERIVED from route definitions (the hand-built list of 16 was 30% short), 0 unwaived nodes, 132 adjudicated, bound stated as JUDGED not CONTAINED. Vertosoft handoff bundle assembled at `P:/tmp/VPAT/vertosoft_handoff_2026-08-20/` (tagged PDFs + CSV, verified against an untagged control). Heads and serving revisions are in the L1/L2 closes, not restated here. **OPEN and dispatchable: G-103 shared tagged-PDF render service, G-104 SmartSite title + glyph fix.** Both compile through `scripts/dispatch.mjs`; a fabricated row refuses. The eleven domains reach no pixel; all fifteen lenses share one `web/index.html` and one unpartitioned `web/shell.css`, so lens rendering merges one at a time. **Open, operator-owed:** Parks and Court are NOT expressible on the seam (four gate points, pinned to go red if a vendorless path appears) and four build-sheet lenses have no vendor — W2DEPT-F2; the register's disposition column is still hand-declared and can drift; the Design picker walk is STILL unrun. Closes `_inbox/2026-08-19_w2ds_close.json`, `_w2dept_close.json`, `_w2fix_close.json`.
 
@@ -32,11 +32,11 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 ## OPS A-025 + P-59 SCORER SPECS — CLOSED_PARTIAL 2026-08-23
 
-**Status: mud PR open.** PR **#461** merged. LDT PR **#462** (`p59/mud-scorer-spec`) open — 14/14 scoreable in branch. Close `_inbox/2026-08-23_p59-scorer-specs_close.json`. **Open:** merge #462; rrc-wells Harris absence probe.
+**Status: mud shipped.** PR **#461** + **#462** merged. Serving **`cortex-api-00551-cor` @100%** (shift 2026-08-23T14:26Z). Close `_inbox/2026-08-23_p59-scorer-specs_close.json`. **Open:** rrc-wells Harris absence probe.
 
-## P-60 SMARTSITE MAP LAYERS — CP2 DEPLOYED 2026-08-23
+## P-60 SMARTSITE MAP LAYERS — SETBACK HOTFIX CLOSED 2026-08-23
 
-**Status: CP2 deployed + hotfix.** hauska-map **#186/#187** merged. PE prod **`dpl_Dra8jsMXspZvmwb2yJ83FaFeijQX`** @ smartsite.cloud 2026-08-23. retrieval-api **00071-fat**. Close `_inbox/2026-08-23_p60-map-layers_cp2_close.json`, `_inbox/2026-08-23_p60_setback_hotfix_close.json`. **Open:** setback live-derive (depth-warm vs atom-chain rule); building-footprint near-bbox auth probe.
+**Status: setback hotfix closed.** hauska-map **#186/#187/#188** + engine **#359** merged; PE smartsite.cloud live; retrieval-api **00071-fat**. Close `_inbox/2026-08-23_p60-map-layers_cp2_close.json`, `_inbox/2026-08-23_p60_setback_hotfix_close.json`. **Open:** buildingFootprintFact atom-miss on gold; near-bbox map layer probes.
 
 ## L21 CROSS-VINTAGE KEY MAPPING (P-25) — CLOSED_BOTH_FLIPPED 2026-08-14
 
