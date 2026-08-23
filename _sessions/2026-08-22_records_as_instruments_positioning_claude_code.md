@@ -3,8 +3,8 @@ session_date: 2026-08-22
 topic: positioning arc, records as instruments, atom layering verification
 agent: claude_code
 seat: integration
-status: mid-session capture
-snapshot: doc_repo main @ 1470560
+status: session close
+snapshot: opened at doc_repo main @ 1470560; closed at 19e887d
 related_canonical:
   - _decisions/2026-08-22_atom_layering_target_state
   - 09_post_saas_substrate_thesis
@@ -14,10 +14,11 @@ related_canonical:
 
 ## What this is
 
-Mid-session capture, not a close. The session began as a positioning conversation
-and became an architecture verification, then returned to positioning changed by
-what the verification found. Format was written without re-reading
-`01_doc_conventions.md` this session; check it against the standard at close.
+The session began as a positioning conversation, became an architecture
+verification, returned to positioning changed by what the verification found, and
+ended by ratifying a governing document and reconciling canon to it. Written
+without re-reading `01_doc_conventions.md`; format should be checked against the
+standard.
 
 ## Inputs
 
@@ -120,6 +121,20 @@ your address; we give them an identifier and a gate, never custody"), both of wh
 are true today.
 
 An ADR is owed once that verification returns.
+
+## The second half
+
+**Smart Markets was found and it changed everything.** Probing the agent-facing markets surface revealed a running implementation of most of what this session had derived by argument: a repo whose first line calls its output an instrument twin, a union layer that holds no database enforced by a CI gate, typed absence with three verdicts, provenance classes that determine which fields the schema requires, withholding carried in scope rather than faked as absence, issuer and security as separate nodes, and a governing document at `_rd_disclosure_twin/09_twin_read_contract.md` that binds its own package. Two corrections were owed: readings taken from local trees were wrong on both `smart-files` and `smart-markets`, which are five and forty commits behind origin, and Smart Files does have a live consumer.
+
+**The model was corrected twice by the operator.** A song is a node rather than an atom, which generalised to the rule that anything you can point at, own and transact is a node. And an atom's subject can be a set: one code section applies to a region, so the subject is a selector rather than a node, and the enumerated store, where region-scale families sit at 90 to 151 percent of the parcel count, is write amplification that had been misread as scale.
+
+**19 was ratified, adversarially reviewed, and revised the same day.** The review found three fatals and could not break the core ontology, which was the correct outcome. Twenty-three of twenty-six findings were fixed in place. Aliases and lineage became atoms and edges. Selectors gained an indexability constraint, measured against the August flood work at 218 to 362 times. Delivery's Economics was carved to point of sale. The armed table gained a snapshot and evidence per row, reclassifying x402 as dormant and the markets keyed entitlement branch as starved. And the review's most damaging finding, nineteen rules with one mechanism, became an enforcement triage: twenty type items, six probes, two conventions.
+
+**Both measurements came back from the property seat before the brief reached them.** Property scored 3.0 / 2.0 / 2.5 / 2.5 against markets 3.5 / 3.5 / 3.0 / 1.0. The mirror premise was too neat; markets leads three axes and property leads economics alone, and evidence at 2.0 is the largest gap in the portfolio. The enumerated-family provenance hypothesis was confirmed and is smaller than feared: the citation text is honest and the defect is classification, so the fix is reclassification rather than re-sourcing.
+
+## Documents produced
+
+`19_the_instrument_contract.md`, governing, superseding `77` as north star and subsuming `05`. `24_instrument_conformance_program.md`, five tracks. `03c_records_as_instruments_positioning.md`, the positioning layer. `_decisions/2026-08-22_atom_layering_target_state.md`. `80_adrs/adr_030`. Two seat briefs in `_inbox`. Amendments to `25b`, `01a`, `_architecture_homes/02`, `adr_011` and `adr_017`.
 
 ## Open
 

@@ -11,6 +11,8 @@ related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operation
 
 Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not treat this file as the serving-revision ledger.
 
+**Canon change 2026-08-22.** [`19_the_instrument_contract.md`](19_the_instrument_contract.md) is ratified and governs the model portfolio-wide: node, atom with an intensional subject, edge, layer, instrument, lens, access as two fields, and the four-property benchmark. It supersedes `77_place_graph_strategy` as north star and subsumes `05_living_lineage_thesis`; `_rd_disclosure_twin/09_twin_read_contract` and the atom contract package sit under it as its executable forms. Program at [`24_instrument_conformance_program.md`](24_instrument_conformance_program.md), positioning at [`03c_records_as_instruments_positioning.md`](03c_records_as_instruments_positioning.md), seat briefs in `_inbox/2026-08-22_{property,substrate}_seat_instrument_brief.md`. **Nothing in 19 may be claimed in present tense externally unless its armed table says armed.** This header's date predates the change; edited as a single pointer line because this file has concurrent writers.
+
 ## 1. Active fires
 
 - **Fire 1: GTM / checkout, not L26 fill.** Operator 2026-08-17: QA the live map at `https://smartsite.cloud`. Stripe checkout mechanically works; polish owed. Pipedrive with `smartsite` + tier tags. Pricing popup like lander signup. Hobby stays. Stand `_inbox/2026-08-17_l26_backfill_and_gtm_stand.md`. Do not restart Harris statewide-PBF. L26 lease heartbeat still live; do not start a second writer. Do not DROP cortex-prod `smart_file_*`.
