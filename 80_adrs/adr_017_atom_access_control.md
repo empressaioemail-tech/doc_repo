@@ -1,14 +1,17 @@
 ---
 id: adr_017_atom_access_control
 title: ADR-017 — Atom access control
-status: accepted
-last_updated: 2026-05-16
+status: accepted-amended
+amended_by: 19_the_instrument_contract
+last_updated: 2026-08-22
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_015_actor_atoms, 08_tiered_access_model, 50_hauska_mcp_server, 60_eci_atomization]
 owner: nick
 ---
 
 # ADR-017 — Atom access control
+
+> **AMENDED 2026-08-22 by [`19_the_instrument_contract.md`](../19_the_instrument_contract.md).** The five-value union below is retained as five points in a grid and is no longer the field. Access is now two orthogonal fields: **discoverability** (catalog-listed, unlisted, hidden) and **entitlement** (anyone-free, anyone-paid, named-parties, owner-only, platform-only). The single enum cannot express unlisted-and-purchasable, which is the ordinary case of sending one record to one party and having them pay for it without listing it publicly. It also conflated discoverability with entitlement, which are independent. Owner-issued grants extend the entitlement set the gate computes its ceiling against, and the gate itself still only removes. Where this ADR and 19 disagree, 19 wins.
 
 ## Status
 

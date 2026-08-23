@@ -1,14 +1,17 @@
 ---
 id: adr_011_atom_identity_across_versions
 title: "ADR-011 — Atom identity across versions (DID + IPNS, anchoring deferred)"
-status: active
-last_updated: 2026-05-12
+status: active-amended
+amended_by: 19_the_instrument_contract
+last_updated: 2026-08-22
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access, adr_010_atom_graph_traversal, 05_living_lineage_thesis, 25_atom_architecture_reference]
 owner: nick
 ---
 
 # ADR-011 — Atom identity across versions
+
+> **AMENDED 2026-08-22 by [`19_the_instrument_contract.md`](../19_the_instrument_contract.md).** Identity is now **minted, type-prefixed, opaque and immutable**, and is never content-derived, because a content-derived identifier changes when the record is corrected, which fails the identity property. Content addressing survives for hashes and evidence, not for identity. Atoms do not version: they are immutable and superseded, and supersession is an edge carrying its own authority and clock. Natural keys are **aliases**, and an alias is an atom (`identity.alias`) with an authority, a provenance class, valid time and knowledge time, not a field on a record. Lineage is an edge, with `mergedInto`, `dividedInto` and `unmerged` as distinct events, and resolution takes a clock: `canonical(id, knowledgeAt)`. Where this ADR and 19 disagree, 19 wins.
 
 > **Status posture.** Accepted as a high-level architectural commitment;
 > refinement deferred. The decision below settles the *shape* of identity

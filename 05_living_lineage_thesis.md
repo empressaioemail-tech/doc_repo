@@ -1,8 +1,9 @@
 ---
 id: 05_living_lineage_thesis
 title: Living lineage thesis — the property as first-class durable entity
-status: active
-last_updated: 2026-05-10
+status: superseded
+superseded_by: 19_the_instrument_contract
+last_updated: 2026-08-22
 applies_to: portfolio
 related: [06_cities_value_narrative, 25_atom_architecture_reference, 30_smartcity_os, 40_design_accelerator, 47_codex_plan_review, adr_001_atom_architecture, adr_007_cross_stakeholder_atom_access]
 owner: nick

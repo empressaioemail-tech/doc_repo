@@ -10,6 +10,8 @@ owner: planner
 
 # Atom conventions for the portfolio
 
+> **Vocabulary superseded 2026-08-22.** [`19_the_instrument_contract.md`](19_the_instrument_contract.md) governs the model and distinguishes node, atom, edge, layer, instrument and lens, which this document collapses. An atom's subject may be intensional (a selector over a set) as well as extensional (one node). Read 19 first; where 19 and this document disagree, 19 wins.
+
 > **Atom conformance target (2026-06-21).** Every atom now carries the read-contract (three axes calibrated/asserted/consequence, each with n/width/provenance), the five-value accessPolicy, and a signed-history layer for data-level atoms, plus a downloadable-atom export shape; conformance target version 1.5.0. "Cortex" is the reporting function package per the ADR-008 amendment. See [`_architecture_homes/02_atoms_lifecycle_ownership.md`](_architecture_homes/02_atoms_lifecycle_ownership.md).
 
 Standardize the Atom pattern across `doc_repo`, Cortex, Empressa, Hauska, and all agents for predictable, low-token, intent-driven context retrieval.

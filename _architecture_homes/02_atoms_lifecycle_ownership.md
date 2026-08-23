@@ -29,7 +29,7 @@ Today only data atoms are richly instantiated; the rest are accepted-but-thin or
 
 - Corpus: code-section, code-cross-reference, code-edition, code-amendment, jurisdiction-corpus.
 - Encumbrances (ADR-020/021): recorded-instrument, restriction-clause, restriction-corpus, administrative-rule, constraint-resolution.
-- Workspace: property-workspace, brief-run, workspace-attachment, workspace-share-edge.
+- Workspace: property-workspace, brief-run, workspace-attachment, workspace-share-edge. **Correction 2026-08-22: declared in the contract, not instantiated.** Zero workspace rows exist in the `hauska_mcp` atoms store, and the family's only importer is a shape-only registration in legacy-design-tools on the frozen `@hauska` package name whose composition edges are forward references resolving to nothing. See ADR-030. The vocabulary in this doc is superseded by [`19_the_instrument_contract.md`](../19_the_instrument_contract.md), which distinguishes node, atom, edge, layer, instrument and lens; read that first.
 - Reasoning atoms: the web-first warmed, mutable, confidence-bearing layer.
 - Arrow-two capture: finding, decision-event, submission-classification.
 - Site: site-topography, site-drainage.

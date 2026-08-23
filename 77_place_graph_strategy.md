@@ -1,7 +1,9 @@
 ---
 id: 77_place_graph_strategy
 title: Place graph strategy — country-scale AI-native real estate intelligence
-status: active
+status: superseded-as-north-star
+superseded_by: 19_the_instrument_contract
+retains: go-to-market content and the Texas ingest lane, which remain active and should be relocated rather than lost. The place graph is one shape family under 19; it is no longer the top of the model.
 last_updated: 2026-07-07
 applies_to: portfolio
 related: [09_post_saas_substrate_thesis, 11_roadmap, 16_commercialization_roadmap, 27_engine_evolution_plan, 46_smartcity_parcel_intelligence, 49_code_ingestion_pipeline, 49b_encumbrance_ingestion_pipeline, 50_hauska_mcp_server, 75_hauska_brokerage_workflow_plan, 75a_hauska_brief_extension, 76_empressa_wedge_90d_operating_plan, 77b_cotality_integration_strategy, 73_partnerships, 80_adrs/adr_019_layered_code_substrate, 80_adrs/adr_020_recorded_instruments_and_restriction_clauses, 80_adrs/adr_021_constraint_resolution_and_precedence, _sessions/2026-05-27_place_graph_tx_crg_minerals_claude_code]
