@@ -65,11 +65,15 @@ Read this instead of `19` and `24`. They are the governing documents and they ar
 
 **T2.20 Import the accessPolicy vocabulary rather than copying it.** Smart Files reproduces the five-value union as literal SQL CHECK constraints in two migrations, and the engine's instances list is missing `tenant-shared`. Generate the constraint from the contract with a CI equality test that fails on drift.
 
-## Two measurements owed
+## Two measurements — CLOSED 2026-08-23, both by this seat
 
-The property side has never been scored on the four properties. Markets scored itself at identity 3.5, evidence 3.5, interface 3.0, economics 1.0. Everything in `19` currently rests on a planner's inference that property is the mirror. A seat should measure it.
+Delivered before this brief was read, in `a911921`. Both changed the governing document, folded in at `cd966c0`.
 
-And sample the body of one enumerated family and report what the provenance actually says. If those rows carry their own provenance as though each were an independently sourced measurement about that parcel, the class is wrong across a very large fraction of the store, and no check that counts rows can see it. This is a hypothesis, not a finding, and it could be the largest evidence defect in the portfolio or nothing at all.
+**Four-property score.** Property 3.0 / 2.0 / 2.5 / 2.5, mean 2.50, against markets 3.5 / 3.5 / 3.0 / 1.0, mean 2.75. The mirror premise was too neat: markets leads on three axes and property leads on economics alone. **Evidence at 2.0 is the largest single gap in the portfolio** and is the property the entire thesis rests on. Both seats answer the acid test no.
+
+**Enumerated-family provenance: CONFIRMED, and smaller than feared.** All 62,256 Bastrop flood atoms carry one county bulk provenance signature, and the two distinct timestamps are write-batch boundaries rather than per-parcel fetches. The citation text is honest and names the bulk load. The defect is classification: `reasoningKind: observed` on every row, no `inputAtoms`, no `provenanceClass: Derivation`.
+
+**T1.4 is rescoped accordingly** and is now much smaller: set the class to Derivation, populate `inputAtoms` with the regional source, replace `observed` with derived, and stop stamping per-parcel timestamps that imply per-parcel measurement. Per family, not per row. Nothing is re-fetched and no citation is rewritten.
 
 ## Not yours
 
