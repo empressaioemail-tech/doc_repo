@@ -217,6 +217,33 @@ export function gradeUpgradeViolation(layer, upstreamVerdict) {
   return { pass: failures.length === 0, failures };
 }
 
+/** P-66: present fact wires must carry registry classification when enriched. */
+export function gradeRegistryEnrichedPresentFact(fact, expected = {}) {
+  const failures = [];
+  if (!fact || typeof fact !== "object") {
+    return { pass: false, failures: ["fact object missing"] };
+  }
+  if (fact.state !== "present" && fact.status !== "populated") {
+    return { pass: true, failures: [] };
+  }
+  for (const field of ["provenanceClass", "serveLayer", "chainAnchoring", "subjectKind"]) {
+    if (!isNonEmptyString(fact[field])) {
+      failures.push(`present fact missing ${field}`);
+    }
+  }
+  if (expected.provenanceClass && fact.provenanceClass !== expected.provenanceClass) {
+    failures.push(
+      `provenanceClass=${JSON.stringify(fact.provenanceClass)} expected ${expected.provenanceClass}`,
+    );
+  }
+  if (expected.serveLayer && fact.serveLayer !== expected.serveLayer) {
+    failures.push(
+      `serveLayer=${JSON.stringify(fact.serveLayer)} expected ${expected.serveLayer}`,
+    );
+  }
+  return { pass: failures.length === 0, failures };
+}
+
 export function gradeLayerFixture(fixture) {
   const payload = fixture.payload ?? fixture;
   const layerField = fixture.layerField || "structuralFact";
@@ -322,6 +349,41 @@ export function runSelfTests() {
     failures: atomMiss.failures,
     whatWouldProveInstrumentWrong:
       "atom-miss-only structuralFact PASSES (instrument admits incomplete absence)",
+  });
+
+  const registryPresent = gradeRegistryEnrichedPresentFact(
+    {
+      state: "present",
+      source: "land-use-fact",
+      provenanceClass: "Record",
+      serveLayer: "landuse",
+      chainAnchoring: "backfill",
+      subjectKind: "extensional",
+    },
+    { provenanceClass: "Record", serveLayer: "landuse" },
+  );
+  cases.push({
+    name: "P-66 present fact with registry fields PASSES",
+    expectPass: true,
+    pass: registryPresent.pass === true,
+    observedPass: registryPresent.pass,
+    failures: registryPresent.failures,
+    whatWouldProveInstrumentWrong:
+      "enriched present fact FAILS (registry grade too strict or broken)",
+  });
+
+  const registryMissing = gradeRegistryEnrichedPresentFact({
+    state: "present",
+    source: "land-use-fact",
+  });
+  cases.push({
+    name: "P-66 present fact without registry fields FAILS",
+    expectPass: false,
+    pass: registryMissing.pass === false,
+    observedPass: registryMissing.pass,
+    failures: registryMissing.failures,
+    whatWouldProveInstrumentWrong:
+      "unenriched present fact PASSES (registry guard vacuous)",
   });
 
   const ok = cases.every((c) => c.pass === true);
@@ -477,6 +539,10 @@ export function quoteLayerFacts(payload) {
       asOf: layer.asOf ?? null,
       basis: layer.basis ?? null,
       source: layer.source ?? null,
+      provenanceClass: layer.provenanceClass ?? null,
+      serveLayer: layer.serveLayer ?? null,
+      chainAnchoring: layer.chainAnchoring ?? null,
+      subjectKind: layer.subjectKind ?? null,
     };
   }
   return quotes;
