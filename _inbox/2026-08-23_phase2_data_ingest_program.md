@@ -3,9 +3,9 @@ id: 2026-08-23_phase2_data_ingest_program
 title: Phase 2 — data ingest and Texas flush (locked until Phase 1 QA)
 date: 2026-08-23
 last_updated: 2026-08-23
-status: approved
+status: active
 owner: nick
-operator_gate: Phase 1 exit checklist in phase1-master-program canvas + operator QA on smartsite.cloud and CC manifest
+operator_gate: Phase 1 closed 2026-08-23 — _inbox/2026-08-23_phase1_program_close.json + operator QA on smartsite.cloud
 related:
   - canvases/phase1-master-program.canvas.tsx
   - canvases/parcel-public-facts-deficit.canvas.tsx
@@ -19,7 +19,7 @@ related:
 
 # Phase 2 — data ingest and Texas flush
 
-**Gate:** Phase 2 does not start until Phase 1 closes and the operator signs the exit checklist on `canvases/phase1-master-program.canvas.tsx` (Overview tab). Phase 1 = wiring, instruments, measurement, regression fixes on existing store rows. Phase 2 = new atoms, COVER apply, statewide writers, deficit backfill.
+**Gate:** Phase 2 **ACTIVE** as of 2026-08-23. Phase 1 closed per `_inbox/2026-08-23_phase1_program_close.json`. Operator QA passed gold `48021:34137`.
 
 **Companion artifacts:**
 

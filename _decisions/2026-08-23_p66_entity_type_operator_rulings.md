@@ -18,7 +18,7 @@ Operator closed all six open P-66 entity-type classification questions; registry
 
 | entityType | field | ruling |
 | --- | --- | --- |
-| property-boundary-edge | chainAnchoring | **contemporaneous** |
+| property-boundary-edge | chainAnchoring | **backfill** (reverted 2026-08-23; see `_decisions/2026-08-23_boundary_edge_backfill_revert.md`) |
 | setback-rule | provenanceClass | **Record** |
 | parcel-terrain-model | provenanceClass | **Observation** |
 | building-footprint | provenanceClass | **Record** |
@@ -33,7 +33,7 @@ P-66 draft registry had 15 decided and 6 open types blocking serve-layer wiring 
 
 - **Sell reasoning, not data:** Record/Observation/Derivation split locks how citations render on inspect and delivery verification.
 - **Confidence is earned:** Observation on terrain and Record on setbacks/footprint raise the bar for writer fields (edition, section, source dataset) in P-67.
-- **Fail closed:** contemporaneous on boundary-edge means batch depth-warm edges cannot be served as verified contemporaneous chains without live re-derive (engineering follow-up).
+- **Fail closed:** boundary-edge backfill matches batch depth-warm serve; no contemporaneous over-claim.
 
 ## Reasoning
 

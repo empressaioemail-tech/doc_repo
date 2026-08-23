@@ -8,9 +8,9 @@
 
 ## OPEN
 
-- Lane D: R-06 GitHub ALARM proof (systems seat)
-- Lane G: substrate 3 open items
-- **boundary-edge contemporaneous** — engineering debt: live re-derive or refuse batch edges (operator ruling)
+- R-06 GitHub ALARM — **DEFERRED** operator 2026-08-23 (`_scratch/r06-alarm-deferred.md`)
+- Lane G substrate — **AUTHORIZED** pickup (`_state/substrate/STATE.md`)
+- P-66 boundary-edge: **backfill** (reverted from contemporaneous 2026-08-23)
 - gold footprint/well atom-miss — Phase 2 data
 - Harris `48201:412831` empty chain — Phase 2 ingest
 

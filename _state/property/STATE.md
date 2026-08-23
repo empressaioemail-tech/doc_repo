@@ -4,21 +4,18 @@ Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not 
 
 Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T14:30Z (Phase 1 master program — near exit). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
 
-## PHASE 1 MASTER PROGRAM — OPERATOR QA PASS 2026-08-23
+## PHASE 1 — CLOSED 2026-08-23 · PHASE 2 ACTIVE
 
-**Canvas:** `canvases/phase1-master-program.canvas.tsx` · **Phase 2:** `_inbox/2026-08-23_phase2_data_ingest_program.md` · **QA close:** `_inbox/2026-08-23_phase1_operator_qa_close.json`
+**Close:** `_inbox/2026-08-23_phase1_program_close.json` · **Canvas:** `canvases/phase1-master-program.canvas.tsx` · **Phase 2:** `_inbox/2026-08-23_phase2_data_ingest_program.md`
 
 | Lane | Status | Evidence |
 | --- | --- | --- |
-| A hotfix | **CLOSED** | engine #359 + map #187/#188; live 48021:35433 atom-chain derive |
-| B atom surface | live audit **pass** | `atom-full-surface-audit.mjs --live` exit 0 |
-| C P-66 | **CLOSED** | operator rulings `_decisions/2026-08-23_p66_entity_type_operator_rulings.md`; registry active 21/21 |
-| D R-06 | suite pushed `543f0ba` | GitHub ALARM proof still owed (systems) |
-| E SERVE | **wiring done** | Harris empty chain = Phase 2 data |
-| F mud | **CLOSED_PARTIAL** | LDT #461+#462; cortex **00551-cor** @100% |
-| G substrate | open (3 items) | `_inbox/2026-08-23_substrate_lane_g_status.json` |
+| A–F | **CLOSED** / partial | See phase1 program close |
+| C P-66 | **registry done** | serve wiring **IN FLIGHT** |
+| D R-06 | **deferred** | `_scratch/r06-alarm-deferred.md` |
+| G substrate | **IN FLIGHT** | `_state/substrate/STATE.md` |
 
-**Phase 2:** unlocked by operator QA pass on gold `48021:34137`. **Open:** R-06 GitHub ALARM (systems); substrate lane G; boundary-edge contemporaneous engineering debt (P-67).
+**Operator:** QA + GTM while P-66 serve + Lane G run. **Next property lane:** deficit P0 ingest after serve close.
 
 **LANE B 2026-08-19 (waves 1 and 2 SHIPPED): TEMPLATE CITY BUILD IS RUNNING.** Read `_inbox/2026-08-19_template_city_lens_build_sheet.md` and OPS-17 rows **A-073 to A-079**. **THE CORRECTION THAT OPENED THIS: the G-18 register's `Not built` meant THIS SURFACE DOES NOT EXIST YET, and three agent handoffs hardened it into THIS SURFACE IS MEANT TO BE EMPTY.** Rulings: honest absence is now about SOURCES per region, not screens; the department roster matches live and GROWS; demo data on every lens with one `Demo` chip. Dashboards main **`1b271c8c3dc7bf361c09f00a095cc8e9022a6946`**, serving **`smartcity-dashboards-00025-mam` @100%**, suite **320/320**. Kit main **`17eccfade057c0f8a835b8731be834cd4b828166`**, vocabulary **143**, components **86**, Design project **482** files. **Registry: 11 domains, 10 carrying on `template-city`, 0 of 11 on `empty-city`; `patrol-vehicles` stays the single `ungranted` region on purpose** — granting everything deletes the state that proves ruling 1. Footer now carries two claims: `0 of 10 sources granted` beside `6 of 10 demonstrated with fixture records`. Connections register split to **70 rows / 5 addenda**. **WAVE 3 SHIPPED 2026-08-20** under OPS-17 rows **A-080 to A-084**. Every department lens now renders its domain. Conformance instrument is live and is the reason wave 3 grew: 92 scans over 23 surfaces DERIVED from route definitions (the hand-built list of 16 was 30% short), 0 unwaived nodes, 132 adjudicated, bound stated as JUDGED not CONTAINED. Vertosoft handoff bundle assembled at `P:/tmp/VPAT/vertosoft_handoff_2026-08-20/` (tagged PDFs + CSV, verified against an untagged control). Heads and serving revisions are in the L1/L2 closes, not restated here. **OPEN and dispatchable: G-103 shared tagged-PDF render service, G-104 SmartSite title + glyph fix.** Both compile through `scripts/dispatch.mjs`; a fabricated row refuses. The eleven domains reach no pixel; all fifteen lenses share one `web/index.html` and one unpartitioned `web/shell.css`, so lens rendering merges one at a time. **Open, operator-owed:** Parks and Court are NOT expressible on the seam (four gate points, pinned to go red if a vendorless path appears) and four build-sheet lenses have no vendor — W2DEPT-F2; the register's disposition column is still hand-declared and can drift; the Design picker walk is STILL unrun. Closes `_inbox/2026-08-19_w2ds_close.json`, `_w2dept_close.json`, `_w2fix_close.json`.
 
