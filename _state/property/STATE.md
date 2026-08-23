@@ -13,7 +13,7 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 | A–F | **CLOSED** / partial | See phase1 program close |
 | C P-66 | **registry done** | serve wiring **IN FLIGHT** |
 | D R-06 | **deferred** | `_scratch/r06-alarm-deferred.md` |
-| G substrate | **IN FLIGHT** | `_state/substrate/STATE.md` |
+| G substrate | **CLOSED_PENDING_PUBLISH** | PRs [atom-contract #22](https://github.com/empressaioemail-tech/hauska-atom-contract/pull/22) + [MCP #74](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/74) |
 
 **Operator:** QA + GTM while P-66 serve + Lane G run. **Next property lane:** deficit P0 ingest after serve close.
 
