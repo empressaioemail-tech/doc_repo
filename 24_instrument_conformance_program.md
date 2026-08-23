@@ -96,13 +96,17 @@ Two adjacent items ride with this track. Class signed at origin, so a middle-hop
 | The delivery multiple | delivery is priced as a perpetual multiple; no multiple has been defended |
 | Whether the conformance registry is built now or later | the buying-agent filter has nothing to query without it |
 
-## Track 5 — Measurements owed before claims
+## Track 5 — Measurements, both closed 2026-08-23
 
-Two things this program rests on are inferred rather than measured, and both should be closed by a seat rather than by a planner.
+Both items in this track were measured by the property seat on 2026-08-23 and both changed the program.
 
-The property side has never been scored on the four properties. The markets seat scored markets. The claim that property is the mirror is an inference from two verification sweeps.
+**The four-property score.** Property is identity 3.0, evidence 2.0, interface 2.5, economics 2.5, mean 2.50, against markets at 3.5, 3.5, 3.0, 1.0, mean 2.75. The mirror hypothesis is only directionally true: markets leads on three axes and property leads on economics alone. Evidence at 2.0 is the largest single gap in the portfolio and is the property the thesis rests on. Both seats answer the acid test no.
 
-The provenance class of the materialised region-scale rows is an open hypothesis. If those rows currently carry their own provenance as though each were an independently sourced measurement about that parcel, the class is wrong across a very large fraction of the store and no check that counts rows can see it. Sample the body of one such table and report what the provenance says.
+**The provenance class of enumerated rows: CONFIRMED, and smaller than feared.** All 62,256 Bastrop flood atoms carry one county-level bulk provenance signature, one adapter, one url, one vintage, one citation, and two timestamps that are write-batch boundaries rather than per-parcel fetches. The write path builds one provenance object per county run and stamps it on every parcel.
+
+The citation text is honest and names the bulk load. The defect is classification: `reasoningKind: observed` on every row, with per-parcel timestamps, no `inputAtoms`, and no `provenanceClass: Derivation`, so a point-in-polygon result against a regional polygon presents as a measurement of that parcel.
+
+**This rewrites T1.4.** It is a reclassification with a link to the regional source, not a re-sourcing. Nothing is re-fetched, no citation is rewritten, and the selector atom already has an honest citation to inherit. Scope T1.4 as: set `provenanceClass` to Derivation, populate `inputAtoms` with the regional source, replace `reasoningKind: observed` with derived, and stop stamping per-parcel timestamps that imply per-parcel measurement. Apply per family, not per row.
 
 ## Sequencing
 

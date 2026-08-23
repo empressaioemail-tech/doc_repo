@@ -71,7 +71,18 @@ Two ADRs are contradicted by this document and both still stand as canon, which 
 
 Two tracks built the same idea in parallel and each built the half its environment forced it to build. Markets receives outcomes whether it asks for them or not, and a disclosure that lies is a legal problem, so markets built evidence and interface. Property has counterparties and a gate, so property built economics. Neither environment forced identity, so neither built it, which is why identity is the defect both tracks share and arrived at independently.
 
-Scored on 2026-08-22 by the markets seat, the markets record is identity 3.5, evidence 3.5, interface 3.0, economics 1.0. **The property side has not been scored on the same scale by a seat and should be**; two verification sweeps place it as the inverse, which is an inference and not a measurement. There are not two systems. There is one system with two instantiations, and this is its definition.
+Both sides are now scored by their own seat against the failure tests below.
+
+| | identity | evidence | interface | economics | mean |
+|---|---|---|---|---|---|
+| markets, scored 2026-08-22 | 3.5 | 3.5 | 3.0 | 1.0 | 2.75 |
+| property, scored 2026-08-23 | 3.0 | 2.0 | 2.5 | 2.5 | 2.50 |
+
+**The mirror was too neat and the measurement says so.** Markets leads on three axes of four. Property leads on exactly one, economics, and by a wide margin. So the honest reading is not that each track built the opposite half; it is that markets is ahead nearly everywhere, and **economics is the single axis where property's environment forced something markets' did not**. Evidence remains the sharpest gap in both directions, at 2.0 against 3.5, and it is the property the whole thesis rests on.
+
+Both seats answered the acid test the same way. No. Property named four blocking steps: identity reconciliation off the gold parcel, an evidence chain not walkable at store scale, dual-serve integration with empty chains outside gold, and a meter armed while the rate and settlement are not closed.
+
+There are not two systems. There is one system with two instantiations, and this is its definition.
 
 ## The benchmark
 
@@ -456,7 +467,11 @@ The number of unenforced rules is therefore a figure that moves rather than a pa
 
 **Minting monetization.** Doc 19 §Economics says give away the mint and charge for the join. Whether node minting is free, freemium, or metered per node is not settled. Logged open 2026-08-22; not solved in thesis planner session.
 
-**The provenance class of materialised rows**, which is an open hypothesis rather than a finding and is recorded in the capture that preceded this document.
+**The provenance class of materialised rows is no longer open. Measured 2026-08-23 and CONFIRMED, with one important nuance in our favour.** All 62,256 Bastrop flood atoms share a single county-level bulk provenance signature: one adapter, one source url, one vintage, one citation, and two timestamps that are write-batch boundaries rather than per-parcel fetches. The write path builds one provenance object per county run and stamps it onto every parcel.
+
+The nuance: **the citation text is honest.** It names the bulk county load and the row counts it was filtered from. What is wrong is the classification. Every row carries `reasoningKind: observed` with per-parcel timestamps, no `inputAtoms`, and no `provenanceClass: Derivation`, so a point-in-polygon result against a regional polygon presents as a measurement of that parcel.
+
+This makes T1.4 substantially smaller than feared. It is a reclassification with a link to the regional source, not a re-sourcing. Nothing has to be re-fetched and no citation has to be rewritten.
 
 **Monetisation of minting.** The model says give away the mint and charge for the join, but whether minting is free, freemium, or metered per node is unsettled, and it interacts with how a stranger is expected to arrive.
 
