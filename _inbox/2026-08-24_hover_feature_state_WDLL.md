@@ -30,7 +30,7 @@ On `smartsite.cloud` after a hard refresh, hover 280236, 280239, and 280233 from
 
 5. **Find identity stays green.** Same pick still opens `48453:280239`. Gold `48021:34137` still docks. Hover pick still keys `PARCEL_TILES_FILL_ID` only. | check: existing rooftop-pick + hover-peel identity tests | grade: [met] identity test kept verbatim and passing; PE suite 1490 pass / 103 files incl. rooftop-pick/Find; pick path untouched
 
-6. **Operator visual on the seam block.** Hover 280236 / 280239 / 280233 on live smartsite.cloud. Full-lot highlight from both entry edges. No straight cut parallel to Simsbrook. | check: operator walk after deploy | grade: [ ] OWED — pre-verified headless 22:34Z (full-lot highlight on 280236, `verify_hover_seam_lot.png`; leave clears state), operator eyes are the grade
+6. **Operator visual on the seam block.** Hover 280236 / 280239 / 280233 on live smartsite.cloud. Full-lot highlight from both entry edges. No straight cut parallel to Simsbrook. | check: operator walk after deploy | grade: [met] operator 2026-08-24: walked it, leftover closed; next thread is completeness not hover
 
 ## Amendments
 

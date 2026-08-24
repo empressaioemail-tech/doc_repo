@@ -1,5 +1,15 @@
 # Setback serve wave — 2026-08-23
 
+## GROUND-TRUTH (2026-08-24T22:49Z) — completeness on the Simsbrook block is THREE defects
+
+Operator walk closed hover (WDLL item 6 met). Next thread is data completeness. Live facets same minute:
+
+- **Join miss (lot-to-lot):** 280238 has no `cad_property` row at vintage 2026/cad-export (`landUse` coverage false). 9/10 neighbors have the row. HTTP 200 on all ten. Travis registry `prop_id_bad_rate` 0.5147; StratMap 834k vs REST 386k.
+- **Structural zero (county-wide):** joined Travis rows are absent-verified / structural fields null. Gold 34137 living area 2800. Travis store 0.0% sqft (2026-08-10). Well / footprint / boundary atom-miss is family-wide (gold too for well+footprint). Dashed orange on the house is the envelope, not the footprint atom.
+- **Situs sentinel:** Dashwood 280210/280211 print a street. Simsbrook prints `, TX`. Find address is a different path.
+
+Diagnosis `_inbox/2026-08-24_travis_block_completeness_diagnosis.md`. Real fix = identity join, then Travis CAMA improvement file, then rich-tier situs. Do not hide atom-miss or invent sqft.
+
 ## LESSON (2026-08-24, promotion candidate) — never draw queryRenderedFeatures geometry as a lot highlight
 
 `hits[0].geometry` from a vector tile is a fragment clipped at the tile seam. Drawing it as a hover/inspect overlay produces a missing strip on every seam-crossing lot, and the cut lines up across neighbors because it is the tile grid. Feature-state on the promote id paints every fragment. Mechanical guard already shipped: `packages/map-renderer/src/hover-feature-state.test.js` (6/6 FAIL on the old path, then PASS). Durable rule: `_decisions/2026-08-24_hover_never_draws_tile_fragment.md`. Do not promote as "the lot line was wrong" or "rebake the tiles."
