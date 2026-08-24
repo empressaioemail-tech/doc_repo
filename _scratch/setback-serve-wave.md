@@ -1,5 +1,13 @@
 # Setback serve wave — 2026-08-23
 
+## GROUND-TRUTH (2026-08-24T22:40Z) — hover-fs SHIPPED + LIVE-VERIFIED; operator walk owed
+
+hauska-map [#210](https://github.com/empressaioemail-tech/hauska-map/pull/210) squash `57ca035` (base `80c9ad4` unmoved at merge; CI 4/4 `completed success` by conclusion string). Vercel `dpl_3W5RKLKaLPmPLJiakeVCvDdeX818` Ready, smartsite.cloud serving `index-iYfCC3y3.js`: `hauska-ovl-hover-highlight` x0, `["feature-state","hover"]` x6, `peelParcelMesh` persists. Hover is now feature-state on the promoted id (whole lot across every tile fragment); map `mouseout` clears (lingering-ring fix); fragment `setData` and the overlay source/layers deleted. Violation-proven: seam-span suite 6/6 FAIL on 80c9ad4 recorded BEFORE deletion, 6/6 PASS after; map-renderer 131/131; PE 1490 pass.
+
+Live headless verify 22:34Z: no hover layer/source on the map; hover on 2-fragment seam lot `48453:280236` -> `{hover:true}` + pointer + ONE full-lot highlight (`verify_hover_seam_lot.png`, no straight cut); canvas leave -> `{hover:false}`. WDLL items 1-5 [met]; **item 6 OWED: operator walk — hover 280236 / 280239 / 280233 both entry edges, no straight cut parallel to Simsbrook, sealed 280239 still sheet-ring, Find still docks.**
+
+Lane occupancy: peel tree registered for the lane at `e60f75f`, entry REMOVED again in the close commit (as its note required). A2 rebase + seal-lifecycle/red-card/search-bar/subject-store card + retrieval near-bbox 504s = leave_behind (`_inbox/2026-08-24_hover-fs_close.json`).
+
 ## GROUND-TRUTH (2026-08-24T22:10Z) — OPERATOR FALSIFIED the lot-line reading; the pattern is PER-TILE FRAGMENT HIGHLIGHT GEOMETRY, measured
 
 Operator screenshots (parcel boundary OFF, hover on 280236): blue hover box and pale inspected fill offset/mismatched, pattern traceable across properties. Measured live (instrument `probe_fragment_geometry.mjs`, smartsite.cloud 2026-08-24T22:02Z):
