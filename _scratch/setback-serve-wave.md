@@ -1,5 +1,9 @@
 # Setback serve wave — 2026-08-23
 
+## LESSON (2026-08-24, promotion candidate) — never draw queryRenderedFeatures geometry as a lot highlight
+
+`hits[0].geometry` from a vector tile is a fragment clipped at the tile seam. Drawing it as a hover/inspect overlay produces a missing strip on every seam-crossing lot, and the cut lines up across neighbors because it is the tile grid. Feature-state on the promote id paints every fragment. Mechanical guard already shipped: `packages/map-renderer/src/hover-feature-state.test.js` (6/6 FAIL on the old path, then PASS). Durable rule: `_decisions/2026-08-24_hover_never_draws_tile_fragment.md`. Do not promote as "the lot line was wrong" or "rebake the tiles."
+
 ## GROUND-TRUTH (2026-08-24T22:40Z) — hover-fs SHIPPED + LIVE-VERIFIED; operator walk owed
 
 hauska-map [#210](https://github.com/empressaioemail-tech/hauska-map/pull/210) squash `57ca035` (base `80c9ad4` unmoved at merge; CI 4/4 `completed success` by conclusion string). Vercel `dpl_3W5RKLKaLPmPLJiakeVCvDdeX818` Ready, smartsite.cloud serving `index-iYfCC3y3.js`: `hauska-ovl-hover-highlight` x0, `["feature-state","hover"]` x6, `peelParcelMesh` persists. Hover is now feature-state on the promoted id (whole lot across every tile fragment); map `mouseout` clears (lingering-ring fix); fragment `setData` and the overlay source/layers deleted. Violation-proven: seam-span suite 6/6 FAIL on 80c9ad4 recorded BEFORE deletion, 6/6 PASS after; map-renderer 131/131; PE 1490 pass.

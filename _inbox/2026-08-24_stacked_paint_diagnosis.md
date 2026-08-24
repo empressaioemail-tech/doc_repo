@@ -1,12 +1,18 @@
 ---
 id: 2026-08-24_stacked_paint_diagnosis
 title: Stacked paint after #209 — Round-2: per-tile fragment highlight; bake still exonerated
-status: active
+status: closed_code_done
 date: 2026-08-24
 from: planner (integration, P:/doc_repo, second agent per 2026-08-24 handoff)
 plan_row: P-60
-snapshot: doc_repo main bbcf029; peel tree P:/tmp/hauska-map-paint-peel 80c9ad4; live bundle index-BOWGIz6n.js verified = 80c9ad4 (peelParcelMesh x1, countyRing x17); archive parcels.b692c6534d26.pmtiles gen 1786341204674220
+snapshot: hauska-map #210 squash 57ca035; live smartsite.cloud index-iYfCC3y3.js (verified 2026-08-24T22:42Z); decision _decisions/2026-08-24_hover_never_draws_tile_fragment.md
 ---
+
+# SHIPPED (2026-08-24T22:30Z) — fragment overlay deleted; hover is feature-state
+
+hauska-map [#210](https://github.com/empressaioemail-tech/hauska-map/pull/210) squash `57ca035`. Serving `index-iYfCC3y3.js` on smartsite.cloud (this-session fetch). Hover is `{hover:true}` on the promoted id. `hauska-ovl-hover-highlight` and `picked.feature.geometry` setData are gone. Close `_inbox/2026-08-24_hover-fs_close.json`. Rule `_decisions/2026-08-24_hover_never_draws_tile_fragment.md`.
+
+WDLL items 1–5 met. Item 6 (operator walk) is the only open grade. Do not re-open bake, mesh, sidewalks, or Find.
 
 # ROUND 2 (2026-08-24T22:10Z) — operator falsified the round-1 referent; the macro issue is per-tile fragment highlight geometry
 
@@ -73,12 +79,12 @@ Only the client facets GET chain can paint red (`InspectCard.tsx:163-168, 683-69
 
 # WDLL grading (items 2 and 3; operator visual remains the grade)
 
-- **Item 2 (one visible ring per uninspected lot): not met.** The leftover the operator can trace is the hover overlay drawing `hits[0].geometry` (`map-renderer.js:384`). That is one composer, but it paints a tile fragment, so the visible box is not the lot. Off-seam lots look exact; seam-crossing lots lose a strip. Round-1 "single line composer" was true and insufficient.
-- **Item 3 (inspected lot = one ring plus at most one envelope): partial.** Sealed lots look right because P-60d's county-exact ring takes over. Pre-seal hover/inspect still draws a fragment (or a fragment overlay against a full-lot feature-state fill). Seal-lifecycle defects in section 5 remain a later card.
+- **Item 2 (one visible ring per uninspected lot): code-done; operator walk owed.** Fragment overlay deleted in #210. Headless 22:34Z on 280236 showed one full-lot highlight. Item 6 of `_inbox/2026-08-24_hover_feature_state_WDLL.md` is the grade.
+- **Item 3 (inspected lot = one ring plus at most one envelope): partial, unchanged.** Sealed lots use the P-60d county-exact ring. Seal-lifecycle defects in section 5 remain a later card.
 
 # The fix card this earns (one PR, no rebake, no architecture)
 
-**(0) Hover feature-state — this PR.** Replace the hover overlay with a `hover` branch on the existing tile fill/line paint expressions (`parcel-tiles.js`). Set/clear feature-state on mousemove. Delete the fragment-geometry write (`picked.feature.geometry` / `HOVER_SOURCE_ID` setData). Same for any remaining pre-seal consumer of picked fragment geometry. Violation test: a fixture parcel spanning a mocked tile boundary must highlight as one full lot; the old overlay path must fail that test. Post-seal stays on the P-60d county-exact ring. Do not touch it.
+**(0) Hover feature-state — SHIPPED #210.** Feature-state `hover` branch on tile fill/line paint. Fragment overlay deleted. Violation suite 6/6 FAIL on `80c9ad4` then 6/6 PASS. Post-seal P-60d ring untouched.
 
 Later card (not this PR): (a) replay `countyRing` in `applyParcelTiles`; (b) make feature-state clears retry-or-track instead of swallow-and-null; (c) hover mouseleave is absorbed by (0) if feature-state clear is on leave; (d) clear or rewrite the search bar on map click; (e) sequence-guard the subject store; (f) declare near-bbox degradation in the UI and chase the retrieval 504s; (g) strip the `", TX"` sentinel from the card title. Explicitly out of both cards: rebake, hide-tiles-on-zoom, Photon/Find, new architecture.
 
@@ -97,9 +103,8 @@ leave_behind:
   plan_row: P-60
 ```
 
-# For the operator: 60-second self-verification on smartsite.cloud
+# For the operator: 60-second self-verification on smartsite.cloud (WDLL item 6)
 
-1. Layers panel, toggle "GIS Parcel Boundary" OFF. Hover a seam-crossing lot (280236, 280239). The leftover box is still there — it is the hover overlay, not the parcel-line layer. Move the cursor from west to east across the same lot: the box changes shape. That is the fragment, not the lot.
-2. Toggle parcel boundary back ON, toggle "Topography" OFF — the thin brown squiggles die (they were on by default; every hard refresh turns them back on).
-3. The yellow dashed box is the buildable envelope (its toggle is "Buildable envelope"). It sits on the house because F 25 / S 7.5 / R 20 lands there.
-4. After this PR deploys: hover 280236 / 280239 / 280233. The highlight is the full lot from either entry edge. The straight cut through the front yards is gone. Sealed lots still use the county-exact ring.
+Hard refresh. Hover 280236, 280239, and 280233 (four-fragment lot) from both sides of each lot. The highlight must be the whole lot every time. No straight cut parallel to Simsbrook. No shape change on entry edge. Sealed 280239 still uses the sheet ring. Find still docks it.
+
+Yellow dashed box is still the buildable envelope. Thin brown squiggles are topography (default ON). Those are not this leftover.
