@@ -27,10 +27,15 @@ Simsbrook probe address: `17005 Simsbrook, Pflugerville TX` (full "Drive" suffix
 
 Close: `_inbox/2026-08-23_setback_geometry_unification_close.json`
 
-## OPEN (leave_behind) — next card P-60
+## SHIPPED 2026-08-24 (P-60 perf/viz + commercial polish)
 
-- **P0 perf:** dedupe live derive in `fact-sheet-resolver` (two serial POSTs today)
-- **P0 viz:** setback lines / consumed outline for `no-buildable-area` when scalars on card (Simsbrook operator feedback)
+- PE **#198** merged `69d801e` — single derive per inspect, consumed-lot dashed outline, pricing ladder UI, share free, unlock hardening
+- WDLL: `_inbox/2026-08-24_p60_setback_perf_viz_WDLL.md`, `_inbox/2026-08-24_smartsite_commercial_polish_WDLL.md`
+- Live verify pending post-deploy: 48021:34137, 48453:280239, share mint, unlock Stripe path
+
+## OPEN (leave_behind)
+
+- **P0 viz follow-up:** per-edge setback lines (optional; dashed outline shipped)
 - Cortex POST: accept `parcel_node_id` (PE re-enable send after schema)
 - Geocoder miss on full Simsbrook street address
 - Engine BDC hash lock mirror vs LDT `18b9bca9…` (optional)

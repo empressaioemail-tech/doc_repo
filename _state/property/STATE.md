@@ -2,7 +2,7 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T14:30Z (Phase 1 master program — near exit). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T18:35Z (P-66 serve registry deployed). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
 
 ## PHASE 1 — CLOSED 2026-08-23 · PHASE 2 ACTIVE
 
@@ -11,17 +11,21 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 | Lane | Status | Evidence |
 | --- | --- | --- |
 | A–F | **CLOSED** / partial | See phase1 program close |
-| C P-66 | **registry done** | serve wiring **IN FLIGHT** |
+| C P-66 | **CLOSED** | serve registry live cortex `00553-suf` + PE #189 |
 | D R-06 | **deferred** | `_scratch/r06-alarm-deferred.md` |
 | G substrate | **CLOSED_PENDING_PUBLISH** | PRs [atom-contract #22](https://github.com/empressaioemail-tech/hauska-atom-contract/pull/22) + [MCP #74](https://github.com/empressaioemail-tech/hauska-mcp-server/pull/74) |
 
-**Operator:** QA + GTM continues. **Deploy queue:** merge P-66 PRs (#463 LDT, #189 map) + substrate (#22, #74). **Next lane:** Phase 2 deficit P0 ingest.
+**Operator:** QA + GTM continues. **Deploy queue:** substrate (#22, #74) publish only. **Next lane:** Phase 2 deficit P0 ingest.
 
 **LANE B 2026-08-19 (waves 1 and 2 SHIPPED): TEMPLATE CITY BUILD IS RUNNING.** Read `_inbox/2026-08-19_template_city_lens_build_sheet.md` and OPS-17 rows **A-073 to A-079**. **THE CORRECTION THAT OPENED THIS: the G-18 register's `Not built` meant THIS SURFACE DOES NOT EXIST YET, and three agent handoffs hardened it into THIS SURFACE IS MEANT TO BE EMPTY.** Rulings: honest absence is now about SOURCES per region, not screens; the department roster matches live and GROWS; demo data on every lens with one `Demo` chip. Dashboards main **`1b271c8c3dc7bf361c09f00a095cc8e9022a6946`**, serving **`smartcity-dashboards-00025-mam` @100%**, suite **320/320**. Kit main **`17eccfade057c0f8a835b8731be834cd4b828166`**, vocabulary **143**, components **86**, Design project **482** files. **Registry: 11 domains, 10 carrying on `template-city`, 0 of 11 on `empty-city`; `patrol-vehicles` stays the single `ungranted` region on purpose** — granting everything deletes the state that proves ruling 1. Footer now carries two claims: `0 of 10 sources granted` beside `6 of 10 demonstrated with fixture records`. Connections register split to **70 rows / 5 addenda**. **WAVE 3 SHIPPED 2026-08-20** under OPS-17 rows **A-080 to A-084**. Every department lens now renders its domain. Conformance instrument is live and is the reason wave 3 grew: 92 scans over 23 surfaces DERIVED from route definitions (the hand-built list of 16 was 30% short), 0 unwaived nodes, 132 adjudicated, bound stated as JUDGED not CONTAINED. Vertosoft handoff bundle assembled at `P:/tmp/VPAT/vertosoft_handoff_2026-08-20/` (tagged PDFs + CSV, verified against an untagged control). Heads and serving revisions are in the L1/L2 closes, not restated here. **OPEN and dispatchable: G-103 shared tagged-PDF render service, G-104 SmartSite title + glyph fix.** Both compile through `scripts/dispatch.mjs`; a fabricated row refuses. The eleven domains reach no pixel; all fifteen lenses share one `web/index.html` and one unpartitioned `web/shell.css`, so lens rendering merges one at a time. **Open, operator-owed:** Parks and Court are NOT expressible on the seam (four gate points, pinned to go red if a vendorless path appears) and four build-sheet lenses have no vendor — W2DEPT-F2; the register's disposition column is still hand-declared and can drift; the Design picker walk is STILL unrun. Closes `_inbox/2026-08-19_w2ds_close.json`, `_w2dept_close.json`, `_w2fix_close.json`.
 
 **DRAIN STATUS 2026-08-17: L26 IDLE, QA/LAUNCH ON CURRENT MAP.** Read `_inbox/2026-08-17_l26_backfill_and_gtm_stand.md` first. Decision `_decisions/2026-08-17_qa_launch_current_map.md`. GTM `_decisions/2026-08-17_smartsite_gtm_pipedrive_popup_hobby.md`. Pickup `_inbox/2026-08-15_l26_gotomarket_pickup.md`. 15-min scoreboard loop PID 85672 **dead**. Lease **L26** heartbeat PID **22096** still live (expires ~21:53Z). Work root `P:/tmp/l26_flood_drain_20260815/`. Roads **98/254** landed, drain stopped, Harris extract killed at 64k/0 written. Do not restart statewide-PBF Harris. Do not start a second atoms writer. Flood 84/84 including Harris 48201. Metro pipelines 50/52 (48039+48157 honest hold). PR **#345** unmerged. PR **#344** unmerged. L25 not seated. Live QA `https://smartsite.cloud` (Vercel HIT, Last-Modified 2026-08-16T05:02Z). No PE deploy this close (no product code). Hobby stays. Pipedrive + pricing popup not built. Done+verified stands: SD 253/253, rail 254/254, Harris parcel-node, mud scored.
 
 **CONVERGENCE HEADER (read these three before anything below): two plans of record run concurrently.** OPS-16 Texas market is `90_operations/OPS-16_texas_market_plan_of_record.md` (rows `P-xx`). OPS-17 govtech stack is `90_operations/OPS-17_govtech_stack_plan_of_record.md` (rows `G-xx`). Every dispatch names a PLAN-ROW from exactly one; the baseline is frozen, changes are amendment rows. The operative agent law is `90_runbooks/AGENT_CONTRACT.md` (fan model, interrupt recovery, slot law + lease, heavy-scan serialization, verification rules, close schema). Dispatches are COMPILED via `node scripts/dispatch.mjs --plan <OPS-16|OPS-17> --lane <ID> --plan-row <P-xx|G-xx>` — hand-assembled dispatches are blocked by the canon-gate hook (M4 contract hash, M5 PLAN-ROW validity, both verified live 2026-08-13).**
+
+## P-66 SERVE REGISTRY — CLOSED 2026-08-23
+
+**Status: CLOSED customer-done.** LDT **#463** + hauska-map **#189** merged. Cortex **`cortex-api-00553-suf` @100%** (merge `a1ca5ff`, shift 2026-08-23T18:32Z). PE smartsite.cloud live. Live instrument `scripts/verdict-layer-serve-selftest.mjs` **livePass true** at 2026-08-23T18:32:58Z; gold `48021:34137` landUseFact+pipelineFact carry `provenanceClass`/`serveLayer` on cortex+PE. Close `_inbox/2026-08-23_p66-serve-registry_close.json`.
 
 ## P-63 VERDICT SERVE — CLOSED 2026-08-23
 
@@ -31,9 +35,13 @@ Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in m
 
 **Status: mud shipped.** PR **#461** + **#462** merged. Serving **`cortex-api-00551-cor` @100%** (shift 2026-08-23T14:26Z). Close `_inbox/2026-08-23_p59-scorer-specs_close.json`. **Open:** rrc-wells Harris absence probe.
 
-## P-60 SMARTSITE MAP LAYERS — SETBACK HOTFIX CLOSED 2026-08-23
+## P-60 SMARTSITE MAP + COMMERCIAL POLISH — CLOSED 2026-08-24
 
-**Status: setback hotfix closed.** hauska-map **#186/#187/#188** + engine **#359** merged; PE smartsite.cloud live; retrieval-api **00071-fat**. Close `_inbox/2026-08-23_p60-map-layers_cp2_close.json`, `_inbox/2026-08-23_p60_setback_hotfix_close.json`. **Open:** buildingFootprintFact atom-miss on gold; near-bbox map layer probes.
+**Status: CLOSED code-done; operator visual QA owed.** hauska-map **#198** merged `75ac6f4`; PE **smartsite.cloud** deploy `dpl_FL1gCxWWQLJRsvBv7tDr3ai5ke6b`. Single derive per inspect; consumed-lot dashed outline; pricing UI → locked ladder (Solo/Studio/Team, $15/30d); share mint free (sign-in only); unlock checkout hardened. API probes PASS (48021:34137, 34073, 48453:280239). Close `_inbox/2026-08-24_p60_perf_commercial_close.json`. WDLL `_inbox/2026-08-24_p60_setback_perf_viz_WDLL.md`, `_inbox/2026-08-24_smartsite_commercial_polish_WDLL.md`. **Open:** operator map visual on Simsbrook; Stripe dashboard price rebuild (4900/12900/29900); buildingFootprintFact atom-miss on gold. **Parked:** feasibility report assembler.
+
+## P-60 SMARTSITE MAP LAYERS — SETBACK HOTFIX CLOSED 2026-08-23 (superseded by above)
+
+**Status: superseded by 2026-08-24 close.** hauska-map **#186/#187/#188/#197**; prior closes `_inbox/2026-08-23_p60-map-layers_cp2_close.json`, `_inbox/2026-08-23_p60_setback_hotfix_close.json`.
 
 ## L21 CROSS-VINTAGE KEY MAPPING (P-25) — CLOSED_BOTH_FLIPPED 2026-08-14
 
