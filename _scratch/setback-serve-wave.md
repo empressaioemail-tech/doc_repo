@@ -1,5 +1,36 @@
 # Setback serve wave — 2026-08-23
 
+## GROUND-TRUTH (2026-08-24T22:10Z) — OPERATOR FALSIFIED the lot-line reading; the pattern is PER-TILE FRAGMENT HIGHLIGHT GEOMETRY, measured
+
+Operator screenshots (parcel boundary OFF, hover on 280236): blue hover box and pale inspected fill offset/mismatched, pattern traceable across properties. Measured live (instrument `probe_fragment_geometry.mjs`, smartsite.cloud 2026-08-24T22:02Z):
+
+- The hover/highlight overlay draws `hits[0].geometry` (`map-renderer.js:384`) — the PER-TILE CLIPPED FRAGMENT, not the parcel. The Simsbrook block sits on a z16 tile-grid CROSS: vertical seam lng -97.6354980 (7 m west of the 17005 rooftop, parallel to Simsbrook through the front yards), horizontal seam lat 30.4581444 (through the south lots).
+- Fragment census this viewport: ~134 duplicate fragments; 280233 and 280234 in FOUR pieces (both seams), 280236/280239/280237 in TWO. Hover at lot center draws 280236 as 30 m of its real 38 m (eastern strip missing); control 280209 (off-seam, 1 fragment) draws exact. Cut lines are constant (seam ± ~10 m tippecanoe buffer: ≈ -97.63560 / -97.63539) — the same line across every lot the seam crosses = the traceable pattern. Cursor side selects which fragment draws ("different shapes depending on entry edge", already observed after #203).
+- The pale fill is feature-state (renders across ALL fragments = full lot); the blue box is the single fragment — hence the offset double box in the operator frames.
+- #204 kept hit-test identity correct but moved the pick to PMTiles, locking drawn geometry to the fixed z16 grid; #209 removed the mesh so no path draws a true ring pre-seal.
+- STILL TRUE from the 21:05Z entry: bake exonerated (fragments are query-time clipping; archive has each lot whole, county-true ≤1.5 m; never overwritten since 08-10) — REBAKE WOULD NOT FIX THIS; red-card + wrong-APN mechanics; near-bbox 504s. SUPERSEDED from that entry: attributing the operator's "line across the front yards" to the platted front lot boundary — the referent was the highlight fragment cut, which at this block happens to parallel the street.
+- Fix (one PR): feature-state `hover` branch on the tile fill/line paint expressions; never draw `picked.feature.geometry`. Violation test: mocked seam-spanning parcel must highlight as one full lot.
+
+Diagnosis doc updated in place: `_inbox/2026-08-24_stacked_paint_diagnosis.md`.
+
+## GROUND-TRUTH (2026-08-24T21:05Z) — stacked paint diagnosed round 1; bake exonerated by three instruments; lot-line reading SUPERSEDED at 22:10Z above
+
+Second agent, integration seat, doc_repo main `bbcf029`, peel tree `80c9ad4` = live bundle (verified: `index-BOWGIz6n.js` contains `peelParcelMesh` x1, `countyRing` x17, mounts `parcels.b692c6534d26.pmtiles`). Full evidence: `_inbox/2026-08-24_stacked_paint_diagnosis.md`. Instruments in session scratchpad (`probe_tile_bake.mjs`, `probe_tile_vs_mesh.mjs`, `probe_layers_live*.mjs`, `probe_seal_lifecycle.mjs`), all self-tested both directions.
+
+1. **Rebake is DEAD, measured.** GCS object `parcels.b692c6534d26.pmtiles`: Last-Modified 2026-08-10, `x-goog-metageneration: 1` — never overwritten; nothing changed in the tile store in the 48h window. Tile decode at z16/14994/26941: ONE source-layer (`parcels`), 353 polygons, zero line features, zero duplicate ids near 280239. Tile-vs-live-county-mesh per parcel across the Simsbrook block: max dev **1.54 m**, mean 0.04 m — same fabric. The Travis vertex check P-60d never ran is now run; the Bastrop-only gap is closed.
+2. **The "line across the front yards" is `hauska-parcel-tiles-line` painting the correct platted front lot boundary.** Violation-proven in a live headless browser: hiding that ONE layer removes every lot line including the frontage line; nothing else paints it. Lots legally stop short of the curb (street ROW), so the true front line cuts through what reads as yard on imagery — "compensating for the road" is the ROW. Not sidewalks: in the probe session the sidewalks layer never mounted (its feed 504s) and the line was there anyway.
+3. **Mesh is gone.** Live style dump: no `hauska-ovl-live-parcels-*` layer exists post-#209. Peel verified complete in code (single PE call site, hardcoded flag) and in the served bundle.
+4. **Yellow dashed box on the house = envelope inset rendering as designed** (#f2a23c dash [3,2]; SF-S 25/7.5/20 puts the inset on the footprint; the exact 280239 ring is a checked-in test fixture). One at a time; moves with clicks by design.
+5. **The stacked/offset thin-blue-vs-white pair is the seal-state lifecycle cluster** (the real residual defect): countyRing feature-state never replayed after tile-source rebuild (`map-renderer.js:574-581`) so the tile stroke returns under the county-exact ring; swallowed feature-state clears orphan `#cfe8ff` strokes permanently (`parcel-tiles.js:419-432` + tracker nulling); failed seals strand pre-seal strokes; hover ring has no mouseleave clear. Live-reproduced: subject adoption with NO seal for 70s x2 while facets probe 200/623ms.
+6. **Red card mechanized**: only the client facets GET chain paints red; one cold-start episode (two transients in ~41s) converts to red; single 404/4xx/malformed-200 is red with zero retry. Wrong-APN cards = neighbor clicks through simplified tile fill + a search bar that never clears on map click. Two unguarded races: subject-store last-resolve-wins (`subject-store.ts:103`), late-landing Find snap-back.
+7. **New live defects found**: `retrieval/road-nodes|building-footprints|special-districts/near-bbox` 504 repeatedly (silent empty layers — Sidewalks toggle currently governs nothing when the feed dies, an undeclared degradation); toggles reset to defaults on every hard refresh (`ExplorerMap.tsx:445-457`) so Sidewalks/contours/FEMA/OZ re-arm silently; card title renders situs sentinel `", TX"` raw.
+
+Do-nots honored: no rebake, no hide-on-zoom, no Photon/A2/Reports, nothing committed to product repos. Fix card proposal + WDLL 2/3 grading in the diagnosis doc; operator visual remains the grade.
+
+## OPEN (2026-08-24T20:25Z) — sidewalks rejected; second agent
+
+Operator toggled Sidewalks OFF. Leftover stayed. Not a vibe-rebake. Fire `_inbox/2026-08-24_stacked_paint_second_agent_handoff.md`.
+
 ## OPEN (2026-08-24T18:48Z) — stacked paint on Travis lots after successful pick
 
 Operator after #208: Find dropdown worked. Now multiple shapes on the Simsbrook lots, not leftover Bastrop / Tahitian Village.
@@ -17,7 +48,35 @@ Code-read composers in `ExplorerMap` `mapOverlays` (tree `P:/tmp/hauska-map-roof
 
 #204 peeled hover HIT-TEST only. Paint stack was left behind.
 
-Pickup: `_inbox/2026-08-24_multi_shape_paint_handoff.md`. WDLL draft: `_inbox/2026-08-24_lane1_multi_shape_peel_WDLL.md`. Needs operator go before code.
+Pickup: `_inbox/2026-08-24_multi_shape_paint_handoff.md`. WDLL approved. Peel LIVE #209 `80c9ad4` / `dpl_5vS8iCR67beCF4sWzXzZw912rxPu`. Operator re-grade after hard refresh.
+
+## GROUND-TRUTH (2026-08-24T20:16Z) — operator visual after #209: not a tile rebake
+
+Operator: red card + odd shapes all over + a line across the front of every yard like it is compensating for the road. Asked if the PMTiles bake broke in the last 48 hours.
+
+Mechanism 1 (frontage line): `pedestrian-ways` (Sidewalks) is ON on cold open (`consumerColdOpenVisible`, not in COLD_OPEN_OFF_BY_DEFAULT). Paints a bright line along the street. Matches "consistent across the front of the lots." Not a parcel ring. Not a new bake.
+
+Mechanism 2 (double lot lines last 48h): #201 hid tile lines, #203 fail-open put them back on top of live mesh. #209 peeled the mesh (`peelParcelMesh` is in live `index-BOWGIz6n.js`). Remaining all-lot line is tiles + sidewalks. Do not rebake until toggling Sidewalks off still leaves a second lot ring.
+
+Mechanism 3 (red card): not missing data. Live 2026-08-24T20:16Z PE proxy: facets `48453:280239` 200 / 623ms baked-snapshot; envelope POST 200 / 1726ms `ok` node 280239; facets `280238` 200. Red box is `source=live` + `env.status=error` (resolve throw). Search bar stayed 17005 while cards showed 280238 / 280235.
+
+Yellow dashed on the house is the envelope wedge (default ON), one inspected lot. Footprints stay default OFF.
+
+Rejected: fresh Travis tile bake. No bake shipped in this wave. P-60d already measured tiles vs county mesh as one CAD fabric on Bastrop. Rebake is the last cut, not the first.
+
+## GROUND-TRUTH (2026-08-24T19:49Z) — peel LIVE, operator re-grade owed
+
+hauska-map [#209](https://github.com/empressaioemail-tech/hauska-map/pull/209) squash `80c9ad4`. Vercel `dpl_5vS8iCR67beCF4sWzXzZw912rxPu` aliased smartsite.cloud. Isolated `P:/tmp/hauska-map-paint-peel`. Linked `property-explorer` (prj_vcZGXbqdffk5C20WzaplEpzFynK3). Build log `property-explorer@0.1.0 build`.
+
+Operator 2026-08-24 ~14:45 local screenshot was still #208: Find PASS 280239, stacked blue rings on subject + south neighbor, yellow dashed envelope on the house. That was pre-deploy. Hard refresh owed.
+
+A2 not in this tree. Leave-behind rebase after this merge.
+
+## OPEN (2026-08-24T19:35Z) — Lane 2 parked until peel merges
+
+A2 is not in the peel tree. Verified still uncommitted on `P:/seat-worktrees/property/hauska-map` `fix/pe-pricing-a2`, behind origin/main by 4 (dirty PricingModal + checkout + tests). This seat does not open that branch.
+
+Loop-in: peel visual then deploy/merge, rebase A2 onto that main, A2 visual then deploy, then a new tree for Reports Option D. Pin `_inbox/2026-08-24_lane2_parked_after_paint.md`. If A2 stays dirty, a checkout wipes it. Close must name the rebase as leave_behind.
 
 ## GROUND-TRUTH (2026-08-24T18:48Z) — operator visual after #208
 
