@@ -6,7 +6,7 @@ Option C unification **CLOSED**. Map wedge = cortex `labelEdges+derive` only. Fa
 
 Deploys:
 - Cortex `8c6d304f` → revision `cortex-api-00560-rih` @ 100%
-- PE `f3e390ab` → smartsite.cloud `dpl_ExbMz87sec8TjB79xin3gpuu1Fks`
+- PE `b74cca1` ([#197](https://github.com/empressaioemail-tech/hauska-map/pull/197)) → smartsite.cloud `dpl_4JRGkvaTVdhBeNmEQYdfekbSHqrg`
 
 ## LIVE PROBES (instrument: `_scratch/_probe_setback_unify.mjs`)
 
@@ -27,11 +27,20 @@ Simsbrook probe address: `17005 Simsbrook, Pflugerville TX` (full "Drive" suffix
 
 Close: `_inbox/2026-08-23_setback_geometry_unification_close.json`
 
-## OPEN (leave_behind)
+## OPEN (leave_behind) — next card P-60
 
-- Cortex POST body: accept `parcel_node_id` for derive when CAD situs is `, TX`
-- Geocoder miss on `17005 Simsbrook Drive, Pflugerville, TX 78660`
+- **P0 perf:** dedupe live derive in `fact-sheet-resolver` (two serial POSTs today)
+- **P0 viz:** setback lines / consumed outline for `no-buildable-area` when scalars on card (Simsbrook operator feedback)
+- Cortex POST: accept `parcel_node_id` (PE re-enable send after schema)
+- Geocoder miss on full Simsbrook street address
 - Engine BDC hash lock mirror vs LDT `18b9bca9…` (optional)
+- doc_repo: commit close JSON deploy-id amend (`main` ahead 1)
+
+Handoff: `_inbox/2026-08-24_setback_wedge_handoff.md`
+
+## LESSON (2026-08-24)
+
+PE #196 started sending `parcel_node_id` on buildable-envelope POST; cortex schema does not accept it → **400 invalid_body** → live derive never patches geojson → card can show stale buildable % from warm scalars but **map draws no amber wedge**. Fix: `fix/setback-wedge-derive-post-body` omits `parcel_node_id` until LDT accepts it; ExplorerMap defaults buildable-envelope overlay visible before layer seed lands.
 
 ## PRIOR WAVE (superseded by Option C)
 
