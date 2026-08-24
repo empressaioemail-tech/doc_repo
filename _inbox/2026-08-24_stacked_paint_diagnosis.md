@@ -1,6 +1,6 @@
 ---
 id: 2026-08-24_stacked_paint_diagnosis
-title: Stacked paint after #209 — diagnosis: bake exonerated, one real line, a seal-lifecycle defect cluster
+title: Stacked paint after #209 — Round-2: per-tile fragment highlight; bake still exonerated
 status: active
 date: 2026-08-24
 from: planner (integration, P:/doc_repo, second agent per 2026-08-24 handoff)
@@ -73,12 +73,14 @@ Only the client facets GET chain can paint red (`InspectCard.tsx:163-168, 683-69
 
 # WDLL grading (items 2 and 3; operator visual remains the grade)
 
-- **Item 2 (one visible ring per uninspected lot): met in current live state.** Violation screenshot shows a single line composer; no second per-lot painter exists in the served style. Caveat for the operator walk: lots clicked earlier in a session with failed seals or swallowed clears can carry an orphan blue stroke (defect 5) until refresh.
-- **Item 3 (inspected lot = one ring plus at most one envelope): partial.** True when the seal lands and countyRing holds. The countyRing non-replay and failed-seal paths reproduce a second ring; both are named, file:line, in defect 5.
+- **Item 2 (one visible ring per uninspected lot): not met.** The leftover the operator can trace is the hover overlay drawing `hits[0].geometry` (`map-renderer.js:384`). That is one composer, but it paints a tile fragment, so the visible box is not the lot. Off-seam lots look exact; seam-crossing lots lose a strip. Round-1 "single line composer" was true and insufficient.
+- **Item 3 (inspected lot = one ring plus at most one envelope): partial.** Sealed lots look right because P-60d's county-exact ring takes over. Pre-seal hover/inspect still draws a fragment (or a fragment overlay against a full-lot feature-state fill). Seal-lifecycle defects in section 5 remain a later card.
 
-# The fix card this earns (one lane, no rebake, no architecture)
+# The fix card this earns (one PR, no rebake, no architecture)
 
-(a) replay `countyRing` in `applyParcelTiles`; (b) make feature-state clears retry-or-track instead of swallow-and-null; (c) hover mouseleave clear; (d) clear or rewrite the search bar on map click; (e) sequence-guard the subject store; (f) declare near-bbox degradation in the UI and chase the retrieval 504s; (g) strip the `", TX"` sentinel from the card title. Explicitly out: rebake, hide-tiles-on-zoom, Photon/Find, new architecture.
+**(0) Hover feature-state — this PR.** Replace the hover overlay with a `hover` branch on the existing tile fill/line paint expressions (`parcel-tiles.js`). Set/clear feature-state on mousemove. Delete the fragment-geometry write (`picked.feature.geometry` / `HOVER_SOURCE_ID` setData). Same for any remaining pre-seal consumer of picked fragment geometry. Violation test: a fixture parcel spanning a mocked tile boundary must highlight as one full lot; the old overlay path must fail that test. Post-seal stays on the P-60d county-exact ring. Do not touch it.
+
+Later card (not this PR): (a) replay `countyRing` in `applyParcelTiles`; (b) make feature-state clears retry-or-track instead of swallow-and-null; (c) hover mouseleave is absorbed by (0) if feature-state clear is on leave; (d) clear or rewrite the search bar on map click; (e) sequence-guard the subject store; (f) declare near-bbox degradation in the UI and chase the retrieval 504s; (g) strip the `", TX"` sentinel from the card title. Explicitly out of both cards: rebake, hide-tiles-on-zoom, Photon/Find, new architecture.
 
 # Leave-behind
 
@@ -97,7 +99,7 @@ leave_behind:
 
 # For the operator: 60-second self-verification on smartsite.cloud
 
-1. Layers panel, toggle "GIS Parcel Boundary" OFF. The frontage line dies with every lot line — it is the parcel fabric itself, one layer, county-true.
-2. Toggle it back ON, toggle "Topography" OFF — the thin brown squiggles die (they were on by default; every hard refresh turns them back on).
+1. Layers panel, toggle "GIS Parcel Boundary" OFF. Hover a seam-crossing lot (280236, 280239). The leftover box is still there — it is the hover overlay, not the parcel-line layer. Move the cursor from west to east across the same lot: the box changes shape. That is the fragment, not the lot.
+2. Toggle parcel boundary back ON, toggle "Topography" OFF — the thin brown squiggles die (they were on by default; every hard refresh turns them back on).
 3. The yellow dashed box is the buildable envelope (its toggle is "Buildable envelope"). It sits on the house because F 25 / S 7.5 / R 20 lands there.
-4. Any lot whose card once failed red and any lot the pointer last hovered can hold a stray blue/cyan ring until refresh — that is the fix card, not the bake.
+4. After this PR deploys: hover 280236 / 280239 / 280233. The highlight is the full lot from either entry edge. The straight cut through the front yards is gone. Sealed lots still use the county-exact ring.
