@@ -1,5 +1,33 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T05:25Z)
+
+- Factory operating instructions filed `_inbox/2026-08-25_factory_operating_instructions.md`. Atom/node/edge pointer is P-55 engine PR #356 `29ab77c` (`parcel-write-identity.ts`), not the 2026-08-08 DATA_MODEL proposal. Canvas family Read-with now includes the instructions file. Next planner wave `_inbox/2026-08-25_factory_memory_wave_handoff.md`.
+- Routing pin leftovers updated: P-75 #475 / P-76 under 403d8010 on 00579-teh. No longer cites #475 OPEN or deploy UNMEASURED.
+
+## GROUND-TRUTH (2026-08-25T05:05Z)
+
+- Factory routing pin filed `_inbox/2026-08-24_factory_routing_pin.json` (16 rows: 14 Manifest rails + who-serves + city-limits). Instrument `scripts/factory-routing-readiness.mjs` --self-test and --check PASS. Snapshot doc_repo `cd88552` on main. Dump still GET 2026-08-25T04:13:26Z.
+- ready:true only on already-serving hops: geometry P-01 (ledger 253 present + Donley absent), flood P-08 (ledger 162 present), envelope P-60 gold setbacks (PE #220 54f55a1 / 48021:34137). Not new ingest.
+- P-25 cad/owner, P-09 footprint, P-17 roads COVER stay ready:false. Defects cite P-75 #475 OPEN, P-76 #476 `f2b6987d` deploy UNMEASURED, last-wins, tax_year DESC, A-004 bbox, A-017 Harris PBF 0.
+- No --apply. No rematerialize. WDLL `_inbox/2026-08-24_factory_routing_readiness_WDLL.md` related list pointed at pin + script. Not graded here.
+
+## GROUND-TRUTH (2026-08-25T04:55Z)
+
+- P-75 LDT #475 still OPEN. CI green: Test SUCCESS completedAt 2026-08-25T04:54:21Z (gh pr view, run 32810067063). Typecheck SUCCESS. Fixture-red handoff at 04:22Z is stale.
+- P-76 LDT #476 MERGED 04:33Z `f2b6987d`. Cortex deploy still UNMEASURED.
+- Factory health canvas refreshed. Manifest dump still 667/3556 from GET 04:13:26Z, computedAt 04:10:25Z, rematerialized false. Dump age past 15 min banner; cells unchanged.
+
+## GROUND-TRUTH (2026-08-25T04:45Z)
+
+- P-76 LDT #476 MERGED. origin/main `f2b6987d`. Cortex deploy UNMEASURED. Empty-index now unmeasured on that tree.
+- P-75 LDT #475 still OPEN.
+- Factory canvas filed `factory-health.canvas.tsx`. Family pointers + union pin row added. Memory report: MEMORY.md holds zero factory lessons. Code read: last-wins and landuse hard-null still on 1.5; footprint apply bbox on engine main; bake still tax_year DESC.
+
+## GROUND-TRUTH (2026-08-25T04:40Z)
+
+- Union pin instrument PASS both directions. `node scripts/two-track-union-pin.mjs --self-test` and `--check`. F2 old Lane 3 queue fixture fails. F4 empty phrase refused. Live canvases present (0 UNMEASURED). Union commit `cd88552`. WDLL item 14.
+
 ## GROUND-TRUTH (2026-08-25T04:22Z)
 
 - Two tracks linked. Recalibration board no longer owns Lane 3 ingest order. Authority is this game plan. Handoff `_inbox/2026-08-24_two_track_handoff.md`.

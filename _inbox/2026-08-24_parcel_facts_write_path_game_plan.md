@@ -2,7 +2,7 @@
 id: 2026-08-24_parcel_facts_write_path_game_plan
 title: Parcel public-facts write-path game plan
 date: 2026-08-24
-last_updated: 2026-08-24
+last_updated: 2026-08-25
 status: active
 owner: planner
 plan_row: P-73
@@ -14,6 +14,9 @@ related:
   - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\county-manifest.canvas.tsx
   - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-facts-write-path.canvas.tsx
   - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\recalibration-and-design-systems.canvas.tsx
+  - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-health.canvas.tsx
+  - _inbox/2026-08-25_factory_operating_instructions.md
+  - _inbox/2026-08-24_factory_routing_pin.json
   - _inbox/2026-08-24_county_manifest_dump.json
   - _inbox/2026-08-24_two_track_handoff.md
   - _decisions/2026-08-24_write_path_data_capture_order.md
@@ -58,6 +61,7 @@ Verified 2026-08-24 by code read. The deficit register and the 2026-08-24 effort
 - A `cad_property` write is live for structural inspect (sqft) only. Situs, land use, and acreage on the card are baked. Cortex deploy and PE deploy are still required for new Wave 1 facts. See `_inbox/2026-08-24_write_path_what_we_missed.md`.
 - No privileged data. Public record only.
 - MLS stays out (gap matrix row 38).
+- Atom writes use P-55 (`parcel-write-identity.ts`, engine PR #356 `29ab77c`). Node is `{fips}:{integer}`. Edge is `applies-to` in the same batch. Verify by `atom_did IN`. The 2026-08-08 DATA_MODEL proposal is not executable law. Who-serves and city-limits are not atom families. See `_inbox/2026-08-25_factory_operating_instructions.md`.
 
 ## Wave table
 

@@ -6,6 +6,7 @@ owner: nick
 governs: M0 sub-WDLL of 27_MASTER_WDLL_spine_completion_and_depth_engine
 ---
 
+<!-- FLEET-MEMORY v2a98086b — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 # Fleet memory practice (M0)
 
 The problem this solves: build knowledge dies at context roll. An agent figures something out — a lesson, a dead end, a live ground-truth — and it evaporates when the context window ends or the dispatch closes. The next agent re-derives from archaeology and re-makes the same class of mistake. The 714 Spring St jagged-polygon bug was exactly this: an agent knew enough to reject one naive geometry path and not enough to reject the second, and left no durable memory of the missing lesson. This practice stops that.

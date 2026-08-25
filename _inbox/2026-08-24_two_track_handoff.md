@@ -51,6 +51,7 @@ If a board disagrees with the write-path game plan on ingest order, the game pla
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\county-manifest.canvas.tsx`
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-public-facts-deficit.canvas.tsx`
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-health.canvas.tsx`
+   - Factory law: `_inbox/2026-08-25_factory_operating_instructions.md` (P-55 atom/node/edge, not the 2026-08-08 proposal)
 6. `_inbox/2026-08-24_county_manifest_dump.json` then `--live` if you need a new health read
 7. `_inbox/2026-08-24_write_path_planner_handoff.md` (Wave 1 execute detail)
 8. Lane cards: `_inbox/2026-08-24_lane3_p75_who_serves_WDLL.md`, `_inbox/2026-08-24_p75_CP1.md`, `_inbox/2026-08-24_lane3_p76_city_limits_WDLL.md`, `_inbox/2026-08-24_p76_CP1.md`
@@ -99,7 +100,9 @@ Do not rebuild the pricing popup from taste. Do not flip live Stripe keys. Do no
 - `_inbox/2026-08-24_parcel_facts_write_path_game_plan.md`
 - `_inbox/2026-08-24_parcel_facts_write_path_WDLL.md`
 - `_inbox/2026-08-24_county_manifest_dump.json`
-- Four canvases under `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\`
+- Five canvases under `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\` (factory health is in the family)
+- `_inbox/2026-08-25_factory_operating_instructions.md`
+- `_inbox/2026-08-25_factory_memory_wave_handoff.md` (next planner wave)
 
 ## Close this handoff when
 

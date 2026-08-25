@@ -7,9 +7,11 @@
  *                             [--plan OPS-16|OPS-17]   (default OPS-16)
  *
  * Assembles: CANON-PREAMBLE (regenerated from _STATE.md) + AGENT-CONTRACT (hash maintained here)
- * + PLAN-ROW line (validated against OPS-16 baseline/amendments) + mission section + auto-named
+ * + DEV-PROCESS + FLEET-MEMORY (verbatim M0 block from fleet_memory_practice.md) + PLAN-ROW
+ * (validated against the named plan baseline/amendments) + mission section + auto-named
  * CP1/CP2/close artifact paths. Writes _dispatches/<date>_<lane>_dispatch.md and prints to stdout.
- * The canon-gate hook requires both hash markers, so hand-assembled dispatches are blocked.
+ * The canon-gate hook requires the hash markers (including FLEET-MEMORY), so a stripped M0
+ * block is refused the same way a missing AGENT-CONTRACT marker is.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -127,6 +129,36 @@ if (!devProcess.startsWith(pMarker)) {
   writeFileSync(processPath, devProcess, 'utf8');
 }
 
+// --- 3c. Hash fleet_memory_practice.md; emit the verbatim M0 fenced block. ---
+// 2026-08-08 audit break, still live until this emit: 0 compiled dispatches carried the
+// paste-ready FLEET MEMORY (M0) block. The practice file is the source; do not rewrite it.
+const fleetPath = join(root, '90_runbooks', 'fleet_memory_practice.md');
+let fleetPractice = readFileSync(fleetPath, 'utf8');
+const fMarkerRe = /^<!-- FLEET-MEMORY v[a-f0-9]{8} [^\n]*-->\n/m;
+const fleetBody = fleetPractice.replace(fMarkerRe, '');
+const fleetHash = createHash('sha256').update(fleetBody, 'utf8').digest('hex').slice(0, 8);
+const fMarker = `<!-- FLEET-MEMORY v${fleetHash} — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->\n`;
+if (!fleetPractice.includes(fMarker.trim())) {
+  const stripped = fleetBody;
+  const fmEnd = stripped.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n\r?\n/);
+  fleetPractice = fmEnd
+    ? fmEnd[0] + fMarker + stripped.slice(fmEnd[0].length)
+    : fMarker + stripped;
+  writeFileSync(fleetPath, fleetPractice, 'utf8');
+}
+const m0Match = fleetBody.match(
+  /cc-agent dispatch rule block[^\n]*\r?\n\r?\n```\r?\n([\s\S]*?)\r?\n```/,
+);
+if (!m0Match) {
+  console.error('FLEET MEMORY (M0) fenced block not found in 90_runbooks/fleet_memory_practice.md');
+  process.exit(1);
+}
+const m0Block = m0Match[1].replace(/\r\n/g, '\n').trim();
+if (!m0Block.startsWith('FLEET MEMORY (M0):')) {
+  console.error('FLEET MEMORY (M0) fenced block is not the verbatim install text.');
+  process.exit(1);
+}
+
 // --- 4. Mission section. ---
 const mission = missionFile
   ? readFileSync(missionFile, 'utf8').trim()
@@ -151,6 +183,11 @@ measured never subtracted, an instrument's exclusion set is part of its contract
 proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
 not guardrails. Every rule in it is traced to an incident. Read it before any work.
 
+FLEET-MEMORY v${fleetHash} — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+${m0Block}
+
 PLAN-ROW: ${planRows.join(', ')} (90_operations/${plan.file})
 ${repo ? `repo: ${repo}\n` : ''}
 # ${title}
@@ -167,4 +204,4 @@ mkdirSync(join(root, '_dispatches'), { recursive: true });
 const outPath = join(root, '_dispatches', `${today}_${laneLower}_dispatch.md`);
 writeFileSync(outPath, dispatch, 'utf8');
 console.log(dispatch);
-console.error(`\n[dispatch.mjs] wrote ${outPath} (CANON-PREAMBLE v${preambleHash}, AGENT-CONTRACT v${contractHash})`);
+console.error(`\n[dispatch.mjs] wrote ${outPath} (CANON-PREAMBLE v${preambleHash}, AGENT-CONTRACT v${contractHash}, FLEET-MEMORY v${fleetHash})`);

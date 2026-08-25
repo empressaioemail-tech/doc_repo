@@ -260,6 +260,14 @@ function Get-ContractHash {
     return $null
 }
 
+function Get-FleetMemoryHash {
+    $fleetPath = Join-Path $DocRepo '90_runbooks/fleet_memory_practice.md'
+    if (-not (Test-Path -LiteralPath $fleetPath)) { return $null }
+    try { $text = [System.IO.File]::ReadAllText($fleetPath) } catch { return $null }
+    if ($text -match 'FLEET-MEMORY v([a-f0-9]{8})') { return $Matches[1] }
+    return $null
+}
+
 function Get-PlanSummaryLines {
     # Renders "  OPS-17  G-xx  ->  90_operations/OPS-17_...md" from the shared registry,
     # so a block message never hardcodes one program's name at another program's lane.
@@ -367,6 +375,29 @@ CANON GATE (M4): dispatch missing or stale AGENT-CONTRACT marker (current v$cont
 Dispatches are COMPILED, not hand-assembled. Generate this dispatch with:
   node P:/doc_repo/scripts/dispatch.mjs --lane <ID> --plan-row <P-xx> --mission-file <f>
 which embeds the current contract (90_runbooks/AGENT_CONTRACT.md) and preamble hashes.
+Or add a line: CANON_OVERRIDE: <reason>
+"@
+        Write-BlockMessage -Message $msg.Trim()
+    }
+
+    $fleetHash = Get-FleetMemoryHash
+    if ($fleetHash -and ($inspectText -notmatch "FLEET-MEMORY v$fleetHash")) {
+        $msg = @"
+CANON GATE (M6): dispatch missing or stale FLEET-MEMORY marker (current v$fleetHash).
+
+Every compiled dispatch carries the verbatim FLEET MEMORY (M0) block from
+90_runbooks/fleet_memory_practice.md. Dispatches are COMPILED, not hand-assembled:
+  node P:/doc_repo/scripts/dispatch.mjs --lane <ID> --plan-row <P-xx> --mission-file <f>
+Or add a line: CANON_OVERRIDE: <reason>
+"@
+        Write-BlockMessage -Message $msg.Trim()
+    }
+    if ($inspectText -notmatch 'FLEET MEMORY \(M0\):') {
+        $msg = @"
+CANON GATE (M6): dispatch missing the verbatim FLEET MEMORY (M0) block.
+
+The hash marker is not the install. Product-repo agents read the pasted block.
+Generate this dispatch with scripts/dispatch.mjs, which pastes the fenced M0 text.
 Or add a line: CANON_OVERRIDE: <reason>
 "@
         Write-BlockMessage -Message $msg.Trim()
