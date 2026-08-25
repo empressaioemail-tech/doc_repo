@@ -31,7 +31,7 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 6. **P-77 measure.** File-based instrument reports hit/miss/unmeasured on the Simsbrook-Dashwood block and a stated Travis sample at `2026/cad-export`. Self-test both directions, including a not-vacuous case. | check: instrument file + output with snapshot | grade: [met 2026-08-25T02:08:37Z live 10/1/0/0]
 
-7. **P-77 honest miss.** `48453:280238` facets name lookup-failed (or equivalent) and the declared vintage. `48453:280239` stays joined. HTTP 200 is not treated as a CAD bind. | check: live facets both nodes | grade: [ ]
+7. **P-77 honest miss.** `48453:280238` facets name lookup-failed (or equivalent) and the declared vintage. `48453:280239` stays joined. HTTP 200 is not treated as a CAD bind. | check: live facets both nodes | grade: [met 2026-08-25T14:14:55Z] cortex `00584-gaf` SHA `46e1a5a1`; 280238 lookup-failed + vintage; 280239 landUseFact present; close `_inbox/2026-08-25_p77_honest_miss_close.json`
 
 8. **P-78 authority.** A fixture where CAMA lacks legal and StratMap has legal does not wipe legal on same `(fips, prop_id, tax_year)`, or the load writes a new vintage and L17 readers stay on declared. Verified by violation. | check: failing-first test in cad-ingest | grade: [ ]
 

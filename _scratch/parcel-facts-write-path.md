@@ -1,5 +1,27 @@
 # Parcel facts write-path
 
+- Subagent [P-25 CAMA load](5a8ba32d-ed82-486d-8524-7270bfd52785) handoff/measure/announce artifacts SUPERSEDED — forensic only; SKIP in `_inbox/2026-08-25_p25_repair_or_skip.md` stands. Dallas retry completed 806563 post-kill (log `dallas_wave4_load_retry.log`); no ingest running.
+
+## GROUND-TRUTH (2026-08-25T14:16Z)
+
+- P-77 CLOSED. LDT #478 merged `46e1a5a1`; cortex-api `00584-gaf` @100% image `46e1a5a1b52a14953e9eb242fd1c908ea24b13ce`. Live: `48453:280238` facets `structuralFact.verdict=lookup-failed` scopeSearched `cad_property declared vintage 2026/cad-export`; neighbors 280239/280210 joined; gold 48021:34137 no regression. Close `_inbox/2026-08-25_p77_honest_miss_close.json`. Tarrant +91,931 classified (no reload). P-25 still ready:false. No PE branch (9224a73 sufficient).
+
+## GROUND-TRUTH (2026-08-25T13:48Z)
+
+- Wave #222 CLOSED. hauska-map #222 merged `9224a73`; typecheck fix `afc5941`. Deploy smartsite.cloud `dpl_9knoCspkz33ooM2JyppMFRiwt5Be`. Live gold: 48021:34137 908 PINE, who-serves 6+residual, cityLimits Bastrop, Travis 280239 not `, TX`. Close `_inbox/2026-08-25_wave222_pe_chips_close.json`. P-25 still ready:false. No ingest.
+
+## GROUND-TRUTH (2026-08-25T13:45Z)
+
+- Operator STOP off-path Wave-4 CAMA reload. Dallas ingest PID 26408 killed. No cad-ingest running. P-25 decision SKIP `_inbox/2026-08-25_p25_repair_or_skip.md`. Routing pin updated; readiness --check PASS. PE PR #222 chips+P-74 open; live gold pending. Tarrant store +91,931 vs 2026-08-14 baseline (off-path Wave-4 damage).
+
+## Wave-4 Dallas 48113 (2026-08-25T13:30Z)
+
+PARTIAL — Wave-4 cad-ingest wrote rows before kill: log shows ≥400,000 upserted then Stop-Process PID 26408; load incomplete vs 2026-08-14 baseline 806,563. Tarrant Wave-4 also ran off-path (975,303 upserted from cached zip, log `p25_wave4/tarrant_wave4_load2.log`); operator stop: no more ingest, no L17 flip.
+
+## GROUND-TRUTH (2026-08-25T05:30Z)
+
+- Factory memory bounded wave CLOSED. Waves A-D executed; 4-6 not opened. Close `_inbox/2026-08-25_factory_memory_wave_close.json`. P-55 probe PASS on engine origin/main `cfa18bc`. P-78 product on LDT `feat/p78-cad-property-merge` at P:/tmp/ldt-p78 (committed). Eight scratch files triaged; pin 64→56; memory gate still 63>56. P-78 dispatch compiled with FLEET-MEMORY v2a98086b.
+
 ## GROUND-TRUTH (2026-08-25T05:25Z)
 
 - Factory operating instructions filed `_inbox/2026-08-25_factory_operating_instructions.md`. Atom/node/edge pointer is P-55 engine PR #356 `29ab77c` (`parcel-write-identity.ts`), not the 2026-08-08 DATA_MODEL proposal. Canvas family Read-with now includes the instructions file. Next planner wave `_inbox/2026-08-25_factory_memory_wave_handoff.md`.
