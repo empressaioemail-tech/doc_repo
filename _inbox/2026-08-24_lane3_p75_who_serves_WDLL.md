@@ -24,11 +24,11 @@ Gold `48021:34137` returns a typed utilities section: zero or more territory hol
 
 ## Acceptance items
 
-1. **0076 is on the serving revision, or CP1 refuses.** Schema for `tx_utility_territory_staging` is present on the branch that will deploy. If absent, stop and file the miss. Do not query a guessed table name. | check: CP1 names the migration file and a describe of the live/serving table | grade: [partial] 0076 + typed schema on isolated tree; live serving describe UNMEASURED
+1. **0076 is on the serving revision, or CP1 refuses.** Schema for `tx_utility_territory_staging` is present on the branch that will deploy. If absent, stop and file the miss. Do not query a guessed table name. | check: CP1 names the migration file and a describe of the live/serving table | grade: [met 2026-08-25T05:12Z] serving `cortex-api-00579-teh` runs SHA `403d8010` which includes drizzle `txUtilityTerritoryStaging` + 0076; gold returned six typed holders from those source_keys
 
 2. **PIP over staging, not a new harvest.** Read path queries L22 rows (PUCT water, PUCT sewer, HIFLD electric, TWDB PWS, TCEQ additive). No new shapefile load on this card. | check: code read; no new source adapter | grade: [met] whoServesRead.ts + GET /api/who-serves; no new harvest
 
-3. **Gold returns typed holders or residual.** Live gold section is non-empty and typed. A miss is residual, not HTTP 200 empty. | check: live probe after wire | grade: [ ] live leftover; empty store is now `status: unmeasured`, not a fake miss
+3. **Gold returns typed holders or residual.** Live gold section is non-empty and typed. A miss is residual, not HTTP 200 empty. | check: live probe after wire | grade: [met 2026-08-25T05:12Z] prod GET `/api/who-serves?lat=30.11&lng=-97.315` status measured, six holders (Bastrop water/sewer/electric/PWS + two HIFLD coops), residual present. Miss `lat=10&lng=10` holders [] + residual, never `{}`
 
 4. **Outside-all-polygons fixture returns residual.** A fixture point with no polygon hit emits the residual sentence and zero holders. Never blank. Verified by violation: a handler that returns `{}` fails. | check: unit fixture both directions | grade: [met] 16 tests; `{}` throws; empty store is unmeasured (planner add)
 

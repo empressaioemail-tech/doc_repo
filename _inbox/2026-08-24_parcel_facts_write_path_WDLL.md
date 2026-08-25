@@ -25,9 +25,9 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 3. **P-74 situs sentinel.** Live inspect title on `48453:280239` is not `, TX` when `txgio_parcel.situs_address` has a street. Gold `48021:34137` still `908 PINE`. Find/Photon string is not copied onto the county record. | check: live facets + txgio row for both nodes; PE from isolated worktree not A2 | grade: [ ]
 
-4. **P-75 who-serves.** Inspect or assembler section returns territory holders or the SERVICE-LETTER-REQUIRED sentence. A fixture with no polygon hit returns the residual, never blank. No atoms `--apply`. | check: live probe + fixture; 0076 on the serving revision | grade: [ ]
+4. **P-75 who-serves.** Inspect or assembler section returns territory holders or the SERVICE-LETTER-REQUIRED sentence. A fixture with no polygon hit returns the residual, never blank. No atoms `--apply`. | check: live probe + fixture; 0076 on the serving revision | grade: [met 2026-08-25T05:12Z] serving `cortex-api-00579-teh` SHA `403d8010`; gold six holders + residual; miss holders [] + residual
 
-5. **P-76 city limits.** Gold Bastrop city parcel is incorporated. A named unincorporated control is unincorporated. ETJ chip is unresolved, not a derived buffer. | check: live probe on two named parcels; containment code path named | grade: [ ]
+5. **P-76 city limits.** Gold Bastrop city parcel is incorporated. A named unincorporated control is unincorporated. ETJ chip is unresolved, not a derived buffer. | check: live probe on two named parcels; containment code path named | grade: [met 2026-08-25T05:12Z] gold incorporated Bastrop; `48055:1` unincorporated; both `etjStatus=unresolved`
 
 6. **P-77 measure.** File-based instrument reports hit/miss/unmeasured on the Simsbrook-Dashwood block and a stated Travis sample at `2026/cad-export`. Self-test both directions, including a not-vacuous case. | check: instrument file + output with snapshot | grade: [met 2026-08-25T02:08:37Z live 10/1/0/0]
 
@@ -45,11 +45,16 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 13. **County Manifest operator instrument.** File-based dump of GET `/api/county-ledger` (P-47 leaf) plus a canvas that shows `computedAt` freshness and per-rail / watch-county gaps. Refresh is rerun dump then replace canvas DATA. Do not invent a rail. Do not rematerialize inside a refresh. Who-serves, city-limits, and inspect living area are named as not-a-rail. Retire the canvas after a CC push the operator trusts. | check: `node scripts/county-manifest-canvas-dump.mjs --self-test` and `--live` MEASURED; canvas `computedAt` matches dump | grade: [met 2026-08-25T04:08:53Z dump FRESH 667/3556]
 
+14. **Two-track union pin.** The Track A / Track B split cannot silently collapse. `node scripts/two-track-union-pin.mjs --check` fails if the handoff, game plan, or WDLL drop the split, revive the old Lane 3 queue, drop Manifest item 13, or invent a who-serves rail. Canvases are checked when present; missing canvas files are UNMEASURED, not a pass. Not a repo-wide hook. | check: `--self-test` both directions then `--check` PASS | grade: [met 2026-08-25T04:40Z self-test + live PASS]
+
 ## Amendments
 
 - 2026-08-24: operator go is Wave 1 items 4-5 (P-75 who-serves, P-76 city-limits) plus dest names already filed for those two. Items 10 (P-25 CAMA) and Wave 6 (P-09 footprint, P-80 Travis join fix) stay held. Full ETJ derivation is not this go; P-76 ships incorporated / unincorporated / ETJ-unresolved. Reason: screenshot go named ETJ adapter and who-serves promotion; "then footprint / CAMA, not parallel."
 - 2026-08-24 evening: item 13 added. County Manifest operator canvas is equal in importance to Wave 1 for freshness and gap identification. Same GET as CC. Retire after a CC update. Reason: operator asked for an on-demand accurate health read without waiting on the CC surface.
+- 2026-08-24 night: item 14 added. Union pin guards the recalibration / write-path split. Reason: operator asked to protect against regression while transitioning tracks.
 
 ## Finish card (graded at close)
 
 Planning wrap 2026-08-24: items 1, 2, 6, 11 met. Items 4-5 partial (CP1, not live gold). Items 8 partial (spec only). Items 3, 7, 9, 10 dropped this wrap (held or not started). Item 12 in session close `_sessions/2026-08-24_parcel_facts_write_path_claude_code.md`. Program is not closed.
+
+Wave 1 bind close 2026-08-25T05:12Z: items 4 and 5 met on serving `cortex-api-00579-teh` (SHA `403d8010`, digest matched Artifact Registry tag). Close `_inbox/2026-08-24_lane3_p75_p76_close.json`. PE chip leftover. Items 3, 7, 8-10, 12 still open or held.

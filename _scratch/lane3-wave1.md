@@ -54,13 +54,16 @@ Operator: everything landed. Canvas updated. Customer-done on the walk. P-75/P-7
 
 P-75 LDT [#475](https://github.com/empressaioemail-tech/legacy-design-tools/pull/475) `2c56c78a` (typecheck fix: asMeasured). P-76 LDT [#476](https://github.com/empressaioemail-tech/legacy-design-tools/pull/476) `435f4cba` (queryPoint optional). First CI failed Typecheck on both. Fixes pushed. No migrate. No `--apply`.
 
+## GROUND-TRUTH (2026-08-25T05:12Z) — P-75 / P-76 serving gold
+
+LDT #476 squash `f2b6987d` then #475 squash `403d80104a6dea4e2e3a4257f6fc21ab9c9ac5a2`. Build `32811023933` success. Canary `32811529592` success. Shift `32811806686` success. Serving `cortex-api-00579-teh` @100% (tag canary retained). `status.imageDigest` = Artifact Registry SHA tag digest `sha256:3648a51308e556b57b3151ac5271c391ede59b7606f62707c3cb45dba3abf2cb`. Never `latest`. No migrations. Prod healthz 200. Gold who-serves six holders + residual. Miss holders [] + residual. Gold `cityLimitsFact` incorporated Bastrop. `48055:1` unincorporated. Both `etjStatus=unresolved`. Close `_inbox/2026-08-24_lane3_p75_p76_close.json`.
+
 ## OPEN
 
-- Two-track handoff filed `_inbox/2026-08-24_two_track_handoff.md`. Recalibration is Track A (PE hold + 4242 leftover). This file is Track B close of P-75/P-76.
+- Two-track handoff `_inbox/2026-08-24_two_track_handoff.md`. Recalibration is Track A (PE hold + 4242 leftover). Track B Wave 1 bind is closed.
 - Phase-close walk: operator landed 2026-08-24 22:59.
 - 3b leftover (Track A): 4242 on the popup (not /checkout); success card + entitlement; hosted-kill after that; wallets/promo; billing portal leave_behind.
-- P-75 LDT #475 OPEN. Test fail is schema fixture drift for `tx_utility_territory_staging`. Live gold leftover.
-- P-76 LDT #476 OPEN. Live gold leftover. ETJ unresolved. PE origin/main does not copy cityLimitsFact.
+- PE chip leftover: origin/main `withRootFacts` does not copy `cityLimitsFact` and does not call `/api/who-serves`.
 - Travis join WDLL stays draft / write-path HELD.
 - Subagents do not commit. Planner reviews diffs.
 

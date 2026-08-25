@@ -23,7 +23,7 @@ You are the doc_repo planner. Two tracks share one PE surface and must not steal
 
 **Track A (recalibration / design).** Hold live Smart Site. Finish Lane 2 leftover only if you are on that card. Do not restyle. Do not import the SmartCity kit onto PE.
 
-**Track B (data quality).** Execute the write-path program. Last two items in flight are P-75 and P-76. Close them to a live gold probe. Do not start CAMA, footprint, Travis join fix, or REST harvest.
+**Track B (data quality).** Execute the write-path program. P-75 and P-76 are closed to a live gold probe on `cortex-api-00579-teh`. Do not start CAMA, footprint, Travis join fix, or REST harvest.
 
 If a board disagrees with the write-path game plan on ingest order, the game plan wins. The recalibration Lane 3 table is a pointer, not a queue.
 
@@ -31,15 +31,16 @@ If a board disagrees with the write-path game plan on ingest order, the game pla
 
 - doc_repo `main` at handoff time included `36aaafe` (Manifest dump) plus uncommitted Read-with / two-track edits. Declare your own seat, worktree, branch, and commit.
 - Integration `P:/doc_repo` on `main` is not a planner seat. Planner writes go from a registered worktree.
-- PE serving: hauska-map **#220** `54f55a1`, smartsite.cloud, bundle `index-NLDSTywB.js`. Cortex **`cortex-api-00577-baf` @100%**, LDT **#474** `fdb6849`. Operator landed phase-close + Reports 4a/4b.
+- PE serving: hauska-map **#220** `54f55a1`, smartsite.cloud, bundle `index-NLDSTywB.js`. Cortex **`cortex-api-00579-teh` @100%**, LDT **#475** `403d8010` on **#476**. Operator landed phase-close + Reports 4a/4b. Wave 1 bind gold 2026-08-25T05:12Z.
 - Manifest dump fetched 2026-08-25T04:13:26Z, `computedAt` 04:10:25Z, **FRESH**, p47 PASS, **667 / 3556**. Refresh with `node scripts/county-manifest-canvas-dump.mjs --live`. Do not rematerialize.
-- P-75 LDT **[#475](https://github.com/empressaioemail-tech/legacy-design-tools/pull/475)** OPEN on `fix/lane3-wave1-p75-p76`. Typecheck SUCCESS. **Test FAILURE** is schema fixture drift: refresh `lib/db/src/__tests__/__fixtures__/schema.sql.template` for `tx_utility_territory_staging`, then commit that file. Empty store is unmeasured, not miss.
-- P-76 LDT **[#476](https://github.com/empressaioemail-tech/legacy-design-tools/pull/476)** OPEN on `fix/lane3-p76-city-limits`. Typecheck SUCCESS. Test was still in progress at 2026-08-25T04:21Z. Table live 1222/1222 geo_id. ETJ stays `unresolved`. No buffer.
-- LDT pin remains `origin/main` @ `244567a50ae62334984b3f990d776872e1c206ea` for Wave 1 trees. Do not use property-seat LDT or the A2 PE tree.
+- P-75 LDT **[#475](https://github.com/empressaioemail-tech/legacy-design-tools/pull/475)** MERGED squash `403d80104a6dea4e2e3a4257f6fc21ab9c9ac5a2`. Serving gold. Empty store is unmeasured, not miss.
+- P-76 LDT **[#476](https://github.com/empressaioemail-tech/legacy-design-tools/pull/476)** MERGED squash `f2b6987d` under that SHA. Gold incorporated Bastrop. `48055:1` unincorporated. ETJ stays `unresolved`. No buffer.
+- Close `_inbox/2026-08-24_lane3_p75_p76_close.json`. Do not use property-seat LDT or the A2 PE tree.
 - Lane 2 leftover (Track A, not Wave 1): 4242 on the pricing popup, then hosted-kill, wallets/promo, billing portal. Test-mode keys. Do not flip `sk_live`.
 
 ## Read this order, then stop reading and execute
 
+0. `node scripts/two-track-union-pin.mjs --check` must PASS. If it fails, the split has already drifted. Do not execute from a failed pin.
 1. `_STATE.md` then `MEMORY.md` then `_scratch/parcel-facts-write-path.md` then `_scratch/lane3-wave1.md`
 2. This file
 3. `_inbox/2026-08-24_parcel_facts_write_path_game_plan.md` (Track B authority)
@@ -49,6 +50,7 @@ If a board disagrees with the write-path game plan on ingest order, the game pla
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-facts-write-path.canvas.tsx`
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\county-manifest.canvas.tsx`
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-public-facts-deficit.canvas.tsx`
+   - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-health.canvas.tsx`
 6. `_inbox/2026-08-24_county_manifest_dump.json` then `--live` if you need a new health read
 7. `_inbox/2026-08-24_write_path_planner_handoff.md` (Wave 1 execute detail)
 8. Lane cards: `_inbox/2026-08-24_lane3_p75_who_serves_WDLL.md`, `_inbox/2026-08-24_p75_CP1.md`, `_inbox/2026-08-24_lane3_p76_city_limits_WDLL.md`, `_inbox/2026-08-24_p76_CP1.md`
@@ -75,18 +77,16 @@ Who-serves and city-limits never appear as Manifest rails. Travis cad not-yet @ 
 
 ## Open questions
 
-1. Will #475 / #476 merge this session? Open because Test is red or was still running. Route: Wave 1 closer. Next: fixture refresh on #475, re-read #476 Test, then merge, cortex deploy, live gold.
-2. Does PE copy `whoServesFact` / `cityLimitsFact` on origin/main? Open because PE chip is leave_behind unless an isolated hauska-map tree from origin/main exists. Route: after cortex gold, not in the same LDT PR.
+1. Closed. #475 / #476 merged and gold on `cortex-api-00579-teh` 2026-08-25T05:12Z. Close `_inbox/2026-08-24_lane3_p75_p76_close.json`.
+2. Does PE copy `cityLimitsFact` or call `/api/who-serves` on origin/main? Open. PE chip is leave_behind. Route: isolated hauska-map tree from origin/main after #220, only if the operator names that leftover.
 3. When does Lane 2 4242 resume? Open because it is Track A leftover, not a write-path row. Route: only if the operator names that card. Do not mix it into a P-75 close.
 
 ## What to do now (Track B)
 
-1. Re-read #475 and #476. Do not trust this file's CI line after a new push.
-2. Fix #475 schema fixture drift. That is the named fail. Do not rewrite who-serves.
-3. If #476 Test is red, fix that fail the same way: read the log you cite.
-4. Merge your own branches when green. Cortex deploy is planner-owned. Grade WDLL items 4 and 5 on a live gold probe, not a merged PR.
-5. Refresh Manifest after deploy if a new rail could have appeared. It will not. Who-serves is still not a rail. The dump is for freshness and cad/owner/landuse movement, not for a new who-serves cell.
-6. Stop. Present P-74 / P-78 as the next compile. Do not absorb Wave 3.
+1. Wave 1 bind is closed. Do not re-merge #475 / #476.
+2. PE chip is leave_behind unless the operator names it.
+3. Refresh Manifest only for freshness. Who-serves is still not a rail. The dump is for cad/owner/landuse movement, not for a new who-serves cell.
+4. Stop. Present P-74 / P-78 as the next compile only if the operator amends. Do not absorb Wave 3. Do not start CAMA.
 
 ## What not to do (Track A unless named)
 
