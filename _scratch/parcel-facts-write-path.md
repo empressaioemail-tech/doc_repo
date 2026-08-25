@@ -2,6 +2,20 @@
 
 - Subagent [P-25 CAMA load](5a8ba32d-ed82-486d-8524-7270bfd52785) handoff/measure/announce artifacts SUPERSEDED — forensic only; SKIP in `_inbox/2026-08-25_p25_repair_or_skip.md` stands. Dallas retry completed 806563 post-kill (log `dallas_wave4_load_retry.log`); no ingest running.
 
+## GROUND-TRUTH (2026-08-25T16:20Z)
+
+- Operator KEEP on Tarrant 2026 census **975,885**. Decision `_decisions/2026-08-25_p25_tarrant_keep.md`. No DELETE. P-25 `ready:false`. DROP-to-log refused. DROP-to-L21 later only with a named key list.
+
+## OPEN (2026-08-25T16:20Z)
+
+- Other agent: restamp five canvases from three-options to KEEP 975885. Push `dae2006` + `330e4dc` + KEEP commit if operator goes.
+- Next optional store write: Caldwell 48055 leftover `stratmap-landuse` rebake (own WDLL). Not started.
+- Serve leftovers parked: landUseFact vocab; P-74 street; 280238 overlay.
+
+## GROUND-TRUTH (2026-08-25T14:28Z)
+
+- Serve honesty review MEASURED. WDLL 7 met from code + live facets (280238 lookup-failed at 2026/cad-export; HTTP 200 is baked node). WDLL 3 partial: sentinel real, street title not delivered. No block. Close `_inbox/2026-08-25_review_serve_honesty.md`.
+
 ## GROUND-TRUTH (2026-08-25T14:35Z)
 
 - Store honesty wave closed. Track A: Tarrant **DROP** filed `_inbox/2026-08-25_p25_tarrant_keep_or_drop.md` (91,931 net-new keys; DELETE not run). Track B: landuse.ts parser on main via #477; item 9 rebake in flight. Five canvases restamped to 11763c0 / 00584-gaf / PE #222. Pin `--check` PASS. Close `_inbox/2026-08-25_store_honesty_wave_close.json`. P-25 ready:false.

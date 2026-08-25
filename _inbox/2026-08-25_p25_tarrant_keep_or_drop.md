@@ -1,10 +1,10 @@
 ---
-title: P-25 Tarrant (48439) cad_property keep-or-drop — three options (operator pick)
+title: P-25 Tarrant (48439) cad_property — KEEP 975885
 date: 2026-08-25
 plan_row: P-25
 author: integration planner (amended after adversarial review)
-status: OPTIONS FILED — identification incomplete
-decision: null
+status: KEEP — operator 2026-08-25
+decision: KEEP
 operator_go: false
 p25_ready: false
 supersedes_partial: dae2006 single DROP-to-883954 (withdrawn — not operator go)
@@ -20,7 +20,7 @@ related:
 
 ## Status
 
-**No operator decision.** Three restore targets are named below. **Do not run DELETE.** `dae2006` is **not** operator go.
+**KEEP.** Operator accepted 2026-08-25. Decision `_decisions/2026-08-25_p25_tarrant_keep.md`. Approved Tarrant 2026 census is **975,885**. **Do not run DELETE.** `dae2006` is **not** operator go. DROP-to-log stays refused. DROP-to-L21 is a later card only if a named L21 key list exists.
 
 Prior draft filed **DROP-to-883,954** as if it undid Wave-4. That is **withdrawn**. It conflated the Aug-14 **ingest log** (883,954 upserted) with the live store L21 already measured at **939,435** on 2026-08-14, and sampled the **294,297** `prop_ids_only_2026` bucket instead of a named `store NOT IN baseline_set`.
 
@@ -144,12 +144,11 @@ Registry **`tx-48439` is already `2026/cad-export`**. Readers bind declared vint
 
 ## P-78 interaction
 
-**No stratmap-landuse write** while Tarrant delete identification is open. Leftover dry-run filed: `_inbox/2026-08-25_p78_leftover_dryrun_caldwell_48055.json` (Caldwell 48055 parse-only).
+KEEP unblocks a later one-county leftover rebake. Do not start it on this file. Dry-run already filed: `_inbox/2026-08-25_p78_leftover_dryrun_caldwell_48055.json` (Caldwell 48055 parse-only). `Prop_ID` literal `0` rows are a rebake skip, not a reason to reopen item 9.
 
 ## leave_behind
 
-- Operator picks KEEP, DROP-to-L21, or DROP-to-log
-- Baseline prop_id set + dry-run count for chosen option
-- Sample rows from `NOT IN baseline_set` only
+- KEEP filed. Census 975,885. No DELETE.
 - P-25 stays `ready:false`
-- DELETE not run
+- DROP-to-L21 only after a named L21 key list (not this card)
+- Caldwell leftover rebake is the next optional store write, under its own WDLL
