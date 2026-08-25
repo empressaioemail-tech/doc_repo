@@ -1,5 +1,15 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T04:22Z)
+
+- Two tracks linked. Recalibration board no longer owns Lane 3 ingest order. Authority is this game plan. Handoff `_inbox/2026-08-24_two_track_handoff.md`.
+- P-75 LDT #475 OPEN. Test FAILURE is schema fixture drift for `tx_utility_territory_staging` (`schema.sql.template`). Typecheck SUCCESS.
+- P-76 LDT #476 OPEN. Typecheck SUCCESS. Test was in progress at 04:21Z. Do not quote later CI from this line.
+
+## GROUND-TRUTH (2026-08-25T04:13:26Z)
+
+- County Manifest operator dump MEASURED. GET `/api/county-ledger` computedAt 2026-08-25T04:10:25.854Z, fetched 04:13:26Z, FRESH (3 min), p47 PASS. rematerialized false. satisfiedCells 667 / 3556 (22.56%). Cad/owner/landuse 13 present. Roads/footprint/easement/rrc-wells/envelope 254 not-yet. Travis cad not-yet @ 59.47. Tarrant cad not-yet @ 89.45. Dallas cad present 99.91. Who-serves and city-limits are not rails. Refresh: `node scripts/county-manifest-canvas-dump.mjs --live` then replace canvas DATA. Do not rematerialize on refresh.
+
 ## GROUND-TRUTH (2026-08-25T04:08:53Z)
 
 - County Manifest operator dump MEASURED. GET `/api/county-ledger` computedAt 2026-08-25T04:00:46.525Z, fetched 04:08:53Z, FRESH, p47 PASS. satisfiedCells 667 / 3556 (22.56%). Cad/owner/landuse 13 present. Roads/footprint/easement/rrc-wells 254 not-yet. Travis cad not-yet @ 59.47. Tarrant cad not-yet @ 89.45. Dallas cad present 99.91. Who-serves and city-limits are not rails. Refresh: `node scripts/county-manifest-canvas-dump.mjs --live` then replace canvas DATA. Do not rematerialize on refresh.

@@ -4,13 +4,14 @@ title: Handoff prompt — execute parcel public-facts write-path (Wave 1)
 date: 2026-08-24
 status: filed
 plan_row: P-75
-from: integration planner @ 54d791d
+from: integration planner @ 36aaafe
 to: fresh doc_repo planner
+parent: _inbox/2026-08-24_two_track_handoff.md
 ---
 
 # Handoff: execute the write-path plan (do not remake it)
 
-Paste everything below the line into a fresh planner session.
+Sibling of `_inbox/2026-08-24_two_track_handoff.md`. That file splits Track A (PE hold / design leftover) from Track B (this program). Paste everything below the line into a fresh planner session only if you are already on Track B.
 
 ---
 
@@ -18,7 +19,7 @@ You are the doc_repo planner. Execute the already-approved parcel public-facts w
 
 ## Snapshot at handoff (re-verify before you act)
 
-- This prompt was written against **doc_repo `main` @ `54d791d`** (pushed). Declare your own seat, worktree, branch, and commit in your first output. If you are in another seat's checkout, stop.
+- This prompt was written against **doc_repo `main` @ `36aaafe`** plus later uncommitted two-track edits. Declare your own seat, worktree, branch, and commit in your first output. If you are in another seat's checkout, stop.
 - Identify your seat from `_catalog/seat_register.json`. Integration `P:/doc_repo` on `main` is **not** a planner seat. Do planner writes from your registered worktree.
 - LDT pin for Wave 1: **`origin/main` @ `244567a50ae62334984b3f990d776872e1c206ea`**. Isolated trees already exist. Do not use the property-seat LDT (`feat/s1-instrument-hardening`) or the A2 PE tree (`fix/pe-pricing-a2`).
 
@@ -27,11 +28,16 @@ You are the doc_repo planner. Execute the already-approved parcel public-facts w
 1. `_STATE.md` then `MEMORY.md` then `_scratch/parcel-facts-write-path.md`
 2. `_inbox/2026-08-24_parcel_facts_write_path_game_plan.md` (execution instrument)
 3. `_inbox/2026-08-24_parcel_facts_write_path_WDLL.md` (acceptance items; Wave 1 go is items 4-5; item 13 is the Manifest canvas)
-4. `_inbox/2026-08-24_county_manifest_dump.json` then refresh with `node scripts/county-manifest-canvas-dump.mjs --live` when you need a new health read
-5. `_inbox/2026-08-24_write_path_what_we_missed.md` (hop and deploy surprises)
-6. `_inbox/2026-08-24_inspect_hop_diagram.md`
-7. Lane cards you will run: `_inbox/2026-08-24_lane3_p75_who_serves_WDLL.md`, `_inbox/2026-08-24_p75_CP1.md`, `_inbox/2026-08-24_lane3_p76_city_limits_WDLL.md`, `_inbox/2026-08-24_p76_CP1.md`
-8. `90_runbooks/AGENT_CONTRACT.md` and `90_runbooks/DEV_PROCESS.md`
+4. All four canvases (outside this repo; Read before you speak). Recalibration is PE hold + design leftover and does not own ingest order. Manifest is rail freshness. Deficit is hop/field gaps. Who-serves and city-limits are deficit-only.
+   - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\recalibration-and-design-systems.canvas.tsx`
+   - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-facts-write-path.canvas.tsx`
+   - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\county-manifest.canvas.tsx`
+   - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-public-facts-deficit.canvas.tsx`
+5. `_inbox/2026-08-24_county_manifest_dump.json` then refresh with `node scripts/county-manifest-canvas-dump.mjs --live` when you need a new health read. Do not rematerialize.
+6. `_inbox/2026-08-24_write_path_what_we_missed.md` (hop and deploy surprises)
+7. `_inbox/2026-08-24_inspect_hop_diagram.md`
+8. Lane cards you will run: `_inbox/2026-08-24_lane3_p75_who_serves_WDLL.md`, `_inbox/2026-08-24_p75_CP1.md`, `_inbox/2026-08-24_lane3_p76_city_limits_WDLL.md`, `_inbox/2026-08-24_p76_CP1.md`
+9. `90_runbooks/AGENT_CONTRACT.md` and `90_runbooks/DEV_PROCESS.md`
 
 Dispatches are compiled: `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --plan-row <P-xx>`. Never hand-assemble. Work that cannot name a plan row is not scoped.
 
@@ -65,8 +71,8 @@ CAMA (P-25) and footprint (P-09) stay not-parallel. P-74 situs and P-77 honest-m
 
 ### P-75 who-serves (WDLL item 4)
 
-- Isolated LDT: `P:/tmp/ldt-lane3-wave1` branch `fix/lane3-wave1-p75-p76` HEAD must stay on pin `244567a5` plus your uncommitted reader. Confirm the tree is still that pin before you write.
-- CP1 is pass-to-build. 0076 is on the tree. Drizzle `txUtilityTerritoryStaging` was missing at CP1. Reader was uncommitted (`whoServesRead.ts`). Live serving describe was UNMEASURED; the 10196 count is now measured on deployment Neon.
+- PR **#475** OPEN on `fix/lane3-wave1-p75-p76`. Isolated tree `P:/tmp/ldt-lane3-wave1`. Pin was `244567a5` plus the reader. Confirm HEAD before you write.
+- Next fail on #475 is schema fixture drift: refresh `schema.sql.template` for `tx_utility_territory_staging`. Do not rewrite the reader. Live staging count 10196 is measured.
 - v1: serve-time PIP over `tx_utility_territory_staging`. Holders plus residual `SERVICE-LETTER-REQUIRED`. No atom family. No `--apply`.
 - TCEQ `water-district` rows stay complementary who-governs (item 6 on the lane WDLL). Do not remap them to water CCN.
 - Close is a **live** gold probe after **cortex deploy** of the reader + route. A cortex-only ship dies at PE until a merge/chip exists; PE chip is leave_behind unless you have an isolated hauska-map tree from `origin/main`.
@@ -74,7 +80,7 @@ CAMA (P-25) and footprint (P-09) stay not-parallel. P-74 situs and P-77 honest-m
 
 ### P-76 city-limits (WDLL item 5)
 
-- Isolated LDT: `P:/tmp/ldt-lane3-p76` branch `fix/lane3-p76-city-limits` same pin.
+- PR **#476** OPEN on `fix/lane3-p76-city-limits`. Isolated tree `P:/tmp/ldt-lane3-p76`. Same pin. Test was still in progress at 2026-08-25T04:21Z. Re-read the check.
 - Table is live **1222 / 1222 geo_id**. CLI exists. origin/main `resolveCityContainment` still reports an **empty** index as unincorporated. Isolated reader must mark empty as unmeasured. ETJ is `unresolved`, never a fabricated buffer. P-76 does **not** close ruling 3.
 - Boundary CLI apply is planner-owned if it writes Neon. Do not ask the operator to deploy.
 - Close is a live probe: Bastrop city gold incorporated; named unincorporated control unincorporated; ETJ chip unresolved.
@@ -112,7 +118,7 @@ Two StratMap paths (`parse.ts` geometry vs `landuse.ts` values). L20 291k is zon
 
 1. Seat + worktree + `git rev-parse` snapshot. Confirm isolated LDT trees still exist and still sit on `244567a5` (or report they do not).
 2. Run the two selftests. Read `_inbox/2026-08-24_p77_travis_join_measure.json` live block (MEASURED, not the old UNMEASURED draft).
-3. Code-read the isolated P-75 and P-76 trees. Diff against origin/main. File CP2 or a pickup that names what is uncommitted vs merged vs deployed.
+3. Re-read LDT #475 and #476. Diff against origin/main. File CP2 or a pickup that names fixture-fix vs merged vs deployed.
 4. Compile (do not hand-assemble) the next P-75 and P-76 dispatch if a lane is not already in flight. Supervise to a **live** gold probe. Cite WDLL items 4 and 5.
 5. If blocked on PE (A2 tree still held), ship cortex, declare PE chip leave_behind, and say so. Do not open `fix/pe-pricing-a2`.
 6. Update `_scratch/parcel-facts-write-path.md` and your `_state/<seat>/STATE.md`. Do not self-promote MEMORY.md.

@@ -10,8 +10,12 @@ operator_approval: verbal 2026-08-24 Wave 1 (P-75, P-76) via A-027; CAMA/footpri
 snapshot: doc_repo main @ ee9b17d; LDT origin/main @ 244567a (P-25 code); local LDT checkouts stale for CAMA parsers
 related:
   - _inbox/2026-08-24_parcel_facts_write_path_WDLL.md
-  - canvases/parcel-public-facts-deficit.canvas.tsx
-  - canvases/parcel-facts-write-path.canvas.tsx
+  - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-public-facts-deficit.canvas.tsx
+  - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\county-manifest.canvas.tsx
+  - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-facts-write-path.canvas.tsx
+  - C:\Users\cente\.cursor\projects\p-doc-repo\canvases\recalibration-and-design-systems.canvas.tsx
+  - _inbox/2026-08-24_county_manifest_dump.json
+  - _inbox/2026-08-24_two_track_handoff.md
   - _decisions/2026-08-24_write_path_data_capture_order.md
   - 90_operations/OPS-16_texas_market_plan_of_record.md
   - _inbox/2026-08-23_phase2_data_ingest_program.md

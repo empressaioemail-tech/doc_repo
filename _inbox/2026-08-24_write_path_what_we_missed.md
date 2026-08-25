@@ -79,7 +79,7 @@ P-27 is the address-to-parcel resolver (post-gate). P-74 is card-title sentinel 
 
 ### 15. County Manifest health is the ledger GET, not a screenshot
 
-CC `#panel=county-manifest` is one renderer of `GET /api/county-ledger`. The operator instrument is `_inbox/2026-08-24_county_manifest_dump.json` plus the Manifest canvas. Refresh is `--live` then replace DATA. Who-serves and city-limits will never appear as rails. Retire the canvas after a CC push.
+CC `#panel=county-manifest` is one renderer of `GET /api/county-ledger`. The operator instrument is `_inbox/2026-08-24_county_manifest_dump.json` plus the Manifest canvas. Refresh is `--live` then replace DATA. Who-serves and city-limits will never appear as rails. Retire the canvas after a CC push. Read with the deficit register: `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-public-facts-deficit.canvas.tsx`.
 
 ## Cheap work that can run while Phase 1 wraps
 
