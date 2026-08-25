@@ -17,8 +17,9 @@ status: announced-before-write
 | LDT | isolated worktree `P:/tmp/ldt-p78-caldwell` @ **46e1a5a1** (merge **72cffc8** landuse + P-78 ingest) |
 | CLI | `pnpm --filter @workspace/cad-ingest stratmap-landuse -- --county=48055 --file=<zip>` |
 | Dest table | **cortex-prod** `neondb.cad_property` via `CORTEX_DATABASE_URL` |
-| Merge path | **Path A** (same PK in-place; COALESCE / CAMA-wins CASE per P-78) |
+| Merge path | **Path B** (insert new `tax_year=2025` rows; before count at 2025 was 0) |
 | Fields targeted | `year_built`, `land_acres` from StratMap DBF (leftover hard-null fix) |
+| Inspect read set | **Not enriched.** Registry `tx-48055` is already `2026/cad-export`. Structural inspect binds declared vintage. Leftover landed on **2025** StratMap rows only. **Do not flip L17.** |
 
 ## Scope locks
 
