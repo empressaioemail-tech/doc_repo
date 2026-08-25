@@ -2,6 +2,10 @@
 
 - Subagent [P-25 CAMA load](5a8ba32d-ed82-486d-8524-7270bfd52785) handoff/measure/announce artifacts SUPERSEDED — forensic only; SKIP in `_inbox/2026-08-25_p25_repair_or_skip.md` stands. Dallas retry completed 806563 post-kill (log `dallas_wave4_load_retry.log`); no ingest running.
 
+## GROUND-TRUTH (2026-08-25T16:30Z)
+
+- KEEP restamp live. origin/main `53a0139`. Five family canvases KEEP 975885. Other agent stopped before Caldwell. Next card: `_inbox/2026-08-25_p78_caldwell_leftover_rebake_WDLL.md`.
+
 ## GROUND-TRUTH (2026-08-25T16:20Z)
 
 - Operator KEEP on Tarrant 2026 census **975,885**. Decision `_decisions/2026-08-25_p25_tarrant_keep.md`. No DELETE. P-25 `ready:false`. DROP-to-log refused. DROP-to-L21 later only with a named key list.
