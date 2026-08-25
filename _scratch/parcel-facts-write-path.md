@@ -1,5 +1,17 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T16:55Z)
+
+- Cad-ingest apply gate filed and verified both directions. Instrument `scripts/cad-ingest-apply-gate.mjs`. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md` graded. F1 Caldwell-shaped Path A + empty leftover year FAIL exit 1. No-packet `--check` REFUSE. F2 PASS. Caldwell 24989 not rewritten. Texas fill county 2 is the next apply and must `--check --packet` first.
+
+## LESSON (2026-08-25T16:55Z)
+
+- Path is derived from leftover-year n, not from the announce. Caldwell announced Path A while 2025 n was 0. That is Path B. A one-year before-measure hid the live 2026 CAMA year.
+
+## OPEN (2026-08-25T16:55Z)
+
+- Fresh agent: one leftover county through the gate. Handoff `_inbox/2026-08-25_cad_ingest_apply_gate_handoff.md`. Do not implement the gate again.
+
 - Subagent [P-25 CAMA load](5a8ba32d-ed82-486d-8524-7270bfd52785) handoff/measure/announce artifacts SUPERSEDED — forensic only; SKIP in `_inbox/2026-08-25_p25_repair_or_skip.md` stands. Dallas retry completed 806563 post-kill (log `dallas_wave4_load_retry.log`); no ingest running.
 
 ## GROUND-TRUTH (2026-08-25T16:30Z)
