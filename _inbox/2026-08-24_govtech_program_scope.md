@@ -2,7 +2,7 @@
 id: 2026-08-24_govtech_program_scope
 title: Govtech program scope — Smart Files, plan review, SmartCity, ICC and payment
 status: active
-last_updated: 2026-08-24
+last_updated: 2026-08-25
 applies_to: portfolio
 owner: nick
 related:
@@ -12,6 +12,8 @@ related:
     _inbox/2026-08-24_govtech_engine_migration_plan,
     _inbox/2026-08-24_govtech_plan_adversarial_cp1,
     _inbox/2026-08-24_adr023_amendment_draft,
+    _inbox/2026-08-25_govtech_execution_hardening_index,
+    _inbox/2026-08-25_govtech_wave1_WDLL,
     90_operations/OPS-17_govtech_stack_plan_of_record,
     _decisions/2026-08-15_capability_mount_composition,
     _decisions/2026-08-16_plan_review_owns_files_ui,
@@ -315,6 +317,10 @@ Minimum chain to satisfy S5-5 without lying. Full board lives in `govtech-master
 9. **S4-2, S4-4, S4-3, S4-7, S4-1b, S4-8** — meter deployed; cited atom recorded; reconciliation; obligation ledger reader
 10. **S5-2a–c** — deploy probes, bypass inventory, seam vocabulary
 11. **S5-3, S5-5** — shell composition proof on template-city
+
+## Execution hardening (2026-08-25)
+
+Wave 1 build lanes require an approved WDLL and file-based instruments before grading. Full index: `_inbox/2026-08-25_govtech_execution_hardening_index.md`. WDLL: `_inbox/2026-08-25_govtech_wave1_WDLL.md` (15 items; **operator approval pending**). G-105 dispatch cites WDLL items 1–4 (deploy violation probes). Interim engine path decision: `_decisions/2026-08-25_govtech_wave1_interim_engine_path.md`.
 
 ## Latent fail-open register
 
