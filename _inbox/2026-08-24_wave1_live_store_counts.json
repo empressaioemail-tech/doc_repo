@@ -1,0 +1,157 @@
+{
+  "snapshot": {
+    "measured_at": "2026-08-25T01:58:19.796Z",
+    "measured_at_source_key_split": "2026-08-25T01:58:26Z",
+    "repository": "P:/doc_repo",
+    "branch": "main",
+    "commit": "ee9b17d",
+    "target_store": "deployment Neon used by cortex/LDT",
+    "url_source": "gcloud:legacy-design-tools-prod/DEPLOYMENT_DATABASE_URL:latest",
+    "url_source_note": "DEPLOYMENT_DATABASE_URL and CORTEX_DATABASE_URL were unset at session start. Secret fetched with: gcloud.cmd secrets versions access latest --secret=DEPLOYMENT_DATABASE_URL --project=legacy-design-tools-prod (exit 0). Injected into process env for psql only. URL never printed.",
+    "url_printed": false,
+    "query_class": "COUNT / COUNT DISTINCT / information_schema only; no ST_*; no table dump",
+    "session_guard": "BEGIN TRANSACTION READ ONLY",
+    "schema_files_read": [
+      "P:/legacy-design-tools/lib/db/drizzle/0070_tx_city_and_county_boundary.sql",
+      "git show origin/main:lib/db/drizzle/0076_tx_utility_territory_staging.sql (local LDT tree lacked 0076)"
+    ]
+  },
+  "status": "MEASURED",
+  "table_exists": {
+    "tx_city_boundary": true,
+    "tx_county_boundary": true,
+    "tx_utility_territory_staging": true
+  },
+  "columns_checked": {
+    "tx_city_boundary": [
+      "geo_id",
+      "source"
+    ],
+    "tx_county_boundary": [
+      "source"
+    ],
+    "tx_utility_territory_staging": [
+      "service_kind",
+      "source_key"
+    ]
+  },
+  "queries": [
+    {
+      "name": "information_schema.tables",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('tx_city_boundary','tx_county_boundary','tx_utility_territory_staging') ORDER BY table_name; COMMIT;"
+    },
+    {
+      "name": "information_schema.columns",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN ('tx_city_boundary','tx_county_boundary','tx_utility_territory_staging') AND column_name IN ('geo_id','service_kind','source','source_key') ORDER BY table_name, column_name; COMMIT;"
+    },
+    {
+      "name": "tx_city_boundary_counts",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT COUNT(*)::bigint AS row_count, COUNT(DISTINCT geo_id)::bigint AS distinct_geo_id FROM tx_city_boundary; COMMIT;"
+    },
+    {
+      "name": "tx_county_boundary_counts",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT COUNT(*)::bigint AS row_count FROM tx_county_boundary; COMMIT;"
+    },
+    {
+      "name": "tx_utility_territory_staging_counts",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT COUNT(*)::bigint AS row_count, COUNT(DISTINCT source_key)::bigint AS distinct_source_key FROM tx_utility_territory_staging; COMMIT;"
+    },
+    {
+      "name": "tx_utility_territory_staging_by_service_kind",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT service_kind, COUNT(*)::bigint AS n FROM tx_utility_territory_staging GROUP BY service_kind ORDER BY service_kind; COMMIT;"
+    },
+    {
+      "name": "tx_utility_territory_staging_by_source_key",
+      "sql": "BEGIN TRANSACTION READ ONLY; SELECT source_key, service_kind, COUNT(*)::bigint AS n FROM tx_utility_territory_staging GROUP BY source_key, service_kind ORDER BY source_key; COMMIT;"
+    }
+  ],
+  "results": {
+    "tx_city_boundary": {
+      "count_star": 1222,
+      "count_distinct_geo_id": 1222
+    },
+    "tx_county_boundary": {
+      "count_star": 254
+    },
+    "tx_utility_territory_staging": {
+      "count_star": 10196,
+      "columns_present": [
+        "service_kind",
+        "source_key"
+      ],
+      "source_column_exists": false,
+      "source_key_column_exists": true,
+      "count_distinct_source_key": 5,
+      "count_by_service_kind": {
+        "electric": 139,
+        "sewer": 1455,
+        "water": 8515,
+        "water-district": 87
+      },
+      "count_by_source_key": [
+        {
+          "source_key": "hifld-electric-retail",
+          "service_kind": "electric",
+          "rows": 139
+        },
+        {
+          "source_key": "puct-sewer-ccn",
+          "service_kind": "sewer",
+          "rows": 1455
+        },
+        {
+          "source_key": "puct-water-ccn",
+          "service_kind": "water",
+          "rows": 3925
+        },
+        {
+          "source_key": "tceq-water-districts",
+          "service_kind": "water-district",
+          "rows": 87
+        },
+        {
+          "source_key": "twdb-pws",
+          "service_kind": "water",
+          "rows": 4590
+        }
+      ]
+    }
+  },
+  "prior_close_comparators": {
+    "ss_w15_2026_08_19": {
+      "city_boundary_rows": 1222,
+      "source": "_inbox/2026-08-19_ss-w15_close.json bastropFirstTest city_boundary_rows|1222 and incorporatedTexasMunicipalitiesInBoundaryTable=1222"
+    },
+    "l22_2026_08_14": {
+      "source": "_inbox/2026-08-14_l22_close.json final_source_counts",
+      "final_source_counts": [
+        {
+          "source_key": "puct-water-ccn",
+          "rows": 3925
+        },
+        {
+          "source_key": "puct-sewer-ccn",
+          "rows": 1455
+        },
+        {
+          "source_key": "hifld-electric-retail",
+          "rows": 139
+        },
+        {
+          "source_key": "twdb-pws",
+          "rows": 4590
+        },
+        {
+          "source_key": "tceq-water-districts",
+          "rows": 87
+        }
+      ],
+      "implied_total_rows": 10196
+    }
+  },
+  "falsifier": {
+    "statement": "If live counts match the 2026-08-14 L22 and 2026-08-19 ss-w15 closes exactly, report that match and do not treat the numbers as new ingest truth without the timestamp.",
+    "matches_prior_closes_exactly": true,
+    "note": "tx_city_boundary 1222/1222 geo_id matches ss-w15. Staging 10196 and the five source_key splits match L22 final_source_counts exactly. County 254 is the expected Texas set (not in those two headline comparators). This may be an unchanged store, not a fresh load. Freshness claim is the timestamp only."
+  }
+}
