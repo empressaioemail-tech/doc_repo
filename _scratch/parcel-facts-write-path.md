@@ -1,5 +1,21 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T16:25Z)
+
+- Bastrop 48021 leftover reviewed. KEEP year/acres. HOLD gold living area. Packet re-PASS. Live gold `48021:34137` yearBuilt 1910 on inspect wire; livingAreaSqft null (was 2800). City limits still Bastrop incorporated. Wrong-branch first apply accepted; logs have no SHA. Gate must pin `ldtSha=46e1a5a1` before county 3. Review `_inbox/2026-08-25_review_bastrop_48021_leftover.md`. Probe `_inbox/2026-08-25_p78_bastrop_48021_gold_34137_probe.json`.
+
+## LESSON (2026-08-25T16:25Z)
+
+- A packet PASS does not pin the writer tree. Gold Path A is the inspect-enrichment test and the living-area wipe surface. Do not pick 48021 as the first Path A county again without a SHA gate.
+
+## OPEN (2026-08-25T16:25Z)
+
+- Amend Bastrop announce: Path A plus 726 inserts. SHA pin on cad-ingest-apply-gate. Gold 34137 living_area restore later (CAMA or backup). No county 3 until the pin exists.
+
+## GROUND-TRUTH (2026-08-25T17:15Z)
+
+- Texas fill #2: Bastrop 48021 through cad-ingest apply gate. Packet `_inbox/2026-08-25_p78_announce_bastrop_48021_packet.json` PASS. Path A @ 2025; L17 stays 2025/cad-export; inspect read set enriched. Apply LDT `46e1a5a1`; structured vintage `tier:stratmap-roll;...`. Before n/yb/la 77073/40597/63129 → after 77799/49546/63855. INCIDENT: first apply on `feat/s1-instrument-hardening` (no P-78 merge) regressed yb/la; repair re-run on detached `46e1a5a1` same session. Announce `_inbox/2026-08-25_p78_announce_bastrop_48021.md`. STOP for review per handoff.
+
 ## GROUND-TRUTH (2026-08-25T16:55Z)
 
 - Cad-ingest apply gate filed and verified both directions. Instrument `scripts/cad-ingest-apply-gate.mjs`. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md` graded. F1 Caldwell-shaped Path A + empty leftover year FAIL exit 1. No-packet `--check` REFUSE. F2 PASS. Caldwell 24989 not rewritten. Texas fill county 2 is the next apply and must `--check --packet` first.
