@@ -1,5 +1,9 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T04:08:53Z)
+
+- County Manifest operator dump MEASURED. GET `/api/county-ledger` computedAt 2026-08-25T04:00:46.525Z, fetched 04:08:53Z, FRESH, p47 PASS. satisfiedCells 667 / 3556 (22.56%). Cad/owner/landuse 13 present. Roads/footprint/easement/rrc-wells 254 not-yet. Travis cad not-yet @ 59.47. Tarrant cad not-yet @ 89.45. Dallas cad present 99.91. Who-serves and city-limits are not rails. Refresh: `node scripts/county-manifest-canvas-dump.mjs --live` then replace canvas DATA. Do not rematerialize on refresh.
+
 ## GROUND-TRUTH (2026-08-25T02:08:37Z)
 
 - P-77 live MEASURED on named N=11 at 2026/cad-export: hit 10, miss 1, vintage-gap 0, unmeasured 0. Miss `48453:280238` leading_zero_orphan=false (not a padded key). Hit class 280239/280210/280211 all HIT. First live attempt failed: `psql -c` does not interpolate `:'var'`. Instrument now uses digit literals; `:'var'` refused; postgres URLs redacted.

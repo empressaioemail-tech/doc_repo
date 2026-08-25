@@ -77,6 +77,10 @@ CAMA full zips and `stratmap-landuse` re-runs hit the same `cad_property` cortex
 
 P-27 is the address-to-parcel resolver (post-gate). P-74 is card-title sentinel bind. Same situs string, different hop. If both open, they will "fix address" twice. Keep P-27 parked. Say so in P-74.
 
+### 15. County Manifest health is the ledger GET, not a screenshot
+
+CC `#panel=county-manifest` is one renderer of `GET /api/county-ledger`. The operator instrument is `_inbox/2026-08-24_county_manifest_dump.json` plus the Manifest canvas. Refresh is `--live` then replace DATA. Who-serves and city-limits will never appear as rails. Retire the canvas after a CC push.
+
 ## Cheap work that can run while Phase 1 wraps
 
 No product kickoff. No `--apply`. Isolated trees only if someone is already on them.

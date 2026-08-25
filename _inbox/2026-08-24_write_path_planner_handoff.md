@@ -26,11 +26,12 @@ You are the doc_repo planner. Execute the already-approved parcel public-facts w
 
 1. `_STATE.md` then `MEMORY.md` then `_scratch/parcel-facts-write-path.md`
 2. `_inbox/2026-08-24_parcel_facts_write_path_game_plan.md` (execution instrument)
-3. `_inbox/2026-08-24_parcel_facts_write_path_WDLL.md` (acceptance items; Wave 1 go is items 4-5)
-4. `_inbox/2026-08-24_write_path_what_we_missed.md` (hop and deploy surprises)
-5. `_inbox/2026-08-24_inspect_hop_diagram.md`
-6. Lane cards you will run: `_inbox/2026-08-24_lane3_p75_who_serves_WDLL.md`, `_inbox/2026-08-24_p75_CP1.md`, `_inbox/2026-08-24_lane3_p76_city_limits_WDLL.md`, `_inbox/2026-08-24_p76_CP1.md`
-7. `90_runbooks/AGENT_CONTRACT.md` and `90_runbooks/DEV_PROCESS.md`
+3. `_inbox/2026-08-24_parcel_facts_write_path_WDLL.md` (acceptance items; Wave 1 go is items 4-5; item 13 is the Manifest canvas)
+4. `_inbox/2026-08-24_county_manifest_dump.json` then refresh with `node scripts/county-manifest-canvas-dump.mjs --live` when you need a new health read
+5. `_inbox/2026-08-24_write_path_what_we_missed.md` (hop and deploy surprises)
+6. `_inbox/2026-08-24_inspect_hop_diagram.md`
+7. Lane cards you will run: `_inbox/2026-08-24_lane3_p75_who_serves_WDLL.md`, `_inbox/2026-08-24_p75_CP1.md`, `_inbox/2026-08-24_lane3_p76_city_limits_WDLL.md`, `_inbox/2026-08-24_p76_CP1.md`
+8. `90_runbooks/AGENT_CONTRACT.md` and `90_runbooks/DEV_PROCESS.md`
 
 Dispatches are compiled: `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --plan-row <P-xx>`. Never hand-assemble. Work that cannot name a plan row is not scoped.
 
@@ -45,6 +46,7 @@ Dispatches are compiled: `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 | P-77 **measure** (WDLL item 6) | `scripts/p77-travis-join-measure.mjs` live 2026-08-25T02:08:37Z: **10 hit / 1 miss / 0 vintage-gap / 0 unmeasured**. Miss `48453:280238` `leading_zero_orphan=false`. | Re-derive the join. Invent a geo_id join. Treat 0.51 `prop_id_bad_rate` as the grade. Treat 280238 as a padded key. |
 | P-78 **spec** (not product) | `_inbox/2026-08-24_p78_cad_property_merge_SPEC.md` + F1–F8 + `node scripts/p78-merge-fixtures-selftest.mjs` | Start Dallas CAMA. Rewrite the merge in prose. Use `Number()` on YEAR_BUILT lists. |
 | Hop diagram | `_inbox/2026-08-24_inspect_hop_diagram.md` | Treat a `cad_property` upsert as an inspect-title write |
+| County Manifest dump + canvas | `_inbox/2026-08-24_county_manifest_dump.json` live 2026-08-25T04:08:53Z FRESH 667/3556 | Invent a who-serves rail. Rematerialize on refresh. Grade CC by screenshot |
 
 Re-run the two selftests at session start. They must still pass.
 

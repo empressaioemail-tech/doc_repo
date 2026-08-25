@@ -43,9 +43,12 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 12. **Close hygiene.** leave_behind declared; thesis parity ledger entry if atoms / access policy / capture jobs moved. | check: close artifact | grade: [ ]
 
+13. **County Manifest operator instrument.** File-based dump of GET `/api/county-ledger` (P-47 leaf) plus a canvas that shows `computedAt` freshness and per-rail / watch-county gaps. Refresh is rerun dump then replace canvas DATA. Do not invent a rail. Do not rematerialize inside a refresh. Who-serves, city-limits, and inspect living area are named as not-a-rail. Retire the canvas after a CC push the operator trusts. | check: `node scripts/county-manifest-canvas-dump.mjs --self-test` and `--live` MEASURED; canvas `computedAt` matches dump | grade: [met 2026-08-25T04:08:53Z dump FRESH 667/3556]
+
 ## Amendments
 
 - 2026-08-24: operator go is Wave 1 items 4-5 (P-75 who-serves, P-76 city-limits) plus dest names already filed for those two. Items 10 (P-25 CAMA) and Wave 6 (P-09 footprint, P-80 Travis join fix) stay held. Full ETJ derivation is not this go; P-76 ships incorporated / unincorporated / ETJ-unresolved. Reason: screenshot go named ETJ adapter and who-serves promotion; "then footprint / CAMA, not parallel."
+- 2026-08-24 evening: item 13 added. County Manifest operator canvas is equal in importance to Wave 1 for freshness and gap identification. Same GET as CC. Retire after a CC update. Reason: operator asked for an on-demand accurate health read without waiting on the CC surface.
 
 ## Finish card (graded at close)
 

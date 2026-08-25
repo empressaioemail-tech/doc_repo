@@ -60,6 +60,7 @@ Verified 2026-08-24 by code read. The deficit register and the 2026-08-24 effort
 | Wave | Plan rows | Write? | Slot | Can start when |
 | --- | --- | --- | --- | --- |
 | 0 Map | P-73 | Doc only | No | Now |
+| 0 Manifest | P-47 | Dump + canvas | No | Now. GET only. No rematerialize on refresh |
 | 1 Bind | P-74 P-75 P-76 | Serve / Neon boundary | No | After P-73 items that name dest/bind; PE cards after A2 clears or on an isolated tree |
 | 2 Honesty | P-77 | Serve / instrument | No | After P-73; measure is SQL and can overlap Wave 1 |
 | 3 Authority | P-78 | `cad_property` via `stratmap-landuse` | No | After P-73 |
@@ -142,8 +143,9 @@ SB12 click-setbacks and M39 RRC toggle stay on the serve board (P-60 leftovers /
 ## First wave (tee)
 
 1. **P-73** is the map file above. Folklore corrections on the deficit canvas. No product PR. Grades WDLL item 1 before any other card starts.
-2. **Parallel, not PE-blocked:** P-75 who-serves · P-76 city-limits · P-77 measure. Compile after item 1 is met.
-3. **P-74** when an isolated hauska-map worktree exists from `origin/main`. Do not wait to start 2 on this tree. Do not open the A2 pricing branch.
+2. **County Manifest instrument (WDLL item 13 / P-47).** `node scripts/county-manifest-canvas-dump.mjs --live` then replace DATA on the Manifest canvas. Equal to Wave 1 for freshness and gap ID. No rematerialize on refresh.
+3. **Parallel, not PE-blocked:** P-75 who-serves · P-76 city-limits · P-77 measure. Compile after item 1 is met.
+4. **P-74** when an isolated hauska-map worktree exists from `origin/main`. Do not wait to start 3 on this tree. Do not open the A2 pricing branch.
 
 P-76 is the **city-limits** half of gap row 35. It does not close the ETJ adapter ruling. ETJ stays unresolved until a later derivation card.
 
