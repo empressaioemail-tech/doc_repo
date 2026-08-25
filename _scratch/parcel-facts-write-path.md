@@ -1,5 +1,17 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T17:35Z)
+
+- Handback items 1-3 accepted. F10 wrong SHA FAIL (only ldtSha). Missing SHA FAIL. Bastrop packet PASS. Full 40-char serving SHA also FAIL (exact `46e1a5a1` contract). Pin uncommitted; county 3 still blocked. Review `_inbox/2026-08-25_review_bastrop_sha_pin.md`.
+
+## OPEN (2026-08-25T17:35Z)
+
+- Commit pin + announce + close + SHA-pin review. Then county 3 may open a packet. Gold 34137 sqft restore still later.
+
+## GROUND-TRUTH (2026-08-25T17:25Z)
+
+- Bastrop 48021 leftover close filed. Announce amended (Path A + 726 inserts). Gate pins `ldtSha=46e1a5a1`; F10 wrong SHA FAIL; `--self-test` PASS F1-F10. Close `_inbox/2026-08-25_p78_bastrop_48021_leftover_close.json`. KEEP year/acres. HOLD gold livingAreaSqft. County 3 blocked until pin merged. doc_repo main `2526bc9`.
+
 ## GROUND-TRUTH (2026-08-25T16:25Z)
 
 - Bastrop 48021 leftover reviewed. KEEP year/acres. HOLD gold living area. Packet re-PASS. Live gold `48021:34137` yearBuilt 1910 on inspect wire; livingAreaSqft null (was 2800). City limits still Bastrop incorporated. Wrong-branch first apply accepted; logs have no SHA. Gate must pin `ldtSha=46e1a5a1` before county 3. Review `_inbox/2026-08-25_review_bastrop_48021_leftover.md`. Probe `_inbox/2026-08-25_p78_bastrop_48021_gold_34137_probe.json`.

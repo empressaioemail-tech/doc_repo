@@ -66,7 +66,7 @@ P-25, P-09, and roads COVER stay `ready:false`. No Factory 1 `--apply`. No CAMA 
 
 ## Cad-ingest apply gate
 
-No leftover or CAMA apply starts until `node scripts/cad-ingest-apply-gate.mjs --check --packet <path>` PASSes. Missing packet is a refuse. Copy `scripts/fixtures/cad-ingest-apply-gate/packet.template.json`. Census is GROUP BY tax_year with no `tax_year =` filter. Path comes from leftover-year n, not from the prompt. Caldwell 2025 rows stay as written. Do not flip L17. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md`.
+No leftover or CAMA apply starts until `node scripts/cad-ingest-apply-gate.mjs --check --packet <path>` PASSes. Missing packet is a refuse. Copy `scripts/fixtures/cad-ingest-apply-gate/packet.template.json`. Census is GROUP BY tax_year with no `tax_year =` filter. Path comes from leftover-year n, not from the prompt. Packet `ldtSha` must equal `46e1a5a1`. Missing or other SHA is a refuse. Caldwell 2025 rows stay as written. Do not flip L17. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md`.
 
 ## Next legal write
 

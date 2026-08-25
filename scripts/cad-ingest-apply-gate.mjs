@@ -11,7 +11,8 @@
  *   Triggers: leftover or CAMA apply packet. Not a repo-wide hook.
  *   Fails: exit 1. Missing packet, one-year-filtered census, Path A on
  *     empty leftover year, L17 flip when years differ, second FIPS,
- *     fallback flag, pin not PASS, P-25 ready, unstructured vintage.
+ *     fallback flag, pin not PASS, P-25 ready, unstructured vintage,
+ *     missing or wrong ldtSha (must equal SERVING_LDT_SHA).
  *   Bypasses: anyone who applies without --check --packet.
  *
  * Usage:
@@ -26,6 +27,9 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURE_DIR = join(ROOT, "scripts", "fixtures", "cad-ingest-apply-gate");
+
+/** Serving LDT merge for stratmap-landuse / P-78 writer. Re-verify origin/main before bumping. */
+export const SERVING_LDT_SHA = "46e1a5a1";
 
 const YEAR_EQ = /tax_year\s*=/i;
 const STRUCTURED = /^tier:(stratmap-roll|cad-export);/;
@@ -126,6 +130,15 @@ export function gradePacket(packet) {
     failures.push("fips must be a 5-digit county");
   }
 
+  const ldtSha = packet.ldtSha;
+  if (typeof ldtSha !== "string" || !ldtSha.trim()) {
+    failures.push("ldtSha missing");
+  } else if (ldtSha.trim() !== SERVING_LDT_SHA) {
+    failures.push(
+      `ldtSha ${ldtSha.trim()} does not match serving writer ${SERVING_LDT_SHA}`,
+    );
+  }
+
   return { ok: failures.length === 0, failures, derivedPath, leftoverN };
 }
 
@@ -139,6 +152,7 @@ const FIXTURES = [
   { id: "F7", file: "F7-not-vacuous.json", expectOk: false },
   { id: "F8", file: "F8-pin-or-p25-ready.json", expectOk: false },
   { id: "F9", file: "F9-unstructured-vintage.json", expectOk: false },
+  { id: "F10", file: "F10-wrong-ldt-sha.json", expectOk: false },
 ];
 
 export function runSelfTest() {
