@@ -44,4 +44,13 @@ None at approval.
 
 ## Finish card (graded at close)
 
-(empty until close)
+| # | Grade | Evidence |
+|---|---|---|
+| 1 | met (53a0139) | Prior agent; not re-restamped |
+| 2 | met | `_inbox/2026-08-25_p78_announce_caldwell_48055.md` before apply |
+| 3 | met | `_inbox/2026-08-25_p78_caldwell_48055_before.json` n=0 @ 2025 |
+| 4 | met | apply log county=48055; LDT 46e1a5a1; 24989 upserted |
+| 5 | met | after JSON yb 16937 la 24989 vs before 0 |
+| 6 | met | prop_id zero keys=1; not leftover success |
+| 7 | met | close notStarted |
+| 8 | met | `_inbox/2026-08-25_p78_caldwell_leftover_rebake_close.json` |
