@@ -33,11 +33,11 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 7. **P-77 honest miss.** `48453:280238` facets name lookup-failed (or equivalent) and the declared vintage. `48453:280239` stays joined. HTTP 200 is not treated as a CAD bind. | check: live facets both nodes | grade: [met 2026-08-25T14:14:55Z] cortex `00584-gaf` SHA `46e1a5a1`; 280238 lookup-failed + vintage; 280239 landUseFact present; close `_inbox/2026-08-25_p77_honest_miss_close.json`
 
-8. **P-78 authority.** A fixture where CAMA lacks legal and StratMap has legal does not wipe legal on same `(fips, prop_id, tax_year)`, or the load writes a new vintage and L17 readers stay on declared. Verified by violation. | check: failing-first test in cad-ingest | grade: [ ]
+8. **P-78 authority.** A fixture where CAMA lacks legal and StratMap has legal does not wipe legal on same `(fips, prop_id, tax_year)`, or the load writes a new vintage and L17 readers stay on declared. Verified by violation. | check: failing-first test in cad-ingest | grade: [met] LDT #477 @ 72cffc8 merged; p78-merge-fixtures-selftest PASS
 
-9. **P-78 leftover StratMap fields.** `landuse.ts` no longer hard-nulls `year_built` / `land_acres` when DBF has the source fields. One-county dry-run artifact filed. | check: parser test + dry-run JSON | grade: [ ]
+9. **P-78 leftover StratMap fields.** `landuse.ts` no longer hard-nulls `year_built` / `land_acres` when DBF has the source fields. One-county dry-run artifact filed. | check: parser test + dry-run JSON | grade: [in flight] parser on main #477; stratmap-landuse rebake not replayed
 
-10. **P-25 Dallas/Tarrant.** Full loads announced, run, vintage flipped after complete. Store sqft % on those two FIPS is measured from `cad_property`, not asserted. Travis CAMA not started before item 6. | check: announce note + store query JSON + registry vintage | grade: [ ]
+10. **P-25 Dallas/Tarrant.** Full loads announced, run, vintage flipped after complete. Store sqft % on those two FIPS is measured from `cad_property`, not asserted. Travis CAMA not started before item 6. | check: announce note + store query JSON + registry vintage | grade: [skip] Wave 4 STOPPED; Dallas matches baseline; Tarrant +91,931 DROP filed
 
 11. **No silent scope.** Footprint drain, Travis join fix, REST harvest writer, Bexar/Collin/Denton parsers, HOA, COVER roads are not started inside items 1-10. | check: git log pathspecs on those writers during Waves 0-4 | grade: [met this wrap]
 

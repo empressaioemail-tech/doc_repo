@@ -2,6 +2,10 @@
 
 - Subagent [P-25 CAMA load](5a8ba32d-ed82-486d-8524-7270bfd52785) handoff/measure/announce artifacts SUPERSEDED — forensic only; SKIP in `_inbox/2026-08-25_p25_repair_or_skip.md` stands. Dallas retry completed 806563 post-kill (log `dallas_wave4_load_retry.log`); no ingest running.
 
+## GROUND-TRUTH (2026-08-25T14:35Z)
+
+- Store honesty wave closed. Track A: Tarrant **DROP** filed `_inbox/2026-08-25_p25_tarrant_keep_or_drop.md` (91,931 net-new keys; DELETE not run). Track B: landuse.ts parser on main via #477; item 9 rebake in flight. Five canvases restamped to 11763c0 / 00584-gaf / PE #222. Pin `--check` PASS. Close `_inbox/2026-08-25_store_honesty_wave_close.json`. P-25 ready:false.
+
 ## GROUND-TRUTH (2026-08-25T14:16Z)
 
 - P-77 CLOSED. LDT #478 merged `46e1a5a1`; cortex-api `00584-gaf` @100% image `46e1a5a1b52a14953e9eb242fd1c908ea24b13ce`. Live: `48453:280238` facets `structuralFact.verdict=lookup-failed` scopeSearched `cad_property declared vintage 2026/cad-export`; neighbors 280239/280210 joined; gold 48021:34137 no regression. Close `_inbox/2026-08-25_p77_honest_miss_close.json`. Tarrant +91,931 classified (no reload). P-25 still ready:false. No PE branch (9224a73 sufficient).
