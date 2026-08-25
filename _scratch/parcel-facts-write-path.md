@@ -1,5 +1,21 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T18:55Z)
+
+- Hays 48209 leftover reviewed. KEEP acres. year_built count unchanged 82120 (already saturated / no parseable leftover year on nulls). n +40870 @ 2025. 2026 filed counts unchanged. L17 not flipped. Packet re-PASS. Review `_inbox/2026-08-25_review_hays_48209_leftover.md`.
+
+## OPEN (2026-08-25T18:55Z)
+
+- Commit Hays artifacts + review. County 4 waits on a named FIPS. Gold 34137 sqft restore still later.
+
+## GROUND-TRUTH (2026-08-25T17:50Z)
+
+- County 3 handoff filed. FIPS is Hays 48209. Pin live at `d52ddc0`. Do not pick gold 48021. Handoff `_inbox/2026-08-25_county3_hays_48209_handoff.md`.
+
+## OPEN (2026-08-25T17:50Z)
+
+- Other agent: Hays 48209 leftover through `--check --packet` with `ldtSha=46e1a5a1` on writer `46e1a5a1`. Then stop for review.
+
 ## GROUND-TRUTH (2026-08-25T17:35Z)
 
 - Handback items 1-3 accepted. F10 wrong SHA FAIL (only ldtSha). Missing SHA FAIL. Bastrop packet PASS. Full 40-char serving SHA also FAIL (exact `46e1a5a1` contract). Pin uncommitted; county 3 still blocked. Review `_inbox/2026-08-25_review_bastrop_sha_pin.md`.
@@ -7,6 +23,10 @@
 ## OPEN (2026-08-25T17:35Z)
 
 - Commit pin + announce + close + SHA-pin review. Then county 3 may open a packet. Gold 34137 sqft restore still later.
+
+## GROUND-TRUTH (2026-08-25T18:45Z)
+
+- Texas fill #3: Hays 48209 through gate. Packet PASS. Path A + 40870 inserts @ 2025. L17 stays 2026/cad-export; inspectReadSet false. Apply LDT `46e1a5a1` worktree only; 116421 upserted. Before 2025 131246/82120/67231 → after 172116/82120/144674; 2026 unchanged. Close `_inbox/2026-08-25_p78_hays_48209_leftover_close.json`. doc_repo main `d52ddc0`.
 
 ## GROUND-TRUTH (2026-08-25T17:25Z)
 

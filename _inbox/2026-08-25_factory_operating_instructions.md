@@ -70,7 +70,7 @@ No leftover or CAMA apply starts until `node scripts/cad-ingest-apply-gate.mjs -
 
 ## Next legal write
 
-P-78 merge is already on serving main (`#477` `72cffc8`). Caldwell leftover 48055 @ tax_year 2025 is already in store (Path B insert). The next leftover county is a later card and must pass the apply gate first.
+P-78 merge is already on serving main (`#477` `72cffc8`). Caldwell 48055, Bastrop 48021, and Hays 48209 leftover already landed. County 4 waits on a named FIPS and a PASS packet. Do not pick 48021 again. Do not rewrite 48055 or 48209.
 
 P-75 LDT #475 and P-76 LDT #476 serve. Do not re-merge them.
 
