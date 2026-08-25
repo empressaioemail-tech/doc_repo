@@ -1,5 +1,9 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T05:30Z)
+
+- Factory memory bounded wave CLOSED. Waves A-D executed; 4-6 not opened. Close `_inbox/2026-08-25_factory_memory_wave_close.json`. P-55 probe PASS on engine origin/main `cfa18bc`. P-78 product on LDT `feat/p78-cad-property-merge` at P:/tmp/ldt-p78 (committed). Eight scratch files triaged; pin 64→56; memory gate still 63>56. P-78 dispatch compiled with FLEET-MEMORY v2a98086b.
+
 ## GROUND-TRUTH (2026-08-25T05:25Z)
 
 - Factory operating instructions filed `_inbox/2026-08-25_factory_operating_instructions.md`. Atom/node/edge pointer is P-55 engine PR #356 `29ab77c` (`parcel-write-identity.ts`), not the 2026-08-08 DATA_MODEL proposal. Canvas family Read-with now includes the instructions file. Next planner wave `_inbox/2026-08-25_factory_memory_wave_handoff.md`.

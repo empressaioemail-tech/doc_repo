@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v78ed9c62 generated 2026-08-25 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v78ed9c62
-
 
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
@@ -36,3 +31,29 @@ CANON-PREAMBLE v78ed9c62
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
 Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T18:35
+
+AGENT-CONTRACT v92aa194c — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: P-78 (90_operations/OPS-16_texas_market_plan_of_record.md)
+
+# P-78 cad_property merge authority rule
+
+<<< MISSION — replace this line with the hand-written mission section before dispatching >>>
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-08-25_p78-cad-merge_cp1.json
+  CP2: _inbox/2026-08-25_p78-cad-merge_cp2.json
+  CLOSE: _inbox/2026-08-25_p78-cad-merge_close.json
