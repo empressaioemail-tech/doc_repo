@@ -19,9 +19,9 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 ## Acceptance items
 
-1. **P-73 map exists.** `_inbox/2026-08-24_p73_ingest_bound_field_map.md` has source, dest, join key, vintage, authority, and empty/sentinel/unmeasured for every ingest-bound canvas. No empty dest/join/authority cell. Deficit canvas folklore (parse vs landuse, L20 vs footprint, city limits vs ETJ) is corrected. | check: every map row has those six cells filled; two-column job list does not count | grade: [ ]
+1. **P-73 map exists.** `_inbox/2026-08-24_p73_ingest_bound_field_map.md` has source, dest, join key, vintage, authority, and empty/sentinel/unmeasured for every ingest-bound canvas. No empty dest/join/authority cell. Deficit canvas folklore (parse vs landuse, L20 vs footprint, city limits vs ETJ) is corrected. | check: every map row has those six cells filled; two-column job list does not count | grade: [met 2026-08-24]
 
-2. **OPS-16 rows exist.** A-026 adds P-73 through P-80. A dispatch for P-74 compiles; a fabricated P-81 refuses. | check: `node scripts/dispatch.mjs --plan OPS-16 --lane X --plan-row P-74` compiles; `--plan-row P-81` exits nonzero | grade: [ ]
+2. **OPS-16 rows exist.** A-026 adds P-73 through P-80. A dispatch for P-74 compiles; a fabricated P-81 refuses. | check: `node scripts/dispatch.mjs --plan OPS-16 --lane X --plan-row P-74` compiles; `--plan-row P-81` exits nonzero | grade: [met 2026-08-24]
 
 3. **P-74 situs sentinel.** Live inspect title on `48453:280239` is not `, TX` when `txgio_parcel.situs_address` has a street. Gold `48021:34137` still `908 PINE`. Find/Photon string is not copied onto the county record. | check: live facets + txgio row for both nodes; PE from isolated worktree not A2 | grade: [ ]
 
@@ -29,7 +29,7 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 5. **P-76 city limits.** Gold Bastrop city parcel is incorporated. A named unincorporated control is unincorporated. ETJ chip is unresolved, not a derived buffer. | check: live probe on two named parcels; containment code path named | grade: [ ]
 
-6. **P-77 measure.** File-based instrument reports hit/miss/unmeasured on the Simsbrook-Dashwood block and a stated Travis sample at `2026/cad-export`. Self-test both directions, including a not-vacuous case. | check: instrument file + output with snapshot | grade: [ ]
+6. **P-77 measure.** File-based instrument reports hit/miss/unmeasured on the Simsbrook-Dashwood block and a stated Travis sample at `2026/cad-export`. Self-test both directions, including a not-vacuous case. | check: instrument file + output with snapshot | grade: [met 2026-08-25T02:08:37Z live 10/1/0/0]
 
 7. **P-77 honest miss.** `48453:280238` facets name lookup-failed (or equivalent) and the declared vintage. `48453:280239` stays joined. HTTP 200 is not treated as a CAD bind. | check: live facets both nodes | grade: [ ]
 
@@ -39,7 +39,7 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 10. **P-25 Dallas/Tarrant.** Full loads announced, run, vintage flipped after complete. Store sqft % on those two FIPS is measured from `cad_property`, not asserted. Travis CAMA not started before item 6. | check: announce note + store query JSON + registry vintage | grade: [ ]
 
-11. **No silent scope.** Footprint drain, Travis join fix, REST harvest writer, Bexar/Collin/Denton parsers, HOA, COVER roads are not started inside items 1-10. | check: git log pathspecs on those writers during Waves 0-4 | grade: [ ]
+11. **No silent scope.** Footprint drain, Travis join fix, REST harvest writer, Bexar/Collin/Denton parsers, HOA, COVER roads are not started inside items 1-10. | check: git log pathspecs on those writers during Waves 0-4 | grade: [met this wrap]
 
 12. **Close hygiene.** leave_behind declared; thesis parity ledger entry if atoms / access policy / capture jobs moved. | check: close artifact | grade: [ ]
 
@@ -49,4 +49,4 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 ## Finish card (graded at close)
 
-(not yet)
+Planning wrap 2026-08-24: items 1, 2, 6, 11 met. Items 4-5 partial (CP1, not live gold). Items 8 partial (spec only). Items 3, 7, 9, 10 dropped this wrap (held or not started). Item 12 in session close `_sessions/2026-08-24_parcel_facts_write_path_claude_code.md`. Program is not closed.

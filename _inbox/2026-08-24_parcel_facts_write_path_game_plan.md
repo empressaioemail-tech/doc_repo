@@ -160,13 +160,16 @@ P-76 is the **city-limits** half of gap row 35. It does not close the ETJ adapte
 
 ```
 leave_behind:
-  - item: OPS-16 A-026 rows P-73..P-80 filed; WDLL operator-approval pending
+  - item: P-75 / P-76 customer-done (cortex + PE). Handoff _inbox/2026-08-24_write_path_planner_handoff.md
     owner: planner
-    plan_row: P-73
-  - item: A2 PE writer still holds property hauska-map; P-74 needs isolated tree
+    plan_row: P-75
+  - item: A2 PE writer still holds property hauska-map; P-74 needs isolated origin/main tree
     owner: property
     plan_row: P-74
-  - item: 0076 utility staging and staged footprint join not on every LDT/engine checkout
-    owner: property
-    plan_row: P-75
+  - item: P-78 product rewrite; spec + F1-F8 exist; do not start P-25 until SET is in cad-ingest
+    owner: planner
+    plan_row: P-78
+  - item: P-77 honest-miss serve half held (measure already live)
+    owner: planner
+    plan_row: P-77
 ```
