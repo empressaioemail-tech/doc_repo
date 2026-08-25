@@ -8,7 +8,11 @@ owner: nick
 related:
   [
     90_operations/OPS-17_govtech_stack_plan_of_record,
-    _decisions/2026-08-17_g13_consumer_contract,
+    _inbox/2026-08-24_govtech_transaction_contract,
+    _inbox/2026-08-24_govtech_engine_migration_plan,
+    _inbox/2026-08-24_govtech_plan_adversarial_cp1,
+    _inbox/2026-08-24_adr023_amendment_draft,
+    90_operations/OPS-17_govtech_stack_plan_of_record,
     _decisions/2026-08-15_capability_mount_composition,
     _decisions/2026-08-16_plan_review_owns_files_ui,
     _inbox/2026-08-16_icc_demo_planner_pickup,
@@ -22,7 +26,7 @@ related:
 
 # Govtech program scope
 
-Revision 2, 2026-08-24. Revision 1 was written before four operator rulings and before three corrections to its own fact base. Both are recorded below rather than quietly replaced.
+Revision 3, 2026-08-24. Revisions 1 and 2 are recorded below rather than quietly replaced. Rev 3 aligns the scope doc with the adversarial CP1 review (`_inbox/2026-08-24_govtech_plan_adversarial_cp1.json`), files S5-1 and S2-1 plans into `_inbox/`, fixes S2-2 and O-2 against operator rulings, and adds an explicit Wave 1 critical path. **Live program board:** `canvases/govtech-master-program.canvas.tsx` (Cursor managed path under the workspace).
 
 ## Rulings taken 2026-08-24
 
@@ -36,6 +40,8 @@ Revision 2, 2026-08-24. Revision 1 was written before four operator rulings and 
 | R-F | **One app is acceptable** provided R-E holds. | The presentation plane may converge; each product stays independently deployable and independently sellable, because `SCOS-FILE-DEP` and `SCOS-PLAN-DEP` are separate SKUs. |
 | R-G | **SmartSite is parked** for its own discussion. | Out of scope here except where Dashboards embeds it. |
 | R-H | **Fourth demo pack approved.** | Makes `ungranted` reachable. It does NOT deliver a full demo city; see Scope 1. |
+| R-I | **`source_obligation_ledger` is authoritative.** | `plan_review_activity` is a cache that reconciles against it. O-2 is closed. S4-1 implementation remains open. |
+| R-J | **Architect plan-review surface (home A) is DEFERRED**, not retired. | City-internal plan review is the build. Home A is a different product for a different user; see migration plan step 11. |
 
 ## Corrections to revision 1
 
@@ -121,6 +127,19 @@ The demo and the end-to-end test are the same artifact. This is what makes the r
 
 **Definition of done:** a submittal uploaded by staff into Smart Files on `template-city`, reviewed against a code corpus whose edition is declared, producing determinations that cite real sections with honest absence where we have not looked, accruing a reference to ICC in the store designated as the source of truth, all inside one shell, with each product still able to run standalone.
 
+### Doc hygiene (DOC-*)
+
+| id | Item | Status |
+|---|---|---|
+| DOC-1 | Transaction contract filed | done — `_inbox/2026-08-24_govtech_transaction_contract.md` |
+| DOC-2 | Engine migration plan filed | done — `_inbox/2026-08-24_govtech_engine_migration_plan.md` |
+| DOC-3 | Scope S2-2 deferred not retired | done — rev 3 |
+| DOC-4 | OPS-17 rows G-105–G-110 | done — A-085 in `90_operations/OPS-17_govtech_stack_plan_of_record.md` |
+| DOC-5 | ADR-023 amendment draft | draft filed — `_inbox/2026-08-24_adr023_amendment_draft.md`; operator ratify before S2-1 execute |
+| DOC-8 | govtech STATE refreshed | done — `_state/govtech/STATE.md` |
+
+**Dispatch:** compile with `node scripts/dispatch.mjs --plan OPS-17 --lane <ID> --plan-row G-105` (or G-106–G-110). Live board: `canvases/govtech-master-program.canvas.tsx`.
+
 ## Wave 2 — Bastrop v2
 
 Everything that makes Dashboards a complete city product: the feed record path against real vendors, the remaining lenses, the Bastrop pack, MyGov, and the cutover. Live Bastrop stays no-touch throughout; v2 is built alongside and cut over by a later named card.
@@ -177,12 +196,12 @@ The engine is an **issue emitter, not a section adjudicator**: one LLM call whos
 
 | id | Item | Size | Depends on |
 |---|---|---|---|
-| S2-1 | Migrate the finding engine from `hauska-engine` into `plan-review`. Nothing replaces it in the substrate. | **L** | R-D |
-| S2-2 | Retire the other two homes: the cortex-api routers and the unmounted BFF. Retirement item filed in the same card as the repoint, per the doctrine. | **L** | S2-1 |
+| S2-1 | Migrate the finding engine from `hauska-engine` into `plan-review`. Nothing replaces it in the substrate. Plan: `_inbox/2026-08-24_govtech_engine_migration_plan.md`. | **L** | DOC-5, DOC-2 |
+| S2-2 | **DEFERRED:** architect pre-submittal surface (home A). Not retired in Wave 1. Home B (unmounted BFF) retirement is separate and mostly done. | **L** | parked |
 | S2-3 | Kill the code-lookup fallback. An unknown section refuses; it never returns a neighbour. | S | none, do first |
 | S2-4 | Fix the IRC-labelled-as-IBC seed, or delete it with the engine migration. | S | S2-3 |
 | S2-5 | Kill mock mode as a default. It fabricates a `blocker` at confidence 0.92 claiming a setback violation. Verified **not** live — serving revision `hauska-engine-api-00174-zus` runs `AIR_FINDING_LLM_MODE=grok` with `XAI_API_KEY` bound — but a default that invents a high-confidence blocker is one missing key from being live. | S | none |
-| S2-6 | Build the staff upload path end to end into Smart Files, with provenance and freshness stamps. There is no file input, no `FileReader` and no base64 in the UI today; the backend endpoint is unreachable from the interface. | **L** | Scope 3 |
+| S2-6 | Build the staff upload path end to end into Smart Files, with provenance and freshness stamps. There is no file input, no `FileReader` and no base64 in the UI today; the backend endpoint is unreachable from the interface. | **L** | DOC-1, S3-1, S1-17 |
 | S2-7 | Real applicability matrix replacing four hardcoded rows; make `Pass` and `Fail` reachable. The determination vocabulary **already exists** as a CHECK constraint in `plan-review/sql/001_foundation.sql`. | **L** | S2-1 |
 | S2-8 | Typed absence on the code path: never-looked, source-down, paywalled, genuinely-absent. The typed guard exists and is exported; `findings.ts` does not import it. | M | S2-1 |
 | S2-9 | Edition as a selector, not a label. Reads filter on jurisdiction alone; `toCodeSectionInput` drops edition entirely so the model never sees which edition it cites; `annotateEditionCurrency` compares our-scrape to our-latest-scrape, fails open, and is starved. | **L** | S2-1 |
@@ -190,8 +209,9 @@ The engine is an **issue emitter, not a section adjudicator**: one LLM call whos
 | S2-11 | Reconcile the two edition parsers: one splits three segments correctly, the other slices at the first slash and returns the jurisdiction as the edition. | S | S2-9 |
 | S2-12 | Stop serving repealed B3 setbacks. One accessor declines them and a mounted anonymous route calls the other. Add `repealedOn` to the schema and validate it. | M | none |
 | S2-13 | Corpus fidelity pass: 17.03% of sections in the snapshot have empty bodies, and B3 has title/body mis-association from PDF extraction. | M | S2-9 |
-| S2-14 | Remove Cotality. Six `COTALITY_*` secrets are mounted on production engine-api; adapters remain in `ALL_ADAPTERS`; `cotality:hazards` is still a hardcoded key. | M | S2-1 |
-| S2-15 | Branch protection and CI across the five govtech repos. | M | see Scope 5 |
+| S2-14 | Remove Cotality. Six `COTALITY_*` secrets are mounted on production engine-api; adapters remain in `ALL_ADAPTERS`; `cotality:hazards` is still a hardcoded key. | M | none |
+
+Branch protection and CI for the five govtech repos is **S5-4 only** (S2-15 retired as duplicate).
 
 ### Accuracy, which is a Scope 2 deliverable in its own right
 
@@ -238,14 +258,15 @@ R-E promotes this from plan review's document plane to a first-class product. St
 
 | id | Item | Size | Depends on |
 |---|---|---|---|
-| S4-1 | **Reconcile the two ledgers.** `plan_review_activity` works and carries the numbers; `source_obligation_ledger` is the designated source of truth and is empty with zero readers. Decide which is authoritative and make the other follow. | M | ruling |
+| S4-1a | **Ruling closed (R-I):** `source_obligation_ledger` is authoritative; `plan_review_activity` is cache. | — | R-I |
+| S4-1b | **Implement reconciliation:** one write path into obligation ledger; activity repointed; dedup keys; no double-count. | M | S4-7, DEPLOY-75, S4-0 |
 | S4-2 | Fix the MCP plan-review meter bypass: `wrap()` builds an envelope with a hardcoded empty provenance array and the accrual guard is `atom_ids.length > 0`. One function. | S | none |
 | S4-3 | Populate `sourceActorDid` across all envelope builders. Reached by 3 of roughly 20 today, so `search_atoms` returning real ICC sections accrues zero. | M | none |
 | S4-4 | Reconcile the two ICC detectors onto one definition. `access-policy.ts` matches on adapter **or** jurisdiction tenant; `source-obligation-meter.ts` never checks the tenant, which under-counts against a licensor. | S | none |
 | S4-5 | Fix the `?? "public-free"` writer default to refuse, and stamp all four ICC atom types. Only `code-section` is stamped today. | M | none |
 | S4-6 | Backfill existing rows, **after** S4-5 or the next ingest undoes it. | M | S4-5 |
 | S4-7 | Record the **cited** atom, not the served one, and add `book_id` and `section_id`. ICC cannot currently determine which of their sections were referenced. | M | S4-4 |
-| S4-8 | Give the source-of-truth ledger a reader: query, statement, invoice. | M | S4-1, S4-7 |
+| S4-8 | Give the source-of-truth ledger a reader: query, statement, invoice. | M | S4-1b, S4-7, DOC-1 |
 | S4-9 | Rate resolution from an actor atom or rate table. The value currently lives on a fixture inside the `@empressaio/atom-contract` npm package, so setting it is a package publish. | M | open ruling |
 | S4-10 | Fix the `billed` semantic. It means authorized, not paid, and feeds the Command Center revenue panel. | S | none |
 | S4-11 | Circle webhook route and a durable routing ledger. `RevenueRouter` is wired to an in-memory ledger on a service running up to ten instances. | **L** | open ruling |
@@ -270,34 +291,66 @@ The collision point is one transaction: **a submittal reviewed against a declare
 
 | id | Item | Size | Depends on |
 |---|---|---|---|
-| S5-1 | **The transaction contract, written before the lanes build.** What a determination is, what a citation carries, what identity a document has, what the accrual record contains, and which system owns each field. | S | none, do first |
-| S5-2 | **One fail-closed pass across the seams**, one owner, verified by violation. The ten instances above are not distributable: each lane would fix its own and none would own the class. | **L** | S5-1 |
-| S5-3 | Presentation convergence per R-F, with independent deployability preserved. | **L** | S5-1 |
+| S5-1 | **The transaction contract, filed before lanes build.** `_inbox/2026-08-24_govtech_transaction_contract.md`. Lanes gate on DOC-1 (filed copy), not scratch. | S | none |
+| S5-2a | Deploy cut + live violation probes (#7+#39 together; #75; #361). | M | DEPLOY-7, DEPLOY-39, DEPLOY-75, DEPLOY-361 |
+| S5-2b | Cross-repo bypass inventory (writer, load-snapshot, MCP withhold retirement). | M | S4-5, S4-6 |
+| S5-2c | Seam vocabulary conformance (citation validator, absence type, accrual fields). | **L** | DOC-1 |
+| S5-3 | Presentation convergence per R-F, with independent deployability preserved. | **L** | DOC-1 |
 | S5-4 | CI and branch protection across the five govtech repos. None has protection today; `plan-review` had no CI at all until PR #6. Stage 2 requires a check to have already run on the protected branch. Two traps: **skipped counts as passing**, and **job renames break required checks silently**. | M | PR #6 merged |
-| S5-5 | Wave 1 end-to-end proof on `template-city`. The program's definition of done. | **L** | all scopes |
+| S5-5 | Wave 1 end-to-end proof on `template-city`. The program's definition of done. | **L** | see Wave 1 critical path |
 | S5-6 | One honest status surface: what is fixture, what is fed, what is absent, per city and per lane. | M | S1-6 |
+
+## Wave 1 critical path
+
+Minimum chain to satisfy S5-5 without lying. Full board lives in `govtech-master-program.canvas.tsx`.
+
+1. **DOC-1** — transaction contract filed (done: `_inbox/2026-08-24_govtech_transaction_contract.md`)
+2. **DOC-5 (draft filed), DOC-2, DOC-4** — ADR-023 amendment draft at `_inbox/2026-08-24_adr023_amendment_draft.md` (operator ratify); migration plan filed; OPS-17 G-105–G-110 via A-085
+3. **DEPLOY-7, DEPLOY-39** — plan-review #7 service + Vercel together; dashboards #39
+4. **DEPLOY-75, DEPLOY-361, S4-0** — substrate MCP #75; property engine-api #361; migration 009 applied probe
+5. **S1-17** — resolve `template-city` vs `icc-demo` tenant identity
+6. **S3-1** — Smart Files read-path scope (closes defect #3; PR #6 only narrowed BFF)
+7. **S2-6** — staff upload into Smart Files
+8. **S2-9, S2-8, S2-7** — edition selector, typed absence, applicability matrix (after S2-1 migration or scoped ICC-model interim)
+9. **S4-2, S4-4, S4-3, S4-7, S4-1b, S4-8** — meter deployed; cited atom recorded; reconciliation; obligation ledger reader
+10. **S5-2a–c** — deploy probes, bypass inventory, seam vocabulary
+11. **S5-3, S5-5** — shell composition proof on template-city
+
+## Latent fail-open register
+
+Same defect class as the ten instances; tracked explicitly so "no eleventh" does not hide them.
+
+| id | Instance | Seat | Blocks Wave 1? |
+|---|---|---|---|
+| L1 | `canReadPack` defaults unknown `pack.accessPolicy` → `public-free` | govtech | partial |
+| L2 | `load-snapshot-into-pg.mjs` bypasses writer `resolveAccessPolicyOrRefuse` | property | yes (S4-5) |
+| L3 | `verified-absent` (plan-review) vs `absent-verified` (Smart Files) | govtech | yes (S5-2c) |
+| L4 | `chat.ts` accepts `mode: "mock"` | govtech / property | partial |
+| L5 | ICC withhold at `access-policy.ts:87` compensates mis-stamped atoms | substrate | until S4-6 |
 
 ## Ordering constraints
 
 Not a schedule. These are places where doing the second thing first causes harm.
 
-1. **Merge PR #6 before wiring the Smart Files service key for any real city.** The gate narrows; S3-1 closes.
-2. **Fix the `?? "public-free"` writer default before backfilling access policy**, or the next ingest undoes it and the instrument reports success.
-3. **Fix the meter bypass and the detectors before setting a real rate**, or a visible gap becomes silent underpayment.
-4. **Kill the code-lookup fallback before any real determination**, or a review cites a neighbouring section at 200 OK.
+1. **PR #6 merged before wiring Smart Files service key for any real city.** Done. S3-1 still closes the Smart Files read path.
+2. **Fix the `?? "public-free"` writer default before backfilling access policy**, or the next ingest undoes it.
+3. **Deploy meter bypass and detector fixes (#75) before setting a real rate**, or a visible gap becomes silent underpayment. Merged ≠ deployed.
+4. **Deploy code-lookup fix (#7 service + Vercel together) before any real determination**, or fabrication returns on the ICC surface.
 5. **Split the compose seam before connecting any feed**, and never as an `if`.
-6. **Write the S5-1 contract before the lanes build.**
-7. **Migrate the engine before building the matrix.** Building S2-7 against the old home doubles the migration.
+6. **File S5-1 contract (DOC-1) before cross-scope lane work.** Gate: DOC-1, not scratch.
+7. **Draft ADR-023 amendment (DOC-5) and file migration plan (DOC-2) before executing S2-1.**
+8. **S4-6 backfill before G-50 flip (S4-12).**
 
 ## Open rulings
 
 | # | Ruling | Blocks |
 |---|---|---|
-| O-1 | Source payment model: flat per-reference, or percentage of a settled customer payment. Recommendation: **flat** — ICC is a licensor, the obligation exists whether or not the caller paid, and the meter already fires on anonymous calls. | S4-9, S4-11 |
-| O-2 | Which ledger is authoritative (S4-1). | S4-8 |
+| O-1 | Source payment model: flat per-reference, or percentage of a settled customer payment. Recommendation: **flat**. Do not set a real rate until DEPLOY-75 + Wave 1 accrual probe pass. | S4-9, S4-11, S4-B1 |
+| O-2 | ~~Which ledger is authoritative~~ **CLOSED by R-I.** Implementation is S4-1b. | — |
 | O-3 | `spireon` / `patrol-vehicles`. Recommendation: keep ungranted. | S1-11 |
 | O-4 | Stage 2 protection: satisfy the reliability-report gate or drop it deliberately. | S5-4 |
 | O-5 | Bastrop identity hold — deferred to Wave 2 by R-C. | Wave 2 |
+| O-5a | Connections disposition values undefined. Four DS rows moved to `Empty` on inferred meaning. | S1-3 remainder |
 
 ## What could not be established
 

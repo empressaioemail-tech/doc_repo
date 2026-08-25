@@ -1,61 +1,60 @@
 # Govtech seat state
 
-**Created 2026-08-24.** Namespace `govtech`. Branch `seat/govtech`. Carries OPS-17 lanes B, C and D: SmartCity Dashboards, plan review, Smart Files, ICC.
+**Last updated: 2026-08-24T21:00Z.** Namespace `govtech`. Branch `seat/govtech`. OPS-17 lanes B, C and D: SmartCity Dashboards, plan review, Smart Files, ICC.
+
+## Program board
+
+**Authoritative tracker:** `canvases/govtech-master-program.canvas.tsx` (Cursor managed path). Scope rev 3: `_inbox/2026-08-24_govtech_program_scope.md`. Adversarial CP1: `_inbox/2026-08-24_govtech_plan_adversarial_cp1.json`. **OPS-17 Wave 1 rows:** G-105–G-110 (A-085). **ADR-023 draft:** `_inbox/2026-08-24_adr023_amendment_draft.md` (operator ratify).
 
 ## Why this seat exists
 
-Operator ruling 2026-08-24: "seat on govtech, i have a long ways to go on the property seat." Four repos moved off the property seat so the two programs stop sharing a writer. Property keeps `legacy-design-tools`, `hauska-engine`, `hauska-map` and `smartcity-os`.
+Operator ruling 2026-08-24: four product repos moved off property. Property keeps `legacy-design-tools`, `hauska-engine`, `hauska-map`, `smartcity-os` (NO-TOUCH).
 
-**`smartcity-os` deliberately stayed with property and remains ABSOLUTE NO-TOUCH.** It is this seat's subject, not its property. Bastrop v2 is built alongside the live city and cut over later by a named card. Read it only from a fresh clone in scratch, never from `P:/smartcity-os`.
+## Standing rules
 
-**No branch is pinned on the four product repo entries, by design.** This seat ships through per-PR feature branches, and `seat-worktree-gate` only enforces a branch when the register entry declares one. The doc_repo entry does pin `seat/govtech`.
+- Product repos: branch, PR, merge on green. May merge own branches.
+- Does not write property, markets, or substrate repos. Request changes from owning seat.
+- Deploys are planner-owned. Merged ≠ live. Grade on deployed surface with violation probes.
 
-## Standing rules for this seat
+## Shipped this thread (code)
 
-- Product repos: branch, PR, merge on green. This seat may merge its own branches.
-- Does not write property, markets or substrate repos. Request changes from the owning seat.
-- `hauska-mcp-server` and `hauska-atom-contract` are SUBSTRATE seat property. Every ICC meter, gate and rate change is a request to that seat, not a write from here.
-- `hauska-engine` is PROPERTY seat property. The ICC ingest and the `?? "public-free"` writer default live there and are requests, not writes.
+| repo | PR | deploy state |
+|---|---|---|
+| plan-review | #6 | **LIVE** — BFF scope gate; narrows defect #4, does not close Smart Files read path |
+| plan-review | #7 | **NOT DEPLOYED** — must deploy Cloud Run + Vercel together |
+| smartcity-dashboards | #39 | **NOT DEPLOYED** |
+| hauska-engine | #361 | **MERGED** — property; writer fix; backfill + load-snapshot bypass remain |
+| hauska-mcp-server | #75 | **MERGED** — substrate; not proven on serving MCP revision |
+| hauska-sdk | #3, #4 | **MERGED** — substrate |
 
-## OPEN
+## OPEN — Wave 1 blockers
 
-**PR #6 plan-review, OPEN not merged, CI `success` at `93fd897`.** Smart Files scope gate on the BFF plus this repository's first CI. The gate NARROWS and does not close: persona is a localStorage string any caller can set, so it binds a request to one org rather than authenticating it. Closing needs read-path scope enforcement inside Smart Files keyed to a verified identity, which revisits the PR #5 ruling of 2026-08-17.
+1. **Deploy queue:** DEPLOY-7, DEPLOY-39, DEPLOY-75, DEPLOY-361 — dispatch as **G-105**.
+2. **S3-1:** Smart Files read-path scope. Defect #3 open. Dispatch **G-106**.
+3. **S4-6:** property backfill blocked on `hauska_mcp` DSN. Dispatch **G-109** chain.
+4. **DOC-5:** Operator ratify ADR-023 amendment draft before S2-1 execution.
+5. **S1-17:** `template-city` vs `icc-demo` tenant mismatch on plan-review surface.
 
-**Live exposure, verified 2026-08-24, unresolved until PR #6 merges.** `GET https://plan-review-app-ten.vercel.app/api/backend?path=/api/smart-files/folders&scopeType=tenant&scopeId=<tenant>` returns 200 with `tenant-private` folder listings, unauthenticated, for any tenant named. Reproduced on `icc-demo`, `template-city`, `acme`. Only demo tenants exist today, which is timing and not a control.
+## Rulings taken (2026-08-24)
 
-**No branch protection on any repo in this seat.** `plan-review`, `smartcity-dashboards`, `smart-files`, `smartcity-kit` and `icc-portal` all read `protected: false` with no rulesets, verified 2026-08-24 by two instruments and confirmed against a positive control. Branch Protection Stage 1 (2026-08-20) covered `doc_repo`, `hauska-map`, `hauska-engine`, `legacy-design-tools`, `empressa-trading` and `smart-markets` and never covered these. **The 2026-08-20 VPAT scope map states protection is present on all four product repositories; that sentence is wrong.** It does not require a correction to the shipped ACR, whose stated conclusion was that green is a courtesy and nothing blocks a release, which remains true.
-
-**Scope document:** `_inbox/2026-08-24_govtech_program_scope.md`. Four scopes, 43 items, five rulings, six ordering constraints, built from six read-only code reviews at recorded commits.
-
-## Rulings taken
-
-- **PermitFlow is EXTINGUISHED** (operator, 2026-08-24). An old prototype, no longer used. Plan review as surfaced in Dashboards is the version to build out. Nothing is owed to PermitFlow compatibility: it has no document handling at all and its data is seeded fixture.
-- **Intake is staff upload**, not a permit-system integration (operator, 2026-08-24). MyGov is not a Wave 1 dependency.
-- **Wave 1 runs on `template-city`, not Bastrop** (operator, 2026-08-24). The demo city doubles as the end-to-end test and the reseller demo.
-- **The finding engine MIGRATES OUT of `hauska-engine` INTO the `plan-review` repo** (operator, 2026-08-24). Hauska is substrate only per ADR-008; plan review reasoning is Empressa product logic and does not belong in the substrate engine. Nothing replaces it there. The planner had recommended the opposite (delegate to the engine) and was corrected on the layer rule. A shared reasoning home was considered and rejected: with exactly one consumer it is how a fifth implementation appears.
-- **Smart Files serves the WHOLE CITY and must not depend on the city buying plan review** (operator, 2026-08-24). Plan review and SmartCity are PEER CONSUMERS of Smart Files; each consumes independently or composes into one system. Smart Files is now a first-class scope, not plan review's document plane.
-- **One app is acceptable** provided the ruling above holds, and provided each product stays independently deployable and independently sellable. `SCOS-FILE-DEP` (25,000) and `SCOS-PLAN-DEP` (42,000) are separate SKUs; a city must be able to buy filing without plan review.
-- **Fourth demo pack approved.** It makes `ungranted` reachable. It does NOT deliver a full demo city: a pack selects and re-seeds, it does not author.
-- **SmartSite is PARKED** for its own discussion (operator, 2026-08-24). Out of scope except where Dashboards embeds it.
+PermitFlow extinguished. Staff upload. Wave 1 on template-city. Engine migrates to plan-review (R-D). Smart Files whole city (R-E). One app if SKUs stay independent (R-F). SmartSite parked (R-G). Fourth demo pack (R-H). **`source_obligation_ledger` authoritative; activity is cache (R-I).** Architect surface deferred, not retired (R-J).
 
 ## Rulings owed
 
-- Source payment model: flat per-reference, or percentage of a settled customer payment. Planner recommends flat.
-- Which ICC ledger is authoritative: `plan_review_activity` (works, carries the numbers) or `source_obligation_ledger` (designated source of truth, empty, zero readers).
-- `spireon` / `patrol-vehicles`: planner recommends keeping it ungranted, because it is the only running proof that `ungranted` is implemented rather than described.
-- Branch protection Stage 2: satisfy the reliability-report gate or drop it deliberately.
-- Bastrop identity hold: deferred to Wave 2 by the template-city ruling.
+- O-1: ICC rate model (recommend flat; block until DEPLOY-75 + accrual probe).
+- O-3: spireon / patrol-vehicles (recommend keep ungranted).
+- O-4: branch protection Stage 2.
+- O-5a: Connections disposition vocabulary.
 
-## Corrections the planner made to its own reporting, 2026-08-24
+## Filed plans (2026-08-24)
 
-Recorded because a fresh agent will otherwise re-derive the wrong versions from the session summary.
+- `_inbox/2026-08-24_govtech_transaction_contract.md` (S5-1)
+- `_inbox/2026-08-24_govtech_engine_migration_plan.md` (S2-1)
 
-- **"The corpus has no building code at all" was over-generalised** from one artifact (`hauska-engine/services/retrieval-api/corpus/snapshot.json`, 2026-08-05) to the whole estate. Bastrop building-and-development content renders live under `did:hauska:code-section:bastrop_tx-bdc-2026-adopted/…`, an identity that also carries an adoption marker.
-- **Absent I-Code bodies are the LICENCE WORKING, not a gap.** The serving surface states `bodyVerbatim=false`. Per `75n` the contracted posture is deep-link display, never reproducing body text.
-- **There are TWO ICC ledgers.** `plan_review_activity` (plan-review's Postgres, `rate DEFAULT 0.01`) is what the ICC portal renders and it works. `source_obligation_ledger` (MCP) is the designated source of truth and is empty with zero readers. The earlier claim that "one citing surface accrues nothing at all" was wrong; the real finding is a reconciliation problem.
-- **ADR-018 is SATISFIED**, contrary to a stale memory index line the planner carried into the session and stated to the operator.
-- Still true and still real: `R311.7` and `R302.1` are IRC sections labelled as 2018 Building Code with IBC book ids, on the ICC-facing surface.
+## Defect class
 
-## The defect class this seat inherited
+Ten named instances + latent register L1–L5 in scope rev 3. Honest closure on deployed surface today: **1 of 10** (defect #4 BFF layer live-verified). S5-2 decomposed into deploy probes, bypass inventory, seam vocabulary (canvas).
 
-Enforcement and provenance written on the write path and absent on the read path, with defaults fabricated rather than refused. Ten instances across five repos, listed in the scope document. Every card in this seat carries its share, and no card may add an eleventh.
+## Corrections (inherit; do not re-derive)
+
+Corpus claim over-generalised. Absent I-Code bodies = licence working. Two ICC ledgers (reconciliation problem, not zero accrual). ADR-018 satisfied. R311.7 / R302.1 fixed in #7 (undeployed).
