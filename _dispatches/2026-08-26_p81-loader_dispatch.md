@@ -31,11 +31,11 @@ id: 2026-08-26_cloud_loader_WDLL
 title: WDLL — Option A on the existing write path (P-81 harness, P-82-lite plus BP-WRITE-01, P-83 scoped lease, P-84 run ledger; OPS-19 F-02)
 date: 2026-08-26
 last_updated: 2026-08-26
-status: draft
+status: approved
 applies_to: hauska-engine, legacy-design-tools, hauska-factory
 plan_row: P-81, P-82, P-83, P-84
 parent_plan_row: F-02 (90_operations/OPS-19_factory_plan_of_record.md)
-operator_go: 2026-08-26 option A ruled ("fix the path, freeze new fills on it; finish Bexar's resume on the current shape; every new fill waits for the conformant writer"); card text pending operator read
+operator_go: 2026-08-26 option A ruled ("fix the path, freeze new fills on it; finish Bexar's resume on the current shape; every new fill waits for the conformant writer"); card approved by the operator 2026-08-26 ("two cards approved")
 parent_wdll: _inbox/2026-08-24_parcel_facts_write_path_WDLL.md
 design: _inbox/2026-08-26_cloud_loader_design.md (read its review amendments section first) and _inbox/2026-08-26_factory_program_design.md
 decision: _decisions/2026-08-26_factory_model_law_and_option_a.md
@@ -53,7 +53,7 @@ owner: property seat. Deploys planner-owned per standing decision.
 
 # WDLL: option A on the existing write path
 
-Date: 2026-08-26  Status: draft  Operator approval: option A ruled; card text pending read
+Date: 2026-08-26  Status: approved  Operator approval: 2026-08-26 (option A ruled; card approved)
 
 This is 51 §remediation step 1 applied to the live writer: stop the orphan population growing (BP-WRITE-01), remove the round-trip loop that made the path run at 21 atoms/s, bind the lease to a process and to the data it writes, record every run, and finish the one county already mid-rewrite. It is not a fill program. After Bexar, this path writes no new county; the Texas remainder, Harris and Dallas included, waits for the conformant stage E writer (OPS-19 F-15, F-16, F-18). The brief's numbers are the planner's; reporting one wrong is a successful outcome.
 

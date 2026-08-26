@@ -53,4 +53,4 @@ Depends on: substrate seat delivering the Track 2 types in the contract (OPS-19 
 
 Unblocks: OPS-19 baseline v1 as re-frozen today; the drain card as re-scoped; Texas cleanup as T1.1 to T1.7 plus V1 to V15 on the new path.
 
-Does not unblock: any per-parcel fill of an intensional family; any new county on the existing writer; `smartcity-os` writes; the two open P-66 types until the operator rules them.
+Does not unblock: any per-parcel fill of an intensional family; any new county on the existing writer; `smartcity-os` writes. Correction recorded the same day: the P-66 types this record's first draft called open were ruled 2026-08-23 (`_decisions/2026-08-23_p66_entity_type_operator_rulings.md`); the plan JSON's `typesStillOpen` array is stale and the registry is the authority.
