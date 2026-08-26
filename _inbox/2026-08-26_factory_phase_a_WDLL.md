@@ -92,6 +92,7 @@ Prior artifacts for this lane (DEV_PROCESS 3.3b): none for a Factory control pla
 ## Amendments
 
 - 2026-08-26 (later): landing immutability and retention class (item 5), termination records (item 2), path-aware work list (item 10), verdict-per-node cells and derived indicators (items 16 and 17), model law references, after the model-law ruling.
+- 2026-08-26 (CP2): item 19 corrected: the roster has **735** fully unprobed cities of 1,223, not 777; the planner's figure was wrong and the store follows the roster. Item 2 prediction **failed**: `rtt_ms` measured 1,077 ms, not under 5 ms, because the Neon MCP `create_project` has no region field and created `delicate-lake-78875790` in `aws-us-west-2`; the design requires `aws-us-east-1`. Ruling (planner, same day): no Texas landing import (item 6) into the west-2 project; cut over to an east-1 project first, re-run item 2 there, and retire west-2 by decline after counts match. Item 2 second defect: the run row recorded the image tag `phase-a-local`, and the job itself is deployed by tag; the job must be deployed by `@sha256` digest and the row must carry that digest, cross-checked against the execution's container image (two derivations).
 
 ## Finish card (graded at close)
 
