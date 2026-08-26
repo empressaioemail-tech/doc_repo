@@ -72,3 +72,31 @@ LESSON: neon 2.22.0 on this Windows box fails even with a valid NEON_API_KEY. In
 DEAD-END: Neon MCP create_project still has no region_id. REST project.region_id is the create path.
 
 OPEN: items 6, 7, 11 service, 12-15 Vercel, 14 Bexar job, 20 CC publish. Store is east-1.
+
+GROUND-TRUTH (2026-08-26T20:26:47Z): factory-snapshot-lmpfx run 07283063 connect_ms=773 query_rtt_p50_ms=5. Under-5ms query prediction failed. 5 is not under 5. Not far above 5.
+
+GROUND-TRUTH (2026-08-26T20:29:21Z): landing tx_city_boundary 1222=1222 unknown vintage. Run 01357975.
+
+GROUND-TRUTH (2026-08-26T20:30:16Z): manifest-import-n2x8c run 33dbdabf county_rail=3556 county_manifest=254. Live GET 667/3556 computedAt 2026-08-26T20:30:14.362Z. Dump computedAt 2026-08-25T23:40:18.231Z. Watch displayState diffs 0. Dump does not embed 3556 cells.
+
+GROUND-TRUTH (2026-08-26T20:33:36Z): bexar-edges-rwfh7 run 005e9419 links=660000 rewritten=660000 total=703257.
+
+GROUND-TRUTH (2026-08-26T20:34:33Z): landing tx_special_district 2775=2775. Run 6d4c46f5.
+
+GROUND-TRUTH (2026-08-26T20:37:26Z): landing tx_utility_territory_staging 10196=10196. Run 8750f5ab.
+
+GROUND-TRUTH (2026-08-26T20:37:29Z): cc-publish-6nznt run 51d0409b servingPublishedAt=2026-08-26T20:37:29.076Z. Live GET carries published_at. Shape otherwise unchanged.
+
+GROUND-TRUTH (2026-08-26T20:37:59Z): factory-missing-env-8vhxv exit 1 MISSING_ENV FACTORY_CONTROL_API_KEY. Unauth GET /health 401 {"error":"UNAUTHENTICATED"}.
+
+GROUND-TRUTH (2026-08-26T20:39:28Z): console-audit differences []. Console https://smart-site-factory.vercel.app from worktree P:/seat-worktrees/property/hauska-map-factory. /site is the F-07 placeholder.
+
+GROUND-TRUTH (2026-08-26T20:32:04Z): hauska-factory PR #2 CheckRun conclusion SUCCESS.
+
+OPEN: item 6 remaining tables (FEMA factory-landing-import-5t46m in flight; then parcels, cad, wells, pipelines, footprints). Item 19 still open.
+
+LESSON: 144 ms and 773 ms are TLS connect. query_rtt_p50_ms on the same connection is 5.
+
+LESSON: PowerShell splits gcloud --args on commas unless the whole list is quoted.
+
+DEAD-END: do not git switch P:/seat-worktrees/property/hauska-map. It carries PE pricing dirty files. Console lives on hauska-map-factory / seat/property-factory.
