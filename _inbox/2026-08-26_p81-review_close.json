@@ -1,0 +1,82 @@
+{
+  "artifact": "p81-review-close",
+  "lane": "p81-review",
+  "kind": "adversarial review (read-only; findings returned as text; planner-filed close)",
+  "planRows": ["P-81", "P-82", "P-83", "P-84"],
+  "dispatch": "_dispatches/2026-08-26_p81-review_dispatch.md",
+  "reviewed": [
+    "_inbox/2026-08-26_cloud_loader_design.md",
+    "_inbox/2026-08-26_cloud_loader_WDLL.md",
+    "_decisions/2026-08-26_ingest_freeze_and_cloud_loader.md",
+    "90_operations/OPS-16_texas_market_plan_of_record.md A-028",
+    "_dispatches/2026-08-26_p81-loader_dispatch.md"
+  ],
+  "snapshot": {
+    "docRepo": "main 9753b830a8e929ba1b59e625a2c60e50712ebcc0 (dirty; program artifacts untracked)",
+    "engine": "P:/hauska-engine-worktrees/w5a-cad-owner-landuse cfa18bc2325e006edc643b75952d3d9e5a31993a",
+    "ldtOriginMain": "46e1a5a1b52a14953e9eb242fd1c908ea24b13ce",
+    "reviewWindowUtc": "2026-08-26T13:25:55Z to 13:33:04Z",
+    "plannerVerificationUtc": "2026-08-26T13:42:48Z"
+  },
+  "missionPremise": "Operator ruling 2026-08-26: freeze laptop ingest, re-engineer the Factory 1 drain as a cloud job, fail closed, switch-on-and-run. The review attacks the program the planner filed for that ruling before any code or commit.",
+  "completionPredicate": "Every fatal finding is either accepted with a named amendment to the design and WDLL, or refuted with evidence, before the P-81 lane is dispatched.",
+  "scopeBasis": "Four doc_repo artifacts plus the compiled dispatch and the planner's memory note; engine cfa18bc and LDT origin/main read-only; live read-only probes on hauska_mcp.",
+  "fatal": [
+    {"id": "F1", "finding": "UNLOGGED stage table is not persisted across Neon compute restart; verify hash_match = staged passes on an empty stage (0 = 0).", "disposition": "ACCEPTED. Stage becomes a logged table; verify compares staged and merged counts against client atoms_built and per-chunk row counts (second derivation)."},
+    {"id": "F2", "finding": "Starved-edge check (links = stage rows with parcel_node_did not null) is vacuous when the helper is skipped (both zero).", "disposition": "ACCEPTED. Expected link count derived independently from body->>'parcelNodeId' non-null and not county-coverage, or from a rail declaration."},
+    {"id": "F3", "finding": "W5-A did not finish Bexar cad. Verified by planner 13:42:48Z: lease row absent, no W5-A processes, 48029_cad_apply.json absent, cad-parcel-roll 48029 updated since 04:18:30Z = 660,000 of 703,257, links 660,000, last write 12:50:18Z. 43,257 atoms remain on the 2026-08-12 shape with zero applies-to edges; the Manifest cad rule (atom count over parcel features) cannot see that.", "disposition": "ACCEPTED. Decision dependency line corrected; Bexar cad remainder becomes the first proof county (exercises resume); plan mode gains load / score-only / edge-starved-rewrite classes."},
+    {"id": "F4", "finding": "GET /api/county-ledger serves county_ledger_snapshot; the scorer writes county_facet_coverage only; the snapshot refreshes only via countyLedgerMaterializeCli --apply or POST /recompute, both the heavy full-grid scan of the 2026-08-21 incident. WDLL items 20 and 27 cannot pass as written; the Do-not line forbids the only refresh path.", "disposition": "ACCEPTED. P-84b redesigned around a bounded materialize (probe=skip exposed on the CLI) or a live-grid read; Do-not line rewritten."},
+    {"id": "F5", "finding": "Retiring writePropertyAtomsBatch / upsertPropertyAtomRowsMulti by refuse strands writeRoadAtomsBatch (8 callers), write-parcel-node-county (named first v2 rail, Factory 2 precondition), write-building-footprint-county, bake-property-atom-county (only existing cloud host).", "disposition": "ACCEPTED. Batch path is not retired; it gains lease v2 and multi-row links (P-82-lite) and stays the shared path. Stage/merge (P-82b) only behind a real-table measurement."},
+    {"id": "F6", "finding": "holds.json duplicating the routing pin is a paired control without a divergence test and already diverges: the pin holds Factory 1 --apply wholesale plus per-rail apply holds (cad/owner/landuse P-25, mud, rrc-wells, rrc-pipelines, rail-corridor, easement, flood remainder); the design lists six holds; A-028 lifts none. The derived list would load 1,874 held cells. W5-A itself ran while the pin held Factory 1 --apply.", "disposition": "ACCEPTED. Single source is the pin (copied with docRepoHead), CI divergence test on the pin SHA, and an amendment naming exactly which holds the operator lifts for the loader. Operator decision required."}
+  ],
+  "nonFatalAccepted": [
+    "Lease fencing: lock the lease row FOR UPDATE inside each chunk transaction; heartbeat in that transaction; separate connection for the timer.",
+    "Cloud Run Jobs: set --task-timeout and --max-retries=0 explicitly (default timeout 10 min, retries on non-zero exit); stage cleanup and orphan sweep.",
+    "synchronous_commit=off requires the merged marker in the same transaction as the merge.",
+    "C2 wording: no BENCHMARK postdates #356; Kaufman wall times do. W1 2,961/s was an empty throwaway table; the only real-table band is L4 950 to 1,319/s pre-#356.",
+    "Scorer drain: countyRailScoreCli reads DEPLOYMENT_DATABASE_URL and ATOMS_DATABASE_URL (gcloud fallback, exit 2); drain takes a session advisory lock (bounded); rrc-wells registry reach is Harris-only vs statewide staging: fix registry or drop rrc-wells from v1.",
+    "Bulk writers outside section 10: pipeline-runner runner.ts:110 and corpus edition-history ingest.ts:214 loop single-row writeAtom.",
+    "C6 confirmed live: three concurrent COUNT(*) on atoms, callers retrieval-api healthz.ts:68 and index.ts:139.",
+    "Memory note and program disagree on sequencing; the memory (batch links first, measure, then lease) is the smaller correct move.",
+    "Work-list lag: Kaufman written after the 23:40Z GET would be reloaded, not scored; plan classes needed.",
+    "Items 1, 10, 13, 19 are grep-graded for semantic properties; replace with runtime negatives.",
+    "atom_links has no FK; link-count verify does not detect dangling edges.",
+    "Harris memory: about 4.5 GB at 2.7 KB per atom fits a 16 GiB task; COPY staging is justified by resumability, not memory.",
+    "Merge SQL lacks dedupe; duplicate atom_did in a chunk raises 21000; dedupePreparedRowsLastWins not expressed.",
+    "Dependency order inverted: HeldLease type (P-83) and atoms_load_runs (P-84) precede writeStagedAtoms (P-82); one migration, one PR.",
+    "Frontmatter: design status 'proposed' outside the enum; WDLL lacks last_updated; A-028 cites untracked paths; instruments in scratchpad."
+  ],
+  "claimTable": {
+    "C1": "not refuted; cannot reproduce live (W5-A stopped 12:50:18Z); RTT p50 45.2 ms; arithmetic fits within 6 s per batch",
+    "C2": "partially refuted (wording; W1 empty-table)",
+    "C3": "not refuted",
+    "C4": "not refuted at row level; no FK caveat",
+    "C5": "not refuted",
+    "C6": "not refuted; confirmed live",
+    "C7": "refuted (no dedupe; client-filled link column; vacuous starved-edge check)",
+    "C8": "partially refuted (fencing gap)",
+    "C9": "not refuted on limits; timeout and retries unstated",
+    "C10": "refuted (env contract, exit 2, drain advisory lock, rrc-wells reach, snapshot GET)",
+    "C11": "numbers not refuted; hold set refuted",
+    "C12": "refuted",
+    "C13": "partially refuted",
+    "C14": "refuted"
+  },
+  "reviewerStrongestMechanism": "The measured defect is one loop whose fix is a multi-row insert on a writer that already has a lease, a readback verify, and a cloud precedent (cloudbuild.property-atom-bake.yaml). Job-wrap plus process-bound lease plus run record satisfies the ruling without the stage/merge rewrite. Accepted for the write path (P-82-lite first); P-81, P-83, P-84 independently justified; P-82b behind measurement.",
+  "operatorDecisionsSurfaced": [
+    "Which Factory 1 --apply holds in the routing pin are lifted for the loader's rails (amendment required; none lifted by A-028).",
+    "Bexar 48029 cad is unfinished (43,257 atoms, zero edges); first proof county or explicit hold."
+  ],
+  "constraintsHonored": {
+    "reviewerReadOnly": true,
+    "noLeaseTouched": true,
+    "noApply": true,
+    "noCommit": true,
+    "subagentsDidNotCommit": true
+  },
+  "leave_behind": [
+    {"item": "design and WDLL amendments for F1 through F6 and the accepted non-fatal items", "owner": "planner (integration seat)", "plan_row": "P-81..P-84, pending operator read"},
+    {"item": "Bexar 48029 cad remainder 43,257 atoms on old shape, zero edges", "owner": "operator names; loader first proof", "plan_row": "P-81"},
+    {"item": "routing pin hold lift amendment", "owner": "operator", "plan_row": "A-029 (proposed)"}
+  ]
+}
