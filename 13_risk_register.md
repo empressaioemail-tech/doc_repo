@@ -2,7 +2,7 @@
 id: 13_risk_register
 title: Risk register â named failure modes
 status: active
-last_updated: 2026-05-21
+last_updated: 2026-08-26
 applies_to: portfolio
 related: [10_ground_truth, 11_roadmap, 17_leading_indicators]
 ---
@@ -245,13 +245,15 @@ customer issues a formal claim about output reliability.
 - Tech E&O insurance with data-provider + AI-liability specialist
   carrier — tracked as [`11_roadmap.md`](11_roadmap.md) P3 item,
   gated on first enterprise contract conversation.
-- Texas IP attorney opinion memo — data-licensing posture, tracked as
-  parallel bizops in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md)
-  and as a [`11_roadmap.md`](11_roadmap.md) P1 item. Not an ingestion
-  gate: Sync 6 was retired 2026-05-19 and the layered substrate runs on
-  the interim deep-link footing per [ADR-019](80_adrs/adr_019_layered_code_substrate.md).
-  The memo still informs the data-provider liability posture this risk
-  tracks.
+- Data-licensing liability memo — the loss shape this risk tracks,
+  tracked as parallel bizops in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md)
+  under IP posture and as a [`11_roadmap.md`](11_roadmap.md) P1 item. Not
+  an ingestion gate: Sync 6 was retired 2026-05-19 and the layered
+  substrate runs on the interim deep-link footing per
+  [ADR-019](80_adrs/adr_019_layered_code_substrate.md). Split 2026-08-26
+  from the IP protection triage at
+  [`72c_ip_counsel_brief.md`](72c_ip_counsel_brief.md), which is a
+  different question set and does not mitigate this risk.
 - "Sell reasoning, not data" quality contract per catalog roadmap
   Move 1 (kept as universal quality contract regardless of tier):
   every catalog response carries reasoning chain, source citation,
