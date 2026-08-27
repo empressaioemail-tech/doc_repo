@@ -14,7 +14,7 @@ Planner accepted F-02 close 2026-08-27 02:45Z. Drain finish `_inbox/2026-08-27_p
 
 **Done (prod):** #479/#480/#482/#483/#228 merged; migrations **0084+0086** applied; cortex **`00591-mih` @100%** image `ced0f7c1`; **records-request-worker** rev `00003-zhm` image **p85-v3** with `RECORDS_REQUEST_VISION_URL` + `SERVICE_API_KEY`; 7 portal rows permitted; reachability recipes all 6 counties; smartsite REC UI (`dpl_68wKekUURW8GL8oKY3GbChRkpYMC`); dev_role on operator accounts.
 
-**Open PR:** LDT **#485** (worker vision Bearer auth — merge when CI green; p85-v3 already live from deploy build).
+**Open PR:** none (LDT **#485** merged post-deploy for worker Bearer auth).
 
 **Live blocker:** Williamson TylerHost HTTP 403 (item 5 partial — publicsearch default landed).
 

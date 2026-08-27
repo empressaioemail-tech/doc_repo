@@ -6,7 +6,7 @@
   - Migration **0086** applied (GHA run `33068906374`, 2026-08-27T11:47Z)
   - **cortex-api** `00591-mih` @100% canary tag, image `ced0f7c1` (#483 merged); deploy runs `33068750917` canary + `33068971783` shift; healthz 200
   - **records-request-worker** rev `00003-zhm`, image **p85-v3**; env `RECORDS_REQUEST_VISION_URL` → cortex internal vision-read route; `SERVICE_API_KEY` secret mounted
-  - LDT **#485** open (worker Bearer auth on vision callback — image p85-v3 built from branch commit `5a306262` before merge)
+  - LDT **#485 MERGED** — worker sends Bearer `SERVICE_API_KEY` on vision-read callback
 
 ## GROUND-TRUTH (2026-08-27T12:35Z)
 
@@ -76,7 +76,6 @@
 
 ## OPEN
 
-- Merge LDT **#485** (worker vision Bearer auth — p85-v3 image already deployed with fix from local build)
 - Operator prod proof on **48021:34161** (search terms, captures sha256, artifact rows, vision metadata)
 - Operator-run reachability proofs: Travis, Hays, Caldwell (recipes registered)
 - Tyler login + live search proof on Williamson (publicsearch) + Hays after worker deploy
