@@ -1,4 +1,4 @@
-<!-- AGENT-CONTRACT v92aa194c — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
+<!-- AGENT-CONTRACT v1890f0bb — hash maintained by scripts/dispatch.mjs; do not edit this line by hand -->
 
 # AGENT CONTRACT — the operative law for every dispatched lane
 
@@ -33,12 +33,14 @@ disposition in the next checkpoint. Template: `90_runbooks/interrupt_note_templa
 
 ## 3. Write-slot law + lease
 
-ONE atoms bulk-writer slot per database. Only `--apply` against the atoms store queues; acquisition,
-staging, plans, builds, and dry-runs are slot-free and parallel. Slot custody is recorded in
-`_STATE.md`; handoffs are explicit. Where the database-enforced writer lease exists, every bulk write
-validates and heartbeats it and FAILS CLOSED without it — a writer without the live lease is a defect,
-not a workaround target. Any writer process that is not the current custodian is rogue: kill on sight,
-record the kill.
+ONE atoms bulk-writer per `(store, entity_type, county_fips)` scope, and ONE heavy-scan scope per
+database (OPS-19 rule 7). Only `--apply` against the atoms store takes a write scope; acquisition,
+staging, plans, builds, and dry-runs are slot-free and parallel, except heavy PostGIS plan phases,
+which take the heavy-scan scope. Scope custody is recorded in `atoms_writer_lease_v2` and every run
+in the Factory `runs` table. A write without a live scoped `HeldLease`, or whose rows fall outside
+its scope, FAILS CLOSED. The v1 env-var holder and the single-row `atoms_bulk_writer_lease` take
+are retired by refuse. Any writer that is not the recorded holder of its scope is rogue: kill on
+sight, record the kill.
 
 ## 4. Heavy-scan serialization
 

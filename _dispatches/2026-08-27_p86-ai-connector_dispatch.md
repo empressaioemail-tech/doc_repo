@@ -22,7 +22,7 @@ CANON-PREAMBLE vd3c673f8
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
 
-AGENT-CONTRACT v92aa194c — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
 interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
 Read it before any work; where this dispatch and the contract disagree, STOP and report.
 
@@ -40,7 +40,7 @@ FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you r
 PLAN-ROW: P-86, P-87 (90_operations/OPS-16_texas_market_plan_of_record.md)
 repo: hauska-map
 
-# p86-ai-connector dispatch
+# Smart Site agent distribution: P-86 resolvable share links (grant-id URL, HMAC on the hash form only) and the P-87 UI half (Use in your AI); the LDT MCP server is a later dispatch
 
 ---
 id: 2026-08-26_smartsite_ai_connector_WDLL
