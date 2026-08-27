@@ -40,9 +40,19 @@ Snapshot: hauska-map `b97a3e6` (#241 on #240 #238 #237). Vercel `dpl_96eN8m1qXAi
 | --- | --- | --- |
 | 39–40 | partial | Signed-out Reports is sign-in first. Body has no Coming soon and no 10/12 meter. Team $349, annual default, Stripe unlock, fourth chat, and marketing Pricing nav not live-clicked (need a signed-in session). Unit suite on #241 still holds those. |
 
+## Follow-up 2026-08-27T18:42Z
+
+W5 #245 squash-merged `ce7e979`. Prod `dpl_3rhtry2GhnTYCj1B87m7FAxbczVD` aliased smartsite.cloud, bundle `index-EVyeDBjF.js`.
+
+W1.8 parcel-id: `48021:27479` offered "Open parcel 48021:27479 direct parcel id" and landed `1308 PECAN ST , BASTROP, TX 78602`. Search bar then showed the address, not the APN.
+
+W0.2: Compare dock Expand report toggles to Collapse report.
+
+W5 live signed-out: `data-testid=compare-sign-in` text "Sign in to compare saved properties". Notes on A and click-B not walked without a saved pair.
+
 ## W5
 
-Code on `fix/qa-w5-compare`. Not in this deploy. Live click-through waits for the next SHA.
+LIVE on `ce7e979`. Sign-in gate graded. Notes / click-through leftover signed-in.
 
 ## leave_behind
 
