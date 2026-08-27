@@ -58,3 +58,12 @@ Graded 2026-08-27T22:32Z against live `https://smart-site-factory.vercel.app` de
 4. met — public internet GET factory-control `/health` and `/counts` 401; public GET console `/api/proxy/counts` 401. No key in those probes.
 5. met — Vercel CLI deploy; factory-control re-pinned to `sha256:9e5a3406`; this close.
 6. met — eleven screens unchanged; no store schema column; `/site` still 200 (F-07 staging PE); session cookie is `factory_session`, not `pe_session`.
+
+A-013 re-grade 2026-08-27T22:44Z against live `dpl_BWjpjx1T5DphKKcFrohcWuSPrjwa` / `index-DmJSob9i.js`. factory-control unchanged `00006-raz` @100% digest `sha256:9e5a3406`. Decision `_decisions/2026-08-27_factory_console_auth_off.md`. PR map #253 MERGED `008f9d7`.
+
+1. met — served bundle still clean (Bearer false, factory-control false, VITE_FACTORY false, hex32 false). Proxy still holds the key.
+2. dropped by ruling — session door off. No-cookie GET `/` renders the eleven screens (browser 81e015). `GET /api/proxy/runs` 200 last twenty. `GET /api/proxy/counts` 200.
+3. met (identity now anonymous) — no-cookie `POST /api/proxy/start` wrote run `c536c8c6` operator `console:anonymous`. Direct factory-control POST with no Bearer is 401 UNAUTHENTICATED.
+4. met — public factory-control still 401 without Bearer. Console proxy answers without a session.
+5. met — Vercel CLI `--prod`; `FACTORY_CONSOLE_AUTH=off` on production; factory-control not re-pinned (digest unchanged).
+6. met — eleven screens unchanged; no store schema; auth code remains behind the flag.

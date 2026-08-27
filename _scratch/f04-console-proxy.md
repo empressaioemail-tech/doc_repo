@@ -16,4 +16,8 @@ LESSON: vercel env pull of PE production sensitive vars (GOOGLE_OIDC_CLIENT_ID) 
 
 DEAD-END: do not build factory-control in P:/seat-worktrees/property/hauska-factory. Dirty salvage.
 
-OPEN: paste GOOGLE_OIDC_* and OIDC_STATE_SECRET onto smart-site-factory; add Google redirect URI. Then the operator can use the Google button instead of a minted session.
+GROUND-TRUTH (2026-08-27T22:44:10Z): A-013 live. FACTORY_CONSOLE_AUTH=off on smart-site-factory production. console dpl_BWjpjx1T5DphKKcFrohcWuSPrjwa bundle index-DmJSob9i.js. factory-control-00006-raz @100% sha256:9e5a3406 unchanged. No-cookie GET / eleven screens; /runs 20; /counts 200; start c536c8c6 operator console:anonymous; factory-control POST no Bearer 401. PR 253 MERGED 008f9d7. OIDC is not owed.
+
+DEAD-END: do not delete OIDC or session code. A forgotten variable must re-lock. Do not stamp a leftover session subject while auth is off; that would fabricate a particular operator.
+
+LESSON: factory-control sentinels are an exact lowercase set. console:anonymous is accepted; bare anonymous is refused. Do not change factory-control for A-013.
