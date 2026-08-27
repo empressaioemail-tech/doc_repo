@@ -60,3 +60,28 @@ LIVE on `ce7e979`. Sign-in gate graded. Notes / click-through leftover signed-in
 - Signed-in Hoffman / Stripe / fourth chat.
 - `48021:27479` typed as a raw Find string.
 - Engine/MCP still chip UNAVAILABLE (P1 still blocked).
+
+## W2 2026-08-27T19:12Z
+
+LIVE on hauska-map `3fd7f5e` (#247). Vercel `dpl_HrFQHm7fUTYA7LaPPwgUhWSowkRQ` aliased `https://smartsite.cloud`. Bundle `index-DZ53i0Px.js`.
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| 16 W2.1 | met | Browser GET `/s/c86a0001-0086-4086-a001-000000000001` with `Sec-Fetch-Dest: document` returns 302 `Location: /share?g=…`. Signed-out browser lands the full map at 908 PINE , BASTROP, TX 78602, gold parcel, brief on the right. This grant has no notes in the dock (notes unmeasured on this fixture). `?format=html` + dest=document stays 200 instrument titled 908 PINE. No sec-fetch stays 200 instrument. |
+| 17 W2.2 | leftover | Free recipient cannot generate: signed-out Reports says "Sign in to run reports". Paid-vs-free generate lock needs a signed-in free account. |
+| 18 W2.3 | leftover | Anonymous work survives sign-in: Google OAuth, planner cannot complete. |
+| 19 W2.4 | partial | Instrument HTML has `data-testid=share-live-view` → `/share?g=…`. In-app PDF viewer header has "Open live view of this property". Engine PDF bytes unmeasured. |
+| 20 W2.5 | met | Shared analysis "View PDF" opened `pdf-viewer` with Close + Download PDF + live-view link. |
+| 21 W2.6 | met | Reports dock has My reports (pressed) and Shared with me. |
+
+leave_behind: engine must render live-view at top of Flood/X-ray PDFs. Notes-on-share need a grant that actually carries notes.
+
+## W3 2026-08-27T19:28Z
+
+LIVE on hauska-map `2655986` (#249). Vercel `dpl_7A2spvv9AxtaCeHbKtwMnT18yPd9` aliased smartsite.cloud. Bundle `index-DQ3tFl87.js`. W2.1 still 302 on the fixture grant.
+
+Signed-out My properties is the sign-in dock (items 22–27 need a saved property). Bundle contains `dossier-share-persona`, Include notes, and "does not send email".
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| 22–27 W3.1–W3.6 | leftover | Unit suite green. Live signed-in walk not done (Google). Flood exclude is stored on the package; the grant instrument has no flood artifact slot. |
