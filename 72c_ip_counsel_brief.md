@@ -19,6 +19,22 @@ It replaces [`_rd_disclosure_twin/03_ip_counsel_brief.md`](_rd_disclosure_twin/0
 
 **Standing rule, unchanged.** IP counsel runs parallel to bizops and is never a critical-path gate. It does not gate ingestion, does not gate a Sync point, and does not appear in any build sequence as a blocker. This is stated in [`72_hauska_inc_operations.md`](72_hauska_inc_operations.md), in [`13_risk_register.md`](13_risk_register.md), and as row 8 of [`72b_capital_readiness_audit.md`](72b_capital_readiness_audit.md), and it survives this rewrite.
 
+## Status: a filing is already in flight
+
+Updated 2026-08-27 from the IP strategy call with Jonathan, counsel. This changes the brief from a cold agenda to a live matter, and several items below were written before it.
+
+Counsel is preparing a federal filing now, with a Texas Secretary of State filing as a possible addition, and will circulate a draft for review before anything is filed. What counsel is waiting on: a plain-narrative write-up of the process and what makes it unique, a written summary of the call, the filing address, and developer attribution.
+
+The narrative was written 2026-08-27 and is held at `_private/2026-08-27_invention_narrative_for_counsel.md`, deliberately outside version control. It describes the conversion process, the four-domain evidence that the process rather than any vertical is the subject, what is running against what is only designed, chain of title, and the full public-disclosure position with dates. It is not tracked because this repository is public and the document is a pre-filing description of the invention.
+
+**Ownership, decided on the call, and it supersedes the assignment question further down.** The intellectual property is to be held by Nick and Val personally, fifty-fifty, rather than under any existing entity, and leased to the operating businesses. Counsel offered to propose a structure. The earlier framing in this brief, which asked about assignment hygiene across Legacy Group ATX LLC and Hauska Inc., assumed entity ownership and is superseded by that decision. The reasoning is recorded in the call transcript and is not repeated in any tracked document.
+
+**Chain of title, established on the call.** Every line of code in current use was written by Nick personally after roughly thirty-five contract developers over about five years produced nothing usable. The prior contractor repository is frozen and retained and can be compared directly against the current code base, which is the evidence for the claim. No work-for-hire question is outstanding.
+
+**Counsel's own recommendation, not yet in place.** A short non-disclosure agreement for use when the system is shown to third parties. Several parties have asked for the same thing to be built for them, and the First American written summary is pending.
+
+**Two open items.** The 2026-06-26 PDFs `Hauska_IP_Counsel_Brief.pdf` and `Empressa_IP_Counsel_Brief.pdf` sit unread in the operator's Downloads and are referenced nowhere in this repository; they predate the twin-scoped brief by seven weeks and may already answer questions asked here. And the twin brief named counsel as Hullihan while the call names Jonathan; whether that is one person or two has not been established.
+
 ## Two engagements, not one
 
 The repo has been tracking two different asks under one name, and they need separating before either is routed.

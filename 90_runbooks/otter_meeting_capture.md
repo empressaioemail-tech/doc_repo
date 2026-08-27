@@ -6,7 +6,7 @@ last_updated: 2026-08-27
 applies_to: portfolio
 owner: nick
 related: [01_doc_conventions, 20_agent_operating_rules, 80_adrs/adr_030_declared_is_not_armed_contract_surface_governance, 76c_operator_master_next_steps]
-purpose: How Otter is set up and used on this team, what the sharing defaults must be given that most calls are with counterparties, and where a transcript has to land before anything said on the call can be cited. Written as a follow-up for Jonathan from the Otter walkthrough; applies to everyone.
+purpose: How Otter is set up and used on this team, what the sharing defaults must be given that most calls are with counterparties, and where a transcript has to land before anything said on the call can be cited. Applies to everyone recording calls.
 ---
 
 # Otter meeting capture
@@ -66,6 +66,12 @@ Otter records in the browser or in the mobile app on iPhone or Android. Open it,
 You can ask questions across every conversation you have recorded, or scope the question to one meeting. The cross-conversation form is the useful one for us: what did they say about pricing, when did we first discuss the licence, who owned that follow-up. The single-meeting form is good for shaping a messy call into themes.
 
 Treat its answers the way we treat any generated answer. It is reading transcripts that may still have a mis-tagged speaker in them, so check the underlying line before a claim from Otter Chat enters a document.
+
+## Where a transcript may not go
+
+Added 2026-08-27. `doc_repo` is a public repository on GitHub. A transcript carrying third-party personal information, health, family circumstances, financial history, or anything said in confidence by a counterparty, does not go in `80_meetings/transcripts/`. It goes in `_private/transcripts/`, which is gitignored, and the tracked document cites it as a private source without quoting the sensitive part.
+
+This is not hypothetical. The 2026-08 IP counsel call could not be filed to canon for exactly this reason, and its findings reached tracked docs with the personal detail deliberately left out.
 
 ## The short version
 
