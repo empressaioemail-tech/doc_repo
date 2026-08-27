@@ -40,7 +40,7 @@ FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you r
 PLAN-ROW: F-10, F-05 (90_operations/OPS-19_factory_plan_of_record.md)
 repo: hauska-factory
 
-# F-10 wave 1: the CAD roll for all 254 Texas counties through the conformant writer, one recorded run per county, defect rows before the loop, manifest cells reading verdicts per node (F-05); START GATED on the conformant close, the reaper trigger, and the merged PR
+# F-10 wave 1: the CAD roll for all 254 Texas counties through the conformant writer, one recorded run per county, defect rows before the loop, manifest cells reading verdicts per node (F-05); START GATED on the conformant close, the reaper trigger, the merged PR, and the applies-to edge write (A-007)
 
 ---
 id: 2026-08-27_f10_wave1_cad_roll_WDLL
@@ -110,7 +110,7 @@ Every county's CAD roll has been through the writer as its own recorded run, or 
 
 ## Amendments
 
-- None yet.
+- 2026-08-27 (A-007, before start): the start gate has a FOURTH condition. The conformant close left 48021 with 77,799 cad atoms and zero `applies-to`, `subject-to`, or `derivesFrom` edges; V11 (BP-EDGE-01, links starved) is FAIL there, and the job-asserted PASS was rejected. Before executing any county this lane changes the F-20 merge so the same transaction writes `applies-to` edges for every cad atom (parcel node to fact) and `derivesFrom` edges for every Derivation row, re-runs 48021 by replay (supersession, not update), and grades V11 from the store (`applies-to` count equals cad atom count; `derivesFrom` count equals Derivation count). Item 3's per-county evidence then includes the edge counts, and item 4's defect classes gain `EDGES_STARVED` as a class that fails a county. Conditions one to three are met at 15:30Z (close filed, `factory-conformant-reap` scheduled every 10 minutes and verified by violation, factory #9 merged 53c2342, job gen 9 `552694bd`); condition four is yours.
 
 ## Finish card (graded at close)
 

@@ -66,7 +66,7 @@ Every county's CAD roll has been through the writer as its own recorded run, or 
 
 ## Amendments
 
-- None yet.
+- 2026-08-27 (A-007, before start): the start gate has a FOURTH condition. The conformant close left 48021 with 77,799 cad atoms and zero `applies-to`, `subject-to`, or `derivesFrom` edges; V11 (BP-EDGE-01, links starved) is FAIL there, and the job-asserted PASS was rejected. Before executing any county this lane changes the F-20 merge so the same transaction writes `applies-to` edges for every cad atom (parcel node to fact) and `derivesFrom` edges for every Derivation row, re-runs 48021 by replay (supersession, not update), and grades V11 from the store (`applies-to` count equals cad atom count; `derivesFrom` count equals Derivation count). Item 3's per-county evidence then includes the edge counts, and item 4's defect classes gain `EDGES_STARVED` as a class that fails a county. Conditions one to three are met at 15:30Z (close filed, `factory-conformant-reap` scheduled every 10 minutes and verified by violation, factory #9 merged 53c2342, job gen 9 `552694bd`); condition four is yours.
 
 ## Finish card (graded at close)
 

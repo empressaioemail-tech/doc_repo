@@ -46,4 +46,48 @@ GROUND-TRUTH (2026-08-27T12:56Z): npm @empressaio/atom-contract still 1.22.0. F-
 
 OPEN: 5j4mc still persist-zero at run_age ~1990s (started 12:23:51Z, timeout 13:23:51Z). Stay. If persist-zero at timeout, report where it sat. Flood only if old 48021 cad-parcel-roll still 77073.
 
-OPEN: factory-control canary on digest 2af32780 before close; item 3 Queues/Gates grade on serving revision.
+GROUND-TRUTH (2026-08-27T13:01Z): factory-control serving factory-control-00004-jin @100% digest sha256:2af32780. Canary smoked then traffic shifted. Serving /queues 401 unauth; auth owner property-seat-resolution depth 0. /gates bastrop-cad-promote owner + throughput 500. Record _inbox/2026-08-27_f16-f18-factory-control-serving.md.
+
+GROUND-TRUTH (2026-08-27T13:02Z): npm @empressaio/atom-contract still 1.22.0 (published 2026-08-12). F-15 open. Shim check stays.
+
+GROUND-TRUTH (2026-08-27T13:03Z): 5j4mc run 80d375af phase stage-e-conformant status started age ~2313s persist still zero. Factory pg_stat_activity idle (control /gates only). Last job log 12:24:02Z pg SSL warning. Sit is in-memory after landing SELECT, before persistAliases. Hypothesized remaining O(n squared): store.aliases.find on every row in resolveCandidate (aliasesByKey already exists for match; dedupe still scans the full array). Replay runs pipelineFromRows a second time on the shared store. Do not retune until timeout. Next execute waits for per-leg of this sit.
+
+GROUND-TRUTH (2026-08-27T13:24:12Z): 5j4mc timeout. completion 13:24:12Z. Cloud Run failed exit 0 "The configured timeout was reached." persist aliases 0 staged_since 0 events 0. Run 80d375af left status started. Sit: in-memory pipelineFromRows after landing, before persist. Record _inbox/2026-08-27_f16-f18-5j4mc-timeout.md.
+
+GROUND-TRUTH (2026-08-27T13:24Z): old cad-parcel-roll 48021 not conformant-v1 still 77073.
+
+GROUND-TRUTH (2026-08-27T13:25Z): expired lease for 80d375af deleted (taken 12:24:02Z, expired 12:39:02Z).
+
+GROUND-TRUTH (2026-08-27T13:35Z): t85jf per-leg on 2000 rows. landing 194ms, pipeline1 2619ms / 4000 atoms, replay 209ms identical. Merge 42P07 TEMP table twice in one tx. aliases 2000 staged 4000. Record _inbox/2026-08-27_f16-f18-t85jf-per-leg.md.
+
+GROUND-TRUTH (2026-08-27T13:41Z): factory-conformant gen 7 digest sha256:c9c80153. Execution npg6c --apply --replay run c7686690. Landing 1268ms / 77799 rows written. At age 1677s still no pipeline1 event, aliases still 2000, staged_since 0. Stay. Old 48021 still 77073 at execute start.
+
+GROUND-TRUTH (2026-08-27T14:19Z): npg6c cancelled. Same sit as 5j4mc: landing event only, no pipeline1, persist still t85jf 2000 aliases. Expired lease left for F-03 reaper (run c7686690). Do not hand-delete.
+
+GROUND-TRUTH (2026-08-27T14:25Z): landing 48021 usable situs_address 58716 of 77799, centroid 0. Remaining quadratic is T2 full-node scan on usable addresses.
+
+GROUND-TRUTH (2026-08-27T14:29:43Z): reaper rkk9n wrote termination for 5j4mc timeout, t85jf crashed, npg6c killed. Leases 0. Live violation: cancel npg6c, reaper produced the row without a hand fix.
+
+GROUND-TRUTH (2026-08-27T14:31Z): (h) dhvb4 limit=10000 pipeline1 1298ms (resolve 761, stage 435, t2Considered 57) vs 5x of 2619 = 13095. Clears. mergeMs 265540 because MERGE still read the 100k probe stage. Exit 3 rate-floor 58.2 atoms/s. Record _inbox/2026-08-27_f16-f18-h-limit-10000.md.
+
+GROUND-TRUTH (2026-08-27T14:40:46Z): (f) cleanup n5xm6 keyed e8823e11. Deleted 100000 stage + 100000 hauska_mcp rateProbe. probe_left 0. old 48021 still 77073. Record _inbox/2026-08-27_f16-f18-cleanup-e8823e11.md.
+
+OPEN: (h) cleared. Full --apply --replay is allowed. No flood until that persist lands and old 48021 is still 77073. F-15 still 1.22.0.
+
+GROUND-TRUTH (2026-08-27T15:05Z): persist counts for run 15c5c397 / jmwdp. Factory aliases 89799 rows / 77799 distinct keys / 77799 nodes (2k+10k+full eras). write_stage_atoms 155598 (77799 cad + 77799 alias). write_stage_edges 0; applies-to / subject-to / derivesFrom 0 from this persist. hauska_mcp updated_at in 14:43-14:46Z: 77799 cad-parcel-roll + 77799 identity.alias. Old-shape cad-parcel-roll 48021 still 77073. rate event rows 135598 wallMs 116603 atomsPerSec 1162.90 vsFloor met. Replay identical 10219 ms.
+
+GROUND-TRUTH (2026-08-27T15:05Z): rule_grades 48021:15c5c397 V1/V3/V7/V11/V14 PASS; V2/V4/V5/V6/V8/V9/V10/V12/V13/V15 UNMEASURED. V11 PASS is job-asserted; store edges for applies-to are 0.
+
+GROUND-TRUTH (2026-08-27T15:08:09Z): flood-only f2gln exit 1 FLOOD_ZONE_MISSING. Raw enumerated 62256; zoned 62254 (A 2668, AE 1309, AO 42, X 58235); unzoned named 48021:8720001 and 48021:8725799 (floodZone null). Run 70ee9733 started, no termination (reaper sit). Old 48021 still 77073 at execute.
+
+GROUND-TRUTH (2026-08-27T15:11:28Z): scheduler factory-conformant-reap us-east4 */10 Etc/UTC next 15:20:00Z. Body JSON overrides args reap. No hand execute.
+
+GROUND-TRUTH (2026-08-27T15:12:16Z): cancelled v6bzf; SIGTERM wrote killed + lease_released on 2832934d. That is not the scheduled reap. f2gln 70ee9733 still unterminated.
+
+GROUND-TRUTH (2026-08-27T15:16:08Z): flood nm9zb SUCCESS on gen 9 sha256:552694bd. raw 62256, zoned 62254, unzoned 48021:8720001 and 8725799. selectors 4 (A AE AO X). derivations staged 62254 with derivesFrom. re-point 62254 equal, reFetched false. floodMs 60192 wallMs 60222 atomsPerSec 1033.74. old cad still 77073.
+
+GROUND-TRUTH (2026-08-27T15:20:12Z): scheduled reap factory-conformant-4z9lb (scheduler lastAttempt 15:20:00.932Z) wrote f2gln 70ee9733 crashed lease_released. No hand execute. leases 0. v6bzf killed was SIGTERM at 15:12:16, not the scheduled reap.
+
+GROUND-TRUTH (2026-08-27T15:27Z): hauska-factory PR 9 merged 53c2342. Both test check-runs conclusion SUCCESS. Job remains gen 9 digest 552694bd.
+
+OPEN: F-10 and F-06 not started. Next two cards from the planner. F-15 still 1.22.0.
