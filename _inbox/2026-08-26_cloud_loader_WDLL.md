@@ -2,8 +2,8 @@
 id: 2026-08-26_cloud_loader_WDLL
 title: WDLL — Option A on the existing write path (P-81 harness, P-82-lite plus BP-WRITE-01, P-83 scoped lease, P-84 run ledger; OPS-19 F-02)
 date: 2026-08-26
-last_updated: 2026-08-26
-status: approved
+last_updated: 2026-08-27
+status: closed
 applies_to: hauska-engine, legacy-design-tools, hauska-factory
 plan_row: P-81, P-82, P-83, P-84
 parent_plan_row: F-02 (90_operations/OPS-19_factory_plan_of_record.md)
@@ -25,7 +25,7 @@ owner: property seat. Deploys planner-owned per standing decision.
 
 # WDLL: option A on the existing write path
 
-Date: 2026-08-26  Status: approved  Operator approval: 2026-08-26 (option A ruled; card approved)
+Date: 2026-08-26  Status: closed 2026-08-27  Operator approval: 2026-08-26 (option A ruled; card approved)
 
 This is 51 §remediation step 1 applied to the live writer: stop the orphan population growing (BP-WRITE-01), remove the round-trip loop that made the path run at 21 atoms/s, bind the lease to a process and to the data it writes, record every run, and finish the one county already mid-rewrite. It is not a fill program. After Bexar, this path writes no new county; the Texas remainder, Harris and Dallas included, waits for the conformant stage E writer (OPS-19 F-15, F-16, F-18). The brief's numbers are the planner's; reporting one wrong is a successful outcome.
 
@@ -115,9 +115,20 @@ This is 51 §remediation step 1 applied to the live writer: stop the orphan popu
 - 2026-08-26 (later): re-scoped to option A: BP-WRITE-01 added as item 1; Harris, Dallas and the Texas remainder moved out to the conformant writer; `OLD_SHAPE_FILL_FROZEN` added as item 23; parent OPS-19 F-02.
 - 2026-08-26 (night, before dispatch): three bindings added at compile time. (a) Worktree: the drain runs in `P:/seat-worktrees/property/hauska-engine-drain` on `seat/property-drain`, created from `origin/main` (`git -C P:/hauska-engine worktree add P:/seat-worktrees/property/hauska-engine-drain -b seat/property-drain origin/main`); the row is registered in `_catalog/seat_register.json`; never the primary property engine worktree, which holds another lane. (b) Pre-step, sanctioned serving-store write: before any Bexar resume, apply engine migration `010_drop_access_policy_defaults.sql` on `hauska_mcp` and run `packages/storage/scripts/backfill-icc-access-policy.mjs` against `hauska_mcp` (never `neondb`), as a recorded run with snapshot, counts before and after, and the `schema_migrations` row read back (OPS-16 A-033; the writer half shipped in engine PR #361 `cfa18bc`, the store still carries `DEFAULT public-free`). The substrate seat retires `access-policy.ts:87` after this lands; that is their card. (c) Item 20 of the Phase A card (`published_at` on the served ledger) is NOT this lane; it is an LDT route change under OPS-19 F-05.
 - 2026-08-27 (lease v2 handback): (a) body.atomDid question closed: the only consumers are `AtomRetrievalService.withGuaranteedAtomDid` and the atoms-list mapper in `packages/retrieval/src/index.ts`, which preserve `body.atomDid` only when it starts with `did:` and otherwise rebuild `buildAtomDid(entityType, entityId)`, the same derivation the write path uses for the column (planner read on engine main 7012ac7, lines 134 to 139); a writer-local id such as `fhfact_*` or `cadroll_*` is therefore not served identity and BP-WRITE-01 correctly admits it; the foreign-method and type-mismatch cases stay `DID_NAMESPACE`. Record `_inbox/2026-08-27_atomdid_consumer.md`. (b) Sanctioned serving-store DDL: engine migration `011` (`atoms_writer_lease_v2`, no FK, Factory `run_id` as text) is applied on `hauska_mcp` only through the Factory command `lease-v2-migrate` as a recorded run (direct host, never `-pooler`, never `neondb`), after the engine PR merges on CI `SUCCESS`, with the `schema_migrations` row and the table's existence read back and reported. This is the second and last pre-Bexar DDL on the serving store under this card; any further one needs its own amendment. (c) Item 14 landed: `AGENT_CONTRACT.md` section 3 now carries OPS-19 rule 7 and the compiler marker moved from v92aa194c to v1890f0bb; dispatches compiled before it are recompiled by the planner so the gate does not refuse them.
+- 2026-08-27 (close ruling, OPS-19 A-004 and OPS-16 A-042): the F-02 runner exists (`factory-atoms-cad` gen 2) and items 1 to 5 of this card are proven on engine main; Bexar 48029 reads 703,257 = roll, so item 26 (resume) closes as complete by the prior writer and no resume runs; item 7 is graded FAILED at chunk scale (149.0 and 67.4 atoms/s on two 999-row rewrites, prediction 300, floor 150) and, per its own rule, opens stage-and-merge as OPS-19 F-18 for the conformant writer; no further `--apply` on the old shape for any county. The card closes at the drain lane's next handback with its finish card and leave-behind.
 
 ## Finish card (graded at close)
 
-1. (graded at close)
+1-5 met (engine main #362/#363/#364; A-004). 6 unmeasured this close. 7 FAILED (149.0 and 67.4 atoms/s on two 999-row rewrite chunks; prediction 300; floor 150; recorded, not tuned; opens F-18). 8-14 met (lease v2 + AGENT_CONTRACT v1890f0bb). 15 unmeasured. 16-17 met. 18 not-started. 19 unmeasured. 20 is F-05, not this card. 21 met (`factory-atoms-cad` gen 2, digest `5a3bf94d`). 22 unmeasured. 23-25 met. 26 met without a resume (703,257 = roll). 27 met.
 
-leave_behind: (declared at close)
+leave_behind:
+- factory-atoms-cad gen 2 on sha256:5a3bf94d — owner property — plan_row F-02
+- factory-atoms-writer job delete-on-operator-word (execute must 404) — owner planner — plan_row F-02
+- writer worktrees stay drain lane — owner property — plan_row F-02
+- F-18 stage-and-merge write design from 149.0 and 67.4 — owner planner+property — plan_row F-18
+- F-15 contract types — owner substrate — plan_row F-15
+- F-04 console proxy — owner property — plan_row F-04
+- F-05 published_at — owner property-or-ldt — plan_row F-05
+- substrate access-policy.ts:87 — owner substrate
+
+Close: `_inbox/2026-08-27_p81-drain_close.json`. F-02 runner close: `_inbox/2026-08-27_f02-writer-job_close.json`.

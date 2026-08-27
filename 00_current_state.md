@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-08-20
+title: Current state snapshot — 2026-08-27
 status: pointer
-last_updated: 2026-08-20
+last_updated: 2026-08-27
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -20,6 +20,8 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 - **Fire 3: Doc_repo dirty tree.** Many uncommitted files from prior sessions. Commits are a named list, never the whole working tree.
 
 ## 2. In-flight sprints
+
+- **THE FACTORY (OPS-19, added 2026-08-27).** The cloud machine that drains Texas onto the new shape and onboards a state, built to the model law (`19_the_instrument_contract.md`, `_blueprint/`). Plan of record `90_operations/OPS-19_factory_plan_of_record.md`; design `_inbox/2026-08-26_factory_program_design.md` (section 12 is the status). Phase A closed; F-02 runner `factory-atoms-cad` live in us-east4; old-shape writes ENDED 2026-08-27 (OPS-16 A-042); the store still serves the old shape. Next: the conformant writer card `_inbox/2026-08-27_f16_f18_conformant_writer_WDLL.md` (F-16, F-17, F-20, F-18) with F-15 types requested from the substrate seat; then F-10 Texas cleanup; then F-06 publish. Two findings open: engine-api gate headers spoofable (OPS-16 A-039, substrate), console operator-login proxy (F-04).
 
 - **OPS-16 / L26** Fill factory stopped. QA/launch on current map (A-017). Backfill redesign later. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
 - **OPS-17 Lane B** G-61 through G-65 CLOSED. Serving Dashboards `00007-8sc` `https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app`. MCP `00082-mat` tag g11. Next card G-66 Dashboards UI (draft). Not a Bastrop cutover. Three identities: template-city demo, live Bastrop island, next-city pack. Path `_decisions/2026-08-17_dashboards_ui_then_one_feed.md`. `P:\smartcity-os` no-touch.

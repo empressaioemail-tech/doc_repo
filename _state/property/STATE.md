@@ -2,9 +2,26 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T18:35Z (P-66 serve registry deployed). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-27T10:30Z (P-85 status canvas + handoff). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
 
-## PHASE 1 — CLOSED 2026-08-23 · PHASE 2 ACTIVE
+## DRAIN P-81..P-84 / F-02 — CLOSED 2026-08-27
+
+Planner accepted F-02 close 2026-08-27 02:45Z. Drain finish `_inbox/2026-08-27_p81-drain_close.json`. WDLL `_inbox/2026-08-26_cloud_loader_WDLL.md` status closed. Bexar 48029 is 703,257 = roll; item 26 complete without a resume. Item 7 FAILED at 149.0 and 67.4 atoms/s; not tuned. No further `--apply` on the old shape for any county. Job of record: `factory-atoms-cad` gen 2 on `atoms-writer@sha256:5a3bf94d`. Stood-down job `factory-atoms-writer` deleted 2026-08-27T10:21Z (describe cannot find it; execute NOT_FOUND); image `4fea88da` left unreferenced; 149.0 (msmfx, wallMs 6706) stays on the record. Retirement `_inbox/2026-08-27_f02-writer-job_retired.json`. Writer worktrees clean (salvage deleted). **Do not start F-15..F-18 until the planner compiles a dispatch.** Next card starts with substrate contract types and stage-and-merge write design from those two readings (OPS-19 A-004, OPS-16 A-042).
+
+## P-85 RECORDS REQUEST — IN FLIGHT 2026-08-27
+
+**Status: plumbing deployed; Phase B product depth open.** WDLL `_inbox/2026-08-26_p85_central_texas_easements_WDLL.md`. **Canvas:** `C:/Users/cente/.cursor/projects/p-doc-repo/canvases/p85-records-request.canvas.tsx` (2026-08-27T10:38Z). **Handoff:** `_inbox/2026-08-27_p85_records_request_handoff.md`. Scratch `_scratch/p85-easements.md`.
+
+**Done (prod):** #479/#480/#225 merged; migration 0084 applied; cortex `00586-dip`; 7 portal rows permitted; **records-request-worker** live (`p85-v2`); `RECORDS_REQUEST_WORKER_URL` on cortex; reachability recipes all 6 counties; Bastrop jobs complete; smartsite REC UI + live status (`dpl_68wKekUURW8GL8oKY3GbChRkpYMC`); dev_role on `empressaioemail@gmail.com` + `dev@smartcityos.io`.
+
+**Open PRs:** LDT **#482**, hauska-map **#228** — merge first.
+
+**Live blocker:** Williamson TylerHost HTTP 403 on disclaimer (item 5).
+
+**Next:** item 5 real search (Tyler + Travis/Hays/Caldwell proofs) → item 6 acquire instruments → items 7–10 pipeline → item 11 email → item 13 Studio Stripe ids → item 15 graded close.
+
+**Worktrees:** LDT `P:/seat-worktrees/property/legacy-design-tools` `feat/p85-pe-records-bridge`; PE `P:/seat-worktrees/property/hauska-map-records` `seat/property-records`.
+
 
 **Close:** `_inbox/2026-08-23_phase1_program_close.json` · **Canvas:** `canvases/phase1-master-program.canvas.tsx` · **Phase 2:** `_inbox/2026-08-23_phase2_data_ingest_program.md`
 

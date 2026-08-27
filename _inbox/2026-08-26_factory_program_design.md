@@ -2,7 +2,7 @@
 id: 2026-08-26_factory_program_design
 title: The Factory — end-to-end design under the instrument contract (four layers, five stages, staging, console, states)
 date: 2026-08-26
-last_updated: 2026-08-26
+last_updated: 2026-08-27
 status: draft
 applies_to: hauska-factory, hauska-engine, legacy-design-tools, hauska-map, hauska-atom-contract
 plan_row: F-00 through F-19 (OPS-19)
@@ -170,10 +170,10 @@ Texas cleanup runs inside step 5 on the new path. Discovery and Utah run after s
 
 ## 9. Unknowns with their falsifiers
 
-| Unknown | Falsifier |
-|---|---|
-| Round trip from `us-east4` to Neon `us-east-1` | First job execution records `rtt_ms`; prediction under 5 ms |
-| Real-table write rate on the existing path after link batching | Drain card item 6; below 150 atoms/s opens stage-and-merge |
+| Unknown | Falsifier | Outcome |
+|---|---|---|
+| Round trip from `us-east4` to Neon `us-east-1` | First job execution records `rtt_ms`; prediction under 5 ms | OUTCOME 2026-08-26: `query_rtt_p50_ms` 5, `connect_ms` 773 on the east-1 store; the under-5 prediction failed by definition and the figure was accepted (OPS-19 grade log CP4) |
+| Real-table write rate on the existing path after link batching | Drain card item 6; below 150 atoms/s opens stage-and-merge | OUTCOME 2026-08-27: 149.0 and 67.4 atoms/s on two 999-row rewrite chunks in-region (F-02 close); floor failed; stage-and-merge opened as F-20 (OPS-19 A-005) |
 | Tier 2 resolution precision on Texas addresses and centroids | Adjudication sample graded by hand against known parcels; a queue that only grows fails |
 | Selector materialisation cost at 13M parcels | First statewide flood demotion records wall time and row count against the 21.5M enumerated rows it replaces |
 | Neon branch faithfulness for staging | Same county to both targets, identical walk results |
@@ -193,3 +193,9 @@ Retired by refuse or by decline: laptop runners, `P:/tmp` evidence, detached hea
 1. What executes: the Cloud Run Jobs per stage, the write boundary in the graph writer, the DB scope check, the walk job, the scheduler. 2. What triggers: every stage (record and lease), every candidate (resolution), every resolved candidate (reconcile), every verified run (score), every publish (walk), the schedule (drift). 3. What fails: refusals with named codes and non-zero exits; a bare key at the write boundary; a production publish without a passed staging sibling; a quarantined cell reading satisfied; a factory run without a termination record. 4. What bypasses: raw SQL to a serving store (detected by `updated_at` outside any run window and reported as unrecorded); a lane that deploys outside publish (detected by revision not in the ledger).
 
 leave_behind: none; design only.
+
+## 12. Status 2026-08-27 (the record is OPS-19; this section orients a fresh reader)
+
+Phase A closed 2026-08-26 as an honest partial and its leave-behinds closed 2026-08-27: the Factory repository, store, control plane, run ledger, landing of nine Texas sources (9 of 9 matched on two-count ledger rows), the console on its own Vercel project (public URL 401 until the operator-login proxy, F-04), the county ledger publish job whose `published_at` the served ledger does not yet read (F-05, an LDT route change). The option A drain (OPS-16 P-81 to P-84, OPS-19 F-02) landed the write boundary, batched links, lease v2, the run-id requirement, migrations 010 and 011 on `hauska_mcp` as recorded runs, and the F-02 stage runner `factory-atoms-cad` in `us-east4`, proven by recorded refusals, a dry run, and one canary. Bexar read 703,257 against a 703,257 roll, so no resume ran; the write-rate readings (149.0 and 67.4 atoms/s on 999-row chunks) failed the 300 prediction and the 150 floor and opened stage-and-merge as F-20. Old-shape writes ended permanently that day (OPS-16 A-042). Everything the store holds is still the old shape and still serves; the conformant writer (F-16, F-17, F-20, F-18) is the next card, then F-10 drains Texas through it, then F-06 publishes.
+
+Findings that changed the plan: the preamble extractor truncated on a literal Z and was fixed with a self-test (every dispatch before 2026-08-26 evening carried a six-line preamble); the console shipped its control key in a public bundle and the key was rotated the same night; `hauska-engine-api` accepts self-declared gate headers from the public internet (OPS-16 A-039, substrate seat, fix order callers first); two agents built the F-02 runner in one worktree because the planner instructed both (OPS-19 A-003), which is why every lane now has its own registered worktree and the retired lanes' salvage is listed rather than reused in place.

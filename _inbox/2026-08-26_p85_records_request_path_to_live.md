@@ -2,7 +2,7 @@
 id: 2026-08-26_p85_records_request_path_to_live
 title: P-85 Records Request, path to live: what exists, what is in flight, what is left, in order
 date: 2026-08-26
-last_updated: 2026-08-26
+last_updated: 2026-08-27
 status: active
 plan_row: P-85
 card: _inbox/2026-08-26_p85_central_texas_easements_WDLL.md
@@ -67,3 +67,4 @@ A Studio user on Smart Site opens a parcel in one of the six counties, chooses R
 ## Log
 
 - 2026-08-26: written after the property seat's E-1/E-2 close was relayed and the operator asked what is left. States verified by the planner at the snapshot in the frontmatter.
+- 2026-08-27: plumbing deployed (worker, cortex URL, recipes scaffold, Bastrop complete). Status canvas and handoff filed. See `_inbox/2026-08-27_p85_records_request_status_canvas.md`. Product work (items 5–16) remains open.
