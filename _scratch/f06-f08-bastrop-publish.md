@@ -1,21 +1,46 @@
 # F-06/F-07/F-08 Bastrop publish scratch
 
-GROUND-TRUTH (2026-08-27T19:05Z): cortex-api revision `cortex-api-00603-biq` tagged `staging` at 0% traffic; digest `sha256:67b09026…` (LDT main bd0ff0b); staging secrets `STAGING_DEPLOYMENT_DATABASE_URL` + `STAGING_ATOMS_DATABASE_URL` created empty in legacy-design-tools-prod; `/api/healthz` 200 on staging tag URL.
+## Wrong instrument (filed 2026-08-27T22:00Z per planner A-011)
 
-GROUND-TRUTH (2026-08-27T19:05Z): property-explorer-staging VERCEL production `https://property-explorer-staging.vercel.app` (prebuilt deploy dpl_5hJaijT128); CORTEX_API_URL=staging cortex tag; Factory `/site` → staging PE live (`Smart Site - Explore your property`); `GET /tiles.json` serves manifest on staging PE.
+Probe and conformant tier1 bake used **entity_id prefix**, not **jurisdiction_tenant**:
 
-GROUND-TRUTH (2026-08-27T19:05Z): factory-verify-walk job deployed with STAGING_SITE_URL=https://smart-site-factory.vercel.app/site.
+```sql
+-- WRONG (returned 0 conformant-v1 on staging MCP 2026-08-27 ~20:00Z)
+SELECT count(*)::int AS n FROM atoms
+ WHERE entity_type = 'cad-parcel-roll'
+   AND entity_id LIKE '48021:%'
+   AND coalesce(body->>'shape', '') = 'conformant-v1';
+```
 
-GROUND-TRUTH (2026-08-27T17:05Z): migration 0003 via factory-publish-migrate-b4wdp; PRs #11/#235/#493 merged.
+Also filed as `WRONG_CONFORMANT_COUNT_SQL` in `hauska-factory/src/lib/conformant-store-predicate.mjs`.
 
-LESSON: Vercel staging PE needs rootDirectory `apps/property-explorer` in project settings + `vercel build`/`vercel deploy --prebuilt` from monorepo root; CLI remote build with root `.` serves command-center.
+**Correct predicate (V11 grader / planner 21:50Z):**
 
-LESSON: PowerShell splits unquoted `--set-env-vars=a,b,c` on commas.
+```sql
+SELECT coalesce(body->>'shape', '(none)') AS shape, count(*)::int AS n
+  FROM atoms
+ WHERE entity_type = 'cad-parcel-roll'
+   AND jurisdiction_tenant = '48021'
+ GROUP BY 1 ORDER BY n DESC;
+-- conformant-v1: 77,799 rows; applies-to links: 77,799 (production hauska_mcp)
+```
 
-GROUND-TRUTH (2026-08-27T20:22Z): NEON_API_KEY in hauska-prod-497015; staging-reset succeeded; STAGING_* secrets v3 with direct branch hosts; cortex-api-00606-loh tagged staging; tier1 scoped bake (4 walk parcels) on staging neondb; manual verify-walk PASS at Factory /site.
+Old-shape rows do not carry `jurisdiction_tenant = '48021'`. Staging branch (post 17:00Z reset) carries the same conformant rows.
 
-OPEN: conformant-v1 bakes wrote 0 rows — no shape=conformant-v1 on staging MCP (77k legacy cad-parcel-roll only); needs factory-conformant --apply against staging ATOMS URL before conformant tier1 path works.
+## Ground truth
 
-OPEN: factory-verify-walk Cloud Run job fails FK 23503 (walk_results before verify_walks) — fixed insert order locally; job image rebuild pending.
+GROUND-TRUTH (2026-08-27T22:00Z): Item 2 MET (planner verified). Cortex staging `cortex-api-00606-loh` tagged `staging`; STAGING_* secrets v3/v4 in legacy-design-tools-prod; hauska-prod `STAGING_NEONDB_URL` + `STAGING_HAUSKA_MCP_URL` secrets created for publish jobs.
+
+LESSON (A-011): No bake or walk from laptop against any store. Publish bakes run via `factory-bastrop-publish` Cloud Run job (LDT in `Dockerfile.publish`).
+
+LESSON: Item 6 verify-walk grades **conformant-v1 provenance per layer** (`BP-CONFORMANT-01`); old-shape `node-facets-tier1-v1` / cad-roll baseline is production only.
+
+## Open
+
+GROUND-TRUTH (2026-08-27T22:50Z): Cloud Build `890e89f1` then `1ed42f0e` SUCCESS — publish image with LDT bakes deployed. `factory-bastrop-publish-8fffp` failed in 5s: ENOENT on `.bin/tsx`; fixed to `node node_modules/tsx/dist/cli.mjs`, rebuild redeployed.
+
+GROUND-TRUTH (2026-08-27T22:55Z): `factory-bastrop-publish-5jlgs` failed in ~26s, exit 1. tsx ENOENT gone. Cloud log shows only `1` — `bastrop-publish.mjs` / tier1 CLI catch blocks print `err.code` (numeric exit code) not stderr. Failure is tier1 conformant bake subprocess, not job startup.
+
+OPEN: Surface bake stderr in bastrop-publish; diagnose tier1 failure (likely serve guard or DB write on conformant row).
 
 OPEN: Item 8 production publish — operator go withheld.
