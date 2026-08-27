@@ -66,7 +66,7 @@ One Texas source (the Bastrop 48021 CAD roll already in landing) runs end to end
 
 ## Amendments
 
-- None yet.
+- 2026-08-27 (CP2, planner): (a) Item 5 met at 1,165 atoms/s on 100,000 rows (merge leg 90 percent of wall). (b) The rate probe merged 100,000 `conformant-v1` rows into `hauska_mcp` drawn beyond the Bastrop landing's 77,799; before close the lane reports their county composition from `write_stage_atoms` and, unless all are 48021, removes them by a recorded cleanup run keyed on run `e8823e11`; F-10 must never count probe rows. (c) `gcloud run jobs execute --args` from PowerShell must be the single quoted comma form, `--args='conformant,--apply,--rate-probe,--rate-rows=100000'`; the unquoted and bracket forms produce exit-2 usage executions (q67j4, mnjld, Phase A knl7d). This line is the runbook entry the Phase A leave-behind owed. (d) Item 3's console check is gradable only after `factory-control` is redeployed with the Queues and Gates screens; the lane redeploys it (canary form, digest-pinned) before close. (e) Cancelled executions 57lxt, fpt7z, qp9j2 are recorded as such; their expired leases were released and `takeScopedLease` now steals an expired lease, which is consistent with the `stolen_from` column in migration 011.
 
 ## Finish card (graded at close)
 
