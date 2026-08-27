@@ -95,6 +95,7 @@ Order: Phase A now; Phase B is the product; Phase C and D later and operator-tim
 - 2026-08-26 (evening): card re-shaped on the operator's ruling: online-first, asynchronous Studio research product, PIA letters deferred to Phase C.
 - 2026-08-26 (later): no new ingestion; instant sources queried live per parcel; browser agent with a recipe per portal vendor; captures as absence evidence; four acquisition methods; first proof the Tyler recipe on Williamson and Hays.
 - 2026-08-26 (night): scope broadened from easements to every recorded document tied to the parcel; product renamed Records Request and placed in the Reports area; extraction depth by type (item 8); purchase-threshold ask (item 6); unrecorded material named, not absent (item 10); title-plant and title-opinion boundary (item 16); ADR-020 enum extension requested of the substrate seat. Decision `_decisions/2026-08-26_p85_records_request_scope.md`.
+- 2026-08-26 (late): path-to-live map written at `_inbox/2026-08-26_p85_records_request_path_to_live.md` after the lane had started Phase A (portal gate, registry, live GIS query, migration 0083, two schemas, all untracked). Two branch instructions bind the lane before its first commit: re-cut `feat/p85-records-request` from `origin/main` (it was cut from `seat/property`, fifty behind, carrying already-merged P-63 commits), and build the Smart Site half in its own registered worktree `P:/seat-worktrees/property/hauska-map-records` on `seat/property-records`, never on `fix/pe-pricing-a2`.
 
 ## Finish card (graded at close)
 

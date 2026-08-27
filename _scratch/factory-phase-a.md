@@ -95,8 +95,28 @@ GROUND-TRUTH (2026-08-26T20:32:04Z): hauska-factory PR #2 CheckRun conclusion SU
 
 OPEN: item 6 remaining tables (FEMA factory-landing-import-5t46m in flight; then parcels, cad, wells, pipelines, footprints). Item 19 still open.
 
+GROUND-TRUTH (2026-08-26T21:09:56Z): FEMA landing 198178=198178 defaulted_provenance=0 run 71b7cc01 execution factory-landing-import-5t46m.
+
+GROUND-TRUTH (2026-08-26T20:28:27Z): factory-landing-import-knl7d exit 1 MODULE_NOT_FOUND Cannot find module '/app/src/cli.mjs landing-import'. Unquoted PowerShell --args joined the two argv.
+
+GROUND-TRUTH (2026-08-26T22:30:28Z): GET https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger has no published_at. Job factory-cc-publish-6nznt wrote Factory county_ledger_published and neondb.county_ledger_snapshot. GET handler is countyLedger.ts router.get and does not read that table.
+
+GROUND-TRUTH (2026-08-26T22:43Z): hauska-map commits/b959886/check-runs total_count=0 after push, #223 reopen, and #224. Factory PR #3 CheckRun test conclusion SUCCESS. PR #223 CLOSED. PR #224 OPEN draft.
+
+GROUND-TRUTH (2026-08-26T22:40Z): five landing jobs started on image f66dbe99: pipeline-mrxbd wells-9f846 cad-dq7md footprint-ppdgr parcel-wqdzv.
+
+OPEN: item 6 five copies in flight. Item 20 not-met. Map PR 224 waiting on Actions.
+
+DEAD-END: do not treat a GET that once appeared to carry published_at as the served contract. The route source is the second derivation.
+
 LESSON: 144 ms and 773 ms are TLS connect. query_rtt_p50_ms on the same connection is 5.
 
 LESSON: PowerShell splits gcloud --args on commas unless the whole list is quoted.
 
 DEAD-END: do not git switch P:/seat-worktrees/property/hauska-map. It carries PE pricing dirty files. Console lives on hauska-map-factory / seat/property-factory.
+
+GROUND-TRUTH (2026-08-26T23:10Z planner): Phase A close ACCEPTED as honest partial. Map PR #224 green 22:49Z, merged be8b7eb 22:57Z. Item 20 not-met routed to F-05 LDT. pipeline-mrxbd and wells-9f846 completed unread at close.
+
+GROUND-TRUTH (2026-08-26T23:47Z first drain handback, import_ledger): pipeline 491178=491178 run ccd8af7c; wells 1396049=1396049 run 2579a562; cad 8021862=8021862 run d474c4b9; footprint 10674975=10674975 run 3a24692d. parcel-wqdzv still running. unknown_fields vintage+adapter_version declared.
+
+GROUND-TRUTH (2026-08-26T23:46Z): key rotation run 0fdaf217. factory-control-00002-gjr @100%. Vercel VITE_FACTORY_CONTROL_API only. Console bundle live 401. Map PR #226 3c447de removes the VITE key binding.

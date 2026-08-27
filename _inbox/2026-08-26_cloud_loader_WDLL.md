@@ -113,6 +113,7 @@ This is 51 §remediation step 1 applied to the live writer: stop the orphan popu
 
 - 2026-08-26: card rewritten after the adversarial review; first draft superseded in place.
 - 2026-08-26 (later): re-scoped to option A: BP-WRITE-01 added as item 1; Harris, Dallas and the Texas remainder moved out to the conformant writer; `OLD_SHAPE_FILL_FROZEN` added as item 23; parent OPS-19 F-02.
+- 2026-08-26 (night, before dispatch): three bindings added at compile time. (a) Worktree: the drain runs in `P:/seat-worktrees/property/hauska-engine-drain` on `seat/property-drain`, created from `origin/main` (`git -C P:/hauska-engine worktree add P:/seat-worktrees/property/hauska-engine-drain -b seat/property-drain origin/main`); the row is registered in `_catalog/seat_register.json`; never the primary property engine worktree, which holds another lane. (b) Pre-step, sanctioned serving-store write: before any Bexar resume, apply engine migration `010_drop_access_policy_defaults.sql` on `hauska_mcp` and run `packages/storage/scripts/backfill-icc-access-policy.mjs` against `hauska_mcp` (never `neondb`), as a recorded run with snapshot, counts before and after, and the `schema_migrations` row read back (OPS-16 A-033; the writer half shipped in engine PR #361 `cfa18bc`, the store still carries `DEFAULT public-free`). The substrate seat retires `access-policy.ts:87` after this lands; that is their card. (c) Item 20 of the Phase A card (`published_at` on the served ledger) is NOT this lane; it is an LDT route change under OPS-19 F-05.
 
 ## Finish card (graded at close)
 

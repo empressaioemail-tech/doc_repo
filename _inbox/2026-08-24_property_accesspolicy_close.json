@@ -1,0 +1,97 @@
+{
+  "seat": "PROPERTY",
+  "snapshot": {
+    "repo": "P:/seat-worktrees/property/hauska-engine",
+    "branch": "fix/e1-e2-accesspolicy-failclosed",
+    "head_commit": "00fa893f319ed4eecba74b7cfb60f9d148d23e34",
+    "merge_commit": "cfa18bc2325e006edc643b75952d3d9e5a31993a",
+    "merged_at": "2026-08-24T22:47:11Z"
+  },
+  "E-1": {
+    "title": "accessPolicy fail-closed at writer + producer stamping",
+    "what_changed": [
+      "Added packages/storage/src/access-policy-write.ts with resolveAccessPolicyOrRefuse / resolveJurisdictionAccessPolicyOrRefuse / accessPolicyMatchesFilter",
+      "PgStorage, property-atom-batch-write, and in-memory read filters refuse or exclude absent accessPolicy instead of defaulting to public-free",
+      "Removed drizzle schema defaults on access_policy columns; added migration packages/storage/migrations/010_drop_access_policy_defaults.sql",
+      "atomize() and extractModelCodeAtoms() require accessPolicy and stamp every emitted family; pipeline-runner and all ingest paths thread declared policy",
+      "Added bounded resumable backfill script packages/storage/scripts/backfill-icc-access-policy.mjs",
+      "Tests: pg-storage refuse-when-absent, visibility-filter absent-no-widen, atomization end-to-end stamping, extractor equality stamping"
+    ],
+    "pr": 361,
+    "pr_url": "https://github.com/empressaioemail-tech/hauska-engine/pull/361",
+    "check_run": {
+      "name": "typecheck + test",
+      "workflow_run_id": 32786060071,
+      "conclusion_string": "success",
+      "head_sha": "00fa893f319ed4eecba74b7cfb60f9d148d23e34"
+    },
+    "violation_counts": {
+      "pg_storage_resolveAccessPolicyOrRefuse": {
+        "defect_injected": "replace throw with return public-free when absent",
+        "defect_fail_count": 1,
+        "defect_total_tests": 7,
+        "guard_total_always_refuse_fail_count": 5,
+        "guard_total_total_tests": 7
+      },
+      "atomize_accessPolicy_stamping": {
+        "defect_injected": "skip withAccessPolicy on section/definition/crossReference families",
+        "defect_fail_count": 1,
+        "defect_total_tests": 2,
+        "guard_total_note": "not separately measured; stamping test is the primary guard"
+      }
+    },
+    "backfill_state": "NOT RUN. Script exists at packages/storage/scripts/backfill-icc-access-policy.mjs. Migration 010 not applied to production hauska_mcp in this session. No DATABASE_URL to hauska_mcp was available. Substrate must keep hauska-mcp-server/src/access-policy.ts:87 ICC withhold until backfill completes.",
+    "what_not_done": [
+      "Did not apply migration 010 on production hauska_mcp",
+      "Did not execute ICC backfill script against live store",
+      "Did not deploy engine-api or pipeline-runner",
+      "Did not touch six COTALITY_* secrets mounted on production engine-api",
+      "Did not live-probe deployed surfaces (code-done != customer-done)"
+    ]
+  },
+  "E-2": {
+    "title": "findings/briefing LLM mock fail-closed",
+    "not_live_today": "Serving revision hauska-engine-api-00174-zus runs AIR_FINDING_LLM_MODE=grok with XAI_API_KEY bound (planner-verified 2026-08-24 by reading the revision, not re-verified this session). Mock fabrication path was latent, not customer-facing today.",
+    "what_changed": [
+      "Added packages/engine-core/src/llm-mode-refusal.ts; resolveFindingLlmMode / resolveBriefingLlmMode refuse unset or unknown env instead of defaulting mock",
+      "Rewrote services/engine-api/src/lib/llmClients.ts: LlmMode is grok|anthropic only; missing keys throw LlmResolutionRefusalError",
+      "Rewrote services/engine-api/src/routes/findings.ts and briefing.ts: no mock in request schema, no catch-to-mock fallback, 503 on LLM refusal",
+      "Added services/engine-api/src/__tests__/findings-refuse.test.ts; removed findings-degrade.test.ts and briefing-degrade.test.ts",
+      "Updated envelope-contract and reasoning-routes tests to expect 400 for mock mode in body"
+    ],
+    "pr": 361,
+    "check_run_conclusion_string": "success",
+    "violation_counts": {
+      "findings_refuse_route": {
+        "defect_injected": "expect 200 instead of 400 for mock-in-body test",
+        "defect_fail_count": 1,
+        "defect_total_tests": 3,
+        "guard_total_expect_200_on_all_refusal_paths_fail_count": 3,
+        "guard_total_total_tests": 3
+      }
+    },
+    "what_not_done": [
+      "Did not change services/engine-api/src/routes/chat.ts which still accepts mode mock in request body",
+      "Did not deploy engine-api",
+      "Did not live-probe findings endpoint on deployed revision"
+    ]
+  },
+  "cross_seat_ordering": {
+    "substrate_gate": "hauska-mcp-server/src/access-policy.ts:87",
+    "writer_fix_merged": true,
+    "backfill_complete": false,
+    "substrate_unblock": "BLOCKED — backfill not executed. Do not retire access-policy.ts:87 until migration 010 is applied and backfill-icc-access-policy.mjs has run to completion against hauska_mcp with checkpoint+log."
+  },
+  "leave_behind": [
+    {
+      "item": "Apply migration 010_drop_access_policy_defaults.sql on hauska_mcp, then run packages/storage/scripts/backfill-icc-access-policy.mjs with DATABASE_URL pointing at hauska_mcp (not neondb)",
+      "owner": "PROPERTY",
+      "plan_row": "E-1 backfill follow-up"
+    },
+    {
+      "item": "Substrate retirement of hauska-mcp-server/src/access-policy.ts:87 ICC withhold — gated on backfill completion above",
+      "owner": "SUBSTRATE",
+      "plan_row": "parallel card"
+    }
+  ]
+}

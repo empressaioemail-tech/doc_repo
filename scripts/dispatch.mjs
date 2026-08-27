@@ -14,6 +14,7 @@
  * block is refused the same way a missing AGENT-CONTRACT marker is.
  */
 import { createHash } from 'node:crypto';
+import { extractStandingDecisions } from './lib/standing-decisions.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -89,12 +90,11 @@ for (const row of planRows) {
 
 // --- 2. Regenerate CANON-PREAMBLE from _STATE.md (same extraction as dispatch-preamble.mjs). ---
 const state = readFileSync(join(root, '_STATE.md'), 'utf8');
-const sd = state.match(/^## STANDING DECISIONS[^\n]*\n([\s\S]*?)(?=^## |\Z)/m);
-if (!sd) {
+const sdBody = extractStandingDecisions(state);
+if (sdBody === null) {
   console.error('STANDING DECISIONS section not found in _STATE.md');
   process.exit(1);
 }
-const sdBody = sd[1].trimEnd();
 const preambleHash = createHash('sha256').update(sdBody, 'utf8').digest('hex').slice(0, 8);
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(
