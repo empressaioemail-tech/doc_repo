@@ -26,6 +26,18 @@ Doc 51 one-server rule reserved a split for listing visibility / per-domain bran
 
 2026-08-26T23:55Z: planner reply. Card approved. OPS-16 id is A-035 (A-034 is P-85 path-to-live). Amendments a–c on the WDLL. Grant row is a prerequisite of P-86 item 1; resolvable URL carries the grant id, not the HMAC. MCP housing is LDT `artifacts/smartsite-mcp`. AS must be named before P-87; hosted recommended; P-86 does not wait. P-85 item 4 gates records tools and item 8.
 
+## GROUND-TRUTH
+
+2026-08-27T00:15Z: planner named the AS (A-037). Hosted WorkOS AuthKit. Stytch Connected Apps is the twice-failed-Connect fallback, by amendment of A-037. Join: `peUserIdentities` `(provider, subject)` or verified email on the same provider; never a second account; never a tier not on `peUserEntitlements`. Docs read this session: `https://workos.com/docs/authkit/mcp` — AS metadata has S256, refresh_token, registration_endpoint, offline_access; CIMD preferred, DCR for back-compat. Item 10 is the falsifier. P-86 does not wait.
+
+## GROUND-TRUTH
+
+2026-08-27T00:40Z: Claude Design frames for Use in your AI live at `P:/tmp/Smart Site rebrand project (8)/handoff/ai-connect/` (`Smart Site Use In Your AI.dc.html`, standalone bundle). Rail circle, sheet states, Connect click, approve page we own, no keys. P-87 item 15 consumes these; do not re-derive placement.
+
+## LESSON
+
+A-039: engine-api gate headers are spoofable from the internet. Smart Site MCP never calls engine-api directly; it goes through workbench paths. When the token is enforced the PE BFF is one of the four callers that needs it.
+
 ## OPEN
 
-P-86 item 1 starts on hauska-map worktree `P:/seat-worktrees/property/hauska-map-smartsite-ai` branch `seat/property-ai` @ `434ec56` (cut from `origin/main` 2026-08-26; tracks origin/main). Do not use `fix/pe-pricing-a2` or the records worktree. LDT MCP worktree is not created until the planner registers `legacy-design-tools-mcp` / `seat/property-mcp`. Dispatch compiled `_dispatches/2026-08-27_p86-ai-connector_dispatch.md` CANON-PREAMBLE vd3c673f8. Integration does not write `_state/property`.
+LDT grant PR https://github.com/empressaioemail-tech/legacy-design-tools/pull/481 (`e8f0200b`). Migration 0085 is not applied until run-migrations after merge; verify `_schema_migrations` on production. hauska-map `/s/{grantId}` is the first commit on recut `seat/property-ai`. Item 2 (Accept/format) and the HTML funnel follow on that branch. LDT MCP server dispatch waits until P-87 starts. Records tools and item 8 wait on P-85 item 4. Integration does not write `_state/property`. Next OPS-16 A-id is A-040 if one is needed; do not write one for this commit.
