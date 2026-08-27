@@ -38,6 +38,30 @@ Doc 51 one-server rule reserved a split for listing visibility / per-domain bran
 
 A-039: engine-api gate headers are spoofable from the internet. Smart Site MCP never calls engine-api directly; it goes through workbench paths. When the token is enforced the PE BFF is one of the four callers that needs it.
 
+## GROUND-TRUTH
+
+2026-08-27T01:24Z: production `_schema_migrations` on cortex-prod `fancy-fire-06136146` / `neondb` (default branch). Lane SELECT, not the log. `0085_pe_share_grants.sql` applied_at `2026-08-27T01:07:49.908Z`. Sibling `0084_p85_records_request.sql` applied_at `2026-08-27T00:46:05.396Z`. `information_schema` lists `pe_share_grants` with id/grantor_user_id/grantor_tenant_id/parcel_node_id/created_at/expires_at/revoked_at; no HMAC column. Corroboration only: run 33029068772 success. Item 6 applied. #227 stays draft until item 1 is probe-able on a preview.
+
+## GROUND-TRUTH
+
+2026-08-27T01:33Z: scout + planner re-read of `seat/property-ai` `6a2fece`. Item 2 not implemented: `GET /s/:grantId` returns grant metadata only (`pe-share-grant.ts:65-70`). Compose lives in private `serveBrief` / `serveDossier` / `serveDownload` in `pe-share-view.ts` and today requires HMAC `token`. Grant row `grantorTenantId` + `grantorUserId` can hit `internal/share-dossier` with no v2 token (same qs as `serveDossier` lines 154-158). Item 4 mint write path cannot emit 402 (`pe-share.ts` 401/400/503/200 only); `shareClient.ts` 402 map is residual; `pe-share-token.ts:7-9` header is stale (claims export entitlement). Item 5 fails: brief is `source: 'baked-snapshot'` owner-stripped; X-ray has no share path (`brief-xray-export.ts` is signed-in download); ShareTool copy says "full analysis" (`ShareTool.tsx:26-27`). Preview compose will need `CORTEX_SERVICE_API_KEY` and, for downloads, `MCP_PRODUCT_KEY`. `pe-share-grant.ts` is not in the vercel 60s functions block.
+
+## LESSON
+
+Trust the mint handler over `pe-share-token.ts` header comments. The header still describes the retired export-entitlement gate.
+
+## GROUND-TRUTH
+
+2026-08-27T01:50Z: writer return reviewed on `seat/property-ai` `6a2fece` dirty tree. Planner ran 42 tests (6 files) pass. GET `/s/{grantId}` composes HTML/markdown/JSON. Item 5 owner labelled withheld (no owner-fact store). Planner stripped ShareTool "full analysis" copy and added `pe-share-grant.ts` maxDuration 60. Agreement checker is one derivation (hidden comment). #227 still draft. Item 1 still needs a preview probe.
+
+## GROUND-TRUTH
+
+2026-08-27T02:17Z: item 1 customer-done on `https://smartsite.cloud/s/c86a0001-0086-4086-a001-000000000001`. PE `dpl_DLL3qfcjsXsor4zEmHUtehT1QPLe`. Cortex `00589-jen` @100% `0dd3e159`. HTML/markdown/JSON 200. HMAC path 403. `/share` still SPA. `/llms.txt` 200. First 403 was cortex on #480, not a bad grant id.
+
 ## OPEN
 
-LDT grant PR https://github.com/empressaioemail-tech/legacy-design-tools/pull/481 (`e8f0200b`). Migration 0085 is not applied until run-migrations after merge; verify `_schema_migrations` on production. hauska-map `/s/{grantId}` is the first commit on recut `seat/property-ai`. Item 2 (Accept/format) and the HTML funnel follow on that branch. LDT MCP server dispatch waits until P-87 starts. Records tools and item 8 wait on P-85 item 4. Integration does not write `_state/property`. Next OPS-16 A-id is A-040 if one is needed; do not write one for this commit.
+Owner-fact grantor path is leave_behind (item 5 partial). Item 8 waits on P-85 item 4. P-87 hostname, AuthKit, and Connect not started. Probe grant remains live until revoked. Next agent: `_inbox/2026-08-27_p87_planning_agent_handoff.md`. Canvas: `smartsite-ai-connector-finish.canvas.tsx`.
+
+## GROUND-TRUTH
+
+2026-08-27T04:10Z: P-87 item 15/16 surface is live on smartsite.cloud (`dpl_DE5i8ajH8Ms3Bu41AJjTjUzcNUDX`, hauska-map `80585e8`, PR #229). Rail id `use-in-ai` after Share. Sheet: Coming soon / ChatGPT Unavailable, no Connect, no keys. Working hook is the Share mint (`/s/{grantId}`). Desktop: top-right cluster. Mobile: Research tab, then the face/monitor circle. Lander does not show the rail.

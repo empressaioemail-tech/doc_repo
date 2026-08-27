@@ -101,6 +101,26 @@ P-85 coupling (planner reply, same night): `request_records`, `check_request`, a
 
 Worktrees (planner reply): hauska-map work in `P:/seat-worktrees/property/hauska-map-smartsite-ai` on `seat/property-ai`, created from `origin/main`. Never `fix/pe-pricing-a2` and never the records worktree. LDT MCP worktree is `P:/seat-worktrees/property/legacy-design-tools-mcp` on `seat/property-mcp`, created from `origin/main`. Never the primary LDT worktree (P-85 on `feat/p85-records-request`). The LDT server gets its own dispatch when P-87 starts. This hauska-map dispatch covers P-86 and the UI half of P-87.
 
+- 2026-08-27 (item 6 applied, live read). Lane SELECT on production `_schema_migrations`, not the workflow log. Snapshot: Neon project `fancy-fire-06136146` (`cortex-prod`) default branch, database `neondb`, read 2026-08-27T01:24Z via Neon MCP `run_sql` from doc_repo `main` `d9a88d2`. Rows:
+
+  | name | applied_at |
+  |---|---|
+  | `0084_p85_records_request.sql` | `2026-08-27T00:46:05.396Z` |
+  | `0085_pe_share_grants.sql` | `2026-08-27T01:07:49.908Z` |
+
+  Second derivation: `information_schema.tables` lists `pe_share_grants`. Columns on that table: `id` text NOT NULL, `grantor_user_id` text NOT NULL, `grantor_tenant_id` text NOT NULL, `parcel_node_id` text NOT NULL, `created_at` timestamptz NOT NULL, `expires_at` timestamptz NOT NULL, `revoked_at` timestamptz NULL. No HMAC column. Planner dispatch run `33029068772` (`workflow_dispatch` `run-migrations`, completed/success, created 2026-08-27T01:07:09Z) is corroboration, not the record. Item 6 is applied.
+
+- 2026-08-27 (item 15 chrome + item 16, live). Use in your AI is a live rail bubble (`use-in-ai`, after Share) on smartsite.cloud. hauska-map `80585e8` `feat(p87): add Use in your AI rail bubble`, PR #229. PE prod `dpl_DE5i8ajH8Ms3Bu41AJjTjUzcNUDX` (later than the item 1 deploy). Sheet copy matches the design handoff: lede, Claude/Cursor/Copilot Coming soon, ChatGPT Unavailable plus the Business/Enterprise line, zero product-key strings. Working hook on the sheet is the Share mint (`/s/{grantId}`). Item 15 is partial: Connect is not live. Item 16 is met. Do not rewrite item 15 to done until item 10 completes one Claude Connect.
+
+- 2026-08-27 (item 1 customer-done, live probe). hauska-map #227 merged `f968d6fe` 2026-08-27T02:11:13Z on CI Test/Typecheck/encoding conclusion SUCCESS. PE Vercel prod `dpl_DLL3qfcjsXsor4zEmHUtehT1QPLe` aliased `https://smartsite.cloud`. Cortex canary `cortex-api-00589-jen` image tag `0dd3e159abcff8968c02c226881d42b4136627ee` (LDT #481) shifted to 100% (runs 33032649389 canary, 33032789033 shift). Probe grant `c86a0001-0086-4086-a001-000000000001` parcel `48021:34137` inserted 2026-08-27T02:11:07.662Z. Live at 2026-08-27T02:17Z:
+
+  Pre-deploy baseline: `GET /llms.txt` and `GET /s/{id}` were SPA `index.html`.
+  After deploy: `GET https://smartsite.cloud/llms.txt` 200 `text/plain` (resolvable shape, Accept contract, hash non-fetchable, 30 days).
+  `GET https://smartsite.cloud/s/c86a0001-0086-4086-a001-000000000001` 200 HTML instrument, header `X-Share-Freshness-Days: 30`, title 908 PINE, parcel 48021:34137, bake labelled not the share.
+  `Accept: text/markdown` 200 `text/markdown`. `Accept: application/json` 200 `grant-scoped-share-instrument`.
+  HMAC in path 403 `share_grant_invalid`. `/share` still SPA `index.html`.
+  First PE 403 was cortex still serving #480 (`00586-dip`); rejected "grant id invalid" as the mechanism once the row was in Neon.
+
 ## Finish card (graded at close)
 
 (not yet)
