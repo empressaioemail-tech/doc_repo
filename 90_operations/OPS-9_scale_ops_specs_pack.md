@@ -88,7 +88,7 @@ GOAL: keep external metering honest (Postgres store, dual-window rpm+daily) and 
 
 SPEC:
 - **Store:** Postgres counters on pooled Neon DSN (MCP `rate_limit_store.detail=postgres` on serving revision). Upstash is not the launch destination.
-- **Budgets:** defaults in `hauska-mcp-server` `tiers.ts` (`HAUSKA_FREE_IP_RPM=60`, daily 1,000; keyed tiers higher). cortex-api separate daily cap `CORTEX_USER_DAILY_API_LIMIT=10000` on serving revision.
+- **Budgets:** defaults in `hauska-mcp-server` `tiers.ts` (`HAUSKA_FREE_IP_RPM=60`, daily 1,000; keyed tiers higher). cortex-api separate daily cap `CORTEX_USER_DAILY_API_LIMIT=50000` on serving revision.
 - **Health signals:** MCP `/health` dependencies `rate_limit_store` + `postgres` latency_ms; alert if `state != ok` or latency_ms > 500 sustained.
 - **Load proof:** run T4 burst-proof procedure (`T4_infra_track.md`) after any limiter store swap or pool change; archive JSON under `_inbox/2026-08-05_76j_C4_loadtest_results.json` naming pattern with date stamp.
 - **429 vs 503:** 429 = meter working; 503 under load = pool/queue investigation (Neon `query_wait_timeout`).

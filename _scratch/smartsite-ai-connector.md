@@ -132,7 +132,23 @@ run_report/export_instrument marked `live` but fail WDLL item 14. export_instrum
 
 ## GROUND-TRUTH
 
-2026-08-28T05:25Z: **P-87 draw stub LIVE.** LDT **#516** merged @ `13ccde14`. Image tag `13ccde14a6daaaeb48eb642ac3f7cf442d5c6a1f`. cortex-api canary + shift-traffic PASS; serving `cortex-api-00621-poq` @ 100%; `GET /api/healthz` 200. smartsite-mcp canary + shift-traffic PASS; live `/health` reports revision `smartsite-mcp-00018-hop`, auth+cortex configured. Item 27 is the operator Claude `get_smart_site` paste of raw `draw` on `48021:34137`.
+2026-08-28T14:10Z: cortex-api **`00632-vaw` @100%** `minScale=1` (revision annotation, not template). Same image as prior serving `00629-riz` (`e86cade7` digest `sha256:df22a36…`). First canary `00631-xej` was B1-only image `ab0cac20` and was not shifted (would have rolled back #520). Workflow bake is LDT #521, not on main yet.
+
+## GROUND-TRUTH
+
+2026-08-28T13:38Z: B1–B3 + Georgetown **customer-done** on Connect. Serving `00623-mag`. B1 third attempt and B2 both return gold `48021:34137` parcel-situs plus same-county address-point. B3 node-id unchanged. Georgetown `48491:R042064` only. Two B1 aborts (`This operation was aborted`) before the pass. `00623-mag` `minScale` annotation is null; deploy workflow bakes `--min-instances=0`. Item 21 not filed.
+
+## GROUND-TRUTH
+
+2026-08-28T06:48Z: B1 allowlist fix serving. LDT #518 `ab0cac20`. cortex-api **`00623-mag` @100%** (traffic[].percent field). Image digest `sha256:2de20145dd9ce18b9a6997fca8273000545943b547934e0161e6094d6a065875` matched Artifact Registry tag `ab0cac201c3e9a1b9cb9d30bb42b1c696028d4fa` before shift. MCP unchanged (proxies cortex). Customer-done is the Connect B1–B3 + Georgetown pass.
+
+## GROUND-TRUTH
+
+2026-08-28T06:05Z: Connect QA rerun after draw deploy: `find_parcel("908 Pine St, Bastrop TX 78602")` → `{"hits":[]}`; `find_parcel("48021:34137")` → gold situs `908 PINE , BASTROP, TX 78602`. Serving cortex-api **`00621-poq` @100%** digest `sha256:85c38c9e22e1118cf9d33c3fea340b45e0d8c1c42f7d24926dc917be490405a7`. Neon gold row exists; normalized street `908 PINE`; `ILIKE '908 PINE ST%'` false, `ILIKE '908 PINE%'` true. `allStoreCounties()` does not include 48021.
+
+## GROUND-TRUTH
+
+2026-08-28T05:34Z: **P-87 items 22–27 CLOSED.** Operator Claude Connect paste of gold `draw` matches locked ring/url/honesty. Artifact `_inbox/2026-08-28_p87_item27_draw_probe.json`. WDLL `_inbox/2026-08-28_p87_draw_stub_WDLL.md` graded met. leave_behind: bake zoning has no `codeRefs`/`refBasis`; flood label is live NFHL subtype text.
 
 ## LESSON
 
@@ -142,14 +158,108 @@ Frontage is per-edge. Gold `48021:34137` is a corner lot + alley: roads on edges
 
 `atom-miss` ≠ typed absence. Well gold has no row → `unknown`. Pipeline present + `nearPipeline:false` → `absent-verified` naming `bufferMeters`. Boundary prefix empty → no ring + overlay `Parcel boundary unmeasured`.
 
+## GROUND-TRUTH
+
+2026-08-28T15:50Z: P-91 item 11 / item 21 copy pass on doc_repo `main` `843b343`. Live `https://mcp.smartsite.cloud/llms.txt` fetched this session. Eight tools. `export_instrument` live with degraded Hauska path. Only `request_records` and `check_request` marked not ready. Auth string on llms.txt: `OAuth 2.1 + PKCE against the Smart Site account (WorkOS AuthKit)`. Draft uses the S3 ruling string: `OAuth 2.1 + PKCE via WorkOS AuthKit; Google/Microsoft match the workbench.` Draft and blockers updated. B2/B4/S1-S3 copy-ready, not filed. S4 keeps `support@empressa.io` (no monitored smartsite.cloud alias in tracked canon). Directory not filed.
+
 ## OPEN
 
-P-87 items 22–26 deployed. Item 27 customer-done blocked on operator Claude Connect `get_smart_site` paste of raw `draw` JSON for `48021:34137`.
+P-87 draw stub closed. Item 21 copy for B2, B4, S1 to S3 is ready and not filed. Do not file an eight-tool listing we immediately grow. S4 unconfirmed. P-91/P-92 amended 2026-08-28: I5/I6, screen/save decouple, A11-A15, O7. Decision `_decisions/2026-08-28_smartsite_mcp_app_screen_save_decouple.md`. OPS-16 A-046. Do not start the iframe. Do not ship a ninth tool until connector item 12 flips. Persistence tools may start after that flip; they do not wait for item 16.
 
 ## OPEN — item 21 gate
 
-1. **B1** find_parcel city/ZIP — **B1.1 live @ `170ad1af`; operator Claude re-verify pending**
-2. B3 legal /privacy /terms static content (hauska-map)
-3. B2+B4 copy alignment (llms.txt authoritative; Central Texas zoning coverage)
-4. S1–S4 should-fix + minor hygiene
-5. Re-run prompt battery → file item 21
+1. **B1** find_parcel — **CUSTOMER-DONE 2026-08-28T13:38Z**. First-call abort: serving **`00632-vaw` @100%** `minScale=1` (revision annotation), same digest as `00629-riz` (`e86cade7` / `sha256:df22a36…`). LDT **#521** bakes `--min-instances=1` in the workflow; not on main yet (unrelated Test fail on motivated-seller `/0.74/`). Next main-workflow canary with the old yml would undo this. Do not file item 21.
+2. B3 legal pages — **CUSTOMER-DONE 2026-08-28T15:36Z**. hauska-map #275 `e3e40c2`. Live curl of /privacy /privacy/ /terms /terms/ returns static HTML (not SPA shell).
+3. B2+B4+S1 to S3 copy — **COPY-READY 2026-08-28**, not filed. Draft `_inbox/2026-08-28_p88_item21_claude_directory_submission.md`.
+4. S4 mailbox still unconfirmed (`support@empressa.io`). Minor hygiene still open.
+5. Re-run operator prompt battery, then file item 21.
+
+## GROUND-TRUTH
+
+2026-08-28T15:47Z: P-91 O5 not a ship gate. Five non-gold Bastrop parcels have rings. Planner Neon re-read `hauska_mcp.atoms` `property-boundary-edge`: 35073 4/4 warm, 33223 4/4 warm, 27943 5/5 warm, 32243 4/4 warm, 34169 5/5 fixture. HTTP `get_smart_site` for the four warm ids still unmeasured.
+
+2026-08-28T16:25Z: P-91 items 1–5 **live**. LDT **#523** `5a20f61d`. cortex-api **`00635-qux` @100%** `minScale=1` digest `sha256:2437d704…`. smartsite-mcp **`00020-ced` @100%** digest `sha256:9d8c7abe…`. First main-yml canary `00634-vuq` was min-0 and was not shifted; second canary from `fix/cortex-min-instances-1` (#521 still open, Test FAILURE) stamped min 1 on the same digest. Prod gold `draw` ring+label locked vs item 27. Batch stub: `25420` label=node / `situs: unknown`; `48021:no-such-node` in `notFound`. hop1 400. Evidence `_inbox/2026-08-28_p91_wire_live_probe.md`. Connect tools/list and saved-list leftover unprobed. Do not start the iframe. O1 unset. Item 21 unfiled. Next main-workflow canary still bakes `--min-instances=0`.
+
+2026-08-28T16:40Z: Wave A spawned. Connector item 12 flipped (five tools authorized, tools/list still 8). CP1 `_inbox/2026-08-28_p91_wave_a_CP1.md`. Worktrees `legacy-design-tools-p91-cite` and `p91-leak` from `5a20f61d`. Iframe and persistence implementation wait for CP2.
+
+## LESSON
+
+O1 ruling B. X-ray 42% is live `deriveBuildableEnvelope` (`labelEdges` + inset feet), not a bake or envelope atom. MCP R1/draw always refuses `atom_path_pending`. Serving the inset on Studio only is the disagreement. Do not take ruling A until the atom path is live and O2 is settled.
+
+## GROUND-TRUTH
+
+2026-08-28T16:50Z: O1 accepted as ruling B. Decision `_decisions/2026-08-28_p91_o1_envelope_xray_must_refuse.md`. Producer read `_inbox/2026-08-28_p91_o1_producer_read.md`. Code re-read: `computeTier1Envelope` always declined; `assembleParcelDraw` envelope overlay always refused; `derive.ts` `buildableAreaPct` at 220-221; `fetchLiveEnvelopeDerive` when setback scalars present. Paired probe on `48021:33223` unfiled. X-ray refuse not shipped. Wave C still blocked. Wave B still waits on the other Wave A returns.
+
+## LESSON
+
+MCP save must not reuse PUT `/saved-properties/:parcelNodeId`. That handler sets `snapshot` from `body.snapshot ?? {}` on conflict and wipes the dossier. CRM is a typed column (`New|Watching|Chasing|Passed`), not `snapshot.status` (`researching|offer|passed`).
+
+## GROUND-TRUTH
+
+2026-08-28T16:55Z: Screen/save spec planner-reviewed. `_inbox/2026-08-28_p91_screen_save_schema.md`. Two-table split accepted. `list_screens(screenId?)` is the reopen path. Wave B not started (waits CP2). No LDT write this review.
+
+## GROUND-TRUTH
+
+2026-08-28T16:46Z: Item 10 violate test failed on `5a20f61d` (forwarded cortex 400 named `workspaceDid` / `personaBucket` / `mls_id`). After sanitize, 68/68 smartsite-mcp pass. Code in `legacy-design-tools-p91-leak` `fix/p91-ask-leak`. leave_behind: `parcelNodeId` is still not a research/chat selector.
+
+## GROUND-TRUTH
+
+2026-08-28T16:48Z: Item 9 violate failed on `5a20f61d` (gold flood/landUse presentCitationDishonest true). After `citationsDegraded`, tests pass. LDT #525 `8cc4c827`. Gold ring/label locked.
+
+2026-08-28T16:42Z: O7 `o4_not_closed`. Rainmaker Cv and Cove curl 28 at 40s / 0 bytes on `00635-qux` minScale=1. Pine St/Street both `48021:34137` in ~2s. Fold `COVE`→`CV` already in `normalizeSitusSearchPrefix`. Evidence `_inbox/2026-08-28_p91_o7_abbrev_probe.md`.
+
+## GROUND-TRUTH
+
+2026-08-28T16:55Z: Wave B CP1 spawned. Worktrees `legacy-design-tools-p91-miss`, `legacy-design-tools-p91-persist` from `5a20f61d`; `hauska-map-p91-o1` from `aefe5ad`. Iframe not started. #524 Typecheck FAILURE still open.
+
+2026-08-28T16:58Z: #524 Typecheck was TS7006 on `args` after `.passthrough()`. Annotation `args: Record<string, unknown>` pushed as `1cd3f107`. Local typecheck + violate test green. CI Test still planner-owned.
+
+2026-08-28T17:05Z: O1 X-ray refuse accepted. hauska-map #283 `d776a49` on `fix/p91-o1-xray-refuse`. Sheet no longer calls `fetchLiveEnvelopeDerive`. Local parcel-fact-sheet 28/28; PE targeted 204 passed. Not merged, not live.
+
+2026-08-28T17:08Z: O7 miss-path accepted. LDT #526 `f324bcfe`. 20s budget + SET LOCAL. Unit tests green including Pine gold and keep-hit-on-later-hang. Rainmaker still unmeasured live. Not merged, not deployed.
+
+2026-08-28T17:10Z: O1 paired probe accepted. `_inbox/2026-08-28_p91_o1_paired_probe.md`. Serving `00635-qux` / `00020-ced`. MCP `48021:33223` refuse measured. Composed X-ray unmeasured. Falsifier `unmeasured_xray`. Ruling B stands. Do not invent 42%.
+
+2026-08-28T17:14Z: Wave B persist accepted. LDT #527 `42878e0e`. tools/list 13 in code. Migration 0088 not applied. A12/A5/A14 unit green. Conflicts with #524/#525 on smartsite-mcp. Not merged, not deployed.
+
+## OPEN
+
+#524 squash-merged `4a7e789` 2026-08-28T17:35:56Z. Main push started cortex + MCP canaries with `--min-instances=0`. Do not shift. Serving stays `00635-qux` / `00020-ced`. Next: rebase #525 onto main, then merge. #526 merge anytime. #527 still CI-red. #283 Test SUCCESS, not shifted.
+
+#525 rebased onto `4a7e789` as `c19f1c0c`. Test conclusion SUCCESS 2026-08-28T17:53:02Z. Squash-merged `b89849c`. Do not shift the new min-0 canary. Next: #526 anytime, then #527 CI fix.
+
+## GROUND-TRUTH
+
+2026-08-28T19:01Z: #526 Test run `33199771284` on `f73eb67c` cancelled by planner. Not a hang. api-server started 18:40:02Z and was still completing files at 18:56:35Z (`brokerageUserEntitlement` 11/11). `users.test.ts` 241s, `pe-pricing-ladder` 215s, `brokerageNodeFacets` 183s. `txgioSitusSearchBudget.test.ts` never appeared. Local budget file 5/5, process exit 2765 ms. Main Test on `f325413` was 10m51s. This runner was slow, not stuck. Do not treat the 20s budget as the CI defect.
+
+## GROUND-TRUTH
+
+2026-08-28T19:21Z: #526 re-run Test conclusion is the string `success` on run `33199771284` HEAD `f73eb67c`. Test job 19:01:38Z–19:13:12Z (~11m34s; Run tests 10m20s). Matches same-branch 9m and current-main 10m51s. First attempt was a slow runner, not a hang. `txgioSitusSearchBudget.test.ts` was never the CI defect.
+
+## GROUND-TRUTH
+
+2026-08-28T19:21:40Z: #526 squash-merged `5e5d1d95`. Main push started cortex-api `33203520034` (build/push only). Deploy 0% canary SKIPPED. Shift 100% SKIPPED. Serving stays `00635-qux` / `00020-ced`. Do not shift the leftover min-0 canary. Rainmaker re-probe waits until this revision is serving.
+
+## GROUND-TRUTH
+
+2026-08-28T19:24Z: Serving is `cortex-api-00389-phv` at 100 percent, not `00635-qux`. Read `status.traffic[].revisionName` and `percent` by field name. Image digest `sha256:b29beb70c2ec59c5053b8389a172f97eff967527891fd5fb4e8ffcf16e75c5ca`. Env `CORTEX_USER_DAILY_API_LIMIT=50000` on that revision. Creator `empressaioemail@gmail.com`. Canary tag still `00639-gez`. Traffic is pinned. A deploy does not move it.
+
+## LESSON
+
+2026-08-28T19:24Z: `--set-env-vars` is authoritative-replace. Baking 10000 deletes a manual 50000 and locks the operator out. Read the serving revision before asserting serving. Do not cite latestReady as traffic.
+
+## GROUND-TRUTH
+
+2026-08-28T20:00:58Z: LDT #530 squash-merged `b28de09c`. Test conclusion `success`. `ci-cortex-daily-limit-50000` SUCCESS. Bake is 50000 on main. Do not deploy-canary or shift from this merge.
+
+## GROUND-TRUTH
+
+2026-08-28T20:51Z: Serving is `cortex-api-00643-rib` at 100 percent. Read `status.traffic[]`. `latestReady` is `00644-soz` (staging, 0 percent). Env `CORTEX_USER_DAILY_API_LIMIT=50000` on the serving revision. Digest `sha256:59a4696f…`. minScale absent. Shift `33209942592` conclusion success.
+
+## GROUND-TRUTH
+
+2026-08-28T20:52Z: Rainmaker re-probe on serving `00643-rib`. Cv 200 in 2902 ms, Cove 200 in 2696 ms, both first hit `48021:8720522`. Pine St/Street still `48021:34137`. `abbreviation_works` fired. `o4_not_closed` did not. Evidence `_inbox/2026-08-28_p91_o7_rainmaker_reprobe.md`.
+
+## OPEN
+
+#527 still CI-red. After any later cortex-api shift or redeploy, re-read `status.traffic[]` and confirm `CORTEX_USER_DAILY_API_LIMIT=50000` on the serving revision. Do not shift staging `00644-soz`.
