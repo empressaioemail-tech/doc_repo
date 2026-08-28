@@ -66,7 +66,7 @@ A staging Smart Site at the Factory base URL under `/site` reads Bastrop from Ne
 
 ## Amendments
 
-- None yet.
+- 2026-08-28 (A-020, course correction): this card is the critical path and gains a fifth phase. Items 3 and 6 close on a succeeded publish run (tier 2 fixed, bakes chunked by `prop_id` pages, the walk on that run's rows). Item 8 stays the operator word for Bastrop. New item 8a: the same publish job runs per county for Travis, Williamson, Hays, Caldwell, and McLennan as each county's new-shape write lands, staging sibling first then production under rule 6, each on the operator word or a standing word for the slice; the production walk per county on gold plus an area-swept set; the freshness stamp per county; the manifest cell moves. Item 4 (PMTiles) is not required for the slice and stays `--skip-pmtiles` until the six are served.
 
 ## Finish card (graded at close)
 

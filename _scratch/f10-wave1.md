@@ -21,10 +21,13 @@ CP3 planner ruling filed `_inbox/2026-08-28_f10-wave1_cp3.json`. Criteria 1,2,6 
 Bexar wrn26: 16Gi/4CPU, signal kill at 3.6 min (run `87078753`). 48085 4s977: signal after pipeline1 on 8Gi, 387334 landing / 774668 atoms in memory. Cause: whole county held in memory, not OOM exit.
 
 ## OPEN
-A-016: implement county chunking (~50k rows, run_event per chunk, lease whole county, B-E per chunk).
+A-016 code landed seat/property-f10: chunk ~50k, run_event per chunk, merge per chunk stagedSince, peakMemoryMb in chunk events. **Next: rebuild factory-conformant image + Bexar 48029 execute.**
 
-## OPEN
-Criterion 3: field-level diff one 48055 atom first vs replay; F-19 admits no divergence; disposition re-run insufficient.
+## GROUND-TRUTH (2026-08-28T03:02Z)
+Bexar chunked execute in flight: `factory-conformant-2nd9z` on digest `sha256:8fd1cd3af664db0b3bc8b52e9a15fabfebdca090b607a0eb1899c23cd8634bdc` (build f484e6a7). Commit `694c286` on seat/property-f10.
+
+## LESSON
+A-017: 217 no-landing counties are absent sources (lookup-failed on manifest), not loop defects; wave 1 = 31 with landing.
 
 ## OPEN
 Criterion 5: CP2 list 10/10 once after chunking + criterion 3.

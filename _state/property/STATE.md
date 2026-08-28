@@ -2,17 +2,23 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-28T01:00Z (F-10 CP3 partial, A-016 chunking ruled). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-28T06:25Z (A-020 wave-1 scope, A-019 merged). Property namespace.**
 
-## F-10 WAVE 1 CP3 — PARTIAL 2026-08-28
+## F-10 WAVE 1 CP3 — IN PROGRESS 2026-08-28
 
-**Status: CP3 partial; full 254-county loop NOT GO.** Dispatch `_dispatches/2026-08-28_f10-wave1_dispatch.md`. CP3 `_inbox/2026-08-28_f10-wave1_cp3.json`. WDLL amendment A-016 (county chunking + replay field diff).
+**Status: CP3 5/6 MET; criterion 5 in flight (`scllr` / `7eb4d0fd`). Full 254 NOT GO. Wave 1 scope per A-020 (Central Texas six), not A-017 31.**
 
-**MET:** (1) idempotency guard — loop `5b2c4437` skipped 5 CP2 passes; (2) signal→killed — cancel mnzqj → run `04f1be29` `exit_kind=killed`; (6) 254 distribution — dry-run `4j6pr` run `23b956fb`: execute **25**, idempotent **6**, skip-by-class **6**, noLanding **217**.
+**MET:** (1) idempotency; (2) signal→killed; (3) 48055 replay / F-19 deterministic mint; (4) Bexar 2nd9z chunks; (6) 254 distribution 4j6pr.
 
-**NOT MET / OPEN:** (3) 48055 replay — hash pairs filed; **field-level atom diff required**; `re-run` disposition rejected (F-19); (4) large counties — **not RAM**; wrn26 Bexar died by signal on 16Gi at 3.6 min; **A-016 chunk ~50k rows** before Bexar grades clean; (5) CP2 list 10/10 **deferred until after chunking**.
+**IN PROGRESS:** (5) CP2 loop **`factory-f10-cad-loop-scllr`** — 48055 child success (288 atoms/s); 48085 conformant running.
 
-**Jobs:** `factory-conformant` gen 14 `c9ec2df9` 4CPU/16Gi; `factory-f10-cad-loop` gen 6 `8612b8cc`. Worktree `P:/seat-worktrees/property/hauska-factory-f10`.
+**A-019 CLOSED:** PR #21 merged — `factory-f10-cad-loop` deploy in `cloudbuild.conformant.yaml`.
+
+**A-020 wave 1 (after criterion 5):** `--counties=48021,48453,48491,48209,48055,48309`. All six **have landing** (48491 **602,050**; 48309 **114,255**). Register still blocks execute on 48453 `TX-TRAVIS-JOIN` (lane/P-80), 48209 `TX-HAYS-LANDUSE`, 48021 `TX-SITUS-SENTINELS` — disposition required. 25-county remainder, concurrency lever, F-09 **wait**.
+
+**F-03 CLOSED:** PR #19 fleet reap API; publish 3eb8d70d reaped.
+
+**Jobs:** conformant gen 8 digest `3e1bbea0`; CP3 `_inbox/2026-08-28_f10-wave1_cp3.json`.
 
 ## LDT CONTRACT RENAME (F-15 / F-06) — CLOSED 2026-08-27
 
