@@ -2,7 +2,21 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-27T12:50Z (P-85 items 6–7 deploy). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-28T01:00Z (F-10 CP3 partial, A-016 chunking ruled). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+
+## F-10 WAVE 1 CP3 — PARTIAL 2026-08-28
+
+**Status: CP3 partial; full 254-county loop NOT GO.** Dispatch `_dispatches/2026-08-28_f10-wave1_dispatch.md`. CP3 `_inbox/2026-08-28_f10-wave1_cp3.json`. WDLL amendment A-016 (county chunking + replay field diff).
+
+**MET:** (1) idempotency guard — loop `5b2c4437` skipped 5 CP2 passes; (2) signal→killed — cancel mnzqj → run `04f1be29` `exit_kind=killed`; (6) 254 distribution — dry-run `4j6pr` run `23b956fb`: execute **25**, idempotent **6**, skip-by-class **6**, noLanding **217**.
+
+**NOT MET / OPEN:** (3) 48055 replay — hash pairs filed; **field-level atom diff required**; `re-run` disposition rejected (F-19); (4) large counties — **not RAM**; wrn26 Bexar died by signal on 16Gi at 3.6 min; **A-016 chunk ~50k rows** before Bexar grades clean; (5) CP2 list 10/10 **deferred until after chunking**.
+
+**Jobs:** `factory-conformant` gen 14 `c9ec2df9` 4CPU/16Gi; `factory-f10-cad-loop` gen 6 `8612b8cc`. Worktree `P:/seat-worktrees/property/hauska-factory-f10`.
+
+## LDT CONTRACT RENAME (F-15 / F-06) — CLOSED 2026-08-27
+
+**Status: CLOSED code-done; item 6 deploy/smoke open on operator go (planner-run).** LDT **#504** merged **`532bddc3`** to main. All six packages on `@empressaio/atom-contract ^1.30.0`; four vendor tarballs deleted; `check-no-hauska-atom-contract.mjs` in CI typecheck job. `serveGuards` uses contract `parseAccessPair`. **Partial (item 4):** `nodeFacetBakeTier1ConformantCli` SQL still filters `body->>'shape' = 'conformant-v1'` — BP-CONFORMANT-01 not yet on contract type for shape. WDLL deviation accepted: one PR not dual-pin + six package PRs. Close `_inbox/2026-08-27_ldt-contract-rename_close.json`. Worktree `legacy-design-tools-rename` may retire after pull.
 
 ## DRAIN P-81..P-84 / F-02 — CLOSED 2026-08-27
 

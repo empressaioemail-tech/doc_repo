@@ -1,0 +1,178 @@
+{
+  "id": "2026-08-28_f10-wave1_cp3",
+  "kind": "CP3",
+  "status": "partial",
+  "plan_row": "F-10",
+  "amendment": "OPS-19 A-010, A-016",
+  "prerequisite": "OPS-19 A-014 shim deletion merged PR #14",
+  "contract_pin": "^1.30.0",
+  "graded_at": "2026-08-28T01:00:00Z",
+  "graded_by": "planner field read 2026-08-28; supersedes _inbox/2026-08-27_f10-wave1_cp3.json",
+  "imageDigest": "sha256:c9ec2df962d10f889c94354bb63be7864c25ab15009faed69f951c00efaadf79",
+  "factoryPrs": {
+    "shimDelete": "https://github.com/empressaioemail-tech/hauska-factory/pull/14",
+    "cp3Roster254": "https://github.com/empressaioemail-tech/hauska-factory/pull/15",
+    "conformant16Gi4Cpu": "https://github.com/empressaioemail-tech/hauska-factory/pull/16"
+  },
+  "jobs": {
+    "factory-conformant": { "generation": 14, "digest": "c9ec2df9", "cpu": 4, "memory": "16Gi" },
+    "factory-f10-cad-loop": { "generation": 6, "digest": "8612b8cc" }
+  },
+  "items": {
+    "1_idempotency_guard": {
+      "requirement": "Re-run CP2 list; 48013,48019,48027,48053,48091 skipped by guard",
+      "status": "met",
+      "evidence": {
+        "loopRunDry": "5b2c4437-8093-43a3-bb4c-0e601a62b8ec",
+        "execution": "factory-f10-cad-loop-bpzbb",
+        "counts": {
+          "workListSize": 10,
+          "skipped": 10,
+          "executed": 0,
+          "distribution": { "byAction": { "idempotent": 7, "skip": 1, "execute": 2 } }
+        },
+        "idempotentCounties": ["48013", "48019", "48027", "48031", "48053", "48091"],
+        "cp2PassCountiesIdempotent": ["48013", "48019", "48027", "48053", "48091"],
+        "snapshotIds": ["01fae5b3-88e1-4a6f-a706-72eeb27bcbe7", "63adb8e2-b0f3-41f2-8770-c20f4fb8cc9b"]
+      }
+    },
+    "2_signal_to_killed": {
+      "requirement": "Cancel one execution; scheduled reaper termination row exit_kind=killed",
+      "status": "met",
+      "evidence": {
+        "cancelledExecution": "factory-conformant-mnzqj",
+        "run_id": "04f1be29-6bc6-4f0f-97ea-c0c116b5147c",
+        "county": "48029",
+        "exit_kind": "killed",
+        "recorded_at": "2026-08-27T23:40:23.208Z",
+        "handReap": false
+      }
+    },
+    "3_replay_48055": {
+      "requirement": "Field-level diff of one 48055 atom between first run and replay; name cause; fix or file class whose disposition is not re-run (F-19 admits no divergence)",
+      "status": "not_met",
+      "planner_ruling": "Hash pairs and TX-REPLAY-NOT-IDENTICAL with disposition re-run are insufficient. A-016 (2): same landed bytes + logic version must produce identical atoms.",
+      "evidence": {
+        "county": "48055",
+        "landing_rows": 73371,
+        "cp2Run": "cce16346-051e-4436-b590-fa4a72821182",
+        "cp3Run": "5ec48e6d-b6e2-4c62-a696-dd06bdd86c52",
+        "fingerprintOnly": {
+          "cp2": {
+            "first": "0aac8ac4a44a79b3afaab70341dad35f0ad86f6090dd9e7bb359516bd0bb8551",
+            "second": "17a281cdc3fff586b098d5cd140b6c8566fef44d8988e70fe26fa98aa7cedb7d",
+            "identical": false
+          },
+          "cp3_1_30": {
+            "first": "de142601b763be1af3fa79acc5f8b7473c7aed99cb5ea460a375a07a018cd588",
+            "second": "4777a078de5606feec5eec96334fca8044bc962793386e84896222590462bab6",
+            "identical": false
+          }
+        },
+        "hypothesis_not_graded": "In-run replay re-executes pipelineFromRows with warm resolveStore; mint() assigns non-deterministic node IDs per pass. Requires one atom field diff to close.",
+        "required_to_close": [
+          "Pick one 48055 cad atom present in both first-pass and replay-pass staged sets",
+          "File field-level diff (atomId, nodeId, claim body fields, edge endpoints)",
+          "Name root cause (ordering, timestamp, warm-store tier-2, unordered-set hash)",
+          "Fix replay path OR file defect class with disposition other than re-run"
+        ]
+      }
+    },
+    "4_large_county_crashes": {
+      "requirement": "48029 and 48085 crashes explained; Bexar runs clean end-to-end",
+      "status": "open",
+      "planner_ruling": "Not a RAM problem. County held in memory whole. A-016: chunk county (~50k ordered landing slices, run_event per chunk, lease for whole county, stages B-E per chunk, idempotent stage and merge). Grade on Bexar clean through chunks with chunk size and peak memory filed.",
+      "evidence": {
+        "48085_cp3": {
+          "run_id": "2c3dde34-50ce-4028-9630-5531620fe1a7",
+          "execution": "factory-conformant-4s977",
+          "landing_rows": 387334,
+          "atoms_in_memory_after_pipeline1": 774668,
+          "cause": "signal terminated container after pipeline1 on 8Gi/2CPU (not OOM exit code; whole county in memory)",
+          "run_events": ["landing 5151ms", "pipeline1 29889ms"],
+          "exit_kind": "killed"
+        },
+        "48029_wrnl6": {
+          "run_id": "87078753-cedb-44ce-8c9f-4cb0647874b3",
+          "execution": "factory-conformant-wrn26",
+          "county": "48029",
+          "landing_rows": 703257,
+          "resources": { "cpu": 4, "memory": "16Gi" },
+          "wall_s": 218,
+          "cause": "signal terminated container at 3.6 min on 16Gi; 16Gi did not save Bexar",
+          "started": "2026-08-28T00:14:31.538545Z",
+          "completed": "2026-08-28T00:18:09.586713Z",
+          "exit_kind": "killed"
+        },
+        "48029_cp2": {
+          "run_id": "1ce4fc55-087e-4ca5-81d9-98e34310c78c",
+          "cause": "crashed during pipeline1 on 703258 rows (landing only in run_events)",
+          "exit_kind": "crashed"
+        },
+        "fix_ruled": "A-016 county chunking in conformant writer (~50000 rows per slice); not further RAM increase"
+      }
+    },
+    "5_cp2_list_rerun": {
+      "requirement": "CP2 ten-county list 10/10 pass or named-class skip with rate distribution",
+      "status": "deferred",
+      "planner_ruling": "Runs once after A-016 chunking lands, not before.",
+      "evidence": {
+        "priorLoop": "e4e04093-55b5-4557-965a-c2d9bb081b9c",
+        "currentLedger": {
+          "pass": ["48013", "48019", "48027", "48031", "48053", "48091"],
+          "skip": ["48021"],
+          "defect": ["48029", "48055", "48085"]
+        },
+        "next": "factory-f10-cad-loop --apply --limit=10 after Bexar clean through chunks and criterion 3 closed"
+      }
+    },
+    "6_worklist_distribution": {
+      "requirement": "254-county snapshot with execute/idempotent/skip-by-class/noLanding distribution before next execute",
+      "status": "met",
+      "evidence": {
+        "loopRun": "23b956fb-e4e3-4dff-b3f5-4f476ad807fb",
+        "execution": "factory-f10-cad-loop-4j6pr",
+        "args": "f10-cad-loop --dry-run",
+        "completed": "2026-08-28T00:18:43Z",
+        "workListSize": 254,
+        "distribution": {
+          "total": 254,
+          "byAction": {
+            "execute": 25,
+            "idempotent": 6,
+            "skip": 6,
+            "defect": 217
+          },
+          "byDefect": {
+            "TX-LANDING-ABSENT": 217,
+            "TX-TRAVIS-JOIN": 1,
+            "TX-HAYS-LANDUSE": 1,
+            "TX-ECTOR-KEYKIND": 1,
+            "TX-SITUS-SENTINELS": 1,
+            "TX-DALLAS-TARRANT-VINTAGE": 2
+          },
+          "noLanding": 217
+        },
+        "loopCounts": { "executed": 0, "skipped": 37, "defects": 217 },
+        "interpretation": {
+          "execute": "25 counties with landing and no quarantine class",
+          "idempotent": "6 counties with prior successful f10_county_runs or in-flight parent",
+          "skip_by_class": "6 quarantined (Travis join, Hays landuse, Ector keyKind, situs sentinels, Dallas-Tarrant vintage x2)",
+          "no_landing": "217 counties with zero cad_property landing rows (TX-LANDING-ABSENT)"
+        },
+        "snapshot": "work_list_snapshots path=f10-cad-loop state_fips=48 on Factory store"
+      }
+    }
+  },
+  "full254Loop": "NOT GO",
+  "next_work": [
+    "Implement A-016 county chunking in hauska-factory conformant writer; prove on Bexar 48029",
+    "Criterion 3: field-level diff of one 48055 atom first vs replay; fix or non-rerun defect class",
+    "Criterion 5: single CP2 list re-run after chunking + criterion 3"
+  ],
+  "leave_behind": [
+    { "item": "A-016 county chunking (~50k slices, run_event per chunk)", "owner": "property", "plan_row": "F-10,F-19,F-20" },
+    { "item": "48055 replay field-level diff + fix or non-rerun class", "owner": "property", "plan_row": "F-10,F-19" },
+    { "item": "CP3 criterion 5 after chunking", "owner": "property", "plan_row": "F-10" }
+  ]
+}

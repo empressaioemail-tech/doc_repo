@@ -41,6 +41,6 @@ GROUND-TRUTH (2026-08-27T22:50Z): Cloud Build `890e89f1` then `1ed42f0e` SUCCESS
 
 GROUND-TRUTH (2026-08-27T22:55Z): `factory-bastrop-publish-5jlgs` failed in ~26s, exit 1. tsx ENOENT gone. Cloud log shows only `1` — `bastrop-publish.mjs` / tier1 CLI catch blocks print `err.code` (numeric exit code) not stderr. Failure is tier1 conformant bake subprocess, not job startup.
 
-OPEN: Surface bake stderr in bastrop-publish; diagnose tier1 failure (likely serve guard or DB write on conformant row).
+GROUND-TRUTH (2026-08-27T23:30Z): F-15 shim delete landed on `seat/property-f10` — `@empressaio/atom-contract` ^1.30.0, `src/contract-shim/` removed, contract imports + stricter points (responseRef, closedAt, Observation/Synthesis). CP3 partial filed `_inbox/2026-08-27_f10-wave1_cp3.json` (items 1,2,6 met in code; 3-5 await live re-run).
 
 OPEN: Item 8 production publish — operator go withheld.

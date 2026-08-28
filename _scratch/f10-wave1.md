@@ -13,8 +13,21 @@ PowerShell gcloud deploy: quote '--command=node,src/cli.mjs' and '--args=f10-cad
 ## LESSON
 Laptop abort duplicate launches: planCadWorkList lacks idempotency; two loop runs 8b27+bb4d both succeeded overlapping conformant jobs.
 
+## GROUND-TRUTH (2026-08-28T01:00Z)
+CP3 planner ruling filed `_inbox/2026-08-28_f10-wave1_cp3.json`. Criteria 1,2,6 MET; 3 NOT MET (re-run disposition rejected); 4 OPEN (A-016 chunking, not RAM); 5 deferred until chunking. Full 254 loop NOT GO.
+
+254-county dry-run `factory-f10-cad-loop-4j6pr` run `23b956fb`: execute 25, idempotent 6, skip-by-class 6, noLanding 217 (TX-LANDING-ABSENT), defects 217 total in loop counts.
+
+Bexar wrn26: 16Gi/4CPU, signal kill at 3.6 min (run `87078753`). 48085 4s977: signal after pipeline1 on 8Gi, 387334 landing / 774668 atoms in memory. Cause: whole county held in memory, not OOM exit.
+
 ## OPEN
-Reaper: Cloud Run "signal terminated" exit 0 classified crashed not killed (8njc9, kzzhx). Amendment before full loop.
+A-016: implement county chunking (~50k rows, run_event per chunk, lease whole county, B-E per chunk).
+
+## OPEN
+Criterion 3: field-level diff one 48055 atom first vs replay; F-19 admits no divergence; disposition re-run insufficient.
+
+## OPEN
+Criterion 5: CP2 list 10/10 once after chunking + criterion 3.
 
 ## OPEN
 Wait planner go before factory-f10-cad-loop --apply full 254.
