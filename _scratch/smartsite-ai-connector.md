@@ -132,7 +132,7 @@ run_report/export_instrument marked `live` but fail WDLL item 14. export_instrum
 
 ## GROUND-TRUTH
 
-2026-08-28T05:00Z: **P-87 draw stub implemented, not deployed.** LDT `feat/p87-draw-stub` @ `7986a919` + dirty tree. `assembleParcelDraw` gold ring matches locked feet [[48.60,83.94],[-50.37,83.70],[-49.07,-84.28],[50.84,-83.36]]. Cortex `POST /property-explorer/v1/research/brief` attaches optional `draw`. MCP `normalizeR1BodyForExternal` passes valid draw, omits unlabeled hatch / seed float. WDLL items 22–26 unit-tested. Item 27 waits cortex-api + smartsite-mcp deploy + operator Claude paste. **Do not merge/deploy until operator says so.**
+2026-08-28T05:25Z: **P-87 draw stub LIVE.** LDT **#516** merged @ `13ccde14`. Image tag `13ccde14a6daaaeb48eb642ac3f7cf442d5c6a1f`. cortex-api canary + shift-traffic PASS; serving `cortex-api-00621-poq` @ 100%; `GET /api/healthz` 200. smartsite-mcp canary + shift-traffic PASS; live `/health` reports revision `smartsite-mcp-00018-hop`, auth+cortex configured. Item 27 is the operator Claude `get_smart_site` paste of raw `draw` on `48021:34137`.
 
 ## LESSON
 
@@ -144,7 +144,7 @@ Frontage is per-edge. Gold `48021:34137` is a corner lot + alley: roads on edges
 
 ## OPEN
 
-P-87 items 22–26 code-done on `feat/p87-draw-stub`. Item 27 customer-done blocked on deploy + operator `get_smart_site` paste of raw `draw` JSON.
+P-87 items 22–26 deployed. Item 27 customer-done blocked on operator Claude Connect `get_smart_site` paste of raw `draw` JSON for `48021:34137`.
 
 ## OPEN — item 21 gate
 
