@@ -1,5 +1,20 @@
 # P-85 Records Request
 
+## GROUND-TRUTH (2026-08-28T20:18Z)
+
+- LDT #529 MERGED `5bd983ea`. Worker rebuilt FROM that main. Serving `records-request-worker-00013-qwc` @100% digest `sha256:6328f5b5` tag p85-v13. POST /run returns `{"error":"missing_job_id"}` HTTP 400.
+- LDT #530 already baked `CORTEX_USER_DAILY_API_LIMIT=50000` into `--set-env-vars`. Serving cortex is still `00639-gez` until the next cortex deploy; traffic is PINNED.
+- Purchase write-path: `pageIncludes`/`page.content().includes("pay")` is the 21/0 artifact blocker, not the header selector. #531 open.
+- purchaseApproved does not checkout. WDLL item 6 amended.
+
+## LESSON (2026-08-28T20:18Z)
+
+- In-process harness cannot see what the real runtime injects. happy-dom `fn()` missed tsx `__name` in Chromium. Same class as Chromium-in-CI.
+
+## OPEN (2026-08-28T20:18Z)
+
+- Land #531, rebuild worker from main, then read the live Aumentum grid. Do not guess selectors first.
+
 ## GROUND-TRUTH (2026-08-28T19:20Z)
 
 - cortex serving `cortex-api-00639-gez` @100% image `f325413`; `CORTEX_USER_DAILY_API_LIMIT=10000` (manual 50000 reverted, intended).

@@ -2,7 +2,7 @@
 id: 2026-08-26_p85_central_texas_easements_WDLL
 title: WDLL — P-85 Central Texas recorded documents: Records Request (Studio, asynchronous, browser agent per portal), live instant sources, no new ingestion, bulk acquisition later
 date: 2026-08-26
-last_updated: 2026-08-26
+last_updated: 2026-08-28
 status: approved
 applies_to: legacy-design-tools, hauska-map, hauska-factory, hauska-engine, hauska-atom-contract
 plan_row: P-85
@@ -96,6 +96,8 @@ Order: Phase A now; Phase B is the product; Phase C and D later and operator-tim
 - 2026-08-26 (later): no new ingestion; instant sources queried live per parcel; browser agent with a recipe per portal vendor; captures as absence evidence; four acquisition methods; first proof the Tyler recipe on Williamson and Hays.
 - 2026-08-26 (night): scope broadened from easements to every recorded document tied to the parcel; product renamed Records Request and placed in the Reports area; extraction depth by type (item 8); purchase-threshold ask (item 6); unrecorded material named, not absent (item 10); title-plant and title-opinion boundary (item 16); ADR-020 enum extension requested of the substrate seat. Decision `_decisions/2026-08-26_p85_records_request_scope.md`.
 - 2026-08-26 (late): path-to-live map written at `_inbox/2026-08-26_p85_records_request_path_to_live.md` after the lane had started Phase A (portal gate, registry, live GIS query, migration 0083, two schemas, all untracked). Two branch instructions bind the lane before its first commit: re-cut `feat/p85-records-request` from `origin/main` (it was cut from `seat/property`, fifty behind, carrying already-merged P-63 commits), and build the Smart Site half in its own registered worktree `P:/seat-worktrees/property/hauska-map-records` on `seat/property-records`, never on `fix/pe-pricing-a2`.
+- 2026-08-28: extraction fail-closed. Item 8: `classifyRecordsRequestDocumentType` refuses `unclassifiable_document_type` on absent, empty, and unresolved labels (grantor name sitting in the type field is the fixture); it no longer writes `documentKind: deed` from either the empty branch or the terminal fallthrough. Item 5: index hits bind from the grid header through a vendor alias table; leftover cell join into `parties` is deleted; absent header refuses the run (`unresolved_result_row_header`); unrecognised header yields null fields. Item 12: instrument page image already on the artifact row is exposed as `documentUrl` so PE `PdfViewer` has a target. Cards 1 and 2 ship together. Card 3 follows. Dispatch `_dispatches/2026-08-28_p85-records_dispatch.md`. Reason: the operator-visible parties dump was the smallest of three write-path defects; fixing only the dump would leave fabricated deeds in every downstream count.
+- 2026-08-28 (evening): item 6 honesty. `purchaseApproved` queues a human clerk. This card does not drive checkout. A sold instrument stays `needs-human` after approval. Purchase required is decided from the document surface (a cart control, a price cell on that row, an interstitial on the document URL), never from `page.content()` substring match. A "Pay Taxes" nav link is not a document paywall. Reason: the ambient HTML scan failed toward paid on every clerk page, so capture never ran and classify never wrote artifacts. PR `legacy-design-tools#531`.
 
 ## Finish card (graded at close)
 
