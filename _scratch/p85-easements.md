@@ -11,9 +11,15 @@
 
 - In-process harness cannot see what the real runtime injects. happy-dom `fn()` missed tsx `__name` in Chromium. Same class as Chromium-in-CI.
 
-## OPEN (2026-08-28T20:18Z)
+## GROUND-TRUTH (2026-08-28T20:50Z)
 
-- Land #531, rebuild worker from main, then read the live Aumentum grid. Do not guess selectors first.
+- Live Bastrop SearchResults for PALMS PROPERTIES LLC is Infragistics, not Telerik. 21 records. Data table has th in the first tbody row, data in the next 21. Classes `ig_ElectricBlueAlt igg_ElectricBlueAlt`. No `.RadGrid`, no `rgRow`.
+- Worker extract on that live page: 39 rows, 14 with null headers. Those 14 are chrome (login, sort, logon). The 21 instrument rows have headers. `unresolved_result_row_header` is the chrome rows, not a missing Instrument # header.
+- Dump: `_inbox/2026-08-28_p85_aumentum_live_grid_dump.md`.
+
+## OPEN (2026-08-28T20:50Z)
+
+- Merge #531 (purchase-bind), rebuild worker, then extract change from the live dump. Do not add another RadGrid selector. Drop chrome / scope to the innermost Instrument # table. Violation: current extract fails the live-shaped fixture.
 
 ## GROUND-TRUTH (2026-08-28T19:20Z)
 
