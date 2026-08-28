@@ -33,9 +33,20 @@
 - Live job `74b9f93d` on serving `00014-864` failed `unresolved_result_row_header`. 0 hits, 0 artifacts. Classify states still absent. The new image ran (revision logs at 21:15:40). Chrome-drop did not clear the live refuse.
 - Suspected leak: date regex treats "as of 08/28/2026" chrome as index data. Not confirmed from a worker row dump. Do not guess another header selector.
 
-## OPEN (2026-08-28T21:16Z)
+## GROUND-TRUTH (2026-08-28T21:28Z)
 
-- Dump the worker's extracted null-header rows on refuse. Then drop date-only matches if that dump shows chrome dates. Merge #533 when rebase CI is green so origin/main matches the image.
+- Owner page extract (same IIFE as serving): 21 headed, 0 null. Legal `BUILDING BLOCK 49 E W ST, ACRES 1.280`: 0 records found. Date-only chrome on that page is the later-query refuse that wiped owner hits.
+- #534 open: instrument-shaped cells only; refuse dump; later header refuse does not wipe prior hits.
+
+## GROUND-TRUTH (2026-08-28T21:41Z)
+
+- Dump on `e79a5655` (v15): `nullHeaderRows=21/21` cells `1, View, , 202008880`. Real Infragistics rows. Playwright splits header/data; closest table has no th.
+- v16 `00016-l7w` @100% digest `sha256:ec0ced91` ancestor walk. Job `370d191d` **complete**, not header-refused. Owner+legal resultCount 0. Owner capture 34KB vs legal 75KB; not the 21-row grid. Classify still absent.
+- #534 open (dump + date-only drop + ancestor walk + later-query skip).
+
+## OPEN (2026-08-28T21:41Z)
+
+- Merge #534 when CI is green. Owner fill/wait: complete-with-0 after a planned owner query that previously dumped 21 instruments is a navigation/fill miss, not a header miss.
 
 ## GROUND-TRUTH (2026-08-28T19:20Z)
 
