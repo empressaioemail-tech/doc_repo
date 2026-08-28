@@ -1,0 +1,47 @@
+{
+  "id": "2026-08-28_ctx-c_cp2",
+  "kind": "cp2",
+  "lane": "ctx-c",
+  "planRows": ["F-15", "F-16", "F-10"],
+  "wdll": "_inbox/2026-08-28_ctx_c_access_pair_writer_restamp_WDLL.md",
+  "cp1": "_inbox/2026-08-28_ctx-c_cp1.json",
+  "filedAt": "2026-08-28T10:55:00Z",
+  "snapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-replay",
+    "branch": "seat/property-ctx-access",
+    "head": "26e0c042890303d688c82880be0750bc555eaa41 (origin/main at branch cut; no commit made by this lane)",
+    "originMainLocalRef": "26ba52543dc1770030a923786d0bc4d4f05d3023 (moved since the cut by PR #26 a36de99, which touches only cloudbuild.publish.yaml; zero overlap with this lane's paths; not fetched or merged by this lane)",
+    "workingTree": "uncommitted: 11 modified (112 insertions, 37 deletions) + 4 new files (1,234 lines); handed back for planner commit by explicit pathspec"
+  },
+  "missionPremise": "unchanged from CP1: A-023 makes catalog-listed / anyone-free the contract's pair for a public record and public / anonymous a legacy writer encoding; the conformant writer stamps the canonical pair at the source, the store is corrected in place by a Factory job with its own run row and a count read back, and the LDT serve translation retires by test when the re-stamp closes.",
+  "completionPredicate": "unchanged from CP1; evaluated at close.",
+  "scopeBasis": "unchanged from CP1.",
+  "pilotEvidence": {
+    "suite": "npm test (node --test test/*.test.mjs): 215 tests, 213 pass, 0 fail, 2 skipped (landing-live without FACTORY_DATABASE_URL); baseline at 26e0c04 was 191 / 189 / 0 / 2; +24 tests, all in test/ctx-access-pair.test.mjs; counting rule: node --test summary lines",
+    "cardChecks": "grep -rn '\"public\"' src -> no match (exit 1); grep -rn mapAccessPolicy src -> no match (one producer constant); grep -rn discoverability src -> only src/lib/access-pair.mjs, src/jobs/restamp-access.mjs (SQL predicates and the table read), src/lib/publish-guards.mjs (reader, unchanged) and the canonical branches of accessPolicyProjection",
+    "cliViolationProbes": "real entry path node src/cli.mjs with FACTORY_CLOUD, FACTORY_DATABASE_URL and ATOMS_DATABASE_URL all unset, real exit codes: restamp-access -> exit 1 COUNTY_REQUIRED; --county=99999 --apply -> exit 1 COUNTY_UNKNOWN; --county=48021 -> exit 1 MODE_REQUIRED; --county=48021 --apply -> exit 1 LAPTOP_WRITE_FROZEN; --county=48021 --dry-run -> exit 1 RUN_RECORD_UNWRITABLE (before any connection; no socket opened)",
+    "verifiedByViolation": "src/jobs/conformant.mjs line 154 (the cad-parcel-roll stamp) reverted to the legacy pair with sed; node --test test/ctx-access-pair.test.mjs exit 1 with exactly two failures: 'every atom pipelineFromRows stages ... carries exactly the canonical pair' failed by ACCESS_NOT_CANONICAL thrown from assertCanonicalAccessPair via assertNewShapeBoundary via stageRows inside pipelineFromRows (the boundary caught the producer), and 'retirement: no file under src/ except src/lib/access-pair.mjs carries the legacy stamp text' failed naming src/jobs/conformant.mjs:154; the file was restored from a pre-violation copy and cmp reports byte-identical; three canonical stamps present",
+    "falsifiersScored": [
+      {"cp1Falsifier": "pipelineFromRows emits only PUBLIC_RECORD_ACCESS", "result": "held on a 6-row fixture producing both cad-parcel-roll and identity.alias atoms; also held for syntheticStagedAtoms and for floodAtomsToStage selector + derivation atoms through stageRows"},
+      {"cp1Falsifier": "stageRows / copyStage / accessPolicyProjection / sixFieldCandidate refuse {public, anonymous} with ACCESS_NOT_CANONICAL", "result": "held for all four; copyStage refuses with zero rows staged when one atom of a batch is legacy; an unknown pair ({tenant, anonymous}) and a missing pair also refuse ACCESS_NOT_CANONICAL at the boundary; node checks still fire first (SOURCE_KEY_AS_NODE = 'malformed_node_id', which my first draft compared against the wrong literal; the test was corrected, the code was not touched)"},
+      {"cp1Falsifier": "reverting line 153/154 leaves the retirement tests green", "result": "falsified as intended: both retirement tests fail (see verifiedByViolation)"},
+      {"cp1Falsifier": "restamp fake run: written != matched, or a canonical / out-of-table / old-shape / access-missing / other-county row touched", "result": "held: 9 matched, 9 written, 9 rows carry the run id; batches (4,4) (3,3) (2,2) with first/last dids; six untouched rows byte-identical before and after"},
+      {"cp1Falsifier": "a legacy row injected after the last batch does not throw RESTAMP_INCOMPLETE", "result": "held: RESTAMP_INCOMPLETE with counts.legacyTotal 1, termination failure, refuse_code recorded, Factory leases released"},
+      {"cp1Falsifier": "--dry-run issues an UPDATE or a lease INSERT, or terminates success", "result": "held: zero UPDATEs, zero v2 leases, zero Factory lease INSERTs, rows byte-identical, run_event restamp-dry-run carries the per-type counts, DRY_RUN_REFUSED, termination exit_kind dry-run"},
+      {"cp1Falsifier": "--apply with FACTORY_CLOUD unset reaches connectFn", "result": "held: connectFn never called, zero SQL"},
+      {"cp1Falsifier": "suite fail > 0 or count <= 191", "result": "held: 215 / 213 / 0 / 2"},
+      {"cp1Falsifier": "grep -rn '\"public\"' src finds a producer", "result": "held: no match"}
+    ],
+    "selfReviewFindings": [
+      {"finding": "first draft opened the atoms store before writing the run row, so a WRONG_DATABASE or connect refusal would have left no run record (ENFORCEMENT: refusals of a state-changing verb are recorded)", "fix": "run row first with db_host_fingerprint from the parsed URL host, then connectAtoms; test asserts runs[0].refuse_code === WRONG_DATABASE and a failure termination"},
+      {"finding": "the retirement source scan listed an offending line once per matching pattern", "fix": "once per line"},
+      {"finding": "accessPolicyProjection keeps its accessPolicy shortcut (a three-field object returns its accessPolicy without re-parsing the pair); the boundary (copyStage) is what validates bodies before they are staged, and the projection now refuses a legacy pair by name; a body with accessPolicy plus a garbage pair could only reach the merge through a hand INSERT into write_stage_atoms", "disposition": "left as designed and named here"},
+      {"finding": "src/lib/publish-guards.mjs assertAccessPair still accepts {public, anonymous} (presence-shaped, F-06 reader; publish.test.mjs asserts that acceptance)", "disposition": "not a producer; not changed; reported for the F-06 publish card, since after the re-stamp closes it should refuse like LDT's guard"},
+      {"finding": "src/lib/six-field.mjs and cloudbuild.conformant.yaml were rewritten with LF line endings while the checkout convention is CRLF (git warns 'LF will be replaced by CRLF'); the diff is content-only and git normalises on commit", "disposition": "cosmetic; named so the planner does not read the warning as a phantom change"}
+    ]
+  },
+  "stoppedWorkers": "not applicable: no sub-agents (dispatch forbids spawning)",
+  "constraintsHonored": ["no commit, push, PR, deploy, job execution", "no gcloud call of any kind", "no store write; every store in tests is an in-process fake", "no DATABASE_URL, secret, or token printed", "read-only gh pr diff of LDT #519 and read-only git reads of local refs", "no writes under P:/doc_repo except the three checkpoint files", "no writes outside own worktree"],
+  "leave_behind": "declared at close"
+}

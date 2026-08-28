@@ -2,7 +2,23 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-28T06:25Z (A-020 wave-1 scope, A-019 merged). Property namespace.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-28 20:56Z (card F serving; six re-bakes running)**
+
+## CTX SIX SERVED ON THE FULL FACET SHAPE (OPS-19 A-020 / A-021 / A-025) — 2026-08-28
+
+**Status: SIX OF SIX in production on `node-facets-tier1-conformant-v1` (Bastrop 48021, Caldwell 48055, McLennan 48309, Hays 48209, Williamson 48491, Travis 48453), each from a succeeded production `publish_runs` row with a passed inline content walk (gold plus area sweep) and a freshness stamp. A-020 measure of done MET. One served-value defect OPEN as CTX card F.**
+
+**Latest production runs:** Hays b6cda81e (rmhj4 16:24Z, gold 48209:135570); Williamson 38cf5b16 (vlh8k 18:26Z, 602,050 written, walk cceed65a, gold 48491:76149); Travis 1615b4ce (4l82p 19:30Z, 500,307 rows / 873,766 written, walk 3089903c, gold 48453:493738); Bastrop, Caldwell, McLennan rows in OPS-19. Probe: `https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/<fips>%3A<prop_id>/facets`.
+
+**Card F (SERVING in production; re-bakes running):** the premise corrected itself by measurement: the conformant claim READER looked for `body.claim` while the Factory writes flat bodies, so situsCity, situsZip, land use and claim acreage were null on all 1,498,010 conformant rows; the serve predicate then read the null situsCity as unincorporated. Fixed: LDT #532 (main ee27845e; reader accepts nested or flat; zoning verdict derived from `loadCityLimitsFact` with `derivation` on the wire: `stamp-missing` inside a place, `not-applicable` outside every polygon under the county doctrine, `unmeasured` without a point or index); Factory #34 (walk BP-VALUE-01 against `landing_tx_city_boundary`, fails closed on no point or empty table, shared-input clause declared) and #35 (`_LDT_SHA` pin). cortex-api production 00643-rib (digest 59a4696f) since 20:51Z, staging tag 00644-soz same digest; publish image 1b10d7e7 (job gen 17, walk gen 18). Six staging re-bakes launched 20:54Z (48021 k224m, 48055 2kr9c, 48309 wkjgk, 48209 vj2sz, 48453 mnwhc, 48491 4j7r4); production publishes follow each passed walk (state file in the planner scratchpad `rebake3_state.txt`). 534,700 unstamped rows carry the 0,0 bake sentinel and serve `unmeasured` until a point source exists (follow-up). Card `_inbox/2026-08-28_ctx_f_zoning_verdict_city_limits_WDLL.md`, close `_inbox/2026-08-28_ctx-f_close.json`.
+
+**Jobs (us-east4, all from build configs):** factory-conformant gen 21 (timeout 21600), factory-bastrop-publish gen 16 image 7bdecdb1 (21600), factory-verify-walk gen 17 (900), factory-restamp-access, factory-f10-cad-loop. Execute form: `--args="^|^bastrop-publish|--target=production|--county=<fips>|--gold=<fips>:<prop_id>|--skip-pmtiles" --update-env-vars=OPERATOR_PUBLISH_GO=1,PRODUCTION_SITE_URL=https://smartsite.cloud`. Production requires a walked staging sibling (`requireStagingSibling`).
+
+**Stores:** atoms `hauska_mcp` on ep-lucky-truth (direct, never pooler); production snapshots `neondb` same host; staging hauska_mcp br-billowing-queen (ep-blue-unit), staging neondb br-super-cloud (ep-wispy-fire); six stale staging branches deleted 2026-08-28 19:37Z (A-022). cortex-api production 00629-riz. Access pair is `catalog-listed / anyone-free` at writer, bake, and serve; legacy pair refused everywhere (translation retired LDT #520, Factory #30).
+
+**Backlog routed (not started):** Travis written-vs-rows reconciliation; ledger-vs-seed join gate for 48209/48491 (operator ruling, F-05); R1 brief envelope routing (F-08 decision); walk fetch latency per parcel; value-level grades; two-tax-year selection at bake; per-page bake cost; per-county published_at reader; legacy reaper start-time fallback deletion by 2026-09-01; reset job Neon config; publish-guards reader. Deferred by A-020 still deferred (wave 1 remainder, F-09 217 counties, F-11 to F-14).
+
+**Standing:** OLD_SHAPE_FILL_FROZEN; no store writes from a laptop; never a pooler host; commits by explicit pathspec on the operator word; subagents do not commit.
 
 ## F-10 WAVE 1 CP3 — IN PROGRESS 2026-08-28
 

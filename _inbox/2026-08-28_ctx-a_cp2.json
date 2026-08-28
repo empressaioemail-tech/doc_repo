@@ -1,0 +1,53 @@
+{
+  "lane": "ctx-a",
+  "planRow": ["F-10", "F-19", "F-03"],
+  "checkpoint": "CP2",
+  "filedAt": "2026-08-28T08:40:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-replay",
+    "branch": "seat/property-ctx-replay",
+    "base": "a70139a4de48fd099a28391cd77646d7ab38061e",
+    "uncommitted": "yes by design; planner commits",
+    "cp1": "_inbox/2026-08-28_ctx-a_cp1.json"
+  },
+  "state": {
+    "item1": "CLOSED in the worktree. test/ctx-replay-determinism.test.mjs 7 of 7 pass; full suite 134 pass / 0 fail / 2 skipped (live-DB) after step 2. Baseline before any change: 127 pass / 0 fail / 2 skipped over 129 pre-existing tests.",
+    "item2": "reaper.mjs rewritten, reap.mjs patched, test/ctx-reaper.test.mjs written; running now.",
+    "item3": "register, loop, manifest, migration 0004, test/ctx-register-dispositions.test.mjs written; applying next."
+  },
+  "failingBeforeFix": {
+    "run": "node --test test/ctx-replay-determinism.test.mjs against a70139a src: 0 pass / 7 fail",
+    "fixtureA": "missing_on_one_side, identity.alias 48055:100041 on the second side only (the 48085 mechanism reproduced)",
+    "fixtureAprime": "field_divergence on an alias key: [atomId, nodeId, atomDid], claim hash equal (random-era multi-alias binding)",
+    "fixtureC": "per-chunk staged counts 240,270,300 against expected 60,60,60 with 180 hydrated aliases: the card's cumulative arithmetic reproduced exactly",
+    "mechanismI": "resolveCandidate bound nid_8b2a... in one hydration order and nid_8b1c... in the other",
+    "mechanismII": "two reads of one landing page returned the duplicate prop_id 100011 rows in different orders",
+    "stepOneOnly": "after the alias-delta change alone: (a), (a'), (c) pass; (b), (i), (ii), signature still fail, proving binding order and tie order are independent mechanisms; signature check listed the tie-order signature [atomId, atomDid, claim] on cad key 100006 and its alias key"
+  },
+  "designDeviations": [
+    {
+      "what": "replayCountyCadChunks and processCountyCadChunks hydrate aliases with knowledge_at < this run's knowledgeAt (loadAliasRows knownBefore), so pass two derives every binding from the state pass one started from.",
+      "why": "Fixture (b) did not fire under the card's literal wording: when pass two hydrates the aliases pass one persisted, a random mint is bound through those aliases and replay reads identical, so the check could not fail for the defect it exists to catch (DEV_PROCESS 2.2). The card's own item 1 also asks that the emitted alias be independent of what an earlier pass persisted. Fixture (a) still hydrates from the persisted table; the filter only excludes rows stamped at this run's knowledgeAt.",
+      "planner_check": "acceptable, or say so and the filter is removed with fixture (b) marked unable to fire"
+    },
+    {
+      "what": "tier-1 binding among several authoritative aliases for one key is earliest knowledgeAt first (then validFrom, then nodeId); later nodes are MERGED_INTO the earliest.",
+      "why": "Today's [...nodeIds][0] is hydration order, which is DB row order with no ORDER BY. Earliest-known preserves what pass one has been doing whenever the DB returned insertion order, so published node ids for re-run counties do not move (V9). Consequence named for the planner: counties with random-era aliases (48055 has four sets per key by the card's arithmetic; Bastrop 3.18) keep binding to the earliest random-era node, not to the deterministic one; changing that is a repoint decision, not this card."
+    },
+    {
+      "what": "persisted aliases per chunk are the chunk's emitted set, deduplicated only by the aliases conflict target (alias_key, valid_from, knowledge_at).",
+      "why": "Literal reading of item 1. Consequence: every run at a new knowledgeAt inserts one era row per key even when the binding is unchanged, so the aliases table keeps growing one set per run (the 247,397-row Bastrop symptom continues). Reusing the earliest era when the binding is unchanged would stop that; not done here because it changes era semantics. Named as a planner decision."
+    }
+  ],
+  "fortyEightZeroFiveFive": {
+    "cardSignature": "cad-parcel-roll key, fields [atomId, atomDid], nodeId and claim hash equal",
+    "finding": "unreachable from this tree for one landing row: reconcile sets atomId = contentId({node: nodeId, claim, logic: logicVersion}) and the staged atom carries those same nodeId and claim objects; no code path mutates either after reconcile (grep), and logicVersion is f.logicVersion in both passes. The signature check fixture applies every perturbation found (four random-era alias sets, reversed hydration, duplicate prop_ids with unstable tie order) and finds no cad key diverging on atomId without nodeId or claim.",
+    "mechanismsThatDoDiverge": {
+      "bindingOrder": "signature [atomId, nodeId, atomDid]; fixed by byEra sort",
+      "tieOrder": "signature [atomId, atomDid, claim] via diff's last-wins keying of duplicate prop_ids; fixed by ORDER BY prop_id, id"
+    },
+    "plannerQuery": "SELECT body->'fieldDiff' FROM run_events WHERE run_id::text LIKE '1956886d%' AND kind = 'leg' AND body->>'leg' = 'replay'; the fields array settles which of the two it was"
+  },
+  "constraintsHonored": ["no commit/push/PR", "no deploy/job/scheduler", "no store write", "no secret printed", "doc_repo writes: cp1, cp2 only so far"]
+}

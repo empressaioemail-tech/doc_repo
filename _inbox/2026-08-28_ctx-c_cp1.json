@@ -1,0 +1,71 @@
+{
+  "id": "2026-08-28_ctx-c_cp1",
+  "kind": "cp1",
+  "lane": "ctx-c",
+  "planRows": ["F-15", "F-16", "F-10"],
+  "wdll": "_inbox/2026-08-28_ctx_c_access_pair_writer_restamp_WDLL.md",
+  "filedAt": "2026-08-28T10:05:00Z",
+  "seat": "planner-run subagent, property seat, worktree P:/seat-worktrees/property/hauska-factory-ctx-replay, no sub-agents (dispatch forbids spawning)",
+  "snapshot": {
+    "repo": "hauska-factory",
+    "branch": "seat/property-ctx-access",
+    "head": "26e0c04 (origin/main; Merge pull request #25); working tree clean at CP1",
+    "baselineTests": "npm test (node --test test/*.test.mjs) at 26e0c04: 191 tests, 189 pass, 0 fail, 2 skipped (landing-live without FACTORY_DATABASE_URL)",
+    "contract": "@empressaio/atom-contract 1.30.0 in node_modules; package.json exports './access' -> dist/access/index.js; dist/access/access-pair.js parseAccessPair refuses public/anonymous as unknown discoverability/entitlement and mapAccessPolicy(public-free) returns {catalog-listed, anyone-free, accessPolicy: public-free}",
+    "ldtPr519": "read via gh pr diff 519 (OPEN, head fix/access-pair-law-normalize): LEGACY_ACCESS_PAIRS = { public/anonymous: {catalog-listed, anyone-free} } exactly one entry; normalizeAccessPair translates only that key and marks accessNormalizedFrom; refusePayloadAtServe rewrites the served payload"
+  },
+  "missionPremise": "A-023 (OPS-19, 2026-08-28): the canonical access pair for a public record is catalog-listed / anyone-free; public / anonymous is a legacy writer encoding, never a value; the conformant writer must stamp the canonical pair at the source and every already-written conformant atom is re-stamped in place by a Factory card with its own run row and a count read back from the store; when that closes the LDT serve translation is retired by test. Source: 90_operations/OPS-19_factory_plan_of_record.md line 98 (A-023) and the WDLL card, both read this session; the Bastrop production 422 (ACCESS_NOT_DEFAULTED, unknown discoverability) is the incident.",
+  "completionPredicate": "node --test green with fail 0 and count above 191; every atom pipelineFromRows, syntheticStagedAtoms and floodAtomsToStage emit carries exactly {catalog-listed, anyone-free}; a legacy pair refuses ACCESS_NOT_CANONICAL at assertNewShapeBoundary, copyStage, accessPolicyProjection (merge) and sixFieldCandidate; grep -rn '\"public\"' src finds no producer; a retirement test fails when a producer is reverted (proven by violation at CP2); restamp-access job with fake factory + fake atoms store proves matched/written counts per batch, read-back refusal, out-of-table and canonical rows untouched, dry-run refusal (cannot succeed), laptop refusal, nothing-matched refusal; cloudbuild.conformant.yaml deploys factory-restamp-access from the build config; handback carries diff by file, full test output, execute commands, count read-back, the LDT retirement test text, leave_behind.",
+  "scopeBasis": "The card's four items on src/jobs/conformant.mjs, src/stages/write/index.mjs, src/lib/six-field.mjs, a new job, cloudbuild.conformant.yaml and tests. Out of scope by the card: commit, push, PR, deploy, any job execution, any store write, image rebuild while the 48309/48453/48491 loop runs, hand edits to job templates, mapping any pair outside the declared table, LDT code (the LDT test is handed back as text only). Deliberately excluded and named: re-stamping write_stage_atoms bodies in the Factory store (the merge projection now refuses a legacy body so the stale staging half is inert; declared in leave_behind); src/lib/publish-guards.mjs assertAccessPair (a presence-shaped reader on the F-06 path, not a producer; reported, not changed).",
+  "findingsBeforeBuild": [
+    {
+      "item": 1,
+      "finding": "Card snapshot says lines 153, 173 and 509 stamp the legacy pair on every cad-parcel-roll, identity.alias and flood atom. At 26e0c04: 153 = cad-parcel-roll (pipelineFromRows), 173 = identity.alias (pipelineFromRows), 509 = the rate-probe synthetic atoms (syntheticStagedAtoms), NOT flood. Flood atoms come from src/stages/demote/flood.mjs floodAtomsToStage line 151, which already stamps mapAccessPolicy(public-free) = the contract's three-field canonical form. Consequence: flood atoms in the store are not expected to carry the legacy pair; the re-stamp still scans every entity type for the county so nothing is assumed. Second mechanism considered: an earlier flood writer stamped legacy pairs before flood.mjs took mapAccessPolicy; not verifiable without the store (reads forbidden by the dispatch), so the job matches on the pair, never on entity type."
+    },
+    {
+      "item": 1,
+      "finding": "src/lib/six-field.mjs normalizeAccess is used only by sixFieldCandidate (adapter candidates, the production side); nothing in six-field classifies stored rows. The card's clause 'keeps reading the legacy pairs only where it classifies stored rows' therefore leaves nothing for six-field to keep: sixFieldCandidate will refuse a legacy pair (ACCESS_NOT_CANONICAL) instead of silently translating it, and the declared legacy table plus a stored-row classifier move to one module src/lib/access-pair.mjs, used by the re-stamp job."
+    },
+    {
+      "item": 1,
+      "finding": "Atom identity does not include access: atomId = contentId({entityType, nodeId, claim, logicVersion}) (src/stages/write/index.mjs:18). The stamp change therefore keeps every atom_did stable, the re-stamp is an in-place UPDATE, and a future writer re-run ON CONFLICT DO UPDATEs the same did with a canonical body. LOGIC_VERSION is NOT bumped; bumping it would mint new dids beside the old rows and duplicate the county."
+    },
+    {
+      "item": 1,
+      "finding": "mergeFromFactoryStage without stagedSince merges every write_stage_atoms row for (entityType, county); accessPolicyProjection currently maps a legacy body onto the column, so a stale legacy body in the Factory staging half could re-enter the atoms store through a whole-stage merge after the re-stamp. Today no live path does that for cad-parcel-roll (the chunk path passes stagedSince; the flood path merges flood-* types, which are canonical), but the path exists. accessPolicyProjection will refuse a legacy pair with ACCESS_NOT_CANONICAL so the stale staging half is inert until re-staged by a writer run."
+    },
+    {
+      "item": 2,
+      "finding": "The Dockerfile copies only src/ and migrations/ into the image; a file at jobs/restamp-access.mjs would not ship. The job lands at src/jobs/restamp-access.mjs and is wired through src/cli.mjs like every other job (the card's jobs/restamp-access.mjs is read as the repo's src/jobs/ convention)."
+    },
+    {
+      "item": 2,
+      "finding": "src/control/reaper.mjs COMMAND_JOBS / PHASE_JOBS give each run an execution affinity; a restamp run without an entry would be matchable to any factory execution by start time. Both tables gain restamp-access -> factory-restamp-access, with a test."
+    },
+    {
+      "item": 2,
+      "finding": "Template execution pattern (A-019): factory-conformant's template args are the bare command and the loop passes container-override args per county. factory-restamp-access will be deployed with --args=restamp-access (which alone refuses COUNTY_REQUIRED, so the template cannot succeed by accident) and executed with --args=restamp-access,--county=<fips>,--dry-run then ...,--apply."
+    }
+  ],
+  "design": {
+    "accessPairModule": "src/lib/access-pair.mjs: PUBLIC_RECORD_ACCESS = frozen {catalog-listed, anyone-free}; ACCESS_NOT_CANONICAL; LEGACY_ACCESS_PAIRS = frozen { public/anonymous: {discoverability: catalog-listed, entitlement: anyone-free, accessPolicy: public-free} } mirroring LDT PR #519 exactly; legacyPairKey(access); classifyStoredAccess(access) -> {kind: canonical|legacy|unknown, key, canonical}; assertCanonicalAccessPair(access) refuses a legacy or unknown pair with ACCESS_NOT_CANONICAL (cause = the contract's AccessParseError) and returns the contract-parsed pair; the parser is the package export @empressaio/atom-contract/access parseAccessPair (available in 1.30.0, no shim needed).",
+    "producers": "conformant.mjs 153/173/509 -> PUBLIC_RECORD_ACCESS; flood.mjs floodAtomsToStage -> PUBLIC_RECORD_ACCESS; adapt/cad.mjs candidate access -> PUBLIC_RECORD_ACCESS (one producer constant in the repo; a divergence test ties it to the contract's mapAccessPolicy(public-free)).",
+    "boundary": "assertNewShapeBoundary validates row.access after the node/key/DID checks; copyStage validates every atom before its INSERT; accessPolicyProjection refuses a legacy pair (ACCESS_NOT_CANONICAL) and keeps the canonical projection; sixFieldCandidate refuses a legacy pair.",
+    "restampJob": "src/jobs/restamp-access.mjs runRestampAccess(env, {flags, deps}): flags --county (required, TX-validated), --apply | --dry-run (one required), --batch-size (default 5000), --run-id; --apply refuses LAPTOP_WRITE_FROZEN unless FACTORY_CLOUD=1 before any connect; ATOMS_DATABASE_URL required, pooler refused, current_database() must be hauska_mcp (WRONG_DATABASE); run row first (phase restamp-access, scope.command restamp-access, max_duration_s 7200, legacy table keys and canonical pair recorded in scope); per county: count legacy rows per (entity_type, legacy key) from the store, count rows whose access_policy disagrees with the table's policy (refuse ACCESS_COLUMN_DISAGREES), count out-of-table and canonical rows (reported, never touched); zero matched refuses RESTAMP_NOTHING_MATCHED (a run that writes nothing cannot succeed); for each entity type with matches: Factory scoped lease (entity_type, county) + lock, then keyset batches on atom_did, each batch one transaction: atoms_writer_lease_v2 take on <entity_type>:<county> (LEASE_HELD refuses), SELECT dids where legacy predicate, UPDATE body = body || {access: canonical, accessRestampedFrom: <legacy pair>, accessRestampRunId, accessRestampedAt}, access_policy = table policy WHERE atom_did = ANY(dids) AND the same legacy predicate; written must equal matched (RESTAMP_BATCH_SHORT), release lease, COMMIT, run_event restamp-batch {entityType, legacyKey, batchIndex, matched, written, firstAtomDid, lastAtomDid}; after all types: read-back legacy count must be 0 (RESTAMP_INCOMPLETE) and rows carrying this run's accessRestampRunId must equal total written (RESTAMP_COUNT_MISMATCH); termination success 7200. Dry run: counts only, run_event restamp-dry-run, no lease, no UPDATE, then DRY_RUN_REFUSED with runs.status failed / refuse_code and termination exit_kind dry-run (the 831fec74 rule). Every failure path writes runs.refuse_code and a termination.",
+    "build": "cloudbuild.conformant.yaml deploys factory-restamp-access by digest: --command=node,src/cli.mjs --args=restamp-access, task-timeout 7200, secrets FACTORY_DATABASE_URL + ATOMS_DATABASE_URL, env CONTRACT_VERSION/IMAGE_DIGEST/CLOUD_RUN_REGION/FACTORY_CLOUD=1, 1Gi/1 cpu.",
+    "tests": "new test/ctx-access-pair.test.mjs and test/helpers/fake-atoms-store.mjs; test/helpers/fake-factory.mjs gains control-table handling (runs, termination_records, leases) additively; fixtures in chunk-replay and reconcile-promote-write move from the legacy pair to the canonical pair; retirement test = (a) runtime: every producer path's emitted atoms carry the canonical pair, (b) source: no file under src/ except src/lib/access-pair.mjs contains the legacy stamp text; both must fail when line 153 is reverted (to be shown at CP2)."
+  },
+  "preRegisteredFalsifiers": [
+    "If pipelineFromRows on the fixture emits any atom whose access is not deepEqual PUBLIC_RECORD_ACCESS, item 1 is not met.",
+    "If stageRows/copyStage/accessPolicyProjection/sixFieldCandidate accept {public, anonymous} without throwing code ACCESS_NOT_CANONICAL, the boundary is presence-shaped and item 1 is not met.",
+    "If reverting conformant.mjs line 153 to the legacy pair leaves the retirement tests green, item 3 is vacuous.",
+    "If the restamp fake run reports written != matched, or touches a canonical / out-of-table / old-shape row (any of those rows gains accessRestampedFrom), item 2 is not met.",
+    "If a legacy row injected after the last batch does not make the job throw RESTAMP_INCOMPLETE, the read-back refusal is vacuous.",
+    "If --dry-run issues any UPDATE or lease INSERT, or terminates with exit_kind success, the dry-run refusal is vacuous.",
+    "If --apply with FACTORY_CLOUD unset reaches connectFn, the laptop refusal is vacuous.",
+    "If node --test after the change reports fail > 0 or a count at or below 191, the change broke the suite or dropped tests.",
+    "If grep -rn '\"public\"' src finds a producer outside src/lib/access-pair.mjs, item 1's check fails."
+  ],
+  "constraintsHonored": ["no commit, push, PR, deploy, execution", "no store write; fakes only", "no secret printed", "read-only gh pr diff of LDT #519", "no writes under P:/doc_repo except this file, CP2 and CLOSE", "no writes outside own worktree"],
+  "leave_behind": "declared at close"
+}

@@ -1,0 +1,123 @@
+{
+  "checkpoint": "CP1",
+  "lane": "ctx-e",
+  "card": "CTX card E: the bake projects the facet set; the reader is not assumed to be the gap",
+  "planRows": ["F-06", "F-08"],
+  "writtenAt": "2026-08-28T14:05:00Z",
+  "snapshot": {
+    "ldtWorktree": "P:/seat-worktrees/property/legacy-design-tools-publish",
+    "ldtBranch": "fix/f06-conformant-bake-facet-projection",
+    "ldtCommit": "e86cade76a615f1ecf15e77a76fb495bf5f7c9a6",
+    "mapWorktree": "P:/seat-worktrees/property/hauska-map-publish",
+    "mapBranch": "fix/pe-brief-conformant-reader",
+    "mapCommit": "9a718deb4594f4ea39848e4a165fcf04de996da8",
+    "factoryReadOnly": "P:/seat-worktrees/property/hauska-factory-ctx-publish @ fe2e153 (seat/property-ctx-walk-nullcity), read for the walk grader and the publish job only",
+    "database": "production neondb via PRODUCTION_NEONDB_URL, read-only SELECTs, statement_timeout 30000; probes ran 2026-08-28T13:45:26Z, 13:50:26Z, 13:51:08Z"
+  },
+  "missionPremise": "OPS-19 A-025 (1): the conformant tier 1 bake projects everything the old tier 1 bake projected for the same parcel or writes an explicit absent per facet, never an omitted key; A-025 (5): the Property Explorer reader is changed only where proven. Operator screenshot 13:40Z on 48021:34729.",
+  "premiseCorrections": [
+    {
+      "claimInCard": "item 1: 'the old-shape tier 1 payload (the superseded row)' exists in production side by side with the new-shape row",
+      "finding": "No superseded row exists. place_layer_snapshots has a UNIQUE index (adapter_key, place_key) and both conformant CLIs upsert ON CONFLICT (adapter_key, place_key) DO UPDATE, so the old-shape tier 1 row for every re-baked parcel was overwritten in place. Evidence: the five gold rows carry created_at 2026-07-20/21 and snapshot_at 2026-08-28 on one row each; index list from pg_indexes.",
+      "consequence": "The old-shape reference for the key diff is (a) three un-rebaked old-shape Bastrop rows read through the (adapter_key, lat_rounded, lng_rounded) index (node:48021:8704664, node:48021:51708, node:48021:22508, snapshot_at 2026-08-04T12:25Z), (b) two Travis rows (node:48453:211051, node:48453:211230, 2026-07-24), and (c) the old CLI's Tier1FacetPayload type, which those rows match key for key."
+    },
+    {
+      "claimInCard": "Travis gold 48453:493738 and Williamson gold 48491:76149 exist as production rows",
+      "finding": "Neither place_key has a row under node-facets:tier1 or node-facets:tier2 in production (10 rows returned for 7 keys x 2 adapters = the five other parcels only). The old bake never wrote them; their production publish is held under A-025 (3), so nothing is affected."
+    }
+  ],
+  "liveShapes": {
+    "newShapeTier1KeyPaths_allFiveGolds": [
+      "access.discoverability", "access.entitlement", "baked", "facetCoverage.tier1",
+      "facets.base.apn", "facets.base.parcelNodeId", "facets.base.situsAddress",
+      "publishRunId", "shapeSource", "source"
+    ],
+    "newShapeExtraOn48055_48209_48309": ["accessNormalizedFrom (baked before the A-023 re-stamp; Bastrop's 12:38Z re-bake carries no marker)"],
+    "newShapeTier2KeyPaths": ["baked", "bakedAt", "envelope=null", "flood=null", "publishRunId", "shapeSource", "source"],
+    "oldShapeTier1KeyPaths_reference": [
+      "facetSchemaVersion", "tier", "parcelNodeId", "countyFips", "countyName",
+      "baseFacts.apn", "baseFacts.situsAddress", "baseFacts.situsCity", "baseFacts.situsState",
+      "baseFacts.landUse.code", "baseFacts.landUse.description", "baseFacts.landUse.source", "baseFacts.landUse.vintage",
+      "baseFacts.acreage.value", "baseFacts.acreage.sqft", "baseFacts.acreage.method",
+      "zoning (null when unstamped) | zoning.district, zoning.jurisdictionKey, zoning.provenance.{sourceUrl,codeField,cityKey,layerName,stampedAt}",
+      "envelope.status", "envelope.confidence", "envelope.disclosure", "envelope.approximate", "envelope.provisional", "envelope.roadsPending", "envelope.declineReason", "envelope.jurisdictionKey",
+      "facetCoverage.baseFacts", "facetCoverage.landUse", "facetCoverage.acreage", "facetCoverage.zoning", "facetCoverage.envelope",
+      "provenance.parcelSource", "provenance.parcelVintage", "provenance.landUseSource", "provenance.landUseAddressRecovered", "provenance.roadsPending", "provenance.tierNote", "provenance.landUseGateBlocked", "provenance.zoningSource",
+      "bakedAt"
+    ]
+  },
+  "keyDiffPerParcel": {
+    "note": "old-only = every old reference path (none of them is on any new row; the new row shares zero paths with the old shape); new-only = the ten new paths above. Per parcel, what can supply each old key on the corrected bake, from the production reads.",
+    "48021:34137": {
+      "txgioRow": "found (feature_index 24587): situs '908 PINE , BASTROP, TX 78602', situs_city BASTROP, situs_state TX, zoning_district SF-1, zoning_jurisdiction bastrop-city-tx, source_vintage stratmap25-landparcels_48021_bastrop_202503, geometry jsonb present",
+      "cadRow": "prop 34137 tax_year 2025 property_use_code A1 land_acres 0.3815",
+      "supply": {
+        "baseFacts.apn": "claim sourceIdentifiers.prop_id (node id suffix)",
+        "baseFacts.situsAddress": "claim.situsAddress",
+        "baseFacts.situsCity": "claim.situsCity",
+        "baseFacts.situsState": "txgio join situs_state (TX)",
+        "baseFacts.landUse.*": "claim.propertyUseCode A1 + ptadLandUseDescription + vintage from claim taxYear 2025",
+        "baseFacts.acreage.*": "shoelace on the txgio ring (same derivation as old); claim landAcres 0.3815 is the fallback when no ring",
+        "zoning.*": "txgio zoning stamp join: SF-1 / bastrop-city-tx, provenance from ZONING_LAYERS (same resolveZoningJurisdiction + zoningProvenanceFromLayer path)",
+        "envelope.*": "computeTier1Envelope on the ring: declined / atom_path_pending (same as old)",
+        "facetCoverage.*, provenance.*, bakedAt, tier, countyFips, countyName, parcelNodeId": "derived by the shared assembly"
+      }
+    },
+    "48021:34729": {
+      "txgioRow": "found (feature_index 17053): situs '1005 PINE ST , BASTROP, TX 78602', BASTROP / TX, zoning_district SF-1, zoning_jurisdiction bastrop-city-tx, stratmap25 vintage, geometry present",
+      "cadRow": "prop 34729 tax_year 2025 property_use_code A1 land_acres 0.2621",
+      "supply": "identical to 48021:34137 (SF-1 / bastrop-city-tx, A1)"
+    },
+    "48055:20478": {
+      "txgioRow": "found (feature_index 7296): situs '921 PLUM ST, LOCKHART, TX 78644', LOCKHART / TX, zoning_district RMD, zoning_jurisdiction NULL, stratmap25 vintage, geometry present",
+      "cadRow": "prop 20478 tax_year 2026 A1 land_acres 0.2068 (and 2025 A1 0.2056)",
+      "supply": {
+        "zoning.*": "district RMD from the stamp; jurisdiction via the situs-city fallback (LOCKHART -> lockhart-tx, wired in ZONING_LAYERS) exactly as the old CLI resolved it; provenance from the lockhart-tx layer",
+        "everything else": "as 48021"
+      }
+    },
+    "48209:135570": {
+      "txgioRow": "NONE: txgio_parcel has no (48209, '135570') row. Consistent with the old bake's gate: Hays TxGIO prop_ids and CAD prop_ids are different numbering systems, and 48209 is in LANDUSE_JOIN_DISABLED_FIPS_SEED, so the prop_id join is gate-blocked for this county even though county_facet_coverage now scores it 'pass' at 0.8315 (two numbers that should agree and do not; reported, not resolved here).",
+      "cadRow": "prop 135570 tax_year 2026 property_use_code 'A' land_acres NULL (2025 same)",
+      "supply": {
+        "baseFacts.apn, situsAddress, situsCity": "claim",
+        "baseFacts.situsState": "null (no txgio row; never defaulted)",
+        "baseFacts.landUse.*": "claim.propertyUseCode 'A' (the row's own field, no join)",
+        "baseFacts.acreage": "null: no ring and claim landAcres null (explicit absent)",
+        "zoning": "null with provenance.parcelJoin {state: gate-blocked} (unmeasured, stated as such; not a verified no-stamp)",
+        "envelope": "null (no ring), same as the old bake for a parcel without geometry",
+        "coordinate": "row carries the 0.00000 sentinel (fresh insert 10:23:59Z), so the serve's cityLimits query point is unusable -> unmeasured; the corrected bake writes a real centroid only when a ring exists, so this parcel stays unmeasured honestly"
+      }
+    },
+    "48309:176914": {
+      "txgioRow": "found (feature_index 48819): situs '4204 BEVERLY DR , WACO, TX 76711', WACO / TX, zoning_district NULL, zoning_jurisdiction NULL, stratmap25 vintage, geometry present",
+      "cadRow": "prop 176914 tax_year 2025 A1 land_acres NULL",
+      "supply": {
+        "zoning": "null (joined; stamp absent) with parcelJoin {state: joined}; envelope declined / no-zoning-stamp from computeTier1Envelope, as the old bake wrote for node:48021:22508",
+        "baseFacts.acreage": "shoelace on the ring",
+        "everything else": "as 48021"
+      }
+    }
+  },
+  "newOnlyKeysDisposition": {
+    "keep": ["shapeSource", "baked", "source", "access.*", "accessNormalizedFrom (only when the serve translation applies)", "publishRunId", "facets.base.{apn,parcelNodeId,situsAddress}", "facetCoverage.tier1"],
+    "why": "refusePayloadAtServe reads facets.base.situsAddress; hauska-factory verify-walk.mjs reads publishRunId at root or under facets and greps the body for 'conformant-v1'; the tier 2 conformant CLI selects tier 1 rows by payload_json->>'shapeSource'.",
+    "add": ["provenance.parcelJoin.{table,state,basis}: which parcel table the zoning/geometry join hit and whether it was joined, found no row, or was gate-blocked"],
+    "change": ["facetSchemaVersion: 'node-facets-tier1-conformant-v1' (NOT 'node-facets-tier1-v1'): hauska-factory src/jobs/verify-walk.mjs:93 fails BP-CONFORMANT-01 on facets.facetSchemaVersion === 'node-facets-tier1-v1' as the old-shape baseline; nothing in LDT or hauska-map reads the literal (grep: only the old CLI and two serve-test fixtures)."]
+  },
+  "readerFinding": "The reader is not the gap. PE fact-sheet-resolver.ts identityFacts reads facets.baseFacts.situsAddress; on the new shape baseFacts is undefined, so situs is absent, no geometry seed is available (no envelope geojson, no situs to geocode), resolveGeometry returns null, the parcel is UnplaceableParcel, and PropertyBriefPanel renders VERDICT_UNRESOLVED ('This property has not resolved a fact sheet yet.'). Zoning/setbacks/land use render 'not verified here' because r1BriefCompose reads root.zoning, root.envelope, root.baseFacts.landUse, all absent on the new shape. Full key table in CP2.",
+  "designDecisions": [
+    "Extract the old CLI's assembly (zoning resolution, envelope, acreage, coverage, provenance) into src/lib/nodeFacetTier1Assemble.ts and its txgio join SELECT/discovery into src/lib/nodeFacetTier1ParcelJoin.ts; both CLIs import them. The conformant CLI never imports the old CLI module: its isDirectRun() guard is true inside the esbuild publish bundle (hauska-factory scripts/build-publish-bake-clis.mjs bundles the conformant CLI as one file) and would run the old bake's main() against DATABASE_URL.",
+    "Land use comes from the claim (propertyUseCode, taxYear), not from a cad_property join: the claim is the row itself, so the land-use gate does not apply; provenance.landUseGateBlocked is false and parcelJoin carries the join state.",
+    "The txgio join is gate-blocked for effectiveBlockedFips (ledger 'block' verdicts UNION LANDUSE_JOIN_DISABLED_FIPS_SEED), the same instrument the old bake uses, because a CAD prop_id joined into a divergent TxGIO numbering attaches another parcel's zoning and geometry. Blocked counties (48209, 48491 today) bake zoning null, envelope null, acreage from claim landAcres, parcelJoin.state gate-blocked.",
+    "Acreage: shoelace on the txgio ring (same derivation); claim landAcres only when no ring, with method 'cad-roll-land-acres' so the two are distinguishable.",
+    "Coordinates: the bake writes the ring centroid when it has one; on conflict the sentinel never overwrites a real prior coordinate; updated_at is set (the current CLI leaves it stale).",
+    "Owner: the claim carries ownerName; the builder never reads it and assertNoOwnerKey refuses any owner-shaped key before a write (same predicate as the serve strip).",
+    "Tier 2 untouched (SS-W16).",
+    "No monotonic guard on the conformant path: a publish run overwrites its own rows by design; the old-shape rows of parcels the run does not bake stay in place (V9)."
+  ],
+  "openBeforeBuild": [
+    "The conformant bake refuses the whole parcel on a punctuation-only situs (16,104 Bastrop rows in run e1b32af8), so those parcels keep their old-shape rows; refusePayloadAtServe reads facets.base.situsAddress and therefore never refuses an old-shape ', ,' row. Existing publish-lane behaviour, not changed here; named for the planner.",
+    "county_facet_coverage scores 48209 and 48491 'pass' (0.8315, 0.8890) while LANDUSE_JOIN_DISABLED_FIPS_SEED still blocks them; the bake follows the union as the old CLI does."
+  ]
+}
