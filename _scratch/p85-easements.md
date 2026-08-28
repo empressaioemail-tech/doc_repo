@@ -17,9 +17,25 @@
 - Worker extract on that live page: 39 rows, 14 with null headers. Those 14 are chrome (login, sort, logon). The 21 instrument rows have headers. `unresolved_result_row_header` is the chrome rows, not a missing Instrument # header.
 - Dump: `_inbox/2026-08-28_p85_aumentum_live_grid_dump.md`.
 
-## OPEN (2026-08-28T20:50Z)
+## GROUND-TRUTH (2026-08-28T20:59Z)
 
-- Merge #531 (purchase-bind), rebuild worker, then extract change from the live dump. Do not add another RadGrid selector. Drop chrome / scope to the innermost Instrument # table. Violation: current extract fails the live-shaped fixture.
+- LDT #531 MERGED `3cbbfbb4`. Purchase bind is on main. Worker not rebuilt yet; waiting #533 so one image carries both.
+- LDT #533 open: chrome-drop extract from the live Infragistics dump. Local worker tests 70/70.
+
+## GROUND-TRUTH (2026-08-28T21:14Z)
+
+- Worker serving `records-request-worker-00014-864` @100% (status.traffic[] by field name). Digest `sha256:7bb5e5b4`. Tag p85-v14. Built from worktree `6a5a8e79` (#531 + #533 rebase). POST /run `{}` → HTTP 400 `missing_job_id`.
+- #531 MERGED `3cbbfbb4`. #533 still open (CI after rebase). Image already includes both.
+- Enqueued `74b9f93d` for `48021:35481`.
+
+## GROUND-TRUTH (2026-08-28T21:16Z)
+
+- Live job `74b9f93d` on serving `00014-864` failed `unresolved_result_row_header`. 0 hits, 0 artifacts. Classify states still absent. The new image ran (revision logs at 21:15:40). Chrome-drop did not clear the live refuse.
+- Suspected leak: date regex treats "as of 08/28/2026" chrome as index data. Not confirmed from a worker row dump. Do not guess another header selector.
+
+## OPEN (2026-08-28T21:16Z)
+
+- Dump the worker's extracted null-header rows on refuse. Then drop date-only matches if that dump shows chrome dates. Merge #533 when rebase CI is green so origin/main matches the image.
 
 ## GROUND-TRUTH (2026-08-28T19:20Z)
 
