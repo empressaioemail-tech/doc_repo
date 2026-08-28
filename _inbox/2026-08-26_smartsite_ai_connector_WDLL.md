@@ -2,7 +2,7 @@
 id: 2026-08-26_smartsite_ai_connector_WDLL
 title: WDLL — Smart Site agent distribution (resolvable shares, product MCP, directory listings)
 date: 2026-08-26
-last_updated: 2026-08-27
+last_updated: 2026-08-28
 status: approved
 applies_to: hauska-map, legacy-design-tools
 plan_row: P-86, P-87, P-88
@@ -89,6 +89,8 @@ Order: P-86, then P-87, then P-88. P-87 must not start its public hostname or OA
 
 21. **One listing filed only after item 20.** First filing is Claude's connector directory (or the vendor that item 20 used). ChatGPT listing is a second filing, same gate. A listing that points at the Cloud Run URL or at Hauska fails. | check: public directory URL resolves to `mcp.smartsite.cloud`; live initialize from that listing | grade: [ ]
 
+22–27. **Draw stub on `get_smart_site`.** Local-foot ring, honest overlays, deep link. Card `_inbox/2026-08-28_p87_draw_stub_WDLL.md`. | check: that card | grade: [ ]
+
 ## Amendments
 
 - 2026-08-26 (a): Items 1 and 6. The resolvable URL carries the grant row id, never the HMAC. Tokens in paths land in Vercel and Cloud Run request logs and referrers. Grant rows are a prerequisite of item 1, not a later phase. The HMAC remains the bearer for `/share#token` only.
@@ -96,6 +98,8 @@ Order: P-86, then P-87, then P-88. P-87 must not start its public hostname or OA
 - 2026-08-26 (c): Item 10. Name the authorization server before P-87 starts. Smart Site sign-in is an OIDC BFF (Google, Microsoft PKCE) minting `pe_session`; no AS exists in either repo. Options: minimal in-house AS in LDT bound to `pe_session`, or a hosted AS with DCR and PKCE federated to the same sign-in. Planner recommends hosted. P-86 does not wait on this.
 
 - 2026-08-27 (planner reply 00:15Z, OPS-16 A-037). Restates (a)–(c) before the first product commit. (a) Unchanged: grant row first (item 6), then a resolvable URL carrying the grant id; HMAC stays on `/share#token` only. (b) Unchanged: MCP server is `legacy-design-tools/artifacts/smartsite-mcp` via `cloud-run-deploy.yml`; share links, `llms.txt`, and Use in your AI stay in hauska-map. (c) Named: hosted WorkOS AuthKit. OAuth 2.1 + PKCE, dynamic client registration, refresh tokens, Google and Microsoft sign-in matching the existing OIDC BFF, documented MCP authorization-server role. Fallback if a live Claude custom-connector Connect cannot complete against it twice: Stytch Connected Apps, by amendment of A-037, not re-litigation. Identity join rule, binding: an AuthKit subject maps to a Smart Site user only through `peUserIdentities` by `(provider, subject)`, or by verified email on the same provider; the MCP server never creates a second account and never grants a tier that the user's `peUserEntitlements` row does not carry. Vendor capability claims are verified at build time; item 10 is the falsifier. P-86 does not wait on the AS.
+
+- 2026-08-28 (draw stub). P-87 items 22–27. Optional `draw` field on the existing brief. No ninth tool. Setback fixture zeros omitted. Seed confidence never a float. Operator go same night.
 
 P-85 coupling (planner reply, same night): `request_records`, `check_request`, and item 8 consume the P-85 job API and start after P-85 item 4 merges. Shared backends only; this card does not build a second records path.
 
@@ -120,6 +124,8 @@ Worktrees (planner reply): hauska-map work in `P:/seat-worktrees/property/hauska
   `Accept: text/markdown` 200 `text/markdown`. `Accept: application/json` 200 `grant-scoped-share-instrument`.
   HMAC in path 403 `share_grant_invalid`. `/share` still SPA `index.html`.
   First PE 403 was cortex still serving #480 (`00586-dip`); rejected "grant id invalid" as the mechanism once the row was in Neon.
+
+- 2026-08-27 (item 12, operator approved). Six tools ship live before P-85 item 4 merges: `find_parcel`, `get_smart_site`, `list_my_properties`, `run_report`, `export_instrument`, `ask_the_map`. `request_records` and `check_request` stay in the catalog but return honest `not_ready` (labeled error, fail closed) until P-85 item 4 merges. `tools/list` still returns exactly eight entries. Deploy workflow is `cloud-run-deploy-smartsite-mcp.yml` (separate Cloud Run service), not the cortex-api image. Item 12 grade: list length 8; the six live tools are probe-able at the caller's tier; the records pair passes when invoked and fails closed with a labeled `not_ready`, not a silent stub, spinner, or public-catalog body.
 
 ## Finish card (graded at close)
 
