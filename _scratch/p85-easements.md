@@ -1,5 +1,180 @@
 # P-85 Records Request
 
+## GROUND-TRUTH (2026-08-28T19:20Z)
+
+- cortex serving `cortex-api-00639-gez` @100% image `f325413`; `CORTEX_USER_DAILY_API_LIMIT=10000` (manual 50000 reverted, intended).
+- worker serving `records-request-worker-00012-zkv` @100% digest `sha256:ed2ef3f5` tag p85-v12. Traffic read from `status.traffic[]`, not latestReady.
+- Live job `08023fab` parcel `48021:35481` failed `unresolved_result_row_header`. GET artifacts=[] — written/unclassified/refused all absent on the wire.
+- Prior post-deploy: `c4959190` died `__name is not defined` (tsx + page.evaluate function). String evaluate killed that. Header bind still refuses on live Aumentum.
+- PE #285 MERGED `f334ca89`. Dirty `hauska-map-records` not touched.
+- Loop not closed. Leave-behind: live Aumentum header DOM, classify-on-artifacts probe, LDT source not on origin/main.
+
+## LESSON (2026-08-28T19:20Z)
+
+- A happy-dom in-process `fn()` test cannot catch tsx `__name` leaking into Chromium. The evaluate payload must be a string, and the test must refuse a function payload.
+- `purchaseApproved` does not create artifacts on a paid Aumentum image. classifyStatus cannot appear on the GET wire until a capture row exists.
+
+## OPEN (2026-08-28T19:20Z)
+
+- Read the live Bastrop Aumentum grid DOM. Do not guess another selector.
+- Land LDT #529 (string-evaluate + happy-dom pin) on main. catalog: still breaks Docker until then.
+- Classify three-state live probe after a real artifact exists.
+
+## GROUND-TRUTH (2026-08-28T17:40Z)
+
+- LDT `feat/p85-extract-fail-closed` @ `8f5e796c` rebased on `origin/main` `4a7e789c`. Pathspec commit, 16 files. Findings A+B closed. Not pushed.
+
+## GROUND-TRUTH (2026-08-28T17:05Z)
+
+- Cards 1+2+3 LDT written on `feat/p85-extract-fail-closed` (from `63e14028`). Tests green: api-server classify 16/16, documentServe+routes 26/26, worker suite 56/56. Not committed. Not deployed.
+- PE PdfViewer handoff: `_inbox/2026-08-28_p85_records_documenturl_pe_handoff.md`.
+
+## OPEN (2026-08-28T17:05Z)
+
+- Pathspec commit + rebase onto origin/main + PR. Worktree was already dirty; do not `git add` all. `playwrightBrowser.ts` still carries pre-existing Chrome UA dirty work.
+- Deploy worker + cortex after merge.
+- PE half on `hauska-map-records`.
+
+## OPEN (2026-08-28T16:55Z)
+
+- Dispatch `_dispatches/2026-08-28_p85-records_dispatch.md` executing from integration on `P:/doc_repo` main `843b343`.
+- LDT worktree `P:/seat-worktrees/property/legacy-design-tools` at `feat/p85-worker-v8-tag` `63e14028`, dirty with pre-existing Chrome-UA work. This card uses `feat/p85-extract-fail-closed` and pathspec-only commits.
+- Cards 1+2 must ship together. Card 3 PE PdfViewer is a handoff to `hauska-map-records`.
+
+## LESSON (2026-08-28T16:55Z)
+
+- A leftover `parties` join is the visible half. The dangerous half is positional `documentType` plus classify fallthrough-to-deed. Fixing only the dump sends `null` into the empty branch and fabricates a deed. Verify by violation: `SMITH JOHN A` must refuse, not become `deed`.
+
+- **#502 MERGED** — cloudbuild tag p85-v8 on main
+- **Pecan smoke @ 22:45Z:** job **`bab70fd3`** · mode `index-search` · **2 index hits** · fee gate $7.00
+- **PE #256 MERGED** — spine-deep allowlist for records-request approve/decline POST (fee button fix)
+- **Operator bypass @ 22:48Z:** manual approve + worker invoke · job re-ran · **`needs-human`** again (human clerk checkout on Bastrop portal — expected post-approve)
+
+## GROUND-TRUTH (2026-08-27T20:55Z)
+
+- **Worker p85-v8 DEPLOYED prod:**
+  - rev **`records-request-worker-00008-sc6`** @100%, image **p85-v8** · Cloud Build **`4db68ab9`**
+  - env: `RECORDS_REQUEST_VISION_URL` + **`RECORDS_REQUEST_NOTIFY_URL`** (notify route wired; Resend key still on cortex)
+  - #500 run-cost + canary gate now live on worker
+- **Wave A DONE** · Pecan `21eb218a` · Chestnut `beb04339` · both header-only complete
+- **RESEND_API_KEY** in GSM (cortex deploy wire still pending for live sends)
+
+## GROUND-TRUTH (2026-08-27T20:50Z)
+
+## GROUND-TRUTH (2026-08-27T20:25Z)
+
+- **W2 + W3 MERGED:**
+  - LDT **#499** vision+classify · cortex **`33109586204`**
+  - LDT **#500** canary+run cost · cortex **`33111104901`** · migration **0087** via **`33111194806`** SUCCESS
+  - PE **#248** chat citations · PE sync **`33110505255`** SUCCESS
+  - LDT **#501** corridor geometry (item 9) · merged · cortex auto-deploy pending
+- **Worker still p85-v7** — #500 run-cost + canary gate need **p85-v8** Cloud Build + traffic shift
+- **Next:** W4 ten-run grade (item 15) · Resend env wiring · re-run Chestnut/Pecan with full pipeline
+
+## GROUND-TRUTH (2026-08-27T20:05Z)
+
+## GROUND-TRUTH (2026-08-27T19:05Z)
+
+- **W1 CLOSED** — operator graded fee path on **1101 Chestnut St** (Approve + Decline) · items 1A–1C + 6 **met**
+- **LDT #497 MERGED** — Williamson publicsearch grading scaffold (item 5)
+- **W2 OPEN PRs:**
+  - LDT **#499** vision + classify (items 7–8)
+  - LDT **#500** canary + run cost (item 14) · needs migration **0087**
+  - PE **#248** chat recordingRef citations (item 12)
+
+## GROUND-TRUTH (2026-08-27T19:00Z)
+
+## GROUND-TRUTH (2026-08-27T18:40Z)
+
+- **~50% wave MERGED** (subagent fan + parent rebase/merge):
+  - LDT **#496** → Resend completion email (item 11) · cortex auto-deploy **`33103649339`** SUCCESS
+  - PE **#239** → verdict cards (item 10) + copy guard CI (item 16)
+  - PE **#242** → live GIS hits in acknowledgement (items 2–3)
+  - PE **#243** → Studio gate on REC in Tools group (item 13) · PE sync triggered **`33104633282`**
+  - LDT **#497** OPEN — Williamson grading scaffold (item 5) · CI Test still running on run **`33103743567`**
+- **Still operator:** 1101 Chestnut Approve/Decline tap (items 1A–1C proof)
+- **Still env:** `RESEND_API_KEY` on cortex + `RECORDS_REQUEST_NOTIFY_URL` on worker for live email sends
+
+## GROUND-TRUTH (2026-08-27T18:00Z)
+
+- **W1 lanes 1A–1C MERGED + DEPLOYED prod:**
+  - LDT **#494** → main `f18d55db` (approve/decline API + worker resume)
+  - PE **#236** → main (Approve/Decline UI) · GHA PE sync **`33095334991`** SUCCESS
+  - **records-request-worker** rev **`00007-8z5`** @100%, image **p85-v7** · Cloud Build **`9d467b15`**
+  - **cortex-api** canary deploy **`33095139148`** + shift **`33095335080`** SUCCESS · healthz green
+- **W1 parallel lanes opened:**
+  - LDT **#496** (Resend email item 11) · PE **#239** (verdict cards item 10 + copy guard item 16)
+- **Operator proof next:** hard refresh smartsite → **1101 Chestnut** paused-fees → Approve / Decline
+
+## GROUND-TRUTH (2026-08-27T17:45Z)
+
+- **W1 kicked off** — fee approve/decline spine + UI on branches (not merged/deployed):
+  - **LDT** `feat/p85-w1-fee-spine`: `POST approve-purchase` / `decline-purchase`, worker `purchaseApproved` resume, cloudbuild **p85-v7**
+  - **hauska-map** `feat/p85-w1-fee-ui`: Approve/Decline card on `paused-fees`, client wired to deep proxy
+  - **Contract frozen:** `_inbox/2026-08-27_p85_records_request_fee_approve_contract.md`
+  - **Tests green:** `recordsRequestPurchaseDecision.test.ts` (5), `instrumentAcquisition.test.ts` (4 incl. fee-approved human route)
+- **Canvas:** wave W1–W4 lanes + queue at `canvases/p85-records-request.canvas.tsx` (filter defaults W1)
+- **Operator proof pending post-deploy:** 1101 Chestnut — Approve → requeue; Decline → header-only complete
+
+## GROUND-TRUTH (2026-08-27T16:20Z)
+
+- **Operator fee gate proof:** **1101 Chestnut St, Bastrop** — job paused **paused-fees** · worker copy *"Portal purchase path detected; bot does not drive checkout on this card"*. Index search + paywall detect working; **approve/decline UI not built** (item 6 P0).
+- **905 Pecan (48021:34161):** index search + ~2 hits + PE instrument rows (#232) · may also hit fee pause on acquire.
+
+## GROUND-TRUTH (2026-08-27T14:38Z)
+
+- **#489 + #232 MERGED; p85-v6 + PE DEPLOYED prod:**
+  - **records-request-worker** rev **`00006-mcq`** @100%, image **p85-v6** (strip leading THE from owner clerk search)
+  - Cloud Build **`81742a30`** SUCCESS (2026-08-27T14:27Z)
+  - **PE #232** merged hauska-map main **`04389d6`**; GHA PE sync runs **`33081792339`** + **`33081969891`** SUCCESS → smartsite.cloud
+  - PE wires `scopeSearched.indexHits` → instrument rows + type filters
+- **Operator:** hard refresh → **Run new search** on **48021:34161**. Expect **~2 index hits** (201905582, 199904322). Rows show "Index hit — image not acquired yet". Job may still pause on image acquisition (item 6).
+
+## GROUND-TRUTH (2026-08-27T13:51Z)
+
+- **#487 MERGED + p85-v5 DEPLOYED prod:**
+  - **records-request-worker** rev **`00005-tt6`** @100%, image **p85-v5** (Bastrop SearchEntry disclaimer + grantor form)
+  - Cloud Build **`bef42374`** SUCCESS (2026-08-27T13:49Z)
+  - LDT main **`e4182d62`**
+- **Operator:** hard refresh smartsite → **Run new search** on **48021:34161** (905 Pecan). Expect index search hits; job may still route **needs-human** / **awaiting-purchase-approval** on image acquisition (item 6).
+
+## GROUND-TRUTH (2026-08-27T13:16Z)
+
+- **Operator proof 48021:34161:** UI status strip updated correctly (#231). Job failed **`search-ui-not-found`** — root cause: Bastrop recipe opened `SearchTerms.aspx` without disclaimer session; real flow is disclaimer `#cph1_lnkAccept` → `SearchEntry.aspx` inline form (not Grantor link navigation).
+- **Fix in progress (LDT worker):** `aumentumIndexSearch v2` — Bastrop SearchEntry separate grantor fill + live test finds 2 hits (201905582, 199904322) for DIOCESE OF AUSTIN. Deploy **p85-v5** required.
+- **Operator decisions filed:** `_decisions/2026-08-27_p85_records_request_email_and_studio_pricing.md` — **Resend** for item 11 email; Records Request **included in existing Studio package** (item 13 not a separate SKU).
+
+## GROUND-TRUTH (2026-08-28T02:05Z)
+
+- **#511 + #512 MERGED** main @ `b8983157`
+- **records-request-worker** rev **`00009-dp2`** @100%, image **p85-v9** · Cloud Build **`41d0db9a`**
+- **cortex-api** @100% image **`b8983157`** (Resend secret wired) · deploy-canary `33134723267` + shift `33134787046`
+- W4 re-run ready: Williamson (48491), Caldwell (48055), Hays (48209 captcha → needs-human)
+
+## GROUND-TRUTH (2026-08-28T01:50Z)
+
+- **#511 MERGED** worker **p85-v9** W4 recipes @ `535a02dc`:
+  - Williamson entryUrl root (not `/terms`)
+  - Hays ERSS: captcha detect + searchEntryUrl DOCSEARCH149S1
+  - Caldwell: County.Clerk URL (fixes 403)
+  - Chrome 147 UA + sec-ch-ua on browser context
+- **#512 MERGED** Resend wire @ `b8983157` — `RESEND_API_KEY` in cloud-run-deploy.yml
+- **Deploy in flight:** Cloud Build p85-v9; cortex deploy-canary run `33134042794` @ `b8983157`
+- **Prior prod:** worker p85-v8 rev `00008-sc6`; cortex `08cd9104`
+
+## GROUND-TRUTH (2026-08-27T12:48Z)
+
+- **#486 MERGED** + **item 5 DEPLOYED prod:**
+  - **records-request-worker** rev `00004-6jf` @100%, image **p85-v4** (Aumentum multi-query index search)
+  - **cortex-api** canary shifted @100%, image `9d9432ff` (CAD-enriched `searchTerms` at enqueue); healthz 200
+  - GHA: build `33072849327`, deploy-canary `33073306561`, shift-traffic `33073461108`
+  - Worker cloud build `e162e045` SUCCESS
+
+## GROUND-TRUTH (2026-08-27T12:26Z)
+
+- **Operator run 48021:34161 @ ~7:22 local** — live enqueue on prod worker **p85-v3**; current prod Bastrop recipe is still **reachability scaffold** (mode `scaffold`). Expect quick complete without index hits until item 5 worker deploy lands.
+- **Item 5 branch:** LDT `feat/p85-item5-index-search` — Aumentum multi-query (owner + legal + subdivision), CAD-enriched searchTerms at enqueue. PR pending.
+
 ## GROUND-TRUTH (2026-08-27T12:50Z)
 
 - **P-85 items 6–7 DEPLOYED prod:**
