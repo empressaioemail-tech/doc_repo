@@ -52,14 +52,48 @@ Full detail, including every refusal with its reason, is committed with the code
 at `apps/property-explorer/docs/smart-site-brand/v2/IMPLEMENTED.md`. It is the
 document to read, not this one.
 
+## Wave 2 — stacking, and the two defects behind the operator report
+
+The operator used the shipped chrome and asked for multi-dock, reporting
+missing animation and docks that looked half-treated, assuming the missing
+stacking was why. It was not. Both symptoms were wave-1 defects, both measured
+before anything changed:
+
+- **Six primitives shipped with zero call sites** (`ss-pulse`,
+  `LabelledSkeleton` + shimmer, `LoadingCount`, `Rule`, `FieldError`,
+  `UnverifiedSource`). A motion system delivered and left largely unreachable.
+  Dormant mechanisms report as success, which is why this survived a green
+  suite, a clean build AND a live-bundle check that confirmed the keyframes
+  were present — presence in the CSS is not reachability from the app.
+- **Two of eighteen dock surfaces were actually ported.** The shell was v2, the
+  bodies were on the v1 half-steps.
+
+Stacking shipped because it was asked for; the two defects were fixed on their
+own terms and not credited to it. hauska-map #261 (`bd3ffac`), #262
+(`0cb8758`), live on smartsite.cloud.
+
+Decision: `_decisions/2026-08-27_smartsite_chrome_v2_dock_stacking_reversal.md`.
+
+**Second new control:** the v2 type ramp is enforced by the chrome-kit gate —
+off-ramp `fontSize` / `borderRadius` / `fontWeight` in any of the 20 scanned
+surfaces fails CI. A codemod that runs once and is not enforced drifts back.
+Verified by violation, and worth recording that the FIRST TWO attempts to plant
+that violation silently failed to write anything and the gate reported PASS
+both times. A check observed passing against a violation that was never applied
+is not a check; the plant has to be confirmed present before the pass means
+anything.
+
 ## Ruling taken this session
 
-**SPEC section 2 multi-dock stacking with fold-to-header in a left column was
-DECLINED** (operator, 2026-08-27). One tool open at a time and the right-hand
-dock stay; the `workbench.test.tsx` guards written to stop multi-open returning
-stay armed. Everything else in that section landed. Do not re-raise without a
-new ruling. Recorded as a decision at
-`_decisions/2026-08-27_smartsite_chrome_v2_one_dock_ruling.md`.
+SPEC section 2 multi-dock stacking was DECLINED, then REVERSED the same day
+after the operator used the shipped single-dock chrome. Stacking is live. The
+first ruling is retained at
+`_decisions/2026-08-27_smartsite_chrome_v2_one_dock_ruling.md` with status
+`superseded` (flipped, never deleted); the reversal and its reasoning are at
+`_decisions/2026-08-27_smartsite_chrome_v2_dock_stacking_reversal.md`.
+
+The column stays on the RIGHT. Moving it left, as the drop draws it, was not
+asked for and is still unsettled.
 
 ## New control
 
@@ -105,7 +139,10 @@ now refuses gold as a colour outside the four files allowed to draw the mark.
 ## Verification
 
 - `tsc --noEmit` clean; `vite build` clean at 231 modules.
-- Suite 1844 passed / 1 failed locally. The one failure, `pe-llms-txt.test.ts`,
+- Wave 2: suite 1866 passed / 1 failed, tsc clean, build clean, gate 16/16.
+  Live bundle `index-CSk8BIRy.css` matches the wave-2 local build exactly, and
+  `ss-pulse` is correctly ABSENT from it.
+- Wave 1: suite 1844 passed / 1 failed locally. The one failure, `pe-llms-txt.test.ts`,
   reproduces on a clean stashed tree (`\r\n` vs `\n` on a Windows checkout) and
   is not from this change. It passes on ubuntu CI, where all three checks were
   green before merge.
@@ -122,6 +159,7 @@ now refuses gold as a colour outside the four files allowed to draw the mark.
 
 ## Owed to the operator
 
-A visual pass on the live site. Everything above is code-done and
+A visual pass on the live site, now more than before: stacking changed
+behaviour, so open three tools and confirm the fold reads the way it should. Everything above is code-done and
 instrument-verified; none of it is a person having looked at the screen, and
 `CODE-DONE != CUSTOMER-DONE` is a standing decision.

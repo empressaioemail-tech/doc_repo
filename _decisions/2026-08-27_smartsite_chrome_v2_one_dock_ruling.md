@@ -2,14 +2,22 @@
 title: Smart Site chrome v2 ships as a restyle; one dock stays
 date: 2026-08-27
 type: decision
-status: active
+status: superseded
 owner: Nick
 last_updated: 2026-08-27
 repos: [hauska-map]
 supersedes: none
+superseded_by: _decisions/2026-08-27_smartsite_chrome_v2_dock_stacking_reversal.md
 ---
 
 # Smart Site chrome v2 ships as a restyle; one dock stays
+
+> **SUPERSEDED the same day.** The operator reversed this after using the
+> shipped single-dock v2 chrome. Stacking is live as of hauska-map #261
+> (`bd3ffac`). See
+> `_decisions/2026-08-27_smartsite_chrome_v2_dock_stacking_reversal.md`.
+> Retained, not deleted: the reasoning below is what the reversal was measured
+> against, and the reversal criteria it named are exactly what fired.
 
 ## Decision
 
