@@ -262,4 +262,12 @@ MCP save must not reuse PUT `/saved-properties/:parcelNodeId`. That handler sets
 
 ## OPEN
 
-#527 still CI-red. After any later cortex-api shift or redeploy, re-read `status.traffic[]` and confirm `CORTEX_USER_DAILY_API_LIMIT=50000` on the serving revision. Do not shift staging `00644-soz`.
+Customer-done for Wave C is two serving grades, then the iframe.
+
+1. O1: Vercel serving hauska-map `cca29644`. Grade composed X-ray on `48021:33223` (`not-derived` / `atom_path_pending`, no lot-percentage).
+2. Persistence: apply 0088 on cortex Neon (not Factory, not atoms). Then planner-owned #527 canaries on cortex-api AND smartsite-mcp, each stamped `minScale=1` (yml still bakes 0). Do not shift staging `00644-soz` (daily-limit / CTX, not #527). After shift: HTTP A12 (`create_screen` writes zero saves; save/unsave leaves screen intact) and live `tools/list` of 13.
+3. Wave C iframe only after 1 and 2. Then item 21 copy.
+
+P-89 Hauska MCP hollow refuse is code-done on `1ae9f28` (#77). Customer-done is a live probe on the serving Hauska MCP revision. Different server from `mcp.smartsite.cloud`. P-90 leftover.
+
+After any later cortex-api shift, re-read `status.traffic[]` and confirm `CORTEX_USER_DAILY_API_LIMIT=50000`.
