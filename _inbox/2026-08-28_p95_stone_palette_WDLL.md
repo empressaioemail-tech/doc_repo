@@ -35,9 +35,19 @@ One contrast failure stands unruled by design: `Button / hover fill vs panel`,
 ruling does not reach it, and whether a hover tint owes 3:1 at all is a design call.
 It is left failing rather than exempted so it cannot be forgotten.
 
-Do not start before P-93 closes. P-95 changes the ramp and radii constants inside
-`scripts/pe-chrome-kit-gate.mjs`, which is the file P-93 is arming. Two cards on
-one file is the collision this sequencing exists to prevent.
+**The P-93 sequencing gate is CLEAR as of 2026-08-28.** It existed to prevent two
+cards editing `scripts/pe-chrome-kit-gate.mjs` at once. Verified at source rather
+than from the close artifact, which is worth stating because that artifact reads
+`"committed": false, "deployed": false` and would have been misleading on its own:
+the lane wrote it before the parent landed the work.
+
+    last change to the gate file on origin/main : 0e4dc5c (#291), P-93's own ratchet
+    P-93 item 1 at be60021                      : all five pre-v2 token files STAMPED
+    gate armed in CI                            : job `test` runs it via package.json
+    open PRs touching PE chrome                 : none (#183 is P-63 verdict layer)
+
+P-95 may start. The lane still confirms this itself before its first commit and says
+how, per the dispatch.
 
 ## Done looks like
 
