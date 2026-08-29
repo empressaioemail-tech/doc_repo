@@ -58,6 +58,37 @@ the new constants and still fails when violated. Every contrast failure the pale
 carries is listed and priced rather than silently corrected, and every contrast
 failure caused by a component picking the wrong token is fixed.
 
+## LIVE QA ROUND 2026-08-29 — four operator findings, all landed
+
+`555d834` expanded column clears the find bar; control glyphs on the ramp.
+`97391b1` Light Charcoal supersedes Stone (hue only).
+`be01aed` depth pass, toolset panels ported, properties left justified.
+`908c5d9` one compact dock no longer vetoes the column's width.
+
+Three of the four were the same shape: **a declaration that reads as correct and
+does nothing**, surviving because what was tested was its text rather than its
+effect.
+
+- `textAlign: "left"` on a row inside a kit Button that is `inline-flex` with
+  `justifyContent: center`. textAlign has no say over flex distribution, so
+  every address rendered centre-ragged in the one dock built for scanning a
+  column.
+- `clamp(380px, calc(100vw - 534px), 860px)`, whose 534 reserved for a
+  LEFT-ANCHORED find bar that is in fact centred. Three tests asserted that
+  string; none asserted the relationship, so all three passed for the whole
+  period the column sat 201px under the bar.
+- `canExpand` reading the NEWEST open dock, when the state six lines above
+  already declared width to be the column's. A per-dock `expandable: false`
+  became a veto over every dock stacked beneath it.
+
+Each is now checked by a relationship rather than a string, and each new check
+was verified by violating it. `columnCanExpand` had to be EXTRACTED to be
+testable at all: the render harness takes one `openToolId` and ignores the
+multi-open prop for workbench tools, so the condition that broke was unreachable
+from a test while the predicate stayed inline.
+
+The fourth was the depth pass breaking `--ss-line-28`, recorded below.
+
 ## SUPERSEDED HUE 2026-08-29: Stone becomes LIGHT CHARCOAL
 
 Operator ruling: the Stone shell read too brown against the map. Handoff at
