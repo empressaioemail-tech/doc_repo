@@ -1,0 +1,170 @@
+{
+  "card": "P-94 Team roster server half",
+  "plan_row": "P-94 (OPS-16 A-048; tree still uncommitted at first close)",
+  "status": "MET on WDLL items 1-8 in an isolated tree. Not committed. Not deployed. Not customer-done.",
+  "missionPremise": "The Settings Team tab is live on smartsite.cloud against GET /api/property-explorer/v1/team/members and renders honest Not read on 404. Client parser on hauska-map origin/main (teamClient.ts) is the locked contract. Seat enforcement is the server's. Source: _inbox/2026-08-28_p94_team_roster_WDLL.md (draft; operator-approved contract via PE chrome lane 2026-08-28).",
+  "completionPredicate": "A signed-in owner can GET the roster in the client parser shape, invite until purchased seats are held, and cannot orphan the account. POST at capacity is refused with a named error and no row. DELETE or PATCH-to-member of the only joined owner is refused and the table is unchanged. seatsPurchased is a number or absent, never 0 for unknown. No administrator role is emitted. Customer-done is a live GET on the serving cortex revision, not this tree.",
+  "scopeBasis": "legacy-design-tools only, fresh isolated tree from origin/main. Reuse peUserIdentities / peUserEntitlements / users. Do not take Stripe, do not rewrite Hauska MCP, do not start Factory / P-85 / P-87-92 / P-90 / W8. Do not write the dirty property LDT trees. Dunning, portal, self-leave, SSO, domain capture, per-member usage out of scope.",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 50c1607565c2d83ba25cf57ee6d3d1b0f8b46edb",
+    "lane_repo": "legacy-design-tools",
+    "lane_tree": "P:/tmp/legacy-design-tools-team-roster",
+    "lane_branch": "feat/pe-team-roster",
+    "lane_base_commit": "89e539f62e13ed1d2821510571be46cb0fece336",
+    "committed_by_this_lane": false,
+    "deployed": false,
+    "reason_not_committed": "First close stopped before commit because no OPS-16 row existed. A-048 added P-94 after this close. PR, 0089, and cortex deploy are the remaining customer-done path."
+  },
+  "acceptance": {
+    "1_read_shape": {
+      "grade": "MET",
+      "wdll": 1,
+      "evidence": "GET /api/property-explorer/v1/team/members 200 { members, viewerEmail, viewerRole, seatsPurchased? }. role only owner|member, status only joined|invited, at ISO. 401 authentication_required. Integration test GET returns the client parser shape."
+    },
+    "2_seats_purchased_honesty": {
+      "grade": "MET",
+      "wdll": 2,
+      "evidence": "seatsPurchasedForWire omits the field unless subscription_tier is team AND seats_purchased is a stored number. Solo paid account GET has no seatsPurchased key. Never emits 0 to mean unknown."
+    },
+    "3_no_third_role": {
+      "grade": "MET",
+      "wdll": 3,
+      "evidence": "toWireMember drops administrator. CHECK pe_team_members_role_chk refuses a planted administrator insert. GET members never contain role administrator."
+    },
+    "4_invite_holds_a_seat": {
+      "grade": "MET",
+      "wdll": 4,
+      "evidence": "POST /team/invitations writes pe_team_invitations. GET then lists the row as status invited. consumed = joined + outstanding invitations. Table row exists before accept."
+    },
+    "5_over_capacity_refuse": {
+      "grade": "MET",
+      "wdll": 5,
+      "evidence": "With seatsPurchased=2 (owner + one invite), a second POST returns 409 seat_capacity_exceeded. invitationCount unchanged. overflow@roster.test row count 0."
+    },
+    "6_write_verbs_owner_only": {
+      "grade": "MET",
+      "wdll": 6,
+      "evidence": "DELETE invitation, DELETE member, PATCH role exist. Member session POST invite and DELETE member return 403 owner_required; invitation and member counts unchanged."
+    },
+    "7_last_joined_owner": {
+      "grade": "MET",
+      "wdll": 7,
+      "evidence": "DELETE only joined owner 409 last_joined_owner, row still owner. PATCH that owner to member 409 last_joined_owner, role still owner. An invited owner does not lift the refuse."
+    },
+    "8_no_silent_cap": {
+      "grade": "MET",
+      "wdll": 8,
+      "evidence": "Over-capacity POST is 409, never 200 or 201. Same violate as item 5."
+    }
+  },
+  "violate_then_pass": {
+    "counting_rule": "vitest cases in artifacts/api-server/src/lib/peTeamRoster.unit.test.ts plus artifacts/api-server/src/__tests__/pe-team-roster.test.ts only. Run 2026-08-28T22:39Z against a throwaway Neon schema with the fixture replayed. Not the full api-server suite.",
+    "passed": 19,
+    "failed": 0,
+    "denominator": 19,
+    "required_violates": [
+      {
+        "id": "post_at_capacity",
+        "verdict": "PASS",
+        "error": "seat_capacity_exceeded",
+        "table": "pe_team_invitations overflow row count 0; invitationCount unchanged"
+      },
+      {
+        "id": "delete_last_joined_owner",
+        "verdict": "PASS",
+        "error": "last_joined_owner",
+        "table": "pe_team_members row still role=owner; memberCount unchanged"
+      },
+      {
+        "id": "patch_last_joined_owner_to_member",
+        "verdict": "PASS",
+        "error": "last_joined_owner",
+        "table": "pe_team_members.role still owner"
+      },
+      {
+        "id": "seats_purchased_absent_without_team_sub",
+        "verdict": "PASS",
+        "error": null,
+        "table": "GET body has no seatsPurchased key for solo paid account"
+      },
+      {
+        "id": "administrator_not_emitted",
+        "verdict": "PASS",
+        "error": "pe_team_members_role_chk",
+        "table": "planted administrator insert rejected; GET members roles only owner|member"
+      }
+    ]
+  },
+  "named_error_strings": {
+    "authentication_required": "401 unsigned GET/write",
+    "owner_required": "403 member session write",
+    "seat_capacity_exceeded": "409 POST when consumed >= seatsPurchased; no row written",
+    "seats_purchased_unknown": "409 POST when seatsPurchased is omitted; unknown is not permission",
+    "last_joined_owner": "409 DELETE member or PATCH-to-member of the only joined owner",
+    "invalid_role": "400 role not owner|member",
+    "invalid_email": "400 email does not parse",
+    "already_on_roster": "409 invite email already joined or invited",
+    "invitation_not_found": "404 DELETE invitation :id",
+    "member_not_found": "404 DELETE/PATCH member :email",
+    "viewer_email_unresolved": "422 GET when viewer has no email on pe_user_identities or users"
+  },
+  "endpoints": [
+    "GET /api/property-explorer/v1/team/members",
+    "POST /api/property-explorer/v1/team/invitations",
+    "DELETE /api/property-explorer/v1/team/invitations/:id",
+    "DELETE /api/property-explorer/v1/team/members/:email",
+    "PATCH /api/property-explorer/v1/team/members/:email"
+  ],
+  "pathspec_for_the_parent_to_commit": [
+    "lib/db/drizzle/0089_pe_team_roster.sql",
+    "lib/db/src/schema/peTeamMembers.ts",
+    "lib/db/src/schema/peTeamInvitations.ts",
+    "lib/db/src/schema/peUserEntitlements.ts",
+    "lib/db/src/schema/index.ts",
+    "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+    "lib/db/src/__tests__/integration/schema.integration.test.ts",
+    "artifacts/api-server/src/lib/peTeamRoster.ts",
+    "artifacts/api-server/src/lib/peTeamRoster.unit.test.ts",
+    "artifacts/api-server/src/__tests__/pe-team-roster.test.ts",
+    "artifacts/api-server/src/__tests__/setup.ts",
+    "artifacts/api-server/src/routes/propertyExplorer.ts"
+  ],
+  "could_not_enforce_without_a_stripe_field": {
+    "field": "pe_user_entitlements.seats_purchased",
+    "finding": "Checkout already accepts Team seats and sends them as Stripe line_items quantity (PE_TEAM_INCLUDED_SEATS=10 plus extras on STRIPE_TEAM_SEAT_PRICE_ID). The webhook grant writes access_tier + subscription_tier only. There is no persisted seat count on origin/main. This card added a nullable seats_purchased column and reads it. It does not write Stripe and does not invent a quantity from the base-10 Team price. A live Team account with the column still null omits seatsPurchased and POST invite returns seats_purchased_unknown. That is honest under-permission, not a silent 10."
+  },
+  "constraints_honored": [
+    "Did not commit",
+    "Did not deploy",
+    "Did not take Stripe / rewrite pePaywallStripe or brokerageStripe webhook",
+    "Did not rewrite Hauska MCP",
+    "Did not start Factory, P-85, P-87/P-91/P-92, P-90, or W8",
+    "Did not write P:/seat-worktrees/property/legacy-design-tools or the other named forbidden trees",
+    "Did not write a second user table; membership points at users / pe_user_identities",
+    "No fixture roster rows; specimen domains @bastrop-arch.com / @structural.co / @firm.com fail a source test"
+  ],
+  "leave_behind": [
+    {
+      "item": "Stripe grant must write pe_user_entitlements.seats_purchased from checkout quantity / subscription items. Until then live Team omits the field.",
+      "owner": "property Stripe lane",
+      "plan_row": "Stripe / W6 leftovers — not this card"
+    },
+    {
+      "item": "Migration 0089_pe_team_roster.sql not applied to live Neon",
+      "owner": "planner on deploy",
+      "plan_row": "P-94 (apply after merge)"
+    },
+    {
+      "item": "Accept-invitation path (invited email becomes joined member) is not built",
+      "owner": "property",
+      "plan_row": "out of this WDLL"
+    },
+    {
+      "item": "Lane tree P:/tmp/legacy-design-tools-team-roster is uncommitted and unregistered in _catalog/seat_register.json",
+      "owner": "parent planner",
+      "plan_row": "P-94"
+    }
+  ],
+  "prs": "not applicable: this lane does not commit",
+  "checkpoints": "not applicable: executor half, no CP artifacts named"
+}

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Site in Claude — screening prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#151A1E;
+  --ground-2:#1D242A;
+  --paper:#F3F5F1;
+  --paper-2:#E6EAE3;
+  --ink:#171E23;
+  --ink-2:#4A5760;
+  --rule:#C6CDC4;
+  --present:#1C6B57;
+  --refused:#6B4A8F;
+  --unknown:#7E857C;
+  --unread:#B6BCB3;
+  --alert:#A8451F;
+  --link:#12594A;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground);
+  color:var(--paper);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 120px}
+
+/* transcript chrome */
+.chrome{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:#7C8A93;
+}
+.turn{margin:0 0 14px}
+.turn-user{
+  background:var(--ground-2);
+  border-left:2px solid #3A464E;
+  padding:12px 14px;
+  border-radius:2px;
+  font-size:14.5px;
+}
+.turn-user .chrome{margin-bottom:6px}
+.assist{padding:2px 0 0}
+.assist p{margin:0 0 12px;color:#C8D0D4;font-size:14.5px}
+.assist p.tight{margin-bottom:6px}
+
+/* panel = the MCP App iframe */
+.panel{
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:3px;
+  margin:10px 0 18px;
+  overflow:hidden;
+  box-shadow:0 1px 0 rgba(0,0,0,.4);
+}
+.panel-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 14px;
+  background:var(--paper-2);
+  border-bottom:1px solid var(--rule);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
+}
+.panel-bar b{font-weight:600;color:var(--ink)}
+.panel-body{padding:14px}
+
+/* disposition glyphs — the signature element */
+.g{width:15px;height:15px;display:inline-block;vertical-align:-3px;flex:none}
+.cell{
+  display:flex;align-items:center;gap:7px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-2);
+  white-space:nowrap;
+}
+
+/* board */
+.board{width:100%;border-collapse:collapse;font-size:13px}
+.board th{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-2);font-weight:500;text-align:left;
+  padding:0 8px 7px;border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+.board th.sortable{cursor:pointer}
+.board th.sortable:hover{color:var(--ink)}
+.board th .arr{opacity:.45;margin-left:3px}
+.board td{padding:6px 8px;border-bottom:1px solid #DCE1D9;vertical-align:middle}
+.board tr.row{cursor:pointer}
+.board tr.row:hover td{background:#EAEEE7}
+.board tr.row.open td{background:#E3EAE4;box-shadow:inset 2px 0 0 var(--present)}
+.pl{font-weight:500;color:var(--ink);font-size:13px}
+.pn{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-2)}
+.pl.unres{color:var(--alert)}
+.status{
+  font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--rule);border-radius:2px;padding:2px 5px;background:#fff;color:var(--ink-2);
+  cursor:pointer;
+}
+.status:hover{border-color:var(--ink-2)}
+.status[data-s="Watching"]{border-color:var(--present);color:var(--present)}
+.status[data-s="Chasing"]{border-color:var(--alert);color:var(--alert)}
+.status[data-s="Passed"]{opacity:.5}
+
+/* legend */
+.legend{
+  display:flex;flex-wrap:wrap;gap:14px;
+  padding:10px 14px;border-top:1px solid var(--rule);background:var(--paper-2);
+}
+.legend .cell{font-size:10.5px}
+
+/* parcel drawing */
+.draw-grid{display:flex;gap:18px;flex-wrap:wrap}
+.draw-svg{flex:1 1 260px;min-width:240px}
+.draw-side{flex:1 1 260px;min-width:230px}
+.sect{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:0 0 6px}
+.ovl{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #E1E6DE;font-size:12.5px}
+.ovl:last-child{border-bottom:none}
+.ovl .txt{line-height:1.35}
+.ovl .why{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-2);
+  display:block;margin-top:2px;
+}
+.ovl.clickable{cursor:pointer}
+.ovl.clickable:hover{background:#EAEEE7}
+.attrs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  border:1px solid var(--rule);background:#fff;border-radius:2px;padding:3px 7px;
+}
+.chip b{font-weight:600}
+.chip.trace{cursor:pointer;border-color:var(--link);color:var(--link)}
+.chip.trace:hover{background:#E4EFEA}
+.edges{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.edges td{padding:4px 6px;border-bottom:1px solid #E1E6DE}
+.edges tr.walk{cursor:pointer}
+.edges tr.walk:hover td{background:#E4EFEA;color:var(--link)}
+.edges .ro{color:var(--ink-2)}
+
+/* actions */
+.acts{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;border-top:1px solid var(--rule);background:var(--paper-2)}
+.btn{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--ink-2);background:#fff;color:var(--ink);border-radius:2px;
+  padding:6px 10px;cursor:pointer;
+}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.ghost{border-color:var(--rule);color:var(--ink-2)}
+.btn.ghost:hover{background:var(--paper-2);color:var(--ink);border-color:var(--ink-2)}
+.btn:focus-visible,.status:focus-visible,tr:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+
+/* dev notes rail */
+.note{
+  border-left:2px solid #3A464E;padding:8px 12px;margin:0 0 14px;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.55;color:#93A2AB;
+}
+.note b{color:#C8D0D4;font-weight:500}
+.tag{
+  display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;border:1px solid #3A464E;border-radius:2px;padding:1px 5px;margin-right:6px;color:#7C8A93;
+}
+.tag.turn-t{border-color:#4E6B62;color:#7FB3A2}
+.tag.local-t{border-color:#4A5760;color:#93A2AB}
+hr.sep{border:none;border-top:1px solid #262F35;margin:26px 0}
+@media (prefers-reduced-motion:no-preference){
+  .panel{animation:in .18s ease-out}
+  @keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+}
+@media (max-width:620px){
+  .board th.hide-sm,.board td.hide-sm{display:none}
+  .wrap{padding:16px 10px 100px}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ============================================================
+   REAL DATA ONLY.
+   - saved list: live list_my_properties, 2026-08-28
+   - draw payloads: live get_smart_site for 34137 and 34169
+   - drainage: FD-48021-35073 sheet, 2026-08-28
+   - 33223: PD-48021-33223 X-ray sheet, 2026-08-27
+   Anything not read live is state "unread". Nothing is invented.
+   ============================================================ */
+
+const STATES = {
+  present:  {label:'present',        color:'var(--present)'},
+  absent:   {label:'absent, verified',color:'var(--ink-2)'},
+  unknown:  {label:'unknown',        color:'var(--unknown)'},
+  refused:  {label:'refused',        color:'var(--refused)'},
+  unread:   {label:'not read',       color:'var(--unread)'}
+};
+
+function glyph(state){
+  const c = STATES[state].color;
+  switch(state){
+    case 'present':
+      return `<svg class="g" viewBox="0 0 15 15"><rect x="1.5" y="1.5" width="12" height="12" fill="${c}"/></svg>`;
+    case 'absent':
+      return `<svg class="g" viewBox="0 0 15 15"><rect x="1.5" y="1.5" width="12" height="12" fill="none" stroke="${c}" stroke-width="1.3"/></svg>`;
+    case 'unknown':
+      return `<svg class="g" viewBox="0 0 15 15"><defs><pattern id="hx${Math.random().toString(36).slice(2,7)}" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="${c}" stroke-width="1.4"/></pattern></defs><rect x="1.5" y="1.5" width="12" height="12" fill="none" stroke="${c}" stroke-width="1.3"/><rect x="1.5" y="1.5" width="12" height="12" fill="${c}" opacity=".28"/><line x1="2" y1="13" x2="13" y2="2" stroke="${c}" stroke-width="1.2"/><line x1="2" y1="8" x2="8" y2="2" stroke="${c}" stroke-width="1.2"/><line x1="7" y1="13" x2="13" y2="7" stroke="${c}" stroke-width="1.2"/></svg>`;
+    case 'refused':
+      return `<svg class="g" viewBox="0 0 15 15"><rect x="1.5" y="1.5" width="12" height="12" fill="none" stroke="${c}" stroke-width="1.3" stroke-dasharray="2.6 2"/><line x1="4" y1="11" x2="11" y2="4" stroke="${c}" stroke-width="1.5"/></svg>`;
+    default:
+      return `<svg class="g" viewBox="0 0 15 15"><line x1="3" y1="7.5" x2="12" y2="7.5" stroke="${c}" stroke-width="1.6"/></svg>`;
+  }
+}
+
+/* ---------- saved list: verbatim from list_my_properties ---------- */
+const RAILS = ['situs','zoning','landUse','flood','drainage','envelope'];
+const RAIL_LABEL = {situs:'Situs',zoning:'Zoning',landUse:'Land use',flood:'Flood',drainage:'Drainage',envelope:'Envelope'};
+const unread6 = {situs:'present',zoning:'unread',landUse:'unread',flood:'unread',drainage:'unread',envelope:'unread'};
+
+const PARCELS = [
+  {id:'48021:34137', label:'908 PINE ST, BASTROP', status:'Watching', read:true,
+   d:{situs:'present',zoning:'present',landUse:'present',flood:'present',drainage:'unread',envelope:'refused'}},
+  {id:'48021:34169', label:'PARCEL 48021:34169, BASTROP', status:'New', read:true, noSitus:true,
+   d:{situs:'unknown',zoning:'absent',landUse:'absent',flood:'present',drainage:'unread',envelope:'refused'}},
+  {id:'48021:35073', label:'1102 PINE ST, BASTROP', status:'Chasing', read:'partial',
+   d:{situs:'present',zoning:'unread',landUse:'unread',flood:'unread',drainage:'present',envelope:'unread'}},
+  {id:'48021:33223', label:'927 MAIN ST, BASTROP', status:'New', read:'partial',
+   d:{situs:'present',zoning:'present',landUse:'present',flood:'present',drainage:'unread',envelope:'unread'}},
+  {id:'48021:25420', label:'situs unresolved', status:'New', unresolved:true,
+   d:{situs:'unknown',zoning:'unread',landUse:'unread',flood:'unread',drainage:'unread',envelope:'unread'}},
+  {id:'48021:27943', label:'703 CYPRESS ST, BASTROP', status:'New', d:unread6},
+  {id:'48021:49295', label:'145 HASLER SHORES DR, BASTROP', status:'New', d:unread6},
+  {id:'48209:104321',label:'133 REMINGTON, KYLE', status:'New', d:unread6},
+  {id:'48021:32243', label:'1207 FAYETTE ST, BASTROP', status:'New', d:unread6},
+  {id:'48021:35425', label:'1206 WALNUT ST, BASTROP', status:'Passed', d:unread6},
+  {id:'48021:34121', label:'907 CHESTNUT ST, BASTROP', status:'New', d:unread6},
+  {id:'48021:35105', label:'1101 CHESTNUT ST, BASTROP', status:'New', d:unread6},
+  {id:'48021:82112', label:'709 LAUREL ST, BASTROP', status:'New', d:unread6},
+  {id:'48021:36249', label:'1408 CHESTNUT ST, BASTROP', status:'New', d:unread6},
+  {id:'48021:36105', label:'711 MARTIN LUTHER KING JR DR, BASTROP', status:'New', d:unread6}
+];
+
+/* ---------- draw payloads: verbatim from get_smart_site ---------- */
+const DRAW = {
+'48021:34137':{
+  label:'908 PINE , BASTROP, TX 78602', asOf:'2026-08-04T12:24:40.869Z',
+  ring:[[48.6,83.94],[-50.37,83.7],[-49.07,-84.28],[50.84,-83.36]],
+  attrs:[{k:'zoning',v:'SF-1',trace:'14-02-003'},{k:'land use',v:'A1'},{k:'year built',v:'1910'}],
+  edges:[
+    {i:0,role:'rear',ft:98.98,b:"S 89°52' W",adj:'alley',road:'48021:road:925036023'},
+    {i:1,role:'side',ft:167.99,b:"S 0°27' E",adj:'neighbor-parcel',nb:'48021:34169'},
+    {i:2,role:'front',ft:99.92,b:"N 89°28' E",adj:'ROW',road:'48021:road:15113284',nb:'48021:34121'},
+    {i:3,role:'side_corner',ft:167.32,b:"N 0°46' W",adj:'ROW',road:'48021:road:129017865'}
+  ],
+  ov:[
+    {id:'flood',s:'present',t:'Zone X 0.2 PCT ANNUAL CHANCE FLOOD HAZARD',w:'scope parcel-wide · sfha false'},
+    {id:'footprint',s:'unknown',t:'Structure of record (1910), footprint unmeasured',w:'no footprint atom bound to this parcel'},
+    {id:'envelope',s:'refused',t:'Buildable envelope not computed',w:'producer baked-envelope-facet · atom_path_pending'},
+    {id:'pipeline',s:'absent',t:'No pipeline within 152.4 m',w:'provenance degraded · vintage UNKNOWN'},
+    {id:'specialDistrict',s:'absent',t:'Outside mapped special districts'},
+    {id:'well',s:'unknown',t:'Well records not checked'}
+  ]
+},
+'48021:34169':{
+  label:'48021:34169', asOf:'2026-08-28T12:39:15.545Z',
+  ring:[[47.35,78.51],[-32.58,77.89],[-32.15,23.18],[-31.28,-90.1],[48.65,-89.47]],
+  attrs:[{k:'zoning',v:'absent'},{k:'land use',v:'absent'},{k:'year built',v:'1917'}],
+  edges:[
+    {i:0,role:'rear',ft:79.93,b:"S 89°33' W",adj:'alley',road:'48021:road:925036023'},
+    {i:1,role:'side',ft:54.71,b:"S 0°27' E",adj:'neighbor-parcel',nb:'48021:34177'},
+    {i:2,role:'side',ft:113.28,b:"S 0°27' E",adj:'neighbor-parcel',nb:'48021:34161'},
+    {i:3,role:'front',ft:79.93,b:"N 89°33' E",adj:'ROW',road:'48021:road:15113284',nb:'48021:34121'},
+    {i:4,role:'side',ft:167.99,b:"N 0°27' W",adj:'neighbor-parcel',nb:'48021:34137'}
+  ],
+  ov:[
+    {id:'flood',s:'present',t:'Zone X 0.2 PCT ANNUAL CHANCE FLOOD HAZARD',w:'scope parcel-wide · sfha false'},
+    {id:'footprint',s:'unknown',t:'Structure of record (1917), footprint unmeasured'},
+    {id:'envelope',s:'refused',t:'Buildable envelope not computed',w:'producer baked-envelope-facet · not-in-bake'},
+    {id:'pipeline',s:'absent',t:'No pipeline within 152.4 m',w:'provenance degraded · vintage UNKNOWN'},
+    {id:'specialDistrict',s:'absent',t:'Outside mapped special districts'},
+    {id:'well',s:'unknown',t:'Well records not checked'}
+  ]
+}};
+
+/* drainage: FD-48021-35073 */
+const DRAINAGE = {
+  '48021:35073':{catchment:'43,425 sq ft (1.00 acres)',ponding:'None modeled',exits:'0',
+    storm:'9.5 in · 24-hr · 100-yr',forcing:'documented regional default, live NOAA estimate unavailable'}
+};
+
+/* ---------- state ---------- */
+let stack = [];           // turns below the board
+let sortRail = null;
+let sortDir = 1;
+let statuses = Object.fromEntries(PARCELS.map(p=>[p.id,p.status]));
+const CYCLE = ['New','Watching','Chasing','Passed'];
+
+const KNOWN = {present:0, absent:0, refused:1, unknown:2, unread:3};
+function unknownScore(p){ return RAILS.reduce((a,r)=>a+KNOWN[p.d[r]],0); }
+
+/* ---------- render ---------- */
+function boardRows(){
+  let rows = PARCELS.slice();
+  if(sortRail === 'complete'){
+    rows.sort((a,b)=>(unknownScore(a)-unknownScore(b))*sortDir);
+  } else if(sortRail){
+    rows.sort((a,b)=>(KNOWN[a.d[sortRail]]-KNOWN[b.d[sortRail]])*sortDir);
+  }
+  return rows;
+}
+
+function boardPanel(){
+  const openIds = stack.filter(t=>t.kind==='parcel').map(t=>t.id);
+  const head = `<th class="sortable" onclick="sortBy('complete')">Parcel${sortRail==='complete'?`<span class="arr">${sortDir>0?'▲':'▼'}</span>`:''}</th>`
+    + RAILS.map(r=>`<th class="sortable ${r==='drainage'||r==='envelope'?'hide-sm':''}" onclick="sortBy('${r}')">${RAIL_LABEL[r]}${sortRail===r?`<span class="arr">${sortDir>0?'▲':'▼'}</span>`:''}</th>`).join('')
+    + `<th class="hide-sm">Status</th>`;
+
+  const body = boardRows().map(p=>{
+    const cells = RAILS.map(r=>`<td class="${r==='drainage'||r==='envelope'?'hide-sm':''}"><span class="cell" title="${RAIL_LABEL[r]}: ${STATES[p.d[r]].label}">${glyph(p.d[r])}</span></td>`).join('');
+    const st = statuses[p.id];
+    return `<tr class="row ${openIds.includes(p.id)?'open':''}" tabindex="0" onclick="openParcel('${p.id}')" onkeydown="if(event.key==='Enter')openParcel('${p.id}')">
+      <td><div class="pl ${p.unresolved?'unres':''}">${p.label}</div><div class="pn">${p.id}</div></td>
+      ${cells}
+      <td class="hide-sm"><span class="status" data-s="${st}" onclick="event.stopPropagation();cycleStatus('${p.id}')">${st}</span></td>
+    </tr>`;
+  }).join('');
+
+  const legend = Object.keys(STATES).map(k=>`<span class="cell">${glyph(k)} ${STATES[k].label}</span>`).join('');
+
+  return `<div class="panel">
+    <div class="panel-bar"><span><b>Screen</b> · Bastrop saved set</span><span>${PARCELS.length} parcels · 4 read</span></div>
+    <div class="panel-body" style="padding:14px 8px 0">
+      <table class="board"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+    </div>
+    <div class="legend">${legend}</div>
+  </div>`;
+}
+
+function ringSvg(d){
+  const R = d.ring;
+  const xs=R.map(p=>p[0]), ys=R.map(p=>p[1]);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const w=maxX-minX, h=maxY-minY, pad=26;
+  const s=Math.min(230/w, 300/h);
+  const W=w*s+pad*2, H=h*s+pad*2;
+  const px=p=>[(p[0]-minX)*s+pad, (maxY-p[1])*s+pad];
+  const pts=R.map(px).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const roadLines = d.edges.filter(e=>e.road).map(e=>{
+    const a=px(R[e.i]), b=px(R[(e.i+1)%R.length]);
+    const strong = e.role==='front';
+    return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--present)" stroke-width="${strong?3.2:1.5}" ${strong?'':'stroke-dasharray="5 4"'}/>`;
+  }).join('');
+  const yb = (d.attrs.find(a=>a.k==='year built')||{}).v;
+  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" width="100%" role="img" aria-label="Parcel outline with unmeasured footprint hatching">
+    <defs><pattern id="hi" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="var(--unknown)" stroke-width=".8" opacity=".55"/></pattern></defs>
+    <polygon points="${pts}" fill="#85B7EB" opacity=".16"/>
+    <polygon points="${pts}" fill="url(#hi)"/>
+    <polygon points="${pts}" fill="none" stroke="var(--ink-2)" stroke-width="1"/>
+    ${roadLines}
+    <text x="${(W/2).toFixed(0)}" y="${(H/2-4).toFixed(0)}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--ink-2)">footprint unmeasured</text>
+    <text x="${(W/2).toFixed(0)}" y="${(H/2+9).toFixed(0)}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="var(--unknown)">structure of record, ${yb}</text>
+  </svg>`;
+}
+
+function parcelPanel(id){
+  const d = DRAW[id];
+  const p = PARCELS.find(x=>x.id===id);
+  if(!d){
+    return `<div class="panel">
+      <div class="panel-bar"><span><b>Parcel</b> · ${id}</span><span>not read</span></div>
+      <div class="panel-body">
+        <p style="margin:0 0 4px;font-size:14px">${p.unresolved?'Situs unresolved for this saved parcel.':'This parcel has not been read yet.'}</p>
+        <p style="margin:0;font-size:12.5px;color:var(--ink-2)">${p.unresolved?'The saved record carries no address components. The node id resolves; the situs string does not. Repair is queued.':'Opening it is a turn: it calls get_smart_site and appends a new panel below.'}</p>
+      </div>
+      <div class="acts">
+        <button class="btn" onclick="readParcel('${id}')">Read parcel</button>
+        ${p.unresolved?'<button class="btn ghost" onclick="alert(\'Would push: ask Claude to search public records for this node id.\')">Ask Claude to look it up</button>':''}
+      </div>
+    </div>`;
+  }
+  const attrs = d.attrs.map(a=>a.trace
+    ? `<span class="chip trace" onclick="trace('${a.trace}')"><b>${a.k}</b> ${a.v} → ${a.trace}</span>`
+    : `<span class="chip"><b>${a.k}</b> ${a.v}</span>`).join('');
+  const ovl = d.ov.map(o=>`<div class="ovl ${o.s==='unknown'||o.s==='refused'?'clickable':''}" ${o.s==='unknown'||o.s==='refused'?`onclick="askAbout('${id}','${o.id}')"`:''}>
+      ${glyph(o.s)}<div class="txt">${o.t}${o.w?`<span class="why">${o.w}</span>`:''}</div></div>`).join('');
+  const edges = d.edges.map(e=>{
+    const walk = e.nb && DRAW[e.nb];
+    return `<tr class="${walk?'walk':''}" ${walk?`onclick="openParcel('${e.nb}')"`:''}>
+      <td class="ro">${e.role}</td><td>${e.ft.toFixed(2)} ft</td><td class="ro">${e.b}</td>
+      <td>${e.nb ? (walk?'→ '+e.nb:e.nb) : e.adj}</td></tr>`;
+  }).join('');
+
+  return `<div class="panel">
+    <div class="panel-bar"><span><b>Parcel</b> · ${d.label}</span><span>asOf ${d.asOf.slice(0,10)} · confidence seed</span></div>
+    <div class="panel-body">
+      <div class="attrs">${attrs}</div>
+      <div class="draw-grid">
+        <div class="draw-svg">${ringSvg(d)}
+          <p class="sect" style="margin-top:8px">Boundary edges</p>
+          <table class="edges">${edges}</table>
+        </div>
+        <div class="draw-side">
+          <p class="sect">What is known, and what is not</p>
+          ${ovl}
+        </div>
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn" onclick="runDrainage('${id}')">Run drainage</button>
+      <button class="btn ghost" onclick="alert('Would call export_instrument and return a downloadable sheet.')">Export sheet</button>
+      <button class="btn ghost" onclick="alert('Would open smartsite.cloud/p/${id} via ui/open-link.')">Open live map</button>
+    </div>
+  </div>`;
+}
+
+function drainagePanel(id){
+  const d = DRAINAGE[id];
+  if(!d) return `<div class="panel"><div class="panel-bar"><span><b>Drainage</b> · ${id}</span><span>not run</span></div>
+    <div class="panel-body"><p style="margin:0;font-size:13px">No drainage model has been run for this parcel. Running it is a turn.</p></div></div>`;
+  return `<div class="panel">
+    <div class="panel-bar"><span><b>Drainage</b> · ${id}</span><span>screening model, not an engineering determination</span></div>
+    <div class="panel-body">
+      <div class="attrs">
+        <span class="chip"><b>catchment</b> ${d.catchment}</span>
+        <span class="chip"><b>ponding</b> ${d.ponding}</span>
+        <span class="chip"><b>flow exits</b> ${d.exits}</span>
+        <span class="chip"><b>design storm</b> ${d.storm}</span>
+      </div>
+      <div class="ovl">${glyph('present')}<div class="txt">Catchment delineated and modeled<span class="why">D8 flow accumulation · pysheds · USGS 3DEP 10 m</span></div></div>
+      <div class="ovl">${glyph('absent')}<div class="txt">No modeled ponding intersects the parcel at a 9.5 in storm</div></div>
+      <div class="ovl">${glyph('absent')}<div class="txt">No concentrated flow path crossing the boundary was traced</div></div>
+      <div class="ovl clickable" onclick="askAbout('${id}','rainfall')">${glyph('unknown')}<div class="txt">Rainfall forcing is a regional default<span class="why">${d.forcing}</span></div></div>
+      <div class="ovl">${glyph('refused')}<div class="txt">Riverine flooding not modeled<span class="why">local storm ponding only · check FEMA NFHL separately</span></div></div>
+    </div>
+    <div class="acts"><button class="btn ghost" onclick="alert('Would call export_instrument for the two-sheet PDF.')">Export drainage sheets</button></div>
+  </div>`;
+}
+
+function render(){
+  const parts = [];
+  parts.push(`<div class="note"><b>Prototype.</b> Real payloads only: live <span style="color:#C8D0D4">list_my_properties</span>, live <span style="color:#C8D0D4">get_smart_site</span> for 34137 and 34169, the FD-48021-35073 drainage sheet, and the PD-48021-33223 X-ray. Everything unread is shown as unread. Nothing is invented.</div>`);
+
+  parts.push(`<div class="turn"><div class="turn-user"><div class="chrome">You</div>Screen my Bastrop saved set. Which of these are worth an afternoon, and what don't you know?</div></div>`);
+  parts.push(`<div class="assist"><p class="tight">Fifteen parcels in the set. Four have been read. Sort by <b>Parcel</b> to rank by how much is known, or by any rail to see where the gaps cluster.</p></div>`);
+  parts.push(boardPanel());
+  parts.push(`<div class="note"><span class="tag local-t">local</span> sort, hover, status change · <span class="tag turn-t">turn</span> open a parcel, walk to a neighbor, run drainage</div>`);
+
+  stack.forEach(t=>{
+    parts.push(`<div class="turn"><div class="turn-user"><div class="chrome">You · from the panel</div>${t.prompt}</div></div>`);
+    if(t.say) parts.push(`<div class="assist"><p>${t.say}</p></div>`);
+    if(t.kind==='parcel') parts.push(parcelPanel(t.id));
+    if(t.kind==='drainage') parts.push(drainagePanel(t.id));
+  });
+
+  document.getElementById('app').innerHTML = parts.join('');
+}
+
+/* ---------- interactions ---------- */
+function sortBy(r){ if(sortRail===r) sortDir*=-1; else {sortRail=r; sortDir=1;} render(); }   // local
+function cycleStatus(id){ statuses[id]=CYCLE[(CYCLE.indexOf(statuses[id])+1)%CYCLE.length]; render(); } // turn in production
+function push(t){ stack.push(t); render(); setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),40); }
+
+function openParcel(id){
+  const p = PARCELS.find(x=>x.id===id);
+  const known = !!DRAW[id];
+  push({kind:'parcel',id,prompt:`Open ${p.unresolved?id:p.label}`,
+    say: known
+      ? `Ring assembled from ${DRAW[id].edges.length} boundary edges. Two things it does not know are marked. Click either one to ask about it.`
+      : (p.unresolved ? `That saved record has no situs. The node id resolves; the address string does not.` : `Not read yet.`)});
+}
+function readParcel(id){ alert('Would call get_smart_site for '+id+'. This prototype only carries payloads that were actually read.'); }
+function runDrainage(id){
+  push({kind:'drainage',id,prompt:`Run drainage on ${id}`,
+    say: DRAINAGE[id] ? `Screening model complete. Note the forcing: the rainfall depth is a regional default because the live estimate was unavailable on this run.` : `No model has been run for this parcel.`});
+}
+function askAbout(id,what){
+  const q = {
+    footprint:`Why don't you know the footprint on ${id}?`,
+    envelope:`Why is the buildable envelope refused on ${id}?`,
+    well:`What would it take to check well records on ${id}?`,
+    rainfall:`How much does the default rainfall depth change the drainage result?`
+  }[what] || `Tell me about ${what} on ${id}.`;
+  push({kind:'msg',prompt:q,say:`This is the loop the app exists for: you pointed at an absence, the panel pushed it into the conversation with the refusal object attached, and I can answer with the producer name and the decline reason instead of guessing.`});
+}
+function trace(sec){
+  push({kind:'msg',prompt:`Show me Bastrop code section ${sec}`,
+    say:`Blocked today. The zoning atom body names this section as a DID pointer, but it does not survive serialization. One serializer field away from being a real walk from parcel to statute.`});
+}
+
+render();
+</script>
+</body>
+</html>
