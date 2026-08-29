@@ -58,6 +58,66 @@ the new constants and still fails when violated. Every contrast failure the pale
 carries is listed and priced rather than silently corrected, and every contrast
 failure caused by a component picking the wrong token is fixed.
 
+## SUPERSEDED HUE 2026-08-29: Stone becomes LIGHT CHARCOAL
+
+Operator ruling: the Stone shell read too brown against the map. Handoff at
+`P:/tmp/Smart Site Design System (1)/handoff/`. **Hue only.** Lightness is held
+within a point at every step, so no contrast ruling on this card reopens. Twelve
+distinct hex substitutions covering twenty declared token lines, plus the scrim.
+Accents, gold, state, type, radii, shadows and motion are byte-identical.
+
+The reason is worth keeping, because it is the same fact that drove the opaque
+chrome ruling: the basemap is bright aerial imagery, dry tan and olive canopy. A
+warm grey shares a hue family with that, so the panels read as part of the map
+rather than on top of it.
+
+Verified rather than accepted. `--ss-t6` on `--ss-ink` 4.60 (was 4.53),
+`--ss-line-28` on `--ss-raised` 3.03 (was 3.01), `--ss-t5` passes on both grounds,
+and `--ss-t6` on `--ss-raised` still fails at 3.95, which is correct because t6 is
+ink-only by ruling.
+
+**One thing the handoff understates: `--ss-err` goes 4.52 to 4.50 against a 4.5
+threshold.** It passes with no margin left. Not changed, because the hue is pinned
+by meaning and a green error message is not a contrast fix, but it is now the
+tightest value in the palette and the next ground change will break it.
+
+Landed `97391b1` (PR #304), deployed, verified in the served stylesheet: every
+Charcoal value present, every Stone value gone.
+
+## Wave 1 QA FIXES 2026-08-29 (PR #302, `555d834`)
+
+Two operator findings from the live deploy, both fixed and deployed.
+
+**The expanded column tucked behind the find bar.** The rule meant to prevent it
+reserved `calc(100vw - 534px)`, arithmetic that assumes a LEFT-ANCHORED bar. The
+bar is centred, so its right edge is `50vw + findW/2` and grows with the viewport;
+the old subtraction under-reserved by more the wider the screen got. Measured on
+the live DOM at 1903: bar right 1170, column left 969, a 201px overlap. Now
+`clamp(380px, calc(50vw - 86px - var(--ss-find-w) / 2), 860px)`, holding a constant
+12px channel. Re-measured live after deploy: column left 1182, gap exactly 12.
+
+`--ss-find-w` had zero consumers before this; binding the layout to the token is
+what stops the bar width and the column arithmetic drifting apart again. It moved
+the design system's geometry band from `documentation` to `mixed`, and the
+system's own honesty check caught the readme still claiming otherwise.
+
+**Three tests asserted the width STRING**, which is why they passed for the whole
+time the column was visibly broken. Replaced with a geometry test evaluating the
+clamp across six viewports against `columnLeft >= barRight + channel`, carrying an
+explicit not-vacuous negative so the superseded rule must fail it.
+
+**The map control glyphs were tinted for the old palette.** The filter was hand
+tuned to v2's cool `--ss-t3`; wave 1 left it stale on the grounds that a filter
+chain cannot be verified without rendering. Changing the mechanism removed that
+objection: `brightness(0) invert(85.5%)` forces any source to black first, so the
+result is `#DADADA` regardless of what MapLibre ships, computable without a
+renderer.
+
+**Measured, not eyeballed:** the badge, the MapLibre control group and the rails
+were already on the palette. They looked unported against bright aerial and were
+not. The LEGEND is not, and cannot be here: it lives in `packages/map-renderer`,
+which command-center also renders, and still needs the per-app paint seam ruling.
+
 ## Wave 1 LANDED AND DEPLOYED 2026-08-28
 
     PR            #300, squash-merged as 67c2e0b on origin/main
