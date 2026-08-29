@@ -2,7 +2,7 @@
 id: smartsite_masters_06_gtm_audiences_pricing
 title: Smart Site go-to-market — audiences, motion, pricing
 status: active
-last_updated: 2026-08-10
+last_updated: 2026-08-29
 applies_to: smart_site
 owner: nick
 purpose: The commercial frame for Smart Site. Who pays, how they find it, what it costs, how the funnel works, and the vision roadmap beyond launch. For biz ops and biz dev; carries internal-only sections that never reach market copy.
@@ -42,7 +42,7 @@ Operator-locked 2026-08-10. Full rulings, unit economics and the GTM motion in `
 | Free | $0 | The map and all layer toggles. The inspect card (zoning, setbacks, buildable envelope, flood, land use, acreage). Save properties. 3 AI chat messages per property. **Share.** |
 | Solo | **$49/mo** | The X-ray, the Flood and Drainage study, unlimited AI chat, unlimited properties. The full answer on one parcel at a time. |
 | Studio | **$129/mo** | Everything in Solo plus the professional deliverables: site plan CAD (DXF, IFC), terrain export, and owner data. |
-| Team | **$299/mo up to 10 seats, then $25 per seat** | Everything in Studio, for a firm. Shared saved properties, seats, one bill. |
+| Team | **$299/mo up to 3 seats, then $25 per seat** | Everything in Studio, for a firm. Shared saved properties, seats, one bill. |
 | Prospect | post-launch | The set-level answer. Marked **coming soon to Studio and Team**. |
 
 **Per-property unlock: $15 for 30 days** (not "forever"). Breakeven against Solo is 3.3 properties.
@@ -59,7 +59,7 @@ Tiers split on **what the output IS**, not on volume of the same thing: Free ans
 
 The rule that governs the paywall is unchanged: **one unlock moment, not a wall per button**. Reaching for any paid feature (or the fourth chat message on a property) surfaces a single unified flow, never a different wall per feature.
 
-Team is deliberately cheaper per seat than Solo ($29.90 a head at 10 seats). Under the no-sales-team ruling firms cannot be sold to, so the pricing is set so they assemble themselves. The working revenue target is $100K MRR — 2,041 seats at Solo-only, materially fewer on a Studio and Team mix. Annual pricing (roughly two months free) is the primary churn defense and should be the **default presentation**, with monthly as the alternative.
+Team is $299/mo for 3 seats, then $25 per extra seat (operator 2026-08-29; was 10 included). Extra seats stay monthly. The working revenue target is $100K MRR — 2,041 seats at Solo-only, materially fewer on a Studio and Team mix. Annual pricing (roughly two months free) is the primary churn defense and should be the **default presentation**, with monthly as the alternative.
 
 ### Superseded — the 2026-07-29 ladder (retired, do not use)
 

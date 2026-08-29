@@ -47,6 +47,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 5. Recent session summaries
 
+- 2026-08-29 Team seats 3 + P-96 chrome pile + live `/favicon.ico` ICO (operator confirmed serving). This seat idle. `_sessions/2026-08-29_p96_chrome_and_team_seats_claude_code.md`
 - 2026-08-28 Smart Site design system: Stone exact port opened (P-95) + chrome defect pile (P-96); design system rebuilt and swapped in; the chrome gate sees 7.1% of colour literals: `_sessions/2026-08-28_smart_site_design_system_stone_port_claude_code.md`
 - 2026-08-28 P-91 situs-search budget, daily-limit bake 50000, Rainmaker live on `00643-rib`: `_sessions/2026-08-28_p91_situs_budget_daily_limit_claude_code.md`
 - 2026-08-28 CTX six counties served (OPS-19 A-020 to A-025; card F on `00643-rib`): `_sessions/2026-08-28_ctx_six_counties_served_claude_code.md`

@@ -2,7 +2,8 @@
 id: 2026-08-10_smartsite_pricing_and_gtm_LOCKED
 title: Smart Site pricing ladder and GTM motion — LOCKED (planner handoff)
 date: 2026-08-10
-status: locked by operator 2026-08-10; supersedes the 2026-07-29 pricing table in _smartsite_masters/06
+status: locked by operator 2026-08-10; Team included seats amended 2026-08-29 from 10 to 3
+last_updated: 2026-08-29
 owner: nick
 related: [_smartsite_masters/06_smart_site_gtm_audiences_and_pricing, 76j_smartsite_launch_readiness_program, 2026-08-10_smartsite_humanless_gtm_handoff, _decisions/2026-08-10_market_layer_thesis_parked, 14_pricing_framework]
 purpose: The locked pricing ladder and go-to-market motion for Smart Site. Hand to the planning agent for roadmap fold-in. Every number here is operator-set 2026-08-10 and supersedes the 2026-07-29 table.
@@ -21,7 +22,7 @@ Scope note: this doc assumes **every capability ships**. Owner data, flood studi
 | **Free** | $0 | The map and all layer toggles. The inspect card (zoning, setbacks, buildable envelope, flood, land use, acreage). Save properties. 3 AI chat messages per property. **Share.** |
 | **Solo** | **$49/mo** | The X-ray, the Flood and Drainage study, unlimited AI chat, unlimited properties. The full answer on one parcel at a time. |
 | **Studio** | **$129/mo** | Everything in Solo plus the professional deliverables: site plan CAD (DXF, IFC), terrain export, and owner data. |
-| **Team** | **$299/mo for up to 10 seats, then $25 per seat** | Everything in Studio, for a firm. Shared saved properties, seats, one bill. |
+| **Team** | **$299/mo for up to 3 seats, then $25 per seat** | Everything in Studio, for a firm. Shared saved properties, seats, one bill. |
 | **Prospect** | post-launch | The set-level answer. Marked **coming soon to Studio and Team**. |
 
 **Per-property unlock: $15, 30 days** (not "forever"). The on-ramp. Breakeven against Solo is 3.3 properties, which is the right conversion pressure.
@@ -40,7 +41,7 @@ Scope note: this doc assumes **every capability ships**. Owner data, flood studi
 
 **The unlock is 30 days because data changes, not merely because "forever" is a liability.** Bastrop repealed its entire zoning code and the corpus served the dead version for six weeks. A forever-unlock is a promise to serve a current answer indefinitely on a parcel whose zoning may be repealed next year, and every re-warm to keep that promise costs compute already collected on. **Surface the expiry as a freshness property, not a paywall** — "this answer was verified on [date]" is a feature, and it makes renewal obvious rather than punitive.
 
-**Team is deliberately cheaper per seat than Solo.** $299 for 10 seats is $29.90 a head, below the $49 Solo price. Under the no-sales-team ruling we cannot sell firms, so the pricing is set so firms assemble themselves: a 10-person office is cheaper consolidated than scattered across individual accounts. The $25 marginal seat keeps expansion frictionless.
+**Team starts at 3 seats for the Team price.** Operator 2026-08-29 dropped the included count from 10 to 3. The $299 / $2,990 Team price and the $25/mo extra seat are unchanged. The 2026-08-10 per-head story ($29.90 vs Solo $49) applied to 10 seats and is retired. Extra seats stay monthly; annual Team cannot carry extras.
 
 **Prospect is post-launch and marked coming soon.** The market layer is explicitly parked (`_decisions/2026-08-10_market_layer_thesis_parked.md`: no build lane, no adapter contract, no vendor applications until Texas launches). Launching three rungs and adding a premium tier later is a far easier motion than launching four and discovering the top one is empty. Naming it now gives Studio and Team headroom, so $129 reads as a progression rather than a ceiling.
 
@@ -92,6 +93,8 @@ Named for the planner; no ruling made on these.
 **Branded exports** — white-labelled X-ray PDFs with a firm's logo. Cheap to build, disproportionately valuable to a brokerage or architecture firm, and a clean Team differentiator.
 
 **API / agent access** — architecture-true today, not commercially live. A natural top-tier or add-on when the agent channel goes commercial.
+
+**Per-state coverage add-on** — raised and discussed 2026-08-10, then **PARKED with its mechanics settled**: `_inbox/2026-08-10_per_state_coverage_addon_PARKED.md`. Post-launch, same treatment as Prospect. The structural ruling is recorded there and does not reopen this ladder: **tier is what you can do, coverage is where you can do it** — a per-state add-on tiers with the user's existing plan (a Solo user with five states has Solo capabilities in all five), so buying coverage never buys capability. Pricing, the user journey, and a related map-filter/load-time thread are open.
 
 ## Downstream work this creates
 
