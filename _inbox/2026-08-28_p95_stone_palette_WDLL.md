@@ -16,8 +16,24 @@ Repo: `hauska-map` `apps/property-explorer`. Property seat. Isolated worktree fr
 `origin/main`. Starts only after P-93 closes.
 
 Decision record `_decisions/2026-08-28_stone_palette_exact_port.md`.
-Source palette `P:/tmp/Smart Site Design System`, plus the ported candidate and
-evidence at `P:/tmp/ss-ds-v3`.
+
+**Source of truth: `P:/tmp/Smart Site Design System`.** As of 2026-08-28 that path
+holds the REBUILT system, not the original: 65 tokens carrying every ruling on this
+card, a working ESLint config with 11 rules proved by violation, a contrast checker
+with a per-pairing exemption, 16 components with real `:focus-visible` and a Modal
+that traps focus. Run `npm run check` inside it; it self-tests in both directions.
+The as-authored original is preserved unchanged at
+`P:/tmp/Smart Site Design System (original 2026-08-28)` and is the historical
+reference, not the parity target. Do not diff against the backup.
+
+Ported candidate and migration evidence at `P:/tmp/ss-ds-v3`. Live-app evidence at
+`P:/tmp/ss-map-shot/live-map-parcel.png`. Palette comparison harness at
+`P:/tmp/ss-ds-proof/palette-proof.html`.
+
+One contrast failure stands unruled by design: `Button / hover fill vs panel`,
+`--ss-line-06` at 1.20:1. It is neither a border nor a separator, so the decoration
+ruling does not reach it, and whether a hover tint owes 3:1 at all is a design call.
+It is left failing rather than exempted so it cannot be forgotten.
 
 Do not start before P-93 closes. P-95 changes the ramp and radii constants inside
 `scripts/pe-chrome-kit-gate.mjs`, which is the file P-93 is arming. Two cards on
