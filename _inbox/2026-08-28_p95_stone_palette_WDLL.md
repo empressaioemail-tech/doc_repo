@@ -73,6 +73,17 @@ Grade: [ ]
 Check: grep the six for `rgba(` and expect zero matches; grep `--ss-scrim` and
 expect one. Grade: [ ]
 
+    The reason is structural, not aesthetic, and it was established from the live
+    app rather than from a mock. The basemap is bright AERIAL IMAGERY, not a dark
+    vector map. Aerial is not one ground: bright roofs and asphalt sit beside dark
+    tree canopy in the same frame. At any alpha below 1, canopy and roofs bleed into
+    panel text, and panel text is the one thing this palette may not degrade. The
+    visible delta from today's `.94` is only about 6% because a `.94` panel over
+    bright imagery already reads opaque. The planner's earlier claim that opaque
+    chrome would take the dock "from dimming the parcel fabric to occluding it" was
+    argued against a dark vector ground this product does not have, and is withdrawn.
+    Evidence: `P:/tmp/ss-map-shot/live-map-parcel.png`.
+
 3. **The scale actually moved, in the place that controls it.** `PE` geometry and
 the `TYPE` ramp in `src/styles/pe-chrome.ts` carry the Stone numbers. Check: read
 the values. Note that changing `--ss-fs-*` alone is a no-op, because all six have
@@ -128,8 +139,44 @@ but a hardcoded rgb string for the fill and border, so `solid(PE.ok, RGB.ok)` re
 the v2 `--ss-ok`. After the swap the label is Stone's sage and the wash stays
 emerald: a sage word in a green box, on all three tones, six sites. The rail's gold
 dot has the same shape, carrying an `rgba(11,14,19,.95)` halo sized for near-black
-that will sit on a warm grey capsule. Check: for every semantic and reserved hue,
-assert the token value and any rgb literal of that same colour agree. This is two
+that will sit on a warm grey capsule. `StateNote` is a third instance and worse,
+because it carries the defect across all four registers: `waiting` reads `PE.warn`
+for `color` and `rgba(245,158,11,...)` for fill and border at `:29-30`, and
+`not-on-file` and `failed` do the same with `--ss-slate` and `--ss-err`.
+
+    Measured extent, not estimated. A self-tested scan for the decimal rgb triples
+    of twelve v2 token values found **169 sites**, splitting into **122 standalone
+    literals that will desync on the swap** and 44 `var(--token, <literal>)`
+    fallbacks holding stale copies. The standalone 122 are the work; the 44 are a
+    quieter hazard, silently rendering v2 colours if a token is ever undefined.
+    Worst files: `RecordsRequestSection.tsx` 12, `FloodTool.tsx` 9, `ShareView.tsx`
+    7, `ChatTool.tsx` 7, `CheckoutSuccessCard.tsx` 6, `ReportsTool.tsx` 6.
+    A hex grep does NOT find any of these, because they are decimal triples inside
+    template strings. That is why this item exists as its own check.
+
+    **The fix is derivation, not correction.** Ruled by the palette author
+    2026-08-28, superseding their own earlier prescription of literal alphas, which
+    they withdrew as the same defect: a wash is computed from its token and never
+    spelled.
+
+        fill:   color-mix(in oklab, var(--ss-warn) 13%, transparent)
+        border: color-mix(in oklab, var(--ss-warn) 34%, transparent)
+
+    Same 13/34 for `ok`, `err` and `slate`, substituting the token. A derived wash
+    cannot desync because there is no second copy to go stale. This is stronger than
+    getting the 122 sites right once, because getting them right once leaves the
+    next palette change to get them right again.
+
+    **The `var(--token, <literal>)` fallback form is BANNED**, and the 44 fallbacks
+    are worse than the 122 standalone literals rather than better. A fallback looks
+    like it respects the token while being a second source of truth that surfaces
+    only when the first is missing, so it hides exactly the failure it claims to
+    handle. If a token can be absent, that breaks loudly rather than silently
+    rendering last year's colour. Check: zero `var(--` with a comma-literal second
+    argument outside the token file.
+
+    Check: for every semantic and reserved hue, assert the token value and any rgb
+    literal of that same colour agree. This is two
 derivations of one value and it is the check that catches a half-ported colour;
 a grep for hex alone will not, because these are decimal rgb triples in template
 strings. Enumerate and fix all of them. Grade: [ ]
@@ -157,6 +204,15 @@ or over the map:
 goes 24 to **17.5 mono**, not 26 and not 32, because it repeats once per tier and a
 repeated element never takes a title step. Check: read the site. Grade: [ ]
 
+13a. **A state colour tints a chip, never a card.** `LockedToolPanel.tsx:68` renders
+`StateNote register="waiting"`, and `StateNote.tsx:27-31` is `color: PE.warn` with
+`rgba(245,158,11,.07)` fill and `.25` border. It reads as a filled gold-ish card in
+the live capture. The token is `--ss-warn`, NOT `--ss-gold`, so the gold gate is not
+missing a site and Rule 1 holds. The defect is size, not alpha: 13/34 is calibrated
+for a chip, and a large surface tinted with a state colour reads as a state of the
+whole panel, which is not what "Sign in to use this tool" means. Ruling: chips take
+the wash; notes take `--ss-ink` with a `--ss-warn` border and no fill. Grade: [ ]
+
 13. **Chip label, and the tracking leak.** The `StatusChip` label is `--ss-fs-label`
 11.5, weight 600, tracking normal, sentence case. Confirmed unguarded today:
 `src/components/StatusChip.tsx:92` and `:162` set `fontSize` and `fontWeight` and
@@ -172,7 +228,7 @@ the child declarations are both present; either alone leaves a path open.
 Grade: [ ]
 
 14. **Two map hues, separated by treatment.** Parcel geometry takes `--ss-sky`
-`#A6CDEB` (data). Search highlight takes `--ss-blue` `#86ADDF` (interaction),
+`#2C6B9E` (data). Search highlight takes `--ss-blue` `#86ADDF` (interaction),
 because interactions are blue everywhere else in the product and the map is not
 where the product invents a fourth blue. The hardcoded `#7dd3fc` at
 `src/browse/ExplorerMap.tsx:1200,1203` is retired. The two hues are close by
@@ -181,10 +237,25 @@ while geometry stays a stroke. Check: grep `#7dd3fc` returns zero; both hues rea
 from tokens or, failing that, are listed in the same allow-list mechanism as gold so
 the next palette change cannot silently skip the renderer. Grade: [ ]
 
-    `--ss-sky` `#A6CDEB` is **PROVISIONAL**, the only non-final value in this port.
-    It was chosen against a near-black ground and Stone is roughly 30 points
-    lighter. Final sign-off happens with Stone behind a flag against live tiles.
-    Do not record it as settled.
+    **`--ss-sky` is FINAL at `#2C6B9E`**, ruled 2026-08-28 from the live capture.
+    `#A6CDEB` is WITHDRAWN: a light blue over light aerial imagery is not a
+    hairline. Nothing in this port remains provisional.
+
+    **The casing treatment is the ruling, more than the hue.** Aerial is not one
+    ground, so no single stroke colour survives both canopy and pavement unaided.
+    Each map line is a stroke over a casing beneath it:
+
+        parcel geometry   1px --ss-sky #2C6B9E over 2px rgba(255,255,255,.50)
+                          dark line, light halo. it recedes.
+        search highlight  2px --ss-blue #86ADDF over 2px rgba(0,0,0,.45)
+                          light line, dark halo. it advances.
+
+    That is the real separation between data and interaction: dark-on-light versus
+    light-on-dark. Hue alone was never going to carry it against imagery. Neither
+    casing is a brand colour, so **no tokens are added** and the set stays at 65.
+    Check: both casings present and beneath their strokes, verified by reading the
+    layer paint spec, not by the hue alone. A stroke that ships without its casing
+    passes a hue check and fails on canopy.
 
 15. **No literal font size outside the kit module.** RULED IN by the operator
 2026-08-28. The palette author's position, which the ruling adopts:
@@ -218,6 +289,38 @@ ruling in this port combined."
     not ruled without naming its call sites. A token with zero consumers is a
     comment. Where a ruled value cannot reach the screen, the palette author is told
     and re-rules against what can.
+
+16. **The gate greps one alphabet and reports clean on the rest.** Measured
+2026-08-28 against the export, test files and the token file excluded, comment-only
+lines excluded, using the gate's own hex pattern `/#[0-9a-fA-F]{3,8}\b/`:
+
+        bucket           lines   the gate sees it?
+        hex    in .tsx      25   YES
+        hex    in .ts       80   no  — chromeFiles() walks .tsx only
+        nonhex in .tsx     198   NO  — no rule exists for the form
+        nonhex in .ts       49   NO  — both reasons
+        SEEN 25   BLIND 327   coverage 7.1%
+
+    Two independent scope defects, both fixable. The walk excludes `.ts`, which is
+    where `mobile-layout.ts`, `stripeAppearance.ts` and the map overlays live. And
+    no rule matches any non-hex literal form: `rgb()`/`rgba()`, bare decimal
+    triples, three-digit hex inside a triple, or CSS named colours, of which 84
+    sites exist.
+
+    This is why the 169 literal-beside-token sites grew unseen while CI reported
+    "20 surfaces + 12 kit files ok". The gate was not broken; it was answering a
+    narrower question than its message implies, which ENFORCEMENT ranks as the worse
+    kind of scope defect because nothing complains.
+
+    Check: extend the walk to `.ts`, add a decimal-triple rule
+    (`\d{1,3},\s*\d{1,3},\s*\d{1,3}` outside the token file), an `hsl()` rule and a
+    named-colour rule. Verify each by violating it. Then re-run and record the new
+    coverage figure, because a coverage number that is never recomputed is the same
+    class of defect one level up. Grade: [ ]
+
+    Standing instruction from the palette author, adopted: ask what else the
+    instrument is blind to before trusting the next clean report. A clean report
+    from a check with 7% coverage is not evidence of health.
 
 ## Out of scope
 
