@@ -58,6 +58,32 @@ the new constants and still fails when violated. Every contrast failure the pale
 carries is listed and priced rather than silently corrected, and every contrast
 failure caused by a component picking the wrong token is fixed.
 
+## Wave 1 LANDED AND DEPLOYED 2026-08-28
+
+    PR            #300, squash-merged as 67c2e0b on origin/main
+    branch        seat/property-stone, base be60021, 56 files +1888/-1059
+    CI            test SUCCESS · Typecheck SUCCESS · No double-encoded source SUCCESS
+                  (conclusion strings, not exit codes)
+    gate          SELF-TEST 70/70 ok · CHROME-KIT GATE ok · exit 0
+    tests         2001 passed; the one local failure was pe-llms-txt, a Windows
+                  checkout CRLF artifact untouched by the diff, and it passed on CI
+    deploy        vercel --prod from repo root with Root Directory apps/property-explorer
+                  Production Ready; smartsite.cloud HTTP 200
+    live proof    /assets/index-B6ymVFHf.css carries 2A2A28 323230 3C3C39 86ADDF
+                  9D9991 86867D D38577 2C6B9E and --ss-fs-display; v2's 07090D,
+                  3B82F6, 12161D and F59E0B are all gone
+    screenshot    P:/tmp/ss-map-shot/stone-live.png
+
+**One v2 value survives on the live site and it is explained, not missed.**
+`#0b0e13` remains in `packages/map-renderer/dist/styles.css` on the map-note hover
+popup. That package is rendered by `apps/command-center` as well, and there is no
+per-app paint seam, so changing it repaints a second product. It is the same
+constraint that kept parcel geometry on its v2 colour and it wants the same ruling.
+The other source-side survivor is `brief-print-html.ts`, the print island, a
+different medium and out of scope by ruling.
+
+Wave 2 (ramp literals to `TYPE.*` references, zero visual change) is NOT yet done.
+
 ## Acceptance items
 
 1. **Token parity, measured against the source.** The token set is **65**: the 63
