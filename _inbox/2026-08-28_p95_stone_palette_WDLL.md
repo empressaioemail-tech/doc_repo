@@ -67,8 +67,12 @@ Without a declared winner the check fails on an authored palette edit exactly as
 loudly as on app drift, and a check that fires on correct work is a check people
 silence. Grade: [ ]
 
-1a. **The four ruled contrast values, verbatim.** `--ss-t6` `#9D9991`, `--ss-t5`
-`#ADA9A1`, `--ss-line-28` `#86867D`, focus ring alpha `.67`. The author's first
+1a. **The five ruled contrast values, verbatim.** `--ss-t6` `#9D9991`, `--ss-t5`
+`#ADA9A1`, `--ss-line-28` `#86867D`, `--ss-err` `#D38577`, focus ring alpha `.67`.
+`--ss-err` moved from `#D28477`, which measured 4.470 as body text on `--ss-ink` and
+needed 4.5; `#D38577` measures 4.522, verified independently by the planner. It is
+the only palette value changed on readable text rather than a boundary, and the same
+token already passed everywhere it is used as a border. The author's first
 line-28 value `#85857C` measured 2.974 against `--ss-raised` and was corrected to
 `#86867D` (3.014) on our measurement and their confirmation. `--ss-line-06` and
 `--ss-line-14` ship failing 3:1 by explicit ruling: they are row separators and
@@ -337,6 +341,52 @@ lines excluded, using the gate's own hex pattern `/#[0-9a-fA-F]{3,8}\b/`:
     Standing instruction from the palette author, adopted: ask what else the
     instrument is blind to before trusting the next clean report. A clean report
     from a check with 7% coverage is not evidence of health.
+
+17. **Canonical hover: one mechanism, and the border carries the state.** Ruled
+2026-08-28, closing the last open value in the port.
+
+        background:    color-mix(in oklab, var(--ss-t1) 7%, <the surface it sits on>)
+        border-color:  var(--ss-line-28)
+
+    The border is the state at 3.01:1, so the tint is enhancement on a boundary that
+    already passes and the 1.4.11 question stops being a judgement call. Answering
+    the strict reading beats winning the loose one. **Press adds nothing further and
+    nothing scales.**
+
+    `--ss-line-06` returns to being a hairline separator and nothing else. It had two
+    jobs, separator and primary-button hover fill, and raising it to clear 3:1 as a
+    hover state would have made every row separator in the product a heavy rule. That
+    trade, a real hairline for a compliance number, is the wrong one in a product
+    built on 1px lines.
+
+    **Which mechanism is canonical: the app's idea, the design system's discipline.**
+    The app is right that a lift should be ground-independent, one value mixed into
+    whatever surface the control rests on, rather than the three hardcoded surface
+    steps per variant the design system was using. The app is wrong to spell it
+    `rgba(255,255,255,.07)`, and its hover border literal `rgba(154,166,178,.38)` is
+    a v2 value stranded in a Stone build. **Both app literals retire with the other
+    169.** Both files change; neither was right.
+
+    Note for the port: 7% of `--ss-t1` on Stone is NOT the lift 7% white gave on v2's
+    near-black. The old alpha was tuned to a much darker ground and would read as a
+    barely-there tint here. Do not carry the old number across as if it were
+    equivalent. Grade: [ ]
+
+18. **Tokens pinned by meaning are never substituted.** Contrast tooling MAY propose
+a lighter or darker version of a pinned token. It may NEVER propose a different one.
+Pinned: `--ss-err`, `--ss-ok`, `--ss-warn`, `--ss-gold`, `--ss-atom` by meaning, and
+`--ss-blue` by rule 2.
+
+    This exists because the mechanical substitution search was one pass from making
+    the product lie: `--ss-err` missed body text by 0.03 and the tool proposed
+    `--ss-ok` at 5.05:1, because it is in the same family and passes. Painting an
+    error message green is a false statement with a good ratio.
+
+    Implemented per TOKEN, not per pairing. A per-pairing boolean is fine until
+    someone adds a row and forgets it, and a substitution that only happens on
+    forgotten rows is the defect nobody finds by looking. Verified by violation: with
+    `--ss-err` reverted to its failing value the tool reports "no token in the state
+    family clears it" and offers no alternative. Grade: [ ]
 
 ## Out of scope
 
