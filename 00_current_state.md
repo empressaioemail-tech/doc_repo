@@ -1,8 +1,8 @@
 ---
 id: 00_current_state
-title: Current state snapshot — 2026-08-29
+title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-08-29
+last_updated: 2026-08-30
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -21,7 +21,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 2. In-flight sprints
 
-- **THE FACTORY (OPS-19, added 2026-08-27).** The cloud machine that drains Texas onto the new shape and onboards a state, built to the model law (`19_the_instrument_contract.md`, `_blueprint/`). Plan of record `90_operations/OPS-19_factory_plan_of_record.md`; design `_inbox/2026-08-26_factory_program_design.md`. **2026-08-28: Central Texas SERVED.** Under A-020 (course correction: CTX first, everything else waits) and A-021 (standing production word for the six) all six counties (Bastrop, Caldwell, McLennan, Hays, Williamson, Travis) serve `node-facets-tier1-conformant-v1` on smartsite.cloud from succeeded production publish runs with passed content walks and freshness stamps; the access pair is the contract pair at writer, bake, and serve (A-023, re-stamp of 6.3M atoms, translation retired); the bake projects the full facet set and the walk grades content (A-025). CTX card F (`_inbox/2026-08-28_ctx_f_zoning_verdict_city_limits_WDLL.md`) SERVING since 20:51Z: the zoning verdict is derived from city-limits containment (LDT #532, cortex-api 00643-rib) and the conformant claim reader accepts the flat body the Factory stores; all six counties re-baked on the card F publish image and serving it in production as of 2026-08-29 01:38Z (Caldwell, Bastrop, McLennan, Hays, Williamson, Travis), each from a passed staging sibling and a passed production walk. Follow-ups (not started): a point source for the 534,700 sentinel rows; the F-05 join-gate ruling for Hays and Williamson; the F-08 envelope routing decision; Property Explorer labels for `stamp-missing` and `unmeasured`; a Factory-side parcel point for BP-VALUE-01. Live state `_state/property/STATE.md`. Deferred by A-020 stays deferred: wave 1 remainder, F-09 (217 counties without landing), F-11 to F-14. Two findings still open: engine-api gate headers spoofable (OPS-16 A-039, substrate), console operator-login proxy (F-04).
+- **THE FACTORY (OPS-19).** Plan `90_operations/OPS-19_factory_plan_of_record.md`. The six Central Texas counties serve `node-facets-tier1-conformant-v1` from walked card H production publishes (image `sha256:7bef3ce7`, LDT `889b1556`). That met A-020 shape. It is not county-complete. **Live remainder 2026-08-30T13:48:33Z: 232,770 unstamped 0,0. Do not quote pre-H 534,700 as live.** Travis `no-row` still 119,389 (situs never tried). Seed leak 0. Operator go on the remainder; cards at `_inbox/2026-08-30_ctx_facts_complete_WDLL.md` and `_inbox/2026-08-30_ctx_w1_bake_WDLL.md`. **Do not start W1 until the operator routes `_inbox/2026-08-30_ctx_remainder_deep_review.md`** (block-then-amend: landUse on W1, PE wiring card with a plan row, Wave R allowed but not customer-done). Rainmaker `48021:8720522` atom-miss is not a card H wipe; recon `_inbox/2026-08-30_rainmaker_open_complete_recon.md`. `_state/property/STATE.md` is stale (still card F / 534,700). Pickup `_sessions/2026-08-30_ctx_remainder_and_rainmaker_wiring_claude_code.md`. Deferred by A-020 stays deferred: wave 1 remainder, F-09, F-11 to F-14. Do not restart `scllr`. Do not lift the seed.
 
 - **OPS-16 / L26** Fill factory stopped. QA/launch on current map (A-017). Backfill redesign later. Plan `90_operations/OPS-16_texas_market_plan_of_record.md`.
 - **OPS-17 Lane B** G-61 through G-65 CLOSED. Serving Dashboards `00007-8sc` `https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app`. MCP `00082-mat` tag g11. Next card G-66 Dashboards UI (draft). Not a Bastrop cutover. Three identities: template-city demo, live Bastrop island, next-city pack. Path `_decisions/2026-08-17_dashboards_ui_then_one_feed.md`. `P:\smartcity-os` no-touch.
@@ -47,6 +47,7 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 
 ## 5. Recent session summaries
 
+- 2026-08-30 CTX remainder cards, Rainmaker Open/wiring recon, deep review (W1 blocked pending operator route): `_sessions/2026-08-30_ctx_remainder_and_rainmaker_wiring_claude_code.md`
 - 2026-08-29 P-91 deep dive, ruling (Open stays a turn), build to deploy: `smartsite-mcp` p556 (`00061-zik`) and `cortex-api` p542 (`00666-cuf`) serving; `ask_the_map` blocked; rails at first paint; existence fails closed; PRs #550/#551; operator Connect grade owed (`_inbox/2026-08-29_p91_p556_connect_grade_prompt.md`): `_sessions/2026-08-29_p91_mcp_app_deep_dive_and_build_claude_code.md`
 - 2026-08-29 Team seats 3 + P-96 chrome pile + live `/favicon.ico` ICO (operator confirmed serving). This seat idle. `_sessions/2026-08-29_p96_chrome_and_team_seats_claude_code.md`
 - 2026-08-28 Smart Site design system: Stone exact port opened (P-95) + chrome defect pile (P-96); design system rebuilt and swapped in; the chrome gate sees 7.1% of colour literals: `_sessions/2026-08-28_smart_site_design_system_stone_port_claude_code.md`
