@@ -24,6 +24,14 @@ Pro forma is investor only, and held. One base model delivered to the LLM is acc
 
 A UI and rendering conversation follows once this card is logged. Queued behind the lens conversation.
 
+# Second ruling set, operator 2026-08-30 (on the thesis draft's five questions)
+
+1. No standalone lenses. Lens/persona was a frame of reference for who we are dealing with, not a shippable unit. Real estate pros wear multiple hats; the tooling covers the spectrum. Consequence: no first-persona sequencing decision exists; the gap ledger's wanted list is the UNION of the jobs across the spectrum, and the queued "lens conversation" reframes to a FUNCTION INVENTORY: the questions the tooling must answer, each mapped to the fields it needs.
+2. The client-facing share artifact is OUT. Claude composes any client report from the twin in context; that is the model's job, not a product surface we build. (Twin depth still serves this: the report is only as good as what is in context.)
+3. The yardstick is FUNCTION-scored, not persona-scored. Walk scenarios grade usable functions (job-question answered correctly, with receipts, in how many turns), regardless of who is asking.
+4. Standing watches are OUT.
+5. The paint-only serverTools channel is RULED IN, with the two invariants as proposed: a paint-only result never claims to be in context, and anything the user acts on still drafts a turn. This supersedes the "fork, not built" posture above and in the 10x lever table; build lands with v3.
+
 # The multi-parcel view (design settled in chat, folded into the v3 build)
 
 Origin story: the QA walk opened three adjacent parcels through boundary-line doors and the model had to reconstruct a composite by solving frame translations from shared edges, because every ring ships in its own centroid-origin local frame (`parcelDrawStub` types `origin: "centroid"`, no absolute anchor; verified against origin/main). Users must never solve translations. Three pieces:
@@ -55,9 +63,27 @@ E. Vector plat ground with no imagery: neighbor rings, road centerlines with nam
 
 Imagery sourcing if B or D: PE serves Esri World_Imagery; server-side export of it needs a terms check before any snapshot pipeline uses it. TxGIO / USDA NAIP orthoimagery is public domain, on the public-record posture, ingestable into the hauska-map-tiles bucket for the launch counties; size and ingest cost are a measurement.
 
-Probe extension: measurement 6 grows to test BOTH channels in one deploy: per-origin fetch, and app-initiated resources/read through the host bridge.
+Probe extension: measurement 6 grows to test BOTH channels in one deploy: per-origin fetch, and app-initiated resources/read through the host bridge, plus WebGL availability (MapLibre requires it; a sandboxed iframe may lack it; unmeasured until this cut).
+
+Measurement 6 status 2026-08-30: BUILT and canaried. p559 (`smartsite-mcp-00067-puw`, digest `sha256:c2b4c618...`) carries the three-token boot strip (`net= gl= bridge=`), declares the four origins in the resource's `_meta.ui.csp` (previously empty arrays), and is held at 0 percent; PR #556 squash-merged 28969a36; record `_inbox/2026-08-30_p91_p559_probe_deploy.md`. Shift on the operator's word, one reconnect, one screenshot of the strip; result lands here verbatim. Weighing ruled in chat 2026-08-30: E ships unconditionally as the default ground inside the v3 build; A is gated on this probe (declared-CSP fetch AND WebGL both passing) and sits on top of E if it passes; the snapshot underlay is the fallback via whichever transport the probe shows (`bridge=ok` preferred). A map click pushes to Claude through the same drafted Open turn as doors and board rows; paint-only prefetch over `serverTools` is a named fork for the UI conversation, not built.
 
 Decision routed to the UI and rendering conversation.
+
+# Product thesis draft and the 10x levers (opened 2026-08-30; FOR REFINEMENT, not ruled)
+
+Candidate thesis, one sentence for the operator to confirm or bend: the twin grounds, Claude reasons, the panel shows receipts. The app's moat is not data on a screen (PropertyRadar) and not canned analytics (Rentometer); it is conversational reasoning over a verified twin where every painted cell traces to a source, a vintage, and an honest gap. 10x is measured against the user's job, not against the panel.
+
+Five levers, each with what it takes:
+
+1. Reasoning depth: lens sheets over the full twin in context. Takes the lens conversation, then per-lens field lists driving the gap ledger. The model does the judgment; the panel paints the verdict with receipts.
+2. Twin depth: the gap ledger executed by the data lane (permits, clerk index, land use, footprints, drainage, owner and equity). The slowest and largest lever.
+3. Area scale: block view, subdivision and radius selectors, area sweeps. From a parcel tool to a territory tool; mostly the already-scoped multi-parcel build.
+4. Turn economy: the paint-only serverTools channel (hover previews, lazy sections) so the panel feels alive without spending turns or context. Operator LEANED YES 2026-08-30 ("i like this"); still a fork to rule with two invariants proposed: paint-only results never claim to be in context, and anything the user acts on still drafts a turn.
+5. The deliverable: a shareable client-facing brief (the smartsite.cloud/p/ URLs already exist as the panel's outbound link). The OneHome links are what a realtor SENDS; whether the share artifact is this product's job or PE's is an open question below.
+
+A sixth named and held: standing watches ("tell me when a permit is filed on this street"). Agent-native and compounding, but the host cannot be pushed into a conversation; delivery would be email or PE notification. In or out of v3 is an open question.
+
+The yardstick question: 10x needs a measure. Proposed: persona-scored walk scenarios (the W1 pattern applied to jobs, e.g. "screen this list, pick three, show receipts"), graded on correctness, citation coverage, and turns spent. Not ruled.
 
 # Queue
 
