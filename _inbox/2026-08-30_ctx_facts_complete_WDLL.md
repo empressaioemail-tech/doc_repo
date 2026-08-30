@@ -26,7 +26,7 @@ A user on smartsite.cloud who opens a parcel on the six sees a named join state,
 
 ## Waves
 
-See `_inbox/2026-08-30_ctx_execute_waves_WDLL.md`. Short form: P0 truth, P1 controls, P2 substrate + alias long pole (P2b PE parallel), P3 absence (826,569), P4 rails, P5 scrub, P6 pin, P7 Wave R, P8 prove. W2 / P-80 stays parked. This file's title still says "facts complete"; the program is the last production publish, not county-complete.
+See `_inbox/2026-08-30_ctx_execute_waves_WDLL.md`. Short form: P0 truth, P1 controls, P2 substrate + alias long pole (P2b PE parallel), P3 absence (357,269 `not-applicable` + 465,568 `unmeasured`), P4 rails, P5 scrub, P6 pin, P7 Wave R, P8 prove. W2 / P-80 stays parked. This file's title still says "facts complete"; the program is the last production publish, not county-complete.
 
 ## Acceptance items
 

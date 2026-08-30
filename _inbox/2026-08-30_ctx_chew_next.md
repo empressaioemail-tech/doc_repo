@@ -17,7 +17,7 @@ Nothing runs today. P0 is docs. The next operator word starts three lanes. After
 
 ## Why this order is short
 
-Most of the gap is not work. 826,569 of 981,410 parcels become `not-applicable` once setbacks, edges, and envelope inherit city scope (P3). Edges actually owed are ~154,841. Wells and footprint apply on five counties, not six. Flood is a shape conversion. C-count already ran.
+Most of the gap is not work. Once setbacks, edges and envelope inherit city scope (P3), **357,269** of 981,410 parcels become `not-applicable` and **465,568** become `unmeasured` pending a city probe. Those are different states; do not collapse them. Edges actually owed are ~154,841. Wells and footprint apply on five counties, not six. Flood is a shape conversion. C-count already ran.
 
 The only item people cannot compress is the `breadth_*` → `place_fips` alias table. Start it on the same go as P1.
 
@@ -41,7 +41,7 @@ P2 job template + writer allowlist. One non-CAD writer runs as a Cloud Run job a
 
 ## Click 4 (cheap, huge)
 
-P3. Unincorporated setbacks, edges, envelope → `not-applicable`. Four county easement absences. Converts 826,569 parcels.
+P3. Unincorporated setbacks, edges, envelope → `not-applicable` (357,269). In-city without a table → `unmeasured` (465,568). Warmed → `value` (3,732). Four county easement absences.
 
 ## Click 5 (serialize heavy scans)
 

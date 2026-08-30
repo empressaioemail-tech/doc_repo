@@ -56,7 +56,7 @@ Three lanes, one go:
 2. P2 alias table seed (property; long pole; start immediately).
 3. P2b PE wiring (hauska-map; does not block Wave R).
 
-Then P2 job template + writer allowlist (one lane). Then P3 (cheap, converts 826,569). Then P4.
+Then P2 job template + writer allowlist (one lane). Then P3 (cheap: 357,269 `not-applicable` + 465,568 `unmeasured`, three states not one). Then P4.
 
 ## Do not parallelize
 

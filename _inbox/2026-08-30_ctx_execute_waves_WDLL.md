@@ -23,11 +23,11 @@ Do not apply 0005 as drafted. Do not re-run `landing-import`. Do not run F-18 un
 
 ## Done looks like
 
-Every served cell on the six is exactly one of value / absent-verified / not-applicable / refused, each with its proof. Unincorporated setbacks, edges, and envelope are `not-applicable` (826,569 parcels). Edge work is ~154,841 in-city parcels where a table exists. Wells and footprint apply on five counties. Flood is a shape conversion. One production publish after P5 can fail. PE words match the wire (P2b; does not block Wave R).
+Every served cell on the six is exactly one of value / absent-verified / not-applicable / refused, each with its proof. Unincorporated setbacks, edges, and envelope are `not-applicable` (**357,269** parcels). A further **465,568** in-city parcels with no setback table are `unmeasured`, then `absent-verified` on probe — NOT `not-applicable`. Edge work is ~154,841 in-city parcels where a table exists. Wells and footprint apply on five counties. Flood is a shape conversion. One production publish after P5 can fail. PE words match the wire (P2b; does not block Wave R).
 
 ## Measured owe (do not re-derive)
 
-981,410 parcels. In-city ceiling 624,141. Current setback-gate ceiling 158,573. Edges owed ~154,841. Absence rows 826,569.
+981,410 parcels. In-city ceiling 624,141. Current setback-gate ceiling 158,573. Edges owed ~154,841. Non-edge remainder 826,569, which is **not one state**: 357,269 unincorporated `not-applicable` + 465,568 in-city `unmeasured` + 3,732 warmed `value`. Stamping all 826,569 `not-applicable` fabricates a structural claim on 469,300 in-city parcels.
 
 | Rail | Work | Scope |
 |---|---|---|
@@ -63,7 +63,7 @@ P2b PE wiring. Easement four-point probe. Zoning-stamp remainder (home named, wo
 | Phase | What | Parallel with | Exit gate | Starts |
 |---|---|---|---|---|
 | P0 | Canon. OPS-1 boundary lie. Owe table. 72 cities. Rename "facts complete" in prose. | nothing | Fresh agent reading tracked canon does not say county-wide setbacks | now (docs) |
-| P1 | Checks that can fail. Walk four-state. Routing-pin holds. F-18 refuse missing county. Vintage or delete. Recount repair. | P2b start | Each control fails a known violation and passes a known-good | after P0 |
+| P1 | Checks that can fail. Walk four-state. Gate a job can read (`import_ledger` has 0 SELECTs; the routing pin's field is `held`, carrying plan rows, not `holds`). F-18 refuse missing county. Vintage or delete. Recount repair. **0005 split per the section above.** `DrawEdge.state` -> real union. Serve-path `status` filter (723 retired edges shipping). | P2b start | Each control fails a known violation and passes a known-good | after P0 |
 | P2 | One job template. Writer allowlist. F-11 writer. Easement writer stops live REST. Store split ruled. **Alias table (long pole).** | P2b | One writer other than CAD runs as a job and refuses a missing county | after P1 start |
 | P2b | PE wiring. Grey-box scope. Zone. A1 default. yearBuilt with source. Bundle marker. | P2 | Live brief + deployed bundle marker. #310 is not the gate | after P0 |
 | P3 | `unincorporated → not-applicable` on setbacks, edges, envelope. Four county easement absences. | after alias table exists enough to key cities | Caldwell rural brief names county-absence | after P2 alias seed starts |
@@ -73,9 +73,47 @@ P2b PE wiring. Easement four-point probe. Zoning-stamp remainder (home named, wo
 | P7 | Wave R. Six production serial. GRADE LOG per county. Refusal fixtures green. | nothing | Six production close lines + golds | after P6 + operator word |
 | P8 | Repaired recount. Live briefs. Area sweep. Schedule the scrub. | — | Continuous fail on regression | after P7 |
 
+## The 0005 split (A1 — this replaces "do not apply 0005 as drafted")
+
+A prohibition is not a fix. 0005 is the ONLY migration creating
+`landing_setback_registry`, `landing_setback_record`, `landing_easement_gis` and
+`landing_cad_txgio_alias`, so P4's "land four `SETBACK_TABLES` artifacts" — on the
+critical path — has no sanctioned migration until this lands. Split it in **P1**,
+not P2.
+
+**0005a — landing tables, Factory store (`FACTORY_DATABASE_URL`).**
+`landing_setback_registry`, `landing_setback_record`, `landing_easement_gis`.
+
+1. **Drop every `'absence'` seed.** All eight, not only the four false ones.
+   Absence rows are written by a probe job that looked, never by DDL that assumed.
+   Austin, Kyle, Georgetown and Round Rock are registered in `SETBACK_TABLES` with
+   cited feet (Georgetown `human-verified` 0.95, audited 2026-07-23) and Austin
+   alone already has 150,702 `setback-rule` atoms. Seeding them absence overwrites
+   sourced data.
+2. **Add `probed_at timestamptz`** plus `CHECK (kind <> 'absence' OR probed_at IS
+   NOT NULL)`. An unprobed absence becomes unwritable rather than merely forbidden.
+   This is the mechanism; the Do-not line is not.
+3. **Add `source_url_verified_at timestamptz`**, nullable. Round Rock and Cedar
+   Park URLs are synthesised from T3 elisions; a synthesised URL is not a probed
+   one and must not pass a `nonempty(source_url)` check. `elgin-warmed-cohort` and
+   `lockhart-ordinance` are sentinels passing that same check today.
+
+**0005b — alias table, bake store (`STAGING_`/`PRODUCTION_NEONDB_URL`).**
+`landing_cad_txgio_alias` only. It currently ships inside 0005 against
+`FACTORY_DATABASE_URL`, while `cad-txgio-alias-persist.mjs:252` inserts through
+`resolveTargetStores(...).DATABASE_URL`, which `TARGET_VARS` restricts to the bake
+store. `FACTORY_DATABASE_URL` is unreachable from that function, so the first
+insert errors with "relation does not exist". The table must be created where the
+writer writes.
+
+**Verify by violating.** Before either is reported working: attempt an `'absence'`
+insert with `probed_at` null and confirm the CHECK refuses it; run `alias-persist
+--apply` against a store without 0005b and confirm it fails loudly rather than
+silently. A migration observed only applying cleanly has not been observed working.
+
 ## Chew order (first three clicks)
 
-1. **P0 this session.** Docs. Removes 826,569 parcels of false owe.
+1. **P0 this session.** Docs. Removes 357,269 parcels of false owe outright and reclassifies 465,568 more from owed work to `unmeasured`.
 2. **P1 + start alias table + P2b** on the next go. Three lanes. Alias is the long pole; start it before you need it.
 3. **P2 job template + writer allowlist** after P1's refuse-on-missing-county exists. Then P3 (cheap, huge), then P4.
 
@@ -85,7 +123,7 @@ After P1 to P3 the rest is one scheduled chain.
 
 1. **P0 landed.** OPS-1 no longer says city/county boundaries have zero rows. Owe table in W3 and this card matches the measured rows. City number is 72. | check: a reader of OPS-1 + this card does not claim county-wide setbacks | grade: [met 2026-08-30: OPS-1 A12 correction; W3 apply list restated; execute-waves card filed]
 
-2. **P1 controls fail both ways.** Walk rejects all-null. Held rail refuses a job. Missing county refuses F-18. | check: violation run + pass run filed | grade: [ ]
+2. **P1 controls fail both ways.** Walk rejects all-null. Held rail refuses a job. Missing county refuses F-18. 0005a refuses an `'absence'` row with null `probed_at`. 0005b exists in the bake store and `alias-persist --apply` succeeds against it. `DrawEdge.state` no longer compiles as a single literal. Serve path drops retired edges. | check: violation run + pass run filed for EACH | grade: [ ]
 
 3. **P2 one non-CAD writer job.** Allowlist. County required. | check: Cloud Run execution on a named FIPS, refuse on omitted county | grade: [ ]
 

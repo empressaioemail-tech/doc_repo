@@ -34,7 +34,7 @@ On the six, every rail in the table has either atoms or a coverage-absence row t
 
 These are the only new stores. Everything else is apply.
 
-1. **F-11 setback authoring, registry-loaded.** Land the four existing `SETBACK_TABLES` artifacts (Austin, Kyle, Georgetown, Round Rock already cited; plus Bastrop / Elgin / Lockhart). Then probe the other cities of **72** territory-touching places. Unincorporated is `not-applicable` (826,569 parcels), not a table. Do not apply 0005 as drafted (it seeds four of those as absence). Do not invent PDD / overlay scalars.
+1. **F-11 setback authoring, registry-loaded.** Land the four existing `SETBACK_TABLES` artifacts (Austin, Kyle, Georgetown, Round Rock already cited; plus Bastrop / Elgin / Lockhart). Then probe the other cities of **72** territory-touching places. Unincorporated is `not-applicable` (**357,269** parcels), not a table. In-city with no table landed is `unmeasured` (**465,568**), not `not-applicable`. Do not apply 0005 as drafted (it seeds four of those as absence). Do not invent PDD / overlay scalars.
 
 2. **Public easement GIS landing (four known layers).** P-85 Phase A queries them live and created zero landing tables. For a complete GIS dataset, Factory L2 landing is owed: City of Bastrop `Easements_/43` (148), Round Rock easements, Cedar Park easements, McLennan CAD layers 9 and 10 (44,197 lines / 16,578 text). County Bastrop, Caldwell, Hays, Williamson stay honest-absence at county scope (T3 recon 2026-08-05). Clerk-index documents stay on P-85 jobs, not this landing.
 
@@ -52,7 +52,7 @@ Do not build: a PDD setback table, a county easement layer where the recon found
 | CAD leftover | `cad_property` / snapshots | Conformant + W1 | Six-county leftover **534,700** CAD with no conformant snapshot (not the 18,100 CTX-cohort figure). Bastrop 15,542 `no-row` confirmed. | After W1, remainder stays `no-row` with basis |
 | Zoning stamps | City GIS / ordinance | F-11 + bake | McLennan **48,441 stamped**. Home: this rail, not collect Band C. | Unincorporated `not-applicable`. `stamp-missing` inside a city |
 | Roads | OSM / county streets / COVER | P-17 | Home: parked this pass (F-10 / P-17). | Thin unincorporated network |
-| Edges | Parcel ring + setback-rule | depth-warm | **City fact.** ~154,841 owed. Bastrop 3,732 parcels (99.65% in-city). Five other counties 0 until a city table. Hays / McLennan / Williamson owe zero now. | Unincorporated `not-applicable` (826,569). PDD / `no-setback-row`. |
+| Edges | Parcel ring + setback-rule | depth-warm | **City fact.** ~154,841 owed. Bastrop 3,732 parcels (99.65% in-city). Five other counties 0 until a city table. Hays / McLennan / Williamson owe zero now. | Unincorporated `not-applicable` (357,269); in-city-no-table `unmeasured` (465,568). PDD / `no-setback-row`. |
 | Envelope | Derived from setback-rule | Bake compute | Follows setbacks. McLennan 65,814 envelopes over 0 rules: quarantine before Wave R. | PDD declined. Unincorporated `not-applicable`. |
 
 ## RRC this pass (do whatever it takes)
