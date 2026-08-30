@@ -127,7 +127,7 @@ defaults county to 48021.
 | **P0** docs | Commit the program (9 artifacts, A-026, A-028). OPS-1 A12 **and** `2026-08-08_STATEWIDE_layer_inventory.md` 29-30. Restore road-to-prod P0 item 5. Propagate the 357,269/465,568/3,732 split. Write 72. Re-derive `CTX_RESIDUE` vs W0b no-go. Supersede `collect_WDLL` 53+95. Card H GRADE LOG rows. Reconcile 4-vs-5 easement layers. Rename "facts complete". Restamp the canvas (32 commits behind). | A fresh agent reading **`git show HEAD:`** only, with no session context, reaches this owe table |
 | **P1** controls | BP-CONTENT-01 four-state; delete all-null-passes. Gate a job can read. Refuse-on-missing-county + `--name=value`. Schema-version fidelity. Vintage fix-or-delete. Recount repair. **0005 split** (drop 4 seeds, `probed_at NOT NULL`, name the store). **`DrawEdge.state` → real union.** **Serve-path `status` filter.** | Every control run against a poisoned case **and** a known-good; both observed |
 | **P2** substrate | County-scope + delta-count `landing-import`, indexes, deploy. Writer allowlist. F-11 setback writer. Easement writer stops live REST. Rule the store split. **Spatial jurisdiction join (primary derivation).** Alias seed reconciles the 48% carrying a string — it is NOT the long pole and NOT a jurisdiction source. | One non-CAD writer runs as a job on a named FIPS and refuses without one |
-| **P2b** parallel | Grey-box scope (keep the setbacks half). `"Zone"` label. `A1 — A1` default. yearBuilt **with source**. **X2 edge disposition.** **Restore `sourceAdapter`.** **Absolute anchor on draw** (unblocks X1 + the block view). | Live brief **plus** deployed bundle marker. A merged PR is not the gate |
+| **P2b** parallel | Grey-box scope (keep the setbacks half). `"Zone"` label. `A1 — A1` default. yearBuilt **with source**. **X2 edge disposition.** **Restore `sourceAdapter`.** **Absolute anchor on draw** (unblocks X1 + the block view). **Five MCP-app one-liners — see below.** | Live brief **plus** deployed bundle marker. A merged PR is not the gate |
 | **P3** absence | Three states, not one. Four county easement absences. | Caldwell rural brief names county-absence live |
 | **P4** rails | Wells **5** · Footprint **5** · Flood = shape conversion · Land 4 `SETBACK_TABLES`, probe other 68 of 72 · Edges ≤154,841 · Envelope where a rule exists · Easements after probe · Zoning stamps F-11 · Roads parked · Quarantine 188,103 + 65,814 | Every rail applied-or-absence with a five-field record; the job **refuses** without it |
 | **P5** scrub | S1–S13 **+ S14** edge reciprocity on the `ST_Intersection ≥ 0.9` predicate | Each family fails a poisoned row and passes a gold |
@@ -177,9 +177,12 @@ fewer. Draft at `_catalog/2026-08-30_breadth_place_alias_seed.json`
 covering 17 real places** — Cedar Creek, Driftwood, Del Valle, Dale, China Spring,
 Elm Mott, Axtell, Paige, McDade and others are absent from both
 `texas_roster_v1.json` (1,223 incorporated) and `tx_city_boundary` (1,222); 19 were
-probed and 0 found. These are unincorporated communities. Rule: extend the roster
-to CDPs, or give them an explicit `unincorporated` disposition. Do not seed around
-it.
+probed and 0 found. These are unincorporated communities. **RULED 2026-08-30: they get the
+explicit `unincorporated` disposition; the roster is NOT extended to CDPs**
+(`_decisions/2026-08-30_unincorporated_is_the_disposition.md`). A CDP has no
+zoning layer, no dimensional record and no corporate limits, so a `place_fips`
+there would be an identifier that reads as a jurisdiction and can never carry one.
+Containment decides it by measurement, not a name lookup.
 
 **Never blocks Wave R:** P2b, easement probes, zoning-stamp remainder, roads,
 recount repair, W1 CI, Factory walk grades.
@@ -188,6 +191,31 @@ recount repair, W1 CI, Factory walk grades.
 its six measurements.
 
 ---
+
+## MCP app — five one-liners (property seat, P2b)
+
+All five located in `_inbox/2026-08-30_p91_measurement5_field_inventory.md`
+(items 3, 5, 6, 8, 9). Each is a key mismatch or a dropped field, not a design
+change. Together they are a **fifth instance** of the leaf-disposition defect this
+program keeps finding: a state that exists in the vocabulary and is unreachable in
+the code.
+
+| # | Defect | Effect |
+|---|---|---|
+| 1 | `attrs.landUse.desc` — reader keys `landUseDescription` / `desc`; the bake writes `description` | cannot populate from the facet it reads |
+| 2 | `attrs.landUse.taxYear` — reader keys `taxYear`; the bake writes `vintage` | cannot populate from the bake |
+| 3 | `yearBuiltFromBake` reads `facets.yearBuilt` / `baseFacts.yearBuilt` | keys **no Tier-1 bake writes**; only the structural `cad_property` read can populate `attrs.yearBuilt` |
+| 4 | `parcelDrawFromReads` maps every absent read as bare `{state:"absent"}`, dropping `sourceVintage` | **`absent-verified` is unreachable** on flood, well and specialDistrict, and on pipeline plain-absent — `verifiedAbsence` always returns `unknown` / "provenance unknown; vintage unknown". The only absent-verified the draw can emit is pipeline present-outside |
+| 5 | `manifestLayers` reads `facets.envelope.geojson` from a snapshot the loader has already nulled | `layers` is **always empty**, `degraded` always true — empty by construction |
+
+Item 4 is the one that matters most: it is `DrawEdge.state`'s defect in a different
+field family. The vocabulary has five states; the read path can express two. Fixing
+it is a prerequisite for any honest absence on the draw, and it should land with
+X2 rather than after it.
+
+Item 5 is a dormant mechanism — a manifest that can never carry a layer will never
+report one missing.
+
 
 # 3. Test regime
 
