@@ -2,7 +2,8 @@
 decision_id: 2026-08-30_ctx_facts_complete_waves
 date: 2026-08-30
 owner: Nick (operator), recorded by integration seat
-status: active
+status: superseded
+superseded_by: 2026-08-30_ctx_one_more_bake
 related_canonical:
   - 90_operations/OPS-19_factory_plan_of_record.md
   - _inbox/2026-08-30_ctx_facts_complete_WDLL.md
@@ -13,6 +14,8 @@ related_canonical:
 ## Decision
 
 Take Central Texas facts complete next. Parallel W0 now. One LDT plus one Factory PR for bake inputs (W1). One production publish of the six after those merge (Wave R). Rails landing (W3) may start in parallel and does not block Wave R. P-80 starts only if the W0 recount names a Travis cannot-bind class.
+
+Superseded 2026-08-30 by `_decisions/2026-08-30_ctx_one_more_bake.md`. Seed stays and P-80 parked still hold. Sequencing does not: every bake-input defect rides the one bake, PE is its own card under the umbrella, and a later rails publish is not used to absorb a missed facet.
 
 ## Context
 

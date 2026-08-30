@@ -197,7 +197,17 @@ export function selfTest() {
     vacuous.rows === 2 && vacuous.point_usable === 1 && vacuous.unstamped_sentinel === 1 && vacuous.join_joined === 1 && vacuous.join_no_row === 1,
     "a two-row mixed set would collapse to one class");
 
-  return { ok: true, tests: 6 };
+  let writeGuarded = false;
+  try {
+    writeReport({ control: "should-not-write" });
+  } catch (err) {
+    writeGuarded = String(err.message || err).includes("writeReport refused");
+  }
+  assert("writeReport refuses without --live (does not truncate the live JSON)",
+    writeGuarded,
+    "self-test would overwrite _inbox/2026-08-30_ctx_w0_residue_recount.json");
+
+  return { ok: true, tests: 7 };
 }
 
 function redact(text) {
@@ -297,6 +307,13 @@ function runLive() {
 }
 
 function writeReport(payload) {
+  const argv = process.argv.slice(2);
+  const live = argv.includes("--live");
+  if (!live || payload?.control !== CONTROL) {
+    throw new Error(
+      "writeReport refused: live report path is guarded; pass --live with control ctx-w0-residue-recount",
+    );
+  }
   writeFileSync(REPORT_PATH, JSON.stringify(payload, null, 2) + "\n");
   return REPORT_PATH;
 }
@@ -368,12 +385,12 @@ try {
       w2: "Travis 119389 is still no-row. Situs recovery was not tried on 48453. Extend situs in W1 before coding P-80.",
     };
   }
-  const path = writeReport(report);
+  const path = wantLive ? writeReport(report) : null;
   if (wantLive && report.live.liveStatus !== "measured") {
     console.log(JSON.stringify({ ok: false, selfTest: tests, live: report.live, path }, null, 2));
     process.exit(2);
   }
-  console.log(JSON.stringify({ ok: true, selfTest: tests, live: report.live.liveStatus, path }, null, 2));
+  console.log(JSON.stringify({ ok: true, selfTest: tests, live: report.live.liveStatus, path, wroteLive: Boolean(path) }, null, 2));
 } catch (err) {
   console.error(String(err && err.message ? err.message : err));
   process.exit(1);

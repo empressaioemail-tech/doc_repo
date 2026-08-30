@@ -11,7 +11,9 @@ wdll: _inbox/2026-08-30_ctx_facts_complete_WDLL.md item 4
 
 Ordered. The bake tries the next source only when the previous one cannot produce a usable point. A fabricating `prop_id` join on 48209 or 48491 is not a source.
 
-1. **Owner-gated situs-keyed `txgio_parcel`.** Same path card H already wired for blocked FIPS (`normalizeSitusAddress` then `ownersAgree`). Extend it to leftover no-row on 48021, 48055, and 48453 when a situs key exists. `parcelJoin.state` is `joined-situs` or honest `gate-blocked` / `no-row`. Seed stays.
+0. **Open CAD to TxGIO alias.** `landing_cad_txgio_alias` / `identity.alias` for `(county_fips, cad_prop_id)` at `knowledgeAt`. Method `cad-roll-address-join`, `ownersAgree` already true. Source `cad-txgio-alias`. Decision `_decisions/2026-08-30_ctx_cad_txgio_alias.md`. Card `_inbox/2026-08-30_ctx_w1_alias_WDLL.md`.
+
+1. **Owner-gated situs-keyed `txgio_parcel`.** Same path card H already wired for blocked FIPS (`normalizeSitusAddress` then `ownersAgree`). Extend it to leftover no-row on 48021, 48055, and 48453 when a situs key exists and source 0 missed. `parcelJoin.state` is `joined-situs` or honest `gate-blocked` / `no-row`. Seed stays. New successes emit a bind for source 0.
 
 2. **CAD roll centroid, only when the claim body carries finite coordinates.** Card F CP1 sampled centroids were null. If a later atom carries one, use it and name `source: cad-roll-centroid`. Do not invent a centroid from a mailing address.
 

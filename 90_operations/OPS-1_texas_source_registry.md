@@ -2,7 +2,7 @@
 id: OPS-1_texas_source_registry
 title: OPS-1 — Texas Source-of-Truth Registry (the baked-in engine input for L-SOURCE)
 date: 2026-08-05
-last_updated: 2026-08-08
+last_updated: 2026-08-30
 status: operations doc (gap-closure: R-FND-2 registry-as-engine-input; T6 statewide expansion in flight), CORRECTED 2026-08-08, see doctrine note and correction blocks below
 owner: nick
 related: [2026-08-02_DAY_ONE_foundation_brief, 2026-08-02_foundation_ground_truth_ACCEPTED, _land_records/source_rail_registry.md, _catalog/tx_jurisdiction_source_registry.json, _inbox/2026-08-08_STATEWIDE_layer_inventory, _decisions/2026-08-08_county_shape_thirteen_rails_and_geometry_first]
@@ -32,9 +32,9 @@ The registry the ENGINE READS (R-FND-2: baked in, not docs beside it) to know, p
 ## RAIL C — TxGIO STRATMAP (live-probed 2026-08-02; the spine)
 Source of record: StratMap land parcels, DataHub collection `0fa04328-872e-481c-b453-126a74777593`.
 
-> **CORRECTION 2026-08-08:** "253/254 counties covered" below is SOURCE-AVAILABILITY, meaning StratMap publishes a downloadable zip for that county. It is NOT a data-loaded or served claim. Live `txgio_parcel` (the store the warm path actually reads) holds **19 of 254 counties loaded**; 235 are absent, including Harris. True distinct parcels across those 19 counties: **4,617,181** (not a row count; `txgio_parcel` writes a feature once per 0.02-degree tile it touches, so raw row counts overstate by roughly 16.6 percent; identity key is `(county_fips, md5(geometry::text))`). Source: `_inbox/2026-08-08_STATEWIDE_layer_inventory.md` and `_inbox/2026-08-08_FABRIC_statewide_parcel_analysis.md`, both live-queried 2026-08-08. Do not read "253/254" as "loaded" anywhere in this section.
+> **CORRECTION 2026-08-11 (supersedes 2026-08-08 store count):** "253/254 counties covered" below is SOURCE-AVAILABILITY, meaning StratMap publishes a downloadable zip for that county. It is NOT a data-loaded or served claim. Live `txgio_parcel` (the store the warm path actually reads) holds **196 of 254 counties loaded**; 58 are absent at last check. Instrument: `SELECT count(DISTINCT county_fips) FROM txgio_parcel` on `DEPLOYMENT_DATABASE_URL` / neondb. Row counts overstate distinct parcels because `txgio_parcel` writes a feature once per 0.02-degree tile it touches; identity key is `(county_fips, md5(geometry::text))`. Do not read "253/254" as "loaded" anywhere in this section.
 
-- COVERAGE (source-availability probe, NOT data loaded, see correction above): 253/254 counties have a StratMap zip published. NOT covered: Donley (48129) → needs county CAD/ArcGIS override. **Data loaded in the store: 19/254 counties.**
+- COVERAGE (source-availability probe, NOT data loaded, see correction above): 253/254 counties have a StratMap zip published. NOT covered: Donley (48129) → needs county CAD/ArcGIS override. **Data loaded in the store: 196/254 counties** (`SELECT count(DISTINCT county_fips) FROM txgio_parcel`).
 - FRESHNESS: 249 counties STALE (>1yr as of 2026-08-02); 4 FRESH (Cooke 48097, Hopkins 48223, Limestone 48293, Palo Pinto 48363, all 202509). Metros (Travis/Williamson/Bexar/Harris/Dallas) are 202503 = STALE → prefer live county ArcGIS where published + fresher.
 - JOIN-INTEGRITY (prop_id bad rate ≥25%, do NOT join CAD on prop_id alone): Robertson 48395 (1.00), Oldham 48359 (0.9995), Roberts 48393 (0.9992), Motley 48345 (0.53), Travis 48453 (0.51), Floyd 48153 (0.46), Dimmit 48127 (0.39), Lipscomb 48295 (0.38). These route join_key → geo_id_or_address_crosswalk, gated by owner-match.
 - ACCESS: bulk per-county zip ONLY (parcel REST /query is 400 "not supported" / token-gated — display only). One zip per FIPS: `https://data.geographic.texas.gov/{collection}/resources/stratmap25-landparcels_{fips}_lp.zip`. Browser User-Agent REQUIRED (bare UA → CloudFront 403). No auth, no published rate limit. Warm path = STAGED BULK LOAD per county, not live-per-county REST.
@@ -43,12 +43,14 @@ Source of record: StratMap land parcels, DataHub collection `0fa04328-872e-481c-
 
 ## OTHER TxGIO STATEWIDE LAYERS (candidates for the uniform-data parallel track / Rail D+)
 
-> **CORRECTION 2026-08-08:** every "statewide" figure and "already ingested" claim below describes the SOURCE mechanism (what the TxGIO service publishes/serves live), not the store. Only two rows below have been checked directly against a store and both were found far short of statewide: address points (6/254 counties loaded, 14 percent of the claimed total) and city limits / county boundaries (zero rows anywhere, code confirms no adapter exists). Treat every other row here as an unverified candidate source until it is checked against a store.
+> **CORRECTION 2026-08-08:** every "statewide" figure and "already ingested" claim below describes the SOURCE mechanism (what the TxGIO service publishes/serves live), not the store. Address points were checked 2026-08-08: 6/254 counties loaded. Treat every other row here as an unverified candidate source until it is checked against a store.
+
+> **CORRECTION 2026-08-30 (A12):** city limits and county boundaries are loaded and indexed. The 2026-08-08 "zero rows anywhere, no adapter" line is false and told agents the work was impossible. Do not cite it. Source: CTX collect review `_inbox/2026-08-30_ctx_w3_collect_amendments.md`.
 
 - ADDRESS POINTS: statewide ~11.7M is the SOURCE's paginated-REST total (`Address_Points/stratmap_address_points_48_most_recent/MapServer/0`, where=county='X', maxRecordCount 2000, geojson, ~2 req/s), not a loaded count. **Live `txgio_address`: 6 of 254 counties, 1,688,950 rows (Bexar, Travis, Williamson, Hays, Bastrop, Caldwell), 14 percent of the claimed statewide total.** "Already ingested" was a blanket misread; it is ingested for 6 counties. Source: `_inbox/2026-08-08_STATEWIDE_layer_inventory.md`, live SQL 2026-08-08. USE for situs where loaded.
-- CITY LIMITS: `City_Boundaries/Texas_City_Boundaries/MapServer/0`, 1,225 city polygons, queryable REST, $0. This is a SOURCE only: **no adapter, ingest script, or table exists; zero rows anywhere.** Confirmed independently by the engine's own code comment at `cascade-unzoned-envelope-decline.ts:62`: "no city_limits / incorporated_place / TIGER source anywhere." Would solve the R17 "what is the city" problem (Bastrop Phase 1 flagged BCAD city fields empty) once built. CAVEAT: CPA sales-tax geometry, cities without sales tax omitted. Fields: city_name, geo_id, gnis, geometry.
+- CITY LIMITS: `City_Boundaries/Texas_City_Boundaries/MapServer/0`, 1,225 city polygons, queryable REST, $0. **Loaded and indexed** as of 2026-08-30 (supersedes the 2026-08-08 "zero rows / no adapter" claim). CAVEAT: CPA sales-tax geometry, cities without sales tax omitted. Fields: city_name, geo_id, gnis, geometry.
 - HYDROGRAPHY (NHD streams/waterbodies), WATERSHED (WBD/HUC), HYPSOGRAPHY (contours), LEGISLATIVE boundaries: all statewide queryable REST, $0, as SOURCES. Acquisition/load status not verified in this pass; do not assume loaded.
-- COUNTY BOUNDARIES: NOT a dedicated TxGIO service; use Census TIGER. Same absence as city limits, zero rows, no adapter.
+- COUNTY BOUNDARIES: Census TIGER. **Loaded and indexed** as of 2026-08-30 (supersedes the 2026-08-08 "zero rows / no adapter" claim).
 - ETJ — NO statewide layer; derive from city-limits + Local Gov Code §42.021, or per-city GIS.
 - LiDAR/DTM + ORTHO: statewide raster on DataHub (additive viz only; not a 3DEP replacement, datum-mismatch risk). Source only; no ingest code found anywhere in hauska-engine as of 2026-08-08.
 
