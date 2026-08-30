@@ -100,7 +100,14 @@ id — on `34169` e3 the edge *is* the shared boundary while its claimed road is
 clock, `basis` identical across parcels · 188,103 placeholder `setback-rule` atoms
 (Hays 34,454 and Williamson 124,499 are **100%** placeholder) · McLennan 65,814
 envelopes derived from **0** setback rules · 723 retired edges served · 7.5% of
-neighbour ids sound · Travis `parcel-node` 804,457 against 380,918 parcels.
+neighbour ids sound · Travis `parcel-node` 804,457 against 380,918 parcels ·
+**envelope computed and denied** (wire `envelope.status: "ok"`,
+`buildableAreaSqFt: 9350`; DOM says "Buildable: Not stamped here", because
+`liveBuildablePct` reads a `buildableAreaPct` the facets envelope never carries) ·
+**a retired derivation serving** (`boundaryEdgeFact.setback.provenance:
+"road-class-setback-table"` live on the gold front edge; the mold retired the
+road-class-to-setback-value path 2026-07-29) · **509,911 parcels (52.0%) carry
+`unknown` and no jurisdiction string at all**.
 
 ## Controls that exist and cannot fail
 
@@ -119,7 +126,7 @@ defaults county to 48021.
 |---|---|---|
 | **P0** docs | Commit the program (9 artifacts, A-026, A-028). OPS-1 A12 **and** `2026-08-08_STATEWIDE_layer_inventory.md` 29-30. Restore road-to-prod P0 item 5. Propagate the 357,269/465,568/3,732 split. Write 72. Re-derive `CTX_RESIDUE` vs W0b no-go. Supersede `collect_WDLL` 53+95. Card H GRADE LOG rows. Reconcile 4-vs-5 easement layers. Rename "facts complete". Restamp the canvas (32 commits behind). | A fresh agent reading **`git show HEAD:`** only, with no session context, reaches this owe table |
 | **P1** controls | BP-CONTENT-01 four-state; delete all-null-passes. Gate a job can read. Refuse-on-missing-county + `--name=value`. Schema-version fidelity. Vintage fix-or-delete. Recount repair. **0005 split** (drop 4 seeds, `probed_at NOT NULL`, name the store). **`DrawEdge.state` → real union.** **Serve-path `status` filter.** | Every control run against a poisoned case **and** a known-good; both observed |
-| **P2** substrate | County-scope + delta-count `landing-import`, indexes, deploy. Writer allowlist. F-11 setback writer. Easement writer stops live REST. Rule the store split. **Alias table — long pole, start first.** | One non-CAD writer runs as a job on a named FIPS and refuses without one |
+| **P2** substrate | County-scope + delta-count `landing-import`, indexes, deploy. Writer allowlist. F-11 setback writer. Easement writer stops live REST. Rule the store split. **Spatial jurisdiction join (primary derivation).** Alias seed reconciles the 48% carrying a string — it is NOT the long pole and NOT a jurisdiction source. | One non-CAD writer runs as a job on a named FIPS and refuses without one |
 | **P2b** parallel | Grey-box scope (keep the setbacks half). `"Zone"` label. `A1 — A1` default. yearBuilt **with source**. **X2 edge disposition.** **Restore `sourceAdapter`.** **Absolute anchor on draw** (unblocks X1 + the block view). | Live brief **plus** deployed bundle marker. A merged PR is not the gate |
 | **P3** absence | Three states, not one. Four county easement absences. | Caldwell rural brief names county-absence live |
 | **P4** rails | Wells **5** · Footprint **5** · Flood = shape conversion · Land 4 `SETBACK_TABLES`, probe other 68 of 72 · Edges ≤154,841 · Envelope where a rule exists · Easements after probe · Zoning stamps F-11 · Roads parked · Quarantine 188,103 + 65,814 | Every rail applied-or-absence with a five-field record; the job **refuses** without it |
@@ -128,9 +135,51 @@ defaults county to 48021.
 | **P7** Wave R | Six production **serial** under A-021. GRADE LOG per county. Refusal fixtures green. | Six close lines + gold probes |
 | **P8** prove | Repaired recount. Live briefs. Area sweep. **Schedule** the scrub. | Continuous fail on regression |
 
-**Critical path:** P0 → P1 → **P2 alias table** → P4 setback land → P4 edges → P5 →
-P6 → P7. The alias table is hand-seeded, cannot be derived, and every city-scoped
-rail waits on it. Start it at the top of P2.
+**Critical path — CORRECTED 2026-08-30 after the enumeration ran.** The alias
+table is **not** the long pole, and jurisdiction must not be derived from it.
+
+The enumeration measured 225 distinct `breadth_*` values (Bastrop 49, Caldwell 27,
+Hays 87, McLennan 58, Travis 3, Williamson 1) — and found that **509,911 parcels,
+52.0% of the six, carry `unknown` and no jurisdiction string at all.** Williamson
+is 282,570 under one value with nothing else; Travis 169,688. No alias table
+reaches those parcels.
+
+Two further facts kill the alias-as-jurisdiction premise outright:
+
+- **An alias maps a string to a place, not a parcel to corporate limits.** CAD
+  situs carries a *postal* city. `48209_kyle` is 30,923 parcels, far more than
+  Kyle's incorporated count. Consuming it as jurisdiction would fabricate exactly
+  the defect this program is cleaning up.
+- **Four keys are county-scoped, not city** — `48209_hays`, `48309_mclennan`,
+  and mixed `48021_bastrop` / `48055_caldwell`. All four read as clean matches from
+  the string alone, and a naive roster lookup sends `caldwell` to Caldwell city in
+  **Burleson County** and `hays` to Hays city.
+
+**So spatial containment is the primary derivation and the alias table is a
+name-normalisation fallback.** The inputs are already loaded and indexed:
+`tx_city_boundary` (1,222 polygons) and `tx_county_boundary` (254) on cortex
+`neondb`, PostGIS 3.5.0, and the equivalent join re-derives in **1.3 s**
+zone-major with a `MATERIALIZED` bbox CTE. This is cheaper than the hand-seeding it
+replaces, and it is the only derivation that answers "is this parcel inside
+corporate limits", which is what every city-scoped rail actually needs.
+
+    P0 -> P1 -> P2 spatial jurisdiction join -> P4 setback land -> P4 edges
+       -> P5 -> P6 -> P7
+
+The alias seed still ships, scoped honestly: it reconciles the 48% that carry a
+string, and its confirm pass is short — the top 3 values are 63.3% of parcel
+weight, the top 25 are 94.7%, and 112 of the 225 values carry two parcels or
+fewer. Draft at `_catalog/2026-08-30_breadth_place_alias_seed.json`
+(33 `certain` / 93 `likely` / 99 `needs-human`), findings at
+`_inbox/2026-08-30_alias_seed_findings.md`.
+
+**One operator ruling is owed before P3.** `place_fips` cannot express **40 values
+covering 17 real places** — Cedar Creek, Driftwood, Del Valle, Dale, China Spring,
+Elm Mott, Axtell, Paige, McDade and others are absent from both
+`texas_roster_v1.json` (1,223 incorporated) and `tx_city_boundary` (1,222); 19 were
+probed and 0 found. These are unincorporated communities. Rule: extend the roster
+to CDPs, or give them an explicit `unincorporated` disposition. Do not seed around
+it.
 
 **Never blocks Wave R:** P2b, easement probes, zoning-stamp remainder, roads,
 recount repair, W1 CI, Factory walk grades.
