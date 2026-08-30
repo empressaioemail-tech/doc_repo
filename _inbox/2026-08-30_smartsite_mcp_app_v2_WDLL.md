@@ -2,12 +2,13 @@
 id: 2026-08-30_smartsite_mcp_app_v2_WDLL
 title: WDLL — Smart Site MCP App v2. The finished companion: board, drawing you can read, facts with citations, reports, honest gaps
 date: 2026-08-30
-status: DRAFT for operator approval (forks in section 3 need a ruling before this binds)
+status: EXECUTING (operator go 2026-08-30 "commit then spawn sub agents to execute and manage this build through deploy"). Forks taken on the planner's recommendation and reversible by amendment: 3.1 narrow report view yes; 3.2 hover yes; 3.3 zoning on the drawing yes; 3.4 flood-study forms defined, graded when the data lane lands. Not taken: 3.5 Free tier (pricing law; gate unchanged, upgrade sentence painted) and 3.6 exports (needs the substrate seat's Hauska MCP export endpoint and key, not a config toggle; R2 deferred by name). H2 measured 2026-08-30: largest node body 5,549 chars, average 4,711; a 50-id node batch would be about 235,000 chars against Claude's roughly 150,000 threshold, so node-depth arrays cap at 25 (stub stays 50). BUILT AND SERVING 2026-08-30 on smartsite-mcp p558 (00065-siv) and cortex-api p543 (00668-cos); items built and not built are named in the Amendments section; grades fill at the W1 walk.
 applies_to: legacy-design-tools (artifacts/smartsite-mcp, cortex-api), hauska-map (assets only)
 plan_row: P-91 (carry), P-92 (opens), new rows named in section 6
 supersedes: _inbox/2026-08-28_smartsite_mcp_app_WDLL.md items 12, 13, 14, 16, 21, 22, 25, 26 (v1 stays the record of what shipped; v2 defines finished)
 fixtures: _inbox/2026-08-30_p91_fixture_set_bastrop.md
 serving_at_draft: smartsite-mcp p557 (00063-rej), cortex-api p542 (00666-cuf)
+serving_built: smartsite-mcp p558 (smartsite-mcp-00065-siv, digest sha256:1d119501...) and cortex-api p543 (cortex-api-00668-cos, digest sha256:679683fd...), both at 100% by field name 2026-08-30; records _inbox/2026-08-30_p91_p558_deploy.md and _inbox/2026-08-30_p91_p543_deploy.md
 decisions_carried: _decisions/2026-08-29_p91_open_stays_a_turn.md; _decisions/2026-08-28_smartsite_mcp_app_screen_save_decouple.md; _decisions/2026-08-28_p91_o1_envelope_xray_must_refuse.md
 owner: property seat (product code and cortex); planner owns this card, the walks, and deploys
 ---
@@ -219,4 +220,4 @@ The v2 scope lived in three places: the P-92 section of the v1 card (items 21 to
 
 ## Amendments
 
-(none yet; draft)
+- 2026-08-30 (execution, lanes S6 to S10). Built on `feat/p91-v2-panel` (MCP server and iframe) and `feat/p91-v2-cortex` (cortex, PR #553 merged `d8dfb319`, canary p543): D1, D2, D3, D4, D7, F1, F2, F5, F6, P1, C1, C2, R1 (narrow), B1, B2 (both halves), B3, B4, B5, F7, H1, H2 (cap 25). Not built here, by name: D5, D6, D8, F3, F4, F8, X1 (data lane); F9, N1, R3 (P-92); R2 (substrate seat endpoint); 3.5 Free tier (held). Regression found by S8's fixtures and fixed in p558: since p555, an unresolved screen row (`parcelNodeId: null`, `id: <uuid>`) took its own row id as a node and painted an Open button carrying a uuid; the p554 inline parser never did this, the exported twin did, and no walk after p555 opened a created screen with an unresolved row. Checkpoints `_inbox/2026-08-30_p91_v2_build_cp.md`. Walk prompt `_inbox/2026-08-30_p91_p558_connect_walk_prompt.md`. Grades fill at the walk.
