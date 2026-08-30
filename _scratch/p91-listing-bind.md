@@ -295,3 +295,15 @@ Two suites the isolate could not collect (`propertyExplorerRecordsRequest*`) wer
 ## LESSON
 
 The seat gate refuses git writes from every second worktree of one repo path (`product_index_foreign`), and the primary LDT worktree carried P-85. The honest path was to register the standalone clones under the property seat with their own path and prove the gate in both directions, not the override env.
+
+## GROUND-TRUTH
+
+2026-08-30 (continuation): p557 serving `smartsite-mcp-00063-rej` (icons, redirects, find_parcel parcels-only + `located`, bakedAt wording), #552 squash `7cbe0bc4`. Smart Site mark tile ink live: hauska-map #315 `a275a459`, Vercel `property-explorer-limy5bkix`, five icon URLs changed bytes, live corners rgba(50,50,52,255). Operator QA walk on p556/p542 recorded the boot strip for the first time: `caps=` includes `serverTools` and `updateModelContext`.
+
+## LESSON
+
+The three raster icons on main had never been rendered from the SVG; two marks were in the wild under one name and nobody could regenerate either. A "colour-only" asset change is the moment that surfaces. Measure the old raster before rendering the new one, carry both geometries by name in one script, and make the check decode the files on disk.
+
+## LESSON
+
+The connector card icon is whatever the product site serves at the URLs the server names; our server named none, so the card took the site's icon. Name the icons explicitly (`serverInfo.icons`) so the card follows the product on reconnect and the source is never a guess again.

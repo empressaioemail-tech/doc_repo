@@ -35,6 +35,14 @@ S3's direct import of `txgioAddressResolve` into the route made two records-requ
 
 #550 `feat/p91-cortex-leftovers` (cortex): Test SUCCESS, Typecheck SUCCESS, squash-merged `42d56c32`. #551 `feat/p91-wave-h-stone` (server + iframe): Test SUCCESS, Typecheck SUCCESS, squash-merged `cfea2b6d` after main was merged in. Main tip at close `cfea2b6d`. Details in `_inbox/2026-08-29_p91_build_close.md`.
 
+# 2026-08-30 continuation (same session)
+
+Operator QA walk on p556/p542 (screenshots) graded the panel half: boot strip recorded for the first time (`caps=` includes `serverTools` and `updateModelContext`), rails at first paint on the batch board, `Sent to chat` on the board after an acknowledged click, a new panel per Open, listing history on an ordinary parcel. Miss sentence still unobserved live. The other agent's two captures filed verbatim (`_inbox/2026-08-30_p91_qa_walk_five_parcels.md`, `_inbox/2026-08-30_p91_five_parcel_comparison.md`), routed in `_inbox/2026-08-30_p91_qa_triage.md`.
+
+p557 (`smartsite-mcp-00063-rej`, `_inbox/2026-08-30_p91_p557_deploy.md`): `serverInfo.icons` and `websiteUrl`, `/` and `/favicon.ico` redirects, `find_parcel` hits are parcels only with a typed `located` list on a miss (D1, as the operator ruled: produce value or remove), `bakedAt` wording. PR #552 squash `7cbe0bc4` after a merge of main (three conflicts from the #551 squash, resolved to the p557 side).
+
+Logo: the card showed the icon the site serves; the site's own icons were the crosshair on a void tile. Operator: tile to the component colour on every Smart Site surface; token confirmed ink. Lane on a registered hauska-map clone: `_inbox/2026-08-30_smart_site_mark_tile_ink.md`, PR #315 squash `a275a459`, Vercel `property-explorer-limy5bkix` live, record `_inbox/2026-08-30_pe_mark_ink_deploy.md`. Finding: the rasters had never been rendered from the SVG; one script now renders both geometries by name. Ask-Claude button: dropped by the operator. Warm-on-open: data lane, out of scope. Data-agent prompt handed over in chat for the address-point bind.
+
 # Open
 
 Operator Connect grade on p556/p542: `_inbox/2026-08-29_p91_p556_connect_grade_prompt.md` (O1 boot strip `caps=`, O2 gold Open, O3 miss Open, rails on the board, batch board). Item 16 stays held until that walk. Free tier on MCP (deep dive decision 2). `ask_the_map` wiring item. Migrations named as leave_behind (expression index on `ltrim(prop_id,'0')`, `reason` column). `status: degraded | refused` bodies still paint the empty copy. The A13 board's historical `900099` resolved row.
