@@ -1,0 +1,57 @@
+{
+  "runAt": "2026-08-11T22:46:30.000Z",
+  "wellsTotal": 1396049,
+  "wellsWithCountyBefore": 499924,
+  "wellsWithCountyAfter": 1394336,
+  "coveragePctAfter": 99.88,
+  "joinMethod": "tx_county_boundary bbox prefilter + even-odd ray-cast point-in-polygon in application code (254 Census TIGERweb polygons from migration 0070; no PostGIS on deployment Neon). Full re-assignment of all 1,396,049 wells — not null-only — because P2.3 tx_county_bbox assignments disagreed with boundary PIP on 41/500 adversarial spot-check (8.2%). Batched unnest UPDATEs, 5000-well read batches.",
+  "countiesRepresented": 254,
+  "wellsGenuinelyOutsideTexas": 1,
+  "unassignedRemaining": 1712,
+  "unassignedExplanation": "1712 wells have WGS84 coordinates inside the generous Texas degree envelope but outside every tx_county_boundary polygon. Residue diagnosis (15-row sample): overwhelmingly Panhandle/north-border cluster (lat ~34.1–34.6, lng ~−98 to −100) where RRC coordinates sit inside county bbox prefilter (e.g. Wichita 48485) but north of the actual TIGER polygon — consistent with Oklahoma-adjacent or bad surface locations, not a join failure. One additional well is outside the Texas bbox entirely (counted separately as wellsGenuinelyOutsideTexas). These must stay county_fips NULL; the well-fact writer must treat them via lng/lat bbox queries, not as in-county absence.",
+  "pipelineCountyCheck": {
+    "assigned": 491178,
+    "total": 491178
+  },
+  "cp1": {
+    "runAt": "2026-08-11T22:10:32.967Z",
+    "predictedCoveragePctAfter": 99.6,
+    "predictedGenuinelyOutsideTexas": 0,
+    "predictedUnassignedInTx": 5600,
+    "predictedWellsWithCountyAfter": 1390000,
+    "stratifiedNullSample": {
+      "head5000": { "resolved": 5000, "unassigned": 0 },
+      "mid5000": { "resolved": 5000, "unassigned": 0 },
+      "tail5000": { "resolved": 4942, "unassigned": 58 },
+      "random500": { "resolved": 498, "unassigned": 2 }
+    },
+    "existingBboxAssignmentSpotCheck": {
+      "agree": 459,
+      "disagree": 41,
+      "disagreeRatePct": 8.2,
+      "finding": "P2.3 tx_county_bbox (245 parcel-derived rectangles) assigns wrong county for ~8% of already-tagged wells — full re-assignment required, not null-only patch"
+    }
+  },
+  "cp2": {
+    "runAt": "2026-08-11T22:46:05.156Z",
+    "measuredCoveragePctAfter": 99.88,
+    "measuredWellsWithCountyAfter": 1394336,
+    "measuredGenuinelyOutsideTexas": 1,
+    "measuredUnassignedInTx": 1712,
+    "measuredCountiesRepresented": 254,
+    "sampleVerifications": 10,
+    "allSamplesMatchIndependentPip": true,
+    "applyWallMs": 1801069,
+    "rowsUpdated": 921676,
+    "diagnosis": "Coverage materially above CP1 ~99.6% floor. Residue 1712 is systematic north-border coordinate class (OK-adjacent / outside polygon but inside bbox), not random join noise — do not accept as offshore masquerade."
+  },
+  "adversarialFindings": [
+    "P2.3 tx_county_bbox covered only 35.8% and was wrong on 8.2% of spot-checked existing assignments; boundary PIP fixes both coverage and accuracy.",
+    "Executor v1 postgres.js UPDATE FROM sql(chunk) syntax invalid — fixed to unnest(${ids}::bigint[], ${fips}::text[]) batch UPDATE.",
+    "Must reassign ALL wells: null-only patch would leave ~41k mis-assigned wells from bbox join.",
+    "CP2: 10/10 newly-assigned wells (uniqid 600k–1.2M cohort, previously null under bbox join) verified against independent boundary PIP — all match.",
+    "1712 unassigned ≠ out-of-state: only 1 well outside Texas bbox; remainder are in-envelope but outside all 254 county polygons (border/bad-coordinate class).",
+    "Pipeline county_fips already 491178/491178 from RRC denormalized source — confirmed unchanged.",
+    "PostGIS unavailable on deployment Neon — jsonb GeoJSON + application PIP per tx_special_district / P2.4 precedent."
+  ]
+}

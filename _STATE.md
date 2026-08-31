@@ -161,7 +161,7 @@ Planner accepted F-02 close 2026-08-27 02:45Z. Drain finish `_inbox/2026-08-27_p
 
 ## L24 FLOOD PLAN PRE-EMISSION (P-07/P-08) — IN FLIGHT 2026-08-14
 
-**Status: P-08 READY; P-07 METROS HOLD.** OFF-SLOT. Worktree `P:/hauska-engine-worktrees/l24-flood-plan-emit` @ `e65baf9`. Work root `P:/tmp/plan_farm_20260813/`. **Did NOT take atoms slot / no `--apply`.** **Remainder 77/77 NDJSON READY** (manifest). Resume of 7 large counties completed `resume.done` @ 2026-08-14T18:28:58Z (48491 feature-budget OK wall 376s). **Metros 0/6 HOLD** until L16 pipelines leg close artifact — then one-at-a-time in gap. Operator rulings ack `_inbox/2026-08-14_l24_operator_rulings_ack.json` (Zone-X accepted; contention standing-rule upgrade accepted). CP1/CP2 + findings filed. Close owed after metros: `_inbox/2026-08-14_l24_close.json`.
+**Status: P-08 READY; P-07 METROS HOLD.** OFF-SLOT. Worktree `P:/hauska-engine-worktrees/l24-flood-plan-emit` @ `e65baf9`. Work root `P:/tmp/plan_farm_20260813/`. **Did NOT take atoms slot / no `--apply`.** **Remainder 77/77 NDJSON READY** (manifest). Resume of 7 large counties completed `resume.done` @ 2026-08-14T18:28:58Z (48491 feature-budget OK wall 376s). **Metros 0/6 HOLD** until L16 pipelines leg close artifact — then one-at-a-time in gap. Operator rulings ack `_inbox/2026-08-14_l24_operator_rulings_ack.json` (Zone-X accepted; contention standing-rule upgrade accepted). CP1/CP2 + findings filed. Close owed after metros: `_inbox/2026-08-14_l24_close.json`. **Still owed as of 2026-08-31; never filed, never in git history. The debt is real, the artifact is absent.**
 
 ## L20 FACTORY 1.5 FIRST PRODUCTION SWEEP (P-21/P-22) — CLOSED 2026-08-14
 
@@ -470,7 +470,7 @@ The operating sequence pivoted from **jurisdiction-first** to **layer-first** (`
 
 `.claude/hooks/canon-gate.ps1` on the `Agent|Write` matcher blocks (a) dispatches into repos marked retiring or no-touch, and (b) dispatches missing the hash-pinned `CANON-PREAMBLE` marker, with paste-ready text in the block message. Regenerate after editing the standing decisions below: `node P:/doc_repo/scripts/dispatch-preamble.mjs`.
 
-**M2 divergence detector:** `_catalog/canon_divergence.md` (machine report). Checks: `_catalog/repo_intents_checks.json`. Runner: `node P:/doc_repo/scripts/canon-divergence.mjs`. Cadence hook: `.claude/hooks/canon-divergence-run.ps1` refreshes the report on Read of this file when the report is older than 12 hours (fail-open). Historical replay of the ldt failure: `_inbox/2026-08-08_M2_historical_replay.md`.
+**M2 divergence detector:** `_catalog/canon_divergence.md` (machine report). Checks: `_catalog/repo_intents_checks.json`. Runner: `node P:/doc_repo/scripts/canon-divergence.mjs`. Cadence hook: `.claude/hooks/canon-divergence-run.ps1` refreshes the report on Read of this file when the report is older than 12 hours (fail-open). Historical replay of the ldt failure: `_inbox/2026-08-08_M2_historical_replay.md`. **NOT FILED: this path has never existed on disk or in git history on any branch (checked 2026-08-31). Do not send an agent to read it.**
 
 Built because `_catalog/repo_intents.md` went 35 days stale while legacy-design-tools took 387 commits and became the factory repo, and the master planner dispatched ten new database tables into a repo the canon declared retiring. **legacy-design-tools is now ruled the FACTORY REPO** (`_decisions/2026-08-08_ldt_is_the_factory_repo.md`); only the root SPA and the Cortex console still retire.
 
