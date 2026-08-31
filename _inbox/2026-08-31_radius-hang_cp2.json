@@ -1,0 +1,104 @@
+{
+  "checkpoint": "CP2",
+  "lane": "radius-hang",
+  "card": "root-cause and fix place/radius-search hang",
+  "planRows": ["P-91"],
+  "dispatch": "_dispatches/2026-08-31_radius-hang_dispatch.md",
+  "writtenAt": "2026-08-31T19:40:00Z",
+  "seat": "property in P:/tmp/legacy-design-tools-radius-hang on feat/radius-hang; no sub-agents; no commit/push/PR/deploy",
+  "snapshot": {
+    "legacy-design-tools": "P:/tmp/legacy-design-tools-radius-hang, branch feat/radius-hang, HEAD d115493877ca9201508ea2cdcb1bc3f6d72c0321 (origin/main). Uncommitted: three api-server files.",
+    "store": "fancy-fire-06136146 / neondb / br-crimson-feather-aphfmy91",
+    "prs": "not applicable: uncommitted",
+    "mergeSha": "not applicable: unmerged",
+    "ciConclusion": "not applicable: unmerged"
+  },
+  "missionPremise": "Shipped radius-search hangs because the candidate query seq-scans txgio_parcel. Verified at CP1. Fix is B: narrow county via tx_county_boundary, then PK via tile_key. A (bbox btree) is not applied.",
+  "completionPredicate": "Code in tree uses county + tile_key, not texasCountyFipsList. Tests prove the 254-list is gone, empty county refuses, 50/500 ft share one cell. Local EXPLAIN of the new SQL is Index Scan in a stated time. Live GET after planner deploy is still required for customer-done.",
+  "scopeBasis": "Same as CP1. No production index. No timeout/ceiling/pool change.",
+  "fix": {
+    "choice": "B plus the store's existing tile_key pk path",
+    "files": [
+      "artifacts/api-server/src/lib/txgioRadiusSearch.ts",
+      "artifacts/api-server/src/lib/txgioRadiusSearch.test.ts",
+      "artifacts/api-server/src/__tests__/brokeragePlaceRadiusSearch.test.ts"
+    ],
+    "behavior": "countiesOverlappingBbox on tx_county_boundary; refuse radius_county_unresolved when empty; parcel query county_fips IN (those) AND tile_key IN (cellKeysForBbox) AND bbox. Ceiling and timeout unchanged.",
+    "notApplied": "no CREATE INDEX on txgio_parcel"
+  },
+  "localVerification": {
+    "tests": {
+      "value": "19/19",
+      "countingRule": "vitest run of txgioRadiusSearch.test.ts (15) and brokeragePlaceRadiusSearch.test.ts (4) at 2026-08-31T19:24:37-05:00 against the uncommitted files. Instrument: artifacts/api-server/node_modules/.bin/vitest.cmd",
+      "head": "d115493877ca9201508ea2cdcb1bc3f6d72c0321 plus uncommitted three-file diff"
+    },
+    "explain_implemented_sql": {
+      "sql": "county_fips IN ('48021','48287') AND tile_key = 'g0.02:-97.34000,30.10000' AND bbox LIMIT 2001",
+      "plan_raw": [
+        "Limit  (cost=0.56..29.26 rows=1 width=556) (actual time=0.162..4.327 rows=37 loops=1)",
+        "  Buffers: shared hit=1134 read=3",
+        "  ->  Index Scan using txgio_parcel_county_fips_tile_key_feature_index_pk on txgio_parcel  (cost=0.56..29.26 rows=1 width=556) (actual time=0.161..4.322 rows=37 loops=1)",
+        "        Index Cond: ((county_fips = ANY ('{48021,48287}'::text[])) AND (tile_key = 'g0.02:-97.34000,30.10000'::text))",
+        "        Filter: (bbox predicates)",
+        "        Rows Removed by Filter: 1159",
+        "Planning Time: 0.126 ms",
+        "Execution Time: 4.345 ms"
+      ],
+      "comparison": {
+        "shipped": "Seq Scan; ANALYZE canceled at 40-90s",
+        "B_only": "Index Scan prop_idx 607.797 ms",
+        "implemented": "Index Scan pk 4.345 ms"
+      }
+    }
+  },
+  "predictionScores": [
+    {
+      "id": "F1_seq_scan",
+      "score": "confirmed",
+      "evidence": "EXPLAIN statewide candidate is Seq Scan. ANALYZE timed out. Falsifier (Index Scan) did not fire."
+    },
+    {
+      "id": "F2_activity_is_scan_io",
+      "score": "confirmed",
+      "evidence": "pid 23520 state=active wait_event_type=Extension wait_event=Neon/PS_ReadIO. Not Lock."
+    },
+    {
+      "id": "F3_B_index_scan",
+      "score": "confirmed",
+      "evidence": "county_fips='48021' + bbox: Index Scan prop_idx 607.797 ms, 37 rows."
+    },
+    {
+      "id": "F4_A_not_required",
+      "score": "confirmed",
+      "evidence": "B + tile_key Index Scans the pk in 4.345 ms. A was not applied."
+    }
+  ],
+  "adversarialRevisit": [
+    "A btree on (west_lng, south_lat, east_lng, north_lat) would still only range on west_lng. The pk path already exists and is what txgioParcelStore uses. Adding A now would be a production write without a needed improvement.",
+    "Lee County in the bbox pair is conservative overlap, not a PIP miss. Including it is the card's one-or-two-county bound. The pk cond still uses tile_key so Lee is cheap.",
+    "Live service is unprobed. 4.345 ms is the store query, not Cloud Run."
+  ],
+  "liveProbeRecipe": {
+    "owner": "planner after deploy of this tree to cortex-api",
+    "auth": "same Bearer that already returns street-search hits",
+    "steps": [
+      "GET {cortex-api}/api/brokerage/v1/place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=500",
+      "GET {cortex-api}/api/brokerage/v1/place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=50",
+      "GET {cortex-api}/api/brokerage/v1/place/radius-search?lat=notanumber still 400 and fast (control: router unchanged)"
+    ],
+    "expect": {
+      "status": 200,
+      "fields": ["hits", "cap", "received", "truncated", "radiusFt"],
+      "localStoreCandidatesAt500ft": 37,
+      "time": "state the observed latency. Local EXPLAIN of the new SQL was 4.345 ms; Cloud Run must not approach 300s.",
+      "notDone": "504 / 300s hang. A 200 that takes tens of seconds is shipped-and-slow and is not done."
+    }
+  },
+  "leave_behind_at_cp2": [
+    {
+      "item": "live probe on deployed cortex-api (this lane cannot deploy)",
+      "owner": "planner",
+      "plan_row": "P-91"
+    }
+  ]
+}

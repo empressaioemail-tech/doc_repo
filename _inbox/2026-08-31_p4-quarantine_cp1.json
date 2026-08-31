@@ -1,0 +1,109 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p4-quarantine",
+  "card": "Repair the instrument, then disposition the two P4 quarantines",
+  "planRows": ["F-11", "F-06"],
+  "writtenAt": "2026-08-31T19:15:00Z",
+  "seat": "integration supervising; implementer writes in hauska-engine-p4-quarantine; planner commits",
+  "snapshot": {
+    "planner": "P:/doc_repo on main b2800f6",
+    "worktree": "P:/tmp/hauska-engine-p4-quarantine",
+    "branch": "feat/p4-quarantine",
+    "head": "76b13d161d2946ffc3b19b9d91b5c8eaeb6ab5d3",
+    "headNote": "origin/main, PR #367 F-11 allowlist + setback writer",
+    "store": "unmeasured; F1/F2/F4 held until planner authorizes; no hauska_mcp connection this card yet",
+    "forbidden": [
+      "do not commit",
+      "do not push",
+      "do not open a PR",
+      "do not deploy",
+      "do not run F1/F2/F4 store scans until authorized",
+      "do not query neondb for atoms",
+      "do not raise statement_timeout",
+      "do not write hauska-map / LDT / mcp-server",
+      "do not edit serving-sweep/vendor",
+      "do not write-setback-city.mjs --apply",
+      "do not delete atoms"
+    ]
+  },
+  "missionPremise": "P4 names two quarantines before Wave R: 188,103 placeholder setback-rule atoms citing storage-port-proof/phase-1a, and McLennan 65,814 envelopes derived from zero setback rules. Both are a value on the wire whose input does not exist. The Bastrop bake and the placeholder quarantine address the same rows by primary key (propertyEntityId version-1 is bare parcelNodeId; writePropertyAtom upserts ON CONFLICT atom_did DO UPDATE body). A quarantine that throws on the first placeholder parcel refuses the entire Bastrop city plan. Both published premises come from measure-setback-provenance.mjs, which reads fieldProvenance.front ONLY and assumes a FIPS-prefixed entity_id that assertCanonicalParcelEntityId does not enforce. 188,103 is a floor, not a count. McLennan zero may be a range-predicate artefact. Sources: _dispatches/2026-08-31_p4-quarantine_dispatch.md; _decisions/2026-08-31_bastrop_setbacks_bake_ruling.md; write-path read of measure-setback-provenance.mjs, setback-provenance-disposition.ts, plan-city-setback.ts refuseSetbackQuarantines, parcel-write-identity.ts:67, pg-storage writePropertyAtom, 2026-08-31T19:12Z.",
+  "completionPredicate": "Instrument reads fieldProvenance front AND side AND rear; McLennan is no longer claimed from a FIPS entity_id range alone. File-based self-test fails on a fixture stamped with the placeholder DID (including side-only and rear-only) and passes on a known layer-23 Bastrop fixture. Detector for citing setback-rule rows of storage-port-proof/phase-1a exists, self-tests both directions, is CI-wired; does not fire on the code-section proof atom (Gate A / retrieval-api DEPLOY.md step 2). Mechanisms A-F evaluated from the write path; A recommended unless evidence says otherwise; B and C and D rejected with write-path reasons. plan-city-setback: incoming named source supersedes placeholder; one placeholder parcel does not refuse the city plan; collision is recorded on the parcel and the plan continues. Descriptor-fixture scope called, not silently widened or excluded. Consumer map verified at this snapshot; vendor-drift reported; atom-chain-to-facets commit named. MCP ICC meter impact named and requested, not edited. F1-F4 unrun until authorized; close status partial. Diff in the registered worktree. Planner commits.",
+  "scopeBasis": "hauska-engine this clone only (P:/tmp/hauska-engine-p4-quarantine). Citing setback-rule rows, not the cited code-section. Factory holds, hauska-map PE, LDT cortex-api, and hauska-mcp-server ICC meter are read-only reconnaissance and requests. Do not edit packages/retrieval/src/serving-sweep/vendor/. Do not mutate atoms. Do not run store scans until the planner authorizes. Descriptor-fixture is reported as a scope call, not absorbed.",
+  "falsifiersStatedBeforeAnyStoreRun": {
+    "F1": {
+      "check": "after the side/rear fix, measure-setback-provenance against hauska_mcp",
+      "preRegistered": "placeholder 188103 / non-placeholder 158573 / Bastrop non-placeholder 7534",
+      "falsifiedIf": "any of the three misses. A miss means the predicate is wrong, not that the corpus moved. Timeout is unmeasured, never 0.",
+      "axisFixMustNotMove": "adding side and rear must not move 188103 / 158573. If it does, the published figures were wrong and that is the finding.",
+      "status": "HELD — not run; stated before any store connection"
+    },
+    "F2": {
+      "check": "count Bastrop setback-rule rows that classify unknown",
+      "falsifiedIf": ">0 and the card still treats placeholder and Bastrop bake populations as disjoint. OR 0 but 48021 total minus 7534 > 0 (third population needs a name).",
+      "status": "HELD — Bastrop overlap is a number, not a belief; unmeasured until authorized"
+    },
+    "F3": {
+      "check": "overwrite a placeholder body on the same atom_did with a named-source rule; re-run the serve classifier",
+      "falsifiedIf": "classifier still returns unknown. Must run against every adopted mechanism.",
+      "status": "unit-testable without store; store overwrite HELD"
+    },
+    "F4": {
+      "check": "resolve the 65814 McLennan envelopes setback-rule DIDs by atom_did PK, no range predicate",
+      "falsifiedIf": "any resolve. One resolving DID means mechanism B (rules exist under a non-FIPS key) and the McLennan quarantine is void.",
+      "status": "HELD — McLennan quarantine not reported sound until this runs"
+    }
+  },
+  "design": {
+    "instrumentRepair": {
+      "what": "Export classifySetbackProvenanceFromBody and the placeholder-axis predicate from measure-setback-provenance.mjs. CASE WHEN reads sourceCodeAtomRef.atomDid OR fieldProvenance.front.atomDid OR fieldProvenance.side.atomDid OR fieldProvenance.rear.atomDid. McLennan emits labeled predicates: entity_id FIPS range (existing), atom_did prefix did:hauska:setback-rule:48309:, jurisdiction_tenant if stamped; F4 PK resolve stays held and is not absorbed into a better range query. File-based self-test: side-only placeholder and rear-only placeholder classify placeholder; layer-23 Bastrop fixture classifies layer-23; a non-FIPS entity_id is invisible to the range predicate (proves the range is narrower than McLennan).",
+      "executes": "node packages/retrieval/scripts/measure-setback-provenance.mjs (store) and its self-test (no store)",
+      "triggers": "manual / authorized F1; CI self-test on every push",
+      "fails": "self-test non-zero if side/rear miss or layer-23 is classed placeholder",
+      "bypasses": "any ad-hoc SQL that reads front only; F4 is the independent McLennan discriminator and is held"
+    },
+    "placeholderDetector": {
+      "what": "packages/engine-core/scripts/detect-placeholder-setback-citation.mjs modeled on retire-road-class-setback-table.mjs. Fires on a production write assignment of the placeholder DID as a setback-rule citation (atomDid / provenance / sourceCitation). Does not fire on write-storage-port-proof.mjs or storage-port-proof.ts (code-section, Gate A). Does not fire on comments, tests, fixtures, or the classifier constant. Self-test both directions. CI-wired next to the road-class step.",
+      "scope": "citing setback-rule rows only, not the cited code-section",
+      "knownGap": "source-text scan does not cover the runbook remint of the code-section DID; reminting the proof atom does not remint the 188103 citing rows; that gap is declared, not closed by weakening Gate A",
+      "executes": "node packages/engine-core/scripts/detect-placeholder-setback-citation.mjs; .github/workflows/ci.yml",
+      "triggers": "CI on push/PR",
+      "fails": "non-zero if a production setback-rule writer stamps the placeholder DID",
+      "bypasses": "write-storage-port-proof runbook (out of scope by design); laptop SQL UPDATE of body"
+    },
+    "mechanismRecommendation": {
+      "adopt": "A — serve-time body predicate (classifySetbackRuleAtom already reads front/side/rear; applySetbackProvenanceServe on getPropertyAtomChain and assembleChain). No schema change, no mutation, no unwind: when Bastrop bake replaces the body on the same atom_did, the next read returns value.",
+      "noMutation": true,
+      "rejectB": "access_policy — resolveAccessPolicyOrRefuse refuses only null/empty; invented quarantined would write and then accessPolicyMatchesFilter would hide the atom on every surface, collapsing unknown into absent; collides with 2026-08-28 access-pair ruling",
+      "rejectC": "status=retired — no status column on atoms; body.status retired means superseded and is not served; turns unknown into absence on 188103 parcels and rewrites content_hash/cid",
+      "rejectD": "delete — forbidden on F-11; converts a wrong value into an absence",
+      "eRequirement": "if a stored mark is used at all it must record the content_hash it was made against and invalidate when the body hash changes",
+      "fNote": "Factory hold is not armed for setback/envelope rails; planWork iterates only cad/geometry/flood. Arming belongs to the Factory seat, not this one."
+    },
+    "bastropPlanGranularity": {
+      "choice": "incoming named source supersedes placeholder",
+      "what": "refuseSetbackQuarantines stops throwing PLACEHOLDER_COLLISION. A parcel whose existing rule classifies unknown and whose incoming plan is present with binding.namedSource plans as present and records superseded-by-named-source on that row. A parcel whose existing rule classifies unknown and which has no named incoming source is recorded as placeholder-collision on that row and is not adopted as present; the rest of the city continues. McLennan envelope collision stays a named refuse until F4.",
+      "falsifier": "a city plan with one placeholder parcel and one clean parcel that throws. OR a placeholder parcel with a named incoming source that refuses PLACEHOLDER_COLLISION instead of planning present. OR F3: after overwrite, classifier still unknown.",
+      "rejectedAlternative": "per-parcel record-and-skip without supersede — that would still block baking the Bastrop in-city parcel that holds the placeholder, which is the same primary key the bake lands on"
+    }
+  },
+  "descriptorFixture": {
+    "call": "report at CP2 after reading gate 8 RETIRED_PROVENANCE and the F-11 classifier; do not silently widen this card to include it and do not silently exclude it",
+    "liveExistenceOnly": "_inbox/2026-08-31_f11_ldt_c7_reread.md gate 8 C7 on 48021:34137 — descriptor-fixture 5 hits, no storage-port-proof/phase-1a on that one parcel. One parcel is not 62257."
+  },
+  "do_not": [
+    "delete atoms",
+    "collapse absent/zero/unmeasured",
+    "stamp not-applicable on in-city parcels",
+    "use access_policy as a truth flag",
+    "retire before consumers are repointed",
+    "write hauska-map / LDT / mcp-server",
+    "edit the vendor mirror",
+    "run write-setback-city.mjs --apply",
+    "query neondb for atoms",
+    "report McLennan quarantine sound until F4",
+    "two writers on one scope",
+    "raise statement_timeout",
+    "commit / push / PR / deploy",
+    "run F1/F2/F4 until planner authorizes"
+  ]
+}

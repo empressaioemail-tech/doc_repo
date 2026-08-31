@@ -1,0 +1,157 @@
+{
+  "checkpoint": "CP1",
+  "lane": "radius-hang",
+  "card": "root-cause and fix place/radius-search hang",
+  "planRows": ["P-91"],
+  "dispatch": "_dispatches/2026-08-31_radius-hang_dispatch.md",
+  "writtenAt": "2026-08-31T19:30:00Z",
+  "seat": "property in P:/tmp/legacy-design-tools-radius-hang on feat/radius-hang; no sub-agents; no commit/push/PR/deploy",
+  "snapshot": {
+    "planner": "P:/doc_repo on main b2800f6 (declared by dispatch; not re-read as HEAD in this lane)",
+    "legacy-design-tools": "P:/tmp/legacy-design-tools-radius-hang, branch feat/radius-hang, HEAD d115493877ca9201508ea2cdcb1bc3f6d72c0321 (origin/main, merge of LDT #571)",
+    "store": "Neon project fancy-fire-06136146 (cortex-prod) database neondb branch br-crimson-feather-aphfmy91 (production, default). Serving/landing store. Not hauska_mcp.",
+    "prs": "not applicable: uncommitted",
+    "mergeSha": "not applicable: unmerged",
+    "ciConclusion": "not applicable: unmerged"
+  },
+  "missionPremise": "place/radius-search is shipped and non-functional: valid params hang until Cloud Run kills at 300s. Candidate cause from the write path (not a measurement): texasCountyFipsList() is all 254 Texas counties so (county_fips, prop_id) has zero selectivity; txgio_parcel was claimed to have no bbox index; the query selects geometry. Size-independence (50 ft hangs like 500 ft) is the predicted result of a full scan that never hits LIMIT. Hypothesis must be verified against the live catalog, not lib/db/src/__tests__/__fixtures__/schema.sql.template.",
+  "completionPredicate": "GET /place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=500 returns a correct body in a stated time against the live service, and radiusFt=50 does too. Code-done is the query change plus tests plus a local EXPLAIN comparison. Live probe is planner-owned after deploy. Shipped-and-slow is not done.",
+  "scopeBasis": "legacy-design-tools only, this worktree. In scope: txgioRadiusSearch query shape, tests, CP/CLOSE/scratch. Out of scope: Cloud Run timeout, candidate ceiling, Neon pooling, applying a production index from this laptop, any other repo, commit/push/PR/deploy.",
+  "falsifiers": {
+    "catalog": "pre-registered: live pg_indexes shows a bbox index on txgio_parcel matching the siblings. If so, the 'absent bbox index' half of the hypothesis is wrong.",
+    "explain": "pre-registered: EXPLAIN (ANALYZE, BUFFERS) on the candidate query at lat 30.10592 lng -97.32528 radiusFt 500 shows an Index Scan. If so, the scan hypothesis is WRONG and the lock/wait arm is back.",
+    "activity": "pre-registered: pg_stat_activity during a hung request shows wait_event_type populated as Lock/Client (not I/O) and state idle/idle-in-transaction. That would be a wait, not a scan. If 2 and 3 disagree: 2 wins for a scan, 3 wins for a wait."
+  },
+  "measurements": {
+    "pg_indexes_txgio_parcel": {
+      "instrument": "SELECT schemaname, tablename, indexname, indexdef FROM pg_indexes WHERE tablename = 'txgio_parcel' ORDER BY indexname",
+      "project": "fancy-fire-06136146",
+      "database": "neondb",
+      "branch": "br-crimson-feather-aphfmy91",
+      "at": "2026-08-31T19:20:00Z",
+      "rows": [
+        {
+          "indexname": "txgio_parcel_county_fips_tile_key_feature_index_pk",
+          "indexdef": "CREATE UNIQUE INDEX txgio_parcel_county_fips_tile_key_feature_index_pk ON public.txgio_parcel USING btree (county_fips, tile_key, feature_index)"
+        },
+        {
+          "indexname": "txgio_parcel_geom_gist_idx",
+          "indexdef": "CREATE INDEX txgio_parcel_geom_gist_idx ON public.txgio_parcel USING gist (geom) WHERE (geom IS NOT NULL)"
+        },
+        {
+          "indexname": "txgio_parcel_prop_idx",
+          "indexdef": "CREATE INDEX txgio_parcel_prop_idx ON public.txgio_parcel USING btree (county_fips, prop_id)"
+        },
+        {
+          "indexname": "txgio_parcel_situs_norm_idx",
+          "indexdef": "CREATE INDEX txgio_parcel_situs_norm_idx ON public.txgio_parcel USING btree (county_fips, <situs-norm expression>)"
+        }
+      ],
+      "count": 4,
+      "bbox_index_present": false,
+      "fixture_claim_exactly_one": "FALSE. Live catalog has four indexes. The template is a drifted proxy.",
+      "gist_on_geom": "present; the candidate query does not use geom, it uses jsonb geometry plus bbox columns, so this GIST is unused by the hang path"
+    },
+    "table_size": {
+      "relname": "txgio_parcel",
+      "reltuples": 16428786,
+      "relpages": 2306957,
+      "heap": "18 GB",
+      "total": "27 GB"
+    },
+    "sibling_bbox_indexes_live": [
+      "tx_building_footprint_bbox_idx",
+      "tx_city_boundary_bbox_idx",
+      "tx_county_boundary_bbox_idx",
+      "tx_fema_nfhl_flood_zone_bbox_idx",
+      "tx_rrc_pipeline_bbox_idx",
+      "tx_rrc_well_bbox_idx",
+      "tx_special_district_bbox_idx",
+      "tx_utility_territory_staging_bbox_idx",
+      "tx_zoning_district_staging_bbox_idx"
+    ],
+    "explain_statewide_candidate": {
+      "params": { "lat": 30.10592, "lng": -97.32528, "radiusFt": 500 },
+      "box": {
+        "westLng": -97.32686782454255,
+        "southLat": 30.104546373626373,
+        "eastLng": -97.32369217545747,
+        "northLat": 30.10729362637363
+      },
+      "countyIn": "254 FIPS from texasCountyFipsList (48001..48507 odd)",
+      "limit": 2001,
+      "plan_raw": [
+        "Limit  (cost=0.64..8900.14 rows=2001 width=556)",
+        "  ->  Seq Scan on txgio_parcel  (cost=0.64..2717677.29 rows=611053 width=556)",
+        "        Filter: ((west_lng <= '-97.32369217545747'::double precision) AND (east_lng >= '-97.32686782454255'::double precision) AND (south_lat <= '30.10729362637363'::double precision) AND (north_lat >= '30.104546373626373'::double precision) AND (county_fips = ANY ('{48001,...,48507}'::text[])))"
+      ],
+      "analyze": "SET LOCAL statement_timeout = 90s then 45s then 40s: all canceled (statement timeout). ANALYZE did not finish. Plan is Seq Scan. Falsifier (Index Scan) did NOT fire.",
+      "verdict": "Seq Scan CONFIRMED. Scan hypothesis holds. Lock/wait arm is not the cause of the hang."
+    },
+    "pg_stat_activity": {
+      "at": "2026-08-31T19:28:00Z",
+      "during": "statewide candidate SELECT with 40s statement_timeout",
+      "raw": [
+        {
+          "pid": 23520,
+          "state": "active",
+          "wait_event_type": "Extension",
+          "wait_event": "Neon/PS_ReadIO",
+          "backend_type": "client backend",
+          "query": "SELECT county_fips FROM txgio_parcel WHERE county_fips IN ('48001','48003',..."
+        }
+      ],
+      "verdict": "active + Neon/PS_ReadIO is page-server I/O during a scan, not Lock/Client. Measurement 2 and 3 agree: scan. 2 would win anyway."
+    },
+    "explain_B_county_only": {
+      "sql": "county_fips = '48021' AND same bbox LIMIT 2001",
+      "plan_raw": [
+        "Limit  (cost=0.56..136504.97 rows=2001 width=556) (actual time=296.756..607.767 rows=37 loops=1)",
+        "  Buffers: shared hit=55541 read=6384 dirtied=1405",
+        "  ->  Index Scan using txgio_parcel_prop_idx on txgio_parcel  (cost=0.56..337953.02 rows=4954 width=556) (actual time=296.754..607.755 rows=37 loops=1)",
+        "        Index Cond: (county_fips = '48021'::text)",
+        "        Filter: ((west_lng <= ...) AND (east_lng >= ...) AND (south_lat <= ...) AND (north_lat >= ...))",
+        "        Rows Removed by Filter: 74692",
+        "Planning Time: 0.118 ms",
+        "Execution Time: 607.797 ms"
+      ],
+      "verdict": "B alone produces Index Scan. 37 candidates in 608 ms after walking 74692 Bastrop index rows."
+    },
+    "explain_B_plus_tile_key": {
+      "sql": "county_fips = '48021' AND tile_key = 'g0.02:-97.34000,30.10000' AND same bbox LIMIT 2001",
+      "plan_raw": [
+        "Limit  (cost=0.56..20.68 rows=1 width=556) (actual time=4.300..15.647 rows=37 loops=1)",
+        "  Buffers: shared hit=1115 read=18",
+        "  ->  Index Scan using txgio_parcel_county_fips_tile_key_feature_index_pk on txgio_parcel  (cost=0.56..20.68 rows=1 width=556) (actual time=4.299..15.639 rows=37 loops=1)",
+        "        Index Cond: ((county_fips = '48021'::text) AND (tile_key = 'g0.02:-97.34000,30.10000'::text))",
+        "        Filter: (bbox predicates)",
+        "        Rows Removed by Filter: 1159",
+        "Planning Time: 11.256 ms",
+        "Execution Time: 15.677 ms"
+      ],
+      "verdict": "Designed PK path. Same 37 rows in 16 ms. This is the store's intended bbox read (txgioParcelStore already uses it)."
+    },
+    "explain_county_boundary": {
+      "sql": "bbox overlap on tx_county_boundary",
+      "plan_raw": [
+        "Seq Scan on tx_county_boundary  (cost=0.00..22.08 rows=16 width=20) (actual time=3.331..3.991 rows=2 loops=1)",
+        "  Filter: (bbox predicates)",
+        "  Rows Removed by Filter: 252",
+        "Execution Time: 4.014 ms"
+      ],
+      "counties": [
+        { "county_fips": "48021", "county_name": "Bastrop County" },
+        { "county_fips": "48287", "county_name": "Lee County" }
+      ],
+      "note": "254-row table; seq scan is 4 ms. Two counties is the card's 'one or two' case (Lee bbox overlaps a point inside Bastrop). tx_county_boundary_bbox_idx exists live; planner still seq-scanned because N=254."
+    }
+  },
+  "recommendation": {
+    "choice": "B",
+    "reasoning": "B alone flips the plan from Seq Scan over 16.4M rows to Index Scan on txgio_parcel_prop_idx (608 ms, 37 rows). A (btree west_lng,south_lat,east_lng,north_lat) uses only the leading column for four independent range predicates; west_lng <= -97.32 is weakly selective across Texas and is not needed once county_fips is selective. B is correct regardless of A. Implementing B as the existing store shape: resolve 1-2 counties from tx_county_boundary bbox overlap, then constrain county_fips plus tile_key covering cells (PK). Measured 15.7 ms for the hung params. No production index apply. A is leave_behind, not this card: a sibling-consistent bbox index would need a run record and a planned apply, and this EXPLAIN says it is not what produces the index scan.",
+    "notA": "Do not add or apply txgio_parcel_bbox_idx from this laptop. No run record that names an applied index will be written because no index will be applied.",
+    "notTimeout": "Do not raise Cloud Run timeout. Do not widen RADIUS_SEARCH_CANDIDATE_CEILING. Do not touch Neon pooling."
+  },
+  "codeChangeAuthorized": true,
+  "workers": []
+}

@@ -2,7 +2,7 @@
 
 **Read this first.**
 
-1. **61 rows carry the decision.** They are 481,429 of the 481,504 alias parcel-rows (**99.98%** of alias weight, **46.0%** of the corpus). The first 20 of them are 96.2%. Everything after row 20 is optional.
+1. **63 rows carry the decision.** They are 483,715 of the 483,792 alias parcel-rows. The first 20 of them still carry almost all of the alias weight. Everything after row 20 is optional.
 2. **42 more rows need four rulings, not a yes/no**: the Bruceville-Eddy correction (4 rows, 2,288 parcels, flagged below as a seed error), the 4 county-scoped traps (17,875), the 24 out-of-county rows (2,054), the 10 `unresolved` rows (79). Combined weight 22,296 parcel-rows, and 17,875 of that is the four traps alone.
 3. **122 rows need nothing from you.** 21 are `unknown` or CAD junk (509,928 parcel-rows, disposition already fixed by the four-state contract), 36 are already ruled `unincorporated` by the 2026-08-30 decision, and 65 are alias tail rows worth **75 parcels in total** (confirmable as 23 one-line blocks, or skipped).
 
@@ -13,7 +13,7 @@
 | | |
 |---|---|
 | Seed | `P:\doc_repo\_catalog\2026-08-30_breadth_place_alias_seed.json`, 225 rows |
-| Seed sha256 | `7f384d0dcbeb1eeb8c47b7e51732871fb5a07ae26e5360dd09fc42dacd685394` |
+| Seed sha256 | `7e5ac620452cbeca9bd7d59042af1cc4678c239fc3aa46f20646292439bf94f3` |
 | Roster | `_catalog/texas_roster_v1.json`, 1,223 incorporated cities |
 | doc_repo | branch `main`, commit `e4b312ea351dcd3638da82c13316166125069e91` |
 | Sources read | the seed JSON, `_inbox/2026-08-30_alias_seed_findings.md`, `_decisions/2026-08-30_unincorporated_is_the_disposition.md`, the roster file |
@@ -24,7 +24,7 @@
 
 ---
 
-## 1. The decision table, 61 rows
+## 1. The decision table, 63 rows
 
 > **An alias maps a STRING to a PLACE. It does not say the parcel is inside that place's corporate limits.** CAD situs city is a *postal* city. `48209_kyle` is 30,923 parcels, far more than Kyle's incorporated count; the balance is unincorporated Hays County with a Kyle mailing address. Confirming a row here is **not** a jurisdiction sign-off. In-limits membership is a point-in-polygon test against `tx_city_boundary`, and it is a different job from this one.
 
@@ -32,34 +32,36 @@ Ordered by impact. `cum% alias` is the running share of the 481,504 alias parcel
 
 | # | `breadth_*` (prefix stripped) | County | Parcels | cum% alias | cum% corpus | place_fips | Place | Conf | Reason | OK? |
 |---:|---|---|---:|---:|---:|---|---|---|---|---|
-| 2 | `48453_austin-tx` | Travis | 211,209 | 43.9% | 47.1% | 05000 | Austin | likely | roster match, stripped state suffix `tx` **[see 7.2]** | [ ] |
-| 5 | `48309_waco-tx` | McLennan | 48,441 | 53.9% | 73.0% | 76000 | Waco | likely | roster match, stripped state suffix `tx` | [ ] |
-| 6 | `48209_kyle` | Hays | 30,923 | 60.3% | 75.9% | 39952 | Kyle | certain | exact roster name, county agrees | [ ] |
-| 7 | `48209_san_marcos` | Hays | 22,373 | 65.0% | 78.1% | 65600 | San Marcos | certain | exact roster name, county agrees | [ ] |
-| 8 | `48453_pflugerville-tx` | Travis | 22,033 | 69.6% | 80.2% | 57176 | Pflugerville | likely | roster match, stripped state suffix `tx` | [ ] |
-| 9 | `48309_waco` | McLennan | 20,572 | 73.8% | 82.1% | 76000 | Waco | certain | exact roster name, county agrees | [ ] |
-| 10 | `48209_buda` | Hays | 19,026 | 77.8% | 84.0% | 11080 | Buda | certain | exact roster name, county agrees | [ ] |
-| 12 | `48209_dripping_springs` | Hays | 12,090 | 80.3% | 86.8% | 21424 | Dripping Springs | certain | exact roster name, county agrees | [ ] |
-| 13 | `48209_wimberley` | Hays | 11,654 | 82.7% | 87.9% | 79624 | Wimberley | certain | exact roster name, county agrees | [ ] |
-| 14 | `48055_lockhart` | Caldwell | 10,673 | 84.9% | 88.9% | 43240 | Lockhart | certain | exact roster name, county agrees | [ ] |
-| 15 | `48209_austin` | Hays | 7,379 | 86.5% | 89.6% | 05000 | Austin | likely | straddle, primary county 48453, holds territory in 48209 | [ ] |
-| 16 | `48309_woodway` | McLennan | 6,685 | 87.9% | 90.3% | 80224 | Woodway | certain | exact roster name, county agrees | [ ] |
-| 18 | `48309_hewitt` | McLennan | 5,819 | 89.1% | 91.5% | 33428 | Hewitt | certain | exact roster name, county agrees | [ ] |
-| 19 | `48021_bastrop-city-tx` | Bastrop | 5,795 | 90.3% | 92.0% | 05864 | Bastrop | likely | roster match, stripped state suffix `tx` **[see 7.3]** | [ ] |
-| 20 | `48021_elgin` | Bastrop | 5,666 | 91.5% | 92.5% | 23044 | Elgin | certain | exact roster name, county agrees | [ ] |
-| 21 | `48021_smithville` | Bastrop | 5,327 | 92.6% | 93.1% | 68456 | Smithville | certain | exact roster name, county agrees | [ ] |
-| 22 | `48055_luling` | Caldwell | 4,719 | 93.5% | 93.5% | 45096 | Luling | certain | exact roster name, county agrees | [ ] |
-| 23 | `48309_west` | McLennan | 4,368 | 94.4% | 93.9% | 77332 | West | certain | exact roster name, county agrees | [ ] |
-| 24 | `48309_lorena` | McLennan | 4,251 | 95.3% | 94.3% | 44020 | Lorena | certain | exact roster name, county agrees | [ ] |
-| 25 | `48309_mcgregor` | McLennan | 4,066 | 96.2% | 94.7% | 45672 | McGregor | certain | exact roster name, county agrees | [ ] |
+| 2 | `48453_austin-tx` | Travis | 211,209 | 43.7% | 47.1% | 05000 | Austin | likely | roster match, stripped state suffix `tx` **[see 7.2]** | [ ] |
+| 5 | `48309_waco-tx` | McLennan | 48,441 | 53.7% | 73.0% | 76000 | Waco | likely | roster match, stripped state suffix `tx` | [ ] |
+| 6 | `48209_kyle` | Hays | 30,923 | 60.1% | 75.9% | 39952 | Kyle | certain | exact roster name, county agrees | [ ] |
+| 7 | `48209_san_marcos` | Hays | 22,373 | 64.7% | 78.1% | 65600 | San Marcos | certain | exact roster name, county agrees | [ ] |
+| 8 | `48453_pflugerville-tx` | Travis | 22,033 | 69.2% | 80.2% | 57176 | Pflugerville | likely | roster match, stripped state suffix `tx` | [ ] |
+| 9 | `48309_waco` | McLennan | 20,572 | 73.5% | 82.1% | 76000 | Waco | certain | exact roster name, county agrees | [ ] |
+| 10 | `48209_buda` | Hays | 19,026 | 77.4% | 84.0% | 11080 | Buda | certain | exact roster name, county agrees | [ ] |
+| 12 | `48209_dripping_springs` | Hays | 12,090 | 79.9% | 86.8% | 21424 | Dripping Springs | certain | exact roster name, county agrees | [ ] |
+| 13 | `48209_wimberley` | Hays | 11,654 | 82.3% | 87.9% | 79624 | Wimberley | certain | exact roster name, county agrees | [ ] |
+| 14 | `48055_lockhart` | Caldwell | 10,673 | 84.5% | 88.9% | 43240 | Lockhart | certain | exact roster name, county agrees | [ ] |
+| 15 | `48209_austin` | Hays | 7,379 | 86.1% | 89.6% | 05000 | Austin | likely | straddle, primary county 48453, holds territory in 48209 | [ ] |
+| 16 | `48309_woodway` | McLennan | 6,685 | 87.4% | 90.3% | 80224 | Woodway | certain | exact roster name, county agrees | [ ] |
+| 18 | `48309_hewitt` | McLennan | 5,819 | 88.6% | 91.5% | 33428 | Hewitt | certain | exact roster name, county agrees | [ ] |
+| 19 | `48021_bastrop-city-tx` | Bastrop | 5,795 | 89.8% | 92.0% | 05864 | Bastrop | likely | roster match, stripped state suffix `tx` **[see 7.3]** | [ ] |
+| 20 | `48021_elgin` | Bastrop | 5,666 | 91.0% | 92.5% | 23044 | Elgin | certain | exact roster name, county agrees | [ ] |
+| 21 | `48021_smithville` | Bastrop | 5,327 | 92.1% | 93.1% | 68456 | Smithville | certain | exact roster name, county agrees | [ ] |
+| 22 | `48055_luling` | Caldwell | 4,719 | 93.1% | 93.5% | 45096 | Luling | certain | exact roster name, county agrees | [ ] |
+| 23 | `48309_west` | McLennan | 4,368 | 94.0% | 93.9% | 77332 | West | certain | exact roster name, county agrees | [ ] |
+| 24 | `48309_lorena` | McLennan | 4,251 | 94.9% | 94.3% | 44020 | Lorena | certain | exact roster name, county agrees | [ ] |
+| 25 | `48309_mcgregor` | McLennan | 4,066 | 95.7% | 94.7% | 45672 | McGregor | certain | exact roster name, county agrees | [ ] |
 | | **STOP LINE. The 20 rows above are 96.2% of alias weight. The 41 below add 3.8%, 18,436 parcel-rows.** | | | | | | | | | |
-| 27 | `48021_elgin-tx` | Bastrop | 3,762 | 97.0% | 95.5% | 23044 | Elgin | likely | roster match, stripped state suffix `tx` | [ ] |
-| 31 | `48309_moody` | McLennan | 2,354 | 97.4% | 96.5% | 49200 | Moody | certain | exact roster name, county agrees | [ ] |
-| 33 | `48309_mart` | McLennan | 2,200 | 97.9% | 96.9% | 46824 | Mart | certain | exact roster name, county agrees | [ ] |
-| 37 | `48309_crawford` | McLennan | 2,010 | 98.3% | 97.7% | 17564 | Crawford | certain | exact roster name, county agrees | [ ] |
-| 42 | `48309_riesel` | McLennan | 1,543 | 98.6% | 98.5% | 62108 | Riesel | certain | exact roster name, county agrees | [ ] |
-| 45 | `48209_uhland` | Hays | 1,082 | 98.9% | 98.9% | 74216 | Uhland | certain | exact roster name, county agrees | [ ] |
-| 47 | `48055_martindale` | Caldwell | 1,016 | 99.1% | 99.1% | 46848 | Martindale | certain | exact roster name, county agrees | [ ] |
+| 27 | `48021_elgin-tx` | Bastrop | 3,762 | 96.5% | 95.5% | 23044 | Elgin | likely | roster match, stripped state suffix `tx` | [ ] |
+| 31 | `48309_moody` | McLennan | 2,354 | 97.0% | 96.5% | 49200 | Moody | certain | exact roster name, county agrees | [ ] |
+| 33 | `48309_mart` | McLennan | 2,200 | 97.4% | 96.9% | 46824 | Mart | certain | exact roster name, county agrees | [ ] |
+| 37 | `48309_crawford` | McLennan | 2,010 | 97.9% | 97.7% | 17564 | Crawford | certain | exact roster name, county agrees | [ ] |
+| 42 | `48309_riesel` | McLennan | 1,543 | 98.2% | 98.5% | 62108 | Riesel | certain | exact roster name, county agrees | [ ] |
+| 43 | `48309_eddy` | McLennan | 1,274 | 98.4% | 98.7% | 10828 | Bruceville-Eddy | likely | hyphen-component `Eddy` of Bruceville-Eddy | [ ] |
+| 45 | `48209_uhland` | Hays | 1,082 | 98.7% | 98.9% | 74216 | Uhland | certain | exact roster name, county agrees | [ ] |
+| 47 | `48055_martindale` | Caldwell | 1,016 | 98.9% | 99.1% | 46848 | Martindale | certain | exact roster name, county agrees | [ ] |
+| 48 | `48309_bruceville` | McLennan | 1,012 | 99.1% | 99.1% | 10828 | Bruceville-Eddy | likely | hyphen-component `Bruceville` of Bruceville-Eddy | [ ] |
 | 49 | `48309_valley_mills` | McLennan | 1,001 | 99.3% | 99.2% | 74732 | Valley Mills | certain | exact roster name, county agrees | [ ] |
 | 50 | `48209_san_marcos_tx` | Hays | 828 | 99.5% | 99.3% | 65600 | San Marcos | likely | roster match, stripped state suffix `tx` | [ ] |
 | 53 | `48209_niederwald` | Hays | 493 | 99.6% | 99.5% | 51492 | Niederwald | certain | exact roster name, county agrees | [ ] |
@@ -97,7 +99,7 @@ Ordered by impact. `cum% alias` is the running share of the 481,504 alias parcel
 
 ---
 
-## 2. Alias tail, 65 rows, 75 parcels in total
+## 2. Alias tail, 67 rows, 77 parcels in total
 
 > **An alias maps a STRING to a PLACE. It does not say the parcel is inside that place's corporate limits.** CAD situs city is a *postal* city. `48209_kyle` is 30,923 parcels, far more than Kyle's incorporated count; the balance is unincorporated Hays County with a Kyle mailing address. Confirming a row here is **not** a jurisdiction sign-off. In-limits membership is a point-in-polygon test against `tx_city_boundary`, and it is a different job from this one.
 
@@ -113,6 +115,7 @@ Every row here is 1 or 2 parcels. They are grouped by target so each block is on
 | Buda | 11080 | Hays | 3 | 3 | `48209_biuda`, `48209_buda_tx_78610`, `48209_budaa` | [ ] |
 | Elgin | 23044 | Bastrop | 3 | 3 | `48021_elgiin`, `48021_elgin_t`, `48021_ellgin` | [ ] |
 | Luling | 45096 | Caldwell | 3 | 4 | `48055_luing`, `48055_lulilng`, `48055_lulung` | [ ] |
+| Bruceville-Eddy | 10828 | McLennan | 2 | 2 | `48309_brucevill`, `48309_brucville` | [ ] |
 | Crawford | 17564 | McLennan | 2 | 3 | `48309_crwford`, `48309_drawford` | [ ] |
 | Lockhart | 43240 | Caldwell | 2 | 2 | `48055_lcokhart`, `48055_lockhrt` | [ ] |
 | Lorena | 44020 | McLennan | 2 | 2 | `48309_lorean`, `48309_loren` | [ ] |
@@ -279,17 +282,11 @@ In every one of these the named place sits in a county that physically touches t
 
 Nothing below is upgraded. Where I disagree with the seed I say so and move the row toward needs-human; I do not promote anything to `certain`.
 
-### 7.1 The seed misfiles Bruceville-Eddy. 4 rows, 2,288 parcels. This is a real error.
+### 7.1 Bruceville-Eddy half-names, corrected in this regeneration.
 
-The seed grades `48309_eddy` (1,274), `48309_bruceville` (1,012), `48309_brucevill` (1) and `48309_brucville` (1) as `unincorporated-place-no-place-fips`. **That is false.** Verified against the roster file:
+`48309_eddy` and `48309_bruceville` now grade `likely` / `roster-component` on Bruceville-Eddy `10828`. `48309_brucevill` and `48309_brucville` follow as `likely` / `misspelling-of-roster-place` on the same place. They sit in the decision table and the alias tail, not in the CDP bucket. A component match is never `certain` and never `roster-exact`.
 
-```
-place_fips 10828 | Bruceville-Eddy | "Bruceville-Eddy city" | parent 48309 McLennan | all_county_fips ['48145','48309']
-```
-
-The seeder's lookup is exact-name, and `bruceville` and `eddy` are each one half of a hyphenated name, so it correctly reported no exact match and then drew the wrong conclusion from it. The findings doc caught this in prose (section 5b), but **the `kind` field in the JSON still says the place has no `place_fips`**, and an operator working the CDP list would sweep all four rows into the 2026-08-30 `unincorporated` ruling. They must not be. A `place_fips` exists, so the ruling does not reach them.
-
-This is a decision, not an acknowledgement: confirm that all four map to 10828, or split them. I would not sign it blind, because Bruceville and Eddy were separate communities before they merged and the two halves may key different territory in CAD.
+This is still a string-to-place mapping, not a jurisdiction assertion. Bruceville-Eddy is a small city and 2,288 parcels under those two keys is almost certainly larger than its incorporated parcel count.
 
 ### 7.2 `48453_austin-tx`, 211,209 parcels, is 43.9% of the entire alias decision in one row.
 
@@ -343,18 +340,27 @@ Every row is accounted for exactly once.
 
 | Bucket | Rows | Parcel-rows | What you do |
 |---|---:|---:|---|
-| Decision table (section 1) | 61 | 481,429 | Confirm, yes/no. Stop after 20 if you like. |
-| Alias tail (section 2) | 65 | 75 | Confirm 23 blocks, or skip. |
+| Decision table (section 1) | 63 | 483,715 | Confirm, yes/no. Stop after 20 if you like. |
+| Alias tail (section 2) | 67 | 77 | Confirm 23 blocks, or skip. |
 | `unknown` and CAD junk (section 3) | 21 | 509,928 | Nothing. Already disposed. |
 | County-scoped traps (section 4) | 4 | 17,875 | Rule on a scope split. Not a mapping. |
 | CDP, already ruled (section 5) | 36 | 33,999 | Nothing. Acknowledge the ruling's scope. |
 | Out-of-county (section 6) | 24 | 2,054 | One class ruling plus one CAD-error correction. |
-| Bruceville-Eddy, seed error (7.1) | 4 | 2,288 | Decide. A `place_fips` exists. |
 | `unresolved` (7.4) | 10 | 79 | Re-route per 7.4, then decide 2 rows. |
 | **Total** | **225** | **1,047,727** | |
 
-Every `breadth_*` value appears in exactly one bucket above, asserted in the generator rather than added up by hand: the eight buckets hold 225 distinct values and their parcel-rows sum to 1,047,727. Row-count checks: 61 + 65 = 126 alias candidates; 36 + 4 = 40 CDP rows as the seed grades them; 21 + 4 + 24 + 10 = 59; 126 + 40 + 59 = 225.
+Every `breadth_*` value appears in exactly one bucket above, asserted in the generator rather than added up by hand: the 7 buckets hold 225 distinct values and their parcel-rows sum to 1,047,727.
 
 > **An alias maps a STRING to a PLACE. It does not say the parcel is inside that place's corporate limits.** CAD situs city is a *postal* city. `48209_kyle` is 30,923 parcels, far more than Kyle's incorporated count; the balance is unincorporated Hays County with a Kyle mailing address. Confirming a row here is **not** a jurisdiction sign-off. In-limits membership is a point-in-polygon test against `tx_city_boundary`, and it is a different job from this one.
 
 *Prepared read-only. No repo, store, or product file was written. This sheet is built to be confirmed, not to be authoritative: where it disagrees with the seed, section 7 says so explicitly rather than silently correcting the JSON.*
+
+## Hash pin, line endings
+
+The pin above is the **LF** sha256, which is what git stores and what a verifier
+recomputing from the repository will get: `7e5ac620452cbeca9bd7d59042af1cc4678c239fc3aa46f20646292439bf94f3`.
+
+The CRLF sha256 of the same content is `d3f6d340c2a713a2987aa93992b29135864d0f3aa7b7bd1578859ac7cf02fa97`. That value was pinned first,
+computed on a Windows working copy before commit, and it does not match the
+committed artifact. Corrected 1 occurrence(s) 2026-08-31. When pinning a hash for
+an artifact that will be committed, compute it on the bytes git will store.

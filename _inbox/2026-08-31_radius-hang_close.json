@@ -1,0 +1,114 @@
+{
+  "lane": "radius-hang",
+  "planRows": ["P-91"],
+  "dispatch": "_dispatches/2026-08-31_radius-hang_dispatch.md",
+  "writtenAt": "2026-08-31T19:42:00Z",
+  "seat": "property",
+  "worktree": "P:/tmp/legacy-design-tools-radius-hang",
+  "branch": "feat/radius-hang",
+  "base": "d115493877ca9201508ea2cdcb1bc3f6d72c0321",
+  "partial": true,
+  "partialReason": "Live cortex-api unprobed. Deploys are planner-owned. Code + tests + local EXPLAIN are in the tree.",
+  "prs": "not applicable: uncommitted",
+  "mergeSha": "not applicable: unmerged",
+  "ciConclusion": "not applicable: unmerged",
+  "checkpoints": [
+    "_inbox/2026-08-31_radius-hang_cp1.json",
+    "_inbox/2026-08-31_radius-hang_cp2.json"
+  ],
+  "scratch": "_scratch/radius-hang.md",
+  "missionPremise": "place/radius-search hangs at 300s because the shipped query seq-scans txgio_parcel. The 254-county IN list makes every (county_fips, *) index non-selective. Verified on live fancy-fire-06136146 / neondb, not the schema fixture.",
+  "completionPredicate": "Live GET /place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=500 and radiusFt=50 return a correct body in a stated time. Code-done is the B+tile_key query, tests, and local EXPLAIN Index Scan at 4.345 ms.",
+  "scopeBasis": "legacy-design-tools radius-hang worktree only. No timeout raise, no ceiling widen, no Neon pooling, no production index apply, no other repo, no commit/push/PR/deploy.",
+  "snapshot": {
+    "planner_declared": "P:/doc_repo on main b2800f6",
+    "worktree": "P:/tmp/legacy-design-tools-radius-hang",
+    "branch": "feat/radius-hang",
+    "HEAD": "d115493877ca9201508ea2cdcb1bc3f6d72c0321"
+  },
+  "pg_indexes": {
+    "instrument": "SELECT schemaname, tablename, indexname, indexdef FROM pg_indexes WHERE tablename = 'txgio_parcel' ORDER BY indexname",
+    "at": "2026-08-31T19:20:00Z",
+    "raw": [
+      "CREATE UNIQUE INDEX txgio_parcel_county_fips_tile_key_feature_index_pk ON public.txgio_parcel USING btree (county_fips, tile_key, feature_index)",
+      "CREATE INDEX txgio_parcel_geom_gist_idx ON public.txgio_parcel USING gist (geom) WHERE (geom IS NOT NULL)",
+      "CREATE INDEX txgio_parcel_prop_idx ON public.txgio_parcel USING btree (county_fips, prop_id)",
+      "CREATE INDEX txgio_parcel_situs_norm_idx ON public.txgio_parcel USING btree (county_fips, <situs-norm expression>)"
+    ],
+    "count": 4,
+    "bbox_index": false,
+    "fixture_exactly_one": false
+  },
+  "explainVerdict": {
+    "falsifier": "Index Scan on the shipped candidate query would have killed the scan hypothesis",
+    "shipped": "Seq Scan CONFIRMED. ANALYZE canceled at 90s/45s/40s.",
+    "activity": "active Neon/PS_ReadIO. Scan, not lock. 2 and 3 agree; 2 would win.",
+    "recommendation": "B. A not applied."
+  },
+  "filesChanged": [
+    "artifacts/api-server/src/lib/txgioRadiusSearch.ts",
+    "artifacts/api-server/src/lib/txgioRadiusSearch.test.ts",
+    "artifacts/api-server/src/__tests__/brokeragePlaceRadiusSearch.test.ts"
+  ],
+  "uncommitted": [
+    "P:/tmp/legacy-design-tools-radius-hang artifacts/api-server/src/lib/txgioRadiusSearch.ts",
+    "P:/tmp/legacy-design-tools-radius-hang artifacts/api-server/src/lib/txgioRadiusSearch.test.ts",
+    "P:/tmp/legacy-design-tools-radius-hang artifacts/api-server/src/__tests__/brokeragePlaceRadiusSearch.test.ts",
+    "P:/doc_repo/_inbox/2026-08-31_radius-hang_cp1.json",
+    "P:/doc_repo/_inbox/2026-08-31_radius-hang_cp2.json",
+    "P:/doc_repo/_inbox/2026-08-31_radius-hang_close.json",
+    "P:/doc_repo/_scratch/radius-hang.md"
+  ],
+  "counts": {
+    "apiServerTests": {
+      "value": "19/19",
+      "countingRule": "vitest of the two radius-search files, 2026-08-31T19:24:37-05:00, uncommitted HEAD d1154938"
+    }
+  },
+  "constraintsHonored": [
+    "did not raise Cloud Run timeout",
+    "did not widen RADIUS_SEARCH_CANDIDATE_CEILING",
+    "did not read schema.sql.template as live catalog",
+    "EXPLAIN before code change",
+    "did not apply a production index",
+    "did not touch Neon pooling",
+    "did not touch any other repo",
+    "did not commit / push / PR / deploy"
+  ],
+  "mcpRefusalCodesForPlanner": [
+    "radius_invalid",
+    "radius_exceeds_max",
+    "radius_unbounded",
+    "radius_county_unresolved"
+  ],
+  "liveProbeRecipe": {
+    "owner": "planner after deploy",
+    "gets": [
+      "/api/brokerage/v1/place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=500",
+      "/api/brokerage/v1/place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=50"
+    ],
+    "expect200": ["hits", "cap", "received", "truncated", "radiusFt"],
+    "localExplainMs": 4.345,
+    "notDone": "504 at 300s, or a slow 200"
+  },
+  "leave_behind": [
+    {
+      "item": "live probe + cortex-api deploy of feat/radius-hang",
+      "owner": "planner",
+      "plan_row": "P-91"
+    },
+    {
+      "item": "optional sibling bbox index on txgio_parcel (NOT required; B+tile_key already Index Scans). If ever added: migration plus a run record naming the index, timestamp, and invocation. Do not apply from a laptop.",
+      "owner": "planner",
+      "plan_row": "P-91"
+    },
+    {
+      "item": "MCP mapping for new refuse code radius_county_unresolved",
+      "owner": "integration",
+      "plan_row": "P-91"
+    }
+  ],
+  "constraints": {
+    "commit": "left uncommitted; lane executor does not commit"
+  }
+}

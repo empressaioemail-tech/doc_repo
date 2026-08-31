@@ -159,8 +159,8 @@ confirms in that order and can stop when the marginal row stops mattering.
 | Confidence | rows | parcel-rows | share |
 |---|---:|---:|---:|
 | `certain` | 33 | 180,692 | 17.2% |
-| `likely` | 93 | 300,812 | 28.7% |
-| `needs-human` | 99 | 566,223 | 54.0% |
+| `likely` | 97 | 303,100 | 28.9% |
+| `needs-human` | 95 | 563,935 | 53.8% |
 | | **225** | **1,047,727** | |
 
 `parcel-rows` sums `parcel_count` across values and therefore **double counts** the 66,149
@@ -378,16 +378,19 @@ alias table does nothing for either. Bastrop is the opposite case: 38,174 of its
 unknown-touching parcels are recoverable from a second atom, because 43,800 of its 62,260
 parcels carry more than one `breadth_*` value.
 
-### 5b. Real places with no `place_fips` to map to — 40 rows, 17 distinct places
+### 5b. Real places with no `place_fips` to map to — 36 rows
 
-These are not misspellings and not errors. They are unincorporated communities, CDPs, and
-postal places that appear in CAD situs and **have no row in the target vocabulary**:
+These are not misspellings of incorporated places and not errors. They are unincorporated
+communities, CDPs, and postal places that appear in CAD situs and **have no row in the
+target vocabulary**:
 
 - `texas_roster_v1.json` carries 1,223 **incorporated** cities.
 - `neondb.tx_city_boundary` carries 1,222 rows, all incorporated.
 - Probed directly for Cedar Creek, Driftwood, Del Valle, Manchaca, Paige, McDade, Red Rock,
   Rosanky, Dale, Maxwell, Elm Mott, China Spring, Axtell, Henly, Fischer, Prairie Lea,
-  Fentress, Eddy, Bruceville: **0 of 19 present in either source.**
+  Fentress: **0 of 17 present in either source.** Eddy and Bruceville were on this list
+  and are not: they are hyphen-components of Bruceville-Eddy 10828 and now grade
+  `roster-component`, not this bucket.
 
 | value | parcels | reads as |
 |---|---:|---|
@@ -402,9 +405,9 @@ postal places that appear in CAD situs and **have no row in the target vocabular
 | `breadth_48021_paige` | 1,776 | Paige |
 | `breadth_48055_maxwell` | 1,715 | Maxwell |
 | `breadth_48309_axtell` | 1,627 | Axtell |
-| `breadth_48309_eddy` | 1,274 | Eddy |
+| `breadth_48021_red_rock` | 1,091 | Red Rock |
 
-36,287 parcel-rows sit under these 40 values. **The declared target form `place_fips`
+33,999 parcel-rows sit under these 36 values. **The declared target form `place_fips`
 cannot express them at all**, so this is not a hand-seeding task that more effort finishes;
 it is an operator ruling. Three options, and the choice belongs to the operator:
 
@@ -415,9 +418,7 @@ it is an operator ruling. Three options, and the choice belongs to the operator:
 
 Option 2 preserves the distinction between *we do not know* and *we know it is
 unincorporated*, which the four-state contract already asks for and which option 3 destroys.
-Bruceville and Eddy are a special case inside this bucket: both lead to the incorporated
-**Bruceville-Eddy** (place_fips 10828), so 2,286 parcels across those two values may be a
-clean `certain` mapping once a human confirms the two halves of the hyphenated name.
+2 rows now grade `roster-component` (likely, never certain): `breadth_48309_eddy` -> 10828, `breadth_48309_bruceville` -> 10828.
 
 ### 5c. Wrong scope, not wrong spelling — 4 rows
 

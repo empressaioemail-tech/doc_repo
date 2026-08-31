@@ -1,8 +1,12 @@
 import json
 from collections import Counter, defaultdict
+from pathlib import Path
 
-SCR = r"C:/Users/cente/AppData/Local/Temp/claude/p--doc-repo/fee8e111-788c-4d0e-bd16-5510b77df32c/scratchpad"
-o = json.load(open(SCR + "/alias_seed.json", encoding='utf-8'))
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+SEED = REPO / "_catalog" / "2026-08-30_breadth_place_alias_seed.json"
+OUT = REPO / "_inbox" / "2026-08-30_alias_seed_findings.md"
+o = json.load(open(SEED, encoding='utf-8'))
 NAMES = {'48021': 'Bastrop', '48055': 'Caldwell', '48209': 'Hays',
          '48309': 'McLennan', '48453': 'Travis', '48491': 'Williamson'}
 DIST = {'48021': 62260, '48055': 24989, '48209': 116421,
@@ -372,16 +376,22 @@ w("alias table does nothing for either. Bastrop is the opposite case: 38,174 of 
 w("unknown-touching parcels are recoverable from a second atom, because 43,800 of its 62,260")
 w("parcels carry more than one `breadth_*` value.")
 w("")
-w("### 5b. Real places with no `place_fips` to map to — 40 rows, 17 distinct places")
+cdp_rows = [x for x in o if x['kind'] in (
+    'unincorporated-place-no-place-fips', 'misspelling-of-unincorporated-place')]
+comp_rows = [x for x in o if x['kind'] == 'roster-component']
+w("### 5b. Real places with no `place_fips` to map to — %d rows" % len(cdp_rows))
 w("")
-w("These are not misspellings and not errors. They are unincorporated communities, CDPs, and")
-w("postal places that appear in CAD situs and **have no row in the target vocabulary**:")
+w("These are not misspellings of incorporated places and not errors. They are unincorporated")
+w("communities, CDPs, and postal places that appear in CAD situs and **have no row in the")
+w("target vocabulary**:")
 w("")
 w("- `texas_roster_v1.json` carries 1,223 **incorporated** cities.")
 w("- `neondb.tx_city_boundary` carries 1,222 rows, all incorporated.")
 w("- Probed directly for Cedar Creek, Driftwood, Del Valle, Manchaca, Paige, McDade, Red Rock,")
 w("  Rosanky, Dale, Maxwell, Elm Mott, China Spring, Axtell, Henly, Fischer, Prairie Lea,")
-w("  Fentress, Eddy, Bruceville: **0 of 19 present in either source.**")
+w("  Fentress: **0 of 17 present in either source.** Eddy and Bruceville were on this list")
+w("  and are not: they are hyphen-components of Bruceville-Eddy 10828 and now grade")
+w("  `roster-component`, not this bucket.")
 w("")
 w("| value | parcels | reads as |")
 w("|---|---:|---|")
@@ -389,7 +399,9 @@ for r in sorted([x for x in o if x['kind'] == 'unincorporated-place-no-place-fip
                 key=lambda x: -x['parcel_count'])[:12]:
     w("| `%s` | %s | %s |" % (r['breadth_value'], f"{r['parcel_count']:,}", r['proposed_place_name']))
 w("")
-w("36,287 parcel-rows sit under these 40 values. **The declared target form `place_fips`")
+cdp_parcels = sum(x['parcel_count'] for x in cdp_rows)
+w("%s parcel-rows sit under these %d values. **The declared target form `place_fips`"
+  % (f"{cdp_parcels:,}", len(cdp_rows)))
 w("cannot express them at all**, so this is not a hand-seeding task that more effort finishes;")
 w("it is an operator ruling. Three options, and the choice belongs to the operator:")
 w("")
@@ -400,9 +412,10 @@ w("3. Map them to the county and drop the postal name, losing real signal.")
 w("")
 w("Option 2 preserves the distinction between *we do not know* and *we know it is")
 w("unincorporated*, which the four-state contract already asks for and which option 3 destroys.")
-w("Bruceville and Eddy are a special case inside this bucket: both lead to the incorporated")
-w("**Bruceville-Eddy** (place_fips 10828), so 2,286 parcels across those two values may be a")
-w("clean `certain` mapping once a human confirms the two halves of the hyphenated name.")
+if comp_rows:
+    w("%d rows now grade `roster-component` (likely, never certain): %s."
+      % (len(comp_rows), ", ".join("`%s` -> %s" % (r['breadth_value'], r['proposed_place_fips'])
+                                   for r in sorted(comp_rows, key=lambda x: -x['parcel_count']))))
 w("")
 w("### 5c. Wrong scope, not wrong spelling — 4 rows")
 w("")
@@ -513,5 +526,5 @@ w("- `build_alias.py`, `gen_md.py` — the instruments.")
 w("")
 w("`confidence` describes the **string-to-place** proposal only. `kind` carries why.")
 
-open(SCR + "/alias_seed.md", "w", encoding='utf-8').write("\n".join(L) + "\n")
-print("wrote alias_seed.md", len(L), "lines")
+open(OUT, "w", encoding='utf-8').write("\n".join(L) + "\n")
+print("wrote", OUT, len(L), "lines")

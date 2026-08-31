@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 import json, re, collections, io, hashlib
+from pathlib import Path
 
-SEED = r"P:\doc_repo\_catalog\2026-08-30_breadth_place_alias_seed.json"
-ROST = r"P:\doc_repo\_catalog\texas_roster_v1.json"
-OUT  = r"C:\Users\cente\AppData\Local\Temp\claude\p--doc-repo\fee8e111-788c-4d0e-bd16-5510b77df32c\scratchpad\alias_confirm_sheet.md"
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+SEED = REPO / "_catalog" / "2026-08-30_breadth_place_alias_seed.json"
+ROST = REPO / "_catalog" / "texas_roster_v1.json"
+OUT = REPO / "_inbox" / "2026-08-31_alias_confirm_sheet.md"
 
 seed_raw = open(SEED, 'rb').read()
 R = json.loads(seed_raw.decode('utf-8'))
 C = json.loads(open(ROST, 'rb').read().decode('utf-8'))['cities']
 ros = {c['name'].lower(): c for c in C}
 TOT = sum(r['parcel_count'] for r in R)
-DEC = {'roster-exact', 'misspelling-of-roster-place', 'straddle'}
+DEC = {'roster-exact', 'misspelling-of-roster-place', 'straddle', 'roster-component'}
 CDPK = {'unincorporated-place-no-place-fips', 'misspelling-of-unincorporated-place'}
 BE = {'breadth_48309_eddy', 'breadth_48309_bruceville', 'breadth_48309_brucevill', 'breadth_48309_brucville'}
 grank = {r['breadth_value']: i for i, r in enumerate(R, 1)}
@@ -42,6 +45,11 @@ def reason(r):
             return "exact roster name, county agrees"
         s = re.match(r'Roster match after stripping ([^;]+);', n)
         return "roster match, stripped %s" % (s.group(1) if s else 'suffix')
+    if k == 'roster-component':
+        a = re.search(r"component `([^`]+)` of roster place ([^(]+)", n)
+        if a:
+            return "hyphen-component `%s` of %s" % (a.group(1), a.group(2).strip())
+        return "hyphen-component of %s" % (r['proposed_place_name'] or '?')
     return n.split('.')[0][:70]
 
 
@@ -58,7 +66,8 @@ W = o.write
 
 W("# `breadth_*` to `place_fips` alias, operator confirm sheet\n\n")
 W("**Read this first.**\n\n")
-W("1. **61 rows carry the decision.** They are 481,429 of the 481,504 alias parcel-rows (**99.98%** of alias weight, **46.0%** of the corpus). The first 20 of them are 96.2%. Everything after row 20 is optional.\n")
+W("1. **%d rows carry the decision.** They are %s of the %s alias parcel-rows. The first 20 of them still carry almost all of the alias weight. Everything after row 20 is optional.\n" % (
+    len(main), format(sum(r['parcel_count'] for r in main), ','), format(decTOT, ',')))
 W("2. **42 more rows need four rulings, not a yes/no**: the Bruceville-Eddy correction (4 rows, 2,288 parcels, flagged below as a seed error), the 4 county-scoped traps (17,875), the 24 out-of-county rows (2,054), the 10 `unresolved` rows (79). Combined weight 22,296 parcel-rows, and 17,875 of that is the four traps alone.\n")
 W("3. **122 rows need nothing from you.** 21 are `unknown` or CAD junk (509,928 parcel-rows, disposition already fixed by the four-state contract), 36 are already ruled `unincorporated` by the 2026-08-30 decision, and 65 are alias tail rows worth **75 parcels in total** (confirmable as 23 one-line blocks, or skipped).\n\n")
 W(CAVEAT + "\n")
@@ -74,7 +83,7 @@ W("| Store access | **none**. This sheet is derived entirely from files. No quer
 W("| Instrument | file-based Python, self-tested in both directions before use: 225 rows, 1,047,727 parcel-rows, top-3 = 663,467 (63.32%), top-25 = 94.72%, 112 rows at 2 parcels or fewer, 97 at exactly 1. Two negative controls (fabricated `kind` returns 0; `p AND NOT p` returns 0) and one non-vacuity control passed. |\n\n")
 W("`parcel_count` double counts the 66,149 parcels carrying more than one `breadth_*` value. Distinct parcels are 981,413. Use these percentages for **ordering by impact**, never as a parcel population.\n\n")
 
-W("---\n\n## 1. The decision table, 61 rows\n\n")
+W("---\n\n## 1. The decision table, %d rows\n\n" % len(main))
 W(CAVEAT + "\n")
 W("Ordered by impact. `cum% alias` is the running share of the 481,504 alias parcel-rows. `#` is the row's global rank among all 225 seed rows, so you can see which already-ruled rows it steps over. Confidence is the seed's own grade, **not upgraded by me**.\n\n")
 W("| # | `breadth_*` (prefix stripped) | County | Parcels | cum% alias | cum% corpus | place_fips | Place | Conf | Reason | OK? |\n")
@@ -93,7 +102,7 @@ for i, r in enumerate(main, 1):
         W("| | **STOP LINE. The 20 rows above are 96.2% of alias weight. The 41 below add 3.8%, 18,436 parcel-rows.** | | | | | | | | | |\n")
 W("\n")
 
-W("---\n\n## 2. Alias tail, 65 rows, 75 parcels in total\n\n")
+W("---\n\n## 2. Alias tail, %d rows, %s parcels in total\n\n" % (len(tail), format(sum(r['parcel_count'] for r in tail), ',')))
 W(CAVEAT + "\n")
 W("Every row here is 1 or 2 parcels. They are grouped by target so each block is one decision rather than one per string. Confirming all 23 blocks moves alias weight by 0.02%. Skipping them is defensible.\n\n")
 W("| Place | place_fips | County | Rows | Parcels | Strings | OK? |\n|---|---|---|---:|---:|---|---|\n")
@@ -165,11 +174,16 @@ W("**`48055_harwood`, 456 parcels, is undecidable for a different reason.** The 
 
 W("---\n\n## 7. What I would not sign\n\n")
 W("Nothing below is upgraded. Where I disagree with the seed I say so and move the row toward needs-human; I do not promote anything to `certain`.\n\n")
-W("### 7.1 The seed misfiles Bruceville-Eddy. 4 rows, 2,288 parcels. This is a real error.\n\n")
-W("The seed grades `48309_eddy` (1,274), `48309_bruceville` (1,012), `48309_brucevill` (1) and `48309_brucville` (1) as `unincorporated-place-no-place-fips`. **That is false.** Verified against the roster file:\n\n")
-W("```\nplace_fips 10828 | Bruceville-Eddy | \"Bruceville-Eddy city\" | parent 48309 McLennan | all_county_fips ['48145','48309']\n```\n\n")
-W("The seeder's lookup is exact-name, and `bruceville` and `eddy` are each one half of a hyphenated name, so it correctly reported no exact match and then drew the wrong conclusion from it. The findings doc caught this in prose (section 5b), but **the `kind` field in the JSON still says the place has no `place_fips`**, and an operator working the CDP list would sweep all four rows into the 2026-08-30 `unincorporated` ruling. They must not be. A `place_fips` exists, so the ruling does not reach them.\n\n")
-W("This is a decision, not an acknowledgement: confirm that all four map to 10828, or split them. I would not sign it blind, because Bruceville and Eddy were separate communities before they merged and the two halves may key different territory in CAD.\n\n")
+BE_MIS = [r for r in R if r['breadth_value'] in BE and r['kind'] in CDPK]
+if BE_MIS:
+    W("### 7.1 The seed misfiles Bruceville-Eddy. 4 rows, 2,288 parcels. This is a real error.\n\n")
+    W("The seed grades `48309_eddy` (1,274), `48309_bruceville` (1,012), `48309_brucevill` (1) and `48309_brucville` (1) as unincorporated. **That is false.** Verified against the roster file:\n\n")
+    W("```\nplace_fips 10828 | Bruceville-Eddy | \"Bruceville-Eddy city\" | parent 48309 McLennan | all_county_fips ['48145','48309']\n```\n\n")
+    W("The lookup misses a half-name: `bruceville` and `eddy` are each one component of a hyphenated roster name. They must not receive an `unincorporated` disposition.\n\n")
+else:
+    W("### 7.1 Bruceville-Eddy half-names, corrected in this regeneration.\n\n")
+    W("`48309_eddy` and `48309_bruceville` now grade `likely` / `roster-component` on Bruceville-Eddy `10828`. `48309_brucevill` and `48309_brucville` follow as `likely` / `misspelling-of-roster-place` on the same place. They sit in the decision table and the alias tail, not in the CDP bucket. A component match is never `certain` and never `roster-exact`.\n\n")
+    W("This is still a string-to-place mapping, not a jurisdiction assertion. Bruceville-Eddy is a small city and 2,288 parcels under those two keys is almost certainly larger than its incorporated parcel count.\n\n")
 W("### 7.2 `48453_austin-tx`, 211,209 parcels, is 43.9% of the entire alias decision in one row.\n\n")
 W("I would sign the string-to-place mapping. `austin-tx` means Austin, `place_fips` 05000. What I would not sign is anything downstream treating it as jurisdiction. Travis County has 380,918 distinct parcels in this corpus and this single postal string covers 211,209 of them. If this alias is consumed as a jurisdiction assertion it fabricates Austin city jurisdiction on a six-figure parcel population in one move. **This row is where the semantic caveat stops being theoretical.**\n\n")
 W("### 7.3 Do not confirm `48021_bastrop-city-tx` in isolation.\n\n")
@@ -209,9 +223,10 @@ BUCKETS = [
     ("County-scoped traps (section 4)", [r for r in R if r['kind'] in ('county-level-key', 'mixed-scope-key')], "Rule on a scope split. Not a mapping."),
     ("CDP, already ruled (section 5)", rest, "Nothing. Acknowledge the ruling's scope."),
     ("Out-of-county (section 6)", [r for r in R if r['kind'] in ('c-undecidable', 'b-cad-error')], "One class ruling plus one CAD-error correction."),
-    ("Bruceville-Eddy, seed error (7.1)", [r for r in R if r['breadth_value'] in BE], "Decide. A `place_fips` exists."),
     ("`unresolved` (7.4)", [r for r in R if r['kind'] == 'unresolved'], "Re-route per 7.4, then decide 2 rows."),
 ]
+if BE_MIS:
+    BUCKETS.insert(-1, ("Bruceville-Eddy, seed error (7.1)", BE_MIS, "Decide. A `place_fips` exists."))
 seen = [v for _, rs, _ in BUCKETS for v in (x['breadth_value'] for x in rs)]
 assert len(seen) == len(set(seen)) == 225, ("bucket overlap or gap", len(seen), len(set(seen)))
 assert sum(len(rs) for _, rs, _ in BUCKETS) == 225
@@ -220,7 +235,7 @@ W("| Bucket | Rows | Parcel-rows | What you do |\n|---|---:|---:|---|\n")
 for name, rs, act in BUCKETS:
     W("| %s | %d | %s | %s |\n" % (name, len(rs), format(sum(x['parcel_count'] for x in rs), ','), act))
 W("| **Total** | **%d** | **%s** | |\n\n" % (sum(len(rs) for _, rs, _ in BUCKETS), format(TOT, ',')))
-W("Every `breadth_*` value appears in exactly one bucket above, asserted in the generator rather than added up by hand: the eight buckets hold 225 distinct values and their parcel-rows sum to 1,047,727. Row-count checks: 61 + 65 = 126 alias candidates; 36 + 4 = 40 CDP rows as the seed grades them; 21 + 4 + 24 + 10 = 59; 126 + 40 + 59 = 225.\n\n")
+W("Every `breadth_*` value appears in exactly one bucket above, asserted in the generator rather than added up by hand: the %d buckets hold 225 distinct values and their parcel-rows sum to %s.\n\n" % (len(BUCKETS), format(TOT, ',')))
 W(CAVEAT)
 W("\n*Prepared read-only. No repo, store, or product file was written. This sheet is built to be confirmed, not to be authoritative: where it disagrees with the seed, section 7 says so explicitly rather than silently correcting the JSON.*\n")
 

@@ -1,8 +1,13 @@
 import json, re, difflib
 from collections import Counter, defaultdict
+from pathlib import Path
 
-SCR = r"C:/Users/cente/AppData/Local/Temp/claude/p--doc-repo/fee8e111-788c-4d0e-bd16-5510b77df32c/scratchpad"
-ROSTER = r"P:/doc_repo/_catalog/texas_roster_v1.json"
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+ROSTER = REPO / "_catalog" / "texas_roster_v1.json"
+ADJ_PATH = HERE / "adjacency.txt"
+RAW_PATH = HERE / "master_raw.tsv"
+SEED_OUT = REPO / "_catalog" / "2026-08-30_breadth_place_alias_seed.json"
 SIX = {'48021': 'Bastrop', '48055': 'Caldwell', '48209': 'Hays',
        '48309': 'McLennan', '48453': 'Travis', '48491': 'Williamson'}
 LIMITS = (" Maps the STRING to a PLACE; it does NOT establish that these parcels lie inside "
@@ -13,7 +18,7 @@ cities = d['cities']
 counties = {c['fips']: c['name'] for c in d['counties']}
 
 adj = defaultdict(set)
-for line in open(SCR + "/adjacency.txt", encoding='utf-8'):
+for line in open(ADJ_PATH, encoding='utf-8'):
     p = line.strip().split("|")
     if len(p) == 3:
         adj[p[0]].add(p[1])
@@ -34,6 +39,20 @@ roster_by_fullname = {}
 for c in cities:
     roster_by_fullname.setdefault(nk(c['full_name']), []).append(c)
 
+# third index: hyphen-separated components of roster names (Bruceville / Eddy of
+# Bruceville-Eddy). Consulted only after name and full_name miss. County-scoped
+# at lookup time. A component match is never certain and never roster-exact.
+roster_by_component = {}
+for c in cities:
+    name = c.get('name') or ''
+    if '-' not in name:
+        continue
+    for part in name.split('-'):
+        part = part.strip()
+        if not part:
+            continue
+        roster_by_component.setdefault(nk(part), []).append((part, c))
+
 
 def roster_lookup(key):
     """Primary name index first; fall back to the full_name index only on a clean single hit.
@@ -45,8 +64,50 @@ def roster_lookup(key):
         return alt, 'full_name'
     return None, None
 
+
+def holds_territory(city, fips):
+    if city.get('parent_county_fips') == fips:
+        return True
+    return fips in (city.get('all_county_fips') or [])
+
+
+def component_lookup(key, fips):
+    """Miss-only, county-scoped, single-hit component index.
+    Returns (hits, matched_component, refuse_multi)."""
+    raw = roster_by_component.get(key)
+    if not raw:
+        return None, None, False
+    scoped = []
+    seen = set()
+    for part, c in raw:
+        if not holds_territory(c, fips):
+            continue
+        pf = c['place_fips']
+        if pf in seen:
+            continue
+        seen.add(pf)
+        scoped.append((part, c))
+    if len(scoped) == 0:
+        return None, None, False
+    if len(scoped) > 1:
+        return [c for _, c in scoped], None, True
+    part, c = scoped[0]
+    return [c], part, False
+
+
+def roster_or_component(key, fips):
+    hits, via = roster_lookup(key)
+    if hits:
+        return hits, via, None, False
+    chits, comp, refuse = component_lookup(key, fips)
+    if refuse:
+        return chits, 'component', None, True
+    if chits:
+        return chits, 'component', comp, False
+    return None, None, None, False
+
 rows = []
-for line in open(SCR + "/master_raw.tsv", encoding='utf-8'):
+for line in open(RAW_PATH, encoding='utf-8'):
     line = line.rstrip("\n")
     if not line or line.startswith("Pager"):
         continue
@@ -107,8 +168,8 @@ for r in rows:
     if nonjur(r['free']) or (r['roads'] > 0 and r['parcels'] == 0):
         continue
     base, _ = normalise(r['free'])
-    hh, _via = roster_lookup(nk(base))
-    if hh:
+    hh, _via, _comp, refuse = roster_or_component(nk(base), r['fips'])
+    if hh and not refuse:
         cur = anchors.setdefault(r['fips'], {}).get(nk(base))
         if cur is None or r['parcels'] > cur[2]:
             anchors[r['fips']][nk(base)] = (base, hh, r['parcels'])
@@ -116,7 +177,8 @@ for r in sorted(rows, key=lambda x: -x['parcels']):
     if nonjur(r['free']) or (r['roads'] > 0 and r['parcels'] == 0):
         continue
     base, _ = normalise(r['free'])
-    if roster_lookup(nk(base))[0] or r['parcels'] < 100:
+    hh, _via, _comp, refuse = roster_or_component(nk(base), r['fips'])
+    if (hh and not refuse) or r['parcels'] < 100:
         continue
     postal.setdefault(r['fips'], {}).setdefault(nk(base), (base, r['parcels']))
 
@@ -282,6 +344,27 @@ for r in rows:
         out.append(rec)
         continue
 
+    # 2b. county-scoped component index, miss-only, single-hit
+    chits, comp, refuse_multi = component_lookup(key, fips)
+    if refuse_multi:
+        names = ", ".join("%s (%s)" % (c['name'], c['place_fips']) for c in chits)
+        rec.update(confidence='needs-human', kind='unresolved',
+                   note=("COMPONENT AMBIGUOUS. Token `%s` is a hyphen-separated component of "
+                         "more than one roster place holding territory in %s: %s. Refused."
+                         % (base, fips, names)) + mixed)
+        out.append(rec)
+        continue
+    if chits:
+        h = chits[0]
+        rec.update(proposed_place_fips=h['place_fips'], proposed_place_name=h['name'],
+                   confidence='likely', kind='roster-component',
+                   note=("ROSTER COMPONENT. Token `%s` matched the hyphen-separated component "
+                         "`%s` of roster place %s (place_fips %s). Not an exact name match; "
+                         "graded likely."
+                         % (base, comp, h['name'], h['place_fips'])) + mixed + LIMITS)
+        out.append(rec)
+        continue
+
     # 3. unresolved -> cluster to an in-county anchor
     ba, ratio = best_anchor(fips, key)
     if ba and ratio >= 0.82 and ba[0] != key:
@@ -331,7 +414,7 @@ for r in rows:
     out.append(rec)
 
 out.sort(key=lambda r: (-r['parcel_count'], -r['atom_rows'], r['breadth_value']))
-json.dump(out, open(SCR + "/alias_seed.json", "w", encoding='utf-8'), indent=1, ensure_ascii=False)
+json.dump(out, open(SEED_OUT, "w", encoding='utf-8'), indent=1, ensure_ascii=False)
 
 print("total rows:", len(out))
 print("confidence:", dict(Counter(r['confidence'] for r in out)))
