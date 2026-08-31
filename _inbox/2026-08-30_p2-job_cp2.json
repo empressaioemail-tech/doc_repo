@@ -1,0 +1,58 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p2-job",
+  "card": "P2 job template — writer allowlist so a non-CAD Factory job can run on a named FIPS and refuse without one",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-30T23:15:00Z",
+  "seat": "property",
+  "snapshot": {
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p2-job",
+    "branch": "seat/property-ctx-p2-job",
+    "base": "7f41f52328ec40da0480d5eb65aad09ca3d4c3f9",
+    "workingTree": "uncommitted; planner commits",
+    "tests": "node --test test/*.test.mjs after npm install --omit=dev at 2026-08-30T23:15Z: 278 pass, 0 fail, 2 skipped"
+  },
+  "pilot": {
+    "missingCounty": {
+      "violation": "parseP2JurisFlags([]) / [--apply] / [--county=] / [--county,''] throw COUNTY_REQUIRED. CLI `node src/cli.mjs p2-juris` prints COUNTY_REQUIRED and exits 1. [--county=99999] and [--county, 99999] throw COUNTY_UNKNOWN. No 48021 default on the refuse path.",
+      "knownGood": "--county=48453 and --county 48055 both resolve. Close-line JSON carries runScope.job containment-persist and runScope.county 48453."
+    },
+    "dryPlan": {
+      "violation": "runP2Juris with county 48453 and no run row throws RUN_ROW_REQUIRED. requireRunRow(null) and requireRunRow({}) throw RUN_ROW_REQUIRED.",
+      "knownGood": "county 48453 plus run row 11111111-… accepted as dry plan: persistExecuted false, connected false, connectFn never called, plan rows execute false, Coupland 17312 excluded (spatial 48491 only)."
+    },
+    "laptopApply": {
+      "violation": "runP2Juris --apply with FACTORY_CLOUD unset throws LAPTOP_WRITE_FROZEN and connectFn call count stays 0. CLI `node src/cli.mjs p2-juris --county=48453 --apply --run-id=11111111-1111-1111-1111-111111111111` prints LAPTOP_WRITE_FROZEN and exits 1.",
+      "knownGood": "dry path with the same county and run row does not connect"
+    },
+    "allowlist": {
+      "violation": "assertWriterAllowlistNotCadOnly({factory-conformant:{kind:cad}}) throws WRITER_ALLOWLIST_CAD_ONLY. requireWriterJob('not-a-writer') throws WRITER_NOT_ALLOWLISTED. easement liveRest true throws EASEMENT_LIVE_REST.",
+      "knownGood": "WRITER_JOBS names containment-persist, f11-setback, easement-no-live-rest (liveRest false), and factory-conformant."
+    },
+    "persistSpec": {
+      "violation": "consumePersistSpec([]) and a row missing parent_county_fips throw PERSIST_SPEC_SHAPE. executeContainmentPersist and deps.executePersist true throw PERSIST_NOT_THIS_CARD.",
+      "knownGood": "PERSIST_SPEC_FIXTURE plans Austin 04844 for 48453; Golinda 30092 for 48309; Coupland drops 48453."
+    },
+    "copiedCollectGate": {
+      "violation": "requireCollectComplete against empty import_ledger throws COLLECT_INCOMPLETE.",
+      "knownGood": "cad_property 77799/77799 returns ok. This stub does not call the gate (not CAD)."
+    }
+  },
+  "notDoneThisCard": [
+    "Persist UPDATE city_manifest.payload.all_county_fips is not executed (PERSIST_NOT_THIS_CARD).",
+    "No Cloud Run job created or started.",
+    "0005 / 0005a / 0005b not applied.",
+    "conformant.mjs 48021 default left for P1-FACTORY.",
+    "p1-controls, gate8, p2-juris trees not written."
+  ],
+  "adversarialAtPilot": [
+    {
+      "worry": "the dry plan silently defaults county to 48021 when flags are injected",
+      "resolution": "parseP2JurisFlags never defaulted; runP2Juris re-checks empty county and throws COUNTY_REQUIRED. CLI missing-county stderr has no 48021."
+    },
+    {
+      "worry": "laptop --apply connects then refuses",
+      "resolution": "FACTORY_CLOUD check is before connectFn. Violation test asserts connects === 0."
+    }
+  ]
+}

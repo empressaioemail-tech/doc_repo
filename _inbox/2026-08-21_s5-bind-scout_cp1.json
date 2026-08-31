@@ -1,0 +1,92 @@
+{
+  "lane": "s5-bind-scout",
+  "artifact": "cp1",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T19:10:00Z",
+  "planRows": ["R-08"],
+  "planOfRecord": "90_operations/OPS-18_canon_reconciliation_plan_of_record.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["5"],
+  "checkpoint": "design/pre-build",
+  "dispatch": "_dispatches/2026-08-21_s5-bind-scout_dispatch.md",
+  "seat": "property occupancy; read-only on LDT + hauska-map worktrees",
+  "snapshot": {
+    "docRepo": "P:/doc_repo",
+    "docRepoBranch": "main",
+    "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "codeReadLdt": "P:/seat-worktrees/property/legacy-design-tools",
+    "codeBranchLdt": "seat/property",
+    "codeHeadLdt": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+    "codeReadMap": "P:/seat-worktrees/property/hauska-map",
+    "codeBranchMap": "seat/property",
+    "codeHeadMap": "f80035797c2f71f557f1118c5e38bb8bcafbeb6a",
+    "forbidden": ["P:/legacy-design-tools", "product edits", "atoms --apply", "Harris PBF", "git add/commit/push", "deploy"]
+  },
+  "missionPremise": "WDLL sellable item 5: a fact atom that exists for a gold parcel is retrievable by that parcel's parcelNodeId on inspect. Dual-grammar misses (R-07 Q8) are in scope. S2 consumer table is authoritative; in-scope families are those S2 marked atom or retiredStore. Source: _dispatches/2026-08-21_s5-bind-scout_dispatch.md, _inbox/2026-08-21_s2-family-scout_close.json.",
+  "completionPredicate": "CLOSE has one row per in-scope family {family, parcel, keysTried, storeHit, inspectOutcomeInteger, inspectOutcomePadded, grade}. Fail if atom is in store and inspect is empty for that family. leave_behind wiring cards for fails. No COUNT(*) on atoms; point lookups and live GET only.",
+  "scopeBasis": "Read-only scout. SmartSite inspect BFF GET /api/spine/property-atoms/:parcelNodeId/facets plus map consumer paths from S2 (attaching-roads, near-bbox for road-node). Gold flood parcel 48021:34137. Both grammars: integer {fips}:{prop} and padded {fips}:{prop}.00000000. HOLD families out of scope.",
+  "familiesInScope": [
+    "zoning-fact",
+    "setback-rule",
+    "buildable-envelope",
+    "road-node",
+    "flood-hazard-fact",
+    "land-use-fact"
+  ],
+  "s2Basis": "_inbox/2026-08-21_s2-family-scout_close.json",
+  "goldParcel": "48021:34137",
+  "keyGrammars": [
+    "integer {fips}:{prop}",
+    "padded {fips}:{prop}.00000000"
+  ],
+  "method": "Neon point SELECT on hauska_mcp.atoms (entity_id IN both keys OR body.parcelNodeId). Live GET smartsite.cloud property-atoms/facets both keys. Live retrieval atom-chain and attaching-roads. road-node near-bbox with ExplorerMap query param names (westLng/southLat/eastLng/northLat). No product code edits.",
+  "predictions": [
+    {
+      "id": "P1",
+      "claim": "Gold integer 48021:34137 serves zoning-fact, setback-rule, buildable-envelope on inspect via atom-chain-warm",
+      "falsifier": "GET facets integer key returns zoning null and envelope atom_path_pending while store has those entity_ids"
+    },
+    {
+      "id": "P2",
+      "claim": "Padded 48021:34137.00000000 is a dual-grammar miss: atom-chain empty and inspect declines zoning/envelope even though integer-key atoms exist in store",
+      "falsifier": "padded key returns the same atom-chain payload as integer"
+    },
+    {
+      "id": "P3",
+      "claim": "flood-hazard-fact atom exists in store for gold but inspect BFF omits floodHazardFact (cortex merge source still snapshot-only; PR 449 undeployed)",
+      "falsifier": "GET facets integer includes floodHazardFact.state=present floodZone=X"
+    },
+    {
+      "id": "P4",
+      "claim": "land-use-fact inspect shows retiredStore cad-roll landUse on integer grammar, not the land-use-fact atom",
+      "falsifier": "facets.baseFacts.landUse.source names land-use-fact atom adapter"
+    },
+    {
+      "id": "P5",
+      "claim": "road-node serves on integer via attaching-roads (2 roads); padded attaching-roads empty; near-bbox returns road-node atoms in viewport",
+      "falsifier": "attaching-roads integer returns empty while store has 48021:road:* near parcel"
+    },
+    {
+      "id": "P6",
+      "claim": "Lockhart 48055:18925 repeats dual-grammar miss on padded key for atom-chain families",
+      "falsifier": "48055:18925.00000000 atom-chain usable"
+    }
+  ],
+  "adversarial": {
+    "risk1": "grade near-bbox as parcel bind for road-node",
+    "rejectedBecause": "S2 consumer is map overlay; near-bbox is viewport. Parcel bind for road-node is attaching-roads POST keyed by parcelNodeId.",
+    "risk2": "treat cad-roll landUse as atom serve",
+    "rejectedBecause": "S2 marks land-use-fact as retiredStore; item 5 still records inspect outcome separately from store hit.",
+    "risk3": "COUNT atoms for denom",
+    "rejectedBecause": "dispatch forbids COUNT(*) on atoms; point lookups only."
+  },
+  "constraints": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no product code edits",
+    "no atoms --apply",
+    "no Harris PBF",
+    "doc_repo writes: _inbox JSON only"
+  ]
+}

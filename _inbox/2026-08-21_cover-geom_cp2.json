@@ -1,0 +1,96 @@
+{
+  "lane": "cover-geom",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "planRows": ["P-56"],
+  "plan": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "P:/doc_repo/_inbox/2026-08-21_ops18_all_board_WDLL.md item 8 and item 13",
+  "dispatch": "_dispatches/2026-08-21_cover-geom_dispatch.md",
+  "seat": "integration",
+  "worktree": "P:/legacy-design-tools-worktrees/cover-p56",
+  "branch": "cover-p56",
+  "commit": "24d280c294d6e6055605044c0511b287049622ff",
+  "occupancyShaUnchanged": true,
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "14705605d2683e2276e342189bf1a894261aea45",
+  "pr": "not applicable: no product git commits this lane",
+  "mergeSha": "not applicable: no product git commits this lane",
+  "ci": "not applicable: no product git commits this lane",
+  "missionPremise": "Same as CP1. 48135 numerator is active geo_id-keyed only. Denom is DISTINCT feature_index. Retired prop_id rows cannot enter the count.",
+  "completionPredicate": "Write omits --dry-run. Neon geometry 48135 last_verified_at moves off 2026-08-21T18:26:28.553Z. honest_coverage_pct is not 104.95. If still overcount, stop.",
+  "whatWasVerified": [
+    {
+      "check": "Named denom is DISTINCT feature_index=75891",
+      "result": "CONFIRMED. Neon and dry-run both features=75891 table=txgio_parcel.",
+      "whatWouldProveWrong": "accountedFeatures or a different table."
+    },
+    {
+      "check": "Numerator is 75859 active geo_id, not stock 79650",
+      "result": "CONFIRMED. dry-run atoms=75859. Matches CP1 Neon GROUP BY and P-02 close.",
+      "whatWouldProveWrong": "atoms=79650 coverage=104.95."
+    },
+    {
+      "check": "32-row gap is quoted, not clamped",
+      "result": "CONFIRMED. 75859 vs 75891. coverage=99.96 unclamped. Not 100.00.",
+      "whatWouldProveWrong": "honest_coverage_pct=100.00."
+    },
+    {
+      "check": "Violation fixture: retired ids fail the new check or classify not-yet",
+      "result": "CONFIRMED. vitest 23/23. assertGeometryNumeratorExcludesRetired throws on unfiltered 90-active+10-retired. Filtered path is 90/100 not-yet. Stock 79650/75891 remains not-yet.",
+      "whatWouldProveWrong": "fixture with retired ids scores satisfied-present, or assert accepts retired rows."
+    },
+    {
+      "check": "Dry-run did not write",
+      "result": "CONFIRMED. ledger writes=0. last_verified_at still 2026-08-21T18:26:28.553Z honest_coverage_pct still 104.95.",
+      "whatWouldProveWrong": "pin moved during dry-run."
+    }
+  ],
+  "tests": {
+    "command": "node artifacts/api-server/node_modules/vitest/vitest.mjs run artifacts/api-server/src/countyGeometryScore.test.ts",
+    "cwd": "P:/legacy-design-tools-worktrees/cover-p56",
+    "passed": 23,
+    "failed": 0,
+    "files": 1
+  },
+  "sqlTexts": {
+    "numerator": "SELECT count(*)::text AS n FROM atoms WHERE entity_type = 'parcel-node' AND entity_id >= $1 AND entity_id < $2 AND COALESCE(body->>'status', 'active') = 'active' AND ($1 <> '48135' OR COALESCE(body->>'keyKind', '') IN ('geo_id', 'geo_id_crosswalk'))",
+    "denom": "SELECT count(DISTINCT feature_index) AS features FROM txgio_parcel WHERE county_fips = $1",
+    "retiredExclusion": "COALESCE(body->>'status', 'active') = 'active'; 48135 also requires keyKind in (geo_id, geo_id_crosswalk)"
+  },
+  "dryRun": {
+    "command": "node artifacts/api-server/node_modules/tsx/dist/cli.mjs artifacts/api-server/src/countyGeometryScoreCli.ts --county=48135 --dry-run",
+    "cwd": "P:/legacy-design-tools-worktrees/cover-p56",
+    "argvHasAll": false,
+    "atoms": 75859,
+    "features": 75891,
+    "table": "txgio_parcel",
+    "coveragePct": 99.96,
+    "classification": "real-at-ceiling",
+    "rail_state": "satisfied-present",
+    "wrote": 0,
+    "duration_s": 1.2,
+    "gap": 32,
+    "countingRule": "coverage = 75859/75891*100 = 99.957834 -> 99.96. Not overcount. >= 95 so satisfied-present. Gap 32 is P-02 foldedExtraFeatures magnitude.",
+    "envNote": "DATABASE_URL and DEPLOYMENT_DATABASE_URL set from gcloud secrets (hauska-prod-497015 / legacy-design-tools-prod). Values not printed.",
+    "progress": "P:/tmp/cover_p56/progress.log",
+    "stdoutQuote": "DRY-RUN 48135/Ector: atoms=75859 features=75891 (txgio_parcel) coverage=99.96% -> real-at-ceiling -> rail_state=satisfied-present"
+  },
+  "predictedVsObserved": {
+    "atoms": { "predicted": 75859, "observed": 75859, "match": true },
+    "features": { "predicted": 75891, "observed": 75891, "match": true },
+    "coveragePct": { "predicted": 99.96, "observed": 99.96, "match": true },
+    "rail_state": { "predicted": "satisfied-present", "observed": "satisfied-present", "match": true }
+  },
+  "writeDecision": {
+    "go": true,
+    "reason": "Dry-run is not overcount 104.95. Numerator 75859 and denom 75891 disagree by 32 and that is quoted. Write --county=48135 only. Watch file is in place."
+  },
+  "watch": {
+    "id": "cover-p56-geom-48135",
+    "path": "P:/tmp/cover_p56/progress.log",
+    "registry": "_catalog/watch_registry/cover-p56-geom-48135.json",
+    "createdBeforeWrite": true
+  },
+  "remaining": "WRITE omit --dry-run. Verify last_verified_at moved and honest_coverage_pct is not 104.95. CLOSE. leave_behind planner POST /api/county-ledger/recompute?probe=skip."
+}

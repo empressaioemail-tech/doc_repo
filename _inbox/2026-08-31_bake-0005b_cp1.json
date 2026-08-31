@@ -1,0 +1,103 @@
+{
+  "checkpoint": "CP1",
+  "lane": "bake-0005b",
+  "card": "Bake-migrate job for 0005b — identity alias on bake neondb",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-31T03:10:00Z",
+  "seat": "property (bake-migrate 0005b lane planner; no sub-agents; no commit, push, deploy, apply, or laptop psql)",
+  "snapshot": {
+    "docRepo": "P:/doc_repo (inbox writes only; planner-owned)",
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-bake-migrate",
+    "branch": "seat/property-ctx-bake-migrate",
+    "head": "a7a804220ad046ac3c70e286d61c83595bb3afe3",
+    "headConfirmed": "git rev-parse HEAD = a7a804220ad046ac3c70e286d61c83595bb3afe3 (required a7a8042)",
+    "originNote": "HEAD is Merge PR #42 (p2-juris-plan). Working tree clean at CP1.",
+    "noStoreWrite": true,
+    "noCommit": true,
+    "noFactoryMigrateJob": true,
+    "noMainMigrateWorktree": true
+  },
+  "missionPremise": "0005a is live on Factory migrations/ (landing_setback_registry_absence_probed, 23514, rolled back, survived 0; _inbox/2026-08-31_0005a_check_live_proof.md). 0005b is CAD prop_id ↔ TxGIO identity (landing_cad_txgio_alias) under migrations/bake/. applyMigrations readdir is non-recursive and never sees bake/. factory-conformant-migrate and factory-publish-migrate are the Factory store. alias-persist --apply writes via resolveTargetStores to bake neondb (STAGING_NEONDB_URL / PRODUCTION_NEONDB_URL). There is no job that applies migrations/bake/ there. Source: _dispatches/2026-08-31_bake-0005b_dispatch.md; OPS-19 F-08.",
+  "completionPredicate": "Uncommitted Factory diff plus this card's CP1/CP2/close. A Cloud Run job (or distinct args template) reads only migrations/bake/*.sql, requires --target=staging|production in --name=value form, resolves only the bake neondb URL for that target, refuses FACTORY_DATABASE_URL before connect, refuses a missing --target= and a missing URL, and on --apply writes a durable per-file record (filename, applied_at, invocation) before or in the same transaction as the SQL so a record-write failure rolls back the apply. Factory migrate file list has 0005a not 0005b; this job file list has 0005b not 0005a. Fail-arm (Factory URL) and pass-arm (dry plan names 0005b and the bake target) both fire. alias-persist --apply without 0005b still refuses ALIAS_TABLE_MISSING. 0005b is not applied. No commit, push, deploy, laptop psql, or factory-conformant-migrate execute.",
+  "scopeBasis": "This worktree only. hauska-factory-main-migrate is read-forbidden for apply. FACTORY_DATABASE_URL is never the connect string. 0005 as drafted is not applied. P4 rails and the containment join are out. Wave R is out. 0005b is identity alias, not breadth_* jurisdiction.",
+  "adversarial": [
+    {
+      "claim": "reuse factory-conformant-migrate with a different --args and it will apply bake/",
+      "finding": "That job's secrets are FACTORY_DATABASE_URL and its command is migrate, which calls applyMigrations against migrations/ only. A args override cannot see bake/ and would still target Factory. Mechanism: applyMigrations readdirSync(MIGRATIONS) is non-recursive; MIGRATION_FILE_RE never matches a bake/ prefix because readdir returns basenames in that directory only.",
+      "rejectedAlternative": "execute factory-conformant-migrate with --args=bake-migrate; rejected because the job image env is Factory and the dispatch forbids using that job except to read"
+    },
+    {
+      "claim": "resolveTargetStores is enough and we can skip a Factory-URL refuse",
+      "finding": "resolveTargetStores never reads FACTORY_DATABASE_URL, but a mis-bound secret can set STAGING_NEONDB_URL to the Factory URL. Pointing this job at Factory URL must refuse before connect by comparing the resolved bake URL to env.FACTORY_DATABASE_URL when that env is present, and by never selecting FACTORY_DATABASE_URL as the source var.",
+      "rejectedAlternative": "trust the env var name; rejected because the fail-arm is pointing at the Factory URL, not the Factory name"
+    },
+    {
+      "claim": "schema_migrations (filename, applied_at) on bake neondb is the durable record",
+      "finding": "A count is not a record. The existing Factory table has no invocation. Doctrine: name, timestamp, invocation. If the record cannot be written, the apply does not run. INSERT of the record must precede or share the transaction with the file SQL so a record failure cannot leave applied SQL.",
+      "rejectedAlternative": "reuse Factory schema_migrations and return ran.length; rejected because a count is not a record and Factory and bake stores must not share a migrate path"
+    },
+    {
+      "claim": "0005b is the breadth jurisdiction table and can wait on P2-JURIS",
+      "finding": "0005b creates landing_cad_txgio_alias (prop_id ↔ TxGIO, ownersAgree, cad-roll-address-join). It is not breadth_*. Dropping it is the defect this card exists to close for alias-persist --apply.",
+      "rejectedAlternative": "fold 0005b into a P2 job; rejected by the mission"
+    }
+  ],
+  "design": {
+    "fileLists": {
+      "what": "listFactoryMigrationFiles reads migrations/ with MIGRATION_FILE_RE (non-recursive). listBakeMigrationFiles reads migrations/bake/ with the same regex. applyMigrations uses the Factory list only. bake-migrate uses the bake list only.",
+      "executes": "listFactoryMigrationFiles; listBakeMigrationFiles; node --test",
+      "triggers": "every migrate and bake-migrate invocation; the suite",
+      "fails": "assertion if Factory list contains 0005b or bake list contains 0005a",
+      "bypasses": "a raw psql of a named file (forbidden this card)"
+    },
+    "targetAndUrl": {
+      "what": "parseBakeMigrateFlags requires --target=staging|production in --name=value form. resolveBakeNeondbUrl reads only TARGET_VARS[target].db (STAGING_NEONDB_URL or PRODUCTION_NEONDB_URL). Missing target is BAKE_TARGET_REQUIRED. Missing URL is TARGET_ENV_MISSING naming the var. Space-form --target staging is BAKE_TARGET_FORM.",
+      "executes": "parseBakeMigrateFlags; resolveBakeNeondbUrl",
+      "triggers": "every bake-migrate invocation",
+      "fails": "BAKE_TARGET_REQUIRED / BAKE_TARGET_FORM / TARGET_UNKNOWN / TARGET_ENV_MISSING before connect",
+      "bypasses": "injected flags.target (named, not defaulted)"
+    },
+    "factoryUrlRefuse": {
+      "what": "assertNotFactoryUrl compares the resolved bake URL to env.FACTORY_DATABASE_URL when Factory env is present. Equality refuses FACTORY_URL_REFUSED before connectFn. FACTORY_DATABASE_URL is never the source var.",
+      "executes": "assertNotFactoryUrl; runBakeMigrate",
+      "triggers": "every bake-migrate path that would connect; also dry plan after URL resolve so a Factory-pointed dry still refuses",
+      "fails": "FACTORY_URL_REFUSED, connectFn call count 0",
+      "bypasses": "a raw pg.Client on FACTORY_DATABASE_URL (nothing in this job constructs one)"
+    },
+    "dryPlan": {
+      "what": "Default is dry. Plan names files (0005b_landing_cad_txgio_alias.sql), target, and the bake URL var name. Does not print a connection string. Does not connect. applied false.",
+      "executes": "runBakeMigrate without --apply",
+      "triggers": "CLI bake-migrate --target=staging|production",
+      "fails": "n/a (pass-arm). Missing target still refuses.",
+      "bypasses": "--apply (planner-run later; this lane does not)"
+    },
+    "durableRecord": {
+      "what": "Table bake_schema_migrations (filename PK, applied_at, invocation NOT NULL). CREATE TABLE first. Per file: BEGIN; INSERT record; apply SQL; COMMIT. INSERT failure rolls back; SQL of that file does not run. Invocation is CLOUD_RUN_EXECUTION (or --invocation=). --apply without an invocation refuses INVOCATION_REQUIRED. --apply without FACTORY_CLOUD=1 refuses LAPTOP_WRITE_FROZEN before connect.",
+      "executes": "applyBakeMigrations (only on --apply after gates)",
+      "triggers": "planner execute with --apply",
+      "fails": "RECORD_UNWRITABLE / INVOCATION_REQUIRED / LAPTOP_WRITE_FROZEN",
+      "bypasses": "laptop psql of 0005b (forbidden)"
+    },
+    "cloudRunJob": {
+      "what": "New job factory-bake-migrate in cloudbuild.publish.yaml (those secrets already exist there). Template args=bake-migrate (no --target=, so the deployed template refuses). Secrets STAGING_NEONDB_URL and PRODUCTION_NEONDB_URL only. Not FACTORY_DATABASE_URL. Same image family as publish jobs. factory-conformant-migrate stays Factory-only.",
+      "executes": "gcloud run jobs deploy factory-bake-migrate (planner build later)",
+      "triggers": "publish image pin",
+      "fails": "template execute without --target= override → BAKE_TARGET_REQUIRED",
+      "bypasses": "this lane does not deploy or execute the job"
+    },
+    "aliasPersistUnweakened": {
+      "what": "applyAliasLandingRows against a missing table still throws ALIAS_TABLE_MISSING and issues no INSERT. Not edited.",
+      "executes": "existing p1-controls / alias-persist tests plus a re-assert in bake-migrate.test.mjs",
+      "triggers": "node --test",
+      "fails": "ALIAS_TABLE_MISSING",
+      "bypasses": "n/a this card"
+    }
+  },
+  "constraintsHonored": [
+    "no commit, push, deploy, Cloud Run job start, 0005 / 0005a / 0005b apply, laptop psql, connection URL print",
+    "never hauska-factory-main-migrate for apply",
+    "never FACTORY_DATABASE_URL as connect string",
+    "HEAD remains a7a8042 plus this tree's uncommitted diff",
+    "no P4 rails, no containment join, no Wave R"
+  ]
+}

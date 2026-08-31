@@ -1,0 +1,91 @@
+{
+  "runAt": "2026-08-11T20:45:00Z",
+  "roadNodeRegistered": true,
+  "propertyEntityTypesCountBefore": 14,
+  "propertyEntityTypesCountAfter": 15,
+  "contractVersion": "1.19.0",
+  "pr293Assessment": {
+    "refutationsStillOpen": [
+      "collinear-boundary-coin-flip: FIXED on feat/f5-roads-unblock branch (geometry-epsilon.ts magnitude-scaled epsilon + H2 two-county diagonal test) but NOT on origin/main — main way-to-county.ts still uses 1e-18 at segmentsIntersect collinear branches",
+      "node-ingest-unexecuted: STILL OPEN — PR #293 body lists H6 throwaway-county apply unchecked; no ingest_report.json from ingest-statewide-roads-pbf.mjs product path; CI failure prevented merge validation",
+      "silent-upsert-clobber: FIXED ON BRANCH ONLY — road-ingest-supersede.ts + writeRoadAtomsBatch rewrite with decideRoadSupersede skip-protected for ROAD_ADAPTERS_PROTECTED_FROM_PBF; simulate-bastrop-road-supersede.mjs claims 7249/7249 protected rows would skip; origin/main writeRoadAtomsBatch still silent ON CONFLICT DO UPDATE via writePropertyAtomsBatch",
+      "synthetic-id-landmine: PARTIALLY OPEN — H4 moves NEW county synthetics to negative namespace (-800M/-900M offsets); LEGACY positive bands (800_000_001–800_011_351 county-roadway, 900_000_001–900_001_307 surveyed-2016) remain live in Bastrop store; adversarial ~1.53M real OSM ids still occupy 700M–999M positive space statewide — collision risk at {fips}:road:{id} persists for legacy rows",
+      "ci-import-regression: NEW BLOCKER on #293 — pg-storage.ts diff drops tokenize import; typecheck fails TS2304 Cannot find name tokenize/matchesAtomQuery/scoreAtomSearch/rankSearchResults (run 31334775238 conclusion failure)"
+    ],
+    "recommendation": "salvage_specific_commits",
+    "reasoning": "Do NOT merge PR #293 wholesale (DO NOT MERGE banner + CI failure + H6 open). Cherry-pick or rebase the substantive fixes onto a fresh branch rebased to current origin/main: (1) geometry-epsilon.ts + way-to-county.ts + extract_highways.py epsilon alignment; (2) road-ingest-supersede.ts + pg-storage writeRoadAtomsBatch supersede path WITH import regression fixed; (3) f5-roads-unblock.test.ts + taxonomy proposed/construction filter; (4) simulate-bastrop-road-supersede.mjs as gate artifact. Before any statewide apply: execute H6 throwaway-county apply with ingest_report.json; run independent adversarial re-review of supersede against live Bastrop rows; publish legacy synthetic-band migration plan (retire or remap positive 800M/900M rows before statewide PBF). Silent-upsert prevention after salvage: PBF ingest MUST use writeRoadAtomsBatch with supersede contract — incoming road-intake-osm-geofabrik-pbf hits skip-protected when existing row carries road-intake-osm-overpass, road-intake-elgin-osm, road-intake-bastrop-county-roadway, road-intake-county-streets-surveyed-2016, or road-intake-caldwell-cad-centerlines; same-adapter refresh still upserts by design; opts.force must remain operator-gated and excluded from bulk slot runs."
+  },
+  "writerExists": false,
+  "writerPath": "NO write-road-node-county.mjs — manifest deriveHasWriter (legacy-design-tools lib/db/src/railManifestDerivation.ts:112) requires packages/engine-core/scripts/write-*-county.mjs; roads binding (railEngineBinding.ts:46-50) has no engineWriterScript. Ad-hoc per-source ingest scripts exist (NOT county writers): packages/engine-core/scripts/ingest-bastrop-roads-overpass.mjs, ingest-elgin-roads-overpass.mjs, ingest-bastrop-roads-county-roadway.mjs, ingest-bastrop-roads-county-surveyed.mjs, ingest-caldwell-roads-overpass.mjs, ingest-caldwell-roads-cad.mjs, ingest-statewide-roads-pbf.mjs. Registration unblocks atomFamilyState from engine snapshot only; roads rail will remain hasWriter=false / no-writer ×254 until a standardized county writer lands.",
+  "prNumber": 309,
+  "ciConclusionString": "success",
+  "cp1": {
+    "preRegisteredAt": "2026-08-11T20:30:00Z",
+    "expectedPropertyEntityTypesCountAfter": 15,
+    "contractVersionExpected": "1.19.0",
+    "pr293RefutationPredictions": {
+      "collinearBoundaryCoinFlip": {
+        "prediction": "ADDRESSED on feat/f5-roads-unblock branch; STILL OPEN on origin/main until merged",
+        "evidencePlan": "grep 1e-18 vs collinearOrientationEpsilon on branch; f5-roads-unblock.test.ts H2 diagonal both-counties test"
+      },
+      "nodeIngestUnexecuted": {
+        "prediction": "STILL OPEN — H6 throwaway apply not executed; no product ingest_report.json",
+        "evidencePlan": "PR #293 body gate checklist; recursive search for ingest_report.json"
+      },
+      "silentUpsertClobber": {
+        "prediction": "ADDRESSED on branch via supersede skip-protected; STILL OPEN on main",
+        "evidencePlan": "compare writeRoadAtomsBatch on main vs branch; simulate-bastrop-road-supersede.mjs"
+      },
+      "syntheticIdLandmine": {
+        "prediction": "PARTIALLY ADDRESSED — negative namespace for new mints only; legacy positive 800M/900M bands remain",
+        "evidencePlan": "classify-county-street.ts OFFSET constants; isLegacyCountySyntheticWayId vs real OSM density in 700M-999M"
+      }
+    },
+    "writerPrediction": {
+      "writerExists": false,
+      "reason": "No write-road-node-county.mjs; P1.3 capability probe distinguishes registration from can-produce"
+    }
+  },
+  "cp2": {
+    "measuredAt": "2026-08-11T20:44:00Z",
+    "propertyEntityTypesCountMeasured": 15,
+    "engineMainShaAfterMerge": "6ccfe8c",
+    "registrationEvidence": "origin/main packages/atoms/src/property-instances.ts — road-node in union :174-175 and array :192; grep road-node count 4; parcel-node-registration.test.ts count guard 15 and isPropertyEntityType(road-node) true",
+    "pr293RefutationOutcomes": {
+      "collinearBoundaryCoinFlip": {
+        "cp1Prediction": "ADDRESSED on branch; OPEN on main",
+        "outcome": "CONFIRMED",
+        "evidence": "main way-to-county.ts segmentsIntersect still Math.abs(o*) < 1e-18 (planner grep); branch adds geometry-epsilon.ts collinearOrientationEpsilon max(1e-14, scale*1e-14); f5-roads-unblock.test.ts H2 requires ≥99% along-line jittered ways assigned to BOTH counties"
+      },
+      "nodeIngestUnexecuted": {
+        "cp1Prediction": "STILL OPEN",
+        "outcome": "CONFIRMED",
+        "evidence": "PR #293 body: H6 throwaway-county apply unchecked; CI conclusion failure; adversarial review 2026-08-09 documents no ingest_report.json from product script"
+      },
+      "silentUpsertClobber": {
+        "cp1Prediction": "ADDRESSED on branch; OPEN on main",
+        "outcome": "CONFIRMED",
+        "evidence": "branch road-ingest-supersede.ts decideRoadSupersede returns skip-protected when ROAD_PBF_SOURCE_ADAPTER targets ROAD_ADAPTERS_PROTECTED_FROM_PBF rows; PR body simulate 7249/7249 skip; main writeRoadAtomsBatch delegates to writePropertyAtomsBatch with unconditional ON CONFLICT DO UPDATE"
+      },
+      "syntheticIdLandmine": {
+        "cp1Prediction": "PARTIALLY ADDRESSED",
+        "outcome": "CONFIRMED",
+        "evidence": "branch COUNTY_ROADWAY_ID_OFFSET=-800_000_000 and COUNTY_ROAD_ID_OFFSET=-900_000_000 for new mints; LEGACY_COUNTY_ROADWAY_ID_OFFSET=800_000_000 and LEGACY_COUNTY_ROAD_ID_OFFSET=900_000_000 retained for live Bastrop rows; adversarial review quantifies ~1.53M real OSM ids in reserved positive space statewide — H4 does not retire legacy positive-band atoms"
+      }
+    },
+    "writerOutcome": {
+      "writerExists": false,
+      "outcome": "CONFIRMED",
+      "evidence": "glob write-*-county.mjs under packages/engine-core/scripts returns 9 files — none for road-node; ingest-*-roads-*.mjs are source-specific one-offs not probed by deriveHasWriter"
+    }
+  },
+  "adversarialFindings": [
+    "CP1: registration alone does NOT clear roads no-writer — P1.3 explicitly held roads at no-writer ×254 because engineWriterScript absent; P2.5 completes half of (a) only; operator must not read merged #309 as writer-ready",
+    "CP1 adversarial against salvage: rebuilding from scratch would force re-proving supersede against live Bastrop — but salvage carries the pg-storage.ts tokenize import regression (CI-proven failure) which a clean rebuild would not inherit; checked: diff origin/main...feat/f5-roads-unblock removes tokenize from pg-storage imports",
+    "CP2: isPropertyAtomInstance deliberately excludes road-node (roadNodeId-keyed) — registration is manifest/engine snapshot truth, not parcel-keyed property atom union membership; conflating the two would break listPropertyAtomsByParcelNodeId assumptions documented in property-instances.ts",
+    "CP2 adversarial against DO-NOT-MERGE #293: the supersede simulation is read-only SELECT + local JSON — it does not prove write-then-verify round-trip under bulk slot batching; H6 remains the honest apply gate",
+    "CP2 adversarial against close-and-re-derive: epsilon + supersede + taxonomy fixes are ~970 LOC with passing unit tests on branch — re-deriving wastes a reviewed artifact; salvage wins IF import fix + H6 + legacy-band migration are sequenced as merge blockers",
+    "Silent-upsert damage prevention explicit: after supersede merge, statewide PBF apply cannot clobber Bastrop warm-path rows carrying protected sourceAdapter values; Elgin warm 49/50 no-road-adjacency case is a coverage gap (missing OSM in city bbox), not supersede failure — clobber risk is the separate upsert-without-guard defect on main",
+    "Merge path: PR #309 merged 6ccfe8c after CI run 31529345862 conclusion success; PR #293 NOT merged per mission"
+  ]
+}

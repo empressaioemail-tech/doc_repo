@@ -1,0 +1,89 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p2-job",
+  "card": "P2 job template — writer allowlist so a non-CAD Factory job can run on a named FIPS and refuse without one",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-30T23:00:00Z",
+  "seat": "property",
+  "snapshot": {
+    "docRepo": "P:/doc_repo (inbox writes only; planner-owned)",
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p2-job",
+    "branch": "seat/property-ctx-p2-job",
+    "head": "7f41f52328ec40da0480d5eb65aad09ca3d4c3f9",
+    "originMain": "7f41f52328ec40da0480d5eb65aad09ca3d4c3f9",
+    "p1ControlsReadByPath": "P:/seat-worktrees/property/hauska-factory-p1-controls (read only; uncommitted)",
+    "p2JurisReadByPath": "P:/seat-worktrees/property/hauska-factory-p2-juris/sql/p2-juris/03_all_county_fips.sql (read only; PERSIST_SPEC shape)",
+    "noStoreWrite": true,
+    "noCommit": true,
+    "noOtherFactoryWorktreeWrite": true
+  },
+  "missionPremise": "P2-JURIS persist is blocked because the only Factory writer that can run on a named FIPS is CAD. A CAD-only allowlist is the defect. Sources: _dispatches/2026-08-30_p2-job_dispatch.md; _inbox/2026-08-30_p2_job_mission.md; OPS-19 F-01; P2-JURIS close leave_behind.",
+  "completionPredicate": "Uncommitted Factory diff plus this card's CP1/CP2/close. Missing county refuses COUNTY_REQUIRED. Named county plus a run row is accepted as a dry plan with persistExecuted false. Laptop --apply refuses LAPTOP_WRITE_FROZEN before any connection. Writer allowlist names containment persist, F-11 setback, and easement with no live REST. PERSIST_SPEC shape is consumed and not written. No commit, push, deploy, Cloud Run job start, 0005 apply, or persist.",
+  "scopeBasis": "hauska-factory this worktree only. p1-controls / gate8 / p2-juris trees are read by path, never written. 0005 is not applied. Persist UPDATE is not this card. Conformant.mjs 48021 default is P1-FACTORY's card and is not edited here.",
+  "adversarial": [
+    {
+      "claim": "factory-conformant plus requireCountyFips is enough for P2-JURIS persist",
+      "finding": "origin/main 7f41f52 factory-conformant still defaults county to BASTROP 48021 and is a CAD writer. A non-CAD persist of city_manifest.payload.all_county_fips has no job, no allowlist entry, and no dry-plan path. Mechanism: the only Band-1 apply path is CAD.",
+      "rejectedAlternative": "reuse factory-conformant --county= for persist; rejected because that job writes landing_cad_property through stage E, not city_manifest"
+    },
+    {
+      "claim": "the writer allowlist can be CAD plus a comment that other jobs will be added later",
+      "finding": "the card names a CAD-only allowlist as the defect. A comment is not an allowlist entry. Containment persist, F-11 setback, and easement with no live REST must be named now so a non-CAD job can be required.",
+      "rejectedAlternative": "ship CAD-only and extend later; rejected because persist waits on this template"
+    },
+    {
+      "claim": "copying sql/p2-juris/03 into this tree and running it is consuming PERSIST_SPEC",
+      "finding": "03 is SELECT-only in the p2-juris tree. Persist is a later Factory job that writes city_manifest.payload from the spatial array. This card consumes the result-set shape (place_fips, name, parent_county_fips, all_county_fips) and refuses execute.",
+      "rejectedAlternative": "copy the SQL and apply; rejected because persist is not this card and the other tree is not opened for write"
+    }
+  ],
+  "design": {
+    "countyRefuse": {
+      "what": "parseP2JurisFlags uses requireCountyFips(flagValue(argv, '--county')). Both --county= and --county forms. Never default 48021.",
+      "executes": "parseP2JurisFlags; node --test",
+      "triggers": "every p2-juris invocation",
+      "fails": "COUNTY_REQUIRED / COUNTY_UNKNOWN before any store write",
+      "bypasses": "a caller that passes {flags:{county:'48021'}} explicitly (named, not defaulted)"
+    },
+    "runRowFirst": {
+      "what": "requireRunRow before any write. Dry plan accepts a named county plus an existing run row. Apply on Cloud Run would startRun first. Persist UPDATE is not called.",
+      "executes": "requireRunRow; runP2Juris",
+      "triggers": "every p2-juris invocation",
+      "fails": "RUN_ROW_REQUIRED",
+      "bypasses": "a raw SQL UPDATE on city_manifest (nothing in this repo issues one)"
+    },
+    "writerAllowlist": {
+      "what": "WRITER_JOBS names containment-persist, f11-setback, easement-no-live-rest, and factory-conformant. assertWriterAllowlistNotCadOnly fails a CAD-only map. requireWriterJob refuses an unnamed job. easement liveRest must be false.",
+      "executes": "requireWriterJob / assertWriterAllowlistNotCadOnly; runP2Juris",
+      "triggers": "every p2-juris invocation and the suite",
+      "fails": "WRITER_NOT_ALLOWLISTED / WRITER_ALLOWLIST_CAD_ONLY / EASEMENT_LIVE_REST",
+      "bypasses": "a job that never calls requireWriterJob"
+    },
+    "persistSpec": {
+      "what": "consumePersistSpec accepts the 03 PERSIST_SPEC columns only. planCountyPersist filters by named FIPS. executeContainmentPersist always refuses PERSIST_NOT_THIS_CARD.",
+      "executes": "consumePersistSpec; planCountyPersist; node --test",
+      "triggers": "dry plan",
+      "fails": "PERSIST_SPEC_SHAPE / PERSIST_NOT_THIS_CARD",
+      "bypasses": "hand UPDATE city_manifest (forbidden this card)"
+    },
+    "laptopFreeze": {
+      "what": "--apply and FACTORY_CLOUD !== '1' throws LAPTOP_WRITE_FROZEN before connectFn.",
+      "executes": "runP2Juris",
+      "triggers": "p2-juris --apply from a laptop",
+      "fails": "LAPTOP_WRITE_FROZEN",
+      "bypasses": "FACTORY_CLOUD=1 on a laptop (same as other Factory writers)"
+    },
+    "p1Helpers": {
+      "what": "origin/main already has requireCountyFips. collect-complete.mjs is copied from p1-controls (uncommitted there). conformant.mjs is not edited.",
+      "executes": "copied module plus existing cli-flags",
+      "triggers": "import; CAD writers on the P1 card",
+      "fails": "COLLECT_INCOMPLETE when the copied gate is called with no ledger row",
+      "bypasses": "this stub is not CAD and does not call requireCollectComplete"
+    }
+  },
+  "constraintsHonored": [
+    "no commit, push, deploy, Cloud Run job start, 0005 apply, persist, connection URL print",
+    "no write to p1-controls, gate8, or p2-juris trees",
+    "HEAD remains 7f41f52 plus this tree's uncommitted diff"
+  ]
+}

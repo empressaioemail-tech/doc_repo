@@ -1,0 +1,71 @@
+{
+  "checkpoint": "CP2",
+  "lane": "bake-0005b",
+  "card": "Bake-migrate job for 0005b — identity alias on bake neondb",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-31T03:25:00Z",
+  "seat": "property",
+  "snapshot": {
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-bake-migrate",
+    "branch": "seat/property-ctx-bake-migrate",
+    "base": "a7a804220ad046ac3c70e286d61c83595bb3afe3",
+    "workingTree": "uncommitted; planner commits",
+    "tests": "node --test test/*.test.mjs after npm install --omit=dev at 2026-08-31T03:24Z: 319 pass, 0 fail, 2 skipped. bake-migrate.test.mjs 14/14."
+  },
+  "pilot": {
+    "fileLists": {
+      "violation": "n/a as a throw. Assertion: Factory listFactoryMigrationFiles includes 0005a_landing_setback_easement.sql and excludes 0005b_landing_cad_txgio_alias.sql. Bake listBakeMigrationFiles is the inverse. No breadth_* file in bake/.",
+      "knownGood": "applyMigrations uses listFactoryMigrationFiles (migrations/ only, non-recursive). bake-migrate uses listBakeMigrationFiles (migrations/bake/ only)."
+    },
+    "missingTarget": {
+      "violation": "parseBakeMigrateFlags([]) / [--apply] / [--target=] throw BAKE_TARGET_REQUIRED. CLI `node src/cli.mjs bake-migrate` prints BAKE_TARGET_REQUIRED exit 1. [--target, staging] throws BAKE_TARGET_FORM. [--target=canary] throws TARGET_UNKNOWN.",
+      "knownGood": "--target=staging and --target=production resolve. Apply defaults false."
+    },
+    "missingUrl": {
+      "violation": "resolveBakeNeondbUrl({FACTORY_DATABASE_URL}, staging) throws TARGET_ENV_MISSING missing STAGING_NEONDB_URL. runBakeMigrate with Factory URL only: connectFn count 0. CLI --target=staging without STAGING_NEONDB_URL prints TARGET_ENV_MISSING.",
+      "knownGood": "STAGING_NEONDB_URL present resolves varName STAGING_NEONDB_URL; production uses PRODUCTION_NEONDB_URL."
+    },
+    "factoryUrl": {
+      "violation": "assertNotFactoryUrl(FACTORY_URL, {FACTORY_DATABASE_URL:FACTORY_URL}) throws FACTORY_URL_REFUSED. Same host+db with different user/pass also refuses. runBakeMigrate with STAGING_NEONDB_URL equal to FACTORY_DATABASE_URL: FACTORY_URL_REFUSED, connectFn 0. CLI same pair prints FACTORY_URL_REFUSED.",
+      "knownGood": "Dry plan with distinct bake URL and Factory URL present does not connect and does not print FACTORY_DATABASE_URL or the factory host."
+    },
+    "dryPlan": {
+      "violation": "n/a (pass-arm). Missing target still refuses.",
+      "knownGood": "runBakeMigrate --target=staging names files including 0005b_landing_cad_txgio_alias.sql, excludes 0005a, job factory-bake-migrate, urlVar STAGING_NEONDB_URL, store bake-neondb, dry true, applied false, connectFn 0. CLI stdout parses to the same. Production dry names PRODUCTION_NEONDB_URL."
+    },
+    "recordGate": {
+      "violation": "applyBakeMigrations with INSERT INTO bake_schema_migrations throwing: RECORD_UNWRITABLE, readSql not called, file SQL never issued, ROLLBACK issued.",
+      "knownGood": "Successful mock: INSERT params [0005b_landing_cad_txgio_alias.sql, factory-bake-migrate-abc] precede the file SQL. records[] carries filename and invocation. A count is not the record."
+    },
+    "laptopApply": {
+      "violation": "--apply with FACTORY_CLOUD unset throws LAPTOP_WRITE_FROZEN, connectFn 0. --apply with FACTORY_CLOUD=1 and no invocation throws INVOCATION_REQUIRED.",
+      "knownGood": "Dry path with the same bake URL does not connect."
+    },
+    "aliasPersistUnweakened": {
+      "violation": "applyAliasLandingRows against information_schema empty rows throws ALIAS_TABLE_MISSING, no INSERT. Re-asserted in bake-migrate.test.mjs and still in alias-persist-job.test.mjs / p1-controls.",
+      "knownGood": "Not edited this card."
+    }
+  },
+  "notDoneThisCard": [
+    "0005b not applied to staging or production neondb.",
+    "factory-bake-migrate Cloud Run job not deployed or executed.",
+    "cloudbuild.publish.yaml not submitted.",
+    "No commit, push, PR.",
+    "hauska-factory-main-migrate not opened for apply.",
+    "P4 rails and containment join not touched."
+  ],
+  "adversarialAtPilot": [
+    {
+      "worry": "dry plan silently falls through to FACTORY_DATABASE_URL when STAGING_NEONDB_URL is missing",
+      "resolution": "resolveBakeNeondbUrl reads only TARGET_VARS[target].db. Missing var is TARGET_ENV_MISSING. connectFn stays 0. CLI stderr is TARGET_ENV_MISSING, not a Factory connect error."
+    },
+    {
+      "worry": "record INSERT after file SQL so a record failure leaves applied SQL",
+      "resolution": "INSERT runs first in the transaction. Record-fail test: readSql false, no landing_cad_txgio_alias CREATE on the client, ROLLBACK. Pass test: insertAt < fileAt."
+    },
+    {
+      "worry": "factory-conformant-migrate args override could be this job",
+      "resolution": "New job name factory-bake-migrate. Secrets are STAGING_NEONDB_URL and PRODUCTION_NEONDB_URL only. factory-publish-migrate stays args=migrate + FACTORY_DATABASE_URL."
+    }
+  ]
+}

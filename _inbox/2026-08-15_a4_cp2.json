@@ -1,0 +1,97 @@
+{
+  "lane": "A4",
+  "planRow": "G-56",
+  "checkpoint": "CP2",
+  "timestamp": "2026-08-15T18:00:00.000Z",
+  "cp1Path": "_inbox/2026-08-15_a4_cp1.json",
+  "worktrees": {
+    "legacy-design-tools": "P:\\legacy-design-tools-worktrees\\a4-smart-files-cc",
+    "hauska-mcp-server": "P:\\hauska-mcp-server-worktrees\\a4-smart-files-cc",
+    "hauska-map": "P:\\hauska-map-worktrees\\a4-smart-files-cc"
+  },
+  "seedCounts": {
+    "countingRule": "Measured rows written by seedSmartFilesDataRoom.mjs (planner --apply on cortex-prod)",
+    "folders": { "n": 2, "rule": "rows in smart_file_folders" },
+    "fileDocuments": { "n": 3, "rule": "rows in smart_file_documents with accessPolicy platform-internal (excludes tenant-private RBAC probe doc)" },
+    "placements": { "n": 5, "rule": "rows in smart_file_placements (includes dual-folder file counted twice)" },
+    "dualFolderSameEntityId": {
+      "entityId": "smartfile:jurisdiction:48021:udc-seed",
+      "placementCount": 2,
+      "folderIds": ["folder:jurisdiction:48021:planning", "folder:site:parcel:48021:R12345:geotech"],
+      "rule": "same document_entity_id, two distinct target_id values"
+    },
+    "pdfDocument": { "entityId": "smartfile:jurisdiction:48021:udc-seed", "contentCid": "bafyG56seedpdf0001", "rule": "smart_file_versions.content_type application/pdf" },
+    "nonFileRecordAtom": {
+      "recordEntityId": "property:flood-zone:48021:R12345",
+      "folderId": "folder:jurisdiction:48021:planning",
+      "rule": "row in smart_file_folder_records; excluded from list_smart_file_folder_files"
+    },
+    "typedAbsence": {
+      "entityId": "smartfile:jurisdiction:48021:str-ordinance",
+      "verdict": "absent-verified",
+      "rule": "row in smart_file_absence_determinations"
+    },
+    "tenantPrivateProbe": {
+      "entityId": "smartfile:jurisdiction:48021:tenant-private-probe",
+      "accessPolicy": "tenant-private",
+      "rule": "RBAC deny target; not counted in platform-internal fileDocuments"
+    }
+  },
+  "proofs": {
+    "fileListExcludesNonFileAtom": {
+      "mechanism": "listFilesInFolder joins smart_file_placements → smart_file_documents only; record atoms live in smart_file_folder_records served by /folders/:id/records",
+      "test": "apps/command-center/src/admin/control/panels/SmartFiles.test.tsx — UDC in file buttons, FEMA SFHA only in Record pane"
+    },
+    "dualFolderSameEntityId": {
+      "mechanism": "two placement rows, one document row; listFilesInFolder reports placementCount=2",
+      "seed": "placeDocument called twice with same entityId, different folder targetIds"
+    },
+    "brokerageUntouched": {
+      "mechanism": "git diff --name-only in all three worktrees; zero paths matching brokerage",
+      "result": "pass"
+    },
+    "staleIndicator": {
+      "mechanism": "evaluateSmartFileFreshness with backdated computedAt; artifacts/api-server/src/__tests__/smart-file-stale.test.ts",
+      "ccSurface": "SmartFiles FileSidebar Pill STALE when freshness.isStale"
+    },
+    "rbac": {
+      "mechanism": "smartFileAccess.ts + MCP access-policy.ts; anon denied tenant-private; platform-internal allowed with platformInternal flag",
+      "tests": ["smart-file-access.test.ts (LDT)", "tests/smart-files-access.test.ts (MCP, 2/2 pass in that file; 458/458 in full suite)"]
+    }
+  },
+  "tests": {
+    "hauska-mcp-server": "npm run build OK; tests/smart-files-access.test.ts — 2 tests pass (458/458 full suite denominator)",
+    "legacy-design-tools": "schema.sql.template updated for 0081 tables; fixture-drift guard",
+    "hauska-map": "SmartFiles.test.tsx — getByText('FEMA SFHA') on visible record title span"
+  },
+  "constraintsHonored": [
+    "isolated worktrees",
+    "zero brokerage files",
+    "no atoms --apply",
+    "no workflow_dispatch",
+    "no merge",
+    "no Vercel",
+    "no canary",
+    "smartcity-os not opened",
+    "no payment SDK",
+    "doc_repo uncommitted"
+  ],
+  "remainingRisks": [
+    "Planner must apply migration 0081 + seed on cortex-prod before live grade",
+    "Attachment bytes served from seed-blobs/ until engine /v1/blobs/:cid wired",
+    "A-013 type promotion still planner-owned; MCP uses wire JSON not copied contract file",
+    "CC proxy must forward Bearer to cortex-api for smart-files routes in production"
+  ],
+  "prs": [
+    { "repo": "legacy-design-tools", "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/433", "branch": "feat/g56-smart-files-cc" },
+    { "repo": "hauska-mcp-server", "url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/66", "branch": "feat/g56-smart-files-cc" },
+    { "repo": "hauska-map", "url": "https://github.com/empressaioemail-tech/hauska-map/pull/162", "branch": "feat/g56-smart-files-cc" }
+  ],
+  "findings": [
+    {
+      "id": "A4-0081-seed-sidecar",
+      "severity": "accepted",
+      "summary": "Migration 0081 smart_file_folders + smart_file_folder_records with JSON payload sidecar is a seed/serve convenience for CC-done, not the graph model. Folder registry and record-pane links are not placed-on edges; graph-native record atoms remain a follow-on. Planner accepted; do not rewrite in this bounce."
+    }
+  ]
+}
