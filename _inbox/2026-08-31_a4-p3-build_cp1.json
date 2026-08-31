@@ -1,0 +1,151 @@
+{
+  "checkpoint": "CP1",
+  "lane": "a4-p3-build",
+  "card": "Build P3 now; rail_absence store, writer, and serve path. A build does not wait for a measurement.",
+  "planRows": ["F-05", "F-06"],
+  "writtenAt": "2026-08-31T21:10:00Z",
+  "seat": "integration supervising; implementer writes in P:/tmp/hauska-factory-a4-p3-build; planner commits",
+  "snapshot": {
+    "docRepo": "P:/doc_repo on main 17555ce, seat integration (planner). This lane writes inbox/scratch only.",
+    "hauskaFactory": "P:/tmp/hauska-factory-a4-p3-build",
+    "branch": "feat/a4-p3-build",
+    "head": "5f9acc3c53c04efa88f59715271f3d6a12f78e99",
+    "headNote": "Factory HEAD at clone; git rev-parse matches dispatch 5f9acc3. Merge of #49 p2-juris-persist.",
+    "treeConfirm": {
+      "rail_absence": "zero files (glob **/*rail_absence* = 0; repo grep rail_absence = no matches)",
+      "collect_close": "zero files (glob **/*collect_close* = 0; repo grep collect_close = no matches)",
+      "instrument": "read the tree, did not assume"
+    },
+    "forbiddenTreesNotOpened": [
+      "hauska-factory-a1-containment",
+      "hauska-factory-p2-juris-persist",
+      "hauska-factory-p2-juris-join",
+      "hauska-factory-p5-scrub",
+      "hauska-factory-p4-rails"
+    ],
+    "noStoreWrite": true,
+    "noCommit": true,
+    "noContainmentFigure": true
+  },
+  "missionPremise": "P3 is a BUILD and builds do not wait for TOTALS. Absence that is SERVED, not merely stored, is the ADR-029 gap. Three states are not interchangeable: not-applicable is unincorporated only (counties do not zone); unmeasured is in-city with no landed table; absent-verified is after a probe found none. Operator ruling 2026-08-31_bastrop_setbacks_bake_ruling item 2 is not reopenable: an in-city parcel with no landed setback table serves unmeasured, NEVER not-applicable. L7 satisfied-absent is county SCORE vocabulary and is not copied onto parcel rails. Sources: _dispatches/2026-08-31_a4-p3-build_dispatch.md; _decisions/2026-08-31_bastrop_setbacks_bake_ruling.md; 80_adrs/adr_029_building_footprint_and_utility_easement_rails.md; _inbox/2026-08-12_L7_sparse_rail_absence_doctrine.md; _inbox/2026-08-05_T3_easement_source_recon.md; _inbox/2026-08-30_ctx_w3_rail_inventory_WDLL.md.",
+  "completionPredicate": "Uncommitted Factory diff plus this card's CP1/CP2/close. Schema for collect_close and rail_absence exists and seeds no absence rows. Writer refuses an unprobed absence, a request-clock asOf, a basis identical across two parcels, and not-applicable on an in-city parcel. Serve path emits a named absence with scope, evaluation-time asOf, and per-cell basis; an empty rail on a classified parcel is the ADR-029 defect. Fixtures cover all three states and the in-city / unincorporated boundary. Arm 1: Caldwell rural serve names county-absence, not an empty rail. Arm 2: in-city no-table requires unmeasured; a poisoned not-applicable emit is refused. No production job. No store beyond fixtures. No containment figure adopted. Planner commits.",
+  "scopeBasis": "hauska-factory this registered clone only. Classification is wired against population SHAPE (unincorporated vs in-city; landed table vs none; probed vs unprobed), not against 357269 / 465568 / 826569 or any A1 TOTALS. County easement absences are the T3 four: 48021, 48055, 48209, 48491. Setbacks, edges, and envelope inherit zoning scope. collect_close is the probe receipt; rail_absence is the served row. Live PE brief is not this card (factory-only, build not run).",
+  "adversarial": [
+    {
+      "claim": "P3 is blocked on A1 containment TOTALS",
+      "finding": "Running a production stamp needs a count. Building the schema, classifier, writer, and serve path needs the three-state rule and the incorporation shape. Waiting for TOTALS puts a full phase back on the serial line. Mechanism: dispatch sentence 'Building it needs the schema, not the number.'",
+      "rejectedAlternative": "hold the card until A1 files 357269; rejected by the dispatch and by the P5/F-11 precedent the card names"
+    },
+    {
+      "claim": "copy L7 satisfied-absent onto parcel setback rails",
+      "finding": "L7 is SCORE-time counting for sparse statewide-uniform rails (rrc-wells, pipelines, rail-corridor, mud) after a confirmed universe. Parcel setbacks are not a statewide-uniform rail. satisfied-absent on an unincorporated parcel would collapse not-applicable into a looked-and-none vocabulary. The doctrine file itself says it does not authorize that.",
+      "rejectedAlternative": "reuse countyLedger displayState mapping; rejected because that mapping is CAD county-cell SCORE, not a parcel rail"
+    },
+    {
+      "claim": "stamp not-applicable on every parcel without a setback table",
+      "finding": "That is the ruling-forbidden fabrication. In-city with no table is unmeasured. Only unincorporated qualifies for not-applicable. Volume is not evidence of a structural cannot-exist.",
+      "rejectedAlternative": "treat the 826569 remainder as structural; rejected by the 2026-08-31 ruling item 2"
+    },
+    {
+      "claim": "store the absence on county_rail / landing_easement_gis and let PE infer it from a zero atom count",
+      "finding": "That is ADR-029 reproduced: stored absence that never reaches a surface, or a zero count read as unmeasured. W3 item 3 says PE does not read county_manifest for no-footprint-source. The serve path is the point of the phase.",
+      "rejectedAlternative": "one county_rail display_state flip; rejected because the brief still renders an empty rail"
+    }
+  ],
+  "design": {
+    "collect_close": {
+      "what": "Probe receipt. One row per (rail, scope_kind, scope_id). Fields: evaluated_at (evaluation time, no DEFAULT now()), instrument, finding (structural-unincorporated | no-landed-table | none-found | source-present), source_catalog. Writer cannot insert rail_absence without a matching collect_close id. DDL seeds none.",
+      "executes": "writeCollectClose; requireCollectClose; CHECK collect_close_id IS NOT NULL on rail_absence",
+      "triggers": "every absence write",
+      "fails": "UNPROBED_ABSENCE",
+      "bypasses": "a hand INSERT that forges collect_close_id; schema cannot stop a forged FK to a fake probe, so tests also refuse a close whose evaluated_at is missing"
+    },
+    "rail_absence_store": {
+      "what": "Served absence row. Parcel scope for setbacks/edges/envelope. County scope for the T3 four easement absences (one row per FIPS, not per parcel). Columns: rail, scope_kind, scope_id, parcel_node_id, county_fips, city_key, incorporation, state, scope_searched, as_of, basis, collect_close_id. CHECK: not-applicable only when incorporation=unincorporated AND rail in (setbacks, edges, envelope). CHECK: unmeasured only when incorporation=in-city. as_of has no DEFAULT now(). No absence seeds in DDL.",
+      "executes": "migrations/0006_rail_absence.sql; writeRailAbsence",
+      "triggers": "writer; tests parse the SQL",
+      "fails": "SQL CHECK on a poisoned in-city not-applicable insert; UNPROBED_ABSENCE without close",
+      "bypasses": "a store that never applies 0006 (this card does not apply)"
+    },
+    "classifier": {
+      "what": "Pure function. Inputs are independently derived: incorporation (unincorporated|in-city), landedTable boolean, collectClose finding. Zoning-inherited rails (setbacks, edges, envelope): unincorporated -> not-applicable; in-city and no landed table -> unmeasured; in-city and finding none-found -> absent-verified. emitOverride not-applicable on in-city -> IN_CITY_NOT_APPLICABLE. County easement on the T3 four with finding none-found -> absent-verified at county scope. No TOTALS input.",
+      "executes": "classifyParcelRail; classifyCountyEasement",
+      "triggers": "writer and serve",
+      "fails": "IN_CITY_NOT_APPLICABLE; UNPROBED_ABSENCE; UNKNOWN_INCORPORATION",
+      "bypasses": "a caller that writes a rail_absence row without calling classify (SQL CHECK is the second door)"
+    },
+    "writer": {
+      "what": "Copies as_of from collect_close.evaluated_at. Mints basis that includes the cell identity (parcel node, or county+rail+parcel when projecting county coverage). Refuses character-identical basis across two parcel cells. Refuses asOf === requestClock. Dry job only; --apply refuses APPLY_NOT_THIS_CARD / LAPTOP_WRITE_FROZEN. No production.",
+      "executes": "writeRailAbsence; runP3Absence",
+      "triggers": "p3-absence CLI; unit suite",
+      "fails": "REQUEST_CLOCK_ASOF; BASIS_COLLISION; APPLY_NOT_THIS_CARD; LAPTOP_WRITE_FROZEN",
+      "bypasses": "a job that never calls writeRailAbsence"
+    },
+    "serve": {
+      "what": "serveParcelBrief(store, parcel, {requestClock}) emits every classified rail as a named object {verdict, scope, asOf, basis}. County easement coverage is projected onto the parcel with a per-parcel basis. asOf is the stored evaluation time, never Date.now() and never requestClock. An omitted or null rail is the ADR-029 empty-rail defect and fails the arm-1 fixture.",
+      "executes": "serveParcelRail; serveParcelBrief",
+      "triggers": "unit suite; later PE/brief consumers (not this card)",
+      "fails": "EMPTY_RAIL; REQUEST_CLOCK_ASOF; IN_CITY_NOT_APPLICABLE on a stuffed row",
+      "bypasses": "a brief builder that never calls serveParcelBrief (named leave-behind)"
+    },
+    "fourCountyEasements": {
+      "what": "T3 recon 2026-08-05 four-point probe. County-scope absent-verified for utility-easement on 48021, 48055, 48209, 48491. evaluated_at is the recon probe timestamp 2026-08-05T19:30:00.000Z, not the request clock. 48309 is CAD-derived and is not an absence. City of Bastrop / Round Rock / Cedar Park layers are municipal and do not retire the county row.",
+      "executes": "classifyCountyEasement; fixture collect_close rows",
+      "triggers": "writer fixtures; serve of a Caldwell rural parcel",
+      "fails": "COUNTY_EASEMENT_NOT_T3 on a fifth FIPS; EMPTY_RAIL if serve does not project the county row",
+      "bypasses": "a parcel-sentinel fan-out (ADR-029 forbids millions of sentinels)"
+    },
+    "fixtures": {
+      "what": "Shape, not counts. (1) 48055:RURAL-1 unincorporated -> setbacks/edges/envelope not-applicable AND utility-easement county-absence. (2) 48021:INCITY-NOTABLE in-city no landed table -> unmeasured. (3) 48021:INCITY-PROBED in-city finding none-found -> absent-verified. (4) Boundary pair: same county, one unincorporated and one in-city, different states. (5) Poison: in-city forced not-applicable. (6) Two parcels same basis. (7) asOf equals requestClock. (8) Write without collect_close.",
+      "executes": "test/p3-absence.test.mjs",
+      "triggers": "node --test",
+      "fails": "each poison listed",
+      "bypasses": "none in this suite"
+    }
+  },
+  "falsifiers": {
+    "statedBeforeRun": true,
+    "arm1": {
+      "name": "Caldwell rural names county-absence on the wire",
+      "whatWouldProveWrong": "serveParcelBrief on fixture 48055:RURAL-1 omits utility-easement, or emits an empty/null rail, or names the county SCORE token satisfied-absent. Stored row that serve does not emit is ADR-029 reproduced.",
+      "passLooksLike": "wire.rails['utility-easement'].verdict === 'absent-verified' with scope naming the Caldwell catalog probe, asOf 2026-08-05T19:30:00.000Z, and a basis that includes parcel 48055:RURAL-1. Setbacks on the same parcel are not-applicable, not empty.",
+      "note": "Live PE brief is not this card. The serve function is the wire. A later PE consumer that skips it is leave_behind."
+    },
+    "arm2": {
+      "name": "in-city no landed table must be unmeasured; poisoned not-applicable must fail",
+      "whatWouldProveWrong": "classifyParcelRail or serveParcelRail emits not-applicable for 48021:INCITY-NOTABLE (in-city, no landed table). That is the ruling-forbidden direction.",
+      "passLooksLike": "correct path emits unmeasured. Poison path (emitOverride or stuffed row with not-applicable + in-city) throws IN_CITY_NOT_APPLICABLE. CP2 files the poison fail.",
+      "note": "This arm is the one that matters. It is stated here before any implementation."
+    },
+    "shared": {
+      "unprobed": "writeRailAbsence without collect_close throws UNPROBED_ABSENCE",
+      "requestClock": "asOf equal to requestClock throws REQUEST_CLOCK_ASOF",
+      "basisCollision": "two parcel cells with character-identical basis throw BASIS_COLLISION",
+      "l7Leak": "parcel serve payload contains satisfied-absent -> card failed",
+      "totalsAdopted": "classifier takes a containment count as input -> card failed"
+    }
+  },
+  "threeQuestionGate": [
+    {
+      "control": "IN_CITY_NOT_APPLICABLE",
+      "executes": "classifyParcelRail + writeRailAbsence + serveParcelRail + SQL CHECK rail_absence_not_applicable_unincorporated",
+      "triggers": "every classify/write/serve of a zoning-inherited rail",
+      "fails": "IN_CITY_NOT_APPLICABLE; SQL CHECK on insert",
+      "bypasses": "a brief builder that never calls serveParcelBrief"
+    },
+    {
+      "control": "UNPROBED_ABSENCE",
+      "executes": "requireCollectClose; rail_absence.collect_close_id NOT NULL",
+      "triggers": "every absence write",
+      "fails": "UNPROBED_ABSENCE",
+      "bypasses": "a forged collect_close row (tests refuse a close missing evaluated_at)"
+    },
+    {
+      "control": "evaluation-time asOf, not request clock",
+      "executes": "writeRailAbsence copies collect_close.evaluated_at; serve refuses asOf === requestClock; SQL as_of has no DEFAULT now()",
+      "triggers": "write and serve",
+      "fails": "REQUEST_CLOCK_ASOF",
+      "bypasses": "a consumer that replaces asOf with Date.now() after serve (named leave-behind)"
+    }
+  ]
+}

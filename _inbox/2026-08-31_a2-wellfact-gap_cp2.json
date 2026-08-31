@@ -1,0 +1,67 @@
+{
+  "lane": "A2",
+  "planRows": ["F-02"],
+  "checkpoint": "CP2",
+  "at": "2026-08-31T21:25:00Z",
+  "snapshot": {
+    "worktree": "P:/tmp/hauska-engine-a2-wellfact",
+    "branch": "feat/a2-wellfact-gap",
+    "engine_head": "0e96e6a2eb54a0563b23eaf9fb347191b3aa87ab"
+  },
+  "predicted_number_stated_before_check": 2087,
+  "prediction": {
+    "mechanism": 3,
+    "statement": "The 2087 are extra present rows that share a persist PK with another planned row. Persist PK is did:hauska:well-fact:{parcelNodeId}:{wellKey}. wellKey is buildApiNumber14(api). The planner emits one planned row per well FEATURE that hits a parcel and does not dedupe by wellKey. writePropertyAtomsBatch last-wins on atom_did. atomsWritten counts slice.length. Verify hashes body.atomDid from the same (parcelNodeId, wellKey), so a duplicate pair verifies 2 and stores 1. Exit 0 plus verified=69000 is the signature of this collapse, not a successful unique write.",
+    "arithmetic_stated_before_check": {
+      "wouldWritePresent": 12079,
+      "wouldWriteAbsent": 56921,
+      "present_plus_absent": 69000,
+      "unique_present_persist_keys_if_gap_is_this_class": 9992,
+      "unique_absent_persist_keys": 56921,
+      "predicted_store": 66913,
+      "predicted_gap": 2087,
+      "formula": "2087 = 12079 - |unique (parcelKey, buildApiNumber14(api)) among present hits|",
+      "why_absent_cannot_supply_the_2087": "absent wellKey is the literal none; seenParcelKeys already keeps one raw parcelKey. Two absents collide only if two different raw keys canonicalize to one parcel token. Class B produces different wlfact_ tokens; a same-500-slice pair would have failed verify and exited 1. The run exited 0 with verified=69000. Class A (same raw parcelKey + same wellKey) is the only class that verifies in-batch."
+    }
+  },
+  "check": {
+    "what_would_prove_wrong": "unique present persist keys on the 48021 plan is not 9992, or 9992+56921 is not 66913, or a unit fixture of two same-API wells on one parcel plans 1 row / writes 2 PKs",
+    "arithmetic_check": {
+      "stated_before": "9992 + 56921 must equal 66913",
+      "result": 66913,
+      "hit": true
+    },
+    "code_fixture_check": {
+      "stated_before": "two well features, identical api, same parcel, both on-parcel: planned present=2, unique persist keys=1, extras=1. After the planner dedupe patch: planned present=1, collapsedDuplicateWellKeys=1",
+      "status": "HIT",
+      "instrument": "vitest src/well-fact/__tests__/plan-county-well-facts.test.ts (20 passed, 2026-08-31T21:09:47Z, vitest 2.1.9 via P:/hauska-engine/node_modules; A2 clone has no node_modules)",
+      "observed": "counts.present=1, collapsedDuplicateWellKeys=1; countWellFactPersistCollisions extras=1; 12079-2087=9992; 9992+56921=66913"
+    },
+    "source_table_unique_count": {
+      "status": "HELD",
+      "reason": "Computing |unique (parcelKey, wellKey)| on 48021 requires reading neondb tx_rrc_well and txgio_parcel. A1 holds that compute. Dispatch: write OPEN and stop rather than scan under A1."
+    }
+  },
+  "mechanisms_at_cp2": [
+    {
+      "id": 1,
+      "status": "reject",
+      "reason": "12079+56921=69000. buildAtomsForWellFactPlan is plan.planned.map 1:1. Writer emits both present and absent. skippedUnusableKey is outside planned[] and cannot subtract from a 69000 that was built and counted as atomsWritten."
+    },
+    {
+      "id": 2,
+      "status": "reject_as_this_gap",
+      "reason": "Unusable keys and duplicate raw parcelKeys are skipped before planned[]. They never enter the 69000. persist assertions throw (ParcelEntityIdRejectedError, LeaseRequiredError); they do not skip. A silent skip after build would have made atomsWritten < 69000."
+    },
+    {
+      "id": 3,
+      "status": "held_as_the_mechanism",
+      "reason": "Matches exit 0, atomsWritten=69000, verified=69000, unique store PKs=66913. Dedupes in preparePropertyAtomRows and ON CONFLICT (atom_did). Writer logs only counts (well-fact-county.progress written/verified/ofTotal). A count is not a record. Per-chunk item names are absent; that is itself a finding."
+    },
+    {
+      "id": 4,
+      "status": "reject",
+      "reason": "Writable set equals planned set. No persist filter. writePropertyAtomsBatch writes every instance it is given (then last-wins on PK)."
+    }
+  ]
+}

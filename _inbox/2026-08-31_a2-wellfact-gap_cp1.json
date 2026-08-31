@@ -1,0 +1,90 @@
+{
+  "lane": "A2",
+  "planRows": ["F-02"],
+  "checkpoint": "CP1",
+  "at": "2026-08-31T21:05:00Z",
+  "snapshot": {
+    "planner_seat": "integration",
+    "planner_repo": "P:/doc_repo",
+    "planner_branch": "main",
+    "planner_commit": "17555ce",
+    "worktree": "P:/tmp/hauska-engine-a2-wellfact",
+    "branch": "feat/a2-wellfact-gap",
+    "engine_head": "0e96e6a2eb54a0563b23eaf9fb347191b3aa87ab",
+    "engine_head_note": "includes #368 lease mint 34710cb and #369",
+    "write_that_produced_gap": {
+      "run": "3dc46ece",
+      "execution": "factory-atoms-cad-9zhg5",
+      "child": "write-well-fact-county.mjs",
+      "lease_entity_type": "well-fact",
+      "digest": "sha256:0b259a54",
+      "ENGINE_SHA": "34710cb",
+      "generation": 4
+    }
+  },
+  "missionPremise": "Run 3dc46ece planned 69000 well-fact atoms and the store holds 66913 (gap 2087), confirmed by entity_id range AND atom_did prefix. Cause unknown. Source: _inbox/2026-08-31_writer-lease_close.json FINDING_GAP and dispatch 2026-08-31_a2-wellfact-gap_dispatch.md. A mechanism that is merely consistent with a gap of any size explains nothing; it must predict 2087.",
+  "completionPredicate": "A named mechanism predicts 2087 before the check that confirms it. Each of the four dispatch mechanisms is stated with a reject-or-hold reason. Per-chunk planned-in vs written-out is settled from writer records, or the finding is that the writer records only a total (a count is not a record). No store connection while A1 holds neondb/hauska_mcp. No re-run of 48021. No apply on another county.",
+  "scopeBasis": "hauska-engine write path only (P:/tmp/hauska-engine-a2-wellfact). Lease path is out: it worked. CAD is out. Other counties held. Store held while A1 is in flight. Code reading outranks output measuring.",
+  "write_path_read": {
+    "planner": "packages/engine-core/src/well-fact/plan-county-well-facts.ts",
+    "atom_builder": "packages/engine-core/src/well-fact/well-fact-atoms.ts",
+    "writer": "packages/engine-core/scripts/write-well-fact-county.mjs",
+    "batch": "packages/storage/src/pg-storage.ts writePropertyAtomsBatch + packages/storage/src/property-atom-batch-write.ts",
+    "observed_before_mechanism_claim": [
+      "wouldWriteTotal = plan.planned.length; 12079 present + 56921 absent = 69000 (arithmetic holds; skippedUnusableKey is NOT in the plan total)",
+      "buildAtomsForWellFactPlan is plan.planned.map 1:1; atomsBuilt cannot diverge from planned.length",
+      "atomsWritten += slice.length (write-well-fact-county.mjs:344). That is planned-in, not unique PKs and not the upsert return",
+      "writePropertyAtomsBatch preparePropertyAtomRows({ dedupe: true }) last-wins on atom_did, then ON CONFLICT (atom_did) DO UPDATE",
+      "PK is did:hauska:well-fact:${entityId} unless body.atomDid already starts with did:hauska:",
+      "verify looks up those PKs then maps by body.atomDid (wlfact_ token). Cross-batch collapse of the same PK would still verify 69000 and exit 0",
+      "progress events emit only written/verified/ofTotal counts. No per-chunk item names. A count is not a record",
+      "planner skips unusable parcel keys and duplicate parcelKeys silently (seenParcelKeys). Those never enter the 69000 so they cannot be this gap"
+    ]
+  },
+  "mechanisms": [
+    {
+      "id": 1,
+      "name": "The plan over-counts",
+      "stated": "69000 split was 12079 present + 56921 absent. Either that sum is not the plan, or the plan counts a class the writer never emits.",
+      "test_first": false,
+      "status": "hold_pending_arithmetic_then_entityId_class",
+      "note": "12079+56921=69000 is already true from the close numbers. skippedUnusableKey is outside planned[]. Will confirm the writer emits both present and absent (it does: buildAtomForPlannedWellFact both arms) before rejecting."
+    },
+    {
+      "id": 2,
+      "name": "The writer skips a class silently",
+      "stated": "Parcels declined without a recorded refusal. Defect twice: rows missing and nothing named them.",
+      "test_first": false,
+      "status": "hold",
+      "note": "Unusable keys and duplicate parcelKeys are skipped before planned[] is built. They cannot subtract from a 69000 that was already built and counted as atomsWritten. A silent skip AFTER build would. Will look at assertCanonicalParcelEntityId / assertScopeOnAtoms / assertPropertyWriteBoundary as refuse-not-skip."
+    },
+    {
+      "id": 3,
+      "name": "The batch drops rows",
+      "stated": "Chunk boundaries, upsert conflict collapsing two planned rows onto one atom_did, or a slice that partially failed without failing the run. Durable: merged data, recurs on every county.",
+      "test_first": true,
+      "status": "test_first",
+      "why_first": "Job reported atomsWritten=69000 and verified=69000 and exit 0 while store unique PKs=66913. That is the signature of last-wins upsert on a colliding atom_did: slice.length is counted, verify reads the surviving body, unique PKs shrink. writePropertyAtomsBatch:298-307 and write-well-fact-county.mjs:341-344. Next: derive entityId/atomDid and find the collision class whose multiplicity is 2087."
+    },
+    {
+      "id": 4,
+      "name": "The count is right and the plan is a different population",
+      "stated": "Present-plus-absent may not be the writable set.",
+      "test_first": false,
+      "status": "hold",
+      "note": "atomsBuilt is a 1:1 map of planned[]. Writable set equals planned set unless a persist assertion drops a class. Will reject if entityId construction is defined for every planned row and the persist path has no filter, only upsert."
+    }
+  ],
+  "falsifier": {
+    "convenient": "any story that explains a gap of unspecified size",
+    "required": "the mechanism predicts 2087 before the check",
+    "not_yet_predicted": true
+  },
+  "do_not_done": [
+    "have not re-run 48021",
+    "have not connected to neondb or hauska_mcp",
+    "have not applied another county",
+    "have not mutated atoms",
+    "have not touched the lease path"
+  ]
+}

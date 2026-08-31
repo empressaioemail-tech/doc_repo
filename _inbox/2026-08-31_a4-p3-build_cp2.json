@@ -1,0 +1,72 @@
+{
+  "checkpoint": "CP2",
+  "lane": "a4-p3-build",
+  "card": "Build P3 now; fixtures exist; arm 2 poison observed failing",
+  "planRows": ["F-05", "F-06"],
+  "writtenAt": "2026-08-31T21:20:00Z",
+  "seat": "integration supervising; implementer in P:/tmp/hauska-factory-a4-p3-build; planner commits",
+  "snapshot": {
+    "hauskaFactory": "P:/tmp/hauska-factory-a4-p3-build",
+    "branch": "feat/a4-p3-build",
+    "head": "5f9acc3c53c04efa88f59715271f3d6a12f78e99",
+    "uncommitted": [
+      "migrations/0006_rail_absence.sql",
+      "src/ledgers/collect_close.mjs",
+      "src/ledgers/rail_absence.mjs",
+      "src/ledgers/rail_absence_serve.mjs",
+      "src/jobs/p3-absence.mjs",
+      "src/cli.mjs",
+      "src/control/writer-allowlist.mjs",
+      "test/p3-absence.test.mjs"
+    ],
+    "noCommit": true,
+    "noJobExecute": true,
+    "noStoreWrite": true
+  },
+  "missionPremise": "Same as CP1. Operator ruling 2026-08-31 item 2 is not reopenable. L7 satisfied-absent stays off parcel rails.",
+  "completionPredicate": "Fixtures exist for all three states and the boundary. Both falsifier arms observed. Arm 2 poison fails. Diff uncommitted in the registered clone. No production apply.",
+  "scopeBasis": "Same as CP1. Classification on shape, not TOTALS. Live PE brief is leave_behind.",
+  "pilot": {
+    "whatRan": [
+      "node --test test/p3-absence.test.mjs test/p2-job.test.mjs (26 pass, 0 fail) at P:/tmp/hauska-factory-a4-p3-build HEAD 5f9acc3"
+    ],
+    "falsifiersStatedInCp1BeforeRun": true,
+    "bothArms": {
+      "arm1": {
+        "stated": "serveParcelBrief on 48055:RURAL-1 must name utility-easement absent-verified; empty rail is ADR-029",
+        "pass": "with T3 county row written: verdict absent-verified, asOf 2026-08-05T19:30:00.000Z, basis includes 48055:RURAL-1; setbacks not-applicable on the same parcel; payload has no satisfied-absent",
+        "fail": "without the county row, rails['utility-easement'].empty is true and assertNamedAbsence throws EMPTY_RAIL"
+      },
+      "arm2": {
+        "stated": "in-city no landed table must be unmeasured; poisoned not-applicable must fail",
+        "pass": "classifyParcelRail(48021:INCITY-NOTABLE, in-city, landedTable false) state=unmeasured; containmentTotal 357269 ignored",
+        "failPoisonClassify": "emitOverride not-applicable on the same in-city parcel throws IN_CITY_NOT_APPLICABLE",
+        "failPoisonServe": "stuffed row state=not-applicable incorporation=in-city on 48021:INCITY-NOTABLE: serveParcelRail throws IN_CITY_NOT_APPLICABLE"
+      }
+    }
+  },
+  "whatWasViolated": [
+    "classifyParcelRail emitOverride=not-applicable on in-city 48021:INCITY-NOTABLE (IN_CITY_NOT_APPLICABLE)",
+    "serveParcelRail of a stuffed in-city not-applicable row (IN_CITY_NOT_APPLICABLE)",
+    "serveParcelBrief on Caldwell rural with no county easement row (EMPTY_RAIL)",
+    "writeCollectClose evaluatedAt=requestClock (REQUEST_CLOCK_ASOF)",
+    "writeRailAbsence forcedBasis colliding two parcels (BASIS_COLLISION)",
+    "requireCollectClose with no row (UNPROBED_ABSENCE)",
+    "classifyCountyEasement 48309 (COUNTY_EASEMENT_NOT_T3)",
+    "emitOverride satisfied-absent (L7_VOCAB_ON_PARCEL)",
+    "p3-absence with no --county (COUNTY_REQUIRED)",
+    "p3-absence --apply (LAPTOP_WRITE_FROZEN / APPLY_NOT_THIS_CARD)"
+  ],
+  "arm2PoisonDetail": {
+    "input": {
+      "parcelNodeId": "48021:INCITY-NOTABLE",
+      "incorporation": "in-city",
+      "landedTable": false,
+      "emitOverride": "not-applicable"
+    },
+    "expectedByRuling": "unmeasured",
+    "poisonEmit": "not-applicable",
+    "observed": "classifyParcelRail throws IN_CITY_NOT_APPLICABLE; serve of stuffed row throws the same",
+    "whatThisProves": "the build fails in the direction the 2026-08-31 ruling forbids when that emit is forced"
+  }
+}
