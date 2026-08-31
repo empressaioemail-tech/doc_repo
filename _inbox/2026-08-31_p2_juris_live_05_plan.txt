@@ -1,0 +1,29 @@
+Merge Join  (cost=37761402.85..37918840.81 rows=1 width=96)
+  Merge Cond: (p.county_fips = co.county_fips)
+  Join Filter: ((p.west_lng <= tx_city_boundary.east_lng) AND (p.east_lng >= tx_city_boundary.west_lng) AND (p.south_lat <= tx_city_boundary.north_lat) AND (p.north_lat >= tx_city_boundary.south_lat) AND st_intersects(p.geom, st_makevalid(st_setsrid(st_geomfromgeojson((tx_city_boundary.geometry)::text), 4326))))
+  CTE counties
+    ->  Bitmap Heap Scan on tx_county_boundary  (cost=4.19..96.40 rows=6 width=70)
+          Recheck Cond: (county_fips = ANY ('{48021,48055,48209,48309,48453,48491}'::text[]))
+          ->  Bitmap Index Scan on tx_county_boundary_county_fips_pk  (cost=0.00..4.19 rows=6 width=0)
+                Index Cond: (county_fips = ANY ('{48021,48055,48209,48309,48453,48491}'::text[]))
+  CTE parcels_six
+    ->  Unique  (cost=37563274.87..37756249.52 rows=1048706 width=82)
+          ->  Gather Merge  (cost=37563274.87..37748305.98 rows=1588707 width=82)
+                Workers Planned: 2
+                ->  Sort  (cost=37562274.85..37563929.75 rows=661961 width=82)
+                      Sort Key: p_1.county_fips, p_1.prop_id, p_1.feature_index, p_1.west_lng, p_1.south_lat, p_1.east_lng, p_1.north_lat
+                      ->  Parallel Bitmap Heap Scan on txgio_parcel p_1  (cost=57407.44..37434918.18 rows=661961 width=82)
+                            Recheck Cond: ((county_fips = ANY ('{48021,48055,48209,48309,48453,48491}'::text[])) AND (prop_id IS NOT NULL))
+                            Filter: (btrim(prop_id) <> ''::text)
+                            ->  Bitmap Index Scan on txgio_parcel_prop_idx  (cost=0.00..57010.26 rows=1596691 width=0)
+                                  Index Cond: ((county_fips = ANY ('{48021,48055,48209,48309,48453,48491}'::text[])) AND (prop_id IS NOT NULL))
+  ->  CTE Scan on parcels_six p  (cost=0.00..20974.12 rows=1043462 width=128)
+        Filter: (geom IS NOT NULL)
+  ->  Materialize  (cost=5056.94..5056.94 rows=1 width=400)
+        ->  Sort  (cost=5056.94..5056.94 rows=1 width=400)
+              Sort Key: co.county_fips
+              ->  Nested Loop  (cost=0.28..5056.93 rows=1 width=400)
+                    ->  CTE Scan on counties co  (cost=0.00..0.12 rows=6 width=96)
+                    ->  Index Scan using tx_city_boundary_bbox_idx on tx_city_boundary  (cost=0.28..842.79 rows=1 width=368)
+                          Index Cond: ((west_lng <= co.east_lng) AND (south_lat <= co.north_lat) AND (east_lng >= co.west_lng) AND (north_lat >= co.south_lat))
+                          Filter: ((st_makevalid(st_setsrid(st_geomfromgeojson((geometry)::text), 4326)) IS NOT NULL) AND (NOT st_isempty(st_makevalid(st_setsrid(st_geomfromgeojson((geometry)::text), 4326)))) AND st_intersects(st_makevalid(st_setsrid(st_geomfromgeojson((geometry)::text), 4326)), co.geom))

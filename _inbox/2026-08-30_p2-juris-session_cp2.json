@@ -1,0 +1,69 @@
+{
+  "checkpoint": "CP2",
+  "lane": "P2-JURIS-SESSION",
+  "card": "_dispatches/2026-08-30_p2-juris-session_dispatch.md",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-30T23:05:00Z",
+  "seat": "property (hauska-factory-p2-juris); deepest worker; no sub-agents; no commit; no Neon URI",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris, branch seat/property-ctx-p2-juris, HEAD 7f41f52328ec40da0480d5eb65aad09ca3d4c3f9, SQL uncommitted",
+    "stores": "NONE. Live TOTALS UNMEASURED. Local initdb RO proof hung (DEAD-END); file-side guard is the terminating instrument this half."
+  },
+  "whatExists": {
+    "chosenFix": "CTE rewrite (option 1). 00-05 and generated roster/alias have no CREATE TEMP / INSERT / DROP TABLE.",
+    "sql": [
+      "sql/p2-juris/00_session.sql",
+      "sql/p2-juris/01_containment.sql",
+      "sql/p2-juris/02_probes.sql",
+      "sql/p2-juris/03_all_county_fips.sql",
+      "sql/p2-juris/04_alias_reconcile.sql",
+      "sql/p2-juris/05_explain.sql",
+      "sql/p2-juris/_roster_six_touch.sql",
+      "sql/p2-juris/_alias_seed.sql",
+      "sql/p2-juris/README.md"
+    ],
+    "guard": "node sql/p2-juris/_ro_session_guard.mjs → ok true"
+  },
+  "adversarialReview": [
+    {
+      "finding": "Doing option 2 (temps on a second connection) would leave 01 unrunnable on the RO URI the card asks for.",
+      "action": "Option 1 only. Durable CREATE TABLE in 00 is the RO refuse probe, not a temp path."
+    },
+    {
+      "finding": "Repeating the 981k join once per report would blow the 180s budget.",
+      "action": "01 is one WITH. Native TOTALS columns. Other reports jsonb on that row. KYLE_IN / RURAL_BASTROP / UNRESOLVED_AFTER moved onto that row."
+    },
+    {
+      "finding": "Empty city table would emit statewide unincorporated and look like a join miss.",
+      "action": "00 and 01 RAISE before the join. totals CASE-guards zero usable city geoms (1/0)."
+    },
+    {
+      "finding": "04 parcel-matched ALIAS_DISAGREE would be a second 180s scan.",
+      "action": "04 is seed-only. Parcel-matched disagree is leave_behind."
+    },
+    {
+      "finding": "00 DO catches only three SQLSTATEs. A Neon replica might raise a fourth and abort before 01.",
+      "action": "Abort is still a refuse (RO is armed). Do not catch OTHERS. Planner amends the WHEN list only from a live SQLSTATE."
+    },
+    {
+      "finding": "Throwaway initdb on this Windows host hung past 60s with no output.",
+      "action": "Killed. Not a Neon connect. Guard fail-arm (CREATE TEMP + LATERAL fixture rejected) is the terminating both-arm this half."
+    },
+    {
+      "finding": "DISTINCT ON (county_fips, prop_id) ORDER BY feature_index alone is unstable on null/tie.",
+      "action": "ORDER BY feature_index NULLS LAST, then west/south/east/north. Named tie-break."
+    }
+  ],
+  "liveCounts": "UNMEASURED. Card forbids store connect. Planner reconciles 01 TOTALS to 357269 / 624141 / 981410.",
+  "falsifiers": [
+    "01 TOTALS |d_total| material or |d_in_city| material -> join wrong",
+    "00 durable CREATE TABLE succeeds -> RO hole",
+    "01/03 regain CREATE TEMP TABLE -> session unrunnable on RO URI",
+    "COUPLAND_TRAVIS refused = false -> threshold not set",
+    "STRADDLE kept = false for Austin-48491 or Golinda-48309 or Staples-48055 or Thorndale-48491 -> threshold too high",
+    "cdp_assert.assigned_forbidden_names > 0 or city_table_cdp > 0 -> roster extended to CDPs",
+    "05 EXPLAIN shows SubPlan LATERAL from parcels_six -> shape violated",
+    "empty tx_city_boundary emits TOTALS instead of RAISE -> fail-closed missing",
+    "timeout with no row -> not a zero"
+  ]
+}

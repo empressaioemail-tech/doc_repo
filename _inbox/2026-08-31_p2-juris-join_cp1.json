@@ -1,0 +1,56 @@
+{
+  "checkpoint": "CP1",
+  "lane": "P2-JURIS-JOIN",
+  "card": "_dispatches/2026-08-31_p2-juris-join_dispatch.md",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-31T03:05:00Z",
+  "seat": "property (hauska-factory-p2-juris-join worktree); deepest worker; no sub-agents; no commit; no store connection; no Neon mint",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris-join, branch seat/property-ctx-p2-juris-join, HEAD a7a804220ad046ac3c70e286d61c83595bb3afe3 (PR #42 merge). Confirm: git rev-parse HEAD = a7a8042.",
+    "doc_repo": "P:/doc_repo (inbox writes only; planner-owned commits)",
+    "stores": "NONE this card. Dispatch forbids psql, Neon URI mint, timed 01, and any store connect. Live 05 is planner-run. TOTALS stays UNMEASURED."
+  },
+  "missionPremise": "Merged 01 on a7a8042 can run (1/0 CASE gone, DO kept) but the unlimited cities_ok JOIN parcels_six is a Nested Loop of CTE Scan on parcels_six (~1,043,462) and CTE Scan on cities_ok (~811), ~846M comparisons, cost 1.06e10, over 180s. Both sides MATERIALIZED, so no index. Join quals are only inequalities and ST_Intersects, so Hash Join is not in the method set. Source: _inbox/2026-08-31_p2_juris_totals_run_record.md Finding 2; _decisions/2026-08-31_p2_juris_totals_unmeasured.md. TOTALS stays UNMEASURED. A green timed 01 is not this card.",
+  "completionPredicate": "05_explain.sql still explains the unlimited FROM cities_ok JOIN parcels_six (no LIMIT). File-side both-arm test rejects the 2026-08-31 Nested Loop CTE fixture and accepts a Hash Join fixture. Write-path shows why that Nested Loop cannot be produced. DO block kept. No 1/0 in an aggregate. No LATERAL. statement_timeout not raised. Reconcile targets remain 357269 / 624141 / 981410. Diff handed back uncommitted. Live 05 and timed 01 are planner-run.",
+  "scopeBasis": "Registered worktree P:/seat-worktrees/property/hauska-factory-p2-juris-join only. 01 parcel_hits join and 05 explained join. No p4-rails, bake-migrate, p2-juris, p2-juris-plan, or main-migrate Factory trees. No persist. No 0005b. No LDT.",
+  "design": {
+    "rewrite": "county-equality Hash Join, city side NOT MATERIALIZED",
+    "whyThisNotUnMaterializeBoth": "NOT MATERIALIZED on parcels_six inlines 1M GeoJSON decodes. If the join stayed Nested Loop those decodes would run per city (~846M). That is a classifier dodge that can make the timeout worse. Rejected.",
+    "whyThisNotGiST": "GiST needs an index on a relation. CREATE INDEX is refused by the RO file-side guard. TEMP is forbidden. Base geometry is GeoJSON text, not an indexed geography column.",
+    "whyThisNotEnableNestloopOff": "Hash Join still requires an equality clause. enable_nestloop=off without equality errors with could not devise a query plan. A GUC is not a join rewrite.",
+    "mechanism": "PostgreSQL Hash Join requires at least one equality in hashclauses. The poison join has none (west/east/south/north inequalities plus ST_Intersects), so the method set is Nested Loop only. Adding p.county_fips = c.county_fips puts an equality into hashclauses. Hash Join enters the set. Cost of Nested Loop without an index is the measured 1.06e10; Hash Join is O(n+m) with cities_ok as the build side.",
+    "cities_ok": "NOT MATERIALIZED bind, not a hint. Inlined. EXPLAIN cannot emit CTE Scan on cities or CTE Scan on cities_ok. isMillionRowCteNestedLoop requires that city CTE Scan as conjunct three. The poison shape is unrepresentable even if a small Nested Loop remains inside the hash build (city x 6 counties).",
+    "parcels_six": "stays MATERIALIZED. Decode once. 01 references it twice (parcel_hits and parcel_jurisdiction).",
+    "counties": "MATERIALIZED, six FIPS only. 811 x 6 bbox+intersects is the cheap city-county join already measured at 1.3s statewide (1222 x 254). Name is counties, not cities, so CTE Scan on counties does not trip the classifier.",
+    "cities_ok_rows": "one row per (city, county) pair that intersects a six-county polygon. FROM cities_ok c JOIN parcels_six p kept so requireZoneMajor still matches.",
+    "semanticRisk": "A parcel whose ring leaves its county_fips and hits a city that does not intersect that county polygon would miss. DISTINCT ON already binds the parcel to one county_fips. Sliver city-county pairs that 1e-8 would drop on 03 still hash here (bare ST_Intersects on city-county) so a parcel-city hit above 1e-8 is not lost. If TOTALS move, the join is wrong; do not adopt a new split.",
+    "timeouts": "01 stays 180s. 05 stays 30s. Do not raise.",
+    "proposedPlanFixture": "Hash Join  (cost=8000..195000)\n  Hash Cond: (p.county_fips = c.county_fips)\n  ->  CTE Scan on parcels_six  (rows=1043462)\n  ->  Hash\n        ->  Nested Loop  (cost=0.00..4000)\n              ->  Seq Scan on tx_city_boundary\n              ->  CTE Scan on counties  (rows=6)"
+  },
+  "adversarial": [
+    {
+      "risk": "Live 05 EXPLAIN of a correct Hash Join still contains Nested Loop (city x county inside the hash build) plus CTE Scan on parcels_six plus CTE Scan on cities_ok, and the existing classifier fails it.",
+      "response": "cities_ok is NOT MATERIALIZED so CTE Scan on cities(_ok)? cannot appear. The third conjunct is false. Inner Nested Loop of Seq Scan x CTE Scan on counties does not match the city regex."
+    },
+    {
+      "risk": "County equality moves 357269/624141 because the 2026-08-30 measure was all-cities bbox+intersects.",
+      "response": "TOTALS stays UNMEASURED. A miss names the join. City-county uses bare ST_Intersects so sliver pairs still hash; 1e-8 stays on parcel-city rings only. Do not adopt a new split."
+    },
+    {
+      "risk": "NOT MATERIALIZED on cities_ok is only a classifier dodge and the outer join stays Nested Loop.",
+      "response": "Equality is the plan change. NOT MATERIALIZED is the bind that makes the named poison shape unrepresentable. Both are required. A live 05 that is still Nested Loop of CTE Scan parcels_six against an inlined city scan is a planner finding on the next card, not a pass of this one."
+    },
+    {
+      "risk": "LATERAL sneaks in for county explode or grid cells.",
+      "response": "City-county is a regular JOIN to a six-row counties CTE. Guard forbids LATERAL on 01 and 05."
+    }
+  ],
+  "outOfScope": [
+    "Timed 01",
+    "Live 05 (planner-run)",
+    "Adopt a new TOTALS split",
+    "Persist, Neon mint, psql, commit, push, deploy",
+    "P4 rails, 0005b, LDT",
+    "Other Factory worktrees"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "checkpoint": "CP1",
+  "lane": "P2-JURIS",
+  "card": "_dispatches/2026-08-30_p2-juris_dispatch.md",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-30T22:40:00Z",
+  "seat": "property (hauska-factory-p2-juris worktree); deepest worker; no sub-agents; no commit; no store connection",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris, branch seat/property-ctx-p2-juris, HEAD 7f41f52328ec40da0480d5eb65aad09ca3d4c3f9 (= origin/main 7f41f52), clean before this card's writes",
+    "doc_repo": "P:/doc_repo (inbox writes only; planner-owned commits)",
+    "stores": "NONE this half. Card forbids psql, Neon URI mint, and any store connect. Live counts are UNMEASURED. Planner runs the SQL.",
+    "inputsRead": [
+      "_dispatches/2026-08-30_p2-juris_dispatch.md",
+      "_decisions/2026-08-30_unincorporated_is_the_disposition.md",
+      "_catalog/2026-08-30_breadth_place_alias_seed.json",
+      "_catalog/texas_roster_v1.json",
+      "_inbox/2026-08-30_alias_seed_findings.md",
+      "_inbox/2026-08-30_ctx_w3_collect_amendments.md",
+      "legacy-design-tools lib/db/drizzle/0070_tx_city_and_county_boundary.sql",
+      "legacy-design-tools lib/db/src/schema/txgioParcel.ts",
+      "hauska-factory src/ledgers/city.mjs (adoptRoster drops all_county_fips)",
+      "hauska-factory src/jobs/seed.mjs (payload is the adopted thin object)"
+    ]
+  },
+  "missionPremise": "Jurisdiction is spatial containment against tx_city_boundary, not a breadth_* alias. A parcel outside every incorporated polygon is the real disposition unincorporated (_decisions/2026-08-30_unincorporated_is_the_disposition.md). The alias seed is name-normalisation for the 48 percent that carry a string. Persist waits on the P2 job template and is out of this half.",
+  "design": {
+    "store": "cortex neondb (deployment store). Tables: tx_city_boundary (1222 incorporated polygons, btree bbox), tx_county_boundary (254), txgio_parcel (rings + bbox; DISTINCT county_fips, prop_id). Not hauska_mcp atoms. Not Factory landing. Not cad_property (no geometry).",
+    "joinShape": "Zone-major. cities AS MATERIALIZED builds 1222 geoms once. Parcels join onto city bboxes (west/south/east/north inequality), then ST_Intersects. Point-major LATERAL (FROM parcel, LATERAL city lookup) is forbidden; measured ~218x slower on this store.",
+    "place_fips": "substring(geo_id from 3). CPA geo_id is 48 + 5-digit place_fips (Austin 4805000 -> 05000, Kyle 4839952 -> 39952, Bastrop 4805864 -> 05864).",
+    "unincorporated": "LEFT JOIN from every in-universe parcel. No hit after the threshold is disposition unincorporated, place_fips NULL. Not a null, not a CDP name, not unknown.",
+    "threshold": {
+      "constant": "1e-8",
+      "unit": "deg2 (WGS84 ST_Area of ST_Intersection)",
+      "approx_m2_at_30N": 107,
+      "coupland_sliver_deg2": 7.6e-10,
+      "coupland_vs_floor": "sliver is 76x smaller than the floor; refused",
+      "applies_to": "polygon-polygon hits (parcel-city and city-county). Point / bbox-centre hits have no area; ST_Intersects(point, city) is the test and method is labelled bbox-centre.",
+      "why_not_fraction": "A relative floor (1 percent of parcel) would reclassify large rural rings that nick a limit and would move the 624,141. Absolute floor kills Coupland-class slivers without adopting a new split."
+    },
+    "caldwell": "Measured join used bbox-centre because 48055 carried no usable ring. SQL: if ST_MakeValid(ring) is empty or not a polygon, use ST_Point((west+east)/2,(south+north)/2) and set method=bbox-centre. Do not launder those as ring containment. If bbox columns are also unusable, disposition=unresolved (reported, not rounded into unincorporated).",
+    "universe": "txgio_parcel WHERE county_fips IN (48021,48055,48209,48309,48453,48491) AND prop_id IS NOT NULL. DISTINCT ON (county_fips, prop_id). Measured per-county denominators to reconcile: 62257 / 24989 / 116421 / 114255 / 380918 / 282570 = 981410.",
+    "straddles": "File-side roster: 72 touching, 69 primary in the six, 24 with more than one all_county_fips, 3 primary outside (Golinda 30092 parent 48145, Staples 70052 parent 48187, Thorndale 72776 parent 48331). city_manifest.payload is the adoptRoster thin object (place_fips, name, parent_county_fips, rails) and dropped all_county_fips. This half specifies the 72-row restore and a live city-county re-derive with the same 1e-8 floor so Coupland 17312 drops 48453. Persist job writes it.",
+    "alias": "225-row seed is a TEMP table. proposed_place_fips is never written onto a parcel. Disagreement (string place vs containment place) is a result row. Containment wins.",
+    "cdp": "No place_fips for Driftwood, Cedar Creek, Del Valle, Dale, China Spring, Elm Mott, Axtell, Paige, McDade. Assertion: zero tx_city_boundary.city_name in that list; zero assigned place_fips whose city_name is in that list.",
+    "timeout": "SET statement_timeout = '180s' on the parcel join (city-county equivalent was 1.3s; 981k with btree bbox should land well under 180s if zone-major). Probes 30s. A timeout is a finding, not a zero.",
+    "reconcileRule": "Totals must match 357269 unincorporated / 624141 in-city / 981410. A material divergence means this join is wrong, not that the number is new. Named in SQL comments and the close."
+  },
+  "adversarial": [
+    {
+      "risk": "Threshold moves thousands of boundary parcels and the split no longer matches 357269/624141",
+      "response": "Floor is 1e-8 deg2 (~107 m2), 76x the Coupland sliver. SQL emits both thresholded totals and a sliver-only count (intersects AND overlap < 1e-8). If thresholded totals diverge materially, the join is wrong; do not adopt the new number."
+    },
+    {
+      "risk": "Caldwell bbox-centre is silently treated as ring containment",
+      "response": "method column is ring | bbox-centre | unresolved. Totals broken out by method. Amendments already flagged 48055 as bbox-centre; the SQL keeps that label."
+    },
+    {
+      "risk": "Point-major LATERAL sneaks in as a convenience for one-parcel probes",
+      "response": "Probes reuse the same cities MATERIALIZED + bbox join. 05_explain.sql must show no SubPlan LATERAL from parcels."
+    },
+    {
+      "risk": "Restoring roster all_county_fips blindly re-imports Coupland as a Travis city",
+      "response": "03 re-derives city-county with the 1e-8 floor. Persist writes the spatial array, not the roster array, where they disagree. Disagreement is recorded."
+    },
+    {
+      "risk": "Alias seed consumed as jurisdiction for the 48 percent",
+      "response": "04 is SELECT-only reconcile. No UPDATE. Containment column is the authority."
+    }
+  ],
+  "outOfScope": [
+    "Persist / city_manifest UPDATE / adoptRoster code change (P2 job template does not exist)",
+    "Store connect, psql, Neon URI, laptop apply",
+    "CDP roster extension",
+    "hauska_mcp breadth_* as a join key",
+    "Commit, push, deploy"
+  ]
+}
