@@ -1,74 +1,53 @@
 ---
 id: 2026-08-31_p91_disposition_union_defect
-title: The node disposition union cannot express unknown, so the MCP silently rewrites it to absent and strengthens a claim cortex never made
+title: CORRECTED. The stub/node disposition difference is a deliberate weakening in api-server, not a strengthening in the MCP. The planner's original mechanism was inverted
 date: 2026-08-31
-status: OPEN defect, MCP-side, not cortex
-severity: high. It manufactures a claim, it is invisible from outside, and it violates an invariant this file states in its own comment.
+status: CORRECTED 2026-08-31. Original severity claim WITHDRAWN. A real but latent hazard remains and is hardened in p564.
 plan_row: P-91
-found_by: W2 answer-key preparation (harness chat pulled ground truth on six fixtures and saw landUse read unknown at stub and absent at node on the same parcel and the same bake). Root cause read from the write path by the planner.
-snapshot: legacy-design-tools, artifacts/smartsite-mcp/src/tool-honesty.ts and src/constants.ts at origin/main 03050926 (p563, serving smartsite-mcp-00078-fat)
+corrected_by: the p564 build lane, which read the api-server write path before implementing the brief and refused to build the check as specified
+verified_by: planner, against artifacts/api-server/src/lib/smartSiteStub.ts at origin/main
 ---
 
-# The observation
+# What this card originally claimed, and why it was wrong
 
-Land use returns `unknown` at `depth: "stub"` and `absent` at `depth: "node"`, on the same parcel, from the same bake. Confirmed across all six Bastrop fixtures, so it is one systematic defect and not six data faults.
+It claimed that land use reading `unknown` at stub depth and `absent` at node depth on the same parcel was a defect in `artifacts/smartsite-mcp`: that the MCP node disposition union cannot express `unknown`, so `asExplicitDisposition("unknown")` returns null, `sectionDisposition` falls through to `derivedSectionDisposition`, and a cortex `unknown` is silently rewritten to `absent`. It called that a STRENGTHENING, the one direction the file's own comment forbids, and filed it as the highest-severity finding of the walk.
 
-Per this program's own display vocabulary those are different claims. `unknown` is "not a finding either way. The record neither confirms present nor earns a verified absence." `absent` is "the source claims no record exists." One reports that nothing was established; the other reports that a source affirmatively said there is nothing. The second is a claim about the world. The first is not.
+**The direction was backwards.** Verified at source in `artifacts/api-server/src/lib/smartSiteStub.ts` on `origin/main`:
 
-# The mechanism, read from the write path
+    // Node section disposition into the rail vocabulary. `absent` (no
+    // determination, no refusal) is `unknown` on the rail
+      switch (disposition) {
+        case "absent":
+          return "unknown";
 
-There are two disposition vocabularies for the same facets and they are not the same set.
+    state?: "present" | "absent" | "refused";   // the node type. No "unknown".
 
-The stub vocabulary, published in the `get_smart_site` tool description at `src/constants.ts:14`:
+Cortex's node disposition type STRUCTURALLY CANNOT emit `unknown`. The node value is `absent`, and api-server's `railStateFromSectionDisposition` deliberately projects it to `unknown` for the stub rail, which is documented in that file's own header comment.
 
-    present | absent-verified | unknown | refused | unread
+So the observed difference is not a rewrite in the MCP at all. It is api-server serving the same fact at two fidelities, and the stub is the vaguer one. `absent` to `unknown` is a WEAKENING, which is permitted: it converts a source's claim of no record into no claim either way. Nothing manufactures a claim anywhere in that path.
 
-The node vocabulary, `EXTERNAL_BRIEF_SECTION_DISPOSITIONS` at `src/tool-honesty.ts:218`:
+# What remains true, and it is smaller
 
-    present | refused | absent | unread
+The MCP code path is real. `EXTERNAL_BRIEF_SECTION_DISPOSITIONS` genuinely lacks `unknown` and `absent-verified`, and a section arriving with either would derive to `absent`. But **that branch is dead**, because nothing upstream can send those values at node depth. It is a latent hazard rather than an active defect: if cortex ever widens its node disposition type, the MCP would silently downgrade on the first payload and nothing would fail.
 
-They overlap on `present`, `refused` and `unread`. Stub carries two states node cannot express, `unknown` and `absent-verified`. Node carries one state stub does not use, `absent`.
+p564 hardens it anyway, which is correct. The union is widened, a recognised claimed state is preserved rather than derived over, and the derive path stays as the fallback for a genuinely missing or malformed disposition.
 
-The rewrite happens in `sectionDisposition`:
+The agreement check p564 ships uses the VERIFIED mapping, node `absent` corresponds to stub `unknown`. The check this card originally specified, that the two must be equal, would have FAILED ON EVERY HEALTHY PARCEL carrying an absent facet. The lane read the write path, found the brief wrong, and built the correct check instead of the specified one. That is the behaviour the contract asks for and it is the reason this correction exists.
 
-    const derived = derivedSectionDisposition(section);   // no data -> "absent"
-    const claimed = asExplicitDisposition(section.disposition);
-    if (claimed === null) return derived;
+# The planner failure, stated plainly because the shape recurs
 
-`asExplicitDisposition` tests membership in the node union. A cortex `unknown` is not a member, so it returns `null`, so the claimed disposition is discarded and the derived one is returned. `derivedSectionDisposition` returns `refused` if a refusal rides along, `present` if data exists, and otherwise `absent`. A facet that is honestly unknown carries no data, so it lands on `absent` every time.
+Three parties reported the stub/node difference: a harness chat holding ground truth, this planner, and a blind walk chat reading only the payload. The original card presented that as three independent confirmations. **It was not.** Two of the three were the same OBSERVATION. Only one mechanism was ever proposed, by the planner, and it was never checked against the producing side.
 
-The function's own doc comment says "A missing or unrecognised disposition derives", which is exactly what happens. The defect is that `unknown` is not missing and is not unrecognisable; it is a valid wire state this union simply does not list.
+The planner did read a write path, and that is what made the error persuasive. But it read the CONSUMING side's write path only. Reading the consumer and inferring the producer is still output-measuring with respect to the producer, and this operation's own doctrine says code reading outranks output measuring precisely because the same predicates that admitted a defect will confirm it.
 
-# Why this is worse than a display bug
+The rule that would have caught it is already written down and was not applied: state the mechanism you believe explains an observation, then state a second mechanism that would produce the same observation and why you rejected it. A deliberate stub-side projection is an obvious second mechanism for "two depths disagree", it was never named, and it was the right one.
 
-Eleven lines above the function, the same comment block states the invariant:
+The convenient part is what should have raised suspicion. The finding arrived pre-packaged as a violation of an invariant stated in a comment eleven lines above the function, which made it feel discovered rather than assumed.
 
-    The wire may weaken a claim, never strengthen one.
+# Consequences to unwind
 
-`unknown` to `absent` is a strengthening. It converts "we did not establish this" into "the source says there is none". That is the single direction the file declares off-limits, and it is being done by the type union rather than by any line of logic, which is why no reviewer caught it and why no test failed.
+The walk results doc listed this as finding 1, ours, highest severity. That entry is corrected alongside this card.
 
-`absent-verified` degrades through the same hole in the other direction: with no data it also derives to `absent`, losing the provenance-or-vintage that made the absence verified. That direction is a weakening and so is permitted by the invariant, but it is still an information loss and the same root cause.
+No dispatch acted on it. The property-seat mission did not carry it, so nothing was built on the wrong premise outside this repo.
 
-# Why no test caught it
-
-Every fixture in the 452-test suite exercises the node path with dispositions drawn from the node union. Nothing feeds a `unknown` or `absent-verified` section into `sectionDisposition` and asserts what comes out. The check that would have caught this is a two-derivation check: the stub rail and the node section for the SAME facet on the SAME parcel must not disagree about that facet's state. Neither derivation currently knows the other exists.
-
-# Consequences to grade against, not to guess at
-
-This lands squarely on two W2 functions and it is the reason the W2 answer key had to be built before the walk. F1 screening and F5 outreach targeting both justify a screen using rail states, so a rail that says `absent` where the record says `unknown` gives a screen a reason it has not earned. Any prose composed from a node read will describe land use as affirmatively absent on every one of the six fixtures.
-
-It also means the derived-figures and honest-absence work shipped in p563 sits on top of a value that was already wrong before any display string was attached. The vocabulary made the wrong token print nicely.
-
-# The fix, and the one to avoid
-
-Wrong fix: add `"absent"` handling upstream, or map `unknown` to something friendlier at display time. That paints over a semantic error with a nicer word.
-
-Right fix: make the node union express what the wire can actually say. Add `unknown` and `absent-verified` to `EXTERNAL_BRIEF_SECTION_DISPOSITIONS`, and make `sectionDisposition` preserve a claimed state it recognises rather than deriving over it. The derive path stays as the fallback for a genuinely missing or malformed disposition, which is what its comment already describes.
-
-Then add the check that was absent: for a given parcel and facet, the stub rail and the node disposition are two independently derived readings of one fact and must agree. That is a meaning-shaped check with two real derivations, not a presence check, and no sentinel can satisfy it.
-
-Verify by violation before reporting it fixed: feed a section with `disposition: "unknown"` and no data, and confirm the output is `unknown`. Then feed the stub and node paths the same fixture and confirm a deliberate disagreement fails.
-
-# Scope note
-
-This is `artifacts/smartsite-mcp/`, which this seat owns, so it is a card rather than a handoff. It does not need cortex and does not touch another seat's worktrees.
+The stub/node fidelity difference is still worth a product question, separately and at much lower severity: a reader seeing `unknown` on the board and `absent` on the panel for one facet has to know that the board is deliberately vaguer. That is a UX legibility question about two fidelities, not a correctness defect, and it should not be carded as one.
