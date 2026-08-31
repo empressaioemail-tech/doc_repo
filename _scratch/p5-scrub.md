@@ -27,3 +27,11 @@ LESSON — S2b comparable projection is `{ distinct }`. gradeRule PASSes on equa
 DEAD-END — S1 as real-vs-absent (not only sentinel-vs-non-null-coverage) failed the Travis walk on `48453:610002` because the earlier tax-year row was `", ,"`. S1 applies only when coverage claims real. Two-tax-year landing map prefers the parseable situs (same rule as selectSweepParcels).
 
 OPEN — live S6/S7 extra-reader fetchers and live S4 geometry table are not on this card (no production probe). Walk invokes the families; missing seconds are UNMEASURED. P4 keeps the poison fixtures.
+
+GROUND-TRUTH 2026-08-31T15:44Z — S3 landUse (A1, null) is `KNOWN_OPEN` citing Gate 8 C3 (`_inbox/2026-08-31_gate8_live_1437_48021.json`, SHA `3a0dc9a`, 14:37Z) and Wave R / P7 as the clearing point. (A1, PDD) stays FAIL. Vocabulary was PASS/FAIL/UNMEASURED; it could not express this. `node --test test/p5-scrub.test.mjs` 55/0.
+
+LESSON — C3's reason string is "internal consistency". Two fields from one facets payload. Same vacuity as family zero, one layer out. Do not split that payload into two S3 sources.
+
+DEAD-END — Do not exempt landUse, compare only populated pairs, or downgrade S3 to a warning. Those convert C3 into a specification.
+
+OPEN 2026-08-31T15:45Z — Wave R bake is the C3 clearing point (P7). C4 poison exists; fix is F-06. Do not merge #44 until operator says so. No production scrub.
