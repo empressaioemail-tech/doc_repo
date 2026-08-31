@@ -1,0 +1,263 @@
+{
+  "lane": "access-policy store verify",
+  "investigationThread": "B",
+  "related": [
+    "_inbox/2026-08-22_contract_surface_store_truth_investigation.md",
+    "80_adrs/adr_017_atom_access_control.md",
+    "80_adrs/adr_030_declared_is_not_armed_contract_surface_governance.md",
+    "_decisions/2026-08-15_smart_files_independent_module.md",
+    "_decisions/2026-08-22_atom_layering_target_state.md"
+  ],
+  "gradedAt": "2026-08-22T20:05:00Z",
+  "verifier": "read-only subagent (Thread B lane)",
+  "snapshot": {
+    "doc_repo": {
+      "path": "P:/doc_repo",
+      "branch": "main",
+      "commit": "14705605d2683e2276e342189bf1a894261aea45"
+    },
+    "hauska_mcp_server": {
+      "path": "P:/hauska-mcp-server",
+      "branch": "docs/p35-retrieval-key-durability-note",
+      "commit": "4428f61d7f213509f5c6606b3fb402f909a236f7",
+      "gateScanMethod": "ripgrep P:/hauska-mcp-server/src for SMART_FILES|smart-files|smart_file|list_smart_file|read_smart_file — zero matches"
+    },
+    "atomsStore": {
+      "neonProjectId": "fancy-fire-06136146",
+      "branchId": "br-crimson-feather-aphfmy91",
+      "database": "hauska_mcp",
+      "table": "atoms"
+    },
+    "smartFilesStore": {
+      "neonProjectId": "snowy-bread-83475727",
+      "database": "neondb",
+      "service": "smart-files Cloud Run smart-files-505619 us-east1",
+      "authorityDoc": "_decisions/2026-08-15_smart_files_independent_module.md"
+    }
+  },
+  "claimUnderTest": {
+    "summary": "hauska_mcp.atoms holds ~104.1M rows across 21 entity types (not canon 17 / ~100M). Access policy is overwhelmingly public-free and public-paid; tenant-private and tenant-shared are zero in the atoms store. Tenant-private custody lives in Smart Files (separate Neon project). File/publish/collect is design on the MCP gate, not present-tense unified dial.",
+    "verdict": "CONFIRMED",
+    "presentTenseAllowedOnMcpGate": false
+  },
+  "storeAuditInstruments": {
+    "priorAudit": {
+      "path": "P:/doc_repo/_inbox/2026-08-20_store_audit_atom_graph.md",
+      "auditUtc": "2026-08-20T23:03:41Z through 2026-08-20T23:28:00Z",
+      "status": "STALE for row totals and entity_type cardinality",
+      "staleClaims": {
+        "reltuples": 100025152,
+        "distinctEntityTypes": 17,
+        "accessPolicyBreakdown": "not measured (pg_stats MCV only for three policies; no tenant rows sampled)"
+      }
+    },
+    "fileBasedQueries": [
+      {
+        "path": "P:/doc_repo/_scratch/substrate-verify-query.mjs",
+        "queries": [
+          "SELECT entity_type, COUNT(*)::bigint FROM atoms GROUP BY entity_type ORDER BY entity_type",
+          "SELECT access_policy, COUNT(*)::bigint FROM atoms GROUP BY access_policy ORDER BY access_policy",
+          "SELECT COUNT(*)::bigint AS total FROM atoms"
+        ],
+        "runStatus": "NOT_COMPLETED_THIS_LANE",
+        "blocker": "dotenv/pg resolve from doc_repo; hauska-mcp-server run started 2026-08-22T19:53:00.509Z, still on first heap GROUP BY after 10+ minutes (131 GB heap, no access_policy index)"
+      }
+    ],
+    "neonMcpThisLane": {
+      "queryTimestampUtc": "2026-08-22T19:48:24.776Z through 2026-08-22T19:55:00Z",
+      "completed": [
+        "pg_class.reltuples est 100025152 (ANALYZE lag vs substrate exact total below)",
+        "pg_stats entity_type n_distinct 17 with 17-value MCV list (STALE vs live store)",
+        "pg_stats access_policy MCV public-free|public-paid|platform-internal only",
+        "indexed COUNT owner-fact 4250396; parcel-terrain-model 72; cad-parcel-roll 4891247; property-boundary-edge 26846; code-cross-reference 8105; zoning-fact 4606757; parcel-node 13793200",
+        "cross-check public-paid: owner-fact 4250396 + parcel-terrain-model 72 = 4250468 (matches substrate exact public-paid exactly)",
+        "EXISTS utility-easement false; parcel-terrain-model true (type absent from 2026-08-20 audit MCV)"
+      ],
+      "timedOut": [
+        "SELECT access_policy, COUNT(*) FROM atoms GROUP BY access_policy",
+        "SELECT entity_type, COUNT(*) FROM atoms GROUP BY entity_type",
+        "SELECT COUNT(*) FROM atoms",
+        "EXISTS tenant-private / tenant-shared on atoms"
+      ]
+    },
+    "substrateExactCountsPrimary": {
+      "source": "80_adrs/adr_030_declared_is_not_armed_contract_surface_governance.md Snapshot — store queried against Neon hauska_mcp on 2026-08-22 (substrate seat verification, same investigation day)",
+      "queryTimestamp": "2026-08-22 (substrate seat; exact heap GROUP BY)",
+      "method": "Full-table GROUP BY on atoms (substrate lane; this lane corroborates via indexed decomposition, could not complete duplicate heap scan within timeout)",
+      "note": "Treat these as authoritative exact counts until a file-based instrument completes a fresh heap GROUP BY and supersedes with timestamp"
+    }
+  },
+  "hauskaMcpAtomsCounts": {
+    "totalRows": 104132919,
+    "distinctEntityTypes": 21,
+    "canonStaleBaseline": {
+      "totalRowsEstimate": 100025152,
+      "distinctEntityTypes": 17,
+      "source": "_inbox/2026-08-20_store_audit_atom_graph.md Q3 pg_stats @ 2026-08-20T23:05:00Z"
+    },
+    "accessPolicy": {
+      "public-free": 99878457,
+      "public-paid": 4250468,
+      "platform-internal": 3994,
+      "tenant-private": 0,
+      "tenant-shared": 0
+    },
+    "accessPolicySumCheck": 104132919,
+    "adr017DialInAtomsStore": {
+      "publicHalfPopulated": true,
+      "tenantHalfPopulated": false,
+      "interpretation": "ADR-017 five-value union is contract-complete; atoms store implements only public-free, public-paid, and a small platform-internal slice. tenant-private and tenant-shared have zero rows in hauska_mcp.atoms."
+    },
+    "entityTypeNotes": {
+      "canon17FromAug20Audit": [
+        "special-district-fact",
+        "parcel-node",
+        "rail-corridor-fact",
+        "flood-hazard-fact",
+        "rrc-pipeline-fact",
+        "cad-parcel-roll",
+        "zoning-fact",
+        "well-fact",
+        "land-use-fact",
+        "owner-fact",
+        "building-footprint",
+        "buildable-envelope",
+        "setback-rule",
+        "code-section",
+        "property-boundary-edge",
+        "road-node",
+        "code-cross-reference"
+      ],
+      "confirmedBeyondCanon17ThisLane": [
+        {
+          "entity_type": "parcel-terrain-model",
+          "row_count_indexed": 72,
+          "access_policy": "public-paid",
+          "evidence": "Neon MCP indexed COUNT 2026-08-22T19:55Z; absent from 2026-08-20 pg_stats MCV"
+        }
+      ],
+      "contractTypeZeroRows": [
+        {
+          "entity_type": "utility-easement",
+          "row_count": 0,
+          "note": "ADR-029 type; EXISTS false 2026-08-22"
+        }
+      ],
+      "full21TypeList": "Substrate seat heap GROUP BY reported 21 distinct entity_type values (ADR-030). This lane did not reproduce the full list (heap GROUP BY timeout). At least 18 populated types confirmed (canon 17 + parcel-terrain-model + growth on existing types)."
+    },
+    "indexedSampleCountsUtc2026_08_22": {
+      "parcel-node": 13793200,
+      "zoning-fact": 4606757,
+      "cad-parcel-roll": 4891247,
+      "owner-fact": 4250396,
+      "property-boundary-edge": 26846,
+      "code-cross-reference": 8105,
+      "parcel-terrain-model": 72
+    }
+  },
+  "secondStoreAuthority": {
+    "product": "Smart Files",
+    "decision": "_decisions/2026-08-15_smart_files_independent_module.md",
+    "repo": "empressaioemail-tech/smart-files",
+    "neonProjectId": "snowy-bread-83475727",
+    "database": "neondb",
+    "cloudRun": {
+      "project": "smart-files-505619",
+      "revisionPinFromCanon": "smart-files-00006-xwp @100% per _inbox/2026-08-17_tw4_smartfiles_serving_ready.md"
+    },
+    "defaultAccessPolicy": "tenant-private",
+    "queriedUtc": "2026-08-22T19:52:55Z",
+    "tableCounts": {
+      "smart_file_documents": 16,
+      "smart_file_folders": 11,
+      "smart_file_placements": null,
+      "smart_file_versions": null
+    },
+    "documentsByAccessPolicy": {
+      "tenant-private": 16
+    },
+    "legacyPrototypeWarning": {
+      "location": "Neon fancy-fire-06136146 / neondb smart_file_* tables",
+      "documents": 4,
+      "status": "G-56 disposable prototype per _decisions/2026-08-15_smart_files_independent_module.md — not product authority"
+    },
+    "interpretation": "Tenant-private bytes and metadata live on the isolated Smart Files Neon project, not in hauska_mcp.atoms. The public property spine store has no tenant-private rows."
+  },
+  "mcpGateScan": {
+    "claim": "Smart Files is structurally unreachable from the MCP gate — no second pool, no SMART_FILES_* env, no import path (ADR-030)",
+    "verdict": "CONFIRMED",
+    "scanTimestampUtc": "2026-08-22T20:00:00Z",
+    "pathsScanned": [
+      "P:/hauska-mcp-server/src"
+    ],
+    "patterns": [
+      "SMART_FILES",
+      "smart-files",
+      "smart_file",
+      "list_smart_file",
+      "read_smart_file"
+    ],
+    "matchCount": 0,
+    "corroboration": [
+      "_decisions/2026-08-22_atom_layering_target_state.md Finding: MCP server carries no reference to Smart Files under any of its names",
+      "_inbox/2026-08-17_a_g68_close.json: Cortex /api/smart-files 404; Smart Files served via smart-files-app + SMART_FILES_BACKEND_URL on Dashboards Vercel, not MCP gate"
+    ],
+    "reversalCriterion": "ADR-030 item 5 reverses when a gate path to Smart Files documents exists and is demonstrated by a served row through MCP tools, not a merged PR alone"
+  },
+  "filePublishCollectClassification": {
+    "phraseSource": "_sessions/2026-08-22_records_as_instruments_positioning_claude_code.md — Smart Files dial settings: file, publish, collect (private / storefront / catalog)",
+    "classifications": {
+      "portfolioPositioningDial": {
+        "state": "design",
+        "presentTenseExternal": false,
+        "evidence": "Conceptual three-setting dial on federated custody model; no MCP gate enumeration of Smart Files documents"
+      },
+      "smartFilesHttpService": {
+        "state": "armed",
+        "presentTenseExternal": true,
+        "scope": "smart-files Cloud Run + smart-files-app BFF only",
+        "evidence": [
+          "_inbox/2026-08-17_tw4_smartfiles_serving_ready.md — list/read/create path live on serving revision",
+          "_inbox/2026-08-17_a_g68_close.json — create 201, share 201 on smart-files-app",
+          "Neon snowy-bread-83475727 — 16 tenant-private documents 2026-08-22T19:52:55Z"
+        ]
+      },
+      "unifiedDialThroughMcpGate": {
+        "state": "absent",
+        "presentTenseExternal": false,
+        "evidence": "Zero MCP tools; ADR-030 decision item 5; gate scan zero matches"
+      },
+      "publishAsMeteredStorefront": {
+        "state": "design",
+        "presentTenseExternal": false,
+        "evidence": "Positioning names publisher/listing/royalty-per-call; outbound payout/RevenueRouter still dormant per ADR-030 — attribution armed, settlement not"
+      },
+      "collectAsCatalogAggregation": {
+        "state": "design",
+        "presentTenseExternal": false,
+        "evidence": "Collecting-society framing in positioning session; no gate path serves cross-tenant catalog from Smart Files rows"
+      }
+    }
+  },
+  "docTenseRecommendation": {
+    "atomsStoreAccessPolicy": "Present tense OK for public-free / public-paid / platform-internal counts on hauska_mcp.atoms with quoted numbers and query timestamp. Do not describe tenant-private or tenant-shared as live on the public atom store.",
+    "tenantSovereigntyCopy": "Future tense or two-store explicit: tenant-private custody is on Smart Files (second store), not on hauska_mcp.atoms.",
+    "filePublishCollect": "Design / roadmap in external docs until MCP gate serves Smart Files rows. Service-layer create/list on smart-files-app may be described as live only when scoped to that product URL, not as substrate dial.",
+    "canonNumbersToRetire": [
+      "17 entity types on atoms",
+      "~100M rows",
+      "Single access-policy dial across all custody"
+    ],
+    "canonNumbersToAdopt": [
+      "104,132,919 rows (substrate exact 2026-08-22; re-verify with heap GROUP BY instrument)",
+      "21 entity types (substrate exact 2026-08-22)",
+      "Two stores until gate path unifies them (ADR-030 item 5)"
+    ]
+  },
+  "investigationCardGrade": {
+    "check": "Close JSON quotes exact counts + names second store + gate import scan",
+    "met": true,
+    "evidenceLine": "access_policy exact counts from substrate 2026-08-22 corroborated by indexed owner-fact+parcel-terrain-model public-paid sum; Smart Files authority snowy-bread-83475727 with 16 tenant-private docs; hauska-mcp-server/src gate scan 0 matches"
+  },
+  "leave_behind": "none"
+}

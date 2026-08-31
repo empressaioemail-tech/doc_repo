@@ -1,0 +1,84 @@
+{
+  "specId": "s3-heartbeat-job-spec",
+  "filedAt": "2026-08-21T18:29:30Z",
+  "lane": "s3-heartbeat",
+  "planRow": "P-14",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md item 2",
+  "createTheJob": false,
+  "reasonNotCreated": "dispatch: Do not create the job. leave_behind: planner creates the job.",
+  "job": {
+    "project": "legacy-design-tools-prod",
+    "location": "us-central1",
+    "name": "county-ledger-heartbeat",
+    "description": "Keep county_ledger_snapshot younger than Command Center LEDGER_STALE_AFTER_MS (15 minutes).",
+    "schedule": "*/10 * * * *",
+    "timeZone": "Etc/UTC",
+    "scheduleRationale": "SLA is 15 minutes. Ten-minute period leaves a five-minute margin for a 409 (recompute_in_progress) retry or a slow skip-probe run. A 15-minute cron would meet the threshold only on an instantaneous success and would show STALE after any delay."
+  },
+  "http": {
+    "method": "POST",
+    "uri": "https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger/recompute?probe=skip",
+    "body": "{}",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer <SERVICE_API_KEY from secret SERVICE_API_KEY; never stored in this spec>"
+    },
+    "bodyRequired": "Cloud Run frontend returns 411 Length Required on a bare POST with no body before Express sees the route. Probe and the job must send -d '{}' / --message-body={}."
+  },
+  "authShape": {
+    "kind": "api-key-bearer",
+    "not": "OIDC",
+    "whyNotOidc": "POST /api/county-ledger/recompute is gated by requireServiceToken, which compares Authorization Bearer to SERVICE_API_KEY. Cloud Scheduler OIDC writes an identity token into that same Authorization header and would 401. Cloud Run IAM on cortex-api is allUsers roles/run.invoker (bindings[0].members), so OIDC is not required to invoke.",
+    "secret": "projects/legacy-design-tools-prod/secrets/SERVICE_API_KEY",
+    "headerSetAtCreateTimeFromSecret": true,
+    "doNotCommitTheKey": true
+  },
+  "timeouts": {
+    "cloudRunTimeoutSeconds": 300,
+    "recomputeStatementTimeoutMs": 240000,
+    "attemptDeadline": "240s",
+    "fullProbeHistoricDurationSec": 1072.2,
+    "fullProbeHistoricSource": "_inbox/2026-08-14_l18_close.json materializeApply.durationSec",
+    "whyProbeSkipOnTheJob": "L18 full materialize was 1072.2s. Serving Cloud Run timeoutSeconds is 300 and RECOMPUTE_STATEMENT_TIMEOUT_MS is 240000. A scheduled POST without probe=skip will 504 / statement-timeout rather than refresh computedAt. probe=skip is the only POST that can finish inside the serving timeout today. Raising Cloud Run timeout is a separate planner change, not this spec."
+  },
+  "sla": {
+    "staleThresholdMs": 900000,
+    "staleThresholdSource": "hauska-map 9477a8f LEDGER_STALE_AFTER_MS = 15 * 60 * 1000; live CC bundle assets/index-CRBvzuKb.js has data-testid manifest-stale-banner and manifest-computed-at",
+    "whatFailsWhenItMisses": "Command Center County Manifest shows pill 'manifest stale' and banner 'STALE — materialized at <computedAt> (showing snapshot, not a live recompute).' GET /api/county-ledger stays HTTP 200 with growing summary.materializationAgeMs. The miss is visible honesty, not an HTTP error.",
+    "liveProofThisProbe": {
+      "computedAt": "2026-08-21T18:05:57.209Z",
+      "getMaterializationAgeMs": 1106282,
+      "ccBanner": "STALE — materialized at 2026-08-21T18:05:57.209Z (showing snapshot, not a live recompute)."
+    }
+  },
+  "whatBypassesIt": [
+    "manual POST /api/county-ledger/recompute?probe=skip with Authorization Bearer SERVICE_API_KEY and body {} (named by dispatch)",
+    "manual POST /api/county-ledger/recompute (full probes) with the same auth — a bypass of the scheduler, but it will not finish inside Cloud Run 300s today",
+    "countyLedgerMaterializeCli --apply from a laptop (full probes, not bound by Cloud Run timeout)",
+    "GET /api/county-ledger does not rematerialize; it only stamps servedAt"
+  ],
+  "contention": {
+    "lock": "county_ledger_recompute",
+    "onConflict": "HTTP 409 error=recompute_in_progress; store unmoved",
+    "schedulerRetry": "enable Cloud Scheduler retry; a 409 is contention, not a missing route"
+  },
+  "targetRevisionAtSpec": {
+    "service": "cortex-api",
+    "region": "us-central1",
+    "revisionName": "cortex-api-00527-yic",
+    "percent": 100,
+    "imageDigest": "us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api@sha256:83fd0dc6aafab0df625ab3ad267b49779decfc43b4bdc172f2d150f1001cb781",
+    "note": "digest from revision spec.containers[0].image / status.imageDigest, not the service template tag"
+  },
+  "currentExecutorInventory": {
+    "cloudSchedulerJobs": 0,
+    "locationsChecked": 30,
+    "githubWorkflowCron": 0,
+    "inProcessTimerOnCountyLedger": false
+  },
+  "plannerCreateNotes": [
+    "Do not use --oidc-service-account-email.",
+    "Do not print SERVICE_API_KEY.",
+    "After create, WDLL item 2 still needs a probe: skip one beat on purpose in staging, or prove production fired by a new computedAt without a planner session."
+  ]
+}

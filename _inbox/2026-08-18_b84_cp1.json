@@ -1,0 +1,98 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-gate-build adversarial review",
+  "lane": "B",
+  "planRow": "G-84",
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "repo": "empressaioemail-tech/smartcity-kit",
+  "branch": "g84/ship-fonts",
+  "clone": "P:\\tmp\\g84-kit (fresh clone of origin/main at 7fa706c)",
+  "date": "2026-08-18",
+  "subAgents": "none. The dispatch forbids spawning; all work and all verification is done by this agent.",
+  "missionPremise": "vendor/sc-kit.css declares --sc-font-ui as Inter and --sc-font-data as IBM Plex Mono and the package shipped neither family and no @font-face, so every design built from the package rendered in a system fallback and lost the type ramp silently. _decisions/2026-08-18_smartcity_kit_component_package.md gate item 4, as amended 2026-08-18 during the first design sync, now permits @font-face rules and only those, for families the token block already names.",
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "The set of families and weights is READ from vendor/index.html, not chosen here.",
+      "measured": "vendor/index.html line 9 carries https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;650&display=swap",
+      "consequence": "IBM Plex Mono 400/500/600 and Inter 400/500/600/650. Inter 650 is a non-standard weight and is exactly why a static-instance source was needed rather than a package of 100-step statics.",
+      "gate": "a test re-parses that URL out of the registered vendored copy and fails if the product asks for a weight the package does not ship, so the two cannot drift."
+    },
+    {
+      "id": "D2",
+      "decision": "Ship all 43 subset slices the font host returns, not a latin-only subset.",
+      "measured": "43 files, 1003 KiB total: latin 233, latin-ext 372, cyrillic-ext 122, cyrillic 99, greek 74, vietnamese 58, greek-ext 44 KiB.",
+      "rejectedAlternative": "latin + latin-ext only, 14 files, ~605 KiB.",
+      "why": "a subset cut is a silent divergence from what the product loads: non-latin glyphs would fall back with nothing saying so. unicode-range means a browser still fetches only the slices it needs, so the cut buys package size and costs honesty."
+    },
+    {
+      "id": "D3",
+      "decision": "The @font-face sheet is a separate export, dist/fonts.css, never folded into kit.css.",
+      "why": "gate 4 asserts dist/kit.css is byte-exactly vendor/sc-kit.css then vendor/shell.css, and that assertion is load-bearing. Folding @font-face in would have required weakening it."
+    },
+    {
+      "id": "D4",
+      "decision": "Acquisition is a separate hand-run script (scripts/fetch-fonts.mjs); the build is offline and deterministic.",
+      "why": "a build that reaches the network cannot be reproduced and would make CI depend on a font host. Files and their hashes are committed; the build only emits CSS and copies."
+    },
+    {
+      "id": "D5",
+      "decision": "fonts/ is its own manifest (fonts/FONTS.json), not a row in vendor/UPSTREAM.json.",
+      "why": "UPSTREAM.json means 'copy of smartcity-dashboards' and test/vendor-parity.test.mjs arm B byte-compares every row in it against a live upstream checkout. A font file has no upstream in that repo; registering it there would have broken arm B or forced an exemption into it."
+    },
+    {
+      "id": "D6",
+      "decision": "The licence texts ship inside dist/fonts/ alongside the binaries.",
+      "why": "OFL 1.1 permits redistribution only when the licence accompanies the files. This is the fonts' own licence and is not the repo LICENSE file the dispatch holds for an operator ruling."
+    }
+  ],
+  "adversarialReview": [
+    {
+      "risk": "The new gate could pass vacuously if dist/fonts.css were missing or empty.",
+      "handling": "the gate asserts existence, asserts a non-empty rule set, and asserts the inverse direction (every family the token block names as primary has at least one @font-face). That inverse assertion is the one that would have caught the original defect, so it is watched failing against a fonts sheet with the Inter faces removed."
+    },
+    {
+      "risk": "The weight-drift check parses a URL; a parse that returns nothing would make it silently vacuous.",
+      "handling": "the parser throws when it finds no font URL and the test asserts the parsed request set is non-empty before comparing."
+    },
+    {
+      "risk": "The exception widens later - somebody adds a rule to the fonts sheet because it is 'the CSS file we already ship'.",
+      "handling": "every top-level rule in the sheet must have the prelude @font-face exactly; anything else fails and names the prelude. Injected as a prove:gates case."
+    },
+    {
+      "risk": "A src url could point at a file that exists in the repo but never reaches a consumer.",
+      "handling": "two checks, not one: gate 4 resolves every url against dist/, and test/consumer.test.mjs resolves every url in the PACKED tarball's fonts.css against the tarball listing. The second is the one that catches a files/exports mistake."
+    },
+    {
+      "risk": "A stylesheet that parses is not a font that loaded.",
+      "handling": "scripts/prove-fonts.mjs renders through headless Chrome over a local http server it starts and kills, asserts document.fonts reports each family loaded, and measures that the same string is a different width from the token stack with the shipped family removed."
+    },
+    {
+      "risk": "Binary files entering repo-wide scans that read every file as utf8.",
+      "handling": "measured, not assumed: all seven constraint needles were run over the 43 woff2 files and both licence texts. Zero hits. .gitattributes gains *.woff2 binary so autocrlf cannot corrupt them."
+    }
+  ],
+  "stateAtCheckpoint": {
+    "done": [
+      "fresh clone, branch g84/ship-fonts off origin/main 7fa706c",
+      "scripts/fetch-fonts.mjs written and run: 43 woff2 + 2 OFL texts + fonts/FONTS.json",
+      "scripts/fonts-css.mjs written: the one place @font-face is emitted",
+      "scripts/build.mjs emits dist/fonts.css and copies dist/fonts/",
+      "build verified: dist/fonts holds 45 files, dist/kit.css carries zero @font-face"
+    ],
+    "next": [
+      "extend gate 4 with the four new assertions plus the inverse-direction one",
+      "extend test/consumer.test.mjs to the packed tarball",
+      "extend scripts/prove-gates.mjs with one injected violation per new assertion",
+      "scripts/prove-fonts.mjs and the README install contract",
+      "npm test, prove:gates, prove:fonts, PR, CI"
+    ]
+  },
+  "constraintsHonored": [
+    "no edit to vendor/sc-kit.css or vendor/shell.css",
+    "no component, class, or rule that styles a component",
+    "no npm publish",
+    "no repo LICENSE file added",
+    "no edit to smartcity-dashboards"
+  ]
+}

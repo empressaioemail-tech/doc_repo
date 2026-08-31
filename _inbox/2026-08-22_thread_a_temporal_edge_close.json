@@ -1,0 +1,438 @@
+{
+  "lane": "temporal-edge-obligation verify",
+  "investigationThread": "A",
+  "related": [
+    "_inbox/2026-08-22_contract_surface_store_truth_investigation.md",
+    "80_adrs/adr_030_declared_is_not_armed_contract_surface_governance.md"
+  ],
+  "gradedAt": "2026-08-22T20:50:00Z",
+  "verifier": "read-only subagent (Thread A lane)",
+  "snapshot": {
+    "doc_repo": {
+      "path": "P:/doc_repo",
+      "branch": "main",
+      "commit": "14705605d2683e2276e342189bf1a894261aea45"
+    },
+    "hauska_atom_contract": {
+      "path": "P:/hauska-atom-contract",
+      "branch": "main",
+      "commit": "292a22b1613f7729b2fd06fb01174da59c92284d",
+      "sourcePackageJsonVersion": "1.20.0",
+      "npmTagV1220": {
+        "tag": "v1.22.0",
+        "packageJsonVersionAtTag": "1.22.0",
+        "inspectionMethod": "git show v1.22.0:package.json (local clone; npm pack not run)"
+      },
+      "note": "Definitions quoted from source at main @292a22b; v1.22.0 tag matches published tarball per ADR-030 snapshot. Serving gate resolved version is Thread D; reasoning from 1.22 types alone is unsound until reconciled."
+    },
+    "hauska_engine": {
+      "path": "P:/hauska-engine",
+      "branch": "HEAD (detached, no branch)",
+      "commit": "8d8e8803550f6f7fdaae42c59a25c4a2d9acc71c"
+    },
+    "hauska_mcp_server": {
+      "path": "P:/hauska-mcp-server",
+      "branch": "docs/p35-retrieval-key-durability-note",
+      "commit": "4428f61d7f213509f5c6606b3fb402f909a236f7"
+    },
+    "legacy_design_tools": {
+      "path": "P:/legacy-design-tools",
+      "branch": "feat/s1-instrument-hardening",
+      "commit": "10069854f5aa840cc94e6eadbd625c61d3e48010"
+    },
+    "store": {
+      "neonProjectId": "fancy-fire-06136146",
+      "database": "hauska_mcp",
+      "queryTimestamp": "2026-08-22T20:45:00Z",
+      "method": "Neon MCP run_sql (index-backed COUNT with nonexistent entity_id; atom_links GROUP BY)",
+      "priorAudit": "_inbox/2026-08-20_store_audit_atom_graph.md Q9 (TABLESAMPLE body ILIKE would_affect)"
+    }
+  },
+  "claimUnderTest": {
+    "summary": "would-affect-edge is a 1:1 immutable evt_-to-subject edge, not a multi-target zoning-impact relation. ./temporal exports are dormant in serving repos. Obligation atom type (entity_type obligation) is dormant with zero atoms rows. Forward consequence is not present-tense.",
+    "verdict": "CONFIRMED",
+    "presentTenseAllowed": false
+  },
+  "contractDefinitions": {
+    "inspectionSource": "@empressaio/atom-contract — local clone P:/hauska-atom-contract @292a22b (v1.22.0 tag verified 1.22.0)",
+    "exportPaths": {
+      "./temporal": "package.json exports ./temporal → dist/temporal/index.js",
+      "obligation": "root barrel only (src/obligation.ts); NO ./obligation subpath in package.json exports"
+    },
+    "wouldAffectEdge": {
+      "contractName": "WouldAffectEdge",
+      "storeEntityType": null,
+      "edgeTypeLiteral": "would_affect",
+      "cardinality": "1:1",
+      "notMultiTarget": true,
+      "quotedDefinition": "Structural edge from an event node to a subject node. sourceNodeId MUST carry the evt_ prefix. targetSubjectId carries a subject prefix (parcel_, jurisdiction_, etc.). effectiveDate is the ISO 8601 calendar date the event takes effect. immutable: true — structural, never updated after deposit; supersession is via a new edge deposit.",
+      "sourceFile": "P:/hauska-atom-contract/src/temporal/would-affect-edge.ts",
+      "interfaceFields": [
+        "type: \"would_affect\"",
+        "sourceNodeId: string (evt_ prefix required)",
+        "targetSubjectId: string (parcel_|jurisdiction_|code-section_|security_)",
+        "effectiveDate: string (ISO YYYY-MM-DD)",
+        "immutable: true"
+      ],
+      "sampleFixture": {
+        "type": "would_affect",
+        "sourceNodeId": "evt_<16-hex from deriveEvtNodeId>",
+        "targetSubjectId": "parcel_abc123def456",
+        "effectiveDate": "2027-06-01",
+        "immutable": true
+      },
+      "misreadRisk": "Name suggests 'which parcels would an amendment affect' (1:N query relation). Contract is one evt_ node linked to one subject node per edge record. Multi-subject coverage requires N edge deposits, not one multi-target edge."
+    },
+    "temporalModuleSurfaces": {
+      "count": 3,
+      "surfaces": [
+        {
+          "name": "AnticipatoryAtom",
+          "kind": "event-family atom shape",
+          "quotedDefinition": "An anticipatory atom in the event family. valid_from MAY be in the future. claim_type must match anticipatory.<kind>. confidence.basis must be asserted on new deposits.",
+          "sourceFile": "P:/hauska-atom-contract/src/temporal/anticipatory-atom.ts",
+          "storeEntityType": null,
+          "note": "Not registered as atoms.entity_type; claim_type vocabulary on event-family payloads."
+        },
+        {
+          "name": "WouldAffectEdge",
+          "kind": "structural graph edge",
+          "see": "wouldAffectEdge above"
+        },
+        {
+          "name": "interval-query helpers",
+          "kind": "read-side query utilities",
+          "exports": ["isAtomVisibleAtAsOf", "filterAtomsForAsOf"],
+          "quotedDefinition": "Current-state queries that filter valid_from <= now silently exclude anticipatory atoms whose valid_from is in the future. Helpers make that exclusion explicit and offer opt-in to surface anticipatory atoms.",
+          "sourceFile": "P:/hauska-atom-contract/src/temporal/interval-query.ts",
+          "storeEntityType": null
+        }
+      ],
+      "alsoExported": {
+        "evtNodeId": "deriveEvtNodeId, validateEvtNodeAnchor — evt_ hashed from source\\0externalId",
+        "common": "AtomFamily, anticipatory claim_type pattern, NodeTypePrefix including evt_ and oblg_",
+        "sourceFile": "P:/hauska-atom-contract/src/temporal/node-id.ts, common.ts"
+      }
+    },
+    "obligationAtomInstance": {
+      "contractName": "ObligationAtomInstance",
+      "storeEntityType": "obligation",
+      "quotedDefinition": "Obligation atom instance. Domain-neutral from birth. entityType: obligation. obligationDid format oblg_<16-hex>. Status is engine-derived, never hand-asserted.",
+      "sourceFile": "P:/hauska-atom-contract/src/obligation.ts",
+      "obligationTypes": [
+        "delay-rental",
+        "shut-in-royalty",
+        "minimum-royalty",
+        "bonus",
+        "rental",
+        "lease-expiration",
+        "continuous-development",
+        "pugh-release",
+        "license-reference-royalty",
+        "license-revenue-share",
+        "other"
+      ],
+      "interfaceFields": [
+        "entityType: \"obligation\"",
+        "obligationDid",
+        "obligationType",
+        "anchorDid",
+        "anchorKind?",
+        "owedToActorDid? (required for license-* types)",
+        "dueDate",
+        "status",
+        "confidence",
+        "sourceCitation",
+        "extractedAt",
+        "accessPolicy"
+      ],
+      "notTheSameAs": "source_obligation_ledger rows (MCP inbound meter accrual table; obligationType license-reference-royalty string on ledger, not obligation atoms in atoms table)"
+    }
+  },
+  "importSites": {
+    "method": "ripgrep across P:/hauska-engine, P:/hauska-mcp-server, P:/legacy-design-tools (artifacts + lib scopes for LDT)",
+    "patterns": [
+      "@empressaio/atom-contract/temporal",
+      "validateWouldAffectEdge",
+      "filterAtomsForAsOf",
+      "validateAnticipatoryAtom",
+      "WouldAffectEdge",
+      "would_affect",
+      "would-affect-edge",
+      "OBLIGATION_SCHEMA",
+      "ObligationAtomInstance",
+      "oblg_",
+      "obligationDid"
+    ],
+    "hauska_engine": {
+      "temporal_subpath_imports": [],
+      "would_affect_or_edge": [],
+      "anticipatory_validators": [],
+      "obligation_schema_or_instance_imports": [],
+      "comments_only": [
+        "P:/hauska-engine/packages/atoms/src/property-instances.ts — comment references ObligationAtomInstance; imports property subpath only, not obligation types"
+      ],
+      "unrelated_temporal_strings": [
+        "code-amendment amendmentScope: temporal (corpus edition history; not ./temporal module)",
+        "boundary-primitive compute header mentions temporal (edge validity semantics; not contract import)"
+      ],
+      "producers_writers": [],
+      "selects": "No SELECT entity_type obligation|would-affect* in engine packages searched"
+    },
+    "hauska_mcp_server": {
+      "temporal_subpath_imports": [],
+      "would_affect_or_edge": [],
+      "obligation_atom_imports": [
+        {
+          "file": "P:/hauska-mcp-server/src/source-obligation-meter.ts",
+          "import": "@empressaio/atom-contract/reasoning — ICC_LICENSE_REFERENCE_OBLIGATION_FIXTURE",
+          "purpose": "Fixture shape for inbound meter; writes source_obligation_ledger, not atoms.entity_type=obligation",
+          "classification": "starved for obligation atoms; armed for ledger accrual (separate surface)"
+        },
+        {
+          "file": "P:/hauska-mcp-server/tests/source-obligation-meter.test.ts",
+          "import": "same fixture",
+          "purpose": "test"
+        },
+        {
+          "file": "P:/hauska-mcp-server/tests/fixtures/engine-property-instances.snapshot.ts",
+          "import": "comment only — ObligationAtomInstance",
+          "purpose": "comment"
+        }
+      ],
+      "producers_writers": [
+        "P:/hauska-mcp-server/src/source-obligation-meter.ts — INSERT INTO source_obligation_ledger (not atoms)"
+      ],
+      "selects": "No SELECT entity_type obligation|would-affect* in mcp-server src"
+    },
+    "legacy_design_tools": {
+      "scopes_searched": ["P:/legacy-design-tools/artifacts", "P:/legacy-design-tools/lib"],
+      "temporal_subpath_imports": [],
+      "would_affect_or_edge": [],
+      "obligation_atom_imports": [],
+      "producers_writers": [],
+      "selects": []
+    },
+    "atom_contract_internal_only": [
+      "P:/hauska-atom-contract/src/og/common.ts — imports NodeTypePrefix from ../temporal/common.js",
+      "P:/hauska-atom-contract/src/og/well.ts — imports API_14_PATTERN from ../temporal/node-id.js",
+      "P:/hauska-atom-contract/src/reasoning/fixtures.ts — ICC_LICENSE_REFERENCE_OBLIGATION_FIXTURE ObligationAtomInstance"
+    ]
+  },
+  "rowCounts": {
+    "hauska_mcp_atoms": {
+      "queryTimestamp": "2026-08-22T20:45:00Z",
+      "method": "SELECT COUNT(*) FROM atoms WHERE entity_type = $type AND entity_id = '__audit_nonexistent__' (index on entity_type, entity_id; 0 means no rows of that type)",
+      "rows": [
+        {
+          "entity_type": "obligation",
+          "count": 0,
+          "verified": true,
+          "sql": "SELECT COUNT(*)::bigint AS n FROM atoms WHERE entity_type = 'obligation' AND entity_id = '__audit_nonexistent__'"
+        },
+        {
+          "entity_type": "would-affect-edge",
+          "count": 0,
+          "verified": true,
+          "sql": "SELECT COUNT(*)::bigint AS n FROM atoms WHERE entity_type = 'would-affect-edge' AND entity_id = '__audit_nonexistent__'"
+        },
+        {
+          "entity_type": "would_affect",
+          "count": 0,
+          "verified": true,
+          "sql": "same pattern; contract uses type literal would_affect on edge object, not this entity_type — checked for naming drift"
+        },
+        {
+          "entity_type": "anticipatory%",
+          "count": 0,
+          "verified": true,
+          "sql": "SELECT entity_type, COUNT(*) FROM atoms WHERE entity_type LIKE 'anticipatory%' AND entity_id = '__audit_nonexistent__' GROUP BY entity_type — empty result"
+        }
+      ],
+      "bodySamplePrior": {
+        "source": "_inbox/2026-08-20_store_audit_atom_graph.md Q9",
+        "would_affect_in_body": "0 / 920 TABLESAMPLE rows",
+        "valid_from_valid_to_on_atoms": "0 in 1,025-row sample"
+      }
+    },
+    "hauska_mcp_atom_links": {
+      "queryTimestamp": "2026-08-22T20:45:00Z",
+      "would_affect_link_types": 0,
+      "link_type_distribution": [
+        { "link_type": "contains", "approx_count": 28623 },
+        { "link_type": "cites", "approx_count": 4526 },
+        { "link_type": "subject-to", "approx_count": 2069 },
+        { "link_type": "see-also", "approx_count": 228 },
+        { "link_type": "as-defined-in", "approx_count": 65 },
+        { "link_type": "amends", "approx_count": 27 },
+        { "link_type": "supersedes", "approx_count": 7 }
+      ],
+      "note": "No would_affect / would-affect-shaped link_type"
+    },
+    "source_obligation_ledger": {
+      "note": "Separate from obligation atoms — inbound ICC meter (ADR-030 armed attribution)",
+      "approx_live_tuples": 10,
+      "sql": "pg_stat_user_tables n_live_tup for relname source_obligation_ledger",
+      "notCountedAs": "obligation entity_type rows in atoms"
+    }
+  },
+  "classificationTable": [
+    {
+      "surface": "WouldAffectEdge (type would_affect)",
+      "adr030State": "dormant",
+      "evidence": "Shipped in @empressaio/atom-contract/temporal @1.22.0. Zero imports in hauska-engine, hauska-mcp-server, legacy-design-tools. Zero atoms rows and zero atom_links link_type. No writer, no query API.",
+      "presentTenseExternal": false
+    },
+    {
+      "surface": "AnticipatoryAtom (anticipatory.<kind> claim_type)",
+      "adr030State": "dormant",
+      "evidence": "Shipped in ./temporal. Zero serving-repo imports. No atoms.entity_type. No producer.",
+      "presentTenseExternal": false
+    },
+    {
+      "surface": "interval-query helpers (filterAtomsForAsOf, isAtomVisibleAtAsOf)",
+      "adr030State": "dormant",
+      "evidence": "Exported from ./temporal. Zero serving-repo imports.",
+      "presentTenseExternal": false
+    },
+    {
+      "surface": "evt_ node-id derivation (deriveEvtNodeId)",
+      "adr030State": "dormant",
+      "evidence": "Exported from ./temporal. Only consumed inside atom-contract og module in this verification pass; not imported by engine/mcp/LDT serving trees.",
+      "presentTenseExternal": false
+    },
+    {
+      "surface": "ObligationAtomInstance (entity_type obligation in atoms)",
+      "adr030State": "dormant",
+      "evidence": "Root export OBLIGATION_SCHEMA @1.22.0. Zero obligation rows in atoms. No engine/LDT writer. MCP imports fixture from reasoning for meter shape only.",
+      "presentTenseExternal": false
+    },
+    {
+      "surface": "source_obligation_ledger accrual (license-reference-royalty)",
+      "adr030State": "armed",
+      "evidence": "source-obligation-meter.ts INSERT on successful reads; ~10 ledger rows live. Not Thread A obligation-atom surface.",
+      "presentTenseExternal": true,
+      "scopeNote": "Attribution/counting armed; obligation atoms in catalog store are still dormant"
+    },
+    {
+      "surface": "Forward consequence / zoning-amendment impact query",
+      "adr030State": "absent",
+      "evidence": "No multi-target relation type, no producer, no store rows, no SELECT/API. Name would-affect-edge misleads readers toward a capability that does not exist.",
+      "presentTenseExternal": false
+    }
+  ],
+  "fixOptionsRanked": [
+    {
+      "rank": 1,
+      "option": "kill_slide_copy",
+      "effort": "low",
+      "rationale": "Forward consequence and obligation/temporal families must not lead positioning until armed. Immediate harm reduction; no code change required.",
+      "addresses": ["present-tense claims", "misnamed would-affect-edge reader confusion"]
+    },
+    {
+      "rank": 2,
+      "option": "unimplemented_marker_in_contract",
+      "effort": "low-medium",
+      "rationale": "ADR-030 item 3: contract declares surfaces without producers as unimplemented so compile-time readers match store truth.",
+      "addresses": ["dormant types read as live", "accumulation of undeclared types"]
+    },
+    {
+      "rank": 3,
+      "option": "rename_or_split_type",
+      "effort": "medium",
+      "rationale": "Rename WouldAffectEdge / would_affect to reflect 1:1 evt→subject edge (e.g. event-subject-edge) OR split future 1:N impact relation as a distinct unimplemented type. Kills the zoning-amendment misread at the name.",
+      "addresses": ["would-affect-edge naming vs 1:1 semantics"]
+    },
+    {
+      "rank": 4,
+      "option": "adr_amendment",
+      "effort": "low",
+      "rationale": "Record ADR-030 classification and retract present-tense forward-consequence claims in dependent ADRs/positioning drafts.",
+      "addresses": ["canon drift", "operator-approved governance"]
+    },
+    {
+      "rank": 5,
+      "option": "fund_producer_store_query_path",
+      "effort": "high",
+      "rationale": "Engine writer for anticipatory atoms + would_affect edges (or replacement type), atoms or atom_links persistence, MCP/engine query API, conformance tests. Only path to armed.",
+      "addresses": ["dormant → armed", "forward consequence as product"]
+    }
+  ],
+  "claims": [
+    {
+      "id": "A1",
+      "claim": "WouldAffectEdge is 1:1 evt_ → single subject node, not multi-target.",
+      "status": "verified",
+      "evidence": "would-affect-edge.ts interface: one sourceNodeId, one targetSubjectId; immutable edge deposit.",
+      "whatWouldProveWrong": "Contract interface allowing array targetSubjectIds or entity_type storing many parcel IDs per edge without N rows."
+    },
+    {
+      "id": "A2",
+      "claim": "No producer writes would_affect edges or anticipatory atoms in serving repos.",
+      "status": "verified",
+      "evidence": "Grep zero matches for temporal subpath imports and would_affect in engine/mcp/LDT.",
+      "whatWouldProveWrong": "INSERT INTO atoms or atom_links with would_affect / anticipatory payload in hauska-engine or hauska-mcp-server on inspected commits."
+    },
+    {
+      "id": "A3",
+      "claim": "Zero atoms rows for obligation entity_type.",
+      "status": "verified",
+      "evidence": "Neon hauska_mcp index-backed COUNT obligation + nonexistent entity_id → 0 at 2026-08-22T20:45Z.",
+      "whatWouldProveWrong": "COUNT > 0 for entity_type='obligation' with any real entity_id sample, or pg_stats showing obligation in entity_type histogram."
+    },
+    {
+      "id": "A4",
+      "claim": "Zero store representation of would_affect edges.",
+      "status": "verified",
+      "evidence": "entity_type would-affect-edge/would_affect COUNT 0; atom_links has no would-shaped link_type; store audit Q9 body sample 0 hits.",
+      "whatWouldProveWrong": "atom_links.link_type = would_affect with n > 0, or atoms body containing type would_affect in indexed query."
+    },
+    {
+      "id": "A5",
+      "claim": "./temporal module is dormant in all three serving repos.",
+      "status": "verified",
+      "evidence": "No @empressaio/atom-contract/temporal import sites in engine, mcp-server, legacy-design-tools.",
+      "whatWouldProveWrong": "Any production import of atom-contract/temporal outside tests in those repos."
+    },
+    {
+      "id": "A6",
+      "claim": "Forward consequence is not a present-tense differentiator.",
+      "status": "verified",
+      "evidence": "Classification table: all forward-consequence surfaces dormant or absent; no query API.",
+      "whatWouldProveWrong": "Armed producer + populated rows + serving SELECT/API demonstrated on deployed gate."
+    },
+    {
+      "id": "A7",
+      "claim": "Investigation './obligation' subpath exists.",
+      "status": "falsified",
+      "evidence": "package.json exports list has ./temporal but no ./obligation; obligation ships from root index.ts only.",
+      "whatWouldProveWrong": "package.json exports[\"./obligation\"] entry.",
+      "operatorNote": "Thread A text says ./obligation; correct import is @empressaio/atom-contract (root) or types from reasoning fixtures."
+    },
+    {
+      "id": "A8",
+      "claim": "Gate runs same contract version as 1.22.0 definitions used here.",
+      "status": "unverified",
+      "evidence": "ADR-030: mcp-server resolves @empressaio/atom-contract@1.9.0 on deployed main; Thread D owns reconciliation.",
+      "whatWouldProveWrong": "npm ls / image digest showing gate at 1.22.0 with temporal exports present in node_modules.",
+      "dependency": "Thread D contract-version reconcile"
+    }
+  ],
+  "grade": {
+    "thread": "A",
+    "status": "met",
+    "checklist": {
+      "close_json_cites_contract_definition": true,
+      "zero_store_rows": true,
+      "zero_import_sites_in_serving_repos": true,
+      "classification_table_present": true,
+      "what_would_prove_wrong_per_claim": true
+    },
+    "evidenceSummary": "Contract @1.22.0 (tag-verified) defines 1:1 would_affect edge and anticipatory event atoms; obligation atom type on root export. Grep: no temporal imports and no obligation atom writers in engine/mcp/LDT. Store: 0 obligation rows, 0 would-affect entity_types, 0 would_affect link_types. Forward consequence remains roadmap."
+  },
+  "leave_behind": {
+    "item": "P:/doc_repo/_inbox/2026-08-22_thread_a_temporal_edge_close.json",
+    "owner": "operator / planner",
+    "plan_row": "investigation Thread A"
+  }
+}
