@@ -1,10 +1,3 @@
-!!! SUPERSEDED 2026-08-31 — DO NOT HAND-CARRY THIS ONE.
-!!! Replaced by _dispatches/2026-08-31_p91-cortex-verify2_dispatch.md
-!!! Reason: this brief asserts `cortex-api-00672-ceq` is serving 100 percent. It is not.
-!!! The planner deployed over it twice the same day for P-87; `cortex-api-00678-jup` serves now.
-!!! A lane running this brief probes a revision no user reaches and reports against the wrong id.
-!!! The mission substance is unchanged and the replacement narrows the diff target.
-
 CANON-PREAMBLE v6f9d139b
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
@@ -47,15 +40,30 @@ FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you r
 PLAN-ROW: P-91 (90_operations/OPS-16_texas_market_plan_of_record.md)
 repo: legacy-design-tools
 
-# Is the v3 Smart Site panel still correct against cortex-api-00672-ceq
+# Is the v3 Smart Site panel still correct against cortex-api-00678-jup
 
-# Mission: is the v3 Smart Site panel still correct against `cortex-api-00672-ceq`?
+# Mission: is the v3 Smart Site panel still correct against `cortex-api-00678-jup`?
 
 ## The situation, and why this is not a formality
 
 The P-91 v3 MCP wave (cuts p560 through p563) was built, graded and deployed against cortex serving `cortex-api-00668-cos` and `00670-bay`, which share image digest `41f998d5`. Those cuts are now serving as `smartsite-mcp-00078-fat` (digest `sha256:ecc72a40`, tag p563), and the operator's seven-test live walk passed on 2026-08-31.
 
-Cortex then moved underneath that wave. `cortex-api-00672-ceq` was created 2026-08-31T02:52:52Z on a NEW digest and is serving 100 percent. It is LDT PR #560, the F-11 road-class setback refuse, merged `8f11e81b` by another seat AFTER the P-91 wave closed. Nobody on the P-91 thread verified anything against it.
+Cortex then moved underneath that wave. `cortex-api-00672-ceq` was created 2026-08-31T02:52:52Z on a NEW digest. It is LDT PR #560, the F-11 road-class setback refuse, merged `8f11e81b` by another seat AFTER the P-91 wave closed. Nobody on the P-91 thread verified anything against it.
+
+## REVISION CORRECTION 2026-08-31 — read this before probing
+
+The first cut of this dispatch said `00672-ceq` "is serving 100 percent". **That is no longer true, and the planner is why.** Two further cortex deploys landed the same day for P-87 Claude Sync: `cortex-api-00676-hid`, then `cortex-api-00678-jup`, which is what serves 100 percent now. Probe `00678-jup`. A probe against `00672-ceq` reports on a revision no user reaches.
+
+**The mission's substance is unchanged, and the diff target is NARROWER than it looks.** The planner enumerated every api-server change between the F-11 merge `8f11e81b` and the currently serving build `8416583d`. The only serving-path files that moved are the P-87 additions:
+
+    artifacts/api-server/src/lib/peAiConnections.ts          (new)
+    artifacts/api-server/src/lib/peAiConnectionsClassify.ts  (new)
+    artifacts/api-server/src/routes/propertyExplorer.ts      (one added GET route)
+    artifacts/api-server/src/__tests__/setup.ts              (test-only)
+
+`setbackProvenanceDisposition.ts` and `boundaryEdgeFactRead.ts` — the two files this hunt is actually about — are **byte-identical between `00672-ceq` and `00678-jup`**. Verify that claim yourself rather than taking it; if it is wrong, that is a finding and it changes the scope of this lane.
+
+So F-11's behaviour on the wire is the same in the revision you will probe as in the one this dispatch was written against. The added `ai-connections` route is a signed-in GET unrelated to node facets; treat it as out of scope unless you find otherwise.
 
 This is not a generic "re-run the tests" ask. F-11 touched three files that the Smart Site MCP demonstrably consumes:
 
@@ -87,7 +95,7 @@ A new road-class refusal shape is precisely the kind of thing that is absent fro
 
 ## Method
 
-Probe live against `cortex-api-00672-ceq` and read code. When a probe and the code disagree, that disagreement IS the finding; report both readings rather than picking one.
+Probe live against `cortex-api-00678-jup` (the revision actually serving) and read code. When a probe and the code disagree, that disagreement IS the finding; report both readings rather than picking one.
 
 The anonymous route is `GET /api/brokerage/v1/place/node/:parcelNodeId/facets`. It is the only anonymous route in the place surface; every other route there is gated. Fixture parcels with known shapes: `48021:34137`, `48021:34169` and `48021:34161` are a contiguous block; `48021:82112` is the sparsest record, no ring and no year built; `48021:31254` and `48021:31272` are the Higgins block.
 
@@ -109,9 +117,9 @@ Distinguish absent, zero and unmeasured throughout, and state your snapshot (rep
 
 A findings document naming, at minimum: every changed wire field, every unmapped token with its user-visible consequence, a verdict on function 6, a verdict on edge roles, and an explicit statement of what you did NOT measure.
 
-Lead with the single decision-relevant sentence: whether the v3 panel is still correct against `00672-ceq`, or what specifically is now wrong.
+Lead with the single decision-relevant sentence: whether the v3 panel is still correct against `00678-jup`, or what specifically is now wrong.
 
 CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
-  CP1: _inbox/2026-08-31_p91-cortex-verify_cp1.json
-  CP2: _inbox/2026-08-31_p91-cortex-verify_cp2.json
-  CLOSE: _inbox/2026-08-31_p91-cortex-verify_close.json
+  CP1: _inbox/2026-08-31_p91-cortex-verify2_cp1.json
+  CP2: _inbox/2026-08-31_p91-cortex-verify2_cp2.json
+  CLOSE: _inbox/2026-08-31_p91-cortex-verify2_close.json
