@@ -55,8 +55,23 @@ This error was already found and recorded in
 `_decisions/2026-08-30_unincorporated_is_the_disposition.md` on 2026-08-31, but
 **the seed JSON was never regenerated**, so the bad grading is still live in
 `_catalog/2026-08-30_breadth_place_alias_seed.json` and would have been picked up
-by R2 and R3 as approved. Its cause was an exact-name lookup missing a hyphenated
-name.
+by R2 and R3 as approved.
+
+**CAUSE CORRECTED 2026-08-31 (planner). This record originally said the cause was
+"an exact-name lookup missing a hyphenated name." That is WRONG, and building a fix
+to it produces a no-op.** The generator's `nk()` already strips hyphens, and the
+proof is inside the seed: `breadth_48309_lacy_lakeview` resolves to Lacy-Lakeview
+`40168`, graded `certain`, kind `roster-exact`. Hyphenation is handled.
+
+The actual mechanism is a **half-name**. CAD situs carries ONE COMPONENT of a
+compound roster name (`eddy` and `bruceville` are halves of `Bruceville-Eddy`), and
+the lookup has no component index, so no whole-key match exists for a half. The fix
+is a **county-scoped, miss-only, single-hit component index**, not hyphen handling.
+
+Each of those three qualifiers is load-bearing. `breadth_48309_west` is currently
+`certain` on West `77332` in McLennan, and `West` is also a component of West Lake
+Hills `77632` in Travis; a component rule that is not county-scoped or not
+miss-only flips a row that is right today.
 
 The seed file is generated property-seat output and is deliberately NOT hand-patched
 here: a hand edit to generated data reads as a fix and drifts at the next
