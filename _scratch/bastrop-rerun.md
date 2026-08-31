@@ -30,9 +30,15 @@ GROUND-TRUTH 2026-08-31T19:12:51Z — McLennan factory-p2-juris-cbt28 started be
 
 GROUND-TRUTH 2026-08-31T19:42:14Z — McLennan cbt28 on sha256:56a8ee75: 15 chunks, 114254 rows, landing 32422/81832/114254 all run 82c26c82. Cloud Run succeededCount=1 29m19s unaided. F2-as-#49 NOT TESTABLE. Not cancelled.
 
-GROUND-TRUTH 2026-08-31T19:46:11Z — factory-p2-juris-krckc on sha256:cb278eb5. Run 1dda40f7. F1 50264/11992/62256 all rows this run_id at 19:47:03Z. F2 succeededCount=1 2m6.33s unaided recorder=containment-persist. Licenses 62256.
+GROUND-TRUTH 2026-08-31T19:46:11Z — factory-p2-juris-krckc on sha256:cb278eb5. Run 1dda40f7. F1 50264/11992/62256 all rows this run_id at 19:47:03Z. F2 succeededCount=1 2m6.33s unaided recorder=containment-persist. Was the bind. Upsert later moved it.
 
-OPEN — Travis/Williamson COUNTY_HELD. TOTALS UNMEASURED. Setback bake not started (P4-QUARANTINE). McLennan 82c26c82 completed on Hays image only.
+GROUND-TRUTH 2026-08-31T19:45:30Z — Cloud Build 6c7700ec from persist HEAD 5f9acc3. Digest sha256:dd7c2a94. Job generation 5. IMAGE_DIGEST matches. Tarball, no COMMIT_SHA. Differs from 56a8ee75 and cb278eb5.
+
+GROUND-TRUTH 2026-08-31T19:48:42Z — factory-p2-juris-hwzq5 args p2-juris --county=48021 --apply image sha256:dd7c2a94. Falsifiers stated: F1 50264/11992/62256 exact; F2 unaided exit. Do not cancel.
+
+GROUND-TRUTH 2026-08-31T19:50:47Z — hwzq5 run 85f984c2. F1 store 50264/11992/62256 all this run_id, n_zero=0. F2 succeededCount=1 1m58.18s unaided recorder=containment-persist reason matched. Licenses 62256. Cite this run.
+
+OPEN — Travis/Williamson COUNTY_HELD. TOTALS UNMEASURED. Setback bake not started (P4-QUARANTINE). McLennan 82c26c82 completed on Hays image only. Bake may cite 85f984c2.
 
 ## SUPERVISION 2026-08-31T19:14Z (this chat)
 Did not start gq4r8 or cbt28. Sibling chat did. Image sha256:56a8ee75 carries #49 by success-termination behavior (recorder containment-persist, max_duration_s 21600, process exit 0). Did not rebuild under live cbt28. Bastrop F1+F2 already met on run 2287e9e8. McLennan 82c26c82 started 19:13:08Z, 0 chunks at first poll. Do not start a second heavy op. Do not hand-cancel.
