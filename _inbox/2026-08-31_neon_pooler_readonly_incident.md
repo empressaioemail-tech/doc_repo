@@ -39,7 +39,7 @@ The fixed revision `cortex-api-00670-bay` produced 0 read-only errors and 0 erro
 
 One reading that looked like a failure and was not, recorded because it would mislead the next reader: for several minutes after the shift, read-only errors continued at roughly the previous rate. Attributed by revision, they came from EIGHT old revisions (00581, 00649, 00654, 00656, 00660, 00664, 00666, 00668) running in-process interval sweepers against the pooler, and none from 00670-bay. Old revisions with lingering instances keep executing their own timers regardless of traffic. Counting errors service-wide would have said the fix failed; counting them per revision said it worked. The aggregate was the wrong instrument.
 
-End-to-end proof through the product was NOT performed by the planner: the planner's own connector token expired mid-incident. The operator's reconnect is the outstanding confirmation.
+End-to-end proof through the product was NOT performed by the planner: the planner's own connector token expired mid-incident. The operator's reconnect was the outstanding confirmation. **CLOSED 2026-08-31: the operator reconnected and a `create_screen` plus `save_property` write succeeded on the unpooled direct endpoint.** The product write path is proven end to end. What that does NOT close is the incident itself: both services still run unpooled, which is safe at 23 of 901 connections and is not a resting state, and Neon still owes an explanation for why one pool on one database went read-only while another pool on the same compute and role did not. Proving the mitigation works is not the same as curing the cause, and the revert remains a traffic shift because the original secret was never modified.
 
 # Open
 
