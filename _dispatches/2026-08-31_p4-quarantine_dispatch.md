@@ -120,6 +120,40 @@ Consequence: no column predicate finds this cohort. Every quarantine mechanism
 that operates on columns is looking in the wrong place, and a
 `source_adapter`-based allowlist would pass all 188,103 rows.
 
+## The placeholder has a live re-mint path, and it is a documented deploy step
+
+Answer the bypass question before designing the control, because the answer here
+is not "none".
+
+`packages/storage/scripts/write-storage-port-proof.mjs` writes
+`did:hauska:code-section:storage-port-proof/phase-1a` into the substrate store as
+an idempotent upsert on `atom_did`. It is not dead code. It is
+`services/retrieval-api/DEPLOY.md` **step 2**, an operator command in the live
+retrieval-api deploy runbook, and the Gate A live verify at DEPLOY.md:167 then
+asserts that same DID returns 200 and is findable by `search?q=storage-port-proof`.
+It is also exposed as the package script `write-storage-port-proof` in
+`packages/storage/package.json:21`.
+
+Two consequences, and they pull in opposite directions:
+
+1. **A quarantine that makes that DID decline or 404 breaks the documented
+   retrieval-api deploy verification**, and it would present as a deploy failure
+   rather than as a quarantine working. The proof atom is a deliberately
+   maintained serving artifact for a different purpose.
+2. **A source-text CI detector does not cover this path.** The detector this card
+   models on `retire-road-class-setback-table.mjs` scans for a provenance string
+   assigned in source. Re-minting here is a runbook command, so the scan passes
+   while the atom is rewritten. A control whose scope is narrower than its claim
+   is still a defect.
+
+Hold the scope distinction precisely. The proof atom is a **`code-section`**.
+Re-running the deploy step does not re-mint the 188,103 `setback-rule` rows; it
+keeps the DID those rows cite alive and servable. Do not conflate "the cited
+target exists" with "the citation is a dimensional record". Report whether the
+quarantine's scope is the citing `setback-rule` rows only, which is the reading
+this card assumes, or the cited `code-section` as well, which would collide with
+Gate A. **Do not resolve that collision by weakening either side.**
+
 ## What already exists — build into it, do not rebuild
 
 The F-11 provenance lane already landed real work on `hauska-engine` main
