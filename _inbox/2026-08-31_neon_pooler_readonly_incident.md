@@ -57,6 +57,36 @@ A comment block at each site records why the binding is `_DIRECT`, that this ver
 
 One planner error worth keeping, because it is the documented class. The planner's own `sed` for the third site used `--secret=DEPLOYMENT_DATABASE_URL$`, and the line ends in a backslash continuation, so the anchor could never match. The fail-closed count returned 0 and the executing seat diagnosed the pattern rather than assuming the file had moved. A shell one-liner whose anchor quietly means something other than intended is exactly the instrument failure this doctrine already records; the check caught it because it was written to fail loudly.
 
+# Diagnostic 2026-08-31T16:39Z. NOT CURRENTLY OCCURRING, and still UNDETERMINED whether the pooler is safe to return to
+
+Run because the operator reported seeing no errors and no messages on the Neon console. That observation turns out to carry no information, and establishing why is the most useful thing this diagnostic produced.
+
+**The injection is not happening right now.** A 2x2 of `SHOW default_transaction_read_only` across `neondb` and `hauska_mcp`, each through the pooled and the direct hostname, returned `off` in all four cells. The discriminator that defined the incident, `hauska_mcp` writable through the pooler while `neondb` was not, is GONE rather than inverted; the two are now symmetric.
+
+The sharper half of that measurement is the `source` column, not the value. Every cell reads `pg_settings.source = default`, which is the healthy signature. The incident's signature was `source = session`, meaning something injected it per-connection. Reading the value alone would not have distinguished a healthy default from a session-level `off`; reading where the value came from does. Repeated five times on the historically affected cell across fresh connections, `off` every time, so no intermittency at this instant.
+
+Everything ruled out at incident time is still ruled out: `pg_is_in_recovery()` false, `pg_db_role_setting` zero rows, `pg_event_trigger` zero rows, and the `neondb_owner` role last modified 2026-05-20, months before any of this.
+
+**Why the console shows nothing, and why that is not reassurance.** The Neon operations log contains ZERO entries touching the production endpoint `ep-lucky-truth-apodo8hr` across a window spanning 2026-08-28 to now. Verified independently by the planner rather than accepted from the lane: 100 operations returned, every one against `ep-wispy-fire-apd2q819` or `ep-blue-unit-apy6w1vh`, which are staging. That window CONTAINS the live incident and the eleven-hour regression.
+
+So the operations log was silent for production while writes were actively broken, and it is silent now. The two states are indistinguishable through that instrument. The operations API tracks compute lifecycle, start, suspend and branch, not proxy-level session injection, so it was never going to see this. **An absent alert here is not evidence the condition cleared; it is evidence that nothing reports the condition.** That is the whole reason the incident ran undetected in the first place, twice.
+
+Endpoint settings were also read live: the `pg_settings` override is empty, the endpoint is not disabled, its type is `read_write`, no maintenance window is active, and no HIPAA or block flags are set. The consumption and quota endpoint refused the available key because it is org-scoped, so quota is UNMEASURED rather than clear.
+
+**Connection headroom, live:** `max_connections` 901 with 19 in use, 2.1 percent, against 23 at incident time. Unpooled remains comfortably safe at this load.
+
+# The posture, ruled
+
+**Stay on `DEPLOYMENT_DATABASE_URL_DIRECT`. Do not revert to the pooler.**
+
+Not because the pooler is proven bad today, but because nothing can currently detect it going bad. The fault's defining property is that it produces no signal anywhere visible until an application write fails downstream, and that property has now been demonstrated three times: the original outage, the cortex-api regression, and the smartsite-mcp regression that ran two and a half hours before a pre-shift gate caught it.
+
+Reverting would trade a measured cost, running unpooled at 2 percent of connection capacity, for an unmeasured risk with no detector. That is the wrong trade while the detector does not exist.
+
+**The instrument that would settle it, and it does not exist yet:** a scheduled canary reading `SHOW default_transaction_read_only` against the POOLED endpoint every few minutes for 24 to 48 hours, with alerting, spanning the two recurrence times seen today around 02:11Z and 02:52Z. Until that runs clean, "safe to revert" is undetermined and should be stated as undetermined rather than inferred from quiet.
+
+Building that canary is the correct next control and is not yet scheduled. Note what it would be for: not detecting the pooler, but detecting SILENCE that means something. This operation's own doctrine already says a control that cannot fail is not a control, and the current situation is the inverse, a fault that cannot announce.
+
 What that does NOT close is the incident itself: both services still run unpooled, which is safe at 23 of 901 connections and is not a resting state, and Neon still owes an explanation for why one pool on one database went read-only while another pool on the same compute and role did not. Proving the mitigation works is not the same as curing the cause, and the revert remains a traffic shift because the original secret was never modified.
 
 # Open
