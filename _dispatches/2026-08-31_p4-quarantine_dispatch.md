@@ -419,6 +419,26 @@ one direction and edited in the other, and the guard that would have said so has
 been comparing against the pin it was copied from. **Report this as its own
 finding. Do not fix hauska-map from this seat; it is not yours.**
 
+**That file moved under you on 2026-08-31, and it will move again.** hauska-map
+PR **#322** (`feat/c4-buildable-pct`, `1bba1e3`) edits
+`apps/property-explorer/api/_lib/atom-chain-to-facets.ts` and
+`_lib/pe-property-atoms.ts` to compute `buildableAreaPct` after the base-facts
+merge, closing Gate 8's C4. All three of its checks are conclusion string
+`success` and it is expected to merge. Two consequences for this card:
+
+- **Re-read that file at your snapshot rather than at the line numbers quoted
+  above.** Any line reference here is a dated snapshot and #322 shifts them.
+- **The vendor drift gets worse, not better.** The mirror was already 710 lines
+  against a main of 1,549 with its guard skipping. #322 widens the gap while the
+  guard stays blind. That strengthens the finding; it does not change who fixes
+  it. Still not this seat.
+
+The overlap is not a conflict of intent: #322 adds a computed percentage and this
+card adds a provenance classifier, to the same file for different reasons. But two
+cards editing one file with a disarmed drift guard is exactly how a serve path ends
+up carrying one change and not the other. **State in your close which commit of
+`atom-chain-to-facets.ts` you read.**
+
 **A quarantine changes ICC accrual.** Every served setback citing the
 placeholder currently accrues a `license-reference-royalty` obligation against
 the ICC actor, because the placeholder DID is on the inbound allowlist. Removing
