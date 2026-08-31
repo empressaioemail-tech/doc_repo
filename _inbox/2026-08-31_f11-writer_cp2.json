@@ -1,0 +1,70 @@
+{
+  "checkpoint": "CP2",
+  "lane": "f11-writer",
+  "card": "Writer allowlist plus the F-11 setback writer",
+  "planRows": ["F-11", "F-02"],
+  "writtenAt": "2026-08-31T14:58:00Z",
+  "seat": "integration supervising; implementer [F11-WRITER](89e48338-1312-4012-a587-05a6bfbce5a8); planner commits",
+  "snapshot": {
+    "hauskaEngine": "P:/seat-worktrees/property/hauska-engine-f11-setback",
+    "branch": "seat/property-ctx-f11-writer",
+    "head": "80fb9069fc8aec22de5c9d578cd4013bb31583a7",
+    "dirty": [
+      "packages/engine-core/package.json",
+      "packages/engine-core/scripts/atoms-writer-job.mjs",
+      "packages/engine-core/scripts/atoms-writer-allowlist.mjs",
+      "packages/engine-core/scripts/write-setback-city.mjs",
+      "packages/engine-core/src/__tests__/atoms-writer-job-env.test.ts",
+      "packages/engine-core/src/setback-writer/"
+    ]
+  },
+  "supervisorReRan": {
+    "cwd": "P:/seat-worktrees/property/hauska-engine-f11-setback",
+    "at": "2026-08-31T14:54Z",
+    "vitest": {
+      "command": "pnpm --filter @hauska-engine/engine-core exec vitest run src/__tests__/atoms-writer-job-env.test.ts src/setback-writer/__tests__/plan-city-setback.test.ts",
+      "pass": 33,
+      "fail": 0
+    },
+    "process": [
+      { "argv": [], "exit": 2, "code": "WRITER_REQUIRED" },
+      { "argv": ["--writer=not-a-writer"], "exit": 2, "code": "WRITER_NOT_ALLOWLISTED" },
+      { "argv": ["--writer=cad-parcel-roll"], "exit": 2, "code": "COUNTY_REQUIRED" },
+      {
+        "script": "tsx scripts/write-setback-city.mjs --city=elgin-tx",
+        "env": "SETBACK_PATH=1",
+        "stderr": "{\"event\":\"setback-city.refused\",\"code\":\"COUNTY_REQUIRED\",\"county\":null}"
+      }
+    ]
+  },
+  "pilot": {
+    "allowlist": "Selection runs before requireWriterEnv. Absent writer is WRITER_REQUIRED, not MISSING_ENV. No CAD default. Run scope echoed only after resolveWriterJob succeeds.",
+    "pathEnv": "applyWriterPathEnv on well-fact does not set CAD_PARCEL_ROLL_PATH. cad-parcel-roll clears the other PATH guards.",
+    "setback": "City-scoped. elgin-tx+48021 binds. austin-tx on 48021 refuses JURISDICTION_BINDING_UNRESOLVED. Unincorporated not-applicable. smithville in-city unmeasured, never not-applicable. --apply SETBACK_APPLY_HELD. Placeholder PLACEHOLDER_COLLISION. McLennan envelope MCLENNAN_ENVELOPE_COLLISION.",
+    "item3": "handed back. write-utility-easement-county.mjs still fetch() at line 191."
+  },
+  "adversarial": [
+    {
+      "claim": "existing factory-atoms-cad keeps working without a writer name",
+      "finding": "Silent CAD default is gone. A job that only passes --county will exit WRITER_REQUIRED. That is the card working. The live job args must gain --writer=cad-parcel-roll or WRITER_NAME=cad-parcel-roll before the next execute.",
+      "rejectedAlternative": "keep an implicit CAD path so old jobs just work; rejected by the dispatch fail-closed rule"
+    },
+    {
+      "claim": "planConformantChunks is a live stage-and-merge write",
+      "finding": "It builds ordered slices, a run_event object, batched link records, and a leaseLock flag. It does not take a lease or INSERT run_events. Apply is SETBACK_APPLY_HELD. Honest plan, not a write.",
+      "rejectedAlternative": "treat the chunk objects as proof the lease v2 path ran; rejected by reading plan-city-setback.ts"
+    },
+    {
+      "claim": "plain node write-setback-city.mjs is the job form",
+      "finding": "Plain node fails ERR_MODULE_NOT_FOUND on city-binding.js. Cloud Run uses pnpm exec tsx, same as the other writers. Not a defect.",
+      "rejectedAlternative": "the setback writer cannot run; rejected because the job childArgs use tsx"
+    }
+  ],
+  "whatWasViolated": [
+    "atoms-writer-job with no --writer (WRITER_REQUIRED exit 2)",
+    "--writer=not-a-writer (WRITER_NOT_ALLOWLISTED exit 2)",
+    "--writer=cad-parcel-roll without --county (COUNTY_REQUIRED exit 2)",
+    "write-setback-city --city=elgin-tx without --county (COUNTY_REQUIRED)",
+    "setback --apply (SETBACK_APPLY_HELD, suite)"
+  ]
+}
