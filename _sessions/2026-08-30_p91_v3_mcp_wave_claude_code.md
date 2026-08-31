@@ -62,6 +62,10 @@ What that leaves owed: Neon must explain why one pool on one database went read-
 
 Also open: the W1 walk is parked at step 3 and needs only the Add-to-screen leg plus three small step-2 leftovers. The `tools=` channel is unmeasured until a door is hovered on a live panel. Esri imagery terms for the in-iframe context, with NAIP in our own bucket as the sovereign alternative. Measurement X4, what we hold for deeds, liens, sale history and owner, still held until the data lane quiets. Rulings R-1 records posture, R-2 rental and MLS feed posture, R-3 imagery terms. And the OPS-16 amendment row opening the v3 rows.
 
+# Correction filed 2026-08-31
+
+This summary said the Neon write outage left an outstanding confirmation and that the operator's reconnect would settle it. The reconnect happened and a write succeeded, and the planner then recorded that as "the product write path is proven end to end". That was an overclaim. What was proven is the smartsite-mcp write path. cortex-api was never tested and had already been reverted to the pooler by the F-11 deploy at 02:52Z, so customer login on smartsite.cloud was broken at the moment the claim was written. Full record and the fix in `_inbox/2026-08-31_neon_pooler_readonly_incident.md`.
+
 # Lessons
 
 Scoping a thread narrowly produced the wave's best discovery: the question "what can the MCP do alone" found an anchor that had been sitting on an anonymous route the whole time, and removed a cortex dependency the plan had assumed. A plan's assumption about what requires another team is worth re-measuring before it becomes a blocker.
