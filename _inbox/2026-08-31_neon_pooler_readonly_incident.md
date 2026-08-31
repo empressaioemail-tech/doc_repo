@@ -43,6 +43,20 @@ End-to-end proof through the product was NOT performed by the planner: the plann
 
 The lesson is not that the seat erred. **The mitigation was never made structural.** A secret rebound by hand survives exactly until the next workflow deploy of that service, and the planner applied a pre-shift binding gate to its own smartsite-mcp deploy while never checking whether the sibling service had already been reverted. The gate has to live in the deploy workflow file, not in a runbook step and not in a planner's attention. Repo base rate: hook-shaped controls 1-for-1, protocol-step-shaped 0-for-3.
 
+**STRUCTURAL FIX MERGED 2026-08-31, LDT #564, merge `df6ae2b77353cf3ebdccfe298823f97573948520`.** THREE sites were pointing at the pooler, not one, and only the first had been found by the outage:
+
+    cloud-run-deploy.yml           cortex-api --set-secrets       (caused the outage)
+    cloud-run-deploy-smartsite-mcp.yml  --set-secrets             (ARMED; the next MCP workflow deploy would have repeated it)
+    cloud-run-deploy.yml           migrate: gcloud secrets access (migrations are WRITES and would have failed read-only)
+
+All three now bind `DEPLOYMENT_DATABASE_URL_DIRECT`. Verified on merged main by reading the files back from the GitHub API: zero remaining pooler references across both workflows.
+
+A comment block at each site records why the binding is `_DIRECT`, that this very workflow reverted a hand-applied fix because `--set-secrets` is authoritative-replace, and the revert condition. The revert condition is **Neon explaining the injection and restoring the pooler**, not the passage of time. That comment is the half that makes this structural: a correct binding whose reason is invisible is how a control gets "fixed" back to the broken value, and how a temporary mitigation quietly becomes permanent because nobody knows what would end it.
+
+**What the merge does NOT prove.** The binding is now correct in the FILE. It is not yet proven correct in PRODUCTION: both services carry the right binding today only because the planner applied it by hand with `gcloud`. The proof is the next real workflow deploy of either service, which is when `--set-secrets` actually runs. Until then this is a fix that has passed review and has not been observed working, which this repo already knows is a different state. Check on the next deploy by reading the new revision's `DATABASE_URL` secretKeyRef by field name and confirming it names `DEPLOYMENT_DATABASE_URL_DIRECT`.
+
+One planner error worth keeping, because it is the documented class. The planner's own `sed` for the third site used `--secret=DEPLOYMENT_DATABASE_URL$`, and the line ends in a backslash continuation, so the anchor could never match. The fail-closed count returned 0 and the executing seat diagnosed the pattern rather than assuming the file had moved. A shell one-liner whose anchor quietly means something other than intended is exactly the instrument failure this doctrine already records; the check caught it because it was written to fail loudly.
+
 What that does NOT close is the incident itself: both services still run unpooled, which is safe at 23 of 901 connections and is not a resting state, and Neon still owes an explanation for why one pool on one database went read-only while another pool on the same compute and role did not. Proving the mitigation works is not the same as curing the cause, and the revert remains a traffic shift because the original secret was never modified.
 
 # Open
