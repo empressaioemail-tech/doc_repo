@@ -1,0 +1,192 @@
+{
+  "lane": "p87-cando",
+  "title": "Claude Sync capability disclosure surfaced in the SETUP state",
+  "planRow": ["P-87"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "status": "complete — working-tree diff handed to the planner, uncommitted",
+  "closedAt": "2026-08-31T15:12:00Z",
+
+  "missionPremise": "The collapsed disclosure 'What you can do in Claude with Smart Site' (WhatYouCanDo, apps/property-explorer/src/workbench/tools/ClaudeSyncTool.tsx) shipped in commit dbca9ef rendering ONLY inside ClaudeSyncPanel, the connected state, under the 'Connect a different Claude' control. That put the answer to 'what do I get' in front of the one audience that had already decided, and made it unreachable for the person still deciding, who is by definition in the setup state. A test named 'sits under Connect a different Claude, not in the setup state' pinned that placement. Source: the compiled dispatch _dispatches/2026-08-31_p87-cando_dispatch.md, and the file itself read at commit 333c3c05.",
+
+  "completionPredicate": "In the setup state the collapsed disclosure toggle renders BELOW the numbered steps, the address block and the primary Copy button; it still renders collapsed in the connected state; the rewritten test FAILS when the disclosure is absent from the setup state and PASSES when restored, with both directions shown; tsc is clean; the scoped suite gains passing tests with no new failures; node scripts/pe-chrome-kit-gate.mjs exits 0.",
+
+  "scopeBasis": "Presentation-layer placement plus its test, confined to one component file and its test file. Explicitly EXCLUDED and why: CLAUDE_CAN_DO / CLAUDE_NOT_YET contents (the not-ready exclusion is a standing constraint of the card, not this card's subject, and the dispatch forbids adding capabilities); the share block (deliberately removed earlier, stays removed); the three CONNECT_STEPS and the setup copy; the connection-read effect and its failure notice; src/lib/pe-llms-txt.test.ts and scripts/render-mark.test.mjs (both pre-existing Windows-checkout failures owned by origin/fix/pe-windows-test-suites).",
+
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-cando",
+    "worktreeRegistered": "_catalog/seat_register.json lines 426-429, seat property",
+    "branch": "feat/p87-cando-setup-state",
+    "commit": "333c3c05c77c2735cae27e8d896995e1a3f189b7",
+    "baseIsOriginMainTip": true,
+    "commitsOnMainSinceBase": 0,
+    "treeAtClose": "2 modified files, both listed below; nothing staged, nothing committed"
+  },
+
+  "prsAndCi": "not applicable: no PR opened. This lane was dispatched to produce a working-tree DIFF for the planner to review and commit; it was explicitly forbidden from running git commit, git push, git merge or any deploy, and did not. No PR numbers, no merge SHAs, no CI conclusion strings exist for this lane's own work. CI evidence cited below is for the BASE, gathered only to classify two pre-existing failures.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-08-31_p87-cando_cp1.json",
+    "_inbox/2026-08-31_p87-cando_cp2.json"
+  ],
+
+  "changed": [
+    {
+      "path": "apps/property-explorer/src/workbench/tools/ClaudeSyncTool.tsx",
+      "hunks": 3,
+      "insertions": 31,
+      "deletions": 0,
+      "what": "One functional change: a div with marginTop 10 wrapping the WhatYouCanDo mount, added as the LAST child of ClaudeSetupPanel, after the button column and the copy notice. Two comment blocks: the ClaudeSetupPanel docblock records why the disclosure is here and why it goes last; a new docblock over WhatYouCanDo records that it now has two mount sites and one copy.",
+      "notTouched": "CLAUDE_CAN_DO, CLAUDE_NOT_YET, ClaudeSyncPanel, CONNECT_STEPS, the connection-read effect, and every exported constant."
+    },
+    {
+      "path": "apps/property-explorer/src/workbench/tools/claude-sync-tool.test.tsx",
+      "hunks": 2,
+      "insertions": 91,
+      "deletions": 9,
+      "what": "Two test helpers added next to visibleText: at(html, needle) which asserts presence before returning a position (so an ordering assertion cannot go green on an absence), and primaryActions(html) which reads the primary-variant control testids off the rendered button open-tags. The old two tests become five.",
+      "netTests": "+3 (28 tests in this file before, 31 after)"
+    }
+  ],
+
+  "testRewrite": {
+    "removed": "it('sits under Connect a different Claude, not in the setup state') — a presence-shaped test whose single assertion was that the toggle is ABSENT from the setup state, and whose name claimed a connected-state ordering it never actually asserted.",
+    "notDeletedBut": "reversed and split into assertions that can fail. The dispatch was explicit that deleting the assertion leaves nothing behind that can fail.",
+    "added": [
+      "is COLLAPSED by default in BOTH states — was connected-only; now loops both connection facts and asserts the toggle is present while the rows and CLAUDE_CAN_DO[0].line are not",
+      "ALSO renders in the setup state, where the connect decision is made — the direct inversion of the removed assertion",
+      "sits BELOW the steps, the address and Copy — never above the instructions — ORDERING, three independent position comparisons in the setup state",
+      "sits under Connect a different Claude in the connected state — the ordering the old test name claimed but never checked, now real",
+      "never takes the lead action — ONE primary per state, and it is not this — exactly one data-variant=primary control per state, and it is claude-sync-copy-address in setup and claude-sync-push connected"
+    ]
+  },
+
+  "verifyByViolation": {
+    "rule": "A check observed only passing has not been observed working. Four mutations, each with its falsifier pre-registered before the run.",
+    "results": [
+      "A remove the mount from the setup panel -> 3 failed | 28 passed (31). Verbatim: 'AssertionError: data-testid=\"claude-sync-can-do-toggle\" is missing from this state entirely: expected -1 to be greater than -1'. The at() guard fired; a bare indexOf would have passed this on an absence.",
+      "B present but hoisted ABOVE the numbered steps -> 1 failed | 30 passed (31), ONLY the ordering test. Verbatim: 'AssertionError: expected 1251 to be less than 466'. This is the discriminating case: it proves the ordering assertion is independent of the presence assertion.",
+      "C open by default -> 3 failed | 28 passed (31), including the PRE-EXISTING three-numbered-steps test at 'expected 11 to be 3'. The collapse is load-bearing for an older assertion too.",
+      "D toggle promoted to variant=primary -> 1 failed | 30 passed (31). Verbatim: 'AssertionError: expected [ claude-sync-copy-address, ...(1) ] to deeply equal [ claude-sync-copy-address ]'. primaryActions() is non-vacuous: it returned the live testid plus the newly-promoted one.",
+      "RESTORE file restored, sha1 c89ffa7790ef08614aa01d50736619d69b669042 identical to the pre-violation copy -> 31 passed (31). Both directions shown for all four."
+    ]
+  },
+
+  "counts": {
+    "countingRule": "npx vitest run src/workbench src/lib, the exact scope the dispatch named, run in the worktree apps/property-explorer at commit 333c3c05 with map-renderer built. Files and tests reported as vitest reports them.",
+    "before": "Test Files 1 failed | 105 passed (106). Tests 1 failed | 1485 passed | 1 todo (1487).",
+    "after": "Test Files 1 failed | 105 passed (106). Tests 1 failed | 1488 passed | 1 todo (1490).",
+    "delta": "+3 passing tests, +0 failing, +0 files failing",
+    "soleFailure": "src/lib/pe-llms-txt.test.ts > 'static public/llms.txt matches the served contract' — the pre-existing Windows CRLF failure the dispatch named. Identical before and after. NOT this lane's; not fixed; not counted as this lane's.",
+    "fullSuiteAside": {
+      "countingRule": "npx vitest run with no path filter — what CI actually runs via pnpm --filter property-explorer test. Reported because the scoped command the dispatch named cannot see scripts/.",
+      "pristineTreeBaseline": "Test Files 2 failed | 156 passed (158). Tests 1 failed | 2084 passed | 1 todo (2086). Measured with git status --porcelain EMPTY at commit 333c3c05, i.e. zero of this lane's changes on disk.",
+      "afterThisDiff": "Test Files 2 failed | 156 passed (158). Tests 1 failed | 2087 passed | 1 todo (2089).",
+      "delta": "+3 passing tests, zero new failures, zero new failing files"
+    }
+  },
+
+  "requiredChecks": [
+    {
+      "check": "npx tsc --noEmit -p tsconfig.json",
+      "result": "exit 0, no output",
+      "verdict": "clean"
+    },
+    {
+      "check": "npx vitest run src/workbench src/lib",
+      "result": "1 failed | 1488 passed | 1 todo (1490); sole failure pe-llms-txt, pre-existing",
+      "verdict": "pass for this lane"
+    },
+    {
+      "check": "node scripts/pe-chrome-kit-gate.mjs",
+      "result": "SELF-TEST 76/76 ok; COVERAGE walked 171 billed chrome files, measured 87/87 of the four literal forms; CHROME-KIT GATE 20 surfaces + 12 kit files ok (gold confined to 5 files, display to 3); exit 0",
+      "verdict": "pass"
+    },
+    {
+      "check": "node scripts/records-copy-guard.mjs (the other guard CI runs)",
+      "result": "Records copy guard passed (204 files scanned); exit 0",
+      "verdict": "pass — run unprompted because CI runs it and this lane should not hand the planner a diff that trips a gate the dispatch did not name"
+    }
+  ],
+
+  "constraintsHonored": [
+    "CLAUDE_CAN_DO still excludes request_records, check_request and ask_the_map. Zero capability rows added or removed — the component diff is three hunks and none falls inside the array. The guard test 'names no capability the server reports as not ready' passed in the baseline, in all four violation runs, and in the final run.",
+    "Collapsed by default in BOTH states. Asserted for both; violation C proves the assertion fires.",
+    "The card still leads with ONE action: Copy address in setup, Sync when connected. Asserted off the rendered controls; violation D proves it fires.",
+    "In the setup state the disclosure sits BELOW the numbered steps and the address block — it is the last child of the panel, after the button column. Violation B proves the ordering assertion fires while presence still passes.",
+    "The share block was not reintroduced. 'renders no share control in either state' passes; no share string in the diff.",
+    "pe-chrome-kit-gate passes: no raw colour literal, no native button element, no new type step or radius. The mount uses the kit Button (via the untouched WhatYouCanDo) and one wrapper carrying marginTop only.",
+    "Worked ONLY in the registered worktree P:/seat-worktrees/property/hauska-map-cando on branch feat/p87-cando-setup-state. No other checkout touched.",
+    "No git commit, no git push, no git merge, no deploy. Working-tree diff handed over.",
+    "No sub-agents spawned. This lane was the deepest worker and did the work itself.",
+    "Every verification command was exit-bounded: pnpm install, a tsup build, npx tsc --noEmit, npx vitest run, node scripts. No watch, no dev server, no serve."
+  ],
+
+  "openItems": [
+    {
+      "item": "scripts/render-mark.test.mjs fails at collection on this Windows checkout (SyntaxError: Invalid or unexpected token, at the import on line 6; no tests run). The dispatch named only pe-llms-txt as the known Windows failure, so the local FULL-suite baseline is two failing files, not one.",
+      "evidenceItIsNotThisLane": "git status shows apps/property-explorer/scripts/ entirely unmodified; the full suite reproduces the identical 2-failed/156-passed split against a PRISTINE tree with git status --porcelain empty; node imports the module fine, so it is a transform-time artifact not a bad byte; the file is CRLF including its shebang.",
+      "owner": "origin/fix/pe-windows-test-suites — a one-commit branch (0635b03) adding .gitattributes, titled 'pin line endings so the two Windows-only test failures stop being pre-existing'. It names TWO Windows-only failures and these are the two.",
+      "action": "none taken; not this lane's file and already owned",
+      "planRow": "P-87 adjacent, no new row requested"
+    },
+    {
+      "item": "The disclosure heading is identical in both states ('What you can do in Claude with Smart Site'). In the setup state it describes what you get AFTER connecting rather than what you have now. Deliberately not forked: one constant feeding two surfaces is this file's own stated pattern and forking it is how capability lists drift. Flagged as a copy decision the operator may want to revisit, not a defect.",
+      "owner": "operator / planner",
+      "planRow": "P-87"
+    }
+  ],
+
+  "fleetMemoryScratch": [
+    {
+      "kind": "LESSON",
+      "text": "An ordering assertion written on bare indexOf passes when the thing it orders is ABSENT, because indexOf returns -1 and -1 is less than every real index. A positional test therefore needs a presence guard folded into the position lookup or it silently degrades into a check that cannot fail in the one case that matters. Proven here: violation A produced 'expected -1 to be greater than -1' from the guard, and without the guard that mutation would have gone green on the ordering test."
+    },
+    {
+      "kind": "LESSON",
+      "text": "The discriminating violation for a placement requirement is PRESENT-BUT-WRONGLY-PLACED, not ABSENT. Removing the element fails both the presence and the ordering assertions, which proves nothing about whether the ordering assertion is independent. Moving it above the target failed ONLY the ordering test (1 failed | 30 passed), which is the proof. Any lane pinning a layout constraint should run the wrong-place mutation, not just the missing mutation."
+    },
+    {
+      "kind": "LESSON",
+      "text": "cat -A in this Git Bash reported LF on a file that is actually CRLF; a Python repr read of the same bytes showed \\r\\n. A string replace built against the cat -A reading matched zero times. When scripting an edit against exact bytes on Windows, derive the line ending from the file inside the same instrument that does the replace, never from a shell tool's rendering of it. This is the enforcement rule about the instrument being part of the claim, in miniature."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31: hauska-map origin/main tip is 333c3c05c77c2735cae27e8d896995e1a3f189b7 and the p87-cando worktree branched exactly there, zero commits behind. dbca9ef (the commit that introduced WhatYouCanDo) is already an ancestor of main, so there is no in-flight lane competing for ClaudeSyncTool.tsx. feat/c4-buildable-pct (1bba1e3) has green CI and is NOT in main — different area, no overlap."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31: apps/property-explorer full suite on a Windows checkout at 333c3c05 with a PRISTINE tree fails two files, not one: src/lib/pe-llms-txt.test.ts and scripts/render-mark.test.mjs. Both are CRLF artifacts. gh run list --workflow=property-explorer-ci.yml returns conclusion string 'success' on the last five Linux runs of the same command, which is the discriminator that says config is not the cause. Any PE lane measuring a local full-suite baseline should expect 2 failed | 156 passed (158) files until origin/fix/pe-windows-test-suites lands."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31: apps/property-explorer has no lint or prettier script. package.json test = 'node scripts/pe-chrome-kit-gate.mjs && vitest run'. CI (property-explorer-ci.yml) additionally runs node apps/property-explorer/scripts/records-copy-guard.mjs and pnpm --filter property-explorer exec tsc --noEmit. A lane that runs only the dispatch-named scoped vitest has NOT run what CI runs."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Tried to diagnose the scripts/render-mark.test.mjs collection failure as a bad byte: the file decodes as clean UTF-8, contains no character above U+2100 and no stray control character, and `node -e import(...)` loads it successfully. So it is not an encoding defect in the source; it is vitest's esbuild transform on a CRLF shebang line. Do not spend time hunting for a corrupt character in that file — the fix is .gitattributes, which is what the owning branch does."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Copy question for the operator: the disclosure heading is the same string in both states, so in the setup state it reads as a promise about a connection that does not exist yet. Deliberately left unforked (one constant, two surfaces, the file's own pattern) but it is a real copy decision, not an oversight."
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch feat/p87-cando-setup-state in worktree P:/seat-worktrees/property/hauska-map-cando, carrying 2 modified files uncommitted (122 insertions, 9 deletions). No commit, no push, no PR — by dispatch instruction. The planner reads the diff and commits.",
+      "owner": "planner (doc_repo)",
+      "plan_row": "P-87"
+    },
+    {
+      "item": "_inbox/2026-08-31_p87-cando_cp1.json, _inbox/2026-08-31_p87-cando_cp2.json and this close file, all uncommitted in P:/doc_repo. doc_repo commits are planner-owned per AGENT_CONTRACT section 6.",
+      "owner": "planner (doc_repo)",
+      "plan_row": "P-87"
+    },
+    {
+      "item": "scratchpad copies of the pre-violation files and the mutation script (violate.py) under the session scratchpad directory. Session-local, outside the repo, nothing to clean in-tree.",
+      "owner": "none — session-local, expires with the session",
+      "plan_row": "n/a"
+    }
+  ]
+}

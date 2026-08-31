@@ -1,0 +1,66 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "p87-cando",
+  "planRow": ["P-87"],
+  "at": "2026-08-31T15:05:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-cando",
+    "branch": "feat/p87-cando-setup-state",
+    "commit": "333c3c05c77c2735cae27e8d896995e1a3f189b7",
+    "treeAtDeclare": "clean"
+  },
+  "missionPremise": "The collapsed disclosure WhatYouCanDo() renders only inside ClaudeSyncPanel (connected state), under the 'Connect a different Claude' ghost control. The person deciding WHETHER to connect is in the setup state and is the one person the connected-only placement can never reach. Source: the dispatch, and ClaudeSyncTool.tsx line 602 read this session.",
+  "baselinesMeasured": {
+    "tsc": "npx tsc --noEmit -p tsconfig.json -> exit 0, no output",
+    "vitest": "npx vitest run src/workbench src/lib -> Test Files 1 failed | 105 passed (106); Tests 1 failed | 1485 passed | 1 todo (1487). Sole failure src/lib/pe-llms-txt.test.ts:72 (CRLF on Windows checkout), pre-existing, another lane owns it.",
+    "chromeKitGate": "node scripts/pe-chrome-kit-gate.mjs -> SELF-TEST 76/76 ok; 20 surfaces + 12 kit files ok; exit 0"
+  },
+  "design": {
+    "placement": "Render <WhatYouCanDo /> as the LAST child of ClaudeSetupPanel, after the button column and after the copy notice, wrapped in a div with marginTop 10 (the same separation the connected state already uses).",
+    "whyLastAndNotBetweenAddressAndButtons": "The constraint is two-sided. 'Below the steps and the address block' rules out anything above the <ol> or the Mono address. 'The card still leads with one action, Copy address when not connected' rules out inserting it between the Mono address block and the primary Copy button, which would push the primary action down. Last child satisfies both at once; there is no other position that does.",
+    "componentReuse": "One WhatYouCanDo component, referenced from both panels. Function declarations hoist, so ClaudeSetupPanel (line 255) may reference WhatYouCanDo (line 430). Two mount sites means two independent useState open flags, which is correct because the two panels are mutually exclusive (showSync XOR setup) and never co-render.",
+    "copyUnchanged": "Same heading string in both states. The file's own stated principle for CLAUDE_VENDOR is that one constant feeds both surfaces so they cannot disagree; forking the copy for setup would reintroduce exactly that drift.",
+    "capabilitiesUntouched": "CLAUDE_CAN_DO and CLAUDE_NOT_YET are not edited. Zero rows added, zero removed. The not-ready guard test therefore cannot change verdict for a reason inside this diff."
+  },
+  "testPlan": {
+    "reversedTest": "'sits under Connect a different Claude, not in the setup state' is REWRITTEN, not deleted. Its single assertion (toggle absent from setup) inverts to present-in-setup, and the half its own name claimed but never asserted (that it sits UNDER the reconnect control when connected) is added as a real ordering assertion.",
+    "newAssertions": [
+      "present in BOTH states (loop over the two connection facts, the existing file idiom)",
+      "collapsed in BOTH states: no claude-sync-can-do list and no CLAUDE_CAN_DO[0].line in the markup",
+      "ORDERING in setup: indexOf(can-do-toggle) is greater than indexOf(steps), indexOf(connect-host), indexOf(copy-address) — a positional check, not a presence check, so a regression that moves it above the instructions fails",
+      "ORDERING in connected: indexOf(can-do-toggle) is greater than indexOf(reconnect)",
+      "LEAD ACTION: exactly one data-variant=primary control per state, and it is claude-sync-copy-address in setup and claude-sync-push when connected. Parsed out of the button open-tags, so the assertion is on the rendered control set, not on a string the test itself supplies."
+    ],
+    "whyOrderingNotPresence": "A presence check has one input and passes on any placement. The constraint that actually matters here is positional ('never above the instructions'), and only a positional assertion can fail when it is violated."
+  },
+  "adversarialReview": [
+    {
+      "risk": "The disclosure's <li> rows break the test that pins exactly three <li> in the setup markup ('carries three numbered steps, not a run-on paragraph').",
+      "finding": "Not reachable. WhatYouCanDo renders the <ul> only when open === true, and open is false on first render. renderToStaticMarkup never opens it. Verified by reading lines 430-487: the entire list including the not-yet row is inside the `open ? ... : null` branch.",
+      "willVerify": "The three-<li> test is in the suite and must stay green after the change; if it goes red the collapse is not actually collapsing."
+    },
+    {
+      "risk": "The FORBIDDEN-strings test ('names no internal system in either state') fires on new setup-state markup.",
+      "finding": "The only new visible string is the toggle label 'What you can do in Claude with Smart Site'. It contains none of Hauska, Empressa, MCP, API key, product key, Cloud Run, OAuth, PKCE, Bearer, X-Hauska-Key. The CLAUDE_CAN_DO lines stay out of the markup while collapsed.",
+      "willVerify": "That test runs against both states already and must stay green."
+    },
+    {
+      "risk": "The chrome-kit gate refuses the new markup (raw colour literal, native <button>, off-ramp type step or radius).",
+      "finding": "The diff introduces no colour, no fontSize, no borderRadius and no <button>. It adds one wrapper div carrying marginTop only, and renders an existing component that already passes the gate at its current call site.",
+      "willVerify": "node scripts/pe-chrome-kit-gate.mjs must exit 0 after the change."
+    },
+    {
+      "risk": "Second mount site changes behaviour at the existing connected call site.",
+      "finding": "No edit is made to ClaudeSyncPanel. The connected-state assertions are unchanged and must stay green as the control for that."
+    },
+    {
+      "risk": "The 'lead action' assertion is vacuous — a broken parse helper returns an empty array and the test still reads as meaningful.",
+      "finding": "Asserted with toEqual against a one-element array, so an empty parse fails loudly rather than passing. Additionally the same helper is run against the connected state, which expects a DIFFERENT single testid, so a helper that returned a constant could not satisfy both."
+    }
+  ],
+  "scopeBasis": "Presentation-layer placement plus its test, in one file and its test file. Explicitly out: CLAUDE_CAN_DO contents (the not-ready exclusion is a standing constraint, not this card's subject), the share block (deliberately removed, stays removed), the setup copy and the three CONNECT_STEPS, the connection-read effect, and src/lib/pe-llms-txt.test.ts (pre-existing Windows CRLF failure, another lane owns it).",
+  "completionPredicate": "In the setup state the collapsed 'What you can do in Claude with Smart Site' toggle renders below the numbered steps, the address block and the Copy button; it renders collapsed in the connected state too; the rewritten test FAILS when the disclosure is removed from ClaudeSetupPanel and PASSES when restored, both directions shown; tsc clean; the suite carries one more passing file-local test count with the only failure still being pe-llms-txt; the chrome-kit gate exits 0.",
+  "proceed": true
+}
