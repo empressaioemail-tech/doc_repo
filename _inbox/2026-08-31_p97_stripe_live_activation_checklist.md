@@ -27,7 +27,19 @@ That is the single most expensive failure available on this list, and the only p
 
 **2. Measure the stale-customer blast radius.** `SELECT count(*) FROM pe_user_entitlements WHERE stripe_customer_id IS NOT NULL;` and the same on `brokerage_wallets`. The number must exist before step 12 is planned.
 
-**3. Resolve the terms contradiction.** `apps/property-explorer/public/terms.html:107` promises customers can "cancel a paid plan through the Stripe billing flow in the product." No billing-portal call exists anywhere in the PE app. Either build it or amend the terms. Verification: a grep for `billing/portal` under `apps/property-explorer` returns a hit, or that sentence is gone.
+**3. Build the PE billing portal. The published terms are ahead of the product, and this is exposure rather than polish.** Operator ruling 2026-08-31, elevated from a checklist line to a blocking Phase 0 item.
+
+`apps/property-explorer/public/terms.html` states verbatim: "You can cancel a paid plan through the Stripe billing flow in the product." Zero billing-portal references exist anywhere in `apps/property-explorer` — verified by grep, not inferred.
+
+The sharp version of the problem: **the product is honest and the legal page is not.** `SettingsModal.tsx:21-22` says in its own header comment that "payment method, invoices and cancel need a billing portal that does not exist", and the Plan tab renders "Not built" to the user's face. So the app declines to overclaim while the terms overclaim on its behalf. That is the inversion of the usual failure and it is the half that carries legal weight, because the terms are the document a customer is held to and holds us to.
+
+Taking live money against a cancellation promise the product cannot honour is the exposure. It is not a copy defect.
+
+**The fix is small, which is why "amend the terms" is the wrong trade.** The Stripe call already exists and is already proven: `brokerageStripe.ts:245` posts to `/billing_portal/sessions` for the install-scoped seam, and `POST /api/brokerage/v1/billing/portal` is live. What is missing is only the PE user-scoped equivalent. `propertyExplorer.ts` carries `billing/checkout` and `billing/property-unlock/checkout` and no portal route at all.
+
+So the work is: a `POST /property-explorer/v1/billing/portal` that opens a portal session against the signed-in user's `stripe_customer_id`; that path added to `api/_lib/deep-allowlist.ts` (omitting it returns 403, which is the defect class that bit `ai-connections` the same day); and a control in Settings > Plan replacing the "Not built" state. Removing a promise we can cheaply keep, in order to ship faster, trades a customer-facing capability for nothing.
+
+Verification: a signed-in POST to the new route returns a `billing_portal` URL on the customer's own id, the Settings Plan tab no longer renders "Not built" for cancel, and the terms sentence is now true. If the decision goes the other way and the terms are amended instead, the verification is that the sentence is gone before any live charge, not after.
 
 ## Phase 1 — build the live objects (operator)
 
