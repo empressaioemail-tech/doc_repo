@@ -18,7 +18,16 @@ places addressable, and do not seed around the gap.
 
 ## Context
 
-The alias enumeration found 40 `breadth_*` values covering 17 real places that
+**CORRECTED 2026-08-31: the scope is 36 values over 15 places, not 40 over 17.**
+The confirm-sheet pass found a real seed error. `48309_eddy`, `48309_bruceville`,
+`brucevill` and `brucville` (4 rows, **2,288 parcels**) were graded as having no
+`place_fips`. That is false: **Bruceville-Eddy is `place_fips` 10828, parent county
+48309**, verified in the roster. An exact-name lookup missed a hyphenated name and
+drew the wrong conclusion. Left uncorrected, this ruling would have applied an
+`unincorporated` disposition to a real incorporated city — the precise failure it
+exists to prevent. Re-verify a name before adding it to the excluded set.
+
+The alias enumeration found 36 `breadth_*` values covering 15 real places that
 `place_fips` cannot express — Cedar Creek, Driftwood, Del Valle, Dale, China
 Spring, Elm Mott, Axtell, Paige, McDade and others. All are absent from both
 `_catalog/texas_roster_v1.json` (1,223 incorporated places) and

@@ -183,8 +183,10 @@ fewer. Draft at `_catalog/2026-08-30_breadth_place_alias_seed.json`
 (33 `certain` / 93 `likely` / 99 `needs-human`), findings at
 `_inbox/2026-08-30_alias_seed_findings.md`.
 
-**One operator ruling is owed before P3.** `place_fips` cannot express **40 values
-covering 17 real places** — Cedar Creek, Driftwood, Del Valle, Dale, China Spring,
+**One operator ruling is owed before P3.** `place_fips` cannot express **36 values
+covering 15 real places** (corrected 2026-08-31 from 40/17: Bruceville-Eddy is
+`place_fips` 10828, parent 48309 — 4 rows and 2,288 parcels were wrongly in the
+excluded set because an exact-name lookup missed a hyphenated name) — Cedar Creek, Driftwood, Del Valle, Dale, China Spring,
 Elm Mott, Axtell, Paige, McDade and others are absent from both
 `texas_roster_v1.json` (1,223 incorporated) and `tx_city_boundary` (1,222); 19 were
 probed and 0 found. These are unincorporated communities. **RULED 2026-08-30: they get the
