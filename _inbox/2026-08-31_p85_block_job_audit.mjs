@@ -28,7 +28,7 @@
  * Snapshot is written into the output. Predicates match
  * artifacts/api-server/src/lib/recordsSearchQueryPlan.ts at LDT #567.
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,10 +37,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 export const RETIRED_BLOCK_PATTERN = /\bBLK(?:OCK)?\.?\s+(\d+[A-Z]?)\b/i;
 export const CURRENT_BLOCK_PATTERN = /\bBL(?:OC)?K\.?\s+(\d+[A-Z]?)\b/i;
+/** Letter-only block. Not captured by CURRENT_BLOCK_PATTERN (\d+ required). */
+export const LETTER_BLOCK_PATTERN = /\bBL(?:OC)?K\.?\s+([A-Z])\b/i;
 
 export function parseBlock(legal) {
   if (!legal?.trim()) return null;
   return legal.trim().match(CURRENT_BLOCK_PATTERN)?.[1]?.trim() ?? null;
+}
+
+export function parseLetterBlock(legal) {
+  if (!legal?.trim()) return null;
+  if (parseBlock(legal)) return null;
+  return legal.trim().match(LETTER_BLOCK_PATTERN)?.[1]?.trim() ?? null;
 }
 
 export function blockTermMissedByRetiredPattern(legal) {
@@ -51,6 +59,73 @@ export function blockTermMissedByRetiredPattern(legal) {
 export function shouldHaveAndDidNot(row) {
   const stored = row.storedBlock == null ? "" : String(row.storedBlock).trim();
   return blockTermMissedByRetiredPattern(row.legalDescription) && stored === "";
+}
+
+export function isLetterBlockNoDigit(row) {
+  const stored = row.storedBlock == null ? "" : String(row.storedBlock).trim();
+  return parseLetterBlock(row.legalDescription) != null && stored === "";
+}
+
+export function classifyIssuedRows(rows, extras = {}) {
+  const issuedInScope = rows.length;
+  const carriedBlockTerm = rows.filter(
+    (r) => r.storedBlock != null && String(r.storedBlock).trim() !== "",
+  ).length;
+  const noLegalDescription = rows.filter(
+    (r) => r.legalDescription == null || String(r.legalDescription).trim() === "",
+  ).length;
+  const digitMisses = rows.filter(shouldHaveAndDidNot).map((r) => ({
+    id: r.id,
+    parcelKey: r.parcelKey,
+    status: r.status,
+    legalDescription: String(r.legalDescription).trim(),
+    parsedBlock: parseBlock(r.legalDescription),
+  }));
+  const letterMisses = rows.filter(isLetterBlockNoDigit).map((r) => ({
+    id: r.id,
+    parcelKey: r.parcelKey,
+    status: r.status,
+    legalDescription: String(r.legalDescription).trim(),
+    parsedLetterBlock: parseLetterBlock(r.legalDescription),
+  }));
+  const digitParcels = [...new Set(digitMisses.map((m) => m.parcelKey))];
+  const letterParcels = [...new Set(letterMisses.map((m) => m.parcelKey))];
+  return {
+    status: "MEASURED",
+    ...extras,
+    counts: {
+      issuedInScope,
+      carriedBlockTerm,
+      digitBlockShouldHaveAndDidNot: digitMisses.length,
+      letterBlockNoDigit: letterMisses.length,
+      issuedWithoutBlockTermTheyShouldHaveCarried: digitMisses.length + letterMisses.length,
+      noLegalDescription,
+    },
+    rerunPopulationLandedFix: {
+      jobs: digitMisses.length,
+      parcels: digitParcels.length,
+      parcelKeys: digitParcels,
+      note: "Jobs the landed BL(?:OC)?K parser now extracts. Not re-run: portal-access gate is with the operator.",
+    },
+    consequencePopulation: {
+      jobs: digitMisses.length + letterMisses.length,
+      parcels: new Set([...digitParcels, ...letterParcels]).size,
+      note: "Issued without a block term they should have carried. 21 is this count, not the re-run count for today's fix.",
+    },
+    letterBlockClass: {
+      jobs: letterMisses.length,
+      parcels: letterParcels.length,
+      parcelKeys: letterParcels,
+      disposition: "held-parser-not-declined",
+      reason:
+        "Letter-only blocks are valid plat designations and the worker submits block as free text. The current capture group requires a digit, so a re-run with the landed fix still stores null. Not a declined clerk-term class. Not in the landed-fix re-run population. Do not re-run.",
+    },
+    misses: digitMisses,
+    exclusion_letterBlockNoDigit: letterMisses,
+    retiredPatternHits: rows.filter((r) =>
+      RETIRED_BLOCK_PATTERN.test(String(r.legalDescription ?? "")),
+    ).length,
+  };
 }
 
 export function selfTest() {
@@ -88,6 +163,20 @@ export function selfTest() {
   });
   if (trueMiss !== true) {
     failures.push({ case: "BLOCK without stored block must be a miss", got: trueMiss });
+  }
+  const letterCases = [
+    { legal: "RIVERSIDE GROVE SUBDIVISION PHASE 1, BLOCK A, LOT 27", letter: "A" },
+    { legal: "6 CREEKS PHASE 1 SECTION 10, BLOCK F, Lot 30, 18671 SQUARE FEET", letter: "F" },
+    { legal: "MELBOURNE HTS Lot 6 Block D Acres .186", letter: "D" },
+    { legal: "LOT 2 BLK D WALNUT RIDGE I", letter: "D" },
+    { legal: "Building Block, BLOCK 13 E W ST, ACRES 0.485", letter: null },
+    { legal: "BLOCK 12A", letter: null },
+  ];
+  for (const c of letterCases) {
+    const got = parseLetterBlock(c.legal);
+    if (got !== c.letter) {
+      failures.push({ case: `letter block ${c.legal}`, expected: c.letter, got });
+    }
   }
   return { ok: failures.length === 0, failures };
 }
@@ -161,45 +250,26 @@ export async function runAudit({ databaseUrl, snapshot } = {}) {
 
   try {
     const { rows } = await client.query(SQL_ALL);
-    const issuedInScope = rows.length;
-    const carriedBlockTerm = rows.filter(
-      (r) => r.storedBlock != null && String(r.storedBlock).trim() !== "",
-    ).length;
-    const noLegalDescription = rows.filter(
-      (r) => r.legalDescription == null || String(r.legalDescription).trim() === "",
-    ).length;
-    const misses = rows.filter(shouldHaveAndDidNot).map((r) => ({
-      id: r.id,
-      parcelKey: r.parcelKey,
-      status: r.status,
-      legalDescription: String(r.legalDescription).trim(),
-    }));
-
-    const blockWordPresent = rows.filter((r) =>
-      /\bBLOCK\.?\s+\d+[A-Z]?\b/i.test(String(r.legalDescription ?? "")),
-    );
-    const instrumentWrong =
-      misses.length === 0 &&
-      blockWordPresent.some(
-        (r) => r.storedBlock == null || String(r.storedBlock).trim() === "",
-      );
-
-    return {
-      status: instrumentWrong ? "REFUSED" : "MEASURED",
-      reason: instrumentWrong
-        ? "third number is 0 while a fetched BLOCK-without-stored-block row exists"
-        : "live records_request_jobs",
+    const classified = classifyIssuedRows(rows, {
       snapshot: snapshot ?? null,
-      counts: {
-        issuedInScope,
-        carriedBlockTerm,
-        shouldHaveAndDidNot: misses.length,
-        noLegalDescription,
-      },
-      rerunCandidates: misses.length,
-      misses,
       self,
-    };
+      reason: "live records_request_jobs",
+    });
+    const instrumentWrong =
+      classified.counts.digitBlockShouldHaveAndDidNot === 0 &&
+      rows.some(
+        (r) =>
+          /\bBLOCK\.?\s+\d+[A-Z]?\b/i.test(String(r.legalDescription ?? "")) &&
+          (r.storedBlock == null || String(r.storedBlock).trim() === ""),
+      );
+    if (instrumentWrong) {
+      return {
+        ...classified,
+        status: "REFUSED",
+        reason: "third number is 0 while a fetched BLOCK-without-stored-block row exists",
+      };
+    }
+    return classified;
   } finally {
     await client.end().catch(() => {});
   }
@@ -210,9 +280,25 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     at: new Date().toISOString(),
     docRepo: process.env.DOC_REPO_SHA ?? null,
     instrument: "doc_repo/_inbox/2026-08-31_p85_block_job_audit.mjs",
-    predicates: "LDT recordsSearchQueryPlan.ts RETIRED_BLOCK_PATTERN + CURRENT BL(?:OC)?K",
+    predicates: "LDT recordsSearchQueryPlan.ts RETIRED_BLOCK_PATTERN + CURRENT BL(?:OC)?K + letter-only [A-Z]",
   };
-  runAudit({ snapshot })
+  const fromRows = process.argv.includes("--from-rows");
+  const run = fromRows
+    ? Promise.resolve(
+        classifyIssuedRows(
+          JSON.parse(readFileSync(join(HERE, "2026-08-31_p85_block_job_rows.json"), "utf8")).rows,
+          {
+            snapshot: {
+              ...snapshot,
+              source: "re-derived from _inbox/2026-08-31_p85_block_job_rows.json (no store write, no portal)",
+            },
+            self: selfTest(),
+            reason: "re-derived from stored issued-job rows",
+          },
+        ),
+      )
+    : runAudit({ snapshot });
+  run
     .then((out) => {
       const path = join(HERE, "2026-08-31_p85_block_job_audit.json");
       writeFileSync(path, JSON.stringify(out, null, 2));

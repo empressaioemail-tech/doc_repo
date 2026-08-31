@@ -2,9 +2,9 @@
 id: 2026-08-31_c4_buildable_pct_finding
 title: C4 — a known 9,350 sq ft buildable area renders as not-stamped on the gold parcel
 date: 2026-08-31
-status: open
+status: diagnosed
 plan_row: F-06
-owner: unassigned (serve-side; property seat)
+owner: integration (serve-side; hauska-map PE property-atoms path)
 source: _inbox/2026-08-31_gate8_live_1437_48021.json (Gate 8 inhabited dayOne, 14:37Z, SHA 3a0dc9a)
 snapshot: doc_repo main e904a2b; production arm; PE and smartsite.cloud facets route
 ---
@@ -30,7 +30,7 @@ So the surface tells a customer we have nothing, on a parcel where we have 9,350
 square feet. That is not honest absence. Honest absence is what 48055 and 48453 are
 doing.
 
-# Two mechanisms, neither ruled out
+# Mechanism A (lot area known; derivation absent)
 
 **A. The derivation is broken or absent.** `buildableAreaPct` is presumably
 `buildableAreaSqFt` over a lot area, and the computation is missing from the serve
@@ -41,13 +41,39 @@ null is the correct value for that field. If so the field is right and **the def
 is the rendering**: PE collapses "percentage not computable" into the same
 not-stamped state as "no buildable area", and it discards the 9,350 sq ft it holds.
 
-These produce the identical observation from outside. Distinguishing them takes one
-read of the serve path for where `summary.buildableAreaPct` is populated, plus a
-check of whether a lot area exists for 48021:34137. Do that before proposing a fix;
-a fix aimed at A when the truth is B adds a derivation that will still be null.
+Ruled **A**. Lot area is known. The percentage is computable and is not computed.
 
-Under B the customer-facing defect is worse, not better, because the number exists
-and is being withheld by a label.
+Live body this session (2026-08-31, HTTP 200, 10744 bytes, same size as Gate 8):
+`https://smartsite.cloud/api/spine/property-atoms/48021%3A34137/facets`. Extract
+`_inbox/2026-08-31_c4_gold_facets_measure.json`.
+
+| field | live value |
+|---|---|
+| `envelope.status` | `ok` |
+| `envelope.buildableAreaSqFt` | 9350 |
+| `envelope.buildableAreaPct` | absent |
+| `envelope.summary` | absent |
+| `baseFacts.acreage.sqft` | **16673** |
+| `facetCoverage.acreage` | true |
+
+9350 / 16673 * 100 rounds to **56.1** (one decimal, same as `derive.ts`).
+
+The atom-chain serve path (`atom-chain-to-facets.ts` status-ok branch) copies
+`envAtom.outcome.buildableAreaPct` onto the envelope root when that field is a
+number. It never divides. The gold envelope atom outcome is `{ kind: "buildable",
+areaSqFt: 9350 }` with no percent field (`_inbox/_tmp_s5_gold_chain.json`).
+Acreage arrives later via `mergeBakedBaseFacts` from the cortex bake. Nothing
+after the merge computes the ratio. `envelope.summary` is not in the
+`PeBakedFacetPayload` type and is never written. Gate 8 C4 and PE
+`liveBuildablePct` both read `summary.buildableAreaPct`.
+
+Mechanism B is rejected because a finite lot area is on the same body. A
+render-only fix (show 9,350 sq ft when percent is null) would still leave C4
+red. Amendment 4 on the baked card path already does that render; it is not
+this defect.
+
+Falsifier for A: acreage absent or non-finite on the live gold body. Observed
+the opposite.
 
 # Why this is not blocked and will be skipped anyway
 
@@ -62,15 +88,20 @@ measurement attached.
 
 # What would close it
 
-The serve path read that distinguishes A from B, then either the derivation lands
-or PE stops collapsing "not computable" into "not stamped" and renders the 9,350
-with its unit. Re-run Gate 8 dayOne on 48021:34137 and watch C4 move from fail to
-pass on an inhabited body. Do not close it on a code change alone; C4 is already an
-assertion in a gate that now works, so the gate is the test.
+Derivation lands on the property-atoms body after `mergeBakedBaseFacts`: when
+status is ok, sqft > 0, and acreage is a finite positive number, write
+`envelope.buildableAreaPct` and `envelope.summary.buildableAreaPct` as
+round(sqft / lot * 100, 1). If lot area is unknown, leave both absent. Never
+write 0 for a missing denominator. Re-run Gate 8 dayOne on 48021:34137 and
+watch C4 move from fail to pass on an inhabited body. Do not close it on a
+code change alone.
 
 ```
 leave_behind:
-  - item: C4 buildableAreaPct null on a positive-area envelope (48021:34137)
-    owner: unassigned
+  - item: C4 derivation on property-atoms after merge (write root + summary pct from known acreage; fail closed if lot area unknown)
+    owner: integration
+    plan_row: F-06
+  - item: Gate 8 dayOne C4 on deployed 48021:34137 (close test; code-done is not customer-done)
+    owner: integration
     plan_row: F-06
 ```
