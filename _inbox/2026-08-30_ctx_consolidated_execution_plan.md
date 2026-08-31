@@ -156,12 +156,22 @@ Two further facts kill the alias-as-jurisdiction premise outright:
   **Burleson County** and `hays` to Hays city.
 
 **So spatial containment is the primary derivation and the alias table is a
-name-normalisation fallback.** The inputs are already loaded and indexed:
-`tx_city_boundary` (1,222 polygons) and `tx_county_boundary` (254) on cortex
-`neondb`, PostGIS 3.5.0, and the equivalent join re-derives in **1.3 s**
-zone-major with a `MATERIALIZED` bbox CTE. This is cheaper than the hand-seeding it
-replaces, and it is the only derivation that answers "is this parcel inside
-corporate limits", which is what every city-scoped rail actually needs.
+name-normalisation fallback.** The inputs are loaded: `tx_city_boundary` (1,222
+polygons) and `tx_county_boundary` (254) on cortex `neondb`, PostGIS 3.5.0.
+Containment is the only derivation that answers "is this parcel inside corporate
+limits", which is what every city-scoped rail actually needs.
+
+**CORRECTED 2026-08-31 — the cost claim is withdrawn.** An earlier draft said this
+"re-derives in 1.3 s". That timing was the **city-to-county roster** join
+(1,222 x 254). *Parcel* containment is 981,410 x 1,222 and, measured live, it
+**exceeds its own 180 s bound**: `EXPLAIN` shows a Nested Loop over two CTE scans,
+~846M comparisons, cost 1.06e10, with no index reachable because both sides are
+CTE outputs. Zone-major in shape, not in effect. **TOTALS is UNMEASURED and no
+total was adopted.** Containment being *correct* is unaffected; containment being
+*cheap* is unproven until a workable plan exists. Run record:
+`_inbox/2026-08-31_p2_juris_totals_run_record.md`. Gate for the next attempt:
+`05_explain.sql` must show a plan that is not that nested loop **before** another
+timed `01` — the plan is the evidence, not a green run.
 
     P0 -> P1 -> P2 spatial jurisdiction join -> P4 setback land -> P4 edges
        -> P5 -> P6 -> P7
@@ -313,18 +323,22 @@ worse, not better.
 controls can fail. Build gate 8 alongside it, because P4 is the fan-out the mold
 forbids without one.
 
-**4. Start the alias table on the same go as P1.** It is the long pole, it is
-hand-seeded, and nothing about it can be compressed later.
+**4. Five dispatches start now in separate trees.** P1-FACTORY (Factory A),
+Gate 8 steps 1–2 (Factory B; county-scoped job waits on refuse), P2-JURIS
+read (planner short-lived RO URI), P1-LDT (LDT A), P2b-serve (LDT B). Do not
+use the PE wiring card. 0005b ships: it is CAD↔TxGIO identity, not jurisdiction.
+Gate 8 step 2 on the served body unlocks P4. The browser walk unlocks P7.
+P2-JURIS persist waits on the P2 job template. Same checkout is a hard no.
 
 **5. Do not run:** 0005 as drafted · `landing-import` · F-18 while it defaults to
 48021 · Wave R before P5 and P6 · any absence without a probe · the adjacencyKind
-invariant.
+invariant · a CDP `place_fips` · `breadth_*` as jurisdiction.
 
 ```
 leave_behind:
-  - item: breadth_* to place_fips alias table (hand-seeded; long pole)
+  - item: breadth_* alias seed as name-normalisation only (not jurisdiction; not the long pole)
     owner: property seat
-    plan_row: F-11
+    plan_row: F-01
   - item: gate 7 (tally + cost) and gate 8 (smoke) — mold prerequisites, unbuilt
     owner: planner
     plan_row: F-08
