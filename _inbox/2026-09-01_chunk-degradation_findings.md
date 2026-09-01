@@ -207,3 +207,34 @@ Which specific cities each chunk's parcels hit (pending read 2). The Williamson
 touch-set enumeration by name (registry shard lists 15; Austin straddles in; the
 17-touch set was never enumerated in doc_repo). Whether the --run-id resume path
 works end to end (code-present, never exercised).
+
+## Termination, 2026-09-01
+
+Execution `factory-p2-juris-hzkqk` (run `fb490620-d4e9-4110-804d-21ee7375b960`,
+Williamson 48491) was cancelled on operator go at `2026-09-01T04:14:11Z`, roughly 46
+minutes ahead of the 05:00 UTC maintenance restart.
+
+Verbatim:
+
+```
+$ gcloud run jobs executions cancel factory-p2-juris-hzkqk \
+    --project=hauska-prod-497015 --region=us-east4 --quiet
+Cancelled execution [factory-p2-juris-hzkqk].
+
+runningCount:   None
+succeededCount: None
+failedCount:    None
+cancelledCount: 1
+completionTime: 2026-09-01T04:14:11.171940Z
+```
+
+`cancelledCount: 1` with no `failedCount` is the distinguishing fact: this is a clean
+stop and is separable in the record from the 57P01 deaths and from a maintenance kill.
+Nine chunks and roughly 72,000 rows are complete and carried on the run id.
+
+The termination forfeited only the in-flight chunk, which the 05:00 restart would have
+forfeited anyway.
+
+**Open and lane-owned:** the Factory run row is still `started` and has no termination
+record. Carried on `mission_covers_fastpath`. A deliberate stop that leaves no name is
+indistinguishable from the failure class it was performed to avoid.
