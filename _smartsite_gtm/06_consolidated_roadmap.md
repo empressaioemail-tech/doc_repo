@@ -67,7 +67,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
 | 1.1 | Build the PE billing portal so the published terms stop overclaiming | planner | 0.6 |
-| 1.2 | **P-103** retire the legacy checkout seam, proven by decline | property seat | **PR #331 open.** Guard shown failing six ways |
+| 1.2 | **P-103** retire the legacy checkout seam | property seat | **DONE 2026-09-01.** #331 `847550aa`, deployed, **decline proven live** |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
 | 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | nothing, carded |
@@ -99,6 +99,14 @@ It is tempting to score that as a third revenue leak and it would be wrong. The 
 What it does do is put a named live client on P-97 checklist item 6, which says there is no safe way to leave `STRIPE_PRO_PRICE_ID` and `STRIPE_MAX_PRICE_ID` at their test values. Item 6 was already an operator decision; it now has a consequence attached. If the extension still sells Pro and Max, both need live price ids created before the switch. If it does not, both need to fail closed rather than resolve to a stale test id, because `subscriptionTierFromPriceId` falls through to `pro` for every subscription when `STRIPE_MAX_PRICE_ID` does not match, which silently grants Pro to a Max subscriber, and an EMPTY value is worse still: `brokerageStripe.ts:174` returns a SIMULATED session under a live key, failing open with no error anywhere.
 
 So the item is: does the extension still sell Pro and Max. That is a product question, not an engineering one, and it gates checklist item 6.
+
+### P-103 retirement proven by decline on the deployed host, 2026-09-01
+
+Not documented, measured. `POST https://smartsite.cloud/api/pe-billing?path=checkout` returned `400 {"error":"install_id_required"}` before, which is the function's OWN error from `pe-billing.ts:42-48` and therefore proof the function existed and ran. After the deploy it returns `404 NOT_FOUND`, which is Vercel's, and therefore proof the function is gone.
+
+The made-up-route control also returns 404, so that control cannot discriminate after the fact, and the comparison carrying the proof is against the recorded before-state rather than against the control. The positive control is what rules out a broken deployment: the sibling `pe-gtm` function still answers 400, so functions still deploy and the 404 is specific to the route that was retired.
+
+The CI guard is what keeps it retired, and it fails on a re-added parent prefix that contains no literal "billing", which is the case a grep would pass.
 
 ## Wave 2. Make the ladder real and the funnel measurable
 
