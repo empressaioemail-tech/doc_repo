@@ -2,7 +2,63 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 18:32Z (parcel-sample-six closed)**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 19:17Z (parcel-fill-48491 filled)**
+
+## PARCEL-FILL-48491 FILLED 2026-09-01T19:17Z
+
+Seat property claiming from integration `P:/doc_repo` `main` `aefb9bec`. Factory claim tree execution-only (`P:/tmp/hauska-factory-parcel-fill` `feat/parcel-record-fill` `bb66db4`). Close `_inbox/2026-09-01_parcel-fill-48491_close.json`. Table `_inbox/2026-09-01_parcel-fill-48491_verify.json`.
+
+**Later lane.** 48021 owned STEP 0. This lane did not write the factory tree and did not laptop-fill.
+
+**Fill executed.** `factory-parcel-record-fill-dtcs6` args `parcel-record-fill --county=48491 --apply --twice` succeeded 19:09:41Z in 10m8.28s. Run `461778d8-8276-48c5-bf2f-921a68f59c11`. Image `sha256:7a1d11ba…`. Job close: landing=282570 records=282570 cells=18367050 drift=zero-drift.
+
+**Store at 19:11:31Z.** Landing 282570 (174827 in-city + 107743 unincorporated) = store 282570 at 65 cells. NA 18 x 107743, zero on in-city. `absent-verified` 0. CAD county $0 68483 join landing = 0. PRIVATE ROAD keyed.
+
+Do not use 590644 or 602050 as the row target. Do not treat store unaccounted improvement as a fill miss. Do not rebuild the job. Do not laptop-fill.
+
+## PARCEL-FILL-48055-R2 FILLED 2026-09-01T19:15Z
+
+Seat property claiming from integration `P:/doc_repo` `main` `8e734ee1`. Factory claim tree execution-only. Close `_inbox/2026-09-01_parcel-fill-48055-r2_close.json`. Did not overwrite the burned 48055 close.
+
+**Fill executed.** `factory-parcel-record-fill-f82qb` args `parcel-record-fill --county=48055 --apply --twice` succeeded 19:12:17Z in 1m22.33s. Run `e0d45c25-0e91-4eca-9045-abf0a8bd1f5c`. Image not rebuilt (`sha256:7a1d11ba…`).
+
+**Store at 19:14:00Z.** Landing 24988 = store 24988 at 65 cells. NA 18 x 14361, zero on in-city. `absent-verified` 0. Landing-matched improvement $0 = 5630. Card headline 24552 is CAD latest $0, not containment.
+
+Do not use 24552 as the store $0 target. Do not rebuild the job. Do not laptop-fill.
+
+## PARCEL-FILL-48021 FILLED 2026-09-01T19:08Z
+
+Seat property claiming from integration `P:/doc_repo` `main` `8e734ee1`. Factory claim tree `P:/tmp/hauska-factory-parcel-fill` `feat/parcel-record-fill` `bb66db4`. Close `_inbox/2026-09-01_parcel-fill-48021_close.json`. Table `_inbox/2026-09-01_parcel-fill-48021_verify.json`.
+
+**STEP 0 done.** Factory #57 MERGED `648366df`. #58 MERGED `9b0aff4` (65-rail vendor, county-wide path, `LAPTOP_WRITE_FROZEN`, cloudbuild). Image `sha256:7a1d11bab1d968d97c2d8469983370c9fa83dddf6b0bc6a7cd9862aee9c2e616` `ENGINE_SHA=22e71e1c18ec6bcefe590b97d36093ae3849a4fc`. Job `factory-parcel-record-fill`.
+
+**Fill executed.** `factory-parcel-record-fill-bmd6f` args `parcel-record-fill --county=48021 --apply --twice` succeeded 18:59:43Z in 2m26.54s. Run `5cc8f823-77bd-4563-b711-6bf4f8526977`. Job close: landing=62256 records=62256 cells=4046640 drift=zero-drift.
+
+**Store at 19:02:30Z.** Landing 62256 (11992 in-city + 50264 unincorporated). 62256 rows at 65 cells. Two leftover 52-rail orphans `48021:0` and `48021:10005` (not in landing). NA 18 rails x 50264, zero on in-city. `absent-verified` 0. CAD latest $0 6158 and living>0 8712 are outside landing. Landing-matched $0 is 0. Gold `48021:34137` livingAreaSqft stays unaccounted.
+
+Later fill cards re-verify this image. Do not rebuild the job. Do not rebuild the store token. Do not COUNT(*) the two leftovers into the absolute target. Do not laptop-fill.
+
+## PARCEL-FILL-48209 PARTIAL 2026-09-01T18:53Z
+
+Seat property claiming from integration `P:/doc_repo` `main` `2390d282`. Factory claim tree `P:/tmp/hauska-factory-parcel-fill` `feat/parcel-record-fill` `b4fdcfb` (no writes). Close `_inbox/2026-09-01_parcel-fill-48209_close.json`. Table `_inbox/2026-09-01_parcel-fill-48209_table.json`.
+
+**Fill not executed.** Later lane. 48021 / 48055 / 48491 already held. Job is sample-only. No Cloud Run job. Vendored module still 52 rails. Laptop `--apply` refused. Store token attached by claim; not rebuilt.
+
+**Hays baseline (18:49:30Z).** Containment 48209 = **116420** (54835 in-city + 61585 unincorporated, method=ring). Factory leftover 60 records / 3120 cells / 52 each / `absent-verified` 0. Dispatch 154313 is latest-year `market_value IS NOT NULL`, not containment. livingArea 54.3% is 93973/173050 unique CAD keys.
+
+**STEP 0.** (a) factory #57 MERGED `648366df` 18:48:03Z, CI test+gate8 SUCCESS (first lane). (b)(c) not done.
+
+Do not treat 154313 as the Hays row target. Do not run `--county=48209` on the #57 image. Do not rebuild the store token.
+
+## PARCEL-FILL-48055 PARTIAL 2026-09-01T18:50Z
+
+Seat property claiming from integration `P:/doc_repo` `main` `2390d282`. Factory claim tree `P:/tmp/hauska-factory-parcel-fill` `feat/parcel-record-fill` `b4fdcfb` (unread, no writes). Close `_inbox/2026-09-01_parcel-fill-48055_close.json`. Table `_inbox/2026-09-01_parcel-fill-48055_table.json`.
+
+**Fill not executed.** Later lane. 48021 already held. STEP 0 not done: #57 still OPEN, no Cloud Run job, vendored module still 52 rails. Job has no county-wide path. Laptop --apply refused.
+
+**Baselines (18:47:38Z).** Containment 48055 = 24988 (10627 in-city + 14361 unincorporated, method=ring). CAD latest-year improvement $0 = 24552. Store 60 records / 3120 cells / 52 each. Dispatch 48588 is CAD market-present, not containment.
+
+Do not execute the current job as a county fill. Do not rebuild the store token. Do not ARG-only rebuild for 65 rails.
 
 ## PARCEL-SAMPLE-SIX CLOSED 2026-09-01T18:32Z
 
