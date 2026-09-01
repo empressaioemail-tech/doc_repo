@@ -130,7 +130,7 @@ Runs alongside Wave 1. Nothing here waits on Stripe.
 |---|---|---|---|
 | 2.1 | **P-101** ladder re-cut across both surfaces | property seat | nothing, carded |
 | 2.1b | **P-102** two-seat Studio, split out per ruling 2 | property seat | sequence after P-101 |
-| 2.2 | P-100 share and funnel instrumentation | property seat | nothing, dispatched |
+| 2.2 | **P-100** share and funnel instrumentation | property seat | **code complete**, diffs held behind P-104; migration `0093` NOT applied |
 | 2.3 | Screen test the four affiliate segment lines | operator | nothing |
 | 2.4 | Affiliate kits, one per segment | planner | 2.3 |
 | 2.5 | Content production, five pillars | operator and planner | 0.4 |
@@ -143,6 +143,22 @@ Recruiting sits here rather than in Wave 3 deliberately. It was ruled unblocked;
 **A structural finding from that lane outlives P-101.** There are three copies of `subscriptionTierGrantsStudio` across the two repos, not two, and the test named "matches api-server predicate" asserts hardcoded booleans against its own local copy and never opens the api-server file. That is internal consistency wearing a divergence test's name. The consequence sharpens the connector ruling rather than weakening it: gate at the tier and both surfaces inherit is structurally true only for a route gate, and false for any predicate gate, because a predicate would simply become a fourth copy.
 
 **2.2 is measure-then-close-gaps, not build-from-zero.** The event infrastructure exists. The one gap established repo-wide as genuinely absent is sharer attribution, so a recipient who signs up today is credited to nobody. This is the declared gate on affiliate link distribution, and the reason is not perfectionism: events cannot be backfilled, and the first sixty days is exactly the window in which share and affiliate traffic have to be told apart.
+
+### P-100 measured first, and the measurement changed the build
+
+The card's instruction to measure before building was the whole value of the row.
+
+**The Smart Site share plane emitted nothing at all.** The only `share_created` writer was on the brokerage workspace surface, 7 rows, last fired 2026-07-19. `share_viewed` had a writer that has never written a row in the store's history. What the Smart Site share landing actually emitted was `pe_browse_started` carrying a `shareLanding` flag in its payload: a browse event wearing a flag, carrying no grant id, 12 rows against 10,286. That is the shape that reads as instrumented and measures nothing, which is exactly the suspicion the card asked item 1 to settle.
+
+**The card asked for three states and the data required five.** `ROWS_NO_WRITER` (four orphan types left by a retired extension writer) and `MENTION_ONLY` (five types produced conditionally by code a text scan cannot follow) cannot be folded into absent, zero, or rows without filing a false report.
+
+**The card's own premise on attribution was half wrong, and this is the most consequential finding.** The card said sharer attribution does not exist, on four zero-hit greps, and those greps were accurate. But `pe_share_grants` already exists from migration 0085, with 12 live rows carrying `grantor_user_id`, server-written by the mint route. The grant row id the card asked attribution to be keyed on was already there. And `share-landing.ts` already stashes that id through the `?signed_in=1` OIDC round-trip, which is precisely the anonymous-to-account trap the card warned about. Only the join was missing. That narrowed item 3 from build attribution to build the join, and it is why nothing was rebuilt.
+
+**A pre-registered prediction was lost, and losing it changed a design.** The lane predicted most of the 741 null-consent rows belonged to installs with no consent record. Wrong: 62 percent have one, and the writer simply never read it. That turned item 5 from unrecoverable into resolve from the store and refuse only the remaining 38 percent.
+
+**A free finding, out of scope and backlogged.** `pe_upgrade_started` stands at 42 against zero PE conversion events. `brokerageBilling.ts:191` gates the only webhook recording on `if (result.installId)`, while every PE branch returns `peUserId` and often no install id. The competing explanation, a dead webhook, is disproven by `pe_user_entitlements` holding 14 rows that only that handler writes.
+
+**Honest partial:** six of seven items closed in code, and migration `0093` is written and NOT applied, so three new routes error until it runs. The DDL guarantees are unverified because the lane had no test Postgres; the readable refusals are tested and the unbypassable ones are not, and the close says so rather than implying otherwise.
 
 ## Wave 3. Turn on the channel
 

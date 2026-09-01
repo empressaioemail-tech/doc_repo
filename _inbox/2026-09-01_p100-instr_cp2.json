@@ -1,0 +1,167 @@
+{
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint (build complete, verification complete, pre-close)",
+  "lane": "p100-instr",
+  "planRows": ["P-100"],
+  "date": "2026-09-01",
+  "cp1": "_inbox/2026-09-01_p100-instr_cp1.json",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p100",
+      "branch": "feat/p100-share-funnel-instr",
+      "baseCommit": "d332d799e1ddbd64e106685fe37828ce24862959"
+    },
+    "hauska-map": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-p100",
+      "branch": "feat/p100-share-funnel-instr",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99"
+    }
+  },
+
+  "seatRegistrationCorrection": {
+    "what": "The seat-worktree gate BLOCKED the first write into P:/seat-worktrees/property/hauska-map-p100 because the worktree was not yet in _catalog/seat_register.json.",
+    "verbatim": "SEAT-01: worktree P:/seat-worktrees/property/hauska-map-p100 is not in _catalog/seat_register.json. A shared checkout is the failure this control exists to make impossible. Work in a registered seat worktree.",
+    "disposition": "Registered the worktree, then proceeded. CP1 had recorded the entry as 'pending, added at CP2', which was the lane planning to do the right thing later rather than doing it first. The hook did not accept the intention. Recorded here because a control firing on this lane is evidence the control works, and because 'I was going to' is exactly the shape ENFORCEMENT says is not a control."
+  },
+
+  "buildInventory": {
+    "legacy-design-tools": {
+      "modified": [
+        "artifacts/api-server/src/lib/recordGtmEvent.ts",
+        "artifacts/api-server/src/lib/gtmPropertyExplorerFunnel.ts",
+        "artifacts/api-server/src/routes/brokerageGtm.ts",
+        "artifacts/api-server/src/__tests__/setup.ts",
+        "lib/db/src/schema/index.ts",
+        "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+        "lib/db/src/__tests__/integration/schema.integration.test.ts"
+      ],
+      "added": [
+        "lib/db/drizzle/0093_p100_share_funnel_instrumentation.sql",
+        "lib/db/src/schema/peShareAttributions.ts",
+        "lib/db/src/schema/peAccountActivations.ts",
+        "lib/db/src/schema/gtmEventRefusals.ts",
+        "artifacts/api-server/src/lib/recordGtmEventDecide.ts",
+        "artifacts/api-server/src/lib/peShareAttributionValidate.ts",
+        "artifacts/api-server/src/lib/peShareAttribution.ts",
+        "artifacts/api-server/src/lib/peAccountActivationValidate.ts",
+        "artifacts/api-server/src/lib/gtmPropertyExplorerFunnelTypes.ts",
+        "artifacts/api-server/src/lib/gtmShareFunnelReadoutShape.ts",
+        "artifacts/api-server/src/lib/gtmShareFunnelReadout.ts",
+        "artifacts/api-server/src/lib/__tests__/p100ShareFunnelInstrumentation.test.ts",
+        "scripts/gtm-event-state.mjs"
+      ]
+    },
+    "hauska-map": {
+      "modified": [
+        "apps/property-explorer/api/pe-gtm.ts",
+        "apps/property-explorer/src/lib/gtmClient.ts",
+        "apps/property-explorer/src/workbench/tools/ShareTool.tsx",
+        "apps/property-explorer/src/workbench/tools/ReportsTool.tsx",
+        "apps/property-explorer/src/share/ShareFunnelApp.tsx",
+        "apps/property-explorer/src/browse/ExplorerMap.tsx"
+      ],
+      "added": ["apps/property-explorer/api/_lib/pe-gtm-bff.test.ts"]
+    }
+  },
+
+  "designChangesForcedByOtherLanes": [
+    {
+      "wanted": "Mount the attribution and activation routes on artifacts/api-server/src/routes/propertyExplorer.ts, next to the share-grant routes they join against.",
+      "blocked": "Another live lane holds that file (adding a route).",
+      "did": "Mounted them on the GTM router (brokerageGtm.ts) instead, which is also a defensible home because they are measurement. The file carries a comment saying why, so a successor does not read the placement as an accident."
+    },
+    {
+      "wanted": "A new hauska-map BFF file api/pe-share-attribution.ts.",
+      "blocked": "That needs a rewrite entry in apps/property-explorer/vercel.json, which another live lane holds.",
+      "did": "Folded both new calls into the EXISTING /api/pe-gtm BFF as two new allowed paths. No vercel.json change. This turned out better than the original design: one BFF now owns every GTM call and the session-resolution rule lives in one place."
+    },
+    {
+      "wanted": "Nothing in artifacts/api-server/src/lib/peEntitlement.ts.",
+      "blocked": "n/a",
+      "did": "Not touched. Verified by the diff."
+    }
+  ],
+
+  "adversarialReviewOfOwnWork": [
+    {
+      "found": "The item-1 instrument scored READERS as writers. brokerageExtensionPublic.ts:103 counts brief_completed rows for a rate limit and contains `eventType: \"brief_completed\"`; the first pass reported it as an emit site. extension_install was scored WRITER_HAS_ROWS off a scoreboard constant.",
+      "whyItMattered": "The item-1 table would have claimed writer coverage this system does not have. A reader scored as a writer is the same defect class as a check that cannot fail.",
+      "fix": "Site kinds emit / union / mention, a fifth state MENTION_ONLY, and fixture not-vacuous-4 pinning both directions. extension_install moved to ROWS_NO_WRITER; five types moved to MENTION_ONLY."
+    },
+    {
+      "found": "The first test file imported the funnel allowlist from gtmPropertyExplorerFunnel.ts, which imports @workspace/db, which throws at module load without DATABASE_URL. The whole suite failed to collect.",
+      "whyItMattered": "The pure-logic split exists so refusals are verifiable without Postgres. One import defeated it, and the test would then only have run where a database was reachable.",
+      "fix": "Extracted the vocabulary into gtmPropertyExplorerFunnelTypes.ts (pure) and re-exported it, so no consumer import changed. All 49 tests now run with no database."
+    },
+    {
+      "found": "A near-miss on DEV_PROCESS 2.3. `npx tsc -b lib/db 2>&1 | grep -v 'npm warn'; echo $?` reported exit 1. That was GREP's exit code (no lines matched), not tsc's. The instrument said the build was broken when it was clean.",
+      "whyItMattered": "This is the documented 'prove the negative case on the real exit code, not on a pipe's exit code' incident, reproduced live. It would have sent this lane chasing a build failure that did not exist.",
+      "fix": "Re-ran without the pipe (exit 0), and every subsequent exit-code check in this lane redirects to a file and reads $? from the command itself."
+    },
+    {
+      "found": "findAffiliateStore built a SQL ARRAY literal by string interpolation via sql.raw.",
+      "whyItMattered": "The candidate list is a module constant so it was not exploitable, but a string built into SQL is a habit, and the habit is what eventually meets input.",
+      "fix": "Bound parameter. Also documented that table existence is read from information_schema rather than inferred from a query's shape — the recorded incident where a 33,066-row link table was declared absent by inference."
+    },
+    {
+      "found": "recordAccountActivation's doc comment contained a visible self-correction ('...no, it is derived from...').",
+      "fix": "Rewritten to state the rule and the reason a timestamp comparison would be wrong (two calls in one clock tick would both report first)."
+    }
+  ],
+
+  "openRisksCarriedToClose": [
+    {
+      "risk": "share_viewed counts BROWSER landings only. An agent fetching /s/{grantId}?format=json never runs the SPA and produces no event.",
+      "whyNotFixed": "gtm_events.install_id is minted in the browser and is the key gtm_consent is written against. A server-side emit would have no install id, and inventing one fabricates the identity the consent record is about.",
+      "disposition": "DECLARED, not hidden: the exclusion is written into gtmClient.ts at the emit site and travels with the number. Degradation declared in the output is permitted; silent degradation is not."
+    },
+    {
+      "risk": "The graph_opt_in gate at brokerageGtm.ts:162 blocks share_created / share_viewed on the EXTENSION route unless consent.graph_opt_in is true. Every PE consent row is written graph_opt_in=false.",
+      "whyNotApplied": "That gate is on a different handler; the PE events route has its own consent check and the Smart Site share events go through it. Applying the graph gate to the PE plane would make the rail permanently zero — a dead gate.",
+      "disposition": "OPERATOR RULING REQUESTED in the close. If share telemetry on the Smart Site plane must require a graph opt-in, the PE consent route has to start collecting one first, and the rail would read zero until it does."
+    },
+    {
+      "risk": "recordGtmEvent now refuses when an install has no consent row. Measured on production: 38% of currently-null-consent events (282 rows, 94 distinct installs) would become refusals.",
+      "disposition": "Intended. The refusal is durable in gtm_event_refusals and is a first-class number in the readout, so the hole is visible rather than a rail going quietly flat."
+    },
+    {
+      "risk": "Migration 0093 is written and NOT applied. Until it is, the three new routes will error against production.",
+      "disposition": "By design — this lane produces an uncommitted diff and holds no deploy authority. Named in the close as the first thing the planner must sequence."
+    }
+  ],
+
+  "verificationSoFar": {
+    "legacy-design-tools": {
+      "tscLibDb": "npx tsc -b lib/db --force -> exit 0",
+      "tscApiServer": "npx tsc --noEmit -p tsconfig.json -> exit 0",
+      "newSuite": "npx vitest run src/lib/__tests__/p100ShareFunnelInstrumentation.test.ts -> 49 passed",
+      "fullSuiteBefore": "1461 passed | 1 skipped; 165 files failed (all DATABASE_URL absence), 155 files passed",
+      "fullSuiteAfter": "1510 passed | 1 skipped; 165 files failed (unchanged), 156 files passed",
+      "delta": "+49 passing tests, +1 passing file, ZERO change in the failing-file count. The 165 failures are pre-existing DATABASE_URL absence in this environment and are identical before and after."
+    },
+    "hauska-map": {
+      "tsc": "npx tsc --noEmit -> exit 0",
+      "fullSuiteBefore": "166 files, 2234 passed | 1 todo",
+      "fullSuiteAfter": "167 files, 2257 passed | 1 todo",
+      "delta": "+23 passing tests, +1 file, zero regressions."
+    },
+    "instrument": "node scripts/gtm-event-state.mjs --self-test -> SELF-TEST PASSED (5 classifier fixtures + 4 not-vacuous cases), exit 0; shown failing on two deliberate violations."
+  },
+
+  "constraintsHonored": [
+    "No second gtm_events store; no second event writer. Asserted by a test that enumerates insert(gtmEvents) sites and fails when a new file appears (violation-verified).",
+    "GoHighLevel / P-99 untouched.",
+    "PromoteKit untouched; affiliate reported as honestly unmeasured.",
+    "Share fidelity rule unchanged.",
+    "No tenant-private research on any event: share events carry the grant id only. The parcel lives on the grant row and is deliberately NOT on the event.",
+    "Production read only. No INSERT, UPDATE, DELETE or DDL was issued.",
+    "Own registered worktree and branch per repo.",
+    "No held file touched.",
+    "No commits, pushes, merges, PRs or deploys."
+  ],
+
+  "pr": "not applicable: lane produces an uncommitted diff",
+  "mergeSha": "not applicable: lane produces an uncommitted diff",
+  "ciConclusion": "not applicable: lane produces an uncommitted diff"
+}

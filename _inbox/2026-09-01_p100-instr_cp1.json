@@ -1,0 +1,179 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "lane": "p100-instr",
+  "planRows": ["P-100"],
+  "date": "2026-09-01",
+  "card": "_inbox/2026-08-31_p100_share_and_funnel_instrumentation_WDLL.md",
+  "dispatch": "_dispatches/2026-09-01_p100-instr_dispatch.md",
+  "operatorGo": "2026-08-31 (\"assign p100\"), then 2026-08-31 instructing the planner to execute the roadmap via sub-agents",
+
+  "missionPremise": "The card is MEASURE-THEN-CLOSE-GAPS, not build-from-zero. gtm_events, gtm_consent, recordGtmEvent, the PE gtmClient and the brokerageWorkspace share emitters all exist on origin/main; a lane that rebuilds an existing writer fails the card. Item 1 (the measurement) comes first and governs what items 2-6 are allowed to build.",
+  "completionPredicate": "A named person can answer, from a query rather than a narration: shares created last week, shares viewed, viewers who signed up, which sharer each signup belongs to, and the split of new accounts across share / affiliate / organic. Each answer may be zero, and zero must render differently from unmeasured. Every event carries its consent state at emit time, and an event type that can be emitted with consent absent rather than refusing fails.",
+  "scopeBasis": "Boundaries are the card's 'Explicitly not this card' plus the dispatch's held-file list. No second gtm_events store, no second event writer, no GoHighLevel (P-99), no PromoteKit, no change to the share fidelity rule, no tenant-private research on any event. Three other lanes are live; their held files are excluded by name and the design was reshaped once to avoid one of them.",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p100",
+      "branch": "feat/p100-share-funnel-instr",
+      "baseCommit": "d332d799e1ddbd64e106685fe37828ce24862959",
+      "baseSubject": "feat(P-98): billing interval persisted, entitlement readable without a parcel (#574)"
+    },
+    "hauska-map": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-p100",
+      "branch": "feat/p100-share-funnel-instr",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "baseSubject": "fix(pe/P-98b): the wire speaks month/year, and the annual rung reads it (#330)"
+    },
+    "store": {
+      "target": "Neon neondb via DEPLOYMENT_DATABASE_URL_DIRECT, project legacy-design-tools-prod",
+      "readAt": "2026-09-01T02:42:50.688Z",
+      "access": "READ ONLY. No INSERT, UPDATE, DELETE or DDL was issued against production."
+    }
+  },
+
+  "seatRegistration": {
+    "seat": "property",
+    "action": "registered two new worktrees in _catalog/seat_register.json before working",
+    "entries": ["legacy-design-tools-p100", "hauska-map-p100 (pending, added at CP2)"],
+    "note": "hauska-map worktree created because the shared P:/hauska-map checkout sat on a stale branch that lacks the entire P-86 grant plane. Reading it would have produced a confident wrong answer about whether the Smart Site share surface has a grant row."
+  },
+
+  "item1Measurement": {
+    "artifact": "_inbox/2026-09-01_p100_event_state_measurement.md",
+    "instrument": "legacy-design-tools scripts/gtm-event-state.mjs",
+    "instrumentSelfTest": "node scripts/gtm-event-state.mjs --self-test -> SELF-TEST PASSED (5 classifier fixtures + 4 not-vacuous cases), exit 0",
+    "instrumentShownFailing": true,
+    "eventTypesClassified": 38,
+    "stateCounts": {
+      "WRITER_HAS_ROWS": 21,
+      "WRITER_NEVER_WROTE": 6,
+      "MENTION_ONLY": 5,
+      "ROWS_NO_WRITER": 4,
+      "NO_WRITER": 2
+    },
+    "statesAreFiveNotThree": "The card named three. ROWS_NO_WRITER (rows from a retired writer) and MENTION_ONLY (an eventType: literal outside any writer call, needing a code read) were both found in the data and cannot be folded into the card's three without a false report.",
+    "shareSurfaceVerdict": "SETTLED: the Smart Site share plane emits nothing. The only share_created writer is brokerageWorkspace.ts:480 (brokerage workspace surface, 7 rows, all source_surface='api', last 2026-07-19). share_viewed has a writer at brokerageWorkspace.ts:129 and has NEVER written a row. On the Smart Site plane, POST /api/pe-share and GET /s/{grantId} emit nothing; ShareFunnelApp.tsx:55 emits pe_browse_started with payload.shareLanding=true, which is a browse event with a flag, not a share event, and carries no grant id.",
+    "cardPremiseCorrection": {
+      "claim": "The card states sharer attribution does not exist, on the basis that sharerUserId / referredBy / attributedTo / referrerUserId return zero hits.",
+      "finding": "Half right. The GRANT ROW already exists: pe_share_grants (migration 0085) holds 12 live rows written 2026-08-27..2026-08-29, carrying id, grantor_user_id, grantor_tenant_id, parcel_node_id, created_at, expires_at, revoked_at. It is written by POST /api/pe-share via the cortex service-key route and read by GET /s/{id}. The grant row id the card asks attribution to be keyed on is already server-owned and already durable. What is genuinely absent is only the JOIN: no attribution table, no route, no column on users (8 columns, none of them attribution).",
+      "alsoAlreadyPresent": "share-landing.ts already stashes the grant id in sessionStorage (pe_share_funnel_grant) and restores it on the ?signed_in=1 return leg. The anonymous-to-account hop the card names as the recorded trap is already carrying the grant id; it just does not write anything.",
+      "evidentiaryStandard": "Quoted at file and line per DEV_PROCESS 3.2a. lib/db/src/schema/peShareGrants.ts:8, lib/db/drizzle/0085_pe_share_grants.sql:3, artifacts/api-server/src/routes/propertyExplorer.ts:1424, hauska-map apps/property-explorer/api/pe-share.ts:82, apps/property-explorer/src/share/share-landing.ts:61-62."
+    },
+    "activationVerdict": "pe_activation_events exists, has exactly one writer (recordActivationEvent from POST /property-explorer/v1/activation-events), has a client caller (NextActionCard.tsx), and has ZERO rows. It is also a DIFFERENT SUBJECT from card item 4: its grammar is shown/acted against a next-action ladder rung, not a once-per-account first-time milestone. Item 4's subject is NO_WRITER.",
+    "consentVerdict": "741 of 11,518 rows carry consent_version IS NULL, all written by recordGtmEvent (recordGtmEvent.ts:27 is `consentVersion: input.consentVersion ?? null`) whose 14 call sites pass no consent. The two consent-enforcing routes stamp from the store and refuse 403 without it, so their rows are all non-null."
+  },
+
+  "preRegisteredPredictionsScored": [
+    {
+      "prediction": "Most of the 741 null-consent rows belong to installs with no gtm_consent record, so the consent is unrecoverable.",
+      "falsifier": "A LEFT JOIN showing a majority of null-consent rows whose install_id HAS a consent row.",
+      "result": "WRONG. 459 of 741 (62%) belong to installs that DO have a consent row; 282 (38%, 94 distinct installs) do not.",
+      "consequence": "Changes the item-5 fix from 'default is unavoidable' to 'the writer must resolve consent from gtm_consent by install_id, and refuse only the 38% case'."
+    },
+    {
+      "prediction": "share_created and share_viewed fire only on the brokerage workspace, not on the Smart Site plane.",
+      "falsifier": "A share_created or share_viewed emit site under apps/property-explorer, or any row with source_surface='property-explorer'.",
+      "result": "CONFIRMED. Zero such emit sites on hauska-map origin/main; zero such rows."
+    },
+    {
+      "prediction": "pe_activation_events is fed.",
+      "falsifier": "count(*) = 0.",
+      "result": "WRONG. Zero rows. The writer, its route, and its client caller all exist and none has ever produced a row."
+    }
+  ],
+
+  "instrumentDefectFoundAndFixed": {
+    "defect": "The first pass classified every `eventType:` string literal as an emit site, which scored brokerageExtensionPublic.ts:103 as a WRITER of brief_completed when that file only COUNTS those rows for a rate limit, and scored extension_install as WRITER_HAS_ROWS off a scoreboard constant.",
+    "whyItMatters": "A reader scored as a writer is the same defect class as a check that cannot fail, and it would have produced a table claiming coverage this system does not have.",
+    "fix": "Site kinds emit / union / mention. Only emit and union count as a writer; mention-only types get their own state and an explicit instruction to read the code. Fixture not-vacuous-4 pins both directions of that distinction.",
+    "effect": "extension_install moved WRITER_HAS_ROWS -> ROWS_NO_WRITER. pe_property_unlock, pe_subscription_active, pe_churned, shown, acted moved to MENTION_ONLY."
+  },
+
+  "freeFindingsFromReconciliation": [
+    {
+      "finding": "brokerage_workspace_shares = 7 and share_created events = 7. Two independent derivations agreeing. The only agreeing pair in the measurement.",
+      "disposition": "no action"
+    },
+    {
+      "finding": "pe_upgrade_started = 42, PE subscription-created events = 0, pe_property_unlocks = 0, pe_user_entitlements = 14. The conversion end of the Smart Site funnel is unmeasured.",
+      "mechanism": "brokerageBilling.ts:191 gates the only recording of a webhook result on `if (result.installId)`, while every PE branch of handleStripeWebhook returns peUserId and often no installId. A Smart Site purchaser who never carried an extension install id produces no event.",
+      "rejectedAlternative": "That the PE stripe webhook is simply not firing. Rejected because pe_user_entitlements holds 14 rows, which only setPeAccessTierFromStripe / setPeSubscriptionEntitlement write, so the handler IS running; it is the recording line downstream of it that is gated out.",
+      "disposition": "IN SCOPE for item 6 as an honest `unmeasured` cell with a stated basis. Fixing brokerageBilling.ts is NOT in this card's scope (it is the billing lane's file and P-98's territory) and goes to the close as an OPEN item."
+    },
+    {
+      "finding": "GTM_SOURCE_SURFACES declares a `share_page` surface; zero rows carry it. Declared and never used.",
+      "disposition": "the Smart Site share events built under item 2 will not use it either; they carry source_surface='property-explorer' so they aggregate with the rest of the Smart Site funnel. Noted so the declaration is not mistaken for coverage."
+    },
+    {
+      "finding": "Four ROWS_NO_WRITER types (brief_failed 13, upgrade_completed 10, extension_install 3, workspace_shared 2). All source_surface='extension'. POST /gtm/events accepts an OPEN event-type vocabulary (`z.string().min(1).max(64)`), so the extension can mint types the server has never heard of.",
+      "disposition": "OUT OF SCOPE, to the close as an OPEN item. Closing the extension vocabulary is a behaviour change to a shipped surface and is not this card."
+    }
+  ],
+
+  "buildPlan": {
+    "item2": {
+      "verdict": "BUILD. Item 1 found the Smart Site share plane silent, so the card's 'closes by citing evidence' branch does not apply.",
+      "design": "share_created on POST /api/pe-share after the grant row persists; share_viewed on GET /s/{grantId} after the grant resolves. Both carry the grant row id in the payload. Both go through the EXISTING single writer path (POST /api/brokerage/v1/gtm/property-explorer/events -> the one insert at brokerageGtm.ts:652) with source_surface='property-explorer'. No new writer, no new store.",
+      "duplicateSubjectGuard": "The brokerage-workspace share subject stays on source_surface='api'; the Smart Site share subject is source_surface='property-explorer'. They are different subjects sharing a type name and the readout reports them split, never merged. A second insert into gtm_events would fail the card and is not being written."
+    },
+    "item3": {
+      "verdict": "BUILD, narrowed by the premise correction. The grant row exists; only the join is missing.",
+      "design": "New table pe_share_attributions (recipient_user_id PK, grant_id -> pe_share_grants.id, grantor_user_id, attributed_at, source). First-touch-wins: recipient_user_id is the primary key, so a second attribution for the same recipient cannot be written. A self-attribution (grantor = recipient) is refused. New route on the GTM router, service-key only. The BFF resolves BOTH ids server-side: the grantor from the pe_share_grants row, the recipient from the PE session. The client supplies only the grant id, which it legitimately holds because it is in its own URL.",
+      "clientAssertionRefusal": "Any request body carrying grantorUserId / sharerUserId / recipientUserId / referredBy / attributedTo is REFUSED 400, not ignored. Ignoring an asserted sharer would leave a caller believing it had set one."
+    },
+    "item4": {
+      "verdict": "BUILD. pe_activation_events is a different subject and cannot be stretched to cover this without corrupting P-98's ladder measurement.",
+      "design": "New table pe_account_activations (owner_user_id, milestone, first_at, surface) with a UNIQUE(owner_user_id, milestone). Once-per-account is enforced by the DDL, not by a read-then-write race. Milestones closed at three: first_parcel_inspected, first_property_saved, first_report_opened. A re-fire is an ON CONFLICT DO NOTHING that returns the FIRST row, so the response tells the caller it was not the first time.",
+      "rejectedAlternative": "Adding milestones to pe_activation_events.action_id. Rejected: that table's row means 'a ladder rung was shown or acted on', its event_type is frozen at shown/acted by a DDL check, and mixing a once-per-account milestone into a per-impression table would make every P-98 ratio wrong."
+    },
+    "item5": {
+      "verdict": "BUILD. recordGtmEvent must refuse rather than default.",
+      "design": "recordGtmEvent resolves consent from gtm_consent by install_id (a second, independent derivation, not a caller claim) and REFUSES to insert when there is none. A refusal is not silent: it writes a durable row to gtm_event_refusals naming the event type, install id, reason and timestamp, per ENFORCEMENT 'refusals of a state changing verb are recorded the same way'. Measured consequence: 62% of what is null today would become correctly stamped, 38% would become a recorded refusal instead of a fabricated null.",
+      "rejectedAlternative": "Making consentVersion a required parameter on the input type. Rejected: it moves the claim to the caller, and a caller-supplied consent version is a client assertion with extra steps. The store is the authority."
+    },
+    "item6": {
+      "verdict": "BUILD.",
+      "design": "GET /api/brokerage/v1/gtm/share-funnel returning every number as a discriminated union: {state:'measured', value:N} | {state:'unmeasured', basis:'...'}. The unmeasured determination is DERIVED, not hardcoded: a metric is unmeasured when its event type has zero rows ALL TIME (never written) as opposed to zero rows IN WINDOW (written before, quiet now). Two counts, two states, and a period with no activity returns measured-zero while a never-written type returns unmeasured. Affiliate is reported side by side and is honestly unmeasured with basis 'attribution lives in PromoteKit against Stripe; no local store' — PromoteKit is explicitly not this card's to touch, and being able to say so is the point of the state."
+    },
+    "item7": "Every check above run against a deliberate violation and shown failing with verbatim text, then restored and shown passing. Recorded in the close."
+  },
+
+  "adversarialReview": {
+    "risk1": {
+      "risk": "Emitting share_created from the Smart Site plane creates a duplicate-subject writer and fails the card.",
+      "mitigation": "No new insert. The Smart Site emitters call the existing PE events route, whose single insert is brokerageGtm.ts:652. The writer census (`grep -rn 'insert(gtmEvents)'`) stays at three non-test sites, exactly as it is today, and is asserted by a test."
+    },
+    "risk2": {
+      "risk": "Making recordGtmEvent refuse silently stops events that flow today, and the stoppage looks like success.",
+      "mitigation": "That is precisely why the refusal writes a durable row. The readout counts refusals, so a stopped rail is visible as a number rather than as an absence. A refusal that left no name is the ENFORCEMENT instance this rule was written from."
+    },
+    "risk3": {
+      "risk": "The graph_opt_in gate at brokerageGtm.ts:162 blocks share_created / share_viewed unless consent.graph_opt_in is true, and PE consent rows are all written with graph_opt_in=false. Applying that gate to the Smart Site plane would make every share event 403 forever — a permanently-red gate, DEV_PROCESS 2.0.",
+      "resolution": "The graph gate lives on the EXTENSION route (POST /gtm/events) and governs contributing to a network graph. The PE route is a separate handler with its own consent check and the Smart Site share events go through it, so the gate is not reached. This is a deliberate scope decision, not an oversight, and it is flagged to the operator in the close as an OPEN item rather than buried: if the ruling is that share telemetry on the Smart Site plane requires a graph opt-in, the PE consent route must start collecting one, and until it does the rail would read zero."
+    },
+    "risk4": {
+      "risk": "New DDL against a production database this lane may only read.",
+      "mitigation": "Migrations are written as files (lib/db/drizzle) and are NOT applied. The lane produces an uncommitted diff; applying migrations is a planner/deploy action. Tests run against the drizzle schema, never against production."
+    },
+    "risk5": {
+      "risk": "Editing a file another live lane holds.",
+      "mitigation": "Held list checked before design. legacy-design-tools: peEntitlement.ts and routes/propertyExplorer.ts are NOT touched — this is why the attribution and activation routes are mounted on the GTM router instead of on propertyExplorer.ts, where they would otherwise naturally sit. hauska-map: vercel.json is NOT touched — this is why the attribution call is folded into the existing /api/pe-gtm BFF as a new allowed path rather than shipped as a new api/ file needing a rewrite entry. Both are design changes forced by the held list and both are recorded here so a successor can tell a deliberate exclusion from an oversight."
+    }
+  },
+
+  "constraintsHonored": [
+    "No second gtm_events store and no second event writer.",
+    "No GoHighLevel CRM wiring (P-99).",
+    "PromoteKit untouched.",
+    "Share fidelity rule unchanged.",
+    "No tenant-private research on any event: the share events carry grant id and parcel_node_id, which the share link already exposes to its recipient by construction; no notes, no chat, no dossier content.",
+    "Production read only.",
+    "Own registered worktree, own branch, per repo.",
+    "No commits, pushes, merges, PRs or deploys."
+  ],
+
+  "pr": "not applicable: lane produces an uncommitted diff",
+  "mergeSha": "not applicable: lane produces an uncommitted diff",
+  "ciConclusion": "not applicable: lane produces an uncommitted diff"
+}
