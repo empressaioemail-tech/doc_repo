@@ -1,80 +1,82 @@
-# Mission A4 — build P3 now; it is a build and builds do not wait for measurements
+# Mission — build P3 absence. Build only. Do not apply.
 
-## Why this card exists
+## Why this is a build and why it does not wait
 
-P3 is the phase with **no writer, no store and no serve path**. `rail_absence` and
-`collect_close` are zero files. It has been described as blocked on containment
-TOTALS, and that is only true of **running** it. Building it needs the schema, not the
-number.
+P3 has no writer, no store and no serve path yet. Building needs the schema, not the
+measurement, so it runs during the measurement window instead of behind it. That
+compression is what takes a full phase off the serial line: the critical path goes from
+`TOTALS -> P3 -> P4 -> P5 -> P6` to `TOTALS -> P4 -> P5-final -> P6`.
 
-This is the same compression that already worked twice: the P5 scrub families and the
-F-11 setback writer were both built before their inputs existed, and both were ready
-when the gate lifted. Waiting for TOTALS to start P3 wastes the whole measurement
-window and puts a full phase back on the serial line.
+The same compression already worked for the P5 families and the F-11 setback writer.
 
-## What P3 owes
+## What P3 is
 
-Absence that is **served**, not merely stored. That was the ADR-029 gap and it is the
-point of the phase: a rail with no value must say so on the wire, with a basis, rather
-than rendering empty.
+Setbacks, edges and envelope inherit their scope from zoning, and counties do not zone
+unincorporated land. **Zoning already emits `not-applicable` there; the other three do
+not.** So:
 
-Three states, and they are not interchangeable:
+- Add the `unincorporated -> not-applicable` row for **setbacks, edges and envelope**.
+- Add the **four county-level easement absences** the T3 recon already established.
 
-| State | Meaning | Population |
+## The number in the roadmap is now second-derivable, and you must check it
+
+The roadmap carries this population table:
+
+| population | parcels | state |
 |---|---|---|
-| `not-applicable` | cannot exist here, structural | **unincorporated parcels only** |
-| `unmeasured` | could exist, not yet sourced | in-city with no landed table |
-| `absent-verified` | looked, none found | after the city is probed |
+| in-city ceiling | 624,141 | — |
+| unincorporated | **357,269** | `not-applicable` (structural) |
+| in-city, no table yet | 465,568 | `unmeasured` -> `absent-verified` on probe |
+| in-city, warmed | 3,732 | `value` |
 
-**The operator ruling of 2026-08-31 governs this and is not reopenable here:** an
-in-city parcel with no landed setback table serves `unmeasured`, **never**
-`not-applicable`. A setback can exist there and calling it structural is an unearned
-absence. That governs roughly 465,568 parcels and is the largest single fabrication
-available on this board if taken the other way.
+**That 357,269 predates 2026-09-01.** Containment now covers all six counties and produces
+an independently derived unincorporated count per county — Williamson 107,743 and Travis
+103,914 alone are 211,657. TOTALS collects the other four.
 
-`not-applicable` is correct for unincorporated parcels only, because counties do not
-zone unincorporated land. It applies to setbacks, edges and envelope, which inherit
-their scope from zoning. Zoning already emits it there; those three do not.
+So there are now two derivations where there was one, and they must be reconciled before
+any apply. **Do not reconcile them by picking the prettier number.** If they disagree, the
+disagreement is the finding and it is more valuable than the build.
 
-Also owed: the four county-level easement absences the T3 recon established.
+You do not need that reconciliation to build. You need it before anything is stamped.
 
-## Build, do not run
+## The constraint that governs the whole card
 
-1. The `rail_absence` store and its writer.
-2. The serve path that makes an absence **visible on the wire** with its basis.
-3. Every absence carries: the scope searched, an `asOf` that is **evaluation time and
-   not the request clock**, and a per-cell basis. **A basis identical across two
-   parcels is a defect**, not a saving.
-4. Fixtures for all three states, and for the boundary between them.
+**Do not stamp `not-applicable` on the 826,569 remainder.** Only the unincorporated
+population qualifies, because a county genuinely does not zone that land. The rest are
+in-city parcels where a setback can exist and has not been sourced.
 
-Wire it against the population shape, not against a specific number. TOTALS will
-arrive from lane A1 and the numbers will move; the *classification* is what this card
-fixes and it does not depend on the count.
+Calling that structural is an **unearned absence** — the exact defect class of asserting a
+state the system did not establish. `not-applicable` and `absent-verified` and `unmeasured`
+are three different states and collapsing them is the failure this phase exists to prevent.
 
-## The falsifier, and it is the point of the phase
+Build the type so the distinction cannot be lost. Where a type can carry the constraint,
+prefer the type over a check: a discriminated union the compiler enforces at every consumer
+has no trigger to be missing and no call site to be absent.
 
-**A live brief on a Caldwell rural parcel names county-absence rather than showing an
-empty rail.** Stored absence that never reaches a surface is the ADR-029 gap
-reproduced, not closed.
+## Absence must be SERVED, not just stored
 
-Second arm, and this is the one that catches the dangerous failure: **feed the path an
-in-city parcel with no landed table and require `unmeasured`.** If it emits
-`not-applicable`, the build is wrong in exactly the direction the ruling forbids.
+The exit gate is a live brief on a Caldwell rural parcel naming **county-absence** rather
+than showing an empty rail. That was the ADR-029 gap: absence written into a store that no
+surface reads is indistinguishable from absence nobody recorded.
+
+**You are not closing that gate on this card** — it needs the apply and a deployed surface.
+But build the serve path, and say what remains between what you built and that live brief.
+A merged PR is not customer-done and this repo has proved it more than once.
 
 ## Do not
 
-- Do not stamp `not-applicable` on the 826,569 remainder. Only the unincorporated
-  population qualifies; the rest are in-city parcels where a setback can exist.
-- Do not write an absence without a probe. **An unprobed absence is a fabricated fact
-  and is harder to detect than a fabricated value.**
-- Do not use the request clock for `asOf`.
-- Do not adopt 357,269 or any containment figure; A1 produces the number and this card
-  does not need it.
-- Do not run a production job or touch a store beyond fixtures.
+- Do not apply. Do not stamp. Do not write absence rows to any store.
+- Do not stamp `not-applicable` anywhere outside the unincorporated population, ever.
+- Do not take 357,269 as true; it has a second derivation now.
+- Do not touch the store. This card needs no store token and must not take one.
+- Do not close the ADR-029 serve gap on a build.
 - Do not touch any repository other than the registered worktree you open.
 
 ## Close
 
-Use the exact CP1 / CP2 / CLOSE paths named at the end of this dispatch. Declare
-snapshot in the first output. State both falsifier arms before running them.
-`leave_behind` named. Subagents do not commit.
+Use the exact CP1 / CP2 / CLOSE paths named at the end of this dispatch. Declare snapshot
+in the first output. Report the type or schema that makes `not-applicable`,
+`absent-verified` and `unmeasured` non-collapsible, what remains between the build and the
+live Caldwell brief, and the reconciliation you would run on 357,269 without running it.
+Name what contradicted this card, or say plainly that nothing did. `leave_behind` named.
+Subagents do not commit.
