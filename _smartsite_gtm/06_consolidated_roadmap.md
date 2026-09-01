@@ -59,7 +59,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
 | 1.1 | Build the PE billing portal so the published terms stop overclaiming | planner | 0.6 |
-| 1.2 | Retire `api/pe-billing.ts` and prove retirement by decline | planner | operator ruling |
+| 1.2 | Retire `api/pe-billing.ts` and prove retirement by decline | planner | nothing, RULED retire |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
 
@@ -79,7 +79,7 @@ Runs alongside Wave 1. Nothing here waits on Stripe.
 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
-| 2.1 | P-101 ladder re-cut across both surfaces | property seat | two operator calls, below |
+| 2.1 | P-101 ladder re-cut across both surfaces, two-seat Studio SPLIT OUT per ruling 2 | property seat | nothing, rulings landed |
 | 2.2 | P-100 share and funnel instrumentation | property seat | nothing, dispatched |
 | 2.3 | Screen test the four affiliate segment lines | operator | nothing |
 | 2.4 | Affiliate kits, one per segment | planner | 2.3 |
@@ -110,17 +110,17 @@ Affiliate terms are locked at 20 percent, recurring, capped at twelve months, op
 
 P-88 vendor directory listing, which is what turns Claude Sync from a reason to stay into a way to be found, and which is currently the highest-leverage unassigned item in the plan. McLennan and Waco as the first proof the playbook transfers to a second media market. Dunning, which is silent churn at scale and nothing at zero customers. Prospect rebuilt as monitoring per the ladder re-cut. Agent access priced by volume rather than by rung, which is a different buyer.
 
-## Open operator calls
+## Operator rulings, 2026-08-31
 
-These block named wave items and nothing else in this document waits on them.
+All three calls that were open when this document was written are now ruled. They are recorded here because this is the document the build works against; the plan-of-record row and the decision record may be filed by the lane closing out P-101, and if a second record appears it should be reconciled against this section rather than either being silently dropped.
 
-**Call 1, in Wave 2.1.** Gating screens to Studio means a free connector user never sees the Smart Site panel at all. `create_screen` and `list_screens` are two of the three tools that mount the panel, and the third is already paid-gated. The options are to gate `create_screen` only and leave `list_screens` open so the panel still mounts empty, or to accept that the connector goes dark for free users. This cuts against the connector being top-of-funnel, which is the role the connector ruling assigned it.
+**Ruling 1, screens gating and the free connector.** Gate `create_screen` and `add_to_screen`. Leave `list_screens` open. The panel still mounts, so the connector keeps the top-of-funnel role the connector ruling assigned it, and a free user meets the upgrade prompt in context rather than meeting nothing at all. Nothing real is given away, because `list_screens` on a free account returns an empty list. The job Studio sells is building the list, not reading one the user could never create.
 
-**Call 2, in Wave 2.1.** Whether two-seat Studio stays inside P-101 or splits into its own row. It is four coordinated server changes plus an unresolved Stripe product question, and it is the item most likely to be scoped as copy and discovered to be a build.
+**Ruling 2, two-seat Studio splits out of P-101 into its own row.** It is four coordinated server changes plus an unresolved Stripe product question, sitting behind a 409, with a unit test pinning the current behaviour that must be inverted rather than deleted. The rest of the re-cut is gates and copy and ships without it. Bundling would make the fast half wait on the slow half, and two seats is the weakest line in the re-cut: the pitch is that Solo answers one parcel and Studio works a list, not that Studio gets a second seat.
 
-**Call 3, in Wave 1.2.** Whether `api/pe-billing.ts` is retired or retained. The recommendation is retire, and the reason is in Wave 1.2.
+**Ruling 3, `api/pe-billing.ts` is retired.** Delete the file, the `vercel.json:42` rewrite and the `vite.config.ts:48` dev proxy, then prove retirement by decline with a CI check asserting a 404. This is Wave 1.2 and it is a hard prerequisite of the Stripe live switch, not a parallel cleanup.
 
-**Routed out rather than folded in.** Site plan CAD is sold Studio-only in `pricing.ts` and enforced in the MCP, but carries no `studioGated` flag in the PE workbench catalog, unlike terrain and records. That sold-versus-enforced divergence predates the ladder ruling and wants its own item.
+**Still routed out rather than folded in.** Site plan CAD is sold Studio-only in `pricing.ts` and enforced in the MCP, but carries no `studioGated` flag in the PE workbench catalog, unlike terrain and records. That sold-versus-enforced divergence predates the ladder ruling and wants its own item.
 
 ## What this document is not
 
