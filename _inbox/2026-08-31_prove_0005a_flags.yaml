@@ -1,0 +1,43 @@
+--project: hauska-prod-497015
+--region: us-east4
+--image: us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:4bd728c5a70a1148349fa2d5620131c004202f05ca745efa881167d74d68b65a
+--task-timeout: 120
+--max-retries: 0
+--memory: 1Gi
+--set-secrets: FACTORY_DATABASE_URL=FACTORY_DATABASE_URL:latest
+--set-env-vars: CONTRACT_VERSION=1.30.0,IMAGE_DIGEST=us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:4bd728c5a70a1148349fa2d5620131c004202f05ca745efa881167d74d68b65a,CLOUD_RUN_REGION=us-east4,FACTORY_CLOUD=1
+--command:
+  - node
+  - --input-type=module
+  - -e
+--args:
+  - |
+    import { connectFactory } from "./src/db/connect.mjs";
+    const { client } = await connectFactory(process.env);
+    const out = { refused: false, code: null, constraint: null, survived: null, rolled_back: false };
+    try {
+      await client.query("BEGIN");
+      try {
+        await client.query(
+          "INSERT INTO landing_setback_registry (city_key, county_fips, name, kind, absence_basis, probed_at) VALUES ($1, $2, $3, $4, $5, $6)",
+          ["_prove_0005a_check", "00000", "prove-0005a", "absence", "live CHECK proof; must refuse", null]
+        );
+      } catch (e) {
+        out.refused = true;
+        out.code = e.code ?? null;
+        out.constraint = e.constraint ?? null;
+        out.msg = String(e.message ?? "");
+      }
+      await client.query("ROLLBACK");
+      out.rolled_back = true;
+      const leftover = await client.query(
+        "SELECT 1 FROM landing_setback_registry WHERE city_key = $1",
+        ["_prove_0005a_check"]
+      );
+      out.survived = leftover.rowCount;
+      out.ok = out.refused === true && out.code === "23514" && /absence_probed/.test(String(out.constraint ?? out.msg)) && out.survived === 0;
+      console.log(JSON.stringify(out));
+      if (!out.ok) process.exit(2);
+    } finally {
+      await client.end();
+    }

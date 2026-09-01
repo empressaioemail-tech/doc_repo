@@ -11,6 +11,19 @@
 ## LESSON
 accessPolicy gates whole atoms, not fields. Owner on public-free cad-parcel-roll is an MCP catalog leak class; Twin stripper does not cover it.
 
+## GROUND-TRUTH (2026-09-01T00:12Z hauska_mcp)
+Per-county cad-parcel-roll owner coverage, entity_id FIPS range. Store present.
+
+| FIPS | n_roll | ownerName nonempty | mail nonempty |
+|---|---:|---:|---:|
+| 48021 | 77078 | 77078 | 77048 |
+| 48055 | 48384 | 48384 | 48170 |
+| 48209 | 265881 | 29 | 0 |
+| 48309 | 114280 | 113384 | 114254 |
+| 48453 | 492851 | 3 | 0 |
+| 48491 | 319487 | 7 | 0 |
+
+MCP catalog is serving owner on public-free roll today in 48021/48055/48309. Path open and empty in 48209/48453/48491.
+
 ## OPEN
-- Store read: COUNT per county WHERE body ? 'ownerName' on entity_type=cad-parcel-roll (PENDING-STORE-READ).
 - Brief cad:property free owner from cad_property is parallel surface — out of roll atom scope but same product policy tension.

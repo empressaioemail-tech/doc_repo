@@ -1,0 +1,56 @@
+{
+  "runAt": "2026-08-11T19:30:00.000Z",
+  "sameUniverse": false,
+  "tceqVsComptrollerEvidence": "TCEQ deployment: 2775 polygons (17 TYPE values incl MUD 1888, WCID 250, MMD 197). Comptroller latest-year: 3028 unique entities (MUD 1379, ESD 282, PID 197, 758 non-water types absent from TCEQ layer). Strict name crosswalk matched 131/3028 (4.33%); loose county+type+number ~38.8%. Comptroller-only without TCEQ polygon: ~2897 entities; TCEQ polygons without registry match: ~2646. Tax rates present on 425/3028 Comptroller entities; rateEnrichedCount 0 on Harris/Bastrop dry-runs due to name/county join friction (cnty_cd suffix mapping), not missing registry. Universes overlap but are NOT identical: Comptroller is tabular self-reported superset of types; TCEQ is statewide water-district geometry superset for spatial membership.",
+  "recommendation": "subcategorize-inside-special-district",
+  "reasoning": "R1 split rule: MUD is a TCEQ district TYPE attribute on the same polygon source as WCID/MMD/FWSD/SUD — subcategorize via special-district-fact body districtType, not a separate rail. special-district-fact is built (contract 1.19.0, engine PR #301, 2775 tx_special_district polygons loaded, county writer demonstrated on Harris/Bastrop). Retiring the rail would drop accountability for special-district apply (254 cells removed, denominator 3556→3302) without eliminating duplicate work — the duplicate was declaration-vs-reality, not two writers. Comptroller remains optional tax-rate enrichment inside the same cell; 758 non-water Comptroller entities (ESD/PID/hospital) lack TCEQ geometry and cannot justify a separate spatial rail today — phase-4 expansion within special-district-fact when boundary sources verified.",
+  "cellsResolved": 254,
+  "declarationChange": "mud rail (ordinal 14): atomFamilyState missing→present, hasWriter false→true, atomFamilyRef→special-district-fact (contract 1.19.0), declaredSource Comptroller-only→TCEQ WaterDistricts (tx_special_district) + Comptroller SPDPID optional enrich, displayName MUD/special districts→Special districts, notes document R1 subcategorize. Declaration landed on main via #408; #409 added test guards only. COUNTY_RAIL_COUNT unchanged at 14 (3556 cells).",
+  "prNumber": 409,
+  "mergeCommit": "74fea911e2f4c1efb641d1f32cc35c61164ede59",
+  "ciConclusionString": "success",
+  "liveLedgerMeasured": {
+    "measuredAt": "2026-08-11T19:28:00.000Z",
+    "endpoint": "https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+    "totalRails": 14,
+    "totalCells": 3556,
+    "totalCounties": 254,
+    "satisfiedCells": 195,
+    "texasCompletenessPct": 6.514404212880377,
+    "satisfiedPresentPartialCells": 0,
+    "mudDisplayStates": { "not-yet": 254 },
+    "mudOffNoAtom": true,
+    "mudSampleCell": {
+      "countyFips": "48001",
+      "railKey": "mud",
+      "displayState": "not-yet",
+      "atomFamilyState": "present",
+      "hasWriter": true
+    }
+  },
+  "cp1": {
+    "registeredAt": "2026-08-11T18:05:00.000Z",
+    "recommendation": "subcategorize-inside-special-district",
+    "sameUniverseHypothesis": false,
+    "expectedCellsResolved": 254,
+    "expectedDenominatorBefore": 3556,
+    "expectedDenominatorAfter": 3556,
+    "expectedDisplayStateChange": "no-atom → not-yet (254 counties)",
+    "alternateConsidered": "keep-separate-rail for Comptroller-only ESD/PID",
+    "alternateRejectedBecause": "Comptroller carries no geometry; separate rail would still be registry-only with honest absence for spatial membership — same atom family, duplicate manifest column"
+  },
+  "cp2": {
+    "verdict": "CONFIRMED",
+    "recommendationConfirmed": true,
+    "retireRailRefuted": true,
+    "evidenceSummary": "TCEQ NOT strict superset of full Comptroller universe (758 non-water Comptroller-only types), but IS the geometry source for water-district spatial membership already implemented in special-district-fact. Strict crosswalk 4.33% confirms agencies disagree on naming/universe; does not justify duplicate rail. Subcategorize-in-place fixes 254 misreported no-atom cells without denominator change.",
+    "wouldHaveRefutedIf": "Comptroller carried materially different TAX-RELEVANT districts with verified geometry that TCEQ lacks AND special-district-fact could not serve — not observed; ESD/PID have no polygon source in either loaded table"
+  },
+  "adversarialFindings": [
+    "OPPOSITE CASE (keep-separate-rail): Comptroller lists 282 ESD + 197 PID + 758 non-water entities with no TCEQ polygon; buyer disclosure for emergency-services and improvement districts is real; tax rates on 425/3028 entities are Comptroller-only value. A separate mud/Comptroller rail could carry registry-only membership with sourceTier downgrade.",
+    "REJECTED because: (1) Comptroller has zero geometry — a separate rail cannot produce point-in-polygon membership any more than the TCEQ rail; (2) R1 says split on source+geometry difference — Comptroller differs on ATTRIBUTE (rates, debt), not geometry; (3) special-district-fact already subcategorizes districtType and accepts optional Comptroller enrich; (4) duplicate rail key 'mud' vs atom family 'special-district-fact' was the actual defect — misreporting 254 no-atom cells, not missing coverage class.",
+    "RETIRE-MUD-RAIL considered: would fix duplicate naming and drop denominator to 3302. REJECTED: removes manifest column for special-district apply progress; no other rail absorbs the 254 cells; operator ledger would stop tracking special-district coverage entirely.",
+    "rateEnrichedCount:0 is a join-key defect (name normalization + cnty_cd FIPS suffix), not evidence that Comptroller and TCEQ are unrelated — follow-up lane, not P1-4 blocker.",
+    "MERGE HYGIENE (corrective 2026-08-11): branch rebased onto main 8038752d; dropped redundant railCapabilityProbeCli fix (P1-3 #408 authoritative); #409 merged as single test-only commit 77035d03 atop declaration already on main via #408."
+  ]
+}

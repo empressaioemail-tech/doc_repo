@@ -35,3 +35,7 @@ LESSON — C3's reason string is "internal consistency". Two fields from one fac
 DEAD-END — Do not exempt landUse, compare only populated pairs, or downgrade S3 to a warning. Those convert C3 into a specification.
 
 OPEN 2026-08-31T15:45Z — Wave R bake is the C3 clearing point (P7). C4 poison exists; fix is F-06. Do not merge #44 until operator says so. No production scrub.
+
+GROUND-TRUTH 2026-08-31T16:55Z — C3 falsifier CONFIRMED. Payload both leaves `ZZ-NOT-A-CAD-CODE` → C3 PASS. A1 vs PDD both present also PASS. C3 does not consult anything outside the facets payload. Card was right.
+
+LESSON — a green C3 after Wave R is "the payload is self-consistent," never "landUse is correct." Label shipped on `seat/property-ctx-c3-presence`. Second derivation is its own card. Do not start P-85 until this reports (this is the report).

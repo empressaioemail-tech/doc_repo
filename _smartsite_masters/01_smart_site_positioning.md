@@ -2,7 +2,7 @@
 id: smartsite_masters_01_positioning
 title: Smart Site positioning framework
 status: active
-last_updated: 2026-08-04
+last_updated: 2026-08-27
 applies_to: smart_site
 owner: nick
 purpose: The positioning framework for Smart Site. The one-liner, the spine, the two-altitude rule, the X-ray, the audience lines, the approved claims, and the never-say list. Collateral and conversations draw from this; options get generated against it, not invented beside it.
@@ -103,5 +103,6 @@ A smart city is a bunch of smart sites. Smart Site is both the unit and the prod
 ## Naming rulings (ratified 2026-07-31)
 
 - The unit is a **smart site**: any addressable place, fully assembled. Ratified over the internal working term it replaced.
-- The report is the **Smart Site X-ray**, not a dossier or property brief.
+- The deep-read report is the **Smart Site X-ray**, not a dossier or property brief.
+- Locked report menu (2026-08-27): X-ray, Flood and Drainage, Feasibility, Comparison. Comparison is also a tool. Brief is a tool. Records is a tool. Site plan and terrain are exports. Feasibility and Comparison generate are not live.
 - The product formerly named Property Explorer is **Smart Site**. The old name survives only in historical records and internal infrastructure, never in market-facing material.

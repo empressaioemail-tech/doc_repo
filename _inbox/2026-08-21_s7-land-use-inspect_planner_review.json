@@ -1,0 +1,59 @@
+{
+  "lane": "s7-land-use-inspect",
+  "artifact": "planner-review",
+  "date": "2026-08-21",
+  "verdict": "ACCEPT-CODE after planner LIKE-escape pickup",
+  "live": "not met on cortex-api (undeployed)",
+  "reviewer": "integration planner",
+  "agent": "3b3b4311-d752-41e5-b9ab-f15e2cb28b73",
+  "wdllItems": ["5", "6"],
+  "snapshot": {
+    "ldtWorktree": "P:/legacy-design-tools-worktrees/s7-land-use-inspect",
+    "ldtBranch": "s7-land-use-inspect",
+    "ldtHeadBeforePlannerFix": "a028ed3777c9aa783e118a4cbfa67c53bd37738c",
+    "localVitest": "54 passed, 11 skipped after LIKE-escape pickup (was 51/11 as closed)"
+  },
+  "preRegisteredFalsifiers": [
+    {
+      "claim": "landUseFact is not cad-roll code/description",
+      "wrongIf": "interpret serves present from body.code A1, or route assigns landUseFact from baseFacts.landUse",
+      "observed": "cad-roll-only body is malformed-atom; route boot-proof forbids landUseFact = baseFacts.landUse; divergence GET fixture C1 vs bake A1"
+    },
+    {
+      "claim": "bind is prefix+taxYear not flood ANY parcel keys",
+      "wrongIf": "SELECT uses entity_id = ANY(parcel keys) or interpret serves 48021:34137 without :year",
+      "observed": "SELECT FROM atoms LIKE escaped-prefix:% ; flood-style entity_id is atom-miss"
+    },
+    {
+      "claim": "miss is a named refusal",
+      "wrongIf": "landUseFact null or omitted",
+      "observed": "atom-miss / bind-conflict / atoms-store-not-configured / malformed-atom with tried prefixes"
+    }
+  ],
+  "plannerPickup": {
+    "defect": "LIKE $2 || ':%' with raw prefix. PARCEL_NODE_ID_RE allows underscore. Unescaped _ is any-char in LIKE, so 48021:341_7 could bind 48021:34117:2025.",
+    "fix": "landUseFactLikePrefixPattern + LIKE $2 ESCAPE '\\'. tried stays raw prefixes. Test: underscore request is atom-miss against 48021:34117:2025.",
+    "secondMechanismRejected": "Gold and Lockhart are numeric so unescaped LIKE would not fire on this wave. Rejected because over-broad bind is the defect even when today's gold ids have no underscore."
+  },
+  "secondMechanism": {
+    "claim": "SmartSite inspect will show land-use-fact after this cortex deploy",
+    "rejectedBecause": "live PE still copies baked cad-roll into baseFacts.landUse and has no landUseFact field. s8 PE surface is the customer path. Cortex GET is the s7 leave_behind."
+  },
+  "pr": {
+    "number": 450,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/450",
+    "commit": "a1e23cfd",
+    "branch": "s7-land-use-inspect"
+  },
+    {
+      "item": "PR + CI Test (11 GET cases skipped locally) + merge + deploy-canary image_tag=merge-sha never latest + shift 100% + live GET landUseFact.state=present source=land-use-fact on 48021:34137. Confirm ATOMS_DATABASE_URL still mounted (already on 00529-peg).",
+      "owner": "planner",
+      "plan_row": "P-08"
+    },
+    {
+      "item": "s8 PE copies landUseFact onto inspect Land use row",
+      "owner": "planner after s8 close",
+      "plan_row": "P-08"
+    }
+  ]
+}

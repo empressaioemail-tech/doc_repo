@@ -1,0 +1,117 @@
+{
+  "lane": "s3-heartbeat",
+  "planRows": ["P-14"],
+  "seat": "lane executor; occupancy gcloud read + doc_repo spec only",
+  "status": "CLOSED",
+  "closedAt": "2026-08-21T18:30:00Z",
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "dispatch": "_dispatches/2026-08-21_s3-heartbeat_dispatch.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md items 1 and 2",
+  "missionPremise": "L18 closed GET /api/county-ledger on a snapshot, and left scorer auto-invoke open, so Command Center honestly shows STALE after LEDGER_STALE_AFTER_MS (15 min) until the next --apply or POST recompute. Sellable WDLL items 1-2 require a live CC-vs-GET stamp match plus a scheduled heartbeat executor. This lane inventories and files the job spec; it does not create the job. Sources: _inbox/2026-08-14_l18_close.json remainsOpen; _inbox/2026-08-21_sellable_WDLL.md items 1-2; hauska-map 9477a8f LEDGER_STALE_AFTER_MS.",
+  "completionPredicate": "CLOSE quotes GET summary.computedAt, servedAt, materializationAgeMs by field name; quotes what CC county-manifest actually rendered (computedAt testid and STALE banner or missing); scheduler inventory covers us-central1 plus every listed location; job spec exists at _inbox/2026-08-21_s3-heartbeat_job_spec.json; job was not created.",
+  "scopeBasis": "Inventory and spec only. Creating Cloud Scheduler is planner-owned. POST recompute, atoms --apply, deploys, and git writes were forbidden. probe=skip is named as a bypass, not something this lane executes.",
+  "checkpoints": {
+    "CP1": "_inbox/2026-08-21_s3-heartbeat_cp1.json",
+    "CP2": "_inbox/2026-08-21_s3-heartbeat_cp2.json"
+  },
+  "jobSpecPath": "_inbox/2026-08-21_s3-heartbeat_job_spec.json",
+  "serving": {
+    "service": "cortex-api",
+    "revisionName": "cortex-api-00527-yic",
+    "percent": 100,
+    "imageDigest": "us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api@sha256:83fd0dc6aafab0df625ab3ad267b49779decfc43b4bdc172f2d150f1001cb781",
+    "countingRule": "gcloud run services describe --format=json; traffic percent read from status.traffic[].percent by field name; image from revision status.imageDigest, not the template tag"
+  },
+  "ccVsGet": {
+    "countingRule": "direct GET /api/county-ledger JSON summary fields by name; CC same-origin proxy JSON summary fields by name; CC page data-testid manifest-computed-at and manifest-stale-banner via browser CDP. Stamps match if computedAt strings are identical.",
+    "get": {
+      "url": "https://cortex-api-tds7av26va-uc.a.run.app/api/county-ledger",
+      "probedAt": "2026-08-21T18:24:23.801Z",
+      "http": 200,
+      "elapsedMs": 705,
+      "computedAt": "2026-08-21T18:05:57.209Z",
+      "servedAt": "2026-08-21T18:24:23.491Z",
+      "materializationAgeMs": 1106282
+    },
+    "ccProxy": {
+      "url": "https://cmdcenter-blush.vercel.app/api/spine/cortex/api/county-ledger",
+      "probedAt": "2026-08-21T18:26:01.503Z",
+      "http": 200,
+      "computedAt": "2026-08-21T18:05:57.209Z",
+      "servedAt": "2026-08-21T18:26:01.010Z",
+      "materializationAgeMs": 1203801
+    },
+    "ccPage": {
+      "url": "https://cmdcenter-blush.vercel.app/#panel=county-manifest",
+      "computedAt": "2026-08-21T18:05:57.209Z",
+      "staleBanner": "STALE — materialized at 2026-08-21T18:05:57.209Z (showing snapshot, not a live recompute).",
+      "pill": "manifest stale"
+    },
+    "stampsMatch": true,
+    "panelState": "STALE",
+    "getState": "stale (materializationAgeMs 1106282 > LEDGER_STALE_AFTER_MS 900000)",
+    "wdll1": "met for this probe — same computedAt on GET, CC proxy, and CC DOM; panel STALE while GET is also stale, not a frozen-bundle mismatch"
+  },
+  "schedulerInventory": {
+    "project": "legacy-design-tools-prod",
+    "locationsListed": 30,
+    "totalJobs": 0,
+    "usCentral1JobCount": 0,
+    "ledgerRelatedJobCount": 0,
+    "locationsWithJobs": [],
+    "countingRule": "gcloud scheduler locations list --format=json (30 locationId values), then gcloud scheduler jobs list --location=<id> --format=json for each. Node JSON.parse of each captured file after stripping UTF-8 BOM: 30/30 arrays length 0. Direct us-central1 list printed [].",
+    "ldtRepo": {
+      "githubWorkflowSchedule": 0,
+      "terraformOrYamlScheduler": 0,
+      "countyLedgerTimer": false,
+      "writePaths": [
+        "POST /api/county-ledger/recompute",
+        "countyLedgerMaterializeCli --apply"
+      ]
+    }
+  },
+  "wdllGrades": {
+    "1": "met — GET computedAt=2026-08-21T18:05:57.209Z servedAt=2026-08-21T18:24:23.491Z materializationAgeMs=1106282; CC DOM manifest-computed-at and STALE banner carry the same computedAt",
+    "2": "not met (executor absent) — 0 Cloud Scheduler jobs in 30 listed locations; no GitHub cron; no in-process county-ledger timer. Spec filed. Creating the job is leave_behind for the planner. The WDLL item 2 beat-skip / new-computedAt-without-session probe is not this lane."
+  },
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no gcloud scheduler create/update/run",
+    "no POST recompute",
+    "no atoms --apply",
+    "SERVICE_API_KEY never printed",
+    "JSON by field name",
+    "node --use-system-ca for live HTTPS"
+  ],
+  "predictionScores": {
+    "P1": "PASS",
+    "P2": "PASS_ON_AGE_FAIL_ON_MECHANISM — age>15min true; computedAt is 2026-08-21T18:05:57.209Z not L18 2026-08-14; accepted mechanism is a recent manual rematerialize with no scheduler",
+    "P3": "PASS",
+    "P4": "PASS",
+    "P5": "PASS",
+    "P6": "PASS"
+  },
+  "leave_behind": {
+    "item": "Cloud Scheduler job county-ledger-heartbeat per _inbox/2026-08-21_s3-heartbeat_job_spec.json",
+    "owner": "planner",
+    "plan_row": "P-14",
+    "why": "Dispatch forbade gcloud scheduler create. WDLL item 2 is unmet until a schedule, not a planner POST, refreshes computedAt."
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-08-21_s3-heartbeat_cp1.json",
+    "_inbox/2026-08-21_s3-heartbeat_cp2.json",
+    "_inbox/2026-08-21_s3-heartbeat_job_spec.json",
+    "_inbox/2026-08-21_s3-heartbeat_close.json"
+  ],
+  "whatRemainsOpen": [
+    "Planner creates the job. Do not use OIDC. Authorization Bearer from secret SERVICE_API_KEY. URI POST .../recompute?probe=skip with body {}.",
+    "WDLL item 2 post-create probe: skip one beat on purpose or prove a new computedAt without a planner session."
+  ]
+}

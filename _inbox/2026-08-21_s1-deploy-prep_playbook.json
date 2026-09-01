@@ -1,0 +1,156 @@
+{
+  "lane": "s1-deploy-prep",
+  "artifact": "playbook",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T19:08:00Z",
+  "planRows": ["P-08"],
+  "wdllItem": 3,
+  "execute": false,
+  "reasonNotExecuted": "dispatch: Do not execute any of those commands. Bypass of this lane is the planner running them.",
+  "repo": "empressaioemail-tech/legacy-design-tools",
+  "workflowName": "Cloud Run Deploy (cortex-api)",
+  "workflowFile": ".github/workflows/cloud-run-deploy.yml",
+  "service": "cortex-api",
+  "project": "legacy-design-tools-prod",
+  "region": "us-central1",
+  "productionUrl": "https://cortex-api-tds7av26va-uc.a.run.app",
+  "canaryUrl": "https://canary---cortex-api-tds7av26va-uc.a.run.app",
+
+  "ciGateAlreadyMet": {
+    "instrument": "GitHub check-runs API conclusion field, not gh pr checks wording",
+    "sha": "6074940dc18cd241b7cde54fda7fdde2fc8fd64c",
+    "doNotPin": "682d56f1",
+    "Typecheck": "success",
+    "Test": "success",
+    "workflowRun": 32515870355,
+    "mergeLaw": "conclusion string success on both jobs. This playbook does not merge."
+  },
+
+  "imageTagRule": {
+    "never": "latest",
+    "whyNeverLatest": "workflow inputs.image_tag default is latest. deploy-canary does not build. R-09: workflow_dispatch 32482494494 with default latest froze digest seven seconds before Build & push of 4a52dee1 finished; canary ran 1a55566b.",
+    "ciPassingPrHead": "6074940dc18cd241b7cde54fda7fdde2fc8fd64c",
+    "deployTagIsMainPushGithubSha": "build-and-push runs only on push to main and tags github.sha. After merge, wait for job name Build & push image conclusion string success on the landed SHA, then pass that full sha as image_tag. If squash or merge-commit, that sha is not 6074940.",
+    "openPrMergeCommitShaIsNotAnImage": "13c745b1329bbeba0296b397b9176b0ba29d9889 is the open-PR test-merge ref. Do not deploy it.",
+    "yamlRefMustCarryAtomsSecret": "ATOMS_DATABASE_URL is on the PR-branch --set-secrets line. Dispatch --ref main only AFTER that yaml is on main, otherwise the new revision will not mount the secret."
+  },
+
+  "servingTodayDoNotShiftYet": {
+    "revisionName": "cortex-api-00527-yic",
+    "percent": 100,
+    "imageDigest": "us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api@sha256:83fd0dc6aafab0df625ab3ad267b49779decfc43b4bdc172f2d150f1001cb781",
+    "canaryTagCurrentlyOn": "cortex-api-00527-yic",
+    "atomsDatabaseUrlOnRevision": false,
+    "secretExists": true,
+    "secretName": "projects/1062716564162/secrets/ATOMS_DATABASE_URL",
+    "secretCreateTime": "2026-08-21T18:43:41.769859Z",
+    "readRule": "gcloud --format=json; traffic percent by field name; digest from the revision, not the template tag"
+  },
+
+  "steps": [
+    {
+      "id": 0,
+      "name": "merge PR 449",
+      "execute": false,
+      "owner": "planner",
+      "gate": "Typecheck conclusion success AND Test conclusion success on 6074940dc18cd241b7cde54fda7fdde2fc8fd64c already filed. Do not merge on gh pr checks pass.",
+      "after": "read merged=true then the landed merge SHA from the PR JSON by field name. That SHA (or the squash SHA) is the candidate image_tag, not the open-PR test-merge ref."
+    },
+    {
+      "id": 1,
+      "name": "wait Build & push image on the main-push SHA",
+      "execute": false,
+      "why": "push to main is the only path that tags an image. deploy-canary does not build.",
+      "verify": "check-run or workflow job named Build & push image conclusion string success on the landed SHA. Confirm the Artifact Registry tag equals that full sha."
+    },
+    {
+      "id": 2,
+      "name": "deploy-canary",
+      "execute": false,
+      "exactCommand": "gh workflow run \"Cloud Run Deploy (cortex-api)\" --repo empressaioemail-tech/legacy-design-tools --ref main -f action=deploy-canary -f image_tag=<FULL_MAIN_PUSH_SHA>",
+      "exampleIfFastForwardKeepsPrHead": "gh workflow run \"Cloud Run Deploy (cortex-api)\" --repo empressaioemail-tech/legacy-design-tools --ref main -f action=deploy-canary -f image_tag=6074940dc18cd241b7cde54fda7fdde2fc8fd64c",
+      "requiredFlags": ["--ref main after the ATOMS_DATABASE_URL yaml is on main", "-f action=deploy-canary", "-f image_tag=<full sha never latest never omitted>"],
+      "poll": "gh run list --repo empressaioemail-tech/legacy-design-tools --workflow \"Cloud Run Deploy (cortex-api)\" --json databaseId,event,headSha,status,conclusion,displayTitle,url then the run's jobs conclusion strings. MERGE-law equivalent: job Deploy 0% canary conclusion success.",
+      "expectedAfter": {
+        "newRevisionAtZeroPercent": true,
+        "canaryTagMovesOff00527": true,
+        "serving00527Stays100UntilStep4": true,
+        "newRevisionMustMount": "ATOMS_DATABASE_URL secretKeyRef.name === ATOMS_DATABASE_URL",
+        "digestReadFrom": "gcloud run revisions describe <new> --format=json status.imageDigest, not latestReadyRevisionName and not the tag"
+      }
+    },
+    {
+      "id": 3,
+      "name": "smoke canary /api/healthz",
+      "execute": false,
+      "exactCommand": "curl -sS -o NUL -w \"%{http_code}\" https://canary---cortex-api-tds7av26va-uc.a.run.app/api/healthz",
+      "expectHttp": 200,
+      "doNotSmokeDefaultUrlYet": "deploy-canary uses --no-traffic because the service exists. Default URL stays 00527-yic until shift-traffic. Today the canary tag is still on 00527-yic; after step 2 it must point at the new revision before this smoke is evidence of the new image.",
+      "confirmCanaryRevisionFirst": "gcloud run services describe cortex-api --project=legacy-design-tools-prod --region=us-central1 --format=json; find status.traffic[] where tag==canary; read revisionName by field name; describe that revision's imageDigest"
+    },
+    {
+      "id": 4,
+      "name": "shift-traffic 100%",
+      "execute": false,
+      "exactCommand": "gh workflow run \"Cloud Run Deploy (cortex-api)\" --repo empressaioemail-tech/legacy-design-tools --ref main -f action=shift-traffic",
+      "note": "no image_tag on this action. Workflow runs gcloud run services update-traffic --to-tags=canary=100 then smokes production /api/healthz.",
+      "verify": "status.traffic[] percent 100 on the NEW revision by field name, not latestReadyRevisionName. Digest on that revision matches the sha-tagged image, not sha256:83fd0dc6."
+    },
+    {
+      "id": 5,
+      "name": "live GET gold facets",
+      "execute": false,
+      "method": "GET",
+      "url": "https://cortex-api-tds7av26va-uc.a.run.app/api/brokerage/v1/place/node/48021%3A34137/facets",
+      "parse": "JSON by field name, never positional",
+      "expect": {
+        "floodHazardFact.state": "present",
+        "floodHazardFact.floodZone": "X",
+        "tier2.flood": null
+      },
+      "failClosedIf": [
+        "HTTP not 200",
+        "floodHazardFact missing",
+        "floodHazardFact.code === atoms-store-not-configured (secret not on the revision or yaml --ref too early)",
+        "floodHazardFact.state !== present",
+        "floodZone !== X at the named field",
+        "tier2.flood is not JSON null"
+      ],
+      "notThisProbe": "https://smartsite.cloud inspect. Planner-review already showed atom-chain-warm drops floodHazardFact. This playbook grades cortex-api."
+    }
+  ],
+
+  "rollbackIfNeeded": {
+    "exactCommand": "gh workflow run \"Cloud Run Deploy (cortex-api)\" --repo empressaioemail-tech/legacy-design-tools --ref main -f action=rollback -f rollback_revision=cortex-api-00527-yic",
+    "when": "canary healthz not 200, new revision missing ATOMS_DATABASE_URL, or live GET fails closed"
+  },
+
+  "atomsDatabaseUrl": {
+    "requiredOnNewRevision": true,
+    "secretAlreadyCreated": true,
+    "project": "legacy-design-tools-prod",
+    "prYamlAddsToSetSecrets": "ATOMS_DATABASE_URL=ATOMS_DATABASE_URL:latest",
+    "yamlEvidence": "s1-flood-inspect .github/workflows/cloud-run-deploy.yml deploy-canary gcloud run deploy --set-secrets line includes that pair after PLAN_REVIEW_API_KEY",
+    "withoutIt": "GET returns floodHazardFact.code=atoms-store-not-configured even if the inspect code is serving",
+    "servingToday": "00527-yic env secretKeyRef names do not include ATOMS_DATABASE_URL"
+  },
+
+  "whatBypassesThisPlaybook": [
+    "planner skipping canary and shifting traffic anyway (today tag=canary is 00527-yic, so shift-traffic without a new canary is a no-op that looks like success)",
+    "omitting -f image_tag, which defaults to latest",
+    "passing image_tag=latest",
+    "gh workflow run --ref before ATOMS_DATABASE_URL is on that ref's yaml",
+    "gcloud run deploy / services update / update-traffic / replace-traffic outside the workflow",
+    "pinning 682d56f1",
+    "using the open-PR merge_commit_sha 13c745b as image_tag",
+    "merging on gh pr checks printing pass without conclusion string success",
+    "smoking the default URL after deploy-canary and treating 00527-yic healthz as the new image"
+  ],
+
+  "threeQuestionGate": {
+    "whatExecutesIt": "GitHub Actions jobs deploy-canary and shift-traffic, gated on workflow_dispatch && inputs.action. Planner types the gh workflow run commands.",
+    "whatTriggersIt": "deliberate workflow_dispatch after merge and after Build & push conclusion success",
+    "whatFailsWhenViolated": "live GET missing present/X or atoms-store-not-configured; or serving digest still sha256:83fd0dc6. Those fail only after the planner runs the commands. This file does not arm them.",
+    "whatBypassesIt": "see whatBypassesThisPlaybook"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "runAt": "2026-08-11T18:21:00Z",
+  "verifyBefore": "apply loop called verifyStoredSpecialDistrictFactAtom(atom, ...) on the in-memory object immediately after writePropertyAtomsBatch; summary.verifyFailures was a numeric counter (+= 1) structurally incapable of detecting a failed write because no SELECT ever ran",
+  "verifyAfter": "after each batch write, SELECT body FROM atoms WHERE atom_did IN (did:hauska:special-district-fact:${a.entityId}) using a.entityId as persisted; map stored rows by body.atomDid; verifyStoredSpecialDistrictFactAtom(back, ...) on stored bytes; push to verifyFailures[] and throw if any failures",
+  "file": "packages/engine-core/scripts/write-special-district-fact-county.mjs:299-345",
+  "atomDidInPresent": true,
+  "siblingTemplateUsed": "write-owner-fact-county.mjs:374-418 (PK atom_did IN + storedByDid map + fail-closed throw)",
+  "dryRunCounty": "48021",
+  "dryRunResult": {
+    "event": "special-district-fact-county.dry-run-prediction",
+    "county": "48021",
+    "apply": false,
+    "atomsBuilt": 75,
+    "atomsWritten": 0,
+    "verified": 0,
+    "verifyFailures": [],
+    "limit": 100,
+    "elapsedMs": 1338,
+    "plan": {
+      "wouldWriteTotal": 75,
+      "wouldWritePresentMemberships": 2,
+      "wouldWriteAbsentOutside": 73
+    },
+    "note": "BINARY PIP ONLY — no proximity semantics; --apply not run (slot held)"
+  },
+  "prNumber": 306,
+  "ciConclusionString": "typecheck + test: success (run 31521893121, 2m52s)",
+  "merged": true,
+  "mergeCommit": "9fb41c72139239328357bdbfa2f84dd997b51de1",
+  "originMainBefore": "34c94ff",
+  "originMainAtMerge": "9fb41c7",
+  "cp1": {
+    "registeredAt": "2026-08-11T18:05:00Z",
+    "expectedDiffShape": [
+      "summary: verifyFailures number -> array; add verified: 0",
+      "apply loop: after writePropertyAtomsBatch, const dids = slice.map(a => did:hauska:special-district-fact:${a.entityId})",
+      "SELECT body FROM atoms WHERE atom_did IN ${handle.sql(dids)}",
+      "storedByDid map keyed by body.atomDid; verify on back not atom",
+      "throw Error if verifyFailures.length > 0",
+      "cp2-refute.test.ts: add special-district-fact present + absence PK derivation cases"
+    ],
+    "expectedGrepAfter": {
+      "write-special-district-fact-county.mjs atom_did IN": 1,
+      "write-special-district-fact-county.mjs body->>'atomDid' IN": 0,
+      "scripts/ atom_did IN total files": 9
+    },
+    "grepBefore": {
+      "write-special-district-fact-county.mjs atom_did IN": 0,
+      "write-special-district-fact-county.mjs body->>'atomDid' IN": 0
+    }
+  },
+  "cp2": {
+    "measuredAt": "2026-08-11T18:21:00Z",
+    "grepAfter": {
+      "write-special-district-fact-county.mjs atom_did IN": 1,
+      "write-special-district-fact-county.mjs body->>'atomDid' IN": 0,
+      "scripts/ atom_did IN total files": 9
+    },
+    "grepReconciled": true,
+    "typecheck": "pnpm -w typecheck exit 0",
+    "testFileCount": {
+      "file": "packages/atoms/src/__tests__/cp2-refute.test.ts",
+      "filesRun": 1,
+      "testsPassed": 23,
+      "testsFailed": 0
+    },
+    "commitScopeVerified": [
+      "packages/engine-core/scripts/write-special-district-fact-county.mjs",
+      "packages/atoms/src/__tests__/cp2-refute.test.ts"
+    ],
+    "rebaseOnP01Merge": "origin/main moved 34c94ff -> 8ed9cac (PR #305 parcel-node PK fix); branch already stacked on 8ed9cac before push; rebase was no-op",
+    "readbackFailProof": {
+      "mechanism": "When SELECT by atom_did returns zero rows, storedByDid.get(atom.atomDid) is undefined; code pushes { problem: 'atom not readable back...' } and throws after the batch loop",
+      "unitTest": "cp2-refute.test.ts describe 'CP2: special-district readback verify can FAIL' — empty storedByDid after PK lookup yields failures.length === 1",
+      "priorBriefBugRefuted": "reconstructing did from parcelNodeId alone (did:hauska:special-district-fact:48021:27303) !== writerDerivedDid which requires entityId 48021:27303:sd:mud-test-001 — would match zero rows"
+    },
+    "dryRunDoesNotExerciseApplyPath": true,
+    "applyPathReachability": "proven by code inspection at :299-345 on origin/main plus unit-test simulation of missing readback; not by dry-run verifyFailures count"
+  },
+  "adversarialFindings": [
+    "Executor PR was correct on base (origin/main not sweep/fast-write) and commit scope (two files only) — confirmed via git show --stat HEAD before and after planner pass",
+    "Executor omitted the PK-vs-jsonb comment block from the sibling template — planner added at :299-305 in follow-up commit 1998e64",
+    "Executor omitted adversarial fail-reachability tests — planner added cp2-refute describe block proving empty storedByDid triggers non-zero verifyFailures (dry-run cannot prove this; apply path is slot-forbidden)",
+    "Failure message string still says 'via body->>'atomDid'' but lookup is by atom_did PK — inherited verbatim from owner-fact/well-fact siblings; cosmetic only",
+    "P0.1 (PR #305) merged concurrently; shared clone hazard did not contaminate this branch — no write-parcel-node-county.mjs in our commits",
+    "Residual end-to-end risk unchanged from Group A: zero special-district-fact rows in store today; first --apply must be watched for verifyFailures — mechanism + cp2-refute PK derivation + fail-closed throw are the guards shipped"
+  ]
+}

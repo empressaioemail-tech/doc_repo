@@ -2,11 +2,7 @@
 decision_id: 2026-08-17_g11_city_pack_tenancy
 date: 2026-08-17
 owner: nick
-status: provisional
-verification_pending:
-  [
-    "Operator approves `_inbox/2026-08-17_g11_tenancy_WDLL.md` before this record is treated as the G-11 build contract.",
-  ]
+status: active
 related_canonical:
   [
     _inbox/2026-08-17_g11_tenancy_WDLL,
@@ -25,13 +21,13 @@ related_canonical:
 
 # Decision
 
-After G-63 close, Lane B next card is OPS-17 **G-11** as city-pack tenancy on Dashboards and the existing Hauska MCP server, not live vendor ingest and not the rest of sprint-54. A city pack is the tenant. Isolation is accessPolicy plus tenant scope, not git. Do not start implementation until the G-11 WDLL is operator-approved.
+After G-63 close, Lane B next card is OPS-17 **G-11** as city-pack tenancy on Dashboards and the existing Hauska MCP server, not live vendor ingest and not the rest of sprint-54. A city pack is the tenant. Isolation is accessPolicy plus tenant scope, not git. Operator approved the G-11 WDLL 2026-08-17. Implementation may start.
 
 ## Context
 
 G-63 closed 2026-08-17. Housing already said cities are tenant packs in one repo. G-62 already said `DASHBOARDS_API_KEY` is not a paid subject and that identified-caller compose waits until G-11 names a real caller identity retrieval can entitle. ADR-005 Layer A already binds `jurisdiction_tenant` on the Hauska product key (MCP #29, 2026-06-09). Sprint-54 still has unbuilt T2 (tenant-private write) and T3 (real second tenant plus ADR-005 Layer B load test). Cortex still runs an anonymous default tenant. Live Bastrop is still `tenant_id=2` on `smartcity-os`.
 
-Operator 2026-08-17: draft the G-11 WDLL after G-63 close.
+Operator 2026-08-17: draft the G-11 WDLL after G-63 close. Operator 2026-08-17 later: wdll approved. Verification of that approval cleared; this record is active.
 
 Alternatives considered: treat G-11 as all of sprint-54 (too wide; G-62 already refused that). Connect live MyGov under a Bastrop key (needs cutover and credentials; copies the weld). Close S-1 because MCP already withholds some tenant-private seeds (does not make a city pack a tenant). Invent Clerk on this card (claim flow, not Dashboards).
 

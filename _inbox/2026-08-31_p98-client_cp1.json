@@ -1,0 +1,102 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p98-client",
+  "planRow": "P-98",
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "repo": "hauska-map",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+    "branch": "feat/p98-next-action-rail",
+    "commit": "0fb9734ce455d391c8ec0e931879c9e110f20488",
+    "treeAtStart": "clean",
+    "seat": "property",
+    "seatRegisterEntry": "hauska-map-nextaction"
+  },
+  "dispatchVsDecision": "NO CONFLICT. _dispatches/2026-08-31_p98-client_dispatch.md and _decisions/2026-08-31_next_action_rail_activation_engine.md agree on all four rulings, the ladder, and the null-reachability acceptance test.",
+  "dependencySatisfied": {
+    "claim": "the decision doc sequences P-98 AFTER fix/pe-settings-line-weight because both edit SettingsModal.tsx",
+    "evidence": "git log shows cd64005 (Merge pull request #326 from empressaioemail-tech/fix/pe-settings-line-weight) is an ancestor of this branch base 0fb9734"
+  },
+  "baseline": {
+    "tsc": "exit 0",
+    "vitest": "159 files, 2111 passed, 1 todo (2112)",
+    "chromeKitGate": "exit 0, SELF-TEST 76/76, 20 surfaces + 12 kit files"
+  },
+  "designDecisions": [
+    {
+      "id": "D1-pure-ladder",
+      "what": "src/lib/nextAction.ts holds nextAction(context, state) returning NextAction or null. No React, no fetch, no DOM. Every rung test lives beside it.",
+      "why": "dispatch requirement; also the only way the null-reachability acceptance test can be a real check rather than a render assertion."
+    },
+    {
+      "id": "D2-unread-is-a-kind-not-a-boolean",
+      "what": "Every ladder input that can be unread is a discriminated union (read | unread), never a boolean with a default. Unlocks additionally carry not-built (404) and blocked (403) as separate kinds.",
+      "why": "ENFORCEMENT: absent, zero and unmeasured are three different states, and where a type can express the constraint prefer the type over a check. A 404 collapsing into nothing-to-do is the exact defect the dispatch names."
+    },
+    {
+      "id": "D3-rail-refuses-on-unread-where-the-card-fails-toward-setup",
+      "what": "aiConnectionClient doctrine is EVERY UNKNOWN RESOLVES TOWARD SETUP (the ClaudeSync card shows setup on 403/404/500). The RAIL does the opposite: an unread connection proposes NOTHING.",
+      "why": "the two surfaces have different jobs. The card discloses; showing setup costs nothing. The rail proposes a state-derived step, and the decision doc rules that an action shown on guessed state is the same defect class as an unearned confidence number. Divergence is deliberate and commented at the call site."
+    },
+    {
+      "id": "D4-line-token-counts-must-not-move",
+      "what": "src/browse/settings-line-weight.test.ts pins PE.line14 == 7, PE.line06 == 7, PE.line28 == 1 in SettingsModal.tsx. The rail edit keeps the rail borderLeft line06 and the footer borderTop line06 and adds no line token.",
+      "why": "a sibling lane merged control. Moving those counts would break another seat finding, not do this card."
+    },
+    {
+      "id": "D5-honesty-note-stays-in-settings-not-in-the-component",
+      "what": "The one-line honesty note lives in SettingsModal.tsx below the mounted card, not inside NextActionCard.",
+      "why": "the note is about Settings own Not read / Not built rows. Putting it in the component would make the component assume Settings, which the dispatch forbids. It also preserves the footer line06."
+    },
+    {
+      "id": "D6-annual-rung-ships-starved-and-declared",
+      "what": "The annual rung requires billingInterval === monthly. NOTHING in this client reads a billing interval today (the Plan tab renders Billing interval: Not read), so the mount passes null and the rung cannot fire.",
+      "why": "the alternative is to infer the interval, which is the guessed-state defect. Declared degradation is permitted; silent is not. Reported per-rung in the close as STARVED with the named missing input."
+    },
+    {
+      "id": "D7-no-account-entitlement-read-is-built",
+      "what": "Rejected: adding fetchAccountEntitlement() to entitlementClient.ts.",
+      "why": "measured, not assumed. It would populate tier and subscriptionTier but NOT freeMessagesLeft (per-property, inside the response property block) and NOT billingInterval (not on the wire) and NOT seats (roster route is 404). Zero additional rungs would fire while a read path is added. Scope creep with no payoff."
+    }
+  ],
+  "ladderShape": {
+    "account": ["connect-claude"],
+    "connections": ["connect-claude"],
+    "plan": ["extend-expiring-unlock", "unlock-property", "switch-to-annual"],
+    "team": ["invite-teammate"],
+    "ordering": "first match within the context wins; single return, so ONE action per context is true by construction",
+    "globalPrecondition": "not authenticated returns null on every context"
+  },
+  "violationTestsPlanned": [
+    "null case: a quiet account returns null on all four contexts; violation direction flips one field and the SAME state yields an action, proving the null was not vacuous",
+    "one-action rule: expiring unlock plus paid-monthly-solo returns ONLY the unlock; violation direction removes the unlock read and the same state yields the annual action, proving both rungs were genuinely satisfied and ordering chose",
+    "team guard: solo tier with unused seats returns null; violation direction flips tier to team with the SAME seats and yields invite, proving the tier guard refused rather than the seat arithmetic"
+  ],
+  "adversarialReviewOfOwnPlan": [
+    {
+      "risk": "The ladder could be written so that null is unreachable in practice (an ad slot).",
+      "check": "the acceptance test is written first and is a real state, not a contrived one: signed in, Claude connected, paid annual Studio, no expiring unlock, returns null on all four contexts."
+    },
+    {
+      "risk": "Verified by violation degenerates into asserting the negative of the positive.",
+      "check": "each violation test mutates exactly ONE field of the SAME state object, so the assertion is about which predicate was load-bearing, not about two unrelated fixtures."
+    },
+    {
+      "risk": "not-built and ready-with-zero-unlocks produce the same OUTPUT today, so a test cannot separate them by output.",
+      "check": "acknowledged as a real limit and reported. The separation that IS testable: ready-with-an-expiring-unlock yields the action while not-built and blocked do not, which proves the kind is read. The type forces every caller to distinguish."
+    },
+    {
+      "risk": "SettingsModal is server-rendered in settings-modal.test.tsx via renderToStaticMarkup; new effects and fetches could break 159 files.",
+      "check": "effects do not run under renderToStaticMarkup, so the rail renders empty in those tests. Full suite is run before and after and counts reported."
+    }
+  ],
+  "constraintsAccepted": [
+    "no commit, no push, no merge, no deploy",
+    "no change to the four tab bodies",
+    "chrome-kit gate exit 0; new files carry ZERO colour literals and ZERO native button elements (the ratchet walks the tree and a file with no baseline entry is allowed none)",
+    "no sub-agents (deepest worker)"
+  ],
+  "openAtCp1": [
+    "Observed while reading, NOT in scope to fix: SettingsModal calls usePropertyEntitlement(null), and that hook returns its LOADING constant whenever parcelNodeId is null. LOADING has locked:false and signedOut:false, so the expression access = ent.locked ? Free : ent.signedOut ? Not read : Paid evaluates to Paid for EVERY account including anonymous. To be confirmed by render before the close."
+  ]
+}

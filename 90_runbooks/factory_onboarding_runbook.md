@@ -2,12 +2,20 @@
 id: factory_onboarding_runbook
 title: Factory Onboarding Runbook (pipeline, fallbacks, ledger, Warden, regression protection)
 date: 2026-08-04
-status: active (executor-drafted 2026-08-04, planner-reviewed and promoted same day with the corrections section below; the draft remains in _inbox as provenance)
+status: superseded for Factory 2 depth work by `90_runbooks/factory_2_jurisdiction_depth.md` (2026-08-11 P2.7); retained as provenance for wave-1 corrections and Elgin/Bastrop history
 owner: nick
 related: [90_operations/OPS-8_blocker_free_onboarding_model, 90_operations/OPS-9_scale_ops_specs_pack, 90_operations/onboarding_defect_class_backlog, 90_operations/OPS-2_county_onboarding_runbook, 90_operations/OPS-5_cert_standard, 90_operations/OPS-7_coverage_and_honesty_doctrine, 90_operations/OPS-4_rewarm_protocol, product_surface_smoke_suite, 80_adrs/adr_029_building_footprint_and_utility_easement_rails, _inbox/2026-08-05_T3_ingest_spec_footprints_easements, _dispatches/2026-08-04_elgin_pipeline_planner_handoff, _sessions/2026-08-03_county_onboarded_claude_code, _sessions/2026-08-03_elgin_foundation_and_city_code_refs_claude_code, _sessions/2026-08-04_elgin_pipeline_continuation_claude_code, _sessions/2026-08-04_ops9_wave_execution_claude_code]
 ---
 
 # Factory Onboarding Runbook
+
+**SUPERSEDED (2026-08-11):** use the three-factory runbook set instead:
+
+- [`factory_1_statewide_fabric.md`](factory_1_statewide_fabric.md) — statewide fabric + parcel-node seam
+- [`factory_1_5_acquisition_staging.md`](factory_1_5_acquisition_staging.md) — acquisition / staging
+- [`factory_2_jurisdiction_depth.md`](factory_2_jurisdiction_depth.md) — jurisdiction depth (replaces this doc for new work)
+
+This file remains for provenance. **Do not follow Step Z10 verbatim here** — the Elgin `tsx scripts/depth-warm-elgin-batch.mjs` command bypasses the parcel-node warm gate. Use `depth-warm-city-batch.mjs --row-id=<RegistryRowId>` per Factory 2 runbook.
 
 Purpose: what a fresh planner agent needs to onboard a Texas jurisdiction end to end — the two pipeline lanes, the fallback and trap procedures paid for in blood this week, the ledger contract, the Warden, and the regression gate that must hold after any shared-code change. Every command below is copied verbatim from a real run record; where a record does not state a fact precisely enough to give as an instruction, this doc says OPEN and names the question rather than guessing.
 
@@ -454,3 +462,13 @@ Default `--batch=500` (raised from 200 per measured county-scale pace). Do not e
 Bexar (48029) first production cascade: **sharded dry-run → review diff proof → sharded apply → cert**. Solo full-county cascade apply is forbidden.
 
 **Proof record (McLennan 48309, 2026-08-05):** `_inbox/2026-08-05_mclennan_sharding_diff_proof.json` — union-equals-solo PASS (scanned 114,255 solo = sum of 4 shards; cascade already complete so cascaded=0 validates partition only). Shipped: engine PR #259.
+
+## Smithville eCode360 (F2 corpus, W5 E1, 2026-08-09)
+
+**Adapter home:** `hauska-engine` `packages/corpus/src/adapters/ecode360/` on `origin/main` (`41cfdb4`, commits `122798f` / `0d2fc2e` / `67ffe31`). Stale branch `feat/ecode360-scraper-header-first` superseded (185 commits behind, zero unique delta) — delete local copy; do not push.
+
+**Scrape posture:** robots gate first; civil UA `Mozilla/5.0 (compatible; PublicLawTextFetcher/1.0)`; rate ≤0.5 rps; fail loud on 403/challenge. Chrome UA spoof forbidden. Proof artifacts: `P:/tmp/tx_scraper_proofs/smithville/` (155 parent pages, `normalized.json` 12,793 blocks, fidelity harness 836/836 TOC sections). Ingest artifact (post parent-dedup): `P:/tmp/smithville-normalized-2026-08-04.json` (4,366 blocks → 836 code-section atoms).
+
+**Ingest path:** Path eCode360 File — set `SMITHVILLE_NORMALIZED_PATH` to the deduped normalized JSON, then `build-corpus-snapshot` Smithville unit or `runPathEcode360FileIngest` directly. Target eval: **1.0/1.0/1.0** (15 curated queries). Do not ingest from the raw 12,793-block proof file without re-normalizing through the merged adapter (duplicate parent-page markers inflate section entityIds).
+
+**Zoning stamp:** **not configured** — registry `zoning_gis: null` (city Maps page carries PDF only; no public FeatureServer row). `zoning-stamp --city=smithville-tx` fails `unknown city`. Corpus/zoning-fact onboarding can proceed; parcel district stamp is a separate registry/GIS follow-on (Donley-pattern honest absent until a public layer is probed).

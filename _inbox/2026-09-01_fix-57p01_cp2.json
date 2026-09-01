@@ -1,0 +1,53 @@
+{
+  "checkpoint": "CP2",
+  "lane": "FIX-57P01",
+  "card": "_dispatches/2026-09-01_fix-57p01_dispatch.md",
+  "planRows": ["F-01", "F-03"],
+  "writtenAt": "2026-09-01T01:55:00Z",
+  "seat": "integration P:/doc_repo main e3dba48; factory P:/seat-worktrees/property/hauska-factory-p2-juris-persist fix/57p01-heartbeat uncommitted",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main e3dba48",
+    "factory_branch": "fix/57p01-heartbeat",
+    "factory_base": "5f9acc3",
+    "prior_image": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:70e3f7140e77d744e05cbff6101ecde5e891a6ea68e92c4a7f90f360520d8a61",
+    "new_image": "pending cloudbuild.p2-juris.yaml submit"
+  },
+  "missionPremise": "Neon suspends idle control client during long data chunks (57P01). Unhandled pg error skips termination. Lease only renewed at chunk start. scope missing max_duration_s.",
+  "completionPredicate": "F1/F2 unit MET. F3 Williamson 48491 pending deploy+execute.",
+  "falsifiers": {
+    "F1": {
+      "stated": "simulated client error must not uncaught-exit; failed termination names cause",
+      "positive_arm": "MET — test/p2-juris-57p01.test.mjs F1 pass; termination exit_kind failure, reason matches administrator command",
+      "negative_arm": "Structural: unhandled EventEmitter error crashes Node; not re-run after fix landed"
+    },
+    "F2": {
+      "stated": "60s timer renews lease via UPDATE leases; clears both paths; multiple firings during blocked chunk",
+      "positive_arm": "MET — 4/4 in test/p2-juris-57p01.test.mjs; zero SELECT 1 keepalives",
+      "negative_arm": "Not exercised without interval (pre-fix only renewed at chunk start)"
+    },
+    "F3": {
+      "stated_original": "Williamson 48491 total 282570 unresolved 0; death ~300s past reaper tick = heartbeat fix failed",
+      "amended": "2026-09-01 operator correction — heartbeat arm UNMEASURABLE (scale-to-zero disabled ~01:47–01:53 before hzkqk). F3 grades Williamson triple only.",
+      "grades": "unincorporated+in_city+unresolved===total, total===282570, unresolved===0, succeeded unaided",
+      "doesNotGrade": "heartbeat in production, runtime past 300s as suspend proof",
+      "status": "IN FLIGHT hzkqk — monitor subagent owns final grade"
+    }
+  },
+  "subagent": {
+    "id": "6fd4f281-6dc7-4a0e-8a68-51ed5cdf2d35",
+    "deliverable": "57p01 fixes + F1/F2 tests",
+    "planner_review": "Adopted with replay gate cherry-pick from a6-totals (required for Williamson F3; starved in persist tree)"
+  },
+  "tests": {
+    "command": "node --test test/p2-juris-57p01.test.mjs test/p2-juris-persist.test.mjs test/p2-job.test.mjs",
+    "result": "34 pass 0 fail"
+  },
+  "replay_note": "Merged loadReplayFromLanding + replayFromLandingRows from P:/tmp/hauska-factory-a6-totals uncommitted diff so HELD_FIPS 48491 can execute F3. Not a 57P01 fix; unblocks the integration county named in dispatch.",
+  "constraints_honored": [
+    "No Neon endpoint setting changes",
+    "No data-store client behaviour change",
+    "Lease renewal not SELECT 1 keepalive",
+    "max_duration_s in scope",
+    "Subagents did not commit"
+  ]
+}

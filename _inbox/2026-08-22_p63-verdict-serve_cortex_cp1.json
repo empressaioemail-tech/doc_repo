@@ -1,0 +1,142 @@
+{
+  "checkpoint": "CP1",
+  "track": "A-cortex",
+  "plan_row": "P-63",
+  "wdll_items": [1, 2, 3, 5],
+  "date": "2026-08-23",
+  "branch": "seat/property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+  "snapshot": {
+    "note": "Uncommitted diffs on seat/property; fact-read siblings checked out from origin/main as base"
+  },
+  "files_to_change": [
+    {
+      "path": "artifacts/api-server/src/lib/verdictLayerServe.ts",
+      "role": "Core doc 19 layer absence types, bulk_primary+stratmap-roll predicate, unincorporated shape predicate, no-upgrade guard"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/structuralFactResolve.ts",
+      "role": "Pure structural/CAMA resolution (present vs absent-verified vs lookup-failed)"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/structuralFactRead.ts",
+      "role": "Async loader: cad_property read when tier allows; lookup-failed when bulk_primary+stratmap-roll"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/landUseFactVerdict.ts",
+      "role": "Enrich landUseFact atom-miss → not-applicable on unincorporated unzoned shape"
+    },
+    {
+      "path": "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+      "role": "Wire structuralFact sibling + enrich landUseFact on GET /place/node/:parcelNodeId/facets"
+    },
+    {
+      "path": "lib/cad-ingest/package.json",
+      "role": "Export ./vintage and ./tier subpaths for db-free serve imports"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/verdictLayerServe.test.ts",
+      "role": "Unit tests: predicates, not-applicable enrichment, upgrade refusal"
+    },
+    {
+      "path": "artifacts/api-server/src/lib/structuralFactRead.test.ts",
+      "role": "Unit tests: lookup-failed wire, present path, no upgrade on lookup-failed branch"
+    }
+  ],
+  "schema_shape": {
+    "layer_absence_wire": {
+      "status": "absent",
+      "verdict": "absent-verified | lookup-failed | not-applicable",
+      "authority": "string (e.g. tad, dcad, none)",
+      "scopeSearched": "string — where we looked, including tier/entitlement bound",
+      "asOf": "ISO-8601 instant",
+      "basis": "string — human-checkable reason",
+      "provenanceClass": "Record | Observation | Derivation | Synthesis",
+      "source": "structural-fact | land-use-fact (family-specific)"
+    },
+    "structuralFact_present": {
+      "state": "present",
+      "source": "structural-fact",
+      "livingAreaSqft": "number | null",
+      "yearBuilt": "number | null",
+      "taxYear": "number",
+      "tier": "cad-export | stratmap-roll"
+    },
+    "landUseFact_enriched": {
+      "note": "Extends existing atom-miss refusal with layer absence fields; populated landUseFact unchanged"
+    },
+    "response_root": "GET /api/brokerage/v1/place/node/:parcelNodeId/facets adds structuralFact; landUseFact may carry verdict fields"
+  },
+  "lookup_failed_rule": {
+    "predicate": "BULK_PRIMARY_COUNTY_FIPS.has(fips) AND tryResolveDeclaredCadVintage(fips).tier === 'stratmap-roll'",
+    "registry_source": "_catalog/tx_cad_source_registry.json bulk_primary + lib/cad-ingest/src/vintage.ts DECLARED_CAD_VINTAGES",
+    "basis_template": "registry bulk_primary=true; declared vintage tier=stratmap-roll; CAMA bulk export undeclared",
+    "scope_template": "cad_property stratmap-roll tier; CAMA bulk export not loaded",
+    "live_note": "As of 2026-08-23 Dallas/Tarrant bulk_primary counties are declared cad-export — lookup-failed fires only when tier flips back to stratmap-roll without CAMA load"
+  },
+  "not_applicable_rule": {
+    "predicate": "county zoning_regime.unincorporated === 'unzoned' (texas_county_roster_v1) AND parcelIsUnincorporatedShape(baked facets): no zoning district, no situsCity, no-zoning-stamp or facetCoverage.zoning false",
+    "verdict": "not-applicable",
+    "field": "landUseFact (zoning authority shape on inspect)"
+  },
+  "no_upgrade_rule": {
+    "mechanism": "assertNoVerdictUpgrade + mergeLayerVerdict opts.priorVerdict",
+    "forbidden": "lookup-failed → absent-verified"
+  },
+  "falsifiers": [
+    {
+      "id": "F1-empty-success",
+      "description": "Metro structural response with atom-miss only and no verdict fields must fail instrument selftest (track C)",
+      "fixture": "scripts/fixtures/verdict-layer-serve/metro-structural-empty-success.json",
+      "expect": "FAIL grade"
+    },
+    {
+      "id": "F2-lookup-failed-pass",
+      "description": "structuralFact with status absent + verdict lookup-failed + required fields must pass",
+      "fixture": "scripts/fixtures/verdict-layer-serve/metro-structural-lookup-failed.json",
+      "expect": "PASS grade"
+    },
+    {
+      "id": "F3-not-applicable",
+      "description": "landUseFact not-applicable on unincorporated unzoned parcel must not be absent-verified",
+      "fixture": "scripts/fixtures/verdict-layer-serve/unincorporated-zoning-not-applicable.json",
+      "expect": "PASS grade"
+    },
+    {
+      "id": "F4-upgrade-forbidden",
+      "description": "mergeLayerVerdict with priorVerdict lookup-failed and next absent-verified throws",
+      "instrument": "artifacts/api-server/src/lib/verdictLayerServe.test.ts mergeLayerVerdict case"
+    },
+    {
+      "id": "F5-gold-populated-unchanged",
+      "description": "48021:34137 structuralFact state=present when cad_property has living_area_sqft at declared vintage; landUseFact present/absent paths unchanged when not unincorporated shape",
+      "parcelNodeId": "48021:34137"
+    }
+  ],
+  "test_parcels": [
+    {
+      "label": "gold",
+      "parcelNodeId": "48021:34137",
+      "expect": "Populated structural when CAD row has living_area_sqft; landUseFact not forced to not-applicable (incorporated situsCity on bake)"
+    },
+    {
+      "label": "dallas-metro",
+      "parcelNodeId": "48439:412831",
+      "expect": "structuralFact lookup-failed when declared tier=stratmap-roll; with live cad-export tier, structural reads cad_property instead"
+    },
+    {
+      "label": "unincorporated",
+      "parcelNodeId": "48103:1",
+      "expect": "landUseFact atom-miss enriched to not-applicable when baked facets show unincorporated no-zoning shape"
+    }
+  ],
+  "blockers": [
+    "Live WDLL item 2 probe needs a bulk_primary county still on stratmap-roll tier OR documents cad-export flip; registry currently shows 48113/48439 as cad-export",
+    "Track C instrument scripts/verdict-layer-serve-selftest.mjs not in this track — planner/instrument lane",
+    "Track B PE display not in this track",
+    "Deploy grade (WDLL 7) planner-owned"
+  ],
+  "tests_ran": [
+    "pnpm exec vitest run src/lib/verdictLayerServe.test.ts src/lib/structuralFactRead.test.ts (api-server package)"
+  ]
+}

@@ -38,3 +38,9 @@ Lane: P4-QUARANTINE. Plan rows F-11, F-06. Worktree `P:/tmp/hauska-engine-p4-qua
 - Do not import write-setback-city.mjs from vitest in this clone; it throws SyntaxError. The 13 plan tests and 3 placeholder tests load via index.js and pass.
 
 PLANNER REVIEW 2026-08-31T19:33Z — Accept partial. Re-read measure-setback-provenance.mjs (front/side/rear + atom_did prefix; F4 held). Re-read refuseSetbackQuarantines: PLACEHOLDER_COLLISION no longer throws; McLennan envelope still throws. classifySetbackRuleAtom already reads all three axes. Re-ran detector CLI clean, measure --self-test pass, 17 engine-core + 1 retrieval. Detector is quoted-literal only: property-atom-proof.ts cites STORAGE_PORT_PROOF_ATOM_DID on a setback-rule via identifier and does not fire. Declared as a starve, not a close of the remint gap. Dropped SETBACK_APPLY_HELD CLI tests stay leave_behind; writer-lease a199155 covers the refuse via spawn on a different tree. F1/F2/F4 still unrun. Do not authorize those scans from this review.
+
+GROUND-TRUTH 2026-08-31T19:46Z — F1 on hauska_mcp 15s. Bastrop non-placeholder 7534 MATCH. Travis and Williamson unmeasured (statement_timeout). Published 188103/158573 UNMEASURED. Do not invent zeros. F2 Bastrop placeholder 1969 = 9503-7534. F4 McLennan 65814 envelopes, 0 cited setback DIDs, 0 PK resolve, verdict no-resolve.
+
+GROUND-TRUTH 2026-08-31T19:58Z — engine #369 squash-merged 0e96e6a. CLI tests restored as spawn write-setback-city-cli.test.mjs. Detector starve, descriptor-fixture, vendor drift recorded in PR body. No atom mutation. No --apply setback.
+
+GROUND-TRUTH 2026-08-31T22:02:15Z — A3 chunked F1 on hauska_mcp scored the two premises. placeholder 188103 stayed. nonPlaceholder 158573 stayed. Travis 22011/150702. Williamson 124499/0. Zero UNMEASURED ranges. Timeout 15s. Close `_inbox/2026-08-31_a3-f1-chunked_close.json`. F4 still held. SETBACK_APPLY_HELD unlifted.

@@ -1,0 +1,71 @@
+{
+  "checkpoint": "CP2",
+  "lane": "p98-client",
+  "planRow": "P-98",
+  "repo": "hauska-map",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+    "branch": "feat/p98-next-action-rail",
+    "baseCommit": "0fb9734ce455d391c8ec0e931879c9e110f20488",
+    "committed": "nothing - lane produces a diff, planner commits"
+  },
+  "trigger": "mid-work adversarial checkpoint, taken after the build was green and again after the coordinator's course correction landed",
+  "courseCorrectionReceived": {
+    "from": "coordinator, mid-lane",
+    "content": "the five action_id strings are a server contract (400 on anything else); expiresAt is nullable and null means UNBOUNDED; use the route's asOf as the clock; the route fails loud so a 500 must stay distinct from not-built and from empty; both allowlist entries are entirely this lane's risk because legacy-design-tools has no allowlist of its own",
+    "conflictWithDispatchOrDecision": "NONE. The ids map one-to-one onto ladder v1 with no orphan rung and no orphan id. Every other point tightened the build rather than contradicting it.",
+    "applied": [
+      "NEXT_ACTION_IDS is now an exported const array and NextActionId is DERIVED from it, so the list and the union cannot drift; all five renamed to the server's snake_case",
+      "AccountUnlock.expiresAt is string | null; null is kept as an active unbounded unlock, never dropped and never read as a date",
+      "UnlocksRead's read arm carries the server's asOf and the ladder has NO `now` field at all - the clock and the expiries arrive in one response so they cannot disagree",
+      "UnlocksRead gained an `error` arm so a 500 is distinct from not-built, blocked, unread and empty",
+      "parseAccountUnlocks REQUIRES a parseable asOf; its absence is an unreadable body, never a fallback to Date.now()",
+      "recordActivationEvent gained a `rejected` kind for 400, so a refused action_id is nameable rather than filed under network"
+    ],
+    "reportedBack": "the ids are one-to-one; no sixth string was invented; the route's shape carries NO human label for the parcel, so the expiring-unlock headline says 'the property you unlocked' rather than naming it - flagged as an OPEN, not worked around"
+  },
+  "adversarialFindingsAgainstMyOwnWork": [
+    {
+      "found": "The first draft of the expiring-unlock copy said 'It lapses today' / 'It lapses tomorrow'.",
+      "why_wrong": "an expiry is a UTC instant and the module does not know the viewer's timezone, so a calendar word is a claim about a fact nobody read - the same defect one level down from proposing an action on unread state.",
+      "fix": "duration wording that rounds DOWN ('Less than a day left', 'About 3 days left'). Understating is the safe direction for a lapse warning.",
+      "caughtBy": "the test, on its first run"
+    },
+    {
+      "found": "parseAccountUnlocks returned [] when the server sent rows under different keys and every row was dropped.",
+      "why_wrong": "a contract mismatch would have been indistinguishable from an honest empty account, on the exact rung that decides whether somebody is told their unlock is lapsing. An empty result is not an absence.",
+      "fix": "rows arrived and NONE could be shaped is an unreadable body. A PARTIAL drop still keeps the good rows.",
+      "caughtBy": "self-review while writing the report, not by a test"
+    },
+    {
+      "found": "The post-action note was a bare ReactNode in state, so 'Address copied' would still be sitting under whatever action the NEXT tab proposed.",
+      "why_wrong": "a line of text asserting something about a step the user never took.",
+      "fix": "the note is keyed to the action id that produced it.",
+      "caughtBy": "self-review"
+    },
+    {
+      "found": "The Settings mount had no way to say 'I cannot run this step'. team_invite has NO invite write path anywhere in this client, and routing unlock_expiring through onUpgrade opens a checkout scoped to the MAP's active parcel rather than the lapsing one.",
+      "why_wrong": "either would ship a dead control, or worse, a checkout for the wrong property.",
+      "fix": "SETTINGS_RUNNABLE, fail-closed: an action not on it is not rendered, and each exclusion carries its reason in the source.",
+      "caughtBy": "reading TeamTab and ExplorerMap's onUpgrade wiring rather than assuming"
+    }
+  ],
+  "violationBattery": {
+    "method": "each mutation applied to the FINAL source, the relevant suite run, the file restored from a pristine copy. A mutation whose pattern did not apply is reported as SKIP rather than counted as a pass - the first run of this harness silently no-op'd five mutations on a CRLF file and reported them green, which is why the harness now checks that the pattern was found before it trusts the result.",
+    "result": "13 of 13 produce a failure",
+    "note": "V9 fails the TYPE CHECKER rather than a test. Removing the null-expiry skip leaves `daysUntil(u.expiresAt, asOf)` receiving string | null, which is TS2345. That is the stronger mechanism, not a weaker one, but it is reported for what it is: vitest alone does not catch it, because Date.parse(null) happens to be NaN and the downstream unparseable guard absorbs it."
+  },
+  "instrumentDefectFoundInMyOwnHarness": {
+    "what": "perl -0pi -e substitutions whose patterns contained \\n silently failed on CRLF files, and the violation runs reported PASSING (i.e. 'the check is vacuous') when in fact no mutation had been made.",
+    "howCaught": "the grep-count sanity line after each mutation did not move",
+    "fix": "the harness now normalises the pattern to the file's own line endings and refuses to score a case whose pattern was not found",
+    "generalisation": "a convenient result is a reason to distrust the instrument. Here the INconvenient result was the honest one and the instrument was producing it for the wrong reason."
+  },
+  "constraintsHeldAtCp2": {
+    "chromeKitGate": "exit 0; the ratchet walks the tree and the four new source files carry ZERO colour literals and ZERO native buttons (walked 171 -> 175 billed files)",
+    "settingsLineWeight": "PE.line14 == 7, PE.line06 == 7, PE.line28 == 1 in SettingsModal.tsx, unchanged; the sibling lane's merged pins still pass",
+    "tabBodies": "unchanged",
+    "sourceEncodingGuard": "exit 0 with the new files tracked (663 scanned, up from 655); self-test 6 fire / 8 no-fire",
+    "recordsCopyGuard": "exit 0"
+  }
+}

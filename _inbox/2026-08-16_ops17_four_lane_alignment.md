@@ -41,7 +41,7 @@ Operator fused C + D + MCP into one demo because ICC's offer **is** complete pla
 | S-1 G-11 | shared | QA personas, not G-11. Same as G-59. |
 | S-3 | shared | E6 compose from hauska-map in a clean worktree. Full SmartCity mapping adoption is B, later. |
 | S-4 | D executes | G-60 item 19. |
-| S-5 G-13 | shared | Not closed. This wave uses the A pattern: UI HTTP to the product Cloud Run; agents on one Hauska MCP. B's consumer pass still waits G-51 + G-13. |
+| S-5 G-13 | shared | CLOSED 2026-08-17. Decision `_decisions/2026-08-17_g13_consumer_contract.md`. Caller split: UI HTTP/embed; agents on one Hauska MCP. |
 
 ## Drift this wave must not re-introduce
 

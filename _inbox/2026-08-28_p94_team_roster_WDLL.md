@@ -24,7 +24,7 @@ A signed-in owner can read the roster, invite until purchased seats are held, an
 
 1. **Read shape.** GET `/api/property-explorer/v1/team/members` returns 200 `{ members, seatsPurchased, viewerEmail, viewerRole }` with `role` only `owner|member` and `status` only `joined|invited`. `at` is ISO or null. 401 is sign-in. Check: live or integration against the client parser. Grade: [ ]
 
-2. **seatsPurchased honesty.** The field is a number or absent. Never 0 to mean unknown. An account with no team subscription omits the field. Check: that account; client keeps null distinct from zero. Grade: [ ]
+2. **seatsPurchased honesty.** The field is a number or absent. Never 0 to mean unknown. An account with no team subscription omits the field. Check: that account; client keeps null distinct from zero. Grade: [partial 2026-08-29] writer serving; live omit until a Team Stripe event
 
 3. **No third role.** A row whose role is not owner|member is not sent. Check: server never emits `administrator`. A planted `administrator` is dropped by the client and the roster still renders (contract check). Grade: [ ]
 
@@ -44,4 +44,4 @@ Dunning. Stripe customer portal. Leaving an account yourself. SSO. Domain captur
 
 ## Amendments
 
-None yet.
+- 2026-08-29: hauska-map BFF must allowlist GET `api/property-explorer/v1/team/members` on `DEEP_GET_EXACT`. Isolated tree `P:/tmp/hauska-map-p94-allowlist` branch `feat/p94-team-allowlist`. Do not rewrite `teamClient`. Reason: live dummy-cookie GET is 403 `Path not on deep allowlist`; cortex serving `00656-vek` @100% already has the route. Writes stay off the allowlist because the Settings invite control is display-only.

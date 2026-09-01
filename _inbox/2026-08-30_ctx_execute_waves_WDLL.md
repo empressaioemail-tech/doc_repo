@@ -6,9 +6,9 @@ last_updated: 2026-08-30
 status: approved
 applies_to: hauska-factory, hauska-engine, legacy-design-tools, hauska-map
 plan_row: F-01, F-06, F-08, F-11, F-18, P-09, P-11, P-17
-depends_on: _inbox/2026-08-30_ctx_road_to_prod_accurate.md, _inbox/2026-08-30_ctx_w3_collect_amendments.md, _inbox/2026-08-30_ctx_w3_collect_review.md, _decisions/2026-08-30_ctx_complete_or_absent.md
-operator_go: 2026-08-30 (tee up; do not pull 0005, landing-import, or F-18 until P2)
-snapshot: integration P:/doc_repo; review refused collect-as-written; measured owe from amendments; Wave R paused
+depends_on: _inbox/2026-08-30_ctx_consolidated_execution_plan.md, _inbox/2026-08-30_ctx_road_to_prod_accurate.md, _decisions/2026-08-30_unincorporated_is_the_disposition.md, _decisions/2026-08-30_ctx_complete_or_absent.md
+operator_go: 2026-08-30 (five dispatches ae89dc3; separate trees; do not Wave R)
+snapshot: integration P:/doc_repo; Q1–Q5 ruled; Gate 8 step 2 unlocks P4; 0005b ships
 owner: integration cuts; property produces diffs; planner executes jobs
 canvas: C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-and-texas-complete.canvas.tsx
 ---
@@ -17,7 +17,7 @@ canvas: C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-and-texas-co
 
 Date: 2026-08-30  Status: approved (P0 now; P1+ on operator word for code)
 
-Spine stays: Factory L2 collect, then L3 atomize, then one Wave R. Schedule is P0 to P8. The draft collect card is a specification; this card is the order of work.
+Spine stays: Factory L2 collect, then L3 atomize, then one Wave R. Schedule is the consolidated card. This file is the WDLL companion. Containment is the jurisdiction source. The alias table is name normalisation, not the long pole.
 
 Do not apply 0005 as drafted. Do not re-run `landing-import`. Do not run F-18 until it refuses a missing county.
 
@@ -48,11 +48,11 @@ Writers read `neondb`. Factory L2 copy has zero readers. Collect-complete for al
 ## Critical path (sets length)
 
 ```
-P0 truth  ->  P1 controls  ->  P2 alias table  ->  P4 setback land
-          ->  P4 edges     ->  P5 scrub        ->  P6 pin  ->  P7 Wave R
+P0 -> P1-FACTORY (refuse + 0005 split) -> P2-JURIS containment -> P4 setback land
+    -> P4 edges -> P5 -> P6 -> P7
 ```
 
-Start the `breadth_*` → `place_fips` alias table at the top of P2. It is hand-seeded and cannot be derived. Adding people does not compress it.
+Five dispatches at ae89dc3. P1-FACTORY, Gate 8 steps 1–2, P1-LDT, and P2b-serve start now in **separate trees**. Gate 8 county-scoped job waits on P1-FACTORY refuse. P2-JURIS read is planner RO now; persist waits on the P2 job template. 0005b ships (CAD↔TxGIO identity, not jurisdiction). Gate 8 step 2 on the **served body** unlocks P4. The browser walk unlocks P7.
 
 ## Parallel (never blocks Wave R)
 
@@ -64,9 +64,9 @@ P2b PE wiring. Easement four-point probe. Zoning-stamp remainder (home named, wo
 |---|---|---|---|---|
 | P0 | Canon. OPS-1 boundary lie. Owe table. 72 cities. Rename "facts complete" in prose. | nothing | Fresh agent reading tracked canon does not say county-wide setbacks | now (docs) |
 | P1 | Checks that can fail. Walk four-state. Gate a job can read (`import_ledger` has 0 SELECTs; the routing pin's field is `held`, carrying plan rows, not `holds`). F-18 refuse missing county. Vintage or delete. Recount repair. **0005 split per the section above.** `DrawEdge.state` -> real union. Serve-path `status` filter (723 retired edges shipping). | P2b start | Each control fails a known violation and passes a known-good | after P0 |
-| P2 | One job template. Writer allowlist. F-11 writer. Easement writer stops live REST. Store split ruled. **Alias table (long pole).** | P2b | One writer other than CAD runs as a job and refuses a missing county | after P1 start |
-| P2b | PE wiring. Grey-box scope. Zone. A1 default. yearBuilt with source. Bundle marker. | P2 | Live brief + deployed bundle marker. #310 is not the gate | after P0 |
-| P3 | `unincorporated → not-applicable` on setbacks, edges, envelope. Four county easement absences. | after alias table exists enough to key cities | Caldwell rural brief names county-absence | after P2 alias seed starts |
+| P2 | Job template + writer allowlist after refuse exists. Unlocks P2-JURIS persist. **P2-JURIS read** is unblocked now (planner RO URI). Containment. Alias seed reconciles the 48% that carry a string. | P2b-serve, Gate 8 steps 1–2 | Join totals **357,269 / 624,141**. Material divergence means the join is wrong. One non-CAD writer refuses a missing county | read now; persist after job template |
+| P2b | `_dispatches/2026-08-30_p2b-serve_dispatch.md` (P-92, LDT tree B). X2 + item 4 together. Five MCP one-liners. Do not use the PE wiring card. | P1-LDT (other LDT tree) | Live brief + deployed bundle marker. #310 is not the gate | now |
+| P3 | Three states: 357,269 `not-applicable` / 465,568 `unmeasured` / 3,732 `value`. Four county easement absences. CDPs stay `unincorporated`. | after containment exists | Caldwell rural brief names county-absence | after P2-JURIS |
 | P4 | Apply five-county wells and footprint. Flood shape conversion. Land four setback artifacts. Edges ≤154,841. Envelope where a rule exists. Five easement layers after probe. Quarantine 188,103 placeholders and McLennan 65,814 envelopes-over-zero. | serialize heavy scans | Every rail applied or absence with a five-field record. Job refuses without it | after P2 writers + P3 |
 | P5 | S1–S13 on 100% SQL-able rows. Area sweep for HTTP. Poison + pass both directions. | nothing on the walk image | Each family fails a poisoned row | after P4 |
 | P6 | Pin W1. Determinism (empty body diff). Six staging concurrent. | PE deploy may ride | Six `walkVerdict pass` on rows those runs wrote | after P5 |
@@ -98,7 +98,9 @@ not P2.
    one and must not pass a `nonempty(source_url)` check. `elgin-warmed-cohort` and
    `lockhart-ordinance` are sentinels passing that same check today.
 
-**0005b — alias table, bake store (`STAGING_`/`PRODUCTION_NEONDB_URL`).**
+**0005b — identity alias, bake store (`STAGING_`/`PRODUCTION_NEONDB_URL`).**
+This is CAD `prop_id` ↔ TxGIO natural key (`ownersAgree`, `cad-roll-address-join`).
+It is **not** the `breadth_*` jurisdiction table P2-JURIS demoted. Do not drop it.
 `landing_cad_txgio_alias` only. It currently ships inside 0005 against
 `FACTORY_DATABASE_URL`, while `cad-txgio-alias-persist.mjs:252` inserts through
 `resolveTargetStores(...).DATABASE_URL`, which `TARGET_VARS` restricts to the bake
@@ -111,13 +113,12 @@ insert with `probed_at` null and confirm the CHECK refuses it; run `alias-persis
 --apply` against a store without 0005b and confirm it fails loudly rather than
 silently. A migration observed only applying cleanly has not been observed working.
 
-## Chew order (first three clicks)
+## Chew order (compiled dispatches)
 
-1. **P0 this session.** Docs. Removes 357,269 parcels of false owe outright and reclassifies 465,568 more from owed work to `unmeasured`.
-2. **P1 + start alias table + P2b** on the next go. Three lanes. Alias is the long pole; start it before you need it.
-3. **P2 job template + writer allowlist** after P1's refuse-on-missing-county exists. Then P3 (cheap, huge), then P4.
-
-After P1 to P3 the rest is one scheduled chain.
+1. **Now, five trees:** P1-FACTORY (Factory A), Gate 8 steps 1–2 (Factory B), P2-JURIS read (planner RO), P1-LDT (LDT A), P2b-serve (LDT B).
+2. **After P1-FACTORY refuse:** Gate 8 county-scoped job form. P2 job template. P2-JURIS persist.
+3. **P4** after Gate 8 step 2 fails on the served body (and can pass a gold).
+4. **P7** after Gate 8 browser walk.
 
 ## Acceptance items
 
@@ -127,9 +128,9 @@ After P1 to P3 the rest is one scheduled chain.
 
 3. **P2 one non-CAD writer job.** Allowlist. County required. | check: Cloud Run execution on a named FIPS, refuse on omitted county | grade: [ ]
 
-4. **Alias table started.** Seed file exists; at least Bastrop's seven spellings mapped to `place_fips`. | check: row count > 0 and a self-test on two spellings | grade: [ ]
+4. **P2-JURIS containment.** Every parcel in the six is an incorporated `place_fips` or `unincorporated`. Totals reconcile to 357,269 / 624,141. Alias disagreements recorded, not consumed. No CDP `place_fips`. | check: Kyle-in and rural-Bastrop-out both observed; Coupland sliver refused; material miss vs 357,269 / 624,141 named as join-wrong | grade: [ ]
 
-5. **P3 served.** Unincorporated setback/edge/envelope is `not-applicable`. Four county easement absences named. | check: live Caldwell rural brief | grade: [ ]
+5. **P3 served.** Three states. Unincorporated setback/edge/envelope is `not-applicable` (357,269). In-city no table is `unmeasured` (465,568), not `not-applicable`. Four county easement absences named. | check: live Caldwell rural brief | grade: [ ]
 
 6. **P4 rails apply-or-absence.** Five-county wells and footprint. Four setback artifacts landed. Placeholders quarantined. | check: five-field record per rail; P4 job refuses without it | grade: [ ]
 
@@ -144,6 +145,9 @@ After P1 to P3 the rest is one scheduled chain.
 ## Amendments
 
 1. 2026-08-30: Replaces Band C / Band 1 as the operating schedule. Collect WDLL spine kept; its lanes are not the order. Reason: review refused the card as a specification wearing a schedule's clothes; amendments A1–A12; road-to-prod P0–P8.
+2. 2026-08-30: Containment replaces the alias table as jurisdiction. Alias demoted to name normalisation. `unincorporated` is the CDP disposition. Four compiled dispatches; P1-FACTORY first. Reason: enumeration (509,911 unknown; postal Kyle overcount; county-scoped keys) plus operator ruling.
+3. 2026-08-30: Fifth dispatch P2b-serve. Q1–Q5: separate trees; Gate 8 steps 1–2 parallel and unlock P4; 0005b ships (identity, not jurisdiction); P2-JURIS read now / write after P2 job; browser walk unlocks P7. Reason: planner answers ae89dc3.
+4. 2026-08-30: `source_url_verified_at` on `landing_easement_gis` before 0005a apply. Synthesised Round Rock and Cedar Park URLs seed NULL and refuse a verified timestamp. P4 wells/footprint/flood go; P4 setbacks/edges/envelope hold until F-11 retires `road-class-setback-table`. Reason: planning board `_decisions/2026-08-30_ctx_fan2_planning_board.md`.
 
 ## Do not
 
@@ -163,4 +167,13 @@ After P1 to P3 the rest is one scheduled chain.
 - Start Wave R from this card without P5 + P6 + operator word.
 - Laptop `--apply`.
 - Restart scllr, F-09, F-10 254, Harris PBF.
+- Give a CDP a `place_fips` or extend `texas_roster_v1` to CDPs.
+- Consume `breadth_*` as jurisdiction.
+- Stamp `not-applicable` on the 465,568 in-city no-table parcels.
+- Adopt a new containment total instead of naming the join wrong.
+- Use `_inbox/2026-08-30_ctx_pe_wiring_WDLL.md` as a P2b brief.
+- Share a checkout between two F-08 or two P-92 lanes.
+- Drop 0005b.
+- Laptop `psql` for the containment persist.
+- Grade Gate 8 against the store instead of the served body.
 ---

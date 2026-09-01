@@ -9,11 +9,12 @@ related_canonical:
   - _decisions/2026-08-09_texas_flush_launch_gate
   - 90_operations/OPS-18_canon_reconciliation_plan_of_record
   - 90_operations/OPS-18a_path_to_smartsite_market
+  - _decisions/2026-08-21_sellable_is_cc_heartbeat_and_atoms_on_parcels
 ---
 
 ## Decision
 
-The living sequence is `90_operations/OPS-18a_path_to_smartsite_market.md`. This record is the ruling that created it. Operator approved the path and rulings 1-3 on 2026-08-21. Desired end is Smart Site to market in Texas. Dashboards is parked. OPS-18 is the structural pass that makes the data defects gradable; it is not a substitute for fixing them.
+The living sequence is `90_operations/OPS-18a_path_to_smartsite_market.md`. This record is the ruling that created it. Operator approved the path and rulings 1-3 on 2026-08-21. **Sellable was redefined the same afternoon:** Command Center heartbeat plus existing atoms on SmartSite parcels (`_decisions/2026-08-21_sellable_is_cc_heartbeat_and_atoms_on_parcels.md`). Desired end is Smart Site sellable in Texas under that definition. Dashboards is parked. OPS-18 is the structural pass that makes the data defects gradable; it is not a substitute for fixing them.
 
 ## Context
 

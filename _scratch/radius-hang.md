@@ -31,3 +31,22 @@ Implemented shape (county_fips IN (48021,48287) AND tile_key = g0.02:-97.34000,3
 Planner live probe after deploy: GET /place/radius-search?lat=30.10592&lng=-97.32528&radiusFt=500 and radiusFt=50. This lane cannot deploy.
 
 PLANNER REVIEW 2026-08-31T19:32Z — Accept partial. Re-read txgioRadiusSearch.ts: texasCountyFipsList gone; countiesOverlappingBbox then tile_key IN cellKeysForBbox; empty county refuses radius_county_unresolved; ceiling 2000 and max 5280 unchanged. Independently listed live pg_indexes on fancy-fire-06136146 / neondb: four indexes, no bbox. Re-ran vitest 19/19. tile_key is the existing txgioParcelStore pk path, not a new index. Do not deploy from this review.
+
+## GROUND-TRUTH 2026-08-31T20:15Z
+LDT #572 squash-merged as 394424f2520ecd32074470b1bdc4c798bfcdff7c. CI on a3e8ccc7: every required check-run conclusion SUCCESS including Test. MERGEABLE CLEAN.
+
+## GROUND-TRUTH 2026-08-31T20:19Z
+build-and-push run 33435023400 job Build & push image conclusion success. AR tag 394424f2 digest sha256:1edc04974ea830717bf1da9a57adf0bcc76506516a44bfbf71a505ad9cb68340.
+
+## GROUND-TRUTH 2026-08-31T20:22Z
+Before: cortex-api-00680-vog @100% digest sha256:5130d91b. Canary deploy 33435461759 conclusion success. Revision cortex-api-00682-met digest sha256:1edc0497, 0% traffic, DATABASE_URL=DEPLOYMENT_DATABASE_URL_DIRECT.
+
+## GROUND-TRUTH 2026-08-31T20:25Z
+shift-traffic 33435836763 job conclusion success. Serving cortex-api-00682-met percent=100 digest sha256:1edc0497. Digests differ.
+
+## GROUND-TRUTH 2026-08-31T20:26Z
+Live authenticated GET on production (Bearer SERVICE_API_KEY, key never printed):
+radiusFt=500 -> 200 in 0.354s, received=29 truncated=false first 48021:31254
+radiusFt=50 -> 200 in 0.203s, received=3 truncated=false
+lat=notanumber -> 400 in 0.135s validation_error
+Falsifier (504 / max-time / slow 200) did not fire. Timeout and 2000/5280 ceilings not raised. No bbox index applied.

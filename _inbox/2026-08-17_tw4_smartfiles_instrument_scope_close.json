@@ -5,26 +5,35 @@
   "planRowBasis": "CANON_OVERRIDE: Smart Markets is unregistered R&D with bounded PRs, so no PLAN-ROW exists by design. Operator-ruled 2026-08-17.",
   "repo": "empressaioemail-tech/smart-files",
   "date": "2026-08-17",
-
   "branch": "tw4/instrument-scope",
-  "headSha": "b306cd5f235f027aa6805ae3af523e37681b3384",
+  "headSha": "2e6a38a0b17c1ea194aa72084bceef58ba132157",
   "baseSha": "abd77f3",
   "prUrl": "https://github.com/empressaioemail-tech/smart-files/pull/5",
-  "prState": "OPEN, mergeable, NOT MERGED. Owning lane (OPS-17 Smart Files / Plan Review seat) reviews before merge and before any Neon apply.",
-
+  "prState": "OPEN, mergeable, NOT MERGED. Reviewed by the owning lane (OPS-17 Smart Files / Plan Review seat); one patch requested and delivered (see listFoldersNarrowing). Merge is go from their seat; the merge, the Neon apply and the Cloud Run deploy are all theirs to run.",
   "ciConclusion": "success",
   "ciDetail": {
-    "runId": 32087147131,
+    "runId": 32090472710,
     "workflow": "Test",
     "jobs": [
-      { "name": "Unit", "conclusion": "success" },
-      { "name": "HTTP round trip", "conclusion": "success" }
+      {
+        "name": "Unit",
+        "conclusion": "success"
+      },
+      {
+        "name": "HTTP round trip",
+        "conclusion": "success"
+      }
     ],
     "note": "This repo had NO CI before this PR. `gh api repos/empressaioemail-tech/smart-files/actions/workflows` returned {\"total_count\":0,\"workflows\":[]} and main is not branch-protected. `.github/workflows/test.yml` is added by this PR and is flagged in the PR body as additive scope the owning lane may strip.",
-    "roundTripInCi": "39/39 checks passed against a postgres:16 service with sql/001..004 applied",
-    "absenceGuardInCi": "PASS: not-applicable is still refused by the absence CHECK"
+    "roundTripInCi": "46/46 checks passed against a postgres:16 service with sql/001..004 applied",
+    "absenceGuardInCi": "PASS: not-applicable is still refused by the absence CHECK",
+    "headSha": "2e6a38a0b17c1ea194aa72084bceef58ba132157",
+    "ghPrChecksVerbatim": [
+      "HTTP round trip\tpass\t29s\thttps://github.com/empressaioemail-tech/smart-files/actions/runs/32090472710/job/95571487052",
+      "Unit\tpass\t8s\thttps://github.com/empressaioemail-tech/smart-files/actions/runs/32090472710/job/95571486947"
+    ],
+    "priorRun": "32087147131 (success, 39/39) on b306cd5, superseded by the narrowing commit"
   },
-
   "writePathChanges": [
     "src/store.mjs createFolder: INSERT hardcoded VALUES ($1, 'tenant', $2, $3, $4) -> parameterised on a resolved scope, VALUES ($1, $2, $3, $4, $5).",
     "src/store.mjs uploadFileToFolder: guard `folder.scopeType !== 'tenant' || folder.scopeId !== orgId` -> assertFolderInScope() pair comparison; the tenant path keeps the exact error string 'folder is not in this org'.",
@@ -37,7 +46,6 @@
     "src/cid.mjs buildFolderId(orgId, slug) -> buildFolderId(scopeId, slug, scopeType = 'tenant'). Default keeps every existing folder id byte-identical; instrument rooms are folder:instrument:<node_id>:<slug>.",
     "src/actors.mjs: new INSTRUMENT_SERVICE_ACTOR = actorKey('instrument','service')."
   ],
-
   "validatorDesign": {
     "shape": "sec_ or iss_ followed by a 26-character canonical Crockford base32 ULID",
     "regex": "/^(?:sec|iss)_[0-9ABCDEFGHJKMNPQRSTVWXYZ]{26}$/",
@@ -47,10 +55,15 @@
     "writableScopes": "New WRITABLE_SCOPE_TYPES = ['tenant','instrument']. Names what was already true: jurisdiction and site documents are produced elsewhere and are read-only through this service.",
     "notReused": "Does NOT reuse JURISDICTION_FIPS_RE and does NOT reuse the tenant free-string rule. isInstrumentNodeId('48021') === false and isInstrumentNodeId('acme') === false, both asserted."
   },
-
   "tenantUntouchedProof": {
     "rule": "tenant scopeId remains ANY non-empty string. No tenant regex added.",
-    "slugsExercised": ["icc-demo", "acme", "empressa", "template-city", "g58-probe"],
+    "slugsExercised": [
+      "icc-demo",
+      "acme",
+      "empressa",
+      "template-city",
+      "g58-probe"
+    ],
     "method": "All five driven through the real HTTP routes on identical baselines, before (origin/main abd77f3) and after (branch b306cd5). icc-demo, acme, empressa and template-city ran the full create-folder / upload / read / list-folder-files / list-folders path via their QA personas. g58-probe has no QA persona, so it ran the read path: GET /folders?scopeType=tenant&scopeId=g58-probe and GET /files/smartfile:tenant:g58-probe:isolation-note.",
     "rowsIdentical": "scope_type|scope_id|doc_slug|access_policy|jurisdiction_fips|created_by identical before and after, run tag normalised: acme|tw4-acme-RUNTAG|tenant-private||acme/joe ; empressa|...|empressa/nick ; g58-probe|isolation-note|tenant-private|| ; icc-demo|...|icc-demo/reviewer ; template-city|...|template-city/g71-calendar",
     "beforeRun": "31/33 checks, the 2 failures both being the instrument scope that does not yet exist",
@@ -58,9 +71,8 @@
     "pinnedByTest": "identity.test.mjs 'every live tenant slug still builds and parses' and 'tenant accepts shapes no other scope would' fail if anyone adds a tenant regex.",
     "jurisdictionFipsOnInstrument": "NULL. Verified by SQL on the instrument row (jurisdiction_fips empty) and asserted by a DO block in sql/004 that raises if any non-jurisdiction row ever carries a FIPS."
   },
-
   "httpRoundTrip": {
-    "verdict": "PASS 39/39",
+    "verdict": "PASS 46/46",
     "environment": "Local throwaway PostgreSQL 18 cluster on 127.0.0.1:55432, database built clean from sql/001..004 plus scripts/ci_probe_seed.sql. Reproduced in CI on postgres:16.",
     "prover": "scripts/scope_roundtrip_probe.mjs (committed). Exercises real routes only; never starts a server itself; exits 0/1.",
     "instrumentPath": [
@@ -72,9 +84,9 @@
       "GET /api/smart-files/files/:entityId/placements -> 200 placements=1"
     ],
     "negativeChecks": "8 malformed instrument scopeIds rejected 400 at POST /folders (lowercase ULID, wrong prefix, no prefix, 25 chars, Crockford-excluded I, extra colon, FIPS shape, tenant slug); listFolders rejects a tenant-shaped instrument scopeId 400; a tenant persona uploading into an instrument room 403; an instrument scope uploading into a tenant room 403.",
-    "serverLifecycle": "Every run started the server in the background, curled with --retry-connrefused, ran the probe, killed the PID and waited on it, then confirmed the port was dead. No foreground server, no deploy, every command exited."
+    "serverLifecycle": "Every run started the server in the background, curled with --retry-connrefused, ran the probe, killed the PID and waited on it, then confirmed the port was dead. No foreground server, no deploy, every command exited.",
+    "narrowingChecks": "Seven checks added by the narrowing commit: jurisdiction with a non-FIPS scopeId, jurisdiction with a FIPS scopeId, site with a colon-bearing scopeId, tenant with an odd non-empty scopeId, and tenant with an instrument-shaped scopeId all return 200 with a folders array; a missing scopeId is still 400; an unknown scope type is still 400."
   },
-
   "migrationSql": {
     "file": "sql/004_instrument_scope.sql",
     "widens": [
@@ -82,16 +94,17 @@
       "smart_file_folders_scope_type_check -> ('jurisdiction','tenant','site','instrument')",
       "smart_file_placements_target_type_check -> ('folder','parcel','project','asset','permit','meeting','instrument')"
     ],
-    "alsoUpdatedInPlace": ["sql/001_foundation.sql", "sql/002_rooms.sql"],
+    "alsoUpdatedInPlace": [
+      "sql/001_foundation.sql",
+      "sql/002_rooms.sql"
+    ],
     "notWidened": "smart_file_absence_determinations. Verified after apply: CHECK (verdict = ANY (ARRAY['absent-verified','lookup-failed'])). INSERT of 'not-applicable' still raises, locally and in CI. not-applicable stays a twin-layer concept; if Plan Review meets the same wall the store changes once, deliberately.",
     "assertion": "DO block raises if jurisdiction_fips is non-null on any row whose scope_type is not 'jurisdiction'.",
     "rerunnable": "Every constraint is DROP CONSTRAINT IF EXISTS before ADD. Applied twice locally, second run exit 0.",
     "targetIfApproved": "files Neon branch snowy-bread-83475727 (project smart-files) ONLY."
   },
-
   "neonApplied": false,
   "neonNote": "Not authorized and not attempted. No Neon credential was read or used. cortex-prod untouched; migrations 0078-0081 untouched; no DROP. All proof ran against a throwaway local PostgreSQL cluster and a CI postgres:16 service container.",
-
   "testsProvenByRemoval": [
     {
       "guard": "SCOPE_ID_VALIDATORS.instrument (the validator itself)",
@@ -124,28 +137,42 @@
       "restored": "39/39"
     }
   ],
-
   "removalProofConclusion": "Proofs 3 and 4 are the symmetric halves: neither the migration nor the code is sufficient alone. Proof 3 also establishes the deploy order, since this branch is safe against the un-migrated Neon (tenant untouched, instrument writes 500 until 004 lands).",
-
   "reviewerDecisions": [
-    "listFolders read-path tightening. scopeIdIsValid is applied uniformly, so GET /folders?scopeType=jurisdiction&scopeId=bastrop now returns 400 where it previously returned 200 {folders:[]}. tenant and site are provably unaffected because their rule is non-empty, which the route already required. No live caller uses jurisdiction scope here (the MCP blueprint tool and the QA BFF both pass tenant). Narrowable to instrument-only on request.",
-    ".github/workflows/test.yml is additive scope. The repo had no CI and no branch protection; the program merge rule gates on a conclusion string, so a gate was built. Strip it if the owning lane would rather add CI on its own terms."
+    "RESOLVED. listFolders read-path tightening: ruled narrow, instrument-only. Delivered in 2e6a38a. See listFoldersNarrowing.",
+    "RESOLVED. .github/workflows/test.yml: ruled KEEP. Not stripped.",
+    "RESOLVED. Provenance stays sourceLabel instrument-write on this PR. TW-6 widens it once, together with public-free. Neither added here."
   ],
-
   "remaining": [
-    "Owning lane review of PR #5, then merge, then apply sql/004_instrument_scope.sql to Neon snowy-bread-83475727. Both gates are the owning lane's, not this seat's.",
+    "Owning lane: merge PR #5, apply sql/004_instrument_scope.sql to Neon snowy-bread-83475727, then deploy smart-files Cloud Run. All three are theirs.",
     "Paired control named in the A-029 reply, to run after the Neon apply: existing tenant:icc-demo rooms still read, and the leftover folder:tenant:template-city:public-meetings stays unread rather than deleted.",
-    "Version provenance on instrument writes is a fixed sourceLabel 'instrument-write'. TW-6 needs real provenance (accession number, source URI) and will widen the write path once, deliberately. Left out here rather than opening an unbounded input surface on this row.",
-    "Instrument rooms cannot be shared. createShare generalised to a scope-pair comparison so an instrument folder correctly 403s a tenant persona, but the POST /folders/:id/share route stays persona-only. Correct-by-absence rather than half-built; a later row can open it.",
-    "Instrument documents default to access_policy tenant-private via the column default. TW-6 wants public-free on compiled filings, which is a write-path parameter this row did not add.",
+    "Version provenance on instrument writes is a fixed sourceLabel instrument-write, and instrument documents default to access_policy tenant-private. TW-6 widens both once, deliberately. Ruled out of scope for this PR.",
+    "Instrument rooms cannot be shared. createShare generalised to a scope-pair comparison so an instrument folder correctly 403s a tenant persona, but the share route stays persona-only. Correct-by-absence rather than half-built; a later row can open it.",
     "web/ QA UI is tenant-only and untouched. It does not render instrument rooms.",
     "TW-6 remains blocked on this merge plus the TW-7 distribution run."
   ],
-
   "blocked": [],
-
   "workingEnvironment": {
     "clone": "Fresh clone of origin/main at P:/tmp/tw4-smartfiles. P:\\smart-files was NOT used, NOT reset, NOT cleaned, NOT checked out over.",
     "database": "Throwaway PostgreSQL 18 cluster initdb'd into the session scratchpad on port 55432. Four scratch databases: _before (origin/main baseline), main (after), _no004 (pre-migration proof), _clean (final clean-room). No Neon DSN read, no ~/.empressa credential touched."
+  },
+  "listFoldersNarrowing": {
+    "ruling": "Owning lane, on review of PR #5, 2026-08-17. Apply scopeIdIsValid on the instrument scope ONLY. Restore jurisdiction, tenant and site to prior behaviour.",
+    "rulingReasoning": "Identity already rejects a malformed id at build time, so turning the list route into a validator for every scope adds blast radius this PR does not need. This is the owner of the surface choosing the smaller change, not a correction of a defect.",
+    "commit": "2e6a38a fix(tw4): narrow the listFolders scopeId check to the instrument scope",
+    "codeChange": "src/server.mjs listFolders: the condition \"if (!scopeIdIsValid(scopeType, scopeId))\" becomes \"if (scopeType === instrument && !scopeIdIsValid(scopeType, scopeId))\". One condition. The SMART_FILE_SCOPE_TYPES allowlist above it is untouched, and so is the non-empty scopeId requirement.",
+    "behaviourRestored": "GET /api/smart-files/folders with scopeType=jurisdiction and scopeId=bastrop returns 200 with folders:[] again, where the reviewed revision returned 400.",
+    "parityProof": "Same three requests served by origin/main (abd77f3) and by the branch (2e6a38a) against the same database, responses identical apart from the servedAt timestamp: jurisdiction/bastrop 200 folders empty; site/parcel:48021:R12345 200 folders empty; tenant/Mixed_Case 200 folders empty.",
+    "instrumentStillValidated": "listFolders with scopeType=instrument and scopeId=acme still returns 400 invalid_scope_id.",
+    "pinnedByTest": "scripts/scope_roundtrip_probe.mjs narrowingChecks(). Honest scope of the pin: of the five parity assertions, only \"jurisdiction with a non-FIPS scopeId still lists\" actually detects a re-widening, because the other four scopeIds satisfy their own validators and are unaffected by uniform application. Re-widening proof run: reverting the condition to the uniform form leaves npm test at 18/18 green and fails that one probe check, 45/46. The other four are parity assertions, not re-widening detectors.",
+    "allowlistGuardStillHolds": "Re-ran the removal proof the lane asked to keep. Reverting the allowlist to jurisdiction/tenant/site leaves npm test 18/18 green; the instrument room is created 201, uploaded 201 and read 200, and listFolders returns 400. Writable, readable and invisible. Probe 45/46.",
+    "notTouched": "Enum, SCOPE_ID_VALIDATORS, WRITABLE_SCOPE_TYPES, store.mjs write path, sql/004, .github/workflows/test.yml, cid.mjs, actors.mjs, identity.mjs. Diff of the narrowing commit is src/server.mjs +9/-1 and scripts/scope_roundtrip_probe.mjs +45/-0."
+  },
+  "ciWorkflowRuling": "KEPT, per the owning lane. The repo had zero workflows and main is unprotected, so merge-on-green had nothing to attach to. Not stripped.",
+  "deployOwnership": {
+    "ruling": "Owning lane takes both the Neon apply on snowy-bread-83475727 and the smart-files Cloud Run deploy. Neither this seat nor the cockpit seat runs them. They have deployed that service five times; the owner of the risk owns the window.",
+    "preferredOrder": "merge, then apply sql/004_instrument_scope.sql, then deploy smart-files, so the first serving revision carrying the write path does not 500 on instrument.",
+    "servingRevisionAtHandoff": "smart-files-00005-fdr",
+    "safetyPropertyEndorsed": "Both seats endorsed the proven property: code-without-migration and migration-without-code are each safe, and both must land before TW-6 writes a filing. That is what makes the preferred order a preference rather than a hard constraint."
   }
 }

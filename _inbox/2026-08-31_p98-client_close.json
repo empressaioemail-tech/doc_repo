@@ -1,0 +1,283 @@
+{
+  "lane": "p98-client",
+  "planRow": ["P-98"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "repo": "hauska-map",
+  "status": "complete, uncommitted",
+
+  "missionPremise": "Operator ruling 2026-08-31 (_decisions/2026-08-31_next_action_rail_activation_engine.md), four parts: the Settings right rail becomes ACTION not information; capability-first, so an action names what you get and never a price or a plan; a MOUNTABLE COMPONENT not a Settings feature, because Settings is low traffic and a funnel engine that only fires there moves almost nothing; and instrumented from the first commit, because the locked GTM plan names activation instrumentation as the blocker for affiliate optimisation. The acceptance test is that the ladder must be able to return NOTHING: a next-action surface that always finds something to sell is an ad slot, and this panel already declares that nothing in it is a control that does nothing.",
+
+  "completionPredicate": "A stranger can verify this without me: (1) `npx vitest run src/lib/nextAction.test.ts` passes and its FIRST describe proves a real, fully-read account gets null on all four contexts; (2) the ladder module imports no React, no fetch and no DOM and calls no clock; (3) both new routes appear in api/_lib/deep-allowlist.ts AND in the parity test, and deleting either line turns the parity test red; (4) `node scripts/pe-chrome-kit-gate.mjs` exits 0; (5) `npx tsc --noEmit` exits 0; (6) the full suite is green with a higher count than the recorded baseline.",
+
+  "scopeBasis": "Client half only. The server routes are the sibling lane's in legacy-design-tools; this lane owns BOTH deep-allowlist entries because the deep proxy is on this side and the server lane confirmed legacy-design-tools has no allowlist of its own, so the entire 403 risk is here. Fixing the panel's 'Not read' / 'Not built' rows is explicitly OUT of scope, which is why the honesty note that explains them had to survive rather than be deleted with the prose around it. The four tab bodies are untouched.",
+
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+    "branch": "feat/p98-next-action-rail",
+    "baseCommit": "0fb9734ce455d391c8ec0e931879c9e110f20488",
+    "treeAtStart": "clean",
+    "seat": "property",
+    "seatRegisterEntry": "hauska-map-nextaction",
+    "dependencySatisfied": "the decision doc sequences P-98 after fix/pe-settings-line-weight because both edit SettingsModal.tsx; cd64005 (PR #326) is an ancestor of this base, so there is no second lane on that file"
+  },
+
+  "prNumbers": "not applicable: lane produces a diff, planner commits",
+  "mergeShas": "not applicable: nothing committed, pushed, merged or deployed",
+  "ciConclusionStrings": "not applicable: no PR opened. Local equivalents of every CI step were run and are recorded under `verification`.",
+  "checkpointArtifacts": [
+    "_inbox/2026-08-31_p98-client_cp1.json",
+    "_inbox/2026-08-31_p98-client_cp2.json"
+  ],
+
+  "filesChanged": {
+    "modified": [
+      "apps/property-explorer/api/_lib/deep-allowlist.ts",
+      "apps/property-explorer/src/browse/SettingsModal.tsx",
+      "apps/property-explorer/src/lib/proxy-allowlist.test.ts"
+    ],
+    "added": [
+      "apps/property-explorer/src/lib/nextAction.ts",
+      "apps/property-explorer/src/lib/nextAction.test.ts",
+      "apps/property-explorer/src/lib/unlockClient.ts",
+      "apps/property-explorer/src/lib/activationEvents.ts",
+      "apps/property-explorer/src/lib/nextAction-clients.test.ts",
+      "apps/property-explorer/src/components/NextActionCard.tsx",
+      "apps/property-explorer/src/components/NextActionCard.test.tsx",
+      "apps/property-explorer/src/browse/settings-next-action.test.tsx"
+    ],
+    "diffstatTracked": "3 files changed, 304 insertions(+), 29 deletions(-) — tracked files only; the 8 added files are untracked and listed above"
+  },
+
+  "ladderTable": {
+    "countingRule": "one row per (context, state) -> outcome. `unread` means the read has not landed or did not come back clean. Every row was executed by a test in src/lib/nextAction.test.ts.",
+    "globalPrecondition": "authenticated !== true  ->  NULL on every context. There is no sign-in rung: a state-derived step needs state.",
+    "rows": [
+      { "context": "account | connections", "stateIn": "claude read, connected = false", "actionOut": "connect_claude" },
+      { "context": "account | connections", "stateIn": "claude read, connected = true", "actionOut": "NULL" },
+      { "context": "account | connections", "stateIn": "claude UNREAD (401 / 403 / 404 / 500 / network)", "actionOut": "NULL" },
+      { "context": "plan", "stateIn": "unlocks read, one expiry inside 7 days and not lapsed", "actionOut": "unlock_expiring" },
+      { "context": "plan", "stateIn": "unlocks read, expiry is NULL (unbounded unlock)", "actionOut": "NULL from this rung - unbounded is not expiring" },
+      { "context": "plan", "stateIn": "unlocks read, expiry outside 7 days", "actionOut": "NULL from this rung" },
+      { "context": "plan", "stateIn": "unlocks read, expiry already past", "actionOut": "NULL from this rung - gone, not expiring; extend is the wrong verb" },
+      { "context": "plan", "stateIn": "unlocks read, expiry present and unparseable", "actionOut": "NULL from this rung - a refusal, never a zero" },
+      { "context": "plan", "stateIn": "unlocks read, empty list", "actionOut": "NULL from this rung - the route fails loud, so empty genuinely means none" },
+      { "context": "plan", "stateIn": "unlocks not-built (404) | blocked (403) | error (500) | unread", "actionOut": "NULL from this rung, and the ladder CONTINUES to the lower rungs" },
+      { "context": "plan", "stateIn": "entitlement read, tier free, freeMessagesLeft <= 1", "actionOut": "property_unlock" },
+      { "context": "plan", "stateIn": "entitlement read, tier free, freeMessagesLeft >= 2", "actionOut": "NULL" },
+      { "context": "plan", "stateIn": "entitlement read, tier free, freeMessagesLeft NULL (no counter on the wire)", "actionOut": "NULL - unread is not spent" },
+      { "context": "plan", "stateIn": "entitlement read, tier paid, solo or studio, billingInterval monthly", "actionOut": "annual_upgrade" },
+      { "context": "plan", "stateIn": "entitlement read, tier paid, solo or studio, billingInterval annual", "actionOut": "NULL" },
+      { "context": "plan", "stateIn": "entitlement read, tier paid, solo or studio, billingInterval NULL", "actionOut": "NULL - the STARVED state today, see starvedRungs" },
+      { "context": "plan", "stateIn": "entitlement read, tier paid, TEAM, billingInterval monthly", "actionOut": "NULL - annual Team is seat-capped on the wire, so proposing it could cost them seats" },
+      { "context": "plan", "stateIn": "entitlement UNREAD", "actionOut": "NULL" },
+      { "context": "team", "stateIn": "entitlement read, subscriptionTier team, seats read, viewer is owner, remaining > 0", "actionOut": "team_invite" },
+      { "context": "team", "stateIn": "subscriptionTier solo | studio | null, ANY seat state", "actionOut": "NULL - THE GUARD. Pushing a team plan at a solo user is the nag version." },
+      { "context": "team", "stateIn": "subscriptionTier team, seats read, remaining = 0", "actionOut": "NULL" },
+      { "context": "team", "stateIn": "subscriptionTier team, seats read, viewer is NOT owner", "actionOut": "NULL" },
+      { "context": "team", "stateIn": "subscriptionTier team, seats UNREAD", "actionOut": "NULL - an unknown seat count is not permission, it is the absence of permission" },
+      { "context": "any", "stateIn": "everything else", "actionOut": "NULL" }
+    ],
+    "acceptanceCase": "signed in, Claude connected, paid ANNUAL Studio, free-message count known, unlock list read and EMPTY, seats read and full -> NULL on all four contexts, with every input READ. Nothing is null because we did not look."
+  },
+
+  "actionIdContract": {
+    "source": "coordinator, mid-lane; POST /api/property-explorer/v1/activation-events 400s on anything else",
+    "ids": ["connect_claude", "unlock_expiring", "property_unlock", "annual_upgrade", "team_invite"],
+    "mapping": "one-to-one onto ladder v1. No orphan rung, no orphan id, no sixth string invented.",
+    "control": "NEXT_ACTION_IDS is the exported source and NextActionId is derived from it, so the list and the union cannot drift. The test that actually fails on a rename pins all five as LITERALS (deriving them from the module under test would pass on any rename) and separately walks the ladder to assert each rung PRODUCES its own id in order. Verified by violation: renaming annual_upgrade to switch_to_annual turns it red.",
+    "whyItNeededItsOwnControl": "a failed activation event is dropped silently by design, so a wrong id does not error, does not warn, and appears on no surface - it just loses every event for that rung forever. Nothing else in the codebase would catch it."
+  },
+
+  "allowlistAdditions": [
+    {
+      "verb": "GET",
+      "path": "api/property-explorer/v1/entitlement/unlocks",
+      "set": "DEEP_GET_EXACT",
+      "file": "apps/property-explorer/api/_lib/deep-allowlist.ts",
+      "parityTest": "added to SHIPPED_DEEP_GETS in src/lib/proxy-allowlist.test.ts, imported from the client's own ACCOUNT_UNLOCKS_PATH constant rather than retyped",
+      "violationEvidence": "deleting the line -> 'allows GET api/property-explorer/v1/entitlement/unlocks' fails, AssertionError expected false to be true"
+    },
+    {
+      "verb": "POST",
+      "path": "api/property-explorer/v1/activation-events",
+      "set": "DEEP_POST_EXACT",
+      "file": "apps/property-explorer/api/_lib/deep-allowlist.ts",
+      "parityTest": "the POST half had NO parity coverage at all before this lane. Added SHIPPED_DEEP_POSTS with six paths including this one, imported from the client's ACTIVATION_EVENTS_PATH constant",
+      "violationEvidence": "deleting the line -> 'allows POST api/property-explorer/v1/activation-events' fails, AssertionError expected false to be true"
+    }
+  ],
+  "allowlistNote": "The pre-existing SHIPPED_DEEP_GETS entries are hand-transcribed literals, which makes the test a THIRD copy of each path: a typo in the test and a matching typo in the client agree with each other and the check passes on a path nobody calls. The two P-98 rows are IMPORTED from the client modules instead, so the comparison is between the two independently authored halves. The existing rows were left as they are - retro-fixing them is not this card. Narrowness is also pinned: POST on the unlocks path, GET on the events path, and a neighbouring invented path are all asserted refused.",
+
+  "verification": {
+    "countingRule": "vitest file and test counts from a full `npx vitest run` in apps/property-explorer, before any edit and after the last one, on the same machine and node.",
+    "baseline": { "testFiles": 159, "tests": 2111, "todo": 1, "total": 2112 },
+    "after": { "testFiles": 163, "tests": 2192, "todo": 1, "total": 2193 },
+    "delta": "+4 test files, +81 tests, 0 failures, 0 regressions",
+    "deltaBreakdown": "nextAction.test.ts 36 + nextAction-clients.test.ts 13 + NextActionCard.test.tsx 11 + settings-next-action.test.tsx 13 = 73 new, plus proxy-allowlist.test.ts +8 (28 from 20: one GET parity row, six POST parity rows, one P-98 path-constant pin) = 81, which reconciles to the 2111 -> 2192 delta exactly",
+    "tsc": "npx tsc --noEmit -p tsconfig.json exit 0",
+    "chromeKitGate": "node scripts/pe-chrome-kit-gate.mjs exit 0; SELF-TEST 76/76 ok; walked 171 -> 175 billed chrome files; the four new source files add ZERO colour literals and ZERO native buttons (the ratchet allows a file with no baseline entry none of either)",
+    "sourceEncodingGuard": "exit 0 with the new files intent-to-added so git ls-files covers them: 663 scanned, up from 655; self-test 6 fire / 8 no-fire. Index reset afterwards.",
+    "recordsCopyGuard": "exit 0, 209 files scanned",
+    "siblingLanePinsStillPass": "settings-line-weight.test.ts 7/7 - PE.line14 == 7, PE.line06 == 7, PE.line28 == 1 in SettingsModal.tsx are unmoved; settings-modal.test.tsx 13/13"
+  },
+
+  "violationEvidence": {
+    "method": "each mutation applied to the FINAL source, the affected suite run, the file restored from a pristine copy. The harness refuses to score a case whose pattern was not found, so a no-op mutation reports SKIP instead of a false green.",
+    "result": "13 of 13 mutations produce a failure",
+    "cases": [
+      { "id": "V1", "mutation": "team-tier guard deleted from the invite rung", "fails": "THE TEAM GUARD > solo, studio, an unknown tier and free all get NOTHING on Team", "count": 1 },
+      { "id": "V2", "mutation": "plan rungs reordered so annual outranks the expiring unlock", "fails": "ONE ACTION PER CONTEXT > a state satisfying two rungs returns the HIGHER one", "count": 1 },
+      { "id": "V3", "mutation": "connect rung fires on UNREAD connection state", "fails": "nothing is proposed on unread state > an unread Claude connection proposes nothing", "count": 1 },
+      { "id": "V4", "mutation": "annual rung fires without reading the interval (the ad-slot direction)", "fails": "THE LADDER CAN RETURN NOTHING (the acceptance test) plus 9 more", "count": 10 },
+      { "id": "V5", "mutation": "an unreadable unlock list silences the whole Plan context", "fails": "a 404 is NOT 'you have nothing to do' > does not block a LOWER plan rung", "count": 1 },
+      { "id": "V9", "mutation": "the null-expiry skip removed from soonestExpiringUnlock", "fails": "THE TYPE CHECKER - TS2345 at nextAction.ts:282, string | null not assignable to string", "count": "tsc exit 2", "note": "vitest alone does NOT catch this one and is reported as such: Date.parse(null) is NaN, so the downstream unparseable guard absorbs it at runtime. The compiler is the mechanism here, which is the stronger form, but it is not a test and is not claimed as one." },
+      { "id": "V10", "mutation": "expiry measured against a browser clock instead of the server asOf", "fails": "the CLOCK is the server's asOf, plus 3 more", "count": 4 },
+      { "id": "V11", "mutation": "annual_upgrade renamed to switch_to_annual", "fails": "THE FIVE ACTION IDS ARE A SERVER CONTRACT > the exported list is exactly the set the server accepts", "count": 1 },
+      { "id": "V8", "mutation": "false-absence guard removed so all-rows-dropped reads as empty", "fails": "parseAccountUnlocks > rows arrived and NONE could be shaped is unreadable, NEVER empty", "count": 2 },
+      { "id": "V12", "mutation": "asOf no longer required, falls back to Date.now()", "fails": "parseAccountUnlocks > asOf IS REQUIRED - no server clock, no read", "count": 1 },
+      { "id": "V13", "mutation": "a NULL expiry row dropped instead of kept as unbounded", "fails": "parseAccountUnlocks > A NULL EXPIRY IS KEPT", "count": 1 },
+      { "id": "V6", "mutation": "unlocks GET deleted from the deep allowlist", "fails": "every deep path a shipped client calls is allowlisted > allows GET .../entitlement/unlocks", "count": 1 },
+      { "id": "V7", "mutation": "activation-events POST deleted from the deep allowlist", "fails": "every deep path a shipped client calls is allowlisted > allows POST .../activation-events", "count": 1 }
+    ],
+    "harnessDefectFoundAndFixed": "the first run of this battery used perl -0pi substitutions whose patterns contained \\n. deep-allowlist.ts is CRLF in this Windows checkout, so those patterns never matched, no mutation was made, and the run reported the checks as VACUOUS. Caught because the grep-count sanity line did not move. The harness now normalises the pattern to the file's own line endings and refuses to score a case whose pattern was not found. Recorded because the inconvenient result was being produced for the wrong reason, which is the same instrument failure as a convenient one."
+  },
+
+  "notVisuallyConfirmed": "STATED PLAINLY, as the dispatch required: there is no screenshot harness in this repo and no jsdom, and I did not visually confirm the rendered result. What IS proven is static markup (a null action renders the empty string; an action renders one kit Button, the headline, the detail and data-action-id) and the pure ladder, fully executed. What is NOT proven by execution: that the `shown` effect fires on render and that `acted` fires on click. Effects do not run under renderToStaticMarkup and there is nothing to click. Those two are covered by FILE-SHAPED pins that read the write path, and they are labelled as file-shaped in the test file itself rather than dressed up as behavioural.",
+
+  "starvedRungs": {
+    "note": "Reported per rung, per the rule that a mechanism is not built until it exists, has a trigger, AND its gating precondition is populated. One of five rungs can fire today.",
+    "connect_claude": "LIVE. fetchAiConnections works today and the path is already allowlisted. Runnable from this mount.",
+    "unlock_expiring": "STARVED on the route until the sibling lane deploys GET /entitlement/unlocks, AND not runnable from this mount even then - see notRunnableFromThisMount.",
+    "property_unlock": "STARVED. Needs freeMessagesLeft at ACCOUNT level. usePropertyEntitlement is per-PROPERTY and Settings has no property, so the hook returns its LOADING constant and never fetches. The free-message counters live inside the response's per-property block, so even an account-level entitlement read would not supply this one.",
+    "annual_upgrade": "STARVED. Needs billingInterval, which NOTHING in this client reads - the Plan tab renders 'Billing interval: Not read' for exactly this reason. The rung requires the literal string 'monthly' and null suppresses it, so it cannot fire on an inference. Named input: billingInterval on GET /entitlement.",
+    "team_invite": "STARVED twice over. Needs subscriptionTier at account level (unreadable here) AND a roster with a known seat count (the roster route is 404 -> not-built today). Also not runnable from this mount."
+  },
+
+  "notRunnableFromThisMount": {
+    "mechanism": "SETTINGS_RUNNABLE in SettingsModal.tsx, fail-closed: an action the host cannot run is not rendered, and the rail goes quiet. A new NextActionId is not runnable until it is added there AND given a branch in runAction. Pinned by a test.",
+    "team_invite": "there is NO invite write path anywhere in this client. The Team tab's Invite block is prose only, and deep-allowlist.ts states team writes stay off 'until the client has a write path'. Rendering an Invite button that posts nowhere is the dead-control defect.",
+    "unlock_expiring": "onUpgrade opens the pricing modal scoped to the MAP's active parcel (ExplorerMap.tsx passes parcelNodeId={activeParcelNodeId}), which is not necessarily the parcel whose unlock is lapsing. Sending someone to a checkout for a DIFFERENT property is worse than not offering the step. Extending needs parcel-scoped routing this host does not have."
+  },
+
+  "constraintsHonored": [
+    "no commit, no push, no merge, no deploy - the diff is uncommitted and listed above",
+    "no sub-agents spawned (deepest worker)",
+    "the four tab bodies are unchanged",
+    "nothing removed from Settings earlier today was reintroduced",
+    "chrome-kit gate exit 0; no raw colour literal and no native <button> in any new file; the kit Button and PE tokens only",
+    "the sibling lane's merged line-weight pins (7 / 7 / 1) are unmoved",
+    "the honesty note survives as one line at the BOTTOM of the rail, below the action, and lives in SettingsModal rather than in the component because it is a statement about Settings",
+    "every command exit-bounded; no watch, no dev server, no serve",
+    "the pure ladder imports no React, no fetch, no DOM, and calls no clock"
+  ],
+
+  "openItems": [
+    {
+      "id": "OPEN-1",
+      "what": "LIVE DEFECT FOUND, NOT FIXED (out of scope: it is a tab body). SettingsModal's Plan tab shows 'Paid' for EVERY account, including anonymous.",
+      "evidence": "usePropertyEntitlement(null) short-circuits to its LOADING constant whenever parcelNodeId is null (`if (!parcelNodeId || !snapshot) return LOADING`) and the effect that would fetch is guarded by `if (parcelNodeId && !snapshot)`, so it never runs. LOADING has locked:false and signedOut:false, so `access = ent.locked ? 'Free' : ent.signedOut ? 'Not read' : 'Paid'` always evaluates to 'Paid'. Confirmed two ways: read of the write path, and a render probe that printed ACCESS_WORD= Paid for an anonymous first paint.",
+      "owner": "unassigned - recommend a follow-up row",
+      "fix": "an account-level entitlement read, which would also un-starve property_unlock's tier half"
+    },
+    {
+      "id": "OPEN-2",
+      "what": "billingInterval is on no wire, so annual_upgrade can never fire.",
+      "owner": "server side - GET /entitlement",
+      "note": "highest-value unblock in the set: the decision doc calls the annual switch the strongest lever because it is expansion revenue with no capability to build and the annual Stripe price ids are already configured. The rung is written and tested and needs one field."
+    },
+    {
+      "id": "OPEN-3",
+      "what": "The unlocks route shape carries NO human label for the parcel, so the expiring-unlock headline says 'the property you unlocked' rather than naming it.",
+      "owner": "server lane",
+      "note": "not worked around. Synthesising a label from parcelNodeId was rejected: a raw 48021:34137 in a sentence is a leak, not a label. If the route gains a label field the copy can name the property; the ladder change would be one line."
+    },
+    {
+      "id": "OPEN-4",
+      "what": "Extending an unlock has no parcel-scoped route from Settings, so the highest-intent rung in the whole ladder is unrunnable at its only mount.",
+      "owner": "unassigned",
+      "note": "the fix is a host callback that opens a specific parcel (ExplorerMap knows how). Not built here because the rung cannot fire yet anyway and speculative plumbing into ExplorerMap is not this card."
+    },
+    {
+      "id": "OPEN-5",
+      "what": "There is no invite write path anywhere in the client, so team_invite is unrunnable everywhere, not only here.",
+      "owner": "server + client, tracked separately",
+      "note": "deep-allowlist.ts already records that team writes are off until the client has one."
+    },
+    {
+      "id": "OPEN-6",
+      "what": "`shown` on render and `acted` on click are not verified by execution.",
+      "owner": "this repo's test infrastructure",
+      "note": "no jsdom and no DOM harness exists. Adding one is a repo-wide decision, not a P-98 one. The gap is declared in the test file and here rather than hidden behind a file-shaped check that reads as behavioural."
+    },
+    {
+      "id": "OPEN-7",
+      "what": "not-built and read-with-an-empty-list produce the SAME output from the ladder today.",
+      "owner": "n/a - declared limit",
+      "note": "the distinction is real and enforced by the TYPE (only the `read` arm carries a list at all, so a failure cannot reach a consumer as an empty one), and the tests prove the kind is read: ready-with-an-expiring-unlock yields the action while not-built, blocked and error do not. But no test can separate not-built from empty by output alone, and that is stated rather than papered over."
+    },
+    {
+      "id": "OPEN-8",
+      "what": "The pre-existing SHIPPED_DEEP_GETS rows are hand-transcribed literals - a third copy of each path rather than a comparison between the client and the allowlist.",
+      "owner": "unassigned",
+      "note": "the two P-98 rows import the client constants instead. Converting the older rows is a small, safe follow-up."
+    }
+  ],
+
+  "fleetMemory": {
+    "LESSON": [
+      "A calendar word ('today', 'tomorrow') derived from a UTC instant is an unearned claim when the module does not know the viewer's timezone. Say a DURATION and round DOWN - understating is the safe direction for an expiry warning. Caught by the test on its first run.",
+      "A parse that drops unrecognised rows returns [] on a whole-contract mismatch, and [] is then indistinguishable from an honest empty. Rule: rows arrived and NONE could be shaped is UNREADABLE, not empty. A partial drop may still keep the good rows.",
+      "When two halves of a contract are authored in different repos, a parity test that retypes the path is a THIRD copy - a matching typo on both sides passes. Import the client's own path constant so the test compares the two independently authored halves.",
+      "perl/sed substitutions whose patterns span a newline SILENTLY NO-OP on CRLF files in a Windows checkout, and a violation harness then reports the check as vacuous when no mutation was ever made. Any mutation harness must assert the pattern was FOUND before scoring the result. In this repo new files are LF and existing tracked files are CRLF, so the same script can work on one and no-op on the next.",
+      "A violation battery must record WHICH gate fails. One of thirteen here fails the TYPE CHECKER and not vitest, because Date.parse(null) is NaN and a downstream guard absorbs it. That is a stronger mechanism, but reporting it as 'a test catches it' would be false.",
+      "A next-action ladder needs a host-side runnable set. The ladder is host-agnostic by design, so the host must be able to say 'I have no working control for this step' and render nothing, fail-closed. Without it the rail ships a dead button the moment the server half lands.",
+      "Where a clock and the data it interprets come from the same response, put the clock INSIDE the read arm and delete the caller-supplied one. Two derivations of 'now' are free to disagree; one cannot."
+    ],
+    "DEAD-END": [
+      "Adding fetchAccountEntitlement() to entitlementClient.ts to feed the plan rungs. Measured before building: it would supply tier and subscriptionTier but NOT freeMessagesLeft (per-property, inside the response's property block), NOT billingInterval (not on the wire at all) and NOT seats (roster route 404s). Zero additional rungs would fire. Rejected as scope creep with no payoff.",
+      "Routing unlock_expiring through onUpgrade from Settings. ExplorerMap passes parcelNodeId={activeParcelNodeId} to PricingModal, so the checkout would be scoped to whatever parcel the MAP has selected - possibly a different property from the one lapsing. Worse than not offering the step.",
+      "Keeping a `label` field on AccountUnlock. The server's shape has no such field; a nullable label that is always null is a slot inviting someone to fill it from parcelNodeId."
+    ],
+    "GROUND-TRUTH": [
+      "2026-08-31 18:17 local - hauska-map @ feat/p98-next-action-rail on base 0fb9734: tsc --noEmit exit 0; pe-chrome-kit-gate exit 0 (self-test 76/76, 175 billed chrome files); vitest 163 files / 2192 passed / 1 todo; source-encoding guard exit 0 (663 tracked files); records-copy-guard exit 0 (209 files).",
+      "2026-08-31 - baseline BEFORE this lane on the same base: vitest 159 files / 2111 passed / 1 todo.",
+      "2026-08-31 - SettingsModal.tsx Plan tab renders the access word 'Paid' for an anonymous, unread account. Confirmed by render probe AND by reading usePropertyEntitlement's null-parcel short circuit. Live defect, out of this lane's scope.",
+      "2026-08-31 - there is no jsdom, no @testing-library and no screenshot harness anywhere in apps/property-explorer. Every component test in the repo is renderToStaticMarkup or a source read.",
+      "2026-08-31 - the Team tab's Invite block in SettingsModal is PROSE. There is no invite control and no invite write path in the client.",
+      "2026-08-31 - apps/property-explorer/api/_lib/deep-allowlist.ts is CRLF in this checkout; newly written files are LF. .gitattributes pins only apps/property-explorer/public/** (-text) and *.mjs (eol=lf)."
+    ],
+    "OPEN": [
+      "The sibling server lane must ship GET /entitlement/unlocks returning { asOf, unlocks: [{parcelNodeId, tenantId, unlockedAt, expiresAt, source}] } with asOf REQUIRED and parseable - this client refuses the body without it rather than falling back to a browser clock.",
+      "billingInterval on GET /entitlement is the single field that un-starves the highest-value rung (annual_upgrade).",
+      "An account-level entitlement read would fix OPEN-1 (the 'Paid' defect) and half of property_unlock's starvation in one move.",
+      "Settings is the PROTOTYPE mount. The decision doc says Settings staying the component's only home would mean the component argument was not honoured - the next mount decision is the operator's."
+    ]
+  },
+
+  "leave_behind": [
+    {
+      "item": "branch feat/p98-next-action-rail in P:/seat-worktrees/property/hauska-map-nextaction, 11 files uncommitted (3 modified, 8 added)",
+      "owner": "planner",
+      "plan_row": "P-98",
+      "note": "nothing committed, pushed, merged or deployed, per the dispatch. Commit by explicit pathspec - the file list is under filesChanged."
+    },
+    {
+      "item": "the three checkpoint/close artifacts in doc_repo _inbox (cp1, cp2, close)",
+      "owner": "planner",
+      "plan_row": "P-98",
+      "note": "doc_repo commits are planner-owned; left uncommitted."
+    },
+    {
+      "item": "scratch violation harness at P:/tmp/p98viol.mjs and pristine copies at P:/tmp/p98orig/",
+      "owner": "this lane",
+      "plan_row": "none",
+      "note": "scratch only, outside any repo, safe to delete. Recorded rather than silently abandoned."
+    },
+    {
+      "item": "four rungs that are built, tested and STARVED (unlock_expiring, property_unlock, annual_upgrade, team_invite)",
+      "owner": "server lanes",
+      "plan_row": "OPEN-2 through OPEN-5 above",
+      "note": "declared, not hidden. Each names the exact input it is waiting on."
+    }
+  ]
+}

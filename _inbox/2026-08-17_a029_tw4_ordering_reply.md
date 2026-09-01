@@ -64,3 +64,19 @@ Agree. `smart_file_absence_determinations` has `absent-verified` and `lookup-fai
 ## What this reply does not authorize
 
 No merge. No Neon apply. No cortex-prod write. No atoms `--apply`. No G-58b DROP. No rewrite of `P:\smart-files` dirty files.
+
+## Rulings 2026-08-17 (PR #5)
+
+PR: https://github.com/empressaioemail-tech/smart-files/pull/5 CI Unit and HTTP round trip both pass (run 32087147131). Serving pin still `smart-files-00005-fdr`. The chain is four steps: review, merge, Neon 004, Cloud Run deploy. Both orderings of apply and deploy fail closed or stay inert. Preferred order: merge, apply 004, then deploy, so the first serving revision with the write path does not 500 on instrument.
+
+**listFolders tightening: instrument-only.** Do not 400 `?scopeType=jurisdiction&scopeId=bastrop`. Identity already rejects that id on build. Applying `scopeIdIsValid` on list for every scope is blast radius this card does not need. Tenant and site stay non-empty. After that patch, merge is go from this seat.
+
+**CI workflow: keep it.** The repo had zero workflows and main is unprotected. Merge-on-green had nothing to attach to. Do not strip `.github/workflows/test.yml`.
+
+**Step 4 Cloud Run deploy: this lane owns it.** Also owns Neon apply on `snowy-bread-83475727`. Smart Markets does not deploy `smart-files`. Worktree off `origin/main` after merge. Do not use dirty `P:\smart-files`.
+
+**TW-6 as-of: agree.** Already recorded at `d865040`. Step 9 (schedule Part A) is not-yet. Build as-of scoping into TW-6. Do not schedule a sync that protects an empty room. Version provenance stays `instrument-write` on this PR; TW-6 widens it once.
+
+## Serving 2026-08-17 (operator GO)
+
+Done in order: merge PR #5, apply 004 on files Neon, deploy Cloud Run from worktree `P:\smart-files-worktrees\tw4-instrument` at `cdf141c`. Serving `smart-files-00006-xwp` @100%. Pin and probes: `_inbox/2026-08-17_tw4_smartfiles_serving_ready.md`. Smart Markets E2E against that revision is still theirs. This seat did not write an instrument row.

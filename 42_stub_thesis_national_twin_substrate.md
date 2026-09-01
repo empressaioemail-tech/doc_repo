@@ -1,7 +1,7 @@
 ---
 id: 42_stub_thesis_national_twin_substrate
 title: The stub thesis — the national twinned-place substrate (working name "stub" — TBD)
-last_updated: 2026-07-31
+last_updated: 2026-08-10
 status: canonical thesis (ratified in discussion 2026-07-31; seeds the cross-repo doc reconciliation + archive program)
 owner: nick
 related: [41_three_wedge_spine_strategy, 09_post_saas_substrate_thesis, 40_hauska_map_3d_implementation_brief, 30_block_cert_harness_spec, _prospects/mox]
@@ -10,7 +10,9 @@ purpose: The unifying thesis. The company builds ONE thing — the national inve
 
 # The stub thesis
 
-Ratified in strategy discussion 2026-07-31. NOTE: "stub" is a WORKING NAME for the unit — a single-word name is TBD and will be set before the cross-repo doc reconciliation. Everywhere "stub" appears, read "the unit" until named.
+> **THE UNIT IS NAMED, AND THIS DOC IS SUPERSEDED IN PART 2026-08-10 by [`portfolio_thesis/01_the_layer_and_the_three_doors.md`](portfolio_thesis/01_the_layer_and_the_three_doors.md).** The portfolio thesis folder is the reference set; where it and this doc disagree, **it wins**. **"Stub" is resolved: the unit is a smart site.** Read "stub" as "smart site" throughout — the placeholder-name question below is closed. The three temporal modes still hold, with one correction: **deepen now has a self-serve path (Property Watch) that did not exist when this doc was written**, where deepening meant only heavy engagements. Also carried forward and still binding: the two-altitude rule — "digital twin" is internal language and stays internal.
+
+Ratified in strategy discussion 2026-07-31. NOTE: "stub" is a WORKING NAME for the unit — a single-word name is TBD and will be set before the cross-repo doc reconciliation. Everywhere "stub" appears, read "the unit" until named. **(Closed 2026-08-10: the name is smart site — see the banner above.)**
 
 ## THE UNIT — a stub
 A stub is a FULLY-TWINNED PLACE: every layer that governs it — lots, roads, topo, land-use code, building codes, utilities, setbacks — where "twinned" means two specific, already-solvable things are DONE for that place:

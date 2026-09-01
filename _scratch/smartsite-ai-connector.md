@@ -260,14 +260,89 @@ MCP save must not reuse PUT `/saved-properties/:parcelNodeId`. That handler sets
 
 2026-08-28T20:52Z: Rainmaker re-probe on serving `00643-rib`. Cv 200 in 2902 ms, Cove 200 in 2696 ms, both first hit `48021:8720522`. Pine St/Street still `48021:34137`. `abbreviation_works` fired. `o4_not_closed` did not. Evidence `_inbox/2026-08-28_p91_o7_rainmaker_reprobe.md`.
 
+## GROUND-TRUTH
+
+2026-08-28T22:16:06.124Z: `_schema_migrations` on fancy-fire-06136146 / neondb names `0088_pe_screens_and_saved_crm.sql`. `pe_screens` and `pe_screen_rows` exist. Workflow 33216058017 migrations-only; deploy and shift jobs skipped. Not Factory. Not `hauska_mcp.atoms`.
+
+## GROUND-TRUTH
+
+2026-08-28T22:17Z: O1 serving bundle is `index-BmBbb7Ot.js` (was `index-BSF0m7t6.js`). Strings present: `atom_path_pending`, `not-derived`, `live derive`. Anonymous `https://smartsite.cloud/p/48021:33223` Property tab still 44-char chrome. Facets 200 `atom-chain-warm`: envelope status ok, `buildableAreaSqFt` 1397, `buildableAreaPct` absent, geojson absent. Do not invent 42%. Composed kind unmeasured.
+
+## GROUND-TRUTH
+
+2026-08-28T22:18Z: origin/main hauska-mcp-server `1ae9f28` still has `assert.ok(true)` for P-89 item 5. Isolated `P:/seat-worktrees/substrate/hauska-mcp-p89-scan` `feat/p89-flood-catalog-scan` replaces it with a two-derivation catalog scan. Planted `refresh_flood_export` in tools.ts failed the scan, then reverted. 27/27 after revert. Did not write #74 or ICC-meter trees. Did not deploy.
+
+## GROUND-TRUTH
+
+2026-08-28T22:32Z: Serving `cortex-api-00649-wuq` @100% tag `p527`. Digest `sha256:9d7651868e37d4b6a28378bfa03cb97e621134ee3de6fa3f50045318e320faf0` = image tag `fd750203ce4d51f388aff4afd7d34bc404ef0880`. Revision annotation `minScale=1`. Env `CORTEX_USER_DAILY_API_LIMIT=50000`. Staging `00646-luj` still 0%. Do not shift it. `00647-goh` is the min-0 canary leftover, not serving.
+
+## GROUND-TRUTH
+
+2026-08-28T22:32Z: Serving `smartsite-mcp-00023-kud` @100% tag `p527`. Digest `sha256:3c0116e8553b9e98ae93698f3262acec525352fb25b5103fc33d510854418e3d`. `minScale=1`. Live `/health` on mcp.smartsite.cloud names `00023-kud`. `GET /llms.txt` says Tools (13). Unauth `POST /mcp` tools/list is 401 `missing_bearer`.
+
+## GROUND-TRUTH
+
+2026-08-28T22:31Z: HTTP A12 pass on serving `00649-wuq`. Screen `399f84c3-c4e5-4e1c-9359-b599a660f668`. create_screen wrote 0 saves (15→15). Unresolved `zzzz-not-a-situs-99999` stored verbatim. `908 Pine, Bastrop TX` also stored unresolved (A5 leftover). add_to_screen gold `48021:34137` resolved. save Watching then DELETE left ordinals and queries identical. Neon `pe_screen_rows` agrees. Saves restored 16→15. Gold was not previously saved.
+
+## GROUND-TRUTH
+
+2026-08-28T22:58Z: Address `situs-search` is empty at the 20s budget on both serving `00649-wuq` (digest `9d765186`, `#527` image) and staging `00646-luj` (old digest, 0% traffic). Queries: `908 Pine, Bastrop TX`, CAD `908 PINE , BASTROP, TX 78602`, `908 Pine St, Bastrop TX`, `111 Rainmaker Cv, Bastrop TX`, `927 MAIN ST, BASTROP, TX`. All HTTP 200, hits n=0, ~20.1–20.3s. Node-id `48021:34137` is 1 hit in 136–162ms on both hosts. `create_screen` unresolved on `908 Pine, Bastrop TX` is the same miss, not a screen-only path split. Rejected: `#527` broke address search. Staging is the pre-#527 image and misses the same way. Rejected: abbreviation-only. Rainmaker Cv also empty. Earlier O7 pass on `00643-rib` at 20:52Z (Cv/Cove 200 under 3s to `48021:8720522`) is stale. Do not run A5 forty until address search returns a hit or a declared miss under budget.
+
+## GROUND-TRUTH
+
+2026-08-28T23:22Z: O1 customer-done on signed-in More facts for `48021:33223` / `927 MAIN ST , BASTROP, TX 78602`. BUILDABLE `Not stamped here`. No lot-percentage. No 42%. Setbacks still print `F 20 ft · S 5 ft · R 20 ft` (scalars, not a pct). Footer `source baked-snapshot · report R1 · baked 2026-08-28T21:29:25Z`. Zone chip `F1 — F1` and Zoning row `GC` both present. Owner `BASTROP CHAMBER OF COMMERCE`. Agrees with MCP R1 refuse. Machine strings `atom_path_pending` / `not-derived` are not on this card. Wave C iframe unblocked.
+
+## GROUND-TRUTH
+
+2026-08-28T23:50Z: Serving `smartsite-mcp-00025-qud` @100% tag `p536`. Digest `sha256:d1766fe257744077d6baa927f8c421dd75c8bc7d851ee5610425d605ac96253c` = merge `ecdd4bb85c2614aff720d19975f742b69ae0f4aa` (#536 squash). Revision `minScale=1`. Live `https://mcp.smartsite.cloud/health` names `00025-qud`. `GET /llms.txt` Tools (13). Cortex not shifted. Staging cortex `00646-luj` not touched. Item 16 Connect still ungraded.
+
+## GROUND-TRUTH
+
+2026-08-28T23:50Z operator Connect on serving `00025-qud`: board rendered for screen `cd48f7a2-3994-4353-a1d4-8eeb0218f0c9`. Rows were id/ordinal/parcelNodeId/query/resolution/source only; no envelope cell. All three queries unresolved with `parcelNodeId` null, including `48021:34137` and `48021:33223`. Envelope on gold `get_smart_site`: refused `atom_path_pending`, label "Buildable envelope not computed", no lot-percentage. Find listing history: Claude four-liner said the button was missing and tried `ask_the_map` (rejected "Provide runId, address, or areaContext"). Screenshot shows the button on the parcel panel. I5 is `ui/message`, not `ask_the_map`.
+
+## GROUND-TRUTH
+
+2026-08-29T01:24Z: LDT #538 squash-merged `c601f2bbc70c8a23d7b66c9555cbd12d5afda21f`. Serving MCP `smartsite-mcp-00027-gap` @100% tag `p538`, digest `sha256:f90b5d3db589a6edd5fec0d9582927eb16e2fce61bf7141fc79ab4796e5e9cba`, minScale=1. Live `/health` names `00027-gap`. Serving cortex `cortex-api-00654-lom` @100% tag `p538`, digest `sha256:e1f169a99a717f91799179f13b480662cc6ba129e85c879d02a38330dd441294`, minScale=1, `CORTEX_USER_DAILY_API_LIMIT=50000`. Staging `00646-luj` still tagged `staging` at 0%. Leftover MCP tags at 0%: canary `00022-roz`, p527 `00023-kud`, p536 `00025-qud`. Item 16 Connect re-grade still owed.
+
+## GROUND-TRUTH
+
+2026-08-29T01:31Z: Connect re-probe on serving `00027-gap` / `00654-lom`. Board rendered, Claude-dark chrome. `48021:34137` and `48021:33223` resolved; only `zzzz-not-a-situs-99999` unresolved. Gold `get_smart_site` header `908 PINE , BASTROP, TX 78602`; envelope refused `atom_path_pending` on draw overlays; no lot-percentage. Screen rows are still query/resolution/parcelNodeId/source (plus id/ordinal). Board rail columns including envelope are unread dashes, not refused cells. Listing did not run: research/`ask_the_map` rejected three selectors (parcel node id, R1 runId, situs) with "Provide runId, address, or areaContext". Nothing written to board or panel. Item 16 listing half failed. Item 26 live turn failed.
+
+## GROUND-TRUTH
+
+2026-08-29T02:28Z: Wave E serving. LDT #539 squash `d070e2ad`. cortex-api `00656-vek` @100% tag `p539`, digest `sha256:8c5fcd25…`, minScale=1, `CORTEX_USER_DAILY_API_LIMIT=50000`. Staging `00646-luj` still 0%. Live situs-search: Pine 200 1.42s first `48021:34137`; Rainmaker Cv 200 2.83s first `48021:8720522`; zzzz 200 0.36s `missClass=no-hit`. Evidence `_inbox/2026-08-29_p91_wave_e_live_probe.md`.
+
+## GROUND-TRUTH
+
+2026-08-29T02:46Z: Wave D serving. LDT #540 squash `bd4c2d8c`. MCP `00029-fom` @100% tag `p540`, digest `sha256:8f8d435a…`, minScale=1. Live `https://mcp.smartsite.cloud/health` names `00029-fom`. `GET /llms.txt` Tools (13). Cortex still `00656-vek`. Staging untouched. Item 16 Connect three-way score still owed.
+
+## GROUND-TRUTH
+
+2026-08-29T03:25Z: Connect loop QA on `00029-fom` / `00656-vek`. Paste PASS n=1. Save PASS, board `updatedAt`=`createdAt`. Listing: no turn, nothing written. Not scored `host_drop`. Three mechanisms remain open. Evidence `_inbox/2026-08-29_p91_connect_loop_qa.md`.
+
+## GROUND-TRUTH
+
+2026-08-29T04:20Z: Listing bind serving. LDT #542 squash `f4cc90bc`. MCP `00033-hin` @100% tag `p542`, digest `sha256:754e11247c202612b596a7ead8fc69070a94f805a4a8231a02c2abe0bf4bde7c`, minScale=1. Live `/health` names `00033-hin`. `GET /llms.txt` Tools (13). Cortex still `00656-vek` / p539. Staging `00646-luj` still 0%. Connect re-score owed: `script-ran` visible? label flip?
+
 ## OPEN
 
-Customer-done for Wave C is two serving grades, then the iframe.
-
-1. O1: Vercel serving hauska-map `cca29644`. Grade composed X-ray on `48021:33223` (`not-derived` / `atom_path_pending`, no lot-percentage).
-2. Persistence: apply 0088 on cortex Neon (not Factory, not atoms). Then planner-owned #527 canaries on cortex-api AND smartsite-mcp, each stamped `minScale=1` (yml still bakes 0). Do not shift staging `00644-soz` (daily-limit / CTX, not #527). After shift: HTTP A12 (`create_screen` writes zero saves; save/unsave leaves screen intact) and live `tools/list` of 13.
-3. Wave C iframe only after 1 and 2. Then item 21 copy.
+1. Fresh Connect after `00033-hin`: create screen, Open Pine, click listing. Report `script-ran` and the label. Flip + empty chat = host_drop. Missing `script-ran` = script stripped. Label sits with `script-ran` = click not reaching the iframe. Do not widen `ask_the_map`.
+2. After that score: Wave H next, not A5 forty. Do not start either until the score.
+3. Item 21 copy after O1. Connect OAuth `tools/list` still unprobed.
+4. P-89 leftover PR #78. Do not deploy Hauska MCP. Do not take P-90.
 
 P-89 Hauska MCP hollow refuse is code-done on `1ae9f28` (#77). Customer-done is a live probe on the serving Hauska MCP revision. Different server from `mcp.smartsite.cloud`. P-90 leftover.
 
 After any later cortex-api shift, re-read `status.traffic[]` and confirm `CORTEX_USER_DAILY_API_LIMIT=50000`.
+
+## LESSON
+
+2026-08-30: The honesty differentiator is a design argument (operator, 2026-08-28 QA battery), not a verified property. The claim is that the payload makes silence legible so the model refuses where the record refuses. It is not "it will not degrade." Mechanism: five dispositions on sections; atom-miss maps to unknown; refusals carry `agentGuidance`; geometry is a server projection in feet. Prefer a mechanical guard (X2 serialize refuse on implicit-present neighbor) over restating the slogan.
+
+## OPEN
+
+2026-08-30: X2 (P-92). `draw.edges[]` has no disposition. Neighbor and adjacency ship as flat fact. Operator observation this walk: five of six labels on verified shared boundaries were wrong (not independently re-measured; needs X1 artifact). Do not market the honesty differentiator until X2 is customer-done. Decision `_decisions/2026-08-30_honesty_contract_is_silence_legible.md`.
+
+## GROUND-TRUTH
+
+2026-08-30T19:24-05: Operator restated the claim and named the edge-metadata gap. Filed decision, WDLL X2, OPS-16 A-052. Snapshot doc_repo `main` `beb8c8b` at session start; this write is uncommitted. Flood caveat unchanged: every flood section in the 2026-08-30 walks is `present` + `citationsDegraded: true` + empty citations (F2).

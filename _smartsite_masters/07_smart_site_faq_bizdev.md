@@ -2,7 +2,7 @@
 id: smartsite_masters_07_faq_bizdev
 title: Smart Site FAQ — answers for biz ops and biz dev
 status: active
-last_updated: 2026-08-04
+last_updated: 2026-08-29
 applies_to: smart_site
 owner: nick
 purpose: The questions buyers, partners, and skeptics actually ask, with the approved way to answer each. Internal working document; the answers are written to be spoken or adapted, not pasted wholesale.
@@ -23,6 +23,9 @@ The county GIS tells you where the lines are. Smart Site tells you what they mea
 
 **What is the X-ray?**
 The deep-read report on one smart site. Not a folder of documents; a read through the surface to every layer underneath: what you can build with the envelope drawn, flood and drainage, terrain, codes, utilities, each sourced and dated. It is the artifact a realtor shares with a client, an architect hands a reviewer, a developer runs before buying.
+
+**What other reports are there?**
+Flood and Drainage is the other live report. Feasibility and Comparison are reports on the locked menu and are not live generate paths today. Comparison is also the side-by-side tool. Brief is the inspect dock. Records is a courthouse request. Do not pitch a report that is not on the live card.
 
 **Is this a valuation tool?**
 No, deliberately. Smart Site tells you what you can do with a place, not what it is worth. Constraints and buildability, cited, is the wedge; valuation is a crowded, opinion-driven category and we stake the brand on being right about facts instead.
@@ -82,7 +85,7 @@ So do we, at the browse layer. The county gives you fragments across a dozen sys
 ## Commercial
 
 **What does it cost?**
-Free to browse, genuinely — the map, the inspect card, saved properties, three AI chat messages per property, and sharing. Solo at $49/mo is the full answer on a parcel: the X-ray, the Flood and Drainage study, unlimited chat, unlimited properties. Studio at $129/mo adds the professional deliverables: site plan CAD (DXF and IFC), terrain export, and owner data. Team is $299/mo for up to 10 seats, then $25 a seat. A single property can also be unlocked for $15 for 30 days. One unlock moment, never a wall per button.
+Free to browse, genuinely — the map, the inspect card, saved properties, three AI chat messages per property, and sharing. Solo at $49/mo is the full answer on a parcel: the X-ray, the Flood and Drainage study, unlimited chat, unlimited properties. Studio at $129/mo adds the professional deliverables: site plan CAD (DXF and IFC), terrain export, and owner data. Team is $299/mo for up to 3 seats, then $25 a seat. A single property can also be unlocked for $15 for 30 days. One unlock moment, never a wall per button.
 
 **Why is the unlock 30 days and not forever?**
 Because the answer has a shelf life. Bastrop repealed its entire zoning code, and any product promising a permanent answer would have been serving the dead version. The bound is a freshness guarantee, not a meter: what you get is an answer verified on a date, and the date is on it. It is the on-ramp — a little over three properties and Solo is the better buy, which is exactly the point.
@@ -91,7 +94,7 @@ Because the answer has a shelf life. Bastrop repealed its entire zoning code, an
 Skip-trace is a professional capability, not a $49 impulse feature. Studio is the tier for people who produce something they hand to someone else — drawings, exports, an owner approach — so the deliverables travel together.
 
 **Is there a team/brokerage offer?**
-Yes, and it closes without talking to anyone: $299/mo covers up to 10 seats, then $25 per additional seat, with shared saved properties and one bill. A firm swipes a card and invites colleagues. Note that 10 seats works out to under $30 a head, below the $49 individual price — a scattered office is paying more than a consolidated one. There are no negotiated terms to improvise, by design.
+Yes, and it closes without talking to anyone: $299/mo covers up to 3 seats, then $25 per additional seat, with shared saved properties and one bill. A firm swipes a card and invites colleagues. Extra seats stay monthly. There are no negotiated terms to improvise, by design.
 
 **Can I talk to someone / get a demo?**
 The product is the demo. The inspect card is free, needs no login, and answers a real parcel in seconds. There is no sales call because there is no sales team on this product — the pricing page answers the questions a rep would, and anything it fails to answer is a defect in the page, not a reason to book a meeting. (Custom builds and municipal deployments are different businesses and do have people; that is Empressa Solutions and SmartCity OS, not Smart Site.)

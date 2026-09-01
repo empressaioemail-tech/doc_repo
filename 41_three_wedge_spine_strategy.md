@@ -1,7 +1,7 @@
 ---
 id: 41_three_wedge_spine_strategy
 title: The three-wedge spine strategy — one substrate, three buyers, plan-review keystone
-last_updated: 2026-07-31
+last_updated: 2026-08-10
 status: canonical strategy frame (ratified 2026-07-31; supersedes scattered wedge captures)
 owner: nick
 related: [09_post_saas_substrate_thesis, 2026-07-31_tier3_municipal_wedge_thesis_frame, 2026-07-31_FULL_SESSION_CAPTURE_all_threads_and_open_items, _prospects/mox, 08_tiered_access_model, 14_pricing_framework]
@@ -9,6 +9,8 @@ purpose: The unifying go-to-market + product frame. THREE wedges into ONE spine,
 ---
 
 # The three-wedge spine strategy
+
+> **SUPERSEDED IN PART 2026-08-10 by [`portfolio_thesis/01_the_layer_and_the_three_doors.md`](portfolio_thesis/01_the_layer_and_the_three_doors.md).** The portfolio thesis folder is the reference set; where it and this doc disagree about how the product lines relate, **it wins**. The three wedges here (RE-pro, municipal, custom-build) are the three **doors** in that frame. Specifically: **the custom-build framing pass this doc flagged as owed is resolved there** — custom build stays services (Empressa Solutions, per-engagement, no list price), and Property Watch is the repeatable commercial product this doc was reaching for. The unifying-theology and three-buyer analysis below still hold; read them under the door frame.
 
 Ratified 2026-07-31. Replaces the "two wedge / Tier-1-vs-Tier-3" framing with the sharper THREE-wedge shape.
 

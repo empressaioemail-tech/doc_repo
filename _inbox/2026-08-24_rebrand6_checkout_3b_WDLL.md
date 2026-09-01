@@ -53,6 +53,12 @@ Start Solo, Studio, Team, or Unlock from the live pricing popup. The next surfac
 - Write `P:/seat-worktrees/property/hauska-map`. Isolated hauska-map tree only.
 - Write the property LDT checkout from a PE tree. Cortex is a property/LDT branch.
 
+## Amendments
+
+2026-08-24: Stripe 2026-03-25 retired Session `ui_mode=custom`. Live Start Studio returned that error on the pricing modal. Wire is now `elements` (PE body + Stripe form). `custom` remains an accepted PE alias and maps to `elements`. Hosted keep still omits `ui_mode` (Stripe default `hosted_page`). Product is unchanged: Payment Element on the existing Checkout Session.
+
+2026-08-24: Item 4 full-page `/checkout` is retired. Operator rejected leaving the map after Start Studio. Subscription payment is a pricing-family popup. Decision `_decisions/2026-08-24_checkout_is_pricing_popup.md`. Phase-close WDLL `_inbox/2026-08-24_phase_close_live_qa_WDLL.md` item 3.
+
 ## Sequencing
 
 Cortex items 1-2 on an isolated LDT tree from current serving main. PE items 4-9 on an isolated hauska-map tree from `origin/main` after #216. Item 3 hosted-kill is the last merge, after the PE alias. Two writers, one WDLL. PE does not mount until item 1 returns a secret against a known violation fixture.

@@ -1,0 +1,11 @@
+import fs from "node:fs";
+const buf = fs.readFileSync("P:/doc_repo/_inbox/2026-08-05_kaufman_cert.log");
+const log = buf.toString("utf16le");
+const marker = '"when":';
+const i = log.indexOf(marker);
+const start = log.lastIndexOf("{", i);
+const block = log.indexOf('"blockPass": true', i);
+const end = log.indexOf("}", block) + 1;
+const parsed = JSON.parse(log.slice(start, end));
+fs.writeFileSync("P:/doc_repo/_inbox/2026-08-05_kaufman_cert.json", JSON.stringify(parsed, null, 2));
+console.log("ok", parsed.score?.label, parsed.blockPass);

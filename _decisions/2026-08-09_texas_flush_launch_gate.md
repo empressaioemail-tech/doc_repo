@@ -2,10 +2,14 @@
 id: 2026-08-09_texas_flush_launch_gate
 title: Texas flush — launch gate is measured-everywhere; filled-everywhere is program completion
 date: 2026-08-09
-status: active
+status: active (criteria amended 2026-08-11)
+amended_by: _decisions/2026-08-11_texas_flush_launch_gate_amendment
 owner: nick
-related: [_decisions/2026-08-08_layer_first_statewide_fabric_sequence, 90_operations/OPS-11_invariant_register, 90_operations/OPS-12_instrument_inventory, 90_operations/OPS-13_store_topology, 76j_smartsite_launch_readiness_program, 90_operations/OPS-7_coverage_and_honesty_doctrine]
+related: [_decisions/2026-08-08_layer_first_statewide_fabric_sequence, _decisions/2026-08-11_texas_flush_launch_gate_amendment, 90_operations/OPS-11_invariant_register, 90_operations/OPS-12_instrument_inventory, 90_operations/OPS-13_store_topology, 76j_smartsite_launch_readiness_program, 90_operations/OPS-7_coverage_and_honesty_doctrine]
 ---
+
+> **Amended 2026-08-11.** Denominator, displayState coverage, criterion 2 ledger-native restatement, and gradable done-card live in [`_decisions/2026-08-11_texas_flush_launch_gate_amendment.md`](_decisions/2026-08-11_texas_flush_launch_gate_amendment.md). This record preserves launch-vs-program intent and the per-rail split; grade launch against the amendment's done-card, not the literal counts below.
+
 
 # Texas flush: two gates, not one
 

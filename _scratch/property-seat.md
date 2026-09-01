@@ -11,3 +11,5 @@ OPEN: P-90 WDLL draft, not approved. W8 queued after live honest X-ray PDFs.
 OPEN: Stripe A1-A4 / B1-B3 other agent. `seats_purchased` persist is the join to P-94 invite. Do not start a second Stripe lane.
 
 LESSON: a canvas worker is disposable. The salvage file is continuity. Predecessor claims that P-89 was undeployed and that W9 live deploy was `dpl_J6Liza2UFgYYpzDXZAwSgmtrXBwN` are stale.
+
+GROUND-TRUTH 2026-08-29T00:34Z: P-94 canary held. See `_scratch/p94-team-roster.md`. Do not shift. Allowlist + sign-in are the gates.

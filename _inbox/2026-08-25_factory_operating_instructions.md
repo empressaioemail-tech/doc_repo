@@ -2,6 +2,7 @@
 id: 2026-08-25_factory_operating_instructions
 title: Factory operating instructions (this program)
 date: 2026-08-25
+last_updated: 2026-08-25
 status: active
 plan_row: P-73
 operator_approval: verbal 2026-08-24 operate do not rebuild; 2026-08-25 atom/node/edge pointer
@@ -66,17 +67,27 @@ P-25, P-09, and roads COVER stay `ready:false`. No Factory 1 `--apply`. No CAMA 
 
 ## Cad-ingest apply gate
 
-No leftover or CAMA apply starts until `node scripts/cad-ingest-apply-gate.mjs --check --packet <path>` PASSes. Missing packet is a refuse. Copy `scripts/fixtures/cad-ingest-apply-gate/packet.template.json`. Census is GROUP BY tax_year with no `tax_year =` filter. Path comes from leftover-year n, not from the prompt. Packet `ldtSha` must equal `46e1a5a1`. Missing or other SHA is a refuse. Caldwell 2025 rows stay as written. Do not flip L17. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md`.
+No leftover or CAMA apply starts until `node scripts/cad-ingest-apply-gate.mjs --check --packet <path>` PASSes. Missing packet is a refuse. Copy `scripts/fixtures/cad-ingest-apply-gate/packet.template.json`. Census is GROUP BY tax_year with no `tax_year =` filter. Path comes from leftover-year n, not from the prompt. Packet `ldtSha` must equal `46e1a5a1`. Missing or other SHA is a refuse. Caldwell 2025 rows stay as written. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md`.
+
+## L17 is the inspect pin, not a leftover stop
+
+L17 is the county registry declared vintage (`current_tax_year` / `current_tier`). Structural inspect binds that year only.
+
+Leftover still writes. StratMap leftover usually lands on 2025. If that year is not the declared year, leftover is off the inspect read set. That is expected. Packet sets `inspectReadSet=false` and `willFlipL17=false`.
+
+Do not flip L17 mid-apply so leftover 2025 looks like the live roll while a later CAMA year is already declared.
+
+A later named card may flip L17 after a complete leftover that is meant to become the declared vintage. That card is reviewed. It is not this leftover apply.
 
 ## Next legal write
 
-P-78 merge is already on serving main (`#477` `72cffc8`). Caldwell 48055, Bastrop 48021, and Hays 48209 leftover already landed. County 4 waits on a named FIPS and a PASS packet. Do not pick 48021 again. Do not rewrite 48055 or 48209.
+P-78 merge is already on serving main (`#477` `72cffc8`). Leftover KEEP through Wise **48497** Path B +48428 (yb 0, la 48428). Tranche-1 leftover farm is done (33/33). Do not rewrite the KEEP set. Do not start Dallas 48113 or Tarrant 48439 on this gate. Do not start atoms `--apply` from leftover. Queue `_inbox/2026-08-25_leftover_queue.md`.
 
 P-75 LDT #475 and P-76 LDT #476 serve. Do not re-merge them.
 
 ## Memory
 
-Compiled dispatches now carry the verbatim FLEET MEMORY (M0) block. Canon-gate M6 refuses a stripped block. Do not raise `.github/memory-backlog-pin.json`. Live gate 2026-08-25T05:03Z: 85 untriaged > pin 64. Triage is a planner decision in `_catalog/memory_promotion_log.jsonl`, then lower the pin in the same commit. Do not self-promote `MEMORY.md` from a sub-agent.
+Compiled dispatches now carry the verbatim FLEET MEMORY (M0) block. Canon-gate M6 refuses a stripped block. Do not raise `.github/memory-backlog-pin.json`. Pin file `maxUntriagedLessonFiles` is **49** (W8 parent apply after 29 decisions; was 56). Historical 2026-08-25T05:03Z measurement was 85 > pin 64. Mid-session live was 78 > 56. Do not quote those as live. Live instrument: `node scripts/enforcement/memory-promotion-gate.mjs` — last scored this checkpoint 49 untriaged, pin 49. Do not self-promote `MEMORY.md` from a sub-agent. Pin and log are uncommitted until the planner commit.
 
 ## Do not start
 

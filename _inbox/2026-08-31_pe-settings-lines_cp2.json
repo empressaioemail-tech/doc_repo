@@ -1,0 +1,88 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint — change applied and interrogated",
+  "lane": "pe-settings-lines",
+  "planRow": "P-95",
+  "repo": "hauska-map",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-settings",
+    "branch": "fix/pe-settings-line-weight",
+    "commit": "fbda04aa77065cc9dd8e4ad453623401c7f58d02",
+    "treeAtCp2": "2 modified, 1 untracked; nothing committed"
+  },
+
+  "applied": {
+    "numstat": "14 add / 14 del  apps/property-explorer/src/browse/SettingsModal.tsx\n17 add /  2 del  apps/property-explorer/src/components/Card.tsx",
+    "noWholeFileChurn": "SettingsModal is 787 lines and the diff is 14 lines. Verified with git diff --numstat, not by eye.",
+    "newFile": "apps/property-explorer/src/browse/settings-line-weight.test.ts (7 pins)"
+  },
+
+  "completenessSweep": {
+    "method": "grep every border / outline / boxShadow declaration in SettingsModal.tsx, not just the line-token ones, so a line painted by some other means cannot hide",
+    "result": "26 hits. 15 are line-token borders (14 reclassified, 1 kept). 8 are borderRadius (geometry, untouched). 1 is `border: 0` on the tab Button. 1 is L237, the active tab 2px underline in PE.blue/transparent — an INDICATOR, not a chrome hairline, correctly not a line token. 1 is a comment.",
+    "rawColourCheck": "grep for var(--, hex literals and rgba( in SettingsModal.tsx returns NONE. Every colour on this surface is a PE token, so the chrome-kit literal ratchet cannot have moved."
+  },
+
+  "violationEvidence": {
+    "harness": "scratchpad/violate.sh — applies one violation, runs the pins, records the exit, restores from a snapshot of the LANE working state (never from HEAD, which would have reverted the lane work itself)",
+    "rounds": [
+      { "id": "control", "what": "clean lane tree, no violation", "expected": 0, "actual": 0, "verdict": "OK" },
+      { "id": "V1", "direction": "regression", "what": "SettingsModal:117 Panel edge line14 -> line28, i.e. repaint structure with emphasis", "expected": 1, "actual": 1, "verdict": "OK" },
+      { "id": "V2", "direction": "over-correction", "what": "SettingsModal:102 Aside 2px bar line28 -> line06, i.e. flatten the one legitimate emphasis", "expected": 1, "actual": 1, "verdict": "OK" },
+      { "id": "V3", "direction": "shared-shell regression", "what": "Card.tsx raised edge line14 -> line28", "expected": 1, "actual": 1, "verdict": "OK" },
+      { "id": "V4", "direction": "count-neutral swap", "what": "swap one edge with one rule (419 -> line14, 117 -> line06) so the 7/7 counts still hold. If this had PASSED, the site-specific pin would be vacuous and worth nothing.", "expected": 1, "actual": 1, "verdict": "OK" },
+      { "id": "V5", "direction": "premise drift", "what": "pe-tokens.css line-28 role comment rewritten, i.e. the definition the whole reclassification rests on moves", "expected": 1, "actual": 1, "verdict": "OK" },
+      { "id": "post-restore control", "what": "clean lane tree again", "expected": 0, "actual": 0, "verdict": "OK" }
+    ],
+    "score": "6/6 violations refused; control passed before and after",
+    "eventsExcluded": "The five induced failures are indistinguishable from real ones in a raw test-run count. They ran ONLY against src/browse/settings-line-weight.test.ts and every one was reverted. The AFTER numbers below were taken on a post-restore tree whose md5s match the pre-harness snapshot exactly, for all three touched files.",
+    "treeIntegrityAfterHarness": "md5 match on SettingsModal.tsx, Card.tsx and pe-tokens.css; git status shows pe-tokens.css UNMODIFIED, proving the V5 mutation was fully reverted"
+  },
+
+  "verification": {
+    "tsc": { "before": "exit 0, no output", "after": "exit 0, no output" },
+    "vitest": {
+      "before": "exit 0 — 158 files, 2104 passed, 1 todo (2105)",
+      "after": "exit 0 — 159 files, 2111 passed, 1 todo (2112)",
+      "delta": "+1 file, +7 tests, which is exactly the new pin file. Zero regressions, zero failure markers."
+    },
+    "chromeKitGate": {
+      "before": "exit 0 — SELF-TEST 76/76, 20 surfaces + 12 kit files ok",
+      "after": "exit 0 — SELF-TEST 76/76, 20 surfaces + 12 kit files ok, coverage 87/87 unchanged"
+    },
+    "exitCodeDiscipline": "Every exit code above was read with $? on the bare command redirected to a file. None was read through a pipe to tail, which would have reported tail status and passed unconditionally."
+  },
+
+  "adversarialReviewOfMyOwnChange": [
+    {
+      "challenge": "Is this a blanket find-and-replace wearing a classification?",
+      "answer": "No, and the diff proves it. The ten line28 sites split 7 to line14 and 2 to line06, with 1 kept. The five line14 sites all went to line06. Three destinations from two sources. A blanket replace could not produce that shape."
+    },
+    {
+      "challenge": "Did I find zero legitimate line28 uses, which the dispatch flags as suspicious?",
+      "answer": "No. One survives inside SettingsModal (the 2px Aside marker) and four more render ON the Settings surface from shared kit and were deliberately not touched: Button.tsx:50 primary, the quiet OUTLINE BUTTON named verbatim in the token doc; StatusChip.tsx:42 and :56 dashed absence chips; pe-tokens.css:283 .pe-btn:hover border. Every one is a control state or a signal, which is what the token means."
+    },
+    {
+      "challenge": "The Aside call is close. What if it is wrong?",
+      "answer": "Stated as close in CP1 with the counter-reading. It is one token at one call site (SettingsModal.tsx:102) and V2 proves the pins would catch its removal, so a reversal is a one-line change plus one expectation."
+    },
+    {
+      "challenge": "Am I claiming a visual result?",
+      "answer": "No. There is no screenshot harness in this repo. Nothing here asserts how the panel looks. The measured contrast numbers are arithmetic on hex values, not a rendering."
+    },
+    {
+      "challenge": "Does the change do anything, or is it a correct artifact that enforces nothing?",
+      "answer": "The change is the rendered border colour on eleven structural elements, so it acts by definition. The PIN is the part at risk of being ceremonial, and V1 through V5 are the evidence it is not: it was observed FAILING five times, including once on a mutation that keeps every count identical."
+    },
+    {
+      "challenge": "What bypasses the pin?",
+      "answer": "Named honestly. (a) A line painted in a CSS file rather than an inline style; the sweep shows Settings has none today, but the pin would not see one added. (b) A NEW file added to the Settings tree; SETTINGS_TREE is a hand-listed array of three files, which is a hand-declared list and drifts the way every hand-declared list in this operation drifts. (c) A swap between two edges or between two rules that are not one of the three site-pinned lines. These are the exclusion set, and they are part of the instrument's contract."
+    }
+  ],
+
+  "openAtCp2": [
+    "line06 measures 1.034 on the raised modal ground, i.e. the seven internal rules are now near-invisible. Shipped and declared, escalated to the palette author. Operator eye is the acceptance test.",
+    "four hand-rolled modal shells still carry a line28 edge and my change does not reach them",
+    "sed rewrote SettingsModal.tsx from CRLF to LF on disk; the git diff is still exactly 14 lines and git will restore CRLF on next touch, so this is local and cosmetic, but the planner should not read the warning as churn"
+  ]
+}

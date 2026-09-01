@@ -1,0 +1,44 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review — verify by violation, both directions",
+  "lane": "P-97 Phase 0 — kill the silent tier downgrade in the PE checkout client",
+  "planRow": ["P-97"],
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-billing",
+    "branch": "fix/pe-checkout-no-tier-downgrade",
+    "baseCommit": "de0dca732ab52e44cd86c7d888f73f9eae0b7c83",
+    "state": "working-tree diff, uncommitted — planner commits"
+  },
+  "preRegisteredFalsifier": "Before running, the falsifier was stated: if the new block passes with the ORIGINAL defective billingClient.ts restored, the test is not a control and must be rewritten. The defective file was obtained from git (git show HEAD:apps/property-explorer/src/lib/billingClient.ts), not hand-reconstructed, so the violation is the real prior code.",
+  "violationDirection1_defectRestored": {
+    "how": "git show HEAD:apps/property-explorer/src/lib/billingClient.ts > (same path). Confirmed restored by grep: line 105 startPeCheckoutInstallScoped({ successUrl, cancelUrl }) present, line 145 tier: \"pro\" present.",
+    "command": "npx vitest run src/lib/pe-checkout-tier.test.ts",
+    "result": "Tests 12 failed | 14 passed (26). All twelve matrix cases (3 tiers x 2 intervals x {403,404}) FAILED. First assertion to trip: 'expected [ { …(2) }, { …(2) } ] to have a length of 1 but got 2' at pe-checkout-tier.test.ts:244.",
+    "controlsSurvived": "All three NOT-VACUOUS CONTROLS passed under the defect, which is correct — they are designed to hold in BOTH directions. A control that failed here would be measuring the fix, not the vacuity."
+  },
+  "violationDirection1b_independentAssertions": {
+    "why": "The matrix test's first assertion short-circuits, so 'three independent failures' was a CLAIM, not a measurement. It was measured rather than asserted.",
+    "how": "A throwaway probe src/lib/__violation-probe.test.ts asserted BEHAVIOUR 2 and BEHAVIOUR 3 in isolation while the defect was still in place. Deleted immediately after; confirmed absent from the working tree.",
+    "result": [
+      "BEHAVIOUR 2 ALONE (no request carries a tier other than the one clicked): FAILED — 'expected false to be true'. The restored fallback put tier 'pro' on the wire behind a 'studio' click.",
+      "BEHAVIOUR 3 ALONE (nothing purchasable returned): FAILED — 'expected true to be false' on result.ok. Under the defect the call returned ok:true carrying the Pro-priced checkout URL. This is the direct evidence that the defect yields a purchasable session at the wrong price, not merely an extra request."
+    ]
+  },
+  "violationDirection2_fixRestored": {
+    "how": "Restored the fixed file from the pre-violation copy; verified by grep that the fallback call site is gone (count 0) and that the only remaining 'tier: \"pro\"' occurrence is inside the explanatory comment at line 105, not code.",
+    "result": "npx vitest run src/lib/pe-checkout-tier.test.ts — 26 passed (26). Full suite: 158 files, 2104 passed, 1 todo."
+  },
+  "existingTestRemoved": {
+    "test": "src/lib/pe-checkout-tier.test.ts 'NOT-VACUOUS CONTROL: 404 feature-detect DOES reach the install-scoped fallback (proves the 503 test could fail)'",
+    "whyRemovedNotWeakened": "It asserted calls.length===2 and calls[1].url===LEGACY_INSTALL_SCOPED_URL — i.e. it asserted the defect as the specification, the exact shape ENFORCEMENT.md/Tests forbids. Leaving it would have made the fix read as a regression.",
+    "whatReplacedItsFunction": "Its job was keeping the 503 test non-vacuous. Three replacement controls do that job by discriminators that survive the retirement: (1) a 200 still returns ok:true, so the refusals are not a blanket refuser; (2) the harness demonstrably records two calls with differing bodies across two invocations, so toHaveLength(1) is a measurement not a stub artifact; (3) a 500 returns a message that is NOT CHECKOUT_UNAVAILABLE_MESSAGE, so the branch discriminates on status.",
+    "netTestDelta": "+15 added, -1 removed = +14. Suite total 2090 -> 2104 passing. The arithmetic matches exactly."
+  },
+  "adversarialSelfReview": [
+    "Did the fix change the 503 branch? No — git diff shows the 503 hunk untouched.",
+    "Did any existing test get weakened? No test assertion was relaxed. One test was removed for asserting a defect, and it is named here with its replacement.",
+    "Is the retirement safe? startPeCheckoutInstallScoped was module-private (no export keyword) with exactly two occurrences repo-wide: its declaration and the single call site. No dynamic import, no barrel re-export. startProCheckout aliases startPeCheckout, not the retired function.",
+    "Second mechanism for the grep result being empty: the function could be reached under another name via a re-export. Rejected by reading the export list of the module — every export is enumerated and none is the install-scoped function."
+  ]
+}

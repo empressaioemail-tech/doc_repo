@@ -1,0 +1,288 @@
+{
+  "lane": "p98-server",
+  "title": "P-98 server half: activation events + the account-wide unlock-with-expiry read",
+  "planRows": ["P-98"],
+  "repo": "legacy-design-tools",
+  "status": "complete-pending-planner-commit",
+
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+    "branch": "feat/p98-activation-events",
+    "baseCommit": "394424f2520ecd32074470b1bdc4c798bfcdff7c",
+    "baseIsOriginMainTip": true,
+    "declaredAt": "2026-08-31",
+    "seatRegistered": "yes — _catalog/seat_register.json, property seat, entry legacy-design-tools-p98"
+  },
+
+  "missionPremise": "OPS-16 amendment A-063 (2026-08-31) and _decisions/2026-08-31_next_action_rail_activation_engine.md. The Settings right rail becomes a next-action rail: one state-derived action, capability-first, able to go quiet, instrumented from the first commit. Two facts the ladder needs did not exist server-side. (1) An account-wide list of ACTIVE unlocks with expiry: hasPePropertyUnlock in peEntitlement.ts filters by parcelNodeId one parcel at a time, and the decision record names the expiring unlock as the highest-intent rung, so the read was in scope rather than deferred. (2) A PE-user-scoped activation event store: gtm_events is keyed on install_id for the browser extension and cannot answer a question about a signed-in account.",
+
+  "completionPredicate": "GET /api/property-explorer/v1/entitlement/unlocks returns every active unlock for the signed-in account with its STORED expiry; POST /api/property-explorer/v1/activation-events writes one row to a new pe_activation_events table and REFUSES an unrecognised or absent event_type or action_id rather than defaulting; the monorepo typecheck is clean; artifacts/api-server test counts move only by the tests this lane added and no test regresses; artifacts/smartsite-mcp is byte-for-byte untouched and its counts are identical.",
+
+  "scopeBasis": "Server half only, and both deliverables are ADDITIVE — no existing route, read or table changes behaviour. The hauska-map deep-allowlist is the client lane's item and was deliberately NOT edited: product repositories have one owning seat. The ladder component, the rung logic and the client's event emission are the client lane's (feat/p98-next-action-rail). Fixing the panel's 'Not read' / 'Not built' rows is out of scope for both halves per the client dispatch.",
+
+  "gitState": {
+    "prNumbers": "not applicable: this lane produces a DIFF and does not commit, push, merge or deploy, per its dispatch",
+    "mergeShas": "not applicable: nothing committed",
+    "ciConclusionStrings": "not applicable: no PR opened; CI has not run on this work",
+    "workingTree": "dirty by design; the planner commits",
+    "filesChanged": {
+      "modified": [
+        "artifacts/api-server/src/__tests__/setup.ts",
+        "artifacts/api-server/src/routes/propertyExplorer.ts",
+        "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+        "lib/db/src/__tests__/integration/schema.integration.test.ts",
+        "lib/db/src/schema/index.ts"
+      ],
+      "added": [
+        "artifacts/api-server/src/__tests__/pe-activation-events.test.ts",
+        "artifacts/api-server/src/__tests__/pe-entitlement-unlocks.test.ts",
+        "artifacts/api-server/src/lib/__tests__/peActivationEventsValidate.test.ts",
+        "artifacts/api-server/src/lib/peActivationEvents.ts",
+        "artifacts/api-server/src/lib/peActivationEventsValidate.ts",
+        "artifacts/api-server/src/lib/peUnlocksRead.ts",
+        "lib/db/drizzle/0091_pe_activation_events.sql",
+        "lib/db/src/schema/peActivationEvents.ts"
+      ],
+      "diffstatTracked": "5 files changed, 139 insertions(+), 2 deletions(-)"
+    }
+  },
+
+  "THE_CLIENT_HALF_MUST_ADD_THESE_TWO_ALLOWLIST_PATHS": {
+    "severity": "BLOCKING — without this both routes return 403 and the client reads it as a failed read",
+    "repo": "hauska-map (NOT this lane's repo; deliberately not edited)",
+    "file": "apps/property-explorer/api/_lib/deep-allowlist.ts",
+    "additions": [
+      { "constant": "DEEP_GET_EXACT", "path": "api/property-explorer/v1/entitlement/unlocks" },
+      { "constant": "DEEP_POST_EXACT", "path": "api/property-explorer/v1/activation-events" }
+    ],
+    "precedent": "A route omitted from that allowlist is exactly the defect that shipped on 2026-08-31 for ai-connections: a dead card for every user, with the server side correct the whole time.",
+    "verifiedAbsenceOnThisSide": "grep -rn for DEEP_GET_EXACT, DEEP_POST_EXACT, deep-allowlist and deepAllowlist across the whole legacy-design-tools worktree (--include=*.ts --include=*.mjs, node_modules excluded) returned ZERO matches. Positive determination: there is no LDT-side allowlist to update, so the entire 403 risk sits in hauska-map."
+  },
+
+  "deliverable1_unlocksRead": {
+    "route": "GET /api/property-explorer/v1/entitlement/unlocks",
+    "auth": "requirePeAuthenticated + resolvePeOwnerUserId, identical to /team/members and /ai-connections",
+    "responses": {
+      "200": "{ asOf: ISO, unlocks: [{ parcelNodeId, tenantId, unlockedAt: ISO, expiresAt: ISO|null, source }] }",
+      "401": "{ error: 'authentication_required' } — NOT an empty list, which would claim 'you have unlocked nothing' about an account that was never identified",
+      "500": "{ error: 'unlocks_unavailable' } — fails LOUD; an unreadable list must not degrade to an empty one, because a quiet rail is indistinguishable from an account with nothing expiring"
+    },
+    "expiryIsStoredNotDerived": "pe_property_unlocks.expires_at is a real nullable column (lib/db/src/schema/pePropertyUnlocks.ts). PE_PROPERTY_UNLOCK_DURATION_DAYS = 30 lives at artifacts/api-server/src/lib/pePaywallStripe.ts:44 and is WRITE-side only: the Stripe path computes now+30d and hands it to createPePropertyUnlock. No read derives from it and this one does not either. A NULL expires_at row (legacy / operator dev unlock) is ACTIVE but UNBOUNDED and ships as expiresAt: null; synthesising unlocked_at + 30 days would have the rail announce a lapse that does not exist.",
+    "activePredicate": "expires_at IS NULL OR expires_at > asOf — copied verbatim from hasPePropertyUnlock so the list read and the per-parcel gate cannot disagree about the same row. One definition, not two.",
+    "asOfRationale": "The instant the ACTIVE predicate was evaluated at ships in the response. A consumer computing 'lapses in four days' then uses the same clock the filter used, so the countdown and the set cannot contradict each other, and no rounding rule had to be invented server-side.",
+    "tenantNotUsedToNarrow": "The primary key includes tenant_id, but the question is account-wide. Filtering by session tenant would silently hide unlocks bought under another and read as 'you have no unlocks'. tenantId is RETURNED per row instead.",
+    "ordering": "expires_at ASC (Postgres NULLS LAST on ASC, which is wanted: an unbounded unlock is the least urgent thing in the list), then parcel_node_id ASC as a stable tiebreak."
+  },
+
+  "deliverable2_activationEvents": {
+    "route": "POST /api/property-explorer/v1/activation-events",
+    "auth": "requirePeAuthenticated + resolvePeOwnerUserId",
+    "requestBody": "{ event_type: 'shown'|'acted', action_id: <closed set>, surface?: string }  (snake_case, matching the contract both P-98 dispatches state)",
+    "responses": {
+      "201": "{ ok: true, event: { eventType, actionId, surface, createdAt } } — echoed from INSERT ... RETURNING, so createdAt is the database clock every later ratio buckets by, not a value this process guessed",
+      "400": "{ error: 'invalid_event_type'|'invalid_action_id'|'invalid_surface', allowed?: [...] } — the refusal NAMES the vocabulary so a client/server drift explains itself",
+      "401": "{ error: 'authentication_required' }",
+      "500": "{ error: 'activation_event_not_recorded' } — the server always declares its failures; the client's silent drop is a deliberate degradation on that side only"
+    },
+    "ACTION_IDS_ARE_DEFINED_BY_THIS_LANE": {
+      "why": "Nothing in legacy-design-tools defined an action-id vocabulary before this work (grep verified 2026-08-31), and neither P-98 dispatch, OPS-16 A-063, nor the decision record names any id string. The server owns the closed set.",
+      "theFiveStrings": ["connect_claude", "unlock_expiring", "property_unlock", "annual_upgrade", "team_invite"],
+      "mapping": "connect_claude = Account/Connections when pe_ai_connections shows none. unlock_expiring = Plan, an active unlock close to lapsing (the highest-intent rung, and the reason the unlock read was in scope). property_unlock = Plan, free tier with the chat allowance nearly exhausted. annual_upgrade = Plan, paid MONTHLY on solo or studio. team_invite = Team tier with unused seats, never any other tier.",
+      "COORDINATION_ITEM": "The client lane must emit EXACTLY these strings. Any other id is a 400, which is the correct fail-closed direction but produces an empty funnel that would read as low engagement. This is surfaced rather than left to be discovered."
+    },
+    "failClosedDesign": "event_type and action_id are refused when unknown OR absent; nothing is defaulted. surface is nullable with NO default — gtm_events defaults source_surface to 'api', which invents an attribution, and an event whose surface was never sent is UNMEASURED, a different fact. A present-but-blank or non-string surface is refused rather than coerced to null, because coercing turns a client bug into an honest-looking absence and absence is a claim on this table."
+  },
+
+  "migration": {
+    "file": "lib/db/drizzle/0091_pe_activation_events.sql",
+    "numberClaim": "0091. lib/db/drizzle holds 90 .sql files, highest 0090_pe_ai_connections.sql. The drizzle README requires checking open PRs AND unmerged branches because there is no meta journal and the FILENAME is the migration's identity: all six open PRs (554, 521, 510, 446, 445, 440) touch no lib/db/drizzle/00* file, and no unmerged remote branch claims a number at or above 0091. Positive determination, not an assumption.",
+    "table": "pe_activation_events (id uuid pk, owner_user_id text FK users(id) ON DELETE CASCADE, event_type text, action_id text, surface text NULL, created_at timestamptz)",
+    "namedFkConstraint": "pe_activation_events_owner_user_id_users_id_fk — named explicitly so the SQL migration and drizzle-kit push produce ONE name. An inline unnamed REFERENCES gets Postgres's _fkey default while push names it _users_id_fk, and production would then differ from every test database by a string nobody looks at until it matters. Migration 0090 carries the same note.",
+    "indexes": [
+      "pe_activation_events_owner_user_id_created_at_idx (owner_user_id, created_at)",
+      "pe_activation_events_action_id_created_at_idx (action_id, created_at)"
+    ],
+    "checkConstraints": [
+      "pe_activation_events_event_type_chk CHECK (event_type IN ('shown','acted'))",
+      "pe_activation_events_action_id_chk CHECK (action_id <> '')",
+      "pe_activation_events_surface_chk CHECK (surface IS NULL OR surface <> '')"
+    ],
+    "theDeliberateAsymmetry": "event_type is frozen in DDL because its grammar is closed at two values and is not expected to grow, so the check catches writers the TypeScript union never sees (a raw connection, a future job, a psql session). action_id is NOT a DDL value list because the ladder vocabulary grows once per rung, and a schema constraint would mean a new rung's events are refused until a migration lands — and because the client drops failed events on purpose, that loss would be SILENT, the exact failure this table exists to prevent. What is frozen for action_id is narrower and permanent: it may not be the empty string, the sentinel a plain NOT NULL admits. The reasoning is written into the migration header and the schema file, not only into this close.",
+    "bypassNamed": "A raw SQL connection can insert an unknown action_id. Today nothing else writes this table: the single writer is recordActivationEvent, reached only from the one route behind requirePeAuthenticated. If a second writer appears, that reasoning expires with it, and the writer module says so.",
+    "beyondTheNamedShape": "An `id uuid DEFAULT gen_random_uuid()` primary key was added, which the dispatch's named column list does not include. It mirrors gtm_events, the store this replaces; an append-only event log with no row identity cannot be deduped or referenced. Flagged here rather than made silently."
+  },
+
+  "hardcodedListsRefreshed": {
+    "lib/db/src/__tests__/integration/schema.integration.test.ts": "pe_activation_events inserted alphabetically. It sorts FIRST in the whole pe_ block: pe_ac < pe_ai (c < i) under ORDER BY tablename, so it lands between parcel_briefings and pe_ai_connections. The neighbouring comment on pe_ai_connections was corrected too, because it claimed pe_ai_connections sorts first in the pe_ block and that is no longer true.",
+    "artifacts/api-server/src/__tests__/setup.ts": "pe_activation_events added to TRUNCATE_TABLES with the 'if a route writes to it, it's in this list' rationale. It cascades off users, but the activation suite asserts ROW COUNTS, so a leaked row from another test would silently break a refusal assertion."
+  },
+
+  "schemaFixture": {
+    "file": "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+    "HAND_PATCHED": true,
+    "notRegenerated": "No database was available. A local PostgreSQL 18.3 (psql and pg_dump on PATH) exists but the postgresql-x64-18 service is Stopped AND StartType=Disabled, and the Docker daemon is not running. Enabling a service the operator deliberately disabled is operator state, not a lane action (DEV_PROCESS 5.4), so it was declined rather than worked around.",
+    "WHAT_PROVES_IT": "CI's fixture-drift check, and nothing else. .github/workflows/pr-checks.yml runs 'Push database schema' (pnpm --filter @workspace/db run push) against a live Postgres and then 'Check schema fixture drift' (test:fixture:drift), which pg_dumps the just-pushed schema and diffs it against this committed template. If the hand-patch is wrong, that job fails loudly with the diff in the log. It is the instrument; this lane's claim is unverified until it runs.",
+    "howThePatchWasCalibrated": "From the committed fixture itself, not from memory of pg_dump behaviour. Three renderings were read off real examples in that file: drizzle `IN (...)` deparses to `= ANY (ARRAY['x'::text, ...])` (pe_saved_properties_crm_status_chk, whose drizzle source uses IN); a string-literal comparison renders as `''::text` (county_ledger_snapshot_id_check); and pg_dump sorts CREATE TABLE constraints, PRIMARY KEY blocks, INDEX blocks and FK CONSTRAINT blocks ALPHABETICALLY by name rather than by creation order (county_facet_coverage's six checks are dumped in alphabetical order while their drizzle source order is different).",
+    "fourBlocksPatched": [
+      "TABLE block, placed between parcel_briefings and pe_ai_connections",
+      "PRIMARY KEY block, placed between parcel_briefings_pkey and pe_chat_message_counts",
+      "two INDEX blocks (action_id first, then owner_user_id), placed between parcel_briefings_engagement_idx and pe_ai_connections_owner_client_uidx",
+      "FK CONSTRAINT block, placed between parcel_briefings_generation_id_... and pe_ai_connections_owner_user_id_users_id_fk"
+    ]
+  },
+
+  "verification": {
+    "typecheck": {
+      "FINDING_THE_DISPATCHED_CHECK_IS_VACUOUS_FOR_THIS_WORK": "The dispatch required 'npx tsc --build clean at root'. Root tsconfig.json has files: [] and references ONLY ./lib/* projects — artifacts/api-server is not among them, and only lib/* set composite: true. So `npx tsc --build` at root DOES NOT TYPECHECK a single line of this lane's api-server code. It exited 0 both before and after the work, which is exactly the convenient result that should not be trusted. Caught by asking why no dist output existed for the new files.",
+      "rootBuild": "npx tsc --build at root: exit 0. Reported for completeness; it covers lib/db (where the new drizzle schema lives) and nothing in artifacts/.",
+      "AUTHORITATIVE": "pnpm run typecheck: exit 0. This is what CI runs (.github/workflows/pr-checks.yml job `typecheck` -> `pnpm run typecheck`), and it is typecheck:libs followed by a per-artifact `tsc -p tsconfig.json --noEmit`. Its log shows `artifacts/api-server typecheck: Done` explicitly, so api-server WAS covered.",
+      "provenAbleToFail": "A deliberate type error (`const _p98TypecheckViolationProbe: number = \"not a number\";`) appended to src/lib/peUnlocksRead.ts made `npx tsc -p tsconfig.json --noEmit` in artifacts/api-server report `src/lib/peUnlocksRead.ts(97,7): error TS2322` and exit 2. File restored and md5 re-confirmed (ce34264d1caa1b4a8c16433009f09aa8).",
+      "notRelieduPON": "`npx tsc -b artifacts/api-server` also exits 0 but emits nothing, and api-server is not a composite project. Its exit 0 is not evidence and is not cited as such."
+    },
+
+    "testCounts": {
+      "countingRule": "Vitest summary lines from `npx vitest run` in each package directory, on this machine, with DATABASE_URL UNSET. 'Test Files failed' here means FAILED TO COLLECT, not failing assertions.",
+      "apiServerBefore": "Test Files 163 failed | 152 passed | 1 skipped (316). Tests 1397 passed | 1 skipped (1398). Individual tests failed: 0.",
+      "apiServerAfter": "Test Files 165 failed | 153 passed | 1 skipped (319). Tests 1437 passed | 1 skipped (1438). Individual tests failed: 0.",
+      "delta": "+3 test files (the two DB-backed route suites joined the collection-failure set as predicted; the pure validator suite passes). +40 passing tests, exactly the pure validator file's 40. Zero individual tests regressed.",
+      "predictionsPreRegisteredAndScored": "Four predictions were stated before the run: failed files 163->165, passed files 152->153, passed tests 1397->1437, smartsite-mcp unchanged. All four hit exactly.",
+      "whyTheFailedFileCountIsNotARegression": "The local baseline of 163 collection failures is pre-existing and environmental: `DATABASE_URL must be set` is thrown at lib/db/src/index.ts:8 when the Pool is constructed at import time. This lane does not touch that module; the new schema file is a leaf import. CI provisions Postgres and runs these files. The two new route suites are DB-backed by design (they use setupRouteTests, which calls createTestSchema).",
+      "smartsiteMcpBefore": "Test Files 19 passed (19). Tests 506 passed (506).",
+      "smartsiteMcpAfter": "Test Files 19 passed (19). Tests 506 passed (506). IDENTICAL.",
+      "smartsiteMcpUntouchedProof": "Beyond identical counts: `git status --porcelain` lists ZERO paths under artifacts/smartsite-mcp, modified or untracked. Counts alone would not prove untouched, so the path enumeration is the second, independent derivation."
+    },
+
+    "verifiedByViolation": {
+      "why": "A check observed only passing has not been observed working. The refusal evidence lives in a file that runs WITHOUT a database precisely so it could be executed here rather than only in CI.",
+      "instrument": "npx vitest run src/lib/__tests__/peActivationEventsValidate.test.ts (40 tests, no DB)",
+      "baseline": "40 passed / 40",
+      "runs": [
+        {
+          "direction": "action_id, refuse side",
+          "injected": "isActionId widened to `typeof v === 'string'` so any string is accepted",
+          "result": "6 tests failed / 40",
+          "predicted": "exactly the six STRING-valued invalid ids (buy_now, connect-claude, Connect_Claude, ' connect_claude ', '', unknown); the number and null cases still refuse on the typeof arm",
+          "matchedPrediction": true
+        },
+        {
+          "direction": "surface, absence side",
+          "injected": "`let surface: string | null = null` changed to `= \"api\"`, reproducing the gtm_events.source_surface default",
+          "result": "2 tests failed / 40 — 'writes null when surface is absent' and 'writes null when surface is explicitly null'",
+          "matchedPrediction": true
+        },
+        {
+          "direction": "event_type, refuse side",
+          "injected": "the event_type refusal branch replaced with a silent `b.event_type = \"shown\"` default — the exact defect the dispatch names",
+          "result": "12 tests failed / 40, covering every event_type refusal case, the absent case, and the both-invalid ordering case",
+          "matchedPrediction": true
+        }
+      ],
+      "restored": "md5 188a908498273b6c340e7882aa1c7f7e re-confirmed against the pre-violation copy after the last run; 40/40 green again.",
+      "acceptSideProven": "Both accepted event types and all five accepted action ids pass, asserted with it.each over the exported constants, so a shrunken vocabulary fails too.",
+      "antiVacuityGuard": "The suite contains explicit 'the validator is not vacuous' cases (empty, undefined and null bodies must refuse). If parseActivationEvent ever returned ok unconditionally, those fail first and every other refusal assertion is known to be meaningless."
+    },
+
+    "routeLevelCoverage": {
+      "files": [
+        "artifacts/api-server/src/__tests__/pe-activation-events.test.ts",
+        "artifacts/api-server/src/__tests__/pe-entitlement-unlocks.test.ts"
+      ],
+      "runsWhere": "CI ONLY. Both use setupRouteTests, which creates a real test schema; they cannot execute without DATABASE_URL. Stated plainly rather than implied: the route WIRING is not locally proven, only the validator is.",
+      "whatTheyAssert": "Activation events: 401 writes nothing; 201 for each of the five action ids and both event types; surface stored NULL when absent (not 'api'); and EVERY refusal case additionally asserts ZERO ROWS IN THE TABLE, because a 400 body that says refused while a row lands anyway is invisible to a status-only assertion. Also that an owner_user_id in the request body is ignored and the row is attributed to the session. Unlocks: 401 is not an empty list; the empty case is reachable; a bounded unlock returns its stored expiry; a NULL-expiry unlock returns expiresAt null rather than a synthesised date; an EXPIRED unlock is excluded; a mixed account returns exactly the active one; another account's unlocks never appear; a different tenant does NOT narrow the set; ordering is soonest-first with unbounded last; and the lapse countdown computed from asOf agrees with the returned expiry."
+    }
+  },
+
+  "constraintsHonored": [
+    "Worked only in the registered worktree P:/seat-worktrees/property/legacy-design-tools-p98 on branch feat/p98-activation-events; snapshot declared before any work.",
+    "Did NOT commit, push, merge or deploy. Diff left for the planner.",
+    "Did NOT edit hauska-map, which this lane does not own — the allowlist requirement is reported instead.",
+    "Did not spawn sub-agents (deepest-worker instruction).",
+    "Every command exit-bounded: pnpm install, tsc, vitest run, greps, gh reads. No watch, no dev server, no tail -f.",
+    "Read the write path (pePropertyUnlocks schema, hasPePropertyUnlock, createPePropertyUnlock, the Stripe duration constant, migration 0090's own FK-naming note) rather than inferring from comments.",
+    "Declined to enable a deliberately-disabled operator service to get a database.",
+    "CP1 and CP2 filed at the exact dispatch-named paths before and during the build."
+  ],
+
+  "openItems": [
+    {
+      "item": "The two hauska-map deep-allowlist entries. Until they land, both routes return 403.",
+      "owner": "client lane (feat/p98-next-action-rail) / planner",
+      "planRow": "P-98"
+    },
+    {
+      "item": "The five action_id strings must match between this server's closed set and the client ladder's emissions. A mismatch is a 400 on every event and an empty funnel that reads as low engagement.",
+      "owner": "planner to reconcile the two lane closes",
+      "planRow": "P-98"
+    },
+    {
+      "item": "The hand-patched schema fixture is unproven locally. CI's fixture-drift job is the only instrument that can confirm or refute it, and it has not run.",
+      "owner": "planner at PR time",
+      "planRow": "P-98"
+    },
+    {
+      "item": "FINDING, out of scope to fix here: root `npx tsc --build` in legacy-design-tools covers only lib/*, so any dispatch verification phrased as 'tsc --build clean at root' is VACUOUS for artifacts/ work. The correct instruction is `pnpm run typecheck`. Worth correcting in future dispatch text.",
+      "owner": "planner",
+      "planRow": "backlog"
+    },
+    {
+      "item": "The migration is written but has been applied nowhere. Merged is not applied: the deployment Neon database needs 0091 before either route can serve.",
+      "owner": "planner",
+      "planRow": "P-98"
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch feat/p98-activation-events in worktree P:/seat-worktrees/property/legacy-design-tools-p98, uncommitted working tree (13 paths: 5 modified, 8 added)",
+      "owner": "planner (doc_repo planner commits; this lane is diff-only by dispatch)",
+      "plan_row": "P-98"
+    },
+    {
+      "item": "store: new table pe_activation_events, created by migration 0091 and by drizzle-kit push. Not applied to any database yet.",
+      "owner": "planner",
+      "plan_row": "P-98"
+    },
+    {
+      "item": "cross-repo dependency: two entries in hauska-map apps/property-explorer/api/_lib/deep-allowlist.ts (DEEP_GET_EXACT and DEEP_POST_EXACT). Not editable from this seat.",
+      "owner": "client lane feat/p98-next-action-rail",
+      "plan_row": "P-98"
+    },
+    {
+      "item": "scratchpad backups used for the violation runs (validator.orig.ts, unlocks.orig.ts) in the session scratchpad. Both source files restored and md5-verified; the backups are disposable.",
+      "owner": "none — session-scoped temp",
+      "plan_row": "n/a"
+    }
+  ],
+
+  "checkpoints": [
+    "_inbox/2026-08-31_p98-server_cp1.json",
+    "_inbox/2026-08-31_p98-server_cp2.json"
+  ],
+
+  "fleetMemory": {
+    "LESSON": [
+      "legacy-design-tools root `npx tsc --build` covers ONLY lib/* — root tsconfig.json has files: [] and references no artifacts/* project, and only lib/* set composite: true. Any verification phrased as 'tsc --build clean at root' is VACUOUS for artifacts/api-server, artifacts/smartsite-mcp and every other artifact. The real instrument is `pnpm run typecheck` (typecheck:libs then a per-artifact `tsc -p tsconfig.json --noEmit`), which is what CI runs. `npx tsc -b artifacts/<x>` also exits 0 while emitting nothing, because those projects are not composite — do not cite it either.",
+      "Hand-patching lib/db's schema.sql.template: calibrate from the committed file, never from memory of pg_dump. Three renderings verified there — drizzle `IN (...)` deparses to `= ANY (ARRAY['x'::text, ...])`; a string literal renders `''::text`; and pg_dump sorts CREATE TABLE constraints, PK blocks, INDEX blocks and FK blocks ALPHABETICALLY by name, not by creation order (county_facet_coverage's six checks prove it: dumped alphabetically, authored in a different order).",
+      "A new LDT table breaks THREE things, not the two usually named: the schema.integration.test.ts ORDER BY tablename list, the api-server setup.ts TRUNCATE list, AND the schema.sql.template fixture (4 separate blocks). Also check the neighbouring COMMENT in the integration list — inserting a table can falsify a comment that says which table sorts first in a block.",
+      "LDT migrations have NO drizzle meta journal; the FILENAME is the migration's identity. lib/db/drizzle/README.md requires scanning open PRs AND unmerged branches for the number before claiming it, because two branches shipping the same number collide when the second merges.",
+      "Put refusal/validation logic in a module that imports no database (the peAiConnectionsClassify precedent). In LDT, 163 of 316 api-server test files cannot collect without DATABASE_URL, so a refusal test written into a route suite is evidence only CI can run — which means nobody looks at it before merging."
+    ],
+    "DEAD-END": [
+      "Getting a local database to prove the schema fixture: PostgreSQL 18.3 IS installed (psql and pg_dump on PATH) but the postgresql-x64-18 service is Stopped AND StartType=Disabled, and the Docker Desktop daemon is not running. Enabling a deliberately-disabled operator service was declined as operator state, not lane work. Do not re-try this path on this machine; treat CI's fixture-drift job as the only available prover.",
+      "Reading `npx tsc -b artifacts/api-server` as a typecheck. Exit 0, no emit, non-composite project — it proves nothing."
+    ],
+    "GROUND-TRUTH": [
+      "2026-08-31, legacy-design-tools @ 394424f2 (origin/main tip): api-server local vitest baseline is Test Files 163 failed | 152 passed | 1 skipped (316), Tests 1397 passed | 1 skipped, ZERO individual test failures. The 163 are collection failures from `DATABASE_URL must be set` thrown at lib/db/src/index.ts:8 (Pool constructed at import). smartsite-mcp is 19 files / 506 tests, fully green with no database.",
+      "2026-08-31: pe_property_unlocks.expires_at is a STORED nullable timestamptz. PE_PROPERTY_UNLOCK_DURATION_DAYS = 30 lives at artifacts/api-server/src/lib/pePaywallStripe.ts:44 and is WRITE-side only (the Stripe webhook computes now+30d). NULL expiry = unbounded legacy/dev unlock, and it is ACTIVE. Never derive an expiry from the constant.",
+      "2026-08-31: legacy-design-tools contains NO route allowlist. grep for DEEP_GET_EXACT / DEEP_POST_EXACT / deep-allowlist / deepAllowlist over the worktree returns zero. The PE deep-route allowlist lives entirely in hauska-map apps/property-explorer/api/_lib/deep-allowlist.ts, so every 403-on-a-new-PE-route incident is a hauska-map fix, never an LDT one.",
+      "2026-08-31: LDT highest committed migration is 0090_pe_ai_connections.sql (90 files). No open PR (554, 521, 510, 446, 445, 440) and no unmerged remote branch claims 0091.",
+      "2026-08-31: PE route auth in api-server tests is header-based in dev mode — `x-audience: user` + `x-requestor: user:<id>` — and the DB is swapped per-file via vi.mock('@workspace/db') returning ctx.schema.db. That is the pattern to copy for any new PE route suite."
+    ],
+    "OPEN": [
+      "The five P-98 action_id strings (connect_claude, unlock_expiring, property_unlock, annual_upgrade, team_invite) are SERVER-DEFINED by this lane because no prior vocabulary existed. The client ladder must emit exactly these. Unreconciled until both lane closes are read together.",
+      "The two hauska-map deep-allowlist entries are unlanded; both new routes 403 until then.",
+      "Migration 0091 is written and applied nowhere. Merged is not applied — the deployment Neon database needs it before either route serves.",
+      "The hand-patched schema fixture is unproven until CI's fixture-drift job runs."
+    ]
+  }
+}

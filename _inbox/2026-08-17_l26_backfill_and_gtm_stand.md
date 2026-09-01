@@ -34,6 +34,7 @@ Live QA URL: `https://smartsite.cloud` (Vercel, same app as `property-explorer-x
 | Pricing UX | Popup like the landing signup modal. Not a full page. Not built this session. |
 | Vercel | **Hobby stays.** PE is 11 of 12 functions. Do not add a BFF without merging one. |
 | Deploy this session | **None.** No PE/cortex code changed. Live site is already the QA surface. Do not `npx vercel --prod` from dirty `P:\hauska-map`. |
+| Google sign-in on `smartsite.cloud` | **BLOCKED 2026-08-17:** `redirect_uri_mismatch`. Live start sends `https://smartsite.cloud/api/auth/google/callback`. Client `1062716564162-1ost2c9ekv7t6t13v7l1jtd2cjvle19d` in GCP project `legacy-design-tools-prod` does not list that URI (Vercel host likely still listed). No code/deploy fix. Operator adds the URI in Cloud Console, then retry. |
 
 ## Why the backfill kept failing (do not retry these)
 

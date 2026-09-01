@@ -1,0 +1,111 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "p98-server",
+  "planRows": ["P-98"],
+  "repo": "legacy-design-tools",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+    "branch": "feat/p98-activation-events",
+    "commit": "394424f2520ecd32074470b1bdc4c798bfcdff7c",
+    "baseIsOriginMain": true,
+    "declaredAt": "2026-08-31"
+  },
+  "missionPremise": "OPS-16 amendment A-063 (2026-08-31) and _decisions/2026-08-31_next_action_rail_activation_engine.md. The next-action rail is an ACTION surface that must be able to go quiet, and it must be instrumented in this build. Two server facts the ladder needs do not exist: an account-wide list of ACTIVE unlocks with expiry (peEntitlement.ts hasPePropertyUnlock filters by parcelNodeId, one parcel at a time) and a PE-user-scoped activation event store (gtm_events is install_id-scoped for the browser extension and is the wrong spine for a signed-in funnel).",
+  "completionPredicate": "GET /api/property-explorer/v1/entitlement/unlocks returns every active unlock for the signed-in account with its stored expiry; POST /api/property-explorer/v1/activation-events writes one row to a new pe_activation_events table and REFUSES an unrecognised event_type or action_id rather than defaulting; npx tsc --build clean at root; artifacts/api-server vitest green with new tests that fail in both directions on the two validations; artifacts/smartsite-mcp count unchanged.",
+  "scopeBasis": "Server half only. The hauska-map deep-allowlist is the client lane's item and is NOT edited here (repo ownership). No behaviour of any existing route changes; both deliverables are additive.",
+
+  "writePathFindings": [
+    {
+      "question": "Is unlock expiry derived or stored?",
+      "answer": "STORED.",
+      "evidence": "lib/db/src/schema/pePropertyUnlocks.ts declares expiresAt: timestamp('expires_at', {withTimezone:true}) - NULLABLE, no default. artifacts/api-server/src/lib/pePaywallStripe.ts:44 exports PE_PROPERTY_UNLOCK_DURATION_DAYS = 30 and it is a WRITE-side constant only: the Stripe webhook computes now+30d and passes it to createPePropertyUnlock({expiresAt}). No read derives an expiry from it.",
+      "consequence": "The new read uses the stored column and NEVER synthesizes unlockedAt + 30 days. A NULL expires_at row (legacy/dev unlocks) is ACTIVE but has no lapse date; it ships as expiresAt: null, which is unbounded, a different fact from expires-soon. Fabricating a date there would invent a lapse the ladder would then advertise."
+    },
+    {
+      "question": "What does ACTIVE mean?",
+      "answer": "expires_at IS NULL OR expires_at > now(), copied verbatim from the existing authority.",
+      "evidence": "artifacts/api-server/src/lib/peEntitlement.ts hasPePropertyUnlock: or(isNull(pePropertyUnlocks.expiresAt), gt(pePropertyUnlocks.expiresAt, new Date())). Same predicate, so the list read and the per-parcel gate cannot disagree about whether one row is active.",
+      "consequence": "Two derivations of active would be a divergence defect. There is one predicate and the new read reuses it."
+    },
+    {
+      "question": "Is there an LDT-side route allowlist that also has to be updated?",
+      "answer": "NO. Positive determination.",
+      "evidence": "grep -rn for DEEP_GET_EXACT, DEEP_POST_EXACT, deep-allowlist and deepAllowlist over the whole worktree (--include=*.ts --include=*.mjs) excluding node_modules returned zero matches.",
+      "consequence": "The 403 risk lives entirely in hauska-map apps/property-explorer/api/_lib/deep-allowlist.ts, which this lane does not own and does not edit."
+    },
+    {
+      "question": "Does a vocabulary of action ids already exist anywhere in legacy-design-tools?",
+      "answer": "NO. Positive determination.",
+      "evidence": "grep for actionId|action_id|nextAction|next_action|NEXT_ACTION across --include=*.ts excluding node_modules returned only unrelated sheetContentExtractionIds hits. Neither dispatch, OPS-16 A-063, nor the decision doc names any action id string.",
+      "consequence": "This lane DEFINES the closed set, server-side, as the single authority, and the client half must adopt those exact strings. This is reported prominently: an id mismatch produces 400 on every event, which is the correct fail-closed direction but is a coordination item, not a silent one."
+    },
+    {
+      "question": "What name will drizzle-kit push give the FK?",
+      "answer": "pe_activation_events_owner_user_id_users_id_fk",
+      "evidence": "Migration 0090 header states the same trap verbatim and names its FK pe_ai_connections_owner_user_id_users_id_fk; the committed fixture at schema.sql.template lines 4517-4520 confirms pg_dump emits that exact name after push.",
+      "consequence": "The 0091 migration names the constraint explicitly so the production DDL path and the drizzle-kit push path produce one name, not two."
+    }
+  ],
+
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Migration number 0091.",
+      "basis": "ls lib/db/drizzle/*.sql = 90 files, highest 0090_pe_ai_connections.sql. Next free is 0091."
+    },
+    {
+      "id": "D2",
+      "decision": "event_type closed set = [shown, acted]. Anything else 400 invalid_event_type. Absent is also 400.",
+      "basis": "Named in the dispatch and in the client dispatch's stated body shape."
+    },
+    {
+      "id": "D3",
+      "decision": "action_id closed set = [connect_claude, unlock_expiring, property_unlock, annual_upgrade, team_invite], exported from a pure no-DB module. Anything else, or absent, is 400 invalid_action_id.",
+      "basis": "One id per ladder-v1 rung as ruled in the decision doc and OPS-16 A-063: Connect Claude; the expiring-unlock rung (named there as the highest-intent action); the property unlock when free messages are nearly gone; annual when paid monthly on solo or studio; team invite on team tier with unused seats. A closed set is the whole point: an invented action id pollutes the only activation measurement that will exist."
+    },
+    {
+      "id": "D4",
+      "decision": "surface is NULLABLE with NO default. Absent writes NULL. Present-but-not-a-non-empty-string is 400, never coerced to null.",
+      "basis": "ENFORCEMENT: absent, zero and unmeasured are three different states. gtm_events defaults source_surface to api, which fabricates an attribution; an activation event whose surface was never sent must read as unmeasured, not as a surface. Refusing a malformed value rather than nulling it keeps the degradation declared."
+    },
+    {
+      "id": "D5",
+      "decision": "Add an id uuid defaultRandom() primary key, which the dispatch's named shape does not list.",
+      "basis": "Mirrors gtm_events, the store this replaces. An append-only event log with no row identity cannot be deduped or referenced. Flagged in the report as an addition beyond the named shape rather than made silently."
+    },
+    {
+      "id": "D6",
+      "decision": "The unlocks read is a separate lib module (peUnlocksRead.ts) and the event write is a pure validator module plus a writer module.",
+      "basis": "Mirrors the peAiConnections pattern already in this codebase: peAiConnectionsClassify.ts holds the logic and imports no database, so it is testable without one; peAiConnections.ts is the query. Validation refusals therefore get tests that need no Postgres."
+    },
+    {
+      "id": "D7",
+      "decision": "The schema fixture schema.sql.template is HAND-PATCHED, not regenerated.",
+      "basis": "CI pushes drizzle to a live Postgres, pg_dumps it and diffs against the committed template (pr-checks.yml Push database schema step then Check schema fixture drift step). No database is available here, so the patch is written to match what pg_dump emits and CI's drift check is the instrument that proves or refutes it. Stated as unproven-locally in the report."
+    }
+  ],
+
+  "adversarialReview": [
+    {
+      "risk": "Deriving expiry as unlockedAt + PE_PROPERTY_UNLOCK_DURATION_DAYS because the dispatch names the constant in the same sentence as the expiry.",
+      "disposition": "REJECTED. The constant is write-side. Deriving would give every NULL-expiry dev/legacy row a fabricated lapse date, and the ladder would then tell an operator their unbounded unlock lapses in N days. Read the stored column."
+    },
+    {
+      "risk": "Filtering the unlocks read by tenantId, since the table's primary key includes tenant_id.",
+      "disposition": "REJECTED. The question the ladder asks is account-wide. Adding a tenant filter would silently drop rows written under a different session tenant and read as you-have-no-unlocks. The tenant is RETURNED on each row so a consumer can see it, never used to narrow the set."
+    },
+    {
+      "risk": "A closed action_id set that the client half does not match, producing 400 on every event and an empty funnel that reads as low engagement.",
+      "disposition": "ACCEPTED WITH MITIGATION. Refusing is correct per the dispatch. The mitigation is reporting the five exact strings prominently, and the route's 400 body naming the allowed set so the failure is self-diagnosing rather than silent."
+    },
+    {
+      "risk": "Reporting the two routes as working because the tests pass, when the client will still get 403 from the hauska-map allowlist.",
+      "disposition": "ACCEPTED AND SURFACED. This is the documented 2026-08-31 ai-connections defect. It is stated as the headline of the report, not as a footnote, and both exact path strings are given."
+    }
+  ],
+
+  "openAtCp1": [
+    "Whether the client lane's ladder uses the same five action id strings. Coordination item, surfaced in the report."
+  ]
+}

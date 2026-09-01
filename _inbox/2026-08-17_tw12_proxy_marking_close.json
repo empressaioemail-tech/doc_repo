@@ -5,7 +5,7 @@
   "branch": "tw12/proxy-marking",
   "headSha": "f03b87ccc7c2abf665de58a50a1a194445e19df6",
   "prUrl": "https://github.com/empressaioemail-tech/empressa-trading/pull/337",
-  "prState": "OPEN, not merged, not draft, base=main",
+  "prState": "MERGED into main at 2026-08-18T00:22:08Z, merge commit a15a85d0fe41d39e2cee8c35c69d4d74d034346a. NOT merged by this executor -- see mergeNote.",
   "ciConclusion": "success",
   "ciEvidence": {
     "runUrl": "https://github.com/empressaioemail-tech/empressa-trading/actions/runs/32083601069",
@@ -19,7 +19,6 @@
     ],
     "mainBaselineWasGreen": true
   },
-
   "surfacesFound": [
     {
       "id": "S1",
@@ -67,7 +66,6 @@
       "action": "marked"
     }
   ],
-
   "surfacesCheckedAndLeftAlone": [
     "apps/cockpit/backend/app/data/futures_catalog.json + providers/cftc.py — TW-9 parent-contract-proxy COT rows: already correct, untouched",
     "apps/cockpit/backend/app/providers/futures_reference.py — typed-absence resolver: already correct, untouched",
@@ -79,7 +77,6 @@
     "apps/empressa/frontend/src/utils/tradeTeeUp.ts — reads Object.keys of the proxy map as a symbol-recognition set, never serves its values; keys deliberately unchanged so it keeps working",
     "apps/empressa/backend/intelligence/empressa_fundamentals.py — futures panel is already honest (no substitution) and is not deployed"
   ],
-
   "markingDesign": {
     "vocabulary": "TW-9's, extended rather than duplicated. resolution / proxy_of / proxy_note are the exact keys apps/cockpit/backend/app/data/futures_catalog.json already uses for borrowed CFTC series, kept snake_case in TypeScript on purpose so one `grep proxy_of` finds every marked proxy in the repo, frontend and backend alike.",
     "newEnumValue": "tracking-fund-proxy, joining exact and parent-contract-proxy. A listed fund standing in for a contract is a different KIND of borrow from a parent contract standing in for its micro, so it earns a value, not a second field set.",
@@ -88,7 +85,6 @@
     "structuralGuarantee": "futuresFundamentalsProxy returns FundamentalsProxy | null instead of string | null, so the substituted ticker is unreachable without its marker. The UI half is a component with no unmarked variant and no suppression prop.",
     "sharedHelper": "proxyMark lives in apps/empressa/frontend/src/utils/proxyMark.ts, the tree both the cockpit web app and the mobile app alias as @empressa, so the two Trade Grids cannot drift into different answers about one borrow — and one CI-gated test pins the marker both render."
   },
-
   "testProvenByRemoval": [
     {
       "removed": "proxy_note from markProxy() in types/futures.ts",
@@ -116,7 +112,6 @@
       "restoredAndGreen": true
     }
   ],
-
   "deployedSurfaces": {
     "summary": "S1, S2, S3 and S4 are live in front of users right now. S5 is not live today but ships on the next standard deploy.",
     "verifiedHow": "against production, not against the README, which calls apps/empressa retired. It is retired as an app and live as source: apps/cockpit/frontend/vite.config.ts aliases @empressa to apps/empressa/frontend/src, focus/panels.tsx imports DriversTab from it, and the live bundle at empressa-cockpit.vercel.app (assets/App-D8p_Tf4b.js, 1,053,941 bytes) contains the literal string \"/GC\":\"GLD\" and the string 'issuer fundamentals'. The unmarked proxy was and is shipping.",
@@ -136,7 +131,6 @@
     ],
     "deployedByThisBranch": "nothing. No deploy, no production write, no migration."
   },
-
   "filesChanged": [
     ".github/workflows/ci.yml",
     "apps/cockpit/backend/app/routers/fundamentals.py",
@@ -154,27 +148,44 @@
     "apps/empressa/frontend/src/utils/proxyMark.test.ts",
     "apps/empressa/frontend/src/utils/proxyMark.ts"
   ],
-
   "ciGapClosed": {
     "finding": "CI ran ZERO frontend assertions. The workflow ran pytest, `vite build` and gitleaks. `vite build` proves the bundle compiles and asserts nothing, so a frontend contract could be deleted and main would stay green — which is exactly how a backend-sealed proxy marker could be dropped by two UIs with nothing red.",
     "fix": "added a test-frontend job running the existing, previously ungated vitest suite. vite.config.ts already includes ../../empressa/frontend/src/**, so the frozen @empressa components that ship inside the live cockpit bundle are now gated too.",
     "beforeAfter": "baseline 35 files / 421 tests (already green, no pre-existing failures repaired or suppressed); now 39 files / 446 tests."
   },
-
   "doNotWeakenCheck": "every TW-9 artifact is byte-identical to main on this branch — futures_catalog.json, providers/cftc.py, providers/futures_reference.py, adaptive_panel.py, tests/test_signal_heatmap.py, bots/presets.py all verified UNCHANGED via git diff --quiet against origin/main.",
-
   "remaining": [
     "The mobile render path has no test runner — apps/cockpit/mobile has no `test` script and no vitest. CI pins the shared proxyMark that screen consumes, and the mobile build was run locally and verified to contain the marker strings, but the mobile JSX itself is not asserted. Closing this means adding vitest to the mobile package and a CI job for it.",
     "apps/cockpit/backend/app/bots/presets.py::weekly_proxy() still returns a bare string. Its only serving consumer marks the result and that is pinned by existing tests, so this is latent rather than live — but the same structural hardening applied to the frontend lookup (return the marked record, not the ticker) would close it. Deliberately left out of scope to avoid touching the deployed signal path in a marking PR.",
     "empressa-mobile.vercel.app is serving the cockpit web build rather than the mobile build. That is a deploy-wiring fact discovered while establishing deployedSurfaces, not a TW-12 defect, and it is unowned — worth an operator call on whether the mobile project is intended to be live.",
     "apps/empressa has its own vitest.config.ts whose include glob is `frontend/src/**/*.test.ts` — .ts only, so it would not pick up the .tsx test added here. Harmless today because nothing runs that config in CI, but it is a naming inconsistency between the two configs."
   ],
-
   "blocked": [],
-
   "notes": [
     "The brief named one surface and explicitly did not claim it was the only one. Grepping the constant found 2; asking which renderers consume the same payloads found 3 more, one of which (the slash-strip) is not a proxy at all but a collision serving another issuer's ratios as a contract's.",
     "The Drivers proxy was defensible as trader convenience and is kept, marked, per the instruction that marking is preferred because removing it loses information. The slash-strip was not defensible in any reading and was removed.",
     "Local full backend suite also run to completion outside CI: 4566 passed, 2 skipped, 21 deselected, 0 failed, 562s."
-  ]
+  ],
+  "mergeNote": {
+    "constraintWas": "the dispatch said: PR against main, NOT merged.",
+    "whatIDid": "I never issued a merge. My last actions were push, gh pr create, gh pr edit and read-only status checks. No gh pr merge, no auto-merge enabled (the API reports auto_merge=null), no direct push to main.",
+    "whatHappened": "between my final verification (PR OPEN, mergedAt null, CI conclusion=success) and the next check, the PR was merged by the account empressaioemail-tech. That is the same account this executor’s gh CLI is authenticated as, so the API alone cannot distinguish an operator merge from other automation using that token. I am not claiming to know which; I am recording that it was not an action I took.",
+    "mergedBy": "empressaioemail-tech",
+    "mergeCommitSha": "a15a85d0fe41d39e2cee8c35c69d4d74d034346a",
+    "mergeCommitSubject": "merge: TW-12 mark every proxy, remove one wrong-entity collision, gate the frontend suite",
+    "postMergeVerification": {
+      "headShaIsAncestorOfMain": true,
+      "mainCiOnMergeCommit": "CI conclusion=success status=completed (run 32084235265)",
+      "jobsOnMergeCommit": [
+        "Frontend build (cockpit web): success",
+        "Python tests (cockpit backend): success",
+        "Frontend tests (cockpit vitest): success",
+        "Gitleaks security scan: success",
+        "Windows .exe (release tags only): skipped"
+      ],
+      "markersPresentOnMain": "futures.ts carries tracking-fund-proxy (4 occurrences); utils/proxyMark.ts present; ci.yml on main contains the test-frontend job, and that job RAN and passed on the merge commit -- the gate is live on main, not just on the branch.",
+      "mainNotLeftRed": true
+    },
+    "unrelatedMainState": "main has since advanced to cf9499f (TW-10), whose CI was still in_progress at time of writing. That is another lane, not this row."
+  }
 }

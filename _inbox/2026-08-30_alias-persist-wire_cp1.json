@@ -1,0 +1,56 @@
+{
+  "checkpoint": "CP1",
+  "lane": "alias-persist-wire",
+  "card": "P1-FACTORY item-4 hole: alias-persist real INSERT",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-30T23:00:00Z",
+  "seat": "property (deepest worker; no sub-agents)",
+  "snapshot": {
+    "docRepo": "P:/doc_repo (inbox writes only; planner-owned)",
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p1-controls",
+    "branch": "seat/property-ctx-p1-factory",
+    "head": "53f8b366b56dda0c94505a4b66392ffcf1692429",
+    "headSubject": "fix(f08): walk four-state, refuse missing county, split 0005a/0005b",
+    "ctxPublish": "P:/seat-worktrees/property/hauska-factory-ctx-publish read-only; alias-persist job still lives only there",
+    "noStoreWrite": true,
+    "noCommit": true,
+    "noOtherFactoryWorktreeWrite": true
+  },
+  "missionPremise": "P1-FACTORY item 4 shipped requireAliasLandingTable and applyAliasLandingRows, then counted wroteLanding after the table-exists SELECT without issuing INSERT. A pg Client has query and no insertLanding. Source: HEAD 53f8b36 src/lib/alias-landing-table.mjs lines 36-39; dispatch 2026-08-30_alias-persist-wire; OPS-19 F-08.",
+  "completionPredicate": "Uncommitted Factory diff plus this card's CP1/CP2/close. Arm 1: missing landing table still refuses ALIAS_TABLE_MISSING. Arm 2: applyAliasLandingRows issues INSERT INTO landing_cad_txgio_alias via client.query; wroteLanding equals INSERT executions, not row-array length. A client with only insertLanding cannot produce wroteLanding. node --test terminates. No commit, push, deploy, migration apply, or job start.",
+  "scopeBasis": "This worktree only. The persist job on origin/seat/property-ctx-walk-alias-schema is read, not copied, not written. 0005 / 0005a / 0005b are not applied to any store. No connection URL is printed.",
+  "adversarial": [
+    {
+      "claim": "insertLanding is a valid write path and the table-exists gate is enough",
+      "finding": "applyAliasLandingRows calls insertLanding only when the test injects it, then pushes every row into wrote regardless. After requireAliasLandingTable succeeds, wroteLanding increments with zero SQL. Mechanism: the increment is outside the insertLanding if. A live pg Client never has insertLanding.",
+      "rejectedAlternative": "keep insertLanding as a test hook and add query as a fallback; rejected because that is the ctx-publish writePersistedAlias shape (insertLanding first, query else) and it still lets a mock report wroteLanding without SQL"
+    },
+    {
+      "claim": "the persist job on ctx-publish already INSERTs via LANDING_INSERT_SQL",
+      "finding": "writePersistedAlias prefers landingClient.insertLanding. alias-persist.test.mjs fakeStores injects insertLanding and never records SQL. The job is not on this tree. Porting the job is out of scope; this card owns the landing write that 53f8b36 left hollow.",
+      "rejectedAlternative": "copy alias-persist.mjs onto this tree this card; rejected because the dispatch forbids writing the ctx-publish tree and the hole named is applyAliasLandingRows"
+    }
+  ],
+  "design": {
+    "requireThenInsert": {
+      "what": "requireAliasLandingTable stays first. applyAliasLandingRows then issues ALIAS_LANDING_INSERT_SQL via client.query for each row. wroteLanding increments only after that query returns. insertLanding is not a write path.",
+      "sql": "INSERT INTO landing_cad_txgio_alias (county_fips, cad_prop_id, txgio_id, situs_key, owners_agree, as_of, method, run_id, valid_to) VALUES ($1,$2,$3,$4,true,$5::timestamptz,$6,$7::uuid,NULL)",
+      "params": ["county_fips", "cad_prop_id", "txgio_id", "situs_key", "as_of", "method", "run_id"],
+      "failClosedRow": "missing required INSERT fields refuse; no wroteLanding increment",
+      "executes": "applyAliasLandingRows in src/lib/alias-landing-table.mjs; node --test",
+      "triggers": "every applyAliasLandingRows call (the persist --apply landing write this tree owns)",
+      "fails": "ALIAS_TABLE_MISSING when information_schema has no row; ALIAS_LANDING_WRITE_REFUSED when client.query is absent or a row cannot form INSERT params; test fails if wroteLanding > 0 and no INSERT SQL was recorded",
+      "bypasses": "the ctx-publish writePersistedAlias insertLanding branch (other tree, not written this card); a raw INSERT on the bake store; applying 0005 as drafted (forbidden)"
+    }
+  },
+  "bothArmsPlanned": {
+    "arm1_missingTable": "client.query returns { rows: [] }; applyAliasLandingRows rejects ALIAS_TABLE_MISSING; no INSERT issued",
+    "arm2_realInsert": "client.query records SQL; first call is the information_schema SELECT; later calls are INSERT INTO landing_cad_txgio_alias; wroteLanding equals INSERT count. A client that also has insertLanding must not be the counted write."
+  },
+  "constraintsHonored": [
+    "no commit, push, deploy, job start, bake, publish",
+    "no 0005 / 0005a / 0005b apply to any live store",
+    "no connection URL printed",
+    "ctx-publish / p2-job / gate8 / p2-juris / P:/hauska-factory not written"
+  ]
+}

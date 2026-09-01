@@ -1,0 +1,119 @@
+{
+  "lane": "alias-persist-job",
+  "planRows": ["F-08"],
+  "closedAt": "2026-08-30T23:21:00Z",
+  "seat": "property (alias-persist-job deepest worker; no sub-agents; no commit, push, deploy, migration apply, job start, bake, or publish)",
+  "dispatch": "_dispatches/2026-08-30_alias-persist-job_dispatch.md",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p1-controls, branch seat/property-ctx-p1-factory, HEAD 57e8b662ed927416b9d1f1ca45777f0b93c45f9d, uncommitted (planner commits)",
+    "doc_repo": "inbox CP1/CP2/CLOSE only, uncommitted",
+    "prs": "not applicable: hand back, do not land",
+    "ci": "not applicable: no PR"
+  },
+  "missionPremise": "57e8b66 closed the helper hole. The persist job on origin/seat/property-ctx-walk-alias-schema still preferred insertLanding and counted wroteLanding from landingRows.length. A mock write that reports a count without SQL is the defect. Source: ctx-publish writePersistedAlias ~217; dispatch 2026-08-30_alias-persist-job; OPS-19 F-08.",
+  "completionPredicate": "This tree's --apply calls applyAliasLandingRows. Missing landing table refuses ALIAS_TABLE_MISSING with no INSERT. A query-recording client is the write path: wroteLanding equals INSERT INTO landing_cad_txgio_alias executions. insertLanding is not called and is not a fallback. Laptop --apply still refuses without GO and a run row. node --test terminates. Diff uncommitted on this tree.",
+  "scopeBasis": "This worktree only. ctx-publish persist job read, not written. 0005 / 0005a / 0005b not applied. No connection URL printed. No job started.",
+  "gradesByItem": {
+    "arm1_missingTable": "met",
+    "arm2_realInsert": "met — job --apply issued client.query INSERT; insertLanding not called; wroteLanding === INSERT count; live Postgres apply still planner-owned",
+    "laptopApplyFreeze": "met — ALIAS_PERSIST_GO_REQUIRED and RUN_ROW_REQUIRED still fire"
+  },
+  "filesChanged": {
+    "hauska-factory": [
+      "src/cli.mjs",
+      "src/jobs/alias-persist.mjs",
+      "src/lib/cad-txgio-alias.mjs",
+      "src/lib/cad-txgio-alias-persist.mjs",
+      "src/lib/cad-txgio-alias-snapshot.mjs",
+      "src/lib/cad-txgio-alias-counts.mjs",
+      "test/alias-persist-job.test.mjs"
+    ],
+    "doc_repo": [
+      "_inbox/2026-08-30_alias-persist-job_cp1.json",
+      "_inbox/2026-08-30_alias-persist-job_cp2.json",
+      "_inbox/2026-08-30_alias-persist-job_close.json"
+    ]
+  },
+  "sqlIssued": "INSERT INTO landing_cad_txgio_alias (\n  county_fips, cad_prop_id, txgio_id, situs_key, owners_agree, as_of, method, run_id, valid_to\n) VALUES ($1,$2,$3,$4,true,$5::timestamptz,$6,$7::uuid,NULL)",
+  "sqlParams": [
+    "county_fips",
+    "cad_prop_id",
+    "txgio_id",
+    "situs_key",
+    "as_of",
+    "method",
+    "run_id"
+  ],
+  "testsRun": {
+    "command": "node --test test/*.test.mjs",
+    "cwd": "P:/seat-worktrees/property/hauska-factory-p1-controls",
+    "at": "2026-08-30T23:19Z",
+    "result": "279 pass, 0 fail, 2 skipped",
+    "bothArms": {
+      "arm1_missingTable": {
+        "violated": "runAliasPersist --apply against a client whose query returns empty information_schema rows",
+        "result": "ALIAS_TABLE_MISSING; table landing_cad_txgio_alias; issued SQL has the exists SELECT and no INSERT; insertLandingCalls 0"
+      },
+      "arm2_realInsert": {
+        "violated": "the ctx-publish hole: table present, insertLanding injected, wroteLanding without INSERT SQL",
+        "result": "insertLandingCalls stays 0; issued SQL includes exactly one INSERT INTO landing_cad_txgio_alias; wroteLanding === 1 === INSERT count"
+      }
+    }
+  },
+  "whatWasViolated": [
+    "alias-persist --apply against a store whose information_schema has no landing_cad_txgio_alias (ALIAS_TABLE_MISSING, no INSERT)",
+    "a client that only has insertLanding (ALIAS_LANDING_WRITE_REFUSED; mock write is not a write)",
+    "laptop --apply without FACTORY_ALIAS_PERSIST_GO=1 (ALIAS_PERSIST_GO_REQUIRED) and GO without a run row (RUN_ROW_REQUIRED)",
+    "persistCadTxgioAliasBinds(apply=true) claiming wroteLanding without SQL (now 0 until writePersistedAlias)"
+  ],
+  "checkpoints": {
+    "CP1": "_inbox/2026-08-30_alias-persist-job_cp1.json",
+    "CP2": "_inbox/2026-08-30_alias-persist-job_cp2.json",
+    "close": "_inbox/2026-08-30_alias-persist-job_close.json"
+  },
+  "constraintsHonored": [
+    "no commit, push, PR, deploy, job start, bake, publish",
+    "neither 0005 nor 0005a/0005b applied to any store",
+    "no connection URL printed",
+    "ctx-publish / p2-job / gate8 / p2-juris / P:/hauska-factory not written",
+    "laptop --apply freeze not weakened",
+    "verification terminated (node --test); no watch"
+  ],
+  "counts": {
+    "suite": {
+      "pass": 279,
+      "fail": 0,
+      "skipped": 2,
+      "countingRule": "node --test test/*.test.mjs in this worktree"
+    },
+    "insertArm": {
+      "wroteLanding": 1,
+      "insertStatements": 1,
+      "insertLandingCalls": 0,
+      "countingRule": "issued SQL filtered by INSERT INTO landing_cad_txgio_alias; wroteLanding must equal that count"
+    }
+  },
+  "leave_behind": [
+    {
+      "item": "branch seat/property-ctx-p1-factory in hauska-factory, uncommitted diff on HEAD 57e8b66: alias-persist --apply calls applyAliasLandingRows. Planner commits by explicit pathspec.",
+      "owner": "planner",
+      "plan_row": "F-08"
+    },
+    {
+      "item": "ctx-publish tree still has writePersistedAlias preferring insertLanding. That branch was read, not written. Retire or ignore that copy after this tree lands.",
+      "owner": "planner",
+      "plan_row": "F-08"
+    },
+    {
+      "item": "0005b still not applied to bake neondb. Planner applies migrations/bake/0005b_landing_cad_txgio_alias.sql to STAGING_NEONDB_URL and PRODUCTION_NEONDB_URL only. Live INSERT arm waits on that apply.",
+      "owner": "planner",
+      "plan_row": "F-08"
+    }
+  ],
+  "fleetMemory": [
+    "LESSON: persistCadTxgioAliasBinds(apply=true) reporting wroteLanding from array length is a mock write. The job must take wroteLanding from applyAliasLandingRows after client.query INSERT.",
+    "DEAD-END: insertLanding first, query else. That is the ctx-publish writePersistedAlias shape and it still lets a mock report wroteLanding without SQL.",
+    "GROUND-TRUTH 2026-08-30T23:19Z: node --test test/*.test.mjs in hauska-factory-p1-controls at 57e8b66 + this diff: 279 pass, 0 fail, 2 skipped.",
+    "OPEN: planner commit this pathspec; apply 0005b to bake neondb only; do not apply drafted 0005; ctx-publish insertLanding branch is leftover."
+  ]
+}

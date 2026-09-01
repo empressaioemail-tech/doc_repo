@@ -17,7 +17,7 @@ Attack plan: `_inbox/2026-08-27_nick_val_qa_attack_plan.md`
 
 ## Done looks like
 
-A visitor on smartsite.cloud can use the right rail the way it worked before #234, stack only the left map utilities, find a Bastrop parcel without a second click, land a share recipient on that property, and cannot download a hollow X-ray. The reports panel matches the locked ladder (X-ray and Flood are reports; site plan and terrain are exports) without advertising Coming soon or a 10-of-12 meter. Long-term items remain listed on the canvas and are absent from the shipped tree. Appraisal numbers are absent. No new report SKU exists.
+A visitor on smartsite.cloud can use the right rail the way it worked before #234, stack only the left map utilities, find a Bastrop parcel without a second click, land a share recipient on that property, and cannot download a hollow X-ray. The locked report menu is X-ray, Flood and Drainage, Feasibility, and Comparison. Comparison is also a tool. Brief and Records are tools. Site plan and terrain are exports. Feasibility and Comparison generate paths are not this program and are not pitched as live. The panel does not advertise Coming soon or a 10-of-12 meter. Long-term items remain listed on the canvas and are absent from the shipped tree. Appraisal numbers are absent.
 
 ## Acceptance items
 
@@ -68,7 +68,12 @@ Wave 0 depends on nothing. Wave 1 and Wave 2 depend on W0.1–W0.4. Wave 4 P1 de
 
 ## Amendments
 
-None yet.
+1. 2026-08-27 operator walk: Plans first paint is Monthly, not Annual. Remove the header "2 months free" chip. Seat count and 10 × monthly live in the Team column. Reason: the chip was unused info and the stepper sat off-column.
+2. 2026-08-27 operator walk: share recipient must keep the Shared analysis dock (property report detail). Reason: share flight stole Brief the same way a My properties row click did.
+3. 2026-08-27 operator walk: dossier persona menu must not be white-on-white; minted link must offer Copy link. Reason: native select inherited canvas text on a white OS list.
+4. 2026-08-27 operator SKU ruling: Feasibility is a report; Comparison is a report and a tool; Brief is a tool. Records stays a tool. Reason: the live picker named those four and positioning still said only X-ray and Flood. Generate paths for Feasibility and Comparison are not opened here. P-89/P-90 added for the X-ray generator.
+5. 2026-08-28 operator: rebuild the in-app PDF viewer so it actually paints and matches Smart Site chrome. Reason: Chrome embed never worked (navy empty, sad-document, white void). Viewer rasterizes %PDF bytes with pdf.js. Native plugin is retired.
+6. 2026-08-28 operator: compile W9 (P-93) now that W0 is live. Do not start W8. Reason: kit gate does not wait on MCP; W8.1 writes the X-ray P-90 will rebuild.
 
 ## Finish card (graded at close)
 

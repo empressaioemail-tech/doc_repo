@@ -1,0 +1,42 @@
+{
+  "checkpoint": "CP2",
+  "lane": "alias-persist-wire",
+  "card": "P1-FACTORY item-4 hole: alias-persist real INSERT",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-30T23:05:00Z",
+  "seat": "property",
+  "snapshot": {
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p1-controls",
+    "branch": "seat/property-ctx-p1-factory",
+    "head": "53f8b366b56dda0c94505a4b66392ffcf1692429",
+    "workingTree": "uncommitted; planner commits",
+    "tests": "node --test test/*.test.mjs at 2026-08-30T23:04Z: 276 pass, 0 fail, 2 skipped"
+  },
+  "pilot": {
+    "arm1_missingTable": {
+      "violation": "applyAliasLandingRows against a client whose query returns { rows: [] }. Rejects ALIAS_TABLE_MISSING, table landing_cad_txgio_alias. Recorded SQL is the information_schema SELECT only; no INSERT INTO landing_cad_txgio_alias.",
+      "also": "client with insertLanding and no query rejects ALIAS_LANDING_WRITE_REFUSED (the mock write path is not a write)"
+    },
+    "arm2_realInsert": {
+      "violationOfTheHole": "the 53f8b36 path: table present, insertLanding injected, wroteLanding 1 with zero INSERT SQL. That client is now present on the PASS fixture and insertLandingCalls stays 0.",
+      "knownGood": "client.query records SQL. After requireAliasLandingTable, applyAliasLandingRows issues ALIAS_LANDING_INSERT_SQL. wroteLanding equals INSERT executions (1). Params are county_fips, cad_prop_id, txgio_id, situs_key, as_of, method, run_id.",
+      "incompleteRow": "table present plus { county_fips, cad_prop_id } only rejects ALIAS_LANDING_WRITE_REFUSED; no extra INSERT"
+    }
+  },
+  "sqlIssued": "INSERT INTO landing_cad_txgio_alias (\n  county_fips, cad_prop_id, txgio_id, situs_key, owners_agree, as_of, method, run_id, valid_to\n) VALUES ($1,$2,$3,$4,true,$5::timestamptz,$6,$7::uuid,NULL)",
+  "notDoneThisCard": [
+    "Migrations not applied to any store (forbidden).",
+    "alias-persist job still lives only on origin/seat/property-ctx-walk-alias-schema; that tree was read, not written. writePersistedAlias still prefers insertLanding.",
+    "No job started, no deploy, no bake, no publish."
+  ],
+  "adversarialAtPilot": [
+    {
+      "worry": "the recording client could count wroteLanding from the exists SELECT",
+      "resolution": "the test filters issued SQL with INSERT INTO landing_cad_txgio_alias and requires that count === wroteLanding. The exists SELECT does not match."
+    },
+    {
+      "worry": "insertLanding remains a silent second write if a future caller injects it",
+      "resolution": "applyAliasLandingRows never calls insertLanding. The PASS fixture injects insertLanding and asserts insertLandingCalls === 0."
+    }
+  ]
+}

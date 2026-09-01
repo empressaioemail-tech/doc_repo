@@ -1,0 +1,90 @@
+{
+  "lane": "p98b-client",
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "planRow": "P-98",
+  "repo": "hauska-map",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+    "branch": "feat/p98b-account-entitlement-client",
+    "commit": "8740558dbb26ad1526ac21ce124724e5a33cf60b",
+    "treeAtStart": "clean",
+    "seatRegistered": "_catalog/seat_register.json seats[].name = hauska-map-nextaction, branch matches"
+  },
+  "baseline": {
+    "tsc": "npx tsc --noEmit -p tsconfig.json exit 0",
+    "vitest": "164 files, 2194 passed | 1 todo (2195)",
+    "chromeKitGate": "node apps/property-explorer/scripts/pe-chrome-kit-gate.mjs exit 0; SELF-TEST 76/76; 20 surfaces + 12 kit files ok",
+    "gateScriptPathCorrection": "the dispatch says scripts/pe-chrome-kit-gate.mjs at the worktree ROOT; it does not exist there. The real path is apps/property-explorer/scripts/pe-chrome-kit-gate.mjs. Reported, not worked around. NOTE: the first attempt piped the gate to tail and read $? as the gate's exit code; it was tail's. Re-run with the output redirected to a file to read the real code."
+  },
+  "groundTruthReads": [
+    {
+      "claim": "the parcel-less GET is already deep-allowlisted",
+      "evidence": "apps/property-explorer/api/_lib/deep-allowlist.ts line 5: the string api/property-explorer/v1/entitlement inside DEEP_GET_EXACT. isDeepPathAllowed in the same file resolves GET via DEEP_GET_EXACT.has(upstreamPath). api/spine-deep.ts line 31 builds upstreamPath = path.join('/') from req.query.upath ONLY, so the query string never reaches the allowlist. The parcel-less form and the parcelNodeId form therefore hit the SAME set member.",
+      "verifiedBy": "source read, not assumption"
+    },
+    {
+      "claim": "what a parcel-less GET does TODAY, before the sibling deploys",
+      "evidence": "P:/legacy-design-tools (branch feat/s1-instrument-hardening) artifacts/api-server/src/routes/propertyExplorer.ts lines 210-245: the handler builds base = { authenticated, tier, tenantId, userId, devRole, entitlementSource } and, when parcelNodeId is absent or blank or the caller is unauthenticated, res.json(base) with NO property block and NO 400.",
+      "consequence": "TODAY a parcel-less call already returns a usable access tier (as the key `tier`) but carries NO subscriptionTier, NO seatsPurchased and NO billingInterval. So Access can become real immediately, while Tier name and Billing interval must stay Not read until the sibling lands. That IS the honest degradation, and it is a distinct outcome rather than a failure."
+    },
+    {
+      "claim": "spine-deep checks the session cookie BEFORE the allowlist",
+      "evidence": "api/spine-deep.ts lines 26-36: readPeSessionCookie gives 401 first, isDeepPathAllowed gives 403 second. So signed-out callers get 401 and 401 must map to sign-in, never to no subscription."
+    }
+  ],
+  "design": {
+    "newFiles": [
+      "src/lib/accountEntitlementClient.ts - pure fetch plus parse of the parcel-less GET, injectable fetchImpl, an outcome union that keeps 401/403/404/500 apart, mirroring src/lib/unlockClient.ts which is the sibling P-98 read.",
+      "src/lib/useAccountEntitlement.ts - the ACCOUNT-LEVEL hook. useState plus useEffect plus cancel-on-unmount, the exact idiom the same modal already uses for fetchAiConnections, fetchTeamRoster and fetchAccountUnlocks. No module cache: Settings mounts on open, so a post-checkout reopen reads fresh for free and there is no invalidate mechanism left sitting dormant."
+    ],
+    "changedFiles": [
+      "src/browse/SettingsModal.tsx - swap usePropertyEntitlement(null) for useAccountEntitlement(); Access, Tier name and Billing interval read from it; the ladder entitlement input reads tier, subscriptionTier and billingInterval from it.",
+      "src/browse/settings-next-action.test.tsx - the never-invents-a-billing-interval test currently pins the literal billingInterval: null in the mount. That literal IS the starvation this card removes. The anti-invention half (no literal monthly) is preserved VERBATIM; the positive half becomes meaning-shaped (the mount passes the value THROUGH from the account read).",
+      "src/lib/nextAction.ts - comment only. The ladder guard (billingInterval !== monthly returns null) is ALREADY correct for the rule that matters; this card FEEDS it rather than changing it."
+    ],
+    "tierParseIsFailClosed": "The dispatch names the field accessTier; today's live server emits tier. Rather than guess which the sibling ships, the parse accepts EITHER key and, when NEITHER is present, resolves to null = UNKNOWN, which renders Not read. This is deliberately stricter than entitlementClient.ts's per-property parse, which turns an absent field into a positive free. The per-property parse is NOT touched.",
+    "unknownIsNull": "billingInterval parses to monthly, annual or null and NOTHING ELSE. An absent key, an explicit null, an unrecognised string (yearly, Monthly, empty) and a non-string all resolve to null. Null is UNKNOWN, it is never monthly, and it suppresses the rung.",
+    "preContractObservation": "The ready outcome carries preContract: boolean = the 200 body had no own property named billingInterval. It is a statement about the WIRE, used only for the report and for reasoning, never rendered as a fact. SECOND MECHANISM THAT WOULD PRODUCE THE SAME OBSERVATION: a deployed sibling that omits null-valued keys from its JSON. That false positive costs nothing, because pre-contract and deployed-but-null render IDENTICALLY (Not read, rung quiet) - the flag changes no user-visible behaviour by construction."
+  },
+  "adversarialReview": [
+    {
+      "risk": "Access could show a flattering answer again - the exact defect commit b4add1b fixed.",
+      "mitigation": "The signed-out guard is PRESERVED: ready and not authenticated still renders Not read, never Free and never Paid. Paid requires authenticated true AND a parsed paid tier. An unresolved read still renders Not read, which is what settings-access-not-read.test.tsx pins, and that pin survives unchanged because renderToStaticMarkup runs no effects.",
+      "falsifier": "a body of authenticated false plus tier paid must NOT produce Paid."
+    },
+    {
+      "risk": "Feeding the ladder could make annual_upgrade fire on an unknown interval.",
+      "mitigation": "The ladder guard is already a whitelist (not equal to monthly returns null) and is NOT being relaxed. The client parse independently refuses to produce monthly from anything but the literal string. Two independent refusals.",
+      "falsifier": "null must not fire; annual must not fire; monthly MUST fire - if the third fails, the rung is still starved and this card did not do its job."
+    },
+    {
+      "risk": "Removing usePropertyEntitlement(null) from SettingsModal changes per-property behaviour.",
+      "mitigation": "It cannot: the hook was called with a null id, which returns its LOADING constant and never fetches. No other Settings path reads it. The per-property module is not edited at all. Proof is src/lib/use-property-entitlement.test.tsx passing unchanged.",
+      "falsifier": "any diff to usePropertyEntitlement.ts or entitlementClient.ts, or any change in that test file's pass count."
+    },
+    {
+      "risk": "property_unlock looks like it should now fire and will not.",
+      "mitigation": "Declared, not fixed. The free-message counters live in the response's per-PROPERTY block, so an account-level read has none; freeMessagesLeft stays null and the rung stays suppressed. That is nextAction.ts's own documented contract. It is reported as a REMAINING starved rung rather than papered over."
+    },
+    {
+      "risk": "A second derivation of seats (entitlement seatsPurchased versus the Team roster) could disagree on screen.",
+      "mitigation": "seatsPurchased is PARSED (it is named in the contract) but wired to NOTHING. The Team tab's Purchased at checkout row keeps its single roster-derived source. Wiring the second derivation is a divergence test worth having and is explicitly out of this card's scope; it goes in leave_behind."
+    },
+    {
+      "risk": "Chrome-kit gate regression.",
+      "mitigation": "No new control and no new colour. The three rows are existing Row components whose value becomes a string; the kit Button and PE tokens are untouched."
+    }
+  ],
+  "preRegisteredFalsifiers": [
+    "F1 null billingInterval produces annual_upgrade -> would falsify the whole card",
+    "F2 annual produces annual_upgrade -> would falsify",
+    "F3 monthly does NOT produce annual_upgrade -> would mean the rung is still starved",
+    "F4 an unrecognised interval string parses to monthly or annual -> would falsify the parse",
+    "F5 a 404 parses to anything other than not-built -> would collapse route-absent into no-subscription",
+    "F6 the violation tests still pass after the ladder guard is deliberately broken -> would prove the tests vacuous"
+  ],
+  "notVerifiable": [
+    "No screenshot or DOM harness exists in this app (renderToStaticMarkup only). Nothing in this card is visually confirmed."
+  ]
+}

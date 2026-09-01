@@ -2,78 +2,49 @@
 id: 2026-08-31_c3_not_meaning_shaped_finding
 title: C3 is internal consistency, so its future PASS will not mean landUse is correct
 date: 2026-08-31
-status: open
+status: confirmed
 plan_row: F-08
-owner: unassigned (Gate 8; property seat)
-source: P5-SCRUB CP2 observation, _inbox/2026-08-31_p5-scrub_cp2.json; gate record _inbox/2026-08-31_gate8_live_1437_48021.json
-snapshot: doc_repo main 952f496; Factory seat/property-ctx-p5-scrub 29bded5
+owner: property seat (Gate 8)
+source: P5-SCRUB CP2 observation; violation run 2026-08-31 on hauska-factory seat/property-ctx-c3-presence
+snapshot: Factory PR #47 MERGED as 603c2f91; prior main d93c7b0 (PR #45)
 ---
 
-# The finding
+# Verdict
 
-P5-SCRUB was told to cite C3 rather than re-derive it, and while doing so it read
-what C3 actually checks. C3's own reason string names it:
+**CONFIRMED.** C3 PASSed on a payload where both leaves agreed and both were wrong. The card was right. C3 is internal consistency. A future green C3 after Wave R will not establish that landUse is correct.
 
-> `landUseFact.landUseCode is non-null while baseFacts.landUse is null (internal consistency)`
+Falsifier, stated before the run and in this direction (the convenient result is the one that lets everyone relax):
 
-Both leaves come from **one facets payload, from one upstream**. Under the
-enforcement rule that governs this operation, two fields from one payload from one
-upstream are **one derivation, not two**. The test is whether one party acting
-alone could satisfy both sides, and here it plainly could.
+- If C3 PASSES on agreeing-and-wrong, the finding is CONFIRMED.
+- If C3 FAILS on that payload, the card is WRONG (C3 consults something outside the facets payload).
 
-So C3 is an internal-consistency check. It catches transcription errors inside a
-payload. It cannot catch a wrong source.
+Observed: PASS. Instrument: `test/gate8.test.mjs` test named `C3 FALSIFIER: agreeing-and-wrong payload`. Payload:
 
-# Why this matters later rather than now
+```
+facets.baseFacts.landUse = "ZZ-NOT-A-CAD-CODE"
+landUseFact.state = "present"
+landUseFact.landUseCode = "ZZ-NOT-A-CAD-CODE"
+```
 
-C3 currently FAILS on all three golds, and the failure is real, so nothing about
-today's reading is wrong. The problem is the converse, and it arrives on a
-schedule:
+A second file test showed C3 also PASSES when both leaves are present and disagree (`A1` vs `PDD`). C3 does not compare the two values. It only fails the null/non-null pair and the present-vs-absent-rowState pair. That is stronger than the card needed, and it is still not a second derivation.
 
-**When Wave R re-bakes and C3 flips to PASS, that PASS will not establish that
-landUse is correct.** It will establish that the payload agrees with itself. An
-upstream that populates both leaves consistently and wrongly passes C3 exactly as
-cleanly as a correct one.
+# What shipped on this card (cheaper half)
 
-C3 sits in Gate 8. Gate 8 is the gate that unblocked P4 and is scheduled to gate
-P7. The moment C3 goes green, someone will read it as "the landUse defect is
-fixed," because that is what it will look like and because the landUse fix
-(LDT #566, `1d10024f`) will genuinely have landed in the same window. Two true
-statements will combine into an unearned third.
+C3 is labelled presence-shaped in Gate 8's own output. Verdict vocabulary is unchanged (`pass` stays `pass`; P4 still reads `dayOne.C3`). What changed:
 
-This is the same defect family as P5-SCRUB's family zero, one layer out. Family
-zero found `meaningShaped` being passed as a caller literal beside `evidence.pass`.
-C3 is a check whose two halves come from one payload. Same shape, different floor.
+- `assertC3` stamps `shape: "presence-shaped"` on pass and fail.
+- Pass reason is now `payload is self-consistent; does not establish landUse is correct` (was `land-use halves agree`).
+- `computeDayOne` emits `dayOneShape.C3 = "presence-shaped"` when graded, and `dayOneReading.C3` carries the pass sentence when C3 is pass. A refused C3 has null shape and null reading.
+
+No second derivation. CAD landUse at source versus served `landUseFact.landUseCode` is its own card.
 
 # What this is not
 
-Not a reason to distrust the current C3 FAIL. A presence-shaped check that fires is
-still evidence of the thing it fired on.
-
-Not a reason to weaken or remove C3. It catches a real class.
-
-Not P5-SCRUB's to fix. The lane was explicitly told not to split that payload into
-two S3 sources and it correctly did not. It reported and moved on, which is why
-this card exists instead of a silent scope creep.
-
-# What would close it
-
-C3 needs a **second independently derived input** before its PASS is load-bearing.
-The candidate is the CAD landUse value at its source, compared against the served
-`landUseFact.landUseCode`, rather than the served pair compared against itself.
-Where no second derivation exists, construct one rather than weakening the check.
-
-Until that lands, C3 should be recorded in Gate 8's own output as
-presence-shaped, so a green C3 reads as "the payload is self-consistent" and not as
-"landUse is correct." That is the cheaper half and it can ship first.
-
-**Verify by violation:** feed C3 a payload where both leaves agree and both are
-wrong. If C3 passes, the finding is confirmed. That check has not been run and
-should be the first thing this card does.
+Not a fix of C3's check. Not a reason to distrust today's C3 FAIL on the live golds. Not a reason to weaken S3. Not P-85.
 
 ```
 leave_behind:
-  - item: C3 second derivation, or an explicit presence-shaped label in gate output
+  - item: C3 second derivation (CAD landUse at source vs served landUseFact.landUseCode)
     owner: unassigned
     plan_row: F-08
 ```

@@ -2,7 +2,7 @@
 id: 2026-08-28_smartsite_mcp_app_WDLL
 title: WDLL — Smart Site MCP App v1 (screen board + parcel) and v2 (overlays + later intake)
 date: 2026-08-28
-last_updated: 2026-08-29T21:40-05
+last_updated: 2026-08-30
 status: amended
 applies_to: hauska-map, legacy-design-tools
 plan_row: P-91, P-92
@@ -136,6 +136,8 @@ Interactive map-in-chat (connector item 18). Hauska catalog tools on this server
 - 2026-08-29 (companion look-up). Operator: look up a property and get the full companion experience. Picture is the punched mockup. Item 12 chrome is Stone, not lime/white. Item 16 is the walk in `_inbox/2026-08-29_p91_companion_ux_walk.md`. Two waves: I Look up (Open + ring + human envelope), J Honesty (legend, empty, fail pair, listing on the drawn panel). Reason: item 16 named a walk the live iframe could not show.
 
 - 2026-08-29 (Open stays a turn; build to deploy). Operator ruling: every opened parcel lands in Claude's context, so Open stays a `ui/message` turn and item 13 is unchanged. The host mounts one instance per tool call, so F6 step 2 is re-specified: after Send, the panel under the `get_smart_site` row reads `Not on file in <county>` (parcel absent) or `No baked snapshot yet` (parcel exists, unbaked) or `Upgrade to open this parcel` (402), and the board above reads `Sent to chat. Press Send to open.`; `Open did not reach me` is reserved for no acknowledgement. New items pulled into this cut: 31 rails at first paint (screen rows carry `stub` from `create_screen` / `list_screens(screenId)`; bake miss is `unknown`, never `unread`; `stubRead` per row; `stubsDegraded` on the screen); 32 batch stub result paints as a board; 33 three sentences, county-correct, plus `Result not readable` as its own state; 34 `ask_the_map` is `blocked` / `not_ready` until its parcel path is wired (catalog stays 13; the live 400 was confirmed 2026-08-29); 35 cortex existence lookup fails closed (a throw refuses `lookup_unavailable`, never writes an absence) and the brief 404 splits `parcel_not_found` from `baked_snapshot_not_found`. Decision `_decisions/2026-08-29_p91_open_stays_a_turn.md`. Build plan and wire contract `_inbox/2026-08-29_p91_build_plan_p555_p542.md`. Targets p555 / p542. Reason: four punches changed what the miss looked like and never changed which instance it reached; the design now uses the host's model instead of fighting it.
+
+- 2026-08-30 (v2 card supersedes). Items 12, 13, 14, 16, 21, 22, 25, 26 of this card are superseded by `_inbox/2026-08-30_smartsite_mcp_app_v2_WDLL.md`. v1 stays the record of what shipped (p557). v2 is serving on p558 / p543 (PRs #553 `d8dfb319` and #555 `24553cfc`). Close `_inbox/2026-08-30_p91_v2_build_close.md`. Item text in this file is not changed.
 
 ## Finish card (graded at close)
 

@@ -1,0 +1,225 @@
+{
+  "lane": "P-97 Phase 0 — kill the silent tier downgrade in the PE checkout client",
+  "laneId": "p97-billing",
+  "planRow": ["P-97"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "dispatch": "_dispatches/2026-08-31_p97-billing_dispatch.md",
+  "status": "COMPLETE for items 1, 2 and 4. Item 3 investigated and HANDED BACK by design (a deployed public route; the dispatch forbids changing deployed routing).",
+  "closedAt": "2026-08-31",
+
+  "missionPremise": "The PE checkout client's 403/404 branch fed startPeCheckoutInstallScoped, which posted a hardcoded tier 'pro' — STRIPE_PRO_PRICE_ID, the RETIRED pre-ladder price — with no interval and no seats. The 503 branch three lines below already states the governing rule (never retried as another tier, never routed to the legacy fallback); the 403/404 branch simply predates it. Source: the dispatch's defect statement, independently re-verified at source this session (see dispatchPremiseVerification). The locked ladder is solo/studio/team per src/lib/pricing.ts (operator 2026-08-10); 'pro' is not on it.",
+  "completionPredicate": "A stranger can evaluate this by: (a) git diff shows the 403/404 branch returning {ok:false, message: CHECKOUT_UNAVAILABLE_MESSAGE} and startPeCheckoutInstallScoped deleted; (b) restoring the pre-fix billingClient.ts from git makes src/lib/pe-checkout-tier.test.ts fail on all twelve tier x interval x status cases; (c) with the fix in place npx tsc --noEmit exits 0, npx vitest run is fully green, node scripts/pe-chrome-kit-gate.mjs exits 0.",
+  "scopeBasis": "Bounded to the PE checkout CLIENT (billingClient.ts) plus its test. The install-scoped SEAM itself is deliberately NOT retired: two other paths reach it (api/pe-billing.ts, a deployed public route; and a starved allowlist entry in api/spine.ts), and closing either changes deployed routing or another surface's configuration, which the dispatch explicitly reserves. Cortex-side price configuration is a different repo and a different seat. api/spine.ts is shared with command-center, so an edit there is not a PE-local change.",
+
+  "prNumbers": "not applicable: no commit made. Sub-agent produces the diff; the planner commits, per the dispatch and ENFORCEMENT 'Subagents do not commit'.",
+  "mergeShas": "not applicable: no commit made.",
+  "ciConclusionStrings": "not applicable: nothing pushed, so no check-runs exist.",
+  "checkpointArtifacts": [
+    "_inbox/2026-08-31_p97-billing_cp1.json",
+    "_inbox/2026-08-31_p97-billing_cp2.json"
+  ],
+
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-billing",
+    "worktreeRegistered": "yes — _catalog/seat_register.json seats[property] name=hauska-map-billing, branch matches",
+    "branch": "fix/pe-checkout-no-tier-downgrade",
+    "baseCommit": "de0dca732ab52e44cd86c7d888f73f9eae0b7c83",
+    "baseIsOriginMainTip": true,
+    "treeCleanAtStart": true,
+    "deliverable": "uncommitted working-tree diff, 2 files, +147 / -52"
+  },
+
+  "dispatchPremiseVerification": {
+    "rule": "Verify at source before acting on ANY state claim, including your own dispatch's context block (AGENT_CONTRACT s5).",
+    "403Reachable": "CONFIRMED. api/spine-deep.ts:33-34 returns 403 {error:'forbidden', message:'Path not on deep allowlist'} for any path failing isDeepPathAllowed. api/_lib/deep-allowlist.ts:51 currently carries 'api/property-explorer/v1/billing/checkout' — the route is on the list by exactly one line, which is the omission class the dispatch names.",
+    "hardcodedPro": "CONFIRMED. billingClient.ts:131-149 (pre-fix) posted body {tier:'pro', successUrl, cancelUrl}: no interval, no seats.",
+    "503BranchCorrect": "CONFIRMED and untouched — git diff shows no change to that hunk."
+  },
+
+  "changes": [
+    {
+      "file": "apps/property-explorer/src/lib/billingClient.ts",
+      "what": "403/404 branch now returns {ok:false, message: CHECKOUT_UNAVAILABLE_MESSAGE}, mirroring the 503 branch. A 16-line comment carries what the branch used to do, why that was wrong, and why 403 is reachable (naming spine-deep.ts:33 and the deep-allowlist entry).",
+      "userVisibleEffect": "The refusal is visible, not silent: useCheckoutActions.ts calls resolveSubscriptionNavigation, which maps !result.ok to {action:'error'} and renders an amber note. A missing route now reads as a broken checkout instead of a wrong charge."
+    },
+    {
+      "file": "apps/property-explorer/src/lib/billingClient.ts",
+      "what": "RETIRED startPeCheckoutInstallScoped (42 lines) and its now-unused CORTEX_PROXY_BASE import. A tombstone comment records what it was, why it went, and that the SEAM is not retired by this change — naming the two other paths that still reach it."
+    },
+    {
+      "file": "apps/property-explorer/src/lib/pe-checkout-tier.test.ts",
+      "what": "Removed one test that asserted the defect as a specification; added a 12-case behavioural matrix plus three non-vacuity controls; corrected the stale file-header comment that said the legacy seam was still a 403/404 feature-detect."
+    }
+  ],
+
+  "item2_isTheInstallScopedFunctionOrphaned": {
+    "answer": "YES — orphaned by this change, and RETIRED accordingly.",
+    "evidence": "grep -rn 'startPeCheckoutInstallScoped' over the whole worktree (node_modules and .git excluded) returned exactly two hits before the fix: the declaration at billingClient.ts:131 and the single call at billingClient.ts:105. Both are in the same file. The function had no export keyword, so it was module-private and unreachable from outside.",
+    "secondMechanismRejected": "It could have been reachable under another name via a re-export or a barrel. Rejected by enumerating every export in the module: CHECKOUT_NO_SESSION_MESSAGE, PeCheckoutResult, PeCheckoutTier, PeCheckoutInterval, CHECKOUT_UNAVAILABLE_MESSAGE, startPeCheckout, startProCheckout, PROPERTY_UNLOCK_COMING_MESSAGE, isStripeCheckoutUrl, resolveCustomOrHostedCheckout, PropertyUnlockResult, startPropertyUnlock. startProCheckout aliases startPeCheckout, NOT the install-scoped function. No dynamic import() and no string-keyed access to the module anywhere.",
+    "searchScope": "apps/property-explorer/src and apps/property-explorer/api (the dispatch minimum) plus the entire repo including apps/command-center and apps/factory."
+  },
+
+  "item3_isPeBillingStillCalled": {
+    "answer": "NOTHING IN THIS REPO CALLS IT — and it is LIVE ON PRODUCTION AND REACHABLE FROM THE INTERNET. Retirement is PROPOSED, NOT PERFORMED, per the dispatch.",
+    "staticFindings": [
+      "Zero references from any application source. Repo-wide grep for 'pe-billing' across ts/tsx/js/jsx/json/md/html returns exactly two hits, both configuration: vercel.json:42 (the rewrite that routes it) and vite.config.ts:48 (the local dev proxy). No src/ file, no api/ file, and no other app references it.",
+      "The file has ONE commit in its entire history (b4dc15f, the Wave 4-5 GTM BFF drop). It was born as part of a wave and never wired to a caller.",
+      "Cross-repo read-only check: no source caller in legacy-design-tools. doc_repo mentions are audit and status records only (2026-07-21 GTM status, 2026-07-27 type-debt note, 2026-08-20 worktree audit, and the prior P-97 stripe close which already flagged it)."
+    ],
+    "liveFindings": {
+      "host": "https://smartsite.cloud",
+      "measuredAt": "2026-08-31 (co-timed with a coverage response stamped 2026-08-31T20:36:36.527Z)",
+      "probes": [
+        "GET /api/pe-billing?path=status -> 200 {stripeConfigured:true, liveCheckout:true}. The route is deployed AND cortex reports live checkout configured. Not simulated.",
+        "POST /api/pe-billing?path=checkout with no install-id header -> 400 {error:install_id_required}. Deliberately stopped here: that 400 is emitted by the handler at pe-billing.ts:42, strictly BEFORE the upstream fetch at :60, so the probe proves the route is live without creating a Stripe session.",
+        "CONTROL POST /api/pe-billing?path=bogus -> 400 {error:invalid path} — the ALLOWED set discriminates.",
+        "CONTROL GET /api/pe-billing-nonexistent -> 404 NOT_FOUND — the above are the real handler, not a catch-all."
+      ],
+      "exposure": "The only gate on POST /api/pe-billing?path=checkout is a self-asserted X-Hauska-Install-Id header of length >= 8, which any caller can invent. The function then attaches Authorization: Bearer CORTEX_SERVICE_API_KEY server-side and forwards the caller's body verbatim to api/brokerage/v1/property-explorer/billing/checkout. The tier in that body is whatever the caller sends. Stripe is in TEST mode today, which is the only thing standing between this and real money."
+    },
+    "recommendation": "Retire the route: delete apps/property-explorer/api/pe-billing.ts, the vercel.json:42 rewrite, and the vite.config.ts:48 dev proxy, then prove retirement by decline (a CI check asserting POST /api/pe-billing returns 404). Per ENFORCEMENT 'Retirement is proven by decline, never by documentation.' NOT DONE HERE: it changes deployed routing, which this dispatch reserves. Needs its own card and a deploy.",
+    "whyNotDoneSilently": "Deleting a deployed public route inside a card whose diff is advertised as a client-side refusal would misdescribe the commit, and the route's absence would first be discovered in production."
+  },
+
+  "item4_theTest": {
+    "file": "apps/property-explorer/src/lib/pe-checkout-tier.test.ts",
+    "design": "The instrument models the world in which the defect actually bites: a scripted per-call fetch stub answers call 1 with 403 or 404 and would answer call 2 with a SUCCESSFUL Pro-priced session. Under the fix there is no call 2. Under a restored fallback the same script yields ok:true, a checkout URL, and a request carrying tier 'pro'.",
+    "assertsBehaviourNotStrings": "Yes. No assertion reads source text or checks for the presence of an identifier. The three behaviours asserted are: exactly one request is made and it goes to the deep checkout URL; no request anywhere carries a tier other than the one clicked; and nothing purchasable comes back (no checkoutUrl, no clientSecret, no sessionId, ok false).",
+    "coverage": "12 cases = 3 tiers (solo, studio, team) x 2 intervals (month, year) x 2 statuses (403, 404). Counting rule: one it.each case per combination.",
+    "nonVacuityControls": [
+      "CONTROL 1 — a 200 still returns ok:true with its checkout URL. If someone 'fixed' this by making startPeCheckout refuse everything, every refusal assertion above would pass vacuously and this control fails.",
+      "CONTROL 2 — two startPeCheckout invocations produce calls.length===2 with differing bodies, so toHaveLength(1) is a real measurement rather than an artifact of a stub that can only record one call.",
+      "CONTROL 3 — a 500 returns a message that is NOT CHECKOUT_UNAVAILABLE_MESSAGE, so the 403/404 branch discriminates on status and is not a blanket 'unavailable' for every non-2xx."
+    ]
+  },
+
+  "existingTestRemoved": {
+    "name": "NOT-VACUOUS CONTROL: 404 feature-detect DOES reach the install-scoped fallback (proves the 503 test could fail)",
+    "location": "src/lib/pe-checkout-tier.test.ts, pre-fix line 169",
+    "whatItAsserted": "calls.length===2 and calls[1].url===LEGACY_INSTALL_SCOPED_URL — that a 404 reaches the legacy seam.",
+    "whyRemoved": "It asserted the defect as the specification. ENFORCEMENT.md/Tests: 'Never assert a value the system produces that no external authority recognises. That converts a defect into a specification and makes the fix read as a regression.' No external authority recognises a Studio click buying Pro.",
+    "notAWeakening": "Its function was keeping the 503 test non-vacuous. Three controls now do that job by discriminators that survive the retirement (see item4.nonVacuityControls). The 503 test itself is untouched and still passes, including its assertion that the request URL is not the legacy one. Flagged here explicitly so the planner sees a removal, not a quiet deletion."
+  },
+
+  "correctionToTheDispatchsSeverityClaim": {
+    "dispatchSaid": "Under current code such an omission would silently charge every customer the wrong price instead of failing visibly.",
+    "whatIFound": "On the deployed surface that outcome does not occur today, because the fallback's own target is blocked by PE's own proxy. The fallback posts to CORTEX_PROXY_BASE + '/brokerage/v1/property-explorer/billing/checkout'. api/spine.ts:311 runs isCortexBrowsePathAllowed FIRST and 403s outright; its POST branch (spine.ts:144-150) allows exactly four paths, none of them billing. The cortexPostPaths entry 'api/brokerage/v1/property-explorer/billing' at spine.ts:346 sits BELOW that early return and never executes on this surface — a starved allowlist entry, which the code's own comment at spine.ts:328-329 acknowledges.",
+    "secondMechanismConsideredAndRejected": "That the browse gate is not actually deployed, or does not cover this path — which would make the wrong-charge real. Rejected by live probe: GET /api/spine/cortex/api/brokerage/v1/property-explorer/billing/checkout -> 403 forbidden; POST /api/spine/cortex/api/brokerage/v1/coverage (non-allowlisted POST, harmless read endpoint) -> 403 forbidden; and the NOT-VACUOUS CONTROL GET /api/spine/cortex/api/brokerage/v1/coverage -> 200, proving the gate is discriminating rather than a blanket denier.",
+    "realizedBehaviourBeforeThisFix": "A confusing failure, not a wrong charge: the user saw the proxy's internal string 'Anonymous browse proxy allows facet/envelope/map-data paths only. GTM consent/events use /api/pe-gtm; authenticated deep routes use /api/spine-deep.' as their checkout error message.",
+    "whyTheFixIsStillRequired": "Three reasons. The code ENCODES the intent to charge Pro, and code reading outranks output measuring. The path is one line from being live — spine.ts:346 already names it, so widening the browse gate makes the downgrade real and silent with no further edit. And leaking an internal proxy message to a paying customer is its own defect.",
+    "whatThisReranks": "Item 3 is the more urgent finding, not item 1. /api/pe-billing bypasses the spine gate entirely and is live with liveCheckout:true.",
+    "staleness": "The code claims are stated against de0dca7. The probe claims are stated against the deployed artifact, which per fleet memory does not auto-deploy on merge and may lag main. They are reported as two separate measurements, not merged."
+  },
+
+  "counts": {
+    "vitestBefore": "158 files, 2090 passed, 1 todo (2091 total)",
+    "vitestAfter": "158 files, 2104 passed, 1 todo (2105 total)",
+    "countingRule": "npx vitest run at apps/property-explorer, full suite, no filter, vitest v3.2.7. Delta +14 = 15 tests added (12 matrix + 3 controls) minus 1 removed (the defect-asserting control). The arithmetic reconciles exactly; no test file count change.",
+    "tsc": "npx tsc --noEmit -p tsconfig.json — exit 0, no diagnostics, before and after",
+    "chromeKitGate": "node scripts/pe-chrome-kit-gate.mjs — exit 0. SELF-TEST 76/76 ok; CHROME-KIT GATE 20 surfaces + 12 kit files ok",
+    "diff": "2 files changed, 147 insertions(+), 52 deletions(-)"
+  },
+
+  "violationEvidence": {
+    "direction1_defectRestored": "Restored the pre-fix file with 'git show HEAD:apps/property-explorer/src/lib/billingClient.ts' (the real prior code, not a hand-reconstruction). npx vitest run src/lib/pe-checkout-tier.test.ts -> Tests 12 failed | 14 passed (26). All twelve matrix cases failed. The three non-vacuity controls PASSED under the defect, which is correct: they are designed to hold in both directions.",
+    "direction1b_assertionsFailIndependently": "The matrix test short-circuits on its first assertion, so 'three independent failures' was measured rather than claimed. A throwaway probe asserted BEHAVIOUR 2 and BEHAVIOUR 3 in isolation against the restored defect: BEHAVIOUR 2 failed ('expected false to be true' — tier 'pro' on the wire behind a 'studio' click) and BEHAVIOUR 3 failed ('expected true to be false' on result.ok — the defect returned a PURCHASABLE Pro-priced session, not merely an extra request). The probe file was deleted; the working tree contains only the two intended files.",
+    "direction2_fixRestored": "npx vitest run src/lib/pe-checkout-tier.test.ts -> 26 passed (26). Full suite green. Verified by grep that the fallback call site is gone and the only surviving 'tier: pro' occurrence is inside the explanatory comment, not code."
+  },
+
+  "constraintsHonored": [
+    "Worked only in the registered worktree P:/seat-worktrees/property/hauska-map-billing on branch fix/pe-checkout-no-tier-downgrade; snapshot declared in the first output.",
+    "No commit, no push, no merge, no deploy. Deliverable is an uncommitted working-tree diff.",
+    "No sub-agents spawned — deepest worker.",
+    "The 503 branch was not changed; git diff confirms the hunk is untouched.",
+    "No existing test weakened. One test removed for asserting the defect, named explicitly with its replacement.",
+    "Every command exit-bounded: pnpm install, tsup build, tsc --noEmit, vitest run, node scripts, curl, git reads. No watch, no dev server, no tail -f.",
+    "Live probes were read-only or stopped at a handler-level 400. No request that could create a Stripe checkout session was completed.",
+    "Stayed inside hauska-map for writes. Cross-repo checks were read-only greps.",
+    "Findings state a second mechanism and why it was rejected (item 2 orphan claim, the severity correction, the pe-billing reachability claim)."
+  ],
+
+  "openItems": [
+    {
+      "id": "P97-OPEN-1",
+      "item": "api/pe-billing.ts is live on smartsite.cloud with liveCheckout:true, has zero in-repo callers, and is gated only by a self-asserted install-id header. It forwards any caller's body to the install-scoped seam with the cortex service key attached.",
+      "recommendation": "Retire it (file + vercel.json:42 + vite.config.ts:48) and prove retirement by decline with a CI check asserting 404. Needs its own card and a deploy.",
+      "urgency": "Before Stripe live activation. This, not the client fallback, is the live path to the retired Pro price.",
+      "owner": "planner to route"
+    },
+    {
+      "id": "P97-OPEN-2",
+      "item": "api/spine.ts:346 cortexPostPaths carries 'api/brokerage/v1/property-explorer/billing', which is unreachable dead configuration on the PE surface because isCortexBrowsePathAllowed 403s first. A starved allowlist entry that reads as a live permission.",
+      "recommendation": "Remove the entry, or document why it is retained. NOT done here: spine.ts is shared with command-center per its own comment at :328, so the change is not PE-local.",
+      "owner": "planner to route"
+    },
+    {
+      "id": "P97-OPEN-3",
+      "item": "The cortex-side install-scoped seam POST api/brokerage/v1/property-explorer/billing/checkout still exists and still resolves tier 'pro' to STRIPE_PRO_PRICE_ID. This card removed one client of it, not the seam.",
+      "recommendation": "Separate repo (legacy-design-tools / cortex-api), separate seat. Retire or fail-closed on the retired tier there.",
+      "owner": "planner to route"
+    },
+    {
+      "id": "P97-OPEN-4",
+      "item": "Out of scope, noticed while probing: GET /api/spine/cortex/api/brokerage/v1/coverage on production returns layers including cotality:national. Canon says Cotality is EXTINGUISHED. A live production response still advertises a cotality layer.",
+      "recommendation": "Planner's call whether this is a stale label in a response payload or a live routing path. Not investigated — outside this card and a different repo.",
+      "owner": "planner to route"
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch fix/pe-checkout-no-tier-downgrade in worktree P:/seat-worktrees/property/hauska-map-billing, carrying an uncommitted 2-file diff",
+      "owner": "planner (doc_repo planner seat)",
+      "plan_row": "P-97",
+      "note": "Deliberate. Sub-agents do not commit. The planner reads the diff and commits."
+    },
+    {
+      "item": "api/pe-billing.ts route retirement (file + vercel.json:42 rewrite + vite.config.ts:48 dev proxy + a decline check)",
+      "owner": "planner to assign",
+      "plan_row": "P-97 follow-on, see P97-OPEN-1",
+      "note": "Proposed, not performed — changes deployed routing, which this dispatch reserves."
+    },
+    {
+      "item": "api/spine.ts:346 starved cortexPostPaths entry",
+      "owner": "planner to assign",
+      "plan_row": "P-97 follow-on, see P97-OPEN-2",
+      "note": "Shared with command-center; not a PE-local edit."
+    }
+  ],
+
+  "fleetMemory": [
+    {
+      "kind": "LESSON",
+      "text": "A test can be the thing blocking a fix. pe-checkout-tier.test.ts carried a control that asserted the defect ('404 DOES reach the install-scoped fallback') because it was the cheapest way to keep a neighbouring test non-vacuous. Non-vacuity controls written as 'the broken path still fires' pin the defect. Write them as 'the good path still succeeds' instead — that discriminator survives the fix. Check for defect-asserting tests BEFORE estimating a fix; the obvious one-line change had a test-suite dependency on the defect."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31: https://smartsite.cloud/api/pe-billing is LIVE. GET ?path=status -> 200 {stripeConfigured:true, liveCheckout:true}. POST ?path=checkout is gated only by a self-asserted X-Hauska-Install-Id header of length >= 8, then forwards the caller's body to the install-scoped brokerage seam with CORTEX_SERVICE_API_KEY attached server-side. Zero in-repo callers. Stripe TEST mode is the only thing between this and real money."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31: the PE spine browse gate is deployed and discriminating. api/spine.ts isCortexBrowsePathAllowed runs BEFORE the cortexPostPaths allowlist and 403s outright, so the four-path POST exact list is the real gate and cortexPostPaths is dead configuration on the PE surface. Measured: GET billing/checkout -> 403; POST coverage -> 403; CONTROL GET coverage -> 200."
+    },
+    {
+      "kind": "LESSON",
+      "text": "A defect's blast radius is not what the defective function does; it is what the defective function can REACH. The 403/404 fallback looked like a live wrong-charge path and was actually blocked by PE's own proxy two hops later. The genuine exposure was a route nobody in the codebase calls. Trace the full request path to its gate before ranking severity — and probe the gate, since a code-read of the gate and a deployed gate are two different claims."
+    },
+    {
+      "kind": "LESSON",
+      "text": "When an it.each assertion short-circuits, 'N independent assertions fail' is a claim, not a measurement. A throwaway single-assertion probe run against the restored defect converts it into a measurement, costs one file and one run, and gets deleted before the diff is handed over."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Do not verify a billing route's reachability by completing its POST. The pe-billing checkout probe was deliberately stopped at the handler's own 400 (pe-billing.ts:42, before the upstream fetch at :60), which proves the route is deployed and reached without creating a Stripe session. Sending a valid install-id would have created a real test-mode session against production."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "node cannot read the MSYS-style path /p/doc_repo/... — it resolves it to P:\\p\\doc_repo and ENOENTs. Bash heredocs write to /p/... fine; node/JSON validation needs P:/doc_repo/... . Mixing the two forms in one command fails only at the node step and looks like a missing file."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Three retirement items remain after this card, none performed: api/pe-billing.ts (live route, needs a deploy), api/spine.ts:346 starved allowlist entry (shared with command-center), and the cortex-side seam that still resolves tier 'pro' to STRIPE_PRO_PRICE_ID (different repo and seat). Retiring the client alone does not close the seam, and the tombstone comment in billingClient.ts says so."
+    }
+  ]
+}

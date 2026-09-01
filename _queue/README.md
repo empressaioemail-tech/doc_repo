@@ -31,11 +31,24 @@ dispatch path, the plan row, the close path, **the premises you must re-verify**
 Then do the work from the compiled dispatch at the path it printed. The dispatch is
 the instruction; the card is only the queue entry.
 
-When the close artifact is written:
+When the close artifact is written and carries `leave_behind`:
 
 ```
 node scripts/queue/cli.mjs release --card <id> --seat <your-seat>
 ```
+
+That form still works. `--as` is inferred as `close` only when the artifact exists
+and is contract-complete. Releasing with no close is refused and prints both
+forms. `--reason` has no default.
+
+```
+node scripts/queue/cli.mjs release --card <id> --seat <your-seat> --as abandon --reason "<why>"
+node scripts/queue/cli.mjs close-addendum --card <id> --seat <your-seat> --text "<what changed>"
+```
+
+`--as abandon` puts the card back on the board as claimable and logs `ABANDONED`.
+A closed card accepts a close-addendum **beside** the close, never over it.
+`status` prints that command when it reports `CARD_CLOSED`.
 
 ## The 13 refusals
 
@@ -54,7 +67,7 @@ node scripts/queue/cli.mjs release --card <id> --seat <your-seat>
 | `STATE_UNREADABLE` | a control input exists but could not be parsed. Absent and unreadable are different states |
 | `WORKTREE_MISMATCH` | git says that worktree is on a different branch than the claim declares |
 
-All refusals and their inverses are asserted in `scripts/queue/self-test.mjs` — 48
+All refusals and their inverses are asserted in `scripts/queue/self-test.mjs` — 66
 cases including an explicit not-vacuous one, so it cannot pass by refusing everything.
 `lib.mjs` exports `R` and is the authority on the code list; this table is a convenience
 and has already gone stale once.

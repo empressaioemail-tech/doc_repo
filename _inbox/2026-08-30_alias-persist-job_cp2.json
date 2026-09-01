@@ -1,0 +1,45 @@
+{
+  "checkpoint": "CP2",
+  "lane": "alias-persist-job",
+  "card": "alias-persist --apply calls applyAliasLandingRows",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-30T23:20:00Z",
+  "seat": "property",
+  "snapshot": {
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p1-controls",
+    "branch": "seat/property-ctx-p1-factory",
+    "head": "57e8b662ed927416b9d1f1ca45777f0b93c45f9d",
+    "workingTree": "uncommitted; planner commits",
+    "tests": "node --test test/*.test.mjs at 2026-08-30T23:19Z: 279 pass, 0 fail, 2 skipped"
+  },
+  "pilot": {
+    "arm1_missingTable": {
+      "violation": "runAliasPersist --apply with FACTORY_ALIAS_PERSIST_GO=1, run row, and a query client whose information_schema returns empty. Rejects ALIAS_TABLE_MISSING, table landing_cad_txgio_alias. Issued SQL is the exists SELECT only. insertLandingCalls stays 0. writePersistedAlias on the same client also rejects ALIAS_TABLE_MISSING.",
+      "also": "laptop --apply without GO rejects ALIAS_PERSIST_GO_REQUIRED; GO=1 without a run row rejects RUN_ROW_REQUIRED. persistCadTxgioAliasBinds(apply=true) reports wroteLanding 0."
+    },
+    "arm2_realInsert": {
+      "violationOfTheHole": "the ctx-publish path: insertLanding injected, wroteLanding from array length, zero INSERT SQL. That client is on the PASS fixture. insertLandingCalls stays 0.",
+      "knownGood": "runAliasPersist --apply records client.query INSERT INTO landing_cad_txgio_alias. wroteLanding equals INSERT executions (1). Params are county_fips, cad_prop_id, txgio_id, situs_key, as_of, method, run_id. A client with only insertLanding rejects ALIAS_LANDING_WRITE_REFUSED."
+    }
+  },
+  "sqlIssued": "INSERT INTO landing_cad_txgio_alias (\n  county_fips, cad_prop_id, txgio_id, situs_key, owners_agree, as_of, method, run_id, valid_to\n) VALUES ($1,$2,$3,$4,true,$5::timestamptz,$6,$7::uuid,NULL)",
+  "notDoneThisCard": [
+    "Migrations not applied to any store (forbidden).",
+    "ctx-publish writePersistedAlias still prefers insertLanding (that tree was read, not written).",
+    "No job started, no deploy, no bake, no publish, no Neon persist."
+  ],
+  "adversarialAtPilot": [
+    {
+      "worry": "the job could still report persistCadTxgioAliasBinds wroteLanding and never call applyAliasLandingRows",
+      "resolution": "the planner returns wroteLanding 0. runAliasPersist overwrites wroteLanding from writePersistedAlias, which only calls applyAliasLandingRows. The arm2 test requires wroteLanding === INSERT count."
+    },
+    {
+      "worry": "insertLanding remains a silent second write if a future caller injects it",
+      "resolution": "writePersistedAlias never calls insertLanding. Both arm fixtures inject it and assert insertLandingCalls === 0. src/ has insertLanding only in refuse comments."
+    },
+    {
+      "worry": "laptop --apply was opened for the injected client",
+      "resolution": "GO and run row are still required before stores open. The freeze test rejects both missing halves."
+    }
+  ]
+}

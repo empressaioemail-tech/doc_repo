@@ -1,0 +1,163 @@
+{
+  "lane": "p98b-client",
+  "planRow": ["P-98"],
+  "repo": "hauska-map",
+  "status": "COMPLETE — diff produced, nothing committed",
+  "missionPremise": "The Settings Access row shipped showing 'Paid' to every account including anonymous (commit b4add1b), and the P-98 next-action rail's annual_upgrade rung shipped starved. BOTH have the same single cause: `GET api/property-explorer/v1/entitlement` could only be asked about a PARCEL, and Settings is account-scoped. A sibling lane in legacy-design-tools is making that GET callable without a parcelNodeId. This lane is the client half: read the account block, light up the three Plan values it can honestly answer, and feed billingInterval into the ladder. The rule the work is judged on is that a NULL interval must never be treated as monthly, because offering 'switch to annual' to an annual subscriber is the failure that rung would be judged on.",
+  "completionPredicate": "A stranger can evaluate this by: (1) confirming `npx vitest run` in apps/property-explorer reports MORE tests than the 2194 baseline with none removed; (2) reading src/lib/account-entitlement-client.test.ts and finding the three-direction violation block (monthly fires, annual does not, null does not) driven from a WIRE BODY rather than a hand-built ladder input; (3) breaking `if (e.billingInterval !== \"monthly\") return null;` in src/lib/nextAction.ts and confirming tests go red; (4) confirming git reports no modification to usePropertyEntitlement.ts or entitlementClient.ts.",
+  "scopeBasis": "Bounded to the CLIENT half in hauska-map. The server half is another seat's repo and was READ (to establish today's pre-contract behaviour) but never written. Inside the client, the boundary is the three rows the account entitlement can actually answer — Access, Tier name, Billing interval. Renewal date, Payment method, Invoices and Cancel subscription were deliberately left because they remain genuinely unread or unbuilt, and a test now pins that they were not touched. seatsPurchased is parsed but wired to nothing, deliberately: the Team tab already derives a purchased-seat count from the roster, and a second derivation without a divergence test between them is how two numbers that should agree start disagreeing on screen.",
+
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+    "branch": "feat/p98b-account-entitlement-client",
+    "baseCommit": "8740558dbb26ad1526ac21ce124724e5a33cf60b",
+    "treeAtStart": "clean",
+    "treeAtClose": "5 modified, 4 new, UNCOMMITTED — the dispatch forbids commit/push/merge/deploy"
+  },
+  "prs": "not applicable: this lane produces a diff for the planner to commit. No branch pushed, no PR opened, no CI conclusion string to report.",
+  "mergeShas": "not applicable: nothing committed",
+  "ciConclusion": "not applicable: nothing pushed. Every job this repo's CI runs was executed LOCALLY instead and is reported under `verification` below.",
+  "checkpoints": [
+    "_inbox/2026-09-01_p98b-client_cp1.json",
+    "_inbox/2026-09-01_p98b-client_cp2.json"
+  ],
+
+  "diff": {
+    "modified": [
+      "apps/property-explorer/src/browse/SettingsModal.tsx (+210/-74 within the file)",
+      "apps/property-explorer/src/browse/settings-next-action.test.tsx",
+      "apps/property-explorer/src/lib/nextAction.ts (COMMENT-ONLY — proved mechanically)",
+      "apps/property-explorer/src/lib/nextAction.test.ts (one stale test NAME and comment)",
+      "apps/property-explorer/src/lib/proxy-allowlist.test.ts"
+    ],
+    "new": [
+      "apps/property-explorer/src/lib/accountEntitlementClient.ts (266 lines)",
+      "apps/property-explorer/src/lib/useAccountEntitlement.ts (118 lines)",
+      "apps/property-explorer/src/lib/account-entitlement-client.test.ts (407 lines)",
+      "apps/property-explorer/src/browse/settings-plan-rows.test.tsx (187 lines)"
+    ],
+    "gitDiffStat": "5 files changed, 230 insertions(+), 74 deletions(-) plus 978 lines across 4 new files"
+  },
+
+  "accountReadShapeAndMount": {
+    "module": "apps/property-explorer/src/lib/accountEntitlementClient.ts",
+    "path": "ACCOUNT_ENTITLEMENT_PATH = 'api/property-explorer/v1/entitlement', fetched with NO query string at all (pinned: the test asserts the built URL contains no '?' and no 'parcelNodeId')",
+    "outcomeUnion": "{ kind: 'ready'; account } | { kind: 'sign-in' } (401) | { kind: 'blocked' } (403, our own proxy) | { kind: 'not-built' } (404/501) | { kind: 'error'; message } (500, unreachable, unreadable body). Five kinds that must never merge — the same discipline unlockClient.ts carries, against the same shipped defect.",
+    "accountShape": "{ authenticated, accessTier: 'free'|'paid'|null, subscriptionTier: 'solo'|'studio'|'team'|null, entitlementSource: string|null, devRole: boolean, seatsPurchased: number|null, billingInterval: 'monthly'|'annual'|null, preContract: boolean }",
+    "hook": "apps/property-explorer/src/lib/useAccountEntitlement.ts — useAccountEntitlement(), one fetch per mount via useState/useEffect/cancel-on-unmount, the exact idiom SettingsModal already uses for fetchAiConnections, fetchTeamRoster and fetchAccountUnlocks. NO module cache, deliberately: a cache would need an invalidate wired into the post-checkout reconcile, and an invalidate nobody calls is a dormant mechanism. Settings mounts when it opens, so a post-checkout reopen reads fresh for free.",
+    "bridge": "ladderEntitlementFromAccount(read) — pure, exported, tested apart from any component. It is the ONE place a wire value becomes a ladder input, and therefore the one place an 'unknown means monthly' bug could be written. It returns unread for an unresolved read, for all four failure kinds, for a signed-out 200, and for an unknown accessTier; otherwise it passes billingInterval STRAIGHT THROUGH, null included, and always sets freeMessagesLeft null.",
+    "mount": "SettingsModal.tsx line ~224: `const account = useAccountEntitlement();` replacing `const ent = usePropertyEntitlement(null);`. Three pure exported label functions (accessLabel, tierNameLabel, billingIntervalLabel) render the rows; ladderEntitlementFromAccount(account) feeds the rail.",
+    "typeReuse": "BillingInterval and PlanTier are imported FROM nextAction.ts rather than redeclared, so the wire parse and the ladder guard cannot drift into two different unions. unlockClient.ts already sets that precedent by importing AccountUnlock the same way."
+  },
+
+  "allowlistLineThatProvesTheGetIsListed": {
+    "file": "apps/property-explorer/api/_lib/deep-allowlist.ts",
+    "line": 5,
+    "text": "'api/property-explorer/v1/entitlement',",
+    "context": "the FIRST entry of DEEP_GET_EXACT",
+    "whyItCoversTheParcelLessForm": "isDeepPathAllowed (same file, line 78) resolves GET via DEEP_GET_EXACT.has(upstreamPath), and api/spine-deep.ts line 31 builds `const upstreamPath = path.join('/')` from req.query.upath SEGMENTS only — the query string is stripped into a separate URLSearchParams at lines 39-46 and never reaches the check. So the per-property form (?parcelNodeId=…) and the account form (no query) hit the SAME set member and NO new allowlist line is needed.",
+    "verifiedNotAssumed": "both files read; and a new test was added at src/lib/proxy-allowlist.test.ts asserting isDeepPathAllowed('GET', ACCOUNT_ENTITLEMENT_PATH) is true using the constant the CLIENT builds its URL from, plus NOT-VACUOUS narrowness checks that POST, DELETE and a '/account' subpath on the same prefix are all still refused."
+  },
+
+  "settingsRowsAndTheirSources": [
+    { "row": "Access (Account tab, and the Plan hero headline)", "readsFrom": "accessLabel(account) — accessTier from the account read. 'Paid' | 'Free' (PE_PRICING.free.title) | 'Not read'.", "notReadWhen": "the read has not resolved; any of the four failure kinds; a 200 that says authenticated:false; or an accessTier neither key carried.", "changed": "YES — was permanently 'Not read' because the per-property hook could never answer an account question. It can now resolve, and it already resolves against TODAY's server because the deployed route emits `tier`." },
+    { "row": "Tier name", "readsFrom": "tierNameLabel(account) — subscriptionTier through PE_PRICING[tier].title, so Settings keeps no second copy of the word 'Solo'.", "notReadWhen": "subscriptionTier is null — which includes a paid account whose row carries no tier, and today's pre-contract server. It is NEVER back-derived from paid/free.", "changed": "YES — was a hardcoded 'Not read' string." },
+    { "row": "Billing interval", "readsFrom": "billingIntervalLabel(account) — PE_PRICING.interval.monthlyLabel / annualLabel, the same strings the pricing popup's toggle uses.", "notReadWhen": "billingInterval is null. NULL IS UNKNOWN AND NEVER PRINTS MONTHLY. Nothing backfills the column, so a live test-mode subscriber genuinely reads null and the row says so.", "changed": "YES — was a hardcoded 'Not read' string." },
+    { "row": "Renewal date", "readsFrom": "nothing — the NOT_READ constant", "changed": "NO. Genuinely not on the entitlement wire." },
+    { "row": "Payment method", "readsFrom": "nothing — 'Not built'", "changed": "NO. Needs a billing portal that does not exist." },
+    { "row": "Invoices", "readsFrom": "nothing — 'Not built'", "changed": "NO. Same reason." },
+    { "row": "Cancel subscription", "readsFrom": "nothing — 'Not built'", "changed": "NO. Same reason." }
+  ],
+  "untouchedRowsArePinned": "settings-plan-rows.test.tsx asserts the Plan panel still contains exactly THREE 'Not built' strings and still names Renewal date, so lighting a fourth row up off a field that does not exist fails a test rather than passing review.",
+
+  "ladderChange": {
+    "codeChanged": "NONE. src/lib/nextAction.ts's diff is COMMENT-ONLY, proved mechanically: `git diff | grep` filtered to added/removed NON-comment lines returns empty. The guard `if (e.billingInterval !== \"monthly\") return null;` was already correct — it is a WHITELIST, so null and annual both fall through it — and relaxing it was never the work.",
+    "whatActuallyChanged": "the rung is now FED. SettingsModal's ladder input was `billingInterval: null` hardcoded; it is now `ladderEntitlementFromAccount(account)`, which carries the real value. annual_upgrade can therefore fire for the first time.",
+    "commentsCorrected": "two comments asserted a starvation that no longer holds and were corrected in the same change: EntitlementRead's field doc ('no client read exists anywhere in this app today') and switchToAnnualRung's ('STARVED TODAY, DELIBERATELY. Nothing reads a billing interval'). A comment asserting a dead mechanism is the same defect class as a dormant control.",
+    "twoIndependentRefusals": "the client parse resolves ONLY the two literal strings and everything else to null; the ladder guard then admits only one of those two. Neither may be relaxed on the strength of the other, and that is now written at both sites."
+  },
+
+  "violationEvidence": {
+    "method": "Each mechanism was DELIBERATELY BROKEN, the suite re-run, the failures recorded, and the mechanism restored and re-confirmed green. A check observed only passing has not been observed working.",
+    "runs": [
+      { "id": "A", "broke": "src/lib/nextAction.ts: `billingInterval !== \"monthly\"` rewritten to `billingInterval === \"annual\"`, i.e. null now reads as monthly", "result": "4 tests FAILED across 2 files — nextAction.test.ts 'does NOT fire when the interval is UNKNOWN'; account-entitlement-client.test.ts 'an EXPLICIT NULL interval does NOT fire it', 'an ABSENT interval — today's pre-contract server — does NOT fire it', 'an UNRECOGNISED interval does NOT fire it'. NOTE the 'annual does NOT fire' test correctly still passed, because that breakage did not touch the annual refusal — the two directions are independently pinned.", "restored": "62/62 green" },
+      { "id": "B", "broke": "src/lib/accountEntitlementClient.ts: parseBillingInterval rewritten to default unknowns to 'monthly'", "result": "5 tests FAILED — the parse violation test, the pre-contract-body test, and the same three chain tests", "restored": "26/26 green" },
+      { "id": "C", "broke": "src/browse/SettingsModal.tsx: the `if (!account.authenticated) return NOT_READ;` guard removed from accessLabel — the exact guard whose absence shipped 'Paid' to anonymous", "result": "1 test FAILED — 'VIOLATION: a signed-out 200 claiming paid still refuses to print Paid'", "restored": "12/12 green" }
+    ],
+    "threeDirectionsPinnedEndToEnd": "src/lib/account-entitlement-client.test.ts drives parseAccountEntitlement -> ladderEntitlementFromAccount -> nextAction from a WIRE BODY, so it pins the CHAIN rather than two individually correct halves: monthly FIRES annual_upgrade; annual does NOT; explicit null does NOT; ABSENT (today's server) does NOT; unrecognised ('Monthly', 'yearly', '', 1, true) does NOT.",
+    "notVacuous": "the block carries its own non-vacuity test: the positive and negative fixtures are asserted to have IDENTICAL key sets, differing only in the interval, so the negative cases cannot be passing because some other field suppressed the rung."
+  },
+
+  "verification": {
+    "countingRule": "counts are `npx vitest run` in apps/property-explorer, whole app suite, no filter. Baseline taken on the clean tree at 8740558 BEFORE any edit.",
+    "tsc": { "command": "npx tsc --noEmit -p tsconfig.json", "before": "exit 0", "after": "exit 0" },
+    "vitest": { "before": "164 files, 2194 passed | 1 todo (2195)", "after": "166 files, 2234 passed | 1 todo (2235)", "delta": "+2 files, +40 tests, 0 removed, 0 skipped, 0 failing" },
+    "chromeKitGate": { "commandPathCorrection": "apps/property-explorer/scripts/pe-chrome-kit-gate.mjs — the dispatch's worktree-root path does not exist", "before": "exit 0; SELF-TEST 76/76; 175 billed chrome files; 20 surfaces + 12 kit files ok", "after": "exit 0; SELF-TEST 76/76; 177 billed chrome files; 20 surfaces + 12 kit files ok" },
+    "otherCiJobsRunLocally": {
+      "recordsCopyGuard": "node apps/property-explorer/scripts/records-copy-guard.mjs exit 0, 212 files scanned",
+      "sourceEncodingGuard": "exit 0. Run with the four NEW files intent-added (git add -N) so the git ls-files denominator actually covered them — 668 of 668 scanned, PASS; index reset afterwards. Its --self-test also run: 6 fire cases, 8 no-fire cases, PASS.",
+      "factSheetSuite": "pnpm --filter @empressaio/parcel-fact-sheet test exit 0, 28 tests",
+      "mapRendererBuild": "pnpm --filter @hauska/map-renderer build succeeded (setup step)"
+    },
+    "perPropertyPathUntouched": "git status --porcelain reports NO modification to usePropertyEntitlement.ts, entitlementClient.ts, or use-property-entitlement.test.tsx. Both per-property suites run and pass UNCHANGED: use-property-entitlement.test.tsx 8 tests, entitlement-client.test.ts 17 tests, 25 total.",
+    "existingPinsSurvive": "settings-access-not-read.test.tsx passes UNMODIFIED (2 tests). Its property is restated against the new reader in settings-plan-rows.test.tsx so a future change to the reader fails in both places. Under renderToStaticMarkup no effect runs, so the account read never lands and Access still falls to 'Not read' — an unresolved read is still unknown."
+  },
+
+  "notVisuallyConfirmed": "STATED PLAINLY: no screenshot harness exists in this app and none was built. Nothing in this change was seen rendered. Every component assertion is renderToStaticMarkup against markup strings. The three rows are asserted by their data-testid spans (settings-access, settings-tier-name, settings-billing-interval) at first paint only; no test observes them AFTER the read resolves in a real browser, because there is no DOM harness that could.",
+
+  "degradationDeclared": {
+    "preSiblingDeploy": "Today's deployed route (source read at P:/legacy-design-tools artifacts/api-server/src/routes/propertyExplorer.ts lines 210-245) answers a parcel-less GET with 200 and `base` = { authenticated, tier, tenantId, userId, devRole, entitlementSource } — no 400, no property block, and none of subscriptionTier / seatsPurchased / billingInterval. So on merge, BEFORE the sibling deploys: Access goes live immediately off `tier`; Tier name and Billing interval stay 'Not read'; annual_upgrade stays quiet. That is a partial, honest win, and it is pinned by a test that reproduces that exact body verbatim.",
+    "preContractFlag": "the ready outcome carries preContract = 'the 200 body had no own property named billingInterval'. It is NEVER rendered and decides NOTHING. A SECOND MECHANISM produces the same observation — a deployed server that omits null-valued keys from its JSON — and that false positive is harmless precisely because the flag drives no behaviour: pre-contract and deployed-but-null render identically and suppress the same rung."
+  },
+
+  "constraintsHonored": [
+    "worked only in the registered worktree P:/seat-worktrees/property/hauska-map-nextaction on branch feat/p98b-account-entitlement-client; seat confirmed against _catalog/seat_register.json before any edit",
+    "no commit, no push, no merge, no deploy",
+    "no sub-agents spawned (deepest-worker instruction honoured)",
+    "every command exit-bounded — installs, builds, tsc, vitest run, one-shot node scripts. No watch, no dev server, no serve.",
+    "did not write to another seat's repository. P:/legacy-design-tools was READ to establish today's route behaviour and never written.",
+    "chrome-kit gate passes; no raw colour literal added; no new control added at all — the three rows are existing Row components whose value became a string",
+    "no existing test weakened: settings-access-not-read.test.tsx untouched and passing; the ladder's annual tests kept all three assertions; settings-next-action.test.tsx kept its anti-'monthly' assertion VERBATIM and gained two",
+    "exit codes read from redirected output, never through a pipe to tail"
+  ],
+
+  "openAndRemaining": [
+    "property_unlock is STILL a starved rung on account surfaces, and it is in SETTINGS_RUNNABLE so it looks live. The free-message counters live in the response's per-PROPERTY block, so an account read has none, freeMessagesLeft stays null and the rung is suppressed. Declared rather than fixed — feeding it would need a per-property read this surface has no parcel for.",
+    "seatsPurchased is parsed and consumed by NOTHING. The Team tab's 'Purchased at checkout' row keeps its single roster-derived source. Wiring the entitlement value would create a genuine two-derivation consistency check worth having, WITH a divergence test; that is a card, not a line.",
+    "unlock_expiring is still excluded from SETTINGS_RUNNABLE (onUpgrade opens a checkout scoped to the MAP's active parcel, not the lapsing one). Unchanged by this lane; the reason is in SettingsModal's own comment.",
+    "The sibling's field name is unresolved on the wire: the dispatch says accessTier, production emits tier. The client accepts both. When the sibling deploys, someone should read one live response and confirm which key ships, and whether billingInterval is emitted as an explicit null or omitted — that determines whether preContract ever reads true post-deploy.",
+    "PricingInterval (pricing.ts) and BillingInterval (nextAction.ts) are the SAME two-value union under two names. Not merged here because pricing.ts's is a checkout-toggle concept and nextAction.ts's is a wire concept, and collapsing them is a rename touching the pricing modal. Flagged, not done."
+  ],
+
+  "fleetMemory": [
+    { "kind": "GROUND-TRUTH", "at": "2026-09-01", "text": "A parcel-less GET api/property-explorer/v1/entitlement returns 200 TODAY with { authenticated, tier, tenantId, userId, devRole, entitlementSource } and no property block — it does NOT 400. Source: P:/legacy-design-tools branch feat/s1-instrument-hardening, artifacts/api-server/src/routes/propertyExplorer.ts lines 210-245. Consequence: the account-level Access row can go live BEFORE the sibling deploys, while tier name and interval cannot." },
+    { "kind": "GROUND-TRUTH", "at": "2026-09-01", "text": "api/spine-deep.ts builds its allowlist key from req.query.upath SEGMENTS ONLY (`path.join('/')`), stripping the query into a separate URLSearchParams. So a deep path needs ONE allowlist line regardless of how many query shapes call it — and adding a query-only variant of an existing GET needs no allowlist change. It also checks the session cookie BEFORE the allowlist, which is why a 403 is only ever visible to a signed-IN request." },
+    { "kind": "LESSON", "text": "A test that pins a STARVATION (here, the literal `billingInterval: null` in the mount) becomes the obstacle to unstarving it. When that happens, keep the anti-invention half verbatim and replace the positive half with one that names the SOURCE of the value. Deleting the whole test is weakening; keeping the literal is ceremony." },
+    { "kind": "LESSON", "text": "hauska-map's PE app has NO DOM or screenshot harness — every component test is renderToStaticMarkup, and effects never run. That makes first-paint assertions cheap and post-read assertions impossible. Push behaviour into PURE EXPORTED FUNCTIONS (accessLabel, ladderEntitlementFromAccount) so the resolved states are testable at all; a value computed inline in JSX is untestable in this repo." },
+    { "kind": "LESSON", "text": "tsconfig.json in apps/property-explorer sets include:['src'] and EXCLUDES all *.test.ts(x) — so tsc does NOT typecheck tests, and api/ is not typechecked by that project at all. A test file can carry props a component does not declare (settings-access-not-read.test.tsx passes `open` and `section`) and tsc stays green. Do not read a green tsc as coverage of test files." },
+    { "kind": "DEAD-END", "text": "`node scripts/pe-chrome-kit-gate.mjs` at the hauska-map worktree ROOT does not exist — the dispatch's path is wrong. It lives at apps/property-explorer/scripts/pe-chrome-kit-gate.mjs. Related: piping it to `tail` and reading `$?` gives TAIL's exit code (0) regardless. Redirect to a file and read the code." },
+    { "kind": "DEAD-END", "text": "A bash heredoc carrying a large JSON body with apostrophes failed to parse in this harness ('unexpected EOF while looking for matching quote') even with a quoted delimiter. Use the Write tool for multi-line artifacts rather than fighting the shell." },
+    { "kind": "LESSON", "text": "To run the source-encoding guard over files you have not committed, `git add -N` them first — the guard's denominator is `git ls-files`, so untracked files are invisible to it and it reports a clean PASS that never looked at your work. Reset the index afterwards." },
+    { "kind": "OPEN", "text": "When the sibling deploys: confirm from ONE live response whether the field ships as `accessTier` or `tier`, and whether `billingInterval` is emitted as an explicit null or omitted. The client handles all four combinations, but the answer determines whether the preContract flag can ever read true post-deploy." },
+    { "kind": "OPEN", "text": "property_unlock remains starved on account surfaces (no per-property free-message counters in an account read) while sitting in SETTINGS_RUNNABLE. A rung that is runnable and unfeedable is the shape worth re-checking when the rail moves off Settings to a surface that DOES have an active parcel." }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch feat/p98b-account-entitlement-client in P:/seat-worktrees/property/hauska-map-nextaction, carrying 9 uncommitted files (5 modified, 4 new)",
+      "owner": "planner (doc_repo)",
+      "plan_row": "P-98",
+      "note": "the dispatch forbids commit/push/merge/deploy in this lane. Nothing is staged; the index was reset after the encoding-guard run."
+    },
+    {
+      "item": "seatsPurchased parsed on AccountEntitlement and consumed by nothing — wire it to the Team tab only WITH a divergence test against the roster-derived count",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "PricingInterval (pricing.ts) and BillingInterval (nextAction.ts) are the same union under two names",
+      "owner": "unassigned",
+      "plan_row": "backlog"
+    }
+  ]
+}

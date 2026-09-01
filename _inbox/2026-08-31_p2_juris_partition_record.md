@@ -18,8 +18,10 @@ SQL home: `P:/seat-worktrees/property/hauska-factory-p2-juris-join`
 at `96e3ef4`. Join is `p.county_fips = c.county_fips`. Floor
 `1e-8`. No LATERAL. `statement_timeout` 180s, never raised.
 RO proven each session by durable CREATE TABLE refuse.
-Reconcile target remains 357,269 / 624,141 / 981,410. Nothing
-adopted. Statewide TOTALS stays UNMEASURED.
+08-30 baseline 357,269 / 624,141 DISCARDED (unrecoverable
+method; `_decisions/2026-08-31_p2_juris_baseline_discarded.md`).
+Nothing adopted. Statewide TOTALS stays UNMEASURED. Declared
+method is join-rewrite `01`.
 
 ## Timed runs
 
@@ -106,19 +108,13 @@ not cut another chunk with `IN (SELECT … LIMIT)`.
 
 ## Open
 
-- The Bastrop 6 (320 slivers + 6 unnamed vs prior 49939). Honest
-  cheaper probe, not yet run: unincorporated non-sliver Bastrop
-  parcels against cities in an adjacent county that do not
-  intersect 48021, same `1e-8`. Cities overlapping 48021 is the
-  wrong cut.
-- Cost driver for full Hays: **un-named**. Geometry is a fact
-  and not the explanation (Austin real, 3.56% bbox reach).
-  Four mechanisms lost: parcels-linear, city-count,
-  chunk-linear (confounded), Austin vertex budget. Per-city
-  bbox-reach × npoints is the measurement that would name the
-  product. Offered, not licensed this morning. Range-chunk
-  remains a live instrument without a mechanism-backed
-  prediction.
+- Six-county TOTALS under the declared `01` method. Bastrop and
+  Caldwell partitions stand (11992 / 10628). Hays, McLennan,
+  Williamson, Travis unmeasured. Licensed instruments written,
+  not run: `06_bbox_reach_npoints.sql` (Hays first), then scout
+  plus `07_range_chunk.sql`.
+- The Bastrop 6. SQL at `08_cp1_bastrop6.sql`. Does not gate.
+  Budget risk: reuses the 129s Bastrop join.
 - Sentinel `prop_id` `"0"` live in `txgio_parcel` (Bastrop
   `min(prop_id)` sampler). Leave-behind for persist.
 

@@ -1,0 +1,84 @@
+{
+  "lane": "s3-heartbeat",
+  "artifact": "cp1",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T18:23:00Z",
+  "planRows": ["P-14"],
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md items 1 and 2",
+  "checkpoint": "design/pre-build",
+  "dispatch": "_dispatches/2026-08-21_s3-heartbeat_dispatch.md",
+  "ops16": "90_operations/OPS-16_texas_market_plan_of_record.md row P-14",
+  "snapshot": {
+    "seat": "lane executor under planner fan; occupancy gcloud read + doc_repo spec only",
+    "docRepo": "P:/doc_repo",
+    "docRepoBranch": "main",
+    "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "docRepoVsOrigin": "ahead 1",
+    "codeRead": "P:/seat-worktrees/property/legacy-design-tools",
+    "forbidden": [
+      "git add/commit/push",
+      "deploy",
+      "gcloud scheduler create/update/run",
+      "POST recompute",
+      "atoms --apply",
+      "print SERVICE_API_KEY"
+    ]
+  },
+  "missionPremise": "L18 closed 2026-08-14 with GET /api/county-ledger serving county_ledger_snapshot in constant time, but scorers do not auto-invoke the materialize CLI. L18 close remainsOpen: snapshot ages past LEDGER_STALE_AFTER_MS (15 min) and CC honestly shows STALE until the next --apply. WDLL sellable items 1-2 require a live CC-vs-GET stamp match plus a scheduled heartbeat executor. Source: _inbox/2026-08-14_l18_close.json remainsOpen scorer auto-invoke; _inbox/2026-08-21_sellable_WDLL.md items 1-2.",
+  "completionPredicate": "CP2 and CLOSE filed. Live GET quotes summary.computedAt, servedAt, materializationAgeMs by field name. CC county-manifest page quotes what it actually shows (computedAt in HTML/JS, STALE, or missing). Scheduler inventory covers us-central1 plus any other listed locations and an LDT repo search for cron / Cloud Scheduler / materialize-on-timer. Job spec JSON filed at _inbox/2026-08-21_s3-heartbeat_job_spec.json naming schedule, URI, method, auth shape, SLA vs 15-minute STALE threshold, what fails when it misses, what bypasses it. Job is NOT created. leave_behind: planner creates the job.",
+  "scopeBasis": "Inventory and spec only. Creating the Cloud Scheduler job is planner-owned (dispatch: Do not create the job). Manual POST /api/county-ledger/recompute is a named bypass, not an executor. WDLL item 2 probe that skips a beat or proves a new computedAt is the planner's after the job exists; this lane files the spec that makes that probe possible.",
+  "method": "1. gcloud secrets versions access SERVICE_API_KEY (never print). 2. node --use-system-ca GET cortex-api /api/county-ledger, parse JSON by field name. 3. Fetch CC panel HTML/JS and quote computedAt or STALE or missing. 4. gcloud scheduler jobs list as JSON by field name for us-central1 and other listed locations. 5. Search LDT worktree for cron / scheduler / materialize timer. 6. File spec. No POST, no job create.",
+  "predictions": [
+    {
+      "id": "P1",
+      "claim": "GET /api/county-ledger returns HTTP 200 with summary.computedAt, servedAt, materializationAgeMs present as named fields",
+      "falsifier": "non-200, or any of those three fields absent from the parsed object"
+    },
+    {
+      "id": "P2",
+      "claim": "materializationAgeMs is greater than 15 minutes (900000 ms) because no heartbeat has run since L18 2026-08-14 apply",
+      "falsifier": "materializationAgeMs <= 900000, or computedAt is within 15 minutes of probe wall clock"
+    },
+    {
+      "id": "P3",
+      "claim": "CC county-manifest shows STALE (or missing computedAt) because the snapshot is older than LEDGER_STALE_AFTER_MS",
+      "falsifier": "CC HTML/JS shows a fresh computedAt matching GET with no STALE marker, or CC cannot be read at all"
+    },
+    {
+      "id": "P4",
+      "claim": "Cloud Scheduler us-central1 on legacy-design-tools-prod returns an empty jobs list",
+      "falsifier": "jobs list JSON contains one or more job objects"
+    },
+    {
+      "id": "P5",
+      "claim": "No other GCP location on the same project has a county-ledger / materialize / heartbeat scheduler job",
+      "falsifier": "a listed location returns a job whose name or URI targets county-ledger or materialize"
+    },
+    {
+      "id": "P6",
+      "claim": "LDT repo has no Cloud Scheduler Terraform/YAML and no cron that POSTs /api/county-ledger/recompute; the live bypass is manual POST ?probe=skip",
+      "falsifier": "a committed scheduler resource or cron/timer that hits recompute or materializeCountyLedger on a schedule"
+    }
+  ],
+  "adversarial": {
+    "risk": "treat a fresh-looking CC bundle timestamp as computedAt",
+    "rejectedBecause": "WDLL 1 fail if panel is frozen client bundle; quote the field the page actually renders, not Last-Modified",
+    "risk2": "create the scheduler job to make WDLL 2 green",
+    "rejectedBecause": "dispatch forbids gcloud scheduler create/update/run; leave_behind is planner creates the job",
+    "risk3": "POST recompute to refresh computedAt so CC looks live",
+    "rejectedBecause": "that is the named bypass, not the executor; dispatch forbids POST recompute",
+    "risk4": "print SERVICE_API_KEY in artifacts or stdout",
+    "rejectedBecause": "dispatch: Do not print the key; secret used only as request header"
+  },
+  "constraints": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no gcloud scheduler create/update/run",
+    "no POST recompute",
+    "no atoms --apply",
+    "do not print SERVICE_API_KEY",
+    "JSON by field name",
+    "node --use-system-ca"
+  ]
+}

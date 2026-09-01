@@ -1,0 +1,119 @@
+{
+  "lane": "pe-flood-surface",
+  "artifact": "cp1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T19:05:00Z",
+  "planRows": ["P-08"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["3"],
+  "dispatch": "_dispatches/2026-08-21_pe-flood-surface_dispatch.md",
+  "repo": "hauska-map",
+  "worktree": "P:/seat-worktrees/property/hauska-map",
+  "branch": "seat/property",
+  "snapshot": {
+    "hauskaMapWorktree": "P:/seat-worktrees/property/hauska-map",
+    "hauskaMapBranch": "seat/property",
+    "hauskaMapHead": "d3510a6fbfa883907897d66b942579da132b8358",
+    "docRepo": "P:/doc_repo main 83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "seat": "property",
+    "forbiddenCheckout": "P:/legacy-design-tools not touched",
+    "docRepoWrites": "_inbox JSON only"
+  },
+
+  "missionPremise": "Live SmartSite inspect is PROPERTY_ATOM_PATH=1 (X-PE-Read-Path atom-chain-warm). GET https://smartsite.cloud/api/spine/property-atoms/48021%3A34137/facets has no floodHazardFact. Cortex PR 449 adds floodHazardFact on GET /api/brokerage/v1/place/node/:id/facets at the JSON ROOT. mergeBakedBaseFacts currently copies cortex baseFacts only and returns early when facets are missing, dropping a root-only field. InspectCard has no Flood row and must not read tier2.flood. Source: _dispatches/2026-08-21_pe-flood-surface_dispatch.md, _inbox/2026-08-21_s1-flood-inspect_planner_review.json leave_behind.",
+
+  "completionPredicate": "mergeBakedBaseFacts copies a fixture floodHazardFact from the cortex JSON ROOT onto the atom-chain payload and does not copy tier2.flood. A missing field stays missing (no invented zone). If merge returns early because facets are missing, floodHazardFact still attaches when the root carries it. InspectCard shows a Flood row for gold 48021:34137 from floodHazardFact only: present zone, typed absence, or named refusal (atom-miss / atoms-store-not-configured). Never a silent null. Never tier2.flood. Tests cover copy / non-copy / missing. Diff left uncommitted. No deploy, no apply, no Harris PBF, P:/legacy-design-tools untouched.",
+
+  "scopeBasis": "PE BFF copy plus InspectCard row. Cortex already owns the atom read (PR 449). Live inspect is atom-chain-warm so mergeBakedBaseFacts is the live path; cortex-off strip already spreads the root and is not the live path. compare-facts floodCell (tier2.flood) is out of this card. R1 brief stays SS-W16. No new atoms. Planner commits/PR after review.",
+
+  "design": {
+    "livePath": "PROPERTY_ATOM_PATH=1 → fetchAtomChain + mergeBakedBaseFacts(adapted, cortexBody). Cortex-off strip is not live; strip already spreads root so a deployed floodHazardFact would pass through unchanged and is not invented from tier2.flood.",
+    "copyRule": {
+      "from": "cortex JSON ROOT.floodHazardFact only",
+      "onto": "PeBakedFacetsResponse.floodHazardFact (same root sibling, not inside facets)",
+      "whenMissing": "leave the key absent; do not invent a zone; do not set undefined",
+      "earlyReturn": "if facets are missing, still attach root floodHazardFact when present; identity-return only when neither facets nor a valid root fact exist",
+      "never": ["tier2.flood", "facets.floodHazardFact", "invented Zone X"]
+    },
+    "typeGuard": "copy only a plain object whose state is present | absent | refused. Reject null, strings, arrays, and snapshot-shaped {status, floodZone} objects.",
+    "card": {
+      "mapper": "floodHazardFactToCardFacet in baked-facets.ts",
+      "present": "Zone {floodZone}; if floodZone is null, 'Flood determination present (zone unstated)' — never invent a zone letter",
+      "absent": "typed absence reason or kind, never silent null",
+      "refused": "named code (atom-miss / atoms-store-not-configured / bind-conflict / malformed-atom) as FacetRow value",
+      "fieldMissing": "CardFacet state unknown → FacetRow hides the row (honest; cortex undeployed)",
+      "inspect": "FacetRow label Flood testid inspect-flood from baked.flood only. deriveBakedCardModel(facets, floodHazardFact). Does not call floodCell."
+    },
+    "gold": {
+      "parcelNodeId": "48021:34137",
+      "fixture": "state=present source=flood-hazard-fact floodZone=X inSpecialFloodHazardArea=false (S1 live atom, 2026-08-21)"
+    }
+  },
+
+  "threeQuestionGate": {
+    "control": "vitest on mergeBakedBaseFacts + floodHazardFactToCardFacet",
+    "whatExecutesIt": "pnpm --filter property-explorer test (vitest run)",
+    "whatTriggersIt": "local this lane; planner PR CI after review",
+    "whatFailsWhenViolated": "test fail if merge copies tier2.flood, invents a zone on a missing field, drops a root fact on the no-facets early return, or card mapper renders silent null for a named refusal",
+    "whatBypassesIt": "compare-facts.floodCell still reads tier2.flood (out of InspectCard this pass). A second client that ignores floodHazardFact. Undeployed cortex (field absent on live GET until PR 449 serves)."
+  },
+
+  "predictions": {
+    "mergeCopiesRootFact": {
+      "expect": "merged.floodHazardFact === fixture (Zone X present)",
+      "falsifier": "field absent after merge, or floodZone not X"
+    },
+    "mergeDoesNotCopyTier2Flood": {
+      "expect": "'floodHazardFact' not in merged when only tier2.flood is present, even if that flood is AE/FLOODWAY",
+      "falsifier": "any floodHazardFact whose zone/status came from tier2.flood"
+    },
+    "missingStaysMissing": {
+      "expect": "'floodHazardFact' in merged === false on today's bakedCortexBody",
+      "falsifier": "key present with any value including null"
+    },
+    "earlyReturnStillAttaches": {
+      "expect": "mergeBakedBaseFacts(adapted, { floodHazardFact: fixture }) attaches the fact even with no facets key",
+      "falsifier": "returns adapted unchanged (same reference or missing field)"
+    },
+    "cardNamedRefusalNeverSilentNull": {
+      "expect": "atom-miss and atoms-store-not-configured produce FacetRow-renderable absent values equal to the code",
+      "falsifier": "value null, or row hidden while the fact was refused"
+    }
+  },
+
+  "adversarialReview": [
+    {
+      "objection": "Putting floodHazardFact inside facets would ride the existing merge without a new root field.",
+      "response": "Cortex PR 449 attaches the field on the JSON ROOT (brokerageNodeFacets.ts res.json sibling of facets/tier2). Copying from a nested place that cortex does not write would look like a merge win while remaining starved. Root-to-root.",
+      "disposition": "ROOT only."
+    },
+    {
+      "objection": "compare-facts.floodCell already renders flood from tier2.flood; reuse it on InspectCard.",
+      "response": "SS-W16 plus WDLL item 3 forbid snapshot flood as the inspect value. floodCell is the retired vocabulary. New mapper from floodHazardFact only.",
+      "disposition": "Do not call floodCell."
+    },
+    {
+      "objection": "If cortex is undeployed, showing a Flood row as 'not verified here' claims an honest absence that is really an undeployed field.",
+      "response": "Missing field → unknown → FacetRow hides the row. A named refusal is only rendered when cortex sent state=refused.",
+      "disposition": "Hide when absent-from-wire; name when refused-on-wire."
+    }
+  ],
+
+  "secondMechanism": {
+    "claim": "Atom-chain already carries flood-hazard-fact in chain.atoms so merge is unnecessary.",
+    "rejectedBecause": "adaptAtomChainToBakedFacets maps zoning/setback/envelope only (atom-chain-to-facets.ts). Live GET on smartsite.cloud has no floodHazardFact. S1 planner review named this exact drop."
+  },
+
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no gcloud run",
+    "no gh workflow run",
+    "no atoms --apply",
+    "no Harris PBF",
+    "P:/legacy-design-tools not touched"
+  ]
+}

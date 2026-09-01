@@ -1,5 +1,90 @@
 # Setback serve wave — 2026-08-23
 
+## OPEN (2026-08-25T01:45Z) — 3b + Lane 3 Wave 1 in flight
+
+Operator: red card approved; go on 3b WDLL; put screenshot Lane 3 items in flight. Isolated trees TBD at fan. 3b WDLL approved. P-76 = city-limits PIP (not fabricated ETJ). P-75 = who-serves serve-time read. CAMA/footprint held. A-027 filed.
+
+## GROUND-TRUTH (2026-08-25T01:31Z) — OSM/boundary public-free; snapshot script residual
+
+Operator: (1) yes public (2) fine. Decision `_decisions/2026-08-24_osm_roads_boundary_public_free.md`. No engine card opened. No snapshot-loader card.
+
+## GROUND-TRUTH (2026-08-25T01:26Z) — red-card LIVE on smartsite.cloud
+
+Operator go. hauska-map #217 squash `ec36da5`. Prod `dpl_J1Fgg9EEtGixyvF98MUS6LLQqaP8` aliased smartsite.cloud. Live GET 200 serves `index-CKNsS3jP.js`. Bundle contains `subjectDisplay` + `parcel-lookup-input`. Isolated trees detached on origin/main. Hard-refresh owed: Find 17005, click neighbor, bar and card agree. 280238 CAD miss is still Travis join, not this card.
+
+## GROUND-TRUTH (2026-08-25T01:21Z) — red-card code-done, not live
+
+Isolated `P:/tmp/hauska-map-red-card`. Store generation guard + lookup intent + SearchBar subjectDisplay. Planner wrapped Find `inspectInPlace` in `isCurrent` after CP2 read. 79 tests. Uncommitted. Do not ship until planner commit + alias.
+
+## GROUND-TRUTH (2026-08-25T01:16Z) — 3a visual confirmed; red-card GO
+
+Operator: 3a visual fine for now; copy revision later if warranted. Go on red-card with sub-agents. WDLL `_inbox/2026-08-24_red_card_search_bar_WDLL.md` approved. Isolated `P:/tmp/hauska-map-red-card`. Do not treat 280238 CAD as this card. Do not start 3b.
+
+## OPEN (2026-08-25T01:13Z) — 3b checkout WDLL drafted, go needed
+
+Card: `_inbox/2026-08-24_rebrand6_checkout_3b_WDLL.md`. Custom Checkout on the existing session. Cortex `clientSecret` first, then PE `/checkout` + unlock modal + return card + queued report. Hosted Stripe stays until PE mounts. Not started. Do not invent card fields. Do not flip live keys on this card.
+
+## GROUND-TRUTH (2026-08-25T01:05Z) — rebrand (6) 3a LIVE on smartsite.cloud
+
+Operator go. hauska-map #216 squash `2ed062d`. Prod `dpl_94RP5KPdTYMLxd3z8NEgkrvjp1Dw` aliased smartsite.cloud. Live GET 200 serves `index-CVDvwQf-.js`. Bundle contains `Sign in with Google` + `Free covers the map`; no `Continue with Google`; no `One ladder`. Remaining `stay free` is the locked-dock line, not the pricing closer. Isolated tree detached on origin/main. 3b embedded Stripe is leave_behind (cortex clientSecret). Hard-refresh owed. Do not write P:/seat-worktrees/property/hauska-map.
+
+## GROUND-TRUTH (2026-08-25T00:44Z) — rebrand (6) 3a + Google button built, not live
+
+Operator: implement `_temp/Smart Site rebrand project (6)`. Isolated `P:/tmp/hauska-map-pricing-a2` branch `fix/pe-rebrand-auth-pricing-6` from `bcf4626`. WDLL `_inbox/2026-08-24_rebrand6_auth_pricing_WDLL.md`. Pricing 3a copy cut (no framing, no stay-free closer, no soloNudge, check/dash cells, Free one-liner, Prospect row gone). GoogleSignInButton on every former text-link surface. 111 tests. 3b embedded Stripe is leave_behind: cortex must return clientSecret; PE did not invent card fields. Not on smartsite.cloud.
+
+## GROUND-TRUTH (2026-08-25T00:29Z) — SB12 click-parcel setbacks; RRC has no PE toggle
+
+Operator: click a parcel should show setbacks, a ton missing; also how do I toggle RRC. Registered on parcel-public-facts-deficit canvas. SB12 = inspect-path hole (not basemap paint). Causes remain SB02/SB04. M39 = texas-rrc exists in registry, PE consumerKnownLayers omits it (live:false, emptyBasis: ticking draws nothing). Product layers if wired: Wells + Pipelines, default OFF. Not the RRC.gov filter farm. Wells = Harris mirror 1/254. Do not add a dead PE checkbox. Do not start Factory 2 without WDLL go.
+
+## GROUND-TRUTH (2026-08-25T00:21Z) — flood overlay purge + dock scrollbar LIVE
+
+Operator go. hauska-map #215 squash `bcf4626`. Prod `dpl_7f56U4ZuD1AmCL9apomtierTcPif` aliased smartsite.cloud, bundle `index-B6pvxBoN.js`. Overlay paints only after Generate/Re-run this session; persist/cache stay dock-only. Dock scrollbar dark thin slate. Isolated tree detached on origin/main. Hard-refresh owed. Operator also: missing setbacks in Bastrop and across the map. That is the canvas setback-program (M21, SB04 ~10k layer-23 fail-closed, SB02 BDC SF-1..RR only, SB08 Factory 2). Envelope is inspect-one-parcel (M22), never every lot. Honest decline is correct serve. Not a new paint bug. Do not start Factory 2 without a WDLL go.
+
+## GROUND-TRUTH (2026-08-25T00:12Z) — reports dock package is X-ray
+
+Operator: property dossier is universally X-ray. Dock catalog copied the Option D frame label. #214 squash `468bf54`. Prod `dpl_2d389aNw9qa55it1rMJxWL3x2Vsd` aliased smartsite.cloud, bundle `index-DT-DGRAA.js`. Picker name / promise / paywall / download say X-ray. Internal id stays DOSS. Isolated tree detached on origin/main.
+
+## GROUND-TRUTH (2026-08-25T00:06Z) — Option D LIVE on smartsite.cloud
+
+Operator go. hauska-map #213 squash `303d11c`. Vercel prod `dpl_DZqbo4qM74EdiL3gZXNc7rTR8szj` target=production, aliases include smartsite.cloud + www.smartsite.cloud. Live GET 200 serves `index-CRqari14.js`. Bundle contains `reports-doc-picker` + "Choose a report or export" + Feasibility Study + Comparison report. Isolated tree detached on origin/main. Do not write P:/seat-worktrees/property/hauska-map. Customer-done waits on hard-refresh walk of the signed-in Reports dock.
+
+## GROUND-TRUTH (2026-08-24T23:50Z) — A2 checkout PASS; Option D built, not live
+
+Operator: checkout looks good, report area still the same. #212 only unlocked terrain on the stacked wall. Option D WDLL `_inbox/2026-08-24_reports_option_d_WDLL.md` (verbal go). Isolated `P:/tmp/hauska-map-pricing-a2` branch `fix/pe-reports-option-d` from `origin/main` `eb6abb8`. ReportsTool is picker + one document + one action. Catalog 11 rows (frame caption said 12; the list is 11). Coming soon in the picker. Flood/site-plan/terrain engines mount only when selected. Persistence keys unchanged. 401 workbench tests pass. Committed `83d8998`. PR https://github.com/empressaioemail-tech/hauska-map/pull/213. Not on smartsite.cloud. Do not write the property checkout. Do not revive `feat/pe-workbench-verdict-reports`.
+
+## GROUND-TRUTH (2026-08-24T23:35Z) — #212 LIVE: modal no-scroll + devRole=Team
+
+Operator: no scrollbar on pricing; dev-mode account still saw the locked terrain / View pricing strip. Mechanism: cortex `/entitlement` sets `tier: paid` + `devRole: true` and omits `subscriptionTier`; PE fail-closed Studio on null. Fix: infer Team from explicit `devRole` only. Isolated `P:/tmp/hauska-map-pricing-a2` branch `fix/pe-a2-fit-dev-studio` `863f74f`. PR #212 CI 3/3 SUCCESS, squash-merged, prod `dpl_DdaSxeG4ShEe2nfxpb37QHsZaVbV` aliased smartsite.cloud serving `index-DUXUgM-E.js`. 58/58 tests. Reports Option D is still the next chrome card — this did not replace the stacked dock.
+
+## GROUND-TRUTH (2026-08-24T23:32Z) — A2 LIVE on smartsite.cloud; Travis join NOT started
+
+Operator go: deploy it. hauska-map #211 squash-merged `d22fe2d`. Production `dpl_6auCPAsahr45ia8eyrUzYtSZPZdt` target=production, aliased https://smartsite.cloud. Live GET 200 serves `index-daRWF8c7.js`. Isolated tree P:/tmp/hauska-map-pricing-a2 detached on origin/main. Do not write P:/seat-worktrees/property/hauska-map.
+
+Travis identity-join: still draft `_inbox/2026-08-24_lane3_travis_identity_join_WDLL.md` (`operator_go: needed`). No ingest. No product branch.
+
+Govtech SmartSite relay filed `_inbox/2026-08-24_govtech_smartsite_findings_relay.md` and landed on both canvases. PE ICC citations confirmed OFF (same bundle hold-list footnote). Planner rec on the two ?? defaults: CONFIRM, then make explicit.
+
+## GROUND-TRUTH (2026-08-24T23:25Z) — A2 planner-spec PASS on #211 preview; alias WAIT
+
+Preview `https://property-explorer-hshz6l7dl-empressaioemail-techs-projects.vercel.app/?parcelNodeId=48021:34137` inspect `dpl_FvVeFBcQiNb8uoDG83eHUR9eDiGS`, bundle `index-daRWF8c7.js`, target null (not production). Modal opened via `host.openPaywall` (signed-out dock is Google sign-in, not View pricing). Measured:
+
+- interval `annual`; Annual pressed
+- Free caption `$0`
+- cards Solo `$490/yr`, Studio `$1,290/yr` emphasized Deliverables, Team `$2,990/yr`
+- CTAs Start Solo/Studio/Team `data-checkout-interval=year`; computed colors brand-blue `#3B82F6` (Studio primary solid, others subtle)
+- Unlock footer `$15 for 30 days`
+- no gold / `--sc-*`
+
+Not merged. Not aliased. Operator visual is the grade. After go: merge #211 from `P:/tmp/hauska-map-pricing-a2` and `npx vercel --prod` aliasing `https://smartsite.cloud`. Do not write `P:/seat-worktrees/property/hauska-map`.
+
+## GROUND-TRUTH (2026-08-24T23:00Z) — A2 rebased, PR open, no alias
+
+hauska-map [#211](https://github.com/empressaioemail-tech/hauska-map/pull/211) `b6c3b61` on `fix/pe-pricing-a2-rebased` from `57ca035`. Isolated `P:/tmp/hauska-map-pricing-a2`. Seven pricing files only. 30/30 tests. Typecheck fix: team seats state is `number`. Not aliased to smartsite.cloud.
+
+Property `fix/pe-pricing-a2` still dirty on #203. Do not write it.
+
+Travis identity-join draft: `_inbox/2026-08-24_lane3_travis_identity_join_WDLL.md`. Not started.
+
 ## GROUND-TRUTH (2026-08-24T22:49Z) — completeness on the Simsbrook block is THREE defects
 
 Operator walk closed hover (WDLL item 6 met). Next thread is data completeness. Live facets same minute:

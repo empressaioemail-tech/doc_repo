@@ -1,0 +1,90 @@
+{
+  "lane": "p98b-client",
+  "checkpoint": "CP2",
+  "kind": "post-build adversarial review, with the falsifiers scored",
+  "planRow": "P-98",
+  "repo": "hauska-map",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+    "branch": "feat/p98b-account-entitlement-client",
+    "baseCommit": "8740558dbb26ad1526ac21ce124724e5a33cf60b",
+    "state": "uncommitted working tree; 5 modified, 4 new"
+  },
+  "falsifiersScored": [
+    {
+      "id": "F1",
+      "statement": "a null billingInterval produces annual_upgrade",
+      "result": "REFUTED as intended - null does not fire",
+      "howEstablished": "not by observing a pass. The ladder guard was DELIBERATELY BROKEN (billingInterval !== monthly rewritten to billingInterval === annual, i.e. null now reads as monthly) and the suite was re-run: 4 tests failed across 2 files - nextAction.test.ts 'does NOT fire when the interval is UNKNOWN' plus three chain tests in account-entitlement-client.test.ts (explicit null, absent, unrecognised). Guard restored, 62/62 green."
+    },
+    {
+      "id": "F2",
+      "statement": "annual produces annual_upgrade",
+      "result": "REFUTED as intended - annual does not fire",
+      "howEstablished": "nextAction.test.ts 'does NOT fire for an account already on annual' (pre-existing, unchanged) plus the new chain test 'ANNUAL does NOT fire it', which drives the whole path from a wire body rather than from a hand-built ladder input."
+    },
+    {
+      "id": "F3",
+      "statement": "monthly does NOT produce annual_upgrade, i.e. the rung is still starved",
+      "result": "REFUTED - monthly DOES fire, end to end from a wire body",
+      "howEstablished": "account-entitlement-client.test.ts 'MONTHLY DOES fire annual_upgrade - the rung is fed, not starved' runs parseAccountEntitlement -> ladderEntitlementFromAccount -> nextAction on a paid solo body carrying billingInterval monthly and asserts the action id. This is the test that proves the card did its job rather than merely staying safe."
+    },
+    {
+      "id": "F4",
+      "statement": "an unrecognised interval string parses to monthly or annual",
+      "result": "REFUTED",
+      "howEstablished": "parseBillingInterval was DELIBERATELY BROKEN to default unknowns to monthly: 5 tests failed (the parse violation test, the pre-contract body test, and the three chain tests). Restored, green. The parse is pinned against null, undefined, empty, whitespace, Monthly, MONTHLY, yearly, year, month, a trailing space, 0, 1, true, an object and an array."
+    },
+    {
+      "id": "F5",
+      "statement": "a 404 parses to anything other than not-built",
+      "result": "REFUTED",
+      "howEstablished": "fetchAccountEntitlement is driven through an injected fetch for 401/403/404/501/500/502 and each is asserted to its own kind AND asserted not to be ready. ladderEntitlementFromAccount maps every one of them to unread, and accessLabel maps every one to Not read."
+    },
+    {
+      "id": "F6",
+      "statement": "the violation tests still pass when the mechanism is broken, i.e. they are vacuous",
+      "result": "REFUTED, three times",
+      "howEstablished": "three separate deliberate breakages, each re-run and each restored: (A) the ladder guard, 4 failures; (B) the parse, 5 failures; (C) the accessLabel signed-out guard removed, 1 failure ('a signed-out 200 claiming paid still refuses to print Paid'). Each restoration was confirmed green before moving on."
+    }
+  ],
+  "additionalAdversarialFindings": [
+    {
+      "finding": "The dispatch names the account field accessTier; the route running today emits tier. Reading only one would have made the Access row wrong for one half of the deploy window.",
+      "disposition": "The parse accepts BOTH keys and, when NEITHER is present, resolves to null = unknown rather than to free. Pinned by a test that reproduces today's exact pre-contract body verbatim from the server source."
+    },
+    {
+      "finding": "The card unstarves annual_upgrade but property_unlock stays starved on this surface, and it is in SETTINGS_RUNNABLE, so it looks live and is not.",
+      "disposition": "DECLARED, not fixed. The free-message counters live inside the response's per-PROPERTY block, so an account-level read has none; freeMessagesLeft is null and the rung is suppressed. That is nextAction.ts's own documented contract. Reported in the close as a remaining starved rung with its reason, rather than being papered over by feeding it a count from somewhere else."
+    },
+    {
+      "finding": "The mount's stale prose asserted a starvation that no longer holds: the Plan hero said 'Tier name and billing interval are not on that wire' and nextAction.ts said the annual rung was 'STARVED TODAY, DELIBERATELY'. A comment asserting a dead mechanism is the same defect class as a dormant control.",
+      "disposition": "Both corrected in the same change. The nextAction.ts diff is COMMENT-ONLY and that was proved mechanically: git diff filtered to non-comment added/removed lines is empty."
+    },
+    {
+      "finding": "settings-next-action.test.tsx pinned the literal `billingInterval: null` in the mount. That literal WAS the starvation.",
+      "disposition": "Changed, and the change is a strengthening. The anti-invention half (this file must never contain a literal \"monthly\") is preserved VERBATIM. The positive half now names the SOURCE - the mount must derive its ladder input through the pure exported bridge - and a new assertion forbids the mount from hand-building a second EntitlementRead alongside it. A second test pins that the mount no longer calls the per-property hook at all."
+    },
+    {
+      "finding": "The four rows this card must not touch could be lit up later by accident.",
+      "disposition": "Pinned. settings-plan-rows.test.tsx asserts Renewal date is present and that the Plan panel contains exactly three 'Not built' strings, so lighting a fourth row fails a test rather than passing review."
+    },
+    {
+      "finding": "The dispatch gives the chrome-kit gate path as scripts/pe-chrome-kit-gate.mjs at the worktree root. It is not there.",
+      "disposition": "The real path is apps/property-explorer/scripts/pe-chrome-kit-gate.mjs. Reported rather than silently substituted. Also: the first attempt read the exit code through a pipe to tail and got tail's code, which is exactly the positional-read defect class - re-run with output redirected to a file to read the real code."
+    }
+  ],
+  "verificationAtThisPoint": {
+    "tsc": "npx tsc --noEmit -p tsconfig.json exit 0",
+    "vitest": "166 files, 2234 passed | 1 todo (2235). Baseline was 164 / 2194 | 1 todo (2195): +2 files, +40 tests, 0 removed, 0 skipped.",
+    "chromeKitGate": "exit 0; SELF-TEST 76/76; 20 surfaces + 12 kit files ok; coverage walked 177 billed chrome files (was 175)",
+    "recordsCopyGuard": "exit 0, 212 files scanned",
+    "sourceEncodingGuard": "exit 0 with the four new files intent-added so the git ls-files denominator covered them: 668 of 668 scanned, PASS. Self-test also run: 6 fire cases, 8 no-fire cases, PASS. Index reset afterwards.",
+    "factSheetSuite": "pnpm --filter @empressaio/parcel-fact-sheet test exit 0, 28 tests - the other suite this repo's CI gates on",
+    "perPropertyPathUntouched": "git status --porcelain reports NO modification to usePropertyEntitlement.ts, entitlementClient.ts or use-property-entitlement.test.tsx. Both per-property suites run and pass unchanged (8 + 17 = 25 tests)."
+  },
+  "notVerified": [
+    "Nothing here was visually confirmed. This app has no screenshot or DOM harness; every component assertion is renderToStaticMarkup against markup strings.",
+    "No live call was made against the deployed route. The pre-contract body fixture is transcribed from the server SOURCE at P:/legacy-design-tools, not from a response."
+  ]
+}

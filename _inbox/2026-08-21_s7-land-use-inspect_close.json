@@ -1,0 +1,163 @@
+{
+  "lane": "s7-land-use-inspect",
+  "artifact": "close",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T21:24:00Z",
+  "planRows": ["P-08"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["5", "6"],
+  "dispatch": "_dispatches/2026-08-21_s7-land-use-inspect_dispatch.md",
+  "repo": "legacy-design-tools",
+  "occupancy": "P:/legacy-design-tools-worktrees/s7-land-use-inspect branch s7-land-use-inspect tracking origin/main HEAD a028ed3777c9aa783e118a4cbfa67c53bd37738c; P:/legacy-design-tools not touched; P:/seat-worktrees/property/legacy-design-tools not occupied",
+
+  "snapshot": {
+    "ldtWorktree": "P:/legacy-design-tools-worktrees/s7-land-use-inspect",
+    "ldtBranch": "s7-land-use-inspect",
+    "ldtHead": "a028ed3777c9aa783e118a4cbfa67c53bd37738c",
+    "ldtHeadSubject": "fix(inspect): flood-hazard-fact on node facets, SS-W16 stays (#449)",
+    "uncommitted": true,
+    "docRepoWrites": [
+      "_inbox/2026-08-21_s7-land-use-inspect_cp1.json",
+      "_inbox/2026-08-21_s7-land-use-inspect_cp2.json",
+      "_inbox/2026-08-21_s7-land-use-inspect_close.json"
+    ]
+  },
+
+  "missionPremise": "Sellable WDLL item 5: a land-use-fact atom that exists for a gold parcel must be retrievable by that parcel's parcelNodeId on inspect. Writer seam stores entity_id as ${parcelNodeId}:${taxYear}, so flood's entity_id = ANY(parcel keys) misses 48021:34137:2025. Item 6: no new ingest. Source: _dispatches/2026-08-21_s7-land-use-inspect_dispatch.md, hauska-engine packages/atoms/src/land-use-fact-writer.ts entityIdOf, _inbox/2026-08-21_s5-bind-scout_close.json integerHit 48021:34137:2025.",
+
+  "completionPredicate": "GET /api/brokerage/v1/place/node/:id/facets returns landUseFact from land-use-fact atoms (prefix LIKE + taxYear) or a typed refusal code=atom-miss naming both prefixes. Never a silent null. Never SELECT cad_property for that field. facets.baseFacts.landUse remains baked cad-roll. Tests fail if cad-roll code/description is copied onto landUseFact and pass when a fixture atom on 48021:34137:2025 yields landUseCode. Diff uncommitted. No deploy.",
+  "completionPredicateStatus": "MET IN CODE. NOT MET ON live cortex-api (undeployed; planner-owned). Fixture gold 48021:34137:2025 yields landUseCode. Live GET after deploy is leave_behind.",
+
+  "scopeBasis": "New atoms READ on the inspect GET only, parallel to floodHazardFact. Dual grammar is parcel PREFIX only; taxYear comes from the atom row. Baked landUse stays retiredStore. No hauska-map. No writer re-key. No new ingest.",
+
+  "prNumbers": "not applicable: uncommitted isolated worktree; dispatch forbade git add/commit/push",
+  "mergeShas": "not applicable: uncommitted isolated worktree",
+  "ciConclusionStrings": "not applicable: no PR this lane",
+  "checkpoints": [
+    "_inbox/2026-08-21_s7-land-use-inspect_cp1.json",
+    "_inbox/2026-08-21_s7-land-use-inspect_cp2.json"
+  ],
+
+  "filesChanged": [
+    "artifacts/api-server/src/lib/landUseFactRead.ts (new)",
+    "artifacts/api-server/src/lib/landUseFactRead.test.ts (new)",
+    "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+    "artifacts/api-server/src/__tests__/brokerageNodeFacets.test.ts"
+  ],
+
+  "bindSql": "SELECT entity_id, body FROM atoms WHERE entity_type = $1 AND (entity_id LIKE $2 || ':%' OR entity_id LIKE $3 || ':%')",
+  "bindSqlParams": {
+    "$1": "land-use-fact",
+    "$2": "integer parcel prefix {fips}:{prop}",
+    "$3": "padded parcel prefix {fips}:{prop}.00000000"
+  },
+  "bindRule": {
+    "keys": "always both prefixes; year is never appended by the helper",
+    "function": "landUseFactBindPrefixes",
+    "taxYear": "from the atom row (entity_id suffix and body.taxYear). Prefer highest year. Same year both grammars: integer first if bodies agree; bind-conflict if they disagree.",
+    "zeroHits": "refused code=atom-miss, tried=[both prefixes], never a silent null",
+    "storeUnconfigured": "refused code=atoms-store-not-configured (ATOMS_DATABASE_URL). Never DATABASE_URL.",
+    "floodStyleMiss": "entity_id 48021:34137 without :taxYear is atom-miss"
+  },
+
+  "testsThatFailIfCadPropertyOrSnapshotsAreServedAsLandUseFact": [
+    "interpretLandUseFactRows > does not copy cad-roll code/description field names onto landUseFact",
+    "loadLandUseFactAtom — store seam > the memory fake refuses a cad_property query",
+    "loadLandUseFactAtom — store seam > the memory fake refuses flood-style entity_id = ANY(parcel keys)",
+    "landUseFactRead source does not name the retired store > the SELECT binds by prefix LIKE and does not use flood-style ANY parcel keys",
+    "brokerageNodeFacets boot-proof > the route source wires landUseFact from atoms and keeps baked landUse",
+    "node-facet read endpoint (integration) > REFUSES the snapshot flood facet even though a real in-SFHA row is seeded (landUseFact atom-miss while bake landUse.code stays A1)",
+    "node-facet read endpoint (integration) > serves a fixture land-use-fact while keeping baked cad-roll landUse as retiredStore (divergence C1 vs A1)"
+  ],
+
+  "testsThatAssertAtomsPathYieldsAValue": [
+    "interpretLandUseFactRows > serves a present finding stored on the integer prefix plus taxYear (gold 48021:34137:2025)",
+    "interpretLandUseFactRows > serves a present finding stored only on the padded parcel prefix (dual-grammar hit)",
+    "loadLandUseFactAtom — store seam > yields landUseCode when a fixture atom exists on 48021:34137:2025",
+    "node-facet read endpoint (integration) > gold parcel 48021:34137 dual-grammar prefix bind yields the :2025 fixture atom",
+    "node-facet read endpoint (integration) > padded gold prefix 48021:34137.00000000:2025 dual-grammar bind yields landUseCode"
+  ],
+
+  "testRun": {
+    "cwd": "P:/legacy-design-tools-worktrees/s7-land-use-inspect/artifacts/api-server",
+    "command": "pnpm exec vitest run src/lib/landUseFactRead.test.ts src/lib/floodHazardFactRead.test.ts src/__tests__/brokerageNodeFacets.test.ts",
+    "result": "51 passed, 11 skipped (62)",
+    "skippedWhy": "11 integration GET cases need postgres. VITEST_DATABASE_STUB=1 locally. CI Test job services postgres and does not set the stub, so those 11 run there."
+  },
+
+  "goldParcel": {
+    "id": "48021:34137",
+    "fixture": "48021:34137:2025 landUseCode C1 (unit) or A1 (gold GET fixture). Divergence GET uses C1 against bake A1.",
+    "liveStore": {
+      "thisLane": "UNMEASURED (ATOMS_DATABASE_URL unset)",
+      "cited": "_inbox/2026-08-21_s5-bind-scout_close.json land-use-fact integerHit 48021:34137:2025, paddedHit null"
+    },
+    "inspectGet": "not live this lane (no deploy). After planner cortex-api deploy with ATOMS_DATABASE_URL, GET https://cortex-api-tds7av26va-uc.a.run.app/api/brokerage/v1/place/node/48021%3A34137/facets must show landUseFact.state=present source=land-use-fact and must not copy cad-roll code/description onto that field. facets.baseFacts.landUse may still be the bake."
+  },
+
+  "counts": {
+    "vitestPassed": {
+      "value": 51,
+      "rule": "vitest run of landUseFactRead.test.ts + floodHazardFactRead.test.ts + brokerageNodeFacets.test.ts locally"
+    },
+    "landUseFactReadPassed": {
+      "value": 21,
+      "denominator": 21,
+      "rule": "all cases in landUseFactRead.test.ts"
+    },
+    "vitestSkippedIntegration": {
+      "value": 11,
+      "rule": "describe.skipIf(!hasDb) GET cases; hasDb false because VITEST_DATABASE_STUB=1. 8 prior + 3 new land-use GET."
+    }
+  },
+
+  "wdllGrades": [
+    {
+      "item": 5,
+      "status": "met-in-code",
+      "evidence": "Inspect GET composes landUseFact from land-use-fact atoms with prefix+taxYear bind. Dual-grammar prefixes always two. Gold fixture 48021:34137:2025 yields landUseCode. Live GET on cortex-api ungraded (undeployed)."
+    },
+    {
+      "item": 6,
+      "status": "met",
+      "evidence": "No atoms --apply. No Harris PBF. No statewide roads apply. No minted absence. Lookup of existing rows only."
+    }
+  ],
+
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no gcloud run",
+    "no gh workflow run",
+    "no atoms --apply",
+    "no Harris PBF",
+    "no re-key",
+    "no minted absence",
+    "did not touch P:/legacy-design-tools",
+    "did not occupy P:/seat-worktrees/property/legacy-design-tools as a git checkout",
+    "did not write hauska-map",
+    "baked facets.baseFacts.landUse kept as retiredStore",
+    "doc_repo writes are the three _inbox JSON files only"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "planner PR + cortex-api deploy from this worktree. Live GET https://cortex-api-tds7av26va-uc.a.run.app/api/brokerage/v1/place/node/48021%3A34137/facets must show landUseFact.state=present source=land-use-fact and must not copy cad-roll code/description onto that field. Set ATOMS_DATABASE_URL to hauska_mcp (same gap s1 named: not in cloud-run-deploy.yml --set-secrets). Without it the GET returns atoms-store-not-configured.",
+      "owner": "planner",
+      "plan_row": "P-08"
+    },
+    {
+      "item": "uncommitted LDT worktree P:/legacy-design-tools-worktrees/s7-land-use-inspect plus three doc_repo _inbox JSON files",
+      "owner": "planner",
+      "plan_row": "P-08"
+    }
+  ],
+
+  "open": [
+    "CI Test job not run this lane (no PR). 11 integration GET cases skipped locally.",
+    "Live inspect GET undeployed.",
+    "ATOMS_DATABASE_URL missing from Cloud Run secrets list (s1 finding; still true as a deploy requirement)."
+  ]
+}

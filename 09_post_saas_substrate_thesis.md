@@ -2,13 +2,15 @@
 id: 09_post_saas_substrate_thesis
 title: Post-SaaS substrate thesis
 status: active
-last_updated: 2026-06-09
+last_updated: 2026-08-15
 applies_to: portfolio
 related: [05_living_lineage_thesis, 06_cities_value_narrative, 07_product_line_summary, 08_tiered_access_model, 14_pricing_framework, 28_mcp_first_product_design, 77_place_graph_strategy]
 owner: nick
 ---
 
 # Post-SaaS substrate thesis
+
+> **Sits under [`_thought_leadership/04_positioning_narrative.md`](../_thought_leadership/04_positioning_narrative.md) (the mountain, 2026-08-15) and [`portfolio_thesis/01_the_layer_and_the_three_doors.md`](portfolio_thesis/01_the_layer_and_the_three_doors.md) (the place-product doors, 2026-08-10). NOT superseded. Compatible.** The mountain says every agent transaction asks who / what / how do I pay. This doc is the Hauska economics of that stack. The data-room/SDK mapping is [`portfolio_thesis/03_three_questions_data_room_and_sdk.md`](portfolio_thesis/03_three_questions_data_room_and_sdk.md). Read 04 for the vision, 03 for the mapping, 01 for the product doors, this file for why the business is shaped this way. This doc stays in external use.
 
 The strategic frame for Empressa and Hauska as a company. Articulates what kind of business is being built, what makes it durable, and where it leads. Intended for external use with investors, partners, hires, and strategic counterparties as a standalone explanation of the operating thesis.
 

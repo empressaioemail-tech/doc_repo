@@ -25,6 +25,7 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DUMP_PATH = join(ROOT, "_inbox", "2026-08-24_county_manifest_dump.json");
+const PIN_PATH = join(ROOT, "_inbox", "2026-08-25_family_canvas_pin.json");
 const STALE_AFTER_MS = 15 * 60 * 1000;
 
 export const WATCH_COUNTIES = [
@@ -154,6 +155,60 @@ export function compactDump({ payload, fetched, grade }) {
   };
 }
 
+/**
+ * One pin the five family canvases import. Serving revisions are last-filed
+ * unless a later probe overwrites them. Leftover count is documentary
+ * (queue KEEP), not a Manifest cell. Never rematerialize here.
+ */
+export function familyPin(dump) {
+  if (!dump || dump.status !== "MEASURED") {
+    return {
+      status: "UNMEASURED",
+      reason: dump?.reason || "dump not MEASURED",
+      rematerialized: false,
+    };
+  }
+  const cad = dump.rails.find((r) => r.railKey === "cad") || null;
+  return {
+    status: "MEASURED",
+    control: "family-canvas-pin",
+    planRow: "P-47",
+    wave: "CP-2",
+    rematerialized: false,
+    postRecompute: false,
+    dumpPath: "_inbox/2026-08-24_county_manifest_dump.json",
+    pinPath: "_inbox/2026-08-25_family_canvas_pin.json",
+    fetchedAt: dump.fetchedAt,
+    computedAt: dump.quotes.computedAt,
+    servedAt: dump.quotes.servedAt,
+    freshness: dump.freshness.status,
+    freshnessReason: dump.freshness.reason,
+    p47Pass: dump.p47Pass,
+    satisfiedCells: dump.quotes.satisfiedCells,
+    totalCells: dump.quotes.totalCells,
+    completenessPct: dump.quotes.texasCompletenessPct,
+    leftoverKeep: 33,
+    leftoverEligible: 33,
+    leftoverFarm: "done",
+    lastLeftoverFips: "48497",
+    lastFiledServing: {
+      class: "LAST_FILED",
+      cortexRevision: "cortex-api-00584-gaf",
+      cortexTrafficPct: 100,
+      ldtSha: "46e1a5a1",
+      pePr: 222,
+      peSha: "9224a73",
+      evidence: [
+        "_inbox/2026-08-25_p77_honest_miss_close.json",
+        "_inbox/2026-08-25_wave222_pe_chips_close.json",
+      ],
+    },
+    cadPresent: cad ? cad.satisfiedPresent : null,
+    cadNotYet: cad ? cad.notYet : null,
+    note: "Canvases restamp from this pin. Do not hand-type SNAPSHOT strings. GET only.",
+  };
+}
+
 function assert(name, cond, failures) {
   if (!cond) failures.push(name);
 }
@@ -215,6 +270,14 @@ export function runSelfTests() {
   const fresh = freshness("2026-08-24T04:00:00Z", "2026-08-24T04:05:00Z");
   assert("fresh within 15 min", fresh.status === "FRESH", failures);
 
+  const pin = familyPin(ok);
+  assert("pin MEASURED on MEASURED dump", pin.status === "MEASURED", failures);
+  assert("pin rematerialized false", pin.rematerialized === false, failures);
+  assert("pin leftover farm done", pin.leftoverFarm === "done", failures);
+  assert("pin serving class is LAST_FILED", pin.lastFiledServing.class === "LAST_FILED", failures);
+  const pinBad = familyPin({ status: "UNMEASURED", reason: "x" });
+  assert("pin UNMEASURED when dump is", pinBad.status === "UNMEASURED", failures);
+
   return { ok: failures.length === 0, failures };
 }
 
@@ -257,7 +320,9 @@ function main() {
   const grade = gradeManifest(fetched.json);
   const dump = compactDump({ payload: fetched.json, fetched, grade });
   writeFileSync(DUMP_PATH, JSON.stringify(dump, null, 2) + "\n", "utf8");
-  process.stdout.write(JSON.stringify({ ...dump, watchCounties: undefined }, null, 2) + "\n");
+  const pin = familyPin(dump);
+  writeFileSync(PIN_PATH, JSON.stringify(pin, null, 2) + "\n", "utf8");
+  process.stdout.write(JSON.stringify({ ...dump, watchCounties: undefined, familyPin: pin }, null, 2) + "\n");
   process.exit(dump.status === "MEASURED" ? 0 : 2);
 }
 

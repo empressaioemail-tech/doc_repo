@@ -2,7 +2,8 @@
 id: 2026-08-26_smartsite_ai_connector_WDLL
 title: WDLL — Smart Site agent distribution (resolvable shares, product MCP, directory listings)
 date: 2026-08-26
-last_updated: 2026-08-28
+last_updated: 2026-08-28T16:35Z
+# P-91/P-92 MCP App carded; eight-tool law still binds. Next five tools named, not shipped. See A-046.
 status: approved
 applies_to: hauska-map, legacy-design-tools
 plan_row: P-86, P-87, P-88
@@ -67,7 +68,7 @@ Order: P-86, then P-87, then P-88. P-87 must not start its public hostname or OA
 
 11. **Entitlement is the Stripe tier.** Free, Solo, Studio, Team ceilings match the workbench. A Free session cannot run a Studio report. A Studio session can. Unresolvable, expired, and revoked credentials are 401 with no public-catalog body. Bearer-without-OAuth is 401, never silent public. | check: four-tier matrix plus 401 fixtures; a Bearer-only initialize is 401 | grade: [ ]
 
-12. **Exactly eight tools, PE-proven names.** The list is: find a parcel, get its smart site, list my properties, run a report, request records, check a request, export an instrument, ask the map. `tools/list` returns those eight and only those eight. Copy is property-written so a model can pick. | check: tools/list length 8; a ninth tool fails the card; name/description review against a fixture prompt set | grade: [ ]
+12. **Named catalog.** Today the list is eight: find a parcel, get its smart site, list my properties, run a report, request records, check a request, export an instrument, ask the map. The approved next add, and only this add, is: `create_screen`, `add_to_screen`, `list_screens`, `save_property`, `set_property_status`. No listing-feed tool. No web-search tool. Find listing history is a panel `ui/message`, not an MCP tool. An unnamed ninth tool still fails the card. | check: `tools/list` length 8 until the five ship, then those thirteen and only those thirteen; a tool not on this list fails the card | grade: [partial] eight live; five authorized, not shipped
 
 13. **Same content as the workbench for the same caller.** `get_smart_site` on gold `48021:34137` for a Studio session agrees with signed-in inspect on the parcel id, verdicts, and citations. Audience is agent (markdown or structured tool result), never a thinner catalog. | check: paired Studio inspect vs tool result; Free vs Studio withheld fields | grade: [ ]
 
@@ -100,6 +101,14 @@ Order: P-86, then P-87, then P-88. P-87 must not start its public hostname or OA
 - 2026-08-27 (planner reply 00:15Z, OPS-16 A-037). Restates (a)–(c) before the first product commit. (a) Unchanged: grant row first (item 6), then a resolvable URL carrying the grant id; HMAC stays on `/share#token` only. (b) Unchanged: MCP server is `legacy-design-tools/artifacts/smartsite-mcp` via `cloud-run-deploy.yml`; share links, `llms.txt`, and Use in your AI stay in hauska-map. (c) Named: hosted WorkOS AuthKit. OAuth 2.1 + PKCE, dynamic client registration, refresh tokens, Google and Microsoft sign-in matching the existing OIDC BFF, documented MCP authorization-server role. Fallback if a live Claude custom-connector Connect cannot complete against it twice: Stytch Connected Apps, by amendment of A-037, not re-litigation. Identity join rule, binding: an AuthKit subject maps to a Smart Site user only through `peUserIdentities` by `(provider, subject)`, or by verified email on the same provider; the MCP server never creates a second account and never grants a tier that the user's `peUserEntitlements` row does not carry. Vendor capability claims are verified at build time; item 10 is the falsifier. P-86 does not wait on the AS.
 
 - 2026-08-28 (draw stub). P-87 items 22–27. Optional `draw` field on the existing brief. No ninth tool. Setback fixture zeros omitted. Seed confidence never a float. Operator go same night.
+
+- 2026-08-28 (MCP App). P-91 / P-92 opened. The eight-tool catalog still fails a ninth tool. P-91 extends `get_smart_site` and `list_my_properties` only. `create_screen`, `save_property`, and `set_property_status` wait for P-92 and a further amendment of item 12 that names each tool. WDLL `_inbox/2026-08-28_smartsite_mcp_app_WDLL.md`.
+
+- 2026-08-28 (screen/save decouple, names the next tools, does not ship them). Item 12 still grades on length 8 today. The approved next catalog add, once a later amendment flips item 12 from eight to the grown list, is exactly: `create_screen`, `add_to_screen`, `list_screens`, `save_property`, `set_property_status`. No listing-feed tool. No web-search tool. Find listing history is a panel `ui/message`, not an MCP tool. This row names the tools so a later ship is not a silent add. It does not authorize `tools/list` to grow yet. Decision `_decisions/2026-08-28_smartsite_mcp_app_screen_save_decouple.md`. OPS-16 A-046.
+
+- 2026-08-28 (item 12 flip). Operator asked to push the amended MCP App path in waves. Item 12 now authorizes the five persistence tools to be built. `tools/list` stays 8 until they ship. An unnamed tool still fails. Persistence implementation starts after Wave A honesty agents return and the schema spec is reviewed. Iframe still waits for O1.
+
+- 2026-08-28 (O1 ruling B). Planner accepted the producer read: X-ray must refuse envelope like MCP. Decision `_decisions/2026-08-28_p91_o1_envelope_xray_must_refuse.md`. Iframe now waits on the X-ray refuse plus persistence tools, not on an unset A-or-B fork.
 
 P-85 coupling (planner reply, same night): `request_records`, `check_request`, and item 8 consume the P-85 job API and start after P-85 item 4 merges. Shared backends only; this card does not build a second records path.
 

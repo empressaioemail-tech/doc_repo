@@ -343,6 +343,21 @@ function parseArgs(argv) {
 }
 
 function main() {
+  // F-03 item 9: pin retired by refuse after holds are imported as data.
+  const consoleUrl = process.env.FACTORY_CONSOLE_URL || "Smart Site Factory";
+  process.stdout.write(
+    JSON.stringify(
+      {
+        control: "factory-routing-readiness",
+        status: "RETIRED",
+        exit: 2,
+        message: `retired by refuse. Holds live in the Factory store. Read them on the console: ${consoleUrl}`,
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+  process.exit(2);
   const args = parseArgs(process.argv.slice(2));
   const selfTest = runSelfTests();
   if (!selfTest.ok) {

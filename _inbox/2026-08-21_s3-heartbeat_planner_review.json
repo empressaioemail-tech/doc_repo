@@ -1,0 +1,44 @@
+{
+  "lane": "s3-heartbeat",
+  "artifact": "planner-review",
+  "date": "2026-08-21",
+  "verdict": "ACCEPT",
+  "reviewer": "integration planner",
+  "wdll": {
+    "1": "met at S3 probe (GET, CC proxy, CC DOM all computedAt 2026-08-21T18:05:57.209Z, all STALE). GET later moved at 18:29:14.283Z from the S4 planner recompute; that is a later snapshot, not a frozen-bundle miss at the probe.",
+    "2": "met. Job county-ledger-heartbeat ENABLED */10 UTC. First schedule fire lastAttemptTime 2026-08-21T18:40:01.023473Z moved GET computedAt from 18:29:14.283Z to 18:40:01.440Z with no planner POST and no jobs run."
+  },
+  "snapshot": {
+    "docRepo": "P:/doc_repo",
+    "branch": "main",
+    "commit": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "usCentral1JobsBeforeCreate": 0,
+    "cortexIam": "roles/run.invoker members [allUsers]",
+    "requireServiceToken": "artifacts/api-server/src/middlewares/serviceAuth.ts:52-64 timingSafe equal to getServiceApiKey(); OIDC identity token would 401",
+    "bodyRequired": "countyLedger.ts:175-178 Cloud Run 411 without body"
+  },
+  "preRegisteredFalsifiers": [
+    {
+      "claim": "no scheduler jobs in us-central1",
+      "wrongIf": "jobs list length > 0",
+      "observed": "[]"
+    },
+    {
+      "claim": "recompute gated by SERVICE_API_KEY Bearer not IAM",
+      "wrongIf": "route missing requireServiceToken or allUsers invoker absent so OIDC would be required to reach the service",
+      "observed": "requireServiceToken on POST /recompute; IAM allUsers run.invoker"
+    }
+  ],
+  "specAccepted": {
+    "name": "county-ledger-heartbeat",
+    "schedule": "*/10 * * * *",
+    "uriHasProbeSkip": true,
+    "auth": "api-key-bearer",
+    "oidcForbidden": true,
+    "messageBody": "{}"
+  },
+  "secondMechanism": {
+    "claim": "CC STALE banner is a frozen client bundle while GET is fresh",
+    "rejectedBecause": "at probe time GET materializationAgeMs 1106282 also exceeded 900000, CC proxy computedAt identical, DOM banner quoted the same stamp"
+  }
+}

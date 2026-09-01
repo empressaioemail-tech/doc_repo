@@ -2,14 +2,17 @@
 id: 2026-08-15_smart_files_entity_id_shape
 title: Smart Files entityId shape — jurisdiction-scoped, not parcel-keyed and not CID-keyed
 date: 2026-08-15
-status: active
+status: superseded
+superseded_by: 2026-08-15_smart_files_module_identity
 applies_to: portfolio
 owner: nick
 decider: nick
 related: [90_operations/OPS-17_govtech_stack_plan_of_record, _smartcity_masters/34_smartcity_smart_files_and_foundation, 80_adrs/adr_017_atom_access_control, _inbox/2026-08-15_a_close.json]
 ---
 
-# Smart Files entityId shape
+# Smart Files entityId shape (SUPERSEDED 2026-08-15)
+
+**Superseded the same day it was written.** Operator correction: Smart Files is a spine module used across SmartCity, Smart Site, Mox/custom, and a la carte. A FIPS-only key cannot address those scopes. Successor: `_decisions/2026-08-15_smart_files_module_identity.md` (`smartfile:<scopeType>:<scopeId>:<docSlug>`). The three-table split, the reject-parcel-key, and the reject-CID-key rulings in this record still stand; only the identity string is reversed.
 
 ## Decision
 

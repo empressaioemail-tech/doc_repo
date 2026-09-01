@@ -2,7 +2,7 @@
 id: smartsite_masters_05_product_walkthrough
 title: Smart Site product walkthrough — what a user sees and does
 status: active
-last_updated: 2026-08-04
+last_updated: 2026-08-27
 applies_to: smart_site
 owner: nick
 purpose: A user-level walkthrough of the Smart Site application for biz ops and biz dev. What each surface does, in the order a user meets it. Grounded in the live application, not the roadmap; where a capability is staged rather than live, this doc says so.
@@ -76,7 +76,7 @@ Browsing is anonymous. An account (Google or Microsoft sign-in) adds saved prope
 
 ## Capability notes (internal, keep collateral honest)
 
-- **Reports:** exactly two reports exist, the X-ray and the Flood and Drainage study. The site plan and terrain deliverables are exports. Do not enumerate a longer report menu.
+- **Reports:** live generate today is the X-ray and the Flood and Drainage study. The locked menu also names Feasibility and Comparison as reports; those generate paths are not live. Comparison as a side-by-side tool is live. Brief is the inspect dock. Records is a request tool. Site plan and terrain are exports. Do not pitch a report that is not on the live card.
 - **3D:** there is no 3D or tilted view in the current product. The groundwork exists and the push is deliberately paused; do not show or promise 3D.
 - **Valuation:** deliberately out of scope. The starter chip "Does it pencil?" drives constraint-and-cost reasoning on cited facts, not an opinion of value.
 - **Agent door:** the programmatic agent interface is architecture-true (same records, same citations) but not commercially live; speak of it at architecture altitude, not as a shipping feature.

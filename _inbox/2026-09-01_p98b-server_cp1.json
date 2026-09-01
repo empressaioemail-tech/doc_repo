@@ -1,0 +1,118 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "p98b-server",
+  "planRow": "P-98",
+  "repo": "legacy-design-tools",
+  "seat": "property / legacy-design-tools-p98",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+    "branch": "feat/p98b-account-entitlement",
+    "commit": "26068a1e886f37119b0cafffc0e7b195a5f8368c",
+    "identicalToOriginMain": true,
+    "treeCleanAtStart": true
+  },
+  "writePathsRead": [
+    "lib/db/src/schema/peUserEntitlements.ts",
+    "lib/db/drizzle/README.md (migration-number claiming rule)",
+    "lib/db/drizzle/0083, 0088, 0091 (DDL precedent)",
+    "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+    "lib/db/scripts/check-fixture-drift.sh + refresh-schema-fixture.sh",
+    "lib/db/src/__tests__/integration/schema.integration.test.ts",
+    "artifacts/api-server/src/lib/pePaywallStripe.ts (full)",
+    "artifacts/api-server/src/lib/brokerageStripe.ts (webhook, full)",
+    "artifacts/api-server/src/lib/peIdentity.ts (setPeAccessTierFromStripe, getPeEntitlementRow)",
+    "artifacts/api-server/src/lib/peEntitlement.ts (resolvePeEntitlement)",
+    "artifacts/api-server/src/lib/peTeamSeatsFromStripe.ts",
+    "artifacts/api-server/src/routes/propertyExplorer.ts:272-308"
+  ],
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "Migration number 0092.",
+      "basis": "README requires claiming a number free across main AND unmerged work. origin/main tip carries 0091 as its highest. All six open PRs (554, 521, 510, 446, 445, 440) touch no lib/db/drizzle/00* file. No unmerged remote branch carries 0092-0094. Verified by gh pr diff --name-only per PR and a git ls-tree sweep over remote branches not merged into main."
+    },
+    {
+      "id": "D2",
+      "decision": "billing_interval text NULL, no DDL default, plus a named CHECK (billing_interval IS NULL OR billing_interval IN ('month','year')).",
+      "basis": "Absent means unknown. A default of 'monthly' fabricates a billing fact and would make the annual_upgrade rung fire at annual subscribers. The CHECK is a real armed control: executed by Postgres, triggered by every INSERT/UPDATE, fails with SQLSTATE 23514, bypassed only by dropping the constraint. It stops writers the TypeScript union never sees (a raw connection, a future job, a psql session). Mirrors the 0088 pe_saved_properties_crm_status_chk precedent including its idempotent DO-block pg_constraint guard."
+    },
+    {
+      "id": "D3",
+      "decision": "Interval derived by inverting our own configured price ids, in pePaywallStripe.ts, from the same TIER_PRICE_ENV / TIER_ANNUAL_PRICE_ENV config that stripePriceIdForPeTier reads.",
+      "basis": "Dispatch requirement. Deliberately avoids current_period_end and price.recurring.interval, whose shapes track the Stripe API version, and this repo pins no version."
+    },
+    {
+      "id": "D4",
+      "decision": "Ambiguous configuration yields null. If one price id is configured under both a monthly and an annual env name, or if two billed items resolve to different intervals, refuse rather than pick.",
+      "basis": "Fail closed. A guess about which env name won is a fabricated billing fact."
+    },
+    {
+      "id": "D5",
+      "decision": "On checkout.session.completed, widen the EXISTING conditional subscription fetch from team-only to any PE subscription grant whose payload carries no price items, and feed the ONE fetched object to both the seats resolver and the interval resolver.",
+      "basis": "Stripe does not expand line_items on a checkout.session.completed webhook payload, so a price-id inverse reading only the payload resolves null for every new subscriber, which is the exact population the annual_upgrade rung targets. That is a starved mechanism (ENFORCEMENT: mechanisms must be armed and fed). resolveTeamSeatsPurchased returns null on its first line for any non-team grant, so widening the fetch cannot change seat behaviour. One round trip, not two. Fetch failure still yields null.",
+      "risk": "One extra Stripe API call per new solo/studio subscription. Rare event, inside the existing try/catch, already the team path's cost."
+    },
+    {
+      "id": "D6",
+      "decision": "Route: change EXACTLY ONE path, the authenticated caller with no parcelNodeId. Anonymous callers keep today's shape whether or not they pass a parcel; every with-parcel authenticated response stays byte-identical; the invalid-parcel 400 keeps its current precedence.",
+      "basis": "Today the guard is one compound condition (!auth || !userId || !parcel), so a naive 'add fields to base' would also change the anonymous-with-parcel response, which today is base. Splitting the guard in two isolates the change to the one path the card is about. The account fields are meaningless for a caller with no account."
+    },
+    {
+      "id": "D7",
+      "decision": "The no-parcel response OMITS the property key entirely (no empty or defaulted block) and carries seatsPurchased plus billingInterval in addition to today's base fields.",
+      "basis": "Dispatch requirement; an omitted block and a block of falsy values are different facts. The existing test 'authenticated without parcelNodeId has no property block' already pins the omission and must keep passing."
+    },
+    {
+      "id": "D8",
+      "decision": "seatsPurchased and billingInterval reach the route by widening getPeEntitlementRow's SELECT and PeEntitlementSnapshot, not by a second query.",
+      "basis": "Only two consumers read the snapshot (the propertyExplorer entitlement route and brokerageNodeFacets callerGrantsOwnerFact) and neither spreads it into a response body, verified by grep. base is built from explicitly named fields, so widening the snapshot cannot leak into the with-parcel response. artifacts/smartsite-mcp keeps its own private copy of the row reader and is untouched."
+    },
+    {
+      "id": "D9",
+      "decision": "devRole does NOT synthesise seatsPurchased or billingInterval. Both pass through from the stored columns.",
+      "basis": "resolvePeEntitlement already elevates tier and subscriptionTier for dev role. A dev-role account has made no purchase; inventing seats or an interval for it would be a fabricated billing fact of exactly the kind the nullable column exists to prevent."
+    }
+  ],
+  "adversarialReview": [
+    {
+      "attack": "Adding fields to base would silently change the with-parcel response, which the dispatch pins as byte-identical.",
+      "resolution": "base is left untouched. The two new fields are added only in the no-parcel branch's own object literal. A JSON.stringify equality test against a frozen expected body pins it in both directions."
+    },
+    {
+      "attack": "Splitting the guard could reorder the invalid-parcel 400 relative to the anonymous early return, changing an anonymous caller's response to a malformed parcel from 200 plus base to 400.",
+      "resolution": "The anonymous guard is evaluated FIRST, before any parcel parsing, preserving today's precedence exactly. Pinned by a test."
+    },
+    {
+      "attack": "The CHECK constraint hand-patched into the fixture could be rendered differently by pg_dump, turning a correct migration into a red CI drift check.",
+      "resolution": "The rendering is copied byte for byte from nine existing constraints of the identical shape already in the fixture (lines 674, 677, 678, 730, 1013, 1311, 1581, 2101), all produced by the real pg_dump pipeline. Residual risk is disclosed: the fixture is a hand-patch, and the drift check cannot pass until the migration is applied to the database CI points at."
+    },
+    {
+      "attack": "The inverse mapping could be satisfied by a sentinel: an unset env var reads as undefined, and comparing undefined to a null price id would match.",
+      "resolution": "The configured-id set is built by filtering out empty and unset values before any comparison, and the lookup key must itself be a non-empty string. Both directions get an explicit violation test."
+    },
+    {
+      "attack": "Deriving the interval from our own checkout metadata[billing_interval] would be easier and is always present.",
+      "resolution": "Rejected. Metadata is what we ASKED Stripe for; the price id on the subscription is what Stripe BILLED. Persisting the request as though it were the billed fact is the fabrication this card exists to avoid, and the dispatch names the price-id inverse as the mechanism."
+    },
+    {
+      "attack": "Tests could be written where they cannot run, so a violation is asserted but never observed failing.",
+      "resolution": "No DATABASE_URL is available in this environment (local postgresql-x64-18 is Stopped and cannot be started without admin; the Docker daemon is not running), so 165 of 319 api-server test files fail at import in the BASELINE. The inverse-mapping and response-shape tests are therefore written as colocated pure-unit tests using a factory vi.mock of @workspace/db, the pattern src/lib/peTeamSeatsFromStripe.unit.test.ts already uses and which passes in the baseline. Probed empirically before committing to the design: pePaywallStripe.ts loads and its exports are callable under that mock. Route-level assertions additionally go in the CI-authoritative src/__tests__ bucket."
+    }
+  ],
+  "threeQuestionGate": {
+    "control": "pe_user_entitlements_billing_interval_chk",
+    "whatExecutes": "PostgreSQL constraint evaluation",
+    "whatTriggers": "every INSERT or UPDATE touching billing_interval",
+    "whatFails": "the write raises SQLSTATE 23514 and the transaction aborts",
+    "whatBypasses": "ALTER TABLE ... DROP CONSTRAINT. Nothing else reaching this database. NOT deployed until the migration is applied to the live database; until then it enforces nothing, and that is stated in leave_behind rather than claimed as coverage."
+  },
+  "baselineBeforeAnyEdit": {
+    "command": "cd artifacts/api-server && npx vitest run",
+    "testFiles": "165 failed | 153 passed | 1 skipped (319)",
+    "tests": "1437 passed | 1 skipped (1438)",
+    "cause": "DATABASE_URL unset in this environment",
+    "typecheck": "npx tsc --noEmit -p artifacts/api-server/tsconfig.json exit 0",
+    "libDbBuild": "npx tsc -b lib/db exit 0"
+  }
+}

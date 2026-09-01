@@ -1,0 +1,61 @@
+{
+  "checkpoint": "CP1",
+  "lane": "alias-persist-job",
+  "card": "alias-persist --apply calls applyAliasLandingRows",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-30T23:10:00Z",
+  "seat": "property (deepest worker; no sub-agents)",
+  "snapshot": {
+    "docRepo": "P:/doc_repo (inbox writes only; planner-owned)",
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p1-controls",
+    "branch": "seat/property-ctx-p1-factory",
+    "head": "57e8b662ed927416b9d1f1ca45777f0b93c45f9d",
+    "headSubject": "fix(f08): alias landing write is client.query INSERT, not insertLanding",
+    "ctxPublish": "P:/seat-worktrees/property/hauska-factory-ctx-publish read-only; writePersistedAlias still prefers insertLanding",
+    "noStoreWrite": true,
+    "noCommit": true,
+    "noOtherFactoryWorktreeWrite": true
+  },
+  "missionPremise": "57e8b66 closed the helper hole: applyAliasLandingRows issues INSERT via client.query. The persist job still lives only on origin/seat/property-ctx-walk-alias-schema. writePersistedAlias prefers insertLanding and runAliasPersist reports wroteLanding from persistCadTxgioAliasBinds array length. A mock write that reports a count without SQL is the defect. Source: ctx-publish src/lib/cad-txgio-alias-persist.mjs writePersistedAlias ~217; src/jobs/alias-persist.mjs ignores the write return; dispatch 2026-08-30_alias-persist-job; OPS-19 F-08.",
+  "completionPredicate": "This tree has the job. --apply calls applyAliasLandingRows (or the same client.query INSERT). insertLanding is not a write path and is not copied as a fallback. Arm 1: missing landing_cad_txgio_alias refuses ALIAS_TABLE_MISSING with no INSERT. Arm 2: --apply on a test client issues INSERT INTO landing_cad_txgio_alias via query; insertLanding is not called; wroteLanding equals INSERT count. Laptop --apply without FACTORY_ALIAS_PERSIST_GO=1 and a run row still refuses. node --test terminates. No commit, push, deploy, migration apply, job start, or Neon persist.",
+  "scopeBasis": "This worktree only. ctx-publish / p2-job / gate8 / p2-juris / P:/hauska-factory are read, not written. 0005 / 0005a / 0005b are not applied. No connection URL is printed. Card-H snapshot floors and two-count helpers are ported so the job loads; live card-H read and 0005b apply stay planner-owned.",
+  "adversarial": [
+    {
+      "claim": "porting writePersistedAlias as-is and adding applyAliasLandingRows as the else branch is enough",
+      "finding": "ctx-publish prefers insertLanding when present. Tests inject insertLanding and never record SQL. That is the mock write. Keeping insertLanding as a fallback copies the defect.",
+      "rejectedAlternative": "insertLanding first, query else. Rejected: that is the source hole."
+    },
+    {
+      "claim": "persistCadTxgioAliasBinds(apply=true) already sets wroteLanding so the job can report the count",
+      "finding": "that count is landingRows.length before any client.query. runAliasPersist spreads result and ignores writePersistedAlias's return. Mechanism: wroteLanding is assigned in the pure planner, not after INSERT.",
+      "rejectedAlternative": "leave the pre-write count and only change writePersistedAlias. Rejected: the job would still report a count without SQL if write is skipped or insertLanding is injected."
+    },
+    {
+      "claim": "laptop --apply can be opened for the test client",
+      "finding": "FACTORY_ALIAS_PERSIST_GO=1 and a run row are the freeze. Tests inject those. Laptop env without GO still refuses. Do not weaken.",
+      "rejectedAlternative": "skip the GO gate when landingClient is injected. Rejected: that is a laptop --apply hole."
+    }
+  ],
+  "design": {
+    "applyPath": {
+      "what": "Port the job onto this tree. writePersistedAlias calls applyAliasLandingRows only. Job --apply uses that wroteLanding. persistCadTxgioAliasBinds does not claim a write. insertLanding is not imported, not called, not copied.",
+      "sql": "INSERT INTO landing_cad_txgio_alias (county_fips, cad_prop_id, txgio_id, situs_key, owners_agree, as_of, method, run_id, valid_to) VALUES ($1,$2,$3,$4,true,$5::timestamptz,$6,$7::uuid,NULL)",
+      "params": ["county_fips", "cad_prop_id", "txgio_id", "situs_key", "as_of", "method", "run_id"],
+      "executes": "runAliasPersist --apply → writePersistedAlias → applyAliasLandingRows → client.query(ALIAS_LANDING_INSERT_SQL)",
+      "triggers": "factory alias-persist --apply after FACTORY_ALIAS_PERSIST_GO=1 and a run row",
+      "fails": "ALIAS_TABLE_MISSING when information_schema has no landing_cad_txgio_alias; ALIAS_PERSIST_GO_REQUIRED / RUN_ROW_REQUIRED on laptop --apply; ALIAS_LANDING_WRITE_REFUSED when client.query is absent",
+      "bypasses": "a raw INSERT on the bake store; applying 0005 as drafted (forbidden); the unwritten ctx-publish branch still prefers insertLanding until that tree is retired"
+    }
+  },
+  "bothArmsPlanned": {
+    "arm1_missingTable": "runAliasPersist --apply with GO + run row + a query client whose information_schema returns empty. Rejects ALIAS_TABLE_MISSING. Issued SQL is the exists SELECT only. insertLanding not called.",
+    "arm2_realInsert": "same gate plus table present. INSERT INTO landing_cad_txgio_alias via query. insertLanding not called even when injected. wroteLanding equals INSERT count."
+  },
+  "constraintsHonored": [
+    "no commit, push, deploy, job start, bake, publish",
+    "no 0005 / 0005a / 0005b apply to any live store",
+    "no connection URL printed",
+    "ctx-publish / p2-job / gate8 / p2-juris / P:/hauska-factory not written",
+    "laptop --apply freeze not weakened"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "runAt": "2026-08-11T21:05:00Z",
+  "tablesCreated": ["tx_rrc_well", "tx_rrc_pipeline"],
+  "wellRowsLoaded": 1396049,
+  "pipelineRowsLoaded": 491178,
+  "pipelineDedupeKey": "P5_NUM + T4PERMIT (4576 distinct permit/operator groups across 491178 county-split segments; never OPERATOR name)",
+  "wellCountyJoinDone": true,
+  "wellCountyJoinNote": "499924/1396049 wells assigned county_fips via tx_county_bbox (245 counties materialized from txgio_parcel min/max bbox; smallest bbox wins). 896125 remain null — wells outside parcel-derived county rectangles (offshore, state waters, gaps between county parcel extents). Four-corner probe uses lng/lat, not county_fips.",
+  "fieldMapping": [
+    {"oldField": "SURFACE_ID", "newField": "UNIQID"},
+    {"oldField": "WELLID", "newField": "GIS_WELL_NUMBER"},
+    {"oldField": "LONG83", "newField": "GIS_LONG83"},
+    {"oldField": "LAT83", "newField": "GIS_LAT83"},
+    {"oldField": "LONG27", "newField": "GIS_LONG27"},
+    {"oldField": "LAT27", "newField": "GIS_LAT27"},
+    {"oldField": "API", "newField": "API"},
+    {"oldField": "SYMNUM", "newField": "SYMNUM"},
+    {"oldField": "RELIAB", "newField": "RELIAB"},
+    {"oldField": "(none)", "newField": "GIS_SYMBOL_DESCRIPTION"},
+    {"oldField": "(none)", "newField": "GIS_LOCATION_SOURCE"},
+    {"oldField": "(none)", "newField": "GIS_API5"},
+    {"oldField": "OBJECTID", "newField": "OBJECTID"}
+  ],
+  "symnumDefaultFixed": true,
+  "symnumDefaultEvidence": "0 rows with well_status=producing where SYMNUM had no explicit mapping and GIS_SYMBOL_DESCRIPTION empty; 121197 rows well_status=unknown",
+  "fourCornerProbe": {
+    "permian": 507,
+    "panhandle": 10,
+    "eastTx": 184,
+    "southTx": 212
+  },
+  "fourCornerLiveSourceAtProbe": {
+    "permian": 568,
+    "panhandle": 10,
+    "eastTx": 222,
+    "southTx": 215
+  },
+  "prNumber": 311,
+  "ciConclusionString": "success",
+  "dataVintage": "UNKNOWN",
+  "commercialRedistributionRights": "UNKNOWN",
+  "postgisNote": "Deployment Neon has no PostGIS; geometry stored as jsonb GeoJSON with west_lng/south_lat/east_lng/north_lat bbox btree indexes (tx_special_district convention), not GiST",
+  "cp1": {
+    "runAt": "2026-08-11T20:40:00Z",
+    "expectedWellCount": 1396049,
+    "expectedPipelineCount": 492021,
+    "fieldMappingRegistered": true,
+    "pipelineDedupeKeyRegistered": "P5_NUM + T4PERMIT",
+    "symnumFailClosedRegistered": true,
+    "liveProbeEvidence": {
+      "wells": "{\"count\":1396049}",
+      "pipelines": "{\"count\":492021}"
+    }
+  },
+  "cp2": {
+    "runAt": "2026-08-11T21:05:00Z",
+    "wellRowsInTable": 1396049,
+    "pipelineRowsInTable": 491178,
+    "wellShortfall": 0,
+    "pipelineShortfall": 843,
+    "pipelineShortfallExplanation": "843 segments skipped at ingest — null county_fips after rrcCountyFips() or invalid line geometry; equals pipelinesSkipped in ingest report; not a paging bug (would be round-number multiple of 1000)",
+    "fourCornerAllNonZero": true,
+    "defaultProducingCount": 0,
+    "countyAssigned": 499924,
+    "countyNull": 896125
+  },
+  "adversarialFindings": [
+    "Executor v1 loaded entire layer into memory before INSERT — would OOM at 1.4M wells; planner rewrote to stream one REST page (1000 features) at a time.",
+    "Executor v1 used row-by-row INSERT — measured ~10 min for first 1000 pipeline segments; planner replaced with postgres.js multi-row INSERT per page.",
+    "Node fetch to gis.rrc.texas.gov fails TLS verification on Windows (UNABLE_TO_VERIFY_LEAF_SIGNATURE); curl.exe works. Added RRC_STAGING_TLS_INSECURE=1 gate for ingest only.",
+    "PostGIS unavailable on deployment Neon; GiST request adapted to jsonb + bbox btree indexes per tx_special_district convention.",
+    "Initial county join JOIN txgio_parcel per well hung at 0 rows after 35 min; replaced with materialized tx_county_bbox (245 counties) + smallest-bbox-wins batched UPDATE. Only 35.8% wells got county_fips — parcel min/max bboxes do not cover all well locations; Phase 3 writer must use lng/lat bbox queries against tx_rrc_well, not county_fips alone.",
+    "Four-corner table counts slightly below live REST probe (Permian 507 vs 568) — all four corners non-zero, defect class (single-county Harris mirror) refuted.",
+    "symnum.ts toContractWellStatus maps unknown→permitted for atom contract bridge only; staging table stores unknown correctly; 0 default-producing rows verified.",
+    "Pipeline segment count 491178 vs source 492021: 843 skipped — invalid COUNTY_FIPS or geometry at normalize time, not pagination loss.",
+    "Buffer discrepancy flagged: WELL_FACT_PROXIMITY_RADIUS_METERS=152 (498.69 ft) vs dispatch 152.4 m / 500 ft — not changed in this dispatch.",
+    "dataVintage UNKNOWN — service exposes no lastEditDate; source_vintage column set to UNKNOWN with observedAt on ingest.",
+    "commercialRedistributionRights UNKNOWN — public REST, no ToS gate, but RRC disclaimer needs legal read before Layer 2 resale."
+  ]
+}

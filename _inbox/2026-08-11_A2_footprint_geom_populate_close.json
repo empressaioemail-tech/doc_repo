@@ -1,0 +1,59 @@
+{
+  "runAt": "2026-08-11T22:36:00.000Z",
+  "rowsTotal": 10674975,
+  "geomPopulatedBefore": 0,
+  "geomPopulatedAfter": 10674975,
+  "postgisAvailable": true,
+  "strategyUsed": "batched UPDATE SET geom = ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326) at 50000 rows/batch; 213 batches, 657068ms wall (~16100 rows/sec avg)",
+  "gistIndexUsed": true,
+  "joinPrecisionBefore": "bbox-only",
+  "joinPrecisionAfter": "postgis-st_intersects-gist (SQL prefilter, 558ms for 48231/65974 Bastrop candidates) + polygon-clipping overlap-ratio >=10% (writer join path, unchanged)",
+  "bastropJoinMsBefore": 47419,
+  "bastropJoinMsAfter": 77796,
+  "bastropJoinMsAfterNote": "App join (joinFootprintsToParcels O(fp×parcels)) measured 77796ms during geom backfill and 357366ms immediately after full populate on same 200-parcel/65974-footprint Bastrop slice — high variance, geom populate does not change app join algorithm. PostGIS prefilter is the speed win: ST_Intersects bbox union in 558ms vs 350214ms app join post-populate.",
+  "falsePositiveCheck": {
+    "parcelsSampled": 201,
+    "bboxMatched": 257,
+    "trueIntersect": 104,
+    "bboxOnlyFalsePositives": 153,
+    "falsePositiveRateOfBboxHits": 0.595,
+    "straddleThreshold": 0.1,
+    "counties": [
+      { "fips": "48021", "parcelsSampled": 67, "bboxMatched": 117, "trueIntersect": 35 },
+      { "fips": "48113", "parcelsSampled": 67, "bboxMatched": 140, "trueIntersect": 69 },
+      { "fips": "48453", "parcelsSampled": 67, "bboxMatched": 0, "trueIntersect": 0, "samplingBiasNote": "Head feature_index parcels are rural strips with no nearby footprints — not representative; exclude from rate denominator or resample with footprint EXISTS prefilter" }
+    ],
+    "adversarialVerifiedFalsePositives": 5,
+    "adversarialVerdict": "All 5 inspected: bboxHit=true, overlapRatio 0.0327-0.0708 (<0.10), centroidDistance 18-20m — genuine adjacent-parcel bbox bleed, not test artifact"
+  },
+  "cp1": {
+    "runAt": "2026-08-11T22:10:46.593Z",
+    "postgisPrediction": "AVAILABLE — P2.3 artifact wrong; same neondb (TXGIO_DATABASE_URL) has PostGIS 3.5.0 installed",
+    "postgisContradictionResolution": "P2.3 close said 'Deployment Neon has NO PostGIS'; P2.4 created geom GiST index. Live SELECT PostGIS_Version() = 3.5.0; pg_extension installed_version = 3.5.0. P2.3 likely probed before CREATE EXTENSION or mis-read error from RRC staging attempt.",
+    "strategyPrediction": "batched ST_GeomFromGeoJSON UPDATE at 50k/batch (~30-60 min for 10.7M), not per-row (P2.4 proved 8000 rows/10min untenable)",
+    "falsePositiveRatePrediction": "~40-60% of bbox-matched footprint-parcel pairs fail 10% polygon overlap threshold in metro/rural mix",
+    "bastropJoinMsPrediction": "App join unchanged by geom column; expect similar 47-80s for 200×66k O(fp×parcels); PostGIS prefilter should drop candidate set in sub-second SQL"
+  },
+  "cp2": {
+    "runAt": "2026-08-11T22:36:00.000Z",
+    "postgisAvailableMeasured": true,
+    "postgisVersion": "3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1",
+    "geomPopulatedAfterMeasured": 10674975,
+    "populateWallMs": 657068,
+    "gistExplainSnippet": "Bitmap Index Scan on tx_building_footprint_geom_gist_idx + Bitmap Index Scan on tx_building_footprint_county_idx",
+    "falsePositiveRateMeasured": 0.595,
+    "bastropJoinMsMeasured": 77796,
+    "postgisPrefilterMs": 558,
+    "postgisPrefilterCandidateCount": 48231,
+    "reconciliation": "PostGIS available — strategy executed not bbox+app fallback. Geom 0→10674975 (P2.4 artifact said 0; live at A2 start had 117239 partial from aborted per-row ingest). False positive rate 59.5% exceeds CP1 lower bound — bbox-only join would mis-attribute more than half of candidate matches. Travis zero-match is sampling defect not zero footprint coverage."
+  },
+  "adversarialFindings": [
+    "P2.3 vs P2.4 PostGIS contradiction resolved at source: PostGIS 3.5.0 IS installed on neondb; GiST index real and used after populate",
+    "P2.4 left ~117k partial geom from aborted per-row UPDATE before A2; full backfill completed in 213×50k batches",
+    "Travis county sample biased: ORDER BY feature_index head parcels have zero footprint bbox overlap despite 73394 Travis footprints — rate calculation should use Dallas+Bastrop only (59.5%) or resample",
+    "5/5 adversarial false-positive coordinate inspections confirmed: bbox overlap with 3-7% polygon overlap, 18-20m centroid separation — adjacent parcel bleed",
+    "Intersection test IS stricter than bbox: 153 pairs pass bbox but fail 10% overlap ratio; zero suspicious all-clear",
+    "Bastrop app join wall time highly variable (47419 P2.4 → 77796 mid-A2 → 357366 post-populate) — geom populate enables SQL prefilter not app join speedup; writer still needs spatial index or PostGIS candidate query before polygon-clipping",
+    "Per-row geom UPDATE rate from P2.4 (~13 rows/sec) vs batched (~16100 rows/sec avg) — 1200× improvement validates batch strategy"
+  ]
+}

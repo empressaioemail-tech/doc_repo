@@ -2,7 +2,7 @@
 id: 28_mcp_first_product_design
 title: MCP-first product design principle and product line architecture
 status: active
-last_updated: 2026-05-19 (combined Cortex/Codex sprint folds MCP co-design into L1-L6 stream rather than queuing retrofit as a separate later phase; Codex 1a, Codex 1b, Cortex all confirmed tracked-retrofit; sprint goes stronger than minimum policy per _decisions/2026-05-19_sync_4_5_and_cortex_sprint.md)
+last_updated: 2026-08-30 (MCP Apps iframe pattern named; 2026-05-19 Cortex/Codex sprint note stands)
 applies_to: portfolio
 related: [07_product_line_summary, 09_post_saas_substrate_thesis, 14_pricing_framework, 29_mcp_surface_tier_model, 30_smartcity_os, 40_design_accelerator, 42_design_accelerator_program_plan, 47_codex_plan_review, 48_codex_program_plan, 41_revit_connector, 50_hauska_mcp_server, 60_eci_atomization, _decisions/2026-05-19_sync_4_5_and_cortex_sprint, adr_008_engine_factor_out]
 owner: nick
@@ -19,6 +19,8 @@ The product line architecture principle that generalizes existing structural com
 **Existing UI-first products retrofit MCP as v2 or later work.** Identify what an agent would want to do with the product. Map those use cases to atom queries and existing engine functions. Spec MCP tools. Wire accessPolicy enforcement at the MCP layer. Add MCP surface to the product's roadmap with a target date. UI remains as-is.
 
 **Every product roadmap tracks MCP surface ship date as a line item.** This makes the principle visible across the portfolio without forcing all products to ship MCP simultaneously.
+
+A product MCP may also serve an MCP App: an HTML iframe the server exposes as a `ui://` resource, which the host mounts per tool call. The app paints the tool result. Its only path back into the model is `ui/message` (a drafted turn the user sends). It does not call a private HTTP endpoint the conversation could not call. Smart Site ships this pattern on `mcp.smartsite.cloud` as `ui://smartsite/app-p558.html` (2026-08-30). See `_decisions/2026-08-29_p91_open_stays_a_turn.md` and `_inbox/2026-08-30_smartsite_mcp_app_v2_WDLL.md`.
 
 ## Why this matters
 

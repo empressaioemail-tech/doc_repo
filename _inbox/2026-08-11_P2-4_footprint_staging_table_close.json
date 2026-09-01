@@ -1,0 +1,51 @@
+{
+  "runAt": "2026-08-11T21:25:00.000Z",
+  "tableCreated": "tx_building_footprint",
+  "rowsLoaded": 10674975,
+  "gistIndexCreated": true,
+  "sourceBytes": 394135084,
+  "loadWallMs": 4016789,
+  "perCountyJoinBenchmark": [
+    { "fips": "48021", "parcels": 200, "joinMs": 47419 },
+    { "fips": "48113", "parcels": 200, "joinMs": 460553 }
+  ],
+  "speedupVsRestream": "37.2x benchmark total (47419ms vs 1762884ms Bastrop baseline); 15.0x writer dry-run (117509ms vs 1762884ms); eliminates 10678921-feature zip re-stream per county run",
+  "attributionCarried": true,
+  "prNumber": 310,
+  "ciConclusionString": "success",
+  "cp1": {
+    "expectedRowCount": 10678921,
+    "expectedLoadWallMsBand": "1800000-5400000",
+    "expectedBastropJoinMsPostIndex": 60000,
+    "expectedDallasFootprintQueryMs": 30000,
+    "countyAssignmentSource": "tx_county_boundary centroid-in-bbox (254 counties)",
+    "postgisPlan": "CREATE EXTENSION + geom GiST; jsonb geometry primary store"
+  },
+  "cp2": {
+    "measuredRowCount": 10674975,
+    "measuredFeaturesScanned": 10678921,
+    "skippedNoCounty": 3946,
+    "measuredLoadWallMs": 4016789,
+    "measuredBastropTotalMs": 47419,
+    "measuredBastropFootprintQueryMs": 2998,
+    "measuredBastropJoinOnlyMs": 43287,
+    "measuredDallasTotalMs": 460553,
+    "measuredDallasFootprintQueryMs": 17373,
+    "measuredWriterDryRun48021WallMs": 117509,
+    "baselineBastropWallMs": 1762884,
+    "explainCountyIndexUsed": true,
+    "explainSnippet": "Bitmap Index Scan on tx_building_footprint_county_idx",
+    "gistIndexPopulated": false,
+    "gistIndexPopulatedNote": "geom column exists with GiST index from migration; ingest skips per-row geom backfill at 10.7M scale — county_fips btree serves county-scoped queries",
+    "reconciliation": "Row count 10674975 vs expected 10678921: delta 3946 = skippedNoCounty (centroid outside all county bboxes). Load 4016789ms within CP1 band. Bastrop total 47419ms beats CP1 60000ms prediction. Index use confirmed by EXPLAIN."
+  },
+  "adversarialFindings": [
+    "Executor shipped single-row INSERT loop — CP1 caught; fixed to 2000-row bulk INSERT before load",
+    "Initial county assignment used txgio_parcel bboxes (196 counties) — fixed to tx_county_boundary (254)",
+    "Per-row PostGIS geom UPDATE during ingest yielded 8000 rows in 10min — removed; geom GiST index exists but column unpopulated",
+    "Node fetch TLS failure on Windows — worked around via curl cache of Texas.geojson.zip (394135084 bytes exact)",
+    "CRS spot-check: 48021/103433, 48113/00000700000000000, 48453/423378 all intersect-verified, crsWgs84Sanity true",
+    "Full Dallas 726k-parcel join still O(footprints×parcels) prohibitive; county-scoped footprint load (17s vs 24min stream) is the structural win",
+    "Honesty fields: table source_tier=ml-derived; atom verificationStatus=unsurveyed on present footprints; sourceCitation carries ODC-By attribution into exports"
+  ]
+}

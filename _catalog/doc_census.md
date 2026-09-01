@@ -93,4 +93,4 @@ Full row data: `_catalog/doc_census.json` (2406 rows).
 
 ## Quarantine
 
-**None.** Contradiction pairs recorded above for R-02 second half / operator ruling.
+R-02b 2026-08-21: remainder against bounded canon set (`countTotal` 238). Three two_bodies already in `_quarantine/`. Remaining pairs held (byte-identical white papers, gitignored scratch, pointer stubs, operator items). Census not re-run.

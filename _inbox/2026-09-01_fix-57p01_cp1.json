@@ -1,0 +1,32 @@
+{
+  "checkpoint": "CP1",
+  "lane": "FIX-57P01",
+  "card": "_dispatches/2026-09-01_fix-57p01_dispatch.md",
+  "planRows": ["F-01", "F-03"],
+  "writtenAt": "2026-09-01T01:40:00Z",
+  "seat": "integration (P:/doc_repo main e3dba48); lane planner; product writes only in hauska-factory-p2-juris-persist on fix/57p01-heartbeat",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main e3dba48",
+    "factory": "P:/seat-worktrees/property/hauska-factory-p2-juris-persist branch fix/57p01-heartbeat from 5f9acc3 (Merge #49 p2-juris-persist). Image digest TBD post-build.",
+    "notOpened": ["Neon endpoint settings", "data-store client behaviour", "other Factory worktrees"]
+  },
+  "missionPremise": "Factory p2-juris holds two pg clients. Long data-store chunks leave the control client idle; Neon suspends ep-round-base ~300s after last activity (57P01). Unhandled client 'error' events skip failed termination. Lease renews at chunk start only. scope lacks max_duration_s so reaper prices at 3600 default. Root cause measured on withered-surf ops log 2026-08-31/2026-09-01; do not re-investigate. Source: _dispatches/2026-09-01_fix-57p01_dispatch.md.",
+  "completionPredicate": "F1 unit: simulated client error does not uncaught-exit; failed termination written naming cause. F2 unit: ~60s timer renews lease (not SELECT 1 keepalive); interval cleared on success and failure; simulated 15-min chunk leaves lease live. F3 integration (after F1/F2): Williamson 48491 completes unaided with unincorporated+in_city+unresolved===total, total===282570, unresolved===0. max_duration_s in run scope. Deploy digest-pinned; one attempt only if F3 fails.",
+  "scopeBasis": "runP2Juris owns both clients (p2-juris.mjs:112,145). Fixes in that ownership boundary only. No Neon setting changes (operator). No data-store client changes. No fourth Williamson run if F3 fails at ~300s.",
+  "design": {
+    "fix1": "attachPgClientErrorBridge on factory and neon after connect; fatal routes to existing catch via shared noteFatal + throw after await boundaries; failed termination names PG cause",
+    "fix2": "setInterval ~60000ms calling heartbeatLease (lease UPDATE, not SELECT 1); clearInterval in same finally as client.end and releaseLease; keep chunk-start renewal as extra safety",
+    "fix3": "p2JurisRunScope adds max_duration_s: MAX_DURATION_S (21600)"
+  },
+  "falsifiers": {
+    "F1": "Without listener, simulated error uncaught-exits; with fix, termination exit_kind failure names cause",
+    "F2": "Timer fires heartbeatLease not ping; cleared on both paths; 15-min simulated chunk lease still live",
+    "F3": "Williamson dies ~300s past reaper tick => fix failed; report, no fourth run"
+  },
+  "outOfScope": [
+    "suspend_timeout operator setting on ep-round-base",
+    "Re-investigating root cause",
+    "Data-store client changes",
+    "Bare keepalive ping instead of lease renewal"
+  ]
+}

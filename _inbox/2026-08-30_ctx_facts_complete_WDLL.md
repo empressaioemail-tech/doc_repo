@@ -26,7 +26,7 @@ A user on smartsite.cloud who opens a parcel on the six sees a named join state,
 
 ## Waves
 
-See `_inbox/2026-08-30_ctx_execute_waves_WDLL.md`. Short form: P0 truth, P1 controls, P2 substrate + alias long pole (P2b PE parallel), P3 absence (357,269 `not-applicable` + 465,568 `unmeasured`), P4 rails, P5 scrub, P6 pin, P7 Wave R, P8 prove. W2 / P-80 stays parked. This file's title still says "facts complete"; the program is the last production publish, not county-complete.
+See `_inbox/2026-08-30_ctx_chew_next.md`. Short form: five dispatches now in separate trees. Gate 8 step 2 (served body) unlocks P4. Browser walk unlocks P7. 0005b is CAD↔TxGIO identity and ships. P2-JURIS read now, persist after the P2 job. P2b-serve is the only P2b brief. W2 / P-80 stays parked.
 
 ## Acceptance items
 
@@ -69,6 +69,8 @@ See `_inbox/2026-08-30_ctx_execute_waves_WDLL.md`. Short form: P0 truth, P1 cont
 5. 2026-08-30: Durable CAD to TxGIO alias (A-029). Item 13. Wave R reads the map. Reason: operator yes to persist successful situs binds.
 
 6. 2026-08-30: Execute waves P0–P8 replace Band C / Band 1 as the schedule. Measured owe. Do not apply 0005. Reason: collect review refuse + operator tee-up.
+7. 2026-08-30: Containment replaces the alias table. Four dispatches compiled. P1-FACTORY first. `unincorporated` is the CDP disposition. Reason: enumeration + operator ruling.
+8. 2026-08-30: Fifth dispatch P2b-serve. Q1–Q5 ruled. Separate trees. Gate 8 step 2 unlocks P4. 0005b ships. Reason: planner answers ae89dc3.
 
 ## Finish card (graded at close)
 

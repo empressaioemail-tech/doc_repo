@@ -44,9 +44,35 @@
 - v16 `00016-l7w` @100% digest `sha256:ec0ced91` ancestor walk. Job `370d191d` **complete**, not header-refused. Owner+legal resultCount 0. Owner capture 34KB vs legal 75KB; not the 21-row grid. Classify still absent.
 - #534 open (dump + date-only drop + ancestor walk + later-query skip).
 
-## OPEN (2026-08-28T21:41Z)
+## GROUND-TRUTH (2026-08-28T22:05Z)
 
-- Merge #534 when CI is green. Owner fill/wait: complete-with-0 after a planned owner query that previously dumped 21 instruments is a navigation/fill miss, not a header miss.
+- Fill/wait card landed on LDT #534 `5becba6d` (rebased onto `fd750203`). Worker tests 79/79. `assertBastropSearchSettled` requires SearchResults.aspx plus a published records-found label. SearchEntry plus "Please enter search criteria" fails `search-fill-did-not-submit`. Playwright fill now string-evaluates `$find(id).set_value` and fails if readback does not match.
+- #534 pushed `4aa64647...5becba6d`. CI after force-push not yet read. Do not enqueue until merge + v17 pin.
+
+## GROUND-TRUTH (2026-08-28T22:32Z)
+
+- LDT #534 MERGED `89e539f6`. Worker rebuilt FROM origin/main. Serving `records-request-worker-00017-ksk` @100% digest `sha256:92e6e4af`. Tag p85-v17. POST /run `{}` → HTTP 400 `missing_job_id`. Cortex traffic unread for this card beyond `00643-rib` @100% (not moved by this card).
+- Live job `6eb07368` parcel `48021:35481` complete. Recipe `p85-aumentum-index-search-v3`. Owner 21 hits, legal 0. 21 artifacts, acquisitionMethod capture. After vision, GET `classifyStatus=written` on 21/21. Unclassified and refused absent on this job. Classified-only does not close the loop.
+
+## GROUND-TRUTH (2026-08-28T23:05Z)
+
+- Data planner + steering admin approved the narrower cortex wire card. Rejected status overloading, skip persistence on the artifact, and a production synthetic refuse. Decision `_decisions/2026-08-28_p85_classify_wire_not_status.md`.
+- Item 8 bar: rows per run by type (met on `6eb07368`) and two refuse fixtures (unit tests). Three-state-on-one-job dropped.
+- Amendment vs code: grantor-in-type writes unclassified at `89e539f6`, does not refuse.
+- Item 18 wrongly homed; does not block the wire. `sourceAdapter` contract enum is R1..R5, not `records-request-v1`; parse-before-insert and keep-that-string are two substrate items.
+
+## GROUND-TRUTH (2026-08-28T23:32Z)
+
+- LDT #535 MERGED `68553d3d`. Cortex `cortex-api-00651-tor` @100% tag canary, digest `sha256:0008ca07` (image tag `68553d3d`, not latest). Worker still `records-request-worker-00017-ksk` @100%.
+- Re-GET `6eb07368`: 21 artifacts. MEMORANDUM is `written` / `unclassified` / `MEMORANDUM`. DEED 10 written/deed/DEED. PARTIAL RELEASE written/release. EASEMENT 7 and CONSERVATION EASEMENT 2 are written with documentKind null and source label on the wire. No skipped. No refuse on this job.
+- Wire card closed. Item 8 live bar (rows by type + two unit refuse fixtures) holds. Three-state-on-one-job not adopted.
+
+## OPEN (2026-08-28T23:32Z)
+
+- Next card, not this one: vocabulary-backed unclassified vs unresolved; sourceDocumentType on every classify route; contract parse (enum vs R1 are two items); capture-coverage marker; restamp the 21; optional ASSIGNMENT as first-class instrumentType; optional staging-only refuse POST.
+- Item 18 still wrongly homed. Does not block.
+
+
 
 ## GROUND-TRUTH (2026-08-28T19:20Z)
 

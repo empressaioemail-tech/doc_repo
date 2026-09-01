@@ -16,6 +16,7 @@ related_canonical:
   - _inbox/2026-08-31_p2_juris_explain_c.md
   - _inbox/2026-08-31_p2_juris_cities_ok_npoints.md
   - _inbox/2026-08-31_p2_juris_austin_present_vs_reached.md
+  - _decisions/2026-08-31_p2_juris_baseline_discarded.md
 ---
 
 ## Decision
@@ -82,11 +83,13 @@ does not prescribe the next plan.
 
 ## Reversal criteria
 
-A timed run of the join-rewrite `01` that emits TOTALS and
-reconciles 357,269 / 624,141 / 981,410. A miss still names the
-join. The 05 plan gate alone does not reverse this. A
-single-county emit is a partition, not a measured statewide
-TOTALS.
+A timed run of the join-rewrite `01` that emits six-county TOTALS
+under the declared method (county equality, 1e-8, jsonb rings).
+The 08-30 split 357,269 / 624,141 is discarded
+(`_decisions/2026-08-31_p2_juris_baseline_discarded.md`); a miss
+versus those numbers is not join-wrong. The 05 plan gate alone
+does not reverse this. A single-county emit is a partition, not
+a measured statewide TOTALS.
 
 ## Dependencies
 

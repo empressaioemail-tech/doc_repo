@@ -65,10 +65,12 @@ Tile feature-state fill is supposed to demote after seal. Confirm by reading the
 
 - Patch Photon labels, `compactEnvelopeAddressQuery`, or `trustedRooftop` unless this peel regresses identity
 - Take situs or mesh `hits[0]`
-- Work pricing / A2 / Stripe
+- Open `fix/pe-pricing-a2` or any Reports branch in this tree
 - Tile rebake
 - New map architecture
 - Claim hover is still the leftover
+
+Lane 2 is parked, not dropped. A2 lives uncommitted on `P:/seat-worktrees/property/hauska-map` `fix/pe-pricing-a2` (behind main by 4 as of 2026-08-24). After this peel merges to main, rebase that branch, then operator visual, then deploy. Reports Option D (`Smart Site Reports Dock - Option D.dc.html`) starts only after that visual. Old report branches (`feat/pe-workbench-verdict-reports`, `fix/pe-report-panels-*`) are not that card. Your close must name the A2 rebase as `leave_behind`. Pin: `_inbox/2026-08-24_lane2_parked_after_paint.md`.
 
 ## Files
 

@@ -1,0 +1,186 @@
+{
+  "lane": "s8-land-use-surface",
+  "artifact": "cp1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T21:20:00Z",
+  "planRows": ["P-08"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["5"],
+  "dispatch": "_dispatches/2026-08-21_s8-land-use-surface_dispatch.md",
+  "repo": "hauska-map",
+  "worktree": "P:/hauska-map-worktrees/s8-land-use-surface",
+  "branch": "s8-land-use-surface",
+  "snapshot": {
+    "hauskaMapWorktree": "P:/hauska-map-worktrees/s8-land-use-surface",
+    "hauskaMapBranch": "s8-land-use-surface",
+    "hauskaMapHead": "0a5ae0e05e8a2d2c1c4367185cdf7c315127d01a",
+    "hauskaMapTracks": "origin/main (dual-grammar PR 175 already on this SHA)",
+    "docRepo": "P:/doc_repo main 83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "seat": "property occupancy; isolated s8 worktree only; one-level executor under integration planner",
+    "forbiddenCheckout": [
+      "P:/legacy-design-tools",
+      "P:/seat-worktrees/property/hauska-map",
+      "P:/hauska-map default clone"
+    ],
+    "docRepoWrites": "_inbox JSON only"
+  },
+
+  "occupancyConfirmed": true,
+  "expectedHeadMatched": true,
+
+  "missionPremise": "WDLL item 5 leftover: land-use inspect still cad-roll retiredStore. Cortex lane s7 adds JSON ROOT sibling landUseFact from land-use-fact atoms (same shape family as floodHazardFact: state present|absent|refused, landUseCode/landUseLabel, source=land-use-fact). PE mergeBakedBaseFacts currently copies baked facets.baseFacts.landUse only. Inspect resolver landUseFact() reads that cad-roll field. Cortex may still be undeployed: implement against fixtures. Source: _dispatches/2026-08-21_s8-land-use-surface_dispatch.md, _inbox/2026-08-21_sellable_WDLL.md finish item 5, _inbox/2026-08-21_s2-family-scout_close.json land-use-fact row, _dispatches/2026-08-21_s7-land-use-inspect_dispatch.md present payload.",
+
+  "completionPredicate": "mergeBakedBaseFacts copies a fixture landUseFact from the cortex JSON ROOT onto the atom-chain payload and does not copy cad-roll baseFacts.landUse onto that field. A missing field stays missing (no invented land-use code). If merge returns early because facets are missing, landUseFact still attaches when the root carries it. Cad-roll landUse continues to copy onto facets.baseFacts this pass (acreage/situs must not regress). Inspect Land use prefers landUseFact when present (landUseCode/landUseLabel, provenance source=land-use-fact). Cad-roll-only bake without landUseFact does not claim the atom (retiredStore). Typed absence / named refusal stays visible. fetchCortexFacetsWithAlias treats missing landUseFact like missing floodHazardFact (try alias). Echo REQUESTED parcelNodeId. Diff uncommitted. No deploy.",
+
+  "scopeBasis": "PE BFF copy plus inspect Land use row / resolver. Cortex owns the atom read (s7). Live inspect is atom-chain-warm so mergeBakedBaseFacts is the live path. Do not adopt baked facets.baseFacts.landUse as landUseFact. Do not invent a zone or land-use code. Do not wait for s7 deploy. compare-facts / deriveBakedCardModel cad-roll landUse left as retiredStore for that surface. No new ingest.",
+
+  "filesWillTouch": [
+    "apps/property-explorer/api/_lib/atom-chain-to-facets.ts",
+    "apps/property-explorer/src/lib/atom-chain-to-facets.test.ts",
+    "apps/property-explorer/api/_lib/pe-property-atoms.ts",
+    "apps/property-explorer/src/lib/pe-property-atoms.test.ts",
+    "apps/property-explorer/src/lib/fact-sheet-resolver.ts",
+    "apps/property-explorer/src/lib/fact-sheet-resolver.test.ts",
+    "apps/property-explorer/src/lib/sheet-to-card-model.test.ts",
+    "apps/property-explorer/src/browse/InspectCard.test.tsx"
+  ],
+
+  "fieldContract": {
+    "name": "landUseFact",
+    "placement": "JSON ROOT sibling of facets / tier2 / floodHazardFact, copied root-to-root onto PeBakedFacetsResponse",
+    "shapeFamily": "floodHazardFact",
+    "typeGuard": "plain object whose state is present | absent | refused. Reject null, strings, arrays, and cad-roll {code, description} objects parked on the root.",
+    "present": {
+      "state": "present",
+      "source": "land-use-fact",
+      "landUseCode": "string from atom body (not cad-roll code)",
+      "landUseLabel": "string or null (not cad-roll description renamed onto this field)"
+    },
+    "whenMissing": "leave the key absent; do not invent a code; do not set undefined; do not copy baseFacts.landUse onto landUseFact",
+    "earlyReturn": "if facets are missing, still attach root landUseFact when present; identity-return only when neither facets nor a valid root flood/land-use fact exist",
+    "never": [
+      "facets.baseFacts.landUse as landUseFact",
+      "cad-roll code/description renamed onto landUseFact",
+      "invented land-use code",
+      "waiting for s7 deploy"
+    ],
+    "retiredStoreThisPass": "keep copying baked landUse onto facets.baseFacts so acreage/situs do not regress. Land use DISPLAY must not prefer cad-roll once landUseFact is present."
+  },
+
+  "design": {
+    "livePath": "PROPERTY_ATOM_PATH=1 → fetchAtomChainWithAlias + fetchCortexFacetsWithAlias + mergeBakedBaseFacts(adapted, cortexBody) + echoRequestedParcelNodeId. Cortex-off strip already spreads the root.",
+    "copyRule": {
+      "from": "cortex JSON ROOT.landUseFact only",
+      "onto": "PeBakedFacetsResponse.landUseFact (same root sibling, not inside facets)",
+      "picker": "landUseFactFromCortexRoot parallel to floodHazardFactFromCortexRoot",
+      "cadRollBake": "existing merge of baseFacts.landUse / acreage / situs unchanged"
+    },
+    "alias": {
+      "rule": "fetchCortexFacetsWithAlias retries when floodHazardFact OR landUseFact is missing on a 2xx (or on 404), same pair helper. Return alias only when it fills a root-fact gap. Echo stays the REQUESTED parcelNodeId.",
+      "whyOr": "After PR 175, padded gold already carries floodHazardFact. A flood-only retry condition would starve landUseFact alias."
+    },
+    "resolver": {
+      "whenPresent": "sheet.landUse from landUseCode / landUseLabel; provenance.source = land-use-fact (never cad-roll)",
+      "whenRefused": "unresolved with named code (atom-miss / atoms-store-not-configured); row stays visible",
+      "whenTypedAbsence": "absent-covered with absence.reason/kind; row stays visible",
+      "whenFieldMissing": "keep existing cad-roll baked path labelled retiredStore in tests; do not claim the atom"
+    },
+    "card": {
+      "path": "InspectCard uses bakedCardModelFromSheet(sheet). Preferring landUseFact in the resolver is the inspect Land use row.",
+      "present": "landUseCode — landUseLabel (or code alone if label null)",
+      "gold": "48021:34137 fixture landUseCode from landUseFact source=land-use-fact"
+    }
+  },
+
+  "threeQuestionGate": {
+    "control": "vitest on mergeBakedBaseFacts landUseFact copy + resolver preference + cortex alias",
+    "whatExecutesIt": "pnpm test of the named files under apps/property-explorer (vitest run)",
+    "whatTriggersIt": "local this lane; planner PR CI after review",
+    "whatFailsWhenViolated": "test fail if merge copies cad-roll baseFacts.landUse onto landUseFact, invents a code on a missing field, drops a root fact on the no-facets early return, resolver claims source=land-use-fact from a cad-roll-only bake, or padded missing landUseFact does not alias integer root",
+    "whatBypassesIt": "undeployed s7 cortex (field absent on live GET until cortex serves landUseFact AND this PE diff is committed/deployed). deriveBakedCardModel / compare-facts still read cad-roll baseFacts.landUse."
+  },
+
+  "predictions": {
+    "mergeCopiesRootFact": {
+      "expect": "merged.landUseFact === fixture (state=present landUseCode=A1 source=land-use-fact)",
+      "falsifier": "field absent after merge, or landUseCode not A1, or source cad-roll"
+    },
+    "mergeDoesNotCopyCadRollOntoLandUseFact": {
+      "expect": "'landUseFact' not in merged when only facets.baseFacts.landUse is present, even if that bake is A1; facets.baseFacts.landUse still copied (retiredStore bake kept)",
+      "falsifier": "any landUseFact whose code/description came from baseFacts.landUse"
+    },
+    "missingStaysMissing": {
+      "expect": "'landUseFact' in merged === false on today's bakedCortexBody",
+      "falsifier": "key present with any value including null"
+    },
+    "earlyReturnStillAttaches": {
+      "expect": "mergeBakedBaseFacts(adapted, { landUseFact: fixture }) attaches the fact even with no facets key",
+      "falsifier": "returns adapted unchanged (same reference or missing field)"
+    },
+    "resolverPrefersAtom": {
+      "expect": "present gold uses landUseCode from landUseFact with source=land-use-fact even when cad-roll bake is also on the wire",
+      "falsifier": "provenance.source is cad-roll, or value is the cad-roll code when they differ"
+    },
+    "cadRollOnlyDoesNotClaimAtom": {
+      "expect": "cad-roll-only bake without landUseFact keeps source=cad-roll (retiredStore); does not claim land-use-fact",
+      "falsifier": "sheet.landUse.provenance.source === land-use-fact"
+    },
+    "aliasPaddedMissingLandUseFact": {
+      "expect": "padded cortex missing landUseFact (even if floodHazardFact is already present) aliases integer root landUseFact; echo REQUESTED padded parcelNodeId",
+      "falsifier": "landUseFact absent on padded inspect payload while integer fixture carried it"
+    }
+  },
+
+  "whatIWillViolateToProveTests": [
+    {
+      "violation": "temporarily make withLandUseFact copy bakedBody.facets.baseFacts.landUse onto landUseFact",
+      "expectedFail": "does not copy cad-roll baseFacts.landUse onto landUseFact",
+      "restore": true
+    },
+    {
+      "violation": "temporarily skip landUseFact alias so fetchCortexFacetsWithAlias only retries on missing floodHazardFact",
+      "expectedFail": "padded cortex missing landUseFact aliases integer root even when floodHazardFact is already on the padded body",
+      "restore": true
+    }
+  ],
+
+  "adversarialReview": [
+    {
+      "objection": "Rename cad-roll baseFacts.landUse.code to landUseCode and call that landUseFact.",
+      "response": "Dispatch forbids adopting baked facets.baseFacts.landUse as landUseFact. Cortex s7 writes a ROOT sibling from land-use-fact atoms. Copying the bake would look like a merge win while remaining starved of the atom.",
+      "disposition": "ROOT only. Cad-roll stays on baseFacts this pass."
+    },
+    {
+      "objection": "Hide the Land use row when landUseFact is missing, matching Flood.",
+      "response": "Dispatch allows hide OR keep baked path labelled retiredStore. Hiding would regress acreage-adjacent inspect while s7 is undeployed. Cad-roll fallback is honest if tests refuse to claim the atom.",
+      "disposition": "Keep baked path as retiredStore when the field is missing. Prefer landUseFact when present."
+    },
+    {
+      "objection": "Retry cortex alias only when floodHazardFact is missing (current s6 helper).",
+      "response": "PR 175 already puts floodHazardFact on padded gold. A flood-only retry never fetches integer landUseFact. Treat missing landUseFact the same way as missing floodHazardFact.",
+      "disposition": "OR the missing-field retry; return alias only when it fills a gap."
+    }
+  ],
+
+  "secondMechanism": {
+    "claim": "Atom-chain already carries land-use-fact in chain.atoms so merge is unnecessary.",
+    "rejectedBecause": "adaptAtomChainToBakedFacets hardcodes facetCoverage.landUse=false and landUse null (S2 scout). Live inspect shows cad-roll via mergeBakedBaseFacts. S7 puts landUseFact on the cortex JSON ROOT, which is the flood copy pattern this card is ordered to follow."
+  },
+
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no gcloud run",
+    "no gh workflow run",
+    "no atoms --apply",
+    "no Harris PBF",
+    "no re-key the store",
+    "no mint absence",
+    "no mud-pid / texas-rrc",
+    "P:/legacy-design-tools not touched",
+    "P:/seat-worktrees/property/hauska-map not occupied"
+  ]
+}

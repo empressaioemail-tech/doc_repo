@@ -1,0 +1,160 @@
+﻿diff --git a/artifacts/api-server/src/lib/recordsRequestJobWorker.ts b/artifacts/api-server/src/lib/recordsRequestJobWorker.ts
+index 34f17ddb..dbe4f66f 100644
+--- a/artifacts/api-server/src/lib/recordsRequestJobWorker.ts
++++ b/artifacts/api-server/src/lib/recordsRequestJobWorker.ts
+@@ -124,6 +124,25 @@ export async function listRecordsRequestJobsForEngagement(
+     .orderBy(desc(recordsRequestJobs.createdAt));
+ }
+ 
++/** Cross-parcel inbox for PE My reports ΓÇö latest jobs for this user. */
++export async function listRecordsRequestJobsForUser(
++  userId: string,
++  limit = 25,
++): Promise<RecordsRequestJob[]> {
++  return db
++    .select()
++    .from(recordsRequestJobs)
++    .where(eq(recordsRequestJobs.userId, userId))
++    .orderBy(desc(recordsRequestJobs.updatedAt))
++    .limit(limit);
++}
++
++export function parcelNodeIdFromParcelKey(parcelKey: string): string | null {
++  if (!parcelKey.startsWith("apn:")) return null;
++  const rest = parcelKey.slice("apn:".length).trim();
++  return rest.length > 0 ? rest : null;
++}
++
+ export function recordsRequestJobToWire(job: RecordsRequestJob): Record<string, unknown> {
+   return {
+     jobId: job.id,
+diff --git a/artifacts/api-server/src/lib/recordsRequestService.ts b/artifacts/api-server/src/lib/recordsRequestService.ts
+index 06f2f66d..ad2e3471 100644
+--- a/artifacts/api-server/src/lib/recordsRequestService.ts
++++ b/artifacts/api-server/src/lib/recordsRequestService.ts
+@@ -10,6 +10,8 @@ import { resolveParcelInput } from "./siteTopographyIngest";
+ import {
+   enqueueRecordsRequestJob,
+   listRecordsRequestJobsForEngagement,
++  listRecordsRequestJobsForUser,
++  parcelNodeIdFromParcelKey,
+   recordsRequestJobToWire,
+ } from "./recordsRequestJobWorker";
+ import { resolveRecordsSearchTerms } from "./recordsSearchTerms";
+@@ -184,3 +186,26 @@ export async function listRecordsRequestJobsWire(
+     jobs: jobs.map(recordsRequestJobToWire),
+   };
+ }
++
++export async function listRecordsRequestInboxWire(
++  userId: string,
++): Promise<Record<string, unknown>> {
++  const jobs = await listRecordsRequestJobsForUser(userId, 25);
++  return {
++    jobs: jobs.map((job) => {
++      const wire = recordsRequestJobToWire(job);
++      const scope =
++        job.scopeSearched && typeof job.scopeSearched === "object"
++          ? (job.scopeSearched as Record<string, unknown>)
++          : null;
++      const indexHits = scope?.indexHits;
++      return {
++        ...wire,
++        parcelNodeId: parcelNodeIdFromParcelKey(job.parcelKey),
++        finishReason:
++          typeof scope?.finishReason === "string" ? scope.finishReason : null,
++        indexHitsCount: Array.isArray(indexHits) ? indexHits.length : 0,
++      };
++    }),
++  };
++}
+diff --git a/artifacts/api-server/src/routes/__tests__/propertyExplorerRecordsRequest.test.ts b/artifacts/api-server/src/routes/__tests__/propertyExplorerRecordsRequest.test.ts
+index ebb49a0a..2133ab0c 100644
+--- a/artifacts/api-server/src/routes/__tests__/propertyExplorerRecordsRequest.test.ts
++++ b/artifacts/api-server/src/routes/__tests__/propertyExplorerRecordsRequest.test.ts
+@@ -15,6 +15,7 @@ const mockEnsure = vi.fn();
+ const mockFind = vi.fn();
+ const mockCreateJob = vi.fn();
+ const mockListJobs = vi.fn();
++const mockListInbox = vi.fn();
+ const mockResolveUser = vi.fn();
+ 
+ vi.mock("@workspace/db", () => ({
+@@ -45,6 +46,7 @@ vi.mock("../../lib/peRecordsEngagement", () => ({
+ vi.mock("../../lib/recordsRequestService", () => ({
+   createRecordsRequestJob: (...args: unknown[]) => mockCreateJob(...args),
+   listRecordsRequestJobsWire: (...args: unknown[]) => mockListJobs(...args),
++  listRecordsRequestInboxWire: (...args: unknown[]) => mockListInbox(...args),
+ }));
+ 
+ const propertyExplorerRouter = (await import("../propertyExplorer")).default;
+@@ -85,6 +87,18 @@ beforeEach(() => {
+     engagementId: ENGAGEMENT_ID,
+     jobs: [{ jobId: JOB_ID, status: "queued" }],
+   });
++  mockListInbox.mockResolvedValue({
++    jobs: [
++      {
++        jobId: JOB_ID,
++        jobStatus: "running",
++        parcelNodeId: PARCEL_NODE,
++        indexHitsCount: 0,
++        finishReason: null,
++        updatedAt: "2026-08-27T12:00:00.000Z",
++      },
++    ],
++  });
+ });
+ 
+ describe("POST /property-explorer/v1/records-request", () => {
+@@ -170,3 +184,17 @@ describe("GET /property-explorer/v1/records-request", () => {
+     expect(mockListJobs).not.toHaveBeenCalled();
+   });
+ });
++
++describe("GET /property-explorer/v1/records-request/inbox", () => {
++  it("lists recent jobs across parcels for the signed-in user", async () => {
++    const app = buildApp();
++    const res = await request(app).get(
++      "/api/property-explorer/v1/records-request/inbox",
++    );
++
++    expect(res.status).toBe(200);
++    expect(res.body.jobs).toHaveLength(1);
++    expect(res.body.jobs[0].parcelNodeId).toBe(PARCEL_NODE);
++    expect(mockListInbox).toHaveBeenCalledWith(USER_ID);
++  });
++});
+diff --git a/artifacts/api-server/src/routes/propertyExplorer.ts b/artifacts/api-server/src/routes/propertyExplorer.ts
+index 02f85f91..31e2837e 100644
+--- a/artifacts/api-server/src/routes/propertyExplorer.ts
++++ b/artifacts/api-server/src/routes/propertyExplorer.ts
+@@ -48,6 +48,7 @@ import {
+ } from "../lib/peRecordsEngagement";
+ import {
+   createRecordsRequestJob,
++  listRecordsRequestInboxWire,
+   listRecordsRequestJobsWire,
+ } from "../lib/recordsRequestService";
+ import {
+@@ -1304,6 +1305,20 @@ router.get(
+   },
+ );
+ 
++router.get(
++  "/property-explorer/v1/records-request/inbox",
++  requirePeAuthenticated,
++  async (req: Request, res: Response) => {
++    const scope = ownerScope(req);
++    if (!scope) {
++      res.status(401).json({ error: "authentication_required" });
++      return;
++    }
++    const body = await listRecordsRequestInboxWire(scope.ownerUserId);
++    res.status(200).json(body);
++  },
++);
++
+ const RecordsRequestJobIdParamsSchema = z.object({
+   jobId: z.string().uuid(),
+ });

@@ -1,0 +1,92 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial review",
+  "lane": "p98-server",
+  "planRows": ["P-98"],
+  "repo": "legacy-design-tools",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+    "branch": "feat/p98-activation-events",
+    "baseCommit": "394424f2520ecd32074470b1bdc4c798bfcdff7c",
+    "declaredAt": "2026-08-31",
+    "workingTree": "dirty by design; this lane produces a diff and does not commit"
+  },
+
+  "builtSoFar": [
+    "lib/db/src/schema/peActivationEvents.ts (new drizzle table)",
+    "lib/db/src/schema/index.ts (export added)",
+    "lib/db/drizzle/0091_pe_activation_events.sql (new migration)",
+    "lib/db/src/__tests__/__fixtures__/schema.sql.template (HAND-PATCHED, 4 blocks)",
+    "lib/db/src/__tests__/integration/schema.integration.test.ts (table list)",
+    "artifacts/api-server/src/__tests__/setup.ts (TRUNCATE list)",
+    "artifacts/api-server/src/lib/peActivationEventsValidate.ts (pure validator)",
+    "artifacts/api-server/src/lib/peActivationEvents.ts (writer)",
+    "artifacts/api-server/src/lib/peUnlocksRead.ts (account-wide unlock read)",
+    "artifacts/api-server/src/routes/propertyExplorer.ts (2 routes appended)",
+    "artifacts/api-server/src/lib/__tests__/peActivationEventsValidate.test.ts (40 tests, no DB)"
+  ],
+
+  "verifiedByViolation": {
+    "instrument": "npx vitest run src/lib/__tests__/peActivationEventsValidate.test.ts in artifacts/api-server",
+    "why_this_file_carries_the_evidence": "The validator imports no database, so it EXECUTES on this machine. The 163 DB-backed api-server files cannot run locally (DATABASE_URL unset), and refusal evidence only CI can run is evidence nobody reads before merging. Each violation was injected into the real source file, the suite was run, then the file was restored and its md5 re-checked against the pre-violation hash 188a908498273b6c340e7882aa1c7f7e.",
+    "baseline": "40 passed / 40",
+    "runs": [
+      {
+        "violation": "A — isActionId widened to `typeof v === 'string'`, so any string is an accepted action id.",
+        "result": "1 file failed, 6 tests failed / 40",
+        "whichFailed": "Exactly the six STRING-valued invalid ids (buy_now, connect-claude, Connect_Claude, ' connect_claude ', '', unknown). The number and null cases still refused on the typeof arm, which is why 6 and not 8. The count matches the prediction.",
+        "proves": "The action_id closed-set refusal is real and not vacuous."
+      },
+      {
+        "violation": "B — `let surface: string | null = null` changed to `= \"api\"`, reproducing the gtm_events.source_surface default.",
+        "result": "1 file failed, 2 tests failed / 40",
+        "whichFailed": "'writes null when surface is absent' and 'writes null when surface is explicitly null'.",
+        "proves": "Absent-surface is asserted as UNMEASURED and a fabricated attribution is caught."
+      },
+      {
+        "violation": "C — the event_type refusal branch replaced with a silent `b.event_type = \"shown\"` default.",
+        "result": "1 file failed, 12 tests failed / 40",
+        "whichFailed": "Every event_type refusal case plus the absent-event_type case plus the both-invalid ordering case.",
+        "proves": "The exact defect the dispatch names — defaulting instead of refusing — fails loudly."
+      }
+    ],
+    "restored": "md5 188a908498273b6c340e7882aa1c7f7e re-confirmed after the last violation; 40/40 green again."
+  },
+
+  "findingsSinceCp1": [
+    {
+      "finding": "A local PostgreSQL 18.3 (psql and pg_dump on PATH) exists on this machine, but the `postgresql-x64-18` service is Stopped AND StartType=Disabled. Docker Desktop's daemon is also not running.",
+      "disposition": "DECLINED to enable or start either. A disabled service is a deliberate operator setting, and DEV_PROCESS 5.4 makes remediation of operator state a proposal, not a lane action. Consequence, stated plainly rather than worked around: the hand-patched schema fixture is NOT proven locally, and CI's fixture-drift check is the instrument that will prove or refute it.",
+      "notAnExcuse": "The dispatch anticipated exactly this and instructed the hand-patch path. The patch was written against the committed fixture's own rendering conventions, calibrated from real pg_dump output in that file rather than from memory of pg_dump's behaviour."
+    },
+    {
+      "finding": "The api-server local baseline is 163 test FILES failing to collect with `DATABASE_URL must be set` thrown from lib/db/src/index.ts:8, while 1397 individual tests pass and 0 individual tests fail.",
+      "disposition": "Pre-existing and environmental, not caused by this lane. The throw is at the Pool construction in lib/db's entry module, which this lane does not touch; the new schema file is a leaf import. CI provisions a database and runs these. Recorded so the after-count is compared against the right baseline."
+    },
+    {
+      "finding": "pg_dump renders drizzle `IN (...)` as `= ANY (ARRAY[...])`, and sorts table constraints, index blocks and FK blocks alphabetically by name.",
+      "disposition": "Calibrated from the committed fixture itself (pe_saved_properties_crm_status_chk's drizzle source vs its dumped form; the county_facet_coverage constraint block ordering). The four hand-patched blocks were placed alphabetically on that evidence, not on assumption."
+    }
+  ],
+
+  "adversarialReviewOfOwnWork": [
+    {
+      "challenge": "The 40 passing tests could be passing because the validator is permissive rather than because it is correct.",
+      "answer": "Falsifier pre-registered and run: three injected defects, each predicted to fail a specific named subset. All three failed the predicted subset with the predicted count. A convenient green was not accepted as a result."
+    },
+    {
+      "challenge": "The route could refuse for a different reason than the validator (wiring not proven locally).",
+      "answer": "TRUE and declared. The route delegates to parseActivationEvent and returns 400 with the refusal body; that wiring is covered by the DB-backed route suites, which run in CI only. This is stated in the close as CI-proven rather than locally proven, not glossed."
+    },
+    {
+      "challenge": "A DDL check on event_type plus a route check on action_id is an asymmetry that could read as an oversight.",
+      "answer": "Deliberate, and the reasoning is written into both the migration header and the schema file rather than left in a checkpoint. Event grammar is closed and stable, so freezing it in DDL catches writers the compiler never sees. The ladder vocabulary grows, and a DDL value list would silently drop a new rung's events because the client drops failures on purpose. The DDL check that IS applied to action_id is the permanent one: it may not be the empty string, the value a plain NOT NULL admits."
+    }
+  ],
+
+  "remaining": [
+    "Two DB-backed route test files (activation-events POST, entitlement/unlocks GET) following the pe-team-roster.test.ts pattern.",
+    "Root npx tsc --build re-run after the test files land.",
+    "Full artifacts/api-server and artifacts/smartsite-mcp vitest runs with before/after counts."
+  ]
+}

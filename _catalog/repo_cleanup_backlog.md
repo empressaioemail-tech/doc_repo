@@ -131,25 +131,40 @@ the catalog-thesis check first (the surface is Smart Site's property substrate, 
 from that vocabulary). Table renames need migrations plus a compatibility window; module renames are
 mechanical but must land as one atomic change with the divergence-test discipline of DEV_PROCESS 2.4.
 
-## Item 26 — P1 — CI never executes `.sql` migration files (found by lane A, 2026-08-15)
+## Item 26 — P2 — merge-time CI cannot execute `.sql` migrations (CORRECTED 2026-08-15)
 
-**Process-level gap. Any lane can misread green CI as "the migration works."**
+**This item was filed on a wrong premise. The corrected version is narrower and still real.**
 
-Planner-verified at source: no `drizzle-kit` step exists in any `legacy-design-tools` workflow. CI
-builds its test database from the drizzle schema; migrations apply ONLY through the `run-migrations`
-job in `.github/workflows/cloud-run-deploy.yml`, against `_schema_migrations` tracking.
+**What the planner filed:** "CI never executes `.sql` migration files." That was concluded from a
+negative grep for `drizzle-kit` and is FALSE — the conclusion did not follow from the evidence, and it
+is the "an empty result is not an absence" error that DEV_PROCESS names. The lane A planner caught it.
 
-So green CI proves the drizzle schema, the schema fixture, and the pushed test database AGREE. It does
-NOT prove that `lib/db/drizzle/NNNN_*.sql` EXECUTES. Those are different claims, and the second is the
-one a reviewer assumes when they see a merged migration with a green check.
+**What is actually true**, verified at source in `.github/workflows/cloud-run-deploy.yml`:
 
-This is the merged-is-not-applied trap generalized from a data question to a schema question. Lane A
-caught it because its WDLL card retained an applied-not-merely-merged check on purpose; a lane without
-that check would have called the row closed.
+- A migration runner EXISTS: the `Plan + apply pending migrations` step runs
+  `pnpm --filter @workspace/db run migrate:prod`, applying pending `lib/db/drizzle/*.sql` against
+  `_schema_migrations` tracking, echoing the pending list before and the applied state after. The repo
+  deliberately avoids `drizzle-kit push` in favour of this hand-rolled runner, which is why the grep
+  missed it.
+- That job is `workflow_dispatch`-gated and **unreachable from a merge**, by explicit design. The
+  workflow header carries it as a HARD CONSTRAINT: *"Traffic shifts and DB migrations are NEVER coupled
+  to `push`."*
 
-**Proposed disposition:** a CI step that runs pending `.sql` migrations against a scratch database and
-fails on error, so agreement and execution stop being conflated. Cheap, and it converts a
-remembered discipline into a hook-shaped control per DEV_PROCESS rule 0.
+**The residual gap, which is the real item:** merge-time CI builds its test database from the drizzle
+schema, so green CI proves the drizzle schema, the schema fixture and the pushed test database AGREE —
+it still does NOT prove a given `.sql` file executes. A reviewer seeing a merged migration with a green
+check can still read execution into agreement. That conflation is what to close.
+
+**Two consequences of the correction:**
+
+1. The gating decision is sound as it stands. Migrations are deliberately an operator action, not a
+   merge side effect, and that is the safer posture — not a defect.
+2. **The apply mechanism for the held `0078` already exists** as a one-input `workflow_dispatch` action.
+   Applying it is a deliberate operator step, not a build.
+
+**Proposed disposition:** a merge-time CI step that runs pending `.sql` migrations against a scratch
+database and fails on error — proving executability without touching any deployment database. Cheap,
+and it separates "the schema agrees" from "the migration runs" permanently.
 
 ## Item 27 — P2 — `legacy-design-tools` consumes a VENDORED atom-contract tarball, not the published package
 

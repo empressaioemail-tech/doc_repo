@@ -101,8 +101,12 @@ enforcement gap is stated here rather than silently assumed closed.
 
 ## Amendments
 
-(none; frozen at CP1 on 2026-08-15)
+- 2026-08-15: item 1 identity string. The city-file FIPS shape `smartfile:<jurisdictionFips>:<docSlug>` is reversed. The node class is the Smart Files MODULE, keyed `smartfile:<scopeType>:<scopeId>:<docSlug>` (OPS-17 A-015; `_decisions/2026-08-15_smart_files_module_identity.md`). Reason: operator correction that Smart Files is a spine module used across SmartCity, Smart Site, Mox/custom, and a la carte, not a city-only store. The check (a `_decisions/` record cited by the schema PR; no brokerage reconstruction) is unchanged. The three-table split and items 2-5 are unchanged.
 
 ## Finish card (graded at close)
 
-(not graded; build not started)
+1. met: entityId declared as `smartfile:<scopeType>:<scopeId>:<docSlug>` in `_decisions/2026-08-15_smart_files_module_identity.md` and in `smart-file.contract.ts` on main `015b15d6` (PR #432). Frozen-card item 1 amended 2026-08-15 (FIPS-only reversed). Brokerage absent from the PR diff.
+2. met: live schema on cortex-prod `fancy-fire-06136146` / `neondb` at 2026-08-15T14:27Z. `_schema_migrations` has 0078 (14:27:09.389Z), 0079 (14:27:10.242Z), 0080 (14:27:10.446Z). `smart_file_documents` has `updated_at` NOT NULL, `access_policy` NOT NULL, `scope_type`/`scope_id` NOT NULL, `jurisdiction_fips` nullable. `smart_file_versions` has `version` and `content_cid` NOT NULL. Apply run https://github.com/empressaioemail-tech/legacy-design-tools/actions/runs/31889907009 conclusion success. CI fixture-drift on PR #432 SUCCESS.
+3. met: CI Test job executed `smartFiles.integration.test.ts` (15 tests, 15864ms) including store-once on all three scopes. Not skipped.
+4. met: same CI suite revise-once probes executed (not skip).
+5. met at store path: G-14 STALE both-directions inherited; G-34 absence STALE 15 tests 15952ms executed. Residual G-53 serving-path probe unchanged. Serving cortex-api revision does not yet include #432.

@@ -1,7 +1,7 @@
 ---
 id: 2026-08-17_g75_shell_mounts_motion
 title: G-75 Dashboards shell, mounts and map motion
-status: active
+status: closed
 last_updated: 2026-08-17
 applies_to: smartcity
 owner: nick
@@ -20,7 +20,7 @@ related:
 
 Chrome and mount pass on `template-city`. No feed, no adapter grant, no city deploy, no atoms apply. Live Bastrop stays on `smartcityos.io`.
 
-PR [13](https://github.com/empressaioemail-tech/smartcity-dashboards/pull/13) on branch `g75/shell-mounts-motion`, head `d2a63be`. CI check-run conclusion `success`. Not merged. Not deployed. Planner owns both.
+PR [13](https://github.com/empressaioemail-tech/smartcity-dashboards/pull/13) on branch `g75/shell-mounts-motion`, head `d2a63be`. CI check-run conclusion `success`. Squash-merged `34b307b`. Serving `smartcity-dashboards-00013-vkl` @100%. Planner merged and deployed.
 
 Identity regression check on serving `00012-9dk` before any work: `Bastrop`, `Chestnut`, `1311`, `bastrop-tx`, `municodemeetings`, `permitflow`, `CitizenConnect`, `leaflet`, `pipedrive`, `stripe.com` all zero on the served HTML, and the compose API returns `meetings.status=empty` with `recordCount=0`. G-74 held. Nothing was re-added.
 

@@ -9,7 +9,7 @@ supersedes: _inbox/2026-08-28_smartsite_mcp_app_WDLL.md items 12, 13, 14, 16, 21
 fixtures: _inbox/2026-08-30_p91_fixture_set_bastrop.md
 serving_at_draft: smartsite-mcp p557 (00063-rej), cortex-api p542 (00666-cuf)
 serving_built: smartsite-mcp p558 (smartsite-mcp-00065-siv, digest sha256:1d119501...) and cortex-api p543 (cortex-api-00668-cos, digest sha256:679683fd...), both at 100% by field name 2026-08-30; records _inbox/2026-08-30_p91_p558_deploy.md and _inbox/2026-08-30_p91_p543_deploy.md
-decisions_carried: _decisions/2026-08-29_p91_open_stays_a_turn.md; _decisions/2026-08-28_smartsite_mcp_app_screen_save_decouple.md; _decisions/2026-08-28_p91_o1_envelope_xray_must_refuse.md
+decisions_carried: _decisions/2026-08-29_p91_open_stays_a_turn.md; _decisions/2026-08-28_smartsite_mcp_app_screen_save_decouple.md; _decisions/2026-08-28_p91_o1_envelope_xray_must_refuse.md; _decisions/2026-08-30_honesty_contract_is_silence_legible.md
 owner: property seat (product code and cortex); planner owns this card, the walks, and deploys
 ---
 
@@ -168,6 +168,8 @@ H2. **Payload ceiling measured (scope O6).** One measurement of the largest sing
 
 X1. **Reciprocity sweep (scope 10, v1 item 23).** Every shared boundary edge is two assertions that must agree: same length, reciprocal bearing, neighbor pointing back. Run as a county sweep from the store, producing a defect map; no new ingest. An instrument, not a panel feature; the panel consumes it only as a seam mark (N1) once it exists. | check: one county artifact; gold edge 1 versus 34169 edge 4 agree | grade: [ ] (data lane instrument)
 
+X2. **Edge metadata carries a disposition.** The no-invention contract covers sections today and does not cover `draw.edges[]`. Neighbor ids and adjacency cannot serialize as flat fact with an implicit present. Each edge (or each of neighbor and adjacency on the edge) carries an explicit disposition from the same five-state vocabulary. A reciprocity miss (X1), an unverified ray-hit (O3), or an unconfirmed label maps to unknown or refused with `agentGuidance`, never to implicit present. The panel hover and the Claude transcript read the same field. This item gates marketing the honesty differentiator (`_decisions/2026-08-30_honesty_contract_is_silence_legible.md`). | check: a fixture whose neighbor fails X1 or O3 cannot emit that neighbor as implicit present; gold shared-boundary edges that pass X1 may stay present; a Connect walk on a known-wrong label shows the model hedging or refusing the way it already refuses setbacks | grade: [ ] (cortex serialize plus data lane; P-92)
+
 W1. **The walk.** The fixture set in `_inbox/2026-08-30_p91_fixture_set_bastrop.md` walked end to end on Connect: paste the Higgins block, open 108 Higgins, hover every edge, open a neighbor through a shared line, open 145 Hasler Shores and read the floodway tint, open 1408 Chestnut and read the no-ring flood case, save one with Watching, reopen the screen next chat, run the report on gold. | check: every item above observed; screenshots filed; boot strip recorded | grade: [ ]
 
 ## 3. Forks for the operator (short)
@@ -194,7 +196,7 @@ The served-script suite (`tests/mcp-app-served.test.ts`) grows one fixture per i
 
 ## 6. Plan rows
 
-P-91 carries A1, B3, B5, D1 to D4, D7, F1, F2, F5, F6, C1, C2, P1, H1, H2 (panel and MCP work on the serving pair). P-92 opens with B1, B2, B4, N1, F7, F9, R1, R3 (cortex plus panel). Data lane rows own D5, D6, D8, F3, F4, F8, X1 and the warm cohort. R2 is P-87 item 17 config. Later intake (Chrome, Gmail, file) is not carded here.
+P-91 carries A1, B3, B5, D1 to D4, D7, F1, F2, F5, F6, C1, C2, P1, H1, H2 (panel and MCP work on the serving pair). P-92 opens with B1, B2, B4, N1, F7, F9, R1, R3, X2 (cortex plus panel; X2 is the serialize half of the honesty contract). Data lane rows own D5, D6, D8, F3, F4, F8, X1 and the warm cohort. R2 is P-87 item 17 config. Later intake (Chrome, Gmail, file) is not carded here.
 
 ## 7. Reconciliation with the 2026-08-28 v2 scope
 
@@ -205,7 +207,7 @@ The v2 scope lived in three places: the P-92 section of the v1 card (items 21 to
 | Named screens, status CRM (cut decision) | Shipped under A-046 (v1 items 17 to 20, 28 to 30). Carried. |
 | Drainage overlay on `draw` (v1 item 21, scope 3.5, A8) | D8, form defined; wire is the data lane's. |
 | Zoning codeRefs (v1 item 22, scope 3.7, A10) | F9, added. D3 (district on the drawing plus citation) is a different thing and stays. |
-| County reciprocity sweep (v1 item 23, scope 10) | X1, added as a data-lane instrument feeding N1. |
+| County reciprocity sweep (v1 item 23, scope 10) | X1, added as a data-lane instrument feeding N1. X2 (2026-08-30) is the serialize rule X1 feeds: a miss cannot ship as implicit present. |
 | Selection language stays out (v1 item 24, scope 7) | Section 4: out until a Project node exists. Unchanged. |
 | Later intake: Claude for Chrome, Gmail listing alerts, bulk file upload (v1 P-92 text) | Not in this card. Each needs its own connector and is its own card; paste stays the only intake here. Named so the omission is deliberate. |
 | Three levels: board, parcel, neighborhood (scope 4.1) | Board and parcel are sections 1 and 2; neighborhood is D2 plus N1 (added) plus W1's block walk. |
@@ -221,3 +223,4 @@ The v2 scope lived in three places: the P-92 section of the v1 card (items 21 to
 ## Amendments
 
 - 2026-08-30 (execution, lanes S6 to S10). Built on `feat/p91-v2-panel` (MCP server and iframe) and `feat/p91-v2-cortex` (cortex, PR #553 merged `d8dfb319`, canary p543): D1, D2, D3, D4, D7, F1, F2, F5, F6, P1, C1, C2, R1 (narrow), B1, B2 (both halves), B3, B4, B5, F7, H1, H2 (cap 25). Not built here, by name: D5, D6, D8, F3, F4, F8, X1 (data lane); F9, N1, R3 (P-92); R2 (substrate seat endpoint); 3.5 Free tier (held). Regression found by S8's fixtures and fixed in p558: since p555, an unresolved screen row (`parcelNodeId: null`, `id: <uuid>`) took its own row id as a node and painted an Open button carrying a uuid; the p554 inline parser never did this, the exported twin did, and no walk after p555 opened a created screen with an unresolved row. Checkpoints `_inbox/2026-08-30_p91_v2_build_cp.md`. Walk prompt `_inbox/2026-08-30_p91_p558_connect_walk_prompt.md`. Grades fill at the walk.
+- 2026-08-30 (honesty contract scope). Operator restated the 2026-08-28 QA-battery design argument: the claim is silence made legible, not "it will not degrade." Added X2 (edge metadata disposition) on P-92. Decision `_decisions/2026-08-30_honesty_contract_is_silence_legible.md`. Reason: the no-invention contract covers sections and does not cover neighbor or adjacency; operator observation this walk that five of six labels on verified shared boundaries were wrong, filed as operator-attributed pending X1. Do not market the honesty differentiator until X2 is customer-done.

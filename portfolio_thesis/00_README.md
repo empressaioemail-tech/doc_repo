@@ -2,7 +2,7 @@
 id: portfolio_thesis_readme
 title: Portfolio thesis — the reference set
 status: active
-last_updated: 2026-08-10
+last_updated: 2026-08-15
 applies_to: portfolio
 owner: nick
 purpose: Index and authority statement for the portfolio thesis. The frame that unifies Smart Site, Smart City, Property Watch and custom builds into one layer with several doors. The reference set the portfolio docs reconcile against.
@@ -14,7 +14,7 @@ Ratified in the strategy discussion of 2026-08-10. **This folder is the referenc
 
 ## Authority
 
-Where these documents and any other doc in the repo disagree about how the product lines relate to each other, or about what the company is fundamentally building, **these win**. Older portfolio docs were written before the doors were named and in several cases describe a structure that no longer holds.
+Where these documents and any other doc in the repo disagree about how the product lines relate to each other, **these win**. Where they disagree with `_thought_leadership/04_positioning_narrative.md` about what the company is at mountain altitude (three questions, ground truth, tokens need twins), **the narrative wins**, and `03_three_questions_data_room_and_sdk.md` is the stack mapping of that narrative. Doc 01 remains the place-product doors.
 
 Isolated from the numbered canon on the same pattern as `_smartcity_masters/` and `_smartsite_masters/`, so the reconciliation pass has a fixed point to correct against.
 
@@ -22,8 +22,9 @@ Isolated from the numbered canon on the same pattern as `_smartcity_masters/` an
 
 | Doc | What it covers |
 |---|---|
-| [01_the_layer_and_the_three_doors.md](01_the_layer_and_the_three_doors.md) | The unifying frame: one layer, twinning as deposit, three doors, selling access, the diagram, what each customer thinks they are buying, and what this supersedes. |
+| [01_the_layer_and_the_three_doors.md](01_the_layer_and_the_three_doors.md) | The unifying frame: one layer, twinning as deposit, three doors, selling access, the diagram, what each customer thinks they are buying, and what this supersedes. Place-product altitude. |
 | [02_the_registry_concept_PARKED.md](02_the_registry_concept_PARKED.md) | **PARKED concept, not ratified.** An independent registry where claims are registered before outcomes and graded against ground truth the claimant does not control. Captures the verification-architecture through-line across the property spine and empressa-trading, the neutrality constraints, the tooling shape, and the honest problems. No build, no commitment. |
+| [03_three_questions_data_room_and_sdk.md](03_three_questions_data_room_and_sdk.md) | **Active 2026-08-15.** The Empressa mountain mapped onto the stack. Data room = who / what. SDK = how do I pay. ICC is the first real SDK customer. Sits under `_thought_leadership/04_positioning_narrative.md`. |
 
 ## The frame in one paragraph
 
@@ -58,4 +59,7 @@ We build one public layer of verified truth about physical places. Every address
 1. **Property Watch commercial terms.** Offer architecture ratified 2026-08-06; prices not set.
 2. **Tenant isolation** gates the first private-telemetry customer (sprint 54 tenancy leg). Operator call owed on sequencing.
 3. **The 2026-08-06 sensor session close** — never completed; app UX discussion still owed.
-4. **Reconciliation** of docs 41, 42 and 09 to point at this frame.
+
+## Done
+
+- **Reconciliation of docs 41, 42 and 09 — CLOSED 2026-08-10.** All three now carry a banner at the top pointing here, each stating its specific relationship rather than a generic cross-reference: [`41_three_wedge_spine_strategy.md`](../41_three_wedge_spine_strategy.md) superseded in part (wedges are doors; the custom-build framing pass it flagged as owed is resolved here); [`42_stub_thesis_national_twin_substrate.md`](../42_stub_thesis_national_twin_substrate.md) superseded in part (the unit is named — "stub" reads as **smart site**, and deepen now has a self-serve path); [`09_post_saas_substrate_thesis.md`](../09_post_saas_substrate_thesis.md) **not superseded, compatible** — the substrate it describes IS the layer, it predates the door framing, and it stays in external use.

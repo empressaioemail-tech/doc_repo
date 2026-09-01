@@ -1,0 +1,107 @@
+{
+  "runAt": "2026-08-11T19:42:30Z",
+  "repoPath": "P:/hauska-engine",
+  "filesAdded": [
+    "packages/engine-core/scripts/sweep/run_sweep.mjs",
+    "packages/engine-core/scripts/sweep/run-sweep-lib.mjs",
+    "packages/engine-core/scripts/sweep/__tests__/run-sweep-resume.test.ts"
+  ],
+  "prNumber": 307,
+  "ciConclusionString": "success",
+  "merged": true,
+  "mergeCommit": "6e6b0324242ac8ef2de9444305a104af696568f2",
+  "resumeHoleFixed": true,
+  "bomStripAdded": true,
+  "behaviourDiffVsOriginal": "Same dry-then-apply county sweep loop, halt semantics, dedup tripwires, ECONNRESET retries, manifest curl fetch, and --batch=5000 default. Skip set is landed-only (halted no longer excludes). Halted county re-enters queue and moves to front when not landed. Progress read strips UTF-8 BOM. OUT_DIR, ENGINE, and pnpm script name are CLI args (--out-dir, --engine-path, --cli-script) instead of hardcoded P:/tmp and P:/hauska-engine paths.",
+  "cp1": {
+    "status": "pass",
+    "targetPath": "packages/engine-core/scripts/sweep/run_sweep.mjs",
+    "placementJustification": "Co-located with write-parcel-node-county.mjs and warden-sweep.mjs under packages/engine-core/scripts/; tools/ is for standalone CLI packages with own node_modules, not operator runners invoking pnpm --filter @hauska-engine/engine-core run.",
+    "intendedChanges": [
+      "Skip set = progress.landed FIPS only; halted is resume pointer not exclusion",
+      "stripBom on progress.json read; write without BOM",
+      "CLI args --out-dir, --engine-path, --cli-script (default write-parcel-node-county)",
+      "Preserve --batch=5000 in runCli spawn args"
+    ],
+    "scopeLock": "No changes to dry/apply loop, dedup thresholds, ECONNRESET retry, manifest fetch, halt exit codes, PARCEL_NODE_PATH, MANIFEST_URL, or batch verify comment block.",
+    "workerDeviations": "none"
+  },
+  "cp2": {
+    "status": "pass",
+    "originalPath": "P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs",
+    "originalLineCount": 413,
+    "committedLineCount": 433,
+    "differences": [
+      {
+        "id": "D1",
+        "kind": "new_file",
+        "path": "packages/engine-core/scripts/sweep/run-sweep-lib.mjs",
+        "justification": "Pure helpers stripBom, buildSkipSet, buildQueue extracted for vitest import without loading runner top-level side effects; matches repo precedent (bake-property-atom-county test pattern)."
+      },
+      {
+        "id": "D2",
+        "kind": "new_file",
+        "path": "packages/engine-core/scripts/sweep/__tests__/run-sweep-resume.test.ts",
+        "justification": "Required adversarial test proving resume hole closed and BOM strip works; 6 assertions all pass."
+      },
+      {
+        "id": "D3",
+        "kind": "import",
+        "change": "import { stripBom, buildQueue } from ./run-sweep-lib.mjs",
+        "justification": "Wires lib helpers into runner; no logic change beyond D4-D9."
+      },
+      {
+        "id": "D4",
+        "kind": "parameterize",
+        "change": "Added parseArgs for --out-dir=, --engine-path=, --cli-script= with usage exit if out-dir or engine-path missing",
+        "justification": "Mission item 4: eliminate hardcoded ENGINE and OUT_DIR stale-tree trap."
+      },
+      {
+        "id": "D5",
+        "kind": "removed_constant",
+        "change": "Removed const OUT_DIR = P:/tmp/parcel_node_sweep_20260809 and const ENGINE = P:/hauska-engine",
+        "justification": "Replaced by config from D4."
+      },
+      {
+        "id": "D6",
+        "kind": "resume_fix",
+        "change": "Replaced skip set landed union halted with buildQueue using buildSkipSet(landed only); halted county moved to queue front when not landed",
+        "justification": "Mission item 2: 48457-class hole where halted-but-not-landed was silently skipped."
+      },
+      {
+        "id": "D7",
+        "kind": "bom_strip",
+        "change": "loadProgress reads raw text, JSON.parse(stripBom(raw))",
+        "justification": "Mission item 3: PowerShell-written progress.json UTF-8 BOM breaks JSON.parse."
+      },
+      {
+        "id": "D8",
+        "kind": "parameterize",
+        "change": "runCli pnpm run uses CLI_SCRIPT instead of literal write-parcel-node-county",
+        "justification": "Mission item 4: same runner drives other county writers by changing input not code."
+      },
+      {
+        "id": "D9",
+        "kind": "parameterize",
+        "change": "spawnMiss regex uses CLI_SCRIPT dynamically instead of hardcoded script name",
+        "justification": "Consistent with D8; required for multi-writer parameterization."
+      },
+      {
+        "id": "D10",
+        "kind": "unchanged",
+        "change": "--batch=5000 still passed in runCli args; verify-cost comment block preserved verbatim",
+        "justification": "Mission item 5: default batch path unchanged."
+      }
+    ],
+    "undocumentedDifferences": []
+  },
+  "adversarialFindings": [
+    "PASS: progress { landed: [], halted: { countyFips: 48457 } } with sizing queue containing 48457 → buildSkipSet excludes nothing for 48457; buildQueue includes 48457 (3 counties remain). Original would have excluded 48457 via halted union.",
+    "PASS: halted 48141 with empty landed → queue order [48141, 48001, 48457] (resume pointer moves halted to front).",
+    "PASS: stripBom removes \\uFEFF prefix; JSON.parse succeeds on BOM-prefixed progress text.",
+    "PASS: landed-only skip still excludes 48001 when landed=[48001]; halted null path unchanged.",
+    "PASS: --batch=5000 present in runCli spawn args at line matching original comment block.",
+    "NOTE: readJson for dry/apply county output files does not strip BOM; original also did not. Only progress.json read was in scope.",
+    "NOTE: orphanOk variable still computed but unused in apply success path — preserved from original, not introduced."
+  ]
+}

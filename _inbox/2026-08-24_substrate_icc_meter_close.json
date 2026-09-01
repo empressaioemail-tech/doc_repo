@@ -1,0 +1,188 @@
+{
+  "artifact": "2026-08-24_substrate_icc_meter_close",
+  "date": "2026-08-24",
+  "filedAt": "2026-08-24T22:53:00Z",
+  "seat": "substrate",
+  "status": "CLOSED_CODE_NOT_CUSTOMER",
+  "snapshot": {
+    "requestClones": {
+      "hauska-mcp-server": { "branch": "main", "commit": "bdbb99d1773df3816465f514450ba74dfdd7e8c8" },
+      "hauska-sdk": { "branch": "main", "commit": "60cdaa706eab920798ab73d543e2a93815fee985" }
+    },
+    "worktrees": {
+      "hauska-mcp-icc-meter": {
+        "path": "P:/seat-worktrees/substrate/hauska-mcp-icc-meter",
+        "branch": "feat/icc-meter-s1-s4",
+        "commit": "8c1cad2b3675b365d5daf029e6da87f1c604ca1d"
+      },
+      "hauska-sdk": {
+        "path": "P:/seat-worktrees/substrate/hauska-sdk",
+        "branch": "feat/s4-publish-check-total",
+        "commit": "d6a807055757f0af882f9e5dcf40f5bea31bfc7f"
+      }
+    },
+    "note": "access-policy.ts ICC withhold (canReadAccessTarget special-case, originally :87, now the G-60 A-028 block at src/access-policy.ts:88-93) was NOT retired. Waiting on PROPERTY E-1 writer fix (items 1-6) AND the recorded backfill (item 7). Retiring it earlier would make mis-stamped public-free ICC rows readable through the MCP gate with nothing visible in that retirement diff."
+  },
+  "items": {
+    "S-1": {
+      "what_changed": "wrap() now requires EnvelopeProvenance. plan_review_get_code builds ICC provenance (tenant icc-model-code, adapter icc-code-connect, actor did:hauska:actor:org:icc) and logToolRead accrues Ledger B. typed-absence and other plan-review tools use emptyProvenance('no-atoms'). icc_activity_list reads listSourceObligationLedger as authoritative and labels plan_review_activity as cache. MCP does not call recordActivity. No second independent accrual for the same reference.",
+      "pr": 75,
+      "pr_url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/75",
+      "merge_commit": "c81f1c39ddb72bb75d229823b5fee86740a93efa",
+      "check_run_conclusion": "success",
+      "check_runs": [
+        { "name": "build-test", "conclusion": "success" },
+        { "name": "ci-deny-as-no-atom-found", "conclusion": "success" },
+        { "name": "ci-hardcoded-did-type-union", "conclusion": "success" },
+        { "name": "ci-gate-map-vs-server-tool", "conclusion": "success" },
+        { "name": "ci-dual-atom-contract", "conclusion": "success" }
+      ],
+      "violation": {
+        "suite": "tests/plan-review-tools.test.ts",
+        "baseline": { "fail": 0, "pass": 4 },
+        "inject_defect": { "fail": 1, "pass": 3, "how": "wrap() rebuilt the live defect: buildEnvelope(data, emptyProvenance('no-atoms'))" },
+        "refuse_all": { "fail": 2, "pass": 2, "how": "wrap always empty AND provenanceFromPlanReviewCode returned emptyProvenance at entry" }
+      },
+      "did_not": [
+        "Write plan_review_activity (Ledger A). plan-review /code still recordActivity; that is the cache write, not a second MCP accrual.",
+        "Build a writer that updates Ledger A from Ledger B. icc_activity_list exposes both and names the relationship; it does not sync rows.",
+        "Set a per-reference rate. Accruals stay amount_minor NULL / grace_terms pending-rate.",
+        "Live-probe the deployed surface. Code-done is not customer-done."
+      ]
+    },
+    "S-2": {
+      "what_changed": "src/icc-content.ts:isIccContent is the single ICC detector. isIccCatalogTarget and resolveSourceActorDid both call it. Meter toHint carries jurisdictionTenant and adapterStatus. provenanceFromSearchResult uses makeProvenanceEntry; missing sourceAdapter is adapterStatus unmeasured, not 'not ICC'. AtomSearchResult may carry sourceAdapter/sourceActorDid if the engine ever sends them. listSourceObligationLedger is the ledger reader. Search path logs gate-vs-meter agreement via checkIccSearchPathAgreement. Adapter-unknown branch taken: PROPERTY has not shipped sourceAdapter on /search.",
+      "pr": 75,
+      "pr_url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/75",
+      "merge_commit": "c81f1c39ddb72bb75d229823b5fee86740a93efa",
+      "check_run_conclusion": "success",
+      "violation": {
+        "suite": "tests/source-obligation-meter.test.ts + tests/access-policy.test.ts",
+        "baseline": { "fail": 0, "pass": 25 },
+        "inject_defect": { "fail": 4, "pass": 21, "how": "deleted the tenant limb from isIccContent" },
+        "refuse_all": { "fail": 9, "pass": 16, "how": "isIccContent always returns false" },
+        "note": "gate===meter agreement still passes if both sides lose the tenant limb together. The load-bearing fails are tenant-only accrue and the withhold tests."
+      },
+      "did_not": [
+        "Retire the access-policy.ts ICC withhold (originally :87, now :88-93). Waiting on PROPERTY E-1 writer fix AND backfill.",
+        "Mark sourceActorDid verified for ICC editions, definitions, or xrefs. That path is starved until PROPERTY E-1 item 4 stamps it on every family.",
+        "Add sourceAdapter to the engine /search projection. That is a PROPERTY request. Tenant limb closes the search-path gap.",
+        "Set a per-reference rate."
+      ]
+    },
+    "S-3": {
+      "what_changed": "Migration 011 renames metering_events.billed to authorized and the billed index to authorized. 007 comment rewritten as a retirement record, not deleted. Writers: sdk-metering.ts, metering.ts. Reader: metering-summary.ts totals.authorized / totals.unauthorized. No billed, unbilled, or money figure. PROPERTY change request filed at _inbox/2026-08-24_substrate_to_property_revenue_panel.md for RevenueMeter.tsx.",
+      "pr": 75,
+      "pr_url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/75",
+      "merge_commit": "c81f1c39ddb72bb75d229823b5fee86740a93efa",
+      "check_run_conclusion": "success",
+      "violation": {
+        "suite": "tests/metering-summary.test.ts + tests/billed-retired.test.ts",
+        "baseline": { "fail": 0, "pass": 13 },
+        "inject_defect": { "fail": 4, "pass": 9, "how": "restored totals.billed / totals.unbilled on the reader" },
+        "refuse_all": { "fail": 5, "pass": 8, "how": "aggregateMeteringRows throws refuse-all" }
+      },
+      "did_not": [
+        "Edit hauska-map Command Center. SUBSTRATE does not own that repo.",
+        "Create a paid/billed column. No billing writer exists. Absent stays absent.",
+        "Deploy migration 011 to the live MCP database. Deploys are this seat's, not done in this card."
+      ]
+    },
+    "S-4": {
+      "what_changed": "publish.yml iterates package.json workspaces (packages/* and packages/adapters/*), not packages/*/package.json. @hauska-sdk/node-manager renamed to @hauska-sdk/adapters-node-manager before first publish. ci.yml runs scripts/check-publish-workspaces.mjs. Follow-up: the check now fails on an empty declared set and when the workspaces array disagrees with the on-disk packages/**/package.json set. Ran the glob: old single-level set is 6, declared/on-disk set is 13.",
+      "pr": 3,
+      "pr_url": "https://github.com/empressaioemail-tech/hauska-sdk/pull/3",
+      "follow_up_pr": 4,
+      "follow_up_pr_url": "https://github.com/empressaioemail-tech/hauska-sdk/pull/4",
+      "merge_commits": {
+        "pr_3": "b0e979a521b016c1f6ce07cfb8faac229e3cdc16",
+        "pr_4": "4ff39be34b30607bf27cd2631c5ffea4f5cfed64"
+      },
+      "check_run_conclusion": "success",
+      "check_runs_pr_3": [
+        { "name": "Build Packages", "conclusion": "success" },
+        { "name": "Continuous Integration (18)", "conclusion": "success" },
+        { "name": "Continuous Integration (20)", "conclusion": "success" },
+        { "name": "Lint and Type Check", "conclusion": "success" },
+        { "name": "Run Tests", "conclusion": "success" }
+      ],
+      "check_runs_pr_4": [
+        { "name": "Build Packages", "conclusion": "success" },
+        { "name": "Continuous Integration (18)", "conclusion": "success" },
+        { "name": "Continuous Integration (20)", "conclusion": "success" },
+        { "name": "Lint and Type Check", "conclusion": "success" },
+        { "name": "Run Tests", "conclusion": "success" }
+      ],
+      "violation": {
+        "instrument": "scripts/check-publish-workspaces.mjs plus the shell glob",
+        "green": { "exit": 0, "declared": 13 },
+        "inject_defect": {
+          "old_glob_count": 6,
+          "declared_count": 13,
+          "ASSERT_OLD_GLOB_DRIFT_exit": 1,
+          "old_loop_in_yml_exit": 1
+        },
+        "refuse_all": {
+          "empty_declared_exit_before_follow_up": 0,
+          "empty_declared_exit_after_follow_up": 1,
+          "why_follow_up": "PR #3 check passed when declared was emptied. That is not a control. PR #4 makes empty and on-disk disagreement refuse."
+        }
+      },
+      "did_not": [
+        "npm publish any workspace. The publish workflow still runs only on v*.*.* tags.",
+        "Close workstation npm publish as a bypass. Named, not closed."
+      ]
+    }
+  },
+  "shared_did_not": [
+    "Did not retire src/access-policy.ts ICC withhold (originally line 87). Waiting on PROPERTY E-1 writer fix AND backfill.",
+    "Did not set a per-reference ICC rate anywhere. S-1 and S-2 must stay proven before any operator-gated rate card.",
+    "Did not write hauska-engine, hauska-map, or plan-review.",
+    "Did not spawn sub-agents.",
+    "Did not deploy MCP. Migration 011 is merged, not applied to the serving revision.",
+    "Did not live-probe production. A merged PR is not a grade."
+  ],
+  "violation_events_exclude": "S-1/S-2/S-3 inject and refuse-all runs used the test insert capture harness. They generate ledger-shaped events indistinguishable from real accruals if pointed at a live pool. Exclude those runs from any production obligation count. This close's violation numbers are from local node --test TAP, not from production.",
+  "leave_behind": [
+    {
+      "item": "MCP Cloud Run deploy including migration 011 (metering_events.billed -> authorized). Until then /metering/summary against the live DB still has a billed column.",
+      "owner": "substrate",
+      "plan_row": "S-3"
+    },
+    {
+      "item": "Do not retire access-policy.ts ICC withhold until PROPERTY close confirms E-1 writer (items 1-6) AND backfill (item 7) are complete.",
+      "owner": "substrate",
+      "plan_row": "S-2 / sequencing"
+    },
+    {
+      "item": "sourceActorDid path for ICC editions / definitions / xrefs is unmeasured until PROPERTY E-1 item 4.",
+      "owner": "property then substrate",
+      "plan_row": "E-1 item 4 / S-2"
+    },
+    {
+      "item": "Command Center RevenueMeter still reads totals.billed. Change request: _inbox/2026-08-24_substrate_to_property_revenue_panel.md",
+      "owner": "property",
+      "plan_row": "S-3"
+    },
+    {
+      "item": "Ledger A reconcile writer (plan_review_activity updated from source_obligation_ledger) is not built. icc_activity_list only names the relationship.",
+      "owner": "substrate or govtech",
+      "plan_row": "S-1 follow-on"
+    },
+    {
+      "item": "Per-reference ICC rate. Separate operator-gated card after S-1 and S-2 are live-probed, not set here.",
+      "owner": "operator then substrate",
+      "plan_row": "later"
+    },
+    {
+      "item": "Remove temporary seat_register entry hauska-mcp-server-icc-meter and unpin hauska-sdk from feat/s4-publish-glob.",
+      "owner": "systems or substrate",
+      "plan_row": "card close hygiene"
+    },
+    {
+      "item": "P:/seat-worktrees/substrate/doc_repo does not exist. _state/substrate/STATE.md was not written from this session (integration checkout cannot write that namespace).",
+      "owner": "substrate",
+      "plan_row": "seat topology"
+    }
+  ]
+}

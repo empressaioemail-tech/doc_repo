@@ -1,0 +1,89 @@
+{
+  "lane": "a6-flood-score",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "planRows": ["P-08"],
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+  "branch": "seat/property",
+  "commit": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "missionPremise": "Same as CP1. Pilot Anderson 48001 dry-run then write a flood county_facet_coverage row via prefix-range atom COUNT, not the stock CLI GROUP BY.",
+  "completionPredicate": "48001 coverage row exists, facet=flood. Then remaining 75.",
+  "whatWasVerified": [
+    {
+      "check": "48001 had no flood coverage row before",
+      "result": "CONFIRMED. row_48001_n=0 at CP1. SELECT returned empty.",
+      "whatWouldProveWrong": "A row already present before the write."
+    },
+    {
+      "check": "Dry-run does not upsert",
+      "result": "CONFIRMED. DRY-RUN 48001/Anderson atoms=31676 features=43894 coverage=72.16% rail_state=not-yet wrote=0 duration=0.7s. Progress DRY line at 2026-08-21T17:58:19.022Z.",
+      "whatWouldProveWrong": "missing_n dropping during dry-run, or a 48001 row appearing before the WRITE line."
+    },
+    {
+      "check": "Write creates facet=flood county_fips=48001",
+      "result": "CONFIRMED. Neon 2026-08-21T17:58:29.290Z last_verified_at. honest_coverage_pct=72.16 rail_state=not-yet classification=real-at-ceiling source=flood-hazard-fact-atom-count threshold_pct=95.00 verified_by_instrument=countyFloodScoreCli.ts. flood_coverage_n 177->178. missing_n 77->76.",
+      "whatWouldProveWrong": "Empty SELECT after WRITE, or facet other than flood."
+    },
+    {
+      "check": "Atom discovery was prefix-range COUNT, not left(entity_id,5) GROUP BY",
+      "result": "CP1 EXPLAIN Index Only Scan atoms_entity_composite_unique cost 0.57..8.60. Runner score_county.mjs readAtomCountPrefixRange. Dry-run 0.7s is inconsistent with a full flood-hazard-fact GROUP BY on 100M atoms.",
+      "whatWouldProveWrong": "A close that invoked stock countyFloodScoreCli.ts as the atom instrument."
+    }
+  ],
+  "pilot48001": {
+    "before": {
+      "row": null,
+      "row_n": 0,
+      "missing_n": 77,
+      "flood_coverage_n": 177
+    },
+    "dryRun": {
+      "atoms": 31676,
+      "features": 43894,
+      "table": "txgio_parcel",
+      "coveragePct": 72.16,
+      "classification": "real-at-ceiling",
+      "rail_state": "not-yet",
+      "wrote": 0,
+      "duration_s": 0.7
+    },
+    "after": {
+      "county_fips": "48001",
+      "facet": "flood",
+      "honest_coverage_pct": 72.16,
+      "rail_state": "not-yet",
+      "classification": "real-at-ceiling",
+      "source": "flood-hazard-fact-atom-count",
+      "threshold_pct": 95.0,
+      "verified_by_instrument": "countyFloodScoreCli.ts",
+      "artifact_path": "atoms:entity_type=flood-hazard-fact,countyFips=48001",
+      "last_verified_at": "2026-08-21T17:58:29.290Z",
+      "missing_n": 76,
+      "flood_coverage_n": 178
+    },
+    "countingRule": "coverage = min(100, atomCount/featureCount*100). rail_state satisfied-present iff honestCoveragePct >= 95. 31676/43894 = 72.1643 -> 72.16 not-yet. Valid score, not a fail."
+  },
+  "holdBeforeRemaining75": {
+    "reason": "Dispatch: if colliding with P-02 on txgio_parcel, wait. Do not start a second heavy scan.",
+    "observedAtUtc": "2026-08-21T17:58:45Z",
+    "p02Lease": "holder=P02 takenAt=2026-08-21T17:56:45.348Z heartbeat=2026-08-21T17:56:56.062Z expires=2026-08-21T21:56:56.062Z. apply.log still watch-armed only.",
+    "txgioActivity": {
+      "application_name": "postgres.js",
+      "pids": [12388, 22638, 22639],
+      "query_age_s": 43,
+      "query": "SELECT county_fips, count(*)::int AS rows, count(DISTINCT feature_index)::int AS features, min(source_vintage), max(source_vintage) FROM txgio_parcel GROUP BY county_fips ORDER BY county_fips"
+    },
+    "verdict": "Three concurrent full-table GROUP BY DISTINCT feature_index on txgio_parcel. Wait until they finish before the other 75 per-county DISTINCT reads."
+  },
+  "remaining": {
+    "count": 75,
+    "source": "_inbox/2026-08-21_a4-flood-exists_close.json leave_behind.commands minus 48001"
+  }
+}

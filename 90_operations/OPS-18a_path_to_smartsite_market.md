@@ -2,7 +2,7 @@
 id: OPS-18a_path_to_smartsite_market
 title: Path to Smart Site market — structural then data
 status: active
-last_updated: 2026-08-21
+last_updated: 2026-08-22
 applies_to: portfolio
 owner: nick
 related:
@@ -43,7 +43,7 @@ Chasing GTM fires hid operational and data defects. The defects were ungradable:
 | 4 | Grade the store you already audited. No second census. | R-07 | CLOSED as the grade. `_inbox/2026-08-21_r07_store_grade.md`: 31 Qs, 9 launch-critical. No second census. |
 | 5 | Remediation plan ordered by what the now-honest launch DCs fail on. | R-08 | PLAN CLOSED. Execution in flight. Flood 76 missing-row FIPS scored (P-08). Ector parcel-nodes re-keyed geo_id (P-02 apply 75859 active / 3791 retired). DC-2 still FAIL: geometry `48135` not rescored. DC-3 still FAIL on roads/footprint/wells/pipelines/rail 254, flood 92, mud 45, geometry 1. |
 | 6 | Sellable as redefined. CC heartbeat plus existing atoms on SmartSite parcels. | OPS-18a / P-08 serve | MET as the slice. Heartbeat live. Flood inspect live. Land-use inspect live (LDT [450](https://github.com/empressaioemail-tech/legacy-design-tools/pull/450) serving `cortex-api-00531-fus`, hauska-map [176](https://github.com/empressaioemail-tech/hauska-map/pull/176) PE `dpl_JHohCzrJs4JRnbTjy7HFg9eqNBuc`). Gold Land use cites `land-use-fact`. Empty Manifest cells are coverage. Checkout polish is not this gate. Not program complete. |
-| 7 | Remaining board. HOLD families, Wave A/B/C, R-06 armed. Four teams. | P-48..P-56, R-06 | THIS WAVE. Plan OPS-18c. COVER holds `--apply`. First compiles not yet run. |
+| 7 | Remaining board. HOLD families, Wave A/B/C, R-06 armed. Four teams. | P-48..P-56, R-06, P-47 | THIS WAVE, reordered 2026-08-22. Foreground: SERVE P-49..P-54, IDENT P-55, DC-3 instrument P-47, then deploy for visual QA. COVER `--apply` parked (P-17 halt after 48371). Pickup `_inbox/2026-08-22_p17_roads_park_pickup.md`. Decision `_decisions/2026-08-22_serve_ident_then_background_cover.md`. |
 
 R-02b (quarantine against the bounded canon set) rides with this regroup because it was gated on R-01. It is not a new program.
 
@@ -53,7 +53,7 @@ R-02b (quarantine against the bounded canon set) rides with this regroup because
 2. Unmeasured stays distinct. Do not fold `derivation-indeterminate` into DC-4 `no-atom` or DC-5 `no-writer`. Decision `_decisions/2026-08-21_dc4_dc5_unmeasured_stays_distinct.md`.
 3. ADR-028 accepted-partial. Verified-absence pair is real. `knowledge_atoms` is not production bitemporal proof. Follow-on ADR owed for 1.9.0 through 1.22.0. Decision `_decisions/2026-08-21_adr028_accept_partial.md`.
 4. Sellable is CC heartbeat plus existing atoms on parcels. Decision `_decisions/2026-08-21_sellable_is_cc_heartbeat_and_atoms_on_parcels.md`.
-5. All remaining work on the board as four teams. Wave A `--apply` in. Harris PBF out. S7 owner identified inspect only. A2 honest-absent held until L7 vs pair. Decision `_decisions/2026-08-21_all_board_parallel_execution.md`.
+5. All remaining work on the board as four teams. Wave A `--apply` PARKED 2026-08-22 (was in). Harris PBF out. S7 owner identified inspect only. A2 honest-absent held until L7 vs pair. Foreground SERVE + IDENT + DC-3 instrument. Decisions `_decisions/2026-08-21_all_board_parallel_execution.md` and `_decisions/2026-08-22_serve_ident_then_background_cover.md`.
 
 ## What this wave is not
 

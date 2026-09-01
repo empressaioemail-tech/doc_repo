@@ -1,0 +1,112 @@
+{
+  "lane": "a6-flood-score",
+  "artifact": "cp1",
+  "date": "2026-08-21",
+  "planRows": ["P-08"],
+  "plan": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "P:/doc_repo/_inbox/2026-08-21_p02_flood_score_WDLL.md items 6, 7",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+  "branch": "seat/property",
+  "commit": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "declaredSnapshot": {
+    "repository": "legacy-design-tools",
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+    "branch": "seat/property",
+    "commit": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+    "docRepo": "P:/doc_repo main 83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "seat_register": "property owns LDT at this worktree. Did not touch P:/legacy-design-tools."
+  },
+  "missionPremise": "A4 measured 76 missing-flood FIPS with flood-hazard-fact atoms present and Donley 48129 skip. Coverage rows were never written because countyFloodScoreCli was never invoked --county= for those FIPS. This lane scores them into county_facet_coverage facet=flood. Sources: _dispatches/2026-08-21_a6-flood-score_dispatch.md, _inbox/2026-08-21_a4-flood-exists_close.json leave_behind.commands, WDLL items 6/7, countyFloodScoreCli.ts.",
+  "completionPredicate": "_inbox/2026-08-21_a6-flood-score_close.json has 48001 before/after, how many of 76 wrote, missing_n after, and named not-yet vs satisfied-present among the new rows. 48001 coverage row exists facet=flood after the pilot write. Progress every county at P:/tmp/a6_flood_score_20260821/progress.log. No --all. No atoms --apply. No POST ledger recompute. No product git commits.",
+  "scopeBasis": "Slot-free writes to county_facet_coverage only. Code/run from P:/seat-worktrees/property/legacy-design-tools. Doc_repo writes this lane's _inbox JSON. Stock countyFloodScoreCli.ts --county= still runs readAtomCountsByCounty (lines 105-121, called at 287 before the county filter), which is left(entity_id,5) GROUP BY all flood-hazard-fact. Dispatch announce is per-county indexed reads, not a full-table atoms scan. Execution therefore uses a tmp runner that keeps the CLI's scoreFlood + upsert SQL and replaces atom discovery with prefix-range COUNT on (entity_type, entity_id). Feature denom stays count(DISTINCT feature_index) FROM txgio_parcel WHERE county_fips=$1. Exclude Donley. Do not score geometry 48135. Harris 48201 not-yet under 95% is a valid score.",
+  "beforeState": {
+    "queriedAtUtc": "2026-08-21T17:55:00Z",
+    "projectId": "fancy-fire-06136146",
+    "branchId": "br-crimson-feather-aphfmy91",
+    "deploymentDatabase": "neondb",
+    "manifest_n": 254,
+    "flood_coverage_n": 177,
+    "missing_n": 77,
+    "row_48001_n": 0,
+    "row_48001": null,
+    "countingRule": "missing_n = county_manifest rows with no county_facet_coverage facet=flood. 254-177=77. 48001 is one of the 77; SELECT of that row returned empty."
+  },
+  "p02CollisionCheck": {
+    "applyLog": "P:/tmp/p02_ector_20260821/apply.log last line watch-armed 2026-08-21T12:53:32-05:00, no apply progress",
+    "heartbeatLog": "P:/tmp/p02_ector_20260821/lease_heartbeat.log last line watch-armed same stamp",
+    "pgStatActivityTxgio": "none (neondb, state<>idle, query ILIKE %txgio_parcel%, excluding self)",
+    "verdict": "P-02 is not hammering txgio_parcel. Proceed. Re-check before 48135."
+  },
+  "preRegisteredSelfChecks": [
+    {
+      "check": "Invoke stock countyFloodScoreCli.ts 76 times, each doing readAtomCountsByCounty GROUP BY all flood-hazard-fact",
+      "whatWouldProveWrong": "progress.log or close that ran tsx artifacts/api-server/src/countyFloodScoreCli.ts as the atom-discovery instrument.",
+      "result": "Rejected. Dispatch announce is per-county indexed reads. Stock CLI --county= still GROUP BYs the whole flood-hazard-fact family (countyFloodScoreCli.ts:105-121 called at 287). Tmp runner uses prefix-range COUNT."
+    },
+    {
+      "check": "Pass --all",
+      "whatWouldProveWrong": "Any argv containing --all, which re-scores the already-scored 177 via atomCounts.keys().",
+      "result": "Forbidden. 76 --county= only."
+    },
+    {
+      "check": "Treat Harris 48201 not-yet as a fail",
+      "whatWouldProveWrong": "A close that retries 48201 or calls the write a defect because coverage < 95%.",
+      "result": "Dispatch: Harris 48201 may write not-yet under 95%. Valid score, not a fail."
+    },
+    {
+      "check": "Score geometry 48135, restart Harris PBF, atoms --apply, POST ledger recompute",
+      "whatWouldProveWrong": "countyGeometryScoreCli --county=48135 write, PBF restart, atoms --apply, or a ledger recompute POST.",
+      "result": "Forbidden. Flood facet only. 48135 flood score is in the 76; geometry rescore is not this wave."
+    },
+    {
+      "check": "Print DATABASE_URL or DEPLOYMENT_DATABASE_URL",
+      "whatWouldProveWrong": "A secret string in progress.log, CP, close, or stdout.",
+      "result": "gcloud fetch in-process. Log resolved=true only."
+    },
+    {
+      "check": "Start a second heavy txgio_parcel scan while P-02 is paging 48135",
+      "whatWouldProveWrong": "COUNT DISTINCT feature_index for 48135 overlapping a live P-02 apply query on the same table.",
+      "result": "P-02 not scanning now. Wait if pg_stat_activity shows txgio_parcel before 48135."
+    },
+    {
+      "check": "Force missing_n after = 1 if the live count is not 1",
+      "whatWouldProveWrong": "Close that asserts Donley-only without quoting the live COUNT.",
+      "result": "Query missing_n after the 76. Expect 1 (Donley 48129) or name why not."
+    }
+  ],
+  "adversarialDesign": {
+    "atomInstrument": "SELECT count(*)::bigint FROM atoms WHERE entity_type='flood-hazard-fact' AND entity_id >= fips||':' AND entity_id < fips||';'. Unique index atoms_entity_composite_unique. Announce: not a full-table atoms scan, 76 indexed prefix-range COUNTs plus per-county txgio_parcel DISTINCT feature_index.",
+    "explain48001Fire": {
+      "sql": "EXPLAIN SELECT count(*) FROM atoms WHERE entity_type='flood-hazard-fact' AND entity_id >= '48001:' AND entity_id < '48001;'",
+      "nodeType": "Index Only Scan",
+      "indexName": "atoms_entity_composite_unique",
+      "indexCond": "(entity_type = 'flood-hazard-fact'::text) AND (entity_id >= '48001:'::text) AND (entity_id < '48001;'::text)",
+      "cost": "0.57..8.60",
+      "queriedAtUtc": "2026-08-21T17:56:00Z",
+      "database": "hauska_mcp"
+    },
+    "whyNotStockCli": "Named command tsx artifacts/api-server/src/countyFloodScoreCli.ts --county=48001 still executes readAtomCountsByCounty before the single-FIPS filter. That is the instrument A4 forbade (left(entity_id,5) GROUP BY). Score function, upsert SQL, 95% threshold, and verified_by_instrument=countyFloodScoreCli.ts stay identical. Atom discovery does not.",
+    "denom": "count(DISTINCT feature_index) FROM txgio_parcel WHERE county_fips=$1, then txgio_parcel_staging. Same as countyFloodScoreCli.ts:123-141.",
+    "upsert": "INSERT county_facet_coverage ... ON CONFLICT (county_fips, facet) DO UPDATE. Same column list as countyFloodScoreCli.ts:204-247. Writes neondb, not atoms.",
+    "pilot": "48001 dry-run (no upsert) then write. CP2 after the 48001 row exists. Then the other 75 from A4 GO.",
+    "secondMechanismForMissing77": "If writes succeed and missing_n stays 77, upsert is writing a different facet or database. Rejected by SELECT facet=flood county_fips=48001 after the pilot."
+  },
+  "fanPlan": "none. Dispatch forbids sub-agents.",
+  "watch": {
+    "id": "a6-flood-score",
+    "path": "P:/tmp/a6_flood_score_20260821/progress.log",
+    "maxQuietMin": 20,
+    "paused": false
+  },
+  "deliverables": [
+    "_inbox/2026-08-21_a6-flood-score_cp2.json",
+    "_inbox/2026-08-21_a6-flood-score_close.json"
+  ]
+}

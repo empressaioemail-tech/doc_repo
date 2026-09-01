@@ -31,3 +31,15 @@ Drainage overlay. codeRefs hop. Walk across ROW (O3). Item 21 file (after this s
 ## Close
 
 CP1/CP2/close under `_inbox/2026-08-28_p91c_*`. leave_behind named. Subagent does not commit.
+
+## History
+
+Wave C (the build body above) shipped the v1 iframe. v2 is serving 2026-08-30. The Wave C text is kept as the record of that cut.
+
+## v2 serving (2026-08-30)
+
+URI `ui://smartsite/app-p558.html`. smartsite-mcp tag p558 revision `smartsite-mcp-00065-siv` (PR #555 squash-merged `24553cfc`). cortex-api tag p543 revision `cortex-api-00668-cos` (PR #553 squash-merged `d8dfb319`). Both 100 percent, read by field name 2026-08-30. Catalog stays 13.
+
+Lanes S6 to S10. Panel branch `feat/p91-v2-panel` (tree `ff36c8f0`): S10 `4cd2b57b`, S6 `525f3bca`, S7 `29086224`, S8 `8a34f2c6`. Cortex branch `feat/p91-v2-cortex`: S9 cut `37cf5286` plus the build config `0bcced84`.
+
+Card `_inbox/2026-08-30_smartsite_mcp_app_v2_WDLL.md`. Close `_inbox/2026-08-30_p91_v2_build_close.md`. Deploys `_inbox/2026-08-30_p91_p558_deploy.md` and `_inbox/2026-08-30_p91_p543_deploy.md`. Open item: W1 walk (`_inbox/2026-08-30_p91_p558_connect_walk_prompt.md`). Grades fill the card there.

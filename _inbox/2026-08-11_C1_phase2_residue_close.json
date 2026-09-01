@@ -1,0 +1,103 @@
+{
+  "runAt": "2026-08-11T22:20:00-05:00",
+  "wave4WorkerVersioned": true,
+  "tmpScriptsRemaining": [
+    "P:/tmp/wave4_reproject_20260811/wave4_worker.mjs (superseded by engine sweep/; keep until PR #312 merge)",
+    "P:/tmp/wave4_reproject_20260811/wave4_orchestrator.mjs",
+    "P:/tmp/wave4_reproject_20260811/build_close.mjs",
+    "P:/tmp/wave4_reproject_20260811/patch_vintage.mjs (ephemeral one-time patch)",
+    "P:/tmp/wave4_reproject_20260811/patch_worker.mjs (ephemeral)",
+    "P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs (superseded by origin/main #307; archive copy only)",
+    "P:/tmp/parcel_node_sweep_20260809/verify_dbs.mjs (candidate for future sweep PR)",
+    "P:/tmp/w3_build.mjs (L2 wave archive)",
+    "P:/tmp/w3_size.mjs (L2 wave archive)",
+    "P:/tmp/w3_scan2/scan.mjs (L2 wave archive)",
+    "P:/tmp/w3_bosque/analyze.mjs (L2 wave archive)",
+    "P:/tmp/w3_wood/scan.mjs (L2 wave archive)"
+  ],
+  "runbooksGradable": [
+    {
+      "path": "90_runbooks/factory_1_statewide_fabric.md",
+      "gradableBefore": false,
+      "gradableAfter": true,
+      "acceptanceItems": 13
+    },
+    {
+      "path": "90_runbooks/factory_1_5_acquisition_staging.md",
+      "gradableBefore": false,
+      "gradableAfter": true,
+      "acceptanceItems": 13
+    },
+    {
+      "path": "90_runbooks/factory_2_jurisdiction_depth.md",
+      "gradableBefore": false,
+      "gradableAfter": true,
+      "acceptanceItems": 13
+    }
+  ],
+  "carsonFinding": "48065 Carson east-edge overshoot CONFIRMED as source county-assignment bleed, not truncation: 6710/6710 distinct features, rows_outside_texas=0, store max_east_lng -100.8843 vs Census xmax -101.0859 (inset -0.2016°). 278 features fully east of Census xmax (~655 rows) sit in Gray County territory with zero Gray prop_id overlap in store — StratMap zip tagging noise. 49 straddling features add at most +0.0236° bbox inflation. P2.2 non-truncation conclusion stands; verdict upgraded from operator spot-check to county_assignment.",
+  "postgisContradictionResolved": "Same database (neondb via DEPLOYMENT_DATABASE_URL). Not a logical contradiction — temporal and table-scoped. P2.3 (21:05Z) correctly built tx_rrc_well/tx_rrc_pipeline jsonb+bbox-only without PostGIS when extension was not yet installed. P2.4 (21:25Z) apply-tx-building-footprint-migration.mjs ran CREATE EXTENSION postgis 3.5.0 and created tx_building_footprint_geom_gist_idx; gistIndexCreated:true is literal. gistIndexPopulated:false is also literal — geom populated on 117239/10674975 rows (~1.1%); county_fips btree serves queries. Lane A2 not found on this topic.",
+  "staleClaimsFixed": [
+    {
+      "path": "90_runbooks/factory_1_statewide_fabric.md",
+      "was": "Resume hole still present in code; BOM trap unmitigated in loadProgress",
+      "now": "Documents #307 fixes (landed-only skip, stripBom); pre-#307 manual recovery procedure retained"
+    },
+    {
+      "path": "90_operations/OPS-13_store_topology.md",
+      "was": "neondb has no PostGIS (absolute)",
+      "now": "PostGIS 3.5.0 installed 2026-08-11 P2.4; default path remains jsonb+bbox; RRC tables jsonb-only; footprint geom GiST sparsely populated"
+    }
+  ],
+  "prNumbers": [312],
+  "ciConclusionString": "in_progress",
+  "cp1": {
+    "registeredAt": "2026-08-11T17:12:00-05:00",
+    "item3_postgis": {
+      "prediction": "Both P2.3 and P2.4 wrote to same neondb; P2.3 no-PostGIS claim reflects RRC table design and pre-footprint-migration state; P2.4 gistIndexCreated refers to DDL on tx_building_footprint with empty/sparse geom column",
+      "instrumentPlan": "pg_extension query + pg_indexes on three tables + geom population count"
+    },
+    "item4_carson": {
+      "prediction": "Not truncation (6710=6710); east overshoot is projection error or county-assignment/bbox-inflation, not count-based gate failure",
+      "instrumentPlan": "SQL extent vs Census TIGERweb; count features east of census xmax; sample max-east parcels"
+    }
+  },
+  "cp2": {
+    "reviewedAt": "2026-08-11T22:18:00-05:00",
+    "item3_postgis": {
+      "outcome": "CONFIRMED",
+      "refutations": "CP1 prediction that PostGIS extension permanently absent was REFUTED — postgis 3.5.0 now installed after P2.4 migration",
+      "resolution": "Semantic mismatch between RRC jsonb-only staging note and footprint GiST DDL on same store 20 minutes later; both close artifacts accurate for their table/time"
+    },
+    "item4_carson": {
+      "outcome": "CONFIRMED with refinement",
+      "refutations": "Pure projection_error REFUTED (west/north inset correct); pure bbox_inflation REFUTED as sole cause (only 49 straddle features)",
+      "resolution": "county_assignment CONFIRMED — 278 features fully east of Census xmax; truncation REFUTED"
+    },
+    "runbookAdversarial": {
+      "factory1": {
+        "F1-2": "REWRITTEN — vitest path fixed to engine-core package relative path; graded PASS (6/6)",
+        "F1-10": "PASS — versioned orchestrator exists on branch b8e82bd",
+        "F1-9": "KEPT — grep _STATE.md bulk-writer; mechanical when sweep runs"
+      },
+      "factory15": {
+        "F15-8": "KEPT — Utah 49001 dry-run fail-closed is one-shot CLI grade",
+        "F15-11": "KEPT — requires two apply legs; mechanical compare"
+      },
+      "factory2": {
+        "F2-3": "PASS — depth-warm-bastrop-batch.mjs exit 2 RETIRED",
+        "F2-9": "REWRITTEN — ratificationRecordPath + Test-Path replaces git blame"
+      }
+    }
+  },
+  "adversarialFindings": [
+    "Wave4 fold into run_sweep rejected — Census bbox, vintage marker gate, apply2 idempotency not expressible as --cli-script config",
+    "F1-2 acceptance item initially used wrong vitest path (filter exec miss); rewritten before close",
+    "F2-9 initially used git blame (not definitive pass/fail); rewritten to ratificationRecordPath instrument",
+    "P2.3 postgisNote still accurate for RRC tables but misleading if read as global store capability — OPS-13 amended",
+    "Carson rowCount 10300 vs feature 6710 is multipolygon part expansion not double-load",
+    "PR #312 CI still in_progress at close; wave4WorkerVersioned=true on committed branch not yet on origin/main",
+    "Roads no-writer scope filed at _inbox/2026-08-11_road_node_county_writer_scope.md; apply blocked until PR #293 salvage + H6 + legacy band migration",
+    "verify_dbs.mjs and L2 w3_* tmp scripts remain load-bearing archive class — not versioned in this dispatch"
+  ]
+}

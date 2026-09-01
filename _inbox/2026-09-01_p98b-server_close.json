@@ -1,0 +1,216 @@
+{
+  "lane": "p98b-server",
+  "planRow": ["P-98"],
+  "plan": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "repo": "legacy-design-tools",
+  "seat": "property / legacy-design-tools-p98",
+  "status": "complete, uncommitted — the lane produces a diff; the planner commits",
+
+  "missionPremise": "Two live defects share one cause: the account has no readable entitlement without a parcel, and the billing interval is stored nowhere. Settings passes a null parcelNodeId on purpose because it is account-scoped, and GET /entitlement returned early without one, so Settings read Access as \"Not read\" for every account including paying ones. Separately the P-98 next-action rail's highest-value rung, `annual_upgrade`, is STARVED: pe_user_entitlements has no interval column, so nothing can tell it a subscriber pays monthly. Source: the binding dispatch _dispatches/2026-09-01_p98b-server_dispatch.md, and origin/main propertyExplorer.ts where the compound guard at the old line 289 is the refusal.",
+
+  "completionPredicate": "A stranger can verify this without me by: (1) confirming lib/db/drizzle/0092_pe_billing_interval.sql adds a NULLABLE billing_interval with NO DDL default; (2) reading peBillingIntervalForPriceId in pePaywallStripe.ts and confirming it consults only our own env price ids and returns null — never 'month' — for an unmatched id; (3) confirming the webhook writes it inside the EXISTING setPeAccessTierFromStripe call rather than through a new write path; (4) running `npx vitest run src/lib/pePaywallStripe.interval.unit.test.ts src/lib/peEntitlement.responseBody.unit.test.ts` in artifacts/api-server, which needs no database and must report 24 passed; (5) confirming the WITH-parcel response key list is unchanged against origin/main. Not complete until CI runs the 15 DB-backed assertions, which have never executed here.",
+
+  "scopeBasis": "The dispatch bounded this to the server half; the client half is the sibling lane on hauska-map. Inside that, exactly one response path was changed rather than the whole handler, because the with-parcel byte-identity requirement is a harder constraint than the feature. No backfill was written, per the dispatch: the only way to fill pre-0092 rows is to call Stripe, and existing test-mode subscribers reading null is the correct and expected outcome. The migration was NOT applied to any database and nothing was deployed, per the dispatch's no-commit/no-deploy bound.",
+
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+    "branch": "feat/p98b-account-entitlement",
+    "baseCommit": "26068a1e886f37119b0cafffc0e7b195a5f8368c",
+    "baseIdenticalToOriginMain": true,
+    "treeCleanAtStart": true,
+    "committed": false,
+    "pushed": false
+  },
+
+  "prNumbers": "not applicable: lane produces an uncommitted diff by dispatch instruction",
+  "mergeShas": "not applicable: nothing committed",
+  "ciConclusionStrings": "not applicable: nothing pushed, so no check run exists. CI is the first place the 15 DB-backed assertions will execute.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-01_p98b-server_cp1.json",
+    "_inbox/2026-09-01_p98b-server_cp2.json"
+  ],
+
+  "deliverable1_billingInterval": {
+    "migration": {
+      "path": "lib/db/drizzle/0092_pe_billing_interval.sql",
+      "numberClaim": "0092. Claimed per lib/db/drizzle/README.md, which requires the number be free across main AND unmerged work, not merely the next after the branch base. origin/main's highest committed is 0091. All six open PRs (554, 521, 510, 446, 445, 440) were checked with `gh pr diff <n> --name-only` and none touches lib/db/drizzle/00*. A `git ls-tree` sweep over every remote branch not merged into main found no claim on 0092-0094.",
+      "ddl": "ALTER TABLE pe_user_entitlements ADD COLUMN IF NOT EXISTS billing_interval text; plus an idempotent DO-block guard adding CONSTRAINT pe_user_entitlements_billing_interval_chk CHECK (billing_interval IS NULL OR billing_interval IN ('month','year')).",
+      "nullable": true,
+      "ddlDefault": "none — deliberately. A default of 'month' fabricates a fact about somebody's billing and would make the annual_upgrade rung offer 'switch to annual' to annual subscribers.",
+      "whyTheCheckExists": "It binds writers the TypeScript union never sees — a raw connection, a future job, a psql session — and specifically refuses 'monthly', the plausible string a hand-written UPDATE reaches for. Shape and idempotency guard copied from the 0088 pe_saved_properties_crm_status_chk precedent."
+    },
+    "drizzleSchema": {
+      "path": "lib/db/src/schema/peUserEntitlements.ts",
+      "column": "billingInterval: text(\"billing_interval\").$type<PeBillingInterval>()",
+      "typeHome": "`PeBillingInterval = \"month\" | \"year\"` is DEFINED here, on the column that stores it, and RE-EXPORTED by pePaywallStripe.ts (which previously declared its own copy). One definition, so checkout, the webhook, and the store cannot drift into two vocabularies for one fact.",
+      "checkMirrored": "yes — a matching drizzle `check()` so drizzle-kit push produces the identical constraint."
+    },
+    "hardcodedLists": {
+      "conclusion": "Only ONE artifact needed a hand edit. Both other candidates were enumerated rather than assumed.",
+      "schemaFixtureTemplate": "lib/db/src/__tests__/__fixtures__/schema.sql.template — HAND-PATCHED, two lines added to the pe_user_entitlements CREATE TABLE. Stated openly per the dispatch. See leave_behind.",
+      "schemaIntegrationTest": "lib/db/src/__tests__/integration/schema.integration.test.ts — NOT touched. Its hardcoded list is of TABLE names (it asserts against `SELECT tablename FROM pg_tables`). A new column does not appear in it.",
+      "migrationRunner": "lib/db/scripts/migrate-prod.mjs — NOT touched. It discovers migrations with readdirSync over lib/db/drizzle/*.sql, so there is no migration list to refresh.",
+      "handPatchRendering": "The two added lines were copied byte-for-byte from nine constraints of the identical `(x IS NULL) OR (x = ANY (ARRAY[...]))` shape already in the file (lines 674, 677, 678, 730, 1013, 1311, 1581, 2101), all produced by the real pg_dump pipeline. CI's drift check is the proof, and it cannot run here."
+    },
+    "inverseMapping": {
+      "path": "artifacts/api-server/src/lib/pePaywallStripe.ts",
+      "functions": [
+        "configuredPeTierPriceIds(interval) — private; builds the configured set for one interval by calling stripePriceIdForPeTier for all three tiers, so exactly ONE place in the file knows which env name carries which (tier, interval) pair. Unset and blank env values are dropped by that accessor and never enter the set.",
+        "peBillingIntervalForPriceId(priceId) — the inverse of stripePriceIdForPeTier. Returns 'month' | 'year' | null.",
+        "peBillingIntervalFromPriceItems(items) — resolves a subscription's billed line items. Skips items matching nothing configured (the $25 extra-seat line is a real price but not a tier BASE price), refuses on two items that disagree, returns null when nothing matches."
+      ],
+      "failClosedCases": [
+        "price id matching no configured id -> null, never 'month'",
+        "nothing configured at all (missing env group) -> null for every id, never 'month'",
+        "price id configured under BOTH a monthly and an annual env name -> null; we cannot tell which the customer was billed under and a guess is a fabricated billing fact",
+        "null / undefined / empty / whitespace price id -> null",
+        "two billed items resolving to different intervals -> null, not the first one"
+      ],
+      "whyNotAStripeApiField": "Deliberately avoids current_period_end, price.recurring.interval and plan.interval. Their shapes track the Stripe API version and this repo pins no version anywhere — a separate unresolved problem the dispatch names. A price id is an opaque identifier we chose and put in env ourselves, so inverting it reads a source we control.",
+      "whyNotOurOwnMetadata": "pePaywallStripe.ts already writes metadata[billing_interval] at checkout and it is always present, which makes it tempting. Rejected: metadata is what we ASKED Stripe for, the price id is what Stripe BILLED. Persisting the request as though it were the billed fact is the fabrication this column exists to prevent. Pinned by the test 'P-98 VIOLATION: metadata[billing_interval] alone does NOT set the column'."
+    },
+    "webhookWrite": {
+      "path": "artifacts/api-server/src/lib/brokerageStripe.ts",
+      "events": ["checkout.session.completed", "customer.subscription.updated", "customer.subscription.deleted"],
+      "mechanism": "No new write path. The interval rides on the EXISTING setPeAccessTierFromStripe call that already writes the tier, via a new optional `billingInterval` parameter on that function (artifacts/api-server/src/lib/peIdentity.ts).",
+      "oneReadOfTheItems": "`peBilledPriceItems` reads the billed items once; `peGrantBillingFacts` derives BOTH the seat count and the interval from that one reading, so the two facts can never disagree about what was on the subscription.",
+      "deliberateBehaviourChange": "The conditional subscription fetch that already existed here for Team seats had its condition widened from 'team only' to 'any PE subscription grant whose payload carries no items'. REASON: Stripe never expands line_items on a checkout.session.completed webhook, so without the widening every new Solo and Studio subscriber would store a null interval — starving the exact rung the column was added to feed. It CANNOT change the seat count (resolveTeamSeatsPurchased returns null on its first line for any non-team grant) and costs at most one extra Stripe call per new subscription, inside the existing try/catch. Verified it adds no network calls to the existing suite: no current webhook test payload sets `subscription` on the session object.",
+      "churnClears": "tier 'free' writes billingInterval null, never omitting the column. A leftover 'month' after churn or a plan change is a silent false claim about the customer's billing — the same rule the seat count already follows.",
+      "reDerivedOnEveryUpdate": "customer.subscription.updated re-derives rather than carrying a value forward. A monthly-to-annual switch IS this event; a stale 'month' surviving it is the single worst output this column can produce, because it makes the rail upsell annual billing to somebody who just bought it."
+    }
+  },
+
+  "deliverable2_entitlementWithoutAParcel": {
+    "path": "artifacts/api-server/src/routes/propertyExplorer.ts",
+    "changedPaths": "EXACTLY ONE: authenticated caller, no parcelNodeId.",
+    "howTheGuardWasSplit": "origin/main had one compound condition `(!authenticated || !userId || !parcel)`. It is now two: the anonymous check first and alone, then the parcel-absent check. Splitting it this way is what keeps anonymous callers byte-identical AND preserves guard precedence — on main an anonymous caller never reached the validity check, so an anonymous request with a malformed parcel returned 200 with today's body, not 400. That is pinned by a test rather than left to the reader.",
+    "shapeWithAParcel": {
+      "keys": ["authenticated", "tier", "subscriptionTier", "tenantId", "userId", "devRole", "entitlementSource", "property"],
+      "propertyKeys": ["parcelNodeId", "unlocked", "freeMessagesUsed", "freeMessagesLimit"],
+      "byteIdenticalToMain": true,
+      "howGuaranteed": "The base literal was extracted verbatim into peEntitlementBaseBody and the route still spreads it followed by `property`, so insertion order — and therefore JSON.stringify output — is unchanged. Pinned by a full-string comparison against a literal transcribed from origin/main, not from the code under test."
+    },
+    "shapeWithoutAParcel": {
+      "keys": ["authenticated", "tier", "subscriptionTier", "tenantId", "userId", "devRole", "entitlementSource", "seatsPurchased", "billingInterval"],
+      "propertyKeyPresent": false,
+      "why": "An omitted block and a block full of falsy values are different facts. `\"property\" in body` is asserted false, not `toBeUndefined()`, because res.json drops an explicit undefined and a body carrying `property: undefined` would pass the weaker check while being the wrong construction."
+    },
+    "anonymousCallers": "Unchanged in every case, with or without a parcel: they get today's base body. They have no account, so seatsPurchased and billingInterval would be meaningless. This is narrower than a literal reading of the dispatch's 'without one, return the account block' and is called out here rather than buried — it keeps a second response shape from moving.",
+    "howTheFieldsAreRead": "getPeEntitlementRow's SELECT and PeEntitlementSnapshot were widened, so the account answer costs no second query. Safe because the snapshot's consumers were ENUMERATED, not assumed: resolvePeEntitlement has exactly two (this route and brokerageNodeFacets.callerGrantsOwnerFact, which reads only snap.subscriptionTier) and neither spreads it into a response body. artifacts/smartsite-mcp keeps a private copy of the row reader and was not touched.",
+    "devRole": "resolvePeEntitlement already elevates tier and subscriptionTier for dev role. seatsPurchased and billingInterval are passed through UNELEVATED — an operator account bought nothing, and inventing billing facts for it is precisely what this column exists to prevent. Pinned by a test."
+  },
+
+  "wireNamingCorrection": {
+    "correctionReceived": "Coordinator mid-task: the parcel-less field is `tier`, NOT `accessTier`; do not emit both; STOP and report if that conflicts with byte-identity.",
+    "conflict": "none — no STOP was required.",
+    "disposition": "Already satisfied when the correction arrived, and already flagged independently: CP1 decisions D6/D7 record the choice and a source comment at peEntitlement.ts:181 records why. No rename was needed.",
+    "evidence": "`grep -n accessTier` over propertyExplorer.ts and peEntitlement.ts returns zero hits in the route and four in peEntitlement.ts, none of them on the wire: lines 116 and 122 read the DB column to compute `tier`, line 181 is the comment recording this decision, line 457 writes the DB column.",
+    "structuralGuarantee": "peEntitlementAccountBody is `{...peEntitlementBaseBody(snap), seatsPurchased, billingInterval}`. The two shapes cannot drift on field names because the account body is BUILT FROM the with-parcel base builder rather than from a parallel literal. That is a construction guarantee, not a convention someone has to remember.",
+    "actionForTheSiblingLane": "The client's defensive `accessTier` read is now dead code — `tier` is present on both shapes and always has been. Recommend deleting it there, so a future reader does not infer from the client that two names are expected on this wire."
+  },
+
+  "verifiedByViolation": {
+    "rule": "A check observed only passing has not been observed working. Each defect below was injected into the real source, the suite was run, and the source was restored.",
+    "runs": [
+      {"id": "A", "defect": "peBillingIntervalForPriceId defaults to 'month' for anything not annual", "caught": true, "detail": "4 tests failed, including 'an unmatched price id yields null, NOT month' and 'with NOTHING configured every price id yields null, not month'"},
+      {"id": "B", "defect": "peBillingIntervalFromPriceItems takes the first resolvable item, ignoring disagreement", "caught": true, "detail": "1 test failed, in both item orders"},
+      {"id": "C", "defect": "configuredPeTierPriceIds reads process.env directly, admitting unset and untrimmed values", "caught": "NOT ON THE FIRST RUN — see selfFinding", "detail": "all 15 tests stayed green; after the test was fixed, 1 test failed"},
+      {"id": "D", "defect": "peEntitlementBaseBody widened with billingInterval (the naive Deliverable 2)", "caught": true, "detail": "4 tests failed including the byte-identity string comparison"},
+      {"id": "E", "defect": "peEntitlementAccountBody defaults null interval to 'month' AND emits an empty property block", "caught": true, "detail": "3 tests failed"}
+    ],
+    "selfFinding": "Defect C is the finding of this session. A test labelled 'VIOLATION: a blank env var cannot be matched by a blank price id' was VACUOUS: two independent guards produce that outcome and the input-side empty-string check satisfies it alone, so the assertion never exercised the config-side filter it appeared to be about. It was a presence-shaped check wearing a violation label, and it would have read as coverage forever. Found only because the falsifier was pre-registered per-defect instead of scoring the file green. Fixed two ways: the vacuous test now states in its own body exactly what it does and does not prove, and a non-vacuous companion was added ('configured price ids are read through the trimming accessor, not raw env') which the defect does fail."
+  },
+
+  "counts": {
+    "countingRule": "`npx vitest run` in artifacts/api-server, whole suite, identical command before and after. 165 test FILES fail at import in BOTH runs because DATABASE_URL is unset in this environment (local postgresql-x64-18 is Stopped and cannot be started without admin; the Docker daemon is not running). That 165 being unchanged is the no-regression signal, not a claim of health.",
+    "before": {"testFiles": "165 failed | 153 passed | 1 skipped (319)", "tests": "1437 passed | 1 skipped (1438)"},
+    "after": {"testFiles": "165 failed | 155 passed | 1 skipped (321)", "tests": "1461 passed | 1 skipped (1462)"},
+    "delta": "+2 passing files, +24 passing tests, +0 failing files",
+    "newTestsWritten": 39,
+    "newTestsObservedRunning": 24,
+    "newTestsNeverExecuted": "15 — 8 route assertions in pe-property-entitlement.test.ts and 7 webhook assertions in pe-pricing-ladder.test.ts. Both files are in the DATABASE_URL-dependent 165 and fail at import here. They typecheck; CI is the first place they run. Stated rather than implied.",
+    "typecheck": "artifacts/api-server `npx tsc --noEmit -p tsconfig.json` EXIT=0 (measured directly, not through a pipe — an earlier reading of this exit code through `| grep` returned grep's 1 and would have been reported as a failure)",
+    "libDbBuild": "`npx tsc -b lib/db` EXIT=0",
+    "bundle": "`node ./build.mjs` in artifacts/api-server EXIT=0 — run specifically because this change closes a module cycle (see constraintsHonored)"
+  },
+
+  "constraintsHonored": [
+    "Nullable, never defaulted — no DDL default, and the TypeScript path returns null rather than guessing at six distinct failure points.",
+    "Derived from our own configured price ids, not a Stripe API field. current_period_end, price.recurring.interval and plan.interval are untouched.",
+    "The inverse lives in pePaywallStripe.ts, reading the same config through the same accessor as the forward mapping.",
+    "No new write path — the interval rides with the existing tier write.",
+    "No backfill. Existing test-mode subscribers will read null, which is correct.",
+    "With-parcel response byte-identical, tested by full-string comparison against a literal transcribed from origin/main.",
+    "Property block OMITTED, not empty or defaulted, tested with `in` rather than a falsy check.",
+    "Verified by violation in both directions, five injected defects, one of which exposed a vacuous test.",
+    "Every command exit-bounded. No watch, no dev server, no non-exiting process.",
+    "Did not commit, push, merge or deploy. Did not apply the migration to any database.",
+    "Worked only in the registered worktree for this seat, on its own branch. No other seat's checkout was touched.",
+    "The new import edge brokerageStripe -> pePaywallStripe closes a module cycle (pePaywallStripe already imported brokerageStripe). Verified benign rather than assumed: neither module references the other at module-evaluation time, tsc passes, and the esbuild bundle succeeds. Recorded because a future top-level const on either side would make it a real problem."
+  ],
+
+  "threeQuestionGate": {
+    "control": "pe_user_entitlements_billing_interval_chk",
+    "whatExecutes": "PostgreSQL constraint evaluation",
+    "whatTriggers": "every INSERT or UPDATE touching billing_interval",
+    "whatFails": "the write raises SQLSTATE 23514 and the transaction aborts",
+    "whatBypasses": "ALTER TABLE ... DROP CONSTRAINT; nothing else reaching this database",
+    "isItRunningInProductionToday": "NO. The migration is written and not applied anywhere. Until it is applied this control enforces nothing, and it is recorded as an open item rather than counted as coverage."
+  },
+
+  "openItems": [
+    "The schema fixture is a HAND-PATCH, not a pg_dump refresh, and the drift check compares against the LIVE database — so it cannot pass until 0092 is applied there. Sequence: apply 0092, then `pnpm --filter @workspace/db run test:fixture:schema`, then commit any difference. If that refresh produces a diff against the hand-patch, the refresh is right and the hand-patch was wrong.",
+    "15 DB-backed assertions have never been observed executing. CI is authoritative for them.",
+    "The migration is not applied to any database. Merged is not applied.",
+    "The sibling client lane's defensive `accessTier` read is now provably dead code."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "branch feat/p98b-account-entitlement in P:/seat-worktrees/property/legacy-design-tools-p98, 12 files uncommitted (9 modified, 3 new)",
+      "owner": "planner",
+      "plan_row": "P-98",
+      "note": "Lane produces a diff by dispatch instruction. Nothing committed, pushed, merged or deployed."
+    },
+    {
+      "item": "lib/db/drizzle/0092_pe_billing_interval.sql — written, not applied to any database",
+      "owner": "planner",
+      "plan_row": "P-98",
+      "note": "Until it is applied, billing_interval does not exist in any live schema, the CHECK enforces nothing, and the fixture drift check will fail against the live DB."
+    },
+    {
+      "item": "hand-patched lib/db/src/__tests__/__fixtures__/schema.sql.template",
+      "owner": "planner",
+      "plan_row": "P-98",
+      "note": "Must be regenerated by refresh-schema-fixture.sh after 0092 is applied. The hand-patch is a best transcription of pg_dump's rendering, not its output."
+    }
+  ],
+
+  "fleetMemory": {
+    "LESSON": [
+      "A 'VIOLATION:' label on a test is a claim, not a property. Two independent guards can produce one outcome, and the cheaper guard satisfies the assertion alone — so the test never exercises the mechanism it appears to be about. Injecting the defect PER GUARD rather than per file is what distinguishes them. Instance: 'a blank env var cannot be matched by a blank price id' stayed green against a defect that admitted unset env vars into the configured set, because the empty-input check short-circuits first. Caught only because the falsifier was pre-registered per-defect.",
+      "In this repo, a DB-free unit test seam exists and is already established: `vi.mock(\"@workspace/db\", () => ({...}))` with a FACTORY and no importActual, in a colocated src/lib/*.unit.test.ts. The precedent is peTeamSeatsFromStripe.unit.test.ts. The 165 api-server test files that fail without DATABASE_URL almost all use `vi.importActual` inside the mock factory, which re-enters the real module and constructs the Pool — that is the discriminator, not the presence of vi.mock. This is the difference between writing a violation test and OBSERVING one.",
+      "Reading a command's exit code through a pipe reports the LAST stage's status. `npx tsc -b lib/db 2>&1 | grep -v 'npm warn'; echo $?` printed 1 because grep matched nothing, and tsc had exited 0. Redirect to a file and read $? directly. Same family as the positional-formatter trap already in ENFORCEMENT.md.",
+      "Stripe does NOT expand line_items on a checkout.session.completed webhook payload. Anything derived from billed price items at checkout time needs the subscription fetched, or it is null for every new subscriber — a starved column that reports as a shipped feature.",
+      "lib/db/drizzle/README.md requires claiming a migration number free across main AND unmerged branches, not the next after your own base. `gh pr diff <n> --name-only` per open PR plus a `git ls-tree` sweep over unmerged remote branches is the check.",
+      "pg_dump renders a table CHECK constraint inside the CREATE TABLE body, alphabetically by constraint name, as `CONSTRAINT name CHECK (((col IS NULL) OR (col = ANY (ARRAY['a'::text, 'b'::text]))))`. A hand-patch of the LDT schema fixture must match byte-for-byte; nine existing constraints of that shape are in the file to copy from."
+    ],
+    "DEAD-END": [
+      "Starting the local PostgreSQL 18 service to run the DB-backed suite: `Start-Service postgresql-x64-18` fails with 'Cannot open postgresql-x64-18 service on computer' — no admin rights in this environment. The Docker daemon is also not running (npipe dockerDesktopLinuxEngine absent). Do not retry either; write DB-free unit tests for anything that must be observed running, and let CI own the rest.",
+      "Deriving the billing interval from our own `metadata[billing_interval]` on the checkout session. It is always present and would have been trivial, and it is wrong: metadata is what we ASKED for, the price id is what Stripe BILLED. Rejected deliberately, with a test pinning that metadata alone does not set the column, so nobody re-derives it as an easy win."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-01: legacy-design-tools origin/main tip is 26068a1e886f37119b0cafffc0e7b195a5f8368c; highest committed migration 0091_pe_activation_events.sql; six open PRs (554, 521, 510, 446, 445, 440), none touching lib/db/drizzle.",
+      "2026-09-01: artifacts/api-server baseline `npx vitest run` with DATABASE_URL unset = 165 test files failed | 153 passed | 1 skipped (319); 1437 tests passed | 1 skipped. This is the LOCAL baseline and it is not a health signal — it is the number to compare against.",
+      "2026-09-01: pe_user_entitlements columns before this change were ownerUserId, tenantId, accessTier, devRole, entitlementSource, stripeCustomerId, updatedAt, subscriptionTier, seatsPurchased. No interval column existed.",
+      "2026-09-01: GET /api/property-explorer/v1/entitlement on origin/main emits `tier`, never `accessTier`. There is no accessTier on that wire and there never was."
+    ],
+    "OPEN": [
+      "0092 is unapplied. The fixture drift check will fail against the live DB until it is applied and the fixture regenerated.",
+      "15 DB-backed assertions (8 route, 7 webhook) have never executed. CI is their first run.",
+      "The api-server has no Stripe API version pin anywhere. This card routed around it by inverting price ids instead of reading versioned fields, but the underlying problem is untouched and will surface again on anything that needs current_period_end or a recurring-interval field.",
+      "The sibling client lane reads both `tier` and `accessTier`; the latter is dead code and should be removed there."
+    ]
+  }
+}

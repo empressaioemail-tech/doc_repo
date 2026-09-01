@@ -76,6 +76,7 @@ code-section / code-cross-reference are Codex-only; out of scope.
 - 2026-08-22: opened at operator verbal after SERVE visual QA revealed CC unchanged and random-parcel incompleteness. Phase 1 audit dispatches immediately. Phases 2–5 blocked on audit close.
 - 2026-08-22 (thesis planner): narrow "honest miss" to typed verdicts per doc 19; empty-success is defect. Verdict serve P-63 authorized (`_inbox/2026-08-22_verdict_layer_serve_WDLL.md`).
 - 2026-08-23: P-63 closed; P-59 semantics unblocked (A-025). Atom surface WDLL items 6–7 dispatch under `_inbox/2026-08-23_p59_scorer_specs_WDLL.md`.
+- 2026-08-23: Phase 2–5 partial close. P-61 closed; P-60 CP2 in flight (PR #186); program close `_inbox/2026-08-23_atom-full-surface_close.json` status PARTIAL until map deploy.
 
 ## Finish card (graded at close)
 
@@ -84,14 +85,15 @@ code-section / code-cross-reference are Codex-only; out of scope.
 3. met: 15-family matrix post-SERVE ecfaac4/712f56e5. Evidence `_inbox/2026-08-22_p58-code-audit_close.json`. Nine families changed vs s2 scout.
 4. met: CC baseline in P-57 grade; roads 254/254 not-yet; six unspecified rails zero satisfied-present.
 5. met: Ranked backlog P-59..P-62 stack `_inbox/2026-08-22_atom_full_surface_gap_backlog.json`.
-6. pending
-7. pending
-8. pending
-9. pending
-10. pending
-11. pending
-12. pending
-13. pending
+6. met: P-59 close `_inbox/2026-08-23_p59-scorer-specs_close.json` — six rails scoreable; apply rrc-pipelines+rail-corridor @ 98.26% Bastrop.
+7. partial: Bastrop CC cells scored; statewide mostly not-yet; p47 amended post-P-59 (SCORER_SPEC_RAILS).
+8. partial: P-60 CP2 merged pending deploy (PR #186); buildable-envelope, building-footprint, mud-pid flipped live in registry.
+9. partial: falsifier suite documented; live map probe grades after PE+engine deploy.
+10. met: P-61 close `_inbox/2026-08-23_p61-inspect_remainder_close.json` gold landUseFact source=land-use-fact.
+11. partial: P-52 HOLD close filed; rail-corridor inspect/map parked per scout.
+12. met: Bastrop rrc-pipelines+rail-corridor 98.26% on dated GET 2026-08-23T12:10Z.
+13. partial: inspect+CC consistent; map layer stamp pending P-60 deploy.
+14. met: item 14 divergence guard in `scripts/atom-full-surface-audit.mjs` 11-case self-test pass 2026-08-23.
 
 ## Phase 1 status
 

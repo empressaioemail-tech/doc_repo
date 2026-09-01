@@ -1,0 +1,168 @@
+{
+  "lane": "s7-land-use-inspect",
+  "artifact": "cp1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T21:18:00Z",
+  "planRows": ["P-08"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["5", "6"],
+  "dispatch": "_dispatches/2026-08-21_s7-land-use-inspect_dispatch.md",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/legacy-design-tools-worktrees/s7-land-use-inspect",
+  "branch": "s7-land-use-inspect",
+  "snapshot": {
+    "ldtWorktree": "P:/legacy-design-tools-worktrees/s7-land-use-inspect",
+    "ldtBranch": "s7-land-use-inspect",
+    "ldtHead": "a028ed3777c9aa783e118a4cbfa67c53bd37738c",
+    "ldtHeadSubject": "fix(inspect): flood-hazard-fact on node facets, SS-W16 stays (#449)",
+    "ldtStatus": "clean before edits",
+    "forbiddenCheckout": "P:/legacy-design-tools not touched; P:/seat-worktrees/property/legacy-design-tools not occupied",
+    "docRepo": "P:/doc_repo",
+    "docRepoWrites": "_inbox JSON only"
+  },
+
+  "missionPremise": "Sellable WDLL item 5: a land-use-fact atom that exists for a gold parcel must be retrievable by that parcel's parcelNodeId on inspect. Flood PR 449 proved the sibling-field pattern (floodHazardFact). Land-use entity_id is ${parcelNodeId}:${taxYear} (writer seam land-use-fact-writer.ts), so flood's entity_id = ANY(parcel keys) WILL MISS 48021:34137:2025. Baked facets.baseFacts.landUse stays retiredStore this pass. Item 6: no new ingest. Source: _dispatches/2026-08-21_s7-land-use-inspect_dispatch.md, hauska-engine packages/atoms/src/land-use-fact-writer.ts entityIdOf, _inbox/2026-08-21_sellable_WDLL.md items 5 and 6.",
+
+  "completionPredicate": "GET /api/brokerage/v1/place/node/:parcelNodeId/facets returns a ROOT sibling landUseFact read from land-use-fact atoms (prefixes + taxYear bind), or a typed refusal code=atom-miss that names both parcel prefixes. Never a silent null. Never SELECT cad_property for that field. facets.baseFacts.landUse remains the baked cad-roll object. Tests fail if cad-roll code/description is copied onto landUseFact, and pass when a fixture atom on 48021:34137:2025 yields landUseCode. Diff uncommitted. No deploy, no atoms --apply, no Harris PBF, no minted absence.",
+
+  "scopeBasis": "New READ of existing land-use-fact atoms on the cortex inspect GET only, copied from floodHazardFactRead. Dual grammar is on the parcel PREFIX only, then :taxYear from the atom row, never invented from cad_property or the request. Keep baked landUse. Do not write hauska-map. Do not occupy the property seat checkout. Deploy is planner leave_behind.",
+
+  "filesWillTouch": [
+    "artifacts/api-server/src/lib/landUseFactRead.ts (new)",
+    "artifacts/api-server/src/lib/landUseFactRead.test.ts (new)",
+    "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+    "artifacts/api-server/src/__tests__/brokerageNodeFacets.test.ts"
+  ],
+
+  "bindSql": {
+    "notThis": "entity_id = ANY($2::text[]) of parcel keys (floodHazardFactRead). That lookup misses ${parcel}:${taxYear}.",
+    "this": "SELECT entity_id, body FROM atoms WHERE entity_type = $1 AND (entity_id LIKE $2 || ':%' OR entity_id LIKE $3 || ':%')",
+    "params": {
+      "$1": "land-use-fact",
+      "$2": "integer parcel prefix {fips}:{prop}",
+      "$3": "padded parcel prefix {fips}:{prop}.00000000"
+    },
+    "taxYear": "suffix after a matching prefix. Parsed from the atom row (entity_id and/or body.taxYear). Never a request param. Never cad_property.tax_year.",
+    "prefer": "highest taxYear among prefix hits. Same year on both grammars: integer first if bodies agree; bind-conflict if they disagree.",
+    "zeroHits": "refused code=atom-miss, tried=[both prefixes], source=land-use-fact",
+    "gold": "48021:34137:2025 (and confirmatory 48055:18925:2026)"
+  },
+
+  "design": {
+    "retiredStoreUnchanged": {
+      "facets.baseFacts.landUse": "keep baked cad-roll {code, description, source, vintage} this pass. PE will prefer landUseFact.",
+      "never": "SELECT cad_property for landUseFact. Never copy code/description onto landUseFact."
+    },
+    "newReadPath": {
+      "field": "landUseFact",
+      "parallelTo": "floodHazardFact",
+      "store": "ATOMS_DATABASE_URL -> hauska_mcp.atoms. Never DATABASE_URL (deployment store in api-server).",
+      "pool": "module-level singleton, not a new Pool per GET",
+      "presentFields": [
+        "state=present",
+        "source=land-use-fact",
+        "boundAs",
+        "tried",
+        "entityId",
+        "taxYear",
+        "landUseCode",
+        "landUseLabel (null if absent)",
+        "sourceAdapter",
+        "sourceVintage",
+        "evaluatedAt"
+      ]
+    },
+    "divergenceInTests": {
+      "snapshotFixture": "baseFacts.landUse.code=A1 description=Single-family residential source=cad-roll",
+      "atomFixture": "landUseCode distinct from A1 (fixture C1), landUseLabel not the cad-roll description",
+      "why": "a test that seeds the same code on both stores can pass while still serving cad-roll. Distinct values plus atom field names (landUseCode not code) prove which store answered."
+    }
+  },
+
+  "whatWillViolateToProveTests": [
+    "interpret empty rows / flood-style entity_id without :taxYear => atom-miss, not null",
+    "memory fake query containing cad_property or place_layer_snapshots throws",
+    "GET with snapshot A1 and empty atoms: landUseFact.code undefined, landUseFact is atom-miss, baked landUse.code stays A1",
+    "GET with snapshot A1 and fixture 48021:34137:2025 landUseCode=C1: landUseFact.landUseCode=C1 source=land-use-fact, baked landUse.code still A1",
+    "padded-prefix-only fixture 48021:34137.00000000:2025 yields present",
+    "2024 and 2025 both present: serve 2025",
+    "same year both grammars disagree: bind-conflict",
+    "boot-proof: brokerageNodeFacets.ts imports landUseFactRead and emits landUseFact",
+    "read module source has zero cad_property / FROM place_layer_snapshots; has FROM atoms and LIKE prefix"
+  ],
+
+  "threeQuestionGate": {
+    "control": "unit tests on prefix bind + year prefer + cad_property refusal, plus route boot-proof",
+    "whatExecutesIt": "vitest in artifacts/api-server (CI Test job on PR; this lane does not open a PR)",
+    "whatTriggersIt": "local vitest this lane; later PR/push to main (planner)",
+    "whatFailsWhenViolated": "vitest non-zero if landUseFact carries cad-roll code/description, if miss is a silent null, if flood-style parcel-only ids bind, or if the route does not import the new module",
+    "whatBypassesIt": "a second route that SELECT cad_property onto a differently named field. Tests assert landUseFact.source is land-use-fact and landUseFact has landUseCode not code."
+  },
+
+  "predictions": {
+    "bakedLandUseStaysRetiredStore": {
+      "expect": true,
+      "falsifier": "GET stops returning facets.baseFacts.landUse.code from the bake, or landUseFact is populated from that object"
+    },
+    "landUseFactNeverCadProperty": {
+      "expect": "landUseFactRead.ts has zero cad_property tokens; memory fake throws on that name",
+      "falsifier": "a SELECT cad_property in the new module, or a passing test whose landUseFact.code equals the bake"
+    },
+    "floodStyleAnyParcelKeysMiss": {
+      "expect": "rows keyed 48021:34137 (no :year) are atom-miss for land-use",
+      "falsifier": "interpret serves a present finding from a parcel-only entity_id"
+    },
+    "dualGrammarPrefixesAlwaysTwo": {
+      "expect": "landUseFactBindPrefixes('48021:34137') and inbound padded both equal ['48021:34137','48021:34137.00000000']",
+      "falsifier": "a third key, a missing padded form, or inbound padded not inverted"
+    },
+    "preferHighestTaxYear": {
+      "expect": "2025 wins over 2024",
+      "falsifier": "2024 served when 2025 exists"
+    },
+    "missIsNamedRefusal": {
+      "expect": "code atom-miss with tried prefixes, landUseFact not null",
+      "falsifier": "landUseFact omitted or null with no code"
+    },
+    "gold48021": {
+      "expect": "fixture 48021:34137:2025 yields landUseCode; live store UNMEASURED until a point lookup this lane can run without apply",
+      "falsifier": "silent null, or a value whose source is cad-roll / cad_property"
+    }
+  },
+
+  "adversarialReview": [
+    {
+      "objection": "LIKE prefix || ':%' might match padded ids from the integer prefix.",
+      "response": "48021:34137.00000000:2025 does not LIKE 48021:34137:% because the next character after the integer prefix is '.' not ':'. Interpret additionally requires rest === YYYY against each prefix independently.",
+      "disposition": "Proceed. Test both prefixes as distinct hits."
+    },
+    {
+      "objection": "Inventing taxYear from cad_property or from the request would bind even when the atom is missing.",
+      "response": "Year comes from the atom row. tried names prefixes only. Zero hits is atom-miss.",
+      "disposition": "Fail closed. No year parameter."
+    },
+    {
+      "objection": "Copying bake landUse onto landUseFact would pass a naive presence check.",
+      "response": "Divergence fixture: bake A1 vs atom C1. Assert landUseCode not code. Assert baked A1 still on baseFacts.",
+      "disposition": "Divergence test is the control."
+    }
+  ],
+
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no gcloud run",
+    "no gh workflow run",
+    "no atoms --apply",
+    "no Harris PBF",
+    "no re-key",
+    "no minted absence",
+    "no mud-pid / texas-rrc",
+    "P:/legacy-design-tools not touched",
+    "property seat checkout not occupied",
+    "hauska-map not written"
+  ]
+}

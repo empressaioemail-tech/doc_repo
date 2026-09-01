@@ -2,7 +2,7 @@
 id: 2026-08-27_ship_wave_live_grade
 title: Live grade — ship wave W0 W1 P0 W6/W7
 status: filed
-last_updated: 2026-08-27
+last_updated: 2026-08-28
 ---
 
 # Ship wave live grade
@@ -85,3 +85,87 @@ Signed-out My properties is the sign-in dock (items 22–27 need a saved propert
 | Item | Grade | Evidence |
 | --- | --- | --- |
 | 22–27 W3.1–W3.6 | leftover | Unit suite green. Live signed-in walk not done (Google). Flood exclude is stored on the package; the grant instrument has no flood artifact slot. |
+
+## Nick signed-in walk 2026-08-27T22:15Z
+
+Operator screenshots. Live was `5ff60e4` / `index-BjUy_omD.js` at walk time. Fix for the two defects shipped `2b3a736` `dpl_94JVCwjnB6tuyefDe6MTqtDVKJrt` bundle `index-DYJTvYgr.js`.
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| W0.2 | met | Compare two-column: 1101 Chestnut vs 145 Hasler Shores. |
+| W0.7 colors | met | Draw notes 1 blue / 2 green on 1101 Chestnut. |
+| W0.7 hover | defect then fix | White text on white MapLibre popup. Contrast CSS shipped. Re-grade. |
+| W3 row click | defect then fix | Clicking a saved row opened Brief (`inspectInPlace` stole the rail). `keepDock` shipped. Re-grade. |
+| W3.4 list | met | List rows show X-ray / Flood include, status chips, notes/chat/drawings labels. |
+| W2 include-notes | met on rail | Share dock checkbox + `/s/750145cc-…`. Dossier notes on share still need the dossier dock. |
+| W5.1 / W5.2 | met | Notes on B (`test note`). Pair survives. |
+| W6.2 copy | met | Plans: "2 months free · 10 × monthly". Start Solo / Studio / Team. $15 / 30 days. 12 seats $349 helper. |
+| W6.1 checkout | partial | 10 seats $299. 12-seat checkout not clicked. |
+| W6.3 | met | Back to cart + Change seats on Stripe Team page. |
+| W6.2 toggle | leftover | Plans Monthly selected; Stripe still "billed annually" $2,990. |
+
+leave_behind: monthly toggle vs annual Stripe session. 12-seat live checkout. Wallets / unlock error. Flood exclude on the instrument.
+
+## Nick signed-in walk 2026-08-27T22:36Z
+
+My properties detail stayed open (keepDock). Operator then graded the next defects on that surface.
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| W3 dossier stay | met | 145 Hasler Shores detail: notes `test note`, Researching, Include notes, Agent persona. |
+| W3.3 persona contrast | defect | Who I am sharing with: white text on white OS list. |
+| W3.3 copy after mint | defect | Link `https://smartsite.cloud/s/dae16d61-…` shown with no Copy link. |
+| W2.1 recipient dock | defect | Recipient `/share?g=b0864737-…` opened Property brief, not Shared analysis. |
+| W6 first paint | defect | Plans landed on Annual. |
+| W6.2 chip | defect | "2 months free · 10 × monthly" sat next to the toggle. |
+| W6.1 seat placement | defect | Seat stepper and 12-seat $349 sat off the Team column. Math itself correct. |
+
+Amendment filed. LIVE hauska-map `0fa17be` (#254). Vercel `dpl_9viNLTjjkX6aVoRkyxWZTmsC3yPW` aliased smartsite.cloud. Bundle `index-CJ_n-E23.js`.
+
+## Nick signed-in walk 2026-08-27T22:54Z
+
+Operator: all pass on the #254 ship.
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| W3.3 persona | met | Dark who-I-am-sharing-with menu readable. |
+| W3.3 copy | met | Copy link after mint. |
+| W2.1 recipient dock | met | Share land stays on Shared analysis, not Brief. |
+| W6 first paint | met | Plans lands Monthly. |
+| W6.2 chip | met | No header 2 months free chip. |
+| W6.1 seat placement | met | Seats and $349 live in the Team column. |
+
+leave_behind: W3.2 auto-save, W3.5 chats, W3.6 pass; W1 leftover strings; W2.2 / W2.3 / W2.4; 12-seat checkout click; wallets / unlock; W4 P1 blocked on engine chips.
+
+## W1 leftovers 2026-08-27T23:12Z
+
+LIVE hauska-map `987e5be` (#255). Vercel `dpl_BHHFS7ENuTVichTb9oNGgwJhr8E7` aliased smartsite.cloud. Bundle `index-JEQCZEMl.js`. Shipped for Nick walk. Not graded met.
+
+| Check | Instrument | Result |
+| --- | --- | --- |
+| 905 Pecan | GET `/api/pe-geocode?q=905%20Pecan` no viewport | First feature is 905 Pecan Street, Bastrop. Second is 905 West Pecan Street, Stephenville. |
+| 905 PECAN ST situs | GET `/api/pe-situs-search?q=905%20Pecan%20ST` | Empty. Store row exists as `48021:34161`. Cortex prefix leave-behind. |
+| 17000 Simsbrook | GET `/api/pe-geocode?q=17000%20Simsbrook` | 17000 Simsbrook Drive, Pflugerville. |
+| 1620 Bryant | GET `/api/pe-situs-search?q=1620%20Bryant` | Unit rows (1404, 2204, 1802, …). Not collapsed. |
+| Bastrop Texas | GET `/api/pe-geocode?q=Bastrop%20Texas` | Photon still leads with FCI Bastrop house. Client merge drops address rows on place queries so UI should show City then County. |
+
+leave_behind: Nick walk of the five Find strings; cortex situs prefix for 905 PECAN ST; W3.2 / W3.5 / W3.6; W2.2 / W2.3 / W2.4; 12-seat checkout; wallets / unlock; W4 P1 blocked on engine chips.
+
+## W3 remainder 2026-08-27T23:13Z
+
+Nick walk on live `987e5be` / 927 MAIN ST Bastrop.
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| 23 W3.2 | met | Flood on a fresh parcel created a saved property. |
+| 26 W3.5 | met | Chat expands and contracts in the property area. |
+| 27 W3.6 | met | Pass does not delete the property. |
+| 20 W2.5 | defect | View PDF opened navy viewer chrome (live-view + Close + Download PDF) with no page. Flood download sends Content-Disposition attachment; Chrome iframe stays empty. |
+
+## Nick walk 2026-08-28T05:41Z
+
+LIVE hauska-map `b32d988` (#266). Vercel `dpl_5GxvPb1ibxKrxWwa6aqcs2ZEUcHb` aliased smartsite.cloud. Bundle `index-GKUuHHrr.js`.
+
+| Item | Grade | Evidence |
+| --- | --- | --- |
+| 20 W2.5 | met | Operator: viewer verified good. Pages paint in the pdf.js chrome v2 card. Native embed retired. |

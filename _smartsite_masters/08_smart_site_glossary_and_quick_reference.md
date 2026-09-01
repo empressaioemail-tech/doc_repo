@@ -2,7 +2,7 @@
 id: smartsite_masters_08_glossary_quick_reference
 title: Smart Site glossary and quick reference
 status: active
-last_updated: 2026-08-04
+last_updated: 2026-08-27
 applies_to: smart_site
 owner: nick
 purpose: One-page vocabulary and claims quick reference for anyone speaking or writing about Smart Site. If a term or claim is not here or in the positioning framework, do not improvise it; ask.
@@ -15,6 +15,16 @@ purpose: One-page vocabulary and claims quick reference for anyone speaking or w
 **Smart Site.** Both the unit and the product, one name on purpose. The unit: any addressable place, a lot, a building, a corner, a stretch of road, a park, with all the information that governs it assembled into one current, cited, usable structure. The product: the application that puts smart sites in your hands, the map, the layers, the parcel answers, the chat, the X-ray. There is no separate brand for the app versus the thing; the product is the unit made accessible. Formerly named Property Explorer; the old name is retired from all market-facing material.
 
 **Smart Site X-ray.** The deep-read report on one smart site: what you can build (envelope drawn), flood and drainage, terrain, codes, utilities, each layer sourced and dated. Say "X-ray," never "dossier," "brief," or "report pack."
+
+**Flood and Drainage.** The other live report.
+
+**Feasibility.** A report on the locked menu. Not live generate today.
+
+**Comparison.** A report on the locked menu and a tool (side-by-side). The tool is live. The report generate path is not.
+
+**Brief.** The inspect dock. A tool, not a report.
+
+**Records.** The courthouse request tool. Not a report.
 
 **Smart City.** A whole community's worth of smart sites connected into one operating picture. Also the frame behind the SmartCity OS product line sold to cities; that line has its own positioning set and its own rules. Do not pitch cities from Smart Site collateral.
 

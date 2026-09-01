@@ -83,7 +83,7 @@ Contention is keyed by DATABASE and ENDPOINT, not by table. All factory stores s
 
 ## THE STATE TEMPLATE (Texas is one of fifty)
 
-The transferable asset is the layer taxonomy and the program shape, never the adapters. Standing up state two must cost exactly: a state source registry (which agency serves parcels, roads, flood, CAD equivalents, code hosting patterns) plus per-state adapters conforming to existing adapter contracts. Everything else ships unchanged. Design rule with teeth: no state constant may live in factory machinery; state specifics live in registry rows and adapter modules only. Any PR hardcoding a Texas fact into shared machinery is a template violation, flagged in review. The W5 WDLL carries the template worksheet.
+The transferable asset is the layer taxonomy and the program shape, never the adapters. Standing up state two must cost exactly: a state source registry (which agency serves parcels, roads, flood, CAD equivalents, code hosting patterns) plus per-state adapters conforming to existing adapter contracts. Everything else ships unchanged. Design rule with teeth: no state constant may live in factory machinery; state specifics live in registry rows and adapter modules only. Any PR hardcoding a Texas fact into shared machinery is a template violation, flagged in review. W5 WDLL acceptance item 9 (state template worksheet) is **OWED** — grade empty; no worksheet doc exists yet.
 
 ## ATTENTION-FREE OPERATION (honest status and the mechanics)
 

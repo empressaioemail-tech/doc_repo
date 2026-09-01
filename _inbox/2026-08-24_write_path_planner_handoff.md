@@ -33,6 +33,7 @@ You are the doc_repo planner. Execute the already-approved parcel public-facts w
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-facts-write-path.canvas.tsx`
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\county-manifest.canvas.tsx`
    - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\parcel-public-facts-deficit.canvas.tsx`
+   - `C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-health.canvas.tsx`
 5. `_inbox/2026-08-24_county_manifest_dump.json` then refresh with `node scripts/county-manifest-canvas-dump.mjs --live` when you need a new health read. Do not rematerialize.
 6. `_inbox/2026-08-24_write_path_what_we_missed.md` (hop and deploy surprises)
 7. `_inbox/2026-08-24_inspect_hop_diagram.md`

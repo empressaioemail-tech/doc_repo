@@ -44,3 +44,7 @@ Revisit v1 if Claude Apps require a Team or Enterprise org we do not have and ca
 ## Dependencies
 
 P-87 eight-tool catalog and draw stub (items 22 to 27) are prerequisites and are live. P-88 item 21 files on the connector path (P-91 item 11), not as a child of the app iframe. P-85 records stay `not_ready` until that card lands; they are not a v1 board dependency. P-92 depends on P-91 item 16 customer-done plus a connector WDLL amendment.
+
+## Status 2026-08-30 (P-91 v2 serving)
+
+This decision is not rewritten. The tools it listed under v2 (named screens, status CRM, `create_screen`, `save_property`, `set_property_status`) shipped in v1 under A-046 on p557. Drainage overlay and hop-1 codeRefs did not: drainage overlay is D8 (data lane); codeRefs is F9 on P-92. P-92 now carries N1 (neighbor seam), F9 (zoning codeRefs), and R3 (`ask_the_map`, still `not_ready`). v2 is serving on smartsite-mcp p558 (`smartsite-mcp-00065-siv`) and cortex-api p543 (`cortex-api-00668-cos`), PRs #553 (`d8dfb319`) and #555 (`24553cfc`). Card `_inbox/2026-08-30_smartsite_mcp_app_v2_WDLL.md`.

@@ -15,7 +15,7 @@ related_canonical:
 
 # Decision
 
-All remaining SmartSite and Texas-flush work is on the board and runs as four parallel teams (SERVE, COVER, IDENT, GOV). Sellable remains heartbeat plus atoms on parcels. It is not program complete. Wave A `--apply` is in. Harris PBF stays out. Owner-fact is identified inspect only. Honest-absent stays held until the verified-absence pair is ruled against L7.
+All remaining SmartSite and Texas-flush work is on the board and runs as four parallel teams (SERVE, COVER, IDENT, GOV). Sellable remains heartbeat plus atoms on parcels. It is not program complete. Wave A `--apply` was in; operator 2026-08-22 parked COVER fill in favor of SERVE + IDENT + DC-3 instrument (`_decisions/2026-08-22_serve_ident_then_background_cover.md`). Harris PBF stays out. Owner-fact is identified inspect only. Honest-absent stays held until the verified-absence pair is ruled against L7.
 
 ## Context
 

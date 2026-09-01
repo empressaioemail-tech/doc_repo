@@ -2,7 +2,7 @@
 id: 2026-08-23_phase2_data_ingest_program
 title: Phase 2 — data ingest and Texas flush (locked until Phase 1 QA)
 date: 2026-08-23
-last_updated: 2026-08-23
+last_updated: 2026-08-24
 status: active
 owner: nick
 operator_gate: Phase 1 closed 2026-08-23 — _inbox/2026-08-23_phase1_program_close.json + operator QA on smartsite.cloud
@@ -27,6 +27,7 @@ related:
 | --- | --- |
 | `canvases/phase1-master-program.canvas.tsx` | Phase 1 lanes, exit criteria, Phase 2 preview tab |
 | `canvases/parcel-public-facts-deficit.canvas.tsx` | 66-row deficit register (field-level) |
+| `_inbox/2026-08-24_parcel_facts_write_path_game_plan.md` | Write-path execution instrument (A-026) |
 | `_inbox/2026-08-22_parcel_public_facts_gap_matrix.md` | 38-category statewide gap matrix |
 | `90_operations/OPS-14_texas_flush_game_plan.md` | Texas flush W1–W5 workstreams |
 
@@ -43,7 +44,22 @@ Tiers 0–3 (structure, surface wiring, instrument conformance, measurement-only
 
 ---
 
-## Workstream A — deficit register and CAD/CAMA ingest
+## Workstream C — setback serve (current data serving correctly)
+
+**Active 2026-08-23** under “get our current data serving correctly.”
+
+| PR | Repo | Scope | Status |
+| --- | --- | --- | --- |
+| [#194](https://github.com/empressaioemail-tech/hauska-map/pull/194) | hauska-map | Map wedge = export: serve depth-warm geojson with layer-23 scalars | **merged** + PE sync deployed |
+| [#195](https://github.com/empressaioemail-tech/hauska-map/pull/195) | hauska-map | Travis table-backed setback PE port | **merged** + PE sync deployed |
+| [#466](https://github.com/empressaioemail-tech/legacy-design-tools/pull/466) | legacy-design-tools | Bastrop BDC router + `bastrop-development-code.json` | **merged** — cortex deploy pending |
+| [#360](https://github.com/empressaioemail-tech/hauska-engine/pull/360) | hauska-engine | Travis warm-verify-decline → codified table fallback | **merged** — retrieval deploy pending |
+
+**Live verified 2026-08-23:** gold `48021:34137` geojson + scalars; Travis `48453:280239` codified scalars on card.
+
+Long-term statewide setback factory (254 counties, road-node ingest, serve dashboard): **parcel-public-facts-deficit canvas** section `setback-program` rows SB08–SB11 — not blocking this wave.
+
+---
 
 **Source:** `_inbox/2026-08-22_parcel_public_facts_gap_matrix.md`, deficit canvas.
 
@@ -163,17 +179,19 @@ P-66, P-69, P-70, P-71 remain **Phase 1** (type decisions, no bulk row migration
 
 ## Phase 2 execution order (stack, not calendar)
 
-1. Operator signs Phase 1 exit checklist
-2. CAMA bulk Dallas/Tarrant (unblocks structural facts on metros)
-3. Resume COVER roads from park pickup (98/254 → target per OPS-14 gate)
-4. L16 drain tail (Tarrant/Dallas per L21)
-5. P-55 IDENT writers (after NodeId if lineage required)
-6. W1 writer RUN (cad-parcel-roll, land-use-fact, flood statewide)
-7. Deficit register P1/P2 fields (deed date, plat identity, structured situs)
-8. W2 fabric + W5 factories in parallel where slot allows
-9. W3 integrity + W4 launch readiness toward Texas flush gate
+**Superseded 2026-08-24.** Ingest and bind sequencing is `_inbox/2026-08-24_parcel_facts_write_path_game_plan.md` (OPS-16 A-026, P-73 through P-80). This section no longer orders CAMA, harvest, or COVER.
 
-Dependencies named in `_inbox/2026-08-22_atom_full_surface_gap_backlog.json` override this stack where they conflict.
+Write-path summary (full table in the game plan):
+
+0. P-73 field map (A3). No store write.
+1. P-74 situs bind · P-75 who-serves read · P-76 city-limits PIP. No atoms slot.
+2. P-77 Travis measure + honest miss.
+3. P-78 CAMA-vs-StratMap authority + leftover `landuse.ts` fields.
+4. P-25 Dallas/Tarrant CAMA after 0+3. Travis CAMA after P-77. Atom apply is separate and slotted.
+5. P-79 REST harvest writer (not a CAMA rider).
+6. Heavy last: P-80 Travis join fix, P-09 footprint drain (10.67M, not L20 zoning), remaining-metro parsers, COVER (A-022 parked), P-55.
+
+A-017 and A-022 stand. Typed absence is not a Phase 2 exit for every canvas P0.
 
 ---
 
@@ -192,3 +210,4 @@ Dependencies named in `_inbox/2026-08-22_atom_full_surface_gap_backlog.json` ove
 ## Amendments
 
 - 2026-08-23: Filed at operator request to capture Phase 2 scope outside canvas-only preview. Phase 1 master canvas links here from Phase 2 tab.
+- 2026-08-24: Execution order superseded by write-path game plan. P0 backfill list above is historical; do not dispatch from it. A-026 opened P-73..P-80.

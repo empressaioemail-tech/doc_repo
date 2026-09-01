@@ -2,7 +2,7 @@
 id: smartsite_masters_readme
 title: Smart Site masters — the reference set
 status: active
-last_updated: 2026-08-04
+last_updated: 2026-08-27
 applies_to: smart_site
 owner: nick
 purpose: Index and authority statement for the Smart Site masters. This set is the current definition of Smart Site for business ops and business development; built to be loaded into a Claude project as the knowledge base for positioning work and Q&A.
@@ -33,7 +33,7 @@ The companion set `_smartcity_masters/` governs the SmartCity OS product line so
 - **The name and the X-ray were ratified 2026-07-31.** The report is the Smart Site X-ray, never a dossier or brief.
 - **Coverage is spoken of as nationwide United States** (operator, 2026-08-04). The go-to-market assumption is national coverage at launch. Collateral never enumerates jurisdictions as the extent of coverage or quotes dated counts; per-place honesty stays in the product ("not verified here" where true).
 - **The two-altitude rule governs all copy.** Never lead externally with digital twin, RWA, tokenization, on-chain, blockchain, atom, node, graph, or substrate. The substance and technical white papers exist for the readers who want depth; do not blend altitudes in one artifact.
-- **Two reports exist**: the X-ray and the Flood and Drainage study. Site plan and terrain are exports. Do not enumerate a longer report menu.
+- **Locked report menu (operator 2026-08-27):** X-ray, Flood and Drainage, Feasibility, Comparison. Comparison is also a tool. Brief and Records are tools. Site plan and terrain are exports. Live generate today is X-ray and Flood only. Do not pitch Feasibility or Comparison generate as live.
 - **No 3D claims.** The 3D push is deliberately paused; nothing in-market shows or promises it.
 - **Valuation is out of scope**, deliberately and honestly. Constraints and buildability, cited, is the wedge.
 - **No cycle-time, savings, or ROI figures. No named-competitor attacks in customer material. No claim that the system approves, permits, or certifies anything.**

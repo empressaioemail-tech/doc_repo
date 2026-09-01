@@ -1,6 +1,10 @@
 # p77-travis-join
 
-OPEN: Serve/honest-miss half still held (A-027). Measure instrument is live.
+OPEN: P-80 join fix carded `_inbox/2026-08-25_p80_travis_join_WDLL.md`. Implementation is property/LDT. 280238 cannot bind on prop_id without CAMA or geo_id invent (REST empty + store miss). Honest-miss half CLOSED P-77.
+
+DEAD-END: starting Travis CAMA to bind 280238. CAMA keys CAD account. Live TCAD REST PROP_ID=280238 returned features=[] while 280239 returned one feature.
+
+GROUND-TRUTH 2026-08-25 (integration pack): TCAD REST named-id `_inbox/2026-08-25_p80_280238_tcad_rest_named_id.json`. 280238 empty. 280239 PROP_ID=280239 geo_id=0278360439 situs 17005 SIMSBROOK DR. Not a file-based instrument yet (WDLL item 5 partial).
 
 LESSON: `psql -c` does not interpolate `:'var'`. First live fail 2026-08-25T02:07:22Z stayed UNMEASURED. SQL now uses digit-only literals after the scan guard.
 

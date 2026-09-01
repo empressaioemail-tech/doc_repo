@@ -1,0 +1,69 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "P-97 Phase 0 — kill the silent tier downgrade in the PE checkout client",
+  "planRow": ["P-97"],
+  "dispatch": "_dispatches/2026-08-31_p97-billing_dispatch.md",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-billing",
+    "branch": "fix/pe-checkout-no-tier-downgrade",
+    "commit": "de0dca732ab52e44cd86c7d888f73f9eae0b7c83",
+    "commitIsOriginMainTip": true,
+    "treeCleanAtStart": true,
+    "seatRegistered": "_catalog/seat_register.json entry name=hauska-map-billing, branch matches"
+  },
+  "dispatchPremiseVerifiedAtSource": {
+    "claim403Reachable": "VERIFIED. apps/property-explorer/api/spine-deep.ts:33-34 returns 403 {error:'forbidden'} for any path failing isDeepPathAllowed. apps/property-explorer/api/_lib/deep-allowlist.ts:51 currently lists 'api/property-explorer/v1/billing/checkout', so 403 fires exactly on the omission class the dispatch names.",
+    "claimHardcodedPro": "VERIFIED. billingClient.ts:131-149 startPeCheckoutInstallScoped posts body {tier:'pro', successUrl, cancelUrl} — no interval, no seats.",
+    "claim503BranchCorrect": "VERIFIED. billingClient.ts:112-116 returns {ok:false, message: CHECKOUT_UNAVAILABLE_MESSAGE}. Not being touched."
+  },
+  "adversarialFindings": [
+    {
+      "id": "CP1-A",
+      "severity": "blocks-the-obvious-implementation",
+      "finding": "An EXISTING test asserts the defect as a specification. src/lib/pe-checkout-tier.test.ts:169 'NOT-VACUOUS CONTROL: 404 feature-detect DOES reach the install-scoped fallback' asserts calls.length===2 and calls[1].url===LEGACY_INSTALL_SCOPED_URL. The fix makes it fail.",
+      "enforcementRule": "ENFORCEMENT.md Tests: 'Never assert a value the system produces that no external authority recognises. That converts a defect into a specification and makes the fix read as a regression.' This is that exact shape.",
+      "resolution": "REPLACE, not delete-and-move-on. The test existed to keep the 503 test non-vacuous. Its replacement must restore non-vacuity by a different discriminator that survives the retirement: a 200 case that still returns ok:true. If the whole function were broken into blanket refusal, that control fails. Reported explicitly in the close so the planner sees a defect-asserting test was removed, not weakened."
+    },
+    {
+      "id": "CP1-B",
+      "severity": "corrects the dispatch's severity claim",
+      "finding": "The dispatch says a 403/404 click 'would silently charge every customer the wrong price'. Code reading says otherwise on the deployed surface. The fallback posts to CORTEX_PROXY_BASE + '/brokerage/v1/property-explorer/billing/checkout' = /api/spine/cortex/api/brokerage/v1/property-explorer/billing/checkout. api/spine.ts:311 runs isCortexBrowsePathAllowed FIRST and 403s outright; its POST branch (spine.ts:144-150) allows exactly four paths, none of them billing. The cortexPostPaths entry 'api/brokerage/v1/property-explorer/billing' at spine.ts:346 sits BELOW that early return and is unreachable dead configuration on this surface — a starved allowlist.",
+      "secondMechanismConsidered": "That the browse gate is not deployed, or does not cover this path — which would make the wrong-charge real. Rejected by live probe, see liveProbes below.",
+      "consequence": "The realized behaviour today is a confusing failure, not a wrong charge: the user sees the proxy's internal message 'Anonymous browse proxy allows facet/envelope/map-data paths only...' as their checkout error. The fix is still required — the code ENCODES the intent to charge Pro, and spine.ts:346 already names the path, so widening the browse gate by one line makes the downgrade real and silent. But the close must not overstate present-tense money risk."
+    },
+    {
+      "id": "CP1-C",
+      "severity": "higher than the dispatch's own item 1",
+      "finding": "The real live exposure to the retired Pro price is item 3, not item 1. /api/pe-billing bypasses spine.ts entirely (own rewrite, vercel.json:42), attaches Authorization: Bearer CORTEX_SERVICE_API_KEY server-side, and forwards the caller's body verbatim to the install-scoped seam. Its only gate is a self-asserted X-Hauska-Install-Id header of length >= 8, which any caller can invent.",
+      "status": "PROPOSE retirement, do not perform — it is a deployed public route and removing it changes deployed routing. Handed back per dispatch item 3."
+    }
+  ],
+  "liveProbes": {
+    "host": "https://smartsite.cloud",
+    "ranAt": "2026-08-31 (coverage response generatedAt 2026-08-31T20:36:36.527Z)",
+    "caveat": "These measure the DEPLOYED artifact, which per fleet memory does not auto-deploy on merge and may lag origin/main de0dca7. Code findings above are stated against de0dca7; probes are stated against the deployed artifact.",
+    "safetyRule": "No probe completed a request that could create a Stripe checkout session. The pe-billing checkout probe was deliberately stopped at the handler's own 400 (pe-billing.ts:42, strictly before the upstream fetch at :60).",
+    "results": [
+      { "probe": "GET /api/spine/cortex/api/brokerage/v1/property-explorer/billing/checkout", "expected": "403 browse gate", "got": "403 {\"error\":\"forbidden\",\"message\":\"Anonymous browse proxy allows facet/envelope/map-data paths only. ...\"}" },
+      { "probe": "POST /api/spine/cortex/api/brokerage/v1/coverage (non-allowlisted POST, harmless read endpoint)", "expected": "403 POST branch", "got": "403 same forbidden body" },
+      { "probe": "NOT-VACUOUS CONTROL: GET /api/spine/cortex/api/brokerage/v1/coverage (allowlisted)", "expected": "NOT 403 — proves the gate is not a blanket denier", "got": "200 with coverage JSON" },
+      { "probe": "GET /api/pe-billing?path=status", "expected": "route live?", "got": "200 {\"stripeConfigured\":true,\"liveCheckout\":true}" },
+      { "probe": "POST /api/pe-billing?path=checkout with NO install-id header", "expected": "400 at the handler, before upstream", "got": "400 {\"error\":\"install_id_required\"}" },
+      { "probe": "CONTROL POST /api/pe-billing?path=bogus", "expected": "400 invalid path", "got": "400 {\"error\":\"invalid path\"}" },
+      { "probe": "CONTROL GET /api/pe-billing-nonexistent", "expected": "404 — proves the above are the real handler, not a catch-all", "got": "404 NOT_FOUND" }
+    ]
+  },
+  "buildPlan": [
+    "1. billingClient.ts 403/404 branch -> {ok:false, message: CHECKOUT_UNAVAILABLE_MESSAGE}, comment carrying what it did, why that was wrong, and why 403 is reachable.",
+    "2. Retire startPeCheckoutInstallScoped (module-private, zero callers after step 1) and its now-unused CORTEX_PROXY_BASE import.",
+    "3. pe-billing.ts: PROPOSE retirement in the close, do NOT touch — deployed public route.",
+    "4. Replace the defect-asserting test with a behavioural matrix over tier x interval x {403,404}, plus a surviving non-vacuity control."
+  ],
+  "baselines": {
+    "vitest": "158 files, 2090 passed, 1 todo (2091)",
+    "tsc": "exit 0, no output",
+    "chromeKitGate": "exit 0, SELF-TEST 76/76 ok"
+  }
+}

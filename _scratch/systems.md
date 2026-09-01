@@ -92,3 +92,7 @@ The 135-set is a declaration-reader partition. Other seats were active in the wi
 ## DEAD-END
 
 Systems agent probing branch-guard by attempting foreign-repo commits to see when it blocks — indistinguishable from bypass hunting. Routed to control-owner investigation instead.
+
+## OPEN 2026-08-28T22:00Z — seat-gate isGitWrite() is a prose match
+
+P-93 lane: `scripts/enforcement/seat-gate` `isGitWrite()` is a plain text match for `git … add|commit|push` and fired on ordinary prose containing `git worktree add` inside a heredoc, blocking a plain file write. The control's scope is broader than its claim. Reported by the P-93 lane; not adjudicated here. Owner: systems.

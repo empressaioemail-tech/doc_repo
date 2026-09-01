@@ -1,0 +1,107 @@
+{
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial review, after build and violation runs",
+  "lane": "p98b-server",
+  "planRow": "P-98",
+  "repo": "legacy-design-tools",
+  "snapshot": {
+    "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+    "branch": "feat/p98b-account-entitlement",
+    "baseCommit": "26068a1e886f37119b0cafffc0e7b195a5f8368c",
+    "uncommitted": true
+  },
+  "coordinatorCorrectionReceived": {
+    "correction": "The parcel-less response field is `tier`, NOT `accessTier`. Do not emit both. If honouring that conflicts with the byte-identical with-parcel requirement, STOP and report.",
+    "conflict": "none",
+    "disposition": "Already satisfied before the correction arrived, and flagged as a naming decision in CP1 (D6/D7) and in a source comment at peEntitlement.ts:181. No rename was needed.",
+    "evidenceCommand": "grep -n accessTier artifacts/api-server/src/routes/propertyExplorer.ts artifacts/api-server/src/lib/peEntitlement.ts",
+    "evidenceResult": "Four hits, all in peEntitlement.ts, none on the wire: lines 116 and 122 read the DB column `row.accessTier` to compute `tier`; line 181 is the comment recording this exact decision; line 457 writes the DB column. Zero hits in propertyExplorer.ts.",
+    "structuralGuarantee": "peEntitlementAccountBody is literally `{...peEntitlementBaseBody(snap), seatsPurchased, billingInterval}`. The account response cannot drift from the with-parcel response's field names because it is built from the same function, not from a parallel literal. This is a type-and-construction guarantee rather than a convention someone has to remember.",
+    "noteBackToCoordinator": "The sibling client's defensive `accessTier` read is now dead code. `tier` is always present on both shapes. Worth deleting there so a future reader does not infer that two names are expected."
+  },
+  "whatWasBuilt": {
+    "migration": "lib/db/drizzle/0092_pe_billing_interval.sql — nullable text column, no DDL default, plus the idempotent named CHECK (NULL or 'month'/'year') using the DO-block pg_constraint guard copied from 0088.",
+    "drizzleSchema": "lib/db/src/schema/peUserEntitlements.ts — `billingInterval` column, matching `check()`, and the `PeBillingInterval` type defined here (one definition, re-exported by pePaywallStripe.ts rather than duplicated).",
+    "fixture": "lib/db/src/__tests__/__fixtures__/schema.sql.template — HAND-PATCHED, two lines. See openThreads.",
+    "inverseMapping": "artifacts/api-server/src/lib/pePaywallStripe.ts — `peBillingIntervalForPriceId` (single id) and `peBillingIntervalFromPriceItems` (billed items), both reading the configured set through `stripePriceIdForPeTier` so exactly one place knows which env name carries which (tier, interval) pair.",
+    "webhookWrite": "artifacts/api-server/src/lib/brokerageStripe.ts — `peBilledPriceItems` (one read of the items) feeding `peGrantBillingFacts` (seats + interval together), consumed by the existing `setPeAccessTierFromStripe` call on checkout.session.completed and customer.subscription.updated. No new write path.",
+    "route": "artifacts/api-server/src/routes/propertyExplorer.ts — the compound guard split so exactly one path changed.",
+    "readWidening": "peIdentity.getPeEntitlementRow + peEntitlement.PeEntitlementSnapshot carry seatsPurchased and billingInterval, so the account answer needs no second query."
+  },
+  "verifiedByViolation": [
+    {
+      "id": "A",
+      "defectInjected": "peBillingIntervalForPriceId returns 'month' for anything not annual (the fabricated default).",
+      "result": "CAUGHT — 4 tests failed, including 'VIOLATION: an unmatched price id yields null, NOT month' and 'VIOLATION: with NOTHING configured every price id yields null, not month'.",
+      "restored": true
+    },
+    {
+      "id": "B",
+      "defectInjected": "peBillingIntervalFromPriceItems takes the first resolvable item and ignores disagreement.",
+      "result": "CAUGHT — 1 test failed ('two items disagreeing on interval refuse rather than take the first'), in both item orders.",
+      "restored": true
+    },
+    {
+      "id": "C",
+      "defectInjected": "configuredPeTierPriceIds reads process.env directly, admitting unset and untrimmed values into the configured set.",
+      "resultFirstRun": "NOT CAUGHT. All 15 tests stayed green. This is the finding of the session: the test named 'a blank env var cannot be matched by a blank price id' was VACUOUS. Two independent guards produce that outcome and the input-side empty check satisfies it alone, so the assertion never exercised the env-side filter at all. It was a presence-shaped check wearing a violation label.",
+      "fix": "The vacuous test was relabelled to state exactly what it does and does not prove, and a non-vacuous companion was added: a PADDED env value must still match the clean price id Stripe returns, which only passes if the set is built through the trimming accessor.",
+      "resultSecondRun": "CAUGHT — 1 test failed ('configured price ids are read through the trimming accessor, not raw env').",
+      "restored": true
+    },
+    {
+      "id": "D",
+      "defectInjected": "peEntitlementBaseBody widened with billingInterval (the naive implementation of Deliverable 2).",
+      "result": "CAUGHT — 4 tests failed, including the byte-identity string comparison and 'the base body does NOT gain the account-only fields'.",
+      "restored": true
+    },
+    {
+      "id": "E",
+      "defectInjected": "peEntitlementAccountBody defaults a null interval to 'month' AND emits an empty property block.",
+      "result": "CAUGHT — 3 tests failed, including 'property is absent, not an empty or defaulted block' and 'an unknown interval stays null, never defaulted to month'.",
+      "restored": true
+    }
+  ],
+  "adversarialReviewOfTheBuild": [
+    {
+      "attack": "A convenient result was not interrogated.",
+      "finding": "One was, and it was wrong. Defect C passing is the concrete instance. Pre-registering the falsifier per-defect rather than per-file is what surfaced it; scoring the whole file green would have hidden it."
+    },
+    {
+      "attack": "Widening the checkout-session subscription fetch from team-only to any-PE-grant adds Stripe network calls to the existing test suite.",
+      "resolution": "It does not. No existing webhook test payload sets `subscription` on the session object, so `subscriptionId` is null and the fetch is skipped. Verified by grep across src/__tests__. The seven new webhook tests deliberately keep that property too, and the note is written into the test file so a future author does not break it by adding a `subscription` field casually."
+    },
+    {
+      "attack": "The new import brokerageStripe -> pePaywallStripe closes a module cycle (pePaywallStripe already imports brokerageStripe).",
+      "resolution": "Benign and verified. Neither module references the other at module-evaluation time — every use is inside a function body — so there is no temporal-dead-zone hazard. `npx tsc --noEmit` passes and the api-server esbuild bundle (node build.mjs) succeeds, exit 0. Recorded here because a future top-level const on either side would make it a real problem."
+    },
+    {
+      "attack": "Widening getPeEntitlementRow/PeEntitlementSnapshot leaks new fields into some other endpoint that spreads the snapshot.",
+      "resolution": "Enumerated the call sites rather than trusting the shape: resolvePeEntitlement has exactly two consumers, the entitlement route and brokerageNodeFacets.callerGrantsOwnerFact, and the latter reads only `snap.subscriptionTier`. getPeEntitlementRow has one. artifacts/smartsite-mcp keeps a private copy of the row reader and was not touched."
+    },
+    {
+      "attack": "The migration touches a hardcoded list that CI checks, and the lane missed it.",
+      "resolution": "Enumerated both candidates. schema.integration.test.ts's list is of TABLE names (SELECT tablename FROM pg_tables) and a new COLUMN does not touch it. migrate-prod.mjs discovers migrations with readdirSync over lib/db/drizzle/*.sql, so there is no migration list to refresh. The schema fixture template is the only artifact that needed a hand edit."
+    },
+    {
+      "attack": "Writing null on customer.subscription.updated destroys a previously-good interval.",
+      "resolution": "Deliberate, and the safer of the two errors. Carrying a value forward that this payload does not prove is how a subscriber who switched to annual keeps a stale 'month' — and that single row is what makes the rail upsell annual billing to someone who already bought it. Unknown is recoverable on the next event; a confident wrong value is not. Same rule the seat count already follows."
+    }
+  ],
+  "counts": {
+    "countingRule": "vitest run in artifacts/api-server, whole suite, same command before and after. 165 test FILES fail at import in both runs because DATABASE_URL is unset in this environment; that number is unchanged, which is the no-regression signal.",
+    "before": {
+      "testFiles": "165 failed | 153 passed | 1 skipped (319)",
+      "tests": "1437 passed | 1 skipped (1438)"
+    },
+    "after": {
+      "testFiles": "165 failed | 155 passed | 1 skipped (321)",
+      "tests": "1461 passed | 1 skipped (1462)"
+    },
+    "delta": "+2 passing files, +24 passing tests, +0 failing files. The 24 are the two new colocated DB-free unit files (16 interval + 8 response-shape). The 15 further tests added to DB-backed files (8 route, 7 webhook) are inside files that cannot import here and are therefore NOT in these numbers; CI is authoritative for them."
+  },
+  "openThreads": [
+    "The schema fixture is a HAND-PATCH, not a pg_dump refresh. The two added lines were copied byte-for-byte from nine constraints of the identical shape already in the file, but the drift check compares against the LIVE database, so it cannot pass until 0092 is applied there. Sequence: apply 0092, then run pnpm --filter @workspace/db run test:fixture:schema, then commit any difference. If that refresh produces a diff against the hand-patch, the refresh is right and the hand-patch was wrong.",
+    "No DATABASE_URL means the 15 DB-backed assertions have never been observed running. They are written, they typecheck, and CI is the first place they execute."
+  ]
+}

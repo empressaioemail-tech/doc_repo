@@ -118,14 +118,20 @@ for (const [planId, plan] of Object.entries(registry.plans)) {
   if (!negOk) failed += 1;
 
   if (planId === "OPS-16") {
-    const added = ["P-48", "P-49", "P-50", "P-51", "P-52", "P-53", "P-54", "P-55", "P-56"];
-    for (const rid of added) {
+    const addedA021 = ["P-48", "P-49", "P-50", "P-51", "P-52", "P-53", "P-54", "P-55", "P-56"];
+    for (const rid of addedA021) {
       const okAdd = isDispatchableRow(text, rid) === true;
       results.push([okAdd, `OPS-16 A-021 makes ${rid} dispatchable`]);
       if (!okAdd) failed += 1;
     }
-    const notAdded = isDispatchableRow(text, "P-57") === false;
-    results.push([notAdded, "OPS-16 REJECTS P-57 (A-021 negative case)"]);
+    const addedA023 = ["P-57", "P-58", "P-59", "P-60", "P-61", "P-62"];
+    for (const rid of addedA023) {
+      const okAdd = isDispatchableRow(text, rid) === true;
+      results.push([okAdd, `OPS-16 A-023 makes ${rid} dispatchable`]);
+      if (!okAdd) failed += 1;
+    }
+    const notAdded = isDispatchableRow(text, "P-63") === false;
+    results.push([notAdded, "OPS-16 REJECTS P-63 (A-023 negative case)"]);
     if (!notAdded) failed += 1;
   }
 }

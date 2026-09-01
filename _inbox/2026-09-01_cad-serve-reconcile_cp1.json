@@ -1,0 +1,50 @@
+{
+  "id": "2026-09-01_cad-serve-reconcile_cp1",
+  "kind": "CP1",
+  "lane": "CAD-SERVE-RECONCILE",
+  "planRows": ["F-01"],
+  "filedAt": "2026-09-01T15:31:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 8370dfd61ec24b024d5fbced4ff7b8456a45edc6",
+    "engineWorktree": "P:/seat-worktrees/property/hauska-engine fix/e1-e2-accesspolicy-failclosed e2eb96f9ffdbf6a102fbbd3aaf464279ed1841db",
+    "seat": "property claiming from integration checkout; card repo hauska-engine",
+    "store": "cortex-prod token held by cad-serve-reconcile until 2026-09-01T17:00:24.415Z",
+    "current_database": "not yet queried; first SELECT current_database() is the next step"
+  },
+  "missionPremise": "READ ONLY. For each of the six CTX counties: what CAD actually has, what production will actually serve, and what the gap is. Field list derived from information_schema and atom bodies, never hand-written. Per county, never global. Four-cell placement plus pipeline-word leak. This gates Wave R so the gap is NAMED, not closed.",
+  "completionPredicate": "Per-county per-field table with four-cell placement, source and served populations, stored-zero counts on numeric fields. Gap ranked and named SOURCE vs PIPELINE. Every pipeline-word leak named with field, counties, and the basis the bake had. Serve-side store+table named and how it is what Wave R publishes. Six golds live plus one area-sweep block per county. current_database() in the first query output. leave_behind named. No mutation.",
+  "scopeBasis": "Reads on hauska_mcp (atoms) and neondb (cad_property + place_layer_snapshots). Half-open entity_id FIPS ranges, never jurisdiction_tenant. Do not write, bake, stamp, or backfill. Do not collapse stored zeros into absent. Do not report served fields from code.",
+  "serveSideHypothesis": {
+    "table": "neondb.public.place_layer_snapshots",
+    "adapter": "node-facets:tier1",
+    "place_key": "node:{fips}:{prop_id}",
+    "payload": "payload_json",
+    "howWaveRPublishes": "OPS-19 A-020: the publish job upserts place_layer_snapshots keyed by the parcel node id the serving path already uses; cortex-api loadBakedNodeFacetSnapshot SELECTs adapter_key IN (node-facets:tier1, node-facets:tier2) at place_key = node:{parcelNodeId}. Wave R is a re-bake into this same table. Hypothesis is confirmed only after information_schema + a gold payload_json matches a live /facets body.",
+    "rejectedAlternate": "Measuring the bake code or the LDT #575 reader as if it were served. Code-done is not customer-done; gold-probe already found #575 fields absent on all six live bodies."
+  },
+  "sourceSideHypothesis": {
+    "relational": "neondb.public.cad_property (and any other information_schema table whose name or comment is CAD). Columns derived, not remembered.",
+    "atoms": "hauska_mcp.public.atoms entity_type=cad-parcel-roll, scoped by half-open entity_id FIPS ranges. Keys from jsonb_object_keys(body) DISTINCT, 100 percent.",
+    "whyBoth": "cad_property is the deployment-store CAD table living_area was counted on. Atom bodies are what the bake actually reads. A field in one and not the other is itself a finding."
+  },
+  "counties": ["48021", "48055", "48209", "48309", "48453", "48491"],
+  "golds": ["48021:34137", "48021:8720522", "48209:135570", "48491:76149", "48453:493738", "48453:231086"],
+  "areaSweepRule": "One chosen block per county (not random): consecutive place_key / entity_id range around the county gold, plus forced-in hard classes (PDD 48021:8720522, gate-blocked Williamson gold, no-row Travis gold, five- and seven-digit ids, unincorporated if present in the block).",
+  "pipelineWords": ["unmeasured", "unresolved", "pending", "unknown"],
+  "falsifierPreregistered": {
+    "livingAreaMatchesPremise": "If cad_property living_area_sqft distinct-parcel coverage is not Hays 54.3 / Williamson 40.8 / Caldwell 27.7 / Bastrop 11.2 / McLennan 0 / Travis 0, the card's worked example is stale and the table says so.",
+    "bastropImprovementZero": "If Bastrop stored-zero improvement values are not ~26553, the zero-vs-absent premise is wrong.",
+    "livingAreaStoredZeros": "If living_area_sqft has any stored zeros, the card's 'no stored zeros at all' line is wrong.",
+    "serveTableWrong": "If a live /facets body for 48021:34137 does not match place_layer_snapshots.payload_json at place_key=node:48021:34137 adapter node-facets:tier1, we measured the wrong serve table.",
+    "tenantScope": "If entity_id-range n_roll disagrees with a tenant-scoped count, that is the expected 72-atom gap, not a finding against this card.",
+    "convenientCoverage": "A field that is 100 percent present in every county on both sides is treated as an instrument defect until a known-absent county or a known-null key fails the same predicate."
+  },
+  "heavyScanPlan": "One heavy operation at a time. (1) information_schema on both DBs. (2) atom key DISTINCT per county. (3) cad_property per-column per-county counts. (4) place_layer_snapshots nested-key DISTINCT then per-key per-county counts. (5) pipeline-word scan. (6) live golds + area sweep. Announce each before it starts.",
+  "adversarial": {
+    "risk1": "A remembered CAD column list would miss the fields this card exists to surface. Mitigation: information_schema + jsonb_object_keys only.",
+    "risk2": "Global aggregation hiding Travis/McLennan zeros. Mitigation: GROUP BY fips on every query; no cross-county rollup in the deliverable.",
+    "risk3": "Presence-shaped counts passing pipeline words. Mitigation: fifth check enumerates unmeasured/unresolved/pending/unknown values, not just IS NOT NULL.",
+    "risk4": "Collapsing stored zero into absent. Mitigation: numeric fields report nonempty, stored-zero, and null as three columns.",
+    "rejected": ["fixing any gap", "hand-writing the field list", "sampling SQL sides", "scoping by jurisdiction_tenant"]
+  }
+}

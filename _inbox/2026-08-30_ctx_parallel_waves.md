@@ -1,41 +1,43 @@
 ---
 id: 2026-08-30_ctx_parallel_waves
-title: CTX complete — execute waves P0 to P8 (A-028)
+title: CTX complete — carry order after ae89dc3
 date: 2026-08-30
 status: amended
-plan_row: F-05, F-06, F-08, F-10, F-11, F-18, P-09, P-11, P-17, P-85
-depends_on: _decisions/2026-08-30_ctx_complete_or_absent.md, _inbox/2026-08-30_ctx_execute_waves_WDLL.md, _inbox/2026-08-30_ctx_w3_collect_amendments.md, _inbox/2026-08-30_ctx_road_to_prod_accurate.md
+plan_row: F-01, F-05, F-06, F-08, F-10, F-11, F-18, P-09, P-11, P-17, P-85, P-92
+depends_on: _inbox/2026-08-30_ctx_consolidated_execution_plan.md, _decisions/2026-08-30_unincorporated_is_the_disposition.md, _inbox/2026-08-30_ctx_execute_waves_WDLL.md
 canvas: C:\Users\cente\.cursor\projects\p-doc-repo\canvases\factory-and-texas-complete.canvas.tsx
-operator_go: 2026-08-30 (tee up; P0 now; no 0005, no landing-import, no F-18)
-snapshot: integration P:/doc_repo; collect-as-written refused; measured owe; Wave R paused
+operator_go: 2026-08-30 (five dispatches ae89dc3; separate trees; no Wave R)
+snapshot: integration P:/doc_repo; Q1–Q5 ruled; Gate 8 step 2 unlocks P4; 0005b ships
 ---
 
-# Execute waves
+# Carry order
 
-Operating card: `_inbox/2026-08-30_ctx_execute_waves_WDLL.md`. This file is the short map. Band C / Band 1 language is retired as a schedule.
+Operating schedule: `_inbox/2026-08-30_ctx_consolidated_execution_plan.md`. Chew sheet: `_inbox/2026-08-30_ctx_chew_next.md`.
 
-Subagents do not commit. One bulk-writer per `(store, entity_type, county_fips)`. One heavy-scan per database. Writers read `neondb`. Do not re-run `landing-import`. Do not apply 0005 as drafted.
+Subagents do not commit. One bulk-writer per `(store, entity_type, county_fips)`. One heavy-scan per database. Writers read `neondb`. Do not re-run `landing-import`. Do not apply 0005 as drafted. Do not give a CDP a `place_fips`.
 
 ## Order
 
 ```
-P0 truth  ->  P1 controls  ->  P2 alias (long pole) + job template
-          ->  P3 absence   ->  P4 rails  ->  P5 scrub  ->  P6 pin  ->  P7 Wave R
-P2b PE wiring rides beside P2 and never blocks Wave R
+NOW in parallel, separate trees:
+  P1-FACTORY (Factory A) · Gate 8 steps 1–2 (Factory B) · P2-JURIS read (planner RO)
+  P1-LDT (LDT A) · P2b-serve (LDT B)
+THEN: P2 job template · P2-JURIS persist · P3 · P4 (gated by Gate 8 step 2 on served body)
+THEN: P5 · P6 · P7 (gated by Gate 8 browser walk)
 ```
 
 | Phase | Parallel with | Do | Refuse |
 |---|---|---|---|
-| P0 | — | Canon. Measured owe. 72 cities. OPS-1 boundary correction. | County-wide setback owe. |
-| P1 | P2b start | Walk four-state. Routing-pin holds. Missing-county refuse. Recount repair. | Trust a walk that cannot fail. |
-| P2 | P2b, start alias now | Writer allowlist. One job template. F-11 writer. Easement no live REST. Store split: count `neondb`, do not copy. | Second landing-import. Hardcoded CAD-only job as the rail executor. |
-| P2b | P2 | PE copy, grey-box scope, Zone, A1, yearBuilt + source, bundle marker. | Treat #310 as done. |
-| P3 | after alias seed starts | `not-applicable` on unincorporated setback/edge/envelope. Four county easement absences. | Fabricated absence. |
-| P4 | serialize heavy scans | Wells + footprint on five. Flood shape conversion. Land four setback artifacts. Edges ~154k. Quarantine placeholders. | Apply 0005 seeds. Six-county well/footprint apply. |
-| P5 | — | S1–S13, 100% SQL, area sweep HTTP. | Publish. |
-| P6 | PE deploy may ride | Pin, determinism, six staging. | Promote a failed walk. |
-| P7 | — | Six production serial. GRADE LOG. | Second snapshot write. |
-| P8 | — | Recount, live briefs, schedule scrub. | Call a merged PR customer-done. |
+| P0 | — | Canon. Three-state split. 72 cities. OPS-1 A12. | County-wide setback owe. 826,569 as one state. |
+| P1-FACTORY | P1-LDT | Walk four-state. Readable gate. Refuse missing county. 0005 split. | Trust a walk that cannot fail. Apply 0005 as drafted. |
+| P1-LDT | P1-FACTORY | `DrawEdge.state` union. Retired-edge filter. `sourceAdapter`. | Mint atoms from this card. |
+| Gate 8 | now, Factory tree B | Steps 1–2 now (unlock P4). County-scoped job waits on P1-FACTORY. Browser walk unlocks P7. | Same checkout as P1-FACTORY. Assert against the store. Pin Node 20. |
+| P2-JURIS | read now; write after P2 job | Containment. Reconcile 357,269 / 624,141. Planner RO URI for the read. | Laptop `psql`. `breadth_*` as jurisdiction. CDP `place_fips`. Adopt a new total. |
+| P2 job | after P1-FACTORY refuse | Writer allowlist. Unlocks P2-JURIS persist. F-11 writer. Easement no live REST. | Second landing-import. Hardcoded CAD-only job. |
+| P2b-serve | now, LDT tree B | X2 + item 4 together. Five MCP one-liners. New dispatch only. | The PE wiring card. Treat #310 as done. Same checkout as P1-LDT. |
+| P3 | after containment | Three states. Four county easement absences. | `not-applicable` on the 465,568. |
+| P4 | serialize heavy scans | Wells + footprint on five. Flood shape. Four setback artifacts. Edges ~154k. | 0005 seeds. Six-county well/footprint apply. |
+| P5–P8 | — | Scrub both directions. Pin. Wave R serial. Prove. | Publish before P5. |
 
 ## What is already done (do not schedule)
 
@@ -46,17 +48,8 @@ P2b PE wiring rides beside P2 and never blocks Wave R
 - McLennan stamps 48,441.
 - Every FIPS has wells. Zero-FIPS branch is dead.
 - W0b landUse MET. Situs-extend off.
-- LDT #554 and Factory #37 are PRs, not an image.
-
-## Chew next (max parallel after P0)
-
-Three lanes, one go:
-
-1. P1 controls (Factory walk + F-18 refuse + routing pin).
-2. P2 alias table seed (property; long pole; start immediately).
-3. P2b PE wiring (hauska-map; does not block Wave R).
-
-Then P2 job template + writer allowlist (one lane). Then P3 (cheap: 357,269 `not-applicable` + 465,568 `unmeasured`, three states not one). Then P4.
+- Alias seed draft exists (`_catalog/2026-08-30_breadth_place_alias_seed.json`). It is reconcile-input, not a jurisdiction source.
+- Five dispatches compiled at ae89dc3.
 
 ## Do not parallelize
 
@@ -68,4 +61,8 @@ Then P2 job template + writer allowlist (one lane). Then P3 (cheap: 357,269 `not
 - 0005 as drafted.
 - A second `landing-import`.
 - Subagent commits.
+- The PE wiring card as a P2b brief.
+- Two F-08 lanes or two P-92 lanes in one checkout.
+- Gate 8 county-scoped job form before P1-FACTORY refuse lands.
+- Drop 0005b (CAD↔TxGIO identity; not the jurisdiction alias).
 ---

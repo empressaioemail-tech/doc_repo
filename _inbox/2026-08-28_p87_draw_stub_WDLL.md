@@ -2,7 +2,7 @@
 id: 2026-08-28_p87_draw_stub_WDLL
 title: WDLL — get_smart_site draw stub (local ring + honest overlays)
 date: 2026-08-28
-status: approved
+status: closed
 plan_row: P-87
 wdll_items: 22-27
 operator_go: 2026-08-28 (verbal go on locked draw contract)
@@ -12,7 +12,7 @@ gold: 48021:34137
 
 # WDLL: P-87 draw stub on get_smart_site
 
-Date: 2026-08-28  Status: approved  Operator approval: 2026-08-28
+Date: 2026-08-28  Status: closed  Operator approval: 2026-08-28
 
 Amendment to the Smart Site agent-distribution card. Does not add a ninth tool. Does not ship setback scalars. Does not claim a graph walk.
 
@@ -40,4 +40,19 @@ None at start.
 
 ## Finish card (graded at close)
 
-Pending deploy and item 27.
+Snapshot: LDT `13ccde14` / cortex-api `00621-poq` / smartsite-mcp `00018-hop`. Evidence: operator Claude Connect paste 2026-08-28 filed at `_inbox/2026-08-28_p87_item27_draw_probe.json`.
+
+22. met — live `get_smart_site` returned `draw` on gold.
+23. met — ring equals locked feet (JSON drops trailing zeros: 48.6 / 83.7). Roles 0 rear / 1 side / 2 front / 3 side_corner. `roadNode` on 0, 2, 3. Neighbor `48021:34169` on 1.
+24. met — `confidence: "seed"`. No setbacks key. No 0.7. Footprint unknown + 1910 label. Envelope refused `atom_path_pending`. Pipeline `absent-verified` names 152.4 m. Well `unknown`.
+25. met — `https://smartsite.cloud/p/48021:34137`.
+26. met — unit test only on this close (gold has edges; miss path not in this paste).
+27. met — paste is unambiguous: corner lot, alley, 1910 unmeasured, envelope refused.
+
+leave_behind:
+- item: zoning `codeRefs` / `refBasis: body-denorm` not on this bake-shaped wire (attrs.zoning is district + jurisdiction only)
+  owner: property
+  plan_row: P-87
+- item: flood label uses live NFHL subtype `0.2 PCT ANNUAL CHANCE FLOOD HAZARD`, not the dump prose `shaded, 0.2% annual chance`
+  owner: property
+  plan_row: P-87
