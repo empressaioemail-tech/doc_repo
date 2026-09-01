@@ -60,28 +60,45 @@ is not looking hard enough.
 |---|---|
 | `48021:34137` | landUse present and **not null-as-absent** |
 | `48021:8720522` | PDD, setbacks **refused** — the refusal is correct output |
-| `48209:135570` | `joined-situs` **or** honest `gate-blocked` |
+| `48209:135570` | **`joined-situs`** on the CAD roll (`cad-roll-address-join`). Not `gate-blocked`. `landUseFact` on this gold is `atom-miss`. |
 | `48491:76149` | never `joined` |
 | `48453:493738` | honest `no-row` |
 | `48453:231086` | `stamp-missing` for Austin |
+
+Hays is settled as `joined-situs`. Do not write `gate-blocked` back onto that gold
+without a new measurement.
 
 ## Defects already known to exist. If the probe does not catch these, it is not working.
 
 Use them as your known-violation set — the probe must fail on each, today, before you
 trust a pass anywhere.
 
-- **`"A1 — A1"`** minted inside PE by `description: landUseLabel ?? landUseCode`, a
-  defaulted field then rendered again as a second datum.
-- **`inspectHighLevelLabel` returns the literal string `"Zone"`** for `landUse`.
-- **`yearBuilt`** occurs twice repo-wide, both type declarations, **never assigned**. Where
-  it does render it must render with its source, because CAD 2021 disagrees with listing
-  2022 on Driftwood and a bare number puts two contradicting figures on one screen.
-- **Situs sentinels** that pass a non-null test: `", ,"` and `", TX 78660"`, plus `0,0`
-  coordinates.
-- **Grey box scope**: keyed on a per-row `absent-uncovered` state but printed as "in this
-  area". The "setbacks" half of that string is true; do not fix the string as one unit.
-- **`buildableAreaPct`** was absent while `buildableAreaSqFt` and `acreage.sqft` were both
-  present. Derivable-but-absent is its own failure.
+Measured on production 2026-09-01T15:00Z (GOLD-PROBE). Do not re-derive the stale
+forms below.
+
+- **`"A1 — A1"` mint.** `landUseLabel ?? landUseCode` is **gone from the landUseFact
+  path**. The surviving mint is the cad-roll default `description ?? code`
+  (`description:u??s??""` in the shipped bundle). A click that shows bare `A1` is not
+  proof the mint is dead.
+- **`inspectHighLevelLabel` / Zone.** Current **source** returns `Land use`. The **shipped
+  bundle** still carries the fallback accordion `label:"Zone"` for `landUse`.
+  Source-fixed and bundle-stale are different states. Only the bundle is what a user
+  sees. Do not quote the source function as customer-done.
+- **`yearBuilt` is assigned.** The card that said "never assigned" was wrong. Production
+  click on `48021:34137` renders `1910 (structural-fact)`. The remaining defect is that
+  `yearBuilt.value` on the wire is a bare number; the source is a sibling
+  (`yearBuiltSource`). A second reader of the year leaf still gets an unsourced year.
+- **Situs sentinels** that pass a non-null test: `", ,"`, `", TX 78660"`, `0,0`
+  coordinates, and the empty street token on the gold (`908 PINE , BASTROP, TX 78602`).
+  The named three were not on the six golds today; the empty-street-token was.
+- **Grey box scope.** `"in this area"` is **gone** from the shipped bundle. The footer
+  now collapses a per-row `absent-uncovered` state into `We have not stamped … for this
+  parcel`. The setbacks half of that collapse is still true; do not fix the string as
+  one unit.
+- **`buildableAreaPct` 56.1 is on the wire** for `48021:34137` (with sqft 9350 and
+  acreage 16673). Gate 8 C4 passes on that body. The click still prints `Buildable Not
+  stamped here`. Derivable-and-served but hidden on the card is the live failure, not
+  "pct absent."
 
 ## The CAD field set
 
