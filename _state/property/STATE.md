@@ -2,7 +2,34 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-29 01:40Z (six of six on the card F bake; program idle; follow-ups listed under card F)**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 14:51Z (owner-rowcount: totals unchanged; 00:12Z SQL recovered)**
+
+## PROPERTY QUEUE — OWNER-ROWCOUNT CLOSED 2026-09-01T14:51Z
+
+Seat property on integration checkout `P:/doc_repo` `main` `818c86174ea7e12c7e9ad02b9c1e50e56732d9f1`. Do not strip.
+
+**Reasoning correction (keep):** the planner's "a deleted atom loses both fields, so a one-sided delta cannot be a delete" argument was invalid. It holds only for atoms carrying both keys. That argument must not be reused. Deletion was a live hypothesis until this card measured totals.
+
+**owner-rowcount CLOSED (read-only).** Recovered the 2026-09-01T00:12Z SQL from transcript `c4be557c-599e-4d26-8195-e131b7a6bf09` (decision record and 08-31 closes had numbers, not SQL). Re-ran verbatim on `hauska_mcp` (`current_database()` checked). **n_roll and ownerName keys are identical to 00:12Z.** Deletion is dead because totals did not drop. Silent in-place strip is dead because keys did not drop. Table `_inbox/2026-09-01_owner-rowcount_table.json`. Close `_inbox/2026-09-01_owner-rowcount_close.json`.
+
+| fips | n_roll then = now | ownerName key | name without mailing |
+| --- | ---: | ---: | ---: |
+| 48021 | 77078 | 77078 | 30 |
+| 48055 | 48384 | 48384 | 214 |
+| 48309 | 114280 | 113386 | 26 |
+| 48209 | 265881 | 29 | 29 |
+| 48453 | 492851 | 3 | 3 |
+| 48491 | 319487 | 7 | 7 |
+
+**Why the 09-01 cards saw a drop:** they counted `jurisdiction_tenant=tx_{fips}`. The recovered instrument counts half-open `entity_id` FIPS ranges. The difference is 5 / 2 / 29 / 26 / 3 / 7 atoms whose tenant is a bare FIPS or another county. They still exist and still carry `ownerName`. McLennan name-without-mailing ceiling is **26**, not zero.
+
+**Premises that stay settled:** #371 is not a rewrite of these bodies (no `updated_at` after 2026-08-12). Store is `hauska_mcp`. JSONB `?` / `->>` / `<>` agree. Do not re-derive those three.
+
+**Next owner card:** if a strip is authorised, use the recovered `entity_id` range, not `tx_` tenant, or it will miss those 72 atoms. Exposure is unchanged.
+
+**Product SHAs that landed this loop:** Factory #54 `45098156931497f1fb93b6de6abffa16cc2fe3f8`. Engine #373 `477ef3d5473c6fcd2f4c3714c3a540e6eb12eaf8`. Engine #372 `10dfc102b29cf9b8bc622aef7888e1cedf8e601f`.
+
+**Closes this session (uncommitted, planner-owned):** owner-rowcount plus earlier loop closes. Do not `git add` all. This STATE file is the exception the operator restored and asked the property seat to commit.
 
 ## CTX SIX SERVED ON THE FULL FACET SHAPE (OPS-19 A-020 / A-021 / A-025) — 2026-08-28
 
