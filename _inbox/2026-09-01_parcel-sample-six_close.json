@@ -1,0 +1,132 @@
+{
+  "lane": "PARCEL-SAMPLE-SIX",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-01T18:32:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-sample-six_dispatch.md",
+  "seat": "property",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-sample-six_cp1.json",
+    "_inbox/2026-09-01_parcel-sample-six_cp2.json"
+  ],
+  "table": "_inbox/2026-09-01_parcel-sample-six_table.json",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main fe0bfeb7c4539262021c069997e8ecf311fac19d",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill feat/parcel-record-fill",
+    "factory_pushed": "b4fdcfb561b61be4a04c83d087a9403cfcb1a8c5",
+    "engine_authority": "hauska-engine main bfa96424db85e4f656052e9334d86e61218a03cd",
+    "runId": "5b9d3fc9-ffe5-414c-920a-7c134a68640c",
+    "current_database": {
+      "cad_and_landing": "PRODUCTION_NEONDB_URL / neondb",
+      "writes": "FACTORY_DATABASE_URL / neondb (withered-surf-26870298)"
+    }
+  },
+  "missionPremise": "Operator correction: fill a handful of parcels in each of the six counties, never one county end to end. Engine module at >= bfa9642 is the sole constructor. CAD from cad_property, never roll atoms. _decisions/2026-09-01_parcel_record_is_the_gate_to_everything.md step 2.",
+  "completionPredicate": "Job exists, calls instantiateParcelRecord + ingestCadOntoRecords only, sample covers six counties with >=10 in-city and >=10 unincorporated, targeted CAD shapes present, NULL-at-source mapping reported from the module, second pass zero-drift, poisonCell refuses publish gate, branch pushed.",
+  "scopeBasis": "Sample only. No full-county fill. No atom ingest. No Cloud Run image deploy. No conversion of unaccounted to absent-verified.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 57,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/57",
+      "branch": "feat/parcel-record-fill",
+      "headSha": "b4fdcfb561b61be4a04c83d087a9403cfcb1a8c5",
+      "ci": "not read: PR opened at close; do not treat local 20/20 as CI"
+    }
+  ],
+  "thisRun": {
+    "countingRule": "in-memory cell kinds on the records this run instantiated; write counts are upsert row counts from run 5b9d3fc9",
+    "parcels": { "48021": 41, "48055": 40, "48209": 40, "48309": 40, "48453": 40, "48491": 40, "total": 241 },
+    "cellsWritten": 12532,
+    "drift": "zero-drift on all six",
+    "poison": {
+      "placeKey": "48021:34137",
+      "gateOk": false,
+      "unaccountedCount": 39,
+      "persisted": false
+    }
+  },
+  "storeAfter": {
+    "countingRule": "SELECT county_fips, count(*) FROM parcel_record GROUP BY 1; SELECT count(*) FILTER kinds FROM parcel_record_cell. Measured 2026-09-01T18:29Z.",
+    "records": { "48021": 62, "48055": 60, "48209": 60, "48309": 40, "48453": 40, "48491": 40, "total": 302 },
+    "cells": { "n": 15704, "value": 3439, "unaccounted": 9529, "not-applicable": 2736, "absent-verified": 0 },
+    "leftoverReason": "an earlier --apply on 48021/48055/48209 wrote ~50-parcel sets before a later county SAMPLE_FLOOR abort; this run upserted 241 keys on top"
+  },
+  "nullAtSourceMapping": [
+    { "cadField": "prop_id", "rail": "apn", "nullAtSource": "value (row key, always stamped)" },
+    { "cadField": "situs_address/city/zip, legal_description, exemption_codes, property_use_code", "nullAtSource": "unaccounted" },
+    { "cadField": "land/improvement/market/assessed/year_built/land_acres", "nullAtSource": "unaccounted", "zeroAtSource": "value (module stamps 0). Live node-pg numerics arrive as strings, so $0 landed as value \"0\", still not absent." },
+    { "cadField": "living_area_sqft", "nullAtSource": "unaccounted", "zeroAtSource": "unaccounted (module requires > 0)" },
+    { "cadField": "all other rails", "nullAtSource": "unaccounted — ingestCadOntoRecords never emits absent-verified" }
+  ],
+  "proofs": {
+    "goldLivingNotInvented": "48021:34137 livingAreaSqft kind=unaccounted after CAD ingest; apn/marketValue/improvementValue from cad_property",
+    "caldwellZero": "48055:103436 / 103532 / 103538 improvementValue kind=value value=\"0\" source=cad_property",
+    "mclennanNull": "48309 assessedValue and livingAreaSqft 40/40 unaccounted",
+    "travisLivingNull": "48453 targeted cad_living_null; living_area is 0/500307 at source",
+    "williamsonCadKeyed": "40 records written from cad_property + landing. Snapshot probe timed out at 8s (unmeasured). Sample includes landing prop_id PRIVATE ROAD."
+  },
+  "landingUnincorporated370289": "50264+14361+61585+32422+103914+107743 measured on landing_parcel_jurisdiction method=ring",
+  "whatContradictedTheCard": [
+    "Incorporation is not on the Factory store. landing_parcel_jurisdiction lives on PRODUCTION_NEONDB_URL / neondb. Factory catalog has parcel_record* and no jurisdiction landing table.",
+    "instantiateParcelRecord is not idempotent unless nowIso is pinned: countyFips vintage is the clock. First live --twice failed IDEMPOTENCY_DRIFT for that reason; the module was right.",
+    "Full-table DISTINCT ON cad_property and place_layer_snapshots LIKE/ANY are not sample-safe. Snapshot ANY on 40 keys timed out at 8s. Williamson snapshot-present is unmeasured.",
+    "McLennan early prop_id order is in-city. Mixed paging never reached 10 unincorporated in 1000 rows. Disposition-index queries are required.",
+    "A targeted-first merge filled Bastrop with living-null unincorporated rows and missed the in-city floor.",
+    "node-pg returns cad_property numerics as strings. $0 lands as value \"0\", not JSON number 0. Still not absent.",
+    "Williamson landing contains prop_id PRIVATE ROAD. The fill keyed it because it is a landing/CAD key.",
+    "Gold 48021:34137 has NULL living_area_sqft at CAD. The sample targeted it as cad_living_null. Serve-time living area on that gold is not a CAD field.",
+    "Sample size landed 40-41, not 50: 20 in-city + 20 unincorporated + gold is 41 unique. ~50 held.",
+    "Store record counts (302) are not this-run writes (241). An earlier apply left extras. Do not quote 302 as the sample size."
+  ],
+  "constraintsHonored": [
+    "one card claimed",
+    "store token not rebuilt",
+    "cad_property only for CAD values",
+    "no unaccounted to absent-verified",
+    "branch committed and pushed before close",
+    "poison not persisted"
+  ],
+  "scratch": {
+    "LESSON": [
+      "Pin nowIso on instantiate or a second pass drifts on countyFips vintage.",
+      "Page landing by prop_id and load CAD for that page. Do not DISTINCT ON the whole county.",
+      "Reserve in-city and unincorporated slots before targeted rows or the mix dies."
+    ],
+    "DEAD-END": [
+      "place_layer_snapshots seq scan / ANY for sample selection — 8s timeout, 5+ min hang on LIKE.",
+      "targeted-first mergeUnique on Bastrop — SAMPLE_FLOOR on in-city."
+    ],
+    "GROUND-TRUTH": [
+      "landing unincorporated 370289 @ 2026-09-01T18:07Z",
+      "run 5b9d3fc9 241 parcels zero-drift @ 2026-09-01T18:28Z",
+      "48021:34137 livingAreaSqft unaccounted @ 2026-09-01T18:29Z"
+    ],
+    "OPEN": [
+      "Merge factory PR 57 when CI conclusion is success.",
+      "Full-county fill cards: keep paged CAD loads; do not seq-scan snapshots.",
+      "61 leftover place_keys from the aborted earlier apply sit in parcel_record."
+    ]
+  },
+  "leave_behind": [
+    {
+      "item": "hauska-factory PR #57 feat/parcel-record-fill b4fdcfb — unmerged, CI unread",
+      "owner": "property",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "61 extra parcel_record rows from the aborted earlier apply (48021 62 vs 41, 48055 60 vs 40, 48209 60 vs 40)",
+      "owner": "property",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Williamson snapshot-present unmeasured; landing prop_id PRIVATE ROAD",
+      "owner": "property",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Cloud Run image does not yet contain parcel-record-fill; laptop ran the job",
+      "owner": "property",
+      "plan_row": "F-01"
+    }
+  ]
+}
