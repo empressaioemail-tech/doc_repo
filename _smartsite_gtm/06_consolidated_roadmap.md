@@ -39,18 +39,26 @@ Nothing blocks any of these. Two of them have clocks that run outside our contro
 
 | # | Item | Owner | State as of 2026-08-31 |
 |---|---|---|---|
-| 0.1 | Land P-98b: merge LDT #574, apply migration `0092`, open and merge the hauska-map client PR | planner | in flight, see below |
+| 0.1 | Land P-98b | planner | **DONE 2026-09-01.** #574 `d332d799`, `0092` applied, cortex-api `00686-mig` at 100%, #330 `4401095`, PE live on smartsite.cloud |
 | 0.2 | A2P 10DLC brand and campaign registration | operator | not started, longest lead item in this document |
 | 0.3 | Email sending domain `email.smartsite.cloud`, records added at GoDaddy | operator | not started |
-| 0.4 | GoHighLevel pipeline and tags, created through the API rather than the browser | planner | not started |
-| 0.5 | Stale-customer blast radius, two SQL counts | planner | not started |
-| 0.6 | Card and dispatch the PE billing portal (A-062) | planner | not started |
+| 0.4 | GoHighLevel pipeline and tags via API | planner | **DONE 2026-09-01.** Pipeline `POxG6ilXw5CyMHMDukJc`, ten tags, verified by readback |
+| 0.5 | Stale-customer blast radius | planner | **DONE 2026-09-01. 38 stale ids:** 9 in `pe_user_entitlements`, 29 in `brokerage_wallets` |
+| 0.6 | Card and dispatch A-062 | planner | **DONE.** Carded, compiled, lane running |
 
 **0.1 detail.** PR #574 failed CI on three assertions sharing one root cause: the two halves of P-98b disagree on the billing-interval vocabulary. The server speaks `month` and `year` end to end, deliberately mirroring Stripe's own recurring-interval values and enforced by a `CHECK` constraint in migration `0092`. The client half was built against `monthly` and `annual`, and a translation layer on the response path bridged them while the server's own tests asserted the untranslated form. The ruling is one vocabulary end to end, `month` and `year`, with no translation layer, because a silent mapping between two vocabularies for one subject is the defect class that previously required re-stamping 6.3 million atom rows. Dispatch `_dispatches/2026-09-01_p98b-vocab_dispatch.md`.
 
 Landing 0.1 lights up the `annual_upgrade` rung, which is the highest-value of the five next-action rungs and one of four currently starved. Only `connect_claude` can fire today.
 
 **0.4 detail.** Pipeline creation is proven API-supported: `POST /opportunities/pipelines` returned 422 validation against a `POST /pipelines` 404 control, and nothing was created. Tags likewise. Moving these two tasks off the browser reduces the browser-agent surface from nine tasks to three, which matters because the browser attempt has been failing. What remains genuinely browser-only is the sending domain, A2P, social OAuth, the permission-list transcription, and the demo-contact cleanup. Those are peeled into `05_ghl_chrome_runbook.md`.
+
+### Measured 2026-09-01: the stale-customer blast radius is 38
+
+Checklist item 2 is closed. `pe_user_entitlements` holds 9 rows with a non-null `stripe_customer_id` and `brokerage_wallets` holds 29, against a `pe_user_entitlements` total of 14. Every one of those 38 is a test-mode `cus_` id.
+
+That number is what checklist item 12 has to clear before the live switch, and the reason it cannot be left is that it self-deadlocks. `getOrCreatePeStripeCustomer` returns the stored id unconditionally, a test-mode id under a live key makes Stripe return 400, and the write that would replace the id only runs on a successful checkout that the stale id prevents. Nothing clears it on its own.
+
+Separately, `billing_interval` is non-null on zero rows, which is correct rather than a defect. Nothing backfills it, filling it would require calling Stripe, and the card deliberately refused that. Existing subscribers read null, the rung stays quiet, and the Plan tab prints "Not read".
 
 ## Wave 1. Make money takeable
 
