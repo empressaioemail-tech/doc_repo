@@ -70,7 +70,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | 1.2 | **P-103** retire the legacy checkout seam | property seat | **DONE 2026-09-01.** #331 `847550aa`, deployed, **decline proven live** |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
-| 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | **LDT #577 + hauska-map #332 open.** Deploy order BLOCKING: server first |
+| 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | **SHIPPED 2026-09-01.** #577 + #332 merged, `cortex-api-00689-dal` emits `studioGranted`, PE live on `index-CqQ_6icv` |
 
 **1.1 is the item that sat unowned across both retired threads,** because each assumed the other held it. `terms.html` states verbatim that a customer can cancel a paid plan through the Stripe billing flow in the product, and zero billing-portal references exist anywhere in `apps/property-explorer`. The product is honest and the legal page is not, which is the inversion of the usual failure and the half carrying legal weight. The build is one route against the signed-in user's `stripe_customer_id`, one line added to `deep-allowlist.ts`, and a control in Settings replacing the string "Not built". The Stripe call already exists and is proven at `brokerageStripe.ts:245`. Ruled a blocking Phase 0 item as A-062.
 
@@ -133,6 +133,20 @@ The portal is built: the route resolves `stripe_customer_id` from the session an
 **The base moved under the lane mid-build** and it caught that by re-fetching at close rather than trusting its own checkpoint, then re-measured everything against the new base and ran the new guard from P-103. File overlap with that merge was enumerated with `comm`, not eyeballed: none.
 
 One clause is explicitly not met and not claimed: the live open showing a customer returns to smartsite.cloud needs a deploy and a browser session, and is planner-owned after merge.
+
+### P-104 shipped, and the ordering constraint nearly failed because it lived in prose
+
+Both PRs were merged by another session while this seat was writing docs. The merges were fine; the order was not. The BFF half refuses when `studioGranted` is absent, so hauska-map `main` sat in a state where the next PE deploy by anyone would have returned 503 to every Studio and Team customer on CAD and terrain. Nothing was broken, because hauska-map does not auto-deploy on merge, but the gun was loaded and the person who fired it would not have known they had.
+
+Closed in the correct order: canary on the merge SHA, three-way verification that the canary emitted `studioGranted` while the then-serving revision did not and a bogus path 404'd, traffic shifted to `cortex-api-00689-dal`, the gate re-checked on production, and only then the PE deploy. P-103's retirement was re-probed after that deploy and still declines, with a sibling function answering 400 as the positive control.
+
+**The lesson is about where the constraint lived.** It was in bold in the card, in the PR body, and in a plan row, and it was still nearly violated. Prose controls went roughly 0-for-4 across this session while every hook-shaped control fired correctly. An ordering constraint this consequential wants to be a check, not a paragraph: the PE deploy path could assert that the deployed cortex-api emits the field before it proceeds.
+
+### And the api typecheck gap is bigger than P-104's lane could see
+
+P-104 reported that CI does not typecheck the PE BFF, proved it by planting an error and watching CI exit 0, and routed it to backlog rather than arming a permanently red gate. Confirmed and worse: `apps/property-explorer/tsconfig.json` carries `"include": ["src"]`, so the build's own `tsc --noEmit` never sees `api/` either.
+
+The authoritative observation is from the cloud build itself. The production deploy **printed** `TS2339` and `TS2345` diagnostics for `api/pe-share-grant.ts` and `api/pe-share-view.ts` and completed READY anyway. So nothing gates api type errors: not CI, not the build's typecheck, and not the deploy that prints them. That is a broader finding than three standing errors in an uninvoked tsconfig, and it belongs on the backlog item.
 
 ## Wave 2. Make the ladder real and the funnel measurable
 
