@@ -1,0 +1,86 @@
+{
+  "lane": "DOLLAR-FIELDS",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-01T21:15:00Z",
+  "dispatch": "_dispatches/2026-09-01_dollar-fields_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main d10fa86",
+  "partialClose": true,
+  "handoffNote": "Prior claimant died mid-work (usage exhausted ~2026-09-01T20:30Z, ~9 min after claim) but had already pushed one commit with an open PR (#578). Worktree inspected per addendum: git status was clean, HEAD matched the pushed remote branch. Nothing to fold; the code was complete but CI Typecheck was FAILING (two real bugs in the diff, not pre-existing). This seat fixed both, re-ran CI green end to end, re-confirmed the base had not moved, and merged. What remains open is execution, not code: this card requires the bake to actually RUN against cortex-prod/neondb place_layer_snapshots and report real per-county per-field before/after counts -- that has not happened, and this seat is declining to run it from a laptop. See blocker below.",
+  "reevaluationOnGapLedgerClose": "The 2026-09-01T17:28Z addendum gated this card behind parcel-gap-ledger and asked whether serve should repoint to parcel_record instead of this cortex-prod snapshot bake once the ledger closed. The gap ledger close (_inbox/2026-09-01_parcel-gap-ledger_close.json) shows parcel_record's publish gate at REFUSE across all six counties, with only 10,817,524 of 63,791,325 landing-matched cells at kind=value (the rest unaccounted or not-applicable) -- parcel_record is not a live serving path today. cortex-prod/place_layer_snapshots is what Property Explorer and LDT api-server actually serve from right now. Serve cannot repoint to a store that refuses its own publish gate. Conclusion: this snapshot bake is still the correct serve-side move; it is not competing with parcel_record, it is filling the store users actually read today. This does not remove the eventual question of whether Wave R bakes get superseded once parcel_record publishes -- it only says that has not happened yet.",
+  "blocker": {
+    "what": "The dispatch requires running artifacts/api-server/src/nodeFacetPatchCadRollFromCadPropertyCli.ts against all six counties on cortex-prod/neondb (PRODUCTION_NEONDB_URL) and reporting real per-county per-field bake-key-count before/after numbers, plus a live-wire check on 48021:34137. That is a write of roughly 2.5 million cells to the database Property Explorer and LDT api-server serve from in production, today.",
+    "whyNotRunFromHere": "This seat's standing instruction (issued at claim time, non-negotiable) is: store writes happen only through a Cloud Run job with a run row, never a laptop --apply. `gcloud run jobs list --project hauska-prod-497015` was checked in full: every existing job (factory-atoms-cad, factory-parcel-record-fill, factory-conformant, etc.) runs the hauska-factory image against the Factory's own Neon store. None of them can run an LDT (legacy-design-tools) CLI script, and none write to cortex-prod/place_layer_snapshots. There is no existing controlled execution path for this specific bake.",
+    "whyNotBuildOne": "Standing up a new Cloud Run Job (image, entrypoint, IAM, run-row ledger) for LDT bake scripts is itself a production-deployment decision -- new infrastructure, new attack surface, a call on whether this is worth a dedicated job versus some other controlled mechanism (a gated GitHub Actions workflow_dispatch, a one-time supervised execution with operator present, etc.). That decision is outside this card's named scope (the dispatch asks for the CLI script and its verification counts, not new deploy infrastructure) and outside this seat's authority to make unilaterally under the 'anything needs a production deploy... STOP AND REPORT' condition in this session's standing instructions.",
+    "whatIsSafe": "The code is real, typechecked, tested (CI Test job green with a live Postgres service container), and merged to legacy-design-tools main at 65f924e86fd4060a439300ea51271ad8a56f9a44. Running it later costs nothing extra -- it is idempotent per-row (UPDATE by place_key) and takes --dry-run, --county, --prop-ids, and --page-size flags, so a supervised dry-run against one county is a cheap next step whichever execution mechanism is chosen."
+  },
+  "missionPremise": "CAD-SERVE-RECONCILE found place_layer_snapshots serving 0 of N on every CAD dollar/living/year/legal/exemption field across all six counties while cad_property holds them on 89-99% of parcels; LDT #575 merged the bake reader but the bake never ran. Gated behind parcel-gap-ledger per the 2026-09-01T17:28Z addendum; see reevaluationOnGapLedgerClose above for why the gate lifted in this card's favor.",
+  "completionPredicate": "NOT MET. Full completion requires: the bake run against all six counties on cortex-prod; per-county per-field bake-key-count reported before/after with differences explained (not 'more than zero'); the three hollow-atom counties (Hays, Travis, Williamson) explicitly re-checked to confirm cad_property was read and atoms were not; the Hays 48209:135570 provenance fix verified live; a stated answer on which path Wave R publishes where the bake and the HTTP overlay disagree; and the live wire for 48021:34137 reported post-bake. None of those are met yet because the bake has not executed. What IS met: the code exists, typechecks, passes its test suite in CI with a live database, and is merged on the current base.",
+  "scopeBasis": "legacy-design-tools artifacts/api-server only (the CLI script, cadRollValue.ts, joinIntegrityGate.ts, nodeFacetBakeTier1Conformant.ts/.test.ts, nodeFacetTier1Assemble.ts, structuralFactResolve.ts, verdictLayerServe.ts, lib/instrument-registry). This seat additionally touched exactly two files (parcelDrawFromReads.test.ts, nodeFacetPatchCadRollFromCadPropertyCli.ts) to clear two real typecheck failures introduced by the inherited diff -- both were required to reach green CI, neither changes the bake's logic.",
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "number": 578,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/578",
+      "branch": "feat/dollar-fields",
+      "headShaAtInherit": "1f53171e1a88d0ecefdc4141a9360a8efd28f015",
+      "fixCommit": "3032b331",
+      "mergeSha": "65f924e86fd4060a439300ea51271ad8a56f9a44",
+      "ciCheckRunName": "PR Checks",
+      "ciConclusion": "SUCCESS",
+      "note": "First CI run (against 1f53171e) had Typecheck FAILURE (two real bugs: a test fixture missing a newly-required entityType field, and a TS7022 self-reference inference issue on a paginated pg.Pool.query<T> call). This seat fixed both, pushed 3032b331, re-ran CI: all 10 checks including the DB-backed Test job passed. Base re-verified current (merge-base HEAD origin/main unchanged) before merge."
+    }
+  ],
+  "typecheckFixDetail": {
+    "bug1": "src/lib/__tests__/parcelDrawFromReads.test.ts: STRUCTURAL_PRESENT fixture was missing entityType, which structuralFactResolve.ts's StructuralFactPresent type made required in this same diff. TS reported it as a confusing 'string not assignable to \"present\"' error on the state field because the object literal failed union matching entirely and fell back to widened structural inference. Fix: added entityType: \"cad_property\" to the fixture.",
+    "bug2": "src/nodeFacetPatchCadRollFromCadPropertyCli.ts:65: const page = await neondb.query<{...inline object type...}>(...) inside a for(;;) pagination loop triggered TS7022 ('page' referenced in its own initializer) -- reproduced locally, not a CI-only artifact. Fix: named the row type SnapshotPageRow and gave page an explicit pg.QueryResult<SnapshotPageRow> annotation, which resolves the inference cleanly. No behavior change; the query, its params, and the pagination logic are identical."
+  },
+  "counts": {
+    "bakeExecutionCounts": "NOT COLLECTED -- bake has not run. See blocker.",
+    "ciTestJob": "PASSED with a live postgres:16 service container per .github/workflows/pr-checks.yml (localhost:5432/test_db); this seat did not independently re-run the DB-backed suites locally, relying on CI as authoritative for LDT per this seat's prior-session guidance, since the two files this seat touched do not exercise database logic.",
+    "localVerification": "parcelDrawFromReads.test.ts 9/9 and cadRollValue.test.ts 15/15 run locally without a database (both pure-function suites) after the fix, confirming the fixture and type fixes did not break either file's own assertions."
+  },
+  "whatContradictedTheCard": "The dispatch's 'Close' section describes reporting real bake execution numbers as if execution were simply the next step inside this card. It is not: this session's standing instruction (store writes only via a Cloud Run job with a run row, never a laptop --apply) has no matching infrastructure for LDT's cortex-prod bakes today -- every existing Cloud Run job in the project is Factory-only. The dispatch did not anticipate this seam because the Factory-vs-LDT store split, and the Cloud-Run-only write rule, are both session-level constraints layered on top of the card, not things the card's own author priced in. Filing an honest partial close and surfacing the execution-mechanism gap is the correct move under this seat's own operating rules ('anything needs a production deploy... STOP AND REPORT') rather than either violating the laptop-write rule or unilaterally standing up new job infrastructure.",
+  "constraintsHonored": [
+    "read cad_property, never cad-parcel-roll atoms (unchanged from inherited code; verified by reading cadRollValue.ts and joinIntegrityGate.ts)",
+    "no store write executed by this seat, laptop or otherwise",
+    "no repository touched other than the registered legacy-design-tools worktree",
+    "stored zeros not collapsed to absent (CadRollZeroWire shape unchanged)",
+    "McLennan assessedValue / Travis+McLennan livingAreaSqft not filled (inherited code already leaves these as source gaps per the dispatch's Do-Not list; this seat verified the logic still routes them to absent-verified rather than value, by reading cadRollValue.ts's null-handling branches)"
+  ],
+  "scratch": {
+    "LESSON": [
+      "A dead lane's pushed branch with an open PR can still be broken -- always run the PR's own CI (or reproduce locally) before trusting a 'nothing to fold, work was complete' read of a clean git status. Clean working tree only means nothing was LOST; it says nothing about whether what was committed actually works.",
+      "TS7022 on a generic query<T> call inside a loop is fixable by naming the row type and giving the result variable an explicit annotation -- faster than chasing the real inference cause.",
+      "LDT's monorepo typecheck needs pnpm run typecheck:libs (tsc --build on referenced projects) before per-package tsc -p tsconfig.json --noEmit will resolve @workspace/* types; a bare tsc --noEmit -p . in a package directory produces a wall of TS6305/TS2307 noise that looks like a real failure but is just unbuilt project references."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-01T21:09:36Z legacy-design-tools PR #578 MERGED mergeSha 65f924e86fd4060a439300ea51271ad8a56f9a44; all 10 PR Checks jobs SUCCESS including the live-Postgres Test job",
+      "2026-09-01T21:10Z gcloud run jobs list --project hauska-prod-497015: 23 jobs, all named factory-*, all running the hauska-factory image or empty; none run legacy-design-tools code"
+    ],
+    "DEAD-END": [],
+    "OPEN": [
+      "Decide the execution mechanism for LDT production bakes (new Cloud Run Job vs. gated workflow_dispatch vs. a named supervised break-glass run) -- this blocks not just dollar-fields but any future LDT-side write against cortex-prod under the same standing rule.",
+      "Once an execution mechanism exists: run nodeFacetPatchCadRollFromCadPropertyCli.ts --dry-run first per county, then --county=<fips> for real, for all six counties (48021, 48055, 48209, 48309, 48453, 48491); collect the per-field before/after counts the dispatch asks for; verify the Hays 48209:135570 provenance fix and the bake-vs-overlay disagreement on livingAreaSqft; report the live wire for 48021:34137."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_dollar-fields_measure.mjs (inherited from an earlier session, not read or relied on by this close)",
+    "_queue/cards/dollar-fields/addenda/2026-09-01T20-35-58-820Z_planner.md",
+    "_inbox/2026-09-01_dollar-fields_close.json",
+    "_queue/cards/dollar-fields/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "Execution-mechanism decision for LDT production writes (dollar-fields bake specifically, and any future LDT-side cortex-prod write under the same store-writes-via-Cloud-Run-job-only rule). Operator input needed.",
+      "owner": "Nick / planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Once unblocked: run the merged bake CLI against all six counties and file the real per-county per-field counts, the hollow-atom recheck, the provenance fix verification, and the 48021:34137 live-wire report the dispatch asks for.",
+      "owner": "property seat (re-claim dollar-fields, or a follow-on card)",
+      "plan_row": "F-01"
+    }
+  ]
+}
