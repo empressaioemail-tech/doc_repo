@@ -76,6 +76,25 @@ instead of at every card.
 node scripts/queue/cli.mjs authorize --card <id> --operator nick --reason "<why>"
 ```
 
+## Commit and push your own branch BEFORE you close
+
+**This has now failed three times in one day.** `covers-fastpath` (894 lines), the `a3`/`a4`
+trees (14 files), and `gold-probe` (7 files) each finished as dirty files in `P:/tmp` with
+zero commits and nothing on origin. Twice a close said "planner commits by pathspec."
+
+**The planner cannot commit them.** SEAT-01 gives product repos one owning seat and the
+planner holds `doc_repo` only; it is refused at the gate, not merely reluctant. A close that
+defers a product commit to the planner defers it to nobody.
+
+**Committing and pushing your own branch is self service and needs no authorisation.** Do it
+before you write the close, not after: stage by explicit pathspec (never `add .`), confirm
+the CONTENT is staged rather than the paths, commit with a message that describes that diff,
+and push the branch to origin. Then name the pushed SHA in the close.
+
+**A close whose work exists only in `P:/tmp` is not a close.** That directory holds twenty
+plus clones and has been recycled before on this operation. Opening the PR is optional and
+depends on the card; pushing is not.
+
 ## Store credentials: you have them, they are not on disk
 
 A store card is not blocked for lack of credentials. **There is no `.env` in any worktree
