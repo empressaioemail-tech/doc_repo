@@ -1,7 +1,7 @@
 ---
 id: 03_ladder_recut_proposal
-title: Ladder re-cut proposal — Solo answers one parcel, Studio works a list
-status: draft
+title: Ladder re-cut — Solo answers one parcel, Studio works a list (RULED)
+status: active
 last_updated: 2026-08-31
 applies_to: smart_site
 owner: nick
@@ -11,12 +11,14 @@ related:
   - _inbox/2026-08-10_smartsite_pricing_and_gtm_LOCKED
   - _decisions/2026-08-31_smartsite_connector_is_a_door_not_a_tier
   - 14_pricing_framework
-purpose: A proposed amendment to the LOCKED 2026-08-10 ladder, opened because a code read of the live entitlement gates found Studio has almost no case for the largest audience. Carries the verified capability map as the evidence. NOT RULED. The locked ladder stands until the operator rules this.
+purpose: The amendment to the LOCKED 2026-08-10 ladder, RULED 2026-08-31, and the verified capability map that is its evidence. Filename and id keep their slot so existing references resolve.
 ---
 
-# Ladder re-cut proposal
+# Ladder re-cut
 
-Status: proposal. The LOCKED 2026-08-10 ladder stands unchanged until ruled. Prices are not touched by this proposal; only which capability sits on which rung.
+RULED 2026-08-31 by the operator. Decision record: `_decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list.md`. Implementation is OPS-16 P-101.
+
+This document keeps its `proposal` filename and id so existing references resolve; read it as the ruled amendment. Prices are untouched. Only which capability sits on which rung changed, and one capability actually moves.
 
 ## The verified capability map
 
@@ -47,7 +49,7 @@ The pricing table then argues against itself. Owner data is the third row inside
 
 Two capabilities are being given away. The multi-parcel screening board, `create_screen`, `add_to_screen`, and `list_screens`, carries no entitlement gate anywhere in either surface. That is the set-level job the locked ladder reserves for Prospect, shipping free today, before Prospect has launched. And the connector is effectively a free-account capability, though that one is correct and deliberate per the connector ruling.
 
-## The proposal
+## What was ruled
 
 Solo answers one parcel. Studio works a list of them.
 
@@ -63,7 +65,7 @@ This honors the locked principle that tiers split on what the output IS rather t
 
 The comparison table regroups to match the jobs: *Answer this parcel* for the Solo rows, *Work a list of them* for screens, owner data, and records, *Hand it off* for CAD and terrain, and *Work as a firm* for seats. Studio's badge stops being "The packet," because that phrase tells the largest audience the tier is not for them.
 
-Optional, and recommended: Studio moves from one seat to two, making it the "me and my partner" tier. The P-94 Team roster server half is already built, so the seat machinery exists.
+RULED: Studio moves from one seat to two, making it the "me and my partner" tier. The P-94 Team roster server half is already built, so the seat machinery exists.
 
 ## What this costs to build
 
@@ -71,13 +73,13 @@ Gating screens at the tier level, in both surfaces. The connector inherits the g
 
 Gating screens is a takeaway from free users who hold the capability today. Pre-market that population is approximately zero, which makes this the last cheap moment to do it.
 
-## The consequence that has to be ruled with it
+## The consequence ruled with it
 
 Giving Studio the screening board eats Prospect's stated job, which the locked doc defines as "the set-level answer."
 
-Proposed resolution: Prospect becomes the monitoring tier. Alerts and saved searches, tell me when something changes. The same locked doc already names that as "likely the strongest retention mechanism in the product and the natural Prospect hook." Studio works a list today; Prospect watches it for you. No collision, and Prospect keeps a genuinely different job rather than becoming a volume tier.
+RULED: Prospect becomes the monitoring tier. Alerts and saved searches, tell me when something changes. The same locked doc already names that as "likely the strongest retention mechanism in the product and the natural Prospect hook." Studio works a list today; Prospect watches it for you. No collision, and Prospect keeps a genuinely different job rather than becoming a volume tier.
 
-## Options considered and not proposed
+## Options considered and rejected
 
 Reframe only, changing the table's grouping and Studio's badge without moving any capability. Rejected as insufficient on its own: Solo genuinely delivers the complete single-parcel answer, so an honest buyer still has no reason to move. The reframe is necessary and is included above, but it does not carry the change by itself.
 
@@ -85,7 +87,7 @@ Moving the connector's `run_report` to Studio, making Studio the agent tier. Rej
 
 Metering Solo on report count so Studio can be unlimited. Rejected: it breaks the locked principle that tiers split on what the output is rather than on volume, and that principle is the reason an upgrade reads as graduating instead of as a tax.
 
-## Reversal criteria if ruled in
+## Reversal criteria
 
 Reverse the screens move if a measured free-tier cohort shows screens are a primary activation event, because gating an activation event to reach a revenue goal costs more than it earns. Reverse the two-seat Studio if seat management cannot close self-serve, since the humanless ruling forbids a tier that requires a conversation. Reverse the Prospect redefinition if a named buyer asks for set-level answers before alerts exist, in which case Prospect keeps its original job and Studio's screens are capped instead.
 

@@ -75,3 +75,15 @@ The product-to-CRM pipe, which needs the credential in Secret Manager bound to c
 ## Hygiene noted, not fixed
 
 OPS-16 amendment ids A-016, A-060 and A-061 each appear twice. The baseline is append-only so the duplicates stand; they are named in A-064 so a later reader is not misled.
+
+## Second arc, same day
+
+The ladder was RULED, not left as a proposal. Solo answers one parcel, Studio works a list. Exactly one capability moves, screens and boards from ungated to Studio; the records package was already Studio and only becomes visible; the rest is regrouping, a second Studio seat, and Prospect redefined as monitoring. Prices untouched. `03_ladder_recut_proposal.md` keeps its filename and flips to ruled. OPS-16 A-066 opens P-101 to implement it.
+
+Before ruling, the capability map was re-checked for staleness. Another seat had shipped P-98 and its commit message named a "Paid for everyone" defect, which sounded like entitlement. The four entitlement files behind the map are byte-unchanged between the read commit and current LDT main, and the defect was a client-side `SettingsModal` display bug. The map held, but the check was the point.
+
+P-100 was assigned to the property seat with a compiled dispatch. Scoping it surfaced a second staleness: the instrumentation is not missing. `gtmEvents`, `gtmConsent`, `recordGtmEvent` with many live call sites, a PE emitter, and `share_created` / `share_viewed` all exist, so the 2026-08-24 "none are wired" claim is stale and the card is measure-then-close rather than build-from-zero. The one gap established repo-wide as genuinely absent is sharer attribution: no referrer field exists anywhere, so a recipient who signs up is credited to nobody. Had the card been written from the doc instead of from the code, it would have ordered a rebuild of a working writer.
+
+GoHighLevel pipeline creation was proven API-supported by a safe write probe, 422 validation against a 404 control, creating nothing. Browser-only setup went into an agent runbook the operator drives from Google Docs.
+
+Two planner errors avoided by checking rather than asserting, and one earlier in the day corrected by withdrawal. The pattern across all three: the doc was stale and the code was not.

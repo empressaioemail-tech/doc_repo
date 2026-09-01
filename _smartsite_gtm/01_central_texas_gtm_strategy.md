@@ -50,7 +50,9 @@ The locked ladder already resolved the audience question and it does not get re-
 | Firms | Team $299 | The same, for three or more people, on one bill | Small Austin design and investment shops |
 | Homeowner and share recipient | Free, then the $15 unlock | What can I do with my lot, and is this flood thing real | The share loop's natural landing point |
 
-The tier each segment is sold into is under revision. A 2026-08-31 read of the live entitlement gates found that Studio's entire differentiation is four items, three of which are architect-only, so the largest segment has almost no reason to pass Solo. The proposed re-cut is `03_ladder_recut_proposal.md` and it is not yet ruled. Affiliate targeting and the per-segment lines wait on it.
+The tier each segment is sold into was re-cut and RULED 2026-08-31: Solo answers one parcel, Studio works a list of them. Screens and boards move to Studio, the records package becomes a visible row, the comparison surface regroups by job, Studio goes to two seats, and Prospect is redefined as monitoring. Prices are untouched. Ladder at `03_ladder_recut_proposal.md`, decision at `_decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list.md`, implementation at OPS-16 P-101.
+
+The consequence for this plan is that the investor, flipper, and agent segment is now sold into Studio rather than parked at Solo, because working a list of deals is that segment's actual job. Affiliate targeting follows the job, not the price.
 
 The free tier and the thirty-day unlock are the on-ramp, and the unlock's expiry is surfaced as a freshness property rather than a paywall. Bastrop repealing its entire zoning code in April is the proof that a forever answer is a promise we cannot keep, and saying so out loud is better positioning than hiding it.
 
@@ -130,7 +132,20 @@ Decisions 1 to 3 are ruled and binding. Decision record `_decisions/2026-08-31_c
 
 ### Still open
 
-4. What is the one-line outcome each affiliate segment sells? Candidates were drafted against the masters on 2026-08-31 and are deliberately not recorded here as settled, because the ladder re-cut in `03_ladder_recut_proposal.md` changes which tier each segment is being sold into. The lines get re-pointed and brought for approval after the ladder is ruled. This is a positioning commitment and stays an operator ruling rather than a drafting task.
+4. What is the one-line outcome each affiliate segment sells? The ladder is now ruled, so the candidates below are re-pointed and ready for an operator ruling. They remain candidates: this is a positioning commitment, and a line entering a kit without approval is a claim nobody ratified.
+
+## Affiliate segment lines — candidates, awaiting ruling on decision 4
+
+Re-pointed 2026-08-31 against the ruled ladder. Every line states an outcome the audience already wants, per the locked rule that an affiliate cannot sell property intelligence. All four are demonstrable on the two live generate paths, X-ray and Flood and Drainage. None carries a number, a saving, or a claim of approval, permitting, or certification.
+
+| Segment | Sold into | Candidate line | Demo |
+|---|---|---|---|
+| Investor, flipper | Studio | Find out what kills the deal before you make the offer | X-ray on an Austin-area lot: setbacks, envelope, flood, cited |
+| Agent, brokerage | Solo, driving Free | Send your client their smart site | Share a live smart site with a client, on a phone |
+| Land and ranch | Solo, some Studio | Know what the water does to that land before you drive out to see it | Flood and Drainage plus X-ray on a rural Bastrop or Caldwell tract |
+| Builder, designer | Studio | Start with the setbacks already drawn, cited to the ordinance section | X-ray on an infill lot, envelope labeled approximate, then the site plan export |
+
+Two notes that bind whichever lines are chosen. The agent line is the share gesture, which makes affiliate and share the same motion for that segment and is the one place two channels compound rather than compete; that argues for recruiting agents first. And the land line is deliberately built on water rather than on what you can build, because unincorporated Central Texas is legitimately unzoned and a build-focused line is weakest exactly where that audience operates.
 
 ## A refused line, recorded so it cannot return
 
