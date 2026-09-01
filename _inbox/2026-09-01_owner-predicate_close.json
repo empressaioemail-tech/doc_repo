@@ -1,0 +1,82 @@
+{
+  "lane": "OWNER-PREDICATE",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-01T14:25:00Z",
+  "closeKind": "complete: predicate hypothesis dead; no mutation",
+  "seat": "property claiming from integration checkout P:/doc_repo; engine worktree P:/tmp/hauska-engine-owner-backfill feat/owner-backfill",
+  "dispatch": "_dispatches/2026-09-01_owner-predicate_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-01_owner-predicate_cp1.json",
+    "_inbox/2026-09-01_owner-predicate_cp2.json"
+  ],
+  "table": "_inbox/2026-09-01_owner-predicate_table.json",
+  "prs": "not applicable: read-only; no product PR",
+  "ci": "not applicable: no PR",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main b6a01495d5bc57c6b0966b9b0f3edb065e90819a",
+    "db": "hauska_mcp via ATOMS_DATABASE_URL (121 bytes; value not recorded)",
+    "measuredAt": "2026-09-01T14:22:32Z to 2026-09-01T14:24:20Z"
+  },
+  "missionPremise": "No writes, no deletes, a one-sided ownerName delta. Hypothesis: the 08-31 and 09-01 measurements asked different JSONB questions. Source: compiled dispatch 2026-09-01_owner-predicate.",
+  "completionPredicate": "All three JSONB forms run per county in one pass. Falsifier scored. The 39 small-county bodies read or shown absent. Strip predicate recommended. Nothing mutated.",
+  "scopeBasis": "Reads on hauska_mcp only. current_database() checked. Did not strip. Did not touch owner-fact or cad_property.",
+  "counts": {
+    "instrument": "COUNT cad-parcel-roll by jurisdiction_tenant. Three filters: body ? ownerName; body->>'ownerName' IS NOT NULL; body->>'ownerName' <> ''. mailing_key = body ? ownerMailingAddress.",
+    "48021": { "key_present": 77073, "value_not_null": 77073, "value_not_empty": 77073, "mailing_key": 77048 },
+    "48055": { "key_present": 48382, "value_not_null": 48382, "value_not_empty": 48382, "mailing_key": 48170 },
+    "48209": { "key_present": 0, "value_not_null": 0, "value_not_empty": 0, "mailing_key": 0 },
+    "48309": { "key_present": 113360, "value_not_null": 113360, "value_not_empty": 113360, "mailing_key": 114254 },
+    "48453": { "key_present": 0, "value_not_null": 0, "value_not_empty": 0, "mailing_key": 0 },
+    "48491": { "key_present": 0, "value_not_null": 0, "value_not_empty": 0, "mailing_key": 0 }
+  },
+  "falsifier": {
+    "preregistered": "If key-present also returns the lower numbers, the JSONB-form hypothesis is dead.",
+    "fired": true,
+    "plain": "key-present returned 77073 / 48382 / 113360 / 0 / 0 / 0, the same as value-not-null and value-not-empty. The 70-row 08-31 delta is not null-or-empty keys. Something removed those keys without touching updated_at, or the 08-31 query counted a set this store does not now hold."
+  },
+  "smallCountyInspect": {
+    "asked": "Hays 29, Travis 3, Williamson 7 bodies",
+    "foundWithKey": 0,
+    "why": "body ? 'ownerName' is zero on all three tenants. There is no 39-row sample to open. The keys are gone, not null-valued."
+  },
+  "mechanism": {
+    "leadingAfterFalsifier": "A write that removed ownerName keys and left updated_at on 2026-08-12, or an 08-31 query that is not any of these three forms. The discriminator the card named (key-present vs value) did not split.",
+    "rejected": {
+      "name": "JSONB ? vs ->> vs <> '' on the same store",
+      "why": "All three returned the same integer in every county. One party writing both sides of a form-split cannot be the explanation when the three derivations agree."
+    },
+    "alsoRejectedAsSettled": ["#371 rewrite (no updated_at after 05:52:30Z)", "delete (mailing keys still match 08-31)", "wrong database (current_database=hauska_mcp)", "other access_policy (already established)"]
+  },
+  "stripRecommendation": {
+    "doNotRunUntil": "the silent-key-removal path is named, or the 08-31 query is recovered and shown to be a different predicate than these three",
+    "ifAuthorisedLater": {
+      "predicate": "entity_type=cad-parcel-roll AND (body ? 'ownerName' OR body ? 'ownerMailingAddress')",
+      "expectBefore": { "48021": { "ownerName": 77073, "mailing": 77048 }, "48055": { "ownerName": 48382, "mailing": 48170 }, "48309": { "ownerName": 113360, "mailing": 114254 }, "48209": { "ownerName": 0, "mailing": 0 }, "48453": { "ownerName": 0, "mailing": 0 }, "48491": { "ownerName": 0, "mailing": 0 } },
+      "zeroAfterMustHoldFor": ["body ? 'ownerName'", "body->>'ownerName' IS NOT NULL", "body->>'ownerName' <> ''", "same three on ownerMailingAddress"]
+    }
+  },
+  "whatContradictedTheCard": "The card said the data did not change and the question did, and that key-present would return the 08-31 highs. It did not. All three forms returned the 09-01 lows. The 39 Hays/Travis/Williamson bodies cannot be read because no ownerName key remains on those tenants. Did not salvage the hypothesis.",
+  "leave_behind": [
+    {
+      "item": "JSONB-form split is dead. Next owner card must name a write path that drops keys without bumping updated_at, or recover the 08-31 query text.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Remaining key-present pool: Bastrop 77073, Caldwell 48382, McLennan 113360. Hays/Travis/Williamson 0 under all three forms. Strip not run.",
+      "owner": "planner / operator",
+      "plan_row": "F-01"
+    }
+  ],
+  "constraintsHonored": [
+    "read only; no strip",
+    "did not re-derive #371 or delete",
+    "checked current_database()=hauska_mcp",
+    "ran all three forms per county in one pass",
+    "pre-registered the falsifier and scored it",
+    "stated a second mechanism and why it was rejected"
+  ],
+  "open": [
+    "Whether the missing keys were removed by a timestamp-silent write or never existed under these three forms in the 08-31 measurement."
+  ]
+}
