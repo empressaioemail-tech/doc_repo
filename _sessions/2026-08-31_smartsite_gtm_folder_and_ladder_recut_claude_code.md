@@ -1,6 +1,6 @@
 ---
 id: 2026-08-31_smartsite_gtm_folder_and_ladder_recut
-title: Smart Site GTM working set opened, ladder re-cut proposed, GoHighLevel proven live
+title: Smart Site GTM working set opened, ladder re-cut RULED, GoHighLevel proven live
 date: 2026-08-31
 status: active
 applies_to: smart_site
@@ -13,6 +13,8 @@ related:
   - _decisions/2026-08-31_ctx_gtm_rulings
   - _decisions/2026-08-31_gohighlevel_supersedes_pipedrive
   - _decisions/2026-08-31_smartsite_connector_is_a_door_not_a_tier
+  - _decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list
+  - _smartsite_gtm/04_gohighlevel_agent_runbook
   - 90_operations/OPS-16_texas_market_plan_of_record
 ---
 
@@ -48,7 +50,7 @@ Screens and boards carry no entitlement gate anywhere, giving away the set-level
 
 `requirePePaidDeep` is dead code with zero repo-wide mounts. It was nearly reported as a starved control, which would have been a false alarm; it is superseded by `requirePePaidOrPropertyUnlocked`, which carries four live mounts. The negative was checked repo-wide rather than by a scoped grep, per the planner's own standing error.
 
-The proposed re-cut is "Solo answers one parcel, Studio works a list", with Prospect redefined from set-level answers to monitoring. Prices untouched. Not ruled.
+The proposed re-cut is "Solo answers one parcel, Studio works a list", with Prospect redefined from set-level answers to monitoring. Prices untouched. Ruled later the same day; see Second arc.
 
 ## GoHighLevel proven live, and how the first two proofs were vacuous
 
@@ -87,3 +89,12 @@ P-100 was assigned to the property seat with a compiled dispatch. Scoping it sur
 GoHighLevel pipeline creation was proven API-supported by a safe write probe, 422 validation against a 404 control, creating nothing. Browser-only setup went into an agent runbook the operator drives from Google Docs.
 
 Two planner errors avoided by checking rather than asserting, and one earlier in the day corrected by withdrawal. The pattern across all three: the doc was stale and the code was not.
+
+## Incident: another seat's commit swallowed this seat's staged index
+
+At 19:56 local, commit `71c3a62`, message `docs(F-03): compile STORE-SPLIT-PLAN — plan the split, change nothing`, landed carrying all eight of this session's staged files and nothing else. Its own F-03 artifact does not appear in its diff. That seat committed with an add-all reflex in the window between this seat's `git add` and its `git commit`.
+
+Nothing was lost or corrupted. The ladder ruling, the runbook, OPS-16 A-066, and the other seat's A-065 are all intact in that commit, verified by reading them out of it. The commit is pushed and on the shared branch, so it is not being rewritten: other seats are actively working and a history rewrite would cost more than a misdescribing message. The record is corrected here instead.
+
+The lesson is sharper than the existing one. Staging explicit paths does not protect you, because the exposure is the git INDEX, which is shared process-wide, not the paths you chose. Committing "promptly" after staging does not protect you either, because the window is however long the next tool call takes. The only mitigation that closes it is to stage and commit in a single invocation, so no other process can observe a populated index. This seat staged in one call and committed in the next, and lost the race by one call.
+
