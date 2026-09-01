@@ -113,6 +113,18 @@ stands; this is recorded so the reasoning is visible rather than assumed absent.
 Retrieval depth stays as ruled: up to three queries plus detail navigations, per
 request, throttled.
 
+### The 14 BLOCK re-runs are PERMITTED under this ruling
+
+Ruled 2026-09-01. Fourteen issued records requests on three Bastrop parcels
+(`48021:34161` block 13, `48021:34753` block 27, `48021:35481` block 49) were planned
+without a block term because the retired `BLK(?:OCK)?` pattern could never match
+`BLOCK`. They may be re-run.
+
+**The other seven stay held**, and not for a policy reason: they are letter-only blocks
+(`BLOCK A`, `BLOCK F`, `Block D`, `BLK D`) across 48453, 48209 and 48309, and the
+shipped parser still requires a leading digit. Re-running them today reproduces the
+same null. They wait on a parser widening, which is its own card.
+
 ### Reversal criteria
 
 Reverse if a portal operator objects directly, if a portal's terms change materially,
@@ -127,7 +139,8 @@ leave_behind:
   - item: portal throttle, WAF-shaped UA removal, robots.txt fetch and log
     owner: property
     plan_row: P-85
-  - item: confirm whether the 14 BLOCK re-runs proceed under this ruling
-    owner: nick
+  - item: the 7 letter-block jobs stay held; the shipped parser still stores null on a
+      letter-only block, so re-running them reproduces the same null
+    owner: property
     plan_row: P-85
 ```
