@@ -12,7 +12,7 @@
 //
 //   node scripts/queue/self-test.mjs
 
-import { evaluateClaim, inMaintenanceWindow, parseHm, R } from "./lib.mjs";
+import { evaluateClaim, inMaintenanceWindow, parseHm, unblockAt, nextWakeSeconds, R } from "./lib.mjs";
 
 let pass = 0, fail = 0;
 const results = [];
@@ -204,6 +204,117 @@ t("refusals accumulate: wrong seat AND maintenance window both reported", () => 
   const r = evaluateClaim(s, req({ seat: "govtech", now: TUE_0530 }));
   assert(hasCode(r, R.WRONG_SEAT) && hasCode(r, R.MAINTENANCE_WINDOW),
     `expected both, got ${codes(r)}`);
+});
+
+// ---- operator authorization: a loop must not start a deploy by ticking ----
+
+t("NEEDS_OPERATOR_GO fires on an operator card with no authorization file", () => {
+  const s = base(); s.card.authorization = "operator"; s.authorization = null;
+  const r = evaluateClaim(s, req());
+  assert(!r.ok && hasCode(r, R.NEEDS_OPERATOR_GO), `got ${codes(r)}`);
+});
+
+t("INVERSE: an authorized operator card is claimable", () => {
+  const s = base(); s.card.authorization = "operator";
+  s.authorization = { card: "c1", operator: "nick", reason: "go", authorized_at: "x" };
+  const r = evaluateClaim(s, req());
+  assert(r.ok, `got ${codes(r)}`);
+});
+
+t("INVERSE: a seat-authorization card needs no operator go", () => {
+  const s = base(); s.card.authorization = "seat";
+  const r = evaluateClaim(s, req());
+  assert(!hasCode(r, R.NEEDS_OPERATOR_GO), `got ${codes(r)}`);
+});
+
+t("INVERSE: an absent authorization field defaults to seat, not operator", () => {
+  const r = evaluateClaim(base(), req());
+  assert(!hasCode(r, R.NEEDS_OPERATOR_GO), "missing field must not imply operator");
+});
+
+// ---- pacing ----
+
+t("unblockAt returns the window END for a maintenance-blocked card", () => {
+  const s = base(); s.card.needs_store = "cortex-prod";
+  const t0 = unblockAt(s, req({ now: TUE_0530 }));
+  assert(t0 && t0.toISOString() === "2026-09-01T06:00:00.000Z", `got ${t0 && t0.toISOString()}`);
+});
+
+t("unblockAt is null (unknowable) when a dependency is open", () => {
+  const s = base({ deps: { d1: { present: false, parsed: false, hasLeaveBehind: false } } });
+  assert(unblockAt(s, req()) === null, "a dep another seat must close has no knowable time");
+});
+
+t("unblockAt takes the LATEST clear time when two refusals apply", () => {
+  const s = base(); s.card.needs_store = "cortex-prod";
+  // token clears 06:30, window clears 06:00 -> answer must be 06:30
+  s.storeTokens = { "cortex-prod": { card: "other", seat: "property", expires_at: "2026-09-01T06:30:00.000Z" } };
+  const t0 = unblockAt(s, req({ now: TUE_0530 }));
+  assert(t0 && t0.toISOString() === "2026-09-01T06:30:00.000Z", `got ${t0 && t0.toISOString()}`);
+});
+
+t("nextWakeSeconds is 0 when something is claimable now", () => {
+  assert(nextWakeSeconds([base()], req()) === 0, "claimable now must wake immediately");
+});
+
+t("nextWakeSeconds counts down to the window end", () => {
+  const s = base(); s.card.needs_store = "cortex-prod";
+  const secs = nextWakeSeconds([s], req({ now: TUE_0530 }));
+  assert(secs === 1800, `expected 1800 from 05:30 to 06:00, got ${secs}`);
+});
+
+t("nextWakeSeconds clamps into the ScheduleWakeup range [60,3600]", () => {
+  const s = base(); s.card.needs_store = "cortex-prod";
+  const near = nextWakeSeconds([s], req({ now: new Date("2026-09-01T05:59:30Z") }));
+  assert(near === 60, `30s to the window end must clamp up to 60, got ${near}`);
+  const far = base({ deps: { d1: { present: false, parsed: false, hasLeaveBehind: false } } });
+  const secs = nextWakeSeconds([far], req());
+  assert(secs >= 60 && secs <= 3600, `idle poll out of range: ${secs}`);
+});
+
+t("nextWakeSeconds ignores cards belonging to other seats", () => {
+  const mine = base(); mine.card.id = "mine"; mine.card.needs_store = "cortex-prod";
+  const theirs = base(); theirs.card.id = "theirs"; theirs.card.repo = "smart-files";
+  // theirs is claimable by govtech, but property must not be woken by it
+  const secs = nextWakeSeconds([mine, theirs], req({ seat: "property", now: TUE_0530 }));
+  assert(secs === 1800, `another seat's claimable card must not wake this one; got ${secs}`);
+});
+
+// ---- watching the card in front ----
+
+t("waiting on an IN-FLIGHT dependency polls tight, not the idle interval", () => {
+  const s = base({ deps: { d1: { present: false, parsed: false, hasLeaveBehind: false, claimed: true } } });
+  const secs = nextWakeSeconds([s], req(), { idlePollSeconds: 1200, depWatchPollSeconds: 300 });
+  assert(secs === 300, `expected the dep-watch poll, got ${secs}`);
+});
+
+t("waiting on an UNSTARTED dependency uses the idle interval", () => {
+  const s = base({ deps: { d1: { present: false, parsed: false, hasLeaveBehind: false, claimed: false } } });
+  const secs = nextWakeSeconds([s], req(), { idlePollSeconds: 1200, depWatchPollSeconds: 300 });
+  assert(secs === 1200, `nobody is working it; expected idle poll, got ${secs}`);
+});
+
+t("an in-flight dependency SHORTENS a longer knowable wait", () => {
+  // one card blocked by the window until 06:00 (1800s away), another waiting on
+  // an in-flight dep. The seat must wake at the tighter of the two.
+  const win = base(); win.card.id = "win"; win.card.needs_store = "cortex-prod";
+  const dep = base({ deps: { d1: { present: false, parsed: false, hasLeaveBehind: false, claimed: true } } });
+  dep.card.id = "dep";
+  const secs = nextWakeSeconds([win, dep], req({ now: TUE_0530 }), { idlePollSeconds: 1200, depWatchPollSeconds: 300 });
+  assert(secs === 300, `expected 300 (tighter than the 1800s window), got ${secs}`);
+});
+
+t("a satisfied dependency makes the card claimable and wakes immediately", () => {
+  const s = base({ deps: { d1: { present: true, parsed: true, hasLeaveBehind: true, claimed: false } } });
+  assert(nextWakeSeconds([s], req()) === 0, "the card in front closed; start now");
+});
+
+t("an operator card behind a closed dependency still waits for the go", () => {
+  const s = base({ deps: { d1: { present: true, parsed: true, hasLeaveBehind: true, claimed: false } } });
+  s.card.authorization = "operator"; s.authorization = null;
+  const r = evaluateClaim(s, req());
+  assert(hasCode(r, R.NEEDS_OPERATOR_GO) && !hasCode(r, R.DEPENDENCY_OPEN),
+    `dependency is satisfied but the go is not; got ${codes(r)}`);
 });
 
 for (const [s, n, m] of results) console.log(`${s}  ${n}${m ? `\n      ${m}` : ""}`);

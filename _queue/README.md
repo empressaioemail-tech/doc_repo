@@ -37,7 +37,7 @@ When the close artifact is written:
 node scripts/queue/cli.mjs release --card <id> --seat <your-seat>
 ```
 
-## The seven refusals
+## The ten refusals
 
 | code | meaning |
 |---|---|
@@ -50,10 +50,11 @@ node scripts/queue/cli.mjs release --card <id> --seat <your-seat>
 | `MAINTENANCE_WINDOW` | the store is inside its Neon maintenance window |
 | `UNKNOWN_STORE` | `needs_store` names a store not in `config.json` |
 | `CARD_CLOSED` | the close artifact already exists |
+| `NEEDS_OPERATOR_GO` | card is `authorization:"operator"` and has no authorization file |
 
-All 24 refusal and inverse cases are asserted in `scripts/queue/self-test.mjs`,
-including an explicit not-vacuous case. Run it before trusting any change to
-`lib.mjs`.
+All refusals and their inverses are asserted in `scripts/queue/self-test.mjs` — 40
+cases including an explicit not-vacuous one, so it cannot pass by refusing everything.
+Run it before trusting any change to `lib.mjs`.
 
 ## Why each of these exists
 
@@ -112,13 +113,33 @@ was still `started`.
 or states explicitly that nothing did.** Without it the queue is a faster way to
 propagate the planner's mistakes.
 
+## Pacing: the queue tells the loop when to wake
+
+Seats run on loops. A loop that polls a fixed interval is chatty on a quiet board and
+late on a busy one, so ask instead of guessing:
+
+```
+node scripts/queue/cli.mjs next-wake --seat <seat>
+```
+
+`0` when something is claimable; the exact unblock time when it is knowable (window end,
+token expiry, lease expiry); the dep-watch poll when the only thing in the way is a
+dependency **another seat is currently working**; the idle poll when nobody has started
+the card in front. Clamped to [60, 3600].
+
+The loop spec is `90_runbooks/seat_loop.md`.
+
+## Deploys in a chain
+
+Mark a deploy card `"authorization": "operator"`. It refuses `NEEDS_OPERATOR_GO` until
+`authorize` writes an authorization file, so a loop cannot start a deploy by being the
+next thing to tick. Cards behind it wait on `depends_on` and resume when it closes. The
+operator is in the path once, at the deploy, rather than at every card.
+
 ## What this does not do
 
-It does not wake anyone. Whether seats can be started on a schedule is unresolved and
-is deliberately not assumed here; the queue works identically whether a seat is woken
-by a scheduler or started by hand.
-
-It does not merge, deploy, or run anything. It grants permission to begin.
+It does not start work, merge, deploy, or run anything. It grants permission to
+begin, and a loop does the asking.
 
 It does not replace the dispatch compiler. Cards point at dispatches compiled by
 `scripts/dispatch.mjs` and `enqueue` refuses a card whose dispatch file does not

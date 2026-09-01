@@ -17,6 +17,7 @@ import path from "node:path";
 import {
   REPO_ROOT, R, evaluateClaim, loadState, readJson, queueDir, cardDir,
   tokensPath, configPath, minutesFromNow, isExpired, loadSeats,
+  nextWakeSeconds, unblockAt,
 } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
@@ -195,6 +196,45 @@ if (cmd === "addendum") {
   process.exit(0);
 }
 
+// ---------------- next-wake ----------------
+// Prints seconds until this seat's board could change. A loop passes this to
+// ScheduleWakeup instead of guessing an interval.
+if (cmd === "next-wake") {
+  const seat = flag("seat");
+  if (!seat) die("usage: next-wake --seat <name>");
+  const now = new Date();
+  const states = listCardIds().map((id) => loadState(id));
+  const secs = nextWakeSeconds(states, { seat, now });
+  const lines = [];
+  for (const st of states) {
+    if (!st.card) continue;
+    const owner = Object.entries(st.seats).find(([, rs]) => rs.includes(st.card.repo));
+    const mine = st.card.repo === "doc_repo" || (owner && owner[0] === seat);
+    if (!mine) continue;
+    const t = unblockAt(st, { seat, now });
+    lines.push(`  ${st.card.id}: ${t === null ? "unknowable (waiting on another seat or an operator go)" : t <= now ? "NOW" : t.toISOString()}`);
+  }
+  console.log(`next_wake_seconds=${secs}`);
+  for (const l of lines) console.log(l);
+  process.exit(0);
+}
+
+// ---------------- authorize ----------------
+if (cmd === "authorize") {
+  const id = flag("card"), operator = flag("operator"), reason = flag("reason");
+  if (!id || !operator || !reason) die("usage: authorize --card <id> --operator <name> --reason <text>");
+  const card = readJson(path.join(cardDir(id), "card.json"));
+  if (!card) die(`REFUSED: no card "${id}"`);
+  if (card.authorization !== "operator") {
+    die(`REFUSED: card "${id}" is authorization:"${card.authorization || "seat"}" and needs no operator go. Writing one would be decoration.`);
+  }
+  const auth = { card: id, operator, reason, authorized_at: new Date().toISOString() };
+  writeJson(path.join(cardDir(id), "authorization.json"), auth);
+  record("operator", { verb: "authorize", card: id, result: "AUTHORIZED", auth, invocation: argv.join(" ") });
+  console.log(`AUTHORIZED ${id} by ${operator}: ${reason}`);
+  process.exit(0);
+}
+
 // ---------------- enqueue ----------------
 if (cmd === "enqueue") {
   const file = flag("file");
@@ -218,4 +258,4 @@ if (cmd === "enqueue") {
   process.exit(0);
 }
 
-die(`unknown command "${cmd || ""}". Commands: status, claim, release, addendum, enqueue`);
+die(`unknown command "${cmd || ""}". Commands: status, next-wake, claim, release, addendum, authorize, enqueue`);
