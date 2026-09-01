@@ -2,13 +2,21 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 19:37Z (parcel-gap-ledger CP1)**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 20:12Z (parcel-gap-ledger CLOSED)**
 
-## PARCEL-GAP-LEDGER IN FLIGHT 2026-09-01T19:37Z
+## PARCEL-GAP-LEDGER CLOSED 2026-09-01T20:12Z
 
-Seat property claiming from integration `P:/doc_repo` `main` `8e734ee1`. Claim until 21:07:10Z. CP1 `_inbox/2026-09-01_parcel-gap-ledger_cp1.json`. Scratch `_scratch/parcel-gap-ledger.md`. READ-ONLY. Not closed.
+Seat property from integration `P:/doc_repo` `main` `9453bce`. Report `_inbox/2026-09-01_parcel_gap_ledger.md`. Close `_inbox/2026-09-01_parcel-gap-ledger_close.json`. READ-ONLY.
 
-Next context: live census at 65 rails, NA 21.24 resolution, flood probe, non-numeric prop_id, CAD-null unaccounted sizing, Bastrop zero-overlap trace, orphan census, per-county CAD-join match rate. Do not convert unaccounted. Do not delete leftovers. Do not prefix-strip.
+**Store.** Landing 981405 x 65 rails. Store 981407 (leftovers 48021:0, 48021:10005 at 52). NA 18.00. absent-verified 0. Publish REFUSE. CAD-join 1.0 all six.
+
+**21.24** is a defect in the 52-rail CAD-universe proof, not live. Live Bastrop CAD value cells 689028 vs derived 864681.
+
+**Williamson** identity join is 1.0 on the R-prefix CAD slice. Dollars/living live on 319480 numeric CAD keys. Do not prefix-strip.
+
+**Bastrop 8712** living>0 are CAD accounts with no txgio feature (0/8712 in txgio). Mechanism A.
+
+Do not convert unaccounted. Do not delete leftovers. Do not prefix-strip.
 
 ## PARCEL-FILL-48453 FILLED 2026-09-01T19:36Z
 
