@@ -1,0 +1,137 @@
+{
+  "checkpoint": "CP2",
+  "phase": "mid-work adversarial review — build complete, verification in progress",
+  "lane": "A-062 PE billing portal",
+  "planRow": ["P-97"],
+  "declaredAt": "2026-09-01",
+  "seat": "property",
+  "snapshot": {
+    "legacyDesignTools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-a062-portal",
+      "branch": "feat/a062-pe-billing-portal",
+      "baseCommit": "d332d799e1ddbd64e106685fe37828ce24862959",
+      "workingTree": "dirty (5 modified, 2 added), uncommitted by design"
+    },
+    "hauskaMap": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-a062-portal",
+      "branch": "feat/a062-pe-billing-portal",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "workingTree": "dirty (7 modified, 4 added), uncommitted by design"
+    },
+    "testDatabase": {
+      "what": "the CI image, run locally: pgvector/pgvector:pg14, container a062-pg, host port 55432",
+      "why": "the api-server suite replays the committed schema fixture into a per-file schema and needs a real Postgres; the local Windows service postgresql-x64-18 is Disabled and was not enabled",
+      "schemaPushedBy": "DATABASE_URL=... pnpm --filter @workspace/db run push -> '[OK] Changes applied'",
+      "leaveBehind": "the container is a local verification artifact and is named in the close for teardown"
+    }
+  },
+  "filesTouched": {
+    "legacy-design-tools": [
+      "artifacts/api-server/src/lib/brokerageStripe.ts (M) — extracted createStripePortalSessionForCustomer; createBillingPortalSession now delegates to it",
+      "artifacts/api-server/src/lib/pePaywallStripe.ts (M) — added readPeStripeCustomerId, createPeBillingPortalSession, PE_BILLING_PORTAL_ROUTE, peAllowedReturnHosts, isAllowedPeReturnUrl",
+      "artifacts/api-server/src/lib/peEntitlement.ts (M) — hasBillingAccount on the snapshot and on peEntitlementAccountBody ONLY",
+      "artifacts/api-server/src/routes/propertyExplorer.ts (M) — POST /property-explorer/v1/billing/portal",
+      "artifacts/api-server/src/lib/peEntitlement.responseBody.unit.test.ts (M) — the pinned contract extended for the account body, still pinned for the base body",
+      "artifacts/api-server/src/lib/pePortalReturnUrl.unit.test.ts (A) — 13 tests, no DB",
+      "artifacts/api-server/src/__tests__/pe-billing-portal.test.ts (A) — 15 tests, real DB + spied Stripe"
+    ],
+    "hauska-map": [
+      "apps/property-explorer/api/_lib/deep-allowlist.ts (M) — one DEEP_POST_EXACT line",
+      "apps/property-explorer/src/lib/portalClient.ts (A) — the client, seven outcomes",
+      "apps/property-explorer/src/lib/portal-client.test.ts (A) — 15 tests",
+      "apps/property-explorer/src/lib/pe-terms-cancellation.ts (A) — the claim detector",
+      "apps/property-explorer/src/lib/pe-terms-cancellation.test.tsx (A) — 9 tests, the terms-vs-product implication",
+      "apps/property-explorer/src/lib/accountEntitlementClient.ts (M) — parse hasBillingAccount, explicit true only",
+      "apps/property-explorer/src/lib/account-entitlement-client.test.ts (M) — +2 tests",
+      "apps/property-explorer/src/lib/proxy-allowlist.test.ts (M) — parity on the imported constant, plus narrowness",
+      "apps/property-explorer/src/browse/SettingsModal.tsx (M) — billingManagementState + the Plan control",
+      "apps/property-explorer/src/browse/settings-modal.test.tsx (M) — the old row assertions replaced",
+      "apps/property-explorer/src/browse/settings-plan-rows.test.tsx (M) — the Not-built count guard strengthened to zero"
+    ],
+    "doc_repo": [
+      "_catalog/seat_register.json (M) — two lane worktrees registered",
+      "_inbox/2026-09-01_a062-portal_cp1.json (A)",
+      "_inbox/2026-09-01_a062-portal_cp2.json (A)",
+      "_inbox/2026-09-01_a062-portal_close.json (A)"
+    ]
+  },
+  "adversarialReviewOfTheBuild": [
+    {
+      "finding": "F1 — a latent fail-closed defect in the code being reused, found by reading the write path rather than by measuring output.",
+      "detail": "createBillingPortalSession read `const portalUrl = String(session.url); if (!portalUrl) throw`. String(undefined) is the seven-character string \"undefined\", which is truthy, so that guard could NEVER fire. A Stripe response with no url would have redirected an extension customer to a page named \"undefined\".",
+      "action": "The extracted primitive reads the field and requires a non-empty string. Behaviour change on the install-scoped path is strictly fail-closed: what used to be a bogus redirect is now a thrown error.",
+      "provenBy": "src/__tests__/pe-billing-portal.test.ts 'VIOLATION: a Stripe 200 with NO url is refused, not stringified' — asserts 502 and that the body does not contain the string 'undefined'."
+    },
+    {
+      "finding": "F2 — the customer-id refusal is DOUBLY armed, and the test discriminates between the two arms.",
+      "detail": "Disabling peSuppliedCustomerIdSource still refuses the request, because the zod schema is .strict() and an unknown key is a 400. The request is refused either way — but with error 'invalid_request' instead of the named 'customer_id_not_accepted'. The test asserts the NAMED error, so removing the explicit check fails even though the security outcome is unchanged.",
+      "action": "kept as designed; recorded because a weaker test would have passed on the violation.",
+      "provenBy": "violation run below, verbatim in the close."
+    },
+    {
+      "finding": "F3 — item 5's check cannot be met by rendering alone.",
+      "detail": "SettingsModal is asserted with renderToStaticMarkup, which runs no effects, so the account entitlement read never resolves at first paint and the 'manage' arm is unreachable in a render test. A render-only test would therefore have been unable to prove the control renders for a customer WITH an id.",
+      "action": "The rule is a pure exported function, billingManagementState, tested directly across all three arms and every non-ready outcome. The render test proves the complementary half: first paint shows 'Not read' and NOT the button, which is the honest state for an unresolved read.",
+      "provenBy": "pe-terms-cancellation.test.tsx (the manage/none arms) + settings-modal.test.tsx (the unresolved-read arm)."
+    },
+    {
+      "finding": "F4 — two existing tests pinned the shape this card changes, and both had to be rewritten rather than deleted.",
+      "detail": "settings-modal.test.tsx asserted the three 'Not built' rows were PRESENT (their presence was the disclosure), and settings-plan-rows.test.tsx counted exactly three 'Not built' strings as a guard against a fourth row being lit up by accident.",
+      "action": "Both rewritten to assert the NEW invariant and to preserve the guard in a stronger form: the count assertion is now zero 'Not built' anywhere on the tab, so a future card cannot add one back silently, and Renewal date is still checked by name as the row that stayed honest. The reason for each change is written into the test file itself.",
+      "provenBy": "both files pass; the reasoning is in their comments, not only here."
+    },
+    {
+      "finding": "F5 — the terms-vs-route check cannot span two repositories, and pretending otherwise would have been the defect.",
+      "detail": "terms.html is in hauska-map; the Express router is in legacy-design-tools. No single test process reads both.",
+      "action": "Split into two halves, each reading the artefact that actually decides its side, with the residual seam (the path STRING) declared and pinned as a literal on both sides. The seam is named in the module header rather than left for a reader to discover.",
+      "provenBy": "pe-terms-cancellation.ts header; pe-billing-portal.test.ts 'the route is MOUNTED' block."
+    }
+  ],
+  "predictionsPreRegistered": [
+    {
+      "id": "P1",
+      "prediction": "Removing the deep-allowlist line fails the parity test AND the terms-implication test.",
+      "falsifier": "either suite stays green with the line removed",
+      "outcome": "CONFIRMED — 3 failures across 2 files"
+    },
+    {
+      "id": "P2",
+      "prediction": "Replacing the read with getOrCreatePeStripeCustomer fails the no-billing-account test.",
+      "falsifier": "the 409 test stays green",
+      "outcome": "CONFIRMED — 502 instead of 409, because the spy refuses /customers"
+    },
+    {
+      "id": "P3",
+      "prediction": "Disabling the named customer-id check fails the refusal test.",
+      "falsifier": "the refusal test stays green",
+      "outcome": "CONFIRMED, but NOT for the predicted reason — the request was still refused, by .strict(), with a different error code. The test caught it on the error STRING. Recorded as F2 rather than smoothed over: the prediction was right about the failure and wrong about the mechanism."
+    },
+    {
+      "id": "P4",
+      "prediction": "Substring host matching admits smartsite.cloud.evil.com and notvercel.app and fails two allowlist tests.",
+      "falsifier": "the VIOLATION cases stay green under substring matching",
+      "outcome": "CONFIRMED — 2 failures"
+    },
+    {
+      "id": "P5",
+      "prediction": "Making billingManagementState never return 'manage' fails the terms-implication test.",
+      "falsifier": "green",
+      "outcome": "CONFIRMED — 1 failure"
+    },
+    {
+      "id": "P6",
+      "prediction": "Removing the promise from terms.html fails the implication tests, so deleting the sentence is not a quiet way to make them vacuous.",
+      "falsifier": "green, which would mean the check can be silenced by editing the legal page",
+      "outcome": "CONFIRMED — 5 failures"
+    }
+  ],
+  "knownLocalArtifact": {
+    "what": "'Hook timed out in 30000ms' in setup.ts afterEach truncateAll",
+    "where": "any api-server route suite when several run in parallel against this local Docker Postgres",
+    "evidence": "the baseline batch of four files produced 6 such failures INCLUDING three in pe-pricing-ladder.test.ts, a file this lane does not touch. pe-billing-portal.test.ts produced one on its first run and ZERO on a serial re-run with --hook-timeout=180000, all 15 passing.",
+    "conclusion": "an environment artifact, not an assertion defect, and it is discriminated by re-running rather than asserted. Matches the standing note that LDT api-server tests are not green locally and CI is authoritative. Serial runs with a raised hook timeout are the instrument used for every LDT number in the close."
+  },
+  "prNumbers": "not applicable: lane produces an uncommitted diff",
+  "mergeShas": "not applicable: lane produces an uncommitted diff",
+  "ciConclusion": "not applicable: lane produces an uncommitted diff"
+}

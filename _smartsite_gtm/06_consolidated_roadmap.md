@@ -66,7 +66,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
-| 1.1 | Build the PE billing portal so the published terms stop overclaiming | planner | 0.6 |
+| 1.1 | **A-062** the PE billing portal | property seat | **code complete**, committed; PRs held behind P-104 (shared file) |
 | 1.2 | **P-103** retire the legacy checkout seam | property seat | **DONE 2026-09-01.** #331 `847550aa`, deployed, **decline proven live** |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
@@ -121,6 +121,18 @@ The fix is that the SERVER computes `studioGranted` and consumers consume it. Th
 **One artifact now has two answers on two surfaces.** PE's `dossier` is the Solo X-ray and is deliberately NOT gated, because gating it would have taken away a sold Solo capability. The MCP's `STUDIO_EXPORT_KINDS` includes `dossier`. That divergence is logged and unresolved because resolving it is a product call, not an engineering one.
 
 **And a control that was never armed.** CI does not typecheck the PE BFF: `tsconfig.json` has `include: ["src"]` and the workflow runs exactly that. It was proved by planting a type error in `api/_lib/` and watching CI's typecheck exit 0, which is the only way that class of finding can be established. An `api/tsconfig.json` exists, nothing invokes it, and it holds three pre-existing errors. The lane deliberately did NOT arm it, because arming it would ship a permanently red dead gate, and routed it as a backlog item with the arming step and the three errors named. That is the correct call: a red gate teaches the fleet to use the bypass.
+
+### A-062 found a guard that could never fire, by reading the write path
+
+The portal is built: the route resolves `stripe_customer_id` from the session and refuses a caller-supplied one across seven spellings with a `.strict()` schema closing the set; no customer id is a declared 409 rather than a throw, a 500, or a Stripe customer created as a side effect of asking; `returnUrl` is required with a host allowlist, which makes the stale hardcoded Vercel default unreachable by construction rather than merely unused; and `hasBillingAccount` is added to the account body only, so the with-parcel contract the BFF pins does not move and the customer id never reaches the wire.
+
+**The finding worth keeping is in the code that was reused.** `createBillingPortalSession` contained `const portalUrl = String(session.url); if (!portalUrl) throw`. `String(undefined)` is the string `"undefined"`, which is truthy, so that guard could never fire. A Stripe response carrying no url would have redirected an extension customer to a page named "undefined". It was found by reading the write path, not by measuring output, which is the pattern every real defect in this operation has followed. The fix lives in the extracted primitive so both seams inherit it.
+
+**A prediction that was right about the failure and wrong about the mechanism, recorded rather than smoothed.** Disabling the named customer-id check still refused the request, through `.strict()`, with a different error code. The test caught it only because it asserts the error string. A test asserting merely that the request failed would have reported a working control that had quietly lost half of itself.
+
+**The base moved under the lane mid-build** and it caught that by re-fetching at close rather than trusting its own checkpoint, then re-measured everything against the new base and ran the new guard from P-103. File overlap with that merge was enumerated with `comm`, not eyeballed: none.
+
+One clause is explicitly not met and not claimed: the live open showing a customer returns to smartsite.cloud needs a deploy and a browser session, and is planner-owned after merge.
 
 ## Wave 2. Make the ladder real and the funnel measurable
 
