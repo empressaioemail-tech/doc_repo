@@ -59,7 +59,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
 | 1.1 | Build the PE billing portal so the published terms stop overclaiming | planner | 0.6 |
-| 1.2 | Retire `api/pe-billing.ts` and prove retirement by decline | planner | nothing, RULED retire |
+| 1.2 | **P-103** retire BOTH paths to the retired-price seam, proven by decline | property seat | nothing, carded |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
 
@@ -71,7 +71,11 @@ The only gate on `POST /api/pe-billing?path=checkout` is a self-asserted `X-Haus
 
 So 1.2 is a hard prerequisite of 1.3, not a parallel cleanup. Retirement means deleting the file, the `vercel.json:42` rewrite and the `vite.config.ts:48` dev proxy, then proving retirement by decline with a CI check asserting a 404, per the standing rule that retirement is proven by decline and never by documentation.
 
-Two related items are routed rather than folded in. `api/spine.ts:346` carries a starved `cortexPostPaths` entry that reads as a live permission and is unreachable, and it is shared with Command Center so it is not a PE-local edit. And the cortex-side install-scoped seam still resolves tier `pro` to the retired price; this wave removes one client of that seam, not the seam.
+**Scope-corrected 2026-08-31 by the lane that carded it, and the correction is right.** Retiring `api/pe-billing.ts` alone is a partial retirement that reads as complete. Two paths reach the retired-price seam: that file via `vercel.json:42`, and a `cortexPostPaths` prefix at `api/spine.ts:346`. P-103 takes both.
+
+Two seats disagree on whether the second path is live. The P-97 audit read `api/spine.ts:346` as unreachable dead configuration, because `isCortexBrowsePathAllowed` returns 403 first, and scored it a starved entry that merely reads as a live permission. The P-103 card reads it as a second live path. That disagreement does not need adjudicating before acting, because the action is identical under both readings: if it is unreachable, retiring it costs nothing, and if it is reachable, retiring it closes a live hole. P-103 proves retirement by decline on the deployed host, which settles the question empirically rather than by argument. Reachability is exactly the class of question that text search answers wrongly, so the probe is the instrument, not the grep.
+
+One item stays routed out. The cortex-side install-scoped seam still resolves tier `pro` to the retired price. This wave removes the clients of that seam, not the seam.
 
 ## Wave 2. Make the ladder real and the funnel measurable
 
@@ -79,7 +83,8 @@ Runs alongside Wave 1. Nothing here waits on Stripe.
 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
-| 2.1 | P-101 ladder re-cut across both surfaces, two-seat Studio SPLIT OUT per ruling 2 | property seat | nothing, rulings landed |
+| 2.1 | **P-101** ladder re-cut across both surfaces | property seat | nothing, carded |
+| 2.1b | **P-102** two-seat Studio, split out per ruling 2 | property seat | sequence after P-101 |
 | 2.2 | P-100 share and funnel instrumentation | property seat | nothing, dispatched |
 | 2.3 | Screen test the four affiliate segment lines | operator | nothing |
 | 2.4 | Affiliate kits, one per segment | planner | 2.3 |
