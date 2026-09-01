@@ -76,6 +76,40 @@ instead of at every card.
 node scripts/queue/cli.mjs authorize --card <id> --operator nick --reason "<why>"
 ```
 
+## Store credentials: you have them, they are not on disk
+
+A store card is not blocked for lack of credentials. **There is no `.env` in any worktree
+and there is not supposed to be.** The connection strings live in GCP Secret Manager on
+`hauska-prod-497015`:
+
+```
+export PRODUCTION_NEONDB_URL=$(gcloud secrets versions access latest   --secret=PRODUCTION_NEONDB_URL --project=hauska-prod-497015)      # cortex-prod: hauska_mcp + neondb
+export FACTORY_DATABASE_URL=$(gcloud secrets versions access latest   --secret=FACTORY_DATABASE_URL --project=hauska-prod-497015)       # factory control store
+```
+
+`psql` and the `pg` node module are both present. Related secrets that exist and may be the
+right one for a given card: `ATOMS_DATABASE_URL`, `CORTEX_DATABASE_URL`, `DATABASE_URL`.
+Read the card before picking one.
+
+**Never echo a secret, never write one to a file, never paste one into a close.** Pipe to
+the thing that consumes it. To prove access without exposing a value, pipe to `wc -c`.
+
+**There is a second path and it is sometimes better.** Store work can be driven through the
+Cloud Run job rather than a local connection, which is how the covers-fastpath measurements
+ran on 2026-09-01:
+
+```
+gcloud run jobs execute factory-p2-juris --project=hauska-prod-497015 --region=us-east4   --args="p2-juris,--county=48309,--apply,--measure-lo=100000,--measure-hi=112364" --async
+```
+
+The job already holds both secrets. Prefer it when the operation is something the job
+implements, because it runs in the same environment the real runs use.
+
+**On 2026-09-01 a seat reported store cards blocked for want of credentials and stopped the
+loop.** It had looked on disk, found only `.env.example`, and concluded absence. Absence of
+a local file is not absence of access. If a card looks blocked on credentials, run the
+access check before reporting it blocked.
+
 ## Stop, and mean it
 
 A loop that never stops is a loop nobody reads. Stop and report when any of these hold:
@@ -86,8 +120,14 @@ A loop that never stops is a loop nobody reads. Stop and report when any of thes
   not go looking for a path that reaches the same state without the claim.
 - **The board has nothing for this seat and nothing knowable is coming.** Say so and stop
   rather than idling indefinitely.
-- **Anything needing a deploy, an irreversible deletion, or credentials.** These are operator
-  calls whether or not a card is claimable.
+- **A deploy to production, or an irreversible deletion.** Operator calls whether or not a
+  card is claimable.
+- **A production WRITE that no card authorised.** Not reads. Using a read connection to
+  measure the store is the ordinary way to do a store card and is not a stop; a card that
+  mutates production carries `authorization: "operator"` and the queue already refuses it
+  until the go exists. **Do not stop a store card merely because it needs a connection
+  string** — that sentence used to read "or credentials" and it stopped a loop on
+  2026-09-01 that should have kept going.
 - **A long run of no-op ticks.** Say how many and stop. Silence is not progress.
 
 ## What a loop must never do
