@@ -166,9 +166,43 @@ if (cmd === "release") {
   if (!id || !seat) die("usage: release --card <id> --seat <name> [--reason <text>]");
   const st = loadState(id);
   if (!st.card) die(`REFUSED: no card "${id}"`);
-  if (st.claim && st.claim.seat !== seat && !has("force")) {
-    record(seat, { verb: "release", card: id, result: "REFUSED", detail: `held by ${st.claim.seat}`, invocation: argv.join(" ") });
-    die(`REFUSED: card "${id}" is held by seat "${st.claim.seat}", not "${seat}". Use --force only on an operator ruling.`);
+
+  // Release is keyed to the LIVE CLAIM IDENTITY, not to the seat. Found
+  // 2026-09-01 by the double-close audit: two lanes of one seat both worked
+  // cad-serve-reconcile because seat-only keying let lane 1 drop lane 2's live
+  // claim in 284ms without --force. ALREADY_CLAIMED blocks a second CLAIM by the
+  // same seat; nothing was blocking a second RELEASE, which undid it.
+  if (st.claim && !has("force")) {
+    if (st.claim.seat !== seat) {
+      record(seat, { verb: "release", card: id, result: "REFUSED", code: "SEAT_MISMATCH",
+                     detail: `held by ${st.claim.seat}`, invocation: argv.join(" ") });
+      die(`REFUSED: card "${id}" is held by seat "${st.claim.seat}", not "${seat}". Use --force only on an operator ruling.`);
+    }
+    const wt = flag("worktree"), br = flag("branch");
+    if (st.claim.worktree && (!wt || !br)) {
+      die(`REFUSED: this claim names a worktree and branch, so release must too.
+` +
+          `  held by: ${st.claim.worktree} on ${st.claim.branch}
+` +
+          `  run: release --card ${id} --seat ${seat} --worktree <path> --branch <branch>
+` +
+          `Seat alone is not identity: two lanes of one seat are two lanes.`);
+    }
+    if (st.claim.worktree && (wt !== st.claim.worktree || br !== st.claim.branch)) {
+      record(seat, { verb: "release", card: id, result: "REFUSED", code: "CLAIM_IDENTITY_MISMATCH",
+                     detail: `claim is ${st.claim.worktree}@${st.claim.branch}, caller is ${wt}@${br}`,
+                     invocation: argv.join(" ") });
+      die(`REFUSED: card "${id}" is held by a DIFFERENT LANE of your seat.
+` +
+          `  claim : ${st.claim.worktree} on ${st.claim.branch}
+` +
+          `  caller: ${wt} on ${br}
+` +
+          `That lane may still be working. Use --force only on an operator ruling; it logs a STEAL.`);
+    }
+  }
+  if (st.claim && has("force") && st.claim.seat === seat) {
+    record(seat, { verb: "release", card: id, result: "STEAL", detail: `forced over ${st.claim.worktree}@${st.claim.branch}`, invocation: argv.join(" ") });
   }
   const cp = path.join(cardDir(id), "claim.json");
   if (fs.existsSync(cp)) fs.rmSync(cp);
@@ -181,6 +215,40 @@ if (cmd === "release") {
   }
   record(seat, { verb: "release", card: id, result: "RELEASED", reason, invocation: argv.join(" ") });
   console.log(`RELEASED ${id} (${reason})`);
+  process.exit(0);
+}
+
+// ---------------- extend ----------------
+// A long card silently losing its claim is the failure mode that makes a stolen
+// lease possible. Only the holding LANE may extend, for the same reason release
+// is identity-keyed.
+if (cmd === "extend") {
+  const id = flag("card"), seat = flag("seat");
+  const wt = flag("worktree"), br = flag("branch");
+  const mins = Number(flag("minutes", "90"));
+  if (!id || !seat) die("usage: extend --card <id> --seat <name> --worktree <p> --branch <b> [--minutes N]");
+  if (!Number.isFinite(mins) || mins <= 0 || mins > 480) die("REFUSED: --minutes must be 1..480");
+  const now = new Date();
+  const st = loadState(id);
+  if (!st.claim) die(`REFUSED: card "${id}" is not claimed; nothing to extend`);
+  if (st.claim.seat !== seat) die(`REFUSED: held by seat "${st.claim.seat}"`);
+  if (st.claim.worktree && (wt !== st.claim.worktree || br !== st.claim.branch)) {
+    record(seat, { verb: "extend", card: id, result: "REFUSED", code: "CLAIM_IDENTITY_MISMATCH",
+                   detail: `claim is ${st.claim.worktree}@${st.claim.branch}, caller is ${wt}@${br}`, invocation: argv.join(" ") });
+    die(`REFUSED: only the holding lane may extend. A neighbour must not extend a lease it does not hold.`);
+  }
+  const claim = { ...st.claim, expires_at: minutesFromNow(now, mins) };
+  writeJson(path.join(cardDir(id), "claim.json"), claim);
+  const cfg = readJson(configPath()) || {};
+  if (st.card.needs_store) {
+    const tokens = readJson(tokensPath()) || {};
+    if (tokens[st.card.needs_store]?.card === id) {
+      tokens[st.card.needs_store].expires_at = minutesFromNow(now, Math.min(mins, cfg.store_ttl_minutes ?? 60));
+      writeJson(tokensPath(), tokens);
+    }
+  }
+  record(seat, { verb: "extend", card: id, result: "EXTENDED", expires_at: claim.expires_at, invocation: argv.join(" ") });
+  console.log(`EXTENDED ${id} until ${claim.expires_at}`);
   process.exit(0);
 }
 
@@ -270,4 +338,4 @@ if (cmd === "enqueue") {
   process.exit(0);
 }
 
-die(`unknown command "${cmd || ""}". Commands: status, next-wake, claim, release, addendum, authorize, enqueue`);
+die(`unknown command "${cmd || ""}". Commands: status, next-wake, claim, release, extend, addendum, authorize, enqueue`);

@@ -34,8 +34,23 @@ Do the work from the compiled dispatch. Write the close, including the mandatory
 what contradicted the card. Then:
 
 ```
-node scripts/queue/cli.mjs release --card <id> --seat <seat>
+node scripts/queue/cli.mjs release --card <id> --seat <seat>     --worktree <path> --branch <branch>
 ```
+
+**Release now requires the same worktree and branch you claimed with.** Seat alone is not
+identity: two lanes of one seat are two lanes. On 2026-09-01 two lanes of seat `property`
+both worked `cad-serve-reconcile` because release was seat-keyed, so one lane dropped the
+other's live claim in 284 milliseconds without `--force`. `ALREADY_CLAIMED` blocks a second
+*claim*; nothing was blocking a second *release*, which undid it.
+
+**If your card runs long, extend rather than losing the lease:**
+
+```
+node scripts/queue/cli.mjs extend --card <id> --seat <seat>     --worktree <path> --branch <branch> --minutes 120
+```
+
+Only the holding lane may extend. A lease that silently expires mid-work is what makes a
+stolen claim possible in the first place.
 
 **3. If nothing is claimable, do not guess an interval. Ask.**
 
