@@ -1,0 +1,109 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "lane": "p105-share-handoff",
+  "planRows": ["P-105"],
+  "date": "2026-09-01",
+  "snapshot": {
+    "docRepo": {
+      "repo": "doc_repo",
+      "path": "P:/doc_repo",
+      "branch": "main",
+      "note": "read-only for this lane except the three close artifacts"
+    },
+    "hauskaMap": {
+      "repo": "hauska-map",
+      "worktree": "P:/seat-worktrees/property/hauska-map-p105",
+      "branch": "feat/p105-share-handoff",
+      "baseCommit": "79e6c9cb3249ce91510b2c7bb42baad3ce0f5f68",
+      "baseCommitSubject": "Merge pull request #332 from empressaioemail-tech/seat/property-p104-studiogate",
+      "createdFrom": "origin/main fetched 2026-09-01"
+    },
+    "legacyDesignTools": {
+      "repo": "legacy-design-tools",
+      "readOnly": true,
+      "originMain": "91e39991a3ecdedbf1e703e205ec3b6240477d71",
+      "why": "artifacts/smartsite-mcp/src/vocabulary.ts and src/tool-honesty.ts are the SOURCE for the absence vocabulary; this lane reads them and writes nothing there"
+    }
+  },
+  "missionPremise": "P-105, operator go 2026-09-01. A share is the highest-intent moment the product gets and it currently ends in a static document whose live-view link is relative (/share?g=...) and therefore unresolvable by a foreign model. Claude Sync (P-87) already turns a parcel into a Claude conversation that calls get_smart_site, but it lives on the WORKBENCH, which is the sharer. The recipient gets nothing. Source: _inbox/2026-09-01_p105_share_handoff_WDLL.md; _decisions/2026-08-31_claude_sync_card_and_connected_signal.md; _decisions/2026-08-30_honesty_contract_is_silence_legible.md.",
+  "completionPredicate": "All seven acceptance items on the card graded, each with a violation run in BOTH directions and verbatim failure text in the close. Specifically: (1) the HTML instrument's Sync prompt is byte-identical to the workbench prompt for the same subject and is produced by importing src/lib/claudeSync.ts; (2) markdown and JSON name the connector, the parcel node id and get_smart_site as availability, with no claude:// anywhere; (3) no relative URL in the agent bodies; (4) four-plus distinct absence states, each with its own next action, none collapsing; (5) no internal tool name and no raw HTTP status in any customer-facing body, and Artifacts/Withholdings stop repeating four identical lines; (6) the 'Not exported by the sharer (... 404 ...)' line stops asserting two contradictory facts.",
+  "scopeBasis": "hauska-map/apps/property-explorer only. legacy-design-tools is READ-ONLY (vocabulary source). Excluded deliberately: src/share/ShareFunnelApp.tsx, src/workbench/tools/ShareTool.tsx, src/workbench/tools/ReportsTool.tsx, api/_lib/pe-gtm-bff.test.ts (P-100 holds them, dirty in P:/seat-worktrees/property/hauska-map-p100 verified by git status 2026-09-01) and the A-062 file set. No MCP tool added or renamed. No share-analytics writer (P-100 owns that subject). No change to the share fidelity rule or the paste-logs-the-URL warning.",
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "Import buildSyncPrompt / claudeWebChatUrl / claudeDesktopChatUrl from src/lib/claudeSync.ts into api/_lib/pe-share-handoff.ts. No second prompt builder.",
+      "risk": "No api/ file imports from src/ today (grep: zero hits). Vercel's @vercel/node function build must resolve the ../../src/lib/claudeSync.js specifier.",
+      "mitigation": "Prove resolution with a file-based bundle check (esbuild --bundle on the entry function) rather than assuming. Report the result either way."
+    },
+    {
+      "id": "D2",
+      "decision": "Single-source the connector identity (host, URL, connector name, tool name) in src/lib/claudeSync.ts and re-export from ClaudeSyncTool.tsx, rather than retyping mcp.smartsite.cloud in api/.",
+      "risk": "ClaudeSyncTool.tsx edit could collide with another lane.",
+      "mitigation": "Verified 2026-09-01: no unmerged remote branch and no dirty worktree in this repo touches ClaudeSyncTool.tsx, claudeSync.ts, pe-share-instrument.ts, pe-share-view-compose.ts or pe-share-grant.ts."
+    },
+    {
+      "id": "D3",
+      "decision": "The human handoff and the agent handoff are DIFFERENT artifacts. HTML gets the clipboard-then-open Sync handoff (a prompt, which is imperative by design because a person asked for it). Markdown and JSON get a connector OFFER: connector name, connector URL, parcel node id, tool name get_smart_site, phrased as availability. The Sync prompt never enters an agent body, because it is an instruction and would read as injection inside somebody else's model.",
+      "risk": "Item 2 requires naming get_smart_site while item 5 bans tool names in customer bodies.",
+      "resolution": "The ban is on INTERNAL tools the recipient cannot reach (refresh_parcel_dossier_export, download_parcel_*_export). get_smart_site is the one deliberately offered tool. The detector carries an explicit allowlist of exactly get_smart_site and its exclusion set is part of its contract."
+    },
+    {
+      "id": "D4",
+      "decision": "Absence becomes a five-value union with an MCP disposition token attached: excluded-by-sharer (refused), not-measured (unknown), tier-gated (refused + upgrade_required), absent-for-parcel (absent), unread (unread). Each carries a lay display sentence and an agentGuidance sentence in the shape tool-honesty.ts facetGuidance uses.",
+      "risk": "The vocabulary lives in another repo (legacy-design-tools artifacts/smartsite-mcp/src/vocabulary.ts) and cannot be imported across repos, so this is a copy that can drift.",
+      "mitigation": "The copy names its source path and read date in the module header and is filed as an OPEN in the close. A drift test is not possible from this repo."
+    },
+    {
+      "id": "D5",
+      "decision": "Kill the Artifacts/Withholdings duplication by making the Artifacts block state-only ('X-ray: not on this share.') and keeping the full reason in Withholdings exactly once. Withholdings becomes a structured entry (subject, state, disposition, display, agentGuidance, line) rather than a bare string.",
+      "risk": "Three existing assertions in src/lib/pe-share-instrument.test.ts regex over withholdings as strings and will break.",
+      "mitigation": "Update those three to read .line. That file is not held by another lane."
+    },
+    {
+      "id": "D6",
+      "decision": "Absolute URLs come from an origin threaded into composeShareInstrument from deployOrigin(req) (api/_lib/oidc-config.ts). absoluteShareUrl THROWS on a non-absolute origin rather than emitting a relative URL.",
+      "risk": "A missing origin previously degraded silently to a relative path.",
+      "mitigation": "Fail closed: refuse to build the link at all."
+    }
+  ],
+  "adversarialReview": [
+    {
+      "objection": "A clean local tsc --noEmit would prove the api/ changes typecheck.",
+      "finding": "FALSE and pre-established by the dispatch. apps/property-explorer/tsconfig.json carries include:[src] and exclude:[src/**/*.test.ts, src/**/*.test.tsx]. Verified by reading the file and .github/workflows/property-explorer-ci.yml, whose typecheck job is 'pnpm --filter property-explorer exec tsc --noEmit'. Neither CI nor the build typechecks api/ OR the test files. A separate api-scoped tsc run is required and its before/after counts are reported."
+    },
+    {
+      "objection": "The HTML instrument is what a person receiving a share sees.",
+      "finding": "NOT for a default browser navigation. api/_lib/pe-share-grant-id.ts isBrowserShareNavigation 302s a document navigation to /share?g={id}, the SPA (src/share/ShareFunnelApp.tsx), which P-100 holds and this lane must not edit. The HTML instrument is reachable at /s/{id}?format=html and by any non-navigation fetch with Accept: text/html. Item 1 names 'the HTML view of /s/{grantId}', which is that body, so the item is satisfiable in scope; the SPA half is a real gap and is reported, not implied away."
+    },
+    {
+      "objection": "A test that renders one instrument and greps the body proves the absence states do not collapse.",
+      "finding": "No. That is a presence-shaped check with one input. The collapse check compares the five states' rendered strings PAIRWISE and fails if any two are equal, and is verified by making two of them equal and watching it fail."
+    },
+    {
+      "objection": "The bare-HTTP-status detector can just look for three-digit numbers.",
+      "finding": "It cannot. 'No pipeline within 500 ft' is real overlay copy and a parcel node id is digits. The detector matches parenthesised codes and the phrases 'HTTP <code>' / 'status <code>' / 'returned <code>' only. That exclusion set is part of the instrument's contract and is stated in the close."
+    }
+  ],
+  "twoThingsToMeasure": {
+    "webPrefill": "Records disagree (2026-08-30 session vs 2026-08-31 decision). Status at CP1: NOT YET MEASURED. This lane will report observed-or-unresolved, and will not quietly adopt either. Clipboard-first is unchanged either way.",
+    "panelMountsOnFirstAction": "Status at CP1: NOT MEASURABLE FROM THIS LANE (requires a live Claude session with the connector attached and a fresh conversation). Will be reported as unmeasured."
+  },
+  "baselines": {
+    "tests": {
+      "command": "npx vitest run --reporter=dot (cwd apps/property-explorer)",
+      "result": "Test Files 167 passed (167); Tests 2272 passed | 1 todo (2273); exit 0"
+    },
+    "apiTypecheck": {
+      "command": "npx tsc --noEmit -p P:/tmp/p105-apicheck/tsconfig.json (include: apps/property-explorer/api/**/*.ts)",
+      "result": "3 errors, exit 2",
+      "errors": [
+        "api/_lib/verdict-layer-merge.ts(50,5): error TS2353",
+        "api/_lib/verdict-layer-merge.ts(168,5): error TS2322",
+        "api/pe-share-grant.ts(135,54): error TS2345"
+      ],
+      "note": "Pre-existing, not introduced by this lane. The dispatch reported the production Vercel deploy printing TS2339 and TS2345 for api/pe-share-grant.ts and api/pe-share-view.ts; this instrument finds TS2345 in pe-share-grant.ts and nothing in pe-share-view.ts. Two numbers that should agree and do not: different compiler options and a different commit. Reported, not rounded off."
+    }
+  },
+  "leaveBehindIntent": "none"
+}

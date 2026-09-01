@@ -1,0 +1,68 @@
+{
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial checkpoint (build complete, verification run)",
+  "lane": "p105-share-handoff",
+  "planRows": ["P-105"],
+  "date": "2026-09-01",
+  "snapshot": {
+    "repo": "hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-p105",
+    "branch": "feat/p105-share-handoff",
+    "baseCommit": "79e6c9cb3249ce91510b2c7bb42baad3ce0f5f68",
+    "workingTree": "dirty by design: this lane produces an uncommitted diff, the planner commits",
+    "legacyDesignToolsReadAt": "91e39991a3ecdedbf1e703e205ec3b6240477d71"
+  },
+  "cp1": "_inbox/2026-09-01_p105-share-handoff_cp1.json",
+  "whatWasBuilt": {
+    "newFiles": [
+      "apps/property-explorer/api/_lib/pe-share-absence.ts (376 lines) — five-state absence vocabulary sourced from the Smart Site MCP server, the probe-error classifier, and the customer-copy guards (internal tool names, HTTP-status leaks, relative URLs, rooted JSON paths, directive-shaped copy, fail-closed absoluteShareUrl)",
+      "apps/property-explorer/api/_lib/pe-share-handoff.ts (187 lines) — the human Sync handoff (imports buildSyncPrompt from src/lib/claudeSync.ts) and the model connector offer",
+      "apps/property-explorer/src/lib/pe-share-handoff.test.ts (669 lines) — 38 tests covering items 1-6, each with a violation"
+    ],
+    "modifiedFiles": [
+      "apps/property-explorer/api/_lib/pe-share-instrument.ts — absolute links, connector offer in md/JSON, Sync section in HTML, structured withholdings, state-only artifact lines, absence-aware verdicts, scriptSafeJson",
+      "apps/property-explorer/api/_lib/pe-share-view-compose.ts — ShareArtifactState carries a classified absence instead of a raw upstream reason string",
+      "apps/property-explorer/api/pe-share-grant.ts — threads deployOrigin(req) into compose",
+      "apps/property-explorer/src/lib/claudeSync.ts — connector identity constants moved here so a serverless function can read them",
+      "apps/property-explorer/src/workbench/tools/ClaudeSyncTool.tsx — re-exports those two constants; no behaviour change",
+      "apps/property-explorer/src/lib/pe-share-instrument.test.ts — updated for the three deliberate shape changes"
+    ]
+  },
+  "adversarialReviewOfOwnWork": [
+    {
+      "finding": "XSS: the inline Sync script embedded the prompt with JSON.stringify alone. The prompt carries the parcel's situs address, which is upstream data. A situs containing </script> would close the element and the rest of the page would parse as markup.",
+      "howFound": "reading the write path, not a failing test. No test failed and none would have.",
+      "fix": "scriptSafeJson() escapes < and & to \\u forms. Covered by a permanent test asserting both directions, and by violation case V7.",
+      "status": "fixed and verified by violation"
+    },
+    {
+      "finding": "Copy defect: the Sync lead said 'If this browser has the Smart Site connector'. A connector is attached to a Claude ACCOUNT, not a browser, so the sentence was a false statement about where the capability lives.",
+      "howFound": "reading the rendered HTML body",
+      "fix": "'If your Claude has the Smart Site connector'",
+      "status": "fixed"
+    },
+    {
+      "finding": "Copy defect: the unmeasured verdict line repeated the section title, rendering as 'Flood: Flood determination: Not measured for this parcel yet.' Both renderers already print `${title}: ${line}`.",
+      "howFound": "rendering a sample markdown body and reading it, which no assertion covered",
+      "fix": "the line is the absence display alone; the test now asserts the line does NOT contain the title",
+      "status": "fixed"
+    },
+    {
+      "finding": "Instrument defect in the violation battery itself: multi-line mutation anchors written with \\n silently failed to match CRLF files, and case V5a reported MUTATION-ANCHOR-NOT-FOUND rather than a failing check. A convenient reading of that would have been 'could not reproduce'.",
+      "howFound": "the battery's own anchor-not-found branch, which exists precisely so a non-matching mutation cannot be mistaken for a passing check",
+      "fix": "the battery normalises each anchor to the target file's own line endings",
+      "status": "fixed; V5a then fired"
+    },
+    {
+      "finding": "V5a's original mutation would not have reached any test body, because every fixture stubbed probeArtifact. The check would have been gated on a stub and could not observe a regression in the real write path.",
+      "howFound": "reasoning about what the mutation could actually reach",
+      "fix": "added a permanent test that runs the REAL probeShareArtifact with a callTool stub returning the exact historical production payload, and asserts both detectors find nothing in all three rendered bodies",
+      "status": "fixed; V5a now fails with 'expected [ refresh_parcel_dossier_export ] to deeply equal []'"
+    }
+  ],
+  "openObjectionsCarriedToClose": [
+    "The default browser path for a share is a 302 to /share?g={id}, the SPA, which P-100 holds. The HTML instrument this lane improved is reached at /s/{id}?format=html and by non-navigation fetches. Item 1 is satisfied for the body the card names; the SPA half is a real gap and is declared, not implied away.",
+    "The absence vocabulary is a cross-repo COPY of the Smart Site MCP server's tokens. No divergence test is possible from hauska-map.",
+    "The Vercel function build was proven to resolve the api -> src import by reading @vercel/node's own build code and by an esbuild bundle, not by a deploy. This lane produces an uncommitted diff and does not deploy."
+  ]
+}
