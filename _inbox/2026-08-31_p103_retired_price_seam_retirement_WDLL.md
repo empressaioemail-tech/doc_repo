@@ -1,6 +1,6 @@
 ---
 id: 2026-08-31_p103_retired_price_seam_retirement_WDLL
-title: WDLL — P-103: retire the legacy install-scoped checkout seam, both live paths
+title: WDLL — P-103: retire the legacy install-scoped checkout seam (one live path, one latent)
 date: 2026-08-31
 last_updated: 2026-08-31
 status: open
@@ -26,13 +26,15 @@ hauska-map PR #325 already retired the client half: the 403/404 feature-detect i
 
 ## The operator ruling and its scope correction
 
-Operator 2026-08-31 ruled "retire pe-billing.ts". Verified read-only the same day: retiring `pe-billing.ts` alone is a PARTIAL retirement that would read as complete. Two paths reach the seam, not one.
+Operator 2026-08-31 ruled "retire pe-billing.ts". Two configured paths point at the seam, not one, so retiring `pe-billing.ts` alone leaves a configuration that reads as a live permission. Only ONE of the two is actually reachable; see the Path B correction below, which was another seat's catch of a planner error.
 
 **Path A.** `apps/property-explorer/api/pe-billing.ts`, a deployed Vercel function, routed at `vercel.json:42` (`/api/pe-billing`) and proxied in `vite.config.ts:48`. Nothing under `apps/property-explorer/src` references it; `git grep -n "pe-billing" origin/main` returns only the function, its route, and the vite proxy. It is publicly routable on the production host.
 
-**Path B.** `apps/property-explorer/api/spine.ts:346` carries `'api/brokerage/v1/property-explorer/billing'` in `cortexPostPaths`, and `/api/spine/(.*)` is routed at `vercel.json:40`. A POST to `/api/spine/api/brokerage/v1/property-explorer/billing/checkout` reaches the same seam.
+**Path B, CORRECTED 2026-08-31 — dead configuration, not a live path.** `apps/property-explorer/api/spine.ts:346` carries `'api/brokerage/v1/property-explorer/billing'` in `cortexPostPaths`, and `/api/spine/(.*)` is routed at `vercel.json:40`. The planner originally called this a second live path. **That was wrong, and another seat caught it.** `cortexPostPaths` sits INSIDE the `if (path[0] === 'cortex')` branch, BELOW the `isCortexBrowsePathAllowed` 403 at `spine.ts:311-317`, whose POST allowlist is four exact map-data and envelope paths that do not include billing. The code says so itself at `spine.ts:328-329`: "Legacy command-center cortex paths retained for shared spine.ts deploy; property-explorer browse gate above blocks them on this surface." The P-97 audit had already scored it a starved entry that merely reads as a live permission, and that reading is correct.
 
-Both go, or the seam is still reachable and the retirement is a documentation claim.
+The planner error was inferring reachability from the presence of a string in a list without reading the guard above it. Reachability is a structural question and text search answers it wrongly; that is a documented recurring error for this seat and it recurred here.
+
+**Both still go**, because retiring dead configuration that reads as a live permission is correct hygiene and costs nothing, and because a future refactor that moves or relaxes the browse gate would silently make it live. But the CHARACTERIZATION changes: path A is a live hole, path B is a latent one. Grade them differently and do not report path B's removal as closing an exploitable path.
 
 ## Done looks like
 
@@ -40,9 +42,9 @@ Both paths return a decline rather than a checkout, proven by a live probe again
 
 ## Acceptance items
 
-1. **Path A removed.** `api/pe-billing.ts` deleted, its `vercel.json:42` rewrite removed, and the `vite.config.ts:48` proxy entry removed. | check: `POST /api/pe-billing?path=checkout` on the deployed host returns 404, captured verbatim with the deployment id | grade: [ ]
+1. **Path A removed. This is the live one.** `api/pe-billing.ts` deleted, its `vercel.json:42` rewrite removed, and the `vite.config.ts:48` proxy entry removed. | check: `POST /api/pe-billing?path=checkout` on the deployed host returns 404, captured verbatim with the deployment id | grade: [ ]
 
-2. **Path B removed.** The `'api/brokerage/v1/property-explorer/billing'` prefix removed from `cortexPostPaths` in `api/spine.ts`. Confirm the removal does not orphan a legitimate consumer: the GTM sibling `'api/brokerage/v1/gtm/property-explorer'` at the adjacent line is a DIFFERENT prefix and stays. | check: `POST /api/spine/api/brokerage/v1/property-explorer/billing/checkout` returns a decline; the GTM path still works | grade: [ ]
+2. **Path B removed. This is the LATENT one — expect it to 403 already.** The `'api/brokerage/v1/property-explorer/billing'` prefix removed from `cortexPostPaths` in `api/spine.ts`. Confirm the removal does not orphan a legitimate consumer: the GTM sibling `'api/brokerage/v1/gtm/property-explorer'` at the adjacent line is a DIFFERENT prefix and stays. | check: probe it BEFORE the change and record the status; a 403 before removal CONFIRMS it was already blocked and is the expected result, not a failed test. After removal it still declines. The GTM sibling still works | grade: [ ]
 
 3. **Prove by decline on the deployed surface, not in source.** Both probes run against the live host after deploy, with the Vercel deployment id recorded. A source diff is not a grade. Code-done is not customer-done. | check: two curl outputs pasted verbatim with status codes | grade: [ ]
 
