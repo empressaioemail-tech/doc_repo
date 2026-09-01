@@ -24,6 +24,8 @@ export const R = Object.freeze({
   UNKNOWN_STORE: "UNKNOWN_STORE",
   CARD_CLOSED: "CARD_CLOSED",
   NEEDS_OPERATOR_GO: "NEEDS_OPERATOR_GO",
+  STATE_UNREADABLE: "STATE_UNREADABLE",
+  WORKTREE_MISMATCH: "WORKTREE_MISMATCH",
 });
 
 const MIN = 60 * 1000;
@@ -72,10 +74,21 @@ export function evaluateClaim(state, req) {
   const push = (code, detail) => refusals.push({ code, detail });
   const now = req.now;
 
+  // A control input that could not be read is not an absent control input. Any
+  // unreadable state refuses before anything else is evaluated, because every
+  // check below would be reasoning from a file it could not see.
+  for (const u of state.unreadable || []) {
+    push(R.STATE_UNREADABLE, u);
+  }
+
   const card = state.card;
   if (!card) {
     push(R.NO_CARD, "no card.json for that id");
     return { ok: false, refusals };
+  }
+
+  if (state.worktreeCheck && !state.worktreeCheck.ok) {
+    push(R.WORKTREE_MISMATCH, state.worktreeCheck.detail);
   }
 
   if (state.closeExists) {
@@ -156,12 +169,53 @@ export function evaluateClaim(state, req) {
 
 // ---------- disk helpers ----------
 
-export function readJson(p) {
+// ABSENT and UNREADABLE are two different states and collapsing them is how a
+// control fails open. Found 2026-09-01 by the property seat during queue-init: a
+// tokens file written with a PowerShell UTF-8 BOM parsed as garbage, readJson
+// caught and returned null, and "a store token exists" became "no token held".
+// The claim was then GRANTED over a live token.
+//
+// Absent is a real and expected state and returns null. Present-but-unparseable
+// is a broken control input and throws. Callers that must not crash catch it and
+// turn it into a refusal, never into a permission.
+export function readJson(p, { strict = false } = {}) {
+  let raw;
   try {
-    return JSON.parse(fs.readFileSync(p, "utf8"));
-  } catch {
+    raw = fs.readFileSync(p, "utf8");
+  } catch (e) {
+    if (e?.code === "ENOENT") return null; // genuinely absent
+    if (strict) throw new Error(`unreadable: ${p}: ${e.message}`);
     return null;
   }
+  // Strip a UTF-8 BOM rather than choking on it; PowerShell writes them by
+  // default and a BOM is not a corrupt file.
+  if (raw.charCodeAt(0) === 0xfeff) raw = raw.slice(1);
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    if (strict) throw new Error(`unparseable JSON: ${p}: ${e.message}`);
+    return null;
+  }
+}
+
+// Two independently derived inputs: what the claim DECLARES, and what git says is
+// actually checked out there. A claim that cannot name where the work happens was
+// already refused; this refuses one that names somewhere it is not.
+export function checkWorktree(worktree, branch, execFileSync) {
+  if (!worktree || !branch) return { ok: false, detail: "worktree and branch are required" };
+  if (!fs.existsSync(worktree)) return { ok: false, detail: `worktree does not exist: ${worktree}` };
+  let head;
+  try {
+    head = execFileSync("git", ["-C", worktree, "rev-parse", "--abbrev-ref", "HEAD"], {
+      encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  } catch (e) {
+    return { ok: false, detail: `not a git checkout or git failed at ${worktree}: ${String(e.message).slice(0, 120)}` };
+  }
+  if (head !== branch) {
+    return { ok: false, detail: `declared branch "${branch}" but ${worktree} is on "${head}"` };
+  }
+  return { ok: true, detail: `${worktree} is on ${head}` };
 }
 
 export function queueDir() {
@@ -216,17 +270,30 @@ export function loadDepState(card) {
 }
 
 export function loadState(id) {
-  const card = readJson(path.join(cardDir(id), "card.json"));
-  const config = readJson(configPath()) || { stores: [], maintenance_windows: [] };
+  // Every one of these is a control input, so all are read strictly and a read
+  // failure becomes a refusal rather than a default. `unreadable` is checked
+  // first in evaluateClaim.
+  const unreadable = [];
+  const strict = (p) => {
+    try {
+      return readJson(p, { strict: true });
+    } catch (e) {
+      unreadable.push(e.message);
+      return null;
+    }
+  };
+  const card = strict(path.join(cardDir(id), "card.json"));
+  const config = strict(configPath()) || { stores: [], maintenance_windows: [] };
   return {
     card,
     config,
-    claim: readJson(path.join(cardDir(id), "claim.json")),
-    authorization: readJson(path.join(cardDir(id), "authorization.json")),
+    unreadable,
+    claim: strict(path.join(cardDir(id), "claim.json")),
+    authorization: strict(path.join(cardDir(id), "authorization.json")),
     closeExists: !!card?.close_artifact && fs.existsSync(path.join(REPO_ROOT, card.close_artifact)),
     seats: loadSeats(),
     deps: card ? loadDepState(card) : {},
-    storeTokens: readJson(tokensPath()) || {},
+    storeTokens: strict(tokensPath()) || {},
   };
 }
 

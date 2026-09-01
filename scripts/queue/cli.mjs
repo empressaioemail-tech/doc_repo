@@ -14,10 +14,11 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import {
   REPO_ROOT, R, evaluateClaim, loadState, readJson, queueDir, cardDir,
   tokensPath, configPath, minutesFromNow, isExpired, loadSeats,
-  nextWakeSeconds, unblockAt,
+  nextWakeSeconds, unblockAt, checkWorktree,
 } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
@@ -106,6 +107,8 @@ if (cmd === "claim") {
 
   const now = new Date();
   const st = loadState(id);
+  // Verified against git, not taken on the claim's word.
+  st.worktreeCheck = checkWorktree(worktree, branch, execFileSync);
   const res = evaluateClaim(st, { seat, now });
 
   if (!res.ok) {

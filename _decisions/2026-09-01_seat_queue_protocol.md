@@ -32,12 +32,12 @@ token, and a wake.
 
 `scripts/queue/lib.mjs` holds `evaluateClaim`, a pure function returning accumulated
 refusals. `cli.mjs` provides `status`, `claim`, `release`, `addendum` and `enqueue`.
-`self-test.mjs` asserts all nine refusal codes fire and asserts the inverse arm on every
-refusal that has one, plus an explicit not-vacuous case: 24 assertions, all passing.
+`self-test.mjs` asserts all refusal codes fire and asserts the inverse arm on every
+refusal that has one, plus an explicit not-vacuous case: 48 assertions, all passing.
 
-Nine refusals: `NO_CARD`, `NO_SEAT`, `WRONG_SEAT`, `ALREADY_CLAIMED`, `DEPENDENCY_OPEN`,
-`DEPENDENCY_MALFORMED`, `STORE_TOKEN_HELD`, `MAINTENANCE_WINDOW`, `UNKNOWN_STORE`,
-`CARD_CLOSED`.
+13 refusals; `scripts/queue/lib.mjs` exports `R` and is the authority on the list. Do
+not restate the count in prose without re-reading it — this paragraph was stale within
+hours of being written and the property seat caught it.
 
 Each answers a failure this operation has actually had, not a hypothetical:
 
@@ -112,7 +112,7 @@ The queue is used to fire work rather than to refuse it.
 
 ## Verification
 
-`node scripts/queue/self-test.mjs` — 24 passing, both directions.
+`node scripts/queue/self-test.mjs` — 48 passing, both directions.
 
 Verified by violation on the live board at setup: `WRONG_SEAT` refused govtech on a
 property card, `MAINTENANCE_WINDOW` refused both store cards inside the live window, a

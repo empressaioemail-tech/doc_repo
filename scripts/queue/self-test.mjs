@@ -12,7 +12,10 @@
 //
 //   node scripts/queue/self-test.mjs
 
-import { evaluateClaim, inMaintenanceWindow, parseHm, unblockAt, nextWakeSeconds, R } from "./lib.mjs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { evaluateClaim, inMaintenanceWindow, parseHm, unblockAt, nextWakeSeconds, readJson, R } from "./lib.mjs";
 
 let pass = 0, fail = 0;
 const results = [];
@@ -315,6 +318,63 @@ t("an operator card behind a closed dependency still waits for the go", () => {
   const r = evaluateClaim(s, req());
   assert(hasCode(r, R.NEEDS_OPERATOR_GO) && !hasCode(r, R.DEPENDENCY_OPEN),
     `dependency is satisfied but the go is not; got ${codes(r)}`);
+});
+
+// ---- the two bypasses the property seat found on 2026-09-01 ----
+
+t("STATE_UNREADABLE fires and does NOT fall through to a grant", () => {
+  const s = base({ unreadable: ["unparseable JSON: _queue/tokens/store.json"] });
+  const r = evaluateClaim(s, req());
+  assert(!r.ok && hasCode(r, R.STATE_UNREADABLE), `got ${codes(r)}`);
+});
+
+t("INVERSE: no unreadable inputs does not fire STATE_UNREADABLE", () => {
+  const r = evaluateClaim(base({ unreadable: [] }), req());
+  assert(!hasCode(r, R.STATE_UNREADABLE) && r.ok, `got ${codes(r)}`);
+});
+
+t("WORKTREE_MISMATCH fires when git disagrees with the declared branch", () => {
+  const s = base({ worktreeCheck: { ok: false, detail: 'declared "a" but on "b"' } });
+  const r = evaluateClaim(s, req());
+  assert(!r.ok && hasCode(r, R.WORKTREE_MISMATCH), `got ${codes(r)}`);
+});
+
+t("INVERSE: a verified worktree does not fire WORKTREE_MISMATCH", () => {
+  const s = base({ worktreeCheck: { ok: true, detail: "ok" } });
+  const r = evaluateClaim(s, req());
+  assert(r.ok, `got ${codes(r)}`);
+});
+
+// ---- readJson: the exact regression, reproduced ----
+
+const TMP = path.join(os.tmpdir(), "queue-selftest");
+fs.mkdirSync(TMP, { recursive: true });
+
+t("REGRESSION: a UTF-8 BOM token file PARSES instead of reading as no-token", () => {
+  const p = path.join(TMP, "bom.json");
+  // Exactly what PowerShell writes by default, and exactly what made a live store
+  // token invisible on 2026-09-01.
+  fs.writeFileSync(p, "﻿" + JSON.stringify({ "cortex-prod": { card: "x" } }), "utf8");
+  const v = readJson(p, { strict: true });
+  assert(v && v["cortex-prod"]?.card === "x", `BOM file must parse, got ${JSON.stringify(v)}`);
+});
+
+t("strict readJson THROWS on a corrupt file rather than returning null", () => {
+  const p = path.join(TMP, "corrupt.json");
+  fs.writeFileSync(p, "{not json at all", "utf8");
+  let threw = false;
+  try { readJson(p, { strict: true }); } catch { threw = true; }
+  assert(threw, "a present-but-unparseable control input must not read as absent");
+});
+
+t("readJson returns null for a genuinely ABSENT file, even strict", () => {
+  const v = readJson(path.join(TMP, "does-not-exist.json"), { strict: true });
+  assert(v === null, "absent is a real state and is not an error");
+});
+
+t("non-strict readJson still tolerates corruption (non-control callers)", () => {
+  const p = path.join(TMP, "corrupt.json");
+  assert(readJson(p) === null, "non-strict path keeps its old behaviour");
 });
 
 for (const [s, n, m] of results) console.log(`${s}  ${n}${m ? `\n      ${m}` : ""}`);

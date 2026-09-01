@@ -37,7 +37,7 @@ When the close artifact is written:
 node scripts/queue/cli.mjs release --card <id> --seat <your-seat>
 ```
 
-## The ten refusals
+## The 13 refusals
 
 | code | meaning |
 |---|---|
@@ -51,10 +51,13 @@ node scripts/queue/cli.mjs release --card <id> --seat <your-seat>
 | `UNKNOWN_STORE` | `needs_store` names a store not in `config.json` |
 | `CARD_CLOSED` | the close artifact already exists |
 | `NEEDS_OPERATOR_GO` | card is `authorization:"operator"` and has no authorization file |
+| `STATE_UNREADABLE` | a control input exists but could not be parsed. Absent and unreadable are different states |
+| `WORKTREE_MISMATCH` | git says that worktree is on a different branch than the claim declares |
 
-All refusals and their inverses are asserted in `scripts/queue/self-test.mjs` — 40
+All refusals and their inverses are asserted in `scripts/queue/self-test.mjs` — 48
 cases including an explicit not-vacuous one, so it cannot pass by refusing everything.
-Run it before trusting any change to `lib.mjs`.
+`lib.mjs` exports `R` and is the authority on the code list; this table is a convenience
+and has already gone stale once.
 
 ## Why each of these exists
 
