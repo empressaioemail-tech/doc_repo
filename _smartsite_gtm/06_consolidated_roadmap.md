@@ -62,6 +62,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | 1.2 | **P-103** retire BOTH paths to the retired-price seam, proven by decline | property seat | nothing, carded |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
+| 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | nothing, carded |
 
 **1.1 is the item that sat unowned across both retired threads,** because each assumed the other held it. `terms.html` states verbatim that a customer can cancel a paid plan through the Stripe billing flow in the product, and zero billing-portal references exist anywhere in `apps/property-explorer`. The product is honest and the legal page is not, which is the inversion of the usual failure and the half carrying legal weight. The build is one route against the signed-in user's `stripe_customer_id`, one line added to `deep-allowlist.ts`, and a control in Settings replacing the string "Not built". The Stripe call already exists and is proven at `brokerageStripe.ts:245`. Ruled a blocking Phase 0 item as A-062.
 
@@ -118,6 +119,22 @@ Affiliate terms are locked at 20 percent, recurring, capped at twelve months, op
 ## Wave 4. Compound
 
 P-88 vendor directory listing, which is what turns Claude Sync from a reason to stay into a way to be found, and which is currently the highest-leverage unassigned item in the plan. McLennan and Waco as the first proof the playbook transfers to a second media market. Dunning, which is silent churn at scale and nothing at zero customers. Prospect rebuilt as monitoring per the ladder re-cut. Agent access priced by volume rather than by rung, which is a different buyer.
+
+## Studio is not enforced on the web at all, and it changes what P-101 is worth
+
+Verified at source 2026-09-01 against hauska-map `origin/main`, after P-104 was carded.
+
+`apps/property-explorer/api/_lib/pe-site-plan-export-core.ts:430` gates site plan CAD on `input.entitlement.tier !== 'paid'`. A Solo subscriber is paid. So a 49 dollar Solo customer clicks site plan CAD on the web today and receives it, while the pricing table sells it as Studio at 129. Line 396 of the same file states that terrain export shares that gate, so terrain leaks the same way. Line 400 types the whole thing as `'free' | 'paid'`, which cannot express Studio even in principle.
+
+The scope is larger than those two exports. The word `studio` appears in **zero** files under `apps/property-explorer/api`, the web surface's entire server side. The negative control is that `entitlement` appears in thirteen files under the same pathspec, so the search and the pathspec work and the zero is a real absence rather than a broken instrument. **Every Studio lock on the web is client-side only.** The `studioGated` flags in the reports catalog drive a lock in the React tree and nothing else.
+
+Two source comments assert the opposite, at `peEntitlement.ts:29-30` and `propertyExplorer.ts:276-277`, both stating the PE BFF gates Studio-only surfaces on studio-or-team and never on bare tier. The server does supply `subscriptionTier`. The BFF never reads it. That is the enforcement doctrine's worst shape: not an absent control, but one documented as working, with its input supplied, shipping a plausible client artifact, and enforcing nothing. Reading it satisfies you and only violating it does not.
+
+**The consequence for the ladder re-cut.** The scoping lane already found Studio's whole differentiation is four items. Screens were ungated, which P-101 fixes. Site plan CAD and terrain are unenforced on the web, which P-104 fixes. So P-101 alone does not make Studio real on the paid surface; the two rows together do. A tier whose differentiators are all client-side is a suggestion, not a tier.
+
+**The inversion worth sitting with.** The MCP connector enforces this correctly. The connector was ruled a free door and a top-of-funnel surface. The workbench, which is the surface people pay for, is the leaky one. The free door is the strict one.
+
+**Why this sits in Wave 1 rather than later.** It costs nothing today, because Stripe is in test mode and nobody is paying. The cost begins at the first live Studio sale. So the deadline is the live switch, not some later cleanup window. It does not block the switch the way A-062 does, since no wrong charge and no legal exposure follow from it, but shipping live money while Studio's capabilities are free to Solo undermines the re-cut on the day it launches.
 
 ## Operator rulings, 2026-08-31
 
