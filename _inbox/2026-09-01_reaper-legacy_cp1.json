@@ -1,0 +1,75 @@
+{
+  "id": "2026-09-01_reaper-legacy_cp1",
+  "kind": "cp1",
+  "lane": "reaper-legacy",
+  "planRows": ["F-03"],
+  "wdll": "dispatch _dispatches/2026-09-01_reaper-legacy_dispatch.md (CTX card D item 2 follow-up; WDLL practice does not trigger for a single-control deletion). Inherited: _inbox/2026-08-28_ctx_d_reaper_execution_identity_WDLL.md item 2 removal date.",
+  "filedAt": "2026-09-01T03:01:11Z",
+  "seat": "integration executing compiled dispatch; worktree P:/tmp/hauska-factory-reaper-legacy, branch feat/reaper-legacy-remove, no sub-agents",
+  "snapshot": {
+    "docRepo": "P:/doc_repo main (SEAT-01 integration)",
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/hauska-factory-reaper-legacy",
+    "branch": "feat/reaper-legacy-remove",
+    "head": "5f9acc3c53c04efa88f59715271f3d6a12f78e99 (origin/main at clone; working tree clean at CP1)",
+    "clockAtCp1": "2026-09-01T03:01:11.3934798Z",
+    "controlStore": {
+      "instrument": "Neon MCP run_sql on project withered-surf-26870298 (hauska-factory), default branch br-noisy-bar-au9cwf7n. Not cortex-prod.",
+      "runs_total": 925,
+      "started_unterminated": 1,
+      "unnamed_predate_started": 0,
+      "fallback_eligible": 0,
+      "named_predate_started": 0,
+      "the_one_started_row": {
+        "id": "fb490620-d4e9-4110-804d-21ee7375b960",
+        "started_at": "2026-09-01T01:51:42.695Z",
+        "phase": "p2-juris-containment",
+        "execution": "factory-p2-juris-hzkqk",
+        "job": "factory-p2-juris",
+        "host": "cloud-run-job"
+      },
+      "termination_events": 640,
+      "start_time_legacy_events": 0,
+      "whatHappensToRealRows": "Zero live unnamed pre-date started rows. Removal changes the disposition of nobody currently started. The one started row is named and post-SINCE; matchExecution already uses MATCHED_BY_NAME only. Any future unnamed pre-date row (none exist) would stay started until its age bound and then orphan, which A-022(5) already ruled."
+    }
+  },
+  "missionPremise": "LEGACY_FALLBACK_REMOVE_BY = 2026-09-01T00:00:00Z has passed. test/ctx-execution-identity.test.mjs is the control that forces deletion of legacyStartTimeMatch. Observed this session against 5f9acc3: that test FAILS with its own message; the sibling test 'the legacy fallback still reconciles a pre-date unnamed run' PASSES (exec = factory-bastrop-publish-czlpc, by = start-time-legacy). A control working, not a defect. Source: compiled dispatch PLAN-ROW F-03; CTX D WDLL item 2; A-022(5).",
+  "completionPredicate": "legacyStartTimeMatch deleted; LEGACY_START_TIME_FALLBACK === false (flag kept because the expiry test and reap.mjs consumers still read the export); MATCHED_BY_START_TIME kept (reap.mjs reconcile-termination and byStartTimeLegacy, plus historical fixtures); EXECUTION_NAME_SINCE and predatesExecutionNames left in place; a pre-date unnamed fixture that currently matches now returns exec:null (shown failing on current code first); a named row still matches by name; node --test fail 0; expiry test green; leave_behind named; no commit.",
+  "scopeBasis": "src/control/reaper.mjs plus the tests that still assert the live fallback (test/ctx-execution-identity.test.mjs, test/ctx-reaper.test.mjs). Out of scope: #50, #51, cortex-prod, any store write, deploy, job execute, folding this into another PR, extending the date, deleting MATCHED_BY_START_TIME, deleting EXECUTION_NAME_SINCE or predatesExecutionNames.",
+  "findingsBeforeBuild": [
+    {
+      "finding": "MATCHED_BY_START_TIME must stay. src/jobs/reap.mjs:90 counts byStartTimeLegacy against it; src/jobs/reap.mjs:181 refuses reconcile-termination unless termination.matched_by === MATCHED_BY_START_TIME. Live store has 0 such events today; the constant is still the stored-value reader. Deleting it would break reconcile of any historical start-time-legacy record that later appears in a fixture or an unindexed event."
+    },
+    {
+      "finding": "LEGACY_START_TIME_FALLBACK is flipped to false, not removed. The expiry test imports it and asserts === false. matchExecution can drop the call to legacyStartTimeMatch and return exec:null for unnamed rows. Removing the export would make the control test fail for the wrong reason (import error)."
+    },
+    {
+      "finding": "eligibleExecutions is only called from legacyStartTimeMatch. After the delete it is unreferenced in src/. Left in place and named rather than silently removed. jobsForRun still used by the control-run test."
+    },
+    {
+      "finding": "ctx-reaper.test.mjs 'legacy start-time fallback honours job affinity' asserts a pre-SINCE unnamed publish matches factory-bastrop-publish-z and an untagged execution. That test must invert with the identity tests. Card A orphan / parent / named-execution tests do not use the fallback (named rows, or no executions so they orphan by age) and stay."
+    },
+    {
+      "finding": "Store measurement: unnamed_predate_started = 0, fallback_eligible = 0. Counting rule: runs.status='started' AND no termination_records row AND started_at < 2026-08-28T11:00:00Z AND (scope.execution is null or blank). Snapshot 2026-09-01T03:01Z on withered-surf-26870298 default branch."
+    }
+  ],
+  "design": {
+    "reaper": "Delete function legacyStartTimeMatch. LEGACY_START_TIME_FALLBACK = false. matchExecution: named path unchanged; unnamed path returns {exec:null, by:null, named:null} without calling a start-time matcher. Docblock updated: fallback deleted on LEGACY_FALLBACK_REMOVE_BY, identity rule kept. MATCHED_BY_START_TIME, EXECUTION_NAME_SINCE, predatesExecutionNames, eligibleExecutions remain exported.",
+    "tests": "Invert ctx-execution-identity 'legacy fallback still reconciles' to assert exec:null and no termination. Invert the three-unnamed-siblings block to assert they no longer attach to czlpc. Invert ctx-reaper affinity test to assert matchRunToExecution returns null for rightJob and untagged. Expiry test left as written. Named-row tests untouched."
+  },
+  "falsifiersPreRegistered": [
+    "F1 (watch fail first): a probe that asserts matchExecution(pre-date unnamed, [done]) is {exec:null, by:null} FAILS on 5f9acc3 current code (the path still matches). After the delete the same probe PASSES.",
+    "F2: the expiry test still fails after LEGACY_START_TIME_FALLBACK = false (must go green).",
+    "F3: a named row (three-siblings or run-done) returns exec null or by !== MATCHED_BY_NAME after the delete.",
+    "F4: node --test fail > 0 or the expiry test is skipped/weakened."
+  ],
+  "constraintsHonored": [
+    "no fold into #50 or #51",
+    "no cortex-prod read",
+    "no store write; Neon MCP SELECT only on hauska-factory",
+    "no date extension",
+    "no commit",
+    "no other product repo"
+  ],
+  "leave_behind": "declared at close"
+}
