@@ -1,0 +1,95 @@
+{
+  "artifact": "CP2",
+  "lane": "p98b-vocab",
+  "planRows": ["P-98"],
+  "date": "2026-09-01",
+  "phase": "mid-work / pilot adversarial checkpoint -- both halves built, verified by violation, nothing committed",
+  "dispatch": "_dispatches/2026-09-01_p98b-vocab_dispatch.md",
+  "cp1": "_inbox/2026-09-01_p98b-vocab_cp1.json",
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+      "branch": "feat/p98b-account-entitlement",
+      "baseCommit": "b2e81052f8a5936daadb73be3956b0073ee97f8c",
+      "state": "3 files changed (1 modified, 2 deleted), uncommitted"
+    },
+    "hauska-map": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+      "branch": "feat/p98b-account-entitlement-client",
+      "baseCommit": "04e0a752c0ead0d5af20fba344ebfb8969f45e3a",
+      "state": "8 files changed, all modified, uncommitted"
+    }
+  },
+  "verifyByViolation": {
+    "target": "apps/property-explorer/src/lib/nextAction.ts:406, the annual_upgrade whitelist",
+    "injected": "if (e.billingInterval !== \"month\") return null;  ->  if (e.billingInterval === \"month\") return null;",
+    "command": "cd P:/seat-worktrees/property/hauska-map-nextaction/apps/property-explorer && npx vitest run src/lib/nextAction.test.ts src/lib/account-entitlement-client.test.ts",
+    "resultUnderViolation": "Test Files 2 failed (2) | Tests 20 failed | 42 passed (62)",
+    "restored": "reverted to !== \"month\"; full suite re-run green at 166 files / 2234 passed / 1 todo; working-tree diff md5 identical to the pre-violation backup (1a782f51a18610e429dbabe36ac0d927), so the injection left no residue",
+    "conclusion": "the gate fires in BOTH directions -- it goes red when a month subscriber stops firing the rung AND when a year/null account starts firing it. Observed failing, not only observed passing."
+  },
+  "adversarialReviewOfOwnWork": [
+    {
+      "check": "Did the three originally-failing assertions pass without being edited?",
+      "falsifierPreRegistered": "if any of the three lines had to change, the tests did NOT express the source authority and the ruling would need re-examination",
+      "result": "PASS. peEntitlement.responseBody.unit.test.ts lines 136 and 181 are untouched by the diff (git diff shows no hunk in that file at all) and now pass. Not one server test was edited."
+    },
+    {
+      "check": "Do the before/after suite numbers reconcile exactly, or is there an unexplained delta?",
+      "falsifierPreRegistered": "any test count I cannot attribute to a named cause is a finding, not a rounding",
+      "serverBefore": "Test Files 166 failed | 155 passed | 1 skipped (322); Tests 2 failed | 1462 passed | 1 skipped (1465)",
+      "serverAfter": "Test Files 165 failed | 155 passed | 1 skipped (321); Tests 1461 passed | 1 skipped (1462)",
+      "reconciliation": "files 322->321 = the deleted peWireBillingInterval.test.ts. failed files 166->165 = responseBody.unit.test.ts moved from failed to passed. passed files stay 155 because responseBody joined (+1) as the deleted wire test left (-1). tests 1465->1462 = -3, exactly the three deleted wire tests. passed 1462->1461 = +2 (the two assertions that now pass) -3 (deleted). Every unit accounted for; no unexplained delta.",
+      "result": "PASS"
+    },
+    {
+      "check": "Did the client suite lose or gain tests?",
+      "method": "measured, not argued: git stash push -- apps/property-explorer, full vitest run at the pristine base commit, git stash pop, then md5 of the regenerated diff against a pre-stash backup",
+      "clientBefore": "Test Files 166 passed (166); Tests 2234 passed | 1 todo (2235)",
+      "clientAfter": "Test Files 166 passed (166); Tests 2234 passed | 1 todo (2235)",
+      "restoreProof": "diff md5 1a782f51a18610e429dbabe36ac0d927 identical before stash and after pop",
+      "result": "PASS -- identical. The edits changed assertion VALUES and one test NAME; they added and removed no test."
+    },
+    {
+      "check": "Is the file set that carries billingInterval identical to the file set changed?",
+      "command": "grep -rl \"billingInterval\" src api scripts (in apps/property-explorer)",
+      "result": "PASS -- the 8 files returned are exactly the 8 files in git status --porcelain. No consumer was missed and no unrelated file was swept in."
+    },
+    {
+      "check": "MY OWN INSTRUMENT FAILED ONCE THIS LANE, and it is recorded rather than buried.",
+      "instrument": "grep -c $'\\r' <file>, used to check for CRLF damage after rewriting files with python",
+      "defect": "the $'\\r' escape did not survive into the pattern, so grep received an EMPTY pattern and matched EVERY line. It reported 269 CR lines in a 269-line file and 467 in a 467-line file -- a plausible, convenient, and entirely wrong answer that would have sent me chasing a line-ending problem that does not exist.",
+      "howCaught": "od -c on the same file showed only \\n. Two derivations disagreed; the disagreement was the finding.",
+      "correctInstrument": "cr=$(tr -cd '\\r' < \"$f\" | wc -c) -- reports CR=0 LF=269 and CR=0 LF=467",
+      "negativeControl": "printf 'a\\nb\\n' > /tmp/nocr.txt; grep -c $'\\r' /tmp/nocr.txt returns 2 on a file with zero CR bytes, proving the pattern was vacuous",
+      "groundTruth": "both worktrees are checked out LF-only in the working copy despite core.autocrlf=true, including files this lane never touched. The python rewrites preserved LF and introduced no line-ending change; git diff shows only semantic hunks.",
+      "ruleInvoked": "ENFORCEMENT 'the instrument that produced a claim is part of the claim' and 'if an output looks convenient, that is a reason to distrust the instrument'"
+    },
+    {
+      "check": "Could the deleted totality guard bite in production?",
+      "secondMechanismConsidered": "a value reaching the wire from somewhere other than the constrained column -- e.g. a cached snapshot, a second read path, or a service-to-service body",
+      "rejectedBecause": "snap.billingInterval is constructed in exactly two places, both read in this lane: peIdentity.ts:181 from the CHECK-constrained column, and peEntitlement.ts:111 as a literal null for the unauthenticated snapshot. There is no third constructor and no cache between them.",
+      "residualOpen": "the DDL CHECK is the runtime guarantee; drizzle .$type<>() is an unchecked cast. If anyone ever drops or weakens pe_user_entitlements_billing_interval_chk, the wire loses its grammar with nothing left to catch it. Recorded as an OPEN item, not as a blocker."
+    }
+  ],
+  "unmeasuredHere": {
+    "file": "artifacts/api-server/src/__tests__/pe-property-entitlement.test.ts",
+    "assertionInScope": "line 298, expect(res.body.billingInterval).toBe(\"month\")",
+    "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx vitest run src/__tests__/pe-property-entitlement.test.ts",
+    "verbatimResult": "FAIL src/__tests__/pe-property-entitlement.test.ts -- Error: [vitest] There was an error when mocking a module ... Caused by: Error: DATABASE_URL must be set. Did you forget to provision a database? ... Test Files 1 failed (1) | Tests no tests",
+    "status": "UNMEASURED HERE, not passing and not failing. Zero tests were collected; the file died at import. It is one of the 165 DB-backed files that fail identically before and after this change. CI with DATABASE_URL is the authority."
+  },
+  "constraintsHonored": [
+    "no git add / commit / push / PR in any repo",
+    "no sub-agents spawned",
+    "every verification command exit-bounded (vitest run, tsc --noEmit, one-shot greps); no watch, tail, serve or dev server",
+    "usePropertyEntitlement.ts and entitlementClient.ts untouched (git status confirms)",
+    "pricing.ts, PricingModal.tsx, checkoutCopy.ts, CheckoutPage.tsx and the checkout tests untouched",
+    "worked only in this lane's two registered worktrees; no other seat's checkout was read or written"
+  ],
+  "openAtCp2": [
+    "PR #574 needs a push before CI can re-judge it; the planner owns that.",
+    "The hauska-map client branch has no PR open at all (verified in CP1 at 04e0a75).",
+    "pricing.ts keeps a second interval vocabulary for display; declared out of scope and reported, not acted on."
+  ]
+}
