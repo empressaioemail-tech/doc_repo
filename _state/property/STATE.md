@@ -2,7 +2,17 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 16:58Z (queue-release-semantics closed)**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 18:32Z (parcel-sample-six closed)**
+
+## PARCEL-SAMPLE-SIX CLOSED 2026-09-01T18:32Z
+
+Seat property claiming from integration `P:/doc_repo` `main` `fe0bfeb`. Factory tree `P:/tmp/hauska-factory-parcel-fill` `feat/parcel-record-fill` `b4fdcfb561b61be4a04c83d087a9403cfcb1a8c5`. PR https://github.com/empressaioemail-tech/hauska-factory/pull/57. Run `5b9d3fc9-ffe5-414c-920a-7c134a68640c`. Close `_inbox/2026-09-01_parcel-sample-six_close.json`.
+
+**Job landed.** `parcel-record-fill` instantiates via engine bfa9642 and CAD-ingests from `cad_property` on PRODUCTION_NEONDB_URL / neondb. Incorporation is `landing_parcel_jurisdiction` on that same store, not Factory. Writes to Factory `parcel_record*`. This run 241 parcels, zero-drift, poison on `48021:34137` refused the gate. Store after leftovers: 302 records / 15704 cells / `absent-verified` 0.
+
+Do not quote 302 as the sample size. Do not seq-scan `place_layer_snapshots` to pick a sample. Do not DISTINCT ON a whole county. Pin `nowIso` or a second instantiate drifts.
+
+**Next.** Fill cards may run. Merge #57 when CI is SUCCESS. Do not rebuild the store token.
 
 ## QUEUE-RELEASE-SEMANTICS CLOSED 2026-09-01T16:58Z
 
