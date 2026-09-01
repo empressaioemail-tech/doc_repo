@@ -73,7 +73,11 @@ So 1.2 is a hard prerequisite of 1.3, not a parallel cleanup. Retirement means d
 
 **Scope-corrected 2026-08-31 by the lane that carded it, and the correction is right.** Retiring `api/pe-billing.ts` alone is a partial retirement that reads as complete. Two paths reach the retired-price seam: that file via `vercel.json:42`, and a `cortexPostPaths` prefix at `api/spine.ts:346`. P-103 takes both.
 
-Two seats disagree on whether the second path is live. The P-97 audit read `api/spine.ts:346` as unreachable dead configuration, because `isCortexBrowsePathAllowed` returns 403 first, and scored it a starved entry that merely reads as a live permission. The P-103 card reads it as a second live path. That disagreement does not need adjudicating before acting, because the action is identical under both readings: if it is unreachable, retiring it costs nothing, and if it is reachable, retiring it closes a live hole. P-103 proves retirement by decline on the deployed host, which settles the question empirically rather than by argument. Reachability is exactly the class of question that text search answers wrongly, so the probe is the instrument, not the grep.
+Two seats briefly disagreed on whether the second path is live, and **it is resolved: one live path, not two.** The P-97 audit read `api/spine.ts:346` as unreachable configuration because `isCortexBrowsePathAllowed` returns 403 above it, and that reading was correct. The P-103 card's author checked its own claim, found `cortexPostPaths` sits inside the cortex branch below that 403 whose POST allowlist is four exact map-data paths not including billing, and corrected itself in the open.
+
+The correction is recorded here rather than quietly absorbed, because the error is instructive: reachability was inferred from a string's presence in an allowlist without reading the guard above it. Reachability is structural and text search answers it wrongly. The convenient answer was accepted because it made the finding bigger, which is the reason to distrust it.
+
+P-103 does not shrink. Both entries still go, because configuration that reads as a live permission is worth removing and a later refactor relaxing the browse gate would make it live silently. What changed is the grading: one path is live, the other is starved, and the card says which is which rather than scoring both the same.
 
 One item stays routed out. The cortex-side install-scoped seam still resolves tier `pro` to the retired price. This wave removes the clients of that seam, not the seam.
 
