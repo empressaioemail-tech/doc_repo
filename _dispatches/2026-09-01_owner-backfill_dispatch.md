@@ -37,10 +37,10 @@ The verbatim install block follows. Product-repo agents do not carry .cursor/rul
 
 FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
 
-PLAN-ROW: P-91 (90_operations/OPS-16_texas_market_plan_of_record.md)
+PLAN-ROW: F-01 (90_operations/OPS-19_factory_plan_of_record.md)
 repo: hauska-engine
 
-# Strip owner fields from ~239k cad-parcel-roll bodies, authorised production mutation
+# OWNER-BACKFILL dispatch
 
 # Mission — strip owner fields from ~239k cad-parcel-roll bodies
 
@@ -73,16 +73,35 @@ on the roll atom.**
 
 ## Serialization — this is the constraint that governs the whole card
 
-`hauska_mcp` and `neondb` share one compute on **cortex-prod**, and containment owns it
-for Williamson and Travis. **Confirm no `factory-p2-juris` execution is running before
-you start**, and do not start if one is queued behind you.
+`hauska_mcp` and `neondb` share one compute on **cortex-prod**, and containment owns it.
+**Three gates, all of them, before you start.** Verify each from live state, not from a
+lane's report that it finished.
 
-If containment starts while you are mid-backfill, you contend. Chunk small enough that
-stopping between chunks is cheap, and prefer yielding to holding.
+**Gate 1 — `CTX-CONTAINMENT-RUN` is closed for BOTH counties.** Williamson 48491 and
+Travis 48453 must both have landed. Containment now takes roughly ten minutes per county
+rather than ten hours, so this is a short wait, and starting in the gap between the two
+counties is the specific mistake to avoid. Check:
 
-**Do not run into Tuesday 05:00–06:00 UTC.** Scale-to-zero is disabled on both computes,
-but they still restart for scheduled updates in that window, and `FIX-57P01`'s error
-listeners are not merged — so a restart mid-backfill is still an uncaught exit.
+```
+gcloud run jobs executions list --job=factory-p2-juris   --project=hauska-prod-497015 --region=us-east4 --limit=5 --format=json
+```
+
+Require `runningCount` null on every recent execution and a succeeded execution for each
+of 48491 and 48453. **Read the execution's own `args` for its `--county`**, not the
+execution name, which says nothing about scope.
+
+**Gate 2 — the Neon maintenance window has passed.** Both computes sit in a
+**Tuesday 05:00 to 06:00 UTC** window and restart in it for scheduled updates. Scale-to-zero
+is disabled, which does not help here. Do not start before **2026-09-01T06:00:00Z**, and do
+not start inside any later Tuesday window either.
+
+This window has already cost two runs in one night. `FIX-57P01`'s error listeners are in
+the serving image now, so a restart mid-run is a caught and recorded death rather than an
+uncaught exit, but a caught death is still a dead run.
+
+**Gate 3 — nothing else is running or queued on cortex-prod.** If containment starts while
+you are mid-backfill, you contend. Chunk small enough that stopping between chunks is
+cheap, and prefer yielding to holding.
 
 ## Method
 
@@ -128,8 +147,10 @@ protection is back to being a habit.
 
 ## Do not
 
-- Do not run while a containment execution is live.
-- Do not run into Tuesday 05:00–06:00 UTC.
+- Do not run while a containment execution is live, and do not start between Williamson
+  and Travis.
+- Do not start before 2026-09-01T06:00:00Z, or inside any Tuesday 05:00–06:00 UTC window.
+- Do not infer a county from an execution name; read the execution's `args`.
 - Do not apply without a clean dry run whose counts match the measurement.
 - Do not touch `owner-fact`, `cad_property`, or any other roll field.
 - Do not add an MCP field stripper; the ruling rejected it and the policy is the
