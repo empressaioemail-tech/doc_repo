@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { evaluateClaim, inMaintenanceWindow, parseHm, unblockAt, nextWakeSeconds, readJson, R } from "./lib.mjs";
+import { evaluateClaim, evaluateRelease, inferReleaseAs, inMaintenanceWindow, parseHm, unblockAt, nextWakeSeconds, readJson, R, RELEASE, closeAddendumPath, cardClosedAddendumHint } from "./lib.mjs";
 
 let pass = 0, fail = 0;
 const results = [];
@@ -132,26 +132,8 @@ t("INVERSE: a contract-complete dep close does not block", () => {
   assert(r.ok, `got ${codes(r)}`);
 });
 
-t("STORE_TOKEN_HELD fires when another card holds the store", () => {
-  const s = base(); s.card.needs_store = "cortex-prod";
-  s.storeTokens = { "cortex-prod": { card: "other", seat: "property", expires_at: "2026-09-01T09:00:00Z" } };
-  const r = evaluateClaim(s, req());
-  assert(!r.ok && hasCode(r, R.STORE_TOKEN_HELD), `got ${codes(r)}`);
-});
 
-t("INVERSE: a token held by THIS card does not block", () => {
-  const s = base(); s.card.needs_store = "cortex-prod";
-  s.storeTokens = { "cortex-prod": { card: "c1", seat: "property", expires_at: "2026-09-01T09:00:00Z" } };
-  const r = evaluateClaim(s, req());
-  assert(!hasCode(r, R.STORE_TOKEN_HELD), `got ${codes(r)}`);
-});
 
-t("INVERSE: an EXPIRED store token does not block", () => {
-  const s = base(); s.card.needs_store = "cortex-prod";
-  s.storeTokens = { "cortex-prod": { card: "other", seat: "property", expires_at: "2026-09-01T05:00:00Z" } };
-  const r = evaluateClaim(s, req({ now: TUE_0630 }));
-  assert(!hasCode(r, R.STORE_TOKEN_HELD), `got ${codes(r)}`);
-});
 
 t("MAINTENANCE_WINDOW fires inside the Tuesday 05:00-06:00 window", () => {
   const s = base(); s.card.needs_store = "cortex-prod";
@@ -249,10 +231,10 @@ t("unblockAt is null (unknowable) when a dependency is open", () => {
 });
 
 t("unblockAt takes the LATEST clear time when two refusals apply", () => {
-  const s = base(); s.card.needs_store = "cortex-prod";
-  // token clears 06:30, window clears 06:00 -> answer must be 06:30
-  s.storeTokens = { "cortex-prod": { card: "other", seat: "property", expires_at: "2026-09-01T06:30:00.000Z" } };
-  const t0 = unblockAt(s, req({ now: TUE_0530 }));
+  const s2 = base({ claim: { seat: "property", claimed_at: "x", expires_at: "2026-09-01T06:30:00.000Z" } });
+  s2.card.needs_store = "cortex-prod";
+  // lease clears 06:30, window clears 06:00 -> answer must be 06:30
+  const t0 = unblockAt(s2, req({ now: TUE_0530 }));
   assert(t0 && t0.toISOString() === "2026-09-01T06:30:00.000Z", `got ${t0 && t0.toISOString()}`);
 });
 
@@ -399,6 +381,108 @@ t("a closed card does not drag the board into the idle poll", () => {
   const done = base({ closeExists: true }); done.card.id = "done";
   const ready = base(); ready.card.id = "ready";
   assert(nextWakeSeconds([done, ready], req()) === 0, "claimable sibling wins");
+});
+
+// ---- release split (DOUBLE-CLOSE-AUDIT / queue-release-semantics) ----
+
+function rel(over = {}) {
+  return {
+    card: { id: "c1", close_artifact: "_inbox/x_close.json" },
+    claim: { seat: "property", worktree: "P:/x", branch: "b" },
+    closeExists: false,
+    closeHasLeaveBehind: false,
+    ...over,
+  };
+}
+const rreq = (over = {}) => ({ seat: "property", as: null, reason: null, force: false, ...over });
+const rCodes = (r) => r.refusals.map((x) => x.code);
+const rHas = (r, c) => rCodes(r).includes(c);
+
+t("--as close with NO close artifact is refused", () => {
+  const r = evaluateRelease(rel(), rreq({ as: "close" }));
+  assert(!r.ok && rHas(r, RELEASE.CLOSE_INCOMPLETE), `got ${rCodes(r)}`);
+});
+
+t("--as close with a close that has NO leave_behind is refused", () => {
+  const r = evaluateRelease(rel({ closeExists: true, closeHasLeaveBehind: false }), rreq({ as: "close" }));
+  assert(!r.ok && rHas(r, RELEASE.CLOSE_INCOMPLETE), `got ${rCodes(r)}`);
+});
+
+t("INVERSE: --as close with a contract-complete close is granted", () => {
+  const r = evaluateRelease(rel({ closeExists: true, closeHasLeaveBehind: true }), rreq({ as: "close" }));
+  assert(r.ok && r.result === "RELEASED", `got ${JSON.stringify(r)}`);
+});
+
+t("--as abandon with no reason is refused", () => {
+  const r = evaluateRelease(rel(), rreq({ as: "abandon" }));
+  assert(!r.ok && rHas(r, RELEASE.REASON_REQUIRED), `got ${rCodes(r)}`);
+});
+
+t("INVERSE: --as abandon with a reason is granted ABANDONED and does not need a close", () => {
+  const r = evaluateRelease(rel(), rreq({ as: "abandon", reason: "cannot finish; store held" }));
+  assert(r.ok && r.result === "ABANDONED", `got ${JSON.stringify(r)}`);
+});
+
+t("omitted --as with a valid close is granted (live-lane happy path)", () => {
+  const r = evaluateRelease(rel({ closeExists: true, closeHasLeaveBehind: true }), rreq());
+  assert(r.ok && r.as === "close" && r.result === "RELEASED", `got ${JSON.stringify(r)}`);
+});
+
+t("omitted --as with no close is refused and prints both forms", () => {
+  const r = evaluateRelease(rel(), rreq());
+  assert(!r.ok && rHas(r, RELEASE.CLOSE_INCOMPLETE), `got ${rCodes(r)}`);
+  assert(r.forms.includes("--as close") && r.forms.includes("--as abandon"), `forms: ${r.forms}`);
+});
+
+t("INVERSE: inferReleaseAs is close only when both exist and leave_behind", () => {
+  assert(inferReleaseAs(rel({ closeExists: true, closeHasLeaveBehind: true }), null) === "close");
+  assert(inferReleaseAs(rel({ closeExists: true, closeHasLeaveBehind: false }), null) === null);
+  assert(inferReleaseAs(rel(), null) === null);
+});
+
+t("--as steal without --force is refused", () => {
+  const r = evaluateRelease(rel(), rreq({ as: "steal", reason: "operator ruling" }));
+  assert(!r.ok && rHas(r, RELEASE.STEAL_REQUIRES_FORCE), `got ${rCodes(r)}`);
+});
+
+t("INVERSE: --as steal --force with a reason is STEAL", () => {
+  const r = evaluateRelease(rel(), rreq({ as: "steal", reason: "operator ruling", force: true }));
+  assert(r.ok && r.result === "STEAL", `got ${JSON.stringify(r)}`);
+});
+
+t("close by another seat is SEAT_MISMATCH, not a silent steal", () => {
+  const r = evaluateRelease(rel({ closeExists: true, closeHasLeaveBehind: true }), rreq({ as: "close", seat: "govtech" }));
+  assert(!r.ok && rHas(r, RELEASE.SEAT_MISMATCH), `got ${rCodes(r)}`);
+});
+
+t("closeAddendumPath is beside the close, never the close", () => {
+  const src = "_inbox/2026-09-01_cad-serve-reconcile_close.json";
+  const dest = closeAddendumPath(src, "2026-09-01T16:02:00.000Z");
+  assert(dest !== src, "dest must not equal source");
+  assert(dest.startsWith("_inbox/2026-09-01_cad-serve-reconcile_close-addendum-"), dest);
+  assert(!dest.includes(src), "must not reuse the close filename");
+});
+
+t("writing an addendum leaves the close bytes identical", () => {
+  const dir = path.join(TMP, "addendum");
+  fs.mkdirSync(dir, { recursive: true });
+  const closeP = path.join(dir, "probe_close.json");
+  const body = JSON.stringify({ leave_behind: "none", n: 1 }, null, 2) + "\n";
+  fs.writeFileSync(closeP, body, "utf8");
+  const destRel = closeAddendumPath("probe_close.json", "2026-09-01T16:02:00.000Z");
+  const destP = path.join(dir, destRel);
+  const before = fs.readFileSync(closeP);
+  fs.writeFileSync(destP, JSON.stringify({ text: "better table" }), "utf8");
+  const after = fs.readFileSync(closeP);
+  assert(Buffer.compare(before, after) === 0, "close must be byte-identical");
+  assert(fs.existsSync(destP), "addendum must exist beside");
+});
+
+t("status CARD_CLOSED hint is the close-addendum command", () => {
+  const h = cardClosedAddendumHint("cad-serve-reconcile", "property");
+  assert(h.includes("close-addendum"), h);
+  assert(h.includes("--card cad-serve-reconcile"), h);
+  assert(h.includes("--seat property"), h);
 });
 
 for (const [s, n, m] of results) console.log(`${s}  ${n}${m ? `\n      ${m}` : ""}`);

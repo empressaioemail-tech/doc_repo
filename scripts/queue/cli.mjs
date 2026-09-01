@@ -3,7 +3,8 @@
 //
 //   node scripts/queue/cli.mjs status [--seat <name>]
 //   node scripts/queue/cli.mjs claim --card <id> --seat <name> --worktree <p> --branch <b>
-//   node scripts/queue/cli.mjs release --card <id> --seat <name> [--reason <text>]
+//   node scripts/queue/cli.mjs release --card <id> --seat <name> [--as close|abandon|steal] [--reason <text>]
+//   node scripts/queue/cli.mjs close-addendum --card <id> --seat <name> (--text <text>|--file <path>)
 //   node scripts/queue/cli.mjs addendum --card <id> --author <name> --text <text>
 //   node scripts/queue/cli.mjs enqueue --file <card.json>
 //
@@ -16,9 +17,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import {
-  REPO_ROOT, R, evaluateClaim, loadState, readJson, queueDir, cardDir,
+  REPO_ROOT, R, evaluateClaim, evaluateRelease, loadState, readJson, queueDir, cardDir,
   tokensPath, configPath, minutesFromNow, isExpired, loadSeats,
-  nextWakeSeconds, unblockAt, checkWorktree,
+  nextWakeSeconds, unblockAt, checkWorktree, closeAddendumPath, cardClosedAddendumHint,
 } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
@@ -93,6 +94,9 @@ if (cmd === "status") {
       const codes = res.refusals.map((r) => r.code).join(",");
       console.log(`  blocked    ${id}  [${codes}]`);
       for (const r of res.refusals) console.log(`               - ${r.detail}`);
+      if (res.refusals.some((r) => r.code === R.CARD_CLOSED)) {
+        console.log(`               addendum: ${cardClosedAddendumHint(id, seat)}`);
+      }
     }
   }
   process.exit(0);
@@ -166,48 +170,27 @@ if (cmd === "claim") {
 }
 
 // ---------------- release ----------------
+// --reason has no default. Infer --as close only when the close artifact exists
+// and carries leave_behind. Otherwise refuse and print both forms. Found
+// 2026-09-01: the default "close" made a release-without-close look finished.
 if (cmd === "release") {
-  const id = flag("card"), seat = flag("seat"), reason = flag("reason", "close");
-  if (!id || !seat) die("usage: release --card <id> --seat <name> [--reason <text>]");
-  const st = loadState(id);
-  if (!st.card) die(`REFUSED: no card "${id}"`);
-
-  // Release is keyed to the LIVE CLAIM IDENTITY, not to the seat. Found
-  // 2026-09-01 by the double-close audit: two lanes of one seat both worked
-  // cad-serve-reconcile because seat-only keying let lane 1 drop lane 2's live
-  // claim in 284ms without --force. ALREADY_CLAIMED blocks a second CLAIM by the
-  // same seat; nothing was blocking a second RELEASE, which undid it.
-  if (st.claim && !has("force")) {
-    if (st.claim.seat !== seat) {
-      record(seat, { verb: "release", card: id, result: "REFUSED", code: "SEAT_MISMATCH",
-                     detail: `held by ${st.claim.seat}`, invocation: argv.join(" ") });
-      die(`REFUSED: card "${id}" is held by seat "${st.claim.seat}", not "${seat}". Use --force only on an operator ruling.`);
-    }
-    const wt = flag("worktree"), br = flag("branch");
-    if (st.claim.worktree && (!wt || !br)) {
-      die(`REFUSED: this claim names a worktree and branch, so release must too.
-` +
-          `  held by: ${st.claim.worktree} on ${st.claim.branch}
-` +
-          `  run: release --card ${id} --seat ${seat} --worktree <path> --branch <branch>
-` +
-          `Seat alone is not identity: two lanes of one seat are two lanes.`);
-    }
-    if (st.claim.worktree && (wt !== st.claim.worktree || br !== st.claim.branch)) {
-      record(seat, { verb: "release", card: id, result: "REFUSED", code: "CLAIM_IDENTITY_MISMATCH",
-                     detail: `claim is ${st.claim.worktree}@${st.claim.branch}, caller is ${wt}@${br}`,
-                     invocation: argv.join(" ") });
-      die(`REFUSED: card "${id}" is held by a DIFFERENT LANE of your seat.
-` +
-          `  claim : ${st.claim.worktree} on ${st.claim.branch}
-` +
-          `  caller: ${wt} on ${br}
-` +
-          `That lane may still be working. Use --force only on an operator ruling; it logs a STEAL.`);
-    }
+  const id = flag("card"), seat = flag("seat");
+  const asFlag = flag("as");
+  const reason = flag("reason");
+  if (!id || !seat) {
+    die("usage: release --card <id> --seat <name> [--as close|abandon|steal] [--reason <text>]");
   }
-  if (st.claim && has("force") && st.claim.seat === seat) {
-    record(seat, { verb: "release", card: id, result: "STEAL", detail: `forced over ${st.claim.worktree}@${st.claim.branch}`, invocation: argv.join(" ") });
+  const st = loadState(id);
+  const res = evaluateRelease(st, { seat, as: asFlag, reason, force: has("force") });
+  if (!res.ok) {
+    record(seat, {
+      verb: "release", card: id, result: "REFUSED", as: res.as,
+      refusals: res.refusals, invocation: argv.join(" "),
+    });
+    console.error(`REFUSED release "${id}":`);
+    for (const r of res.refusals) console.error(`  ${r.code}: ${r.detail}`);
+    console.error(res.forms);
+    process.exit(1);
   }
   const cp = path.join(cardDir(id), "claim.json");
   if (fs.existsSync(cp)) fs.rmSync(cp);
@@ -218,8 +201,11 @@ if (cmd === "release") {
       writeJson(tokensPath(), tokens);
     }
   }
-  record(seat, { verb: "release", card: id, result: "RELEASED", reason, invocation: argv.join(" ") });
-  console.log(`RELEASED ${id} (${reason})`);
+  record(seat, {
+    verb: "release", card: id, result: res.result, as: res.as,
+    reason: reason || null, invocation: argv.join(" "),
+  });
+  console.log(`${res.result} ${id}${reason ? ` (${reason})` : ""}`);
   process.exit(0);
 }
 
@@ -343,4 +329,48 @@ if (cmd === "enqueue") {
   process.exit(0);
 }
 
-die(`unknown command "${cmd || ""}". Commands: status, next-wake, claim, release, extend, addendum, authorize, enqueue`);
+// ---------------- close-addendum ----------------
+// Beside the close, never over it. The 16:02 overwrite of cad-serve-reconcile
+// was the better artifact; both should have survived. status prints this
+// command when it reports CARD_CLOSED so the cheaper option is the one offered.
+if (cmd === "close-addendum") {
+  const id = flag("card"), seat = flag("seat");
+  const text = flag("text"), file = flag("file");
+  if (!id || !seat || (!text && !file)) {
+    die("usage: close-addendum --card <id> --seat <name> (--text <text>|--file <path>)");
+  }
+  const st = loadState(id);
+  if (!st.card) die(`REFUSED: no card "${id}"`);
+  if (!st.closeExists) {
+    die(`REFUSED: card "${id}" has no close artifact. Write the close, or release --as abandon --reason.`);
+  }
+  const closeAbs = path.join(REPO_ROOT, st.card.close_artifact);
+  const before = fs.readFileSync(closeAbs);
+  const destRel = closeAddendumPath(st.card.close_artifact, new Date().toISOString());
+  const destAbs = path.join(REPO_ROOT, destRel);
+  if (path.resolve(destAbs) === path.resolve(closeAbs)) {
+    die("REFUSED: addendum path collided with the close artifact");
+  }
+  if (fs.existsSync(destAbs)) die(`REFUSED: ${destRel} already exists; not overwriting`);
+  const body = file ? fs.readFileSync(path.resolve(file), "utf8") : text;
+  writeJson(destAbs, {
+    card: id,
+    seat,
+    at: new Date().toISOString(),
+    beside: st.card.close_artifact,
+    text: body,
+  });
+  const after = fs.readFileSync(closeAbs);
+  if (Buffer.compare(before, after) !== 0) {
+    die("REFUSED: close artifact changed during addendum; this command did not write it");
+  }
+  record(seat, {
+    verb: "close-addendum", card: id, result: "WRITTEN",
+    file: destRel, invocation: argv.join(" "),
+  });
+  console.log(`CLOSE ADDENDUM -> ${destRel}`);
+  console.log(`close artifact unchanged: ${st.card.close_artifact}`);
+  process.exit(0);
+}
+
+die(`unknown command "${cmd || ""}". Commands: status, next-wake, claim, release, close-addendum, extend, addendum, authorize, enqueue`);

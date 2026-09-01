@@ -148,13 +148,12 @@ export function evaluateClaim(state, req) {
     if (!state.config?.stores?.includes(store)) {
       push(R.UNKNOWN_STORE, `card needs_store "${store}" which is not in config.stores`);
     }
-    const tok = state.storeTokens?.[store];
-    if (tok && tok.card !== card.id && !isExpired(tok.expires_at, now)) {
-      push(
-        R.STORE_TOKEN_HELD,
-        `store "${store}" held by card "${tok.card}" (seat ${tok.seat}) until ${tok.expires_at}`
-      );
-    }
+    // Store token REMOVED 2026-09-01 on operator ruling. It serialised the whole
+    // store when conflicts are row-scoped, and cost four lanes an afternoon while
+    // the actual job is filling a database with data we already hold. Counties do
+    // not conflict with each other. If concurrent load becomes a real measured
+    // problem, fix it where it is measured, not with a queue-wide lock.
+
     const win = inMaintenanceWindow(now, state.config?.maintenance_windows, store);
     if (win) {
       push(
@@ -165,6 +164,15 @@ export function evaluateClaim(state, req) {
   }
 
   return { ok: refusals.length === 0, refusals };
+}
+
+// Store holders are a LIST under a cap. Tolerates the old single-holder shape so a
+// token written before the cap landed is still honoured rather than silently dropped.
+export function liveStoreHolders(storeTokens, store, now) {
+  const raw = storeTokens?.[store];
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : Array.isArray(raw.holders) ? raw.holders : [raw];
+  return arr.filter((t) => t && t.card && !isExpired(t.expires_at, now));
 }
 
 // ---------- disk helpers ----------
@@ -284,6 +292,14 @@ export function loadState(id) {
   };
   const card = strict(path.join(cardDir(id), "card.json"));
   const config = strict(configPath()) || { stores: [], maintenance_windows: [] };
+  let closeHasLeaveBehind = false;
+  if (card?.close_artifact) {
+    const closePath = path.join(REPO_ROOT, card.close_artifact);
+    if (fs.existsSync(closePath)) {
+      const parsed = strict(closePath);
+      closeHasLeaveBehind = !!parsed && Object.prototype.hasOwnProperty.call(parsed, "leave_behind");
+    }
+  }
   return {
     card,
     config,
@@ -291,6 +307,7 @@ export function loadState(id) {
     claim: strict(path.join(cardDir(id), "claim.json")),
     authorization: strict(path.join(cardDir(id), "authorization.json")),
     closeExists: !!card?.close_artifact && fs.existsSync(path.join(REPO_ROOT, card.close_artifact)),
+    closeHasLeaveBehind,
     seats: loadSeats(),
     deps: card ? loadDepState(card) : {},
     storeTokens: strict(tokensPath()) || {},
@@ -412,4 +429,102 @@ export function nextWakeSeconds(states, req, opts = {}) {
         watchingInFlight ? depWatchPoll : Infinity
       );
   return Math.min(3600, Math.max(60, secs));
+}
+
+// ---------- release ----------
+//
+// DOUBLE-CLOSE-AUDIT 2026-09-01: a mandatory --reason that defaults to "close"
+// is a ceremony (dispatch_overrides.log, sixteen identical strings). Split the
+// verb. Infer close when --as is omitted IFF the close is contract-complete so
+// the three live lanes keep working. Otherwise refuse and print both forms.
+// Do not add these codes to R: that is the claim refusal set and this card
+// does not change it.
+
+export const RELEASE = Object.freeze({
+  NO_CARD: "NO_CARD",
+  AS_UNKNOWN: "AS_UNKNOWN",
+  CLOSE_INCOMPLETE: "CLOSE_INCOMPLETE",
+  REASON_REQUIRED: "REASON_REQUIRED",
+  STEAL_REQUIRES_FORCE: "STEAL_REQUIRES_FORCE",
+  SEAT_MISMATCH: "SEAT_MISMATCH",
+});
+
+export function releaseForms(id, seat) {
+  const s = seat || "<seat>";
+  const c = id || "<id>";
+  return [
+    `  To finish:      node scripts/queue/cli.mjs release --card ${c} --seat ${s} --as close`,
+    `  To put it down: node scripts/queue/cli.mjs release --card ${c} --seat ${s} --as abandon --reason "<why>"`,
+  ].join("\n");
+}
+
+export function inferReleaseAs(state, asFlag) {
+  if (asFlag) return asFlag;
+  if (state.closeExists && state.closeHasLeaveBehind) return "close";
+  return null;
+}
+
+export function evaluateRelease(state, req) {
+  const forms = releaseForms(state.card?.id, req.seat);
+  const refusals = [];
+  const push = (code, detail) => refusals.push({ code, detail });
+
+  if (!state.card) {
+    push(RELEASE.NO_CARD, "no card.json for that id");
+    return { ok: false, as: null, result: null, refusals, forms };
+  }
+
+  const allowed = new Set(["close", "abandon", "steal"]);
+  if (req.as && !allowed.has(req.as)) {
+    push(RELEASE.AS_UNKNOWN, `--as must be close, abandon, or steal; got "${req.as}"`);
+    return { ok: false, as: req.as, result: null, refusals, forms };
+  }
+
+  const inferred = inferReleaseAs(state, req.as);
+  if (!inferred) {
+    push(
+      RELEASE.CLOSE_INCOMPLETE,
+      "release without --as only succeeds when the close artifact exists and carries leave_behind"
+    );
+    return { ok: false, as: null, result: null, refusals, forms };
+  }
+
+  const reason = typeof req.reason === "string" ? req.reason.trim() : "";
+  const otherSeat = state.claim && state.claim.seat !== req.seat;
+
+  if (inferred === "close") {
+    if (!state.closeExists) push(RELEASE.CLOSE_INCOMPLETE, "close artifact is absent");
+    else if (!state.closeHasLeaveBehind) push(RELEASE.CLOSE_INCOMPLETE, "close artifact has no leave_behind");
+    if (otherSeat) {
+      push(RELEASE.SEAT_MISMATCH, `held by ${state.claim.seat}. To take it: --as steal --force --reason`);
+    }
+    if (refusals.length) return { ok: false, as: "close", result: null, refusals, forms };
+    return { ok: true, as: "close", result: "RELEASED", refusals: [], forms };
+  }
+
+  if (inferred === "abandon") {
+    if (!reason) push(RELEASE.REASON_REQUIRED, "--as abandon requires --reason");
+    if (otherSeat) {
+      push(RELEASE.SEAT_MISMATCH, `held by ${state.claim.seat}. To take it: --as steal --force --reason`);
+    }
+    if (refusals.length) return { ok: false, as: "abandon", result: null, refusals, forms };
+    return { ok: true, as: "abandon", result: "ABANDONED", refusals: [], forms };
+  }
+
+  if (!req.force) push(RELEASE.STEAL_REQUIRES_FORCE, "--as steal requires --force");
+  if (!reason) push(RELEASE.REASON_REQUIRED, "--as steal requires --reason");
+  if (refusals.length) return { ok: false, as: "steal", result: null, refusals, forms };
+  return { ok: true, as: "steal", result: "STEAL", refusals: [], forms };
+}
+
+export function closeAddendumPath(closeArtifact, atIso) {
+  const ext = path.extname(closeArtifact);
+  const base = ext ? closeArtifact.slice(0, -ext.length) : closeArtifact;
+  const stamp = String(atIso).replace(/[:.]/g, "-");
+  return `${base}-addendum-${stamp}${ext || ".json"}`;
+}
+
+export function cardClosedAddendumHint(id, seat) {
+  const s = seat || "<seat>";
+  return `node scripts/queue/cli.mjs close-addendum --card ${id} --seat ${s} --text "<what changed>"`;
 }
