@@ -33,6 +33,10 @@ This folder governs what we DO. Channels, audiences, targeting, campaigns, platf
 |---|---|
 | [01_central_texas_gtm_strategy.md](01_central_texas_gtm_strategy.md) | The launch market. Why Central Texas, who buys, the three channels with a Central Texas plan for each, the content system, the sequencing, and the open operator decisions. |
 | [02_gohighlevel_buildout.md](02_gohighlevel_buildout.md) | GoHighLevel from an empty login to a running bizops platform. What it is allowed to be the record of, what it must never write, and the build order. |
+| [03_ladder_recut_proposal.md](03_ladder_recut_proposal.md) | The ladder re-cut, RULED 2026-08-31. Solo answers one parcel, Studio works a list. The verified capability map behind it. Filename kept as "proposal" so existing references resolve. |
+| [04_gohighlevel_agent_runbook.md](04_gohighlevel_agent_runbook.md) | The original nine-task GoHighLevel setup runbook. Tasks 3 and 4 have since moved to the API; see 05. |
+| [05_ghl_chrome_runbook.md](05_ghl_chrome_runbook.md) | The browser-only subset of the GoHighLevel setup, written for a browser-driving agent and ordered by lead time. Supersedes 04 tasks 1, 2, 5, 6, 7, 8 and 9 as execution instructions. |
+| [06_consolidated_roadmap.md](06_consolidated_roadmap.md) | The wave plan to first revenue. Merged 2026-08-31 from two retired working threads. The reference the build works against. |
 
 ## The stack and who is the record of what
 
