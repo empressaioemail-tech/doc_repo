@@ -129,10 +129,15 @@ if (cmd === "claim") {
 
   if (st.card.needs_store) {
     const tokens = readJson(tokensPath()) || {};
+    // The store token expires WITH the claim, never before it. A token that
+    // outlives shorter than its lease opens a window where a lane holds the card
+    // and is mid-work while another lane may legitimately take the store from
+    // under it. Found live 2026-09-01: zoning-band1 held a 60-minute token under
+    // a 90-minute lease and reported the later time, so it did not know.
     tokens[st.card.needs_store] = {
       card: id, seat,
       held_at: now.toISOString(),
-      expires_at: minutesFromNow(now, cfg.store_ttl_minutes ?? 60),
+      expires_at: claim.expires_at,
     };
     writeJson(tokensPath(), tokens);
   }
@@ -243,7 +248,7 @@ if (cmd === "extend") {
   if (st.card.needs_store) {
     const tokens = readJson(tokensPath()) || {};
     if (tokens[st.card.needs_store]?.card === id) {
-      tokens[st.card.needs_store].expires_at = minutesFromNow(now, Math.min(mins, cfg.store_ttl_minutes ?? 60));
+      tokens[st.card.needs_store].expires_at = claim.expires_at; // token follows the claim
       writeJson(tokensPath(), tokens);
     }
   }
