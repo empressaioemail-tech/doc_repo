@@ -21,6 +21,24 @@ UNACCOUNTED      no state at all. THE DEFECT. Indistinguishable from never looki
 value" — that is unreachable and chasing it produces fabricated values. Every cell has a
 *state*.
 
+## This enforces a standing rule, and the rule is stronger than the gate
+
+Ruled 2026-09-01, `_decisions/2026-09-01_every_parcel_starts_with_a_full_record.md`:
+**every parcel in every county is instantiated with the complete column set from the moment
+it exists.** Acquisition changes a cell's state, never a cell's existence.
+
+**A missing column is invisible; an unaccounted cell is countable.** That is why every gap
+analysis in this program has been structurally incapable of finding the largest gaps —
+permits were missing from the contract rather than from a parcel, so no count could show it.
+
+So this ledger is not only a measurement. **Where the shape can carry the constraint, make
+the column set closed and compiler-enforced so a cell cannot be missing at all**, and let
+the gate be the backstop rather than the mechanism. A type with no way to omit a cell has no
+trigger to be absent and no call site to be missed.
+
+`unaccounted` is a legitimate state **at rest** and fatal **at publish**. Both halves are
+load bearing: if it stops being fatal, it becomes cover.
+
 ## Do not build this beside the dead ledger
 
 A county-by-rail ledger already exists and **its gating indicators are dead**: `hasWriter`,
