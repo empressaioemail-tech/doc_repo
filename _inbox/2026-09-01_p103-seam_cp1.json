@@ -1,0 +1,144 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "lane": "p103-seam",
+  "planRows": ["P-103"],
+  "date": "2026-09-01",
+  "dispatch": "_dispatches/2026-09-01_p103-seam_dispatch.md",
+  "missionPremise": "Operator Nick ruled 2026-08-31 'retire pe-billing.ts'. The install-scoped seam POST /api/brokerage/v1/property-explorer/billing/checkout resolves stripePriceIdForTier to STRIPE_PRO_PRICE_ID, the retired pre-ladder Pro price, so any request reaching it opens a Stripe checkout at an amount that is not on the locked ladder. hauska-map PR #325 retired the client half under P-97 and explicitly named the two BFF paths it left. Source: _dispatches/2026-09-01_p103-seam_dispatch.md and the doc_repo scope correction committed at 41278c7.",
+  "completionPredicate": "api/pe-billing.ts, the vercel.json rewrite, the vite.config.ts dev proxy entry, and the 'api/brokerage/v1/property-explorer/billing' entry in cortexPostPaths are all gone from apps/property-explorer; a guard in the repo's existing check set fails if any of the four reappears and has been observed failing in all four directions; the deployed host declines /api/pe-billing with a 404 after the planner deploys.",
+  "scopeBasis": "api/ and config in apps/property-explorer only. apps/property-explorer/src/browse/SettingsModal.tsx and apps/property-explorer/src/lib/* are held by other lanes (hauska-map-settings on fix/pe-settings-line-weight, hauska-map-nextaction on feat/p98b-account-entitlement-client) and are excluded by the dispatch. legacy-design-tools is another seat's repo and is read-only here. STRIPE_PRO_PRICE_ID stays in Secret Manager and in the workflow per acceptance item 6, because unsetting it turns brokerageStripe.ts:174 into a mode:'simulated' fail-open, a wider blast radius than the card.",
+  "snapshot": {
+    "docRepo": {
+      "repo": "P:/doc_repo",
+      "branch": "main",
+      "role": "integration checkout; edits left uncommitted for the planner"
+    },
+    "hauskaMap": {
+      "repo": "hauska-map",
+      "worktree": "P:/tmp/hauska-map-p103-seam",
+      "kind": "standalone clone, path equals worktree",
+      "branch": "feat/p103-seam-retire",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "baseRef": "origin/main",
+      "registeredIn": "_catalog/seat_register.json (property seat, added by this lane, uncommitted)"
+    },
+    "readOnlyRepos": [
+      { "repo": "legacy-design-tools", "ref": "origin/main", "sha": "d332d799e1ddbd64e106685fe37828ce24862959" },
+      { "repo": "hauska-brief-extension", "ref": "origin/main", "sha": "526f5f21e21fd93746ef6ffaa3230e54f77bb46d" }
+    ],
+    "deployedSurfaceProbedBefore": {
+      "host": "https://smartsite.cloud",
+      "servedBundle": "assets/index-BWNkkyuR.js",
+      "buildStamp": "UNSTAMPED",
+      "buildStampNote": "__HAUSKA_BUILD__ in the served bundle is the literal string UNSTAMPED, so the deployed build cannot name its own commit. The served identity available to this lane is the asset hash plus the X-Vercel-Id of each request, not a SHA.",
+      "probeWindow": "Tue, 01 Sep 2026 02:27:53 GMT to 02:28:16 GMT"
+    }
+  },
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "Remove four things, not one: apps/property-explorer/api/pe-billing.ts (the file), the vercel.json rewrite at line 42, the vite.config.ts dev-proxy entry at line 48, and the 'api/brokerage/v1/property-explorer/billing' string in cortexPostPaths at apps/property-explorer/api/spine.ts:346.",
+      "basis": "The dispatch's Path A and Path B, verified at source in the lane clone at 4401095."
+    },
+    {
+      "id": "D2",
+      "decision": "The root ./api/spine.ts (the command-center copy) is NOT touched.",
+      "basis": "git grep -ln cortexPostPaths on the lane clone returns ./api/spine.ts and ./apps/property-explorer/api/spine.ts. Reading the root copy at lines 212-224 shows six entries, none of them billing and none of them the gtm sibling."
+    },
+    {
+      "id": "D3",
+      "decision": "The adjacent 'api/brokerage/v1/gtm/property-explorer' entry stays, and the guard asserts it is STILL PRESENT as a positive control.",
+      "basis": "Acceptance item 2. Asserting the sibling's presence is what stops the guard passing because the array, the file, or the extractor vanished."
+    },
+    {
+      "id": "D4",
+      "decision": "The guard is a file-based instrument, apps/property-explorer/scripts/seam-retired-guard.mjs, exporting a checked function plus a CLI, wired into BOTH the PE package test script and a named CI step, with a vitest spec that runs it against synthetic violating fixtures in all four directions.",
+      "basis": "ENFORCEMENT: a load-bearing claim needs a file-based instrument that has been shown to fail. DEV_PROCESS 2.2: a gating indicator is tested for its ability to fire before it is trusted. Repo precedent: scripts/records-copy-guard.mjs and scripts/pe-chrome-kit-gate.mjs. A shell one-liner grep would not survive its own rule."
+    },
+    {
+      "id": "D5",
+      "decision": "The guard does NOT do a blanket repo-wide grep for the string 'pe-billing'.",
+      "basis": "apps/property-explorer/src/lib/billingClient.ts:145-153 is a historical P-97 comment naming both retired paths, and it sits in another lane's scope. A blanket grep would be permanently red (DEV_PROCESS 2.0) or would force an edit this lane is forbidden to make. The guard is scoped to four structural facts instead."
+    }
+  ],
+  "gradingCorrectionVerifiedIndependently": {
+    "claim": "There is ONE live path (A), not two. Path B is LATENT.",
+    "sourceEvidence": "apps/property-explorer/api/spine.ts:310-318 places the isCortexBrowsePathAllowed 403 ABOVE the cortexPostPaths block. isCortexBrowsePathAllowed (lines 137-153) allows POST for exactly four upstream paths: api/brokerage/v1/place/buildable-envelope, api/brokerage/v1/map-data, api/brokerage/v1/map-data/gis-layer, api/brokerage/v1/map-data/composite-layer. The billing prefix is not among them, and cortexPostPaths is declared inside the same 'cortex' branch, so it is unreachable for that path.",
+    "liveEvidenceBefore": {
+      "probe": "POST https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/property-explorer/billing/checkout",
+      "result": "403 {\"error\":\"forbidden\",\"message\":\"Anonymous browse proxy allows facet/envelope/map-data paths only. GTM consent/events use /api/pe-gtm; authenticated deep routes use /api/spine-deep.\"}",
+      "meaning": "Production TODAY carries the billing prefix in cortexPostPaths and still declines. The entry is a config permission that has never fired."
+    },
+    "notVacuousControl": {
+      "probe": "POST https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/map-data with an empty body",
+      "result": "400 {\"error\":\"invalid_request\",\"details\":{\"formErrors\":[],\"fieldErrors\":{\"latitude\":[\"Required\"],\"longitude\":[\"Required\"]}}}",
+      "meaning": "The 403 above is not a blanket refuser. An allowed POST passes the gate and reaches upstream cortex, which answers with its own zod validation error. The gate discriminates."
+    },
+    "consequenceForGrading": "Removing the cortexPostPaths entry closes NO exploitable path. It removes config that reads as a live permission and that a later relaxation of the browse gate would silently make live. The close must not report it as closing an exploitable path."
+  },
+  "pathALivenessVerifiedBefore": {
+    "probe": "POST https://smartsite.cloud/api/pe-billing?path=checkout with no X-Hauska-Install-Id header",
+    "result": "400 {\"error\":\"install_id_required\",\"message\":\"X-Hauska-Install-Id header is required\"}",
+    "vercelId": "cle1::iad1::kpswv-1788229673830-fa2519efacbc",
+    "date": "Tue, 01 Sep 2026 02:27:53 GMT",
+    "meaning": "That JSON is emitted by pe-billing.ts lines 42-48, not by Vercel. The function is deployed and reachable from the internet.",
+    "secondOwnCodeProbe": "POST https://smartsite.cloud/api/pe-billing?path=bogus returns 400 {\"error\":\"invalid path\"} from pe-billing.ts lines 11-14.",
+    "discriminator": "POST https://smartsite.cloud/api/pe-not-a-real-route returns 404 'The page could not be found / NOT_FOUND'. An absent api route and a present one are distinguishable, so the post-deploy 404 will be a real decline rather than a catch-all rendering.",
+    "whyThisProbeAndNotACheckout": "A probe carrying an install id of 8 or more characters would reach the upstream seam and fire recordGtmEvent, syncPipedriveDeal, and a Stripe checkout session creation. That is an outward-facing mutation and is never batched into a go. The header-less probe proves liveness entirely from the function's own code with zero upstream contact."
+  },
+  "adversarialReview": [
+    {
+      "risk": "The guard passes vacuously because the extractor stops matching (file renamed, array renamed, comment reflow).",
+      "mitigation": "Positive controls inside the same extractor: the guard fails if apps/property-explorer/api/spine.ts is missing, if the cortexPostPaths array cannot be extracted, if the gtm sibling prefix is absent from the extracted array, if vercel.json cannot be parsed as JSON, or if the vite dev-proxy block cannot be located."
+    },
+    {
+      "risk": "The guard is dormant, meaning correct but never triggered.",
+      "mitigation": "Wired into apps/property-explorer package.json 'test' (which the PE CI job already runs as 'pnpm --filter property-explorer test') AND as a named CI step next to the existing records-copy-guard step, so it survives a reorganisation of either."
+    },
+    {
+      "risk": "Removing the billing prefix accidentally removes the adjacent GTM prefix, which is a different subject.",
+      "mitigation": "The edit is a single-line deletion matched on the exact string; the guard asserts the GTM prefix survives; the diff is read line by line."
+    },
+    {
+      "risk": "A caller elsewhere depends on /api/pe-billing.",
+      "mitigation": "Enumerated with a positive-control instrument across ten present repos (item 5 below). Zero callers outside the retired-client comment and a client test constant."
+    },
+    {
+      "risk": "The close overstates the security effect of removing the latent entry.",
+      "mitigation": "The grading correction above travels verbatim into CP2 and the close, with the two live probes that establish it."
+    },
+    {
+      "risk": "This lane cannot deploy, so acceptance item 3 (prove by decline AFTER deploy) cannot be graded here.",
+      "mitigation": "Declared as an explicit open with the planner as owner and the exact post-deploy probe commands pre-registered. It is not silently marked done."
+    }
+  ],
+  "preRegisteredFalsifiers": [
+    { "claim": "Path A is live", "falsifiedBy": "the header-less POST returning 404 NOT_FOUND or SPA HTML instead of the function's own install_id_required JSON", "observed": "400 install_id_required; claim survived" },
+    { "claim": "Path B is latent", "falsifiedBy": "the billing POST returning anything other than the browse-gate 403: a 200, a 400 from upstream zod, a 405, or a 502", "observed": "403 browse-gate; claim survived" },
+    { "claim": "the 403 is a real gate, not a blanket refuser", "falsifiedBy": "the map-data POST also returning 403", "observed": "400 from upstream cortex; claim survived" },
+    { "claim": "the guard can fail", "falsifiedBy": "re-adding any one of the four artefacts and the guard still exiting 0", "observed": "recorded in CP2" },
+    { "claim": "no other caller reaches the seam", "falsifiedBy": "a git grep hit outside apps/property-explorer and artifacts/api-server, OR any searched repo whose positive control returned zero files (instrument dead)", "observed": "recorded in item5CallerEnumeration" }
+  ],
+  "item5CallerEnumeration": {
+    "command": "node <scratchpad>/seam-caller-enum.mjs. Per repo: git fetch origin main; git rev-parse origin/main; git grep -In 'brokerage/v1/property-explorer/billing' origin/main; plus a positive control git grep -Ilc 'property' origin/main whose zero result reports INSTRUMENT-DEAD rather than 'no callers'.",
+    "reposSearched": 10,
+    "reposNotPresent": ["P:/empressa-trading is not on this machine; reported as not searched, never as an absence"],
+    "allControlsLive": true,
+    "hits": [
+      "legacy-design-tools origin/main d332d79: artifacts/api-server/src/routes/propertyExplorerBilling.ts:4 (the seam itself, doc comment) and artifacts/api-server/src/__tests__/propertyExplorerGtm.test.ts:93 (its own test). Router mounted at artifacts/api-server/src/routes/brokerageBrief.ts:310.",
+      "hauska-map origin/main 4401095: the four in-scope references (api/pe-billing.ts:50, api/spine.ts:346, src/lib/billingClient.ts:145 retired-comment, src/lib/pe-checkout-tier.test.ts:25 negative-assertion constant)."
+    ],
+    "zeroHitsWithLiveControl": ["hauska-brief-extension", "icc-portal", "SmartCity_OS", "AEC-cortex", "hauska-mcp-server", "hauska-engine", "hauska-factory", "Hauska SDK"],
+    "adjacentFindingNotThisCard": "The Chrome extension calls POST /api/brokerage/v1/billing/checkout (src/lib/billing-api.js via brokeragePath), a DIFFERENT install-scoped route mounted at artifacts/api-server/src/routes/brokerageBilling.ts:80. It also calls createSubscriptionCheckoutSession and therefore also resolves STRIPE_PRO_PRICE_ID through stripePriceIdForTier (brokerageStripe.ts:51, 60, 178). It is not the P-103 seam and is out of this card's scope, but it is a second live path to the same retired price and is carried as a leave-behind."
+  },
+  "constraintsHonored": [
+    "no sub-agents spawned",
+    "no git add, commit, push, PR, merge, or deploy in any repo",
+    "own registered worktree on own branch; no other lane's checkout touched",
+    "no edit to apps/property-explorer/src/browse/SettingsModal.tsx or apps/property-explorer/src/lib/*",
+    "no write to any repo this seat does not own; legacy-design-tools and hauska-brief-extension read-only",
+    "every verification command exit-bounded; no watch, tail, follow, or dev server",
+    "no probe that would reach Stripe, Pipedrive, or the gtm event writer"
+  ]
+}

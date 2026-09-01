@@ -67,7 +67,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
 | 1.1 | Build the PE billing portal so the published terms stop overclaiming | planner | 0.6 |
-| 1.2 | **P-103** retire BOTH paths to the retired-price seam, proven by decline | property seat | nothing, carded |
+| 1.2 | **P-103** retire the legacy checkout seam, proven by decline | property seat | **PR #331 open.** Guard shown failing six ways |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
 | 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | nothing, carded |
@@ -89,6 +89,16 @@ The correction is recorded here rather than quietly absorbed, because the error 
 P-103 does not shrink. Both entries still go, because configuration that reads as a live permission is worth removing and a later refactor relaxing the browse gate would make it live silently. What changed is the grading: one path is live, the other is starved, and the card says which is which rather than scoring both the same.
 
 One item stays routed out. The cortex-side install-scoped seam still resolves tier `pro` to the retired price. This wave removes the clients of that seam, not the seam.
+
+### A third path to the PRO/MAX prices, and why it is NOT a third leak
+
+P-103 found that the Chrome extension calls `POST /api/brokerage/v1/billing/checkout`, which reaches `createSubscriptionCheckoutSession` at `brokerageBilling.ts:80` and resolves the `STRIPE_PRO_PRICE_ID` and `STRIPE_MAX_PRICE_ID` pair. Verified at source. Unlike the seam P-103 retired, this path has a real client.
+
+It is tempting to score that as a third revenue leak and it would be wrong. The two are different in the way that matters. On the retired seam the CALLER chose the tier, and the tier it chose was not on any ladder. Here the tier is the extension's own product tier, and Pro and Max are the extension's real tiers, which predate the Smart Site Solo/Studio/Team ladder entirely. A live client calling a live price for the product it actually sells is not a leak.
+
+What it does do is put a named live client on P-97 checklist item 6, which says there is no safe way to leave `STRIPE_PRO_PRICE_ID` and `STRIPE_MAX_PRICE_ID` at their test values. Item 6 was already an operator decision; it now has a consequence attached. If the extension still sells Pro and Max, both need live price ids created before the switch. If it does not, both need to fail closed rather than resolve to a stale test id, because `subscriptionTierFromPriceId` falls through to `pro` for every subscription when `STRIPE_MAX_PRICE_ID` does not match, which silently grants Pro to a Max subscriber, and an EMPTY value is worse still: `brokerageStripe.ts:174` returns a SIMULATED session under a live key, failing open with no error anywhere.
+
+So the item is: does the extension still sell Pro and Max. That is a product question, not an engineering one, and it gates checklist item 6.
 
 ## Wave 2. Make the ladder real and the funnel measurable
 
