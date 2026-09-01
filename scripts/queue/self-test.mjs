@@ -377,6 +377,30 @@ t("non-strict readJson still tolerates corruption (non-control callers)", () => 
   assert(readJson(p) === null, "non-strict path keeps its old behaviour");
 });
 
+t("a CLOSED card reports done, never \"unknowable\"", () => {
+  const s = base({ closeExists: true });
+  assert(unblockAt(s, req()) === "done", `closed card must report done, got ${String(unblockAt(s, req()))}`);
+});
+
+t("a fully closed board returns null so a loop STOPS instead of polling", () => {
+  const a = base({ closeExists: true }); a.card.id = "a";
+  const b = base({ closeExists: true }); b.card.id = "b";
+  assert(nextWakeSeconds([a, b], req()) === null, "no card left is not a reason to wait");
+});
+
+t("INVERSE: one open card among closed ones still produces a wake", () => {
+  const done = base({ closeExists: true }); done.card.id = "done";
+  const open = base(); open.card.id = "open"; open.card.needs_store = "cortex-prod";
+  const secs = nextWakeSeconds([done, open], req({ now: TUE_0530 }));
+  assert(secs === 1800, `a closed sibling must not suppress a real wake; got ${secs}`);
+});
+
+t("a closed card does not drag the board into the idle poll", () => {
+  const done = base({ closeExists: true }); done.card.id = "done";
+  const ready = base(); ready.card.id = "ready";
+  assert(nextWakeSeconds([done, ready], req()) === 0, "claimable sibling wins");
+});
+
 for (const [s, n, m] of results) console.log(`${s}  ${n}${m ? `\n      ${m}` : ""}`);
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -322,8 +322,19 @@ export function windowEnd(now, win) {
  * makes the whole answer unknowable.
  * @returns {Date|null} null when unknowable
  */
+// A closed card is FINISHED, not waiting. Found 2026-09-01 by the property seat:
+// next-wake labelled every CARD_CLOSED row "unknowable (waiting on another seat or
+// an operator go)" because unblockAt had no branch for it and fell through to null.
+// Harmless while something else was claimable; on a fully closed board it would have
+// told a loop to keep polling a finished board forever.
+export function isDone(state, req) {
+  if (!state.card) return false;
+  return evaluateClaim(state, req).refusals.some((r) => r.code === R.CARD_CLOSED);
+}
+
 export function unblockAt(state, req) {
   const now = req.now;
+  if (isDone(state, req)) return "done";
   const res = evaluateClaim(state, req);
   if (res.ok) return now;
 
@@ -358,17 +369,21 @@ export function nextWakeSeconds(states, req, opts = {}) {
 
   let best = null;        // earliest knowable unblock time
   let watchingInFlight = false; // waiting on a dependency somebody is working now
+  let anyDone = false;    // at least one card is finished
+  let anyOpen = false;    // at least one card is not finished
 
   for (const st of states) {
     if (!st.card) continue;
     const owner = Object.entries(st.seats || {}).find(([, rs]) => rs.includes(st.card.repo));
     const mine = st.card.repo === "doc_repo" || (owner && owner[0] === req.seat);
     if (!mine) continue; // another seat's card changing does not wake this seat
+    anyOpen = true;
 
     const res = evaluateClaim(st, req);
     if (res.ok) return 0;
 
     const t = unblockAt(st, req);
+    if (t === "done") { anyDone = true; continue; } // finished, never a reason to wake
     if (t !== null) {
       if (best === null || t < best) best = t;
       continue;
@@ -383,6 +398,11 @@ export function nextWakeSeconds(states, req, opts = {}) {
       watchingInFlight = true;
     }
   }
+
+  // Every card for this seat is finished. Not "wait a while" - there is nothing to
+  // wait for. null tells the caller the board is complete so a loop stops instead of
+  // sleeping on a finished board.
+  if (anyOpen && anyDone && best === null && !watchingInFlight) return null;
 
   if (best !== null && best <= now) return 0;
   const secs = best === null

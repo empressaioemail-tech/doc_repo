@@ -215,7 +215,16 @@ if (cmd === "next-wake") {
     const mine = st.card.repo === "doc_repo" || (owner && owner[0] === seat);
     if (!mine) continue;
     const t = unblockAt(st, { seat, now });
-    lines.push(`  ${st.card.id}: ${t === null ? "unknowable (waiting on another seat or an operator go)" : t <= now ? "NOW" : t.toISOString()}`);
+    const label = t === "done" ? "done"
+      : t === null ? "unknowable (waiting on another seat or an operator go)"
+      : t <= now ? "NOW" : t.toISOString();
+    lines.push(`  ${st.card.id}: ${label}`);
+  }
+  if (secs === null) {
+    console.log("next_wake_seconds=none");
+    console.log("BOARD COMPLETE for this seat. Every card is closed. Stop the loop; do not sleep.");
+    for (const l of lines) console.log(l);
+    process.exit(0);
   }
   console.log(`next_wake_seconds=${secs}`);
   for (const l of lines) console.log(l);
