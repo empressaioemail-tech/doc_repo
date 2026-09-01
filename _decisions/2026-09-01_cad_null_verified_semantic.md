@@ -34,6 +34,14 @@ class is the explicit negative case: those values exist under a different CAD ke
 join has not matched the value-bearing row, and the class stays unaccounted until the
 R1 crosswalk lands.
 
+Adjudication note 2026-09-01 (R6 close): the live Williamson identity join DOES match
+the R-prefix CAD row at rate 1.0, so the matched-row letter of this scoping would fire
+there while the values sit on sibling numeric accounts. The intent phrase governs: the
+matched row is not the VALUE-BEARING row, and until the R1 crosswalk exists the module
+cannot tell. Enforced by execution sequencing, not a module special-case: R6B defers the
+48491 dual-key dollar rails until R1B closes (addendum on the R6B card). The module's
+structural scoping and its b/b2 fixtures stand as merged (engine #376, a38cbb2).
+
 ## Reasoning
 
 Absent-verified requires "something looked; a basis says where and why not." The CAD

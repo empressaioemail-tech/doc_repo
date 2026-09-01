@@ -1,0 +1,100 @@
+{
+  "lane": "PARCEL-R6-CADNULL",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-01T20:41:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-r6-cadnull_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main d10fa86",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-r6-cadnull_cp1.json",
+    "_inbox/2026-09-01_parcel-r6-cadnull_cp2.json"
+  ],
+  "handoffNote": "This card's claimant died mid-work (usage exhausted ~2026-09-01T20:30Z) after filing CP1/CP2 and pushing both commits with an open PR. Per the addendum, the worktree was inspected: git status was clean, HEAD matched the pushed remote branch exactly (ls-remote confirmed), and PR #376 was already open with CI green. Nothing was folded or discarded because there was nothing uncommitted to fold; the prior claimant's work was complete. This close independently re-verifies rather than re-narrates it: re-ran the merge-base check against a freshly fetched origin/main (no drift), re-read the full diff line by line against the dispatch's structural-scoping requirement, and re-ran the test suite locally at HEAD (26/26 passed, not taken from CP2's claim).",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "engine_worktree": "P:/tmp/hauska-engine-parcel-r6",
+    "engine_base": "22e71e1c18ec6bcefe590b97d36093ae3849a4fc",
+    "engine_head_at_claim": "d1502d435f2efd8f460908e03a26ce6437215e4b",
+    "engine_merge": "a38cbb22eda23637d7a56e104456aa4e7237fc25",
+    "baseCurrency": "origin/main re-fetched at close time; merge-base HEAD origin/main == 22e71e1, so origin/main had not moved since the branch was cut -- re-green was against the current base, not a stale one"
+  },
+  "missionPremise": "_decisions/2026-09-01_cad_null_verified_semantic.md (operator ruling): a matched latest CAD row with a null/blank scalar field emits absent-verified with the CAD row as basis; a join miss never fires it. Gap ledger section 9 sizes the class and sourced the initial McLennan/Travis framing.",
+  "completionPredicate": "ingestCadOntoRecords in packages/engine-core/src/parcel-record/ carries the typed cad-null-verified emission, reachable only from the matched-row branch (ingestCadOntoRecords returns before calling applyCadScalar when cadByProp.get misses; applyCadScalar and cadNullVerified are not exported). $0 stays value 0, living_area 0 stays unaccounted, both proven by dedicated tests. Tests (a)-(e) from the dispatch plus the Williamson match-hit fixture (b2) all pass. schema.sql untouched, no store writes. PR merged with CI conclusion SUCCESS on the current base.",
+  "scopeBasis": "hauska-engine packages/engine-core/src/parcel-record/ only (ingest-existing.ts, cell-state.ts, index.ts, the test file). No schema.sql change, no store write, no factory or vendor edit -- R6B is the re-ingest and merge-SHA pin, a separate card.",
+  "prs": [
+    {
+      "repo": "hauska-engine",
+      "number": 376,
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/376",
+      "branch": "feat/parcel-r6-cadnull",
+      "headSha": "d1502d435f2efd8f460908e03a26ce6437215e4b",
+      "mergeSha": "a38cbb22eda23637d7a56e104456aa4e7237fc25",
+      "ciCheckRunName": "typecheck + test",
+      "ciConclusion": "SUCCESS",
+      "note": "Merged by this seat on check-run conclusion SUCCESS after independently confirming origin/main had not moved since the branch was cut (merge-base HEAD origin/main == 22e71e1, the PR's stated base)."
+    }
+  ],
+  "counts": {
+    "testSuite": "26/26 on packages/engine-core/src/parcel-record/__tests__/parcel-record.test.ts, independently re-run at HEAD d1502d4 by this seat (not taken from the inherited CP2 claim)",
+    "diffShape": "4 files changed, 333 insertions(+), 24 deletions(-): the test file, cell-state.ts (basis type widened to string | CadNullVerifiedBasis), index.ts (type export), ingest-existing.ts (stampAbsent/stampText/stampNumber + cadNullVerified)",
+    "countingRule": "npx vitest run, file-scoped, matches the dispatch's named test file"
+  },
+  "design": {
+    "home": "packages/engine-core/src/parcel-record/ingest-existing.ts",
+    "structuralScoping": "cadNullVerified is called only from applyCadScalar's stampAbsent helper; applyCadScalar is called only from ingestCadOntoRecords, which does `if (!cad) continue;` before that call. A join miss (cadByProp.get returns undefined) cannot reach the emission without a new call site -- proven by a dedicated test asserting applyCadScalar and cadNullVerified are not exported from the module.",
+    "fieldRules": {
+      "text": "hasText false (null, empty, whitespace) -> cad-null-verified via stampText",
+      "numericDollarsAcresYear": "non-null including 0 -> value; null/blank -> cad-null-verified via stampNumber",
+      "livingAreaSqft": ">0 -> value; null/blank -> cad-null-verified; ===0 -> unaccounted (existing >0 rule, not widened, kept as a separate branch)",
+      "taxYear": "cadNullVerified refuses (returns null, cell stays unaccounted) when cad.tax_year is null or blank -- never invents a year for the basis"
+    },
+    "idempotency": "stamp helpers all guard on `c[key].kind !== unaccounted`, so a re-ingest on identical input moves zero cells and leaves value/absent-verified cells identity-equal (test (d))."
+  },
+  "whatContradictedTheCard": "Gap ledger section 9 states a cad-null-verified semantic would NOT close Williamson improvement because those values 'exist under a different key' -- framed as a join-miss case. That framing does not hold against the live store: the identity join hits the R-prefix CAD row at rate 1.0 (gap ledger section 7), so the R-prefix row IS the matched row for a Williamson landing parcel, and its improvement/living/assessed fields are null ON THAT MATCHED ROW while the numeric sibling row (different prop_id) holds the dollar values. The dispatch's own negative fixture is therefore a join-miss shape (value under a different key that never matches) which is NOT what live Williamson does. This seat's inherited CP1/CP2 work already caught and resolved this: it implemented the dispatch's structural row-level rule as specified (not an R-prefix runtime skip, which the dispatch forbids), added test (b) as the card's literal join-miss fixture, and added test (b2) as the live Williamson match-hit shape, explicitly named so PARCEL-R6B does not read a moved Williamson improvement cell as proof the join-miss scoping leaked -- it proves the card's fixture and the live store are different shapes, and the emission is working as designed on both. No code decision changed as a result; the finding is that the emission WILL touch Williamson improvement/living once R6B re-ingests, and that is correct per the ruling's own text (\"basis records the CAD row itself\"), not a scope violation.",
+  "constraintsHonored": [
+    "schema.sql untouched",
+    "no store writes",
+    "no laptop --apply",
+    "no prefix-strip",
+    "living_area 0 not widened (stays unaccounted)",
+    "$0 not converted to absent-verified",
+    "no R-prefix or per-county runtime skip added",
+    "factory/vendor module not edited (left to R6B)"
+  ],
+  "falsifiersRun": [
+    "join-miss Williamson-shaped fixture (test b): improvement/living/assessed/apn/marketValue all stayed unaccounted -- did not fire",
+    "living_area_sqft 0: stayed unaccounted, did not become absent-verified",
+    "improvement_value 0: became value 0, did not become absent-verified",
+    "missing tax_year: assessed/living stayed unaccounted, no invented year",
+    "schema.sql: absent from the diff (git diff --stat confirms 4 files, none schema.sql)"
+  ],
+  "scratch": {
+    "LESSON": [
+      "Gap-ledger sizing sections describe the CAD store's key shape at a point in time; a module's structural scoping should be verified against the live join behavior (here: R-prefix identity join rate 1.0), not just the ledger's prose description of which class a semantic would or would not close.",
+      "A card's 'negative fixture' description in prose (join miss) and its live equivalent (match-hit with a null field) are different structural shapes and both need a test -- the second one is often the one that actually fires in production."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-01T20:39:07Z hauska-engine PR #376 MERGED mergeSha a38cbb22eda23637d7a56e104456aa4e7237fc25; CI 'typecheck + test' conclusion SUCCESS",
+      "2026-09-01T15:39:51-08:00 (local) vitest 26/26 on parcel-record.test.ts at d1502d4, re-run independently by this seat post-inheritance"
+    ],
+    "DEAD-END": [],
+    "OPEN": [
+      "PARCEL-R6B-REINGEST pins engine SHA >= a38cbb22eda23637d7a56e104456aa4e7237fc25 and must treat a moved Williamson improvement/living cell as expected (per whatContradictedTheCard above), not as a scoping leak.",
+      "This close's engine_merge SHA (a38cbb2) supersedes the CP1/CP2 artifacts' PR-open state (d1502d4) as the SHA R6B and any drift guard must pin to."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_parcel-r6-cadnull_cp1.json (inherited from the prior claimant, unchanged)",
+    "_inbox/2026-09-01_parcel-r6-cadnull_cp2.json (inherited from the prior claimant, unchanged)",
+    "_inbox/2026-09-01_parcel-r6-cadnull_close.json",
+    "_queue/cards/parcel-r6-cadnull/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "PARCEL-R6B-REINGEST must pin ENGINE_SHA >= a38cbb22eda23637d7a56e104456aa4e7237fc25 and re-ingest the six counties; expect Williamson improvement/living to move to absent-verified on the R-prefix rows per whatContradictedTheCard, not treat that as a defect.",
+      "owner": "PARCEL-R6B-REINGEST / property seat",
+      "plan_row": "F-01"
+    }
+  ]
+}

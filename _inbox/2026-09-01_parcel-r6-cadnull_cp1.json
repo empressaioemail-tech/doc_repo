@@ -1,0 +1,72 @@
+{
+  "lane": "PARCEL-R6-CADNULL",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-01T20:32:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 2b6ab05b63ce89773f41f20c9f6a914acf0fd0ef",
+    "engine": "P:/tmp/hauska-engine-parcel-r6 feat/parcel-r6-cadnull 22e71e1c18ec6bcefe590b97d36093ae3849a4fc",
+    "engineVsRequired": "HEAD == 22e71e1, satisfies >= 22e71e1",
+    "seat": "property claiming from integration P:/doc_repo main",
+    "claimExpires": "2026-09-01T21:56:21.706Z",
+    "storeWrites": "none this card",
+    "addenda": "none at claim"
+  },
+  "premisesReverified": {
+    "gapLedger": "_inbox/2026-09-01_parcel_gap_ledger.md section 9 + section 7 Williamson",
+    "decision": "_decisions/2026-09-01_cad_null_verified_semantic.md",
+    "dollarZero": "value 0, not absent-verified",
+    "livingZero": "stays unaccounted; do not widen",
+    "schemaSql": "untouched",
+    "williamsonLiveJoin": "contradicts the card's join-miss framing — see adversarialReview"
+  },
+  "design": {
+    "home": "packages/engine-core/src/parcel-record/ingest-existing.ts",
+    "scoping": "stampCadNull is a nested function inside applyCadScalar. applyCadScalar is not exported. ingestCadOntoRecords is the only caller and returns before that call when cadByProp.get(rec.propId) is missing. A join miss cannot reach the emission without a new call site.",
+    "emission": "matched latest CAD row + null/blank scalar CAD field -> kind absent-verified, basis {source: cad_property, countyFips, propId, taxYear, vintage}",
+    "basisType": "ScalarAbsentVerifiedCell.basis widens to string | CadNullVerifiedBasis. Existing string bases keep working. schema.sql stays rail-agnostic jsonb.",
+    "taxYear": "CadPropertyRow.tax_year optional. basis.taxYear is cad.tax_year ?? null. Do not invent a year. R6B must SELECT tax_year (CAD_ROWS_SQL currently does not).",
+    "fields": {
+      "text": "hasText false (null, empty, whitespace) -> cad-null-verified",
+      "numericDollarsAcresYear": "non-null including 0 -> value; null -> cad-null-verified",
+      "livingAreaSqft": ">0 -> value; null -> cad-null-verified; ===0 -> unaccounted (existing >0 rule, not widened)",
+      "apn": "always value from cad.prop_id on a match",
+      "derived": "landUseSource and acreageMethod stamp only when the parent CAD field is present; they are not CAD fields and do not emit cad-null"
+    },
+    "idempotency": "stamp only when cell.kind === unaccounted. value stays value; absent-verified stays absent-verified on identical input.",
+    "tests": [
+      "(a) matched row + null assessed/living -> absent-verified with full basis",
+      "(b) join-miss Williamson-shaped: landing R000009, map holds only numeric 9 with dollars/living -> both stay unaccounted (the card fixture)",
+      "(b2) match-hit Williamson-shaped: landing R000009 present in the map with null improvement, numeric 9 also in the map with dollars -> matched-row emission DOES fire on R000009.improvement. Named so R6B is not surprised.",
+      "(c) blank-string situs_address -> absent-verified",
+      "(d) re-ingest: value stays value; absent-verified stays absent-verified; cellsMoved 0 on second pass",
+      "(e) existing suite green; $0 stays value 0; living 0 stays unaccounted"
+    ]
+  },
+  "adversarialReview": {
+    "what": "The card's Williamson fixture is a JOIN MISS. Live Williamson is a JOIN HIT on the R-prefix CAD slice. Gap ledger section 7: identity join rate 1.0 on 282,570 landing keys; dollars/living live on 319,480 numeric keys. R6B's negative control ('Williamson improvement stays unaccounted — if it moved, STOP, the scoping leaked') is therefore unsatisfiable under identity join plus a matched-row emission.",
+    "mechanism1": "Card authors treated 'values exist under a different key' as a join miss. Rejected as the live mechanism: the fill already matches every R-prefix landing key to an R-prefix CAD row (apn/acres/legal/market/situs stamped).",
+    "mechanism2Accepted": "Identity join hits the R-prefix row; improvement is null ON THAT ROW. A matched-row emission will convert those cells to absent-verified. That is field-level authority (the numeric row is the value-bearing account) leaking into a row-level rule. Not a join-miss leak.",
+    "disposition": "Implement the structural row-level rule the dispatch asked for. Do not add an R-prefix or 48491 runtime skip (that is the bypassable check the card forbids). Name the live match-hit as the contradiction. R6B must not treat a moved Williamson improvement cell as proof the join-miss scope leaked — it proves the card's fixture and the live store are different shapes.",
+    "livingZeroVsNull": "Collapsed 0-and-null would convert living 0 to absent-verified. Forbidden. Separate branches.",
+    "dollarZeroVsNull": "Collapsed would convert $0 to absent-verified. Forbidden.",
+    "stampGuardVsR1": "kind !== unaccounted means a later crosswalked VALUE cannot overwrite absent-verified. If R6B identity-joins Williamson before R1, those cells lock. R1B leave_behind.",
+    "applyCadScalarExport": "Will not export. A public emitCadNullVerified would let a join-miss caller fire the emission."
+  },
+  "willNot": [
+    "touch schema.sql",
+    "write any store",
+    "laptop --apply",
+    "prefix-strip",
+    "widen living 0",
+    "convert $0 to absent-verified",
+    "add a 48491 or R-prefix runtime skip",
+    "edit factory or vendor the module (R6B)"
+  ],
+  "falsifiers": [
+    "Join-miss Williamson fixture emits on improvement or living -> scoping is not structural.",
+    "living_area_sqft 0 becomes absent-verified -> the >0 rule was widened.",
+    "improvement_value 0 becomes absent-verified -> $0 was widened.",
+    "schema.sql in the diff -> card violated."
+  ]
+}
