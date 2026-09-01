@@ -6,6 +6,8 @@ GROUND-TRUTH (2026-08-25T05:02Z live): P-73 compile `_dispatches/2026-08-25_p73-
 
 OPEN: this card's items 1 and 2 are filed. Items 3-6 (routing pin + instrument + no silent turn-on + leftovers) are not this lane.
 
+GROUND-TRUTH (2026-08-25T05:30Z): factory memory wave closed. Eight factory scratch files triaged (all declined to durable refs). Pin 64→56. P-78 dispatch `_dispatches/2026-08-25_p78-cad-merge_dispatch.md` carries FLEET-MEMORY v2a98086b + M0 block. Memory gate 63>56 leave_behind.
+
 GROUND-TRUTH (2026-08-25T05:12Z planner re-run): `fleet-memory-travel.test.mjs` 14/14 exit 0. `factory-routing-readiness.mjs --check` PASS. Memory gate still 85 > 64 exit 1. Pin not raised.
 
 LESSON: pin `ready:true` is already-serving, not write-allowed. Envelope P-60 and flood P-08 are serving hops. They are not a go to point new factory workload at those rails. Write-allowed stays implicit in `held` plus `ready:false` on P-25 / P-09 / roads.
