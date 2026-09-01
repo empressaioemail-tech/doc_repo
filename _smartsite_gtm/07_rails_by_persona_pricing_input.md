@@ -1,6 +1,6 @@
 ---
 id: 07_rails_by_persona_pricing_input
-title: Rails by persona — the input to the pricing and packaging revisit
+title: Personas by rung — the grid behind packaging, copy and the pricing revisit
 status: active
 last_updated: 2026-09-01
 applies_to: smart_site
@@ -13,50 +13,111 @@ related:
   - _decisions/2026-09-01_parcel_record_rails_v2_template
   - _decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list
   - _inbox/2026-08-10_smartsite_pricing_and_gtm_LOCKED
-purpose: What the v2 rail template means for who pays and for what. Written 2026-09-01 when the rail set went 52 to 65 organized by persona, to be read at the pricing and packaging revisit that happens after the six fills land. This is an input, not a decision; the locked pricing doc and the ladder re-cut govern until that revisit.
+purpose: Every persona exists at every rung. This is the grid of what each one gets where, which rails they lean on, and what actually moves them up. Built 2026-09-01 when the rail set went 52 to 65. Two jobs: internal decision-making, and the source material for client-facing copy and collateral framing.
 ---
 
-# Rails by persona
+# Personas by rung
 
-The parcel record went from 52 rails to 65 on 2026-09-01, and the thirteen new ones were chosen by asking who arrives with the question. That grouping is a go-to-market artifact as much as a data one, so it is recorded here for the revisit.
+The rail set is organised by who asks. The ladder is organised by the shape of the job. Those are different axes and they are both right, which is why this is a grid rather than a mapping.
 
-**This doc decides nothing about price.** `_inbox/2026-08-10_smartsite_pricing_and_gtm_LOCKED.md` and `_decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list.md` govern. Read this when the data has landed and the ladder gets its one more look.
+**The premise that makes it a grid:** there is some of every persona at every rung. Nobody is a Studio person. Somebody is a Studio person *this month*, because of what they are working on. A land buyer with one deal is a Solo customer and the same land buyer with a broker's list of forty is a Studio customer, and it is the same human.
 
-## The thirteen, by who asks
+**This doc decides nothing about price.** `_inbox/2026-08-10_smartsite_pricing_and_gtm_LOCKED.md` and the ladder re-cut govern. Read it at the pricing revisit after the six county fills land.
 
-| Persona | Rails added | The question underneath |
+## Two constraints that bound every cell below
+
+Only two reports are live generate: the **X-ray** and **Flood and Drainage**. Feasibility and Comparison sit in the menu and may not be pitched as live. Every cell below is written against the two that work.
+
+The thirteen new rails are **declared absences** until the fills land. A cell that names one is naming what the customer will be able to see, not what they see today, and no collateral may claim otherwise until liveness is earned from the cells themselves.
+
+## The rungs
+
+Free. A $15 unlock on one parcel for 30 days. Solo $49. Studio $129. Team $299 for three seats, $25 each beyond. Annual is the default presentation. Prospect is monitoring and is not shipped.
+
+The connector is a door, not a rung. It is available at every level including Free and mirrors whatever the workbench allows.
+
+---
+
+## Land buyer
+
+Investor, flipper, land. Arrives with a specific piece of dirt and a decision to make about it.
+
+| Rung | What the job is | The rails they lean on | What moves them up |
+|---|---|---|---|
+| Free | Is this worth a phone call | apn, situs, acreage, land use, `cityLimits`, `etjStatus` | They hit a question the free record will not answer, usually flood or zoning |
+| $15 unlock | One deal, one decision, this week | full zoning and envelope, `flood`, value, `ossf`, `utilityService` | They buy the second unlock. Two is the signal, not one |
+| **Solo** | A deal at a time, continuously | everything above plus `agValuation` and rollback, `mineralRights`, `owner`, `valueHistory` | **Count.** More than one live deal at once, and the tab-juggling starts |
+| **Studio** | A list. A broker sent thirty, or a county has forty in the corridor | screens and boards over the same rails, `salesHistory`, `publicRecordRefs` | They stop working alone. A partner or an analyst needs the same board |
+| Team | The pipeline is shared and somebody else has to see it | same rails, shared boards, roster | Firm scale, or a fourth seat |
+
+**The line for this persona:** answer the question you would otherwise pay somebody a week to answer, cited.
+
+**What kills the deal for them:** septic, flood, and rollback exposure. Those three rails are the ones worth leading with in a land-audience kit, and two of the three are new.
+
+---
+
+## Agent
+
+Listing agent, buyer's agent, brokerage. Arrives because a client asked something they cannot answer.
+
+| Rung | What the job is | The rails they lean on | What moves them up |
+|---|---|---|---|
+| Free | Answer one client question without guessing | situs, land use, `schoolDistrict`, acreage | A disclosure question, which is the first one with liability attached |
+| $15 unlock | Prep one listing properly | `flood`, zoning, `hoaDeedRestrictions`, `salesHistory` | The next listing. This persona's cadence is naturally repeating |
+| **Solo** | Listing prep and disclosure prep as routine | above plus `owner`, `valueHistory`, full envelope | **Somebody else's list.** A buyer sends twelve addresses and one-at-a-time breaks |
+| **Studio** | Work a buyer's shortlist, or farm a neighbourhood | screens and boards, `publicRecordRefs`, records package | The team asks for it. Agents work in teams more than the other two personas |
+| Team | A brokerage team on shared boards | same, roster, shared screens | Seat count |
+
+**The line for this persona:** stop saying "let me check on that."
+
+**What they are actually buying:** not data, defensibility. The citation is the product. That framing should carry into agent-facing copy more than it currently does.
+
+---
+
+## Architect
+
+Architect, designer, civil, builder. Arrives before drawing, and again before submitting.
+
+| Rung | What the job is | The rails they lean on | What moves them up |
+|---|---|---|---|
+| Free | Site check before taking the call | situs, acreage, zoning district, `cityLimits` | The envelope question, which is the first one that costs money to get wrong |
+| $15 unlock | One feasibility, one site | setbacks, buildable sqft and pct, max height and coverage, `maxImperviousCoverPct`, `overlayDistricts`, `treeProtection` | Rarely. This persona's work arrives in projects, not parcels |
+| **Solo** | One site, worked properly | above plus terrain, `buildingFootprint`, easements, `publicRecordRefs` | **The handoff.** They have to give a client or a jurisdiction something |
+| **Studio** | The deliverable | site plan CAD (DXF, IFC), terrain export, records package, screens | A second person in the office needs it |
+| Team | The firm | same, roster, shared boards | Seat count |
+
+**The line for this persona:** know what shrinks the envelope before you draw it.
+
+**Where Studio is unambiguous:** this is the only persona for whom Studio is obviously worth it, because the deliverable is the job. That is exactly why the old Studio badge said "The packet" and exactly why that badge failed the other two personas.
+
+---
+
+## The finding worth carrying into copy
+
+**The Solo to Studio trigger is different for all three, and none of them is price.**
+
+| Persona | Trigger | The sentence that describes it |
 |---|---|---|
-| Land buyer | `ossf`/septic, `utilityService`, `agValuation` + rollback, `mineralRights` | Can I build on it, what does it cost me to hold it, and what did somebody already sell out from under it |
-| Agent | `schoolDistrict`, `salesHistory`, `hoaDeedRestrictions` | What do I have to disclose, and what will the buyer ask that I cannot answer |
-| Architect | `maxImperviousCoverPct`, `overlayDistricts` (incl. historic), `treeProtection` | What shrinks the envelope before I draw |
-| Cross-cutting | `owner` (paid pair carried explicitly), `valueHistory`, `publicRecordRefs` | Who is it, what has it been worth, and where is the paper |
+| Land buyer | count | more than one deal live at once |
+| Agent | someone else's list | a buyer sends twelve addresses |
+| Architect | the handoff | something has to be given to a client |
 
-## The tension this creates, stated now so the revisit does not have to rediscover it
+Same rung transition, three unrelated causes. **So the Studio pitch is three pieces of copy, not one.** A single Studio badge can only ever speak to one of them, which is the defect the ladder re-cut identified when it retired "The packet" for telling the largest segment the tier was not for them.
 
-The locked strategy resolved the audience question one way: investor, land flipper, and agent are one audience, not three, because they ask the same questions and they buy the same rung. The real division was drawn between them and the professionals who need deliverables.
+The same logic runs down the grid. The Free to unlock trigger is a flood or zoning question for the land buyer, a disclosure question for the agent, and an envelope question for the architect. Three campaigns, one product.
 
-The rail work just drew a different line. The land buyer wants septic, utilities, ag rollback and minerals. The agent wants school district, sales history and deed restrictions. Those are six rails and almost no overlap. Two personas the strategy treats as one segment turn out to want different data.
+## What this means for collateral
 
-Both readings can be true at once, and probably are. They may ask the same *question shape* (what governs this parcel, can I act on it) while needing different *facts* to answer it. If so, the ladder's cut by job shape survives untouched and this is just a content and campaign observation: the affiliate kit for a land group and the kit for a brokerage should lead with different rails even though both sell the same rung.
+Affiliate kits are already a per-segment deliverable by the locked handoff's rule that an affiliate needs one outcome, one line, one demo, one link. This grid is the source for which outcome and which line per segment. The kit for a land group leads with septic, flood and rollback. The kit for a brokerage leads with disclosure and defensibility. The kit for a design audience leads with the envelope.
 
-But it is also possible the shared-audience finding was an artifact of having only one paid tier and a thin rail set when it was made. That is exactly the kind of premise that ages badly and gets quoted forever, so it goes on the revisit list rather than into a conclusion here.
+Claims still come from `_smartsite_masters/`, which wins any conflict with anything written here.
 
-**The revisit question, in one line:** does the rail set justify a second axis, or does it only justify different copy on the same rungs?
+## Open, for the pricing revisit
 
-## What the ladder currently cuts on, for comparison
+**Does the rail set justify a second axis?** The locked strategy resolved investor, flipper and agent as one audience because they ask the same questions. The rail work gave the land buyer and the agent six rails with almost no overlap. Both can be true: same question shape, different facts. But the shared-audience finding was made when there was one paid tier and a thinner rail set, and that is the kind of premise that ages badly and gets quoted forever.
 
-Solo answers one parcel. Studio works a list of them. Team works as a firm. Prospect is monitoring. That is a cut by **job shape**, and it is deliberate: it moved exactly one capability (screens and boards) and left prices untouched.
+**Nothing prices on persona today and nothing should start to without a ruling.** A rung a customer self-selects into by identity is one they can misreport themselves into. A rung selected by job shape is not. If persona ever becomes an axis, it has to be a pack sold on top of a rung rather than a rung of its own.
 
-The rails cut by **persona**. Nothing today prices on persona, and nothing should start to without a ruling, because a tier a customer self-selects into by identity rather than by job is a tier they can misreport themselves into.
+**`publicRecordRefs` forks access on `acquiredBy`,** so a customer's own acquired records live in the product. Nobody has decided whether that is a rung feature, a per-record charge, or free storage, and that decision determines whether records are a cost centre or a channel.
 
-## What must be true before this doc is actionable
-
-The six county fills land on the 65-rail template. Until then every persona row above is a declared absence rather than a served fact, and packaging against unserved rails is how the product ends up promising what it cannot deliver — the failure the terms page already committed once.
-
-Liveness is derived from earned cells rather than a hand-set flag, so the honest read at revisit time is available from the product itself rather than from this table.
-
-## Also worth carrying into the revisit
-
-The flood rail. The Central Texas wedge rides on it, its row shape is now committed to BFE, floodway flag, panel id and effective date, and there is an addendum probing what the flood stores actually hold. If that probe comes back thin, the seasonal content engine that the whole channel plan leans on is thinner than the plan assumes, and that is a go-to-market fact before it is a data one.
-
-`publicRecordRefs` forks access on `acquiredBy`. A record the platform ingests is public-record; a record a customer acquires is theirs. That fork is a packaging surface nobody has priced: whether a customer's own acquired records are a feature of a rung, a per-record charge, or simply storage they get for free.
+**The flood rail.** The Central Texas wedge rides on it and its row shape is now committed to BFE, floodway flag, panel id and effective date. If the store probe comes back thin, the seasonal content engine the whole channel plan leans on is thinner than the plan assumes. That is a go-to-market fact before it is a data one.
