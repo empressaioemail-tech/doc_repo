@@ -70,7 +70,7 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 | 1.2 | **P-103** retire the legacy checkout seam | property seat | **DONE 2026-09-01.** #331 `847550aa`, deployed, **decline proven live** |
 | 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
-| 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | nothing, carded |
+| 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | **LDT #577 + hauska-map #332 open.** Deploy order BLOCKING: server first |
 
 **1.1 is the item that sat unowned across both retired threads,** because each assumed the other held it. `terms.html` states verbatim that a customer can cancel a paid plan through the Stripe billing flow in the product, and zero billing-portal references exist anywhere in `apps/property-explorer`. The product is honest and the legal page is not, which is the inversion of the usual failure and the half carrying legal weight. The build is one route against the signed-in user's `stripe_customer_id`, one line added to `deep-allowlist.ts`, and a control in Settings replacing the string "Not built". The Stripe call already exists and is proven at `brokerageStripe.ts:245`. Ruled a blocking Phase 0 item as A-062.
 
@@ -107,6 +107,20 @@ Not documented, measured. `POST https://smartsite.cloud/api/pe-billing?path=chec
 The made-up-route control also returns 404, so that control cannot discriminate after the fact, and the comparison carrying the proof is against the recorded before-state rather than against the control. The positive control is what rules out a broken deployment: the sibling `pe-gtm` function still answers 400, so functions still deploy and the 404 is specific to the route that was retired.
 
 The CI guard is what keeps it retired, and it fails on a re-added parent prefix that contains no literal "billing", which is the case a grep would pass.
+
+### P-104: three states, a blocking deploy order, and a CI gate that was never armed
+
+The fix is that the SERVER computes `studioGranted` and consumers consume it. The predicate definition count is three before and three after, zero of them under the BFF, because a fourth copy would have been the defect rather than the fix.
+
+**Three states, not two.** `boolean | null`. True serves, false returns 402 `studio_required` (distinguishable from the free-tier `payment_required`, so a Solo customer is told the right thing), and null returns 503 `entitlement_contract_incomplete`. Absent is unmeasured, not denied. Failing open would preserve the exact leak the card removes; failing closed on absent would tell a paying Studio customer they need to pay, which is a false statement about their account.
+
+**The cost of that honesty is a blocking deploy order,** and it is declared rather than engineered away: cortex-api ships first and the field is verified on the live body before the Vercel deploy, or every Studio and Team customer gets a 503 on CAD and terrain until the server catches up. The lane's gate command used an unauthenticated curl, which 401s on that route and therefore could not answer the question; the authenticated form is in the PR.
+
+**Exposure is seven days of code exposure and unmeasured customer exposure.** The window opened 2026-08-24 with the ladder, not with the gate, which was correct for the thirty days there was only one paid tier. Customer exposure is recorded as UNMEASURED rather than zero, with both instruments named. The lane repeated the test-mode claim as the planner's rather than adopting it as fact, which is the right handling.
+
+**One artifact now has two answers on two surfaces.** PE's `dossier` is the Solo X-ray and is deliberately NOT gated, because gating it would have taken away a sold Solo capability. The MCP's `STUDIO_EXPORT_KINDS` includes `dossier`. That divergence is logged and unresolved because resolving it is a product call, not an engineering one.
+
+**And a control that was never armed.** CI does not typecheck the PE BFF: `tsconfig.json` has `include: ["src"]` and the workflow runs exactly that. It was proved by planting a type error in `api/_lib/` and watching CI's typecheck exit 0, which is the only way that class of finding can be established. An `api/tsconfig.json` exists, nothing invokes it, and it holds three pre-existing errors. The lane deliberately did NOT arm it, because arming it would ship a permanently red dead gate, and routed it as a backlog item with the arming step and the three errors named. That is the correct call: a red gate teaches the fleet to use the bypass.
 
 ## Wave 2. Make the ladder real and the funnel measurable
 
