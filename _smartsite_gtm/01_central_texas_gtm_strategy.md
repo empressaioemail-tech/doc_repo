@@ -132,11 +132,11 @@ Decisions 1 to 3 are ruled and binding. Decision record `_decisions/2026-08-31_c
 
 ### Still open
 
-4. What is the one-line outcome each affiliate segment sells? The ladder is now ruled, so the candidates below are re-pointed and ready for an operator ruling. They remain candidates: this is a positioning commitment, and a line entering a kit without approval is a claim nobody ratified.
+4. RULED PROVISIONALLY 2026-08-31: the four candidate lines below are adopted as written, to be judged on screen rather than on paper. The operator's words were "let's see how your suggestion feels on the screen, so go with it for now." That is a real adoption and the lines may enter drafts, mockups, and internal review immediately. It is not a hard positioning lock, and the distinction matters for one specific reason: nothing may go to an external affiliate under a provisional line, because a claim handed to a channel is repeated verbatim and cannot be quietly revised afterwards. Promote to settled, or replace, after the operator has seen them rendered.
 
-## Affiliate segment lines — candidates, awaiting ruling on decision 4
+## Affiliate segment lines — RULED PROVISIONALLY, pending the screen test
 
-Re-pointed 2026-08-31 against the ruled ladder. Every line states an outcome the audience already wants, per the locked rule that an affiliate cannot sell property intelligence. All four are demonstrable on the two live generate paths, X-ray and Flood and Drainage. None carries a number, a saving, or a claim of approval, permitting, or certification.
+Adopted 2026-08-31 pending a look at them rendered. Re-pointed against the ruled ladder. Every line states an outcome the audience already wants, per the locked rule that an affiliate cannot sell property intelligence. All four are demonstrable on the two live generate paths, X-ray and Flood and Drainage. None carries a number, a saving, or a claim of approval, permitting, or certification.
 
 | Segment | Sold into | Candidate line | Demo |
 |---|---|---|---|
