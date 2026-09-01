@@ -1,0 +1,86 @@
+{
+  "lane": "ctx-a",
+  "planRow": ["F-10", "F-19", "F-03"],
+  "checkpoint": "CLOSE",
+  "filedAt": "2026-08-28T09:05:00Z",
+  "dispatch": "CTX card A (WDLL _inbox/2026-08-28_ctx_a_replay_reaper_dispositions_WDLL.md)",
+  "checkpoints": ["_inbox/2026-08-28_ctx-a_cp1.json", "_inbox/2026-08-28_ctx-a_cp2.json"],
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-replay",
+    "branch": "seat/property-ctx-replay",
+    "head": "a70139a4de48fd099a28391cd77646d7ab38061e (unchanged; all work uncommitted by design)",
+    "prNumbers": "not applicable: subagent lane; the planner commits, opens the PR, merges, builds, executes",
+    "mergeShas": "not applicable: see prNumbers",
+    "ciConclusion": "not applicable: nothing pushed; local node --test is the evidence"
+  },
+  "missionPremise": "OPS-19 A-020 (Central Texas first; the reaper and any fix that keeps a job from lying in the ledger are not deferred) and the CTX card A WDLL: replay is non-identical by construction because pipelineFromRows stages the cumulative alias store; the reaper reaches only runs with a matched execution; three register classes block the Central Texas write although none is a CAD roll write defect.",
+  "completionPredicate": "node --test green with fixtures (a) (b) (c), the reaper orphan test pair, and the register execute-degraded tests; handback carries diff by file, full test output, the three fixtures, the 48055 cause with a rejected second mechanism, and leave_behind; no commit, push, deploy, job, or store write.",
+  "scopeBasis": "Card item 4. Files touched are the card's named areas plus migrations/0004 (the county row needs a degraded column) and test/helpers (in-process fake). Not touched: diff.mjs redesign, loop concurrency, F-09, console, cloudbuild templates, landing-import scope bound (named in leave_behind).",
+  "diffByFile": {
+    "src/stages/resolve/index.mjs": "+31/-1: byEra comparator; tier-1 binding sorts matched authoritative aliases earliest-known first; mintFn injection (default mintDeterministicParcelNode)",
+    "src/stages/resolve/persist.mjs": "+19/-6: loadAliasRows knownBefore bound (knowledge_at < run knowledgeAt)",
+    "src/jobs/conformant.mjs": "+51/-10: pipelineFromRows stages this chunk's candidates' aliases and returns them; persistNewResolveState persists that emitted set; both passes hydrate with knownBefore; loadCountyLandingPage ORDER BY prop_id, id; replayCountyCadChunks returns secondChunkAtoms; run scope carries max_duration_s",
+    "src/control/reaper.mjs": "+166/-15: reconciles every started row (live execution leaves alone; finished execution keeps exit kind; child of terminated parent or age > scope.max_duration_s default 3600 terminates orphaned); parents before children; control runs never time-match; job affinity when executions carry _job; every termination named with reason and age",
+    "src/jobs/reap.mjs": "+17/-3: reap run scope max_duration_s 300; deps.connectFn; return names executions, n, orphaned",
+    "src/ledgers/f10-defect-register.mjs": "+56/-3: execute-degraded disposition; CENTRAL_TEXAS_FIPS; per-county dispositions on exactly TX-HAYS-LANDUSE (48209), TX-TRAVIS-JOIN (48453), TX-SITUS-SENTINELS (48021, 48209); dispositionForCounty; quarantineForCounty resolves per county; assertRegisterScoped",
+    "src/jobs/f10-cad-loop.mjs": "+72/-10: classifyCounty executes when every entry resolves execute-degraded, carries degraded; blocking entry still skips; f10_county_runs.degraded written; child scope carries degraded and max_duration_s 21600; defect_events row per degraded class per execute; assertRegisterScoped before the work list; distribution counts degraded; loop scope max_duration_s 86400",
+    "src/ledgers/manifest-read.mjs": "+9/-2: cells read f10_county_runs.degraded; materialiseCadCell carries degraded; county_manifest payload cell carries degraded",
+    "migrations/0004_f10_degraded.sql": "new: ALTER TABLE f10_county_runs ADD COLUMN IF NOT EXISTS degraded jsonb",
+    "test/helpers/fake-factory.mjs": "new: in-process fake of the Factory store surface with unstable tie order and hydration order knobs; allDivergences",
+    "test/ctx-replay-determinism.test.mjs": "new: fixtures (a) (a') (b) (c), mechanisms (i) (ii), signature check",
+    "test/ctx-reaper.test.mjs": "new: 11 reaper cases including the three live orphans and runReap",
+    "test/ctx-register-dispositions.test.mjs": "new: 8 register, loop, manifest cases including an end-to-end runF10CadLoop over a fake client"
+  },
+  "counts": {
+    "testsFinal": "155 tests: 153 pass, 0 fail, 2 skipped; counting rule: node --test test/*.test.mjs lines, skipped = the two landing-live cases that need FACTORY_DATABASE_URL",
+    "testsBaseline": "129 pre-existing tests at a70139a with deps installed: 127 pass, 0 fail, 2 skipped",
+    "testsAdded": "26 = 7 determinism + 11 reaper + 8 register; counting rule: test() calls in the three new files",
+    "failingBeforeFix": "7 of 7 determinism tests failed against a70139a src; after the alias-delta change alone 3 passed and 4 failed; after binding order and landing order 7 passed",
+    "registerClassesChanged": "3 of 5 entries gained a dispositions map; 0 class dispositions changed; counting rule: git diff of F10_COUNTY_QUARANTINES"
+  },
+  "constraintsHonored": [
+    "no git commit, push, merge, or gh pr; HEAD a70139a unchanged",
+    "no gcloud run/scheduler; no deploy",
+    "no store write: local PostgreSQL 18 exists on this machine and was deliberately not used; every test runs over fixtures or the in-process fake",
+    "no secret or DATABASE_URL printed; fixture URL is postgres://u@ep-direct.example/factory",
+    "doc_repo writes limited to cp1, cp2, close; no git in doc_repo",
+    "job templates untouched (A-019)",
+    "no check widened to admit a failing case; the negative fixture (b) fails the replay check by construction"
+  ],
+  "open": [
+    "The 48055 signature on the card (atomId and atomDid differ, nodeId and claim hash equal) is unreachable from this tree for one landing row; the planner reads run_events for 1956886d leg=replay fieldDiff.fields to see whether it was the binding-order signature [atomId, nodeId, atomDid] or the tie-order signature [atomId, atomDid, claim]; both are fixed here either way.",
+    "Replay hydration now excludes rows stamped at this run's knowledgeAt so fixture (b) can fire; the card's literal (a) wording had pass two reading pass one's rows, under which a random mint is invisible to the check. Planner accepts or the filter comes out with (b) marked unable to fire.",
+    "Tier-1 binding is earliest-known first: counties with random-era alias sets (48055 four per key, Bastrop 3.18 per key by the card's arithmetic) keep binding to the earliest random-era node, not the deterministic one; a repoint to deterministic ids is a V9 decision outside this card.",
+    "Persisting the emitted alias set per chunk means one new era row per key per run; the aliases table keeps growing one set per run. Reusing the earliest era when the binding is unchanged would stop it; era semantics decision for the planner.",
+    "Migration 0004 must be applied (factory-conformant-migrate) before the loop or manifest-read runs on the new image; an unapplied column fails the f10_county_runs INSERT and the manifest degraded SELECT loud, never silently."
+  ],
+  "leave_behind": [
+    { "item": "branch seat/property-ctx-replay with uncommitted work in P:/seat-worktrees/property/hauska-factory-ctx-replay", "owner": "planner", "plan_row": "F-10 F-19 F-03" },
+    { "item": "migrations/0004_f10_degraded.sql to apply via factory-conformant-migrate before the first loop on the new image", "owner": "planner", "plan_row": "F-10" },
+    { "item": "three live orphans 309a07ab, 1bd6316f, c536c8c6 reconcile on the first scheduled reap after deploy; planner reads the rows", "owner": "planner", "plan_row": "F-03" },
+    { "item": "f10-cad-loop.mjs does not terminate a child run when executeFn or waitFn throws; the reaper now covers it, the loop itself still leaves the row started", "owner": "property", "plan_row": "F-10 backlog" },
+    { "item": "landing-import terminates with 86400 but declares no scope.max_duration_s, so the reaper default 3600 applies; add max_duration_s to its scope", "owner": "property", "plan_row": "F-03 backlog" },
+    { "item": "diff.mjs keys cad atoms by prop_id last-wins and reports only the first divergent key; a multi-atom key is invisible; consider allDivergences from the test helper as the triage instrument", "owner": "property", "plan_row": "F-19 backlog" },
+    { "item": "ensureDefectRow replaces cells wholesale on conflict; degraded county cells are therefore recorded in defect_events, not in defects.cells", "owner": "property", "plan_row": "F-10 backlog" }
+  ],
+  "fleetMemory": {
+    "LESSON": [
+      "A replay that hydrates what the first pass persisted is internal consistency: a random mint passed it. Cold replay must read the state the run started from (knowledge_at < run knowledgeAt).",
+      "atomId is a pure function of (nodeId, claim, logicVersion); a diff claiming atomId differs while both agree is a reading to re-verify, not a mechanism to hunt.",
+      "The card's staged-atom counts encode the hydrated alias count: 48055 783,710 = 4.0 prior sets per key; 48085 2,174,668 = 0 prior sets. Arithmetic on a symptom is a free instrument."
+    ],
+    "DEAD-END": [
+      "Adding ORDER BY to loadAliasRows as the binding-order fix: it would be a second implementation of one rule next to the in-memory sort; the sort in resolveCandidate is the single control and the fake returns rows unordered on purpose.",
+      "Running the migration against the local PostgreSQL 18: refused under the no-database rule; CI's migrate step exercises it."
+    ],
+    "GROUND-TRUTH": [
+      "2026-08-28T08:50Z hauska-factory worktree a70139a + this diff: node --test 155/153/0/2.",
+      "2026-08-28T08:00Z tree src equals the lineage the 3e1bbea0 image was built from (git diff 84f1d1c a70139a = cloudbuild.conformant.yaml only)."
+    ],
+    "OPEN": [
+      "run_events 1956886d leg=replay fieldDiff.fields decides the 48055 mechanism.",
+      "Aliases table era growth per run: keep literal (one row per run) or reuse earliest era."
+    ]
+  }
+}

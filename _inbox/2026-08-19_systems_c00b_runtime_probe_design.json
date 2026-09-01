@@ -1,0 +1,77 @@
+{
+  "artifact": "systems_c00b_runtime_probe_design",
+  "control": "C-00b",
+  "seat": "systems agent",
+  "status": "design_handoff_not_built",
+  "date": "2026-08-19",
+  "operatorRuling": "Build separately from C-00. Meaning shaped doctrine-reach measurement.",
+
+  "problem": {
+    "currentMethod": "Fleet inventory classifies seats as reached/partial/not reached by reading configuration files (CLAUDE.md, .cursor/rules, settings.json, dispatch injection markers).",
+    "defect": "Presence shaped inference about whether doctrine actually loaded. A file on disk is not instruction received."
+  },
+
+  "derivationClass": "meaning_shaped",
+  "partyA": "Expected doctrine at repo HEAD — ENFORCEMENT.md hash, required sections, @ENFORCEMENT.md in CLAUDE.md when Claude Code",
+  "partyB": "Instruction payload the running agent received at session start — exported by probe hook or session introspection",
+  "pass": "Agreement on hash or required section markers",
+  "fail": "Disagreement — doctrine absent or truncated",
+  "refuse": "Either party unavailable — do not infer reach",
+
+  "probeShape": {
+    "name": "doctrine-reach-probe",
+    "modes": [
+      {
+        "id": "claude-code",
+        "trigger": "SessionStart hook or first substantive turn",
+        "capture": "List of @-imported files + first N chars hash of ENFORCEMENT body if loaded; report if @ENFORCEMENT.md missing from imports"
+      },
+      {
+        "id": "cursor",
+        "trigger": "First agent turn in workspace (manual or scheduled sample)",
+        "capture": "alwaysApply rules loaded — grep session for enforcement.mdc markers or ask agent to echo ENFORCEMENT governing-rule first line"
+      },
+      {
+        "id": "compiled-dispatch",
+        "trigger": "After dispatch compile, before lane start",
+        "capture": "CANON-PREAMBLE hash + AGENT-CONTRACT hash present in injected block (already partially covered by canon-gate; this probe confirms receipt not just file existence)"
+      }
+    ],
+    "outputSchema": {
+      "seat": "string",
+      "harness": "claude-code | cursor | other",
+      "repo": "absolute path",
+      "head": "git sha",
+      "expectedEnforcementHash": "sha256 first 8 of ENFORCEMENT.md",
+      "receivedEnforcementHash": "sha256 first 8 or null",
+      "reach": "reached | partial | not_reached | probe_failed",
+      "probeFailedReason": "string if probe_failed"
+    },
+    "storage": "_catalog/doctrine_reach_probes.jsonl — append only, counted weekly",
+    "gate": {
+      "executor": "scripts/enforcement/c-00b-doctrine-reach-probe.mjs + harness-specific capture",
+      "trigger": "weekly fleet sample + any lane close citing doctrine",
+      "fails": "non-zero when any probed production seat is not_reached",
+      "bypasses": "seats explicitly listed uncovered in fleet inventory with operator acknowledgment"
+    }
+  },
+
+  "implementationOrder": [
+    "1. doc_repo self-sample (Claude @ENFORCEMENT.md + Cursor enforcement.mdc)",
+    "2. Append-only jsonl + counter in _catalog/",
+    "3. Weekly report script listing not_reached seats",
+    "4. Extend to product repos as ENFORCEMENT lands per repo"
+  ],
+
+  "notInScope": [
+    "C-00 byte sync (internal consistency — separate script built)",
+    "Substrate T-25 enumeration (property/markets seats)",
+    "Arming branch prune or durability sweep"
+  ],
+
+  "acceptanceWhenBuilt": [
+    "Probe run on doc_repo Cursor + Claude Code; both report reached with matching hash",
+    "Deliberately truncate enforcement.mdc; probe reports not_reached",
+    "Fleet inventory updated from probe jsonl, not from config inference alone"
+  ]
+}

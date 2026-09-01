@@ -1,0 +1,57 @@
+{
+  "checkpoint": "CP1",
+  "lane": "P2-JURIS-SESSION",
+  "card": "_dispatches/2026-08-30_p2-juris-session_dispatch.md",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-30T22:55:00Z",
+  "seat": "property (hauska-factory-p2-juris worktree); deepest worker; no sub-agents; no commit; no store connection",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris, branch seat/property-ctx-p2-juris, HEAD 7f41f52328ec40da0480d5eb65aad09ca3d4c3f9 (= origin/main 7f41f52). Existing sql/p2-juris/ uncommitted from the read-half card.",
+    "doc_repo": "P:/doc_repo inbox writes only; planner-owned commits",
+    "stores": "NONE. Card forbids Neon URI mint, persist, migrate, job start. Live TOTALS stay UNMEASURED."
+  },
+  "missionPremise": "Supervisor hole: 00 sets default_transaction_read_only = on, then 01 CREATE TEMP TABLE. Postgres and Neon replicas refuse that, so the session is not planner-runnable on a short-lived RO URI. Source: _inbox/2026-08-30_p2-juris_supervisor_review.md hole 1; dispatch 2026-08-30_p2-juris-session.",
+  "chosenFix": "CTE rewrite (option 1), not the RO-prove-and-keep-temps option. Temps on a second connection would still not make 01 runnable on the RO URI the card asks for.",
+  "design": {
+    "01": "One WITH MATERIALIZED pipeline (cities, parcels_six, parcel_hits, parcel_jurisdiction, parcel_slivers). No DROP/CREATE TEMP/CREATE INDEX. Reports TOTALS (native columns) plus BY_COUNTY / METHOD / SLIVERS / DENOM_CHECK / CDP_ASSERT / CITY_TABLE_CDP / KYLE_IN / RURAL_BASTROP / UNRESOLVED_AFTER as jsonb on the same row so the 981k join runs once.",
+    "00": "Keeps SET default_transaction_read_only = on and statement_timeout 180s. Adds empty-city RAISE (fail closed). Adds a durable CREATE TABLE probe that must refuse; proving RO with CREATE TEMP TABLE is the hole and is not used.",
+    "02": "City-county probes only (Coupland, straddles). Own cities/counties CTEs. Parcel probes live on the 01 row.",
+    "03": "City-county overlap as CTEs. Roster is VALUES, not TEMP+INSERT. PERSIST_SPEC stays SELECT. UPDATE stays commented.",
+    "04": "Seed-only CDP/unknown reports as VALUES CTE. Parcel-matched ALIAS_DISAGREE is not re-run (would be a second 180s join). leave_behind.",
+    "05": "EXPLAIN of the same cities JOIN parcels CTE. No LATERAL. No temp names.",
+    "keep": [
+      "zone-major FROM cities JOIN parcels on btree bbox then ST_Intersects",
+      "floor 1e-8 deg2 on ring hits only",
+      "empty city table fail-closed",
+      "reconcile 357269 / 624141 / 981410; material miss = join wrong",
+      "no CDP place_fips; unincorporated is the disposition",
+      "03 PERSIST_SPEC leave_behind; do not execute persist"
+    ],
+    "tieBreak": "DISTINCT ON (county_fips, prop_id) ORDER BY feature_index NULLS LAST, then west/south/east/north. Named so a null or tied feature_index is not an arbitrary winner."
+  },
+  "adversarial": [
+    {
+      "risk": "Doing both options half-way: CTE rewrite plus temps on a second connection",
+      "response": "Option 1 only. No CREATE TEMP in 00-05. Durable CREATE TABLE in 00 is the RO refuse probe, not a temp path."
+    },
+    {
+      "risk": "Repeating the 981k join per report, or losing native TOTALS columns",
+      "response": "One WITH. TOTALS stay native columns on the single result row. Other reports are jsonb on that row."
+    },
+    {
+      "risk": "Empty tx_city_boundary emits 981k unincorporated and a green-looking TOTALS miss that is really a missing table",
+      "response": "00 and 01 RAISE before the join. totals also CASE-guards on zero usable city geoms (1/0)."
+    },
+    {
+      "risk": "LATERAL sneaks back as a decode convenience",
+      "response": "Decode stays WITH decoded. Guard script fails on LATERAL in executable 01/05."
+    }
+  ],
+  "outOfScope": [
+    "Mint or print a Neon URI",
+    "Persist / city_manifest UPDATE / adoptRoster change",
+    "Commit, push, deploy, job start, migration apply",
+    "Live TOTALS (planner runs 01)",
+    "Other Factory worktrees"
+  ]
+}

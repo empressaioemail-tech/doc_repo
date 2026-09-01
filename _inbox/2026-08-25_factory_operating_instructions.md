@@ -15,6 +15,7 @@ related:
   - 90_runbooks/factory_1_5_acquisition_staging.md
   - 90_runbooks/factory_1_statewide_fabric.md
   - 90_runbooks/factory_2_jurisdiction_depth.md
+  - _inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md
 ---
 
 # Factory operating instructions
@@ -63,11 +64,15 @@ ready:true means already serving on a named hop. It does not mean write-allowed.
 
 P-25, P-09, and roads COVER stay `ready:false`. No Factory 1 `--apply`. No CAMA zip. No COVER restart.
 
+## Cad-ingest apply gate
+
+No leftover or CAMA apply starts until `node scripts/cad-ingest-apply-gate.mjs --check --packet <path>` PASSes. Missing packet is a refuse. Copy `scripts/fixtures/cad-ingest-apply-gate/packet.template.json`. Census is GROUP BY tax_year with no `tax_year =` filter. Path comes from leftover-year n, not from the prompt. Packet `ldtSha` must equal `46e1a5a1`. Missing or other SHA is a refuse. Caldwell 2025 rows stay as written. Do not flip L17. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md`.
+
 ## Next legal write
 
-P-78 on an isolated LDT tree from `origin/main`. Spec `_inbox/2026-08-24_p78_cad_property_merge_SPEC.md`. Fixtures `node scripts/p78-merge-fixtures-selftest.mjs` must stay green. P-78 writes `cad_property`. It does not take the atoms slot. It does not mint parcel-node atoms. When a later card applies `cad-parcel-roll` / land-use / owner, that apply uses the P-55 helper.
+P-78 merge is already on serving main (`#477` `72cffc8`). Caldwell 48055, Bastrop 48021, and Hays 48209 leftover already landed. County 4 waits on a named FIPS and a PASS packet. Do not pick 48021 again. Do not rewrite 48055 or 48209.
 
-P-75 LDT #475 and P-76 LDT #476 serve on `cortex-api-00579-teh` at SHA `403d8010`. Do not re-merge them.
+P-75 LDT #475 and P-76 LDT #476 serve. Do not re-merge them.
 
 ## Memory
 

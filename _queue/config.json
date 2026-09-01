@@ -1,0 +1,31 @@
+{
+  "_purpose": "Seat queue configuration. Read by scripts/queue/lib.mjs. Every value here is enforced by a refusal in evaluateClaim, not by a sentence in a card.",
+  "lease_ttl_minutes": 90,
+  "stores": [
+    "cortex-prod",
+    "hauska-factory"
+  ],
+  "maintenance_windows": [
+    {
+      "store": "cortex-prod",
+      "weekday": 2,
+      "start_utc": "05:00",
+      "end_utc": "06:00",
+      "note": "Neon scheduled updates. Cost two runs on 2026-09-01: forced a defensive termination of fb490620 at 04:14Z and made a run card unsafe to send. Scale-to-zero is disabled on both computes and does not help; they still restart for updates in this window. Delete this entry only when the window has actually been moved in the Neon console, never because a run got lucky."
+    },
+    {
+      "store": "hauska-factory",
+      "weekday": 2,
+      "start_utc": "05:00",
+      "end_utc": "06:00",
+      "note": "Control store, project withered-surf-26870298. Same window. Its suspend_compute events at 22:45:31Z and 00:25:31Z on 2026-08-31 matched the 57P01 deaths exactly."
+    }
+  ],
+  "_weekday_note": "weekday is JS getUTCDay(): 0=Sunday, 2=Tuesday.",
+  "_boundary_note": "A window is [start, end) in UTC. 05:00 is inside, 06:00 is outside. Both edges are asserted in scripts/queue/self-test.mjs.",
+  "idle_poll_seconds": 1200,
+  "dep_watch_poll_seconds": 300,
+  "_pacing_note": "next-wake returns 0 when something is claimable, the exact unblock time when it is knowable (window end, token expiry, lease expiry), dep_watch_poll_seconds when the only thing in the way is a dependency ANOTHER SEAT IS CURRENTLY WORKING, and idle_poll_seconds when nobody has started the card in front. Clamped to the ScheduleWakeup range [60,3600].",
+  "_token_lifetime_note": "The store token expires WITH the claim, not on its own TTL. store_ttl_minutes was removed 2026-09-01: it was 60 against a 90-minute lease, so a lane could hold a card and be mid-work for 30 minutes with no token, while another lane could legitimately take the store. A token that outlives shorter than the work needing it protects nothing.",
+  "_store_token_note": "Store token removed 2026-09-01. Counties do not conflict with each other."
+}

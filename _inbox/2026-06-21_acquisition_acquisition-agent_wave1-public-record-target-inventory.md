@@ -123,7 +123,7 @@ Backtest requires **edition in effect at case date** ([`02_base_calibration_boot
 
 | Flag | Target | Why |
 |---|---|---|
-| **Pull first** | Bastrop MyGov (city) | Existing SmartCity scraper, Address Lookup, permit + variance + code enforcement modules, deepest operational familiarity |
+| ~~**Pull first**~~ **FORBIDDEN 2026-08-31** | ~~Bastrop MyGov (city)~~ | **DO NOT PULL. Operator ruling 2026-08-31.** Bastrop is a SmartCity OS customer and MyGov is TENANT DATA. Routing it into the property product pools a tenant's private data into a shared asset, which the tenant-sovereignty commitment forbids, and "existing SmartCity scraper / deepest operational familiarity" is the privileged-relationship path the no-privileged-data rule forbids by name. Use a uniform public source or serve nothing. |
 | **Bulk anchor** | Austin Issued Construction Permits CSV | ~2.35M issued permits, direct API, lowest extraction cost |
 | **Bulk anchor** | San Antonio Open Data + Legacy Portal | ~20+ years issued permits across two systems; variance CSV |
 | **Export pattern to prototype** | San Marcos MyPermitNow "Advanced Reporting" CSV | Documented bulk-export workflow; test before Clariti split |
@@ -158,7 +158,7 @@ Dependency: edition dates must land before or alongside case pulls for K2 retrod
 
 ### What to pull first
 
-1. **Bastrop MyGov module inventory** (read-only recon pull, single address canary): enumerate API/HTML endpoints behind Address Lookup, permit statuses, inspection steps, code-enforcement request types. No mass storage until raw-ledger landing path confirmed with cc-agent-C (F3).
+1. ~~**Bastrop MyGov module inventory**~~ **STRUCK 2026-08-31 by operator ruling. Do not enumerate, recon, canary or pull Bastrop MyGov.** It is tenant data belonging to a SmartCity OS customer. Read-only recon is still access to tenant data and is still forbidden. Start at item 2.
 2. **Austin** — full `3syk-w9eu` CSV + `ykxk-t5y9` BOA CSV via SODA API.
 3. **San Antonio** — `PERMITS ISSUED 2020-2024.csv` + variance/BOA CSV + scripted legacy portal queries for sample addresses (prove pagination/retention behavior).
 4. **Edition bundle v0** — Bastrop + Austin adoption ordinance PDFs and Municode Previous Versions exports for the same date windows as the permit samples.
@@ -241,4 +241,4 @@ K1 Wave 2 acquisition pulls can begin once:
 2. Operator confirms GCS landing bucket (or interim `_inbox/acquisition_staging/` policy for dev-only).
 3. cc-agent-C stamps F3 raw-ledger minimum manifest schema.
 
-Recommended first dispatch: **K1-W2-A Bastrop MyGov module recon + Austin CSV pull + edition bundle v0 (Bastrop/Austin).**
+~~Recommended first dispatch: **K1-W2-A Bastrop MyGov module recon**~~ **STRUCK 2026-08-31.** The Bastrop MyGov half is forbidden per the operator ruling above. The Austin CSV pull and edition bundle v0 stand. Corrected 2026-08-31; see `_inbox/2026-08-31_capability_inventory.md`.

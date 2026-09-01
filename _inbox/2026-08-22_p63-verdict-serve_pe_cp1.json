@@ -1,0 +1,123 @@
+{
+  "lane": "p63-verdict-serve-pe",
+  "track": "B",
+  "artifact": "cp1",
+  "kind": "design / pre-build adversarial checkpoint",
+  "date": "2026-08-22",
+  "filedAt": "2026-08-22T19:12:00Z",
+  "planRows": ["P-63"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "_inbox/2026-08-22_verdict_layer_serve_WDLL.md",
+  "wdllItems": ["1 (display)"],
+  "dispatch": "_dispatches/2026-08-23_p63-verdict-serve_dispatch.md",
+  "repo": "hauska-map",
+  "worktree": "P:/seat-worktrees/property/hauska-map",
+  "branch": "seat/property",
+  "snapshot": {
+    "hauskaMapWorktree": "P:/seat-worktrees/property/hauska-map",
+    "hauskaMapBranch": "seat/property",
+    "hauskaMapHead": "f80035797c2f71f557f1118c5e38bb8bcafbeb6a",
+    "docRepoWrites": "_inbox/2026-08-22_p63-verdict-serve_pe_cp1.json only",
+    "seat": "property",
+    "forbidden": ["commit", "merge", "push", "deploy"]
+  },
+
+  "missionPremise": "PE inspect must render doc-19 layer absence verdicts when cortex returns them on GET facets. No silent empty rows for structural/zoning families. Track A (cortex) not yet serving verdict wires on live GET — PE mapper + UI ship first against fixtures.",
+
+  "completionPredicate": "deriveBakedCardModel reads LayerWire on livingAreaSqft and LayerAbsenceWire on zoning; FacetRow renders verdict string + basis + provenance chips (authority/scope/asOf/basis). Silent-empty structural (facetCoverage.structural=true, no wire) surfaces data-silent-empty defect, not success. Unit tests pass; live metro GET remains red until Track A deploy.",
+
+  "schemaDesign": {
+    "vocabulary": ["absent-verified", "lookup-failed", "not-applicable"],
+    "layerAbsenceWire": {
+      "status": "absent",
+      "required": ["verdict", "authority", "scopeSearched", "asOf", "basis"]
+    },
+    "populatedLayerWire": {
+      "status": "populated",
+      "required": ["value"]
+    },
+    "payloadFields": {
+      "facets.livingAreaSqft": "LayerWire<number> — structural / living_area_sqft family",
+      "facets.zoning": "{ district } | LayerAbsenceWire — not-applicable for unincorporated",
+      "facets.facetCoverage.structural": "boolean — when true, empty chain without verdict is defect"
+    },
+    "cardModel": {
+      "livingArea": "CardFacet with optional layerAbsence + silentEmpty",
+      "zoning": "existing declineReason path OR LayerAbsenceWire (verdict takes precedence)"
+    },
+    "ui": {
+      "row": "FacetRow data-verdict + data-silent-empty",
+      "basis": "always visible in layer-absence-basis block",
+      "chips": "chipsForLayerAbsence → AtomChip pattern (authority, scope, asOf, basis)",
+      "verdictColors": {
+        "lookup-failed": "semantic-warning",
+        "not-applicable": "semantic-not-applicable (#A78BFA)",
+        "absent-verified": "semantic-absence"
+      }
+    }
+  },
+
+  "threeQuestionGate": {
+    "control": "vitest on layer-absence.ts, baked-facets.test.ts (P-63 describe), InspectCard.test.tsx (FacetRow verdict describe)",
+    "whatExecutesIt": "pnpm --filter property-explorer test",
+    "whatTriggersIt": "local Track B lane; planner PR CI after review",
+    "whatFailsWhenViolated": "test fail if lookup-failed collapses to atom-miss, not-applicable equals absent-verified render, or silent-empty structural passes without data-silent-empty",
+    "whatBypassesIt": "live GET until cortex Track A deploys verdict fields; FacetRow without onLayerChipToggle hides chips but basis block still renders"
+  },
+
+  "predictions": {
+    "lookupFailedRendersBasis": {
+      "expect": "FacetRow HTML contains data-verdict=lookup-failed and bulk_primary basis text",
+      "falsifier": "verdict missing, basis hidden, or value is atom-miss"
+    },
+    "notApplicableDistinctFromAbsentVerified": {
+      "expect": "zoning not-applicable and livingArea absent-verified produce different data-verdict attributes",
+      "falsifier": "same verdict string or shared generic not-verified-here"
+    },
+    "silentEmptyNotSuccess": {
+      "expect": "deriveBakedCardModel sets silentEmpty=true when structural coverage true and no livingAreaSqft wire",
+      "falsifier": "livingArea.state unknown or absent without silentEmpty flag"
+    },
+    "liveMetroStillRed": {
+      "expect": "live Tarrant/Dallas GET has no livingAreaSqft verdict until Track A merge+deploy",
+      "falsifier": "live GET returns lookup-failed with basis before Track A ships",
+      "status": "documented dependency — it.todo in baked-facets.test.ts"
+    }
+  },
+
+  "filesChanged": [
+    "apps/property-explorer/src/lib/layer-absence.ts (new)",
+    "apps/property-explorer/src/lib/baked-facets.ts",
+    "apps/property-explorer/src/lib/baked-facets.test.ts",
+    "apps/property-explorer/src/browse/InspectCard.tsx",
+    "apps/property-explorer/src/browse/InspectCard.test.tsx"
+  ],
+
+  "testResults": {
+    "command": "pnpm --filter property-explorer test",
+    "exitCode": 0,
+    "passed": 995,
+    "todo": 1,
+    "failed": 0,
+    "note": "1 todo = live metro GET lookup-failed (cortex Track A dependency)"
+  },
+
+  "blockers": [
+    {
+      "id": "track-a-schema",
+      "owner": "cortex Track A",
+      "description": "Live inspect GET does not yet carry livingAreaSqft LayerWire or zoning LayerAbsenceWire — PE is fixture-ready only"
+    },
+    {
+      "id": "bff-forward",
+      "owner": "PE BFF if needed",
+      "description": "mergeBakedBaseFacts / atom-chain adapter may need to forward new layer fields from cortex root — not touched this pass; verify at CP2 when Track A lands"
+    }
+  ],
+
+  "leave_behind": {
+    "item": "uncommitted diffs on seat/property hauska-map worktree",
+    "owner": "property seat lane planner",
+    "plan_row": "P-63"
+  }
+}

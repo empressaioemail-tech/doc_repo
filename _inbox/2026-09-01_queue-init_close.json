@@ -1,0 +1,129 @@
+{
+  "lane": "QUEUE-INIT",
+  "planRows": ["F-00"],
+  "closedAt": "2026-09-01T05:41:00Z",
+  "seat": "hooks integration P:/doc_repo main 3adae1e; operator assigned seat property for the loop",
+  "dispatch": "_dispatches/2026-09-01_queue-init_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-01_queue-init_cp1.json",
+    "_inbox/2026-09-01_queue-init_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 3adae1e1316c52eb204b9c0dc61120e16c81eacc",
+    "clock": "2026-09-01T05:39:32Z after release; board left with factory-merges CLAIMABLE",
+    "maintenance_window": "Tuesday 05:00-06:00 UTC live; no temporary window added"
+  },
+  "missionPremise": "The queue refuses; a passing self-test is the planner checking the planner. Source: _dispatches/2026-09-01_queue-init_dispatch.md; _decisions/2026-09-01_seat_queue_protocol.md.",
+  "completionPredicate": "Five constructed violations observed (WRONG_SEAT, STORE_TOKEN_HELD, MAINTENANCE_WINDOW, ALREADY_CLAIMED, expired lease returns claimable). Bypass paths named. Close names what contradicted the card. Board left claimable for the property loop. leave_behind named.",
+  "scopeBasis": "doc_repo queue files and CLI only. No Factory image rebuild. factory-merges was claimed only as a verification lease and released; the loop takes it as the first real card.",
+  "prs": "not applicable: doc_repo lane",
+  "mergeShas": "not applicable: doc_repo lane",
+  "ciConclusion": "not applicable: doc_repo lane",
+  "constructedViolations": [
+    {
+      "code": "WRONG_SEAT",
+      "construct": "claim factory-merges --seat govtech --worktree P:/seat-worktrees/govtech/smartcity-dashboards --branch seat/govtech",
+      "refused": true,
+      "detail": "card targets repo hauska-factory which belongs to seat property, not govtech"
+    },
+    {
+      "code": "MAINTENANCE_WINDOW",
+      "construct": "claim ctx-totals --seat property at 2026-09-01T05:38:52Z inside the live Tuesday window",
+      "refused": true,
+      "detail": "store cortex-prod is inside its maintenance window 05:00-06:00 UTC"
+    },
+    {
+      "code": "STORE_TOKEN_HELD",
+      "construct": "wrote _queue/tokens/store.json held by dummy card queue-init-probe",
+      "firstAttempt": {
+        "writer": "PowerShell ConvertTo-Json + Set-Content -Encoding utf8",
+        "refusedStoreTokenHeld": false,
+        "onlyCode": "MAINTENANCE_WINDOW",
+        "mechanism": "readJson catch-returns null. A UTF-8 BOM or otherwise unparseable tokens file is treated as no tokens."
+      },
+      "secondAttempt": {
+        "writer": "node fs.writeFileSync, 171 bytes, BOM false",
+        "refused": true,
+        "codes": ["STORE_TOKEN_HELD", "MAINTENANCE_WINDOW"],
+        "detail": "store cortex-prod held by card queue-init-probe (seat property) until 2026-09-01T06:39:14.941Z"
+      },
+      "tokenRemovedAfter": true
+    },
+    {
+      "code": "ALREADY_CLAIMED",
+      "construct": "claim factory-merges as property, then claim again",
+      "first": "GRANTED until 2026-09-01T07:09:21.565Z",
+      "second": "REFUSED ALREADY_CLAIMED held by property"
+    },
+    {
+      "code": "expired lease returns claimable",
+      "construct": "overwrote claim.json expires_at to 2026-09-01T04:01:00.000Z",
+      "evaluateClaim": "ok true",
+      "status": "CLAIMABLE factory-merges",
+      "reclaim": "GRANTED",
+      "released": true,
+      "stuck": false
+    }
+  ],
+  "bypassPaths": [
+    {
+      "path": "Do the work without running claim. gh merge, git push, gcloud jobs execute, neon SQL, and any editor on a registered worktree never consult the queue.",
+      "shouldClose": false,
+      "why": "Closing this would wrap every write path and turn the queue into a dispatcher. The protocol forbids that. Honestly advisory at those points."
+    },
+    {
+      "path": "Write claim.json, tokens/store.json, card.json, or a close artifact by hand. This seat did the first two for the lease and token constructs.",
+      "shouldClose": false,
+      "why": "The files are the state. A seat that will not ask will not be stopped by prettier files. Advisory, same as not running claim."
+    },
+    {
+      "path": "Pass --seat property from the integration checkout P:/doc_repo on main. The CLI does not check cwd against the seat worktree.",
+      "shouldClose": false,
+      "why": "The operator assigned this chat to seat property. A cwd check would have refused the assigned loop. Seat identity at claim time is a string, not a location."
+    },
+    {
+      "path": "Pass any --worktree and --branch. claim records them and does not check they exist or are in seat_register.",
+      "shouldClose": true,
+      "why": "The dispatch said do not claim a card you cannot name a worktree and branch for. The CLI requires the flags and then believes them. A grant that names a path the seat does not hold is a forged location."
+    },
+    {
+      "path": "readJson fail-open: a tokens or claim file that exists and does not parse is treated as absent.",
+      "shouldClose": true,
+      "why": "This seat's first STORE_TOKEN_HELD construct produced a file and the refusal did not fire. A control that cannot read its own record and reports no token is silent degradation. If the file exists and cannot be parsed, claim should refuse, not proceed as if the store is free."
+    },
+    {
+      "path": "Edit config.json (empty the window, change weekday) or seat_register.json (move hauska-factory onto another seat).",
+      "shouldClose": false,
+      "why": "Those files are the policy. Anyone who can edit them already owns the control. Advisory."
+    },
+    {
+      "path": "release --force on another seat's claim.",
+      "shouldClose": false,
+      "why": "Named hatch; dispatch already forbids it without an operator ruling."
+    }
+  ],
+  "refusalsWrongOrMissing": {
+    "wrong": "none of the five specified refusals granted when they should have refused, once the token file was parseable",
+    "missing": "no refusal for an unreadable tokens file; no refusal for a worktree/branch that is not registered or does not exist; no refusal when --seat does not match the invoking checkout"
+  },
+  "whatContradictedTheCard": "The card implied that constructing a held token is enough to fire STORE_TOKEN_HELD. The first construct wrote _queue/tokens/store.json and the CLI refused only MAINTENANCE_WINDOW. readJson returned null, so a present file was no token. A second construct with node-written JSON then fired STORE_TOKEN_HELD. That is the contradiction: the store token is a parsed object, not a file on disk. The decision record is also stale against the tree it describes: it still says 24 assertions and nine refusals; README and self-test.mjs now say 40 cases and ten refusals including NEEDS_OPERATOR_GO. Nothing else on the specified list contradicted the card. factory-merges was CLAIMABLE, the two store cards were refused until 06:00 UTC, and an expired lease became claimable rather than stuck.",
+  "leave_behind": "none",
+  "constraintsHonored": [
+    "did not treat the self-test as evidence",
+    "did not leave a live claim or a constructed token on the board",
+    "did not use release --force",
+    "did not rebuild a Factory image",
+    "did not write another seat's _queue namespace; govtech.jsonl was appended only by the WRONG_SEAT claim as that seat, which is the log the CLI owns for that invocation"
+  ],
+  "open": [
+    "property seat loop takes factory-merges next",
+    "readJson fail-open on tokens/claim files is unfixed; returned as a lesson, not patched on this card",
+    "worktree/branch not checked against seat_register; returned as a lesson"
+  ],
+  "scratch": {
+    "LESSON": "A tokens file that exists and does not parse is treated as no tokens. Windows PowerShell Set-Content -Encoding utf8 writes a BOM; readJson catch-returns null. Construct store tokens with node fs.writeFileSync, and treat an unreadable tokens file as a refuse-shaped defect, not as a free store.",
+    "DEAD-END": "PowerShell ConvertTo-Json token write as a STORE_TOKEN_HELD construct. The file was visible to Get-Content and invisible to evaluateClaim.",
+    "GROUND-TRUTH": "2026-09-01T05:39:32Z board: factory-merges CLAIMABLE; ctx-totals and owner-backfill MAINTENANCE_WINDOW until 06:00:00Z; no live claim; no store token.",
+    "OPEN": "Loop claims factory-merges. Store cards stay refused until 06:00Z and then need cortex-prod credentials this seat does not have; stop there rather than claiming them."
+  }
+}

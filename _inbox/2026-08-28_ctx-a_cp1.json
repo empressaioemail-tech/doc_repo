@@ -1,0 +1,53 @@
+{
+  "lane": "ctx-a",
+  "planRow": ["F-10", "F-19", "F-03"],
+  "checkpoint": "CP1",
+  "filedAt": "2026-08-28T08:05:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-replay",
+    "branch": "seat/property-ctx-replay",
+    "head": "a70139a4de48fd099a28391cd77646d7ab38061e",
+    "treeVsImageLineage": "git diff 84f1d1c a70139a --stat = cloudbuild.conformant.yaml only; src identical to the tree the 3e1bbea0 image was built from",
+    "atomContract": "1.30.0 (npm ci in worktree; baseline npm test before install failed 5 files on ERR_MODULE_NOT_FOUND, environmental)",
+    "docRepoReadOnly": ["90_runbooks/AGENT_CONTRACT.md", "90_runbooks/DEV_PROCESS.md", "90_operations/OPS-19 A-019/A-020/A-021", "_blueprint/40_rule_register.md BP-WRITE-01 BP-VERIFY-01", "_inbox/2026-08-28_ctx_a_replay_reaper_dispositions_WDLL.md", "_inbox/2026-08-28_f10_criterion3_replay_diff.json"]
+  },
+  "missionPremise": "OPS-19 A-020 (Central Texas first; the reaper and any fix that keeps a job from lying in the ledger are not deferred) and the CTX card A WDLL. Three hauska-factory defects: (1) pipelineFromRows stages rs.aliases, the cumulative hydrated store, per chunk, so replay is non-identical by construction; (2) reap.mjs reaches only runs whose scope names an execution or whose start is within 90 s of some execution, so f10-county children, publish runs and control runs sit at started forever; (3) TX-TRAVIS-JOIN, TX-HAYS-LANDUSE, TX-SITUS-SENTINELS block the Central Texas write outright although none is a CAD-roll write defect.",
+  "completionPredicate": "node --test green in the worktree with: (a) a two-pass fixture through processCountyCadChunks and replayCountyCadChunks where pass two hydrates from pass one's persisted aliases and chunkFingerprintRoll is identical; (b) the same fixture with an injected non-deterministic mint reports identical=false; (c) per-chunk staged atoms = candidates x 2 with hydrated aliases present, no cumulative growth; a reaper test where an old started run with no execution is terminated orphaned with a termination_records row and a young run is untouched; a register test where 48453/48209/48021 execute with degraded class ids on the county row and manifest cell and a non-Central-Texas county under the same class still skips. Handback carries diff by file, full test output, the three fixtures, the 48055 cause with a rejected second mechanism, leave_behind. No commit, push, deploy, job, or store write.",
+  "scopeBasis": "Item 4 of the card: writer changes only under item 1 (replay determinism), reaper reconciliation, register disposition and its loop/manifest plumbing, plus a migration adding f10_county_runs.degraded because the card requires the county row to carry the class id and the table has no such column. Out: loop concurrency, F-09, console, diff.mjs redesign, terminating child runs from inside the loop on executeFn failure (named as leave_behind), any change to cloudbuild job templates.",
+  "codeReadingFindings": {
+    "aliasCumulative": "conformant.mjs pipelineFromRows stages rs.aliases (whole store). processCountyCadChunks persists resolveStore.aliases.slice(before) and hydrates once before chunk 1; replayCountyCadChunks hydrates again after pass one persisted, and resolveCandidate's already check (nodeId, validFrom, knowledgeAt equal) suppresses re-emission. Arithmetic on the card's counts: 48055 783,710 = 73,371 + 2H + 123,371 gives H = 293,484 hydrated aliases = exactly 4.0 per key, i.e. four prior alias sets; 48085 2,174,668 = 387,334 + 8H + 1,787,334 gives H = 0, a first-time county. The 48085 diff (alias on second side only) is this mechanism.",
+    "atomIdFormula": "reconcile/index.mjs: atomId = contentId({node: nodeId, claim, logic: logicVersion}); the staged cad atom carries the same nodeId and the same claim object; diff.mjs compares atomId, nodeId, atomDid and contentId(claim). No code path in src mutates a claim or a nodeId after reconcile (grep for .claim =, .nodeId =, Object.assign, delete: none). Therefore a cad key with atomId differing while nodeId and claim hash agree is unreachable from this tree for the same landing row; it must be re-verified against run_events for 1956886d (leg=replay, fieldDiff.fields). Two mechanisms that DO diverge cad atoms across passes were found by reading: (i) tier-1 binding takes [...nodeIds][0] in hydration order and loadAliasRows has no ORDER BY, so a key with several authoritative aliases to different nodes (the random-mint era left 48055 with four per key) can bind to a different node in pass two, signature [atomId, nodeId, atomDid]; (ii) loadCountyLandingPage orders by payload->>'prop_id' only, so duplicate prop_ids can swap order or cross a page boundary between passes, signature [atomId, atomDid, claim] via diff's last-wins keying. Both are fixed under item 1 with their own failing tests; neither produces the card's stated signature, and the harness asserts that.",
+    "reaper": "reaper.mjs reapStartedRuns skips any run without a matched, done execution; matchRunToExecution falls back to the nearest execution start within 90 s across every factory job, which can attach a control or publish run to an unrelated live execution and keep it started. f10-cad-loop.mjs never terminates a child run when executeFn or waitFn throws.",
+    "register": "F10_COUNTY_QUARANTINES carries one disposition per class; classifyCounty skips on any quarantine entry. f10_county_runs has no degraded column; county_manifest payload cells carry railKey/displayState/verdict only."
+  },
+  "design": {
+    "item1": [
+      "resolve/index.mjs: resolveCandidate takes an optional mintFn (default mintDeterministicParcelNode) so the negative fixture can inject a random mint; tier-1 binding sorts matched authoritative aliases by (knowledgeAt, validFrom, nodeId) before choosing, earliest-known node wins and later nodes MERGED_INTO it, independent of hydration order.",
+      "conformant.mjs: pipelineFromRows stages the aliases returned by this chunk's candidates (resolution.alias per candidate, duplicates kept) and returns them as `aliases`; processCountyCadChunks persists chunkOut.aliases (dedup at the aliases conflict target) instead of the store slice; loadCountyLandingPage orders by (payload->>'prop_id', id) so pages are a total order over the immutable landing table.",
+      "test/helpers/fake-factory.mjs: in-process pg-shaped client over landing_cad_property, aliases, write_stage_atoms/edges, run_events, resolution_atoms, adjudication_queue; configurable tie order and hydration order so the fixtures can violate the invariants the fixes enforce."
+    ],
+    "item2": [
+      "reaper.mjs: reapStartedRuns processes parent-less runs before children; a run with a matched live execution is left alone; a matched done execution keeps today's exit-kind path; otherwise a child whose parentRun is no longer started terminates orphaned, and any run older than scope.max_duration_s (default 3600) terminates orphaned; every termination writes termination_records, deletes leases, updates runs.status, and is named in the returned list with reason and age.",
+      "reaper.mjs: execution affinity by phase/command (control runs never match an execution; stage-e-* to factory-conformant; f10-cad-loop to factory-f10-cad-loop; publish commands to their jobs) applied only when executions carry _job, so the 90 s fallback cannot attach a control run to a stranger.",
+      "reap.mjs: reap run scope carries max_duration_s 300 so a stuck reap orphans itself; the returned written list is the log line."
+    ],
+    "item3": [
+      "f10-defect-register.mjs: execute-degraded added to F10_DISPOSITIONS; CENTRAL_TEXAS_FIPS; the three entries gain a per-county dispositions map scoped to 48453 / 48209 / 48021 and 48209; dispositionForCounty and quarantineForCounty resolve per county; assertRegisterScoped refuses execute-degraded outside the slice.",
+      "f10-cad-loop.mjs: classifyCounty executes when every quarantine entry for the county resolves to execute-degraded and carries degraded: [classIds]; still skips when any entry is blocking; the execute path records degraded on f10_county_runs and a county cell with disposition on the defects row; seedF10DefectRegister calls assertRegisterScoped before the work list.",
+      "migrations/0004_f10_degraded.sql: ALTER TABLE f10_county_runs ADD COLUMN IF NOT EXISTS degraded jsonb.",
+      "manifest-read.mjs: readCadCellsFromFactory joins f10_county_runs.degraded per county; materialiseCadCell carries degraded; persistCadManifestCells writes it into the county_manifest payload cell."
+    ]
+  },
+  "adversarial": [
+    "Widening: making the replay check tolerate the alias delta would admit the failing case; instead the staged set is changed so identical is reachable by construction and the negative fixture proves the check still fires.",
+    "Paired controls: an ORDER BY in loadAliasRows plus an in-memory sort would be two implementations of one rule; the in-memory sort in resolveCandidate is the single control, and the fake returns rows unordered on purpose.",
+    "Persisting every emitted alias is redundant work on re-runs; accepted because the card names the conflict target as the dedup point and the cost is bounded per chunk.",
+    "Orphaning by age could terminate a run whose execution is live but missing from the executions list (pagination); mitigated because a run past its own max_duration_s is by contract a failed close (BP-FACTORY-01) and a duplicate termination from the job is already tolerated as the reaper winning.",
+    "A child whose parent terminated may still have a live execution (the loop killed, the conformant job running); a matched live execution wins over the parent rule.",
+    "Register scoping is a ruling that could later widen; assertRegisterScoped fails loud at loop start rather than at import so the loop refuses before any execute.",
+    "The migration must be applied (factory-conformant-migrate) before the loop writes degraded; an unapplied column fails the INSERT loud, never silently."
+  ],
+  "fan": "none; single writer per the dispatch, no sub-agents",
+  "constraints": ["no commit/push/PR", "no deploy/job/scheduler", "no store write; fixtures and in-process fake only", "no secret printed", "doc_repo writes limited to the three checkpoint files"]
+}

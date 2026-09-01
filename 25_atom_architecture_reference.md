@@ -2,13 +2,15 @@
 id: 25_atom_architecture_reference
 title: "@hauska/atom-contract â Architecture reference"
 status: active
-last_updated: 2026-05-18
+last_updated: 2026-08-26
 applies_to: portfolio
 related: [adr_001_atom_architecture, adr_018_atom_contract_substrate_layer, 26_atom_upgrade_guide, 30_smartcity_os, 40_design_accelerator, 41_revit_connector]
 ---
 
 # `@hauska/atom-contract` â Architecture reference
 
+> **Superseded for the model, 2026-08-26.** This document describes the frozen `@hauska/atom-contract` name at 1.5.0 and predates the instrument contract by three months. The model is now [`19_the_instrument_contract.md`](19_the_instrument_contract.md) (ratified 2026-08-22), the graph shape is adjudicated in [`_blueprint/10_model.md`](_blueprint/10_model.md), the write path is [`51_ingestion_pipeline_reference.md`](51_ingestion_pipeline_reference.md) and [`_blueprint/20_pipeline.md`](_blueprint/20_pipeline.md), and the work list is [`24_instrument_conformance_program.md`](24_instrument_conformance_program.md). The published package is `@empressaio/atom-contract` (1.22.0 at this note) and its `dist/*.d.ts` is the tiebreaker. Read those first; where this document disagrees with them, they win. It stays as the historical reference for the 1.x registration layers.
+>
 > **Atom-contract update (2026-06-21).** Published at 1.5.0 with `/conformance` (validateAtomConformance, target 1.5.0) and `/export` (the DownloadableAtom shape), on top of the `/read-contract` three-axis confidence. The conformance target and the downloadable-atom export are the current shape every consumer co-bumps to; "Cortex" is reframed to the reporting function package per the ADR-008 amendment. See [`_architecture_homes/02_atoms_lifecycle_ownership.md`](_architecture_homes/02_atoms_lifecycle_ownership.md).
 >
 > **Architecture spec.** This is the full reference for the atom

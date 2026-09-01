@@ -1,0 +1,40 @@
+{
+  "id": "2026-08-28_ctx-b_cp2",
+  "kind": "cp2",
+  "lane": "ctx-b",
+  "planRows": ["F-06", "F-07", "F-08"],
+  "wdll": "_inbox/2026-08-28_ctx_b_walk_sweep_production_publish_WDLL.md",
+  "cp1": "_inbox/2026-08-28_ctx-b_cp1.json",
+  "filedAt": "2026-08-28T08:40:00Z",
+  "snapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-publish",
+    "branch": "seat/property-ctx-publish",
+    "head": "df5f5e6662ee3a50ca562a7ee8f2e27caaa298cb (merge of origin/main a70139a; the only commit this lane made)",
+    "workingTree": "uncommitted: 8 modified, 2 new files; handed back for planner commit by explicit pathspec"
+  },
+  "missionPremise": "unchanged from CP1: A-021 needs a passed staging sweep walk owned by the publish run before the identical job runs on production; the path at 9b27304 could not deliver it (no sweep, no ownership, guard always-refuse and vacuous-pass, cross-target env fallback).",
+  "completionPredicate": "unchanged from CP1; evaluated at close.",
+  "scopeBasis": "unchanged from CP1.",
+  "pilotEvidence": {
+    "suite": "node --test test/*.test.mjs: 159 tests, 157 pass, 0 fail, 2 skipped (landing-live without FACTORY_DATABASE_URL); baseline 127/125/0/2 at 9b27304, 129/127/0/2 after the merge; +30 tests all in test/publish.test.mjs",
+    "cliViolationProbes": "real entry path node src/cli.mjs with FACTORY_DATABASE_URL unset, each exit 1 with the named code: verify-walk --county=48021 --sweep=9 -> SWEEP_TOO_SMALL; verify-walk --county=48453 -> GOLD_REQUIRED; verify-walk -> COUNTY_REQUIRED; bastrop-publish --target=staging -> COUNTY_REQUIRED; --county=99999 -> COUNTY_UNKNOWN; --target=canary -> TARGET_UNKNOWN; --target=production --county=48021 --skip-walk -> MISSING_ENV (connect refuses before anything)",
+    "falsifiersScored": [
+      {"cp1Falsifier": "15-neighbour fixture walks all 15", "result": "held: walk_results carries gold + 3 smoke + 15 sweep + broken = 20 rows; body.sweep.count 15; a first draft of the pure-function fixture counted 16 because the fixture fed a 48453 row that the loader's county WHERE would have excluded; the fixture was corrected to mirror the SQL, the function was not touched"},
+      {"cp1Falsifier": "under-ten fixture throws SWEEP_TOO_SMALL with refuseCode in the walk body", "result": "held: verify_walks body {verdict: refused, refuseCode, reason 'yields 9 neighbours; floor is 12', sweep.count 9}; zero fetches; runs.refuse_code SWEEP_TOO_SMALL"},
+      {"cp1Falsifier": "four guard refusals + one pass", "result": "held on evaluateStagingSibling fixtures and through requireStagingSibling against the in-process store after real publish/walk runs (UNWALKED after --skip-walk, pass after the linked walk, FAILED after an inline walk failure)"},
+      {"cp1Falsifier": "production with only STAGING_* refuses TARGET_ENV_MISSING naming PRODUCTION_NEONDB_URL; production bake env has no STAGING_ key", "result": "held: err.missing = [PRODUCTION_NEONDB_URL, PRODUCTION_HAUSKA_MCP_URL]; bakeEnvForTarget(production) key set has no STAGING_/PRODUCTION_/DEPLOYMENT_DATABASE_URL and DATABASE_URL equals PRODUCTION_NEONDB_URL even when process.env carries a leaked STAGING_NEONDB_URL"},
+      {"cp1Falsifier": "link fixture: walk_id null after --skip-walk, equal to the walk id after --publish-run", "result": "held; also held for the inline walk and for a FAILED inline walk (link written before WALK_FAILED)"},
+      {"cp1Falsifier": "merge keeps fail 0 and test count >= 127", "result": "held: 129 after merge"}
+    ],
+    "selfReviewFindings": [
+      {"finding": "publish flag reader arg() matched only the `--name value` form; the deployed template's `--target=staging --county=48021` parsed as nothing and the job ran on defaults; `--county=48453` would have published Bastrop silently", "fix": "src/lib/cli-flags.mjs reads both forms; county never defaulted; test 'falsifier: 48453 must not become 48021'"},
+      {"finding": "first draft let the inline publish pass --sweep=9 straight into the walk (parse-time floor only on the standalone path)", "fix": "publish flags use the walk's parseSweepMin/parseSweepMax; runVerifyWalk enforces the floor for every caller and records the refusal on the run row; test 'the sweep floor cannot be lowered ... (verified by violation)'"},
+      {"finding": "main's writeTermination (src/control/termination.mjs:12, from the fleet-reap merge) now overwrites runs.status with exit_kind ('success'/'failure') after the job wrote 'succeeded'/'failed'; two vocabularies on one column", "disposition": "not this card; tests assert termination exit_kind and the terminal status main writes; reported in the close as an open finding for the planner"},
+      {"finding": "loadConformantPropIds read STAGING_HAUSKA_MCP_URL ?? HAUSKA_MCP_DATABASE_URL for every target (a production run would have listed prop_ids from the staging MCP branch)", "fix": "takes the resolved target's MCP URL; no env read"}
+    ]
+  },
+  "stoppedWorkers": "not applicable: no sub-agents (dispatch forbids spawning)",
+  "constraintsHonored": ["no commit beyond the item 1 merge", "no push, PR, deploy, job execution, secret access", "no store writes; every test uses the in-process fake", "no secrets printed", "no writes outside the worktree except the three checkpoint files"],
+  "leave_behind": "declared at close"
+}

@@ -1,0 +1,100 @@
+{
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial review — verify-by-violation results",
+  "lane": "p87-cando",
+  "planRow": ["P-87"],
+  "at": "2026-08-31T15:10:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/hauska-map",
+    "worktree": "P:/seat-worktrees/property/hauska-map-cando",
+    "branch": "feat/p87-cando-setup-state",
+    "commit": "333c3c05c77c2735cae27e8d896995e1a3f189b7",
+    "baseIsOriginMainTip": true,
+    "commitsOnMainSinceBase": 0
+  },
+  "preRegisteredFalsifiers": {
+    "note": "Stated BEFORE running each violation, per the 2026-08-21 enforcement rule that a planner's own checks get the same pre-registration as a lane's. Each names the result that would prove the assertion is not a check.",
+    "A": "Removing the WhatYouCanDo mount from ClaudeSetupPanel MUST fail the presence and ordering tests. If they pass, the assertions are not reading the setup state at all.",
+    "B": "Moving the disclosure ABOVE the numbered steps MUST fail ONLY the ordering test. If the presence tests also fail, the ordering test is not independent. If NOTHING fails, the ordering assertion is decorative.",
+    "C": "Flipping useState(false) to useState(true) MUST fail the collapsed assertion. If it passes, collapsed is unmeasured.",
+    "D": "Promoting the toggle to variant=primary MUST fail the lead-action assertion. If it passes, primaryActions() is vacuous."
+  },
+  "violationResults": [
+    {
+      "id": "A",
+      "mutation": "the WhatYouCanDo mount and its wrapper removed from ClaudeSetupPanel",
+      "predicted": "presence + ordering fail",
+      "observed": "3 failed | 28 passed (31). Failures: is COLLAPSED by default in BOTH states; ALSO renders in the setup state; sits BELOW the steps, the address and Copy.",
+      "verbatim": "AssertionError: data-testid=\"claude-sync-can-do-toggle\" is missing from this state entirely: expected -1 to be greater than -1",
+      "verdict": "PASS — matches prediction. The at() guard is load-bearing: without it indexOf would have returned -1, and -1 is less than every real index, so the ordering test would have gone GREEN on a total absence. That is the sentinel-satisfies-the-check shape and it is now closed."
+    },
+    {
+      "id": "B",
+      "mutation": "disclosure present but hoisted ABOVE the ol data-testid=claude-sync-steps",
+      "predicted": "ordering fails ALONE",
+      "observed": "1 failed | 30 passed (31). Only 'sits BELOW the steps, the address and Copy' failed.",
+      "verbatim": "AssertionError: expected 1251 to be less than 466",
+      "verdict": "PASS — matches prediction exactly. This is the discriminating case: the disclosure was PRESENT, so every presence assertion passed, and only the positional assertion caught it. Proves the ordering test is not a restatement of the presence test."
+    },
+    {
+      "id": "C",
+      "mutation": "useState(false) changed to useState(true) in WhatYouCanDo",
+      "predicted": "collapsed assertion fails",
+      "observed": "3 failed | 28 passed (31). is COLLAPSED by default in BOTH states; ALSO renders in the setup state (the toggle label becomes Hide); and the PRE-EXISTING 'carries three numbered steps, not a run-on paragraph' with 'expected 11 to be 3'.",
+      "verdict": "PASS, plus a free finding. The pre-existing three-li test also fires, which means the collapse is load-bearing for an assertion written before this card, and neither test can be quietly defeated without the other complaining."
+    },
+    {
+      "id": "D",
+      "mutation": "toggle Button variant ghost changed to primary",
+      "predicted": "lead-action assertion fails alone",
+      "observed": "1 failed | 30 passed (31).",
+      "verbatim": "AssertionError: expected [ 'claude-sync-copy-address', ...(1) ] to deeply equal [ 'claude-sync-copy-address' ]",
+      "verdict": "PASS — matches prediction. primaryActions() is demonstrably non-vacuous: it returned the real testid PLUS the newly-promoted one, so the helper is parsing live markup rather than echoing the expectation."
+    },
+    {
+      "id": "RESTORE",
+      "mutation": "none — file restored from the pre-violation copy",
+      "observed": "sha1 c89ffa7790ef08614aa01d50736619d69b669042 matches the pre-violation hash byte for byte; 31 passed (31).",
+      "verdict": "PASS direction confirmed. Both directions shown for all four."
+    }
+  ],
+  "unexpectedFindingInvestigated": {
+    "observation": "The FULL property-explorer suite (what CI actually runs, pnpm --filter property-explorer test) fails TWO files locally, not the one the dispatch named: src/lib/pe-llms-txt.test.ts AND scripts/render-mark.test.mjs (SyntaxError at collection, no tests run).",
+    "mechanism1": "Windows-checkout CRLF artifact in a file this lane does not touch. EVIDENCE, not inference: (a) git status shows apps/property-explorer/scripts/ entirely unmodified, so the file vitest chokes on is byte-for-byte HEAD; (b) the full suite was re-run against a PRISTINE tree (both my files git-checkout'd back to HEAD, git status --porcelain empty) and produced the identical 2-failed/156-passed file split; (c) gh run list --workflow=property-explorer-ci.yml returns conclusion STRING success on the last five runs of the same suite on Linux; (d) origin/fix/pe-windows-test-suites is a one-commit branch adding .gitattributes, titled 'pin line endings so the two Windows-only test failures stop being pre-existing' — it names TWO, and these are the two.",
+    "mechanism2rejected": "A defect introduced by this diff. Rejected on (a) and (b) above: the pristine-tree run reproduces it with zero of my changes on disk. Also rejected: a vitest config problem, since (c) shows the same command green on CI with the same config.",
+    "action": "Reported, not fixed. render-mark.test.mjs is outside this lane's scope and is already owned by origin/fix/pe-windows-test-suites. The dispatch named only pe-llms-txt as the known Windows failure; the second one is flagged so the planner knows the local full-suite baseline is 2 failing files, not 1."
+  },
+  "constraintReReview": [
+    {
+      "constraint": "CLAUDE_CAN_DO keeps excluding request_records, check_request, ask_the_map",
+      "status": "HONORED",
+      "proof": "The full component diff is three hunks (two comment blocks, one three-line render addition). No hunk falls inside the CLAUDE_CAN_DO array or CLAUDE_NOT_YET. The guard test 'names no capability the server reports as not ready' passes in every run above, including all four violation runs. Zero rows added."
+    },
+    {
+      "constraint": "collapsed by default in BOTH states",
+      "status": "HONORED",
+      "proof": "Asserted for both states in one loop; violation C proves the assertion fires."
+    },
+    {
+      "constraint": "card leads with one action — Sync connected, Copy address not connected",
+      "status": "HONORED",
+      "proof": "primaryActions() returns exactly [claude-sync-copy-address] in setup and exactly [claude-sync-push] connected; violation D proves it fires."
+    },
+    {
+      "constraint": "in setup the disclosure sits BELOW the steps and the address block, never above",
+      "status": "HONORED",
+      "proof": "Rendered markup read back verbatim in the violation-C output shows the order: Open Customize Connectors button, close of the button column div, then div margin-top:10px, then div margin-top:4px, then the claude-sync-can-do-toggle button. It is the last child of the setup panel, after the button column. Violation B proves the ordering assertion fires."
+    },
+    {
+      "constraint": "no share block reintroduced",
+      "status": "HONORED",
+      "proof": "'renders no share control in either state' passes in all runs; no share string appears in the diff."
+    },
+    {
+      "constraint": "pe-chrome-kit-gate passes",
+      "status": "HONORED",
+      "proof": "SELF-TEST 76/76 ok; 20 surfaces + 12 kit files ok; exit 0. The diff adds no colour literal, no fontSize, no borderRadius and no native button element."
+    }
+  ],
+  "proceed": true
+}

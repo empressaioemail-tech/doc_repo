@@ -1,0 +1,134 @@
+---
+id: 2026-08-26_cloud_loader_WDLL
+title: WDLL — Option A on the existing write path (P-81 harness, P-82-lite plus BP-WRITE-01, P-83 scoped lease, P-84 run ledger; OPS-19 F-02)
+date: 2026-08-26
+last_updated: 2026-08-27
+status: closed
+applies_to: hauska-engine, legacy-design-tools, hauska-factory
+plan_row: P-81, P-82, P-83, P-84
+parent_plan_row: F-02 (90_operations/OPS-19_factory_plan_of_record.md)
+operator_go: 2026-08-26 option A ruled ("fix the path, freeze new fills on it; finish Bexar's resume on the current shape; every new fill waits for the conformant writer"); card approved by the operator 2026-08-26 ("two cards approved")
+parent_wdll: _inbox/2026-08-24_parcel_facts_write_path_WDLL.md
+design: _inbox/2026-08-26_cloud_loader_design.md (read its review amendments section first) and _inbox/2026-08-26_factory_program_design.md
+decision: _decisions/2026-08-26_factory_model_law_and_option_a.md
+review: _inbox/2026-08-26_p81-review_close.json
+supersedes: _inbox/2026-08-26_partitioned_lease_review_handoff.md
+depends_on:
+  - _inbox/2026-08-26_factory_phase_a_WDLL.md (F-00 repo, F-01 store, F-03 control core)
+  - _blueprint/40_rule_register.md (BP-WRITE-01, BP-KEY-SENTINEL-01, BP-EDGE-01, BP-DID-01)
+  - 51_ingestion_pipeline_reference.md §remediation step 1
+  - _inbox/2026-08-21_recompute_lock_orphaned_on_cloud_run_timeout.md
+  - 90_operations/OPS-13_store_topology.md
+snapshot: P:/doc_repo main 9753b830a8e929ba1b59e625a2c60e50712ebcc0 · hauska-engine cfa18bc · legacy-design-tools origin/main 46e1a5a1 · Bexar 48029 cad 660,000 of 703,257 rewritten (verified 2026-08-26T13:42Z)
+owner: property seat. Deploys planner-owned per standing decision.
+---
+
+# WDLL: option A on the existing write path
+
+Date: 2026-08-26  Status: closed 2026-08-27  Operator approval: 2026-08-26 (option A ruled; card approved)
+
+This is 51 §remediation step 1 applied to the live writer: stop the orphan population growing (BP-WRITE-01), remove the round-trip loop that made the path run at 21 atoms/s, bind the lease to a process and to the data it writes, record every run, and finish the one county already mid-rewrite. It is not a fill program. After Bexar, this path writes no new county; the Texas remainder, Harris and Dallas included, waits for the conformant stage E writer (OPS-19 F-15, F-16, F-18). The brief's numbers are the planner's; reporting one wrong is a successful outcome.
+
+## Done looks like
+
+`writePropertyAtomsBatch` refuses a node binding that is not canonical grammar and a sentinel inside a key, writes all of a batch's `applies-to` links in one statement, runs under a process-bound scoped lease locked inside each chunk transaction, and records every run and refusal in the Factory run ledger. Bexar 48029 cad completes its rewrite from an edge-presence read (43,257 atoms remaining), verifies against the writer's own counts, and its cell moves by bounded materialise. The real-table rate from `us-east4` is measured and recorded. No `--apply` runs from the PC. No county other than Bexar is written on this path, and a work list containing one refuses with `OLD_SHAPE_FILL_FROZEN`.
+
+## Acceptance items
+
+### P-82-lite write path plus BP-WRITE-01 (hauska-engine)
+
+1. **Write boundary refuses bare keys and sentinels.** A `parcelNodeId` or `entityId` that is not `{fips}:{integer}` (plus the declared discriminators) refuses `NON_CANONICAL_BINDING` before any `INSERT`; `:outside`, `:primary` and any sentinel token inside a key refuse `KEY_SENTINEL`; `body.atomDid` in a different namespace from the column refuses `DID_NAMESPACE`. Verified by violation for each. Bexar's existing keys pass. | check: three refuse fixtures plus a Bexar-row pass fixture | grade: [ ]
+
+2. **Links are one statement per batch.** `writeAtomLinks` inserts all links of a batch in one multi-row `INSERT ... ON CONFLICT (from_atom_did, to_atom_did, link_type) DO NOTHING`; the per-link loop is gone; `writePropertyAtomsBatch` stays the shared path for every caller. | check: a 5,000-atom batch issues fewer than 10 statements to `atom_links`, counted by a query-logging double | grade: [ ]
+
+3. **Differential identity holds** for atoms and links on the W1 fixture set. | check: `property-atom-batch-differential.test.ts` extended to links | grade: [ ]
+
+4. **The edge cannot be omitted, independently derived.** Expected link count per batch from atom bodies (`parcelNodeId` non-null and not county-coverage); links written must equal it; a batch whose writer skipped the helper fails `STARVED_EDGE`. Both directions. | check: fixture pair | grade: [ ]
+
+5. **Verify is two-derivation.** Atoms readable back equals the count the writer built; stored `content_hash` equals the client hash for every atom; links equal item 4. A corrupted row and a dropped row each fail the run, record `failed`, exit non-zero on the real exit, and enqueue no score. | check: three fault fixtures | grade: [ ]
+
+6. **Per-leg timing** (`plan_ms`, `upsert_ms`, `links_ms`, `verify_ms`, `rtt_ms`) in every run record. | check: non-null on the Bexar run | grade: [ ]
+
+7. **Benchmark on the real table from `us-east4`.** `writePropertyAtomsBatch` end to end (lease, upsert, links, verify) on a throwaway county with its snapshot stated. Pre-registered prediction: at least 300 atoms/s against the only real-table band on record (L4 950 to 1,319/s, pre-#356). Below 150 atoms/s the database is the bound and the conformant writer (F-18 stage-and-merge shape) opens with that number in hand. | check: benchmark JSON with snapshot | grade: [ ]
+
+### P-83 scoped lease v2 (hauska-engine)
+
+8. **Scope `(entity_type, county_fips)`; no GLOBAL; token-bound `HeldLease`; no env-var holder path.** | check: type signature; runtime negative | grade: [ ]
+
+9. **Scope check on data, in the DB, inside the transaction.** Lease row locked `FOR UPDATE WHERE holder_token = $t AND expires > now()` per batch; `SCOPE_MISMATCH` on any atom outside the scope before any `INSERT`; an expired lease inside a slow batch refuses at the lock. | check: fixtures both directions plus an expiry-race fixture | grade: [ ]
+
+10. **Disjoint scopes concurrent; same scope refuses; same label different token refuses.** | check: concurrent test on two small scopes with zero DID overlap | grade: [ ]
+
+11. **Liveness is the writer's.** Heartbeat from the writing process on a dedicated connection plus per batch; TTL 15 min; steal after expiry records `stolen_from`; no advisory locks. | check: kill-and-retake; grep for `pg_advisory` returns nothing | grade: [ ]
+
+12. **Heavy-scan scope** for PostGIS plan phases; second concurrent heavy plan waits or refuses, recorded. | check: concurrent plan test | grade: [ ]
+
+13. **v1 retired by refuse.** `takeWriterLease` throws `ATOMS_WRITER_LEASE_V1_RETIRED`; CI asserts a v1 take cannot satisfy a v2 write. | check: test plus CLI exit | grade: [ ]
+
+14. **AGENT_CONTRACT section 3 amended** with OPS-19 rule 7 wording; compiler re-hashes. | check: marker diff | grade: [ ]
+
+15. **Bypass enumeration disposed**, including `writeAtoms` loops in `pipeline-runner/runner.ts` and corpus `edition-history/ingest.ts`, the `UPDATE atoms` repair scripts, and `load-snapshot-into-pg.mjs`; `status --audit` reports serving-store rows with `updated_at` outside any run window. | check: table in close; audit output | grade: [ ]
+
+### P-84 run ledger and scoring (hauska-factory, legacy-design-tools)
+
+16. **Every run and refusal is a row with a termination record** (max duration, success exit, failure exit, lease release); a run cannot start without its row; a job that exits without a termination record fails its own close. | check: refuse fixtures; ledger-connection fault; missing-termination fixture | grade: [ ]
+
+17. **Progress has one instrument.** `factory status` from `runs`; no bare `count(*)` on `atoms` anywhere in the Factory. Bexar reads 660,000 rewritten, 43,257 pending, from an edge-presence read. | check: grep and runtime; status output | grade: [ ]
+
+18. **Scoring is a job with its own env contract.** `countyRailScoreCli.ts --rail --county --apply` with `ATOMS_DATABASE_URL` and `DEPLOYMENT_DATABASE_URL` set explicitly (no gcloud fallback in the image); its advisory lock bounded per county and released on exit; rrc-wells dropped from this card or its registry reach fixed first. | check: job spec; exit 2 negative; rrc-wells decision recorded | grade: [ ]
+
+19. **The cell moves by bounded materialise** within 30 min of a verified run; the full-grid recompute is unreachable from the Factory; a pending score older than 30 min is an alarm. | check: cell move on Bexar; alarm test with the scheduler disabled | grade: [ ]
+
+20. **Cost recorded** per run against commitment 3. | check: run rows | grade: [ ]
+
+### P-81 harness (hauska-factory, GCP hauska-prod-497015)
+
+21. **Image and job pinned**; explicit `--task-timeout` and `--max-retries=0`; `engine_sha` and `image_digest` on every run; `--expect-engine-sha` mismatch refuses. | check: `gcloud run jobs describe` JSON read by field; refuse test | grade: [ ]
+
+22. **RTT measured**; prediction under 5 ms. | check: run record | grade: [ ]
+
+23. **Work list derived; holds are rows; old-shape fill frozen.** `factory plan --state=48 --path=existing` returns Bexar 48029 cad only; any other county on the existing path refuses `OLD_SHAPE_FILL_FROZEN` and records the refusal; holds imported once from the routing pin with `docRepoHead` and a CI divergence test until the pin is retired. | check: plan output; refuse rows | grade: [ ]
+
+24. **Secrets in the job definition; missing env refuses.** | check: job YAML; refuse test | grade: [ ]
+
+25. **Nothing runs on the PC.** `write-*-county.mjs --apply` without a `HeldLease` refuses; a `HeldLease` requires a `run_id`; `overnight.mjs` and `_w5a_detached_heartbeat.mjs` retired in the runbook. | check: local `--apply` refuse | grade: [ ]
+
+### Proof
+
+26. **Bexar resume.** `48029` cad completes from the edge-presence read: 43,257 atoms rewritten with edges, verify per item 5, cell moved; no atom rewritten twice without cause recorded; the run's termination record present. | check: run rows; store counts before and after with timestamps | grade: [ ]
+
+27. **Out of this card.** Harris 48201, Dallas 48113 and the Texas remainder (held to the conformant writer, OPS-19 F-15, F-16, F-18); publish (F-06), staging (F-07), verify walk (F-08), acquisition manifests (F-09), depth (F-11), discovery (F-13), `countAtoms()` health scan (substrate seat), P-09, COVER, P-25. Named so unmentioned is not the failure state. | check: pathspec on close; `notStarted` list | grade: [ ]
+
+## Do not
+
+- Write any county other than Bexar 48029 on this path. `OLD_SHAPE_FILL_FROZEN` is the control, not a note.
+- Use the v1 lease for anything. It is retired by item 13.
+- Add `GLOBAL` scope, an env-var holder, a dual-accept window, or an advisory lock in the loader.
+- Create `UNLOGGED` tables on Neon.
+- Count atoms by hand as progress.
+- Run the full-grid Manifest recompute.
+- Run any `--apply` from `P:/` once item 25 lands.
+
+## Amendments
+
+- 2026-08-26: card rewritten after the adversarial review; first draft superseded in place.
+- 2026-08-26 (later): re-scoped to option A: BP-WRITE-01 added as item 1; Harris, Dallas and the Texas remainder moved out to the conformant writer; `OLD_SHAPE_FILL_FROZEN` added as item 23; parent OPS-19 F-02.
+- 2026-08-26 (night, before dispatch): three bindings added at compile time. (a) Worktree: the drain runs in `P:/seat-worktrees/property/hauska-engine-drain` on `seat/property-drain`, created from `origin/main` (`git -C P:/hauska-engine worktree add P:/seat-worktrees/property/hauska-engine-drain -b seat/property-drain origin/main`); the row is registered in `_catalog/seat_register.json`; never the primary property engine worktree, which holds another lane. (b) Pre-step, sanctioned serving-store write: before any Bexar resume, apply engine migration `010_drop_access_policy_defaults.sql` on `hauska_mcp` and run `packages/storage/scripts/backfill-icc-access-policy.mjs` against `hauska_mcp` (never `neondb`), as a recorded run with snapshot, counts before and after, and the `schema_migrations` row read back (OPS-16 A-033; the writer half shipped in engine PR #361 `cfa18bc`, the store still carries `DEFAULT public-free`). The substrate seat retires `access-policy.ts:87` after this lands; that is their card. (c) Item 20 of the Phase A card (`published_at` on the served ledger) is NOT this lane; it is an LDT route change under OPS-19 F-05.
+- 2026-08-27 (lease v2 handback): (a) body.atomDid question closed: the only consumers are `AtomRetrievalService.withGuaranteedAtomDid` and the atoms-list mapper in `packages/retrieval/src/index.ts`, which preserve `body.atomDid` only when it starts with `did:` and otherwise rebuild `buildAtomDid(entityType, entityId)`, the same derivation the write path uses for the column (planner read on engine main 7012ac7, lines 134 to 139); a writer-local id such as `fhfact_*` or `cadroll_*` is therefore not served identity and BP-WRITE-01 correctly admits it; the foreign-method and type-mismatch cases stay `DID_NAMESPACE`. Record `_inbox/2026-08-27_atomdid_consumer.md`. (b) Sanctioned serving-store DDL: engine migration `011` (`atoms_writer_lease_v2`, no FK, Factory `run_id` as text) is applied on `hauska_mcp` only through the Factory command `lease-v2-migrate` as a recorded run (direct host, never `-pooler`, never `neondb`), after the engine PR merges on CI `SUCCESS`, with the `schema_migrations` row and the table's existence read back and reported. This is the second and last pre-Bexar DDL on the serving store under this card; any further one needs its own amendment. (c) Item 14 landed: `AGENT_CONTRACT.md` section 3 now carries OPS-19 rule 7 and the compiler marker moved from v92aa194c to v1890f0bb; dispatches compiled before it are recompiled by the planner so the gate does not refuse them.
+- 2026-08-27 (close ruling, OPS-19 A-004 and OPS-16 A-042): the F-02 runner exists (`factory-atoms-cad` gen 2) and items 1 to 5 of this card are proven on engine main; Bexar 48029 reads 703,257 = roll, so item 26 (resume) closes as complete by the prior writer and no resume runs; item 7 is graded FAILED at chunk scale (149.0 and 67.4 atoms/s on two 999-row rewrites, prediction 300, floor 150) and, per its own rule, opens stage-and-merge as OPS-19 F-18 for the conformant writer; no further `--apply` on the old shape for any county. The card closes at the drain lane's next handback with its finish card and leave-behind.
+
+## Finish card (graded at close)
+
+1-5 met (engine main #362/#363/#364; A-004). 6 unmeasured this close. 7 FAILED (149.0 and 67.4 atoms/s on two 999-row rewrite chunks; prediction 300; floor 150; recorded, not tuned; opens F-18). 8-14 met (lease v2 + AGENT_CONTRACT v1890f0bb). 15 unmeasured. 16-17 met. 18 not-started. 19 unmeasured. 20 is F-05, not this card. 21 met (`factory-atoms-cad` gen 2, digest `5a3bf94d`). 22 unmeasured. 23-25 met. 26 met without a resume (703,257 = roll). 27 met.
+
+leave_behind:
+- factory-atoms-cad gen 2 on sha256:5a3bf94d — owner property — plan_row F-02
+- factory-atoms-writer job delete-on-operator-word (execute must 404) — owner planner — plan_row F-02
+- writer worktrees stay drain lane — owner property — plan_row F-02
+- F-18 stage-and-merge write design from 149.0 and 67.4 — owner planner+property — plan_row F-18
+- F-15 contract types — owner substrate — plan_row F-15
+- F-04 console proxy — owner property — plan_row F-04
+- F-05 published_at — owner property-or-ldt — plan_row F-05
+- substrate access-policy.ts:87 — owner substrate
+
+Close: `_inbox/2026-08-27_p81-drain_close.json`. F-02 runner close: `_inbox/2026-08-27_f02-writer-job_close.json`.

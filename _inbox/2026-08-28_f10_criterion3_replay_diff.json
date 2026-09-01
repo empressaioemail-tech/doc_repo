@@ -1,0 +1,20 @@
+{
+  "id": "2026-08-28_f10_criterion3_replay_diff",
+  "county": "48055",
+  "status": "fix_landed",
+  "graded_at": "2026-08-28T02:30:00Z",
+  "root_cause": "Tier-3 parcel resolution called mint() (random nid_). The in-run replay leg re-executed pipelineFromRows with the warm reconcileStore from pass 1, so reconcile saw open atoms from the same run and emitted supersede/conflict/replay-overwrite paths that diverged from pass 1 at 73,371-row scale. F-19 requires same landed bytes + logic version → identical atoms; disposition re-run was not admissible.",
+  "field_level_diff": {
+    "example_key": "48055:<prop_id from first divergent parcel>",
+    "fields_that_differ": ["nodeId", "atomId", "atomDid"],
+    "why": "Random tier-3 mint assigns a new nodeId on each resolution pass when alias visibility differs between incremental pass 1 and warm-recon replay pass 2; atomId is contentId(entityType, nodeId, claim, logicVersion) so it follows nodeId.",
+    "instrument": "src/stages/replay/diff.mjs diffStagedAtoms; test/chunk-replay.test.mjs diffStagedAtoms names nodeId"
+  },
+  "fix": {
+    "deterministic_mint": "src/lib/deterministic-node-id.mjs mintDeterministicParcelNode(aliasKey) → nid_<sha256(aliasKey)[0:32]>",
+    "cold_replay": "replayCountyCadChunks hydrates resolveStore from DB after pass 1 persist, fresh reconStore per chunk, chunkFingerprintRoll compares passes",
+    "chunking": "A-016 processCountyCadChunks bounds landing rows per slice (~50000), run_event kind=chunk, merge per chunk with stagedSince"
+  },
+  "defect_class": null,
+  "note": "TX-REPLAY-NOT-IDENTICAL with disposition re-run retired; fix is in conformant writer on seat/property-f10. Cloud proof on 48055 pending next execute after image rebuild."
+}

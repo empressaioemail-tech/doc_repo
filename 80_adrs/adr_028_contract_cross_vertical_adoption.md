@@ -2,7 +2,7 @@
 id: adr_028_contract_cross_vertical_adoption
 title: ADR-028 — Contract 1.8.0 cross-vertical adoption (license, verified absence, bitemporality, outcomes, lineage, PII)
 status: accepted-partial
-last_updated: 2026-08-21
+last_updated: 2026-08-27
 applies_to: portfolio
 related: [adr_018_atom_contract_substrate_layer, adr_017_atom_access_control, adr_001_atom_architecture, adr_011_atom_identity_across_versions, 25_atom_architecture_reference, _catalog/thesis_parity_ledger, _decisions/2026-07-20_cross_vertical_parity_program, _dispatches/2026-07-20_trading_cockpit_parity_adoption]
 owner: nick
@@ -63,3 +63,11 @@ If any field group proves wrong in shape during implementation, amend this ADR b
 
 - **2026-07-20 (origin):** Proposed six field groups for 1.8.0.
 - **2026-08-21 (accept-partial):** Group 2 accepted as shipped. Section 3 empty-table proof struck. Groups 1/3/4/5/6 remain type-only. Follow-on ADR owed for 1.9.0 through 1.22.0.
+- **2026-08-27 (F-15 1.23.0):** Additive branded `NodeId` (`mint`/`parse` only). A raw string does not type-check as a node id. `parse("48021:34137")` refuses as a node id. Producer: Factory (ADR-030 rule 3). Does not close groups 1/3/4/5/6.
+- **2026-08-27 (F-15 1.24.0):** `AliasAtom` (`identity.alias` with validity era) and lineage edges (`mergedInto`, `dividedInto`, `unmerged`). A node type with `mergedInto` does not compile.
+- **2026-08-27 (F-15 1.25.0):** `ProvenanceClass` discriminated union. Factory four plus Observation and Synthesis from 19.
+- **2026-08-27 (F-15 1.26.0):** `Derivation` export. `derivesFrom` required on Derivation, refused on Record.
+- **2026-08-27 (F-15 1.27.0):** `AbsenceVerdict` closed union. `absent-verified` requires sourceId plus responseRef.
+- **2026-08-27 (F-15 1.28.0):** `SupersessionEdge` with `closedAt`. No `supersededBy` column.
+- **2026-08-27 (F-15 1.29.0):** `SelectorPredicate` closed union and exhaustive `match`. Flood A/AE/AO/X type-check.
+- **2026-08-27 (F-15 1.30.0):** `AccessPair` (`discoverability`, `entitlement`). Existing `accessPolicy` stays exported and mapped.

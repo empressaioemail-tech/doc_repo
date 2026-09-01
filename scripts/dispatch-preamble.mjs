@@ -5,6 +5,7 @@
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { extractStandingDecisions } from './lib/standing-decisions.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,13 +14,11 @@ const statePath = join(root, '_STATE.md');
 const outPath = join(root, '_catalog', 'DISPATCH_PREAMBLE.md');
 
 const state = readFileSync(statePath, 'utf8');
-const match = state.match(/^## STANDING DECISIONS[^\n]*\n([\s\S]*?)(?=^## |\Z)/m);
-if (!match) {
+const body = extractStandingDecisions(state);
+if (body === null) {
   console.error('STANDING DECISIONS section not found in _STATE.md');
   process.exit(1);
 }
-
-const body = match[1].trimEnd();
 const hash = createHash('sha256').update(body, 'utf8').digest('hex').slice(0, 8);
 const today = new Date().toISOString().slice(0, 10);
 

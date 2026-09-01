@@ -1,0 +1,58 @@
+{
+  "id": "2026-08-28_ctx-b_cp1",
+  "kind": "cp1",
+  "lane": "ctx-b",
+  "planRows": ["F-06", "F-07", "F-08"],
+  "wdll": "_inbox/2026-08-28_ctx_b_walk_sweep_production_publish_WDLL.md",
+  "filedAt": "2026-08-28T07:40:00Z",
+  "seat": "planner-run subagent, property seat, worktree P:/seat-worktrees/property/hauska-factory-ctx-publish",
+  "snapshot": {
+    "repo": "hauska-factory",
+    "branch": "seat/property-ctx-publish",
+    "commitBeforeMerge": "9b27304cc73ec2da8e58c4cc44e65137911cde4a",
+    "originMain": "a70139a4de48fd099a28391cd77646d7ab38061e",
+    "mergeBase": "51bdae9338e8a32bab1b999273480539f927cb15",
+    "mergeCommit": "df5f5e6 (item 1, clean, no conflicts)",
+    "baselineTests": "node --test test/*.test.mjs at 9b27304: 127 tests, 125 pass, 0 fail, 2 skipped (landing-live without FACTORY_DATABASE_URL)",
+    "deployedPublishJob": "factory-bastrop-publish on sha256:2c7c6479 args bastrop-publish,--target=staging,--county=48021,--skip-pmtiles env CONTRACT_VERSION=1.30.0 STAGING_SITE_URL BAKE_CLI_ROOT=/app/bakes secrets FACTORY_DATABASE_URL STAGING_NEONDB_URL STAGING_HAUSKA_MCP_URL (read-only gcloud describe 2026-08-28)"
+  },
+  "missionPremise": "A-021 (OPS-19) makes a passed staging sweep walk on the rows a publish run wrote the precondition for the identical job on production, and the current path cannot satisfy it: the walk has no sweep, the publish run never owns its walk, requireStagingSibling refuses always (subquery on an unwritten row) and passes vacuously (unwalked sibling admitted), and bakeEnv falls back across targets. Source: the card's evidence section, verified by reading src/jobs/verify-walk.mjs, src/jobs/bastrop-publish.mjs, src/lib/publish-guards.mjs at 9b27304.",
+  "completionPredicate": "node --test green after the origin/main merge; a fixture with 15 seeded street neighbours walks all 15 and an under-ten fixture refuses with the reason in the walk body; a publish followed by a standalone walk links walk_id and the inline walk links it too; four guard refusals and one pass each proven by fixture; a production run with only STAGING_* set refuses TARGET_ENV_MISSING before any bake and the production bake env carries no STAGING_* key; cloudbuild.publish.yaml declares the two production secrets; every 48021/bastrop occurrence in the publish and walk code is justified or removed; handback carries diff summary, full test output, sweep rule, execute commands, leave_behind.",
+  "scopeBasis": "The card names seven items on three source files plus the build file and tests. Out of scope by the card: committing beyond the item 1 merge, pushing, PRs, deploys, job executions, any store write, secret creation (planner), job rename (a later card), PMTiles, LDT serving code (A-020: no new serving code). The item 6 phrase 'served county ledger published_at moves' is investigated and reported, not built, when no per-county reader exists in this repo.",
+  "findingsBeforeBuild": [
+    {
+      "item": 1,
+      "finding": "Tracked cloudbuild.publish.yaml IS the file behind image 2c7c6479's job template: the live template carries CONTRACT_VERSION=1.30.0 and BAKE_CLI_ROOT=/app/bakes, which only the tracked file emits; the untracked cloudbuild.publish.bundle.yaml in the publish lane's worktree would have stamped CONTRACT_VERSION=1.22.0 and LDT_ROOT=/ldt. Second mechanism considered: the template was hand-edited after a bundle build; rejected because A-019 forbids it and the digest-pinned deploy loop is the only writer of those env keys in either file.",
+      "action": "No swap needed; header comment and secrets updated only."
+    },
+    {
+      "item": 1,
+      "finding": "git merge-tree --write-tree origin/main HEAD produced a clean tree (no conflict entries); the six publish files are byte-identical between HEAD and origin/main (PR #18 carried them); main adds cloudrun-jobs.mjs, reaper coverage, f10 --cp2, cloudbuild.conformant f10 deploy. Merge landed as df5f5e6."
+    },
+    {
+      "item": 2,
+      "finding": "landing_cad_property payload is to_jsonb(cad_property): county_fips, prop_id, situs_address, situs_city, situs_zip, legal_description, owner_name, values, tax_year, source_vintage; NO geometry or centroid (LDT lib/db/dist/schema/cadProperty.d.ts, read-only). 'Nearest by landing geometry' is unavailable; the rule must be address-based."
+    },
+    {
+      "item": 6,
+      "finding": "No per-county published_at exists in this repo: county_ledger_published is one 'current' row written by cc-publish (whole manifest, F-05); the control API counts county_manifest rows only; freshness (scope_key target:county) has no reader. The per-county-per-target records that move on publish are freshness.stamped_at and publish_runs.completed_at. Will report UNMEASURED for the served ledger and propose the reader, not write a field nothing reads."
+    }
+  ],
+  "design": {
+    "sweepRule": "same-situs-street: area = every landing_cad_property row in the county whose normalised street key (situs_address with the leading house number and any trailing unit token removed, upper-cased, whitespace collapsed) equals the gold parcel's, with the same situs_city and 5-digit situs_zip (null matches only null). Ordered by absolute house-number distance from gold, then prop_id. --sweep=<n> is the FLOOR (default 12, refuse below 10 at parse and SWEEP_TOO_SMALL when the area yields fewer); --sweep-max (default 500) is a declared ceiling recorded as truncated:true with areaCount, never silent. Gold with no parseable street refuses SWEEP_ANCHOR_UNADDRESSED. Why: no geometry in the landing; street plus city plus zip is the tightest area the roll can express and every neighbour in it is walked, so a broken neighbour cannot hide behind a sample.",
+    "walkOwnership": "publish inserts its publish_runs row (status succeeded, walk_id null) after the stamp and BEFORE the walk; the inline walk and verify-walk --publish-run=<id> both link via UPDATE publish_runs SET walk_id; the link happens before WALK_FAILED is thrown so a failed walk is visible on the run; a refused walk (no sweep) does not link, leaving walk_id null which the guard reads as UNWALKED.",
+    "guard": "requireStagingSibling(client, countyFips, {minSweep:10}): most recent succeeded staging publish_runs row for the county (completed_at DESC NULLS LAST, created_at DESC); no row -> STAGING_SIBLING_REQUIRED; walk_id null or walk row missing -> STAGING_SIBLING_UNWALKED; body.verdict !== 'pass' -> STAGING_SIBLING_FAILED; body.sweep.count < 10 -> STAGING_SIBLING_NO_SWEEP; production row records staging_sibling_id.",
+    "targetEnv": "src/lib/publish-target-env.mjs: TARGET_VARS table {staging:{db:STAGING_NEONDB_URL,mcp:STAGING_HAUSKA_MCP_URL,site:STAGING_SITE_URL}, production:{db:PRODUCTION_NEONDB_URL,mcp:PRODUCTION_HAUSKA_MCP_URL,site:PRODUCTION_SITE_URL}}; resolveTargetStores refuses TARGET_ENV_MISSING naming the variable (never the value) before the run's first bake; bakeEnvForTarget scrubs every target's URL keys and DEPLOYMENT_DATABASE_URL from the subprocess env and sets DATABASE_URL/HAUSKA_MCP_DATABASE_URL from the selected target only; loadConformantPropIds takes the resolved MCP URL, no env fallback; a publish without --skip-walk also requires the target's site URL up front so the walk can never be skipped silently.",
+    "perCounty": "--county required (COUNTY_REQUIRED) and validated against TX_COUNTY_FIPS_SET (COUNTY_UNKNOWN); gold and smoke parcels keyed by county in a registry (48021 only today), --gold=<county:prop_id> required for a county with no registered gold (GOLD_REQUIRED); broken fixture is <county>:__broken__."
+  },
+  "preRegisteredFalsifiers": [
+    "15-neighbour fixture: if walk_results carries fewer than 15 sweep parcels, or the sweep body count is not 15, the sweep samples and item 2 is NOT met.",
+    "under-ten fixture: if runVerifyWalk resolves (does not throw SWEEP_TOO_SMALL) or the verify_walks body lacks refuseCode, the refusal is vacuous.",
+    "guard: each of the four refusal fixtures must throw its named code and the pass fixture must return the sibling id; a fixture that throws the wrong code, or the pass fixture throwing, falsifies the guard.",
+    "target env: production with only STAGING_* set must throw TARGET_ENV_MISSING naming PRODUCTION_NEONDB_URL; if it resolves, the fallback survives. The production bake env object must have no key starting STAGING_; if it does, the scrub is broken.",
+    "link fixture: after publish (skipWalk) publish_runs.walk_id must be null; after verify-walk --publish-run it must equal the walk id; if it is set before the walk or stays null after, ownership is not implemented.",
+    "merge: node --test after merge must report fail 0 with test count at least 127; a lower count means the merge dropped tests."
+  ],
+  "constraintsHonored": ["no store writes", "no secrets printed", "read-only gcloud describe only", "no writes outside own worktree except the three checkpoint files"],
+  "leave_behind": "declared at close"
+}

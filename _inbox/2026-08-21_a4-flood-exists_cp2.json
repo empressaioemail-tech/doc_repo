@@ -1,0 +1,102 @@
+{
+  "lane": "a4-flood-exists",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "planRows": ["P-08"],
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+  "ldtBranch": "seat/property",
+  "ldtHead": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "seat": "property (fanned from integration; writes on P:/doc_repo _inbox only)",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "missionPremise": "Same as CP1. Split 77 missing flood coverage FIPS into atoms-present vs atoms-absent without a heap COUNT(*).",
+  "querySnapshot": {
+    "projectId": "fancy-fire-06136146",
+    "projectName": "cortex-prod",
+    "branchId": "br-crimson-feather-aphfmy91",
+    "deploymentDatabase": "neondb",
+    "atomsDatabase": "hauska_mcp",
+    "missingRowQueriedAtUtc": "2026-08-21T17:05:00Z",
+    "instrumentFireQueriedAtUtc": "2026-08-21T17:07:00Z",
+    "missingRowSql": "SELECT m.county_fips, m.county_name FROM county_manifest m WHERE NOT EXISTS (SELECT 1 FROM county_facet_coverage c WHERE c.county_fips = m.county_fips AND c.facet = 'flood') ORDER BY m.county_fips",
+    "missingCountSql": "SELECT COUNT(*)::int AS missing_n FROM county_manifest m WHERE NOT EXISTS (SELECT 1 FROM county_facet_coverage c WHERE c.county_fips = m.county_fips AND c.facet = 'flood')",
+    "announce": "not a heavy scan, 76 index probes plus two instrument-fire controls. Unique index atoms_entity_composite_unique ON public.atoms USING btree (entity_type, entity_id). Never COUNT(*) atoms. Never GROUP BY flood-hazard-fact. Never left(entity_id,5)."
+  },
+  "whatWasVerified": [
+    {
+      "check": "missing flood coverage FIPS count is 77 including Donley 48129",
+      "result": "PIN HOLDS. missing_n=77. county_manifest=254. flood coverage rows=177. 254-177=77. Donley 48129 is in the 77. SQL quoted in querySnapshot.",
+      "whatWouldProveWrong": "missing_n other than 77, in which case this lane stops."
+    },
+    {
+      "check": "Donley 48129 has no txgio_parcel; the other 76 do",
+      "result": "CONFIRMED via EXISTS on neondb.txgio_parcel per missing FIPS. has_txgio_parcel false only for 48129. 76 true.",
+      "whatWouldProveWrong": "48129 true, or any of the other 76 false."
+    },
+    {
+      "check": "hauska_mcp.atoms exists on this project and unique index is (entity_type, entity_id)",
+      "result": "CONFIRMED. Database hauska_mcp present. Table public.atoms present. indexdef CREATE UNIQUE INDEX atoms_entity_composite_unique ON public.atoms USING btree (entity_type, entity_id).",
+      "whatWouldProveWrong": "atoms missing, or the unique index not on (entity_type, entity_id), which would make left() the only cheap path and force a stop."
+    },
+    {
+      "check": "EXISTS instrument can fire both directions before scoring the 76",
+      "result": "FIRED. Positive: 48021 Bastrop flood-hazard-fact range EXISTS true (not in the missing-77). Negative: 00000: to 00000; EXISTS false.",
+      "whatWouldProveWrong": "Positive false (store or range shape wrong) or negative true (range too wide)."
+    }
+  ],
+  "adversarialPilot": {
+    "goTemptation": "Treat the 76 as GO because they have txgio_parcel and a scorer CLI exists.",
+    "rejectedBecause": "GO requires EXISTS true on flood-hazard-fact for that FIPS. Parcel denominator is necessary for scoring, not proof of atoms. A1 already rejected scorer-skip; this lane measures the remaining split.",
+    "allTemptation": "leave_behind countyFloodScoreCli.ts --all if most of the 76 have atoms, because --all iterates atomCounts.keys().",
+    "rejectedBecause": "Dispatch pre-register: A1's cannot-fill-via --all still holds as the leave_behind shape. --all discovery is left(entity_id,5) GROUP BY all flood-hazard-fact (countyFloodScoreCli.ts:109-113), which this lane forbids, and --all re-scores the already-scored 177. GO commands are --county= per FIPS.",
+    "l24Mechanism": "If most of 76 EXISTS false, L24 remainder 77/77 NDJSON READY with no apply is the surviving mechanism. If most EXISTS true, scorer-never-invoked-per-county is the surviving mechanism. Scored at close, not guessed here."
+  },
+  "missingFips77": [
+    "48001 Anderson", "48005 Angelina", "48013 Atascosa", "48027 Bell", "48029 Bexar",
+    "48037 Bowie", "48039 Brazoria", "48041 Brazos", "48053 Burnet", "48061 Cameron",
+    "48067 Cass", "48071 Chambers", "48073 Cherokee", "48085 Collin", "48091 Comal",
+    "48113 Dallas", "48121 Denton", "48129 Donley SKIP", "48135 Ector", "48139 Ellis",
+    "48141 El Paso", "48157 Fort Bend", "48167 Galveston", "48181 Grayson", "48183 Gregg",
+    "48187 Guadalupe", "48199 Hardin", "48201 Harris", "48203 Harrison", "48209 Hays",
+    "48213 Henderson", "48215 Hidalgo", "48217 Hill", "48221 Hood", "48231 Hunt",
+    "48241 Jasper", "48245 Jefferson", "48251 Johnson", "48257 Kaufman", "48265 Kerr",
+    "48277 Lamar", "48291 Liberty", "48299 Llano", "48303 Lubbock", "48309 McLennan",
+    "48321 Matagorda", "48325 Medina", "48329 Midland", "48339 Montgomery", "48347 Nacogdoches",
+    "48349 Navarro", "48355 Nueces", "48361 Orange", "48363 Palo Pinto", "48367 Parker",
+    "48373 Polk", "48375 Potter", "48381 Randall", "48397 Rockwall", "48401 Rusk",
+    "48407 San Jacinto", "48409 San Patricio", "48423 Smith", "48427 Starr", "48439 Tarrant",
+    "48441 Taylor", "48451 Tom Green", "48453 Travis", "48467 Van Zandt", "48469 Victoria",
+    "48471 Walker", "48473 Waller", "48479 Webb", "48485 Wichita", "48491 Williamson",
+    "48497 Wise", "48499 Wood"
+  ],
+  "existsSet76": [
+    "48001","48005","48013","48027","48029","48037","48039","48041","48053","48061",
+    "48067","48071","48073","48085","48091","48113","48121","48135","48139","48141",
+    "48157","48167","48181","48183","48187","48199","48201","48203","48209","48213",
+    "48215","48217","48221","48231","48241","48245","48251","48257","48265","48277",
+    "48291","48299","48303","48309","48321","48325","48329","48339","48347","48349",
+    "48355","48361","48363","48367","48373","48375","48381","48397","48401","48407",
+    "48409","48423","48427","48439","48441","48451","48453","48467","48469","48471",
+    "48473","48479","48485","48491","48497","48499"
+  ],
+  "skipDonley": ["48129"],
+  "existsProbesPendingClose": "76 correlated EXISTS on hauska_mcp.atoms using VALUES of existsSet76. Range entity_type='flood-hazard-fact' AND entity_id >= fips||':' AND entity_id < fips||';'.",
+  "constraintsHonoredSoFar": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no atoms --apply",
+    "no Harris PBF restart",
+    "no writes under P:/legacy-design-tools",
+    "code reads only P:/seat-worktrees/property/legacy-design-tools",
+    "doc_repo writes only _inbox JSON",
+    "no COUNT(*) hauska_mcp.atoms",
+    "no GROUP BY flood-hazard-fact",
+    "no left(entity_id,5)",
+    "did not force the 77 pin; live count was 77"
+  ]
+}

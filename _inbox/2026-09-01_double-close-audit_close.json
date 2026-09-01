@@ -1,0 +1,106 @@
+{
+  "lane": "DOUBLE-CLOSE-AUDIT",
+  "planRows": ["F-00"],
+  "closedAt": "2026-09-01T16:45:00Z",
+  "closeKind": "complete: mechanism named, nothing changed",
+  "seat": "property claiming from integration checkout P:/doc_repo main",
+  "dispatch": "_dispatches/2026-09-01_double-close-audit_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-01_double-close-audit_cp1.json",
+    "_inbox/2026-09-01_double-close-audit_cp2.json"
+  ],
+  "table": "_inbox/2026-09-01_double-close-audit_timeline.json",
+  "prs": "not applicable: read-only",
+  "ci": "not applicable",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 7ee1f6a52262b63cf0ef278ab802a0b6a36ea9df",
+    "claimedAt": "2026-09-01T16:39:47.308Z",
+    "needs_store": null
+  },
+  "missionPremise": "READ ONLY. Two lanes reported closing cad-serve-reconcile. The log is the instrument. Name which of four mechanisms happened. Do not close the advisory bypass by fiat. Source: compiled dispatch 2026-09-01_double-close-audit.",
+  "completionPredicate": "Timeline with timestamps after VERIFICATION_MARKER. One mechanism named and a second that would produce the same log rejected. Whether the queue behaved as designed. Release-without-close shape. Lease-extend yes/no. Cost this time. leave_behind named. Queue unmodified.",
+  "scopeBasis": "Read property.jsonl after 2026-09-01T05:41:01.308Z VERIFICATION_MARKER, planner enqueue, two Cursor transcripts, scripts/queue/cli.mjs release. Did not modify the queue, the logs, or any card. Did not re-run cad-serve-reconcile.",
+  "timeline": [
+    {"at": "2026-09-01T15:26:40.491Z", "where": "planner.jsonl", "verb": "enqueue", "card": "cad-serve-reconcile"},
+    {"at": "2026-09-01T15:29:00Z", "where": "operator via planner", "verb": "dispatch-twice", "detail": "Two Cursor prompts at 10:29 CDT. ee49e2f7: claim the card only. 3cbfe584: merge factory #55 then claim the same card."},
+    {"at": "2026-09-01T15:30:24.483Z", "where": "property.jsonl", "verb": "claim", "result": "GRANTED", "worktree": "P:/seat-worktrees/property/hauska-engine", "branch": "fix/e1-e2-accesspolicy-failclosed", "expires_at": "2026-09-01T17:00:24.415Z", "who": "ee49e2f7 (this seat's first wake). CP1 15:31 names that tree and that expiry."},
+    {"at": "2026-09-01T15:32:40.473Z", "where": "property.jsonl", "verb": "release", "result": "RELEASED", "reason": "wrong worktree: loop claimed primary engine tree... reclaiming isolated P:/tmp/hauska-engine-cad-serve", "who": "3cbfe584. Same-seat release. No close artifact yet. Default release checks seat only, not worktree."},
+    {"at": "2026-09-01T15:32:40.757Z", "where": "property.jsonl", "verb": "claim", "result": "GRANTED", "worktree": "P:/tmp/hauska-engine-cad-serve", "branch": "feat/cad-serve-reconcile", "expires_at": "2026-09-01T17:02:40.648Z", "who": "3cbfe584, 284ms later"},
+    {"at": "2026-09-01T15:46:00Z", "where": "disk", "verb": "write-close", "path": "_inbox/2026-09-01_cad-serve-reconcile_close.json", "who": "3cbfe584 (factory #55 merge + early table)"},
+    {"at": "2026-09-01T15:48:29.803Z", "where": "property.jsonl", "verb": "release", "result": "RELEASED", "reason": "close", "who": "3cbfe584"},
+    {"at": "2026-09-01T15:51:58.459Z", "where": "property.jsonl", "verb": "claim", "card": "zoning-ingest", "result": "GRANTED", "detail": "store token moved; ee49e2f7 still finishing live sweep"},
+    {"at": "2026-09-01T15:58:25.161Z", "where": "status stdout, NOT the log", "verb": "status", "result": "cad-serve-reconcile blocked [CARD_CLOSED,STORE_TOKEN_HELD]", "who": "ee49e2f7"},
+    {"at": "2026-09-01T16:02:00Z", "where": "disk", "verb": "overwrite-close", "path": "_inbox/2026-09-01_cad-serve-reconcile_close.json", "who": "ee49e2f7. No claim. No CARD_CLOSED refusal because claim was never re-run."}
+  ],
+  "mechanism": {
+    "named": 3,
+    "label": "worked without claiming",
+    "plain": "The second table was written after the card was closed and released, with no claim attempt. status printed CARD_CLOSED. status is not logged. QUEUE-INIT already named this bypass as honestly advisory: any editor on a registered worktree never consults the queue.",
+    "related": "At 15:32 lane 3cbfe584 released the live claim held by ee49e2f7 and reclaimed (mechanism 1, same seat). That hop is what the log looks like. It is not how the second close landed. After 15:48 there is no second GRANTED claim."
+  },
+  "rejectedAlternative": {
+    "wouldProduceTheSameLog": "Mechanism 1 alone: one lane released a wrong-tree claim, reclaimed, closed, released. The four log lines are exactly that.",
+    "whyRejected": "A second Cursor transcript (ee49e2f7) wrote CP1 against the 15:30 claim and then overwrote the close at 16:02 after status printed CARD_CLOSED. That write has no log line. Mechanism 4 (one lane reported twice) is also rejected: two prompts, two transcripts. Mechanism 2 (lease expiry) is rejected: 15:48 is 74 minutes into a 90-minute lease; expires_at was 17:00 / 17:02."
+  },
+  "queueBehavedAsDesigned": true,
+  "whatTheControlsDid": {
+    "ALREADY_CLAIMED": "Never tested on this card after the marker. Lane A did not claim while the 15:30 lease was live; it released first.",
+    "CARD_CLOSED": "Would have refused a claim after 15:46. Nobody ran claim. status showed it. status writes nothing.",
+    "release": "Removes claim.json and the store token. Default --reason is the string close. Does not check that the close artifact exists. The 15:32 release had no close and returned the card to the board in 284ms. The 15:48 release had a close."
+  },
+  "releaseShape": {
+    "doNot": "Refuse every release that lacks a close. That strands the store token until lease expiry and forbids abandon.",
+    "shape": [
+      "Split the verb. release --as close requires the close artifact and a leave_behind; missing either is REFUSED CLOSE_INCOMPLETE and the claim stays. release --as abandon requires a non-default reason and writes result=ABANDONED. The card returns to the board as claimable, not as closed. An abandon is distinguishable from untouched.",
+      "Stop defaulting --reason to close. An omitted reason is REFUSED REASON_REQUIRED.",
+      "Key release to the live claim identity (worktree+branch, or a nonce written at claim time), not only to seat. Same-seat steal is how 15:32 evicted a live worker. Steal remains possible as release --as steal --force with a reason; it is logged as STEAL so it is not indistinguishable from the holder finishing."
+    ]
+  },
+  "leaseExtend": {
+    "recommend": true,
+    "shape": "Holder-only. extend --card --seat resets expires_at to now+TTL if the caller matches the live claim identity. Logged as EXTEND. Does not transfer the claim. Mechanism 2 is not what happened this time; it remains the failure mode on a card that runs past 90 minutes. Pair it with claim-identity on release so a neighbour cannot extend a stolen lease."
+  },
+  "bypassCostThisTime": {
+    "doNotCloseTheBypass": "QUEUE-INIT recorded editor/SQL/gh as honestly advisory. Closing those paths turns the queue into a dispatcher. Not recommended.",
+    "cost": [
+      "Two property agents on one store-backed card from 15:30 to 15:48, then the second agent kept reading after the token moved to zoning-ingest at 15:51.",
+      "An early close at 15:46 that marked Travis/Williamson bake scans as timed out; the scans finished at 15:46:58. The second write corrected that. Operator had to open this audit to learn the writes were two lanes.",
+      "ALREADY_CLAIMED and CARD_CLOSED did no work because the second lane never re-ran claim. The expensive part of claiming (the refusal) was skipped. status was cheaper and did not bind."
+    ],
+    "leastResistance": "Claim stays the wake verb. Make the second write a named path rather than an obligation: a closed card accepts an addendum file, not a silent overwrite of close.json. status that prints CARD_CLOSED should also print the addendum command. That is still advisory. The cost of ignoring it becomes a second artifact the planner can see, not a second claim the queue must force."
+  },
+  "whatContradictedTheCard": "The card framed the defect as ALREADY_CLAIMED or CARD_CLOSED failing to fire on a second claim. Neither refusal is in the log. The second lane used status, which is not a claim and is not logged. The queue did not permit a second concurrent claim. Nothing in the four-event log contradicted the queue's documented behaviour.",
+  "leave_behind": [
+    {
+      "item": "Implement the release split (close / abandon / steal) and claim-identity match in scripts/queue/cli.mjs plus self-test cases, including a not-vacuous same-seat steal. Not this card.",
+      "owner": "planner",
+      "plan_row": "F-00"
+    },
+    {
+      "item": "Add holder-only extend. Not this card.",
+      "owner": "planner",
+      "plan_row": "F-00"
+    },
+    {
+      "item": "Do not wrap editor or SQL in a claim check. Do not treat this incident as a reason to make the queue a dispatcher.",
+      "owner": "planner",
+      "plan_row": "F-00"
+    }
+  ],
+  "constraintsHonored": [
+    "read only",
+    "did not modify the queue, the logs, or any card",
+    "did not count pre-marker events",
+    "did not close the advisory bypass",
+    "did not re-run cad-serve-reconcile",
+    "named a mechanism and rejected a second that matches the log"
+  ],
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_double-close-audit_cp1.json",
+    "_inbox/2026-09-01_double-close-audit_cp2.json",
+    "_inbox/2026-09-01_double-close-audit_close.json",
+    "_inbox/2026-09-01_double-close-audit_timeline.json",
+    "_scratch/double-close-audit.md",
+    "_state/property/STATE.md"
+  ]
+}

@@ -2,6 +2,37 @@
 /**
  * Cursor/Claude hook entry for SEAT-01.
  * Reads hook JSON on stdin, resolves the mutated worktree, calls evaluate.
+ *
+ * TWO ENFORCEMENT BOUNDARIES, ON PURPOSE. Do not "fix" this into one.
+ *
+ *   Write / Edit tool  -> refused at the FILE WRITE. You are stopped before you work.
+ *   shell (Bash)       -> refused at the GIT WRITE only (see isGitWrite below).
+ *                         Every other command, including heredocs, sed -i and python
+ *                         file writes, is ALLOWED in an unregistered worktree.
+ *
+ * That asymmetry surprised the planner on 2026-08-31: a Write into an unregistered
+ * worktree was refused while bash heredocs into the same worktree had already
+ * succeeded, and it was reported to the operator as "bash is ungated". That report was
+ * WRONG, and the correction is why this comment exists. Verified by violation the same
+ * day in P:/tmp/hauska-map-qa-w5 (unregistered): `git status` ran, `git add -n .` was
+ * refused. Bash is gated; it is gated LATER.
+ *
+ * The later boundary is the defensible one. SEAT-01 exists to make a shared checkout
+ * impossible, and what actually collides between two seats is the COMMIT, not the edit.
+ * Editing a file in an unregistered worktree harms nobody as long as nothing can be
+ * committed from it, which is exactly what this enforces.
+ *
+ * DO NOT broaden shell mode to refuse file-mutating commands. A control whose scope is
+ * broader than its claim is its own defect class: it blocks work it was never meant to
+ * reach and teaches the fleet to reach for the bypass flag. The narrow gate plus the
+ * early Write signal is the intended shape.
+ *
+ * KNOWN WEAKNESS, stated rather than hidden: isGitWrite inspects the COMMAND STRING.
+ * A commit that does not lexically match — `bash some-script-that-commits.sh`, or a git
+ * invocation built at runtime — reaches the same state without passing through here.
+ * This is the same command-string-inspection weakness the dirty-tree close gate carries.
+ * It is a real bypass and it is contrived; it is recorded here so nobody rediscovers it
+ * and mistakes it for a discovery.
  */
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';

@@ -1,0 +1,125 @@
+{
+  "row": "TW-7",
+  "kind": "operator-run",
+  "title": "Part A ran on the residential box; bodies are on the production host",
+  "ranAt": "2026-08-18T00:45:20Z",
+  "finishedAt": "2026-08-18T00:52:21Z",
+  "host": "Windows residential (this box). Isolated worktree P:\\tmp\\tw7-part-a @ origin/main cf9499fb. Did not touch P:\\Empressa Trading on fix/zone-mark-death-clip.",
+  "plan": "_rd_disclosure_twin/08_build_scope.md (unregistered R&D; CANON_OVERRIDE TW-7)",
+  "steps": [
+    {
+      "n": 1,
+      "what": "Review and merge PR 338",
+      "status": "already_done",
+      "evidence": "gh pr view 338 --json state,mergedAt,mergeCommit => MERGED 2026-08-18T00:19:54Z mergeCommit 851be9059a651dd02a94796193a49571ef5781ae"
+    },
+    {
+      "n": 2,
+      "what": "Pull merged main on the non-datacenter host",
+      "status": "done_via_worktree",
+      "evidence": "git worktree add P:\\tmp\\tw7-part-a origin/main; HEAD cf9499fb (TW-10, contains TW-7). Local P:\\Empressa Trading left on fix/zone-mark-death-clip."
+    },
+    {
+      "n": 3,
+      "what": "Set SEC and GCS credentials",
+      "status": "done",
+      "evidence": "SEC_GCS_BUCKET=empressa-sec; SEC_USER_AGENT='Empressa contact@empressa.pro'; SEC_DOCUMENTS_STAGE_DIR=P:\\tmp\\sec_documents_stage. gsutil used the active gcloud account empressaioemail@gmail.com (objectAdmin already held). No GOOGLE_APPLICATION_CREDENTIALS file; none needed."
+    },
+    {
+      "n": 4,
+      "what": "DRY RUN",
+      "status": "done",
+      "exit": 0,
+      "elapsed_ms": 141244,
+      "evidence": {
+        "ok": true,
+        "documents": 171,
+        "skipped": 24,
+        "bytes": 165948963,
+        "verified_locally": 171,
+        "uploaded": false,
+        "dry_run": true,
+        "sec_probe": "INFO SEC probe OK: HTTP 200 (164300 bytes)"
+      }
+    },
+    {
+      "n": 5,
+      "what": "REAL RUN",
+      "status": "done",
+      "exit": 0,
+      "elapsed_ms": 50803,
+      "evidence": {
+        "ok": true,
+        "documents": 171,
+        "skipped": 24,
+        "bytes": 165948963,
+        "verified_locally": 171,
+        "uploaded": true,
+        "gcs_prefix": "gs://empressa-sec/documents/",
+        "note": "Every body replayed from the dry-run stage (edgar: body for ... from disk cache). gsutil -m rsync -r P:\\tmp\\sec_documents_stage gs://empressa-sec/documents/"
+      }
+    },
+    {
+      "n": 6,
+      "what": "Confirm objects in the bucket",
+      "status": "done",
+      "evidence": {
+        "gsutil_du": "158.44 MiB   gs://empressa-sec/documents",
+        "prefixes": [
+          "gs://empressa-sec/documents/documents_manifest.json",
+          "gs://empressa-sec/documents/CIK0000320193/",
+          "gs://empressa-sec/documents/CIK0000789019/",
+          "gs://empressa-sec/documents/CIK0000884394/",
+          "gs://empressa-sec/documents/CIK0001045810/",
+          "gs://empressa-sec/documents/CIK0001067839/",
+          "gs://empressa-sec/documents/CIK0001318605/"
+        ],
+        "sidecars": 171,
+        "manifest": 1
+      }
+    },
+    {
+      "n": 7,
+      "what": "Deploy the backend (Part B inside the deploy)",
+      "status": "part_b_landed_cutover_not_mine",
+      "evidence": {
+        "whatISaw": "After the GCS push, a concurrent process (not this session's deploy-cockpit-api-gcp.ps1) dropped /tmp/cockpit-deploy.tar.gz at 00:50Z, wrote scripts/sec_sync_from_gcs.sh and scripts/sec_documents_verify.py onto /opt/empressa, and ran Part B. I did not start a second deploy.",
+        "partB": "171 bodies, 171 sidecars, 161M at /var/lib/cockpit/sec_documents, six CIK prefixes plus documents_manifest.json",
+        "imageBuilt": "empressa-cockpit-api a70595d19177 created 2026-08-18T00:51:26Z",
+        "cutover": "NOT completed. Running api/worker still image sha256:d63d83dc60a934fc7fcfb44b3103c3d2573cee202cca3ca4f43e2f0983af9963 started 2026-08-17T22:15:53Z. Health 200. /var/lib/cockpit is bind-mounted, so the running process sees the new tree without a restart.",
+        "iap": "IAP tunnel fails from this network (FATAL ERROR: Remote side unexpectedly closed). --no-tunnel-through-iap works."
+      }
+    },
+    {
+      "n": 8,
+      "what": "Verify on the VM independently of the deploy",
+      "status": "done",
+      "exit": 0,
+      "cmd": "python3 -B /opt/empressa/scripts/sec_documents_verify.py --dir /var/lib/cockpit/sec_documents --json",
+      "evidence": {
+        "ok": true,
+        "documents_dir": "/var/lib/cockpit/sec_documents",
+        "rows": 171,
+        "verified": 171,
+        "failed": 0,
+        "missing_sidecars": 0,
+        "unlisted_bodies": 0,
+        "failures": []
+      }
+    },
+    {
+      "n": 9,
+      "what": "OPTIONAL: schedule Part A daily",
+      "status": "not_done",
+      "reason": "Optional. No Task Scheduler entry created. Re-runs are cheap because the stage at P:\\tmp\\sec_documents_stage replays."
+    }
+  ],
+  "tw6Unblocked": true,
+  "tw6UnblockedBecause": "Filing bodies exist on the production host at /var/lib/cockpit/sec_documents, 171/171 verified through edgar.local_filing_document. Default COCKPIT_SEC_DOCUMENTS_DIR is that path. The running API bind-mounts /var/lib/cockpit.",
+  "remaining": [
+    "Image a70595d19177 is built and not serving. Cutover is a D-080 soak-window item, not required for TW-6 to read bodies.",
+    "Step 9 schedule not created.",
+    "NPORT-P xsl-viewer-path gap (24 skipped) is unchanged; that is a provider row, not this run.",
+    "Worktree P:\\tmp\\tw7-part-a can be removed when convenient."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "lane": "A3",
+  "artifact": "PLANNER_CP1_REVIEW",
+  "date": "2026-08-15",
+  "reviewer": "planner",
+  "against": ["_inbox/2026-08-15_a3_wdll_g14_l1_complete.md", "_inbox/2026-08-15_a3_cp1.json", "PR 432 @ 1332d220"],
+  "verdict": "HOLD_MERGE — two defects, both cheap, both must land before SUCCESS is mergeable",
+  "challenges": [
+    {
+      "id": "P-A3-1",
+      "challenge": "Does 0080 backfill of the superseded three-segment form rewrite entity_id, or only denorm columns?",
+      "resolution": "ONLY denorm. Rows with entity_id smartfile:48021:udc get scope_type=jurisdiction and scope_id=48021, but entity_id stays three-segment. parseSmartFileEntityId of that stored value returns null. Storage would persist a string the declared parser cannot read. Fail-closed: rewrite entity_id to smartfile:jurisdiction:<fips>:<docSlug> in the same UPDATE, or refuse the backfill (empty deployment makes rewrite safe).",
+      "severity": "merge-blocker",
+      "wdllItem": 1
+    },
+    {
+      "id": "P-A3-2",
+      "challenge": "Is empty-string jurisdiction_fips on smart_file_absence_determinations a surviving guardrail?",
+      "resolution": "No. Store writes '' for tenant/site to satisfy 0079 NOT NULL. An empty result is not an absence; an empty FIPS is a synthesized city. 0080 must ALTER absence.jurisdiction_fips DROP NOT NULL and the store must write NULL. Do not rewrite 0079. A3-CP1-F1 was correctly found and incorrectly deferred.",
+      "severity": "merge-blocker",
+      "wdllItem": 3
+    },
+    {
+      "id": "P-A3-3",
+      "challenge": "Parser last-segment-is-slug and old-form rejection",
+      "resolution": "HOLD pending P-A3-1. Builder/parser and contract tests look correct on read of smart-file.contract.ts. Old three-segment returns null. Round-trips for jurisdiction/tenant/site-with-colons present.",
+      "severity": "pass-conditional"
+    },
+    {
+      "id": "P-A3-4",
+      "challenge": "0078/0079 rewritten?",
+      "resolution": "No. 0080 additive. Pass.",
+      "severity": "pass"
+    },
+    {
+      "id": "P-A3-5",
+      "challenge": "Brokerage / smartcity-os",
+      "resolution": "9 files, 0 brokerage names. Pass on name list. Re-check after the fix commit.",
+      "severity": "pass"
+    }
+  ],
+  "requiredFixBeforeMerge": [
+    "0080: when backfilling 3-segment rows, rewrite entity_id to the declared 4-segment form",
+    "0080: ALTER smart_file_absence_determinations.jurisdiction_fips DROP NOT NULL",
+    "drizzle + store: absence jurisdictionFips null not empty string"
+  ]
+}

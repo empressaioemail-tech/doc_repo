@@ -1,0 +1,309 @@
+{
+  "artifact": "CLOSE",
+  "lane": "p98b-vocab",
+  "laneTitle": "P-98b: one billing-interval vocabulary, month/year, end to end",
+  "planRows": ["P-98"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "date": "2026-09-01",
+  "dispatch": "_dispatches/2026-09-01_p98b-vocab_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-01_p98b-vocab_cp1.json",
+    "_inbox/2026-09-01_p98b-vocab_cp2.json"
+  ],
+  "status": "complete -- both halves built, both suites green, gate verified by violation. Diffs are UNCOMMITTED in two worktrees, per the dispatch commit clause.",
+
+  "missionPremise": "Operator ruling carried in the compiled dispatch (Nick, 2026-08-31): ONE billing-interval vocabulary end to end -- 'month' / 'year', Stripe's own recurring-interval grammar -- with no translation layer, and the client changed to match rather than the server. The rationale in the dispatch is that a silent mapping between two vocabularies for one subject is the defect class that already cost this operation a re-stamp of 6.3M rows when a legacy access-policy pair had to be removed. The source authority is lib/db/drizzle/0092_pe_billing_interval.sql, whose CHECK admits only NULL, 'month' and 'year', and whose comment states the grammar mirrors Stripe.",
+  "completionPredicate": "peWireBillingInterval.ts no longer exists in the tree; no billing-interval VALUE in either repo's entitlement path is 'monthly' or 'annual' except as a deliberately-refused input in a violation test; the three assertions that failed CI pass WITHOUT being edited; npx tsc --noEmit is clean in both repos; the client suite is at or above its pre-change count; and the annual_upgrade gate has been observed RED under a deliberate inversion and green again after restore, with the red output captured verbatim. All met.",
+  "scopeBasis": "The subject is the entitlement WIRE FIELD pe_user_entitlements.billing_interval and every reader of it. Display copy and UI toggle state are out of scope: they are not a wire vocabulary and already sit behind a declared, tested boundary (pricing.ts toCheckoutInterval). Persisted identifiers containing the substring 'annual' -- the annual_upgrade rung id -- are out of scope because they name a rung, not an interval, and renaming one to satisfy a text match would break a stored vocabulary.",
+
+  "snapshot": {
+    "doc_repo": {
+      "path": "P:/doc_repo",
+      "branch": "main",
+      "role": "close artifacts only; no repo edits beyond the three _inbox JSON files this dispatch named"
+    },
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+      "remote": "https://github.com/empressaioemail-tech/legacy-design-tools",
+      "branch": "feat/p98b-account-entitlement",
+      "baseCommit": "b2e81052f8a5936daadb73be3956b0073ee97f8c",
+      "baseCommitSubject": "feat(P-98): billing interval persisted, entitlement readable without a parcel",
+      "treeAtStart": "clean",
+      "treeAtClose": "3 files changed, uncommitted"
+    },
+    "hauska-map": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+      "remote": "https://github.com/empressaioemail-tech/hauska-map.git",
+      "branch": "feat/p98b-account-entitlement-client",
+      "baseCommit": "04e0a752c0ead0d5af20fba344ebfb8969f45e3a",
+      "baseCommitSubject": "feat(pe/P-98): read entitlement without a parcel; Access, tier and interval light up",
+      "treeAtStart": "clean",
+      "treeAtClose": "8 files changed, uncommitted"
+    }
+  },
+
+  "prNumbers": "not applicable: lane produces an uncommitted diff",
+  "mergeShas": "not applicable: lane produces an uncommitted diff",
+  "ciConclusionStrings": "not applicable: lane produces an uncommitted diff. PR #574 on legacy-design-tools remains at its pre-existing failing CI until the planner commits and pushes this diff; nothing in this lane pushed a commit, so no new check run exists to quote. The hauska-map client branch still has no PR open.",
+
+  "translationRemoved": {
+    "fileDeleted": "artifacts/api-server/src/lib/peWireBillingInterval.ts",
+    "mappingLines": "33-34",
+    "verbatim": "if (v === \"month\") return \"monthly\";\nif (v === \"year\") return \"annual\";",
+    "typeDeleted": "peWireBillingInterval.ts:28  export type PeWireBillingInterval = \"monthly\" | \"annual\";",
+    "appliedAt": "artifacts/api-server/src/lib/peEntitlement.ts:199  billingInterval: peWireBillingInterval(snap.billingInterval)",
+    "nowReads": "artifacts/api-server/src/lib/peEntitlement.ts  billingInterval: snap.billingInterval  (wire type PeBillingInterval | null)",
+    "consumerEnumeration": "grep -rn \"peWireBillingInterval|PeWireBillingInterval\" --include=*.ts --include=*.tsx . | grep -v node_modules -- one production consumer plus the module's own test. Nothing else imported it."
+  },
+
+  "filesChanged": {
+    "legacy-design-tools": [
+      {
+        "path": "artifacts/api-server/src/lib/peWireBillingInterval.ts",
+        "change": "DELETED",
+        "reason": "the module IS the mapping; with month/year on the wire there is no function left to keep"
+      },
+      {
+        "path": "artifacts/api-server/src/lib/__tests__/peWireBillingInterval.test.ts",
+        "change": "DELETED",
+        "reason": "retirement item for the module, carried in the same card per ENFORCEMENT Retirement; it tests a function that no longer exists"
+      },
+      {
+        "path": "artifacts/api-server/src/lib/peEntitlement.ts",
+        "change": "modified (+17 / -6)",
+        "reason": "dropped the import, typed the wire field PeBillingInterval | null, passed snap.billingInterval straight through, and documented WHY there is no translation and which control now carries the totality property (the 0092 CHECK)"
+      }
+    ],
+    "hauska-map": [
+      {
+        "path": "apps/property-explorer/src/lib/nextAction.ts",
+        "change": "modified",
+        "reason": "type BillingInterval flipped to \"month\" | \"year\"; the annual_upgrade whitelist at line 406 flipped from !== \"monthly\" to !== \"month\". This is the line the rung is judged on."
+      },
+      {
+        "path": "apps/property-explorer/src/lib/accountEntitlementClient.ts",
+        "change": "modified",
+        "reason": "parseBillingInterval now resolves only \"month\" and \"year\"; the contract header and THE ONE RULE block updated to the new vocabulary, and the doc now says explicitly that the retired product words do not resolve"
+      },
+      {
+        "path": "apps/property-explorer/src/lib/useAccountEntitlement.ts",
+        "change": "modified (1 line)",
+        "reason": "the 'never turns a null into monthly' refusal doc now names \"month\"; the pass-through code itself needed no change"
+      },
+      {
+        "path": "apps/property-explorer/src/browse/SettingsModal.tsx",
+        "change": "modified",
+        "reason": "billingIntervalLabel now switches on the wire value \"year\" instead of \"annual\", and the render boundary is documented as the ONE place the wire word and the display word meet; the ladder-input comment updated"
+      },
+      {
+        "path": "apps/property-explorer/src/lib/account-entitlement-client.test.ts",
+        "change": "modified",
+        "reason": "parse accepts month/year; the rejected-input list REBUILT -- \"month\" and \"year\" moved OUT of it, \"monthly\" and \"annual\" moved IN with a comment saying they are refused because they are the retired words a translation layer would use to grow back; fixtures and the wire-body-to-rung violation tests re-vocabularised"
+      },
+      {
+        "path": "apps/property-explorer/src/lib/nextAction.test.ts",
+        "change": "modified",
+        "reason": "the annual-rung helper signature and every ladder fixture moved to month/year; not named in the dispatch, found by the required grep, and it carried its own copy of the union at line 529"
+      },
+      {
+        "path": "apps/property-explorer/src/browse/settings-plan-rows.test.tsx",
+        "change": "modified",
+        "reason": "the label test now feeds wire values month/year and still expects the pricing popup's Monthly/Annual LABELS, which is the point of the render boundary; the not-vacuous guard moved with it"
+      },
+      {
+        "path": "apps/property-explorer/src/browse/settings-next-action.test.tsx",
+        "change": "modified",
+        "reason": "the anti-invention source scan WIDENED rather than swapped: the mount must hard-code none of \"month\", \"year\", \"monthly\" or \"annual\". Swapping the one refused literal would have left the retired words admissible in the exact file the test exists to police."
+      }
+    ]
+  },
+
+  "testsEditedAndWhy": {
+    "server": "ZERO server tests were edited. The three assertions named in the dispatch expected month/year, which is the source authority, and they went green on the production change alone. peEntitlement.responseBody.unit.test.ts has no hunk in the diff.",
+    "client": "Four client test files were edited. None of them was wrong about a RULE; every one of them was written against the vocabulary being retired. Two edits are worth calling out explicitly rather than letting them pass as mechanical: (1) in account-entitlement-client.test.ts the rejected-input list previously listed \"month\" and \"year\" AS INVALID -- under the ruling they are the only valid values, so the list was inverted and \"monthly\"/\"annual\" were added to it with a stated reason; (2) in settings-next-action.test.tsx the single refused literal became four, so the retired words stay refused rather than becoming admissible by omission."
+  },
+
+  "beforeAfter": {
+    "serverTargetedFile": {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx vitest run src/lib/peEntitlement.responseBody.unit.test.ts",
+      "before": "Test Files 1 failed (1) | Tests 2 failed | 6 passed (8)",
+      "after": "Test Files 1 passed (1) | Tests 8 passed (8)"
+    },
+    "serverFullSuite": {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx vitest run",
+      "beforeMethod": "measured at the base tree via git stash push / run / git stash pop; restore proved byte-identical by md5 e167894e53def6e2b7db0307d9655add on the regenerated diff",
+      "before": "Test Files 166 failed | 155 passed | 1 skipped (322); Tests 2 failed | 1462 passed | 1 skipped (1465); Errors 1 error",
+      "after": "Test Files 165 failed | 155 passed | 1 skipped (321); Tests 1461 passed | 1 skipped (1462); Errors 1 error",
+      "countingRule": "vitest counts a file as failed if any test in it fails OR if it throws at import. 165 of the failed files die at import on 'DATABASE_URL must be set' and are UNMEASURED locally, not failing on logic; they fail identically before and after. The 1 error is the same vi.mock unhandled rejection from lib/engine-core/src/partition.ts in both runs, pre-existing and untouched by this lane.",
+      "reconciliation": "files 322->321 is the one deleted test file. failed files 166->165 is responseBody.unit.test.ts moving from failed to passed. passed files stay 155 because responseBody joined (+1) as the deleted wire test left (-1). tests 1465->1462 is exactly the three deleted wire tests. passed 1462->1461 is +2 (the assertions that now pass) and -3 (deleted). Every unit is attributed; there is no unexplained delta.",
+      "declaredRegression": "3 passing tests were RETIRED, not lost: src/lib/__tests__/peWireBillingInterval.test.ts (3 tests, green at baseline) tested the translation function and was deleted with it. Reporting the after-count without this line would misdescribe the change."
+    },
+    "serverTypecheck": {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx tsc --noEmit -p tsconfig.json",
+      "before": "exit 0, no diagnostics",
+      "after": "exit 0, no diagnostics",
+      "note": "a clean typecheck after deleting a module is the check that no importer was left dangling"
+    },
+    "serverDbBackedFile": {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx vitest run src/__tests__/pe-property-entitlement.test.ts",
+      "result": "UNMEASURED HERE. Verbatim: 'FAIL src/__tests__/pe-property-entitlement.test.ts -- Error: [vitest] There was an error when mocking a module. ... Caused by: Error: DATABASE_URL must be set. Did you forget to provision a database? -- Test Files 1 failed (1) | Tests no tests'. Zero tests collected; the file dies at import. Its line-298 assertion expects \"month\", which is what the wire now carries, but this lane did not observe it pass and does not claim it. CI with DATABASE_URL is the authority."
+    },
+    "clientFullSuite": {
+      "command": "cd P:/seat-worktrees/property/hauska-map-nextaction/apps/property-explorer && npx vitest run",
+      "beforeMethod": "measured at the base tree via git stash push -- apps/property-explorer / run / git stash pop; restore proved byte-identical by md5 1a782f51a18610e429dbabe36ac0d927 on the regenerated diff",
+      "before": "Test Files 166 passed (166); Tests 2234 passed | 1 todo (2235)",
+      "after": "Test Files 166 passed (166); Tests 2234 passed | 1 todo (2235)",
+      "countingRule": "identical because the edits changed assertion VALUES and one test NAME; no test was added or removed. Measured on both sides rather than argued from the diff.",
+      "dispatchFigureReconciled": "the dispatch cited 2194 as the pre-P-98b-client baseline. That is a DIFFERENT baseline -- it predates the sibling lane's own commit 04e0a75. Against 04e0a75, which is this lane's actual base, the count is 2235 including 1 todo. The two figures are not in conflict; they are counts of different trees, and the 41-test difference is the client lane's own work."
+    },
+    "clientTypecheck": {
+      "command": "cd P:/seat-worktrees/property/hauska-map-nextaction/apps/property-explorer && npx tsc --noEmit",
+      "after": "exit 0, no diagnostics"
+    },
+    "clientChromeKitGate": {
+      "command": "cd P:/seat-worktrees/property/hauska-map-nextaction/apps/property-explorer && node scripts/pe-chrome-kit-gate.mjs",
+      "after": "exit 0 -- 'SELF-TEST 76/76 ok' / 'CHROME-KIT GATE 20 surfaces + 12 kit files ok'. Run because the package's own test script is 'node scripts/pe-chrome-kit-gate.mjs && vitest run', so a bare vitest run is NOT the whole gate."
+    }
+  },
+
+  "verifyByViolation": {
+    "required": "dispatch step 7 -- break the gate, confirm red, restore, confirm green, paste verbatim",
+    "target": "apps/property-explorer/src/lib/nextAction.ts:406",
+    "injected": "if (e.billingInterval !== \"month\") return null;   ->   if (e.billingInterval === \"month\") return null;",
+    "command": "cd P:/seat-worktrees/property/hauska-map-nextaction/apps/property-explorer && npx vitest run src/lib/nextAction.test.ts src/lib/account-entitlement-client.test.ts",
+    "summaryUnderViolation": "Test Files  2 failed (2)   /   Tests  20 failed | 42 passed (62)",
+    "verbatimRedOutput": "⎯⎯⎯⎯⎯⎯ Failed Tests 20 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  src/lib/account-entitlement-client.test.ts > VERIFY BY VIOLATION — wire body to rung, in both directions > MONTH DOES fire annual_upgrade — the rung is fed, not starved\nAssertionError: expected undefined to be 'annual_upgrade' // Object.is equality\n\n- Expected: \n\"annual_upgrade\"\n\n+ Received: \nundefined\n\n ❯ src/lib/account-entitlement-client.test.ts:374:24\n    372|     // the account read is that this rung can now reach a user at all.\n    373|     const action = nextAction(\"plan\", planStateFromBody(paidSolo({ bil…\n    374|     expect(action?.id).toBe(\"annual_upgrade\");\n       |                        ^\n    375|   });\n    376| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/20]⎯\n\n FAIL  src/lib/account-entitlement-client.test.ts > VERIFY BY VIOLATION — wire body to rung, in both directions > ANNUAL does NOT fire it\nAssertionError: expected { id: 'annual_upgrade', …(4) } to be null\n\n- Expected: \nnull\n\n+ Received: \n{\n  \"context\": \"plan\",\n  \"ctaLabel\": \"Switch to annual\",\n  \"detail\": \"Same plan, same access, billed once a year instead of monthly.\",\n  \"headline\": \"Two months free on this plan\",\n  \"id\": \"annual_upgrade\",\n}\n\n ❯ src/lib/account-entitlement-client.test.ts:380:7\n    378|     expect(\n    379|       nextAction(\"plan\", planStateFromBody(paidSolo({ billingInterval:…\n    380|     ).toBeNull();\n       |       ^\n    381|   });\n    382| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/20]⎯\n\n FAIL  src/lib/account-entitlement-client.test.ts > VERIFY BY VIOLATION — wire body to rung, in both directions > an EXPLICIT NULL interval does NOT fire it\nAssertionError: expected { id: 'annual_upgrade', …(4) } to be null\n\n- Expected: \nnull\n\n+ Received: \n{\n  \"context\": \"plan\",\n  \"ctaLabel\": \"Switch to annual\",\n  \"detail\": \"Same plan, same access, billed once a year instead of monthly.\",\n  \"headline\": \"Two months free on this plan\",\n  \"id\": \"annual_upgrade\",\n}\n\n ❯ src/lib/account-entitlement-client.test.ts:386:7\n    384|     expect(\n    385|       nextAction(\"plan\", planStateFromBody(paidSolo({ billingInterval:…\n    386|     ).toBeNull();\n       |       ^\n    387|   });\n    388| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/20]⎯\n\n FAIL  src/lib/nextAction.test.ts > the annual rung > does NOT fire for an account already on annual\nAssertionError: expected { id: 'annual_upgrade', …(4) } to be null\n\n- Expected: \nnull\n\n+ Received: \n{\n  \"context\": \"plan\",\n  \"ctaLabel\": \"Switch to annual\",\n  \"detail\": \"Same plan, same access, billed once a year instead of monthly.\",\n  \"headline\": \"Two months free on this plan\",\n  \"id\": \"annual_upgrade\",\n}\n\n ❯ src/lib/nextAction.test.ts:547:54\n    545| \n    546|   it(\"does NOT fire for an account already on annual\", () => {\n    547|     expect(nextAction(\"plan\", paid(\"solo\", \"year\"))).toBeNull();\n       |                                                      ^\n    548|   });\n    549| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/20]⎯\n\n FAIL  src/lib/nextAction.test.ts > the annual rung > does NOT fire when the interval is UNKNOWN — and unknown is now a live state, not a starved one\nAssertionError: expected { id: 'annual_upgrade', …(4) } to be null\n\n ❯ src/lib/nextAction.test.ts:558:52\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/20]⎯\n\n FAIL  src/lib/nextAction.test.ts > capability-first copy law > gathered every rung, so this law is not tested on an empty set\nAssertionError: expected [ Array(4) ] to have a length of 5 but got 4\n\n ❯ src/lib/nextAction.test.ts:612:17\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/20]⎯\n\n\n Test Files  2 failed (2)\n      Tests  20 failed | 42 passed (62)",
+    "restore": "reverted line 406 to !== \"month\"; full client suite re-run green at 166 files / 2234 passed / 1 todo; working-tree diff md5 identical to the pre-violation backup (1a782f51a18610e429dbabe36ac0d927), proving the injection left no residue in the delivered diff",
+    "conclusion": "The gate was observed FAILING for the right reasons in BOTH directions: a month subscriber stops firing the rung, AND a year subscriber and a null-interval account both start firing it. A check observed only passing has not been observed working; this one has been.",
+    "eventsExcluded": "the 20 failures above were generated BY the violation and are excluded from every count reported elsewhere in this close. No reported before/after count includes them."
+  },
+
+  "contradictionsToTheBrief": [
+    {
+      "briefSaid": "The sibling CLIENT lane on hauska-map (branch feat/p98b-account-entitlement-client, commit 04e0a75, pushed but no PR opened) built its contract as billingInterval: 'monthly'|'annual'|null.",
+      "atSource": "TRUE but INCOMPLETE, and the incompleteness changes the blast radius. The monthly/annual vocabulary is ALREADY MERGED on hauska-map origin/main -- it did not arrive with the sibling branch.",
+      "command": "git -C P:/seat-worktrees/property/hauska-map-nextaction grep -n billingInterval origin/main",
+      "evidence": "origin/main:apps/property-explorer/src/lib/nextAction.ts and origin/main:apps/property-explorer/src/lib/nextAction.test.ts already carry the 'monthly'|'annual' union (nextAction.test.ts:529 on main declares billingInterval: \"monthly\" | \"annual\" | null); origin/main:SettingsModal.tsx:358 hardcodes billingInterval: null; origin/main:settings-next-action.test.tsx:159-160 pins it. It landed with PR #329, feat/p98-next-action-rail.",
+      "consequence": "This diff edits main-resident client code, not only code the sibling lane authored. It is still inside task 5's mandate, but the planner should know the change is not confined to an unmerged branch's own additions."
+    },
+    {
+      "briefSaid": "Grep the whole app for monthly and annual to catch any you were not told about.",
+      "found": "src/lib/nextAction.test.ts was NOT in the dispatch's five named starting files and carried its own copy of the union at line 529 plus twelve fixtures. Changed.",
+      "note": "reported per DEV_PROCESS 3.2 -- the brief's list was a starting point and said so; this is the grep doing its job, not a defect in the brief."
+    },
+    {
+      "briefSaid": "The baseline before the P-98b client work was 2194 tests.",
+      "atSource": "Not contradicted, but not this lane's baseline either. At 04e0a75 -- the commit this lane actually starts from -- the client suite is 2234 passed + 1 todo = 2235. The 2194 figure predates the sibling lane's own commit. Both numbers are right about different trees; quoting 2194 as the before-count for THIS change would have been wrong by 41."
+    },
+    {
+      "briefSaid": "There is unrelated annual PRICING copy which must NOT be touched.",
+      "atSource": "Confirmed, and it is more structured than 'copy'. apps/property-explorer/src/lib/pricing.ts:30 declares PricingInterval = \"annual\" | \"monthly\" as the pricing-modal TOGGLE vocabulary, and pricing.ts:262-273 already carries an explicit named boundary to the wire: PeCheckoutInterval = \"month\" | \"year\" with toCheckoutInterval / fromCheckoutInterval, commented 'Cortex checkout enum. UI says annual/monthly; the wire says year/month.' pe-checkout-tier.test.ts:122 already pins 'UI token annual is refused on the wire -- cortex enum only, no POST'.",
+      "significance": "This is a finding in the ruling's FAVOUR and worth the planner's attention. The CHECKOUT leg of the client already spoke month/year on the wire. Before this change the client spoke month/year to the server on checkout and monthly/annual from the server on entitlement -- two directions, one subject, two vocabularies. After this change both legs agree. Untouched, as instructed."
+    }
+  ],
+
+  "deliberatelyNotChanged": [
+    {
+      "item": "apps/property-explorer/src/lib/usePropertyEntitlement.ts and src/lib/entitlementClient.ts",
+      "why": "explicit dispatch bound -- the client lane left them alone and a test pins that. git status confirms neither is in the diff."
+    },
+    {
+      "item": "apps/property-explorer/src/lib/pricing.ts, PricingModal.tsx, pricing-modal.test.tsx, pricing.test.ts",
+      "why": "PricingInterval is UI toggle state and display copy behind a declared, tested boundary, not a wire vocabulary. Out of scope by the dispatch bound. Flagged as a standing question the operator may want to rule on separately: the product now carries two words for one concept, but they are separated by a named function with tests on both sides, which is the opposite of the silent bridge this ruling deleted."
+    },
+    {
+      "item": "src/checkout/checkoutCopy.ts:31, const ui = interval === \"year\" ? \"annual\" : \"monthly\"",
+      "why": "render-time copy selection on the checkout page, same category as billingIntervalLabel. Not a wire value."
+    },
+    {
+      "item": "the annual_upgrade rung id, in nextAction.ts:85/408, SettingsModal.tsx:127/492, and artifacts/api-server/src/lib/peActivationEventsValidate.ts:58",
+      "why": "a persisted IDENTIFIER, not an interval value. It is in the server's activation-event enum and therefore in stored data. Renaming it to satisfy a substring match would break a stored vocabulary to make a grep look clean."
+    },
+    {
+      "item": "user-facing rung copy: 'Switch to annual', 'billed once a year instead of monthly'",
+      "why": "English shown to a person. The ruling is about the wire."
+    },
+    {
+      "item": "src/browse/brief-view-model.ts, '1% annual-chance floodplain'",
+      "why": "FEMA flood terminology. Matched the grep, has nothing to do with billing."
+    },
+    {
+      "item": "the 165 DATABASE_URL-blocked api-server test files and the 1 pre-existing vi.mock unhandled rejection from lib/engine-core/src/partition.ts",
+      "why": "identical before and after; a local-environment condition, not this lane's to fix, and fixing it would have been unscoped work inside a vocabulary change."
+    },
+    {
+      "item": "no commit, push, branch, or PR in any repo",
+      "why": "dispatch commit clause -- this lane produces diffs and a report; the planner commits."
+    }
+  ],
+
+  "constraintsHonored": [
+    "no git add / commit / push / merge / PR in any repo; only git status, git diff, git grep, git stash push+pop (both popped and proved byte-identical by md5)",
+    "no sub-agents spawned (dispatch no-nesting clause); AGENT_CONTRACT section 1 permits a fan but does not require one, so there is no contract conflict",
+    "every verification command exit-bounded: npx vitest run, npx tsc --noEmit, node scripts/pe-chrome-kit-gate.mjs, one-shot greps. No watch, tail, follow, serve or dev server was run.",
+    "worked only in this lane's two registered worktrees (both listed in _catalog/seat_register.json under seat 'property', with notes stating each lane produces a diff and the planner commits); no other seat's checkout was read or written",
+    "no atoms-store write, no heavy PostGIS scan, so no write-slot or heavy-scan lease was required",
+    "CP1 and CP2 filed as named _inbox artifacts before and mid-work respectively, per AGENT_CONTRACT section 1",
+    "all three artifacts land at the exact paths the dispatch named and parse as valid JSON"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "uncommitted diff in P:/seat-worktrees/property/legacy-design-tools-p98 on feat/p98b-account-entitlement (3 files: 1 modified, 2 deleted) -- needs commit + push before PR #574 CI can re-judge",
+      "owner": "planner",
+      "plan_row": "P-98"
+    },
+    {
+      "item": "uncommitted diff in P:/seat-worktrees/property/hauska-map-nextaction on feat/p98b-account-entitlement-client (8 files modified) -- needs commit + push, and this branch still has NO PR open",
+      "owner": "planner",
+      "plan_row": "P-98"
+    },
+    {
+      "item": "cross-repo merge ordering: the server and client halves are one contract change split across two repos. Merging the server half alone puts month/year on a wire whose deployed client parses only monthly/annual, which fails CLOSED (parseBillingInterval returns null, the rung stays quiet, Settings prints Not read) rather than fabricating a billing fact -- but it is a silently degraded window and should be short.",
+      "owner": "planner",
+      "plan_row": "P-98"
+    },
+    {
+      "item": "pricing.ts keeps PricingInterval = annual|monthly as a second word for a related concept, bridged by toCheckoutInterval. Deliberately out of scope here; worth an explicit operator ruling on whether the display vocabulary stays or collapses, so a future lane does not re-open it as a defect.",
+      "owner": "operator",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "the wire's grammar now rests solely on the DDL CHECK pe_user_entitlements_billing_interval_chk. drizzle .$type<PeBillingInterval>() is an unchecked cast and is NOT the runtime guarantee. If that constraint is ever dropped or weakened, nothing else catches an out-of-grammar value on the wire.",
+      "owner": "planner",
+      "plan_row": "backlog"
+    },
+    {
+      "item": "scratchpad backups of both diffs (hauska-map-p98b-vocab.patch, ldt-p98b-vocab.patch) under the session scratchpad; disposable once the planner commits.",
+      "owner": "planner",
+      "plan_row": "none"
+    }
+  ],
+
+  "fleetMemory": {
+    "LESSON": [
+      "grep -c $'\\r' is VACUOUS in this environment: the escape does not survive into the pattern, grep gets an empty pattern, and it reports every line as matching. It returned '269 CR lines' for a file with zero CR bytes. Use cr=$(tr -cd '\\r' < f | wc -c). Negative control that proves it: printf 'a\\nb\\n' > f; grep -c $'\\r' f returns 2. This is the ENFORCEMENT 'convenient answer, uninterrogated instrument' shape, caught only because od -c disagreed.",
+      "Both property-seat worktrees are checked out LF-ONLY in the working tree even though core.autocrlf=true. Rewriting a file with python io.open(..., newline='') therefore matches the checkout and produces a clean semantic diff. Writing CRLF would produce a whole-file diff.",
+      "To measure a real BEFORE count without a second checkout: back the diff up, git stash push (path-scoped where possible), run the suite, git stash pop, then regenerate the diff and compare md5 to the backup. The md5 match is the proof the restore was byte-identical, and it costs one command. This worked on both repos here.",
+      "A package's `test` script is not always `vitest run`. apps/property-explorer runs `node scripts/pe-chrome-kit-gate.mjs && vitest run`, so a bare vitest run skips a real gate. Read the script before claiming a suite is green.",
+      "When a translation module is deleted, the strongest single check that no importer was orphaned is a clean `tsc --noEmit` over the whole project -- stronger than grepping for the symbol, because it follows re-exports."
+    ],
+    "DEAD-END": [
+      "Do not try to establish a baseline by `git checkout -- <files>` in a lane worktree: it is refused as destructive, and correctly so. git stash push / pop is the sanctioned path and is reversible with a provable restore.",
+      "Do not anchor a multi-line patch on remembered indentation. A doc-comment anchor with 3 leading spaces instead of 1 failed to match and aborted the patch script -- which is the right failure, because the script asserts an exact occurrence count of 1 before writing. Anchor patches on text read from the file in the same session."
+    ],
+    "GROUND-TRUTH": [
+      "(2026-09-01) legacy-design-tools origin/main contains NO occurrence of billingInterval. The entire P-98 billing-interval wire field is unmerged and has no deployed consumer. Command: git grep -n billingInterval origin/main.",
+      "(2026-09-01) hauska-map origin/main ALREADY carries the monthly|annual billing-interval union in apps/property-explorer/src/lib/nextAction.ts and nextAction.test.ts, landed by PR #329. The vocabulary split was not confined to the unmerged sibling branch.",
+      "(2026-09-01) hauska-map apps/property-explorer suite at 04e0a75: 166 files, 2234 passed, 1 todo (2235). Unchanged by this lane.",
+      "(2026-09-01) legacy-design-tools artifacts/api-server full suite locally: 155 files pass, 165 die at import on 'DATABASE_URL must be set', 1 skipped, plus 1 pre-existing vi.mock unhandled rejection from lib/engine-core/src/partition.ts. That failure population is a local-environment fact and is identical before and after any code change; CI is the authority for those 165.",
+      "(2026-09-01) apps/property-explorer/src/lib/pricing.ts:262-273 already exports toCheckoutInterval / fromCheckoutInterval mapping PricingInterval (annual|monthly) to PeCheckoutInterval (month|year). The checkout wire has spoken Stripe grammar all along."
+    ],
+    "OPEN": [
+      "Both diffs are uncommitted in two worktrees; PR #574 cannot re-run CI until the server half is pushed, and the client branch has no PR at all.",
+      "Server and client halves are one contract split across two repos -- merge order matters, and the intermediate state degrades silently-but-closed (rung quiet, Settings prints Not read).",
+      "Whether pricing.ts's display vocabulary stays split from the wire vocabulary is an unruled question this lane deliberately did not answer.",
+      "The wire grammar's only runtime guarantee is now the 0092 DDL CHECK; nothing in TypeScript enforces it at the boundary."
+    ]
+  }
+}

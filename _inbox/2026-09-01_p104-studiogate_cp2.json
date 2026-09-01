@@ -1,0 +1,103 @@
+{
+  "checkpoint": "CP2",
+  "kind": "mid-work adversarial review, after the build and the violation harness",
+  "lane": "p104-studiogate",
+  "planRow": "P-104",
+  "date": "2026-09-01",
+  "cp1": "_inbox/2026-09-01_p104-studiogate_cp1.json",
+  "snapshot": {
+    "hauska-map": {
+      "worktree": "P:/tmp/hauska-map-p104-studiogate",
+      "branch": "seat/property-p104-studiogate",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "state": "11 files modified, UNCOMMITTED"
+    },
+    "legacy-design-tools": {
+      "worktree": "P:/tmp/legacy-design-tools-p104-studiogate",
+      "branch": "seat/property-p104-studiogate",
+      "baseCommit": "d332d799e1ddbd64e106685fe37828ce24862959",
+      "state": "2 files modified, UNCOMMITTED"
+    }
+  },
+  "violationHarness": {
+    "instrument": "a FILE, not a shell one-liner: scratchpad/p104violate.py. Each case mutates one file, runs the check that should catch it, asserts a NON-ZERO exit, restores the file, and asserts the restored bytes are IDENTICAL to the pre-mutation bytes and the check passes again. A case that did not go 0 then non-zero then 0 is reported as harness failure, not as a proof.",
+    "selfCheckThatCaughtAHarnessDefect": "First run aborted on case 1 with 'anchor count=0'. Cause: line endings are MIXED in this tree (core.autocrlf=true; pe-site-plan-export-core.ts and ReportsTool.tsx are CRLF in the working copy, the rest LF), so a \\n-written anchor matched zero times. Had the harness not counted its anchor it would have silently no-opped and reported ten passes. The count check is the reason this is trustworthy. Fixed by translating each anchor into the target file's own newline convention.",
+    "casesRun": 10,
+    "casesProved": 10,
+    "resultTable": "P:/tmp/p104-violations.json (verbatim mutated-run output per case)",
+    "cases": [
+      { "n": 1, "mutation": "site-plan Studio requirement DELETED (restores the exact P-104 bug)", "check": "npx vitest run src/lib/pe-site-plan-export-bff.test.ts", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 2, "mutation": "site-plan gate INVERTED (=== true refuses, so Studio is denied and Solo served)", "check": "same", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 3, "mutation": "site-plan UNMEASURED branch deleted, so absent collapses into the 402 paywall", "check": "same", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 4, "mutation": "terrain Studio requirement DELETED", "check": "npx vitest run src/lib/pe-terrain-export-bff.test.ts", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 5, "mutation": "terrain gate INVERTED", "check": "same", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 6, "mutation": "terrain UNMEASURED branch deleted", "check": "same", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 7, "mutation": "studioGated dropped from the SITEPLAN catalog row", "check": "npx vitest run src/workbench/tools/reports-catalog.test.ts", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 8, "mutation": "studioGated dropped from the SITEPLAN catalog row", "check": "npx vitest run src/workbench/tools/lock-matrix.test.tsx (the RENDERED lock, not the flag)", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 9, "mutation": "server predicate replaced with a hardcoded true, so every account reads as Studio", "check": "npx vitest run src/lib/peEntitlement.responseBody.unit.test.ts (cwd artifacts/api-server)", "before": 0, "mutated": 1, "restored": 0 },
+      { "n": 10, "mutation": "studioGranted key removed from the wire body entirely", "check": "same", "before": 0, "mutated": 1, "restored": 0 }
+    ],
+    "typeLevelViolation": {
+      "mutation": "studioGranted dropped from the fetchPeEntitlementDetail return literal",
+      "instrument": "npx tsc -p api/tsconfig.json --noEmit (cwd apps/property-explorer)",
+      "errorsBefore": 3,
+      "errorsMutated": 4,
+      "errorsRestored": 3,
+      "newError": "api/_lib/pe-entitlement.ts(96,5): error TS2322: Type '{ ok: true; authenticated: boolean; tier: \"free\" | \"paid\"; tenantId: string | null; userId: string | null; propertyUnlocked: boolean | null; }' is not assignable to type 'PeEntitlementDetailResult'.",
+      "caveat": "SEE the instrumentGap finding below. This instrument is real and it fires, but nothing in CI runs it."
+    },
+    "preRegisteredFalsifiers": [
+      "If deleting the Studio branch left the site-plan suite GREEN, the new tests would be testing nothing and would have to be rewritten. It went red.",
+      "If dropping studioGated from the SITEPLAN catalog left lock-matrix GREEN, the rendered lock would not actually be driven by the flag. It went red.",
+      "If forcing the server predicate to true left the LDT unit test GREEN, the Solo assertion would be reading a constant. It went red.",
+      "If the SITEPLAN-vs-TERRAIN divergence test never observed BOTH a locked and an unlocked state, it would be comparing two absent testids and passing trivially. Explicit counters now assert both outcomes occurred; the test fails if either count is zero."
+    ]
+  },
+  "instrumentGap": {
+    "finding": "THE PE BFF IS NOT TYPECHECKED BY CI. `apps/property-explorer/tsconfig.json` has `include: [\"src\"]`, and `.github/workflows/property-explorer-ci.yml:63` runs exactly `pnpm --filter property-explorer exec tsc --noEmit`. The whole `api/` directory, which is every serverless function and every gate in this card, is outside it.",
+    "provedByViolation": "Wrote `api/_lib/p104-vacuity-probe.ts` containing `const P104_VACUITY_PROBE: number = \"not a number\"`. The CI typecheck exited 0. The api tsconfig caught it. Probe deleted.",
+    "secondFinding": "`apps/property-explorer/api/tsconfig.json` EXISTS and is correct. Nothing invokes it. Dormant: it has no trigger.",
+    "thirdFinding": "It is also starved-on-arrival. Running it on the UNMODIFIED base commit yields 3 pre-existing errors, none related to P-104: api/_lib/verdict-layer-merge.ts(50,5) TS2353, api/_lib/verdict-layer-merge.ts(168,5) TS2322, api/pe-share-grant.ts(135,54) TS2345.",
+    "dispositionAndWhy": "NOT ARMED BY THIS LANE. Adding the step to the workflow today would make CI permanently red on three pre-existing errors, which is DEV_PROCESS 2.0's dead-gate failure mode: a gate nobody can get to green gets ignored, and the bypass becomes the habit. Two of the three errors sit in files adjacent to other live lanes. Routed as a backlog item with the arming step written out. P-104's own type claim is verified by baseline-compare instead: 3 errors before, 3 after, and 4 under the deliberate violation.",
+    "armingStep": "add `- run: pnpm --filter property-explorer exec tsc -p api/tsconfig.json --noEmit` to the typecheck job in .github/workflows/property-explorer-ci.yml, AFTER the three errors above are fixed. Not before."
+  },
+  "designChangesSinceCP1": [
+    {
+      "change": "The site-plan SelectedEngine branch now renders a LockedToolPanel (testid site-plan-studio-lock) for a non-Studio account, mirroring terrain.",
+      "why": "CP1 planned the catalog flag alone. On reading ReportsTool.tsx the `site-plan` branch ignored the lock entirely and always rendered the export control. The flag would have changed the picker chip while the panel still offered a button that now 402s. Item 6's check says the locked UI renders; a flag that changes a chip and not the panel does not satisfy it."
+    },
+    {
+      "change": "SITE_PLAN_PAYWALL_MESSAGE rewritten to name Studio and the unlock exclusion, and the paywall call now passes studioOnly/highlightTier studio.",
+      "why": "The old copy described the deliverable and offered no tier. A Solo subscriber refused with generic paywall copy is told to pay for something they already pay for."
+    },
+    {
+      "change": "requirePaidSession renamed to requireStudioSession in both handlers.",
+      "why": "The old name was an accurate description of the code and a false description of the product. A reader auditing 'do we gate CAD' would have read `requirePaidSession` and stopped."
+    },
+    {
+      "change": "A THIRD false comment was found and corrected, and the dispatch's second citation had MOVED.",
+      "why": "See the falseComments block."
+    }
+  ],
+  "falseComments": {
+    "dispatchClaimed": ["artifacts/api-server/src/lib/peEntitlement.ts:29-30", "artifacts/api-server/src/routes/propertyExplorer.ts:276-277"],
+    "actuallyAtHead": [
+      "artifacts/api-server/src/lib/peEntitlement.ts:30-31 (the PeEntitlementSnapshot.subscriptionTier doc)",
+      "artifacts/api-server/src/lib/peEntitlement.ts:160-161 (the peEntitlementBaseBody inline doc) - THIS IS the propertyExplorer.ts:277-278 comment, verbatim, moved by P-98 #574 when the inline base literal was hoisted into peEntitlementBaseBody. Verified with `git show 26068a1e:artifacts/api-server/src/routes/propertyExplorer.ts`.",
+      "artifacts/api-server/src/lib/peEntitlement.ts:398-399 (requirePePaidOrPropertyUnlocked doc, THIRD instance, not in the dispatch): 'terrain stays Pro-only, enforced PE-BFF-side off the /entitlement tier field'. True of the code, wrong about the product."
+    ],
+    "alsoCorrectedInHauskaMap": [
+      "api/pe-site-plan-export.ts:5 and api/pe-terrain-export.ts:5 - 'Requires PE session + paid entitlement'",
+      "api/pe-site-plan-export.ts:22-25 - the dossier GATE DIFFERENCE note, rewritten to state WHY the X-ray is deliberately weaker and to record the MCP divergence",
+      "api/_lib/pe-terrain-export-core.ts:189 - 'only reaches engine after session+paid entitlement'",
+      "api/_lib/pe-entitlement.ts:40 - 'the Pro-only exports'"
+    ],
+    "note": "Seven comments across two repos described a gate that did not exist. Not one of them was wrong about the CODE; every one was wrong about the PRODUCT. That is the shape worth naming: the comments were written from the intent and never re-read against the ladder that landed on 2026-08-24."
+  },
+  "openRisksCarriedToClose": [
+    "DEPLOY ORDER is now a hard blocking condition, not a preference. The live cortex-api does NOT emit studioGranted (probed 2026-09-01 02:52 UTC, body pasted verbatim in the close). Shipping the Vercel BFF first 503s every Studio and Team customer on CAD and terrain.",
+    "The CLIENT still re-derives Studio from subscriptionTier (entitlementClient.ts:90) while the SERVER now computes it. They agree today by construction, same predicate and same input, and there is no divergence test between them. Consolidation is explicitly out of scope; the divergence risk is not, and is logged.",
+    "SPPDF: the card gates the site-plan PDF to Studio; the pricing matrix row says 'Site plan CAD, DXF, IFC'. Implemented per the card, seam reported, planner ruling requested.",
+    "The MCP treats dossier as a Studio export kind; PE treats it as the Solo X-ray. Same artifact, two answers, on two surfaces. Not resolved here."
+  ]
+}

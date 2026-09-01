@@ -1,0 +1,318 @@
+{
+  "runAt": "2026-08-11T00:00:00Z",
+  "connectorFound": true,
+  "connector": {
+    "name": "parcel-node rail (producer CLI write-parcel-node-county.mjs + consumer gate warm-preflight-gate.ts), driven by the frozen sweep runner run_sweep.mjs",
+    "paths": [
+      "P:/hauska-engine/packages/engine-core/scripts/write-parcel-node-county.mjs:1",
+      "P:/hauska-engine/packages/engine-core/src/parcel-node/plan-county-parcel-nodes.ts:1",
+      "P:/hauska-engine/packages/engine-core/src/parcel-node/reconcile-county-parcel-nodes.ts:1",
+      "P:/hauska-engine/packages/engine-core/src/parcel-node/parcel-node-atoms.ts:1",
+      "P:/hauska-engine/packages/engine-core/src/parcel-node/warm-preflight-gate.ts:1",
+      "P:/hauska-engine/packages/engine-core/src/parcel-node/index.ts:39",
+      "P:/hauska-engine/packages/engine-core/scripts/depth-warm-city-batch.mjs:581",
+      "P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs:1",
+      "P:/tmp/parcel_node_sweep_20260809/progress.json:1"
+    ],
+    "repo": "hauska-engine (both halves); driver artifact lives outside any repo at P:/tmp/parcel_node_sweep_20260809/",
+    "whatItDoes": "Closes the Factory1 -> Factory2 seam in two halves. PRODUCER: write-parcel-node-county.mjs walks a loaded county's txgio_parcel rows (the statewide fabric store) and emits contract-shaped parcel-node atoms into the atoms store, with typed absences, orphan retirement on re-acquire, and write-then-verify on stored bytes. CONSUMER: warm-preflight-gate.ts enforces invariant S3 — the warm set is the INTERSECTION of recipe eligibility (a zoning-fact exists) and parcel-node eligibility (a live, resolved, account-keyed anchor exists), with six named decline codes and a fail-closed arithmetic reconciliation (assertWarmGateApplied) that exits the run if any parcel reached compute without a verdict.",
+    "inputs": [
+      "txgio_parcel on TXGIO_DATABASE_URL (= DEPLOYMENT_DATABASE_URL, legacy-design-tools-prod; database neondb) — READ ONLY, the Factory 1 fabric output",
+      "county roster read from store truth at execution time (--list-counties; no hardcoded allowlist)",
+      "for the consumer: parcel-node atoms read back out of the atoms store, plus the zoning-fact recipe cohort"
+    ],
+    "outputs": [
+      "parcel-node atoms in atoms (DATABASE_URL, database hauska_mcp) — 11,603,489 rows across 196 counties (live-queried 2026-08-11)",
+      "typed absence atoms by kind: no-parcel-geometry, geometry-incomplete, parcel-key-unresolved",
+      "retired orphan rows on re-acquisition (assertNoActiveOrphans fails the run if any active orphan survives)",
+      "per-county landed_<fips>.json receipts + progress.json + County Manifest cells the Command Center ledger reads",
+      "for the consumer: a depth-warm.parcel-node-preflight event carrying recipeCohort / anchorsFound / warmEligible / declinesByCode"
+    ],
+    "invocation": "PRODUCER single county: PARCEL_NODE_PATH=1 TXGIO_DATABASE_URL=<ldt deployment Neon> DATABASE_URL=<atoms Neon, hauska_mcp> pnpm --filter @hauska-engine/engine-core run write-parcel-node-county -- --county=<fips> [--apply] [--batch=5000] [--limit=0] [--out=path.json]  ||  MULTI-COUNTY SWEEP: cd /p/hauska-engine && git checkout main && git pull && git rev-parse HEAD; then node P:/tmp/parcel_node_sweep_20260809/run_sweep.mjs (loads its own .env, hardcodes ENGINE=P:/hauska-engine, resumes from progress.json).  ||  CONSUMER: the gate is not separately invoked; it fires inside tsx scripts/depth-warm-city-batch.mjs --row-id=<RowName> --city-cohort [--dry-run] --promote.",
+    "proven": true,
+    "provenEvidence": "PRODUCER HALF PROVEN END TO END IN PRODUCTION. P:/tmp/parcel_node_sweep_20260809/progress.json: startedAt 2026-08-09T15:24:17.784Z, completedAt 2026-08-11T13:27:52.245Z, landed 132, attempted (unique) 132, attempted-not-landed [] (no resume hole), halted null, 11,060,796 atoms written by the runner against 11,619,062 features, sumVerified == sumAtomsWritten == 11,060,796. Three counties entered failed[] (48277 apply-failed on a stale atom-contract export; 48265 and 48113 econnreset at attempt 4) and ALL THREE subsequently landed (48277:36128, 48265:34939, 48113:693556), so failed[] is a retry log, not a hole. Independent store truth queried live 2026-08-11 against DATABASE_URL (hauska-prod-497015): SELECT count(DISTINCT body->>'countyFips') FROM atoms WHERE entity_type='parcel-node' = 196; SELECT count(*) = 11,603,489. TXGIO_DATABASE_URL: SELECT count(DISTINCT county_fips) FROM txgio_parcel = 196. Producer coverage is therefore 196 of 196 loaded-geometry counties — the seam is fully drained against the fabric that exists. (The 196 exceeds the runner's 132 because ~64 counties were written by earlier pre-sweep runs, e.g. engine #284/#285.) CONSUMER HALF PROVEN ONLY TO DRY-RUN, NEVER APPLIED: _inbox/2026-08-09_E3_elgin_builder_close_post_anchors.json — verdict DRY_RUN_PASS_APPLY_HOLD, apply_executed false, engine_sha fb1a632adb92c07747f3e4c6c539bc55d4480b37, preflight anchorsFound 499 / warmEligible 499 of 500, verifyPass 75 / verifyFail 98, legacy_parity graded 'partial' (NOT 0-mismatch vs legacy @4bfff71), adversarial_checkpoint graded 'pending'. No apply of a gated warm cohort has ever run.",
+    "lastTouched": "2026-08-11 (producer: local commit 81344ec 'fix(parcel-node): look rows up by PRIMARY KEY, not by a jsonb expression', on origin/main as 34c94ff / PR #304; sweep completed 2026-08-11T13:27:52Z). Consumer gate last exercised 2026-08-09 (Elgin dry-run, engine_sha fb1a632).",
+    "currentlyWired": true
+  },
+  "connectorGaps": [
+    {
+      "gap": "The consumer half of the connector has never been APPLIED. Every proof of the Factory1 -> Factory2 handoff is a dry-run. The only post-anchor artifact (_inbox/2026-08-09_E3_elgin_builder_close_post_anchors.json) is explicitly DRY_RUN_PASS_APPLY_HOLD with apply_executed:false, legacy_parity 'partial' (not the 0-mismatch standard the lane set for itself), and adversarial_checkpoint 'pending'. The producer is proven at 196-county scale; the consumer is proven on 500 parcels of one city, in dry mode, unreviewed.",
+      "severity": "high",
+      "evidence": "_inbox/2026-08-09_E3_elgin_builder_close_post_anchors.json fields verdict/apply_executed/acceptance_grade; verifyPass 75 vs verifyFail 98 on the same run"
+    },
+    {
+      "gap": "The gate is wired into ONE of four warm runners. gateWarmCohort appears twice in depth-warm-city-batch.mjs and ZERO times in depth-warm-bastrop-batch.mjs, depth-warm-elgin-batch.mjs, and depth-warm-caldwell-batch.mjs — all three of which remain on disk, remain runnable, and are the invocation form the promoted factory_onboarding_runbook Step Z10 still instructs an operator to use. Running the documented command bypasses invariant S3 entirely: a parcel with no anchor, a retired anchor, or a synthetic key can be warmed and promoted as if its geometry were established. The fail-closed assertWarmGateApplied cannot catch this because it is never called on those paths.",
+      "severity": "high",
+      "evidence": "grep -c gateWarmCohort across the four scripts: city-batch=2, bastrop=0, elgin=0, caldwell=0; 90_runbooks/factory_onboarding_runbook.md:139 still gives 'tsx scripts/depth-warm-elgin-batch.mjs --city-cohort --force-overwrite --promote --limit=10000' as the verbatim Elgin command"
+    },
+    {
+      "gap": "The frozen driver of record is not in any repository. run_sweep.mjs (413 lines) and progress.json live only at P:/tmp/parcel_node_sweep_20260809/ on one machine. P:/tmp is explicitly recorded in repo memory as a recycle-prone scratch location (tmp-clone-recycle-hazard). The operate-not-rebuild ruling instructs the next executor to copy this artifact and change three strings — an instruction that fails permanently the day the directory is recycled, and there is no committed copy to restore from.",
+      "severity": "high",
+      "evidence": "ls -la P:/tmp/parcel_node_sweep_20260809/ (present, .env dated Aug 9); no run_sweep.mjs anywhere under P:/hauska-engine or P:/doc_repo; MEMORY.md tmp-clone-recycle-hazard"
+    },
+    {
+      "gap": "The resume hole is still live in code and was only ever fixed procedurally. run_sweep.mjs's skip set is landed UNION halted.countyFips, so a county that halted but never landed is silently skipped on resume — no count-based gate catches a one-county hole. The 2026-08-09 fix for 48457 was a manual pre-resume checklist, not a code change. The current progress.json happens to be clean (attempted-not-landed is empty), which means the hazard is unexercised, not removed.",
+      "severity": "med",
+      "evidence": "_inbox/2026-08-11_FACTORY_operating_procedure_of_record.md 'The resume hole, still present in code'; verified against progress.json: attempted unique 132 == landed 132, no orphans"
+    },
+    {
+      "gap": "The producer's coverage ceiling is the fabric, not the state. 196 of 254 Texas counties have parcel-node atoms because only 196 have txgio_parcel geometry. The remaining 58 counties are a Factory 1 / Factory 1.5 acquisition gap, not a connector gap — but any reading of '196 counties' as statewide completion is wrong, and the runner's own manifest reports texasCompletenessPct 0.7689 (89 satisfied cells of 3,556).",
+      "severity": "med",
+      "evidence": "live SQL: txgio_parcel distinct county_fips = 196, atoms parcel-node distinct countyFips = 196; progress.json manifestFinal.texasCompletenessPct = 0.7689080448168135, satisfiedCells 89, totalCells 3556"
+    },
+    {
+      "gap": "One sibling county writer cannot fail its own verification. write-special-district-fact-county.mjs has zero 'atom_did IN' occurrences and verifies the in-memory object it just constructed rather than reading stored bytes back, so summary.verifyFailures is structurally always 0 for that rail. It is not the parcel-node connector itself, but it shares the connector's write-then-verify contract and rides the same slot.",
+      "severity": "med",
+      "evidence": "_inbox/2026-08-11_FACTORY_operating_procedure_of_record.md 'One writer does not verify stored bytes at all'; independently consistent with the nine-writer listing in packages/engine-core/scripts/"
+    },
+    {
+      "gap": "Naming divergence that will cost an agent a search. Nothing in either repo or the doc set is called a 'connector'. The word 'connector' in doc_repo refers exclusively to the CAD host-connector program (Revit/ArchiCAD/SketchUp/SoftPlan, docs 41*). The seam is called, variously, 'the joint', 'the seam', 'parcel-node', 'the C1/C5 warm preflight gate', and 'Rail 1'. An operator searching for 'connector' finds the wrong program.",
+      "severity": "low",
+      "evidence": "grep -ril connector across doc_repo returns 41b/41c/41d/41e/41f/41g/41h/41i/41_revit_connector and no factory-seam doc; the seam's own header comment (write-parcel-node-county.mjs:5) says 'closing the seam'"
+    }
+  ],
+  "revisionNeeded": {
+    "forThreeFactoryModel": "The existing connector is a Factory1 -> Factory2 artifact and needs to become Factory1 -> Factory1.5 -> Factory2. Structurally the revision is smaller than it looks, because Factory 1.5 ALREADY EXISTS AS CODE — it is the ldt lib/cad-ingest acquisition layer (txgio/, address/, boundary/, nfhl/, orion/, pacs/, permits/) that fetches, parses, projection-guards, and persists payloads into txgio_parcel, txgio_address, cad_property with vintage provenance. What does not exist is Factory 1.5 as a NAMED tier with its own queue, its own slot posture, and its own close-artifact contract. Today acquisition is narrated as 'L2 waves' and 'Stage 1 ACQUIRE' inside a county runbook, which is why its failures (Harris multi-shp truncation, eight coastal holds, the 202505 EPSG:3857 vintage, Donley 404) surfaced serially rather than as a queue an operator could drain. The connector itself does not need rewriting: write-parcel-node-county.mjs already reads its roster from store truth at execution time with no hardcoded allowlist, so the moment Factory 1.5 persists a new county's geometry, the connector can drain it unchanged. The real revision is to make the producer run CONTINUOUSLY off a 1.5 queue rather than as a one-shot 132-county sweep, and to name the 58 missing counties as 1.5 backlog rather than connector gaps.",
+    "whatChanges": [
+      "Name Factory 1.5 explicitly in OPS-14 and the factory runbook, with the ldt lib/cad-ingest layer identified as its code home and txgio_parcel / txgio_address / cad_property as its persistence targets — so acquisition failures land in a queue instead of being discovered serially",
+      "Give 1.5 its own close-artifact contract (per-county acquisition receipt with vintage, projection verdict, feature count, and a named absence reason) so the connector can consume a queue rather than being told which counties to sweep",
+      "Re-point the connector from 'sweep a fixed queue file' to 'drain the set of counties present in txgio_parcel but absent from parcel-node atoms' — a two-query diff the writer can compute itself, which also makes the resume hole structurally impossible",
+      "Commit run_sweep.mjs into hauska-engine (or generalize it into a scripts/sweep-county-writer.mjs taking --cli and --queue) so the frozen artifact survives a P:/tmp recycle",
+      "Wire the C1/C5 warm gate into the three legacy per-city warm scripts, or delete them and finish the OPS-9 S4 consolidation onto depth-warm-city-batch.mjs, so no documented path bypasses invariant S3",
+      "Move the 58 geometry-absent counties from 'connector gap' framing into a 1.5 acquisition backlog with named reasons (Donley 404, coastal holds, etc.)",
+      "Reclassify the 1.5 slot posture: acquisition is network-bound and infinitely parallel, so it must NOT inherit the one-bulk-writer-per-database rule that correctly governs the connector's atoms writes"
+    ],
+    "whatStaysSame": [
+      "write-parcel-node-county.mjs itself — its store-truth roster read, dedup-on-feature_index, account-vs-geometry identity split, orphan retirement, idempotent atom_did upsert, and verify-by-primary-key all survive the retier unchanged",
+      "warm-preflight-gate.ts and invariant S3 — the intersection semantics and six decline codes are correct regardless of how many factories feed the anchor",
+      "The atom contract as the only inter-factory interface (OPS-14 'The joint': no factory reads another factory's internal tables except through a registered writer or scorer)",
+      "The one-bulk-writer-per-database slot rule for the atoms store, and slot handoff recorded in _STATE.md",
+      "Dry-run-must-predict-apply, identical-engine-SHA pairing, and write-then-verify on stored bytes",
+      "Factory 2's entire county/city lane (C1-C7, Z1-Z11), the eight-check onboard-preflight gate, area-sweep cert, and the Warden"
+    ]
+  },
+  "existingRunbooks": [
+    {
+      "path": "P:/doc_repo/90_runbooks/factory_onboarding_runbook.md",
+      "covers": "factory2",
+      "lastUpdated": "2026-08-09 (frontmatter date 2026-08-04; body carries dated amendments through the 2026-08-09 store-topology correction and the 2026-08-09 Smithville eCode360 section)",
+      "staleClaims": [
+        "Step Z10 gives 'tsx scripts/depth-warm-elgin-batch.mjs --city-cohort --force-overwrite --promote --limit=10000' as the verbatim command; that script does not call the C1/C5 parcel-node gate, so following the runbook literally bypasses invariant S3",
+        "Open item 8 and Step Z10 both state the registry-driven single warm runner is NOT shipped; it merged as engine #287 on 2026-08-09T18:09Z (depth-warm-city-batch.mjs exists on main and is the only gated runner)",
+        "The runbook has no parcel-node / anchor step anywhere. A city cohort cannot warm without anchors — the Elgin lane discovered this the hard way at 500/500 declines — and the procedure never tells the operator to check for or mint them",
+        "Section 1A Step C1 'the AGOL cohort loader is FIPS-keyed' is corrected later in the same file (planner correction 7: rowId-keyed loader SHIPPED engine #236) but the original text is left inline and reads as current on a linear read",
+        "The 2026-08-04 planner-correction block corrects its own item 6 with a 2026-08-09 CORRECTION that keeps the false original text 'for provenance' directly above the correction — an operator skimming will read the retracted sentence first"
+      ],
+      "gradable": true,
+      "newStateReady": false,
+      "gaps": [
+        "Entirely Texas-shaped: every source in it is TxGIO/StratMap, AGOL FeatureServer, Municode/eCode360, or a Texas CAD. There is no state-agnostic step",
+        "Assumes geometry already exists in txgio_parcel; the acquisition (Factory 1.5) leg is out of scope and not cross-referenced",
+        "No parcel-node/anchor prerequisite, so the Factory1->Factory2 ordering it depends on is invisible in the procedure"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/_inbox/2026-08-11_FACTORY_operating_procedure_of_record.md",
+      "covers": "connector",
+      "lastUpdated": "2026-08-11",
+      "staleClaims": [
+        "Reports the verify fix as 575x and simultaneously _STATE.md reports 56x for the same fix; the doc names the conflict but both numbers remain in circulation",
+        "States the sweep landed 132 counties and 11,603,489 atoms in the same breath; 11,603,489 is the STORE total across 196 counties, while the runner wrote 11,060,796 across 132 — the two are conflated in the headline sentence (this doc is otherwise the most accurate artifact in the set)",
+        "Says P:/hauska-engine 'currently sits on branch sweep/fast-write, ahead 1 and behind 4' — still true as of this inventory, so the named hazard is unresolved, not stale"
+      ],
+      "gradable": true,
+      "newStateReady": false,
+      "gaps": [
+        "Explicitly a Texas-runner document; the words Utah, New Mexico, Colorado, Arizona and 'state two' do not appear",
+        "Documents the producer half of the connector thoroughly and the consumer gate not at all — warm-preflight-gate.ts, invariant S3, and the six decline codes are absent from it"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_operations/OPS-2_county_onboarding_runbook.md",
+      "covers": "factory2",
+      "lastUpdated": "2026-08-08",
+      "staleClaims": [
+        "Stage 4's 'BCAD rings trusted, no scrub (A5)' is superseded by the Geometry Law (txgio is the truth frame); the correction block is present but the superseded text is retained inline",
+        "Stage 1 ACQUIRE describes acquisition in two sentences as a stage of a county onboard — this is exactly the Factory 1.5 work the new model promotes to its own tier, and treating it as a sub-step is the framing that let acquisition blockers surface serially"
+      ],
+      "gradable": false,
+      "newStateReady": false,
+      "gaps": [
+        "Stage-level prose, not commands. No verbatim invocation appears anywhere in the file, so it orients but cannot be executed",
+        "No pass/fail thresholds per stage; 'the proof this runbook is correct' is narrative (Bastrop runs the line end to end), not a gradable criterion"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_operations/OPS-1_texas_source_registry.md",
+      "covers": "other (Factory 1.5 source discovery — the closest thing to an acquisition runbook that exists)",
+      "lastUpdated": "2026-08-08",
+      "staleClaims": [
+        "The 'Data loaded in the store: 19/254 counties' correction is itself now stale: live txgio_parcel holds 196 counties as of 2026-08-11",
+        "'the engine reads NONE of this today — it uses hardcoded per-county adapters' is partially superseded: jurisdiction-registry.ts now carries 16 frozen rows the engine does read, though the statewide Rail C matrix is still a _scratch JSON the engine does not load"
+      ],
+      "gradable": false,
+      "newStateReady": false,
+      "gaps": [
+        "It is a Texas source INVENTORY, not a source-DISCOVERY procedure. It records what TxGIO publishes; it does not tell an operator how to find the equivalent agency in a state that has no TxGIO",
+        "The per-state provider abstraction is a TODO in code (jurisdiction-registry.ts 'TODO(onboard-fips): per-state provider') and an unwritten section here"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_operations/OPS-WDLL_the_factory.md",
+      "covers": "other (done/broken/kill definition for the factory as a machine)",
+      "lastUpdated": "2026-08-03",
+      "staleClaims": [
+        "Status section is pinned at 2026-08-03 and describes Bastrop city as mid-warm with other blocks queued; eight days of county fan, the L2 waves, and the parcel-node sweep have happened since and are not reflected",
+        "'Machine-grain maturity: B and C SPECED, NOT BUILT' — still true, which is itself the finding: the onboard(fips) single entrypoint remains unbuilt"
+      ],
+      "gradable": true,
+      "newStateReady": false,
+      "gaps": [
+        "Defines done/broken/kill for a Texas factory; contains no state-portability criterion",
+        "Predates the two-factory (now three-factory) framing entirely — it describes one undifferentiated factory"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_operations/OPS-14_texas_flush_game_plan.md",
+      "covers": "other (program plan naming both factory classes and the joint)",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        "'Joint status: ... parcel-node atoms flowing in production (run the OPS-13 query for the count; do not quote one)' — correctly refuses to quote a count, and the count has since moved to 11,603,489 / 196 counties",
+        "F3 readiness 'Elgin is the first proof city and still owes parcel-node anchors plus a unified dry-run before apply' — anchors were minted and the dry-run ran 2026-08-09; the apply is still owed, so the line is half-stale",
+        "'The W5 WDLL carries the template worksheet' — the W5 WDLL carries an acceptance ITEM for the worksheet with an ungraded empty box; no worksheet document exists"
+      ],
+      "gradable": true,
+      "newStateReady": false,
+      "gaps": [
+        "States the state-template rule ('no state constant may live in factory machinery') as a design rule with teeth, but names no enforcement mechanism that has ever run — W5 acceptance item 10 requires a per-PR reviewer check and is ungraded",
+        "Names the second-state candidate set (UT/NM/CO/AZ) as a resolved operator decision but attaches no procedure to it"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/_inbox/2026-08-09_W5_depth_factory_program_WDLL.md",
+      "covers": "other (the acceptance card that OWNS the state template)",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [
+        "Acceptance items 1-12 are ALL ungraded (every 'grade: [ ]' box is empty) and the Finish card reads '(pending)', despite _inbox/2026-08-09_W5_program_close.json declaring the program closed with per-lane verdicts",
+        "Item 5 (Elgin unified dry-run at 0-mismatch, adversarially reviewed before apply) is contradicted by the post-anchor close artifact, which grades legacy_parity 'partial' and adversarial_checkpoint 'pending'"
+      ],
+      "gradable": true,
+      "newStateReady": false,
+      "gaps": [
+        "Item 9 (the state template worksheet) and item 10 (no state constant in shared machinery) are both ungraded and neither deliverable exists",
+        "The four UT/NM/CO/AZ recon notes item 9 requires as evidence do not exist in _inbox/ or anywhere in the repo"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_operations/OPS-13_store_topology.md",
+      "covers": "other (which store holds which truth; overrides the onboarding runbook on store facts)",
+      "lastUpdated": "2026-08-09",
+      "staleClaims": [],
+      "gradable": false,
+      "newStateReady": false,
+      "gaps": [
+        "Topology is stated in Texas terms (txgio_parcel, cad_property); a second state either shares these tables with a state discriminator or gets its own, and the doc does not say which"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_runbooks/product_surface_smoke_suite.md",
+      "covers": "other (post-change live serve probes)",
+      "lastUpdated": "2026-08-05",
+      "staleClaims": [
+        "Probes are pinned to three Bastrop parcels; a second state would have no equivalent named exhibit"
+      ],
+      "gradable": true,
+      "newStateReady": false,
+      "gaps": [
+        "Regression instrument only; not an onboarding procedure"
+      ]
+    },
+    {
+      "path": "P:/doc_repo/90_operations/OPS-INDEX_operator_manual.md",
+      "covers": "other (front door into the ops doc set)",
+      "lastUpdated": "2026-08-03",
+      "staleClaims": [
+        "Indexes OPS-0 through OPS-7 only; OPS-8 through OPS-15 and the factory_onboarding_runbook have landed since and are not in the front door"
+      ],
+      "gradable": false,
+      "newStateReady": false,
+      "gaps": [
+        "As the declared single entry point it now omits more than half the operations set, including the runbook that carries every verbatim command"
+      ]
+    }
+  ],
+  "runbookGaps": [
+    {
+      "missing": "A Factory 1.5 (acquisition/staging) runbook. There is no procedure document for the acquisition tier at all — no verbatim invocation for the txgio bulk-zip ingest, the address-points ingest, the boundary ingest, or the NFHL load; no per-county acquisition close-artifact contract; no queue.",
+      "severity": "high",
+      "whyItMatters": "This is the tier the operator just created, it is where every serially-discovered blocker of the last two weeks lived (Harris multi-shp truncation, eight coastal holds, the 202505 EPSG:3857 vintage split, Donley 404, the 4.46x rural seam factor), and it is the ONLY tier a new state must exercise before anything else can run. Its procedure currently exists only as source-code comments in lib/cad-ingest and as narrative in L2 wave reports."
+    },
+    {
+      "missing": "A connector runbook that covers BOTH halves. 2026-08-11_FACTORY_operating_procedure_of_record.md documents the producer exhaustively and never mentions warm-preflight-gate.ts, invariant S3, or the six decline codes.",
+      "severity": "high",
+      "whyItMatters": "An operator who runs the producer and then runs a LEGACY warm script gets a silently ungated warm — parcels promoted without an established anchor. The gate exists, is correct, and is fail-closed, but nothing in the doc set tells anyone it must be the path taken."
+    },
+    {
+      "missing": "The state template worksheet (W5 acceptance item 9): registry row schema, adapter contract list, a 'what changes for state two' section, and four UT/NM/CO/AZ GIS-posture recon notes.",
+      "severity": "high",
+      "whyItMatters": "It is the single named deliverable standing between the current Texas machine and a second state, it is the artifact OPS-14 promises exists ('the W5 WDLL carries the template worksheet'), and it does not exist — the WDLL carries an empty checkbox pointing at it."
+    },
+    {
+      "missing": "A source-DISCOVERY procedure for a state with no TxGIO. OPS-1 inventories Texas sources; nothing describes how to find the equivalent authority in a new state.",
+      "severity": "high",
+      "whyItMatters": "Texas is unusually easy: one agency (TxGIO) publishes one statewide-normalized parcel schema at one URL template for 253 of 254 counties. UT (AGRC/UGRC), NM (RGIS), CO (no statewide parcel authority — county-by-county), and AZ (AZGeo) have four different postures, and Colorado in particular breaks the 'one source blankets a state' premise that defines Factory 1. Nobody has probed this."
+    },
+    {
+      "missing": "A county-roster equivalent procedure. The Texas roster is TXGIO_STATEWIDE_COUNTIES (254 hardcoded entries) plus isTexasCountyFips.",
+      "severity": "med",
+      "whyItMatters": "The connector reads its roster from store truth and needs no roster file, but the acquisition tier does — and a new state needs its 254-equivalent enumerated, named, and FIPS-mapped before a single fetch can be planned."
+    },
+    {
+      "missing": "A per-state cost model. OPS-WDLL and commitment 3 give a per-JURISDICTION gate (<$200 compute + 1hr review). The three-factory model makes Factory 1 and 1.5 costs per-STATE and roughly constant, which the per-jurisdiction gate cannot express.",
+      "severity": "med",
+      "whyItMatters": "The factory operating procedure says 'do not re-measure cost per jurisdiction — settled well under $200 by operator ruling', which is the right call for Factory 2 and says nothing about what a state costs to blanket. A second-state go/no-go has no cost instrument."
+    },
+    {
+      "missing": "A single onboard(fips) entrypoint. OPS-WDLL machine-grain criteria B (unambiguous mechanism/prose boundary) and C (one entrypoint) are recorded as SPECED, NOT BUILT and remain so.",
+      "severity": "med",
+      "whyItMatters": "OPS-WDLL's own DIES criteria name this: 'the recipe cannot generalize past a hand-relayed prose crutch — every new jurisdiction needs careful human recipe relay and drifts without it. Then onboard(fips) is unreachable and the fan never scales.' The doc set is still the prose crutch."
+    },
+    {
+      "missing": "A committed home for run_sweep.mjs and any successor sweep driver.",
+      "severity": "med",
+      "whyItMatters": "The operate-not-rebuild ruling's teeth are 'run the frozen proven artifact'. An artifact that exists only in P:/tmp on one machine cannot be operated by anyone else and will not survive a recycle, at which point a rebuild becomes mandatory and every halt tripwire is re-derived or lost."
+    },
+    {
+      "missing": "Reconciliation of the ungraded W5 acceptance card against the W5 close JSON.",
+      "severity": "low",
+      "whyItMatters": "A program declared closed whose acceptance card is entirely ungraded is the exact 'a status is a claim' failure the factory procedure warns about, and it is what makes the missing state template invisible at a glance."
+    }
+  ],
+  "newStateReadiness": {
+    "canANewStateBeOnboardedFromDocsAlone": false,
+    "blockingGaps": [
+      "No source-discovery procedure for a non-Texas state. The Texas path is a single agency (TxGIO/StratMap), a single collection GUID, and a single URL template stratmap25-landparcels_{fips}_lp.zip that resolves for 253 of 254 counties with one statewide-normalized DBF schema. No document describes the discovery step that produces that finding for UT/NM/CO/AZ, and no recon note for any of the four exists. Colorado plausibly has no statewide parcel authority at all, which would break the Factory 1 premise that one source blankets a state — and nobody has checked.",
+      "A fail-closed Texas coordinate assertion sits in the acquisition hot path. assertTexasWgs84Bbox (lib/cad-ingest/src/txgio/parse.ts:185) throws TxgioProjectionError on any bbox outside the Texas WGS84 envelope, and it is called per feature at parse.ts:584 and reused by the NFHL parser at nfhl/parse.ts:145. A Utah parcel would be refused ingest by design. This is correct, valuable Texas behavior and an absolute blocker for state two; it must become a per-state envelope from a registry row.",
+      "Texas coupling is pervasive in the acquisition tier: 26 of 47 non-test TypeScript files under lib/cad-ingest/src (55%) reference Texas, FIPS 48, or a texas.gov host. Hard instances include boundary/service.ts hardcoding WHERE STATE='48' for the county layer and feature.geographic.texas.gov as the host, address/service.ts pinning stratmap_address_points_48_most_recent, boundary/parse.ts defaulting stateFips to '48', and txgio/counties.ts carrying a 254-entry TXGIO_STATEWIDE_COUNTIES roster behind isTexasCountyFips. OPS-14's rule that 'no state constant may live in factory machinery' is violated throughout the tier that would have to run first.",
+      "No county-roster equivalent procedure. A new state needs its counties enumerated, FIPS-mapped, and probed before any fetch. stateFromFips already knows 48->TX, 49->UT, 16->ID, so the seam is anticipated in code — but nothing populates a roster for 49.",
+      "The state template worksheet that OPS-14 promises does not exist. W5 acceptance item 9 is an empty checkbox and the four state recon notes it names as evidence were never written.",
+      "No per-state cost model. Commitment 3 is per-jurisdiction; Factory 1 and 1.5 costs are per-state and constant-ish, and no instrument reports them. A second-state go/no-go cannot be priced from the docs.",
+      "No Factory 1.5 runbook, so even a state whose sources were fully discovered has no acquisition procedure to follow — the operator would reverse-engineer it from lib/cad-ingest source comments and L2 wave reports.",
+      "SECONDARY, not blocking, but it would bite immediately: the promoted Factory 2 runbook still instructs the ungated legacy warm command and never mentions the parcel-node anchor prerequisite, so a competent operator following it end to end in a new state would warm parcels with no established geometry anchor and not know it."
+    ]
+  },
+  "adversarialFindings": [
+    "THE CONNECTOR IS REAL — this is not a case of prose describing a nonexistent artifact. It is two committed code artifacts in hauska-engine (write-parcel-node-county.mjs, 560 lines, and src/parcel-node/ with four modules plus a contract test suite) driven by a third artifact outside any repo (run_sweep.mjs, 413 lines). The operator's belief is correct on the substance. The correction to the operator's mental model is about which HALF is proven, and about where the driver lives.",
+    "BUT THE CONNECTOR IS HALF-PROVEN, AND THE PROVEN HALF IS THE EASY HALF. The producer ran 132 counties over 46 hours in production, with independent store truth confirming 196/196 fabric counties drained. The consumer — the gate that makes the seam MEAN something — has run exactly once against real anchors, in dry mode, on 500 Elgin parcels, produced verifyPass 75 / verifyFail 98, graded its own legacy parity 'partial' rather than the 0-mismatch standard it set, left its adversarial checkpoint 'pending', and was never applied. Writing 11.6M anchors nobody has yet consumed in a promoting run is a producer achievement, not a proven seam.",
+    "THE GATE IS BYPASSABLE BY FOLLOWING THE PROMOTED RUNBOOK. gateWarmCohort is called in exactly one of four warm runners. The three legacy per-city scripts have zero calls, and 90_runbooks/factory_onboarding_runbook.md:139 — a doc with status 'active, planner-reviewed and promoted' — gives one of those legacy scripts as the verbatim Elgin command. Invariant S3 is enforced by a total function with a fail-closed arithmetic reconciliation, which is excellent engineering, and it is simply not on the documented path. This is the single most actionable finding in this inventory.",
+    "'132/132' AND '196 COUNTIES' ARE BOTH TRUE AND THE DOCS CONFLATE THEM. The runner landed 132 counties and wrote 11,060,796 atoms; the store holds 11,603,489 parcel-node atoms across 196 counties because ~64 counties were written before the sweep. _STATE.md line 23 puts both in one sentence and the FACTORY procedure doc repeats it. Anyone reading '132/132 complete' as statewide is wrong twice over: it is 196 of 254 counties, gated by 196 counties of geometry existing at all.",
+    "progress.json's failed[] ARRAY IS A RETRY LOG, NOT A HOLE — VERIFIED, NOT ASSUMED. Three counties appear in failed[] (48277 apply-failed on a stale @empressaio/atom-contract export named OWNER_EXEMPTION_FLAGS_SCHEMA, 48265 and 48113 econnreset at attempt 4) and all three appear in landed[] with nonzero atomsWritten. I checked the resume hole directly: unique attempted = 132, landed = 132, attempted-not-landed = empty. The sweep has no hole. But the code path that permits a hole is still present, and the only defense is a manual pre-resume checklist.",
+    "THE FROZEN ARTIFACT IS UNCOMMITTED, WHICH MAKES OPERATE-NOT-REBUILD UNENFORCEABLE. The ruling with the most institutional weight in this program says: run run_sweep.mjs, change three strings, never write a new driver. That artifact exists only at P:/tmp/parcel_node_sweep_20260809/ — a path repo memory separately flags as recycle-prone. The day it is recycled, rebuilding becomes mandatory and every halt tripwire, the ECONNRESET idempotent retry, the dedup guard, and the manifest checkpointing are re-derived from a prose description or lost. Committing it is a five-minute action that protects the program's most-cited ruling.",
+    "THE ENGINE TREE POINTER IS STILL WRONG, EIGHT DAYS AFTER IT COST A RUN. P:/hauska-engine is on branch sweep/fast-write, ahead 1 and behind 4 of origin/main. run_sweep.mjs hardcodes ENGINE = P:/hauska-engine and inherits whatever that tree is checked out to. This exact trap already caused an unknown period of writing at the old 47 atoms/sec. The FACTORY procedure doc names it as an adversarial finding; it remains unfixed as of this inventory.",
+    "FACTORY 1.5 IS NOT NEW CODE — IT IS UNNAMED CODE. lib/cad-ingest in legacy-design-tools already does exactly what the operator's Factory 1.5 describes: find, fetch, parse, normalize, projection-guard, and persist with vintage provenance into txgio_parcel / txgio_address / cad_property. The retier is therefore mostly a naming, queue, and close-artifact exercise rather than a build. The honest finding is the inverse of the usual one: the operator believes a tier is NEW when the code is already there but undocumented and unqueued — which is precisely why its blockers surfaced one at a time instead of as a drainable backlog.",
+    "THE STATE-TEMPLATE CLAIM IS THE ONE PLACE WHERE A DOCUMENT ASSERTS SOMETHING THAT DOES NOT EXIST. OPS-14:86 states 'The W5 WDLL carries the template worksheet.' The W5 WDLL carries acceptance item 9 requiring a worksheet, with an empty grade box, and requires four UT/NM/CO/AZ recon notes as its evidence. No worksheet document and no recon note exists anywhere in the repo. Meanwhile _inbox/2026-08-09_W5_program_close.json declares the W5 program closed. A closed program whose acceptance card is 100% ungraded is exactly the 'a status is a claim' failure mode the factory procedure warns about.",
+    "THE GOOD NEWS ON PORTABILITY IS REAL AND WORTH STATING PRECISELY: the connector and Factory 2's engine core are clean. grep for hardcoded '48'/'TX'/texas across packages/engine-core/src returned ZERO hits outside comments, and the parcel-node module's only Texas references are explanatory comments naming Hays and Bastrop as examples. Texas constants are confined to (a) per-source adapter scripts in engine-core/scripts, which is where OPS-14's design rule says they belong, and (b) the ldt acquisition tier, where they are pervasive and where the rule is violated. So the state-portability problem is almost entirely a Factory 1.5 problem — which is a much better position than the doc set's silence would suggest, and it should shape where the template work is aimed.",
+    "NOBODY CALLS IT A CONNECTOR. Zero documents in doc_repo use the word for this seam; 'connector' there means the Revit/ArchiCAD/SketchUp/SoftPlan host-connector program. The seam is called the joint, the seam, parcel-node, Rail 1, and the C1/C5 warm preflight gate across five different documents. Adopting one name would have saved this investigation most of its search time and will save the next one the same.",
+    "ONE SIBLING WRITER CANNOT FAIL ITS OWN VERIFICATION. write-special-district-fact-county.mjs has zero atom_did IN occurrences and verifies the in-memory object it just built, so verifyFailures is structurally always 0 for that rail. It is not the connector, but it shares the connector's write-then-verify contract and is queued for the same slot — and the standing instruction to 'watch verifyFailures on the first apply' is vacuous for exactly that rail."
+  ]
+}

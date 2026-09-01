@@ -1,0 +1,74 @@
+{
+  "checkpoint": "CP2",
+  "lane": "P2-JURIS",
+  "card": "_dispatches/2026-08-30_p2-juris_dispatch.md",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-30T22:55:00Z",
+  "seat": "property (hauska-factory-p2-juris); deepest worker; no sub-agents; no commit; no store connection",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris, branch seat/property-ctx-p2-juris, HEAD 7f41f52, SQL uncommitted",
+    "stores": "NONE. Live query results UNMEASURED. Planner runs the SQL."
+  },
+  "whatExists": {
+    "sql": [
+      "sql/p2-juris/00_session.sql",
+      "sql/p2-juris/01_containment.sql",
+      "sql/p2-juris/02_probes.sql",
+      "sql/p2-juris/03_all_county_fips.sql",
+      "sql/p2-juris/04_alias_reconcile.sql",
+      "sql/p2-juris/05_explain.sql",
+      "sql/p2-juris/_roster_six_touch.sql",
+      "sql/p2-juris/_alias_seed.sql",
+      "sql/p2-juris/README.md"
+    ],
+    "fileSideCounts": {
+      "touching_cities": 72,
+      "straddles": 24,
+      "primary_outside_six": ["Golinda 30092 parent 48145", "Staples 70052 parent 48187", "Thorndale 72776 parent 48331"],
+      "alias_rows": 225,
+      "alias_certain": 33,
+      "alias_likely": 93,
+      "alias_needs_human": 99,
+      "unknown_string_parcels": 509911
+    }
+  },
+  "adversarialReview": [
+    {
+      "finding": "A first draft decoded parcel jsonb with LEFT JOIN LATERAL. That is not city lookup, but the file would have contained the forbidden keyword.",
+      "action": "Removed. Decode is a WITH decoded CTE. Executable SQL has zero LATERAL. City join is FROM cities_bbox c JOIN parcels_six p ON bbox then ST_Intersects."
+    },
+    {
+      "finding": "The measured 357269/624141 may have been centroid-in-polygon or bare ST_Intersects. Adding 1e-8 on rings can move sliver parcels.",
+      "action": "01 emits SLIVERS (intersects AND overlap < 1e-8) next to TOTALS. If thresholded totals diverge materially from 357269/624141, the join is wrong. Do not adopt the new number. Floor is 76x the Coupland sliver so the expected move is that class, not thousands."
+    },
+    {
+      "finding": "Gold 48209:135570 is KYLE 78640 but its bake point is the 0,0 sentinel. A probe that names that prop_id would be unmeasured.",
+      "action": "KYLE_IN counts 48209 parcels whose kept hit is place_fips 39952. Zero rows is a fail. Sample prop_id is whatever the store returns."
+    },
+    {
+      "finding": "Alias situs_token match is approximate. CAD situs is postal. Unmatched seed rows are unmatched, not resolved.",
+      "action": "04 records only matched disagreements. Containment is never overwritten. unmatched is a third state."
+    },
+    {
+      "finding": "Blind restore of roster all_county_fips re-imports Coupland as Travis (17312 lists 48453).",
+      "action": "03 re-derives city-county with the same 1e-8 floor. Persist writes spatial_all_county_fips. ROSTER_VS_SPATIAL lists drops. COUPLAND_FIPS must show travis_dropped true."
+    },
+    {
+      "finding": "Caldwell 48055 was bbox-centre in the measured join. Treating those as ring would launder the caveat.",
+      "action": "method is ring | bbox-centre | unresolved. BY_COUNTY and METHOD break it out. Unresolved is not folded into unincorporated."
+    },
+    {
+      "finding": "\\i paths in 03 and 04 are cwd-relative.",
+      "action": "README requires the session start at the hauska-factory worktree root."
+    }
+  ],
+  "liveCounts": "UNMEASURED. Card forbids store connect. Planner reconciles 01 TOTALS to 357269 / 624141 / 981410.",
+  "falsifiers": [
+    "01 TOTALS |d_total| material or |d_in_city| material -> join wrong",
+    "COUPLAND_TRAVIS refused = false -> threshold not set",
+    "STRADDLE kept = false for Austin-48491 or Golinda-48309 or Staples-48055 or Thorndale-48491 -> threshold too high",
+    "CDP_ASSERT > 0 or CITY_TABLE_CDP > 0 -> roster extended to CDPs",
+    "05 EXPLAIN shows SubPlan LATERAL from parcels_six -> shape violated",
+    "timeout with no row -> not a zero"
+  ]
+}

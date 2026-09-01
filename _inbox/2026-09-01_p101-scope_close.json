@@ -1,0 +1,127 @@
+{
+  "lane": "P-101 ladder re-cut scope — read-only change inventory",
+  "planRows": ["P-101"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "filedAt": "2026-09-01",
+  "laneKind": "read-only inventory across two product repos; produced no code",
+
+  "missionPremise": "Operator ruling 2026-08-31, _decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list.md, amending the LOCKED 2026-08-10 ladder: Solo answers one parcel, Studio works a list of them. Screens and boards move from ungated to Studio-or-Team; the records package becomes a visible pricing row; the comparison table regroups; Studio goes to two seats; Prospect is redefined as monitoring. Prices are untouched. Evidence doc: _smartsite_gtm/03_ladder_recut_proposal.md.",
+
+  "completionPredicate": "A stranger holding this inventory can name every file and line that must change to satisfy items 1 through 6, can tell which of those changes are enforcement and which are copy, and knows which of the ruling's stated premises the code does not currently support. Every claim carries file:line on a named commit; every negative carries the command that produced it.",
+
+  "scopeBasis": "Bounded to legacy-design-tools and hauska-map because those are the two repos named in the dispatch and the two that hold the entitlement gates and the pricing surface. Read from origin/main only, because a working tree is not the source of truth and both checkouts are dirty on unrelated branches. No code written: the dispatch is a scope, and this seat owns no product repo and could not merge the change anyway.",
+
+  "prNumbers": "not applicable: read-only lane, no code produced",
+  "mergeShas": "not applicable: read-only lane, no code produced",
+  "ciConclusionStrings": "not applicable: read-only lane, no CI run",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "ref": "origin/main",
+      "commit": "26068a1e886f37119b0cafffc0e7b195a5f8368c",
+      "committedAt": "2026-08-31 19:03:18 -0500",
+      "remoteTipVerified": "git ls-remote origin refs/heads/main matched local origin/main"
+    },
+    "hauska-map": {
+      "ref": "origin/main",
+      "commit": "8740558dbb26ad1526ac21ce124724e5a33cf60b",
+      "committedAt": "2026-08-31 19:24:03 -0500",
+      "remoteTipVerified": "git ls-remote origin refs/heads/main matched local origin/main",
+      "note": "The ruling cites hauska-map fbda04aa; main has advanced since. LDT 26068a1e is the commit the ruling re-checked against."
+    }
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-01_p101-scope_cp1.json",
+    "_inbox/2026-09-01_p101-scope_cp2.json"
+  ],
+
+  "countsWithCountingRules": {
+    "screensRoutesToGate": {
+      "count": 4,
+      "rule": "express route registrations whose path starts /property-explorer/v1/screens in artifacts/api-server/src/routes/propertyExplorer.ts, counted at the router.<verb>( line"
+    },
+    "mcpScreenToolHandlers": {
+      "count": 3,
+      "rule": "case blocks in the registerTools switch in artifacts/smartsite-mcp/src/tools.ts named create_screen, add_to_screen, list_screens"
+    },
+    "subscriptionTierGrantsStudioDefinitions": {
+      "count": 3,
+      "rule": "function declarations of that exact name, counted repo-wide across both repos via git grep on origin/main; excludes test imports, doc comments, and call sites"
+    },
+    "nonTestCallersOfScreenDomainFunctions": {
+      "count": 1,
+      "rule": "files importing createScreen / addToScreen / listScreens from lib/peScreenSave, excluding *.test.ts and vi.mock factories; the single file is artifacts/api-server/src/routes/propertyExplorer.ts"
+    },
+    "hauskaMapScreensCallSites": {
+      "count": 0,
+      "rule": "occurrences of the substring property-explorer/v1/screens anywhere in hauska-map origin/main; the command exited 1"
+    },
+    "pricingComparisonGroups": {
+      "count": 3,
+      "rule": "keys under PE_PRICING.groups in pricing.ts, which must equal the entries of the hand-written GROUPS array in PricingModal.tsx; they currently agree at 3"
+    }
+  },
+
+  "constraintsHonored": [
+    "Read ONLY via git show origin/main:<path> and git grep <pattern> origin/main. No working-tree read in either product repo.",
+    "No checkout, stash, clean, reset, or fetch. git ls-remote used instead of fetch to confirm the remote tip.",
+    "Every command exit-bounded; no watch, tail, follow, server, or non-exiting command.",
+    "No sub-agents spawned; nesting forbidden and not attempted.",
+    "No commit, push, merge, PR, or deploy. doc_repo artifacts left uncommitted for the planner.",
+    "Every negative claim carries the exact command that produced it.",
+    "Findings state a competing mechanism and why it was rejected (CP2)."
+  ],
+
+  "whatRemainsOpen": [
+    "Whether any repo outside legacy-design-tools and hauska-map calls the screens routes. Not searchable from this lane's two repos; stated as unestablished rather than as a negative.",
+    "Whether the PE server-side export path enforces Studio for site plan and terrain. Established that the PE BFF entitlement helper parses only tier free|paid and never subscriptionTier, and that git grep -ni studio over apps/property-explorer/api exits 1. NOT established whether cortex-api enforces it further upstream on those export routes.",
+    "What Stripe product configuration a two-seat Studio needs. Established that resolveTeamSeatsPurchased returns null for every non-team grant and seatsPurchasedForWire returns undefined for studio, so no server seat concept exists for Studio today.",
+    "Whether the gated screen tools should refuse in the MCP with a declared upgrade_required envelope or pass through the route 402. That is a design call for the implementing lane, not a fact."
+  ],
+
+  "leave_behind": "none",
+
+  "lessonsForPromotion": [
+    {
+      "kind": "LESSON",
+      "text": "subscriptionTierGrantsStudio is duplicated THREE times across two repos (LDT api-server peEntitlement.ts:52, LDT smartsite-mcp entitlement.ts:27, hauska-map entitlementClient.ts:90) with no shared module and no divergence test. The test named 'matches api-server predicate' (smartsite-mcp/tests/entitlement.test.ts:101) asserts four hardcoded booleans against the LOCAL copy and never reads the api-server source, so one editor satisfies both sides. 'Gate at the tier and both surfaces inherit it' is structurally true only if the gate lives on the api-server ROUTE; it is false for any predicate-level gate."
+    },
+    {
+      "kind": "LESSON",
+      "text": "The MCP inherits an api-server route gate correctly because peServiceUserId requires SERVICE_API_KEY plus X-PE-User-Id and resolvePeEntitlement then reads the tier from pe_user_entitlements for that user id. Tier is never taken from a header on this path. get_smart_site is the shipped precedent: no local gate, the paid requirement declared in its tool description, enforced upstream at research/brief."
+    },
+    {
+      "kind": "LESSON",
+      "text": "pricing.ts is config for prices but NOT for the comparison-table structure. PricingModal.tsx:61-65 hand-writes GROUPS as a three-entry array naming answer/handoff/firm; nothing iterates Object.keys(PE_PRICING.groups). A fourth group added to config alone renders nothing and fails silently."
+    },
+    {
+      "kind": "LESSON",
+      "text": "PE_PRICING.solo/studio/team .blurb and .features have zero consumers anywhere. Verified repo-wide by a regex grep on both the dotted and indexed forms, which exited 1. Only .badge, .title, .ctaLabel, the price labels, and the team seat fields actually render."
+    },
+    {
+      "kind": "DEAD-END",
+      "text": "Do not expect the MCP test suite to catch a screens gate regression. tools.test.ts:23-29 sets defaultAuth to accessTier paid / subscriptionTier studio, so a Studio gate on the screen tools passes every existing assertion including the CORTEX_CALLS reach-cortex-once check. Adding the gate produces zero failures in that suite. A both-directions test must be written, following the pattern at tools.test.ts:501-545."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31, LDT origin/main 26068a1e: the four screens routes (propertyExplorer.ts:546, :574, :596, :624) carry requirePeAuthenticated and nothing else, and the only two entitlement gate call sites in the entire Smart Site MCP tool surface are tools.ts:817 (run_report, deep) and tools.ts:851 (export_instrument, studio)."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31, hauska-map origin/main 8740558d: no screens client exists. git grep 'property-explorer/v1/screens' exits 1, and no screens path is on the deep-proxy allowlist in apps/property-explorer/api/_lib/deep-allowlist.ts, so any such call would 403. Screens are a connector-only capability today."
+    },
+    {
+      "kind": "GROUND-TRUTH",
+      "text": "2026-08-31: 'Prospect' as a pricing tier appears in NO shipped surface in either repo. hauska-map git grep -ni prospect exits 1; the LDT hits are gtmInvestorFunnel 'qualified prospect' lead scoring, an unrelated concept. The comingSoon MatrixCellKind exists and renders but no pricing row uses it."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Site plan CAD is sold as Studio-only in the pricing table (pricing.ts groups.handoff) but is NOT studioGated in the PE workbench catalog (reports-catalog.ts SITEPLAN/SPPDF/SPDXF/SPIFC carry no studioGated flag), while the MCP DOES gate it via STUDIO_EXPORT_KINDS. Sold-versus-enforced divergence on one of the rows the P-101 regroup touches. Adjacent to P-101, not caused by it."
+    },
+    {
+      "kind": "OPEN",
+      "text": "Studio two seats is a real entitlement change, not copy. seatsPurchasedForWire (peTeamRoster.ts:108-115) returns undefined for any tier other than team, which makes inviteTeamMember throw SEATS_PURCHASED_UNKNOWN 409; resolveTeamSeatsPurchased (peTeamSeatsFromStripe.ts:88) returns null for every non-team grant; and peTeamRoster.unit.test.ts:58 pins studio-with-3-seats to undefined. Four coordinated code changes plus Stripe configuration."
+    }
+  ]
+}

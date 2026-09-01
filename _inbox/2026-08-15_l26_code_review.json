@@ -1,0 +1,81 @@
+{
+  "lane": "L26",
+  "kind": "adversarial-review",
+  "reviewedAt": "2026-08-15T13:48:00Z",
+  "reviewer": "lane-planner",
+  "wdll": "_inbox/2026-08-15_texas_flush_server_plan_WDLL.md",
+  "verdict": {
+    "pr344": "ACCEPT_TIMERS_ONLY",
+    "pr345": "HOLD_DO_NOT_MERGE"
+  },
+  "prs": [
+    {
+      "pr": 344,
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/344",
+      "agent": "2fc043d9-657b-40e2-93ce-c8660b488835",
+      "wdllItemsClaimed": [7, 9],
+      "grade": {
+        "7": "partial",
+        "8": "partial",
+        "9": "met"
+      },
+      "evidence": [
+        "write-well-fact-county.mjs and write-building-footprint-county.mjs emit loadParcelsMs/sourceLoadMs/planMs/writeMs/verifyMs/wallMs",
+        "neondb statement_timeout=120000 lock_timeout=30000, not 0",
+        "well grain still one atom per (parcel, well); footprint still planCountyStagedFootprints + ST_Intersects",
+        "no rrc-pipeline-fact edits; no l24-flood-plan-emit edits"
+      ],
+      "gaps": [
+        "WDLL item 7 check requires a test that a .done missing planMs/writeMs/verifyMs FAILS — fields exist, that failing test does not",
+        "WDLL item 8 pg_sleep abort not run (correctly left for planner; Harris occupies neondb)",
+        "well writer still pages with DISTINCT ON (feature_index)+geometry — pre-existing, not introduced here, not in this PR's WDLL items"
+      ],
+      "merge": false
+    },
+    {
+      "pr": 345,
+      "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/345",
+      "agent": "8d55eac3-e78a-4edc-b2ed-bf7cd3e39a03",
+      "wdllItemsClaimed": ["4", "5-harness", "7", "8"],
+      "grade": {
+        "4": "partial",
+        "5": "harness-only",
+        "6": "not-started",
+        "7": "partial",
+        "8": "partial"
+      },
+      "evidence": [
+        "TEMP+GiST path uses (tile_key, feature_index) keyset load, no GeoJSON on hit rows, geography ST_DWithin at 152.4m",
+        "default --plan-backend=auto uses PostGIS when ready; --apply does not call loadParcelsJs on that path",
+        "phase timers loadMs/planMs/planSqlMs/writeMs/verifyMs/wallMs",
+        "statement_timeout 600000 lock_timeout 30000, not 0",
+        "no --apply, no lease, no l24-flood-plan-emit edits"
+      ],
+      "blockers": [
+        "keysetParcelBatchPlanSql still SELECT DISTINCT ON (feature_index) ... ST_GeomFromGeoJSON(geometry) ORDER BY feature_index — the Brazoria hang shape. Used for every county under 50k parcels, including 48001 parity.",
+        "loadParcelsJs still ships the same DISTINCT ON + geometry page query and is the --plan-backend=js apply path and the --parity JS leg.",
+        "assemblePlanFromRows skips only empty/zero keys, not isUsablePropId — same Jones/Power named-data class as flood.",
+        "WDLL item 4 EXPLAIN not captured. Item 5 live parity not run. Item 8 pg_sleep not run. All correctly deferred; none are merge-gates except the DISTINCT ON residue."
+      ],
+      "merge": false,
+      "requiredBeforeMerge": [
+        "Kill DISTINCT ON (feature_index)+geometry from keysetParcelBatchPlanSql and from loadParcelsJs (or delete the JS apply path).",
+        "Filter parcel keys with isUsablePropId before createRrcPipelineFact.",
+        "Planner-owned: EXPLAIN of new plan SQL; 48001 parity after Harris releases neondb; pg_sleep timeout proof."
+      ]
+    }
+  ],
+  "neondb": {
+    "harrisPlanOnlyAlive": true,
+    "pid": 77264,
+    "secondScanStarted": false,
+    "parityDeferredUntil": "Harris 48201 plan-only finishes or is ruled stalled"
+  },
+  "floodDrainAtReview": {
+    "landed": 3,
+    "atomsWritten": 19267,
+    "current": "48337",
+    "currentWritten": 15000,
+    "failed": 0
+  }
+}

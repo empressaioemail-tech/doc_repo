@@ -1,0 +1,90 @@
+{
+  "id": "2026-08-28_ctx-d_cp1",
+  "kind": "cp1",
+  "lane": "ctx-d",
+  "planRows": ["F-03", "F-06", "F-10"],
+  "wdll": "_inbox/2026-08-28_ctx_d_reaper_execution_identity_WDLL.md (read before design; inherited whole, same five items, same scope)",
+  "filedAt": "2026-08-28T10:30:00Z",
+  "seat": "planner-run subagent, property seat, worktree P:/seat-worktrees/property/hauska-factory-ctx-replay, branch seat/property-ctx-reaper, no sub-agents (dispatch forbids spawning)",
+  "snapshot": {
+    "repo": "hauska-factory",
+    "branch": "seat/property-ctx-reaper",
+    "head": "25d031be827ee6980bdc18a7e93bc646610ec727 (origin/main; Merge pull request #27); working tree clean at CP1",
+    "baselineTests": "npm test (node --test test/*.test.mjs) at 25d031b: 215 tests, 213 pass, 0 fail, 2 skipped (landing-live without FACTORY_DATABASE_URL); matches the dispatch's stated baseline",
+    "schema": "migrations/0001_init.sql: termination_records is one row per run (run_id PRIMARY KEY) with max_duration_s, exit_kind, lease_released, recorded_at and NO recorder column; run_events is (run_id, at, kind, body); runs.scope is jsonb; migrations/0003_publish_staging.sql: publish_runs (id = the publish run id, status, walk_id, completed_at)",
+    "clockAtCp1": "2026-08-28T10:25:06Z (date -u in the worktree shell)"
+  },
+  "missionPremise": "The reaper's start-time fallback (src/control/reaper.mjs matchRunToExecution, 90 s window with job affinity, card A) is a control broader than its claim (ENFORCEMENT.md): three staging publish executions of one job started within two seconds (czlpc 48055, csvv8 48309, wqnzb 48209 at 09:22:59Z to 09:23:01Z) and the reaper attached the finished czlpc to the running Hays run 41bcc81a and terminated it crashed at 09:50:25Z mid-bake; when wqnzb finished at 10:12Z its own termination hit 23505 and the run row reads failed 23505 while publish_runs 41bcc81a succeeded and walk ecd466a7 passed. The publish was right; the ledger about it is wrong twice. Identity replaces the heuristic: every run names its own Cloud Run execution at start and the reaper matches by that name only. Source: the WDLL card and the compiled dispatch (both read), BP-FACTORY-01 (every run terminates once, with a record), A-022(5) (orphan rule).",
+  "completionPredicate": "node --test green with fail 0 and count above 215; startRun stamps scope.execution, scope.job, scope.host on every run (self or child) and refuses EXECUTION_NAME_REQUIRED on Cloud Run without CLOUD_RUN_EXECUTION; the reaper reconciles a named run against its execution only, never attaches a named run whose execution is missing to a sibling, applies the start-time fallback only to unnamed runs started before EXECUTION_NAME_SINCE and never to host not-cloud-run rows, and the fallback has a removal date enforced by a test; writeTermination refuses ALREADY_TERMINATED naming the existing exit kind and recorder and a job close records that refusal (refuse_code, counts.terminationConflict, run_event) while keeping its own outcome and exit code; reap reconcile-termination corrects a reaper-terminated run from the run's own close evidence (publish_runs succeeded + walk pass, both after the termination) and refuses without that evidence; the three-sibling and named-missing fixtures fail against main's reaper (shown by running them against a scratch copy of 25d031b's reaper); handback carries diff by file, full test output, the EXECUTION_NAME_SINCE value, the exact execute command for 41bcc81a, leave_behind.",
+  "scopeBasis": "The card's five items on src/control/runs.mjs, src/control/termination.mjs, src/control/reaper.mjs, src/jobs/reap.mjs, src/cli.mjs, the named jobs (bastrop-publish, verify-walk, staging-reset, restamp-access, f10-cad-loop and its county child, conformant when keyed by --run-id), tests and fakes. Out of scope by the card: commit, push, PR, deploy, any job execution, any store write, any gcloud call, job templates and cloudbuild files, widening the window or adding a second heuristic. Deliberately excluded and named: a termination_records schema change (a recorder column) because a migration would sequence the image rebuild behind a migrate execution while the loop runs and the card allows a run_event instead; jobs not named by the card (snapshot, cc-publish, bexar-cad, bexar-edges, landing-import, manifest-import, access-policy-prestep, lease-v2-migrate, hold-refuse-run) get the identity stamp through startRun's default env without a per-file edit and keep their existing close paths; the control API's control runs are NEVER_AN_EXECUTION and record host cloud-run-service.",
+  "findingsBeforeBuild": [
+    {
+      "item": 1,
+      "finding": "Only three jobs record an execution name today, each by its own inline scope key: src/jobs/reap.mjs:21, src/jobs/conformant.mjs:694, src/jobs/restamp-access.mjs:320 (all execution: env.CLOUD_RUN_EXECUTION ?? null). bastrop-publish, verify-walk, staging-reset, f10-cad-loop (loop and child) record none, which is why every publish run is start-time matched. Three writers of one field is the two-implementations shape (DEV_PROCESS 2.4); startRun becomes the single writer and the inline keys are removed."
+    },
+    {
+      "item": 1,
+      "finding": "The loop's county child row (f10-cad-loop.mjs:441) is created BEFORE its execution exists (executeJob returns the name only afterwards; via gcloud --wait only at completion), and the child conformant job receives the row by --run-id and never calls startRun (conformant.mjs:678 f.runId || startRun). So the child's name must be written in two places from two derivations: the loop stamps the name from the Cloud Run API response as soon as executeJob returns (execution_named_by: parent), and the child stamps its own CLOUD_RUN_EXECUTION when it starts (execution_named_by: self). When both exist and disagree the child refuses EXECUTION_NAME_MISMATCH: two executions claiming one run row is exactly the identity confusion this card kills, and the check has two independent sources (API response vs the process's own env). Between row creation and the first stamp the row is unnamed and post-SINCE, so the reaper never attaches it by time."
+    },
+    {
+      "item": 1,
+      "finding": "The Cloud Run signal: FACTORY_CLOUD=1 is set on every Factory job template except factory-snapshot (cloudbuild.yaml:43), and Cloud Run Jobs itself sets CLOUD_RUN_JOB and CLOUD_RUN_EXECUTION; Cloud Run services set K_SERVICE and no CLOUD_RUN_JOB. executionIdentity(env): K_SERVICE without CLOUD_RUN_JOB -> host cloud-run-service (the control API; its runs are NEVER_AN_EXECUTION); FACTORY_CLOUD=1 or CLOUD_RUN_JOB -> host cloud-run-job and CLOUD_RUN_EXECUTION is required; otherwise host not-cloud-run with execution null. FACTORY_CLOUD=1 without CLOUD_RUN_EXECUTION is the refusal case the card names (a laptop shell exporting FACTORY_CLOUD=1 to get past LAPTOP_WRITE_FROZEN)."
+    },
+    {
+      "item": 2,
+      "finding": "Reap ticks run as executions of factory-conformant (scheduler posts factory-conformant:run with args reap). Under the current fallback an unnamed stage-e-conformant child row (job affinity factory-conformant) started within 90 s of a reap tick could be attached to the finished reap execution. Not observed, but it is the same defect class and it disappears with name-only matching; noted so the planner does not read a quiet reaper as proof the heuristic was safe."
+    },
+    {
+      "item": 2,
+      "finding": "EXECUTION_NAME_SINCE semantics: rows the NEW image writes are always named (or host not-cloud-run, which is never time-matched), so the constant only decides whether OLD unnamed rows still get the legacy heuristic. An earlier value means less heuristic; a row started by the old image after SINCE that is still started is left to its age bound and orphaned (A-022(5)), never attached. Recommendation to the planner: set it to the merge timestamp (UTC); the code default is 2026-08-28T10:30:00Z (this CP1). Removal: a test asserts the fallback is gone once LEGACY_FALLBACK_REMOVE_BY (2026-09-01T00:00:00Z, later than the longest max_duration_s 86400 plus a day past deploy) passes, so the suite goes red on that date until the fallback code is deleted; that is the follow-up date the handback names."
+    },
+    {
+      "item": 2,
+      "finding": "Existing card A tests that rely on the fallback use started_at relative to a fixed NOW (2026-08-28T07:00Z), which is before SINCE today; they are rewritten relative to EXECUTION_NAME_SINCE so they stay legacy fixtures whatever value the planner sets."
+    },
+    {
+      "item": 3,
+      "finding": "termination_records has no recorder column, and adding one is a migration the image would depend on (factory-conformant-migrate must run before the new image ticks, while the loop is running on the old image). The card allows a run_event; writeTermination therefore writes a run_events row kind termination naming exit_kind, max_duration_s, recorder, reason, execution and matched_by with every termination record, and ALREADY_TERMINATED reads the latest such event for the recorder. Historical records (before this change) have no event; the refusal reports recorder null, an honest absence, never a sentinel."
+    },
+    {
+      "item": 3,
+      "finding": "The duplicate is detected atomically by INSERT ... ON CONFLICT (run_id) DO NOTHING RETURNING run_id (no check-then-insert race, no raw 23505 surfaces). Three fakes must answer that statement with a row on success and none on conflict: test/helpers/fake-factory.mjs, the publish test's fakeFactoryClient, and the ctx-reaper test's fakeClient (which returns rows [] for every write today and would read as a conflict on every termination)."
+    },
+    {
+      "item": 3,
+      "finding": "reaper.mjs terminate() catches the duplicate and STILL writes runs.status = its own exit kind and deletes leases; that is the reaper overwriting a job's own close in the race the SELECT ... t.run_id IS NULL leaves open. With ALREADY_TERMINATED the reaper backs off entirely and reports the conflict in its log line. Every named job close (publish success and failure, verify-walk success and failRun, staging-reset, restamp success, conformant success and cleanup closes, loop close, reap own close) records the conflict (refuse_code ALREADY_TERMINATED, counts.terminationConflict, run_event termination-conflict) and keeps its own outcome; the SIGTERM handlers keep their catch-all."
+    },
+    {
+      "item": 4,
+      "finding": "Evidence for the Hays shape from the store alone, two independent derivations: the reaper's termination (termination_records.exit_kind crashed, recorded_at 09:50:25Z; for pre-change rows no termination event, recorder inferred from ordering) versus the run's own close (publish_runs 41bcc81a status succeeded with completed_at ~10:12Z after recorded_at, and the verify-walk run whose scope.publishRunId = 41bcc81a with status success and counts.overall pass). The verb refuses RECONCILE_RUN_NOT_FOUND, RECONCILE_NO_TERMINATION, RECONCILE_NOT_REAPER_TERMINATION (a termination event with another recorder, or recorded_at not before publish_runs.completed_at), RECONCILE_NO_EVIDENCE (phase not publish, no publish_runs row, not succeeded, no passed walk), RECONCILE_NO_DIFFERENCE (exit_kind already success), RECONCILE_ALREADY_CORRECTED. A --skip-walk publish has no walk and refuses: the operator walks it first. Correction: run_event termination-corrected naming both records and the evidence, runs.status set to success (the status a normally closed publish ends with, since writeTermination writes status = exit_kind after the job's own succeeded), refuse_code cleared with the old 23505 preserved in the event body; the termination_records row is left as written (append-only evidence of what the reaper did). Default is dry-run; --apply writes."
+    },
+    {
+      "item": 5,
+      "finding": "The verification that the three-sibling and named-missing fixtures fail on main cannot be a git stash (a git write in a running worktree); it is done by extracting 25d031b's reaper.mjs, termination.mjs and cloudrun-jobs.mjs with git show into the scratchpad and running the same fixtures against that copy in a scratch script, exit code read directly."
+    }
+  ],
+  "design": {
+    "runs": "src/control/runs.mjs: EXECUTION_NAME_REQUIRED, EXECUTION_NAME_MISMATCH, KEYED_RUN_NOT_FOUND; executionIdentity(env, {require}) -> {execution, job, host, service}; startRun(client, fields, {env = process.env, executionOf = 'self'}) merges {execution, job, host, execution_named_by} into scope as the single writer (a child row gets execution null, job from scope, execution_named_by null); nameKeyedRun(client, runId, env) stamps a --run-id row from the process's own identity (self), confirms a parent-written name, refuses a mismatch.",
+    "termination": "src/control/termination.mjs: ALREADY_TERMINATED; writeTermination ON CONFLICT DO NOTHING RETURNING, run_event termination with recorder/reason/execution/matched_by, refusal carries err.existing and err.attempted; readTerminationRecord; recordTerminationConflict(client, runId, err, {outcome}) -> UPDATE runs SET refuse_code, counts = coalesce(counts,'{}') || {terminationConflict} plus run_event termination-conflict; isAlreadyTerminated(err).",
+    "reaper": "src/control/reaper.mjs: EXECUTION_NAME_SINCE, LEGACY_FALLBACK_REMOVE_BY, LEGACY_START_TIME_FALLBACK; matchExecution(run, executions) -> {exec, by: execution-name | start-time-legacy | null, named}; matchRunToExecution keeps its shape for the card A tests; named run -> name only; unnamed and host not-cloud-run or cloud-run-service -> never; unnamed and started_at >= SINCE -> never; unnamed pre-SINCE -> legacy fallback unchanged (job affinity, 90 s); terminate passes recorder reaper, reason, execution, matched_by; ALREADY_TERMINATED -> back off, no status or lease write, reported as reason already-terminated.",
+    "reap": "src/jobs/reap.mjs: parseReapArgs(argv) -> tick | reconcile-termination {run, apply}; runReap tick unchanged plus conflicts count; runReconcileTermination(env, {flags, deps}) with its own run row (phase f03-reconcile-termination) and the refusals above; src/cli.mjs routes reap args; scheduler args ['reap'] untouched.",
+    "jobs": "bastrop-publish, verify-walk, staging-reset (gains deps.connectFn / deps.createBranchFn and reads NEON vars from env), restamp-access, f10-cad-loop (loop self; child executionOf child with scope.job factory-conformant; stamp from executeJob response), conformant (nameKeyedRun when --run-id; inline execution key removed), reap: startRun with {env}; closes through the conflict recorder.",
+    "tests": "new test/ctx-execution-identity.test.mjs (identity, startRun, nameKeyedRun, termination refusal and conflict recorder, reaper name-only rules, legacy fallback and its removal date, staging-reset, loop child naming and mismatch, reap tick naming, reconcile-termination fixtures); publish.test.mjs gains the job-level three-sibling fixture (three runBastropPublish starts under three CLOUD_RUN_EXECUTION names, three executions, one finished, reap reconciles exactly that one), publish and walk scope assertions, the item 3 pre-existing-termination close; ctx-register-dispositions.test.mjs asserts the child scope and the parent stamp; ctx-access-pair.test.mjs asserts the restamp scope and the EXECUTION_NAME_REQUIRED refusal; ctx-reaper.test.mjs legacy fixtures re-anchored to SINCE and its fake answers the new termination statement."
+  },
+  "falsifiersPreRegistered": [
+    "F1: startRun with FACTORY_CLOUD=1 and no CLOUD_RUN_EXECUTION inserts a run row (must refuse EXECUTION_NAME_REQUIRED with zero INSERT).",
+    "F2: a run row started under CLOUD_RUN_EXECUTION=x carries scope.execution !== 'x' or scope.job !== CLOUD_RUN_JOB or scope.host !== 'cloud-run-job' (per job: publish, walk, staging-reset, restamp, loop, reap, child after stamp).",
+    "F3: three named runs started within one second, three executions, one finished: the reaper writes more or fewer than exactly one termination, or the wrong run.",
+    "F4: a named run whose execution is absent from the listing and a live stranger of the same job within 5 s: the reaper touches the named run before its age bound.",
+    "F5: an unnamed run started after EXECUTION_NAME_SINCE with a finished same-job execution 5 s away: the reaper attaches it.",
+    "F6: an unnamed run started before EXECUTION_NAME_SINCE with a finished same-job execution 5 s away: the reaper does NOT attach it (legacy must still reconcile).",
+    "F7: the three-sibling job-level fixture and the named-missing fixture pass against a scratch copy of 25d031b's reaper (they must fail there).",
+    "F8: writeTermination on a run with an existing termination throws anything other than code ALREADY_TERMINATED, or the error lacks existing.exit_kind, or a second termination_records row appears.",
+    "F9: publish with a pre-existing reaper termination rejects, or leaves runs.status other than succeeded, or omits refuse_code ALREADY_TERMINATED / counts.terminationConflict.",
+    "F10: reconcile-termination --apply on the 41bcc81a fixture leaves runs.status unchanged or writes no termination-corrected event; or it succeeds on any of: no termination, exit_kind success, no publish_runs row, walk failed or absent, termination recorded after completed_at, a termination event with recorder bastrop-publish, phase stage-e-conformant, already corrected.",
+    "F11: the removal-date test passes with Date.now() past LEGACY_FALLBACK_REMOVE_BY while LEGACY_START_TIME_FALLBACK is true (checked by evaluating the predicate with a forged now).",
+    "F12: full suite fail > 0 or count <= 215."
+  ],
+  "constraintsHonored": ["no commit, push, PR, deploy, job execution", "no gcloud call", "no store write; fakes only", "no DATABASE_URL, secret or token printed", "no writes under P:/doc_repo except the three checkpoint files", "no writes outside own worktree; job templates and cloudbuild files untouched"],
+  "leave_behind": "declared at close"
+}

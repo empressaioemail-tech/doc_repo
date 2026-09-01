@@ -1,0 +1,80 @@
+{
+  "lane": "A4",
+  "planRow": "G-56",
+  "checkpoint": "CP1",
+  "timestamp": "2026-08-15T16:30:00.000Z",
+  "missionPremise": "Smart Files CC-done (WDLL `_inbox/2026-08-15_a_wdll_cc_done_l15.md`): files are file-shaped smart-file documents reached by `placed-on` edges in `smart_file_placements`; folder membership is never reconstructed from entityId (decision `_decisions/2026-08-15_file_set_edges_not_identity.md`). L1 store on cortex-api main `015b15d6246ea6af12b6b25daa69eae8a75fc61b` is applied; this lane adds serving routes, MCP tools, CC panel, and seed script.",
+  "completionPredicate": "Operator opens `#panel=smart-files` on deployed CC; MCP tools list/read the same room; seed satisfies WDLL item 3 counts; RBAC denies anon on tenant-private; platform-internal readable with operator key.",
+  "scopeBasis": "Items 2-7 only. Planner owns canary (1) and close (9). No payment SDK, no G-19/G-44/G-53, no smartcity-os, no atoms --apply, no brokerage edits.",
+  "mcpTools": [
+    {
+      "name": "list_smart_file_folders",
+      "gate": "reporting",
+      "anonymous_ok": false,
+      "input": {
+        "scopeType": "jurisdiction | tenant | site",
+        "scopeId": "string (opaque scope id; may contain colons for site)"
+      },
+      "output": {
+        "folders": "array of { folderId, label, scopeType, scopeId, accessPolicy }",
+        "absence": "null when folders exist; typed SmartFileAbsence when scope unknown"
+      }
+    },
+    {
+      "name": "list_smart_file_folder_files",
+      "gate": "reporting",
+      "anonymous_ok": false,
+      "input": {
+        "folderId": "opaque folder target_id (never parsed into entityId parts)"
+      },
+      "output": {
+        "files": "array of file-shaped document summaries from placements join (entityId, title, accessPolicy, currentVersion, placementsCount)",
+        "absence": "typed when folderId unknown or folder empty with positive absence row"
+      },
+      "countingRule": "files.length = DISTINCT smart_file_documents.id via smart_file_placements WHERE target_type='folder' AND target_id=folderId"
+    },
+    {
+      "name": "read_smart_file",
+      "gate": "reporting",
+      "anonymous_ok": false,
+      "input": {
+        "entityId": "declared smartfile:… entityId verbatim",
+        "version": "optional integer; defaults current"
+      },
+      "output": "SmartFileReadResult union (held | absent-*); accessPolicy enforced before return; attachmentUrl relative path only when held"
+    },
+    {
+      "name": "list_smart_file_placements",
+      "gate": "reporting",
+      "anonymous_ok": false,
+      "input": { "entityId": "declared smartfile entityId" },
+      "output": {
+        "placements": "array of placed-on edges { targetType, targetId, placedAt, placedBy }",
+        "absence": "typed SmartFileReadResult when document not held"
+      }
+    }
+  ],
+  "placedOnReadPath": "File list and placement list query `smart_file_placements` with target_type='folder' and matching target_id. Documents joined on document_id. NEVER filter smart_file_documents by entityId prefix matching folderId. One file in two folders = two placement rows, same document_entity_id.",
+  "recordPanePath": "Non-file atoms are NOT smart_file_documents and MUST NOT appear in list_smart_file_folder_files. Record pane reads `smart_file_folder_records` (new serve table, migration 0081): folder_target_id → { recordEntityId, entityType, payload }. CC reuses AtomInspector row renderer on payload objects. MCP has no list-records tool in v1; CC calls cortex-api GET /api/smart-files/folders/:folderId/records directly (same accessPolicy gate).",
+  "pdfFetchPath": "read_smart_file returns held.version.contentCid. Attachment stream: GET /api/smart-files/files/:entityId/attachment?version=N validates document+version exist and accessPolicy, then streams bytes from engine GET /v1/blobs/:cid (gate-front) OR seed-local object path keyed by cid. Route 404 when document gone even if blob exists (no unsigned parallel URL).",
+  "staleBackdatePlan": "Sidebar surfaces freshness.stale from evaluateSmartFileFreshness (same class as county-manifest computedAt). Seed script accepts --backdate-computed-at ISO flag on one document; integration test asserts stale=true after backdate. CC shows STALE Pill when freshness.stale === true.",
+  "servingAdapter": "Thin cortex-api routes in legacy-design-tools worktree calling existing smartFileStore + new smartFileServe query module. MCP legacyClient HTTP to LEGACY_BACKEND_URL /api/smart-files/*. No second document table; migration 0081 adds folder registry + folder record links only.",
+  "findings": [],
+  "willNotDo": [
+    "payment SDK / Circle / VDA / take-rate",
+    "G-19 close or CC docs",
+    "G-44 corpus capture",
+    "G-53 Vertosoft sale",
+    "smartcity-os",
+    "implied identity-as-folder file listing",
+    "copy smart-file.contract.ts into hauska-mcp-server (wire types duplicated minimally; A-013 promotion is planner-owned)",
+    "brokerage_* file edits",
+    "atoms --apply",
+    "merge or deploy"
+  ],
+  "worktrees": {
+    "legacy-design-tools": "P:\\legacy-design-tools-worktrees\\a4-smart-files-cc",
+    "hauska-mcp-server": "P:\\hauska-mcp-server-worktrees\\a4-smart-files-cc",
+    "hauska-map": "P:\\hauska-map-worktrees\\a4-smart-files-cc"
+  }
+}

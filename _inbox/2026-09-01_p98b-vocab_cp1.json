@@ -1,0 +1,113 @@
+{
+  "artifact": "CP1",
+  "lane": "p98b-vocab",
+  "planRows": ["P-98"],
+  "date": "2026-09-01",
+  "phase": "design / pre-build adversarial checkpoint",
+  "dispatch": "_dispatches/2026-09-01_p98b-vocab_dispatch.md",
+  "missionPremise": "Operator ruling carried in the compiled dispatch: ONE billing-interval vocabulary end to end, Stripe's own month/year, with no translation layer, and the client changed to match. Rationale in the dispatch: a silent mapping between two vocabularies for one subject is the defect class that already cost this operation a re-stamp of 6.3M rows (the legacy access-policy pair).",
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p98",
+      "remote": "https://github.com/empressaioemail-tech/legacy-design-tools",
+      "branch": "feat/p98b-account-entitlement",
+      "baseCommit": "b2e81052f8a5936daadb73be3956b0073ee97f8c",
+      "treeAtCp1": "clean (git status --porcelain empty)"
+    },
+    "hauska-map": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-nextaction",
+      "remote": "https://github.com/empressaioemail-tech/hauska-map.git",
+      "branch": "feat/p98b-account-entitlement-client",
+      "baseCommit": "04e0a752c0ead0d5af20fba344ebfb8969f45e3a",
+      "treeAtCp1": "clean (git status --porcelain empty)"
+    }
+  },
+  "translationLocated": {
+    "module": "artifacts/api-server/src/lib/peWireBillingInterval.ts",
+    "mappingLines": "33-34",
+    "mappingText": "if (v === \"month\") return \"monthly\";  /  if (v === \"year\") return \"annual\";",
+    "typeLine": "artifacts/api-server/src/lib/peWireBillingInterval.ts:28  export type PeWireBillingInterval = \"monthly\" | \"annual\";",
+    "appliedAt": "artifacts/api-server/src/lib/peEntitlement.ts:199  billingInterval: peWireBillingInterval(snap.billingInterval)",
+    "wireTypeDeclaredAt": "artifacts/api-server/src/lib/peEntitlement.ts:194  billingInterval: PeWireBillingInterval | null",
+    "consumerEnumerationCommand": "grep -rn \"peWireBillingInterval|PeWireBillingInterval\" --include=*.ts --include=*.tsx . | grep -v node_modules",
+    "consumerEnumerationResult": "exactly one production consumer (peEntitlement.ts) plus the module's own test file src/lib/__tests__/peWireBillingInterval.test.ts. No other call site in the repo."
+  },
+  "baselineMeasured": [
+    {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx vitest run src/lib/peEntitlement.responseBody.unit.test.ts",
+      "result": "Test Files 1 failed (1) | Tests 2 failed | 6 passed (8)",
+      "failures": ["line 136 expected 'monthly' to be 'month'", "line 181 expected 'annual' to be 'year'"]
+    },
+    {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx vitest run src/lib/__tests__/peWireBillingInterval.test.ts",
+      "result": "Test Files 1 passed (1) | Tests 3 passed (3)",
+      "note": "this file tests the translation only; it is retired with the translation, so the two-file server baseline must be reported as 11 before and 8 after WITH the retirement named, never as a bare regression"
+    },
+    {
+      "command": "cd P:/seat-worktrees/property/legacy-design-tools-p98/artifacts/api-server && npx tsc --noEmit -p tsconfig.json",
+      "result": "exit 0, no diagnostics"
+    }
+  ],
+  "plannedChange": {
+    "server": [
+      "delete artifacts/api-server/src/lib/peWireBillingInterval.ts (the whole module IS the mapping; nothing is left once the mapping goes)",
+      "delete artifacts/api-server/src/lib/__tests__/peWireBillingInterval.test.ts (retirement item for the module, same card, per ENFORCEMENT Retirement)",
+      "peEntitlement.ts: drop the import, type the wire field PeBillingInterval | null, pass snap.billingInterval straight through"
+    ],
+    "client": [
+      "nextAction.ts: type BillingInterval = month | year; gate !== monthly becomes !== month",
+      "accountEntitlementClient.ts: parse whitelist and its contract comments",
+      "SettingsModal.tsx: formatInterval reads year instead of annual; hardcoded wire literal and comments",
+      "test/fixture updates in account-entitlement-client.test.ts, nextAction.test.ts, settings-plan-rows.test.tsx, settings-next-action.test.tsx"
+    ]
+  },
+  "adversarialReview": [
+    {
+      "objection": "Deleting the mapping deletes its TOTALITY guard (module doc: an unrecognised value yields null rather than being passed through). After the change an out-of-grammar DB value would reach the wire raw.",
+      "assessment": "Accepted as a real property loss, judged acceptable, surviving control named.",
+      "survivingControl": "lib/db/drizzle/0092_pe_billing_interval.sql:49-52 CONSTRAINT pe_user_entitlements_billing_interval_chk -- billing_interval IS NULL OR billing_interval IN ('month','year'). A DDL CHECK binds every writer including raw connections, which a TypeScript union never does. ENFORCEMENT: where a type can express the constraint, prefer the type over any check.",
+      "residualRisk": "drizzle .$type<PeBillingInterval>() is an UNCHECKED cast, so TypeScript is not the runtime guarantee here; the CHECK constraint is. The column was ADDed and CHECKed in the same migration (0092), so there is no pre-constraint legacy population holding an out-of-grammar value.",
+      "provenanceOfSnapValue": "snap.billingInterval has exactly two origins: peIdentity.ts:181 (row?.billingInterval ?? null, read from the constrained column) and peEntitlement.ts:111 (hardcoded null for the unauthenticated snapshot). Neither can produce a third string."
+    },
+    {
+      "objection": "Removing a translation from a live wire breaks deployed consumers.",
+      "assessment": "Rejected: there is no deployed consumer. Verified at source.",
+      "command": "git -C P:/seat-worktrees/property/legacy-design-tools-p98 grep -n billingInterval origin/main",
+      "result": "no matches on legacy-design-tools origin/main. The whole billingInterval wire field is new in the unmerged PR #574; nothing in production reads it."
+    },
+    {
+      "objection": "The client half is confined to the sibling branch, so only that branch needs changing.",
+      "assessment": "REJECTED. This contradicts the brief and is this checkpoint's main finding. monthly/annual is ALREADY MERGED on hauska-map origin/main.",
+      "command": "git -C P:/seat-worktrees/property/hauska-map-nextaction grep -n billingInterval origin/main",
+      "result": "origin/main apps/property-explorer/src/lib/nextAction.ts and nextAction.test.ts already carry the monthly|annual union (landed by PR #329, feat/p98-next-action-rail); origin/main SettingsModal.tsx:358 hardcodes billingInterval: null and settings-next-action.test.tsx:159-160 pins it.",
+      "consequence": "Still in scope under task 5 (update every test, fixture and wire-body literal carrying the old strings), but it means this diff edits files whose current content is already on main, not only files the sibling lane authored."
+    },
+    {
+      "objection": "The ruling says one vocabulary end to end, so PricingInterval and the checkout copy must also be collapsed.",
+      "assessment": "Rejected for THIS lane, and reported rather than acted on. The dispatch bounds explicitly protect unrelated annual PRICING copy.",
+      "finding": "apps/property-explorer/src/lib/pricing.ts:30 declares PricingInterval = annual|monthly as the pricing-MODAL TOGGLE vocabulary, and pricing.ts:262-273 already carries an explicit named boundary to the wire: PeCheckoutInterval = month|year with toCheckoutInterval/fromCheckoutInterval, comment 'Cortex checkout enum. UI says annual/monthly; the wire says year/month.' pe-checkout-tier.test.ts:122 already pins 'UI token annual is refused on the wire'.",
+      "why": "That is presentation state and display copy behind a declared, tested boundary, not a second wire vocabulary. The CHECKOUT wire already speaks month/year. After this change the ENTITLEMENT wire speaks month/year too, so the two client-to-server legs agree for the first time; today they disagree, which is itself an argument for the ruling."
+    },
+    {
+      "objection": "annual_upgrade contains annual, so the sweep should rename it.",
+      "assessment": "Rejected. It is a rung IDENTIFIER, not an interval value, and it is persisted: it appears in the server activation-event enum at artifacts/api-server/src/lib/peActivationEventsValidate.ts:58 and in the client rung list. Renaming it would break a stored vocabulary to satisfy a text match. Explicitly left alone."
+    },
+    {
+      "objection": "Deleting peWireBillingInterval.test.ts silently reduces the suite.",
+      "assessment": "Accepted; handled by declaring it rather than hiding it. 3 tests are retired WITH the function they test. The close reports 11 to 8 on those two files with the retirement named, never as a bare after count."
+    },
+    {
+      "objection": "A null interval could start reading as monthly once the mapping is gone.",
+      "assessment": "Rejected, and it is pinned. peEntitlement.responseBody.unit.test.ts:151-160 (VIOLATION: an unknown interval stays null, never defaulted to month) asserts both body.billingInterval === null and that the serialised body contains \"billingInterval\":null. Straight pass-through preserves null as null."
+    }
+  ],
+  "boundsHonored": [
+    "usePropertyEntitlement.ts and entitlementClient.ts in hauska-map: NOT TOUCHED (dispatch bound; a test pins it)",
+    "pricing.ts / PricingModal.tsx / pricing-modal.test.tsx / checkoutCopy.ts / CheckoutPage.tsx: NOT TOUCHED (pricing copy plus UI toggle)",
+    "brief-view-model.ts 1% annual-chance floodplain: NOT TOUCHED (FEMA flood text, not billing)",
+    "no commits, no pushes, no PRs in any repo (dispatch commit clause; planner commits)",
+    "no sub-agents spawned (dispatch no-nesting clause)"
+  ],
+  "completionPredicate": "peWireBillingInterval.ts no longer exists; grep for monthly/annual as billing-interval VALUES returns nothing in either repo's entitlement path; the three originally-failing assertions pass without being edited; npx tsc --noEmit is clean in both repos; the client suite is green at or above its pre-existing count; and the gate has been observed RED under a deliberate violation and green again after restore, with the red output pasted verbatim.",
+  "scopeBasis": "The subject is the ENTITLEMENT WIRE FIELD pe_user_entitlements.billing_interval and everything that reads it. Presentation copy and UI toggle state are excluded because they are not a wire vocabulary and already sit behind a declared, tested boundary. Persisted identifiers containing the substring annual are excluded because they name a rung, not an interval."
+}

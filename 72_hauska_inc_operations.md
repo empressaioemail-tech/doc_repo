@@ -2,7 +2,7 @@
 id: 72_hauska_inc_operations
 title: Hauska Inc. operations â corporate state tracker
 status: active
-last_updated: 2026-05-26
+last_updated: 2026-08-26
 applies_to: portfolio
 related: [00_current_state, 14_pricing_framework, 50_hauska_mcp_server, 51_substrate_v1_sprint, 70_bizops_overview, 80_adrs/adr_008_engine_factor_out, 80_adrs/adr_018_atom_contract_substrate_layer]
 owner: nick
@@ -35,11 +35,14 @@ State of declared capital allocations against Hauska Inc. operations.
 |---|---|---|
 | **Substrate v1 first-30-cities ingest budget** | Allocated 2026-05-18 | $1-2K LLM compute + 60-100 person-hours per [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Phase 0 close. Funded from Hauska Inc. equity per [`_decisions/2026-05-18_substrate_v1_phase_0_close.md`](_decisions/2026-05-18_substrate_v1_phase_0_close.md). Cost ceiling enforced by the cost-per-jurisdiction structural commitment ($200 compute + 1 hour human review per jurisdiction) and the 3-county hard-kill checkpoint at [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) Stream 1D. |
 
-## IP attorney memo
+## IP posture
+
+Two engagements, separated 2026-08-26. They were tracked as one row under one name and are different question sets.
 
 | Item | Status | Notes |
 |---|---|---|
-| **Texas IP attorney memo** | Open / routing date TBD; parallel bizops, not a substrate-v1 ingestion gate. | Per CLAUDE.md "What is open." Runs in parallel with substrate v1 work; does not gate Bastrop, Grand County, or the Tier 1/2/3 Texas city pipeline. Reframed 2026-05-19 per fleet correction: prior framing as [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) sync point #6 retired; Sync 6 removed from §Sync points table same date. Joint dependency with [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory-posture stands for paid Layer 2 surfaces but does not block ingestion. **Wedge scope addendum (2026-05-26):** memo must cover extension, brokerage API, Regrid/Grok outputs, share cards, and future graph/institutional product per [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md). Interim memo acceptable by day 90. |
+| **Protection triage** (what to file, what to keep secret, what is lost to publication, freedom to operate, clearance to publish) | Open / routing date TBD; parallel bizops, never a gate. | Brief at [`72c_ip_counsel_brief.md`](72c_ip_counsel_brief.md), portfolio-scoped 2026-08-26 against [`19_the_instrument_contract.md`](19_the_instrument_contract.md). Supersedes the twin-scoped brief at `_rd_disclosure_twin/03_ip_counsel_brief.md`. Lead item is the certification-mark question on the conformance stamp, which may change whether the conformance registry is built now. |
+| **Data-licensing liability memo** (does ingestion and downstream output exceed source-license scope) | Open / routing date TBD; parallel bizops, not a substrate-v1 ingestion gate. | Per CLAUDE.md "What is open." Does not block Bastrop, Grand County, or the Texas city pipeline. Reframed 2026-05-19 per fleet correction: prior framing as [`51_substrate_v1_sprint.md`](51_substrate_v1_sprint.md) sync point #6 retired; Sync 6 removed from the Sync points table same date. Joint dependency with [`14_pricing_framework.md`](14_pricing_framework.md) Open-question #5 regulatory-posture stands for paid Layer 2 surfaces but does not block ingestion. **Scope (2026-05-26, corrected 2026-08-26):** extension, brokerage API, engine outputs, share cards, and future graph or institutional product per [`76_empressa_wedge_90d_operating_plan.md`](76_empressa_wedge_90d_operating_plan.md), plus county CAD, Municode and ICC sources and the scrape posture ruled 2026-08-04. The original addendum named Regrid, which is purged; Cotality is extinguished. Do not send counsel at either. Interim memo acceptable by day 90. |
 
 ## Tech E&O insurance
 

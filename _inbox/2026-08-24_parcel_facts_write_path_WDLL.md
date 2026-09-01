@@ -23,7 +23,7 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 2. **OPS-16 rows exist.** A-026 adds P-73 through P-80. A dispatch for P-74 compiles; a fabricated P-81 refuses. | check: `node scripts/dispatch.mjs --plan OPS-16 --lane X --plan-row P-74` compiles; `--plan-row P-81` exits nonzero | grade: [met 2026-08-24]
 
-3. **P-74 situs sentinel.** Live inspect title on `48453:280239` is not `, TX` when `txgio_parcel.situs_address` has a street. Gold `48021:34137` still `908 PINE`. Find/Photon string is not copied onto the county record. | check: live facets + txgio row for both nodes; PE from isolated worktree not A2 | grade: [ ]
+3. **P-74 situs sentinel.** Live inspect title on `48453:280239` is not `, TX` when `txgio_parcel.situs_address` has a street. Gold `48021:34137` still `908 PINE`. Find/Photon string is not copied onto the county record. | check: live facets + txgio row for both nodes; PE from isolated worktree not A2 | grade: [partial 2026-08-25] P-74 sentinel chip on PE #222; `48453:280239` street title still unmet; do not open a new hauska-map tree
 
 4. **P-75 who-serves.** Inspect or assembler section returns territory holders or the SERVICE-LETTER-REQUIRED sentence. A fixture with no polygon hit returns the residual, never blank. No atoms `--apply`. | check: live probe + fixture; 0076 on the serving revision | grade: [met 2026-08-25T05:12Z] serving `cortex-api-00579-teh` SHA `403d8010`; gold six holders + residual; miss holders [] + residual
 
@@ -31,17 +31,17 @@ A dispatcher can compile `node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --
 
 6. **P-77 measure.** File-based instrument reports hit/miss/unmeasured on the Simsbrook-Dashwood block and a stated Travis sample at `2026/cad-export`. Self-test both directions, including a not-vacuous case. | check: instrument file + output with snapshot | grade: [met 2026-08-25T02:08:37Z live 10/1/0/0]
 
-7. **P-77 honest miss.** `48453:280238` facets name lookup-failed (or equivalent) and the declared vintage. `48453:280239` stays joined. HTTP 200 is not treated as a CAD bind. | check: live facets both nodes | grade: [ ]
+7. **P-77 honest miss.** `48453:280238` facets name lookup-failed (or equivalent) and the declared vintage. `48453:280239` stays joined. HTTP 200 is not treated as a CAD bind. | check: live facets both nodes | grade: [met 2026-08-25T14:14:55Z] cortex `00584-gaf` SHA `46e1a5a1`; 280238 lookup-failed + vintage; 280239 landUseFact present; close `_inbox/2026-08-25_p77_honest_miss_close.json`
 
-8. **P-78 authority.** A fixture where CAMA lacks legal and StratMap has legal does not wipe legal on same `(fips, prop_id, tax_year)`, or the load writes a new vintage and L17 readers stay on declared. Verified by violation. | check: failing-first test in cad-ingest | grade: [ ]
+8. **P-78 authority.** A fixture where CAMA lacks legal and StratMap has legal does not wipe legal on same `(fips, prop_id, tax_year)`, or the load writes a new vintage and L17 readers stay on declared. Verified by violation. | check: failing-first test in cad-ingest | grade: [met] LDT #477 @ 72cffc8 merged; p78-merge-fixtures-selftest PASS
 
-9. **P-78 leftover StratMap fields.** `landuse.ts` no longer hard-nulls `year_built` / `land_acres` when DBF has the source fields. One-county dry-run artifact filed. | check: parser test + dry-run JSON | grade: [ ]
+9. **P-78 leftover StratMap fields.** `landuse.ts` no longer hard-nulls `year_built` / `land_acres` when DBF has the source fields. One-county dry-run artifact filed. | check: parser test + dry-run JSON | grade: [met 2026-08-25] Caldwell 48055 rebake before 0/0/0 → after 24989/16937 yb/24989 la @ 2025; close `_inbox/2026-08-25_p78_caldwell_leftover_rebake_close.json`; prop_id `0` keys=1 not success
 
-10. **P-25 Dallas/Tarrant.** Full loads announced, run, vintage flipped after complete. Store sqft % on those two FIPS is measured from `cad_property`, not asserted. Travis CAMA not started before item 6. | check: announce note + store query JSON + registry vintage | grade: [ ]
+10. **P-25 Dallas/Tarrant.** Full loads announced, run, vintage flipped after complete. Store sqft % on those two FIPS is measured from `cad_property`, not asserted. Travis CAMA not started before item 6. | check: announce note + store query JSON + registry vintage | grade: [skip KEEP 2026-08-25] Wave 4 STOPPED; Dallas 806563 matches baseline; Tarrant KEEP 975885 (`_decisions/2026-08-25_p25_tarrant_keep.md`); no DELETE; L17 already 2026/cad-export; `ready:false`; DROP-to-log refused
 
 11. **No silent scope.** Footprint drain, Travis join fix, REST harvest writer, Bexar/Collin/Denton parsers, HOA, COVER roads are not started inside items 1-10. | check: git log pathspecs on those writers during Waves 0-4 | grade: [met this wrap]
 
-12. **Close hygiene.** leave_behind declared; thesis parity ledger entry if atoms / access policy / capture jobs moved. | check: close artifact | grade: [ ]
+12. **Close hygiene.** leave_behind declared; thesis parity ledger entry if atoms / access policy / capture jobs moved. | check: close artifact | grade: [met 2026-08-25] `_inbox/2026-08-25_store_honesty_wave_close.json`; Tarrant three options; no DELETE; canvases restamped
 
 13. **County Manifest operator instrument.** File-based dump of GET `/api/county-ledger` (P-47 leaf) plus a canvas that shows `computedAt` freshness and per-rail / watch-county gaps. Refresh is rerun dump then replace canvas DATA. Do not invent a rail. Do not rematerialize inside a refresh. Who-serves, city-limits, and inspect living area are named as not-a-rail. Retire the canvas after a CC push the operator trusts. | check: `node scripts/county-manifest-canvas-dump.mjs --self-test` and `--live` MEASURED; canvas `computedAt` matches dump | grade: [met 2026-08-25T04:08:53Z dump FRESH 667/3556]
 

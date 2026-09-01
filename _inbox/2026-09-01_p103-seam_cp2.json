@@ -1,0 +1,107 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot / mid-work adversarial checkpoint - the guard proven able to fire",
+  "lane": "p103-seam",
+  "planRows": ["P-103"],
+  "date": "2026-09-01",
+  "cp1": "_inbox/2026-09-01_p103-seam_cp1.json",
+  "snapshot": {
+    "repo": "hauska-map",
+    "worktree": "P:/tmp/hauska-map-p103-seam",
+    "branch": "feat/p103-seam-retire",
+    "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+    "uncommitted": true,
+    "baselineCheckout": {
+      "path": "P:/tmp/hauska-map-p103-base",
+      "commit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "purpose": "pristine detached checkout of the base commit, used to measure the BEFORE test and typecheck baselines rather than deriving them"
+    }
+  },
+  "whatWasBuilt": {
+    "removals": [
+      "apps/property-explorer/api/pe-billing.ts - deleted (75 lines)",
+      "apps/property-explorer/vercel.json - the /api/pe-billing rewrite removed (1 line)",
+      "apps/property-explorer/vite.config.ts - the /api/pe-billing dev-proxy entry removed (4 lines)",
+      "apps/property-explorer/api/spine.ts - 'api/brokerage/v1/property-explorer/billing' removed from cortexPostPaths (1 line)"
+    ],
+    "additions": [
+      "apps/property-explorer/scripts/seam-retired-guard.mjs - the guard, exporting checkSeamRetired plus a CLI",
+      "apps/property-explorer/scripts/seam-retired-guard.test.mjs - 19 vitest cases that run the guard against synthetic violating trees",
+      "apps/property-explorer/package.json - guard wired into the 'test' script and exposed as 'gate:seam-retired'",
+      ".github/workflows/property-explorer-ci.yml - a named 'Retired checkout seam guard (P-103)' step"
+    ],
+    "diffstat": "6 files changed, 8 insertions(+), 82 deletions(-), plus 2 new untracked files"
+  },
+  "threeQuestionGate": {
+    "whatExecutesIt": "node apps/property-explorer/scripts/seam-retired-guard.mjs",
+    "whatTriggersIt": "a pull request touching apps/property-explorer - twice over: inside 'pnpm --filter property-explorer test' (the PE CI test job runs exactly that command) and as its own named CI step. Also on every local run of the PE suite.",
+    "whatFails": "exit 1, non-zero, blocking the PE CI test job before merge. Verified by running it against six known violations; verbatim output below.",
+    "whatBypassesIt": [
+      "a change that does not touch apps/property-explorer, packages/map-renderer, packages/parcel-fact-sheet, pnpm-lock.yaml, .gitattributes, or the PE workflow itself - the workflow's path filter",
+      "a direct push to main, which runs no pull_request job",
+      "a NEW function under a different basename that forwards to the same upstream path. The guard keys on the pe-billing basename for checks 1-3; only check 4 is path-semantic. This residual is stated in the guard's own header rather than implied.",
+      "the upstream route itself, which still exists in legacy-design-tools and is reachable by anything holding a service token and an install id. Removing the BFF paths does not remove the seam; see the close's leave_behind."
+    ]
+  },
+  "guardDesignReview": {
+    "notAGrep": "Check 4 extracts the cortexPostPaths array and re-implements the exact matching rule spine.ts applies (upstreamPath === p || upstreamPath.startsWith(p + '/')), then asks whether the seam path would be admitted. A literal grep for 'billing' passes on 'api/brokerage/v1/property-explorer', which reintroduces the permission. Fixture 4b and violation CASE 5 both prove the difference.",
+    "extractorHardening": "The closing bracket is found by depth counting with strings and comments skipped, not by indexOf(']'). Pre-registered falsifier for the two tests that cover this: they must FAIL against the old indexOf extractor or they measure nothing. Measured - nested array: old extractor yields ['api/engagements','api/nested/one','api/nested/two'], admits seam = false; bracket-inside-string: old extractor yields [], admits seam = false. Both non-vacuous.",
+    "positiveControlsInEveryCheck": [
+      "check 1 fails if api/ holds no other pe-* function",
+      "check 2 fails if vercel.json does not parse, or has no /api/* rewrites",
+      "check 3 fails if there is no 'proxy: {' block, or it has no /api/* keys",
+      "check 4 fails if cortexPostPaths cannot be extracted non-empty, or no longer admits the GTM sibling path"
+    ],
+    "declaredExclusion": "The repo-root api/spine.ts (the command-center copy) is checked when present and its absence is reported as a note rather than silently skipped. It carries no GTM sibling, so its GTM control is downgraded to a note and its seven entries are still tested against the seam path. Verified at source: the root copy's cortexPostPaths has six entries, none of them billing and none of them gtm."
+  },
+  "violationTest": {
+    "instrument": "scratchpad/violate-guard.mjs - reintroduces each artefact IN THE REAL TREE, runs the guard CLI exactly as CI runs it, reads the real process exit code from execFileSync's thrown status (never a pipe's exit code, DEV_PROCESS 2.3), then restores the original bytes. git checkout -- is deliberately not used because this lane's working-tree changes are the deliverable.",
+    "casesRun": 8,
+    "result": "the guard exited 1 on all six violations and 0 on both clean states; the tree was byte-identical afterwards (git status unchanged)",
+    "verbatimOutputIn": "the close artifact field violationTestVerbatim",
+    "mechanizedEquivalent": "19 vitest cases in scripts/seam-retired-guard.test.mjs cover the same directions plus vercel functions entries, .js reintroduction, commented-out entries, unparseable vercel.json, renamed array, missing proxy block, and a bare api dir. The manual test proves the CLI and its exit code; the vitest cases keep it proven on every run."
+  },
+  "beforeAfter": {
+    "command": "pnpm --filter property-explorer test  (which is: node scripts/pe-chrome-kit-gate.mjs && node scripts/seam-retired-guard.mjs && vitest run)",
+    "beforeCommandNote": "on the base checkout the test script is 'node scripts/pe-chrome-kit-gate.mjs && vitest run' - the guard step does not exist yet",
+    "before": { "where": "P:/tmp/hauska-map-p103-base @ 4401095", "testFiles": 166, "passed": 2234, "todo": 1, "total": 2235, "exit": 0 },
+    "after": { "where": "P:/tmp/hauska-map-p103-seam @ 4401095 + lane diff", "testFiles": 167, "passed": 2253, "todo": 1, "total": 2254, "exit": 0 },
+    "delta": "+1 test file, +19 tests, all of them the new guard's own self-tests. No existing test changed status.",
+    "countingRule": "vitest's own summary lines, read from the same command in both trees; 'todo' counted separately from 'passed' as vitest reports it."
+  },
+  "typecheck": {
+    "ciCommand": "pnpm --filter property-explorer exec tsc --noEmit",
+    "ciResult": "exit 0, both before and after",
+    "findingAboutThatCommand": "it does NOT cover api/spine.ts. apps/property-explorer/tsconfig.json has include: ['src'], so only the 8 api files that src happens to import enter the program; --listFiles shows 446 files, 8 under api/, and zero matches for property-explorer/api/spine.ts. The PE CI typecheck job is therefore vacuous for the file this card edits. Pre-existing, not introduced here.",
+    "compensatingRun": "npx tsc -p api/tsconfig.json --noEmit run in BOTH trees. Identical output in both: three pre-existing errors in api/_lib/verdict-layer-merge.ts (2) and api/pe-share-grant.ts (1), exit 2. Zero errors in spine.ts, and deleting pe-billing.ts removed no error, so it was not hiding one. This lane introduces no new type error; the baseline is unchanged."
+  },
+  "otherChecksRun": [
+    "node scripts/check-source-encoding.mjs --self-test -> PASSED (6 fire cases, 8 no-fire cases)",
+    "node scripts/check-source-encoding.mjs -> PASS, 667 of 668 tracked files scanned (the shortfall is the deleted pe-billing.ts, still tracked until commit), 2 files carry a baseline ceiling and none exceeded it",
+    "node apps/property-explorer/scripts/records-copy-guard.mjs -> passed, 212 files scanned",
+    "non-ASCII audit of every file this lane wrote: 0 non-ASCII code points in both new .mjs files and in the workflow edit, measured with a node scan whose positive control (api/spine.ts, 33 non-ASCII including U+FEFF and a U+E2 U+20AC mojibake pair) confirmed the detector was live"
+  ],
+  "adversarialFindingsDuringBuild": [
+    {
+      "finding": "A first attempt to audit non-ASCII used grep -c '[^\\x00-\\x7F]' in bash, which does not interpret hex escapes and matched literal x/0/7/F, reporting nearly every line as non-ASCII. The convenient-looking answer was wrong.",
+      "resolution": "replaced with a node scan carrying a known-positive control. Recorded as a LESSON."
+    },
+    {
+      "finding": "The first edit attempt matched LF-terminated strings against a CRLF working tree and failed closed rather than silently mis-editing.",
+      "resolution": "edits rewritten as line-oriented splices that preserve each file's existing terminator. package.json was left with one bare LF by the first patch and was normalised to all-CRLF; verified 0 bare LF afterwards."
+    },
+    {
+      "finding": "The apps/command-center proxyContract.test.ts and the PE src/lib/proxy-allowlist.test.ts each hold a HAND-COPIED duplicate of a spine allowlist. Neither reads spine.ts, so neither can notice this change - or any future one.",
+      "resolution": "out of scope here; recorded as a leave-behind. It is the paired-controls-without-a-divergence-test shape (DEV_PROCESS 2.4)."
+    }
+  ],
+  "constraintsHonored": [
+    "no sub-agents spawned",
+    "no git add, commit, push, PR, merge, or deploy in any repo; only status, diff, grep, show, fetch, clone, checkout of a fresh clone",
+    "own registered worktree on own branch; no other lane's checkout touched",
+    "no edit to apps/property-explorer/src/browse/SettingsModal.tsx or apps/property-explorer/src/lib/*",
+    "legacy-design-tools and hauska-brief-extension read only",
+    "every verification command exit-bounded",
+    "no probe that would reach Stripe, Pipedrive, or the gtm event writer"
+  ]
+}

@@ -1,5 +1,105 @@
 # Parcel facts write-path
 
+## GROUND-TRUTH (2026-08-25T18:55Z)
+
+- Hays 48209 leftover reviewed. KEEP acres. year_built count unchanged 82120 (already saturated / no parseable leftover year on nulls). n +40870 @ 2025. 2026 filed counts unchanged. L17 not flipped. Packet re-PASS. Review `_inbox/2026-08-25_review_hays_48209_leftover.md`.
+
+## OPEN (2026-08-25T18:55Z)
+
+- Commit Hays artifacts + review. County 4 waits on a named FIPS. Gold 34137 sqft restore still later.
+
+## GROUND-TRUTH (2026-08-25T17:50Z)
+
+- County 3 handoff filed. FIPS is Hays 48209. Pin live at `d52ddc0`. Do not pick gold 48021. Handoff `_inbox/2026-08-25_county3_hays_48209_handoff.md`.
+
+## OPEN (2026-08-25T17:50Z)
+
+- Other agent: Hays 48209 leftover through `--check --packet` with `ldtSha=46e1a5a1` on writer `46e1a5a1`. Then stop for review.
+
+## GROUND-TRUTH (2026-08-25T17:35Z)
+
+- Handback items 1-3 accepted. F10 wrong SHA FAIL (only ldtSha). Missing SHA FAIL. Bastrop packet PASS. Full 40-char serving SHA also FAIL (exact `46e1a5a1` contract). Pin uncommitted; county 3 still blocked. Review `_inbox/2026-08-25_review_bastrop_sha_pin.md`.
+
+## OPEN (2026-08-25T17:35Z)
+
+- Commit pin + announce + close + SHA-pin review. Then county 3 may open a packet. Gold 34137 sqft restore still later.
+
+## GROUND-TRUTH (2026-08-25T18:45Z)
+
+- Texas fill #3: Hays 48209 through gate. Packet PASS. Path A + 40870 inserts @ 2025. L17 stays 2026/cad-export; inspectReadSet false. Apply LDT `46e1a5a1` worktree only; 116421 upserted. Before 2025 131246/82120/67231 → after 172116/82120/144674; 2026 unchanged. Close `_inbox/2026-08-25_p78_hays_48209_leftover_close.json`. doc_repo main `d52ddc0`.
+
+## GROUND-TRUTH (2026-08-25T17:25Z)
+
+- Bastrop 48021 leftover close filed. Announce amended (Path A + 726 inserts). Gate pins `ldtSha=46e1a5a1`; F10 wrong SHA FAIL; `--self-test` PASS F1-F10. Close `_inbox/2026-08-25_p78_bastrop_48021_leftover_close.json`. KEEP year/acres. HOLD gold livingAreaSqft. County 3 blocked until pin merged. doc_repo main `2526bc9`.
+
+## GROUND-TRUTH (2026-08-25T16:25Z)
+
+- Bastrop 48021 leftover reviewed. KEEP year/acres. HOLD gold living area. Packet re-PASS. Live gold `48021:34137` yearBuilt 1910 on inspect wire; livingAreaSqft null (was 2800). City limits still Bastrop incorporated. Wrong-branch first apply accepted; logs have no SHA. Gate must pin `ldtSha=46e1a5a1` before county 3. Review `_inbox/2026-08-25_review_bastrop_48021_leftover.md`. Probe `_inbox/2026-08-25_p78_bastrop_48021_gold_34137_probe.json`.
+
+## LESSON (2026-08-25T16:25Z)
+
+- A packet PASS does not pin the writer tree. Gold Path A is the inspect-enrichment test and the living-area wipe surface. Do not pick 48021 as the first Path A county again without a SHA gate.
+
+## OPEN (2026-08-25T16:25Z)
+
+- Amend Bastrop announce: Path A plus 726 inserts. SHA pin on cad-ingest-apply-gate. Gold 34137 living_area restore later (CAMA or backup). No county 3 until the pin exists.
+
+## GROUND-TRUTH (2026-08-25T17:15Z)
+
+- Texas fill #2: Bastrop 48021 through cad-ingest apply gate. Packet `_inbox/2026-08-25_p78_announce_bastrop_48021_packet.json` PASS. Path A @ 2025; L17 stays 2025/cad-export; inspect read set enriched. Apply LDT `46e1a5a1`; structured vintage `tier:stratmap-roll;...`. Before n/yb/la 77073/40597/63129 → after 77799/49546/63855. INCIDENT: first apply on `feat/s1-instrument-hardening` (no P-78 merge) regressed yb/la; repair re-run on detached `46e1a5a1` same session. Announce `_inbox/2026-08-25_p78_announce_bastrop_48021.md`. STOP for review per handoff.
+
+## GROUND-TRUTH (2026-08-25T16:55Z)
+
+- Cad-ingest apply gate filed and verified both directions. Instrument `scripts/cad-ingest-apply-gate.mjs`. WDLL `_inbox/2026-08-25_cad_ingest_apply_gate_WDLL.md` graded. F1 Caldwell-shaped Path A + empty leftover year FAIL exit 1. No-packet `--check` REFUSE. F2 PASS. Caldwell 24989 not rewritten. Texas fill county 2 is the next apply and must `--check --packet` first.
+
+## LESSON (2026-08-25T16:55Z)
+
+- Path is derived from leftover-year n, not from the announce. Caldwell announced Path A while 2025 n was 0. That is Path B. A one-year before-measure hid the live 2026 CAMA year.
+
+## OPEN (2026-08-25T16:55Z)
+
+- Fresh agent: one leftover county through the gate. Handoff `_inbox/2026-08-25_cad_ingest_apply_gate_handoff.md`. Do not implement the gate again.
+
+- Subagent [P-25 CAMA load](5a8ba32d-ed82-486d-8524-7270bfd52785) handoff/measure/announce artifacts SUPERSEDED — forensic only; SKIP in `_inbox/2026-08-25_p25_repair_or_skip.md` stands. Dallas retry completed 806563 post-kill (log `dallas_wave4_load_retry.log`); no ingest running.
+
+## GROUND-TRUTH (2026-08-25T16:30Z)
+
+- KEEP restamp live. origin/main `53a0139`. Five family canvases KEEP 975885. Other agent stopped before Caldwell. Next card: `_inbox/2026-08-25_p78_caldwell_leftover_rebake_WDLL.md`.
+
+## GROUND-TRUTH (2026-08-25T16:20Z)
+
+- Operator KEEP on Tarrant 2026 census **975,885**. Decision `_decisions/2026-08-25_p25_tarrant_keep.md`. No DELETE. P-25 `ready:false`. DROP-to-log refused. DROP-to-L21 later only with a named key list.
+
+## OPEN (2026-08-25T16:20Z)
+
+- Other agent: restamp five canvases from three-options to KEEP 975885. Push `dae2006` + `330e4dc` + KEEP commit if operator goes.
+- Next optional store write: Caldwell 48055 leftover `stratmap-landuse` rebake (own WDLL). Not started.
+- Serve leftovers parked: landUseFact vocab; P-74 street; 280238 overlay.
+
+## GROUND-TRUTH (2026-08-25T14:28Z)
+
+- Serve honesty review MEASURED. WDLL 7 met from code + live facets (280238 lookup-failed at 2026/cad-export; HTTP 200 is baked node). WDLL 3 partial: sentinel real, street title not delivered. No block. Close `_inbox/2026-08-25_review_serve_honesty.md`.
+
+## GROUND-TRUTH (2026-08-25T14:35Z)
+
+- Store honesty wave closed. Track A: Tarrant **DROP** filed `_inbox/2026-08-25_p25_tarrant_keep_or_drop.md` (91,931 net-new keys; DELETE not run). Track B: landuse.ts parser on main via #477; item 9 rebake in flight. Five canvases restamped to 11763c0 / 00584-gaf / PE #222. Pin `--check` PASS. Close `_inbox/2026-08-25_store_honesty_wave_close.json`. P-25 ready:false.
+
+## GROUND-TRUTH (2026-08-25T14:16Z)
+
+- P-77 CLOSED. LDT #478 merged `46e1a5a1`; cortex-api `00584-gaf` @100% image `46e1a5a1b52a14953e9eb242fd1c908ea24b13ce`. Live: `48453:280238` facets `structuralFact.verdict=lookup-failed` scopeSearched `cad_property declared vintage 2026/cad-export`; neighbors 280239/280210 joined; gold 48021:34137 no regression. Close `_inbox/2026-08-25_p77_honest_miss_close.json`. Tarrant +91,931 classified (no reload). P-25 still ready:false. No PE branch (9224a73 sufficient).
+
+## GROUND-TRUTH (2026-08-25T13:48Z)
+
+- Wave #222 CLOSED. hauska-map #222 merged `9224a73`; typecheck fix `afc5941`. Deploy smartsite.cloud `dpl_9knoCspkz33ooM2JyppMFRiwt5Be`. Live gold: 48021:34137 908 PINE, who-serves 6+residual, cityLimits Bastrop, Travis 280239 not `, TX`. Close `_inbox/2026-08-25_wave222_pe_chips_close.json`. P-25 still ready:false. No ingest.
+
+## GROUND-TRUTH (2026-08-25T13:45Z)
+
+- Operator STOP off-path Wave-4 CAMA reload. Dallas ingest PID 26408 killed. No cad-ingest running. P-25 decision SKIP `_inbox/2026-08-25_p25_repair_or_skip.md`. Routing pin updated; readiness --check PASS. PE PR #222 chips+P-74 open; live gold pending. Tarrant store +91,931 vs 2026-08-14 baseline (off-path Wave-4 damage).
+
+## Wave-4 Dallas 48113 (2026-08-25T13:30Z)
+
+PARTIAL — Wave-4 cad-ingest wrote rows before kill: log shows ≥400,000 upserted then Stop-Process PID 26408; load incomplete vs 2026-08-14 baseline 806,563. Tarrant Wave-4 also ran off-path (975,303 upserted from cached zip, log `p25_wave4/tarrant_wave4_load2.log`); operator stop: no more ingest, no L17 flip.
+
 ## GROUND-TRUTH (2026-08-25T05:30Z)
 
 - Factory memory bounded wave CLOSED. Waves A-D executed; 4-6 not opened. Close `_inbox/2026-08-25_factory_memory_wave_close.json`. P-55 probe PASS on engine origin/main `cfa18bc`. P-78 product on LDT `feat/p78-cad-property-merge` at P:/tmp/ldt-p78 (committed). Eight scratch files triaged; pin 64→56; memory gate still 63>56. P-78 dispatch compiled with FLEET-MEMORY v2a98086b.

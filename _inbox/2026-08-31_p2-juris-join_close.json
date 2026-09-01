@@ -1,0 +1,114 @@
+{
+  "lane": "P2-JURIS-JOIN",
+  "card": "_dispatches/2026-08-31_p2-juris-join_dispatch.md",
+  "planRows": ["F-01"],
+  "closedAt": "2026-08-31T03:22:00Z",
+  "seat": "property (hauska-factory-p2-juris-join worktree); deepest worker; no sub-agents",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris-join, branch seat/property-ctx-p2-juris-join, HEAD a7a804220ad046ac3c70e286d61c83595bb3afe3 (= origin/main PR #42). Rewrite uncommitted. Planner commits.",
+    "doc_repo": "inbox CP1/CP2/CLOSE uncommitted. Planner-owned.",
+    "stores": "none connected. No psql. No Neon URI. No timed 01. No persist."
+  },
+  "missionPremise": "The unlimited cities_ok JOIN parcels_six on a7a8042 is a Nested Loop of CTE Scan on parcels_six and CTE Scan on cities_ok (~846M comparisons, cost 1.06e10) because both sides are MATERIALIZED and the only quals are inequalities plus ST_Intersects, so Hash Join is not in the method set. Source: _inbox/2026-08-31_p2_juris_totals_run_record.md Finding 2; _decisions/2026-08-31_p2_juris_totals_unmeasured.md. TOTALS stays UNMEASURED. A green timed 01 is not this card.",
+  "completionPredicate": {
+    "fileSideRewrite": "MET. 05 still explains unlimited FROM cities_ok JOIN parcels_six (no LIMIT). DO kept. No 1/0 in executable SQL. No LATERAL. Timeouts unchanged (01 180s, 05 30s). Reconcile literals remain 357269 / 624141 / 981410. node --test test/p2-juris-sql.test.mjs: 7 pass / 0 fail, both arms.",
+    "writePathPlan": "MET as file-side reasoning plus HASH_CTE fixture the existing classifier accepts. Live 05 is planner-run and is not this close.",
+    "liveExplain": "NOT THIS CARD. Planner runs 05 and pipes the text through sql/p2-juris/assert-explain-plan.mjs.",
+    "timed01": "NOT THIS CARD. TOTALS stays UNMEASURED."
+  },
+  "scopeBasis": "This worktree only. 01 parcel_hits and 05 explained join. No p4-rails, bake-migrate, p2-juris, p2-juris-plan, or main-migrate Factory trees. No persist. No 0005b. No LDT. No commit, push, deploy, Neon mint.",
+  "prs": "not applicable: hand back, do not land",
+  "mergeShas": "not applicable: hand back, do not land",
+  "ciConclusions": "not applicable: hand back, do not land",
+  "checkpoints": {
+    "CP1": "_inbox/2026-08-31_p2-juris-join_cp1.json",
+    "CP2": "_inbox/2026-08-31_p2-juris-join_cp2.json",
+    "close": "_inbox/2026-08-31_p2-juris-join_close.json"
+  },
+  "treeSha": "a7a804220ad046ac3c70e286d61c83595bb3afe3",
+  "filesChanged": [
+    "P:/seat-worktrees/property/hauska-factory-p2-juris-join/sql/p2-juris/01_containment.sql",
+    "P:/seat-worktrees/property/hauska-factory-p2-juris-join/sql/p2-juris/05_explain.sql",
+    "P:/seat-worktrees/property/hauska-factory-p2-juris-join/sql/p2-juris/README.md",
+    "P:/seat-worktrees/property/hauska-factory-p2-juris-join/test/p2-juris-sql.test.mjs",
+    "P:/doc_repo/_inbox/2026-08-31_p2-juris-join_cp1.json",
+    "P:/doc_repo/_inbox/2026-08-31_p2-juris-join_cp2.json",
+    "P:/doc_repo/_inbox/2026-08-31_p2-juris-join_close.json",
+    "P:/doc_repo/_scratch/p2-juris-join.md"
+  ],
+  "writePathWhyNestedLoopCannotOccur": {
+    "poisonCause": "MATERIALIZED CTE scans have no index. Join quals were only <= >= IS NOT NULL and ST_Intersects. PostgreSQL Hash Join requires equality in hashclauses. The method set was Nested Loop only. That is why the live plan was Nested Loop of two CTE scans, cost 1.06e10.",
+    "equality": "p.county_fips = c.county_fips is an equality. Hash Join enters the method set. Cities (small, inlined) are the hash build; parcels_six (MATERIALIZED, ~1,043,462) is the probe. Nested Loop without an index stays the 1.06e10 path and loses the cost comparison.",
+    "notMaterializedBind": "cities_ok AS NOT MATERIALIZED is a bind, not a hint. EXPLAIN cannot emit CTE Scan on cities or CTE Scan on cities_ok. isMillionRowCteNestedLoop requires that city CTE Scan as conjunct three. The named poison shape is unrepresentable even if a small Nested Loop remains inside the hash build (city x 6 counties).",
+    "rejectedAlternatives": [
+      "NOT MATERIALIZED on parcels_six: classifier dodge; decode-in-loop if Nested Loop remains",
+      "GiST: CREATE INDEX refused by RO guard; TEMP forbidden; base geometry is GeoJSON text",
+      "enable_nestloop=off without equality: could not devise a query plan",
+      "LATERAL grid explode: LATERAL is forbidden"
+    ]
+  },
+  "proposedPlanFixture": "Hash Join  (cost=8000..195000)\n  Hash Cond: (p.county_fips = c.county_fips)\n  ->  CTE Scan on parcels_six  (rows=1043462)\n  ->  Hash\n        ->  Nested Loop  (cost=0.00..4000)\n              ->  Seq Scan on tx_city_boundary\n              ->  CTE Scan on counties  (rows=6)",
+  "classifierOnFixture": {
+    "POISON": "isMillionRowCteNestedLoop true (rejected)",
+    "HASH_CTE": "isMillionRowCteNestedLoop false (accepted): Nested Loop present, CTE Scan on parcels_six present, CTE Scan on cities(_ok)? absent"
+  },
+  "bothArmTest": {
+    "command": "node --test test/p2-juris-sql.test.mjs",
+    "output": "7 pass / 0 fail / duration_ms 164.6825",
+    "tests": [
+      "01 has no 1/0 in executable SQL",
+      "05 explains the unlimited join",
+      "poison Nested Loop CTE plan is rejected",
+      "non-loop plan is accepted",
+      "hash join of parcels CTE against inlined cities is accepted",
+      "empty plan text refuses",
+      "file-side RO session guard both arms"
+    ]
+  },
+  "counts": {
+    "countingRule": "Reconcile target is distinct prop_id on neondb txgio_parcel for the six FIPS, contained against tx_city_boundary. Measured 2026-08-30. This card does not remeasure.",
+    "expected_unincorporated": 357269,
+    "expected_in_city": 624141,
+    "expected_total": 981410,
+    "live": "UNMEASURED",
+    "reconcileRule": "A material divergence from 357269/624141/981410 means the join is wrong, not that the number is new."
+  },
+  "constraintsHonored": [
+    "no commit, push, deploy, store connect, psql, Neon mint, persist, timed 01",
+    "no other Factory worktree opened",
+    "no LATERAL",
+    "no 1/0 in executable SQL",
+    "DO block kept at top of 01",
+    "05 unlimited (no LIMIT)",
+    "statement_timeout not raised (01 180s, 05 30s)",
+    "reconcile targets unchanged",
+    "TOTALS stays UNMEASURED"
+  ],
+  "leave_behind": [
+    {
+      "item": "Live 05 EXPLAIN on cortex neondb. Pipe FORMAT TEXT through sql/p2-juris/assert-explain-plan.mjs. A Nested Loop of CTE Scan on parcels_six and CTE Scan on cities_ok is a fail. Nested Loop of CTE Scan on parcels_six against an inlined city scan is a finding, not a pass.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Timed 01 after 05 passes. TOTALS stays UNMEASURED until that run. Reconcile 357269 / 624141 / 981410. A miss names the join. Do not raise statement_timeout.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Uncommitted rewrite under P:/seat-worktrees/property/hauska-factory-p2-juris-join (01, 05, README, test). Planner commits by explicit pathspec after live 05, not before.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    }
+  ],
+  "fleetMemory": [
+    "LESSON: PostgreSQL Hash Join is not in the method set unless a join qual is equality. MATERIALIZED CTE + bbox inequalities + ST_Intersects is Nested Loop of CTE scans with no index. Zone-major in the SQL text is not zone-major in the plan.",
+    "LESSON: isMillionRowCteNestedLoop is three whole-text conjuncts. An inner Nested Loop (city x county) plus both CTE Scans fails a correct Hash Join. City-side NOT MATERIALIZED is what makes conjunct three unrepresentable. CTE Scan on counties does not match cities(_ok)?.",
+    "DEAD-END: NOT MATERIALIZED on parcels_six to clear the classifier. Inlines 1M GeoJSON decodes. If Nested Loop remains those decodes run per city.",
+    "DEAD-END: enable_nestloop=off without an equality. Planner errors: could not devise a query plan.",
+    "DEAD-END: GiST on a CTE. CREATE INDEX refused by the RO file-side guard. TEMP forbidden. Base geometry is GeoJSON text.",
+    "GROUND-TRUTH 2026-08-31 file-side: HEAD a7a8042; node --test test/p2-juris-sql.test.mjs 7 pass / 0 fail; POISON rejected; HASH_CTE accepted; 01 DO kept; 05 no LIMIT; timeouts 180s/30s.",
+    "OPEN: live 05 EXPLAIN. Planner-run. Gate is assert-explain-plan.mjs.",
+    "OPEN: timed 01 after 05. TOTALS UNMEASURED. 357269 / 624141 / 981410."
+  ]
+}

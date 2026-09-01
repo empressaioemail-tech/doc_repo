@@ -1,0 +1,103 @@
+{
+  "artifact": "systems_pr_check_unverified_analysis",
+  "seat": "systems agent",
+  "status": "read_back_hold",
+  "scannedAt": "2026-08-20T00:30:52.631Z",
+  "question": "What does unverified mean for the 258 merged branches blocked on PR check, and what is real prune reach if gh works?",
+  "arming": "BLOCKED pending operator acceptance of this analysis",
+
+  "codeSemantics": {
+    "verified_true": "gh pr list succeeded in repo cwd — open PR heads known (may be empty set)",
+    "verified_false": "gh pr list threw — CANNOT reach PR API; empty heads assumed; every merged branch gets deleteBlockedReason open_pr_check_unverified",
+    "notUsed": "Unverified does NOT mean 'branch has no associated pull request'. Absence of open PR is openPrHead=false with verified=true."
+  },
+
+  "threeCaseVerdict": {
+    "case1_cannotReachPrData": {
+      "applies": true,
+      "countDuringFleetScan": 258,
+      "repos": [
+        {
+          "path": "P:/legacy-design-tools",
+          "mergedDuringScan": 216,
+          "fleetScanPrCheck": "UNVERIFIED"
+        },
+        {
+          "path": "P:/Empressa Trading",
+          "mergedDuringScan": 42,
+          "fleetScanPrCheck": "UNVERIFIED"
+        }
+      ],
+      "evidence": [
+        "Fleet scan 2026-08-20T00:09:25Z: both repos repo-level pr_check=UNVERIFIED; all merged branches bucketed blockedUnverifiedPrCheck (0 excluded)",
+        "Re-run 2026-08-20T00:30:52Z LDT: gh error Post https://api.github.com/graphql: unexpected EOF — verified=false",
+        "Re-run same session LDT (earlier): gh succeeded — verified=true, 217 excluded by safety signal, 0 blocked",
+        "Re-run same session ET: gh succeeded — verified=true, 43 excluded by safety signal, 0 blocked"
+      ],
+      "conclusion": "258 is a tooling/API reach failure during the long batch scan, not a finding about branch merge history. Intermittent GraphQL EOF on LDT; ET likely transient failure in same batch window."
+    },
+    "case2_reachableNoOpenPr": {
+      "applies": false,
+      "note": "When gh works, empty open PR list is verified=true with openPrHead=false — branches proceed to declaration/worktree signals. Not counted as unverified."
+    },
+    "case3_mix": {
+      "applies": false,
+      "note": "Not a mix of case 1 and 2 at branch level. Fleet scan was case 1 for two whole repos. When case 1 clears, branches rebucket into excludedBySafetySignal with real reasons."
+    }
+  },
+
+  "realReachWithGhWorking": {
+    "deleteEligibleFleetWide": 1,
+    "branch": "P:/smart-markets :: tw11/absence-fixtures",
+    "byRepo": [
+      {
+        "path": "P:/legacy-design-tools",
+        "merged": 217,
+        "prVerified": "intermittent — false on 2026-08-20T00:30:52Z",
+        "deleteEligible": 0,
+        "exclusionBreakdown": {
+          "undeclared_protects": 152,
+          "worktree_attached": 65
+        },
+        "note": "No LDT branches in branch_declarations.json. Fail-closed undeclared dominates."
+      },
+      {
+        "path": "P:/Empressa Trading",
+        "merged": 43,
+        "prVerified": true,
+        "deleteEligible": 0,
+        "exclusionBreakdown": {
+          "declared_unknown": 22,
+          "worktree_attached": 20,
+          "declared_live": 1
+        },
+        "note": "Markets-declared prune-safe branches (tw44a–tw66 etc.) blocked by worktree_attached, not PR check."
+      },
+      {
+        "path": "P:/smart-markets",
+        "merged": 21,
+        "prVerified": true,
+        "deleteEligible": 1,
+        "exclusionBreakdown": {
+          "declared_live": 1,
+          "declared_unknown": 1,
+          "worktree_attached": 18,
+          "deleteEligible": 1
+        }
+      }
+    ]
+  },
+
+  "operatorConclusion": {
+    "armedFirstRunBehavior": "Would delete 1 of 259 merged candidates in current estate — not 258. The 258 figure misreports gh API failure as branch-level PR ambiguity.",
+    "branchPruneNotThe500BranchControl": true,
+    "reason": "Real gates are (1) branch_declarations.json fail-closed undeclared/unknown/live, (2) worktree attachment on declared prune-safe, (3) intermittent gh GraphQL for LDT. Fixing gh access changes reporting bucket only; it does not unlock mass delete without declaration programme and worktree release.",
+    "beforeArming": [
+      "Harden gh call (retry/backoff) or fail loud at repo level when verified=false so armed run cannot report success on API failure",
+      "Operator accepts ~1-branch reach or amends control scope",
+      "Separate programme for LDT undeclared merged locals (152) and fleet worktree cleanup (103+ attached on merged prune-safe/unknown)"
+    ]
+  },
+
+  "nineWorktreeAgentNote": "Count resolved by git evidence (git branch --list worktree-agent-* → 9), not markets declaration — markets seat could not declare branches it did not create. See fleet inventory v3 worktreeAgentReconciliation."
+}

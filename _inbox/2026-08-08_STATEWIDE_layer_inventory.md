@@ -9,6 +9,19 @@ related: [90_operations/OPS-1_texas_source_registry, _land_records/source_rail_r
 
 # Statewide Layer Inventory — the layer-first pivot audit
 
+> **CORRECTION 2026-08-30 (CTX collect review, A12).** The city-boundary and
+> county-boundary rows below are **superseded**. Both tables are **loaded and
+> indexed** on cortex `neondb`: `tx_city_boundary` (1,222 polygons, 26 MB) and
+> `tx_county_boundary` (254, 25 MB), btree bbox indexes, PostGIS 3.5.0. The
+> city-to-county spatial join landed 2026-08-11T19:44Z and re-derives in 1.3 s;
+> `_catalog/texas_roster_v1.json` links 1,214 of 1,223 places. This audit's
+> 2026-08-08 "No adapter found / zero rows" verdict for those two rows was true
+> on its date and is false now. **Do not cite rows 29-30 or the code-comment
+> evidence in section "Explicit code evidence of absence" as current.** They told
+> agents this work was impossible. Source:
+> `_inbox/2026-08-30_ctx_w3_collect_amendments.md`. The roads and NLCD rows are
+> NOT corrected here — they were not re-measured.
+
 Operator framing (2026-08-08): pivot from county-by-county onboarding to layer-first — lay statewide-uniform layers across all of Texas first, then backfill jurisdiction-specific rails. This audit answers, per candidate layer: do we HOLD it statewide, partially, or not at all, and in what store, at what coverage, from what source, at what vintage.
 
 **Method:** live SQL against the two production Neon stores (atoms/`hauska_mcp` on `hauska-prod-497015`, txgio/`neondb` on `legacy-design-tools-prod`, both read via `DATABASE_URL`/`DEPLOYMENT_DATABASE_URL` secrets per `90_runbooks/factory_onboarding_runbook.md` section 0.5), plus `grep`/`Read` against `P:\hauska-engine` source, plus the canonical docs named in `related` above. Every row below is either a SQL result (query shown), a file:line citation, or explicitly marked unverified.
@@ -26,8 +39,8 @@ Operator framing (2026-08-08): pivot from county-by-county onboarding to layer-f
 | FEMA flood (NFHL) | Yes (federal, uniform) | Yes (`fema-nfhl.ts`) | **Zero cached** | Live point-query only, no persistence found | 0 rows in `adapter_response_cache` |
 | Soils (USDA SSURGO) | Yes (federal, uniform) | Yes (`usda-ssurgo.ts`) | **Zero cached** | Live point-query only | 0 rows in `adapter_response_cache` |
 | Hydrology / NHD / watershed | Yes (federal, uniform) | Yes (`hydrography/`, `hydrology/` packages) | Not verified as bulk-loaded; likely same live-query pattern as FEMA/SSURGO | Live point/bbox-query, per site-plan flood-drainage study | Not statewide-loaded; see WHAT I COULD NOT DETERMINE |
-| City / jurisdiction boundaries (TxGIO City_Boundaries) | Yes | **No adapter found** | No | No | Explicitly confirmed absent — see code comment cited below |
-| County boundaries | Yes (Census TIGER candidate) | **No adapter found** | No | No | Same code comment confirms "no ... TIGER source anywhere" |
+| City / jurisdiction boundaries (TxGIO City_Boundaries) | Yes | **SUPERSEDED 2026-08-30 — LOADED** | Yes | Yes | `tx_city_boundary`, 1,222 polygons, 26 MB, btree bbox index, cortex `neondb`. The 2026-08-08 "absent" verdict is false as of 2026-08-30 |
+| County boundaries | Yes (Census TIGER candidate) | **SUPERSEDED 2026-08-30 — LOADED** | Yes | Yes | `tx_county_boundary`, 254 polygons, 25 MB, cortex `neondb`. The cited code comment describes 2026-08-08, not today |
 | School / special districts | Yes | Not found | No | No | Not found in code or docs |
 | Land use / land cover (NLCD) | Yes | **No adapter found** | No | No | Zero grep hits |
 | Railroads, pipelines (RRC), utility infra | Statewide (RRC open data) | Partial — RRC PDQ adapter exists (`og-sources/src/adapters/rrc-pdq/`) for oil/gas, not utility/pipeline geometry | Fixture-only sample seen; not confirmed as loaded data | Not confirmed | RRC oil/gas adapter exists per prior Reeves/Permian work; pipeline/utility-corridor layer not found |
@@ -93,7 +106,7 @@ Operator framing (2026-08-08): pivot from county-by-county onboarding to layer-f
 
 ### City boundaries / county boundaries / TIGER
 
-- **Explicit code evidence of absence**: `packages/engine-core/src/property-reasoning/cascade-unzoned-envelope-decline.ts:62` — inline comment reads **"(verified: no city_limits / incorporated_place / TIGER source anywhere in [the codebase])"** — this is a prior engineer's own verification note, independently corroborating this audit's grep results (zero hits for `city_boundar`, `city_limits`, `TIGER`, `tiger` anywhere in `hauska-engine` outside that one comment).
+- **Explicit code evidence of absence** *(SUPERSEDED 2026-08-30 for city/county boundaries — both tables are loaded; the comment below records the codebase as of 2026-08-08 and must not be cited as current)*: `packages/engine-core/src/property-reasoning/cascade-unzoned-envelope-decline.ts:62` — inline comment reads **"(verified: no city_limits / incorporated_place / TIGER source anywhere in [the codebase])"** — this is a prior engineer's own verification note, independently corroborating this audit's grep results (zero hits for `city_boundar`, `city_limits`, `TIGER`, `tiger` anywhere in `hauska-engine` outside that one comment).
 - OPS-1 names TxGIO `City_Boundaries/Texas_City_Boundaries/MapServer/0` (1,225 city polygons, queryable REST, $0) as a known available statewide source that would "solve the R17 what-is-the-city problem" — but no adapter, ingest script, or table exists for it. This is a **pure candidate**, not partially built.
 - County boundaries: OPS-1 notes "NOT a dedicated TxGIO service; use Census TIGER" — also zero code.
 

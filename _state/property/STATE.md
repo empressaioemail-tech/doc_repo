@@ -2,9 +2,89 @@
 
 Preserved from _STATE.md at the 2026-08-20 topology split. Write this file, not the generated combined view. Duplicate branch-protection paragraphs from the concurrent double write were removed; the surviving record is `_state/systems/STATE.md`. The Smart Markets block moved to `_state/markets/STATE.md`.
 
-Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-08-23T18:35Z (P-66 serve registry deployed). Property namespace. Restructured from _STATE.md; branch protection lives in _state/systems/STATE.md.**
+Single source of truth for WHERE WE ARE RIGHT NOW. Not decisions (those are in memory / _decisions/), not history (those are in _sessions/). Live state a fresh agent picks up from; edit it constantly. **Last updated: 2026-09-01 14:51Z (owner-rowcount: totals unchanged; 00:12Z SQL recovered)**
 
-## PHASE 1 — CLOSED 2026-08-23 · PHASE 2 ACTIVE
+## PROPERTY QUEUE — OWNER-ROWCOUNT CLOSED 2026-09-01T14:51Z
+
+Seat property on integration checkout `P:/doc_repo` `main` `818c86174ea7e12c7e9ad02b9c1e50e56732d9f1`. Do not strip.
+
+**Reasoning correction (keep):** the planner's "a deleted atom loses both fields, so a one-sided delta cannot be a delete" argument was invalid. It holds only for atoms carrying both keys. That argument must not be reused. Deletion was a live hypothesis until this card measured totals.
+
+**owner-rowcount CLOSED (read-only).** Recovered the 2026-09-01T00:12Z SQL from transcript `c4be557c-599e-4d26-8195-e131b7a6bf09` (decision record and 08-31 closes had numbers, not SQL). Re-ran verbatim on `hauska_mcp` (`current_database()` checked). **n_roll and ownerName keys are identical to 00:12Z.** Deletion is dead because totals did not drop. Silent in-place strip is dead because keys did not drop. Table `_inbox/2026-09-01_owner-rowcount_table.json`. Close `_inbox/2026-09-01_owner-rowcount_close.json`.
+
+| fips | n_roll then = now | ownerName key | name without mailing |
+| --- | ---: | ---: | ---: |
+| 48021 | 77078 | 77078 | 30 |
+| 48055 | 48384 | 48384 | 214 |
+| 48309 | 114280 | 113386 | 26 |
+| 48209 | 265881 | 29 | 29 |
+| 48453 | 492851 | 3 | 3 |
+| 48491 | 319487 | 7 | 7 |
+
+**Why the 09-01 cards saw a drop:** they counted `jurisdiction_tenant=tx_{fips}`. The recovered instrument counts half-open `entity_id` FIPS ranges. The difference is 5 / 2 / 29 / 26 / 3 / 7 atoms whose tenant is a bare FIPS or another county. They still exist and still carry `ownerName`. McLennan name-without-mailing ceiling is **26**, not zero.
+
+**Premises that stay settled:** #371 is not a rewrite of these bodies (no `updated_at` after 2026-08-12). Store is `hauska_mcp`. JSONB `?` / `->>` / `<>` agree. Do not re-derive those three.
+
+**Next owner card:** if a strip is authorised, use the recovered `entity_id` range, not `tx_` tenant, or it will miss those 72 atoms. Exposure is unchanged.
+
+**Product SHAs that landed this loop:** Factory #54 `45098156931497f1fb93b6de6abffa16cc2fe3f8`. Engine #373 `477ef3d5473c6fcd2f4c3714c3a540e6eb12eaf8`. Engine #372 `10dfc102b29cf9b8bc622aef7888e1cedf8e601f`.
+
+**Closes this session (uncommitted, planner-owned):** owner-rowcount plus earlier loop closes. Do not `git add` all. This STATE file is the exception the operator restored and asked the property seat to commit.
+
+## CTX SIX SERVED ON THE FULL FACET SHAPE (OPS-19 A-020 / A-021 / A-025) — 2026-08-28
+
+**Status: SIX OF SIX in production on `node-facets-tier1-conformant-v1` (Bastrop 48021, Caldwell 48055, McLennan 48309, Hays 48209, Williamson 48491, Travis 48453), each from a succeeded production `publish_runs` row with a passed inline content walk (gold plus area sweep) and a freshness stamp. A-020 measure of done MET. One served-value defect OPEN as CTX card F.**
+
+**Latest production runs:** Hays b6cda81e (rmhj4 16:24Z, gold 48209:135570); Williamson 38cf5b16 (vlh8k 18:26Z, 602,050 written, walk cceed65a, gold 48491:76149); Travis 1615b4ce (4l82p 19:30Z, 500,307 rows / 873,766 written, walk 3089903c, gold 48453:493738); Bastrop, Caldwell, McLennan rows in OPS-19. Probe: `https://smartsite.cloud/api/spine/cortex/api/brokerage/v1/place/node/<fips>%3A<prop_id>/facets`.
+
+**Card F (SERVING in production; six of six re-baked):** the premise corrected itself by measurement: the conformant claim READER looked for `body.claim` while the Factory writes flat bodies, so situsCity, situsZip, land use and claim acreage were null on all 1,498,010 conformant rows; the serve predicate then read the null situsCity as unincorporated. Fixed: LDT #532 (main ee27845e; reader accepts nested or flat; zoning verdict derived from `loadCityLimitsFact` with `derivation` on the wire: `stamp-missing` inside a place, `not-applicable` outside every polygon under the county doctrine, `unmeasured` without a point or index); Factory #34 (walk BP-VALUE-01 against `landing_tx_city_boundary`, fail-closed, shared-input clause declared) and #35 (`_LDT_SHA` pin). cortex-api production 00643-rib (digest 59a4696f) since 20:51Z; staging tag 00646-luj same digest. **Incident 21:10Z to 21:20Z (planner error):** the A-022 branch cleanup checked hosts against hauska-prod secrets only; legacy-design-tools-prod `STAGING_ATOMS_DATABASE_URL` v4 still bound the deleted br-little-term, and the staging redeploy re-resolved `:latest` into it (every staging facets request 500, `password authentication failed`); fixed by versions 5 of both LDT staging secrets copied from the Factory staging secrets (atoms br-billowing-queen ep-blue-unit, deployment br-super-cloud ep-wispy-fire) and a staging redeploy; the two affected bakes were sound and were re-walked, not re-baked. **County state on the card F bake (publish image 1b10d7e7):** Caldwell LIVE (run f4eb42ac, 21:37Z), Bastrop LIVE (run 4fc360c7, 21:39Z; 48021:34729 serves BASTROP 78602 SF-1 0.263 ac), McLennan LIVE (run 66bbd7bd, 21:48Z; gold WACO 76711 serves `stamp-missing`), Hays LIVE (run 564fa712, 22:21Z; gold KYLE 78640, join gate-blocked so `unmeasured`), Williamson LIVE (run c3c5a9a9, 00:52Z; gold TAYLOR 76574, join gate-blocked so `unmeasured`), Travis LIVE (run 5a985b47, 01:38Z; gold AUSTIN 78756 `unmeasured` on the no-row join; 6102 Laird Dr `stamp-missing` for Austin; 48453:227161 `not-applicable` by containment). **SIX OF SIX on the card F bake in production; nothing executing.** (planner scratchpad `rebake3_state.txt`, `rebake3_prod_execs.txt`, `rebake3_prod_state.txt`). 534,700 unstamped rows carry the 0,0 bake sentinel and serve `unmeasured` until a point source exists (follow-up). Card `_inbox/2026-08-28_ctx_f_zoning_verdict_city_limits_WDLL.md`, close `_inbox/2026-08-28_ctx-f_close.json`.
+
+**Jobs (us-east4, all from build configs):** factory-conformant gen 21 (timeout 21600), factory-bastrop-publish gen 16 image 7bdecdb1 (21600), factory-verify-walk gen 17 (900), factory-restamp-access, factory-f10-cad-loop. Execute form: `--args="^|^bastrop-publish|--target=production|--county=<fips>|--gold=<fips>:<prop_id>|--skip-pmtiles" --update-env-vars=OPERATOR_PUBLISH_GO=1,PRODUCTION_SITE_URL=https://smartsite.cloud`. Production requires a walked staging sibling (`requireStagingSibling`).
+
+**Stores:** atoms `hauska_mcp` on ep-lucky-truth (direct, never pooler); production snapshots `neondb` same host; staging hauska_mcp br-billowing-queen (ep-blue-unit), staging neondb br-super-cloud (ep-wispy-fire); six stale staging branches deleted 2026-08-28 19:37Z (A-022). cortex-api production 00629-riz. Access pair is `catalog-listed / anyone-free` at writer, bake, and serve; legacy pair refused everywhere (translation retired LDT #520, Factory #30).
+
+**Backlog routed (not started):** Travis written-vs-rows reconciliation; ledger-vs-seed join gate for 48209/48491 (operator ruling, F-05); R1 brief envelope routing (F-08 decision); walk fetch latency per parcel; value-level grades; two-tax-year selection at bake; per-page bake cost; per-county published_at reader; legacy reaper start-time fallback deletion by 2026-09-01; reset job Neon config; publish-guards reader. Deferred by A-020 still deferred (wave 1 remainder, F-09 217 counties, F-11 to F-14).
+
+**Standing:** OLD_SHAPE_FILL_FROZEN; no store writes from a laptop; never a pooler host; commits by explicit pathspec on the operator word; subagents do not commit.
+
+## F-10 WAVE 1 CP3 — IN PROGRESS 2026-08-28
+
+**Status: CP3 5/6 MET; criterion 5 in flight (`scllr` / `7eb4d0fd`). Full 254 NOT GO. Wave 1 scope per A-020 (Central Texas six), not A-017 31.**
+
+**MET:** (1) idempotency; (2) signal→killed; (3) 48055 replay / F-19 deterministic mint; (4) Bexar 2nd9z chunks; (6) 254 distribution 4j6pr.
+
+**IN PROGRESS:** (5) CP2 loop **`factory-f10-cad-loop-scllr`** — 48055 child success (288 atoms/s); 48085 conformant running.
+
+**A-019 CLOSED:** PR #21 merged — `factory-f10-cad-loop` deploy in `cloudbuild.conformant.yaml`.
+
+**A-020 wave 1 (after criterion 5):** `--counties=48021,48453,48491,48209,48055,48309`. All six **have landing** (48491 **602,050**; 48309 **114,255**). Register still blocks execute on 48453 `TX-TRAVIS-JOIN` (lane/P-80), 48209 `TX-HAYS-LANDUSE`, 48021 `TX-SITUS-SENTINELS` — disposition required. 25-county remainder, concurrency lever, F-09 **wait**.
+
+**F-03 CLOSED:** PR #19 fleet reap API; publish 3eb8d70d reaped.
+
+**Jobs:** conformant gen 8 digest `3e1bbea0`; CP3 `_inbox/2026-08-28_f10-wave1_cp3.json`.
+
+## LDT CONTRACT RENAME (F-15 / F-06) — CLOSED 2026-08-27
+
+**Status: CLOSED code-done; item 6 deploy/smoke open on operator go (planner-run).** LDT **#504** merged **`532bddc3`** to main. All six packages on `@empressaio/atom-contract ^1.30.0`; four vendor tarballs deleted; `check-no-hauska-atom-contract.mjs` in CI typecheck job. `serveGuards` uses contract `parseAccessPair`. **Partial (item 4):** `nodeFacetBakeTier1ConformantCli` SQL still filters `body->>'shape' = 'conformant-v1'` — BP-CONFORMANT-01 not yet on contract type for shape. WDLL deviation accepted: one PR not dual-pin + six package PRs. Close `_inbox/2026-08-27_ldt-contract-rename_close.json`. Worktree `legacy-design-tools-rename` may retire after pull.
+
+## DRAIN P-81..P-84 / F-02 — CLOSED 2026-08-27
+
+Planner accepted F-02 close 2026-08-27 02:45Z. Drain finish `_inbox/2026-08-27_p81-drain_close.json`. WDLL `_inbox/2026-08-26_cloud_loader_WDLL.md` status closed. Bexar 48029 is 703,257 = roll; item 26 complete without a resume. Item 7 FAILED at 149.0 and 67.4 atoms/s; not tuned. No further `--apply` on the old shape for any county. Job of record: `factory-atoms-cad` gen 2 on `atoms-writer@sha256:5a3bf94d`. Stood-down job `factory-atoms-writer` deleted 2026-08-27T10:21Z (describe cannot find it; execute NOT_FOUND); image `4fea88da` left unreferenced; 149.0 (msmfx, wallMs 6706) stays on the record. Retirement `_inbox/2026-08-27_f02-writer-job_retired.json`. Writer worktrees clean (salvage deleted). **Do not start F-15..F-18 until the planner compiles a dispatch.** Next card starts with substrate contract types and stage-and-merge write design from those two readings (OPS-19 A-004, OPS-16 A-042).
+
+## P-85 RECORDS REQUEST — IN FLIGHT 2026-08-27
+
+**Status: items 6–7 scaffold deployed prod; operator proof + items 8–10 open.** WDLL `_inbox/2026-08-26_p85_central_texas_easements_WDLL.md`. **Canvas:** `C:/Users/cente/.cursor/projects/p-doc-repo/canvases/p85-records-request.canvas.tsx`. **Handoff:** `_inbox/2026-08-27_p85_records_request_handoff.md`. Scratch `_scratch/p85-easements.md`.
+
+**Done (prod):** #479/#480/#482/#483/#228 merged; migrations **0084+0086** applied; cortex **`00591-mih` @100%** image `ced0f7c1`; **records-request-worker** rev `00003-zhm` image **p85-v3** with `RECORDS_REQUEST_VISION_URL` + `SERVICE_API_KEY`; 7 portal rows permitted; reachability recipes all 6 counties; smartsite REC UI (`dpl_68wKekUURW8GL8oKY3GbChRkpYMC`); dev_role on operator accounts.
+
+**Open PR:** none (LDT **#485** merged post-deploy for worker Bearer auth).
+
+**Live blocker:** Williamson TylerHost HTTP 403 (item 5 partial — publicsearch default landed).
+
+**Next:** operator proof **48021:34161** → Travis/Hays/Caldwell reachability → items **8–10** → item 11 email → item 13 Stripe ids → item 15 graded close.
+
+**Worktrees:** LDT `P:/seat-worktrees/property/legacy-design-tools` `feat/p85-worker-vision-auth`; PE `P:/seat-worktrees/property/hauska-map-records` `seat/property-records`.
+
 
 **Close:** `_inbox/2026-08-23_phase1_program_close.json` · **Canvas:** `canvases/phase1-master-program.canvas.tsx` · **Phase 2:** `_inbox/2026-08-23_phase2_data_ingest_program.md`
 

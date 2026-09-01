@@ -1,0 +1,66 @@
+{
+  "card": "P-89 Hauska MCP X-ray generator fail-closed",
+  "checkpoint": "CP2",
+  "plan_row": "P-89",
+  "lane": "p89-mcp",
+  "snapshot": {
+    "lane_repo": "hauska-mcp-server",
+    "lane_tree": "P:/seat-worktrees/substrate/hauska-mcp-p89",
+    "lane_commit": "1ae9f287feb2660730e338841aa79e59df0ad772",
+    "test_command": "node --import tsx --test tests/xray-export-gate.test.ts tests/dossier-export-catalog.test.ts",
+    "test_result": "26 pass / 0 fail. Counting rule: node:test files named above, run 2026-08-28T22:02:00Z in this worktree. Denominator 26 is the tests in those two files, not the full suite."
+  },
+  "falsifiers_scored": [
+    {
+      "id": 1,
+      "claim": "A tool call with no verdict still returns 200 and PDF bytes.",
+      "verdict": "REFUTED",
+      "evidence": "test 'P-89: refresh_parcel_dossier_export refuses missing verdict without engine call': isError true, JSON status 422, error pipeline_output_absent, missing includes verdict, calls.length === 0."
+    },
+    {
+      "id": 1b,
+      "claim": "Unresolved placeholder still generates.",
+      "verdict": "REFUTED",
+      "evidence": "test refuses XRAY_VERDICT_PLACEHOLDER; calls.length === 0."
+    },
+    {
+      "id": 2,
+      "claim": "A tool call with a verdict string and empty brief still stores an artifact.",
+      "verdict": "REFUTED",
+      "evidence": "test 'refuses verdict with empty brief facts': brief null, pipeline_output_absent, missing brief_facts, calls.length === 0."
+    },
+    {
+      "id": 3,
+      "claim": "GET download of a hollow stored id returns %PDF.",
+      "verdict": "REFUTED at the MCP tool",
+      "evidence": "test 'download_parcel_dossier_export refuses stored hollow artifact without PDF bytes': 422, pipeline_output_absent, text does not match %PDF, GET /dossier-export/download call count 0."
+    }
+  ],
+  "item_4": {
+    "grade": "MET at MCP boundary",
+    "evidence": "test forwards https://smartsite.cloud/share?g=grant-uuid-test as liveViewUrl on the refresh POST body and on envelope.data.liveViewUrl."
+  },
+  "item_5": {
+    "grade": "MET as written finding",
+    "finding": "Flood refresh is not an MCP write path. src/tools.ts registers refresh_parcel_terrain_export, refresh_parcel_site_plan_export, refresh_parcel_dossier_export. No refresh_flood_* tool. PUBLIC_CATALOG_TOOLS has those three refresh tools plus downloads. PE flood generate is pe-flood-drainage-core.ts to engine-api, not this server. liveViewUrl for flood is not this card's write path.",
+    "vacuous_test_named": "tests/xray-export-gate.test.ts 'WDLL item 5 finding' is assert.ok(true). That is a ceremony, not a second derivation. The finding above is from reading tools.ts tool names and PUBLIC_CATALOG_TOOLS, not from that assert."
+  },
+  "item_6": {
+    "grade": "MET",
+    "evidence": "Each refuse has a violate test at the tool handler (catalog) plus a unit violate on the gate. Pass-only was not the grade. This lane re-ran the suite; 26/26."
+  },
+  "ci_on_merge": {
+    "pr": 77,
+    "build-test": "success",
+    "ci-deny-as-no-atom-found": "success",
+    "ci-dual-atom-contract": "success",
+    "ci-gate-map-vs-server-tool": "success",
+    "ci-hardcoded-did-type-union": "success",
+    "note": "Conclusions read from gh api check-runs on 1ae9f28, field conclusion by name. gh pr checks printing 'pass' is not the authority; the check-run conclusion string is success."
+  },
+  "second_mechanism": {
+    "observation": "26 tests pass.",
+    "first_mechanism": "The write path refuses and the tests call the real registerTools handlers with a mocked fetch, so a missing gate would still POST and fail the calls.length === 0 asserts.",
+    "rejected": "The tests only exercise the extracted gate and never the handler. Rejected: dossier-export-catalog.test.ts callTool uses registerTools and asserts fetch was not called."
+  }
+}

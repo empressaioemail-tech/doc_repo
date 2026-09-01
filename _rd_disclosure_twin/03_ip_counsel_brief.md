@@ -1,8 +1,9 @@
 ---
 id: rd_dt_03_ip_counsel_brief
 title: IP counsel brief — agenda and questions for Hullihan
-status: draft
-last_updated: 2026-08-16
+status: superseded
+superseded_by: 72c_ip_counsel_brief
+last_updated: 2026-08-26
 applies_to: portfolio
 owner: nick
 related: [rd_dt_01_service_concept, rd_dt_02_cockpit_precedent]
@@ -10,6 +11,14 @@ purpose: Working agenda for the conversation with Hullihan (IP counsel) on the D
 ---
 
 # IP counsel brief: questions for Hullihan
+
+> **Superseded 2026-08-26 by [`72c_ip_counsel_brief.md`](../72c_ip_counsel_brief.md).** This brief was scoped
+> from the Disclosure Twin outward. `19_the_instrument_contract.md` superseded `77_place_graph_strategy.md`
+> as north star on 2026-08-22 and governs the twin read contract as one specialisation, so the counsel
+> engagement is now scoped at the portfolio with the twin as one instance. All content below is preserved
+> in `72c`, which adds the certification mark question, the corrected publication inventory including the
+> live overview deck, the signature-versus-hash gap, and the liability and neutrality questions. Kept for
+> audit. Do not route this version.
 
 > **Scope note, 2026-08-16.** Ruling 9 redirected the service from tokenized RWAs to publicly traded
 > companies, so the freedom-to-operate question against the Securitize and tZERO families is now

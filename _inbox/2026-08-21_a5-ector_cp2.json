@@ -1,0 +1,67 @@
+{
+  "lane": "a5-ector",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "planRows": ["P-02"],
+  "worktreeReadEngine": "P:/seat-worktrees/property/hauska-engine",
+  "engineBranch": "seat/property",
+  "engineHead": "8d8e8803550f6f7fdaae42c59a25c4a2d9acc71c",
+  "worktreeReadLdt": "P:/seat-worktrees/property/legacy-design-tools",
+  "ldtBranch": "seat/property",
+  "ldtHead": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "seat": "property (fanned from integration; writes on P:/doc_repo _inbox only)",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "missionPremise": "Same as CP1. Name the Ector re-key. Do not apply. Score-apply remains NO-GO.",
+  "querySnapshot": {
+    "projectId": "fancy-fire-06136146",
+    "projectName": "cortex-prod",
+    "database": "hauska_mcp",
+    "table": "atoms_bulk_writer_lease",
+    "queriedAtUtc": "2026-08-21T17:03:24.405Z",
+    "sql": "SELECT lock_id, holder, taken_at, heartbeat, expires, now() AS queried_at, (expires > now()) AS unexpired FROM atoms_bulk_writer_lease",
+    "whatWouldProveWrong": "Citing _STATE.md L16B/L26 as live, or treating heartbeat logs dated 2026-08-15/18 as the lease, or INSERT/UPDATE on this table."
+  },
+  "whatWasVerified": [
+    {
+      "check": "Re-key / parcel-node plan script path",
+      "result": "P:/seat-worktrees/property/hauska-engine/packages/engine-core/scripts/write-parcel-node-county.mjs. Invoked via package.json script write-parcel-node-county. Default is dry-run. Default keyKind is prop_id (line 316); Ector must pass --key-kind=geo_id_crosswalk. L15 dry-evidence wrapper P:/tmp/plan_farm_20260813/ector/ector_48135_rekey.mjs does not plan or write atoms.",
+      "whatWouldProveWrong": "A path that is only the SQL evidence script, or a dry-run missing --key-kind=geo_id_crosswalk."
+    },
+    {
+      "check": "foldedExtraFeatures=72100 vs plan expected geo_id extra 71673",
+      "result": "DISAGREE. Delta 427. 72100 = 75891 rawFeatures - 3791 accountedFeatures (A1 coverage artifact_path 2026-08-21, last_verified_at 2026-08-12T12:42:12.313Z). 71673 = 75464 geo_id_distinct - 3791 prop_id_distinct (L15 VERIFY.json executedAt 2026-08-13T12:43:41.348Z; OPS-16 P-02 ~71,673; NEARMISS additional-atoms figure). 427 = 75891 - 75464 (feature_index_n minus geo_id_distinct).",
+      "whatWouldProveWrong": "Rounding them together, or calling 71673 the post-re-key total atom count (that total would approach geo_id_distinct 75464, not 71673)."
+    },
+    {
+      "check": "Live lease table/row vs STALE _STATE.md",
+      "result": "Table exists. One row: lock_id=1 holder=L26 taken_at=2026-08-15T13:40:04.704Z heartbeat=2026-08-18T01:06:47.023Z expires=2026-08-18T05:06:47.023Z queried_at=2026-08-21T17:03:24.405Z unexpired=false. _STATE.md L16B (2026-08-15) and L26 PID 22096 still-live (2026-08-17) are STALE. Heartbeat logs stop 2026-08-15 (L16B) and 2026-08-18T01:06:47Z (L26). Slot is expired, not held live. This lane did not take it.",
+      "whatWouldProveWrong": "UNMEASURED after a successful SELECT, or claiming the slot is held because holder text still says L26."
+    },
+    {
+      "check": "countyGeometryScoreCli on 48135 today would still write 5% or would change the denom",
+      "result": "Would coincidentally still print ~5.00 IF atomCount stays 3791 and DISTINCT feature_index stays 75891 (3791/75891=4.9953, toFixed(2)=5.00). It WOULD change the denom provenance: readFeatureCount at countyGeometryScoreCli.ts:272-274 is count(DISTINCT feature_index); upsert verified_by_instrument=countyGeometryScoreCli.ts; artifact_path loses denom=raw;accountedFeatures;foldedExtraFeatures. countyRailScoreCli geometry uses denKind=txgio-parcel-distinct-feature-index. RAIL_SCORING_DECLARATION geometry notes the live producer is B2 accounted-features, not in this repo, and forbids guessing. Score-apply NO-GO.",
+      "whatWouldProveWrong": "A GO because the percentage string would still be 5.00."
+    }
+  ],
+  "adversarialPilot": {
+    "temptation": "Score-apply 48135 now because DISTINCT feature_index equals the live rawFeatures=75891 so the cell stays 5 percent, then re-key later.",
+    "rejectedBecause": "The live row is already scored. Re-scoring replaces B2_cp2_geometry_scorer_apply.mjs denom=raw provenance with a reconstructible DISTINCT feature_index denom the registry says will not reproduce live values where foldedExtraFeatures>0. Ector foldedExtraFeatures=72100. P-02 is the re-key.",
+    "secondMechanismForFivePercent": "An accounted-features denom would score 3791/3791=100 percent and flip satisfied-present. Rejected because the stored artifact_path is denom=raw, not denom=accounted.",
+    "secondMechanismForExpiredLease": "Empty table meaning no lease ever taken. Rejected because SELECT returned lock_id=1 holder=L26 with expires in the past."
+  },
+  "constraintsHonoredSoFar": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no atoms --apply",
+    "did not take atoms_bulk_writer_lease",
+    "did not touch P:/legacy-design-tools",
+    "code reads property worktrees only",
+    "doc_repo writes only _inbox JSON"
+  ]
+}

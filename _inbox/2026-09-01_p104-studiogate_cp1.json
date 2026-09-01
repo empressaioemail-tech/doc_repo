@@ -1,0 +1,141 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design / pre-build adversarial review",
+  "lane": "p104-studiogate",
+  "planRow": "P-104",
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "date": "2026-09-01",
+  "seat": "property (sub-agent; produces an uncommitted diff, does not commit)",
+  "snapshot": {
+    "hauska-map": {
+      "worktree": "P:/tmp/hauska-map-p104-studiogate",
+      "kind": "standalone clone from origin (P:/hauska-map primary is on fix/p35-vercel-token-preflight and dirty; every P:/seat-worktrees/property/hauska-map-* worktree belongs to another live lane)",
+      "branch": "seat/property-p104-studiogate",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "baseSubject": "fix(pe/P-98b): the wire speaks month/year, and the annual rung reads it (#330)"
+    },
+    "legacy-design-tools": {
+      "worktree": "P:/tmp/legacy-design-tools-p104-studiogate",
+      "kind": "standalone clone from origin",
+      "branch": "seat/property-p104-studiogate",
+      "baseCommit": "d332d799e1ddbd64e106685fe37828ce24862959",
+      "baseSubject": "feat(P-98): billing interval persisted, entitlement readable without a parcel (#574)"
+    },
+    "seatRegisterEntry": "NOT PRESENT for this lane at start. Two entries proposed as an uncommitted doc_repo diff; the planner commits."
+  },
+  "dispatchContextVerifiedAtSource": {
+    "gateAdmitsSolo": {
+      "claim": "apps/property-explorer/api/_lib/pe-site-plan-export-core.ts:430 gates on input.entitlement.tier !== 'paid'",
+      "verdict": "CONFIRMED at 4401095, line 430 exactly"
+    },
+    "terrainSharesTheGate": {
+      "claim": "terrain leaks identically",
+      "verdict": "CONFIRMED. pe-terrain-export-core.ts:369 is the same predicate, and the site-plan file's own comment at :395-396 names terrain as the shared tier"
+    },
+    "typeCannotExpressStudio": {
+      "claim": "line 400 types the result { ok: true; tier: 'free' | 'paid' }",
+      "verdict": "CONFIRMED, and the root declaration is pe-entitlement.ts:3, PeEntitlementTier = 'free' | 'paid'"
+    },
+    "zeroStudioUnderTheBff": {
+      "claim": "studio appears in ZERO files under apps/property-explorer/api; entitlement appears in 13",
+      "verdict": "CONFIRMED, re-run at 4401095: grep -ril studio gives 0 files; grep -ril entitlement gives 13 files; grep -rn subscriptionTier gives 0 lines. The negative control fires, so the zero is a real absence."
+    },
+    "twoFalseComments": {
+      "claim": "peEntitlement.ts:29-30 and propertyExplorer.ts:276-277 both assert the BFF gates Studio on studio-or-team",
+      "verdict": "PARTIALLY MOVED. At the dispatch's LDT snapshot 26068a1e the second comment was propertyExplorer.ts:277-278 (verified by git show). Between 26068a1e and d332d799, P-98 (#574) hoisted that inline object into peEntitlementBaseBody, so at current HEAD BOTH false comments live in artifacts/api-server/src/lib/peEntitlement.ts, at lines 30-31 and 160-161. propertyExplorer.ts:276-277 at HEAD is unrelated prose about Settings reading 'Not read'. Same two comments, one file. Nothing to correct in propertyExplorer.ts."
+    },
+    "threeCopiesOfThePredicate": {
+      "claim": "peEntitlement.ts:52, smartsite-mcp/entitlement.ts:27, entitlementClient.ts:90",
+      "verdict": "CONFIRMED as three definitions; the LDT line number is now 69 not 52 (same P-98 hoist). Count before = 3."
+    }
+  },
+  "dossierFinding": {
+    "question": "acceptance item 5, is the PE dossier export the Studio dossier or the Solo X-ray?",
+    "answer": "It is the SOLO X-ray. It is NOT gated to Studio.",
+    "evidence": [
+      "apps/property-explorer/src/workbench/tools/reports-catalog.ts:81-92, id DOSS, name X-ray, group Reports, engine dossier, catalogStatus ready, NO studioGated flag",
+      "apps/property-explorer/api/_lib/pe-dossier-export-core.ts:12-14, the gate comment: dossier requires PROPERTY entitlement, paid tier OR the single-property unlock, explicitly unlike the Pro-only site-plan/terrain exports",
+      "apps/property-explorer/api/_lib/pe-dossier-export-core.ts:247, the live predicate is tier !== 'paid' && propertyUnlocked !== true, which is the $15-unlock-or-paid R1 line, a strictly WEAKER gate than the export gate",
+      "apps/property-explorer/src/lib/pricing.ts:92-93, Solo's sold feature list is X-ray, flood and drainage study, unlimited AI, unlimited properties"
+    ],
+    "action": "resolveDossierExportAuth is NOT touched. Gating it would take a sold Solo capability away.",
+    "divergenceRecorded": "The MCP is the side that is wrong here, not PE. artifacts/smartsite-mcp/src/entitlement.ts:19 sets STUDIO_EXPORT_KINDS = [siteplan, terrain, dossier] and tools.ts:851 refuses a Solo caller for kind=dossier. So a Solo subscriber is refused the X-ray on the connector and served it on the web. Out of scope for P-104 (this card only removes the web leak); logged as an OPEN for the planner."
+  },
+  "design": {
+    "principle": "The server computes the predicate. The BFF consumes the answer. No fourth copy of subscriptionTierGrantsStudio.",
+    "changes": [
+      {
+        "repo": "legacy-design-tools",
+        "file": "artifacts/api-server/src/lib/peEntitlement.ts",
+        "change": "peEntitlementBaseBody gains a computed studioGranted: subscriptionTierGrantsStudio(snap.subscriptionTier), APPENDED LAST so the pinned R1 field order ahead of it is byte-identical. Dev role needs no special case: resolvePeEntitlement already maps devRole to subscriptionTier team (lines 120-124), so the one predicate covers it."
+      },
+      {
+        "repo": "hauska-map",
+        "file": "apps/property-explorer/api/_lib/pe-entitlement.ts",
+        "change": "PeEntitlementResult ok-branch and PeEntitlementDetail carry studioGranted: boolean | null, parsed from the server body. REQUIRED field, not optional, so tsc forces every call site to supply it."
+      },
+      {
+        "repo": "hauska-map",
+        "file": "apps/property-explorer/api/_lib/pe-site-plan-export-core.ts and pe-terrain-export-core.ts",
+        "change": "Both resolvers require studioGranted === true. Three-state, never two."
+      },
+      {
+        "repo": "hauska-map",
+        "file": "apps/property-explorer/src/workbench/tools/reports-catalog.ts",
+        "change": "SITEPLAN, SPPDF, SPDXF, SPIFC gain studioGated: true. catalogStatus is deliberately LEFT as ready: REC already ships studioGated true with catalogStatus ready, so the two fields are not coupled, and flipping catalogStatus would churn the group snapshot in reports-catalog.test.ts:26 for no behavioural gain."
+      }
+    ],
+    "threeStateRationale": "studioGranted absent from the server response is UNMEASURED, not false. Absent, zero and unmeasured are three different states. true gives serve; false gives 402 studio_required naming Studio, distinguishable from the free-tier 402 payment_required; null gives 503 entitlement_contract_incomplete, which names the real cause (this BFF is talking to a cortex-api that predates the field) instead of showing a paying customer a paywall for a deploy-order problem. Fail closed in all three, honest in all three.",
+    "predicateDefinitionCount": {
+      "before": 3,
+      "after": 3,
+      "countingRule": "occurrences of the string 'function subscriptionTierGrantsStudio' across both repos, excluding node_modules"
+    }
+  },
+  "adversarialReview": [
+    {
+      "risk": "DEPLOY ORDER. If the PE BFF ships to Vercel before cortex-api ships the studioGranted field, every Studio and Team customer hits the null branch and gets a 503 on CAD and terrain.",
+      "disposition": "ACCEPTED AND DECLARED, not mitigated by fail-open. Required order is stated as a blocking condition in the close: cortex-api (LDT) first, verified on the live /entitlement body, THEN the Vercel BFF deploy. The alternative, treating absent as granted, preserves the exact leak this card exists to close; treating absent as false would tell a paying Studio customer they need to pay, which is a false statement about their account."
+    },
+    {
+      "risk": "The dev bypass short-circuits ahead of the Studio check in both resolvers, so an armed bypass still serves CAD to a free session.",
+      "disposition": "UNCHANGED BY DESIGN. That is the existing operator QA path and it is env/secret-armed server-side (pe-export-dev-bypass.ts: PE_EXPORT_DEV_BYPASS=1 or a header matching PE_EXPORT_DEV_BYPASS_SECRET), never client-reachable. Widening this card to the bypass would be scope creep. Recorded so the exclusion is deliberate rather than unnoticed."
+    },
+    {
+      "risk": "Acceptance item 6 gates SPPDF (the site-plan PDF) to Studio, but the pricing matrix row is 'Site plan CAD, DXF, IFC' (pricing.ts:167) and Studio's sold feature string is 'site-plan CAD (DXF, IFC)' (pricing.ts:108). Neither names PDF.",
+      "disposition": "FOLLOW THE CARD, REPORT THE SEAM. The card names SPPDF explicitly, and SITEPLAN is ONE catalog row with formatLabel 'PDF, DXF, IFC'; a per-format split would require splitting the row, which is a bigger design change than this card scopes, and any pricing change is listed as explicitly not this card. Note that Solo does NOT lose the site-plan drawing: the X-ray PDF a Solo subscriber can still export appends the site-plan sheets (reports-catalog.ts:88-89). What Studio sells is the openable file. The planner is asked to rule on whether the standalone site-plan PDF stays Studio or drops to Solo."
+    },
+    {
+      "risk": "REC (Records request) carries studioGated: true in the catalog, a FIFTH studioGated entry the dispatch context did not name, and the same client-only-lock shape as terrain.",
+      "disposition": "OUT OF SCOPE (P-85), REPORTED. Its server side was not audited by this lane. Flagged as an OPEN so it is measured rather than assumed."
+    },
+    {
+      "risk": "A source-shaped test (grep the file for the predicate name) would satisfy the acceptance check while enforcing nothing, the exact defect class this card exists to remove.",
+      "disposition": "REFUSED. Every gate assertion is a behavioural call of the resolver with a Solo fixture and a Studio fixture, and each is shown failing when the gate line is removed."
+    },
+    {
+      "risk": "LDT api-server tests cannot run green locally (DATABASE_URL unset), so a new LDT test could be reported as passing when it never ran.",
+      "disposition": "MEASURED, NOT ASSUMED. Local baseline captured BEFORE any edit: 166 test files failed / 154 passed / 1 skipped (321); 1 test failed / 1460 passed / 1 skipped (1462). Any LDT test added is compared against that same baseline and CI is authoritative."
+    }
+  ],
+  "baselines": {
+    "hauska-map": {
+      "command": "npx vitest run (cwd apps/property-explorer)",
+      "testFiles": "166 passed (166)",
+      "tests": "2234 passed | 1 todo (2235)"
+    },
+    "legacy-design-tools": {
+      "command": "npx vitest run (cwd artifacts/api-server)",
+      "testFiles": "166 failed | 154 passed | 1 skipped (321)",
+      "tests": "1 failed | 1460 passed | 1 skipped (1462)",
+      "note": "Known-red locally: DATABASE_URL must be set. Baseline-compare only; CI authoritative."
+    }
+  },
+  "outOfScope": [
+    "Consolidating the three subscriptionTierGrantsStudio copies (named, not fixed, per the card)",
+    "Owner data (already enforced server-side at brokerageNodeFacets.ts:210-215)",
+    "The screens gate (P-101), Studio seats (P-102), the retired-price seam (P-103)",
+    "Any pricing change, including the SPPDF copy seam above",
+    "apps/property-explorer/api/pe-billing.ts, vercel.json, api/spine.ts, SettingsModal.tsx. Other lanes hold these; none is required by this design"
+  ]
+}

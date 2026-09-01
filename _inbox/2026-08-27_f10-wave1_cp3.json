@@ -1,0 +1,140 @@
+{
+  "id": "2026-08-27_f10-wave1_cp3",
+  "kind": "CP3",
+  "status": "partial",
+  "plan_row": "F-10",
+  "amendment": "OPS-19 A-010",
+  "prerequisite": "OPS-19 A-014 shim deletion merged PR #14",
+  "contract_pin": "^1.30.0",
+  "graded_at": "2026-08-28T00:15:00Z",
+  "imageDigest": "sha256:c9ec2df962d10f889c94354bb63be7864c25ab15009faed69f951c00efaadf79",
+  "factoryPrs": {
+    "shimDelete": "https://github.com/empressaioemail-tech/hauska-factory/pull/14",
+    "cp3Roster254": "https://github.com/empressaioemail-tech/hauska-factory/pull/15",
+    "conformant16Gi4Cpu": "https://github.com/empressaioemail-tech/hauska-factory/pull/16"
+  },
+  "items": {
+    "1_idempotency_guard": {
+      "requirement": "Re-run CP2 list; 48013,48019,48027,48053,48091 skipped by guard",
+      "status": "met",
+      "evidence": {
+        "loopRunDry": "5b2c4437-8093-43a3-bb4c-0e601a62b8ec",
+        "execution": "factory-f10-cad-loop-bpzbb",
+        "counts": { "workListSize": 10, "skipped": 10, "executed": 0, "distribution": { "byAction": { "idempotent": 7, "skip": 1, "execute": 2 } } },
+        "idempotentCounties": ["48013", "48019", "48027", "48031", "48053", "48091"],
+        "cp2PassCountiesIdempotent": ["48013", "48019", "48027", "48053", "48091"],
+        "snapshotIds": ["01fae5b3-88e1-4a6f-a706-72eeb27bcbe7", "63adb8e2-b0f3-41f2-8770-c20f4fb8cc9b"]
+      }
+    },
+    "2_signal_to_killed": {
+      "requirement": "Cancel one execution; scheduled reaper termination row exit_kind=killed",
+      "status": "met",
+      "evidence": {
+        "cancelledExecution": "factory-conformant-mnzqj",
+        "run_id": "04f1be29-6bc6-4f0f-97ea-c0c116b5147c",
+        "county": "48029",
+        "exit_kind": "killed",
+        "recorded_at": "2026-08-27T23:40:23.208Z",
+        "handReap": false
+      }
+    },
+    "3_replay_48055": {
+      "requirement": "48055 non-identical replay explained from two runs and fixed or filed as named defect",
+      "status": "met_filed",
+      "evidence": {
+        "defectClass": "TX-REPLAY-NOT-IDENTICAL",
+        "disposition": "re-run",
+        "cp2Run": "cce16346-051e-4436-b590-fa4a72821182",
+        "cp3Run": "5ec48e6d-b6e2-4c62-a696-dd06bdd86c52",
+        "replayDiff": {
+          "cp2": {
+            "first": "0aac8ac4a44a79b3afaab70341dad35f0ad86f6090dd9e7bb359516bd0bb8551",
+            "second": "17a281cdc3fff586b098d5cd140b6c8566fef44d8988e70fe26fa98aa7cedb7d",
+            "identical": false
+          },
+          "cp3_1_30": {
+            "first": "de142601b763be1af3fa79acc5f8b7473c7aed99cb5ea460a375a07a018cd588",
+            "second": "4777a078de5606feec5eec96334fca8044bc962793386e84896222590462bab6",
+            "identical": false
+          }
+        },
+        "rootCause": "In-run replay leg re-executes pipelineFromRows with warm resolveStore/reconStore; fingerprint diverges at 73k-row scale (73371 landing rows). Same pattern on CP2 image and 1.30.0 image. Cold-store replay fails because mint() assigns new node IDs per pass. Named class TX-REPLAY-NOT-IDENTICAL; fix deferred to deterministic node minting lane."
+      }
+    },
+    "4_large_county_crashes": {
+      "requirement": "48029 and 48085 crashes explained; Bexar runs clean end-to-end",
+      "status": "partial",
+      "evidence": {
+        "48085_cp3": {
+          "run_id": "2c3dde34-50ce-4028-9630-5531620fe1a7",
+          "execution": "factory-conformant-4s977",
+          "cause": "signal terminated container after pipeline1 (387334 landing, 774668 atoms); OOM on 8Gi/2CPU",
+          "run_events": ["landing 5151ms", "pipeline1 29889ms"],
+          "exit_kind": "killed"
+        },
+        "48029_cp2": {
+          "run_id": "1ce4fc55-087e-4ca5-81d9-98e34310c78c",
+          "cause": "crashed during pipeline1 on 703258 rows (landing only in run_events)",
+          "exit_kind": "crashed"
+        },
+        "48029_cp3_cancel": {
+          "run_id": "04f1be29-6bc6-4f0f-97ea-c0c116b5147c",
+          "note": "intentional cancel for item 2, not a crash triage run"
+        },
+        "fix": "factory-conformant memory 16Gi + cpu 4 (PR #16 merged); build 8554a9d4 SUCCESS digest c9ec2df9",
+        "bexarRerun": {
+          "execution": "factory-conformant-wrn26",
+          "status": "in_flight",
+          "started": "2026-08-28T00:14:00Z"
+        }
+      }
+    },
+    "5_cp2_list_rerun": {
+      "requirement": "CP2 ten-county list 10/10 pass or named-class skip with rate distribution",
+      "status": "partial",
+      "evidence": {
+        "priorLoop": "e4e04093-55b5-4557-965a-c2d9bb081b9c",
+        "counts": { "executed": 1, "skipped": 6, "defects": 3 },
+        "currentLedger": {
+          "pass": ["48013", "48019", "48027", "48031", "48053", "48091"],
+          "skip": ["48021"],
+          "defect": ["48029", "48055", "48085"]
+        },
+        "next": "factory-f10-cad-loop --apply --limit=10 after Bexar wrn26 completes"
+      }
+    },
+    "6_worklist_distribution": {
+      "requirement": "254-county snapshot with execute/skip/defect/idempotent/noLanding distribution before first execution",
+      "status": "in_flight",
+      "evidence": {
+        "codeFix": "PR #15 planCadWorkList enumerates TX_COUNTY_FIPS 254",
+        "priorPartial": {
+          "loopRun": "53d75718-7f8e-4285-9723-af307a56f2db",
+          "workListSize": 37,
+          "note": "pre-254-roster dry-run"
+        },
+        "liveRun": {
+          "execution": "factory-f10-cad-loop-4j6pr",
+          "args": "f10-cad-loop --dry-run",
+          "status": "in_flight",
+          "started": "2026-08-28T00:14:00Z"
+        }
+      }
+    }
+  },
+  "publishLane": {
+    "ldt504": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/504 merged 532bddc3",
+    "ldt505": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/505 merged b54b50ce",
+    "publishImageRebuild": {
+      "status": "in_flight",
+      "ldtSha": "b54b50ce5ae7cc42595eea9b56c919c925f10096",
+      "contractVersion": "1.30.0",
+      "cloudbuild": "hauska-factory-publish/cloudbuild.publish.yaml"
+    }
+  },
+  "full254Loop": "NOT GO",
+  "leave_behind": [
+    { "item": "48055 TX-REPLAY-NOT-IDENTICAL deterministic mint fix", "owner": "property", "plan_row": "F-10" },
+    { "item": "CP3 items 4-6 close after wrn26 + 4j6pr + apply limit=10", "owner": "property", "plan_row": "F-10" }
+  ]
+}

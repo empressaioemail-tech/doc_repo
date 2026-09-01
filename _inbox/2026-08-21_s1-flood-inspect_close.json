@@ -1,0 +1,165 @@
+{
+  "lane": "s1-flood-inspect",
+  "artifact": "close",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T18:45:00Z",
+  "planRows": ["P-08"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["3", "6"],
+  "dispatch": "_dispatches/2026-08-21_s1-flood-inspect_dispatch.md",
+  "repo": "legacy-design-tools",
+  "occupancy": "P:/legacy-design-tools-worktrees/s1-flood-inspect branch s1-flood-inspect; P:/legacy-design-tools not touched",
+
+  "snapshot": {
+    "ldtWorktree": "P:/legacy-design-tools-worktrees/s1-flood-inspect",
+    "ldtBranch": "s1-flood-inspect",
+    "ldtHead": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+    "ldtHeadSubject": "fix(manifest): trust RAIL_ENGINE_BINDINGS when engine tree is absent",
+    "uncommitted": true,
+    "docRepoWrites": [
+      "_inbox/2026-08-21_s1-flood-inspect_cp1.json",
+      "_inbox/2026-08-21_s1-flood-inspect_cp2.json",
+      "_inbox/2026-08-21_s1-flood-inspect_close.json"
+    ]
+  },
+
+  "missionPremise": "SS-W16 retired snapshot flood at inspect because the Tier-2 bake queried FEMA at the tile centre. A3 showed inspect still SELECTs place_layer_snapshots and never reads flood-hazard-fact. Sellable WDLL item 3 requires the inspect GET to read the atom. Dual grammar is in scope (R-07 Q8). Source: _dispatches/2026-08-21_s1-flood-inspect_dispatch.md.",
+
+  "completionPredicate": "GET /api/brokerage/v1/place/node/:id/facets returns floodHazardFact from flood-hazard-fact atoms (or a typed refusal naming the miss). tier2.flood stays null. disposeTier2Flood still refuses every snapshot input. ci-tier2-flood-not-served still flags a flood: value assignment. Tests fail if snapshots are served and pass when a fixture atom yields a value. Gold 48021:34137 has a live or fixture result. No deploy, no apply, no Harris PBF.",
+  "completionPredicateStatus": "MET IN CODE. NOT MET ON smartsite.cloud (undeployed; planner-owned). Live atom for gold exists (point lookup). Serving it on the GET requires cortex-api deploy plus ATOMS_DATABASE_URL.",
+
+  "scopeBasis": "New atoms READ on the inspect GET only. Snapshot refusal stays. No bake rewrite. No new ingest. propertyExplorer R1 brief stays on the SS-W16 refusal this pass. Dual grammar is two entity_id lookups, not a writer re-key.",
+
+  "prNumbers": "not applicable: uncommitted isolated worktree; dispatch forbade git add/commit/push",
+  "mergeShas": "not applicable: uncommitted isolated worktree",
+  "ciConclusionStrings": "not applicable: no PR this lane",
+  "checkpoints": [
+    "_inbox/2026-08-21_s1-flood-inspect_cp1.json",
+    "_inbox/2026-08-21_s1-flood-inspect_cp2.json"
+  ],
+
+  "filesChanged": [
+    "artifacts/api-server/src/lib/floodHazardFactRead.ts (new)",
+    "artifacts/api-server/src/lib/floodHazardFactRead.test.ts (new)",
+    "artifacts/api-server/src/routes/brokerageNodeFacets.ts",
+    "artifacts/api-server/src/__tests__/brokerageNodeFacets.test.ts"
+  ],
+
+  "bindRule": {
+    "keys": "always both: integer {fips}:{prop} and padded {fips}:{prop}.00000000",
+    "function": "floodHazardFactBindKeys",
+    "oneHit": "serve that row; boundAs is the hitting entity_id",
+    "zeroHits": "refused code=atom-miss, tried=[both], never a silent null",
+    "twoHitsAgree": "serve integer first",
+    "twoHitsDisagree": "refused code=bind-conflict",
+    "storeUnconfigured": "refused code=atoms-store-not-configured (ATOMS_DATABASE_URL). Never DATABASE_URL (deployment store in api-server).",
+    "goldLiveBind": "48021:34137 hit; 48021:34137.00000000 miss; one-hit serve"
+  },
+
+  "testsThatFailIfSnapshotsAreServed": [
+    "extractTier2Overlay — flood is refused, never served (SS-W16) > refuses a REAL in-SFHA determination and puts no value on the wire",
+    "extractTier2Overlay — flood is refused, never served (SS-W16) > disposeTier2Flood is TOTAL — no SNAPSHOT input yields a value (SS-W16 stays)",
+    "node-facet read endpoint (integration) > REFUSES the snapshot flood facet even though a real in-SFHA row is seeded",
+    "node-facet read endpoint (integration) > serves a fixture flood-hazard-fact while still refusing the snapshot bake (divergence: snapshot AE/FLOODWAY/512.4 vs atom AO)",
+    "brokerageNodeFacets boot-proof > the route source wires floodHazardFact from atoms and keeps flood: null",
+    "ci-tier2-flood-not-served (pr-checks.yml) — ripgrep flood\\s*: offenders in brokerageNodeFacets.ts"
+  ],
+
+  "testsThatAssertAtomsPathYieldsAValue": [
+    "interpretFloodHazardFactRows > serves a present finding stored on the integer key",
+    "interpretFloodHazardFactRows > serves a present finding stored only on the padded key (dual-grammar hit)",
+    "loadFloodHazardFactAtom — store seam > yields a value when a fixture atom exists",
+    "node-facet read endpoint (integration) > serves a fixture flood-hazard-fact while still refusing the snapshot bake",
+    "node-facet read endpoint (integration) > gold parcel 48021:34137 dual-grammar bind yields the fixture atom"
+  ],
+
+  "testRun": {
+    "cwd": "P:/legacy-design-tools-worktrees/s1-flood-inspect/artifacts/api-server",
+    "result": "29 passed, 8 skipped",
+    "skippedWhy": "8 integration GET cases need postgres. Local postgresql-x64-18 was Stopped and could not be started. CI Test job services postgres and does not set VITEST_DATABASE_STUB, so those 8 run there.",
+    "ciGrepLocal": "offenders [] ; flood: null; and flood: null, both present"
+  },
+
+  "goldParcel": {
+    "id": "48021:34137",
+    "fixture": "integration test seeds zone X on the integer key when postgres is present",
+    "live": {
+      "instrument": "point SELECT on hauska_mcp.atoms, entity_type flood-hazard-fact, entity_id ANY (48021:34137, 48021:34137.00000000)",
+      "queriedAt": "2026-08-21T18:40:00Z",
+      "rowCount": 1,
+      "entityId": "48021:34137",
+      "floodZone": "X",
+      "inSpecialFloodHazardArea": false,
+      "sourceAdapter": "fema-nfhl-bulk-v1",
+      "sourceVintage": "NFHL_48_20260101",
+      "sourceTier": "fema-nfhl",
+      "evaluatedAt": "2026-08-11T23:13:43.774Z"
+    },
+    "inspectGet": "not live this lane (no deploy). After deploy with ATOMS_DATABASE_URL, GET should return floodHazardFact.state=present floodZone=X boundAs=48021:34137 tried both keys, with tier2.flood still null."
+  },
+
+  "counts": {
+    "vitestPassed": {
+      "value": 29,
+      "rule": "vitest run of floodHazardFactRead.test.ts + brokerageNodeFacets.test.ts locally"
+    },
+    "vitestSkippedIntegration": {
+      "value": 8,
+      "rule": "describe.skipIf(!hasDb) GET cases; hasDb false locally because VITEST_DATABASE_STUB=1"
+    },
+    "goldAtomRows": {
+      "value": 1,
+      "rule": "rowCount of the two-key point lookup, not an estimate"
+    }
+  },
+
+  "wdllGrades": [
+    {
+      "item": 3,
+      "status": "met-in-code",
+      "evidence": "Inspect GET composes floodHazardFact from flood-hazard-fact atoms. place_layer_snapshots flood values still refused by disposeTier2Flood. Gold atom exists (48021:34137 Zone X). Live GET on smartsite.cloud ungraded (undeployed)."
+    },
+    {
+      "item": 6,
+      "status": "met",
+      "evidence": "No atoms --apply. No Harris PBF. No statewide roads apply. No minted absence. Dual-grammar lookup of existing rows only."
+    }
+  ],
+
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no atoms --apply",
+    "no Harris PBF",
+    "no ledger recompute POST",
+    "did not touch P:/legacy-design-tools",
+    "SS-W16 snapshot refusal kept",
+    "doc_repo writes are the three _inbox JSON files only"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "deploy cortex-api from this worktree and live GET https://smartsite.cloud (or cortex-api) /api/brokerage/v1/place/node/48021%3A34137/facets. Expect floodHazardFact.state=present floodZone=X and tier2.flood null. Set ATOMS_DATABASE_URL to hauska_mcp (hauska-prod DATABASE_URL secret). It is not in cloud-run-deploy.yml --set-secrets today; without it the GET returns atoms-store-not-configured.",
+      "owner": "planner",
+      "plan_row": "P-08"
+    },
+    {
+      "item": "propertyExplorer R1 brief flood section still carries the SS-W16 snapshot refusal only. Not wired to floodHazardFact this pass.",
+      "owner": "property",
+      "plan_row": "P-08"
+    },
+    {
+      "item": "uncommitted LDT worktree P:/legacy-design-tools-worktrees/s1-flood-inspect plus three doc_repo _inbox JSON files",
+      "owner": "planner",
+      "plan_row": "P-08"
+    }
+  ],
+
+  "open": [
+    "CI Test job not run this lane (no PR). 8 integration GET cases skipped locally.",
+    "Live inspect GET undeployed.",
+    "ATOMS_DATABASE_URL missing from Cloud Run secrets list."
+  ]
+}

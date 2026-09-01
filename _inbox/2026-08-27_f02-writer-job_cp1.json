@@ -1,0 +1,83 @@
+{
+  "id": "2026-08-27_f02-writer-job_cp1",
+  "kind": "CP1",
+  "lane": "f02-writer-job",
+  "planRows": ["F-02", "F-03"],
+  "wdll": "_inbox/2026-08-27_f02_writer_job_WDLL.md",
+  "dispatch": "_dispatches/2026-08-27_f02-writer-job_dispatch.md",
+  "wdllItems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "filedAt": "2026-08-27T01:40:00Z",
+  "snapshot": {
+    "docRepo": "P:/doc_repo",
+    "docRepoBranch": "main",
+    "docRepoHead": "d9a88d21c0be9b564aee30c18937e4c00c6c8b4d",
+    "hookSeat": "integration",
+    "dispatchSeat": "property",
+    "engineWriter": "P:/seat-worktrees/property/hauska-engine-writer",
+    "engineWriterBranch": "seat/property-writer",
+    "engineWriterHeadAtPickup": "62c1c4a",
+    "engineMain": "b402c8b4f430ee82d3c9e6fb25f4e41317aefe22",
+    "factoryWriter": "P:/seat-worktrees/property/hauska-factory-writer",
+    "factoryWriterBranch": "seat/property-writer",
+    "factoryWriterHeadAtPickup": "b0f0478",
+    "factoryMain": "07f48c2370a8ebb6cf0cc178f8fe9226e2404057",
+    "usEast4JobsAtPickup": [
+      "factory-bexar-edges",
+      "factory-cc-publish",
+      "factory-console-audit",
+      "factory-landing-cad",
+      "factory-landing-footprint",
+      "factory-landing-import",
+      "factory-landing-parcel",
+      "factory-landing-pipeline",
+      "factory-landing-wells",
+      "factory-manifest-import",
+      "factory-missing-env",
+      "factory-snapshot"
+    ],
+    "factoryAtomsWriterAtPickup": false,
+    "drainAndPrimaryFactoryOpened": false
+  },
+  "missionPremise": "Option A ( _decisions/2026-08-26_factory_model_law_and_option_a.md ): Bexar 48029 cad finishes on the current writer as a recorded Factory job in us-east4. Gate 3 of the drain card stopped because no engine writer job exists. This lane builds that runner (image by digest, Factory-written run row, store-read counts, one 1,000-row canary) and hands the full resume back. Operator go 2026-08-27: give me the writer job and I will give it to a new agent. OPS-19 A-002.",
+  "completionPredicate": "factory-atoms-writer exists in us-east4 on a digest; three refusal executions, one dry run, and exactly one --apply --limit=1000 on 48029 are named Cloud Run executions with Factory run rows; counts come from a SELECT; lease observed during and released after; close artifact names digest, job, script, run ids, atoms/s; drain lane owns the full resume.",
+  "scopeBasis": "F-02 stage runner plus the F-03 run-row/termination wiring this job needs. No packages/ change. No county but 48029. No apply beyond the one canary. No laptop --apply. No F-15..F-18. No F-04 operator-login proxy. Drain and primary factory worktrees are not opened.",
+  "seatDisposition": "Hook identified integration at P:/doc_repo main d9a88d2. Dispatch names property. Product writes only P:/seat-worktrees/property/hauska-engine-writer and P:/seat-worktrees/property/hauska-factory-writer. Inbox artifacts stay in P:/doc_repo uncommitted. Drain hauska-engine-drain and primary hauska-factory are not opened.",
+  "design": {
+    "engineImage": "services/atoms-writer/Dockerfile; cloudbuild.atoms-writer.yaml builds us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-atoms-writer tagged by engine SHA; entrypoint is write-cad-parcel-roll-county; no FACTORY_DATABASE_URL; no packages/ delta",
+    "jobCreate": "scripts/jobs/atoms-writer.sh creates factory-atoms-writer by digest with CAD_PARCEL_ROLL_PATH=1 and ATOMS_DATABASE_URL + SOURCE_DATABASE_URL secrets",
+    "factoryRun": "src/jobs/atoms-writer-run.mjs startRun(phase write, target cad_property:48029) then Cloud Run Jobs API execute with --run-id; RUN_RECORD_UNWRITABLE starts nothing",
+    "counts": "SELECT atoms in scope; stdout stored as artifact; COUNT_MISMATCH fails with both numbers",
+    "console": "GET /screens and GET /runs return recent runs from the Factory store"
+  },
+  "adversarialFindings": [
+    {
+      "id": "A1",
+      "finding": "seat/property-writer already has 62c1c4a (engine) and b0f0478 (factory). Engine commit added packages/engine-core/scripts/atoms-writer-job.mjs and put FACTORY_DATABASE_URL on the engine job image. Factory commit added bexar-cad.mjs targeting factory-atoms-cad with RUN_ID as an env var and counts from gcloud exit. All three violate the card (no packages/ change; engine image never holds FACTORY_DATABASE_URL; job name factory-atoms-writer; --run-id arg; counts from SELECT).",
+      "disposition": "revert packages/ to origin/main. Replace Dockerfile.atoms-writer and cloudbuild with the card paths. Add atoms-writer-run.mjs and scripts/jobs/atoms-writer.sh. Leave bexar-cad.mjs in tree unused; this lane does not deploy through it."
+    },
+    {
+      "id": "A2",
+      "finding": "WDLL item 5 names lease scope_type=cad_property scope_id=48029. The writer on main (read, not changed) inserts scope_type=write scope_id=cad-parcel-roll:48029 via scopeIdOf. The writer is the authority.",
+      "disposition": "observe the live row the writer writes; do not change packages/; report the WDLL column names as a wording miss"
+    },
+    {
+      "id": "A3",
+      "finding": "Public Smart Site Factory console is 401 after F-04 key rotation (A-001 leave-behind). Item 8 check is authenticated GET /screens. The public bundle cannot render a run until F-04 proxy.",
+      "disposition": "grade item 8 on authenticated GET /screens plus /runs from the store; record console 401 as F-04 leave-behind, not this card's defect"
+    },
+    {
+      "id": "A4",
+      "finding": "--list-counties on the writer requires a CAD-source URL. A docker run without secrets cannot exit 0 on that path.",
+      "disposition": "Cloud Build verify step runs --list-counties with SOURCE_DATABASE_URL from Secret Manager; that is the item 1 instrument"
+    }
+  ],
+  "notStarted": [
+    "full Bexar resume (drain lane item 7)",
+    "writer script or storage package changes",
+    "any county other than 48029",
+    "second apply",
+    "conformant writer F-15..F-18",
+    "F-04 operator-login proxy",
+    "laptop --apply"
+  ]
+}

@@ -44,6 +44,29 @@ Where no second derivation exists, construct one rather than weakening the check
 
 Before scoring a default or a check as remediable, enumerate its call sites. A default copied into its callers survives its own removal, and deleting the signature default reads as a fix while changing nothing.
 
+## Every record starts with its full shape
+
+Ruled 2026-09-01, `_decisions/2026-09-01_every_parcel_starts_with_a_full_record.md`.
+
+A record is instantiated with its complete column set from the moment it exists.
+Acquisition changes a cell's STATE, never a cell's EXISTENCE. A record is never partially
+shaped; it is fully shaped and mostly unaccounted, and it fills in.
+
+**A missing column is invisible. An unaccounted cell is countable.** Where a field appears
+only once something writes it, a field nobody built an acquisition path for is
+indistinguishable from one that does not apply and from one nobody thought of. Every gap
+analysis is then structurally incapable of finding the largest gaps, because it can only
+see the fields that already exist.
+
+`unaccounted` is legitimate at rest and fatal at publish. Both halves are load bearing. If
+it stops being fatal it becomes cover, and if it stops being legitimate the pressure moves
+to fabricating values.
+
+Never convert `unaccounted` to `absent-verified` to clear a gate. `absent-verified` is a
+claim that something looked; writing it where nothing looked is a lie that passes every
+check. Watch for unaccounted counts falling without a matching acquisition landing — that
+is relabelling, and it looks like progress.
+
 ## Absent, zero, and unmeasured are three different states
 
 Never collapse them. A fabricated zero is worse than an absence, because a zero enters averages, percentages, and ratios without announcing that it was invented, while an absence forces a decision.
@@ -93,7 +116,7 @@ Added 2026-08-21 after the planner made ten wrong load-bearing statements in one
 
 **Never read multi-field CLI output through a positional formatter.** `--format="value(a,b,c)"` aligns by semicolons and a blank field shifts every column after it. Use JSON and read fields by name. Instance: `gcloud run services describe --format="value(status.traffic[].revisionName,status.traffic[].percent)"` returned `...00522-row;...00524-pit` against `;;;100;`, which reads as 100 percent on the last revision and means 100 percent on the fourth. The planner reported the wrong serving revision to the operator twice on that one misread, while claiming to have checked the traffic split.
 
-**Read the authoritative record, never a proxy for it.** The revision that served a request is on that request's log line, not in `latestReadyRevisionName`. The image a revision runs is its digest, not the tag that was requested. Whether a table exists is in the catalog, not in the shape of somebody else's query. Instances: a canary deployed with `image_tag=latest` froze a digest seven seconds before the intended image was pushed, so a dry-run against it read as an overlay no-op when it was running older code; and a link table holding 33,066 rows was declared absent because its absence was inferred from an orphan query rather than by enumerating tables.
+**Read the authoritative record, never a proxy for it.** *(Armed 2026-08-30 as a hook: `.claude/hooks/authoritative-read.mjs`, rules and self-tests in `scripts/enforcement/authoritative-read.mjs`. It WARNS, never blocks, and fires only on documented instances. This paragraph stood as prose from 2026-08-21 and did not bind: on 2026-08-30 the planner read a working tree and called an uncommitted fix landed, and read a coverage count instead of the writer a job actually calls. Prose controls here are 0-for-3; hooks are 1-for-1.)* The revision that served a request is on that request's log line, not in `latestReadyRevisionName`. The image a revision runs is its digest, not the tag that was requested. Whether a table exists is in the catalog, not in the shape of somebody else's query. Instances: a canary deployed with `image_tag=latest` froze a digest seven seconds before the intended image was pushed, so a dry-run against it read as an overlay no-op when it was running older code; and a link table holding 33,066 rows was declared absent because its absence was inferred from an orphan query rather than by enumerating tables.
 
 **Pre-register the falsifier for your own checks, not only for other agents' work.** The same session pre-registered sixteen predictions against five lane returns, scored them honestly, and lost most of them, which was the correct outcome. Not one of the planner's own verifications got the same treatment, and that is exactly where the failures were. Before running a check, state what result would prove it wrong. If no result would, it is not a check.
 

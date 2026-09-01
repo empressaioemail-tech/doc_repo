@@ -1,0 +1,64 @@
+{
+  "lane": "a3-flood",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T16:50:00Z",
+  "planRows": ["P-08"],
+  "wdll": "_inbox/2026-08-21_wave_a_execution_WDLL.md items 3, 5",
+  "checkpoint": "pilot/mid-work",
+  "dispatch": "_dispatches/2026-08-21_a3-flood_dispatch.md",
+  "snapshot": {
+    "codeRead": "P:/seat-worktrees/property/legacy-design-tools",
+    "codeBranch": "seat/property",
+    "codeHead": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+    "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a"
+  },
+  "predictionScores": [
+    {
+      "id": "P1",
+      "verdict": "CONFIRMED",
+      "evidence": "rg place_layer_snapshots countyFloodScoreCli.ts: no matches. Imports are node builtins, pg, and ./lib/countyCoverageClassification only (countyFloodScoreCli.ts:16-26). countyCoverageClassification.ts also has zero place_layer/flood-hazard/tx_fema/FROM hits."
+    },
+    {
+      "id": "P2",
+      "verdict": "CONFIRMED",
+      "evidence": "countyFloodScoreCli.ts:109-113 SELECT left(entity_id, 5) AS fips, count(*) FROM atoms WHERE entity_type = 'flood-hazard-fact' AND entity_id ~ '^[0-9]{5}:' GROUP BY 1. Binding railEngineBinding.ts:57-63 atomEntityTypes flood-hazard-fact, ldtScorerPath countyFloodScoreCli.ts."
+    },
+    {
+      "id": "P3",
+      "verdict": "CONFIRMED",
+      "evidence": "rg tx_fema_nfhl_flood_zone countyFloodScoreCli.ts: no matches. Denominator is txgio_parcel then txgio_parcel_staging (countyFloodScoreCli.ts:127-140), not NFHL."
+    },
+    {
+      "id": "P4",
+      "verdict": "CONFIRMED",
+      "evidence": "brokerageNodeFacets.ts:365-381 loadBakedNodeFacetSnapshot .from(placeLayerSnapshots). nodeFacetBakeTier1Cli.ts:963 SELECT FROM place_layer_snapshots; :990 INSERT; :1046 batch SELECT; :1115 batch INSERT. brokerageSiteContext.ts:6 names the table; :315-320 readPlaceLayerSnapshot."
+    },
+    {
+      "id": "P5",
+      "verdict": "CONFIRMED",
+      "evidence": "Ledger GET cells come from county_manifest CROSS JOIN county_rail LEFT JOIN county_facet_coverage ON facet = rail_key (countyLedgerCompute.ts:230-234). When coverage row missing, display_state = not-yet (:219). Flood scorer upserts county_facet_coverage facet='flood' (countyFloodScoreCli.ts:210-232). Inspect path does not write that table. Therefore inspect snapshots cannot produce the 140."
+    },
+    {
+      "id": "P6",
+      "verdict": "CONFIRMED",
+      "evidence": "Score path already on flood-hazard-fact. A3 fix sentence 'Repoint the flood score/read path to flood-hazard-fact' is already true for the ledger scorer. Remaining snapshots consumer is inspect/serve (and Property Brief site-context), a different defect."
+    }
+  ],
+  "secondMechanism": {
+    "observation": "140 flood not-yet on live GET",
+    "firstMechanism": "ledger score/serve: coverage below 95% writes not-yet (countyFloodScoreCli.ts:188-191) and/or missing county_facet_coverage rows display as not-yet (countyLedgerCompute.ts:219)",
+    "secondMechanismConsidered": "inspect still reading place_layer_snapshots starves or poisons ledger flood cells",
+    "whyRejected": "score CLI never reads that table; ledger compute never joins it; inspect writes snapshots not county_facet_coverage"
+  },
+  "inspectFloodNuance": {
+    "tableStillOnReadPath": true,
+    "floodValuesServedFromSnapshotsInThisTree": false,
+    "why": "SS-W16 disposeTier2Flood always refuses; Tier2Overlay.flood typed null (brokerageNodeFacets.ts:212-274, 293-328, 444-454). supersededBy names flood-hazard-fact in the refusal string; this route does not SELECT that atom family.",
+    "bakeStillWritesFloodIntoSnapshots": true,
+    "bakeFile": "nodeFacetBakeTier2Cli.ts:346 SELECT, :398 INSERT, flood facet composed :732-771",
+    "productionServingOfInspectFlood": "UNMEASURED this pass. SS-W16 close 2026-08-19 said PR #441 undeployed and live GET still served AO. This lane did not re-probe."
+  },
+  "noProductEdits": true,
+  "noAtomsApply": true
+}

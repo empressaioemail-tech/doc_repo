@@ -1,0 +1,28 @@
+{
+  "card": "P-93 W9 Smart Site kit write-path",
+  "checkpoint": "CP2",
+  "plan_row": "P-93",
+  "design_decision": {
+    "chosen": "BASELINE RATCHET, not a ban",
+    "why": "The write path already carries 87 raw hexes across 37 files and 60 native buttons, islands excluded. Converting them is explicitly out of scope for this card ('does not restyle the product'). A blanket ban fails on commit one and gets switched off by the next person. The ratchet records every existing violation with a count and fails when a count goes UP, or when a file with no entry has any violation. New code cannot add either; the old debt stays visible and countable.",
+    "rejected_alternative": "Ban raw hex outright and convert 37 files. Rejected: out of scope, and it would have been reverted rather than obeyed.",
+    "declared_degradation": "scripts/chrome-kit-baseline.json IS the bill. It is committed rather than computed at gate time so that lowering a count is a deliberate reviewable act, and so a failing gate cannot be made to pass by re-running the generator."
+  },
+  "coverage_change": {
+    "before": "hand-maintained REQUIRED list; new files unscanned",
+    "after": "chromeFiles() walks src/**/*.tsx, excluding tests, node_modules, dist",
+    "islands_exempt": ["src/checkout/ (Stripe night/Inter)", "src/browse/brief-print (print gold)", "src/browse/road-overlay + flood-map-overlay (map overlay cyan)"]
+  },
+  "fail_closed": "A missing or unparseable baseline is a FAILURE, not a silent skip. Verified by moving the file away: exit 1.",
+  "defect_found_in_my_own_work": {
+    "what": "The first cut of rawHexes() contained a literal 0x08 backspace byte where the two characters backslash-b were intended, introduced by my own escaping through a shell heredoc into python.",
+    "effect": "The regex could only match an actual backspace character, so it returned zero for EVERY input. The rule would have armed a gate that could never fire, and the gate would have reported PASS.",
+    "how_it_was_caught": "Not by reading the file: grep and sed rendered the byte invisibly and it LOOKED correct. It was caught by probing the exported helper with a known-positive input and getting an empty array. Confirmed with od -c.",
+    "now_guarded": "Twelve self-test cases were added to the gate's own selfTest(), including one named 'NOT VACUOUS'. Verified by planting a vacuous quantifier: SELF-TEST FAIL, exit 1."
+  },
+  "second_defect_found_by_re_running": {
+    "what": "rawButtons required a whitespace or close-bracket after the tag name, which misses the self-closing form <button/>.",
+    "how_it_was_caught": "Re-running the falsifiers after the Dock extraction. The first F2 probe used '<button onClick=' which has a space, so it passed for the wrong reason.",
+    "fix": "the character class now also admits a slash. All four opening forms now match; <Button/> and <buttonish> do not."
+  }
+}

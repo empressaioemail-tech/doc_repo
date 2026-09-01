@@ -1,0 +1,78 @@
+{
+  "lane": "CTX-TOTALS",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-01T12:53:00Z",
+  "closeKind": "complete: six-row table with both derivations; refuse did not fire",
+  "seat": "property claiming from integration checkout P:/doc_repo; factory worktree P:/tmp/hauska-factory-covers-fastpath feat/covers-fastpath",
+  "dispatch": "_dispatches/2026-09-01_ctx-totals_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-01_ctx-totals_cp1.json",
+    "_inbox/2026-09-01_ctx-totals_cp2.json"
+  ],
+  "table": "_inbox/2026-09-01_ctx-totals_table.json",
+  "prs": "not applicable: read-only totals card; no product PR",
+  "ci": "not applicable: no PR",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 8e9941d911b268a57ddc923f3883e197685315a6",
+    "factory_worktree": "P:/tmp/hauska-factory-covers-fastpath",
+    "factory_HEAD": "e5a8d880385c101285f5ee811797f41da826228a",
+    "secrets_access": "PRODUCTION_NEONDB_URL 141 bytes; FACTORY_DATABASE_URL 117 bytes; values not recorded"
+  },
+  "missionPremise": "A1 closed when Travis landed at 05:09:29Z. TOTALS is the head of TOTALS -> P4 -> P5-final -> P6. A run self-report is one derivation. Source: compiled dispatch 2026-09-01_ctx-totals.",
+  "completionPredicate": "Durable six-row artifact keyed by county with total, in_city, unincorporated, unresolved, method_version, run_id, and the store COUNT that confirmed it. Travis 380917 vs 380918 explained from the payload sentinel. match.checked answered. Refuse on store-versus-run mismatch named and scored.",
+  "scopeBasis": "Reads only against factory runs/run_events and landing_parcel_jurisdiction. Payload sentinel/match from Cloud Run stdout. No containment re-run, no laptop write, no Factory image rebuild, no second card while cortex-prod was held.",
+  "counts": {
+    "instrument": "factory: SELECT runs + SUM run_events kind=chunk by persist run_id. store: COUNT(*) GROUP BY county_fips, run_id, disposition on landing_parcel_jurisdiction. payload: Cloud Logging jsonPayload.containment on run.googleapis.com/stdout.",
+    "refuse": "store_total !== run.chunk_sum.rows",
+    "refuseFired": false,
+    "rows": [
+      { "county_fips": "48021", "name": "Bastrop", "total": 62256, "in_city": 11992, "unincorporated": 50264, "unresolved": 0, "method_version": "intersection-v1", "run_id": "85f984c2-e67b-4229-be57-a727f3026b04", "store_total": 62256 },
+      { "county_fips": "48055", "name": "Caldwell", "total": 24988, "in_city": 10627, "unincorporated": 14361, "unresolved": 0, "method_version": "intersection-v1", "run_id": "1e2529a3-9a3e-4928-bd5d-1e122133a9b5", "store_total": 24988 },
+      { "county_fips": "48209", "name": "Hays", "total": 116420, "in_city": 54835, "unincorporated": 61585, "unresolved": 0, "method_version": "intersection-v1", "run_id": "bdcf534f-658e-43f8-bcfc-7c397b7bd04a", "store_total": 116420 },
+      { "county_fips": "48309", "name": "McLennan", "total": 114254, "in_city": 81832, "unincorporated": 32422, "unresolved": 0, "method_version": "intersection-v1", "run_id": "a62e3fce-59ef-49be-b6fc-8f45a115b4e5", "store_total": 114254 },
+      { "county_fips": "48453", "name": "Travis", "total": 380917, "in_city": 277003, "unincorporated": 103914, "unresolved": 0, "method_version": "covers-v1", "run_id": "dd58e803-8892-4be1-8b89-1b0df8fc77ec", "store_total": 380917 },
+      { "county_fips": "48491", "name": "Williamson", "total": 282570, "in_city": 174827, "unincorporated": 107743, "unresolved": 0, "method_version": "covers-v1", "run_id": "2a40517b-df07-4cb9-9f2c-8cfe68416b59", "store_total": 282570 }
+    ]
+  },
+  "travisOneRow": {
+    "planning": 380918,
+    "persist_and_store": 380917,
+    "payload_sentinel": {
+      "excluded": true,
+      "n": 1,
+      "prop_id": "0",
+      "reason": "txgio_parcel_sentinel_zero",
+      "source": "factory-p2-juris-gn8hr stdout 2026-09-01T05:09:25.347213Z"
+    },
+    "explanation": "Planning counted distinct prop_id including sentinel 0. The persist path excludes that one key. Manifest denominator, chunk-sum, payload totals.total, and store COUNT are all 380917. Williamson on the same image has sentinel n=0 excluded=false, so the one-row hole is Travis-specific, not a covers-v1 off-by-one."
+  },
+  "matchChecked": {
+    "what": "assertInteractiveMatch compares persist totals to INTERACTIVE_PARTITIONS. Only 48021 and 48055 have expected triples. Mismatch refuses PARTITION_MISMATCH. Missing expected returns {checked:false, totals} and does not refuse. It runs only on full persist (apply && !plannedOnly && !onlyRange).",
+    "covers_v1": "checked:false on both Travis and Williamson payloads because those FIPS are absent from INTERACTIVE_PARTITIONS.",
+    "starved_or_dead": "starved, not dead. 48021 and 48055 payloads have checked:true against the expected triples. The control has no input for 48209, 48309, 48453, 48491.",
+    "should_it_gate": "It already gates Bastrop and Caldwell. It should not gate covers-v1 counties until a second derivation supplies expected partitions. checked:false is not a pass."
+  },
+  "whatContradictedTheCard": "Factory runs.status is the string success, not succeeded; a filter written from the English word returns zero persist rows. landing_parcel_jurisdiction.method is ring on every persist row including the two covers-v1 counties, so grouping the store by method collapses method_version instead of recording it. McLennan's latest factory success is 1e5d4ae5, a covers-v1 measure with persist=false and zero landing rows; the persist run the store holds is still a62e3fce intersection-v1. The card's four-county intersection-v1 claim is true of the persist runs, not of latest success.",
+  "leave_behind": [
+    {
+      "item": "six-county totals table _inbox/2026-09-01_ctx-totals_table.json; P4 may now take per-county denominators from it",
+      "owner": "planner / P4 card",
+      "plan_row": "F-01"
+    }
+  ],
+  "constraintsHonored": [
+    "did not re-run containment",
+    "did not write from the laptop",
+    "did not rebuild the Factory image",
+    "did not echo or file a secret",
+    "did not copy Bastrop/Caldwell/Hays/McLennan numbers from a planner doc",
+    "did not collapse method_version",
+    "did not round 380917 to 380918",
+    "did not claim a second card while cortex-prod was held"
+  ],
+  "open": [
+    "P4 is unblocked on denominators. It still needs its own card.",
+    "match stays starved for four counties until INTERACTIVE_PARTITIONS grows from a second derivation.",
+    "ldt-576-retry is next if still claimable; one retry authorised."
+  ]
+}

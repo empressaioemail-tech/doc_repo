@@ -1,0 +1,143 @@
+{
+  "checkpoint": "CP1",
+  "phase": "design / pre-build adversarial review",
+  "lane": "A-062 PE billing portal",
+  "planRow": ["P-97"],
+  "dispatch": "_dispatches/2026-09-01_a062-portal_dispatch.md",
+  "card": "_inbox/2026-09-01_a062_pe_billing_portal_WDLL.md",
+  "declaredAt": "2026-09-01",
+  "seat": "property",
+  "snapshot": {
+    "docRepo": {
+      "repo": "doc_repo",
+      "path": "P:/doc_repo",
+      "branch": "main",
+      "note": "read-only for the card and runbooks; the lane's only doc_repo writes are _catalog/seat_register.json and these three artifacts, all left uncommitted"
+    },
+    "legacyDesignTools": {
+      "repo": "empressaioemail-tech/legacy-design-tools",
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-a062-portal",
+      "branch": "feat/a062-pe-billing-portal",
+      "baseCommit": "d332d799e1ddbd64e106685fe37828ce24862959",
+      "baseCommitSubject": "feat(P-98): billing interval persisted, entitlement readable without a parcel (#574)",
+      "verifiedAgainstRemote": "git ls-remote origin main -> d332d799e1ddbd64e106685fe37828ce24862959"
+    },
+    "hauskaMap": {
+      "repo": "empressaioemail-tech/hauska-map",
+      "worktree": "P:/seat-worktrees/property/hauska-map-a062-portal",
+      "branch": "feat/a062-pe-billing-portal",
+      "baseCommit": "440109531f0a4ab60176cfa6c5f3e9deb05acf99",
+      "baseCommitSubject": "fix(pe/P-98b): the wire speaks month/year, and the annual rung reads it (#330)",
+      "verifiedAgainstRemote": "git ls-remote origin main -> 440109531f0a4ab60176cfa6c5f3e9deb05acf99"
+    }
+  },
+  "seatRegistration": {
+    "action": "registered BEFORE any file was written, per ENFORCEMENT.md 'Which seat are you'",
+    "file": "_catalog/seat_register.json",
+    "entriesAdded": [
+      "legacy-design-tools-a062-portal",
+      "hauska-map-a062-portal"
+    ],
+    "committed": false,
+    "note": "Two other sessions wrote this file concurrently (legacy-design-tools-p100 and hauska-map-p103-seam entries). Both survived the edit; verified by reading git diff after writing, per the doc_repo concurrent-commit hazard."
+  },
+  "sequencingHazardCleared": {
+    "cardStated": "the Settings half must land after feat/p98b-account-entitlement-client merges or the two rewrite SettingsModal.tsx",
+    "resolution": "CLEARED. hauska-map #330 is merged and IS the base commit 4401095. LDT #574 is merged and IS the base commit d332d799. Both verified by git ls-remote rather than taken from the dispatch's prose.",
+    "residualConflictRisk": "P:/seat-worktrees/property/hauska-map-settings holds fix/pe-settings-line-weight, an uncommitted UI lane that also edits SettingsModal.tsx. That lane paints line tokens; this one adds a Plan row. The planner merges; a textual conflict in that file is possible and is named here rather than discovered at merge."
+  },
+  "designDecisions": [
+    {
+      "id": "D1",
+      "question": "How is 'reuse the existing portal client; do not write a second one' satisfied honestly?",
+      "chosen": "Extract the /billing_portal/sessions POST into createStripePortalSessionForCustomer in brokerageStripe.ts. Both the install-scoped seam and the new PE route call it. Customer RESOLUTION stays separate.",
+      "rejected": "Calling brokerageStripe.createBillingPortalSession directly from the PE route. It resolves a brokerage_wallets customer from an EXTENSION INSTALL ID and calls getOrCreateStripeCustomer, so it would open the wrong customer's portal for a signed-in web user, or create a customer that never pays. That is the opposite of acceptance item 2.",
+      "why": "The two seams need OPPOSITE behaviour on a missing customer. Sharing the HTTP call and splitting the resolution is the only reading of 'one client' that is also correct."
+    },
+    {
+      "id": "D2",
+      "question": "Is a caller-supplied customer id ignored or refused?",
+      "chosen": "REFUSED with a named 400 (customer_id_not_accepted) naming the source (body / query / header), across seven spellings, plus a .strict() zod schema closing the set.",
+      "rejected": "Silently ignoring it and using the session id anyway.",
+      "why": "Ignoring is the same security outcome with NO EVIDENCE. An attempt to open somebody else's portal would look exactly like an ordinary request in every log we keep. The card says 'refused, not honoured'; a refusal is the same protection plus a record."
+    },
+    {
+      "id": "D3",
+      "question": "What does a signed-in user with no stripe_customer_id get?",
+      "chosen": "409 { error: no_billing_account, hasBillingAccount: false, message }. The lib returns a discriminated union arm { kind: 'no-billing-account' } rather than throwing.",
+      "rejected": "404 (the client convention maps 404 to 'route not deployed'), 403 (maps to 'our proxy refused'), 500 (the card forbids it), and a thrown error (an exception the route would have to remember to catch).",
+      "why": "A discriminated union makes the compiler force every consumer to handle absence; an if-check can be forgotten. 409 is unused by the client's existing status conventions so it cannot be confused with another state."
+    },
+    {
+      "id": "D4",
+      "question": "How does the CLIENT know whether to render a control, without probing?",
+      "chosen": "Add hasBillingAccount: boolean to peEntitlementAccountBody ONLY. Derived from the same row read the rest of the snapshot comes from.",
+      "rejected": "Putting stripeCustomerId on the wire (hands every caller the exact string the portal route exists to reject); probing the portal route (a write-shaped request whose only purpose is a read); deriving from tier (a paid account whose customer id never landed, and a cancelled free account that still has a portal, both come out backwards).",
+      "why": "One bit is all the UI needs. peEntitlementBaseBody stays byte-identical so the with-parcel response the PE BFF is pinned to does not move."
+    },
+    {
+      "id": "D5",
+      "question": "returnUrl: required, or defaulted?",
+      "chosen": "REQUIRED. No server default on this route.",
+      "rejected": "Falling back to peWebAppBaseUrl(), whose own fallback is the hardcoded https://property-explorer-xi.vercel.app.",
+      "why": "Acceptance item 4 forbids inheriting that default. Making the field required makes the wrong destination UNREACHABLE rather than merely unlikely. Also added: an explicit host allowlist that REFUSES an off-host value rather than rewriting it, because a silently changed destination is the same defect one layer down."
+    },
+    {
+      "id": "D6",
+      "question": "Simulated portal when Stripe is unconfigured, mirroring the install-scoped seam?",
+      "chosen": "NO. 503 portal_unavailable, declared.",
+      "rejected": "Returning `${returnUrl}?simulated_portal=1` the way createBillingPortalSession does.",
+      "why": "A simulated portal cannot cancel a subscription. Handing one back would make the terms sentence READ true while being false, which is precisely the defect this card was raised to close."
+    },
+    {
+      "id": "D7",
+      "question": "Where does the terms-vs-route consistency check live, given the two halves are in two repositories?",
+      "chosen": "Split, and the split is DECLARED rather than hidden. hauska-map's pe-terms-cancellation.test.tsx reads public/terms.html AND the deep-proxy allowlist AND the Settings control. LDT's pe-billing-portal.test.ts reads the MOUNTED Express app (path answers 401 while three neighbours 404).",
+      "rejected": "A single test, which no process can write: terms.html is in hauska-map and the router is in legacy-design-tools.",
+      "why": "The deep-proxy allowlist IS the route table from the browser's point of view — an unlisted path is unreachable regardless of what LDT mounts. The residual seam is the path STRING, pinned as a literal on both sides, the same discipline ACCOUNT_UNLOCKS_PATH already gets."
+    }
+  ],
+  "adversarialReview": [
+    {
+      "risk": "The lane writes a second Stripe portal client and fails the card.",
+      "mitigation": "D1. Verified by grep: exactly one occurrence of '/billing_portal/sessions' exists in the repo after the change.",
+      "status": "closed"
+    },
+    {
+      "risk": "The allowlist entry is proven by a production probe, which proves nothing (the proxy checks the cookie before the allowlist, so signed-out is 401 either way).",
+      "mitigation": "The parity test imports BILLING_PORTAL_PATH from the client module. No probe is used anywhere in this lane's evidence.",
+      "status": "closed"
+    },
+    {
+      "risk": "The route reads getOrCreatePeStripeCustomer, one identifier away from the correct read, creating a Stripe customer for a free user who clicked cancel to see what it said.",
+      "mitigation": "readPeStripeCustomerId is a pure read. The test's fetch spy answers 404 for any unexpected Stripe path and the test asserts the RECORDED call list is empty, so a /customers call fails the test rather than passing silently.",
+      "status": "closed"
+    },
+    {
+      "risk": "The host allowlist is broader than its claim, or narrower — a control that blocks legitimate work teaches the fleet to route around it.",
+      "mitigation": "Vercel preview hosts and loopback (non-production only) are admitted, because PE checkout ALREADY returns to window.location.origin on a preview. A portal stricter than the checkout beside it would refuse a flow the product permits.",
+      "status": "closed"
+    },
+    {
+      "risk": "Turning every 'Not built' row into a button, which the card explicitly does not license.",
+      "mitigation": "Renewal date stays 'Not read' and is asserted by name in settings-plan-rows.test.tsx. Payment method / Invoices / Cancel collapse into ONE row because they are three doors into one Stripe surface, not three features we now own.",
+      "status": "closed"
+    },
+    {
+      "risk": "A pre-A-062 server omits hasBillingAccount and the client reads the absence as true, putting a Cancel button in front of somebody who will get a 409 while trying to stop paying.",
+      "mitigation": "parseAccountEntitlement accepts ONLY an explicit true. Asserted against 'true', 1, {}, [], 'yes', null, undefined and an absent key.",
+      "status": "closed"
+    }
+  ],
+  "constraintsHonored": [
+    "Did not amend terms.html (the ruling is keep the promise, build the capability). Restored verbatim after using it as a violation fixture; git diff confirms it is unmodified.",
+    "Did not retire api/pe-billing.ts (Wave 1.2, and the P-103 seam lane holds it).",
+    "Did not touch POST /api/brokerage/v1/billing/portal, routes/brokerageBilling.ts, or the extension portal path.",
+    "Did not perform any Stripe live switch and created no live Stripe object. No network call reached Stripe at any point; every Stripe interaction in this lane is a spied globalThis.fetch.",
+    "Did not build dunning, invoice history, or payment-method UI beyond linking to Stripe's own portal.",
+    "Did not edit api/pe-billing.ts, vercel.json, vite.config.ts or api/spine.ts (held by the P-103 seam lane), nor api/_lib/pe-site-plan-export-core.ts."
+  ],
+  "prNumbers": "not applicable: lane produces an uncommitted diff",
+  "mergeShas": "not applicable: lane produces an uncommitted diff",
+  "ciConclusion": "not applicable: lane produces an uncommitted diff"
+}

@@ -1,0 +1,83 @@
+{
+  "lane": "a4-flood-exists",
+  "artifact": "cp1",
+  "date": "2026-08-21",
+  "planRows": ["P-08"],
+  "plan": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "governingPlan": "90_operations/OPS-18b_data_remediation_plan.md Wave A next",
+  "wdll": "P:/doc_repo/_inbox/2026-08-21_wave_a_next_WDLL.md items 1, 2, 3, 5",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+  "seat": "property (integration planner fanned this lane; doc_repo writes on P:/doc_repo main)",
+  "branch": "seat/property",
+  "commit": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "docRepoBranch": "main",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "missionPremise": "A1 left 77 county_manifest FIPS with no county_facet_coverage flood row (76 with txgio_parcel, Donley 48129 without). Atoms presence on those 76 is UNMEASURED. This lane splits them into atoms-present vs atoms-absent with 76 prefix-range EXISTS probes on (entity_type, entity_id), never COUNT(*) the atoms heap, never GROUP BY all flood-hazard-fact rows, never left(entity_id,5). Sources: _dispatches/2026-08-21_a4-flood-exists_dispatch.md, _inbox/2026-08-21_a1-coverage_close.json, WDLL 2026-08-21_wave_a_next items 1/2/3/5, countyFloodScoreCli.ts --county= vs --all at lines 292-297.",
+  "completionPredicate": "_inbox/2026-08-21_a4-flood-exists_close.json exists. Missing-flood FIPS SQL quoted; count is 77 including Donley 48129, or the close names why the pin moved and stops. Three lists: GO (EXISTS true, later countyFloodScoreCli --county= without new apply), NO-GO-no-atoms (EXISTS false, needs P-08 apply), skip-Donley. leave_behind is exact tsx ... countyFloodScoreCli.ts --county= commands for GO FIPS, or none. Query snapshot names project/db/time. No product edits. WDLL 1-3-5 graded.",
+  "scopeBasis": "Read-only. Deployment queries on fancy-fire-06136146 / neondb. Atoms EXISTS on hauska_mcp if that database exists on the project. Code reads P:/seat-worktrees/property/legacy-design-tools. Doc_repo writes only this lane's _inbox JSON. Exclude 48129 from the EXISTS set. Do not estimate UNMEASURED FIPS into GO. Score-apply is a later dispatch. Item 4 (Ector re-key) belongs to a5-ector.",
+  "snapshot": {
+    "ldtWorktree": "P:/seat-worktrees/property/legacy-design-tools",
+    "ldtBranch": "seat/property",
+    "ldtHead": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+    "docRepo": "P:/doc_repo",
+    "docRepoBranch": "main",
+    "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+    "seat_register": "property owns LDT at P:/seat-worktrees/property/legacy-design-tools. This lane is fanned from integration; writes stay in _inbox JSON on P:/doc_repo."
+  },
+  "preRegisteredSelfChecks": [
+    {
+      "check": "COUNT(*) hauska_mcp.atoms or GROUP BY all flood-hazard-fact or left(entity_id,5)",
+      "whatWouldProveWrong": "Any SQL using COUNT(*) on atoms, GROUP BY flood-hazard-fact, or left(entity_id,5). The scorer itself uses left(entity_id,5) GROUP BY at countyFloodScoreCli.ts:109-113; copying that instrument is the defect this lane exists to avoid.",
+      "result": "Forbidden. Instrument is EXISTS with entity_type = 'flood-hazard-fact' AND entity_id >= '{fips}:' AND entity_id < '{fips};' so the unique index on (entity_type, entity_id) can be used. 76 index probes, announced as not a heavy scan."
+    },
+    {
+      "check": "Force the 77 pin if the live missing-row count moved",
+      "whatWouldProveWrong": "Proceeding to EXISTS after a missing-row count other than 77 without stopping.",
+      "result": "Plan: quote SQL and count. If not 77, stop and report. Do not force the pin."
+    },
+    {
+      "check": "Put Donley 48129 in the EXISTS set or into GO",
+      "whatWouldProveWrong": "48129 appearing in GO or NO-GO-no-atoms instead of skip-Donley.",
+      "result": "Plan: exclude 48129 from EXISTS. skip-Donley is its own list. A1 already measured no txgio_parcel there; this lane re-checks that on neondb, not via atoms."
+    },
+    {
+      "check": "Estimate UNMEASURED FIPS into GO, or treat --all as the GO leave_behind",
+      "whatWouldProveWrong": "A GO list that includes a FIPS whose EXISTS was not run, or leave_behind using countyFloodScoreCli.ts --all.",
+      "result": "Pre-register from dispatch: if most of the 76 have atoms, A1's 'cannot fill via --all' still holds; GO is --county= per FIPS, not --all. --all re-scores every county that already carries atoms (countyFloodScoreCli.ts:292-294) and its atom discovery is the forbidden left(entity_id,5) GROUP BY. If most have no atoms, leave_behind is apply, not score (none)."
+    },
+    {
+      "check": "Trust EXISTS without proving it can fire",
+      "whatWouldProveWrong": "Reporting 76 probes without a positive-control EXISTS on a known flood-present FIPS (not in the missing-77) returning true, and a negative-control range that must return false.",
+      "result": "Plan: before scoring the 76, run EXISTS on 48021 (Bastrop; A1 flood satisfied-present set) expecting true, and EXISTS on entity_id range '00000:' to '00000;' expecting false. If the positive control is false, stop: instrument or store is wrong."
+    }
+  ],
+  "adversarialDesign": {
+    "missingRowSql": "SELECT m.county_fips, m.county_name FROM county_manifest m WHERE NOT EXISTS (SELECT 1 FROM county_facet_coverage c WHERE c.county_fips = m.county_fips AND c.facet = 'flood') ORDER BY m.county_fips. Plus COUNT(*) of that set. Database neondb. Project fancy-fire-06136146. Bounded to 254-row manifest minus flood coverage rows. Not an atoms query.",
+    "existsProbe": "SELECT EXISTS (SELECT 1 FROM atoms WHERE entity_type = 'flood-hazard-fact' AND entity_id >= '{fips}:' AND entity_id < '{fips};'). Database hauska_mcp if present on the same project. Unique index atoms_entity_composite_unique (entity_type, entity_id) per _inbox/2026-08-21_r07_store_grade.md Q1a. Semicolon is next ASCII after colon, so the range is the FIPS prefix without left().",
+    "announce": "Before first EXISTS: not a heavy scan, 76 index probes plus two instrument-fire controls.",
+    "goRule": "GO = EXISTS true AND FIPS is in the missing-77 minus Donley. Later score without new apply via tsx artifacts/api-server/src/countyFloodScoreCli.ts --county={fips} (write path omits --dry-run; that writes county_facet_coverage, not atoms). NO-GO-no-atoms = EXISTS false. skip-Donley = 48129.",
+    "secondMechanismForMissing77": "A1 named L24 remainder 77/77 NDJSON READY with no atoms --apply as an alternate that would produce the same 77 missing rows. This lane's EXISTS split tests that: if most of 76 have no atoms, L24-never-applied is the surviving mechanism; if most have atoms, scorer-never-invoked-per-county is the surviving mechanism."
+  },
+  "sourcesReadThisSession": [
+    "_dispatches/2026-08-21_a4-flood-exists_dispatch.md",
+    "_inbox/2026-08-21_wave_a_next_WDLL.md",
+    "_inbox/2026-08-21_a1-coverage_close.json",
+    "_inbox/2026-08-21_a1-coverage_cp1.json",
+    "_inbox/2026-08-21_a1-coverage_cp2.json",
+    "_inbox/2026-08-21_a1-coverage_planner_review.json",
+    "P:/seat-worktrees/property/legacy-design-tools/artifacts/api-server/src/countyFloodScoreCli.ts",
+    "_inbox/2026-08-21_r07_store_grade.md Q1a unique index",
+    "_STATE.md seat index",
+    "_catalog/seat_register.json",
+    "90_runbooks/AGENT_CONTRACT.md section 6"
+  ],
+  "storeQueryThisLane": "pending: (1) missing-flood FIPS on neondb; stop if count != 77. (2) announce then 76 EXISTS on hauska_mcp.atoms plus two fire-controls. No COUNT(*) atoms. No GROUP BY flood-hazard-fact.",
+  "fanPlan": "none. Dispatch forbids sub-agents.",
+  "deliverables": [
+    "_inbox/2026-08-21_a4-flood-exists_cp2.json",
+    "_inbox/2026-08-21_a4-flood-exists_close.json"
+  ]
+}

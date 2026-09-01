@@ -1,0 +1,339 @@
+{
+  "lane": "P-97-stripe-live-activation-checklist",
+  "planRows": ["P-97"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "repo": "legacy-design-tools",
+  "mode": "READ-ONLY analysis lane (no writes, no git, no deploy)",
+  "missionPremise": "Stripe on cortex-api is TEST mode and live activation is deliberately deferred to the operator (established in dispatch, sourced to _decisions/2026-08-24_stripe_annual_pricing_and_live_activation.md). The lane produces the exact ordered activation checklist, derived from the write path in legacy-design-tools origin/main, with a verification for every step and an explicit silent-failure section, because a wrong-mode Stripe value does not raise at deploy time and several of them take money without granting anything.",
+  "completionPredicate": "A stranger holding this close can execute the switch top to bottom, and for every step can name (a) the command or dashboard action, (b) who performs it, and (c) a check that fails when the step did not work. Every code claim carries file:line on a named commit. Claims that could not be established from code are listed as unestablished rather than guessed.",
+  "scopeBasis": "Scoped to what must CHANGE or be CONFIGURED for live, plus what BREAKS at the test-to-live boundary. Excluded deliberately: performing the switch (operator-owned, explicitly out of scope), pricing-ladder relitigation (LOCKED 2026-08-10 / 2026-08-24), and Stripe dashboard onboarding mechanics that leave no trace in this repo. Included beyond the literal ask: hauska-map apps/property-explorer, because the PE client is where the retired-price-id fallback lives and item 6 cannot be answered from legacy-design-tools alone.",
+  "snapshot": {
+    "legacy-design-tools": {
+      "ref": "origin/main",
+      "commit": "d115493877ca9201508ea2cdcb1bc3f6d72c0321",
+      "commitDate": "2026-08-31T13:37:38-05:00",
+      "note": "read via git show origin/main:<path>; local checkout was on feat/s1-instrument-hardening and was never checked out or modified"
+    },
+    "hauska-map": {
+      "ref": "origin/main",
+      "commit": "333c3c05c77c2735cae27e8d896995e1a3f189b7",
+      "commitDate": "2026-08-31T14:41:41-05:00",
+      "readOnly": true
+    },
+    "liveReadsTakenAt": "2026-08-31 (UTC evening; gcloud + curl, read-only)"
+  },
+  "prs": "not applicable: read-only analysis lane, no code changed",
+  "mergeShas": "not applicable: read-only analysis lane",
+  "ciConclusion": "not applicable: read-only analysis lane",
+  "checkpointArtifacts": {
+    "cp1": "not written: the operative prompt restricted this lane to exactly one created file (the close). CP1/CP2 paths were named in the compiled dispatch; the prompt narrowed it. Reporting the conflict per the dispatch's STOP-and-report clause rather than silently creating extra files.",
+    "cp2": "not written: same reason",
+    "close": "_inbox/2026-08-31_p97-stripe_close.json"
+  },
+  "groundTruth": [
+    {
+      "claim": "cortex-api serving revision is cortex-api-00680-vog at 100 percent, NOT cortex-api-00678-jup as the dispatch's established-facts block states",
+      "verifiedAt": "2026-08-31",
+      "instrument": "gcloud run services describe cortex-api --region us-central1 --project legacy-design-tools-prod --format=json, traffic read as JSON by field name (never the positional value() formatter)",
+      "detail": "latestReadyRevisionName=cortex-api-00680-vog; the only traffic entry carrying a percent is cortex-api-00680-vog at 100, tag canary"
+    },
+    {
+      "claim": "All 13 STRIPE_* env vars ARE bound on the actually-serving revision 00680-vog, each as secretKeyRef <SAME_NAME>:latest, none as a literal",
+      "verifiedAt": "2026-08-31",
+      "instrument": "gcloud run revisions describe cortex-api-00680-vog --format=json, counted spec.containers[0].env entries with prefix STRIPE_",
+      "detail": "13/13. The dispatch's established fact holds in substance; only the revision name had drifted."
+    },
+    {
+      "claim": "Serving image digest is sha256:5130d91b2e04441db3e44e7ee029931c1b9adb7c12752a567cb6740bc5ddb30d, tagged d0b702ad3c3148e1d932ba4567ad9e705a6be2e8. Registry tag 'latest' now points at a DIFFERENT digest, sha256:f532dd19..., tagged d115493877ca9201508ea2cdcb1bc3f6d72c0321.",
+      "verifiedAt": "2026-08-31",
+      "instrument": "gcloud artifacts docker images list --include-tags --sort-by=~UPDATE_TIME",
+      "consequence": "deploy-canary defaults image_tag=latest. A secrets-only redeploy taken with the default would also ship unshipped code."
+    },
+    {
+      "claim": "cortex-api has roles/run.invoker granted to allUsers; POST to the webhook path with an unsigned body returns 400",
+      "verifiedAt": "2026-08-31",
+      "instrument": "gcloud run services get-iam-policy; curl -o /dev/null -w %{http_code}",
+      "detail": "https://cortex-api-tds7av26va-uc.a.run.app/api/brokerage/v1/billing/stripe/webhook -> 400. Stripe can reach it; signature failure is a 400, consistent with the established fact."
+    },
+    {
+      "claim": "PE_WEB_APP_BASE_URL and BROKERAGE_BILLING_PUBLIC_BASE_URL are ABSENT from the serving revision's env, so the hardcoded fallbacks in code are what the server uses",
+      "verifiedAt": "2026-08-31",
+      "instrument": "gcloud run revisions describe cortex-api-00680-vog --format=json, env name set membership",
+      "detail": "Neither name appears in the workflow's --set-env-vars either, which is authoritative-replace, so a hand-set value would not survive the next deploy."
+    },
+    {
+      "claim": "smartsite.cloud and property-explorer-xi.vercel.app both return 200; property-explorer.vercel.app returns 404",
+      "verifiedAt": "2026-08-31",
+      "instrument": "curl -L -o /dev/null -w %{http_code}",
+      "consequence": "billingClient.ts:53's SSR-only origin fallback 'https://property-explorer.vercel.app' points at a dead host."
+    }
+  ],
+  "findings": {
+    "envVarsRead": [
+      {
+        "name": "STRIPE_SECRET_KEY",
+        "readAt": ["artifacts/api-server/src/lib/brokerageStripe.ts:36", "artifacts/api-server/src/lib/brokerageStripe.ts:127", "artifacts/api-server/src/lib/brokerageStripe.ts:650"],
+        "absent": "isStripeConfigured() false -> every checkout returns a SIMULATED session; webhook returns handled:false reason=stripe_not_configured -> route 400",
+        "presentButWrong": "test key while Stripe sends live traffic: every /v1 call 401s inside stripePostForm -> throws -> route 502 checkout_failed. LOUD.",
+        "severity": "loud"
+      },
+      {
+        "name": "STRIPE_PUBLISHABLE_KEY",
+        "readAt": ["artifacts/api-server/src/lib/brokerageStripe.ts:40"],
+        "absent": "publishableKey null on the response; the PE Elements mount refuses with STRIPE_MOUNT_MISSING_KEY (hauska-map stripeCheckoutMount.ts:15,61) AFTER the Checkout Session was already created at Stripe. No charge.",
+        "presentButWrong": "pk_test with a live clientSecret: stripe.initCheckout throws, mountStripeCheckout returns {ok:false,error:<stripe message>} (stripeCheckoutMount.ts:101-106). LOUD, no charge, checkout simply broken for every user.",
+        "severity": "loud"
+      },
+      {
+        "name": "STRIPE_WEBHOOK_SECRET",
+        "readAt": ["artifacts/api-server/src/lib/brokerageStripe.ts:368"],
+        "absent": "handled:false reason=stripe_webhook_secret_missing -> 400 on EVERY event",
+        "presentButWrong": "test-mode whsec_ against live-signed events: HMAC mismatch at brokerageStripe.ts:739-750 -> invalid_signature -> 400 on EVERY event. Customers are charged by Stripe and NO entitlement is ever written. Stripe retries ~3 days then disables the endpoint.",
+        "severity": "SILENT-TO-OPERATOR, money already taken"
+      },
+      {
+        "name": "STRIPE_SOLO_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:78", "artifacts/api-server/src/lib/pePaywallStripe.ts:107-114"],
+        "absent": "PeCheckoutConfigError -> route 503 checkout_unavailable (propertyExplorer.ts:1264-1273); client shows CHECKOUT_UNAVAILABLE_MESSAGE. Fail closed, correct.",
+        "presentButWrong": "test price id under a live key -> Stripe 400 'No such price' -> stripePostForm throws -> 502. LOUD. But a LIVE price id with the WRONG AMOUNT is silent: the code never reads unit_amount.",
+        "severity": "loud on mode mismatch, SILENT on wrong amount"
+      },
+      {
+        "name": "STRIPE_STUDIO_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:79"],
+        "absent": "same 503 fail-closed",
+        "presentButWrong": "same as SOLO: mode mismatch loud, wrong amount silent",
+        "severity": "loud on mode mismatch, SILENT on wrong amount"
+      },
+      {
+        "name": "STRIPE_TEAM_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:80", "artifacts/api-server/src/lib/peTeamSeatsFromStripe.ts:19"],
+        "absent": "503 fail-closed on checkout; AND configuredTeamPriceIds() shrinks, so resolveTeamSeatsPurchased returns null and seats_purchased is silently cleared on every Team webhook grant",
+        "presentButWrong": "stale/test id: the webhook's billed-item comparison never matches (peTeamSeatsFromStripe.ts:97) -> baseFound false -> null -> seats_purchased NULL. Team customer pays for N seats and the roster ceiling reads unknown. SILENT.",
+        "severity": "SILENT"
+      },
+      {
+        "name": "STRIPE_TEAM_SEAT_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:117", "artifacts/api-server/src/lib/peTeamSeatsFromStripe.ts:25"],
+        "absent": "checkout with extra seats throws PeCheckoutConfigError -> 503 (pePaywallStripe.ts:370-372). Base-seat Team checkout unaffected. On the webhook side extras stop being counted -> seat count under-reports.",
+        "presentButWrong": "stale id: extra-seat line items are not recognised at grant time -> seats_purchased = 3 (base only) even though the customer is billed for more. SILENT UNDER-GRANT.",
+        "severity": "SILENT"
+      },
+      {
+        "name": "STRIPE_PE_UNLOCK_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:121", "artifacts/api-server/src/lib/pePaywallStripe.ts:466-469"],
+        "absent": "PeCheckoutConfigError -> 503. Fail closed.",
+        "presentButWrong": "mode mismatch -> Stripe 400 -> 502. LOUD. Wrong amount -> silent.",
+        "severity": "loud on mode mismatch, SILENT on wrong amount"
+      },
+      {
+        "name": "STRIPE_SOLO_ANNUAL_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:94"],
+        "absent": "annual request 503s, never billed monthly (pePaywallStripe.ts:359-367). Fail closed, correct.",
+        "presentButWrong": "a MONTHLY price id pasted into an ANNUAL slot is accepted without complaint: nothing validates recurring.interval. Customer clicks $490/yr and is billed $49/mo.",
+        "severity": "SILENT"
+      },
+      {
+        "name": "STRIPE_STUDIO_ANNUAL_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:95"],
+        "absent": "503 fail-closed",
+        "presentButWrong": "same interval-swap hazard as SOLO_ANNUAL",
+        "severity": "SILENT"
+      },
+      {
+        "name": "STRIPE_TEAM_ANNUAL_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:96", "artifacts/api-server/src/lib/peTeamSeatsFromStripe.ts:20"],
+        "absent": "503 fail-closed on annual Team checkout; also drops out of configuredTeamPriceIds so annual Team grants get seats_purchased NULL",
+        "presentButWrong": "same interval-swap hazard, plus the seat-count comparison miss",
+        "severity": "SILENT"
+      },
+      {
+        "name": "STRIPE_PRO_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/brokerageStripe.ts:44", "artifacts/api-server/src/lib/brokerageStripe.ts:54", "artifacts/api-server/src/lib/brokerageStripe.ts:171"],
+        "absent": "createSubscriptionCheckoutSession falls into the SIMULATED branch even with a live secret key (brokerageStripe.ts:174) and returns a fake success URL. That branch condition is `!isStripeConfigured() || !priceId` — a configured deployment with an unset price id SIMULATES rather than refusing.",
+        "presentButWrong": "See findings.item6 — this is reachable from the deployed PE client and charges the pre-ladder price regardless of which tier the user clicked.",
+        "severity": "SILENT"
+      },
+      {
+        "name": "STRIPE_MAX_PRICE_ID",
+        "readAt": ["artifacts/api-server/src/lib/brokerageStripe.ts:48", "artifacts/api-server/src/lib/brokerageStripe.ts:54", "artifacts/api-server/src/lib/brokerageStripe.ts:60"],
+        "absent": "subscriptionTierFromPriceId returns 'pro' for every subscription (brokerageStripe.ts:60-62): a Max subscriber is granted Pro.",
+        "presentButWrong": "a stale TEST id can never equal a live price id, so subscriptionTierFromPriceId ALWAYS falls through to 'pro'. Install-scoped Max subscribers are silently downgraded to Pro at grant time.",
+        "severity": "SILENT"
+      },
+      {
+        "name": "PE_WEB_APP_BASE_URL",
+        "readAt": ["artifacts/api-server/src/lib/pePaywallStripe.ts:126-129"],
+        "absent": "VERIFIED absent on serving revision -> server default success/cancel URL is the hardcoded https://property-explorer-xi.vercel.app/?checkout=success|cancel",
+        "presentButWrong": "n/a",
+        "severity": "low; the PE client always sends explicit successUrl/cancelUrl (billingClient.ts:98-99), so the fallback is only reached by callers that omit them"
+      },
+      {
+        "name": "BROKERAGE_BILLING_PUBLIC_BASE_URL",
+        "readAt": ["artifacts/api-server/src/lib/brokerageBillingUrls.ts:4-7"],
+        "absent": "VERIFIED absent -> hardcoded https://cortex-api-tds7av26va-uc.a.run.app return pages",
+        "presentButWrong": "n/a",
+        "severity": "low"
+      }
+    ],
+    "item2_webhookSecretIsAThirdSwap": {
+      "verdict": "CONFIRMED",
+      "path": "artifacts/api-server/src/lib/brokerageStripe.ts:368 reads STRIPE_WEBHOOK_SECRET; :372-374 refuses when absent; :385 passes it to parseStripeEvent; :739-750 HMAC-SHA256 over `${t}.${rawBody}` compared timing-safe against every v1= part; mismatch throws; :386-389 maps the throw to handled:false invalid_signature; routes/brokerageBilling.ts:186-189 turns any unhandled result into HTTP 400.",
+      "why": "Stripe issues a distinct whsec_ per endpoint object, and live-mode endpoints are separate objects from test-mode endpoints. Keeping the test whsec_ makes every live event fail the HMAC, so every live payment is collected by Stripe and grants nothing."
+    },
+    "item3_webhookEventTypes": {
+      "actedOn": ["checkout.session.completed", "customer.subscription.updated", "customer.subscription.deleted"],
+      "citations": ["artifacts/api-server/src/lib/brokerageStripe.ts:394", "artifacts/api-server/src/lib/brokerageStripe.ts:499", "artifacts/api-server/src/lib/brokerageStripe.ts:568"],
+      "everythingElse": "artifacts/api-server/src/lib/brokerageStripe.ts:592 returns handled:false reason=ignored_event_type:<type>, which routes/brokerageBilling.ts:186-189 serves as HTTP 400",
+      "consequence": "Subscribing the live endpoint to any FOURTH type (or to 'all events') produces a 400 on every extra delivery. Stripe counts those as endpoint failures, alerts, and can disable the endpoint — taking the three real types down with it. Configure EXACTLY these three.",
+      "namedHazard": "checkout.session.async_payment_succeeded is NOT handled. If any delayed-settlement payment method (ACH / bank debit / deferred Link) is enabled in live mode, that path collects money and never grants."
+    },
+    "item4_otherLiveChanges": {
+      "apiVersionPin": "NONE. VERIFIED by repo-wide grep: no Stripe-Version header, no api_version anywhere in artifacts/ or scripts/. Both call sites (brokerageStripe.ts:129-136 and :651-653) send only Authorization. The account's dashboard default API version governs, and it can change under the code without a deploy.",
+      "automaticTax": "ABSENT. VERIFIED: no automatic_tax, no customer_update, no billing_address_collection, no tax_id anywhere. Enabling Stripe Tax is a CODE change, not a dashboard-only switch.",
+      "idempotency": "ABSENT. VERIFIED: no Idempotency-Key header on any Stripe POST. Webhook replays are mostly harmless because createPePropertyUnlock upserts (peEntitlement.ts:218-238) and setPeAccessTierFromStripe is a full-row update (peIdentity.ts:234-246).",
+      "promotionCodes": "allow_promotion_codes=true is set on the PE SUBSCRIPTION path only (pePaywallStripe.ts:378). NOT set on the $15 unlock (mode=payment, pePaywallStripe.ts:472-480) and NOT on the install-scoped brokerage checkout (brokerageStripe.ts:191-203). Coupons and promotion codes are mode-scoped in Stripe: every test-mode code must be recreated in live, and any live code that exists is redeemable by anyone holding it. A discount is detected at brokerageStripe.ts:354-362 and recorded as entitlement_source=stripe_promo.",
+      "customerPortal": "createBillingPortalSession (brokerageStripe.ts:228-254) is called from exactly ONE route, POST /api/brokerage/v1/billing/portal (brokerageBilling.ts:109), which is install-scoped and brokerageAuth-gated. VERIFIED: the PE app in hauska-map never calls it (no billing/portal, billing_portal or portalUrl reference under apps/property-explorer). Stripe requires a portal configuration per mode; live mode has none until created, and the error surfaces as 502 portal_failed.",
+      "successCancelUrls": "MIXED. Server defaults are env-derived with HARDCODED fallbacks: pePaywallStripe.ts:126-129 (PE_WEB_APP_BASE_URL -> https://property-explorer-xi.vercel.app) and brokerageBillingUrls.ts:4-7 (BROKERAGE_BILLING_PUBLIC_BASE_URL -> https://cortex-api-tds7av26va-uc.a.run.app). Both env vars are VERIFIED ABSENT on the serving revision, and neither is in the workflow's authoritative-replace --set-env-vars, so they cannot be hand-set durably. The PE client overrides both from window.location.origin (billingClient.ts:50-62) so real users land back on the host they started from; its non-browser fallback https://property-explorer.vercel.app is a VERIFIED DEAD host (404).",
+      "publishableKeyDistribution": "GOOD NEWS: there is no hardcoded pk_ anywhere in the PE app. The key travels from cortex-api env to the client on the checkout response and into loadStripe (stripeCheckoutMount.ts:87-88). Swapping the STRIPE_PUBLISHABLE_KEY secret flips the browser with no PE redeploy.",
+      "csp": "apps/property-explorer/vercel.json already allows js.stripe.com, *.stripe.com and hooks.stripe.com in script-src and frame-src. No CSP change needed for live."
+    },
+    "item5_staleTestModeIds": {
+      "peSide": {
+        "storedField": "pe_user_entitlements.stripe_customer_id (lib/db/src/schema/peUserEntitlements.ts:60). NO subscription id is stored on the PE side.",
+        "behaviour": "getOrCreatePeStripeCustomer (pePaywallStripe.ts:246-251) returns the stored id unconditionally and passes it as `customer:` to /checkout/sessions (pePaywallStripe.ts:376). Under a live key a test cus_ produces Stripe 400 'No such customer', stripePostForm throws (brokerageStripe.ts:140-145), and the route returns 502 checkout_failed carrying the raw Stripe message (propertyExplorer.ts:1275-1279).",
+        "verdict": "LOUD but PERMANENTLY BLOCKING and self-deadlocking. There is no catch that clears the stale id and retries. setPeAccessTierFromStripe would overwrite it (peIdentity.ts:241-243) but only on a SUCCESSFUL checkout, which the stale id prevents. Every pre-cutover PE user who ever opened a checkout is locked out of paying until the column is cleared. The raw Stripe error also leaks a customer id into the end-user UI."
+      },
+      "brokerageSide": {
+        "storedFields": "brokerage_wallets.stripe_customer_id and .stripe_subscription_id (lib/db/src/schema/brokerageWallets.ts:34-35)",
+        "behaviour": "getOrCreateStripeCustomer (brokerageStripe.ts:149-151) has the same shape. On the PORTAL route the 'No such customer' error is caught and mapped to 404 no_billing_customer with the message 'No Stripe customer for this install — complete checkout first' (brokerageBilling.ts:116-121), which is WRONG: the customer exists, in the other mode. A misdiagnosing message, not a fix.",
+        "subscriptionIds": "installIdFromStripeSubscription (brokerageStripe.ts:706-722) falls back to a lookup by stripe_subscription_id. Live subscriptions carry metadata.install_id so the fallback is not normally reached; a stale test id in that column simply never matches a live event."
+      },
+      "testModeEventsAfterCutover": "Test-mode events are delivered only to test-mode endpoints. If the existing test endpoint stays pointed at production, every test event will now fail the live whsec_ and return 400 — noisy but fail-closed. Disable or delete the test endpoint as part of the cutover."
+    },
+    "item6_retiredPricePair": {
+      "verdict": "REFUTED as an operational claim; TRUE only as a statement about pePaywallStripe.ts",
+      "commentUnderTest": "artifacts/api-server/src/lib/pePaywallStripe.ts:23-26 — 'The retired STRIPE_PRO_PRICE_ID / STRIPE_MAX_PRICE_ID pair is never read here ... and remains only in the install-scoped brokerage extension seam.'",
+      "whatIsTrue": "Neither name is read in pePaywallStripe.ts. On the WEBHOOK, the PE branches return before the install-scoped branches, so resolveSubscriptionTierFromStripe -> tierFromStripeObject -> subscriptionTierFromPriceId is genuinely unreachable from a PE grant (brokerageStripe.ts:436-479 returns before :481; :505-538 returns before :541).",
+      "whatIsFalse": "The pair IS reached from a live PE surface, twice over:",
+      "path1": "hauska-map apps/property-explorer/src/lib/billingClient.ts:103-106 — if the user-scoped route POST /api/property-explorer/v1/billing/checkout returns 403 or 404, the SHIPPED PE client falls back to startPeCheckoutInstallScoped, which at billingClient.ts:144-148 posts a body with a HARDCODED tier:'pro' and NO tier/interval/seats from the user's click, to /brokerage/v1/property-explorer/billing/checkout -> propertyExplorerBilling.ts:70 -> createSubscriptionCheckoutSession -> stripePriceIdForTier -> STRIPE_PRO_PRICE_ID. A Studio, Team or annual click therefore opens a checkout at the pre-ladder Pro price. This is exactly the defect class pePaywallStripe.ts:360-363 says was fixed, reintroduced one layer up in the client.",
+      "path2": "hauska-map apps/property-explorer/api/pe-billing.ts:50 is a DEPLOYED Vercel function, routed in vercel.json:42, that proxies POST /api/pe-billing?path=checkout straight to the same install-scoped seam. Nothing in apps/property-explorer/src references it, but it is publicly routable on the production host and creates a real Stripe subscription checkout at STRIPE_PRO_PRICE_ID.",
+      "secondMechanismConsidered": "Alternative explanation for the fallback existing: it is dead code that can never fire, because requirePeAuthenticated returns 401 (not 403/404) and the Vercel deep-proxy allowlist contains 'api/property-explorer/v1/billing/checkout' (apps/property-explorer/api/_lib/deep-allowlist.ts:51). Rejected as a safety argument, not as a description: the fallback fires on any condition that makes the route 404 or 403 — a cortex-api revision without the route, a proxy or allowlist regression, a rewrite change — and none of those are prevented by anything. The correct reading is 'currently not firing', not 'cannot fire'. It is one deploy accident away from charging live money at the wrong price."
+    },
+    "commentsThatDisagreeWithCode": [
+      {
+        "where": "artifacts/api-server/src/lib/peTeamSeatsFromStripe.ts:76,78",
+        "comment": "'Team + billed Team base price -> 10 + extra-seat quantities' and 'No readable base item -> null (do not invent 10)'",
+        "code": "PE_TEAM_INCLUDED_SEATS = 3 at peTeamSeatsFromStripe.ts:10, used at :109",
+        "impact": "documentation only; the arithmetic uses 3. Stale from a pre-2026-08-29 included-seat count."
+      },
+      {
+        "where": "artifacts/api-server/src/lib/pePaywallStripe.ts:23-26",
+        "comment": "retired pair 'remains only in the install-scoped brokerage extension seam'",
+        "code": "reachable from the deployed PE client via the 403/404 fallback and via the deployed /api/pe-billing function",
+        "impact": "load-bearing; see item6"
+      },
+      {
+        "where": "artifacts/api-server/src/routes/propertyExplorerBilling.ts:92-97",
+        "comment": "field named liveCheckout",
+        "code": "liveCheckout is literally isStripeConfigured(), i.e. 'STRIPE_SECRET_KEY is non-empty'. It is TRUE right now in TEST mode.",
+        "impact": "there is NO endpoint anywhere that reports which Stripe MODE is serving. Do not use /billing/status as the cutover verification."
+      },
+      {
+        "where": "artifacts/api-server/src/routes/brokerageBilling.ts:116-121",
+        "comment": "'No Stripe customer for this install — complete checkout first'",
+        "code": "the message is emitted for any Stripe 'No such customer', including a valid customer in the other mode",
+        "impact": "misdiagnoses the post-cutover stale-id state"
+      },
+      {
+        "where": "hauska-map apps/property-explorer/public/terms.html:107",
+        "comment": "published terms: 'You can cancel a paid plan through the Stripe billing flow in the product.'",
+        "code": "no billing-portal call exists anywhere in apps/property-explorer",
+        "impact": "taking live money against a stated cancellation path that does not exist in the product"
+      }
+    ],
+    "otherDefectsFound": [
+      {
+        "what": "Stripe webhook signature has NO timestamp tolerance check",
+        "where": "artifacts/api-server/src/lib/brokerageStripe.ts:726-750",
+        "detail": "the t= value is parsed at :737 and used only to build the signed payload; its age is never compared to now. A captured valid webhook body replays forever.",
+        "severity": "security, not a cutover blocker"
+      },
+      {
+        "what": "A configured deployment with an unset install-scoped price id SIMULATES instead of refusing",
+        "where": "artifacts/api-server/src/lib/brokerageStripe.ts:174",
+        "detail": "condition is `!isStripeConfigured() || !priceId`. With a LIVE secret key and an empty STRIPE_PRO_PRICE_ID, the route returns mode:'simulated' and a success URL carrying simulated=1. The PE-side ladder path fixed this (PeCheckoutConfigError); the brokerage path did not.",
+        "severity": "fail-open"
+      }
+    ]
+  },
+  "constraintsHonored": [
+    "READ-ONLY: no file in either product repo modified; no git write; no deploy; no gcloud write",
+    "origin/main read via git show; the local legacy-design-tools checkout (feat/s1-instrument-hardening) was never checked out or altered",
+    "every command exit-bounded (git reads, greps, gcloud describe/list, curl with -o /dev/null); no watch, tail -f, serve or dev server",
+    "exactly one file created, _inbox/2026-08-31_p97-stripe_close.json, per the operative prompt",
+    "no sub-agents spawned",
+    "Cloud Run traffic read as JSON by field name, never the positional value() formatter",
+    "did not propose performing the switch"
+  ],
+  "counts": {
+    "stripeEnvVarsReadByCode": {
+      "value": 13,
+      "rule": "distinct process.env.STRIPE_* names dereferenced in non-test source under artifacts/; matches 1:1 the 13 STRIPE_* env entries on serving revision 00680-vog"
+    },
+    "nonStripeEnvVarsAffectingCheckoutUrls": {
+      "value": 2,
+      "rule": "PE_WEB_APP_BASE_URL, BROKERAGE_BILLING_PUBLIC_BASE_URL; both verified absent on the serving revision"
+    },
+    "webhookEventTypesHandled": {
+      "value": 3,
+      "rule": "distinct `if (type === ...)` branches in handleStripeWebhook that can return handled:true"
+    },
+    "commentCodeDisagreementsFound": {
+      "value": 5,
+      "rule": "a comment, field name, or published document whose text asserts something the read write-path contradicts"
+    }
+  },
+  "open": [
+    "The retired-pair fallback at billingClient.ts:103-106 is a code fix in hauska-map (property seat), not a Stripe configuration step. It is the only item on this list the operator cannot close in the Stripe dashboard.",
+    "The published terms promise an in-product cancellation flow that does not exist. Either build the portal call or amend the terms before taking live money.",
+    "No instrument reports which Stripe MODE cortex-api is serving. /billing/status's liveCheckout field reads true in test mode and is actively misleading.",
+    "Team seat quantity changes after purchase have no route (no portal exposure on PE, no quantity-update endpoint). A Team customer cannot add a fourth seat.",
+    "Count of pe_user_entitlements rows holding a non-null stripe_customer_id was NOT measured (read-only lane, no DB access taken). That count sizes the stale-customer-id remediation."
+  ],
+  "unestablished": [
+    "Whether Cloud Run resolves secretKeyRef :latest at deploy time or at instance start. Both mechanisms produce the same observation here, so the checklist prescribes a new revision (correct under either) rather than asserting one.",
+    "Whether the Chrome extension / brokerage surface still ships a checkout button. The only in-repo caller of POST /api/brokerage/v1/billing/checkout is scripts/_stripe-billing-smoke.mjs:43. The extension source was not read (separate repo, out of scope).",
+    "Which Stripe API version the account currently defaults to, and whether the payload shapes the handler reads (total_details.amount_discount, current_period_end on the subscription object, line_items) are present under it. current_period_end in particular moved to the subscription ITEM in recent Stripe API versions; periodEndFromStripe (brokerageStripe.ts:609-613) reads it off the subscription root and returns null if absent. Not verified against the live account.",
+    "Whether any Stripe coupons or promotion codes already exist in the LIVE account.",
+    "Whether the live-mode Customer Portal has a default configuration.",
+    "The actual amounts behind the eight configured TEST price ids were not read (would require the Stripe key). The checklist's price verification is written to compare live unit_amount against the ladder directly.",
+    "Whether smartsite.cloud is served by the same Vercel project as property-explorer-xi.vercel.app. Both return 200; the relationship was not established."
+  ],
+  "fleetMemory": {
+    "lesson": [
+      "A price id is a bearer of an AMOUNT and an INTERVAL, and this code validates neither. Fail-closed on absence (PeCheckoutConfigError) is real and well built; there is no check at all on a present-but-wrong value. Absence is handled, wrongness is not — that asymmetry is the whole shape of the Stripe cutover risk.",
+      "The webhook route turns EVERY unhandled result into HTTP 400, including the benign ignored_event_type. That makes the live endpoint's event-type subscription list a load-bearing configuration item: one extra subscribed type generates continuous 400s that Stripe reads as endpoint failure.",
+      "'Never read on a live PE path' was true of the file it was written in and false of the product. A negative-reachability claim scoped to one file is not a claim about the system; the client repo held the counterexample.",
+      "propertyExplorerBilling.ts is named for Property Explorer and is entirely the install-scoped legacy seam. Naming is not architecture — the user-scoped PE checkout lives in propertyExplorer.ts:1230."
+    ],
+    "deadEnd": [
+      "GET /api/brokerage/v1/property-explorer/billing/status looked like the cutover verification endpoint. It is not: its liveCheckout field is isStripeConfigured(), true in test mode. Do not use it.",
+      "gcloud artifacts docker images describe <digest> returned tags:None; the tag mapping only comes back from `images list --include-tags`.",
+      "git show 'origin/main:.github/...' fails under Git Bash on Windows with an ambiguous-argument error from MSYS path mangling. MSYS_NO_PATHCONV=1 fixes it."
+    ],
+    "groundTruth": [
+      "2026-08-31: cortex-api serving revision is cortex-api-00680-vog (100 percent, tag canary), digest sha256:5130d91b..., built from tag d0b702ad3c3148e1d932ba4567ad9e705a6be2e8. The dispatch's stated 00678-jup is stale. All 13 STRIPE_* env vars are bound on 00680-vog as secretKeyRef :latest.",
+      "2026-08-31: registry tag `latest` on cortex-api points at sha256:f532dd19... (tag d115493877ca..., current origin/main tip), NOT at the serving digest. deploy-canary defaults image_tag=latest.",
+      "2026-08-31: cortex-api is allUsers-invocable; the webhook path returns 400 to an unsigned POST.",
+      "2026-08-31: PE_WEB_APP_BASE_URL and BROKERAGE_BILLING_PUBLIC_BASE_URL are absent from the serving revision and absent from the workflow's authoritative-replace --set-env-vars.",
+      "2026-08-31: smartsite.cloud 200, property-explorer-xi.vercel.app 200, property-explorer.vercel.app 404."
+    ],
+    "open": [
+      "billingClient.ts:103-106 wrong-price fallback needs a hauska-map (property seat) fix before live money flows.",
+      "terms.html promises a cancellation flow with no code behind it.",
+      "No mode-reporting instrument exists on cortex-api."
+    ]
+  },
+  "leave_behind": "none"
+}

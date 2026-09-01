@@ -1,0 +1,77 @@
+{
+  "lane": "a1-coverage",
+  "artifact": "cp2",
+  "date": "2026-08-21",
+  "planRows": ["P-08", "P-09", "P-01", "P-05"],
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools",
+  "ldtBranch": "seat/property",
+  "ldtHead": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "docRepo": "P:/doc_repo",
+  "docRepoBranch": "main",
+  "docRepoHead": "83081da01df4b1da9781ec6e1c0f16d152c2891a",
+  "seat": "property (fanned from integration; writes on P:/doc_repo _inbox only)",
+  "pr": "not applicable: doc_repo lane",
+  "mergeSha": "not applicable: doc_repo lane",
+  "ci": "not applicable: doc_repo lane",
+  "missionPremise": "Same as CP1. Inventory whether Wave A can SCORE without a new atoms --apply. Query neondb.county_facet_coverage only.",
+  "querySnapshot": {
+    "projectId": "fancy-fire-06136146",
+    "projectName": "cortex-prod",
+    "branch": "br-crimson-feather-aphfmy91",
+    "database": "neondb",
+    "queriedAtUtc": "2026-08-21T16:46:40.428Z",
+    "instrument": "Neon MCP run_sql GROUP BY facet, rail_state on county_facet_coverage. No hauska_mcp.atoms query.",
+    "whatWouldProveWrong": "An empty result treated as zero coverage, or a COUNT(*) on atoms used to fill missing rows."
+  },
+  "whatWasVerified": [
+    {
+      "check": "GROUP BY facet, rail_state on neondb.county_facet_coverage",
+      "result": "Returned. Facets present: cad, envelope, flood, geometry, land-use, landuse, mud, owner, zoning. Facets absent from the table: roads, footprint.",
+      "whatWouldProveWrong": "Query error or UNMEASURED with an estimated table invented anyway."
+    },
+    {
+      "check": "Pre-register: flood ~114 satisfied-present matches live GET",
+      "result": "MATCH. Coverage flood satisfied-present n=114. Live GET pin computedAt 2026-08-21T15:53:02.907Z also 114. Scoring is not the missing piece for those 114.",
+      "whatWouldProveWrong": "Coverage flood satisfied-present far from 114."
+    },
+    {
+      "check": "Live GET flood 140 not-yet vs coverage",
+      "result": "Coverage flood not-yet n=63 (honest_coverage_pct 60.04-94.96, all below 95, instrument countyFloodScoreCli.ts) plus 77 county_manifest FIPS with no flood row = 140. 76 of 77 have txgio_parcel rows; Donley 48129 has none.",
+      "whatWouldProveWrong": "63+77 not equaling 140, or Donley having a flood row."
+    },
+    {
+      "check": "Geometry 48135 coverage row",
+      "result": "Present. honest_coverage_pct=5.00 rail_state=not-yet threshold_pct=95.00 classification=real-at-ceiling source=parcel-node-atom-count verified_by_instrument=B2_cp2_geometry_scorer_apply.mjs artifact_path includes denom=raw;rawFeatures=75891;accountedFeatures=3791;foldedExtraFeatures=72100 last_verified_at=2026-08-12T12:42:12.313Z",
+      "whatWouldProveWrong": "No row, or a pct other than 5."
+    },
+    {
+      "check": "Roads and footprint coverage rows",
+      "result": "Zero. COUNT(*) FILTER facet=roads and facet=footprint both 0. Statewide PBF remains NO-GO per A-017 regardless.",
+      "whatWouldProveWrong": "Any roads or footprint coverage row."
+    },
+    {
+      "check": "Mud 45 not-yet matches live GET",
+      "result": "MATCH. Coverage mud: not-yet 45 (0.00-89.95), satisfied-absent 75, satisfied-present 134. All 254 rows verified_by_instrument=l16-score-mud.mjs. Threshold in COUNTY_RAIL_DECLARATION is 90.",
+      "whatWouldProveWrong": "Mud not-yet other than 45."
+    }
+  ],
+  "adversarialPilot": {
+    "floodGoTemptation": "Treat 77 missing flood rows as GO to score without atoms apply because a scorer CLI exists and 76 have a parcel denominator.",
+    "rejectedBecause": "countyFloodScoreCli --all target set is counties that already carry flood-hazard-fact atoms (file:line artifacts/api-server/src/countyFloodScoreCli.ts 292-294). This lane did not query atoms. Two mechanisms remain for the 76: no atoms, or atoms exist and the scorer was never invoked. Wrong facet key is rejected (facet=flood is the rail key). Scorer skip for no denominator is rejected for 76/77. Until atoms presence is measured without a full-table COUNT(*), GO would be an estimate. Donley 48129 is a named skip (no txgio_parcel).",
+    "geometryGoTemptation": "Re-run countyGeometryScoreCli on 48135 to flip 5% by switching to DISTINCT feature_index.",
+    "rejectedBecause": "A coverage row already exists. RAIL_SCORING_DECLARATION geometry notes the live denom is accounted-features from B2_cp2_geometry_scorer_apply.mjs, which is not in this repo, and forbids guessing a replacement. P-02 is the named re-key (~71,673 atoms vs foldedExtraFeatures=72100). Score-apply is not the missing piece; the cell is already scored below threshold.",
+    "roadsGoTemptation": "Score the 98 landed road counties because coverage rows are missing.",
+    "rejectedBecause": "RAIL_SCORING_DECLARATION.roads.kind=unspecified; countyRailScoreCli refuses unspecified rails. No ldtScorerPath in RAIL_ENGINE_BINDINGS. A-017 statewide PBF is separately NO-GO. Missing coverage is necessary for a landed-county GO and is true, but the measurement spec is also required and is absent."
+  },
+  "constraintsHonoredSoFar": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no atoms --apply",
+    "no Harris PBF restart",
+    "no writes under P:/legacy-design-tools",
+    "code reads only P:/seat-worktrees/property/legacy-design-tools",
+    "doc_repo writes only _inbox JSON",
+    "no COUNT(*) hauska_mcp.atoms"
+  ]
+}

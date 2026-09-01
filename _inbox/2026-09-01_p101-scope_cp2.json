@@ -1,0 +1,46 @@
+{
+  "checkpoint": "CP2",
+  "lane": "P-101 ladder re-cut scope (read-only change inventory)",
+  "planRow": "P-101",
+  "filedAt": "2026-09-01",
+  "snapshot": {
+    "legacy-design-tools": "origin/main 26068a1e886f37119b0cafffc0e7b195a5f8368c (2026-08-31 19:03:18 -0500)",
+    "hauska-map": "origin/main 8740558dbb26ad1526ac21ce124724e5a33cf60b (2026-08-31 19:24:03 -0500)"
+  },
+  "adversarialReviewOfMyOwnFindings": [
+    {
+      "finding": "hauska-map has no screens client code.",
+      "firstMechanism": "The PE workbench never shipped a screens surface; screens are a connector-only capability.",
+      "competingMechanism": "The client calls screens under a different path spelling, or through a generic proxy that does not name the path.",
+      "howRejected": "Two independent derivations. (1) git grep -n \"property-explorer/v1/screens\" origin/main in the hauska-map checkout exits 1. (2) The deep proxy is path-allowlisted in apps/property-explorer/api/_lib/deep-allowlist.ts and no screens path appears in DEEP_GET_EXACT, DEEP_GET_PREFIX, DEEP_POST_EXACT, SAVED_PROPERTY_ITEM_RE, or RECORDS_REQUEST_PURCHASE_RE; isDeepPathAllowed returns false for POST on anything not listed. A generic call would 403. These derive from different files by different authors."
+    },
+    {
+      "finding": "The three screen tools are ungated in the MCP.",
+      "firstMechanism": "No gate was ever written for them.",
+      "competingMechanism": "A gate exists upstream at the api-server route and the MCP inherits it, making a local gate unnecessary.",
+      "howRejected": "Not rejected — CONFIRMED as the second half. The api-server routes carry requirePeAuthenticated ONLY (propertyExplorer.ts:548, :576, :598, :626), so there is no upstream gate to inherit either. Both halves are open."
+    },
+    {
+      "finding": "Gating at the api-server route makes the MCP inherit the gate.",
+      "firstMechanism": "The MCP proxies to the same routes.",
+      "competingMechanism": "The MCP presents a service key and could bypass a user-scoped gate.",
+      "howRejected": "Read the impersonation path. peServiceUserId.ts requires SERVICE_API_KEY plus X-PE-User-Id, and resolvePeEntitlement then reads pe_user_entitlements for THAT user id from the database. The tier is never taken from a header. A route gate therefore evaluates the real subscriber tier on the MCP path too."
+    },
+    {
+      "finding": "The MCP suite would fail if the screen gate were added.",
+      "firstMechanism": "CORTEX_CALLS asserts each screen tool reaches cortex once.",
+      "competingMechanism": "The test fixture is already Studio, so a Studio gate passes and nothing fails.",
+      "howRejected": "The competing mechanism WINS. tools.test.ts:23-29 sets defaultAuth to accessTier paid / subscriptionTier studio. Every screen assertion runs as a Studio caller. My first reading was wrong; corrected before it reached the report."
+    }
+  ],
+  "correctionsMadeDuringWork": [
+    "Initially assumed two subscriptionTierGrantsStudio copies per the dispatch. There are three, across two repos. Corrected.",
+    "Initially assumed the MCP CORTEX_CALLS tests would break under a new gate. They would not; the fixture is Studio. Corrected to the stronger and worse finding: adding the gate produces zero MCP test failures.",
+    "Initially assumed the dossier export kind is where the records package lives on every surface. On the PE side, dossier is the X-ray report and is NOT studio-gated; records is its own catalog entry (REC, engine records, studioGated true). The dispatch premise for item 3 holds on the MCP side only."
+  ],
+  "constraintsHonored": [
+    "Read-only in both product repos. No checkout, stash, clean, fetch, or working-tree read.",
+    "Every command exit-bounded.",
+    "No sub-agents spawned. No git write."
+  ]
+}

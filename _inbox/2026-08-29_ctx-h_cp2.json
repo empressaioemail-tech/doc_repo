@@ -1,0 +1,57 @@
+{
+  "checkpoint": "CP2",
+  "lane": "ctx-h",
+  "card": "CTX card H: conformant bake recovers Hays and Williamson on owner-gated situs, never on prop_id",
+  "planRows": ["F-05", "F-06", "F-08"],
+  "writtenAt": "2026-08-29T17:08:00Z",
+  "seat": "planner-run executor; no commit, push, PR, deploy, bake, or store write",
+  "snapshot": {
+    "legacy-design-tools": "P:/seat-worktrees/property/legacy-design-tools-ctx-join, branch fix/ctx-h-situs-recovery, base 006fd009, 5 files modified uncommitted"
+  },
+  "fixturesFailedOnOldBuilderThenPassed": {
+    "command": "DATABASE_URL=postgres://unused:unused@localhost:5432/unused (dummy, not a secret; cad-ingest throws at import without it) ; vitest run src/nodeFacetBakeTier1Conformant.test.ts -t \"CTX card H\"",
+    "onOldBuilder_006fd009": {
+      "passed": [
+        "seed is still {48209, 48491} and landUseJoinKey stays null for both",
+        "blocked county: an offered prop_id txgio row is still unused (fail closed)",
+        "non-blocked county: addressJoinKey is null; prop_id join and cad-roll land-use stay",
+        "owner never on the wire on the recovery path; an injected owner key is refused"
+      ],
+      "failed": [
+        "blocked county + owners AGREE: expected F1, received claim A1 / cad-roll",
+        "blocked county + owners DISAGREE: expected land-use null, received claim A1",
+        "blocked county + blank owner: expected null, received claim A1",
+        "blocked county + blank situs: expected null, received claim A1",
+        "situs-keyed row is used: expected zoning SF-2, received undefined (prop_id row dropped, situsRow ignored)",
+        "Williamson gold: expected source cad-roll-address-join, received cad-roll"
+      ]
+    },
+    "onThisBranch": "10/10 card H tests pass; full file 32/32"
+  },
+  "item2_seedDoesNotLift": {
+    "LANDUSE_JOIN_DISABLED_FIPS_SEED": ["48209", "48491"],
+    "joinNormalize.ts": "unmodified",
+    "landUseJoinKey_48209": null,
+    "landUseJoinKey_48491": null,
+    "propIdRowOnBlockedCounty": "unused (existing gate-blocked fixture plus new Hays colliding-row fixture)"
+  },
+  "item3_landUseRecovery": {
+    "agree": "Hays 48209:135570, situs 275 CIBOLO CREEK DR KYLE, owners PURVIS/PURVIS: landUse.code F1, source cad-roll-address-join, landUseAddressRecovered true, parcelJoin.state joined-situs",
+    "disagree": "same situs, BREM vs PURVIS: landUse null, landUseAddressRecovered false, parcelJoin.state gate-blocked",
+    "blankOwner": "CAD owner null or TxGIO owner null: landUse null",
+    "blankSitus": "addressJoinKey null, landUse null, state gate-blocked",
+    "reuse": "resolveAddressLandUse / ownersAgree / addressJoinKey; no second gate"
+  },
+  "item4_situsKeyedGeometry": {
+    "sameBlockedParcel": "prop_id row zoning WRONG-PROP-ID feature_index 1 ignored; situs row zoning SF-2 feature_index 99 used; basis names normalizeSitusAddress, does not name a prop_id match",
+    "williamson": "48491:76149, situs 1804 DAVIS ST TAYLOR: situs row R-1 used, COLLISION prop_id row ignored, state joined-situs"
+  },
+  "item5_nonBlockedUnchanged": {
+    "addressJoinKey": "null for 48021, 48453, 48055, 48309",
+    "bastropWithSpuriousRecoveryLookup": "still source cad-roll, state joined, zoning SF-1 from the prop_id row, situsRow ignored"
+  },
+  "item6_ownerNeverOnWire": {
+    "assertNoOwnerKey": "passes on recovered payload that carried txgio_owner_for_gate PURVIS MICHAEL MUST NEVER BAKE",
+    "violation": "injected baseFacts.owner_name throws OWNER_KEY_IN_PAYLOAD"
+  }
+}

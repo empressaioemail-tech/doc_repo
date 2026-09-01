@@ -1,0 +1,100 @@
+{
+  "id": "2026-08-28_p85-records_cp1",
+  "kind": "CP1",
+  "lane": "p85-records",
+  "planRows": ["P-85"],
+  "wdll": "_inbox/2026-08-26_p85_central_texas_easements_WDLL.md",
+  "wdllItems": ["5-amend-header-bind", "8-amend-refuse-unclassifiable", "12-amend-documentUrl"],
+  "dispatch": "_dispatches/2026-08-28_p85-records_dispatch.md",
+  "filedAt": "2026-08-28T16:55:00Z",
+  "snapshot": {
+    "docRepo": "P:/doc_repo",
+    "docRepoBranch": "main",
+    "docRepoHead": "843b343",
+    "seat": "integration",
+    "kind": "integration",
+    "ldtWorktree": "P:/seat-worktrees/property/legacy-design-tools",
+    "ldtBranchAtOpen": "feat/p85-worker-v8-tag",
+    "ldtHead": "63e14028",
+    "ldtOriginMain": "5a20f61d",
+    "ldtWorktreeDirty": "pre-existing P-85 working tree (Chrome UA + CRLF); this card takes a new branch and commits by pathspec only",
+    "hauskaMapRecordsWorktree": "P:/seat-worktrees/property/hauska-map-records",
+    "hauskaMapRecordsBranch": "seat/property-records",
+    "diagnosisCommit": "63e14028"
+  },
+  "missionPremise": "Operator opened a Records Request result and the parties field rendered as a pipe-joined clerk-grid dump. Code reading of the write path (dispatch findings 1-3) shows three defects that compose: normalizeIndexHit leftover-joins unclaimed cells into parties; ResultRowExtract carries no header so documentType is a positional guess (a grantor name wins when name precedes type); classifyRecordsRequestDocumentType then converts an unresolved type into documentKind deed via the empty branch and the terminal fallthrough. A partial fix of the scraper alone sends null into the empty branch and fabricates a deed. Cards 1 and 2 land together or neither lands. Card 3 (documentUrl / PdfViewer) follows and must not ship beside a fabricated classification. WDLL items 5, 8, 12. Source: _dispatches/2026-08-28_p85-records_dispatch.md.",
+  "completionPredicate": "Card 1: classifyRecordsRequestDocumentType refuses unclassifiable_document_type for null, empty, and a grantor name such as SMITH JOHN A; classifyAndWriteRecordsRequestArtifact records status refused with that code and does not insert an instrument. Card 2: a fixture whose header names the columns binds each field to the named column; a fixture with the name column ahead of the type column has documentType not equal to the name; a fixture whose header is absent refuses with unresolved_result_row_header; a fixture whose header is unrecognised returns nulls and never a pipe-joined leftover string. Card 3: instrument capture already on the artifact row is reachable as documentUrl on the records payload; PE PdfViewer handoff is filed, not built in this checkout. Cards 1+2 verified by violation in this lane. Card 3 PE half is a leave-behind on hauska-map-records.",
+  "scopeBasis": "legacy-design-tools only for Cards 1 and 2 and the LDT half of Card 3. Smart Site PdfViewer wiring belongs to P:/seat-worktrees/property/hauska-map-records on seat/property-records; hand across, do not write there. Do not add a county, change the purchase threshold, or edit the ADR-020 instrumentType enum. Portal vendor coverage stays the vendors this lane already drives. Dirty pre-existing files in the LDT worktree are not this card.",
+  "design": {
+    "card1": {
+      "file": "artifacts/api-server/src/lib/recordsRequestInstrumentClassify.ts",
+      "change": "empty branch and terminal fallthrough throw RecordsRequestClassifyRefuseError('unclassifiable_document_type'). Caller classifyAndWriteRecordsRequestArtifact already records refused.",
+      "verifyByViolation": [
+        "classify(null) throws unclassifiable_document_type",
+        "classify('') throws unclassifiable_document_type",
+        "classify('SMITH JOHN A') throws unclassifiable_document_type",
+        "classifyAndWrite with documentType SMITH JOHN A returns status refused and inserts zero instruments"
+      ]
+    },
+    "card2": {
+      "files": [
+        "artifacts/records-request-worker/src/recipes/types.ts",
+        "artifacts/records-request-worker/src/recipes/indexHits.ts",
+        "artifacts/records-request-worker/src/playwrightBrowser.ts"
+      ],
+      "change": "ResultRowExtract.headers is string[] | null. extractResultRows reads thead/th/columnheader. normalizeIndexHit binds via a vendor-family alias table (aumentum / tyler / publicsearch / shared). parties comes only from named grantor/grantee/parties columns. Leftover cell join deleted. Absent header refuses the extract (errorCode unresolved_result_row_header). Unrecognised header yields null fields, never a joined dump.",
+      "verifyByViolation": [
+        "named-header fixture binds ref/type/date/parties",
+        "name-before-type fixture: documentType is not the grantor name",
+        "absent-header fixture refuses",
+        "unrecognised-header fixture returns nulls and never contains ' | '"
+      ]
+    },
+    "card3": {
+      "ldt": "GET records-request payload carries documentUrl per artifact (auth-gated GET .../artifacts/:id/document serving capturePngBase64 or storagePath). Capture already persisted on the artifact row.",
+      "peHandoff": "P:/seat-worktrees/property/hauska-map-records seat/property-records: point PdfViewer at documentUrl. Do not build in this checkout.",
+      "order": "after Cards 1+2"
+    },
+    "outOfScope": [
+      "new county",
+      "purchase threshold",
+      "ADR-020 enum",
+      "portal vendors beyond current recipes",
+      "writing hauska-map-records"
+    ]
+  },
+  "adversarial": [
+    {
+      "id": "A1",
+      "finding": "Card 2 without Card 1 converts an honest null documentType into a fabricated deed.",
+      "disposition": "ship together; Card 1 tests pin the three refuse fixtures before Card 2 lands"
+    },
+    {
+      "id": "A2",
+      "finding": "A shared leftover-cell join dressed as grantor+grantee would reintroduce Finding 1.",
+      "disposition": "parties bind only from columns aliased as parties, grantor, or grantee. Unclaimed cells are ignored."
+    },
+    {
+      "id": "A3",
+      "finding": "Positional fallback when headers are missing is the defect. A 'best effort' parse would keep Finding 2.",
+      "disposition": "absent header refuses the extract. No positional path remains."
+    },
+    {
+      "id": "A4",
+      "finding": "Card 3 without Cards 1+2 renders a document next to a fabricated classification.",
+      "disposition": "Card 3 follows CP2 on Cards 1+2"
+    },
+    {
+      "id": "A5",
+      "finding": "LDT worktree is dirty and behind origin/main. Committing onto feat/p85-worker-v8-tag would mix this card with leftover Chrome-UA work.",
+      "disposition": "new branch feat/p85-extract-fail-closed; commit by explicit pathspec; rebase onto origin/main before PR"
+    }
+  ],
+  "fan": {
+    "writer": "lane planner in the registered LDT P-85 worktree; no sub-agents for Cards 1+2",
+    "pe": "handoff after Card 3 LDT half",
+    "planner": "adversarial review, PR, deploy"
+  },
+  "leave_behind": "none",
+  "next": "Card 1 then Card 2 on feat/p85-extract-fail-closed; tests by violation; CP2; then Card 3"
+}

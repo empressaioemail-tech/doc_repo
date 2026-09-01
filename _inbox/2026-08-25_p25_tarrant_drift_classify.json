@@ -1,0 +1,82 @@
+﻿{
+  "snapshot": {
+    "repo": "P:/doc_repo",
+    "branch": "main",
+    "commit": "9842ed2a038109a66f657a34cb1f07f5620d5d8d",
+    "measured_at_utc": "2026-08-25T14:00:00Z",
+    "database": "cortex-prod neondb via CORTEX_DATABASE_URL (gcloud secret hauska-prod-497015)",
+    "county_fips": "48439",
+    "tax_year_scope": 2026,
+    "read_only": true
+  },
+  "baseline_authority": {
+    "path": "_inbox/2026-08-14_P25_full_loads_reconcile.md",
+    "baseline_row_count_upserted": 883954,
+    "baseline_date": "2026-08-14",
+    "baseline_source": "P-25 full CAMA load (tad_propertydata_full county-run)"
+  },
+  "current_store": {
+    "row_count": 975885,
+    "distinct_prop_id": 975885,
+    "prior_probe_note": "975,885 @ tax_year=2026 (Wave-4 off-path reload)"
+  },
+  "row_count_delta": {
+    "absolute": 91931,
+    "formula": "975885 - 883954",
+    "breakdown": {
+      "duplicate_tax_year_upserts_extra_rows": 0,
+      "duplicate_tax_year_upserts_note": "PK (county_fips, prop_id, tax_year) prevents extra rows on upsert; re-upserts refresh rows in place.",
+      "net_new_prop_id_at_tax_year_2026": 91931,
+      "net_new_by_source_vintage_cohort": {
+        "tier:cad-export;adapter:county-run;drop:tad_propertydata_full": 91349,
+        "tier:cad-export;adapter:county-run;drop:propertydata(delimited)": 582
+      },
+      "net_new_by_source_vintage_cohort_note": "91349 = 975303 (current tad_full rows) - 883954 (baseline upsert count); 582 = delimited cohort rows not present in tad_full cohort.",
+      "other_tax_years_in_delta": 0
+    },
+    "re_upsert_same_keys_estimate": {
+      "keys_re_upserted_without_row_growth": 883954,
+      "derivation": "975303 tad_full rows - 91349 net new tad_full keys = 883954"
+    },
+    "delta_mostly_net_new_keys": true,
+    "delta_mostly_re_upsert": false
+  },
+  "source_vintage_distribution_tax_year_2026": [
+    {
+      "source_vintage": "tier:cad-export;adapter:county-run;drop:tad_propertydata_full",
+      "count": 975303,
+      "ingested_at_utc_min": "2026-08-25T13:18:26.210412+00",
+      "ingested_at_utc_max": "2026-08-25T13:22:53.543743+00"
+    },
+    {
+      "source_vintage": "tier:cad-export;adapter:county-run;drop:propertydata(delimited)",
+      "count": 582,
+      "ingested_at_utc_min": "2026-08-14T05:08:46.372342+00",
+      "ingested_at_utc_max": "2026-08-14T16:46:19.580133+00"
+    }
+  ],
+  "source_vintage_prefix_on_identifiable_delta_rows": {
+    "identifiable_rule": "Rows attributable to +delta vs baseline: 91349 tad_full net-new keys + 582 delimited-only keys (582 not overwritten by Aug-25 tad_full reload).",
+    "prefix_tier_cad_export": 91931,
+    "prefix_note": "All delta rows carry source_vintage prefix tier:cad-export;adapter:county-run;drop:"
+  },
+  "evidence_class_and_tier_columns": {
+    "cad_property_evidence_class": "ABSENT",
+    "cad_property_tier_column": "ABSENT",
+    "tier_signal": "Embedded in source_vintage string as tier:cad-export for all 975885 rows"
+  },
+  "cross_year_prop_id_context": {
+    "rows_2025": 689838,
+    "rows_2026": 975885,
+    "overlap_prop_ids_2025_and_2026": 681588,
+    "prop_ids_only_2026": 294297,
+    "prop_ids_only_2025": 8250,
+    "tad_full_2026_not_in_2025_prop_ids": 293735
+  },
+  "classification_sql": [
+    "SELECT COUNT(*) AS row_count, COUNT(DISTINCT prop_id) AS distinct_prop_ids FROM cad_property WHERE county_fips='48439' AND tax_year=2026;",
+    "SELECT source_vintage, COUNT(*) AS n FROM cad_property WHERE county_fips='48439' AND tax_year=2026 GROUP BY source_vintage ORDER BY n DESC;",
+    "SELECT date_trunc('day', ingested_at AT TIME ZONE 'UTC')::date AS ingest_day, COUNT(*) AS n FROM cad_property WHERE county_fips='48439' AND tax_year=2026 GROUP BY 1 ORDER BY 1;",
+    "WITH y2026 AS (SELECT prop_id FROM cad_property WHERE county_fips='48439' AND tax_year=2026), y2025 AS (SELECT prop_id FROM cad_property WHERE county_fips='48439' AND tax_year=2025) SELECT (SELECT COUNT(*) FROM y2026) AS rows_2026, (SELECT COUNT(*) FROM y2025) AS rows_2025, (SELECT COUNT(*) FROM y2026 j JOIN y2025 o USING (prop_id)) AS overlap_prop_ids, (SELECT COUNT(*) FROM y2026 j WHERE NOT EXISTS (SELECT 1 FROM y2025 o WHERE o.prop_id=j.prop_id)) AS only_2026, (SELECT COUNT(*) FROM y2025 o WHERE NOT EXISTS (SELECT 1 FROM y2026 j WHERE j.prop_id=o.prop_id)) AS only_2025;"
+  ]
+}

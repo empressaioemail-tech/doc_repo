@@ -1,0 +1,104 @@
+{
+  "lane": "s1-flood-inspect",
+  "artifact": "cp2",
+  "kind": "pilot / mid-work adversarial checkpoint",
+  "date": "2026-08-21",
+  "filedAt": "2026-08-21T18:40:00Z",
+  "planRows": ["P-08"],
+  "wdll": "_inbox/2026-08-21_sellable_WDLL.md",
+  "wdllItems": ["3", "6"],
+  "dispatch": "_dispatches/2026-08-21_s1-flood-inspect_dispatch.md",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/legacy-design-tools-worktrees/s1-flood-inspect",
+  "branch": "s1-flood-inspect",
+  "head": "44d6fa89eb322726235c9b58603c947f4c4bd13e",
+  "headUncommitted": true,
+
+  "whatLanded": {
+    "newRead": "artifacts/api-server/src/lib/floodHazardFactRead.ts",
+    "wiredOn": "GET /api/brokerage/v1/place/node/:parcelNodeId/facets field floodHazardFact",
+    "ssW16": "disposeTier2Flood and tier2.flood: null unchanged"
+  },
+
+  "bindRuleObserved": {
+    "function": "floodHazardFactBindKeys",
+    "always": ["{fips}:{prop}", "{fips}:{prop}.00000000"],
+    "goldLive": {
+      "tried": ["48021:34137", "48021:34137.00000000"],
+      "hit": "48021:34137",
+      "paddedMiss": true,
+      "outcome": "one-hit serve, not a miss"
+    }
+  },
+
+  "goldParcelLive": {
+    "instrument": "point SELECT entity_id, claim fields FROM atoms WHERE entity_type=flood-hazard-fact AND entity_id = ANY(two bind keys). Not COUNT(*). Not a heavy scan.",
+    "store": "hauska_mcp via hauska-prod-497015 secret DATABASE_URL",
+    "queriedAt": "2026-08-21T18:40:00Z",
+    "rowCount": 1,
+    "entityId": "48021:34137",
+    "floodZone": "X",
+    "inSpecialFloodHazardArea": false,
+    "sourceAdapter": "fema-nfhl-bulk-v1",
+    "sourceVintage": "NFHL_48_20260101",
+    "sourceTier": "fema-nfhl",
+    "absence": null,
+    "evaluatedAt": "2026-08-11T23:13:43.774Z",
+    "meaning": "present outside-SFHA finding (Zone X), not typed absence, not a miss"
+  },
+
+  "tests": {
+    "command": "pnpm exec vitest run src/lib/floodHazardFactRead.test.ts src/__tests__/brokerageNodeFacets.test.ts",
+    "local": "29 passed, 8 skipped (integration; no local postgres; VITEST_DATABASE_STUB=1). CI Test job has postgres and does not set the stub, so the 8 GET cases run there.",
+    "ciGrepLocal": "node scan of brokerageNodeFacets.ts: flood: lines 3, offenders [], flood: null; present, flood: null, present"
+  },
+
+  "predictionScores": [
+    {
+      "id": "ssW16SnapshotsStayRefused",
+      "expect": true,
+      "result": true,
+      "evidence": "disposeTier2Flood tests still pass; extractTier2Overlay still assigns flood: null; GET still has tier2.flood null in the rewritten snapshot-refusal case"
+    },
+    {
+      "id": "ciTier2FloodNotServedStaysClean",
+      "expect": "clean",
+      "result": "clean on local scan",
+      "evidence": "offenders []. Two required markers present."
+    },
+    {
+      "id": "dualGrammarAlwaysTwoKeys",
+      "expect": "integer then padded, invertible",
+      "result": true,
+      "evidence": "floodHazardFactRead.test.ts three bind-key cases passed"
+    },
+    {
+      "id": "missIsNamedRefusal",
+      "expect": "atom-miss with tried keys",
+      "result": true,
+      "evidence": "interpretFloodHazardFactRows empty-rows case passed"
+    },
+    {
+      "id": "gold48021",
+      "expect": "UNMEASURED then present or named miss",
+      "result": "present at 48021:34137 zone X in_sfha false",
+      "evidence": "live point lookup rowCount 1"
+    }
+  ],
+
+  "adversarialFindThisPass": {
+    "finding": "cortex-api Cloud Run --set-secrets does not include ATOMS_DATABASE_URL. Shipping this read without that env yields atoms-store-not-configured, which is a named refusal, not a silent null and not a snapshot revival.",
+    "rejectedAlternative": "fall back to DATABASE_URL (api-server meaning: deployment store). That would query the wrong database.",
+    "disposition": "keep fail-closed. leave_behind names the env for planner deploy."
+  },
+
+  "constraintsHonored": [
+    "no sub-agents",
+    "no git add/commit/push",
+    "no deploy",
+    "no atoms --apply",
+    "no Harris PBF",
+    "no ledger recompute POST",
+    "P:/legacy-design-tools not touched"
+  ]
+}

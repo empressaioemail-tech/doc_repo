@@ -1,0 +1,67 @@
+{
+  "checkpoint": "CP2",
+  "lane": "P2-JURIS-JOIN",
+  "card": "_dispatches/2026-08-31_p2-juris-join_dispatch.md",
+  "planRows": ["F-01"],
+  "writtenAt": "2026-08-31T03:20:00Z",
+  "seat": "property (hauska-factory-p2-juris-join); deepest worker; no sub-agents; no commit; no store connection",
+  "snapshot": {
+    "hauska-factory": "P:/seat-worktrees/property/hauska-factory-p2-juris-join, branch seat/property-ctx-p2-juris-join, HEAD a7a804220ad046ac3c70e286d61c83595bb3afe3. Rewrite uncommitted.",
+    "stores": "NONE. Live 05 UNMEASURED. Timed 01 not run. TOTALS stays UNMEASURED."
+  },
+  "whatExists": {
+    "sql": [
+      "sql/p2-juris/01_containment.sql",
+      "sql/p2-juris/05_explain.sql",
+      "sql/p2-juris/README.md",
+      "test/p2-juris-sql.test.mjs"
+    ],
+    "joinChange": "FROM cities_ok c JOIN parcels_six p ON p.county_fips = c.county_fips AND bbox AND ST_Intersects. cities_ok is NOT MATERIALIZED and is one row per (city, six-county) intersect. parcels_six stays MATERIALIZED. DO block kept. statement_timeout 180s / 30s unchanged."
+  },
+  "adversarialReview": [
+    {
+      "finding": "isMillionRowCteNestedLoop is three whole-text conjuncts. A correct Hash Join whose CTE init still prints Nested Loop plus both CTE Scans fails the existing classifier.",
+      "action": "cities_ok is NOT MATERIALIZED. CTE Scan on cities(_ok)? cannot appear. Inner city x county Nested Loop, if present, is Seq Scan / CTE Scan on counties. counties does not match the city regex. HASH_CTE fixture encodes that shape and the classifier accepts it. POISON still rejected."
+    },
+    {
+      "finding": "Un-MATERIALIZE parcels_six would also clear conjunct two and could pass the classifier while decoding GeoJSON inside a Nested Loop.",
+      "action": "Rejected. parcels_six stays MATERIALIZED. 01 references it twice. Decode once."
+    },
+    {
+      "finding": "County equality can miss a ring that leaves its county_fips and hits a city that does not intersect that county polygon. The 2026-08-30 measure was all-cities bbox+intersects.",
+      "action": "City-county uses bare ST_Intersects so sliver pairs still hash. 1e-8 stays on parcel-city rings. TOTALS stays UNMEASURED. A miss names the join. Do not adopt a new split."
+    },
+    {
+      "finding": "Exploded cities_ok would double-count city_table_cdp for straddlers.",
+      "action": "city_table_cdp counts DISTINCT geo_id, city_name."
+    },
+    {
+      "finding": "01 parcel_hits and 05 must stay the same join or the explained plan is a different query.",
+      "action": "Same ON clause: county_fips equality, geom IS NOT NULL, four bbox inequalities, ST_Intersects. Same cities_ok / counties / parcels_six shape."
+    },
+    {
+      "finding": "NOT MATERIALIZED alone is a classifier dodge if the outer join stays Nested Loop against an inlined city scan.",
+      "action": "Equality is the plan change (Hash Cond). NOT MATERIALIZED is the bind that makes the named poison shape unrepresentable. Live 05 is planner-run. If that EXPLAIN is still Nested Loop of CTE Scan on parcels_six against inlined cities, that is a finding on the next card, not a pass of this one."
+    }
+  ],
+  "bothArmTest": {
+    "command": "node --test test/p2-juris-sql.test.mjs",
+    "cwd": "P:/seat-worktrees/property/hauska-factory-p2-juris-join",
+    "result": "7 pass / 0 fail",
+    "arms": [
+      "poison Nested Loop CTE plan is rejected (isMillionRowCteNestedLoop true)",
+      "hash join of parcels CTE against inlined cities is accepted (false)",
+      "file-side RO session guard both arms (TEMP+LATERAL fail fixture; live 00-05 pass)",
+      "01 has no 1/0 in executable SQL",
+      "05 explains the unlimited join (FROM cities_ok JOIN parcels_six, no LIMIT)"
+    ]
+  },
+  "liveCounts": "UNMEASURED. Card forbids store connect and timed 01.",
+  "falsifiers": [
+    "Live 05 EXPLAIN matches isMillionRowCteNestedLoop -> rewrite failed",
+    "01 executable SQL contains 1/0 or LATERAL -> file-side gate failed",
+    "05 contains LIMIT -> hid the 981k plan",
+    "statement_timeout raised above 180s / 30s -> timeout used as a zero",
+    "TOTALS adopted without a timed reconcile -> UNMEASURED violated"
+  ]
+}

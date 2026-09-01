@@ -1,0 +1,87 @@
+{
+  "checkpoint": "CP1",
+  "lane": "p1-factory",
+  "card": "P1 controls that can fail — walk four-state, refuse-missing-county, readable gate, 0005 split",
+  "planRows": ["F-08"],
+  "writtenAt": "2026-08-30T22:40:00Z",
+  "seat": "property",
+  "snapshot": {
+    "docRepo": "P:/doc_repo (inbox writes only; planner-owned)",
+    "hauskaFactory": "P:/seat-worktrees/property/hauska-factory-p1-controls",
+    "branch": "seat/property-ctx-p1-factory",
+    "head": "7f41f52328ec40da0480d5eb65aad09ca3d4c3f9",
+    "originMain": "7f41f52328ec40da0480d5eb65aad09ca3d4c3f9",
+    "draft0005": "origin/seat/property-ctx-walk-alias-schema:migrations/0005_ctx_alias_setback_easement.sql (read by ref; not applied; not copied as-is)",
+    "noStoreWrite": true,
+    "noCommit": true,
+    "noOtherFactoryWorktree": true
+  },
+  "missionPremise": "Four Factory controls exist and cannot fire. Nothing downstream of P1 is verifiable until each fails a known violation and passes a known-good. Sources: _dispatches/2026-08-30_p1-factory_dispatch.md; OPS-19 F-08; A7/A9 and the 0005 split in _inbox/2026-08-30_ctx_execute_waves_WDLL.md.",
+  "completionPredicate": "Hand back an uncommitted Factory diff plus this card's CP1/CP2/close. Each of the four controls is shown failing a named violation and passing a named good. No commit, push, deploy, migration apply, job start, bake, or publish.",
+  "scopeBasis": "hauska-factory only, this worktree only. 0005 as drafted is not applied. landing-import is not re-run. alias-persist is not started against a live store. Gate 8 / P2-JURIS / ctx-publish trees are not opened. Routing pin `held` is plan-row values and is not treated as a rail lookup.",
+  "adversarial": [
+    {
+      "claim": "hasKeyPath treating null as present is the walk contract",
+      "finding": "test/publish.test.mjs 'a present key holding an explicit absence counts as present' asserts gradeParcelResponse pass on fullTier1Body with zoning:null, envelope:null, and baseFacts.landUse:null. That converted the defect into a specification. Mechanism: REQUIRED_TIER1_FACET_PATHS filtered through hasKeyPath, whose docstring says the value may be null.",
+      "rejectedAlternative": "the six counties passed because land use is honestly absent; rejected because the card names CAD row and atom both carrying A1 on the same parcels"
+    },
+    {
+      "claim": "factory-conformant already parses --county=",
+      "finding": "parseConformantFlags reads both forms but initialises county: BASTROP (48021). A missing or unparsed county is a silent Bastrop re-run. loadCountyLanding / countCountyLanding / loadCountyLandingPage also do county ?? BASTROP.",
+      "rejectedAlternative": "only the spaced-form reader is the trap; rejected because the default fires even when the equals form is parsed as empty"
+    },
+    {
+      "claim": "refuseHeldCell or the routing pin is the collect gate",
+      "finding": "refuseHeldCell has four call sites (definition, hold-refuse-run proof job, two tests). The pin field is held, values [P-25, P-09, P-17 COVER, Factory 1 --apply], not holds keyed rail:<rail>. import_ledger is INSERT-only. Dockerfile copies only src and migrations, so an _inbox/ file is unreadable in the job image.",
+      "rejectedAlternative": "extend the pin to rails; rejected as a schema change on a file no image contains"
+    },
+    {
+      "claim": "0005 exists on origin/main and can be edited in place",
+      "finding": "origin/main 7f41f52 has migrations 0001–0004 only. The drafted 0005 lives on origin/seat/property-ctx-walk-alias-schema. It seeds five setback kind=absence rows (Austin, Kyle, Georgetown, Round Rock, Waco) plus four easement county-absence rows, and creates landing_cad_txgio_alias on whatever applyMigrations reaches (FACTORY_DATABASE_URL).",
+      "rejectedAlternative": "copy 0005 onto main and comment the seeds; rejected because the card requires a split and a probed_at CHECK, and because Factory migrate cannot be the bake-store writer"
+    }
+  ],
+  "design": {
+    "item1_fourState": {
+      "what": "Replace presence with four-state classification of every required leaf: value | absent-verified | not-applicable | refused. null is none of those.",
+      "absentVerified": "earned only with scope (or scopeSearched), evaluation-time asOf (refuses asOf === requestClock), and a nonempty basis. Walk-level check: two absent-verified leaves on the same path with identical basis fail.",
+      "landUseAtom": "meaning-shaped second input: baseFacts.landUse null while opts.landUseAtom is present fails BP-CONTENT-01. Gold 48021:34137 carries landUse value A1.",
+      "delete": "the all-null-passes assertion in test/publish.test.mjs",
+      "executes": "gradeTier1Content / gradeParcelResponse in verify-walk.mjs; node --test",
+      "triggers": "every verify-walk parcel grade",
+      "fails": "verdict fail, grade BP-CONTENT-01",
+      "bypasses": "a fetchFn that never calls gradeTier1Content (none in src/jobs/verify-walk.mjs)"
+    },
+    "item2_refuseCounty": {
+      "what": "parseConformantFlags uses requireCountyFips(flagValue(argv, '--county')). No 48021 default. loadCounty* refuse a missing county. Close object carries runScope {job, county, apply, flood, replay} so the execution log names the resolved scope.",
+      "executes": "parseConformantFlags, runConformant return, cli.mjs JSON close line",
+      "triggers": "every factory-conformant invocation",
+      "fails": "COUNTY_REQUIRED / COUNTY_UNKNOWN thrown before any store write",
+      "bypasses": "a caller that passes {flags:{county:'48021'}} explicitly (named, not defaulted)"
+    },
+    "item3_collectGate": {
+      "what": "src/control/collect-complete.mjs. SELECT latest import_ledger row for the rail's source table. Refuse COLLECT_INCOMPLETE when no row, counts disagree, or factory_count is 0. Band-1 (CAD) writer runConformant --apply calls it after Cloud-Run check and connect, before startRun. Home is the Factory store, not _inbox/.",
+      "railMap": { "cad": "cad_property" },
+      "notThePin": "held is plan-row values; this gate does not read the pin",
+      "executes": "requireCollectComplete; runConformant apply path",
+      "triggers": "factory-conformant --apply",
+      "fails": "COLLECT_INCOMPLETE",
+      "bypasses": "dry-run / non-apply (no writer); a raw SQL writer that does not call runConformant"
+    },
+    "item4_0005split": {
+      "0005a": "migrations/0005a_landing_setback_easement.sql on Factory store. landing_setback_registry, landing_setback_record, landing_easement_gis. Drop every absence-kind seed (five setback absence + four easement county-absence; the drafted file's eight-row setback INSERT is the 'eight' the card named, of which five are absence). Keep sourced Bastrop/Elgin/Lockhart and the five GIS layers. probed_at + CHECK (kind <> 'absence' OR probed_at IS NOT NULL) on registry and record. source_url_verified_at timestamptz. applyMigrations regex widened to ^\\d+[a-z]?_.*\\.sql$ so 0005a is picked up; bake/ is not scanned.",
+      "0005b": "migrations/bake/0005b_landing_cad_txgio_alias.sql. landing_cad_txgio_alias only, CAD↔TxGIO identity, owners_agree IS TRUE, open-era unique. Planner applies this to STAGING_/PRODUCTION_NEONDB_URL. Factory applyMigrations never sees it. requireAliasLandingTable SELECTs information_schema.tables and refuses ALIAS_TABLE_MISSING so alias-persist --apply fails loudly without 0005b.",
+      "notDropped": "0005b is identity, not the P2-JURIS breadth table",
+      "executes": "SQL CHECK; requireAliasLandingTable; node --test",
+      "triggers": "INSERT of an unprobed absence; alias persist apply against a store",
+      "fails": "Postgres CHECK / ALIAS_TABLE_MISSING",
+      "bypasses": "applying 0005 as drafted (forbidden this card); Factory migrate applying 0005b (prevented by bake/ placement)"
+    }
+  },
+  "constraintsHonored": [
+    "no commit, push, deploy, migration apply, job start, bake, publish, landing-import re-run",
+    "no other Factory worktree opened",
+    "routing pin held not treated as rail keys",
+    "0005 as drafted not copied onto this branch"
+  ]
+}

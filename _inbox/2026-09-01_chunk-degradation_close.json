@@ -1,0 +1,60 @@
+{
+  "card": "2026-09-01_chunk-degradation",
+  "plan_row": ["F-01"],
+  "closed_at": "2026-09-01T04:30:00Z",
+  "missionPremise": "The Williamson per-chunk stretch (1-2 min early, 13-28 min by chunk 7) threatens Travis (380,918 parcels, next): if it is a property of the county rather than the run, the current design cannot complete Travis. Compiled dispatch _dispatches/2026-09-01_chunk-degradation_dispatch.md, report due 04:40Z for a 04:50Z terminate decision.",
+  "completionPredicate": "The mechanism named with a supporting measurement, a second mechanism stated with its rejection grounds, a Travis prediction made before Travis runs, a fix shape with its cost proxy, and a cross-run resume answer; anything unestablished marked UNMEASURED or PENDING-STORE-READ.",
+  "scopeBasis": "Control store (withered-surf-26870298) reads plus read-only code and doc reads only, because cortex-prod is contended by the running job and the dispatch forbids touching it or the job; city vertex measurements taken from the control store's own TxGIO payloads to stay inside that boundary.",
+  "prs": "not applicable: read-and-diagnose card, no code changed, no PRs, no CI",
+  "checkpoints": [
+    "_inbox/2026-09-01_chunk-degradation_cp1.json",
+    "_inbox/2026-09-01_chunk-degradation_cp2.json"
+  ],
+  "findings_record": "_inbox/2026-09-01_chunk-degradation_findings.md",
+  "mechanism": "Per-chunk cost = sum over parcels of exact-geometry work against every bbox-candidate city polygon; ST_Area(ST_Intersection) has no prepared-geometry path so each in-city hit pays a GEOS overlay linear in city vertices, and corridor parcels bbox-hit 3-5 overlapping polygons (Austin 32811 straddling in, Georgetown 11290, Cedar Park 8801, Round Rock 7059). prop_id text order is a geographic transect, so the chunk walk profiles annexation geometry: the stretch is the corridor, not degradation, and chunk 8's fall to 308s plus 3-run per-range reproducibility within 3% proves it.",
+  "second_mechanism_rejected": "Per-range custom-plan flip on the ungated NOT MATERIALIZED chunk SQL. Range-deterministic, therefore consistent with reproducibility; rejected as primary on five observed per-in-city cost levels (a flip is binary), ~45 flip-free control plans (Hays + McLennan twice), and in-band split tracking. Definitive EXPLAIN at range literals is PENDING-STORE-READ; fix 2 removes the surface regardless.",
+  "travis_prediction": "Structurally non-terminating under the current design: Austin's ring is a candidate for most parcels, no cheap head, most chunks 20-60 min, 16-40h total against a 6h task timeout with max-retries 0 and run_id-keyed resume. Falsifier: Travis chunk 1 landing under ~3 minutes kills the mechanism.",
+  "fix_shape": "Ordered: (1) cross-run resume (--run-id exists in shipped code now; durable form is a chunk-manifest event and (county, lo, hi, method_version) keys, refuse on denominator mismatch); (2) ST_Covers fast path (covered parcel overlap := own area, identical semantics) plus county-scoped TEMP city table with GiST built once per run, which also closes the plan-flip surface; (3) two-pass bbox pre-classification plus vertex-mass-budget chunking, proxy = sum of ST_NPoints over bbox-candidate cities; (4) ST_Subdivide(256) for straddlers only if still needed; (5) defer city-major inversion.",
+  "counts": {
+    "chunks_measured_fb490620": "8 of ~36 (8000-row pages over 282,570 distinct prop_ids)",
+    "rows_landed_fb490620": "64,000 = 40,554 in-city + 23,446 unincorporated, summed from run_events chunk bodies",
+    "cross_run_reproductions": "chunk 1 x3 runs within 2.7%, chunk 2 x3 within 2.3%, McLennan 15 chunks x2 runs within ~3%",
+    "counting_rule": "run_events kind='chunk' bodies on the control store; wallMs as recorded by the job; no cortex-prod numbers quoted"
+  },
+  "constraints_honored": [
+    "no cortex-prod read while hzkqk runs (city vertices taken from control-store TxGIO payloads instead)",
+    "hzkqk not cancelled, not interfered with; poll cadence on run_events was 4 bounded queries",
+    "no store writes; no repo writes outside _inbox artifacts; no commits (doc_repo commits are planner-owned and these files are left uncommitted)",
+    "four dead mechanisms not re-run; no curve offered as law: the mechanism is named from code + cross-run + cross-county evidence, not a 7-point fit"
+  ],
+  "open": [
+    "PENDING-STORE-READ 1: EXPLAIN CHUNK_PERSIST_SQL at chunk-2 vs chunk-5 literals (R2 discriminator)",
+    "PENDING-STORE-READ 2: landing GROUP BY city per Williamson chunk range (attributes slow chunks to named polygons)",
+    "PENDING-STORE-READ 3: cities_ok npoints for 48491 on cortex-prod as second derivation of the control-store vertex counts",
+    "PENDING-STORE-READ 4: bbox-candidate multiplicity histogram to size the vertex budget",
+    "--run-id resume path is code-present but never exercised end to end; verify before relying on it for Travis",
+    "fix cards 1-3 need compilation as F-01 follow-on dispatches"
+  ],
+  "leave_behind": [
+    { "item": "doc: _inbox/2026-09-01_chunk-degradation_findings.md + cp1/cp2/close jsons, uncommitted", "owner": "planner", "plan_row": "F-01" }
+  ],
+  "fleet_memory": {
+    "LESSON": [
+      "run_events on the control store is a complete per-chunk cost instrument (range, wallMs, split) and cross-run per-range reproducibility is the cheapest accumulating-state killer; no production-store read needed",
+      "ST_Intersection has no prepared-geometry path (ST_Covers does); overlay-per-hit is the cost unit and it is vertex-linear, so candidate multiplicity x vertex mass prices a chunk",
+      "the control store's landing_tx_city_boundary TxGIO payloads carry city_name, geometry, and bbox scalars: vertex counts and bbox overlap structure are computable without touching cortex-prod"
+    ],
+    "DEAD_END": [
+      "cost-tracks-in-city-COUNT as a single-coefficient model: killed by equal-count pairs 3.8-5.6x apart (c2/c4, c7/c8); survives only as count x vertex-mix",
+      "reading the 57P01 diagnosis file's chunk numbering as ground truth: it is off by one against run_events"
+    ],
+    "GROUND_TRUTH": [
+      "04:05Z: hzkqk live, 8 chunks / 64,000 rows landed for 48491, chunk 9 in flight since 03:47:12Z, ranges R313330 upward remaining",
+      "04:00Z: runs 713aad7f and f5ae0df0 both completed chunks 1-2 and died into chunk 3; their chunk walls match fb490620 within 3%"
+    ],
+    "OPEN": [
+      "the 04:50Z terminate decision consumes this report; if terminated, relaunch with --run-id fb490620-d4e9-4110-804d-21ee7375b960 after 05:00 maintenance",
+      "Travis must not be launched before fix 2 (ST_Covers + TEMP city table) or at minimum fix 1 (resume) lands"
+    ]
+  }
+}
