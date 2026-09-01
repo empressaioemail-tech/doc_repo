@@ -1,0 +1,43 @@
+{
+  "lane": "PARCEL-DOLLAR-RUN",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-01T21:35:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-dollar-run (standalone clone, created this card)",
+    "claimExpires": "2026-09-01T22:54:03.758Z"
+  },
+  "premisesReverified": {
+    "bakeCliMerged": "verified via gh pr view 578: MERGED mergeSha 65f924e86fd4060a439300ea51271ad8a56f9a44, 10/10 checks including the live-Postgres Test job",
+    "factoryVendorsLdt": "verified by reading cloudbuild.publish.yaml, Dockerfile.publish, scripts/build-publish-bake-clis.mjs: the publish image fetches LDT at a pinned _LDT_SHA and esbuild-bundles named CLI entry points into /app/bakes; factory-bastrop-publish already runs bundled tier1/tier2 bakes this way. This premise is correct.",
+    "differentStoreThanParcelRecord": "confirmed: this writes cortex-prod place_layer_snapshots via DATABASE_URL, never FACTORY_DATABASE_URL/parcel_record."
+  },
+  "design": {
+    "gapFound": "the existing conformant publish pipeline (runBastropPublish / factory-bastrop-publish) is the ONLY job that already runs bundled LDT bakes, but it is shaped for the tier1+tier2 conformant NEW-ROW bake plus pmtiles plus an area-sweep verify-walk. The dollar-fields bake is a PATCH of already-served rows (UPDATE by place_key, no new rows, no walk-relevant shape change) -- forcing it through requireStagingSibling (which checks a conformant publish_runs+verify_walks pair) or through runChunkedConformantBakes (which expects a tier1Summary.written shape) would be a category mismatch, not a reuse.",
+    "decision": "built a new, minimal job src/jobs/dollar-fields-patch.mjs: adds the bake CLI to the bundler entries (dollar-fields.mjs), a new Cloud Run job factory-dollar-fields-patch on the SAME publish image (no new image needed beyond the existing rebuild-on-LDT-pin-bump the dispatch already asked for), reuses bakeEnvForTarget for target-scoped store credentials (fail-loud TARGET_ENV_MISSING, never a cross-target fallback -- same guarantee bastrop-publish has), and a purpose-built staging-sibling check against the Factory's own runs table (phase=dollar-fields-patch, target=staging:<county>, status=succeeded) rather than reusing the conformant pipeline's check.",
+    "productionGate": "OPERATOR_PUBLISH_GO required for target=production, matching every other production publish in this harness (bastrop-publish enforces the identical gate). Execution-time --update-env-vars override only, never a template value.",
+    "runRecording": "startRun/writeTermination against the Factory runs table (the same mechanism every other job uses), plus a run_events row carrying the bake's own JSON summary line for audit."
+  },
+  "willNot": [
+    "run the bake from a laptop against production or staging",
+    "reuse requireStagingSibling (the conformant pipeline's check) for a bake with no walk",
+    "skip OPERATOR_PUBLISH_GO for a production run",
+    "invent a policy the job's own gates don't already state",
+    "touch schema.sql or engine-core"
+  ],
+  "testPlan": [
+    "unit: flags parse --name=value and --name value, refuse missing/unknown county and unknown target (no silent default)",
+    "unit: requireDollarStagingSibling refuses with no sibling, refuses on a FAILED sibling (falsifier), passes only on a succeeded same-county sibling and does not cross-match another county",
+    "unit: dry run never connects to the Factory store and never requires OPERATOR_PUBLISH_GO",
+    "unit: production run refuses OPERATOR_GO_REQUIRED even with a valid sibling recorded, and separately refuses DOLLAR_STAGING_SIBLING_REQUIRED even with the go-flag set (both gates independently provable)",
+    "unit: a full staging run and a full production run each write a distinct, correctly-targeted run row with the bake's summary in counts",
+    "unit: a bake subprocess failure marks the run row failed and re-throws rather than swallowing",
+    "full suite: node --test (488 tests, 486 pass / 2 pre-existing skip / 0 fail) run before this job existed, to confirm no regression"
+  ],
+  "falsifiers": [
+    "if a production run succeeded without OPERATOR_PUBLISH_GO set, the gate is decorative -- tested and refuses",
+    "if a production run succeeded against a county with a staging sibling for a DIFFERENT county, the sibling check would be too loose -- tested and refuses (DOLLAR_STAGING_SIBLING_REQUIRED)",
+    "if a FAILED staging run satisfied the sibling check, a bad staging attempt could still gate open production -- tested and refuses"
+  ]
+}
