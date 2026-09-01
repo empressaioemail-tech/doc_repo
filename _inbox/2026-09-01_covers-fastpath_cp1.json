@@ -1,0 +1,77 @@
+{
+  "checkpoint": "CP1",
+  "card": "2026-09-01_covers-fastpath",
+  "plan_row": "F-01",
+  "at": "2026-09-01T04:35:00Z",
+  "seat": "integration P:/doc_repo main 76a06e6; factory P:/tmp/hauska-factory-covers-fastpath feat/covers-fastpath from origin/main 5f9acc3 plus deployed 57p01 working tree",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 76a06e6399b0c75671263b648061e21a470da917",
+    "factory_worktree": "P:/tmp/hauska-factory-covers-fastpath",
+    "factory_branch": "feat/covers-fastpath",
+    "factory_base": "5f9acc3c53c04efa88f59715271f3d6a12f78e99",
+    "live_image_before": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:9e417502d8d23cc7df119a19e13528266fc457d60ebf3c39bf1d4db84032b7aa",
+    "live_job": "factory-p2-juris generation 7",
+    "store": "free: factory-p2-juris-hzkqk cancelledCount=1 at 2026-09-01T04:14:11Z, no running heavy job"
+  },
+  "missionPremise": "Per-chunk containment cost is ST_Area(ST_Intersection) against every bbox-candidate city, linear in vertex count, with cities_ok NOT MATERIALIZED re-decoding statewide every chunk. Source: _inbox/2026-09-01_chunk-degradation_findings.md. Do not re-derive.",
+  "design": {
+    "fixA": "ST_Covers(city, parcel) then ST_Area(parcel); else ST_Area(ST_Intersection). 1e-8 floor unchanged.",
+    "fixB": "ensureCountyCitiesTemp: county-scoped decode once per session into p2_cities_ok TEMP, GiST, ANALYZE. One pg.Client, no Pool (confirmed in openNeonClient; test refuses new Pool).",
+    "fixC": "chunk-manifest at apply start keyed county/method_version/denominator. Missing method_version = intersection-v1. covers-v1 vs intersection-v1 refuses METHOD_VERSION_MISMATCH. Matching method_version still skips.",
+    "measure": "--measure-lo/--measure-hi SELECT-only (CHUNK_MEASURE_SQL). Does not INSERT landing. Does not resume Williamson.",
+    "base": "Copied uncommitted 57p01+replay from persist tree so sha256:9e417502 is not regressed. origin/main is still 5f9acc3."
+  },
+  "expectedSpeedupStatedBeforeMeasure": {
+    "statedAt": "2026-09-01T04:35:00Z",
+    "instrument": "run_events on withered-surf-26870298, not cortex-prod",
+    "williamson_chunk2": {
+      "range": "R014834 -> R031819",
+      "baseline_s": [144.7, 148.0, 145.2],
+      "baseline_mean_s": 146.0,
+      "emit": { "unincorporated": 3141, "in_city": 4859, "unresolved": 0, "rows": 8000 },
+      "expected": "8-20x, wall 7-18s",
+      "falsifier": "wall >= 80s means Fix A missed the hot path"
+    },
+    "williamson_chunk1": {
+      "range": "PRIVATE ROAD -> R014834",
+      "baseline_s": [84.4, 86.7, 84.6],
+      "baseline_mean_s": 85.2,
+      "emit": { "unincorporated": 4306, "in_city": 3694, "unresolved": 0, "rows": 8000 },
+      "expected": "5-15x, wall 6-17s; emit IDENTICAL; must not be slower than baseline"
+    },
+    "mclennan_chunk1": {
+      "range": "100000 -> 112364",
+      "baseline_s": [60.347, 61.909],
+      "baseline_mean_s": 61.1,
+      "runs": ["82c26c82", "a62e3fce"],
+      "emit": { "unincorporated": 5876, "in_city": 2124, "unresolved": 0, "rows": 8000 },
+      "expected": "5-15x, wall 4-12s; emit IDENTICAL"
+    }
+  },
+  "termination": {
+    "run": "fb490620-d4e9-4110-804d-21ee7375b960",
+    "dispatch_claimed": "still started",
+    "store_truth": "already killed. termination_records exit_kind=killed recorded_at=2026-09-01T04:20:29.310Z recorder=reaper reason=execution-finished matched_by=execution-name",
+    "writeTermination": "would refuse ALREADY_TERMINATED; not overwritten",
+    "named_record": "run_events kind=operator-cancellation at 2026-09-01T04:24:10.627Z: cancelled_at=2026-09-01T04:14:11.171940Z cancelledCount=1 failedCount=0 chunks_complete=9 rows_preserved=72000 recorder=covers-fastpath",
+    "chunks_complete": 9,
+    "rows_preserved": 72000
+  },
+  "tests": {
+    "command": "node --test test/p2-juris-covers-fastpath.test.mjs test/p2-juris-persist.test.mjs test/p2-juris-57p01.test.mjs test/p2-job.test.mjs",
+    "result": "45 pass / 0 fail",
+    "violations_shown": [
+      "METHOD_VERSION_MISMATCH on fb490620's 9 intersection-v1 chunks",
+      "DENOM_MISMATCH on manifest denominator change",
+      "MEASURE_RANGE_REQUIRED when hi missing",
+      "ST_Covers / p2_cities_ok required in CHUNK_PERSIST_SQL; cities_ok NOT MATERIALIZED forbidden"
+    ]
+  },
+  "adversarial_review": {
+    "would_regress_57p01": "Building from origin/main 5f9acc3 alone would drop heartbeat, client error guard, max_duration_s, and HELD replay. Rejected. Base is the deployed persist working tree.",
+    "would_overwrite_landing": "A persist re-run of chunk 2 would UPDATE 8000 fb490620 rows. Measure is SELECT-only.",
+    "would_resume_williamson": "--run-id=fb490620 --apply on covers-v1 refuses METHOD_VERSION_MISMATCH (9 foreign chunks). That is the proof, not a silent skip.",
+    "second_mechanism": "If measure is faster but emit differs, the substitution is wrong. If emit matches but wall >= 80s on chunk 2, Fix A missed the hot path."
+  },
+  "next": "Cloud Build cloudbuild.p2-juris.yaml, then one-at-a-time measure: McLennan chunk 1, Williamson chunk 1, Williamson chunk 2. No Travis. No Williamson resume."
+}
