@@ -1,0 +1,41 @@
+{
+  "lane": "PARCEL-R1-CROSSWALK",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-01T21:20:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill feat/parcel-record-fill (READ-ONLY, no writes)",
+    "reads": "PRODUCTION_NEONDB_URL/neondb via psql, default_transaction_read_only=on for every session",
+    "claimExpires": "2026-09-01T22:43:18.964Z"
+  },
+  "premisesReverified": {
+    "gapLedgerSections": "7 (CAD-join health), 8 (Bastrop zero-overlap), 11 (reconciliation input), 12.1 (crosswalk is next card) re-read before querying",
+    "prefixStripProhibited": "honored; disproven concretely below (R000009 -> account 9 would be wrong, true match is 62578)",
+    "cadSourceColumns": "dispatch suggested enumerating geo_id/ref_id columns; \\d cad_property shows NEITHER exists. Actual columns: county_fips, prop_id, tax_year, owner_name, owner_mailing_address, situs_address, situs_city, situs_zip, legal_description, exemption_codes, land_value, improvement_value, market_value, assessed_value, year_built, living_area_sqft, land_acres, property_use_code, source_file, source_vintage, ingested_at. The dispatch's suggested columns do not exist; enumerated the real catalog instead of guessing."
+  },
+  "design": {
+    "williamson": {
+      "sourceDivergence": "R-prefix rows source_file=stratmap25-landparcels_48491_lp.zip (StratMap geometry/parcel roll); numeric rows source_file=property.csv (WCAD appraisal roll). Two independently-ingested sources with unrelated numbering schemes -- confirms why prefix-strip is structurally wrong, not just discouraged.",
+      "primaryDerivation": "exact string match on situs_address (both sources already carry full 'STREET, CITY, TX ZIP' format; trim() test showed zero additional matches over raw equality, so no further normalization needed on this field)",
+      "secondDerivation": "owner_name, independently populated by each source with different punctuation conventions (comma vs no-comma). Normalized via regexp_replace(upper(name),'[^A-Z0-9]','','g') for comparison.",
+      "topologyPlan": "measure situs-match cardinality per R-row first (unique vs ambiguous vs zero) before trusting any pair; a fan-out row is refused, never arbitrarily resolved to its first/nearest match"
+    },
+    "bastrop": {
+      "hypothesis": "dispatch asks whether a parent link exists in CAD for the 8,712 living>0 / 6,158 $0 accounts-without-geometry (Mechanism A, already adjudicated as real orphan accounts, never stamped onto landing parcels)",
+      "discovery": "sampling the 9 gap-ledger-traced keys found legal_description text 'MH ONLY ... LOCA?TED ON R#####' (note: 'LOCATED' is misspelled 'LOCTED' on at least one real row -- both spellings must be matched) naming a parent land account. This is the parent link the dispatch asked about, found by reading the actual data rather than guessing a schema column."
+    }
+  },
+  "willNot": [
+    "prefix-strip or otherwise heuristically force a numeric join",
+    "write to any store (factory, engine, or cad_property)",
+    "convert unaccounted to absent-verified",
+    "stamp Bastrop's 8,712/6,158 orphan accounts onto landing parcels directly",
+    "resolve an ambiguous (fan-out) situs match by picking the nearest value -- refuse instead"
+  ],
+  "falsifiers": [
+    "if R-prefix and numeric prop_ids shared a numeric relationship (e.g. R000009 -> account 9), prefix-strip would be defensible -- it is not (true match is 62578, unrelated)",
+    "if owner-name agreement on unique situs matches were near-zero, the situs join would be coincidental rather than a real crosswalk -- it is 90.3% exact + 1.9% partial, not near-zero",
+    "if the Bastrop parent-link reference failed to resolve to a real, geometry-bearing cad_property/txgio_parcel row at scale, it would not be usable as a companion key -- county-wide it resolves at 99.8% (cad_property) / 99.2% (has geometry) among the 8,288 rows carrying the reference"
+  ]
+}

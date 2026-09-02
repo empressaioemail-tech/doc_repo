@@ -1,0 +1,35 @@
+{
+  "lane": "PARCEL-R1B-REINGEST",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-01T23:40:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r1 feat/parcel-r1b-reingest (merged to main 3707e48)",
+    "claimExpires": "2026-09-02T01:10:47.448Z"
+  },
+  "premisesReverified": {
+    "r1CloseReread": "_inbox/2026-09-01_parcel-r1-crosswalk_close.json re-read in full before implementing; the crosswalk method (situs_address exact match, unique 1:1 gate, owner-name corroboration as evidence not gate) and predicted counts (257,604 matched / 24,965 residue) are the implementation spec and the verify target.",
+    "gapLedgerSection7": "re-read: Williamson's two source_files (stratmap25-landparcels_48491_lp.zip for R-prefix, property.csv for numeric) confirm no arithmetic relationship between the two key schemes; prefix-strip remains prohibited.",
+    "engineShaUnchanged": "confirmed the crosswalk is a pure data-join concern solvable entirely in the Factory job's CAD-loading step; no engine-core change needed. ENGINE_SHA stays 22e71e1 (unchanged from PARCEL-RAILS-V2)."
+  },
+  "design": {
+    "implementation": "loadWilliamsonCrosswalk (new SQL, exact port of R1's proven query) + mergeWilliamsonCrosswalk (fills only the R-prefix row's own null fields, never overwrites, including a real stored $0), wired into loadLandingAndCad for county 48491 only (zero-query no-op for every other county).",
+    "noEngineChange": "the merged CadPropertyRow feeds the existing, unmodified ingestCadOntoRecords via the ordinary path; cad-null-verified vs value semantics are entirely the engine's own unchanged logic reacting to a better-populated input row.",
+    "identityPreserved": "the record's own place_key/prop_id stays the R-prefix landing key at all times; only field VALUES are borrowed from the crosswalk match, never the numeric row's own identity."
+  },
+  "testPlan": [
+    "SQL-shape assertions: no prop_id transform (no substr/replace/regexp_replace/trim on either side of the join), join key is situs_address only, uniqueness gate present in the WHERE clause",
+    "loadWilliamsonCrosswalk: no-op (zero queries) for a non-Williamson county and for an empty batch (falsifiers)",
+    "loadWilliamsonCrosswalk: keys its returned map by the R-prefix target_prop_id, one entry only for a unique match, absent entirely for a target with no unique match",
+    "mergeWilliamsonCrosswalk: fills every null field from the crosswalk row; never overwrites an existing value (falsifier: a deliberately-different market_value on the crosswalk fixture must not survive into the merge); a real stored 0 is preserved, never treated as missing (falsifier)",
+    "mergeWilliamsonCrosswalk: pass-through (identity) when no crosswalk match exists"
+  ],
+  "willNot": [
+    "transform, strip, or pad any prop_id",
+    "overwrite an R-prefix row's own already-present field with the crosswalk's value",
+    "resolve an ambiguous (>1 match) situs collision by any heuristic",
+    "run from a laptop; --apply is Cloud Run only per the existing LAPTOP_WRITE_FROZEN guard, unchanged",
+    "touch engine-core, schema.sql, or any county other than 48491"
+  ]
+}

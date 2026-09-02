@@ -1,0 +1,44 @@
+{
+  "lane": "PARCEL-R1B-REINGEST",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T00:00:00Z",
+  "pilot": {
+    "prCiGreen": "hauska-factory PR #60, mergeSha 3707e480092584772d3213077c2aa5b2f44d7fc0; 7 new unit tests + full 495-test suite (493 pass / 2 pre-existing skip / 0 fail)",
+    "imageRebuild": "cloudbuild.parcel-record-fill.yaml submitted (build 0d8c8d1f-2dbd-4f1c-8f68-4452f1d28daf, SUCCESS); factory-parcel-record-fill redeployed digest sha256:c5289627288e95ffc189ac0671443d7fa37b706f779052807545de55516e7a72; ENGINE_SHA unchanged at 22e71e1",
+    "beforeState": "queried parcel_record_cell for county 48491 R-prefix parcels before the re-ingest: assessedValue/improvementValue/landValue/livingAreaSqft/yearBuilt ALL 282,569 unaccounted, 0 value, 0 absent-verified -- exact match to R1's characterization.",
+    "execution": "gcloud run jobs execute factory-parcel-record-fill --args=parcel-record-fill,--county=48491,--apply,--twice; execution factory-parcel-record-fill-jtx5s, runId d75118f9-d2ba-41c6-a02f-58daf291f9bc, ok:true, drift:zero-drift (the --twice second instantiate+ingest pass on the first chunk produced byte-identical cell fingerprints)."
+  },
+  "afterStateByRail": {
+    "improvementValue": { "value": 257604, "unaccounted": 24966 },
+    "assessedValue": { "value": 257604, "unaccounted": 24966 },
+    "landValue": { "value": 257604, "unaccounted": 24966 },
+    "livingAreaSqft": { "value": 233371, "unaccounted": 49199, "note": "lower value-count than improvement/assessed/land because livingAreaSqft additionally requires the source field be >0 (unchanged engine rule); some of the 257,604 crosswalk-matched accounts have null or 0 living_area_sqft at the matched numeric row -- an honest source gap, not a bug." },
+    "yearBuilt": { "value": 233344, "unaccounted": 49226, "note": "same mechanism as livingAreaSqft: not every crosswalk-matched account has a recorded year_built." },
+    "marketValue": { "value": 278380, "unaccounted": 4190, "note": "substantially higher coverage than improvement/assessed/land because market_value was ALREADY present on most R-prefix rows themselves (per R1: only ~11,406 of 282,570 null); this rail benefits from BOTH the row's own value (preserved, never overwritten) and the crosswalk fill for the remainder." },
+    "legalDescription": { "value": 282554, "unaccounted": 16, "note": "legal_description was already present on nearly all R-prefix rows; the crosswalk barely needed to contribute here, confirming the merge correctly favors the row's own data." },
+    "situsCity": { "value": 257302, "unaccounted": 25268 },
+    "situsZip": { "value": 257294, "unaccounted": 25276 },
+    "landUseCode": { "value": 257562, "unaccounted": 25008 }
+  },
+  "predictedVsActual": {
+    "r1Predicted": "257,604 unique matched pairs; 22,701 ambiguous + 2,264 zero-match = 24,965 residue",
+    "actual": "257,604 value on improvementValue/assessedValue/landValue (EXACT match on the matched-pair count); 24,966 unaccounted (1 more than predicted)",
+    "oneRowGap": "not resolved to a specific row this card -- an attempted isolating query (parcel_record LEFT JOIN parcel_record_cell WHERE apn unaccounted) timed out on the live store and was not re-run under a longer statement_timeout given the overwhelming precision already on record (99.9996% agreement, single-row scale). Reporting honestly rather than forcing an explanation; a genuinely-missing single CAD row for one R-prefix parcel (never observed by R1's identity-join-rate-1.0 measurement, which was a COUNT not a per-row enumeration) is the most likely mechanism, but this is not verified to the row."
+  },
+  "spotCheck": {
+    "method": "queried parcel_record_cell on FACTORY_DATABASE_URL directly for three of R1's 50 verbatim fixture pairs plus the documented 64-way ambiguous case",
+    "results": [
+      { "placeKey": "48491:R000009", "expected": { "improvementValue": 313000, "livingAreaSqft": 2022 }, "actual": { "improvementValue": "313000", "livingAreaSqft": 2022, "marketValue": "401306 (R-row's own, NOT overwritten by the crosswalk's 394000)" }, "match": true },
+      { "placeKey": "48491:R000013", "expected": { "improvementValue": 259502, "livingAreaSqft": 1735 }, "actual": { "improvementValue": "259502", "livingAreaSqft": 1735 }, "match": true },
+      { "placeKey": "48491:R000016", "expected": { "improvementValue": 281904, "livingAreaSqft": 1912 }, "actual": { "improvementValue": "281904", "livingAreaSqft": 1912 }, "match": true },
+      { "placeKey": "48491:R022482", "expected": "unaccounted (64-way ambiguous fan-out, must never be fabricated)", "actual": { "improvementValue": "unaccounted", "livingAreaSqft": "unaccounted" }, "match": true }
+    ],
+    "conclusion": "4 of 4 spot-checks pass exactly, including the negative control (the ambiguous fan-out case correctly refuses rather than guessing). The R-prefix row's own market_value being preserved rather than overwritten by the crosswalk's differing figure (401306 vs 394000) confirms mergeWilliamsonCrosswalk's never-overwrite rule held in production, not just in the unit test fixture."
+  },
+  "violationsRun": [
+    "R022482 (64-way ambiguous) would fail this card's own design if it showed a value -- verified unaccounted",
+    "R000009's market_value would fail if it showed 394000 (the crosswalk's figure) instead of 401306 (its own) -- verified 401306"
+  ],
+  "next": "write close with before/after counts per rail, spot-check table, and the honestly-unresolved 1-row gap"
+}
