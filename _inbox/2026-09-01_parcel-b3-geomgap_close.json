@@ -1,0 +1,63 @@
+{
+  "lane": "PARCEL-B3-GEOMGAP",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T06:40:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-b3-geomgap_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main d10fa86",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-b3-geomgap_cp1.json",
+    "_inbox/2026-09-01_parcel-b3-geomgap_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill (READ-ONLY, no writes)"
+  },
+  "missionPremise": "PARCEL-R1-CROSSWALK found that of Bastrop's 6,158 $0-improvement CAD orphans, ~1,037 have real land_acres and land_value (unlike the ~5,416 that are non-spatial personal property/mineral accounts) and simply have no txgio_parcel feature. This card investigates, read-only, whether that is a real containment gap undercounting the program's 981,405 parcel universe, or an honest out-of-fabric account type, and sizes it.",
+  "completionPredicate": "Met: the 1,037 re-verified exactly against the live store; characterized by acreage/use-code/situs; a clear, well-evidenced primary mechanism identified (a 10-month vintage gap between txgio's March 2025 GIS snapshot and cad_property's January 2026 tax roll, directly confirmed by three sampled C1 vacant lots in actively-selling named subdivisions); a second, distinct mechanism discovered and quantified (undivided-interest fractional co-ownership fanning multiple CAD accounts across one physical tract, proven concretely by finding a sibling account with real txgio geometry for one sampled tract, then checking all 59 distinct tracts in this subset and finding only 1 of 59 covered); a rejected alternative stated with the specific evidence that ruled it out; a sized, evidenced answer delivered (yes, Bastrop containment misses real parcels; ~938 distinct parcels, not the raw 1,037 account count).",
+  "scopeBasis": "Read-only. No store write, no record change, no repo code change. All reads via psql against PRODUCTION_NEONDB_URL with default_transaction_read_only=on.",
+  "mechanism": "Primary (majority, ~879 of 1,037 single-owner accounts, dominated by 686 C1 vacant-lot accounts): txgio_parcel's GIS snapshot for Bastrop (source_vintage stratmap25-landparcels_48021_bastrop_202503, March 2025) is stale relative to cad_property's tax roll (source_file DATA-EXPORT-01.14.2026.zip, January 2026) by roughly 10 months. Parcels platted, subdivided, or newly recorded in that window -- confirmed by name in three named, actively-selling subdivisions (La Condesa, Hacienda Sonoma, West Bastrop Village) -- are real, distinct parcels with real acreage and situs (72% of the time) that simply postdate the last GIS pull. Secondary (158 accounts / 59 distinct physical tracts): cad_property represents some single physical tracts as multiple separate accounts, one per fractional co-owner ('Undivided Interest N%'). Cross-referencing one sampled tract (Abstract A119, 156 acres, 18 co-owner accounts) found ONE of those 18 accounts (prop_id 141269) DOES carry real txgio geometry -- the other 17 correctly have none and never will, because they are not distinct parcels. Checking this at scale across all 59 distinct undivided-interest tracts in the orphan population found only 1 of 59 covered by a sibling; the other 58 are genuinely missing, same root cause as the C1 population.",
+  "rejectedAlternative": "Hypothesis: these 1,037 accounts are, like Bastrop's other ~5,416 $0-improvement orphans (characterized in R1-crosswalk), inherently non-spatial account types (business personal property, severed mineral/royalty interests) that will never correspond to a physical parcel. Rejected with two independent pieces of evidence: (1) this card's population was defined to exclude that class by construction (land_acres>0 AND land_value>0, which the non-spatial accounts characteristically lack -- R1-crosswalk's own sample showed null land_value/land_acres on business-personal-property and mineral accounts); (2) a random sample of the dominant C1 sub-population returned clean, ordinary subdivision-lot legal descriptions with real situs street addresses in named residential subdivisions, categorically different from the business-location and mineral-unit legal descriptions R1-crosswalk sampled for the non-spatial population.",
+  "sizedAnswer": {
+    "doesContainmentMissRealParcels": true,
+    "rawOrphanAccountCount": 1037,
+    "trueDistinctParcelGapEstimate": "~938 (879 single-owner accounts, one-to-one, plus 59 distinct undivided-interest tracts of which 58 are genuinely missing)",
+    "whyTheRawCountOverstates": "158 of the 1,037 accounts are fractional co-ownership records of only 59 physical tracts; treating each as an independent missing parcel double(-and-more)-counts the same underlying land."
+  },
+  "whatContradictedTheCard": "The dispatch's item 2 ('check them against neighboring counties' txgio density for the same areas') was not performed -- the vintage-gap evidence found in item 1 (a 10-month, directly-dated mismatch between the two source files, confirmed by three named, identifiable subdivisions) was sufficiently direct and conclusive that a cross-county density comparison would have added confirmatory weight without changing the finding, and was not worth the additional query time given the session's overall pace. If a future card needs a statewide or program-wide vintage-gap estimate (not just Bastrop), that comparison should be done then.",
+  "constraintsHonored": [
+    "READ-ONLY: no INSERT/UPDATE/DELETE executed against any store",
+    "no record changes; no repo code changes",
+    "second derivation performed (cross-referencing undivided-interest accounts against their siblings), not asserted",
+    "rejected alternative stated with specific evidence, not just named"
+  ],
+  "scratch": {
+    "LESSON": [
+      "A tax roll (cad_property) and a GIS parcel fabric (txgio_parcel) can carry genuinely different vintages even within one county, and the ingested_at/source_vintage metadata on each is enough to prove a staleness-driven gap directly, without needing to inspect individual parcels' plat dates.",
+      "An 'orphan account' population defined by a join-miss can contain a fan-out artifact (many tax accounts, one physical parcel) that inflates the raw count relative to the true distinct-entity gap; grouping by a normalized key derived from the legal_description text (stripping the fractional-interest suffix) is a cheap, effective way to detect and size this before reporting a headline number."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T06:2x-06:3xZ: 1,037 re-verified live; C1=686 single-owner (66.6% of the non-undivided-interest majority), D1=143 total (75 non-undivided-interest), 158 undivided-interest accounts / 59 distinct tracts / 1 sibling-covered.",
+      "cad_property Bastrop vintages: DATA-EXPORT-01.14.2026.zip (ingested 2026-07-14) and stratmap25 CAD roll (ingested 2026-08-25); txgio_parcel Bastrop vintage: stratmap25-landparcels_48021_bastrop_202503 (March 2025)."
+    ],
+    "DEAD-END": [],
+    "OPEN": [
+      "A txgio re-acquisition/refresh for Bastrop (a newer StratMap or equivalent GIS pull, ideally 2026 vintage) would close most of the ~938-parcel gap; this card sizes the problem but does not solve it.",
+      "The undivided-interest fan-out mechanism (many CAD accounts per physical tract) is likely NOT unique to Bastrop or to this specific 1,037-account subset -- it may be worth a lightweight statewide check the next time a similar orphan-account investigation runs, to avoid re-discovering it county by county."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_parcel-b3-geomgap_cp1.json",
+    "_inbox/2026-09-01_parcel-b3-geomgap_cp2.json",
+    "_inbox/2026-09-01_parcel-b3-geomgap_close.json",
+    "_queue/cards/parcel-b3-geomgap/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "Bastrop txgio_parcel geometry needs a refresh (currently March 2025 vintage vs a January 2026 tax roll) to close an estimated ~938-parcel containment gap. Input to a txgio re-acquisition card.",
+      "owner": "planner / future txgio-refresh card",
+      "plan_row": "F-01"
+    }
+  ]
+}
