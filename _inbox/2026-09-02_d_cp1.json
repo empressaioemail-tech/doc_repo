@@ -1,0 +1,50 @@
+{
+  "lane": "D",
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "date": "2026-09-02",
+  "planRow": "G-109",
+  "dispatch": "_dispatches/2026-09-02_d_dispatch.md",
+  "scope": "S4-1b ledger reconciliation, S4-8 obligation ledger reader (govtech half only). S4-3, S4-7 out of scope (substrate).",
+  "verifiedThisCheckpoint": [
+    {
+      "claim": "hauska-mcp-server generates source_obligation_ledger.request_id server-side (node:crypto randomUUID()) and never returns it to the caller, in any response body or header.",
+      "source": "Read P:/hauska-mcp-server/src/index.ts lines 286-343 (the /mcp POST handler): requestId = randomUUID() at line 289, bound into requestContext, used only in log lines and the ctx object. Read src/gate-front.ts: x-hauska-request-id is an OUTBOUND header this server sends when it calls engine-api, unrelated to the inbound /mcp request. Read src/request-context.ts: getCurrentRequestId() reads the same server-generated value back out for internal use (logging, the ledger insert). No response-shaping code anywhere writes request_id into the JSON-RPC response or a response header.",
+      "consequence": "plan-review cannot learn the ledger row's true request_id for any call it makes today. Exact request_id reconciliation is structurally blocked, not just unimplemented, until the substrate seat either echoes an incoming correlation id or exposes it in the response."
+    },
+    {
+      "claim": "hauska-mcp-server exposes no tool or endpoint that reads source_obligation_ledger. The ledger is write-only from any external caller's vantage point.",
+      "source": "grep -i 'ledger|obligation' across P:/hauska-mcp-server/src/tools.ts: zero matches. grep 'source_obligation_ledger' across P:/hauska-mcp-server/src/*: only source-obligation-meter.ts (the insert path) and the migration file.",
+      "consequence": "S4-8's reader cannot be a thin proxy over a substrate read endpoint, because none exists. Confirms the existing memory note (sdk-metering-seam-unwired: ledger is write-only, 0 SELECTs)."
+    },
+    {
+      "claim": "plan-review has a load-bearing, repeated architectural rule: never hold a second party's DSN. Atoms ('Plan-review never holds the atoms DSN'), Smart Files ('Plan-review never holds a files DSN'), and its own DSN is FORBIDDEN-regex-checked against other repos' known DSN fragments.",
+      "source": "Read P:/plan-review src/mcp.mjs line 3, src/files.mjs line 2, src/store.mjs lines 6 and 30-32, web/api/backend.js lines 2 and 7.",
+      "consequence": "Acquiring a direct read-only connection to hauska-mcp-server's Neon (where source_obligation_ledger lives) to read the ledger from plan-review would violate this repo's own established pattern and would bypass the MCP gate that the canon calls 'the single enforcement chokepoint' for substrate. Not done, not considered as an option."
+    },
+    {
+      "claim": "plan_review_activity (the activity cache referenced by S4-1b) has no request_id column, no atom_did column, and no dedup mechanism today. recordActivity() always INSERTs; nothing prevents a duplicate row for the same logical event.",
+      "source": "Read sql/002_activity_and_seed.sql (full column list) and src/store.mjs recordActivity/mapActivity.",
+      "consequence": "S4-1b's 'dedup keys' item needs new schema, not just new query logic."
+    },
+    {
+      "claim": "No live path in plan-review today actually triggers an ICC-licensed accrual. IBC2018P6 and IPMC2018P2 manifests in code-lookup.mjs are both empty (zero ingested sections); the only book with resolvable sections is BASTROP-UDC, which is municipal content, not ICC-sourced, and would not match resolveSourceActorDid's ICC allowlist/citation checks on the MCP side.",
+      "source": "Read src/code-lookup.mjs CODE_BOOKS (IBC2018P6.sections = {}, IPMC2018P2.sections = {}). Read hauska-mcp-server src/source-obligation-meter.ts resolveSourceActorDid: matches on explicit sourceActorDid, iccSourced flag, the ICC_SOURCED_ATOM_DID_ALLOWLIST, adapter name, or an ICC citation regex against sourceCitation -- none of which BASTROP-UDC atoms would carry.",
+      "consequence": "Consistent with the dispatch's own note that DEPLOY-75's true-positive path is unverified this session (needs a codex-tier key). Reconciliation and the reader must be built to report an honest zero/absent state today, not manufacture activity. This is a pre-existing condition, not something S4-1b/S4-8 need to fix."
+    }
+  ],
+  "designDecision": {
+    "s4_1b": "Add plan_review_activity.atom_did (populate at the one call site that already resolves an atom -- GET /api/plan-review/code -- for free, no substrate dependency) and plan_review_activity.request_id (left NULL on every row; reserved for the true ledger correlation id, never filled with a plan-review-side substitute -- filling it with a value that can never match would read as an attempted match that silently always fails, which is worse than an honest absence). Add plan_review_activity.dedup_key, populated from a UUID minted once per inbound HTTP request in server.mjs and threaded through every recordActivity() call made while handling that request, enforced by a partial unique index (NULLs exempt, so pre-migration rows are unaffected). This gives real, DB-enforced protection against plan-review's own repeated-insert bug class; it does not and cannot protect against a client-side network retry, which arrives as a distinct request. New table plan_review_ledger_reconciliation records one append-only row per reconciliation pass (counts, divergence list, and an explicit basis string), so a reconciliation run is a durable record per ENFORCEMENT's 'state changing operations leave a record' rather than a transient response. A reconciliation pass attempts to fetch ledger rows via an MCP tool call (source_obligation_ledger_list -- does not exist on the server today, confirmed above); when the tool is absent the pass writes basis='blocked-no-reader-tool' honestly instead of reporting zero divergence, which would misrepresent 'never checked' as 'checked and clean'.",
+    "s4_8": "Reader lives in plan-review as GET /api/icc/obligations/reconciliation, sibling to the existing GET /api/icc/activity (same repo, same bearer-token gate already applied to every /api/icc/* and /api/plan-review/* route at the top of handle()). Reads the persisted plan_review_ledger_reconciliation rows plan-review already produced; does not attempt to mirror ledger content plan-review has no path to. Reasoning for placement, to satisfy the dispatch's 'note the reasoning in your close' instruction: (1) building it in hauska-mcp-server would be writing another seat's repo, which this dispatch's own out-of-scope line already forbids for S4-3/S4-7 and applies equally here; (2) the seam table row 'ICC paid across Smart Site AND Plan Review | one ledger' argues against a THIRD surface fragmenting an already-two-surface picture further; (3) plan-review already hosts the activity-cache audit precedent at /api/icc/activity, so this is a sibling of an existing pattern, not a new one. The true source-of-truth reader for the ledger itself still belongs on the substrate side eventually (naturally the next ask after S4-7); this reader surfaces what plan-review can honestly attest to about its own reconciliation attempts, not a mirror of substrate's data."
+  },
+  "openDependenciesFlaggedBack": [
+    "S4-7 (substrate): record cited atom + book_id + section_id on the ledger row -- still not landed, per dispatch context.",
+    "NEW, found this checkpoint: no channel exists for a caller to learn source_obligation_ledger.request_id for its own call (neither echoed from an incoming header nor returned in the response). Needed for S4-1b to ever produce an exact match instead of an honest blocked/absent state.",
+    "NEW, found this checkpoint: no MCP tool or endpoint reads source_obligation_ledger at all. S4-8's true source-of-truth reader needs one to exist on the substrate side; this dispatch's reader is a plan-review-side audit trail of reconciliation attempts, not a substitute for that."
+  ],
+  "adversarialReview": {
+    "selfChallenge1": "Am I overstepping into substrate's repo by writing an MCP tool caller for a tool that does not exist? No: the call target is an HTTP tool-call to a deployed service, made from plan-review's own client code (src/mcp.mjs pattern), identical in shape to every other MCP call this repo already makes. No file in hauska-mcp-server is touched.",
+      "selfChallenge2": "Could I instead just add plan-review's own request id into the ledger's request_id column locally to get SOME match rate? Rejected: it would never actually correlate (the two ids are generated independently on each side), so it would report either 0 matches forever (indistinguishable from 'blocked') or, worse, look plausible while being meaningless. An honest blocked state is more useful to an auditor than a column that looks populated and correlates nothing.",
+    "selfChallenge3": "Is the dedup_key mechanism real or cosmetic? It is a genuine DB-enforced unique constraint, verified against a live scratch Postgres before shipping (see CP2). It is explicitly scoped to protect against plan-review's own duplicate-insert bug class, not client network retries -- that limitation is stated in the migration's own comment, not left implicit."
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "lane": "D",
+  "closeType": "PARTIAL — code merged and CI-green; production migration and deploy explicitly held by operator decision (not a lane failure, a scoping call made mid-session)",
+  "date": "2026-09-02",
+  "planRows": ["G-109"],
+  "dispatch": "_dispatches/2026-09-02_d_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-02_d_cp1.json",
+    "_inbox/2026-09-02_d_cp2.json"
+  ],
+
+  "missionPremise": "Plan row G-109 (OPS-17, Layer 1 Wave 1), govtech-seat half only. WDLL acceptance items 11 and 12 (_inbox/2026-08-25_govtech_wave1_WDLL.md) describe the full row; S4-3 and S4-7 are substrate-seat (hauska-mcp-server) and explicitly out of scope. The dispatch's own context block corrected the WDLL's schema assumption before work started: source_obligation_ledger's real columns are id, created_at, source_actor_did, atom_did, tool, product, tier, request_id, obligation_type, amount_minor, currency, grace_terms, note -- NOT the reference_kind/book_id/section_id/edition_id the WDLL's item 12 check literally names. Work was scoped and written against the real schema, per the dispatch's explicit instruction, not the WDLL's literal text.",
+
+  "completionPredicate": "S4-1b (reconciliation) and S4-8 (reader) exist as tested, merged, CI-green code in plan-review, matching request_id between plan_review_activity and source_obligation_ledger and surfacing divergence rather than dropping it, with a genuine write-time idempotency key (dedup_key) enforced by a database constraint. This predicate does NOT require a live post-deploy accrual count (WDLL item 12's literal check) to be met this close, because that check depends on S4-3/S4-7 (substrate, out of scope) and on a production deploy that was deliberately held this session -- see scopeBasis and openResiduals below. A stranger evaluating this close should confirm: PR #8 is merged to plan-review main, CI conclusion is the literal string \"success\" on both the PR head commit and the merge commit, and the reconciliation logic reports an honest blocked state rather than a fabricated match when no ledger read path exists (verified live in CP2, not merely unit-tested).",
+
+  "scopeBasis": "Built only in plan-review (govtech seat's own repo). Did not touch hauska-mcp-server (substrate seat's repo) at any point, including reverting a same-session exploratory addition there was never committed -- see workingNotes. Did not apply migrations to the production Neon or deploy the Cloud Run revision: this was a deliberate scope cut, not an oversight -- the operator ruled (relayed cross-session, see workingNotes) that deploy should wait because the reconciliation feature is structurally blocked by the request_id echo-back gap regardless of whether it ships, so an earlier deploy buys nothing. Did not build S4-3, S4-7, the real ICC rate (O-1/S4-B1), or Circle billing (S4-11), all explicitly out of scope in the dispatch.",
+
+  "prs": {
+    "plan-review": {
+      "number": 8,
+      "url": "https://github.com/empressaioemail-tech/plan-review/pull/8",
+      "headBranch": "govtech/g-109-ledger-reconciliation",
+      "headCommit": "bfb4559",
+      "mergeSha": "1dd20d19601ea18dc9aea8f444e06ac783753470",
+      "mergedAt": "2026-09-02T14:34:18Z",
+      "ciCheckRun": {
+        "onHeadCommit": { "name": "test", "conclusion": "success" },
+        "onMergeCommit": { "name": "test", "conclusion": "success" }
+      }
+    },
+    "hauska-mcp-server": "not applicable: no PR, no commit, no file changes in this repo. An exploratory client-side addition (a listSourceObligationLedger() call in plan-review's own src/mcp.mjs, attempting to call a not-yet-existing MCP tool) was written, tested live against the deployed MCP server to confirm its error shape, then reverted before commit in favor of the adopted design's simpler explicit-null approach -- see workingNotes. Zero lines of hauska-mcp-server were read-write; tools.ts and index.ts were read-only to verify the two residuals below."
+  },
+
+  "counts": {
+    "testsPassing": { "n": 39, "countingRule": "node --test web/api/*.test.mjs full suite count, 33 pre-existing (code-lookup.test.mjs, backend.test.mjs) + 6 in the adopted web/api/ledger-reconciliation.test.mjs; zero skipped, zero failing" },
+    "migrationsAdded": { "n": 2, "countingRule": "sql/003_activity_request_id.sql (adopted from the colliding session's work, request_id column) and sql/004_activity_dedup_key.sql (this session's own addition, dedup_key column + unique index)" },
+    "filesChangedThisPr": { "n": 6, "countingRule": "git diff --stat on the merge commit vs its parent: sql/003, sql/004, src/ledger-reconciliation.mjs (new), src/server.mjs (modified), src/store.mjs (modified), web/api/ledger-reconciliation.test.mjs (new)" },
+    "liveIccAccrualsProducedThisSession": { "n": 0, "countingRule": "No production traffic was generated; no deploy occurred. IBC2018P6 and IPMC2018P2 manifests in code-lookup.mjs are both empty (zero ingested sections) as of this session, so even on the currently-live revision, no code path resolves an ICC-licensed section today -- this is a pre-existing condition unrelated to this PR, confirmed by reading src/code-lookup.mjs, not asserted." },
+    "hauskaMcpServerFilesModified": { "n": 0, "countingRule": "grep/read-only. Confirmed via git status in that repo's checkout: no tracked or untracked changes introduced by this lane." }
+  },
+
+  "constraintsHonored": [
+    "Verify at source: every claim about hauska-mcp-server's request_id handling and the absence of a ledger reader tool was confirmed by reading its actual src/ files (index.ts, tools.ts, source-obligation-meter.ts, gate-front.ts, request-context.ts) and by one live call against the deployed server, not assumed from the WDLL or the dispatch text.",
+    "Merge only on CI conclusion string 'success': confirmed via gh api .../check-runs (not gh pr checks, which prints 'pass') on both the PR head commit and the post-merge commit on main.",
+    "Verify a check by violating it: the dedup_key unique constraint was proven to reject a duplicate and accept two NULLs, against a live scratch Postgres, before being trusted.",
+    "Commit by explicit pathspec: git add named exactly the six intended files; git status confirmed no stray files were staged.",
+    "State-changing operations leave a record: N/A this close -- no state-changing operation against a shared store occurred (no production migration, no deploy, no atoms write).",
+    "Absent vs zero vs unmeasured: reconciliation reports typed 'ledger-unavailable', never a fabricated zero-divergence result, when no ledger read path exists (this was the single most load-bearing design constraint of the whole lane).",
+    "Stay in your own repository: zero writes to hauska-mcp-server; the one exploratory edit there-adjacent (a client function in plan-review calling a not-yet-existing MCP tool) was reverted before commit specifically because it added unverifiable speculative response-shape parsing for a tool that does not exist, not because it touched another repo (it did not).",
+    "Interruption recovery / recover-never-reconstruct: on discovering a live multi-session collision in the shared worktree, stopped immediately, reported full state honestly cross-session, and held for the operator's ruling rather than unilaterally choosing whose work should win."
+  ],
+
+  "openResiduals": [
+    {
+      "item": "Production migration (sql/003, sql/004) not applied to the plan-review Neon deployment DB. Not blocked -- both migrations are additive, IF NOT EXISTS guarded, and verified safe against a schema-matching scratch database. Deliberately held per operator decision.",
+      "owner": "govtech seat, next time this row is picked back up",
+      "planRow": "G-109"
+    },
+    {
+      "item": "Cloud Run deploy of the merged plan-review revision. Deliberately held for the same reason as the migration -- reconciliation cannot do its actual job until the request_id echo-back gap (below) closes, so nothing is gained by deploying early.",
+      "owner": "govtech seat",
+      "planRow": "G-109"
+    },
+    {
+      "item": "SUBSTRATE-SEAT BLOCKER, newly surfaced this session (independently confirmed by two other sessions working the same duplicate dispatch): hauska-mcp-server mints source_obligation_ledger.request_id server-side (node:crypto randomUUID(), src/index.ts line 289) and never returns it to the caller in a response body or header. Exact reconciliation cannot produce a single real match until this is fixed -- either by echoing the id back, or by accepting and honoring a caller-supplied correlation id. This is a NEW finding beyond S4-3/S4-7 and needs its own ask to the substrate seat; per cross-session coordination, doc-repo-1d is writing that request separately.",
+      "owner": "substrate seat",
+      "planRow": "G-109 (blocks it), not a substrate-owned row itself as far as this lane could determine"
+    },
+    {
+      "item": "No MCP tool or endpoint reads source_obligation_ledger at all -- confirmed by grep across hauska-mcp-server/src/tools.ts (zero matches for 'ledger' or 'obligation'). Even with request_id echo-back fixed, plan-review has no path to fetch ledger rows without a substrate-side reader tool. The adopted design in this PR does not attempt to work around this (see workingNotes on the reverted exploratory client call) -- it is named here as a second, independent substrate dependency.",
+      "owner": "substrate seat",
+      "planRow": "G-109"
+    },
+    {
+      "item": "source_obligation_ledger has no book_id/section_id/edition_id columns (S4-7, confirmed still not landed this session). WDLL item 12's literal check (`SELECT reference_kind, book_id, section_id, edition_id, source_actor_did FROM source_obligation_ledger...`) cannot be run as written against the real schema regardless of anything built in this PR.",
+      "owner": "substrate seat (S4-7)",
+      "planRow": "G-109"
+    },
+    {
+      "item": "DEPLOY-75's true-positive path (does a real ICC citation still accrue correctly) remains unverified -- unchanged from the dispatch's own starting context, not addressed by this lane. Needs a codex-tier product key.",
+      "owner": "next session with access to a codex-tier key",
+      "planRow": "G-109 / OPS-17 A-088"
+    }
+  ],
+
+  "wdllCitations": {
+    "item11": "Effectively met, per the dispatch's own pre-verified context: migration 009 applied, source_obligation_ledger exists on hauska-mcp-server's Neon, 12 rows pre-dating the #75 fix. Not re-checked this session per the dispatch's instruction.",
+    "item12": "PARTIALLY addressed. The reconciliation and reader code exist, are tested, and are merged -- but item 12's own check text assumes columns (reference_kind, book_id, section_id, edition_id) that do not exist on source_obligation_ledger (S4-7 not landed), and its post-deploy accrual-count assertion cannot be evaluated because no deploy occurred this session (deliberate hold). Grading item 12 as fully met would misrepresent both of these facts."
+  },
+
+  "workingNotes": "This lane's execution was interrupted mid-build by discovering the identical dispatch (_dispatches/2026-09-02_d_dispatch.md) had been hand-carried to three separate executors across two other Claude sessions (doc-repo-1d and its sub-agent doc-repo-33), all landing in the same shared worktree P:/seat-worktrees/govtech/plan-review. This session's own from-scratch build (a reconciliation.mjs module, a competing sql/003 migration, and a client-side call to a not-yet-existing MCP tool) was abandoned in favor of the other session's already-in-progress, better-scoped design once the collision was confirmed cross-session and the operator ruled (relayed via doc-repo-1d) that the combined state should proceed. This session's net contribution to the merged PR is the dedup_key migration, its verified-by-violation unique constraint, and wiring it through every recordActivity() call site in server.mjs. Full detail in _inbox/2026-09-02_d_cp2.json. Flagging for the record: this was a duplicate-dispatch coordination fault, not a design disagreement between seats, and is worth a look at why the same _dispatches/ file reached three executors.",
+
+  "s4_8_placement_reasoning": "The reader (S4-8) was folded into the existing GET /api/icc/activity endpoint rather than built as a new surface. Reasoning, as the dispatch asked to have recorded: (1) hauska-mcp-server is out of scope for this dispatch (substrate's repo) and has no reader tool of its own today, so a plan-review-side reader cannot be a thin proxy over a real source-of-truth read path -- it can only report on what plan-review itself can see, which is exactly what the activity endpoint already does; (2) the OPS-17 seam table's 'ICC paid across Smart Site AND Plan Review -- one ledger' framing argues against fragmenting an already-two-surface picture with a third; (3) plan-review already hosts this exact audit-facing precedent at /api/icc/activity, so this is a sibling of an existing pattern rather than a new one. No persisted reconciliation-run log was built (CP1 had proposed one): reconciliation is a read-only comparison, not a state mutation, so it does not fall under ENFORCEMENT's durable-record requirement, and computing it fresh on each read avoids a second, unnecessary durable store for a fully-derivable value.",
+
+  "leave_behind": [
+    {
+      "item": "Apply sql/003_activity_request_id.sql and sql/004_activity_dedup_key.sql to the production plan-review Neon (currently only verified against a scratch database), then deploy the merged Cloud Run revision. Held on operator instruction; not blocked technically.",
+      "owner": "govtech seat",
+      "plan_row": "G-109"
+    },
+    {
+      "item": "File a substrate-seat ask for the two newly-found blockers (request_id echo-back; a source_obligation_ledger reader tool). Per cross-session coordination, doc-repo-1d is drafting this separately -- confirm it lands rather than assuming it will.",
+      "owner": "substrate seat (ask originates from doc-repo-1d per this session's coordination)",
+      "plan_row": "G-109"
+    }
+  ]
+}
