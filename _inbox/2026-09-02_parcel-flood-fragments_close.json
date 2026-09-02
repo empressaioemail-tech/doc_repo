@@ -1,0 +1,146 @@
+{
+  "lane": "PARCEL-FLOOD-FRAGMENTS",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T17:55:26Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-flood-fragments_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main 9e38145",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-flood-fragments_cp1.json",
+    "_inbox/2026-09-02_parcel-flood-fragments_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 9e38145",
+    "factory_worktree": "P:/tmp/hauska-factory-flood-frag, branch feat/flood-fragments (behind origin by 3 commits at close time -- the branch is merged and retired, not force-updated, per git-safety guidance against unrequested destructive resets)",
+    "mergedCommit": "2742bbddcb018fb44ddc35d97fe7f64083ed70ea (PR #71, squash)"
+  },
+  "operatorDirection": "Mid-card, the operator (Nick) reviewed the CP2 finding and directed: (a) do not cancel the in-flight Williamson parcel-record-fill run, record its execution id/window instead; (b) turn the write-up into a damage census (current cell-state counts per county x specialized rail vs each owning card's own close-reported counts) rather than only a mechanism report; (c) the planner is carding the parcel-record-fill fix separately, using this card's CP2 as the spec input -- this card's own step 2 (flood re-apply) moves into a later heal pass, after the fix, where it cannot be re-clobbered.",
+  "missionPremise": "R4-COMPANIONS's close flagged flood-ingest.mjs as sharing its own proven single-fragment-pick undercount (~1% of matched wells missed, ~15% of Bastrop parcels span multiple txgio_parcel tile fragments). Port R4's proven union-fragments-per-prop_id fix into flood-ingest.mjs.",
+  "completionPredicate": "Step 1 (the fix) is met: PR #71 merged with 4/4 CI checks SUCCESS on the CURRENT base (re-verified green after a required branch update, not the stale base it was originally opened against), image rebuilt and redeployed to factory-flood-ingest with the deploy digest independently verified two ways (deployed container spec vs the build's own reported result image, both sha256:1c4954d7...). Steps 2 (re-apply + report deltas) and 3 (measure the same single-fragment exposure in p2-juris-store.mjs) are explicitly NOT done, by operator direction, because re-running flood-ingest now would very likely be undone by the parcel-record-fill clobber defect this card discovered underneath it, making any reported delta meaningless. Those steps move to the post-fix heal pass named in the operator direction above.",
+  "scopeBasis": "hauska-factory only. The fix itself (src/jobs/flood-ingest.mjs, its test) matches the card's original scope exactly and was found already correctly implemented by a lapsed prior claim on this same card -- recovered and merged, not redone. The damage census that dominates this close is NOT flood-ingest scope; it exists because verifying this card's own premises (re-running flood-ingest and reporting a delta) surfaced a defect in a completely different, shared file (parcel-record-fill.mjs) that this card does not own and does not fix. No code change was made to parcel-record-fill.mjs by this card.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 71,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/71",
+      "mergeSha": "2742bbddcb018fb44ddc35d97fe7f64083ed70ea",
+      "ciConclusion": "SUCCESS (re-verified on the updated branch HEAD 8ab47b4 after gh api pulls/71/update-branch, not the stale original base)",
+      "tests": "2 new falsifier-shaped tests (union present + single-fragment-pick pattern absent; point-on-surface taken from the unioned geometry, not per-fragment) plus the existing flood-ingest suite, all green"
+    }
+  ],
+  "deployVerification": {
+    "cloudBuildId": "d5604a8c-9d54-43be-9d0f-b1c9aa902035",
+    "status": "SUCCESS",
+    "digestConfirmedTwoIndependentWays": {
+      "deployedContainerImage": "us-east4-docker.pkg.dev/hauska-prod-497015/hauska-factory/hauska-factory@sha256:1c4954d7fa951d7e50a58ad73346be72d4134f5922be735d54c8a18817e73000",
+      "buildOwnReportedImage": "sha256:1c4954d7fa951d7e50a58ad73346be72d4134f5922be735d54c8a18817e73000",
+      "match": true
+    }
+  },
+  "cardH3_damageCensus": {
+    "purpose": "Per operator direction: current live cell-state distribution per county per specialized companion/rail vs each owning card's own close-reported counts, so a future heal pass knows exactly which owning job to re-run where. All counts queried live 2026-09-02T~17:45-17:55Z, statement_timeout-bounded (40-55s), against FACTORY_DATABASE_URL.",
+    "rootCauseSummary": "src/jobs/parcel-record-fill.mjs's instantiateAndIngest()/upsertRecords() generates a default cell for EVERY declared rail (via the vendored engine's instantiateParcelRecord) and unconditionally upserts ALL of them via UPSERT_CELLS_BATCH_SQL (ON CONFLICT (place_key, rail_key) DO UPDATE SET cell_state = EXCLUDED.cell_state), with no filter for rails this job does not itself populate. Every rail whose real data comes from a SEPARATE specialized job (flood-ingest.mjs, parcel-r4-companions.mjs for wells/specialDistricts, parcel-value-history.mjs, parcel-r5-zoning.mjs) gets silently overwritten back to the engine's default 'unaccounted' state EVERY TIME parcel-record-fill runs for that county, for ANY reason -- including runs whose actual purpose is unrelated (e.g. verifying a dollar-rail crosswalk fix). Code-verified by reading the upsert path directly (see CP2), not inferred from timing alone.",
+    "perRail": {
+      "flood": {
+        "owningClose": "_inbox/2026-09-01_parcel-r3-flood_close.json, closedAt 2026-09-02T06:05:00Z. Reported matched/swept: 48021=61945/311, 48209=116389/31, 48309=114126/128, 48453=380208/709, 48491=282362/208. 48055 dry-run only (pre-existing geom gap, never applied).",
+        "liveNow": "48021=0 value/0 absent-verified/62256 unaccounted (FULLY WIPED). 48209=0/0/116420 (FULLY WIPED). 48309=0/0/114254 (FULLY WIPED). 48453=0/0/380917 (FULLY WIPED). 48491=71963 value/7 absent-verified/210600 unaccounted (75% WIPED, partial survival from a run that finished mid-clobber). 48055=0/0/24988 unaccounted (expected -- never applied, pre-existing geom gap).",
+        "verdict": "5 of 5 previously-populated counties damaged; 4 fully, 1 partially."
+      },
+      "wells": {
+        "owningClose": "_inbox/2026-09-01_parcel-r4-companions_close.json, closedAt 2026-09-02T07:00:00Z. Reported total: 2,494 wells matched across five counties (per-county split only in that card's CP2, not repeated in its close text).",
+        "liveNow": "48021=1292 value/60964 absent-verified. 48209=41 value/116379 absent-verified. 48309=216 value/114038 absent-verified. 48453=433 value/380484 absent-verified. 48491=0 value/0 absent-verified/282570 unaccounted (FULLY WIPED). 48055=282... (24988) unaccounted, expected.",
+        "verdict": "Williamson fully wiped (matches the flood/valueHistory pattern exactly). The other four counties show live non-zero 'value' counts (sum 1,982) that cannot be reconciled to R4's own per-county split without reading that card's CP2 -- flagging as unconfirmed-but-plausibly-intact rather than claiming either way."
+      },
+      "specialDistricts": {
+        "owningClose": "_inbox/2026-09-01_parcel-r4-companions_close.json. Reported total: 747,183 matched across five counties.",
+        "liveNow": "48021=12094 value/50162 absent-verified. 48209=34098 value/82322 absent-verified. 48309=114254 value/0 absent-verified (100%). 48453=380831 value/86 absent-verified (~100%). 48491=0 value/282570 unaccounted (FULLY WIPED). 48055=24988 unaccounted, expected.",
+        "verdict": "Live sum of value across the four non-Williamson counties = 541,277. 747,183 - 541,277 = 205,906, close to Williamson's full county size (282,570) -- consistent with Williamson being the ONLY county wiped for this rail, and the other four fully intact. This is the cleanest single reconciliation in this census."
+      },
+      "valueHistory": {
+        "owningClose": "_inbox/2026-09-02_parcel-value-history_close.json, closedAt 2026-09-02T16:00:00Z. Reported: all six counties' rowCount sum exactly matches each county's landing denominator (100% value, zero orphans).",
+        "liveNow": "48021=62256 value (100%, intact). 48055=24988 value (100%, intact). 48209=116420 value (100%, intact). 48309=114254 value (100%, intact). 48453=380917 value (100%, intact). 48491=0 value/282570 unaccounted (FULLY WIPED).",
+        "verdict": "Five of six counties fully intact; Williamson fully wiped. Since this close's own closedAt (16:00:00Z) is AFTER the 12:45/12:59 clobber waves, and Williamson's only parcel-record-fill run since then is the 16:23:02Z execution (id a65950fb, see below, now status=succeeded), this specific wipe is freshly attributable to that one run."
+      },
+      "zoningDistrict": {
+        "owningClose": "_inbox/2026-09-01_parcel-r5-zoning-record_close.json (closed 15:30:00Z) + _inbox/2026-09-02_parcel-r5b-stampgap_close.json (closed 16:08:00Z, the more current baseline). R5B store-wide: value=531,919, unaccounted=79,197, not-applicable=370,289, absent-verified=0.",
+        "liveNow": "48021=11793 value/199 unaccounted/50264 not-applicable. 48055=10038 value/589 unaccounted/14361 not-applicable. 48209=49655 value/5180 unaccounted/61585 not-applicable. 48309=53365 value/28467 unaccounted/32422 not-applicable. 48453=239336 value/37667 unaccounted/103914 not-applicable. 48491=0 value/174827 unaccounted/107743 not-applicable. Live sum value=364187, live sum unaccounted=246929.",
+        "verdict": "531,919 - 364,187 = 167,732 cells reverted from value to unaccounted, matching almost exactly the unaccounted increase (246,929 - 79,197 = 167,732). Damage is NOT limited to Williamson here (which lost 100% of whatever it had) -- McLennan (28,467 unaccounted) and Travis (37,667) and Hays (5,180) all show real, unreconciled damage above R5B's baseline too, meaning parcel-record-fill ran for those counties again after R5B's 16:08:00Z close in a way not fully captured by this census's runs-table sampling (a 6-county single-execution run, like the 03:32:54Z and 01:33:12Z rows this census's runs query surfaced, would not show as a per-county target string match in a naive filter). This rail shows the WIDEST damage of the five measured, not the narrowest."
+      },
+      "cityLimits": {
+        "owningClose": "Not a separate card -- populated directly by parcel-record-fill's own ingestJurisdictionOntoRecords in the SAME pass that (re)generates every rail, every run. Included as a control, not a victim.",
+        "liveNow": "48021=11992 value/50264 absent-verified. 48055=10627 value/14361 absent-verified. 48209=54835 value/61585 absent-verified. 48309=81832 value/32422 absent-verified. 48453=277003 value/103914 absent-verified. 48491=174827 value/107743 absent-verified.",
+        "verdict": "Healthy on all six counties, including Williamson -- zero unaccounted anywhere. Confirms the defect is specific to rails parcel-record-fill does NOT itself populate in the same pass, not a general table-wide corruption."
+      }
+    },
+    "measurementNotes": "A single combined 6-rail query timed out at 55s under current store contention (a live Williamson parcel-record-fill execution plus whatever else is running) and was abandoned in favor of six separate per-rail queries (30-40s bound each), all of which succeeded. No rail was left unmeasured. setbackRules, pipelines, permits, easements, buildingFootprint, owner, salesHistory, publicRecordRefs, ossf, utilityService, agValuation, mineralRights, hoaDeedRestrictions, overlayDistricts share the identical code-level exposure (same 'companion' grain, same upsert path) but were NOT measured -- outside the six rails the operator named for this census. Given wells/specialDistricts/valueHistory/flood all show the same Williamson-concentrated pattern, it is a reasonable but UNVERIFIED expectation that these other companion rails are damaged in the same shape; do not treat that expectation as a measured fact."
+  },
+  "williamsonRunRecord": {
+    "instruction": "Operator directed: do not cancel, record the execution id and window instead.",
+    "runs": [
+      { "id": "a65950fb-c248-4eea-8c70-c6d8d0be91a1", "started_at": "2026-09-02T16:23:02.769Z", "status": "succeeded (confirmed at 2026-09-02T17:55:11Z, was still 'running' at first observation ~17:36Z)", "note": "Most recent Williamson parcel-record-fill execution; correlates with valueHistory's wipe (owning close was 16:00:00Z, after which this is the only Williamson run)." },
+      { "id": "7943a321-52b2-4f0a-af84-3e917115a8bc", "started_at": "2026-09-02T12:59:54.704Z", "status": "succeeded" },
+      { "id": "122cd0b2-bee1-4e4b-8104-178cc033156c", "started_at": "2026-09-02T12:45:11.881Z", "status": "running (still shown as 'running' in the runs table as of 17:55:11Z, ~5h10m after start -- an apparent orphaned/stuck run row, flagged but not investigated; out of this card's scope)" },
+      { "id": "be6e8441-1ab9-4e49-910a-57a6f7b96e98", "started_at": "2026-09-02T03:32:54.089Z", "status": "succeeded", "target": "all six counties in one execution" },
+      { "id": "7a751a28-a795-4e38-9f25-9c7dce9175a5", "started_at": "2026-09-02T01:33:12.367Z", "status": "succeeded", "target": "all six counties in one execution" }
+    ],
+    "notCancelled": "Confirmed no cancel/kill action was taken against any of these runs by this card."
+  },
+  "whatContradictedTheCard": [
+    "The card's own premise ('Idempotent re-runs; ... deltas reported verbatim per county', 'Expect ~1% magnitude; a much larger delta is a finding') anticipated a SMALL delta from the fragment-union fix specifically. The actual live state contradicts the premise that there was a stable baseline to diff against at all: the baseline itself had been silently destroyed by an unrelated defect (parcel-record-fill's non-owned-rail clobber) hours to minutes before this card ran step 2's premise-check. Running step 2 as originally scoped would have reported a delta that looked like validation of the fragment-union fix but was actually mostly measuring damage from a different bug -- exactly the kind of misleading close the queue protocol's contradiction-reporting rule exists to catch.",
+    "Two mechanisms were considered for the reset before settling on parcel-record-fill: PARCEL-S6-COLLISION's remediation (rejected: its own dispatch scopes any reset to 777 accounts' dollar cells specifically, three orders of magnitude smaller than the ~900K+ cells actually affected, and the runs-table evidence points at ordinary parcel-record-fill phase executions, not an S6-specific phase) and, per the operator's own correction mid-card, the possibility that the current in-flight Williamson run WAS S6-COLLISION-related verification traffic (plausible and not excluded -- S6-COLLISION may be the reason Williamson specifically has had far more parcel-record-fill invocations today than any other county) even though the clobber MECHANISM itself is a parcel-record-fill defect, not an S6-COLLISION-authored one."
+  ],
+  "constraintsHonored": [
+    "did not cancel the in-flight Williamson execution; recorded its id and window instead",
+    "did not attempt to fix the parcel-record-fill defect from this card -- named it, sized it, and stopped, per operator direction that the planner cards the fix separately",
+    "no fabricated timestamp anywhere in this close or its checkpoints -- every timestamp queried live via `date -u`",
+    "merged only on green CI, re-verified against the current base (not the stale one) before merging",
+    "deploy digest verified two independently derived ways before treating the fix as live",
+    "reported what could not be measured (13 companion rails outside the census scope) rather than extrapolating a measured pattern onto them as fact"
+  ],
+  "scratch": {
+    "LESSON": [
+      "A recovered lapsed lane's own diagnostic scratch scripts are worth reading in full before writing new ones -- this card's baseline-discrepancy discovery, the runs-table correlation, and the wipe-scope census all reused or lightly adapted five scripts a prior, un-closed claim on this same card had already written.",
+      "When a combined multi-condition query times out under store load, splitting into narrower per-condition queries (here, per rail_key instead of rail_key = ANY(array)) is often both cheaper AND more informative -- it turns one all-or-nothing failure into six independent, individually-timed results, some of which succeed even when the combined form does not.",
+      "A code-level defect that produces a large, confusing store-state discrepancy is worth pausing an in-progress card for, even when the card's own narrow deliverable (here, PR #71) is already done and clean -- reporting the discrepancy as a footnote in an otherwise-successful close would have buried a board-wide finding inside a small card's paperwork."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T17:26:12Z hauska-factory PR #71 merged, mergeSha 2742bbddcb018fb44ddc35d97fe7f64083ed70ea",
+      "2026-09-02T~17:29Z Cloud Build d5604a8c SUCCESS, factory-flood-ingest redeployed to sha256:1c4954d7... (verified two ways)",
+      "2026-09-02T~17:45-17:55Z live census: flood/wells/specialDistricts/valueHistory all show Williamson (48491) as the single most-damaged county, consistent with it having the most parcel-record-fill invocations today (5 distinct executions found: 01:33, 03:32, 12:45, 12:59, 16:23); zoningDistrict shows damage additionally in McLennan/Travis/Hays not yet attributed to a specific run.",
+      "cityLimits (parcel-record-fill's own directly-owned rail) shows zero unaccounted anywhere, including Williamson -- confirms the defect is specific to non-owned rails, not general corruption."
+    ],
+    "DEAD-END": [
+      "A single 6-rail combined census query (rail_key = ANY($1)) timed out at 55s under live store contention; replaced with six separate per-rail queries, all of which completed within 30-40s."
+    ],
+    "OPEN": [
+      "The parcel-record-fill clobber defect itself is unfixed. Per operator direction, the planner is carding this separately using this close and CP2 as the spec input: the fix should make upsertRecords skip rails it does not own, and/or add a never-downgrade invariant (unaccounted may become a value this job owns; no non-unaccounted cell may ever be written back to unaccounted by this job).",
+      "13 companion rails (setbackRules, pipelines, permits, easements, buildingFootprint, owner, salesHistory, publicRecordRefs, ossf, utilityService, agValuation, mineralRights, hoaDeedRestrictions, overlayDistricts) share the identical code-level exposure but were not measured -- a fuller census after the fix lands would confirm or bound the true total blast radius.",
+      "Run id 122cd0b2-bee1-4e4b-8104-178cc033156c (Williamson, started 12:45:11.881Z) still shows status='running' in the runs table over 5 hours later -- either a genuinely still-running/stuck execution or a run-tracking bookkeeping gap. Not investigated; flagged for whoever next touches the runs/termination-records machinery.",
+      "This card's own step 2 (re-run flood-ingest --apply, report the fragment-union delta) and step 3 (measure p2-juris-store.mjs's containment exposure) remain genuinely undone, moved to the post-fix heal pass per operator direction -- not silently dropped."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-flood-fragments_cp1.json",
+    "_inbox/2026-09-02_parcel-flood-fragments_cp2.json",
+    "_inbox/2026-09-02_parcel-flood-fragments_close.json",
+    "_queue/cards/parcel-flood-fragments/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "parcel-record-fill.mjs's upsertRecords() unconditionally clobbers every rail it does not itself own back to 'unaccounted' on every invocation, for any county, regardless of the invoking card's actual purpose. Confirmed for flood, wells, specialDistricts, valueHistory, and zoningDistrict; structurally implied for 13 more companion rails. Fix needed: skip non-owned rails in the batch upsert, or add a never-downgrade invariant.",
+      "owner": "planner (carding directly per operator direction, using this close + CP2 as spec input)",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Once the clobber fix lands, a heal pass is needed: re-run flood-ingest (now with the fragment-union fix), parcel-r4-companions (wells/specialDistricts), parcel-value-history, and parcel-r5-zoning for whichever counties the fuller post-fix census shows still damaged -- Williamson at minimum for all four measured rails.",
+      "owner": "property (next card)",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Run id 122cd0b2-bee1-4e4b-8104-178cc033156c has shown status='running' for over 5 hours -- worth a direct check (still actually running vs. a termination-record gap) before it is trusted or ignored by anything else.",
+      "owner": "property",
+      "plan_row": "F-01"
+    }
+  ]
+}
