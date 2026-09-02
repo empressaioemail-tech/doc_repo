@@ -1,0 +1,34 @@
+{
+  "lane": "PARCEL-B-GATE-SCHED",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T20:07:58Z",
+  "correctionFromCP1": {
+    "what": "CP1's design (a single unbounded (county_fips, rail_key)-scoped SQL statement, measured 408.8ms on the smallest county 48055) does not survive contact with the largest program counties. Live-measured: the same unpaged shape -- tried in three forms (a parcel_record JOIN, a place_key LIKE-prefix filter, and a place_key range filter, all against the actually-idle store per pg_stat_activity) -- timed out at 120s+ on county 48453 (Travis, 380,917 parcels). EXPLAIN (FORMAT JSON, no ANALYZE) on the JOIN form showed the planner choosing a Seq Scan on parcel_record (Travis is ~39% of that table, past the county_fips index's selectivity threshold) feeding a Nested Loop of 380K individual index probes; the range form showed an Index Scan on parcel_record_cell_pkey with an estimated Total Cost of 1,380,343 (5x the join form's 265,108) -- both plans are expensive for the same underlying reason: parcel_record_cell's PK orders rows by (place_key, rail_key), so a WIDE place_key range with an equality filter on the TRAILING rail_key column cannot skip the ~64 other rails per parcel without walking them (no skip-scan for this index shape).",
+      "fix": "loadCountyRailCells now pages internally via loadCountyRailCellsPage (LIMIT 500 by default, ordered by place_key, cursor = last row's place_key) and accumulates in JS memory across pages before calling evaluateRailGate once on the full accumulated set. Each page statement only ever touches page_size x 65 leaf entries regardless of county size. This is the actual 'streaming/batched per rail' the mission's own wording names -- CP1's initial reading (one statement, scoped to one rail, as opposed to the whole-county 65-rail loader) was an incomplete interpretation; the real dead-end was any UNBOUNDED per-county statement, not merely an unscoped-by-rail one.",
+      "liveValidation": "County 48453 (Travis), rail 'flood': 762 pages, 380,917 cells accumulated correctly (matches parcel_record's own count -- the integrity check passed), 139.9s wall time end-to-end via the CLI, 100-180ms per individual page statement. This is the SAME county and rail that timed out unpaged at 120s+. A Cloud Run job (task-timeout=21600s per the existing cloudbuild.parcel-record-fill.yaml pattern) easily absorbs 140s for the single largest program county; the scheduled job in this card's Factory half will run once per (county, live rail), not once total, so per-call cost is bounded and this is not a scaling cliff for the scheduler."
+    },
+    "sourceEvidence": "Diagnostic scratch scripts (not committed; scratch_plan_only.mjs, scratch_plan_noJoin.mjs, scratch_plan_range.mjs, scratch_paged_test.mjs, scratch_activity_check.mjs in P:/tmp/hauska-engine-b-gate/packages/engine-core, gitignored) captured each EXPLAIN and timing claim above at the time it was made; this checkpoint's numbers are copied from their live output, not reconstructed from memory."
+  },
+  "engineHalfBuilt": {
+    "files": [
+      "packages/engine-core/src/parcel-record/load.ts -- loadCountyRailCellsPage, loadCountyRailCells (paged), countyRailCellsFirstAfter, DEFAULT_RAIL_CELL_PAGE_SIZE",
+      "packages/engine-core/src/parcel-record/publish-gate.ts -- evaluateRailGate, RailGateVerdict, RailGateOptions",
+      "packages/engine-core/src/parcel-record/index.ts -- new exports",
+      "packages/engine-core/src/parcel-record/__tests__/rail-gate.test.ts -- 11 new tests",
+      "packages/engine-core/scripts/gate-rail-cli.mjs -- the CLI entrypoint the mission's item 1 names"
+    ],
+    "testResults": "40/40 pass (11 new + 29 pre-existing in the same __tests__ directory), via `npx vitest run src/parcel-record/__tests__/`. Root-level `npm run typecheck` shows pre-existing errors in unrelated files (site-plan/pdf, well-fact, zoning-discovery, etc. -- missing workspace packages in a fresh clone before `pnpm install --filter`) with zero errors in any parcel-record/ file; confirmed via `npm run typecheck 2>&1 | grep parcel-record` returning no matches, both before and after this card's changes.",
+    "liveVerification": [
+      { "county": "48055", "rail": "flood", "result": "excludedDeclaredAhead (zero earned cells; matches the pre-existing Caldwell noGeom gap, ok:true trivially)", "loadMs": 10193, "pageCount": 50 },
+      { "county": "48453", "rail": "flood", "result": "REFUSE (ok:false, unaccountedCount:81517 of 380917) -- a genuine live rail with real unaccounted cells", "loadMs": 139855, "pageCount": 762 },
+      { "county": "48055", "rail": "cityLimits", "result": "PASS (ok:true, unaccountedCount:0, not excluded) -- a genuine live, fully-accounted rail", "loadMs": 34451, "pageCount": 50 }
+    ],
+    "noteOnTravisFloodState": "This card's own live read shows Travis flood at 78.6% accounted (299,400 of 380,917), not the 0% ('FULLY WIPED') the PARCEL-FLOOD-FRAGMENTS close reported at ~17:55Z. Something -- most likely the heal pass or a flood-ingest re-run that close's leave_behind named -- has already re-filled roughly three-quarters of Travis since then. Not independently confirmed against a specific run row in this checkpoint; noted as an observation, not verified provenance."
+  },
+  "remainingWork": [
+    "Factory half: scheduled Cloud Run job that shells out to this CLI per (county, live rail) post-write-wave, writes verdicts to a new verdict-store table, always publishes excludedDeclaredAhead with every evaluation.",
+    "Verify by violation: kill the scheduler mid-run and confirm the allowlist (PARCEL-B-READER's own scope) stays legacy -- this card's own responsibility is ensuring the scheduler never writes a verdict it cannot stand behind on a killed/partial run, not the reader's default.",
+    "Coordinate the verdict-store shape with PARCEL-B-READER via closes -- PARCEL-B-READER had no close or CP filed as of this checkpoint; this card is establishing the shape."
+  ]
+}
