@@ -1,0 +1,33 @@
+{
+  "lane": "FACTORY-JOB-SIGTERM",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T23:37:00Z",
+  "missionPremise": "Twice-confirmed defect per the dispatch: an external Cloud Run cancel never reaches writeTermination in the shared Factory job-runner, leaving run rows stuck at status='running' forever (122cd0b2, the b-gate-sched instance). Root cause named in the dispatch: no SIGTERM handler in the shared runner pattern. Confirmed live before writing any code: grepped every src/jobs/*.mjs for process.on/process.once SIGTERM/SIGINT -- only conformant.mjs and restamp-access.mjs (2 of ~20 job files) ever wired one, each ad hoc and job-local, not shared.",
+  "rootCauseVerification": {
+    "grep": "grep -rn \"process.on|SIGTERM|SIGINT\" src/ --include=*.mjs (excluding test/) returned exactly two hits, both job-local closures capturing their own runId/lease.",
+    "everyJobCallsStartRun": "grep -c 'await startRun(' across src/jobs/*.mjs: 26 call sites across 24 files (reap.mjs 3, f10-cad-loop.mjs 2, all others 1) -- confirms startRun is the one universal choke point every job already passes through, making it the correct place to hook a guard that cannot be forgotten."
+  },
+  "designChoice": "Hooked the guard into startRun (src/control/runs.mjs) itself rather than requiring each job to opt in: every startRun caller already exists, so every job inherits the guard for free and a future job cannot forget to wire it. Tracks every run this process has opened in a module-level Map (never deregistered on normal completion -- writeTermination's own ON CONFLICT DO NOTHING makes a retried write on an already-terminated run a harmless no-op, so correctness does not depend on precise bookkeeping of when a run finished). On SIGTERM/SIGINT, best-effort writeTermination(exit_kind:'killed', recorder:'sigterm-guard', reason:'external <signal>') for each still-open run, then process.exit with the conventional code for the signal received (143/130).",
+  "preFixEvidenceGatheredThisSession": {
+    "note": "Five factory-parcel-r4-companions runs (48453, 48021, 48209, 48309, 48491), all started 2026-09-02T14:18:30-47Z as part of an earlier claimant's heal-pass work, cancelled externally per Cloud Run's own record (Completed=False, reason=Cancelled, message='Cancelled by user', completionTime 14:29-14:31Z) but left at status='running' in the DB for over 9 hours until this session manually terminated them via reap terminate with that same gcloud evidence, ahead of writing this fix. This is the pre-fix falsifier the dispatch asked for, demonstrated live in production rather than synthetically: the row IDs and gcloud describe output are the evidence.",
+    "runIds": ["8da57043-c0a7-4809-91d1-03c31c4bddd9", "4869f0fa-fdd1-4926-8a42-9c6b3973f8d0", "6ba25726-7d46-40d9-a869-c6045e079b80", "5bfde11f-d77d-4a67-941a-67c59a143c82", "d3cefd39-8bc6-4e0a-9194-d6466a6bbb2d"],
+    "manuallyReconciledVia": "gcloud run jobs execute factory-conformant --args=reap,terminate,--run=<id>,--exit-kind=cancelled,--reason=<gcloud executions describe evidence>,--execution=<name>,--apply (5 invocations, all --apply confirmed via runs.status='cancelled' read back after each)"
+  },
+  "knownPhantomRowsFromDispatch": {
+    "122cd0b2": "already status='killed' (confirmed live via SELECT before this session started work) -- resolved by a prior claimant's own reap terminate use (PR #76, merged 2026-09-02T21:34:59Z, deployed to factory-conformant digest sha256:61c5527f...).",
+    "bGateSchedInstance": "confirmed resolved per _inbox/2026-09-02_parcel-b-gate-sched_close.json's own leave_behind text ('manually corrected via the factory-conformant reap terminate path with real evidence'); live SELECT of status='running' rows at CP1 time shows neither this row nor 122cd0b2 present."
+  },
+  "testPlan": {
+    "unitFalsifier": "test/sigterm-guard.test.mjs, 5 tests: SIGTERM writes a killed record for a tracked run; SIGINT exits 130; a race against the job's own normal-path termination write is a harmless no-op (no crash, no duplicate event); and the falsifier -- same installed listener, same writeTermination machinery, the ONLY variable is whether the run is still tracked at signal time. Tracked: 1 termination write. Untracked (the pre-fix shape): 0 termination writes. Proves the tracking, not mere listener presence, is the causal mechanism.",
+    "fullSuite": "npm test: 645/645 passing (2 pre-existing skips, unrelated to this change), run in this session after `npm install` in the fresh worktree clone.",
+    "liveViolationPostDeploy": "planned for CP2: a real Cloud Run execution of a job with no prior handler (parcel-r4-companions), cancelled externally, termination record checked for recorder='sigterm-guard'."
+  },
+  "deployScope": {
+    "planned": [
+      "cloudbuild.parcel-record-fill.yaml -- covers factory-parcel-record-fill, factory-flood-ingest, factory-parcel-r4-companions, factory-publish-gate-sched (the active job family for this session's other in-flight work)",
+      "cloudbuild.conformant.yaml -- covers factory-conformant (reap tick + terminate verb)"
+    ],
+    "explicitlyOutOfScopeThisCard": "The remaining ~20 Cloud Run job resources (factory-atoms-cad, factory-landing-*, factory-bexar-edges, factory-bake-migrate, factory-verify-walk, etc.) share the same source and will inherit the fix the next time their own cloudbuild pipeline runs, but are not redeployed by this card -- named as leave_behind rather than silently claimed as covered. Redeploying ~27 job resources unrelated to this session's active work was judged out of proportion to this card's scope and out of the property seat's lane ownership for those pipelines."
+  }
+}

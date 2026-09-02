@@ -1,0 +1,53 @@
+{
+  "lane": "FACTORY-JOB-SIGTERM",
+  "status": "closed",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T23:42:00Z",
+  "missionPremise": "Dispatch _dispatches/2026-09-02_factory-job-sigterm_dispatch.md: an external Cloud Run cancel never reaches writeTermination in the shared Factory job-runner (twice-confirmed: b-gate-sched close + phantom run 122cd0b2), root cause a missing SIGTERM handler in the shared runner pattern. Live grep at CP1 confirmed the scope: only 2 of ~20 job files (conformant.mjs, restamp-access.mjs) ever wired their own handler.",
+  "completionPredicate": "The SIGTERM/SIGINT guard is hooked into startRun (the one function every job already calls, so no job can opt out by omission), unit-tested including a genuine tracked-vs-untracked falsifier, the full suite is green, the fix is merged and deployed to the active job family, and proven live in both directions: a real external cancel against the new image writes a correct termination record (recorder='sigterm-guard'), and a real ordinary completion is provably unaffected (recorder stays the job's own). Both phantom rows named in the dispatch are confirmed resolved.",
+  "scopeBasis": "Deployed to the five job resources actively touched by this session's other in-flight work (factory-parcel-record-fill, factory-flood-ingest, factory-parcel-r4-companions, factory-publish-gate-sched, factory-conformant) via their two owning cloudbuild configs. The remaining ~20 Cloud Run job resources share the identical source and inherit the fix automatically the next time their own pipeline runs, but were not proactively redeployed here -- named explicitly as leave_behind rather than silently claimed as covered, since redeploying pipelines this card does not own or have live context on was judged out of proportion to the card's scope. Two older phantom rows (9ef1b6d4, 28823aa1; not-cloud-run host, no execution name, predate this card's evidence) were left running rather than terminated on invented evidence -- reap terminate's own contract refuses an inferred exit_kind, and there is no externally-checkable evidence for a laptop-host run.",
+  "pr": {
+    "number": 79,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/79",
+    "repo": "empressaioemail-tech/hauska-factory",
+    "mergeCommit": "8ace6c3d92030f96851b72250e46e0ab92a87912",
+    "mergedAt": "2026-09-02T23:28:56Z",
+    "ciConclusion": "gate8: SUCCESS (x2), test: SUCCESS (x2)"
+  },
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-02_factory-job-sigterm_cp1.json",
+    "cp2": "_inbox/2026-09-02_factory-job-sigterm_cp2.json"
+  },
+  "counts": {
+    "unitTestsAdded": 5,
+    "unitTestsAddedCountingRule": "test/sigterm-guard.test.mjs test() blocks, all passing",
+    "fullSuite": "645/645 passing, 2 pre-existing skips",
+    "phantomRowsReconciledThisSession": 5,
+    "phantomRowsReconciledCountingRule": "factory-parcel-r4-companions runs with status='running' at session start whose scope.execution named a Cloud Run execution independently confirmed Cancelled via gcloud run jobs executions describe, terminated via reap terminate --apply with that evidence as --reason",
+    "phantomRowsFromDispatchAlreadyResolved": 2,
+    "phantomRowsLeftOpenLeaveBehind": 2,
+    "jobResourcesRedeployedWithFix": 5,
+    "jobResourcesRedeployedCountingRule": "distinct Cloud Run job names updated via gcloud run jobs deploy across the two triggered cloudbuild pipelines, each digest-verified against its own build's reported digest"
+  },
+  "constraintsHonored": [
+    "Store writes only via Cloud Run jobs with run rows -- both the live-violation and live-ordinary verification executions ran on Cloud Run (factory-parcel-r4-companions), never a laptop apply; reap terminate itself refuses off-Cloud-Run writes via refuseLaptop().",
+    "Digest-matched images before executing -- both builds' deployed digests read back and compared against each build's own reported digest before any live test ran.",
+    "Re-green against current base before merge -- PR #79 CI (gate8 x2, test x2) all green on the actual merge base, verified via gh pr checks before gh pr merge.",
+    "Reads with statement_timeout guards -- every runs/termination_records read in this card used a bounded pg Client (statement_timeout: 10000-15000ms).",
+    "Never converted unaccounted to absent-verified, never downgraded a non-unaccounted cell -- not applicable to this card's surface (run-row lifecycle, not parcel-record cells).",
+    "A gate REFUSE stays legacy -- not applicable; no REFUSE-class gate touched.",
+    "Committed and pushed own branch before closing -- feat/job-sigterm pushed, PR #79 opened, merged to main.",
+    "Never infer an exit_kind or terminate on invented evidence -- every reap terminate invocation this session carried real gcloud run jobs executions describe evidence as --reason; the two leave_behind rows were explicitly NOT terminated because no such evidence exists for them."
+  ],
+  "open": [
+    "Two older phantom rows (9ef1b6d4-8d88-4615-ade4-f9971dce80aa, 28823aa1-d233-477b-b1d4-e56a0cbb3745), not-cloud-run host, started 2026-09-01T18:15-18:23Z, no execution name -- carry no externally-checkable evidence for a manual reap terminate. Left running; a future card should decide whether a not-cloud-run/unnamed-execution row gets its own reconciliation path or is accepted as permanently unresolvable.",
+    "The reaper's own status-string precondition bug (reapStartedRuns() hardcoded to status='started'; parcel-record-fill and others write status='running') is unfixed by this card -- named as leave_behind by the prior claimant's PR #76 CP1 and still open; this card's guard prevents NEW phantom rows from an external kill but does not make the scheduled reap tick itself see 'running' rows.",
+    "~20 Cloud Run job resources outside the active family (factory-atoms-cad, factory-landing-*, factory-bexar-edges, factory-bake-migrate, factory-verify-walk, etc.) carry the fix in source but were not redeployed by this card -- they inherit it automatically on their own next deploy.",
+    "This session's other in-flight card (PARCEL-FILL-OWNERSHIP, Williamson flood-ingest re-run) continued running through both this card's builds and deploys with no interruption -- confirmed by design (job template deploys never touch a running execution) and by direct observation."
+  ],
+  "leave_behind": [
+    { "item": "not-cloud-run phantom rows 9ef1b6d4 and 28823aa1 (parcel-record-fill, status=running since 2026-09-01)", "owner": "next property-seat claimant", "plan_row": "F-01" },
+    { "item": "reaper status-string precondition bug (reapStartedRuns() only sees status='started', several jobs write status='running')", "owner": "next property-seat claimant", "plan_row": "F-01" },
+    { "item": "redeploy the fix to the ~20 Cloud Run job resources outside the active family, on their own next natural deploy or a dedicated sweep card", "owner": "next property-seat claimant", "plan_row": "F-01" }
+  ]
+}

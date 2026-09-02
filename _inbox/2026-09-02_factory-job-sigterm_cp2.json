@@ -1,0 +1,64 @@
+{
+  "lane": "FACTORY-JOB-SIGTERM",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T23:41:00Z",
+  "pr": {
+    "number": 79,
+    "repo": "empressaioemail-tech/hauska-factory",
+    "headSha": "846d824",
+    "mergeCommit": "8ace6c3d92030f96851b72250e46e0ab92a87912",
+    "mergedAt": "2026-09-02T23:28:56Z",
+    "ciConclusion": "gate8: pass (x2), test: pass (x2) -- all four checks green before merge"
+  },
+  "deploy": {
+    "builds": [
+      {
+        "config": "cloudbuild.parcel-record-fill.yaml",
+        "buildId": "9e2dc068-4ad0-4395-9f28-502eaee6eacf",
+        "digest": "sha256:9969ac22e15ed731da0d223f3b46a9b6fafce1bf567a5edfae7dcac4eb7b12d6",
+        "jobsDeployed": ["factory-parcel-record-fill", "factory-flood-ingest", "factory-parcel-r4-companions", "factory-publish-gate-sched"],
+        "digestVerification": "gcloud run jobs describe <job> --format=... read back for all four; every one matches the build's own gcloud builds describe --format=value(results.images[0].digest) exactly"
+      },
+      {
+        "config": "cloudbuild.conformant.yaml",
+        "buildId": "54fd814f-758e-4c8e-a54d-ab17ffc9c8b0",
+        "jobsDeployed": ["factory-conformant"]
+      }
+    ],
+    "note": "Deploying a Cloud Run job TEMPLATE does not touch an already-running execution of that job -- confirmed against the concurrently in-flight Williamson flood-ingest execution (a6d3d6c3 / factory-flood-ingest-kjwtk, started 23:15:29Z, this session's other in-flight card), which continued unaffected through both builds and past this checkpoint."
+  },
+  "liveVerification": {
+    "violationDemonstrated": {
+      "execution": "factory-parcel-r4-companions-m8gx6",
+      "county": "48209 (Hays) -- already fully verified complete per _inbox/2026-09-02_parcel-r4-companions close data; a re-run with --apply is a proven safe no-op per this session's own handoff note, so this write carried zero data risk",
+      "action": "gcloud run jobs execute ... --async, then gcloud run jobs executions cancel <name> after the run row confirmed live (runId 63ff8b2c, status='running')",
+      "result": "runs.status='killed', termination_records.exit_kind='killed', run_events.termination body: {recorder:'sigterm-guard', reason:'external SIGTERM', lease_released:true} -- the guard's own signature, fired on a real external Cloud Run cancel against the newly deployed image",
+      "contrastWithPreFix": "identical action (external cancel) against the OLD image left five factory-parcel-r4-companions rows (this session's own CP1 evidence) at status='running' for 9+ hours with zero termination record; the NEW image resolves it within the same execution's cancel-to-write window (recorded_at 23:35:37Z, cancel initiated ~23:35:19Z, well inside Cloud Run's ~10s SIGTERM grace)."
+    },
+    "ordinaryPathUnaffected": {
+      "execution": "factory-parcel-r4-companions-jxvsq",
+      "county": "48209, same target as the violation test, run to completion with no external interference",
+      "result": "runs.status='succeeded', termination_records.exit_kind='succeeded', run_events.termination body: {recorder:'parcel-r4-companions', reason:'companion ingest complete'} -- the JOB'S OWN normal-path write, not the guard, confirming the guard's tracking does not race or interfere with normal completion"
+    }
+  },
+  "phantomRowReconciliation": {
+    "fromDispatch": {
+      "122cd0b2": "confirmed status='killed' via live SELECT at CP1 -- already resolved by a prior claimant's own reap terminate use before this session began this card",
+      "bGateSchedInstance": "confirmed absent from the live status='running' set at CP1 -- already resolved per that card's own close leave_behind text"
+    },
+    "discoveredAndReconciledThisSession": {
+      "note": "Five factory-parcel-r4-companions rows (cancelled 2026-09-02T14:18-14:31Z per gcloud run jobs executions describe evidence, per-row) manually terminated via reap terminate --apply, each carrying the specific gcloud evidence as --reason. All five confirmed status='cancelled' by SELECT after each --apply.",
+      "runIds": ["8da57043-c0a7-4809-91d1-03c31c4bddd9", "4869f0fa-fdd1-4926-8a42-9c6b3973f8d0", "6ba25726-7d46-40d9-a869-c6045e079b80", "5bfde11f-d77d-4a67-941a-67c59a143c82", "d3cefd39-8bc6-4e0a-9194-d6466a6bbb2d"]
+    },
+    "leaveBehindNotReconciled": {
+      "rows": ["9ef1b6d4-8d88-4615-ade4-f9971dce80aa", "28823aa1-d233-477b-b1d4-e56a0cbb3745"],
+      "reason": "Both status='running', phase='parcel-record-fill', scope.host='not-cloud-run', scope.execution=null, started 2026-09-01T18:15-18:23Z -- predate every phantom-row evidence this session gathered, carry no Cloud Run execution name to verify against (reap terminate's own contract refuses an inferred exit_kind; there is no externally-checkable evidence for a laptop-host run the way gcloud executions describe provides for a Cloud Run job), and are not named in this card's own dispatch or addenda. Left running rather than terminated on invented evidence, per the never-infer rule reap terminate itself enforces."
+    }
+  },
+  "testResults": {
+    "unitSuite": "npm test: 645/645 passing, 2 pre-existing skips, 0 failures (fresh worktree clone + npm install)",
+    "sigtermGuardFile": "test/sigterm-guard.test.mjs: 5/5 passing including the tracked-vs-untracked falsifier"
+  },
+  "completionPredicate": "The guard is coded, unit-tested with a genuine falsifier, merged, deployed to the active job family, and proven live in both directions (a real external cancel writes the correct termination record; a real ordinary completion is unaffected). Both dispatch-named phantom rows are confirmed resolved. Ready to close."
+}
