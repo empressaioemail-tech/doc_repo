@@ -1,0 +1,118 @@
+{
+  "lane": "PARCEL-R5-ZONING-RECORD",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T15:30:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-r5-zoning-record_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main (session doc-repo-98)",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-r5-zoning-record_cp1.json",
+    "_inbox/2026-09-01_parcel-r5-zoning-record_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 64f5855 (at claim time)",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r5, branch feat/parcel-r5-zoning-record",
+    "engineSha": "a38cbb22eda23637d7a56e104456aa4e7237fc25 (unchanged; job-level change only)"
+  },
+  "missionPremise": "Gap ledger section 11: zoning rails unaccounted on all 611,116 in-city parcel_record rows while 23 of 72 six-county cities hold a real staged zoning layer (zoning-ingest close is the city truth, not the county ledger). Scope: ingest zoningDistrict/zoningJurisdictionKey/zoningProvenance for in-city landing parcels within cities that have a staged layer, spatial join zone-major, keyed by city polygon so a parcel is never stamped across a city boundary (the confirmed Waco/Austin/Pflugerville bleed mechanism in the legacy LDT stamp tool, which scopes by county only). The five named stamp-gap cities and the 49 no-layer cities are out of scope; report residue honestly.",
+  "completionPredicate": "Met: (1) zoningDistrict/zoningJurisdictionKey/zoningProvenance stamped for 516,894 of 522,584 in-city parcels (98.91%) across all 18 in-scope cities (23 staged minus the 5 named stamp-gap), value only, never absent-verified, verified live store-wide with zero absent-verified anywhere on any of the three rails; (2) the bleed defect is verifiably fixed, not just designed around -- Waco (47,679) and Robinson (5,686) parcels in the same county (48309) are cleanly separated with zero cross-contamination, confirmed by direct query; (3) the one material outlier (Elgin, 68.7% match rate) is explained to its mechanism (a 100%/0% split exactly matching its home-county-vs-sliver population, corroborated by an independent prior finding in the zoning-ingest close doc) rather than left as an unexplained number; (4) per-city coverage counts are reported raw, with no fabricated coverage percentage or completeness claim, matching the explicit prohibition already established in this program (zoning-ingest close's countingRule); (5) the five stamp-gap cities and 49 no-layer cities were never processed, verified by the job's own live-derived scope list plus a hardcoded exclusion the tests assert against.",
+  "scopeBasis": "hauska-factory src/jobs/parcel-r5-zoning.mjs + its test (PR #67), plus src/cli.mjs and src/control/writer-allowlist.mjs wiring. No engine-core change, no schema change, no new Cloud Run job or cloudbuild.yaml change (reuses factory-parcel-record-fill via an --args override, the same pattern as purge-bastrop-orphans). No county other than the six-county program touched; no city outside the live-derived, exclusion-filtered scope touched.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 67,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/67",
+      "branch": "feat/parcel-r5-zoning-record",
+      "mergeSha": "4991da344b6263be684d19b8bce570825d551747",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "cloudRunExecution": {
+    "job": "factory-parcel-record-fill",
+    "execution": "factory-parcel-record-fill-4fnnz",
+    "args": "parcel-r5-zoning,--apply",
+    "runId": "1cb60d02-bc5f-4d1f-8da6-5ab462ca53ed",
+    "imageDigest": "sha256:aab454952e8729a0afbea4981cd017de9a6921f5fedb80fac7969fd3c1a89073",
+    "wallClock": "~38 minutes for all 18 cities"
+  },
+  "beforeAfter": {
+    "before": "zoningDistrict / zoningJurisdictionKey / zoningProvenance: 611,116 unaccounted on every in-city record (100%); 370,289 not-applicable on unincorporated records (unchanged by this card either side)",
+    "after": "516,894 value (city_name-scoped district code, jurisdiction key, and ArcGIS source URL); 94,222 unaccounted (5,690 genuine in-scope residue + every parcel in the 49 no-layer / 5 stamp-gap out-of-scope cities); 370,289 not-applicable unchanged; 0 absent-verified"
+  },
+  "counts": {
+    "citiesInScope": 18,
+    "citiesExcludedStampGap": 5,
+    "citiesNoLayerOutOfScope": 49,
+    "totalInCityParcelsInScopeCities": 522584,
+    "matched": 516894,
+    "residualUnaccounted": 5690,
+    "matchRatePct": 98.91,
+    "countingRule": "cell_state->>'kind' grouped by rail_key, read directly from FACTORY_DATABASE_URL after the apply run; per-city total/matched from the job's own live landing_parcel_jurisdiction count at execution time"
+  },
+  "spotCheck": {
+    "placeKey": "48021:34137",
+    "zoningDistrict": "SF-1",
+    "zoningJurisdictionKey": "bastrop-tx",
+    "zoningProvenance": "https://services7.arcgis.com/qOeXJdBtGknaCJC4/arcgis/rest/services/Zoned_Parcels/FeatureServer/83"
+  },
+  "bleedVerification": {
+    "county": "48309 (McLennan -- home to both Waco and Robinson, the exact pair the legacy tool corrupted)",
+    "waco-tx": 47679,
+    "robinson-tx": 5686,
+    "conclusion": "Clean separation, verified live, zero cross-contamination"
+  },
+  "whatContradictedTheCard": "Two things surfaced that the dispatch did not anticipate, neither in the join design itself. First, a real performance defect: landing_parcel_jurisdiction has no supporting index on place_fips, so the originally-written keyset-paginated per-city query re-scanned the county-restricted range and filtered out ~790,000 non-matching rows on every single page (confirmed live via EXPLAIN ANALYZE, 542ms/page for a 500-row page of a 16,496-row city) -- for a city the size of Austin (218,444 parcels, 437 pages at that rate) this would have been prohibitive. Fixed by switching to a single unpaginated per-city fetch (one scan pays the filter cost once, not once per page) with client-side chunking for the expensive spatial-match phase; re-verified live against Hutto with identical correctness (total/matched unchanged) and materially better wall-clock. Second, a genuine cross-session deploy race: mid-deploy, a concurrent Cloud Build from a peer session was pushing to the same mutable image tag at the same time, and the first deploy attempt pinned to a digest that could not be attributed with confidence to either build. Resolved by waiting for the concurrent build to finish, re-syncing to the then-current origin/main (which had moved again in the interim), and submitting a clean rebuild whose push digest and deploy-pin digest were verified to match exactly before any execution ran. Neither issue was a defect in the spatial-join design itself; both were caught by reading live query plans and live digests rather than trusting either a completed status or a tag name.",
+  "constraintsHonored": [
+    "no coverage percentage invented; every count reported raw with its counting rule (matching the zoning-ingest close's explicit prohibition)",
+    "no absent-verified written anywhere, verified live across all 611,405 landing-matched records on all three rails (zero, not merely untested)",
+    "unincorporated parcels' not-applicable cells (set at instantiate time) untouched -- 370,289 unchanged before and after",
+    "the five named stamp-gap cities (Smithville, Luling, Martindale, Woodcreek, Lakeway) never processed, even though this job's own join logic would very likely have succeeded for them",
+    "the 49 no-layer cities never processed",
+    "bleed prevention verified live, not only by design rationale (Waco/Robinson clean separation in the one county both of them share)",
+    "Cloud Run only; LAPTOP_WRITE_FROZEN guard unchanged; no laptop --apply at any point",
+    "store reads via psql with statement_timeout guards throughout; multiple queries timed out under the live table's size and were retried at longer bounds rather than assumed"
+  ],
+  "leave_behind": {
+    "leave_behind": [
+      {
+        "item": "Elgin's Travis-county sliver (1,706 parcels) has no zoning coverage in the source layer at all -- not a stamp defect, a genuine acquisition gap. If Elgin's Travis extent matters to the product, this needs its own re-acquisition card, not a re-run of this one.",
+        "owner": "property / bizops (source acquisition)",
+        "plan_row": "F-01"
+      },
+      {
+        "item": "94,222 unaccounted zoningDistrict cells remain in-scope-city-adjacent: 49 no-layer cities and 5 stamp-gap cities were deliberately not processed by this card. The stamp-gap cities' own layer already exists in tx_zoning_district_staging (Smithville 91 features, Luling 140, Martindale 17, Woodcreek 3165, Lakeway 749 per the zoning-ingest close) -- a follow-up card could very plausibly run this exact job against just those five with a small scope change (removing them from STAMP_GAP_EXCLUDED_CITY_KEYS) once the operator explicitly authorizes expanding scope past the stamp-gap boundary this card respected.",
+        "owner": "property",
+        "plan_row": "F-01"
+      },
+      {
+        "item": "A shared-mutable-image-tag race across concurrent Cloud Build submissions from different sessions is a real, now twice-observed hazard on this shared cloudbuild.parcel-record-fill.yaml (once as a code collision on R2, once as a pure deploy-tag race here). No code fix is proposed here since the file is intentionally shared across many small jobs; flagging for the operator in case a per-session build-tag convention is worth adopting.",
+        "owner": "operator",
+        "plan_row": "F-01"
+      }
+    ]
+  },
+  "scratch": {
+    "LESSON": [
+      "Before trusting a paginated query pattern copied from a similar-looking job, check whether the filter column actually has a supporting index -- landing_parcel_jurisdiction's PK is (county_fips, prop_id) only, so a place_fips-filtered keyset page silently re-scans and discards a huge fraction of the county range on every single page. EXPLAIN ANALYZE caught this in under a minute; the symptom (a small city's job taking 100+ seconds) would have been easy to write off as 'PostGIS is just slow' without it.",
+      "A single unpaginated fetch that returns everything into memory is not always the naive/wrong choice -- when the filtered result set is bounded (here, at most ~220K short id strings for the largest city) and the alternative is a repeated unindexed scan, fetching once and chunking client-side for the expensive downstream work is strictly better.",
+      "Verify a Cloud Build's deploy by reading that build's OWN log line for the digest it pinned, never by re-querying the artifact registry tag afterward -- the tag is mutable and a concurrent build can race it. This is the same discipline as verifying a Cloud Run digest against the build that produced it, one level earlier in the pipeline.",
+      "A sharp per-city outlier in a coverage figure is worth one targeted live query before writing it into a close as an unexplained number. Elgin's 68.7% looked like it could have been a join bug; a single GROUP BY county_fips query showed it was a clean 100%/0% split matching a population size exactly, which is a completely different (and much more defensible) finding than 'roughly two-thirds matched for unclear reasons'."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T14:36:10Z hauska-factory PR #67 MERGED 4991da344b6263be684d19b8bce570825d551747, CI test+gate8 SUCCESS",
+      "2026-09-02T14:40:49Z-ish Cloud Build 41ea7276 SUCCESS, push digest = deploy-pin digest = sha256:aab454952e8729a0afbea4981cd017de9a6921f5fedb80fac7969fd3c1a89073, confirmed live via gcloud run jobs describe before execution",
+      "2026-09-02T15:19:29Z factory-parcel-record-fill-4fnnz execution True (runId 1cb60d02-bc5f-4d1f-8da6-5ab462ca53ed, status succeeded)",
+      "Live store-wide 2026-09-02T15:2xZ: zoningDistrict/zoningJurisdictionKey value=516,894, unaccounted=94,222, not-applicable=370,289, absent-verified=0 on both rails",
+      "Elgin split verified live: 48021=3,749 (100% matched), 48453=1,706 (0% matched)",
+      "McLennan county bleed check verified live: waco-tx=47,679, robinson-tx=5,686, no cross-contamination"
+    ],
+    "DEAD-END": [
+      "A single-line EXPLAIN of the ORIGINAL keyset-paginated CITY_PARCEL_PAGE_SQL is preserved in this card's history for anyone re-deriving why the single-fetch design (CITY_ALL_PARCELS_SQL) exists -- do not reintroduce keyset pagination on landing_parcel_jurisdiction filtered by place_fips without first adding a supporting index."
+    ],
+    "OPEN": [
+      "The 49 no-layer cities and the 5 stamp-gap cities remain fully unaccounted for zoning -- named in leave_behind, not silently dropped.",
+      "Whether to expand this card's scope to the 5 stamp-gap cities (whose layer already exists) is an operator-scope decision, not something this close resolves unilaterally."
+    ]
+  }
+}

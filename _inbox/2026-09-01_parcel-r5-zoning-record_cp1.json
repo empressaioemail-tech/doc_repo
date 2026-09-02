@@ -1,0 +1,41 @@
+{
+  "lane": "PARCEL-R5-ZONING-RECORD",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T14:40:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 64f5855",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r5, branch feat/parcel-r5-zoning-record, cloned fresh from origin/main eb4f9d6",
+    "claimExpires": "2026-09-02T15:37:24.980Z"
+  },
+  "premisesReverified": {
+    "gapLedgerSection11": "re-read: zoning unaccounted on all 611,116 in-city records; zoning-ingest close is the city truth (23 of 72 six-county cities have a real staged layer); Austin serves live while the ledger scored 0.00%.",
+    "cityTruth": "_inbox/2026-09-01_zoning-ingest_close.json re-read: 23 unique cities with a real staged tx_zoning_district_staging layer; five explicit stamp-gap cities (Smithville, Luling, Martindale, Woodcreek, Lakeway) named OUT of scope by this card's own dispatch; 49 no-layer cities also out of scope.",
+    "liveVerification": "Queried tx_zoning_district_staging live (107 cities statewide) and cross-joined against landing_parcel_jurisdiction (six counties, disposition=in-city) via city_geo_id = '48' || place_fips. 23 cities confirmed in-scope-by-layer, matching the close doc's count exactly. Minus the 5 named stamp-gap cities = 18 cities this card actually processes: austin-tx, waco-tx, round-rock-tx, georgetown-tx, leander-tx, cedar-park-tx, pflugerville-tx, kyle-tx, san-marcos-tx, hutto-tx, taylor-tx, lockhart-tx, buda-tx, bastrop-tx, robinson-tx, elgin-tx, dripping-springs-tx, liberty-hill-tx. Round Rock (856 staged districts, 39,163 in-city parcels) is a genuine 18th city confirmed live but not named in the prior close doc's own prose enumeration of 16 -- verified from the table itself, not from the doc's summary.",
+    "layerRoleCheck": "All 18 cities' staged rows are 100% layer_role='base', is_base_district=true -- no overlay rows exist anywhere in this table today. No base-vs-overlay ranking conflict to resolve; the filter is still coded (layer_role='base') for correctness if overlay rows appear later.",
+    "completenessDeclaration": "Confirmed absent at three levels (schema, LDT ZONING_LAYERS config, and an explicit ops-backlog line: 'No instrument grades whether a stamped city's coverage is complete against its zoning layer'). Per this card's own premise ('absent-verified ONLY if the layer is city-complete by its own declaration'), since no such declaration exists ANYWHERE for ANY city, every zone-polygon miss in every one of the 18 cities is unaccounted, never absent-verified. This card writes exactly one cell kind, 'value', and never writes 'absent-verified' at all."
+  },
+  "design": {
+    "readSide": "PRODUCTION_NEONDB_URL / neondb: landing_parcel_jurisdiction (which in-city parcels belong to which city), txgio_parcel (parcel ring geometry), tx_zoning_district_staging (zone polygons, filtered per city + layer_role='base').",
+    "writeSide": "FACTORY_DATABASE_URL: parcel_record_cell, rails zoningDistrict / zoningJurisdictionKey / zoningProvenance. These rows already exist (every parcel starts with its full shape) as 'unaccounted' on every in-city landing-matched parcel; this job is a targeted UPDATE gated on cell_state->>'kind'='unaccounted', never an INSERT, and never touches a cell that is already 'value' or the frozen 'not-applicable' (unincorporated parcels, set at instantiate time, untouched here).",
+    "crossStoreShape": "Not a single SQL join -- two separate databases. Per city: (1) materialize that city's base zoning polygons into a session TEMP table on the cortex-prod connection, GIST-indexed, mirroring p2-juris-store.mjs's HOIST_CITIES_SQL zone-major pattern exactly (detoast once, batch parcels through it) rather than a point-major LATERAL; (2) page that city's in-city landing parcels (per home county chunk, prop_id-ordered, mirroring CHUNK_GEOMETRY_SQL's decode/parcels_six/ranked structure) and spatially test each against the materialized polygons: ST_Covers fast path, ST_Intersects + ST_Area(ST_Intersection) with the same 1e-8 ring floor on a miss, bbox-centre fallback for a parcel lacking usable ring geometry, best match by row_number() PARTITION BY (county_fips, prop_id) ORDER BY overlap_deg2 DESC, district_code (tie-break, replacing p2-juris's place_fips tie-break since city is already fixed here); (3) batch the (place_key, rail_key, cell_state) results in application code and UPDATE Factory's parcel_record_cell gated on current kind, RETURNING to get an exact moved-count distinguishing genuinely-new stamps from cells another run already touched.",
+    "cellShape": "value only: zoningDistrict.value = district_code (e.g. 'PDD', 'RR'); zoningJurisdictionKey.value = city_key (e.g. 'bastrop-tx'); zoningProvenance.value = source_url (the ArcGIS FeatureServer citation, not source_citation which is actually a prose district description despite its column name). source=tx_zoning_district_staging on all three, vintage=this job's own pinned nowIso.",
+    "cityScopeDerivedLive": "The in-scope city list is computed at run time from tx_zoning_district_staging joined against landing_parcel_jurisdiction, not hardcoded to today's 18 -- with the five named stamp-gap city_keys (smithville-tx, luling-tx, martindale-tx, woodcreek-tx, lakeway-tx) excluded by an explicit hardcoded exclusion list per this card's dispatch scope. If a 19th city's layer appears later, this job would pick it up automatically; the exclusion of the five is a deliberate scope boundary, not an oversight, and is enforced in code, not merely in a report.",
+    "geometryGrainNote": "6 of 18 cities (austin-tx, bastrop-tx, leander-tx, robinson-tx, taylor-tx, waco-tx) have geometry_grain='parcel-joined' staging rows (each row's polygon is itself close to one specific parcel's shape, joined at the ArcGIS source); 12 have geometry_grain='district-polygon' (a true zoning-boundary polygon). The spatial-join mechanism (ST_Covers/ST_Intersects + area floor) is grain-agnostic and needs no special-casing -- a parcel-joined row's near-congruent shape simply produces a very high overlap ratio against its own parcel, which the existing ranking already favors correctly."
+  },
+  "testPlan": [
+    "SQL-shape assertions on the hoist/chunk SQL constants, mirroring p2-juris-persist.test.mjs's style (1e-8 floor present, ST_Covers fast path present, layer_role='base' filter present, no statement_timeout, single-client TEMP-table safety)",
+    "city-scope derivation: the five named stamp-gap city_keys are excluded even when present in a fake store's result set (falsifier)",
+    "UPDATE gating: a cell already at kind='value' or kind='not-applicable' is never touched by a fake-client test (falsifier: the UPDATE's WHERE clause is exercised against a non-unaccounted fixture row and must not modify it)",
+    "cell shape: zoningProvenance.value is source_url, not source_citation (falsifier against a fixture row where the two differ)",
+    "no absent-verified is ever constructed anywhere in this job's code (source-text assertion, matching the completeness-declaration finding)",
+    "per-city counting: total in-city parcels for a city (from landing) vs matched vs residual unaccounted, verified against a fake fixture with a known miss"
+  ],
+  "willNot": [
+    "invent a per-city completeness/coverage-percentage flag anywhere; report raw counts only",
+    "write absent-verified for any zoning rail on any miss",
+    "touch a not-applicable cell (unincorporated parcels stay exactly as instantiate.js set them)",
+    "process the five named stamp-gap cities (Smithville, Luling, Martindale, Woodcreek, Lakeway) even though this job's own join logic would likely succeed for them",
+    "scope a match by county alone (the LDT tool's confirmed bleed mechanism); every join is filtered to one city's own materialized zone-polygon set"
+  ]
+}

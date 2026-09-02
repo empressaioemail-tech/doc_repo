@@ -1,0 +1,84 @@
+{
+  "lane": "PARCEL-R5-ZONING-RECORD",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T15:25:00Z",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 67,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/67",
+      "branch": "feat/parcel-r5-zoning-record",
+      "mergeSha": "4991da344b6263be684d19b8bce570825d551747",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS (verified via gh pr view --json statusCheckRollup conclusion strings)"
+    }
+  ],
+  "deployIncident": {
+    "what": "The first image build+deploy (Cloud Build 19f329a5) pushed digest sha256:bc80b501... but a SECOND, concurrent build (9fed49e2) from a peer session was submitting to the SAME mutable image tag (parcel-record-fill) at the same time -- a TOCTOU race on the shared tag, confirmed via `gcloud builds list` showing both builds WORKING within seconds of each other. The deployed job ended up pinned to sha256:9ed0d95e..., neither cleanly attributable to my own push nor verifiably correct.",
+    "resolution": "Waited for the concurrent build to reach a terminal status, re-synced the local worktree to the then-current origin/main tip (which had moved again, PR #68, an unrelated parcel-r4-companions fix from the same peer session), and submitted a clean rebuild (Cloud Build 41ea7276) with no other build running concurrently. That build's push digest and its own deploy-step pin matched exactly (sha256:aab454952e8729a0afbea4981cd017de9a6921f5fedb80fac7969fd3c1a89073), and the live `gcloud run jobs describe` confirmed the deployed job serves that exact digest before any execution was launched.",
+    "lesson": "A shared mutable image tag across concurrent Cloud Build submissions from different sessions is a real race, distinct from the earlier git-worktree collision on this same card's R2 predecessor. The fix is the same discipline: verify the digest actually deployed matches the digest your own build produced, by reading the build's own log line, never by reading the tag's current state (which can be raced)."
+  },
+  "cloudRunExecution": {
+    "job": "factory-parcel-record-fill",
+    "execution": "factory-parcel-record-fill-4fnnz",
+    "args": "parcel-r5-zoning,--apply",
+    "runId": "1cb60d02-bc5f-4d1f-8da6-5ab462ca53ed",
+    "runStatus": "succeeded",
+    "wallClock": "~38 minutes (launched ~14:41Z, execution status True at 15:19:29Z)",
+    "citiesProcessed": 18,
+    "citiesExcluded": ["smithville-tx", "luling-tx", "martindale-tx", "woodcreek-tx", "lakeway-tx"]
+  },
+  "perCityResults": {
+    "countingRule": "totalParcels/matchedParcels are the job's own live count from landing_parcel_jurisdiction (disposition=in-city, six counties, place_fips=this city) at execution time; residual = total - matched, always left unaccounted, never absent-verified.",
+    "totals": { "totalParcels": 522584, "matched": 516894, "residual": 5690, "matchRatePct": 98.91 },
+    "byCity": [
+      { "cityKey": "austin-tx", "total": 218444, "matched": 217553, "residual": 891, "ratePct": 99.6 },
+      { "cityKey": "waco-tx", "total": 48693, "matched": 47679, "residual": 1014, "ratePct": 97.9 },
+      { "cityKey": "round-rock-tx", "total": 39163, "matched": 38998, "residual": 165, "ratePct": 99.6 },
+      { "cityKey": "georgetown-tx", "total": 39015, "matched": 38898, "residual": 117, "ratePct": 99.7 },
+      { "cityKey": "leander-tx", "total": 31779, "matched": 31647, "residual": 132, "ratePct": 99.6 },
+      { "cityKey": "cedar-park-tx", "total": 24756, "matched": 24662, "residual": 94, "ratePct": 99.6 },
+      { "cityKey": "pflugerville-tx", "total": 20240, "matched": 20117, "residual": 123, "ratePct": 99.4 },
+      { "cityKey": "kyle-tx", "total": 20069, "matched": 19855, "residual": 214, "ratePct": 98.9 },
+      { "cityKey": "san-marcos-tx", "total": 18827, "matched": 18671, "residual": 156, "ratePct": 99.2 },
+      { "cityKey": "hutto-tx", "total": 16496, "matched": 15805, "residual": 691, "ratePct": 95.8 },
+      { "cityKey": "taylor-tx", "total": 8541, "matched": 8504, "residual": 37, "ratePct": 99.6 },
+      { "cityKey": "lockhart-tx", "total": 6490, "matched": 6466, "residual": 24, "ratePct": 99.6 },
+      { "cityKey": "buda-tx", "total": 5939, "matched": 5882, "residual": 57, "ratePct": 99.0 },
+      { "cityKey": "bastrop-tx", "total": 5819, "matched": 5775, "residual": 44, "ratePct": 99.2 },
+      { "cityKey": "robinson-tx", "total": 5728, "matched": 5686, "residual": 42, "ratePct": 99.3 },
+      { "cityKey": "elgin-tx", "total": 5455, "matched": 3749, "residual": 1706, "ratePct": 68.7, "note": "outlier -- see elginResidueExplained" },
+      { "cityKey": "dripping-springs-tx", "total": 4016, "matched": 3886, "residual": 130, "ratePct": 96.8 },
+      { "cityKey": "liberty-hill-tx", "total": 3114, "matched": 3061, "residual": 53, "ratePct": 98.3 }
+    ],
+    "byMethod": "0 bbox-centre fallback used across all 18 cities and 522,584 parcels -- 100% of matches came from real ring-geometry intersection, meaning parcel geometry data quality was not a limiting factor anywhere in this run."
+  },
+  "elginResidueExplained": {
+    "observation": "Elgin's match rate (68.7%) is a sharp outlier against every other city (95.8%+).",
+    "liveCheck": "Elgin in-city landing parcels split by county: 48021 (Bastrop, home county) = 3,749; 48453 (Travis, sliver) = 1,706. This job matched exactly 3,749 and left exactly 1,706 unaccounted -- a 100%/0% split, not a partial degradation.",
+    "priorFinding": "_inbox/2026-09-01_zoning-ingest_close.json step1.classes.layer_present_sliver_stamp_zero already named this exact figure under the OLD LDT tool: 'Elgin 48453 1706'.",
+    "conclusion": "This job's own independent, county-agnostic spatial join reproduces the identical 1,706-parcel gap for the identical population. That rules out a stamp-mechanism defect (the LDT tool's confirmed bleed bug was about scoping by county alone, an entirely different failure mode that would produce false positives, not this clean zero-match split) and confirms a genuine source-layer coverage gap: elgin-tx's staged zoning polygons geometrically do not extend into the Travis-county sliver at all. Reported honestly as unaccounted, not converted to absent-verified (no completeness declaration exists to license that conversion)."
+  },
+  "verification": {
+    "storeWideKindDistribution": {
+      "zoningDistrict": { "value": 516894, "unaccounted": 94222, "notApplicable": 370289, "absentVerified": 0 },
+      "zoningJurisdictionKey": { "value": 516894, "unaccounted": 94222, "notApplicable": 370289, "absentVerified": 0 },
+      "note": "not-applicable=370,289 matches the unincorporated total exactly (untouched by this job, set at instantiate time). unaccounted=94,222 = 611,116 total in-city minus 516,894 matched -- covers both the 5,690 in-scope residual and every parcel in the 49 no-layer + 5 stamp-gap out-of-scope cities. Zero absent-verified anywhere, confirming the never-fabricate-completeness design held live, not just in unit tests."
+    },
+    "bleedCheck": {
+      "method": "County 48309 (McLennan, home to both Waco and Robinson -- the exact pair the LDT tool's confirmed bleed defect corrupted) queried for zoningJurisdictionKey value distribution.",
+      "result": "waco-tx: 47,679 (matches Waco's own matched count exactly); robinson-tx: 5,686 (matches Robinson's own matched count exactly). Clean separation, zero cross-contamination -- Robinson parcels are never stamped waco-tx and vice versa.",
+      "conclusion": "The per-city materialized zone-polygon scoping (this job's core design difference from the LDT tool) verifiably prevents the bleed defect in production, not just in the design rationale."
+    },
+    "sampleCell": {
+      "placeKey": "48021:34137",
+      "note": "the canonical gold Bastrop fixture referenced throughout this program's other cards",
+      "zoningDistrict": "SF-1",
+      "zoningJurisdictionKey": "bastrop-tx",
+      "zoningProvenance": "https://services7.arcgis.com/qOeXJdBtGknaCJC4/arcgis/rest/services/Zoned_Parcels/FeatureServer/83",
+      "vintage": "2026-09-02T14:45:16.934Z"
+    }
+  },
+  "next": "write close, release the queue claim, continue the seat loop"
+}
