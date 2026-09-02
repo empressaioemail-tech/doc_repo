@@ -1,0 +1,150 @@
+{
+  "lane": "PARCEL-RO-ROLE",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T22:20:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-ro-role_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main; ldt worktree P:/tmp/legacy-design-tools-ro-role feat/ro-role",
+  "closeKind": "complete",
+  "result": "Created parcel_record_ro, a SELECT-only Postgres role on the Factory Neon store, scoped to parcel_record / parcel_record_cell / parcel_record_companion_row. Minted FACTORY_DATABASE_URL_RO in Secret Manager and swapped both production readers (parcelRecordCellRead.ts, parcelRecordFactRead.ts) to it. Verified by violation at the database (INSERT refused, verbatim). Deployed as a 0%-traffic canary with digest verified against the merge SHA.",
+  "checkpoints": [],
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "number": 585,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/585",
+      "branch": "feat/ro-role",
+      "mergeSha": "af089384eba040acf796882e0221e72a5ac2326d",
+      "ciConclusion": "SUCCESS on every check after one re-run",
+      "note": "First CI run's Test check FAILED on exactly one test, src/__tests__/canva-route.test.ts (an unrelated Canva push-job body-length assertion). Confirmed pre-existing/flaky, not caused by this diff, before re-running: the base commit 72176219 (identical to this PR's merge-base) had its OWN CI run SUCCEED on the same suite one hour earlier. Re-ran only the failed job (gh run rerun --failed); it passed clean (323 test files, 3452 tests, 0 failures) on the second attempt. Never weakened, skipped, or worked around the check -- got it to actually pass."
+    }
+  ],
+  "ci": "All 10 checks SUCCESS on the final state (Typecheck, Test, four L5 greps, two SS-W checks, L17, cortex daily limit bake). Re-verified against the current base (origin/main unchanged at 72176219 between branch cut and merge).",
+  "productCommit": "2d2be864 pushed to feat/ro-role, squash-merged as af089384",
+
+  "missionPremise": "B-READER's own leave_behind, adopted verbatim: both production consumers of parcel_record claimed structurally-read-only with mechanisms weaker than a database role (parcelRecordFactRead.ts: code convention only; parcelRecordCellRead.ts: a protocol-level session flag, stronger but still credential-independent). Role-level read-only beats connection-level beats convention. Verify by violation at the database, never a code check. Role creation is a recorded store change through the sanctioned path.",
+  "completionPredicate": "A SELECT-only role exists on the Factory Neon store, scoped to exactly the three tables named in the mission (the fourth, the verdict table, deferred -- see scopeBasis). A new distinct secret carries its connection string, never reusing or overwriting FACTORY_DATABASE_URL. Both named readers are swapped to it. An INSERT through the new credential fails at the database with a pasted verbatim refusal. The credential resolves correctly in the actual deployed Cloud Run environment (canary, digest-verified against the merge SHA, not merely locally). Role creation and every grant is recorded with its exact DDL and timestamp.",
+  "scopeBasis": "Role and grants created live via psql against FACTORY_DATABASE_URL (rolcreaterole=true, verified before acting). Granted SELECT on parcel_record, parcel_record_cell, parcel_record_companion_row only -- NOT parcel_record_publish_verdict (B-GATE-SCHED's table), because that card's own migration is unmerged and, per a contract-mismatch finding filed as an addendum on parcel-b-gate-sched this session, targets a table shape that does not match B-READER's already-shipped contract; granting on a table whose final shape is still contested would need re-granting later. Code changes confined to the two named reader modules plus the one deploy-workflow secret binding; did not touch the allowlist, the verdict reader, or any rail-cutover logic (PARCEL_RECORD_SLATE stays empty, unchanged, per B-READER's own scope). Canary deployed and digest-verified; traffic was never shifted (no rail is live to serve differently either way).",
+
+  "roleAndGrants": {
+    "roleName": "parcel_record_ro",
+    "createdVia": "psql against FACTORY_DATABASE_URL (neondb_owner, rolcreaterole=true, verified before DDL)",
+    "ddl": [
+      "CREATE ROLE parcel_record_ro WITH LOGIN PASSWORD '<generated, never logged>';",
+      "GRANT CONNECT ON DATABASE neondb TO parcel_record_ro;",
+      "GRANT USAGE ON SCHEMA public TO parcel_record_ro;",
+      "GRANT SELECT ON parcel_record, parcel_record_cell, parcel_record_companion_row TO parcel_record_ro;"
+    ],
+    "grantsConfirmedLive": "SELECT grantee, table_name, privilege_type FROM information_schema.role_table_grants WHERE grantee='parcel_record_ro' -- returned exactly 3 rows (parcel_record, parcel_record_cell, parcel_record_companion_row), all SELECT. Independently re-queried, not assumed from the GRANT statements' own success.",
+    "timestampsUtc": {
+      "roleCreated": "2026-09-02T21:4xZ (first CREATE ROLE, password later reset)",
+      "passwordFinal": "2026-09-02T21:5xZ (ALTER ROLE, the persisted credential)",
+      "verifiedBy": "connect as parcel_record_ro, SELECT current_user, count(*) FROM parcel_record -> 981405"
+    }
+  },
+
+  "verifyByViolation": {
+    "mechanism": "Connected AS parcel_record_ro (the real, persisted credential -- not a hypothetical) and issued: INSERT INTO parcel_record_cell (place_key, rail_key, cell_state) VALUES ('doesnotexist:0','doesnotexist','{}');",
+    "result": "ERROR:  permission denied for table parcel_record_cell",
+    "verbatim": true,
+    "note": "Ran this exact test TWICE: once immediately after role creation (before the secret was persisted, to prove the mechanism before wiring anything downstream), and again against the FINAL persisted FACTORY_DATABASE_URL_RO secret value read back from Secret Manager, to prove the credential that ships is the one that was tested, not a discarded intermediate. Both refusals identical. The row named in the INSERT was never written -- Postgres checks privileges before constraint evaluation, so this is a clean permission-denied with zero side effects, not a rejected-but-partial write."
+  },
+
+  "secretManager": {
+    "name": "FACTORY_DATABASE_URL_RO",
+    "projectsCreatedIn": ["hauska-prod-497015 (project number 172690833726, the Factory store's own project)", "legacy-design-tools-prod (project number 1062716564162, where cortex-api actually deploys)"],
+    "whyTwoProjects": "Discovered live, not assumed: the first canary deploy attempt FAILED with 'Secret projects/1062716564162/secrets/FACTORY_DATABASE_URL_RO/versions/latest was not found'. FACTORY_DATABASE_URL (the existing writer credential) is ALREADY mirrored into both projects -- confirmed live (gcloud secrets describe FACTORY_DATABASE_URL --project=legacy-design-tools-prod succeeds) -- and project-level IAM in legacy-design-tools-prod grants roles/secretmanager.secretAccessor to api-server-runtime@ and gha-deployer@ service accounts covering every secret in that project automatically, which is why the existing secret needed no per-secret IAM grant and why the new one only needed to exist there, not be individually IAM-bound. Mirrored the exact same connection-string value (fetched from hauska-prod-497015, not regenerated) into legacy-design-tools-prod as a second secret version, matching the established pattern rather than inventing a new one.",
+    "staleVersionHandling": "Version 1 in hauska-prod-497015 was created with a password that was immediately superseded by an ALTER ROLE (a syntax-error retry, not a security incident) before ever being used downstream. Disabled (not deleted) rather than left live and misleading."
+  },
+
+  "codeChanges": {
+    "readersSwapped": [
+      "artifacts/api-server/src/lib/parcelRecordCellRead.ts: FACTORY_DATABASE_URL -> FACTORY_DATABASE_URL_RO; header comment and store-not-configured refusal reason updated to match.",
+      "artifacts/api-server/src/lib/parcelRecordFactRead.ts: same env-var swap; ALSO added the SET default_transaction_read_only=on connect handler this module previously lacked, matching its sibling -- closes the guarantee-asymmetry B-READER's own close named as a leave_behind, not just the role-level change this card was scoped for."
+    ],
+    "deployWorkflow": "artifacts/api-server's .github/workflows/cloud-run-deploy.yml: added FACTORY_DATABASE_URL_RO=FACTORY_DATABASE_URL_RO:latest to --set-secrets (authoritative-replace; a manual-only Cloud Run env update would be silently reverted on the next workflow deploy, per this exact file's own documented 2026-08-31 incident comment two lines above where this was inserted).",
+    "testsUnaffected": "45/45 existing tests across both readers plus the allowlist consumer pass unchanged -- every test uses the setParcelRecordQueryableForTests injection seam, never a real env var, so the rename is invisible to the suite by design."
+  },
+
+  "canaryDeploy": {
+    "imageTagDeployed": "af089384eba040acf796882e0221e72a5ac2326d (the exact merge SHA, never 'latest')",
+    "revisionName": "cortex-api-00697-yot",
+    "canaryUrl": "https://canary---cortex-api-tds7av26va-uc.a.run.app",
+    "trafficPercent": 0,
+    "productionUnaffected": "cortex-api-00693-fuz stayed at 100 percent throughout; never shifted.",
+    "digestVerification": "gcloud run revisions describe ... --format='value(spec.containers[0].image)' returned sha256:ce552511...9048; gcloud artifacts docker images describe ...:af089384... returned the IDENTICAL digest -- confirmed the deployed revision runs the exact code this PR merged, not a stale or unrelated build.",
+    "healthCheck": "/api/healthz -> {\"status\":\"ok\"} on the canary tag URL.",
+    "functionalSmoke": "GET /api/brokerage/v1/place/node/48021:34137/facets on the canary returned real, correct live data (Bastrop CAD values, zoning district SF-1, wellFact absence with a real basis) -- confirmed no regression on the one endpoint B-READER's own close treats as the live integration point.",
+    "whyThisDoesNotFullyExerciseTheNewCode": "PARCEL_RECORD_SLATE ships empty by B-READER's own design (no rail cut over yet, per _decisions/2026-09-02_step7_consumer_c_then_b.md) -- the allowlist checks slate membership synchronously BEFORE ever touching the verdict store or calling either reader, so there is currently no live HTTP path that invokes parcelRecordCellRead.ts or parcelRecordFactRead.ts's connection pool at all. This is a structural fact of the current program state, not a gap in this card: the strongest available verification is (1) the direct database-level violation test above, run against the real persisted credential, and (2) Cloud Run's own deploy-time secret-existence check, which is a genuine hard gate -- proven by the first deploy attempt failing loudly and specifically when the secret did not yet exist in the deploying project, not a check that could not have failed."
+  },
+
+  "whatContradictedTheCard": [
+    "The mission's own worktree note implied a single-repo change; the actual fix required action in a SECOND GCP project (legacy-design-tools-prod, 1062716564162) beyond the Factory store's own project (hauska-prod-497015), discovered only by a live deploy failure, not by reading any doc in advance.",
+    "cloud-run-deploy.yml is for cortex-api specifically and lives at repo root .github/workflows/, not under artifacts/api-server -- confirmed by reading the file before editing, not assumed from the card's 'repo: legacy-design-tools' framing.",
+    "Investigated whether to also grant SELECT on parcel_record_publish_verdict (named in the mission as 'once B-GATE-SCHED lands its migration'): found that card's migration targets a DIFFERENT table shape than B-READER's shipped contract expects (filed as a critical addendum on parcel-b-gate-sched this session, independently of this card). Granting on the wrong-shaped table now would need redoing; deferred rather than granted speculatively."
+  ],
+
+  "constraintsHonored": [
+    "role creation and every grant run through psql against the documented FACTORY_DATABASE_URL owner credential -- never an ad hoc superuser bypass",
+    "verified by violation at the database, verbatim refusal pasted, not a code-level check",
+    "never wrote the RO credential's password to a file or committed artifact; generated via node crypto, piped directly into a temp SQL file that was deleted immediately after use, never echoed",
+    "swapped exactly the two named readers, touched no allowlist, verdict-reader, or rail-cutover logic",
+    "did not grant on parcel_record_publish_verdict given its unresolved contract mismatch",
+    "committed by explicit pathspec; staged content verified against the reviewed diff before commit",
+    "re-ran a failed CI check rather than merging around it or weakening the assertion -- confirmed the failure was a pre-existing flake via a same-commit baseline comparison BEFORE re-running, not after",
+    "merged only on the CI conclusion STRING 'SUCCESS' across every check, re-verified against a base that had not moved",
+    "canary deploy pinned to the exact merge SHA, never a mutable tag; digest verified by direct comparison, not inferred",
+    "production traffic never shifted"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "parcel_record_publish_verdict grant deferred pending PARCEL-B-GATE-SCHED's contract reconciliation with B-READER's already-shipped parcel_gate_verdict shape (see the critical addendum filed on that card this session). Whoever closes that reconciliation should also file a follow-up to grant parcel_record_ro SELECT on the correct, final table.",
+      "owner": "planner / whoever closes parcel-b-gate-sched",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "The two-project secret-mirroring pattern (hauska-prod-497015 and legacy-design-tools-prod both carry a live copy of every Factory secret cortex-api consumes) is undocumented anywhere in doc_repo prior to this close. Worth a canonical-doc note so the next card that mints a new Factory secret does not rediscover this by a failed deploy.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "The new code path (RO-credentialed readers) cannot be functionally exercised via any live HTTP endpoint until a rail cuts over (PARCEL-B-SLATE1). This close's verification is therefore database-level plus deploy-time secret validation, not an end-to-end HTTP proof through the reader code itself. Whoever ships the first slate-1 cutover should treat that as the first true end-to-end proof of this credential.",
+      "owner": "planner / whoever ships PARCEL-B-SLATE1",
+      "plan_row": "F-01"
+    }
+  ],
+
+  "scratch": {
+    "LESSON": [
+      "Cloud Run validates a --set-secrets reference's EXISTENCE at deploy submission time, before any container starts -- a missing secret fails the gcloud deploy command itself with a specific 'was not found' error naming the exact project number it resolved against, which is a fast, clear signal rather than a silent runtime failure.",
+      "This program's cortex-api service deploys into a DIFFERENT GCP project (legacy-design-tools-prod, 1062716564162) than the Factory store's own project (hauska-prod-497015, 172690833726). A secret minted only in the Factory project is invisible to that deploy. Existing Factory secrets (confirmed: FACTORY_DATABASE_URL) are already mirrored into both projects as an established, if undocumented, pattern.",
+      "legacy-design-tools-prod grants roles/secretmanager.secretAccessor at the PROJECT level to its runtime and deploy service accounts, not per-secret -- a newly created secret in that project inherits access automatically with no additional IAM step, unlike a fresh project with only per-resource bindings.",
+      "psql's `:'var'` interpolation syntax did not work via a single `-c` flag argument in this shell environment (syntax error at ':') but worked fine inside a heredoc passed to psql with no -c. Writing the DDL to a temp file with the value already substituted by the shell (not psql) and running `psql -f` sidesteps the whole question and is safer for a value with no special characters to escape."
+    ],
+    "DEAD-END": [
+      "First canary deploy attempt with the secret existing only in hauska-prod-497015 -- failed fast and specifically, not silently; diagnosed from the error text alone, no guessing required.",
+      "psql -v pass=\"$PASS\" -c \"ALTER ROLE ... :'pass';\" as a single command-line argument -- syntax error; the same variable-substitution syntax worked fine inside a heredoc in the earlier CREATE ROLE step. Switched to a temp SQL file with shell-side substitution instead of chasing why the two invocation styles differ."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T21:4xZ FACTORY_DATABASE_URL/neondb: neondb_owner has rolcreaterole=true, confirmed before any DDL.",
+      "2026-09-02 parcel_record_ro grants confirmed via information_schema.role_table_grants: exactly 3 rows, all SELECT, on parcel_record / parcel_record_cell / parcel_record_companion_row.",
+      "2026-09-02 verify-by-violation: INSERT as parcel_record_ro -> 'ERROR: permission denied for table parcel_record_cell', run twice (pre- and post-secret-persistence), identical both times.",
+      "2026-09-02T22:05:28Z legacy-design-tools PR #585 MERGED af089384eba040acf796882e0221e72a5ac2326d; CI green on all 10 checks after one legitimate re-run of a confirmed pre-existing flake (canva-route.test.ts).",
+      "2026-09-02T22:13-22:14Z cortex-api canary cortex-api-00697-yot deployed at 0 percent traffic, digest sha256:ce552511...9048 confirmed identical between the deployed revision and the af089384 image tag.",
+      "2026-09-02T22:1xZ canary smoke: /api/healthz ok; GET .../place/node/48021:34137/facets returns correct live Bastrop data unchanged."
+    ],
+    "OPEN": [
+      "Grant parcel_record_ro on parcel_record_publish_verdict once PARCEL-B-GATE-SCHED's contract with B-READER is reconciled.",
+      "Document the two-GCP-project secret-mirroring pattern for Factory secrets consumed by cortex-api.",
+      "True end-to-end functional proof of the RO-credentialed readers waits on the first PARCEL-B-SLATE1 rail cutover."
+    ]
+  },
+
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-ro-role_close.json",
+    "_catalog/seat_register.json",
+    "_queue/cards/parcel-b-gate-sched/addenda/2026-09-02T21-25-55-466Z_planner.md",
+    "_queue/log/property.jsonl"
+  ]
+}
