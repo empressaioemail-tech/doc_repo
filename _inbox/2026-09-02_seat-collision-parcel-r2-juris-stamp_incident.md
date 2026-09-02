@@ -92,6 +92,18 @@ output is wrong here; the failure was mine. Worth a skill/runbook note:
 after any claim call, check the `result` field (or the presence of the word
 REFUSED) explicitly rather than inferring success from field contents.
 
+## Sharper root cause (via doc-repo-0b)
+
+The "worktree/branch fields matched intent" check I trusted is internal
+consistency wearing a meaning-shaped costume (ENFORCEMENT's own vocabulary):
+the card definition supplies both the expectation and the matching value, so
+one party acting alone (the card) can satisfy both sides. A REFUSED response
+and a GRANTED one look identical on the fields I read, because I only checked
+fields I already knew before making the call. The portable rule: a claim
+response is proved by the identity field the authority assigns (holder,
+claim id, timestamp, or the literal result/REFUSED marker), never by fields
+you could have predicted without making the call. Applies beyond this queue.
+
 ## What I did next
 
 Sent the correction to doc-repo-1d, doc-repo-0b, and doc-repo-98 (the last
