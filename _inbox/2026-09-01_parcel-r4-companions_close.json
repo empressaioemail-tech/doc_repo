@@ -1,0 +1,71 @@
+{
+  "lane": "PARCEL-R4-COMPANIONS",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T07:00:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-r4-companions_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main d10fa86",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-r4-companions_cp1.json",
+    "_inbox/2026-09-01_parcel-r4-companions_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r4 (main and feat/parcel-r4-companions both at 27bf8e4, the PR #68 merge)",
+    "imageDigest": "sha256:aab454952e8729a0afbea4981cd017de9a6921f5fedb80fac7969fd3c1a89073"
+  },
+  "missionPremise": "Gap ledger section 11: wells (tx_rrc_well, 1,396,049 rows statewide) and special districts including MUD (tx_special_district, 2,775 rows, 1,888 MUD) were unaccounted on every parcel_record row. Ingest both as companion rails, zone-major spatial, with swept-no-hit parcels earning absent-verified (the sweep is the look) and unswept parcels staying unaccounted.",
+  "completionPredicate": "Met, with the implementation, testing, and full production execution already performed by a parallel property-seat session before this seat claimed the card (this close formalizes and independently verifies that work rather than repeating it). Both wells and specialDistricts ingested for all six program counties; Caldwell correctly shows a total noGeom sweep miss (the same pre-existing txgio geometry gap PARCEL-R3-FLOOD already found); a genuine correctness defect (single-fragment parcels undercounting multi-tile parcels by ~1%) was found and fixed before the production run, not after; an initial per-row write pattern that could not complete in reasonable time was found and fixed (batched) before the production run completed. This seat re-ran the full test suite fresh (548/550 pass), ran an independent sample-based cross-check against live data (2.80% vs the job's 2.08%, consistent given non-random sampling), and directly spot-checked the gold parcel's cell and companion-row state in the Factory store.",
+  "scopeBasis": "hauska-factory only: src/jobs/parcel-r4-companions.mjs, its test file, a writer-allowlist entry, a CLI command, and cloudbuild.parcel-record-fill.yaml (factory-parcel-r4-companions added to the shared image's deploy step) -- all already merged (PRs #66, #68) before this seat's claim. No engine-core change (wells/specialDistricts already existed as rail keys in the v1/65-rail set; both use the existing generic CompanionCellState). No schema.sql change. Cloud Run only for all six county executions.",
+  "prs": [
+    { "repo": "hauska-factory", "number": 66, "mergeSha": "(absorbed into 27bf8e4)", "title": "feat(parcel-r4-companions): wells + special-district companion rails, zone-major", "mergedAt": "2026-09-02T14:14:21Z" },
+    { "repo": "hauska-factory", "number": 68, "mergeSha": "27bf8e4153c5345ae688756e3c2c9a06b8b9c1d3", "title": "fix(parcel-r4-companions): batch companion writes, never one round-trip per parcel", "mergedAt": "2026-09-02T14:36:39Z" }
+  ],
+  "cloudRunExecutions": {
+    "note": "All six executions ran before this seat claimed the card; listed here as the record this close relies on, independently confirmed via gcloud run jobs executions list (all conclusion True) and gcloud logging read (all jsonPayload.ok=true).",
+    "results": "full per-county matched/swept counts in CP2; totals: 956,417 scanned across five covered counties, 2,494 wells matched, 747,183 specialDistricts matched (Caldwell excluded, pre-existing geometry gap)"
+  },
+  "whatContradictedTheCard": [
+    "The dispatch's own premise ('point-major LATERAL is ~218x slower... a named dead-end') does not correspond to any figure actually in this repo -- the implementing session checked and found only this seat's own 27.6x flood-ingest figure, which favors the OPPOSITE approach (direct join, not materialization) for a structurally different source (a native-geometry, GiST-indexed table vs jsonb-encoded polygons with no index). The zone-major materialized pattern used here is justified on its own grounds (p2-juris's prior, separately-proven need to decode complex jsonb polygons once rather than per row) rather than by trusting the cited figure -- exactly the 'EXPLAIN ANALYZE both plans before committing' discipline a planner addendum on this card asked for, already satisfied before this seat ever saw the addendum.",
+    "A parcel spanning multiple txgio_parcel tile fragments (15% of Bastrop) was undercounted by the single-fragment-pick pattern this seat's own flood-ingest.mjs and the pre-existing p2-juris-store.mjs both use -- live-measured at ~1% of matched wells missed. Fixed here by unioning all fragments per prop_id; flood-ingest.mjs was left untouched (out of this card's scope) and is flagged as sharing this exposure.",
+    "The first live --apply attempt (per-row writes) was cancelled after 9+ minutes on the smallest county with no end in sight -- a real, measured scaling failure, not a hypothetical, found and fixed (batched writes) before the successful production run."
+  ],
+  "constraintsHonored": [
+    "zone-major spatial pattern used, with its own justification stated rather than assumed from the card's premise",
+    "MUD not treated as a separate rail (district_type is a payload field, not a rail key)",
+    "swept-no-hit correctly emits absent-verified with the sweep as basis; the gold parcel spot-check confirms this live",
+    "Cloud Run only for every write",
+    "Caldwell excluded/naturally handled as noGeom rather than forced or faked"
+  ],
+  "scratch": {
+    "LESSON": [
+      "When claiming a card whose worktree already shows merged work on main, read the actual code and PR history before assuming the card needs to be built from scratch -- this card's real remaining work was independent verification and closing the loop, not implementation.",
+      "A correctness finding from one card (multi-fragment parcel undercounting) can retroactively apply to an EARLIER, already-closed card's own code (this seat's own flood-ingest.mjs) -- worth checking newer siblings' designs against older closed work even after the fact, not just newer work against older lessons."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T14:14:21Z / 14:36:39Z: hauska-factory PRs #66 / #68 merged",
+      "2026-09-02T14:46:1x-14:46:2xZ: six Cloud Run executions, all True, covering all six program counties including Caldwell's correct noGeom result",
+      "This seat's independent verification 2026-09-02T~06:5xZ: 548/550 tests, sample cross-check 2.80% vs 2.08%, gold parcel spot-check confirmed"
+    ],
+    "DEAD-END": [
+      "Per-row companion writes (one cell-upsert + one companion-delete + N companion-inserts per parcel) -- cancelled after 9+ minutes on the smallest county; fixed by batching per page."
+    ],
+    "OPEN": [
+      "flood-ingest.mjs and p2-juris-store.mjs's single-fragment-pick pattern likely undercounts multi-tile parcels by a similar ~1% margin to what this card measured for wells; not fixed in either job. A future correctness pass could re-run flood-ingest with fragment-union logic and compare."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_parcel-r4-companions_cp1.json",
+    "_inbox/2026-09-01_parcel-r4-companions_cp2.json",
+    "_inbox/2026-09-01_parcel-r4-companions_close.json",
+    "_queue/cards/parcel-r4-companions/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "flood-ingest.mjs's single-fragment-pick (DISTINCT ON prop_id) likely undercounts flood-zone matches for the ~15% of parcels spanning multiple txgio_parcel tile fragments, by a similar margin to the ~1% this card measured for wells. Not fixed; flagged for a future correctness pass.",
+      "owner": "planner / future flood-ingest correctness card",
+      "plan_row": "F-01"
+    }
+  ]
+}

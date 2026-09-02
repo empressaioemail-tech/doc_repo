@@ -1,0 +1,19 @@
+{
+  "lane": "PARCEL-R4-COMPANIONS",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T06:50:00Z",
+  "note": "This card's implementation, testing, and full six-county production execution were already completed by a parallel property-seat session before this seat claimed it (hauska-factory PRs #66 and #68, both merged; worktree found on main at claim time, checked out to the registered feat/parcel-r4-companions branch to satisfy the seat-worktree gate). This checkpoint records what was found and independently verified, per 'when a subagent reports something done, read the diff... a report of success is a claim' -- treating the parallel session's completed work the same way.",
+  "workAlreadyDone": {
+    "pr66": "feat(parcel-r4-companions): wells + special-district companion rails, zone-major -- merged 2026-09-02T14:14:21Z",
+    "pr68": "fix(parcel-r4-companions): batch companion writes, never one round-trip per parcel -- merged 2026-09-02T14:36:39Z. The FIRST live --apply attempt (per-row writes, mirroring flood-ingest.mjs's own pattern) was cancelled after 9+ minutes on Caldwell (the smallest county) with no end in sight; the fix batches per page via unnest, mirroring parcel-record-fill.mjs's proven pattern.",
+    "spatialDesignVerifiedByReadingCode": "The job's own header comment shows the zone-major-vs-direct-join question (raised by this seat's own flood-ingest finding, and echoed back in a planner addendum on this very card) was already resolved on independent grounds: tx_rrc_well/tx_special_district carry no native PostGIS geometry (jsonb + bbox floats only, no GiST index) unlike tx_fema_nfhl_flood_zone, so there is no index to lose by materializing -- the zone-major hoist-once-per-county pattern is justified by p2-juris's own prior, separately-proven need to decode jsonb-encoded complex polygons once rather than per row, not by blindly trusting the card's cited '218x' figure (which the comment notes does not appear anywhere in this repo).",
+    "multiFragmentCorrectnessFinding": "A genuine, quantified defect found and fixed during implementation: a parcel can span multiple txgio_parcel tile fragments (15% of Bastrop, live-verified). Picking one fragment (this seat's OWN flood-ingest.mjs and the pre-existing p2-juris-store.mjs both do this via DISTINCT ON) undercounts: a live check found 1,292 distinct Bastrop parcels with >=1 well by unioning every fragment, vs 1,281-1,282 picking one fragment -- about 1% of matched parcels missed. This job unions all fragments per prop_id (ST_MakeValid(ST_Union(...)) GROUP BY prop_id) before testing intersection. flood-ingest.mjs and p2-juris-store.mjs were explicitly left untouched (out of this card's scope) and likely share this exposure."
+  },
+  "productionExecutionAlreadyRun": "6 successful Cloud Run executions post-fix (14:46:1x-14:46:2xZ start, roughly simultaneous dispatch), one per county, all conclusion True. Caldwell (48055) correctly reported noGeom=24988/24988 -- the same pre-existing txgio geometry gap this seat's own PARCEL-R3-FLOOD close already found and reported, confirmed consistent across two independently-built jobs.",
+  "thisSeatsIndependentVerification": [
+    "full test suite re-run fresh in this claim: 548/550 pass, 2 pre-existing skip, 0 fail",
+    "independent live query: a 2,000-parcel ordered sample of Bastrop found 56 distinct parcels with >=1 well (2.80%), consistent with the job's own full-county rate of 1,292/62,256 (2.08%) given the sample was ordered by prop_id, not random",
+    "direct spot-check of the gold parcel (48021:34137): both wells and specialDistricts correctly show absent-verified with a proper zone-major-sweep basis and zero companion rows -- the sweep found nothing, and nothing was fabricated"
+  ]
+}
