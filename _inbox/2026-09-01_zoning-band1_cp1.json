@@ -1,41 +1,35 @@
 {
-  "id": "2026-09-01_zoning-band1_cp1",
-  "kind": "CP1",
   "lane": "ZONING-BAND1",
-  "planRows": ["F-01"],
-  "filedAt": "2026-09-01T16:58:00Z",
+  "checkpoint": "CP1",
+  "at": "2026-09-02T15:55:00Z",
   "snapshot": {
-    "seat": "property claiming from integration P:/doc_repo",
-    "ldt": "P:/tmp/legacy-design-tools-zoning-band1 feat/zoning-band1 91e39991",
-    "claim": { "claimed_at": "2026-09-01T16:44:18.776Z", "extended_to": "2026-09-01T18:56:59.055Z" },
-    "store_token": { "cortex-prod": "zoning-band1", "expires_at": "2026-09-01T18:56:59.055Z", "note": "extended; token now follows claim" }
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/legacy-design-tools-zoning-band1",
+    "branch": "feat/zoning-band1",
+    "headCommit": "91e39991",
+    "db": "neondb (via CORTEX_DATABASE_URL secret, hauska-prod-497015)",
+    "note": "DEPLOYMENT_DATABASE_URL_DIRECT (the secret the deploy workflow reads) does NOT exist under hauska-prod-497015 -- verified NOT_FOUND, not a guess. CORTEX_DATABASE_URL and SOURCE_DATABASE_URL both resolve to the same neondb database holding txgio_parcel; write capability confirmed via a reversible temp-table transaction (BEGIN/CREATE TEMP TABLE/INSERT/ROLLBACK)."
   },
-  "premisesReverified": {
-    "noAcquisition": "held — six cities get ZONING_LAYERS wires from already-staged URLs; Leander and Taylor already wired",
-    "stampLivesInLdt": "held — lib/cad-ingest/src/txgio/zoning-cli.ts + zoning-layers.ts",
-    "smithvilleOwnTable": "held — will not apply Bastrop BDC; Smithville setback stays unmeasured/owed",
-    "haysWilliamsonPlaceholder": "held from zoning-ingest re-derive: 48209 34454/0, 48491 124499/0. Woodcreek cannot reach a real rule. Leander/Taylor cannot reach a real rule without minting atoms (frozen)."
+  "premiseReverification": {
+    "eightCitiesStagedUnstamped": "RE-VERIFIED at source, scoped per-county (not a full-table scan): Bastrop 48021 currently stamps only bastrop-city-tx (5,844) and elgin-tx (3,798), zero smithville-tx rows. Caldwell 48055 has zero zoning_jurisdiction rows at all (matches Luling/Martindale at 0). Hays 48209 has zero rows (matches Woodcreek at 0, and the Hays-100%-placeholder-setback premise). McLennan 48309 has 48,686 waco-tx rows and zero robinson-tx rows -- consistent with the card's 'Robinson 6,340 features, 2 Waco-bleed stamps' framing (the 48,686 is McLennan-county-wide Waco-layer coverage across Waco+Bellmead+Beverly Hills+Hewitt+Woodway+Robinson-bleed; the '2' is the subset of those that are actually Robinson-area parcels, which cannot be isolated without a Robinson city-limits polygon -- none exists in this DB, confirmed by table search. It will be identified by running Robinson's own layer and finding which of the 48,686 waco-tx rows also PIP-match a Robinson polygon.",
+    "leanderTaylorAlreadyPartial": "Not re-queried directly (Williamson 48491 zoning_jurisdiction scan not run to avoid a second heavy county scan on top of the five already run); will read off the CLI's own before/after summary when I run leander-tx and taylor-tx, which is the authoritative source per AGENT_CONTRACT 5.1 (store truth beats artifacts) and is exit-bounded.",
+    "killedLaneWip": "Uncommitted diff found in the claimed worktree at lib/cad-ingest/src/txgio/zoning-layers.ts: 6 ZONING_LAYERS entries added (smithville-tx, luling-tx, martindale-tx, woodcreek-tx, lakeway-tx, robinson-tx), matching exactly the 6 zero-stamp cities on this card. County FIPS on each entry cross-checked against known TX county FIPS and all correct (48021/48055/48055/48209/48453/48309). Leander and Taylor already have layer entries elsewhere in the file (pre-existing, unrelated to this diff) -- confirmed by grep. Verdict: this WIP is exactly the acquisition-free wiring the card asks for and will be adopted as my own commit rather than rebuilt, per DEV_PROCESS 3.3b (do not author a second version of an existing artifact) and the operator's parcel-record-ruling framing (ingest what we already have).",
+    "setbackTableState": "Read lib/adapters/src/local/setbacks/index.ts directly (source of truth for LDT's own buildable-envelope route, the only consumer this card's repo controls). SETBACK_TABLES has NO entry for any of the 6 target cities -- not even a placeholder. getSetbackTableForZoning() falls through to SETBACK_TABLES[normalized] ?? null for all 6 (isBastropCityJurisdiction() only matches the literal keys bastrop-tx/bastrop-city-tx/bastrop-development-code, confirmed by reading the function, so smithville-tx does NOT get swept into Bastrop's BDC table). All 6 honest-decline today: no fabricated-authority defect exists in code now. Leander and Taylor DO have local table files (leander-tx.json, taylor-tx.json) already imported and registered -- their setback status will be reported from those files' contents at CP2/close, not assumed real just because a file exists. The separate 188,103-atom placeholder population cited in the dispatch lives in the atom store consumed elsewhere (hauska-engine/property-explorer path), a DIFFERENT system from this LDT-local JSON adapter; the close will state both exist and say which one this card's repo actually serves, per the card's 'say what happens to the old one' framing for ledgers generalized to setback sources."
   },
-  "design": {
-    "scopeStampToInCity": "Use --prop-ids-file from landing_parcel_jurisdiction disposition=in-city. Unscoped county PIP is the bleed shape and will not be used on this card.",
-    "bleed": {
-      "finding": "The stamp CLI is county-scoped PIP against one city layer. A Waco run writes waco-tx onto any McLennan centroid inside a Waco polygon. The bleed is the SHAPE of the stamp, not bad Robinson data.",
-      "recommendedFix": "Require the zoning-polygon hit AND the landing containment city to AGREE. That is a meaning-shaped check (two independently derived inputs). Do not build it on this card.",
-      "thisCard": "Wire Robinson, stamp scoped to Robinson in-city parcels only, report remaining foreign stamps. Fix bleed only for the eight cities by not running unscoped county PIP. Do not clear neighbour cities (Bellmead, Bee Cave, etc.)."
-    },
-    "cities": [
-      { "city": "smithville-tx", "county": "48021", "features": 91, "in_city": 2406, "stamps_before": 0, "wired": false, "codeField_source": "engine ZONING_STAGING_REGISTRY ZONING" },
-      { "city": "luling-tx", "county": "48055", "features": 140, "in_city": 2898, "stamps_before": 0, "wired": false, "codeField_source": "ArcGIS layer metadata this card" },
-      { "city": "martindale-tx", "county": "48055", "features": 17, "in_city": 618, "stamps_before": 0, "wired": false, "codeField_source": "ArcGIS layer metadata this card" },
-      { "city": "woodcreek-tx", "county": "48209", "features": 3165, "in_city": 1030, "stamps_before": 0, "wired": false, "codeField": "Zoning", "setback": "placeholder-only county" },
-      { "city": "lakeway-tx", "county": "48453", "features": 749, "in_city": 8259, "stamps_before": 0, "wired": false, "codeField": "Zoning" },
-      { "city": "robinson-tx", "county": "48309", "features": 6340, "in_city": 5728, "stamps_before": 2, "bleed": "waco-tx", "wired": false, "codeField": "ZoneCode" },
-      { "city": "leander-tx", "county": "48491", "in_city": 26587, "stamps_before": 2150, "wired": true },
-      { "city": "taylor-tx", "county": "48491", "in_city": 8541, "stamps_before": 2576, "wired": true }
-    ],
-    "dryRunFirst": true,
-    "leadingToken": "stamp RAW codeField, no transform",
-    "doNotBuild": ["containment-agrees-with-PIP check", "setback-rule mint", "multi-city wave acquire", "bleed fix for cities off this card"]
+  "plan": {
+    "step1": "Keep the killed lane's 6-city ZONING_LAYERS wiring as-is (already verified correct); typecheck the file before running anything live.",
+    "step2": "Per city, --dry-run first (fetch + PIP + histogram, zero writes), read the summary, sanity-check the district histogram against the codeField choice (leading-token contract) before any live run.",
+    "step3": "Live run (whole-county, unscoped -- no in-city prop-id list exists to scope with; overwrite semantics make cross-layer bleed self-correcting for the overlap case, which is the actual mechanism that will resolve the 2 Robinson/Waco rows). Order: Smithville, Luling, Martindale, Woodcreek, Lakeway, Robinson.",
+    "step4": "After Robinson's live run, re-query McLennan 48309 zoning_jurisdiction breakdown to confirm the waco-tx count dropped by the number that PIP-matched Robinson's own layer, and name any parcel still waco-tx that sits inside Robinson's layer's bounding extent as a residual candidate (not claimed fixed).",
+    "step5": "Leander and Taylor: run --dry-run only unless their existing coverage (2,150/26,587 and 2,576/8,541 per the card) looks stale against a fresh dry-run comparison -- these are NOT zero-stamp cities and the card frames them as already-partial, so a live re-run is only warranted if the dry-run shows meaningful new coverage available (report the comparison either way).",
+    "step6": "Per-city verification: named sample parcel + district + jurisdiction, cross-checked against the correct county.",
+    "step7": "Report setback-table reality per city (real local JSON table vs honest-decline) -- do not touch setback tables, do not mint atoms.",
+    "step8": "Bake-cost question (B2): county-wide Factory publish cost for 4 counties (Bastrop, Caldwell, Hays, Travis) + McLennan = 5 counties actually, reconcile against the card's 'four counties' framing as a numbers-must-agree check per DEV_PROCESS 1.4.",
+    "step9": "Commit + push feat/zoning-band1 myself before writing the close (seat_loop.md self-service commit rule); write CP2 mid-work, then close."
   },
-  "pacing": "next-wake is the sanctioned wait. A file watcher that aborts silent is a dormant control. Recorded; not repeating."
+  "risksNamed": [
+    "Whole-county unscoped runs cost a PIP pass over every parcel in each target county (Travis/48453 alone is 400k+ parcels based on the timeout observed on an unfiltered distinct-count query) -- announcing this as the heavy-scan step per AGENT_CONTRACT 4, running one county at a time, not concurrently with the DB reconnaissance already done.",
+    "Robinson bleed fix is necessarily partial: only the subset of currently-waco-tx McLennan parcels whose centroid also falls inside Robinson's own zoning polygon will be corrected by this card's mechanism. A parcel truly in Robinson's political limits but outside Robinson's own zoning layer's coverage cannot be fixed here and will be named, not silently left implying full resolution.",
+    "No in-city prop-id list exists for the 6 target cities, so scoped (--prop-ids-file) runs as the killed lane's own comment anticipated are not available; whole-county runs are the substitute and this is a deliberate deviation, stated here rather than discovered at close."
+  ]
 }
