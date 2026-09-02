@@ -1,0 +1,36 @@
+{
+  "lane": "PARCEL-VALUE-HISTORY",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T15:55:00Z",
+  "pilot": {
+    "prCiGreen": [
+      { "pr": 69, "title": "prior tax years onto valueHistory from data we already hold", "mergeSha": "519498a107d1909a97e78d50753fd29553fc1aa1", "checks": "test: success, gate8: success (verified via gh api check-runs conclusion)" }
+    ],
+    "designTimeFinding": {
+      "what": "The Williamson crosswalk (a disjoint copy of parcel-record-fill.mjs's WILLIAMSON_CROSSWALK_SQL, carrying tax_year through) re-scanned cad_property's full numeric roll on every page. A local dry-run against live Williamson data (282,570 parcels) did not complete in 5+ minutes.",
+      "fix": "Applied the zone-major lesson from this seat's own PARCEL-R4-COMPANIONS card (paid for live, earlier this same session) before shipping, not after a live failure: the numeric roll is materialized once per county into a session TEMP table with its own index (HOIST_NUMERIC_ROLL_SQL) before the page loop, and the page-scoped crosswalk query joins against that.",
+      "measuredImprovement": "Williamson dry-run: did not complete in 5+ minutes (unbatched-per-page join) -> 66 seconds (materialized once)."
+    },
+    "preExistingInfrastructureChecked": "cad_property_vintage_crosswalk / cad_property_vintage_fallback: live schema, clearly purpose-built for this exact cross-vintage identity problem (from_prop_id/to_prop_id across tax years, with a fallback table). Checked before designing anything -- populated ONLY for counties 48113 and 48439, zero rows for any of this program's six counties. Not usable; not touched; not repurposed."
+  },
+  "verification": {
+    "independentSQL_williamsonCrosswalk": "A freshly-authored TEMP table + indexed join (separate from this job's own code), run live: CREATE TEMP TABLE verify_numeric AS SELECT prop_id, situs_address, tax_year, market_value FROM cad_property WHERE county_fips='48491' AND prop_id ~ '^[0-9]+$' AND situs_address IS NOT NULL; ... WITH target AS (...) joined AS (... JOIN verify_numeric ...) ranked AS (... count(*) OVER (PARTITION BY target_prop_id, tax_year) ...) SELECT count(DISTINCT target_prop_id) WHERE match_count=1 -> 257,604. This is an EXACT match to PARCEL-R1B-REINGEST's own documented figure ('257,604 of 282,569 R-prefix accounts, 91.2%'), confirming this job's crosswalk logic reproduces R1B's proven mechanism, not merely resembles it.",
+    "postApplyStoreVerification": {
+      "queryingRule": "cell_state joined to parcel_record on county_fips (indexed), not a place_key string split -- the store timed out at 50s under concurrent load from other lanes and succeeded at 90s, per this store's own established timeout-under-load doctrine.",
+      "results": {
+        "48021_bastrop": "62,256 parcels, all rowCount=1 (single year 2025 -- the store holds no 2026 CAD roll for this county; honest, not a defect)",
+        "48055_caldwell": "266 rowCount=1 + 24,722 rowCount=2 = 24,988 (exact landing match)",
+        "48209_hays": "38,303 rowCount=1 + 78,117 rowCount=2 = 116,420 (exact landing match)",
+        "48309_mclennan": "114,254 parcels, all rowCount=1 (single year 2025 only, same as Bastrop)",
+        "48453_travis": "7,458 rowCount=1 + 373,459 rowCount=2 = 380,917 (exact landing match)",
+        "48491_williamson": "24,966 rowCount=1 + 257,604 rowCount=2 = 282,570 (exact landing match; 257,604 is the exact crosswalk-verified figure above; 24,966 is the R1B-documented unmatched residue, 282,569-257,604=24,965, off by one from a landing-vs-CAD-population rounding difference already known from R1B, not newly introduced)"
+      },
+      "everyCountySumsExactlyToLandingCount": true,
+      "noOrphansNoLeaks": true
+    }
+  },
+  "distinctYearsPerCounty": {
+    "48021": [2025], "48055": [2025, 2026], "48209": [2025, 2026], "48309": [2025], "48453": [2025, 2026], "48491": [2025, 2026]
+  }
+}

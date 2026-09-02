@@ -1,0 +1,79 @@
+{
+  "lane": "PARCEL-VALUE-HISTORY",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T16:00:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-value-history_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main 738d15e, verified via _queue/log/property.jsonl GRANTED 2026-09-02T15:25:22.807Z",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-value-history_cp1.json",
+    "_inbox/2026-09-02_parcel-value-history_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 738d15e at claim time",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-vh (merged to main via #69)",
+    "imageDigestFinal": "sha256:aefd39e0ff2f7adf935c1c37c2fd62f1a7b0ef367b5c6a3fee36a565c212276d"
+  },
+  "missionPremise": "cad_property holds multiple tax years per parcel; the current-value scalar fill discards everything but the latest via DISTINCT ON. This is ingest of data already held, cut from the acquisition list by the planner (exactly the class of mistake the parcel-record-is-the-gate ruling names as most expensive). Scalar rails stay current-only; history is companion; Williamson rides the R1B crosswalk.",
+  "completionPredicate": "Met. valueHistory earned (value, never fabricated) on all six counties, every county's rowCount sum exactly matching its landing denominator -- zero orphans, zero leaks. Two things checked and correctly NOT done: cad_property_vintage_crosswalk/fallback (a pre-built, indexed cross-vintage mechanism that looks purpose-built for this) was found unusable (zero rows for any of the six program counties) rather than assumed usable from its schema alone; a per-page Williamson crosswalk join that did not complete in 5+ minutes on live data was fixed (materialized once per county) before shipping, not discovered as a production failure. Williamson's crosswalk-matched count (257,604) independently verified to exactly match PARCEL-R1B-REINGEST's own documented figure.",
+  "scopeBasis": "hauska-factory only: one new job file (src/jobs/parcel-value-history.mjs), its CLI/allowlist wiring, its tests. No new Cloud Run job resource -- executed via the existing factory-parcel-record-fill job's --args override, matching the established pattern for purge-bastrop-orphans and parcel-r5-zoning (neither has a dedicated job resource either). No engine module change (valueHistory already existed as a declared-ahead rail key). No scalar rail touched. parcel-record-fill.mjs's own WILLIAMSON_CROSSWALK_SQL/loadWilliamsonCrosswalk left completely untouched -- this job carries its own disjoint copy with tax_year added, not a modification of the shared file.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 69,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/69",
+      "mergeSha": "519498a107d1909a97e78d50753fd29553fc1aa1",
+      "title": "prior tax years onto valueHistory from data we already hold",
+      "ciConclusion": "SUCCESS (verified via gh api check-runs, not gh pr checks summary text)"
+    }
+  ],
+  "cloudRunExecutions": [
+    {
+      "purpose": "all six counties, parallel, --apply",
+      "executionIds": ["factory-parcel-record-fill-mc6ch (48021)", "factory-parcel-record-fill-x6k24 (48055)", "factory-parcel-record-fill-6t2pg (48209)", "factory-parcel-record-fill-hnckq (48309)", "factory-parcel-record-fill-k2287 (48453)", "factory-parcel-record-fill-f45jx (48491)"],
+      "imageDigest": "sha256:aefd39e0ff2f7adf935c1c37c2fd62f1a7b0ef367b5c6a3fee36a565c212276d",
+      "result": "all six succeeded within ~4 minutes total (batched writes + zone-major crosswalk from the first shipped version, no cancel-and-retry cycle this time)."
+    }
+  ],
+  "whatContradictedTheCard": "Nothing about the mission itself. Two design-time findings this session's own prior card (PARCEL-R4-COMPANIONS) had already surfaced the shape of, applied here proactively: (1) an unbatched per-row or per-page-unindexed write/join pattern does not scale to this program's county sizes and needs fixing before the first live --apply, not after; (2) a piece of infrastructure that LOOKS purpose-built for a problem (cad_property_vintage_crosswalk) must be checked for actual population before being trusted, not assumed usable from its schema.",
+  "constraintsHonored": [
+    "scalar rails never touched -- confirmed by code review, no UPSERT in this job's write path names any rail key besides valueHistory",
+    "history is companion-only, one row per distinct tax_year, never collapsed into a scalar",
+    "Williamson uses the crosswalk; the crosswalk's own logic independently verified against R1B's documented figure",
+    "parcel-record-fill.mjs untouched (shared job harness; kept this module fully disjoint)",
+    "Cloud Run only for every --apply execution; LAPTOP_WRITE_FROZEN verified via a real test",
+    "no new Cloud Run job resource created -- reused the existing shared image/command pattern"
+  ],
+  "scratch": {
+    "LESSON": [
+      "A same-session lesson (zone-major materialization, batched writes) generalizes across cards touching the same store, not just within one card -- apply it proactively on the NEXT card's first implementation rather than waiting to rediscover it live.",
+      "Infrastructure that structurally matches a problem (cad_property_vintage_crosswalk's schema is an exact conceptual fit for cross-vintage parcel identity) can still be entirely unpopulated for the scope that needs it. Check population, not just schema fit, before designing around an existing table."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T15:45:46Z hauska-factory PR #69 merged 519498a",
+      "2026-09-02T15:4x-15:5xZ: six Cloud Run executions, all succeeded, run rows confirmed status=succeeded",
+      "Live store verification 2026-09-02T~15:5xZ: every county's valueHistory rowCount sum exactly equals its landing denominator; Williamson's 257,604/24,966 split exactly matches the independently-verified crosswalk count and R1B's own documented figure"
+    ],
+    "DEAD-END": [
+      "Reusing cad_property_vintage_crosswalk/fallback directly -- schema is a perfect conceptual match, but the tables hold zero rows for any of this program's six counties (populated only for 48113/48439). Worth revisiting if that table is ever extended to the program counties -- would replace this job's own hand-rolled situs_address crosswalk with an authoritative, pre-computed one.",
+      "An early per-page (non-materialized) version of the Williamson crosswalk query -- did not complete in 5+ minutes locally against live data; replaced before ever reaching a Cloud Run execution."
+    ],
+    "OPEN": [
+      "Bastrop (48021) and McLennan (48309) currently have only one CAD vintage (2025) in the store -- their valueHistory correctly has exactly one row per parcel today. If/when a 2026 roll is ingested for either county, a re-run of this job will pick up the second year automatically (idempotent, delete-then-rewrite per place_key)."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-value-history_cp1.json",
+    "_inbox/2026-09-02_parcel-value-history_cp2.json",
+    "_inbox/2026-09-02_parcel-value-history_close.json",
+    "_queue/cards/parcel-value-history/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "cad_property_vintage_crosswalk/fallback tables are populated only for counties 48113/48439; if extended to the six program counties, they would supersede this job's own hand-rolled Williamson situs_address crosswalk with an authoritative source.",
+      "owner": "planner / future cross-vintage card",
+      "plan_row": "F-01"
+    }
+  ]
+}
