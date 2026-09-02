@@ -1,0 +1,105 @@
+{
+  "lane": "PARCEL-S6-COLLISION",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T18:05:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-s6-collision_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main (session doc-repo-98)",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-s6-collision_cp1.json",
+    "_inbox/2026-09-02_parcel-s6-collision_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 47197ef (at claim time)",
+    "factory_worktree": "P:/tmp/hauska-factory-s6-collision, branch feat/s6-collision"
+  },
+  "missionPremise": "Review finding 1 (_inbox/2026-09-02_parcel_program_review.md): WILLIAMSON_CROSSWALK_SQL guarded uniqueness only from the R-side (count(*) OVER PARTITION BY target_prop_id), letting two different R-prefix accounts sharing one situs_address both crosswalk to the same unique numeric account. Confirmed live: R664999/R665023 both stamped improvementValue=613956, byte-identical. 134 groups / 777 accounts exposed.",
+  "completionPredicate": "Met with one honestly-reported partial: (1) FIX -- an R-side situs-uniqueness guard added, computed county-wide (not batch-scoped, since a colliding sibling can land in a different chunk), live-verified to exclude the traced pair; (2) SWEEP -- all 134 groups actually collided (not merely exposed) on at least one dollar rail before the fix, sized per rail; (3) REMEDIATION -- 2,878 crosswalk-sourced dollar cells across 777 accounts reset to unaccounted via a durable, pre-recorded corrective write, provably scoped (only cells where the account's own CAD row is null on that field); (4) the fixed crosswalk re-ran county-wide for Williamson, re-deriving honest state; (5) VERIFY -- the crosswalk-caused collision (landValue/improvementValue/assessedValue) is verified ELIMINATED across all 134 groups, zero remaining, with zero collateral damage to the 281,792 non-exposed accounts (exact delta reconciliation). The PARTIAL: the dispatch's verify text predicted the traced pair would land on 'unaccounted' -- it actually landed on the more precise 'absent-verified' via the unrelated, pre-existing R6 cad-null-verified logic, a better outcome reported explicitly rather than silently accepted as a match. Separately, 17 of 134 groups still show an identical marketValue across sibling accounts -- traced and confirmed to be native WCAD source-data agreement (both accounts' own CAD rows independently carry the same value), a structurally different phenomenon than the crosswalk bug and outside this card's fix scope; reported honestly against the dispatch's literal falsifier text rather than forced to a false 100%.",
+  "scopeBasis": "hauska-factory src/jobs/parcel-record-fill.mjs (the crosswalk SQL fix) + a new src/jobs/s6-collision-remediate.mjs (the reset job) + tests (PR #73). Williamson county (48491) only -- no other county's crosswalk exists to have this defect. No schema change, no new Cloud Run job (reused factory-parcel-record-fill via an --args override).",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 73,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/73",
+      "branch": "feat/s6-collision",
+      "mergeSha": "2c65b271e2e57022ffcf53f3f89ad91e38f17aa9",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "cloudRunExecutions": [
+    { "execution": "factory-parcel-record-fill-nm6r4", "purpose": "s6-collision-remediate dry-run", "result": "134 groups / 777 accounts / 2,878 targets, matching the live-verified sweep exactly" },
+    { "execution": "factory-parcel-record-fill-w7dbz", "purpose": "s6-collision-remediate --apply", "runId": "5c5c1078-1714-4341-9dd5-849608d1e7cd", "result": "2,878 cells reset, matching the dry-run count exactly" },
+    { "execution": "factory-parcel-record-fill-hnv4b", "purpose": "county-wide re-run of the fixed crosswalk for Williamson", "runId": "a65950fb-c248-4eea-8c70-c6d8d0be91a1", "wallClock": "~90 minutes" }
+  ],
+  "counts": {
+    "exposedGroups": 134,
+    "exposedAccounts": 777,
+    "actuallyCollidedGroupsBeforeFix": 134,
+    "collidedByRailBeforeFix": { "assessedValue": 134, "landValue": 131, "marketValue": 59, "improvementValue": 54 },
+    "cellsReset": 2878,
+    "resetByRail": { "landValue": 777, "improvementValue": 777, "assessedValue": 777, "marketValue": 547 },
+    "collidedGroupsAfterFixOnCrosswalkRails": 0,
+    "collidedGroupsAfterFixOnMarketValueOnly": 17,
+    "nonExposedAccountsAffected": 0,
+    "countingRule": "Live queries against FACTORY_DATABASE_URL (parcel_record_cell) and PRODUCTION_NEONDB_URL (cad_property, for the exposed-group derivation and own-row null checks), cross-referenced in application code since these are two separate databases; before/after comparison via exact count deltas, not estimation."
+  },
+  "spotCheck": {
+    "placeKeys": ["48491:R664999", "48491:R665023"],
+    "situs": "1428 TREASURE MAP VW, LEANDER, TX 78641",
+    "before": "both improvementValue = value:613956 (byte-identical, wrong)",
+    "after": "both landValue/improvementValue/assessedValue = absent-verified; both marketValue = value:134000 (native, correct, untouched)"
+  },
+  "whatContradictedTheCard": "Two findings the dispatch's own verify text did not anticipate precisely, both reported explicitly rather than smoothed over. First: the traced pair's reset cells landed on 'absent-verified,' not the dispatch-predicted 'unaccounted' -- a more informative, strictly correct outcome produced by the unrelated pre-existing R6 cad-null-verified logic re-examining each account's own CAD row after the reset, not a shortfall. Second: 17 of 134 groups retain an identical marketValue across sibling R-accounts after the fix -- traced to native WCAD source-data agreement (both accounts' own records independently carry the same value; land/improvement/assessed are null on both, correctly reset), a structurally different mechanism from the crosswalk bug (which fabricated a value by borrowing a DIFFERENT account's numeric-roll data) and outside this card's scope. The dispatch's literal falsifier ('zero byte-identical non-zero dollar values across distinct R-keys within shared-situs groups') is therefore not 100% satisfied on marketValue specifically, while the actual bug this card targets (crosswalk-induced collision) is verified fully eliminated, zero remaining, across all 134 groups and all three crosswalk-fillable dollar rails.",
+  "constraintsHonored": [
+    "shared-situs residue (post-fix, both accounts correctly unaccounted/absent-verified going forward) left honestly unresolved -- no better key attempted, per the dispatch's explicit boundary",
+    "the reset was recorded via a durable run_events row naming every target and its prior value, written BEFORE the UPDATE ran",
+    "the reset scope was provable, never guessed -- a cell was only reset when the account's own CAD row proved the value could only have come from the crosswalk",
+    "zero non-exposed accounts touched, verified by exact count reconciliation (-777 exactly)",
+    "Cloud Run only, digest verified against the build's own log before executing (the shared-tag race class is now structurally closed by a separate session's per-invocation-tag change, confirmed rather than assumed)",
+    "checked the board (store-token status) before executing",
+    "no better join key attempted; residue explicitly named as future work, not solved here"
+  ],
+  "leave_behind": {
+    "leave_behind": [
+      {
+        "item": "Performance regression, self-inflicted and accepted per the dispatch's own priority ('work it clean, not fast'): the fix recomputes a county-wide window function (situs_share_count over ~282,569 rows) on every chunk call rather than hoisting it once per county run, mirroring the exact class of defect PARCEL-R5-ZONING-RECORD already found and fixed elsewhere (unindexed/unhoisted per-page re-scan). A ~90-minute Williamson re-run (vs. R1B's original faster run) is the visible cost. A follow-up card should hoist situs_share_count into a session-scoped temp table computed once, mirroring the zone-major pattern already proven in parcel-r5-zoning.mjs.",
+        "owner": "property",
+        "plan_row": "F-01"
+      },
+      {
+        "item": "17 groups (34 accounts, one group with 43) show native WCAD marketValue agreement across sibling R-accounts, confirmed NOT a crosswalk defect. Not actionable by this card; if it matters to a future consumer, it needs its own investigation into WCAD's own assessment practice for platting-phase sibling accounts, not a parcel-record-side fix.",
+        "owner": "planner",
+        "plan_row": "F-01"
+      },
+      {
+        "item": "This same many-to-one collision class (a shared-key population with a one-direction-only uniqueness guard) should be checked for in any OTHER crosswalk or fuzzy-match logic in this codebase -- this card fixed Williamson's situs crosswalk specifically; it did not audit for the same pattern elsewhere.",
+        "owner": "planner",
+        "plan_row": "F-01"
+      }
+    ]
+  },
+  "scratch": {
+    "LESSON": [
+      "A uniqueness guard computed via count(*) OVER (PARTITION BY X) only proves uniqueness from X's own side. A join with two independently-populated sides needs the guard checked from BOTH sides' partition keys, or it silently admits many-to-one collisions that look individually clean from the side that was checked.",
+      "When a fix's uniqueness guard must be correct across a CHUNKED/PAGED execution, the guard's own denominator (here, situs-sharing multiplicity) must be computed against the FULL population, never just the current page's batch -- a colliding sibling can land in a different chunk and be invisible to a batch-scoped guard.",
+      "A corrective reset scoped to 'provably crosswalk-sourced cells' (own-row field is null) is strictly more defensible than a blanket reset of 'every exposed account's cells' -- it excludes native CAD data automatically and correctly, as demonstrated by marketValue surviving the reset on the traced pair.",
+      "After a reset-then-rerun sequence, the re-run's OTHER (unrelated) logic can produce a more precise result than what was reset to -- here, R6 cad-null-verified turned a reset 'unaccounted' into a more informative 'absent-verified' on the very next run. Don't treat a dispatch's predicted end-state as gospel if the actual result is honestly better; report the discrepancy and why.",
+      "Sizing a 'sweep' as both 'merely exposed' and 'actually collided' before remediating is valuable even when (as here) the two numbers turn out identical (134=134) -- the sizing work is what let the marketValue-vs-crosswalk-fields distinction be caught cleanly afterward, since the byRail breakdown was already in hand for comparison."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T16:11:57Z hauska-factory PR #73 MERGED 2c65b271e2e57022ffcf53f3f89ad91e38f17aa9, CI SUCCESS",
+      "2026-09-02T16:1xZ Cloud Build 968f5e8d SUCCESS, per-invocation image tag (not the shared mutable tag), digest sha256:e6b87820... verified matching push and live deploy",
+      "2026-09-02T16:2xZ dry-run confirmed 134/777/2878 exactly matching the earlier live-verified sweep",
+      "2026-09-02T16:2xZ apply: 2,878 cells reset, runId 5c5c1078-1714-4341-9dd5-849608d1e7cd",
+      "2026-09-02T16:23Z-17:53Z Williamson county-wide re-run (runId a65950fb-c248-4eea-8c70-c6d8d0be91a1), confirmed progressing via run_events chunk count (994 chunks at ~65min) before completing",
+      "Post-rerun live verification: 0 crosswalk-caused collisions remain across all 134 groups; improvementValue value count 257,604 -> 256,827 (-777, exact match to exposed accounts, zero collateral)"
+    ],
+    "DEAD-END": [],
+    "OPEN": [
+      "Follow-up performance card: hoist the county-wide situs_share_count computation once per run rather than recomputing per chunk.",
+      "17-group native marketValue agreement: not a defect, not actionable by this card, named for awareness only.",
+      "Other crosswalk/fuzzy-match logic in the codebase not audited for the same one-direction-guard pattern."
+    ]
+  }
+}

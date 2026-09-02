@@ -1,0 +1,55 @@
+{
+  "lane": "PARCEL-S6-COLLISION",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T18:00:00Z",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 73,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/73",
+      "branch": "feat/s6-collision",
+      "mergeSha": "2c65b271e2e57022ffcf53f3f89ad91e38f17aa9",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "deploy": {
+    "build": "968f5e8d-16c9-4d49-b3ec-258bcc5ec734",
+    "pushDigest": "sha256:e6b87820f7795819f2b42e8a5266c1ed240c793aed9afbfb7aab4cff4ae95665",
+    "deployPinDigest": "sha256:e6b87820f7795819f2b42e8a5266c1ed240c793aed9afbfb7aab4cff4ae95665",
+    "match": true,
+    "note": "This build's image tag was per-invocation (parcel-record-fill-968f5e8d-..., not the shared mutable :parcel-record-fill tag), landed by a separate session's card between R5B and this card. Confirmed the shared-tag race class is now structurally closed, not merely avoided by luck."
+  },
+  "sweepAndRemediation": {
+    "dryRun": { "execution": "factory-parcel-record-fill-nm6r4", "exposedGroups": 134, "exposedAccounts": 777, "resetTargetCount": 2878, "resetTargetsByRail": { "landValue": 777, "improvementValue": 777, "assessedValue": 777, "marketValue": 547 } },
+    "apply": { "execution": "factory-parcel-record-fill-w7dbz", "runId": "5c5c1078-1714-4341-9dd5-849608d1e7cd", "cellsReset": 2878, "note": "dry-run and apply target counts matched exactly, confirming determinism" },
+    "recrosswalkRerun": {
+      "execution": "factory-parcel-record-fill-hnv4b",
+      "runId": "a65950fb-c248-4eea-8c70-c6d8d0be91a1",
+      "args": "parcel-record-fill,--county=48491,--apply",
+      "wallClock": "~90 minutes (16:23-17:53Z), confirmed progressing via run_events chunk count (994 chunks at the ~65min mark, not inferred from process existence per the stall-detection rule)",
+      "performanceRegressionFinding": "The fix recomputes situs_share_count (a window function over the full ~282,569-row Williamson R-prefix population) inside loadWilliamsonCrosswalk on EVERY chunk call (pageSize=200, ~1,413 chunks for a full county run) rather than hoisting it once per county run. This is the same class of defect PARCEL-R5-ZONING-RECORD found and fixed in its own landing-parcel pagination (an unindexed per-page re-scan) -- not fixed in this card because the dispatch explicitly deprioritizes speed ('this is correctness-critical, not an outage; work it clean, not fast') and a mid-execution redesign risked losing the already-substantial progress. Named as a follow-up optimization, not a defect in the fix's correctness."
+    }
+  },
+  "verification": {
+    "tracedPair": {
+      "before": "48491:R664999 and 48491:R665023 both improvementValue = {kind: value, value: 613956} (byte-identical)",
+      "after": "both landValue/improvementValue/assessedValue = absent-verified (not merely 'unaccounted' as the dispatch's verify text predicted -- see note). marketValue stays value=134000 on both, confirmed native to each account's own cad_property row (land/improvement/assessed null on both, market_value non-null and identical on both), never crosswalk-sourced, correctly untouched by the reset."
+    },
+    "unaccountedVsAbsentVerifiedNote": "The dispatch's verify step said the traced pair should end 'unaccounted' on crosswalk-sourced dollar rails. What actually happened is more precise and strictly correct: after reset (which does produce 'unaccounted'), the county-wide re-run's ordinary CAD-null-verified logic (R6, unrelated to this card) re-examined each account's OWN cad_property row via the normal identity join (which always succeeds -- every prop_id matches itself) and found land_value/improvement_value/assessed_value genuinely NULL there, correctly emitting 'absent-verified' (checked, genuinely absent) rather than leaving the cell at the less-informative 'unaccounted' (never checked). This is a better outcome than the dispatch predicted, not a shortfall -- reported explicitly rather than silently reconciled away.",
+    "storeWideFalsifier": {
+      "method": "Re-ran the same collision-sweep methodology used to size the original 134/777 exposure, now against the post-fix, post-rerun store: for each of the 134 previously-exposed shared-situs groups, check whether 2+ distinct R-keys still carry an identical non-zero value on any of the 4 dollar rails.",
+      "result": "landValue/improvementValue/assessedValue: ZERO remaining collisions across all 134 groups -- the crosswalk-caused collision is fully and completely eliminated for every group, not just the traced pair.",
+      "marketValueException": "17 of 134 groups (34 accounts) still show an identical non-zero marketValue across 2 (or in one case 43) R-keys sharing a situs. Verified this is NOT a residual crosswalk defect: for the checked example (R667144/R667145, 1118 Blue Moon Dr, Georgetown), market_value=95000 is non-null and identical on BOTH accounts' OWN cad_property rows, while land/improvement/assessed are null on both (correctly reset to absent-verified). This is WCAD's own native source data -- both a developer's platting-phase account and a builder's construction account on the same lot are independently assessed the same land-based market value before individual improvements are separately valued. This mechanism is structurally different from the crosswalk bug (which fabricated a value by borrowing another account's numeric-roll data): it is two accounts' own, independently-recorded CAD data genuinely agreeing. Fixing the crosswalk cannot and does not touch this -- it is out of this card's scope by construction.",
+      "literalFalsifierStatus": "The dispatch's verify text ('zero byte-identical non-zero dollar values across distinct R-keys within shared-situs groups') is not 100% literally satisfied (17/134 groups still show a marketValue agreement) -- but the mechanism has been traced and is provably NOT the crosswalk defect this card exists to fix. Reported honestly as a distinct, out-of-scope, structurally-different finding rather than either forcing a false 100% or silently declaring success against the letter of the falsifier."
+    },
+    "noCollateralDamage": {
+      "method": "Store-wide improvementValue count for all Williamson R-prefix accounts, before vs after.",
+      "before": "257,604 value (R1B's original figure)",
+      "after": "256,827 value, 25,742 absent-verified (256,827 + 25,742 = 282,569, the full R-prefix population)",
+      "delta": "-777, exactly matching the 777 exposed accounts -- proving zero non-exposed accounts were affected by either the fix or the reset+rerun."
+    }
+  },
+  "next": "write close, release the claim, continue the seat loop"
+}

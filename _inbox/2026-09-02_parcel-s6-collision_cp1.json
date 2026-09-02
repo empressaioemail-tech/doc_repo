@@ -1,0 +1,31 @@
+{
+  "lane": "PARCEL-S6-COLLISION",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T16:15:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 47197ef",
+    "factory_worktree": "P:/tmp/hauska-factory-s6-collision, branch feat/s6-collision, cloned fresh from origin/main",
+    "claimExpires": "2026-09-02T17:29:45.876Z"
+  },
+  "premisesReverified": {
+    "reviewFinding1ReadInFull": "_inbox/2026-09-02_parcel_program_review.md finding 1 read in full. Traced pair R664999/R665023 sharing situs '1428 TREASURE MAP VW, LEANDER, TX 78641', both crosswalking to numeric account 490339, both stamped improvementValue=613956 (byte-identical). 134 groups / 777 R-prefix accounts exposed statewide-in-Williamson.",
+    "codeRead": "WILLIAMSON_CROSSWALK_SQL (src/jobs/parcel-record-fill.mjs:260-288) confirmed: match_count = count(*) OVER (PARTITION BY target_prop_id) guards only R-account-to-many-numeric fan-out. No guard exists for the reverse (multiple R-accounts to one numeric account) because the window is partitioned by the R-side key, not by situs_address or by the numeric-side key.",
+    "chunkingHazard": "loadWilliamsonCrosswalk is called per page (propIds = the current chunk's R-prefix keys only, via cadByProp.keys()). A naive fix that only checks situs uniqueness WITHIN the passed propIds would miss a colliding sibling that lands in a DIFFERENT page/chunk. The fix must compute situs-sharing multiplicity against the FULL R-prefix population for the county, independent of which propIds are being processed in the current call, then filter down to the requested propIds afterward."
+  },
+  "design": {
+    "sqlFix": "Add an r_situs CTE computing count(*) OVER (PARTITION BY situs_address) across ALL Williamson R-prefix cad_property rows (prop_id ~ '^R[0-9]+$', situs_address IS NOT NULL) -- not filtered by the caller's propIds. The target CTE then filters to the requested propIds AND situs_share_count = 1 (the new R-side guard). The existing match_count = 1 filter (R-to-numeric fan-out guard) stays unchanged, now composing with the new guard so both directions are partition-unique, matching the dispatch's framing exactly.",
+    "regressionFixture": "The traced pair (R664999/R665023, situs '1428 TREASURE MAP VW, LEANDER, TX 78641', numeric 490339) becomes a fixture-shaped unit test: construct a fake cortex returning that exact shape, prove the CURRENT (unfixed) SQL-shape assertion would have let both through (falsifier: assert the OLD single-direction match_count alone is insufficient), and prove the fixed SQL/logic excludes both.",
+    "sweep": "Live query, read-only first: for all 134 exposed groups, size the ACTUALLY-collided subset (2+ R-keys within the group sharing an identical NON-ZERO dollar value on a crosswalk-sourced cell) vs. the merely-exposed count (134/777, already known from the review). Report both numbers per dollar rail (landValue, improvementValue, marketValue, assessedValue) -- the review explicitly left this unsized.",
+    "remediationScope": "Per the dispatch's explicit 'dollar cells only' framing and the verify falsifier's own dollar-only scope: reset exactly landValue/improvementValue/marketValue/assessedValue, and only for the subset of the 777 exposed accounts where the reset is provably correct -- i.e., where the R-row's OWN cad_property record has that specific dollar field NULL (proving the currently-stamped value could only have come from the crosswalk fill, never from the row's own data, since mergeWilliamsonCrosswalk never overwrites an existing value). A dollar field that is non-null on the R-row's own record was never touched by the crosswalk and must not be reset. Non-dollar crosswalk-sourced fields (yearBuilt, livingAreaSqft, acreageAcres, situsCity, situsZip, exemptionCodes, landUseCode) share the identical collision mechanism but are explicitly out of this card's dollar-only scope per the dispatch -- named as leave_behind, not silently left unaddressed.",
+    "resetRecording": "Every reset row recorded per the state-change rule: a durable run_events row naming the affected place_keys, rail_keys, the prior (collided) value, and the authorization/mechanism, before the corrective UPDATE executes.",
+    "sequencing": "1) reset the identified collided dollar cells to unaccounted (a targeted, recorded UPDATE, county-scoped to Williamson, keyed to exactly the affected place_key+rail_key pairs -- never a blanket re-instantiate); 2) re-run the FIXED crosswalk ingest for Williamson county-wide (parcel-record-fill --county=48491 --apply, same job, now carrying the R-side guard); 3) verify the traced pair and the store-wide falsifier."
+  },
+  "willNot": [
+    "touch any county other than Williamson (48491)",
+    "reset any cell outside the four dollar rails",
+    "reset a dollar cell that is provably NOT crosswalk-sourced (i.e., non-null on the R-row's own cad_property record)",
+    "guess a resolution for the shared-situs residue after the fix -- those groups stay honestly unaccounted, per the dispatch",
+    "attempt a better join key (deed, geometry) -- out of scope, named as follow-up"
+  ]
+}
