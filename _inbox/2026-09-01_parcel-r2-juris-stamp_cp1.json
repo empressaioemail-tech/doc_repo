@@ -1,0 +1,40 @@
+{
+  "lane": "PARCEL-R2-JURIS-STAMP",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T12:35:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 9453bce (at claim time)",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r2 feat/parcel-r2-juris-stamp, cloned fresh from origin/main 3084674",
+    "claimExpires": "2026-09-02T13:52:00.656Z"
+  },
+  "premisesReverified": {
+    "gapLedgerSection11": "re-read: cityLimits (and etjStatus IF represented) unaccounted on all 981,407 rows; landing_parcel_jurisdiction already holds disposition for every landing-matched row. 'Cheap fill add' language confirmed live.",
+    "landingSchema": "queried live: landing_parcel_jurisdiction has county_fips, prop_id, disposition (CHECK unincorporated/in-city/unresolved), method, place_fips, city_name, run_id, chunk_lo/hi, recorded_at. No ETJ column or value anywhere on the table -- etjStatus premise 3 confirmed: report needs-source, do not fake it.",
+    "dispositionLiveCounts": "in-city 611,116 (100% have city_name, 71 distinct names), unincorporated 370,289 (0% have city_name). Sum 981,405 = landing total. Zero live 'unresolved' rows.",
+    "orphanCensus": "ledger section 5 re-read: 48021:0 and 48021:10005, 52 cells each, instantiated_at 2026-09-01T18:15:44.893Z, neither in landing. Deletion operator-gated per ledger; the claim's addendum supplies that authorization."
+  },
+  "design": {
+    "location": "job-side (src/jobs/parcel-record-fill.mjs), never the vendored engine module -- ENGINE_PIN.json marks src/lib/parcel-record-engine/*.js as compiled from hauska-engine, do-not-hand-edit.",
+    "shape": "value <-> incorporated=true (cityLimits.value = the real city_name from landing), absent-verified <-> incorporated=false (basis names source/countyFips/propId/disposition/vintage). Mirrors the existing cad-null-verified shape ingestCadOntoRecords already uses for a matched-row null CAD scalar.",
+    "neverFabricate": "disposition='unresolved' (zero live rows but a real CHECK-constraint value) and no landing row at all (the two orphans) both leave cityLimits unaccounted. An in-city row with a blank/null city_name (none measured live, but guarded) also stays unaccounted rather than stamping an empty value.",
+    "etjStatus": "untouched by design; stays unaccounted, reported needs-source."
+  },
+  "testPlan": [
+    "in-city stamps value from city_name, source=landing_parcel_jurisdiction",
+    "unincorporated stamps absent-verified with a landing basis (source/countyFips/propId/disposition/vintage)",
+    "no landing row leaves cityLimits unaccounted (falsifier, covers the orphan shape)",
+    "disposition='unresolved' leaves cityLimits unaccounted (falsifier)",
+    "blank/null city_name on an in-city row leaves cityLimits unaccounted, never fabricates (falsifier)",
+    "idempotent: a second pass does not re-stamp an already-earned cell with a later vintage",
+    "etjStatus untouched on either disposition",
+    "the card's own meaning-shaped verify: cityLimits kind agrees with incorporated on every constructed row",
+    "instantiateAndIngest wires jurisdictionIngest alongside cadIngest"
+  ],
+  "willNot": [
+    "edit src/lib/parcel-record-engine (vendored, pinned)",
+    "stamp etjStatus from any source; landing carries no ETJ representation",
+    "fabricate a cityLimits value on unresolved disposition, a missing landing row, or a blank city_name",
+    "add any generic delete capability; the orphan deletion (if implemented) targets exactly the two named place_keys, hardcoded, never parameterized"
+  ]
+}

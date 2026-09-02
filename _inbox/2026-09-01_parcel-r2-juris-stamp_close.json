@@ -1,0 +1,119 @@
+{
+  "lane": "PARCEL-R2-JURIS-STAMP",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T14:10:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-r2-juris-stamp_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main (session doc-repo-98)",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-r2-juris-stamp_cp1.json",
+    "_inbox/2026-09-01_parcel-r2-juris-stamp_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main (queue claim GRANTED 2026-09-02T12:22:00.656Z per _queue/log/property.jsonl)",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r2, branch feat/parcel-r2-juris-stamp",
+    "engineSha": "a38cbb22eda23637d7a56e104456aa4e7237fc25 (unchanged; job-level change only)",
+    "contractVersion": "1.30.0"
+  },
+  "missionPremise": "Gap ledger section 11 'cheap fill add': cityLimits is unaccounted on all 981,407 rows while landing_parcel_jurisdiction.disposition already resolves in-city/unincorporated for every landing-matched parcel; etjStatus has no representation in landing and must be reported needs-source, never faked; the queued addendum additionally authorizes deleting exactly the two named Bastrop 52-rail orphan rows (48021:0, 48021:10005), nothing else, ever.",
+  "completionPredicate": "Met: (1) cityLimits stamped job-side (value=city_name / absent-verified=disposition basis) on every landing-matched row across all six counties, verified live to match the gap ledger's in-city/unincorporated split exactly per county and store-wide (611,116 value + 370,289 absent-verified = 981,405); (2) the meaning-shaped verify (cityLimits kind vs parcel_record.incorporated) shows zero disagreements across every row measured; (3) etjStatus confirmed 100% unaccounted, untouched, needs-source; (4) both authorized orphans deleted (recordsDeleted=2, cellsDeleted=104), verified absent from the store post-delete, with a durable run_events record naming both keys, counts, authorization, and timestamp; (5) total parcel_record count is exactly 981,405, matching landing with zero residual orphans; (6) a cross-session worktree collision that corrupted this exact rail across all six counties mid-card was detected, escalated to the operator at each destructive-action boundary, resolved with the foreign commit preserved in quarantine rather than discarded, and a second (initially missed) concurrent-write window was found and independently corrected before this close was written.",
+  "scopeBasis": "hauska-factory src/jobs/parcel-record-fill.mjs + its test (PR #64), and the new src/jobs/purge-bastrop-orphans.mjs + its test + writer-allowlist/cli registration (PR #65). No engine-core change (ENGINE_PIN.json forbids hand-editing the vendored module). No schema change. The orphan deletion is a dedicated job with the two place_keys hardcoded, not a parameter -- structurally incapable of deleting anything else.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 64,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/64",
+      "branch": "feat/parcel-r2-juris-stamp",
+      "mergeSha": "e3ea1a4985f288e3492b3a4d4fde61870c27e320",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    },
+    {
+      "repo": "hauska-factory",
+      "number": 65,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/65",
+      "branch": "feat/parcel-r2-juris-stamp",
+      "mergeSha": "eb4f9d69432eedc91314aa519be2329ad55e9a50",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "cloudRunExecution": {
+    "job": "factory-parcel-record-fill",
+    "fillExecutions": "one per county x1, plus a second Travis (48453) pass (nwll6) to correct a foreign trailing-write clobber; see cp2 for full list",
+    "purgeExecutions": {
+      "dryRun": "factory-parcel-record-fill-mf4hn",
+      "apply": "factory-parcel-record-fill-8krbd",
+      "runId": "709174a8-1ae0-47d6-817f-496b9621e72e"
+    }
+  },
+  "beforeAfter": {
+    "cityLimits_before": "981,407 unaccounted (all rows, including the 2 orphans)",
+    "cityLimits_after": "611,116 value (city_name) + 370,289 absent-verified (unincorporated basis) = 981,405; 0 unaccounted; 0 rows in a wrong (status-string) shape",
+    "etjStatus": "981,405 unaccounted before and after -- untouched by design, needs-source",
+    "orphans_before": "2 rows (48021:0, 48021:10005), 52 cells each, incorporated=NULL, not in landing",
+    "orphans_after": "0 rows; parcel_record total is exactly 981,405"
+  },
+  "counts": {
+    "storeWideCityLimits": { "value": 611116, "absentVerified": 370289, "unaccounted": 0 },
+    "countingRule": "cell_state->>'kind' grouped, rail_key='cityLimits', read directly from FACTORY_DATABASE_URL post-purge",
+    "meaningShapedVerify": "0 disagreements (incorp_true_but_not_value / incorp_false_but_not_absent / incorp_null_but_not_unaccounted all 0) across 981,407 rows, measured via a JOIN between parcel_record.incorporated and parcel_record_cell.cell_state -- two independent columns, not two fields of one payload",
+    "purge": { "recordsDeleted": 2, "cellsDeleted": 104 }
+  },
+  "whatContradictedTheCard": "The card's premises held exactly as written -- landing carries no ETJ representation, the two orphans matched the ledger's orphan census precisely, and the value/absent-verified design matched the dispatch's intent. What contradicted the WORKING ASSUMPTION of a clean single-writer execution was a cross-session collision, twice: (1) a peer session (doc-repo-c0) misread a REFUSED claim response as GRANTED and committed-and-pushed a materially different, unauthorized design (a literal 'incorporated'/'unincorporated' status string discarding the real city_name and never using absent-verified, plus a generic --delete-place flag the addendum does not authorize) directly into this lane's claimed worktree and its remote branch; (2) even after that commit was quarantined (preserved at refs/heads/quarantine/r2-unauthorized-f83361c, never merged) and the branch was reset by the operator directly (this lane's own permission layer refuses destructive git ops even under in-chat authorization -- working as intended, confirmed by two separate denied attempts), the FOREIGN SESSION'S ALREADY-RUNNING CLOUD RUN EXECUTIONS were not stopped by the code-level fix: two of its six county-wide fill executions (Williamson and Travis) were still actively writing to production, live, concurrently with this lane's corrected re-runs, for roughly two minutes and forty-nine seconds respectively. The Williamson overlap was caught live (a wrong-shape count ticking UP between two measurements) and the foreign execution was cancelled directly (gcloud run jobs executions cancel, confirmed). The Travis overlap was NOT caught until after this lane's first Travis pass had already reported 'True'/complete -- a live query still showed 200 residual wrong-shape rows, traced by timestamp to the foreign execution's own completion four seconds after this lane's first pass had already moved past that page range. A second Travis re-run was required to reach a clean store. Every one of these findings was caught by verifying at source against live store queries, not by trusting a completed execution status -- an execution reporting True/succeeded says its own work finished, not that no other writer touched the same rows afterward.",
+  "constraintsHonored": [
+    "never hand-edited the vendored engine module (src/lib/parcel-record-engine)",
+    "never fabricated etjStatus; confirmed live it stays 100% unaccounted",
+    "never converted unaccounted to absent-verified outside this card's own authorized cityLimits emission",
+    "the orphan deletion targets exactly and only the two authorized place_keys, hardcoded in the module -- no parameter exists that could widen it, unlike the quarantined foreign design's generic --delete-place",
+    "every destructive git operation (reset --hard, force-push) was routed to and executed by the operator directly, never run by this lane despite holding explicit in-chat authorization to do so -- the permission layer's denial was respected rather than worked around",
+    "the foreign commit was preserved (quarantine ref), never discarded, before any corrective action touched the shared branch",
+    "cancelling another session's live Cloud Run execution was disclosed to that session immediately, not done silently",
+    "store writes only via Cloud Run jobs with run rows (parcel-record-fill --apply, purge-bastrop-orphans --apply); no laptop --apply at any point",
+    "store reads via psql with statement_timeout guards throughout; several timed out under writer load and were retried rather than assumed"
+  ],
+  "leave_behind": {
+    "leave_behind": [
+      {
+        "item": "quarantine/r2-unauthorized-f83361c (remote branch, hauska-factory)",
+        "owner": "operator / property seat",
+        "plan_row": "F-01",
+        "note": "Preserved unmerged foreign commit for review. Delete once reviewed and no longer needed, or leave indefinitely as an incident record -- not this lane's call."
+      },
+      {
+        "item": "_inbox/2026-09-02_seat-collision-parcel-r2-juris-stamp_incident.md",
+        "owner": "doc-repo-c0 (filed) / operator (review)",
+        "plan_row": "F-01",
+        "note": "Peer session's own incident writeup on the claim-misread root cause; complements this close's CP2 incident section."
+      }
+    ]
+  },
+  "scratch": {
+    "LESSON": [
+      "A completed/succeeded Cloud Run execution status means that execution's own work finished -- it says nothing about whether another writer touched the same rows before or after. Verify the STORE, not the execution status, when two writers might have raced.",
+      "The in-memory 'skip if cell.kind !== unaccounted' guard inside a fill job's ingest function only prevents double-processing WITHIN one fresh instantiate+ingest pass (instantiateParcelRecord always rebuilds every rail as unaccounted from scratch). It is NOT a guard against the DB-level upsert overwriting a different run's prior write -- UPSERT ... ON CONFLICT DO UPDATE SET cell_state = EXCLUDED.cell_state is unconditional. This is exactly what let a correct re-run silently self-heal four of six counties without any special corrective code, and exactly why a late-finishing WRONG writer could still clobber an already-correct row.",
+      "When a peer session's claim attempt shows in the log as REFUSED/ALREADY_CLAIMED, the worktree/branch fields in that refusal match the CARD's prescribed path, not proof that the refusing session's own identity was granted anything. Read the verb+result pair, not just the fields, before trusting a claim was yours.",
+      "Destructive git commands (reset --hard, push --force) being denied by the permission layer even after explicit in-session operator authorization is itself the control working -- route to the operator rather than treating it as a bug to route around."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T12:22:00.656Z queue GRANTED parcel-r2-juris-stamp to property (this lane); competing claim REFUSED ALREADY_CLAIMED at 12:22:18.781Z",
+      "2026-09-02T12:39:xxZ foreign commit f83361c quarantined to refs/heads/quarantine/r2-unauthorized-f83361c",
+      "2026-09-02T~12:4xZ feat/parcel-r2-juris-stamp reset to origin/main and force-pushed by the operator directly",
+      "2026-09-02T12:55:35Z hauska-factory PR #64 MERGED e3ea1a4985f288e3492b3a4d4fde61870c27e320, CI SUCCESS",
+      "2026-09-02T13:14Zish factory-parcel-record-fill-bzfxv (foreign Williamson execution) CANCELLED by this lane",
+      "2026-09-02T13:45:20Z factory-parcel-record-fill-nwll6 (Travis re-run) completed True",
+      "2026-09-02T13:50:25Z factory-parcel-record-fill-ph8kw (Williamson) completed True",
+      "2026-09-02T13:56:03Z hauska-factory PR #65 MERGED eb4f9d69432eedc91314aa519be2329ad55e9a50, CI SUCCESS",
+      "2026-09-02T14:01:47Z purge-bastrop-orphans --apply: runId 709174a8-1ae0-47d6-817f-496b9621e72e, recordsDeleted=2, cellsDeleted=104",
+      "Final store-wide cityLimits: value=611116, absent-verified=370289, unaccounted=0 (matches gap ledger's 611,116/370,289 census exactly)",
+      "parcel_record total post-purge: 981,405 (exact landing match)"
+    ],
+    "DEAD-END": [
+      "Assuming a six-executions-all-True status meant the county-wide fill was clean and safe to move straight to the orphan purge. Two of six had a foreign writer still finishing after this lane's own execution reported done; the store had to be re-measured, not the execution list."
+    ],
+    "OPEN": [
+      "This lane's queue claim (expires_at 2026-09-02T13:52:00.656Z) lapsed during the incident response before this close was written; the card was CLAIMABLE again by the time of this close with nobody else having taken it. The close artifact is filed regardless per seat_loop.md (a close artifact, not an active claim, is what satisfies a downstream dependency), but the queue's own release bookkeeping for this specific claim window was not exercised. Flagging for the operator/queue-tooling review: should a claim's TTL auto-extend, or should a lane be expected to `extend` proactively during an unplanned multi-hour incident response?",
+      "Whether refs/heads/quarantine/r2-unauthorized-f83361c should eventually be deleted, or kept as a standing incident record, is an operator call."
+    ]
+  }
+}
