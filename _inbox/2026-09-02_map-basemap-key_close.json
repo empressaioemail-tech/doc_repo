@@ -1,0 +1,72 @@
+{
+  "lane": "MAP-BASEMAP-KEY",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T21:47:00Z",
+  "dispatch": "_dispatches/2026-09-02_map-basemap-key_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main, worktree P:/tmp/hauska-map-basemap-key, branch feat/basemap-key",
+  "checkpoints": [
+    "_inbox/2026-09-02_map-basemap-key_cp1.json",
+    "_inbox/2026-09-02_map-basemap-key_cp2.json"
+  ],
+  "missionPremise": "CARTO retired keyless raster basemaps; live map shows an API-KEY-REQUIRED watermark. Key the two hardcoded legacy styles (dark_all in gis-map-paint.js, light_only_labels in basemap-labels.js), env-inject the key, deploy PE, verify customer-done.",
+  "completionPredicate": "Met: (1) fix merged, hauska-map PR #336, mergeSha 557e679b, CI green (4/4 checks); (2) VITE_CARTO_API_KEY added to Vercel production env; (3) deployed to production and aliased to smartsite.cloud, bundle-marker-verified as this session's own deployment (merge SHA present in the live entry script, not a concurrent session's deploy); (4) customer-done verification per the dispatch's four items: (a) direct keyed tile curl for both styles, 200/clean/watermark-free-byte-count-matched; (b) the live deployed bundle contains the real key value and both style names, with the literal env-var name absent (proof Vite replaced it, not shipped it unresolved); (c) attribution strings present in the shipped bundle. Item (b)'s browser-visual half (an actual rendered screenshot) was not done -- no browser automation tool in this environment -- named explicitly as not verified rather than assumed.",
+  "scopeBasis": "hauska-map only: packages/map-renderer/src/map/{gis-map-paint.js, basemap-labels.js, carto-key.js (new), carto-key.test.js (new), map-legend.test.js}, plus apps/property-explorer/.gitignore (Vercel CLI link artifact) and the Vercel production env var. No P-10x lane file touched (SettingsModal, pe-billing, spine, share tools) per the dispatch's explicit exclusion.",
+  "prs": [
+    {
+      "repo": "hauska-map",
+      "number": 336,
+      "url": "https://github.com/empressaioemail-tech/hauska-map/pull/336",
+      "mergeSha": "557e679bba9c947936edf7e48cc3bb3986907af3",
+      "ciConclusion": "SUCCESS (4/4 checks)",
+      "tests": "map-renderer: 134/134 pass (npm test), including 3 new falsifier-shaped tests for the key/URL construction and one updated assertion for the keyed URL shape"
+    }
+  ],
+  "deployVerification": {
+    "deploymentId": "dpl_2MiNnqV2gpi1b5f3h9W6vvjntcRe",
+    "target": "production",
+    "aliasedTo": "https://smartsite.cloud",
+    "bundleMarker": "merge SHA 557e679bba9c947936edf7e48cc3bb3986907af3, confirmed present in the live entry script fetched directly from smartsite.cloud after deploy"
+  },
+  "whatContradictedTheCard": [
+    "The dispatch's own stated premise -- 'the keyed raster service uses new style paths (rastertiles/<style>)' -- is wrong for the two styles this card actually needed. CARTO's own migration-table documentation (docs.carto.com/faqs/carto-basemaps) maps dark_all to a VECTOR style (dark-matter-gl-style/style.json), not a raster rename; the rastertiles/ prefix belongs only to the separate, newer voyager style family. Ground truth (CartoDB/basemap-styles, the style-list source of truth, plus a live test with the real key) confirms dark_all and light_only_labels keep their EXISTING bare paths -- the actual fix is appending ?key=, nothing else. Acting on the dispatch's stated premise without live-verifying first would have produced a plausible-looking but wrong fix (a rename to paths CARTO does not serve dark_all/light_only_labels under).",
+    "A naive HTTP-status check would have missed the original defect entirely: the unkeyed endpoint returns 200 OK with a small watermark PNG, not a 4xx/5xx error. Every verification in this close (CP1's initial diagnosis, CP2's live checks) used byte-count and visual/content comparison, never status code alone.",
+    "vercel deploy from inside apps/property-explorer/ failed with a doubled-path error (the project's Root Directory setting gets appended to CWD, not treated as an override) -- corrected by linking and deploying from the repo root instead. Left as a note for whoever next deploys this project via CLI rather than the dashboard."
+  ],
+  "constraintsHonored": [
+    "attribution preserved (never removed, verified present in the shipped bundle)",
+    "key env-injected via VITE_CARTO_API_KEY, never hardcoded in source",
+    "verified MY deployment by bundle marker before declaring done; did not assume the alias pointed at my build without checking",
+    "scope held to the two named styles + the env wiring + the deploy; did not fix the leave_behind (hauska-map-style.js's light_all) even though it shares the identical defect"
+  ],
+  "scratch": {
+    "LESSON": [
+      "Live-verify a vendor's stated migration path before trusting a dispatch's premise about it, even when the premise names a specific, plausible-sounding URL scheme (rastertiles/<style>) -- the dispatch author's own research can be incomplete or point at the wrong part of the vendor's documentation (a vector-migration table, when the actual need was a raster fix).",
+      "A watermark served at HTTP 200 is a real, recurring defect-detection trap -- check content, not just status, whenever a vendor might degrade gracefully instead of erroring.",
+      "This repo already has a live precedent (VITE_PARCEL_PMTILES_HASH) for reading Vite env vars inside a tsup-compiled package consumed by a Vite app -- worth searching for existing precedent before treating a bundler-interop question as novel/risky.",
+      "Vercel CLI's Root Directory handling: deploy from the repo root when a project's dashboard Root Directory setting points into a monorepo subdirectory, not from inside that subdirectory (CWD + Root Directory compose, they do not override each other)."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T21:43:13Z hauska-map PR #336 merged, mergeSha 557e679bba9c947936edf7e48cc3bb3986907af3",
+      "2026-09-02T~21:44Z Vercel production deploy dpl_2MiNnqV2gpi1b5f3h9W6vvjntcRe, aliased to smartsite.cloud, bundle-marker-confirmed live",
+      "CARTO_API_KEY in Secret Manager: 35 real characters once \\r\\n stripped (38 bytes on disk with a trailing \\r\\r\\n)"
+    ],
+    "OPEN": [
+      "packages/map-renderer/src/map/hauska-map-style.js has a third hardcoded CARTO style (light_all) with the identical missing-key defect, confirmed still present in the deployed bundle as an unkeyed literal string. Out of this card's named two-style scope; needs its own card."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_map-basemap-key_cp1.json (committed separately)",
+    "_inbox/2026-09-02_map-basemap-key_cp2.json (committed separately)",
+    "_inbox/2026-09-02_map-basemap-key_close.json",
+    "_queue/cards/map-basemap-key/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "packages/map-renderer/src/map/hauska-map-style.js hardcodes the light_all CARTO style at its bare path with no key -- same defect class as this card fixed, different style/file, out of the named scope.",
+      "owner": "property / next card",
+      "plan_row": "F-01"
+    }
+  ]
+}
