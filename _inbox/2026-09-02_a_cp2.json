@@ -1,0 +1,42 @@
+{
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "lane": "Govtech Track A -- Smart Files read-path scope",
+  "planRows": ["G-106", "G-107"],
+  "at": "2026-09-02T14:25:00Z",
+  "priorCheckpoint": "_inbox/2026-09-02_a_cp1.json",
+  "built": [
+    "smart-files/src/identity.mjs: ALL_SCOPES, parseServiceIdentities, resolveCallerIdentity, identityHasBlanketGrant, identityAllowsScope, identityAllowsAnyScope",
+    "smart-files/src/store.mjs: getBlobScopes (distinct scope pairs a blob is cited under, via smart_file_versions JOIN smart_file_documents)",
+    "smart-files/src/server.mjs: requireReadScope wired into GET /folders, GET /folders/:id/files, GET /files/:entityId, GET /files/:entityId/placements, GET /blobs/:cid; write/personas/share routes unchanged (still requireToken, the single shared secret)",
+    "smart-files/scripts/read_scope_probe.mjs (new): live probe encoding WDLL item 5's exact check",
+    "smart-files/.github/workflows/test.yml: SMART_FILES_SERVICE_TOKENS wired for the roundtrip job (blanket grant for the existing ci-round-trip-token, plus two new narrowly-scoped tokens) and read_scope_probe.mjs added as a CI step",
+    "smart-files/README.md: corrected from 'Anonymous callers are 401' / 'Read is open to all four' to describe the actual gated behavior",
+    "smart-files/src/identity.test.mjs: 7 new unit tests for the identity functions above"
+  ],
+  "verificationPerformed": {
+    "environment": "Real throwaway Postgres 16 in Docker (container smart-files-test-pg, port 55433), schema applied from sql/001-004 plus scripts/ci_probe_seed.sql -- the identical steps .github/workflows/test.yml runs, not a mock.",
+    "unitTests": "npm test: 25/25 pass (18 pre-existing + 7 new).",
+    "existingProbeUnchanged": "scope_roundtrip_probe.mjs: 46/46 pass against the fixed server using ONE blanket-grant CI token -- proves zero regression to the documented multi-tenant CI shape.",
+    "newProbe": "read_scope_probe.mjs: 17/17 pass against the fixed server (anonymous/wrong-tenant/matching-tenant x folders/folder-files/file-read/placements/blob, plus two body-shape assertions).",
+    "verifyByViolation": {
+      "method": "git stash (removes the fix, restoring origin/main's exact pre-fix code) against the SAME running Postgres and seed data, re-run the identical curl requests, then git stash pop and re-verify the fix closes what the stash run showed.",
+      "confoundFoundAndCorrected": "First attempt reused a still-running FIXED server on the same port (kill target was from a different shell process, job control does not cross Bash tool calls) -- caught because the 'violation' run returned 403, the FIXED behavior, which should have been a red flag on its own rather than accepted at face value. Found the real PID via Get-NetTCPConnection, killed it, and re-ran the old code cleanly before trusting any result. Recorded here per ENFORCEMENT.md's 'a convenient result is a reason to distrust the instrument, not a result.'",
+      "confirmedPreFixViolations": [
+        "Anonymous read of a tenant folder list returns 401 pre-fix (WDLL requires 403) -- status-code gap real, not assumed.",
+        "The ONE shared token (ci-round-trip-token, no relationship to acme) reads acme's private folder list AND acme's private blob bytes verbatim ('tenant acme unchanged'), status 200, zero scope check -- the actual defect, reproduced against real data, not inferred from reading the code alone."
+      ],
+      "confirmedPostFixCloses": [
+        "The identical anonymous request now returns 403.",
+        "The identical acme-blob-read-via-shared-token request, when attempted with a template-city-scoped token instead, now returns 403 with body {\"error\":\"forbidden\",...}.",
+        "The SAME shared token, now explicitly configured with a blanket ('*','*') grant, still succeeds for both template-city and acme reads -- proving the fix does not regress the already-deployed multi-tenant CI/backend pattern, only closes it for callers that are NOT holding that grant."
+      ]
+    }
+  },
+  "adversarialReviewOfOwnDesign": [
+    "Question: does granting the legacy token a blanket '*'/'*' scope just keep the defect under a new name? Answer: no -- the defect was 'no caller identity is checked at all, ever, for any token'. Post-fix, an UNKNOWN or MISSING token always refuses; a KNOWN token's access is exactly what its grants say, and the blanket grant is an explicit, visible, single line of configuration a reviewer can see and revoke, not a code-level default. This is declared in the README and PR description, not left implicit.",
+    "Question: could the entityId-parse-fails case (malformed entityId) be exploited to bypass the scope check? Answer: no -- requireReadScope with an empty scopePairs array only succeeds for a caller holding the blanket grant (identityHasBlanketGrant short-circuits); a narrowly-scoped caller gets 403 on an unparseable id, never a free pass. Covered by the identityAllowsAnyScope unit test asserting exactly this.",
+    "Question: does the blob-scope lookup (getBlobScopes) correctly refuse an orphaned blob (bytes in smart_file_blobs with no citing version)? Answer: yes -- an orphan returns an empty scope-pair array, which only a blanket-grant caller can read, per the same fail-closed rule above."
+  ],
+  "whatIsNotYetDone": "G-107 (items 6/7: tenant-identity unification across plan-review's web/app.js and src/actors.mjs, and staff-upload provenance fields capturedBy/capturedAt/sourceKind/originalFilename/declaredRole) has not been started. store.mjs's uploadFileToFolder provenance JSONB today only carries {sourceLabel, uploadedBy} -- confirmed by reading the function, not assumed.",
+  "nextStep": "Commit, push, open PR, verify CI green on the actual PR (not just local reproduction), merge, then deploy to the live Cloud Run service and re-run the WDLL item 5 curl checks against the deployed URL before writing the close artifact."
+}

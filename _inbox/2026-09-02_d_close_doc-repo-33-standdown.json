@@ -1,0 +1,42 @@
+{
+  "lane": "D",
+  "repo": "plan-review",
+  "planRow": "G-109",
+  "dispatch": "_dispatches/2026-09-02_d_dispatch.md",
+  "status": "aborted-collision",
+  "missionPremise": "ICC obligation ledger reconciliation and reader, govtech half only (S4-1b, S4-8), per OPS-17 Wave 1 WDLL items 11-12. source_obligation_ledger (hauska-mcp-server) is authoritative; plan_review_activity is a cache per the R-I ruling.",
+  "completionPredicate": "GET /api/icc/activity (or a named successor surface) reports a reconciliation status between plan_review_activity and source_obligation_ledger that is either a real match/divergence verdict per row, or an honest typed 'cannot compare' state naming why -- never a silent omission and never a fabricated zero-divergence result.",
+  "scopeBasis": "S4-3 and S4-7 are substrate-owned (hauska-mcp-server); this dispatch was scoped to the plan-review side only, request-not-build for anything in hauska-mcp-server, per the dispatch's own out-of-scope section.",
+  "whatHappened": "Executed directly per operator instruction (not hand-carried to a lane planner). Partway through implementation, found P:/seat-worktrees/govtech/plan-review actively being written to by a second, already-running process on the exact same branch this session had just created -- files appearing and then disappearing between successive git status checks. Operator confirmed the other process is the legitimate govtech lane planner, already dispatched for this same row, and instructed this session to stand down. This close documents what this session verified and built before stopping; it is not a completion claim for G-109, and the lane planner's own close is authoritative for this row.",
+  "verifiedFindingCrossValidatedWithTheOtherProcess": "hauska-mcp-server mints request_id server-side via randomUUID() per incoming /mcp POST (src/index.ts:289, read directly, not assumed) and never returns it to the caller in the response body or a header. No plan-review-side reconciliation -- this session's or the lane planner's -- can exactly join plan_review_activity rows to source_obligation_ledger rows until hauska-mcp-server either echoes request_id back or accepts a caller-supplied correlation id. This is a substrate-owned gap, independent of which plan-review implementation ships.",
+  "workProducedByThisSession": {
+    "status": "not merged, not pushed -- copied out of the shared worktree and left uncommitted per operator instruction, superseded by the lane planner's more complete implementation",
+    "location": "scratchpad: g-109-stash/ (README_stashed_edits.md, ledger-reconciliation.mjs, 003_activity_request_id.sql, ledger-reconciliation.test.mjs)",
+    "liveSideEffect": "sql/003_activity_request_id.sql (ADD COLUMN IF NOT EXISTS request_id text) WAS applied to the live production plan-review Neon DB and verified via information_schema.columns. Compatible with the lane planner's own migration (also IF NOT EXISTS) -- no live-DB conflict expected.",
+    "testsRun": "39/39 passing (33 pre-existing + 6 new), including a deliberate violation check: reverted fetchLedgerRows() to return [] instead of null and confirmed the test suite fails rather than passing vacuously, then restored it.",
+    "liveProbe": "GET /api/icc/activity against the real service token and real DB (local server, port 8099) returned a typed reconciliation.status of 'ledger-unavailable' with a named reason, against 61 real activity rows -- not a fabricated match count."
+  },
+  "constraintsHonored": [
+    "did not write to hauska-mcp-server (substrate's repo)",
+    "did not fabricate a join key across two independently-generated identifier spaces",
+    "did not run git stash or any command that would have swept up the other process's uncommitted, in-flight edits",
+    "did not commit, push, or merge anything in the contended worktree"
+  ],
+  "counts": {
+    "testsAdded": 6,
+    "testsPassingAtStop": 39,
+    "testsTotalAtStop": 39,
+    "filesTouchedInSharedWorktree": ["src/store.mjs", "src/server.mjs"],
+    "note": "src/store.mjs and src/server.mjs on disk in the shared worktree now carry BOTH this session's edits and the lane planner's edits, interleaved without conflict as of the last check. This session made no further changes to those two files after discovering the collision."
+  },
+  "whatRemainsOpen": [
+    "G-109 completion is the lane planner's to close, not this session's",
+    "the substrate ask (echo or accept request_id) is not filed as a formal request-don't-build ticket anywhere yet -- worth one if the lane planner's close doesn't already carry it",
+    "this session's stashed work is disposable once the lane planner's close lands; nobody needs to reconcile the two implementations line by line"
+  ],
+  "leave_behind": {
+    "item": "stashed, uncommitted plan-review branch work (scratchpad g-109-stash/) and a live schema change already applied to production (request_id column) that is redundant with, but not conflicting with, the lane planner's own migration",
+    "owner": "govtech lane planner (or Nick, to decide whether the stashed work has any residual value)",
+    "plan_row": "G-109"
+  }
+}

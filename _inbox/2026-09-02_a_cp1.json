@@ -1,0 +1,30 @@
+{
+  "checkpoint": "CP1 (design/pre-build)",
+  "lane": "Govtech Track A -- Smart Files read-path scope",
+  "planRows": ["G-106", "G-107"],
+  "at": "2026-09-02T14:00:00Z",
+  "seat": "govtech (executed solo in this session, no sub-agent fan)",
+  "sourcesRead": [
+    "_dispatches/2026-09-02_a_dispatch.md (the compiled dispatch)",
+    "_inbox/2026-08-25_govtech_wave1_WDLL.md, acceptance item 5 (frozen check text) and item 6/7",
+    "_inbox/2026-08-24_govtech_transaction_contract.md, defect #9 (\"enforcement on the write path and absent on the read path\") -- this is the diagnosis the fix follows, not a re-derivation",
+    "smart-files/src/identity.mjs, src/server.mjs, src/store.mjs, src/identity.test.mjs at origin/main 86975d0",
+    "smart-files/scripts/scope_roundtrip_probe.mjs and .github/workflows/test.yml -- the existing CI probe, which uses ONE shared token across five tenants by design",
+    "_catalog/seat_register.json govtech seat entry -- smart-files and plan-review already registered, only the worktree directory needed creating"
+  ],
+  "diagnosis": "requireToken() in server.mjs gates every /api/smart-files/* route on ONE shared secret (SMART_FILES_SERVICE_TOKEN) with no caller-scope check at all. Writes are already scoped via resolveWriteScope + assertFolderInScope (QA persona -> orgId, or explicit instrument scopeId). Reads (listFolders, listFolderFiles, readDocument, listPlacements, getBlob) take no caller argument -- the transaction contract names this exact asymmetry as the program's governing defect class.",
+  "designDecision": {
+    "chosen": "A read-only caller-identity model: SMART_FILES_SERVICE_TOKENS, a JSON grant list (token -> [{scopeType, scopeId}]), checked per-route against the RESOURCE's actual scope (folder's own scope_type/scope_id, entityId's parsed scope, or a blob's scope via the document(s) citing it). '*' accepted in either field but never defaulted -- an unconfigured environment reads nothing. The existing write/personas/share gate (single shared token) is left completely unchanged.",
+    "rejectedAlternative1": "Trust a client-supplied orgId/userId query param on reads, mirroring the write path's persona resolution. Rejected: a GET query param is caller-controlled and trivially spoofable -- it would let any holder of the shared write token claim to be any tenant on reads, which is not a real entitlement check.",
+    "rejectedAlternative2": "Make the existing single SMART_FILES_SERVICE_TOKEN itself tenant-bound (one secret per tenant, breaking the shared-secret model). Rejected for THIS pass: production's existing consumers (QA UI BFF, Dashboards, plan-review) all currently share ONE secret across multiple tenants (icc-demo/acme/empressa/template-city/g58-probe, per scope_roundtrip_probe.mjs's own test shape) -- narrowing that secret today would break every existing integration in the same change that closes the read defect, conflating two different-risk changes. Deferred as a named follow-up (see whatRemainsOpen in the close artifact), not silently dropped.",
+    "backwardCompatibilityCall": "The legacy SMART_FILES_SERVICE_TOKEN is NOT auto-promoted to a blanket read grant by the code. Where an operator wants existing behavior preserved (CI, and this session's production deploy), that is an EXPLICIT, visible grant entry ({scopeType: '*', scopeId: '*'}) in SMART_FILES_SERVICE_TOKENS, satisfying ENFORCEMENT.md's 'degradation permitted only when declared' rule rather than reintroducing the defect as a silent default."
+  },
+  "verificationPlan": [
+    "Reproduce CI's exact schema + seed (sql/001-004, scripts/ci_probe_seed.sql) against a real throwaway Postgres, not a mock.",
+    "Run the existing scope_roundtrip_probe.mjs unchanged post-fix to prove zero regression to the documented multi-tenant CI shape.",
+    "Write a NEW scripts/read_scope_probe.mjs encoding WDLL item 5's literal check (anonymous -> 403, wrong-tenant token -> 403, matching-tenant token -> 200) against folder list, folder-files list, file read, placements, and blob bytes.",
+    "Verify by violation per ENFORCEMENT.md: git-stash the fix, re-run the exact same curl/requests against the SAME live DB and confirm they show the violation (401 not 403 for anonymous; a valid single token successfully reading a different tenant's private blob bytes), then restore the fix and re-confirm it closes both.",
+    "If time permits, deploy to the live Cloud Run service and repeat the WDLL's literal curl checks against the deployed URL, per 'deploys are planner-owned' -- since item 5's own check text is written against 'the deployed Smart Files service', not the local build."
+  ],
+  "scopeBasis": "G-106 (item 5, read-path scope) is this checkpoint's target. G-107 (items 6/7, tenant-identity unification and staff-upload provenance) is explicitly sequenced AFTER item 5 in the dispatch and touches provenance fields (capturedBy, capturedAt, sourceKind, originalFilename, declaredRole) that store.mjs's uploadFileToFolder does not currently accept -- confirmed by reading the function before committing to a plan, not assumed. Whether G-107 is attempted this pass depends on time remaining after G-106 is verified end-to-end; if not, it is left explicitly open, not silently dropped."
+}

@@ -1,0 +1,107 @@
+{
+  "lane": "Govtech Track A -- Smart Files read-path scope",
+  "planRows": ["G-106", "G-107"],
+  "closedAt": "2026-09-02T14:33:00Z",
+  "dispatch": "_dispatches/2026-09-02_a_dispatch.md",
+  "wdll": "_inbox/2026-08-25_govtech_wave1_WDLL.md, acceptance items 5, 6, 7",
+  "seat": "govtech",
+  "checkpoints": [
+    "_inbox/2026-09-02_a_cp1.json",
+    "_inbox/2026-09-02_a_cp2.json"
+  ],
+  "missionPremise": "Defect #3 (\"Smart Files read scope write-only\") per the transaction contract's own diagnosis (_inbox/2026-08-24_govtech_transaction_contract.md, item 9): the write path pairs every mutation with a caller-scope check (resolveWriteScope + assertFolderInScope); the read path took no caller argument at all. WDLL item 5 is the frozen acceptance for closing it. Source: dispatch _dispatches/2026-09-02_a_dispatch.md, OPS-17 G-106.",
+  "completionPredicate": "Item 5's literal check passes against the LIVE DEPLOYED service, not a local build: an anonymous read of a tenant's folder list returns 403; a token scoped to a different tenant returns 403 against the same read; a token scoped to the matching tenant returns 200 with the real folder list. Verified below on the actual production URL after traffic shift, not the canary tag alone.",
+  "scopeBasis": "G-106 (item 5) only. G-107 (items 6/7) is explicitly sequenced after item 5 in the dispatch and requires provenance fields (capturedBy, capturedAt, sourceKind, originalFilename, declaredRole) that store.mjs's write path does not currently accept, plus plan-review UI work that is out of this repo -- confirmed by reading uploadFileToFolder before scoping it out, not assumed. Left open below rather than attempted partially.",
+  "pr": {
+    "repo": "empressaioemail-tech/smart-files",
+    "number": 9,
+    "url": "https://github.com/empressaioemail-tech/smart-files/pull/9",
+    "state": "MERGED"
+  },
+  "mergeSha": "d7b3e713f35f98299cff0fbad3fc33a0ebb5402a",
+  "ciConclusion": {
+    "Unit": "SUCCESS",
+    "HTTP round trip": "SUCCESS",
+    "source": "gh pr view 9 --json statusCheckRollup, read as the literal conclusion string, not the display text (\"pass\")"
+  },
+  "deploy": {
+    "note": "Deploys are planner-owned; item 5's own check text is written against the deployed service, so this closes it live rather than leaving deployment as a follow-up.",
+    "service": "smart-files, project smart-files-505619, region us-east1",
+    "priorServingRevision": "smart-files-00006-xwp @ 100%",
+    "newRevision": "smart-files-00008-geb",
+    "imageDigest": "sha256:4f622303f96f259e40b3773312189c839bc972161f0c3e6828aad02d11ab71d4",
+    "deployMethod": "gcloud run deploy --source . --no-traffic --tag g106-read-scope, smoke-tested at the tagged canary URL BEFORE shifting traffic, then gcloud run services update-traffic --to-latest",
+    "trafficVerifiedBy": "gcloud run services describe --format=json(status.traffic,status.latestReadyRevisionName) read by field name, not the positional value() formatter -- confirms smart-files-00008-geb at 100%",
+    "secretsChanged": [
+      "Created new secret smart-files-service-tokens (GCP Secret Manager, project smart-files-505619), granted roles/secretmanager.secretAccessor to 529170139834-compute@developer.gserviceaccount.com (the Cloud Run revision service account) -- the deploy failed once on a permission error before this grant, then succeeded.",
+      "Payload: three grants -- the EXISTING production SMART_FILES_SERVICE_TOKEN value (fetched from Secret Manager, never printed) bound to a blanket ('*','*') grant for backward compatibility with today's real consumers (QA UI BFF, Dashboards, plan-review, which already read/write across icc-demo/acme/empressa/template-city/g58-probe with that one secret); two freshly-generated 48-hex-char tokens bound narrowly to tenant/template-city and tenant/acme respectively, for grading and future narrowing.",
+      "DATABASE_URL and SMART_FILES_SERVICE_TOKEN secret bindings carried forward unchanged in the same --update-secrets call."
+    ]
+  },
+  "liveVerification": {
+    "preDeployLocalViolationProof": "See CP2: real Postgres, git-stash-verified violation and fix, 46+17 probe checks, 25 unit tests.",
+    "postDeployCanary (0% traffic, before shift)": {
+      "url": "https://g106-read-scope---smart-files-padrd77ava-ue.a.run.app",
+      "anonymousRead": 403,
+      "wrongTenantTokenRead": 403,
+      "matchingTenantTokenRead": "200, real template-city data returned (folder public-meetings)",
+      "legacyTokenReadsTemplateCity": 200,
+      "legacyTokenReadsAcme": "200 (blanket grant preserved, confirms zero regression to real production callers)",
+      "legacyTokenPersonas": "200 (write-side gate unchanged)"
+    },
+    "postTrafficShift (100% traffic, production URL)": {
+      "url": "https://smart-files-padrd77ava-ue.a.run.app",
+      "anonymousRead": 403,
+      "wrongTenantTokenRead": 403,
+      "matchingTenantTokenRead": 200
+    }
+  },
+  "countsWithTheirCountingRules": {
+    "unitTests": "25/25 pass (npm test: identity.test.mjs 25 including 7 new, cid.test.mjs, actors.test.mjs).",
+    "existingRoundtripProbe": "46/46 checks pass unchanged (scope_roundtrip_probe.mjs against the fixed server, one blanket-grant CI token).",
+    "newReadScopeProbe": "17/17 checks pass (read_scope_probe.mjs: 5 routes x anonymous/wrong-tenant/matching-tenant, plus 2 body-shape assertions).",
+    "ciChecks": "2/2 GitHub Actions checks SUCCESS on PR #9 (Unit, HTTP round trip) -- HTTP round trip job now also runs read_scope_probe.mjs going forward."
+  },
+  "constraintsHonored": [
+    "No sub-agents spawned; verification performed directly, not delegated.",
+    "Verified at source throughout: read the actual identity.mjs/server.mjs/store.mjs code before designing, not the dispatch's own pointer-grep summary (which it explicitly flagged as unverified).",
+    "Verify a check by violating it (ENFORCEMENT.md): the pre-fix violation was reproduced live against real data, not asserted from reading code alone, and the first violation attempt's confound (still-running fixed server) was caught and corrected rather than accepted because the result looked convenient.",
+    "No silent degradation: the legacy token's continued blanket read access is declared in the README, the PR description, and this close artifact, not left as an undocumented default.",
+    "Deploy verified by traffic JSON field, not the positional summary text; canary smoke-tested at 0% traffic before any shift.",
+    "No secret value printed to chat or left in a scratch file; the payload was built entirely inside node -e processes reading env vars, and scratch files were deleted immediately after the GCP secret version was created.",
+    "Merged only on the literal CI conclusion string SUCCESS, read via gh --json, not the 'pass' display text, and only after confirming the PR base had not moved.",
+    "Out-of-scope items honored: plan-review untouched, ICC ledger untouched, live Bastrop untouched, DEPLOY-7/DEPLOY-39 not redeployed."
+  ],
+  "whatRemainsOpen": [
+    "G-107 (WDLL items 6 and 7): tenant-identity unification across plan-review's web/app.js and src/actors.mjs, and staff-upload provenance fields (capturedBy, capturedAt, sourceKind=staff-upload, originalFilename, declaredRole) on the upload write path. Not started this pass -- store.mjs's uploadFileToFolder provenance shape today is only {sourceLabel, uploadedBy}.",
+    "Production's existing SMART_FILES_SERVICE_TOKEN retains a blanket read grant for backward compatibility (see designDecision in CP1). A follow-up card should migrate real production callers (QA UI BFF, Dashboards, plan-review) to narrowly-scoped tokens per caller, once it's established which caller actually needs which tenant's reads -- not established this pass.",
+    "The two freshly-minted grading tokens (template-city-scoped, acme-scoped) live only in the smart-files-service-tokens GCP secret; no other record of them exists (by design -- they were never printed). A future session wanting to re-run this exact live check needs to fetch them from Secret Manager, not from this close artifact.",
+    "CI's read_scope_probe.mjs step has not yet been observed running on a SUBSEQUENT PR (it ran once, on PR #9 itself, alongside the code it's testing) -- worth confirming it still passes on the next unrelated PR to this repo."
+  ],
+  "leave_behind": [
+    {
+      "item": "GCP secret smart-files-service-tokens (project smart-files-505619) plus its IAM binding to 529170139834-compute@developer.gserviceaccount.com",
+      "owner": "govtech seat",
+      "plan_row": "G-106",
+      "note": "New durable production credential. Rotation/ownership of the two grading tokens inside it is unassigned -- flagged in whatRemainsOpen."
+    },
+    {
+      "item": "Cloud Run revision smart-files-00008-geb serving 100% traffic; smart-files-00006-xwp (prior revision) still exists but serves 0%",
+      "owner": "govtech seat",
+      "plan_row": "G-106",
+      "note": "Normal Cloud Run history; no action needed unless a rollback is wanted."
+    },
+    {
+      "item": "P:/seat-worktrees/govtech/smart-files left in detached HEAD at d7b3e713 (== origin/main)",
+      "owner": "govtech seat",
+      "plan_row": "G-106",
+      "note": "Could not check out 'main' by name -- already checked out in the separate P:/smart-files primary checkout (dirty, per the dispatch's own note, and out of scope to touch). Detached HEAD at the current origin/main tip is a safe resting state; next session creates a fresh feature branch from here."
+    },
+    {
+      "item": "G-107 (WDLL items 6, 7)",
+      "owner": "unassigned",
+      "plan_row": "G-107",
+      "note": "Not started. See whatRemainsOpen."
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "lane": "Govtech Track A continuation -- G-107 (staff upload + tenant identity)",
+  "planRows": ["G-107"],
+  "closedAt": "2026-09-02T15:55:00Z",
+  "dispatch": "_dispatches/2026-09-02_a_dispatch.md (original Track A dispatch; G-107 explicitly left open at that lane's first close, resumed on direct operator go)",
+  "wdll": "_inbox/2026-08-25_govtech_wave1_WDLL.md, acceptance items 6 and 7",
+  "seat": "govtech",
+  "checkpoints": [
+    "_inbox/2026-09-02_a_g107_cp1.json",
+    "_inbox/2026-09-02_a_g107_cp2.json"
+  ],
+  "missionPremise": "O-4 per the transaction contract (_inbox/2026-08-24_govtech_transaction_contract.md): CITY_KEY says template-city while every persona is icc-demo, so every write lands under the wrong tenant. WDLL items 6/7 are the frozen acceptance for closing it, resumed under direct operator authorization ('go') after two prior cross-session messages claiming approval were correctly refused.",
+  "completionPredicate": "A staff upload through the actual plan-review UI route lands under smartfile:tenant:template-city:%, carries the transaction contract's five provenance keys, and a resubmission of the same document is a new version of the same document rather than a sibling -- verified against the LIVE DEPLOYED surfaces of both smart-files and plan-review, not a local build.",
+  "scopeBasis": "Both repos' code changes plus both production deploys, matching the rigor of the earlier G-106 close. Does NOT include fixing the unrelated production incident discovered during this pass (see criticalFinding below) -- that beIongs to whoever owns the in-flight typed-absence work, not this lane.",
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/smart-files",
+      "number": 10,
+      "url": "https://github.com/empressaioemail-tech/smart-files/pull/10",
+      "state": "MERGED",
+      "mergeSha": "40f024d903740374199d6d605ab6f82113a5f258",
+      "ciConclusion": { "Unit": "SUCCESS", "HTTP round trip": "SUCCESS" }
+    },
+    {
+      "repo": "empressaioemail-tech/plan-review",
+      "number": 9,
+      "url": "https://github.com/empressaioemail-tech/plan-review/pull/9",
+      "state": "MERGED",
+      "mergeSha": "800eae93add10844f1cead92dc43e66908792dc2",
+      "ciConclusion": { "test": "SUCCESS" }
+    }
+  ],
+  "deploys": [
+    {
+      "service": "smart-files",
+      "project": "smart-files-505619",
+      "priorRevision": "smart-files-00008-geb",
+      "newRevision": "smart-files-00010-rig",
+      "traffic": "100%, verified by status.traffic JSON field"
+    },
+    {
+      "service": "plan-review",
+      "project": "plan-review-505715",
+      "priorRevision": "plan-review-00014-zot",
+      "newRevision": "plan-review-00016-buh",
+      "traffic": "100%, verified by status.traffic JSON field",
+      "sideEffectMigrationApplied": "sql/004_activity_dedup_key.sql, previously committed (G-109 PR #8) but never applied to production -- applied via scripts/apply-sql.mjs after verifying the local DSN file matches the production Secret Manager value. Additive-only (ADD COLUMN IF NOT EXISTS, partial unique index)."
+    },
+    {
+      "service": "plan-review-app (Vercel front, project empressaioemail-techs-projects/plan-review-app)",
+      "note": "Discovered mid-close that Vercel does NOT auto-deploy this repo on merge (matches the standing hauska-map memory) -- the last production deployment predated this pass's web/app.js changes by hours. Deployed via `vercel deploy --prod` from web/. Confirmed live on the production alias (plan-review-app-ten.vercel.app) by grepping the served app.js for the new markers (upload-document-role, upload-declared-role, template-city/staff) rather than trusting the CLI's own exit/readyState alone.",
+      "deploymentId": "dpl_F3YfcLn1oF5UJpyUkzTbBPLf8ecG"
+    }
+  ],
+  "liveVerification": {
+    "item6_tenantIdentity": "SELECT entity_id FROM smart_file_documents WHERE entity_id LIKE 'smartfile:tenant:template-city:%' -- matches, both from this session's local runs and from the production upload. Engagement created under orgId=template-city/userId=staff, matching CITY_KEY.",
+    "item7_staffUpload": "Live upload through the actual plan-review documents route (not store.mjs called directly), entityId smartfile:tenant:template-city:<engagementId>--site-plan, provenance->>'sourceKind'='staff-upload' plus capturedBy/capturedAt/originalFilename/declaredRole all read back via direct SQL against the production Smart Files Postgres, matching the WDLL's literal check.",
+    "revisionAsVersion": "A resubmission of the same documentRole under the same engagement became version 2 of the SAME document (entityId unchanged, exactly one placement row) on both local and live production runs.",
+    "regressionChecks": "Legacy call shape (no docSlug/provenance on smart-files; no documentRole/declaredRole/originalFilename on plan-review) verified unchanged on both local and live production runs. Plan-review's actual configured production smart-files token was explicitly checked against this session's earlier G-106 blanket-grant configuration BEFORE any of this session's changes, to rule out an accidental production regression from the earlier G-106 deploy -- confirmed unaffected.",
+    "uiFront": "The upload control's markers (upload-document-role, upload-declared-role, template-city/staff) confirmed present in the live app.js served from plan-review-app-ten.vercel.app after this pass's Vercel deploy -- not just committed source."
+  },
+  "countsWithTheirCountingRules": {
+    "smartFilesUnitTests": "28/28 (21 from G-106 + 7 new)",
+    "smartFilesExistingProbe": "46/46 unchanged",
+    "smartFilesNewProbe": "6/6 (submittal_upload_probe.mjs)",
+    "planReviewExistingTests": "39/39 unchanged (web/api/*.test.mjs; this repo's CI does not collect src/*.test.mjs, and none was added there this pass)"
+  },
+  "constraintsHonored": [
+    "Worktree isolation: plan-review work done in a NEW worktree (P:/plan-review-worktrees/g107-staff-upload), never the contested shared P:/seat-worktrees/govtech/plan-review path a concurrent session (doc-repo-33, G-108) was reported actively using.",
+    "Base-freshness verified before both pushes and both merges (git fetch + merge-base check), given this exact repo's known collision history today.",
+    "Merged only on the literal CI conclusion string SUCCESS via gh --json, not the display text, on both PRs.",
+    "No secret value printed to chat; token values passed only through shell variables and node env-var reads, scratch files deleted after use.",
+    "Verify a check by violating it: the missing-provenance 500-vs-400 bug was found BY testing the refusal path, not assumed correct.",
+    "Read the authoritative record, not a proxy: confirmed the local plan-review DSN file matched the production Secret Manager value, byte for byte, before running a migration against it; confirmed the exact literal token value plan-review uses in production matches what this session's earlier G-106 change granted, before assuming no regression.",
+    "Cross-seat discipline: found a live, out-of-band CHECK constraint blocking a foundational operation, did not alter or drop it, reported it with full mechanism and evidence rather than adjudicating it unilaterally."
+  ],
+  "criticalFinding": "See _inbox/2026-09-02_a_g107_cp2.json's criticalFindingUnrelatedToThisLane for full detail. Summary: plan-review CANNOT create any new engagement in production right now (independent of this lane's own deploy, confirmed on the previously-serving revision too) -- a NOT VALID CHECK constraint (plan_review_findings_absence_required_check) exists live on the database with no corresponding committed migration in the repo, and seedMatrix's INSERT does not satisfy it. Needs urgent operator routing, likely to whoever owns the in-flight G-108 typed-absence work.",
+  "whatRemainsOpen": [
+    "The critical finding above -- not this lane's to fix, needs operator routing.",
+    "sourceKind derivation (persona.userId === 'applicant' ? 'applicant-upload' : 'staff-upload') is a heuristic, not exercised this pass since no template-city applicant persona exists yet -- fine for this card's staff-upload scope, worth a dedicated check if applicant uploads are built later.",
+    "Test data left in production: one template-city folder/engagement and a two-version document from this session's live verification, consistent with how existing QA tenants (icc-demo, acme) already accumulate untouched CI-probe data in this store -- not cleaned up, per that established (if not ideal) precedent."
+  ],
+  "leave_behind": [
+    {
+      "item": "The critical finding (plan_review_findings_absence_required_check blocking all engagement creation)",
+      "owner": "unassigned -- needs operator routing",
+      "plan_row": "not G-107; possibly G-108",
+      "note": "Urgent. See criticalFinding above."
+    },
+    {
+      "item": "P:/plan-review-worktrees/g107-staff-upload left checked out at the merged commit (detached HEAD)",
+      "owner": "govtech seat",
+      "plan_row": "G-107",
+      "note": "Scratch worktree, deliberately outside the seat register's pinned path. Safe to remove or reuse."
+    }
+  ]
+}

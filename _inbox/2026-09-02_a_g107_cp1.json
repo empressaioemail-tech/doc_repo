@@ -1,0 +1,32 @@
+{
+  "checkpoint": "CP1 (design/pre-build)",
+  "lane": "Govtech Track A continuation -- G-107 (staff upload + tenant identity)",
+  "planRows": ["G-107"],
+  "at": "2026-09-02T15:15:00Z",
+  "priorClose": "_inbox/2026-09-02_a_close.json (G-106 closed, G-107 explicitly left open there)",
+  "authorization": "Direct operator 'go' in-session, after two prior cross-session messages claiming operator approval were refused per the no-peer-authorization rule.",
+  "sourcesRead": [
+    "_inbox/2026-08-25_govtech_wave1_WDLL.md, items 6 and 7",
+    "_inbox/2026-08-24_govtech_transaction_contract.md, the Document section (\"Provenance stops being free jsonb\", the docSlug/version-machinery paragraphs, and the O-4 identity-mismatch paragraph naming plan-review/web/app.js:6 and src/actors.mjs by name)",
+    "plan-review/src/actors.mjs, web/app.js, src/files.mjs, src/server.mjs, sql/001_foundation.sql at origin/main 1dd20d1 (includes merged G-109 PR #8)",
+    "smart-files/src/store.mjs, identity.mjs at the already-merged/deployed G-106 state"
+  ],
+  "worktreeIsolation": "P:/seat-worktrees/govtech/plan-review was reported by doc-repo-1d as actively claimed by a concurrent session (doc-repo-33, G-108) at the time of this checkpoint. Per ENFORCEMENT.md ('work in an isolated worktree... never edit a tree another lane's process runs from'), this lane's plan-review work was done in a SEPARATE, freshly created worktree (P:/plan-review-worktrees/g107-staff-upload, branch govtech/g107-staff-upload, off a fresh origin/main fetch), never in the contested shared path.",
+  "diagnosis": {
+    "item6": "O-4 exactly as the transaction contract names it: CITY_KEY = \"template-city\" in web/app.js, but every QA persona (both actors.mjs and web/app.js's own PERSONAS array) is orgId=\"icc-demo\", and ensureFolder() passes persona.orgId into folder creation. Every write lands under tenant/icc-demo, contradicting the surface.",
+    "item7": "The Files tab has a picker for EXISTING Smart Files folders but no upload control at all -- confirmed by reading the tab's render code, not assumed. The server-side POST .../documents route already exists and already calls uploadToFolder, but with no docSlug and no provenance fields -- smart-files' own upload function did not accept them either until the paired G-107 smart-files PR (this session, already merged/deployed)."
+  },
+  "designDecisions": [
+    "Add ONE new QA persona, template-city/staff, to BOTH plan-review's actors.mjs/web/app.js AND smart-files' actors.mjs (matching orgId/userId exactly) -- rather than duplicating icc-demo's full reviewer/observer/applicant role split for template-city, which isn't required by the WDLL and would need matching smart-files personas that don't exist.",
+    "isReviewer() recognizes template-city/staff alongside icc-demo/reviewer, rather than generalizing to an endsWith('/reviewer') suffix match, because template-city has no /reviewer-suffixed persona -- an explicit two-value check is more honest than a generalization that doesn't hold.",
+    "docSlug built server-side as <engagementId>--<documentRole>, never trusting a client-supplied docSlug directly, so an uploader cannot mint an arbitrary document identity.",
+    "capturedBy and capturedAt are derived server-side from the resolved persona and wall-clock time, never accepted from the client body -- only documentRole, declaredRole, and originalFilename come from the uploader.",
+    "The new documentRole/declaredRole/originalFilename trio is required TOGETHER or not at all (checked before calling uploadToFolder): a caller supplying none keeps the exact legacy call shape; a caller supplying some but not all gets a 400, never a partial/guessed provenance write."
+  ],
+  "verificationPlan": [
+    "Live, against the ALREADY-DEPLOYED production smart-files service (not a mock): create a template-city/staff folder, upload with docSlug+provenance, resubmit with the identical docSlug and confirm version 2 / same entityId / no duplicate placement, read back provenance via direct SQL matching the WDLL's own literal check.",
+    "Local Postgres for plan-review's own store; drive the actual HTTP route end to end (create engagement, upload, resubmit) rather than calling store.mjs functions directly.",
+    "Before shifting any production traffic, confirm origin/main has not moved since branching (the exact collision risk flagged for this worktree) and confirm CI is green with the literal conclusion string, not the display text.",
+    "Deploy as a 0%-traffic tagged canary first, smoke-test against the canary URL specifically (not assume the tag alone means isolation), including a DEPLOY-7 regression probe, before shifting traffic."
+  ]
+}

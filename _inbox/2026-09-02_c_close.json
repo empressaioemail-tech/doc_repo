@@ -1,0 +1,52 @@
+{
+  "lane": "C",
+  "repo": "plan-review",
+  "planRow": "G-108",
+  "dispatch": "_dispatches/2026-09-02_c_dispatch.md",
+  "status": "mechanism-closed, WDLL-row-partial",
+  "missionPremise": "Plan review honesty path -- edition selector, typed absence, applicability matrix. WDLL acceptance items 8, 9, 10 (`_inbox/2026-08-25_govtech_wave1_WDLL.md`) are the frozen definition of done. The 2026-09-02 mission (`_inbox/2026-09-02_govtech_track_c_mission.md`) confirmed editionId/applicability/plan_review_findings did not exist anywhere in route or lookup code (grepped that session, zero hits outside store.mjs) -- S2-9, S2-7, S2-8 were genuinely unbuilt, not just ungraded.",
+  "completionPredicate": "Item 8: UI edition selector bound to the engagement; every returned citation-shaped object carries non-empty editionId. Item 9: forced corpus-unreachable returns verdict Unchecked with a typed absence, never a 200 all-Pass matrix. Item 10: at least one Pass and one Fail per review run reachable through cited sections, or typed Unchecked for unreached sections -- never silent omit, never hand-authored citation text.",
+  "scopeBasis": "Out of scope per mission: Smart Files (Track A, G-106/G-107), ICC ledger (Track D, G-109), S2-1 engine migration, live Bastrop. In scope: everything items 8, 9, 10 require inside plan-review's own repo.",
+  "whatShipped": {
+    "pr": "empressaioemail-tech/plan-review#10",
+    "mergeCommit": "f27c60f6ad6a6150cca148d46b45fa8a4d89a802",
+    "branch": "govtech/g-108-edition-selector (deleted post-merge)",
+    "ciConclusion": "pass",
+    "summary": "Edition selector (POST /api/plan-review/engagements/:id/edition + GET /api/plan-review/editions + UI control on the intake tab); a single citation-minting module (src/citation.mjs) that refuses to build a citation-shaped object without editionId/bookId/sectionNumber, replacing six hand-authored citation strings; a real section adjudicator (src/adjudication.mjs) that reaches genuine Pass and Fail from a setback requirement vs. a declared proposed value; a typed SOURCE_UNAVAILABLE absence when the atom-chain fetch itself fails, distinct from a chain that fetched fine with a genuinely empty slot; migration 005 (plan_review_engagements.edition_id, proposed_setback_front_ft; plan_review_findings.edition_id, absence jsonb; citation made nullable; a NOT VALID CHECK requiring absence whenever determination is not Pass/Fail)."
+  },
+  "itemGrading": {
+    "item8": {
+      "grade": "partial",
+      "why": "The mechanism (declared edition, non-derived, threaded into every citation-shaped object built by this service) is live and tested. The WDLL's own text says item 8 is 'Blocked until items 1 and 7 met' -- item 1 (DEPLOY-7) is done, item 7 (Track A staff upload) is NOT done (checked gh pr list on empressaioemail-tech/smart-files this session: G-106 merged 2026-09-02, no G-107/staff-upload PR exists yet). Cannot grade this item met while its own frozen dependency is open."
+    },
+    "item9": {
+      "grade": "partial",
+      "why": "Corpus-unreachable now produces a typed SOURCE_UNAVAILABLE absence on every matrix row, verified by a violation test (disabled the check, confirmed 2 tests correctly fail, restored it). This closes the specific defect the WDLL cites (transaction contract rule 2: 'we could not reach the corpus' and 'the corpus has nothing for this' were the same output). Not fully graded because item 9 depends on item 8 (WDLL dependency line), which is itself partial."
+    },
+    "item10": {
+      "grade": "partial",
+      "why": "Pass and Fail are now STRUCTURALLY reachable -- proven by two tests that genuinely produce each from real inputs, not just a type that compiles. Before this PR, a live query against the production plan_review_findings table (12 rows, checked this session) showed zero Pass/Fail rows ever, despite the 4-value CHECK existing since migration 001 -- only the manual override route could reach those two values. Citations are now structured (editionId/bookId/sectionNumber via citation.mjs) rather than hand-authored text, closing transaction contract rules 6 and 7. Full live exercise of Pass/Fail on a real review run needs a real proposed dimension, which needs Track A's staff-upload extraction (G-107) or a reviewer manually declaring one via the new proposedSetbackFrontFt field -- the mechanism supports both paths."
+    }
+  },
+  "namedDeviationFromFrozenText": "Corrected post-close per doc-repo-1d (2026-09-02): the WDLL (item 9) and the transaction contract both correctly state plan-review's spelling should be `absent-verified`; `verified-absent` is the divergent one. The 2026-09-02 mission's stated reason for not touching it here (\"spelling is verified-absent, not absent-verified\") was wrong, but its INSTRUCTION -- don't fix it in this dispatch -- was still right: the correction is deliberately deferred to S5-2c, a govtech-wide vocabulary pass across all three product repos (canvas item L3), not a piecemeal fix inside one G-108 PR. Left `verified-absent` unchanged in this PR, now for the correct reason.",
+  "preExistingBlockerFoundNotIntroduced": "Full HTTP-level live verification of the matrix and code-lookup routes was not possible this session: PR #8's merged code requires plan_review_activity.dedup_key, but that migration was never applied to the production schema (deploy/migration held per operator call, confirmed via doc-repo-1d and via live information_schema query -- the column genuinely does not exist). This means production is currently still serving pre-#8 code (071a08e) by design, not broken -- the mismatch only surfaces when running post-#8 merged code locally against the still-old production schema, which is exactly what this session's local server run did. Not this track's issue to fix (Track D territory); noted so nobody mistakes production as broken. Verification for this PR instead rests on 57 passing unit tests (2 violation-verified), a live schema check of migration 005, and a live HTTP round-trip of the one route that doesn't touch plan_review_activity (edition declaration).",
+  "counts": {
+    "testsAddedThisPr": 18,
+    "testsPassingAtClose": 57,
+    "testsTotalAtClose": 57,
+    "existingTestsRewritten": 1,
+    "existingTestsRewrittenReason": "code-lookup.test.mjs's 'a residential row states that its adopted edition is unresolved' asserted the OLD hand-authored placeholder citation string, which citation.mjs's rule-1 guard now makes impossible to produce (no citation without a real editionId). Verified the new expected behavior against citation.mjs's own docstring and the transaction contract's rule 1 text, not against whatever the new code happened to output."
+  },
+  "constraintsHonored": [
+    "did not touch smart-files (Track A) or the ICC ledger code (Track D, already merged as PR #8)",
+    "did not attempt S2-1 engine migration",
+    "did not touch live Bastrop (smartcity-os)",
+    "backward compatible: citation stays a string field in every API response (never exposed as a nested object) so no UI consumer needed a rewrite beyond the one new selector control",
+    "CHECK constraint added NOT VALID rather than backfilling a synthetic absence reason onto 12 pre-existing rows, following the exact precedent the lane planner set for dedup_key in migration 004"
+  ],
+  "leave_behind": {
+    "item": "items 8, 9, 10 stay OPEN in the WDLL until Track A lands G-107 and someone runs a live proposed-setback-through-matrix probe on a real submittal; the dedup_key production-schema gap (Track D) also still blocks full HTTP-level live grading of this PR's own routes once that deploy is unheld",
+    "owner": "whichever lane next carries G-107 (Track A) and G-105/G-109 deploy follow-through (Track D)",
+    "plan_row": "G-108"
+  }
+}

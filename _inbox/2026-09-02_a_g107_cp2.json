@@ -1,0 +1,37 @@
+{
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "lane": "Govtech Track A continuation -- G-107 (staff upload + tenant identity)",
+  "planRows": ["G-107"],
+  "at": "2026-09-02T15:50:00Z",
+  "priorCheckpoint": "_inbox/2026-09-02_a_g107_cp1.json",
+  "built": {
+    "smart-files (PR #10, merged 40f024d, deployed smart-files-00010-rig)": [
+      "identity.mjs: isValidDocSlug, PROVENANCE_SOURCE_KINDS, validateProvenance (five required keys, closed sourceKind set, ISO-8601 capturedAt)",
+      "store.mjs uploadFileToFolder: optional explicit docSlug (stable across revisions -- a second upload with the same slug is a new VERSION of the same document, not a counter-suffixed sibling) and optional provenance (validated, additive, legacy shape preserved when omitted)",
+      "actors.mjs: template-city/staff QA persona",
+      "scripts/submittal_upload_probe.mjs (new), wired into CI"
+    ],
+    "plan-review (PR #9, merged 800eae9, deployed plan-review-00016-buh)": [
+      "actors.mjs, web/app.js: template-city/staff persona; isReviewer() recognizes it",
+      "web/app.js: an actual upload control on the Files tab (file input, document-type field, declared-role field) -- did not exist before this pass",
+      "server.mjs: documents POST route builds an explicit docSlug and the contract's provenance server-side when the uploader supplies documentRole/declaredRole/originalFilename; legacy call shape unchanged when they're absent",
+      "files.mjs: uploadToFolder forwards the new fields additively"
+    ]
+  },
+  "verificationPerformed": {
+    "smartFilesLocal": "Real throwaway Postgres 16. 28/28 unit tests (7 new). 46/46 existing scope_roundtrip_probe.mjs unchanged. New submittal_upload_probe.mjs 6/6, INCLUDING a real bug found and fixed by this pass: a missing-provenance-key error was reaching HTTP 500 instead of 400 (validateProvenance's thrown Error carried no .status, unlike every sibling validator in the file) -- caught by violation-testing before merge, fixed by wrapping the call site the same way resolveWriteScope already wraps assertScopeId.",
+    "smartFilesLiveProd": "Against the deployed canary and then the production URL: created a template-city/staff folder, uploaded with explicit docSlug + full provenance, re-uploaded with the identical docSlug -- confirmed version 1->2, same entityId, exactly one placement row (no duplicate). Confirmed missing declaredRole and an out-of-set sourceKind both refuse 400 on live production. Confirmed the existing legacy write path (acme/joe QA persona, no new fields) is unaffected.",
+    "planReviewLocal": "Real throwaway Postgres. Drove the actual HTTP route (not store.mjs directly): created an engagement under template-city/staff, uploaded via POST .../documents, resubmitted the same document type, confirmed version 2 / same entityId, confirmed GET .../documents reflects it, confirmed the legacy call shape (no new fields) still works. All 39 pre-existing web/api/*.test.mjs tests pass unchanged.",
+    "planReviewLiveProd": "Deployed as a 0%-traffic canary (plan-review-00016-buh). See criticalFindingUnrelatedToThisLane below for what the FIRST canary smoke test surfaced. Once worked around, verified the full upload/resubmit/documents-list flow against both the canary URL and the production URL post-traffic-shift, using a real existing template-city engagement."
+  },
+  "criticalFindingUnrelatedToThisLane": {
+    "summary": "Plan-review's CURRENTLY SERVING production revision (plan-review-00014-zot, BEFORE this lane's own deploy) is already unable to create a new engagement at all -- a total, unconditional outage of a foundational write path, discovered incidentally while smoke-testing this lane's own canary, not caused by it.",
+    "mechanism": "POST /api/plan-review/engagements always calls seedMatrix() (server.mjs line ~454), which INSERTs into plan_review_findings without an `absence` column. A CHECK constraint plan_review_findings_absence_required_check exists live on the production database, marked NOT VALID (added directly, not through any committed sql/*.sql migration in this repo -- confirmed by grep), requiring absence IS NOT NULL whenever determination is not Pass/Fail. seedMatrix's rows do not satisfy this, so every insert fails.",
+    "confirmedOnCurrentlyServingRevision": "Reproduced directly against https://plan-review-ozx33wafia-ue.a.run.app (the production URL, unaffected by this lane's own deploy or traffic shift) both before and after this lane's traffic shift: identical error both times.",
+    "aSeparateGap_ALSO_found_and_fixed": "A DIFFERENT, unrelated migration gap was also discovered and fixed by this lane, because it blocked even THIS lane's own canary smoke test: sql/004_activity_dedup_key.sql (committed as part of the already-merged G-109 PR #8) had never been applied to the production database, so any code path touching plan_review_activity's dedup_key column errored. Applied via the repo's own scripts/apply-sql.mjs, exactly as it's meant to be run -- verified the local DSN file matches the production secret before running it, and verified the fix restored DEPLOY-7's own graded behavior (neighbour-fallback-refuse) before proceeding. Low-risk, additive-only migration (ADD COLUMN IF NOT EXISTS, partial unique index).",
+    "whyNotAlsoFixedTheAbsenceConstraint": "Unlike the dedup_key gap (a committed, reviewable migration file simply not yet applied), the absence-required constraint exists ONLY in the live database with no corresponding committed migration anywhere in this repo -- it was added out of band. It is plausibly in-progress work by the concurrently active G-108 session (doc-repo-33, per doc-repo-1d's report) preparing for typed-absence findings, mid-way between 'add the constraint' and 'ship the code that satisfies it.' Dropping or altering it unilaterally risks destroying another seat's in-flight state, which ENFORCEMENT.md's cross-seat rule forbids ('do not adjudicate another seat's closed finding yourself... report both readings and let the operator route it'). This is reported, not fixed, and is NOT part of this lane's G-107 scope.",
+    "impactWhileOpen": "No plan-review engagement (of any tenant, any product) can be created until this is resolved. This blocks G-108's own likely test needs on the same repo, not just future G-107 work.",
+    "workaroundUsedForThisLanesOwnVerification": "An engagement created moments earlier by this lane's own test (before this failure mode was fully understood) had already committed its INSERT INTO plan_review_engagements successfully -- the crash happens in the SEPARATE seedMatrix call after that commit -- so this lane reused that pre-existing engagement id to verify its own upload/resubmit logic live, rather than being blocked entirely."
+  },
+  "decidedToShipDespiteTheFinding": "This lane's own traffic shift to plan-review-00016-buh proceeded, because the finding above is IDENTICAL on the previously-serving revision (confirmed by direct comparison) -- shipping does not make the outage worse, and withholding this lane's fix would not have helped it either. The incident is reported prominently and separately, not folded into this lane's own completion claim."
+}
