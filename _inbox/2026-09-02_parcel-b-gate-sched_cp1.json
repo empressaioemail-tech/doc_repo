@@ -1,27 +1,85 @@
 {
-  "lane": "PARCEL-B-GATE-SCHED",
+  "card": "parcel-b-gate-sched",
   "checkpoint": "CP1",
-  "planRows": ["F-01"],
-  "at": "2026-09-02T19:47:06Z",
-  "premisesReverified": [
-    "_decisions/2026-09-02_step7_consumer_c_then_b.md read: C then B, slate 1 named (cityLimits/jurisdiction, flood zone+floodway, wells, specialDistricts, valueHistory), dollar rails excluded until PARCEL-S6-COLLISION closes (it has: _inbox/2026-09-02_parcel-s6-collision_close.json).",
-    "cell-ledger close (hauska-engine PR #377, merged) confirmed as the source of evaluatePublishGate/loadCountyParcelRecords -- read both files directly at packages/engine-core/src/parcel-record/{publish-gate,load}.ts.",
-    "The 101.5s smallest-county figure belongs to loadCountyParcelRecords, which always loads all 65 rails for every parcel in a county (load.ts's own doc comment: 'one county per call, always... never combine counties'). It is not itself rail-scoped -- consuming it as-is per rail would still pay the full-county cost 65 times over per county. This is the actual dead-end the dispatch's premise names, more precisely than 'materializing Travis' alone.",
-    "parcel_record_cell already carries the indexes a rail-scoped design needs: parcel_record_cell_rail_idx (rail_key) plus the PK (place_key, rail_key); parcel_record carries parcel_record_county_fips_idx. No migration needed to make a (county, rail) query fast."
+  "seat": "property",
+  "missionPremise": "Decision _decisions/2026-09-02_step7_consumer_c_then_b.md, review finding #3 (the publish gate is dormant): build an engine CLI entrypoint that evaluates evaluatePublishGate per county, RAIL-SCOPED and streaming/batched per rail (cell-ledger close measured 101.5s to materialize the smallest county whole; full-county single-shot is a named dead-end), and a Factory-scheduled Cloud Run job that shells out to it per county post-write-wave, writing per-(county,rail) verdicts to a store PARCEL-B-READER's allowlist consumes, always publishing the excludedDeclaredAhead set with every evaluation. Coordinate the verdict-store shape with PARCEL-B-READER via closes; stop and report rather than shipping two shapes if they disagree.",
+  "priorLaneState": {
+    "engineHalf": "ALREADY MERGED before this claim: hauska-engine PR #378 (feat/b-gate-cli, mergeSha 639855c, merged 2026-09-02T20:13:22Z) shipped loadCountyRailCells + evaluateRailGate, rail-scoped and paged, never the whole-county loader. The stale local branch feat/b-gate-cli (da64ae2) is superseded content, not unmerged work -- confirmed via git merge-base (neither an ancestor of the other, same title, PR shows it as the merged head). Nothing left to build on the engine side.",
+    "factoryHalf": "hauska-factory PR #75 (feat/b-gate-scheduler) existed OPEN, CI green (633/633 non-skip tests), mergeable, built by a claimant whose lease lapsed 21:14Z. Inspected per the addendum's explicit instruction (run its CI before trusting a clean tree) -- it was clean and green, but CI green does not prove contract correctness, so it was not trusted on that basis alone."
+  },
+  "contractMismatchFound": {
+    "discoveredBy": "Fetched PARCEL-B-READER's merged parcelGateVerdictRead.ts (legacy-design-tools main) directly via gh api before touching PR #75, per the addendum's instruction to adopt or counter-propose that card's already-shipped contract. Its header comment defines: CREATE TABLE parcel_gate_verdict (county_fips text, rail_key text, verdict text CHECK IN ('pass','refuse','excluded'), unaccounted_count integer, evaluated_at timestamptz, run_id text, PRIMARY KEY (county_fips, rail_key)).",
+    "whatPR75ActuallyBuilt": "migrations/0008_parcel_record_publish_verdict.sql: a DIFFERENT table, parcel_record_publish_verdict, with verdict as jsonb ({ok, unaccountedCount, excludedDeclaredAhead, ...}), run_id as uuid REFERENCES runs(id). Confirmed by reading the migration diff directly, not inferred from table names alone -- the divergence is in column types and encoding, not only naming.",
+    "timingReconstruction": "PR #75's CI completed 20:20:43Z (its migration was live-applied to production at 20:11:21Z per schema_migrations, i.e. before B-READER's own PR #581 merged). PARCEL-B-READER's close is timestamped 20:45:00Z. The factory half raced ahead and independently invented a shape before the reader's contract-defining file existed to consult -- not a copy error, a genuine timing race, exactly the scenario the dispatch's coordination rule anticipated.",
+    "corroboration": "Two other property-seat sessions independently found and filed the identical mismatch as addenda on this card (_queue/cards/parcel-b-gate-sched/addenda/2026-09-02T21-25-51-686Z_planner.md and .../21-25-55-466Z_planner.md) within minutes of my own claim, both recommending the same resolution (adopt B-READER's flat text+int shape) before losing the claim race to this session. Read after I had already written and pushed the fix; used as independent confirmation, not as the source of the fix.",
+    "liveTableStateAtDiscovery": "psql-verified (statement_timeout-bounded) against FACTORY_DATABASE_URL: parcel_record_publish_verdict existed live with exactly one row (48055/cityLimits, from the prior claimant's own end-to-end test, evaluated_at 2026-09-02T20:16:55Z); parcel_gate_verdict did not exist. Zero other consumers of the wrong table name anywhere in the hauska-factory repo (grep-confirmed) or any other repo."
+  },
+  "resolution": {
+    "decision": "Adopt PARCEL-B-READER's contract verbatim, not counter-propose. Reasoning: that card shipped first per its own header comment's explicit rule; its shape is already merged, deployed (0% canary), and staging-probed against production; PR #75 was not yet merged and had exactly one disposable test row. Retiring the wrong side (unmerged, single test row, zero consumers) is strictly lower-risk than asking a closed, deployed, staging-verified card to change.",
+    "migration": "New migrations/0009_parcel_gate_verdict.sql (0008 left untouched -- already applied and schema_migrations-tracked, so the correction is a new migration, not a retroactive edit): DROP TABLE IF EXISTS parcel_record_publish_verdict; CREATE TABLE parcel_gate_verdict exactly per the contract, plus its run_id index.",
+    "writePathChange": "src/jobs/publish-gate-sched.mjs: new exported toGateVerdictKind(engineVerdict) maps the engine's native {ok, unaccountedCount, excludedDeclaredAhead} onto the enum (excludedDeclaredAhead.length>0 -> 'excluded'; else ok?'pass':'refuse') at the write boundary, matching this session's established pattern of doing vocabulary translation at the serve/write boundary rather than upstream. UPSERT_VERDICT_SQL retargeted to parcel_gate_verdict with the six-column shape; writeVerdict() updated to pass the translated kind plus the plain unaccountedCount integer.",
+    "gateRailCliUnchanged": "src/lib/parcel-record-engine/gate-rail-cli.mjs (the vendored engine CLI) was NOT modified -- it correctly emits the engine's own native verdict shape; only the write boundary needed to change.",
+    "testsUpdated": "test/publish-gate-sched.test.mjs: fakeFactoryClient matches INSERT INTO parcel_gate_verdict (not the old table name); writeVerdict test asserts a string enum value, not a jsonb .ok field; added two explicit toGateVerdictKind tests including a falsifier (excludedDeclaredAhead wins even when ok happens to be true, so a declared-ahead rail can never misread as a real pass); kill-mid-run violation test's assertions updated to the string enum. Local run: 635 tests, 633 pass, 2 pre-existing skip, 0 fail (was 633/631/2/0 before my +2 tests)."
+  },
+  "prLifecycle": {
+    "repo": "empressaioemail-tech/hauska-factory",
+    "pr": 75,
+    "originalHeadSha": "7298683",
+    "reconciliationCommit": "b648b6ab4bf3ba0761622afbf75ca2b8902d51b4",
+    "reconciliationCiConclusion": "SUCCESS (test + gate8, verified via gh api check-runs conclusion field)",
+    "baseMovedMidCard": "hauska-factory main advanced by one commit (#76, F-03 reap-terminate, unrelated files) between this card's claim and merge attempt. Re-verified: gh api pulls/75/update-branch, new head 8b1eb1f46c32f9472d12496eb335f8ba76d3ae43, CI re-run green on the updated base before merging -- not the stale base.",
+    "mergedAt": "2026-09-02T21:36:51Z",
+    "mergeCommit": "2425a7aabea8ca9aa34f2df0ccdf3114a0dd00e3",
+    "prBodyUpdated": "gh pr edit before merge, to describe the correction rather than leave a stale summary describing the wrong shape."
+  },
+  "deploy": {
+    "mechanism": "gcloud builds submit --config=cloudbuild.parcel-record-fill.yaml --project=hauska-prod-497015 (same pattern used by every prior card touching this image this session)",
+    "buildId": "45d94202-49ef-42d7-a546-5300558789ac",
+    "status": "SUCCESS",
+    "digestMatch": {
+      "buildOwnReportedImage": "sha256:1eba49d7277cc5d872bdc919284ecfde65d939286454698967c7e019ed9dd541",
+      "deployedJobSpecImage": "sha256:1eba49d7277cc5d872bdc919284ecfde65d939286454698967c7e019ed9dd541",
+      "match": true,
+      "checkedBeforeAnyExecution": true
+    },
+    "jobsRedeployed": ["factory-parcel-record-fill", "factory-flood-ingest", "factory-parcel-r4-companions", "factory-publish-gate-sched"]
+  },
+  "migrationApply": {
+    "mechanism": "gcloud run jobs execute factory-publish-gate-sched --args=migrate (Cloud Run, digest-pinned image from the build above; never a laptop apply)",
+    "execution": "factory-publish-gate-sched-gtmfx",
+    "result": "succeeded",
+    "verifiedLive": "schema_migrations row for 0009_parcel_gate_verdict.sql at 2026-09-02T21:40:49Z; parcel_record_publish_verdict now to_regclass()=null (dropped); parcel_gate_verdict exists with the exact six-column contract shape (information_schema.columns-verified: county_fips text NOT NULL, rail_key text NOT NULL, verdict text NOT NULL, unaccounted_count integer NOT NULL, evaluated_at timestamptz NOT NULL, run_id text NOT NULL)"
+  },
+  "verifyByViolationInProgress": {
+    "excludedCase": "Live-verified: county 48055 rail flood (a pre-existing geom gap this session's own earlier cards documented as never-applied, 100% unaccounted from a never-attempted rail) evaluated real via the deployed CLI/job and wrote verdict='excluded', unaccounted_count=0 -- correct per evaluateRailGate's own live=cells.some(isEarnedCell) branch, matches the case where excludedDeclaredAhead=[railKey].",
+    "refuseCaseAndKillTest": "In progress at CP1 time -- store is under real write contention from the concurrent PARCEL-FILL-OWNERSHIP heal pass (another held card), causing ad hoc SELECTs to time out; switched to using the gate job/CLI itself (bounded, paged, purpose-built for exactly this contention) rather than fighting raw SELECTs. A multi-rail Williamson evaluation is running in the background; will report the real REFUSE verdict and the kill-mid-run / missing-row fails-closed-to-legacy demonstration in CP2.",
+    "unitLevelAlreadyGreen": "The updated test suite's kill-mid-run test (a real falsifier: SIGKILL simulated on the 3rd of 4 CLI calls) already proves two verdicts survive with the correct string values ('refuse' for flood, 'pass' for cityLimits) and the run terminates with exit_kind='failed' -- this is verify-by-violation at the unit level, passing in CI on the merged commit; CP2 adds the live-production instance."
+  },
+  "constraintsHonoredSoFar": [
+    "did not merge PR #75 on its original CI-green status alone -- CI green does not prove contract correctness against a shared store; the actual migration diff was read before trusting it",
+    "did not silently reconcile or silently ship the wrong shape -- documented the divergence, its evidence, and the resolution before merging",
+    "did not redo the engine half -- confirmed already merged via git merge-base + gh pr view, not assumed from the addendum's own possibly-stale framing",
+    "store writes only via Cloud Run: the migration correction and every live gate evaluation ran through gcloud run jobs execute against the freshly digest-pinned image, never a laptop psql apply",
+    "digest-matched the image two independently derived ways before any execution",
+    "re-verified against the current base (not the stale one) before merging, after main moved mid-card",
+    "no unaccounted converted to absent-verified, no cell state altered by this card at all -- this card only reads parcel_record_cell and writes parcel_gate_verdict, a separate table"
   ],
-  "designDecision": {
-    "summary": "Do not call the existing evaluatePublishGate/loadCountyParcelRecords for this card's per-rail evaluation -- they require a full ParcelRecordCells object (assertFullRecordCells enforces all 65 rail keys present), so a rail-scoped caller cannot construct a valid input without fabricating the other 64 rails, which would corrupt deriveLiveRailKeys'/deriveDeclaredAheadRailKeys' cross-record liveness computation for rails never actually loaded -- a sentinel-shaped violation of ENFORCEMENT.md's 'never satisfy a check with a sentinel', and it would misreport excludedDeclaredAhead (the mission's own item 2 names the exclusion set as part of the instrument's contract).",
-    "chosen": "Add a new, narrow rail-scoped instrument alongside the existing whole-county one, reusing the same underlying primitives (isEarnedCell/isUnaccounted from cell-state.ts) rather than reimplementing cell classification: loadCountyRailCells(sql, countyFips, railKey) (one county AND one rail per call, mirrors load.ts's existing one-county-per-call discipline) and evaluateRailGate(cells, railKey, options) (same ok/unaccountedCount/excludedDeclaredAhead/warnings shape as PublishGateVerdict, scoped to one rail). Liveness is naturally decomposable per rail -- deriveLiveRailKeys' definition of 'live' for a given rail (at least one earned cell of that rail, program-wide) does not depend on any OTHER rail's cells -- so this is a genuine narrowing of the same semantics, not a redesign.",
-    "timingValidation": "Live EXPLAIN ANALYZE against the smallest county (48055, flood rail): execution time 408.8ms (Gather node), vs the 101.5s full-65-rail load the dispatch's premise cites. The first cold connection took 11.8s wall-clock (network/SSL handshake, not query execution) -- the query itself is genuinely fast, not merely fast-looking on a warm cache. Confirms streaming/batching per rail is not just a theoretical fix for the named dead-end but a measured one order of magnitude (409ms vs 101,500ms) before any further optimization."
-  },
-  "vendoringPlan": {
-    "engineHalf": "hauska-engine packages/engine-core/src/parcel-record/{load,publish-gate}.ts gain the two new exports plus tests; a new scripts/gate-rail-cli.mjs (mirrors scripts/verify-cell-ledger-cp2-real-county.mjs's postgres()/args/JSON-out pattern) is the CLI entrypoint the mission's item 1 names.",
-    "factoryHalf": "hauska-factory's Dockerfile does not actually copy anything from hauska-engine at build time (verified by reading the Dockerfile -- ENGINE_SHA/LDT_SHA are ENV labels only, per flood-ingest.mjs's own comment 'harmless as env labels'); the existing src/lib/parcel-record-engine/*.js files already committed there are a hand-vendored copy of the engine TS sources, not a build-time fetch. The new rail-gate functions get vendored into that same directory the same way (JS, mirroring the TS 1:1) rather than inventing a second vendoring mechanism, and the Factory job 'shells out to' a CLI script committed inside hauska-factory's own src/ (child_process against a local file, no cross-repo subprocess, no Docker build change required).",
-    "verdictStore": "New migration in hauska-factory: a small table (county_fips, rail_key, verdict jsonb, evaluated_at, PRIMARY KEY (county_fips, rail_key)) is the 'verdict store the B-READER allowlist consumes' the mission names. Coordinating this shape with PARCEL-B-READER via closes per the mission's item 4 -- PARCEL-B-READER had no close or CP filed at the time this card was claimed (checked _inbox/2026-09-02_parcel-b-reader*: none exist), so this card is establishing the shape first; will state it plainly in this card's own close for B-READER to read."
-  },
-  "verifyByViolationPlan": [
-    "A county-rail with at least one live unaccounted cell must produce ok:false / REFUSE.",
-    "Kill the scheduler mid-run (or simulate its absence) and confirm the allowlist (B-READER's own default, per its card: 'fails CLOSED to legacy') stays legacy -- this card verifies the SCHEDULER side never writes a verdict it cannot stand behind (e.g. a partial per-rail write on job failure), not the reader side, which is B-READER's own scope.",
-    "excludedDeclaredAhead must be present on every written verdict, including a passing one -- an empty array is a valid value but the field must never be absent."
-  ]
+  "scratch": {
+    "LESSON": [
+      "Two cards racing to define the same shared contract can both pass CI and both be individually correct while disagreeing with each other -- CI green is necessary but not sufficient evidence a store-shape PR is safe to merge when another card claims to define the same store.",
+      "When a prior claimant's PR already ran a live end-to-end test against production, check schema_migrations and the actual live table before assuming a migration file describes reality -- it may already be applied, meaning the fix is a new migration, not an edit to the old one.",
+      "The Factory's gate-rail-cli.mjs is intentionally narrow (one county, one rail, 20s statement_timeout) specifically so it survives store contention that defeats ad hoc broad SELECTs -- when a raw query times out under concurrent writer load, reach for the purpose-built narrow instrument instead of retrying the broad one with a longer timeout."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T21:36:51Z hauska-factory PR #75 merged as 2425a7aabea8ca9aa34f2df0ccdf3114a0dd00e3, containing the parcel_gate_verdict contract correction",
+      "2026-09-02T~21:37-21:39Z Cloud Build 45d94202 SUCCESS, factory-publish-gate-sched (and three sibling jobs) redeployed to sha256:1eba49d7... (verified two ways)",
+      "2026-09-02T21:40:49Z migration 0009 applied live via Cloud Run execution factory-publish-gate-sched-gtmfx; parcel_record_publish_verdict dropped, parcel_gate_verdict created with the exact contract shape",
+      "2026-09-02T21:42:16Z first real live verdict written: 48055/flood = excluded, unaccounted_count=0, via Cloud Run execution factory-publish-gate-sched-97k9h"
+    ],
+    "OPEN": [
+      "REFUSE case and kill-mid-run/missing-row fails-closed live demonstration not yet complete as of CP1 -- store contention from the concurrent fill-ownership heal pass; retrying via the bounded gate CLI rather than raw SELECTs, to be closed out in CP2.",
+      "One addendum (2026-09-02T21-25-51-686Z_planner.md) suggested moving richer per-page debug fields (unaccountedSamples, cellCount, pageCount) into run_events rather than the serve table -- not done, not required by the contract as specified, noted as a possible future enhancement rather than acted on (avoiding scope creep beyond the dispatch's own six-column spec).",
+      "The migrate CLI command (src/db/migrate.mjs, used for both migrations 0008 and this card's 0009) writes no run row of its own -- a pre-existing tooling gap shared by every migration 0001-0009, not introduced by this card, flagged for whoever next touches migration tooling."
+    ]
+  }
 }
