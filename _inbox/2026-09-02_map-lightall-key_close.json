@@ -1,0 +1,100 @@
+{
+  "lane": "MAP-LIGHTALL-KEY",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T22:30:00Z",
+  "dispatch": "_dispatches/2026-09-02_map-lightall-key_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main; worktree P:/tmp/hauska-map-basemap-key, branch feat/lightall-key (reused post-#336 per the card's own note)",
+  "closeKind": "complete: customer-done",
+  "result": "hauska-map-style.js's HAUSKA_MAP_STYLE hardcoded three unkeyed light_all CARTO tile URLs -- the third instance of the defect PR #336 fixed in two other files. Live-confirmed reachable on PE production BEFORE the fix (unkeyed literal present in the deployed bundle), fixed by reusing the existing shared keyedCartoTileUrls('light_all') helper, deployed to production, and verified customer-done by byte comparison of a real tile fetch, not HTTP status.",
+  "checkpoints": [],
+  "prs": [
+    {
+      "repo": "hauska-map",
+      "number": 338,
+      "url": "https://github.com/empressaioemail-tech/hauska-map/pull/338",
+      "mergeSha": "10f2a3bef81f70cad788564f31e73e14bc68648f",
+      "ciConclusion": "SUCCESS (4/4 checks: test x2, No double-encoded source, Typecheck)",
+      "tests": "packages/map-renderer: 135/135 passing (134 pre-existing + 1 net new; the shared carto-key.test.js falsifier now parametrizes over light_all too, plus one new direct assertion on HAUSKA_MAP_STYLE.sources['hauska-carto-light'].tiles itself)"
+    }
+  ],
+  "productCommit": "d31c877 pushed to feat/lightall-key, squash-merged as 10f2a3be",
+
+  "missionPremise": "MAP-BASEMAP-KEY's own leave_behind: hauska-map-style.js hardcodes the light_all CARTO style at its bare keyless path, the same defect class PR #336 fixed in gis-map-paint.js (dark_all) and basemap-labels.js (light_only_labels). Same proven fix: the existing VITE_CARTO_API_KEY-backed keyedCartoTileUrls() helper, ?key= appended, bare path unchanged (the migration-rename premise was already refuted by the prior card). Verify by byte/content comparison, never HTTP status. Identify the real serving surface before deploying anything.",
+  "completionPredicate": "Met in full: (1) fix merged, hauska-map PR #338, mergeSha 10f2a3be, CI green (4/4 checks), re-verified against a base that had not moved; (2) no new env var or secret needed -- VITE_CARTO_API_KEY was already wired by PR #336 and this style reads the same shared helper; (3) deployed to PE production and aliased to smartsite.cloud, bundle-marker-verified as this session's own deployment (merge SHA present once in the live entry script); (4) customer-done verification: the unkeyed light_all literal is confirmed ABSENT from the live bundle (present before the fix, gone after), and a direct fetch comparing an unkeyed vs. keyed tile at the same z/x/y returns different byte content (10817 vs 7720 bytes) despite both returning HTTP 200 -- proving the watermark is actually gone, not merely that the request stopped erroring.",
+  "scopeBasis": "hauska-map only: packages/map-renderer/src/map/hauska-map-style.js, packages/map-renderer/src/map/carto-key.test.js, packages/map-renderer/src/map-renderer.attribution.test.js. No new shared module -- reused carto-key.js as-is, per the card's own instruction not to rename or restructure. Did not touch command-center (the second consumer of the same HAUSKA_MAP_STYLE default, per createMapRenderer/FloatingMap) -- PE was the surface this card's own live-bundle check confirmed reachable and is the surface MAP-BASEMAP-KEY already established as the customer-facing deploy target; command-center's own deploy (if it independently bundles map-renderer) was not separately verified and is named as an open item, not assumed fixed by inference.",
+
+  "servingSurfaceInvestigation": {
+    "question": "Which app(s) actually reach HAUSKA_MAP_STYLE (hauska-map-style.js), as distinct from the two styles PR #336 already fixed (gis-map-paint.js's dark_all, consumed via a separate render path)?",
+    "staticTrace": "map-renderer.js's createMapRenderer() sets `style: HAUSKA_MAP_STYLE` at map construction (packages/map-renderer/src/map-renderer.js:239). FloatingMap.tsx imports createMapRenderer from map-renderer.js. Both property-explorer's ExplorerMap.tsx and command-center's LiveMapTile.tsx import FloatingMap from @hauska/map-renderer. Static tracing alone left it ambiguous whether gis-map-paint.js's dark_all (used inside gis-map-render.js, a DIFFERENT file) fully supersedes HAUSKA_MAP_STYLE at runtime via some later setStyle, or whether HAUSKA_MAP_STYLE is genuinely what mounts and stays.",
+    "empiricalResolution": "Fetched the LIVE, already-deployed smartsite.cloud bundle (from MAP-BASEMAP-KEY's own deploy, before touching anything) and grepped for the literal unkeyed string 'basemaps.cartocdn.com/light_all/'. It was present, verbatim, in the shipped production bundle -- proof this exact code path is live and reachable on PE today, resolving the ambiguity by evidence rather than further static tracing. dark_all and light_only_labels did NOT appear as literal concatenated strings in the same bundle (they are now built via a template literal with the style name passed as a separate argument), which is exactly the expected shape post-#336 and confirms the grep method distinguishes 'still hardcoded' from 'now dynamic' correctly.",
+    "commandCenterUnresolved": "Whether command-center independently bundles and deploys map-renderer (and therefore also carried this exact defect) was not checked this card -- named as an open item rather than assumed either way."
+  },
+
+  "verifyByBytesNeverStatus": {
+    "unkeyedTile": { "url": "https://a.basemaps.cartocdn.com/light_all/10/200/400@2x.png", "httpStatus": 200, "bytes": 10817 },
+    "keyedTile": { "url": "https://a.basemaps.cartocdn.com/light_all/10/200/400@2x.png?key=<redacted, 35 chars>", "httpStatus": 200, "bytes": 7720 },
+    "comparison": "byte-different (cmp -s reports difference); both return HTTP 200, confirming a naive status check would have certified the pre-fix state as healthy",
+    "note": "Same z/x/y tile coordinate requested both ways in immediate succession to hold vendor-side content as constant as possible."
+  },
+
+  "deployVerification": {
+    "deploymentId": "dpl_FxU6XA5vKwfWBjpL6anCw9x4685E",
+    "target": "production",
+    "aliasedTo": "https://smartsite.cloud",
+    "bundleMarker": "merge SHA 10f2a3bef81f70cad788564f31e73e14bc68648f found exactly once in the live entry script fetched directly from smartsite.cloud post-deploy -- confirms this session's own build, not a concurrent lane's.",
+    "deployedFromRepoRoot": "per MAP-BASEMAP-KEY's own documented lesson (vercel deploy from inside apps/property-explorer/ doubles the Root Directory path); this worktree was already vercel-linked to the property-explorer project from the prior card, reused as-is.",
+    "buildNoiseObserved": "vercel deploy printed several pre-existing TypeScript errors (api/_lib/pe-property-atoms.ts, api/_lib/verdict-layer-merge.ts) during the build step; readyState still reported READY and the deployment completed and aliased successfully. Confirmed these files are untouched by this card's diff (three map-renderer package files only) -- named as observed, unrelated noise, not investigated or fixed."
+  },
+
+  "whatContradictedTheCard": [
+    "The card's own premise framed the serving-surface question as needing resolution before deploying; static code tracing alone (createMapRenderer's construction-time style vs. gis-map-paint.js's separately-consumed dark_all) left real ambiguity about whether HAUSKA_MAP_STYLE actually reaches production. Resolved empirically by grepping the already-live bundle rather than by further reading -- the answer was in the deployed artifact, not fully derivable from the source graph alone within this card's time.",
+    "The vercel deploy build step surfaced unrelated pre-existing TypeScript errors in two API files this diff never touched -- confirmed unrelated by file-path comparison against the actual diff, not assumed."
+  ],
+
+  "constraintsHonored": [
+    "attribution preserved (untouched; existing attribution test still passes)",
+    "no rename, no path change to the bare CARTO style path -- reused the exact helper and pattern PR #336 established",
+    "verified MY deployment by bundle marker before declaring done; did not assume the alias pointed at my build without checking",
+    "verified the fix by live byte comparison of a real tile fetch, never by HTTP status alone",
+    "identified the real serving surface (PE) empirically before deploying, per the card's explicit instruction",
+    "did not clobber a concurrent deploy: fetched origin/main immediately before merge to confirm the base had not moved",
+    "did not touch command-center; named its unresolved status rather than assuming parity"
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Whether command-center independently bundles/deploys @hauska/map-renderer (and therefore may still carry the light_all defect on its own deploy surface) was not checked this card.",
+      "owner": "planner / next card",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "The vercel build for property-explorer surfaces pre-existing TypeScript errors in api/_lib/pe-property-atoms.ts and api/_lib/verdict-layer-merge.ts on every deploy (LayerAbsenceWire shape mismatches). Not investigated; observed as noise on a successful deploy, but worth a dedicated card if it ever starts actually failing a build.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    }
+  ],
+
+  "scratch": {
+    "LESSON": [
+      "When static tracing of a shared component's default prop leaves genuine ambiguity about which of several possible styles a production bundle actually ships, grep the ALREADY-LIVE deployed bundle for the literal string in question before spending more time on source-level tracing -- the deployed artifact is the ground truth the question is actually about.",
+      "A style built via a template literal (style name passed as a separate function argument) will not appear as one continuous string in a minified bundle even though the underlying URL is unchanged in shape -- a grep for the OLD hardcoded concatenated form correctly returns nothing post-fix, and this is a feature of the verification method, not a false negative to worry about."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02 pre-fix: smartsite.cloud bundle index-BkvTb9A1.js contained the literal unkeyed string 'basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'.",
+      "2026-09-02T22:24:15Z hauska-map PR #338 merged, mergeSha 10f2a3bef81f70cad788564f31e73e14bc68648f.",
+      "2026-09-02 post-fix: smartsite.cloud bundle index-DR2e91vk.js contains the merge SHA once, zero unkeyed light_all literals, one bare 'light_all' string literal (the style-name argument).",
+      "2026-09-02 tile byte comparison: unkeyed 10817 bytes vs keyed 7720 bytes at the same z/x/y, both HTTP 200."
+    ],
+    "OPEN": [
+      "command-center's own map-renderer usage, unchecked this card.",
+      "Pre-existing vercel build TS errors in two unrelated API files, observed not investigated."
+    ]
+  },
+
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_map-lightall-key_close.json",
+    "_catalog/seat_register.json",
+    "_queue/log/property.jsonl"
+  ]
+}
