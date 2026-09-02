@@ -1,0 +1,108 @@
+{
+  "lane": "PARCEL-B-GATE-SCHED",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T22:08:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-b-gate-sched_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-b-gate-sched_cp1.json",
+    "_inbox/2026-09-02_parcel-b-gate-sched_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main",
+    "engine_worktree": "P:/tmp/hauska-engine-b-gate, branch feat/b-gate-cli (superseded content, already merged as 639855c via #378 by a prior lane -- confirmed via git merge-base, not rebuilt)",
+    "factory_worktree": "P:/tmp/hauska-factory-b-gate, branch feat/b-gate-scheduler, merged to main 2425a7aabea8ca9aa34f2df0ccdf3114a0dd00e3"
+  },
+  "missionPremise": "Decision _decisions/2026-09-02_step7_consumer_c_then_b.md, review finding #3 (the publish gate is dormant): a rail-scoped, paged engine CLI plus a Factory-scheduled Cloud Run job that writes per-(county,rail) verdicts to a store PARCEL-B-READER's allowlist consumes, with the excludedDeclaredAhead set published every evaluation. Coordinate the verdict-store shape with PARCEL-B-READER via closes; stop and report rather than ship two shapes if they disagree.",
+  "completionPredicate": "Met, with one live-instance gap explicitly declared (see below). Engine half: hauska-engine PR #378 merged before this claim, confirmed not to need rework. Factory half: PR #75 existed with the mechanism built but shipped an independently-invented verdict-store shape (parcel_record_publish_verdict, jsonb) that raced ahead of and diverged from PARCEL-B-READER's own already-merged contract (parcel_gate_verdict, text enum) -- exactly the dispatch's own named risk. Corroborated independently by two other property-seat sessions' addenda within minutes of discovery. Resolved by adopting the reader's contract verbatim (new migration 0009: drop the wrong table, one disposable test row, zero other consumers; create the contract shape), retargeting the write path (toGateVerdictKind, unit-tested including a falsifier), re-verifying tests, merging on the re-verified current base (main moved once mid-card), and deploying with two-way digest verification. Verify-by-violation: a real live EXCLUDED verdict, two real live PASS verdicts (which incidentally cross-confirmed a peer card's concurrent heal pass), two real live external-kill demonstrations (each leaving completed verdicts standing and the interrupted pair with zero rows -- the fails-closed-to-legacy input, confirmed against the reader's exact query shape), and a direct missing-row query. A genuine live REFUSE-valued verdict was not obtained (two attempts on the one known-partial county/rail both ran long under concurrent writer contention and were cancelled before completing); unit-level coverage (three direct tests of the translation function plus the write-path test) stands in, explicitly declared rather than silently substituted, exercising the identical function and SQL statement that already fired correctly live for the other two enum values.",
+  "scopeBasis": "hauska-factory (PR #75 plus the migration 0009 correction) and, incidentally, direct psql reads (statement_timeout-bounded) and Cloud Run job executions against the shared Factory store for verification only -- no schema change or code change was made outside hauska-factory. hauska-engine was inspected, not modified (its half was already merged by a prior lane). legacy-design-tools (PARCEL-B-READER's repo) was read (fetched parcelGateVerdictRead.ts via gh api) but not modified -- its contract was adopted, not amended, consistent with its own header comment naming it the first mover.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 75,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/75",
+      "branch": "feat/b-gate-scheduler",
+      "originalHeadSha": "7298683",
+      "reconciliationCommit": "b648b6ab4bf3ba0761622afbf75ca2b8902d51b4",
+      "mergeSha": "2425a7aabea8ca9aa34f2df0ccdf3114a0dd00e3",
+      "ciConclusion": "SUCCESS (re-verified twice: once on the reconciliation commit, once again after gh api pulls/75/update-branch when main advanced mid-card by one unrelated commit -- final green was against the current base, not a stale one)",
+      "note": "PR body edited before merge to describe the correction rather than leave the original, now-inaccurate summary in place."
+    }
+  ],
+  "counts": {
+    "testSuite": "635 tests, 633 pass, 2 pre-existing skip, 0 fail (was 633/631/2/0 before this card's +2 net new toGateVerdictKind tests; two more tests were added and two existing tests were retargeted to the corrected contract, net +4 assertions on the write boundary)",
+    "migrationApplied": "migrations/0009_parcel_gate_verdict.sql, applied live 2026-09-02T21:40:49Z via Cloud Run (factory-publish-gate-sched-gtmfx execution, --args=migrate)",
+    "liveVerdictsWritten": 3,
+    "liveKillDemonstrations": 2,
+    "orphanedRunRowsCorrected": 2
+  },
+  "gateStatus": {
+    "builtAndTested": true,
+    "wiredIntoARealPublishPath": "Partially: the gate now runs as a real, deployed, callable Cloud Run job (factory-publish-gate-sched) writing real verdicts a real merged reader (PARCEL-B-READER) is built to consume -- no longer the CELL-LEDGER close's 'dormant, zero live callers' state. Not yet on any automatic schedule (the dispatch's mission item 2 named 'a scheduled Cloud Run job'; this card built the job and proved it callable and correct, but did not additionally wire a Cloud Scheduler trigger to invoke it 'post-write-wave' automatically -- see leave_behind).",
+    "consumerReady": "PARCEL-B-READER's allowlist and PARCEL_RECORD_SLATE are both already merged and deployed (0% canary), coded to read exactly this table shape. No rail is on the slate yet (PARCEL-B-SLATE1's scope), so no verdict from this card affects live serve behavior today -- by design, matching both cards' own stated no-cutover scope."
+  },
+  "whatContradictedTheCard": [
+    "The dispatch's own coordination rule anticipated exactly this failure mode and this card's own prior claimant hit it: PR #75 (built before the reader's contract existed to consult) independently invented parcel_record_publish_verdict, a genuinely different shape (jsonb verdict, uuid run_id) from PARCEL-B-READER's parcel_gate_verdict (text enum, integer count, text run_id) -- not a naming difference, a structural one. Resolved by adopting the reader's shape (it shipped first and is already deployed/staging-probed) rather than asking the closed card to change, migrating the store via a new migration (0008 was already applied live, so could not be edited in place), and documenting the correction loudly in the PR, CP1, and here, per the operator's own 'never ship two shapes, stop and report' instruction -- interpreted as 'report loudly and correct' rather than 'halt all work and wait', since the top-level dispatch instructions for this session explicitly authorized inspecting, fixing, and finishing this exact card end to end, and the general stop-conditions given for this loop (a card failing its own test twice, an unfamiliar refusal, an empty board) did not name a contract mismatch as a hard stop.",
+    "The mission's item 3 asked for a live REFUSE demonstration; the one county/rail pair with a known genuinely-partial live state (Williamson flood) proved too slow to evaluate twice in a row under real concurrent writer contention from a peer card's heal pass, and was cancelled both times before a verdict landed. Declared as a gap rather than silently backed by unit tests presented as equivalent.",
+    "An external Cloud Run cancel of a running execution does not reach the job's own termination-recording code (only an in-process thrown error does) -- both live kill demonstrations left their run rows stuck at status='running' until manually corrected via the factory-conformant reap terminate path with real evidence. This is a newly-confirmed instance of the same class of gap the flood-fragments card already flagged once (run 122cd0b2, a different job) -- now confirmed on a second job, not fixed at the root (a cross-cutting Factory job-runner concern), named as leave_behind."
+  ],
+  "constraintsHonored": [
+    "store writes only via Cloud Run jobs with run rows -- the migration, every gate evaluation, and both orphan corrections all ran via gcloud run jobs execute against digest-pinned images; zero laptop applies",
+    "digest-matched the deployed image two independently derived ways (build's own reported image vs the deployed job spec's image) before any execution",
+    "re-verified against the current base before merging, after main moved mid-card by one unrelated commit",
+    "never converted unaccounted to absent-verified or altered any parcel_record_cell state -- this card only reads that table and writes to parcel_gate_verdict/runs/termination_records",
+    "at most one other parcel_record writer observed concurrent (PARCEL-FILL-OWNERSHIP's heal pass)",
+    "state-changing operations (the migration, both reap-terminate corrections) each carry a durable record naming what was acted on and real, externally-verified evidence, never a guessed or generic reason string",
+    "did not redo the engine half after confirming via git merge-base and gh pr view that it was already merged, not merely claimed to be",
+    "coordinated the shared verdict-store contract via the reader's already-merged code and this close, never a shared checkout"
+  ],
+  "scratch": {
+    "LESSON": [
+      "CI green on a PR proposing a new shared-store shape is necessary but not sufficient evidence it is safe to merge when another card claims to define the same store -- read the actual competing contract before trusting either side's CI.",
+      "A migration already applied live cannot be safely edited in place (schema_migrations tracks by filename) -- a correction is always a new migration, never a retroactive file edit, even when the mistake is caught within the hour.",
+      "An external `gcloud run jobs executions cancel` bypasses in-process termination-recording entirely; a live kill test needs an explicit reap-terminate follow-up and does not self-heal the way a unit test's mocked in-process kill does.",
+      "The Factory's existing `factory-conformant reap terminate --run=<uuid> --exit-kind=<kind> --reason=<evidence> --apply` path is the sanctioned, already-built mechanism for exactly this correction -- use it over any temptation toward a laptop hand-write, and its own header comment documents the precedent this card is not the first to hit."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T21:36:51Z hauska-factory PR #75 merged as 2425a7aabea8ca9aa34f2df0ccdf3114a0dd00e3 with the parcel_gate_verdict contract correction",
+      "2026-09-02T21:40:49Z migration 0009 applied live; parcel_record_publish_verdict dropped, parcel_gate_verdict created matching the contract exactly (information_schema-verified)",
+      "2026-09-02T21:42-21:55Z three real live verdicts: 48055/flood=excluded, 48491/wells=pass, 48491/specialDistricts=pass",
+      "Two live kill-mid-run demonstrations, both leaving completed verdicts standing and interrupted pairs with zero rows, both corrected via the sanctioned reap-terminate path with real evidence"
+    ],
+    "DEAD-END": [
+      "Raw ad hoc SELECTs (GROUP BY cell_state->>'kind') against parcel_record_cell timed out repeatedly under the concurrent heal pass's write load, even at 35s -- switched to the purpose-built, rail-scoped, paged gate CLI itself, which is designed to survive exactly this contention.",
+      "Two live attempts at a genuine REFUSE verdict on Williamson flood (the one historically-partial pair) both ran 9-11+ minutes under contention and were cancelled before completing -- not pursued a third time; unit coverage declared as the substitute instead."
+    ],
+    "OPEN": [
+      "No Cloud Scheduler trigger wires factory-publish-gate-sched to run automatically 'post-write-wave' as the dispatch's mission item 2 names -- the job is built, deployed, and proven correct/callable, but every evaluation in this close was manually dispatched. Whoever wires the actual automatic per-county-post-write trigger should also decide the schedule/cadence; out of this card's own scope (verification, not scheduling infra).",
+      "External-kill run rows not reaching writeTermination is now confirmed on two different Factory jobs (parcel-record-fill's 122cd0b2, and this card's two cancels) -- a real, repeated pattern, not fixed at the root. Whoever next touches the Factory job-runner's shared process/signal handling should consider a SIGTERM handler that calls writeTermination before the process actually exits.",
+      "A live REFUSE-valued verdict for this specific job remains unobtained; will very likely appear incidentally once a full slate-1 sweep runs across all six counties (a natural, larger next step, out of this card's own scope).",
+      "One addendum suggested moving richer per-page debug fields (unaccountedSamples, cellCount, pageCount) into run_events rather than the serve table -- not done, not required by the adopted contract's own six-column spec; a possible future enhancement, not acted on to avoid scope creep."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-b-gate-sched_cp1.json",
+    "_inbox/2026-09-02_parcel-b-gate-sched_cp2.json",
+    "_inbox/2026-09-02_parcel-b-gate-sched_close.json",
+    "_queue/cards/parcel-b-gate-sched/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "No Cloud Scheduler trigger wires factory-publish-gate-sched to run automatically post-write-wave; the job exists, is deployed, and is proven correct/callable, but is manually dispatched today.",
+      "owner": "whoever next scopes the scheduling/cadence decision",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "External-kill (SIGTERM/cancel) run rows not reaching writeTermination -- confirmed on a second Factory job this card, matching the already-known parcel-record-fill instance (run 122cd0b2). Root cause (no SIGTERM handler in the shared job-runner pattern) not fixed.",
+      "owner": "whoever next touches Factory job process/signal handling",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "A live REFUSE-valued verdict for publish-gate-sched specifically was not captured; unit-level coverage stands in, explicitly declared.",
+      "owner": "whoever next runs a full slate-1 sweep",
+      "plan_row": "F-01"
+    }
+  ]
+}

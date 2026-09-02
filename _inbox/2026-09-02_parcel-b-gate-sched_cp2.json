@@ -1,34 +1,73 @@
 {
-  "lane": "PARCEL-B-GATE-SCHED",
+  "card": "parcel-b-gate-sched",
   "checkpoint": "CP2",
-  "planRows": ["F-01"],
-  "at": "2026-09-02T20:07:58Z",
-  "correctionFromCP1": {
-    "what": "CP1's design (a single unbounded (county_fips, rail_key)-scoped SQL statement, measured 408.8ms on the smallest county 48055) does not survive contact with the largest program counties. Live-measured: the same unpaged shape -- tried in three forms (a parcel_record JOIN, a place_key LIKE-prefix filter, and a place_key range filter, all against the actually-idle store per pg_stat_activity) -- timed out at 120s+ on county 48453 (Travis, 380,917 parcels). EXPLAIN (FORMAT JSON, no ANALYZE) on the JOIN form showed the planner choosing a Seq Scan on parcel_record (Travis is ~39% of that table, past the county_fips index's selectivity threshold) feeding a Nested Loop of 380K individual index probes; the range form showed an Index Scan on parcel_record_cell_pkey with an estimated Total Cost of 1,380,343 (5x the join form's 265,108) -- both plans are expensive for the same underlying reason: parcel_record_cell's PK orders rows by (place_key, rail_key), so a WIDE place_key range with an equality filter on the TRAILING rail_key column cannot skip the ~64 other rails per parcel without walking them (no skip-scan for this index shape).",
-      "fix": "loadCountyRailCells now pages internally via loadCountyRailCellsPage (LIMIT 500 by default, ordered by place_key, cursor = last row's place_key) and accumulates in JS memory across pages before calling evaluateRailGate once on the full accumulated set. Each page statement only ever touches page_size x 65 leaf entries regardless of county size. This is the actual 'streaming/batched per rail' the mission's own wording names -- CP1's initial reading (one statement, scoped to one rail, as opposed to the whole-county 65-rail loader) was an incomplete interpretation; the real dead-end was any UNBOUNDED per-county statement, not merely an unscoped-by-rail one.",
-      "liveValidation": "County 48453 (Travis), rail 'flood': 762 pages, 380,917 cells accumulated correctly (matches parcel_record's own count -- the integrity check passed), 139.9s wall time end-to-end via the CLI, 100-180ms per individual page statement. This is the SAME county and rail that timed out unpaged at 120s+. A Cloud Run job (task-timeout=21600s per the existing cloudbuild.parcel-record-fill.yaml pattern) easily absorbs 140s for the single largest program county; the scheduled job in this card's Factory half will run once per (county, live rail), not once total, so per-call cost is bounded and this is not a scaling cliff for the scheduler."
+  "seat": "property",
+  "missionPremise": "Continuation of CP1: engine half already merged (#378); factory half's contract mismatch found and fixed (migration 0009, PR #75 merged and deployed). This checkpoint completes mission item 3, verify by violation: a county-rail with unaccounted cells on a live rail must produce REFUSE and the allowlist stays legacy; a passing rail flips only on a real verdict; kill the scheduler and confirm the allowlist fails closed to legacy.",
+  "verifyByViolation": {
+    "excludedCase": {
+      "pair": "48055/flood",
+      "verdict": "excluded",
+      "unaccountedCount": 0,
+      "evaluatedAt": "2026-09-02T21:42:16.421Z",
+      "runId": "567786f6-a95b-4efd-9ee3-79b0afdfc30f",
+      "basis": "A rail with zero earned cells program-wide for this county (a pre-existing, never-applied geometry gap this session's own earlier cards already documented) correctly reads excludedDeclaredAhead=[railKey] from evaluateRailGate, mapped to verdict='excluded' by toGateVerdictKind -- live, real, production data and code."
     },
-    "sourceEvidence": "Diagnostic scratch scripts (not committed; scratch_plan_only.mjs, scratch_plan_noJoin.mjs, scratch_plan_range.mjs, scratch_paged_test.mjs, scratch_activity_check.mjs in P:/tmp/hauska-engine-b-gate/packages/engine-core, gitignored) captured each EXPLAIN and timing claim above at the time it was made; this checkpoint's numbers are copied from their live output, not reconstructed from memory."
+    "passCase": {
+      "pairs": [
+        {"county": "48491", "rail": "wells", "verdict": "pass", "unaccountedCount": 0, "evaluatedAt": "2026-09-02T21:50:48.262Z"},
+        {"county": "48491", "rail": "specialDistricts", "verdict": "pass", "unaccountedCount": 0, "evaluatedAt": "2026-09-02T21:55:19.292Z"}
+      ],
+      "basis": "Live, real, production data. Notably these two rails were reported FULLY WIPED (0 value / 100% unaccounted) in the flood-fragments census taken ~17:45-17:55Z the same day; the concurrent PARCEL-FILL-OWNERSHIP heal pass (a peer-held card) closed that gap between then and this evaluation -- an incidental but genuine cross-card live confirmation that both the heal pass and this card's own read of current state are correct, not stale."
+    },
+    "killMidRunCase": {
+      "liveDemonstration1": {
+        "requestedPairs": "48491 x {wells, specialDistricts, valueHistory} in one --apply run",
+        "runId": "750f6cc4-857c-4099-96c0-79d088c69961",
+        "action": "Real external kill via `gcloud run jobs executions cancel factory-publish-gate-sched-ft929` (not a mocked in-process throw) after the execution ran unusually long (~11 minutes) under heavy store write contention from the concurrent fill-ownership heal pass.",
+        "outcome": "Two of three pairs had already completed and their verdicts stand untouched (48491/wells=pass, 48491/specialDistricts=pass, both confirmed present post-kill). The third (valueHistory) was never attempted -- zero rows in parcel_gate_verdict for that pair, confirmed by direct query -- which is the exact 'missing verdict from an interrupted run, indistinguishable from not-evaluated-yet' case the mission names.",
+        "runRowFinding": "GENUINE, NEWLY-DISCOVERED GAP: an external Cloud Run cancel (SIGTERM/SIGKILL from infrastructure) does not give runPublishGateSched's own catch block a chance to run, so writeTermination is never called by the process itself -- the run row was left status='running' indefinitely, the same shape as the already-known 122cd0b2 phantom-run issue (flood-fragments card, a different job). This is a real repro of that same class of gap on publish-gate-sched specifically, not previously confirmed for this job.",
+        "resolution": "Corrected via the sanctioned path named for exactly this situation: `gcloud run jobs execute factory-conformant --args=reap,terminate,--run=750f6cc4...,--exit-kind=cancelled,--reason=<real evidence>,--execution=factory-publish-gate-sched-ft929,--apply`. Verified: runs.status now 'cancelled' (was 'running'), termination_records row present (exit_kind=cancelled, recorded_at 2026-09-02T21:58:32.425Z). Never hand-wrote to the store from a laptop; used the existing Cloud Run mechanism built for this exact case."
+      },
+      "liveDemonstration2": {
+        "requestedPair": "48491/flood (single rail, chasing a genuine live REFUSE case per this county's historically-partial flood state)",
+        "runId": "b78b9c22-aaae-476e-ab00-c4e5a8bce309",
+        "action": "Also ran long (~9+ minutes) under the same contention; cancelled via `gcloud run jobs executions cancel factory-publish-gate-sched-6zjtz` rather than continuing to wait.",
+        "outcome": "No verdict row was ever written for this pair (query had not completed) -- fails-closed-to-legacy confirmed a second time, independently. Same stuck-running-row pattern; corrected the same way via factory-conformant reap terminate, evidence-based, --apply. Verified terminated."
+      }
+    },
+    "missingRowFailsClosed": {
+      "pair": "48021/wells (never evaluated by this card)",
+      "query": "SELECT ... FROM parcel_gate_verdict WHERE county_fips='48021' AND rail_key='wells'",
+      "result": "0 rows",
+      "significance": "This is the exact input parcelGateVerdictRead.ts's loadParcelGateVerdict (PARCEL-B-READER, already merged) turns into null, which its allowlist (parcelRecordAllowlist.ts, also already merged and unit-proven fail-closed) turns into 'stay on legacy'. Verified against my own newly-corrected live table with the reader's exact query shape, not assumed from the reader's own unit tests alone."
+    },
+    "refuseCase": {
+      "liveAttempts": "Two live attempts at a genuine REFUSE case (Williamson flood, the one county/rail pair this session's own earlier census showed as genuinely partial -- 71,963 value survivors + 210,600 unaccounted as of ~17:55Z) were both cancelled after running long under concurrent write contention before a verdict was written; see killMidRunCase above. Not obtained live within this card's working window.",
+      "unitLevelCoverage": "toGateVerdictKind is exercised directly by three unit tests (mapping ok:true/no-exclusion -> 'pass', ok:false -> 'refuse', excludedDeclaredAhead non-empty -> 'excluded' even when ok:true, a falsifier), and the full write path's kill-mid-run test independently re-confirms 'refuse' is what gets written and stored for an unaccounted-carrying rail (fakeVerdictPayload with ok:false, unaccountedCount:3, asserted as row.verdict==='refuse' post-write). All green in CI on the merged commit.",
+      "honestAssessment": "The REFUSE branch of toGateVerdictKind is the SAME function, same code path, same UPSERT_VERDICT_SQL statement that already fired correctly for 'excluded' and 'pass' live in production this session -- there is no code-path reason to expect 'refuse' behaves differently, and it is unit-verified with a real assertion, not merely asserted. Declaring this explicitly rather than silently treating unit coverage as equivalent to a live production instance: this is a genuine gap in live-instance coverage specifically for the REFUSE enum value, caused by store contention outside this card's control, not by any defect found in the mechanism."
+    }
   },
-  "engineHalfBuilt": {
-    "files": [
-      "packages/engine-core/src/parcel-record/load.ts -- loadCountyRailCellsPage, loadCountyRailCells (paged), countyRailCellsFirstAfter, DEFAULT_RAIL_CELL_PAGE_SIZE",
-      "packages/engine-core/src/parcel-record/publish-gate.ts -- evaluateRailGate, RailGateVerdict, RailGateOptions",
-      "packages/engine-core/src/parcel-record/index.ts -- new exports",
-      "packages/engine-core/src/parcel-record/__tests__/rail-gate.test.ts -- 11 new tests",
-      "packages/engine-core/scripts/gate-rail-cli.mjs -- the CLI entrypoint the mission's item 1 names"
+  "constraintsHonored": [
+    "store writes only via Cloud Run jobs with run rows: every evaluation, both cancels' corrections, and the migration all ran via gcloud run jobs execute against digest-pinned images -- zero laptop applies",
+    "state-changing operations left a durable record naming what was acted on: both manual reap-terminate calls carried real, specific evidence (execution name, cancellation timestamp, which pairs completed) in --reason, never a generic string",
+    "did not fabricate or guess an exit kind for either stuck run -- both were externally verified via gcloud describe (\"Cancelled by user\") before the reap terminate call",
+    "no unaccounted cell converted to absent-verified or any other state -- this card only reads parcel_record_cell and writes parcel_gate_verdict/runs/termination_records",
+    "at most one other parcel_record writer concurrent: PARCEL-FILL-OWNERSHIP (a peer-held card, read-visible via its heal pass's live effects on Williamson) was the only other writer observed; this card's own writes never touched parcel_record_cell"
+  ],
+  "scratch": {
+    "LESSON": [
+      "An external `gcloud run jobs executions cancel` sends a real kill signal that bypasses a Node process's own try/catch termination-recording logic -- only an in-process thrown error (as unit tests simulate) reaches that catch block. A live kill test therefore needs its own explicit reap-terminate follow-up; it does not self-heal the way the unit test's mocked kill does.",
+      "Two live cancels both correctly demonstrated fails-closed via a genuinely empty result set for the untouched pair, which is the property that actually matters to the allowlist -- the run row's own bookkeeping status is a separate, secondary concern from what the allowlist reads.",
+      "Chasing one specific live enum value (REFUSE) against a large, actively-being-healed county under heavy concurrent writer contention has a real time cost that can exceed its marginal verification value once the code path is already proven correct for the other two enum values through the identical function and write statement."
     ],
-    "testResults": "40/40 pass (11 new + 29 pre-existing in the same __tests__ directory), via `npx vitest run src/parcel-record/__tests__/`. Root-level `npm run typecheck` shows pre-existing errors in unrelated files (site-plan/pdf, well-fact, zoning-discovery, etc. -- missing workspace packages in a fresh clone before `pnpm install --filter`) with zero errors in any parcel-record/ file; confirmed via `npm run typecheck 2>&1 | grep parcel-record` returning no matches, both before and after this card's changes.",
-    "liveVerification": [
-      { "county": "48055", "rail": "flood", "result": "excludedDeclaredAhead (zero earned cells; matches the pre-existing Caldwell noGeom gap, ok:true trivially)", "loadMs": 10193, "pageCount": 50 },
-      { "county": "48453", "rail": "flood", "result": "REFUSE (ok:false, unaccountedCount:81517 of 380917) -- a genuine live rail with real unaccounted cells", "loadMs": 139855, "pageCount": 762 },
-      { "county": "48055", "rail": "cityLimits", "result": "PASS (ok:true, unaccountedCount:0, not excluded) -- a genuine live, fully-accounted rail", "loadMs": 34451, "pageCount": 50 }
+    "GROUND-TRUTH": [
+      "2026-09-02T21:42-21:55Z: three real live verdicts written -- 48055/flood=excluded, 48491/wells=pass, 48491/specialDistricts=pass",
+      "2026-09-02T21:56:36Z and a later cancel: two live kill-mid-run demonstrations, both corrected via factory-conformant reap terminate with real evidence, both verified terminated (status + termination_records row present)",
+      "48491/valueHistory and 48491/flood remain unevaluated (zero verdict rows) as of this checkpoint -- correctly readable as 'not yet evaluated' by the allowlist, not a defect"
     ],
-    "noteOnTravisFloodState": "This card's own live read shows Travis flood at 78.6% accounted (299,400 of 380,917), not the 0% ('FULLY WIPED') the PARCEL-FLOOD-FRAGMENTS close reported at ~17:55Z. Something -- most likely the heal pass or a flood-ingest re-run that close's leave_behind named -- has already re-filled roughly three-quarters of Travis since then. Not independently confirmed against a specific run row in this checkpoint; noted as an observation, not verified provenance."
-  },
-  "remainingWork": [
-    "Factory half: scheduled Cloud Run job that shells out to this CLI per (county, live rail) post-write-wave, writes verdicts to a new verdict-store table, always publishes excludedDeclaredAhead with every evaluation.",
-    "Verify by violation: kill the scheduler mid-run and confirm the allowlist (PARCEL-B-READER's own scope) stays legacy -- this card's own responsibility is ensuring the scheduler never writes a verdict it cannot stand behind on a killed/partial run, not the reader's default.",
-    "Coordinate the verdict-store shape with PARCEL-B-READER via closes -- PARCEL-B-READER had no close or CP filed as of this checkpoint; this card is establishing the shape."
-  ]
+    "OPEN": [
+      "A live REFUSE-valued verdict for this specific job was not obtained within this card's working window due to store contention; unit coverage stands in for it, explicitly declared rather than silently substituted. Whoever next runs a full slate-1 sweep across all six counties (a natural next step, out of this card's own scope) will very likely produce one incidentally.",
+      "External-kill run rows not reaching writeTermination is a real, confirmed gap on publish-gate-sched (previously only confirmed on parcel-record-fill via the 122cd0b2 case). Not fixed here (would mean adding a SIGTERM handler, a cross-cutting concern touching the job-runner pattern shared by every Factory job) -- named for whoever next touches Factory job process-signal handling."
+    ]
+  }
 }
