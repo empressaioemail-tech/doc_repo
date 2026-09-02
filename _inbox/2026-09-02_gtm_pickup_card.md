@@ -35,9 +35,11 @@ The parcel-record fills are closing in. Everything below is ordered by whether i
 
 **P-106 constraint search** (LDT #580). The capability that lets someone ask a question across parcels rather than look up one. **MCP-only: it touched zero web UI files.** Blocked on two rulings and an unapplied migration `0094`, so nothing runs live yet.
 
-**A-062 billing portal.** Committed on branches in both repos, no PR opened. This is the item that gates the Stripe live switch, because `terms.html` promises an in-product cancellation path that does not exist.
+**A-062 billing portal.** LDT #583 and hauska-map #334. This is the item that gates the Stripe live switch, because `terms.html` promises an in-product cancellation path that does not exist.
 
-**P-100 share and funnel instrumentation.** Committed on branches, no PR, migration `0093` unapplied. It found the Smart Site share plane emitted nothing at all, and that `pe_share_grants` already existed so only the join was missing.
+**P-100 share and funnel instrumentation.** LDT #584 and hauska-map #335, migration `0093` unapplied. It found the Smart Site share plane emitted nothing at all, and that `pe_share_grants` already existed so only the join was missing.
+
+**Correction to an earlier version of this card:** it recorded A-062 and P-100 as "committed on branches." A-062 was; **P-100 was not.** Its code sat uncommitted in two worktrees, 20 files and 7 files, and was only found when a PR refused to open with "no commits between main and the branch." Both are committed and pushed now. The lesson is that a lane close reporting a diff is not evidence the diff was committed, and the planner recorded a state it had not checked.
 
 ## Carded, not started
 
