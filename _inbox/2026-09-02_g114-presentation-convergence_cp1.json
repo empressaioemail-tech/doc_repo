@@ -1,0 +1,28 @@
+{
+  "checkpoint": "CP1 (design/pre-build)",
+  "lane": "G-114 -- presentation convergence",
+  "planRows": ["G-114"],
+  "at": "2026-09-02T20:15:00Z",
+  "dispatchedBy": "doc-repo-1d, relayed cross-session; started only on Nick's own direct 'go' in this session, per this session's standing no-peer-authorization policy",
+  "sourcesRead": [
+    "smartcity-dashboards/src/mounts.mjs, compose.mjs, server.mjs, staff-review.mjs at origin/main 4573d46",
+    "plan-review/web/app.js (already read in depth this session for G-107)",
+    "smart-files/web/app.js (already read in depth this session for G-107)"
+  ],
+  "diagnosisConfirmed": "Exactly as the dispatch described: planReviewEmbedUrl(envMap) and smartFilesEmbedUrl(envMap) in mounts.mjs return a static origin + embed=1 with no cityKey argument; compose.mjs's composeCityManager resolves `city` for the atoms/files/meetings reads on the same request but never passes it to either embed-URL call.",
+  "additionalFindingDuringDesign": "A second, textually similar embed-URL builder exists in staff-review.mjs (planReviewIframeSrc/smartFilesIframeSrc) with the identical static-URL shape. Grepped the whole repo before assuming it needed the same fix: neither function is imported or called anywhere outside its own test file. Traced the REAL client mount path (web/app.js's MountStage.mount, fed by composeGoldMap's fetch to /api/lenses/city-manager/compose) and confirmed it goes entirely through mounts.mjs. staff-review.mjs's functions are dormant, a separate finding, not fixed in this pass.",
+  "worktreeIsolation": "New isolated worktrees for all three repos (P:/smartcity-dashboards-worktrees/g114-presentation-convergence, reused P:/plan-review-worktrees/g107-staff-upload and P:/seat-worktrees/govtech/smart-files on fresh branches), each fetched fresh from origin/main immediately before branching, given this program's documented history of worktree and deploy-timing collisions today (G-108/G-109/G-113 all landed on plan-review's shared worktree/main during this session).",
+  "designDecisions": [
+    "planReviewEmbedUrl/smartFilesEmbedUrl gain an OPTIONAL second cityKey parameter, appended via URLSearchParams (safe against injection). Omitting it preserves the exact prior behavior for server.mjs's own diagnostic /?work= example calls, which don't have a real city in scope.",
+    "compose.mjs threads its already-resolved `city` variable into both calls -- no new resolution logic needed, just wiring an existing value through.",
+    "On the downstream (plan-review, smart-files) side: read cityKey via the SAME pattern each app already uses for `embed` (new URL(location.href).searchParams.get(...)), for consistency with existing code in the same files.",
+    "Persona/CITY_KEY defaulting is gated on the cityKey PARAM BEING EXPLICITLY PRESENT, not on the fallback-applied effective value -- a bare standalone visit (no param at all, R-F/G-13) must keep its exact prior default behavior. This distinction was verified by explicit test cases in both isolated-logic checks, not assumed.",
+    "A city with no matching persona yet (anything but template-city, since Bastrop onboarding is explicitly out of scope) falls back to the prior default rather than fabricating a match -- fail-honest, not fail-silent."
+  ],
+  "verificationPlan": [
+    "Unit-test the cross-city URL differentiation directly in compose.test.mjs/mounts.test.mjs (a second, non-onboarded city is easy to construct in a unit test; no real second city pack exists in production to test this live, and creating one is explicitly out of scope).",
+    "Isolated pure-logic verification for the two client apps' persona-matching code, since neither repo has a headless browser available in this environment for a full DOM test.",
+    "After deploy: live probe of the actual WDLL item 1 check (compose response for template-city carries its own identity) against the production Dashboards URL.",
+    "A genuine end-to-end check using jsdom to load the ACTUAL deployed app.js bundles (not local source) with the exact URL Dashboards' live compose response produces, to close the gap between 'isolated logic is correct' and 'the real deployed file behaves correctly'."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "checkpoint": "CP2 (pilot/mid-work)",
+  "lane": "G-114 -- presentation convergence",
+  "planRows": ["G-114"],
+  "at": "2026-09-02T21:10:00Z",
+  "priorCheckpoint": "_inbox/2026-09-02_g114-presentation-convergence_cp1.json",
+  "built": {
+    "smartcity-dashboards (PR #40, merged 03250b3, deployed smartcity-dashboards-00041-naf)": [
+      "mounts.mjs: planReviewEmbedUrl/smartFilesEmbedUrl accept an optional cityKey, appended via URLSearchParams",
+      "compose.mjs: threads the already-resolved `city` into both calls",
+      "New test proving two cities produce two different URLs from identical env, plus an injection-safety case (a cityKey containing & or = cannot smuggle a second param)",
+      "6 pre-existing test assertions updated across compose.test.mjs/server.test.mjs -- they hard-coded the cityKey-less URL shape, which was the defect, not a spec to preserve"
+    ],
+    "plan-review (PR #13, merged 67b852c, deployed to Vercel plan-review-app-ten.vercel.app)": [
+      "web/app.js: CITY_KEY now reads an embedding ?cityKey= param, falling back to the prior literal for standalone use",
+      "requireGate() defaults the persona to the one matching an EXPLICIT cityKey param when one exists; standalone (no param) keeps the exact prior default",
+      "go() preserves cityKey across in-app navigation, mirroring the existing embed-preservation logic"
+    ],
+    "smart-files (PR #11, merged c38c20f, deployed to Vercel smart-files-app.vercel.app)": [
+      "web/app.js boot(): selects the persona matching an explicit cityKey param when one exists in PERSONAS, instead of leaving the browser's native first-option default (Joe/Acme) in place regardless of the embedding city"
+    ]
+  },
+  "verificationPerformed": {
+    "smartcityDashboardsLocal": "Full suite 457/457 (102 suites), including the 2 new G-114 tests.",
+    "smartcityDashboardsLiveProd": "Live probe against the deployed production compose endpoint: GET /api/lenses/city-manager/compose?cityKey=template-city returns planReview.url and smartFiles.url both carrying &cityKey=template-city, matching WDLL item 1's literal requirement. A second real city was NOT tested live (none is registered in production -- /api/city-packs returns []; onboarding one is explicitly out of scope) -- cross-city differentiation is proven at the unit level instead, which is the correct substitute given no second live city pack exists to test against.",
+    "planReviewIsolatedLogic": "5 cases (standalone default, matching-city embed, non-matching-city embed, empty param, embed+cityKey together) all pass, extracted and run in plain Node since no headless browser is available in this environment.",
+    "smartFilesIsolatedLogic": "4 cases (no param, embed with no cityKey, matching city, non-matching city) all pass, same method.",
+    "genuineEndToEndCheck": "Rather than stop at isolated-logic confidence, fetched the ACTUAL deployed app.js/index.html from both production Vercel URLs and loaded them in jsdom with the EXACT URL the live Dashboards compose response now produces (https://.../?embed=1&cityKey=template-city). smart-files-app: the persona <select> value after boot() is genuinely template-city/g71-calendar -- PASS, full render completed. plan-review: localStorage's pr_persona after render() is genuinely template-city/staff -- PASS; a secondary check of the rendered page text was inconclusive because the jsdom harness's blanket fetch-stub aborted plan-review's render() into its catch-all error handler before reaching the persona-gate screen's text -- a limitation of the test harness (which stubs every fetch identically), not evidence of a defect in the deployed code; the persona-defaulting logic itself, which is the actual fix, was already confirmed by the localStorage check that runs before that failing fetch."
+  },
+  "adversarialReviewOfOwnDesign": [
+    "Question: does defaulting the persona/CITY_KEY on ANY cityKey param (not just an explicit-and-present one) risk silently changing the standalone product's behavior? Answer: this was caught and corrected mid-build -- the first draft of plan-review's requireGate() matched against the FALLBACK-APPLIED CITY_KEY value, which meant a bare standalone visit (city defaults to template-city) ALSO matched the template-city persona, changing standalone behavior. Caught by the isolated-logic test itself failing on that exact case, not by a review. Fixed by gating on the raw cityKeyParam() call instead of the fallback-applied constant.",
+    "Question: does a cityKey containing special characters risk breaking the embed URL or enabling query-param injection? Answer: covered by a dedicated test -- URLSearchParams.set() encodes the value, verified against a cityKey containing both & and =.",
+    "Question: is staff-review.mjs's separate, unfixed embed-URL builder a live gap this card should have closed? Answer: verified by grep that it has zero callers anywhere in the repo outside its own test file -- fixing dead code would not change any live behavior and would be scope creep beyond what's actually broken. Flagged as a separate dormant-code finding instead."
+  ],
+  "whatIsNotYetDone": "Item 3's acceptance (close names the three independent SKUs and states none now requires another) has not yet been explicitly verified/written -- see the close artifact.",
+  "nextStep": "Write the close artifact naming the three SKUs and confirming standalone independence, per acceptance item 3."
+}

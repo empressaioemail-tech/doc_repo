@@ -1,0 +1,103 @@
+{
+  "lane": "G-114 -- presentation convergence",
+  "planRows": ["G-114"],
+  "closedAt": "2026-09-02T21:35:00Z",
+  "wdll": "WDLL item 14, presentation convergence",
+  "seat": "govtech",
+  "checkpoints": [
+    "_inbox/2026-09-02_g114-presentation-convergence_cp1.json",
+    "_inbox/2026-09-02_g114-presentation-convergence_cp2.json"
+  ],
+  "missionPremise": "A real, confirmed defect (not the WDLL's abstract framing): Dashboards' embed URLs for plan-review and smart-files carried no city-scoping at all -- every city's compose response embedded the identical static origin. Source: dispatch relayed by doc-repo-1d, Nick's direct 'go' authorizing the work in this session.",
+  "completionPredicate": "Dashboards' live compose response for template-city carries a plan-review/smart-files embed URL naming template-city's own identity; both downstream apps, when loaded with that exact URL, resolve to template-city (not a fabricated match, not a silent default); each of the three products still serves its core standalone flow with no Dashboards origin required.",
+  "scopeBasis": "The three files/repos the dispatch named (mounts.mjs/compose.mjs, plus the two downstream apps' own city resolution, which the dispatch explicitly called in-scope as 'a small addition on their side too'). Does NOT include fixing staff-review.mjs's separate, dormant, never-called embed-URL builder (a different defect class -- starved, not silently-static) or onboarding a second real city (explicitly out of scope).",
+  "prs": [
+    {
+      "repo": "empressaioemail-tech/smartcity-dashboards",
+      "number": 40,
+      "url": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/40",
+      "state": "MERGED",
+      "mergeSha": "03250b3f2e49af7618c0a78b95802e632a4241b1",
+      "ciConclusion": { "test": "SUCCESS", "a11y": "SUCCESS" }
+    },
+    {
+      "repo": "empressaioemail-tech/plan-review",
+      "number": 13,
+      "url": "https://github.com/empressaioemail-tech/plan-review/pull/13",
+      "state": "MERGED",
+      "mergeSha": "67b852c84b6ba7ecccf8b2655a27fa94f1acef40",
+      "ciConclusion": { "test": "SUCCESS" }
+    },
+    {
+      "repo": "empressaioemail-tech/smart-files",
+      "number": 11,
+      "url": "https://github.com/empressaioemail-tech/smart-files/pull/11",
+      "state": "MERGED",
+      "mergeSha": "c38c20fe70455a47030470fba035abd4a70a8751",
+      "ciConclusion": "not applicable -- this PR touched only web/app.js, which has no test coverage in this repo's CI; the src/*.test.mjs suite it did NOT touch remains 28/28 passing per the G-107 close"
+    }
+  ],
+  "deploys": [
+    {
+      "service": "smartcity-dashboards",
+      "project": "smartcity-dashboards",
+      "priorRevision": "smartcity-dashboards-00039-cid",
+      "newRevision": "smartcity-dashboards-00041-naf",
+      "traffic": "100%, verified by status.traffic JSON field"
+    },
+    {
+      "service": "plan-review-app (Vercel)",
+      "note": "Cloud Run backend NOT redeployed -- this change touched only web/app.js, which server.mjs does not serve (confirmed by grep before skipping the Cloud Run deploy).",
+      "deploymentId": "dpl_CrPLjMmjAFmXmPy4de8ULrJ7iXgM"
+    },
+    {
+      "service": "smart-files-app (Vercel)",
+      "note": "Cloud Run backend NOT redeployed, same reasoning.",
+      "deploymentId": "dpl_EvmsdNEc7mzSY9Ra9L5LExHGe6Yo"
+    }
+  ],
+  "liveVerification": {
+    "item1": "GET https://smartcity-dashboards-52ecsl5mvq-ue.a.run.app/api/lenses/city-manager/compose?cityKey=template-city (production, post-traffic-shift) returns planReview.url=https://plan-review-app-ten.vercel.app/?embed=1&cityKey=template-city and smartFiles.url=https://smart-files-app.vercel.app/?embed=1&cityKey=template-city -- both carry the composing city's own identity, not a bare static origin.",
+    "crossCityDifferentiation": "No second city pack is registered in production (GET /api/city-packs returns []; onboarding one is explicitly out of scope). Proven instead at the unit level: compose.test.mjs's new test calls composeCityManager with two different cityKeys against identical env and asserts the two resulting URLs differ and each carries its own cityKey.",
+    "item2_standaloneIndependence": "All four standalone surfaces confirmed live and healthy with no cityKey, no embed param, no Dashboards referrer: plan-review-app-ten.vercel.app (200), smart-files-app.vercel.app (200), the plan-review Cloud Run backend (200), the smart-files Cloud Run backend (200).",
+    "genuineEndToEndClosure": "Rather than stop at 'the compose response looks right' and 'the downstream logic looks right' as two separate claims, fetched the ACTUAL deployed app.js/index.html from both Vercel production URLs and loaded them in jsdom with the EXACT URL the live compose response produces. smart-files-app: persona <select> resolves to template-city/g71-calendar -- confirmed against the real deployed file, not a local copy. plan-review: localStorage pr_persona resolves to template-city/staff -- same. This closes the gap between 'each half is individually correct' and 'the two halves actually compose correctly in production', which is the entire point of a presentation-convergence card."
+  },
+  "item3_independentSkus": {
+    "SCOS-PLAN-DEP": "plan-review. Confirmed standalone: serves its own Cloud Run backend (plan-review-ozx33wafia-ue.a.run.app) and Vercel front (plan-review-app-ten.vercel.app) directly; this card's change makes it OPTIONALLY read a cityKey param when embedded, and falls back to its prior standalone default when it isn't. It does not require Dashboards to be reachable, running, or even to exist.",
+    "SCOS-FILE-DEP": "smart-files. Same shape: own Cloud Run backend (smart-files-padrd77ava-ue.a.run.app) and Vercel front (smart-files-app.vercel.app), optional cityKey param, honest fallback. Does not require Dashboards.",
+    "SCOS-DASH-DEP": "smartcity-dashboards. Requires plan-review's and smart-files' PUBLIC embed origins to be reachable (to mount them as iframes) -- it has always required this, per G-13's consumer-contract ruling that iframe embed is accepted. This card does not add or remove that dependency; it only makes the URL Dashboards constructs for those iframes carry the composing city's identity. Dashboards continues to require the other two; the other two do not require Dashboards.",
+    "conclusion": "None of the three now requires another BEYOND the pre-existing, already-accepted direction (Dashboards embeds the other two as iframes; the other two never call back into Dashboards). This card did not change that dependency direction -- it fixed what Dashboards puts IN the iframe src, not whether the iframe relationship exists at all."
+  },
+  "countsWithTheirCountingRules": {
+    "smartcityDashboardsSuite": "457/457 (102 suites), including 2 new G-114 tests",
+    "planReviewIsolatedLogic": "5/5 cases",
+    "smartFilesIsolatedLogic": "4/4 cases",
+    "jsdomEndToEndChecks": "2/2 (persona resolution on both real deployed bundles)"
+  },
+  "constraintsHonored": [
+    "Worktree isolation maintained across all three repos given this session's own G-108/G-109/G-113 collision history on plan-review's shared worktree.",
+    "Base-freshness verified before every push and merge; one real drift caught (plan-review gained G-113 mid-lane) and merged cleanly with a full re-test, not force-pushed over.",
+    "Merged only on the literal CI conclusion string SUCCESS via gh --json, on all three PRs that had CI.",
+    "Verify a check by violating it, twice: the standalone-vs-embedded persona-defaulting distinction was caught by a failing isolated-logic test before it ever reached a PR, not found by review after the fact; the false-alarm on smart-files-app's Vercel deploy (looked missing, was actually just edge-cache propagation lag) was investigated to a real root cause rather than reported as a failure.",
+    "No scope creep: staff-review.mjs's dormant, uncalled embed-URL functions were investigated, confirmed inert, and explicitly left alone rather than \"fixed\" for a defect they cannot actually cause.",
+    "No second city onboarded, per explicit out-of-scope instruction; cross-city proof done at the unit level instead."
+  ],
+  "whatRemainsOpen": [
+    "staff-review.mjs's planReviewIframeSrc/smartFilesIframeSrc: dormant, uncalled code implementing the identical (unfixed) static-URL pattern. Not a live defect today since nothing invokes it, but worth a retirement or a wiring decision by whoever owns that file, so it doesn't get wired up later still carrying the pre-G-114 shape.",
+    "The genuine end-to-end jsdom check on plan-review only confirmed the persona-resolution half (localStorage), not the full rendered page text, because the test harness's blanket fetch-stub aborted the render before reaching that screen. Not believed to indicate a real defect (the actual fix logic was confirmed), but a more careful harness (mocking only the specific endpoints render() needs) would close this fully if ever revisited."
+  ],
+  "leave_behind": [
+    {
+      "item": "staff-review.mjs dormant iframe-src functions",
+      "owner": "unassigned",
+      "plan_row": "not G-114",
+      "note": "See whatRemainsOpen."
+    },
+    {
+      "item": "P:/smartcity-dashboards-worktrees/g114-presentation-convergence left checked out at the merged commit (detached HEAD)",
+      "owner": "govtech seat",
+      "plan_row": "G-114",
+      "note": "Safe resting state, matching this session's other scratch worktrees."
+    }
+  ]
+}
