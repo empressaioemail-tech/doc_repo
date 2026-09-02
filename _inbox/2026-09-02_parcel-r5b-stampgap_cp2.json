@@ -1,0 +1,61 @@
+{
+  "lane": "PARCEL-R5B-STAMPGAP",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T16:05:00Z",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 70,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/70",
+      "branch": "feat/r5b-stampgap",
+      "mergeSha": "d6789a2cf998d329be6dcae1bb696e60eb200cb5",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "deploy": {
+    "build": "da55c7fb-265e-48e0-a8d1-dbfc6579139b",
+    "pushDigest": "sha256:b5a12bf53c9f4734fbf931ec81b432a5456a8143e9ffb7f56327db6ad2e9e6cf",
+    "deployPinDigest": "sha256:b5a12bf53c9f4734fbf931ec81b432a5456a8143e9ffb7f56327db6ad2e9e6cf",
+    "match": true,
+    "note": "Verified no concurrent build running before submitting (gcloud builds list filtered to WORKING/QUEUED, empty). No race this time -- digests matched exactly, confirmed against the live deployed job before executing."
+  },
+  "cloudRunExecution": {
+    "job": "factory-parcel-record-fill",
+    "firstAttempt": {
+      "execution": "factory-parcel-record-fill-rmkjt",
+      "args": "parcel-r5-zoning,--apply (no --city filter)",
+      "outcome": "cancelled deliberately -- would have re-processed all 23 in-scope cities including the 18 already done by R5. Safe (UPDATE gated on unaccounted, a no-op on already-stamped cells) but wasteful; cancelled in favor of a scoped re-launch."
+    },
+    "execution": "factory-parcel-record-fill-shvwr",
+    "args": "parcel-r5-zoning,--apply,--city=smithville-tx,--city=luling-tx,--city=martindale-tx,--city=woodcreek-tx,--city=lakeway-tx",
+    "runId": "354c92e2-ac09-434b-aa19-85bd9ee356f1",
+    "wallClock": "~5 minutes"
+  },
+  "perCityResults": {
+    "totals": { "totalParcels": 15211, "matched": 15025, "residual": 196, "matchRatePct": 98.78 },
+    "byCity": [
+      { "cityKey": "lakeway-tx", "total": 8259, "matched": 8202, "residual": 57, "ratePct": 99.3 },
+      { "cityKey": "luling-tx", "total": 2898, "matched": 2887, "residual": 11, "ratePct": 99.6 },
+      { "cityKey": "smithville-tx", "total": 2406, "matched": 2295, "residual": 111, "ratePct": 95.4 },
+      { "cityKey": "woodcreek-tx", "total": 1030, "matched": 1026, "residual": 4, "ratePct": 99.6 },
+      { "cityKey": "martindale-tx", "total": 618, "matched": 615, "residual": 3, "ratePct": 99.5 }
+    ],
+    "byMethod": "0 bbox-centre fallback across all five cities and 15,211 parcels -- 100% ring-geometry matches, same clean pattern R5 showed on the other 18 cities.",
+    "significance": "The legacy LDT stamp tool reported ZERO citywide stamps for all five of these cities despite their real staged layers (gap ledger 'layer_present_stamp_zero_citywide'). This job's own city-polygon-keyed join achieves 95.4%-99.6% match rates on the identical five cities using the identical staged layers -- conclusively confirming the prior zero-stamp finding was a defect in that OTHER tool (its county-only scoping), not a real data gap. No re-acquisition was needed; the data was already present and unreachable only by the old mechanism."
+  },
+  "verification": {
+    "storeWideZoningDistrictBeforeAfter": {
+      "before": { "value": 516894, "unaccounted": 94222, "notApplicable": 370289 },
+      "after": { "value": 531919, "unaccounted": 79197, "notApplicable": 370289 },
+      "reconciliation": "value delta = +15,025, unaccounted delta = -15,025, exact match to the sum of the five cities' matched counts (8202+2887+2295+1026+615=15025). not-applicable unchanged, confirming no unincorporated parcel was touched."
+    },
+    "bleedCheck": {
+      "method": "County 48453 (Travis, home to both Austin and Lakeway) queried for zoningJurisdictionKey value distribution.",
+      "result": "austin-tx: 203,218; lakeway-tx: 8,202 (matches Lakeway's own matched count exactly); also pflugerville-tx, leander-tx, cedar-park-tx, round-rock-tx, elgin-tx, buda-tx all present as their own slivers into Travis, each a plausible small count. No cross-contamination between Austin and Lakeway.",
+      "conclusion": "Clean separation verified live, consistent with R5's own bleed verification methodology."
+    }
+  },
+  "next": "write close, release the claim, continue the seat loop"
+}

@@ -1,0 +1,101 @@
+{
+  "lane": "PARCEL-R5B-STAMPGAP",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T16:08:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-r5b-stampgap_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main (session doc-repo-98)",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-r5b-stampgap_cp1.json",
+    "_inbox/2026-09-02_parcel-r5b-stampgap_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main dbe15b0 (at claim time)",
+    "factory_worktree": "P:/tmp/hauska-factory-r5b, branch feat/r5b-stampgap"
+  },
+  "missionPremise": "Operator authorization 2026-09-02, in-session to the planner: expand PARCEL-R5-ZONING-RECORD's scope past the stamp-gap boundary for exactly five cities (Smithville, Luling, Martindale, Woodcreek, Lakeway), whose real staged zoning layers already exist in tx_zoning_district_staging. Run the proven R5 job unchanged; the only authorized change is the exclusion list.",
+  "completionPredicate": "Met: (1) STAMP_GAP_EXCLUDED_CITY_KEYS emptied, no other code change, verified by diff and by CI; (2) all five cities processed via a scoped Cloud Run execution, 95.4%-99.6% match rate each, 15,025 of 15,211 parcels matched (98.78%); (3) store-wide before/after reconciles exactly (value +15,025, unaccounted -15,025, not-applicable unchanged); (4) zero cross-boundary bleed verified live in the one county sharing two of the affected cities' neighbors (Travis: Austin/Lakeway cleanly separated); (5) the prior 'zero citywide stamps' finding for these five cities is conclusively explained as a defect in the legacy LDT tool's county-only scoping, not a real data or acquisition gap -- no new data was acquired, this card only reached data that already existed and was unreachable by the old mechanism.",
+  "scopeBasis": "hauska-factory src/jobs/parcel-r5-zoning.mjs (one constant) + its test (PR #70). No new job, no cloudbuild.yaml change, no other city touched.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 70,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/70",
+      "branch": "feat/r5b-stampgap",
+      "mergeSha": "d6789a2cf998d329be6dcae1bb696e60eb200cb5",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "cloudRunExecution": {
+    "job": "factory-parcel-record-fill",
+    "execution": "factory-parcel-record-fill-shvwr",
+    "args": "parcel-r5-zoning,--apply,--city=smithville-tx,--city=luling-tx,--city=martindale-tx,--city=woodcreek-tx,--city=lakeway-tx",
+    "runId": "354c92e2-ac09-434b-aa19-85bd9ee356f1",
+    "imageDigest": "sha256:b5a12bf53c9f4734fbf931ec81b432a5456a8143e9ffb7f56327db6ad2e9e6cf",
+    "wallClock": "~5 minutes"
+  },
+  "beforeAfter": {
+    "before": "zoningDistrict store-wide: 516,894 value / 94,222 unaccounted / 370,289 not-applicable (R5 close's final state)",
+    "after": "531,919 value / 79,197 unaccounted / 370,289 not-applicable"
+  },
+  "counts": {
+    "citiesAdmitted": 5,
+    "totalParcels": 15211,
+    "matched": 15025,
+    "residualUnaccounted": 196,
+    "matchRatePct": 98.78,
+    "byCity": {
+      "lakeway-tx": { "total": 8259, "matched": 8202, "ratePct": 99.3 },
+      "luling-tx": { "total": 2898, "matched": 2887, "ratePct": 99.6 },
+      "smithville-tx": { "total": 2406, "matched": 2295, "ratePct": 95.4 },
+      "woodcreek-tx": { "total": 1030, "matched": 1026, "ratePct": 99.6 },
+      "martindale-tx": { "total": 618, "matched": 615, "ratePct": 99.5 }
+    },
+    "countingRule": "cell_state->>'kind' grouped by rail_key, read directly from FACTORY_DATABASE_URL after the apply run; per-city total/matched from the job's own live landing_parcel_jurisdiction count at execution time"
+  },
+  "bleedVerification": {
+    "county": "48453 (Travis -- shared by Austin and Lakeway)",
+    "austin-tx": 203218,
+    "lakeway-tx": 8202,
+    "conclusion": "Clean separation, verified live, zero cross-contamination"
+  },
+  "whatContradictedTheCard": "Nothing contradicted the card's technical premises. One process choice deviated from the most literal reading of 'Execute per city': the first execute attempt used no --city filter (matching R5's own original full-run pattern) and would have re-processed all 23 in-scope cities, including the 18 R5 already completed. That was safe (the UPDATE is gated on the cell currently being unaccounted, so already-stamped cities are a true no-op) but wasteful -- cancelled it and relaunched scoped to exactly the five named cities via --city flags, which the job already supported from its R5 design. No data or verification was lost by the cancellation; the cancelled execution had not yet written anything (confirmed by checking it was still in its first city's processing when cancelled).",
+  "constraintsHonored": [
+    "exactly the five named cities touched, verified via the execution's own --city args and the per-city log lines",
+    "no re-acquisition or new data source used -- entirely the existing staged layer, already proven present by the R5 close's own live query",
+    "no absent-verified written; the miss residue (196 parcels) stays unaccounted",
+    "Cloud Run only, digest verified against the build's own log line before executing, no laptop --apply",
+    "checked the board (queue store-token status) before executing, confirming no concurrent parcel_record writer"
+  ],
+  "leave_behind": {
+    "leave_behind": [
+      {
+        "item": "196 residual unaccounted parcels across the five cities (mostly Smithville, 111 of 196) -- likely the same class of genuine zone-polygon-miss residue R5 saw elsewhere (~1-5% typical), not investigated to a specific mechanism this card. Low priority given the small absolute count.",
+        "owner": "property",
+        "plan_row": "F-01"
+      },
+      {
+        "item": "Zoning is now sourced for 23 of 72 six-county cities (all cities with a real staged layer). The 49 no-layer cities remain the next real acquisition frontier for this rail -- see PARCEL-SCOUT-GIS's inventory for the schoolDistrict/utilityService/overlayDistricts/agValuation scouting that covers other declared-ahead rails, but no equivalent zoning-layer scouting for the 49 no-layer cities has been done since the original zoning-ingest card (2026-09-01).",
+        "owner": "property",
+        "plan_row": "F-01"
+      }
+    ]
+  },
+  "scratch": {
+    "LESSON": [
+      "When a scope-expansion card says 'run the proven job unchanged,' still check whether the default (no-filter) execution mode matches the card's actual scope -- R5B's job defaults to 'all in-scope cities' now that the exclusion list is empty, which is correct behavior for the job itself but not the efficient way to execute THIS card's specific five-city authorization. The --city flag existed from R5's own design for exactly this kind of targeted re-run; use it.",
+      "A gated UPDATE (WHERE cell_state->>'kind'='unaccounted') makes an accidental full re-run safe, not free -- cancelling and rescoping saved real wall-clock and store-scan cost even though no data integrity was ever at risk."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T15:48:50Z hauska-factory PR #70 MERGED d6789a2cf998d329be6dcae1bb696e60eb200cb5, CI SUCCESS",
+      "2026-09-02T15:5xZ-15:54:52Z factory-parcel-record-fill-shvwr execution True, runId 354c92e2-ac09-434b-aa19-85bd9ee356f1, all five cities 95.4%-99.6% matched",
+      "Live store-wide 2026-09-02T16:0xZ: zoningDistrict value=531,919 (+15,025 from R5's 516,894), unaccounted=79,197 (-15,025 from 94,222), not-applicable=370,289 (unchanged)"
+    ],
+    "DEAD-END": [],
+    "OPEN": [
+      "196 residual parcels across the five cities not traced to a specific mechanism (unlike Elgin's traced sliver-gap finding in R5).",
+      "The 49 no-layer cities remain the standing zoning-acquisition frontier."
+    ]
+  }
+}
