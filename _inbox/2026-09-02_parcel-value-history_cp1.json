@@ -1,0 +1,28 @@
+{
+  "lane": "PARCEL-VALUE-HISTORY",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T15:35:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 738d15e",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-vh feat/parcel-value-history, based on origin/main 27bf8e4",
+    "claim": "GRANTED 2026-09-02T15:25:22.807Z, verified via _queue/log/property.jsonl"
+  },
+  "premisesReverified": {
+    "cadPropertySchema": "Live: PRIMARY KEY (county_fips, prop_id, tax_year) -- genuinely one row per tax year, market/assessed/land/improvement all present as bigint columns, exactly the dollar set the dispatch names.",
+    "yearDistribution": "Live, per county: 48021 (Bastrop) 2025 only; 48055 (Caldwell) 2025+2026; 48209 (Hays) 2025+2026; 48309 (McLennan) 2025 only; 48453 (Travis) 2025+2026; 48491 (Williamson) 2025+2026, but see next item -- Bastrop and McLennan currently have only one vintage in the store, so valueHistory for those two counties will carry exactly one companion row per matched parcel, not a defect.",
+    "williamsonIsNotGenuineTwoYearHistory": "Critical finding, re-verified before designing anything: Williamson's 2025 rows are 100% R-prefix keyed (282,570 rows) and its 2026 rows are 100% numeric keyed (319,480 rows) -- zero overlap in key scheme per year. This is NOT two years of the same-keyed account; it is the R1B-documented dual-key split (R-prefix carries identity/situs but is missing most dollar fields; the numeric roll carries the complete dollar set) presented under what LOOKS like two tax years but is actually the pre-existing key-scheme problem R1B already solved for current-value. The existing WILLIAMSON_CROSSWALK_SQL (parcel-record-fill.mjs) joins R-prefix target rows to numeric-roll rows via situs_address; it does not scope by tax_year in its own SQL text, but given the live data shape (each key scheme currently holds exactly one year), it produces exactly the same match set whether or not tax_year is explicit -- flagged as a real, load-bearing assumption tied to CURRENT data shape, not a structural guarantee, in case a future re-ingest ever gives one key scheme two years."
+  },
+  "design": {
+    "sources": "For every county: cad_property WHERE county_fips=$1 AND prop_id=ANY(pageOfLandingPropIds), ALL rows (never DISTINCT ON latest -- that is the current-value scalar fill's own query, a different SQL constant, untouched here). For Williamson additionally: the existing, unmodified WILLIAMSON_CROSSWALK_SQL/loadWilliamsonCrosswalk imported directly from parcel-record-fill.mjs (not re-implemented) to attach each R-prefix landing parcel's matched numeric-roll account's own rows.",
+    "companionRowPerYear": "One companion row per distinct tax_year found for a landing-matched parcel, direct account and (Williamson only) crosswalk-matched account combined and de-duplicated by tax_year (a direct-account year always wins over a crosswalk year for the same tax_year, though in current data this collision never occurs since the two schemes hold disjoint years). Payload: {taxYear, marketValue, assessedValue, landValue, improvementValue, viaCrosswalk: boolean}. Source cad_property, vintage = the tax_year itself (a per-row vintage, not a single job-wide vintage, since each row IS a different point in time by construction).",
+    "cellState": "value/rowCount when >=1 year found. A parcel with zero cad_property rows (direct or crosswalked) stays unaccounted -- never absent-verified, matching this program's own established convention that a join miss never reaches a positive absence claim (the cad-null-verified precedent in ingest-existing.js), and matching the fact that this is not a spatial sweep with a real second derivation the way R4's absent-verified was.",
+    "scalarRailsUntouched": "This card writes ONLY the valueHistory companion rail. current-value scalar rails (assessedValue etc.) are never read or written by this job -- confirmed by design, will confirm again by code review before commit that no UPSERT touches any rail key besides valueHistory."
+  },
+  "willNot": [
+    "touch any scalar rail (assessedValue, marketValue, etc.) -- history is companion-only per the rails-v2 decision this card's premise states",
+    "modify WILLIAMSON_CROSSWALK_SQL or loadWilliamsonCrosswalk in parcel-record-fill.mjs -- imported and reused as-is",
+    "repeat the unbatched per-row write mistake from this seat's own earlier PARCEL-R4-COMPANIONS card -- batched writes from the first implementation, not retrofitted after a live failure",
+    "fabricate history for Bastrop/McLennan beyond the single vintage the store actually holds"
+  ]
+}
