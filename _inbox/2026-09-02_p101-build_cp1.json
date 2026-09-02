@@ -1,0 +1,122 @@
+{
+  "checkpoint": "CP1",
+  "kind": "adversarial design review, pre-build",
+  "lane": "P-101 ladder re-cut build (gates and copy)",
+  "planRows": ["P-101"],
+  "planOfRecord": "90_operations/OPS-16_texas_market_plan_of_record.md",
+  "filedAt": "2026-09-02",
+
+  "missionPremise": "Operator ruling 2026-08-31 (_decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list.md) plus its 2026-08-31 amendment: Solo answers one parcel, Studio works a list. Screens move ungated to Studio-or-Team; the records package gets a named pricing row; the comparison table regroups to four; Studio badge stops being The packet. Prices untouched. Operator calls ruled 2026-08-31: (1) gate create_screen and add_to_screen, LEAVE list_screens open; (2) Studio two seats splits to P-102; (3) site plan CAD sold-versus-enforced divergence routed to P-104, shipped.",
+
+  "completionPredicate": "A free connector user opens the Smart Site panel, sees an empty screen list, and is refused with a stated reason the moment they create one or add to one. A Studio or Team user is not refused. The pricing surface renders four groups, one naming the records package, and Studio is no longer badged The packet. Every one of those is proven by a test shown failing when the behaviour is removed.",
+
+  "scopeBasis": "Two repos, because those hold the gate and the pricing surface. Two new registered worktrees off current origin/main rather than any existing lane checkout. No file on the dispatch five-PR do-not-edit list is touched, which is why the Studio middleware is a NEW module instead of an addition to peEntitlement.ts.",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/seat-worktrees/property/legacy-design-tools-p101",
+      "branch": "feat/p101-ladder-recut",
+      "baseCommit": "72176219458fd059ed5600ef8cf4e17ffde79d95",
+      "baseSubject": "feat(F-01): PARCEL-B-READER - parcel-record reader and rail allowlist (#581)",
+      "baseCommittedAt": "2026-09-02 15:28:27 -0500"
+    },
+    "hauska-map": {
+      "worktree": "P:/seat-worktrees/property/hauska-map-p101",
+      "branch": "feat/p101-ladder-recut",
+      "baseCommit": "0aec477b5cb3e6ad6e826b47c0f8d4f1dddec186",
+      "baseSubject": "feat(pe/P-105): the share becomes a doorway (#333)",
+      "baseCommittedAt": "2026-09-02 16:04:11 -0500"
+    },
+    "doc_repo": { "worktree": "P:/doc_repo", "branch": "main", "seat": "integration" }
+  },
+
+  "seatRegistration": {
+    "action": "two entries appended to _catalog/seat_register.json under the property seat",
+    "entries": ["legacy-design-tools-p101", "hauska-map-p101"],
+    "committed": false,
+    "note": "doc_repo commits are planner-owned; the register edit is left uncommitted with the rest."
+  },
+
+  "designDecisions": [
+    {
+      "id": "D1",
+      "decision": "The Studio gate is a NEW module artifacts/api-server/src/lib/peStudioGate.ts exporting a factory requirePeStudio({reason, message}), placed second on the two screens POST routes.",
+      "why": "Item 1 requires a route gate calling the api-server own subscriptionTierGrantsStudio. peEntitlement.ts is held by open PR #583 (A-062) and is on the dispatch do-not-edit list, so the middleware cannot be added there. A new module that IMPORTS the predicate adds no fourth copy.",
+      "rejectedAlternative": "Adding the middleware to peEntitlement.ts beside requirePePaidDeep. Rejected: file contention with #583, which the dispatch names explicitly."
+    },
+    {
+      "id": "D2",
+      "decision": "The 402 body carries error upgrade_required plus reason studio_screens.",
+      "why": "smartsite-mcp declareUpstreamNonOk (tool-honesty.ts) prefers the upstream body own reason, then rest.error. A named reason lets the panel render a SCREEN upgrade line rather than a generic Not returned, and it is a positive determination rather than the panel inferring the capability from the absence of anything else.",
+      "rejectedAlternative": "Reusing bare error upgrade_required with no reason. Rejected: the panel would then have to infer the capability, and UPGRADE_TO_OPEN (Upgrade to open this parcel) would be reused verbatim for a screen, which item 10 forbids."
+    },
+    {
+      "id": "D3",
+      "decision": "No change to artifacts/smartsite-mcp/src/tools.ts. The screen tools inherit the route refusal through the existing upstreamErrorResult path.",
+      "why": "Item 2, and the amendment structural finding: a predicate-level MCP gate would be a fourth copy of subscriptionTierGrantsStudio. get_smart_site is the shipped precedent. Verified: tools.ts:889 and :913 already return upstreamErrorResult(res.status, text) on a non-ok create_screen/add_to_screen response, so the refusal reaches the connector with no code change.",
+      "rejectedAlternative": "A local canRunStudioReport check in the create_screen/add_to_screen cases. Rejected by item 2, and it would have made the MCP the second place a tier decision is made."
+    },
+    {
+      "id": "D4",
+      "decision": "The two defect-pinning route tests get their peEntitlement mock changed from a hand-written object to vi.mock with async importOriginal spreading the REAL module, overriding only requirePeAuthenticated, resolvePeEntitlement and resolvePeOwnerUserId.",
+      "why": "peStudioGate imports subscriptionTierGrantsStudio from peEntitlement. A hand-written mock export of that name would be exactly the internal-consistency defect the 2026-08-31 amendment named: one party satisfying both sides. Spreading the original keeps ONE definition of the predicate under test.",
+      "risk": "importOriginal pulls peEntitlement own imports (peIdentity, peServiceUserId, anonymousOwnerCookie, middlewares/session) into an isolate whose @workspace/db mock exports only six names. If module-scope evaluation fails, the fallback is a narrower db mock, NOT a hand-copied predicate.",
+      "falsifier": "If the run errors at import time, D4 is wrong and must be replaced, not patched with a local predicate."
+    },
+    {
+      "id": "D5",
+      "decision": "New MCP tests go in NEW files (tests/screens-studio-gate.test.ts, tests/mcp-app-screen-upgrade.test.ts), not appended to tools.test.ts or mcp-app.test.ts.",
+      "why": "Open PR #580 (P-106 constraint search) edits BOTH of those files and changes the registered-tool count away from 13, so appending would collide on merge and on the count assertions. The dispatch contention list named five PRs; there are eight open in legacy-design-tools and three in hauska-map, and #580 is the one that matters here.",
+      "cost": "The new MCP test file duplicates the roughly 35-line withTestClient / cortex-client / request-context harness from tools.test.ts. Declared, not hidden."
+    },
+    {
+      "id": "D6",
+      "decision": "PricingModal GROUPS array is DERIVED from Object.entries(PE_PRICING.groups) instead of gaining a fourth hand-written entry.",
+      "why": "Item 6 says the regroup is a code change because nothing iterates PE_PRICING.groups. Adding a fourth literal entry satisfies this card and leaves the defect for the fifth group. Deriving removes the class.",
+      "honesty": "The accompanying test iterates Object.keys(PE_PRICING.groups) and asserts each renders. That is a completeness check against one source, not a two-derivation divergence test. It would NOT have failed before this change (config and array both held 3); it fails the moment they diverge, which is the defect it exists to catch. Stated rather than sold as a divergence test."
+    },
+    {
+      "id": "D7",
+      "decision": "Item 12: NO monitoring or Prospect row is added.",
+      "why": "The ruling puts Prospect post-launch and marked coming soon; Prospect appears in zero shipped surfaces in either repo. Adding a coming-soon row would put a non-purchasable line on the purchase surface that three existing tests exist to keep off it. Stating the absence is the option item 12 allows."
+    }
+  ],
+
+  "conflictFoundInTheDispatch": {
+    "what": "Item 2 forbids any new canRun call site in tools.ts. Item 4 prescribes both-directions MCP tests in which free is refused AND expect(mockCortexFetch).not.toHaveBeenCalled().",
+    "whyBothCannotHold": "With enforcement at the route, a free caller create_screen MUST reach cortex, because that is how it learns it is refused. mockCortexFetch not being called is only achievable with a local MCP gate, which item 2 forbids. Item 4 shape was copied from run_report and export_instrument, which ARE locally gated.",
+    "resolution": "Item 2 wins: it is the architecture the 2026-08-31 amendment ruled and the reason the route form works at all. The MCP test asserts the inverse and makes it load-bearing: a free create_screen DOES call cortex exactly once and surfaces the 402 as a declared refusal, which pins no-parallel-gate as a falsifiable property. The gate itself is falsified in the api-server route tests, where it lives.",
+    "reportedTo": "planner, in this checkpoint and in the close. No contract-versus-dispatch disagreement was found; this is dispatch-internal."
+  },
+
+  "contentionDeclared": {
+    "legacy-design-tools": {
+      "openPrs": [584, 583, 580, 554, 510, 446, 445, 440],
+      "dispatchSaidFive": "The dispatch named five open PRs across both repos; eight are open in legacy-design-tools and three in hauska-map as of 2026-09-02 16:30 CDT.",
+      "doNotEditFilesRequired": "none",
+      "sharedFileProceeding": "artifacts/api-server/src/routes/propertyExplorer.ts is also touched by #583 (A-062 billing/portal route). Different region: A-062 adds a billing route; this lane edits only the two screens POST registrations and the import block.",
+      "newContentionNotInTheDispatch": "#580 (P-106) edits artifacts/smartsite-mcp/src/tools.ts, tests/tools.test.ts and tests/mcp-app.test.ts. This lane does not touch tools.ts at all and puts its MCP tests in new files. It DOES edit artifacts/smartsite-mcp/src/mcp-app.ts, which #580 does not."
+    },
+    "hauska-map": {
+      "openPrs": [335, 334, 183],
+      "doNotEditFilesRequired": "none",
+      "note": "ClaudeSyncTool.tsx appears in the hauska-map-p105 seat note but P-105 merged as #333 and is in origin/main; no open PR holds it."
+    }
+  },
+
+  "baselinesBeforeAnyEdit": {
+    "smartsite-mcp": { "command": "npx vitest run (cwd artifacts/smartsite-mcp)", "files": "19 passed", "tests": "506 passed" },
+    "property-explorer": { "command": "npx vitest run (cwd apps/property-explorer)", "files": "168 passed", "tests": "2310 passed, 1 todo" },
+    "apiServerTargeted": { "command": "npx vitest run src/routes/__tests__/propertyExplorerScreensStubs.test.ts src/routes/__tests__/propertyExplorerScreensLookup.test.ts", "files": "2 passed", "tests": "10 passed" },
+    "apiServerFull": {
+      "command": "DATABASE_URL=postgres://u:p@localhost:5432/db npx vitest run",
+      "result": "127 files failed | 197 passed | 3 skipped; 43 tests failed | 2039 passed | 1385 skipped",
+      "cause": "the suite needs a live database; this is the known local red baseline and CI is authoritative. Recorded so the after-run is compared against it and not against green."
+    }
+  },
+
+  "openQuestionsGoingIntoBuild": [
+    "D4 importOriginal may fail at module load. Falsifier stated; no local predicate copy is an acceptable fallback.",
+    "Whether declaredLineHtml new branch needs its constant embedded into the served script as var UPGRADE_TO_SCREEN. It does, because INLINE_SHARED embeds declaredLineHtml BY SOURCE, so a constant it closes over must be emitted. This is the failure mode a unit test on declaredLineHtml alone would NOT catch; the served-html check must assert the string is present."
+  ]
+}
