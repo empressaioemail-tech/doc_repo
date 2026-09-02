@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-02 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,79 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: G-106, G-107 (90_operations/OPS-17_govtech_stack_plan_of_record.md)
+repo: smart-files
+
+# Govtech Track A — Smart Files read-path scope + staff upload
+
+## Mission: Smart Files read-path scope, then staff upload
+
+Plan rows G-106, G-107 (OPS-17, Layer 1 Wave 1). WDLL acceptance items 5, 6, 7 in
+`_inbox/2026-08-25_govtech_wave1_WDLL.md` are the frozen definition of done for this
+work — cite them directly in your close, do not re-derive.
+
+### Context verified this session (2026-09-02), trust this over older docs
+
+- Defect #3 ("Smart Files read scope write-only") is still open. PR #6 narrowed the
+  BFF layer only; folder, file, document, and blob reads are not yet scope-checked.
+- `P:/smart-files` (the primary local checkout) is DIRTY and 8 commits behind
+  `origin/main` — do not build on it, do not touch it. The registered seat worktree
+  `P:/seat-worktrees/govtech/smart-files` does not exist on disk yet — create it
+  fresh from `origin/main` before starting (register it in
+  `_catalog/seat_register.json` first if it isn't already; check current content,
+  it may already be listed ahead-of-creation).
+- Likely home for scope checks: `src/identity.mjs` (scope validators) and
+  `src/server.mjs` (route handlers) in the smart-files repo — this is a pointer from
+  a file-existence grep, not a verified read. Confirm the actual shape at source
+  before writing anything.
+- `template-city` is the Wave 1 tenant, not `icc-demo` (S1-17, WDLL item 6). Staff
+  uploads must land under `entity_id` matching `smartfile:tenant:template-city:%`.
+
+### Acceptance (from the frozen WDLL — do not edit these, only cite them)
+
+**Item 5 — read-path scope enforced.** Anonymous or wrong-tenant reads of
+folders/files/documents/blobs return 403. Matching-tenant service token returns 200.
+Check commands are in the WDLL verbatim.
+
+**Item 6 — tenant identity unified on `template-city`.** `entity_id` prefix check
+plus `CITY_KEY`/`orgId` agreement across plan-review's deployed `web/app.js` and
+`src/actors.mjs`.
+
+**Item 7 — staff upload end to end.** File input in the plan-review UI, PDF upload,
+provenance stamped (`capturedBy`, `capturedAt`, `sourceKind=staff-upload`,
+`originalFilename`, `declaredRole`), bytes land in the city-scoped folder before
+review runs.
+
+### Sequencing
+
+Item 5 first (read-path scope) — it's the prerequisite for everything else per the
+WDLL's own dependency line. Items 6 and 7 follow. G-107 in OPS-17 depends on G-106,
+DOC-1 (already filed, `_inbox/2026-08-24_govtech_transaction_contract.md`), and S3-1.
+
+### Out of scope
+
+Do not touch plan-review's honesty/edition-selector work (that's Track C, G-108).
+Do not touch the ICC ledger (Track D, G-109). Do not redeploy DEPLOY-7 or DEPLOY-39
+— both are live and graded (OPS-17 A-087). Live Bastrop (`smartcity-os`) is
+absolute no-touch.
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-02_a_cp1.json
+  CP2: _inbox/2026-09-02_a_cp2.json
+  CLOSE: _inbox/2026-09-02_a_close.json

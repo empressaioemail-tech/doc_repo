@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-02 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,87 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: G-109 (90_operations/OPS-17_govtech_stack_plan_of_record.md)
+repo: plan-review
+
+# Govtech Track D — ICC obligation ledger (govtech half)
+
+## Mission: ICC obligation ledger — reconciliation and reader (govtech half only)
+
+Plan row G-109 (OPS-17, Layer 1 Wave 1). WDLL acceptance items 11, 12 in
+`_inbox/2026-08-25_govtech_wave1_WDLL.md` describe the full row; **this dispatch
+covers only the govtech-seat half of it.** S4-3 (populate `sourceActorDid` on
+envelopes) and S4-7 (record cited atom + book_id + section_id) are seat
+`substrate`, live in `hauska-mcp-server`, and are NOT in scope here — request them
+from the substrate seat. Building them here would be writing another seat's repo.
+
+### Context verified this session (2026-09-02) — the WDLL's own schema assumption is wrong, read this first
+
+- Migration 009 IS applied. `source_obligation_ledger` exists on the MCP server's
+  Neon (`hauska-prod-497015`), 12 rows, all pre-dating the #75 fix (most recent
+  2026-08-16; #75 merged 2026-08-24). Item 11 is effectively met — do not re-run
+  that check, just cite this.
+- **The WDLL's item 12 check assumes columns that do not exist.** It expects
+  `reference_kind, book_id, section_id, edition_id`. The REAL schema is: `id,
+  created_at, source_actor_did (not null), atom_did (not null), tool (not null),
+  product (not null), tier (not null), request_id (not null), obligation_type
+  (default 'license-reference-royalty'), amount_minor, currency, grace_terms, note`.
+  There is no citation-shaped quadruple on this table today — `atom_did` is the only
+  link back to what was cited, and `book_id`/`section_id`/`edition_id` would need to
+  come from a JOIN against the atom itself (that's plausibly what S4-7 from
+  substrate is meant to add — confirm with them, don't assume). Do not write S4-1b
+  or S4-8 against the WDLL's literal column list; write against the real one, and
+  flag the mismatch back if S4-7 is supposed to have closed this gap and hasn't.
+- `amount_minor` is null on every existing row — expected at this stage. The real
+  ICC rate (O-1) is explicitly deferred until after this accrual work closes; do not
+  block on it and do not invent a rate.
+- DEPLOY-75 is LIVE and graded, WITH A NAMED RESIDUAL (OPS-17 A-088): the PR's own
+  shipped self-test (`scripts/violation-probes.mjs` in hauska-mcp-server) passes
+  non-vacuously, and a live replay of a known false-positive (a non-ICC Bastrop
+  setback-rule that was wrongly billed pre-fix) now correctly produces zero accrual.
+  **The true-positive path — does a real ICC citation still accrue correctly — is
+  UNVERIFIED.** Anonymous `get_atom` on the ICC corpus atom is refused
+  (`"not readable under the caller's accessPolicy"`); it needs a `codex`-tier
+  product key, which wasn't available this session. Build S4-1b/S4-8 to tolerate
+  this being an open question, and get a codex-tier key before calling this track
+  fully done — that's item q11 on the canvas queue.
+
+### Scope for this dispatch
+
+**S4-1b — ledger reconciliation.** `source_obligation_ledger` is authoritative;
+activity (the existing activity table on plan-review) is a cache (R-I, closed
+ruling). Implement the reconciliation: dedup keys, activity rows matched against
+ledger rows by `request_id`, divergence surfaced rather than silently dropped.
+Depends on S4-7 landing from substrate first (or at least a stable interim shape
+you can build against — confirm with them before assuming the shape).
+
+**S4-8 — obligation ledger reader.** A reader endpoint or view a licensor could
+audit against. Where this lives (plan-review, or a new small surface) is not
+decided — read `_decisions/2026-08-16_g60_does_not_wait_on_l26.md` and the seam
+table in OPS-17 for precedent, and make a call; note the reasoning in your close.
+
+### Out of scope
+
+S4-3, S4-7 (substrate's repo, request don't build). The real ICC rate (O-1, S4-B1).
+Circle billing (S4-11). S2-1 engine migration. Live Bastrop is absolute no-touch.
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-02_d_cp1.json
+  CP2: _inbox/2026-09-02_d_cp2.json
+  CLOSE: _inbox/2026-09-02_d_close.json

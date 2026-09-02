@@ -1,9 +1,4 @@
-<!-- CANON-PREAMBLE v6f9d139b generated 2026-09-02 from _STATE.md -->
-
-## STANDING DECISIONS (paste into every executor dispatch)
-
 CANON-PREAMBLE v6f9d139b
-
 - COTALITY IS EXTINGUISHED — when code hits it (502/OAuth/fallthrough), re-route to county-gis/public-record, NEVER rotate the credential. Regrid also dead.
 - DEPLOYS ARE PLANNER-OWNED — the agent deploys and fixes failed deploys; never escalate a deploy to the operator; "failed on X, fixing X".
 - NO PRIVILEGED DATA — everything via uniform public-record; any path must work for a no-relationship jurisdiction.
@@ -26,3 +21,80 @@ CANON-PREAMBLE v6f9d139b
 - SMARTCITY VISUAL LAW (session 1, operator loved 2026-08-17) — quiet surfaces, loud exceptions, honest absence. Register not card deck. Sidebar. Inverted applicability (Pass quiet, Unchecked hatch). Inter + Plex Mono, 12px floor. Environment badge. Not-built nav. Provenance chip; no bare confidence. Code citation has no ICC body slot. Light `--sc-atom` `#177F78`, dark `#4CC9C0`. Kit extract `_inbox/2026-08-17_sc_kit.css`. Decisions `_decisions/2026-08-17_smartcity_visual_law.md` and `_decisions/2026-08-17_atom_accent_light_hex.md`.
 - SMARTCITY DASHBOARDS HOUSING — one product repo `empressaioemail-tech/smartcity-dashboards`, cities as tenant packs. Live Bastrop stays `smartcity-os` until a named island replacement. Decision `_decisions/2026-08-17_smartcity_dashboards_housing.md`.
 - Full standing-decisions detail: `MEMORY.md` (auto-memory) + `_decisions/`.
+
+AGENT-CONTRACT v1890f0bb — you are bound by 90_runbooks/AGENT_CONTRACT.md in full (fan model,
+interruption recovery, slot law + lease, heavy-scan serialization, verification rules, close schema).
+Read it before any work; where this dispatch and the contract disagree, STOP and report.
+
+DEV-PROCESS vbb19bd34 — you are bound by 90_runbooks/DEV_PROCESS.md in full. It governs how work
+is SHAPED and how a result is JUDGED: coverage figures travel with their denominator, classes are
+measured never subtracted, an instrument's exclusion set is part of its contract, gating indicators are
+proven able to fire, paired controls need a divergence test, guardrails that do not survive a clone are
+not guardrails. Every rule in it is traced to an incident. Read it before any work.
+
+FLEET-MEMORY v2a98086b — you are bound by 90_runbooks/fleet_memory_practice.md (M0).
+The verbatim install block follows. Product-repo agents do not carry .cursor/rules; this is the install.
+
+FLEET MEMORY (M0): As you work, capture build knowledge in a scratch block you return in your close, using four entry kinds — LESSON (a hard-won fact worth a test/note), DEAD-END (a tried-and-failed path + reason, so it is not retried), GROUND-TRUTH (a live-verified state WITH its timestamp), OPEN (a live thread the next context must pick up). Read any scratch context passed to you FIRST before re-deriving. Do NOT promote anything to durable memory yourself — return lessons in your close; the planner gates promotion. Nearing your limit, flush open threads + live ground-truths into your close so the next instance starts warm.
+
+PLAN-ROW: G-108 (90_operations/OPS-17_govtech_stack_plan_of_record.md)
+repo: plan-review
+
+# Govtech Track C — Plan review honesty path
+
+## Mission: Plan review honesty path — edition selector, typed absence, applicability matrix
+
+Plan row G-108 (OPS-17, Layer 1 Wave 1). WDLL acceptance items 8, 9, 10 in
+`_inbox/2026-08-25_govtech_wave1_WDLL.md` are the frozen definition of done — cite
+them directly in your close.
+
+### Context verified this session (2026-09-02), trust this over older docs
+
+- `DEPLOY-7` is LIVE and graded (OPS-17 A-087): `plan-review-00014-zot` @100% +
+  Vercel `plan-review-app-ten.vercel.app`. The neighbour-fallback fabrication defect
+  is confirmed gone — a nonsense section now returns a typed absence, not a
+  fabricated `R311.7`/`R302.1`. Build on top of this, do not re-fix it.
+- The typed-absence PLUMBING already exists and is deployed:
+  `src/code-lookup.mjs` ships `ABSENCE_KINDS` (`unchecked`, `source-unavailable`,
+  `not-entitled`, `verified-absent`) and a `CODE_BOOKS` manifest keyed by book id
+  (`IBC2018P6`, `IPMC2018P2` — both currently EMPTY manifests, zero sections
+  ingested, by design per that file's own comments). Read that file before writing
+  anything; it explains why the manifests are empty and what "resolved" means there.
+  **Spelling is `verified-absent`, not `verified_absent` or `absent-verified`.** (A
+  separate item, L3, tracks a spelling divergence elsewhere — do not import it here.)
+- `editionId`/`applicability`/`plan_review_findings` do NOT appear anywhere in the
+  route or lookup code today (grepped `src/` this session, zero hits outside
+  `store.mjs`) — S2-9, S2-7, and S2-8 are genuinely unbuilt, not just ungraded.
+  `store.mjs` is the only file already touching these concepts; start reading there.
+- `GET /api/plan-review/code` requires `Authorization: Bearer $PLAN_REVIEW_SERVICE_TOKEN`
+  (secret `plan-review-service-token` in GCP project `plan-review-505715`) — this is
+  a PRE-EXISTING gate from PR #6, not something to build or remove. Any new probe or
+  test against this route needs that header.
+- Interim path: this track does NOT need S2-1 (engine migration) or DOC-5 (ADR-023
+  ratification) to proceed. The WDLL's own interim clause allows an HTTP hop to
+  `hauska-engine` retrieval-api (`$ENGINE_API_URL/v1/findings/generate`) for finding
+  generation until S2-1 lands. Don't block on the operator ratifying DOC-5.
+
+### Acceptance (from the frozen WDLL — do not edit, only cite)
+
+**Item 8 — edition selector live.** UI exposes an edition selector bound to the
+engagement; every returned citation-shaped object carries non-empty `editionId`.
+Depends on items 1 (done) and 7 (Track A).
+
+**Item 9 — typed absence, no silent empty success.** Forced corpus-unreachable
+returns `verdict: "Unchecked"` with `absence.verdict` in
+`{lookup-failed, absent-verified}`, never a 200 all-Pass matrix.
+
+**Item 10 — honest applicability matrix.** At least one `Pass` and one `Fail` per
+review run, or typed `Unchecked` for unreached sections — never a silent omit, never
+hand-authored citation text.
+
+### Out of scope
+
+Do not touch Smart Files (Track A, G-106/G-107). Do not touch the ICC ledger (Track
+D, G-109). Do not attempt S2-1 engine migration. Live Bastrop is absolute no-touch.
+
+CHECKPOINTS AND CLOSE (exact paths; machine-checkable per contract section 6):
+  CP1: _inbox/2026-09-02_c_cp1.json
+  CP2: _inbox/2026-09-02_c_cp2.json
+  CLOSE: _inbox/2026-09-02_c_close.json
