@@ -78,9 +78,13 @@ intrusion.
   started 12:44:58Z on the superseded digest) was still running when this was
   caught -- doc-repo-98 observed it racing writes against their correction
   and cancelled it (`gcloud run jobs executions cancel ... bzfxv`), confirmed
-  `Cancelled` at source. The other five county executions I launched
-  (48055 pilot, 48021, 48209, 48309, 48453) had already completed and were
-  then overwritten by the other session's re-run, not left concurrent.
+  `Cancelled` at source. Travis (48453, execution `7fnn7`) also raced,
+  finishing ~49s after their correction's Travis job started; its trailing
+  writes (identical `updated_at`, ~200 rows) clobbered rows their pass had
+  already corrected. Doc-repo-98 re-ran 48453 once mine was fully dead. The
+  other four county executions I launched (48055 pilot, 48021, 48209, 48309)
+  had already completed and were then cleanly overwritten by the other
+  session's re-run, not left concurrent.
 
 ## Process gap worth naming
 
