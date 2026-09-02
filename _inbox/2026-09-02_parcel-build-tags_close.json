@@ -1,0 +1,79 @@
+{
+  "lane": "PARCEL-BUILD-TAGS",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T16:05:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-build-tags_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main 539af5f",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-build-tags_cp1.json",
+    "_inbox/2026-09-02_parcel-build-tags_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 539af5f",
+    "factory_worktree": "P:/tmp/hauska-factory-buildtags (registered path), branch feat/build-tags (registered branch), merged to main fb14ee89f626828e5f042f4b7f7db9a7eca0390f"
+  },
+  "missionPremise": "Operator authorization 2026-09-02: the mutable shared cloudbuild tag has raced twice (the R2 collision vehicle; the R5 deploy race resolved only by digest-matching). Adopt a per-invocation build-tag convention on the shared factory cloudbuild files; keep it simple and mechanical; add a check that fails when a deploy pin does not name a digest; do not restructure build files or touch job code; verify by violation with two overlapping builds.",
+  "completionPredicate": "Met: all five shared cloudbuild files (conformant, f10-cad-loop, p2-juris, parcel-record-fill, publish) suffix every tag reference with the Cloud Build built-in $BUILD_ID, eliminating the race by construction with zero caller changes; the digest check is strengthened from presence-only to shape-validated and fails loud with a named tag on a malformed result; neither build files' structure nor job code was touched (verified: git diff --stat shows only the substitutions comment and the tag/check lines changed, same step count, same step order, same job-deploy args); verified by violation with two genuinely overlapping live gcloud builds submit runs, both digests independently addressable and confirmed from each build's own logs.",
+  "scopeBasis": "hauska-factory: cloudbuild.conformant.yaml, cloudbuild.f10-cad-loop.yaml, cloudbuild.p2-juris.yaml, cloudbuild.parcel-record-fill.yaml, cloudbuild.publish.yaml only. No job code (src/jobs/*.mjs) touched. No schema change. cloudbuild.yaml (factory-snapshot, already $COMMIT_SHA-tagged) explicitly out of scope and left untouched. 90_runbooks/factory_cloud_job_execute.md checked and confirmed to not name the old tag convention (zero grep matches) -- no runbook update needed.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 72,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/72",
+      "branch": "feat/build-tags",
+      "mergeSha": "fb14ee89f626828e5f042f4b7f7db9a7eca0390f",
+      "ciConclusion": "SUCCESS (gate8 x2, test x2, all four checks green across both push and pull_request triggers)",
+      "note": "Merged self-service after re-verifying the base had not moved (git merge-base --is-ancestor origin/main HEAD) immediately before merge."
+    }
+  ],
+  "counts": {
+    "filesChanged": 5,
+    "occurrencesRetagged": 25,
+    "countingRule": "5 files x 5 ${_IMAGE}:${_IMAGE_TAG} occurrences per file (build -t, push, describe, images: list, and one duplicate within a multi-target describe block in some files), verified by grep -c before and after",
+    "testSuite": "591/591 pass, 2 skip, 0 fail, local re-run after npm install in the fresh worktree",
+    "liveVerification": "2 genuinely overlapping Cloud Build submissions, both SUCCESS, both independently addressable digests confirmed from raw build logs"
+  },
+  "whatContradictedTheCard": "None on the core design -- the fix landed exactly as scoped. Two process frictions surfaced and were resolved without deviating from the dispatch: (1) the initial worktree path/branch I created (P:/tmp/hauska-factory-build-tags, feat/parcel-build-tags, both matching the queue claim's own naming) diverged from what the planner had actually pre-registered in the seat registry (P:/tmp/hauska-factory-buildtags, feat/build-tags) -- the seat-worktree-gate hook refused twice and both refusals were honored by renaming rather than bypassing, per this session's standing discipline; (2) baking $BUILD_ID directly into the _IMAGE_TAG substitution's own default (rather than appending it at each use site) was considered and rejected before implementing, since Cloud Build substitution defaults are not re-scanned for built-in expansion -- verified this understanding before committing to the simpler, certain-to-work use-site-suffix approach rather than discovering the failure after a submitted build.",
+  "constraintsHonored": [
+    "did not restructure any build file's step order, count, or job-deploy arguments",
+    "did not touch job code (src/jobs/*.mjs)",
+    "kept the fix simple and mechanical: one substitution suffix pattern, applied identically across all five files",
+    "verified the digest-shape regex against a real, live gcloud artifacts docker images describe output before trusting it, rather than guessing the format",
+    "verify-by-violation run for real against production Cloud Build/Artifact Registry, not simulated or asserted",
+    "seat-worktree-gate refusals honored by correcting the path/branch to match the registry, never bypassed"
+  ],
+  "scratch": {
+    "LESSON": [
+      "Cloud Build substitution defaults (the substitutions: block) are literal strings, not re-scanned for built-in variable expansion -- a built-in like $BUILD_ID must be referenced directly at each use site in steps/images, not baked into a user substitution's own default value. Verified before implementing, not discovered after a failed submission.",
+      "gcloud artifacts docker images describe --format='value(image_summary.fully_qualified_digest)' returns the FULL form IMAGE_PATH@sha256:HASH, not a bare sha256:HASH -- confirmed live before writing a shape-validating regex against it, since a wrong assumption here would have broken every future deploy job silently.",
+      "A queue claim's own --branch/--worktree flags are not authoritative over what the planner has separately pre-registered in _catalog/seat_register.json for the same card -- check the registry directly (or let the gate's refusal message state the exact expected path/branch) rather than trusting the claim command's own naming."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T16:0x-16:01Z: two overlapping Cloud Build submissions of cloudbuild.p2-juris.yaml, 551346d3 (digest d8c730b5...) and 28549d01 (digest d817bf73...), both SUCCESS, zero cross-contamination confirmed from raw logs",
+      "2026-09-02T~16:02Z: factory-p2-juris live-confirmed pinned to sha256:d8c730b53f6472f1b8122cb0e7b5ea42483ac84cd5c728d61e684580347fce2b",
+      "2026-09-02T16:02:37Z hauska-factory PR #72 MERGED fb14ee89f626828e5f042f4b7f7db9a7eca0390f; gate8 x2 + test x2 all SUCCESS"
+    ],
+    "DEAD-END": [
+      "Embedding $BUILD_ID inside the _IMAGE_TAG substitution's own default value in the substitutions: block -- rejected before implementing, not after a failed build, once Cloud Build's substitution resolution order was checked rather than assumed."
+    ],
+    "OPEN": [
+      "cloudbuild.yaml (factory-snapshot) still carries the same weak test -n \"$$DIGEST\" presence-only check, left unstrengthened since it was out of this card's named scope ($COMMIT_SHA already makes it collision-proof on the tag dimension). A future consistency pass could strengthen it to match the other five files' shape-validated check.",
+      "The queue-claim-vs-seat-registry naming drift (finding surfaced this card, not a defect in this card's own work) is a smaller instance of the same class as this review's own finding #7 (queue claim mechanism vs. structural enforcement) -- worth a mention if the operator is already looking at queue/registry tooling gaps."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-build-tags_cp1.json",
+    "_inbox/2026-09-02_parcel-build-tags_cp2.json",
+    "_inbox/2026-09-02_parcel-build-tags_close.json",
+    "_queue/cards/parcel-build-tags/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "cloudbuild.yaml's (factory-snapshot) digest check is still presence-only (test -n), inconsistent with the other five files' new shape-validated check. Low priority: this file was never exposed to the tag-race defect ($COMMIT_SHA-tagged already).",
+      "owner": "planner / future consistency pass",
+      "plan_row": "F-01"
+    }
+  ]
+}

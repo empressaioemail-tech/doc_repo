@@ -1,0 +1,28 @@
+{
+  "lane": "PARCEL-BUILD-TAGS",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T16:03:00Z",
+  "editsApplied": {
+    "files": ["cloudbuild.conformant.yaml", "cloudbuild.f10-cad-loop.yaml", "cloudbuild.p2-juris.yaml", "cloudbuild.parcel-record-fill.yaml", "cloudbuild.publish.yaml"],
+    "perFile": "1 comment block added under _IMAGE_TAG explaining the mechanism; every ${_IMAGE}:${_IMAGE_TAG} occurrence (build -t, push, describe, images: list -- 5 occurrences per file, verified by grep count) suffixed to ${_IMAGE}:${_IMAGE_TAG}-$BUILD_ID; test -n \"$$DIGEST\" replaced with the shape-validated [[ =~ ]] check plus an explicit FATAL message naming the offending tag.",
+    "verificationBeforeSubmit": "grep confirmed zero remaining old-form ${_IMAGE}:${_IMAGE_TAG} references without the -$BUILD_ID suffix across all five files; python yaml.safe_load confirmed all five still parse as valid YAML; full local test suite 591/591 pass, 2 skip, 0 fail (after npm install in the fresh clone -- the first run's failures were ERR_MODULE_NOT_FOUND from a missing node_modules, not a real regression, confirmed by re-running a single file's error output before assuming the fix broke anything)."
+  },
+  "verifyByViolation": {
+    "method": "Two genuinely overlapping gcloud builds submit --async runs of cloudbuild.p2-juris.yaml against the live hauska-prod-497015 project, launched back-to-back with no wait between them.",
+    "buildA": { "id": "551346d3-56ad-4320-aa32-a59af5ff1aee", "tag": "p2-juris-551346d3-56ad-4320-aa32-a59af5ff1aee", "digest": "sha256:d8c730b53f6472f1b8122cb0e7b5ea42483ac84cd5c728d61e684580347fce2b", "status": "SUCCESS" },
+    "buildB": { "id": "28549d01-8778-47ea-bb06-56d26745d170", "tag": "p2-juris-28549d01-8778-47ea-bb06-56d26745d170", "digest": "sha256:d817bf737e79bbc6d8ab8739fbfdea7caa838de3702223eca46ae10bb7e92eed", "status": "SUCCESS" },
+    "result": "Both builds ran genuinely overlapping (submitted seconds apart, both completed SUCCESS). Each build's own log shows it tagged, pushed, described, and pinned its OWN unique tag to its OWN digest -- confirmed by reading each build's raw log directly (gcloud builds log <id>), not inferred from success status alone. No FATAL message fired in either log, confirming the new shape-check regex matches real production output. The deployed factory-p2-juris job was confirmed live-pinned to a real, well-formed digest (sha256:d8c730b5..., build A's) post-verification -- coherent end state, no malformed or mixed reference.",
+    "conclusion": "The shared-tag race is structurally eliminated: two concurrent submissions of the identical file can no longer share a tag, by construction, regardless of timing."
+  },
+  "prAndCi": {
+    "repo": "hauska-factory",
+    "pr": 72,
+    "branch": "feat/build-tags",
+    "mergeSha": "fb14ee89f626828e5f042f4b7f7db9a7eca0390f",
+    "checks": "gate8 pass (x2, pull_request + push triggers), test pass (x2) -- all four green, base re-verified current (git merge-base --is-ancestor origin/main HEAD) immediately before merge"
+  },
+  "worktreeCorrection": {
+    "what": "Created the initial clone at P:/tmp/hauska-factory-build-tags (hyphenated) and branch feat/parcel-build-tags (matching the queue claim's own naming), both of which diverged from the seat registry's actual entry (P:/tmp/hauska-factory-buildtags, branch feat/build-tags -- registered ahead of creation by the planner under a different naming convention than the queue claim used). The seat-worktree-gate hook correctly refused the commit twice (once for the path mismatch, once for the branch mismatch after the path was fixed). Both refusals were honored directly: renamed the directory (git does not care about a plain clone's directory name) and renamed the local branch (git branch -m) to match the registry exactly, rather than working around the gate. No git history or state was lost in either correction."
+  }
+}
