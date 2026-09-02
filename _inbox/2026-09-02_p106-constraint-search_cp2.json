@@ -1,0 +1,89 @@
+{
+  "checkpoint": "CP2",
+  "lane": "P-106 constraint search",
+  "planRows": ["P-106"],
+  "filedAt": "2026-09-02T02:50:00Z",
+  "seat": "property",
+  "subject": "Pilot: the derivation run against LIVE Bastrop rows and compared to the LIVE serve path, and the SQL partition run against a real Postgres. Both halves produced by different code paths in different processes, so agreement is evidence rather than tautology.",
+
+  "snapshot": {
+    "legacy-design-tools": {
+      "worktree": "P:/tmp/ldt-p106-constraint",
+      "branch": "seat/property-p106-constraint",
+      "baseCommit": "91e9086d",
+      "uncommitted": true
+    },
+    "deploymentStore": "neondb, DIRECT endpoint, read-only session",
+    "atomsStore": "hauska_mcp, DIRECT endpoint, read-only session",
+    "serveProbe": "live Smart Site MCP get_smart_site, depth stub, 2026-09-02"
+  },
+
+  "pilotOne_projectionVsServePath": {
+    "what": "Ran the REAL projection derivation (projectConstraintCells) over ten live Bastrop parcels chosen to span the states that matter: a stamped in-city district, unincorporated parcels with no district, the degenerate 48021:0 row whose situs is the live ', ,' sentinel, a parcel with no bake facets at all, and three with a land-use code. Then read the SAME ten through the deployed get_smart_site.",
+    "instrument": "_inbox/2026-09-02_p106_projection_recon.ts, output _inbox/2026-09-02_p106_projection_recon.json",
+    "parcels": ["48021:0","48021:10001","48021:10002","48021:10003","48021:10005","48021:10013","48021:10032","48021:103255","48021:103281","48021:103387"],
+    "agreement": {
+      "flood": "10 of 10 agree. Both read the flood-hazard-fact atom; both call an atom-miss unmeasured and a boolean SFHA finding present.",
+      "landUse": "10 of 10 agree, including the three parcels where the bake carries a code and the six where it does not.",
+      "zoningPresent": "5 of 5 agree where the bake carries a district (48021:0 SF-1, 103255 PDD, 103281 GC, 103387 SF-1, and 10005 which has no bake facets and is unknown in both)."
+    },
+    "disagreement": {
+      "rail": "zoningDistrict",
+      "parcels": ["48021:10001","48021:10002","48021:10003","48021:10013","48021:10032"],
+      "projection": "absent-verified",
+      "servePath": "unknown",
+      "cause": "composeSmartSiteStub derives zoning from ONE input (the bake payload) and railStateFromSectionDisposition maps `absent` to `unknown`, because at section level an absence carries no positive typed result (the WDLL item 5 ruling quoted in r1BriefCompose). The projection derives it from TWO independently derived inputs - the bake saying no district AND landing_parcel_jurisdiction saying unincorporated - and therefore earns absent-verified. Unincorporated Texas land carries no municipal zoning; that pair is a positive determination.",
+      "size": "Measured, not estimated: 50,157 of 77,799 Bastrop parcels and 346,165 across the six counties (_inbox/2026-09-02_p106_rail_census_zoningdiv.json).",
+      "verdict": "Item 2's check as literally written ('a parcel's projected value matches get_smart_site for that parcel') FAILS on this class, and it fails because the projection is the better-informed of the two, not because it is wrong. This is a decision, not a bug, and it is NOT the lane's to make. Routed to the operator in the close with two named options and pinned by a test (`PINNED DIVERGENCE: the projection earns absent-verified on zoning where get_smart_site says unknown`) so whichever is chosen has to be chosen rather than happening.",
+      "secondMechanismConsideredAndRejected": "The other explanation for the same observation would be that the projection's jurisdiction join is wrong - that these five parcels are in fact in-city and the landing table mislabels them. Rejected: all five carry McDade-area situs or none at all, all five sit in the 50,264-row unincorporated block of a county whose landing table has ZERO `unresolved` rows, and the same join reproduces `in-city` correctly for the three Bastrop-city parcels in the same sample. A mislabelled join would not be that consistent."
+    }
+  },
+
+  "pilotTwo_partitionAgainstARealStore": {
+    "what": "The three-set SQL run against a real Postgres schema seeded with nine parcels covering every cell of the (acreage x flood) verdict table for 'two acres or more, outside the floodplain'.",
+    "where": "artifacts/api-server/src/lib/parcelConstraintSearch.test.ts, `three-set partition against a real store`. Runs under withTestSchema, which CI provides a database for, so it is not a dormant suite.",
+    "result": "matched 2, excluded 4, notEvaluated 3, countyParcels 9. Partition holds: every parcel in exactly one set.",
+    "theRowThatJustifiesTheWholeDESIGN": "48021:2 has flood_state `absent-verified` and MATCHES 'outside the floodplain'. FEMA mapped the area and drew no zone over it; that is a mapped negative and a real answer. Under a two-state model that parcel is either fabricated into the matched set with no basis, or silently dropped. It is the reason absent-verified is a separate state.",
+    "byRailCountingRuleProvenNotAsserted": "notEvaluated.byRail = {acreage: 2, flood: 3} against a set of 3+1... measured: notEvaluated.count 3, byRail sums to 5. The sum EXCEEDS the set count, which is the documented rule and not a defect, and the test asserts the exact numbers so the rule cannot be quietly changed.",
+    "shownToFail": "Widening the `evaluable` predicate to admit all five states (so notEvaluated drains into the other two) fails the test: `expected 7 to be 3`. Restored, 21 of 21 pass."
+  },
+
+  "adversarialReviewOfTheBuildSoFar": [
+    {
+      "risk": "The projection is a second store for a subject that already has one - the exact thing the card forbids.",
+      "answer": "It carries no value the bake did not already hold. Every cell's basis names the bake field, the landing row, or the atom it came from, and `bake_snapshot_at` on every row names the snapshot it was projected from. It is a cache with a declared build time, and its own DDL refuses a row whose value and state disagree. The test for this is the reconciliation above: flood and land-use agree 10 of 10 with the serve path, which they could not do if this were a second derivation."
+    },
+    {
+      "risk": "The migration is written and never applied, so every control in it is a control that does not exist.",
+      "answer": "TRUE, and stated as such rather than implied. The dispatch instructs handing DDL back unapplied. What was proven instead: the migration applied cleanly to a throwaway local database, all 31 constraints enumerated from pg_catalog, 8 deliberate violations refused and 3 corrected rows accepted. And the constraint definitions produced by migration 0094 were diffed against those produced by `drizzle-kit push` from the schema module: byte-identical, 31 rows each, and the diff was shown able to fire by dropping one constraint. Until 0094 runs in production, this control is armed nowhere but in CI and in that local proof."
+    },
+    {
+      "risk": "The unmeasured-refusal gate has no default, so it is dormant.",
+      "answer": "TRUE by design, and it is the card's instruction: the threshold is an operator ruling and the lane must not pick one silently. The mitigation is that `unmeasuredPctByRail` is on EVERY successful response, so with no gate the coverage is still never hidden. A proposed number with its evidence is in the close. Until the operator rules, a filter on a rail measured on 0 percent of a county returns an honest all-not-evaluated answer rather than a refusal."
+    },
+    {
+      "risk": "Adding a fourteenth tool breaks six hardcoded counts across five test files, and a lane that patches them one by one may miss one.",
+      "answer": "All six were found by grep and updated, and the llms.txt count was changed from a literal 13 to `SMARTSITE_MCP_TOOLS.length` so the NEXT tool cannot desynchronise that one. Full suite: 506 of 506 before, 520 of 520 after."
+    },
+    {
+      "risk": "`find_parcel` and `find_parcels` differ by one character and a model will pick the wrong one.",
+      "answer": "The plural's description opens with the literal word PLURAL, names the singular as the address path, and the two published input schemas share exactly one key (`query`), which on the plural exists only so a single address can be refused BY NAME. A test asserts the schema key sets and the mutual disclaimers, and it was shown to fail when the disclaimer sentence is removed."
+    },
+    {
+      "risk": "The census instrument's numbers are the whole basis for the rail selection, and a wrong instrument would produce a confidently wrong rail list.",
+      "answer": "Every predicate is transcribed from the serve path's own source at a named commit, exercised against five fixtures in both directions, with an explicit not-vacuous check per predicate, and the read-only posture proven by a refused DDL. The instrument was shown to fail. Its strongest external check is that it reproduced the card's independently-derived 21-point Bastrop situs figure to within 0.3 points."
+    }
+  ],
+
+  "aLaneErrorWorthRecording": {
+    "what": "The lane wrote the figure `50,247 Bastrop parcels` into a test comment BEFORE the zoningdiv measurement had run, as a placeholder that read exactly like a measurement.",
+    "caughtBy": "The lane, on re-reading the file after the measurement returned 50,157.",
+    "why it matters": "That is the documented failure mode of this operation in miniature - a plausible number written next to real ones, indistinguishable from measured. It was corrected to the measured value with its denominator, and it is recorded here rather than quietly fixed, because a correction nobody sees teaches nothing."
+  },
+
+  "openAtCp2": [
+    "OPERATOR RULING 1: the unmeasured-refusal threshold. Proposal and evidence in the close.",
+    "OPERATOR RULING 2: the zoning divergence. Either the serve path adopts the two-input derivation (and get_smart_site starts reporting absent-verified on 346,165 parcels), or the projection drops to `unknown` on zoning and the `absent` operator loses its most useful rail.",
+    "The 0094 migration is unapplied, so nothing has been built and no live constraint search can run until it is."
+  ]
+}

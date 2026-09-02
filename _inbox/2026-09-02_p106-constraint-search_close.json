@@ -1,0 +1,375 @@
+{
+  "lane": "P-106 constraint search",
+  "planRows": [
+    "P-106"
+  ],
+  "closedAt": "2026-09-02T03:16:55Z",
+  "dispatch": "_dispatches/2026-09-02_p106-constraint-search_dispatch.md",
+  "card": "_inbox/2026-09-01_p106_constraint_search_WDLL.md",
+  "seat": "property",
+  "checkpoints": [
+    "_inbox/2026-09-02_p106-constraint-search_cp1.json",
+    "_inbox/2026-09-02_p106-constraint-search_cp2.json"
+  ],
+  "missionPremise": "Today a caller can look up A PARCEL and cannot ask a question ACROSS parcels. P-106 adds the second thing as a PROJECTION over facets that are already baked, not a pipeline, and the design idea it exists to get right is that a filter over a rail with gaps returns THREE SETS - matched, excluded, and not-evaluated with the rail named - because including the unmeasured fabricates a claim and excluding them silently hides parcels that might qualify. Source: _inbox/2026-09-01_p106_constraint_search_WDLL.md, operator go 2026-09-01, OPS-16 amendment A-071.",
+  "completionPredicate": "A land buyer can express a constraint over one Central Texas county and get back three sets from a cache that declares when it was built, with every refusal declared rather than errored, and can push the matched ids onto a screen with no re-fetch; every check shown failing on a deliberate violation and passing on restore.",
+  "scopeBasis": "Serve path only, in legacy-design-tools. No acquisition path, no facet re-derivation, no second store for a subject that already has one, no ranking, no owner data, no tier-gate changes. Six Central Texas counties, because landing_parcel_jurisdiction covers 981,405 of roughly 7.6M Texas parcels and a statewide answer would imply coverage that does not exist. DDL written and HANDED BACK UNAPPLIED per the dispatch.",
+  "pr": "not applicable: lane produces an uncommitted diff",
+  "mergeSha": "not applicable: lane produces an uncommitted diff",
+  "ciConclusion": "not applicable: lane produces an uncommitted diff",
+  "snapshot": {
+    "doc_repo": {
+      "repo": "P:/doc_repo",
+      "branch": "main",
+      "baseCommit": "eb70253",
+      "state": "edits left UNCOMMITTED; doc_repo commits are planner-owned",
+      "filesThisLaneTouched": [
+        "_catalog/seat_register.json (7 lines added: the property-seat entry for this worktree)",
+        "_catalog/watch_registry/p106-rail-census.json (new)",
+        "_inbox/2026-09-02_p106_rail_census.md (new)",
+        "_inbox/2026-09-02_p106_rail_census.mjs (new)",
+        "_inbox/2026-09-02_p106_rail_census_selftest.json (new)",
+        "_inbox/2026-09-02_p106_rail_census_bake.json (new)",
+        "_inbox/2026-09-02_p106_rail_census_juris.json (new)",
+        "_inbox/2026-09-02_p106_rail_census_atoms.json (new)",
+        "_inbox/2026-09-02_p106_rail_census_zoningdiv.json (new)",
+        "_inbox/2026-09-02_p106_rail_census_progress.log (new)",
+        "_inbox/2026-09-02_p106_migration_0094_violation_suite.sql (new)",
+        "_inbox/2026-09-02_p106_projection_recon.ts (new)",
+        "_inbox/2026-09-02_p106_projection_recon.json (new)",
+        "_inbox/2026-09-02_p106-constraint-search_cp1.json (new)",
+        "_inbox/2026-09-02_p106-constraint-search_cp2.json (new)",
+        "_inbox/2026-09-02_p106-constraint-search_close.json (new)"
+      ],
+      "otherLanesUncommittedWorkPresentAndUNTOUCHED": [
+        "_catalog/DISPATCH_PREAMBLE.md",
+        "_catalog/thesis_parity_ledger.md",
+        "_queue/log/property.jsonl",
+        "_inbox/2026-09-01_parcel-fill-* and friends"
+      ]
+    },
+    "legacy-design-tools": {
+      "repo": "P:/tmp/ldt-p106-constraint",
+      "branch": "seat/property-p106-constraint",
+      "baseCommit": "91e9086d",
+      "baseRef": "origin/main",
+      "baseSubject": "fix(deploy): smartsite-mcp min-instances=1 - a cold start is a customer-visible failure (#579)",
+      "state": "UNCOMMITTED diff, 15 modified + 9 new files",
+      "registeredIn": "_catalog/seat_register.json, property seat, entry legacy-design-tools-p106"
+    },
+    "deploymentStore": {
+      "database": "neondb",
+      "endpoint": "DIRECT (DEPLOYMENT_DATABASE_URL_DIRECT, project legacy-design-tools-prod). The pooler was NOT used.",
+      "posture": "READ-ONLY. SET default_transaction_read_only = on on every session, proven by violation: `cannot execute CREATE TABLE in a read-only transaction`. Zero INSERT, UPDATE, DELETE or DDL was issued against production."
+    },
+    "atomsStore": {
+      "database": "hauska_mcp",
+      "endpoint": "DIRECT (ATOMS_DATABASE_URL with the -pooler suffix stripped, per the standing Neon posture)",
+      "posture": "READ-ONLY, same proof"
+    },
+    "localTestStores": {
+      "ddlProof": "local Postgres 15 container `backend-db-1`, throwaway database p106_ddl_check, used only to apply 0094 and violate its constraints",
+      "suiteDb": "pgvector/pgvector:pg17 container `p106-pg` on port 55432, database test_db, drizzle-kit push from the schema module"
+    }
+  },
+  "acceptanceItems": [
+    {
+      "item": 1,
+      "title": "Measure before projecting",
+      "grade": "PASS",
+      "artifact": "_inbox/2026-09-02_p106_rail_census.md plus the five JSON outputs and the instrument that produced them",
+      "instrument": "_inbox/2026-09-02_p106_rail_census.mjs, five fixtures, eleven predicates, both directions plus a not-vacuous check per predicate, and a proof that the read-only posture is armed",
+      "shownToFail": "yes, verbatim below",
+      "note": "The measurement CONTRADICTS the card's rail list on four rails and confirms its situs figure to within 0.3 points. Details under `whatContradictedTheCard`."
+    },
+    {
+      "item": 2,
+      "title": "The projection table",
+      "grade": "PARTIAL",
+      "built": "lib/db/drizzle/0094_p106_parcel_constraint_index.sql (UNAPPLIED), lib/db/src/schema/peParcelConstraintIndex.ts, artifacts/api-server/src/lib/parcelConstraintProjection.ts",
+      "whatPassed": [
+        "One row per parcel per county, a column pair (value + NOT NULL state) per rail, builtAt and bakeSnapshotAt on every row, and a build ledger that a build cannot skip.",
+        "Built from the baked facets: every cell's `basis` names the bake field, the landing row, or the atom it came from. No facet is re-derived and no second store is created for a subject that already has one.",
+        "The migration applied cleanly to a throwaway database, all 31 constraints enumerated from pg_catalog, 8 deliberate violations refused, 3 corrected rows accepted, exactly 3 rows admitted.",
+        "The migration's constraints and the drizzle schema's constraints were diffed: byte-identical, 31 rows each, and the diff was shown able to fire.",
+        "The derivation was run over ten LIVE Bastrop parcels and compared to the LIVE get_smart_site: flood agrees 10 of 10, landUse agrees 10 of 10, zoning agrees on all 5 parcels where the bake carries a district."
+      ],
+      "whyPartial": [
+        "The projection table is NOT BUILT. The migration is handed back unapplied by instruction, so no row exists, `builtAt` has never been written, and the row-count reconciliation against the bake could only be run as the SELECT half. That is stated rather than narrated as done.",
+        "The 'a parcel's projected value matches get_smart_site' check FAILS on zoning for unincorporated parcels: the projection says `absent-verified`, the serve path says `unknown`, on 50,157 of 77,799 Bastrop parcels and 346,165 across the six counties. The cause is that the projection uses two independently derived inputs and get_smart_site uses one. Routed to the operator below; pinned by a named test so it cannot drift."
+      ]
+    },
+    {
+      "item": 3,
+      "title": "find_parcels, plural, and distinct from find_parcel",
+      "grade": "PASS",
+      "built": "artifacts/smartsite-mcp/src/constants.ts (14th tool), tools.ts (schema + handler), artifacts/api-server/src/routes/brokeragePlaceConstraintSearch.ts",
+      "distinguishability": "The plural's description opens with the literal word PLURAL and names the singular as the address path. The two published input schemas share exactly one key, `query`, which on the plural exists only so a single address can be refused BY NAME. Pinned by a test asserting both schema key sets and both disclaimers.",
+      "singleAddressRouted": "A house-number-prefixed query returns status refused, reason constraint_single_address, message naming find_parcel, display text 'That is a lookup, not a search'.",
+      "shownToFail": "yes: removing the 'NOT the tool for looking up an address' sentence fails the test."
+    },
+    {
+      "item": 4,
+      "title": "The three-set result, with the excluding rail named",
+      "grade": "PASS",
+      "shape": "matched {count, cap, received, truncated, parcels}, excluded {count, byRail}, notEvaluated {count, byRail}, countyParcels, unmeasuredPctByRail, countingRule, projection {builtAt, ageHours, stale, staleAfterHours}. All three sets are required fields of the type; a response cannot omit one.",
+      "provenAgainstARealStore": "Nine seeded parcels covering every cell of the (acreage x flood) verdict table. matched 2, excluded 4, notEvaluated 3, countyParcels 9. Partition holds.",
+      "theRowThatJustifiesTheDesign": "A parcel whose flood cell is `absent-verified` MATCHES 'outside the floodplain'. FEMA mapped the area and drew no zone over it: a mapped negative, and a real answer. Under a two-state model that parcel is either fabricated into matched with no basis, or silently dropped.",
+      "shownToFail": "yes: widening the `evaluable` predicate to admit all five states drains notEvaluated into the other two and the test fails with `expected 7 to be 3`."
+    },
+    {
+      "item": 5,
+      "title": "Refusals, declared not errored",
+      "grade": "PASS with one item left to the operator, as the card requires",
+      "noGeographicBoundRefused": "constraint_bound_missing, refused at the MCP tool BEFORE anything reaches the wire, and again at the route as a 422 serve_refused.",
+      "overCapIsTruncationNotRefusal": "matched.truncated is a field, exactly as `near` and `street` already report it. Proven against a real store: 5 matched, cap 2, received 2, truncated true.",
+      "nineRefusalCodes": [
+        "constraint_bound_missing",
+        "constraint_county_out_of_scope",
+        "constraint_single_address",
+        "constraint_filters_missing",
+        "constraint_rail_unknown",
+        "constraint_op_unsupported",
+        "constraint_cap_invalid",
+        "constraint_rail_unmeasured",
+        "constraint_projection_missing"
+      ],
+      "eachCarriesAReasonTokenAndDisplayText": "All nine have VOCABULARY rows in artifacts/smartsite-mcp/src/vocabulary.ts, so they travel in the standing vocabulary block on every tool result and the panel and the wire cannot drift. Pinned by a test.",
+      "thresholdIsAnOperatorRuling": "NO DEFAULT SHIPS. `unmeasuredRefuseAbovePctFromEnv` returns null when unset and null means NO GATE, never a silent one. Proposal and evidence under `operatorRulingsRequested`.",
+      "shownToFail": "yes: disabling the ceiling turns the 422 into a 200 and two tests fail."
+    },
+    {
+      "item": 6,
+      "title": "It feeds a screen",
+      "grade": "PASS",
+      "how": "matched.parcels carry parcelNodeId, and create_screen already accepts a parcel node id as a query: peScreenSaveResolveCore.resolveScreenQuery detects a node id, skips situs search, and looks the parcel up directly. So the ids go from find_parcels to create_screen untouched, with no re-fetch and no re-typing, and NO new plumbing was needed.",
+      "provenEndToEnd": "A test walks find_parcels -> create_screen through the tool surface and asserts exactly two cortex calls: the search and the create. A third call would be a re-fetch.",
+      "shownToFail": "yes: emptying matched.parcels in the handler fails the test with `expected [] to deeply equal [ '48021:103255', '48021:103281' ]`."
+    },
+    {
+      "item": 7,
+      "title": "Verify by violation, both directions",
+      "grade": "PASS",
+      "note": "Six violations run, each shown failing and passing on restore, verbatim under `verifyByViolation`."
+    }
+  ],
+  "whatContradictedTheCard": {
+    "summary": "The card's proposed v1 rail list is wrong on four rails. The measurement wins, per item 1.",
+    "marketValue_landValue_improvementValue_yearBuilt": "ZERO present in the tier-1 bake in ALL SIX counties. Not low - zero. cad_property carries the values at source; the bake's cadRoll block does not, because node-facet-patch-cad-roll has not run for these counties. Reading cad_property directly would be re-deriving from source, which item 2 forbids. OUT of the searchable set until the cadRoll patch runs; the columns stay, unmeasured, and every filter over them is refused.",
+    "etj": "NO SOURCE EXISTS in the deployment store. tx_city_boundary, tx_county_boundary, tx_special_district and landing_parcel_jurisdiction are what is there; nothing carries an extraterritorial ring, and landing_parcel_jurisdiction.disposition is CHECK-constrained to in-city | unincorporated | unresolved. Carried as a declared-ahead column per the rails-v2 ruling, `unread` on every row.",
+    "landUse": "0.0% in Caldwell and Travis, 0.03% in McLennan, 20.2% Bastrop, 75.5% Hays, 84.9% Williamson. Searchable per county, never per program.",
+    "zoningDistrict": "The card treats it as one rail. Its PRESENT count is 12.3% to 46.6%, but its EVALUABLE share once the two-input absent-verified rule is applied is 42.8% to 76.8%. The absent-verified half is two to five times the present half and is the half that answers 'unzoned land'.",
+    "whatTheCardGotRight": "The situs sentinel. The card predicted roughly 21 points of Bastrop overstatement from a naive non-null test; measured 20.7 (74,820 naive vs 58,716 real of 77,799). The measurement adds that this is Bastrop-specific: Travis and Williamson are at 0.0 points, so a fleet-wide rule derived from Bastrop would be over-fitted.",
+    "reltuplesConfirmed": "All five of the card's magnitude figures re-measured today and identical."
+  },
+  "operatorRulingsRequested": [
+    {
+      "ruling": 1,
+      "question": "The unmeasured share above which a filter on a rail is REFUSED for that county.",
+      "whyItIsYours": "The card states it explicitly: propose a number with the evidence, do not pick one silently and do not ship a default. Nothing in the code defaults it; unset means no gate, and coverage is reported on every success regardless.",
+      "recommendation": 50,
+      "reasoningInOneLine": "A search must be able to evaluate a MAJORITY of the county it claims to search. That is a principle rather than a fit to today's numbers, and it fires today rather than being dormant.",
+      "evidence": {
+        "unmeasuredSharesAreBimodal": "Every rail that works anywhere is between 0.0% and 57.2% unmeasured; every rail that does not work is at exactly 100.0%. Nothing sits between 58% and 99%, so any ceiling in that whole range refuses the same set and would fire only on rails that are already obviously dead.",
+        "at40pct": "refuses 13 of 36 live rail-county pairs, including every rail Caldwell has. A control whose scope is broader than its claim is a defect too.",
+        "at50pct": "refuses 8 of 36: Williamson flood (53.0%), cityLimits (53.1%) and specialDistrict (53.1%); Caldwell zoning (57.2%); landUse in Bastrop, Caldwell, McLennan and Travis. EVERY county keeps at least three searchable rails - Bastrop 5, Caldwell 4, Hays 6, McLennan 5, Travis 5, Williamson 3. That was measured, not assumed.",
+        "at60pctOr70pct": "identical to each other: refuses landUse in four counties and nothing else, and ADMITS Williamson flood at 53.0% unmeasured - a search that cannot look at half the county presenting itself as a search, which is the exact thing item 5 exists to prevent."
+      },
+      "howToApply": "Set CONSTRAINT_SEARCH_UNMEASURED_REFUSE_ABOVE_PCT=50 on the api-server service. Unset, nothing refuses on this ground and unmeasuredPctByRail still ships on every response.",
+      "reversalCriterion": "If the cadRoll patch and further flood writes move several rails into the 50-60 band, the bimodality that makes 50 cheap disappears and the number should be re-derived from a fresh census rather than nudged."
+    },
+    {
+      "ruling": 2,
+      "question": "The zoning divergence: does get_smart_site adopt the two-input derivation, or does the projection drop to `unknown`?",
+      "whyItIsYours": "It changes what a customer sees on 346,165 parcels, and both answers are defensible.",
+      "optionA": "Teach composeSmartSiteStub the same two-input rule. get_smart_site starts reporting zoning `absent-verified` instead of `unknown` on unincorporated parcels with no district, which is a strictly better answer and the one a land buyer actually wants. Cost: it changes a live customer-visible rail on 346,165 parcels and needs its own card, because the stub currently takes no jurisdiction input at all.",
+      "optionB": "Drop the projection to `unknown` on zoning so the two agree. Cost: the `absent` operator loses its most useful rail, 'unzoned land' becomes unanswerable, and zoning's searchable share falls from 42.8-76.8% back to 12.3-46.6%.",
+      "laneRecommendation": "Option A, as its own card. The projection is already the better-informed of the two and the divergence is not a defect in it; the cheaper fix would throw away the capability the card was written to create.",
+      "pinnedBy": "artifacts/api-server/src/lib/parcelConstraintProjection.test.ts, test `PINNED DIVERGENCE: the projection earns absent-verified on zoning where get_smart_site says unknown`. It asserts the two DISAGREE, so if either side changes the test fails and the change has to be deliberate."
+    }
+  ],
+  "tests": {
+    "command": "pnpm exec vitest run (per package, from the package directory)",
+    "smartsite-mcp": {
+      "command": "cd artifacts/smartsite-mcp && pnpm exec vitest run",
+      "before": "506 passed / 0 failed / 0 skipped, 19 files",
+      "after": "520 passed / 0 failed / 0 skipped, 20 files",
+      "delta": "+14, all in the new tests/find-parcels.test.ts",
+      "beforeMeasuredNotDerived": "run in a separate worktree at origin/main (P:/tmp/ldt-p106-baseline), not computed by subtraction"
+    },
+    "api-server": {
+      "command": "cd artifacts/api-server && DATABASE_URL=<local pgvector test_db> pnpm exec vitest run",
+      "fullSuiteIsNotRELIABLYRUNNABLEONTHISMACHINE": "Stated plainly rather than reported as a pass or a failure. Four full-suite attempts produced 3, 37, 51/82 and 68 FILE-level failures, every one of them `Hook timed out in 30000ms` inside setupRouteTests' beforeAll (per-file CREATE SCHEMA + DDL replay), including one attempt on a freshly created database with nothing else running. AGENT_CONTRACT: Windows-local failures of this kind are a known artifact and CI is authoritative.",
+      "andItIsNOTTHISCHANGE": "Measured rather than assumed: the DDL replay was timed directly, baseline fixture 2,895 ms vs this lane's fixture 2,616 ms into the same database. This lane's template is 114 lines LARGER and replays FASTER. A 30-second hook timeout is not explained by it.",
+      "cleanFullBaselineRun": "3,386 passed / 3 failed / 14 skipped, 322 files (3 pre-existing failures on origin/main: briefing-export-pdf ECONNRESET, countyLedgerRecompute, depthRailGateDivergence). Measured in a separate worktree at origin/main, not derived.",
+      "boundedAffectedSubset": {
+        "why": "A repeatable measurement is worth more than an unrepeatable full one. The subset is every api-server test file this change could touch: the sibling place-search routes, the derivation modules it imports (smartSiteStub, floodHazardFactRead, specialDistrictFactRead, the R1 flood brief), the screen-resolve path item 6 depends on, and the two route suites that exercise setup.ts's TRUNCATE_TABLES.",
+        "files": [
+          "src/__tests__/brokerageNodeFacets.test.ts",
+          "src/__tests__/brokeragePlaceBuildableEnvelope.test.ts",
+          "src/__tests__/brokeragePlaceRadiusSearch.test.ts",
+          "src/__tests__/brokeragePlaceServiceAuth.test.ts",
+          "src/__tests__/brokeragePlaceSitusSearch.test.ts",
+          "src/__tests__/brokeragePlaceStreetSearch.test.ts",
+          "src/__tests__/pe-r1-brief-flood.test.ts",
+          "src/lib/smartSiteStub.test.ts",
+          "src/lib/floodHazardFactRead.test.ts",
+          "src/lib/specialDistrictFactRead.test.ts",
+          "src/lib/peScreenSave.test.ts",
+          "src/lib/peScreenSaveResolve.test.ts",
+          "src/routes/__tests__/propertyExplorerScreensStubs.test.ts",
+          "src/routes/__tests__/propertyExplorerScreensLookup.test.ts"
+        ],
+        "before": "14 files, 226 passed, 0 failed (run in the origin/main worktree)",
+        "after": "17 files, 270 passed, 0 failed (the same 14 plus this lane's 3 new files)",
+        "delta": "+44, all in parcelConstraintProjection.test.ts (16), parcelConstraintSearch.test.ts (21) and brokeragePlaceConstraintSearch.test.ts (7). Nothing pre-existing moved."
+      }
+    },
+    "typecheck": {
+      "command": "npx tsc --build; npx tsc --noEmit -p artifacts/api-server/tsconfig.json; npx tsc --noEmit -p artifacts/smartsite-mcp/tsconfig.json",
+      "result": "exit 0, exit 0, exit 0 (read from $? directly, not through a pipe - DEV_PROCESS 2.3)"
+    },
+    "lib-db": {
+      "command": "cd lib/db && DATABASE_URL=<local pgvector test_db> pnpm exec vitest run",
+      "before": "117 passed / 2 failed (14 files)",
+      "after": "118 passed / 1 failed (14 files)",
+      "whatChanged": "THE FIXTURE-DRIFT GUARD FLIPPED FROM FAIL TO PASS, which is this change's own verification by violation and it came for free. On the origin/main tree, `schema fixture drift > the committed schema fixture matches what pg_dump emits for the live DB` FAILS against a database carrying pe_parcel_constraint_index, because the baseline fixture does not. On this tree it PASSES. The repo's own guard, run in both directions, says the refreshed fixture is correct.",
+      "remainingFailureIsEnvironmental": "railEngineBindingCoverage > engine writer scripts exist on disk when declared. It needs HAUSKA_ENGINE_ROOT pointing at a hauska-engine checkout, which CI sparse-checks out and this machine does not have. It fails identically on origin/main."
+    }
+  },
+  "verifyByViolation": {
+    "note": "Six violations, each shown FAILING on the violation and PASSING on restore. Verbatim output.",
+    "1_censusInstrument": {
+      "violation": "removed the situs sentinel rule from SITUS_REAL_SQL in _inbox/2026-09-02_p106_rail_census.mjs",
+      "verbatim": "2026-09-02T02:07:35.486Z selftest FAIL (3 failures)\n[\n  {\n    \"check\": \"f2_live_sentinel.situs_real\",\n    \"expected\": 0,\n    \"got\": 1\n  },\n  {\n    \"check\": \"f3_empty_records.situs_real\",\n    \"expected\": 0,\n    \"got\": 1\n  },\n  {\n    \"check\": \"sentinel_gap_measurable\",\n    \"naive\": 4,\n    \"real\": 4\n  }\n]",
+      "exitCode": 1,
+      "restored": "2026-09-02T02:07:41.279Z selftest PASS (0 failures), exit 0"
+    },
+    "2_migration0094Constraints": {
+      "violation": "eight deliberately malformed rows against a throwaway database with 0094 applied",
+      "verbatim": "=== V1 a value under an unmeasured state must be refused (acreage) ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_acreage_value_state_chk\"\n=== V2 a present state with no value behind it must be refused (acreage) ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_acreage_value_state_chk\"\n=== V3 a sixth rail-state word must be refused ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_acreage_state_chk\"\n=== V4 an unresolved jurisdiction smuggled in as a PLACE must be refused ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_city_limits_grammar_chk\"\n=== V5 a flood zone letter with no SFHA determination must be refused ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_flood_zone_needs_flag_chk\"\n=== V6 the degenerate prop_id 0 must be refused ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_prop_id_chk\"\n=== V7 a node id that does not agree with its own key must be refused ===\nERROR:  new row for relation \"pe_parcel_constraint_index\" violates check constraint \"pe_pci_node_id_shape_chk\"\n=== V8 a refused build with no reason must be refused ===\nERROR:  new row for relation \"pe_parcel_constraint_index_builds\" violates check constraint \"pe_pci_builds_refusal_chk\"\n=== P1 POSITIVE: the corrected rows must all be ACCEPTED ===\nINSERT 0 3\nINSERT 0 1\n=== P2 the three accepted rows, and their three distinct dispositions ===\n 2001    | present       | present         | present         | present           | present\n 2002    | present       | absent-verified | absent-verified | present           | unknown\n 2003    | unknown       | unknown         | unknown         | refused           | unknown\n=== P3 exactly three rows exist: every V block above refused ===\n rows_admitted \n             3",
+      "suite": "_inbox/2026-09-02_p106_migration_0094_violation_suite.sql"
+    },
+    "3_migrationVsDrizzleDivergence": {
+      "what": "The rail-state vocabulary and the value/state invariant have TWO implementations: migration 0094 and the drizzle schema module. The divergence test diffs the constraint definitions each produces.",
+      "clean": "DIVERGENCE: none - migration 0094 and the drizzle schema produce byte-identical constraint definitions (31 rows each)",
+      "violation": "dropped pe_pci_flood_zone_needs_flag_chk from the pushed schema",
+      "verbatim": "--- violation diff (expected to fire) ---\n15d14\n< pe_pci_flood_zone_needs_flag_chk :: CHECK (((flood_zone IS NULL) OR (flood_in_sfha IS NOT NULL)))\nDIFF_EXIT=1\n--- restored diff (expected clean) ---\nRESTORED: identical"
+    },
+    "4_threeSetPartition": {
+      "violation": "widened evaluableSql to admit all five rail states, so an unmeasured cell can satisfy a comparison and notEvaluated drains away",
+      "verbatim": "× three-set partition against a real store > partitions every parcel into exactly one set, and names the rail\n  → expected 7 to be 3 // Object.is equality\nAssertionError: expected 7 to be 3 // Object.is equality\n Test Files  1 failed (1)\n      Tests  1 failed | 20 passed (21)",
+      "restored": " Test Files  1 passed (1)\n      Tests  21 passed (21)"
+    },
+    "5_toolDistinguishability": {
+      "violation": "removed 'This is NOT the tool for looking up an address, a bare street, or a radius; that is find_parcel, singular.' from the find_parcels description",
+      "verbatim": "  → expected 'PLURAL. Ask a question ACROSS parcels…' to match /NOT the tool for looking up an address/\nAssertionError: expected 'PLURAL. Ask a question ACROSS parcels…' to match /NOT the tool for looking up an address/\n Test Files  1 failed (1)\n      Tests  1 failed | 13 passed (14)",
+      "restored": " Test Files  1 passed (1)\n      Tests  14 passed (14)"
+    },
+    "6_boundRefusal_threeSetPassthrough_andScreenFeed": {
+      "violation": "removed the countyFips check from the find_parcels handler, deleted notEvaluated from the passthrough, and emptied matched.parcels",
+      "verbatim": "  → Unexpected token 'C', \"Cannot rea\"... is not valid JSON\n  → expected undefined to match object { count: 1203 }\n  → expected [] to deeply equal [ '48021:103255', '48021:103281' ]\n Test Files  1 failed (1)\n      Tests  3 failed | 11 passed (14)",
+      "restored": " Test Files  20 passed (20)\n      Tests  520 passed (520)",
+      "note": "Three acceptance items fail on one violation, which is the point: the bound refusal (item 5), the three-set passthrough (item 4), and the screen feed (item 6) are separate checks and each one caught its own half."
+    },
+    "7_operatorCeiling": {
+      "violation": "disabled the unmeasured ceiling in assembleConstraintSearchResult",
+      "verbatim": "  → expected 200 to be 422 // Object.is equality\n  → expected { countyFips: '48021', …(8) } to match object { refused: true, …(1) }\n Test Files  2 failed (2)\n      Tests  2 failed | 26 passed (28)",
+      "restored": " Test Files  2 passed (2)\n      Tests  28 passed (28)"
+    },
+    "8_schemaFixtureDriftGuard": {
+      "what": "The repo's own fixture-drift guard (lib/db src/__tests__/integration/fixture-drift.test.ts) pg_dumps the live pushed schema and diffs it against the committed fixture.",
+      "violation": "run the guard from the origin/main worktree against a database that carries this lane's two tables - i.e. the fixture is stale by exactly this change",
+      "verbatim": " FAIL  src/__tests__/integration/fixture-drift.test.ts > schema fixture drift > the committed schema fixture matches what pg_dump emits for the live DB\n Test Files  2 failed | 12 passed (14)\n      Tests  2 failed | 117 passed (119)",
+      "restored": "run from THIS lane's worktree against the same database: the drift test passes, leaving only the environmental railEngineBindingCoverage failure.\n Test Files  1 failed | 13 passed (14)\n      Tests  1 failed | 118 passed (119)",
+      "note": "This one was not constructed; it fell out of running the suite on both trees, and it is the strongest available evidence that the refreshed fixture is right, because the check is the repo's own and neither side of it was written by this lane."
+    }
+  },
+  "countsWithTheirCountingRules": {
+    "railCensusDenominator": "tier-1 bake rows per county: one row per place_key matching node:<fips>:% under adapter_key='node-facets:tier1'. NOT the CAD row count, NOT the TxGIO parcel count, NOT the landing-table row count; those three differ from it and from each other.",
+    "byRail": "notEvaluated.byRail[r] counts PARCELS in the not-evaluated set whose rail r could not be evaluated. A parcel missing two rails increments both, so byRail values SUM TO MORE than the set count and are not a partition. Same rule for excluded.byRail. The set counts are the partition.",
+    "unmeasuredPctByRail": "the rail's unevaluable share of the WHOLE county, not of the not-evaluated set, computed in the same statement as the answer so the refusal's number and the result's number come from one snapshot.",
+    "magnitudes": "pg_class.reltuples, ESTIMATES, stated as such because a full count(*) on these tables times out under writer load.",
+    "zoningEvaluable": "(present + absent-verified) / bake parcels, where absent-verified requires BOTH no district in the bake AND landing_parcel_jurisdiction saying unincorporated."
+  },
+  "constraintsHonored": [
+    "READ-ONLY against production: zero INSERT/UPDATE/DELETE/DDL. Proven by violation, not asserted.",
+    "DIRECT Neon endpoint on both stores; the stored atoms URL is the pooler and was rewritten to direct rather than used.",
+    "DDL handed back UNAPPLIED, the way P-100 handed back 0093. Migration number 0094 claimed against main (highest committed 0092) and against every unmerged branch on this machine (0093 is held by the P-100 lane, unpushed).",
+    "No file on the dispatch's conflict list was touched: peEntitlement.ts, propertyExplorer.ts, recordGtmEvent.ts, brokerageGtm.ts, lib/db/drizzle/0093_*. Verified by git status.",
+    "Own registered seat worktree on its own branch off current origin/main. The seat-worktree gate BLOCKED the first write attempt because the worktree was unregistered; it was registered and the write proceeded. The control worked.",
+    "Heavy scans serialized: six sequential county scans, one at a time, announced in a watch registered BEFORE the first scan, with pg_stat_activity checked for other lanes' scans first.",
+    "No acquisition path, no facet re-derived, no second store for a subject that already has one, no ranking or scoring, no owner data, no tier-gate change, no statewide claim.",
+    "No sub-agents spawned (dispatch no-nesting clause). No commit, push, merge, PR or deploy in any repo."
+  ],
+  "whatRemainsOpen": [
+    "The two operator rulings above.",
+    "The projection is NOT BUILT: 0094 is unapplied, so no constraint search can run against production today. The builder job (read the bake, the landing table and the two atom families per county, write rows, write the ledger row) is DESIGNED and its derivation is implemented and tested, but the write half is not written, because writing it without a table to write to would be untestable.",
+    "The four dollar-and-age rails wait on node-facet-patch-cad-roll running for these counties. When it does, re-run `node _inbox/2026-09-02_p106_rail_census.mjs bake` and the rails join by themselves - item 1's table is what says when.",
+    "ETJ waits on an extraterritorial-jurisdiction source existing at all. No card exists for it.",
+    "The census instrument measures the BAKE. It does not measure the projection, because the projection does not exist. When it does, the same instrument needs a mode that reconciles projection row counts against bake row counts per county - that is item 2's other half."
+  ],
+  "scratch": {
+    "LESSON": [
+      "A pg_dump-generated test fixture can be refreshed surgically without regenerating the whole thing WRONG: dump the pushed schema with the repo's own pipeline, diff against the committed fixture, and confirm ZERO removed lines before writing. Here the regenerated file was a strict superset (+114, -0), which proves the local pg_dump formats identically to whatever produced the committed one. pg_dump 18 adds \\restrict / \\unrestrict lines that the repo's grep filter does not strip; they must be removed by hand or CI sees drift.",
+      "In Git Bash, `grep -vE '^\\\\restrict '` does NOT match a line starting with a backslash, and neither does the same pattern in a Python heredoc where bash mangles the escapes. `awk 'substr($0,1,1) != \"\\\\\"'` does. A filter that silently matches nothing looks exactly like a filter that had nothing to match.",
+      "`cmd | grep -v ...; echo $?` reports the GREP's exit code, so a typecheck that failed printed 'ok'. DEV_PROCESS 2.3 exactly, and it caught a real TS2322 in a test file that a piped check had reported clean. Redirect to a file and read $? directly.",
+      "Adding one MCP tool breaks six hardcoded counts across five test files plus one in a source string. The source string was changed to derive from the catalog (`SMARTSITE_MCP_TOOLS.length`) so the next tool cannot desynchronise it; the test assertions are deliberately left literal, because a test that re-derives the number it is checking cannot fail.",
+      "The api-server suite's per-file `createTestSchema` beforeAll times out at 30s under CPU contention, producing 37 file-level failures that look like real breakage and are not. Run it alone. Two full suite runs plus a tsc --build concurrently is enough to trigger it.",
+      "The refreshed schema fixture carries the 0094 CHECK constraints INLINE in the CREATE TABLE, so `withTestSchema` replays them into every per-file test schema. The value/state invariant is therefore armed in CI today, before the migration is ever applied to production - which is the only place it is armed until then.",
+      "A full 3,447-test suite on this machine fails at the FILE level with `Hook timed out in 30000ms` in per-file schema creation, in 3 of 4 attempts, including on a fresh database with nothing else running. It looks exactly like real breakage. The discriminator is to TIME THE THING BLAMED: the DDL replay was 2,616 ms on the new fixture and 2,895 ms on the old one, so the fixture was exonerated by measurement rather than by argument. A bounded, repeatable subset comparison is worth more than an unrepeatable full run."
+    ],
+    "DEAD-END": [
+      "Reading the projection's dollar rails from cad_property directly. The data IS there at source, but the card's item 2 says 'built from the baked facets, not re-derived from source', and cad_property is the landing table the bake reads. Doing it would have made the rails searchable today and broken the projection's premise.",
+      "Running a full count(*) on place_layer_snapshots. Times out. reltuples is the only affordable magnitude and it must be labelled an estimate."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T02:31Z, deployment store neondb: the tier-1 bake carries ZERO marketValue, landValue, improvementValue and yearBuilt in all six CTX counties. Not low - zero.",
+      "2026-09-02T02:45Z: no extraterritorial-jurisdiction source exists in the deployment store. landing_parcel_jurisdiction.disposition is CHECK-constrained to in-city | unincorporated | unresolved and `unresolved` is zero in all six counties.",
+      "2026-09-02T02:31Z, atoms store hauska_mcp: flood-hazard-fact atoms exist for 62,256 Bastrop parcels (80.0% of the bake), of which 4,019 are in the SFHA. typed_absence is 0 in Bastrop and Caldwell, so 'outside the floodplain' is answered almost entirely by a present determination with inSpecialFloodHazardArea=false rather than by a verified absence.",
+      "2026-09-02T02:46Z: zoning is evaluable on 42.8% (Caldwell) to 76.8% (Bastrop) of parcels once the two-input absent-verified rule is applied, against a present-only count of 12.3% to 46.6%.",
+      "2026-09-02T02:40Z, live get_smart_site depth stub: 48021:0 returns situs `unknown`, confirming the serve path already handles the ', ,' sentinel; 48021:10001 and four siblings return zoning `unknown` where the projection returns `absent-verified`.",
+      "2026-09-02: in Bastrop, Caldwell, McLennan and Travis, acreage / cityLimits / flood / specialDistrict coverage are the SAME population to within one parcel (the degenerate prop_id '0'), so filtering on two of them together does not compound the coverage loss. Hays and Williamson do NOT follow this, so it is a per-county fact.",
+      "2026-09-02: LDT origin/main is 91e9086d. Highest committed migration is 0092; 0093 is held unpushed by the P-100 lane; this lane claims 0094.",
+      "2026-09-02: McLennan has 114,265 flood-hazard-fact atoms and 114,265 special-district parcels against 114,255 tier-1 bake rows - ten atoms for parcels the bake does not carry. Small, real, and UNEXPLAINED; recorded as unexplained rather than absorbed into a percentage."
+    ],
+    "OPEN": [
+      "The zoning divergence needs an operator ruling before either side moves.",
+      "The unmeasured ceiling needs an operator ruling before the gate can arm; until then it is dormant by instruction.",
+      "The builder job for the projection is unwritten and blocked on 0094 being applied.",
+      "A LANE ERROR worth carrying: the lane wrote `50,247 Bastrop parcels` into a test comment as a placeholder BEFORE the measurement ran, and it read exactly like a measured number. Caught by the lane on re-reading after the measurement returned 50,157, and corrected with its denominator. Recorded rather than quietly fixed."
+    ]
+  },
+  "leave_behind": [
+    {
+      "item": "lib/db/drizzle/0094_p106_parcel_constraint_index.sql, written and UNAPPLIED",
+      "owner": "planner",
+      "plan_row": "P-106",
+      "note": "Handed back unapplied by dispatch instruction. Until it runs, every control in it is armed nowhere but in CI and in a local proof."
+    },
+    {
+      "item": "_catalog/seat_register.json entry `legacy-design-tools-p106` (worktree P:/tmp/ldt-p106-constraint, branch seat/property-p106-constraint)",
+      "owner": "planner",
+      "plan_row": "P-106",
+      "note": "REMOVE at card close, per the register's own convention for card worktrees."
+    },
+    {
+      "item": "_catalog/watch_registry/p106-rail-census.json",
+      "owner": "planner",
+      "plan_row": "P-106",
+      "note": "The census run it watched is complete. Safe to remove; left in place so the planner can see the scan was registered before it ran."
+    },
+    {
+      "item": "Local throwaway databases: p106_ddl_check on the local Postgres, and the docker container p106-pg (pgvector pg17, port 55432) holding test_db",
+      "owner": "property seat",
+      "plan_row": "P-106",
+      "note": "Neither contains production data. Both are safe to destroy; kept so the migration and suite proofs are reproducible."
+    },
+    {
+      "item": "Baseline worktree P:/tmp/ldt-p106-baseline",
+      "owner": "property seat",
+      "plan_row": "P-106",
+      "note": "REMOVED at close (`git worktree remove --force`, exit 0). It existed only to MEASURE the before test counts rather than derive them by subtraction. Recorded here because it existed, not because it remains."
+    }
+  ]
+}
