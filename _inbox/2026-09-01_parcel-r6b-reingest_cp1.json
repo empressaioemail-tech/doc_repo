@@ -1,0 +1,38 @@
+{
+  "lane": "PARCEL-R6B-REINGEST",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T00:50:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r6b feat/parcel-r6b-reingest",
+    "engine_worktree": "P:/tmp/hauska-engine-r6b-vendor (standalone, read-only, checked out at a38cbb22e)",
+    "claimExpires": "2026-09-02T02:47:56.935Z"
+  },
+  "premisesReverified": {
+    "addenda": "Both planner addenda read in full at claim time: (1) 2026-09-01T20:41:50Z restricts dollar rails on 48491 until R1B closes; (2) 2026-09-02T00:49:50Z (R1B closed) lifts that restriction, requires pinning the image digest >= sha256:c5289627... (R1B's image), and requires deriving fresh Williamson targets from the post-R1B store state rather than gap ledger section 9. Both honored: the image built here is a superset of c5289627 (built from a later main commit that already includes R1B's crosswalk code), and Williamson verification below is against R1B's own recorded after-state, not section 9.",
+    "argBumpIsDeadEnd": "confirmed by reading the Dockerfile before touching anything: `COPY src ./src` copies checked-in vendored .js source; the ENGINE_SHA ARG only sets a label (ENV) and feeds the drift guard's schema.sql comparison. It does not fetch or recompile anything. A bare ARG bump would have run stale 22e71e1 logic under an a38cbb2 label.",
+    "schemaSqlUnchanged": "git diff 22e71e1..a38cbb2 -- packages/engine-core/src/parcel-record/schema.sql is empty; confirmed before touching the drift guard's pinned inputs."
+  },
+  "vendorMethod": {
+    "process": "cloned hauska-engine at a38cbb22eda23637d7a56e104456aa4e7237fc25, compiled packages/engine-core/src/parcel-record (excluding __tests__) with tsc --module nodenext --moduleResolution nodenext --target ES2022 --lib ES2023,DOM (matching ENGINE_PIN.json's documented method), outside any project tsconfig to avoid pulling in unrelated project settings.",
+    "verifiedBeforeEditing": "diffed the fresh compile output against the CURRENTLY vendored files (post CRLF-normalization) before touching anything: 11 of 12 files were byte-identical, confirming the compile method exactly reproduces the original vendoring; only ingest-existing.js differed, and that diff was exactly the expected cad-null-verified emission code. cell-state.js and index.js compiled identically despite their .ts sources changing, because R6's changes there were type-only (erased at compile time).",
+    "filesTouched": "only ingest-existing.js copied over; the other 11 vendored files left untouched (git diff --cached confirmed zero net change on them after staging)."
+  },
+  "adjacentUpdates": {
+    "driftGuardChain": "Dockerfile ARG, migrations/0007_parcel_record.sql provenance header, cloudbuild.parcel-record-fill.yaml substitution, AND a hardcoded CI workflow checkout ref (found separately, not part of the drift script itself) all moved to a38cbb2. The CI ref would not have failed today (schema.sql is byte-identical between pins) but would have silently validated against the wrong source SHA the next time schema.sql actually changes -- fixed while the seam was visible.",
+    "reportNullAtSourceMapping": "this factory-side documentation function asserted the OLD 'never emits absent-verified' behavior and was now factually wrong for most CAD scalar fields. Updated per field; surfaced two previously-undocumented gaps in the same pass: exemption_codes is text[] and the module only recognizes strings, so a populated array value is neither a value nor an absent-verified (stays unaccounted, unrelated to R6's scoping); landUseSource/acreageMethod are companion stamps set only in the value branch, so a null property_use_code/land_acres leaves them unaccounted rather than absent-verified."
+  },
+  "testPlan": [
+    "compile-output identity check against the current pin (all 12 files) BEFORE editing anything -- ran first, not after",
+    "3 stale tests updated to the new pin/semantics (ENGINE_SHA prefix, the null-at-source table's blanket claim, the module docstring match)",
+    "1 test reframed (missing-tax_year case) plus 1 new test proving the R6 emission fires end-to-end through this repo's own import surface, with its own falsifier (a join miss on the same field stays unaccounted)",
+    "drift guard run locally against the actual hauska-engine checkout at the new pin before any PR -- ok:true"
+  ],
+  "willNot": [
+    "run from a laptop; --apply stays Cloud Run only",
+    "touch schema.sql or any DDL",
+    "widen living_area_sqft's >0 rule or convert a real $0 to absent-verified",
+    "resolve Williamson's crosswalk residue by any means other than what R1B already proved"
+  ]
+}

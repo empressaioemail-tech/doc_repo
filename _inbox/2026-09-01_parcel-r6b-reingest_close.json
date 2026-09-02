@@ -1,0 +1,101 @@
+{
+  "lane": "PARCEL-R6B-REINGEST",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T03:40:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-r6b-reingest_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main d10fa86",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-r6b-reingest_cp1.json",
+    "_inbox/2026-09-01_parcel-r6b-reingest_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r6b (merged to main 9b19ab7)",
+    "engineSha": "a38cbb22eda23637d7a56e104456aa4e7237fc25",
+    "imageDigestFinal": "sha256:32e05ca345a233bf9a5ac881bc3107004ad60f2ef22326e19dd5592946e5d31e"
+  },
+  "missionPremise": "PARCEL-R6-CADNULL (closed) built the cad-null-verified emission in hauska-engine, vendored via a manual compile-and-check-in process (not a build-time fetch). Two planner addenda superseded the dispatch's original 'Williamson stays unaccounted, if it moves STOP' negative control: the first deferred only Williamson's dollar rails pending the R1 crosswalk; the second (post-R1B close) lifted that deferral entirely once the crosswalk determined which Williamson row is genuinely value-bearing, requiring Williamson to run in the same pass as the other five counties and verification against the post-R1B store state rather than the (now superseded) gap ledger section 9 figures for that one county.",
+  "completionPredicate": "Met, after one real defect found and fixed mid-card: (1) engine vendored correctly (compile-output identity proven against the current pin before editing, only the expected file changed); (2) drift guard chain updated and passing, including a previously-unnoticed hardcoded CI checkout ref; (3) reportNullAtSourceMapping() corrected and two previously-undocumented gaps surfaced (exemption_codes array handling, landUseSource/acreageMethod companion-stamp scoping); (4) a genuine starved-input bug found (CAD_ROWS_SQL never selected tax_year, only ordered by it, so the emission silently refused on every row of every county despite reporting full success) and fixed with a regression test that would have caught it; (5) the six-county re-ingest re-run post-fix shows absent-verified appearing at exactly the sizes gap ledger section 9 predicted for five counties, and at the correct post-crosswalk residual sizes for Williamson; (6) zero-drift idempotency held on both the buggy and fixed runs; (7) negative controls (real $0 stays value, living>0-rule not widened, array-typed exemption_codes stays unaccounted) all verified.",
+  "scopeBasis": "hauska-factory only: the vendored engine module (recompiled, not hand-edited), the drift-guard provenance chain, reportNullAtSourceMapping(), and the CAD_ROWS_SQL starved-input fix. No engine-core change (the R6 module itself was correct and unchanged from what PARCEL-R6-CADNULL shipped; the defect was entirely in how this factory job fed it). No schema.sql change. Cloud Run only for both re-ingest executions.",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 61,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/61",
+      "mergeSha": "099c8d5dddd03f452ce30cd5ffec2aa9a03c3e31",
+      "title": "vendor engine a38cbb2 into the fill job",
+      "ciConclusion": "SUCCESS"
+    },
+    {
+      "repo": "hauska-factory",
+      "number": 62,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/62",
+      "mergeSha": "9b19ab7087802cfef694793a0a1b60ca591d1728",
+      "title": "CAD_ROWS_SQL must SELECT tax_year (starved-input fix)",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+  "cloudRunExecutions": [
+    {
+      "purpose": "first attempt, post-vendor, pre-fix",
+      "executionId": "factory-parcel-record-fill-dp8xd",
+      "runId": "7a751a28-a795-4e38-9f25-9c7dce9175a5",
+      "imageDigest": "sha256:3a044c2ca38f7cae968e6d172cb2b5b78b9dd65fac0fba839271573bc9f27268",
+      "result": "ok:true, drift:zero-drift on all six counties, but ZERO absent-verified cells anywhere -- the signal that led to the starved-input diagnosis"
+    },
+    {
+      "purpose": "second attempt, post-fix",
+      "executionId": "factory-parcel-record-fill-6nmkc",
+      "runId": "be6e8441-1ab9-4e49-910a-57a6f7b96e98",
+      "imageDigest": "sha256:32e05ca345a233bf9a5ac881bc3107004ad60f2ef22326e19dd5592946e5d31e",
+      "result": "ok:true, drift:zero-drift on all six counties, absent-verified appears at exactly the previously-unaccounted magnitudes"
+    }
+  ],
+  "whatContradictedTheCard": "The dispatch and both addenda assumed vendoring the engine would be sufficient to make the cad-null-verified semantic observable across the six counties. It was not: CAD_ROWS_SQL selected every CAD scalar field EXCEPT tax_year (using it only in ORDER BY to pick the latest row via DISTINCT ON), so cad.tax_year was undefined on every row this job ever built, and cadNullVerified's own fail-closed guard (refuse rather than invent a basis year) correctly refused every time. The first execution reported full success (ok:true, zero-drift, complete county coverage) while doing nothing new at all -- a starved mechanism reporting as a working one, exactly the failure mode ENFORCEMENT.md names. This was caught by treating an unchanged result after a real engine change as a reason to distrust the instrument rather than a confirmation of correctness, comparing the first execution's byRailState against Williamson's already-known R1B after-state and finding them byte-identical. The fix (select tax_year) was a two-line change verified with a falsifiable regression test (SELECT-list match, not ORDER-BY) plus an end-to-end fixture whose own falsifier (stripping tax_year from the same fixture) proves the positive assertion was not vacuous.",
+  "beforeAfterByRailAndCounty": {
+    "note": "Full verbatim per-county byRailState (before = first buggy execution, after = second fixed execution) is recorded in CP2. Headline cross-checks against gap ledger section 9 for the five non-Williamson counties, all exact matches: McLennan (48309) assessedValue 114254, livingAreaSqft 114254, yearBuilt (Travis 48453) 380917, livingAreaSqft (Travis) 380917, Bastrop (48021) livingAreaSqft 62256, Hays (48209) livingAreaSqft 63202, Caldwell (48055) livingAreaSqft 11713 -- every figure measured equals the pre-recorded ledger sizing exactly.",
+    "williamson": "landValue/improvementValue/assessedValue: absent-verified 24966 / value 257604 (matches R1B's after-state unaccounted count converting 1:1 to absent-verified, value side unchanged). livingAreaSqft: absent-verified 49199 / value 233371. yearBuilt: absent-verified 49226 / value 233344. marketValue: absent-verified 4190 / value 278380. legalDescription: absent-verified 16 / value 282554."
+  },
+  "constraintsHonored": [
+    "compile-output identity verified against the current pin BEFORE any file was touched",
+    "only the file with real content changes (ingest-existing.js) was staged; the other 11 vendored files produced zero net diff",
+    "schema.sql untouched; drift guard passes",
+    "Cloud Run only for both re-ingest attempts, --apply gated by LAPTOP_WRITE_FROZEN unchanged",
+    "living_area_sqft's >0 rule not widened; a real stored $0 verified to land as value, never absent-verified",
+    "seat-worktree gate respected: when a branch-scope mistake was made mid-fix (checking out an unregistered branch name in this worktree), the gate's refusal was honored by switching back rather than working around it"
+  ],
+  "scratch": {
+    "LESSON": [
+      "After any change to a mechanism that is supposed to newly fire on existing data, treat a run that reports full success with NO observable change as suspicious by default -- especially when a comparison point exists (here: Williamson's known R1B after-state) that makes 'literally nothing moved' immediately checkable.",
+      "A field used only in ORDER BY (to select the latest row via DISTINCT ON) is easy to forget in the SELECT list, and the resulting bug is invisible in every existing test that doesn't specifically assert the SELECT clause's contents -- the fix here required a falsifiable SQL-text assertion, not just a passing integration test.",
+      "When a worktree is registered to a specific branch by the seat topology, switching branches inside it is refused by the seat-worktree-gate hook even for a same-seat, same-card follow-on fix -- go back to the registered branch rather than trying to work around the gate."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T01:29:28Z hauska-factory PR #61 MERGED 099c8d5; PR #62 MERGED 2026-09-02T03:28:54Z 9b19ab7",
+      "2026-09-02T01:3xZ execution dp8xd (buggy, pre-fix): ok:true all six counties, ZERO absent-verified anywhere",
+      "2026-09-02T03:3xZ execution 6nmkc (fixed): ok:true all six counties, absent-verified appears matching gap ledger section 9 exactly for five counties and R1B's post-crosswalk state for Williamson"
+    ],
+    "DEAD-END": [
+      "Attempting to commit the tax_year fix on a freshly-created branch name inside the already-registered r6b-reingest worktree -- the seat-worktree-gate refuses any branch other than the one named in seat_register.json for that worktree path; switch back to the registered branch instead."
+    ],
+    "OPEN": [
+      "exemption_codes (text[]) is never stamped as a value by this module regardless of R6 -- a populated array stays unaccounted forever. Documented in reportNullAtSourceMapping's note but not fixed; a future card could add array support if exemption codes become a product priority.",
+      "landUseSource and acreageMethod never get their own absent-verified companion stamp when property_use_code/land_acres is null (they stay unaccounted) -- documented, not fixed; consistent with those being derived/companion fields rather than direct CAD scalars, but worth a future ruling on whether that's the intended semantic."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_parcel-r6b-reingest_cp1.json",
+    "_inbox/2026-09-01_parcel-r6b-reingest_cp2.json",
+    "_inbox/2026-09-01_parcel-r6b-reingest_close.json",
+    "_queue/cards/parcel-r6b-reingest/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "exemption_codes (text[]) is never stamped as a value; landUseSource/acreageMethod never get their own absent-verified stamp on a null parent field. Both documented in reportNullAtSourceMapping; neither fixed. Future card should rule on whether these are intended gaps or defects.",
+      "owner": "planner / future parcel-record card",
+      "plan_row": "F-01"
+    }
+  ]
+}

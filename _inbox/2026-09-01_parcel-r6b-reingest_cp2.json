@@ -1,0 +1,48 @@
+{
+  "lane": "PARCEL-R6B-REINGEST",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T03:35:00Z",
+  "pilot": {
+    "prCiGreen": [
+      { "pr": 61, "title": "vendor engine a38cbb2 into the fill job", "mergeSha": "099c8d5dddd03f452ce30cd5ffec2aa9a03c3e31", "tests": "30/30 file-scoped, 494/496 suite (2 pre-existing skip)" },
+      { "pr": 62, "title": "CAD_ROWS_SQL must SELECT tax_year (starved-input fix)", "mergeSha": "9b19ab7087802cfef694793a0a1b60ca591d1728", "tests": "32/32 file-scoped, 496/498 suite (2 pre-existing skip)" }
+    ],
+    "firstExecutionFoundNothing": {
+      "what": "Deployed the vendored-engine image (digest sha256:3a044c2c...) and ran --apply --twice for all six counties in one execution (factory-parcel-record-fill-dp8xd, runId 7a751a28-a795-4e38-9f25-9c7dce9175a5). All six counties reported ok:true and drift:zero-drift. The full byRailState breakdown for every county showed ONLY value/unaccounted kinds -- zero absent-verified cells anywhere, on any rail, in any county, including Williamson where the numbers were byte-identical to R1B's pre-R6B after-state (24,966/257,604 on the dollar rails, unchanged to the row).",
+      "whyThisWasTheSignalToStop": "A real engine change that produces zero observable effect on a run that reports full success is exactly the case ENFORCEMENT.md names: 'a convenient result is a reason to distrust the instrument, not a result.' Reported nothing changed rather than treating unanimous unaccounted-to-nothing as confirmation the emission simply had no candidates."
+    },
+    "diagnosis": {
+      "root_cause": "CAD_ROWS_SQL selected every CAD scalar EXCEPT tax_year; tax_year appeared only in `ORDER BY prop_id, tax_year DESC` (used by DISTINCT ON to pick the latest row per prop_id). Every cad row object this job built therefore had cad.tax_year === undefined. cadNullVerified's own guard (`if (cad.tax_year == null) return null;`) treats undefined the same as null and refuses the emission -- correctly, by design, to avoid inventing a basis year. The result: the emission was reachable and correctly scoped (proven in PARCEL-R6-CADNULL's own tests) but its one required input was never supplied by this caller. A starved mechanism, per ENFORCEMENT.md's own vocabulary: 'it has a trigger and correct logic but its input is never supplied, so it runs and does nothing. Both report as success.'",
+      "confirmedBy": "grep on the deployed source confirmed tax_year absent from the SELECT list; a new regression test asserts the SELECT-list text directly (not ORDER BY) as the falsifiable check."
+    },
+    "fix": "Added tax_year to CAD_ROWS_SQL's SELECT list. No other query needed the same fix (grepped every ORDER BY in the file; the other two are plain `ORDER BY prop_id` with no companion field).",
+    "secondExecutionConfirmed": {
+      "what": "Rebuilt and redeployed (digest sha256:32e05ca3...), re-ran the identical six-county --apply --twice execution (factory-parcel-record-fill-6nmkc, runId be6e8441-1ab9-4e49-910a-57a6f7b96e98). All six counties ok:true, drift:zero-drift. Every previously-unaccounted count in the first run's byRailState now shows absent-verified at the IDENTICAL magnitude (value counts unchanged to the row), confirming the fix converts exactly the intended class and nothing else moved."
+    }
+  },
+  "gapLedgerCrossCheck": {
+    "note": "Section 9's sizing predates R1B and R6; it remains the correct target for the five non-Williamson counties (nothing else touched their CAD-null population between the ledger and this card) and is explicitly NOT the target for Williamson per the second addendum.",
+    "exactMatches": [
+      { "county": "48309 (McLennan)", "rail": "assessedValue", "ledgerNull": 114254, "measuredAbsentVerified": 114254 },
+      { "county": "48453 (Travis)", "rail": "livingAreaSqft", "ledgerNull": 380917, "measuredAbsentVerified": 380917 },
+      { "county": "48453 (Travis)", "rail": "yearBuilt", "ledgerNull": 380917, "measuredAbsentVerified": 380917 },
+      { "county": "48021 (Bastrop)", "rail": "livingAreaSqft", "ledgerNull": 62256, "measuredAbsentVerified": 62256 },
+      { "county": "48209 (Hays)", "rail": "livingAreaSqft", "ledgerNull": 63202, "measuredAbsentVerified": 63202 },
+      { "county": "48055 (Caldwell)", "rail": "livingAreaSqft", "ledgerNull": 11713, "measuredAbsentVerified": 11713 },
+      { "county": "48309 (McLennan)", "rail": "livingAreaSqft", "ledgerNull": 114254, "measuredAbsentVerified": 114254 }
+    ],
+    "conclusion": "Every cross-checked figure matches the pre-recorded gap ledger sizing exactly. No unexplained deltas found for the five non-Williamson counties."
+  },
+  "williamsonPostCrosswalkState": {
+    "dollarRailsUnchangedFromR1B": { "landValue": "absent-verified 24966 / value 257604", "improvementValue": "absent-verified 24966 / value 257604", "assessedValue": "absent-verified 24966 / value 257604" },
+    "explanation": "These three rails show absent-verified EXACTLY where R1B's after-state showed unaccounted (24,966), and value unchanged (257,604). This is the expected outcome per the second addendum: the crosswalk-matched residue (ambiguous or zero-match R-prefix accounts, ~24,966) has no crosswalk-supplied value, but IS a matched CAD row (via identity join on the R-prefix key itself) with a real tax_year, so the null on that matched row is now correctly certified absent-verified rather than left an unlooked gap.",
+    "livingYearPartialCoverage": { "livingAreaSqft": "absent-verified 49199 / value 233371", "yearBuilt": "absent-verified 49226 / value 233344", "note": "These counts are lower on the absent-verified side and higher on value than the dollar rails because R1B's crosswalk already converted most of the matched population to real values; the remaining absent-verified count is the genuine subset where even the crosswalk-matched numeric row itself lacks living_area_sqft/year_built." },
+    "marketValueAndLegalDescription": { "marketValue": "absent-verified 4190 / value 278380", "legalDescription": "absent-verified 16 / value 282554", "note": "Consistent with R1B: these fields were mostly already present on the R-prefix row's own data before any crosswalk; only the small residual null count is newly certified." }
+  },
+  "negativeControls": [
+    { "check": "living_area_sqft = 0 must never become absent-verified", "result": "PASS -- the gap ledger's own 'livingAreaSqft zero' row is 0 across all six counties (no stored zeros exist in this rail at all in the current data), so the >0 carve-out was not exercisable this run, but the module code path (livingAreaIsZero, a separate branch from isCadNullNumber) is unchanged from R6's own tests, which do exercise it directly." },
+    { "check": "improvement_value = 0 must land as value 0, never absent-verified", "result": "PASS by construction -- stampNumber routes non-null (including 0) to stampValue, never stampAbsent; verified directly in this card's own new test and in PARCEL-R6-CADNULL's test suite." },
+    { "check": "a populated exemption_codes array must stay unaccounted, never fabricated as a value or wrongly marked absent-verified", "result": "PASS -- 48055/48209/48453/48491 all show a mix of absent-verified (genuine null) and unaccounted (a real text[] value the module does not recognize) on exemptionCodes, exactly matching the newly-documented reportNullAtSourceMapping note." }
+  ]
+}
