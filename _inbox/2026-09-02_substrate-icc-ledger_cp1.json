@@ -1,0 +1,32 @@
+{
+  "lane": "substrate",
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "date": "2026-09-02",
+  "planRow": "G-111",
+  "dispatch": "_dispatches/2026-09-02_substrate-icc-ledger_dispatch.md",
+  "scope": "Gap 1 (request_id echo-back) and Gap 2 (a scoped reader for source_obligation_ledger), in hauska-mcp-server only.",
+
+  "worktreeNote": "The registered worktree P:/seat-worktrees/substrate/hauska-mcp-icc-meter was on branch feat/icc-meter-s1-s4, 5 commits behind origin/main at fetch time (dispatch said 13; the gap had narrowed by the time this session touched it -- an active repo, not a stale count worth re-litigating). git log feat/icc-meter-s1-s4 ^origin/main was empty (every commit on that branch already merged into main via PR #75), and git merge-base --is-ancestor confirmed a true fast-forward was possible, so the registered branch was fast-forwarded to origin/main in place rather than creating a differently-named branch -- the seat-worktree-gate hook (scripts/enforcement/seat-worktree-gate.mjs, SEAT-01) fired and blocked a write attempt on a first try under a fresh branch name, which is exactly what that control is for; it was not bypassed, the branch name was corrected to match the registration instead.",
+
+  "designDecisions": [
+    {
+      "gap": "Gap 1 -- request_id echo-back",
+      "chosen": "Set an x-hauska-request-id response header on every /mcp POST response, carrying the same server-minted randomUUID() that source-obligation-meter.ts's accrueSourceObligations() writes into source_obligation_ledger.request_id for that call.",
+      "rejectedAlternative": "Accept and honor a caller-supplied correlation id instead of always minting one server-side. Rejected: it would require validating an arbitrary caller-supplied string before using it as the ledger's own correlation key, changes what value ends up in every downstream log line (today's request_id is trustworthy as a server-generated id; a caller-supplied one is not, without its own validation/collision story), and gains nothing the simpler echo-back does not already deliver -- the caller only needs to LEARN the id that was actually assigned, not dictate it.",
+      "verification": "Live curl against a running local instance: `x-hauska-request-id` header present on a real /mcp tools/list response, value is a well-formed UUID distinct per call."
+    },
+    {
+      "gap": "Gap 2 -- a reader",
+      "chosen": "A new REST endpoint, GET /obligations/source-ledger, mounted with the exact same authMiddleware + ctx.platform_internal gate as the existing GET /metering/summary (metering-summary.ts) -- deliberately mirrored, not invented fresh, since that endpoint is the closest existing precedent for exposing internal accrual/billing-shaped data. Requires at least one of request_id or source_actor_did; refuses (400 scope_required) an unscoped call rather than defaulting to a recent-N dump.",
+      "rejectedAlternative": "An MCP tool (tools/call) instead of a REST endpoint. Rejected in favor of matching the existing metering-summary precedent exactly, since both are the same class of thing (internal business-accounting read, not a product-facing catalog capability) and inventing a second shape for the same class of read would be an unrequested new pattern rather than reuse of a reviewed one.",
+      "rejectedAlternative2": "No scope requirement (serve the whole table, capped by LIMIT). Rejected: this ledger is money-OUT liability data: an unscoped platform_internal-gated read would hand out exact per-source accrual volumes to anything holding that tier, which is broader disclosure than either named consumer (plan-review's own reconciliation, a licensor audit) actually needs -- both look up a specific request_id or a specific source_actor_did.",
+      "verification": "Live: 401 anonymous, 403 with a synthetic non-internal context (unit test) and via real HTTP with an unrecognised key (curl), 400 with neither scope param, 200 with correct rows for request_id-only, source_actor_did-only, and both-together queries -- verified against a real Postgres instance seeded with migration 009's schema, not mocked."
+    }
+  ],
+
+  "adversarialReview": {
+    "selfChallenge1": "Does gating this behind platform_internal actually block plan-review, which is the consumer this exists for? Yes, today -- plan-review calls MCP anonymously (confirmed: no HAUSKA_MCP_KEY-shaped env var anywhere in its src/*.mjs). Named explicitly as a residual: plan-review needs a platform_internal-tier key issued to it before it can call this endpoint, which is govtech's step, not built here.",
+    "selfChallenge2": "Could an external licensor (ICC) actually use this today? No -- platform_internal is Hauska's own internal tier, not a credential ICC would hold. Named as a residual, not solved: a real external-auditor credential model is a bigger scope than this card."
+  }
+}

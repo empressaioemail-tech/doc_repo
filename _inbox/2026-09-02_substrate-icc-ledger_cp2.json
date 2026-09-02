@@ -1,0 +1,39 @@
+{
+  "lane": "substrate",
+  "checkpoint": "CP2",
+  "type": "pilot/mid-work",
+  "date": "2026-09-02",
+  "planRow": "G-111",
+  "dispatch": "_dispatches/2026-09-02_substrate-icc-ledger_dispatch.md",
+
+  "verifiedThisCheckpoint": [
+    {
+      "claim": "The four files git status showed as modified before any work here (migrations/011_metering_events_authorized.sql, scripts/violation-probes.mjs, tests/billed-retired.test.ts, tests/plan-review-tools.test.ts) are a CRLF line-ending artifact, not another session's live edits.",
+      "method": "git diff --stat on those four paths returned empty (zero content diff) despite git status listing them modified; mtimes on all four are 2026-08-27, five days stale, not live. Left untouched -- not staged, not 'cleaned up'."
+    },
+    {
+      "claim": "npx tsc --noEmit is clean after both changes.",
+      "method": "Ran directly; zero output, zero errors."
+    },
+    {
+      "claim": "The full existing test suite still passes after both changes.",
+      "method": "node --test (via npm test, tsx loader) -- 537/537 passing, run twice (once right after the new test file was added, once again right before staging)."
+    },
+    {
+      "claim": "The new source-obligation-reader.ts query logic is correct against a real Postgres, not just plausible-looking SQL.",
+      "method": "Applied migrations/009_source_obligation_ledger.sql to a scratch database (hauska_mcp_g111_scratch, dropped after), seeded 3 rows across 2 distinct source_actor_did values and 3 distinct request_id values, then invoked the real exported getSourceObligationLedger handler directly (DATABASE_URL pointed at the scratch DB) for four cases: request_id-only (1 row back, correct row), source_actor_did-only (2 rows back, both correct), both params combined where they do not both match the same row (0 rows -- confirmed the AND is a real AND, not silently OR'd), and no params (400 scope_required, no query even attempted)."
+    },
+    {
+      "claim": "Gap 1's fix actually reaches a live HTTP response header, not just the in-process ctx object.",
+      "method": "Started the real server (npx tsx src/index.ts) against the same scratch database on a local port; curl -i against a live POST /mcp tools/list call showed `x-hauska-request-id: 7a024736-571f-472b-8b70-1f5518156dd4` in the response headers."
+    },
+    {
+      "claim": "The new endpoint's auth gate matches the live behavior of its precedent (metering/summary), including a detail the unit tests alone would not have caught.",
+      "method": "curl against the live server: anonymous GET /obligations/source-ledger returned 403 (platform_internal_required), not 401 -- because authMiddleware always populates req.hauska with a default free_anonymous context for unauthenticated callers rather than leaving it undefined, so the handler's own `if (!ctx) return 401` branch is unreachable through the real mounted route. This exactly matches the unmodified metering-summary.ts's own shape and its own test file's same pattern (which also exercises the ctx:undefined case only via a direct, bypassing test harness) -- not a defect introduced here, a pre-existing, already-shipped pattern reused as-is."
+    }
+  ],
+
+  "notPursuedAndWhy": [
+    "Did not create a real hashed platform_internal API key and drive the reader through the full authenticated HTTP path end to end. The auth gate itself (authMiddleware + ctx.platform_internal) is pre-existing, unmodified code already proven live on /metering/summary; re-verifying it via a from-scratch api_keys migration chain would have been re-testing code this card did not touch, for marginal confidence beyond what the direct-handler DB test and the live 401/403 curl checks already established."
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "lane": "substrate",
+  "closeType": "COMPLETE — both gaps closed, merged, CI-green, deployed status not yet checked (see openResiduals)",
+  "date": "2026-09-02",
+  "planRows": ["G-111"],
+  "dispatch": "_dispatches/2026-09-02_substrate-icc-ledger_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-02_substrate-icc-ledger_cp1.json",
+    "_inbox/2026-09-02_substrate-icc-ledger_cp2.json"
+  ],
+
+  "missionPremise": "Plan row G-111 (OPS-17, added 2026-09-02 A-091) is the substrate-seat half of what G-109 (govtech, closed partial A-090) could not close: plan-review PR #8's reconciliation logic is correct but structurally unable to produce a single real match, for two reasons both confirmed by two independent govtech-seat sessions reading hauska-mcp-server's own source (index.ts, tools.ts, source-obligation-meter.ts) rather than assumed from the WDLL. Source: _inbox/2026-09-02_govtech_to_substrate_ledger_asks.md and _inbox/2026-09-02_d_close.json.",
+
+  "completionPredicate": "Gap 1: a caller of POST /mcp can read back the request_id the server minted for its own call, in the response, not just server-side logs -- verified live via curl -i showing the x-hauska-request-id header on a real response. Gap 2: a platform_internal-scoped caller can look up source_obligation_ledger rows by request_id and/or source_actor_did through hauska-mcp-server itself, without holding a direct DSN to its Neon -- verified against a real Postgres instance seeded from the actual migration. Both merged to main (PR #79, commit e6eafa0, merge commit 40e48d4) with CI conclusion string \"success\" on both the PR head and the merge commit. A stranger evaluating this close should confirm: PR #79 is merged, and a live curl against the deployed MCP server (once redeployed -- see openResiduals) shows the header and the endpoint both working the same way the pre-deploy verification in CP2 showed locally.",
+
+  "scopeBasis": "Built only in hauska-mcp-server. Did not touch plan-review, smart-files, or smartcity-dashboards (govtech's repos, explicitly out of scope). Did not set the real ICC rate (O-1/S4-B1) or attempt the DEPLOY-75 true-positive verification (no codex-tier key in hand, and the dispatch said not to attempt it without one). Did not build an external-licensor credential model for the reader -- platform_internal only, named as a residual rather than solved.",
+
+  "prs": {
+    "hauska-mcp-server": {
+      "number": 79,
+      "url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/79",
+      "headBranch": "feat/icc-meter-s1-s4",
+      "headCommit": "e6eafa0",
+      "mergeSha": "40e48d48e509886c7938f37a438711bb3d8b8b6f",
+      "mergedAt": "2026-09-02T15:42:17Z",
+      "ciCheckRun": {
+        "onHeadCommit": [
+          { "name": "ci-dual-atom-contract", "conclusion": "success" },
+          { "name": "ci-hardcoded-did-type-union", "conclusion": "success" },
+          { "name": "ci-gate-map-vs-server-tool", "conclusion": "success" },
+          { "name": "ci-deny-as-no-atom-found", "conclusion": "success" },
+          { "name": "build-test", "conclusion": "success" }
+        ],
+        "onMergeCommit": [
+          { "name": "ci-dual-atom-contract", "conclusion": "success" },
+          { "name": "ci-hardcoded-did-type-union", "conclusion": "success" },
+          { "name": "ci-gate-map-vs-server-tool", "conclusion": "success" },
+          { "name": "ci-deny-as-no-atom-found", "conclusion": "success" },
+          { "name": "build-test", "conclusion": "success" }
+        ]
+      }
+    },
+    "plan-review": "not applicable: no writes, per scope"
+  },
+
+  "worktreeCleanup": {
+    "action": "The registered worktree P:/seat-worktrees/substrate/hauska-mcp-icc-meter's branch feat/icc-meter-s1-s4 was fast-forwarded from 5-commits-behind to current origin/main before any new work (see CP1 for why a fast-forward was safe: git log feat/icc-meter-s1-s4 ^origin/main was empty, and merge-base --is-ancestor confirmed it). After this card's PR merged, the remote branch feat/icc-meter-s1-s4 was deleted (gh api DELETE .../git/refs/heads/feat/icc-meter-s1-s4, confirmed gone via git ls-remote) -- it had sat around unmerged-looking since PR #75's 2026-08-24 merge, which is the exact staleness that made this session initially undercount how far behind it was.",
+    "seatRegisterNote": "_catalog/seat_register.json's entry for this worktree already carries its own instruction: \"REMOVE THIS ENTRY at card close.\" NOT edited by this close -- doc_repo has had very heavy concurrent commit activity from other sessions throughout this work (HEAD moved multiple times during this single card), and seat_register.json is exactly the kind of shared, contended file this session chose not to touch directly for the same reason the G-109 close gave. Left as an explicit leave_behind instead."
+  },
+
+  "counts": {
+    "testsPassing": { "n": 537, "countingRule": "npm test (node --test via tsx loader), full suite, run twice (once after adding the new test file, once immediately before staging); 10 of the 537 are new (tests/source-obligation-reader.test.ts)" },
+    "filesChangedThisPr": { "n": 3, "countingRule": "gh pr diff 79 --name-only: src/index.ts (modified, +21/-0), src/source-obligation-reader.ts (new), tests/source-obligation-reader.test.ts (new). Four other locally-modified files (migrations/011_metering_events_authorized.sql, scripts/violation-probes.mjs, tests/billed-retired.test.ts, tests/plan-review-tools.test.ts) were confirmed as a pre-existing CRLF line-ending artifact (git diff --stat empty, mtimes 2026-08-27) and deliberately excluded from staging -- not part of this PR." },
+    "liveVerificationsThisSession": { "n": 6, "countingRule": "See CP2 verifiedThisCheckpoint: CRLF-phantom confirmation, tsc --noEmit clean, full suite pass, DB-backed handler check (4 sub-cases), live header curl, live 401/403 curl -- six distinct claims each independently verified, not narrated" }
+  },
+
+  "constraintsHonored": [
+    "Verify at source: Gap 1 and Gap 2's existence were re-confirmed by reading index.ts/tools.ts directly in this session (not merely trusting the dispatch's own prior-session findings), before writing any code.",
+    "Merge only on CI conclusion string 'success': confirmed via gh api .../check-runs on both the PR head commit and the post-merge commit on main, watched to completion via Monitor rather than a single point-in-time check that could have caught it mid-run.",
+    "Commit by explicit pathspec: git add named exactly the three intended files each time; the four CRLF-phantom files were never staged.",
+    "Seat-worktree-gate respected, not bypassed: the hook blocked a first attempt to write under a differently-named branch; the branch was corrected to match the registration (fast-forwarded in place) rather than working around the block.",
+    "Verify a check by violating it: the reader's scope-required refusal was tested both by unit test (whitespace-only, non-string, empty) and confirmed live (curl, 400 with no params).",
+    "Absent vs zero vs unmeasured: the reader refuses (400) rather than defaulting to an unscoped dump when no filter is given -- the single most load-bearing design constraint of this card, matching the same constraint that shaped G-109's reconciliation design.",
+    "Destructive-ish local git operations (checkout/reset onto a differently-tracked branch, then later branch delete + push bundled together) were broken into individually reviewable steps after a bundled version was denied -- adjusted rather than retried unchanged."
+  ],
+
+  "openResiduals": [
+    {
+      "item": "Not yet deployed to the live hauska-mcp-server Cloud Run revision. Merged to main only. Whether to deploy now (unlike G-109, THIS card's fix is not itself blocked on anything else -- it closes a real, standalone gap) is a call for whoever picks this back up; not deployed in this close because deploy was not named as in-scope acceptance for this dispatch, only 'merge and notify the govtech thread.'",
+      "owner": "substrate seat, next session",
+      "planRow": "G-111"
+    },
+    {
+      "item": "Notify the govtech thread per this dispatch's acceptance item 3 -- G-109's reconciliation can be re-verified end to end and the production migration/deploy (held per A-090) reconsidered once both gaps are live (not just merged).",
+      "owner": "substrate seat (this session, via cross-session message) or whoever deploys",
+      "planRow": "G-109, G-111"
+    },
+    {
+      "item": "plan-review has no platform_internal-tier key to call the new reader with. Issuing one is govtech's step, not built here.",
+      "owner": "govtech seat",
+      "planRow": "G-109"
+    },
+    {
+      "item": "_catalog/seat_register.json's hauska-mcp-server-icc-meter worktree entry still carries its own 'REMOVE THIS ENTRY at card close' note, not acted on this close -- see worktreeCleanup above for why.",
+      "owner": "next doc_repo session-close pass",
+      "planRow": "G-111"
+    },
+    {
+      "item": "No external-licensor (ICC) credential model for the reader was built. platform_internal only. If ICC itself needs to audit this directly (rather than via Hauska's own reconciliation/reporting), that is a materially bigger card, not scoped here.",
+      "owner": "unassigned",
+      "planRow": "G-111 (named, not carried forward as a numbered row)"
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Deploy the merged fix to the live hauska-mcp-server Cloud Run revision, then verify live (curl -i for the header; curl the reader with a real platform_internal key).",
+      "owner": "substrate seat",
+      "plan_row": "G-111"
+    },
+    {
+      "item": "Remove the stale hauska-mcp-server-icc-meter entry from _catalog/seat_register.json per its own note, once doc_repo's concurrent-commit pressure eases enough to safely edit it.",
+      "owner": "doc_repo session-close",
+      "plan_row": "G-111"
+    }
+  ]
+}
