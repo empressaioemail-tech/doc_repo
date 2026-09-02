@@ -1,0 +1,99 @@
+{
+  "lane": "PARCEL-R3-FLOOD",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T06:05:00Z",
+  "dispatch": "_dispatches/2026-09-01_parcel-r3-flood_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main d10fa86",
+  "checkpoints": [
+    "_inbox/2026-09-01_parcel-r3-flood_cp1.json",
+    "_inbox/2026-09-01_parcel-r3-flood_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r3 (merged to main 3084674)",
+    "imageDigest": "sha256:0b6dee4dfce4f43fd5e64fba6b1d2f0800bf3f9df0105d1d583385200b29b587"
+  },
+  "missionPremise": "Gap ledger section 10: parcel-record flood was unaccounted on all 981,407 rows; the two existing flood stores (LDT bake, hauska_mcp atoms) disagree AO vs AE on the same parcels. Operator go: 'it needs to be brought up to speed.' Phase 1 (CP1, gated before any write) required deriving a reconciliation rule from authority with a stated falsifier; Phase 2 required ingesting from the reconciled source with BFE/panel honesty and a legitimate sweep-based absent-verified emission.",
+  "completionPredicate": "Met. Phase 1: the rule (ST_PointOnSurface + ST_Contains against tx_fema_nfhl_flood_zone, never the proven-wrong tile-quantized bake, never the atom store's own separate defects) was stated, falsified live against the adjudication's own documented AO/AE headline case (POS=AE correct, TILE=AO wrong, reproduced today), and its performance validated (a materialized candidate-zone CTE measured 27.6x slower than a direct GiST-indexed join -- caught before committing to the slow approach). Phase 2: ingested for five of six counties (all but Caldwell, which has a pre-existing, isolated 100% geom gap in txgio_parcel unrelated to this card); zone/floodway from a fresh derivation, BFE recorded honestly (null stays null, never 0), panel effective date recorded as honestly absent with an explicit note (NFHL has no such column); swept-no-match parcels correctly earn absent-verified with the sweep as basis; the falsifier parcel verified in production post-ingest (zone=AE, not AO); an independently-computed sample match rate (99.40%) cross-checks the job's own reported rate (99.50%) for Bastrop.",
+  "scopeBasis": "hauska-factory only: new job src/jobs/flood-ingest.mjs, its test file, a writer-allowlist entry, a CLI command, and a cloudbuild deploy addition (factory-flood-ingest on the same image as factory-parcel-record-fill). No engine-core change -- the flood rail uses the engine's existing generic CompanionCellState; rich zone/floodway/BFE/panel detail lives in parcel_record_companion_row, the side table the engine's own doc comment names for this purpose. No schema.sql change (parcel_record_companion_row was already part of the committed schema, unused until this card). Cloud Run only for all six execution attempts (one dry-run, five --apply).",
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 63,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/63",
+      "mergeSha": "30846749253ccc68fd906bf6d9294e37198f3206",
+      "ciConclusion": "SUCCESS",
+      "tests": "15 new (SQL-shape falsifiers, payload-construction falsifiers including a real-0-BFE-must-survive case, allowlist registration and absence falsifier, dry-run isolation, multi-county apply) + full 511/513 suite green"
+    }
+  ],
+  "cloudRunExecutions": [
+    { "county": "48055", "mode": "dry-run", "result": "noGeom=24988/24988 -- the geom-gap discovery, correctly handled" },
+    { "county": "48021", "mode": "dry-run then apply", "result": "matched 61945, swept 311, noGeom 0; falsifier parcel verified zone=AE post-apply" },
+    { "county": "48209", "mode": "apply", "result": "matched 116389, swept 31, noGeom 0" },
+    { "county": "48309", "mode": "apply", "result": "matched 114126, swept 128, noGeom 0" },
+    { "county": "48453", "mode": "apply", "result": "matched 380208, swept 709, noGeom 0" },
+    { "county": "48491", "mode": "apply", "result": "matched 282362, swept 208, noGeom 0" }
+  ],
+  "totals": {
+    "fiveCountiesCoveredScanned": 956417,
+    "matched": 955030,
+    "swept": 1387,
+    "countingRule": "matched = a containing NFHL zone found and both parcel_record_cell (value) and parcel_record_companion_row written; swept = no containing zone found (a real coverage gap), parcel_record_cell set to absent-verified with the sweep as basis, no companion row; noGeom = txgio_parcel has no populated geom for this parcel, cell left untouched at unaccounted"
+  },
+  "whatContradictedTheCard": [
+    "The card's own CP1 falsifier attempt on its first try (parcel 48021:8727948, the AE/X mass-class headline) did NOT reproduce a divergence: both the point-on-surface and tile-centre methods returned X on the CURRENT tx_fema_nfhl_flood_zone table, because the adjudication's original AE-at-tile finding was specific to a live ArcGIS query at that time, not the bulk table this card reads (the adjudication's own text already noted 'bulk agrees X/X' for that parcel at both points). Recognizing that as 'this specific fixture doesn't diverge in the bulk table' rather than 'the rule is unfalsifiable' and picking a different documented fixture (48021:36521, the AO/AE case, which the adjudication explicitly says diverges within the bulk table itself) produced a genuine, reproducible falsifier.",
+    "A materialized candidate-zone CTE (a defensive design choice made before measuring) turned out to be 27.6x slower than a direct join, because materializing a CTE in Postgres drops the source table's GiST index -- the opposite of the intended optimization. Caught by running EXPLAIN ANALYZE before committing to the approach, not after deploying it.",
+    "Caldwell (48055) has zero populated geom in txgio_parcel county-wide -- discovered only because the first dry-run's noGeom count was suspiciously total (100%), which was checked directly rather than assumed to be a job bug or genuine sweep result. This is a pre-existing data gap this card did not create and cannot fix; it blocks not just flood but any future geom-dependent rail for this one county specifically."
+  ],
+  "gtmFindingsPlainWords": "The reconciled flood determination is reliable for the two fields that matter most for a basic hazard disclosure -- which FEMA zone a parcel sits in, and whether it's in a floodway -- with match rates above 99.5% in five of six program counties (Caldwell blocked entirely by a separate, pre-existing geometry gap). It is NOT reliable, and cannot be made reliable from this source, for the two fields that would make the record actionable for insurance or construction purposes: Base Flood Elevation is populated for under 1% of matched parcels in every county (0% in Bastrop), and NFHL's bulk data carries no panel effective date at all. This is the honest shape of the wedge: a real zone determination, not yet a real elevation or regulatory-currency claim.",
+  "constraintsHonored": [
+    "reconciliation rule derived from authority (the adjudication's own point-on-surface finding), falsified live before any code was written",
+    "never read the bake or the atom store as a source for this ingest",
+    "BFE never coerced to 0; verified live (0 BFE cases exist in the codebase's test fixtures and are proven to survive as 0, distinct from null)",
+    "panel effective date never fabricated; explicit absence note on every matched row",
+    "swept-no-match correctly emits absent-verified with the sweep as basis, never silently skipped or treated as unaccounted",
+    "Cloud Run only for every write; LAPTOP_WRITE_FROZEN and the writer allowlist both proven to actually refuse (falsifier tests for each)",
+    "Caldwell excluded from --apply rather than forced through a query guaranteed to write nothing, once the geom gap was confirmed by direct count"
+  ],
+  "scratch": {
+    "LESSON": [
+      "A materialized CTE used as a spatial-join pre-filter can be actively harmful, not just unhelpful -- it strips the source table's index. Test the direct-join alternative before assuming a CTE pre-filter is the safe default.",
+      "When a card's own falsifier attempt returns 'no divergence found,' treat that as a signal to pick a better fixture, not as evidence the rule is already proven or unfalsifiable -- the adjudication document itself named which specific parcel had a genuine bulk-table-internal divergence, and re-reading it closely found the right fixture on the second try.",
+      "A suspiciously total (100%) failure/exclusion count in a per-county job result is worth a direct, targeted check before writing it off as 'this county has no coverage' -- it can be a genuine, narrow data gap (Caldwell's missing geom column) rather than a job defect, but only a direct check tells you which."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T05:43:52Z hauska-factory PR #63 MERGED 3084674...; CI SUCCESS",
+      "2026-09-02T0x-06:0xZ: six Cloud Run executions (1 dry-run Caldwell, 1 dry-run+apply Bastrop, 4 apply-only), all ok:true",
+      "Production spot-check: 48021:36521 companion payload.zone='AE' post-apply, matching CP1's live falsifier prediction exactly",
+      "txgio_parcel geom coverage by county (2026-09-02): 48021/48209/48309/48453/48491 all 100%; 48055 (Caldwell) 0% of 32,781 rows"
+    ],
+    "DEAD-END": [
+      "A MATERIALIZED candidate-zone CTE for the flood spatial join -- 21.8s/200-parcel page, 27.6x slower than a direct join, because materializing drops the GiST index.",
+      "A full-county (unbatched, ~75K point) independent verification query -- timed out; the job's own 200-row-page batching exists specifically because per-batch sizing keeps the index-nested-loop plan efficient, and a giant single query does not automatically inherit that."
+    ],
+    "OPEN": [
+      "Caldwell (48055) needs a txgio_parcel geom backfill before flood -- or any other geom-dependent rail -- can reach it at all. Not scoped to this card.",
+      "BFE and panel-effective-date sparsity is a genuine source limitation, not a pipeline gap; closing it would require a different acquisition (individual DFIRM panel documents or FEMA's LOMC feed), out of this card's scope and flagged here for a future GTM/product decision on whether that acquisition is worth pursuing."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_parcel-r3-flood_cp1.json",
+    "_inbox/2026-09-01_parcel-r3-flood_cp2.json",
+    "_inbox/2026-09-01_parcel-r3-flood_close.json",
+    "_queue/cards/parcel-r3-flood/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "Caldwell (48055) txgio_parcel has zero populated geom county-wide; flood (and any future geom-dependent rail) cannot reach it until a geom backfill lands.",
+      "owner": "planner / future geometry-backfill card",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "BFE and panel-effective-date sparsity from NFHL's bulk table (well under 1% BFE coverage, 0% panel-date coverage) is a real source limitation; a product decision is needed on whether to pursue a richer acquisition (DFIRM panel documents, FEMA LOMC feed) or ship the thin wedge as-is.",
+      "owner": "Nick / GTM",
+      "plan_row": "F-01"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "lane": "PARCEL-R3-FLOOD",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T04:10:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main d10fa86",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-r3 feat/parcel-r3-flood",
+    "reads": "PRODUCTION_NEONDB_URL/neondb via psql, default_transaction_read_only=on, 2026-09-02T04:0xZ",
+    "claimExpires": "2026-09-02T06:56:22.940Z"
+  },
+  "premisesReverified": {
+    "adjudicationReread": "_inbox/2026-08-20_c10_flood_store_adjudication.md read in full. Verdict: 'The atom store is right about the parcel. The bake store is right about a different point (the 0.005-degree FEMA tile centre), and wrong about the parcel.' Holds for AE/X, A/X, X/AE, and AO/AE (the 129-row headline) -- same tile-quantization mechanism in every class, not four separate defects.",
+    "gapLedgerSection10Reread": "tx_fema_nfhl_flood_zone confirmed live: fld_zone (AO, AE exist), zone_subty (FLOODWAY subtype exists, text not boolean), static_bfe (column present, sampled null on first AE rows), dfirm_id (community/DFIRM id, not a panel+suffix), no panel-effective-date column at all.",
+    "schemaCheck": "\\d tx_fema_nfhl_flood_zone and \\d txgio_parcel both confirmed live: both carry a native PostGIS geometry(Geometry,4326) column named geom with a GiST index, in addition to the jsonb geometry column. The spatial join below uses the native geom columns, never the jsonb."
+  },
+  "reconciliationRule": {
+    "statement": "Authoritative flood zone for a parcel is the tx_fema_nfhl_flood_zone polygon that ST_Contains the parcel's ST_PointOnSurface(txgio_parcel.geom). Never the bake's tile-quantized lookup (round the parcel centroid to the nearest 0.005-degree FEMA tile, then query that tile's centre) -- that mechanism answers for a different point up to several hundred meters away and is wrong whenever the parcel sits near a zone boundary, which is exactly where a flood determination matters most.",
+    "why": "ST_PointOnSurface guarantees a point ON the parcel's own polygon (unlike ST_Centroid/vertex-mean, which can fall outside a concave or multi-part parcel -- the adjudication's W-3/W-4 findings). The tile quantization is a cache-key optimization for a per-tile FEMA API call, not a claim about the parcel; treating the tile's answer as the parcel's answer is a category error the adjudication proved wrong on 9 concrete parcels across every disagreement class.",
+    "sourceChosenOverBakeAndAtom": "Read tx_fema_nfhl_flood_zone directly (never the LDT bake, which is proven wrong by mechanism; never the hauska_mcp atom store, which has its own separate, real defects noted in the adjudication -- W-5 fail-open on a non-standard SFHA flag value, W-3/W-4 centroid issues on concave/multi-part parcels -- that this card does not want to inherit by proxy). Computing ST_PointOnSurface directly against txgio_parcel.geom and joining to the NFHL bulk table is a fresh, independently-correct derivation, not a copy of either existing writer's mechanism."
+  },
+  "falsifierRunLive": {
+    "method": "For a parcel the adjudication already proved has a genuine bulk-table-internal tile-vs-point divergence (48021:36521, the AO/AE headline case: 'Live POS AE... Live TILE AO... Bulk agrees on both points'), computed BOTH methods live against the CURRENT tx_fema_nfhl_flood_zone table and compared.",
+    "query": "WITH p AS (SELECT ST_PointOnSurface(geom) AS pos, ST_Centroid(geom) AS ctr FROM txgio_parcel WHERE county_fips='48021' AND prop_id='36521'), tile AS (SELECT ST_SetSRID(ST_MakePoint(round((ST_X(ctr)/0.005)::numeric)*0.005, round((ST_Y(ctr)/0.005)::numeric)*0.005), 4326) AS tile_pt FROM p) SELECT 'POS' method, n.fld_zone FROM p JOIN tx_fema_nfhl_flood_zone n ON ST_Contains(n.geom, p.pos) UNION ALL SELECT 'TILE', n.fld_zone FROM tile t JOIN tx_fema_nfhl_flood_zone n ON ST_Contains(n.geom, t.tile_pt)",
+    "result": "POS (the chosen rule) = AE, matching the adjudication's adjudicated-correct answer. TILE (the rejected, bake-equivalent mechanism) = AO, matching the KNOWN-WRONG bake value on this exact parcel. Reproduced live, today, on the current table state -- not merely cited from the 2026-08-20 report.",
+    "firstAttemptWasNotAFalsifier": "The first parcel tried (48021:8727948, the AE/X mass-class headline) gave X under BOTH methods on the CURRENT table, because the adjudication's own text already noted bulk agrees X/X on that parcel at both points -- only the LIVE ArcGIS edition (not the bulk table this card reads) disagreed with bulk there. Recognizing that result as 'my query found no live divergence for this specific fixture' rather than 'my rule is unfalsifiable' led to picking 36521 instead, which the adjudication text explicitly documents as a genuine bulk-table-internal disagreement.",
+    "disagreementCountResolved": "This card resolves the mechanism the adjudication names as producing the majority of the 37,331 two-store disagreements (AE/X 16,022 + A/X 9,145 + X/AE 6,732 + X/A 4,824 + AO/AE 129 = 36,852 of 37,331 relayed from Q5), by never computing a tile-quantized point in the first place. It does not re-run the 533,867-row join (RELAYED, not re-derived, per the adjudication's own caveat) and does not claim a new count of remaining disagreements -- the rule change eliminates the MECHANISM, not a specific counted set of rows."
+  },
+  "companionShapeDesign": {
+    "discovery": "The 'committed companion row shape' the dispatch names already has a home: migrations/0007_parcel_record.sql defines parcel_record_companion_row (place_key, rail_key, row_index, payload jsonb, source, vintage) as a side table, exactly matching the engine's own doc comment on CompanionCellState: 'Companion rails carry rows in a side table; the cell still holds exactly one state.' No engine-core change is needed to carry zone/floodway/BFE/panel/vintage detail -- it lives in payload, keyed by (place_key, rail_key='flood', row_index=0).",
+    "cellState": "parcel_record_cell for rail='flood' uses the EXISTING generic CompanionCellState, unchanged: {kind:'value', disposition:'rows', rowCount:1, source:'tx_fema_nfhl_flood_zone', vintage:<source_vintage>} when a containing zone is found; {kind:'absent-verified', basis:{...sweep detail...}} when swept with no containing zone (CompanionCellState already includes ScalarAbsentVerifiedCell as a union member -- verified by reading cell-state.ts before designing this, not assumed); untouched (stays whatever instantiateParcelRecord set, i.e. unaccounted) for any parcel outside this card's sweep.",
+    "companionRowPayload": "{zone: fld_zone, floodway: zone_subty ILIKE '%FLOODWAY%', bfe: static_bfe (JSON null when the column is null -- never coerced to 0), dfirmId: dfirm_id, panelEffectiveDate: null with an explicit noteField stating NFHL carries no panel-effective-date column, method: 'point-on-surface', sourceVintage: source_vintage}."
+  },
+  "performanceValidation": {
+    "firstAttemptFailed": "A MATERIALIZED CTE pre-filtering candidate zones by county (dfirm_id) executed in 21,772ms for one 200-parcel page of Travis (the largest county's zone set, 5,699 rows) -- EXPLAIN showed 'CTE Scan on county_zones' looped 200 times (once per parcel point) doing a full unindexed scan each time, because materializing a CTE drops the source table's GiST index entirely.",
+    "fixedApproach": "Removed the MATERIALIZED CTE; joined parcel points directly against tx_fema_nfhl_flood_zone with ST_Contains(geom, point) AND left(dfirm_id,5)=county, letting the planner use tx_fema_nfhl_flood_zone_geom_gist_idx as a per-point index scan. Same page: 788ms, a 27.6x improvement. EXPLAIN confirms 'Index Scan using tx_fema_nfhl_flood_zone_geom_gist_idx ... loops=200' -- one indexed lookup per point, not a full scan.",
+    "extrapolated": "788ms/200 parcels x 1,905 pages (Travis, the largest county) ~= 25 minutes; well inside the Cloud Run job's task-timeout.",
+    "realSweptSample": "Same 200-parcel Travis page: 198 matched a zone, 2 swept with no containing polygon -- confirms the absent-verified/sweep-basis case is real, not just theoretical, at roughly a 1% rate in this sample."
+  },
+  "willNot": [
+    "read the bake (place_layer_snapshots tier2 facet) as a source for this ingest; it is proven wrong by mechanism",
+    "read the atom store (hauska_mcp.atoms flood-hazard-fact) as the source of truth either, to avoid inheriting its own separate W-3/W-4/W-5 defects by proxy",
+    "coerce a null static_bfe to 0, or fabricate a panel effective date",
+    "collapse 'swept, no intersecting zone' into the same state as 'never looked' (unaccounted) -- the former is absent-verified with the sweep as basis, per the dispatch's explicit ruling that this is a legitimate emission",
+    "touch engine-core; the companion_row side table already carries whatever shape a rail needs"
+  ]
+}

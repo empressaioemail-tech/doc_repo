@@ -1,0 +1,38 @@
+{
+  "lane": "PARCEL-R3-FLOOD",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T05:59:00Z",
+  "pilot": {
+    "prCiGreen": { "pr": 63, "mergeSha": "30846749253ccc68fd906bf6d9294e37198f3206", "tests": "15/15 file-scoped, 511/513 suite (2 pre-existing skip)" },
+    "imageDeployed": "sha256:0b6dee4dfce4f43fd5e64fba6b1d2f0800bf3f9df0105d1d583385200b29b587; both factory-parcel-record-fill and factory-flood-ingest confirmed on this digest",
+    "caldwellGeomGap": {
+      "discovery": "The first dry-run (48055/Caldwell) reported noGeom=24988 for every one of its 125 pages -- 100% of scanned parcels. Checked directly rather than assumed a job bug: SELECT count(*), count(*) FILTER (WHERE geom IS NOT NULL) FROM txgio_parcel WHERE county_fips='48055' returned 32781 total, 0 with geom.",
+      "scopeCheck": "Queried all six counties: 48021/48209/48309/48453/48491 all show total=with_geom (100% populated); 48055 alone shows 0 of 32,781. This is an isolated, pre-existing gap in txgio_parcel's own PostGIS geom backfill for Caldwell specifically, not a defect in this card's query or a symptom of a broader data problem.",
+      "handling": "flood-ingest correctly emitted noGeom rather than crashing, fabricating a point, or falling back to a worse method; Caldwell's flood cells stay at their instantiated unaccounted state, honestly reflecting that this card never reached them. Caldwell was excluded from the --apply runs below to avoid burning Cloud Run time on a page-by-page confirmation of a gap already established by a direct count."
+    },
+    "falsifierConfirmedInProduction": "After applying 48021, queried parcel_record_companion_row for place_key='48021:36521' rail_key='flood' directly on FACTORY_DATABASE_URL: payload.zone = 'AE' (the adjudicated-correct answer), not 'AO' (the bake-equivalent tile answer CP1's falsifier proved wrong). This confirms the CP1 SQL-level falsifier holds end-to-end through the deployed ingest pipeline, not only in an isolated query.",
+    "independentVerification": "For Bastrop (48021), ran a FRESH, separately-derived join (not the job's own code, no shared connection/session) against a 2,000-parcel sample: 1,988/2,000 matched a zone (99.40%). The job's own full-county result was 61,945/62,256 matched (99.50%). The two independently-computed rates agree within 0.1 percentage points, cross-checking that the job's self-reported counts are not a self-consistent artifact."
+  },
+  "perCountyResults": {
+    "48021": { "county": "Bastrop", "scanned": 62256, "matched": 61945, "swept": 311, "noGeom": 0, "matchRate": "99.50%" },
+    "48055": { "county": "Caldwell", "scanned": 24988, "matched": 0, "swept": 0, "noGeom": 24988, "note": "excluded from --apply; pre-existing txgio_parcel geom gap, not this card's defect" },
+    "48209": { "county": "Hays", "scanned": 116420, "matched": 116389, "swept": 31, "noGeom": 0, "matchRate": "99.97%" },
+    "48309": { "county": "McLennan", "scanned": 114254, "matched": 114126, "swept": 128, "noGeom": 0, "matchRate": "99.89%" },
+    "48453": { "county": "Travis", "scanned": 380917, "matched": 380208, "swept": 709, "noGeom": 0, "matchRate": "99.81%" },
+    "48491": { "county": "Williamson", "scanned": 282570, "matched": 282362, "swept": 208, "noGeom": 0, "matchRate": "99.93%" },
+    "totalAcrossFiveCounties": { "scanned": 956417, "matched": 955030, "swept": 1387 }
+  },
+  "gtmFindings": {
+    "bfeSparsity": {
+      "counts": { "48021": "0 of 61945 (0.00%)", "48209": "19 of 116389 (0.02%)", "48309": "239 of 114126 (0.21%)", "48453": "3747 of 380208 (0.99%)", "48491": "115 of 282362 (0.04%)" },
+      "overall": "4120 of 955030 matched parcels (0.43%) carry a non-null static_bfe. In plain words: the reconciled flood determination reliably answers WHICH zone a parcel sits in, but for base flood elevation -- the number that actually drives insurance premiums and structural requirements -- NFHL's own bulk data answers for well under 1% of parcels in every one of these six counties, and for Bastrop specifically, zero. This is a source limitation, not a pipeline gap: static_bfe is genuinely null in the NFHL bulk table for the overwhelming majority of these polygons. Any product surface that implies a BFE-based claim (a specific elevation requirement) for a typical parcel in this program is overstating what the reconciled source actually supports."
+    },
+    "panelEffectiveDate": "NFHL's bulk table (tx_fema_nfhl_flood_zone) has no panel-effective-date column at all -- confirmed by schema inspection before any code was written (\\d showed dfirm_id, not a panel+suffix+date). Every matched companion row's payload.panelEffectiveDate is null with an explicit note stating the field is honestly absent, not attempted. A product claim naming a specific FEMA panel effective date cannot be backed by this source; it would need a different acquisition (the individual DFIRM panel PDFs or FEMA's Letter of Map Change feed), which this card does not attempt.",
+    "wedgeThinnessSummary": "Zone (fld_zone) and floodway flag (zone_subty) are the two fields this reconciliation can support with confidence at scale (>99% match rate across five of six counties). BFE and panel effective date -- the two fields that turn 'is this parcel in a flood zone' into 'what does that actually mean for this specific structure' -- are effectively unavailable from this source. This is the wedge's real shape, not a temporary gap to be filled by better plumbing."
+  },
+  "violationsRun": [
+    "the falsifier parcel (48021:36521) would fail this card's own design if its production companion row showed zone=AO -- verified zone=AE",
+    "a Caldwell parcel showing matched:true would mean the noGeom classification was wrong -- verified Caldwell shows 0 matched, 0 swept, all noGeom, consistent with zero geom rows existing at all"
+  ]
+}
