@@ -1,0 +1,33 @@
+{
+  "lane": "PARCEL-B-READER",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T19:55:00Z",
+  "note": "Design + implementation phase complete, no deploy/merge yet. Records premise re-verification and every design decision made before touching production infrastructure.",
+  "premisesReVerified": [
+    "_decisions/2026-09-02_step7_consumer_c_then_b.md read in full: B is the serve-layer reader + rail-scoped allowlist, gated behind C in sequence but not in code dependency; dollar rails hard-blocked from any slate until PARCEL-S6-COLLISION closes.",
+    "PARCEL-B-GATE-SCHED (the companion card) has filed NO CP1/CP2/close as of claim time (checked via ls _inbox/ 2026-09-02_parcel-b-gate-sched_*) -- this card is the FIRST mover on the shared verdict-store contract, not adopting an existing one.",
+    "The dispatch's own text confirms: reader = per-parcel reads only (never county materialization, citing the cell-ledger close's measured 101.5s-smallest-county cost); allowlist = three states record/legacy/refused, default legacy, FAIL CLOSED on unreadable/missing verdict; no rail cuts over on this card; verify via a staging probe showing byte-identical output before/after deploy.",
+    "No addenda filed on this card as of claim (checked _queue/cards/parcel-b-reader/addenda/, directory does not exist)."
+  ],
+  "verdictStoreContractProposed": {
+    "table": "parcel_gate_verdict (county_fips, rail_key, verdict[pass|refuse|excluded], unaccounted_count, evaluated_at, run_id) PRIMARY KEY (county_fips, rail_key)",
+    "rationale": "documented verbatim as a code comment at the top of parcelGateVerdictRead.ts so PARCEL-B-GATE-SCHED's implementer sees it immediately on opening the file this card's PR touches. If that card's own close proposes a different shape, this card's own instruction is explicit: stop and report, never reconcile silently.",
+    "readerTreatsIdentically": "a missing row and a query error (including relation-does-not-exist, i.e. the scheduler has not created the table yet) both resolve to null -- the allowlist's fail-closed behavior does not need its own try/catch."
+  },
+  "designDecisions": [
+    "Companion rails need no rail-metadata lookup: the reader unconditionally queries parcel_record_companion_row alongside parcel_record_cell for every rail; a scalar rail's companion rows are simply always empty. Avoids duplicating hauska-engine's PARCEL_RECORD_RAIL_META, which is not published for cross-repo consumption.",
+    "unaccounted maps to a REFUSAL (code 'unaccounted'), never a served word, matching this repo's own *FactRead.ts house convention (an unexamined fact is a refused facet) and _decisions/2026-09-01_serve_path_never_emits_pipeline_state.md's no-fifth-state rule -- verified this rule's text directly against verdictLayerServe.ts's own LAYER_ABSENCE_VERDICTS enum, which DOES carry 'unmeasured' as a member; that enum is the pattern the ruling calls a leak, not a precedent to extend for parcel_record's own reader.",
+    "Structurally read-only enforced via `SET default_transaction_read_only = on` on every pooled connection's 'connect' event, not just by omitting write code -- FACTORY_DATABASE_URL (verified via gcloud secrets list, no read-only variant exists) retains its own write grants at the credential level; a dedicated SELECT-only DB role would be stronger defense-in-depth and is named as leave_behind, not built here.",
+    "The allowlist's slate check runs FIRST, synchronously, in memory, before any verdict-store query -- caught and fixed during design: an earlier draft queried the verdict store unconditionally, which would have added a real DB round trip to brokerageNodeFacets.ts's zero-AI zero-live-compute anonymous public hot path on every request, for a pair that can only ever resolve to legacy today. Proven by a spy-based test (the store must never even be called for an unslated pair, not just 'fails gracefully if called').",
+    "Chose ONE real integration point (wells, brokerageNodeFacets.ts) over wiring all five slate-1 candidate rails or building a generic dispatcher -- proves the mechanism is live (not the dormant-code defect the step-5 review found for the publish gate) without overclaiming per-rail wire adapters that are honestly PARCEL-B-SLATE1's scope. The parallel wells call site in propertyExplorer.ts is intentionally left unwired, named as leave_behind.",
+    "The wrapper's unreachable 'record' branch (empty slate today) returns a typed refusal naming exactly why (adapter not built, PARCEL-B-SLATE1's job) rather than throwing or fabricating a plausible-looking present/absent shape -- required a new WellFactRefusal code ('parcel-record-adapter-not-built') rather than reusing an existing code with a misleading name."
+  ],
+  "testingSoFar": {
+    "newFiles": ["parcelRecordCellRead.ts+test (16 tests)", "parcelGateVerdictRead.ts+test (5 tests)", "parcelRecordAllowlist.ts+test (14 tests)", "wellFactServeCutover.ts+test (5 tests)"],
+    "modifiedFiles": ["wellFactRead.ts (added one refusal code to a union type)", "brokerageNodeFacets.ts (swapped one import + one call site)"],
+    "typecheck": "pnpm run typecheck:libs && pnpm --filter ./artifacts/api-server run typecheck -- both clean, DATABASE_URL set to the same dummy value pr-checks.yml uses",
+    "fullSuiteBaselineCompare": "Local api-server test suite requires a real Postgres (pgvector extension, live schema) this worktree does not have; ran the FULL suite (not just my files) on my branch (326 files, 195 passed, 128 failed, 3 skipped; 3443 tests, 2015 passed, 44 failed, 1384 skipped) and, via git stash -u, on a clean baseline checkout of the same branch point (322 files, 191 passed, 128 failed, 3 skipped; 3403 tests, 1975 passed, 44 failed, 1384 skipped). Identical 128 failed files and 44 failed tests in both runs -- every failure is pre-existing and environmental (missing local pgvector, no live DB), not caused by this card. My branch adds exactly 4 new files / 40 new tests, all passing, zero baseline regressions. CI (with its real postgres:16 service container) is authoritative per this repo's own established convention; this comparison is the local substitute."
+  },
+  "nextSteps": "Open PR, confirm CI green (the same postgres-backed Test job that makes the 44 baseline failures pass in CI but not locally), merge to main (triggers build-and-push per this repo's canary discipline), workflow_dispatch action=deploy-canary to get a 0%-traffic revision, probe real parcels on both the canary URL and the currently-serving production URL for byte-identical wells-fact output, then close WITHOUT ever running shift-traffic — this card ships the mechanism, not a cutover."
+}

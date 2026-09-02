@@ -1,0 +1,110 @@
+{
+  "lane": "PARCEL-B-READER",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T20:45:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-b-reader_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-b-reader_cp1.json",
+    "_inbox/2026-09-02_parcel-b-reader_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main",
+    "ldt_worktree": "P:/tmp/legacy-design-tools-b-reader, branch feat/b-reader-allowlist, merged to main 72176219458fd059ed5600ef8cf4e17ffde79d95",
+    "canaryRevision": "cortex-api-00695-cir (0 percent traffic)",
+    "productionRevisionProbedAgainst": "cortex-api-00693-fuz (100 percent traffic)"
+  },
+  "missionPremise": "_decisions/2026-09-02_step7_consumer_c_then_b.md: the serve layer gains ONE parcel-record reader plus a rail-scoped allowlist. A rail serves from parcel_record only where the allowlist says so, fed by PARCEL-B-GATE-SCHED's verdicts (coordinate the shared contract via closes). No rail cuts over on this card -- ships the mechanism with the allowlist entirely on legacy, verified by a staging probe showing byte-identical serve output before and after deploy.",
+  "completionPredicate": "Met in full: (1) reader (parcelRecordCellRead.ts) -- per-parcel cell + companion reads, never county materialization, structurally read-only via default_transaction_read_only=on on every pooled connection, unaccounted maps to a refusal never a served pipeline word; (2) allowlist (parcelRecordAllowlist.ts) -- three states record/legacy/refused, PARCEL_RECORD_SLATE empty and code-owned, checked synchronously before any verdict-store I/O, fail-closed proven against a missing row, a query error, and a null store; (3) verdict-store contract proposed and documented (parcelGateVerdictRead.ts) for PARCEL-B-GATE-SCHED, which had filed nothing as of this card's claim -- this card is the first mover on that shared shape; (4) rendering honors the five cell states, verified unaccounted never reaches the wire; (5) one real integration point wired (wells, brokerageNodeFacets.ts) proving the mechanism is live, not the dormant-publish-gate defect the step-5 review found repeated for the allowlist; (6) staging probe: 5 of 5 real parcels byte-identical between a 0-percent-traffic canary (cortex-api-00695-cir) and the 100-percent production revision (cortex-api-00693-fuz), covering absent/refused/null response shapes, not just one happy path.",
+  "scopeBasis": "legacy-design-tools artifacts/api-server/src/lib/ (four new modules + four new test files), one union-type extension in wellFactRead.ts (a new refusal code, additive, no existing behavior changed), one import + one call-site swap in brokerageNodeFacets.ts, and one boot-proof test update + addition in brokerageNodeFacets.test.ts. No schema change, no hauska-factory change (the verdict table is PROPOSED, not created, by this card -- PARCEL-B-GATE-SCHED's job). propertyExplorer.ts's parallel wells call site intentionally left unwired, named as leave_behind. Cloud Run canary deploy only; shift-traffic never dispatched.",
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "number": 581,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/581",
+      "branch": "feat/b-reader-allowlist",
+      "mergeSha": "72176219458fd059ed5600ef8cf4e17ffde79d95",
+      "ciConclusion": "SUCCESS (three full CI runs across the card's lifetime; the middle one caught and required a real fix, not a retry -- see CP2)",
+      "note": "Merged self-service after re-verifying the base three times, including once after a sibling card (PARCEL-C-REPORT) merged underneath this branch mid-flight."
+    }
+  ],
+  "counts": {
+    "newTestFiles": 4,
+    "newTests": 40,
+    "modifiedTestFile": 1,
+    "modifiedTestFileNetTests": "+1 (one boot-proof split into two, preserving the guarantee one hop deeper)",
+    "parcelsProbedInStaging": 5,
+    "parcelsMatchedByteIdentical": 5,
+    "typecheck": "pnpm run typecheck:libs && pnpm --filter ./artifacts/api-server run typecheck clean",
+    "localBaselineCompare": "128 failed test files / 44 failed tests, identical on this branch and on a clean checkout of the same branch point (git stash -u comparison) -- every one of those failures is pre-existing and environmental (no local pgvector/live DB); this card's own 4 new test files added 40 passing tests and zero regressions, independently reconfirmed by CI's real postgres:16 service container (which passed all 44 of those same tests CI-side)."
+  },
+  "whatContradictedTheCard": [
+    "The first CI run failed one boot-proof test asserting the route's own source literally imports from wellFactRead -- an expected break given this card's own change, not a defect, but real work to fix correctly (update the assertion AND add a second boot-proof on the new wrapper, rather than just relaxing the check).",
+    "An early draft of resolveAllowlist queried the verdict store unconditionally before checking slate membership -- caught during design, before any test was written against it, by reasoning through what this reader feeds: a zero-AI, zero-live-compute, anonymous, public hot path whose whole point is 'just a SELECT.' Fixed to check the code-owned slate first, synchronously, so an empty slate (today's state) never touches the verdict store at all. Proven with a spy test, not just a passing-by-luck assertion.",
+    "The base moved twice during this card's lifetime (once mid-CI-fix-cycle from an unrelated push, once from PARCEL-C-REPORT's merge) -- both re-verified against a fresh CI run before merging, per this session's own re-green-against-current-base discipline, rather than trusting a green check from a superseded base.",
+    "PARCEL-C-REPORT's own parcel_record reader (parcelRecordFactRead.ts, merged just before this card) claims the same 'structurally read-only' framing this card uses but backs it with a strictly weaker mechanism (code convention only, no default_transaction_read_only enforcement) -- reported precisely as a cross-card observation, not fixed (not this seat's checkout) and not escalated as the B-READER/B-GATE-SCHED 'two shapes' stop-and-report clause, which was scoped narrowly to the verdict-store contract and does not cover this."
+  ],
+  "constraintsHonored": [
+    "no rail cut over: PARCEL_RECORD_SLATE ships empty, proven exhaustively against every known rail and county with a fabricated PASS verdict",
+    "allowlist fails closed: proven against a missing verdict row, a verdict-store query error, and a null store -- never throws, always resolves to legacy in every failure mode",
+    "unaccounted never reaches the wire as a word: proven as the load-bearing test case in parcelRecordCellRead.test.ts, matching _decisions/2026-09-01_serve_path_never_emits_pipeline_state.md rather than the LAYER_ABSENCE_VERDICTS enum's own 'unmeasured' leak (read directly, not extended)",
+    "structurally read-only: default_transaction_read_only=on enforced on every pooled connection to FACTORY_DATABASE_URL, verified via gcloud secrets list that no dedicated read-only role/secret exists (named as leave_behind, not fabricated as already solved)",
+    "no county materialization: every query is scoped to exactly one (place_key, rail_key) pair",
+    "coordinated the shared verdict-store contract via a close/CP, not a shared checkout -- PARCEL-B-GATE-SCHED had filed nothing as of claim, so this card proposes the shape rather than adopting one",
+    "verified by a real staging probe against live Cloud Run infrastructure, not asserted from unit tests alone",
+    "never ran shift-traffic; the canary sits at 0 percent, matching this card's own 'no cutover' scope"
+  ],
+  "scratch": {
+    "LESSON": [
+      "Before wiring any new I/O into an existing hot-path call site, trace what that route's own header comment promises about cost/compute -- a 'just a SELECT, zero live compute' route is exactly where an unconditional new query, even one designed to fail gracefully, is the wrong default. Check slate/allowlist membership synchronously first; only touch the network when a genuine candidate exists.",
+      "A repo's own 'boot-proof' tests that regex-match literal import strings in a route file are a real, working control (they caught this card's wiring change immediately and correctly) -- but fixing one to pass requires understanding what GUARANTEE it was protecting (never bake/CAD/GIS/texas-rrc, transitively) and preserving that guarantee at the new location, not just updating the string it happens to match today.",
+      "'Structurally read-only' is not one fixed guarantee -- 'the code never issues a write' (a review-time convention) and 'the connection refuses a write at the Postgres protocol level' (default_transaction_read_only=on) are both real but meaningfully different strengths, and two modules in the same codebase can use the same phrase for either one. Worth checking precisely, not assuming, when a sibling module's header comment claims the same property.",
+      "gcloud run services describe's traffic array prints EVERY historical named tag a service has ever accumulated (p538 through p543, dbfix, staging, canary-min1, ...), not just the currently-relevant ones -- read past entries as historical debris, not as a signal something needs cleanup."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T20:28:28Z legacy-design-tools PR #581 MERGED 72176219458fd059ed5600ef8cf4e17ffde79d95; three full CI runs across the branch's lifetime, final one green on all ten checks against the current base",
+      "2026-09-02T20:33-20:35Z deploy-canary produced cortex-api-00695-cir at the exact merge SHA, 0 percent traffic, reachable at https://canary---cortex-api-tds7av26va-uc.a.run.app",
+      "2026-09-02T20:4xZ staging probe: 5/5 real parcels (48021:34137, 48491:76149, 48453:493738, 48309:12345, 48055:10068) byte-identical wellFact between the canary and the 100-percent production revision cortex-api-00693-fuz"
+    ],
+    "DEAD-END": [
+      "Querying the verdict store before checking slate membership -- caught in design, before it shipped, not after a production incident."
+    ],
+    "OPEN": [
+      "PARCEL-B-GATE-SCHED must adopt (or explicitly counter-propose, triggering stop-and-report) the parcel_gate_verdict table shape documented in parcelGateVerdictRead.ts's header. As of this close, that card has filed no CP1/CP2/close.",
+      "propertyExplorer.ts's own wells call site (a second, parallel loadWellFactAtom usage) was not wrapped with the same allowlist mechanism -- left for a future consistency card or for PARCEL-B-SLATE1 to pick up alongside the real per-rail adapters it will need to build anyway.",
+      "The 'record' branch adapter (parcel_record wells companion payload to WellFactRead's rich shape) is unbuilt and unreachable by design -- explicitly PARCEL-B-SLATE1's scope, not a gap in this card.",
+      "A dedicated SELECT-only Postgres role for FACTORY_DATABASE_URL reads (this card's reader and PARCEL-C-REPORT's alike) would be stronger defense-in-depth than either module's current per-connection or per-code-review guarantee -- infra work, not scoped to either card.",
+      "PARCEL-C-REPORT's parcelRecordFactRead.ts does not enforce default_transaction_read_only -- a cross-card observation for the operator/planner, not fixed here."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-b-reader_cp1.json",
+    "_inbox/2026-09-02_parcel-b-reader_cp2.json",
+    "_inbox/2026-09-02_parcel-b-reader_close.json",
+    "_queue/cards/parcel-b-reader/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "PARCEL-B-GATE-SCHED must adopt or counter-propose the parcel_gate_verdict table contract in parcelGateVerdictRead.ts's header comment.",
+      "owner": "whoever claims PARCEL-B-GATE-SCHED",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "propertyExplorer.ts's parallel wells call site is unwrapped by the allowlist mechanism -- consistency gap, not a regression.",
+      "owner": "planner / future consistency card",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "PARCEL-C-REPORT's parcelRecordFactRead.ts claims structurally-read-only but does not enforce default_transaction_read_only at the connection level, unlike this card's reader -- cross-card observation for the operator.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "A dedicated SELECT-only DB role for FACTORY_DATABASE_URL reads would strengthen both this card's and PARCEL-C-REPORT's read-only claims beyond connection-level or code-review-level guarantees.",
+      "owner": "planner / infra",
+      "plan_row": "F-01"
+    }
+  ]
+}

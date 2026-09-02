@@ -1,0 +1,34 @@
+{
+  "lane": "PARCEL-B-READER",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T20:40:00Z",
+  "note": "PR merged and the live staging probe run. Records the CI incident, the merge-time base-currency re-verification, and the probe results in full.",
+  "prAndCi": {
+    "repo": "legacy-design-tools",
+    "pr": 581,
+    "branch": "feat/b-reader-allowlist",
+    "mergeSha": "72176219458fd059ed5600ef8cf4e17ffde79d95",
+    "ciIncident": "First CI run (headSha e268110e) failed exactly one check: a 'boot-proof' test (brokerageNodeFacets.test.ts) asserting the route's own source literally imports from '../lib/wellFactRead' -- broken by design, since this card's whole point is to import from wellFactServeCutover instead. Fixed by updating that assertion to the new import AND adding a second boot-proof on wellFactServeCutover.ts itself, preserving the test family's real guarantee (never bake/CAD/GIS/texas-rrc) one hop deeper rather than just making the string match pass. Verified every regex by hand against the real file content (a standalone node -e check) before re-pushing, since this whole test file's DB setup (pgvector) is unavailable in this local worktree. Second CI run (headSha 06ec8ff2) green on all ten checks.",
+    "baseMovedBeforeMerge": "PARCEL-C-REPORT (PR #582) merged to main between this PR's second green CI run and its merge attempt. Zero file-level overlap (confirmed via git diff --stat between the two base SHAs). Per this session's re-green-against-current-base discipline, merged origin/main into the branch, re-pushed, and waited for a THIRD full CI run (headSha 083d89c8) -- green on all ten checks -- before merging.",
+    "finalChecks": "L17 ci-vintage-predicate, L5 SF-24/SF-25 score greps, L5 SF-26 hand hasWriter grep, L5 SF-30 Cotality warm grep, L5 silent-fallback greps, SS-W16 tier2 flood not served, SS-W18 api-server boots, Test, Typecheck, cortex daily limit bake -- all pass on the actual merge commit."
+  },
+  "crossCardObservation": {
+    "what": "PARCEL-C-REPORT's own parcelRecordFactRead.ts (merged just before this card, same store, structurally similar per-parcel read pattern -- confirmed by reading its file header) claims 'structurally read-only by construction' but, unlike this card's parcelRecordCellRead.ts, does not call `SET default_transaction_read_only = on` on its pool. Its actual mechanism is 'the code never builds anything but a SELECT' plus 'no read-only DB role exists' -- a real, code-level constraint, but a CONVENTION, not the same protocol-level, Postgres-enforced guarantee this card's reader carries. Both modules' own comments use the word 'structurally' to describe two genuinely different strengths of guarantee.",
+    "action": "Not fixed here -- PARCEL-C-REPORT is a closed, different card, not this seat's checkout to edit. Reported precisely for the operator/planner, matching this session's own discipline against overclaiming a control's strength.",
+    "notAStopAndReport": "This is NOT the 'two shapes' coordination failure the dispatch's stop-and-report clause was about -- that clause was scoped specifically to the PARCEL-B-READER/PARCEL-B-GATE-SCHED shared verdict-store contract, which C-report never touches (it reads parcel_record directly for two specific reports with no allowlist, a legitimately different architecture from B's serve-layer augment of an existing hot path). Named as an observation, not a blocker."
+  },
+  "stagingProbe": {
+    "canaryRevision": "cortex-api-00695-cir",
+    "canaryUrl": "https://canary---cortex-api-tds7av26va-uc.a.run.app",
+    "canaryTraffic": "0 percent -- confirmed from the deploy workflow's own printed traffic table before probing",
+    "productionRevision": "cortex-api-00693-fuz",
+    "productionUrl": "https://cortex-api-tds7av26va-uc.a.run.app",
+    "productionTraffic": "100 percent",
+    "method": "GET /api/brokerage/v1/place/node/:parcelNodeId/facets against both URLs for five real parcels, extracting and comparing only the wellFact field (this card's one wired integration point) as normalized JSON.",
+    "parcelsTested": ["48021:34137 (gold)", "48491:76149", "48453:493738", "48309:12345", "48055:10068"],
+    "result": "5 of 5 byte-identical between canary and production, across a genuine mix of response shapes: two 'absent / no-well-on-or-near' cases, two 'refused / atom-miss' cases, and one null case (48309:12345, no baked snapshot). Full JSON captured for each pair; every pair matched exactly, not approximately.",
+    "shiftTrafficRun": false,
+    "note": "Per this card's own scope ('no rail actually cuts over on this card'), shift-traffic was never dispatched. The canary sits at 0 percent traffic, same as every other historical canary tag already listed on this service (p538 through p543, dbfix, dbfix2, staging, g60, pooling-fix, smoke4, canary-min1) -- normal, standing practice for this repo, not cleaned up here."
+  }
+}
