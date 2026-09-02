@@ -74,3 +74,13 @@ Cards: the reader + allowlist in the serve layer (LDT/cortex, property seat), th
 scheduler job (factory), the C report-source card (if chosen), one retirement card per
 cut-over rail, and the NFHL sibling-layer re-ingest (EFF_DATE + S_BFE, per scout-flood
 — a re-ingest, not an acquisition) to deepen the flood rail before or during the slate.
+
+## Late inputs from the cell-ledger close (2026-09-02)
+
+The gate's DB loader now exists and is verified against one live county; the remaining
+wiring choice belongs inside the gate-scheduler card: an engine CLI entrypoint the
+Factory job shells out to, versus the Factory importing engine-core directly (the
+engine-CLI form matches the existing job pattern and is the planner's default).
+Loader cost is real: 101.5 seconds to materialize the smallest county's cells implies
+25+ minutes for Travis single-shot — the option-B reader and the gate scheduler must
+stream or batch per rail, never full-county-materialize.
