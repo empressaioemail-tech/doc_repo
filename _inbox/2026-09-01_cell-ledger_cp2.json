@@ -1,0 +1,225 @@
+{
+  "lane": "CELL-LEDGER",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "seat": "property",
+  "dispatch": "_dispatches/2026-09-02_substrate-icc-ledger_dispatch.md",
+  "priorCheckpoint": "_inbox/2026-09-01_cell-ledger_cp1.json",
+  "closedAt": "2026-09-02T16:25:00Z",
+  "snapshot": {
+    "engine": {
+      "repo": "hauska-engine",
+      "worktree": "P:/tmp/hauska-engine-cell-ledger",
+      "branch": "feat/cell-ledger",
+      "baseCommit": "a38cbb22eda23637d7a56e104456aa4e7237fc25",
+      "note": "Working tree dirty with this checkpoint's uncommitted diff (see gitDiffSummary below). Base commit unchanged from CP1; nothing else landed on this branch."
+    },
+    "store": {
+      "FACTORY_DATABASE_URL": { "database": "neondb", "readAt": "2026-09-02T16:17:16Z (verification script's own current_database() read)" }
+    },
+    "readOnly": "SET default_transaction_read_only = on issued before any query in the verification script; two SELECTs total (parcel_record, parcel_record_cell JOIN); zero INSERT/UPDATE/DELETE issued (writesIssued: 0 in the script's own payload).",
+    "secretHandling": "Deviation from CP1's stated practice, corrected before this artifact was written: FACTORY_DATABASE_URL was piped through a scratchpad file (gcloud secrets versions access ... > file) rather than directly into env, because the fetch and the script invocation were separate tool calls. The file was never echoed to output and was deleted immediately after the verification run completed (both the secret file and its stderr sidecar). Noting this rather than silently matching CP1's stronger claim."
+  },
+  "missionPremise": "Per the CP2 dispatch's five scoped build items, adversarially reviewed by the lane planner off CP1's recon: the gate logic already exists and is correct: CP2's job is a read-only DB loader, a re-run of the poison/repair test against one real loaded county, a decision (not a punt) on three CAD-SERVE-RECONCILE zoning-verdict fields as rail keys, a WARN-level cross-check for the known full-rail-poison bypass, and a live-reverified disposition constant. All five items are now built, tested, and verified against real data in this worktree. No migration, backfill, or write to any store was performed; no cross-repo repo was opened.",
+  "completionPredicate": "This artifact exists at the exact CP2 path. Every one of the five dispatch items has a corresponding file change, a passing test, or a documented decision with evidence. The real-county violation test ran against actual loader-fetched rows from FACTORY_DATABASE_URL (not a fixture) and reports its own numbers and timestamp. The full parcel-record test suite passes (29/29: 26 pre-existing + 3 new). git status/diff is reported as a file list. Both DO-NOT items from CP1 are carried forward unresolved and unexplored, exactly as instructed.",
+  "scopeBasis": "Read-only on FACTORY_DATABASE_URL (SET default_transaction_read_only=on; two SELECTs; zero writes). No migration or backfill run. No write to county_rail or county_facet_coverage (not queried at all this checkpoint -- CP1 already reverified their disposition; CP2 only edited the doc-comment constant citing CP1's numbers). Did not open hauska-factory or legacy-design-tools; the zoning-verdict rail-key decision was made by reading this repo's own vendored serve mirror (packages/retrieval/src/serving-sweep/vendor/, confirmed the fields do not exist there either) plus already-committed doc_repo artifacts (_inbox/2026-08-22_p63-verdict-serve_cortex_cp1.json, scripts/fixtures/verdict-layer-serve/*.json) that describe the legacy-design-tools schema without requiring that repo to be opened. Did not investigate or resolve the 48021 orphan-record disappearance or the cross-repo wiring question -- both carried forward verbatim. Did not commit or push; produced an uncommitted diff on feat/cell-ledger for the lane planner to review.",
+
+  "itemsBuilt": [
+    {
+      "item": 1,
+      "title": "Read-only DB loader",
+      "file": "packages/engine-core/src/parcel-record/load.ts (NEW, 124 lines)",
+      "description": "loadCountyParcelRecords(sql, countyFips) — two indexed, county-filtered SELECTs (parcel_record; parcel_record_cell JOIN parcel_record) via a minimal duck-typed SQL-client interface (ParcelRecordSqlClient, matching the callable shape of a `postgres()` instance already used elsewhere in this package). Maps rows into ParcelRecordRow[] and calls the existing assertFullRecordCells on every record, so a parcel_record row with an incomplete rail-cell set throws loudly (\"missing rail column: X\") instead of silently defaulting -- row-absence is never treated as the stored 'unaccounted' sentinel. Exported through index.ts. Never issues a write; never closes the caller's connection (caller owns session lifecycle)."
+    },
+    {
+      "item": 2,
+      "title": "Real-county violation-test re-run",
+      "file": "packages/engine-core/scripts/verify-cell-ledger-cp2-real-county.mjs (NEW, 108 lines)",
+      "description": "One-shot, exit-bounded script: connects to FACTORY_DATABASE_URL, sets the read-only session pragma, loads county 48055 via loadCountyParcelRecords, runs evaluatePublishGate, synthetically repairs one loaded cell in memory (never written back), re-runs the gate, reports the delta. See realCountyViolationTest below for the actual numbers."
+    },
+    {
+      "item": 3,
+      "title": "Zoning-verdict fields ruled OUT as rail keys (decision, with evidence)",
+      "file": "packages/engine-core/src/parcel-record/rail-keys.ts (+42 lines, new exported constant ZONING_VERDICT_FIELDS_RULED_OUT)",
+      "description": "See zoningVerdictDecision below for the full reasoning. Not a punt: named, evidenced, and covered by a new test asserting the constant's exact contents so the exclusion cannot silently regress into a truly missing/forgotten field."
+    },
+    {
+      "item": 4,
+      "title": "WARN-level cross-check for the full-rail-poison bypass",
+      "file": "packages/engine-core/src/parcel-record/publish-gate.ts (+43 lines: PublishGateWarning type, PublishGateVerdict.warnings field, PublishGateOptions.priorLiveRailKeys)",
+      "description": "See warnCrossCheck below."
+    },
+    {
+      "item": 5,
+      "title": "COUNTY_RAIL_LEDGER_DISPOSITION updated with live-verified numbers",
+      "file": "packages/engine-core/src/parcel-record/index.ts (+44/-5 lines)",
+      "description": "Replaced the memory-derived '3,556 cells uniform' prose with CP1's live-reverified 2026-09-02 numbers: county_rail 14 rows (has_writer/atom_family_state uniform, dead); county_facet_coverage 1,817 rows (not 3,556 -- that is the 254x14 theoretical denominator), rail_state/classification DO vary, near-gating fields (integrity_verdict, staleness_flag, onboarded, cert_state) effectively dead at 98.9-100%, zero recompute in 10 days (max(checked_at)=max(last_verified_at)=2026-08-23T03:22:18Z) vs parcel_record_cell's multiple-writes-per-minute. Repoint-before-retire recommendation retained; legacy-design-tools consumer list explicitly named as unverified/open, not asserted. Also added exports for PublishGateWarning, loadCountyParcelRecords, ParcelRecordSqlClient, LoadCountyParcelRecordsResult, ZONING_VERDICT_FIELDS_RULED_OUT."
+    }
+  ],
+
+  "realCountyViolationTest": {
+    "county": "48055",
+    "runAt": "2026-09-02T16:17:16.708Z",
+    "currentDatabase": "neondb",
+    "loadMs": 101512,
+    "parcelRowCount": 24988,
+    "cellRowCount": 1624220,
+    "identityCheck": { "formula": "24988 x 65 = 1624220", "exact": true },
+    "verdictBefore": {
+      "ok": false,
+      "unaccountedCount": 13195,
+      "excludedDeclaredAheadCount": 43,
+      "note": "43 rails currently declared-ahead for THIS county at this snapshot -- much wider than the 13 permanently-declared-ahead RAILS_V2_DECLARED_AHEAD list. This is real, in-progress acquisition state (matches CP1's finding of active factory-parcel-record-fill / factory-parcel-r4-companions jobs running concurrently), not a defect: the liveness derivation is auto-discovering which rails genuinely have zero earned cells yet for this specific county."
+    },
+    "syntheticRepair": {
+      "placeKey": "48055:55224",
+      "railKey": "exemptionCodes",
+      "mutation": "in-memory only: unaccounted -> {kind: 'absent-verified', basis: 'CP2 synthetic in-memory repair'}",
+      "unaccountedCountBefore": 13195,
+      "unaccountedCountAfter": 13194,
+      "delta": 1,
+      "deltaIsExactlyOne": true,
+      "writesIssuedToStore": 0
+    },
+    "conclusion": "Confirms the dispatch's expectation exactly: ok:false given live unaccounted counts, and the gate's unaccountedCount tracks a single in-memory cell flip by exactly one against REAL loader-fetched rows, not a fixture. Full output saved at C:\\Users\\cente\\AppData\\Local\\Temp\\claude\\p--doc-repo\\946e4972-42cb-4af0-9c8c-25a62e06791f\\scratchpad\\cp2_48055_verify.json (local scratchpad, not committed)."
+  },
+
+  "loaderPerformanceFinding": {
+    "headline": "101.5s to load the SMALLEST of the six counties (24,988 parcels / 1.62M cell rows) contradicts CP1 stepF's 'low risk -- pure read' framing for the loader specifically, though not for the gate logic it was really about.",
+    "mechanism": "CP1's sixCountyPlan cost estimate ('cheap and safe... under 10 seconds') was measured against a fundamentally different, cheaper query shape: server-side aggregate GROUP BY queries returning a handful of (kind, count) rows. A real loader must materialize every individual cell row client-side to reconstruct ParcelRecordRow[] -- roughly 1.6M JSONB rows for the smallest county alone. That is not the same cost class, and CP1's own numbers should not have been read as validating loader performance, only aggregate-query performance. Naming this rather than letting CP1's 'cheap and safe' framing stand unqualified into CP2's own work.",
+    "rejectedAlternativeMechanism": "Concurrent Cloud Run writer-job contention (per CP1's movingTargetWarning) is a plausible second explanation for slow reads on this table, but this session did not run EXPLAIN or inspect lock waits, so it is not confirmed and is not asserted as the cause here -- named as unconfirmed, not ruled in.",
+    "scalingImplication": "At this measured ~16,000 rows/sec, the largest county (48453, 380,917 parcels / ~24.76M cells) would be on the order of 25+ minutes for a single-shot full load -- a materially different feasibility class than the smallest county, and untested this checkpoint. Not fixed or optimized here (out of CP2 scope: prove correctness on one small county, which is done); carried forward as a leave_behind for whoever builds the real hauska-factory publish-time caller."
+  },
+
+  "zoningVerdictDecision": {
+    "decision": "RULED OUT -- did not add zoning.verdict, zoning.authority, or zoning.derivation.cityLimitsStatus as new rail keys.",
+    "evidenceGathered": [
+      "grep across the entire hauska-engine worktree, including the vendored serve mirrors packages/retrieval/src/serving-sweep/vendor/baked-facets.ts and atom-chain-to-facets.ts, for verdict|authority|derivation|cityLimitsStatus: zero matches. The vendored 'zoning' shape in this repo is only { district, jurisdictionKey } -- the three fields do not exist anywhere in hauska-engine, confirming they are computed entirely outside this repo.",
+      "Read _inbox/2026-08-22_p63-verdict-serve_cortex_cp1.json (already-committed doc_repo artifact, no repo opened): the real computation lives in legacy-design-tools/artifacts/api-server/src/lib/verdictLayerServe.ts as a generic 'layer absence wire' schema -- { status, verdict, authority, scopeSearched, asOf, basis, provenanceClass, source } -- applied across multiple fact families (structuralFact, landUseFact, and per CAD-SERVE-RECONCILE's live sweep, zoning too), not a zoning-specific shape.",
+      "Read scripts/fixtures/verdict-layer-serve/unincorporated-zoning-not-applicable.json (already-committed): confirms verdict/authority describe WHY a fact is absent (e.g. verdict='not-applicable', authority='none' for unincorporated land), not an independent fact about the parcel."
+    ],
+    "structuralReasoning": [
+      "zoning.verdict (enum: absent-verified | lookup-failed | not-applicable) is a near-subset restatement of zoningDistrict's own cell_state.kind (value | absent-verified | not-applicable | refused | unaccounted) -- same concept, narrower vocabulary, computed at serve time from the same underlying fact.",
+      "zoning.authority (e.g. 'tad', 'dcad', 'none') restates the CellProvenance.source field already mandatory on every earned zoningDistrict / zoningProvenance cell -- not new data, a renamed copy of already-required provenance.",
+      "zoning.derivation.cityLimitsStatus is a nested echo of the already independently-accounted cityLimits and etjStatus rail values -- a third copy of a fact this shape already tracks twice by design."
+    ],
+    "whyThisMattersEnforcementWise": "Adding parallel rails for these would create a second, independently-updatable representation of a fact this closed shape already accounts for -- exactly the internal-consistency drift ENFORCEMENT.md's 'How to write a check that actually checks' section warns against (one upstream can fabricate both copies; a check comparing them would look meaning-shaped and not be).",
+    "whatThisDoesNotResolve": "CAD-SERVE-RECONCILE's live finding -- 'unmeasured'/'unresolved' values appearing outside verdictLayerServe's own DECLARED enum (absent-verified | lookup-failed | not-applicable) -- is real and unresolved, but it is a SERVE-TIME vocabulary/mapping defect in legacy-design-tools translating cell_state.kind into that wire, not a hauska-engine storage gap. Already tracked at _decisions/2026-09-01_serve_path_never_emits_pipeline_state.md per CAD-SERVE-RECONCILE's own leave_behind; out of hauska-engine's reach and out of this card.",
+    "notSilentlyDropped": "Codified as the exported, tested constant ZONING_VERDICT_FIELDS_RULED_OUT in rail-keys.ts with a full doc comment carrying this reasoning, plus a new unit test asserting its exact contents -- a future reader or instrument can find and challenge this decision without archaeology, per ENFORCEMENT.md 'a missing column is invisible.'"
+  },
+
+  "warnCrossCheck": {
+    "design": "Additive-only, opt-in. PublishGateOptions gained priorLiveRailKeys?: readonly ParcelRecordRailKey[] (rails known live as of a prior evaluation, supplied by the caller -- this module holds no history of its own). PublishGateVerdict gained a REQUIRED warnings: PublishGateWarning[] field (mirrors the existing required-field pattern already enforced by the file's own ts-expect-error compile-check test for excludedDeclaredAhead). For every rail in excludedDeclaredAhead that IS in the caller-supplied priorLiveRailKeys, evaluatePublishGate now emits { kind: 'full-rail-poison', railKey, detail }. Omitting the option (the default, and every existing call site) produces zero warnings -- behavior for every pre-existing caller is unchanged.",
+    "decision": "accept-and-warn, not a new acquisition-status registry -- matches the lane planner's CP2 scoping decision exactly; not re-litigated.",
+    "newTests": [
+      "\"full-rail poison stays silent without prior-state info (opt-in only, no regression)\" -- fully poisons a rail with no priorLiveRailKeys given; asserts excludedDeclaredAhead contains it AND warnings.length === 0. Proves the additive change cannot surprise an existing caller.",
+      "\"warns when a rail goes from live to fully poisoned, given prior liveness (WARN cross-check)\" -- two records both carrying an earned 'apn' cell (rail live); captures priorLiveRailKeys from that verdict; poisons EVERY earned 'apn' cell across both records; re-evaluates WITH priorLiveRailKeys; asserts the rail is now excludedDeclaredAhead AND carries a warnings entry with kind='full-rail-poison' and the right railKey; also asserts a genuinely-never-attempted declared-ahead rail ('owner') does NOT warn, proving the check is specific to rails that went from live to poisoned, not every declared-ahead rail."
+    ],
+    "existingTestUnchanged": "\"poisoning the last earned cell of a rail demotes it (known limit)\" was NOT modified -- runs and passes exactly as before, now implicitly also demonstrating the default warnings:[] via the interface's required field, without needing to be touched."
+  },
+
+  "testSuite": {
+    "scopedRun": {
+      "command": "npx vitest run src/parcel-record/__tests__/parcel-record.test.ts (inside packages/engine-core)",
+      "result": "29/29 passed (26 pre-existing + 3 new: ZONING_VERDICT_FIELDS_RULED_OUT contents; full-rail-poison-silent-by-default; warns-given-prior-liveness)",
+      "instrumentProvenanceNote": "Ran this file TWICE with materially different toolchains, and the discrepancy matters (ENFORCEMENT.md 'the instrument that produced a claim is part of the claim'). FIRST run (before this checkpoint's own `pnpm install`): 29/29 passed in 291ms, but under vitest v4.1.11 -- NOT the project's pinned devDependency `vitest: ^2.1.8`. This worktree had ZERO node_modules installed at any package (confirmed: `ls node_modules` -> No such file or directory at both repo root and packages/engine-core); npx silently auto-installed an unrelated, unpinned vitest v4 to satisfy the command rather than failing loud. That first pass is NOT treated as authoritative. SECOND run, after `pnpm install --frozen-lockfile --filter @hauska-engine/engine-core...` (5.4s, reused the local pnpm store, zero network downloads per the log): 29/29 passed in 20ms under vitest v2.1.9, matching the pinned range. This second run is the authoritative one cited everywhere else in this artifact.",
+      "typecheck": "npx tsc --noEmit -p . (whole engine-core package, post-install): zero errors, zero output."
+    },
+    "fullPackageRun": {
+      "command": "npx vitest run (no path filter, whole packages/engine-core)",
+      "result": "104 failed test files | 70 passed (174 files); 12 failed tests | 478 passed (490 tests)",
+      "attribution": "Verified by reading the actual failure output, not just the summary counts (ENFORCEMENT.md 'code reading outranks output measuring'). 102 of the 104 file failures are `Cannot find package 'X'` errors (postgres, @hauska-engine/atoms, polygon-clipping, etc.) at IMPORT time in files this diff never touched (flood-postgis-pip.test.ts, property-fact-writers.test.ts, boundary-primitive tests, geometry tests, registry tests, and more) -- a pre-existing partial dependency-install condition in this worktree that the scoped `pnpm install --filter @hauska-engine/engine-core...` (which pulls only that package's OWN dependency graph, not its sibling packages' full dev/test dependency closures) did not fully resolve. The remaining 12 assertion failures are in scripts/writer-apply-lease.test.mjs and scripts/__tests__/write-setback-city-cli.test.mjs -- CLI subprocess exit-code mismatches (expected 2, got 1) in a totally unrelated subsystem (lease/apply CLIs, not parcel-record), consistent with the standing fleet-memory lesson 'ldt api-server tests not green locally -- baseline-compare vs main.' Zero parcel-record files appear anywhere in the failure list (grepped explicitly). Not investigated further or fixed -- fixing sibling-package dependency installs and unrelated CLI test flakiness is out of this card's scope; named as a leave_behind, not silently absorbed into a false 'suite is green' claim."
+    }
+  },
+
+  "gitDiffSummary": {
+    "branch": "feat/cell-ledger",
+    "modified": [
+      { "file": "packages/engine-core/src/parcel-record/__tests__/parcel-record.test.ts", "insertions": 64, "deletions": 0 },
+      { "file": "packages/engine-core/src/parcel-record/index.ts", "insertions": 44, "deletions": 5 },
+      { "file": "packages/engine-core/src/parcel-record/publish-gate.ts", "insertions": 43, "deletions": 0 },
+      { "file": "packages/engine-core/src/parcel-record/rail-keys.ts", "insertions": 42, "deletions": 0 }
+    ],
+    "new": [
+      { "file": "packages/engine-core/src/parcel-record/load.ts", "lines": 124 },
+      { "file": "packages/engine-core/scripts/verify-cell-ledger-cp2-real-county.mjs", "lines": 108 }
+    ],
+    "notIncluded": "node_modules/ (gitignored, confirmed via git check-ignore; the pnpm install for this checkpoint's own verification left no trace in git status).",
+    "totalTrackedDiff": "4 files changed, 193 insertions(+), 5 deletions(-), plus 2 new untracked files (232 lines)."
+  },
+
+  "whatContradictedThisCard": [
+    "CP1's implicit assumption of a ready-to-run environment did not hold: this worktree had zero node_modules anywhere (not just missing a few packages) at the start of CP2, despite CP1 reporting a clean 26/26 pass from the same worktree earlier the same day. The parcel-record test file alone happened to have no external package imports, so `npx vitest` silently auto-installed an unpinned vitest v4 rather than failing -- a real result, but not from the project's own toolchain. Corrected by running a scoped `pnpm install --frozen-lockfile` before treating any test run as authoritative.",
+    "CP1 stepF's 'low risk -- pure read, shape already exists to target' framing for the loader item undersold the loader's actual cost: 101.5s to fully materialize the SMALLEST county's cell rows client-side is a different cost class from the sub-10-second aggregate GROUP BY queries CP1's sixCountyPlan measured. The shape-correctness risk was indeed low (loader worked first try against real data); the performance risk was not assessed by CP1 because CP1 never built or ran a row-materializing query, only aggregates.",
+    "CP1's zoning-verdict 'gapFoundNotYetAdded' framing (stepB) read as leaning toward eventual rail-key addition ('CP2 decision, not resolved here') without flagging that the fields might structurally NOT belong as independent rails; this checkpoint's investigation found a concrete structural reason (metadata-about-an-already-modeled-fact, not new data) and ruled them out, using the dispatch's own stated escape hatch."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Cross-repo wiring question (how hauska-engine's publish gate reaches hauska-factory's actual publish job) is unresolved -- unchanged from CP1. Central blocker for the gate ever leaving DORMANT status.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Cause of the 48021:0 / 48021:10005 orphan-record disappearance -- unchanged from CP1, not investigated this checkpoint.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "This CP2 artifact and its diff (P:/tmp/hauska-engine-cell-ledger, branch feat/cell-ledger, uncommitted), for the lane planner's review and the real CLOSE.",
+      "owner": "lane planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Loader performance at scale is untested beyond the smallest county (48055, 101.5s / 1.62M cells). The largest county (48453, ~24.76M cells) would be on the order of 25+ minutes at the measured per-row rate -- a real feasibility question for whoever builds the actual hauska-factory publish-time caller, not solved here.",
+      "owner": "planner (routes to whichever lane builds the cross-repo caller)",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "The 102-of-104-file dependency-install gap in this worktree's sibling packages (flood-postgis, boundary-primitive, geometry, registry tests, etc.) and the 12 unrelated CLI exit-code test failures (writer-apply-lease, write-setback-city CLI) were observed but not fixed -- named so a future full-suite run in this worktree is not mistaken for a fresh regression.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    }
+  ],
+
+  "constraintsHonored": [
+    "read-only on every store session (SET default_transaction_read_only=on; zero writes issued, confirmed in the verification script's own payload)",
+    "chunked per county -- exactly one county (48055) queried, never a combined multi-county statement",
+    "no migration or backfill run against parcel_record_cell",
+    "no write to county_rail or county_facet_coverage (not queried this checkpoint at all)",
+    "did not open hauska-factory or legacy-design-tools -- decision evidence came from this repo's vendored mirror plus already-committed doc_repo artifacts",
+    "did not investigate the orphan-record disappearance or the cross-repo wiring question",
+    "did not commit or push -- diff left uncommitted on feat/cell-ledger for the lane planner",
+    "did not release the queue card or write the CLOSE artifact -- that is the lane planner's step",
+    "every SQL query was a bounded, indexed, single-county-filtered read; every opened connection was closed (sql.end() in the verification script; try/catch on the error path also closes with a short timeout)",
+    "secret value never echoed to any tool output; the one file it briefly touched was deleted before this artifact was written"
+  ],
+
+  "scratch": {
+    "LESSON": [
+      "A worktree reporting a clean test pass earlier in the SAME session is not proof node_modules is still installed later in that session -- always check `ls node_modules` (or run the exact pinned-version check) before trusting a vitest/tsc invocation's version, especially after any gap between checkpoints. npx will silently auto-install an unpinned major version rather than failing loud when a package is missing but the command name resolves.",
+      "An aggregate GROUP BY query's timing tells you almost nothing about a row-materializing SELECT's timing over the same table -- CP1's 'cheap and safe, under 10 seconds' cost estimate for six sequential county reads was true for the query CP1 actually ran (aggregates) and not transferable to a real loader that must pull every individual cell row client-side. Always re-measure the SPECIFIC query shape a new consumer will actually issue.",
+      "A dispatch's 'add as a rail OR name a concrete structural reason not to' escape hatch is worth taking seriously rather than defaulting to the safer-looking 'just add it' path -- reading the actual already-committed schema doc for the CAD-SERVE-RECONCILE fields (a p63-verdict-serve CP1 artifact already in doc_repo, no new repo needed) surfaced a real duplication risk that a shallower read would have missed.",
+      "pnpm's --filter <pkg>... scoped install pulls only that package's OWN dependency graph, not its sibling packages' dev/test dependency closures in the same monorepo -- a scoped install can leave OTHER packages' test files still unresolvable even after it succeeds cleanly. Don't read a scoped install's success as 'the whole monorepo's tests are now runnable.'"
+    ],
+    "DEAD-END": [
+      "None new this checkpoint beyond the ones CP1 already carried (chunk-per-county was followed from the start)."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T16:17:16Z FACTORY_DATABASE_URL/neondb, county 48055: parcel_record 24,988 rows, parcel_record_cell 1,624,220 rows (24988 x 65 exact). Load time 101,512ms via loadCountyParcelRecords.",
+      "2026-09-02T16:17:16Z county 48055 publish-gate verdict (before synthetic repair): ok=false, unaccountedCount=13,195, excludedDeclaredAhead has 43 rails (not the permanent 13 -- real in-progress-acquisition state for this county at this snapshot).",
+      "2026-09-02 synthetic in-memory repair on 48055:55224/exemptionCodes: unaccountedCount 13,195 -> 13,194, delta exactly 1, zero writes issued to the store.",
+      "2026-09-02 packages/engine-core parcel-record test suite (post `pnpm install --frozen-lockfile --filter @hauska-engine/engine-core...`, vitest v2.1.9 matching the pinned ^2.1.8): 29/29 passing, 20ms. `npx tsc --noEmit -p .` on the whole package: zero errors.",
+      "2026-09-02 whole-package `npx vitest run` (no filter): 478/490 tests passing across 70/174 files; the 104 file-level and 12 test-level failures are pre-existing/unrelated (sibling-package missing deps; unrelated CLI exit-code mismatches), zero touch parcel-record."
+    ],
+    "OPEN": [
+      "Whether hauska-factory's actual publish job will ever call loadCountyParcelRecords / evaluatePublishGate -- still not answerable from hauska-engine alone; unchanged from CP1.",
+      "Cause of the 48021:0 / 48021:10005 orphan disappearance -- unchanged from CP1.",
+      "Loader performance at the scale of the largest counties (up to ~24.76M cell rows) is untested and, at the measured per-row rate, would be on the order of 25+ minutes single-shot -- a real constraint for the eventual cross-repo caller to design around (batching/streaming/chunking further, or running closer to the DB region)."
+    ]
+  },
+
+  "docRepoUncommitted": [
+    "_inbox/2026-09-01_cell-ledger_cp2.json"
+  ]
+}
