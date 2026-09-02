@@ -1,0 +1,65 @@
+{
+  "lane": "govtech",
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "date": "2026-09-02",
+  "planRow": "G-112",
+  "dispatch": "_dispatches/2026-09-02_g112-reconciliation-wiring_dispatch.md",
+  "scope": "Wire mcpCall's captured x-hauska-request-id header through every recordActivity() call site; wire fetchLedgerRows() to the live G-111 reader. Do not modify reconcileActivity's logic.",
+
+  "verifiedThisCheckpoint": [
+    {
+      "claim": "The dispatch's claim that mcpCall() discards response headers entirely was accurate.",
+      "source": "Read src/mcp.mjs before touching it: const raw = await res.text(); ... return textPayload(parseSseOrJson(raw)); -- res.headers never referenced."
+    },
+    {
+      "claim": "recordActivity(row) already accepts and stores row.requestId; every current call site passed requestId: null or omitted it with a now-stale comment.",
+      "source": "Read src/store.mjs recordActivity and mapActivity, and grepped every recordActivity({ call site in src/server.mjs (6 sites)."
+    },
+    {
+      "claim": "The G-111 reader (GET /obligations/source-ledger) is live and returns real data.",
+      "source": "Called it directly with the real plan-review-platform-key secret (read via gcloud secrets versions access, never written to a committed file) against the deployed hauska-mcp-server: 12 rows for source_actor_did=did:hauska:actor:org:icc, matching the count already on record from OPS-17 A-088."
+    },
+    {
+      "claim": "mcpCall's new header capture works against the real, deployed MCP server, not just in theory.",
+      "source": "Called getAtom() twice live: __mcpRequestId present, well-formed UUID, distinct per call."
+    },
+    {
+      "claim": "No live path in plan-review today actually cites ICC-sourced content -- this predates G-112 and is not something this row's acceptance criterion 1 can force.",
+      "source": "Empirically checked two real Bastrop parcels (48021:34137, 48021:27303) via getPropertyAtomChain against the live MCP server: every cited code atom is bastrop_tx-bdc-2026-adopted/* (municipal UDC) or a per-parcel setback fixture, none on hauska-mcp-server's ICC_SOURCED_ATOM_DID_ALLOWLIST or matching its ICC citation regex. Combined with the already-known fact that IBC2018P6/IPMC2018P2 manifests in code-lookup.mjs are still empty (zero ingested sections, unchanged since G-109's own finding), this confirms: neither the /code route nor the /matrix, /intake, /map-feature, or /briefing routes (all of which go through getPropertyAtomChain) can produce a genuine new ICC accrual through plan-review's current production input surface. This is a pre-existing condition (empty ICC manifests), not a G-112 defect."
+    }
+  ],
+
+  "designDecisions": [
+    {
+      "item": "mcpCall's return shape",
+      "chosen": "Additive property __mcpRequestId (double-underscore, deliberately unlikely to collide with any real API field name) attached to the object mcpCall/textPayload already returns, only when that return value is a non-null object.",
+      "reasoning": "The dispatch explicitly warned against changing mcpCall's return shape to a tuple/array, since every existing consumer (getPropertyAtomChain -> seedMatrix -> matrixFromChain; getAtom -> the /code route) reads specific fields off the result directly. An additive property preserves every one of those call sites unchanged; verified by running the full existing test suite (60/60, unchanged tests among them) after the change."
+    },
+    {
+      "item": "The ledger reader client (getSourceObligationLedgerRows in mcp.mjs)",
+      "chosen": "A separate function, not a mcpCall() variant -- it is a plain REST GET on a different path (/obligations/source-ledger, not /mcp), not a JSON-RPC tools/call. Reuses the same x-hauska-key header convention and mcpUrl() helper.",
+      "reasoning": "Matches the actual shape of the endpoint (built in G-111 as a REST endpoint, deliberately mirroring hauska-mcp-server's own /metering/summary precedent, not an MCP tool) rather than forcing it through the JSON-RPC-shaped mcpCall wrapper it does not fit."
+    },
+    {
+      "item": "fetchLedgerRows' actorDid scope",
+      "chosen": "Defaults to did:hauska:actor:org:icc, matching /api/icc/activity's own existing default and overridable the same way (the route's actorDid query param is threaded through).",
+      "reasoning": "This page has always been ICC-scoped (the constant ICC_ACTOR already existed as the route's default before this card); querying the reader by that same actor is the natural, minimal scope, not a new design decision."
+    },
+    {
+      "item": "Platform key env var name",
+      "chosen": "HAUSKA_MCP_PLATFORM_KEY",
+      "reasoning": "Parallels the existing HAUSKA_MCP_URL naming already in this repo's env vars, while remaining unambiguous about tier (distinguishes it from a hypothetical future non-platform key)."
+    },
+    {
+      "item": "Failure handling in fetchLedgerRows",
+      "chosen": "Three distinct logged-and-null-returning branches: no key configured, the reader call itself failing (network/HTTP error), and a malformed response (no rows array). All three collapse to the same null return (reconcileActivity's contract), but each logs its own specific cause via console.error before returning, so an operator reading logs can tell them apart even though reconcileActivity's own output cannot.",
+      "reasoning": "reconcileActivity's contract (per the dispatch, not to be changed) only distinguishes null vs an array -- it cannot express WHY null happened. Rather than widen that contract (out of scope, explicitly forbidden), the distinction is preserved one layer up, in logs, which is where an operator would actually look when reconciliation is unexpectedly unavailable."
+    }
+  ],
+
+  "adversarialReview": {
+    "selfChallenge1": "Am I fabricating a match to satisfy acceptance criterion 1, given no production route can produce one? No -- the empirical finding above is reported as what it is (a pre-existing structural fact, not a G-112 defect), and CP2/close will state plainly which acceptance criteria were met via a genuine but non-production-route call (the ICC-tagged demo/proof fixture atom, built into hauska-mcp-server specifically for proving this exact mechanism) versus which were met via an actual production route with real data producing a correctly-threaded but non-accruing request_id.",
+    "selfChallenge2": "Does the __mcpRequestId property risk leaking into any JSON response served to a plan-review API caller (e.g. the /code route's response body)? Checked: the /code route's response object at line ~397 (json(res, 200, {...})) is built as a fresh object literal, not a passthrough of `atom` or `payload` -- __mcpRequestId is read off `atom` into `requestId` for recordActivity only, never spread into a served response. seedMatrix similarly returns a fresh { sections, chainStatus, mcpRequestId } object, and the /matrix route only serves { engagementId, sections, chainStatus, bodyVerbatim } -- mcpRequestId is consumed for recordActivity but not exposed. No served endpoint changed shape as a result of this property's existence."
+  }
+}

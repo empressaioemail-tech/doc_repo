@@ -1,0 +1,85 @@
+{
+  "lane": "govtech",
+  "closeType": "PARTIAL — mechanism built, merged, deployed, and live-verified; the one thing it was ultimately for (a genuine matched ledger row) is blocked by a pre-existing, already-documented credential gap (OPS-17 A-088), not by anything in this row's scope",
+  "date": "2026-09-02",
+  "planRows": ["G-112"],
+  "dispatch": "_dispatches/2026-09-02_g112-reconciliation-wiring_dispatch.md",
+  "checkpoints": [
+    "_inbox/2026-09-02_g112-reconciliation-wiring_cp1.json",
+    "_inbox/2026-09-02_g112-reconciliation-wiring_cp2.json"
+  ],
+
+  "missionPremise": "G-111 (substrate) shipped the request_id echo-back and the reader endpoint; a platform_internal key for plan-review to call it was minted and stored (plan-review-platform-key, verified IAM-granted before this row started). Nothing consumed either yet. G-112's job was to wire mcpCall's captured header through every recordActivity call site and fetchLedgerRows to the live reader, without modifying reconcileActivity's own logic. Source: _dispatches/2026-09-02_g112-reconciliation-wiring_dispatch.md, itself citing G-109's close and the substrate-side asks doc.",
+
+  "completionPredicate": "mcpCall captures a real, well-formed, per-call-distinct request_id from hauska-mcp-server and every recordActivity call site downstream of an MCP call threads it through, verified against the real production database, not assumed from reading the diff. fetchLedgerRows reads the live G-111 reader with a real platform_internal key and reconcileActivity reports status:\"reconciled\" against real ledger data on the deployed revision, not ledger-unavailable. A stranger evaluating this close should confirm: plan-review PR #11 is merged, plan-review-00021-huc is serving 100% traffic with HAUSKA_MCP_PLATFORM_KEY bound, and GET /api/icc/activity on the live service returns reconciliation.status:\"reconciled\". This predicate does NOT require a matched or divergent reconciliation row to exist yet -- see openResiduals for exactly why none can, today, and why that is not this row's defect to fix.",
+
+  "scopeBasis": "Built only in plan-review. hauska-mcp-server was read for context (source-obligation-reader.ts, per the dispatch's explicit instruction) but never written to. Did not touch Smart Files or Dashboards. Did not attempt S4-7 or the real ICC rate. Did not attempt the DEPLOY-75 true-positive verification with a codex-tier key -- none was available, and the dispatch said only to attempt it 'if a key is already in hand.' Live Bastrop was read (getPropertyAtomChain on two real parcel ids, GET-only, no writes) as part of confirming CP1's empirical finding about ICC citations, consistent with the no-touch rule's intent (no mutation, no side effect) and with what plan-review's own production routes already do for that jurisdiction routinely.",
+
+  "prs": {
+    "plan-review": {
+      "number": 11,
+      "url": "https://github.com/empressaioemail-tech/plan-review/pull/11",
+      "headBranch": "govtech/g-112-reconciliation-wiring",
+      "headCommit": "99516af",
+      "mergeSha": "1f2d6bac4ce5fad0b9a135143eb147486bdd521b",
+      "mergedAt": "2026-09-02T19:43:09Z",
+      "ciCheckRun": {
+        "onHeadCommit": { "name": "test", "conclusion": "success" },
+        "onMergeCommit": { "name": "test", "conclusion": "success" }
+      }
+    },
+    "hauska-mcp-server": "not applicable: read-only, zero writes, confirmed by this lane's own git status discipline (never entered that worktree to write)."
+  },
+
+  "deployedRevision": {
+    "service": "plan-review",
+    "project": "plan-review-505715",
+    "region": "us-east1",
+    "revision": "plan-review-00021-huc",
+    "tag": "g112-recon",
+    "trafficPercent": 100,
+    "verifiedBy": "gcloud run services describe --format=json(status.traffic), read by field name (revisionName, percent), not the positional value() formatter -- an earlier check in this same session used the positional form and returned traffic[0], which was a stale 0%-tagged entry, not the actual 100% one; caught before being reported as fact."
+  },
+
+  "counts": {
+    "testsPassing": { "n": 60, "countingRule": "node --test web/api/*.test.mjs, full suite, run before staging and again before commit; 5 net-new tests over G-109's 39 (fetchLedgerRows key-missing, fetchLedgerRows connection-failure, mapLedgerRow field mapping x2, mapLedgerRow-feeds-reconcileActivity), 2 tests rewritten from sync to async assertions for fetchLedgerRows' new signature" },
+    "recordActivityCallSitesThreaded": { "n": 4, "countingRule": "server.mjs: /code success, /code source-unavailable, /intake (via seedMatrix), /matrix (via seedMatrix). The refusal branch of /code and the override route were correctly left with requestId omitted -- neither is preceded by an MCP call, so there is nothing to thread." },
+    "liveRequestIdsConfirmedInProduction": { "n": 2, "countingRule": "Direct SQL query against the real plan_review_activity table, post-deploy: one row from a live /code call, one from a live /matrix call, both carrying real non-empty request_id values distinct from each other and from every pre-deploy row (empty string)." },
+    "genuineLedgerMatchesProduced": { "n": 0, "countingRule": "See openResiduals -- structurally blocked by the same codex-tier-key gap named in OPS-17 A-088, not by anything built or left undone in this row." }
+  },
+
+  "constraintsHonored": [
+    "Verify at source: every claim in CP1/CP2 was checked live -- the reader's real row count, mcpCall's real header, the activity table's real request_id column, the deployed revision's real env vars and real traffic split -- not inferred from the diff.",
+    "Merge only on CI conclusion string 'success': confirmed via gh api on both the PR head and the merge commit, watched to actual completion after catching and fixing a bug in this session's own first Monitor script (it declared done on an empty check-run list before the check had even started -- caught by checking gh api directly rather than trusting the tool's first report, then relaunched with a fixed condition).",
+    "Cloud Run traffic read as JSON by field name, not the positional formatter: caught and corrected mid-verification, per this program's own standing rule and its own prior incident.",
+    "Don't force a match: acceptance criterion 2 was pursued with a genuine, real diagnostic call against the one atom built for proving this exact mechanism, not with a fabricated ledger row. It failed for a real, external reason (accessPolicy refusing an anonymous caller), and that failure is reported as the finding it is.",
+    "State-changing operations leave a record: the diagnostic probe's activity row was left in place, clearly labeled, rather than deleted -- it is itself the record of the verification attempt.",
+    "--update-secrets, not --set-secrets: preserved every existing bound secret while adding the new one, verified by reading the deployed revision's env list afterward rather than assuming the flag behaved as intended."
+  ],
+
+  "openResiduals": [
+    {
+      "item": "No codex-tier product key available to this session. Blocks: DEPLOY-75's own true-positive verification (A-088, pre-existing), AND now also blocks producing a single genuine matched/divergent reconciliation row for G-112's acceptance criterion 2 -- confirmed empirically this session (the ICC-tagged demo/proof fixture atom refuses an anonymous read with 'not readable under the caller's accessPolicy'). Getting a codex-tier key resolves both at once.",
+      "owner": "whoever can mint or locate a codex-tier product key",
+      "planRow": "G-112, OPS-17 A-088"
+    },
+    {
+      "item": "No production route in plan-review cites genuinely ICC-sourced content. IBC2018P6/IPMC2018P2 manifests in code-lookup.mjs remain empty (zero ingested sections, unchanged since G-109); real Bastrop parcel atom chains cite only municipal UDC and per-parcel setback fixtures. Until real ICC content is ingested into a book manifest here, or a codex-tier key lets a different, gated path through, acceptance criterion 1's 'a route that produces an ICC citation' cannot be satisfied by anything running through plan-review's own production input surface -- only by a direct diagnostic call, which this close already did once, honestly labeled.",
+      "owner": "unassigned -- names a real gap, not a next dispatched row",
+      "planRow": "G-112"
+    },
+    {
+      "item": "A diagnostic activity row (id 47fc24c3-3875-42e2-96b5-092f3f9025ee) sits in the real production plan_review_activity table, clearly labeled bookId=G112-DIAGNOSTIC-PROBE, tier=diagnostic-g112-verification, rate=amount=0. Left in place deliberately (see constraintsHonored); flagging its existence so a future audit of that table is not surprised by it.",
+      "owner": "n/a, informational",
+      "planRow": "G-112"
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Obtain a codex-tier product key and re-run this row's acceptance criterion 2 (and DEPLOY-75's original true-positive check, A-088) against it.",
+      "owner": "next session with access to one",
+      "plan_row": "G-112, OPS-17 A-088"
+    }
+  ]
+}

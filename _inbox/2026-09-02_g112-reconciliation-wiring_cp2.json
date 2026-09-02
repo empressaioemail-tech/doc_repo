@@ -1,0 +1,40 @@
+{
+  "lane": "govtech",
+  "checkpoint": "CP2",
+  "type": "pilot/mid-work",
+  "date": "2026-09-02",
+  "planRow": "G-112",
+  "dispatch": "_dispatches/2026-09-02_g112-reconciliation-wiring_dispatch.md",
+
+  "deploy": {
+    "revision": "plan-review-00021-huc",
+    "tag": "g112-recon",
+    "priorServing": "plan-review-00019-puj (tag g110-fix)",
+    "method": "gcloud run deploy --source . --no-traffic --tag g112-recon --update-secrets=HAUSKA_MCP_PLATFORM_KEY=plan-review-platform-key:latest, i.e. tag+smoke-test+shift, not straight-to-100",
+    "secretsPreserved": "Verified via gcloud run revisions describe (JSON, by field name, not the positional formatter): PLAN_REVIEW_DATABASE_URL, PLAN_REVIEW_SERVICE_TOKEN, SMART_FILES_SERVICE_TOKEN, SMART_FILES_BACKEND_URL, HAUSKA_MCP_URL all carried forward unchanged; HAUSKA_MCP_PLATFORM_KEY newly bound from plan-review-platform-key:latest.",
+    "trafficShift": "100% to plan-review-00021-huc after smoke tests passed. Verified the shift with the JSON traffic list by field name (status.traffic[].revisionName / .percent) after an earlier positional-formatter check returned a stale-looking result -- caught and corrected before trusting it, per this program's own standing rule against exactly that mistake."
+  },
+
+  "liveVerification": [
+    {
+      "criterion": "Acceptance 3 (regression)",
+      "result": "PASS",
+      "evidence": "GET / returns {ok:true}. GET /api/plan-review/reviewer/engagements returns 200. GET /api/plan-review/engagements/:id/matrix (a getPropertyAtomChain consumer) returns 200. GET /api/plan-review/code?book=BASTROP-UDC&section=14-02-003 (a getAtom consumer) returns its expected typed-absence shape, unchanged in kind from before this deploy -- only the underlying recordActivity call now additionally carries a real request_id, which is additive, not a behavior change to the response."
+    },
+    {
+      "criterion": "Acceptance 1 (request_id threading mechanism)",
+      "result": "MECHANISM VERIFIED; NO GENUINE ICC CITATION AVAILABLE TO ROUTE THROUGH IT",
+      "evidence": "Queried plan_review_activity directly (real production DB, DSN from the local .empressa file) after two live calls through the deployed revision: the /code call's row carries request_id=42761383-2f28-42ca-9d6d-96bbca163885, the /matrix call's row carries request_id=88219209-251c-46ac-9a0a-5ff5f3ac76ab -- both real, well-formed ids, both distinct, both absent on every row written before this deploy (empty string). This directly confirms the mechanism the acceptance criterion cares about: a real MCP call's response header lands, correctly, on the activity row. Neither call cited ICC-sourced content (BASTROP-UDC is municipal; the matrix call's chain cited only bastrop_tx-bdc-2026-adopted and per-parcel setback atoms, per CP1's empirical check), so neither produced a ledger accrual -- expected, not a defect."
+    },
+    {
+      "criterion": "Acceptance 2 (a genuine matched or divergent result)",
+      "result": "LEGITIMATE FINDING: not achievable this session, for a reason beyond G-112's scope",
+      "evidence": "Attempted directly: called getAtom() (plan-review's own merged client code) against did:hauska:code-section:storage-port-proof/phase-1a, the one atom on hauska-mcp-server's ICC_SOURCED_ATOM_DID_ALLOWLIST built specifically to demo this mechanism (per that server's own source-obligation-meter.ts comment). The call returned {\"text\":\"Atom at DID ... is not readable under the caller's accessPolicy.\"} -- an anonymous-tier refusal, not atom content, so accrueSourceObligations on the MCP side never had a real atom DID to evaluate and never wrote a ledger row. Confirmed by querying the reader immediately after (GET /obligations/source-ledger?request_id=<the captured id>): 0 rows. This is the SAME residual OPS-17 A-088 already named before this dispatch existed (DEPLOY-75's true-positive path needs a codex-tier product key, unavailable this session) -- G-112 did not introduce it and cannot resolve it; it now additionally blocks this criterion, not only DEPLOY-75's original one. reconcileActivity() itself IS live against real data (status: \"reconciled\", not \"ledger-unavailable\", confirmed via GET /api/icc/activity on the deployed revision: 73 activity rows compared against the real 12-row ICC ledger, every one legitimately no-correlation-key -- the 12 pre-existing rows all predate G-111/G-112 and the 73 activity rows are dated the same way). A labeled diagnostic activity row was left in the real table (id 47fc24c3-3875-42e2-96b5-092f3f9025ee, bookId=G112-DIAGNOSTIC-PROBE, tier=diagnostic-g112-verification, rate=amount=0) recording this attempt -- not deleted, since it is itself evidence of a state-changing verification action and is clearly labeled, not mixed into real billing data."
+    }
+  ],
+
+  "adversarialReview": {
+    "selfChallenge1": "Could I have forced a match by, e.g., manually inserting a matching row into source_obligation_ledger? Not attempted and would have been wrong: that ledger is substrate's repo, out of scope per the dispatch, and fabricating a match to satisfy a checklist item is exactly the failure mode ENFORCEMENT and this dispatch's own 'don't force a match' instruction exist to prevent.",
+    "selfChallenge2": "Is 'reconciled with 100% no-correlation-key' actually distinguishable from the pre-G-112 'ledger-unavailable' state in a way that matters? Yes, and it is the whole point: ledger-unavailable means the read never happened; reconciled/no-correlation-key means the read happened, returned real rows, and none of them share a request_id with anything in the activity window -- a materially different, stronger claim, verified by the reconciliation.status field itself changing from one to the other on the same endpoint, live, before and after this deploy."
+  }
+}
