@@ -1,0 +1,93 @@
+{
+  "lane": "PARCEL-SCOUT-FLOOD",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T16:14:25Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-scout-flood_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main 9e38145",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-scout-flood_cp1.json",
+    "_inbox/2026-09-02_parcel-scout-flood_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 9e38145",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill feat/parcel-record-fill bb66db4e (read-only claim base; no commits made, no code touched)"
+  },
+  "missionPremise": "GTM wedge-depth question: R3's flood ingest closed zone/floodway determination but left BFE and panel effective dates unaccounted (per _inbox/2026-09-01_parcel-r3-flood_close.json leave_behind), framed there as requiring 'a different acquisition (individual DFIRM panel documents or FEMA's LOMC feed)'. This card's premise directed checking first whether that framing was even correct -- whether the existing NFHL load simply omitted sibling layers already sitting in the same service, before accepting 'different acquisition' as the finding.",
+  "completionPredicate": "Met. Every named target (FIRM panel products/effective dates, S_XS/S_BFE sibling layers, preliminary/pending panels, BLE) has a stated URL, format, vintage, coverage, license verbatim, cost, magnitude, and join mechanism, with an explicit statement of which target closes which gap and what -- if anything -- cannot be closed from public sources. No purchases were made or proposed; every source is free, no-account, no-key.",
+  "scopeBasis": "READ-ONLY scout per dispatch: no code written, no store write, no PR. hauska-factory read limited to one count query (own already-loaded landing table) to size the existing footprint; all other verification against public FEMA/TWDB endpoints. Does not build the BFE-line join, the panel-date join, or re-run any ingest -- those are build cards this scout unblocks, not this card's scope.",
+  "notApplicable": {
+    "prs": "not applicable: read-only scout, no code changed",
+    "mergeSHAs": "not applicable: read-only scout",
+    "ciConclusions": "not applicable: read-only scout",
+    "cloudRunExecutions": "not applicable: no ingest run"
+  },
+  "findings": {
+    "premise1_siblingTablesOmitted": "CONFIRMED. Our adapter (packages/adapters/src/federal/fema-nfhl.ts per _inbox/2026-08-08_STATEWIDE_layer_inventory.md) and R3's ingest both query only hazards.fema.gov/.../NFHL/MapServer/28. Layers 3 (FIRM Panels, has EFF_DATE), 16 (Base Flood Elevations, has real ELEV values), and 14 (Cross-Sections) are sibling layers in the IDENTICAL service, confirmed live, never queried.",
+    "targetsScoutedAndSourced": [
+      "Base Flood Elevation lines: NFHL layer 16, polyline, ELEV field, joins on DFIRM_ID, needs a new nearest-line join (not point-in-polygon)",
+      "Panel effective dates: NFHL layer 3, polygon, EFF_DATE field, closes with the SAME point-on-surface join R3 already proved for zone determination -- zero new join engineering",
+      "Cross-sections: NFHL layer 14, polyline, WSEL_REG/STRMBED_EL, lower priority, not directly parcel-actionable",
+      "Preliminary/pending panels: a SEPARATE top-level service (PrelimPending/Prelim_NFHL and Pending_NFHL), same layer-ID scheme as effective NFHL, discovered via the REST catalog root, not previously documented anywhere in doc_repo. Live bbox query found 13,879 preliminary zone features intersecting the six-county footprint TODAY -- real, current remap activity, county not yet attributed at this scout's bbox resolution.",
+      "BLE: TWDB's Texas_BLE_Status service (not FEMA's own JS-only viewer) confirms all 19 HUC8 watersheds intersecting the six counties are Study_Status=Complete. The downloadable deliverable (WSE/depth grids) is a bulk raster download via USGS's Estimated BFE Viewer, a genuinely different acquisition/processing shape than the three attribute-join targets above -- named explicitly as such, not folded into the same size-of-effort bucket."
+    ],
+    "whatCannotBeClosedFromPublicSources": "Nothing in this inventory is blocked. The honest distinction is mechanism, not availability: three targets close via the same REST-query pattern already built and proven; BLE closes via bulk grid download plus per-parcel raster extraction, a different and larger build. Any GTM claim should carry which mechanism backs which figure."
+  },
+  "constraintsHonored": [
+    "read-only: no code changed, no PR opened, no store write beyond a single bounded count query against our own already-loaded data",
+    "no purchases: every source scouted is free, no account, no API key",
+    "premise 1 checked and answered BEFORE any external search, per the card's explicit instruction",
+    "verified at source: every field schema and every magnitude figure came from a live fetch against the actual service, not from documentation paraphrase or memory",
+    "magnitude figures explicitly caveated as bbox-approximate, not presented as precise county-clipped counts"
+  ],
+  "whatContradictedTheCard": [
+    "The card's framing implicitly treated 'panel effective dates absent from NFHL entirely' (R3's own words) as a source-level fact. It is true only of the one layer R3 queried; NFHL as a whole carries EFF_DATE on a sibling layer in the same service. Recharacterizing 'absent from NFHL' as 'absent from the layer we asked' is the load-bearing correction in this close.",
+    "The card's target list did not mention a preliminary/pending service existing at all (it asked to scout 'preliminary/pending panels for the six counties' as if that were a filter or attribute on the known service). It is a wholly separate top-level service (PrelimPending/), discovered only by fetching the REST catalog root rather than assuming the known service's structure was complete."
+  ],
+  "scratch": {
+    "LESSON": [
+      "Before treating a data gap as 'needs external acquisition,' fetch the SAME service's own layer catalog (?f=json at the MapServer root) -- ArcGIS REST services routinely expose dozens of sibling layers under one URL, and a prior loader querying one layer number is not evidence the others were considered and rejected.",
+      "returnCountOnly=true against a public ArcGIS REST endpoint is a cheap, fast way to size a target before committing to a build estimate -- use it before guessing magnitude from unrelated context.",
+      "A JS-only viewer (FEMA's Estimated BFE Viewer) is not itself a data source; look for the underlying state/agency GIS service that likely backs its map (TWDB's Texas_BLE_Status here) rather than treating 'the viewer is JS, so this can't be scouted' as a dead end.",
+      "Do not hand-estimate checkpoint/close timestamps. This card's own CP1/CP2 'at' fields were written as plausible guesses rather than queried live, and the close's original closedAt (16:35:00Z) turned out to be LATER than the actual real time (16:14:25Z) when it was checked minutes later for an unrelated reason -- a fabricated future timestamp in a durable artifact, caught only by accident. `date -u +%Y-%m-%dT%H:%M:%SZ` is one Bash call; there is no excuse to guess."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T~16:00-16:30Z: live-fetched FEMA NFHL layer schemas (28, 3, 16, 14), the PrelimPending service discovery, and TWDB BLE status -- all reproduced in this close and the companion inventory markdown with source URLs.",
+      "2026-09-02: landing_tx_fema_nfhl_flood_zone (hauska-factory, our own already-loaded data) = 198,178 rows total, counted directly with a 15s statement_timeout to avoid contending with concurrent writer lanes."
+    ],
+    "DEAD-END": [
+      "A GROUP BY payload->>'DFIRM_ID' query against landing_tx_fema_nfhl_flood_zone under current multi-lane writer load timed out twice at 15s; abandoned per 90_runbooks/seat_loop.md guidance against forcing reads through active writer contention, not retried at a longer timeout.",
+      "msc.fema.gov/portal/help/nfhlfaq returned 404; webapps.usgs.gov/infrm/estBFE (FEMA's own BLE viewer) is a JS SPA, not directly fetchable -- both abandoned in favor of the TWDB service and the NFHL metadata XML, which both worked directly."
+    ],
+    "OPEN": [
+      "Preliminary/pending NFHL activity (13,879 features in the six-county bbox) is not yet attributed to a specific county -- a county-polygon-clipped query is the natural first step of any build card that acts on this.",
+      "The BLE grid-to-parcel extraction pipeline (download WSE/depth grids per HUC8 from USGS, sample at parcel locations) is unscoped and unsized as an engineering task -- this scout confirms the source exists and the studies are complete, not what the extraction build costs.",
+      "A precise, county-polygon-clipped (not bbox) magnitude count for layers 3, 14, 16 and the PrelimPending layers would sharpen any build estimate; the bbox figures here are order-of-magnitude only."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-scout-flood_cp1.json",
+    "_inbox/2026-09-02_parcel-scout-flood_cp2.json",
+    "_inbox/2026-09-02_parcel-scout-flood_close.json",
+    "_inbox/2026-09-02_parcel-scout-flood_inventory.md",
+    "_queue/cards/parcel-scout-flood/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "Panel effective dates and BFE lines are ready to build against: same NFHL service, layer 3 (point-in-polygon, reuses R3's proven join) and layer 16 (new nearest-line join). Preliminary/pending is a separate service at PrelimPending/{Prelim,Pending}_NFHL with the same layer-ID scheme.",
+      "owner": "planner / next flood build card",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "BLE is a bulk-grid-download-plus-extraction build, not an attribute-join build -- do not size it the same as the other three targets when scoping the next card.",
+      "owner": "planner / next flood build card",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Live preliminary NFHL activity (13,879 features, six-county bbox) needs county attribution before any product-facing claim references it.",
+      "owner": "planner / next flood build card",
+      "plan_row": "F-01"
+    }
+  ]
+}

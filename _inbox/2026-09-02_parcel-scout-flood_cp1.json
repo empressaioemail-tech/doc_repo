@@ -1,0 +1,26 @@
+{
+  "lane": "PARCEL-SCOUT-FLOOD",
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "at": "2026-09-02T15:56:00Z (approximate; not queried live at write time -- corrected 2026-09-02T16:14:25Z after real system time was checked and found the original CP2/close timestamps had drifted into the future)",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 9e38145",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill feat/parcel-record-fill bb66db4e (clean, read-only claim base per seat_register)",
+    "seat": "property",
+    "card": "parcel-scout-flood"
+  },
+  "premiseVerification": {
+    "premise": "Check FIRST whether the NFHL load simply omitted sibling tables (S_XS, S_BFE) before treating BFE as an external acquisition.",
+    "method": "Read _inbox/2026-08-08_STATEWIDE_layer_inventory.md (names the adapter file packages/adapters/src/federal/fema-nfhl.ts and its target URL), read _inbox/phase2_probes_2026-08-10/fema_nfhl_layer28.json (a live field-schema probe of that exact URL), read the R3 flood-ingest close _inbox/2026-09-01_parcel-r3-flood_close.json (which reports BFE <1% and panel date 0% coverage as 'a real source limitation'), then live-fetched the FEMA NFHL MapServer's own service catalog to enumerate every layer in the same service.",
+    "finding": "CONFIRMED and SHARPER than the premise anticipated. The adapter and the R3 ingest both query only hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28 ('Flood Hazard Zones', S_FLD_HAZ_AR). That layer DOES carry a STATIC_BFE attribute field (confirmed in the layer-28 field probe) -- R3's finding that it is <1% populated is a true statement about that one layer, not evidence BFE is externally unavailable. The SAME MapServer service (same base URL, zero new auth, zero cost) also serves layer 16 'Base Flood Elevations' (S_BFE, polyline, real ELEV values) and layer 3 'FIRM Panels' (S_FIRM_PAN, polygon, EFF_DATE field) -- neither ever queried. Layer 3 is polygon geometry, so the existing point-on-surface/point-in-polygon join already proven for zone determination (R3's reconciliation rule) applies unchanged to get a panel effective date per parcel; no new join logic needed for that gap. Layer 16 (elevation lines) needs a different join (nearest-line, not containment) -- a real but bounded scope addition.",
+    "revisedScope": "The premise as written treated 'is this omitted' as a yes/no gate before scouting externally. It is yes, and the external half of the scout (what closes the two remaining gaps R3 flagged as OPEN -- preliminary/pending panels, BLE) still needs live verification, which this checkpoint's plan covers below."
+  },
+  "plan": [
+    "Confirm exact field schemas for layers 3, 14, 16 via live fetch (join keys, geometry types, elevation/date fields).",
+    "Determine whether preliminary/pending NFHL data is a separate service (it is a materially different acquisition path if so) and whether any of the six counties currently have live preliminary activity.",
+    "Confirm FEMA BLE status for the six counties' HUC8 watersheds via the TWDB status service (not FEMA's own viewer, which is a JS app not fetchable directly).",
+    "Pull verbatim license/use-constraint language from the NFHL metadata record rather than paraphrasing.",
+    "Get a live, bbox-scoped feature count per target layer as a real magnitude figure, flagged as bbox-approximate (not exact county-polygon-clipped) rather than presented as precise.",
+    "State plainly what genuinely cannot be closed from a REST attribute/geometry join and would need a different acquisition mechanism (bulk grid download, not a query)."
+  ]
+}
