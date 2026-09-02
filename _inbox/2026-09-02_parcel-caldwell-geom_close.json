@@ -1,0 +1,66 @@
+{
+  "lane": "PARCEL-CALDWELL-GEOM",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-02T15:28:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-caldwell-geom_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main 394820c, verified via _queue/log/property.jsonl GRANTED 2026-09-02T15:18:35.146Z",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-caldwell-geom_cp1.json",
+    "_inbox/2026-09-02_parcel-caldwell-geom_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 394820c",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill, feat/parcel-record-fill (read-only, no writes)"
+  },
+  "missionPremise": "R3-flood discovered txgio_parcel holds zero populated native geom for county 48055, blocking flood and every future geometry-dependent rail there, while landing_parcel_jurisdiction shows real containment dispositions for the same county -- a paradox this card investigates read-only: mechanism with evidence, a rejected alternative, blast radius, and a backfill card spec, never the backfill itself.",
+  "completionPredicate": "Met. The paradox is fully resolved with direct evidence, not inference: containment (p2-juris-store.mjs's CHUNK_GEOMETRY_SQL) has only ever read txgio_parcel's jsonb geometry column, decoded per-chunk, and never depended on the native geom column at all -- so containment's success and geom's absence are not actually in tension once the read path is read, not assumed. The native geom column is populated by a separate, out-of-band process not found anywhere in this repo, and it simply never touched Caldwell, despite Caldwell's source geometry being fully present (32,781/32,781 rows), fully valid (5 sampled rows parse and validate cleanly through the exact conversion chain), and loaded in the identical session as Bastrop (which does have geom) 29 seconds apart. Three specific alternative explanations were tested and rejected with direct evidence (lost/purged data, malformed geometry, chronology gap). Blast radius named with evidence for three confirmed-blocked rails (flood, wells, specialDistricts, the last two from this seat's own closed PARCEL-R4-COMPANIONS card) and six not-yet-built rails named as likely exposed on the same pattern. A backfill card spec (source, transform, job shape, verification) is written; not executed, per scope.",
+  "scopeBasis": "Read-only throughout. No INSERT/UPDATE/DELETE against any store; every finding traced to a SELECT or a code read. No repo code change. The one thing explicitly out of reach within this scope: the actual original geom-backfill script/job that populated the other five counties was not located (confirmed absent from hauska-factory; not searched for in any other repo, which would have exceeded this card's stated scope and repo).",
+  "mechanismSummary": "LOAD gap, not a source gap. TxGIO fabric genuinely carries Caldwell. An out-of-band native-geom backfill (location unknown, not in hauska-factory) ran for five of six counties and never ran for Caldwell, for a reason this investigation could not pin down beyond ruling out data quality and chronology. Full mechanism, evidence, and the three rejected alternatives are in CP1/CP2.",
+  "whatContradictedTheCard": "None of the card's own premises were wrong. The one expectation this investigation could not fully satisfy: the dispatch asks to 'check txgio load run history for 48055' and 'the containment job's actual source tables' as if that history might live in this repo -- it does not. txgio_parcel is an external table with no migration, trigger, or job code in hauska-factory referencing its geom column at all, so 'why the backfill specifically skipped Caldwell' (as opposed to 'that a separate backfill exists and skipped it') is answered as far as this repo's own evidence reaches, and no further. Naming this rather than guessing at a mechanism this repo cannot evidence.",
+  "blastRadius": {
+    "confirmed": ["flood (PARCEL-R3-FLOOD)", "wells (PARCEL-R4-COMPANIONS)", "specialDistricts (PARCEL-R4-COMPANIONS)"],
+    "likelyWhenBuilt": ["parcelGeometry", "roads", "terrain", "railCorridor", "buildingFootprint", "easements"],
+    "probablyNotBlocked": "zoningDistrict / zoning-envelope rails (inherited context: they source from a per-city staged layer, not re-verified here)"
+  },
+  "backfillCardSpecSummary": "Source: txgio_parcel.geometry (jsonb) for county_fips='48055', already present and valid, no new acquisition. Transform: ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)), live-proven against Caldwell's own data in this investigation. Job: a chunked UPDATE ... WHERE geom IS NULL, idempotent by construction. Verification: row-count match, then re-run flood-ingest and parcel-r4-companions dry-run for 48055 and confirm noGeom drops toward 0. Full detail in CP2.",
+  "constraintsHonored": [
+    "READ-ONLY: zero writes to any store",
+    "no repo code changes",
+    "mechanism stated with evidence, not asserted",
+    "second/rejected mechanisms stated with the specific evidence that ruled each out, not merely named",
+    "backfill designed, not executed"
+  ],
+  "scratch": {
+    "LESSON": [
+      "When a derived/native column (geom) and its source column (geometry, jsonb) disagree on population state, check which one the CONSUMING code actually reads before assuming the derived column's absence means the underlying capability is broken -- containment never needed geom at all, so its success was never actually in tension with geom's absence once the read path was read directly.",
+      "A same-session, minutes-apart ingest timing difference (Bastrop vs Caldwell, 29 seconds apart) is strong, cheap evidence against a chronology-gap hypothesis and is worth checking before a more expensive data-quality investigation."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-02T~15:2xZ: txgio_parcel county_fips='48055': 32,781 total rows, 32,781 geometry(jsonb) not null, 0 geom(native) not null, 1 source_vintage, ingested 2026-07-19T00:26:37Z-00:27:02Z.",
+      "txgio_parcel county_fips='48021' (Bastrop, comparison): ingested 2026-07-19T00:27:06Z-00:27:58Z (29s after Caldwell's start), geom populated (verified live during this seat's own R4 card, 74,729 geom-populated rows).",
+      "5 sampled Caldwell geometry values, live ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)) all return valid, non-empty Polygon geometries."
+    ],
+    "DEAD-END": [
+      "Searching hauska-factory for the geom-backfill mechanism -- grep across migrations/ and src/ for any reference to txgio_parcel.geom being written; zero hits. The mechanism is external to this repo."
+    ],
+    "OPEN": [
+      "The exact original backfill job/script (wherever it lives) was not located. A future card scoped to find it (or simply write a fresh Caldwell-scoped backfill per this card's spec, without needing to find the original) can proceed either way.",
+      "This card's blast-radius list for not-yet-built rails (parcelGeometry, roads, terrain, railCorridor, buildingFootprint, easements) is a prediction based on rail grouping, not a confirmed fact for any of them individually -- worth re-checking against each rail's actual join logic once each is built."
+    ]
+  },
+  "docRepoUncommitted": [
+    "_inbox/2026-09-02_parcel-caldwell-geom_cp1.json",
+    "_inbox/2026-09-02_parcel-caldwell-geom_cp2.json",
+    "_inbox/2026-09-02_parcel-caldwell-geom_close.json",
+    "_queue/cards/parcel-caldwell-geom/claim.json (released on close)",
+    "_queue/log/property.jsonl (claim + release entries)"
+  ],
+  "leave_behind": [
+    {
+      "item": "Caldwell (48055) txgio_parcel.geom backfill card spec is written (source/transform/job/verification in CP2) but not executed. Blocks flood, wells, specialDistricts today and likely six more rails once built.",
+      "owner": "planner / future txgio-caldwell-backfill card",
+      "plan_row": "F-01"
+    }
+  ]
+}

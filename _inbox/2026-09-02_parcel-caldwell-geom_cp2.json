@@ -1,0 +1,47 @@
+{
+  "lane": "PARCEL-CALDWELL-GEOM",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T15:25:00Z",
+  "mechanism": {
+    "statement": "The native txgio_parcel.geom column and the jsonb txgio_parcel.geometry column are populated by two SEPARATE, independent processes. Containment (p2-juris) has only ever read geometry (jsonb, decoded per-chunk via ST_GeomFromGeoJSON in CHUNK_GEOMETRY_SQL) -- it does not use and has never needed geom. A later, separate backfill process populates geom from geometry for serving convenience (native PostGIS type + GiST index, used directly by flood-ingest.mjs and this seat's own parcel-r4-companions.mjs). That backfill ran for five of the six program counties and never ran for Caldwell (48055) -- not because Caldwell's data is unusable (it parses and validates cleanly) or because it predates the backfill mechanism (Caldwell and Bastrop loaded 29 seconds apart in the same session, and Bastrop has geom), but because whatever job or script performs that backfill either excluded Caldwell, was never invoked for it, or failed silently for it. That backfill's own source code was not found anywhere in the hauska-factory repo (no migration, no trigger, no job referencing txgio_parcel.geom) -- it runs from outside this repo, and this investigation could not identify exactly where without expanding scope beyond hauska-factory.",
+    "classification": "LOAD gap, not a SOURCE gap. TxGIO fabric genuinely carries Caldwell (32,781 valid, parseable parcel geometries, same vintage and load session as Bastrop). The gap is entirely in an out-of-band geom-column backfill that simply never touched this county."
+  },
+  "rejectedAlternatives": [
+    {
+      "hypothesis": "Caldwell's geometry existed in the native geom column and was later lost or purged.",
+      "rejectedBecause": "No evidence of any DELETE/UPDATE-to-NULL touching txgio_parcel.geom in this repo (no such code exists here at all); the jsonb geometry column, the actual source of truth containment reads, was never touched and remains fully populated -- a 'lost after existing' story would need to explain why only the derived column emptied while the source column it's derived from stayed intact, which has no mechanism in evidence."
+    },
+    {
+      "hypothesis": "Caldwell's geometry is malformed or a different GeoJSON shape that a backfill script's ST_GeomFromGeoJSON call chokes on and silently skips.",
+      "rejectedBecause": "Directly tested: 5 sampled Caldwell rows, run through the exact conversion+validation chain (ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326))) live, all parse and validate. Not consistent with a parse-failure-driven skip."
+    },
+    {
+      "hypothesis": "Caldwell was loaded before the geom-backfill mechanism existed (a simple chronology gap).",
+      "rejectedBecause": "Bastrop (has geom) and Caldwell (does not) were ingested 29 seconds apart in the identical load session (2026-07-19 00:26:37Z-00:27:06Z). Any backfill mechanism that ran for Bastrop from that session would have had the identical opportunity to run for Caldwell in the same pass."
+    }
+  ],
+  "blastRadius": {
+    "confirmedBlocked": [
+      { "rail": "flood", "job": "flood-ingest.mjs (PARCEL-R3-FLOOD)", "evidence": "24,988/24,988 noGeom, R3's own close" },
+      { "rail": "wells", "job": "parcel-r4-companions.mjs (this seat's own PARCEL-R4-COMPANIONS, closed same session)", "evidence": "24,988/24,988 noGeom, live-verified" },
+      { "rail": "specialDistricts", "job": "parcel-r4-companions.mjs", "evidence": "24,988/24,988 noGeom, live-verified" }
+    ],
+    "likelyBlockedWhenBuilt": {
+      "note": "No job exists yet for any of these; each is currently unaccounted everywhere regardless of Caldwell. Named because each is a companion rail in the 'spine'/'companion' groups (rail-keys.js) that would plausibly need txgio_parcel.geom for a spatial join or as the served geometry itself, following the same pattern as the three confirmed rails.",
+      "rails": ["parcelGeometry", "roads", "terrain", "railCorridor", "buildingFootprint", "easements"]
+    },
+    "notNecessarilyBlocked": {
+      "note": "zoningDistrict and the zoning-envelope rails appear (per prior zoning-ingest card closes referenced in the gap ledger) to source from a per-city staged layer rather than a direct txgio_parcel.geom join; this investigation did not re-verify that mechanism and states it as inherited context, not newly confirmed.",
+      "rails": ["zoningDistrict", "zoning-envelope group"]
+    }
+  },
+  "backfillCardSpec": {
+    "note": "Design only, per this card's own scope -- not executed.",
+    "source": "txgio_parcel.geometry (jsonb) for county_fips='48055' -- already present, valid, and parses cleanly; no new data acquisition needed.",
+    "transform": "ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text), 4326)), the identical transform already proven live against Caldwell's own data in this investigation and structurally identical to what the (unlocated) original backfill used for the other five counties.",
+    "job": "A new, narrowly-scoped Cloud Run job (or a one-shot chunked script matching this program's existing write conventions): UPDATE txgio_parcel SET geom = <transform> WHERE county_fips='48055' AND geom IS NULL, chunked by tile_key or feature_index range (32,781 rows; chunk to avoid one long-held write lock, matching the write-slot/heavy-scan doctrine already governing this store). Idempotent by construction (the geom IS NULL guard).",
+    "verification": "Before/after count(*) FILTER (WHERE geom IS NOT NULL) = 32,781 (matching total row count, matching the other five counties' pattern of geom-row-count exceeding or equal to landing-matched parcel count due to multi-tile fragments). Re-run flood-ingest, parcel-r4-companions, in dry-run mode for county 48055 post-backfill and confirm noGeom drops from 24,988 toward 0 (allow for any genuine no-txgio-row edge cases, expect near-total closure given the paradox showed containment already succeeded on 100% of Caldwell's landing rows). Spot-check a handful of backfilled geom values against their source geometry values for shape/bbox agreement.",
+    "notThisCard": "Per this card's own explicit scope, the backfill itself is not run here -- this is a spec for a future card."
+  }
+}

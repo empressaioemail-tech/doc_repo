@@ -1,0 +1,22 @@
+{
+  "lane": "PARCEL-CALDWELL-GEOM",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T15:20:00Z",
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main 394820c (shared, high-concurrency working tree this session -- verified via journal, not assumed, after a same-session claim misread on an earlier card)",
+    "factory_worktree": "P:/tmp/hauska-factory-parcel-fill, feat/parcel-record-fill (read-only, no writes made or intended)",
+    "claim": "GRANTED 2026-09-02T15:18:35.146Z, verified via _queue/log/property.jsonl, expires 16:48:35.146Z"
+  },
+  "premisesReverified": {
+    "r3Discovery": "Confirmed live, independently, before reading this card's dispatch: this seat's own PARCEL-R4-COMPANIONS card hit the identical wall (0 of 32,781 txgio_parcel rows for county_fips='48055' have the native geom column populated), corroborating R3-flood's prior finding across a second, independently-built job.",
+    "paradoxConfirmedReal": "landing_parcel_jurisdiction holds 24,988 Caldwell rows, all with real in-city/unincorporated dispositions computed by p2-juris-store.mjs's zone-major containment logic (method='ring' per the census in the gap ledger, meaning real ring geometry drove the disposition, not the bbox-centroid fallback). Containment genuinely ran and succeeded for this county."
+  },
+  "investigationApproach": [
+    "Checked whether Caldwell's jsonb geometry column (distinct from the native geom column) is populated: 32,781 of 32,781 rows have geometry IS NOT NULL, 0 of 32,781 have geom IS NOT NULL -- full source data present, native column entirely absent.",
+    "Checked whether p2-juris-store.mjs's containment SQL (CHUNK_GEOMETRY_SQL) reads geom or geometry: it decodes geometry (jsonb) via ST_GeomFromGeoJSON directly, never reads the native geom column at all -- resolving the paradox structurally, not just by data presence.",
+    "Checked for a chronology explanation (Caldwell loaded before a later geom-backfill mechanism existed): rejected. Bastrop (geom populated) and Caldwell (geom null) were ingested in the SAME load session, 29 seconds apart (2026-07-19 00:26:37Z Caldwell start, 00:27:06Z Bastrop start).",
+    "Checked for a data-quality explanation (Caldwell's geometry is malformed, a backfill script silently skipping unparseable rows): rejected. Sampled 5 Caldwell rows, ran the exact ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)) transform live -- all 5 parse and validate cleanly.",
+    "Searched hauska-factory (this repo) for any migration, trigger, or job code that writes txgio_parcel.geom: none found. No CREATE TABLE for txgio_parcel exists in this repo at all (external table); no pg_trigger on it; no UPDATE/ALTER referencing it in migrations/ or src/. The geom backfill mechanism is not in this repo."
+  ]
+}
