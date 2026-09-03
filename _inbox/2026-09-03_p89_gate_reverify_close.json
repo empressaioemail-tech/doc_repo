@@ -1,0 +1,108 @@
+{
+  "lane": "p90-item1-gate-reverify",
+  "plan_row": ["P-90 item 1", "P-89 leftover"],
+  "status": "NOT customer-done. Items 1-2 (verdict/brief required) confirmed live-refusing on the currently serving revision. Item 3 (stored-hollow download refuse) is UNCHANGED and still defective in code; NOT re-exercised live because both 2026-08-28 test parcels now hold real, non-hollow stored artifacts. P-90 should not start until this is fixed or the operator explicitly accepts the gap.",
+  "seat": {
+    "identity": "integration checkout, planner-owned executor",
+    "worktree": "P:/doc_repo",
+    "branch": "main",
+    "wrote": ["_inbox/2026-09-03_p89_gate_reverify_close.json"],
+    "did_not_write": [
+      "P:/hauska-mcp-server (or any substrate worktree)",
+      "P:/hauska-engine (or any property worktree)",
+      "any product tree"
+    ],
+    "reads_only": [
+      "gcloud run revisions describe (Cloud Run, read-only)",
+      "gcloud artifacts docker tags list (Artifact Registry, read-only)",
+      "git fetch + git show against hauska-mcp-server origin/main (no checkout mutation)",
+      "live MCP probe via existing key (refresh/download calls only, no mint on success path exercised)"
+    ]
+  },
+  "missionPremise": "P-90 item 1 requires P-89 customer-done: a live refuse on the SERVING Hauska MCP revision, not a merge. That probe was unrun this thread. Operator approved P-90 2026-09-03 and asked to proceed; this is the gate check P-90's own WDLL names as the first action, run before any hauska-engine work starts.",
+  "pre_registered_falsifier": {
+    "claim": "P-89 is customer-done on the currently serving revision hauska-mcp-server-00055-8pz (Cloud Run traffic tag g111-fix).",
+    "proves_true": "refresh_parcel_dossier_export refuses (422 pipeline_output_absent) on no-verdict / placeholder-verdict / null-brief, AND download_parcel_dossier_export on a genuinely hollow-metadata parcel refuses cleanly instead of reaching the engine's /download route, AND the serving image's git lineage includes the P-89 merge with no unreviewed hollow-check changes since.",
+    "proves_false": "any refuse fails to fire, or a hollow download streams through, or the hollow-check code itself is found unfixed on the serving commit.",
+    "result": "PARTIALLY held, PARTIALLY failed. Refuse items held live. Hollow-check code was found unfixed by direct read; live re-exercise was not possible with the prior test fixtures because they are no longer hollow."
+  },
+  "snapshot": {
+    "timestamp": "2026-09-03T18:32-18:40Z (probe + code reads)",
+    "doc_repo": "P:/doc_repo",
+    "doc_repo_commit": "e15d3ae",
+    "project": "hauska-prod-497015",
+    "service": "hauska-mcp-server",
+    "region": "us-central1",
+    "serving_revision": "hauska-mcp-server-00055-8pz",
+    "serving_revision_created": "2026-09-02T18:01:20.628312Z",
+    "serving_cloud_run_traffic_tag": "g111-fix",
+    "serving_image_digest": "sha256:957301293d73a616858d30d813c3898f6b72b1c57aee60b84b450456265666d7",
+    "serving_image_git_short_sha": "40e48d4",
+    "serving_image_git_full_sha": "40e48d48e509886c7938f37a438711bb3d8b8b6f",
+    "serving_commit_message": "feat(icc): G-111 request_id echo-back and a scoped obligation ledger reader (#79)",
+    "note_on_tag_name": "the Cloud Run traffic tag 'g111-fix' is a human-chosen deploy label unrelated to the underlying image's own git-SHA tag (40e48d4) or to P-89 at all -- it names the ICC G-111 feature that motivated this deploy. Do not read a Cloud Run traffic tag as identifying what code shipped; read the image digest's own tag.",
+    "p89_merge_commit": "1ae9f287feb2660730e338841aa79e59df0ad772",
+    "ancestry_check": "git merge-base --is-ancestor 1ae9f287... 40e48d4  => true (confirmed)",
+    "commits_between_p89_merge_and_serving": ["40e48d48 (PR #79, G-111, unrelated to hollow-check)"],
+    "serving_is_tip_of_main": "confirmed: git log 40e48d4..origin/main is empty"
+  },
+  "code_read": {
+    "file": "hauska-mcp-server/src/xray-export-gate.ts",
+    "function": "isStoredDossierArtifactHollow",
+    "read_at_commit": "origin/main (== 40e48d4 == serving)",
+    "history": "touched by exactly two commits ever: ec84995 (original P-89 implementation) and 0649a69 (test(p89): catalog-scan replaces vacuous flood finding -- a test fix, not this function's logic)",
+    "current_source": "if (!artifact || artifact.deferred === true) return false; ... then checks verdictIncluded / briefFactCount only when artifact is truthy.",
+    "defect": "when artifact is undefined (no stored-artifact metadata record exists at all), the function returns false (not hollow) instead of true (hollow). This is a fail-open default on an unknown value, the exact class ENFORCEMENT.md's fail-closed section names: 'Never default a field whose correct value is unknown.'",
+    "customer_visible_consequence": "narrower than a fabricated success: the request still fails (the engine call proceeds and 404s, so no hollow PDF is ever served), but it fails as an unnamed 404 'artifact_unavailable' from the engine rather than the clean, named 422 pipeline_output_absent refuse every other gap in this pipeline produces. Inconsistent refuse shape, not a fabrication defect.",
+    "scope_when_artifact_is_present_but_hollow": "correctly returns true (hollow) when verdictIncluded is false or briefFactCount is 0 on a real, present artifact record. The bug is specifically and only the undefined-record case."
+  },
+  "live_probe": {
+    "instrument": "_inbox/_tmp_p89_live_probe.mjs (reused unchanged from 2026-08-28; not hand-rolled this lane)",
+    "output_file": "_inbox/_tmp_p89_live_probe_out.json (overwritten this run; historical 08-28 numbers are preserved in _inbox/2026-08-28_p89_serving_close.json, not lost)",
+    "results": {
+      "anon_refresh_no_verdict": { "grade": "MET live", "evidence": "public-paid access_policy_denied, correct anonymous-tier refuse" },
+      "cortex_refresh_no_verdict": { "grade": "MET live", "evidence": "422 pipeline_output_absent, missing:[verdict]" },
+      "cortex_refresh_placeholder": { "grade": "MET live", "evidence": "422 pipeline_output_absent, missing:[verdict]" },
+      "cortex_refresh_null_brief": { "grade": "MET live", "evidence": "422 pipeline_output_absent, missing:[brief_facts]" },
+      "cortex_download_gold_48021_34137": {
+        "grade": "NOT A VALID TEST OF ITEM 3 -- fixture drift",
+        "evidence": "isError false, real PDF, byteCount 614489. This parcel was the 2026-08-28 hollow/missing-artifact test case (404 artifact_unavailable at that time); it now has a real generated dossier stored. Item 3's defect was not exercised by this call."
+      },
+      "cortex_download_27479": {
+        "grade": "unchanged control, still not-hollow",
+        "evidence": "isError false, real PDF, byteCount 606503. Same as 2026-08-28 (was never the hollow case)."
+      }
+    },
+    "conclusion": "items 1-2 confirmed MET on the live serving revision. Item 3 was NOT live-re-exercised: no currently-known-hollow parcel was available to the prior fixture set. The code read is decisive here per ENFORCEMENT.md ('code reading outranks output measuring... when they disagree, the code reading finding is correct') -- the function's logic is unchanged and the defect is real regardless of whether a live hollow case was found to demonstrate it this run."
+  },
+  "verdict": {
+    "p89_customer_done": false,
+    "reason": "item 3 (stored-hollow download refuse) fails closed only for present-but-hollow artifacts, not for missing-artifact-record cases, confirmed unfixed on the currently serving commit.",
+    "p90_item_1_gate": "NOT satisfied. P-90's own WDLL text: 'Starts only after P-89 customer-done: a live refuse on the serving Hauska MCP revision.' This has not changed since the 2026-08-28 close identified the same defect.",
+    "severity_note": "the defect is narrow (one boolean default in one function), well-understood, and does not currently let a hollow document reach a customer as a fabricated success -- it produces an inconsistent-shaped refuse instead. This is a real gap against P-90's own stated gate, not a hypothetical one, and P-90's WDLL does not carve out a severity exception."
+  },
+  "constraints_honored": [
+    "Did not write hauska-mcp-server or hauska-engine",
+    "Did not redeploy anything",
+    "Did not mint a new artifact (no successful refresh call attempted)",
+    "Did not invent a key; reused the existing local key",
+    "Read image lineage by digest and git ancestry, never by Cloud Run revision ordinal or traffic-tag name",
+    "Reused the existing validated probe instrument rather than a new ad hoc script",
+    "Pre-registered the falsifier before running the probe"
+  ],
+  "leave_behind": [
+    {
+      "item": "isStoredDossierArtifactHollow(undefined) should return true (fail closed), not false. One-line logic fix plus a regression test asserting the undefined case, at hauska-mcp-server/src/xray-export-gate.ts.",
+      "owner": "substrate",
+      "plan_row": "P-89 leftover (blocks P-90 item 1)"
+    },
+    {
+      "item": "No currently-known hollow-artifact test parcel exists for live re-verification of the present-but-hollow branch (which does appear to work correctly by code read). Whoever fixes the leftover above should also identify or manufacture one for the violation-suite check (P-90 acceptance item 9 / P-89's own item 6).",
+      "owner": "substrate",
+      "plan_row": "P-89 leftover"
+    }
+  ],
+  "pathspec_for_the_parent_to_commit": [
+    "_inbox/2026-09-03_p89_gate_reverify_close.json"
+  ]
+}
