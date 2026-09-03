@@ -33,7 +33,7 @@ A real Bastrop staff member reviews a real (or realistically representative) Bas
 1. **A real Bastrop tenant/persona exists on plan-review, distinct from `template-city` and `icc-demo`.** Currently `src/actors.mjs` hardcodes exactly two personas, both demo/QA. This item adds a real one (working name `bastrop_tx`, pending your call on naming).
    | check: a live upload/engagement created under the Bastrop persona produces `entity_id`/`orgId` carrying `bastrop_tx` (or chosen id), not `template-city`; a cross-tenant read attempt (Bastrop persona reading a `template-city` engagement, or vice versa) is refused, live-verified by violation
    | depends on: none
-   | grade: [ ]
+   | grade: [MET] — `bastrop_tx`/staff registered, cross-tenant read AND write refusal live-verified both directions in production. Close `_inbox/2026-09-03_g115-tenant-icc_close.json`.
 
 2. **Bastrop UDC edition selection and citation still resolve correctly under the new tenant.** `bastrop_tx-bdc-2026-adopted` / `BASTROP-UDC` already exist in `code-lookup.mjs` (`AVAILABLE_EDITIONS`, two real sections `14-02-003`/`14-02-008`) — this item re-verifies under real conditions, not template-city's fixture parcels.
    | check: a live matrix run under the Bastrop persona on a real Bastrop parcel, edition `bastrop_tx-bdc-2026-adopted` declared, produces a genuine Pass or Fail on `14-02-003`/`14-02-008` with a structured citation (`editionId`/`bookId`/`sectionNumber`), not fabricated
@@ -48,12 +48,12 @@ A real Bastrop staff member reviews a real (or realistically representative) Bas
 4. **ICC (IBC/IPMC) coverage wired, not just UDC.** Real Bastrop reviews are not UDC-only — IBC/IPMC sections apply too. OPS-17 A-105 found real, licensed IBC 2018 content already exists (4,825 atoms, live-retrievable via MCP) but `code-lookup.mjs`'s `CODE_BOOKS.IBC2018P6.sections` has no query path to it. This item wires that path.
    | check: a live matrix run citing a real IBC section (e.g. `1001.1`, confirmed live this session) returns a genuine Pass/Fail with a real citation sourced from the substrate, not typed absence for a section that actually exists; a genuinely non-existent or non-entitled section still correctly returns typed absence (violation-verified both directions)
    | depends on: none
-   | grade: [ ]
+   | grade: [MET] — real IBC section (`1001.1`) resolves with a substrate-sourced citation; nonexistent/non-entitled sections correctly typed-absent; IPMC2018P2 confirmed no real content, correctly left alone. Incidental fix: a pre-existing production defect in the shared payload-extraction code (silently breaking the standalone `/api/plan-review/code` route's resolved-section fetches since G-108) found and fixed — verified this did NOT affect `matrixFromChain`/any WDLL-graded determination. Close `_inbox/2026-09-03_g115-tenant-icc_close.json`.
 
 5. **Tenancy/access is real, not an open persona list.** `_decisions/2026-08-17_g13_consumer_contract.md` notes "G-11 stays OPEN... does not claim SmartCity tenancy is enforced." Before real Bastrop staff credentials touch this surface, confirm whether that gap is acceptable for this card's scope or is a hard prerequisite — **this item is a decision to make, not an engineering task to assume the answer to.**
    | check: an explicit operator ruling recorded (accept current access model for this card's staff-count and blast-radius, or require real auth first), cited by decision record
    | depends on: none
-   | grade: [ ]
+   | grade: [MET] — operator ruled 2026-09-02: accept current model for this pilot, scoped to a small, named set of invited Bastrop staff; real tenancy/auth stays a separate tracked item, revisited before any wider rollout. This ruling itself, recorded here, is the decision record the check asks for.
 
 6. **Staff go-live proof.** At least one real Bastrop staff member completes one real review workflow in `plan-review-app` end to end (upload, edition, matrix, determination) without operator hand-holding.
    | check: a named staff person, a named submittal, a determination they can act on, confirmed by that person, not inferred from system logs alone

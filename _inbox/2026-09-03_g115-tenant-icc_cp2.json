@@ -1,0 +1,73 @@
+{
+  "checkpoint": "CP2",
+  "lane": "g115-tenant-icc",
+  "planRow": ["G-115"],
+  "date": "2026-09-03",
+  "phase": "implementation complete / adversarial pre-merge checkpoint",
+  "changeSet": {
+    "repo": "plan-review",
+    "branch": "govtech/g115-tenant-icc-wiring",
+    "baseCommit": "67b852c",
+    "headCommitPreMerge": "e9b7f78",
+    "files": [
+      { "path": "src/actors.mjs", "what": "New bastrop_tx/staff persona. New export engagementCrossTenantRefusal(engagement, {orgId,userId}): null (allow) or {status,body} (refuse), mirroring web/api/backend.js's smartFilesScopeRefusal shape from G-106." },
+      { "path": "src/code-lookup.mjs", "what": "New LIVE_SECTION_NUMBER_RE gate + iccModelCodeSectionAtomId() DID builder (pure). CODE_BOOKS.IBC2018P6 gains liveCodeEditionSlug. resolveCodeLookup()'s miss branch defers to the live path (kind:'resolved', live:true) for any digits-and-dots section number on a book with liveCodeEditionSlug, before falling to UNCHECKED. New export classifyLiveSectionFetch({bookId,sectionId,atom,fetchError}) -- pure, 3-way classification (resolved / absent-verified / not-entitled / source-unavailable) plus the corrected atom?.data?.atom payload-extraction fix." },
+      { "path": "src/mcp.mjs", "what": "getAtom(atomId, key) now accepts and forwards an optional key to mcpCall." },
+      { "path": "src/server.mjs", "what": "New personaFromHeader(req) reads x-persona. engagementCrossTenantRefusal wired into the engMatch block once, ahead of every nested sub-route. /api/plan-review/code route: passes HAUSKA_MCP_PLATFORM_KEY to getAtom(); branches on resolved.live to use classifyLiveSectionFetch (new path) vs the original sourceUnavailable check (unchanged, now with the same payload-extraction fix) for the manifest-confirmed path; iccDeepLink now prefers the atom's own verbatimTextDeepLink/sourceUrl over the untested template." },
+      { "path": "web/api/backend.js", "what": "Forwards the already-read x-persona header to the upstream plan-review/icc backend (previously read only for the local smartFilesScopeRefusal check and then dropped)." },
+      { "path": "web/app.js", "what": "New bastrop_tx/staff entry in the QA UI's PERSONAS list, plugging into G-114's existing ?cityKey= auto-select-by-orgId logic unchanged." },
+      { "path": "web/api/code-lookup.test.mjs", "what": "One existing test narrowed (IBC removed from the 'unchecked and absent-verified are not interchangeable' loop, with the reason recorded inline) + 9 new tests for the live path and classifyLiveSectionFetch's 4 outcomes." },
+      { "path": "web/api/g115-tenant-scope.test.mjs", "what": "New file, 8 tests for the persona + refusal function, same violation-tested shape as backend.test.mjs's G-106 suite." }
+    ],
+    "diffstat": "8 files changed, 551 insertions(+), 42 deletions(-)"
+  },
+  "testResults": {
+    "command": "node --test web/api/*.test.mjs",
+    "cwd": "P:/seat-worktrees/govtech/plan-review",
+    "before": "80 pass / 1 fail on first run (the pre-existing 'unchecked and absent-verified are not interchangeable' test, which asserted the now-superseded IBC-has-no-live-path invariant)",
+    "after": "81 pass / 0 fail",
+    "note": "The 1 changed test's before-state is the expected, diagnosed failure from a deliberate behaviour change, not a regression -- see CP1 investigationFindings and the inline comment left in the test file explaining why."
+  },
+  "verifyByViolation": {
+    "crossTenantRefusal": [
+      { "case": "no persona asserted", "input": "{}", "result": "null (allow) -- unit test + live prod curl, HTTP 200" },
+      { "case": "bastrop_tx reading a template-city engagement", "result": "403 cross_tenant_refused -- unit test + local live run + PROD live curl through the real BFF path" },
+      { "case": "template-city reading a bastrop_tx engagement (reverse direction)", "result": "403 -- unit test + local live run + PROD live curl through the real BFF path" },
+      { "case": "matching-tenant read", "result": "200, full engagement row -- unit test + local live run + PROD live curl" },
+      { "case": "unregistered persona asserted (bastrop_tx/not-a-real-user)", "result": "400 unknown_persona, not silently treated as no-identity -- unit test" },
+      { "case": "the gate is not vacuous", "result": "confirmed it returns null on at least one input (icc-demo/reviewer reading its own icc-demo engagement) -- unit test, same shape as backend.test.mjs's G-106 vacuity guard" }
+    ],
+    "liveIbcPath": [
+      { "case": "real IBC section 1001.1", "result": "resolved, live:true, sectionAtomId ends /1001-1 -- unit test + local live fetch + PROD live fetch, real citation/heading/deepLink returned" },
+      { "case": "multi-dot section 1006.2.1", "result": "sectionAtomId ends /1006-2-1 (every dot mapped, not just the first) -- unit test" },
+      { "case": "R-prefixed (IRC-shaped) input against IBC, e.g. R311.7", "result": "stays UNCHECKED, live:undefined -- no network call spent -- unit test (this is also the pre-existing P-1/P-2 regression case, still passing unmodified)" },
+      { "case": "well-formed but nonexistent section (9999.9 / 9999.1)", "result": "classifyLiveSectionFetch returns absent-verified, not source-unavailable -- unit test with the real {\"data\":{\"atom\":null}} fixture + local live curl against the real substrate" },
+      { "case": "anonymous/under-entitled access to a real atom", "result": "classifyLiveSectionFetch returns not-entitled from the real accessPolicy-denial text -- unit test with the real denial-text fixture" },
+      { "case": "thrown fetch error", "result": "source-unavailable, never a served row -- unit test" },
+      { "case": "an unrecognised non-section, non-null, non-denial payload", "result": "still source-unavailable, not misclassified as the stronger absent-verified -- unit test guarding the discrimination itself, not just the happy paths" },
+      { "case": "IPMC2018P2, same real-shaped section number (101.1)", "result": "stays UNCHECKED, confirming the live path is IBC-only as designed -- unit test" }
+    ],
+    "incidentalExtractionBugConfirmedByViolation": {
+      "beforeFix": "curl against the LIVE DEPLOYED production revision (plan-review-ozx33wafia-ue.a.run.app, pre-this-change) for BASTROP-UDC/14-02-003 -- the already-shipped G-108 path -- returned {\"absence\":{\"status\":\"source-unavailable\",...}}, not a resolved citation, despite the section being in the static manifest and the atom being real and fetchable.",
+      "afterFix": "same curl against the same production URL after this change's deploy returns a resolved citation with real heading ('District Requirements'), real body text, and a real iccDeepLink sourced from the atom's own field. Same before/after pair repeated for the new IBC 1001.1 path."
+    }
+  },
+  "threeQuestionGate_crossTenantRefusal": {
+    "whatExecutes": "engagementCrossTenantRefusal (actors.mjs), called from server.mjs's engMatch block on every request under /api/plan-review/engagements/:id/*.",
+    "whatTriggers": "Any GET or POST to that route subtree, on every request, regardless of whether a persona is asserted (the function itself decides pass-through vs refuse).",
+    "whatFailsAndIsItLiveToday": "A non-2xx (403 or 400) JSON response, returned before any sub-route logic runs. Live in production today: deployed to plan-review-00014-bbg (Cloud Run) and the plan-review-app Vercel production alias, both confirmed serving as of this checkpoint, both live-curled successfully post-deploy.",
+    "whatBypasses": "A caller that never sends x-persona reads unscoped -- named explicitly in the docstring and in CP1, not a gap discovered after the fact. A caller hitting the Cloud Run URL directly with a valid PLAN_REVIEW_SERVICE_TOKEN but crafting no x-persona header is in the same unscoped state as before this change for that one header; this is the stated 'narrowing not closure', identical in kind to G-106's own limitation."
+  },
+  "threeQuestionGate_liveIbcPath": {
+    "whatExecutes": "classifyLiveSectionFetch (code-lookup.mjs), called from server.mjs's /api/plan-review/code route only when resolveCodeLookup returned live:true.",
+    "whatTriggers": "GET /api/plan-review/code?book=IBC2018P6&section=<digits-and-dots>, on every request for a section not in the static (empty) manifest.",
+    "whatFailsAndIsItLiveToday": "A typed-absence JSON body at the correct HTTP status (404/402/503 per kind), or a resolved 200 with a citation sourced from the fetched atom. Live in production today, same deploy as above; live-curled successfully for a real section (1001.1), a nonexistent one (9999.9), and an IRC-shaped one (R311.7).",
+    "whatBypasses": "IPMC2018P2 and BASTROP-UDC are untouched by design (no liveCodeEditionSlug), so nothing here changes their behaviour. A book added later without liveCodeEditionSlug gets no live path, silently -- named as a real limitation: this mechanism is opt-in per book, not automatic, and a future book with real content would need the same field added deliberately."
+  },
+  "meaningShapedNotPresenceShaped": "classifyLiveSectionFetch's three failure branches each key off an INDEPENDENTLY DERIVED signal from the substrate's own response shape (a confirmed {atom:null}, a specific accessPolicy-denial string, or neither), not a single presence/absence check on one field. A caller could not satisfy 'resolved' by returning any truthy object; it must carry title, bodyText, or sectionNumber specifically, and the confirmed-absent branch requires the EXACT nested-null shape the substrate emits, not merely 'no title'.",
+  "howThisCouldStillGoWrong": [
+    "The NOT_ENTITLED string match is against the substrate's own live-verified wording today. If hauska-mcp-server's accessPolicy-denial message ever changes, this degrades to the generic SOURCE_UNAVAILABLE bucket -- never to a false 200, but the absence gets less specific silently. Named here rather than left to be rediscovered.",
+    "engagementCrossTenantRefusal only fires when x-persona is present. The QA UI (web/app.js) sends it on every request once a persona is chosen, but a caller integrating directly against the Cloud Run API (not through this UI) must know to send it -- there is no separate documentation surfacing that requirement beyond this code and its comments.",
+    "The substrate accessPolicy-rollup-vs-per-atom-enforcement disagreement found during investigation (CP1) is unresolved and not owned by this repo. If the substrate's per-atom accessPolicy loosens to match its jurisdiction-rollup 'public-free' claim, callers without a key would suddenly succeed where they previously got NOT_ENTITLED -- watched, not fixed, here."
+  ]
+}

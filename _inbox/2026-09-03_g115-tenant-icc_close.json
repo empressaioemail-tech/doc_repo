@@ -1,0 +1,116 @@
+{
+  "lane": "g115-tenant-icc",
+  "planRow": ["G-115"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "date": "2026-09-03",
+  "status": "closed, both items MET and live-verified in production, plus one incidental production defect found and fixed",
+  "missionPremise": "Mission _inbox/2026-09-02_g115_tenant_and_icc_wiring_mission.md, items 1 and 4 of the Bastrop PermitFlow island-cut WDLL (approved 2026-09-02): register a real bastrop_tx persona with a live-proven cross-tenant read refusal, and wire IBC2018P6's code lookup to the substrate's real, already-ingested content instead of its frozen-empty manifest, while leaving IPMC2018P2 (confirmed no real content) alone.",
+  "completionPredicate": "A stranger can create an engagement as bastrop_tx/staff and see orgId=bastrop_tx; a cross-tenant read (either direction) against the live deployed service is refused; a matching-tenant or no-persona-asserted read is unchanged; a real, live-ingested IBC section number returns a resolved citation sourced from the substrate atom; a nonexistent or non-entitled one returns a correctly-typed absence; IPMC2018P2's honest-empty behaviour is unchanged. All of the above are demonstrated below against the live deployed revision, not only unit tests.",
+  "scopeBasis": "Bounded to items 1 and 4 only, per the mission's explicit boundary. smartcity-os untouched. G-52 not started. The absence taxonomy's spelling/shape (G-113) read, not altered. CODE_BOOKS, AVAILABLE_EDITIONS, buildCitation()/renderCitationText() kept in shape per the standing 'additive only, reuse existing mapping' constraint.",
+  "acceptanceItems": [
+    {
+      "item": 1,
+      "text": "Real Bastrop tenant/persona, with a live-verified cross-tenant read refusal.",
+      "grade": "MET",
+      "how": "bastrop_tx/staff registered in src/actors.mjs (orgId matches the existing CODE_BOOKS['BASTROP-UDC'] convention). engagementCrossTenantRefusal wired ahead of every route nested under /api/plan-review/engagements/:id, keyed on the x-persona header the QA UI already sends on every request (backend.js was silently dropping it before this change; now forwards it). Live-verified against the DEPLOYED production service, both directions: bastrop_tx reading a template-city engagement -> 403; the reverse -> 403; matching-tenant -> 200; no-persona-asserted -> 200 (unchanged). Beyond the check's literal ask: also verified live that a cross-tenant WRITE (POST /edition) is refused the same way, since the check is method-agnostic (keyed on a header, not the body)."
+    },
+    {
+      "item": 4,
+      "text": "Live query path from IBC2018P6 to the real substrate content; IPMC2018P2 left honest-empty.",
+      "grade": "MET",
+      "how": "resolveCodeLookup computes a live DID for any digits-and-dots section number against IBC2018P6 and hands it to server.mjs, which verifies it via get_atom with the already-provisioned HAUSKA_MCP_PLATFORM_KEY and classifies the result three ways (resolved / absent-verified / not-entitled / source-unavailable) via the new classifyLiveSectionFetch. Live-verified against the DEPLOYED production service: section 1001.1 resolves with a real citation, heading, and deep link sourced from the atom itself; section 9999.9 (well-formed, nonexistent) returns absent-verified; an IRC-shaped input (R311.7) stays a pure, no-network unchecked absence exactly as before. IPMC2018P2 confirmed unchanged (two independent live signals: hauska-mcp-server's own plan_review_get_code tool describes 'IPMC is a typed absence', and targeted get_atom probes found nothing)."
+    }
+  ],
+  "incidentalFix": {
+    "what": "get_atom's real response nests section fields one level deeper than this route's existing payload extraction reached (`data.atom.title`, not `data.title`). The already-shipped Bastrop UDC citation path (G-108) had been silently falling back to source-unavailable in production since it shipped, for every real section, because of this.",
+    "evidence": "Curled the LIVE DEPLOYED production revision for BASTROP-UDC/14-02-003 before writing any fix: returned typed-absence source-unavailable. After this fix's deploy, the same URL returns a resolved citation with real body, heading and deep link.",
+    "whyInScope": "The new IBC live path shares the identical extraction code; without this fix, item 4's own check ('returns a genuine ... citation ... not typed absence for a section that actually exists') could not have passed regardless of the new wiring. A one-line extraction-order correction, not a restructuring -- folded into this change rather than filed separately."
+  },
+  "incidentalCitationFix": "iccDeepLink now prefers the atom's own verbatimTextDeepLink/sourceUrl (real, licence-provided) over a hand-built template (`.../content/<bookId>/<section>`) that had been dead code until this change and was never checked against the real codes.iccsafe.org URL form -- confirmed live that the template's URL shape disagrees with the atom's own, correct one.",
+  "substrateFindingNotFixed": "list_jurisdictions/query_jurisdiction report icc-model-code and bastrop_tx as accessPolicy 'public-free' at the jurisdiction-rollup level, but per-atom get_atom enforcement refuses BOTH anonymously (confirmed on both a real ICC atom and a real Bastrop UDC atom). Two independently derived signals disagree. Not this repo's defect (hauska-mcp-server is substrate-seat owned); named for the substrate seat, not corrected here.",
+  "pr": {
+    "number": 14,
+    "url": "https://github.com/empressaioemail-tech/plan-review/pull/14",
+    "title": "feat(G-115): real Bastrop tenant + live IBC citation wiring"
+  },
+  "mergeSha": "1af5ac596d28d5040c56af2545fbe4782f2dac3d",
+  "ciConclusion": {
+    "checkName": "test",
+    "conclusion": "success",
+    "status": "completed",
+    "verifiedVia": "gh api repos/empressaioemail-tech/plan-review/commits/<sha>/check-runs, read by field name, not gh pr checks' summarized bucket"
+  },
+  "deploy": {
+    "cloudRun": {
+      "service": "plan-review",
+      "project": "plan-review-505715",
+      "region": "us-east1",
+      "method": "gcloud run deploy plan-review --source . --region us-east1 --project plan-review-505715",
+      "newRevision": "plan-review-00014-bbg",
+      "newImageDigest": "sha256:6ac2a0f8f0f3ef8568905606ffdd7b8944466b8ad1cbd9d30eeba315cf60ecc5",
+      "priorRevisionAndDigest": "plan-review-00021-huc, sha256:29455c1de04644542827b5673e1189f41da79105542075146618020dadfb9eff",
+      "trafficIssueFoundAndFixed": "The bare --source deploy created and readied the new revision (confirmed via `gcloud run revisions describe`: Ready=True) but did NOT shift traffic to it -- latestReadyRevisionName and the 100% traffic slot both still pointed at the OLD revision (00021-huc) after the deploy command reported success, because this service pins traffic to explicit named revisions/tags rather than auto-following latest (every existing revision in the traffic list carries a canary tag, e.g. g112-recon). Corrected with `gcloud run services update-traffic plan-review --to-revisions=plan-review-00014-bbg=100`, then re-verified traffic was 100% on the new revision by reading the JSON traffic array by field name, not the CLI's own summary line (which had misleadingly named the OLD revision as 'deployed and serving').",
+      "verifiedServing": "curl against https://plan-review-ozx33wafia-ue.a.run.app for /api/plan-review/code (IBC 1001.1, Bastrop UDC 14-02-003), /api/plan-review/personas, and the full cross-tenant read/write probes -- all post-deploy, all matching expected new behaviour."
+    },
+    "vercel": {
+      "project": "plan-review-app",
+      "method": "vercel deploy --prod --yes (from web/)",
+      "deploymentId": "dpl_1t5m6cv7dS35WPfqm78K9WEZqU1f",
+      "productionAlias": "https://plan-review-app-ten.vercel.app",
+      "why": "web/ (the QA UI + BFF, including the backend.js persona-forwarding fix and app.js's new persona entry) is a separate Vercel deployment target from the Cloud Run API; no auto-deploy-on-merge exists for it (no GitHub integration/workflow found), confirmed by `vercel ls` showing the last deployment predating this merge by 6 hours.",
+      "verifiedServing": "curl of the deployed app.js confirms 'bastrop_tx' present; curl through the deployed /api/backend proxy (the actual browser-shaped path) confirms the cross-tenant refusal and matching-tenant read both work end-to-end through the BFF, not only directly against Cloud Run."
+    }
+  },
+  "counts": {
+    "testSuite": { "countingRule": "node --test web/api/*.test.mjs, full suite pass/fail from the runner's own summary", "before": "80 pass / 1 fail (pre-diagnosed, expected)", "after": "81 pass / 0 fail" },
+    "filesChanged": 8,
+    "linesChanged": "551 insertions(+), 42 deletions(-)",
+    "liveProbesRun": 15
+  },
+  "constraintsHonored": [
+    "smartcity-os not touched, not read, not referenced beyond the canon-preamble constraint text itself.",
+    "No new auth system built for item 1; identity is an asserted-and-checked persona header exactly like G-106's own stated posture.",
+    "CODE_BOOKS, AVAILABLE_EDITIONS, buildCitation()/renderCitationText(), the absence taxonomy's four kinds and their spelling all unchanged in shape.",
+    "No verbatim ICC body text surfaced; the existing quotable-gate on the `analysis` field (false for ICC books) untouched.",
+    "Items 2, 3, 5, 6 of the WDLL not attempted. G-52 not started.",
+    "Secrets never printed: fetched into a git-ignored .env.local-verify file for local verification, deleted immediately after use, confirmed via git check-ignore before use and git status after deletion."
+  ],
+  "checkpointArtifacts": [
+    "_inbox/2026-09-03_g115-tenant-icc_cp1.json",
+    "_inbox/2026-09-03_g115-tenant-icc_cp2.json"
+  ],
+  "leave_behind": [
+    {
+      "item": "Smart Files (separate repo, same govtech seat) does not yet carry a matching bastrop_tx/staff persona in its own QA_PERSONAS. The existing comment in actors.mjs already flags this class of dependency ('must match smart-files' QA_PERSONAS exactly, or a write 400s'). A file upload under the Bastrop persona (as opposed to creating an engagement, which this close verifies works) will 400 against Smart Files until that repo adds the matching entry.",
+      "owner": "govtech seat, smart-files repo",
+      "plan_row": "G-115 follow-up, not filed as its own row yet"
+    },
+    {
+      "item": "The jurisdiction-rollup-vs-per-atom accessPolicy disagreement on hauska-mcp-server (both icc-model-code and bastrop_tx report 'public-free' at list_jurisdictions/query_jurisdiction while individual atoms refuse anonymous reads) is unresolved.",
+      "owner": "substrate seat",
+      "plan_row": "not filed; routed here as a finding, not a fix"
+    },
+    {
+      "item": "The live IBC path is opt-in per book (CODE_BOOKS entry needs liveCodeEditionSlug). If a future book gains real substrate content, it needs this field added deliberately -- there is no mechanism that detects new content and wires it automatically.",
+      "owner": "whoever next touches code-lookup.mjs",
+      "plan_row": "n/a, design note"
+    }
+  ],
+  "fleetMemory": {
+    "LESSON": [
+      "This plan-review Cloud Run service pins traffic to named/tagged revisions rather than auto-following 'latest'. A bare `gcloud run deploy --source` here creates and readies a new revision but does NOT shift traffic to it -- an explicit `gcloud run services update-traffic --to-revisions=<new>=100` is required afterward. The deploy command's own final summary line is misleading in this state: it names the OLD, still-serving revision as 'deployed and serving 100 percent of traffic', not the one it just built. Verify by reading the traffic array by field name (JSON), never the CLI summary text.",
+      "get_atom's real response body nests section fields one level deeper than a first read of the JSON-RPC envelope suggests: {\"data\":{\"atom\":{\"title\":...}}}, not {\"data\":{\"title\":...}}. A shallow `atom?.data || atom?.atom || atom` extraction looks plausible and silently never matches a real atom. Verified by curling the live substrate directly for two independent atom types (a real IBC section and the already-shipped Bastrop UDC section) before touching any code.",
+      "A well-formed-but-nonexistent DID against hauska-mcp-server's get_atom returns a clean 200 {\"data\":{\"atom\":null},...,\"meta\":{\"note\":\"No atom found...\"}}, not an error and not a thrown exception -- a positive determination worth its own typed-absence kind (absent-verified), distinct from a genuine fetch failure (source-unavailable) or an accessPolicy denial (not-entitled, itself a distinct, matchable string: \"is not readable under the caller's accessPolicy\")."
+    ],
+    "GROUND-TRUTH": [
+      "(2026-09-02/03, hauska-mcp-server, keyed with plan-review-platform-key) icc-model-code jurisdictionTenant, atomCount 4966, jurisdiction-rollup accessPolicy 'public-free'; per-atom get_atom on a real IBC section (1001.1) refuses anonymously with 'not readable under the caller's accessPolicy' and succeeds keyed.",
+      "(2026-09-03, plan-review Cloud Run, pre-fix) BASTROP-UDC/14-02-003 -- a section in the static manifest, already shipped under G-108 -- returned typed-absence source-unavailable in production, due to the payload-extraction bug fixed by this lane.",
+      "(2026-09-03, post-deploy) plan-review Cloud Run serving revision plan-review-00014-bbg at 100% traffic; plan-review-app Vercel production alias at https://plan-review-app-ten.vercel.app serving the updated web/app.js and web/api/backend.js.",
+      "(2026-09-03) Cross-tenant engagement read/write refusal live-verified in production, both directions, through both the direct Cloud Run URL and the real browser-facing Vercel BFF path."
+    ],
+    "OPEN": [
+      "Smart Files bastrop_tx persona parity (leave-behind above).",
+      "Substrate accessPolicy jurisdiction-rollup-vs-per-atom disagreement (leave-behind above)."
+    ]
+  }
+}
