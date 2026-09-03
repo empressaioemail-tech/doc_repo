@@ -1,0 +1,115 @@
+{
+  "lane": "g116-bastrop-dashboards-pack",
+  "planRow": ["G-116"],
+  "plan": "90_operations/OPS-17_govtech_stack_plan_of_record.md",
+  "date": "2026-09-03",
+  "status": "closed, Phase 0 (foundation) and Phase 1 (first real feed) both MET and live-verified in production",
+  "missionPremise": "Operator direction 2026-09-03, following G-115 (plan-review) closing: build out the rest of smartcity-dashboards for real for Bastrop, TX -- a parallel dashboard for an eventual cutover -- UI/wiring first then one feed at a time, per the gap map (`_inbox/2026-08-17_dashboards_missing_pieces.md`). Ratified `_decisions/2026-09-03_bastrop_tx_dashboards_pack_ratified.md`. Approved plan: two-Explore-pass investigation before any code, covering city-pack.mjs/mounts.mjs/compose.mjs/staff-map.mjs (dashboards) and the fixture-vs-real-feed mechanism plus municode-calendar.mjs's identity-hold history (dashboards + smart-files).",
+  "completionPredicate": "A real, tenant-private bastrop_tx pack exists on smartcity-dashboards, is correctly wired through plan-review/smart-files embeds, and carries at least one genuinely real (not fixture) data feed, live-verified against production, not only unit-tested.",
+  "scopeBasis": "Phase 0 (pack + persona + embed verification) and Phase 1 (identity-guard threading + the one already-proven real feed) only. Phase 2 (the other 10 fixture domains, real vendor feeds for MyGov/Samsara/OpenGov/Esri/FirstDue/Verkada/Spireon/GoTo/PowerBI) explicitly NOT started -- zero credentials provisioned for any of them; named as an open question for the operator, not resolved here. Real staff auth/login stays deliberately unbuilt (named future item). No PermitFlow/live-Bastrop (smartcityos.io) touch of any kind.",
+  "acceptanceItems": [
+    {
+      "item": "Phase 0 -- real bastrop_tx pack, correctly wired",
+      "grade": "MET",
+      "how": "New pack `BASTROP_TX` (smartcity-dashboards PR #41): cityKey bastrop_tx, tenant-private, environment staging (no go-live declared -- own later item), generatesFixtures false, jurisdictionFips 48021. Registered in ensureCityPacksTable's durable upsert list alongside the other three packs -- same self-healing pattern, not new architecture. G-11's guard on the literal cityKey 'bastrop' left untouched; bastrop_tx was always a different string, ratified explicitly by decision doc rather than silently relied on. bastrop_tx/staff persona added to smart-files (PR #12), mirroring plan-review's own G-115-item-1 convention exactly -- unblocks smart-files' scopeId=persona.orgId write path mechanically. Embed threading (G-114, cityKey param on plan-review/smart-files embed URLs) was already merged to origin/main but not yet in either checked-out worktree -- synced both before branching."
+    },
+    {
+      "item": "Phase 1 -- first real, non-fixture feed (municode public meetings)",
+      "grade": "MET",
+      "how": "The one real, already-proven feed in this program (municode calendar scraper, G-71) was hard-blocked from ever running against a real Bastrop pack by pack-unaware identity guards (isIdentityHeldClerkHost/assertPublicFeedSourceUrl, from G-74) that refused the real Bastrop host unconditionally, on every pack, with no way to legitimately grant it -- even to the one real pack it exists for. Threaded cityKey through the full call chain (assertCityPackShape -> assertGrantedAdapterShape -> assertPublicFeedSourceUrl -> isIdentityHeldClerkHost; fetchMunicodeMeetings; runMunicodeCalendar; listMeetingsForOverview, including the leaked-record defense) so the hold now fires on every pack EXCEPT the ratified bastrop_tx (omitting cityKey still defaults to held -- refuse rather than guess, matching prior behaviour exactly for every existing caller). BASTROP_TX now carries TEMPLATE_MUNICODE_CALENDAR_GRANT, the real grant object this repo already had built for exactly this purpose and never attached to a real pack. LIVE-VERIFIED against production, not only unit-tested: ran `src/run-municode-calendar.mjs bastrop_tx` against the real deployed smart-files backend (post-deploy) and the real production Neon DB -- fetched 25 real meetings from bastrop-tx.municodemeetings.com, wrote 5 (the script's own limit), including 'Regular City Council Meeting', 'Zoning Board of Adjustments', 'Public Library Board'. Read them back through `meetingsFromPack('bastrop_tx')`: status ok, honesty 'read', recordCount 5. Confirmed template-city is UNCHANGED: `meetingsFromPack('template-city')` still returns status empty, basis 'no municode calendar grant on template-city' -- the identity hold's own purpose (G-74's finding) is fully preserved for every pack except the one it's now legitimately for."
+    }
+  ],
+  "sourceCheckedCorrection": "The approved plan assumed the identity-guard fix was a small, one-line change. Reading municode-calendar.mjs in full (not assumed from the plan's own summary) before writing anything found the real shape: isIdentityHeldClerkHost is called from FOUR distinct sites (assertPublicFeedSourceUrl, two places in listMeetingsForOverview including a redundant-looking duplicate check, and the 'leaked record' defense that catches a Bastrop-hosted record surviving under the wrong pack's read path), plus assertGrantedAdapterShape is invoked generically from assertCityPackShape's own validation loop -- meaning the fix had to thread cityKey through the PACK-VALIDATION path as well as the runtime fetch/read paths, not just the obvious two functions. Done properly rather than partially: all four sites now agree.",
+  "constraintsHonored": [
+    "smartcity-os / PermitFlow untouched -- not read, not referenced beyond canon-preamble text.",
+    "Additive only: one new pack, one new persona, one cityKey parameter threaded through existing functions (no new mechanism, no restructuring). CODE_BOOKS/AVAILABLE_EDITIONS-equivalent shapes (ADAPTER_KINDS, TEMPLATE_MUNICODE_CALENDAR_GRANT) reused exactly as they already existed.",
+    "environment: staging, not live -- no go-live declared, matches the environment badge's own stated purpose and G-115 item 6's precedent.",
+    "Secrets (smart-files-api-key, dashboards production DATABASE_URL) fetched from GCP Secret Manager into a local scratchpad path outside any git repo, used only as env vars for the live verification run, never printed to output or committed, deleted immediately after use -- confirmed by listing the scratchpad afterward.",
+    "Phase 2 (10 other domains, vendor feeds) not started, not faked with invented credentials or fixture-pretending-to-be-real data."
+  ],
+  "pr": [
+    {
+      "repo": "smartcity-dashboards",
+      "number": 41,
+      "url": "https://github.com/empressaioemail-tech/smartcity-dashboards/pull/41",
+      "title": "feat(G-116): real bastrop_tx city pack + first real feed (municode calendar)",
+      "merged": true,
+      "mergeSha": "01e9c141015e02bc97a52b37e7d16bd36cf3fd13"
+    },
+    {
+      "repo": "smart-files",
+      "number": 12,
+      "url": "https://github.com/empressaioemail-tech/smart-files/pull/12",
+      "title": "feat(G-116): add bastrop_tx/staff persona",
+      "merged": true,
+      "mergeSha": "5fdc5d10d508cc2811a26f08fdad67969c21549e"
+    }
+  ],
+  "deploy": {
+    "smartFiles": {
+      "service": "smart-files",
+      "project": "smart-files-505619",
+      "region": "us-east1",
+      "method": "gcloud run deploy smart-files --source . --region us-east1 --project smart-files-505619",
+      "newRevision": "smart-files-00010-b9v",
+      "trafficConfirmedVia": "gcloud run services describe --format=value(status.traffic), read by field (latestRevision/percent), not the CLI summary line -- this service auto-follows latest (unlike plan-review's pinned-tag behaviour), confirmed 100% on the new revision before running the live scraper"
+    },
+    "smartcityDashboards": {
+      "service": "smartcity-dashboards",
+      "project": "smartcity-dashboards",
+      "region": "us-east1",
+      "method": "gcloud run deploy smartcity-dashboards --source . --region us-east1 --project smartcity-dashboards",
+      "newRevision": "smartcity-dashboards-00030-whz",
+      "trafficConfirmedVia": "gcloud run services describe --format=value(status.traffic), read by field (latestRevision/percent) -- this service also auto-follows latest, confirmed 100% on the new revision post-deploy",
+      "mergedPr": "smartcity-dashboards#41, merge commit 01e9c141015e02bc97a52b37e7d16bd36cf3fd13",
+      "postDeployVerification": "GET / and GET /?lens=development-services&cityKey=bastrop_tx and GET /app.js all 200 on the live serving revision. GET /api/lenses/city-manager/compose?cityKey=bastrop_tx anonymously: 401 (unauthorized) as expected for a tenant-private pack; with the deployed DASHBOARDS_API_KEY as a bearer service caller: 403 (forbidden), NOT 200 -- read src/tenancy.mjs to confirm this is CORRECT, not a defect: canReadPack's tenant-private branch requires callerIsPackSubject(caller, pack.cityKey), which a generic service-kind caller never satisfies, checked ahead of (not falling through to) the service-key branch. This live-confirms the new pack's tenant-private access policy is genuinely enforced, not accidentally left open. Full compose-content verification (actually observing the plan-review/smart-files embed URLs render with &cityKey=bastrop_tx) needs a real Hauska product key scoped to the bastrop_tx tenant, which does not exist yet -- that is real staff-auth/tenant-key provisioning work, named as follow-up (leave_behind), not attempted here since it is explicitly out of this card's scope (real staff auth is a separately-tracked future item). The embed-URL-building code itself (mounts.mjs, G-114) was read in full during Phase 0 investigation and confirmed generically parameterized by cityKey, unmodified by this card."
+    }
+  },
+  "counts": {
+    "filesChanged": { "smartcity-dashboards": 6, "smart-files": 1 },
+    "newTests": 4,
+    "fullSuiteAfter": { "smartcity-dashboards": "460/460", "smart-files": "28/28" },
+    "realMeetingsFetched": 25,
+    "realMeetingsWritten": 5,
+    "livePacksVerified": 2
+  },
+  "leave_behind": [
+    {
+      "item": "smartcity-dashboards PR #41 merged (01e9c141) and deployed (smartcity-dashboards-00030-whz@100%) after close was first drafted -- the live app now serves the bastrop_tx pack. Tenant-private access policy live-confirmed correctly enforced (401 anonymous, 403 for a bare service-kind caller). Full compose-content verification (embed URLs actually rendering) needs a real Hauska product key scoped to bastrop_tx, which does not exist yet -- that is tenant-key provisioning, part of the still-unbuilt real-staff-auth item, not this card's scope.",
+      "owner": "not this card's scope (staff-auth/tenant-key provisioning)",
+      "plan_row": "named future item"
+    },
+    {
+      "item": "Phase 2 -- the other 10 fixture domains and real vendor feeds (MyGov, Samsara, OpenGov, Esri, FirstDue, Verkada, Spireon, GoTo, PowerBI). Zero credentials provisioned for any of them. Gap map names a sanctioned shortcut: a real MyGov scraper/credential may already exist on live smartcity-os to port (read-only) -- not checked, this seat's normal access doesn't include that repo. Real open question for the operator before Phase 2 can be scoped for real.",
+      "owner": "operator (credential/scope decision), then govtech seat",
+      "plan_row": "not yet filed"
+    },
+    {
+      "item": "Per-pack default subject parcel for the SmartSite staff-map embed (currently one global hardcoded constant, coincidentally a real Bastrop parcel, so not currently wrong -- just not truly per-pack).",
+      "owner": "govtech seat, smartcity-dashboards",
+      "plan_row": "not yet filed, small follow-up"
+    },
+    {
+      "item": "Real staff login/auth remains a known, deliberately-unbuilt future item (shell-state.mjs, badged 'Not built'). Access to the bastrop_tx pack today is the same product-key/persona pattern used everywhere else in this program.",
+      "owner": "not this card's scope",
+      "plan_row": "named future item, not filed"
+    }
+  ],
+  "fleetMemory": {
+    "LESSON": [
+      "smart-files' Cloud Run service auto-follows 'latest' revision (100% traffic shifts automatically on deploy) -- unlike plan-review, which pins traffic to explicit named revisions/tags and needs an explicit update-traffic step. Confirmed by reading the traffic array before assuming either behaviour; don't assume deploy behaviour is uniform across services in this program even when the deploy command looks identical.",
+      "A city-pack-validation-time identity guard (fired from assertCityPackShape's own grant-shape loop) and a runtime fetch/read-time identity guard can be the SAME underlying function called from multiple, structurally different call sites (pack construction/validation vs. live HTTP fetch vs. read-back leak detection). Threading a new parameter through such a guard means finding every call site by grep, not just the two most obvious ones -- this one had four, one of them a not-obviously-duplicate-looking pair inside a single function.",
+      "gcloud secrets versions access output should be captured directly into an env var or a scratchpad file outside any git repo, never echoed to stdout even transiently -- verified this pattern again worked cleanly for a second, different secret (smart-files-api-key) beyond the plan-review-platform-key precedent from G-111/G-112."
+    ],
+    "GROUND-TRUTH": [
+      "(2026-09-03) Real Bastrop municode meeting calendar, live-scraped: 25 meetings found at https://bastrop-tx.municodemeetings.com/ as of this date, 5 written under the program's existing limit. Includes real, dated public meetings (Zoning Board of Adjustments 2026-09-10, Public Library Board 2026-09-14, Special/Regular City Council 2026-09-15/22, Parks and Recreation 2026-10-01).",
+      "(2026-09-03) smart-files serving revision smart-files-00010-b9v @100% traffic, carrying the bastrop_tx/staff persona.",
+      "(2026-09-03) smartcity-dashboards worktree was one commit behind origin/main (G-114) at session start -- resynced before branching; general reminder that a checked-out worktree's staleness should be checked, not assumed current, at the start of any new lane."
+    ],
+    "OPEN": [
+      "Real Hauska tenant key for bastrop_tx, for full compose-content live verification and eventual real staff access.",
+      "Phase 2 credential/scope question for the operator.",
+      "Per-pack default parcel, small follow-up."
+    ]
+  }
+}
