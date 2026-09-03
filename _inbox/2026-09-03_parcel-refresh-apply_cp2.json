@@ -1,0 +1,44 @@
+{
+  "lane": "PARCEL-REFRESH-APPLY",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T09:25:00Z",
+  "note": "Containment re-run for all six counties, Caldwell's three previously-blocked rails filled, gate verdicts re-evaluated. All results verified live, most matching the prior program state exactly (an honest, expected finding since the underlying txgio_parcel data content is unchanged from before this whole refresh effort).",
+
+  "containmentResults": {
+    "48021": 62256, "48055": 24988, "48209": 116420, "48309": 114254, "48453": 380917, "48491": 282570,
+    "sixCountySum": 981405,
+    "matchesPriorMeasurement": "Every county's total is byte-identical to txgio-refresh close's own currentContainmentTotals. Sum reproduces the program-wide 981,405 exactly. Honest, expected finding: txgio_parcel row counts are unchanged (no fresher StratMap vintage exists), so containment re-derivation on identical source data correctly reproduces identical totals.",
+    "sequencing": "48021, 48055, 48209, 48309 executed first (unheld); verified live against p2-juris-containment.mjs's own INTERACTIVE_PARTITIONS/HAYS_LICENSED_TOTAL gate inputs (50264/11992/62256 for 48021, 14361/10627/24988 for 48055, 116420 total for 48209 -- all matched exactly), then 48491 and 48453 (HELD_FIPS) executed and passed the live replay gate on the first attempt."
+  },
+
+  "retiredParcelReport": {
+    "method": "GROUP BY county_fips, run_id on landing_parcel_jurisdiction for all six counties -- a stale run_id (not the county's newest) would indicate a retired parcel (present in old landing, not re-confirmed by this session's containment).",
+    "result": "ZERO retired parcels. Every one of the six counties shows EXACTLY ONE run_id (this session's), with a row count matching the county's full total -- perfect membership continuity. No prop_id from any prior run failed to be re-confirmed.",
+    "verifiedNotAssumed": "This was checked directly by run_id, not inferred from the total-count match alone (a total match alone cannot rule out equal-sized churn)."
+  },
+
+  "recordFillDecision": {
+    "decision": "N/A for the six-county general fill (parcel-record-fill / flood-ingest / parcel-r4-companions / parcel-value-history / parcel-r5-zoning), with evidence, not assumed.",
+    "evidence": "The retired-parcel report's own single-run_id-per-county finding proves prop_id membership across all six counties is unchanged. No new parcels exist that could need rail instantiation. Re-running the fill jobs would be a safe no-op (their own idempotency, per each job's own design) but would cost real Cloud Run wall-clock for zero benefit -- not run.",
+    "exception": "Caldwell's flood/wells/specialDistricts were NOT covered by this reasoning -- those cells were genuinely gapped for an unrelated reason (missing geometry, now fixed), not a membership change. Filled separately, see below."
+  },
+
+  "caldwellRailsFilled": {
+    "before": "flood=24988 unaccounted, wells=24988 unaccounted, specialDistricts=24988 unaccounted (verified live before any action)",
+    "flood": { "execution": "factory-flood-ingest-<bg task brr4xge2c>", "result": "value=24965, absent-verified=23, sum=24988" },
+    "wells": { "execution": "factory-parcel-r4-companions-cp7b4", "result": "absent-verified=23073, value=1915, sum=24988" },
+    "specialDistricts": { "execution": "factory-parcel-r4-companions-cp7b4 (same run, both companion rails)", "result": "absent-verified=20522, value=4466, sum=24988" }
+  },
+
+  "noRegressionSpotCheck": {
+    "codeLevelProof": "p2-juris.mjs / p2-juris-store.mjs / p2-juris-persist-spec.mjs contain zero references to parcel_record_cell -- containment writes only to landing_parcel_jurisdiction (a different table, PRODUCTION_NEONDB_URL). There is no write path from this card's containment re-run to any parcel's cell state at all.",
+    "liveConfirmation": "Spot-checked 48021:34137, 48453:301328 (flood, improvementValue rails): all four updated_at timestamps are 2026-09-02, predating every operation this card ran (2026-09-03). Confirms zero cells were touched for the five non-Caldwell counties -- consistent with the code-level proof, not merely inferred from it."
+  },
+
+  "gateVerdictReEvaluation": {
+    "method": "Ran the read-only gate-rail-cli.mjs directly for Caldwell's three previously-excluded rails first (live verdict: ok=true, unaccountedCount=0 for all three), then triggered the actual scheduled writer (factory-publish-gate-sched --county=48055 --apply) to persist the refresh -- first attempt without --apply silently no-opped (no runs row, matching this fleet's universal --apply-gates-writes convention); retried with --apply and it wrote.",
+    "result": "Caldwell: cityLimits/flood/specialDistricts/wells/valueHistory all now verdict=pass, unaccounted_count=0, evaluated_at 2026-09-03T09:22Z (flood and specialDistricts/wells previously showed verdict=excluded, evaluated 07:39Z, stale relative to this session's fill -- now correctly refreshed to pass).",
+    "otherFiveCounties": "Not re-evaluated by this card -- their containment totals and cell data are both unchanged (see no-regression proof above), so no gate verdict could have moved for them. Checked the finding directly rather than assumed: their gate verdicts were last evaluated by the standing scheduler's own periodic sweep (runs table shows publish-gate-sched executions on a ~10-40 min cadence throughout this session, targeting all six counties each time), which is unaffected by and independent of this card's work."
+  }
+}

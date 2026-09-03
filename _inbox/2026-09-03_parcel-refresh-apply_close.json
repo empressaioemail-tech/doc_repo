@@ -1,0 +1,66 @@
+{
+  "lane": "PARCEL-REFRESH-APPLY",
+  "status": "closed",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T09:30:00Z",
+  "missionPremise": "Steps 3-4 of the original refresh card, on the corrected acquisition (PARCEL-TXGIO-REACQ) and gated on PARCEL-B-SLATE1's own Caldwell REFUSE capture. Re-run containment for the six counties on the fresh fabric, then idempotent fills, a retired-parcel report, and full verification.",
+  "completionPredicate": "Met. All six counties' containment re-run, verified, and stated prominently below. Retired-parcel report delivered (zero, verified by run_id not inferred). Record-fill decision made with evidence (N/A program-wide; Caldwell's three genuinely-gapped rails filled). Caldwell's previously-blocked rails filled and verified. No cell regression (code-level proof plus live spot-check). Gate verdicts re-evaluated where counts moved (Caldwell only, correctly flipped excluded->pass). B3 subdivisions checked and honestly reported absent, per PARCEL-TXGIO-REACQ's own already-established finding.",
+
+  "premiseCorrectionsCarriedFromCP1": [
+    "Step 1 of this card's own dispatch (execute the Caldwell geom backfill) was already done by PARCEL-TXGIO-REACQ, this card's own dependency -- not redone, re-verified live (32781/32781, 0 invalid) before proceeding.",
+    "Verification item 'the B3 subdivisions contained' was already established as unreachable by PARCEL-TXGIO-REACQ (no fresher StratMap vintage exists upstream) -- re-checked here anyway rather than assumed stale, still 0 hits, confirming nothing changed."
+  ],
+
+  "newContainmentTotalsPerCounty": {
+    "48021_Bastrop": 62256,
+    "48055_Caldwell": 24988,
+    "48209_Hays": 116420,
+    "48309_McLennan": 114254,
+    "48453_Travis": 380917,
+    "48491_Williamson": 282570,
+    "sixCountySum": 981405,
+    "supersedesThePriorFigure": "981,405 was ALREADY the program-wide figure this refresh set out to supersede (per this card's own and its dependency's dispatch language). This card's own honest, load-bearing finding: the six-county sum is UNCHANGED at 981,405, because the underlying TxGIO source data content is unchanged (no fresher public vintage exists for any of the six counties right now -- verified in PARCEL-TXGIO-REACQ). This re-run's real value is not a count change: it re-derives all six counties' containment through current code on freshly re-validated geometry, and it closes Caldwell's specific geometry gap that had been blocking three whole companion rails."
+  },
+
+  "retiredParcelReport": {
+    "count": 0,
+    "method": "landing_parcel_jurisdiction GROUP BY county_fips, run_id for all six counties -- checked for any row carrying a run_id other than this session's newest per county (which would indicate a prop_id present in old landing but not re-confirmed by the new containment pass).",
+    "result": "Every county shows exactly one run_id, at exactly that county's full row count. Zero retired parcels. No disposition/operator review needed -- there is nothing to report beyond this clean result."
+  },
+
+  "recordFillDecision": {
+    "programWideSixCounties": "N/A, with evidence: prop_id membership verified unchanged (the retired-parcel report's own single-run_id-per-county finding), so no new parcels exist needing rail instantiation. Not run -- would be a safe no-op costing real Cloud Run time for zero benefit.",
+    "caldwellException": "Filled. Caldwell's flood/wells/specialDistricts were genuinely unaccounted (24988/24988/24988) for an unrelated, real reason -- geometry that never existed until PARCEL-TXGIO-REACQ's backfill. factory-flood-ingest and factory-parcel-r4-companions executed for county 48055 specifically: flood now value=24965/absent-verified=23; wells now absent-verified=23073/value=1915; specialDistricts now absent-verified=20522/value=4466 -- each summing to the full 24988."
+  },
+
+  "noCellRegression": {
+    "codeLevelProof": "p2-juris.mjs, p2-juris-store.mjs, and p2-juris-persist-spec.mjs contain zero references to parcel_record_cell -- containment has no write path to any parcel's cell state.",
+    "liveConfirmation": "Spot-checked 48021:34137 and 48453:301328 (flood, improvementValue): all four cells' updated_at predate every operation this card ran (2026-09-02 vintages against 2026-09-03 work), confirming zero cells touched for the five non-Caldwell counties."
+  },
+
+  "gateVerdictReEvaluation": {
+    "moved": "Caldwell only (48055) -- cityLimits/flood/specialDistricts/wells/valueHistory now verdict=pass, unaccounted_count=0 (flood and wells/specialDistricts previously verdict=excluded, a stale declared-ahead state from before this session's fill). Refreshed via the standing writer, factory-publish-gate-sched --county=48055 --apply (a first attempt without --apply silently no-opped, matching this fleet's universal apply-gates-writes convention; the retry with --apply wrote correctly).",
+    "unchanged": "The other five counties -- their containment totals and cell data are both unchanged (proven above), so nothing could have moved their gate verdicts; not re-evaluated by this card, left to the standing scheduler's own independent periodic sweep."
+  },
+
+  "b3SubdivisionVerification": {
+    "result": "NOT PRESENT. Re-checked live (situs_address ILIKE against La Condesa / Hacienda Sonoma / West Bastrop Village, county 48021): 0 hits, same as PARCEL-TXGIO-REACQ's own finding. Nothing in this card's own scope touches txgio_parcel content, so this result could not have changed and did not."
+  },
+
+  "constraintsHonored": [
+    "Store writes only via Cloud Run jobs with run rows, never a laptop apply -- every containment, flood-ingest, r4-companions, and gate-sched execution ran as a Cloud Run job execution in us-east4.",
+    "factory-p2-juris (the containment job) was found running a stale image (last deployed 2026-09-01, before this session's own PR #77 connect-timeout fix merged 2026-09-02T23:18:18Z) -- rebuilt and redeployed via cloudbuild.p2-juris.yaml before use (build fd7808e3, digest sha256:496dd0c986c7442b83515049e81131a4566fd14a377d0656646b6e5d1778d963, verified two independently derived ways) to reduce the risk of a repeat silent-hang during this card's containment runs.",
+    "HELD_FIPS (Travis, Williamson) was never lifted or bypassed -- satisfied honestly by running the three prerequisite counties first and letting the gate's own live replay check pass on its own merits.",
+    "Retired parcels treated as a report, never a deletion -- zero found, nothing to report beyond the clean result itself."
+  ],
+
+  "gitStatus": "P:/tmp/hauska-factory-refresh-apply: git status --short and git diff --stat both empty. Zero code changes -- the p2-juris redeploy used existing origin/main code as-is (no edits); npm install ran to execute gate-rail-cli.mjs directly for verification, which does not modify tracked files.",
+
+  "open": [
+    "The program-wide total remains 981,405 because no fresher upstream TxGIO/StratMap vintage exists for any of the six counties -- carried forward from PARCEL-TXGIO-REACQ's own open item; re-check periodically."
+  ],
+
+  "leave_behind": [
+    { "item": "None specific to this card beyond what PARCEL-TXGIO-REACQ already left behind (the txgio-ingest geom-write defect, now carded separately as TXGIO-GEOM-FIX by the planner).", "owner": "n/a", "plan_row": "F-01" }
+  ]
+}
