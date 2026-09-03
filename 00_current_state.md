@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-02
+last_updated: 2026-09-03
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -20,12 +20,17 @@ never-built agent-exposure gap, audited against live `origin/main`, not the stal
 checkout. Two worktrees dispatched under the existing `property` seat
 (`legacy-design-tools-p113-reliability`, `legacy-design-tools-p113-mcp`); this was the first
 real use of the compiled hand-carry dispatch mechanism rather than a description of it. Both
-windows reported idle by the operator immediately after the dispatch was pasted; not yet
-diagnosed against which of the recently-started peer sessions they are. Tracker
-`_smartsite_gtm/09_crm_courthouse_agent_roadmap.md`. Smart Site dashboard-mode line PARKED for
-v2 same session (`_decisions/2026-09-02_smartsite_dashboard_mode_parked_v2.md`); shell kept as
-reference, nothing scheduled against it now. Session
-`_sessions/2026-09-02_smartsite_gtm_courthouse_and_lane_mimicry_claude_code.md`.
+windows reported idle 2026-09-02, DIAGNOSED 2026-09-03: a new Claude Code tab inherits its
+VSCode window's root, so both attempts pasted the dispatch into windows still rooted at
+`doc_repo` and each correctly refused to execute rather than build in the wrong repo. Fixed
+prompts issued (explicit `code -n` new-window instructions); not yet confirmed successful as of
+session close. Session closed for an operator workspace reorganization; restart point is
+`_inbox/2026-09-03_PLANNER_HANDOFF_next_session.md`, read that before resuming this thread.
+Tracker `_smartsite_gtm/09_crm_courthouse_agent_roadmap.md`. Smart Site dashboard-mode line
+PARKED for v2 same session (`_decisions/2026-09-02_smartsite_dashboard_mode_parked_v2.md`);
+shell kept as reference, nothing scheduled against it now. Sessions
+`_sessions/2026-09-02_smartsite_gtm_courthouse_and_lane_mimicry_claude_code.md` and
+`_sessions/2026-09-03_p113_dispatch_mechanics_and_workspace_handoff_claude_code.md`.
 
 ## 1. Active fires
 
