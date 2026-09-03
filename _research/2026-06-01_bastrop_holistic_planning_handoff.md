@@ -2,12 +2,16 @@
 id: 2026-06-01_bastrop_holistic_planning_handoff
 title: Session handoff — Bastrop health, holistic portfolio, shared engines
 date: 2026-06-01
+status: superseded
+last_updated: 2026-09-02 (status flip only; body untouched)
 applies_to: portfolio
 kind: handoff
 related: [31a_bastrop_maintenance_sprint, 30a_smartcity_stabilization_sprint, 46_smartcity_parcel_intelligence, 47_codex_plan_review, 40d_cortex_site_context_sprint, 27_engine_evolution_plan, 80_adrs/adr_008_engine_factor_out, 00_current_state]
 ---
 
 # Session handoff — Bastrop health, holistic portfolio, shared engines
+
+> **SUPERSEDED 2026-09-02.** The plan-review pilot concept this doc scopes (a wizard bolted onto cortex-api) was abandoned in favor of the current standalone `plan-review` product built through OPS-17 Wave 1 (closed 2026-09-02). Its Q1-Q6 open questions were never formally closed — they were overtaken by the OPS-17 restructure, not resolved. See `90_operations/OPS-17_govtech_stack_plan_of_record.md` and the 2026-08-17 decision cluster for current state. Retained per convention (status flip, not delete) — do not treat anything below this line as a live plan.
 
 **Filed:** 2026-06-01  
 **From:** doc_repo planner (Cursor)  

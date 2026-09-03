@@ -1,13 +1,15 @@
 ---
 id: 31a_bastrop_maintenance_sprint
 title: Bastrop maintenance sprint — platform health catch-up
-status: active
-last_updated: 2026-06-10
+status: superseded
+last_updated: 2026-09-02 (status flip only; body untouched — superseded by the no-touch ruling on smartcity-os)
 applies_to: smartcity-os
 related: [30a_smartcity_stabilization_sprint, 30_smartcity_os, 10_ground_truth, 11_roadmap, 54_tenant_leg_sprint, 80_adrs/adr_005_multitenancy, 90_runbooks/smartcity_cloud_run_env_audit_2026-05-11, 90_runbooks/cloud_run_canary_deploy]
 ---
 
 # Bastrop maintenance sprint — platform health catch-up
+
+> **SUPERSEDED 2026-09-02.** `smartcity-os` (live Bastrop) is now under an absolute no-touch ruling (`_catalog/repo_intents.md`) until a named Bastrop-cutover WDLL runs — an independent maintenance sprint on that repo is no longer a valid work path. See `90_operations/OPS-17_govtech_stack_plan_of_record.md` for current state. Retained per convention (status flip, not delete) — do not execute anything below this line.
 
 > **Working sprint plan.** June 2026 maintenance window before platform
 > enhancements (Codex 1b, M-PropIntel, Prophecy embed resolution).

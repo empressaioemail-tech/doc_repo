@@ -1,14 +1,16 @@
 ---
 id: 11a_bastrop_live_roadmap
 title: Bastrop-live roadmap — Codex 1b → production + Code Ingestion Pipeline
-status: active
-last_updated: 2026-05-11
+status: superseded
+last_updated: 2026-09-02 (status flip only; body untouched — superseded by OPS-17 and the 2026-08-17 decision cluster)
 applies_to: portfolio
 related: [11_roadmap, 07_product_line_summary, 30a_smartcity_stabilization_sprint, 27_engine_evolution_plan, 47_codex_plan_review, 48_codex_program_plan, 33_smartcity_codex_1b_integration, 42_design_accelerator_program_plan]
 owner: nick
 ---
 
 # Bastrop-live roadmap
+
+> **SUPERSEDED 2026-09-02.** This doc's premise — embedding Codex plan-review directly inside `smartcity-os` production — is superseded by the current architecture, where Plan Review is a standalone product (`plan-review` repo) that Bastrop will *consume*, never host. `smartcity-os` is now under an absolute no-touch ruling (`_catalog/repo_intents.md`) until a named Bastrop-cutover WDLL runs. See `90_operations/OPS-17_govtech_stack_plan_of_record.md` and the 2026-08-17 decision cluster (`_decisions/2026-08-17_smartcity_product_line_then_bastrop_onboarding.md`, `_decisions/2026-08-17_dashboards_ui_then_one_feed.md`, `_decisions/2026-08-17_g65_permitflow_kill.md`) for the current plan. Retained per convention (status flip, not delete) — do not execute anything below this line.
 
 > **End state.** Codex 1b live in Bastrop production. Sylvia and Jaime
 > running real submittals through the SmartCity OS Plan Review surface.
