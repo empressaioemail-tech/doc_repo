@@ -1,0 +1,48 @@
+{
+  "lane": "PARCEL-B-SLATE1",
+  "checkpoint": "CP5",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T05:57:00Z",
+  "note": "SPECIALDISTRICTS RAIL LIVE IN PRODUCTION, 5 counties. Second real slate flip, same sequence as wells (CP4), this time correctly including the --apply gate dispatch from the start.",
+
+  "specialDistrictsFlip": {
+    "pr": { "repo": "legacy-design-tools", "number": 590, "branch": "feat/b-slate1-specialdistricts-flip", "mergeSha": "94ae857f4ad0fae7c136f1f322ae76f10a3d0cfd", "mergedAt": "2026-09-03T05:36:58Z" },
+    "ciNote": "Green on the first run, all 10 checks, no flake this time.",
+    "newTestFile": "specialDistrictFactServeCutover.test.ts did not exist before this card (unlike wells, which inherited one from PARCEL-B-READER) -- written mirroring wellFactServeCutover.test.ts's structure, 8 tests covering unslated-byte-identical and slated-record/refuse/store-failure/null-store paths.",
+
+    "gateVerdictsWritten": {
+      "dispatch": "gcloud run jobs execute factory-publish-gate-sched --args=publish-gate-sched,--county=48021,--county=48209,--county=48309,--county=48453,--county=48491,--rail=specialDistricts,--apply (run in parallel with the canary build, since they are independent operations)",
+      "result": "5 real 'pass' rows confirmed live in parcel_gate_verdict, evaluated_at 2026-09-03T05:38-05:51Z (48491's row upserted cleanly over its earlier b-gate-sched-era row from 2026-09-02T21:55Z, confirming idempotency)."
+    },
+
+    "digestVerification": {
+      "canaryRevision": "cortex-api-00701-jin",
+      "digestTwoWays": "sha256:014a6c69a9e4793789877d9045b73ec40fbc755b3665223015bdaeace596ecf7, identical both ways"
+    },
+
+    "liveWireProbe": {
+      "parcels": [
+        { "id": "48021:34137 (gold)", "canary": "absent, sourceAdapter=parcel_record", "production": "absent, sourceAdapter=parcel_record" },
+        { "id": "48453:301328 (Travis)", "result": "present, districtId=6186000 (Oatman Hill MUD) -- matches the live-verified value from this card's own earlier reconnaissance exactly" },
+        { "id": "48021:102817 (Bastrop)", "result": "present, districtId=3504125 (The Colony MUD 1C) -- matches earlier reconnaissance exactly" },
+        { "id": "48491:76149 (Williamson)", "result": "refused, code=parcel-record-cell-miss -- this adapter's own code" },
+        { "id": "48309:100000 (McLennan)", "result": "present, districtId=1685000, districtType=RA -- a genuine record-sourced find" },
+        { "id": "48209:100002 (Hays)", "result": "absent, sourceAdapter=parcel_record, verifiedAbsence=true -- a real, disclosed divergence from legacy: production previously showed a DIFFERENT absence basis (tceq-water-districts-v1, an explicitly narrower single-source finding per its own reason text: 'Finding is scoped to that source only'); parcel_record's absence is the broader zone-major-sweep basis" },
+        { "id": "48055:10068 (Caldwell, UNSLATED)", "result": "absent, sourceAdapter=tceq-water-districts-v1 -- CONFIRMED still legacy, exactly as designed" }
+      ],
+      "confirmedOnBothCanaryAndProductionPostShift": true
+    },
+
+    "trafficShift": {
+      "workflow": "workflow_dispatch action=shift-traffic, run 33720664153, SUCCESS (30s, includes its own healthz smoke)",
+      "verifiedLive": "3 consecutive fresh gcloud run services describe reads, all agreeing: cortex-api-00701-jin at 100 percent",
+      "productionProbeConfirms": "Same 7-parcel spot set re-run directly against production post-shift -- identical results to the canary probe."
+    },
+
+    "retirement": {
+      "legacyPath": "specialDistrictFactRead.ts's loadSpecialDistrictFactAtom, reading entity_type='special-district-fact' rows (dual-grammar :sd:{districtId} entity ids) from the shared `atoms` table.",
+      "whatIsActuallyRetired": "The serve route no longer calls loadSpecialDistrictFactAtom for any of the 5 slated, gate-passing counties -- proven live (production probe shows sourceAdapter=parcel_record / parcel-record-* codes for all 5, never the legacy atom's own adapter tags).",
+      "whatIsHonestlyNotRetired": "The underlying special-district-fact atom table and loadSpecialDistrictFactAtom function are not deleted -- both remain live for Caldwell (excluded verdict, stays legacy) and as the fail-closed fallback for all six counties if the verdict store or gate becomes unavailable. Same honest, partial-retirement framing as wells (CP4) -- not a full decommission."
+    }
+  }
+}
