@@ -25,7 +25,7 @@ This chat is testing `app-p550.html` on serving `smartsite-mcp-00049-duw`. Last 
 
 Gold is `48021:34137`. CAD situs is `908 PINE , BASTROP, TX 78602` (space before the comma, no ST). Rainmaker is `48021:8720522`. Junk is `zzzz-not-a-situs-99999`.
 
-Catalog is 13. There is no `find_listing_history` tool and no `save_to_screen` tool. Save is `save_property`. Listing is a host web turn. Do not add tools. Do not treat a missing catalog name as a dead button.
+Catalog is 16 (updated 2026-09-03: was 13 at authoring time; P-106 added `find_parcels` and P-113 added `list_purchased_records`/`read_purchased_record`, both merged and deployed same day, see OPS-16 A-078/A-079/A-082). There is no `find_listing_history` tool and no `save_to_screen` tool. Save is `save_property`. Listing is a host web turn. Do not add tools. Do not treat a missing catalog name as a dead button.
 
 ## Hands
 
@@ -37,7 +37,7 @@ Host chrome (`Smart Site` plus a tool name) is not the widget header.
 
 ## Step 1. Catalog
 
-Name every Smart Site tool. Report the count. If it is not 13, stop.
+Name every Smart Site tool. Report the count. If it is not 16, stop.
 
 ## Step 2. Empty board (F5)
 
