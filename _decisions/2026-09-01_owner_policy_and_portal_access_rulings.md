@@ -144,3 +144,54 @@ leave_behind:
     owner: property
     plan_row: P-85
 ```
+
+## 2026-09-03 addendum — reconfirmed, prerequisites verified live, letter-block hold lifted
+
+The P-113 reliability lane (a subagent lane-planner dispatched this session) hard-gated its
+Task 3 (re-running held jobs) on a fresh operator confirmation that this ruling still stands,
+per its dispatch's explicit instruction not to assume a portal-access ruling carries forward
+silently. It correctly declined to act on an in-band planner message alone, because that
+message carried no durable, source-checkable record — a report of confirmation is a claim,
+not a fact, until it can be verified at source. This addendum is that record.
+
+**Operator reconfirmation, verbatim.** Asked directly by the property-seat planner, 2026-09-03:
+"Does the 2026-08-26 / Measurement X3 2026-08-30 portal-access ruling still stand as of today,
+so it can proceed once Tasks 1-2 (parser widen, Caldwell/McLennan live) are done?" Operator
+answered: "Yes, still stands."
+
+**The three mandatory engineering prerequisites this ruling made "not optional" were
+independently re-verified live in the codebase this session, by reading the source, not by
+trusting either the ruling's own age or the operator's one-line answer:**
+
+1. **Throttle** — `artifacts/records-request-worker/src/throttle.ts` exists and its
+   `PortalActionThrottle` type is imported and used in `playwrightBrowser.ts`.
+2. **WAF-shaped UA removed** — `playwrightBrowser.ts:36-37` defines
+   `RECORDS_REQUEST_WORKER_USER_AGENT = "RecordsRequestWorker/1.0 (Smart Site;
+   +https://smartsite.cloud/records-request)"`, an honest self-identifying UA, and it is the
+   UA actually passed at `playwrightBrowser.ts:238`. No desktop-Chrome WAF-shaped UA string
+   remains in this file.
+3. **robots.txt fetched and logged** — `recipes/index.ts`'s `runRecipeForJob`, the function every
+   job runs through, calls `fetchRobots(portal.entryUrl)` and attaches the resulting
+   `robotsTxtScopeRecord` to every recipe result (`recipes/index.ts:147-152`), not merely
+   defined and unit-tested in isolation.
+
+All three read as live and wired into the actual job path, not starved. This was checked
+because a ruling whose stated preconditions are unverified is not a green light regardless of
+how recently it was reconfirmed in conversation.
+
+**Scope this reconfirmation actually covers, since the original ruling already drew a finer
+line than a bare yes/no:**
+
+- The 14 digit-block jobs were already ruled PERMITTED by this decision on 2026-09-01 and
+  remain so; today's reconfirmation does not change their status, only re-affirms the ruling
+  they sit under is still live.
+- The 7 letter-block jobs were held **specifically** pending "a parser widening, which is its
+  own card." That card is P-113 Task 1, which landed this session (PR #597, letter-only block
+  capture group `/\bBL(?:OC)?K\.?\s+(\d+[A-Z]?|[A-Z]\d*)\b/i`, failing-first test proven against
+  the 4 real held legal-description strings). **Their hold is therefore lifted on the same
+  terms as the digit-block 14** — same throttle, same UA, same robots.txt discipline, no
+  separate policy question remaining.
+
+Reversal criteria from the parent ruling apply unchanged: a direct portal-operator objection, a
+material terms change, or a block/rate-limit response are each an independent stop-and-re-rule
+signal regardless of this addendum.

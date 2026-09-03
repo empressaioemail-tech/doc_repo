@@ -1,0 +1,97 @@
+{
+  "lane": "P-113-mcp",
+  "laneId": "P-113-mcp (agent exposure for purchased courthouse records)",
+  "planRow": ["P-113"],
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/ldt-p113-mcp",
+  "branch": "feat/p113-records-mcp-exposure",
+  "timestamp": "2026-09-03T14:05:00Z",
+  "missionPremise": "artifacts/api-server/src/lib/recordsRequestVisionRead.ts and recordsRequestClassifyWrite.ts already OCR every purchased courthouse document and classify its instrument type, writing the result onto records_request_artifacts.metadata (visionRead / classify keys), but no route anywhere ever reads that back out — verified directly by reading recordsRequestJobWorker.ts:146-165's recordsRequestJobToWire, which is job-level only (status, cost, error, timestamps; no artifacts array, no per-document field), and by grepping every route file in artifacts/api-server/src/routes for visionRead/extractedText/recordsRequestArtifacts (zero hits outside chatAgentTools/planReviewBff/sheetContent, none of which touch records-request data). The dispatch's framing of the gap ('nothing today lets an agent ask a question about a purchased document and get an answer') held up under this lane's own re-verification at source, not just as inherited prose.",
+  "completionPredicate": "Done means: (1) the read-side capability exists as tested, typechecked, real-DB-verified code reachable by future MCP registration; (2) it is gated on the existing Studio entitlement computation with zero new tier-check copies; (3) the three/four vision-read states and four classify states are provably never collapsed (shown by a real end-to-end DB round-trip AND by a deliberate-violation test that was confirmed to fail before being reverted); (4) it merges to main behind a green CI check-run conclusion STRING of SUCCESS, not gh's human-readable 'pass'. All four are met by PR #596. NOT met: an actual MCP JSON-RPC tools/call reaching this code (that requires src/tools.ts + src/constants.ts registration, which two independently-verified live open PRs hold as of this close). This lane's completion predicate is therefore PARTIAL and stated as such, not narrated as full — the module-level real-data proof stands in for, but is not identical to, a live protocol-level probe.",
+  "scopeBasis": "Boundaries section of the dispatch: new files under artifacts/smartsite-mcp/src/ and their tests, plus the minimal src/tools.ts registration diff; never src/health.ts, src/mcp-app.ts, the vision-read/classify source files, or any file another lane's _catalog/seat_register.json entry currently holds. This lane found, via git log + gh pr view at lane start (not assumed from dispatch prose, per the dispatch's own instruction), that src/tools.ts, src/constants.ts, and (newly discovered at build time) tests/tools.test.ts are all held by PR #580 (open, green CI) as of this session, and that mcp-app.ts + two new tests/*.ts filenames are held by PR #586 (open). The dispatch's own instruction for this exact situation is explicit: 'If you find a live conflicting holder, stop, report it, and do not force past it.' That is why registration is excluded from this lane's shipped scope rather than an oversight — the exclusion is deliberate, evidenced, and re-checked three times across the session (CP1, CP2, and immediately before this close), never once finding either PR merged.",
+  "prsAndCi": [
+    {
+      "pr": 596,
+      "title": "feat(P-113): purchased-record extraction, exposed to the MCP (list_purchased_records, read_purchased_record)",
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/596",
+      "headBranch": "feat/p113-records-mcp-exposure",
+      "state": "MERGED",
+      "mergeCommitSha": "ee03ab52f6469106be506611bdd3e55fb8358202",
+      "mergedAt": "2026-09-03T14:01:19Z",
+      "ciConclusion": "SUCCESS on all 10/10 check runs (state field read verbatim via gh pr checks --json name,state,bucket, not the human-readable bucket alone): Typecheck, Test, L17 ci-vintage-predicate, L5 SF-24/SF-25 score greps, L5 SF-30 Cotality warm grep, L5 silent-fallback greps, L5 SF-26 hand hasWriter grep, SS-W16 tier2 flood not served, SS-W18 api-server boots, cortex daily limit bake. Test job (the full monorepo suite, including this lane's new DB-backed tests) ran ~11.9 minutes, in line with PR #580's own ~12-minute precedent for the same job — not a stall.",
+      "verificationMethod": "A background `gh pr checks --watch` was started first; a mid-session coordinator check-in correctly flagged that its liveness could not be confirmed, so it was NOT trusted alone — a bounded foreground poll loop (20s interval, hard exit on zero pending buckets, ~16 minutes total across two bounded rounds) was run instead and is what actually produced the SUCCESS confirmation that gated the merge decision. The background watch completed independently afterward in agreement (exit 0)."
+    },
+    {
+      "pr": "not opened this session",
+      "title": "src/tools.ts + src/constants.ts registration (Task 3)",
+      "state": "PREPARED, NOT SUBMITTED",
+      "reason": "Blocked on live conflicting holders PR #580 (state OPEN, mergedAt null, re-checked at 2026-09-03T14:0x — see prsAndCi entry for #580 below) and PR #586 (state OPEN, mergedAt null, same recheck). Not forced past per explicit dispatch instruction.",
+      "evidenceOfReadiness": "Diff was written directly into tools.ts/constants.ts, typechecked clean (pnpm --filter @workspace/smartsite-mcp typecheck), and run against the full local suite: passed cleanly on its own two new SMARTSITE_MCP_TOOLS entries + two new switch cases + one new inputSchemaFor case, but surfaced 8 failures across 4 hardcoded toHaveLength(13) assertions in tests/tools.test.ts (that file expects the tool count to stay 13; this lane's two new live tools make it 15). The diff was then reverted via `git checkout --` before anything was committed, so the working tree and PR #596 carry only the new standalone files. The reverted diff text is preserved locally at the scratchpad path noted below for whoever lands the follow-up."
+    },
+    {
+      "pr": 580,
+      "title": "feat(P-106): constraint search — ask a question across parcels, and say what you could not answer",
+      "state": "OPEN as of this close (2026-09-03T14:05Z re-check)",
+      "relevance": "Holds src/tools.ts, src/constants.ts, src/health.ts, src/tool-honesty.ts, src/vocabulary.ts, and tests/{constants,tools,mcp-app,server,vocabulary,find-parcels}.test.ts. All CI green as of 2026-09-02T21:20:06Z per this lane's own gh pr view read."
+    },
+    {
+      "pr": 586,
+      "title": "feat(P-101): screens move to Studio via ONE ROUTE GATE, and the MCP inherits it",
+      "state": "OPEN as of this close (2026-09-03T14:05Z re-check)",
+      "relevance": "Holds src/mcp-app.ts (out of this lane's scope regardless) and two new test files under tests/ (no filename collision with this lane's new test file)."
+    }
+  ],
+  "checkpointArtifacts": [
+    "P:/seat-worktrees/property/doc_repo/_inbox/2026-09-03_p113-mcp_cp1.json",
+    "P:/seat-worktrees/property/doc_repo/_inbox/2026-09-03_p113-mcp_cp2.json",
+    "P:/seat-worktrees/property/doc_repo/_inbox/2026-09-03_p113-mcp_close.json"
+  ],
+  "countsWithCountingRules": {
+    "newProductFiles": "2 (recordsExtraction.ts, records-extraction.test.ts) — counted as `git show --stat` on merge commit ee03ab52 lists exactly 2 files changed, both mode 'create'.",
+    "newTests": "9 test cases in records-extraction.test.ts, counted by vitest's own reported '9 tests' in a passing run against the real isolated DB; covers 4 distinct vision-read states (pending/complete/failed/skipped) + 4 distinct classify states (pending/written/refused/skipped) + Studio-gate positive and negative + 3 ownership/scope-isolation cases + 1 empty-parcel case + 1 invalid-parcelNodeId case. Not double-counted: the four-state vision-read assertions and the classification-detail assertions on the SAME seeded artifact are sub-assertions inside one 'it' block, counted as 1 test each per vitest's own unit, not as separate line-item claims.",
+    "existingSuiteRegressionCount": "0 of 526 previously-passing smartsite-mcp tests broken, counted by re-running the full existing suite (`npx vitest run`, no filter) before and after adding only the two new standalone files (registration diff excluded) — 526 passed both times, exact same count, exact same file list.",
+    "ciChecksGreen": "10 of 10 required check runs on PR #596, counted by `gh pr checks 596 --json name,state,bucket` returning zero entries with bucket != 'pass' and zero entries with state != 'SUCCESS'.",
+    "liveConflictingHoldersFound": "2 (PR #580, PR #586), counted by `gh pr list --state open` cross-referenced against `gh pr diff <n> --name-only` for exact file-path overlap with this lane's Boundaries-declared touch set (src/tools.ts, src/constants.ts, tests/tools.test.ts via the applied-then-reverted registration diff, artifacts/smartsite-mcp/tests/*). A third PR (#583, #584, #554, #510, #446, #445, #440) from the same `gh pr list` output was checked and excluded because its file list (via gh pr diff --name-only) has zero overlap with this lane's touch set."
+  },
+  "constraintsHonored": [
+    "Never touched src/health.ts, src/mcp-app.ts, recordsRequestVisionRead.ts, recordsRequestClassifyWrite.ts, or any other extraction/classification source file — grepped the final PR #596 diff (`gh pr diff 596 --name-only`) to confirm exactly the 2 declared new files and nothing else.",
+    "Never touched artifacts/records-request-worker/** or the fix/p113-records-reliability-hardening branch/worktree (the sibling lane's disjoint scope) — confirmed by working exclusively in P:/tmp/ldt-p113-mcp on feat/p113-records-mcp-exposure throughout.",
+    "Reused the existing studioGranted/canRunStudioReport/refuseStudioReport computation verbatim; added zero new copies of subscriptionTierGrantsStudio (grepped recordsExtraction.ts for '=== \"studio\"' and '=== \"team\"' — zero hits).",
+    "Stopped and reported rather than forcing past a live conflicting holder on src/tools.ts / src/constants.ts (and the newly-discovered tests/tools.test.ts coupling), exactly as the dispatch instructed for this named scenario.",
+    "Fan stayed at zero sub-agent levels this session (all work done directly); no sub-agent was spawned, so the one-level-deep fan rule and its do-not-spawn-further clause were never in play.",
+    "doc_repo: wrote CP1/CP2/close by absolute path under _inbox/, ran zero git commands inside P:/seat-worktrees/property/doc_repo — confirmed by never `cd`-ing into or running git in that path this session.",
+    "Verified every load-bearing state claim at source rather than from dispatch prose: re-derived the hauska-mcp-server zero-hit and smartsite-mcp one-hit claims independently (partial: the smartsite-mcp half was directly re-verified; the hauska-mcp-server half could not be, since that repo is not checked out in this worktree, and is carried forward honestly as unverified rather than restated as fact — see openItems).",
+    "Verified the merge-gating CI signal by the check-run conclusion STRING (SUCCESS), not gh pr checks' human-readable 'pass', and did not trust an unconfirmed background watch alone once its liveness was questioned — re-verified with a bounded foreground poll before merging."
+  ],
+  "fleetMemory": [
+    "LESSON: smartsite-mcp/vitest.config.ts hardcodes DATABASE_URL to postgres://smartsite_mcp_test:test@127.0.0.1:5432/smartsite_mcp_test, but neither CI (.github/workflows/pr-checks.yml provisions postgres/postgres/test_db) nor 90_runbooks/cc_agent_local_test_db.md (same postgres/postgres/test_db) ever provisions that user/db anywhere. It was silently dead because zero smartsite-mcp tests touched a live DB before this lane. Any future DB-backed smartsite-mcp test should default its connection string to postgres://postgres:postgres@localhost:5432/test_db (matching CI/the runbook), with a separately-named override env var for local workstation port conflicts — never rely on vitest.config.ts's DATABASE_URL for a new DB-touching test in this package.",
+    "LESSON: adding a new live tool to SMARTSITE_MCP_TOOLS changes more than tools.ts/constants.ts — tests/tools.test.ts hardcodes toHaveLength(13) at 4 call sites and constants.ts's own header comment states the total. Any future MCP-tool-registration lane in this package should grep for toHaveLength(13) (or whatever the current count is) before assuming the touch set is just tools.ts + constants.ts.",
+    "GROUND-TRUTH (2026-09-03T14:05Z live): PR #580 (seat/property-p106-constraint) and PR #586 (feat/p101-ladder-recut) both OPEN, unmerged, holding src/tools.ts / src/constants.ts / tests/tools.test.ts (#580) and src/mcp-app.ts (#586) in legacy-design-tools. Whoever lands P-113's registration diff next should re-check both before touching those files, not trust this timestamp once it ages.",
+    "GROUND-TRUTH (2026-09-03T14:05Z live): a docker container p113-mcp-testdb (pgvector/pgvector:pg16, port 55441, creds smartsite_mcp_test/test) is running on this workstation with the full @workspace/db schema pushed, left running as a convenience for whoever lands the P-113 registration follow-up (re-run records-extraction.test.ts via P113_TEST_DATABASE_URL=postgres://smartsite_mcp_test:test@127.0.0.1:55441/smartsite_mcp_test). It is disposable scratch infrastructure, holds no precious data, and can be `docker rm -f`'d without consequence once the follow-up lands.",
+    "OPEN: the follow-up registration PR (src/tools.ts + src/constants.ts + the 4 count-assertion updates in tests/tools.test.ts) is fully drafted and validated but not submitted. Land it the moment #580 (and, for the mcp-app.ts overlap, #586) merge. The exact diff text was captured before revert; a next session can also just re-derive it quickly from this close's description plus recordsExtraction.ts's own JSDoc, which names both tool shapes precisely.",
+    "OPEN: hauska-mcp-server's 'zero records/courthouse hits' claim (dispatch's premise, attributed to a 2026-09-02 40e48d48 check) was never independently re-verified by this session — that repo is not checked out in this worktree and was out of this lane's declared scope. Carried forward as an explicit gap rather than restated as settled fact."
+  ],
+  "leaveBehind": [
+    {
+      "item": "branch feat/p113-records-mcp-exposure (merged; branch itself left on origin, not deleted, per --delete-branch=false)",
+      "owner": "property seat / P-113",
+      "planRow": "P-113"
+    },
+    {
+      "item": "docker container p113-mcp-testdb (local, disposable, port 55441)",
+      "owner": "property seat / P-113 (whoever lands the registration follow-up)",
+      "planRow": "P-113"
+    },
+    {
+      "item": "the prepared-but-unsubmitted src/tools.ts + src/constants.ts + tests/tools.test.ts registration diff, blocked on PR #580/#586",
+      "owner": "property seat / P-113",
+      "planRow": "P-113"
+    }
+  ],
+  "whatRemainsOpen": [
+    "Task 3 (registration) is NOT done. list_purchased_records and read_purchased_record exist, are tested end-to-end with real data at the module level, and are merged to main — but are not yet reachable through an actual MCP tools/call, because src/tools.ts and src/constants.ts are held by PR #580 (and tests/tools.test.ts's tool-count assertions, discovered as a coupled dependency, are held by the same PR). This is the lane's single honest open item, reported rather than forced past, per the dispatch's explicit instruction for exactly this scenario.",
+    "CP2's literal wording ('a real MCP call against a parcel ... returns real extracted text and classification end to end') is satisfied at the module boundary (proven with real seeded Postgres data, not fixtures) but not yet at the actual JSON-RPC protocol boundary, which requires the blocked registration.",
+    "The non-Studio-caller refusal is proven at the module boundary (calling listPurchasedRecords/readPurchasedRecord directly with a free-tier snapshot) but likewise not yet provable through a live tools/call, for the same reason.",
+    "hauska-mcp-server's zero-hit claim remains unverified by this session."
+  ]
+}
