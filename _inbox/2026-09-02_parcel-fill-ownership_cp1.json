@@ -1,0 +1,35 @@
+{
+  "lane": "PARCEL-FILL-OWNERSHIP",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T21:45:00Z",
+  "note": "Fix verification, phantom-run resolution build, and the heal-pass plan. Written before any healing execution runs.",
+  "fixVerification": {
+    "prMerged": "hauska-factory PR #74, mergeSha 158ab53a010cd7cecdb44082513fac0a2a1131e7, mergedAt 2026-09-02T18:08:17Z. Independently read the full diff (not trusted from the addendum's summary): two independent guards -- a proactive FILL_OWNED_RAIL_KEYS allowlist (18 rails: countyFips, cityLimits, and 16 CAD-stamped scalars, derived by grepping applyCadScalar directly, explicitly excluding situsState/landUseVintage/acreageSqft as a pre-existing unrelated gap) filtering what upsertRecords sends to the database at all, plus a reactive never-downgrade CASE clause in UPSERT_CELLS_BATCH_SQL that refuses to let an incoming 'unaccounted' overwrite an existing non-unaccounted cell for ANY rail (protects even a future rail added to CAD ingest without updating the allowlist). Three violation tests (a/b/c) match the dispatch's own spec exactly, including a real falsifier (c) proving the guard clause is a genuine addition, not vacuous. CI: gate8 + test, both green, two independent trigger runs.",
+    "deployVerifiedTwoWays": {
+      "deployedImageDigest": "sha256:35cdb8e2c0870580aaac6e9f69d4a52a00d2413fb86cf5aff939e3044dd7b450 (gcloud run jobs describe factory-parcel-record-fill)",
+      "buildOwnReportedDigest": "sha256:35cdb8e2c0870580aaac6e9f69d4a52a00d2413fb86cf5aff939e3044dd7b450 (Cloud Build 479f76df-1726-4a54-b220-6dbcfaa7950e, created 18:08:40Z, 23 seconds after PR #74's merge)",
+      "match": true
+    },
+    "staleLocalBranchHandled": "The registered worktree's local feat/fill-ownership branch carried the prior claimant's ORIGINAL (pre-squash) commit 9bccd3a, diverged from origin/main by SHA but content-IDENTICAL for both changed files (git diff 9bccd3a origin/main -- <files> was empty) -- confirmed before touching anything. Resolved via git reset --mixed origin/main (branch pointer + index only, working tree untouched) rather than any destructive operation, since no content was ever at risk."
+  },
+  "phantomRunResolution": {
+    "diagnosis": "run 122cd0b2-bee1-4e4b-8104-178cc033156c has status='running' (queried live), not 'started' -- the reaper's own reapStartedRuns() query is hardcoded WHERE r.status = 'started'. Confirmed parcel-record-fill.mjs's own startRun() call writes status:'running' (grep of src/jobs/parcel-record-fill.mjs line 878), while reap.mjs's own writes status:'started' -- a genuine, live, board-relevant status-string mismatch, not specific to this one row. 9 rows total currently carry status='running' store-wide; the reaper is structurally starved on all of them, indefinitely, on every tick, not just this one.",
+    "evidenceForThisRow": "The row's own scope names execution factory-parcel-record-fill-bzfxv. gcloud run jobs executions describe confirms: Completed=False, reason=Cancelled, message='Cancelled by user', completionTime=2026-09-02T13:24:16.849563Z -- this is the exact foreign/unauthorized Williamson execution PARCEL-R2-JURIS-STAMP's own close already documented cancelling during its cross-session collision incident.",
+    "fixBuilt": "hauska-factory PR #76 (not yet merged as of this checkpoint): a new `reap terminate --run=<uuid> --exit-kind=<kind> --reason=\"<text>\" [--execution=<name>] [--apply]` verb, the addendum's own authorized 'write the termination record manually with the evidence' path. Requires real evidence (never infers), refuses an already-terminated run, dry-run by default. 30 tests, full suite 621/623 green, 0 regressions. Reaper's own broader status-string precondition bug is NOT fixed here (a separate, board-level defect affecting other job families potentially) -- named as a leave_behind for a dedicated card.",
+    "notYetExecuted": "PR #76 must merge, deploy to factory-conformant (the job that already runs reap on schedule), and then be executed with --apply against run 122cd0b2 before this item is closed. Sequenced after this checkpoint."
+  },
+  "healPassPlan": {
+    "source": "_inbox/2026-09-02_parcel-flood-fragments_close.json's damage census, cross-referenced against each rail's owning close.",
+    "countyRailPairsToHeal": [
+      { "rail": "flood", "counties": ["48021", "48209", "48309", "48453"], "note": "fully wiped (0 value/0 absent-verified), re-run flood-ingest --apply", "owningJob": "factory-flood-ingest" },
+      { "rail": "flood", "counties": ["48491"], "note": "75% wiped (71,963 value survives, 210,600 unaccounted) -- re-run flood-ingest --apply for a full, honest re-derivation rather than trying to patch only the missing 210,600", "owningJob": "factory-flood-ingest" },
+      { "rail": "wells", "counties": ["48491"], "note": "fully wiped (282,570 unaccounted)", "owningJob": "factory-parcel-r4-companions" },
+      { "rail": "specialDistricts", "counties": ["48491"], "note": "fully wiped (282,570 unaccounted)", "owningJob": "factory-parcel-r4-companions" },
+      { "rail": "valueHistory", "counties": ["48491"], "note": "fully wiped (282,570 unaccounted)", "owningJob": "factory-parcel-value-history" },
+      { "rail": "zoningDistrict", "counties": ["48491", "48309", "48453", "48209"], "note": "Williamson fully wiped; McLennan/Travis/Hays show damage BEYOND the R5B baseline (167,732 cells store-wide reverted) not yet attributed to a specific run -- widest-damage rail in the census. Re-run parcel-r5-zoning for all four.", "owningJob": "factory-r5-zoning (name to be confirmed against the actual deployed job list)" },
+      { "rail": "48055 (Caldwell), all rails", "counties": [], "note": "excluded from every heal target -- pre-existing txgio geometry gap, never populated by any owning job to begin with (expected absence, not damage)." }
+    ],
+    "preHealVerification": "Before running ANY heal job, re-measure each target county-rail pair live to confirm the fix (PR #74, deployed) actually holds now -- i.e., that no parcel-record-fill run has re-wiped it AGAIN since the flood-fragments census was taken (2026-09-02T17:45-17:55Z, well before the fix deployed at 18:08:17Z). Any parcel-record-fill run between 17:55Z and 18:08:17Z would have continued the clobber; any run AFTER 18:08:17Z should now be safe by construction (with a falsifier check: confirm the OWNED rails still update correctly and the wiped rails' state is genuinely unchanged by a post-fix parcel-record-fill run, not just assumed from reading the code)."
+  }
+}

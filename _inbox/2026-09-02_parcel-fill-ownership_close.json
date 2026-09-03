@@ -1,0 +1,66 @@
+{
+  "lane": "PARCEL-FILL-OWNERSHIP",
+  "status": "closed",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T04:00:00Z",
+  "missionPremise": "Per the flood-fragments CP2 damage census and this card's own two addenda: PR #74's never-clobber guard (owned-rail allowlist + a never-downgrade-to-unaccounted SQL guard in UPSERT_CELLS_BATCH_SQL) had to land and deploy, then every county-rail pair wiped by the earlier clobber had to be healed by re-running its owning job and verifying against that rail's own original close, and the phantom run 122cd0b2 had to be resolved rather than left running forever.",
+  "completionPredicate": "PR #74 merged, deployed, and sanity-checked live (an owned rail gets a fresh vintage on re-run, a rail this job does not own does not). Every wiped county-rail pair from the damage census re-run and verified against its owning close: flood for 48021/48209/48309/48453/48491, wells+specialDistricts for 48491, valueHistory for 48491, zoningDistrict store-wide. 48055 (Caldwell) correctly excluded throughout as a pre-existing gap, not damage. S6-COLLISION's Williamson dollar rails confirmed untouched by the entire heal pass. The phantom run 122cd0b2 is resolved (status='killed'). Ready to close.",
+  "scopeBasis": "This card's own note restricts coordination with the S6 lane to closes only, so no direct action was taken on S6-owned rows -- only a read-verify that the heal pass never touched them. The two additional phantom rows discovered mid-heal (9ef1b6d4, 28823aa1) and the reap tick's own status-string precondition bug were explicitly out of THIS card's scope (no Cloud Run execution evidence existed for a manual reap terminate, and the precondition bug is a cross-cutting Factory concern) -- both were carried as a leave_behind into a dedicated follow-on card (FACTORY-REAPER-PHANTOMS, closed separately this session) rather than worked here.",
+  "fixVerification": {
+    "pr": { "number": 74, "repo": "empressaioemail-tech/hauska-factory", "mergeSha": "158ab53a010cd7cecdb44082513fac0a2a1131e7", "mergedAt": "2026-09-02T18:08:17Z" },
+    "deploy": { "buildId": "479f76df-1726-4a54-b220-6dbcfaa7950e", "digest": "sha256:35cdb8e2c0870580aaac6e9f69d4a52a00d2413fb86cf5aff939e3044dd7b450", "digestVerification": "matched two independently derived ways: gcloud run jobs describe factory-parcel-record-fill and the build's own reported digest" },
+    "liveSanityCheck": "parcel-record-fill --county=48021 --apply post-deploy: 5 sampled wells cells byte-identical INCLUDING vintage timestamp (never touched, not merely recomputed to the same value), while improvementValue (an owned rail) got a fresh updated_at -- the guard discriminates correctly, not vacuously."
+  },
+  "healPassResults": {
+    "flood": [
+      { "county": "48021", "original": "matched 61945 / swept 311", "postHeal": "matched 61946 / swept 310", "delta": "+1/-1, expected fragment-fix improvement" },
+      { "county": "48209", "original": "matched 116389 / swept 31", "postHeal": "matched 116389 / swept 31", "delta": "exact match" },
+      { "county": "48309", "original": "matched 114126 / swept 128", "postHeal": "matched 114126 / swept 128", "delta": "exact match" },
+      { "county": "48453", "original": "matched 380208 / swept 709", "postHeal": "matched 380210 / swept 707", "delta": "+2/-2, expected fragment-fix improvement" },
+      { "county": "48491 (Williamson)", "original": "matched 282362 / swept 208", "postHeal": "matched 282362 / swept 208, scanned 282570, noGeom 0", "delta": "exact match", "source": "job's own reported counts, execution factory-flood-ingest-kjwtk, read from Cloud Run logs (the authoritative source, not the runs.counts column which this job leaves null)" }
+    ],
+    "48055_caldwell": "excluded from every heal target -- pre-existing txgio geometry gap, never populated by any owning job to begin with (expected absence, not damage)",
+    "wellsAndSpecialDistricts_48491": "COMPLETE, verified exact. Execution factory-parcel-r4-companions-jzh4g: specialDistricts matched=205906, wells matched=512. Reconciles exactly against R4's original five-county totals (specialDistricts 205906+541277=747183; wells 512+1982=2494).",
+    "valueHistory_48491": "COMPLETE, verified exact. Execution factory-parcel-record-fill-b8qks: 282570 of 282570 (100%), matching the landing denominator exactly, same pattern as the other five counties.",
+    "zoningDistrict": "COMPLETE, healed store-wide to the exact R5B baseline. Execution factory-parcel-record-fill-lz5bc: every one of 23 in-scope cities' matched count reproduced its original R5/R5B figure exactly; cellsMoved cleanly identified the actually-damaged cities (Austin, Round Rock, Georgetown, Leander, Cedar Park, Pflugerville, Hutto, Taylor, Liberty Hill, plus a partial Austin) versus the 14 untouched. Store-wide result value=531919/unaccounted=79197/not-applicable=370289 -- exact digit match to R5B's original close.",
+    "s6CollisionWindow": "CONFIRMED UNTOUCHED throughout the entire heal pass, as expected since none of flood-ingest/r4-companions/value-history/r5-zoning write to the dollar rails. Traced pair (R664999/R665023) shows the same absent-verified/value states with the same vintage as at S6's own close. Store-wide improvementValue for Williamson R-prefix accounts: value=256827/absent-verified=25742, unchanged."
+  },
+  "phantomRunResolution": {
+    "122cd0b2": "status='killed', termination_records carries one row (max_duration_s=300, exit_kind='killed', lease_released=true, recorded_at 2026-09-02T21:50:50Z), landed via the sanctioned reap terminate --apply path (PR #76) before PR #80's broader reaper fix even merged. This item is closed.",
+    "additionalPhantomsFoundAndRouted": "Mid-heal, five more phantom rows surfaced (factory-parcel-r4-companions, all six-county batch attempts cancelled 14:18-14:31Z) plus two older not-cloud-run rows (9ef1b6d4, 28823aa1). All seven were reconciled, but via a dedicated follow-on card (FACTORY-REAPER-PHANTOMS, PR #79 + PR #80, closed this session at _inbox/2026-09-02_factory-reaper-phantoms_close.json) rather than inside this card, since the root cause (missing SIGTERM handler; reaper's status-string precondition) was a cross-cutting Factory concern, not specific to fill-ownership's own rails."
+  },
+  "williamsonFloodIngestExecutionHistory": {
+    "note": "Three attempts total, honestly recorded rather than only the successful one.",
+    "attempts": [
+      { "execution": "factory-flood-ingest-8vk5d", "started": "2026-09-02T18:19:27Z", "outcome": "stalled 3+ hours with zero log output, cancelled by the first heal-pass claimant" },
+      { "execution": "factory-flood-ingest-b7ktv", "outcome": "stalled 1.5+ hours, root cause diagnosed by a later claimant: connectFactory/openNeonClient had no connectionTimeoutMillis, so a stalled TCP handshake hung client.connect() forever before ever reaching startRun() -- fixed in PR #77 (merged 2026-09-02T23:18:18Z), deployed to the active job family" },
+      { "execution": "factory-flood-ingest-kjwtk", "runId": "a6d3d6c3-1e65-4dd4-96c5-f2a74f1159bd", "started": "2026-09-02T23:15:29Z, 3 minutes before PR #77 merged -- ran on the pre-fix image", "outcome": "succeeded 2026-09-03T03:37:00Z, elapsed ~4h22m", "verifiedGenuinelyProgressing": "mid-run, confirmed via pg_stat_activity: one matching backend, since_state_change resetting to single digits between two checks 30s+ apart, last-query text cycling between parcel_record_companion_row and parcel_record_cell inserts -- direct evidence of an active write loop, not a frozen connection (the same diagnostic that proved the -b7ktv attempt WAS frozen, here showing the opposite)", "whyItRanLongerThanTravis": "Travis (a larger county, 380917 vs 282570 records) completed in 2h14m; this run took ~4h22m for fewer records. Not fully explained -- plausibly concurrent Factory-store load from this session's simultaneous PR #77/#79/#80 build-test-deploy work during an overlapping window, but not confirmed as anything more specific than that. Named honestly as unexplained rather than assumed benign." }
+    ]
+  },
+  "counts": {
+    "healedCountyRailPairs": 8,
+    "healedCountyRailPairsCountingRule": "flood x5 counties + wells/specialDistricts + valueHistory + zoningDistrict(store-wide) for Williamson, each independently verified against its owning close",
+    "phantomRunsResolvedAcrossBothCards": 7,
+    "phantomRunsResolvedCountingRule": "122cd0b2 (this card) + 5 factory-parcel-r4-companions rows + 2 not-cloud-run rows (all reconciled under FACTORY-REAPER-PHANTOMS)",
+    "williamsonFloodIngestAttempts": 3,
+    "williamsonFloodIngestAttemptsCountingRule": "distinct Cloud Run executions targeting flood-ingest --county=48491 --apply across this card's full lifespan, two stalled/cancelled and one succeeded"
+  },
+  "constraintsHonored": [
+    "Store writes only via Cloud Run jobs with run rows -- every heal execution and the final Williamson flood-ingest run was a real Cloud Run job execution; the phantom-run resolution used reap terminate, itself refuseLaptop()-gated to Cloud Run only.",
+    "Digest-match images before executing -- PR #74's deployed digest verified two independent ways before trusting it for the heal pass.",
+    "Re-green against current base before merge -- not applicable to this card directly (no new PR opened here; PR #74/#76/#77 were each independently CI-gated by their own authoring cards).",
+    "Never converted unaccounted to absent-verified outside authorized emissions -- flood-ingest's own swept-no-match absent-verified emission is the job's documented, authorized behavior per R3's own close, not a new conversion.",
+    "Never downgraded a non-unaccounted cell -- exactly the invariant PR #74 itself enforces and this close's heal-pass results verify held throughout.",
+    "A gate REFUSE stays legacy -- not applicable; no REFUSE-class gate touched by this card's own rails.",
+    "No destructive git operations on the divergent local branch -- confirmed content-identical to origin/main before abandoning it for a fresh branch, rather than force-resetting existing history."
+  ],
+  "open": [
+    "This card's own worktree ended on branch feat/fill-ownership-close (cut from origin/main at commit 1f473e2) rather than the originally-registered feat/fill-ownership, since that branch had a stale local checkout mid-session (see takeoverVerification in CP2). No content was lost -- confirmed empty diff before abandoning it -- but the card registration should be updated to the new branch name if this worktree is reused.",
+    "Williamson's flood-ingest taking ~4h22m against Travis's 2h14m for fewer records is unexplained beyond a plausible concurrent-load hypothesis. Worth a dedicated look if the pattern recurs on a future county.",
+    "parcel-b-slate1 (a separate, concurrently active card) names an owed live REFUSE-verdict capture on Williamson flood post-heal as its own remaining blocker before any PARCEL_RECORD_SLATE entry -- this card's close is what unblocks that step; the capture itself belongs to slate-1's own lane per this card's coordinate-via-closes-only scope."
+  ],
+  "leave_behind": [
+    { "item": "update the card's registered worktree/branch to feat/fill-ownership-close if reused", "owner": "next property-seat claimant", "plan_row": "F-01" },
+    { "item": "investigate the ~4h22m vs 2h14m Williamson flood-ingest runtime discrepancy if it recurs", "owner": "next property-seat claimant", "plan_row": "F-01" }
+  ]
+}
