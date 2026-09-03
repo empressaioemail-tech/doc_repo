@@ -1,0 +1,56 @@
+{
+  "lane": "PARCEL-FLOOD-CUTOVER",
+  "status": "CLOSED",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T08:05:00Z",
+  "seat": "property",
+  "branch": "feat/flood-cutover",
+  "worktree": "P:/tmp/legacy-design-tools-flood-cutover",
+  "prs": [592],
+  "mergeCommit": "4e26dae120c3fdf516ac3e904d5ae2485d9b218c",
+  "deployedRevision": "cortex-api-00705-jik",
+  "deployedDigest": "sha256:de7d4ccbc2d681f323b67833366194fbb96a433ab6cfa18d137b90e710e0e982",
+
+  "missionPremise": "Flip the flood rail from legacy (fema-nfhl-bulk-v1 tile-centre NFHL lookups, measured median 227m / max 366m from the actual parcel, retired at the tier2-bake layer 2026-08-19 per SS-W16/P-45 but still the flood serve path for un-slated counties) to parcel_record (point-on-surface NFHL join, PARCEL-C-REPORT's own already-tested reader) across all six program counties, mirroring PARCEL-B-SLATE1's cutover mechanism exactly. Distinct from slate-1 in one deliberate way: Caldwell (48055) is included in this card's slate even though its own gate verdict is 'excluded' (a known geometry/coverage gap for Caldwell specifically), so that the allowlist's 'refused' state -- attempted-and-declined, visible, distinct from a silently-unslated pair's default 'legacy' -- would be captured live and observed at the wire for the first time in this card family, rather than only reasoned about from the allowlist's own logic.",
+
+  "completionPredicate": "Met in full. All six counties resolved correctly: five (48021 Bastrop, 48209 Hays, 48309 McLennan, 48453 Travis, 48491 Williamson) carry a real 'pass' verdict in parcel_gate_verdict (unaccounted_count 0 across the board) and serve floodHazardFact via sourceAdapter=parcel_record in production. The sixth (48055 Caldwell) carries an 'excluded' verdict and correctly falls back to the legacy fema-nfhl-bulk-v1 adapter in production -- the owed live-refused capture this card's premise specifically asked for, now actually observed rather than only inferred from resolveAllowlistState's logic. Both named acceptance probes pass exactly as specified: gold 48021:34137 serves floodZone=X; the AO/AE discriminator 48021:36521 serves floodZone=AE with inSpecialFloodHazardArea=true. This is a FULL retirement of this card's scope -- unlike PARCEL-B-SLATE1, which closed with two of five rails (valueHistory, and the flood rail this card now owns) explicitly still open.",
+
+  "railsShippedLive": {
+    "flood": {
+      "countiesRecordServed": ["48021 (Bastrop)", "48209 (Hays)", "48309 (McLennan)", "48453 (Travis)", "48491 (Williamson)"],
+      "countiesLegacyByDesign": ["48055 (Caldwell) -- excluded verdict, refused allowlist state, correctly serves legacy fema-nfhl-bulk-v1, not a defect"],
+      "adapter": "floodHazardFactFromParcelRecord.ts, reusing loadParcelRecordFloodFact (parcelRecordFactRead.ts, PARCEL-C-REPORT's own reader) rather than a fourth independent cell-reading implementation",
+      "callSitesWired": 3,
+      "verdictStoreRunId": "8539546a-c1ea-4940-9c35-d80f99b09136"
+    }
+  },
+
+  "criticalFindingsThisCard": [
+    {
+      "finding": "Base-move mid-merge: PR #592 was fully CI-green but origin/main advanced (the concurrent property-seat session's PR #593, PARCEL-B-SLATE2) before merge. GitHub reported mergeable/BEHIND with no textual conflict, but the standing re-green-against-current-base rule required a local merge + fresh typecheck + fresh DB-backed test run before trusting it, rather than accepting GitHub's own auto-merge claim. The local merge was clean at the git level (no conflict markers on the two shared route files) but that alone does not prove semantic correctness -- verified separately via a real pgvector-enabled local postgres (found an existing p106-pg container already running with the vector extension available, matching CI's own postgres:test_db pattern) and a full re-run of every merge-touched test file. Zero regressions found, but the check was real, not assumed.",
+      "disposition": "resolved -- merged clean, re-verified, re-pushed, CI re-confirmed green on the merge commit before the actual PR merge."
+    },
+    {
+      "finding": "cortex-api's own GCP project/region were initially guessed wrong (assumed hauska-prod-497015/us-east4, matching factory-publish-gate-sched's project) -- gcloud run services describe failed with 'Cannot find service'. Corrected by reading .github/workflows/cloud-run-deploy.yml's own CLOUD_RUN_SERVICE/GCP_REGION env block rather than continuing to guess: legacy-design-tools-prod/us-central1.",
+      "disposition": "resolved -- no wrong-project action taken before the correction; caught before any write."
+    }
+  ],
+
+  "leave_behind": [
+    {
+      "item": "feat/flood-cutover branch (merged via PR #592, not deleted -- gh pr merge --delete-branch=false, matching this card's own convention of leaving flip branches intact for traceability)",
+      "owner": "property seat",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Worktree P:/tmp/legacy-design-tools-flood-cutover -- clean, no uncommitted changes, safe to reclaim/delete by any future seat needing the path",
+      "owner": "property seat",
+      "plan_row": "F-01"
+    }
+  ],
+
+  "checkpoints": [
+    "_inbox/2026-09-03_parcel-flood-cutover_cp1.json",
+    "_inbox/2026-09-03_parcel-flood-cutover_cp2.json"
+  ]
+}

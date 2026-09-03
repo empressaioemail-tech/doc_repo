@@ -1,0 +1,72 @@
+{
+  "lane": "PARCEL-FLOOD-CUTOVER",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T08:00:00Z",
+  "note": "Merge, deploy, real gate --apply, wire verification, and production traffic shift -- all six counties, in one continuous pass after CP1's premise-reconciliation and code build. Mirrors PARCEL-B-SLATE1's CP2-CP6 arc compressed into one checkpoint because this card has one slate, not three sequential rail flips.",
+
+  "baseReconciliation": {
+    "trigger": "PR #592 (branch feat/flood-cutover, head b214383e-based) was fully CI-green (10/10 checks) but origin/main moved before merge -- the other property-seat session's PR #593 (PARCEL-B-SLATE2 adapter build, six dollar/structural rails) landed first, moving the base to a777149f.",
+    "githubReportedMergeable": "gh pr view showed mergeStateStatus=BEHIND, mergeable=MERGEABLE (no textual conflict) -- per the standing re-green-against-current-base rule, trusted GitHub's own auto-merge capability was NOT used; instead ran `git merge origin/main --no-edit` locally to verify semantic correctness before pushing.",
+    "mergeResult": "Clean 'ort' merge, no conflict markers. Auto-merged brokerageNodeFacets.ts and propertyExplorer.ts (both files independently touched by #593's six new rail wire-ups and this card's flood wire-up) plus pulled in 9 new/changed files from #593 (cadRoll adapters, structuralFactResolve.ts, etc.).",
+    "semanticVerification": "A clean textual merge does not guarantee semantic correctness (shared Promise.all arrays, shared import lists, shared allowlist Set could desync even with zero conflict markers). Verified explicitly: (1) pnpm run typecheck:libs then pnpm run typecheck in artifacts/api-server -- both clean. (2) Spun up a local pgvector-enabled postgres (found running container p106-pg, port 55432, matching CI's own postgres:postgres@localhost:5432/test_db pattern but with the vector extension CI's docker service provides and this repo's schema requires) and ran the full DB-backed test suite against it: brokerageNodeFacets.test.ts 67/67 pass (every rail's boot-proof test, including flood's own 'wires floodHazardFact through the PARCEL-FLOOD-CUTOVER serve cutover' assertion), floodHazardFactServeCutover.test.ts 8/8, cityLimitsFactRoute.contract.test.ts 2/2, plus the 46 pure/adapter tests already green pre-merge. Zero new failures from the merge.",
+    "push": "Pushed merged branch (b760a1ab) to origin/feat/flood-cutover. CI re-triggered on the merge commit (run 33727711452) -- all 10 checks passed. Re-verified base one more time immediately before merging (still a777149f, unchanged) -- mergeStateStatus CLEAN."
+  },
+
+  "merge": {
+    "pr": 592,
+    "mergeCommit": "4e26dae120c3fdf516ac3e904d5ae2485d9b218c",
+    "mergedAt": "2026-09-03T07:32:39Z",
+    "method": "gh pr merge --merge (no squash, no rebase -- matches repo convention for this deploy sequence)"
+  },
+
+  "deploy": {
+    "buildAndPush": "Push-triggered 'Cloud Run Deploy (cortex-api)' run 33728646791 on the merge commit -- build-and-push only, success.",
+    "canaryDispatch": "workflow_dispatch action=deploy-canary image_tag=4e26dae120c3fdf516ac3e904d5ae2485d9b218c -- run 33729016276, success. New revision cortex-api-00705-jik created, tagged 'canary', 0% traffic.",
+    "digestVerification": {
+      "method": "Two independently-derived reads, not the deploy log's own claim.",
+      "artifactRegistryRead": "gcloud artifacts docker images describe on the merge-SHA tag -> sha256:de7d4ccbc2d681f323b67833366194fbb96a433ab6cfa18d137b90e710e0e982",
+      "runningRevisionRead": "gcloud run revisions describe cortex-api-00705-jik --format=value(spec.containers[0].image) -> ...cortex-api@sha256:de7d4ccbc2d681f323b67833366194fbb96a433ab6cfa18d137b90e710e0e982",
+      "result": "MATCH -- the revision serving the 'canary' tag is genuinely running the merge-commit's built image, not a stale digest frozen before the push landed."
+    },
+    "serviceIdentity": "Corrected from an earlier wrong guess (hauska-prod-497015/us-east4, which is where factory-publish-gate-sched lives) -- cortex-api itself is project legacy-design-tools-prod, region us-central1, confirmed by reading .github/workflows/cloud-run-deploy.yml's own CLOUD_RUN_SERVICE/GCP_REGION env block rather than assuming."
+  },
+
+  "gateApply": {
+    "dispatch": "gcloud run jobs execute factory-publish-gate-sched --project hauska-prod-497015 --region us-east4 --args=publish-gate-sched,--county=48021,--county=48055,--county=48209,--county=48309,--county=48453,--county=48491,--rail=flood,--apply (execution factory-publish-gate-sched-njk8q, run_id 8539546a-c1ea-4940-9c35-d80f99b09136). Started 2026-09-03T07:37:20Z, completed successfully (~17 min wall time, longest single-rail dispatch this card family has run -- six counties' worth of flood-cell evaluation).",
+    "verdictStoreReadback": {
+      "method": "Direct query against parcel_gate_verdict via FACTORY_DATABASE_URL_RO (fetched from Secret Manager, not a cached/injected value), statement_timeout=15000 guard, not the gate-rail-cli.mjs read-only tool (unavailable in this clone) and not trusted from the job's own stdout.",
+      "rows": [
+        { "county_fips": "48021", "verdict": "pass", "unaccounted_count": 0, "evaluated_at": "2026-09-03T07:38:42.924Z" },
+        { "county_fips": "48055", "verdict": "excluded", "unaccounted_count": 0, "evaluated_at": "2026-09-03T07:39:10.064Z" },
+        { "county_fips": "48209", "verdict": "pass", "unaccounted_count": 0, "evaluated_at": "2026-09-03T07:41:22.405Z" },
+        { "county_fips": "48309", "verdict": "pass", "unaccounted_count": 0, "evaluated_at": "2026-09-03T07:41:58.925Z" },
+        { "county_fips": "48453", "verdict": "pass", "unaccounted_count": 0, "evaluated_at": "2026-09-03T07:48:18.108Z" },
+        { "county_fips": "48491", "verdict": "pass", "unaccounted_count": 0, "evaluated_at": "2026-09-03T07:53:57.906Z" }
+      ],
+      "result": "5 pass, 1 excluded (Caldwell/48055) -- exactly the expected shape per CP1's premise reconciliation. All six rows share the same run_id, confirming a single coherent evaluation pass, not a stale mix of old and new verdicts."
+    }
+  },
+
+  "wireProbes": {
+    "spotSet": "The same 7-parcel standard spot set PARCEL-B-SLATE1 established (gold 48021:34137, AO/AE discriminator 48021:36521, plus one real parcel per remaining county), run against canary first, then re-run verbatim against production post-shift.",
+    "canaryResults": [
+      { "id": "48021:34137 (Bastrop, gold)", "result": "present, floodZone=X, sourceAdapter=parcel_record -- matches the required gold check exactly" },
+      { "id": "48021:36521 (Bastrop, AO/AE discriminator)", "result": "present, floodZone=AE, inSpecialFloodHazardArea=true, sourceAdapter=parcel_record -- matches the required AE check exactly" },
+      { "id": "48453:301328 (Travis)", "result": "present, floodZone=X, sourceAdapter=parcel_record" },
+      { "id": "48491:76149 (Williamson)", "result": "refused, code=parcel-record-cell-miss -- honest refusal, no parcel_record row for this parcel/rail, this adapter's own code (not a legacy atom-miss code), consistent with how wells/specialDistricts/cityLimits treated this exact parcel in PARCEL-B-SLATE1" },
+      { "id": "48309:100000 (McLennan)", "result": "present, floodZone=X, sourceAdapter=parcel_record" },
+      { "id": "48209:100002 (Hays)", "result": "present, floodZone=X, sourceAdapter=parcel_record" },
+      { "id": "48055:10068 (Caldwell)", "result": "present, floodZone=X, zoneSubtype='AREA OF MINIMAL FLOOD HAZARD', sourceAdapter=fema-nfhl-bulk-v1 -- THE OWED EVIDENCE: Caldwell is slated (unlike wells/specialDistricts) specifically so this becomes observable -- the allowlist resolves 48055:flood to 'refused' (excluded verdict) and correctly falls back to the legacy adapter rather than serving parcel_record or fabricating a determination" }
+    ],
+    "productionResults": "Identical to canary across all 7 parcels, confirmed by re-running the same probes directly against https://cortex-api-tds7av26va-uc.a.run.app (not the canary tag URL) after the traffic shift -- the flip is genuinely live for real users, not just reachable via the canary tag."
+  },
+
+  "trafficShift": {
+    "dispatch": "workflow_dispatch action=shift-traffic -- run 33730564828, success (includes the workflow's own /api/healthz smoke step).",
+    "liveVerification": "gcloud run services describe cortex-api, three repeated fresh reads, all identical and consistent (no transient lag observed this time): 100% traffic on cortex-api-00705-jik, tag=canary retained on the same revision post-shift.",
+    "readMethod": "status.traffic read by field name (revisionName/percent/tag), never gcloud's positional --format=value() column alignment."
+  },
+
+  "openForClose": "None -- all six counties resolved correctly (5 record-served, 1 correctly-refused-to-legacy), verified at both the data layer (parcel_gate_verdict) and the wire (canary then production). This is a full retirement of the card's scope, unlike PARCEL-B-SLATE1's partial close."
+}
