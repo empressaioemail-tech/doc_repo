@@ -17,6 +17,8 @@ purpose: One scope for the work that remains, ordered by what blocks what and se
 
 Eleven plan rows were added across 2026-09-01 and 09-02. Nine pull requests are open. This document is what remains, why, and in what order.
 
+**RESOLVED 2026-09-03.** All four remaining rows (A-062, P-100, P-101, P-106) merged this session across both repos — LDT #583/#580/#586/#584, hauska-map #334/#337/#335 — each verified on the actual CI check-run conclusion string, not the bucket label. Detail and merge SHAs: OPS-16 A-078. **Not yet done, and this is the real remaining item**: migrations `0093` (P-100) and `0094` (P-106) are merged as files but, per this doc's own note below, do not run on merge and need a deliberate dispatch to actually apply — P-106's `find_parcels` stays a declared refusal and P-100's instrumentation stays inert until then.
+
 ## 1. The merge chain, and why the order is forced
 
 Nine PRs are open and they cannot merge in an arbitrary order.

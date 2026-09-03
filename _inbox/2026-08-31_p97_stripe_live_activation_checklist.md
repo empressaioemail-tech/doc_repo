@@ -23,6 +23,8 @@ That is the single most expensive failure available on this list, and the only p
 
 ## Phase 0 — before touching Stripe at all
 
+**PHASE 0 COMPLETE as of 2026-09-03.** Item 1 (silent tier-downgrade) fixed and confirmed live on `main`. Item 2 (stale-customer blast radius) measured 2026-09-01: 38 ids. Item 3 (PE billing portal) shipped this session — legacy-design-tools #583 + hauska-map #334, both merged. Everything from Phase 1 onward is operator-executed (live Stripe dashboard access required); see OPS-16 A-078.
+
 **1. Fix the silent tier downgrade in the PE checkout client.** `hauska-map apps/property-explorer/src/lib/billingClient.ts:103-106` falls back to `startPeCheckoutInstallScoped` on a 403 or 404, which posts a hardcoded `tier: "pro"` with no interval and no seats, resolving to the retired pre-ladder `STRIPE_PRO_PRICE_ID`. A Studio, Team or annual click opens a Pro checkout at the wrong amount and says nothing. The planner verified this at source. 403 is reachable: the same-origin deep proxy returns exactly 403 for any path missing from `api/_lib/deep-allowlist.ts`, which happened to a different route the same day. This is the only item on the list the operator cannot close in the Stripe dashboard. In flight as its own lane.
 
 **2. Measure the stale-customer blast radius.** `SELECT count(*) FROM pe_user_entitlements WHERE stripe_customer_id IS NOT NULL;` and the same on `brokerage_wallets`. The number must exist before step 12 is planned.
