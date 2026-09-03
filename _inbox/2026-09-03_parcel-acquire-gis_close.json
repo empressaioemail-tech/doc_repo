@@ -1,0 +1,88 @@
+{
+  "lane": "hauska-factory-acquire-gis",
+  "planRow": "F-01",
+  "date": "2026-09-03",
+  "seatSnapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/hauska-factory-acquire-gis",
+    "branch": "feat/parcel-acquire-gis-wave1",
+    "startCommit": "e6edb85f86a592749c4298675914f436a1f229a4"
+  },
+  "missionPremise": "_catalog/dispatch_missions/mission_parcel_acquire_gis_wave1.md and _dispatches/2026-09-03_parcel-acquire-gis_dispatch.md (compiled at e813007): acquire 4 declared-ahead parcel_record rails (schoolDistrict, utilityService water/sewer-only, overlayDistricts 12-cities-only, agValuation Williamson-only) against exactly the sources _inbox/2026-09-02_parcel-scout-gis_inventory.md cited, via spatial/attribute join onto already-instantiated parcel_record rows, no schema.sql change.",
+  "completionPredicate": "This close covers CODE completion: for each of the 4 rails, an acquire job (live HTTP fetch, staged onto a new cortex table) and a write job (join onto parcel_record_cell/parcel_record_companion_row), both unit-tested, both wired into src/cli.mjs and src/control/writer-allowlist.mjs, both deployable via the new cloudbuild.parcel-acquire-gis.yaml. It does NOT cover DATA completion: no --apply was executed against PRODUCTION_NEONDB_URL or FACTORY_DATABASE_URL for any of the 8 jobs in this session, so parcel_record carries zero new cells from this wave as of this close. This was an explicit, informed scope decision made before the build phase (recorded in this session's transcript): the operator/user chose 'stop at ready-to-deploy' over 'planner deploys and executes --apply', given the repo's own LAPTOP_WRITE_FROZEN discipline already structurally requires Cloud Run for any real write regardless. A stranger reading this close should understand: the mission's real objective (parcel_record coverage on these 4 rails) is NOT yet achieved; what exists is a reviewed, tested, ready-to-execute path to achieve it in one deploy + eight `gcloud run jobs execute` calls (4 acquire, then their 4 paired writes).",
+  "scopeBasis": "Four rails only, exactly as the dispatch scoped: schoolDistrict statewide, utilityService water/sewer only (electric/gas excluded), overlayDistricts the 12 confirmed cities only (6 unconfirmed/negative cities excluded), agValuation Williamson County only (5 other program counties excluded). No schema.sql change; no touch to hauska-factory-parcel-fill/-conform/-writer/-publish trees, confirmed never opened this session. Cloud deploy and --apply execution excluded from this lane's own scope per the operator's explicit choice, not per the dispatch (the dispatch itself expected a full acquire+write+verify cycle) -- named here as the reason completion is partial, not because the card asked for less.",
+  "perRailPerCountyStateCounts": {
+    "status": "NOT YET MEASURABLE -- no --apply has run. Every cell this wave targets remains in its pre-existing state (ordinarily 'unaccounted', the instantiated default for a declared-ahead rail per _decisions/2026-09-01_parcel_record_rails_v2_template.md). Real per-rail per-county value/absent-verified/unaccounted counts, independently derived from parcel_record_cell (not a job's own run counter, per the dispatch's explicit verify requirement), are the operator's next action's output, not this close's.",
+    "readOnlyLiveNumbersGatheredThisSession": {
+      "note": "These are SOURCE-side counts (external API / cortex schema), gathered read-only during build and CP1/CP2 verification -- not parcel_record coverage. Included because they are the best available evidence the acquire layer will produce real, correctly-shaped data once deployed.",
+      "schoolDistrict": "TEA source live count 1017 (exact match, confirmed via CLI dry-run 2026-09-03), NCES EDGE cross-check live count 1018 (independent corroboration, per CP1).",
+      "utilityService": "TWDB water source live count 3844 (3790 CCN_NO-1 + 54 CCN_NO-N, both TYPE=1); PUCT sewer source (services6.arcgis.com/N6Lzvtb46cpxThhu, discovered live, not in the original card) live count 967, all CCN_NO-2/TYPE=2. Water-side CLI dry-run blocked twice by TWDB's own currently-flaky infrastructure (independently confirmed via raw curl, see CP2); sewer-side fetched cleanly every time it was tried.",
+      "overlayDistricts": "all 12 confirmed cities got a live-verified, working adapter (44 layer entries total across the 12 cities); partial live CLI dry-run output confirmed real per-adapter fetch counts (e.g. Austin airport-overlay: 4 features).",
+      "agValuation": "WCAD Socrata source live count 305879 land records (confirmed via CLI dry-run 2026-09-03, exact match to the acquire job's own full-sweep count), of which 14744 are ag-qualified by the derived statecode-starts-with-D rule (9801 D1 + 4941 D3 + 2 D2)."
+    }
+  },
+  "citationPresenceProof": {
+    "status": "Every write job's cell-state/companion-row construction includes source and vintage fields sourced from its acquire job's own source/source_vintage/source_citation columns (verified by code reading, not by a live sample pull, since no rows exist in parcel_record yet from this wave). Once deployed and applied, the dispatch's 'sample-pull five written cells, confirm citation+timestamp' verification step becomes runnable for the first time -- it could not be performed this session for lack of any written cells.",
+    "codeLevelVerification": [
+      "schoolDistrict cell: {kind:\"value\", value, districtCode, geoid, source, vintage} -- source/vintage always populated from the matched tx_school_district row (schoolDistrictCellState in parcel-school-district.mjs).",
+      "utilityService companion rows: source/vintage populated per-row from the matched tx_puct_ccn row (writeUtilityResults in parcel-utility-service.mjs).",
+      "overlayDistricts companion rows: source/vintage populated per-row from the matched tx_city_overlay row (writeOverlayResults in parcel-overlay-districts.mjs).",
+      "agValuation companion rows: source/vintage populated per-row from the matched tx_wcad_ag_valuation row (writeAgValuationResults in parcel-ag-valuation.mjs)."
+    ]
+  },
+  "whatContradictedTheCard": [
+    {
+      "rail": "agValuation",
+      "contradiction": "The card's/scout's join key (WCAD `propertyid`, crosswalked through a second WCAD Parcels/geometry dataset `an3x-cnmw`) is wrong. Live-verified: `propertyid` does not match txgio_parcel.prop_id's format at all. The real join key is WCAD's `quickrefid` field, which is in the identical \"R\"+digits format as txgio_parcel.prop_id for Williamson and was confirmed live (5/5 sampled values matched real txgio_parcel rows with correct addresses). This makes the rail a pure attribute join with NO spatial component and NO second WCAD dataset needed at all -- simpler than the card described, not just differently sourced."
+    },
+    {
+      "rail": "agValuation",
+      "contradiction": "The card claimed a literal `agflag` field distinguishes ag-qualified records. Live full-sweep (305,879 rows) found `agflag` sparse and unreliable: 37 real D-coded (ag-qualified) rows carry `agflag='L'` not `'Y'`, and both live D2-coded rows carry no `agflag` key at all. The rail derives `ag_flag` from `statecode` starting with \"D\" instead, which is reliable on every row."
+    },
+    {
+      "rail": "utilityService",
+      "contradiction": "The card names one URL (TWDB's Public_Utility_Commission_CCN_Water MapServer) and says CCN_NO's leading digit splits water=1/sewer=2 within that source. Live-verified: that source is 100% water/exempt (TYPE=1), zero sewer rows. The leading-digit rule is real but only fires across two combined sources; the sewer counterpart (a separate ArcGIS Online FeatureServer, services6.arcgis.com/N6Lzvtb46cpxThhu/.../Sewer_CCN_Service_Areas/FeatureServer/230, 967 rows) was not named in the card and was found via independent search."
+    },
+    {
+      "rail": "utilityService",
+      "contradiction": "The TWDB water source's advancedQueryCapabilities report supportsPagination:false, and a query using resultOffset/resultRecordCount returns a hard 400 error -- the card did not flag this. Keyset pagination (WHERE oid > cursor ORDER BY oid ASC, no resultRecordCount) was required and confirmed live-working instead."
+    },
+    {
+      "rail": "schoolDistrict",
+      "contradiction": "The card did not flag that the TEA ArcGIS layer's native spatial reference is NAD_1983_Lambert_Conformal_Conic (a projected CRS in meters), not WGS84. Every query passes outSR=4326 explicitly; omitting it would have silently misaligned every polygon against txgio_parcel's SRID 4326 geometry."
+    },
+    {
+      "rail": "utilityService",
+      "contradiction": "Operational, not a sourcing error: TWDB's own ArcGIS Web Adaptor is intermittently returning an HTML \"Could not access any server machines\" page instead of JSON under this session's own querying (reproduced twice via the wired CLI and independently a third time via raw curl with no code involved). Retry/backoff logic is built for this; it is named here because a Cloud Run --apply execution of factory-acquire-utility-ccn may need a manual retry if it lands in this window, which is a real operational risk the card's cited sources gave no reason to expect."
+    }
+  ],
+  "leave_behind": [
+    { "item": "utilityService electric sub-rail", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; no PUCT-native GIS layer confirmed by the scout (HIFLD federal source unverified live)." },
+    { "item": "utilityService gas sub-rail", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; scout found no GIS acquisition path exists for Texas gas distribution at all (franchise-based, not polygon-based). Pending a separate operator ruling on permanent-unaccounted status, per the dispatch." },
+    { "item": "agValuation: Travis (48453)", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; scout found a right-shaped field (land_state_cd) not confirmed populated -- follow-up flat-file recheck, not this card." },
+    { "item": "agValuation: Bastrop (48021)", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; scout named a plausible bulk-export path as a separate follow-up card." },
+    { "item": "agValuation: Caldwell (48055), McLennan (48309), Hays (48209)", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; not confirmed as GIS/API sources by the scout (Caldwell/Bastrop parcel layers exist but carry no ag attribute; McLennan has no open-data endpoint at all; Hays's downloads page returned a live 403)." },
+    { "item": "overlayDistricts: Lockhart, Robinson, Elgin, Dripping Springs, Liberty Hill", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; unconfirmed by the scout (read-path failures or no surfaced GIS endpoint), not re-scouted here per the card's own instruction." },
+    { "item": "overlayDistricts: Leander", "owner": "unassigned", "plan_row": "F-01", "reason": "out of scope this wave per the dispatch; confirmed clean negative by the scout (no historic/overlay layer of any kind found in its 37-dataset Hub feed) -- correctly excluded, not an oversight." },
+    { "item": "maxImperviousCoverPct, treeProtection rails", "owner": "unassigned", "plan_row": "F-01", "reason": "scouted in the same 2026-09-02 pass but never in this card's scope (only 4 of the 6 scouted rails were carded here, per the mission's own text) -- not touched, not re-scouted." },
+    { "item": "Deploy cloudbuild.parcel-acquire-gis.yaml and execute all 8 jobs (acquire --apply for each of the 4 rails, then each paired write job's --apply)", "owner": "operator", "plan_row": "F-01", "reason": "the mission's actual data-acquisition objective; not executed this session per the operator's explicit 'stop at ready-to-deploy' scope decision. Recommended order: acquire-school-district -> parcel-school-district (dry-run first) -> --apply; same pattern for the other 3 rails. utilityService's acquire step should be retried if it lands in TWDB's flaky window (see whatContradictedTheCard)." },
+    { "item": "Post-apply verification (dispatch's own 'Verify' section: independently-derived per-rail per-county state counts, water/sewer CCN_NO spot-check, overlayDistricts scope-leak spot-check against Leander, agValuation zero-outside-Williamson spot-check, 5-sample-cell citation pull)", "owner": "operator", "plan_row": "F-01", "reason": "structurally cannot run before the --apply step above produces real cells to verify." }
+  ],
+  "prNumbers": "not applicable -- doc_repo commits and product-repo commits are planner-owned per AGENT_CONTRACT section 6; no PR opened this session, commits land directly on feat/parcel-acquire-gis-wave1 (product repo) and main (doc_repo), pushed by the planner.",
+  "constraintsHonored": [
+    "schema.sql untouched (confirmed via git status -- migrations/0007_parcel_record.sql not in the diff).",
+    "hauska-factory-parcel-fill, -conform, -writer, -publish worktrees never opened this session.",
+    "No new atom rows; every write path targets only parcel_record_cell/parcel_record_companion_row for the 4 named rail keys.",
+    "Direct Neon host used for every live read-verification query this session (pooler refused by refusePoolerHost/manual hostname checks throughout); no write executed against either store.",
+    "Subagents produced diffs only; the planner (this session) read every file in full before wiring the two shared files and before this close."
+  ],
+  "scratch": [
+    { "kind": "LESSON", "text": "This program's writer-allowlist encodes a real architectural rule via the liveRest field, not just documentation: every existing writer job has liveRest:false, and requireEasementNoLiveRest actively refuses liveRest!==false for that one job. Reading the allowlist file directly (not just the AGENT_CONTRACT prose) surfaced that no writer job in this repo calls a live external API at write time -- which is why this wave needed a two-layer acquire/write split at all, not a design preference." },
+    { "kind": "LESSON", "text": "A prior scouting pass's cited join key can be wrong in a way that only shows up by fetching a live sample and cross-checking format against the actual target table, not by re-reading the scout's prose more carefully. agValuation's propertyid-vs-quickrefid error would have shipped a rail that joined against nothing." },
+    { "kind": "LESSON", "text": "ArcGIS FeatureServer/MapServer instances vary meaningfully in capability even within one card: native CRS (TEA projected, PUCT sewer Web Mercator, others WGS84), pagination support (TWDB explicitly refuses resultOffset with a named error; TEA accepts it fine), and field-name conventions. Querying each source's own ?f=json metadata live, per source, before writing its acquire script, caught all of these; trusting a single documented pattern across sources would not have." },
+    { "kind": "DEAD-END", "text": "Attempting to validate a write job's real SQL locally before its acquire job has run --apply against production is not possible -- the zone-major hoist queries the staging table directly and errors 'relation does not exist' rather than returning zero rows. Do not attempt a write-job dry-run before its paired acquire job has landed at least once." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-03: full local test suite (802 tests, 800 pass, 2 pre-existing skips, 0 fail) after all 4 rails' code + shared-file wiring landed together on feat/parcel-acquire-gis-wave1, worktree P:/tmp/hauska-factory-acquire-gis." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-03: TWDB's water CCN ArcGIS Web Adaptor (services.twdb.texas.gov) intermittently returns an HTML error page instead of JSON, independently reproduced via raw curl with no application code involved. This is the third session/subagent to hit it; treat it as a known, currently-live characteristic of that host, not noise, when executing factory-acquire-utility-ccn." },
+    { "kind": "OPEN", "text": "The operator's next action is the actual deploy (gcloud builds submit --config=cloudbuild.parcel-acquire-gis.yaml) and the 8 gcloud run jobs execute calls named in that file's header comment, in acquire-then-write order per rail. Until that happens, this wave has zero measurable parcel_record coverage despite complete, reviewed, tested code." }
+  ]
+}

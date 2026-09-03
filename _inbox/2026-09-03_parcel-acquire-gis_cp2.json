@@ -1,0 +1,55 @@
+{
+  "lane": "hauska-factory-acquire-gis",
+  "checkpoint": "CP2",
+  "type": "pilot/verification",
+  "planRow": "F-01",
+  "date": "2026-09-03",
+  "seatSnapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/hauska-factory-acquire-gis",
+    "branch": "feat/parcel-acquire-gis-wave1"
+  },
+  "buildMethod": "All 4 rails (schoolDistrict, utilityService, overlayDistricts, agValuation) fanned to one subagent each in parallel rather than pilot-one-then-scale, each briefed with the CP1 design and live-verified technical constraints. The planner adversarially reviewed every diff (read every source file in full) before this checkpoint; no subagent touched git. Two shared files (src/control/writer-allowlist.mjs, src/cli.mjs) were deliberately withheld from every subagent's scope and wired by the planner afterward to avoid 4-way merge conflicts on the same lines.",
+  "adversarialReviewFindings": [
+    {
+      "finding": "Inconsistency across subagents: acquire-school-district.mjs called requireWriterJob (gating it behind the parcel_record writer allowlist) while the other 3 acquire scripts (acquire-utility-ccn, acquire-overlay-districts, acquire-ag-valuation) correctly did not, matching the established landing-import.mjs precedent that a cortex-staging job is not a parcel_record writer.",
+      "resolution": "Rather than strip the gate and rewrite acquire-school-district's tests, added it to WRITER_JOBS with an honest kind:\"gis-acquire\", liveRest:true entry -- more transparent than removing a working, tested check, and liveRest is pure bookkeeping (only requireEasementNoLiveRest's hardcoded easement-only check reads it)."
+    },
+    {
+      "finding": "test/parcel-overlay-districts.test.mjs contained a test asserting parcel-overlay-districts was NOT on WRITER_JOBS (deliberately written by that subagent to document the pre-wiring gap, with its own comment instructing the planner to flip it).",
+      "resolution": "Flipped to assert presence, per the test's own instruction, after adding the real entry."
+    }
+  ],
+  "liveVerificationDoneThisCheckpoint": [
+    {
+      "check": "tx_city_boundary city_name casing for the 12 overlayDistricts cities (flagged unverified by that subagent -- no DB credentials in its sandbox)",
+      "method": "live query via read-only PRODUCTION_NEONDB_URL access",
+      "result": "all 12 confirmed exact title-case match (\"San Marcos\", \"Round Rock\", \"Cedar Park\", etc.) against the subagent's documented assumption -- assumption was correct, no code change needed."
+    },
+    {
+      "check": "utilityService subagent's claim that the mission's single TWDB URL is water-only and a second, independently-discovered PUCT sewer source (services6.arcgis.com/N6Lzvtb46cpxThhu/.../Sewer_CCN_Service_Areas/FeatureServer/230) is the real sewer counterpart",
+      "method": "independent live fetch of the claimed sewer endpoint's metadata and a 5-row sample",
+      "result": "confirmed: real, reachable endpoint, CCN_NO values (\"20001\", \"20002\"...) all TYPE=2 as claimed, live count 967 matches the report exactly. Also noted (not caught by the subagent's report): this layer's native spatialReference is Web Mercator (wkid 3857), a different projected CRS than either program's other sources -- confirmed the acquire script's buildQueryUrl passes outSR=4326 unconditionally on both the water and sewer requests, so this is already handled correctly, not a live defect."
+    },
+    {
+      "check": "src/cli.mjs wiring for all 8 new commands actually dispatches to the right run/parse function pairs (unit tests call run functions directly, never through cli.mjs's argv parsing)",
+      "method": "ran each of the 4 acquire commands through the real `node src/cli.mjs <cmd>` entrypoint, dry-run (no --apply), against live external sources",
+      "result": [
+        "acquire-school-district: ok, 4 pages, 1017/1017 features fetched, matches the scout's live-confirmed count exactly, sample rows show real ISD names/codes (Sabine Pass ISD 123-913, Boys Ranch ISD 180-901, Grady ISD 156-905).",
+        "acquire-ag-valuation --county=48491: ok, 153 pages, 305879/305879 rows fetched (exact match to the acquire-ag-valuation subagent's own full-sweep count), agFlagTrue=14744 (exact match: 9801 D1 + 4941 D3 + 2 D2).",
+        "acquire-overlay-districts: ok, live per-adapter feature counts returned for all city/layer adapters attempted (partial output inspected, e.g. Austin airport-overlay fetched=4/staged=4), confirms the 44-adapter config wires and executes correctly end to end.",
+        "acquire-utility-ccn: FAILED both attempts with ARCGIS_FETCH_FAILED. Independently confirmed via a raw curl (no code involved at all) against the exact same TWDB query URL the job builds: the response is TWDB's own \"Could not access any server machines. Please contact your system administrator.\" HTML page, not a JSON API response. This is genuine, currently-reproducible flakiness in TWDB's own ArcGIS Web Adaptor infrastructure, external to this repo, exactly as that subagent's own report and code comments already documented (with the retry/backoff logic already built specifically for this). Not a wiring or code defect -- confirmed independently, not just re-trusting the subagent's claim."
+      ]
+    }
+  ],
+  "notVerifiedThisCheckpointAndWhy": {
+    "writeJobsAgainstLiveStagingData": "None of the 4 write jobs (parcel-school-district, parcel-utility-service, parcel-overlay-districts, parcel-ag-valuation) could be dry-run against real cortex data at this checkpoint: each reads its rail's staging table (tx_school_district, tx_puct_ccn, tx_city_overlay, tx_wcad_ag_valuation) directly in its zone-major hoist SQL, and none of those tables exist yet in the live store -- they are created only by their corresponding acquire job's --apply run, which this session deliberately did not execute (gated behind FACTORY_CLOUD=1, and per the session's own scope decision to stop at ready-to-deploy rather than run --apply itself). Attempting a dry-run now would only produce a 'relation does not exist' Postgres error, not a meaningful validation. This is a structural sequencing fact of the two-layer architecture, not a gap the planner could close from a laptop -- the real validation path is: deploy this card's cloudbuild.parcel-acquire-gis.yaml, execute each acquire job with --apply for at least one county/statewide, THEN dry-run (and eventually --apply) its paired write job.",
+    "productionApply": "No --apply was run against PRODUCTION_NEONDB_URL or FACTORY_DATABASE_URL by this session, for any of the 8 jobs, per the user's explicit scope decision recorded before this lane's build phase: code is built, unit-tested, and where possible live-verified read-only; deploy and --apply execution is handed to the operator."
+  },
+  "testSuite": {
+    "command": "npm test",
+    "result": "802 tests, 800 pass, 0 fail, 2 skipped (pre-existing, unrelated to this wave)",
+    "note": "run three times across this checkpoint: once after all 4 rails' files landed, once after the writer-allowlist.mjs edit (caught the intentional parcel-overlay-districts placeholder-test failure, fixed), once final -- all green."
+  },
+  "nextStep": "File the close artifact naming per-rail state, citation proof, and leave_behind (out-of-scope items: electric, gas, the 5 non-Williamson ag counties, the 6 unconfirmed/negative overlay cities). Commit product-repo changes. Hand off deploy + --apply execution to the operator."
+}
