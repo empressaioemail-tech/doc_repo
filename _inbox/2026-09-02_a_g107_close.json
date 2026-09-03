@@ -74,7 +74,7 @@
     "Read the authoritative record, not a proxy: confirmed the local plan-review DSN file matched the production Secret Manager value, byte for byte, before running a migration against it; confirmed the exact literal token value plan-review uses in production matches what this session's earlier G-106 change granted, before assuming no regression.",
     "Cross-seat discipline: found a live, out-of-band CHECK constraint blocking a foundational operation, did not alter or drop it, reported it with full mechanism and evidence rather than adjudicating it unilaterally."
   ],
-  "criticalFinding": "See _inbox/2026-09-02_a_g107_cp2.json's criticalFindingUnrelatedToThisLane for full detail. Summary: plan-review CANNOT create any new engagement in production right now (independent of this lane's own deploy, confirmed on the previously-serving revision too) -- a NOT VALID CHECK constraint (plan_review_findings_absence_required_check) exists live on the database with no corresponding committed migration in the repo, and seedMatrix's INSERT does not satisfy it. Needs urgent operator routing, likely to whoever owns the in-flight G-108 typed-absence work.",
+  "criticalFinding": "RESOLVED, per OPS-17 A-093 (doc-repo-1d, 2026-09-02, operator: \"fix\") -- not by this lane. Root cause per that record: this lane's own plan-review-00016-buh deploy ran via `gcloud run deploy --source .` from a local checkout holding this lane's merge (#9) but not G-108's concurrently-landed merge (#10); meanwhile G-108's own migration (the absence-required CHECK constraint) had already been applied to the live schema out of band, ahead of its own code landing. Net: new-constraint-present, new-code-absent, on the revision THIS lane deployed. doc-repo-1d diagnosed with temporary logging on a 0%-traffic canary, confirmed the merged code was already correct, redeployed clean from a fresh detached checkout of origin/main (plan-review-00019-puj), and reconfirmed live. Independently re-verified by this lane after the fact: POST /api/plan-review/engagements succeeds again on the production URL. Operational lesson this lane is carrying forward: `git fetch` + freshness check before the CHECKOUT is not sufficient when a concurrent merge can land during the build/deploy window itself -- re-check immediately before every `--source .` deploy, not just once per session.",
   "whatRemainsOpen": [
     "The critical finding above -- not this lane's to fix, needs operator routing.",
     "sourceKind derivation (persona.userId === 'applicant' ? 'applicant-upload' : 'staff-upload') is a heuristic, not exercised this pass since no template-city applicant persona exists yet -- fine for this card's staff-upload scope, worth a dedicated check if applicant uploads are built later.",
@@ -83,9 +83,9 @@
   "leave_behind": [
     {
       "item": "The critical finding (plan_review_findings_absence_required_check blocking all engagement creation)",
-      "owner": "unassigned -- needs operator routing",
-      "plan_row": "not G-107; possibly G-108",
-      "note": "Urgent. See criticalFinding above."
+      "owner": "resolved -- doc-repo-1d, OPS-17 A-093",
+      "plan_row": "not G-107; was a G-107/G-108 deploy-race collision",
+      "note": "No longer open. Left here for the audit trail rather than deleted."
     },
     {
       "item": "P:/plan-review-worktrees/g107-staff-upload left checked out at the merged commit (detached HEAD)",
