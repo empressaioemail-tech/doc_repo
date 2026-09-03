@@ -1,0 +1,36 @@
+{
+  "lane": "PARCEL-TXGIO-REFRESH",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T04:20:00Z",
+  "missionPremise": "Bring the parcel fabric to current vintage across six counties: measure the vintage gap program-wide, re-acquire the current TxGIO statewide fabric through the existing acquisition pipeline, re-run containment, and report the new totals superseding the stale 981,405 figure. The dispatch states this is re-ingest through machinery hauska-factory already has -- 'never a new pipeline.'",
+  "step1MeasurementResults": {
+    "method": "Live queries against PRODUCTION_NEONDB_URL (confirmed same underlying Neon database as CORTEX_DATABASE_URL -- identical host/credentials, pooled vs direct endpoint only).",
+    "txgioParcelVintagePerCounty": {
+      "48021": "stratmap25-landparcels_48021_bastrop_202503, 74729 rows",
+      "48055": "stratmap25-landparcels_48055_caldwell_202503, 32781 rows",
+      "48209": "stratmap25-landparcels_48209_hays_202503, 131734 rows",
+      "48309": "stratmap25-landparcels_48309_mclennan_202503, 130650 rows",
+      "48453": "stratmap25-landparcels_48453_travis_202508, 894657 rows",
+      "48491": "stratmap25-landparcels_48491_williamson_202507, 304298 rows"
+    },
+    "currentContainmentTotals_landing_parcel_jurisdiction": {
+      "48021": 62256, "48055": 24988, "48209": 116420, "48309": 114254, "48453": 380917, "48491": 282570,
+      "sixCountySum": 981405,
+      "significance": "This sum is EXACTLY the 981,405 figure the dispatch names as the stale baseline to supersede. It has not moved. Direct, decisive evidence that no re-acquisition/re-containment has landed for these six counties since B3-GEOMGAP's own investigation -- this card's core mission is genuinely still open, not already done by another card."
+    }
+  },
+  "step2Investigation_reAcquisitionMechanism": {
+    "premiseCheck": "The dispatch asserts 'the EXISTING acquisition pipeline... we already have machinery for.' Verified this claim directly rather than assuming it.",
+    "hauskaFactoryGrepResult": "grep -rn 'txgio' src/cli.mjs: zero hits. No CLI verb named txgio/acquire/refresh exists. landing-import.mjs's SOURCES map reads FROM txgio_parcel (already-loaded) and writes TO landing_txgio_parcel -- it refreshes a DERIVED landing table from whatever is CURRENTLY in txgio_parcel; it does not fetch anything new from the public TxGIO/StratMap service. Six 'factory-landing-*' Cloud Run job resources (landing-parcel, landing-pipeline, landing-cad, landing-footprint, landing-wells, landing-import) all run the identical landing-import verb with different --source args -- none of them reach the public source.",
+    "caldwellGeomCloseCorroboration": "_inbox/2026-09-02_parcel-caldwell-geom_close.json's own independent investigation reached the identical conclusion from a different angle: 'txgio_parcel is an external table with no migration, trigger, or job code in hauska-factory referencing its geom column at all' -- the raw acquisition is confirmed external to this repo by a second, independent card.",
+    "actualMechanismLocated": "OPS-1_texas_source_registry.md names the real path: TxGIO StratMap bulk zips, one per FIPS, at a public URL (data.geographic.texas.gov), no auth, browser User-Agent required; 'Hauska ingest subset in legacy-design-tools/lib/cad-ingest/src/txgio/parse.ts' -- a DIFFERENT repo than this card is scoped into (card.json names repo: hauska-factory).",
+    "recentRealUseOfThatMechanism_P78": "Found and read the actual most recent invocation: P-78 (2026-08-25, _inbox/2026-08-25_p78_announce_bastrop_48021.md and 32+ sibling county announces), which DID perform a real network fetch of a StratMap zip and wrote into cad_property via CORTEX_DATABASE_URL using an 'adapter:stratmap' tier. Read closely, P-78 was NOT a vintage refresh: its own announce doc states 'Source: TxGIO StratMap 202503 zip' -- the SAME already-stale March 2025 vintage already loaded, explicitly scoped as a 'leftover' fill (filling null year_built/land_acres on EXISTING 2025-tax-year rows plus 726 same-vintage inserts), with an explicit scope lock 'No L17 flip' (the vintage tier itself was never advanced). Live-confirmed: cad_property now carries a 'stratmap-roll' tier for 5 of 6 counties (all but 48309/McLennan) ingested 2026-08-25, but this coexists with the same 202503/202507/202508 txgio_parcel vintages already measured above -- P-78 changed CAD attribute presentation, not the underlying geometry vintage. The containment-total cross-check above (still exactly 981,405) independently confirms P-78 did not touch containment.",
+    "conclusion": "The dispatch's step-2 premise does not hold as stated. There is no re-acquisition pipeline inside hauska-factory. The real mechanism (a real, working, network-fetching StratMap adapter) exists in legacy-design-tools, a repo this card is not scoped into, and its one recent real invocation (P-78) was a narrow leftover-field fill using the ALREADY-STALE vintage, not a genuine refresh to a newer StratMap drop. Building or invoking a genuine statewide re-acquisition myself would mean either (a) writing new integration code reaching a live external government data source across six large counties (Travis alone is 894,657 raw parcel rows) -- squarely the 'new pipeline' the dispatch explicitly forbids -- or (b) working inside legacy-design-tools without this card's scope covering that repo. Neither is something to improvise without operator/planner routing."
+  },
+  "caldwellGeomBackfill": {
+    "spec": "From CALDWELL-GEOM's own CP2 (read first per this card's addendum): UPDATE txgio_parcel SET geom = ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)) WHERE county_fips='48055' AND geom IS NULL, chunked, idempotent. Source data (the geometry jsonb column) is already present and valid -- no new acquisition needed for this specific step, unlike step 2 above.",
+    "status": "HELD, not executed. PARCEL-B-SLATE1 (a concurrently active card, claimed since 2026-09-02T23:09:21Z, not yet closed) names Caldwell's geometry gap as its own new owed-live-REFUSE-verdict candidate per its dependency's own close (parcel-fill-ownership's close, just landed, states Williamson flood now passes so slate-1's REFUSE capture 'needs a different candidate... Caldwell's known geometry gap is the live candidate'). Executing this backfill now would destroy the exact gap slate-1 needs to capture a REFUSE against. Posted two coordination addenda on parcel-b-slate1's own card (2026-09-03T03:43Z and 03:54Z) flagging this and requesting a signal once their capture is done. As of this checkpoint, slate-1 remains claimed with no close and no addendum response."
+  },
+  "retiredParcelReport": "Not computable without step 2's fresh landing data to diff against -- there is no 'new landing' to compare the old landing count to. This item is contingent on step 2 and remains open."
+}

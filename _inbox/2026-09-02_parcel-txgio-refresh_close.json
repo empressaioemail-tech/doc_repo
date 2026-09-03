@@ -1,0 +1,57 @@
+{
+  "lane": "PARCEL-TXGIO-REFRESH",
+  "status": "closed_partial",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T04:30:00Z",
+  "missionPremise": "Bring the parcel fabric to current vintage across six counties (48021, 48055, 48209, 48309, 48453, 48491): measure the program-wide vintage gap, re-acquire the current TxGIO statewide fabric through the existing acquisition pipeline, re-run containment, and report new totals superseding the stale 981,405 figure quoted across many closes.",
+  "completionPredicate": "Full completion requires: (1) a live vintage-gap measurement per county [MET], (2) a genuine re-acquisition of fresher TxGIO data through existing machinery [BLOCKED ON A FALSE PREMISE, see below], (3) re-run containment + record-fill/ingest on the fresh data [NOT REACHABLE without (2)], (4) verification including the retired-parcel report [NOT REACHABLE without (2) and (3)]. Closing partial rather than holding the card indefinitely against a blocker this claimant cannot resolve within scope.",
+  "scopeBasis": "Investigated the dispatch's own premise before acting on it, per this repo's standing instruction to re-verify premises against the live base rather than assume a queued card is current. Did not attempt to build a new cross-repo acquisition pipeline myself: the dispatch explicitly forbids inventing a new pipeline, and the real mechanism was found to live in a different repo (legacy-design-tools) this card was not scoped into (card.json names repo: hauska-factory). Held the one genuinely-executable write in this card's scope (Caldwell's geom backfill) rather than run it, because a concurrently active sibling card (PARCEL-B-SLATE1) needs that exact gap intact to capture a live REFUSE verdict first -- coordinated via addenda per this repo's own cross-lane convention, not adjudicated unilaterally.",
+  "whatWasMeasured": {
+    "txgioParcelVintage": {
+      "48021": "202503 (74729 rows)", "48055": "202503 (32781 rows)", "48209": "202503 (131734 rows)",
+      "48309": "202503 (130650 rows)", "48453": "202508 (894657 rows)", "48491": "202507 (304298 rows)"
+    },
+    "currentContainmentTotals": {
+      "48021": 62256, "48055": 24988, "48209": 116420, "48309": 114254, "48453": 380917, "48491": 282570,
+      "sixCountySum": 981405,
+      "finding": "Exactly matches the stale 981,405 figure the dispatch names for supersession. This is decisive, direct evidence that no re-acquisition or re-containment has landed for these six counties since B3-GEOMGAP's own investigation identified the gap -- the mission's core problem is real and still open, not already solved by other work found during this investigation."
+    }
+  },
+  "whyStep2CouldNotProceed": {
+    "claim": "The dispatch states hauska-factory already has machinery for this re-ingest ('never a new pipeline').",
+    "verification": [
+      "grep across src/cli.mjs and every src/jobs/*.mjs for any txgio-acquisition verb: zero hits. landing-import.mjs (the six factory-landing-* Cloud Run jobs) only refreshes a derived landing table FROM whatever is already sitting in txgio_parcel -- it never reaches the public TxGIO/StratMap source.",
+      "PARCEL-CALDWELL-GEOM's own independent investigation (a different card, different investigator) reached the identical conclusion from a different angle: 'txgio_parcel is an external table with no migration, trigger, or job code in hauska-factory referencing its geom column at all.'",
+      "OPS-1_texas_source_registry.md names the actual mechanism: a real StratMap bulk-zip fetch, one zip per FIPS from a public Texas government endpoint, with 'Hauska ingest subset in legacy-design-tools/lib/cad-ingest/src/txgio/parse.ts' -- a different repo than this card's own scope (card.json: repo hauska-factory).",
+      "Found and read the mechanism's actual most recent real use: P-78 (2026-08-25, 33+ county announces including 4 of this card's 6 target counties). Read closely rather than pattern-matched on the tier label: P-78's own announce doc states its source was 'TxGIO StratMap 202503 zip' -- the SAME already-stale vintage this card's own measurement above confirms is still current -- explicitly scoped as a leftover NULL-field fill on existing rows ('No L17 flip', i.e. the vintage tier itself was never advanced), not a refresh. The containment-total cross-check (still exactly 981,405) independently confirms P-78 left containment untouched."
+    ],
+    "conclusion": "The premise does not hold. A genuine statewide re-acquisition (reaching a live external government data source for up to ~895K raw parcel rows per county) would itself be the new pipeline the dispatch explicitly forbids building here, and the one real mechanism that could do it lives in a repo this card has no scope or claim in. This is not a task this claimant can complete by executing an existing job -- it needs either a correctly-scoped card against legacy-design-tools with explicit operator authorization to reach the external source, or planner clarification of which system is actually meant to own this refresh."
+  },
+  "caldwellGeomBackfillStatus": {
+    "spec": "UPDATE txgio_parcel SET geom = ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)) WHERE county_fips='48055' AND geom IS NULL -- chunked, idempotent, no new acquisition needed (source data already present and valid per CALDWELL-GEOM's own CP2).",
+    "status": "NOT EXECUTED. Held explicitly for PARCEL-B-SLATE1, a concurrently active sibling card that (per parcel-fill-ownership's own just-landed close) now needs Caldwell's exact geometry gap intact to capture a live REFUSE verdict. Two coordination addenda posted on parcel-b-slate1's card (2026-09-03T03:43Z, 03:54Z); no response or close from that card as of this close.",
+    "recommendation": "The next claimant of this card (or a dedicated follow-on) should check parcel-b-slate1's close first. Once its REFUSE capture against Caldwell is confirmed done, this backfill is a safe, self-contained, already-specified single step -- it does not depend on step 2's cross-repo blocker at all."
+  },
+  "retiredParcelReport": "Not reachable -- requires fresh landing data from step 2 to diff against the current landing_parcel_jurisdiction counts reported above. Remains open pending step 2.",
+  "counts": {
+    "countiesMeasured": 6,
+    "countiesWithStratmapRollTierAsOfP78": 5,
+    "countiesWithStratmapRollTierCountingRule": "cad_property rows tagged tier:stratmap-roll ingested 2026-08-25, present for all target counties except 48309 (McLennan)",
+    "currentSixCountyContainmentTotal": 981405
+  },
+  "constraintsHonored": [
+    "Read-only throughout -- zero INSERT/UPDATE/DELETE issued against any store by this claimant; every finding traced to a SELECT, a code grep, or a doc read.",
+    "Never a new pipeline -- did not attempt to build statewide TxGIO acquisition code in hauska-factory or elsewhere.",
+    "Stayed in scope -- read legacy-design-tools and doc_repo for investigation only; wrote nothing there.",
+    "Coordinated the one destructive-adjacent action in this card's own real scope (Caldwell's geom backfill) via addenda rather than unilaterally deciding it was safe to run."
+  ],
+  "open": [
+    "Step 2 (genuine TxGIO re-acquisition) is blocked on a repo/scope mismatch, not a timing issue -- needs planner routing, not more waiting.",
+    "Caldwell's geom backfill is ready to execute the moment PARCEL-B-SLATE1 confirms its REFUSE capture is done.",
+    "The retired-parcel report depends on step 2."
+  ],
+  "leave_behind": [
+    { "item": "Route a correctly-scoped card for the genuine TxGIO/StratMap re-acquisition, either into legacy-design-tools with explicit operator authorization to reach the external source, or with planner clarification of the intended mechanism", "owner": "planner", "plan_row": "F-01" },
+    { "item": "Execute Caldwell's geom backfill (spec above, already written, already safe) once PARCEL-B-SLATE1's own REFUSE capture against Caldwell is confirmed done", "owner": "next property-seat claimant", "plan_row": "F-01" }
+  ]
+}
