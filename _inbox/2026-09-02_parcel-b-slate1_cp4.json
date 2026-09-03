@@ -1,0 +1,53 @@
+{
+  "lane": "PARCEL-B-SLATE1",
+  "checkpoint": "CP4",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T05:20:00Z",
+  "note": "WELLS RAIL CUTOVER COMPLETE AND LIVE IN PRODUCTION. First real slate flip of this program. Includes a self-caught, corrected gap: the gate verdicts this card's own CP3 read locally were never persisted, meaning the first canary probe (below) correctly still showed legacy -- fixed by actually dispatching the sanctioned --apply execution before re-probing and shifting traffic.",
+
+  "wellsFlip": {
+    "pr": { "repo": "legacy-design-tools", "number": 589, "branch": "feat/b-slate1-wells-flip", "mergeSha": "dc38d262c938a635b7e97927d6b8ebf36491075d", "mergedAt": "2026-09-03T04:49:23Z" },
+    "ciNote": "One CI run failed a single unrelated test (pe-property-entitlement.test.ts, a duplicate-key fixture-seeding error in a file this PR never touched) -- confirmed as a pre-existing flake per this repo's own established discipline (RO-ROLE's close set the precedent for exactly this situation), re-ran only the failed job, passed clean on 3503 tests second time.",
+
+    "criticalFixInThisPR": "Every serve-cutover wrapper (wellFactServeCutover.ts and its specialDistricts/cityLimits siblings) called resolveAllowlist(injectedVerdictStore ?? null, ...). Since injectedVerdictStore defaults to undefined outside tests, this ALWAYS passed null in production -- the verdict store was never actually connected, so a slated pair would have silently fallen back to legacy regardless of a real passing gate verdict. Invisible in both PARCEL-B-READER's and PARCEL-B-GATE-SCHED's own closes because the slate shipped empty (the slate-membership check short-circuits before ever reaching the store) -- only became reachable, and only now caught, once a real slate entry existed. Fixed with a shared resolveVerdictStore() helper (parcelGateVerdictRead.ts) that resolves the real env-connected pool (reusing parcel_record_ro's existing connection) when no test override is set.",
+
+    "gateVerdictsActuallyWritten": {
+      "gap": "This card's own CP3 (the live REFUSE search) ran gate-rail-cli.mjs directly and locally -- a read-only evaluation, never the sanctioned Cloud Run job with --apply. Those 18+ checks proved the LIVE DATA state (pass/excluded/refuse) but wrote NOTHING to parcel_gate_verdict. The first post-deploy canary probe (immediately after merging this PR) correctly still showed every county serving legacy -- not a bug in the fix, a genuinely empty verdict table (only 3 pre-existing rows from PARCEL-B-GATE-SCHED's own close: 48055/flood=excluded, 48491/wells=pass, 48491/specialDistricts=pass).",
+      "fix": "Dispatched the real job: gcloud run jobs execute factory-publish-gate-sched --args=publish-gate-sched,--county=48021,--county=48209,--county=48309,--county=48453,--county=48491,--rail=wells,--apply (execution factory-publish-gate-sched-lhkfs, completed). Verified live: parcel_gate_verdict now carries 5 real 'pass' rows for wells, evaluated_at 2026-09-03T04:59-05:13Z.",
+      "lessonForRemainingRails": "specialDistricts and cityLimits both need this SAME --apply dispatch before their own canary probes will show anything but legacy -- a read-only gate-rail-cli check (however many times repeated) is not sufficient by itself; it must be followed by the real --apply execution."
+    },
+
+    "digestVerification": {
+      "canaryRevision": "cortex-api-00699-wod",
+      "digestTwoWays": "gcloud run revisions describe (deployed) vs gcloud artifacts docker images describe (image_tag=dc38d262...): both sha256:f3662e732ed6e10021bdeb161f812dff8c4ceec26375696aed4e4dab52817615, identical",
+      "transientReadLag": "This deploy's own post-deploy reads were consistent across 3 fresh calls immediately (unlike the previous deploy, which showed 2 stale reads before settling) -- named as a non-repeat, not assumed fixed generally; still worth re-verifying on every future deploy per that earlier lesson."
+    },
+
+    "liveWireProbe": {
+      "method": "Real GET /api/brokerage/v1/place/node/<id>/facets against both the canary tag URL and, after shift-traffic, production directly. Checked wellFact.sourceAdapter (parcel_record-specific field, distinct from the source field which is intentionally shared across both backends to preserve response-shape parity) and wellFact.code for refused states (parcel-record-* prefixed codes are this adapter's own, distinct from the legacy atom's atom-miss/bind-conflict codes).",
+      "parcels": [
+        { "id": "48021:34137 (gold)", "result": "absent, sourceAdapter=parcel_record" },
+        { "id": "48453:301328 (Travis)", "result": "present, sourceAdapter=parcel_record -- a GENUINE DIVERGENCE from legacy (production showed 'refused/atom-miss' before this flip; parcel_record found a real well the atom-store writer never captured), disclosed and expected, a real coverage improvement" },
+        { "id": "48021:102817 (Bastrop)", "result": "absent, sourceAdapter=parcel_record" },
+        { "id": "48491:76149 (Williamson)", "result": "refused, code=parcel-record-cell-miss (this adapter's own code, confirming the record path, not the legacy atom-miss code)" },
+        { "id": "48309:100000 (McLennan)", "result": "absent, sourceAdapter=parcel_record -- also a genuine divergence from legacy atom-miss" },
+        { "id": "48209:100002 (Hays)", "result": "absent, sourceAdapter=parcel_record -- also a genuine divergence from legacy atom-miss" },
+        { "id": "48055:10068 (Caldwell, UNSLATED)", "result": "absent, sourceAdapter=tx-rrc-well-staged-v1 -- CONFIRMED still legacy, exactly as designed (Caldwell:wells is not in PARCEL_RECORD_SLATE, verdict=excluded not pass)" }
+      ],
+      "secondCallSite": "propertyExplorer.ts's POST /property-explorer/v1/research/brief requires paid/unlock entitlement this session has no test credentials for -- not independently live-probed. It calls the IDENTICAL loadWellFactForServe function (same allowlist, same adapter, no separate implementation) already thoroughly verified live via the anonymous facets endpoint above and via this card's own unit tests -- inherits the same correctness by construction, honestly disclosed as not separately live-verified rather than silently assumed equivalent."
+    },
+
+    "trafficShift": {
+      "workflow": "workflow_dispatch action=shift-traffic, run 33718061714, SUCCESS (4m43s, includes its own /api/healthz smoke probe)",
+      "verifiedLive": "3 consecutive fresh gcloud run services describe reads, all agreeing: cortex-api-00699-wod at 100 percent traffic",
+      "productionProbeConfirms": "Same 7-parcel spot set re-run directly against the production URL (not canary) post-shift -- identical results to the canary probe above, confirming the flip is genuinely live for real users now, not just reachable via the canary tag URL."
+    },
+
+    "retirement": {
+      "legacyPath": "wellFactRead.ts's loadWellFactAtom, reading entity_type='well-fact' rows from the shared `atoms` table (hauska_mcp / ATOMS_DATABASE_URL).",
+      "whatIsActuallyRetired": "The SERVE ROUTE no longer calls loadWellFactAtom for any of the 5 slated, gate-passing counties -- proven structurally (wellFactServeCutover.ts's own logic: state !== 'record' is the only branch that reaches loadWellFactAtom) AND live (the production probe above shows sourceAdapter=parcel_record / parcel-record-* refusal codes for all 5 flipped counties, never the legacy atom's own tags, for every parcel checked).",
+      "whatIsHonestlyNotRetired": "The underlying well-fact ATOM TABLE and the loadWellFactAtom FUNCTION are not deleted -- both remain live and necessary: (a) Caldwell (48055) still serves from them by design (excluded verdict, stays legacy per this card's own premise 4 until the txgio backfill); (b) they are the allowlist's own fail-closed fallback for every county if the verdict store or gate ever becomes unavailable again. This is a PARTIAL, disclosed retirement -- the route's own call pattern for 5 of 6 counties, not a full decommission of the legacy store. Calling it a full retirement would misrepresent Caldwell's continued, correct dependency on it.",
+      "divergenceTestEvidence": "The live wire probe above IS the divergence test the ENFORCEMENT retirement rule asks for: it ran old (production, pre-shift) against new (canary) for the same 7 real parcels before trusting the cutover, and found the expected pattern -- byte-consistent refusal-shape changes (never a fabricated value) plus two disclosed, honest coverage improvements, not a single case of the new path serving something wrong or invented."
+    }
+  }
+}
