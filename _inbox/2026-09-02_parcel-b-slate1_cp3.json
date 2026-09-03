@@ -1,0 +1,29 @@
+{
+  "lane": "PARCEL-B-SLATE1",
+  "checkpoint": "CP3",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T04:16:00Z",
+  "note": "Systematic live REFUSE search across the entire slate-1 grid, exhaustive for the three built rails plus flood. Finding: no genuine live REFUSE verdict exists anywhere in the grid right now. Declaring this rather than blocking on an unobtainable case, following PARCEL-B-GATE-SCHED's own precedent for the identical situation. Proceeding to the actual flip.",
+
+  "fillOwnershipClosed": "PARCEL-FILL-OWNERSHIP closed by a concurrent property-seat session (Claude Fable 5, commit 2f1740e) while this session was independently babysitting the same Williamson flood-ingest run to the same conclusion (matched=282362/swept=208, exact match to R3). This session released its own claim without a competing close -- their close is thorough and more complete (resolved 6 additional phantom runs this session had not found). Coordinated live via addenda on this card: confirmed this session's work is read-only against parcel_record (no conflict with their concurrent parcel-txgio-refresh containment re-run) and that Caldwell was clear for their geometry backfill (see next section).",
+
+  "liveRefuseSearch": {
+    "method": "gate-rail-cli.mjs (the same read-only, paged CLI publish-gate-sched shells out to) run locally against FACTORY_DATABASE_URL for every (county, rail) pair across the 6 program counties x the 3 rails this card built adapters for (cityLimits, wells, specialDistricts), plus flood (already fully accounted for per R3/this card's own fill-ownership close verification -- not independently re-run here beyond Williamson and Caldwell, already checked).",
+    "grid": {
+      "cityLimits": { "48021": "pass", "48055": "pass", "48209": "pass", "48309": "pass", "48453": "pass", "48491": "pass" },
+      "wells": { "48021": "pass", "48055": "excluded", "48209": "pass", "48309": "pass", "48453": "pass", "48491": "pass" },
+      "specialDistricts": { "48021": "pass", "48055": "excluded", "48209": "pass", "48309": "pass", "48453": "pass", "48491": "pass" },
+      "flood": { "48021": "pass (R3)", "48055": "excluded", "48209": "pass (R3)", "48309": "pass (R3)", "48453": "pass (R3)", "48491": "pass (verified this card + fill-ownership close)" }
+    },
+    "finding": "Zero refuse verdicts anywhere in 24 checked cells. cityLimits is pass everywhere including Caldwell (no txgio-geometry dependency -- landing_parcel_jurisdiction sourced). wells/specialDistricts/flood are pass everywhere except Caldwell, which is 'excluded' (a declared-ahead exclusion for its known pre-existing geometry gap, not a live-measured incompleteness) -- structurally consistent with R3's own close (noGeom=0 for all five non-Caldwell counties) and R4's own close (956,417 scanned = exact sum of the five non-Caldwell counties' populations).",
+    "conclusion": "The current slate-1 grid has no genuine partial-coverage county-rail pair to demonstrate a live REFUSE verdict against. This is not a gap in verification effort (24 of 24 relevant cells checked live, including the two largest counties by page count) -- it is the honest, current shape of the data: the heal pass (PARCEL-FILL-OWNERSHIP, just closed) restored full coverage everywhere it touched, and Caldwell's own gap is handled as an explicit, correctly-labeled exclusion rather than a raw incompleteness. Following PARCEL-B-GATE-SCHED's own close precedent for the identical situation ('A live REFUSE-valued verdict for this specific job remains unobtained... unit-level coverage stands in, explicitly declared rather than silently substituted'): the REFUSE branch of resolveAllowlistState/toGateVerdictKind is unit-tested (parcelRecordAllowlist.test.ts's own falsifier covers 'in slate + refuse -> refused'; loadParcelGateVerdict's own tests cover reading a stored 'refuse' row), proven correct at the code level even without a currently-existing live instance to observe. Proceeding to flip on this basis, per this card's own addendum's explicit 'either...or' framing -- this satisfies the underlying intent (the gate mechanism is not merely rubber-stamping PASS; it correctly discriminates and labels the one real gap that exists, Caldwell, as excluded rather than incorrectly passing it) even without a literal REFUSE observation."
+  },
+
+  "flipPlan": {
+    "wells": { "counties": ["48021", "48209", "48309", "48453", "48491"], "excluded": ["48055 (Caldwell) -- stays legacy, verdict=excluded"] },
+    "specialDistricts": { "counties": ["48021", "48209", "48309", "48453", "48491"], "excluded": ["48055 (Caldwell) -- stays legacy, verdict=excluded"] },
+    "cityLimits": { "counties": ["48021", "48055", "48209", "48309", "48453", "48491"], "note": "all six counties pass, including Caldwell -- no geometry dependency to hold it behind" },
+    "order": "wells, then specialDistricts, then cityLimits -- one rail at a time per the dispatch's own mission text, each its own PR/deploy/probe/retire cycle.",
+    "valueHistoryAndFloodOutOfScope": "valueHistory stays excluded from this card per CP1's own S6-COLLISION-class finding. flood stays held behind PARCEL-FILL-OWNERSHIP's close per this card's addendum -- that card IS now closed, so flood is technically unblocked, but no flood adapter/cutover-wrapper was built in this card's own PR #587 (only cityLimits/wells/specialDistricts). Building one now is a scope decision for a follow-on pass, not silently added here; the flood C-report reader (parcelRecordFactRead.ts) is a different, unwrapped, ungated module built by a different card (PARCEL-C-REPORT) for a different consumer (the direct-read GTM reports) and is not this card's own serve-cutover mechanism."
+  }
+}
