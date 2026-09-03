@@ -36,7 +36,9 @@ Yes; the product was renamed Smart Site. The new name is the positioning: the un
 ## Coverage and data
 
 **What's your coverage?**
-Nationwide United States. Coverage is produced by a factory pipeline that onboards jurisdictions in parallel, and every jurisdiction passes mechanical certification gates before it serves. If a buyer asks about a specific place, confirm their jurisdiction on request rather than reciting a list.
+Nationwide United States. Coverage is produced by a factory pipeline that onboards jurisdictions in parallel, and every jurisdiction passes mechanical certification gates before it serves. If a buyer asks about a specific place, point them at the product rather than answering for it: it will tell them what it does not know about their parcel, so coverage is a question the product answers.
+
+*(Corrected 2026-09-02. This previously read "confirm their jurisdiction on request rather than reciting a list." Master 06 retired confirm-on-request by name, date and reason on 2026-08-10 — it puts a human in the loop, which the humanless ruling forbids, and a buyer who has to ask is a sale that dies silently. The retirement had not propagated here.)*
 
 **Where does the data come from?**
 Public authoritative records: county appraisal and GIS parcels, city zoning ordinances and development codes, FEMA flood panels, state lidar terrain, hydrography, and licensed code libraries where applicable. Every fact carries its source; that is the point.
