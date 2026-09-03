@@ -1,0 +1,29 @@
+{
+  "lane": "PARCEL-FILL-OWNERSHIP",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T02:25:00Z",
+  "note": "This card's second claimant made substantial progress (PR #77 connect-timeout fix, PR #79 job-sigterm, PR #80 reaper-phantoms, and resolved run 122cd0b2 via reap-terminate) then their queue lease lapsed silently a second time (no handoff note this time) while the Williamson flood-ingest re-run was still in flight. Property re-claimed to babysit the ALREADY-RUNNING Cloud Run execution to completion -- never restarted, never touched.",
+
+  "takeoverVerification": {
+    "worktreeReconciliation": "The registered worktree's local feat/fill-ownership branch had diverged from its own origin copy (6 local commits vs 1 remote-only commit) after main absorbed several PRs mid-session. Confirmed the local tip was byte-identical in content to origin/main's equivalent merged commit (empty `git diff`) before abandoning it -- no `git reset --hard` on existing branch history (correctly declined when attempted). Cut a fresh branch feat/fill-ownership-close off origin/main (1f473e2) instead; seat_register.json updated to match.",
+    "phantomRun122cd0b2": "CONFIRMED RESOLVED, not merely claimed: status='killed' (was 'running' for 5+ hours per the flood-fragments leave_behind), termination_records carries one row (max_duration_s=300, exit_kind='killed', lease_released=true, recorded_at 2026-09-02T21:50:50Z) -- landed via the sanctioned `reap terminate --apply` path (PR #76) the prior claimant's own CP1 built, before PR #80's broader reaper-phantoms fix even merged (23:53:46Z). This item from the prior CP1's 'genuinely still open' list is closed.",
+    "otherStuckRunsCheck": "Queried store-wide for any other status='running' row: exactly one, the Williamson flood-ingest execution itself (a6d3d6c3-1e65-4dd4-96c5-f2a74f1159bd). Queried every flood-ingest run row targeting 48491 specifically: three total (b3525635 succeeded 10:38Z pre-heal baseline, a427248f killed 18:20Z the first heal attempt's cancelled cross-session collision, a6d3d6c3 running 23:15Z the current attempt) -- no orphans beyond what prior closes already documented.",
+    "doNotRepeat": "Per both prior claimants' explicit instructions, NOT re-running flood-ingest for 48021/48209/48309/48453, parcel-r4-companions or parcel-value-history for 48491, or parcel-r5-zoning for any city -- all independently verified complete and exact against their owning closes already."
+  },
+
+  "williamsonFloodIngestLiveMonitoring": {
+    "runId": "a6d3d6c3-1e65-4dd4-96c5-f2a74f1159bd",
+    "cloudRunExecution": "factory-flood-ingest-kjwtk, startTime 2026-09-02T23:15:13.549392Z",
+    "startedBeforeConnectTimeoutFixDeployed": "PR #77 (the connect-timeout bound) merged 23:18:18Z -- 3 minutes AFTER this execution's own start. Checked whether this execution is exhibiting PR #77's exact failure signature (a hang BEFORE startRun(), zero runs row) -- it is NOT: this execution has a real runs row with a genuine started_at timestamp, meaning it passed the exact point PR #77's fix bounds. Ruled out as the explanation for its long duration.",
+    "elapsedAtThisCheckpoint": "~3h10m, versus Travis's (a larger county, 380,917 vs Williamson's 282,570 records) successful 2h13m completion -- an unexplained overrun by absolute time despite fewer records, plausibly attributable to concurrent Factory-store load from the prior claimant's own simultaneous PR #77/#79/#80 build-test-deploy work during the same window, not confirmed as anything more specific than that.",
+    "verifiedGenuinelyActiveNotStalled": "Two independent live checks, ~30s+ apart (via separate tool calls, not a sleep loop): pg_stat_activity's one matching backend (pid 12358, backend_start exactly matching the run's started_at) showed `since_state_change` resetting to single-digit seconds between checks, with its last-executed query text changing from an INSERT INTO parcel_record_companion_row to an INSERT INTO parcel_record_cell and back -- direct evidence of an actively cycling write loop, not a frozen connection. This is the same diagnostic method PR #77's own investigation used to CONFIRM a genuine hang (no matching backend at all); here it shows the opposite: a live, working backend. Cloud Run's own execution status independently confirms 'Waiting for execution to complete' (still alive), and the job's task timeout ceiling is 6h (started 23:15:13Z, so runway until ~05:15Z) -- ample remaining room before any forced termination.",
+    "conclusion": "This is NOT a stall. It is a slower-than-precedent but genuinely, actively progressing execution. Babysitting to completion per the operator's own instruction; extending this card's lease repeatedly rather than letting it lapse a third time."
+  },
+
+  "remainingWorkThisCard": [
+    "Wait for a6d3d6c3 to reach a terminal status (succeeded/failed/killed).",
+    "On success: verify Williamson flood matched/swept counts against R3's original close (282,362 matched / 208 swept) per the prior handoff note's own spec, accounting for the fragment-fix's expected small improvement (the other four counties each showed a small +N/-N delta from the fragment fix, e.g. Bastrop +1/-1, Travis +2/-2).",
+    "Write the close artifact per this card's dispatch: _inbox/2026-09-02_parcel-fill-ownership_close.json."
+  ]
+}
