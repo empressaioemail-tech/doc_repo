@@ -1,0 +1,55 @@
+{
+  "lane": "hauska-factory-acquire-gis",
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "planRow": "F-01",
+  "date": "2026-09-03",
+  "seatSnapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/hauska-factory-acquire-gis",
+    "branch": "feat/parcel-acquire-gis-wave1",
+    "commitAtStart": "e6edb85f86a592749c4298675914f436a1f229a4"
+  },
+  "missionPremise": "_catalog/dispatch_missions/mission_parcel_acquire_gis_wave1.md, dispatch compiled at e813007 (_dispatches/2026-09-03_parcel-acquire-gis_dispatch.md): acquire schoolDistrict, utilityService (water/sewer only), overlayDistricts (12 confirmed cities only), agValuation (Williamson only) onto already-instantiated parcel_record rows via spatial/attribute join, cited sources only, no schema.sql change.",
+  "architectureDecision": {
+    "finding": "No writer job in this repo calls a live external REST API at write time -- every entry in src/control/writer-allowlist.mjs WRITER_JOBS carries liveRest:false, and the easement-no-live-rest job's own guard (requireEasementNoLiveRest) actively refuses liveRest !== false. This is structural, confirmed by reading src/control/writer-allowlist.mjs directly, not inferred.",
+    "consequence": "Two-layer design per source: (1) an acquire script, live HTTP fetch (built-in fetch(), no new dependency) staged into a new tx_* table on the cortex store (PRODUCTION_NEONDB_URL) following the tx_rrc_well/tx_special_district/tx_city_boundary shape (geometry jsonb, source, source_vintage, source_citation, ingested_at -- confirmed live via information_schema query, source_citation is a real existing column I had not seen in the r4-companions SQL, now included); (2) a write job mirroring src/jobs/parcel-r4-companions.mjs's zone-major pattern exactly, registered on WRITER_JOBS with liveRest:false, reading only the staged table."
+  },
+  "liveVerificationDoneThisCheckpoint": [
+    {
+      "check": "cortex store schema for tx_rrc_well, tx_special_district, tx_city_boundary, txgio_parcel, cad_property, landing_parcel_jurisdiction",
+      "method": "information_schema.columns query via FACTORY read-only path (PRODUCTION_NEONDB_URL secret, read-only queries only, direct host confirmed non-pooler: ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech)",
+      "result": "confirmed 4-column provenance convention (source, source_vintage, source_citation, ingested_at) on every existing tx_* table; txgio_parcel carries a native PostGIS geom column plus jsonb geometry and bbox floats; tx_city_boundary holds 1,222 rows (geo_id, city_name, geometry jsonb) -- this is the table overlayDistricts will use to scope parcels to the 12 confirmed cities."
+    },
+    {
+      "check": "agValuation join key: dispatch/scout said WCAD propertyid; verified this is WRONG for joining onto parcel_record",
+      "method": "live fetch of https://data.wcad.org/resource/2ckt-cqwj.json sample (5 rows), cross-checked candidate quickrefid values against txgio_parcel.prop_id WHERE county_fips=48491 via read-only query",
+      "result": "txgio_parcel.prop_id for Williamson uses an R-number format (e.g. R000009) while cad_property.prop_id uses a different plain-numeric internal id (e.g. 100001) -- these are different id spaces for the same county, which is why src/lib/cad-txgio-alias.mjs exists as a crosswalk for CAD data. WCAD's own propertyid field (e.g. 62647) matches neither. WCAD's quickrefid field (e.g. R000368) DOES match the txgio_parcel.prop_id format exactly, and all 5 sampled quickrefid values were found live as real txgio_parcel.prop_id rows for county_fips=48491 with plausible Williamson addresses (Georgetown, Leander). CORRECTION: agValuation joins on WCAD quickrefid = txgio_parcel.prop_id directly. This is a pure attribute join -- the WCAD sibling Parcels/geometry dataset (an3x-cnmw) the scout named is NOT needed at all, since geometry/matching is already solved via prop_id equality. This simplifies the agValuation acquire+write design versus the dispatch's literal text and is flagged here per DEV_PROCESS 3.2 rather than silently substituted."
+    },
+    {
+      "check": "TEA school district ArcGIS layer: CRS and field shape",
+      "method": "live query against services2.arcgis.com/5MVN2jsqIrNZD4tP FeatureServer/0",
+      "result": "count=1017 confirmed live (matches scout). Native spatial reference is NAD_1983_Lambert_Conformal_Conic (a projected CRS, meters), NOT WGS84 -- the acquire script must pass outSR=4326 explicitly on every query or geometry will not align with txgio_parcel's SRID 4326 data. This was not called out in the scout inventory."
+    },
+    {
+      "check": "TWDB CCN Water/Sewer layer: pagination support",
+      "method": "live layer metadata query (?f=json) plus a plain query attempt with resultRecordCount",
+      "result": "supportsPagination:false, maxRecordCount:2000, live count=3844 statewide (exceeds one page). resultOffset/resultRecordCount-style paging is NOT supported on this server (confirmed: a resultRecordCount=1 request returned an explicit 'Pagination is not supported' error). DESIGN RULE for every ArcGIS acquire script in this wave (TEA, TWDB, and by extension the 12 city overlay layers, which were not individually re-verified live at this checkpoint): use OBJECTID/FID keyset pagination (WHERE <oidField> > :cursor ORDER BY <oidField> ASC, small page size), which is universally supported since it is a plain WHERE+ORDER BY rather than the resultOffset mechanism, not resultOffset-based paging. TWDB CCN additionally has a COUNTY field usable to scope the fetch to the six program counties directly, shrinking the result well under one page, but keyset paging will be built as the general-purpose mechanism regardless (the 12 city overlay servers are individually smaller/different schemas and each needs its own field-shape verification at build time)."
+    }
+  ],
+  "designCallsFlaggedForReview": [
+    {
+      "item": "schoolDistrict zero-hit / multi-hit parcel",
+      "decision": "leave cell unaccounted (untouched), collect into an explicit anomaly list (place_key, county) in the close artifact -- not absent-verified, per the dispatch's explicit 'investigate and report, do not file as absent-verified without investigation.'"
+    },
+    {
+      "item": "utilityService / overlayDistricts: companion rail, swept zero-hit inside the checked scope",
+      "decision": "absent-verified with a sweep basis object, matching the established convention in src/jobs/parcel-r4-companions.mjs (wells/specialDistricts) for a companion rail whose zone-major sweep found nothing. The dispatch's phrase 'write it as a value (empty/none)' is read as 'earn the cell' rather than a literal instruction to use cell_state.kind:\"value\" with an empty row set, since this codebase's one existing convention for an earned-but-empty companion result is absent-verified+basis, not a value with zero rows. Flagged for explicit confirmation before the batch write runs."
+    },
+    {
+      "item": "join method per rail",
+      "decision": "schoolDistrict, utilityService, overlayDistricts all use parcel CENTROID in polygon (per the dispatch's explicit text for each, not r4-companions' own choice of full-polygon ST_Contains/ST_Intersects for wells/specialDistricts). Centroid join structurally guarantees at most one hit against a non-overlapping zone layer, which is what makes the schoolDistrict 'exactly one ISD' invariant hold without extra dedup logic. agValuation is a pure attribute join (see above), no spatial component."
+    }
+  ],
+  "nextStep": "Fan 4 subagents (one per rail: acquire script + write job + test file), each briefed with parcel-r4-companions.mjs's exact SQL patterns to mirror, the live-verified field names/CRS/pagination constraints above, and the do-not-spawn-further clause as its first line per AGENT_CONTRACT section 1. Planner adversarially reviews every diff before committing; subagents do not touch git."
+}
