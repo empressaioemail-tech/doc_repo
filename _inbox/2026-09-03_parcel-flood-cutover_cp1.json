@@ -1,0 +1,27 @@
+{
+  "lane": "PARCEL-FLOOD-CUTOVER",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T06:55:00Z",
+  "note": "Premise re-verification, then the adapter+wrapper build (mirroring PARCEL-B-SLATE1's three rails exactly). Written after the code is built and locally tested, before PR.",
+
+  "premiseReVerification": {
+    "resolveVerdictStoreFixInBundle": "Confirmed: PR #589 (dc38d262) is an ancestor of this branch's own base (b214383e, PARCEL-B-SLATE1's final cityLimits merge) -- verified via git log before writing any code.",
+    "caldwellRefusesClaim": "This card's own premise says 'Caldwell REFUSES until refresh-apply'. Live-checked twice (gate-rail-cli.mjs, county=48055 rail=flood): verdict is 'excluded' (excludedDeclaredAhead=['flood']), NOT 'refuse' -- matching PARCEL-B-SLATE1's own CP3 grid-search finding exactly, and matching the currently-persisted parcel_gate_verdict row (48055/flood/excluded, evaluated_at 2026-09-02T21:42:16Z, written by PARCEL-B-GATE-SCHED's own close). RECONCILED, not silently overridden: resolveAllowlistState's own logic maps BOTH 'refuse' and 'excluded' verdicts to the SAME allowlist state 'refused' -- the premise's 'REFUSES' almost certainly describes the ALLOWLIST's own visible outcome (attempted-but-declined, distinct from an unslated pair's silent 'legacy' default), not a claim that the gate's own verdict enum value is literally 'refuse'. Caldwell is slated for flood in this card (unlike wells/specialDistricts, where it was left out of the slate entirely) specifically so this distinction becomes real and observable, matching the premise's own 'capture it live, the owed observed-refusing evidence' framing.",
+    "aoAeDiscriminator": "48021:36521 named as the wire probe that must serve AE -- not yet probed (code-build phase only so far), tracked for CP2/close."
+  },
+
+  "adapterBuild": {
+    "approach": "Reuses loadParcelRecordFloodFact (parcelRecordFactRead.ts, PARCEL-C-REPORT's own already-tested, already-deployed direct-read flood cell reader) as the raw data source -- floodHazardFactFromParcelRecord.ts is a pure translation layer into FloodHazardFactRead's legacy shape, not a fourth re-implementation of cell reading (unlike wells/specialDistricts/cityLimits, which each built their own raw parcel_record_cell reader since no prior card had already built one for their rail).",
+    "sfhaDerivation": "inSpecialFloodHazardArea is derived from the flood zone string alone (parcel_record's flood cell carries no separate SFHA_TF flag) using the same zone-prefix rule already established in nodeFacetBakeTier2.ts's own isSfhaZone (A/V-prefixed = SFHA; X/D = not) -- reproduced locally rather than importing a private, unexported function from a bake-time module.",
+    "callSitesWired": ["brokerageNodeFacets.ts (one site)", "propertyExplorer.ts assembleNodeBriefBody (one site)", "propertyExplorer.ts assembleStubBody (one site, a second, distinct flood reader this rail alone has that wells/specialDistricts/cityLimits did not)"],
+    "slate": "All 6 program counties (48021/48055/48209/48309/48453/48491) -- Caldwell included deliberately, per the premise reconciliation above.",
+    "localVerification": "typecheck clean (pnpm run typecheck:libs then pnpm run typecheck in artifacts/api-server -- this is a fresh clone, needed both steps, unlike the already-built legacy-design-tools-b-reader worktree PARCEL-B-SLATE1 used). 94/94 directly-affected tests pass (8 new adapter tests, 8 new wrapper tests, allowlist tests extended to 23, boot-proof tests updated in brokerageNodeFacets.test.ts). Full local suite: 128 failed test files / 44 failed tests (the repo's own documented pre-existing environmental baseline), zero new failures, 2110 passing (up from PARCEL-B-SLATE1's own final baseline)."
+  },
+
+  "openForCP2": [
+    "PR not yet opened -- next step.",
+    "Real --apply gate dispatch for flood across all 6 counties not yet run (this CP1 covers code-build only; the earlier premise-verification reads were local, read-only gate-rail-cli.mjs checks, not persisted -- same lesson PARCEL-B-SLATE1's own CP4 already learned and will be applied here from the start).",
+    "Wire probes (gold 48021:34137 zone X; AO/AE discriminator 48021:36521 must serve AE; Caldwell's own owed live-refused capture) not yet run against a deployed canary."
+  ]
+}
