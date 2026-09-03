@@ -1,0 +1,97 @@
+{
+  "lane": "P-113-mcp",
+  "planRow": "P-113",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/ldt-p113-mcp",
+  "branch": "feat/p113-records-mcp-exposure",
+  "checkpoint": "CP1",
+  "timestamp": "2026-09-03T00:00:00Z",
+  "snapshot": {
+    "productRepoHeadAtLaneStart": "416861e6",
+    "originMainHeadAtCP1Time": "4e592c1d (11 commits ahead of the lane's cut point; fetched and inspected, not yet merged into this branch)",
+    "note": "Verify at source, not from dispatch prose (DEV_PROCESS 4.1)."
+  },
+  "reVerificationOfDispatchPremises": {
+    "hauskaMcpServerZeroRecordsHits": "NOT independently re-verified in this session (hauska-mcp-server is a different repo, not checked out here). Taking the dispatch's 2026-09-02 40e48d48 claim as unverified-by-me and out of this lane's repo scope; noted as an open item rather than restated as fact.",
+    "smartsiteMcpOneUnrelatedHit": "TRUE as of this session. Grepped artifacts/smartsite-mcp/src for records/courthouse-shaped hits: only connection-record.ts (pe_ai_connections / Claude Sync connection tracking, unrelated to courthouse documents). Zero tools expose recordsRequestVisionRead / recordsRequestClassifyWrite output today.",
+    "extractionExistsButUnexposed": "TRUE. Read artifacts/api-server/src/lib/recordsRequestVisionRead.ts and recordsRequestClassifyWrite.ts directly. Confirmed: per-artifact vision-read result is merged onto records_request_artifacts.metadata.visionRead = {status, visionApplied, failureReason?, extractedText?, readAt}; classification onto metadata.classify = {status, instrumentId?, clauseCount?, instrumentType?, documentKind?, sourceDocumentType?, refuseCode?, refuseMessage?, classifiedAt?}. The existing GET /api/engagements/:id/records-request/:jobId route (artifacts/api-server/src/routes/recordsRequest.ts) calls recordsRequestJobToWire(job), which is JOB-LEVEL ONLY (status, cost, error, timestamps) and does NOT include the artifacts array or any per-document field. Confirmed by reading recordsRequestJobWorker.ts:146-165. The gap is real and exactly as described."
+  },
+  "liveConflictingHoldersFound": {
+    "instruction": "Dispatch Task 3 explicitly requires checking src/tools.ts and artifacts/smartsite-mcp/tests/* state via git log/gh pr view before assuming free, and to stop+report (not force past) any live conflicting holder.",
+    "finding": "TWO live, open, actively-updated PRs currently hold files I need for registration:",
+    "holders": [
+      {
+        "pr": 580,
+        "title": "feat(P-106): constraint search",
+        "branch": "seat/property-p106-constraint",
+        "state": "OPEN, all CI checks SUCCESS",
+        "updatedAt": "2026-09-02T21:20:06Z",
+        "filesRelevantToThisLane": [
+          "artifacts/smartsite-mcp/src/tools.ts",
+          "artifacts/smartsite-mcp/src/constants.ts",
+          "artifacts/smartsite-mcp/src/health.ts",
+          "artifacts/smartsite-mcp/src/tool-honesty.ts",
+          "artifacts/smartsite-mcp/src/vocabulary.ts",
+          "artifacts/smartsite-mcp/tests/constants.test.ts",
+          "artifacts/smartsite-mcp/tests/tools.test.ts",
+          "artifacts/smartsite-mcp/tests/mcp-app.test.ts",
+          "artifacts/smartsite-mcp/tests/server.test.ts",
+          "artifacts/smartsite-mcp/tests/vocabulary.test.ts",
+          "artifacts/smartsite-mcp/tests/find-parcels.test.ts"
+        ],
+        "impact": "BOTH files this lane's Task 3 must edit (tools.ts for the switch-case registration, constants.ts for the SMARTSITE_MCP_TOOLS entries) are held by #580 with green CI, ready to merge. This is exactly the dispatch's named risk (P-109's registration was noted stuck behind this same PR)."
+      },
+      {
+        "pr": 586,
+        "title": "feat(P-101): screens move to Studio via ONE ROUTE GATE, and the MCP inherits it",
+        "branch": "feat/p101-ladder-recut",
+        "state": "OPEN",
+        "updatedAt": "2026-09-02T22:04:18Z",
+        "filesRelevantToThisLane": [
+          "artifacts/smartsite-mcp/src/mcp-app.ts (this lane must never touch it anyway, per Boundaries)",
+          "artifacts/smartsite-mcp/tests/mcp-app-screen-upgrade.test.ts (new file, no collision)",
+          "artifacts/smartsite-mcp/tests/screens-studio-gate.test.ts (new file, no collision)"
+        ],
+        "impact": "Lower risk than #580: does not touch tools.ts or constants.ts. Confirms the dispatch's other named risk (P-101 touching artifacts/smartsite-mcp/tests/*) is real but not blocking for this lane's specific new test filenames."
+      }
+    ],
+    "decision": "STOP on Task 3 (the tools.ts + constants.ts registration edit) per the dispatch's explicit instruction. Proceeding with Task 1 (this CP1) and Task 2 (new files only, zero overlap with #580/#586's file lists) in full. The registration diff will be fully written, tested against a local copy of the current tools.ts/constants.ts, and held ready to apply the moment #580 merges (it is green and appears close to merging). Re-checked at CP2 time and at close time. This is reported as required, not forced past."
+  },
+  "task1ToolShapeDecision": {
+    "decision": "LIST-THEN-READ PAIR, not one combined tool.",
+    "toolNames": ["list_purchased_records", "read_purchased_record"],
+    "reasoning": [
+      "Matches the established codebase convention already used twice in this same file: find_parcel -> get_smart_site, and list_screens (summary) -> screen rows. A third pattern-breaking shape (one giant combined tool) would be the odd one out.",
+      "Size: extractedText is full OCR text of a courthouse recording (can be many KB per document). A parcel can have multiple records-request jobs, each with multiple artifacts. Returning full extractedText for every document on every job in one call risks the same response-size problem tools.ts already documents and works around elsewhere (H2 comment on SMARTSITE_NODE_BATCH_CAP: the host writes results over ~150,000 chars to a file and hands the panel a pointer instead of showing it, measured 2026-08-30). A list call stays small (state + metadata only, no body text); a read call returns exactly one document's full text, bounded by construction.",
+      "Matches the dispatch's given data shape directly: 'learn what documents exist' (list) is a materially different question from 'read what was extracted from each' (read), and the caller (an LLM agent) benefits from seeing the list first to choose which document is worth a full read, exactly the find_parcel -> get_smart_site flow."
+    ],
+    "threeStateRequirement": {
+      "rule": "pending, failed (with failureReason), and complete-with-text must never collapse to one bit.",
+      "implementation": "readState field, FOUR literal values (not three): pending | complete | failed | skipped. The underlying stored type (VisionReadStatus in recordsRequestArtifactVision.ts) is itself 'complete' | 'failed' | 'skipped' (skipped = vision_client_unavailable, a system-level non-attempt; failed = an attempt was made and produced no usable text, e.g. blank_capture or vision_read_produced_no_text). Collapsing skipped into failed would itself violate the absent/zero/unmeasured-are-different-states rule (ENFORCEMENT.md) by hiding WHY no text exists. pending is added as the fourth value for the case metadata.visionRead is not present at all (vision read has not run on this artifact yet) -- this is the state absent from the stored type entirely and had to be introduced by this lane's read path, not invented data. failureReason travels alongside failed and skipped verbatim from stored metadata; extractedText travels only alongside complete.",
+      "classifyStateSameTreatment": "classifyState field, four literal values: pending | written | refused | skipped, mirroring ArtifactClassifyStatus ('written'|'refused'|'skipped') plus pending for metadata.classify absent."
+    },
+    "purchaseCostPlacement": {
+      "decision": "SAME response, both tools, not a separate call.",
+      "reasoning": "acquisitionMethod and purchaseCostCents are columns on the exact same records_request_artifacts row already being read for vision/classify state -- there is no second query, no second round trip, and no additional DB load to include them. list_purchased_records also surfaces the job-level runCost (jsonb on records_request_jobs) once per job. Splitting this into a separate call would add latency and a second auth/gate check for data that costs nothing extra to include now."
+    }
+  },
+  "task2GatingDecision": {
+    "decision": "Reuse artifacts/smartsite-mcp/src/entitlement.ts's existing canRunStudioReport(snap) / refuseStudioReport(snap) / snapshotFromAuth(auth), the exact same helpers tools.ts already uses to gate run_report's Studio-tier siblings. Zero new tier-check logic written.",
+    "citedWarning": "subscriptionTierGrantsStudio already has 3 independent copies (peEntitlement.ts:78 canonical + P-104 studioGranted field; smartsite-mcp/entitlement.ts:27; brokerageNodeFacets.ts importing the canonical one). This lane adds a 0th new copy by calling the existing MCP-side wrapper (canRunStudioReport), which itself already wraps copy #2. Confirmed by reading entitlement.ts line 62-63: canRunStudioReport's own doc comment already names 'records package' as one of the Studio deliverables it exists to gate -- this lane is the intended caller that comment was written for, not a new consumer inventing a new path.",
+    "refusalShape": "Reuses refuseStudioReport(entitlement) verbatim (status: upgrade_required, reason: studio_report, tier, subscriptionTier, message), wrapped the same way tools.ts already wraps it for run_report via a local upgradeRequiredResult-shaped helper in the new module. A non-Studio caller gets this exact declared body with isError:true, naming the tier required in message. Never a silent empty jobs:[] and never silent full access -- the gate runs before any DB query in both tools."
+  },
+  "newFilesPlanned": [
+    "artifacts/smartsite-mcp/src/recordsExtraction.ts (DB read + shaping logic for both tools, dependency-injectable db client for testing, matching the deps? pattern already used in recordsRequestVisionRead.ts)",
+    "artifacts/smartsite-mcp/tests/records-extraction.test.ts (unit tests against a real isolated local Postgres, not a mock -- see groundTruth below)"
+  ],
+  "preparedButNotYetAppliedDiff": "artifacts/smartsite-mcp/src/tools.ts (2 new SMARTSITE_MCP_TOOLS entries + 2 new switch cases + 1 new inputSchemaFor case) and artifacts/smartsite-mcp/src/constants.ts (2 new tool descriptors). Written and validated locally against the current (main-tip, pre-#580) file contents; held uncommitted pending #580's merge per the stop-and-report decision above.",
+  "groundTruth": [
+    "GROUND-TRUTH (2026-09-03 live): PR #580 (seat/property-p106-constraint) OPEN, mergeable=UNKNOWN, all listed CI checks SUCCESS as of 2026-09-02T21:20:06Z, touches artifacts/smartsite-mcp/src/tools.ts and constants.ts.",
+    "GROUND-TRUTH (2026-09-03 live): PR #586 (feat/p101-ladder-recut) OPEN as of 2026-09-02T22:04:18Z, touches artifacts/smartsite-mcp/src/mcp-app.ts and adds two new test files under artifacts/smartsite-mcp/tests/, does not touch tools.ts or constants.ts.",
+    "GROUND-TRUTH (2026-09-03 live): zero files in artifacts/smartsite-mcp/tests currently exercise a real Postgres connection (grepped for db.insert/db.select/from \"@workspace/db\" across the whole tests/ dir); this lane's new test file is the first in that package to do so, using an isolated local docker container (p113-mcp-testdb, port 55441) rather than the vitest.config.ts default (127.0.0.1:5432/smartsite_mcp_test), because port 5432 on this workstation is already bound by an unrelated container (backend-db-1) and vitest.config.ts is a shared file this lane does not own or need to touch (DI keeps the new module testable without it)."
+  ],
+  "openAtCP1": [
+    "OPEN: whether #580 merges before this lane needs to close; re-check at CP2 and at close.",
+    "OPEN: hauska-mcp-server's zero-hit claim is unverified by this session (repo not checked out here); carried forward as an explicit gap, not restated as fact."
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "lane": "P-113-mcp",
+  "planRow": "P-113",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/ldt-p113-mcp",
+  "branch": "feat/p113-records-mcp-exposure",
+  "checkpoint": "CP2",
+  "timestamp": "2026-09-03T00:00:00Z",
+  "snapshot": {
+    "rebasedOnto": "origin/main 4e592c1d (verified none of the 11 commits between the lane's cut point 416861e6 and 4e592c1d touch any file this lane reads or depends on: grepped git log --stat for artifacts/smartsite-mcp or lib/db/src/schema/records* paths, zero hits)",
+    "laneCommit": "c34ab0fc",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/596"
+  },
+  "whatShipsInThisPr": {
+    "newFiles": [
+      "artifacts/smartsite-mcp/src/recordsExtraction.ts",
+      "artifacts/smartsite-mcp/tests/records-extraction.test.ts"
+    ],
+    "notIncluded": "src/tools.ts and src/constants.ts registration — see liveConflictingHolders below, unchanged since CP1. Re-checked immediately before this checkpoint: both #580 and #586 still OPEN, unmerged."
+  },
+  "liveConflictingHoldersRecheckAtCP2": {
+    "pr580": { "state": "OPEN", "mergedAt": null, "recheckedAt": "2026-09-03T (this session, immediately before opening PR #596)" },
+    "pr586": { "state": "OPEN", "mergedAt": null, "recheckedAt": "2026-09-03T (this session, immediately before opening PR #596)" },
+    "additionalFindingSinceCP1": "Applying the prepared registration diff locally (tools.ts + constants.ts, then reverted before commit) surfaced a THIRD conflict surface not obvious from the file lists alone: tests/tools.test.ts hardcodes 'toHaveLength(13)' at 4 call sites (lines 94, 124, 500, 885) plus constants.ts's own header comment ('eight live tools plus five screen/save tools (13)'). Adding 2 new live tools makes the real count 15, breaking those 4 assertions. tests/tools.test.ts is itself one of the files #580 holds. This means the eventual registration PR must also touch a file #580 holds beyond tools.ts/constants.ts, reinforcing rather than weakening the stop-and-report decision. Confirmed by actually running the full suite with the diff applied (8 failures, all exactly the hardcoded-13 assertions; zero other failures) then reverting via `git checkout --` before committing anything."
+  },
+  "task2VerificationEvidence": {
+    "typecheck": "pnpm --filter @workspace/smartsite-mcp typecheck — clean, both before and after rebase onto origin/main 4e592c1d",
+    "fullExistingSuiteUnaffected": "526/526 existing smartsite-mcp tests pass with only the two new standalone files added (no registration diff) — zero regressions",
+    "newSuiteRealDb": "9/9 new tests in records-extraction.test.ts, run against a REAL isolated local Postgres (docker container p113-mcp-testdb, pgvector/pgvector:pg16, port 55441, full @workspace/db schema pushed via drizzle-kit push), not a mock. Injected via recordsExtraction.ts's deps.db seam (mirrors the deps? pattern already established in recordsRequestVisionRead.ts) rather than fighting vitest.config.ts's shared, pre-existing (and it turns out never-exercised / dead) DATABASE_URL default.",
+    "realEndToEndTextRoundTrip": "Seeded a 4-artifact job with a real ~230-char WARRANTY DEED extractedText string on one artifact; list_purchased_records reported it as readState=complete/hasExtractedText=true/textLength=<exact length> WITHOUT the body text; read_purchased_record on that same artifactId returned the EXACT extractedText string verbatim, plus its real classify fields (instrumentId, instrumentType, documentKind) from seeded classify metadata. This is CP2's literal requirement: 'a real MCP call against a parcel with at least one purchased, vision-read document returns real extracted text and classification end to end' — satisfied at the module level (the layer this PR ships); the same call through the actual MCP JSON-RPC surface is blocked on tools.ts registration, tracked as open below.",
+    "fourStateDistinction": "Same job carried a pending artifact (no visionRead key at all), a failed artifact (status:failed, failureReason:vision_read_produced_no_text), and a skipped artifact (status:skipped, failureReason:vision_client_unavailable) alongside the complete one. All four read back as four DISTINCT readState values in the same list call. classifyState given the identical four-way test (pending/written/refused/skipped) in a second job.",
+    "verifiedByViolation": "Per ENFORCEMENT.md 'Verify a check by violating it': temporarily edited recordsExtraction.ts to collapse status==='skipped' into 'failed', reran the suite, confirmed it failed with 'expected failed to be skipped' at the exact assertion distinguishing the two states, then reverted the edit and reconfirmed green. The test is not vacuous.",
+    "ownershipAndScopeIsolation": "Three tests: (1) a second user's (USER_B) document on the SAME parcel never appears in USER_A's list, and USER_A's direct read-by-artifactId attempt gets the identical refused/artifact_not_found body a genuine miss would get (never confirms the id exists for someone else) — then the SAME artifactId read by USER_B (the rightful owner) succeeds and returns the real text, proving the refusal was ownership-scoped and not a fixture bug; (2) a real artifactId presented against the wrong parcelNodeId is refused the same way; (3) a parcel with zero jobs returns jobs: [] with isError:false — a genuine positive empty result, never conflated with a refusal."
+  },
+  "studioGateVerification": {
+    "nonStudioRefusal": "FREE-tier snapshot (tier:'free', subscriptionTier:null) into both listPurchasedRecords and readPurchasedRecord returns isError:true, status:'upgrade_required', reason:'studio_report', message naming Studio/Team — the exact refuseStudioReport() body, reused verbatim, before any DB query runs (asserted by the gate check preceding the DB call in source, and exercised with no seeded DB rows in that test case at all).",
+    "studioPositiveCase": "STUDIO-tier snapshot against a seeded row is NOT refused (isError:false, status:'ok') — the 'not vacuous' positive-space check DEV_PROCESS 2.6 requires alongside the negative case.",
+    "reuseNotDuplication": "Both handlers call canRunStudioReport/refuseStudioReport imported from ./entitlement.js. Zero new tier-comparison logic (no new '=== \"studio\" || === \"team\"' anywhere in recordsExtraction.ts) — grepped to confirm."
+  },
+  "ciStatus": {
+    "prNumber": 596,
+    "allChecksConclusion": "SUCCESS (verified via `gh pr checks 596 --json name,state,bucket` — every check-run `state` field reads the literal string SUCCESS, not just gh's human-readable bucket:pass; 10/10 checks, Test job the longest at ~11.9 minutes, matching PR #580's own ~12-minute precedent for the same job)",
+    "merged": true,
+    "mergeCommit": "ee03ab52f6469106be506611bdd3e55fb8358202",
+    "mergedAt": "2026-09-03T14:01:19Z",
+    "verificationNote": "A first background `gh pr checks --watch` was started but a mid-flight coordinator check-in flagged it as unconfirmed-armed; rather than trust it, re-verified with a bounded FOREGROUND poll loop (20s interval, exit on zero pending buckets) this same turn, which is what actually produced the SUCCESS confirmation above and gated the merge. The background watch also completed independently afterward with exit code 0, agreeing."
+  },
+  "openAtCP2": [
+    "RESOLVED since first written: PR #596 CI is 10/10 SUCCESS and merged (ee03ab52, 2026-09-03T14:01:19Z).",
+    "OPEN: registration in tools.ts/constants.ts (+ the tests/tools.test.ts count-assertion updates it now also requires) remains blocked on PR #580 — re-checked immediately after #596 merged, both #580 and #586 still OPEN/unmerged. Re-check again at close; if merged by then, land the follow-up registration PR in this same session. If not, this is the lane's honest open item.",
+    "OPEN (carried from CP1): hauska-mcp-server's zero-hit claim remains unverified by this session (different repo, not checked out here)."
+  ]
+}

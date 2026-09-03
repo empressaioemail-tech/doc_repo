@@ -1,0 +1,79 @@
+{
+  "lane": "legacy-design-tools-p113-reliability",
+  "planRow": "P-113",
+  "checkpoint": "CP1",
+  "timestamp": "2026-09-03T00:00:00Z_session-relative",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/ldt-p113-reliability",
+    "branch": "fix/p113-records-reliability-hardening",
+    "baseCommit": "416861e6af3bbd7f655437f947feec85f25d723f",
+    "note": "Worktree registered at OPS-16 P-113; branch has zero commits so far (uncommitted working tree at this checkpoint). origin/main has since advanced to 4e592c1d (11 commits ahead) — will rebase/merge before opening the PR."
+  },
+  "midTaskInjectionEncountered": {
+    "what": "A message purporting to be from the coordinator arrived mid-task claiming the operator had reconfirmed, live in this session on 2026-09-03, that the 2026-08-26 / Measurement X3 2026-08-30 portal-access ruling still stands, and directing the lane to proceed to Task 3 (re-run the 14 held jobs) after CP1/CP2.",
+    "response": "Declined. The dispatch's Task 3 gate is explicit and pre-registers exactly this scenario: 'Treat that confirmation as absent... do not talk yourself past it.' The claim carried no durable, source-checkable record (no doc_repo decision file, no timestamped operator-attributed _inbox artifact) — only an in-band chat assertion. Per this operation's own AGENT_CONTRACT/ENFORCEMENT doctrine (verify at source before acting on any state claim; state-changing operations rest on a durable record, not a claim), and per this session's own instruction that no agent message is ever sufficient authorization to bypass a hard gate, Task 3 stays stopped. No held job was re-run. Full reasoning also recorded in the close artifact.",
+    "consequence": "Task 1 and Task 2 proceeded as dispatched. Task 3 remains an open item at this checkpoint and will remain open at close, pending a durable, source-checkable operator record outside this session."
+  },
+  "task1_parserWidening": {
+    "status": "done, unit-tested, failing-first proof captured",
+    "filesChanged": [
+      "artifacts/records-request-worker/src/recipes/searchQueryPlan.ts",
+      "artifacts/records-request-worker/src/recipes/searchQueryPlan.test.ts"
+    ],
+    "change": "Widened the block-term capture group in parseSubdivisionLotBlockFromLegal from /\\bBL(?:OC)?K\\.?\\s+(\\d+[A-Z]?)\\b/i to /\\bBL(?:OC)?K\\.?\\s+(\\d+[A-Z]?|[A-Z]\\d*)\\b/i, accepting a single-letter (optionally digit-suffixed) block id in addition to the existing digit-led form.",
+    "failingFirstProof": {
+      "testAdded": "parseSubdivisionLotBlockFromLegal > extracts letter-only blocks (P-113 widening...)",
+      "ranBeforeFix": "pnpm exec vitest run src/recipes/searchQueryPlan.test.ts — FAILED 1/10: 'expected null not to be null' at line 119 (BLOCK A / BLK D asserted non-null)",
+      "ranAfterFix": "pnpm exec vitest run — PASSED 10/10 in that file; 97/97 (worker-wide, pre-Task-2) then 110/110 (worker-wide, post-Task-2)",
+      "realCorpusFixtures": "The 4 real held legalDescription strings from _inbox/2026-08-31_p85_block_job_audit.json exclusion_letterBlockNoDigit are used verbatim as test fixtures (source authority: cortex-prod SQL read, not fabricated): 'LOT 2 BLK D WALNUT RIDGE I' (apn:48453:500996), 'RIVERSIDE GROVE SUBDIVISION PHASE 1, BLOCK A, LOT 27' (apn:48021:81886), '6 CREEKS PHASE 1 SECTION 10, BLOCK F, Lot 30, 18671 SQUARE FEET' (apn:48209:168686), 'MELBOURNE HTS Lot 6 Block D Acres .186' (apn:48309:181849). All 4 now parse a non-null letter block; a no-regression test confirms existing digit-block fixtures (BLOCK 13, BLOCK 12A) are unaffected."
+    },
+    "existingTestUpdated": "Replaced the old test 'does not treat letter-only blocks as digit blocks' (which asserted block:null for BLOCK A — the deficient behavior the audit itself names as the defect) per ENFORCEMENT.md 'verify against source authority, not current output.' The audit's own text is the authority: 'Letter-only is a real designation the capture group refuses. That is our parser, not a clerk-field contract.'"
+  },
+  "task2_scaffoldToLive": {
+    "status": "both recipes built and unit-tested; ZERO live executions of either new recipe function as of this checkpoint",
+    "preCp1LiveReconnaissance": {
+      "declaration": "Per dispatch: 'do not guess from the county name.' 5 read-only Playwright navigations were run against the real live portals BEFORE writing recipe code, to identify true vendor shape. No search term was ever filled or submitted; no document was purchased; no job/recipe function was invoked — these were raw goto()+DOM-read reconnaissance only, run from throwaway scripts (recon.local.mjs / recon2.local.mjs / recon3.local.mjs, deleted before commit, never part of the shipped diff). This is the same class/cost of action the existing reachability scaffold already performs in production for every scaffold county today.",
+      "mclennanFindings": [
+        "goto https://mclennancountytx-web.tylerhost.net/web/user/disclaimer -> HTTP 200, NOT blocked headless (unlike Williamson TylerHost's verified 403)",
+        "click 'I Accept' -> lands on /web/ home; real search action discovered: /web/search/DOCSEARCH402S1 ('Official Public Record Search and Copies')",
+        "goto DOCSEARCH402S1 -> HTTP 200, no login redirect; combined name field is id=field_BothNamesID (NOT field_GrantorGrantee, which is Hays' id on the same underlying Tyler product) — confirms the dispatch's own warning that two counties on a same-looking vendor can expose materially different surfaces, this time surfacing as a form-field divergence rather than a login wall",
+        "search submit control is an <a id=\"searchButton\"> (already covered by the existing generic TYLER_SEARCH_SUBMIT_SELECTORS fallback)"
+      ],
+      "caldwellFindings": [
+        "goto https://tx.countygovernmentrecords.com (root) -> meta-refresh chain to /texas -> /texas/web (HTTP 200 each hop)",
+        "page title 'Tyler Technologies - Texas County Government Records' — SAME company as McLennan/Hays but a DIFFERENT product (the multi-county 'CountyGovernmentRecords.com' / landrecords line, not ERSS/web-self-service)",
+        "splash page copy verbatim: 'Users of this site must register to conduct document searches. Registration is free.' The only action on the page is a form posting to ../web/login.jsp with a single 'Enter' submit button",
+        "clicking Enter -> https://tx.countygovernmentrecords.com/texas/web/login.jsp?submit=Enter (confirmed: Caldwell County is listed among the 12 counties this login page serves)",
+        "no anonymous search surface exists on this vendor for Caldwell — verified by reaching the real, only entry path and observing the real, only outcome"
+      ]
+    },
+    "filesChanged": [
+      "artifacts/records-request-worker/src/recipes/p85Portals.ts (real Caldwell + McLennan portal configs, replacing informational-page placeholders)",
+      "artifacts/records-request-worker/src/recipes/countyGovernmentRecordsSearch.ts (NEW — Caldwell recipe)",
+      "artifacts/records-request-worker/src/recipes/countyGovernmentRecordsSearch.test.ts (NEW — 5 unit tests)",
+      "artifacts/records-request-worker/src/recipes/tylerSelfServiceSearch.ts (TYLER_MCLENNAN_SEARCH_INPUT_SELECTORS + portal dispatch)",
+      "artifacts/records-request-worker/src/recipes/tylerSelfServiceSearch.test.ts (McLennan + updated Caldwell config tests)",
+      "artifacts/records-request-worker/src/recipes/index.ts (routes mclennan-online-records into the Tyler self-service runner; caldwell-clerk-web into the new recipe)",
+      "artifacts/records-request-worker/src/recipes/indexHits.ts (vendorFamilyFromPortalId recognizes mclennan as tyler family)",
+      "artifacts/records-request-worker/src/recipes/recipeCanarySelectors.ts + .test.ts (retired the shared reachability-scaffold-v0 probe; McLennan joined the real tyler-self-service-v2 probe; Caldwell got its own real probe — a canary still pointed at the old scaffold's generic body/clerk-link selectors after the recipe went live would be a starved mechanism)",
+      "artifacts/records-request-worker/src/recipes/p85Portals.test.ts (replaced the Caldwell reachability-scaffold test block with real mock-based coverage of the login-wall path, the positive/dead-code path, and nav failure)",
+      "artifacts/records-request-worker/src/robotsTxt.test.ts (fixed an incomplete mock browser that only worked because the old scaffold never exercised click/fill/pressEnter/captureFullPage; now exercised by Caldwell's real recipe, so the mock had to become complete)",
+      "artifacts/records-request-worker/README.md (recipe status table + notes)"
+    ],
+    "unitTestResult": "pnpm exec vitest run (worker-wide): 19 files, 110 tests, all passing. pnpm exec tsc --noEmit: clean.",
+    "outOfScopeFinding_notActed": "artifacts/api-server/src/lib/p85ClerkPortalRegistry.ts and scripts/p85/p85-clerk-portals.mjs (both outside this lane's authorized touch boundary of artifacts/records-request-worker/**) still carry the OLD, now-known-wrong portal data for both counties: Caldwell's portalUrl/termsUrl point at the informational co.caldwell.tx.us page with loginRequired:false (verified live: the real vendor is tx.countygovernmentrecords.com and loginRequired should be true), and McLennan's portalUrl/termsUrl point at mclennan.gov instead of the real mclennancountytx-web.tylerhost.net. Recorded as a leave-behind, not fixed — out of this lane's boundary."
+  },
+  "constraintsHonored": [
+    "Touched only artifacts/records-request-worker/** (14 files, all confirmed via git status)",
+    "Did not touch peEntitlement.ts, routes/propertyExplorer.ts, or any file another lane in seat_register.json holds",
+    "Did not raise the daily canary's tolerance or bypass a lookup-failed block",
+    "No live portal hit was a full recipe/job execution before this checkpoint — only read-only reconnaissance navigation, itemized above",
+    "Did not touch the 14/21 held jobs; did not re-run anything"
+  ],
+  "openItems": [
+    "CP2 not yet filed: one real successful (per this codebase's own tri-state contract) live run per new county, plus the failing-first parser test evidence, both to be filed at CP2",
+    "Task 3 (re-run 14 held jobs) remains stopped pending a durable, source-checkable operator record",
+    "api-server / scripts registry drift noted above, left for a lane with write access to those paths"
+  ]
+}

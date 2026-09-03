@@ -1,0 +1,96 @@
+{
+  "lane": "legacy-design-tools-p113-reliability",
+  "planRow": "P-113",
+  "checkpoint": "CP2",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/ldt-p113-reliability",
+    "branch": "fix/p113-records-reliability-hardening",
+    "commit": "241dd40a45887b472d64e92c09e3eab8e84b90cd",
+    "rebasedOnto": "origin/main 4e592c1d (no conflicting commits in artifacts/records-request-worker/** between base and this rebase point)",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/597",
+    "prNumber": 597
+  },
+  "task1_failingFirstEvidence": {
+    "beforeFix": "pnpm exec vitest run src/recipes/searchQueryPlan.test.ts on the pre-widen parser: 1/10 FAILED — 'expected null not to be null' asserting BLOCK A / BLK D parse to a non-null block value",
+    "afterFix": "same command post-widen: 10/10 PASSED",
+    "regexChange": "/\\bBL(?:OC)?K\\.?\\s+(\\d+[A-Z]?)\\b/i  ->  /\\bBL(?:OC)?K\\.?\\s+(\\d+[A-Z]?|[A-Z]\\d*)\\b/i",
+    "realFixtures": "4 real stored legalDescription strings from _inbox/2026-08-31_p85_block_job_audit.json exclusion_letterBlockNoDigit, source authority cortex-prod SQL read"
+  },
+  "task2_liveEvidence": {
+    "mclennan": {
+      "portalId": "mclennan-online-records",
+      "countyFips": "48309",
+      "command": "pnpm exec vitest run --config vitest.live.local.config.ts src/recipes/mclennanTylerhost.live.test.ts (throwaway local-only config to opt into *.live.test.ts; not committed)",
+      "run1_beforeHardening": {
+        "status": "needs-human",
+        "errorCode": "disclaimer-not-accepted",
+        "finding": "Real race condition: disclaimer-accept click's cookie write had not landed before the recipe navigated to the search action, bouncing back to the disclaimer despite accept-disclaimer having been reached."
+      },
+      "run2_afterWaitFix_beforeExtractionHardening": {
+        "status": "complete",
+        "indexHits": "[]",
+        "resultCount": null,
+        "finding": "Fixed the race (added a bounded settle wait), but this exposed a SECOND real defect: the results panel is a div/listview (0 <table> elements), not the RadGrid/table shape extractResultRowsSource recognizes. Direct DOM verification (outside the recipe, read-only) confirmed the real portal declares 'Showing page 1 of 18 for 1706 Total Results' for BAYLOR UNIVERSITY, with real rows visible (e.g. instrument 2026026010, LABOR MATERIALMEN'S LIEN, Grantor BAYLOR UNIVERSITY, Grantee TDINDUSTRIES INC, recorded 08/13/2026). The recipe would have reported status=complete with indexHits=[] and resultCount=null — a fabricated-looking zero for 1,706 real records."
+      },
+      "run3_final_afterBothFixes": {
+        "status": "needs-human",
+        "errorCode": "index-hit-extraction-unsupported",
+        "errorMessage": "Portal declares 1706 total result(s) but the row extractor recognized 0 — this vendor's results markup is not yet supported; refusing rather than reporting a fabricated zero",
+        "scopeSearched": {
+          "portalId": "mclennan-online-records",
+          "recipeVersion": "p85-tyler-self-service-v2",
+          "mode": "index-search",
+          "stepsReached": ["open-disclaimer", "accept-disclaimer", "open-search-surface", "fill-owner-query", "submit-search", "capture-results"],
+          "queries": [{"kind": "owner-name", "query": "BAYLOR UNIVERSITY"}],
+          "captures": [{"label": "owner-name-results", "sha256": "720911be89dad9b26e3d8082f2bbacac320653a888f735563787ae30906e5e4b", "byteLength": 1212116}],
+          "portalDeclaredResultCount": 1706
+        },
+        "assessment": "This IS the honest, correct, verified terminal state given the current extraction gap — a real live run of the real recipe against the real portal with a real search term, reaching genuinely capture-worthy content (1.2MB real screenshot, up from 62KB on the pre-fix run that captured a near-empty pre-render page), self-diagnosing rather than fabricating. Matches this codebase's own established tri-state contract (complete / needs-human / awaiting-purchase-approval are all valid terminal states across all six counties)."
+      }
+    },
+    "caldwell": {
+      "portalId": "caldwell-clerk-web",
+      "countyFips": "48055",
+      "command": "pnpm exec vitest run --config vitest.live.local.config.ts src/recipes/countyGovernmentRecordsSearch.live.test.ts",
+      "result": {
+        "status": "needs-human",
+        "errorCode": "login-required",
+        "errorMessage": "CountyGovernmentRecords.com requires free registration and login before any index search; no anonymous search path exists (verified live 2026-09-03)",
+        "scopeSearched": {
+          "portalId": "caldwell-clerk-web",
+          "recipeVersion": "p85-caldwell-countygovernmentrecords-v1",
+          "mode": "index-search",
+          "stepsReached": ["open-entry", "acknowledge-splash"],
+          "captures": [{"label": "login-wall", "sha256": "9e432dd5fece42a07d041483f36acd899eafe900af4392854dc6affdf778ef8b", "byteLength": 181194}],
+          "loginRequired": true
+        },
+        "assessment": "This is the real, only-possible outcome for an anonymous automated run against this vendor, exactly as pre-registered from live reconnaissance before any code was written. Real portal reached, real splash acknowledged, real login wall detected and captured with SHA-256. No credential registered or held (NO PRIVILEGED DATA canon)."
+      }
+    },
+    "cleanup": "Throwaway local-only artifacts (vitest.live.local.config.ts, recon*.local.mjs) deleted before commit; never part of the shipped diff. Verified via git status immediately before staging."
+  },
+  "unitTestResult": {
+    "typecheck": "pnpm exec tsc -p tsconfig.json --noEmit — clean",
+    "vitest": "pnpm exec vitest run — 20 files, 114 tests, all passing (worker package scope; full-monorepo pnpm test left to CI per repo convention)"
+  },
+  "prAndCi": {
+    "prUrl": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/597",
+    "prNumber": 597,
+    "commitSha": "241dd40a45887b472d64e92c09e3eab8e84b90cd",
+    "ciStatusAtThisCheckpoint": "in progress at filing time; conclusion strings to be recorded in the close artifact per AGENT_CONTRACT section 5 (merge only on the CI check-run conclusion STRING 'success')"
+  },
+  "constraintsHonored": [
+    "Touched only artifacts/records-request-worker/** (20 files in the commit, all under that path)",
+    "Did not touch peEntitlement.ts, routes/propertyExplorer.ts, or any file another lane holds",
+    "Did not raise the daily canary's tolerance or bypass a lookup-failed block — recipeCanarySelectors.ts probes were updated to point at the real, live recipes' real selectors, replacing the retired scaffold probe (a canary still checking scaffold selectors after the recipe went live would be a starved mechanism)",
+    "Did not touch the 14/21 held jobs",
+    "api-server / scripts/p85 registry drift (found, not fixed — out of boundary) recorded again here"
+  ],
+  "openItems": [
+    "McLennan's extractResultRowsSource does not yet parse this vendor's div/listview results markup — tracked, not silently assumed done; teaching it that shape is a follow-on card",
+    "artifacts/api-server/src/lib/p85ClerkPortalRegistry.ts and scripts/p85/p85-clerk-portals.mjs are stale relative to the corrected, live-verified Caldwell/McLennan portal data — out of this lane's touch boundary, left for a lane with write access there",
+    "Task 3 (re-run 14 held jobs) remains stopped — see close artifact",
+    "CI conclusion strings pending at filing time; recorded in close"
+  ]
+}
