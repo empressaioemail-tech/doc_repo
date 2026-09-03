@@ -37,3 +37,13 @@ Deploy state: cortex-api `00318-sin` @100% (rollback `00316-def`→`00314-lon`�
 ## Reversal criteria
 
 If Cotality returns with production keys + entitlements: flip provider priority config (`TX_PARCEL_PROVIDER`, provider catalog) — no code removal happened, so re-entry is config plus the held engine OAuth-shape port. The public-record providers stay as the permanent free baseline and fallback regardless.
+
+## 2026-09-03 addendum — narrow re-engagement, not a reversal
+
+Operator, in the CRM/Stripe/GHL/courthouse thread (`_smartsite_gtm/09_crm_courthouse_agent_roadmap.md` R11): confirmed "totality" in the Tammy conversation meant Cotality, and stated Cotality "came back around" and a few specific pieces of missing data (raised in the context of building permit/roof-age data) will be sourced from them.
+
+This does NOT meet the reversal criteria above on its own — no production keys or entitlements have been named, and the operator described sourcing specific missing data, not a provider-priority flip. Until scoped, this is recorded as an open re-engagement, not a reversal:
+
+- The standing directive "Cotality is EXTINGUISHED — re-route, never rotate its credential" (`.cursor/rules/read-state-first.mdc`, `_STATE.md`, MEMORY.md) stays in force unchanged.
+- Before any pitch material or code assumes Cotality as a data source, or before the credential-rotation instruction changes, the operator needs to specify: which data pieces, whether a new credential or contract exists (distinct from the dark, expired demo keys this decision describes), and whether re-entry is the full provider-priority flip or a narrower point integration.
+- Tracked open on the roadmap at R11 pending that scope.
