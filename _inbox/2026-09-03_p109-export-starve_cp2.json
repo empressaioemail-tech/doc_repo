@@ -1,0 +1,73 @@
+{
+  "checkpoint": "CP2",
+  "lane": "P-109 export starve",
+  "planRow": ["P-109"],
+  "date": "2026-09-02",
+  "predecessor": "_inbox/2026-09-03_p109-export-starve_cp1.json",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/ldt-p109-export",
+    "branch": "fix/p109-export-catalog-honesty",
+    "baseCommit": "91bfeed9ceb80375a4790801b4108b209123105c",
+    "uncommitted": true
+  },
+
+  "whatChangedSinceCP1": "The CP1 design said the readiness flip needed ZERO edits to src/tools.ts. That was WRONG, and the compiler caught it, not the plan.",
+
+  "cp1PredictionThatFailed": {
+    "prediction": "Flipping export_instrument to readiness 'blocked' requires no edit to artifacts/smartsite-mcp/src/tools.ts, because the readiness short-circuit runs before the switch.",
+    "falsifier": "npx tsc -p tsconfig.json --noEmit exits non-zero naming tools.ts",
+    "outcome": "FAILED. Verbatim: src/tools.ts(846,16): error TS2678: Type '\"export_instrument\"' is not comparable to type '\"find_parcel\" | \"get_smart_site\" | \"list_my_properties\" | \"run_report\" | \"create_screen\" | \"add_to_screen\" | \"list_screens\" | \"save_property\" | \"set_property_status\"'. Real exit code 2, captured with echo $? on the tsc invocation itself and not on a pipe (DEV_PROCESS 2.3).",
+    "mechanism": "registerTools returns early when readiness === 'blocked', so TypeScript narrows tool.name to the live names only. A handler case for a blocked tool then has a non-overlapping case label. This is the SAME forced-edit that CP1 correctly predicted for outright deletion; CP1 failed to see that the type narrowing makes the flip and the deletion identical from tools.ts's point of view.",
+    "consequence": "The minimum item 3 requires is a catalog line PLUS the removal of the export_instrument case from src/tools.ts. That crosses the dispatch's ring fence, so it is reported here explicitly rather than done quietly. The case block was replaced by a comment mirroring the ask_the_map precedent already in that file, and the rewire path is written into the comment.",
+    "goodNews": "The compiler enforcing this is itself the answer to half of item 4. A blocked tool that keeps a handler is a compile error; a live tool that loses its handler is a missing-return error. 'Typecheck' is a required status check on main. That invariant needed no new control."
+  },
+
+  "secondFailureCaught": {
+    "what": "The first version of the item-4 control asserted, as its anti-vacuity guard, that src/tools.ts contains a hardcoded notReadyMessage(\"<name>\") call site.",
+    "howItSurfaced": "After the tools.ts case was removed, that assertion failed: there are now ZERO hardcoded call sites, which is the FIXED state. Verbatim: AssertionError: expected 'import type { McpServer } from \"@mode...' to match /function notReadyMessage\\(/ (from the rename violation run) and, from the real run, the guard failing because no hardcoded call site remained.",
+    "diagnosis": "The guard was asserting that the DEFECT still exists. A control that requires its own defect to be present is a control that must be deleted the moment the defect is fixed. It also meant the predicate's negative-case fixture was reading live source that no longer carried the shape.",
+    "fix": "The defect text is now pinned as a verbatim fixture constant (P109_DEFECT_FIXTURE, copied from src/tools.ts at origin/main 91bfeed9), so the negative case survives the fix forever and does not depend on the defect remaining in the tree. The anti-vacuity guard now asserts only that the scanned file is the file the predicates were written against (notReadyMessage is defined, registerTools is defined, source is non-trivial) and that the case-label parser found at least 8 labels.",
+    "secondPredicateAdded": "handlerCaseLabels(source): live tools must equal the handler case labels inside registerTools only. Scoped to the slice after 'export function registerTools(' so inputSchemaFor's cases (which DO include blocked names like ask_the_map) cannot make it vacuous - and that scoping is itself asserted in a test."
+  },
+
+  "changeInventory": {
+    "src/constants.ts": "export_instrument: readiness live -> blocked, blockedReason added naming P-109 item 3 and the measured 404, description rewritten to stop claiming a working proxy. 6 lines changed. The file's top docblock ('eight live tools ... (13)') is now off by one but was left alone: PR #580 rewrites that exact line and touching it would conflict. Declared as leave_behind.",
+    "src/tools.ts": "the case \"export_instrument\" block (lines 846-871) replaced by a comment mirroring the ask_the_map precedent, naming the measured 404, the rewire target tools and the three rulings the rewire needs. Forced by TS2678. 50 lines changed, one contiguous region at line 846.",
+    "tests/constants.test.ts": "blocked-set assertion extended to four tools; a P-109 reason assertion added; a new llms.txt test asserting every blocked tool carries the not-ready marker on its own line and no live tool does.",
+    "tests/tools.test.ts": "four assertions that exercised the now-unreachable proxy path rewritten to assert the new truth. Two of them now also assert that NO fetch is attempted, which is the stronger statement.",
+    "tests/catalog-readiness.test.ts": "new, the item-4 control."
+  },
+
+  "contentionCheck": {
+    "method": "gh pr diff <n> per file, reading the @@ hunk headers, compared against the line numbers this lane touches.",
+    "pr580_p106": {
+      "holds": ["src/constants.ts", "src/health.ts", "src/tool-honesty.ts", "src/tools.ts", "tests/constants.test.ts", "tests/tools.test.ts", "and others"],
+      "hunks": {
+        "src/constants.ts": "line 1 (docblock) and line 7 (find_parcels inserted after find_parcel) - this lane edits the export_instrument entry at line 47, no overlap",
+        "src/tools.ts": "88, 373, 533 - this lane edits 846, no overlap",
+        "tests/constants.test.ts": "4-12 - this lane edits 16+ and appends, adjacent but not overlapping",
+        "tests/tools.test.ts": "73, 88, 110, 121, 489, 867 - this lane edits 176, 545, 1925, 2054, no overlap"
+      },
+      "verdict": "textually mergeable in both orders; SEMANTICALLY #580 must update nothing of this lane's, and this lane must update nothing of #580's, except the constants.ts docblock line which #580 already rewrites"
+    },
+    "pr586_p101": {
+      "holds": ["src/mcp-app.ts", "tests/mcp-app-screen-upgrade.test.ts", "tests/screens-studio-gate.test.ts"],
+      "note": "The dispatch said #586 holds src/tools.ts. At source (gh pr view 586 --json files) it does NOT: it touches mcp-app.ts and two test files, and mentions export_instrument only inside one comment. Planner figure corrected.",
+      "verdict": "no overlap with this lane at all"
+    }
+  },
+
+  "openJudgementForThePlanner": [
+    "Blocking export_instrument makes the Studio gate on it unreachable. The card says do not change the Studio gate (P-101 owns it). The gate CODE is untouched and still gates run_report; what changes is that export_instrument now answers not_ready to every tier instead of quoting a free caller an upgrade price for a capability no tier can obtain. This lane judges that the honest order and flags it as the one call that deserves review.",
+    "src/export-instrument.ts is now referenced only by its own fixture test. Not deleted: it is the base the rewire builds on, and deleting it would also delete the degraded-payload coverage. Declared as leave_behind.",
+    "Five imports in src/tools.ts (isStudioExportKind, canRunStudioReport, refuseStudioReport, executeExportInstrument, loadHauskaMcpConfig) and the local ensureDeclaredError now have no caller in that file. NOT swept, because the card ring-fences tools.ts and there is no lint gate in CI that would fail on them. Named in a comment in the file and declared as leave_behind."
+  ],
+
+  "testState": {
+    "command": "cd P:/tmp/ldt-p109-export/artifacts/smartsite-mcp && npx vitest run --reporter=basic",
+    "before": "Test Files 19 passed (19) / Tests 506 passed (506)",
+    "after": "Test Files 20 passed (20) / Tests 517 passed (517)",
+    "typecheck": "cd P:/tmp/ldt-p109-export/artifacts/smartsite-mcp && npx tsc -p tsconfig.json --noEmit -> exit 0 (after npx tsc -b lib/db, without which six pre-existing TS6305 project-reference errors mask everything)"
+  }
+}
