@@ -1,8 +1,8 @@
 ---
 id: 2026-08-24_adr023_amendment_draft
 title: ADR-023 amendment draft — plan review engine serving home
-status: draft
-last_updated: 2026-08-24
+status: ratified
+last_updated: 2026-09-02
 applies_to: portfolio
 owner: nick
 related:
@@ -16,7 +16,7 @@ related:
 
 # ADR-023 amendment draft (DOC-5)
 
-**Status: draft for operator ratification.** Do not execute S2-1 migration until this amendment is accepted or a superseding decision is filed active.
+**RATIFIED 2026-09-02.** Operator go, applied in place to `80_adrs/adr_023_cortex_reporting_repo_designation.md`. S2-1 migration execution is unblocked as of this date (not yet dispatched — see OPS-17 for scheduling). This draft is retained as the record of what was proposed and why; the live ADR text is authoritative.
 
 ## Conflict on the record
 
