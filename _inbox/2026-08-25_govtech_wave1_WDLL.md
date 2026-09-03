@@ -1,11 +1,11 @@
 ---
 id: 2026-08-25_govtech_wave1_WDLL
 title: WDLL — Govtech Wave 1 execution hardening on template-city
-status: draft
-last_updated: 2026-08-25
+status: graded
+last_updated: 2026-09-02
 applies_to: portfolio
 owner: nick
-operator_approval: pending
+operator_approval: retroactive — never issued as a standalone Start-card approval (this field sat "pending" through the whole build); the operator engaged per-row instead (dispatch go's, close reviews, and the 2026-09-02 ruling "residual named is fine" that closed item 15). Named here as a process gap, not corrected after the fact.
 related:
   - 90_runbooks/wdll_practice.md
   - 90_operations/OPS-17_govtech_stack_plan_of_record
@@ -19,8 +19,8 @@ plan_row: G-105 through G-110 (OPS-17 A-085)
 
 # WDLL: Govtech Wave 1 — template-city execution hardening
 
-Date: 2026-08-25  Status: draft
-Operator approval: pending
+Date: 2026-08-25  Status: graded (2026-09-02)
+Operator approval: retroactive — see frontmatter note
 
 Plan rows: **G-105** through **G-110** (`90_operations/OPS-17_govtech_stack_plan_of_record.md`, amendment A-085). Scope rev 3: `_inbox/2026-08-24_govtech_program_scope.md`. Transaction contract (S5-1): `_inbox/2026-08-24_govtech_transaction_contract.md`.
 
@@ -38,91 +38,91 @@ Until **S2-1** (engine migration into plan-review, blocked on DOC-5 ADR-023 rati
    | scope: S5-2a, S2-3, S2-4 | OPS: **G-105**
    | check: on the **pre-deploy** serving revision, `curl -sS "$PLAN_REVIEW_URL/api/plan-review/code?book=IBC2018P6&section=ZZZZ-NOT-A-SECTION" | jq -e '.error // .refused // (.sectionNumber != "R311.7" and .sectionNumber != "R302.1")'` exits **non-zero** (violation probe **must fail pre-deploy** — neighbour or seed fallback returns 200 with a wrong section today). After deploy, the same probe exits **0** with an explicit refuse payload (4xx/structured error, never a neighbour section).
    | depends on: none (do first among deploy gates)
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-087
 
 2. **DEPLOY-39 dashboards compose gate live.** SmartCity Dashboards #39 is the serving revision; anonymous compose and absent-`accessPolicy` fail closed on deployed routes implicated by defect #1 and #2.
    | scope: S5-2a, S1-13, S1-14 | OPS: **G-105**
    | check: on the **pre-deploy** serving revision, `curl -sS -o /dev/null -w '%{http_code}' "$DASHBOARDS_URL/api/lenses/city-manager/compose?cityKey=template-city&pack=development-services"` returns **200** while `packContentReadStatus` requires auth (violation probe **must fail pre-deploy**). Post-deploy, the same anonymous call returns **403** (or equivalent refuse). Secondary: unit probe in `smartcity-dashboards` tenancy tests — `atomVisibleToCaller` with absent `accessPolicy` returns **false**, verified by violation fixture before trust.
    | depends on: none
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-087 (graded by code diff; the live probe was inconclusive because the compose response shape doesn't expose per-atom accessPolicy)
 
 3. **DEPLOY-75 MCP meter bypass fix live.** Hauska MCP #75 is the serving revision; plan-review Codex tools accrue licensed references instead of bypassing via empty provenance.
    | scope: S5-2a, S4-2 | OPS: **G-105**, **G-109**
    | check: on the **pre-deploy** MCP revision, invoke any plan-review gate tool (e.g. `plan_review_matrix_from_chain`) against a known ICC section; then `SELECT count(*) FROM source_obligation_ledger WHERE request_id = '<that-request-id>';` against MCP Neon returns **0** (violation probe **must fail pre-deploy**). Post-deploy, the same call yields **count >= 1** with non-null `source_actor_did`.
    | depends on: none
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-088 (code-confirmed + the PR's own self-test, non-vacuous) and A-102 (true-positive real-content path closed live)
 
 4. **DEPLOY-361 engine-api writer refuse live.** Property engine-api #361 is the serving revision; atoms writer refuses unknown `accessPolicy` instead of defaulting `public-free`.
    | scope: S5-2a, S4-5, S5-2b | OPS: **G-105**, **G-109**
    | check: on the **pre-deploy** engine-api revision, run the repo's writer violation fixture (atom ingest with absent/malformed `accessPolicy`) — probe **must fail pre-deploy** (write succeeds with `public-free`). Post-deploy, the same fixture exits non-zero or returns explicit refuse. Paired: document `load-snapshot-into-pg.mjs` bypass in S5-2b inventory with owner and retirement row; bypass must not satisfy this item alone.
    | depends on: none
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-088 (code reading only, deliberately — no live write-probe against the shared atoms store during a same-day concurrent-write incident)
 
 5. **Smart Files read-path scope enforced.** Defect #3 closed: folder, file, document, and blob reads require a verified caller scope; write-only enforcement is insufficient.
    | scope: S3-1 | OPS: **G-106**
    | check: against deployed Smart Files service, `curl -sS -o /dev/null -w '%{http_code}' "$SMART_FILES_URL/api/folders?scopeType=tenant&scopeId=template-city"` without bearer token returns **403**. Wrong-tenant token against a known seeded artifact returns **403**. Matching-tenant service token returns **200** with folder list. Violation: anonymous `GET .../api/documents/<entityId>/blob/<cid>` returns bytes today — probe **must fail pre-deploy**, **403 post-deploy**.
    | depends on: 2 (dashboards #39 BFF posture paired)
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-091
 
 6. **`template-city` tenant identity unified.** Wave 1 demo city is `template-city` end to end; `icc-demo` is not the write scope for staff submittals (O-4 / S1-17).
    | scope: S1-17, S1-16 | OPS: **G-107** (prerequisite)
    | check: staff-path upload (item 7) produces `entity_id` matching `smartfile:tenant:template-city:%` in Smart Files Postgres: `SELECT entity_id FROM smart_file_documents WHERE entity_id LIKE 'smartfile:tenant:template-city:%' ORDER BY created_at DESC LIMIT 1;` — not `icc-demo`. Plan-review `CITY_KEY` and persona `orgId` agree on `template-city` in deployed `web/app.js` and `src/actors.mjs`.
    | depends on: 5
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-091/A-096
 
 7. **Staff upload into Smart Files end to end.** R-B intake: file input in plan-review UI, provenance stamped, bytes in city-scoped folder before review runs.
    | scope: S2-6 | OPS: **G-107**
    | check: on deployed plan-review surface for `template-city`, upload a PDF through the staff upload control; response JSON includes `entityId`, `contentCid`, and provenance keys `capturedBy`, `capturedAt`, `sourceKind=staff-upload`, `originalFilename`, `declaredRole`. Confirm in Smart Files: `SELECT current_version, provenance->>'sourceKind' FROM smart_file_versions v JOIN smart_file_documents d ON d.id = v.document_id WHERE d.entity_id = '<returned entityId>';` returns version **>= 1** with expected provenance.
    | depends on: 5, 6, DOC-1 contract field ownership for `docSlug` and provenance
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-096, live upload + direct SQL provenance confirmation
 
 8. **Edition selector live; interim engine HTTP hop allowed.** Reads and the review UI declare and filter on `editionId`; model/corpus path receives edition, not jurisdiction alone.
    | scope: S2-9, S2-11 | OPS: **G-108**
    | check: deployed plan-review UI exposes edition selector bound to engagement; API read for code sections includes non-empty `editionId` on every returned citation-shaped object. Interim: finding generation may POST to `$ENGINE_API_URL/v1/findings/generate` — log or trace shows HTTP hop, not DSN. **Blocked until items 1 and 7 met.** Violation probe: pre-fix retrieval drops edition at boundary (`toCodeSectionInput` projection) — integration test or live call showing `editionId` absent **must fail pre-fix**, present post-fix.
    | depends on: 1, 7
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-095, live walk producing genuine Pass and Fail on real production data
 
 9. **Typed absence on code path; no silent empty success.** Retrieval failure and never-looked paths emit `lookup-failed` / `absent-verified` per transaction contract, never `succeeded` with empty sections.
    | scope: S2-8, S5-2c | OPS: **G-108**
    | check: force corpus unreachable (bad MCP URL or known-down host) on staging deploy; review run returns determinations with `verdict: "Unchecked"` and `absence.verdict` in `{lookup-failed, absent-verified}` with required `failure` on lookup-failed — not HTTP 200 matrix with all-Pass. Unit: `node --test` in plan-review for absence mapper imports guard from substrate path. Spelling is **`absent-verified`**, not `verified-absent` (L3).
    | depends on: 8
-   | grade: [ ]
+   | grade: [MET] — OPS-17 A-092/A-095, SOURCE_UNAVAILABLE distinct from a genuinely-empty slot, live-verified
 
 10. **Applicability matrix with honest Pass and Fail.** Section adjudicator emits one determination per applicable section; Pass/Fail reachable through cited sections, not hardcoded rows.
     | scope: S2-7 | OPS: **G-108**
     | check: after a review run on `template-city` with declared edition, `SELECT determination, count(*) FROM plan_review_findings WHERE engagement_id = '<eid>' GROUP BY 1;` includes at least one row each in **`Pass`** and **`Fail`** OR documents typed **`Unchecked`** with absence for sections not reached (never silent omit). No row carries hand-authored citation text; citations are structured objects with `editionId`, `bookId`, `sectionNumber` (forbidden rule 6/7 in transaction contract).
     | depends on: 8, 9
-    | grade: [ ]
+    | grade: [MET] — OPS-17 A-095, live walk both directions on real production data, not unit-tested only
 
 11. **Migration 009 applied; obligation ledger exists and accepts writes.** Substrate store ready before accrual chain grading.
     | scope: S4-0 | OPS: **G-109**
     | check: against MCP server deployment Neon: `SELECT to_regclass('public.source_obligation_ledger');` returns **`source_obligation_ledger`** (not null). Pre-apply probe **must fail** if table absent. Post-apply: schema matches `hauska-mcp-server/migrations/009_source_obligation_ledger.sql` (column list includes `source_actor_did`, `atom_did`, `request_id`, `amount_minor`, `grace_terms`).
     | depends on: 3
-    | grade: [ ]
+    | grade: [MET] — OPS-17 A-088, table exists with real pre-#75 rows, schema confirmed
 
 12. **ICC obligation ledger chain: cited atom, reconciliation, reader.** Meter records `referenceKind`, citation quadruple, and activity cache reconciles to authoritative ledger (R-I).
     | scope: S4-1b, S4-2, S4-3, S4-4, S4-7, S4-8 | OPS: **G-109**
     | check: live ICC reference probe (plan-review determination or MCP tool) produces row: `SELECT reference_kind, book_id, section_id, edition_id, source_actor_did FROM source_obligation_ledger WHERE request_id = '<probe-request-id>';` with **`reference_kind = 'cited'`**, non-null quadruple, and `rate_basis` or grace terms honest (`unrated` until O-1/S4-B1). Activity cache row for same event reconciles (matching `request_id` or dedup key, no double-count). Reader endpoint or SQL view named in S4-8 close returns the row for licensor audit. Pre-deploy: plan-review MCP path accrues zero (item 3 violation); post-deploy: count >= 1.
     | depends on: 3, 4, 10, 11
-    | grade: [ ]
+    | grade: [PARTIAL] — OPS-17 A-090/A-098/A-104. Mechanism fully live end to end (request_id threading, live reader call). The literal check above cannot run as written — `reference_kind`, `book_id`, `section_id`, `edition_id` do not exist on the real `source_obligation_ledger` schema (flagged A-088, confirmed A-090; see Amendments). A genuine matched/divergent row was never produced; root cause established A-104: no real per-section ICC content exists anywhere in the system to cite, the same gap named at item 15. Left PARTIAL deliberately — not silently upgraded under item 15's residual-named ruling; it wasn't the item that ruling was asked about.
 
 13. **Seam vocabulary conformance across repos.** Shared citation validator and unified absence spelling; no consumer constructs citations.
     | scope: S5-2c | OPS: **G-110** (prerequisite)
     | check: vendored citation validator `node --test` in plan-review, smart-files, and smartcity-dashboards — fixture missing `editionId` **throws/refuses** (verified by violation before merge). Grep gate: zero new string literals matching `/International Building Code Section/` outside substrate repos. `verified-absent` absent from plan-review IPMC branch (corrected to `absent-verified`).
     | depends on: DOC-1
-    | grade: [ ]
+    | grade: [MET, rescoped] — OPS-17 A-100. The literal check above (a vendored validator in plan-review, smart-files, AND smartcity-dashboards) is not what shipped; see Amendments. Spelling fixed everywhere live in plan-review, the sole repo that constructs citations. Three-layer CI gate (textual, structural, meaning-shaped), violation-verified.
 
 14. **Presentation shell composes with independent deployability.** One shell may mount plan review and Smart Files; each product still deploys and runs alone (R-F, G-13).
     | scope: S5-3 | OPS: **G-110** (prerequisite)
     | check: (a) dashboards shell at `$DASHBOARDS_URL/?cityKey=template-city` renders plan-review lens and files lens without iframe-only scope trap — `CITY_KEY` not hardcoded to a different tenant than mounts. (b) Standalone: `$PLAN_REVIEW_URL` and `$SMART_FILES_URL` each serve core flows without dashboards origin. (c) Close declares separate Cloud Run/Vercel services and SKUs `SCOS-PLAN-DEP`, `SCOS-FILE-DEP`, `SCOS-DASH-DEP`.
     | depends on: 2, 6, 7
-    | grade: [ ]
+    | grade: [MET] — OPS-17 A-101, live-verified against the actual deployed bundles (not just the compose response), all three SKUs confirmed independently deployable
 
 15. **Wave 1 end-to-end transaction proof on `template-city` (S5-5).** The program definition of done: one staff submittal, declared edition review, honest determination or absence, accrual in obligation ledger, visible in composed shell.
     | scope: S5-5 | OPS: **G-110**
     | check: scripted operator walk (or `scripts/govtech/wave1_e2e_probe.mjs` when filed): (1) staff upload item 7 artifact id, (2) create/run review with selected edition from item 8, (3) matrix shows cited ICC section with matching `editionId` or typed Unchecked with absence from item 9, (4) `source_obligation_ledger` row from item 12 for same session, (5) dashboards shell shows same determination without recomputation. Grade **met** only if all five observations pass on **deployed** revisions named in close artifact with commit/digest per revision.
     | depends on: 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14
-    | grade: [ ]
+    | grade: [MET, operator-ruled] — OPS-17 A-103/A-104. Observations 1, 2, 3, 5 genuinely met on one coherent live walk. Observation 4 (a session-scoped `source_obligation_ledger` row) not produced — a content-acquisition gap (no real ICC section content exists anywhere in the system to cite), not a mechanism defect. Operator ruling 2026-09-02, "residual named is fine," closes this item with that gap standing as named scope, not build scope. WAVE 1 COMPLETE.
 
 ## Out of scope (this card)
 
@@ -130,8 +130,30 @@ S2-1 engine migration execute (blocked DOC-5). S2-2 architect surface. Bastrop /
 
 ## Amendments
 
-(none until operator approval)
+- 2026-09-02: Item 12's literal check names columns (`reference_kind`, `book_id`, `section_id`, `edition_id`) that do not exist on the real deployed `source_obligation_ledger` schema — flagged OPS-17 A-088, confirmed A-090. Graded against the item's actual intent (a working accrual/reconciliation/reader chain), not the unsatisfiable literal SQL.
+- 2026-09-02: Item 13's literal check (a vendored citation validator in plan-review, smart-files, AND smartcity-dashboards) rescoped to plan-review only after two independent sessions confirmed by fresh grep that smart-files and smartcity-dashboards construct zero citation-shaped objects — OPS-17 A-099/A-100.
+- 2026-09-02: Item 15 graded MET despite one of its five required observations (a session-scoped `source_obligation_ledger` row) not being producible in-session. Operator ruling ("residual named is fine") accepted this as a named content-acquisition gap rather than a build defect — OPS-17 A-103/A-104.
 
 ## Finish card (graded at close)
+
+Date: 2026-09-02. Full evidence trail: OPS-17 amendments A-087 through A-104.
+
+1. met: DEPLOY-7 + Vercel paired cut, live probe fabricated-citation-to-typed-refuse. A-087.
+2. met: DEPLOY-39 compose gate, graded by code diff (probe route didn't expose the signal). A-087.
+3. met: DEPLOY-75 meter-bypass fix; true-positive real-content path closed same day. A-088, A-102.
+4. met: DEPLOY-361 writer refuse, code reading only (deliberate, concurrent-write incident in progress). A-088.
+5. met: Smart Files read-path scope, live 403/403/200 pre- and post-shift. A-091.
+6. met: template-city tenant identity unified. A-091/A-096.
+7. met: Staff upload end to end, direct-SQL provenance confirmed. A-096.
+8. met: Edition selector live, real Pass and real Fail on production data. A-095.
+9. met: Typed absence, SOURCE_UNAVAILABLE distinct from empty. A-092/A-095.
+10. met: Applicability matrix, both directions live-verified. A-095.
+11. met: Migration 009 applied, table live with real pre-#75 rows. A-088.
+12. partial: Mechanism live end to end; a genuine matched/divergent row never produced (no real ICC content to cite); literal check's named columns don't exist on the real schema. A-090, A-098, A-104.
+13. met (rescoped): Seam vocabulary conformance, single-repo not three-repo scope, verified not assumed. A-099, A-100.
+14. met: Presentation convergence, verified against actual deployed bundles. A-101.
+15. met (operator-ruled): Wave 1 E2E proof, 4 of 5 observations genuinely met on one live walk; the 5th stands as a named, non-build residual by operator ruling. A-103, A-104.
+
+**Program result: 13 met, 1 met-with-rescoped-scope, 1 partial. Wave 1 is CLOSED.** The one partial (item 12's genuine-match observation) shares its root cause with item 15's named residual — real ICC section content does not exist anywhere in this system yet. That is unscoped work, not a defect in anything built here.
 
 (to be filled item-by-item: met | partial | dropped, one line evidence each)
