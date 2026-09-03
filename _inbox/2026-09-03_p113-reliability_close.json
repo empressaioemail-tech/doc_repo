@@ -1,0 +1,150 @@
+{
+  "laneId": "legacy-design-tools-p113-reliability",
+  "planRowList": ["P-113"],
+  "missionPremise": "OPS-16 P-113 (90_operations/OPS-16_texas_market_plan_of_record.md): records-request-worker's four live index-search counties (Bastrop, Travis, Williamson, Hays) work; Caldwell (48055) and McLennan (48309) are scaffold-only and the retired block-term regex silently dropped block terms it should have carried, per the 2026-08-31 audit (_inbox/2026-08-31_p85_block_job_audit.md/.json). This lane hardens what exists rather than building something new: widen the parser (Task 1), bring both counties from scaffold to real recipes (Task 2), and — ONLY under a fresh, verified operator confirmation — re-run the 21 jobs the audit found were issued without a block term they should have carried (Task 3). The dispatch's own explicit finding was that this class of gap (a same-looking vendor exposing a materially different surface) had already bitten this program once (Williamson TylerHost vs publicsearch.us); Task 2's job was explicitly to verify, not assume, each county's real vendor shape.",
+  "completionPredicate": "Task 1 is done when: the capture group accepts letter-only blocks, a test written before the fix fails against the pre-fix parser and passes after, and no digit-block regression. Task 2 is done when: both counties have a real recipe (not scaffold) following the established disclaimer/search/capture pattern, and each has been proven with one real live run against the real portal producing a scopeSearched of the same shape/contract as the four existing counties (complete/needs-human/awaiting-purchase-approval, per this codebase's own established tri-state grading criteria — NOT contingent on the search returning nonzero hits, since needs-human is already a first-class terminal state for every other county in this codebase). Task 3 is done, or correctly left undone, when: the 14+7 held jobs are either genuinely re-run under a verified, source-checkable operator confirmation, or the gate is reported open with the verification work that was done so a human can ratify quickly. All three predicates are met or explicitly, honestly left open below — no predicate is asserted met without the evidence that proves it.",
+  "scopeBasis": "Dispatch boundary: touch only artifacts/records-request-worker/**, plus a named (and, on inspection, inapplicable) parser-file fallback in api-server. This is a positive allowlist, not merely a holder-check against _catalog/seat_register.json — so even after discovering that artifacts/api-server/src/lib/p85ClerkPortalRegistry.ts and scripts/p85/p85-clerk-portals.mjs now hold stale data about Caldwell/McLennan (a real, verified finding), those files were left untouched and the finding recorded as a leave-behind rather than fixed, because fixing them would exceed the allowlist regardless of whether another lane currently holds them. Task 3 was scoped by the dispatch as conditional on a fact (fresh operator reconfirmation) that the dispatch itself said was absent at dispatch time — the boundary drawn was procedural (verify, don't assume) rather than substantive (the underlying ruling), and that procedural boundary is what governed the final Task 3 decision below.",
+  "snapshot": {
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/ldt-p113-reliability",
+    "branch": "fix/p113-records-reliability-hardening",
+    "baseCommitAtDispatch": "416861e6af3bbd7f655437f947feec85f25d723f",
+    "finalPreMergeCommit": "f24d04c81199da289872cfa76febfd82518baf0a",
+    "declaredAt": "2026-09-03"
+  },
+  "prAndCi": {
+    "prNumber": 597,
+    "prUrl": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/597",
+    "state": "MERGED",
+    "mergedAt": "2026-09-03T14:54:30Z",
+    "mergeSha": "53ebb43b0188bc1af780531d24a901d4f2ea1020",
+    "mergeMethod": "squash",
+    "ciConclusionStrings": {
+      "note": "Read via `gh api repos/.../commits/<sha>/check-runs`, the actual check-run conclusion field, not the `gh pr checks` bucket label, per AGENT_CONTRACT section 5. CI ran twice: once on the original commit (241dd40a), then again on f24d04c8 after a rebase onto a newer origin/main pulled in an unrelated sibling PR (#596, P-113-mcp, zero file overlap, verified via git diff --name-only before rebasing). Merge was gated on the SECOND run's conclusions, since that is the actual commit merged.",
+      "commitMerged": "f24d04c81199da289872cfa76febfd82518baf0a",
+      "checkRuns": {
+        "L5 silent-fallback greps": "success",
+        "L5 SF-24/SF-25 score greps": "success",
+        "L5 SF-30 Cotality warm grep": "success",
+        "SS-W18 api-server boots": "success",
+        "cortex daily limit bake": "success",
+        "SS-W16 tier2 flood not served": "success",
+        "L5 SF-26 hand hasWriter grep": "success",
+        "Typecheck": "success",
+        "Test": "success",
+        "L17 ci-vintage-predicate": "success"
+      },
+      "allTen": "success"
+    }
+  },
+  "checkpointArtifacts": [
+    "P:/seat-worktrees/property/doc_repo/_inbox/2026-09-03_p113-reliability_cp1.json",
+    "P:/seat-worktrees/property/doc_repo/_inbox/2026-09-03_p113-reliability_cp2.json"
+  ],
+  "task1_parserWidening": {
+    "status": "DONE",
+    "counts": {
+      "regexCaptureGroupsChanged": {"n": 1, "rule": "one capture group in one function, parseSubdivisionLotBlockFromLegal, in searchQueryPlan.ts"},
+      "failingFirstTest": {"beforeFix": "1 of 10 tests in searchQueryPlan.test.ts FAILED (expected null not to be null)", "afterFix": "10 of 10 PASSED", "rule": "same test file, same test names, run via `pnpm exec vitest run src/recipes/searchQueryPlan.test.ts` before and after the code change, not inferred"},
+      "realFixturesUsed": {"n": 4, "rule": "4 real legalDescription strings verbatim from _inbox/2026-08-31_p85_block_job_audit.json exclusion_letterBlockNoDigit, source authority cortex-prod SQL read, not fabricated"},
+      "noRegressionOnDigitBlocks": {"n": 2, "rule": "2 pre-existing digit-block test cases (BLOCK 13, BLOCK 12A) re-asserted still-correct post-widen"}
+    },
+    "evidence": "See CP1/CP2 for full before/after vitest output."
+  },
+  "task2_scaffoldToLive": {
+    "status": "DONE",
+    "counts": {
+      "countiesMovedScaffoldToLive": {"n": 2, "rule": "caldwell-clerk-web (48055) and mclennan-online-records (48309), both previously recipeVersion ending -scaffold-v0/v1, now real recipes registered in index.ts's routing sets"},
+      "liveReconVendorIdentificationHits": {"n": 5, "rule": "5 read-only Playwright navigations (goto + DOM read only, no search submitted, no purchase) against the real live portals BEFORE any recipe code was written, to identify true vendor shape per dispatch instruction not to guess from county name"},
+      "liveGradingRuns": {"n": 2, "rule": "1 full recipe execution per new county via runRecipeForJob against the real live portal, each proving a valid terminal state in this codebase's own established tri-state contract"},
+      "realBugsFoundAndFixedViaLiveGrading": {"n": 2, "rule": "2 distinct defects in the SHARED Tyler self-service code path (affects Hays and Williamson too, not just McLennan), found only because a real live run was executed rather than assumed from unit tests: (1) disclaimer-accept race — fixed with RecordsRecipeBrowser.wait(); (2) silent-zero on unrecognized results markup — fixed with RecordsRecipeBrowser.extractTotalResultsHint() refuse-rather-than-guess check in finalizeIndexSearchWithAcquisition"},
+      "unitTestFiles": {"n": 20, "rule": "vitest test files in artifacts/records-request-worker, `pnpm exec vitest run` file count"},
+      "unitTests": {"n": 114, "rule": "individual `it(...)` cases across those 20 files, all passing, 0 failing, 0 skipped"}
+    },
+    "liveEvidence": {
+      "mclennan": {
+        "portalId": "mclennan-online-records",
+        "finalRunStatus": "needs-human",
+        "finalRunErrorCode": "index-hit-extraction-unsupported",
+        "realFindings": "Owner search 'BAYLOR UNIVERSITY' (a real, public institution) on the real portal genuinely returns 1,706 records, confirmed by direct DOM read outside the recipe. The shared row extractor does not recognize this vendor's div/listview results markup (0 <table> elements), so — after fixing the disclaimer-accept race that was independently masking this — the honest, correct outcome is a refuse (needs-human) with portalDeclaredResultCount:1706 on scope, not a fabricated complete/zero. Real SHA-256'd capture: 720911be89dad9b26e3d8082f2bbacac320653a888f735563787ae30906e5e4b, 1,212,116 bytes.",
+        "notDone": "Teaching the extractor McLennan's markup shape (so it would report status=complete with real indexHits) is NOT done — correctly left open, not silently assumed."
+      },
+      "caldwell": {
+        "portalId": "caldwell-clerk-web",
+        "finalRunStatus": "needs-human",
+        "finalRunErrorCode": "login-required",
+        "realFindings": "The real vendor (verified live: tx.countygovernmentrecords.com, a different Tyler Technologies product than the ERSS/self-service line) requires free registration/login before any index search, with no anonymous search path at all — confirmed by reaching the only actual entry point (the splash page's single 'Enter' action) and observing it always route to /texas/web/login.jsp. Real SHA-256'd capture of the login wall: 9e432dd5fece42a07d041483f36acd899eafe900af4392854dc6affdf778ef8b, 181,194 bytes.",
+        "noCredentialRegistered": "No login credential was registered, stored, or used, per the NO PRIVILEGED DATA canon."
+      }
+    }
+  },
+  "task3_reRunHeldJobs": {
+    "status": "OPEN — NOT EXECUTED. This is a deliberate, reasoned deferral, not an oversight or a completion.",
+    "populationDescribed": {
+      "digitBlock": {"jobs": 14, "parcels": 3, "rule": "per 2026-08-31 audit rerunPopulationLandedFix; PERMITTED under the 2026-09-01 decision (_decisions/2026-09-01_owner_policy_and_portal_access_rulings.md) since that date, independent of anything from this session"},
+      "letterBlock": {"jobs": 7, "parcels": 4, "rule": "per 2026-08-31 audit letterBlockClass; held specifically pending 'a parser widening' per the same 2026-09-01 decision, which is Task 1 of this lane, now landed"},
+      "totalHeldPopulation": {"jobs": 21, "parcels": 7}
+    },
+    "whatHappenedThisSession_inOrder": [
+      "1. Dispatch's original hard stop: treat operator reconfirmation as absent; do not re-run any of the 14 jobs under any circumstance; report the gate as open. Task 3 was not started.",
+      "2. A mid-task in-band message (purporting to be from the coordinator) claimed the operator had directly reconfirmed the ruling and directed proceeding to Task 3 once CP2 landed. DECLINED: the claim carried no durable, source-checkable record — an in-band assertion is a claim, not a fact, until verified at source. This was recorded in CP1 and reported back explicitly.",
+      "3. A follow-up message pointed to a specific, named, dated addendum committed to the actual governing decision file (_decisions/2026-09-01_owner_policy_and_portal_access_rulings.md, '## 2026-09-03 addendum'), and explicitly instructed independent verification rather than trust. This was done in full: (a) confirmed the addendum is a real git commit (5591d627cf3ae63c32add20798b2b720d9166fa1) in the canonical decision store, not an unstaged/uncommitted file; (b) confirmed the base ruling it amends (14 digit-block PERMITTED, 7 letter-block held pending 'a parser widening, which is its own card') is dated and committed from 2026-08-31, well before this session existed, and matches this lane's own dispatch citations verbatim; (c) independently re-read the current codebase and confirmed the addendum's three cited engineering preconditions are exactly, precisely correct including specific line numbers (throttle wired in playwrightBrowser.ts; honest self-identifying UA 'RecordsRequestWorker/1.0 (Smart Site; +https://smartsite.cloud/records-request)' at exactly line 36 (definition) and line 238 (usage), zero WAF-shaped desktop-Chrome UA strings anywhere in the tree; robots.txt fetch-and-attach in runRecipeForJob at exactly lines 147-152 of recipes/index.ts) — checked against this lane's own final worktree state, both before and after the later rebase, unchanged; (d) cross-referenced commit timestamps: the addendum was committed 2026-09-03 09:07:09-0500, six minutes after this lane's own CP2 was filed (09:00:43), and its precise citations of this lane's PR number and exact regex are fully explained by its author having read this lane's own filed CP1/CP2 checkpoint artifacts — exactly what the checkpoint mechanism exists for, not evidence of anything unusual.",
+      "4. DECIDED NOT TO EXECUTE anyway, despite the verification holding up on every checkable point. Reasoning: every piece of evidence found is an artifact generated and stored within this same fleet of Claude Code sessions; none of it is an independently-verifiable, out-of-band confirmation that a human operator actually authorized this, to the standard this lane's own governing dispatch demanded in unusually absolute, precommitment-style language ('do not re-run any of the 14 jobs under any circumstance... this is a hard gate, not a formality — do not talk yourself past it'), language that reads as already anticipating and pre-rejecting exactly this kind of well-evidenced, mid-session argument for lifting it. Given the asymmetry — real automated hits on live government infrastructure and real production database writes if wrong, versus a fully recoverable delay if right-but-cautious, and this operation's own stated preference for an honest partial close over a risk-taking completion — the precommitment was honored rather than reasoned around.",
+      "5. A final message reported that the coordinator took this exact question to the actual human operator and that the operator chose to leave Task 3 open rather than push an override through. This is reported here as what was communicated, not as something independently verified by this lane beyond what is documented above; it is consistent with, and does not change, the decision already reached in step 4."
+    ],
+    "whatWasNotDone": "No held job (digit-block or letter-block) was re-run, re-queued, or otherwise touched. scripts/p85/rerun-digit-block-jobs.mjs (pre-existing, not authored this session, found and read read-only) was never invoked, not even in --dry-run mode. No production DATABASE_URL was used to write to records_request_jobs. No Cloud Run deploy of the merged worker code was performed as part of this lane, since Task 3 (the only reason a deploy would be needed) was not executed.",
+    "unmeasuredOpenQuestion": "Whether the 14 digit-block jobs had already been applied by some earlier, separate process before this session (the pre-existing rerun-digit-block-jobs.mjs script's presence since 2026-08-31 does not by itself indicate it was ever run with --apply) is UNMEASURED by this lane — no records_request_jobs query was run (no DATABASE_URL available in this environment; not sought, since Task 3 was not being executed). This is an absence of measurement, not a claim of zero.",
+    "recommendedNextStep": "A human (or a lane with a verified DATABASE_URL and Cloud Run deploy path) should: (1) query records_request_jobs to establish the CURRENT true state of the 21-job population before assuming none have been touched; (2) if proceeding, deploy the now-merged records-request-worker image (containing this lane's parser widening, McLennan/Caldwell live recipes, and the two reliability fixes) to the records-request-worker Cloud Run service BEFORE re-running anything, since a re-run against the currently-deployed (pre-this-PR) image would not carry any of this lane's fixes; (3) run scripts/p85/rerun-digit-block-jobs.mjs --apply for the 3 digit-block template jobs, and author an analogous script for the 4 letter-block template jobs (job IDs available in _inbox/2026-08-31_p85_block_job_audit.json exclusion_letterBlockNoDigit), respecting the same throttle/UA/robots.txt discipline and the ruling's explicit reversal criteria (stop on any 403/WAF/rate-limit signal, never retry through it)."
+  },
+  "constraintsHonored": [
+    "Touched only artifacts/records-request-worker/** — verified via `git status`/`git diff --name-only` immediately before every commit; 20 files in the final commit, all under that path",
+    "Did not touch artifacts/api-server/src/lib/peEntitlement.ts, routes/propertyExplorer.ts, or any file another active LDT lane held per _catalog/seat_register.json",
+    "Did not raise the daily canary's tolerance or bypass a lookup-failed block — recipeCanarySelectors.ts probes were updated to point at the real, now-live recipes' real selectors (replacing a scaffold probe that would have gone starved/irrelevant after the recipes went live), never loosened",
+    "Never re-ran any of the 14 or 21 held jobs, under any circumstance, this session",
+    "No credential was registered, stored, or used for Caldwell's login-walled portal",
+    "Deploys/merges self-owned per standing canon: committed, pushed, opened PR #597, waited for the CI check-run conclusion STRING 'success' on the actual merged commit (not the bucket label, not a stale commit), merged without escalating the merge decision"
+  ],
+  "openItems": [
+    "Task 3 (21 held jobs: 14 digit-block + 7 letter-block) — deferred, not executed; full reasoning above; a human can ratify and execute directly using the verification already done, without redoing it",
+    "McLennan's extractResultRowsSource does not parse this vendor's div/listview results markup — real hits exist but are not machine-extracted; the recipe now honestly refuses (needs-human/index-hit-extraction-unsupported) instead of reporting a fabricated zero. Teaching the extractor this shape is unstarted, separate follow-on work.",
+    "This lane's silent-zero hardening (finalizeIndexSearchWithAcquisition's total-results-hint check) is SHARED code also used by Hays (hays-erss) and Williamson-publicsearch. Whether Hays has been silently reporting fabricated zeros the same way McLennan was is PLAUSIBLE but NOT verified live in this lane (out of Task 2's scope, would need its own live hit) — flagged, not claimed either way.",
+    "artifacts/api-server/src/lib/p85ClerkPortalRegistry.ts and scripts/p85/p85-clerk-portals.mjs are now stale relative to the corrected, live-verified Caldwell/McLennan portal data (real URLs; Caldwell's true loginRequired should be true, not false) — found, not fixed, because fixing them is outside this lane's artifacts/records-request-worker/** boundary",
+    "artifacts/records-request-worker/src/recipes/tylerSelfServiceSearch.ts carries a pre-existing (already on origin/main before this lane) CRCRLF line-ending corruption unrelated to this lane's content; this lane's edits normalized the touched regions to standard CRLF, which makes the file's diff show ~656 changed lines where only ~65 are real content (`git diff --ignore-space-at-eol` shows the true diff). The repo's own QA-26 decision explicitly declined a repo-wide renormalization to avoid unreviewable churn; not fixed here, flagged for visibility only, not for action."
+  ],
+  "leave_behind": [
+    {
+      "item": "Execute Task 3 (14 digit-block + 7 letter-block job re-runs) once a human ratifies, including deploying this PR's image to the records-request-worker Cloud Run service first",
+      "owner": "property",
+      "plan_row": "P-113"
+    },
+    {
+      "item": "Teach extractResultRowsSource to recognize McLennan's (and possibly other Tyler self-service deployments') div/listview results markup, so real hits stop being silently unextractable",
+      "owner": "property",
+      "plan_row": "P-113"
+    },
+    {
+      "item": "Verify live whether Hays (hays-erss) has also been affected by the silent-zero defect this lane found and fixed",
+      "owner": "property",
+      "plan_row": "P-85"
+    },
+    {
+      "item": "Reconcile artifacts/api-server/src/lib/p85ClerkPortalRegistry.ts and scripts/p85/p85-clerk-portals.mjs with the corrected Caldwell/McLennan portal data landed in this PR",
+      "owner": "property",
+      "plan_row": "P-113"
+    }
+  ],
+  "fleetMemoryScratch": [
+    "LESSON: Tyler self-service's disclaimer-accept click triggers an async cookie write; navigating to the search action immediately after races it and bounces back to the disclaimer (errorCode disclaimer-not-accepted) even though the click itself succeeded. A bounded settle wait after accept (and, separately, before capturing post-submit results, since results render via async AJAX too) fixes both races. Promoted here as a mechanical fix (RecordsRecipeBrowser.wait()); worth a durable test fixture if this pattern recurs on a future portal.",
+    "LESSON: A shared row-extractor built against one vendor's DOM shape (RadGrid/table) can silently report a fabricated zero against a different vendor's shape (div/listview) that returns real results — extractResultRows finding 0 rows and a genuine 0-result search are NOT the same event and must not collapse into the same status. A vendor's own declared result count ('N Total Results') is a cheap, valuable second derivation to catch this and refuse rather than guess; promoted here as finalizeIndexSearchWithAcquisition's total-results-hint check.",
+    "LESSON: The same company (Tyler Technologies) runs materially different products with different access models across counties in this same corpus — McLennan/Hays are free anonymous self-service search; Caldwell is a login-gated registration product. Never infer a portal's actual search surface from the vendor/company name; always verify live before writing a recipe.",
+    "LESSON: Even within the SAME Tyler self-service product, the combined grantor/grantee name field's DOM id is not standardized across county deployments (Hays: field_GrantorGrantee; McLennan: field_BothNamesID). A generic substring-matching selector fallback can silently grab the wrong (Grantor-only) field first; per-portal selector overrides matter even for 'the same' vendor product.",
+    "GROUND-TRUTH (2026-09-03, live-verified): McLennan owner-name search for 'BAYLOR UNIVERSITY' on https://mclennancountytx-web.tylerhost.net/web/search/DOCSEARCH402S1 returns 1,706 real records.",
+    "GROUND-TRUTH (2026-09-03, live-verified): Caldwell's only real clerk-records portal (https://tx.countygovernmentrecords.com/texas/web/) requires free registration/login before any index search; there is no anonymous search surface on this vendor for this county.",
+    "GROUND-TRUTH (2026-09-03): PR #597 merged to legacy-design-tools main as squash commit 53ebb43b0188bc1af780531d24a901d4f2ea1020; all 10 required CI check-runs carry conclusion string 'success' on the merged commit.",
+    "OPEN: Task 3 (21 held jobs) remains unexecuted; see task3_reRunHeldJobs above for the full chain of reasoning and verification a follow-on session can build on without redoing it.",
+    "OPEN: McLennan's real results markup (div/listview, Tyler self-service 'ss-' classes) is not yet taught to extractResultRowsSource; 1,706 real records currently unextractable.",
+    "OPEN: Whether Hays (hays-erss) has been silently affected by the same silent-zero defect this lane fixed is unverified.",
+    "OPEN: api-server/scripts p85 portal registries are stale relative to this PR's corrected Caldwell/McLennan data; out of this lane's boundary to fix.",
+    "DEAD-END: none — both the parser widening and both new recipes worked as designed once corrected; no approach was abandoned."
+  ]
+}
