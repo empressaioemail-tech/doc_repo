@@ -1,0 +1,70 @@
+{
+  "lane": "p90-engine-honesty",
+  "checkpoint": "CP1 (design / pre-build)",
+  "plan_row": "P-90",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-p90 (branch feat/p90-engine-pdf-honesty, off origin/main 639855c)",
+  "gate_status": "P-89 gate cleared this session (_decisions/2026-09-03_p89_leftover_fixed_gate_cleared.md, _inbox/2026-09-03_p89_leftover_fix_close.json). Item 1 satisfied.",
+  "method": "Own reading of dossier.ts (900 lines, full), dossier-author.ts (full), parcel-terrain.ts routes (schemas + refresh/download handlers), flood-drainage.ts routes (full), plus a targeted Explore sub-agent (one level, research-only, no code changes) for render.ts/aerial.ts/flood-drainage.ts internals, envelope/composeVerdict location, and liveViewUrl repo-wide search. Sub-agent findings spot-checked against source before being trusted (its render.ts:2508 CAPTURED-chip citation was independently re-read and confirmed below).",
+  "per_item_plan": [
+    {
+      "item": 2,
+      "name": "Verdict packet",
+      "finding": "emitPdfDossier's cover page ALREADY composes a verdict-packet structure: labeled verbatim verdictLine (or honest UNAVAILABLE chip), a one-line qualifier, a CONTENTS manifest (facts/AI summary/notes/site-plan present-or-absent), and a generated stamp. dossier-author.ts (authorParcelPropertyDossierExport) threads verdictLine/brief straight through with no fabrication. No missing sub-feature found by code read.",
+      "disposition": "PROBE, not a code change. Live-verify with a real verdictLine + brief payload for 48021:34161 that the resulting cover reads as a packet, not a hollow dump, before grading MET. If the live probe finds an actual defect (e.g. a field silently dropped in the route or author layer), file it and fix; otherwise no engine code changes for item 2."
+    },
+    {
+      "item": 3,
+      "name": "One site-plan sheet",
+      "finding": "emitPdfSitePlan (render.ts:2596-2758) unconditionally emits drawing + all SUMMARY pages + one AERIAL page (3+ sheets; EmitPdfSitePlanOptions has no sheet-selection field). authorParcelPropertyDossierExport (dossier-author.ts:104-107) always passes the full composed model to emitPdfDossier's sitePlan option, which always appends whatever emitPdfSitePlan returns. There is no existing seam to request just the drawing sheet.",
+      "disposition": "CODE CHANGE. Add a sheet-selection option to emitPdfSitePlan (e.g. `sheets: \"all\" | \"drawing-only\"`, default \"all\" to avoid breaking the standalone site-plan-export route which still wants all sheets) that, when \"drawing-only\", emits only the page-1 SITE PLAN drawing sheet. Add a matching counting path (countSitePlanSheets equivalent for drawing-only = 1) so dossier.ts's renumbering math (dossierPageCount + sitePlanSheets = total) stays correct. Wire emitPdfDossier's sitePlan option to request drawing-only, and thread that intent from authorParcelPropertyDossierExport. Standalone pdf-site-plan export route is untouched (still gets all sheets)."
+    },
+    {
+      "item": 4,
+      "name": "No UNAVAILABLE chips on aerials and bound sheets",
+      "finding": "render.ts:2508, drawAerialPage's header stats row: `[{label:\"IMAGERY\",value:\"ESRI\"}, {label:\"CAPTURED\", chip: CHIP_UNAVAILABLE}, registerStat]` -- the CAPTURED stat is UNCONDITIONALLY the chip, never computed, never wired to any real ESRI capture-date field (unlike REGISTER right next to it, which computes computeRegistrationToleranceFeet and only chips when that returns null). This is a dead stub, not an honest per-case absence -- it fires on every single aerial sheet regardless of data availability. No literal 'bound sheet' exists in render.ts (only SITE PLAN / SUMMARY / AERIAL); 'bound packet' in the cited QA item (W4.P3) most likely means the whole bound PDF document, not a fourth sheet kind. The SUMMARY sheet's own KV-row chips (render.ts:1497,1544) are the same honest-absence-row pattern used throughout dossier.ts and are NOT named as defective by any acceptance item.",
+      "disposition": "CODE CHANGE (confirmed piece) + LIVE READ (open question). Remove the CAPTURED stat from the aerial header row entirely (drop the always-chipping stub rather than fabricate a value ESRI World Imagery does not reliably expose per-tile) -- IMAGERY + REGISTER remain, REGISTER's existing computed-or-chip logic is untouched. Before closing this item, generate a real PDF for 48021:34161 and read the bytes (per the item's own check instruction) to confirm no other chip fires on the aerial or summary-as-appended-to-dossier sheets that would contradict the honest-absence design; if one is found, it gets its own citation and fix rather than being folded in silently."
+    },
+    {
+      "item": 5,
+      "name": "Live-view printed",
+      "finding": "liveViewUrl does not exist anywhere in hauska-engine (repo-wide case-insensitive search, zero hits) -- it is not 'stripped', it was simply never added. Neither dossierRefreshBody nor flood-drainage's refreshBody carry it; neither DossierContentInput/DossierContent nor FloodDrainageDescriptor/EmitPdfFloodDrainageOptions carry it; neither dossier.ts's cover nor flood-drainage.ts's sheets print it.",
+      "disposition": "CODE CHANGE. Add `liveViewUrl: z.string().url().max(500).optional()` to both dossierRefreshBody (parcel-terrain.ts) and refreshBody (flood-drainage.ts). Thread through authorParcelPropertyDossierExport -> DossierContentInput -> DossierContent (sanitized like address/countyName, capped) and print it near the generated-stamp line on the dossier cover (verbatim URL, no chip when absent -- it's caller-supplied enhancement data, not a core fact class, so absence is a silent omission of the line, consistent with how address handles the NO-street case but distinct in that there's no chip for a URL that's simply not offered). Thread through authorParcelFloodDrainageReport -> FloodDrainageDescriptor/EmitPdfFloodDrainageOptions and print on flood's sheet 2 (summary) near its own descriptor/stamp area, same absent-is-silent-omission rule. Print only when the string is present."
+    },
+    {
+      "item": 6,
+      "name": "Address title",
+      "finding": "drawDossierHeader (dossier.ts:404-467) and render.ts:576 (site-plan header) both already implement `street ?? PARCEL ${id}` with a NO ADDRESS chip fallback -- honest, no placeholder text. dossierRefreshBody.address flows straight through the route (parcel-terrain.ts:448) with no DB lookup or override; dossier-author.ts:101 falls back to the composed site-plan model's own address only when the request omitted one, never fabricating. render.ts has no 'footer' title -- 'footer' functions (drawPage1Footer, drawFinePrint) draw legend/scale-bar/fine-print, not a title; the per-page running header (top of every dossier sheet, including later pages) is what likely reads as 'footer' in the WDLL's casual phrasing, and it reuses the same drawDossierHeader/address logic on every page.",
+      "disposition": "PROBE, not a code change. Structurally this already looks correct on inspection. Live-verify on 48021:34161 and one other parcel, passing address explicitly in the probe request (since production callers' actual behavior is a hauska-map/Studio concern out of this dispatch's repo scope) -- confirm the title prints the street address, never `PARCEL ... NO ADDRESS`, on both the cover and later pages. If a real defect surfaces, it gets its own fix; none is expected from the code read."
+    },
+    {
+      "item": 7,
+      "name": "Engine hollow download refuse",
+      "finding": "parcel-terrain.ts:491-513, GET /:parcelNodeId/dossier-export/download. Existing check (496): `if (!artifact || artifact.deferred) return 404`. This part is ALREADY fail-closed (unlike the P-89 MCP-side bug I fixed earlier this session -- hauska-engine's own artifact record here is authored directly by dossier-author.ts, which always sets verdictIncluded/briefFactCount on write, so the undefined-record class of bug does not reproduce the same way). But there is NO check at all for the hollow-but-present case (verdictIncluded===false or briefFactCount===0) before streaming bytes at line 512 -- a stored artifact that IS present but records a hollow dossier streams unconditionally today. hauska-engine has no isStoredDossierArtifactHollow-equivalent function anywhere (repo-wide search, zero hits) -- no shared package with hauska-mcp-server; this needs its own small function here.",
+      "disposition": "CODE CHANGE. Add a local hollow check in parcel-terrain.ts (or a small exported helper beside the route) applied after the existing !artifact/deferred check: refuse (422, not 404, to match the MCP-side error shape family and distinguish from genuinely-missing) when `artifact.verdictIncluded === false || (artifact.briefFactCount ?? 0) === 0`, before the artifactStore.get/stream. Mirrors the fail-closed lesson from the P-89 leftover (undefined defaults to hollow=true) even though this route's own !artifact branch already covers that case."
+    },
+    {
+      "item": 8,
+      "name": "Envelope refuse",
+      "finding": "deriveBuildableEnvelope/computeTier1Envelope/composeVerdict/facetsNeedLiveEnvelopeDerive do NOT exist anywhere in hauska-engine (repo-wide search, zero hits) -- this logic lives entirely in legacy-design-tools (computeTier1Envelope, deriveBuildableEnvelope) and hauska-map (facetsNeedLiveEnvelopeDerive, composeVerdict in packages/parcel-fact-sheet). dossier.ts's verdictLine is a pure caller-supplied opaque string, rendered verbatim, with zero percentage/envelope logic in this repo. The X-ray-must-refuse fix was already implemented and MERGED to hauska-map's origin/main: PR #283 'fix(p91): X-ray refuses live-derive envelope like MCP', merge commit cca29644aa7a3c023751141d1d432849817289f2, merged 2026-08-28T21:31:58Z, confirmed an ancestor of hauska-map origin/main tip 32ecabb (fetched and checked this session).",
+      "disposition": "PROBE ONLY, no hauska-engine code change possible or needed (the code that would need changing is not in this repo, and the dispatch forbids writing hauska-map except a probe). Verify: (a) the fix is actually DEPLOYED on hauska-map's live production surface, not merely merged (code-done != customer-done); (b) a live X-ray composed verdict for a parcel that would otherwise show a buildable percentage in fact refuses (matches get_smart_site's atom_path_pending / envelope.kind:not-derived shape) rather than printing N%. Since dossier.ts renders verdictLine verbatim, once the upstream string is honest the engine PDF is automatically honest too -- no dossier.ts change follows from this item."
+    },
+    {
+      "item": 9,
+      "name": "Violation suite",
+      "finding": "Methodology requirement, not a separate code item.",
+      "disposition": "For every refuse/print claim above (items 3,4,5,7 code changes; items 2,6,8 probe confirmations), demonstrate the pre-fix violation on a live parcel before reporting the post-fix behavior as working -- same before/after discipline already applied to the P-89 leftover fix this session (parcel 48029:105129, pre-fix unnamed 404 vs post-fix clean 422, both captured in _inbox/2026-09-03_p89_leftover_fix_close.json). Deploy hauska-engine after merge; grade on live PDF bytes for at least 48021:34161 and one other parcel, never on a merged PR alone."
+    }
+  ],
+  "scope_confirmation": {
+    "in_repo_code_changes": ["item 3 (one site-plan sheet)", "item 4 (aerial CAPTURED chip removal + live-byte read)", "item 5 (liveViewUrl field + print)", "item 7 (engine hollow-download refuse)"],
+    "probe_only_no_code_expected": ["item 2 (verdict packet -- already structurally correct)", "item 6 (address title -- already structurally correct)", "item 8 (envelope refuse -- lives in hauska-map, already merged there, not this repo)"],
+    "out_of_scope_per_dispatch": "Hauska MCP code (P-115, substrate seat). PE viewer rebuild. W8 Site Constraints. Stripe. Feasibility/Comparison generate. P-32 assembler. Valuation. Factory. P-114 (render.ts header block, coordinate not collide).",
+    "judgment_calls_flagged_for_visibility": [
+      "liveViewUrl absence renders as a silently omitted line (no chip) rather than an UNAVAILABLE-chip row, since it is caller-supplied enhancement data, not a core fact class like verdict/brief -- consistent with item 4's direction to reduce, not add, chip usage.",
+      "item 4's 'bound sheets' is read as the whole bound PDF packet (QA item 31 phrasing), not a fourth distinct sheet kind, since no such sheet exists in render.ts.",
+      "item 7's refuse status code is 422 (matching the MCP-side error-shape family: pipeline_output_absent) rather than reusing 404 artifact_unavailable, to keep 'genuinely missing' and 'present but hollow' distinguishable in logs/monitoring, mirroring the MCP-side distinction."
+    ]
+  },
+  "next": "Implement items 3, 4, 5, 7 in this worktree; write/extend unit tests for each; then generate live PDFs (local engine run, controlled test payloads) for the violation-suite probes on items 2, 4, 6, 8 before any deploy. File CP2 at the pilot/mid-work point (code changes done, local tests green, before live deploy+verify). CLOSE after deploy + full live violation-suite grade."
+}

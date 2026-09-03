@@ -1,0 +1,45 @@
+{
+  "lane": "p90-engine-honesty",
+  "checkpoint": "CP2 (pilot / mid-work)",
+  "plan_row": "P-90",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-p90 (branch feat/p90-engine-pdf-honesty, off origin/main 639855c)",
+  "status": "Code-complete for all four in-repo code-change items. Not yet committed, not yet deployed, not yet live-verified. Proceeding next to: commit, push, PR, CI, merge, deploy, live violation-suite grading, CLOSE.",
+  "code_changes_done": [
+    {
+      "item": 3,
+      "name": "One site-plan sheet",
+      "change": "EmitPdfSitePlanOptions.sheets: 'all' | 'drawing-only' added to render.ts; emitPdfSitePlan skips the aerial fetch, SUMMARY pages, and AERIAL page entirely when 'drawing-only'. dossier.ts requests sheets:'drawing-only' unconditionally (no caller-configurable option added -- this is the only mode the dossier ever wants) and counts sitePlanSheets as a constant 1 instead of calling countSitePlanSheets. Standalone pdf-site-plan export route is untouched (still defaults to 'all', still 3+ sheets). Removed the now-dead sitePlan.aerial option from EmitPdfDossierOptions and its unused pass-through in dossier-author.ts, and fixed the CONTENTS manifest row's stale 'drawing · summary · aerial context' qualifier to 'drawing only'.",
+      "tests": "dossier.test.ts's 3-sheet-renumbering test rewritten for 1 sheet; dossier-author.test.ts's pageCount assertion updated (dossierPageCount+1, was +3); render.test.ts's standalone 3-page test PASSES UNCHANGED (confirms 'all' default preserved)."
+    },
+    {
+      "item": 4,
+      "name": "No UNAVAILABLE chips on aerials",
+      "change": "render.ts drawAerialPage: removed the CAPTURED header stat, which was an unconditional {chip: CHIP_UNAVAILABLE} stub never wired to any real ESRI capture-date field (unlike REGISTER beside it, which computes a real value or honestly chips). IMAGERY + REGISTER remain; REGISTER's existing computed-or-chip logic is untouched.",
+      "tests": "aerial.test.ts (16 tests) unaffected/passing -- none asserted on the CAPTURED stat's presence. Live-byte read on a real parcel still pending (next step) to confirm no other chip fires unexpectedly on the aerial sheet."
+    },
+    {
+      "item": 5,
+      "name": "Live-view printed",
+      "change": "liveViewUrl added to dossierRefreshBody and flood's refreshBody (zod, max 500 chars), threaded through DossierContentInput/DossierContent (dossier.ts, sanitized/capped like address) and FloodDrainageDescriptor (flood-drainage.ts). Printed verbatim on the dossier cover (left-aligned, same baseline as the generated-stamp line) and on flood sheet 1's footer (same baseline as its scale/docId/stamp metaLine). Absent = silently omitted, no chip (enhancement link, not a core fact class -- judgment call flagged in CP1).",
+      "tests": "No dedicated new test added yet for the print path (existing dossier.test.ts/flood-drainage.test.ts fixtures don't set liveViewUrl) -- covered instead by the live-byte violation-suite probe (next step), matching the WDLL's own check method ('refresh with a known https://smartsite.cloud/share?g= URL; the string appears on the PDF')."
+    },
+    {
+      "item": 7,
+      "name": "Engine hollow download refuse",
+      "change": "parcel-terrain.ts GET /:parcelNodeId/dossier-export/download: added a check after the existing !artifact/deferred 404 -- refuses 422 pipeline_output_absent when artifact.verdictIncluded===false or (artifact.briefFactCount??0)===0, before streaming bytes.",
+      "tests": "New test 'GET download: violates then refuses a stored artifact that is present but hollow (P-90 item 7)' added and passing; existing 'streams application/pdf after refresh' test's fixture body upgraded to fullBody (non-hollow) so it still legitimately exercises the success path; the route-test mock's stored-artifact fixture fixed to carry realistic verdictIncluded/briefFactCount (previously omitted entirely, a pre-existing gap since the route never read them before this item)."
+    }
+  ],
+  "probe_only_items_unchanged": {
+    "item_2": "Verdict packet -- no code change made; structurally already correct per CP1's code read. Pending live-byte confirmation.",
+    "item_6": "Address title -- no code change made; structurally already correct per CP1's code read. Pending live-byte confirmation.",
+    "item_8": "Envelope refuse -- confirmed already merged in hauska-map (PR #283, commit cca2964, on origin/main). No hauska-engine code involved. Pending live deployment/probe confirmation on hauska-map's own serving surface."
+  },
+  "verification_so_far": {
+    "typecheck": "packages/engine-core and services/engine-api both `tsc --noEmit` clean.",
+    "unit_tests": "packages/engine-core: 130/130 pass across all PDF/site-plan test files (dossier, dossier-author, flood-drainage, aerial, render, layout, overflow-pagination, sheet-standard, provenance, bearing-parity, vertical-rhythm, author). services/engine-api: 90/90 pass across all 16 test files including the new dossier-export-route hollow-refuse test.",
+    "not_yet_done": "No live PDF has been generated against a running engine instance yet. No deploy has happened. No violation-suite live grading (item 9) has run. Items 2/6/8 have zero live confirmation yet -- code-read only."
+  },
+  "next": "Commit this worktree's changes, push, open a PR against hauska-engine, verify CI check-run conclusions are SUCCESS (not gh pr checks 'pass'), merge, deploy (build+push+Cloud-Run-deploy, canary-tag-verify-then-promote, same discipline as the P-89 leftover fix earlier this session), then run the live violation-suite probe against the deployed revision for 48021:34161 and one additional parcel covering all 9 acceptance items, then CLOSE."
+}

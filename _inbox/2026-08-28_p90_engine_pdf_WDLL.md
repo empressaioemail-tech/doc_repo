@@ -1,9 +1,9 @@
 ---
 id: 2026-08-28_p90_engine_pdf_WDLL
 title: WDLL — P-90 engine PDF honesty
-status: draft
-last_updated: 2026-08-28
-operator_approval: pending
+status: graded
+last_updated: 2026-09-03
+operator_approval: 2026-09-03 (dispatched and completed same session, operator instruction "yes do what you need to to get it done")
 plan_row: P-90
 ---
 
@@ -48,4 +48,18 @@ Hauska MCP code. PE viewer rebuild. W8 Site Constraints. Stripe. Feasibility or 
 
 ## Amendments
 
-None yet.
+None.
+
+## Finish card (graded at close, 2026-09-03)
+
+Full evidence: `_inbox/2026-09-03_p90-engine-honesty_close.json`.
+
+1. met: P-89 gate cleared same session before P-90 started — `_decisions/2026-09-03_p89_leftover_fixed_gate_cleared.md`.
+2. met: verdict packet confirmed live on 2 real parcels (verbatim verdictLine + labeled qualifier + cited brief facts); no engine change needed.
+3. met: dossier now appends exactly 1 site-plan sheet, not 3+ — `emitPdfSitePlan` gained `sheets:"drawing-only"`; confirmed live (pageCount 3 = 2 dossier pages + 1 sheet) on both parcels.
+4. met: removed the aerial sheet's unconditional CAPTURED chip stub (never wired to real data); live flood-drainage PDF for 48021:34161 contains zero "UNAVAILABLE" occurrences.
+5. met: `liveViewUrl` threaded through both routes, printed verbatim when forwarded; confirmed live on both the dossier and flood-drainage PDFs.
+6. met: address titles the cover on both parcels, no NO ADDRESS chip, no parcel-id-as-title; no engine change needed.
+7. met: engine's own `/dossier-export/download` now refuses a present-but-hollow artifact (422 `pipeline_output_absent`); live before/after proven on parcel 48021:34161, re-confirmed on the production base URL post-promotion.
+8. met: no hauska-engine code involved (verdictLine is a caller-supplied opaque string). hauska-map's own fix (PR #283) reconfirmed merged and an ancestor of its current main; production deployed since; live behavioral confirmation cited from the 2026-08-30 QA walk already on record rather than re-derived fresh this session.
+9. met: item 7's refuse proven on a genuine before/after pair on live data; items 2/3/5/6 confirmed on live bytes for two real parcels, not asserted from code alone; deploy happened after merge (`hauska-engine-api-00178-xez`), graded on the promoted, 100%-traffic revision.
