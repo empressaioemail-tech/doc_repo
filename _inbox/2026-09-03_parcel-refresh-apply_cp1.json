@@ -1,0 +1,37 @@
+{
+  "lane": "PARCEL-REFRESH-APPLY",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T08:15:00Z",
+  "note": "Premises re-verified against the live base per this card's own dispatch instruction. Two corrections to the dispatch's own premises found before any work; documented rather than silently worked around or silently followed.",
+  "premiseCorrections": [
+    {
+      "dispatchPremise": "Step 1: Execute the Caldwell geom backfill per the spec already written in the caldwell-geom close CP2.",
+      "correction": "ALREADY DONE, not by this card. PARCEL-TXGIO-REACQ (this card's own dependency, closed _inbox/2026-09-03_parcel-txgio-reacq_close.json) ran this exact spec for Caldwell AND all five other target counties (the geom-wipe defect it found affects every county touched by a replace-semantics apply, not only Caldwell). Live-verified again here before starting: 48055 geom 32781/32781, 0 invalid.",
+      "action": "Skip step 1 as separately-already-satisfied. Do not re-run -- the UPDATE is idempotent (WHERE geom IS NULL) so a re-run would be a safe no-op, but there is nothing to fix."
+    },
+    {
+      "dispatchPremise": "Verify item 4: the B3 subdivisions contained.",
+      "correction": "PARCEL-TXGIO-REACQ's own close already established this is NOT achievable: no fresher StratMap vintage exists upstream for any of the six counties right now (every county's post-reacquire source vintage exactly matches the pre-reacquire one). Bastrop's txgio_parcel row count is byte-identical before and after reacquisition (74729=74729) -- the three named subdivisions (La Condesa, Hacienda Sonoma, West Bastrop Village) genuinely postdate the still-current March 2025 vintage and cannot be contained by any containment re-run on this data, because they are not present in the underlying fabric at all.",
+      "action": "This item will be verified and will FAIL, honestly, in this card's own close -- reported as an external-source limitation inherited from the acquisition card, not a defect in this card's own containment work."
+    }
+  ],
+  "liveVerification": {
+    "sixCountyTxgioParcelState": "48021=74729/74729 geom, 48055=32781/32781, 48209=131734/131734, 48309=130650/130650, 48453=894657/894657, 48491=304298/304298 -- all 0 invalid, re-confirmed live before starting.",
+    "containmentJobRedeployed": "factory-p2-juris was on a stale image (last deployed 2026-09-01T05:04:44Z, before this session's own PR #77 connectFactory/openNeonClient statement-timeout fix merged 2026-09-02T23:18:18Z). Rebuilt and redeployed via cloudbuild.p2-juris.yaml (build fd7808e3, digest sha256:496dd0c986c7442b83515049e81131a4566fd14a377d0656646b6e5d1778d963, verified two independently derived ways: gcloud run jobs describe and the build's own artifacts describe). Reduces risk of a repeat of the flood-ingest silent-hang class during this card's containment runs, since p2-juris-store.mjs's openNeonClient is the exact function PR #77 patched."
+  },
+  "sequencingGateFound": {
+    "mechanism": "HELD_FIPS = ['48453','48491'] (Travis, Williamson) in p2-juris-containment.mjs. requireReplayGate refuses either county UNLESS Bastrop (48021) and Caldwell (48055) already match their INTERACTIVE_PARTITIONS baseline in landing_parcel_jurisdiction AND Hays (48209) reaches its licensed total (116420, never merely >0) -- a genuine, meaning-shaped check derived live from the landing table via loadReplayFromLanding, not a hand-asserted flag. McLennan (48309) is not gated.",
+    "priorGuidance": "Multiple earlier cards in this session (hauska-factory-a6-totals worktree note) were explicitly told never to lift HELD_FIPS or pass a replay literal -- this card does not lift it; it satisfies it honestly by running the three prerequisite counties first and letting the gate's own live query confirm readiness.",
+    "executionOrder": "48021, 48055, 48209, 48309 first (any order, none gated); verify Hays reaches 116420 and Bastrop/Caldwell match; then 48453, 48491."
+  },
+  "planForThisCard": [
+    "1. Execute containment (factory-p2-juris --county=<fips> --apply, Cloud Run us-east4) for 48021, 48055, 48209, 48309.",
+    "2. Verify the replay gate's own live inputs (landing GROUP BY county_fips/run_id) show Bastrop/Caldwell matching and Hays at 116420 before attempting the held counties.",
+    "3. Execute containment for 48453, 48491.",
+    "4. Run the idempotent record fills/ingests (parcel-record-fill, flood-ingest, parcel-r4-companions, parcel-value-history, parcel-r5-zoning) so new parcels (if any -- expected to be none, since txgio row counts are unchanged) instantiate at their rails.",
+    "5. Retired-parcel report: parcels in old landing but absent from new landing -- a report only, never a deletion.",
+    "6. Verify: new containment totals stated prominently per county; B3 subdivisions check (expected to fail, honestly reported); Caldwell's previously-blocked rails now fillable; no cell regressions on pre-existing parcels (spot-check byte-stability); gate verdicts re-evaluated where counts moved.",
+    "7. Given txgio_parcel row counts are UNCHANGED from before this whole refresh effort began (no fresher vintage exists), the working expectation is that new containment totals will REPRODUCE the existing 981,405 six-county sum almost exactly -- this card's value is re-validating through current code plus Caldwell's now-complete geometry, not a count change. Any material deviation from that expectation will be investigated, not assumed away."
+  ]
+}
