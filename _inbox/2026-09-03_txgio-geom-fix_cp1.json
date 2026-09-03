@@ -1,0 +1,58 @@
+{
+  "lane": "TXGIO-GEOM-FIX",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T09:10:00Z",
+  "note": "Root-cause confirmation, fix build, and the CI infrastructure gap discovered along the way. Written after the code is built and locally tested, before PR.",
+
+  "rootCauseConfirmation": {
+    "method": "Read lib/cad-ingest/src/txgio/ingest.ts directly rather than trusting the reacq close's own paraphrase.",
+    "finding": "upsertTxgioParcels's flush() function never referenced geom anywhere: not in the batch object pushed for INSERT (only geometry, the jsonb column), and not in the onConflictDoUpdate's set clause (which explicitly lists every other column). Since replaceCountyParcels wraps deleteCountyParcels + upsertTxgioParcels in one transaction (DELETE then fresh INSERT), every apply necessarily produced rows with geom at its column default (NULL) -- not only for counties that started NULL (Caldwell), but for every county the fill touched, since the delete removes the prior row (and its geom) before the insert recreates it from scratch.",
+    "schemaCheck": "Queried live production (PRODUCTION_NEONDB_URL) information_schema.columns, geometry_columns, pg_indexes, pg_trigger for txgio_parcel: geom is geometry(Geometry,4326)) (via geometry_columns: coord_dimension 2, srid 4326, type GEOMETRY), backed by a partial GiST index txgio_parcel_geom_gist_idx (WHERE geom IS NOT NULL), zero triggers, zero drizzle schema declaration, zero tracked migration -- confirming the reacq close's own finding exactly."
+  },
+
+  "fixDesign": {
+    "approach": "A follow-up UPDATE per batch flush, run unconditionally after the INSERT/ON CONFLICT DO UPDATE, deriving geom from the batch's own just-written geometry column via ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text), 4326)) -- the exact formula the reacq close's own manual backfill already validated live across all six program counties.",
+    "whyNotInline": "Considered expressing the derivation directly as a per-row raw sql expression inside the drizzle .values(batch) insert array, which would need each row's own field value to be a distinct sql fragment. No precedent for that pattern exists anywhere in this codebase's drizzle usage (checked: grep for values([ ... sql` patterns turned up nothing), and validating unfamiliar drizzle-orm array-insert behavior under this card's own time budget was a worse bet than the follow-up-UPDATE approach, which reuses db.execute(sql...) -- already an established, working pattern in this exact file (countCountyParcels, listLoadedCountyFips).",
+    "scoping": "The UPDATE is scoped to exactly the batch's own (county_fips, tile_key, feature_index) keys via a FROM unnest(...) join, not a county-wide re-derive -- runs at the same granularity as the insert itself, so it inherits the same natural chunking (250 rows/batch) that already avoids the timeout class the reacq close's own Travis backfill hit (a monolithic 1800s UPDATE across 894,657 rows).",
+    "guaranteeShape": "Because the UPDATE runs after EVERY flush() call regardless of whether that batch's rows came from the INSERT path or the ON CONFLICT DO UPDATE path, 'geom written at insert AND updated on conflict' (the dispatch's own requirement) is satisfied by construction -- there is only one code path to keep correct, not two to keep in sync."
+  },
+
+  "bugsFoundAndFixedDuringBuild": [
+    {
+      "bug": "drizzle-orm's sql template interpolation SPREADS a plain JS array into one bind placeholder PER ELEMENT ($1, $2, ...) -- a convenience for IN-clause-style queries -- rather than binding it as one array-typed parameter. Using ${countyFipsKeys} directly inside the unnest(...) call produced 'malformed array literal' errors at runtime (caught immediately by the first local test run, not silently).",
+      "fix": "sql.param(arrayValue) forces a single bound parameter, letting node-postgres's own array serialization produce a real Postgres {...} array literal. Verified with a minimal standalone repro script comparing plain interpolation (fails) against sql.param (works) before applying the fix, rather than guessing at the API.",
+      "howCaught": "The very first local test run against a real Postgres instance, not a mocked unit test -- this class of bug (correct-looking TypeScript, wrong SQL parameter binding) would not have been caught by a JS-level mock."
+    },
+    {
+      "bug": "CI's own test postgres image (pgvector/pgvector:pg14) has ZERO postgis support -- not merely uninstalled, but the extension is not even in pg_available_extensions. Adding geom to the schema (needed so the existing integration test suite, which now unconditionally calls the geom-deriving UPDATE on every write, does not fail with 'column geom does not exist') would have broken CI entirely without addressing this.",
+      "fix": "Verified locally (docker pull pgvector/pgvector:pg14, matching CI's own image byte-for-byte) that the image's PGDG apt repo already carries postgresql-14-postgis-3, and that `apt-get update && apt-get install -y postgresql-14-postgis-3` inside the running container installs cleanly and CREATE EXTENSION postgis then works. Added an equivalent step to .github/workflows/pr-checks.yml's Test job, using `docker ps --filter ancestor=... ` to find the service container from within a job step (GitHub Actions services are ordinary sibling containers on the runner's own Docker daemon, reachable via docker exec).",
+      "verifiedInRealCI": "Confirmed this actually works in CI itself (not just my local docker reproduction) -- PR #595's own Test job ran the new steps on a fresh ubuntu-latest runner and passed."
+    },
+    {
+      "bug": "drizzle-kit push, once geom existed in schema.ts, prompted interactively ('Is adapter_response_cache table created or renamed from another table? ... rename table spatial_ref_sys -> adapter_response_cache') -- postgis's own extension-owned system table (spatial_ref_sys) confused push's rename-detection heuristic. Would have hung CI indefinitely (no TTY to answer the prompt).",
+      "fix": "extensionsFilters: ['postgis'] in lib/db/drizzle.config.ts -- a documented drizzle-kit option for exactly this class of false positive. Could not be passed as a bare --extensionsFilters CLI flag alongside --config (drizzle-kit refuses to mix --config with other CLI options), so it had to go in the config file itself."
+    },
+    {
+      "bug": "Both lib/db/scripts/refresh-schema-fixture.sh and lib/db/scripts/check-fixture-drift.sh (a deliberately parallel inline copy of the same pg_dump+sed pipeline, per the second script's own comment) rewrite every public.X qualifier to @@SCHEMA@@.X except a hand-carved exemption for public.vector(... -- geom's own public.geometry(... type reference was getting incorrectly rewritten to @@SCHEMA@@.geometry(..., which would fail at test-schema-creation time since the geometry TYPE only exists in the public schema (created there by CREATE EXTENSION postgis), never inside a dynamically-generated per-test schema.",
+      "fix": "Added an identical exemption rule to both scripts (s/@@SCHEMA@@\\.geometry\\(/public.geometry(/g), mirroring the existing vector-specific rule exactly, in both places since they are intentionally kept disjoint."
+    }
+  ],
+
+  "localVerification": {
+    "realPostgresUsed": "docker pull pgvector/pgvector:pg14 (byte-identical to CI's own service image), apt-installed postgis into it, ran drizzle-kit push, refreshed the schema fixture, ran the full integration suite against it -- not a mock.",
+    "existingTestsUnbroken": "All 6 pre-existing tests in txgioIngest.integration.test.ts pass unchanged.",
+    "newFalsifierTests": "3 new tests added: fresh-insert geom derivation, ON CONFLICT DO UPDATE geom refresh, and THE FALSIFIER (geom survives replaceCountyParcels' own delete-then-insert cycle -- the exact defect class this card exists to fix).",
+    "falsifierVerifiedByViolation": "Temporarily wrapped the fix's UPDATE call in `if (false)`, re-ran just the 3 new tests: all 3 failed with geom IS NULL, matching the predicted pre-fix signature exactly. Restored the fix, re-ran: all 9 tests (6 existing + 3 new) pass.",
+    "fullPackageSuite": "278/278 tests pass across the entire lib/cad-ingest package -- zero regressions anywhere, not just the touched file.",
+    "libDbSuite": "118/119 pass. The 1 failure (railEngineBindingCoverage.test.ts) needs a sibling hauska-engine checkout at a hardcoded local path this environment does not have -- confirmed PRE-EXISTING and unrelated to this change by running the identical test against unmodified origin/main (via git stash) and observing the exact same failure.",
+    "typecheck": "pnpm run typecheck:libs clean.",
+    "fixtureDrift": "pnpm --filter @workspace/db run test:fixture:drift passes against the regenerated schema.sql.template.",
+    "consumerSafetyCheck": "Grepped every reader of txgioParcel outside the ingest/schema files (txgioParcelStore.ts, txgioRadiusSearch.ts, txgioStreetSearch.ts, txgioAddressResolve.ts, brokerageTxParcels.ts) -- every one uses explicit column selection (never a bare SELECT * / .select()), so the new geom column is invisible to them and this change has zero effect on any consumer's behavior."
+  },
+
+  "openForCP2": [
+    "PR not yet opened -- next step.",
+    "Base re-verification and CI green-on-merge-commit not yet done."
+  ]
+}

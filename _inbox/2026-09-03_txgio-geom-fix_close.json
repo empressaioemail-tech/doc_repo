@@ -1,0 +1,65 @@
+{
+  "lane": "TXGIO-GEOM-FIX",
+  "status": "CLOSED",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T09:40:00Z",
+  "seat": "property",
+  "branch": "feat/txgio-geom-fix",
+  "worktree": "P:/tmp/legacy-design-tools-geom-fix",
+  "checkpoints": [
+    "_inbox/2026-09-03_txgio-geom-fix_cp1.json",
+    "_inbox/2026-09-03_txgio-geom-fix_cp2.json"
+  ],
+
+  "missionPremise": "PARCEL-TXGIO-REACQ found and manually healed a live production defect (txgio_parcel.geom silently wiped to NULL on every county apply, because upsertTxgioParcels never wrote it) but explicitly left the CODE fix as a leave_behind, naming this card. Fix properly: geom written at insert AND updated on conflict, with a violation test proving the old behavior, so the wipe class can never recur on a future apply.",
+
+  "completionPredicate": "Met in full. upsertTxgioParcels now derives geom from geometry on every batch flush, unconditionally, whether that batch's rows came from the INSERT or the ON CONFLICT DO UPDATE path -- 'written at insert AND updated on conflict' holds by construction, not by two code paths kept manually in sync. A new falsifier test (THE FALSIFIER, in txgioIngest.integration.test.ts) proves the fix directly: geom survives replaceCountyParcels' own delete-then-insert cycle, the exact path that was silently nulling it in production. Verified as a genuine falsifier by disabling the fix locally and watching it fail with the predicted signature before restoring it. The card's own scope statement ('No store execution needed beyond the test fixtures; the data is already healed') is honored exactly -- no Cloud Run dispatch, no production write, this is a pure code-and-CI-infrastructure fix.",
+
+  "scopeBasis": "legacy-design-tools only: lib/cad-ingest/src/txgio/ingest.ts (the fix itself), lib/db/src/schema/txgioParcel.ts (geom brought under tracked drizzle schema for the first time), lib/db/drizzle/0095_txgio_parcel_geom_track.sql (an idempotent migration tracking the already-live column and index -- creates nothing new against production), lib/db/drizzle.config.ts (extensionsFilters to stop drizzle-kit push misreading postgis's own system tables), lib/db/scripts/{refresh-schema-fixture,check-fixture-drift}.sh (a public.geometry() exemption mirroring the existing public.vector() one), .github/workflows/pr-checks.yml (postgis installed into the test postgres service, since pgvector/pgvector:pg14 carries none), and the integration test file itself. PR #595.",
+
+  "prs": [
+    {
+      "repo": "legacy-design-tools",
+      "number": 595,
+      "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/595",
+      "branch": "feat/txgio-geom-fix",
+      "mergeSha": "4e592c1d823b0f9b2e24bd28c861f887f2d6514a",
+      "ciChecks": "11/11 pass (L17, four L5 greps, Rubric unit tests, SS-W16, SS-W18, Test, Typecheck, cortex daily limit bake)"
+    }
+  ],
+
+  "criticalFindingsThisCard": [
+    {
+      "finding": "drizzle-orm's plain sql template array interpolation (${arr}) spreads a JS array into one bind placeholder per element, not one array-typed parameter -- would have produced a silent-looking but wrong query shape for the geom-sync UPDATE's unnest(...) call had it not errored loudly ('malformed array literal') on the very first local test run.",
+      "disposition": "resolved via sql.param(arr), verified with a standalone repro before applying."
+    },
+    {
+      "finding": "CI's own postgres test service (pgvector/pgvector:pg14) has zero postgis support -- this fix's own test coverage was impossible to run in CI as configured. Not a pre-existing gap this card inherited passively: fixing the geom-wipe defect genuinely required extending CI's own capabilities, verified locally against the byte-identical image before touching shared workflow config, and confirmed working in real CI (not just local docker) before merge.",
+      "disposition": "resolved -- an apt-install step added to pr-checks.yml's Test job, since the image's own PGDG repo already carries the postgis package."
+    },
+    {
+      "finding": "drizzle-kit push, once geom existed in schema.ts, produced an interactive rename-ambiguity prompt caused by postgis's own extension-owned spatial_ref_sys table -- would have hung CI indefinitely with no TTY to answer it.",
+      "disposition": "resolved via extensionsFilters:['postgis'] in drizzle.config.ts (drizzle-kit's own documented mechanism for this exact false-positive class)."
+    }
+  ],
+
+  "constraintsHonored": [
+    "Read the actual defect in ingest.ts before writing any fix, rather than trusting the reacq close's own paraphrase alone.",
+    "Verified the fix against a real Postgres (byte-identical to CI's own service image) at every stage, not mocked unit tests alone.",
+    "Verified the falsifier by violation: disabled the fix, confirmed the predicted failure signature, restored it.",
+    "Ran the full package test suite (278 tests), not just the touched file, to catch collateral regressions.",
+    "Confirmed the one pre-existing local failure (railEngineBindingCoverage.test.ts) was genuinely pre-existing via git stash against unmodified main, rather than assuming.",
+    "Verified every consumer of txgioParcel uses explicit column selection before concluding the new geom column is behaviorally invisible to them.",
+    "Re-verified base and re-ran typecheck after a local merge of a moved origin/main, rather than trusting GitHub's own mergeable claim, even though a file-overlap check already showed zero collision.",
+    "CI itself (not just local reproduction) confirmed the new postgis infrastructure steps work, on two separate runs (initial push and post-merge re-push).",
+    "No production write, no Cloud Run dispatch -- honored the card's own explicit 'no store execution needed' scope."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "Migration 0095_txgio_parcel_geom_track.sql is merged to main but has not been applied to production via a run-migrations dispatch. This is a safe no-op today (IF NOT EXISTS throughout; both the geom column and the postgis extension already exist live from PARCEL-TXGIO-REACQ's own manual work), but should be applied by whoever next runs legacy-design-tools' 'Cloud Run Deploy (cortex-api)' workflow with action=run-migrations, so the tracked migration history and live schema state are fully reconciled rather than merely compatible.",
+      "owner": "next deploy-dispatching seat",
+      "plan_row": "F-01"
+    }
+  ]
+}
