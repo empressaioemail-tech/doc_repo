@@ -1,0 +1,33 @@
+{
+  "lane": "PARCEL-B-SLATE2",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T07:00:00Z",
+  "missionPremise": "Decision _decisions/2026-09-02_step7_consumer_c_then_b.md: slate 2 cuts the six dollar/structural rails (marketValue, assessedValue, landValue, improvementValue, livingAreaSqft, yearBuilt) over to parcel_record, rail by rail, per county, following slate-1's proven procedure exactly. S6-COLLISION (the hard requirement) is closed.",
+  "architectureFindings": {
+    "structuralPair_livingAreaSqft_yearBuilt": {
+      "legacyReader": "structuralFactRead.ts's loadStructuralFactAtom -- ONE call returns BOTH livingAreaSqft and yearBuilt bundled in a single StructuralFactPresent object (structuralFactResolve.ts), sourced from a live cad_property lookup (not baked).",
+      "consequence": "Unlike wells/specialDistricts/cityLimits (each a standalone function swap), these two rails cannot be cut over independently by swapping the whole loader -- cutting only one of the pair requires MERGING a parcel_record-sourced value for that field into the legacy object's other fields (taxYear, tier, sourceVintage, entityType), not replacing the whole read.",
+      "existingPrecedentForThisPattern": "brokerageNodeFacets.ts already does exactly this merge shape for livingAreaSqft ONLY: attachVerdictLayersToFacets (structuralFactToFacetsWire.ts) overlays structuralFactToLivingAreaWire(structuralFact) onto the baked facets object post-bake, keyed off the already-loaded structuralFact. yearBuilt currently has NO wire exposure at all in this route -- verified by grep, zero hits for yearBuilt in brokerageNodeFacets.ts.",
+      "callSites": [
+        "brokerageNodeFacets.ts: loadStructuralFactAtom() -> attachVerdictLayersToFacets() -> overlays out.livingAreaSqft only. yearBuilt computed but never wired here.",
+        "propertyExplorer.ts (research/brief): loadStructuralFactAtom() result passed through WHOLE as response.structural -- both livingAreaSqft and yearBuilt DO reach this wire, as sub-fields of one object."
+      ],
+      "designDecision": "Build a merge-capable structural overlay: per parcel, resolve the allowlist independently for livingAreaSqft and yearBuilt; for each field independently resolved to 'record', overlay a parcel_record-sourced value onto the legacy structuralFact object (keeping taxYear/tier/sourceVintage/entityType from the legacy baseline, since those are not this card's own rail scope); when a field resolves to 'legacy' or 'refused', keep the legacy value untouched. This is a genuine field-level merge, not a whole-object swap -- named explicitly since it deviates from slate-1's exact procedure per the dispatch's own 'deviate only where a slate-1 contradiction says to' allowance."
+    },
+    "dollarQuad_marketValue_assessedValue_landValue_improvementValue": {
+      "legacyPath": "NOT a live per-request read like structuralFactRead.ts. These four fields are BAKED into place_layer_snapshots (a materialized snapshot table) by an offline bake job (nodeFacetBakeTier1Conformant.ts writes baseFacts.cadRoll.{marketValue,assessedValue,landValue,improvementValue} from cad_property), and served as-is from that snapshot at request time via loadBakedNodeFacetSnapshot(parcelNodeId) -> snapshot.facets.baseFacts.cadRoll.*.",
+      "corroboration": "_inbox/2026-09-01_dollar-fields_close.json (2 days before this card) confirms this explicitly: 'cortex-prod/place_layer_snapshots is what Property Explorer and LDT api-server actually serve from right now... this does not remove the eventual question of whether Wave R bakes get superseded once parcel_record publishes -- it only says that has not happened yet.' That question is this card's own mission.",
+      "callSites": "brokerageNodeFacets.ts only, verified by grep across both known call sites (propertyExplorer.ts shows no cadRoll/marketValue reference at all -- it does not serve these four fields today, only structural + the three slate-1 rails).",
+      "designDecision": "Same overlay pattern as livingAreaSqft: after loadBakedNodeFacetSnapshot returns the baked facets, for each of the four dollar rails independently resolved to 'record' for this county, overlay a parcel_record-sourced scalar value onto facets.baseFacts.cadRoll.<field> before the response is built; a rail resolved to 'legacy' or 'refused' keeps the baked value untouched. This does NOT change the bake job itself (out of scope, much higher risk, a batch process not a live serve wrapper) -- it overlays at request time, matching the mechanism the decision's own text describes as the serve-layer allowlist's job."
+    },
+    "sharedScalarCellShape": "All six rails are scalar `value` cells in parcel_record_cell (ParcelRecordCellPresent.value: string | number | boolean | null, companionRows empty) -- confirmed by reading parcelRecordCellRead.ts's own type. This is simpler than wells' companion-row shape; one generic scalarFactFromParcelRecord(countyFips, propId, railKey) reader covers all six, with per-rail overlay call sites doing the field-specific merge."
+  },
+  "planForCP2": [
+    "Build scalarFactFromParcelRecord.ts (generic, all six rail keys) + its unit tests, following wellFactFromParcelRecord.ts's own three-state (present/absent/refused) translation contract.",
+    "Build structuralFactServeCutover.ts (merge-shaped, livingAreaSqft + yearBuilt independently resolved) + wire it into both call sites, including adding yearBuilt wire exposure to brokerageNodeFacets.ts where it currently has none (a real, disclosed scope addition, not silently dropped).",
+    "Build cadRollDollarServeCutover.ts (merge-shaped, four fields independently resolved) + wire it into brokerageNodeFacets.ts's baked-facets overlay.",
+    "Per rail per county: dispatch factory-publish-gate-sched --apply, read verdicts, add PASS pairs to PARCEL_RECORD_SLATE (remove from DOLLAR_RAIL_KEYS' current gate now that S6 has closed and this card is the sanctioned cutover), staging deploy + wire probe (gold 48021:34137, Williamson R664999/R665023 -- must show post-S6 honest states, never the duplicated value), production deploy + traffic shift + re-probe.",
+    "Retirement: divergence test comparing the baked snapshot value vs the parcel_record value for N parcels per county per rail before declining the legacy bake path per ENFORCEMENT's retirement rule."
+  ]
+}

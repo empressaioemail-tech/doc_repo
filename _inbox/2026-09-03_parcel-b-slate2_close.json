@@ -1,0 +1,72 @@
+{
+  "lane": "PARCEL-B-SLATE2",
+  "status": "CLOSED",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T09:15:00Z",
+  "seat": "property",
+  "branch": "feat/b-slate2",
+  "worktree": "P:/tmp/legacy-design-tools-slate2",
+  "prs": [593, 594],
+  "mergeShas": {
+    "593": "a777149fd2687d303a2f62d2c04d95675517572a",
+    "594": "239da1b05ad89f6b32492b8af234cda639a19d76"
+  },
+  "deployedRevision": "cortex-api-00707-jen",
+  "deployedDigest": "sha256:ec0a80e187c6123f34ee2deb3d159b9d3fc4ac7d925d214ed198f4b06bfda22b",
+
+  "missionPremise": "Decision _decisions/2026-09-02_step7_consumer_c_then_b.md: cut the six dollar/structural rails (marketValue, assessedValue, landValue, improvementValue, livingAreaSqft, yearBuilt) over to parcel_record, per county, following PARCEL-B-SLATE1's proven procedure, deviating only where CP1's own architecture findings required it -- a merge-shaped request-time overlay onto the existing legacy object, not a whole-function loader swap, because both legacy sources (the baked dollar-quad snapshot and the live-read structural pair) remain permanently load-bearing as the overlay's own base.",
+
+  "completionPredicate": "Met in full. All 36 (county, rail) pairs carry a live PASS verdict in parcel_gate_verdict (unaccountedCount=0 across the board, confirmed via a live ~80-minute factory-publish-gate-sched dispatch and verified genuinely active via pg_stat_activity, not stalled) and are slated in PARCEL_RECORD_SLATE. The canary revision's deployed image digest was independently verified to match the registry digest for the exact merge-sha tag before any probe was trusted. Two real-parcel wire probes (gold 48021:34137; the S6-COLLISION post-heal Williamson fixture 48491:R664999) ran against the canary pre-shift and were re-run against production post-shift, both times showing exact agreement with legacy wherever legacy had a value, correct typed-absent shapes wherever parcel_record explicitly refused, and correct healed-value delivery where parcel_record now serves data legacy never had. A 60-sample divergence check across all six counties found zero disagreement between the baked dollar-quad values and the parcel_record values wherever both existed (40 real comparisons, 20 legitimate coverage-gap skips, no vacuous zero). Traffic shifted to 100% on the canary revision and independently re-verified post-shift.",
+
+  "railsShippedLive": {
+    "marketValue": { "counties": "all 6 (48021, 48055, 48209, 48309, 48453, 48491)", "mechanism": "request-time overlay onto baked cadRoll.marketValue" },
+    "assessedValue": { "counties": "all 6", "mechanism": "same" },
+    "landValue": { "counties": "all 6", "mechanism": "same" },
+    "improvementValue": { "counties": "all 6", "mechanism": "same" },
+    "livingAreaSqft": { "counties": "all 6", "mechanism": "request-time overlay onto the live-read structuralFact, merge-shaped (preserves taxYear/tier/sourceVintage/entityType from the legacy baseline)" },
+    "yearBuilt": { "counties": "all 6", "mechanism": "same merge-shaped overlay; also a disclosed scope addition -- yearBuilt previously had zero wire exposure in brokerageNodeFacets.ts (verified by grep in CP1) and is now exposed there for the first time" }
+  },
+
+  "criticalFindingsThisCard": [
+    {
+      "finding": "structuralFactWithParcelRecordOverlay's original guard clause (`fact.state !== \"present\"`) threw a TypeError on a null fact -- the absent variant's discriminant field is `status`, not `state`, and a raw null (the not-found case, exercised by propertyExplorerBriefAbsent.test.ts's mock) has neither. Caused 3 test failures reading as 500s instead of the expected 404/404/503. Root-caused by isolating with a temporary debug injection around the overlay call, confirming it was NOT the overlay-resolution function itself, then tracing the actual crash site.",
+      "disposition": "resolved -- guard now checks truthiness and `\"state\" in fact` before reading `.state`. All 6 previously-failing tests pass."
+    },
+    {
+      "finding": "GCP project ID for cortex-api's own digest verification was guessed wrong twice in sequence: first as smartcity-os (PERMISSION_DENIED -- wrong project entirely, and a naming trap: the real project smartcity-os-prod exists and IS reachable with a locally-credentialed service account, but hosts smartcity-api/smartcity-scraper, not cortex-api), corrected by reading .github/workflows/cloud-run-deploy.yml directly rather than continuing to guess -- the actual project is legacy-design-tools-prod, matching the repo name and already reachable under this session's own primary gcloud account without any credential switch.",
+      "disposition": "resolved -- caught before any write or false claim; the concurrent PARCEL-FLOOD-CUTOVER close (same session window, different worktree) hit and resolved the identical wrong-project guess independently, cross-confirming legacy-design-tools-prod/us-central1 as correct."
+    },
+    {
+      "finding": "A post-shift traffic verification read a stale cached file from this session's own /tmp mapping (showed revision cortex-api-00569-maw, a leftover from an unrelated earlier point in the session, instead of the actual current cortex-api-00707-jen). Caught by noticing the revision name didn't match anything from this card's own deploy chain, not by luck -- re-ran with a fresh redirect into the scratchpad directory and got the correct state.",
+      "disposition": "resolved -- no false claim reached this close artifact. Standing hazard for future work in this session: this session's /tmp path is not reliable for same-session read-back; always use the scratchpad directory."
+    }
+  ],
+
+  "retirementFinding": {
+    "claim": "No retirement item for this card -- disclosed, not omitted.",
+    "reasoning": "Both legacy sources (the baked dollar-quad snapshot, the live-read structural pair) remain permanently load-bearing as the overlay's own base object; the overlay merges onto their output at request time rather than replacing the read. Unlike PARCEL-B-SLATE1 and PARCEL-FLOOD-CUTOVER (both whole-function-loader swaps where the legacy call count provably declines to zero for a slated pair), there is no call-count decline to prove here by design, and no swap to retire. A 60-sample divergence check (see CP2) found zero disagreement between the two sources wherever both had data, which is the retirement-adjacent evidence this card's own CP1 committed to -- it confirms the overlay is safe, not that the legacy path can be turned off."
+  },
+
+  "leave_behind": [
+    {
+      "item": "feat/b-slate2 branch (merged via PR #593 and #594, not deleted, matching this card family's convention of leaving flip branches intact for traceability)",
+      "owner": "property seat",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Worktree P:/tmp/legacy-design-tools-slate2 -- clean, no uncommitted changes, safe to reclaim/delete by any future seat needing the path",
+      "owner": "property seat",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "Architectural note for any future rail cutover: before assuming a whole-function-loader swap (slate-1's pattern) is available, check whether the legacy source is a batch bake or a live per-request read that other un-slated fields on the same object still depend on. If so, the overlay/merge pattern this card used is the correct model, and a decline-shaped retirement claim will not apply -- say so explicitly rather than forcing the checkbox.",
+      "owner": "property seat",
+      "plan_row": "F-01"
+    }
+  ],
+
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-b-slate2_cp1.json",
+    "_inbox/2026-09-03_parcel-b-slate2_cp2.json"
+  ]
+}

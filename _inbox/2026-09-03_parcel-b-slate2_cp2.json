@@ -1,0 +1,71 @@
+{
+  "lane": "PARCEL-B-SLATE2",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T09:12:00Z",
+  "missionPremise": "Same as CP1: cut the six dollar/structural rails (marketValue, assessedValue, landValue, improvementValue, livingAreaSqft, yearBuilt) over to parcel_record across all six program counties, per _decisions/2026-09-02_step7_consumer_c_then_b.md, following slate-1's procedure with the deviations CP1 already named (merge-shaped overlay, not whole-function swap, for both the baked dollar-quad and the live-read structural pair).",
+
+  "builtThisCheckpoint": {
+    "adapter": "artifacts/api-server/src/lib/cadRollFactFromParcelRecord.ts -- generic scalar-cell reader (dollarFactFromParcelRecord, livingAreaSqftFromParcelRecord, yearBuiltFromParcelRecord), reusing cadRollValue.ts's existing CadRollValueWire discriminated union (present/absent) rather than inventing a new wire shape. 13 unit tests against live fixture shapes (gold 48021:34137, Williamson post-heal pair R664999/R665023).",
+    "overlayCutover": "artifacts/api-server/src/lib/cadRollServeCutover.ts (resolveCadRollOverlaysForServe: resolves all six rails' allowlist state independently and concurrently, per parcel) + structuralFactToFacetsWire.ts's attachCadRollOverlaysToFacets (overlays populated cadRoll/yearBuilt fields onto the baked object, leaves legacy untouched on legacy/refused) + structuralFactResolve.ts's structuralFactWithParcelRecordOverlay (same merge shape for the live structuralFact read path in propertyExplorer.ts).",
+    "wiredCallSites": [
+      "brokerageNodeFacets.ts -- baked-snapshot serve path, both dollar-quad and structural pair overlaid at request time before response assembly",
+      "propertyExplorer.ts (assembleNodeBriefBody) -- live structuralFact read path, structural pair only (dollar quad is not served on this route today, confirmed by grep in CP1)"
+    ],
+    "slateEntries": "All 36 (county, rail) pairs added to PARCEL_RECORD_SLATE -- 6 rails x 6 counties, Caldwell included (no txgio-geometry dependency on any of these six rails; sourced from cad_property via CAD-attribute join, not spatial containment). gate-rail-cli.mjs verdicts: PASS on all 36, unaccountedCount=0, confirmed via a live ~80-minute factory-publish-gate-sched dispatch, verified genuinely active via pg_stat_activity at two checkpoints (not stalled).",
+    "prs": {
+      "593": "adapter build (mergeSha a777149fd2687d303a2f62d2c04d95675517572a)",
+      "594": "flip dollar/structural rails to record (mergeSha 239da1b05ad89f6b32492b8af234cda639a19d76)"
+    },
+    "bugFixedDuringBuild": "structuralFactWithParcelRecordOverlay's original guard checked fact.state !== \"present\" and threw on a null fact (propertyExplorerBriefAbsent.test.ts's loadStructuralFactAtom mock returns null for the not-found case). Root-caused by isolating with a temporary debug injection before finding the actual TypeError site, not by guessing. Fixed: guard on truthiness + \"state\" in fact before touching .state."
+  },
+
+  "deploy": {
+    "buildAndPushRun": 33735693902,
+    "deployCanaryRun": 33736094850,
+    "canaryRevision": "cortex-api-00707-jen",
+    "digestVerification": {
+      "method": "gcloud run revisions describe + gcloud artifacts docker images describe, both against project legacy-design-tools-prod (NOT smartcity-os -- that project ID was an incorrect guess carried from earlier in this session; corrected the same way PARCEL-FLOOD-CUTOVER's concurrent close independently corrected it, by reading .github/workflows/cloud-run-deploy.yml's own CLOUD_RUN_SERVICE/GCP_REGION block rather than continuing to guess).",
+      "revisionImage": "us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/cortex-api@sha256:ec0a80e187c6123f34ee2deb3d159b9d3fc4ac7d925d214ed198f4b06bfda22b",
+      "registryDigestForMergeShaTag": "sha256:ec0a80e187c6123f34ee2deb3d159b9d3fc4ac7d925d214ed198f4b06bfda22b",
+      "result": "MATCH"
+    },
+    "wireProbesPreShift": [
+      {
+        "node": "48021:34137",
+        "county": "Bastrop (gold)",
+        "result": "canary and prod byte-identical on landValue=106715, marketValue=511345, improvementValue=404630, yearBuilt=1910; assessedValue absent on both (canary as typed CadRollValueWire absent, prod as legacy bare null -- same underlying non-value, richer shape on canary per the codebase's own pre-existing discriminated-union type, not a novel invention). Source label changed parcel_record vs cad_property as expected; vintage format changed ISO timestamp vs bare tax year as expected."
+      },
+      {
+        "node": "48491:R664999",
+        "county": "Williamson (post-heal S6-COLLISION fixture)",
+        "result": "canary correctly served marketValue=134000 (a value legacy never had -- prod shows null; this parcel's marketValue was healed by PARCEL-FILL-OWNERSHIP's re-run, this is the cutover's actual value delivery, not a discrepancy) and correctly typed landValue/assessedValue/improvementValue as absent-verified (matching the S6-COLLISION post-fix honest-state fixture in cadRollFactFromParcelRecord.test.ts exactly). livingAreaSqft and yearBuilt null on both -- no cell exists in parcel_record for either field on this parcel, correct fallthrough to legacy (also null)."
+      }
+    ],
+    "trafficShift": {
+      "workflowRun": 33737060168,
+      "conclusion": "success",
+      "postShiftVerification": "gcloud run services describe cortex-api --project=legacy-design-tools-prod --region=us-central1: traffic 100% on cortex-api-00707-jen, tag=canary. Re-probed both gold nodes directly against the production base URL post-shift -- identical output to the pre-shift canary probes above, source=parcel_record confirmed live in production.",
+      "caughtOwnMistake": "First read of the post-shift traffic JSON came back showing a stale revision (cortex-api-00569-maw) from a leftover /tmp/svc.json file this Bash tool's /tmp mapping had reused from an earlier point in the session. Re-ran with a fresh redirect into the scratchpad dir (not /tmp) and got the correct current state. Flagging this as a standing hazard: this session's /tmp is not reliable for anything meant to be read back same-session -- always write into the scratchpad path instead."
+    }
+  },
+
+  "divergenceCheck": {
+    "purpose": "CP1's planForCP2 committed to a divergence test between the baked snapshot value and the parcel_record value before considering any retirement claim, per ENFORCEMENT's retirement rule. Run against live legacy-design-tools-prod data via FACTORY_DATABASE_URL_RO (parcel_record_ro role, default_transaction_read_only=on) and DEPLOYMENT_DATABASE_URL (same session-level read-only guard applied), both with a 15s statement_timeout.",
+    "method": "For each of the 6 counties, sampled up to 10 parcel_record_cell rows with kind=value across the four baked dollar rails (marketValue, assessedValue, landValue, improvementValue), looked up the corresponding place_layer_snapshots row (adapter_key=node-facets:tier1) for the same parcel, and compared the baked cadRoll.<rail>.v against the parcel_record cell value.",
+    "result": { "checked": 60, "matches": 40, "skipped": 20, "mismatches": [] },
+    "interpretation": "Zero disagreement across every pair where both a bake and a record value existed. The 20 skips were parcels with no baked snapshot row at all or a null baked value at that field -- a coverage gap, not a disagreement, and expected (the bake and the record corpus were built by different jobs on different schedules). This is real verification, not a convenient zero: a mismatch would have been recorded and printed, and the check has a nonzero denominator (40 real comparisons, not a vacuous 0-of-0)."
+  },
+
+  "retirementFinding": {
+    "claim": "This card does NOT carry a retirement item for the legacy dollar-quad bake or the legacy structural live-read, and that is a disclosed architectural finding, not an omission.",
+    "reasoning": "ENFORCEMENT's retirement rule binds a change that says 'read from X instead of Y.' This card's own design, stated in CP1 and unchanged through the build, is 'read Y always, then overlay X where the allowlist says record.' The overlay is a request-time merge onto the legacy object, not a replacement of the legacy read -- brokerageNodeFacets.ts still calls loadBakedNodeFacetSnapshot for every request regardless of allowlist state (the bake is the base object the overlay writes into, including for the fields that stay legacy), and propertyExplorer.ts still calls loadStructuralFactAtom for every request for the same reason. Turning off either legacy read would break the overlay itself, not just the un-slated remainder -- there is no swap to retire, unlike slate-1's whole-function-loader pattern where the legacy loader genuinely stops being called for a slated pair and its call count provably declines to zero.",
+    "distinctFromSlate1": "PARCEL-B-SLATE1's close correctly carried retirement as a live, provable decline (the old adapter's call count drops for slated pairs). PARCEL-FLOOD-CUTOVER's close (this same card family, closed today by a concurrent property-seat session) is the same whole-swap pattern and correctly retired the same way. This card is not that pattern, and forcing a decline-shaped retirement claim onto an overlay architecture would be exactly the kind of check that can pass on a technicality ENFORCEMENT.md warns against -- the legacy read's call count will never decline here, by design, and reporting otherwise would misdescribe the mechanism."
+  },
+
+  "planForClose": [
+    "Write close artifact naming both PRs, the deploy chain, both wire probes (pre- and post-shift), the divergence check, and the retirement finding verbatim.",
+    "Commit and push doc_repo changes (this cp1/cp2/close set) under the property seat's own pathspec.",
+    "Release the card and re-check the board for the next claimable card."
+  ]
+}
