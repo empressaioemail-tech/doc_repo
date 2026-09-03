@@ -6,9 +6,9 @@
 
 **Wave 1 CLOSED** (A-104). **G-115 (PermitFlow island cut) CLOSED**, items 1–5 all MET (A-108–A-110). `plan-review` PR #14 merged, deployed `plan-review-00014-bbg`@100%. Coverage measured honestly: `14-02-003` (front setback) is the only adjudicable UDC section; `14-02-008` (permitted-use) has a real citation but no adjudication logic anywhere, by design; 5 of 6 real setback/height dimensions on the setback-rule atom are fetched but unused. A live GIS-source conflict (two disagreeing City of Bastrop layers) was found on both sampled parcels, unresolved, property/substrate's to fix. **Item 6** (real staff go-live) is unblocked but is the operator's own action, not a dispatch — scope it against the coverage findings above before scheduling.
 
-**G-116 (real `bastrop_tx` pack, real data feeds) — foundation + 8 of 10 real domains LIVE end to end** (A-111 through A-117). Decision trail: `_decisions/2026-09-03_bastrop_tx_dashboards_pack_ratified.md`, `_decisions/2026-09-03_smartcity_os_platform_read_authorization.md` (the absolute-no-touch line on `smartcity-os` crossed once, narrowly, on explicit operator authorization — real changes now exist in that repo, not read-only anymore for this one purpose).
+**G-116 (real `bastrop_tx` pack, real data feeds, real auth) — CLOSED. All 10 real-domain routes + real Hauska auth are live end to end on `smartcity-dashboards`** (A-111 through A-119). Decision trail: `_decisions/2026-09-03_bastrop_tx_dashboards_pack_ratified.md`, `_decisions/2026-09-03_smartcity_os_platform_read_authorization.md` (the absolute-no-touch line on `smartcity-os` crossed once, narrowly, on explicit operator authorization — real changes now exist in that repo, not read-only anymore for this one purpose).
 
-**What's real and live right now:** a tenant-private `bastrop_tx` pack (`environment: staging`) on `smartcity-dashboards`, wired through `smart-files`. Ten domains have a real (non-fixture) source defined; **eight are genuinely returning live Bastrop data**, live-verified directly against production before each deploy:
+**What's real and live right now:** a tenant-private `bastrop_tx` pack (`environment: staging`) on `smartcity-dashboards`, wired through `smart-files`, deployed as `smartcity-dashboards-00048-kic`@100% traffic (verified by field, not by CLI summary). Ten domains have a real (non-fixture) source defined; **eight are genuinely returning live Bastrop data**, live-verified directly against production before and after the traffic shift:
 - permits (312 records), work-orders (174), inspections (2015), code-violations (1495), business-licenses (72) — all via `smartcity-os`'s new `/api/platform/mygov/*` routes.
 - fleet-vehicles (75 real Samsara vehicles), patrol-vehicles (24 real Spireon units), cip-projects (14 real PowerBI capital projects).
 
@@ -18,11 +18,14 @@
 
 **Real statuses are never force-mapped onto this product's own invented fixture taxonomies** (checked per domain, not assumed) — every real record keeps its real status/telemetry value as-is; each compose function's `extras` groups honestly instead of guessing a translation.
 
-**What's genuinely still open:**
-1. **Auth for real browser access** — the HTTP routes are correctly access-gated (403/401) behind a Hauska tenant key for `bastrop_tx` that doesn't exist yet. This is the next piece: provision one so a real, identified caller (starting with the operator) can actually view the composed dashboard, not just prove the data pipeline server-side.
-2. **fire-apparatus / call-analytics** — real-world unblocks (vendor scope grant; human OAuth consent), not code.
-3. **Verkada** — real vendor onboarding.
-4. Small, non-blocking: per-pack default subject parcel for the SmartSite staff-map embed (currently one global constant, harmlessly correct for Bastrop by coincidence).
+**Real auth is live.** A real Hauska tenant key was minted (`hauska-mcp-server` admin API, `tier: team`, `product: public`, `jurisdiction_tenant: bastrop_tx`, owner the operator) and a minimal browser bootstrap ships in `web/app.js` (reads `?hauskaKey=` once, persists to `localStorage`, attaches `x-hauska-key` to same-origin API calls). Verified end to end against the live 100%-traffic revision: real key → `resolveHauskaTenant` → `canReadPack` tenant match → real composed data (`origin: feed`, `source: live`, 312 real permit records). Raw key value delivered to the operator directly (never logged in this repo); not needed again unless a new caller is provisioned.
+
+**What's genuinely still open (all real-world, not engineering):**
+1. **fire-apparatus / call-analytics** — vendor scope grant (FirstDue) and human OAuth consent (GoTo), respectively.
+2. **Verkada** — real vendor onboarding, no credential exists anywhere yet.
+3. Small, non-blocking: per-pack default subject parcel for the SmartSite staff-map embed (currently one global constant, harmlessly correct for Bastrop by coincidence).
+
+**Ready for the operator's deep UI QA session** — this was the operator's own stated sequencing (data feeds, then auth, then UI QA) and both prerequisites are now live.
 
 ## Reconciliation corrections (2026-09-02, A-105–A-107 — inherit, don't re-derive)
 
