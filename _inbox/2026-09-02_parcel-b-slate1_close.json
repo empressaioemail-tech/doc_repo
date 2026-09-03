@@ -1,0 +1,164 @@
+{
+  "lane": "PARCEL-B-SLATE1",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-03T06:45:00Z",
+  "dispatch": "_dispatches/2026-09-02_parcel-b-slate1_dispatch.md",
+  "seat": "property",
+  "filedBy": "property claiming from integration P:/doc_repo main",
+  "checkpoints": [
+    "_inbox/2026-09-02_parcel-b-slate1_cp1.json (premises, STEP 0 grant, valueHistory S6-collision-class finding)",
+    "_inbox/2026-09-02_parcel-b-slate1_cp2.json (three-rail adapter build merged + deployed dormant, staging-probe verified)",
+    "_inbox/2026-09-02_parcel-b-slate1_cp3.json (exhaustive live REFUSE search across the grid, zero found)",
+    "_inbox/2026-09-02_parcel-b-slate1_cp4.json (wells rail live in production)",
+    "_inbox/2026-09-02_parcel-b-slate1_cp5.json (specialDistricts rail live in production)",
+    "_inbox/2026-09-02_parcel-b-slate1_cp6.json (cityLimits rail live in production, card complete)"
+  ],
+
+  "missionPremise": "_decisions/2026-09-02_step7_consumer_c_then_b.md: slate 1 (cityLimits/jurisdiction, flood, wells, specialDistricts, valueHistory) cuts over rail by rail, each carrying same-card retirement, gated on PARCEL-B-READER and PARCEL-B-GATE-SCHED (both closed before this card claimed). Dollar rails excluded until PARCEL-S6-COLLISION closes (it did, 2026-09-02, before this card started). Flood held behind PARCEL-FILL-OWNERSHIP's own heal+close per this card's addenda.",
+
+  "completionPredicate": "Met for three of the five named rails -- wells, specialDistricts, cityLimits -- each: (1) gate-verdict-confirmed passing for every county being cut (a real --apply execution through the sanctioned Cloud Run job, not merely a local read), (2) allowlist flipped in code, staging-deployed, digest-verified two ways, live-wire-probed on real parcels before and after each flip, (3) production traffic shifted and re-verified live post-shift, (4) retirement documented honestly (partial: the route structurally never reaches the legacy path for a flipped county, but the legacy table/function and its own fail-closed role are not deleted). NOT met for the other two named rails -- valueHistory (excluded, a live data-quality defect found mid-card, see below) and flood (out of this card's own scope decision, see below) -- both explicitly named as open rather than silently dropped.",
+
+  "scopeBasis": "legacy-design-tools artifacts/api-server/src/lib/ (three new *FromParcelRecord.ts adapters, three *ServeCutover.ts wrappers -- one reused from PARCEL-B-READER's stub, two built new -- plus the parcelRecordAllowlist.ts slate itself and a shared resolveVerdictStore() fix in parcelGateVerdictRead.ts) across three PRs (#587 build, #589 wells flip, #590 specialDistricts flip, #591 cityLimits flip). No schema change. No hauska-factory code change (this card only DISPATCHED the existing publish-gate-sched job, never modified it). Six call sites wired total (two per rail: brokerageNodeFacets.ts and propertyExplorer.ts), closing PARCEL-B-READER's own leave_behind item that propertyExplorer.ts's wells call site bypassed the allowlist.",
+
+  "railsShippedLive": [
+    {
+      "rail": "wells",
+      "counties": ["48021", "48209", "48309", "48453", "48491"],
+      "excludedCounty": "48055 (Caldwell) -- gate verdict excluded, its known pre-existing txgio geometry gap, stays legacy per this card's own premise 4",
+      "pr": "legacy-design-tools #589, mergeSha dc38d262",
+      "liveInProductionSince": "2026-09-03T05:14:53Z"
+    },
+    {
+      "rail": "specialDistricts",
+      "counties": ["48021", "48209", "48309", "48453", "48491"],
+      "excludedCounty": "48055 (Caldwell) -- same reasoning as wells",
+      "pr": "legacy-design-tools #590, mergeSha 94ae857f",
+      "liveInProductionSince": "2026-09-03T05:51:53Z"
+    },
+    {
+      "rail": "cityLimits",
+      "counties": ["48021", "48055", "48209", "48309", "48453", "48491"],
+      "excludedCounty": "none -- ALL SIX counties, including Caldwell, since cityLimits has no txgio-geometry dependency (sourced from landing_parcel_jurisdiction, not spatial containment against parcel geometry)",
+      "pr": "legacy-design-tools #591, mergeSha b214383e",
+      "liveInProductionSince": "2026-09-03T06:15:31Z"
+    }
+  ],
+
+  "criticalFindingsThisCard": [
+    {
+      "finding": "valueHistory carries a live, unremediated S6-COLLISION-class defect",
+      "detail": "Live rail reconnaissance (CP1) found valueHistory's companion rows for Williamson carry byte-identical crosswalk-derived dollar values across sibling R-accounts sharing a situs, self-flagged viaCrosswalk=true -- the exact collision signature PARCEL-S6-COLLISION fixed and remediated for the CURRENT dollar-cell rails, but that remediation never touched valueHistory (a separate rail, separate job, filled after S6-COLLISION's own close). Sized: 257,604 of 540,174 Williamson valueHistory companion rows carry viaCrosswalk=true (an upper bound on exposure, not confirmed-collided count). valueHistory is excluded from this card's slate entirely -- not flipped, not adapter-built beyond CP1's own reconnaissance. Needs its own dedicated remediation card, porting S6-COLLISION's own fix pattern to the valueHistory fill job.",
+      "resolution": "Excluded from scope, reported loudly (CP1, this close, and the fill-ownership close this card's own leave_behind also names it)."
+    },
+    {
+      "finding": "The verdict store was never actually connected to a real database in production",
+      "detail": "Every serve-cutover wrapper called resolveAllowlist(injectedVerdictStore ?? null, ...). Since injectedVerdictStore defaults to undefined outside tests, this ALWAYS passed null in production -- meaning even a real, passing gate verdict would have silently resolved to legacy. This was true in BOTH PARCEL-B-READER's and PARCEL-B-GATE-SCHED's own already-closed work, invisible because the slate shipped empty (the slate-membership check short-circuits before ever reaching the store for an unslated pair) -- only became reachable, and only caught, once this card added a real slate entry and the first canary probe still showed legacy for every county.",
+      "resolution": "Fixed in PR #589 with a shared resolveVerdictStore() helper reusing parcel_record_ro's existing connection (that role also carries SELECT on parcel_gate_verdict as of this card's own STEP 0 migration). Regression-tested."
+    },
+    {
+      "finding": "A read-only local gate-rail-cli.mjs check does not persist anything",
+      "detail": "This card's own CP3 (18+ live REFUSE-search checks) ran the CLI directly, never through the sanctioned Cloud Run job with --apply -- correct for its own purpose (proving the DATA state) but the first post-#589-merge canary probe still showed every county on legacy, because parcel_gate_verdict was still nearly empty (3 pre-existing rows only). Caught immediately, not shipped as a false success.",
+      "resolution": "Every subsequent flip (wells, specialDistricts, cityLimits) dispatched the real gcloud run jobs execute factory-publish-gate-sched ... --apply command before probing, verified the written rows, then probed."
+    },
+    {
+      "finding": "No genuine live REFUSE verdict exists anywhere in the current slate-1 grid",
+      "detail": "Exhaustive check: cityLimits/wells/specialDistricts across all 6 counties (18 cells) plus flood (6 more, via R3/fill-ownership verification) -- 21 pass, 3 excluded (Caldwell's known gap, correctly labeled not raw-unaccounted), 0 refuse. The heal pass (PARCEL-FILL-OWNERSHIP, closed concurrently with this card) restored full coverage everywhere it touched.",
+      "resolution": "Followed PARCEL-B-GATE-SCHED's own precedent for the identical situation: declared explicitly (CP3), relied on existing unit-test coverage of the refusal path (parcelRecordAllowlist.test.ts's own falsifiers, present since PARCEL-B-READER and extended by this card for the real slated pairs), proceeded to flip on that basis rather than blocking indefinitely on a case that may not currently exist."
+    },
+    {
+      "finding": "A concurrent property-seat session (Claude Fable 5) closed PARCEL-FILL-OWNERSHIP while this session was independently babysitting the same Williamson flood-ingest run to the same conclusion",
+      "detail": "This card's own REFUSE-capture requirement depended on fill-ownership closing. Its claim lapsed silently twice; this session re-claimed it (registering a fresh branch off origin/main after confirming no content was lost from the stale local branch) and was actively monitoring the same live Cloud Run execution (verified genuinely active via pg_stat_activity, not stalled) when a different concurrent session closed the card first, with a more complete result (it found and resolved 6 additional phantom runs this session had not).",
+      "resolution": "Released this session's own claim without writing a competing close (a real, uncommitted close.json was discarded via git checkout before it could conflict). Coordinated the remaining dependency via card addenda: confirmed to the other session that this card's own work is read-only against parcel_record (no conflict with their concurrent txgio-refresh containment re-run) and that Caldwell was clear for their geometry backfill (this card's own live grid search had already shown Caldwell gives no rail a genuine REFUSE, so nothing was at risk either way)."
+    }
+  ],
+
+  "counts": {
+    "railsLiveInProduction": 3,
+    "countyRailPairsLive": 16,
+    "countyRailPairsLiveCountingRule": "wells x5 + specialDistricts x5 + cityLimits x6 (Caldwell included only for cityLimits)",
+    "railsExcludedThisCard": 2,
+    "railsExcludedCountingRule": "valueHistory (data-quality defect, not scope) + flood (explicit scope decision, see open items)",
+    "prsMerged": 4,
+    "prsMergedList": "legacy-design-tools #587 (adapter build), #589 (wells flip), #590 (specialDistricts flip), #591 (cityLimits flip) -- all squash-merged, all CI green (one PR needed one re-run of a confirmed pre-existing unrelated flake)",
+    "gateApplyExecutionsDispatched": 3,
+    "gateApplyExecutionsDispatchedCountingRule": "one real --apply Cloud Run execution per rail flip (wells 5 counties, specialDistricts 5 counties, cityLimits 6 counties) -- 16 real verdict rows written total, all independently confirmed live before probing",
+    "canaryDeploysAndTrafficShifts": 4,
+    "canaryDeploysAndTrafficShiftsCountingRule": "one deploy+shift for the dormant adapter build (CP2), one each for wells/specialDistricts/cityLimits (CP4/5/6) -- every deploy digest-verified two independent ways, every shift re-verified live with repeated fresh reads before trusting it"
+  },
+
+  "constraintsHonored": [
+    "no rail flipped without a real, live, --apply-persisted gate verdict of 'pass' for that exact county-rail pair -- caught and corrected the one instance where this card's own read-only checks were mistaken for sufficient",
+    "every canary deploy digest-verified two independently derived ways (gcloud run revisions describe vs gcloud artifacts docker images describe) before trusting it",
+    "every post-deploy traffic read re-verified with repeated fresh calls until consistent, after observing a real transient Cloud Run control-plane read lag on the first deploy of this card",
+    "every flip probed on real, live parcels (not fixtures) on both canary and production, before AND after the traffic shift, checking a field that genuinely distinguishes the new backend from the legacy one (sourceAdapter / basis-string / code, never the shared `source` field which was deliberately kept identical for response-shape parity)",
+    "dollar rails never touched (DOLLAR_RAIL_KEYS guard unchanged, valueHistory's own dollar-adjacent content excluded on discovery rather than shipped)",
+    "no rail flipped whose gate verdict was excluded or refuse for that county -- Caldwell correctly stays legacy for wells/specialDistricts throughout",
+    "state-changing operations (the RO grant, every gate --apply execution) each carry a durable record (migration file, or the parcel_gate_verdict rows themselves with real evaluated_at timestamps) naming what was acted on",
+    "no destructive git operations -- a proposed git reset --hard on a diverged local branch was declined and a fresh branch cut instead, after confirming no content was uniquely at risk",
+    "doc_repo commits made with explicit pathspec throughout, base re-verified before every commit given the confirmed-active shared-worktree collision risk (seat_register.json swept into another session's commit once; a competing fill-ownership close.json write caught and discarded before it could be committed)"
+  ],
+
+  "whatContradictedTheCard": [
+    "This card's own addendum chain anticipated a live REFUSE verdict being 'owed' on Williamson flood specifically, calling it 'the natural partial rail' -- written pre-heal, while Williamson was still genuinely 75% wiped. Post-heal (PARCEL-FILL-OWNERSHIP closed concurrently), Williamson flood evaluates PASS, not REFUSE -- the expected case no longer existed. Searched the entire slate-1 grid instead (18+ checks) and found no REFUSE anywhere; declared this explicitly and proceeded on unit-test coverage, following PARCEL-B-GATE-SCHED's own precedent for the identical situation rather than inventing a workaround.",
+    "The verdict-store wiring gap (see criticalFindingsThisCard) meant the first real flip's first canary probe showed the OPPOSITE of what was expected -- a genuine, load-bearing catch, not a smooth first attempt. Fixed before any traffic shift, not papered over.",
+    "PARCEL-FILL-OWNERSHIP, this card's own dependency for the flood rail, closed via a different, concurrent session mid-card -- an active, real collision with another agent working the same live systems, resolved through card-addendum coordination rather than either session silently overwriting the other's work."
+  ],
+
+  "open": [
+    "flood: not built in this card. PARCEL-FILL-OWNERSHIP (this card's own blocking dependency) closed 2026-09-03, technically unblocking flood -- but this card's own three merged PRs never built a flood adapter/cutover-wrapper (parcelRecordFactRead.ts exists but is PARCEL-C-REPORT's own direct-read module for the GTM reports, not this card's gated serve-layer mechanism). Flood cutover is an explicit, named open scope item for a follow-on card, not silently dropped or silently added here under time pressure.",
+    "valueHistory: excluded pending a dedicated remediation card for the live S6-COLLISION-class defect found in its own companion rows (see criticalFindingsThisCard).",
+    "propertyExplorer.ts's POST /property-explorer/v1/research/brief endpoint (the second call site for wells/specialDistricts, updated in this card's own PRs) was not independently live-probed with real paid/unlock credentials -- it calls the identical, already-verified underlying functions (no separate implementation), so this is a disclosed gap in probe coverage, not an unverified code path.",
+    "Retirement, for wells and specialDistricts, is honestly partial: the legacy atom tables and read functions remain live for Caldwell and as the fail-closed fallback for all counties. cityLimits has no such holdout (all 6 counties flipped) but the legacy PIP reader and tx_city_boundary table are likewise not deleted, only unreached in the current happy path. A full decommission of any legacy store is out of this card's own scope."
+  ],
+
+  "leave_behind": [
+    {
+      "item": "valueHistory's live S6-COLLISION-class defect (Williamson companion rows, viaCrosswalk-flagged, byte-identical dollar values across sibling situs-sharing R-accounts) needs a dedicated remediation card porting S6-COLLISION's own situs-uniqueness-guard-plus-reset pattern to the valueHistory fill job, before valueHistory can safely be considered for a future slate.",
+      "owner": "planner / next dedicated card",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "flood rail cutover: build the B-allowlist-gated adapter/cutover-wrapper (parcelRecordFactRead.ts is a different, direct-read module for a different consumer), slate it, flip it, following the exact sequence this card used for the other three rails.",
+      "owner": "planner / next dedicated card (likely PARCEL-B-SLATE2 or a flood-specific follow-on)",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "The verdict-store wiring bug this card found and fixed (resolveVerdictStore) was present in two already-closed cards' own work (PARCEL-B-READER, PARCEL-B-GATE-SCHED) for the full duration between their closes and this card's own wells flip -- worth a note in those cards' own retrospective awareness that a slate-empty state can hide a real wiring gap until the first real flip exercises it. Not re-opening either closed card; naming the pattern for future slate-mechanism builds.",
+      "owner": "planner",
+      "plan_row": "F-01"
+    },
+    {
+      "item": "propertyExplorer.ts's research/brief endpoint (wells + specialDistricts call sites) was not independently live-probed with real entitlement credentials; relies on shared-function-identity reasoning instead of a direct probe.",
+      "owner": "planner / whoever next has test credentials for that entitlement tier",
+      "plan_row": "F-01"
+    }
+  ],
+
+  "scratch": {
+    "LESSON": [
+      "A gate verdict of 'excluded' (declared-ahead) is not the same as 'refuse' (a live-measured incompleteness) -- both fail closed to the same allowlist outcome, but only one represents an actual live REFUSE observation. Don't assume a known-partial county (like Caldwell) will supply a REFUSE case without checking; it may correctly be excluded instead.",
+      "A LIKE-prefix predicate against parcel_record_cell (place_key LIKE '48491:%') times out even at 60s under this table's scale; a range predicate (place_key >= '48491:' AND place_key < '48492:') on the same column is sargable and returns near-instantly.",
+      "The purpose-built gate-rail-cli.mjs (paged, designed for scale) survives contention that raw ad hoc SQL does not -- but running it LOCALLY without --apply only proves the DATA state; it does not persist anything. The real Cloud Run job with --apply is a separate, required step for any flip to actually take effect.",
+      "A field deliberately kept identical across two backends for response-shape parity (this card's own `source` field, kept as 'well-fact'/'special-district-fact'/'tx_city_boundary' regardless of which adapter served it) is the WRONG field to probe when verifying a cutover live -- use a field the new adapter actually owns (sourceAdapter, a refusal code prefix, or a basis-string signature).",
+      "gcloud run services describe can return stale, inconsistent state for the first 1-3 calls immediately after a deploy -- re-verify with repeated fresh reads until they agree before trusting traffic/revision state for anything load-bearing.",
+      "In a genuinely shared doc_repo working directory (multiple concurrent agent sessions committing to the same local main branch), always re-fetch and diff immediately before writing to a shared artifact path -- a competing write can already be sitting in your working tree from another session's commit, indistinguishable from your own until you check."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-03T05:14:53Z wells live in production (all 5 non-Caldwell counties).",
+      "2026-09-03T05:51:53Z specialDistricts live in production (all 5 non-Caldwell counties).",
+      "2026-09-03T06:15:31Z cityLimits live in production (all 6 counties, including Caldwell).",
+      "16 real parcel_gate_verdict rows written across three --apply executions, all independently confirmed via direct SQL before any probe.",
+      "4 PRs merged (legacy-design-tools #587/#589/#590/#591), CI green on all (one re-run of a confirmed pre-existing flake, unrelated to this card's own diffs)."
+    ],
+    "DEAD-END": [
+      "Attempted to re-verify wells/specialDistricts/valueHistory Williamson counts via direct SQL GROUP BY during the fill-ownership takeover -- timed out even with a sargable range predicate that had just worked for flood (a cold-cache effect, not a query-shape problem). Used the cheap runs-table proof (nothing touched those rails since the prior verification) instead of forcing the expensive scan."
+    ],
+    "OPEN": [
+      "flood rail cutover (see leave_behind).",
+      "valueHistory remediation (see leave_behind).",
+      "propertyExplorer.ts's research/brief endpoint, not independently live-probed (see leave_behind)."
+    ]
+  },
+
+  "docRepoUncommitted": []
+}

@@ -1,0 +1,50 @@
+{
+  "lane": "PARCEL-B-SLATE1",
+  "checkpoint": "CP6",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T06:40:00Z",
+  "note": "CITYLIMITS RAIL LIVE IN PRODUCTION, all six counties including Caldwell. Third and final rail of this card's scope. Same sequence as wells (CP4) and specialDistricts (CP5), including the --apply gate dispatch.",
+
+  "cityLimitsFlip": {
+    "pr": { "repo": "legacy-design-tools", "number": 591, "branch": "feat/b-slate1-citylimits-flip", "mergeSha": "b214383e405514ba8a5977c038c201ab245be469", "mergedAt": "2026-09-03T06:15:31Z" },
+    "ciNote": "Green on the first run, all 10 checks (Test job ran 16m59s, the longest of the three PRs -- no failures, just slower CI infra that run).",
+    "newTestFile": "cityLimitsFactServeCutover.test.ts did not exist before this card -- 8 tests covering the unslated-byte-identical path and the now-real slated path for BOTH gold (48021) and Caldwell (48055) specifically, since Caldwell's inclusion is the one place this rail's own behavior differs from wells/specialDistricts.",
+    "testFixUpstream": "Three pre-existing parcelRecordAllowlist.test.ts tests used 48021:cityLimits as a generic 'definitely unslated' example -- no longer true after this and the prior two PRs; switched to 48021:valueHistory (still genuinely unslated) and added a new test proving the async resolveAllowlist path (not just the pure decision function) resolves a real slated cityLimits pair to 'record'.",
+
+    "gateVerdictsWritten": {
+      "dispatch": "gcloud run jobs execute factory-publish-gate-sched --args=publish-gate-sched,--county=48021,--county=48055,--county=48209,--county=48309,--county=48453,--county=48491,--rail=cityLimits,--apply (all SIX counties, including Caldwell -- unlike wells/specialDistricts which excluded it)",
+      "result": "6 real 'pass' rows confirmed live, evaluated_at 2026-09-03T06:17-06:33Z."
+    },
+
+    "digestVerification": {
+      "canaryRevision": "cortex-api-00703-xoh",
+      "digestTwoWays": "sha256:ff6311ce5591db4ebfca4b916cf883e0d9bcac4052193e700f65462ce53f15ea, identical both ways"
+    },
+
+    "liveWireProbe": {
+      "method": "cityLimitsFact.basis is the clearest record-vs-legacy signal for this rail (this adapter's own basis strings all start literally with 'parcel_record cityLimits:'; the legacy PIP reader's basis strings never do) -- checked on both canary and production post-shift.",
+      "parcels": [
+        { "id": "48021:34137 (gold)", "result": "incorporated, Bastrop, basis starts 'parcel_record cityLimits: incorporated'" },
+        { "id": "48453:301328 (Travis)", "result": "incorporated, Mustang Ridge, parcel_record-sourced" },
+        { "id": "48021:102817 (Bastrop)", "result": "unincorporated, parcel_record-sourced" },
+        { "id": "48491:76149 (Williamson)", "result": "unmeasured, basis 'parcel_record cityLimits refused (no-such-parcel-or-rail)' -- reaches the record adapter, refuses honestly rather than fabricating a determination for a place_key parcel_record has no row for" },
+        { "id": "48309:100000 (McLennan)", "result": "unincorporated, parcel_record-sourced" },
+        { "id": "48209:100002 (Hays)", "result": "unincorporated, parcel_record-sourced" },
+        { "id": "48055:10068 (Caldwell, ALSO SLATED for cityLimits, unlike wells/specialDistricts)", "result": "unincorporated, basis starts 'parcel_record cityLimits:' -- CONFIRMED record-sourced, the one rail where Caldwell's own behavior actually changed by this card" }
+      ],
+      "confirmedOnBothCanaryAndProductionPostShift": true
+    },
+
+    "trafficShift": {
+      "workflow": "workflow_dispatch action=shift-traffic, run 33723838793, SUCCESS (29s)",
+      "verifiedLive": "3 consecutive fresh gcloud run services describe reads, all agreeing: cortex-api-00703-xoh at 100 percent",
+      "productionProbeConfirms": "Identical results to the canary probe, all 7 parcels, post-shift."
+    },
+
+    "retirement": {
+      "legacyPath": "cityLimitsFactRead.ts's loadCityLimitsFact, a live PIP (point-in-polygon) query against tx_city_boundary (the deployment DB, not the atoms store or parcel_record).",
+      "whatIsActuallyRetired": "The serve route no longer calls loadCityLimitsFact for any of the 6 slated, gate-passing counties -- proven live (production probe shows the parcel_record-specific basis-string signature for all 6, including Caldwell, never the legacy PIP reader's own basis text).",
+      "whatIsHonestlyNotRetired": "tx_city_boundary and loadCityLimitsFact are not deleted -- both remain the fail-closed fallback for all six counties (and for the 0 remaining unslated program counties -- there are none for this rail, since all 6 are now slated) if the verdict store or gate ever becomes unavailable. Unlike wells/specialDistricts, there is no county left permanently on the legacy path by design for THIS rail -- Caldwell's own geometry gap does not apply to cityLimits."
+    }
+  }
+}
