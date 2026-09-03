@@ -32,6 +32,28 @@ shell kept as reference, nothing scheduled against it now. Sessions
 `_sessions/2026-09-02_smartsite_gtm_courthouse_and_lane_mimicry_claude_code.md` and
 `_sessions/2026-09-03_p113_dispatch_mechanics_and_workspace_handoff_claude_code.md`.
 
+**ACQUIRE-GIS wave 1 dispatched, gas rail ruling closed, PE refusal-contract finding
+2026-09-03.** Compiled dispatch `_dispatches/2026-09-03_parcel-acquire-gis_dispatch.md`
+(PLAN-ROW F-01, repo `hauska-factory`) covers the four rails PARCEL-SCOUT-GIS found
+acquirable (schoolDistrict, utilityService water/sewer, overlayDistricts, agValuation
+Williamson-only); gas ruled permanently unaccounted
+(`_decisions/2026-09-03_gas_utility_service_rail_closed_unacquirable.md`). Both
+dispatch/ruling commits (`e813007`, `ed35457`) now pushed to origin/main. **Worktree
+now registered** in `_catalog/seat_register.json` (`hauska-factory-acquire-gis`,
+standalone clone at `P:/tmp/hauska-factory-acquire-gis`, branch
+`feat/parcel-acquire-gis-wave1`) but not yet created on disk — hand-carry still
+blocked until the clone exists. Same rooting problem named above applies: a new
+OS-level window (`cursor -n "P:/tmp/hauska-factory-acquire-gis"`) is required once
+the worktree exists, not a new tab in an already-open window. Separately,
+a live PE `atom-miss` investigation confirmed `property-boundary-edge` atoms exist only
+in Bastrop (26,846 rows; zero statewide elsewhere, verified live against `hauska_mcp`);
+finding filed at `_inbox/2026-09-03_pe_refusal_contract_split.md` naming a legibility
+gap between the Doc-19 layer-absence chip contract and the bare `atom-miss` refusal
+used by seven atom-family fact reads. Setback rendering confirmed (by code trace only,
+not live) correctly independent of boundary atoms. Handoff
+`_inbox/2026-09-03_worktree_and_followon_handoff.md`. Session
+`_sessions/2026-09-03_acquire_gis_dispatch_and_pe_refusal_finding_claude_code.md`.
+
 ## 1. Active fires
 
 - **Fire 1: GTM / checkout, not L26 fill.** Operator 2026-08-17: QA the live map at `https://smartsite.cloud`. Stripe checkout mechanically works; polish owed. Pipedrive with `smartsite` + tier tags. Pricing popup like lander signup. Hobby stays. Stand `_inbox/2026-08-17_l26_backfill_and_gtm_stand.md`. Do not restart Harris statewide-PBF. L26 lease heartbeat still live; do not start a second writer. Do not DROP cortex-prod `smart_file_*`.
