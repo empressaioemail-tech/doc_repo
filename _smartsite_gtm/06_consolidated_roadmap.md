@@ -66,9 +66,9 @@ This is the live-money gate. It is shorter than either retired thread believed, 
 
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
-| 1.1 | **A-062** the PE billing portal | property seat | **code complete**, committed; PRs held behind P-104 (shared file) |
+| 1.1 | **A-062** the PE billing portal | property seat | **DONE 2026-09-03.** LDT #583 `59b329df` + hauska-map #334 `e6f12ca6`, both merged, CI green on the actual conclusion string |
 | 1.2 | **P-103** retire the legacy checkout seam | property seat | **DONE 2026-09-01.** #331 `847550aa`, deployed, **decline proven live** |
-| 1.3 | Stripe live activation, following the P-97 checklist | operator | 1.1 and 1.2 |
+| 1.3 | Stripe live activation, following the P-97 checklist | operator | **UNBLOCKED 2026-09-03.** Phase 0 fully closed (see checklist file); Phase 1 onward needs the operator's own Stripe dashboard access — not planner-executable |
 | 1.4 | Live smoke per SKU | planner | 1.3 |
 | 1.5 | **P-104** enforce Studio on the web surface, server side | property seat | **SHIPPED 2026-09-01.** #577 + #332 merged, `cortex-api-00689-dal` emits `studioGranted`, PE live on `index-CqQ_6icv` |
 
