@@ -1,0 +1,74 @@
+---
+id: 2026-09-03_p114_report_brand_polish_WDLL
+title: WDLL — P-114 report brand mark + formatting polish (X-ray, Flood & Drainage)
+status: draft
+last_updated: 2026-09-03
+operator_approval: pending
+plan_row: P-114 (new; not yet opened as an OPS-16 amendment — needs an operator go, same pattern as P-90's row)
+related:
+  - _inbox/2026-08-28_p90_engine_pdf_WDLL.md
+  - _inbox/2026-08-28_p95_stone_palette_WDLL.md
+  - _inbox/2026-08-12_RPT1_existing_report_surface_inventory.md
+  - _inbox/2026-09-03_report_vocabulary_and_surface_findings.md
+  - _decisions/2026-08-27_report_sku_feasibility_comparison_brief.md
+  - docs/smart-site-brand/README.md (hauska-map)
+source: smart-site-welcome-email-light.html (operator-supplied 2026-09-03; email template, not 1:1 — this card is the translation)
+---
+
+# WDLL: P-114 report brand mark + formatting polish
+
+Date: 2026-09-03  Status: draft
+Operator approval: pending (do not implement until Nick greets this card)
+Plan row: P-114 (to be opened as an OPS-16 amendment on approval)
+Repo: `hauska-engine` only, `packages/engine-core/src/site-plan/pdf/`. Isolated worktree from `origin/main`. Read-only reference into `hauska-map` for the source brand SVGs (vendor a copy; do not write that repo). Do not touch `hauska-map` or `hauska-mcp-server`.
+
+Cites the shared-styling architecture RPT1 established: one token module (`template-tokens.ts`), one accent hue, a written standard (`SHEET_STANDARD_v1.html`), and an explicit sibling-assembler export seam (`render.ts`) that `dossier.ts` (X-ray) and `flood-drainage.ts` (Flood & Drainage) already both consume. This card changes the shared primitives, not per-report code, so both live reports pick it up in one place, and the future Feasibility assembler (approved architecture: "clone `dossier.ts`", `_inbox/2026-08-24_feasibility_v1_plan_DRAFT.md` §5) inherits it for free when it's built.
+
+## Where this came from
+
+The operator supplied `smart-site-welcome-email-light.html` — a marketing email template — as the design direction to translate into the PDF reports. It is not portable 1:1 (HTML-email table layout, Outlook `mso-` conditionals, and Arial as an email-client-safe font have no PDF equivalent), but four ideas from it translate directly and are what this card actually proposes:
+
+1. **A dark band as the logo's native context, not a new logo variant.** The email places the existing dark-background brand mark (`smart-site-lockup.svg`, wordmark; `smart-site-mark-crosshair.svg`, mark-alone) inside short charcoal bands on an otherwise light page — header band carries the full lockup, footer band carries the mark alone, centered. This is the same problem the earlier logo scoping hit (`docs/smart-site-brand/README.md`: the asset is gold-on-dark and states "swap to a dark/navy stroke variant if ever used on light backgrounds \[none currently exist]") solved a different way: don't make a light variant, keep the logo in a small native-dark chip inside the light sheet. Cheaper, and it's already proven in production collateral.
+2. **A light neutral palette with cream/warm-gray tones**, distinct from the report engine's current cooler steel-and-graphite ramp — eyebrow labels, headline ink, muted secondary text, hairline borders, a soft card fill for callout boxes.
+3. **A card treatment for honest-absence content** (cream box, bordered, a small status dot, a label, a plain-language explanation) that is visually softer than the current chip system but structurally the same idea the reports already do: name the gap, explain the read.
+4. **A numbered-step visual pattern** (monospace step number, bold label, body copy, a monospace example value) usable for section or item framing.
+
+## What this is and is not
+
+This is a **shared-primitive visual refresh**, not a change to the honesty mechanism P-90 owns. Chips, the fixed `REASON` sentence map, and `isCleanReasonSentence` stay exactly as they are — only their skin may change (item 3 above is a *styling* option for the same absence data, not a replacement for the refuse/chip logic). P-90's acceptance items are unaffected by this card and this card does not gate on P-90, though both touch `render.ts`'s header block — see Sequencing.
+
+## Two things this card must not decide silently
+
+**A. The accent color.** The email's link/icon blue (`#2C6B9E`) is not the engine's current single accent (steel `#5980a6`). Introducing a second blue would itself violate the one-accent rule RPT1 documents as the operator's own red line. This card does **not** pick a winner. It carries the decision as acceptance item 2: either (a) keep steel as the one PDF accent and treat the email blue as a web/email-only choice, or (b) replace the PDF accent with `#2C6B9E` for cross-collateral consistency and re-run the token-level consequences that implies (every drawing that resolves the accent token moves at once, across X-ray, Flood, and later Feasibility). Whichever way it's ruled, it is ONE accent afterward, not two.
+
+**B. The gold status dot.** The email uses a small gold mark (`#B8933F`) narrowly, as a "changed since you last looked" / "not read" indicator — not as decoration. If ported, it must stay scoped to that one semantic (a fixed, named use, the same discipline the confidence enum already has), not become a second decorative color available anywhere a designer likes. Acceptance item 5 makes this an explicit, checked constraint rather than an assumption.
+
+## Done looks like
+
+A generated X-ray or Flood & Drainage PDF on the live engine carries the Smart Site mark (full lockup on the cover/header band, mark-alone on the footer band), rendered from a vendored asset, inside a dark band matching the email's treatment — no new light-background logo file required. The report's neutral palette reads warmer and closer to the rest of the product's collateral, resolved entirely through `template-tokens.ts`, with exactly one accent hue in use (steel or the email blue, per the ruled decision, never both). Honest-absence content still refuses and still names the gap; if the card box treatment is adopted, it is a second, deliberate presentation of the same chip+reason data, not a parallel mechanism. Nothing here changes what a report says — only how it looks.
+
+## Acceptance items
+
+1. **Plan row exists.** OPS-16 amendment row opened for P-114; dispatch compiles against it (`node scripts/dispatch.mjs --plan OPS-16 --lane <ID> --plan-row P-114`). Depends on: operator approval of this WDLL. Check: dispatch compiles; canon-gate accepts.
+2. **Accent ruling recorded.** Operator picks (a) keep steel or (b) adopt `#2C6B9E` as the one PDF accent; recorded as a decision file before any token edit lands. Check: decision in `_decisions/` naming the ruled hex and citing this card.
+3. **Logo asset vendored.** `smart-site-lockup.svg` and `smart-site-mark-crosshair.svg` copied from hauska-map's brand folder into `packages/engine-core/assets/logo/`, rasterized to PNG at a resolution clean at both the header (~170×39-equivalent at PDF scale) and footer (~34×34) sizes used in the source email, loaded via a `resolveLogoDir()` helper mirroring the existing `resolveFontDir()` pattern. Check: asset loads with no network/file-system dependency outside the vendored copy; Docker-COPY note added alongside the existing fonts note.
+4. **`drawLogo()` primitive added to `render.ts`'s shared export block**, callable by both `dossier.ts` and `flood-drainage.ts` without per-file reimplementation. A dark band (new neutral token, see item 6) hosts it in the header; a smaller band or inline placement hosts the mark-alone in the footer, next to or above the existing fine-print run — never overlapping or crossing the header rule per SHEET_STANDARD_v1 §3. Check: golden-byte test decodes the image object at the expected page position on a fixture.
+5. **Gold status-dot scoped, if adopted.** If the card-box absence treatment (idea 3) is built, its status dot is a single named semantic (e.g., "new since last generated") wired through one constant, not a general-purpose color available to any future call site. Check: a lint/grep gate or a code-review note in the PR body naming every call site; more than the one named use fails review.
+6. **Neutral ramp reconciled.** Confirm whether the email's charcoal band (`#2A2A28`) and cream card fill (`#FAF9F6`) already fall within the existing eleven-neutral ramp in `template-tokens.ts`, or need to be added. Adding neutrals is a smaller ask than a second accent but is still a token change — name it in the PR rather than let it land as an unremarked hex. Check: token file diff is additive to the neutral ramp only, never a raw hex in a drawing call.
+7. **Fonts unchanged.** Barlow / Barlow Condensed stay the PDF typefaces. Arial in the source email is an email-client-compatibility artifact, not a brand direction — explicitly not ported. Check: no new font family introduced; type roles (RPT1 §3 "roles, not sizes") reused, not new sizes invented for the eyebrow/step-number treatment.
+8. **Both live reports carry the change from one edit.** X-ray (`dossier.ts`) and Flood & Drainage (`flood-drainage.ts`) both render the updated header/footer band and palette without either file duplicating the primitive. Check: diff touches `render.ts` / `template-tokens.ts` for the shared parts; per-file diffs in `dossier.ts` / `flood-drainage.ts` are wiring only.
+9. **Regression suite holds.** The existing eleven SHEET_STANDARD regression tests pass unchanged where untouched; `vertical-rhythm.test.ts` passes; new tests cover the logo primitive and (if built) the absence card. Check: `pnpm test` green, new test count noted.
+10. **Live verification on real bytes.** Live PDF for at least two parcels (including the standing gold parcel used elsewhere in this program) shows: the mark rendering cleanly at both placements with no artifacting, exactly one accent color present in the byte stream, and the honest-absence chips/reason sentences unchanged in behavior. Check: read the bytes, not a screenshot; grade on the deployed revision, not a merged PR (same discipline as P-90 item 9).
+11. **Close hygiene.** Leave_behind declared; WDLL regraded item by item.
+
+## Sequencing note (not an acceptance item, a planning flag)
+
+This card and P-90 both edit `render.ts`'s header block. They are independent in *purpose* (this is visual skin, P-90 is correctness/refuse behavior) but not independent in *files*. Recommend either folding this into the same lane as P-90 or sequencing them back-to-back rather than running both in parallel worktrees against the same functions — planner's call at dispatch time, not decided here.
+
+## Out of scope
+
+The absence *mechanism* (chips, `REASON` map, `isCleanReasonSentence`) — visual skin only, per "What this is and is not" above. Feasibility or Comparison generate paths (P-32 stays SCOPED, do not start). Any change to `hauska-map`'s email templates or web UI. MCP delivery. A full second design-system audit beyond the four translated ideas named above.
+
+## Amendments
+
+None yet.
