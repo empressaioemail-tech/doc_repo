@@ -1,64 +1,47 @@
 # Govtech seat state
 
-**Last updated: 2026-08-25T03:00Z.** Namespace `govtech`. Branch `seat/govtech`. OPS-17 lanes B, C and D: SmartCity Dashboards, plan review, Smart Files, ICC.
+**Last updated: 2026-09-03.** Namespace `govtech`. Branch `seat/govtech`. OPS-17 lanes B, C, D: SmartCity Dashboards, plan review, Smart Files, ICC.
 
-## Program board
+## Where things stand
 
-**Authoritative tracker:** `canvases/govtech-master-program.canvas.tsx` (Cursor managed path). Scope rev 3: `_inbox/2026-08-24_govtech_program_scope.md`. Adversarial CP1: `_inbox/2026-08-24_govtech_plan_adversarial_cp1.json`. **OPS-17 Wave 1 rows:** G-105–G-110 (A-085). **ADR-023 draft:** `_inbox/2026-08-24_adr023_amendment_draft.md` (operator ratify).
+**Wave 1 CLOSED** (OPS-17 A-104, WDLL items 1–15 all met). G-110 (E2E capstone) walked live on `template-city` 2026-09-02: real staff upload, edition declaration, a genuine Pass and a genuine typed absence in one matrix run. One residual named (no session-scoped `source_obligation_ledger` row) and accepted by operator ruling ("residual named is fine," A-104).
 
-## Execution hardening (2026-08-25)
+**G-115 — PermitFlow island cut — IN PROGRESS.** Frozen card: `_inbox/2026-09-02_bastrop_permitflow_islandcut_WDLL.md`. Not "Bastrop cutover" — a narrower, explicitly-scoped island replacement per `_inbox/2026-08-17_dashboards_missing_pieces.md`'s sequence. Items 1, 4, 5 MET (A-108): real `bastrop_tx` tenant/persona live with cross-tenant read+write refusal verified both directions; IBC live-citation wiring works (real sections resolve, nonexistent ones correctly typed-absent); tenancy/access ruling taken (accept current persona model for this pilot, small named staff set; real auth tracked separately). `plan-review` PR #14 merged, deployed `plan-review-00014-bbg` @100%.
 
-**Index:** `_inbox/2026-08-25_govtech_execution_hardening_index.md`. **WDLL:** `_inbox/2026-08-25_govtech_wave1_WDLL.md` (**operator_approval: pending** — block G-106+ until approved). **Instruments:** `scripts/govtech/deploy-violation-probes.mjs`, `preflight-wave1.mjs`, `wave1_e2e_probe.mjs` (32 self-tests pass). **Runbooks:** preflight checklist + deploy runbook in `_inbox/`. **Dispatch:** `_dispatches/2026-08-25_govtech-deploy_dispatch.md` (G-105, WDLL 1–4). **Decisions:** interim engine path (active); execution rulings batch (provisional).
+**OPEN on G-115 — next work:**
+- **Item 2** — a live matrix run specifically under the `bastrop_tx` persona/edition (not yet attempted, distinct from the mechanism being ready). Depends on item 1, which is MET — **unblocked, ready to dispatch.**
+- **Item 3** — honest UDC coverage measurement against a real Bastrop submittal sample. Only 2 sections of the Bastrop UDC are real today (`14-02-003`, `14-02-008`) — known, not yet measured as a ratio against a realistic sample. Depends on item 2.
+- **Item 6** — real staff go-live proof (named staff, named submittal, their own confirmation). Depends on 1–5; the operator's own action, not a dispatch.
 
-## Why this seat exists
+**Leave-behinds from A-108 (not this card's scope — don't lose):**
+- Smart Files needs a `bastrop_tx` entry in its own `QA_PERSONAS` before a Bastrop-persona file upload works.
+- Substrate: jurisdiction-rollup `accessPolicy` reports `public-free` while individual atom reads refuse anonymous callers — two signals disagree. Named for the substrate seat, not fixed here.
 
-Operator ruling 2026-08-24: four product repos moved off property. Property keeps `legacy-design-tools`, `hauska-engine`, `hauska-map`, `smartcity-os` (NO-TOUCH).
+## Reconciliation corrections (2026-09-02, A-105–A-107 — inherit, don't re-derive)
+
+- Real, licensed IBC 2018 content already exists in the substrate (4,825 atoms, `icc-code-connect` adapter, entitled through Dec 30 2026). Earlier claim that "no real ICC content exists anywhere" (A-102/A-103) was wrong — corrected to a wiring gap, now closed by G-115 item 4.
+- ADR-023 DOC-5 amendment **RATIFIED**: city plan review lives in the standalone `plan-review` repo, not `legacy-design-tools/artifacts/plan-review`. G-13 was already closed by decision but sat OPEN on the tracker for two weeks — re-graded. G-15/G-16/G-22/G-31/G-51 marked out-of-scope-for-Bastrop (they measure the wrong repo; still real rows for AEC-cortex's own surface whenever built).
+- **G-52** (SmartCity-initiated engagement from a MyGov permit record) stays genuinely blocked — needs a live permit feed on `template-city` (`grantedAdapters` still `[]`, per G-63's close). The 2026-08-17 instruction stands: do not start G-52.
 
 ## Standing rules
 
 - Product repos: branch, PR, merge on green. May merge own branches.
-- Does not write property, markets, or substrate repos. Request changes from owning seat.
-- Deploys are planner-owned. Merged ≠ live. Grade on deployed surface with violation probes.
+- Does not write property, markets, or substrate repos. Request changes from the owning seat.
+- Deploys are planner-owned. Merged ≠ live. Grade on the deployed surface with violation probes, not the diff.
+- **G-115 standing constraints (operator, 2026-09-02, binding on every dispatch under this card):** live Bastrop (PermitFlow on `smartcityos.io`) stays 100% live and untouched throughout; additive-only — reuse existing data/component mapping, no rebuilding what already works.
+- `smartcity-os` remains ABSOLUTE NO-TOUCH — this seat's subject, not its property.
 
-## Shipped this thread (code)
+## Notes from this session's orientation pass
 
-| repo | PR | deploy state |
-|---|---|---|
-| plan-review | #6 | **LIVE** — BFF scope gate; narrows defect #4, does not close Smart Files read path |
-| plan-review | #7 | **NOT DEPLOYED** — must deploy Cloud Run + Vercel together |
-| smartcity-dashboards | #39 | **NOT DEPLOYED** |
-| hauska-engine | #361 | **MERGED** — property; writer fix; backfill + load-snapshot bypass remain |
-| hauska-mcp-server | #75 | **MERGED** — substrate; not proven on serving MCP revision |
-| hauska-sdk | #3, #4 | **MERGED** — substrate |
+- Confirmed this worktree (`P:/seat-worktrees/govtech/doc_repo`, branch `seat/govtech`) matches `_catalog/seat_register.json`'s current govtech entry exactly. Clean tree.
+- **Registry drift found:** `icc-portal` is registered (`P:/seat-worktrees/govtech/icc-portal`) but does not exist on disk. Not currently blocking — G-115 doesn't touch it — flagged per the reset-checklist rule (fix the registry entry, or ask the planner, before opening a session there).
+- `smartcity-dashboards` worktree is in detached HEAD at `origin/main`, clean. `smart-files` carries one small uncommitted local change (`web/.gitignore` +`.env*`), harmless and unstaged. `plan-review` is on `main`, clean, matching its post-merge PR #14 state.
+- The old "Authoritative tracker: `canvases/govtech-master-program.canvas.tsx`" pointer in the prior version of this file no longer resolves — file doesn't exist on disk. Dropped rather than carried forward; if a program-board canvas still exists it needs re-pointing.
 
-## OPEN — Wave 1 blockers
+## Filed this thread
 
-1. **Deploy queue:** DEPLOY-7, DEPLOY-39, DEPLOY-75, DEPLOY-361 — dispatch as **G-105**.
-2. **S3-1:** Smart Files read-path scope. Defect #3 open. Dispatch **G-106**.
-3. **S4-6:** property backfill blocked on `hauska_mcp` DSN. Dispatch **G-109** chain.
-4. **DOC-5:** Operator ratify ADR-023 amendment draft before S2-1 execution.
-5. **S1-17:** `template-city` vs `icc-demo` tenant mismatch on plan-review surface.
-
-## Rulings taken (2026-08-24)
-
-PermitFlow extinguished. Staff upload. Wave 1 on template-city. Engine migrates to plan-review (R-D). Smart Files whole city (R-E). One app if SKUs stay independent (R-F). SmartSite parked (R-G). Fourth demo pack (R-H). **`source_obligation_ledger` authoritative; activity is cache (R-I).** Architect surface deferred, not retired (R-J).
-
-## Rulings owed
-
-- O-1: ICC rate model (recommend flat; block until DEPLOY-75 + accrual probe).
-- O-3: spireon / patrol-vehicles (recommend keep ungranted).
-- O-4: branch protection Stage 2.
-- O-5a: Connections disposition vocabulary.
-
-## Filed plans (2026-08-24)
-
-- `_inbox/2026-08-24_govtech_transaction_contract.md` (S5-1)
-- `_inbox/2026-08-24_govtech_engine_migration_plan.md` (S2-1)
-
-## Defect class
-
-Ten named instances + latent register L1–L5 in scope rev 3. Honest closure on deployed surface today: **1 of 10** (defect #4 BFF layer live-verified). S5-2 decomposed into deploy probes, bypass inventory, seam vocabulary (canvas).
-
-## Corrections (inherit; do not re-derive)
-
-Corpus claim over-generalised. Absent I-Code bodies = licence working. Two ICC ledgers (reconciliation problem, not zero accrual). ADR-018 satisfied. R311.7 / R302.1 fixed in #7 (undeployed).
+- `_sessions/2026-09-02_govtech_wave1_close_and_bastrop_permitflow_start_claude_code.md` — full session record
+- `_inbox/2026-09-03_govtech_seat_writepath_handoff.md` — seat/write-path model + reset checklist (this session's orientation source)
+- `_inbox/2026-09-02_bastrop_permitflow_islandcut_WDLL.md` — G-115 frozen card
+- `_decisions/2026-09-02_plan_review_leads_the_bastrop_push.md`
+- `_inbox/2026-09-03_g115-tenant-icc_close.json` — close artifact, G-115 items 1 and 4
