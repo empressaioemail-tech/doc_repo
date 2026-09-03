@@ -1,0 +1,128 @@
+{
+  "lane": "p89-leftover-fix",
+  "plan_row": ["P-90 item 1", "P-89 leftover"],
+  "supersedes": "_inbox/2026-09-03_p89_gate_reverify_close.json",
+  "status": "P-89 customer-done IN FULL as of this close. The undefined-stored-artifact fail-open defect named in the superseded close is fixed, merged, deployed, and live-verified on the serving revision. P-90 item 1's gate is now satisfied.",
+  "missionPremise": "The 2026-09-03 gate re-verify (_inbox/2026-09-03_p89_gate_reverify_close.json) found isStoredDossierArtifactHollow(undefined) returning false (not hollow) instead of true, a fail-open default on an unknown value per ENFORCEMENT.md's fail-closed rule, and ruled P-90 item 1's gate NOT satisfied until this landed and was itself live-verified on the serving revision, not merely merged (_decisions/2026-09-03_p90_approved_gate_still_open.md). Operator instruction this turn: 'yes do what you need to to get it done' -- authorizing the planner to execute this leftover fix, deploy it, and clear the gate, per the standing CANON-PREAMBLE line 'DEPLOYS ARE PLANNER-OWNED'.",
+  "completionPredicate": "isStoredDossierArtifactHollow(undefined) returns true; download_parcel_dossier_export on a parcel with no stored pdf-dossier artifact record refuses with the clean 422 pipeline_output_absent shape (formatStoredHollowRefuse()) instead of falling through to an unnamed engine 404; this is proven true->false->true (violate on old revision, confirm fix on new revision, confirm fix on promoted production URL) on a real parcel, not merely asserted from a code read; the fix is live on the revision actually serving 100% of production traffic, not just merged to main.",
+  "scopeBasis": "Scoped to exactly the one leftover named in the superseded close's leave_behind[0]: the undefined-record branch of isStoredDossierArtifactHollow in hauska-mcp-server/src/xray-export-gate.ts. Did not touch the deferred-artifact branch, the present-but-hollow branch (already correct per code read), hauska-engine, or any P-90 acceptance item -- those remain out of scope for this lane and are P-90's own work once its gate (this lane) clears.",
+  "seat": {
+    "identity": "planner-owned executor, doc_repo lane, operating directly in hauska-mcp-server worktrees per operator go-ahead",
+    "worktrees_used": [
+      "P:/seat-worktrees/substrate/hauska-mcp-p89-leftover (branch fix/p89-hollow-undefined-failclosed, code + test)",
+      "P:/seat-worktrees/substrate/hauska-mcp-p89-deploy (detached at origin/main post-merge, clean Cloud Build source snapshot)"
+    ],
+    "did_not_write": [
+      "P:/hauska-engine (or any property worktree)",
+      "any other hauska-mcp-server worktree in use by another lane"
+    ]
+  },
+  "code_change": {
+    "file": "hauska-mcp-server/src/xray-export-gate.ts",
+    "function": "isStoredDossierArtifactHollow",
+    "diff_summary": "if (!artifact || artifact.deferred === true) return false; split into: if (!artifact) return true; if (artifact.deferred === true) return false; -- one-line logic fix exactly as scoped in the superseded close's leave_behind[0]",
+    "regression_test_added": "tests/xray-export-gate.test.ts: 'isStoredDossierArtifactHollow violates: no stored-artifact record at all fails closed (P-89 leftover, 2026-09-03)' asserts isStoredDossierArtifactHollow(undefined) === true"
+  },
+  "pr": {
+    "number": 80,
+    "url": "https://github.com/empressaioemail-tech/hauska-mcp-server/pull/80",
+    "title": "fix(p89): fail closed on undefined stored-dossier-artifact record",
+    "merge_sha": "3497f388c358326ac11e6040f1bb4aba650b71e0",
+    "merged_at": "2026-09-03T18:57:02Z",
+    "merge_method": "squash"
+  },
+  "ci": {
+    "counting_rule": "gh pr view 80 --json statusCheckRollup, read as the check-run conclusion STRING per AGENT_CONTRACT section 5 ('gh pr checks printing pass is NOT it')",
+    "checks": [
+      { "name": "build-test", "conclusion": "SUCCESS" },
+      { "name": "ci-deny-as-no-atom-found", "conclusion": "SUCCESS" },
+      { "name": "ci-hardcoded-did-type-union", "conclusion": "SUCCESS" },
+      { "name": "ci-gate-map-vs-server-tool", "conclusion": "SUCCESS" },
+      { "name": "ci-dual-atom-contract", "conclusion": "SUCCESS" }
+    ]
+  },
+  "local_test_run": {
+    "counting_rule": "npm test (node --import tsx --test tests/*.test.ts) in the fix worktree, full suite, prior to PR open",
+    "result": "538 / 538 pass, 0 fail",
+    "targeted_file": "tests/xray-export-gate.test.ts: 11 / 11 pass",
+    "typecheck": "tsc --noEmit clean"
+  },
+  "deploy": {
+    "build": {
+      "tool": "gcloud builds submit --config=cloudbuild-mcp.yaml",
+      "build_id": "5dc80547-d9af-4d9f-88b3-25c29c00f8e0",
+      "status": "SUCCESS",
+      "source": "P:/seat-worktrees/substrate/hauska-mcp-p89-deploy, detached HEAD at origin/main 3497f38 (post-merge, clean checkout, no untracked scratch files)",
+      "image": "us-central1-docker.pkg.dev/hauska-prod-497015/hauska-mcp/hauska-mcp-server@sha256:1573b037aa96332167807bf393bbb2609845a25ccc123c67560b0e90d626ca09",
+      "image_tag": "3497f38"
+    },
+    "revision_created": "hauska-mcp-server-00056-9pr",
+    "traffic_sequence": [
+      "deployed 00056-9pr at 0% traffic (service traffic spec pins by revisionName, not latestRevision:true -- gcloud run deploy alone does not shift traffic on this service)",
+      "tagged 00056-9pr as p89-fix for canary verification (gcloud run services update-traffic --update-tags)",
+      "live-verified canary before promoting (see live_probe below)",
+      "promoted 00056-9pr to 100% traffic (gcloud run services update-traffic --to-revisions=hauska-mcp-server-00056-9pr=100)",
+      "prior revision hauska-mcp-server-00055-8pz left at 0% traffic, still tagged g111-fix, as the rollback target"
+    ],
+    "rollback_command_if_needed": "gcloud run services update-traffic hauska-mcp-server --project=hauska-prod-497015 --region=us-central1 --to-revisions=hauska-mcp-server-00055-8pz=100"
+  },
+  "live_probe": {
+    "instrument": "adapted from _inbox/_tmp_p89_live_probe.mjs (P-89 probe pattern reused, not hand-rolled fresh); saved as _inbox/_tmp_p89_leftover_probe.mjs equivalent runs are captured in the three output files below",
+    "pre_registered_falsifier": {
+      "claim": "isStoredDossierArtifactHollow(undefined) now returns true and download_parcel_dossier_export refuses cleanly (422 pipeline_output_absent) for a parcel with no stored pdf-dossier artifact record, on both the canary and the promoted-production serving revision.",
+      "proves_true": "same parcel, same call, refuses with the clean 422 shape on the fixed revision where it did NOT on the pre-fix serving revision.",
+      "proves_false": "the fixed revision still 404s the same way the pre-fix revision did, or any candidate parcel used was not actually a genuine undefined-artifact case."
+    },
+    "witness_parcel": "48029:105129",
+    "before_after": {
+      "pre_fix": {
+        "revision": "hauska-mcp-server-00055-8pz (tag g111-fix, was 100% prod traffic at probe time)",
+        "result": "Dossier artifact not found (404) for 48029:105129. Call refresh_parcel_dossier_export first to build it. -- the exact unnamed-404 defect class named in the superseded close.",
+        "artifact_file": "_inbox/_tmp_p89_leftover_probe_OLDREV_out.json"
+      },
+      "post_fix_canary": {
+        "revision": "hauska-mcp-server-00056-9pr (tag p89-fix, 0% prod traffic at probe time)",
+        "result": "{\"status\":422,\"error\":\"pipeline_output_absent\",\"missing\":[\"verdict\",\"brief_facts\"]} -- formatStoredHollowRefuse() shape",
+        "artifact_file": "_inbox/_tmp_p89_leftover_probe_out.json"
+      },
+      "post_fix_production": {
+        "revision": "hauska-mcp-server-00056-9pr (base URL, 100% prod traffic, post-promote)",
+        "result": "same clean 422 pipeline_output_absent refuse, confirmed on the URL production callers actually use",
+        "artifact_file": "_inbox/_tmp_p89_leftover_probe_FINAL_out.json"
+      }
+    },
+    "control_note": "candidate parcel 48021:34161 was also probed and refused cleanly on BOTH pre-fix and post-fix revisions -- it was already hitting the present-but-hollow branch (already correct per the superseded close's code read), not the undefined-record branch, so it is not a witness for this specific defect. 48021:27303 and 48209:156346 returned an unrelated 'artifact not found (404)... call refresh first' from getParcelDossierExport itself on both revisions -- a different code path (the node/status lookup itself, not the hollow-check), left uninvestigated as out of scope for this narrow fix.",
+    "other_p89_items_status": "items 1-2 (refuse on missing/placeholder verdict, null/empty brief) were already confirmed MET live on 2026-09-03 in the superseded close and are unaffected by this change; not re-run here since neither the code nor the serving revision's relevant behavior changed for them."
+  },
+  "constraints_honored": [
+    "Did not write hauska-engine or any property worktree",
+    "Did not write any other lane's hauska-mcp-server worktree",
+    "Worked in isolated, purpose-created worktrees (fix + deploy), never reused a worktree another lane's process runs from",
+    "Verified CI via check-run conclusion STRING (SUCCESS), not gh pr checks pass output",
+    "Did not merge until all check-runs reported SUCCESS",
+    "Canary-verified the new revision via a tag before shifting any production traffic to it",
+    "Left the pre-fix revision (00055-8pz) live at 0% traffic, still tagged, as an immediate rollback target",
+    "Reused an existing validated probe pattern rather than a new ad hoc script for the live checks",
+    "Pre-registered the falsifier before running the decisive before/after probe",
+    "Proved the negative on the actual pre-fix serving revision (DEV_PROCESS 2.2 -- a gating indicator is tested for its ability to fire) rather than trusting the code read alone"
+  ],
+  "leave_behind": [
+    {
+      "item": "48021:27303 and 48209:156346 return an unrelated 'artifact not found (404)... call refresh first' message from getParcelDossierExport itself (not the hollow-check) on both pre- and post-fix revisions. Not investigated -- likely non-existent or unretrieved property nodes, out of scope for this leftover.",
+      "owner": "unassigned",
+      "plan_row": "not scoped to a plan row; note only"
+    },
+    {
+      "item": "deploy/README.md (dated 2026-05-21) describes cloudbuild-mcp.yaml as shifting traffic directly; live behavior as of this deploy is that the service's traffic spec pins by revisionName, so gcloud run deploy alone does NOT shift traffic -- new revisions land at 0% until explicitly promoted (this is how revisions 00080/00082/00084 accumulated without ever serving). The doc is stale on this point.",
+      "owner": "unassigned",
+      "plan_row": "doc hygiene, not scoped here"
+    }
+  ],
+  "pathspec_for_the_parent_to_commit": [
+    "_inbox/2026-09-03_p89_leftover_fix_close.json",
+    "_inbox/_tmp_p89_leftover_probe.mjs",
+    "_inbox/_tmp_p89_leftover_probe_out.json",
+    "_inbox/_tmp_p89_leftover_probe_OLDREV_out.json",
+    "_inbox/_tmp_p89_leftover_probe_FINAL_out.json"
+  ]
+}

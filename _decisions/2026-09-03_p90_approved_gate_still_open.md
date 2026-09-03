@@ -2,7 +2,9 @@
 decision_id: 2026-09-03_p90_approved_gate_still_open
 date: 2026-09-03
 owner: Nick
-status: active
+status: superseded
+superseded_by: _decisions/2026-09-03_p89_leftover_fixed_gate_cleared.md
+supersession_note: The reversal criteria named below ("substrate-owned leftover lands and is itself live-verified on the serving revision") were met the same day. Fixed, merged (PR #80, hauska-mcp-server), deployed, and live-verified on the serving revision per _inbox/2026-09-03_p89_leftover_fix_close.json, on operator instruction "yes do what you need to to get it done." Mechanism and reasoning sections stand as the historical record of why P-90 did not start immediately on approval.
 related_canonical:
   - _inbox/2026-08-28_p90_engine_pdf_WDLL.md
   - _inbox/2026-09-03_p89_gate_reverify_close.json
