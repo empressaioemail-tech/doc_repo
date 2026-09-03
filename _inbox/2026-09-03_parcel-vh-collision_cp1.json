@@ -1,0 +1,46 @@
+{
+  "lane": "PARCEL-VH-COLLISION",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T08:15:00Z",
+  "note": "Premise re-verification, then the full fix + remediation-job build (mirroring PARCEL-S6-COLLISION's own pattern exactly, per this card's own dispatch). Written after the code is built, locally unit-tested, and separately verified against a real Postgres, before PR.",
+
+  "premiseReVerification": {
+    "spec": "Confirmed: this card's dispatch and card.json both point to slate-1's own CP1 finding plus the S6 close as the spec. Read both before writing any code: _inbox/2026-09-02_parcel-b-slate1_cp1.json (the discovery) and _inbox/2026-09-02_parcel-s6-collision_close.json (the pattern to port).",
+    "tracedPair": "R664999/R665023 (Palmera Bluff Secs 7&8, Leander, situs '1428 TREASURE MAP VW, LEANDER, TX 78641') -- the exact live-confirmed collision from slate-1's CP1: both accounts' 2026-taxYear valueHistory companion row carries landValue=126000, marketValue=739956, assessedValue=739956, improvementValue=613956, viaCrosswalk=true, byte-identical.",
+    "defectLocation": "Confirmed by reading parcel-value-history.mjs's own module comment: WILLIAMSON_HISTORY_CROSSWALK_SQL is explicitly a disjoint copy of parcel-record-fill.mjs's WILLIAMSON_CROSSWALK_SQL (carries tax_year, joins a differently-shaped hoisted table), created disjoint on purpose so the shared job harness (parcel-record-fill.mjs) stayed untouched. This is exactly why S6's fix never traveled here: it isn't a shared-code bug, it's an independently-reimplemented copy of the SAME query shape that only received the R1B uniqueness logic, never the S6 amendment."
+  },
+
+  "fixBuild": {
+    "approach": "Mirrors S6's own fix exactly: a county-wide situs_share_count guard (vh_r_situs), requiring situs_share_count = 1 in the crosswalk's target CTE. Applied S6's own leave_behind performance lesson from the start rather than repeating it: vh_r_situs is hoisted ONCE per county into a session TEMP table with its own index, mirroring the job's own already-proven vh_numeric_roll pattern -- not recomputed per page.",
+    "filesChanged": [
+      "src/jobs/parcel-value-history.mjs -- HOIST_R_SITUS_SQL/INDEX/ANALYZE/DROP added; WILLIAMSON_HISTORY_CROSSWALK_SQL's target CTE now reads vh_r_situs WHERE situs_share_count = 1 instead of cad_property directly; runParcelValueHistory wires the hoist/drop into the Williamson county block alongside the existing numeric-roll hoist",
+      "src/jobs/vh-collision-remediate.mjs (NEW) -- ports S6's explicit reset-before-rerun discipline. Reuses S6's own EXPOSED_GROUPS_SQL unmodified (pure R-side situs-collision detection, no valueHistory content, no reason to duplicate). New logic (computeActuallyCollided): a (situs group, tax_year) is actually-collided when 2+ of the group's R-accounts each carry a viaCrosswalk=true companion row for that year -- simpler than S6's own per-field scalar case, since a valueHistory crosswalk row is one merged tuple written all at once (all four dollar fields from the identical numeric-roll row), never field-by-field, so there is no partial-collision case to distinguish.",
+      "src/control/writer-allowlist.mjs -- vh-collision-remediate registered (kind: remediate, mirroring s6-collision-remediate's own entry)",
+      "src/cli.mjs -- vh-collision-remediate dispatch case + usage string entry",
+      "test/parcel-value-history.test.mjs -- fakeCortex extended for the new hoist queries; SQL-shape tests for the fixed guard; THE OWED FALSIFIER test asserting the WHERE clause structurally excludes situs_share_count > 1",
+      "test/vh-collision-remediate.test.mjs (NEW) -- mirrors s6-collision-remediate.test.mjs's own structure; THE OWED FALSIFIER describe block uses the traced pair's exact live dollar figures as fixture data"
+    ],
+    "localVerification": {
+      "unitTests": "npm test (after npm install/pnpm install to fix a fresh-clone missing-deps baseline): 670 pass, 0 fail, 2 pre-existing skips -- zero regressions across the full suite, not just the touched files.",
+      "realPostgresVerification": "Beyond the mocked unit tests (which only prove the JS-level wiring, not that the SQL text itself is valid or produces the right rows): stood up a local test DB (existing backend-db-1 docker container), ran npm run migrate against it (all 10 migrations applied cleanly, confirming the parcel_record_companion_row schema matches what CI's own postgres:16 service would build), then ran the ACTUAL SQL constants directly -- (1) EXPOSED_VH_CROSSWALK_ROWS_SQL and DELETE_TARGET_ROWS_SQL against real inserted rows reproducing the traced pair's exact payload: the DELETE removed precisely the two 2026 viaCrosswalk rows and left both accounts' honest 2025 direct rows untouched; (2) HOIST_R_SITUS_SQL + the fixed WILLIAMSON_HISTORY_CROSSWALK_SQL against a synthetic cad_property fixture reproducing the traced pair's exact live dollar figures plus a clean singleton control account (R700000): vh_r_situs correctly computed situs_share_count=2 for both R664999/R665023 and =1 for R700000; the crosswalk query then returned ONLY R700000's row, structurally excluding both collided accounts -- proving the fix works against real Postgres, not just a JS mock that could pass on wrong SQL syntax."
+    }
+  },
+
+  "pr": {
+    "repo": "hauska-factory",
+    "number": 81,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/81",
+    "branch": "feat/vh-collision",
+    "opened": "2026-09-03T08:14:00Z"
+  },
+
+  "openForCP2": [
+    "CI not yet confirmed green (in progress at CP1 write time).",
+    "Merge, then Cloud Run deploy (digest-verified) not yet done.",
+    "vh-collision-remediate dry-run not yet dispatched -- sizing actually-collided vs exposed against the REAL Williamson store not yet run.",
+    "vh-collision-remediate --apply not yet dispatched.",
+    "parcel-value-history --apply re-run (fixed crosswalk) for Williamson not yet dispatched -- re-derives honest state after the reset.",
+    "Verify: post-run zero byte-identical crosswalk-flagged dollar rows across distinct situs-sharing R-keys; rowCount sums still equal landing denominators for the unaffected five counties -- not yet run."
+  ]
+}
