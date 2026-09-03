@@ -1,11 +1,11 @@
 ---
 id: 2026-09-02_bastrop_permitflow_islandcut_WDLL
 title: WDLL — PermitFlow island cut (Bastrop staff onto plan-review-app)
-status: draft
+status: approved
 last_updated: 2026-09-02
 applies_to: portfolio
 owner: nick
-operator_approval: pending
+operator_approval: 2026-09-02, "wdll approved." Standing constraints added at approval, binding on every dispatch under this card: (1) smartcity-os / PermitFlow / live Bastrop stays 100% live and untouched throughout — already the card's own no-touch premise, restated explicitly by the operator; (2) reuse existing data and component mapping as-is (Bastrop UDC sections, code-lookup manifest shape, parcel/jurisdiction wiring) — additive changes only, no rebuilding what already works.
 related:
   - 90_runbooks/wdll_practice.md
   - 90_operations/OPS-17_govtech_stack_plan_of_record
@@ -19,7 +19,7 @@ plan_row: G-52 explicitly NOT this card (blocked on missing feed, see Out of sco
 
 # WDLL: PermitFlow island cut — Bastrop staff onto plan-review-app
 
-Date: 2026-09-02  Status: draft
+Date: 2026-09-02  Status: approved
 Operator approval: pending
 
 One of five named island replacements in `_inbox/2026-08-17_dashboards_missing_pieces.md`'s recommended sequence, explicitly NOT "Bastrop cutover" (that framing is the doc's own named anti-pattern). Unblocked by Wave 1 closing today (OPS-17 A-104): Plan Review is now a real, functionally complete standalone product. This card is the one piece of that sequence Wave 1 makes buildable without a feed dependency.
