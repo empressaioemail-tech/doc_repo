@@ -41,9 +41,11 @@ Operator-locked 2026-08-10. Full rulings, unit economics and the GTM motion in `
 |---|---|---|
 | Free | $0 | The map and all layer toggles. The inspect card (zoning, setbacks, buildable envelope, flood, land use, acreage). Save properties. 3 AI chat messages per property. **Share.** |
 | Solo | **$49/mo** | The X-ray, the Flood and Drainage study, unlimited AI chat, unlimited properties. The full answer on one parcel at a time. |
-| Studio | **$129/mo** | Everything in Solo plus the professional deliverables: site plan CAD (DXF, IFC), terrain export, and owner data. |
+| Studio | **$129/mo** | Everything in Solo plus what you hand to someone else: screens and boards to work a list of parcels, owner data, the records package, site plan CAD (DXF, IFC), and terrain export. |
 | Team | **$299/mo up to 3 seats, then $25 per seat** | Everything in Studio, for a firm. Shared saved properties, seats, one bill. |
-| Prospect | post-launch | The set-level answer. Marked **coming soon to Studio and Team**. |
+| Prospect | post-launch | Monitoring — alerts and saved searches, tell me when something changes. Not the set-level answer (Studio's screens now cover that). Marked **coming soon**. |
+
+**Amended 2026-08-31** (`_decisions/2026-08-31_smartsite_ladder_recut_studio_works_a_list.md`, `_smartsite_gtm/03_ladder_recut_proposal.md`): this table was stale relative to the ladder re-cut. Screens and boards (`create_screen`, `add_to_screen`, `list_screens`) moved from ungated to Studio-or-Team, and the records package became a visible Studio row — both now reflected above, corrected here 2026-09-03. Prospect's job also changed from "the set-level answer" to monitoring, since Studio's screens absorbed that job. Prices are unchanged.
 
 **Per-property unlock: $15 for 30 days** (not "forever"). Breakeven against Solo is 3.3 properties.
 
