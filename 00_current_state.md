@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-01
+last_updated: 2026-09-02
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -14,6 +14,18 @@ Pointer doc. Live revisions and standing decisions live in `_STATE.md`. Do not t
 **Canon change 2026-08-22.** [`19_the_instrument_contract.md`](19_the_instrument_contract.md) is ratified and governs the model portfolio-wide: node, atom with an intensional subject, edge, layer, instrument, lens, access as two fields, and the four-property benchmark. It supersedes `77_place_graph_strategy` as north star and subsumes `05_living_lineage_thesis`; `_rd_disclosure_twin/09_twin_read_contract` and the atom contract package sit under it as its executable forms. Program at [`24_instrument_conformance_program.md`](24_instrument_conformance_program.md), positioning at [`03c_records_as_instruments_positioning.md`](03c_records_as_instruments_positioning.md), seat briefs in `_inbox/2026-08-22_{property,substrate}_seat_instrument_brief.md`. **Nothing in 19 may be claimed in present tense externally unless its armed table says armed.** This header's date predates the change; edited as a single pointer line because this file has concurrent writers.
 
 **CTX containment COMPLETE 2026-09-01.** All six Central Texas counties have `landing_parcel_jurisdiction`, zero unresolved; A1 closed and TOTALS is unblocked (Williamson 282,570 run `2a40517b`, Travis 380,917 run `dd58e803`, both `covers-v1`; the earlier four are `intersection-v1` and the six must never be averaged across method versions). Work is now claimed from a card queue rather than hand-carried: `_queue/README.md`, loop spec `90_runbooks/seat_loop.md`, ruling `_decisions/2026-09-01_seat_queue_protocol.md`. The Neon Tuesday 05:00-06:00 UTC maintenance window is enforced as a refusal in `_queue/config.json` and is still owed a move in the console. Session `_sessions/2026-09-01_ctx_containment_and_seat_queue_claude_code.md`.
+
+**P-113 opened 2026-09-02** (OPS-16 A-077): courthouse-records reliability hardening plus the
+never-built agent-exposure gap, audited against live `origin/main`, not the stale local
+checkout. Two worktrees dispatched under the existing `property` seat
+(`legacy-design-tools-p113-reliability`, `legacy-design-tools-p113-mcp`); this was the first
+real use of the compiled hand-carry dispatch mechanism rather than a description of it. Both
+windows reported idle by the operator immediately after the dispatch was pasted; not yet
+diagnosed against which of the recently-started peer sessions they are. Tracker
+`_smartsite_gtm/09_crm_courthouse_agent_roadmap.md`. Smart Site dashboard-mode line PARKED for
+v2 same session (`_decisions/2026-09-02_smartsite_dashboard_mode_parked_v2.md`); shell kept as
+reference, nothing scheduled against it now. Session
+`_sessions/2026-09-02_smartsite_gtm_courthouse_and_lane_mimicry_claude_code.md`.
 
 ## 1. Active fires
 

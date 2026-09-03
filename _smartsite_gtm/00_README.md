@@ -39,6 +39,7 @@ This folder governs what we DO. Channels, audiences, targeting, campaigns, platf
 | [06_consolidated_roadmap.md](06_consolidated_roadmap.md) | The wave plan to first revenue. Merged 2026-08-31 from two retired working threads. The reference the build works against. |
 | [07_rails_by_persona_pricing_input.md](07_rails_by_persona_pricing_input.md) | What the v2 rail template (52 to 65) means for who pays and for what. An INPUT to the pricing and packaging revisit that happens after the six fills land, not a pricing decision. |
 | [08_open_scope.md](08_open_scope.md) | Everything left, sized and sequenced: the forced merge order, the rows carded and not started, the rulings only the operator can make, and the findings logged for retest rather than carded. Written at the 2026-09-02 close. |
+| [09_crm_courthouse_agent_roadmap.md](09_crm_courthouse_agent_roadmap.md) | Row-per-item, instrument-graded tracker for the 2026-09-02 CRM/Stripe/GHL/courthouse thread. Points at OPS-16 P-113 rather than duplicating it; carries the not-yet-scoped items (GHL motion choice, map-imagery-currency, affiliate Settings tab) that would otherwise only live in a session summary. |
 
 ## The stack and who is the record of what
 
