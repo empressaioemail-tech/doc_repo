@@ -1,0 +1,107 @@
+{
+  "lane": "PARCEL-VH-COLLISION",
+  "planRows": ["F-01"],
+  "closedAt": "2026-09-03T08:45:00Z",
+  "dispatch": "_dispatches/2026-09-03_parcel-vh-collision_dispatch.md",
+  "seat": "property",
+  "filedBy": "property (session doc-repo, continuing the same session that closed PARCEL-B-SLATE1 and PARCEL-FLOOD-CUTOVER earlier this arc)",
+  "checkpoints": [
+    "_inbox/2026-09-03_parcel-vh-collision_cp1.json",
+    "_inbox/2026-09-03_parcel-vh-collision_cp2.json"
+  ],
+  "snapshot": {
+    "doc_repo": "P:/doc_repo main (base verified before every commit, per standing discipline)",
+    "factory_worktree": "P:/tmp/hauska-factory-vh-collision, branch feat/vh-collision (built and deployed from main at e6edb85 post-merge)"
+  },
+
+  "missionPremise": "Port PARCEL-S6-COLLISION's fix to valueHistory's own disjoint crosswalk. Slate-1's own CP1 found valueHistory's Williamson companion rows carrying the exact S6-COLLISION signature (byte-identical crosswalk-derived dollars across situs-sharing sibling R-accounts, viaCrosswalk=true) because WILLIAMSON_HISTORY_CROSSWALK_SQL is a deliberately disjoint copy of parcel-record-fill.mjs's own crosswalk (carries tax_year, joins a differently-shaped hoisted table) that never received S6's R-side situs-uniqueness guard. Port the exact pattern: the R-side guard itself, sweep sizing actually-collided vs exposed, explicit reset of collided companion rows BEFORE the idempotent re-run (upserts skip, never clear), shared-situs residue honestly absent, and the traced pair R664999/R665023 as the falsifier fixture.",
+
+  "completionPredicate": "Met in full, verified against real production state at every step, not mocked or assumed. (1) FIX -- vh_r_situs, a county-wide situs_share_count guard hoisted ONCE per county (zone-major from the start, applying S6's own leave_behind performance lesson rather than repeating it), added to WILLIAMSON_HISTORY_CROSSWALK_SQL's target CTE, requiring situs_share_count = 1. (2) SWEEP -- sized live against the real Williamson store: 134 exposed groups / 777 accounts (matching S6's own exposure count exactly, since both key off the identical situs-collision definition), 134 of 134 group-years actually collided (100%, not merely exposed -- expected given valueHistory's crosswalk writes one merged tuple per year, not independently-nullable fields). (3) REMEDIATION -- 777 companion rows (exactly matching the sizing) reset via a durable, pre-recorded run_events write naming every target, provably scoped (the specific place_key/row_index pairs carrying viaCrosswalk=true within an actually-collided group-year, never a blanket per-place_key wipe -- each account's own honest 2025 direct row survives). (4) the fixed crosswalk re-ran county-wide for Williamson, re-deriving honest state (282,570 scanned, 282,570 withHistory, 0 noHistory). (5) VERIFY -- the traced pair confirmed twice (immediately post-reset and again post-re-run) to carry only their honest 2025 row; a corpus-wide sweep re-derived all 134/777 exposed accounts live against production cad_property and confirmed ZERO of them carry any crosswalk-derived companion row at all (not merely zero collided pairs among a remaining candidate pool -- the fixed guard excludes the entire exposed population from the crosswalk path); zero collateral damage verified by exact before/after count comparison across all five unaffected counties.",
+
+  "scopeBasis": "hauska-factory only: parcel-value-history.mjs's own crosswalk SQL fix (vh_r_situs guard), a new vh-collision-remediate.mjs job (mirroring s6-collision-remediate.mjs's own structure and reusing its EXPOSED_GROUPS_SQL unmodified), writer-allowlist.mjs and cli.mjs wiring, tests (PR #81). Williamson county (48491) only -- the only county with this dual-key crosswalk mechanism, matching S6's own scope basis exactly. No schema change, no new Cloud Run job (reused factory-parcel-record-fill via an --args override, matching S6's and parcel-value-history's own established pattern).",
+
+  "prs": [
+    {
+      "repo": "hauska-factory",
+      "number": 81,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/81",
+      "branch": "feat/vh-collision",
+      "mergeSha": "e6edb85f86a592749c4298675914f436a1f229a4",
+      "ciCheckRunName": "test, gate8",
+      "ciConclusion": "SUCCESS"
+    }
+  ],
+
+  "cloudRunExecutions": [
+    { "execution": "factory-parcel-record-fill-r7tpq", "purpose": "vh-collision-remediate dry-run", "result": "134 exposed groups / 777 accounts / 134 collided group-years / 777 reset targets" },
+    { "execution": "factory-parcel-record-fill-lwfl5", "purpose": "vh-collision-remediate --apply", "runId": "73437178-cb99-4c22-ae6e-f6625d844ed0", "result": "777 rows reset, matching the dry-run sizing exactly" },
+    { "execution": "factory-parcel-record-fill-4gwgj", "purpose": "county-wide re-run of the fixed crosswalk for Williamson (parcel-value-history --county=48491 --apply)", "result": "282,570 scanned, 282,570 withHistory, 0 noHistory, distinctYears [2025,2026]" }
+  ],
+
+  "counts": {
+    "exposedGroups": 134,
+    "exposedAccounts": 777,
+    "collidedGroupYears": 134,
+    "rowsReset": 777,
+    "viaCrosswalkRowsAmongExposedAccountsAfterFix": 0,
+    "collateralDamageOnFiveUnaffectedCounties": 0,
+    "countingRule": "Live queries against FACTORY_DATABASE_URL_RO (parcel_record_companion_row) and PRODUCTION_NEONDB_URL (cad_property, for the exposed-group derivation), cross-referenced in application code since these are two separate databases; before/after comparison via exact count deltas across all six counties, not estimation."
+  },
+
+  "spotCheck": {
+    "placeKeys": ["48491:R664999", "48491:R665023"],
+    "situs": "1428 TREASURE MAP VW, LEANDER, TX 78641",
+    "before": "both accounts' 2026 valueHistory companion row byte-identical (landValue=126000, marketValue=739956, assessedValue=739956, improvementValue=613956, viaCrosswalk=true), matching S6's own live-confirmed dollar-cell collision exactly",
+    "immediatelyAfterReset": "both accounts down to exactly one companion row each (2025, viaCrosswalk=false)",
+    "afterFixedCrosswalkRerun": "unchanged -- still exactly one row each; the fixed guard does not regenerate the collided 2026 row on re-run, confirming durability"
+  },
+
+  "whatContradictedTheCard": "Nothing contradicted the dispatch's own premise or falsifier text this time -- unlike PARCEL-FLOOD-CUTOVER's Caldwell reconciliation or S6's own two surprises, every live number this card produced matched what the dispatch's spec predicted (the traced pair as falsifier, the reset-before-rerun sequencing, the exposure count matching S6's own). The one genuinely open observation: numericRollHoisted read 319,466 on this card's Williamson re-run versus 319,480 cited in a prior card's premise-reconciliation note a day earlier -- ordinary drift in the underlying numeric-roll source data over the intervening hours, not a regression from this fix, and not investigated further since the numeric roll's own row count is outside this card's fix scope (this card only touches the R-side guard, never the numeric-roll hoist itself).",
+
+  "constraintsHonored": [
+    "Cloud Run only, digest verified two independently-derived ways (the build's own log line vs a separate gcloud run jobs describe read) before executing anything",
+    "checked for live executions on all four jobs the shared cloudbuild file redeploys before building, per that file's own documented warning -- one was running (factory-publish-gate-sched, held by the concurrent session); confirmed safe per the file's own guarantee that a redeploy never affects an already-running execution",
+    "dry-run before --apply, matching S6's own discipline",
+    "the reset was recorded via a durable run_events row naming every target and its prior payload, written BEFORE the DELETE ran",
+    "the reset scope was provable and row-exact (place_key + row_index pairs), never a blanket per-place_key wipe -- each account's own honest direct-year row was never at risk",
+    "zero collateral verified by exact count comparison across all five unaffected counties, both before and after the re-run",
+    "the traced-pair falsifier verified against real production state twice, not asserted from the job's own return value alone",
+    "the broader corpus-wide sweep re-derived the exposed population LIVE from production rather than trusting the dry-run's own count as still current"
+  ],
+
+  "leave_behind": {
+    "leave_behind": [
+      {
+        "item": "None of S6's own performance-regression leave_behind applies here: this card applied the 'hoist once per county, zone-major' lesson FROM THE START (vh_r_situs is a hoisted TEMP table with its own index, computed once per county alongside the already-existing vh_numeric_roll hoist) rather than discovering the need for it mid-run the way S6's own first pass did. No follow-up performance card is owed for this rail.",
+        "owner": "property",
+        "plan_row": "F-01",
+        "note": "recorded as a positive, not a gap -- named so the pattern (apply prior cards' own leave_behinds proactively rather than re-discovering them) is visible in future review, not so anyone treats this as an open item."
+      },
+      {
+        "item": "The 134/777 exposed-group population itself (two R-accounts genuinely sharing one situs_address in the raw WCAD source data, a real new-construction-subdivision pattern) is a structural fact about the source and is NOT resolved by this fix -- both this card and S6 correctly leave it unresolved, since there is no principled way to determine which sibling 'really' owns the numeric-roll's dollar data without a better join key WCAD itself does not expose. Both accounts now correctly carry no crosswalk-derived valueHistory row at all rather than a fabricated one.",
+        "owner": "planner",
+        "plan_row": "F-01"
+      }
+    ]
+  },
+
+  "scratch": {
+    "LESSON": [
+      "A disjoint copy of a fixed query does not inherit the fix -- this is the second instance of this exact failure mode in this program (S6's fix landed in parcel-record-fill.mjs's crosswalk; valueHistory's own deliberately-disjoint copy of the same query shape never received it). When a module comment says 'deliberately disjoint, keep it that way,' that is also a standing instruction to re-check that module whenever the query it's disjoint FROM gets a correctness fix, not just a performance or feature change.",
+      "A prior card's own leave_behind is worth reading and applying proactively to a NEW build that shares its shape, not just recorded as a debt. S6's leave_behind named 'hoist the county-wide window function once, don't recompute per chunk' as a self-inflicted performance regression; this card's own hoisted-guard design applied that lesson from the very first version, at zero extra cost, because it was already known.",
+      "Where a collision mechanism differs in shape from a prior card's own (S6: four independently-nullable scalar fields per account; valueHistory: one merged tuple per account per year), the ACTUALLY-COLLIDED test has to be re-derived for the new shape, not copy-pasted -- here, existence of 2+ distinct place_keys sharing a viaCrosswalk row for one group-year IS the collision (no per-field partial case), simpler than S6's own OWN_ROW_DOLLAR_FIELDS_SQL nullability check, because a crosswalk row is written all-or-nothing per year, not per field."
+    ],
+    "GROUND-TRUTH": [
+      "2026-09-03T08:11:23Z hauska-factory PR #81 MERGED e6edb85f86a592749c4298675914f436a1f229a4, CI SUCCESS",
+      "2026-09-03T08:13-08:15Z Cloud Build 7d649696-3e87-4652-afa6-46d5eedf648c SUCCESS, digest sha256:4e4776d97273df0b76dcf48a98843ea66ee337e1f325b94efd84fb6c1bb69007, verified matching both the build log and a separate gcloud run jobs describe read",
+      "2026-09-03T~08:16Z dry-run (factory-parcel-record-fill-r7tpq): 134/777/134/777",
+      "2026-09-03T~08:17Z apply (factory-parcel-record-fill-lwfl5): 777 rows reset, runId 73437178-cb99-4c22-ae6e-f6625d844ed0",
+      "2026-09-03T~08:20-08:35Z Williamson re-run (factory-parcel-record-fill-4gwgj): 282,570 scanned / withHistory, 0 noHistory",
+      "Post-run live verification: traced pair R664999/R665023 confirmed twice to carry only their honest 2025 row; corpus-wide sweep confirms 0 of the live-rederived 134/777 exposed population still carries any viaCrosswalk row; five unaffected counties byte-identical before/after (62256/49710/194537/114254/754376); Williamson stable at 539397 (540174 minus 777) both before and after the re-run"
+    ],
+    "DEAD-END": [],
+    "OPEN": [
+      "numericRollHoisted drifted from 319,480 (a prior card's premise-reconciliation note) to 319,466 (this card's own re-run) over roughly a day -- ordinary source-data drift, not investigated further, out of this card's fix scope."
+    ]
+  }
+}

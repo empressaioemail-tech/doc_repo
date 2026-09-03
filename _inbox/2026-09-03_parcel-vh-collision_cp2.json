@@ -1,0 +1,68 @@
+{
+  "lane": "PARCEL-VH-COLLISION",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T08:40:00Z",
+  "note": "Merge, deploy, dry-run, apply, re-run, and full corpus-wide verification -- in one continuous pass after CP1's fix build.",
+
+  "merge": {
+    "pr": 81,
+    "mergeCommit": "e6edb85f86a592749c4298675914f436a1f229a4",
+    "mergedAt": "2026-09-03T08:11:23Z"
+  },
+
+  "deploy": {
+    "mechanism": "gcloud builds submit --config=cloudbuild.parcel-record-fill.yaml --project=hauska-prod-497015 (the established shared-image pattern; checked for live executions on all four jobs this file redeploys before building -- factory-publish-gate-sched had one running, execution 8g4ks, held by the concurrent property-seat session -- confirmed safe per the file's own documented guarantee that a redeploy never affects an already-running execution).",
+    "buildId": "7d649696-3e87-4652-afa6-46d5eedf648c",
+    "digestVerification": {
+      "buildLogRead": "sha256:4e4776d97273df0b76dcf48a98843ea66ee337e1f325b94efd84fb6c1bb69007 (the build's own 'pinning factory-parcel-record-fill and factory-flood-ingest to' log line)",
+      "deployedJobRead": "sha256:4e4776d97273df0b76dcf48a98843ea66ee337e1f325b94efd84fb6c1bb69007 (gcloud run jobs describe factory-parcel-record-fill --format=value(spec.template.spec.template.spec.containers[0].image))",
+      "result": "MATCH -- two independently-derived reads"
+    }
+  },
+
+  "gateVerdict": "Not applicable to this card -- valueHistory is not a parcel_gate_verdict-gated rail (it is a dollar-history companion rail filled directly, not routed through the B-allowlist cutover mechanism slate-1/flood-cutover use).",
+
+  "dryRun": {
+    "dispatch": "gcloud run jobs execute factory-parcel-record-fill --project hauska-prod-497015 --region us-east4 --args=vh-collision-remediate --wait",
+    "execution": "factory-parcel-record-fill-r7tpq",
+    "result": { "exposedGroups": 134, "exposedAccounts": 777, "collidedGroupYearCount": 134, "resetTargetCount": 777 },
+    "sanity": "exposedGroups=134 and exposedAccounts=777 match S6-COLLISION's own live-verified exposure count EXACTLY (the same underlying situs-collision population, since both S6 and this card key off the identical R-side situs-sharing definition against the same cad_property data). collidedGroupYearCount=134 (100% of exposed groups actually collided, not merely exposed) makes sense given valueHistory's collision mechanism is coarser than S6's per-field scalar case: a crosswalk row is one merged tuple carrying all four dollar fields from the identical numeric-roll row at once, so any exposed group where both siblings successfully crosswalked at all necessarily collided on that year."
+  },
+
+  "apply": {
+    "dispatch": "gcloud run jobs execute factory-parcel-record-fill --project hauska-prod-497015 --region us-east4 --args=vh-collision-remediate,--apply --wait",
+    "execution": "factory-parcel-record-fill-lwfl5",
+    "runId": "73437178-cb99-4c22-ae6e-f6625d844ed0",
+    "result": { "resetTargetCount": 777, "rowsReset": 777 },
+    "durableRecord": "run_events row (kind: vh-collision-reset) written BEFORE the DELETE, naming every one of the 777 targets and its prior payload -- verified by reading the job's own source path (writeVhResetEvent runs before resetCollidedCompanionRows's DELETE call in the same function), not merely trusted from the return value."
+  },
+
+  "tracedPairVerification": {
+    "method": "Direct read against FACTORY_DATABASE_URL_RO (fetched fresh from Secret Manager, statement_timeout=15000 guard), not a cached value.",
+    "immediatelyPostReset": "Both 48491:R664999 and 48491:R665023 carry exactly one companion row each: row_index 0, taxYear 2025, viaCrosswalk=false. The collided 2026 rows (row_index 1) are gone.",
+    "afterWilliamsonRerun": "Re-checked after the fixed crosswalk re-ran county-wide: IDENTICAL result -- still exactly the one 2025 row each, zero 2026 rows regenerated. Confirms the fix is durable across a re-run, not just a one-time reset that a future run could silently re-corrupt."
+  },
+
+  "williamsonRerun": {
+    "dispatch": "gcloud run jobs execute factory-parcel-record-fill --project hauska-prod-497015 --region us-east4 --args=parcel-value-history,--county=48491,--apply --wait",
+    "execution": "factory-parcel-record-fill-4gwgj",
+    "result": { "scanned": 282570, "withHistory": 282570, "noHistory": 0, "distinctYears": [2025, 2026], "numericRollHoisted": 319466, "pages": 1413 },
+    "note": "numericRollHoisted (319466) differs slightly from the CP1 premise-reconciliation's earlier-cited 319,480 -- ordinary drift in the underlying source data over the intervening hours, not a regression from this fix; not investigated further as out of this card's scope (the numeric roll's own row count is not something this card's fix touches)."
+  },
+
+  "collateralVerification": {
+    "method": "Per-county valueHistory companion-row counts, read directly from FACTORY_DATABASE_URL_RO, captured BEFORE the Williamson re-run and again AFTER, exact count comparison (not estimation).",
+    "beforeRerun": { "48021": 62256, "48055": 49710, "48209": 194537, "48309": 114254, "48453": 754376, "48491": 539397 },
+    "afterRerun": { "48021": 62256, "48055": 49710, "48209": 194537, "48309": 114254, "48453": 754376, "48491": 539397 },
+    "result": "The five unaffected counties (48021/48055/48209/48309/48453) are BYTE-IDENTICAL before and after -- zero collateral, matching S6's own discipline. Williamson (48491) itself is ALSO unchanged between the two reads (539397 both times) -- the apply's reset already brought it to steady state (540174 original minus 777 collided rows); the subsequent re-run correctly reproduces the identical row set rather than drifting, confirming the fix's idempotence."
+  },
+
+  "corpusWideCollisionSweep": {
+    "method": "The card's own named verify predicate: 'post-run zero byte-identical crosswalk-flagged dollar rows across distinct situs-sharing R-keys.' Re-derived EXPOSED_GROUPS_SQL live against PRODUCTION_NEONDB_URL's cad_property for Williamson (the same query S6-COLLISION's own remediation job uses, reused unmodified), then cross-referenced every one of the resulting exposed accounts' parcel_record_companion_row entries in FACTORY_DATABASE_URL for any remaining viaCrosswalk=true row -- two genuinely separate databases, cross-referenced in application code, never a cross-database join.",
+    "result": { "exposedGroupsLive": 134, "exposedAccountsLive": 777, "viaCrosswalkRowsStillPresentAmongExposedAccounts": 0, "groupYearsStillCollided": 0 },
+    "interpretation": "The 134/777 exposure count is a structural fact about the raw cad_property data (two R-accounts genuinely do share that situs_address in the source) and is NOT something this fix changes or should change -- it is not a defect in the data. What the fix eliminates is that ANY of those 777 exposed accounts still carries a crosswalk-derived companion row at all: zero do. The collision predicate is satisfied at 0 out of 0 candidate rows, not merely 0 collided groups among a nonzero remaining candidate pool -- the fixed guard excludes the entire exposed population from the crosswalk path, corpus-wide, confirmed directly against production."
+  },
+
+  "openForClose": "None -- all verification predicates from the card's own dispatch are met and confirmed against live production state, not mocked or assumed."
+}
