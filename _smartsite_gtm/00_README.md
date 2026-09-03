@@ -38,6 +38,7 @@ This folder governs what we DO. Channels, audiences, targeting, campaigns, platf
 | [05_ghl_chrome_runbook.md](05_ghl_chrome_runbook.md) | The browser-only subset of the GoHighLevel setup, written for a browser-driving agent and ordered by lead time. Supersedes 04 tasks 1, 2, 5, 6, 7, 8 and 9 as execution instructions. |
 | [06_consolidated_roadmap.md](06_consolidated_roadmap.md) | The wave plan to first revenue. Merged 2026-08-31 from two retired working threads. The reference the build works against. |
 | [07_rails_by_persona_pricing_input.md](07_rails_by_persona_pricing_input.md) | What the v2 rail template (52 to 65) means for who pays and for what. An INPUT to the pricing and packaging revisit that happens after the six fills land, not a pricing decision. |
+| [08_open_scope.md](08_open_scope.md) | Everything left, sized and sequenced: the forced merge order, the rows carded and not started, the rulings only the operator can make, and the findings logged for retest rather than carded. Written at the 2026-09-02 close. |
 
 ## The stack and who is the record of what
 
