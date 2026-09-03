@@ -50,7 +50,9 @@ A smart site is everything you need to know about a place, in one place.
 
 ## Coverage posture
 
-Speak of coverage as nationwide United States. The layer is built jurisdiction by jurisdiction under mechanical certification gates, and the go-to-market assumption is national coverage at launch. Do not enumerate specific counties or cities as "all we have" in market-facing material; if a buyer asks about a specific jurisdiction, the honest answer is that coverage is rolling out nationally and their jurisdiction can be confirmed on request.
+Speak of coverage as nationwide United States. The layer is built jurisdiction by jurisdiction under mechanical certification gates, and the go-to-market assumption is national coverage at launch. Do not enumerate specific counties or cities as "all we have" in market-facing material; if a buyer asks about a specific jurisdiction, the honest answer is that coverage is rolling out nationally and the product itself will tell them what it does not know about their parcel.
+
+**Corrected 2026-09-02.** This paragraph previously ended "their jurisdiction can be confirmed on request." Master 06 retired that instruction by name, date and reason on 2026-08-10: it puts a human in the loop, which the humanless ruling forbids, and a prospective buyer who has to ask is a sale that dies silently. The replacement is the same one master 06 names — coverage is a question the product answers, not a question you ask us. The retirement never propagated here, so two masters carried opposite instructions for three weeks.
 
 ## Claims you may make freely
 
