@@ -1,0 +1,17 @@
+{
+  "lane": "FACTORY-REAPER-PHANTOMS",
+  "checkpoint": "CP1",
+  "planRows": ["F-01"],
+  "at": "2026-09-02T23:50:00Z",
+  "missionPremise": "From _inbox/2026-09-02_factory-job-sigterm_close.json's own open/leave_behind items: reapStartedRuns() matches only status='started' but several jobs write status='running' -- a starved mechanism (has a trigger and correct downstream logic, but its own precondition is never supplied for that class of row).",
+  "rootCauseVerification": {
+    "grep": "grep -rhn \"status:\\s*['\\\"]\" src/jobs/*.mjs src/control/*.mjs, filtered to startRun() call sites' own status: literal. Result: 8 job files write status:'running' (flood-ingest, parcel-r4-companions, parcel-r5-zoning, s6-collision-remediate, publish-gate-sched, purge-bastrop-orphans, parcel-record-fill, parcel-value-history) against ~15 that write status:'started' (dollar-fields-patch, p2-juris, staging-reset, restamp-access, conformant, snapshot, verify-walk, bexar-cad, bexar-edges, cc-publish, landing-import, lease-v2-migrate, manifest-import, access-policy-prestep, f10-cad-loop, api.mjs). No third in-flight status string exists (refused/incorporated/unincorporated/unmeasured/missing/terminated-this-tick are all unrelated fields caught by the same grep, not run statuses)."
+  },
+  "designChoice": "IN_FLIGHT_STATUSES = ['started', 'running'] exported from reaper.mjs, applied to every place the file previously hardcoded 'started': the main SELECT (reapStartedRuns), syncRunStatusFromTermination's UPDATE, and parentState's termination check (a 'running' parent now correctly keeps a child unorphaned, matching a 'started' parent's behavior).",
+  "testPlan": "New test/reaper-phantom-statuses.test.mjs with a fake client that ACTUALLY filters fixture rows by the query's own params[0] status list (unlike the existing ctx-reaper.test.mjs fake client, which stubs the SELECT entirely regardless of params and so cannot catch a status-string regression on its own). Falsifier: identical fixture and query text, filtered by the pre-fix single-value ['started'] list returns zero rows for a 'running' fixture; filtered by IN_FLIGHT_STATUSES returns it. Also covers the widened parentState check and syncRunStatusFromTermination's param shape. Full suite: 652/652 passing (2 pre-existing skips); existing ctx-reaper.test.mjs 11/11 unaffected.",
+  "targetPhantomRows": {
+    "note": "Per the SIGTERM close's own leave_behind: two rows, parcel-record-fill phase, status='running', scope.host='not-cloud-run', scope.execution=null, started 2026-09-01T18:15-18:23Z. No Cloud Run execution name to check -- once the widened SELECT sees them, they fall through matchExecution (unnamed, returns exec:null) and orphan purely on age (ageS > maxDurationS, default 3600s; both rows are ~29 hours old at CP1 time), no invented evidence required.",
+    "runIds": ["9ef1b6d4-8d88-4615-ade4-f9971dce80aa", "28823aa1-d233-477b-b1d4-e56a0cbb3745"]
+  },
+  "planForCP2": "Merge, deploy cloudbuild.conformant.yaml (carries reaper.mjs to factory-conformant, the job the scheduled reap tick runs on), execute one live reap tick, confirm both target rows land at status='orphaned' with recorder='reaper' -- the fixed mechanism itself, not another manual override. Then sweep the redeploy list per item 3."
+}

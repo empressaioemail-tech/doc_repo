@@ -1,0 +1,53 @@
+{
+  "lane": "FACTORY-REAPER-PHANTOMS",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T00:01:00Z",
+  "pr": {
+    "number": 80,
+    "repo": "empressaioemail-tech/hauska-factory",
+    "mergeCommit": "1f473e2144229993154e3c326b5037cf9452a3b6",
+    "mergedAt": "2026-09-02T23:53:46Z",
+    "ciConclusion": "gate8: pass (x2), test: pass (x2)"
+  },
+  "deploy": {
+    "builds": [
+      { "config": "cloudbuild.conformant.yaml", "buildId": "797cc0e1-9aab-46cc-a76c-2b95e0495c01", "digest": "sha256:00e755e39d75950b54226ac67c20d73df98105d9999ea81581caafcc7026f4a2", "jobsDeployed": ["factory-conformant-migrate", "factory-conformant", "factory-f10-cad-loop", "factory-restamp-access"] },
+      { "config": "cloudbuild.p2-juris.yaml", "buildId": "639fcf31-95d2-4961-b9a8-4c10f503fa4f", "digest": "sha256:907249ebf1192d48732a5b59346607c7cac2b2674239aefaa2d629d5c338bb75", "jobsDeployed": ["factory-p2-juris"] },
+      { "config": "cloudbuild.publish.yaml", "buildId": "3ffcb043-87b1-4399-8731-f672586af4a2", "digest": "sha256:a431b1c7342a1a8aff06e3fae29ab7d78f27d8e8862f63c42c6ab5e10075db5f", "jobsDeployed": ["factory-publish-migrate", "factory-staging-reset", "factory-bastrop-publish", "factory-verify-walk", "factory-dollar-fields-patch"] }
+    ],
+    "digestVerification": "gcloud run jobs describe read back for all 10 job names across the three builds; every one matches its own build's gcloud builds describe --format=value(results.images[0].digest) exactly."
+  },
+  "phantomRowReconciliation": {
+    "mechanism": "One live reap tick (gcloud run jobs execute factory-conformant --wait --args=reap, execution factory-conformant-q8ktw) against the newly deployed image -- the FIXED mechanism itself, not a manual reap terminate override.",
+    "result": {
+      "9ef1b6d4-8d88-4615-ade4-f9971dce80aa": "status='orphaned', exit_kind='orphaned', recorder='reaper', reason='max-duration-exceeded:3600s'",
+      "28823aa1-d233-477b-b1d4-e56a0cbb3745": "status='orphaned', exit_kind='orphaned', recorder='reaper', reason='max-duration-exceeded:3600s'"
+    },
+    "significance": "Both rows carried scope.host='not-cloud-run' and scope.execution=null -- no externally-checkable evidence existed for a manual reap terminate (which refuses an inferred exit_kind). The widened SELECT alone was sufficient: once visible, they fell through matchExecution (unnamed, exec:null) and orphaned purely on age, the correct, non-invented resolution path."
+  },
+  "zeroStaleRowsVerification": {
+    "query": "SELECT r.id, r.phase, r.status, r.started_at FROM runs r WHERE r.status IN ('running','started') AND extract(epoch FROM (now() - r.started_at)) > COALESCE((r.scope->>'max_duration_s')::int, 3600)",
+    "result": "[] (zero rows) -- run 2026-09-03T00:00Z, after both the reap tick and the redeploy sweep",
+    "note": "The one remaining in-flight row store-wide (a6d3d6c3, flood-ingest, Williamson/48491, this session's other active card) is correctly excluded: it is 51 minutes old against no scope.max_duration_s override, well under the 3600s default and the multi-hour real runtime this job family needs (a same-shape county, Travis, took 2h14m per this session's other card)."
+  },
+  "redeploySweep": {
+    "coveredThisCard": {
+      "note": "10 job resources deployed across 3 builds this checkpoint (conformant.yaml's 4 + p2-juris.yaml's 1 + publish.yaml's 5), on top of the 4 already covered by the FACTORY-JOB-SIGTERM close's own deploy (parcel-record-fill, flood-ingest, parcel-r4-companions, publish-gate-sched) -- 14 of the hauska-factory-image job resources now carry both fixes.",
+      "jobs": ["factory-conformant-migrate", "factory-conformant", "factory-f10-cad-loop", "factory-restamp-access", "factory-p2-juris", "factory-publish-migrate", "factory-staging-reset", "factory-bastrop-publish", "factory-verify-walk", "factory-dollar-fields-patch"]
+    },
+    "deployOnNextNaturalTouch": {
+      "note": "12 hauska-factory-image job resources have no discoverable cloudbuild.*.yaml pipeline in this repo (5 cloudbuild files total, all read and accounted for above). Reconstructing a gcloud run jobs deploy for each from scratch risks silently dropping --set-secrets/--set-env-vars/--memory/--cpu this session has no source-of-truth for (gcloud run jobs deploy REPLACES the spec, it does not patch), so these are marked deploy-on-next-natural-touch rather than swept.",
+      "jobs": ["factory-bake-migrate", "factory-cc-publish", "factory-console-audit", "factory-landing-cad", "factory-landing-footprint", "factory-landing-import", "factory-landing-parcel", "factory-landing-pipeline", "factory-landing-wells", "factory-manifest-import", "factory-missing-env", "factory-snapshot"]
+    },
+    "explicitlyNotApplicable": {
+      "job": "factory-atoms-cad",
+      "reason": "Runs a distinct image (us-east4-docker.pkg.dev/.../hauska-factory/atoms-writer, not hauska-factory) -- does not contain runs.mjs, out of scope by construction, not a gap."
+    }
+  },
+  "testResults": {
+    "unitSuite": "npm test: 652/652 passing, 2 pre-existing skips, 0 failures",
+    "reaperPhantomFile": "test/reaper-phantom-statuses.test.mjs: 5/5 passing including the status-string falsifier",
+    "existingReaperFile": "test/ctx-reaper.test.mjs: 11/11 passing, unaffected"
+  }
+}

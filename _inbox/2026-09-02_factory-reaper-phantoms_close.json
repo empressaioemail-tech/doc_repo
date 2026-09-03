@@ -1,0 +1,51 @@
+{
+  "lane": "FACTORY-REAPER-PHANTOMS",
+  "status": "closed",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T00:02:00Z",
+  "missionPremise": "Dispatch _dispatches/2026-09-02_factory-reaper-phantoms_dispatch.md, itself sourced from the FACTORY-JOB-SIGTERM close's own leave_behind: reapStartedRuns() matches only status='started', but 8 of ~24 job files write status='running' to startRun, so their runs were structurally invisible to every reap tick, forever, regardless of age -- a starved mechanism (correct downstream logic, never-supplied precondition for that class).",
+  "completionPredicate": "The reap tick's own SELECT, syncRunStatusFromTermination, and parentState all check membership in IN_FLIGHT_STATUSES (['started','running']) rather than a bare 'started' string; a genuine falsifier proves the status string itself is what changed; the fix is merged and deployed to 10 job resources (14 counting the SIGTERM close's own 4); both phantom rows named in the dispatch are reconciled via the fixed mechanism itself (recorder='reaper', not a manual override); and a live zero-stale-rows query, run after both the reap tick and the redeploy sweep, returns no rows -- the exact evidence the dispatch asked for.",
+  "scopeBasis": "Redeployed the 3 additional cloudbuild pipelines this repo has checked in beyond the SIGTERM close's own 2 (conformant.yaml, p2-juris.yaml, publish.yaml), covering 10 more job resources at zero configuration risk since each pipeline already fully specifies its own jobs' secrets/env/memory. 12 remaining job resources have no discoverable pipeline in this repo; reconstructing their gcloud run jobs deploy commands from scratch was judged out of proportion risk (a deploy REPLACES the spec; a dropped --set-secrets or --memory flag would be a silent regression this session has no way to catch), so they are named explicitly as deploy-on-next-natural-touch rather than swept. factory-atoms-cad runs a distinct image entirely and does not contain this code -- correctly out of scope, not a gap.",
+  "pr": {
+    "number": 80,
+    "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/80",
+    "repo": "empressaioemail-tech/hauska-factory",
+    "mergeCommit": "1f473e2144229993154e3c326b5037cf9452a3b6",
+    "mergedAt": "2026-09-02T23:53:46Z",
+    "ciConclusion": "gate8: SUCCESS (x2), test: SUCCESS (x2)"
+  },
+  "checkpoints": {
+    "cp1": "_inbox/2026-09-02_factory-reaper-phantoms_cp1.json",
+    "cp2": "_inbox/2026-09-02_factory-reaper-phantoms_cp2.json"
+  },
+  "counts": {
+    "unitTestsAdded": 5,
+    "unitTestsAddedCountingRule": "test/reaper-phantom-statuses.test.mjs test() blocks, all passing, including the status-string falsifier",
+    "fullSuite": "652/652 passing, 2 pre-existing skips",
+    "phantomRowsReconciledThisCard": 2,
+    "phantomRowsReconciledCountingRule": "runs.status='running' rows named in the dispatch, resolved to status='orphaned' via one live reap tick against the deployed fix -- zero manual reap terminate invocations needed for this card",
+    "jobResourcesRedeployedThisCard": 10,
+    "jobResourcesRedeployedCountingRule": "distinct Cloud Run job names updated across 3 triggered cloudbuild pipelines, each digest-verified against its own build's reported digest",
+    "jobResourcesCoveredCumulative": 14,
+    "jobResourcesCoveredCumulativeCountingRule": "this card's 10 plus the FACTORY-JOB-SIGTERM close's own 4 (factory-parcel-record-fill, factory-flood-ingest, factory-parcel-r4-companions, factory-publish-gate-sched)",
+    "jobResourcesDeployOnNextNaturalTouch": 12,
+    "staleInFlightRowsAtClose": 0,
+    "staleInFlightRowsCountingRule": "runs.status IN ('running','started') AND age_seconds > COALESCE(scope.max_duration_s, 3600), live query pasted in CP2"
+  },
+  "constraintsHonored": [
+    "Store writes only via Cloud Run jobs with run rows -- the phantom-row reconciliation ran as a real Cloud Run execution (factory-conformant-q8ktw) of the fixed image, never a laptop apply; refuseLaptop() in reap.mjs enforces this structurally.",
+    "Digest-matched images before executing -- all 10 redeployed job resources read back and compared against each build's own reported digest before the live reap tick or any close claim.",
+    "Re-green against current base before merge -- PR #80 CI (gate8 x2, test x2) confirmed green via gh pr checks before gh pr merge.",
+    "Reads with statement_timeout guards -- every runs/termination_records read this card used a bounded pg Client (statement_timeout 15000ms).",
+    "Never converted unaccounted to absent-verified, never downgraded a non-unaccounted cell -- not applicable; this card's surface is run-row lifecycle, not parcel-record cells.",
+    "Committed and pushed own branch before closing -- feat/reaper-phantoms pushed, PR #80 opened and merged to main.",
+    "No silent caps -- the 12 job resources not swept are named explicitly with their reason, not omitted."
+  ],
+  "open": [
+    "12 hauska-factory-image job resources (factory-bake-migrate, factory-cc-publish, factory-console-audit, factory-landing-cad, factory-landing-footprint, factory-landing-import, factory-landing-parcel, factory-landing-pipeline, factory-landing-wells, factory-manifest-import, factory-missing-env, factory-snapshot) carry both fixes in source but run stale images until their own next deploy -- a run started by one of these between now and that deploy would still leave a phantom row on an external kill (the SIGTERM guard) and would still be invisible to the reap tick if it happens to write status='running' (the reaper fix). Low practical risk: none of these are named in this session's active work, and IN_FLIGHT_STATUSES already covers 'running' the moment any of them does redeploy.",
+    "The redeploy-sweep gap itself (no checked-in pipeline for those 12 jobs) is a standing operational gap worth its own card if a future incident traces to one of them running stale for a long period."
+  ],
+  "leave_behind": [
+    { "item": "deploy-on-next-natural-touch for the 12 job resources listed in `open` above", "owner": "next property-seat claimant or whichever lane next touches one of those jobs", "plan_row": "F-01" }
+  ]
+}
