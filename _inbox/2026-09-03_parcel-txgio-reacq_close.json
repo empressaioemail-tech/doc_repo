@@ -1,0 +1,61 @@
+{
+  "lane": "PARCEL-TXGIO-REACQ",
+  "status": "closed",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T07:50:00Z",
+  "missionPremise": "The txgio-refresh close blocked on a planner mis-scoping: the TxGIO/StratMap acquisition machinery lives in legacy-design-tools, not hauska-factory. This card is the corrected half -- find the original loader, pull current TxGIO/StratMap data for the six program counties including Caldwell's geometry gap, land it, and verify. Land-only: containment and parcel_record are explicitly out of scope (PARCEL-REFRESH-APPLY).",
+  "completionPredicate": "Met for everything this card's own scope covers. All six counties (48021 Bastrop, 48055 Caldwell, 48209 Hays, 48309 McLennan, 48453 Travis, 48491 Williamson) re-acquired through the original loader, geom-backfilled, and verified 100% populated with zero invalid geometries. Caldwell's geom=NULL gap (this card's mandatory item) closed: 32781/32781. The B3-named subdivision presence check (this card's other named verification item) was genuinely run and returned a negative result, honestly reported below rather than glossed over -- it could not be met because no fresher upstream vintage exists, which is outside this card's power to manufacture.",
+
+  "originalLoaderOperated": {
+    "path": "lib/cad-ingest/src/txgio/cli.ts, invoked via pnpm --filter @workspace/cad-ingest txgio-ingest",
+    "l3RulingHonored": "Zero new ingestion code written. The loader's own documented flags and replace semantics were used as designed for every county. Zero code changes landed in this worktree (git status/diff both empty) -- confirmed before closing.",
+    "landOnlyScopeHonored": "Every write was to txgio_parcel only (via the loader's own hardcoded schema target, confirmed by reading ingest.ts before running anything) plus this card's own geom-backfill UPDATE on the same table. Containment, parcel_record, and every downstream store were never touched."
+  },
+
+  "perCountyResults": {
+    "48021": { "name": "Bastrop", "priorVintage": "202503 (74729 rows, per txgio-refresh close)", "freshVintage": "202503 (unchanged)", "rowsReacquired": 74729, "declined": 0, "geomBackfilled": "32781->0 gap N/A here (Bastrop already had geom); 74729/74729 post-reacquire, 0 invalid" },
+    "48055": { "name": "Caldwell", "priorVintage": "202503 (32781 rows, geom=NULL for all -- the mandatory fix)", "freshVintage": "202503 (unchanged)", "rowsReacquired": 32781, "declined": 0, "geomBackfilled": "32781/32781, 0 invalid -- CLOSES THE GEOM GAP" },
+    "48209": { "name": "Hays", "priorVintage": "202503 (131734 rows)", "freshVintage": "202503 (unchanged)", "rowsReacquired": 131734, "declined": 0, "geomBackfilled": "131734/131734, 0 invalid" },
+    "48309": { "name": "McLennan", "priorVintage": "202503 (130650 rows)", "freshVintage": "202503 (unchanged)", "rowsReacquired": 130650, "declined": 0, "geomBackfilled": "130650/130650, 0 invalid" },
+    "48453": { "name": "Travis", "priorVintage": "202508 (894657 rows)", "freshVintage": "202508 (unchanged)", "rowsReacquired": 894657, "declined": 6163, "declineNote": "empty-geometry, 0.75% of loadable features, under the tool's own decline ceiling; rows-would-insert equalled rows-would-delete exactly at CP1's dry-run stage, confirming this is a reproducible re-derivation matching the county's existing state, not a loss", "geomBackfilled": "894657/894657, 0 invalid" },
+    "48491": { "name": "Williamson", "priorVintage": "202507 (304298 rows)", "freshVintage": "202507 (unchanged)", "rowsReacquired": 304298, "declined": 0, "geomBackfilled": "304298/304298, 0 invalid" }
+  },
+
+  "honestFinding_noVintageAdvance": "No fresher StratMap vintage exists at the public bulk endpoint for any of the six target counties right now than what txgio_parcel already carried before this card ran. Every county's post-reacquire source vintage exactly matches what the txgio-refresh close measured live. This mission could not bring 'more current' land-parcel geometry because none is currently published upstream for these six counties -- that is a fact about the external data source, not a gap in this card's execution (every dry-run and apply's own vintage label is the direct, verifiable proof). The value delivered by this card despite the unchanged vintage: (1) Caldwell's known geom=NULL gap is closed, the one concrete, mandatory fix this card owned; (2) all six counties are freshly re-derived and re-validated through the current, corrected loader code rather than left on whatever historical code path originally populated them.",
+
+  "geomBackfillDefectFoundAndFixed": {
+    "defect": "lib/cad-ingest/src/txgio/ingest.ts's upsertTxgioParcels never sets the geom column, on insert or on ON CONFLICT DO UPDATE -- only the raw geometry JSONB column. txgio_parcel carries zero triggers (confirmed via pg_trigger) and geom has no generated-column expression -- it is a plain nullable PostGIS column populated ENTIRELY by a separate, uncodified manual process. Because replaceCountyParcels performs DELETE-then-INSERT for every apply, EVERY county this card touched had its geom wiped to NULL immediately after each apply, not only the ones (like Caldwell) that started that way.",
+    "discoveryPath": "This was not assumed -- verified live after Caldwell's own apply left geom at 0/32781 despite the fresh insert, prompting a schema/trigger check before touching any of the other five counties, which would otherwise have silently regressed from 100% geom to 0% geom on live-serving data.",
+    "fix": "Ran the same UPDATE txgio_parcel SET geom = ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)) WHERE county_fips=<fips> AND geom IS NULL spec the txgio-refresh close had already written and held for Caldwell, applied to all six counties immediately after each one's apply -- never left a live-serving county's geom NULL across a session boundary.",
+    "executionNote": "DEPLOYMENT_DATABASE_URL (the pooled/PgBouncer endpoint) rejects the 'options' startup parameter needed to raise statement_timeout past its 15s default (Neon error: 'unsupported startup parameter in options... use unpooled connection'), and the txgio-ingest CLI's own pg.Pool has no statement_timeout override at all -- it hit that 15s default on a pre-write COUNT query for Hays' first apply attempt (rolled back cleanly, no partial write, confirmed by a 0-row geom-backfill against still-old data before the successful retry). Both the ingest and the backfill were run against DEPLOYMENT_DATABASE_URL_DIRECT (the unpooled endpoint), which accepts the options override. Travis's geom backfill (894657 rows) additionally needed chunking (20000-row batches, 46 rounds) after a monolithic 1800s UPDATE timed out and rolled back cleanly.",
+    "leaveBehindForCodeOwner": "This defect is a genuine, reusable gap in the original loader itself (not specific to this card's run) -- any future txgio-ingest apply for any county will reproduce the same geom-wipe unless this backfill step is remembered by hand again. Worth a small follow-on card to either (a) have upsertTxgioParcels derive geom directly from the geometry it already parsed, inside the same insert, or (b) at minimum add the ON CONFLICT DO UPDATE set clause and a post-apply backfill step to the CLI itself so it is no longer a silent, easy-to-miss manual step."
+  },
+
+  "b3SubdivisionVerification": {
+    "subject": "La Condesa, Hacienda Sonoma, West Bastrop Village -- the three named, actively-selling Bastrop subdivisions PARCEL-B3-GEOMGAP's close used as direct dated evidence of the vintage gap (_inbox/2026-09-01_parcel-b3-geomgap_close.json).",
+    "result": "NOT PRESENT in the fresh data. Checked two ways: an ILIKE name search against situs_address for county 48021 (0 hits), and Bastrop's row count being byte-identical before and after this card's reacquisition (74729 = 74729, which alone proves zero new parcels landed). This is the direct, expected consequence of the vintage-advance finding above, not a separate failure -- these subdivisions postdate the March 2025 StratMap snapshot that is still the most current one available. txgio_parcel also carries no subdivision-name column at all; B3-GEOMGAP's own subdivision evidence came from cad_property (the tax roll), a different table this card never touches."
+  },
+
+  "caldwellGeomVerification": "32781/32781 rows carry non-null, ST_IsValid geometry (0 invalid), coordinates confirmed within Caldwell County's real bounding box (-97.90 to -97.32 lng, 29.63 to 30.07 lat). The mandatory close requirement is met.",
+
+  "constraintsHonored": [
+    "Operated the original loader only -- zero new ingestion code, per the L3 fleet ruling.",
+    "Land-only scope -- containment, parcel_record, and every downstream store untouched; the only tables written were txgio_parcel (via the loader) and its own geom column (via the necessary companion backfill this card discovered was required).",
+    "Public uniform acquisition -- the same public TxGIO/StratMap bulk endpoint every county used, no privileged source.",
+    "Caldwell inclusion honored as mandatory, verified non-null.",
+    "Coordinated with PARCEL-B-SLATE1 before touching Caldwell -- that card's own addendum (2026-09-03T03:58:47Z) gave explicit live clearance, checked across all 5 slate-1 rails, confirming no genuine REFUSE dependency on Caldwell's prior gap."
+  ],
+
+  "gitStatus": "P:/tmp/legacy-design-tools-txgio-reacq: git status --short and git diff --stat both empty. Zero code changes -- explicitly noted rather than a silent empty commit.",
+
+  "open": [
+    "The vintage advance this mission's own name implies (REACQ) did not happen, because no fresher public source data exists yet for any of the six counties -- this is an external-source limitation, stated honestly rather than implied solved.",
+    "The B3-named subdivisions and the ~938-parcel Bastrop containment gap PARCEL-B3-GEOMGAP sized remain open; they require a genuinely newer StratMap vintage (unavailable) or a county-CAD/ArcGIS override (--file flag, a different, unattempted acquisition path) to close."
+  ],
+
+  "leave_behind": [
+    { "item": "PARCEL-REFRESH-APPLY (this card's own dispatch names it as the separate apply half): re-run containment (landing_parcel_jurisdiction) and record-fill against the six freshly re-derived txgio_parcel counties. Row counts are unchanged from before, so containment totals are expected to reproduce the existing 981,405 six-county sum -- the value is re-validating through current code and the newly-complete Caldwell geometry, not a count change.", "owner": "next property-seat claimant", "plan_row": "F-01" },
+    { "item": "The geom-backfill defect in lib/cad-ingest/src/txgio/ingest.ts (upsertTxgioParcels never writes geom) should get a proper code fix -- either derive geom inline at insert time, or add it to the ON CONFLICT SET clause plus a scripted post-apply backfill -- so a future txgio-ingest apply cannot silently wipe a live-serving county's geometry again.", "owner": "planner / next code-touching card in legacy-design-tools", "plan_row": "F-01" },
+    { "item": "Re-check StratMap for a fresher vintage periodically (or on a schedule) -- the mission's real goal (advancing past March/July/August 2025-vintage data) is still unmet; retry this same card's own dry-run step (zero risk) whenever there is reason to believe TxGIO has published newer data for these six counties.", "owner": "next property-seat claimant", "plan_row": "F-01" }
+  ]
+}

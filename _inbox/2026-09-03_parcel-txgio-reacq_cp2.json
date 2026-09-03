@@ -1,0 +1,26 @@
+{
+  "lane": "PARCEL-TXGIO-REACQ",
+  "checkpoint": "CP2",
+  "planRows": ["F-01"],
+  "at": "2026-09-03T07:45:00Z",
+  "note": "All six counties applied via the original loader (txgio-ingest) and geom-backfilled. A real defect was found and worked around: the loader never writes the PostGIS geom column, only the raw geometry JSONB; every replace-semantics apply wipes geom to NULL and requires a separate backfill, which this checkpoint's own apply pass proved is required for EVERY county touched, not just Caldwell.",
+
+  "sixCountyResults": {
+    "48055": { "name": "Caldwell", "vintage": "unchanged (stratmap25...202503)", "rowsApplied": 32781, "declined": 0, "geomBackfilled": 32781, "geomInvalid": 0, "note": "the mandatory geom-gap fix; started at 0/32781 with_geom, now 32781/32781" },
+    "48021": { "name": "Bastrop", "vintage": "unchanged (stratmap25...202503)", "rowsApplied": 74729, "declined": 0, "geomBackfilled": 74729, "geomInvalid": 0 },
+    "48209": { "name": "Hays", "vintage": "unchanged (stratmap25...202503)", "rowsApplied": 131734, "declined": 0, "geomBackfilled": 131734, "geomInvalid": 0, "note": "first apply attempt hit the tool's own 15s pooled-connection statement_timeout on its pre-write COUNT query and rolled back cleanly (no partial write, confirmed by a 0-row geom backfill against the still-old data); retry against DEPLOYMENT_DATABASE_URL_DIRECT with a raised statement_timeout succeeded" },
+    "48309": { "name": "McLennan", "vintage": "unchanged (stratmap25...202503)", "rowsApplied": 130650, "declined": 0, "geomBackfilled": 130650, "geomInvalid": 0 },
+    "48491": { "name": "Williamson", "vintage": "unchanged (stratmap25...202507)", "rowsApplied": 304298, "declined": 0, "geomBackfilled": 304298, "geomInvalid": 0, "note": "geom backfill took 9m14s (monolithic UPDATE, statement_timeout=900s)" },
+    "48453": { "name": "Travis", "vintage": "unchanged (stratmap25...202508)", "rowsApplied": 894657, "declined": 6163, "declineReason": "empty-geometry, 0.75% of 828773 loadable features -- under the tool's own decline ceiling; declined features never become rows, so all 894657 landed rows carry real geometry (confirmed before backfilling)", "geomBackfilled": 894657, "geomInvalid": 0, "note": "a monolithic 1800s (30 min) UPDATE timed out and rolled back cleanly (0 rows touched, verified); switched to a chunked backfill (20000-row batches via a ctid-scoped UPDATE, 300s statement_timeout per batch), 46 rounds, completed cleanly, verified 894657/894657/0invalid" }
+  },
+
+  "consolidatedVerification": "Single query across all six counties (DEPLOYMENT_DATABASE_URL_DIRECT, statement_timeout=180s): 48021=74729/74729/0invalid, 48055=32781/32781/0invalid, 48209=131734/131734/0invalid, 48309=130650/130650/0invalid, 48453=894657/894657/0invalid, 48491=304298/304298/0invalid. Total 1,568,849 rows, 100% geom, zero invalid geometries.",
+
+  "b3SubdivisionVerification": {
+    "checked": "La Condesa, Hacienda Sonoma, West Bastrop Village -- the three actively-selling Bastrop subdivisions PARCEL-B3-GEOMGAP's close (_inbox/2026-09-01_parcel-b3-geomgap_close.json) named as direct evidence of the vintage gap.",
+    "method": "txgio_parcel carries no subdivision-name or legal-description column (schema is county_fips/tile_key/feature_index/prop_id/geo_id/owner_name/situs_address/situs_city/situs_state/situs_zip/geometry/geom/bbox/source_file/source_vintage/ingested_at/zoning -- a GIS fabric, not the tax roll B3-GEOMGAP actually queried). Checked two ways: (1) situs_address ILIKE against all three names, county 48021 -- 0 hits; (2) Bastrop's row count is IDENTICAL before and after this card's apply (74729 = 74729), which alone proves no new parcels were added regardless of what any name search could find.",
+    "result": "NOT PRESENT. Honest finding, not a defect in this card's execution: the fresh acquisition pulled the exact same stratmap25...202503 (March 2025) vintage as before, because that is still the most current vintage the public StratMap bulk endpoint serves for Bastrop -- already established in CP1 as the mission's central honest finding. The B3-named subdivisions were platted after March 2025; closing that specific gap requires a genuinely newer upstream StratMap vintage (or a county-CAD/ArcGIS override per the --file flag), which this card could not manufacture because none exists yet at the public source."
+  },
+
+  "gitStatus": "P:/tmp/legacy-design-tools-txgio-reacq worktree: git status --short and git diff --stat both empty. Zero code changes -- this card was pure live-store operation via the existing, unmodified txgio-ingest CLI plus a hand-run geom-backfill UPDATE (not a code change, a data operation), consistent with the L3 fleet ruling (operate the frozen artifact)."
+}
