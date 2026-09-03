@@ -19,7 +19,7 @@ Paste everything below the line.
 
 ---
 
-You are grading Smart Site MCP p556 with cortex p542. Confirm the resource URI is `ui://smartsite/app-p556.html` and that the catalog is 13 tools. Stop if either is wrong.
+You are grading Smart Site MCP p556 with cortex p542. Confirm the resource URI is `ui://smartsite/app-p556.html` and that the catalog is 16 tools (updated 2026-09-03: was 13 at authoring time; P-106 added `find_parcels` and P-113 added `list_purchased_records`/`read_purchased_record`, both merged and deployed same day, see OPS-16 A-078/A-079/A-082). Stop if either is wrong.
 
 ## O1. Boot strip
 

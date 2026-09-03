@@ -28,7 +28,7 @@ Rule for this walk: you report tool inputs, tool JSON, and what appears in the t
 
 ## Gate
 
-Confirm the resource URI is `ui://smartsite/app-p558.html` and the catalog is 13 tools. Stop if either is wrong. Copy the boot strip verbatim once if it appears in the transcript; if it only appears in the widget, say so and the operator screenshots it.
+Confirm the resource URI is `ui://smartsite/app-p558.html` and the catalog is 16 tools (updated 2026-09-03: was 13 at authoring time; P-106 added `find_parcels` and P-113 added `list_purchased_records`/`read_purchased_record`, both merged and deployed same day, see OPS-16 A-078/A-079/A-082). Stop if either is wrong. Copy the boot strip verbatim once if it appears in the transcript; if it only appears in the widget, say so and the operator screenshots it.
 
 ## 1. Board from a block
 
