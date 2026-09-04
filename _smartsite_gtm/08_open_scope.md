@@ -38,7 +38,7 @@ Two migrations are written and unapplied: `0093` for P-100 and `0094` for P-106.
 
 ## 2. Rows carded and not started
 
-**P-102 Studio two seats.** Four coordinated server changes behind a 409, plus an unresolved Stripe product question. Deliberately split out of P-101 so the fast half could ship.
+~~**P-102 Studio two seats.** Four coordinated server changes behind a 409, plus an unresolved Stripe product question. Deliberately split out of P-101 so the fast half could ship.~~ **REVERSED 2026-09-04**, invoking the reversal criterion this row's own source proposal pre-registered (seat management could not close self-serve). Studio stays one seat. See OPS-16 A-101.
 
 **P-107 out-of-coverage miss class.** Ruled by the operator 2026-09-02. Held only because it edits `find_parcel` in `tools.ts`, which open PRs hold. Goes as soon as the queue clears.
 
