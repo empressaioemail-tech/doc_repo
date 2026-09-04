@@ -1,0 +1,101 @@
+{
+  "lane": "p32-feasibility-wave2",
+  "plan_row": "P-32 wave 2, spec item 10 (90_operations/OPS-16_texas_market_plan_of_record.md)",
+  "repo": "hauska-map",
+  "missionPremise": "Operator screenshot of the live Property Explorer 'Reports & Exports' panel: 'i dont see feasibility as an option in the reports' -- correctly flagging that wave 1's engine-side build (hauska-engine PR #380, deployed) was unreachable from the actual product surface. Operator: 'yes but spwan a sub agent to do it' -- confirmed wave 2 should proceed, directing the coding work to a subagent (per ENFORCEMENT.md's 'subagents do not commit' rule the planner remained responsible for review, testing, commit, PR, merge, deploy, and live verification).",
+  "completionPredicate": "The FEAS catalog entry is live and generatable end to end from the real product surface (not merely a merged PR): the dispatch leg deployed and correctly gated in production, and the catalog string genuinely served in the production bundle -- graded on live production bytes, matching the discipline wave 1 used for the engine side.",
+  "scopeBasis": "hauska-map only: apps/property-explorer/src (catalog, ReportsTool, dossier/reports-dossier label fixes) and apps/property-explorer/api (the new feasibility fold-in leg + core/handler modules). Did not touch hauska-engine (wave 1, already merged/deployed) or hauska-mcp-server (no MCP tool exists for feasibility-export; out of scope for this repo/seat, named not silently added).",
+  "seat": {
+    "identity": "doc_repo planner, re-scoped to property seat per the same operator instruction carried from wave 1 ('i want you to execute it here'); coding delegated to a subagent per operator direction this wave, planner reviewed/tested/committed/PR'd/merged/deployed",
+    "worktrees_used": [
+      "P:/seat-worktrees/property/hauska-map-p32-wave2 (branch feat/p32-feasibility-wave2, subagent-authored diff, planner-reviewed, merged as PR #343)",
+      "P:/seat-worktrees/property/hauska-map-p32-wave2-deploy (detached at origin/main post-merge, clean checkout, deploy)"
+    ],
+    "did_not_write": ["P:/hauska-engine", "P:/hauska-mcp-server", "any other property worktree in use by another lane"]
+  },
+  "code_change_summary": {
+    "apps/property-explorer/src/workbench/tools/reports-catalog.ts": "FEAS entry flipped catalogStatus 'coming' -> 'ready', purchaseSurface false -> true, engine 'none' -> 'feasibility', studioGated: true added. 'feasibility' added to the ReportEngine union.",
+    "apps/property-explorer/api/_lib/pe-feasibility-export-core.ts": "NEW. Pure helpers: buildFeasibilityEngineGateHeaders (packageId 'feasibility-export', mirrors buildSitePlanEngineGateHeaders), resolveFeasibilityExportAuth (mirrors resolveSitePlanExportAuth's decision structure -- distinguishes studioGranted:null -> 503 unmeasured from studioGranted:false -> 402 denied, per the binding instruction in A-087: reuse studioGranted, never a new independent tier check), parseFeasibilityRefreshBody, buildEngineFeasibilityRefreshBody, mapEngineFeasibilityPayload (handles engine-api's flat response shape), retryableFeasibilityEngineFailureResponse.",
+    "apps/property-explorer/api/_lib/pe-feasibility-export-handler.ts": "NEW. The actual fetch() calls to engine-api's wave-1 routes, for both the refresh and download legs -- mirrors pe-flood-drainage-handler.ts's pattern (direct calls for both legs) rather than dossier's MCP-for-refresh/direct-for-download split, because no MCP tool exists for feasibility-export and adding one is out of scope for this repo/seat.",
+    "apps/property-explorer/src/workbench/tools/feasibility-export.ts": "NEW. Client-side request/notice helpers, mirrors the existing export tool helpers for site-plan/terrain.",
+    "apps/property-explorer/api/pe-site-plan-export.ts": "Third dispatch leg added (?kind=feasibility) inside the SAME shared serverless function that already carries site-plan/terrain (default), the dossier fold-in (?kind=dossier), and the flood-drainage fold-in (?report=flood-drainage) -- forced by the Vercel Hobby function-count cap (RPT1). A dedicated dispatch-collision test proves the four legs never cross.",
+    "apps/property-explorer/src/workbench/tools/ReportsTool.tsx": "Largest diff (158 lines). New FeasibilityDockState, threaded through SelectedEngine props. Gated with LockedToolPanel (the Studio-lock pattern site-plan/terrain use) rather than the property-unlock pattern X-ray/Flood use -- correct per the tier ruling (Studio+Team, not a per-property unlock). New FeasibilityExportAction component mirrors DossierExportAction (busy/generating states, download button, notice display, first_report_opened milestone, fileReportOnProperty on success).",
+    "two_pre_existing_mislabeling_bugs_found_and_fixed": {
+      "apps/property-explorer/src/workbench/tools/PropertyDossierDetail.tsx": "exportLabel()'s fallback chain ended in a hardcoded 'Terrain' string with no feasibility branch -- a filed feasibility export would have displayed mislabeled as Terrain. Added the missing ternary branch -> 'Feasibility Study'.",
+      "apps/property-explorer/src/workbench/tools/dossier-chat-context.ts": "labelForKind() fell through to returning the raw string 'feasibility' for any unmatched kind. Added the missing case -> 'Feasibility Study report'."
+    },
+    "apps/property-explorer/src/lib/propertyDossier.ts": "'feasibility' added to DossierExportKind union and to sanitizeExports()'s allow-list.",
+    "apps/property-explorer/src/workbench/tools/reports-dossier.ts": "isAutoSaveReportKind() extended to include 'feasibility' -- it is a Report per the catalog (like X-ray/Flood), so it gets the same auto-save-on-property behavior."
+  },
+  "pr": {
+    "number": 343,
+    "url": "https://github.com/empressaioemail-tech/hauska-map/pull/343",
+    "merge_sha": "3ecf549b5ed0f110256609c8cc072fa25f6af9d5",
+    "merged_at": "2026-09-04T03:37:08Z",
+    "merge_method": "squash",
+    "ci_checks": [
+      { "name": "No double-encoded source", "conclusion": "success" },
+      { "name": "Typecheck", "conclusion": "success" },
+      { "name": "test", "conclusion": "success" }
+    ],
+    "ci_check_read_as": "literal check-run conclusion field via gh api against the PR head commit, not the gh pr checks bucket label -- a monitor script watching gh pr checks --json state timed out after 20 minutes producing nothing (an invalid --json field name for that command, silently returning empty; a script bug, not a CI problem), caught and worked around by reading the authoritative check-runs API directly instead of trusting the idle monitor."
+  },
+  "local_verification_before_pr": {
+    "typecheck": "npx tsc --noEmit -p tsconfig.json (clean); npx tsc --noEmit -p api/tsconfig.json (3 pre-existing errors in verdict-layer-merge.ts / pe-share-grant.ts, confirmed untouched by this diff)",
+    "test": "pnpm test (pe-chrome-kit-gate.mjs + seam-retired-guard.mjs + pe-public-pages-guard.mjs + vitest run) -- 177 files / 2481 tests / 1 pre-existing todo, all passing. New: pe-site-plan-export-dispatch.test.ts (proves the four fold-in/default legs never collide, each landing in its own gate with its own distinct error copy, verified signed-out so no request escapes to the network -- the exact check spec item 10 names for the RPT1 regression risk), pe-feasibility-export-handler.test.ts, pe-feasibility-export-bff.test.ts, feasibility-export.test.ts. Updated reports-catalog.test.ts / reports-dossier.test.ts / reports-tool.test.tsx (one pre-existing test that asserted FEAS must NOT appear now correctly asserts it does, while COMP still correctly stays hidden) / user-work-context.test.ts.",
+    "subagent_diff_independently_reverified_by_planner": "Every claim above (the two mislabeling bugs, the tier-gating pattern choice, the dispatch-leg placement, the studioGranted reuse) was independently confirmed by the planner via git diff / direct file reads before commit, not accepted from the subagent's self-report alone."
+  },
+  "deploy": {
+    "mechanism_researched_this_wave": "hauska-map/property-explorer deploys via the Vercel CLI, not Cloud Run (wave 1's mechanism does not apply here). No GitHub-integration auto-deploy fired on the merge (checked: no commit status, no deployments API entry, and vercel ls showed no new deployment in the minutes after merge) -- deploy is an explicit step, matching the historical pattern in _state/property/STATE.md ('T-010 MERGED + PE DEPLOYED' as two distinct actions, not one).",
+    "worktree": "P:/seat-worktrees/property/hauska-map-p32-wave2-deploy, detached HEAD at origin/main 3ecf549 (post-merge #343), clean checkout confirmed before deploying.",
+    "command": "vercel link --yes --project property-explorer, then vercel deploy --prod --yes",
+    "deployment_id": "dpl_4jyxVBPBVggLtmrNYeoM3eHabzCM",
+    "readyState": "READY",
+    "aliased_to": ["smartsite.cloud", "www.smartsite.cloud", "property-explorer-xi.vercel.app", "property-explorer-empressaioemail-techs-projects.vercel.app"],
+    "build_typecheck_wall_investigated": "Vercel's build log showed a large wall of TS2339/TS2322/TS2353/TS2741 errors across many api/*.ts files, including two files this wave wrote (pe-site-plan-export.ts, pe-feasibility-export-handler.ts). Did not assume this was benign -- compared directly against the immediately-prior production deployment's build log (vercel inspect <old-deployment> --logs, from before this wave's merge) and found the IDENTICAL error set, in the identical files, at the identical line-shape (discriminated-union narrowing false positives on AuthResult/BffResponse patterns). Confirmed pre-existing and non-blocking: it is Vercel's own advisory per-function tsc pass (esbuild-transpile bundling ignores type diagnostics; only genuine syntax errors would block), not a project-tsconfig-gated check, and not something this wave introduced. pe-feasibility-export-handler.ts appears in the list only because it was deliberately modeled on pe-flood-drainage-handler.ts, which already carried the identical pattern -- an honest structural clone inheriting a known, named, pre-existing quirk, not a new defect."
+  },
+  "live_probe": {
+    "instrument": "curl against the production base URL (smartsite.cloud), signed-out, plus a direct read of the actual bytes of the deployed frontend bundle",
+    "pre_registered_falsifier": {
+      "claim": "The Feasibility Study report is genuinely reachable from the live Property Explorer product surface, closing the gap the operator's screenshot named -- not merely present in a merged PR or a local build.",
+      "proves_true": "The production dispatch leg (?kind=feasibility) is live and gates correctly with feasibility-specific copy, AND the production-served JS bundle (matched by build hash to this exact deploy) contains the real catalog copy, not a stale cached bundle.",
+      "proves_false": "A 404 or a generic/wrong gate message on the dispatch leg, or a bundle hash mismatch / absence of the catalog string, would mean the deploy didn't actually ship what was merged."
+    },
+    "dispatch_leg_production": {
+      "request": "POST https://smartsite.cloud/api/pe-site-plan-export?kind=feasibility, signed-out, real parcelNodeId body",
+      "result": "401 { \"error\": \"authentication_required\", \"message\": \"Sign in to generate the feasibility study.\" } -- the distinct feasibility-specific copy (not the site-plan/dossier/flood gate's own copy), confirming the new leg is live and routes correctly on real production infrastructure, not just in the test harness."
+    },
+    "bundle_verification": {
+      "served_bundle": "/assets/index-DfWg58W_.js, read from the live index.html at https://smartsite.cloud/ -- hash matches exactly the bundle filename in this deploy's own build log (dist/assets/index-DfWg58W_.js), confirming the browser is genuinely served this deploy's output, not a cached edge response.",
+      "content_read_directly": "curled the actual served bundle bytes and confirmed both 'Feasibility Study' (the catalog name) and the exact promise copy 'Zoning envelope, flood, terrain, utilities, wells, and every open item -- one composed PDF, site plan appended.' are present in the real production JS, not assumed from the source diff."
+    },
+    "not_verified_here": "A full signed-in click-through (generate + download a real PDF through the live browser UI, the exact action the operator's original screenshot was checking for) requires a real authenticated session and was not performed by this lane -- doing so would require the operator's own credentials, which this lane does not hold and should not use. Recommended as the operator's own next step to close the loop completely."
+  },
+  "constraints_honored": [
+    "Did not write hauska-engine or hauska-mcp-server",
+    "Coding delegated to a subagent per operator direction; planner independently reviewed, tested, committed, PR'd, merged, and deployed -- did not treat the subagent's self-report as verification",
+    "Read the literal check-run conclusion field via gh api after a monitor script produced nothing for 20 minutes, rather than assuming CI was still running or trusting a bucket label",
+    "Investigated the Vercel build's large TS-error wall by diffing against the prior deployment's own build log before concluding it was pre-existing, rather than assuming it was benign or silently ignoring it",
+    "Did not fabricate a signed-in live-generate probe; named the gap and left it for the operator rather than attempting to bypass authentication"
+  ],
+  "leave_behind": [
+    {
+      "item": "A full signed-in click-through of Feasibility Study generate + download on smartsite.cloud, closing the operator's original screenshot gap completely.",
+      "owner": "operator",
+      "plan_row": "n/a -- live QA step, not a build item"
+    },
+    {
+      "item": "No MCP tool exists yet for feasibility-export (refresh/download). Both wave 1 and wave 2 named this as out of scope for their respective repos/seats.",
+      "owner": "unassigned, hauska-mcp-server seat's call",
+      "plan_row": "backlog, unopened"
+    },
+    {
+      "item": "The two carried-forward findings from wave 1 (gate-front enforcement effectively unauthenticated today; the 0.13% buildable-area cross-derivation disagreement) remain untouched by this wave, unchanged.",
+      "owner": "unassigned, per wave 1's close",
+      "plan_row": "backlog, unopened, see _inbox/2026-09-04_p32_wave1_close.json"
+    }
+  ],
+  "pathspec_for_the_parent_to_commit": [
+    "_inbox/2026-09-04_p32_wave2_close.json"
+  ]
+}
