@@ -66,7 +66,9 @@ That is the third instance in one session of the same shape: the code exists, th
 
 That single choice decides whether P-112 is an afternoon or a week. Settle it before dispatching.
 
-**Ruled 2026-09-04** (`_decisions/2026-09-04_p112_auth_options_ruling.md`): WorkOS stays connector-only. Google, Microsoft and email are direct builds, owned and maintained here, not routed through one vendor integration. Apple is OUT of scope — not carded, not sized further; revisit only if raised again explicitly. Email's own open call (magic link vs one-time code) is still unresolved, next up before dispatch.
+**Ruled 2026-09-04** (`_decisions/2026-09-04_p112_auth_options_ruling.md`): WorkOS stays connector-only. Google, Microsoft and email are direct builds, owned and maintained here, not routed through one vendor integration. Apple is OUT of scope — not carded, not sized further; revisit only if raised again explicitly. Email is magic link, ruled same day, dispatched.
+
+**Microsoft deferred 2026-09-04**, not dropped: operator did not realize an Azure AD app registration was a prerequisite ("drop msft for now we will do that ad app and account later"). The build side is done (`api/auth.ts`'s `/api/auth/microsoft/start`/`callback`, correctly-gated UI) and needs nothing further — this is purely waiting on the operator registering an app in the Azure portal and handing over the client id/secret, same shape as every other credential-gated row this session.
 
 ## 4. What only the operator can move
 
