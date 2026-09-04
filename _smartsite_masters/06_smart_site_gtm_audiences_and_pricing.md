@@ -92,6 +92,8 @@ Browse → save or research → paywall moment → unlock or subscribe. Each ste
 
 **Smart Site has no sales CRM, because it has no sales team** (operator ruling 2026-08-10). Funnel signal drives affiliate optimization and share-loop attribution, not a rep's queue. There is no qualified-lead handoff, no demo booking, and no stage a human works. CRM tooling belongs to Empressa Solutions (custom builds) and SmartCity OS (municipal), which do get a sales team; do not let that machinery leak onto this product.
 
+**Narrowly amended 2026-09-04** (`_decisions/2026-08-31_gohighlevel_supersedes_pipedrive.md` addendum): a GHL contact record now gets created per product sign-up (name + email, no tag, no pipeline). Only the *record* half of this ruling reversed; the *machinery* half — no pipelines, appointment booking, call sequences, or human sales stage ever pointed at a Smart Site subscriber — stands exactly as ruled above.
+
 A hard privacy boundary applies and can be stated to customers: identity and funnel stage are all that reach any analytics or affiliate system. A customer's research, saved analyses, and report contents never leave their tenant. This is the same sovereignty rule the product itself enforces.
 
 ## Distribution

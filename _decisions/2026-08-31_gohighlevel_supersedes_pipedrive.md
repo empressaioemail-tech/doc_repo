@@ -48,6 +48,21 @@ Reverse if the webhook cannot write tags without a client-side CRM key. Reverse 
 
 Depends on the Stripe live switch for any real tier tag to exist. Blocks nothing today. The product-to-CRM pipe is unbuilt and needs a plan row plus the credential in Secret Manager bound to cortex-api, since a webhook handler cannot read an operator's disk.
 
+## 2026-09-04 addendum — narrow, deliberate reversal: a GHL contact now gets created per product sign-up
+
+Operator noticed a real GHL sign-up during testing produced no contact, asked why, was shown this decision's own "no sales CRM" ruling, and explicitly chose to reverse it rather than leave it as-is: "scope it and get a sub agent to build it... all the way to prod."
+
+**What actually reverses, and what does not.** The "no sales CRM" ruling was two things bundled together: (1) no CRM *record* exists for a Smart Site subscriber, and (2) no CRM *machinery* (pipelines, appointment booking, call sequences, human sales stages) is ever pointed at one. Only (1) reverses today. (2) stands untouched — the reversal criteria's own language survives verbatim: pointing pipelines, automations, or workflows at Smart Site subscribers is still refused. A contact record existing is not the same claim as a subscriber entering a sales motion.
+
+**Scope, narrowly:** on a new PE user's first sign-up (session-exchange creating a brand-new `users` row), upsert a GHL contact by email with name + email only. No pipeline. No tag write from this hook — the existing runbook rule stands unchanged: `tier-*` tags are written only by the Stripe webhook off a real payment, never by a signup hook, never typed in. An acquisition-source tag (`source-organic` by default) may be added once the hook exists, since that's consistent with the tags already provisioned for exactly this purpose (R3) — but the ruling against fake `tier-*` writes is not open for reinterpretation by whoever builds this.
+
+**Fail-open, matching the existing `claimAnonymousStateOnSignIn` pattern**: a GHL failure (network, 4xx, credential problem) must never block, delay, or revert a successful sign-in. Best-effort, logged, done.
+
+**The credential dependency this decision itself named is now met**: `GOHIGHLEVEL_API_KEY` and `GOHIGHLEVEL_LOCATION_ID` provisioned into `legacy-design-tools-prod` Secret Manager 2026-09-04 (from the same operator-local file this decision's own dependency section pointed at), `api-server-runtime@legacy-design-tools-prod.iam.gserviceaccount.com` granted `secretAccessor` on both. cortex-api can now reach GHL for the first time since this decision was written.
+
+Reversal criteria for the *machinery* half (pipelines/automations/call sequences at subscribers) are unchanged from the original and remain in force. If this narrow contact-creation piece itself needs reversing, the affected data is exactly the contacts this hook created — identifiable by tag/source, not woven into anything else.
+
+
 ## Counterparties
 
 Internal. Operator owns the account and its configuration. Property seat would own the webhook-side pipe when it is carded.
