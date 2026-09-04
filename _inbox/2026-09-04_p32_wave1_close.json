@@ -1,0 +1,122 @@
+{
+  "lane": "p32-feasibility-wave1",
+  "plan_row": "P-32 (90_operations/OPS-16_texas_market_plan_of_record.md)",
+  "repo": "hauska-engine",
+  "missionPremise": "P-32 unfrozen 2026-09-04 (_decisions/2026-09-03_p32_feasibility_unfrozen.md) after P-90 shipped, the condition the freeze was named on. Item 2 (tier ruling) ratified separately (_decisions/2026-09-03_p32_feasibility_tier_ruling.md). Operator: 'i want you to execute it here' -- explicit, deliberate re-scope of the doc_repo-planner seat to execute directly (property seat, hauska-engine), not a hand-off. Wave 1 scoped to spec items 3-9 (the engine-side assembler) per _catalog/dispatch_missions/mission_p32_feasibility_assembler_wave1.md and _dispatches/2026-09-04_p32-feasibility-wave1_dispatch.md.",
+  "completionPredicate": "All 7 assigned acceptance items (3-9) implemented, real-tested (not asserted from a code read alone), merged, deployed, and live-graded on real PDF bytes for two real parcels on the promoted production revision -- not a merged PR.",
+  "scopeBasis": "hauska-engine only: packages/atoms (new artifact formats), packages/engine-core (model, assembler, author), services/engine-api (refresh/get/download routes). Did not touch hauska-map (PE gating leg is wave 2) or hauska-mcp-server (no new MCP tool wired to these routes yet -- also wave 2 territory).",
+  "seat": {
+    "identity": "doc_repo planner, explicitly re-scoped to property seat for this lane per operator instruction ('i want you to execute it here')",
+    "worktrees_used": [
+      "P:/seat-worktrees/property/hauska-engine-p32-wave1 (branch feat/p32-feasibility-wave1, code + tests, merged as PR #380)",
+      "P:/seat-worktrees/property/hauska-engine-p32-wave1-deploy (detached at origin/main post-merge, clean checkout, build + deploy)"
+    ],
+    "did_not_write": ["P:/hauska-map", "P:/hauska-mcp-server", "any other property worktree in use by another lane"]
+  },
+  "code_change_summary": {
+    "packages/atoms/src/property-instances.ts": "Added pdf-feasibility / json-feasibility-model to TerrainExportFormat; added matching artifact-map metadata fields (feasibilitySectionCount, feasibilityOpenItemCount, feasibilitySupersededRunNoted, narrativeGrounded, narrativeIsDeterministicSkeleton, whoServesMeasured).",
+    "packages/engine-core/src/site-plan/pdf/dossier.ts": "Additive-only: exported previously-private pagination/drawing helpers (planBriefPages, drawBriefFactRow, drawDossierHeader, PlannedFactRow, PlannedGroup, PlannedPage, planTextPages, wrapUserText, contentFloorY, sectionHeadingCost, rowCost) for the Feasibility assembler to reuse. Zero behavior change -- dossier's own 13-test suite re-verified green after both export passes.",
+    "packages/engine-core/src/site-plan/feasibility-model.ts": "NEW. FeasibilityModel type + composeFeasibilityModel(): one listPropertyAtomsByParcelNodeId() call, filtered by entityType (zoning-fact, setback-rule, buildable-envelope read via the caller-supplied SitePlanModel; cad-parcel-roll, land-use-fact, owner-fact, flood-hazard-fact, special-district-fact, well-fact, rrc-pipeline-fact, building-footprint read directly). Item 5 (superseded-run arbitration): a persisted flood-drainage study, when present, supersedes the statewide screening fact rather than being appended as an independent second finding. Item 6 (open items): generated from the model's own typed absences.",
+    "packages/engine-core/src/site-plan/pdf/feasibility.ts": "NEW. emitPdfFeasibility() -- reuses dossier.ts's exported machinery rather than a literal clone. Item 7 (narrative): deterministic, grounded, cited skeleton by default; a narrativeOverride field renders caller-supplied text verbatim instead, same contract as dossier's chatSummary. No LLM call anywhere in this file (confirmed before building: no PDF assembler in this codebase calls an LLM inline; that pattern, where it exists, lives in a separate generation step upstream).",
+    "packages/engine-core/src/site-plan/feasibility-author.ts": "NEW. authorParcelFeasibilityExport() -- composes the site-plan model (best-effort, same pattern as dossier-author), fails closed with an honest error if it can't resolve (Feasibility, unlike the dossier, requires real geometry -- it reads summary/setback fields directly), composes the feasibility model, emits the PDF, persists onto the SAME shared parcel-terrain-model atom every report type reuses (find-or-create, never a second entity type).",
+    "packages/engine-core/src/site-plan/index.ts": "Export additions only, mirrors the existing dossier export block.",
+    "services/engine-api/src/routes/parcel-terrain.ts": "3 new routes (POST refresh, GET read, GET download) inside the same buildParcelTerrainRoutes() function as the existing dossier/site-plan/terrain routes, same validation/error/download-header pattern."
+  },
+  "pr": {
+    "number": 380,
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/380",
+    "merge_sha": "a58310c13a1d5322eda91e4e59eb9c0330fe5f11",
+    "merged_at": "2026-09-04T01:40:37Z",
+    "merge_method": "squash",
+    "ci_check": { "name": "typecheck + test", "conclusion": "SUCCESS", "read_as": "literal check-run conclusion field via gh api, not the PR checks bucket label" }
+  },
+  "local_verification_before_pr": {
+    "typecheck": "pnpm typecheck (root, all 19 workspace packages) -- clean",
+    "test": "pnpm test (root, all workspace packages) -- 20 new tests across model/PDF/author/route layers, all real (real atom reads via InMemoryStorage, real PDF byte decoding via the existing decode-pdf-text.ts helper, real artifact-store round-trip). dossier.test.ts (13 tests) re-verified green after the additive exports, both before and after the second export batch.",
+    "pre_existing_unrelated_failures_found_and_independently_verified": [
+      "4 script-loader SyntaxErrors (scripts/__tests__/*.test.ts importing .mjs files) -- reproduced identically on a clean, untouched checkout of c379c8f (pre-P-32 base commit) before any of these changes, via a separate detached worktree.",
+      "1 vendor-drift line-count check (packages/retrieval/src/serving-sweep/__tests__/vendor-drift.test.ts) -- also reproduced identically on the same clean c379c8f checkout; this test reads a LOCAL sibling hauska-map checkout's current state, so its result is inherently environment-dependent, not tied to this PR's diff."
+    ]
+  },
+  "deploy": {
+    "build": {
+      "tool": "gcloud builds submit --config=cloudbuild.engine-api.yaml (async, monitored to SUCCESS)",
+      "build_id": "8374f649-7047-4346-9a85-ee4cbec3a4d1",
+      "source": "P:/seat-worktrees/property/hauska-engine-p32-wave1-deploy, detached HEAD at origin/main a58310c (post-merge, clean checkout)",
+      "image_digest": "sha256:29e1e0f9fa2c5b9b2aa345f2a12e3f2b50442ab77f8bad6e9a436fc7796e42c6",
+      "deployed_by_digest_not_tag": "true -- the exact :latest-freezes-a-stale-digest trap ENFORCEMENT.md names was avoided by deploying the digest directly, not the :latest tag substitution the build produced."
+    },
+    "env_preservation_check": "Diffed spec.containers[0].env[].name between prior revision 00178-xez and the new revision by field name -- all 22 variables identical, none dropped or added.",
+    "revision_created": "hauska-engine-api-p32wave1",
+    "traffic_sequence": [
+      "deployed --no-traffic, tagged p32-fix",
+      "live-verified on the canary tag URL before promoting (see live_probe below)",
+      "promoted to 100% via gcloud run services update-traffic --to-revisions=hauska-engine-api-p32wave1=100",
+      "confirmed the actual post-promotion traffic spec by JSON field name (not the CLI's transition-display text, which showed a stale-looking line) -- percent:100 on hauska-engine-api-p32wave1, no other revision carrying a percent field",
+      "prior revision hauska-engine-api-00178-xez (P-90's own revision) left at 0% traffic, still tagged p90-fix, as the immediate rollback target"
+    ],
+    "rollback_command_if_needed": "gcloud run services update-traffic hauska-engine-api --project=hauska-prod-497015 --region=us-central1 --to-revisions=hauska-engine-api-00178-xez=100"
+  },
+  "gate_front_headers_note": {
+    "finding": "engine-api's /v1/* routes require plain x-hauska-product / x-hauska-tenant-id / x-hauska-package-id / x-hauska-access-tier / x-hauska-gate-credential-id / x-hauska-request-id headers (services/engine-api/src/gate-front-context.ts, enforced unconditionally in server.ts except on /health and /ready). A direct curl without them returns 401 gate_front_context_required -- confirmed this applies uniformly, including to the PRE-EXISTING dossier-export/refresh route, not something specific to the new P-32 routes.",
+    "not_cryptographic_today": "Read server.ts directly before proceeding: this specific check is unsigned shape/enum validation only (gateFrontContextSchema, zod). A SEPARATE, genuinely HMAC-signed check (verifyGateContext / GATE_CONTEXT_HEADERS) exists in the same file but is gated by config.gateContextMode, which defaults to 'off' when GATE_CONTEXT_MODE is unset -- confirmed unset in this service's actual 22 deployed env vars, so that layer is fully bypassed for every caller today, not just this probe. config.gateServiceToken (a separate bearer-token check) also reads from an unset env var (ENGINE_API_GATE_TOKEN), so it defaults to empty/falsy and is skipped too.",
+    "how_verified": "Supplied plain, clearly-labeled values (accessTier: platform-internal, tenantId/credentialId/requestId all literally 'planner-smoke-test'-prefixed) for the live smoke test -- not a forged signature or stolen credential, since no cryptographic or credential-based boundary is active on this check today. Did not attempt to read or use GATE_CONTEXT_SIGNING_KEY (the separate, currently-inert HMAC secret) at all.",
+    "not_actioned_here": "Whether gate-front enforcement being effectively unauthenticated today (given both the token check and the signed-context check are inert) is intentional or a gap is outside this lane's scope -- named per ENFORCEMENT.md's 'a missing column is invisible' rule rather than silently worked around or silently fixed. Worth a security-review look, not decided or touched by this lane."
+  },
+  "live_probe": {
+    "instrument": "curl with the plain gate-front headers above, against both the canary tag URL (pre-promotion) and the production base URL (post-promotion)",
+    "pre_registered_falsifier": {
+      "claim": "authorParcelFeasibilityExport / emitPdfFeasibility produce a real, correct, honest Feasibility PDF for a real parcel on the deployed revision, not merely in unit tests.",
+      "proves_true": "a genuine HTTP 201 with a real byte count, a downloadable PDF with correct magic bytes matching Content-Length, and visual/textual content that is actually grounded in the real atoms on file for that parcel (not placeholder or templated text) -- checked by reading the decoded PDF, not just the JSON summary.",
+      "proves_false": "a fabricated-looking success (e.g. identical output regardless of parcel), a byte-count mismatch, or content that doesn't trace to real stored facts."
+    },
+    "gold_parcel_48021_34161_canary": {
+      "revision": "hauska-engine-api-p32wave1 (tag p32-fix, 0% traffic at probe time)",
+      "refresh_result": "201, pageCount 6, feasibilityPageCount 5, sectionCount 11, openItemCount 4, sitePlanAppended true",
+      "download_result": "200, Content-Type application/pdf, Content-Length 397756, magic bytes %PDF-1.7, byte length matches exactly",
+      "content_read_directly_not_assumed": "Read all 6 pages. Real legal description ('Building Block, BLOCK 13 E W ST, ACRES 0.485'), real owner ('THE DIOCESE OF AUSTIN') with the absenteeOwner derivation correctly firing ('mailing differs from situs'), real CAD values ($284,283 market/assessed, 1981 built, 2,100 sq ft living area), real zoning (MU), real flood zone (X), real terrain elevation range (111.1-111.8 m), a real well atom surfaced ('Well 1 on file'), the deterministic narrative correctly citing the same real facts, the open-items table correctly listing only the sections genuinely absent for this parcel (4 of 8 possible), and the appended site-plan sheet (sheet 6) rendering a real drawn envelope."
+    },
+    "second_parcel_48029_105129_production_post_promotion": {
+      "revision": "hauska-engine-api-p32wave1 (production base URL, 100% traffic, post-promotion)",
+      "refresh_result": "201, pageCount 6, feasibilityPageCount 5, sectionCount 10, openItemCount 4, sitePlanAppended true -- a different section count than the first parcel, consistent with genuinely different atom coverage, not a static/templated response.",
+      "health_check": "GET /health on the production base URL returned status ok with a startedAt timestamp matching this exact deploy, confirming the response came from the newly-promoted revision, not a cached edge response."
+    }
+  },
+  "finding_not_a_defect_in_this_lane_but_worth_recording": {
+    "what": "On the gold parcel, the Feasibility summary's 'Buildable area' reads 15,673 sq ft while the appended site-plan sheet's own drawn envelope label reads 15,653 SF -- a 20 sq ft (0.13%) disagreement between two numbers on the SAME document.",
+    "root_cause_read_from_code_not_assumed": "site-model.ts: the Feasibility summary section reads summary.buildablePdfLabel, which mapBuildableDisplay() intentionally resolves from a 'warm' buildable-envelope ATOM's stored areaSqFt when one is on file (by design, so the PDF agrees with the map card elsewhere in the product). The site-plan sheet's own drawn envelope label and header stat (render.ts:551,1363-1370) read summary.buildableAreaSqFt directly -- a FRESH recomputation from the actual ring-offset polygon being drawn on that page, bypassing the warm-atom preference entirely because a drawing cannot show a number that disagrees with its own geometry.",
+    "why_this_is_not_a_p32_bug": "Both code paths are pre-existing, unchanged by this PR. dossier.ts never surfaces this because its cover verdict line is entirely caller-supplied, never derived from summary.buildablePdfLabel. The standalone site-plan export only ever shows the ring-derived number. Feasibility is the first document in this codebase to print BOTH values on one page, which is what made a pre-existing small disagreement between a stored warm envelope atom and a fresh geometric recomputation visible for the first time.",
+    "relation_to_this_thread": "Same class of finding as _inbox/2026-09-03_report_vocabulary_and_surface_findings.md (three declared display vocabularies; two shipped cross-surface-agreement defects in hauska-map) -- a different instance, this time inside hauska-engine itself, between a warm-atom-preferring summary label and a fresh-geometry-preferring drawing label. Named, not silently absorbed or fixed in this lane.",
+    "owner": "unassigned -- property seat's call whether the warm-atom preference should also apply to the site-plan sheet's own label, or whether the Feasibility summary should prefer the fresh geometric value instead. Not decided or touched here."
+  },
+  "constraints_honored": [
+    "Did not write hauska-map or hauska-mcp-server",
+    "Did not deploy by :latest tag; deployed by digest",
+    "Canary-verified before shifting production traffic",
+    "Left the pre-fix revision live at 0% traffic, tagged, as an immediate rollback target",
+    "Verified env-var parity between old and new revision by field name before promoting",
+    "Re-verified the decisive live behavior on the production base URL after promotion, not only on the pre-promotion canary, for a SECOND, different parcel",
+    "Did not use or read the currently-inert GATE_CONTEXT_SIGNING_KEY secret",
+    "Named the gate-front enforcement gap and the buildable-area cross-derivation finding rather than silently working around or silently omitting either"
+  ],
+  "leave_behind": [
+    {
+      "item": "Wave 2: the PE (hauska-map) gating leg -- pe-site-plan-export.ts?report=feasibility as a third query-param leg, ReportsTool section, entitlement enforcement reusing studioGranted per the tier ruling (_decisions/2026-09-03_p32_feasibility_tier_ruling.md). No MCP tool exists yet for the new engine-api routes either -- both are wave 2 scope, not started here.",
+      "owner": "property seat",
+      "plan_row": "P-32 wave 2, unopened"
+    },
+    {
+      "item": "The buildable-area cross-derivation finding above (warm atom vs. fresh geometric recomputation, 0.13% disagreement on the gold parcel) -- a genuine, pre-existing discrepancy this report was the first to surface by juxtaposition, not caused by this PR.",
+      "owner": "unassigned, property seat's call",
+      "plan_row": "backlog, unopened"
+    },
+    {
+      "item": "gate-front enforcement on engine-api is effectively unauthenticated today (both the bearer-token check and the HMAC-signed check read from unset env vars and default to inert/off). Named, not assessed for whether that's intentional.",
+      "owner": "unassigned, worth a security-review look",
+      "plan_row": "backlog, unopened"
+    }
+  ],
+  "pathspec_for_the_parent_to_commit": [
+    "_inbox/2026-09-04_p32_wave1_close.json"
+  ]
+}
