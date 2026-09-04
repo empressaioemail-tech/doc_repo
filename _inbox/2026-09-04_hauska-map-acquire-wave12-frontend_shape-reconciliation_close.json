@@ -1,0 +1,54 @@
+{
+  "lane": "hauska-map-acquire-wave12-frontend",
+  "plan_row": "F-01 (ACQUIRE-GIS wave 1 / PARCEL wave 2 serve-cutover, frontend leg)",
+  "repo": "hauska-map",
+  "supersedes": "_inbox/2026-09-04_hauska-map-acquire-wave12-frontend_close.json",
+  "status": "Shape-reconciliation follow-on to the original close, which had flagged utilityService and overlayDistricts as needing verification against real LDT code, and agValuation as a lower-confidence 'possibly intentional simplification'. All five original fields are now checked against first-hand-read real code, not modeled by analogy from factory-side evidence.",
+  "missionPremise": "Prompted by the discovery that utilityService's gate verdict passed and its code was live in production with an unverified frontend model. Extended proactively to the remaining fields before their own gate verdicts / PR merges could expose the same risk.",
+  "findings": [
+    {
+      "field": "utilityService",
+      "checkedAgainstRealCode": true,
+      "bugFound": true,
+      "rootCause": "fact-sheet-resolver.ts read nonexistent provider/serviceType keys instead of the real water/sewer companion-row slots -- a resolver defect, not a wire-guard shape mismatch as originally suspected.",
+      "liveExposure": "Was live in production at time of discovery -- utilityService's PARCEL_RECORD_SLATE entries + gate verdict (pass, all 6 counties) both landed before this fix shipped.",
+      "shipped": "commit eba72ee -> PR #347 -> merged 268f755 -> deployed, live"
+    },
+    {
+      "field": "schoolDistrict",
+      "checkedAgainstRealCode": true,
+      "bugFound": false,
+      "note": "districtName key matches the real served type. No fix needed."
+    },
+    {
+      "field": "agValuation",
+      "checkedAgainstRealCode": true,
+      "bugFound": true,
+      "rootCause": "Modeled as flat {hasAgValuation, exemptionType}; real type is entries: AgValuationEntry[] (plural array) -- wrong on cardinality and field names, not just missing detail as the original close's lower-confidence note suggested.",
+      "liveExposure": "None -- PR #602 (LDT-side cutover) was still open when this fix shipped."
+    },
+    {
+      "field": "maxImperviousCoverPct",
+      "checkedAgainstRealCode": true,
+      "bugFound": true,
+      "rootCause": "Found unprompted, same risk class as the others. Real key is percent, not maxImperviousCoverPct; watershedType/inRechargeZone/crosswalkCitation were missing entirely.",
+      "liveExposure": "None -- PR #604 (LDT-side cutover) was still open when this fix shipped."
+    },
+    {
+      "field": "overlayDistricts",
+      "checkedAgainstRealCode": true,
+      "bugFound": true,
+      "rootCause": "Original names:string[] model corrected against real LDT code (per-district description/area now carried).",
+      "liveExposure": "None currently reachable -- two INDEPENDENT reasons, not the same defect, named separately so neither is assumed to cover the other: (1) the gate-verdict not-applicable-never-wired defect (factory-side, hauska-factory writers, already filed against Part 2 of the gate-run investigation) and (2) a git-process defect independently found by this lane -- PR #601 shows GitHub state=MERGED but was merged into the now-abandoned utilityService feature branch, never reaching main. RECONCILIATION NOTE, added by the coordinating session: (2) is not a separate unfixed item -- the LDT serve-cutover lane (legacy-design-tools-acquire-wave12-serve) independently identified this same branch-stacking defect earlier and is actively fixing it by retargeting PR #602 (which contains #601's overlayDistricts commits in its history) to base=main; PR #602 was still open pending its Test suite as of this close. This frontend lane's finding independently corroborates that diagnosis rather than surfacing a new one."
+    }
+  ],
+  "shipped_this_pass": "commit 9a4b76e -> PR #348 (schoolDistrict verified clean, agValuation + maxImperviousCoverPct fixed) -> merged 58d6648 -> deployed, live. commit (overlayDistricts fix) -> PR #349 -> merged ab142c4 -> deployed, live.",
+  "leave_behind": [
+    {
+      "item": "overlayDistricts cannot reach live users yet regardless of the frontend fix -- gated on two separate factory/LDT-side defects (not-applicable vocabulary gap in the gate evaluator; PR #601's content not yet on main). Both must close before this rail can be verified end to end.",
+      "owner": "hauska-factory (not-applicable defect, unassigned) and legacy-design-tools-acquire-wave12-serve (PR #602 landing, in progress)",
+      "plan_row": "F-01"
+    }
+  ],
+  "summary": "Five fields, five checked against first-hand-read real code, four bugs found and fixed (utilityService, agValuation, maxImperviousCoverPct, overlayDistricts), one verified clean (schoolDistrict). All frontend models now match real served types rather than factory-side analogy. No field's frontend code caused live-user-visible wrong data at any point -- every gap that had live exposure (utilityService) was caught and fixed before this close; every other field was fixed or verified before its own LDT-side cutover reached main."
+}
