@@ -1,0 +1,28 @@
+{
+  "lane": "hauska-map-acquire-wave12-frontend",
+  "plan_row": "F-01 (ACQUIRE-GIS wave 1 / PARCEL wave 2 serve-cutover, frontend leg)",
+  "repo": "hauska-map",
+  "missionPremise": "brokerageNodeFacetsRouter's response gained five new root-sibling keys (schoolDistrictFact, utilityServiceFact, overlayDistrictsFact, agValuationFact, maxImperviousCoverPctFact) via a serve-cutover landing in legacy-design-tools (separate lane, out of scope for this seat). This lane's mission: scope, and build if needed, Smart Site frontend rendering (Inspect Card / brief compose / Command Center) for those five fields -- confirming rather than assuming whether any existing UI already covered them.",
+  "scopeBasis": "Seat P:/seat-worktrees/property/hauska-map-acquire-wave12-frontend, branch feat/acquire-wave12-frontend-scope, starting HEAD 3ecf549. Frontend rendering only -- did not touch legacy-design-tools (serve-cutover lane) or hauska-factory-acquire-wave12-gate (gate-evaluation lane). Read-only Phase 1 confirmation required before any Phase 2 build; confirmed no existing generic fact-row renderer already picked up new keys automatically (Inspect Card's fact rows are hardcoded per-key; brief-compose's generic fallback operates on a different endpoint's payload).",
+  "whatShipped": "Phase 1 (read-only, confirmed not assumed): zero hits repo-wide for all five field names prior to this work; no generic renderer exists that would have picked them up automatically. Phase 2 (build): wired all five fields through the full path, replicating the existing wellFact/specialDistrictFact/cityLimitsFact pattern exactly, across 6 production files (packages/parcel-fact-sheet contract, atom-chain-to-facets.ts wire allowlist + guards, baked-facets.ts card-input layer, fact-sheet-resolver.ts, sheet-to-card-model.ts projector, InspectCard.tsx row list). Missing/typed-absent fields hide their row, never fabricate. 55 new tests (present/typed-absent/missing-hides-row per field across all four layers); full suite 2536/2536 passing (177 files) + parcel-fact-sheet package 28/28; typecheck clean (3 pre-existing unrelated errors confirmed via git stash to predate this change). Shipped: commit b160341 -> PR #345 -> CI green (check-run API, not CLI summary) -> squash-merged to main at bd05d96f -> deployed to production (vercel deploy --prod from a worktree verified byte-identical to origin/main) -> live on smartsite.cloud (HTTP 200). Code is inert until the LDT-side cutover serves real data for each field; no second deploy needed when it does.",
+  "leave_behind": [
+    {
+      "item": "utilityServiceFact / ParcelFactSheet.utilityService: modeled here as a single FLAT fact ({provider, serviceType, display}). Factory-side evidence suggested list-shaped companion rows, which turned out to be imprecise on both sides once checked against the actual merged LDT code (legacy-design-tools PR #600, merged 2026-09-04T11:04:56Z, artifacts/api-server/src/lib/utilityServiceFactRead.ts): the real served 'present' shape is a FLAT object with two independently-nullable NAMED sub-fields, water: Entry|null and sewer: Entry|null (Entry = {ccnNo, utility, status, ccnType}) -- neither a single scalar provider nor an array. Additionally, ELECTRIC IS ABSENT from this type entirely, despite parcel_record carrying it at 100% coverage per the ACQUIRE-GIS/wave2 close (companionBreakdownByType.electric=981405) -- status of an electric addition to this type is unconfirmed, ask the LDT lane directly. No gate verdict has been computed for utilityService as of this close, so nothing is live yet -- there is still time to remodel before this reaches production.",
+      "owner": "hauska-map-acquire-wave12-frontend (remodel) coordinated with legacy-design-tools-acquire-wave12-serve (confirm electric status)",
+      "plan_row": "F-01",
+      "reason": "Shape-guard rejection would hide the row permanently once real data lands, not just until it arrives; caught before the gate verdict exists, not after."
+    },
+    {
+      "item": "overlayDistrictsFact / ParcelFactSheet.overlayDistricts: modeled here as { names: string[]; display }. Real factory-side companion-row data carries per-district description and area (e.g. Bastrop Character-District rows: CD_Name/CD_Desc/Shape__Area) which the current model discards. LDT's own serve-cutover for this rail is NOT yet merged (only utilityService's PR #600 has landed as of this close) -- unlike utilityService, there is still an open opportunity to agree the served shape with the frontend model before either side locks in.",
+      "owner": "hauska-map-acquire-wave12-frontend coordinated with legacy-design-tools-acquire-wave12-serve",
+      "plan_row": "F-01",
+      "reason": "Same shape-guard-rejection risk as utilityService, but still preventable before merge rather than after."
+    },
+    {
+      "item": "agValuationFact / ParcelFactSheet.agValuation: modeled as {hasAgValuation, exemptionType}. Factory close records carry an ag-use code and acreage on this rail as well. Lower-confidence finding than the two above -- likely an intentional product simplification rather than a shape bug (not a list-vs-scalar mismatch).",
+      "owner": "product call, unassigned",
+      "plan_row": "F-01",
+      "reason": "Worth a deliberate decision on whether ag-use code/acreage are worth surfacing, not a defect."
+    }
+  ]
+}
