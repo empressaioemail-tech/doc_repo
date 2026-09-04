@@ -48,7 +48,7 @@ closing, reinforced by the operator 2026-09-04.
 |---|---|---|---|
 | 1 | legacy-design-tools PR #601 orphaned merge record — dangling branches + base≠main CI guard | legacy-design-tools | Yes |
 | 2 | valueHistory rail: serve-side cutover (adapter + allowlist), B-SLATE1 template | legacy-design-tools | Yes |
-| 3 | exemptionCodes/landUseSource/acreageMethod stampText type-gap — **ruled: widen `stampText`/`isCadNullText`, not a new companion-row shape** (operator 2026-09-04, agreeing with the planner's lean: these are single-valued fields, no multiplicity to justify new architecture) | hauska-engine (`ingest-existing.ts`) | Yes |
+| 3 | ~~exemptionCodes/landUseSource/acreageMethod stampText type-gap~~ — **DONE 2026-09-04.** Widened `stampText`/`isCadNullText` per the ruling; PR #381 merged (`43a5c09`, no deploy step in this library-only repo, merge was terminal); live-probed against 500 real Caldwell County parcels, 0 unaccounted across all three fields post-fix. Independently re-verified by the integration seat. | hauska-engine (`ingest-existing.ts`) | Closed |
 | 4 | B3-GEOMGAP statewide undivided-interest sweep (5 non-Bastrop counties) | hauska-factory | Yes |
 | 5 | Queue-claim mechanism: no server-side check tying a Cloud Run execution's identity to a live claim — **ruled: Postgres-native locking (claims table + transactional claim-and-verify), not a new lock service** (operator 2026-09-04, agreeing with the planner's lean) | doc_repo (`scripts/queue/`) + hauska-factory (consumer) | Yes — confirm exact file location first, see lane brief |
 | 6 | parcel_record store has no reporting-safe read path — **ruled: Neon read replica**, not a narrow materialized view (operator 2026-09-04, agreeing with the planner's lean: the gap has been hit by 6+ different cards in different query shapes, a general fix beats another point-fix) | infra (Neon `FACTORY_DATABASE_URL`) | Yes — infra/design work |
@@ -103,3 +103,6 @@ than a lane committing to doc_repo directly.
 - 2026-09-04, item 16 closed. Map lane shipped, deployed, and live-verified the
   `utilityServiceFact` electric-slot fix (PR #351, `b559566c`); integration seat
   independently re-confirmed against the live production endpoint before marking done.
+- 2026-09-04, item 3 closed. Engine lane merged PR #381 (`43a5c09`) and live-probed
+  500 real Caldwell parcels post-fix (0 unaccounted across all three fields);
+  integration seat independently re-confirmed the merge and the no-deploy-step claim.
