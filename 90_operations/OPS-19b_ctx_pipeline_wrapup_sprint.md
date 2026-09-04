@@ -59,7 +59,7 @@ closing, reinforced by the operator 2026-09-04.
 | 11 | `factory-publish-gate-sched` has no Cloud Scheduler trigger — every verdict manually dispatched to date | hauska-factory / GCP infra | Yes |
 | 12-13 | LDT PR #445, #446 — rebase against post-#440/#554 main, then fix their Typecheck CI failures | legacy-design-tools | After 14-15 land |
 | 14-15 | LDT PR #440, #554 — land first, clean CI, just need review | legacy-design-tools | Yes |
-| 16 | hauska-map: `utilityServiceFact` never reads the `electric` slot the backend now serves (LDT PR #608, merged 2026-09-04) | hauska-map | Yes |
+| 16 | ~~hauska-map: `utilityServiceFact` never reads the `electric` slot the backend now serves (LDT PR #608, merged 2026-09-04)~~ — **DONE 2026-09-04.** Fixed, deployed, live-verified against production (`_inbox/2026-09-04_hauska-map_property-seat_utilityservice-electric-slot_close.json`; PR #351, `b559566c`, `dpl_6r3iFrDyULQHBCMPrdzUowE9MAqt`). Independently re-verified by the integration seat via a direct live probe on `smartsite.cloud`. | hauska-map | Closed |
 | 17 | ~~hauska-engine `feat/permits-field`~~ — **RESOLVED by operator ruling 2026-09-04: stay with what's live (the companion-shape rail on main); the branch stays parked, revisit only if genuinely needed later.** No dispatch. | hauska-engine | Closed |
 | 20 | **landUse parcel_record cutover — new, operator-prioritized 2026-09-04**: "a lot of the function of the platform rides on this data field." Fixes the 2026-08-30 present-presented-as-absent defect (`_inbox/2026-08-30_ctx_remainder_deep_review.md` §3.1/§3.2 — the conformant bake reports landUse absent when three independent sources confirm it exists, and the walk's own self-test asserts an all-null payload *passes*) as a consequence of migrating the rail, not a patch to code being retired anyway. First step: measure whether parcel_record's landUse rail is already filled (it may be, given the broad Phase 1/2 fill program) or needs acquisition first — do not assume either way. | hauska-factory (fill/verify half) + legacy-design-tools (serve-cutover half) | Yes — Factory half first, LDT half follows |
 
@@ -100,3 +100,6 @@ than a lane committing to doc_repo directly.
 - 2026-09-04, initial. Scoped by a 19-agent adversarial audit, refined in conversation
   (three fix-shape rulings, item 17 resolved, item 20 added, atom-backfill and runbook
   held out of this sprint), organized into four lane-planner dispatches.
+- 2026-09-04, item 16 closed. Map lane shipped, deployed, and live-verified the
+  `utilityServiceFact` electric-slot fix (PR #351, `b559566c`); integration seat
+  independently re-confirmed against the live production endpoint before marking done.
