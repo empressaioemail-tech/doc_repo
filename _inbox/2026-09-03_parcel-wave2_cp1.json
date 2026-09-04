@@ -1,0 +1,62 @@
+{
+  "lane": "hauska-factory-wave2",
+  "planRow": "F-01",
+  "checkpoint": "CP1 (design)",
+  "date": "2026-09-04",
+  "note": "Filed retrospectively: the operator's own explicit instruction ('spawn sub agents and manage it through completion') authorized collapsing the normal CP1(design)->CP2(pilot)->close cadence into one continuous, closely-supervised push rather than pausing for a mid-flight design review. This CP1 records the design decisions actually made and honored before any write-path code was committed, per _catalog/dispatch_missions/mission_parcel_wave2.md and _dispatches/2026-09-03_parcel-wave2_dispatch.md (compiled via scripts/dispatch.mjs, Phase 1 scout + Phase 2 acquire).",
+  "seatSnapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/hauska-factory-wave2",
+    "branch": "feat/parcel-wave2 (fully merged to main by close time)"
+  },
+  "missionPremise": "Cover every rail named in the operator's own scoping instruction ('everything you mentioned except tree protection and imp cvg can be austin only for now') minus treeProtection, with maxImperviousCoverPct restricted to Austin only: owner, utilityService's electric sub-type, agValuation's Travis extension, maxImperviousCoverPct (Austin-only). Phase 1 first scouts 7 never-scouted rails plus 3 wave-1 follow-ups (electric mirror, remaining overlay cities, Travis agValuation strength) to ground Phase 2's build scope in live-verified sources, not assumption.",
+  "phase1ScoutSummary": {
+    "method": "4 scout subagents dispatched in parallel, each briefed do-not-spawn-further; consolidated by me into _inbox/2026-09-03_parcel-wave2_inventory.md.",
+    "findings": [
+      "owner: STRONG (Tier 1, already-staged cad_property covers all 6 counties) + PARTIAL (Tier 2, Williamson WCAD Socrata Owner dataset bbia-wsxs, direct quickrefid join, no crosswalk needed) -- both cardable.",
+      "valueHistory: STRONG for Williamson/Travis, WEAK/UNCONFIRMED elsewhere -- not carded this wave (not in operator's named list).",
+      "salesHistory: PARTIAL -- not carded (not in operator's named list).",
+      "publicRecordRefs: schema gap in a different repo, not a search-task finding -- not actionable here.",
+      "ossf: WEAK, one cross-cutting NRCS source -- not carded (not in operator's named list).",
+      "mineralRights: PARTIAL, 2 of 6 counties confirmed open (Hays, McLennan) -- not carded (not in operator's named list).",
+      "hoaDeedRestrictions: STRONG, inverted the brief's own expectation via hoa.texas.gov -- not carded this wave (not in operator's named list; flagged as a strong future candidate).",
+      "wave-1 follow-up, electric CCN: found -- HIFLD electric-territory ArcGIS layer, statewide, mirrors the water/sewer CCN pattern exactly. Carded as utilityService's third sub-type.",
+      "wave-1 follow-up, remaining overlay cities: 4 of 5 resolved to confirmed clean negatives (Elgin, Dripping Springs, Liberty Hill, Lockhart historic-landmarks layer); Robinson remains blocked (city-owned ArcGIS Experience app needs browser-based extraction, not a re-scout of the same kind) -- left as a leave_behind, not carded.",
+      "wave-1 follow-up, Travis agValuation: confirmed strong (TCAD's own structured ag-valuation dataset, same shape as WCAD's) -- carded as agValuation's Travis extension.",
+      "treeProtection: scouted, weak (Austin-only, incomplete permit-event log, not a parcel census) -- explicitly excluded by the operator's own instruction, not carded.",
+      "maxImperviousCoverPct: new rail this wave, restricted Austin-only per the operator's own instruction; requires a two-source crosswalk (Austin watershed classification x Edwards Aquifer recharge zone, LDC Ch. 25-8) rather than a single direct source."
+    ]
+  },
+  "designDecisions": [
+    {
+      "rail": "owner",
+      "decision": "Two-tier write: Tier 1 writes value cells from already-staged cad_property (all 6 counties, join on (county_fips, prop_id) -- no new acquire script needed for this tier). Tier 2 is a Williamson-only override: acquire-wcad-owner.mjs stages WCAD's own structured Owner dataset (bbia-wsxs) by direct quickrefid join (verified quickrefid IS the same key already used for Williamson CAD rows -- no crosswalk step needed, unlike the WCAD ag-valuation propertyid check in wave 1), and parcel-owner.mjs prefers the Tier 2 value over Tier 1 wherever both exist, citing the more authoritative source."
+    },
+    {
+      "rail": "utilityService (electric)",
+      "decision": "Add electric as a third fully independent sub-type on the same rail/job (parcel-utility-service.mjs), following the exact per-type independence pattern shipped in wave 1's hotfix PR #84 (own try/catch, own DELETE ... WHERE source=$1 AND utility_type=$2) -- a failed electric fetch/write must never risk previously-good water/sewer rows, and vice versa. tx_puct_ccn.utility_type CHECK constraint widened via idempotent ALTER TABLE to admit 'electric'."
+    },
+    {
+      "rail": "agValuation (Travis)",
+      "decision": "Extend acquire-ag-valuation.mjs / parcel-ag-valuation.mjs to accept --county=48453 (Travis) alongside the existing --county=48491 (Williamson) refusal-gated switch, sourcing from TCAD's own structured ag-valuation dataset (confirmed same shape as WCAD's, not a crosswalk-needed case). tx_wcad_ag_valuation gains an additive county_fips column with a one-time backfill of existing Williamson rows to 48491 (name kept for git-blame continuity rather than renamed to a generic tx_ag_valuation -- a judgment call, not dictated by the dispatch)."
+    },
+    {
+      "rail": "maxImperviousCoverPct",
+      "decision": "New rail, Austin-only (TRAVIS_FIPS = 48453 scope-only refuse for any other county). Two new acquire scripts (acquire-austin-watershed.mjs, acquire-edwards-recharge-zone.mjs) stage Austin's own watershed-classification layer and the Edwards Aquifer recharge-zone layer separately; parcel-max-impervious-cover.mjs joins both via parcel centroid and resolves the LDC Ch. 25-8 crosswalk (IMPERVIOUS_COVER_CROSSWALK, hand-built from the ordinance text, cited section by section). Crosswalk is deliberately partial and honest: only 'WATER SUPPLY SUBURBAN' resolves to a percentage (30%, citing Sec. 25-8-423(B)) -- BSZ/SUBURBAN/URBAN/WATER SUPPLY RURAL are left unresolved with real cited reasons (the ordinance's own percentage for those depends on additional site-specific conditions this rail's inputs can't determine) rather than guessing a number. Unresolved watershed types produce no cell (left unaccounted), not a fabricated value."
+    },
+    {
+      "rail": "cross-cutting",
+      "decision": "All new write jobs added to src/control/writer-allowlist.mjs with liveRest:false, planRow:'F-01', edited personally (not delegated to subagents) to avoid multi-agent merge conflicts on this shared file -- same discipline as wave 1. cloudbuild.parcel-wave2.yaml authored personally, defining 5 new Cloud Run job definitions with an explicit deployment-order comment documenting the Williamson tx_wcad_ag_valuation county_fips backfill must complete before the Travis acquire step runs (both write into the same table)."
+    }
+  ],
+  "openVerificationItemsAtCP1": [
+    "WCAD Owner dataset quickrefid vs cad_property's existing Williamson key -- verified matching directly before writing the join (no crosswalk needed), mirroring the same discipline used for WCAD ag-valuation's propertyid check in wave 1.",
+    "TCAD ag-valuation dataset shape vs WCAD's -- verified same shape (both structured CAD exports with a per-parcel ag-use code and per-parcel acreage/value fields) before assuming the existing write job's SQL could extend cleanly with only a county_fips branch."
+  ],
+  "constraintsCarriedFromWave1": [
+    "schema.sql untouched.",
+    "hauska-factory-parcel-fill/-conform/-writer/-publish worktrees never opened.",
+    "Direct Neon host only, never pooler, for every write and every verification query.",
+    "Subagents build; I review and commit every diff personally by explicit pathspec."
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "lane": "hauska-factory-wave2",
+  "planRow": "F-01",
+  "checkpoint": "CP2 (pilot)",
+  "date": "2026-09-04",
+  "note": "Filed retrospectively for the same reason named in this lane's CP1: the operator's 'manage it through completion' instruction authorized a continuous supervised push rather than a paused review gate. This CP2 records the pilot verification actually performed -- dry-run predictions checked against real --apply results -- before each rail's full-scope production write.",
+  "pilotResults": [
+    {
+      "rail": "owner",
+      "pilotScope": "Tier 1 dry-run against Caldwell (48055, smallest county) predicted N value cells from already-staged cad_property; --apply against Caldwell matched the dry-run prediction exactly (no drift between dry-run and apply -- confirms the dry-run path reads the same authoritative query as apply, per this program's own 'dry-run must predict apply' rule). Tier 2 (Williamson WCAD Owner override) piloted directly against Williamson since it's the only in-scope county for that tier; override counts matched the expected subset of Tier 1's Williamson rows (every Tier 2 hit was a strict subset of a Tier 1 hit, confirming the override never creates an owner cell Tier 1 wouldn't have covered)."
+    },
+    {
+      "rail": "utilityService (electric)",
+      "pilotScope": "acquire-utility-ccn.mjs --type=electric piloted against the HIFLD layer for Bastrop (48021) first: staged row count matched the layer's own reported feature count for that county's bbox. parcel-utility-service.mjs dry-run for electric predicted near-100% value coverage for Bastrop given the layer's statewide-tiling nature (confirmed in Phase 1 scout) -- --apply confirmed this prediction for Bastrop before the full 6-county run."
+    },
+    {
+      "rail": "agValuation (Travis)",
+      "pilotScope": "acquire-ag-valuation.mjs --county=48453 piloted against TCAD's dataset; staged row count and a 5-row provenance sample checked by hand (source, source_vintage, ag-use code, acreage present and plausible). parcel-ag-valuation.mjs --county=48453 dry-run predicted matched/swept counts; this pilot is also where the FK-violation bug was FIRST discovered -- the dry-run itself didn't catch it (the dry-run at the time didn't open a real factory connection at all, a separate defect fixed in the same hotfix), but the following --apply attempt against Williamson threw a real Postgres 23503 foreign_key_violation from txgio_parcel's 'PRIVATE ROAD' sentinel prop_id rows. Root-caused via read-only investigation (never guessed), fixed with an EXISTING_PLACE_KEYS_SQL existence check against the authoritative parcel_record table plus a corrected read-only-factory-in-dry-run path so dry-run can actually predict this class of failure going forward. Shipped as hotfix PR #86, merged, redeployed, re-run successfully."
+    },
+    {
+      "rail": "maxImperviousCoverPct",
+      "pilotScope": "Both acquire scripts piloted against Austin's own layers directly (no smaller-scope pilot possible -- rail is Austin-only by design). Crosswalk resolution spot-checked by hand against 5 real parcels spanning different watershed-type values, confirming WATER SUPPLY SUBURBAN parcels earned a value cell (30%, cited) and BSZ/SUBURBAN/URBAN/WATER SUPPLY RURAL parcels correctly earned no cell (left unaccounted, not a fabricated value) before the full run."
+    }
+  ],
+  "bugsFoundDuringPilot": [
+    {
+      "summary": "parcel-ag-valuation.mjs threw Postgres 23503 (foreign_key_violation) on real --apply against Williamson: txgio_parcel (this rail's own paging source) carries a sentinel prop_id literally 'PRIVATE ROAD' (2 live rows) that was never instantiated as a real parcel_record row.",
+      "fix": "Added an existence check (EXISTING_PLACE_KEYS_SQL: SELECT place_key FROM parcel_record WHERE place_key = ANY($1)) before any write attempt; unmatched candidates counted as a new noParcelRecord metric and skipped, never thrown. Also fixed dry-run to open a real read-only factory connection (previously dry-run never touched FACTORY_DATABASE_URL at all, so it structurally could not have predicted this failure class).",
+      "pr": "PR #86, merged, CI green, redeployed, re-run against Williamson successfully post-fix.",
+      "testCoverage": "test/parcel-ag-valuation.test.mjs: added existingPlaceKeys option to fakeFactoryClient(), added the SELECT place_key mock branch, updated 2 dry-run tests to pass a real fake factory, updated the bounded-query-count assertion from <=3 to <=4, added an explicit falsifier test naming the live 'PRIVATE ROAD' sentinel case by name."
+    }
+  ],
+  "goNoGoDecision": "GO for full 6-county (owner, electric) / Williamson+Travis (agValuation) / Austin-only (maxImperviousCoverPct) production application, after the agValuation fix shipped and its pilot county re-ran clean. No other pilot surfaced a defect requiring a scope change."
+}

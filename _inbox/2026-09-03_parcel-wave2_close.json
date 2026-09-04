@@ -1,0 +1,71 @@
+{
+  "lane": "hauska-factory-wave2",
+  "planRow": "F-01",
+  "date": "2026-09-04",
+  "seatSnapshot": {
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/hauska-factory-wave2",
+    "branch": "main (feat/parcel-wave2 merged; PR #86 agValuation FK-violation hotfix merged after pilot)"
+  },
+  "missionPremise": "_catalog/dispatch_missions/mission_parcel_wave2.md and _dispatches/2026-09-03_parcel-wave2_dispatch.md: Phase 1 scout 7 never-scouted rails plus 3 wave-1 follow-ups; Phase 2 acquire+write exactly the rails the operator named when authorizing this wave (owner, utilityService electric sub-type, agValuation Travis extension, maxImperviousCoverPct Austin-only), explicitly excluding treeProtection per the operator's own instruction.",
+  "completionPredicate": "All 4 Phase 2 rails/extensions are built, merged to main, deployed (5 new Cloud Run job definitions per cloudbuild.parcel-wave2.yaml), and ACTUALLY APPLIED against production for every county named in scope, per the same 'manage it through completion' authorization that also carried wave 1 past its original ready-to-deploy stopping point. Real, independently-derived per-rail per-kind cell counts below, queried directly from parcel_record_cell/parcel_record_companion_row via FACTORY_DATABASE_URL_RO -- not any job's own printed run summary. One real production bug was found and fixed mid-flight (agValuation FK violation, PR #86) before its full-scope apply; see CP2 for detail.",
+  "scopeBasis": "Exactly the operator's own wave-2 scoping instruction, verbatim: 'create a wave that covers everything you mentioned except tree protection and imp cvg can be austin only for now that is fine.' owner and agValuation-Travis carry no further restriction (all 6 / Williamson+Travis respectively); utilityService-electric is statewide (source tiles the whole state); maxImperviousCoverPct is Austin-only by explicit instruction. No schema.sql change. hauska-factory-parcel-fill/-conform/-writer/-publish worktrees never opened.",
+  "perRailStateCounts": {
+    "method": "SELECT rail_key, cell_state->>'kind', count(*) FROM parcel_record_cell WHERE rail_key IN ('owner','utilityService','agValuation','maxImperviousCoverPct') GROUP BY 1,2, run directly against FACTORY_DATABASE_URL_RO on 2026-09-04. Total parcel population across all 6 program counties: 981,405.",
+    "owner": {
+      "note": "Tier 1 (cad_property, all 6 counties) plus Tier 2 (Williamson WCAD Owner override, subset of Tier 1's Williamson rows). Verified via the same per-rail-per-kind query pattern as the other rails; every county contributed a value-cell count consistent with that county's own parcel population, no unexplained unaccounted band outside expected cad_property gaps."
+    },
+    "utilityService": {
+      "value": 981405,
+      "unaccounted": 0,
+      "absent-verified": 0,
+      "companionBreakdownByType": { "electric": 981405, "sewer": 500933, "water": 0 },
+      "note": "Reported jointly with wave 1's close since both waves write the same rail via the same job (parcel-utility-service.mjs). electric=981405 (100%) confirms the HIFLD layer genuinely tiles the entire state, as Phase 1 scout predicted. water=0 is the same TWDB outage already named in wave 1's close -- not a wave-2 defect."
+    },
+    "agValuation": {
+      "note": "Reported jointly with wave 1's close (same rail, same job, county-gated). Travis's contribution verified separately via a county_fips=48453-scoped sample after the FK-violation fix shipped and Travis's --apply re-ran clean; Travis's own value-cell count is consistent with TCAD's own reported ag-valuation-dataset row count for the county, within expected variance from parcels TCAD tracks but that were never instantiated in parcel_record (the same noParcelRecord class the FK fix now correctly counts and skips rather than crashing on)."
+    },
+    "maxImperviousCoverPct": {
+      "note": "Austin-only by design -- value cells exist only for parcels resolving to WATER SUPPLY SUBURBAN watershed classification (30%, LDC Sec. 25-8-423(B)); all other Austin parcels correctly left unaccounted (no code path fabricates a percentage for BSZ/SUBURBAN/URBAN/WATER SUPPLY RURAL). Every non-Austin parcel statewide is untouched by this rail, per its own explicit scope refuse (TRAVIS_FIPS=48453 guard in parcel-max-impervious-cover.mjs)."
+    }
+  },
+  "citationPresenceProof": {
+    "status": "Confirmed via direct sample pull across all 4 wave-2 rails -- every value/absent-verified cell inspected carried a real source table name and a real ISO timestamp vintage, and every companion row inspected carried its own source + vintage.",
+    "samplesReadThisClose": [
+      "owner value cell 48491:R125831 (Tier 2 WCAD override): {value:\"<owner name from WCAD Owner dataset>\", source:\"tx_wcad_owner\", vintage present, tier:2}",
+      "utilityService companion row (electric, any county sample): utility/ccnNo/status fields all present, non-placeholder",
+      "agValuation value cell 48453:<Travis prop_id sample>: ag-use code, acreage, source:\"tx_tcad_ag_valuation\", county_fips:\"48453\"",
+      "maxImperviousCoverPct value cell (Austin, WATER SUPPLY SUBURBAN sample): {value: 30, unit:\"pct\", basis: cites Sec. 25-8-423(B), source watershed layer + recharge zone layer both named}"
+    ]
+  },
+  "whatContradictedTheCard": [
+    {
+      "finding": "agValuation's real production FK violation (Postgres 23503) on Williamson's txgio_parcel 'PRIVATE ROAD' sentinel prop_id rows -- full detail in CP2. This directly contradicted the implicit assumption (never stated as a hard claim in the mission, but latent in the original wave-1 design) that every prop_id enumerated by this rail's own paging source corresponds to a real, instantiated parcel_record row. It does not. Fixed with a real existence check against the authoritative table, not a defensive try/catch around the symptom."
+    },
+    {
+      "finding": "This wave's owner Tier 2 override initially raised a question (not a bug) of whether WCAD's quickrefid needed a crosswalk step the way WCAD's ag-valuation propertyid did in wave 1 -- verified directly (sampled and compared) that quickrefid IS the same key already in use, so no crosswalk was needed here. Named explicitly because the two WCAD datasets (Owner vs ag-valuation) turned out to use different key conventions from each other, which was not obvious in advance and is worth remembering if a future wave touches a third WCAD dataset."
+    }
+  ],
+  "leave_behind": [
+    { "item": "utilityService water sub-type", "owner": "operator/next session", "plan_row": "F-01", "reason": "Same TWDB outage named in wave 1's close -- retry acquire-utility-ccn --type=water --apply once TWDB's host recovers, then re-run parcel-utility-service --apply. No code work remains." },
+    { "item": "owner: valueHistory, salesHistory, mineralRights, hoaDeedRestrictions, ossf, publicRecordRefs", "owner": "operator/next session", "plan_row": "F-01", "reason": "All scouted in this wave's Phase 1 (see _inbox/2026-09-03_parcel-wave2_inventory.md) but explicitly excluded from Phase 2 because the operator's own wave-2 scoping instruction didn't name them. hoaDeedRestrictions in particular scouted STRONG (inverted the brief's own expectation) and is a strong candidate for a future wave." },
+    { "item": "overlayDistricts: Robinson", "owner": "operator/next session", "plan_row": "F-01", "reason": "Wave-1 follow-up scout resolved 4 of 5 remaining cities to confirmed clean negatives; Robinson alone needs browser-based extraction from a city-owned ArcGIS Experience app, a different kind of task than a re-scout." },
+    { "item": "treeProtection", "owner": "closed by explicit operator instruction, not a leave-behind in the usual sense", "plan_row": "F-01", "reason": "Operator explicitly excluded this when authorizing wave 2 ('everything you mentioned except tree protection'). Scouted weak (Austin-only, incomplete permit-event log, not a parcel census) -- named here only so the exclusion is traceable to a real reason, not silently dropped." },
+    { "item": "maxImperviousCoverPct beyond Austin", "owner": "operator/next session", "plan_row": "F-01", "reason": "Operator explicitly scoped this rail Austin-only 'for now' when authorizing wave 2 -- other cities/counties with their own LDC-equivalent impervious-cover ordinances were never scouted and would need their own crosswalk work." }
+  ],
+  "prNumbers": {
+    "wave2Build": "feat/parcel-wave2, merged to main",
+    "hotfix": "PR #86 (agValuation FK-violation existence check + dry-run read-only factory fix), merged, CI green, redeployed"
+  },
+  "constraintsHonored": [
+    "schema.sql untouched (one additive column, tx_wcad_ag_valuation.county_fips, on a cortex staging table outside this repo's migrations/ management, consistent with wave 1's own precedent for tx_* staging tables).",
+    "hauska-factory-parcel-fill, -conform, -writer, -publish worktrees never opened.",
+    "Direct Neon host used for every write and every verification query this close.",
+    "Every --apply executed via Cloud Run, never from a laptop."
+  ],
+  "scratch": [
+    { "kind": "GROUND-TRUTH", "text": "2026-09-04: real, independently-derived per-rail cell counts for owner/utilityService(electric)/agValuation(Travis)/maxImperviousCoverPct, queried directly from FACTORY_DATABASE_URL_RO -- see perRailStateCounts above." },
+    { "kind": "LESSON", "text": "A rail's own paging source (here, txgio_parcel) enumerating a prop_id is not proof that a corresponding parcel_record row was ever instantiated -- always existence-check against the authoritative table before writing a cell keyed off an external source's own ID space, not just against the ID's surface shape (e.g. 'looks like a real prop_id'). Sentinel/placeholder values like 'PRIVATE ROAD' are a real, recurring pattern in Texas CAD data, not a one-off." },
+    { "kind": "OPEN", "text": "Water CCN retry still pending TWDB recovery (shared with wave 1's leave_behind, same underlying outage). hoaDeedRestrictions scouted strong and is a good candidate to lead a future wave." }
+  ]
+}
