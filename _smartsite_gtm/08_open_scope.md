@@ -46,7 +46,7 @@ Two migrations are written and unapplied: `0093` for P-100 and `0094` for P-106.
 
 **P-111 the account-deletion orphan.** Simplified by the operator ruling that beta data may be wiped, so this is a foreign key and a wipe rather than a careful migration.
 
-**P-112 more ways in.** Apple, Microsoft and email. See section 3, because the three legs are not the same size and one decision governs all of them.
+**P-112 more ways in.** Ruled 2026-09-04: Google, Microsoft and email, direct builds, no WorkOS front door, Apple out of scope. See section 3.
 
 **P-88 the directory listing.** Copy prepared and verified, deliberately not filed. Revisit when coverage broadens or when the share loop plateaus, whichever comes first, and let P-100's numbers decide rather than judgment.
 
@@ -66,6 +66,8 @@ That is the third instance in one session of the same shape: the code exists, th
 
 That single choice decides whether P-112 is an afternoon or a week. Settle it before dispatching.
 
+**Ruled 2026-09-04** (`_decisions/2026-09-04_p112_auth_options_ruling.md`): WorkOS stays connector-only. Google, Microsoft and email are direct builds, owned and maintained here, not routed through one vendor integration. Apple is OUT of scope — not carded, not sized further; revisit only if raised again explicitly. Email's own open call (magic link vs one-time code) is still unresolved, next up before dispatch.
+
 ## 4. What only the operator can move
 
 **Rulings that block named lanes.**
@@ -76,7 +78,7 @@ P-106's zoning divergence. The projection derives absent-verified from two indep
 
 P-110's metering. The Hauska export tools are SDK-metered per call while these callers already paid Stripe for Studio. Hauska Inc and Legacy Group ATX are separate entities, so this is intercompany billing rather than accounting. Nobody can wire the export path until it is answered, because the answer decides whether exports are profitable at one hundred and twenty-nine dollars.
 
-P-112's WorkOS posture, per section 3.
+~~P-112's WorkOS posture, per section 3.~~ Ruled 2026-09-04, see section 3.
 
 **Decisions with no lane waiting.** The GoHighLevel sub-account posture, cheapest to change now while no contact exists. The four affiliate segment lines. Whether valuation output may surface. The "brief" glossary conflict. Whether the extension still sells Pro and Max. Whether `dossier` means the same thing on both surfaces. Whether the share plane requires a `graph_opt_in`.
 
