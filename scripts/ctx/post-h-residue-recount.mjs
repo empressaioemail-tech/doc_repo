@@ -45,6 +45,21 @@ const REPORT_PATH = join(ROOT, "_inbox", "2026-08-30_ctx_w0_residue_recount.json
 
 export const CONTROL = "ctx-w0-residue-recount";
 export const PLAN_ROWS = ["F-05", "F-06", "F-08"];
+
+// REPAIRED 2026-09-04: `writeReport`'s liveFlag/isMain were read from the REAL
+// process.argv/entrypoint, not the self-test's fixture inputs. `--live` always
+// runs selfTest() first (see the Usage note above), so the moment selfTest()
+// exercised the real writeReport() to prove it refuses, the real process WAS
+// already the entrypoint AND already had --live in argv -- both true for real,
+// independent of what the self-test intended to simulate. The guard's other
+// three gates were all fine; this one was checking a fixture that could never
+// actually occur (self-test always run standalone), so it never caught that a
+// real --live invocation's own self-test satisfies every gate for real and
+// writes. Confirmed live: it truncated the committed report to 88 bytes on the
+// first --live attempt after this file's original 2026-08-30 repair. IN_SELF_TEST
+// is the second, independent input the guard needed -- set only for the
+// duration of selfTest() itself, unrelated to argv or entrypoint identity.
+let IN_SELF_TEST = false;
 export const WDLL = "_inbox/2026-08-30_ctx_facts_complete_WDLL.md item 2";
 export const SCHEMA_VERSION = "node-facets-tier1-conformant-v1";
 export const ADAPTER_KEY = "node-facets:tier1";
@@ -367,7 +382,8 @@ export function auditPublishRuns(counties, expected = CARD_H_RUNS) {
 // self-testable; writeReport applies it against the real process state.
 // ---------------------------------------------------------------------------
 
-export function writeGuardVerdict({ isMain, liveFlag, payload }) {
+export function writeGuardVerdict({ isMain, liveFlag, payload, inSelfTest = false }) {
+  if (inSelfTest) return { allow: false, reason: "in-self-test: a self-test in progress must never write the report, regardless of the real process's own argv/entrypoint" };
   if (!isMain) return { allow: false, reason: "not-entrypoint: importing this module must never write the report" };
   if (!liveFlag) return { allow: false, reason: "no --live: only a live run writes the report" };
   if (payload?.control !== CONTROL) return { allow: false, reason: `control mismatch: expected ${CONTROL}` };
@@ -392,7 +408,7 @@ const IS_MAIN = (() => {
 
 function writeReport(payload) {
   const liveFlag = process.argv.slice(2).includes("--live");
-  const verdict = writeGuardVerdict({ isMain: IS_MAIN, liveFlag, payload });
+  const verdict = writeGuardVerdict({ isMain: IS_MAIN, liveFlag, payload, inSelfTest: IN_SELF_TEST });
   if (!verdict.allow) throw new Error(`writeReport refused: ${verdict.reason}`);
   writeFileSync(REPORT_PATH, JSON.stringify(payload, null, 2) + "\n");
   return REPORT_PATH;
@@ -444,6 +460,15 @@ function row({
 export function selfTest() {
   TEST_COUNT = 0;
   TEST_NAMES = [];
+  IN_SELF_TEST = true;
+  try {
+    return selfTestBody();
+  } finally {
+    IN_SELF_TEST = false;
+  }
+}
+
+function selfTestBody() {
 
   // --- classification fixtures -------------------------------------------
   const noRowSentinel = row({ lat: 0, lng: 0, state: "no-row" });
@@ -764,7 +789,18 @@ export function selfTest() {
     failedLive.allow === false && failedLive.reason.includes("liveStatus"),
     "a failed live run would overwrite a good measurement with an unmeasured stub",
   );
+  assert(
+    "write guard DENIES a self-test even when isMain/liveFlag/payload all look like a real, legitimate --live write (2026-09-04 repair)",
+    writeGuardVerdict({ isMain: true, liveFlag: true, payload: measuredPayload, inSelfTest: true }).allow === false,
+    "--live's own self-test IS an entrypoint run with --live in real argv and a legitimate-looking payload -- exactly the case that truncated the live report for real on 2026-09-04; this gate must fire from IN_SELF_TEST alone, not from argv",
+  );
 
+  // The real writeReport(), exercised for real from inside a real --live process
+  // (IN_SELF_TEST is true here because selfTest() set it before calling this
+  // function). Before the 2026-09-04 repair this call actually wrote the file,
+  // because writeReport's liveFlag/isMain read the REAL process.argv/entrypoint,
+  // which are genuinely true during an actual --live run's own self-test phase --
+  // the fixture below never caught it because IN_SELF_TEST didn't exist yet.
   let refused = false;
   try {
     writeReport({ control: CONTROL, live: { liveStatus: "measured" } });
