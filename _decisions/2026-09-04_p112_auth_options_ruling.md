@@ -31,3 +31,9 @@ Revisit the WorkOS posture if a fourth provider is ever requested (Apple specifi
 ## Dependencies
 
 Blocks nothing that was not already blocked. Unblocks P-112's Microsoft leg (a credential ask, not a build — someone with Azure access needs to register an app) and its email leg (the magic-link-vs-code call still needs an answer before dispatch).
+
+## 2026-09-04 addendum — email mechanism ruled; Microsoft deferred, not just credential-blocked
+
+Operator asked directly what the WorkOS choice actually meant before ruling it; the same session then asked the email-mechanism question directly rather than leaving this decision file's own "still needs an answer" line to be resolved by inference. **Magic link, ruled.** No password anywhere in this flow; a build agent dispatched against this ruling should treat magic link as settled, not open.
+
+**Microsoft correction**: operator had not realized an Azure AD app registration was a real prerequisite before this ruling ("drop msft for now we will do that ad app and account later i didnt realize that was a prerequsite"). This is not merely "a credential ask" as this file originally characterized it — it is deferred, with no dispatch expected until the operator has registered the app and can hand over the client id/secret. Do not treat Microsoft as in-progress or blocked-on-a-quick-ask; treat it as parked.
