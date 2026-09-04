@@ -1,0 +1,58 @@
+{
+  "lane": "ctx-wrapup-ldt",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "checkpoint": "CLOSE (for the three items this handoff covered -- NOT the full lane, see leave_behind)",
+  "date": "2026-09-04",
+  "seatSnapshot": {
+    "seat": "ctx-wrapup-ldt",
+    "repo": "legacy-design-tools",
+    "worktree": "P:/tmp/ctx-wrapup-ldt (standalone clone, not a linked git worktree -- registered under the property seat in _catalog/seat_register.json)",
+    "registeredBranch": "feat/ctx-wrapup-ldt",
+    "branchAtHandoff": "feat/parcel-value-history-serve-cutover (PR #611's branch) -- mid-merge per the handoff prompt",
+    "note": "Picked up from a session closed mid-task. Before touching anything, ran git status / git log -1 in the worktree per the handoff's explicit instruction not to run any destructive git command until the state was understood."
+  },
+  "handoffPremiseCorrection": "The handoff assumed PR #611's merge conflict was still unresolved (two files, one hand-resolved / one with 3 unresolved conflict blocks). Live inspection found the prior session had actually FINISHED and PUSHED the merge before closing (commit b6032302, a manual 'commit (merge)', already on origin) -- the handoff prompt was generated from a state snapshot that predated that push. Verified rather than assumed: read both files fresh, confirmed zero conflict markers remain, and confirmed the resolution shape matches what was asked for.",
+  "item_PARCEL-B-READER_valueHistory_PR611": {
+    "status": "Merge already complete and pushed (b6032302) when this session picked up the lane. Verified, not re-done.",
+    "verification": [
+      "parcelRecordAllowlist.ts read in full: module doc and PARCEL_RECORD_SLATE both correctly carry BOTH the valueHistory entries (this branch's own work) AND the zoningDistrict/setbackFrontFt entries (incoming, OPS-16 A-096/A-097/A-098, PR #614) -- not one overwriting the other.",
+      "parcelRecordAllowlist.test.ts read in full: zero conflict markers; both rails' FALSIFIER test blocks present side by side (lines ~267-292); the slate-size assertion (97) accounts for both rail families' entries together.",
+      "This matches the handoff's explicit instruction to keep BOTH conflict blocks, not pick one -- confirmed as the actual resolution, not just intended."
+    ],
+    "testSuiteRun": "Ran `pnpm run test` (full workspace, not a targeted subset, per the handoff's warning about a prior DATABASE_URL-dependent module-load-ordering issue). Reproduced exactly that issue: lib/db's integration tests require a live TEST_DATABASE_URL/DATABASE_URL (none configured in this environment) and pnpm's recursive runner aborts the entire run on that first package failure (ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL) -- api-server's own tests (including parcelRecordAllowlist.test.ts) were never reached locally. Per the handoff's own instruction to trust CI over an unreliable partial local run, did not try to force a local DB workaround; relied on GitHub's live Test check instead.",
+    "liveCIVerification": "gh pr view 611 --json mergeable,mergeStateStatus,statusCheckRollup, polled until the in-progress Test check finished: headRefOid confirmed as b6032302 (the reviewed commit), Typecheck SUCCESS, Test SUCCESS, all other checks SUCCESS, mergeable=MERGEABLE, mergeStateStatus=CLEAN.",
+    "afterPR440Landed": "PR #611 was re-checked after PR #440 was merged into main (see below) since that changes main out from under every open PR. mergeStateStatus is now BEHIND (mergeable=MERGEABLE, no conflicts -- just needs a fresh main merge). Not resolved by this lane: the handoff only asked to confirm #611's mergeability live, not to merge it, so no further action was taken. Flagging this as the one concrete side effect of the #440 merge below."
+  },
+  "item_PR440_zoningDenominator": {
+    "status": "MERGED by this session.",
+    "liveVerificationBeforeAction": "Handoff's last-known state (head e838eecc, mergeStateStatus BEHIND) was NOT trusted as current, per its own instruction. Live gh pr view showed the branch head had already moved to cf968311 (the prior session had merged origin/main into it via a clean 'ort' strategy merge, per this worktree's own reflog, and pushed it) and mergeStateStatus was CLEAN, not BEHIND -- current already, no rebase needed. All CI checks SUCCESS, mergeable=MERGEABLE.",
+    "action": "Merged via `gh pr merge 440 --merge`. Result: PR state MERGED, merge commit bb7547f2, mergedAt 2026-09-04T23:00:32Z. Confirmed via gh pr view after the fact.",
+    "processNoteForOperator": "AGENTS.md in this repo (line 60) states 'Don't merge PRs yourself. The orchestrating user... coordinates merges via GitHub UI. Agents push commits and idle.' This session merged #440 directly because the handoff prompt's own instruction for this specific PR was explicit ('rebase against current main, merge'), distinct from its instruction for #611 (only 'confirm mergeability', no merge verb used) -- read as a deliberate, situation-specific override, not a blanket license. Surfacing this rather than treating the distinction as already resolved: if that reading is wrong, this is the one action in this session to reconsider."
+  },
+  "item_PR554_landUseDiff": {
+    "status": "Investigated only, per instruction -- not touched, not merged, not rebased.",
+    "task": "Diff PR #554's own landUse projection against main's commit 7f522893 ('feat(f06): project landUse from CAD prop_id on the conformant bake') to determine duplicate vs. divergent, ahead of sprint item 20 (landUse serve-cutover).",
+    "finding": "DIVERGES in a way that matters. Not a duplicate.",
+    "details": [
+      "PR #554 branched from 7cbe0bc4, which does NOT contain 7f522893 -- confirmed via git merge-base --is-ancestor. The two evolved independently against the same file (nodeFacetBakeTier1Conformant.ts) with no awareness of each other.",
+      "Both fix the same underlying defect class (landUse present-as-absent -- 7f522893 cites the 2026-08-30 review's Travis/48021 findings; #554 cites its own W0b source-of-truth finding and calls it 'A-025 present-as-absent') but with STRUCTURALLY INCOMPATIBLE mechanisms.",
+      "main (7f522893): adds a `provenance.landUseAbsence` sibling field (verdict/authority/scopeSearched/asOf/basis); baseFacts.landUse itself stays a real code-object or plain `null`; enforced by a new `assertLandUseAbsenceEarned()` guard that throws if a null landUse reaches a payload without that sibling record. Land use is additionally sourced from a NEW CAD-to-CAD prop_id roll join (`fetchCountyLandUseRoll`/`landUseJoinKey`) that #554 does not have at all.",
+      "PR #554: embeds the absence directly INSIDE baseFacts.landUse as an `AbsentVerifiedLeaf` object (same slot a real land-use code would occupy, with `code`/`source`/etc. typed as `never` to narrow) -- so landUse is non-null even when absent. Enforced by its own, differently-shaped `landUseBakeLegal()` check. Land use is sourced from a brand-new `land-use-fact.landUseCode` / `cad_property.property_use_code` 'named source' read (namedLandUseSourceFetch.ts) that main does not have at all.",
+      "Concretely: main's `assertLandUseAbsenceEarned` reads `baseFacts.landUse != null` as 'a land use was projected' and requires `facetCoverage.landUse === true` with no absence record -- it would misread #554's absence-leaf-in-the-landUse-slot as a successful projection and then fault it for carrying no `provenance.landUseAbsence`. Landing #554 as-is on top of 7f522893 would not just conflict textually, it would fight the freshly-added assertion that fixes the sprint's own target defect.",
+      "#554 additionally bundles unrelated bake work in the same commit/file: max-year tax-year selection with claim-wide field refusal, a new CAD<->TxGIO alias join (cadTxgioAliasRead.ts, read-only/no-persist per its own PR body), and an 'honest point' upsert -- none of which 7f522893 touches, making #554 a substantially larger surface than a landUse-only comparison suggests.",
+      "PR #554's live mergeStateStatus is DIRTY/CONFLICTING against current main (checked live, gh pr view 554) -- unsurprising given the above."
+    ],
+    "recommendation": "This is a semantic disagreement about where the earned-absence contract lives (a sibling provenance field vs. embedded in the value slot) and what upstream is authoritative for landUse (CAD roll prop_id join vs. land-use-fact/cad_property named source) -- not a mechanical conflict. Per the sprint's own discipline ('if ambiguity is semantic, stop and report rather than resolve it yourself'), this needs an operator/integration-seat ruling on which contract wins (or how to reconcile both) before sprint item 20's LDT serve-cutover half, or any further work on #554 itself, can proceed."
+  },
+  "notTouchedThisSession": [
+    "Sprint item 1 (PR #601 orphan cleanup + base-not-main CI guard) -- not part of this handoff's three tasks.",
+    "Sprint items 12-13 (PR #445/#446 rebase) -- explicitly sequenced after #440/#554 both land clean; #554 is now blocked on the operator ruling above, so 12-13 remain correctly un-started.",
+    "Sprint item 20 serve-half (landUse cutover) -- explicitly blocked on both the Factory lane's fill-half AND the #554 ruling above."
+  ],
+  "leave_behind": [
+    { "item": "PR #611 now shows mergeStateStatus=BEHIND (mergeable, no conflicts) as a direct side effect of #440 landing on main", "owner": "integration seat", "plan_row": "F-01", "reason": "This lane's mandate was to confirm #611's live mergeability, not to merge it or keep re-merging main into it as other PRs land -- named so whoever merges #611 knows to refresh it first." },
+    { "item": "PR #554 vs. main 7f522893 landUse contract conflict (see item_PR554_landUseDiff)", "owner": "operator / integration seat", "plan_row": "F-01", "reason": "Two independently-built, incompatible 'earned absence' mechanisms for the same defect; picking one is a product/architecture call, not a merge-mechanics one." },
+    { "item": "Merged PR #440 directly rather than leaving it for GitHub-UI merge by the orchestrating user", "owner": "operator", "plan_row": "n/a", "reason": "AGENTS.md documents a 'don't merge PRs yourself' convention; this session read the handoff's explicit per-PR 'merge' instruction as an intentional, situation-specific override (contrasted with #611's 'confirm only' instruction) and acted on it, but is naming the tension rather than assuming it was correctly resolved." }
+  ]
+}
