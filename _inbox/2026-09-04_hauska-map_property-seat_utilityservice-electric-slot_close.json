@@ -1,0 +1,45 @@
+{
+  "lane": "hauska-map-utilityservice-electric-slot",
+  "plan_row": "wrap-up scope audit item 16 (`_inbox/2026-09-04_ctx_pipeline_wrapup_scope_audit.md`)",
+  "repo": "hauska-map",
+  "seat": "property",
+  "worktree": "P:/tmp/ctx-wrapup-map (standalone clone, branch feat/ctx-wrapup-map)",
+  "status": "closed — live-verified",
+  "missionPremise": "legacy-design-tools PR #608 (merged 2026-09-04T14:10:29Z, 83fb2a1e) added a third rowIndex=2 electric companion-row slot to the utilityService parcel-record writer, alongside the existing water(0)/sewer(1) slots. hauska-map's frontend model of utilityServiceFact was still {water, sewer} only. Per dispatch instruction, verified the real current served shape first-hand (gh api against legacy-design-tools main, not assumed from this repo's own stale comments, which still read 'No electric slot exists -- never invent one' as of the PR #600 merge earlier the same day) before touching any code -- same discipline as this week's earlier water/sewer fix (PR #347).",
+  "finding": {
+    "field": "utilityService",
+    "checkedAgainstRealCode": true,
+    "bugFound": true,
+    "rootCause": "fact-sheet-resolver.ts / atom-chain-to-facets.ts / baked-facets.ts / sheet-to-card-model.ts / packages/parcel-fact-sheet only modeled water+sewer; any parcel whose only populated companion row was electric rendered no utility information at all (silently incomplete card, not a crash or refusal).",
+    "liveExposureAtDiscovery": "Backend (LDT PR #608) had already shipped and was live in production; frontend had not yet been updated. Confirmed via a direct live probe (5 real Williamson County (48491) parcels, all electric-only: water=null, sewer=null, electric=AUSTIN ENERGY) that the unfixed frontend would have dropped this data."
+  },
+  "fix": {
+    "commit": "42b6d2a",
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/351",
+    "mergedCommit": "b559566c8d80efb7e5ffe0112f711825c9d3a368",
+    "filesChanged": [
+      "packages/parcel-fact-sheet/src/index.ts",
+      "apps/property-explorer/api/_lib/atom-chain-to-facets.ts",
+      "apps/property-explorer/src/lib/baked-facets.ts",
+      "apps/property-explorer/src/lib/fact-sheet-resolver.ts",
+      "apps/property-explorer/src/lib/sheet-to-card-model.ts",
+      "+ matching test coverage in atom-chain-to-facets.test.ts, fact-sheet-resolver.test.ts, sheet-to-card-model.test.ts"
+    ],
+    "ciVerification": "Checked via the check-run API on the real head commit (42b6d2a), not a CLI summary line: Typecheck / test / No double-encoded source all conclusion=success. PR mergeStateStatus=CLEAN, mergeable=MERGEABLE before merge.",
+    "testsRun": "Full property-explorer suite (180 files, 2593 tests) pass; packages/parcel-fact-sheet suite (28 tests) pass; tsc --noEmit clean on app/api/package tsconfigs (pre-existing unrelated errors in verdict-layer-merge.ts / pe-share-grant.ts / map-renderer resolution confirmed present on the unmodified tree via git stash, not caused by this change)."
+  },
+  "deploy": {
+    "method": "vercel deploy --prod (project property-explorer, empressaioemail-techs-projects scope) -- no auto-deploy observed within ~2 minutes of merge, so triggered directly",
+    "deploymentId": "dpl_6r3iFrDyULQHBCMPrdzUowE9MAqt",
+    "aliasedTo": "https://smartsite.cloud",
+    "readyState": "READY / target production"
+  },
+  "liveVerification": {
+    "method": "Live probe on the deployed surface, not the merged PR alone.",
+    "backendProbe": "curl https://smartsite.cloud/api/spine/property-atoms/{id}/facets for 5 real Williamson County parcels (48491:R007046..R007050, found via find_parcel street search) -- all return utilityServiceFact.state=present with water=null, sewer=null, electric={AUSTIN ENERGY, REGULATED, ccnNo 1015} -- the exact electric-only shape the old frontend model would have silently dropped.",
+    "frontendBundleProbe": "Fetched the live production JS bundle (assets/index-j_DNZkbH.js, hash matches this deploy's build output) and confirmed it contains this fix's new code: the 'Electric' display-label literal and the updated 'no water, sewer, or electric entry' absence-reason string.",
+    "conclusion": "Both legs confirmed live: backend now serves the electric slot for real parcels, and the deployed frontend bundle contains the code that reads it."
+  },
+  "leave_behind": [],
+  "summary": "One-item fix, no sub-agents needed. utilityServiceFact remodeled to read water/sewer/electric (was water/sewer only), verified against the real legacy-design-tools PR #608 shape via gh api rather than assumed. Shipped push -> PR #351 -> check-run-API-verified-green CI -> squash-merged (b559566c) -> deployed to production (dpl_6r3iFrDyULQHBCMPrdzUowE9MAqt, smartsite.cloud) -> live-verified via a direct backend probe on 5 real electric-only Williamson County parcels plus a served-bundle content check. Customer-done, not just merged."
+}
