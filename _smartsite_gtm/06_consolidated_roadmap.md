@@ -155,7 +155,7 @@ Runs alongside Wave 1. Nothing here waits on Stripe.
 | # | Item | Owner | Blocked by |
 |---|---|---|---|
 | 2.1 | **P-101** ladder re-cut across both surfaces | property seat | nothing, carded |
-| 2.1b | **P-102** two-seat Studio, split out per ruling 2 | property seat | sequence after P-101 |
+| 2.1b | ~~**P-102** two-seat Studio, split out per ruling 2~~ | property seat | **REVERSED 2026-09-04** — reversal criterion in ruling 2 fired (seat management could not close self-serve); Studio stays one seat. OPS-16 A-101. |
 | 2.2 | **P-100** share and funnel instrumentation | property seat | **code complete**, diffs held behind P-104; migration `0093` NOT applied |
 | 2.3 | Screen test the four affiliate segment lines | operator | nothing |
 | 2.4 | Affiliate kits, one per segment | planner | 2.3 |
