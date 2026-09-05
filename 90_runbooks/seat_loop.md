@@ -118,12 +118,21 @@ and there is not supposed to be.** The connection strings live in GCP Secret Man
 
 ```
 export PRODUCTION_NEONDB_URL=$(gcloud secrets versions access latest   --secret=PRODUCTION_NEONDB_URL --project=hauska-prod-497015)      # cortex-prod: hauska_mcp + neondb
-export FACTORY_DATABASE_URL=$(gcloud secrets versions access latest   --secret=FACTORY_DATABASE_URL --project=hauska-prod-497015)       # factory control store
+export FACTORY_DATABASE_URL=$(gcloud secrets versions access latest   --secret=FACTORY_DATABASE_URL --project=hauska-prod-497015)       # factory control store, read-write primary
+export FACTORY_DATABASE_URL_REPLICA=$(gcloud secrets versions access latest   --secret=FACTORY_DATABASE_URL_REPLICA --project=hauska-prod-497015)  # factory control store, READ REPLICA
 ```
 
 `psql` and the `pg` node module are both present. Related secrets that exist and may be the
 right one for a given card: `ATOMS_DATABASE_URL`, `CORTEX_DATABASE_URL`, `DATABASE_URL`.
 Read the card before picking one.
+
+**Use `FACTORY_DATABASE_URL_REPLICA` for any read-only reporting/measurement/sweep query
+against the Factory store** (recounts, gap sweeps, gate-verdict checks, anything that doesn't
+write) instead of the primary. Added 2026-09-04 after repeated `statement timeout`s from
+multiple concurrent lanes hammering the single primary the same night. Verified live: rejects
+writes (`ERROR: cannot execute CREATE TABLE in a read-only transaction`), same row counts as
+the primary. Still only one primary compute for actual writes — the replica does not relieve
+write contention, only read contention.
 
 **Never echo a secret, never write one to a file, never paste one into a close.** Pipe to
 the thing that consumes it. To prove access without exposing a value, pipe to `wc -c`.
