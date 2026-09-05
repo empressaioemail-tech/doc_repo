@@ -143,7 +143,9 @@ Adopted 2026-08-31 pending a look at them rendered. Re-pointed against the ruled
 | Investor, flipper | Studio | Find out what kills the deal before you make the offer | X-ray on an Austin-area lot: setbacks, envelope, flood, cited |
 | Agent, brokerage | Solo, driving Free | Send your client their smart site | Share a live smart site with a client, on a phone |
 | Land and ranch | Solo, some Studio | Know what the water does to that land before you drive out to see it | Flood and Drainage plus X-ray on a rural Bastrop or Caldwell tract |
-| Builder, designer | Studio | Start with the setbacks already drawn, cited to the ordinance section | X-ray on an infill lot, envelope labeled approximate, then the site plan export |
+| Builder, designer | Studio | Know what the site can actually support before you commit to the design | Feasibility Study plus Flood & Drainage on an infill lot, cited |
+
+**Corrected 2026-09-05** (operator ruling, OPS-16 A-103): the builder/designer line and demo now lead with Feasibility Study and Flood & Drainage rather than X-ray-plus-site-plan-export — "builder / designer are going to be interested in having real solid information so feasibility study and flood study." The other three lines confirmed unchanged.
 
 Two notes that bind whichever lines are chosen. The agent line is the share gesture, which makes affiliate and share the same motion for that segment and is the one place two channels compound rather than compete; that argues for recruiting agents first. And the land line is deliberately built on water rather than on what you can build, because unincorporated Central Texas is legitimately unzoned and a build-focused line is weakest exactly where that audience operates.
 
