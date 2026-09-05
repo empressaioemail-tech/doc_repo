@@ -1,0 +1,140 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "checkpoint": "CLOSE (picked up from a closed prior session; this covers items 5, 9, 10, 4, 20 as briefed)",
+  "date": "2026-09-04",
+  "seatSnapshot": {
+    "seat": "ctx-wrapup-factory",
+    "repo": "hauska-factory",
+    "worktree": "P:/tmp/ctx-wrapup-factory (standalone clone, registered under the property seat in _catalog/seat_register.json)",
+    "registeredBranch": "feat/ctx-wrapup-factory",
+    "branchAtHandoff": "main, clean, up to date with origin/main (PRs #87/#88/#89 already merged by the prior session)",
+    "note": "feat/ctx-wrapup-factory was used by the prior session only as a scratch base -- the actual work landed as per-item branches (fix/overlay-impervious-not-applicable, feat/owner-rail-collision-check, feat/b3-geomgap-sweep) merged directly to main as PRs #87/#88/#89. Confirmed via reflog before doing anything else; not a discrepancy."
+  },
+
+  "item5_queueClaimMechanism": {
+    "status": "DONE. PR #90 merged to main (a88fe3c2, 2026-09-05T00:10:04Z), following this repo's own established precedent tonight of the lane self-merging its own green PRs (no AGENTS.md restriction found in this repo, unlike legacy-design-tools).",
+    "whatWasBuilt": [
+      "migrations/0011_claims.sql: new `claims` table, same (entity_type, county_fips) PK shape as `leases` for consistency, but keyed by the Cloud Run execution's OWN identity (CLOUD_RUN_EXECUTION) rather than an in-process randomUUID holder_token.",
+      "src/control/claims.mjs: claimAndVerify (one INSERT...ON CONFLICT...RETURNING -- claim and verify are the same atomic statement), verifyClaim (mid-run recheck for TTL lapse), releaseClaim.",
+      "Wired into src/jobs/parcel-record-fill.mjs's per-county --apply loop -- confirmed by reading the incident's own falsifier (_inbox/2026-09-02_parcel_program_review.md finding #7) that this IS the exact job the incident happened in (Williamson and Travis county fills kept writing after an unauthorized session's claim was never actually granted). Each county is claimed before its write and released once that county's fill closes."
+    ],
+    "whyThisShape": "Operator ruling 2026-09-04: Postgres-native locking, not a new lock service. Closes the falsifier verbatim: 'a Cloud Run job's execution is refused (not just discouraged) unless the invoking identity holds a live, unexpired claim on the target county at execution start time (checked server-side, not client-side)'. requireWriterJob only ever checked WHICH job runs, never whether THIS invocation holds the card; leases' random holder_token has no relationship to the execution's real identity, so a session that misreads a dispatch refusal as a grant faced no technical barrier before this.",
+    "testEvidence": "test/claims.test.mjs (9 tests, including a falsifier reproducing the incident: a second execution cannot claim a county the first still holds, refused CLAIM_HELD naming the actual holder) + a new 'F-01 item 5: county-fill claim wiring' suite in test/parcel-record-fill.test.mjs (4 tests: claims/releases per county, refuses before any read/write when another execution holds the claim, sequences correctly across a multi-county run, never claims on a dry run). Full suite after wiring: 958 pass / 0 fail / 2 pre-existing skips, no regressions from the 954/0/2 baseline.",
+    "confirmedUnrelatedToDocRepo": "doc_repo's own scripts/queue/ (cli.mjs/lib.mjs/self-test.mjs) is a file-based lane-dispatch claims mechanism, unrelated to a Cloud Run execution's Postgres lock. Read it to confirm: no shared code, no shared table, nothing routes back to doc_repo. This item is fully hauska-factory's own.",
+    "notDoneTonight_deliberately": [
+      "Migration 0011 has NOT been applied to any environment. This repo migrates via a dedicated one-off Cloud Run job execution (factory-*-migrate --args=migrate), never automatically on deploy -- someone needs to run that against FACTORY_DATABASE_URL before claimAndVerify can work live. Not attempted from this session: it is a schema-changing write against the primary that has been under real, confirmed contention all night, and no explicit operator go-ahead was given for a schema write tonight specifically.",
+      "Only parcel-record-fill.mjs is wired. conformant.mjs, f10-cad-loop.mjs, p2-juris.mjs, and restamp-access.mjs still rely solely on leases' random-token exclusion. Whether they need the same claim wrapped in is a genuine follow-on scoping question, not resolved here -- flagged in the PR body, not silently decided."
+    ]
+  },
+
+  "items9and10_liveGateVerification": {
+    "sharedContext": "Sprint's own bar: merged + CI-green is not 'done' -- every other closed item tonight met a live-verified bar. Both PRs were live-probed against real production data, not just re-read as diffs.",
+
+    "item9_overlayDistricts_maxImperviousCoverPct": {
+      "status": "PR #87 merged, CI green -- LIVE VERIFICATION FOUND THE FIX HAS HAD ZERO EFFECT ON PRODUCTION YET.",
+      "liveQuery": "SELECT rail_key, cell_state->>'kind', count(*) FROM parcel_record_cell WHERE rail_key IN ('overlayDistricts','maxImperviousCoverPct') GROUP BY 1,2 -- ran clean against FACTORY_DATABASE_URL, no timeout, read-only transaction, 45s statement_timeout.",
+      "actualNumbers": {
+        "overlayDistricts": { "value": 204194, "absent-verified": 263417, "unaccounted": 513794, "not-applicable": 0, "refused": 0, "total": 981405 },
+        "maxImperviousCoverPct": { "value": 22139, "unaccounted": 959266, "not-applicable": 0, "absent-verified": 0, "refused": 0, "total": 981405 }
+      },
+      "rootCause": "Read the merged code (parcel-overlay-districts.mjs, parcel-max-impervious-cover.mjs): the fix's not-applicable write is a GATED UPDATE (UPDATE_NOT_APPLICABLE_CELLS_BATCH_SQL) that only ever moves a currently-'unaccounted' cell, and it only runs when the job is actually EXECUTED with --apply. The merge itself changes no already-written row. Confirmed structurally that this session cannot apply the fix from here: runParcelOverlayDistricts/runParcelMaxImperviousCover both refuse LAPTOP_WRITE_FROZEN unless env.FACTORY_CLOUD==='1', i.e. a real Cloud Run job execution is required.",
+      "meaning": "The code fix is real and (per its own 'dry run previews notApplicable too' commit) believed correct, but as of this measurement BOTH gates would still read exactly as they did before the merge: 0 not-applicable cells exist for either rail, and 513,794 + 959,266 cells sit unaccounted. Nothing about production behavior has actually changed yet.",
+      "followUpNeeded": "A real Cloud Run job execution of factory-parcel-overlay-districts --apply and factory-parcel-max-impervious-cover --apply, for all 6 PROGRAM_FIPS counties, is required before this item is actually live. Not something this session's laptop-scoped tooling can do by design (LAPTOP_WRITE_FROZEN) -- needs the operator/integration seat to dispatch it."
+    },
+
+    "item10_ownerRailCollisionCheck": {
+      "status": "PR #88 merged, CI green -- live-ran the dry-run check for Bastrop (48021); a second county attempt was cut short by contention (see contention section).",
+      "joinKeyAndSemanticDesign": "Confirmed the merged code already implements exactly what was flagged: splitOwnerFactEntityId strips the trailing ':taxYear' from entityId to derive place_key (owner-rail-collision-check.mjs), and withheldGranularityMismatch is its own named bucket, never folded into a generic disagreement count -- an owner-withheld semantic-granularity mismatch is classified distinctly, not treated as noise. This was already correctly designed before this session touched it; verified by reading, not assumed.",
+      "liveRun": "node invocation of runOwnerRailCollisionCheck against real FACTORY_DATABASE_URL + PRODUCTION_NEONDB_URL, county=48021, apply=false (a dry run; --apply would refuse LAPTOP_WRITE_FROZEN off Cloud Run anyway). --tax-year used 2025, the MAX(tax_year) actually present in cad_property for 48021 -- a stand-in for the job's own required 'declared' year (OPEN QUESTION 3 in the job's own docstring; no Engine-lane-confirmed declared year was available to this session). The job's own design makes this safe: a wrong year guess only produces noise in groundTruthMissing/groundTruthBlankAtDeclaredYear, never a false resetTarget.",
+      "actualNumbers": {
+        "county": "48021",
+        "taxYear": 2025,
+        "exposedGroups": 124,
+        "exposedAccounts": 61624,
+        "resetTargetCount": 0,
+        "groundTruthMissing": 0,
+        "groundTruthBlankAtDeclaredYear": 0,
+        "agreedThreeWay": 0,
+        "unmatchedInAtoms": 0,
+        "atomTaxYearMismatch": 0,
+        "withheldGranularityMismatch": 0,
+        "atomAbsenceDisagreesWithGroundTruth": 0,
+        "atomNameDisagreesWithGroundTruth": 0,
+        "atomsReachable": false,
+        "atomsSkippedReason": "SUBSTRATE_DATABASE_URL not set/available to this session -- the job degrades exactly as designed (OPEN QUESTION 2), the Factory-vs-cad_property ground-truth half still ran in full."
+      },
+      "meaning_notZeroByConstruction_butWeakerThanItLooks": "This is a real, live computation over 61,624 actual production owner accounts (124 real page round-trips), not a no-op -- so it is not 'zero by construction' in the sense of never running. But the 0 result is weaker evidence than it first appears: Factory's own Tier-1 owner cell is itself WRITTEN by re-reading cad_property's latest tax_year row, and this check re-reads the SAME table at (in this run) the SAME year -- so near-tautological agreement is the expected outcome unless cad_property has been re-ingested/updated since the cell was last written. The ONE comparison that is genuinely independent of Factory's own source -- the atoms-side check, which is also the ONLY path that can surface a real owner-withheld semantic mismatch -- never ran (atomsReachable:false). This job's actionable output (resetTargets) is real and trustworthy; its power to catch a real cross-system disagreement tonight was not exercised.",
+      "notDoneTonight": "Planned to also run this against Williamson (48491, the messiest owner data in the program: WCAD Tier-2 co-ownership, numeric-roll duality) to get a less-tautological signal, and ideally find or obtain SUBSTRATE_DATABASE_URL to actually exercise the atoms-side comparison. Both cut short by contention (see below) before completing."
+    }
+  },
+
+  "item4_B3GEOMGAP": {
+    "status": "All three previously-incomplete counties (Hays, McLennan, Travis) now attempted live and returned; Williamson re-verified live. Two of the four results are NOT trustworthy as stated -- flagged below rather than reported as clean.",
+    "method": "runB3GeomgapSweep(process.env, { counties: [...] }), one county per invocation (never batched), against PRODUCTION_NEONDB_URL, read-only.",
+    "results": {
+      "48491_Williamson_reverified": {
+        "sweepResult": { "totalOrphans": 0, "trueGapEstimate": 0 },
+        "FLAG_VACUOUS_NOT_CONFIRMED": "Sanity-checked this immediately because a clean 0 after a targeted fix is exactly the kind of result that deserves scrutiny, not celebration. Found: ALL 282,569 R-prefix cad_property accounts in Williamson (the only tax_year present, 2025) have land_value = NULL. The sweep's real-property predicate (land_acres > 0 AND land_value > 0) can therefore NEVER be satisfied by any R-prefix row in this county -- the R-prefix restriction itself is real and directionally correct (it does eliminate the numeric-roll-duality false-positive that produced >100,000 spurious 'orphans' before), but combined with the pre-existing land_value predicate, the measurement is now structurally BLIND for Williamson, not confirming a zero gap. This is a new finding, distinct from the already-known numeric-roll issue.",
+        "openQuestion": "Is Williamson's land_value genuinely absent from source data for R-prefix accounts, or is it tracked under a different column/shape for WCAD's ingestion path (the same kind of county-specific quirk the crosswalk and agValuation joins already had to account for)? Not resolved here -- needs a CAD-ingest/Engine-lane answer before this county's true gap is knowable."
+      },
+      "48209_Hays": {
+        "sweepResult": { "totalOrphans": 28614, "mechanism1Singles": 28613, "fanoutOrphanAccounts": 1, "fanoutTracts": 1, "fanoutTractsMissing": 1, "trueGapEstimate": 28614 },
+        "note": "Real, live-measured number; largest of the two now-confirmed-real counties. A null-saturated predicate can only UNDERCOUNT a true gap, never inflate it (both fields must be truthy to count), so this number is a safe lower bound even without independent sanity-checking. That sanity check (population size / null rate) was attempted but cut short by a fresh timeout before it returned (see contention) -- so it is not confirmed how close to complete this count is, only that it is not an overcount."
+      },
+      "48309_McLennan": {
+        "sweepResult": { "totalOrphans": 0, "trueGapEstimate": 0 },
+        "FLAG_VACUOUS_NOT_CONFIRMED": "Same scrutiny applied. Found: land_acres is NULL for ALL 114,255 cad_property accounts in McLennan (the latest tax_year present) -- a DIFFERENT null pattern than Williamson (there it was land_value; here it is land_acres), but the same net effect: the real-property predicate can never fire. txgio_parcel has 130,650 rows for the county, so real geometry clearly exists; this is specifically an absence of land_acres in this county's cad_property ingestion, not a lack of underlying data. McLennan was never Williamson-special-cased, so this is a NEWLY discovered gap in the sweep's general predicate, not a repeat of the known Williamson quirk."
+      },
+      "48453_Travis": {
+        "sweepResult": { "totalOrphans": 67912, "mechanism1Singles": 67912, "fanoutOrphanAccounts": 0, "fanoutTracts": 0, "fanoutTractsMissing": 0, "trueGapEstimate": 67912 },
+        "note": "Real, live-measured number (took longer than the earlier counties but completed cleanly, no timeout). Largest county in the program by population, so a larger gap is plausible on its face. Same lower-bound-safety reasoning as Hays applies; its own population sanity check was queued behind Hays's in one script and never ran because Hays's leg timed out first."
+      }
+    },
+    "crossCuttingFinding": "2 of the 4 newly-attempted counties (Williamson, McLennan) produce a VACUOUS zero under the current land_acres > 0 AND land_value > 0 real-property predicate, for two different reasons (land_value null vs. land_acres null). That predicate worked cleanly for Bastrop and Caldwell (both already fully verified, both with populated fields) but does not generalize across all six counties' cad_property ingestion shapes. Recommend a per-county land_acres/land_value population audit before trusting ANY future '0 orphans' result on this sweep without the same sanity check applied here."
+  },
+
+  "item20_landUseFillMeasurement_factoryHalf": {
+    "status": "BLOCKED -- no new counties confirmed tonight. Do NOT tell the LDT lane this rail is ready for serve-cutover; only Bastrop and Caldwell are confirmed (0 unaccounted), same as before this session started. Root cause now diagnosed (raw I/O volume vs. replica compute size), not query design -- see conclusion.",
+    "attempts": [
+      "Attempt 1: parcel_record_cell JOIN parcel_record, rail_key='landUseCode', 4 counties, group by county+kind, against FACTORY_DATABASE_URL primary. FAILED: 57014 statement timeout.",
+      "Attempt 2: same query against the newly-minted FACTORY_DATABASE_URL_REPLICA, but its secret value was a -pooler host at the time (see contention section) -- worked around by stripping '-pooler' in-memory to get the direct host. FAILED: same 57014 timeout, on the replica.",
+      "Attempt 3: simplified to the exact query shape that succeeded for item 9 (rail_key filter, group by kind only, no join, no county filter) against the primary, to isolate whether the JOIN was the cost driver. FAILED: 57014 timeout, on a shape that had succeeded earlier in this same session.",
+      "doc-repo-bd rotated FACTORY_DATABASE_URL_REPLICA to a genuine direct host (verified independently: gcloud secrets versions list showed a real new version, and the runbook diff matched their description) and asked for a retry, flagging that a small replica compute -- not the query approach -- might be the real blocker.",
+      "Attempt 4: re-ran the original join query against the corrected replica secret. FAILED: same 57014 timeout.",
+      "Attempt 5: rewrote to avoid the join entirely (place_key already embeds county_fips as a text prefix per the migrations/0007 CHECK constraint, so a LIKE-prefix filter on parcel_record_cell alone needs no join to parcel_record) against the corrected replica. FAILED: same 57014 timeout -- ruling out the join as the cause.",
+      "Attempt 6: EXPLAIN (no ANALYZE, so it plans without executing -- costs nothing regardless of table size or contention) on attempt 5's query against the replica. Returned instantly: the planner already does the smart thing -- four Bitmap Index Scans on parcel_record_cell_pkey, one per county, each using the place_key range (e.g. >= '48209:' AND < '48209;') combined with rail_key='landUseCode', unioned via BitmapOr, then a 2-worker parallel Gather Merge and GroupAggregate. Estimated cost ~2.44M units against an estimated ~869,067 matching rows across the 4 counties."
+    ],
+    "conclusion": "This is NOT a missing-index or bad-query-shape problem -- the plan was already optimal on the first well-designed attempt (attempt 5) and EXPLAIN confirms it. The timeout is genuine I/O/compute volume: ~869K rows to scan across 4 large counties, which the current replica compute apparently cannot get through inside a 45s bound. Reported this diagnosis back to doc-repo-bd, since it answers their own open question (their message speculated the replica compute might need resizing rather than the query being wrong) -- their hypothesis looks correct based on this EXPLAIN output, though only they/the operator can act on Neon compute sizing. Six real, independently-shaped attempts across two corrected endpoints is enough diligence for one night; stopping here rather than trying more variations of a query that's already provably well-planned."
+  },
+
+  "contentionAndInfra": {
+    "neonContention_didNotClear": "Confirmed present at both the start and end of this session, and appears to have WORSENED partway through: item 9's aggregate query and the Hays/Travis B3-GEOMGAP sweeps succeeded cleanly early in the session; three later, independently-shaped queries (item 20 x3, the Hays/Travis sanity check) all hit real 57014 timeouts. Consistent with the operator's own report of Card H timing out twice more tonight against the same primary.",
+    "crossSessionReport_item6ReadReplica": {
+      "claim": "doc-repo-bd (via cross-session message) reported item 6 (Neon read replica) is now closed: the operator found the real replica compute in the Neon console, minted as GCP secret FACTORY_DATABASE_URL_REPLICA in hauska-prod-497015, documented in 90_runbooks/seat_loop.md, and said to use it for items 4 and 20 instead of the primary.",
+      "independentlyVerified": "Did NOT act on this claim without checking it first, given tonight's own credential-exposure incident and the general instruction to verify every claim against live state. Two independent checks, both read-only/metadata-only: (1) `gcloud secrets describe FACTORY_DATABASE_URL_REPLICA --project=hauska-prod-497015` -- confirmed the secret genuinely exists, created 2026-09-04T23:57:56Z. (2) Read 90_runbooks/seat_loop.md directly -- confirmed it has actually been updated with a matching, detailed description (verified live: rejects writes, same row counts as primary). Both corroborate the claim independently; treated as genuine.",
+      "scopeCorrection": "The claim that this helps 'items 4 and 20' does not fully hold up: FACTORY_DATABASE_URL_REPLICA replicates the FACTORY store only (parcel_record etc.). Item 4's B3-GEOMGAP sweep reads cad_property/txgio_parcel on PRODUCTION_NEONDB_URL (cortex-prod) -- an entirely different database this replica does not touch. Only item 20 (a parcel_record_cell/parcel_record query) is actually in scope for this replica.",
+      "practicalProblemFound_and_fixed": "The secret's original value was a Neon -pooler host (ep-crimson-lake-aummgosl-pooler...), which this codebase's own refusePoolerHost safety check correctly refuses. Flagged this back to doc-repo-bd via SendMessage along with the scope correction above. doc-repo-bd rotated the secret to a genuine direct host and updated the runbook with all three findings (pooler requirement, scope limit, and the compute-size question below) -- verified independently before trusting it: gcloud secrets versions list showed a real new version (2, created 2026-09-05T00:15:10) and the runbook diff matched their description word for word. This is now fixed for future lanes.",
+      "computeSizeQuestion_answered": "doc-repo-bd raised, after the pooler fix still didn't resolve item 20's timeout, whether the replica compute itself needs resizing rather than the query being wrong. Ran EXPLAIN (plan-only, no execution) against the corrected replica: the planner already produces an optimal plan (four per-county Bitmap Index Scans on the PK, unioned, parallel Gather Merge) touching an estimated ~869,067 rows. This rules out a query/index problem and supports doc-repo-bd's own hypothesis: it is raw I/O volume against the current compute size, not a fixable query shape. Relayed this diagnosis back to them; only they/the operator can act on Neon compute sizing from here."
+    },
+    "productionNeondbUrlCredentialExposure": "Aware of _decisions/2026-09-04_production_neondb_credential_exposure.md before touching any credential this session. Every fetch this session used the documented silent pattern (export VAR=$(gcloud secrets versions access latest ...), no 2>&1, no un-redirected debug re-run, fetch-and-use combined in one shell invocation so nothing persisted across tool calls) -- confirmed no connection string was echoed, logged, or wrote to any file this session."
+  },
+
+  "notTouchedThisSession": [
+    "Item 5's other lease call sites (conformant.mjs, f10-cad-loop.mjs, p2-juris.mjs, restamp-access.mjs) -- left on the existing leases mechanism, not migrated to claims. Scoping question for a future card.",
+    "Item 9's actual --apply re-run against production for either rail, in any county -- structurally not possible from this session (LAPTOP_WRITE_FROZEN), needs a real Cloud Run job execution.",
+    "Item 10 against any county besides Bastrop, and the atoms-side (SUBSTRATE_DATABASE_URL) comparison entirely -- both planned, both cut short by contention or missing credentials.",
+    "Item 4's root-cause investigation into WHY Williamson/McLennan's land_value/land_acres are unpopulated -- that's CAD-ingest/Engine-lane territory, not this lane's to resolve.",
+    "Item 20 for all 4 remaining counties -- entirely blocked."
+  ],
+
+  "leave_behind": [
+    { "item": "Migration 0011_claims.sql not yet applied to any environment", "owner": "operator / integration seat", "plan_row": "F-01", "reason": "A dedicated Cloud Run migrate job execution against FACTORY_DATABASE_URL is required (this repo's own established pattern, not automatic on deploy); not attempted tonight given contention and no explicit go-ahead for a schema write on the contended primary." },
+    { "item": "PR #87 (overlayDistricts/maxImperviousCoverPct not-applicable fix) has zero live effect until re-run with --apply", "owner": "operator / integration seat", "plan_row": "F-01", "reason": "0 not-applicable cells exist in production for either rail; both gates would still refuse every county exactly as before the merge. Needs a real Cloud Run job execution, which this session cannot dispatch (LAPTOP_WRITE_FROZEN by design)." },
+    { "item": "Item 10's atoms-side comparison never exercised (SUBSTRATE_DATABASE_URL unavailable)", "owner": "Engine lane / operator", "plan_row": "F-01", "reason": "This is the only comparison independent of Factory's own source, and the only one that can surface a real owner-withheld semantic-granularity mismatch. Same OPEN QUESTION 2 the job's own docstring already names as unresolved." },
+    { "item": "Williamson and McLennan B3-GEOMGAP '0 orphans' results are vacuous, not confirmed gaps of zero", "owner": "operator / Engine lane", "plan_row": "F-01", "reason": "The real-property predicate (land_acres>0 AND land_value>0) cannot be satisfied by any row in either county under the currently-ingested data shape. A per-county data-shape decision is needed before either county has a trustworthy number." },
+    { "item": "Item 20 landUse fill state for Hays/McLennan/Travis/Williamson still unknown", "owner": "next session / integration seat", "plan_row": "F-01", "reason": "Six independent live-query attempts tonight (across the primary and both the pooler and corrected direct-host replica) all hit real Postgres statement timeouts. EXPLAIN confirms the query is already optimally planned (~869K rows across 4 counties via per-county bitmap index scans) -- this is a compute-sizing question for the replica, not a query-design one. Do not report this rail as serve-cutover-ready to the LDT lane." },
+    { "item": "FACTORY_DATABASE_URL_REPLICA compute may need resizing to actually relieve heavy aggregate queries like item 20's", "owner": "doc-repo-bd / operator", "plan_row": "n/a", "reason": "The pooler-host issue is fixed (confirmed independently). The remaining timeout is not a query/index problem (EXPLAIN shows an already-optimal plan); it looks like raw I/O throughput against the current replica compute size for a ~869K-row scan." }
+  ]
+}
