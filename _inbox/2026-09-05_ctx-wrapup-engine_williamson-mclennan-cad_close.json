@@ -1,0 +1,26 @@
+{
+  "lane": "ctx-wrapup-engine",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "waveItem": "Wave 1, item 4 follow-up (Williamson/McLennan CAD-ingest fix)",
+  "requestedBy": "doc-repo-bd (cross-session message), assigning the fix implied by _inbox/2026-09-05_engine-williamson-mclennan-geomgap-nulls_close.json",
+  "checkpoint": "CLOSE — routing finding, not a fix",
+  "date": "2026-09-05",
+  "result": "NOT ENGINE-OWNED. Neither hauska-engine nor hauska-factory owns the code that writes cad_property; the real writer is legacy-design-tools. Handed back to doc-repo-bd per their own instruction (\"if it's Factory-owned, hand back... if it's engine-owned, proceed\") rather than writing to a repo ctx-wrapup-engine does not own.",
+  "verificationMethod": "Grepped hauska-engine's full working tree for `INSERT INTO cad_property` / `UPDATE cad_property`, including multiline SQL template literals (ripgrep multiline mode) — zero matches anywhere in the repo.",
+  "falseLeads": [
+    "packages/engine-core/scripts/write-cad-parcel-roll-county.mjs and packages/atoms/src/cad-parcel-roll-writer.ts look like candidates by name but write ATOMS of entity_type `cad-parcel-roll` (a separate, now-deprecated representation) — not the cad_property Postgres table. dollar-fields' own mission premise already flags this distinction: 'READ cad_property. NEVER cad-parcel-roll atoms.'",
+    "doc_repo/scripts/cad-ingest-apply-gate.mjs (the P-78 leftover-farm gate referenced throughout _scratch/parcel-facts-write-path.md, SERVING_LDT_SHA='46e1a5a1') is a pre-apply validator only — its own header states 'Does not run SQL. Does not apply.' It grades a packet before the real ingest runs; it is not the writer."
+  ],
+  "actualOwner": {
+    "repo": "legacy-design-tools",
+    "file": "lib/cad-ingest/src/ingest.ts",
+    "function": "upsertCadProperties()",
+    "schema": "lib/db/src/schema/cadProperty.ts",
+    "migration": "lib/db/drizzle/0052_cad_property.sql",
+    "confirmedVia": "local P:/tmp/ctx-wrapup-ldt worktree (legacy-design-tools, origin/main)",
+    "relevantDetail": "upsertCadProperties already does a COALESCE-preferring-incoming-value upsert on land_value/land_acres (COALESCE(excluded.land_value, cadProperty.landValue)), so a reconciliation re-ingest for either county should slot into this existing upsert path without needing new overwrite logic -- just a new source feed: tx_wcad_ag_valuation aggregated per prop_id for Williamson, parsed legal_description acreage for McLennan."
+  },
+  "noCodeWritten": "True for both hauska-engine and legacy-design-tools. No files modified in any repo this checkpoint.",
+  "nextStep": "Route to whichever lane owns legacy-design-tools for this sprint (LDT lane per OPS-19b's lane table) or handle directly from the integration seat; not ctx-wrapup-engine's repo to fix."
+}
