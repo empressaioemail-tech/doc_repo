@@ -157,6 +157,16 @@ retrying blindly.
 **Never echo a secret, never write one to a file, never paste one into a close.** Pipe to
 the thing that consumes it. To prove access without exposing a value, pipe to `wc -c`.
 
+**Neon API access (`NEON_API_KEY`, `hauska-prod-497015`).** An org-level Neon API key
+already exists in Secret Manager and works — `curl -H "Authorization: Bearer $NEON_API_KEY"
+https://console.neon.tech/api/v2/projects`. Use it freely for read (list projects/branches/
+endpoints, check real compute state) and for resize (`autoscaling_limit_min_cu`/`max_cu`,
+`pg_settings` like `hot_standby_feedback`) — both reversible, low-risk, and this is exactly
+what solved the 2026-09-04 replica-auth and replica-timeout confusion faster than console
+screenshots. **Operator ruling 2026-09-05: any destructive Neon action — deleting a project,
+branch, or compute — gets the same explicit-confirmation treatment as any other irreversible
+production action.** Do not delete Neon infrastructure on your own judgment call alone.
+
 **There is a second path and it is sometimes better.** Store work can be driven through the
 Cloud Run job rather than a local connection, which is how the covers-fastpath measurements
 ran on 2026-09-01:

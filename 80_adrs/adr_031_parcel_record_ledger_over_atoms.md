@@ -112,6 +112,16 @@ atoms under absent-verified cells versus leaving absence ledger-only. Growth of 
 gate verdict store into the catalog surface. Formalizing the place_key to entity_id
 crosswalk as a contract type.
 
+**Named scope item for that card (2026-09-05):** the F-01 item 5 queue-claim mechanism
+(Postgres-native `claims` table, transactional claim-and-verify) is wired into
+`hauska-factory`'s `parcel-record-fill.mjs` only. Four other call sites still rely
+solely on the old `leases` table's random-token exclusion, which has no relationship
+to a Cloud Run execution's real identity: `conformant.mjs`, `f10-cad-loop.mjs`,
+`p2-juris.mjs`, `restamp-access.mjs`. Operator ruling 2026-09-05: does not affect
+current functionality, not urgent standalone, but must be scoped and closed together
+with the CTX atom-backfill card rather than left to drift — noted here specifically
+so it is not overlooked when that card opens.
+
 ## Reversal criteria
 
 If maintaining the grid at multi-state scale proves untenable (measured, not
