@@ -161,3 +161,24 @@ than a lane committing to doc_repo directly.
   landUse): verify the gate-verdict slate actually covers the rail, not just that
   the underlying cell data is correct** — neither `owner` nor `landUseCode` is in
   the current 5-rail default either, so this same gap is latent for both.
+
+## Wave 3 — ledger serving audit follow-through (2026-09-05)
+
+Scope is `_inbox/2026-09-05_ledger_serving_audit.md` in full. Operator ruling: fix
+items 1/2/3/5 now, get everything else genuinely serving prod; item 4 (promoting
+the 7 frozen-manual-verdict rails into a real recurring gate slate) is its own
+**separate, later "gate eval wave"** — explicitly NOT in this wave's scope, so it
+does not get pulled in early while the operator runs QA and market-readiness work
+on the rest of the app in parallel.
+
+| # | Item | Repo | Lane |
+|---|---|---|---|
+| 1 | zoningDistrict/setbackFrontFt (P-106) gate-verdict status is unresolved — the allowlist's own comment says no verdict exists; the prior "live-verified twice" record only proves deploy-crash-safety, not real value resolution. Determine live status via `parcel_gate_verdict`, then if missing, add both to the gate-evaluated slate the same careful way PR #91 did (check per-county scope safety first), then verify a real authenticated request returns the correct value. | hauska-factory (gate-slate fix) + legacy-design-tools (live-authenticated verification, credentials this session lacked) | Factory fixes, LDT verifies |
+| 2 | maxImperviousCoverPct: Travis itself reads `refuse`, 244,669 unaccounted — not the other-counties non-issue reported earlier. Investigate the writer's own tracked `unresolvedZones`/`anomalies` cases and get them to a real terminal state. | hauska-factory | Factory |
+| 3 | Four data-layer "unaccounted forever" bugs: `agValuation` (4/6 counties, no not-applicable path for out-of-scope counties), `schoolDistrict` (0-hit/2+-hit anomalies logged in-memory only, never persisted), `zoningDistrict` (49 cities with no staged layer at all — write an honest `refused`/"no layer yet" state, do not wait on acquiring the data), and the shared CAD-ingest gap in `ingest-existing.js` (`if (!cad) continue`, affects ~15 fields including `landUseCode` — fold into item 20's own landUse work rather than treat separately). | hauska-factory | Factory |
+| 4 | **DEFERRED — separate "gate eval wave," not this sprint.** Promote the 7 rails serving via a frozen one-time manual gate verdict (`marketValue`, `assessedValue`, `landValue`, `improvementValue`, `livingAreaSqft`, `yearBuilt`, `utilityService`) into a real recurring slate, or explicitly rule a one-time verdict acceptable for them and document why. | hauska-factory | Deferred |
+| 5 | `factory-bexar-edges` has no checked-in Cloud Build pipeline at all (same gap as 12 other jobs from the 2026-09-02 reaper-phantoms sweep) — currently also missing the connectFactory timeout fix (2026-09-02 incident) with no safe way to redeploy. Write and check in a real deploy pipeline for it, matching the existing pattern (`cloudbuild.conformant.yaml` et al.), then redeploy. | hauska-factory | Factory |
+
+Report back via `_inbox/` close docs, same as every other lane tonight. Cross-session
+messaging has been unreliable at points this session — do not rely on it as the only
+report path.
