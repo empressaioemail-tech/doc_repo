@@ -194,11 +194,20 @@ schoolDistrict/zoningDistrict), and 5 (pipeline checked in) all merged and
 independently verified (PRs #92-#95, 1000/0/2 full suite). Two genuine, correctly-
 flagged-rather-than-forced open items surfaced:
 
-- **setbackFrontFt has no real writer anywhere in this repo.** The `writer-allowlist.mjs`
-  "f11-setback" entry is scaffolding for a job that was never built on this branch.
-  Only the unincorporated not-applicable case exists. Needs a real F-11 writer before
-  this rail's own half of item 1/P-106 can close at all — separate scoping decision,
-  not a Wave 3 task.
+- **setbackFrontFt has no real writer anywhere in this repo — RULED 2026-09-05**
+  (`_decisions/2026-09-05_f11_setback_bastrop_elgin_atom_reuse.md`). No statewide
+  source exists to join against; hauska-engine has real hand-onboarded setback
+  logic for exactly two cities (Bastrop, Elgin) built for a different consumer.
+  Operator confirmed Bastrop/Elgin are the near-term launch cities, which makes
+  this "the launch geography," not "2 of 72." Ship: Engine emits the resolved
+  scalar values as atoms per parcel for those two cities (reusing its existing
+  live-ArcGIS/ordinance-cross-check logic, no duplication into Factory); Factory
+  extends its existing `ingestAtomsOntoRecords`/`ENTITY_TYPE_TO_RAIL` mapping
+  (already has `"setback-rule"` → `setbackRules`) to cover the four scalar
+  fields; every other city's setback cells get an honest `refused`/"no onboarded
+  source" state, matching `zoningDistrict`'s 49-city fix. A statewide source is
+  queued as its own separate acquisition-program card, not a gate on this ship.
+  Dispatched to Engine + Factory, cross-repo coordinated.
 - **The CAD-ingest gap (`ingest-existing.js`'s `if (!cad) continue`) needs an explicit
   ruling, not a code fix, before anyone touches it.** Two real blockers: (1) the file
   is compiled/vendored from hauska-engine (`ENGINE_PIN.json`, "do not edit these .js
