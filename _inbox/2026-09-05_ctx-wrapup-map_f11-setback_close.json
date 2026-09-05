@@ -1,0 +1,43 @@
+{
+  "lane": "ctx-wrapup-map",
+  "repo": "hauska-map",
+  "scope": "apps/property-explorer only",
+  "date": "2026-09-05",
+  "trigger": "doc-repo-bd relayed a PE setback-serving gap for tonight's CTX launch push (Bastrop is the launch city). This session independently verified every factual claim in the relay against the actual code (codified-setback-from-zoning.ts, atom-chain-to-facets.ts, hauska-engine's bastrop-per-parcel-record.ts/elgin-development-code.json/san-antonio-tx.json, PE's vercel.json timeout budget, and a live curl against the Bastrop ArcGIS FeatureServer) before writing any code.",
+
+  "scopeNote": "Naming collision to flag: this close's filename says 'f11-setback' but this work is UNRELATED to the F-11 plan row referenced in tonight's 2026-09-05_ctx-wrapup-factory_wave3_close.json leave_behind ('setbackFrontFt has no real writer for incorporated parcels anywhere in [hauska-factory]'). That F-11 is a Factory-repo parcel_gate_verdict writer/scheduler gap. This item is entirely inside hauska-map/apps/property-explorer: PE's own codified-setback-table lookup and a new live per-parcel ArcGIS fetch for its own facets BFF. No hauska-factory or hauska-engine files were touched.",
+
+  "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/360, merged 0fe5e38 (fast-forward merge commit) onto main.",
+
+  "branch_hygiene": "Session's pre-existing working branch (fix/pe-retire-glass-chrome, unrelated in-progress work) was left untouched. Cut a fresh branch (fix/pe-bastrop-elgin-sa-setbacks) off freshly-fetched origin/main per the relay's own instruction.",
+
+  "item1_elginSanAntonioTables": {
+    "status": "DONE.",
+    "what": "Copied hauska-engine's packages/adapters/src/local/setbacks/elgin-development-code.json and san-antonio-tx.json verbatim into apps/property-explorer/api/_lib/setback-tables/, added both to codified-setback-from-zoning.ts's SETBACK_TABLES map.",
+    "verified_not_assumed": "Read both source JSON files fully and confirmed every district row carries front_ft/side_ft/rear_ft/side_corner_ft as required by PE's AdapterDistrict type; confirmed PE's existing austin-tx.json copy already retains Engine's extra fields (max_height_ft, provenance, etc.) unstripped, so the same straight-copy pattern applies here too — nothing needed trimming."
+  },
+
+  "item2_bastropLivePerParcel": {
+    "status": "DONE — the real item.",
+    "designDecision_vendorVsImport": "Vendored a lightweight direct-fetch/parse module (pe-bastrop-per-parcel-setback.ts) into PE's own _lib rather than importing hauska-engine's adapters package. Not a guess: PE already has exactly this precedent in pe-opportunity-zone-core.ts (a direct fetch() against CDFI/Census ArcGIS FeatureServers, injectable fetchImpl/AbortSignal, no adapters-package import) — matched that established pattern rather than inventing a new one.",
+    "timeoutBudget_verified_not_assumed": "adaptAtomChainToBakedFacets is called from pe-property-atoms.ts's handlePropertyAtomsFacets, which is served via api/spine.ts. Confirmed in apps/property-explorer/vercel.json that api/spine.ts already carries maxDuration:60 — a single ArcGIS query (live-tested against the real endpoint, sub-second) fits comfortably; no vercel.json change needed.",
+    "correctnessLogicPorted": "Ported (not reinvented) Engine's proven regexes/constants from bastrop-per-parcel-record.ts: FEET_NUMBER_RE, CORNER_SIDE_RE, NON_SCALAR_SIDE_RE, FIRE_CODE_SIDE_SETBACK_FT=5, BASTROP_ZONE_TYPE_CLASS map, and the largest-Shape__Area split-zone dominant-row selection. Sanity-checked against live layer-23 data via curl (confirmed field names/types match: FrontSetback_/RearSetback_ numeric, SideSetback string, ZoneTypeClass coded-value domain) before writing the parser, and specifically validated a live-observed conditional side-yard string ('20 ft (40 ft when abutting to residential district)') parses to the correct leading scalar rather than false-declining.",
+    "wiring": "resolveCodifiedSetbacksForStamp gained an optional perParcelRecord param (mirrors Engine's own getSetbackTableForZoning bastropPerParcelRecord param) so the per-parcel-only hard-decline is bypassed when a caller supplies a live record. adaptAtomChainToBakedFacets threads an opts.perParcelSetback through to it. pe-property-atoms.ts's handlePropertyAtomsFacets only attempts the live fetch when jurisdictionRequiresPerParcelSetbackRecord(jurisdictionKey) is true AND the atom-chain doesn't already carry a trustworthy live layer-23 rule (reused the existing exported hasLiveAtomChainSetbackRule predicate rather than re-deriving that check) — so every non-Bastrop request, and the cohort Engine's own ingest has already baked, pays zero extra network cost.",
+    "knownScopeLimit_notSilentlyDropped": "PE's CodifiedSetbackScalars type carries only the four numeric scalars. Engine's richer per-parcel disclosure metadata (min lot size, fire-code deferral city-language string, split-zone minor-zone disclosure, layer-83 second-source conflict callout) was deliberately NOT ported — there's no slot for it in PE's type/card today. Flagged as a follow-on rather than quietly omitted."
+  },
+
+  "testEvidence": "pnpm --filter property-explorer exec tsc --noEmit: clean. pnpm --filter property-explorer test (chrome-kit gate, seam-retired guard, public-pages guard, full vitest run): 192 files / 2746 tests pass, 0 fail. New coverage: pe-bastrop-per-parcel-setback.test.ts (10 tests — positive scalar parse, live-observed conditional side text, fire-code deferral, corner-side embed, split-zone dominant-row selection over an engine-stamp-matching sliver, and honest-declines for unparseable side / missing scalars / not-found / fetch-failure / non-ok HTTP); codified-setback-from-zoning.test.ts (+5 — Elgin/San Antonio positive resolves, per-parcel-record passthrough, regression that a normal table jurisdiction ignores a supplied record, regression that a per-parcel jurisdiction still declines with none supplied); travis-table-backed-serve.test.ts (+4 — Elgin/San Antonio end-to-end table-backed serve, Bastrop served when a live record is supplied, Bastrop still hard-declines with none supplied); pe-property-atoms.test.ts (+4, new file — fetch fires only for the Bastrop-per-parcel/no-existing-live-rule case, never fires for a normal jurisdiction or when a live rule already exists, honest decline propagates as null). CI (Typecheck, test, No double-encoded source) green on PR #360 before self-merge.",
+
+  "leave_behind": [
+    {
+      "item": "PE's live Bastrop path carries scalars only, not Engine's full per-parcel disclosure metadata (min lot size, fire-code deferral language, split-zone/layer-83 second-source callouts)",
+      "owner": "PE/map-surface lane (whoever picks up PE card-disclosure parity next)",
+      "reason": "No slot for it in PE's CodifiedSetbackScalars type or card today. Porting SetbackDisplayMeta from hauska-engine's table-types.ts would be the next step if the card grows one — reuse Engine's proven shape rather than re-deriving it."
+    },
+    {
+      "item": "Do not confuse this item with Factory's F-11 (parcel_gate_verdict setbackFrontFt writer) — see scopeNote above",
+      "owner": "n/a — informational for whoever reads _inbox next",
+      "reason": "Same word ('setback'), same night, different repo, unrelated mechanism. Filed under this session's own given filename per the relay's instruction, but noting the collision explicitly so it isn't read as F-11 being resolved."
+    }
+  ]
+}
