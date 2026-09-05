@@ -209,3 +209,24 @@ flagged-rather-than-forced open items surfaced:
 - `factory-bexar-edges`'s new pipeline is checked in but the actual `gcloud builds
   submit` was deliberately left for the integration seat (a real production deploy);
   triggered same session this close-out was processed.
+
+**2026-09-05, CAD-ingest gap ruled and fixed.** Operator ruling
+(`_decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md`): a genuine
+CAD join miss now emits `absent-verified`, reversing the prior invariant.
+Engine lane implemented it in hauska-engine's TypeScript source (not the
+vendored `.js`) — new `CadJoinMissBasis` (no `taxYear`, distinct from the
+matched-row `CadNullVerifiedBasis`) and `applyCadJoinMiss`, covering the same
+13 CAD-scalar fields a matched-null row can already earn `absent-verified`
+for, `landUseCode` among them. Checked the decision's own reversal criteria
+first (a population whose `parcel_record` identity comes from a non-CAD
+source) and found none — `prove-parcel-record-county.mjs` and the
+B3-GEOMGAP mission close both confirm the parcel universe's identity is
+`cad_property`-sourced; safe to apply uniformly. Updated the falsifier test
+that asserted the opposite invariant rather than deleting it, preserving its
+real protection (a value under a different CAD key must never leak onto a
+join-missed record). PR #382 merged (`dfdf6fd`), full suite 1339/0/11
+(4 pre-existing unrelated failures untouched by this change), `tsc`
+clean. Full close: `_inbox/2026-09-05_engine-cad-join-miss_close.json`.
+Re-vendor/re-pin into hauska-factory (`ENGINE_PIN.json`) and the actual
+landUseCode re-run for item 20's remaining counties is now handed to the
+Factory lane, not done here.

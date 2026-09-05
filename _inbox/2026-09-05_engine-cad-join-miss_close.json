@@ -1,0 +1,49 @@
+{
+  "lane": "ctx-wrapup-engine",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "wave": "Wave 3, item 3 (CAD-ingest gap sub-item)",
+  "checkpoint": "CLOSE",
+  "date": "2026-09-05",
+  "decision": "_decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md",
+  "seatSnapshot": {
+    "seat": "ctx-wrapup-engine",
+    "repo": "hauska-engine",
+    "worktree": "P:/tmp/ctx-wrapup-engine",
+    "branchAtStart": "main, clean, up to date with origin/main at 43a5c09 (PR #381)"
+  },
+  "whatWasBuilt": {
+    "summary": "Reversed the invariant in packages/engine-core/src/parcel-record/ingest-existing.ts so a genuine CAD join miss (no cad_property row for that county+propId across every tax year CAD_ROWS_SQL observed) emits absent-verified instead of staying unaccounted forever, per the operator ruling.",
+    "files": [
+      "packages/engine-core/src/parcel-record/cell-state.ts: added CadJoinMissBasis (source/countyFips/propId/vintage, deliberately no taxYear -- there is no matched row to read one from), widened ScalarAbsentVerifiedCell.basis to include it alongside the existing CadNullVerifiedBasis.",
+      "packages/engine-core/src/parcel-record/ingest-existing.ts: added cadJoinMissVerified + applyCadJoinMiss (mirrors applyCadScalar's stampAbsent set, never a value), wired into ingestCadOntoRecords's !cad branch (previously `if (!cad) continue`).",
+      "packages/engine-core/src/parcel-record/__tests__/parcel-record.test.ts: rewrote the falsifier test '(b) join miss stays unaccounted...' to assert absent-verified with the join-miss basis, keeping its original core protection intact (a value under a different CAD key must never leak onto the join-missed record) -- and extended the structural-scoping test to also check the two new functions aren't exported."
+    ],
+    "fieldsAffected": [
+      "situsAddress", "situsCity", "situsZip", "legalDescription", "exemptionCodes",
+      "landUseCode", "landValue", "improvementValue", "marketValue", "assessedValue",
+      "yearBuilt", "livingAreaSqft", "acreageAcres"
+    ],
+    "fieldsDeliberatelyExcluded": "apn (never had an absent path even for a matched row's own null field -- would just echo record.propId, not a real CAD confirmation); landUseSource/acreageMethod (derived metadata only ever stamped alongside a real value, same as the existing matched-null behavior)."
+  },
+  "reversalCriteriaCheck": {
+    "question": "Does a real population of parcel_record rows get its identity from something other than cad_property (e.g. geometry-only), where a join miss would mean a key-format mismatch rather than a genuine absence?",
+    "finding": "No such population found. Two independent sources agree the parcel universe's identity is cad_property-sourced: packages/engine-core/scripts/prove-parcel-record-county.mjs builds its record set via `SELECT DISTINCT ON (prop_id) ... FROM cad_property`, joining txgio_parcel only for incorporation containment, never for identity; and the B3-GEOMGAP mission close (_inbox/2026-09-01_parcel-b3-geomgap_close.json) independently confirms the program's parcel-universe count is CAD-account-based, with txgio_parcel geometry sometimes missing FOR a CAD account (vintage lag, undivided-interest fanning) -- the reverse direction, not a CAD-absent geometry-sourced parcel. The R-prefix undivided-interest case (test (b2), 'live Williamson shape') is a same-source key variant within cad_property itself and is already a matched row, not a join miss -- unaffected by this change.",
+    "conclusion": "Safe to apply the reversal uniformly. No population-scoped guard needed."
+  },
+  "verification": {
+    "targetedTests": "npx vitest run src/parcel-record/__tests__/parcel-record.test.ts -- 32/32 passed",
+    "fullSuite": "npx vitest run -- 1339 passed, 11 skipped, 4 pre-existing unrelated failures (syntax errors in unrelated .mjs script test files, present before this change, not touched by it)",
+    "typecheck": "npx tsc --noEmit and npx tsc -b -- both clean"
+  },
+  "landed": {
+    "pr": "https://github.com/empressaioemail-tech/hauska-engine/pull/382",
+    "mergedSha": "dfdf6fd",
+    "mergedAt": "2026-09-05",
+    "method": "squash-merge, branch deleted, following this seat's own established precedent (seat_register.json: property seat 'may merge its own branches') and the same-file precedent from item 3 (PR #381)."
+  },
+  "handoffToFactory": {
+    "whatFactoryNeedsToDo": "Re-vendor/re-pin: bump ENGINE_PIN.json to dfdf6fd (or later main), regenerate the compiled packages/engine-core/dist output hauska-factory vendors as ingest-existing.js, and re-run the CAD ingest for landUseCode (and the other 12 affected fields) against the 4 counties still open on item 20. Do not hand-edit the vendored .js directly -- this fix must come in through the pin bump.",
+    "note": "This closes the Engine-lane half of Wave 3 item 3's CAD-ingest sub-item. Directly unblocks a clean landUseCode fill-state answer for OPS-19b item 20 per the decision doc's stated dependency."
+  }
+}
