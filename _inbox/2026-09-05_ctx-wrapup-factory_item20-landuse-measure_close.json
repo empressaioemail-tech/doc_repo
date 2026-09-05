@@ -1,0 +1,25 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "planRow": "20",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "item": "landUse parcel_record cutover -- measure whether the remaining 4 counties' landUseCode rail is already filled or needs acquisition (Hays 48209, McLennan 48309, Travis 48453, Williamson 48491)",
+  "checkpoint": "MEASUREMENT DONE. All 6 of 6 counties now confirmed 0 unaccounted for landUseCode.",
+  "date": "2026-09-05",
+
+  "howMeasured": "Six prior interactive attempts (primary + pooler-broken + pooler-fixed replica, one after a 0.25-2CU to 2-8CU resize) all hit real Postgres statement timeouts on this query; EXPLAIN confirmed it was already optimally planned (bitmap index scans on place_key). Diagnosed as genuine Neon storage-layer I/O latency, not a fixable query/compute issue -- needed a real execution context with a long timeout budget, not an interactive session. Ran the GROUP BY count query as a one-off Cloud Build (postgres:16 image, psql, no statement_timeout, 3600s build timeout, FACTORY_DATABASE_URL injected server-side via Secret Manager -- never touched this session's shell env). Build 39959005-670e-4844-b045-8bb9332a5216, status SUCCESS.",
+
+  "results": {
+    "48209_Hays": { "absent-verified": 46461, "value": 69959, "unaccounted": 0 },
+    "48309_McLennan": { "absent-verified": 23182, "value": 91072, "unaccounted": 0 },
+    "48453_Travis": { "absent-verified": 7458, "value": 373459, "unaccounted": 0 },
+    "48491_Williamson": { "absent-verified": 25775, "value": 256795, "unaccounted": 0 },
+    "48021_Bastrop": "previously confirmed 0 unaccounted (sprint doc, prior session)",
+    "48055_Caldwell": "previously confirmed 0 unaccounted (sprint doc, prior session)"
+  },
+
+  "interpretation": "landUseCode is not stuck anywhere. Every one of the 6 counties resolves to only value/absent-verified -- no county has any unaccounted landUseCode cells left. The data-fill half of item 20 is real and complete; this is not a designed/simulated number, it's a live count against production parcel_record_cell taken just now.",
+
+  "realFindingAlongTheWay": "This measurement only proves the underlying cell data is honest, not that the gate slate watching it is. The sprint doc's own lesson (line ~160-163, from the valueHistory/cityLimits cutover incident) already flags that neither `owner` nor `landUseCode` is in the current DEFAULT_SCHED_RAIL_KEYS -- meaning no scheduled job has ever computed a parcel_gate_verdict row for landUseCode in any county. If LDT's serve-cutover reads parcel_record only when a `pass` verdict exists (same allowlist rule documented for other rails), a clean data measurement alone does not make this rail serve-cutover-ready. Flagging this now rather than reporting 'unblocked, ready for LDT' without checking it -- have not yet verified whether landUseCode's serve path actually gates on parcel_gate_verdict the same way the other migrated rails do, or serves directly off cell state. Recommend confirming that before telling the LDT lane to cut over.",
+
+  "nextStep": "Do not report this rail as serve-cutover-ready to the LDT lane until the gate-verdict question above is resolved one way or the other. Proceeding to item 10 (Bastrop atoms-comparison, still running) and then the already-dispatched gate-eval wave (SLATE_1D, 7 rails) per doc-repo-bd's sequencing -- will fold this landUseCode gate-slate question into that same conversation since it's the identical mechanism."
+}

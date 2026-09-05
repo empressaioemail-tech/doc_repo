@@ -194,20 +194,28 @@ schoolDistrict/zoningDistrict), and 5 (pipeline checked in) all merged and
 independently verified (PRs #92-#95, 1000/0/2 full suite). Two genuine, correctly-
 flagged-rather-than-forced open items surfaced:
 
-- **setbackFrontFt has no real writer anywhere in this repo — RULED 2026-09-05**
-  (`_decisions/2026-09-05_f11_setback_bastrop_elgin_atom_reuse.md`). No statewide
-  source exists to join against; hauska-engine has real hand-onboarded setback
-  logic for exactly two cities (Bastrop, Elgin) built for a different consumer.
-  Operator confirmed Bastrop/Elgin are the near-term launch cities, which makes
-  this "the launch geography," not "2 of 72." Ship: Engine emits the resolved
-  scalar values as atoms per parcel for those two cities (reusing its existing
-  live-ArcGIS/ordinance-cross-check logic, no duplication into Factory); Factory
-  extends its existing `ingestAtomsOntoRecords`/`ENTITY_TYPE_TO_RAIL` mapping
-  (already has `"setback-rule"` → `setbackRules`) to cover the four scalar
-  fields; every other city's setback cells get an honest `refused`/"no onboarded
-  source" state, matching `zoningDistrict`'s 49-city fix. A statewide source is
-  queued as its own separate acquisition-program card, not a gate on this ship.
-  Dispatched to Engine + Factory, cross-repo coordinated.
+- **setbackFrontFt on `parcel_record` still has no real writer — SUPERSEDED by a
+  better-informed ruling, 2026-09-05.** First ruling
+  (`_decisions/2026-09-05_f11_setback_bastrop_elgin_atom_reuse.md`, Engine emits
+  atoms/Factory ingests) was stood down before any code was written once further
+  investigation found Property Explorer already has its OWN separate, correct,
+  live-in-production setback mechanism (`codified-setback-from-zoning.ts`,
+  serving real data for Austin/Pflugerville today, correctly declining Bastrop)
+  that neither that plan nor an intermediate "wire PE to legacy-design-tools'
+  endpoint" plan accounted for — the latter was independently confirmed unsound
+  (that endpoint is an internal debug shim with no Bastrop gating; wiring a
+  customer app to it risked serving repealed ordinance rows as real values).
+  **Final ruling**: `_decisions/2026-09-05_f11_setback_pe_table_port_and_live_bastrop_fetch.md`.
+  Port Elgin/San Antonio's existing tables into PE's own table map (cheap, same
+  repo, same pattern as the working Austin/Pflugerville case); build a real live
+  per-parcel ArcGIS fetch for Bastrop inside PE's own runtime (the actual
+  launch-blocking gap, unsolved by every version of this plan tonight until now).
+  Dispatched to a newly stood-up hauska-map lane (`cente-b9`), consulting Engine
+  lane on the live Bastrop logic. This `parcel_record.setbackFrontFt` column
+  itself remains unwritten — the real serving path for the CTX launch runs
+  through PE's own atom-chain composition, not this ledger column; that
+  distinction is itself a finding of tonight's architecture review
+  (`_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`).
 - **The CAD-ingest gap (`ingest-existing.js`'s `if (!cad) continue`) needs an explicit
   ruling, not a code fix, before anyone touches it.** Two real blockers: (1) the file
   is compiled/vendored from hauska-engine (`ENGINE_PIN.json`, "do not edit these .js

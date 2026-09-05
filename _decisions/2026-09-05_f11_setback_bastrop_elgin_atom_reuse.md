@@ -2,11 +2,19 @@
 decision_id: 2026-09-05_f11_setback_bastrop_elgin_atom_reuse
 date: 2026-09-05
 owner: operator
-status: active
+status: superseded
+superseded_by: 2026-09-05_f11_setback_pe_table_port_and_live_bastrop_fetch
 related_canonical:
   - 90_operations/OPS-19b_ctx_pipeline_wrapup_sprint
   - _inbox/2026-09-05_ctx-wrapup-factory_f11-setback-writer_scoping
 ---
+
+**SUPERSEDED same day.** Dispatched to Engine/Factory, then stood down before
+any code was written once an adversarial check found the premise wrong:
+Property Explorer already has its own separate, correct, live-in-production
+setback mechanism that this decision never accounted for. See
+`_decisions/2026-09-05_f11_setback_pe_table_port_and_live_bastrop_fetch.md`
+for the corrected plan. Left in place for the record, not for reference.
 
 ## Decision
 
