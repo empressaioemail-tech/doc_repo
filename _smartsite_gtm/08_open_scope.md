@@ -40,11 +40,11 @@ Two migrations are written and unapplied: `0093` for P-100 and `0094` for P-106.
 
 ~~**P-102 Studio two seats.** Four coordinated server changes behind a 409, plus an unresolved Stripe product question. Deliberately split out of P-101 so the fast half could ship.~~ **REVERSED 2026-09-04**, invoking the reversal criterion this row's own source proposal pre-registered (seat management could not close self-serve). Studio stays one seat. See OPS-16 A-101.
 
-**P-107 out-of-coverage miss class.** Ruled by the operator 2026-09-02. Held only because it edits `find_parcel` in `tools.ts`, which open PRs hold. Goes as soon as the queue clears.
+~~**P-107 out-of-coverage miss class.** Ruled by the operator 2026-09-02. Held only because it edits `find_parcel` in `tools.ts`, which open PRs hold. Goes as soon as the queue clears.~~ **SHIPPED 2026-09-04**, deployed to production. See OPS-16 A-102.
 
-**P-110 the export rewire.** Blocked on a commercial ruling, not engineering. See section 4.
+~~**P-110 the export rewire.** Blocked on a commercial ruling, not engineering. See section 4.~~ **RULED AND SHIPPED 2026-09-04**, deployed to production. See OPS-16 A-096/A-100.
 
-**P-111 the account-deletion orphan.** Simplified by the operator ruling that beta data may be wiped, so this is a foreign key and a wipe rather than a careful migration.
+~~**P-111 the account-deletion orphan.** Simplified by the operator ruling that beta data may be wiped, so this is a foreign key and a wipe rather than a careful migration.~~ **SHIPPED 2026-09-04**, migration run against production (6 real orphaned `pe_saved_properties` rows found and cleaned up). See OPS-16 A-102.
 
 **P-112 more ways in.** Ruled 2026-09-04: Google, Microsoft and email, direct builds, no WorkOS front door, Apple out of scope. See section 3.
 
