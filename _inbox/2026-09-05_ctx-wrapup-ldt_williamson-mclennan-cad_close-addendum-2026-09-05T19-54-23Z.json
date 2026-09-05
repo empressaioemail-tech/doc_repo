@@ -1,0 +1,40 @@
+{
+  "addendumTo": "_inbox/2026-09-05_ctx-wrapup-ldt_williamson-mclennan-cad_close.json",
+  "lane": "ctx-wrapup-ldt",
+  "planRow": "F-01",
+  "date": "2026-09-05",
+  "reason": "Williamson's 'NOT_IMPLEMENTED' status in the original close doc is now superseded -- doc-repo-bd characterized all 27 tx_wcad_ag_valuation land_type codes live against cortex-prod, unblocking the fix. Recording the resolution and, per doc-repo-bd's explicit instruction, correcting how this gets reported: land_value and land_acres resolve to DIFFERENT counts, and neither has an actual number yet because the code being merged is not the same as it having run against production.",
+
+  "williamson_48491_NOW_FIXED": {
+    "status": "PR #624 merged (013f4cea) after 3 rounds of real CI-caught fixes (see below) plus doc-repo-bd's independent line-by-line review. Superseded the original close doc's williamson_48491_NOT_IMPLEMENTED entry.",
+    "unblockedBy": "doc-repo-bd's live characterization of tx_wcad_ag_valuation (all 27 land_type codes self-documented via the table's own description column -- R/L/C plus a full ag/pasture/wildlife set, none need exclusion; a property can carry many additive land-segment rows; value (not curr_value) is the market-rate figure to use).",
+    "independentCorroboration": "Before writing any code, cross-checked the value-vs-curr_value call against this repo's own existing code, not just the characterization's word: lib/cad-ingest/src/pacs/parser.ts already documents land_value = ... + ag_market + timber_market for Travis/Bastrop/Caldwell -- i.e. cad_property.land_value is independently established elsewhere in this codebase as the MARKET-rate figure, matching 'value' over 'curr_value'.",
+    "whatCIcaught": [
+      "L17 ci-vintage-predicate: the initial query read cad_property with no vintage-scoping, violating this repo's own invariant (every reader filters to the county's single DECLARED tax_year, no silent cross-vintage read). Real bug, not a lint nit -- fixed via resolveDeclaredCadVintage (Williamson's declared vintage is 2026); added a falsifier test proving a stale 2025 row with the same prop_id and a real ag-valuation match available stays untouched.",
+      "Schema fixture drift + a hardcoded expected-tables list in schema.integration.test.ts both needed the new tx_wcad_ag_valuation schema declaration reflected. Added migration 0098_tx_wcad_ag_valuation.sql (CREATE TABLE IF NOT EXISTS, matching the txFemaNfhlFloodZone precedent for externally-sourced tx_* tables this repo does not itself populate) and applied CI's own computed fixture diff by hand.",
+      "That migration being real meant the DB-integration test's own ad-hoc fixture-table creation became a silent no-op once merged into the test run -- the REAL strict schema (no defaults on ag_flag/source/source_vintage/source_citation) is what's actually live. Fixed by supplying those columns explicitly in the test's INSERTs, matching the real schema doc-repo-bd pulled from information_schema.columns."
+    ],
+    "sanityGuard": "Non-negative + finite for land_value; non-negative + finite + <=100,000 acres for land_acres (comfortably above the real measured max of 26,981, per doc-repo-bd's live percentile pull -- p50=0.46, p99=116, p999=393). Refuses rather than writes an implausible figure.",
+
+    "IMPORTANT_reportingCorrection": "Per doc-repo-bd's explicit instruction: do not report this as a single blended 'N accounts fixed' count when it is eventually run. land_value resolves comprehensively; land_acres resolves only for the subset of properties whose tx_wcad_ag_valuation rows carry acreage (~64% of source rows have null acres per doc-repo-bd's live measurement -- a real source-data shape, especially small Residential land_type='R' rows, not a partial failure of this fix). The CLI's own printed summary (lib/cad-ingest/src/williamson-ag-valuation-cli.ts) already reports four distinct counts -- no-match / resolved / genuinely-absent / guard-refused -- separately for land_value and land_acres, specifically so this distinction survives to whoever runs it.",
+
+    "NOT_YET_RUN_AGAINST_PRODUCTION": "Merging PR #624 lands the code; it does not itself touch any of the 282,569 real Williamson accounts. Someone with production DATABASE_URL write access needs to actually run `pnpm --filter @workspace/cad-ingest williamson-ag-valuation-reconcile` (a --dry-run mode exists to preview the summary counts first without writing) before any real N/M numbers exist to report. This lane does not have that access. Same caveat applies to the already-merged McLennan fix (PR #623): normalizeStratMapLandUse() only runs during ingestion, so the fix takes effect on McLennan's existing 114,255 rows only once its StratMap drop is RE-INGESTED (the existing upsert is idempotent/COALESCE-safe, so a re-run is safe to do), not merely once the code is merged. Neither fix's real-world effect should be reported as done until confirmed live against production data."
+  },
+
+  "filesChanged_pr624": [
+    "lib/db/src/schema/txWcadAgValuation.ts",
+    "lib/db/src/schema/index.ts",
+    "lib/db/drizzle/0098_tx_wcad_ag_valuation.sql",
+    "lib/db/src/__tests__/__fixtures__/schema.sql.template",
+    "lib/db/src/__tests__/integration/schema.integration.test.ts",
+    "lib/cad-ingest/src/williamsonAgValuation.ts",
+    "lib/cad-ingest/src/williamson-ag-valuation-cli.ts",
+    "lib/cad-ingest/src/p78Merge.ts",
+    "lib/cad-ingest/src/__tests__/williamsonAgValuation.test.ts"
+  ],
+  "prMerged": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/624 (013f4cea)",
+
+  "leave_behind": [
+    { "item": "Run williamson-ag-valuation-reconcile (dry-run first) against production, and re-run McLennan's StratMap ingest, to actually apply either fix to real data", "owner": "whoever holds production DATABASE_URL write access (doc-repo-bd or the operator)", "plan_row": "F-01", "reason": "Both fixes are merged code only; neither has touched a real cad_property row yet. Report real N/M counts (per the reporting correction above) only after this runs." }
+  ]
+}

@@ -268,3 +268,35 @@ CAD-ingest gaps (an unreconciled staged table for Williamson, an
 unparsed-embedded-text field for McLennan), neither a legitimate absence,
 neither the sweep's own predicate being wrong. Both handed to Factory as
 scoped fixes.
+
+**2026-09-05, item 4 CLOSED — both counties fixed and independently
+verified against production, not just merged.** LDT lane (`cente-86`).
+
+McLennan (PR #623, `3b010d1`): `landAcresFromLegalDescription()` added as a
+fallback in `normalizeStratMapLandUse()`, only firing when the GIS-area path
+resolves nothing. Merging code is not the fix — the integration seat ran the
+actual StratMap re-ingest (`stratmap-landuse --county=48309`) against
+production `cortex-prod` and independently verified the result directly:
+`land_acres` is now populated on all 114,255 McLennan `cad_property` rows,
+zero remain null.
+
+Williamson (PR #624 then #625): first attempt found and stopped rather than
+guessed at a real blocker — `tx_wcad_ag_valuation.land_type`'s 27 codes,
+initially treated as unknown, were fully characterized by the integration
+seat via live query (the table self-documents every code via its own
+`description` column; none needed special-casing). PR #624 merged clean
+(`013f4cea`) with full test coverage and an independent second review — but
+the FIRST production dry-run (integration seat, before any write) found a
+real bug the tests never caught: the aggregation joined on
+`tx_wcad_ag_valuation.prop_id`, which is WCAD's own internal record id, a
+completely different id space from `cad_property.prop_id` — 0% real match
+rate. The bug passed every test because the fixtures coincidentally used the
+same string for both columns. PR #625 fixed the join key to
+`wcad_property_id` (100% match verified on a 2000-sample), rebuilt every
+fixture with intentionally distinct values so a wrong join can't
+coincidentally pass again, and added a null-key falsifier. Re-run for real
+against `cortex-prod` after merge (`d5d717bd`): 187,360 rows upserted,
+independently verified after the write — `land_value` now 100% populated
+across all 319,480 Williamson rows (tax_year 2026), zero remain null;
+`land_acres` has real data on 105,691 rows. Both fixes verified at the
+source, not from either lane's or the integration seat's own summary output.

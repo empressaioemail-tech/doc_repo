@@ -1,0 +1,35 @@
+{
+  "lane": "ctx-wrapup-ldt",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "waveItem": "Wave 1, item 4 follow-up (Williamson/McLennan CAD-ingest fix)",
+  "requestedBy": "doc-repo-bd (cross-session message), building on _inbox/2026-09-05_engine-williamson-mclennan-geomgap-nulls_close.json and _inbox/2026-09-05_ctx-wrapup-engine_williamson-mclennan-cad_close.json's routing finding",
+  "checkpoint": "CLOSE — McLennan fixed and shipped. Williamson deliberately NOT implemented, see below.",
+  "date": "2026-09-05",
+
+  "verificationBeforeWriting": "Read both prior investigation docs in full before writing any code, rather than trusting the dispatch summary alone. Independently re-confirmed the real writer (lib/cad-ingest/src/ingest.ts upsertCadProperties(), the COALESCE-preferring-incoming pattern on land_value/land_acres, and the schema/migration) directly against origin/main -- matches the routing doc exactly.",
+
+  "mclennan_48309_FIXED": {
+    "status": "Shipped. PR #623 merged (3b010d1), all CI green.",
+    "diagnosis": "McLennan's StratMap leftover-farm drop carries no usable GIS_AREA_U on any of its 114,255 rows, so the existing landAcresFromGis() unconditionally refuses -- but land_value/market_value land fine from the same rows (99% populated), so the source is not field-poor; the acreage is embedded as free text on LEGAL_DESC and was simply never extracted.",
+    "fix": "Added landAcresFromLegalDescription() to lib/cad-ingest/src/p78Merge.ts and wired it as a fallback in normalizeStratMapLandUse() (lib/cad-ingest/src/txgio/landuse.ts), tried ONLY when the GIS-area path refuses or resolves nothing. Matches 'Total <n> Ac' before a bare 'Acres <n>' so a sub-tract decoy earlier in the same description (the investigation's own real example: '...0.116 Ac Aband ROW (A) Total 0.414 Ac') never wins over the parcel's actual total. Returns null, never an invented figure, when neither phrasing matches.",
+    "noRegressionArgument": "Strictly additive under the existing COALESCE-preferring-incoming upsert (already in upsertCadProperties, unmodified): the fallback only fires when the GIS-area path already returned nothing, so a county whose GIS_AREA already resolves is untouched. Verified directly with a falsifier test proving the GIS-area value wins even when LEGAL_DESC also carries a different figure.",
+    "testCoverage": "16 new/updated tests in p78-merge.test.ts: positive case (real 'Acres n' example from the investigation), the decoy falsifier, honest-null cases (no match, non-positive figure, non-string input), and 3 integration tests through normalizeStratMapLandUse (fallback fires correctly, GIS-area path is not regressed, stays null when neither source resolves). Full cad-ingest package suite: 275 passed / 11 skipped (DB-dependent integration tests correctly self-skip without DATABASE_URL, not a false pass). Full-repo pnpm run typecheck (the exact CI command) clean. Live CI on PR #623: Typecheck and Test both SUCCESS, mergeStateStatus CLEAN before merge."
+  },
+
+  "williamson_48491_NOT_IMPLEMENTED": {
+    "status": "Deliberately not attempted. Real, specific blocker -- not a scope refusal.",
+    "whyNotJustGuessed": "The prior investigation (_inbox/2026-09-05_engine-williamson-mclennan-geomgap-nulls_close.json) itself flags this precisely: tx_wcad_ag_valuation's land_type column carries 27 distinct codes across its 305,879 rows; only 'L' has been characterized as the land-segment value (sample: prop_id R349307, land_type='L', acres=1.021, value=306). The other 26 codes were NOT characterized in that investigation and their meaning is unknown -- they could be improvements, exemptions, easements, or other non-land segment types that would corrupt land_value if summed in blindly, or could be legitimate land sub-types that a naive 'only L' rule would wrongly exclude.",
+    "stakes": "282,569 real Williamson accounts, on a CTX-launch-blocking item. Writing an aggregation rule (which land_type codes to sum, whether to sum per prop_id or take a specific row) without knowing what the other 26 codes represent would be guessing at real financial data with no way to catch a wrong rule short of a live customer noticing an incorrect land value.",
+    "environmentConstraint": "This session has no DATABASE_URL/TEST_DATABASE_URL configured, so the land_type characterization (grouping tx_wcad_ag_valuation by land_type, sampling each code's typical acres/value ranges and any correlated fields) cannot be done from here -- it needs a live query against CORTEX_DATABASE_URL the way the original diagnosis was done.",
+    "recommendedNextStep": "Whoever has DB read access (the Engine lane's own toolsAndAccess notes gcloud + psql against CORTEX_DATABASE_URL, project hauska-prod-497015) should characterize all 27 land_type codes -- what each represents, whether codes other than 'L' should contribute to land_value/land_acres, and whether a prop_id can have multiple 'L' rows needing a sum vs. a single authoritative row. Once that's known, the actual fix is mechanically similar to McLennan's: a new fallback source feed into upsertCadProperties' existing COALESCE path, this time aggregating tx_wcad_ag_valuation per prop_id instead of parsing legal_description. Estimate: small once the codes are characterized, same shape of change as this PR.",
+    "notADeferralOfConvenience": "Flagging explicitly: this is not being deferred because it's harder to code -- the aggregation logic itself would be straightforward. It's deferred because writing it now would mean picking an aggregation rule blind on real financial data for a quarter-million accounts, which is exactly the kind of thing this sprint's own governing discipline (verify before writing, don't guess on launch-blocking correctness) says to stop and report rather than push through."
+  },
+
+  "filesChanged": [
+    "lib/cad-ingest/src/p78Merge.ts",
+    "lib/cad-ingest/src/txgio/landuse.ts",
+    "lib/cad-ingest/src/__tests__/p78-merge.test.ts"
+  ],
+  "prMerged": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/623 (3b010d1)"
+}

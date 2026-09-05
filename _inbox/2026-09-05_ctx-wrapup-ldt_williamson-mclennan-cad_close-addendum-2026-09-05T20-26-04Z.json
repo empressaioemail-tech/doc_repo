@@ -1,0 +1,24 @@
+{
+  "addendumTo": "_inbox/2026-09-05_ctx-wrapup-ldt_williamson-mclennan-cad_close.json (and its earlier 2026-09-05T19-54-23Z addendum)",
+  "lane": "ctx-wrapup-ldt",
+  "planRow": "F-01",
+  "date": "2026-09-05",
+  "reason": "PR #624's join key was wrong. Caught by doc-repo-bd's own production dry-run (the standing pre-apply discipline) BEFORE any real write happened. This addendum records the defect, the fix (PR #625, merged), and keeps Williamson's real status as NOT YET CONFIRMED FUNCTIONAL until a re-run dry-run against production shows real matches.",
+
+  "criticalFinding_wrongJoinKey": {
+    "whatHappened": "doc-repo-bd ran williamson-ag-valuation-reconcile --dry-run against cortex-prod before any real apply, per standing discipline. Result: 218,667 targets, 0 matches, 0 resolved. Investigated the suspiciously clean zero rather than reporting 'nothing to fix'.",
+    "rootCause": "aggregateAgValuationByPropId (PR #624) joined tx_wcad_ag_valuation to cad_property on the `prop_id` column. Live-verified (2000-sample against cortex-prod): tx_wcad_ag_valuation.prop_id (e.g. R000009) is WCAD's own internal record identifier -- a DIFFERENT id space from cad_property.prop_id (e.g. 163031), 0% match even after stripping the R-prefix/leading zeros. The real shared key is tx_wcad_ag_valuation.wcad_property_id, which matches cad_property.prop_id at 100% (2000/2000).",
+    "whyItPassedCIBefore": "The DB-integration test fixtures in PR #624 used the SAME literal string for both tx_wcad_ag_valuation.prop_id and cad_property.prop_id (modeling a world where they're the same key). A self-consistent fixture is not the same as one verified against the real key relationship -- named explicitly by doc-repo-bd as its own lesson for this sprint.",
+    "productionImpact": "NONE. The sanity guard correctly refused to write anything when nothing resolved (0 real matches -> 0 writes), exactly as designed. No cleanup needed; this was purely a code defect caught before any data was touched.",
+    "fix": "PR #625 merged (d5d717bd). Joins on wcad_property_id, excludes rows where it is null (can't be matched) rather than aggregating under a null key. Rebuilt every DB-integration fixture with intentionally DISTINCT prop_id/wcad_property_id values so a wrong join can no longer coincidentally pass, added a falsifier for the null-key exclusion case, and corrected the module-doc claims in both williamsonAgValuation.ts and txWcadAgValuation.ts (both had asserted the wrong join key as settled fact)."
+  },
+
+  "williamson_48491_STATUS_CORRECTED": "Still NOT YET CONFIRMED FUNCTIONAL. PR #625 (the join-key fix) is merged code, same caveat as before: merging code is not the same as it having run against production. doc-repo-bd is running the dry-run again against cortex-prod now that the fix is on main, and will report the real match/resolve counts once that's done. Do not report Williamson as working, with any number attached, until that confirmation lands.",
+
+  "filesChanged_pr625": [
+    "lib/cad-ingest/src/williamsonAgValuation.ts",
+    "lib/db/src/schema/txWcadAgValuation.ts",
+    "lib/cad-ingest/src/__tests__/williamsonAgValuation.test.ts"
+  ],
+  "prMerged": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/625 (d5d717bd)"
+}
