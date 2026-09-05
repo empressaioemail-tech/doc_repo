@@ -134,6 +134,26 @@ writes (`ERROR: cannot execute CREATE TABLE in a read-only transaction`), same r
 the primary. Still only one primary compute for actual writes — the replica does not relieve
 write contention, only read contention.
 
+**Scope: this replica only covers the Factory store (`parcel_record` and siblings).** It does
+NOT touch `PRODUCTION_NEONDB_URL` (cortex-prod, `cad_property`/`txgio_parcel`/the atom store) —
+a completely separate Neon project. A card whose contention is against `cad_property` or
+`txgio_parcel` (e.g. B3-GEOMGAP) is not fixed by this; that's cortex-prod's own contention,
+tracked separately.
+
+**The secret's host has no `-pooler` suffix, on purpose.** `refusePoolerHost()` in
+`hauska-factory/src/db/connect.mjs` hard-refuses any `-pooler` host for `FACTORY_DATABASE_URL`
+(`POOLER_HOST_REFUSED`) — Neon's console "Connect" dialog defaults to copying the pooler form,
+which will silently break the moment real Factory code opens this connection. If a future
+replica/secret gets recreated from a console copy-paste, strip `-pooler` from the hostname
+before storing it (same convention `PRODUCTION_NEONDB_URL` already follows correctly).
+
+**Known limitation, found live 2026-09-04: this replica's compute is small (`.25 <-> 2 CU`
+autoscale) and can throw `canceling statement due to conflict with recovery` or simply hang
+on a large scan/join under real load** (a genuine MVCC/replication-lag conflict, not a config
+mistake). If a query times out against the replica the same way it did against the primary,
+that's real information (the compute may need resizing), not something to work around by
+retrying blindly.
+
 **Never echo a secret, never write one to a file, never paste one into a close.** Pipe to
 the thing that consumes it. To prove access without exposing a value, pipe to `wc -c`.
 
