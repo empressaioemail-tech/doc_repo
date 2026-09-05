@@ -300,3 +300,49 @@ independently verified after the write — `land_value` now 100% populated
 across all 319,480 Williamson rows (tax_year 2026), zero remain null;
 `land_acres` has real data on 105,691 rows. Both fixes verified at the
 source, not from either lane's or the integration seat's own summary output.
+
+**2026-09-05, item 10 CLOSED (Bastrop) — real bug found and fixed along the
+way.** Factory lane. The atoms-side owner-rail cross-check ran 3h29m before
+the integration seat, checking `pg_stat_activity`/`EXPLAIN` rather than
+accepting "still running," found the real cause: a bulk
+`unnest()...LIKE place_key||':%'` lookup Postgres cannot index (a
+correlated LIKE pattern, even inside a plain LATERAL, doesn't get a
+plan-time range bound), forcing a full ~4.3M-row scan of the owner-fact
+atoms partition per page. Confirmed not a live production bug — the real
+customer-facing path already does per-key lookups the composite index
+serves in ~30ms. Operator ruling: kill and fix rather than wait an
+unbounded number of hours, since no checkpointing meant nothing was
+actually being saved by waiting. Factory's fix (PR #97, `6678d785`) is
+worth noting for its own rigor: a naive LATERAL rewrite tested fine at 3-5
+array elements, then the planner silently reverted to the identical bad
+full-scan plan at 8+ elements — caught before shipping by testing at the
+real batch size (500), not a toy case, which would otherwise have
+reproduced the exact same multi-hour incident. Fixed with an `OFFSET 0`
+optimization-barrier fence. Verified: `EXPLAIN ANALYZE` 6.4ms vs
+46-60+ seconds/page (~10,000x); correctness confirmed by diffing against
+the live-proven per-key query shape on 8 real place_keys, byte-identical.
+Real result once re-run: `resetTargetCount: 0` — zero provable collisions
+between Factory's served owner data and a fresh ground-truth re-read
+across all 61,624 Bastrop accounts (58,923 + 469 + 2,232 = 61,624 exactly,
+every account in one bucket). Williamson extension of this same check
+explicitly deferred — not launch-blocking, gate-eval/landUseCode/owner take
+priority.
+
+**Follow-up, not tonight's problem:** `WCAD_TIER2_OWNER_COUNT_SQL` (only
+used for Williamson's Tier-2 exclusion count) took 64.3s against a 90s
+budget during the item 10 re-run — a second, different bottleneck. Uses the
+correct primary key but the column order (`place_key` before `rail_key`)
+forces a walk of ~4M rail entries per parcel to find the `owner` ones. A
+real fix needs an index change, not a query rewrite. Tracked, not acted on.
+
+**owner rail folded into the pending gate-eval work**, corrected after
+initial caution: `owner` is paid-tier (`OWNER_RAIL_ACCESS`) and listed
+among the 13 "declared ahead, start unaccounted everywhere" v2-template
+rails, which looked like it might need its own data-completeness
+investigation before joining landUseCode's gate-slate fix. Live query
+(integration seat) found the opposite: `owner` already has 0 unaccounted
+cells across all 6 CTX counties — the real writer has already run
+comprehensively; the "declared ahead" label describes its template
+default, not current reality. Zero `parcel_gate_verdict` rows, same gap
+as landUseCode. Folds into the same `SLATE_1D`-adjacent fix, no separate
+investigation needed.

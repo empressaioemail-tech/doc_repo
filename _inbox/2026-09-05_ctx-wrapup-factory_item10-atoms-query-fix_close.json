@@ -1,0 +1,22 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "planRow": "10",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "item": "Item 10 (Bastrop owner-rail atoms cross-check) was killed per doc-repo-bd's ruling after a real root-cause diagnosis found a fixable query-plan defect, not generic Neon latency. This closes the fix half; the re-run's actual numbers land in a separate close doc.",
+  "checkpoint": "DONE. PR #97, merged 6678d785.",
+  "date": "2026-09-05",
+
+  "rootCause": "ATOMS_OWNER_FACT_BY_PLACE_KEYS_SQL joined unnest(up to 500 place_keys) against atoms via `entity_id LIKE pk.place_key || ':%'`. Postgres can only derive an index range bound from a LIKE pattern when the pattern is a plan-time literal -- confirmed via EXPLAIN that the identical pattern built from a literal uses atoms_entity_composite_unique in ~9 cost units, while the same pattern built from a correlated column (even inside a plain, un-fenced LATERAL) falls back to a full Parallel Bitmap Heap Scan of the entire 'owner-fact' partition (~4.3M rows), once per page. The job's connections had been open 3h29m against Bastrop alone with no firm completion estimate when killed.",
+
+  "notALiveBug": "Checked hauska-engine's pg-storage.ts (the real production consumer, listPropertyAtomsByParcelNodeId): it looks up ONE parcelNodeId at a time via the same LIKE shape, which the composite index handles in ~30ms per that file's own code comment. This defect was specific to this diagnostic script's bulk-batch shape, never reached customers.",
+
+  "fix": "Rewrote the query as a LATERAL with the range bound written explicitly (>= place_key||':' AND < place_key||';', the exact bound Postgres derives on its own for the literal case), fenced with OFFSET 0. The fence was necessary, not cosmetic: a bare LATERAL without it silently flipped back to the bad full-scan plan once the array grew past ~5-7 elements (confirmed empirically at 3, 5, and 8 elements) -- meaning the naive LATERAL rewrite alone would have reproduced the exact same incident at the real pageSize of 500.",
+
+  "verification": {
+    "queryPlan": "EXPLAIN ANALYZE against a real 500-key Bastrop page: Nested Loop / unnest outer / per-key parameterized Bitmap Index Scan on atoms_entity_composite_unique, 6.4ms total for the whole page (vs 46-60+ seconds/page measured live before the kill).",
+    "correctness": "Diffed results against per-key literal LIKE queries (byte-identical predicate to the original, just issued once per key instead of batched) on 8 real Bastrop place_keys -- output identical (entity_id + md5(body) match on every row).",
+    "tests": "test/owner-rail-collision-check.test.mjs: 29/29 pass (fake-store tests were unaffected since they assert on the exported SQL constant, not its literal text). Full suite: 1005/1005 pass, 2 pre-existing skips, 0 fail."
+  },
+
+  "nextStep": "Re-running the real Bastrop check now that the fix is merged (background task, expected minutes not hours). Will report the actual owner-rail cross-check numbers -- resetTargets, unmatchedInAtoms, atomTaxYearMismatch, etc. -- in a separate close doc once it completes, per the sprint's standing rule not to report a number until it's actually been produced."
+}

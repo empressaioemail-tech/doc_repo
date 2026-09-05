@@ -1,0 +1,32 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "planRow": "10",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "item": "Item 10: Bastrop owner-rail atoms cross-check -- the actual numbers, post-fix (PR #97).",
+  "checkpoint": "DONE. Real, complete run against production data.",
+  "date": "2026-09-05",
+
+  "county": "48021 (Bastrop)",
+  "declaredTaxYear": 2025,
+
+  "results": {
+    "exposedGroups_pages": 124,
+    "exposedAccounts": 61624,
+    "resetTargetCount": 0,
+    "wcadTierExcludedCount": 0,
+    "groundTruthMissing": 0,
+    "groundTruthBlankAtDeclaredYear": 0,
+    "agreedThreeWay": 58923,
+    "unmatchedInAtoms": 0,
+    "atomTaxYearMismatch": 0,
+    "withheldGranularityMismatch": 0,
+    "atomAbsenceDisagreesWithGroundTruth": 469,
+    "atomNameDisagreesWithGroundTruth": 2232
+  },
+
+  "interpretation": "Headline: resetTargetCount is 0 -- zero provable collisions between Factory's served owner-rail data and a fresh same-year cad_property re-read, across all 61,624 Bastrop Tier-1 owner accounts. Per this job's own PROVABLE-COLLISION DISCIPLINE, resetTargets are the only actionable signal for 'is Factory wrong' -- this is the real answer to item 10's core question, and it's clean. Sanity check: 58923 + 469 + 2232 = 61624, exactly exposedAccounts, so every account lands in exactly one bucket with no leftover or double-count. Also notable: unmatchedInAtoms is 0 -- full atoms coverage for Bastrop's owner-fact entity type (every Tier-1 owner cell has a matching atom). The 469 + 2232 = 2701 atom-side disagreements (atomAbsenceDisagreesWithGroundTruth, atomNameDisagreesWithGroundTruth) are informational -- they say the independent atoms store sometimes disagrees with cad_property, not that Factory's own served data is wrong. Not investigating those further here since they're outside a Factory-correctness check's actionable scope; flagging in case Engine lane wants to look at atoms-side data quality separately.",
+
+  "realFindingAlongTheWay": "The instrumented re-run caught a second, different slow query: WCAD_TIER2_OWNER_COUNT_SQL (a simple count(*) used only to report the Williamson-specific Tier-2-exclusion count) took 64.3s against a 90s timeout -- close enough that this is almost certainly the actual cause of the FIRST re-run's timeout failure (which used a 60s budget), not a random contention spike as I'd guessed at the time. Checked with EXPLAIN: it DOES use parcel_record_cell_pkey correctly bounded to Bastrop's place_key range, but the PK's column order (place_key, then rail_key) means the scan has to walk every rail_key for every Bastrop parcel (~65 rails x ~62K parcels =~4M index entries) to find just the 'owner' rows, rather than jumping straight to them. This is a different root cause than the atoms LATERAL issue (that one wasn't using the index at all; this one uses the right index in the wrong column order). Currently working, just uncomfortably close to its timeout budget -- not fixing it now since it wasn't in the ruling's scope and a fix here likely means a new (rail_key, place_key) index rather than a query rewrite, which deserves its own consideration rather than a scope-creep fix bundled into this PR. Flagging for a decision on whether it's worth a follow-up, especially since Williamson (where this count is actually non-zero, unlike Bastrop) will hit the same query.",
+
+  "nextStep": "Item 10 is complete for Bastrop. Per the original ask this could extend to Williamson too -- have not done that yet, holding for a ruling on priority now that gate-eval/landUseCode/owner are queued and I don't want to context-switch further without checking. Moving to gate-eval (SLATE_1D) next unless told otherwise."
+}
