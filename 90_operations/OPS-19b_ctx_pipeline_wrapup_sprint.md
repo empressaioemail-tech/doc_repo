@@ -182,3 +182,30 @@ on the rest of the app in parallel.
 Report back via `_inbox/` close docs, same as every other lane tonight. Cross-session
 messaging has been unreliable at points this session — do not rely on it as the only
 report path.
+
+**Close-out (2026-09-05):** items 1 (zoningDistrict half), 2, 3 (agValuation/
+schoolDistrict/zoningDistrict), and 5 (pipeline checked in) all merged and
+independently verified (PRs #92-#95, 1000/0/2 full suite). Two genuine, correctly-
+flagged-rather-than-forced open items surfaced:
+
+- **setbackFrontFt has no real writer anywhere in this repo.** The `writer-allowlist.mjs`
+  "f11-setback" entry is scaffolding for a job that was never built on this branch.
+  Only the unincorporated not-applicable case exists. Needs a real F-11 writer before
+  this rail's own half of item 1/P-106 can close at all — separate scoping decision,
+  not a Wave 3 task.
+- **The CAD-ingest gap (`ingest-existing.js`'s `if (!cad) continue`) needs an explicit
+  ruling, not a code fix, before anyone touches it.** Two real blockers: (1) the file
+  is compiled/vendored from hauska-engine (`ENGINE_PIN.json`, "do not edit these .js
+  files by hand") — the real fix belongs in hauska-engine's TypeScript source plus a
+  re-vendor; (2) this file has a deliberately-tested invariant asserting the OPPOSITE
+  of the wanted fix ("a join miss must never reach absent-verified," with its own
+  falsifier test) — reversing it is a real design call. Factory's own analysis of
+  `CAD_ROWS_SQL` (`DISTINCT ON prop_id ORDER BY tax_year DESC`, scoped to the exact
+  propIds in the page, across all observed tax years) supports the reversal being
+  correct — a genuine join miss there means no `cad_property` row exists for that
+  county+propId in any tax year ever ingested, which is a confirmed absence, not an
+  unprocessed case. Directly blocks a clean landUseCode answer for item 20. Ruling
+  needed from operator/Engine lane, not implemented pending that.
+- `factory-bexar-edges`'s new pipeline is checked in but the actual `gcloud builds
+  submit` was deliberately left for the integration seat (a real production deploy);
+  triggered same session this close-out was processed.
