@@ -168,7 +168,22 @@ landUse, acreage}` — it never reads a `cadRoll` key at all (confirmed: zero
 mentions of `cadRoll` anywhere in the file). All four dollar fields are
 silently discarded one hop downstream of the service that correctly produced
 them, before any customer request sees them. Independently verified by the
-integration seat by reading the same function. Fix dispatched.
+integration seat by reading the same function.
+
+**First fix (PR #358) landed a second, more subtle bug**, caught by the LDT
+lane re-checking its own work against the raw upstream response rather than
+trusting the deploy: the real wire shape from `resolveCadRollOverlaysForServe`
+is a three-state `CadRollValueWire` object (`{state: "present"|"zero"|"absent",
+v, source, vintage, valueBasis?}`), not a bare number — codebase doctrine
+elsewhere already treats collapsing a real stored `$0` into `absent` as a
+defect class. PR #358's fix checked `typeof === "number"`, false for that
+shape, so it silently nulled every field regardless of real upstream data —
+the exact same symptom as the original bug, different root cause. **DONE for
+real, PR #359 (`2af2375`), deployed and live-verified by the integration seat**:
+`marketValue`/`landValue`/`improvementValue` now serve real numbers matching
+the raw upstream response exactly (511345/106715/404630 for the test parcel),
+`assessedValue` correctly serves `state: "absent"` with a real basis object,
+not a silent null.
 
 **Separately flagged, not yet resolved:** `livingAreaSqft`/`yearBuilt` DO
 reach customers live today, but sourced from an older `structuralFact` atom
