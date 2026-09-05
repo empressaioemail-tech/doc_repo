@@ -1,0 +1,57 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "wave": "Wave 3 -- ledger serving audit follow-through",
+  "auditDoc": "_inbox/2026-09-05_ledger_serving_audit.md",
+  "checkpoint": "CLOSE for items 1, 2, 3 (partial), 5. Item 4 explicitly deferred by the wave's own scope. Item 3's CAD-ingest sub-item NOT done -- cross-repo, needs a ruling.",
+  "date": "2026-09-05",
+  "trigger": "doc-repo-bd relayed the operator-ruled Wave 3 scope (audit doc + sprint doc's new Wave 3 section, both independently verified to exist and match the relay before any work started).",
+
+  "item1_zoningDistrictSetbackFrontFtGateVerdict": {
+    "status": "DONE for zoningDistrict. setbackFrontFt BLOCKED, not resolved -- reported, not silently skipped.",
+    "verifiedLive": "Direct parcel_gate_verdict query for rail_key IN ('zoningDistrict','setbackFrontFt') returned zero rows before this fix -- confirmed the allowlist comment/audit claim rather than trusting it.",
+    "zoningDistrictFix": "PR #94, merged fac7a2a. Added SLATE_1C_RAIL_KEYS=['zoningDistrict'] to publish-gate-sched.mjs's default slate. Safe because Wave 3 item 3's 49-no-staged-layer-cities fix (PR #92) landed first: every zoningDistrict cell now reaches value/not-applicable/refused. Verified empirically (not just read-and-hoped) that 'refused' counts as evaluateRailGate's isEarnedCell 'live' signal -- unlike maxImperviousCoverPct's not-applicable out-of-scope sweep -- so a county whose only real zoning coverage is no-staged-layer refused cells still reads genuinely live and can reach a real pass, never a spurious excluded. New tests in test/gate-county-scoped-rail.test.mjs prove this exact property plus its own falsifier (a genuine remaining gap still correctly refuses).",
+    "setbackFrontFtFinding": "Confirmed by reading the entire repo: NO job anywhere writes a real value for setbackFrontFt on an incorporated parcel. The writer-allowlist.mjs 'f11-setback' entry (kind: 'setback', planRow: 'F-11') has no corresponding file in src/jobs/ on this branch -- it's allowlist scaffolding for a writer that was never built here (or was built on a different branch/worktree that never merged). Only the instantiate-time not-applicable for unincorporated parcels exists. Gating the scheduler on it now would be a safe no-op (PARCEL-B-READER treats 'refuse' the same as no-verdict, falling back to legacy) but also useless: a county's gate verdict is one row covering every parcel in it, so a permanently-refusing county (because incorporated parcels never resolve) would never let the unincorporated not-applicable state actually serve either. NOT added to any slate. Needs a real setback writer (F-11) before this is actionable at all -- an Engine-lane/operator question, not something to force through here.",
+    "followUp": "Once the LDT lane has authenticated credentials, they can verify a real request against zoningDistrict end-to-end per the sprint's own division of labor."
+  },
+
+  "item2_maxImperviousCoverPctTravisGap": {
+    "status": "DONE. PR #93, merged 4fab70c9.",
+    "correctedAnEarlierWrongClaim": "This session's own earlier close tonight (before Wave 3) claimed the rail's 845,157 unaccounted figure was entirely explained by the 5 out-of-scope counties. doc-repo-bd's live parcel_gate_verdict check found that was wrong: Travis itself -- the one county this rail covers -- read refuse, unaccounted_count 244,669.",
+    "rootCause": "The unresolvedZones (1 real watershed hit, crosswalk can't resolve a confident percent -- BSZ/SUBURBAN/URBAN/WATER SUPPLY RURAL) and anomalies (2+ hits) branches only ever logged to an in-memory report array; no write happened for either, so those cells sat unaccounted forever.",
+    "fix": "Both now get a gated 'refused' cell (never not-applicable -- not a designed scope boundary; never absent-verified -- a real zone WAS found), reusing the same generic gated-UPDATE SQL the earlier 0-hit fix already added. Full test coverage including a falsifier proving an earlier-earned value is never clobbered, and an end-to-end reproduction of the exact defect shape."
+  },
+
+  "item3_dataLayerTerminalStates": {
+    "status": "DONE for agValuation, schoolDistrict, zoningDistrict (PR #92, merged e13daff). NOT DONE for the CAD-ingest gap -- see below.",
+    "agValuation": "Hard-refused (COUNTY_NOT_IN_SCOPE) any county outside Williamson/Travis. Now accepts all counties; the other 4 get a gated not-applicable sweep reading FACTORY_DATABASE_URL only (nothing to join against).",
+    "schoolDistrict": "0-hit/2+-hit anomalies were logged to an in-memory array only, never persisted. Now also writes a gated 'refused' cell naming the real hit count.",
+    "zoningDistrict": "49 cities with real in-city parcels have no tx_zoning_district_staging base layer at all (a data-acquisition gap, distinct from the already-proven 23-city spatial join and the 5 stamp-gap cities). Every run now also sweeps these 49 cities to a gated 'refused' cell, independent of --city.",
+    "cadIngestGap_NOT_DONE": {
+      "whatWasAsked": "src/lib/parcel-record-engine/ingest-existing.js's ingestCadOntoRecords has `if (!cad) continue` -- a parcel with zero matched cad_property row gets no write for ~15 CAD-scalar fields including landUseCode. The Wave 3 dispatch asked to fold this into item 20's landUse work.",
+      "whyNotDone_crossRepo": "This file's own header states: 'TypeScript emitted with tsc ... from hauska-engine [SHA]. Do not edit these .js files by hand; regenerate from the pin.' It is compiled/vendored from hauska-engine's packages/engine-core/src/parcel-record, tracked by ENGINE_PIN.json. The real fix belongs in hauska-engine's TypeScript source, followed by a re-vendor/re-pin into this repo -- not a hand-edit here. Editing the compiled .js directly would violate this repo's own explicit convention and create exactly the kind of pin/source divergence the mechanism exists to prevent.",
+      "whyNotDone_semanticConflict": "This same file currently has a DELIBERATE, TESTED invariant asserting the opposite of what the audit wants: 'a MATCHED latest CAD row with a null/blank scalar emits absent-verified. A join miss never reaches that emission (structural...)' -- with its own falsifier test (test/parcel-record-fill.test.mjs: 'a join miss on the same field must stay unaccounted' and a second test asserting the module source literally contains that sentence). Reversing this is not obviously wrong -- my own analysis of CAD_ROWS_SQL (DISTINCT ON prop_id ORDER BY tax_year DESC, scoped to the exact propIds in the current page) shows a join miss under that query IS a genuinely confirmed 'no cad_property row for this county+propId in any observed tax year', which would support treating it as absent-verified rather than unaccounted-forever -- but this reverses a prior, explicitly-tested design decision, not an oversight, and needs an explicit ruling before reversing rather than a unilateral change from this lane.",
+      "recommendation": "If the operator/Engine lane rules a join miss should become absent-verified: the fix is straightforward (add an applyCadScalar-equivalent path for the !cad case, using a basis that says 'no cad_property row observed for this propId across any queried tax year' rather than the existing matched-row-specific basis, gated the same way every other cell write in this wave is gated). Not implemented here pending that ruling."
+    }
+  },
+
+  "item4_frozenManualVerdictRails": {
+    "status": "NOT TOUCHED -- correctly. Explicitly deferred by the Wave 3 scope itself ('its own separate, later gate eval wave... explicitly NOT in this wave's scope, so it does not get pulled in early while the operator runs QA and market-readiness work on the rest of the app in parallel'). Confirmed I did not touch marketValue/assessedValue/landValue/improvementValue/livingAreaSqft/yearBuilt/utilityService's gate-slate status anywhere in this session's changes."
+  },
+
+  "item5_bexarEdgesDeployPipeline": {
+    "status": "DONE (checked in). PR #95, merged cc653ed5. Build-and-deploy NOT triggered -- see below.",
+    "whatWasBuilt": "cloudbuild.bexar-edges.yaml, mirroring cloudbuild.conformant.yaml's build/push/digest-extract/deploy structure and its A-020 digest-shape guard. Every gcloud run jobs deploy flag was read directly off the LIVE deployed job (gcloud run jobs describe factory-bexar-edges --project=hauska-prod-497015 --region=us-east4) before writing the file, per the audit's own warning about reconstructing deploy commands from scratch.",
+    "notableDetailPreserved": "The live job's command/args split is command=[node], args=[src/cli.mjs, bexar-edges] -- different from every other job's cloudbuild file (--command=node,src/cli.mjs --args=<subcommand>). Preserved exactly rather than normalized, since the whole point was fidelity to the confirmed-live shape, not consistency with other files.",
+    "notDone_deliberately": "The actual `gcloud builds submit --config=cloudbuild.bexar-edges.yaml --project=hauska-prod-497015` was NOT run. Confirmed no GitHub Action in this repo triggers cloudbuild submissions automatically (checked .github/workflows/ -- only ci.yml exists, no cloudbuild references) -- every cloudbuild file in this repo is a manually-submitted, explicit action, matching how this session treated every other production-deploy-shaped action tonight (item 9's writer re-apply, item 5 [the earlier claims-mechanism item]'s migration application). This is a real, live production Cloud Run job redeploy; triggering it is left for the operator/integration seat."
+  },
+
+  "testEvidence": "Each PR ran its own full suite before merge; cumulative total on main after all four merges: 1000 pass / 0 fail / 2 pre-existing skips (node --test test/*.test.mjs).",
+
+  "leave_behind": [
+    { "item": "setbackFrontFt has no real writer for incorporated parcels anywhere in this repo", "owner": "operator / Engine lane", "plan_row": "F-11", "reason": "The writer-allowlist.mjs 'f11-setback' entry is scaffolding with no corresponding job file on this branch. Needed before setbackFrontFt's gate-verdict question (P-106) can be fully closed." },
+    { "item": "ingest-existing.js's `if (!cad) continue` gap (affects ~15 CAD-scalar fields including landUseCode) is unresolved", "owner": "operator / Engine lane", "plan_row": "F-01 / item 20", "reason": "Cross-repo (vendored from hauska-engine, 'do not edit by hand') AND a semantic reversal of a currently-tested invariant ('a join miss must never reach absent-verified'). This session's own analysis (CAD_ROWS_SQL genuinely confirms absence across all tax years for the page's own propIds) supports reversing it, but that is a call for the operator/Engine lane to make explicitly, not something to force through unilaterally. Directly blocks a clean landUseCode fill-state answer for item 20." },
+    { "item": "factory-bexar-edges pipeline checked in but not yet run", "owner": "operator / integration seat", "plan_row": "F-01 Wave 3 item 5", "reason": "gcloud builds submit --config=cloudbuild.bexar-edges.yaml --project=hauska-prod-497015 needs an explicit trigger; this session does not perform unprompted production Cloud Run redeploys." }
+  ]
+}
