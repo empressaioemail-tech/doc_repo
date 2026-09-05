@@ -3,7 +3,7 @@ id: 2026-09-05_ledger_serving_audit
 title: Full parcel_record serving-ledger audit — data, gate, allowlist, and deploy layers
 status: active
 last_updated: 2026-09-05
-applies_to: hauska-factory, legacy-design-tools
+applies_to: hauska-factory, legacy-design-tools, hauska-map
 owner: nick
 related:
   - 90_operations/OPS-19b_ctx_pipeline_wrapup_sprint
@@ -153,6 +153,37 @@ each flagged job's specific source file was checked for a relevant merged change
   may be getting deprioritized, folded into later atomize-CTX work), this may be
   safe to leave broken/retire rather than fix — operator call, not investigated
   further.
+
+## A fifth layer, found after this audit closed: composition-layer silent drop
+
+The LDT lane, live-verifying the frozen-manual-verdict rails while waiting on
+Wave 3 item 1, found a real defect in a repo this audit didn't originally scope:
+**`hauska-map`**. `marketValue`/`assessedValue`/`landValue`/`improvementValue`
+are correctly resolved server-side by `legacy-design-tools`'s
+`brokerageNodeFacets.ts` (`attachCadRollOverlaysToFacets`) — but
+`hauska-map/apps/property-explorer/api/_lib/atom-chain-to-facets.ts`'s
+`mergeBakedBaseFacts` (line 1499) reconstructs the served `baseFacts` object
+field-by-field as a hardcoded `{apn, situsAddress, situsCity, situsState,
+landUse, acreage}` — it never reads a `cadRoll` key at all (confirmed: zero
+mentions of `cadRoll` anywhere in the file). All four dollar fields are
+silently discarded one hop downstream of the service that correctly produced
+them, before any customer request sees them. Independently verified by the
+integration seat by reading the same function. Fix dispatched.
+
+**Separately flagged, not yet resolved:** `livingAreaSqft`/`yearBuilt` DO
+reach customers live today, but sourced from an older `structuralFact` atom
+path (`yearBuiltSource: "structural-fact"` in the live payload), not confirmed
+to be the newer parcel_record/allowlist-gated version. Cannot yet rule out
+that the newer path is *also* being silently dropped by the same
+`mergeBakedBaseFacts` gap, just masked because the older path happens to
+supply the same field names. Named as open, not guessed at.
+
+This confirms the audit's real lesson generalizes past the four layers
+originally scoped: a rail can be correct at every layer inside
+`hauska-factory` and `legacy-design-tools` and still never reach a customer,
+because of a **fifth layer** — whatever composes the served response one hop
+further downstream. Worth treating hauska-map's own composition/merge code as
+its own layer to check for any rail this audit called "done."
 
 ## Not investigated this session (genuine open questions, not cleared)
 
