@@ -1,0 +1,14 @@
+{
+  "lane": "legacy-design-tools-shared-reader",
+  "item": "Unrelated CI blocker hit while landing PR #626 (boundary-envelope atom program items 2/3): artifacts/records-request-worker/src/recipes/p85Portals.test.ts's four 'Aumentum index search' tests fail intermittently with 'Test timed out in 5000ms' on GitHub Actions.",
+  "checkpoint": "DONE (minimal, surgical fix applied to unblock the merge only). Not a fix to the recipe/polling logic itself -- flagged for whoever owns P-85/records-request to look at properly.",
+  "date": "2026-09-06",
+
+  "diagnosis": "artifacts/records-request-worker/src/recipes/searchOutcome.ts's assertBastropSearchSettled() polls with a REAL setTimeout-based sleep (not vitest fake timers) -- timeoutMs defaults to 20000ms, fillMissAfterMs to 4000ms. Confirmed locally (real local run, not CI): the 'fails closed when owner search stays on SearchEntry after submit' test genuinely takes ~4.25s to complete even on a correct, honest run, because it legitimately waits out fillMissAfterMs before the poll loop is allowed to return the failure. That is inherently marginal against vitest's 5000ms default per-test timeout -- any CI host slowdown tips it over. Reproduced identically on the exact same commit across multiple independent CI runs (failed on 3 of 4 real CI attempts while landing PR #626, always the same 4 tests, always 'Test timed out in 5000ms'), and confirmed NOT caused by that PR's diff: origin/main never moved during any of these attempts, and the PR's diff touches zero files in this package.",
+
+  "fix": "Added an explicit 25000ms vitest per-test timeout (comfortably above timeoutMs+fillMissAfterMs=24000ms) to exactly the four affected tests in p85Portals.test.ts's 'runRecipeForJob — Aumentum index search' describe block. Nothing else touched: no change to searchOutcome.ts's polling logic, retry semantics, or default option values, and no other test in the file. Verified locally: all 14 tests in the file pass, including the previously-marginal one taking its real ~4.25s.",
+
+  "notFixed": "The underlying test-timing fragility (a real-timer-based poll loop this close to a test framework's default timeout) is unaddressed at the root -- this is a symptom patch to unblock an unrelated merge, not a review of whether assertBastropSearchSettled's defaults, or this test's fixture/mock latency, are appropriate. Whoever owns P-85/records-request should decide whether fillMissAfterMs=4000 is the right default, whether these tests should use vitest fake timers instead of real setTimeout to make them deterministic and fast regardless of CI host load, or whether 25000ms is an acceptable permanent per-test timeout.",
+
+  "relatedPr": "empressaioemail-tech/legacy-design-tools#626 (fix/envelope-atom-shared-reader), commit applying this fix is separate from and after the PR's own boundary-envelope atom program changes."
+}
