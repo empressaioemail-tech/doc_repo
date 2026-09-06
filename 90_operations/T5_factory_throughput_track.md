@@ -1,10 +1,20 @@
 ---
 id: T5_factory_throughput_track
 title: T5 — Factory throughput track: sharding, #254 adoption, pending certs, Bexar (catch-up program)
-status: active
+status: superseded
+last_updated: 2026-09-06
 owner: nick
-related: [CATCHUP_program_2026-08-05, 90_runbooks/factory_onboarding_runbook, onboarding_defect_class_backlog]
+related: [CATCHUP_program_2026-08-05, 90_runbooks/factory_onboarding_runbook, onboarding_defect_class_backlog, 90_operations/OPS-19_factory_plan_of_record]
 ---
+
+**Superseded 2026-09-06, confirmed via the compute-bottleneck investigation
+(`_inbox/2026-09-06_ctx-wrapup-factory_compute-bottleneck-profile_close.json`).**
+OPS-16 row A-042 (2026-08-27) made `OLD_SHAPE_FILL_FROZEN` permanent for exactly
+the cascade/cert workflow this doc describes, and A-043 the same day re-homed
+everything under `OPS-19_factory_plan_of_record` (F-10). This doc was never
+updated to reflect either. Its "Bexar" thread is a different, older effort than
+the 2026-09-05 `factory-bexar-edges` deploy-pipeline work — do not conflate the
+two. Kept for historical record only; current work routes through OPS-19/F-10.
 
 # T5 — Factory throughput
 
