@@ -1,0 +1,40 @@
+{
+  "lane": "ctx-wrapup-engine",
+  "planRow": "Boundary-envelope atom program, item 6 (Hays/McLennan/Williamson in-city onboarding) / item 9 (per-county backfill)",
+  "topic": "Follow-up to 2026-09-06_ctx-wrapup-engine_unincorporated-cohort-mismatch_close: identify what pipeline produced the existing buildable-envelope coverage in Caldwell/Hays/McLennan/Williamson, and reconcile it against the registry's zoningRegime:'unzoned' label",
+  "requestedBy": "doc-repo-2c (cross-session, read-only follow-up while the wiring pause is with the operator)",
+  "checkpoint": "CLOSE — read-only trace, no writes",
+  "date": "2026-09-06",
+
+  "sourcePipelineIdentified": {
+    "mechanism": "bake-property-atom-county.mjs normal mode -> emitFromTier1Snapshot() in src/property-reasoning/bake-from-tier1-snapshot.ts",
+    "evidence": "Every existing buildable-envelope atom's source_adapter column reads 'cortex-tier1-snapshot-breadth-bake' (23,669-282,436 per county, all but a handful of stray records). This adapter string is hardcoded in descriptorForCounty() in bake-from-tier1-snapshot.ts.",
+    "upstream": "Reads CORTEX_DATABASE_URL's Tier-1 place_layer_snapshots -- a real GIS PIP (point-in-polygon) zoning-stamp process that predates and is entirely independent of jurisdiction-registry.ts's per-city row model.",
+    "runWindow": "2026-07-23 through 2026-08-05 across all four counties (per min/max created_at on the envelope atoms) -- a real, completed historical rollout, not a stub or dry-run artifact.",
+    "stillLive": "Yes -- wired in packages/engine-core/package.json ('bake-property-atom-county': 'tsx scripts/bake-property-atom-county.mjs'); its companion module cascade-unzoned-envelope-decline.ts has a real commit as recently as 2026-08-09 (c431d9f, contract absence shape update)."
+  },
+
+  "cascadeMechanismConfirmedActive": {
+    "finding": "The pre-existing cascade-unzoned-envelope-decline.ts / bake-property-atom-county.mjs --cascade-absence-only mechanism (flagged as a 'related discovery, not acted on' in the prior close doc) HAS in fact already run for all four counties, back on 2026-08-03/04 -- it is not dormant here as first assumed. It closed the entire absence-zoning-fact gap: confirmed 0 parcels anywhere in these four counties have an absence-marked zoning-fact with no envelope atom.",
+    "concreteExample": {
+      "parcelNodeId": "48309:100000",
+      "county": "McLennan",
+      "zoningFactAtom": "absence.kind='no-zoning-stamp', jurisdictionTenant='breadth_48309_axtell' (Axtell, a real McLennan-county town)",
+      "buildableEnvelopeAtom": "outcome.kind='no-buildable-area', warmVerifyDeclineCode='no-district-on-record', warmVerifyDecline='no district on record — jurisdiction not yet onboarded', sourceCitation='depth-warm-verify-decline'",
+      "note": "Classified via the in-city-unonboarded variant (NO_DISTRICT_ON_RECORD_CODE), not the genuinely-rural variant (UNZONED_NO_DISTRICT_BASIS_CODE) -- the situs-city heuristic (jurisdictionTenant carrying 'axtell' rather than the 'unknown' sentinel) worked as designed."
+    },
+    "shapeNote": "This mechanism writes the OLDER decline shape (outcome.kind + warmVerifyDeclineCode/warmVerifyDecline fields), not tonight's new outcome.kind:'not-applicable' shape. Confirms the two-shapes-coexist concern raised in the prior close doc is real and already live in production data for these counties, not hypothetical."
+  },
+
+  "whyRegistryLabelIsNotContradicted": "jurisdiction-registry.ts's zoningRegime:'unzoned' on these four county rows describes the county GOVERNMENT's own regulatory posture for Rail A/B/C CAD-ingest sourcing (Texas counties have no zoning authority over unincorporated land -- a narrow, doctrinally correct statement about the COUNTY as a jurisdiction). It does not and was never meant to claim no zoning exists anywhere within the county's geographic borders. Real incorporated cities inside these counties (Waco, Round Rock, Georgetown, San Marcos, Kyle, Axtell, etc.) already carry real zoning district stamps via the entirely separate CORTEX Tier-1 snapshot pipeline traced above -- a pipeline that predates, and has no integration with, jurisdiction-registry.ts's formal per-city onboarding model (only Bastrop/Elgin/Lockhart have real rows with warmRunner there).",
+
+  "whyCoverageCeilingVariesByCounty": {
+    "finding": "The 57.5% (McLennan) vs 99.9% (Williamson) coverage difference is NOT a partially-completed run -- re-running the breadth-bake would not change it. It reflects a real, structural gap: setback DIMENSION tables.",
+    "mechanism": "emitFromTier1Snapshot resolves numeric setback dimensions via getSetbackTableForZoning(cityKey, district) in packages/adapters/src/local/setbacks/index.ts. Read the full SETBACK_TABLES registry directly: hand-authored tables exist ONLY for bastrop-tx / bastrop-city-tx / bastrop-development-code / elgin-development-code(-tx) / austin-tx / pflugerville-tx / san-antonio-tx, plus grand-county-ut and lemhi-county-id (out of state). Waco, Round Rock, Georgetown, San Marcos, and Kyle are not in this file at all -- the lookup returns null for any parcel zoned into one of those cities' real districts, and no setback-rule/envelope atom gets emitted, every time.",
+    "conclusion": "McLennan's larger residual gap (48,440 real-district, envelope-less parcels) is dominated by Waco, which has no setback table on file. Williamson's tiny residual (134) suggests its real-zoned population maps mostly onto jurisdictions that DO resolve today, or is small relative to county size. This is the same gap decision-doc item 6 already named (setback-VALUE resolution vs. zoning-existence) -- independently reconfirmed here from the adapter registry's actual file contents rather than the ledger-data framing it was originally written from."
+  },
+
+  "implication": "Nothing here reopens the paused not-applicable wiring thread -- there is still no not-applicable-eligible cohort in these four counties (per the prior close doc). But it does mean: once item 6's ordinance transcription work lands real setback tables for the relevant cities (Waco et al.), the EXISTING breadth-bake pipeline (bake-property-atom-county.mjs, already live and wired) would close most of the real remaining gap on its own re-run -- no new emission code needed for that population. The not-applicable/unincorporated code path built and merged tonight (PR #385/#386) remains correct and tested but has no real cohort to serve in these four counties as things stand.",
+
+  "notActedOn": "Did not attempt to author any new setback tables, did not re-run bake-property-atom-county.mjs, did not touch cascade-unzoned-envelope-decline.ts or its dual old/new decline-shape question. All read-only per the operator's pending review of the paused thread."
+}
