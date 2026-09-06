@@ -2,7 +2,7 @@
 id: adr_031_parcel_record_ledger_over_atoms
 title: "ADR-031 — The parcel record and the atom estate: ledger over claims"
 status: accepted
-last_updated: 2026-09-03
+last_updated: 2026-09-06
 applies_to: portfolio
 related: [adr_018_atom_contract_substrate_layer, adr_028_contract_cross_vertical_adoption, 19_the_instrument_contract, 28_mcp_first_product_design]
 owner: nick
@@ -122,6 +122,22 @@ current functionality, not urgent standalone, but must be scoped and closed toge
 with the CTX atom-backfill card rather than left to drift — noted here specifically
 so it is not overlooked when that card opens.
 
+**The CTX atom-backfill card is now open, narrowly (2026-09-06).** A pilot
+(`_inbox/2026-09-06_ctx-wrapup-engine_boundary-envelope-pilot_close.json`) scoped it
+to exactly one rail-family — `property-boundary-edge`/`buildable-envelope` — as its
+own program, not a statewide or all-rail atomization pass
+(`_decisions/2026-09-06_boundary_envelope_atom_program_scope.md`). Operator's own
+call, deliberate: get one rail-family fully working — including a real parcel
+succession/refresh mechanism and a shared reader across both consuming apps, neither
+of which exist today — before generalizing, since both are reusable infrastructure
+that makes every later rail-family cheaper. **The remaining ~63 rails' atomization
+is explicitly NOT scoped by this card and stays a separate, future decision** —
+this note exists so a future reader does not assume boundary/envelope's program
+implies the rest is coming next by default, or forget that the question is still
+open. Open sub-question for whichever card picks up the next rail-family: does the
+succession/refresh mechanism and the shared-reader principle generalize unchanged,
+or does each rail-family need its own version of both.
+
 ## Reversal criteria
 
 If maintaining the grid at multi-state scale proves untenable (measured, not
@@ -145,3 +161,7 @@ ADR-018, ADR-028. Session origin: the 2026-09-01/02 parcel-record planner sessio
 ## Revision history
 
 - **2026-09-03 (parcel-record planner session):** Initial acceptance.
+- **2026-09-06 (integration seat):** Recorded the CTX atom-backfill card's opening,
+  narrowly scoped to `property-boundary-edge`/`buildable-envelope` per the
+  2026-09-05/06 pilot; explicitly noted the remaining rails stay a separate,
+  deferred decision.
