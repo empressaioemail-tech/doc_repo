@@ -90,3 +90,58 @@ thread). Depends on the compute-bottleneck investigation (dispatched
 Internal: Engine lane (`cente-67`), Factory lane (`cente-b5`), LDT ownership
 (not yet dispatched — items 2/3/8 need an LDT-side lane), operator (ruling,
 scope confirmation).
+
+## Execution log (2026-09-06, operator go-ahead on full sequencing)
+
+Operator reviewed the full program plus a parallel factory-health thread
+(zombie/orphan process audit, compute-bottleneck investigation) that
+surfaced from the same scoping conversation, and ruled on sequencing and
+staffing for both together. Recorded here so the plan survives context loss.
+
+**Ruling: Program 2 (factory health) is a partial, not full, prerequisite
+for Program 1.** The compute-bottleneck/throughput thread gates Program 1's
+real backfill execution (item 9) directly — running a volume backfill
+against a compute known to be degraded just reproduces the same pain at
+scale. The zombie/orphan-process cleanup does not block Program 1's design
+work (items 1-3, 7-8) but should substantially complete before Program 1
+ships for real, per the operator's own standing concern about residual
+processes from prior factory rebuild attempts causing confusion.
+
+**Staffing, as of this entry:**
+- Engine (`cente-67`): expanded zombie audit covering `hauska-engine`'s own
+  `packages/engine-core/scripts/` (real evidence per script, not guessing
+  from names); real per-county sample-atom batches (see below); scoping
+  Lockhart's spatial join and Travis's join-key implementation as bounded
+  engineering tasks.
+- Factory (`cente-b5`): decommissioning the 8 confirmed-zombie Cloud Run
+  jobs with a real close-doc audit trail; the two deferred bottleneck test
+  items (falsify the one-heavy-op-at-a-time rule; re-measure atoms/s
+  throughput) bundled with Engine's sample-batch work since both need real
+  compute time against the same live stores — coordinated to avoid
+  confounding either measurement.
+- LDT (new lane, operator opening a session): item 2 (the shared-reader
+  fix — rewire `buildableEnvelope/derive.ts` to actually consume the atom
+  chain instead of independently re-deriving) is the priority item, not
+  deferred further. Item 3 (the possible road-class-defect echo) and the
+  LDT-side portion of the zombie audit (Tier-1/Tier-2 bake chain,
+  `cortex-api`) are the same lane's other work.
+
+**Real per-county sample-batch sequencing — corrects an earlier gap.** Only
+Bastrop ran in the original pilot; the operator asked for a batch per
+county and did not get one. Real, currently-runnable sequencing:
+Bastrop/Elgin already piloted; Caldwell/Hays/McLennan/Williamson each have
+a real, working unincorporated/rural registry row and can run a real
+dry-run sample batch immediately, exercising the legitimate not-applicable
+coverage path and producing real per-county timing data; Lockhart and
+Travis are blocked on real, not-yet-built code (a spatial join and a
+join-key implementation respectively) and cannot run a sample until that
+lands.
+
+**Operator instruction applied throughout**: lane planners may use their
+own sub-agents to cover ground in parallel where independent (e.g., one
+sub-agent per ready-now county's dry-run batch) — the lane planner reviews
+and commits, sub-agents do not. Every write-shaped action (zombie
+decommission, sample-batch apply, any code merge) keeps the same
+dry-run-first, canary-then-shift, independently-verified discipline used
+for every real change tonight. No production regression tolerated as a
+tradeoff for speed.
