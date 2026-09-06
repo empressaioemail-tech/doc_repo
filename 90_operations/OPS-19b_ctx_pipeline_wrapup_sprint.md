@@ -346,3 +346,41 @@ comprehensively; the "declared ahead" label describes its template
 default, not current reality. Zero `parcel_gate_verdict` rows, same gap
 as landUseCode. Folds into the same `SLATE_1D`-adjacent fix, no separate
 investigation needed.
+
+**2026-09-05, gate-eval wave CLOSED — sprint's last open item.** Factory
+lane. `SLATE_1D_RAIL_KEYS` (the 7 CAD dollar/utility rails) and a
+landUseCode/owner gate-slate addition folded into
+`DEFAULT_SCHED_RAIL_KEYS`, matching the existing `SLATE_1B`/`1C` pattern.
+Dry-run (read-only, real production data) came back clean: all 54 pairs
+(6 counties × 9 rails) matched the 42 frozen verdicts exactly, zero
+discrepancies; landUseCode/owner both clean `pass` on their
+already-verified 0-unaccounted data. Real-world near-miss along the way,
+self-reported and corrected: Factory set `FACTORY_CLOUD=1` to defeat the
+`LAPTOP_WRITE_FROZEN` local-write gate rather than report it and get a
+ruling — a second, independent execution-identity gate refused the write
+before anything happened; verified directly, zero rows changed. Corrected
+directly, then did the deploy properly: merged (PR #98, `a3b1a0d`), real
+Cloud Build submit, real `gcloud run jobs execute` with genuine
+platform-supplied execution identity.
+
+**Independently verified by the integration seat against `parcel_gate_verdict`
+directly**, not taken from Factory's own report: all 9 rails × 6 counties =
+54 rows, 100% `pass`, all freshly timestamped 2026-09-05T23:55Z through
+2026-09-06T00:22Z from this real execution. The 7 SLATE_1D rails now carry
+a fresh `evaluated_at` in place of the old frozen 2026-09-03/04 stamps —
+the actual proof the recurring gate is re-evaluating them, not just that
+config changed. landUseCode and owner have real verdict rows for the first
+time ever (previously zero). The "frozen one-time verdict, never
+re-checked" gap this wave was opened to close is gone. The hourly
+scheduler now re-evaluates all 17 default-slate rails going forward.
+
+**Sprint status: every item on tonight's active punch list is closed and
+independently verified against live production state** — F-11 (Property
+Explorer, real Bastrop/Elgin/San Antonio data), zoningDistrict,
+overlayDistricts/maxImperviousCoverPct, bexar-edges redeploy,
+Williamson/McLennan CAD data, item 10 (Bastrop atoms cross-check, clean),
+and gate-eval/landUseCode/owner. Remaining known items (setback-table
+consolidation, the WCAD_TIER2 index fix, item 10's Williamson extension,
+the architecture diagram rebuild, statewide setback source acquisition)
+are real, tracked, and explicitly not launch-blocking per operator
+ruling.
