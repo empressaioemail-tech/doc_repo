@@ -1,8 +1,8 @@
 ---
 id: OPS-19b_ctx_pipeline_wrapup_sprint
 title: CTX data pipeline wrap-up sprint — durable wave/lane roadmap
-status: active
-last_updated: 2026-09-04
+status: historical
+last_updated: 2026-09-05
 applies_to: portfolio
 owner: nick
 related:
@@ -20,6 +20,17 @@ purpose: Companion sprint plan to OPS-19, F-01. Sequels the 2026-09-04 adversari
 ---
 
 # CTX Data Pipeline Wrap-Up Sprint
+
+**CLOSED 2026-09-05.** Every item on the sprint's active punch list — F-11
+setbacks, gate-eval wave, landUseCode/owner gate-slate, Williamson/McLennan
+CAD data, item 10's Bastrop cross-check, items 1/2/3/5/9/16/17 from earlier
+waves — is done and independently verified against live production state.
+Full arc in `_sessions/2026-09-05_ctx_wrapup_gate_eval_setback_close_claude_code.md`.
+Real, tracked, explicitly-non-blocking follow-ups remain (setback-table
+consolidation, the WCAD_TIER2 index fix, item 10's Williamson extension, the
+architecture-diagram rebuild, statewide setback source acquisition) — see the
+final entries below for each. This doc is kept as the evidentiary record of
+how the sprint ran, not as an active plan.
 
 ## What this sprint is, and is not
 

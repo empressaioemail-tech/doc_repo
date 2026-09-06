@@ -2,7 +2,7 @@
 id: 00_current_state
 title: Current state snapshot — 2026-08-30
 status: pointer
-last_updated: 2026-09-03
+last_updated: 2026-09-05
 applies_to: portfolio
 related: [_STATE, 90_operations/OPS-16_texas_market_plan_of_record, 90_operations/OPS-17_govtech_stack_plan_of_record, 90_runbooks/AGENT_CONTRACT, 90_runbooks/current_state_protocol]
 ---
@@ -53,6 +53,28 @@ used by seven atom-family fact reads. Setback rendering confirmed (by code trace
 not live) correctly independent of boundary atoms. Handoff
 `_inbox/2026-09-03_worktree_and_followon_handoff.md`. Session
 `_sessions/2026-09-03_acquire_gis_dispatch_and_pe_refusal_finding_claude_code.md`.
+
+**CTX pipeline wrap-up sprint (OPS-19b) CLOSED 2026-09-05** — integration seat,
+coordinating four lane-planner sessions (Engine/Factory/LDT/a newly stood-up
+Map lane) via direct messaging. Every item independently verified against live
+production, not merged-and-trusted: F-11 setbacks now serving real data for
+Bastrop/Elgin/Austin/Pflugerville/San Antonio through Property Explorer's own
+runtime (two prior plans killed before shipping wasted code — an atom-emission
+plan superseded by discovering PE's own existing mechanism, then a proposed
+endpoint-wiring plan killed by adversarial review before it risked serving
+repealed ordinance data to customers); Williamson/McLennan CAD data fully
+reconciled (a real join-key bug caught by the integration seat's own dry-run
+before any production write, fixed, re-verified); gate-eval wave un-parked
+mid-sprint and closed (the 7 frozen-verdict CAD/utility rails now genuinely
+re-evaluated on a recurring schedule, not a stale one-time verdict); a
+production query-plan bug found and fixed along the way (~10,000x). Full
+detail `_sessions/2026-09-05_ctx_wrapup_gate_eval_setback_close_claude_code.md`,
+canonical record `90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md`. A
+Smart Site architecture diagram published earlier the same session was found
+materially incomplete by adversarial review (an affirmatively false deploy-risk
+claim, several live surfaces omitted including Command Center and a
+24-component shared tile framework); rebuild deferred to after launch,
+findings at `_inbox/2026-09-05_smart-site-architecture-diagram_gaps.md`.
 
 ## 1. Active fires
 
