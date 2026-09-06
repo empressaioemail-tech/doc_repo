@@ -1,0 +1,107 @@
+{
+  "lane": "ctx-wrapup-engine",
+  "planRow": "F-01",
+  "sprintDoc": "90_operations/OPS-19b_ctx_pipeline_wrapup_sprint.md",
+  "topic": "property-boundary-edge / buildable-envelope atom-backfill pilot, all 6 CTX counties",
+  "requestedBy": "doc-repo-bd (cross-session), operator-directed, sequenced in two steps",
+  "checkpoint": "CLOSE",
+  "date": "2026-09-06",
+  "scopeBasis": "Step 1 (verification) and Step 2 (small pilot batch) as scoped by doc-repo-bd. Step 2 executed via the REAL production pipeline (packages/engine-core/scripts/depth-warm-city-batch.mjs) in --dry-run mode (SELECT-only against live CORTEX_DATABASE_URL/ATOMS_DATABASE_URL stores, no writes) plus a live call to the deployed hauska-retrieval-api Cloud Run service. No records changed, no code changed, no repo touched other than doc_repo for this report.",
+
+  "step1_roadClassRetirementVerification": {
+    "concern": "doc-repo-bd's grep found compute.ts calling resolveDistrictEdgeSetback and inferred the Aug 31 F-11 road-class-setback retirement (branch seat/property-ctx-f11-setback) never merged to main.",
+    "finding": "INCORRECT AS STATED, but for a real reason worth recording: resolveDistrictEdgeSetback is not the retired function. It was fixed to stop using road-class for VALUES back on 2026-07-29 (RULING 2 / WDLL 7), a full month before the Aug 31 work. The genuinely-retired function, resolveRoadClassSetback, is @deprecated and delegates to the safe one; compute.ts never calls it.",
+    "verifiedThreeWays": [
+      "Read resolve-road-class-setback.ts directly: header dated 2026-07-29, function takes no road-class parameter, values come from the district table by edge role only.",
+      "git merge-base --is-ancestor 293633a origin/main confirmed TRUE -- commit 293633a ('fix(f11): refuse road-class setbacks; mark placeholder unknown', 2026-08-30) is an ancestor of current main. It added the consumer-side refuse (setback-provenance-disposition.ts), touched boundary-primitive/consume.ts, and wired a CI write-grep into .github/workflows/ci.yml. The supervisor review's 'uncommitted' snapshot was mid-session state; it landed the next day.",
+      "Ran packages/engine-core/scripts/retire-road-class-setback-table.mjs directly against the current tree (bypassing vitest, since 4 unrelated test files fail to parse in this session's local Node/vitest install -- confirmed via PR #382's real CI run on Node 24 passing clean, a local-toolchain-only issue): 'clean (self-test both directions; 0 production writes of road-class-setback-table)'."
+    ],
+    "residualRisksNotedNotBlocking": [
+      "citesRoadClass in the classifier is an exact-string match; a differently-named alias of the same derivation would pass undetected.",
+      "The supervisor review self-flagged 'C7... LDT boundaryEdgeFactRead still copies edge provenance... Gold 34137 C7 still needs LDT' as explicitly out of the engine-side retirement's scope. Step 2's LDT finding below is the concrete manifestation of this."
+    ]
+  },
+
+  "step2_pilot": {
+    "dependencyChainEnumerated": "From source, not assumed: parcel-node (geometry identity) -> road-node (edge labeling input) -> zoning-fact (district) -> setback-rule (resolved values -- live ArcGIS per-parcel query for Bastrop, ratified chart for Elgin) -> property-boundary-edge (per-edge role + inset, computed from all of the above) -> buildable-envelope (final derived atom; emit-buildable-envelope.ts's own inputAtomRefs explicitly names zoning-fact, setback-rule, parcel-geometry-ring, and front-edge-anchor as required inputs).",
+
+    "registryReVerification": {
+      "premise": "doc-repo-bd's brief assumed 4 counties (Caldwell/Lockhart, Hays, McLennan, Williamson) had a reusable in-city-zoned registry row to re-verify.",
+      "finding": "Only 3 rows in the entire jurisdiction-registry.ts have zoningRegime:'euclidean-zoned' at all: Bastrop, Elgin, Lockhart. Hays/McLennan/Williamson only have *_COUNTY_UNINCORPORATED_REGISTRY_ROW entries (zoningRegime:'unzoned', no warmRunner block) -- legitimate for the pilot's unincorporated/rural coverage, but there is no in-city zoned row to re-verify for these three at all; one would need real hand-onboarding (GIS recon + ordinance transcription), the same scale of work Bastrop/Elgin/Lockhart each required.",
+      "liveChecks": {
+        "bastrop": "LIVE and correct. Parcels_One_Click/FeatureServer/23, CITY='BASTROP' returns 6,971 features today.",
+        "elgin": "LIVE and correct. Elgin_Zoning/FeatureServer/0, CITY_LIMIT='ELGIN' returns 3,220 features; sampled real records with real PROP_ID/Zone_Code values (e.g. PROP_ID:'R77690', Zone_Code:'R-1').",
+        "lockhart": "STRUCTURALLY BROKEN, not just stale. The registry row's propIdField:'prop_id' does not exist on the actual layer (Caldwell_CAD_Parcel_Map/FeatureServer/49): live field list is OBJECTID, AREA, PERIMETER, LKT_ZONING_, LKT_ZONING_ID, ZONING, Shape__Area, Shape__Length -- only 244 features, confirming this is a zoning-district-POLYGON layer, not a parcel layer. The row's own comment already flags this ('Layer 49 has no prop_id field... freeze review required') and its RAIL_A_FIELDS_NEEDS_FREEZE_REVIEW flag is real and still open. No spatial-join fallback exists anywhere in zoning-staging/registry.ts. Nothing can resolve a Lockhart parcel's district through this row today."
+      },
+      "resultingScope": "Confirmed with doc-repo-bd: in-city zoned pilot = Bastrop + Elgin only. Lockhart, Travis, Hays, McLennan, Williamson all moved to scoping-only."
+    },
+
+    "realTimingYardstick": {
+      "method": "Ran depth-warm-city-batch.mjs --row-id=Bastrop --dry-run at limit=50 and limit=500, and --city-cohort --limit=500, against the live stores.",
+      "findings": [
+        "Bulk-load phase dominates and is roughly FIXED regardless of batch size: 161,152ms (50-parcel run), 97,894ms (500-parcel county-wide run), 120,300ms (500-parcel city-cohort run, cityParcelUniverse=17217) -- all single-digit minutes, driven by road/BCAD/txgio geometry prefetch (roadsLoaded: 30,882 each run).",
+        "Per-parcel compute after bulk-load is cheap: msPerParcel 11-35 depending on run.",
+        "Extrapolation basis for a full county rollout: ~2-3 minutes fixed setup, then well under a second per additional parcel -- a real, usable number for sizing a 6-county rollout."
+      ]
+    },
+
+    "realCoverageNumbers_majorFinding": {
+      "originalPremise": "Pilot brief: 'currently only Bastrop has any coverage, and even that's partial -- ~4,158 of ~62,256 real accounts.'",
+      "whatWasFound": "62,260 active buildable-envelope atoms exist for Bastrop county today -- near-total raw coverage, not ~4,158. But cross-referencing against parcel-node status revealed why the original framing undercounted differently than expected: of the 62,256, only 4,552 (384 buildable + 336 provisional-front-edge + 3,832 no-buildable-area) are keyed to a CURRENTLY ACTIVE parcel-node. 57,704 (92.7%) are keyed to a parcel-node that has since been RETIRED -- computed against geometry/identity superseded by a later txgio_parcel re-acquisition.",
+      "outcomeByNodeStatus": {
+        "retiredParcelNode": {"no-buildable-area": 52707, "buildable": 3548, "provisional-front-edge": 1449, "total": 57704},
+        "activeParcelNode": {"no-buildable-area": 3832, "buildable": 384, "provisional-front-edge": 336, "total": 4552}
+      },
+      "realCurrentValidCoverage": "720 parcels (384 buildable + 336 provisional-front-edge) out of 4,694 active parcel-nodes (15.3%) have a real, currently-valid usable envelope. 3,832 (81.6%) of the active population honestly decline no-buildable-area -- plausible small-lot/oversized-setback outcomes, not spot-verified against ground truth in this pass.",
+      "interpretation": "The original '~4,158 of ~62,256' figure appears to be the total buildable-outcome atom count (3,935, close but not exact, possibly measured at a different time or including provisional) without accounting for how many are keyed to now-retired geometry. Real, currently-trustworthy 'buildable' coverage is closer to 720 -- roughly an order of magnitude smaller than the headline raw-atom-count number, and this matters directly for scoping any statewide backfill: raw atom existence is not the same as current validity."
+    },
+
+    "noSetbackRowResolution": {
+      "artifact": "Elgin cross-contamination in the first (non-city-scoped) 500-parcel run: 102 of 202 no-setback-row declines carried Elgin-style district codes (R-1/R-2/R-3/C-1/C-2/C-3), because the county-wide cohort mixed Elgin parcels in and tested them against Bastrop's own SF-1/.../PDD table under --row-id=Bastrop -- a methodology artifact of my own cohort scope, not a pipeline defect.",
+      "cleanResult": "Re-run city-cohort (cityParcelUniverse=17217, correctly excludes non-Bastrop parcels): all 168 no-setback-row declines cross-referenced to zoning-fact district -- 168/168 (100%) are PDD. This is the known, real, structural gap (Planned Development Districts have no ordinance-chart row in bastrop-development-code.json) -- confirmed clean, not a pipeline bug."
+    },
+
+    "the20SampleGap": {
+      "finding": "Not a bug. declines['already-promoted']: 20 is a separate counter from failureBuckets (updated at a different code site, line ~796 vs the bucket-classification sites), which is why summing failureBuckets alone left an apparent 20-sample gap. These 20 already have real atoms from a prior run and were correctly skipped as idempotent no-ops. Chasing this down is what surfaced the realCoverageNumbers finding above."
+    },
+
+    "peConsumerVerification_confirmedCorrect": {
+      "method": "Called the real deployed hauska-retrieval-api (https://hauska-retrieval-api-h7gvu7rgcq-uc.a.run.app/property-nodes/48021:105032/atom-chain) directly using the HAUSKA_ENGINE_API_KEY secret as bearer auth -- not simulated.",
+      "parcel": "48021:105032 (a real Elgin R-2 parcel with a genuinely active parcel-node and a 'buildable' outcome, surfaced by the coverage-number investigation above).",
+      "result": "buildableEnvelope.outcome = {kind:'buildable', areaSqFt:9160}, real GeoJSON FeatureCollection polygon present, depthWarmPromotion:'depth-warm-promoted-v1' -- matches hauska-map's DEPTH_WARM_PROMOTION_MARKER exactly (apps/property-explorer/api/_lib/atom-chain-to-facets.ts). atomChainIsUsable() returns true; Property Explorer renders this parcel correctly today."
+    },
+
+    "cortexApiLdtConsumerVerification_confirmedBroken": {
+      "question": "doc-repo-bd's own stated 'real open question': does legacy-design-tools' buildableEnvelope/derive.ts + fetchPropertyAtomChain.ts correctly read the new atoms?",
+      "answer": "NO -- confirmed, not assumed. Read derive.ts and its real production caller (routes/brokeragePlaceBuildableEnvelope.ts:887): deriveBuildableEnvelope({ring, table, district, labeling}) independently RE-COMPUTES the envelope from raw parcel geometry plus LDT's own setback-table resolution (lib/buildableEnvelope/authoritativeSetbackSource.ts -- grepped directly, zero references to the atom chain anywhere in that file). fetchPropertyAtomChain() IS called in the route (line 1063) but its result is used ONLY as a last-resort DISTRICT fallback (line 1075-1080, only when both live GIS zoning and 'spine zoning' resolution are absent) -- never for setback feet values, never for geometry. For parcel 48021:105032, LDT would compute its own independent area/shape rather than reading the engine's 9,160 sqft result; agreement between the two is untested and not architecturally guaranteed.",
+      "significance": "A real, structural maintenance-liability gap -- two independent implementations of the same derivation, exactly what the atom-first architecture exists to avoid. Matches and confirms concretely what the Aug 31 supervisor review had already self-flagged as out of its own scope ('LDT boundaryEdgeFactRead still copies edge provenance... Gold 34137 C7 still needs LDT')."
+    },
+
+    "flaggedNotConfirmed_possibleThirdDefect": {
+      "finding": "derive.ts defaults to calling roadClassSetbackTableForJurisdiction(jurisdictionKey, district) whenever a caller does not explicitly override roadClassSetbackTable, and the real production caller (brokeragePlaceBuildableEnvelope.ts:887) does not override it. The resulting table is passed into insetFeetForLabeling(...) alongside the real district-table front/side/rear/corner values.",
+      "whatIsNotConfirmed": "Whether this can still cause a road-class-DERIVED number to override or substitute for the district-table VALUE -- the exact defect class engine retired in commit 293633a -- depends on internals of edgeLabeling.ts's insetFeetForLabeling, which was not read in this pass.",
+      "disposition": "Flagged per doc-repo-bd's explicit instruction not to chase this further now -- a real, separate, unconfirmed question for whoever picks up the LDT-side gap next, not a confirmed defect and not something this close doc claims to have resolved."
+    },
+
+    "noRefreshPathByDesign": {
+      "question": "doc-repo-bd's separate architectural question: does any path, even manual, exist to refresh a buildable-envelope atom once its parcel-node retires?",
+      "answer": "NO. packages/engine-core/src/parcel-node/reconcile-county-parcel-nodes.ts's own header is explicit and deliberate: retirement is 'retire without successor... until a succession matcher is decided' -- a one-way design choice, not an oversight (a supersedes edge requires evidence of A-becomes-B that the current pipeline does not attempt to derive). It also does not cascade: directly confirmed via query that buildable-envelope atoms stay status:'active' even after their parcel-node retires (that is the 57,704-atom population above). So today there is no automatic refresh, no designed manual refresh mechanism, and the downstream atom does not even know its own input has gone stale.",
+      "implication": "Every county backfilled under the current architecture will decay toward this same 90%+-stale-atom pattern over time as parcels are naturally re-platted/re-numbered by the county source. This is a bigger, permanent, recurring problem, not a one-time backfill gap -- a real architectural question for the operator to weigh, not something addressed in this pass."
+    },
+
+    "travisMinimalRowScoping": {
+      "knownGaps": [
+        "prop_id bad-rate 0.5147, well above the 0.25 HIGH_PROP_ID_BAD_RATE threshold -- the default joinKey:'prop_id' strategy is unsafe. The JoinKey type already declares a 'geo_id_or_address_crosswalk' variant citing Travis by name, but it is TYPE-LEVEL ONLY -- grepped the full engine-core src, no code implements this join strategy anywhere ('wired through the cohort loader' does not exist yet). This is real, unstarted engineering work, not a config change.",
+        "Previously-flagged count divergence between the county-run TCAD MapServer and StratMap's vintage."
+      ],
+      "liveReVerification": "Queried TCAD MapServer directly (gis.traviscountytx.gov/server1/rest/services/Boundaries_and_Jurisdictions/TCAD/MapServer/0): live count is 386,682 -- an EXACT match to the figure already cited in jurisdiction-registry.ts's comment, confirming that side of the divergence is still current, not stale. (Did not re-fetch the StratMap 834,936 side -- a large statewide download -- but no reconciliation has been recorded anywhere in doc_repo, so the ~2.16x divergence is very likely still open.) Confirmed the TCAD layer's field list includes both PROP_ID and geo_id, plus situs_num/situs_street/situs_address for an address-based crosswalk fallback -- the real data needed for the geo_id_or_address_crosswalk strategy exists at the source; only the code to use it is missing.",
+      "minimalRowNeeds": "Before a Travis row can be authored safely: (1) design + implement the geo_id_or_address_crosswalk JoinKey strategy in the cohort loader (real code, not config), (2) resolve or explicitly accept the TCAD-vs-StratMap count divergence, (3) then author the row against the live TCAD MapServer source confirmed reachable above. This is its own real scoping-sized card, same shape as Lockhart's spatial-join gap, not something to build inline here."
+    },
+
+    "onboardPreflight": "Not run in this pass -- deprioritized given the scale of what surfaced above; a fair amount of registry-row and pipeline health was already exercised indirectly through the dry-run batches and live source checks."
+  },
+
+  "toolsAndAccess": "gcloud (session auth, project hauska-prod-497015) for CORTEX_DATABASE_URL / ATOMS_DATABASE_URL / HAUSKA_ENGINE_API_KEY secrets; psql for direct read-only DB queries (SET default_transaction_read_only = on for every session); npx tsx to run depth-warm-city-batch.mjs in --dry-run mode against live stores (no writes); curl for live ArcGIS FeatureServer/MapServer checks and the deployed hauska-retrieval-api call.",
+
+  "recommendationForOperator": "The pilot justified itself: real coverage is much thinner than the raw atom count suggested (720 currently-valid vs 62,256 raw), a second real consumer defect exists (cortex-api/LDT never reads the engine's envelope atom), and the retirement mechanism has no refresh path by design -- meaning any future backfill decays the same way over time without a separate fix. Recommend the operator weigh a succession/refresh mechanism as a prerequisite (or at least a named, accepted risk) before committing to a statewide backfill program, alongside the already-identified per-county onboarding gaps (Lockhart's spatial join, Travis's join-key + count-divergence, Hays/McLennan/Williamson's from-scratch city onboarding)."
+}
