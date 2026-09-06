@@ -1,0 +1,21 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "item": "Bottleneck analysis test-list item 2: falsify the 'one heavy op at a time' rule by running two genuinely light operations concurrently and measuring whether either degrades.",
+  "checkpoint": "DONE. Rule falsified for genuinely light operations, with real measured data.",
+  "date": "2026-09-06",
+
+  "note": "cente-67's 4 parallel county batches (originally meant to double as real concurrent load) never actually ran -- all 4 failed in 2-3 seconds at arg-check time (no warmRunner config for unincorporated counties), before opening a DB connection. Re-read the analysis's own item 2 wording after that: it asks for TWO LIGHT operations concurrently, not a light probe during someone else's heavy load -- so this didn't need external load at all. Ran a small, self-contained, controlled test instead.",
+
+  "method": "Two genuinely light, realistic point-reads on the real shared cortex/atoms compute (ep-lucky-truth-apodo8hr): Op A a single indexed cad_property lookup on neondb/cortex, Op B a single indexed atoms lookup on hauska_mcp (using the atoms_entity_composite_unique range-bound shape from tonight's item-10 fix). Measured each 12x solo, then 12x running truly concurrently against each other via Promise.all (same wall-clock start).",
+
+  "results": {
+    "soloA_cortex_ms": { "n": 12, "min": 45, "p50": 50, "max": 79, "avg": 50.8 },
+    "soloB_atoms_ms": { "n": 12, "min": 44, "p50": 49, "max": 148, "avg": 55.7 },
+    "concurrentA_cortex_ms": { "n": 12, "min": 43, "p50": 45, "max": 50, "avg": 45.7 },
+    "concurrentB_atoms_ms": { "n": 12, "min": 44, "p50": 50, "max": 55, "avg": 48.8 }
+  },
+
+  "interpretation": "No measurable degradation from concurrency. Both operations were slightly FASTER and tighter (less variance) when run concurrently than solo -- the solo runs' higher max/avg is most likely warm-up/outlier noise, not evidence concurrency helps. The real, honest read: for genuinely light, indexed point-reads, running them at the same time causes no observable mutual slowdown on this shared compute. This falsifies 'one heavy op at a time' as a universal rule -- it's a safe default for HEAVY operations (full scans, bulk writes, large sorts), not something that needs to apply to light, bounded reads. Matches the original analysis's own suspicion: 'Two light operations may well coexist fine... over-broad controls are the ones that teach people to bypass them.'",
+
+  "recommendation": "Narrow the 'one heavy op at a time' rule to named heavy classes (full/large scans, bulk writes, big sorts -- exactly the shapes this session already found and fixed instances of: the item-10 atoms LATERAL bug, the countAtoms() health-check bug) rather than applying it to every operation regardless of size. Not implementing that narrowing myself -- it's a control/process change, not a code fix, and belongs with whoever owns the operational rule."
+}
