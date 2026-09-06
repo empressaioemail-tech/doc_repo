@@ -1,0 +1,52 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "item": "Thread 2 of the operator-directed compute-bottleneck pickup: profile the shared Neon compute under real load (item 1 of _inbox/2026-08-31_store_bottleneck_analysis.md's own test list). Reporting now because one finding is actively degrading production right now and lives in a repo (hauska-engine) I don't own.",
+  "checkpoint": "Real, live measurements taken. One major, high-confidence, actionable root cause found and identified but NOT fixed (not my repo). Items 2 and 5 from the test list not yet done -- reporting this first given its severity and live nature.",
+  "date": "2026-09-06",
+
+  "topologyFindings": {
+    "sharedComputeStillLive": "Confirmed via the Neon API (NEON_API_KEY secret) that cortex-prod (project fancy-fire-06136146, branch br-crimson-feather-aphfmy91 -- same project/branch IDs the original analysis named) is UNCHANGED since 2026-08-31: PRODUCTION_NEONDB_URL (neondb/cortex) and ATOMS_DATABASE_URL (hauska_mcp/atoms) both resolve to the exact same endpoint, ep-lucky-truth-apodo8hr, group size {min:1,max:1} -- still genuinely one compute serving both databases, actively in use right now (last_active matched the moment of this check).",
+    "factoryStoreAlreadySplit_unplanned": "FACTORY_DATABASE_URL (hauska-factory's own parcel_record/parcel_gate_verdict store) is on a COMPLETELY SEPARATE, dedicated Neon project (withered-surf-26870298, created 2026-08-26) -- NOT sharing compute with cortex/atoms at all. This appears to have happened as a side effect of the broader 2026-08-26 architecture pivot (A-028 in OPS-16: 'the model law already gives the Factory its own store'), not as a deliberate response to this bottleneck analysis. Item 4 of the test list ('cost the store split') is therefore already partially resolved for Factory vs cortex/atoms -- the remaining open split question is specifically cortex/neondb vs hauska_mcp/atoms, which are still together.",
+    "readReplicaAlreadyExists_cortexProd": "A read-only endpoint (ep-restless-hat-api2h3tg, min 2 / max 8 CU) already exists on cortex-prod, last active 2026-09-05. This is infrastructure item 3 of the test list asks to test -- it's already provisioned. Did not verify whether any read-heavy job (P5 scrub, ledger reads, provenance measures) actually routes through it, or whether it sits mostly idle. Worth a quick follow-up check before assuming a NEW replica needs building.",
+    "factoryStoreReadReplica_context": "Separately, hauska-factory's own store also has a read replica (ep-crimson-lake-aummgosl, resized 2 CU min after a manual retune, hot_standby_feedback on) -- this is the same replica referenced in tonight's earlier item-20 landUseCode diagnosis ('integration seat resized the replica... same query still timed out'). That earlier conclusion ('genuine Neon storage I/O latency, not a compute-size problem') held up: I later found and fixed the actual cause for a related query (item 10) as a query-plan defect, not a replica/sizing issue. Flagging so this profiling work doesn't re-litigate that -- FACTORY_DATABASE_URL's slow queries this session were plan defects, unrelated to the shared-compute problem this doc is about, which is specifically cortex/atoms."
+  },
+
+  "liveProfilingData": {
+    "measurementMethod": "Neon's public API does not expose OS-level CPU/IO/memory time-series to customers (confirmed: no consumption/metrics endpoint found, /operations only logs suspend/resume/config-apply events, not continuous resource utilization). Used what IS real and queryable: pg_stat_activity (live connections) and pg_stat_database (cache hit ratio, temp-file usage) on the shared cortex/atoms endpoint, captured live while the endpoint was actively in use (not synthetic).",
+    "hauska_mcp_atoms": {
+      "liveConnections": "9-14 concurrent connections observed across two snapshots taken minutes apart, 8-12 of them in state=active simultaneously",
+      "cacheHitRatio": "15.57% (blks_hit / (blks_hit+blks_read)) -- extremely low for an OLTP workload; the large majority of reads are hitting network-attached storage, not memory",
+      "sharedBuffers": "233MB -- tiny relative to the table sizes involved (atoms table alone was cited at 35M-100M+ rows in earlier OPS-16 rows)",
+      "interpretation": "This strongly implicates I/O, not CPU, as hauska_mcp's dominant constraint -- directly answering the analysis's central open question ('we have never measured what the compute is saturated on') for this database specifically."
+    },
+    "neondb_cortex": {
+      "cacheHitRatio": "53.87% -- better than hauska_mcp but still well below a healthy OLTP target (typically >95%)",
+      "tempFileUsage": "746,769 temp files, 13.04 TB of temp_bytes cumulative -- a large volume of sort/hash operations spilling to disk, meaning many queries exceed available work_mem",
+      "deadlocks": "8 (cumulative, non-zero -- worth a follow-up but not this session's focus)"
+    }
+  },
+
+  "rootCauseFound_notFixed": {
+    "what": "Caught LIVE, in the act: 12+ concurrent connections all running the identical unqualified query `SELECT COUNT(*)::text AS count FROM atoms` against hauska_mcp, several already running 3+ minutes, new instances appearing every 15-90 seconds -- meaning new ones launch before old ones finish, an unbounded pile-up.",
+    "source": "hauska-engine packages/storage/src/pg-storage.ts:1085-1090, PgStorage.countAtoms() -- a plain, uncached, unbounded `SELECT COUNT(*) FROM atoms`. Called from services/retrieval-api/src/healthz.ts:68 on EVERY GET /healthz request, with the resulting atomCount used only to answer `corpus.ok: atomCount > 0` -- a boolean liveness check that does not need an exact count.",
+    "selfDocumentedRisk": "The codebase already flags this exact class of risk in its own comment (services/retrieval-api/src/index.ts:122-124): 'countAtoms() against a 100M-row heap can exceed the default 240s single-attempt window on cold boot' -- written for the STARTUP call, but the same risk applies to every steady-state /healthz call, which has no such mitigation.",
+    "confirmedTrigger": "Google Cloud Monitoring has real, configured uptime checks (`hauska-retrieval-api-healthz` and `hauska-mcp-server-healthz`, both period=300s) hitting /healthz on two separate services, both apparently backed by the same countAtoms() path (same literal query text observed for all 12+ instances). Cloud Monitoring uptime checks fire from multiple global checker locations per cycle, which is consistent with the staggered-but-frequent arrival pattern observed live.",
+    "whyThisMatters": "This is a concrete, high-confidence, specific mechanism the original analysis did not have (it only knew operations contend, not why). A full, uncached table scan of the largest table in the store, fired at least every 5 minutes from 2 services with no completion guarantee before the next fire, run continuously since whenever these health checks were configured, is a directly plausible primary driver of hauska_mcp's 15.57% cache-hit ratio (each new scan evicts the last one's cached pages from a 233MB buffer) and of the general concurrency contention (a read-only measurement waiting behind unrelated load) the analysis's own A3-behind-A1 example described.",
+    "notFixed_whyNot": "This is hauska-engine code, not hauska-factory -- not my repo to edit tonight, same boundary as the F-11 atom-shape work earlier. A safe fix is straightforward in shape (cache the count with a short TTL, drop the exact count from the liveness check entirely in favor of `db.status==='up'` alone, or use an approximate estimate like `pg_stat_user_tables.n_live_tup` instead of a real COUNT) but the actual code change, testing, and deploy belongs to whoever owns hauska-engine/retrieval-api.",
+    "urgency": "Flagging as time-sensitive: this is live, ongoing, self-inflicted load on a shared production compute, not a historical artifact -- every 5 minutes it happens again, on both services, indefinitely, until someone changes the code."
+  },
+
+  "testListStatus": {
+    "1_profile_under_load": "DONE (this doc) -- CPU/memory not directly measurable via Neon's API, but cache-hit-ratio and connection data are real and strongly indicate I/O-bound contention, with a specific, identified, ongoing cause.",
+    "2_falsify_one_heavy_op_rule": "NOT DONE as a controlled test. Live data shows an uncontrolled, informative analog (12+ nominally-identical 'light' health-check ops piling up and clearly NOT coexisting fine), but that's confounded by the ops being pathologically expensive (full-table scans), not a clean test of two genuinely light operations. Recommend re-running this test AFTER the countAtoms() fix lands, since right now the compute's baseline load is itself abnormal.",
+    "3_read_replica_test": "Infrastructure already exists (ep-restless-hat-api2h3tg). Not yet verified whether anything routes read-heavy work through it.",
+    "4_cost_split_vs_scale": "Partially resolved: Factory's own store is already split (unplanned). The live remaining question is cortex/neondb vs hauska_mcp/atoms specifically -- not costed this session.",
+    "5_remeasure_throughput": "NOT DONE -- per the analysis's own sequencing, this should follow a concurrency fix, and the countAtoms() issue is exactly this session's identified concurrency fix candidate, not yet applied."
+  },
+
+  "t5StalenessCheck": {
+    "verdict": "T5_factory_throughput_track.md IS stale, with strong evidence, not just an old timestamp.",
+    "evidence": "T5's entire operative content (keyspace-sharding flag for old-shape cascade/bake pagination, pending certs via cascade+Warden sweep+block13, Bexar held on old-shape gates) describes a write path that OPS-16_texas_market_plan_of_record.md's own row A-042 (2026-08-27, AFTER T5 was last touched) explicitly ended: 'OLD_SHAPE_FILL_FROZEN becomes permanent: no --apply on the old shape for any county from here.' Row A-043 (same date) explicitly re-homes everything T5 describes under a different plan (OPS-19 F-10), stating 'their OPS-16 statuses stop re-grading here.' T5 was never updated to reflect this. Its 'Bexar' workstream is a different, superseded thing from tonight's factory-bexar-edges deploy work -- worth not conflating the two.",
+    "recommendation": "Mark T5 superseded/archived rather than active; if any of its content (e.g., the sharding flag concept for mega-counties) is still wanted, it needs to be re-scoped against the current conformant-writer path, not resumed as written."
+  }
+}
