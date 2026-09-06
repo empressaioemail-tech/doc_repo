@@ -1,0 +1,32 @@
+{
+  "lane": "legacy-design-tools-shared-reader",
+  "item": "Boundary-envelope atom program items 2 and 3 (_decisions/2026-09-06_boundary_envelope_atom_program_scope.md).",
+  "checkpoint": "DONE. legacy-design-tools PR #626 merged to main (c742439a), branch deleted.",
+  "date": "2026-09-06",
+
+  "whatShipped": {
+    "item2_sharedReader": "New artifacts/api-server/src/lib/buildableEnvelope/reconcileAtomEnvelope.ts reconciles the live-derived buildable envelope against the property atom chain's own buildableEnvelope.outcome, wired into brokeragePlaceBuildableEnvelope.ts right after deriveBuildableEnvelope(). The engine's atom never carries geometry (EnvelopeHonestOutcome is only {kind:'buildable', areaSqFt} or a decline reason -- confirmed in hauska-engine's atoms package), so derive.ts's live polygon stays the only drawable shape; reconciliation only ever corrects the reported area/outcome, never fabricates geometry. A validation-failed local decline is never overridden (a fact about our own geometry gates, not a measurement the atom's number could correct). Live-verified demonstrated defect this closes: parcel 48021:105032, atom said 9160 sq ft, the unreconciled route computed a different number.",
+    "item3_roadClassDefault": "derive.ts no longer defaults to roadClassSetbackTableForJurisdiction() when a caller skips roadClassSetbackTable -- confirmed this was live and reachable (not just flagged) for real bastrop-city-tx P-5 parcels, since the real production caller always skipped it. Same defect class the engine side already refused via commit 293633a ('a road class is not a setback'). Explicit opt-in only now."
+  },
+
+  "testing": "8 new unit tests for reconcileAtomEnvelope.ts, 2 new regression tests in derive.test.ts. Full api-server typecheck clean. Full api-server test suite run twice locally against a real Postgres (pgvector/pg14 + postgis, matching CI's own service config) with zero new failures beyond pre-existing, independently-verified-unrelated ones (depthRailGateDivergence.test.ts and 4 others, none touching buildableEnvelope, confirmed via git stash against unmodified main). CI green on the 5th attempt after two unrelated blockers (below).",
+
+  "unrelatedBlockersFoundAndFixed": [
+    {
+      "what": "brokeragePlaceBuildableEnvelope.test.ts's 'atom-chain provenanceRefs (R3)' fixture set an incidental buildableEnvelope.outcome that collided with the new (correct) reconciliation behavior, changing derivePath and breaking 2 pre-existing tests.",
+      "fix": "Removed the unused outcome field from the fixture (own commit 7de8e24f) -- those tests are scoped to DID-based provenanceRefs, not envelope reconciliation."
+    },
+    {
+      "what": "artifacts/records-request-worker's p85Portals.test.ts 'Aumentum index search' tests (4 of them) intermittently timing out at vitest's 5000ms default -- reproduced on 3 of 4 real CI attempts, confirmed unrelated to this PR's diff (origin/main never moved, diff touches zero files in that package) and confirmed as a genuine pre-existing test-timing fragility (a real setTimeout-based poll loop, fillMissAfterMs=4000ms default, inherently marginal against a 5000ms test timeout -- one test genuinely takes ~4.25s on a correct run, verified locally).",
+      "fix": "Bumped only those 4 tests' own vitest timeout to 25000ms (own commit d13bcb08). Root cause left unaddressed -- close doc filed for whoever owns P-85/records-request: _inbox/2026-09-06_legacy-design-tools-shared-reader_p85-timeout-fragility_close.json."
+    }
+  ],
+
+  "alsoDoneThisLane": [
+    "LDT-side zombie/residual-process audit of the Tier-1/Tier-2 facet-bake chain (item 8 verification + a real zombie candidate + a real onboarding-runbook gap): _inbox/2026-09-06_legacy-design-tools-shared-reader_bake-chain-zombie-audit_close.json",
+    "Live-verified (not just read from code) that the four dollar/age rails' Tier-1-bake staleness is a contained batch artifact, not a customer-facing incident -- the cadRollServeCutover.ts overlay is confirmed live and wired into the real serve route, all 24 (rail, county) gate verdicts read 'pass' as of a live DB query tonight.",
+    "Traced get_smart_site/composeSmartSiteStub: bypasses the same overlay, but its output type never carries the four dollar/age rails at all, so no exposure risk through that specific tool."
+  ],
+
+  "notDone": "Item 20 and everything downstream of it (the atom backfill program itself, the succession/refresh mechanism, Lockhart/Travis join work) is out of this lane's scope per the decision doc's own staffing split. The node-facet-bake-tier2 retirement and node-facet-patch-cad-roll runbook gap both remain open ruling items, not actioned."
+}
