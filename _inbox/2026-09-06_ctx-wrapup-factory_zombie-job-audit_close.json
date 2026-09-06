@@ -1,0 +1,46 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "item": "Zombie/orphan Cloud Run job audit -- the 12 job resources named in _inbox/2026-09-02_factory-reaper-phantoms_close.json as 'no discoverable pipeline in this repo'.",
+  "checkpoint": "DONE (investigation). No decommissions performed -- classification and evidence only, per the operator's own stated risk (a wrong redeploy or delete is a silent regression this session can't catch).",
+  "date": "2026-09-06",
+
+  "method": "For each job: gcloud run jobs describe (real deployed command/args/image/resources) + gcloud run jobs executions list (real run history) + cross-referenced against current src/cli.mjs's dispatch table and the implementing module's own docstring/code, not guessed from the job name. All 12 currently run the same SIGTERM-fixed image digest (sha256:0754e8bd...) per the 2026-09-04 sweep, so none are on a dangerously stale image -- the question is purely whether their configured command still does anything real.",
+
+  "classifications": {
+    "genuine_zombies_safe_to_decommission": [
+      {
+        "job": "factory-bake-migrate",
+        "evidence": "args=[\"bake-migrate\"] -- this string has NEVER appeared in cli.mjs's tracked git history (git log -S found zero commits). Found the real explanation: migrations/bake/0005b_landing_cad_txgio_alias.sql and 0005c_landing_parcel_jurisdiction.sql live in a subdirectory the normal 'migrate' command explicitly excludes (src/db/migrate.mjs's own comment: 'Factory applyMigrations reads this directory only (not bake/)'). factory-bake-migrate was almost certainly a bespoke one-time runner for exactly those 2 files. Ran 3 times in a 9-minute window on 2026-08-31, all succeeded, never touched since -- a completed one-time schema bootstrap, NOT part of the recurring LDT bake/warm chain (that's a distinct process in a different repo; 'bake' here just means these tables support what LDT's bake reads).",
+        "realGapToFlag": "Since 'bake-migrate' is not a runnable command in current cli.mjs, a genuine future fresh-environment rebuild would silently miss these 2 migrations -- 'migrate' alone does not apply them. Decommissioning the job resource is safe (its work is done and already applied to production), but this gap in the rebuild story is worth its own note, matching exactly the operator's stated worry about rebuild confusion."
+      },
+      {
+        "job": "factory-landing-cad, factory-landing-footprint, factory-landing-parcel, factory-landing-pipeline, factory-landing-wells",
+        "evidence": "All 5 have byte-identical configured args to factory-landing-import: node src/cli.mjs landing-import. runLandingImport() (src/jobs/landing-import.mjs) takes ZERO arguments and already covers all 5 sources internally in one pass (txgio_parcel, cad_property, tx_rrc_pipeline, tx_building_footprint, wells -- confirmed by reading the file's own source table). These 5 are exact duplicates of factory-landing-import, left over from an earlier one-job-per-source design that was consolidated into the single unified job. factory-landing-import is the one real job; the other 5 do nothing distinct from it and would race/duplicate the same writes if ever triggered."
+      },
+      {
+        "job": "factory-manifest-import",
+        "evidence": "src/jobs/manifest-import.mjs has a hardcoded DUMP_QUOTES reference snapshot: computedAt 2026-08-25, totalRails: 14. The current system has 65 rails (PARCEL_RECORD_RAIL_COUNT). This is a one-time historical diff tool from very early in the project (F-01 item 7) whose own reference data is now meaningless -- re-running it today would compare live data against a 14-rail-era snapshot. Ran once, 2026-08-26, never since."
+      },
+      {
+        "job": "factory-missing-env",
+        "evidence": "Its ONLY execution FAILED (STATUS: False), with a real error pulled from Cloud Logging: FactoryConnectError: missing required env: FACTORY_CONTROL_API_KEY, thrown at module load in src/server.mjs. It also runs a different entrypoint than every other job (src/server.mjs, an HTTP server -- architecturally the wrong shape for a Cloud Run JOB, which runs-to-completion rather than staying up). This job has never worked, even once. High confidence this is a broken/misconfigured deploy artifact, not a functioning part of anything."
+      }
+    ],
+    "real_but_unclear_cadence_needs_ruling": [
+      {
+        "job": "factory-cc-publish",
+        "evidence": "Real, current code (src/jobs/cc-publish.mjs), but its own docstring says 'F-05 item 20... one-way... the ONLY serving-store write on this card' -- card-specific, one-time-shaped language. Ran once, 2026-08-26, never since. Did not verify F-05 item 20's own closure status in the sprint history. Ruling needed: if that card closed with this as its one-time deliverable, decommission; if it's meant to run again on a cadence, it needs a real pipeline."
+      },
+      {
+        "job": "factory-console-audit",
+        "evidence": "Real, generic diagnostic (queries live store counts against a control API) -- not tied to stale hardcoded data like manifest-import, so plausibly still useful. But it depends on FACTORY_CONTROL_API_URL/FACTORY_CONTROL_API_KEY -- the SAME control-API dependency factory-missing-env fails on. Open question: does a working control-API server exist anywhere right now for this to actually query? Not verified this session."
+      },
+      {
+        "job": "factory-snapshot",
+        "evidence": "Real, generic deploy-health tool (SNAPSHOT_REQUIRED_ENV, IMAGE_DIGEST verification, connection-latency measurement via measureQueryRttP50) -- not tied to stale data, structurally looks like something worth keeping as an ongoing post-deploy sanity check. Ran 3 times same-day during initial setup (2026-08-26), never since. Leaning (a) real/keep, but flagging for a ruling rather than assuming it should be wired into a recurring trigger without being asked."
+      }
+    ]
+  },
+
+  "notDone": "No gcloud run jobs delete or redeploy was performed. This report is findings only -- decommissioning is a real, mildly destructive action (removes a resource other tooling might reference by name) that deserves an explicit go-ahead, especially for the two 'needs ruling' items where the card-closure status wasn't independently verified here."
+}
