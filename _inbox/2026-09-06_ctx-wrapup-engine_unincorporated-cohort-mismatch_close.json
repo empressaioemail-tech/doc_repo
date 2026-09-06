@@ -1,0 +1,76 @@
+{
+  "lane": "ctx-wrapup-engine",
+  "planRow": "Boundary-envelope atom program, item 9 (per-county atom backfill) / item 6 (Hays-McLennan-Williamson in-city onboarding)",
+  "topic": "Not-applicable envelope wiring for Caldwell/Hays/McLennan/Williamson (F-01 follow-on): substrate cohort check BEFORE any write, per operator's dry-run-first / independently-verified discipline",
+  "requestedBy": "doc-repo-2c (cross-session, relaying prior doc-repo-bd instruction + the 2026-09-06_boundary_envelope_atom_program_scope decision)",
+  "checkpoint": "BLOCKED before write — read-only substrate query only, no atoms written, no --apply run",
+  "date": "2026-09-06",
+
+  "task": "Wire emitUnincorporatedBuildableEnvelope() (the new outcome:{kind:'not-applicable'} shape, PR #385/#361, merged earlier tonight) into a live pipeline for Caldwell (48055) / Hays (48209) / McLennan (48309) / Williamson (48491) — the 4 registry rows with zoningRegime:'unzoned' and no warmRunner config — and get it running against real parcels in at least one county.",
+
+  "whyBlocked": "Before writing any atom, queried the real substrate atoms table (ATOMS_DATABASE_URL, read-only, default_transaction_read_only=on) to size the actual cohort per county, rather than trusting the registry row's zoningRegime label or the decision doc's framing. The result contradicts the premise the task was dispatched on: these counties are NOT unprocessed/blank. A large majority of real parcels in every one of the four already carry a real, computed buildable-envelope atom from some other, already-deployed pipeline (not depth-warm-city-batch.mjs — none of these rows have warmRunner, confirmed by direct source read of jurisdiction-registry.ts). The residual gap is overwhelmingly parcels that DO carry a real zoning district on record — stamping those not-applicable ('unincorporated — no zoning ordinance') would be a false claim, the exact failure mode the not-applicable doctrine exists to prevent, just aimed at a cohort nobody expected.",
+
+  "evidence": {
+    "method": "Direct psql against ATOMS_DATABASE_URL (hauska-prod-497015), SET default_transaction_read_only=on, filtered on entity_type equality (not IN-list — the atoms_property_parcel_node_idx partial index mis-plans with 3+ type IN-lists, single-equality queries used instead) plus body->>'countyFips'/'parcelNodeId' prefix (indexed via atoms_parcel_node_county_idx / atoms_property_parcel_node_idx).",
+    "perCounty": [
+      {
+        "county": "Caldwell (48055)",
+        "activeParcelNodes": 25181,
+        "existingBuildableEnvelopeAtoms": 24006,
+        "existingEnvelopeCoveragePct": 95.3,
+        "envelopeOutcomeKinds": {"no-buildable-area": 21385, "buildable": 2621, "absence": 0, "not-applicable": 0},
+        "gapParcels_noEnvelopeAtom": 1176,
+        "gapWithRealZoningDistrict": 983,
+        "gapWithZoningFactAbsenceMarker": 0,
+        "gapWithNoZoningFactAtAll": 193,
+        "gapWithNoZoningFactAtAll_syntheticFeatureKeyed": 193,
+        "gapWithNoZoningFactAtAll_realPropIdKeyed": 0
+      },
+      {
+        "county": "Hays (48209)",
+        "activeParcelNodes": 116842,
+        "existingBuildableEnvelopeAtoms": 102143,
+        "existingEnvelopeCoveragePct": 87.4,
+        "gapParcels_noEnvelopeAtom": 14699,
+        "gapWithRealZoningDistrict": 14277,
+        "gapWithZoningFactAbsenceMarker": 0,
+        "gapWithNoZoningFactAtAll": 422,
+        "gapWithNoZoningFactAtAll_syntheticFeatureKeyed": 422,
+        "gapWithNoZoningFactAtAll_realPropIdKeyed": 0
+      },
+      {
+        "county": "McLennan (48309)",
+        "activeParcelNodes": 114369,
+        "existingBuildableEnvelopeAtoms": 65814,
+        "existingEnvelopeCoveragePct": 57.5,
+        "gapParcels_noEnvelopeAtom": 48555,
+        "gapWithRealZoningDistrict": 48440,
+        "gapWithZoningFactAbsenceMarker": 0,
+        "gapWithNoZoningFactAtAll": 115,
+        "gapWithNoZoningFactAtAll_syntheticFeatureKeyed": 115,
+        "gapWithNoZoningFactAtAll_realPropIdKeyed": 0
+      },
+      {
+        "county": "Williamson (48491)",
+        "activeParcelNodes": 282695,
+        "existingBuildableEnvelopeAtoms": 282436,
+        "existingEnvelopeCoveragePct": 99.9,
+        "gapParcels_noEnvelopeAtom": 260,
+        "gapWithRealZoningDistrict": 134,
+        "gapWithZoningFactAbsenceMarker": 0,
+        "gapWithNoZoningFactAtAll": 126,
+        "gapWithNoZoningFactAtAll_syntheticFeatureKeyed": 126,
+        "gapWithNoZoningFactAtAll_realPropIdKeyed": 0
+      }
+    ],
+    "keyFinding": "Zero real (non-synthetic, resolved prop_id) parcels across all four counties currently lack BOTH a zoning-fact atom and a buildable-envelope atom. Zero parcels anywhere in these four counties carry a zoning-fact 'absence' marker (the cohort the pre-existing bake-property-atom-county.mjs --cascade-absence-only / cascade-unzoned-envelope-decline.ts mechanism targets), so that pre-existing mechanism also has nothing to do here. Every currently-uncovered REAL parcel either (a) has a real zoning district on record (83.6%-99.8% of each county's gap) or (b) is a synthetic _feature-* StratMap key with no resolved real-world identity yet (the entire remainder). There is no honest not-applicable cohort of real parcels to run against in any of the four counties as they stand today."
+  },
+
+  "interpretation": "The registry's zoningRegime:'unzoned' label on these four county rows (jurisdiction-registry.ts) describes the Rail A/B/C CAD-ingest source characterization ('the county government itself does not zone'), not a claim that no zoning exists anywhere within the county's borders. Real incorporated cities inside these counties (Round Rock/Georgetown in Williamson, San Marcos/Kyle in Hays, Waco in McLennan, Lockhart/Luling in Caldwell) already have real district data on their zoning-fact atoms and, for most, a real computed buildable-envelope outcome — from some other, already-deployed bake pipeline this session had not previously traced (candidate: bake-property-atom-county.mjs's normal/non-cascade mode, which reads CORTEX_DATABASE_URL Tier-1 snapshots — not yet confirmed as the specific source, flagged for whoever picks this up next). This lines up with the 2026-09-06_boundary_envelope_atom_program_scope decision's own item 6, which already noted these three counties have substantial real zoningDistrict ledger data and framed the remaining gap as setback-VALUE resolution (ordinance transcription), not zoning-existence — i.e. a 'no-setback-row'-style pending case, not a not-applicable case. This session's DB check confirms that framing against the atoms table independently.",
+
+  "whatWasNotDone": "No buildable-envelope atoms were written for any of the four counties, dry-run or otherwise, once the query above showed there is no valid real cohort. No --apply was run. cente-b5 was not pinged for a real write (never reached that point). Did not build the planned sibling wiring script (depth-warm-unzoned-county-batch.mjs or similar) since there is currently nothing honest for it to run against at county scale.",
+
+  "recommendation": "Flagged to doc-repo-2c live (cross-session message, same timestamp) rather than proceeding on my own judgment, since this invalidates the wiring task's premise rather than being a routine implementation choice. Options for whoever picks this up: (a) pause the not-applicable wiring thread for these four counties pending a reconciliation of the registry's zoningRegime declaration against actual substrate coverage — possibly the county-fan 'unincorporated' rows were only ever meant to describe Rail C geometry sourcing, not to imply the whole county needs a not-applicable pass; (b) if a live demonstration of the emission code path is still wanted before that reconciliation, run it against a local fixture/synthetic parcel only, clearly labeled non-production, not a real county cohort; (c) treat the much larger real opportunity here — the 983/48,440/14,277/134 real, already-zoned, envelope-less parcels per county — as its own tracked item, but note per decision-doc item 6 that closing it requires real ordinance transcription for each in-city jurisdiction, the same scale of work as the original Bastrop/Elgin/Lockhart build, not a quick wiring pass.",
+
+  "relatedDiscovery_notActedOn": "While tracing cohort sources, found bake-property-atom-county.mjs's --cascade-absence-only mode and cascade-unzoned-envelope-decline.ts (2026-08-03/04, predates tonight's not-applicable ruling) — a real, already-shipped, tested mechanism that mints an OLDER decline shape (body.absence/verifiedAbsence, not outcome:{kind:'not-applicable'}) for parcels with an absence-marked zoning-fact, with its own city-aware unincorporated-vs-in-city-unonboarded classification (situsCity-based). Its target cohort is empty for all four counties tonight (zero absence-marked zoning-facts found), so it wasn't invoked, but its existence — and the fact this session didn't know about it until searching for a cohort source — means there may now be two parallel semantic shapes for 'no zoning-derived envelope opinion' on buildable-envelope atoms (old absence/verifiedAbsence vs new outcome.kind:'not-applicable'). Worth reconciling separately; not blocking, since neither shape was written tonight."
+}
