@@ -1,0 +1,41 @@
+{
+  "lane": "legacy-design-tools-shared-reader",
+  "item": "OPS-16 P-120 item 6: the Feasibility narrative-to-@workspace/briefing-engine endpoint contract question, reportedly gating 11-15 downstream P-120 items across the Reports+Courthouse program.",
+  "checkpoint": "DONE. Investigated, contract locked with cente-67 (hauska-engine), and the real endpoint built and merged: legacy-design-tools PR #633 (bddc541c).",
+  "date": "2026-09-07",
+
+  "investigation": {
+    "question": "Could /research/chat's isBrokerageServiceCaller/requireBrokerageAuthOrServiceToken service-to-service auth path be reused wholesale for hauska-engine's Feasibility narrative need?",
+    "answer": "Split answer, not a guess. The AUTH MECHANISM (middlewares/brokerageServiceAuth.ts) is real, already exercised in production (its own module doc: 'Dual-path auth for brokerage Layer 2 routes called by hauska-mcp-server', Authorization: Bearer SERVICE_API_KEY, metering already handled server-side) -- fully reusable as-is. The REQUEST CONTRACT is not: /research/chat requires a free-text message and resolves context via runId/address/workspaceDid/areaContext, a conversational Q&A shape with multi-turn history, an architectural mismatch for 'generate a narrative paragraph from these facts'. /brief/summarize is closer (flat facts-in/narrative-out via generateSummarize) but still address-keyed with code-section-shaped atoms, not parcelNodeId-keyed with courthouse documents.",
+    "recommendation": "Reuse the auth middleware exactly as-is on ONE new, narrow, purpose-built endpoint; do not force the chat endpoint's shape onto a document-composition need."
+  },
+
+  "contractLockedWithHauskaEngine": {
+    "counterpart": "cente-67 (hauska-engine), synced directly per doc-repo-3b's suggestion before either side wrote code",
+    "request": "{ parcelNodeId: string, facts: {<category key>: {status: \"present\"|\"absent\", ...arbitrary fields}, ...}, courthouseDocuments?: [{citation, excerpt}] } -- facts keys match hauska-engine's own FeasibilityModel section names (jurisdiction, parcelOwnership, zoning, flood, specialDistricts, wellsPipelines, utilities, footprint, dischargePoint, openItems)",
+    "response": "{ narrative: string, generatedBy: string, generatedAt: string } -- deliberately NO citedSections field",
+    "citationMechanismDecision": "Checked this codebase's own existing citation pattern (parseInlineCitations, used by generateSummarize/generateResearchChat) before designing anything new: it works by POST-HOC TEXT SCANNING the model's own returned text for [n]-style markers against the sources actually supplied -- never by asking the model to self-report which sources it used in a separate structured field, since a model's own citation claim is unverifiable while scanning its real output for real markers is not. Recommended (and cente-67 agreed) the same discipline: model marks sentences with same-named [category] brackets per fact key it draws on; caller derives citedSections itself by scanning for its own known keys -- no separate self-reported field needed on the wire at all."
+  },
+
+  "whatShipped": {
+    "pr": "legacy-design-tools#633, merged bddc541c",
+    "files": [
+      "artifacts/api-server/src/lib/brokerageBriefLlm.ts -- new generateNarrativeSection function, sibling to generateSummarize/generateResearchChat, sharing only the lowest-level completeBriefingLlm primitive (same BRIEFING_LLM_MODE routing/credentials), not a wrapper around either existing function",
+      "artifacts/api-server/src/routes/brokerageBrief.ts -- new POST /api/brokerage/v1/research/narrative-section route, sits behind the router's existing requireBrokerageAuthOrServiceToken (zero new auth code)",
+      "artifacts/api-server/src/__tests__/brokerageBrief.test.ts -- 4 new tests"
+    ],
+    "honestDegrade": "When the LLM call returns nothing, falls back to a rules-v1-labeled 'unavailable' narrative rather than fabricating content -- same discipline as generateSummarize's own rules-v1 fallback."
+  },
+
+  "testing": "brokerageBrief.test.ts: 22/22 passing (18 pre-existing + 4 new: unauthenticated-401, real service-token narrative with markers, missing-parcelNodeId-400, empty-LLM-response rules-v1 fallback), run against a real Postgres integration-test container (pgvector+postgis), not mocked. npx tsc --build clean. CI green (Test job 12m14s) before self-merge.",
+
+  "notYetDone": "Not deployed to production. This repo's push-to-main CI only builds and pushes a new image (never deploys/migrates/shifts-traffic on push, only on a deliberate workflow_dispatch, same discipline as cortex-api's own cloud-run-deploy.yml). Ready to trigger the canary/shift-traffic sequence once hauska-engine's build is ready to test against a live endpoint.",
+
+  "handoffNote": "Attempted to notify cente-67 (hauska-engine) directly with the live route path -- that session had already ended/disconnected by the time this PR merged. Routed the handoff through doc-repo-3b instead, who coordinated this contract from the start, to relay once hauska-engine's lane resumes.",
+
+  "relatedPrs": ["empressaioemail-tech/legacy-design-tools#619", "#620", "#626", "#627", "#628", "#629", "#630", "#631", "#632", "#633"],
+  "relatedFindingsDocs": [
+    "_inbox/2026-09-07_legacy-design-tools-shared-reader_pe-vs-mcp-facet-parity-audit_findings.json",
+    "_inbox/2026-09-07_legacy-design-tools-shared-reader_pe-vs-mcp-facet-parity-fixes_close.json"
+  ]
+}
