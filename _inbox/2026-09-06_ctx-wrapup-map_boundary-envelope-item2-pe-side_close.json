@@ -1,0 +1,56 @@
+{
+  "lane": "ctx-wrapup-map",
+  "seat": "hauska-map",
+  "snapshot": {
+    "repo": "hauska-map",
+    "branch": "main",
+    "commit": "3dfb5e8"
+  },
+  "planRow": "Boundary-envelope atom program, item 2 (shared reader) — PE-side counterpart",
+  "relatedCanonical": [
+    "_decisions/2026-09-06_boundary_envelope_atom_program_scope.md",
+    "80_adrs/adr_031_parcel_record_ledger_over_atoms.md",
+    "_inbox/2026-09-06_ctx-wrapup-engine_coverage-pipeline-trace_close.json",
+    "_inbox/2026-09-06_legacy-design-tools-shared-reader_items-2-3_close.json"
+  ],
+  "requestedBy": "doc-repo-2c (cross-session mission brief)",
+  "checkpoint": "CLOSE",
+  "date": "2026-09-06",
+
+  "trigger": "doc-repo-2c relayed an operator mission: unify PE's setback/envelope rendering onto the atom chain, the way legacy-design-tools now does post-#626. Read the cited doc_repo canon (ENFORCEMENT.md, the program-scope decision, ADR-031) and traced PE's actual current path against live code before writing anything, per both the brief's own instruction and ENFORCEMENT.md's code-reading-outranks-output-measuring rule.",
+
+  "findingsBeforeAnyCode": {
+    "misattribution_reported_and_confirmed": {
+      "briefsClaim": "McLennan (65,814 envelope atoms, zero setback-rule atoms) cited as proof PE's vendored setback tables (apps/property-explorer/api/_lib/setback-tables/*.json) and the Bastrop per-parcel resolver (pe-bastrop-per-parcel-setback.ts, this lane's own prior PR #360) serve envelopes outside the atom chain.",
+      "whatTracingFound": "doc_repo's own _inbox/2026-09-06_ctx-wrapup-engine_coverage-pipeline-trace_close.json already attributes this exact split to a different mechanism entirely: hauska-engine's own atom-EMISSION pipeline (bake-property-atom-county.mjs -> emitFromTier1Snapshot -> getSetbackTableForZoning, reading Engine's OWN packages/adapters/src/local/setbacks registry). Cities missing from THAT table (Waco, Kyle, Round Rock, Georgetown, San Marcos) get no envelope atom emitted at write time — nothing to do with hauska-map or read-time serving. Confirmed live mid-investigation: hauska-engine main moved c4e2c18 -> 63394ef during this session, landing a fix for exactly this gap (#393, Waco/Kyle/Round Rock provenance).",
+      "secondMechanismConsidered": "That codified-setback-from-zoning.ts independently manufactures envelope outcomes/geometry bypassing the atom, which would produce the same observed split. Rejected on direct code read (atom-chain-to-facets.ts, mine from PR #360): the fallback only ever supplements per-parcel setback SCALARS on an envelope whose status/outcome is already entirely atom-derived (envAtom-gated, warm-verify-decline-gated) — it never manufactures an outcome.kind or geometry on its own. The pilot's own live verification (real Elgin parcel 48021:105032) already confirmed PE renders atom-chain buildableEnvelope correctly today.",
+      "reportedTo": "doc-repo-2c, cross-session, before writing any code. doc-repo-2c confirmed the misattribution (conflated an Engine write-time gap with a PE read-time one when drafting the brief) and closed the setback-table-fallback question as legitimate-as-designed, no fix needed."
+    },
+    "realGapFoundInstead": {
+      "location": "apps/property-explorer/src/lib/live-envelope-augment.ts, applyLiveDeriveToFacets",
+      "mechanism": "PE's live geometry recompute (labelEdges+derive) is itself correct, sanctioned architecture — confirmed against the program-scope doc's own addendum that BuildableEnvelopeAtomInstance can never carry geometry, so live recompute is required regardless of atom backfill. The real gap: the live-derive step let its own independently-recomputed buildableAreaSqFt/Pct silently override whatever the atom-chain-derived baked facets already carried, with zero comparison against the atom's own reported area — the same pre-#626 defect class legacy-design-tools already fixed on its own route.",
+      "verification": "Read legacy-design-tools' reconcileAtomEnvelope.ts directly off origin/main (not the local checkout, which was on a different branch/seat's worktree with uncommitted changes — did not touch it) to confirm the target pattern before porting: atom's reported area authoritative when present, live-derive's geometry kept (atom carries none), disagreement disclosed not silent."
+    }
+  },
+
+  "fix": {
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/362, merged 3dfb5e8 (fast-forward).",
+    "what": "applyLiveDeriveToFacets now reconciles: when the baked facets carry a real atom-derived buildableAreaSqFt, it wins over live-derive's own number in both directions (live disagrees with a positive atom area, or live finds no buildable area at all while the atom reported one), keeping live-derive's geometry since the atom carries none, with disagreement disclosed (\"... property atom chain (engine source of truth) ...\"). When there is no atom-derived area to reconcile against (codified-table/Bastrop-scalar-only supplement on a warm-verify-declined envelope — the common ~97% cohort), behavior is byte-for-byte unchanged.",
+    "testEvidence": "pnpm --filter property-explorer exec tsc --noEmit: clean. Full test/gate suite: 192 files / 2750 tests pass, 0 fail (chrome-kit gate, seam-retired guard, public-pages guard, vitest). New coverage in live-envelope-augment.test.ts (4 tests): atom area wins on disagreement (positive, using the real Elgin 9160 sq ft figure from tonight's pilot verification); live-derive's result stands unchanged when it already agrees (falsifier proving no gratuitous override); atom wins when live-derive finds no buildable area at all; regression confirming the no-atom-area cohort is unaffected. CI (Typecheck, test, No double-encoded source) green on PR #362 before self-merge."
+  },
+
+  "branchHygiene": "Found mid-task that this session had drifted onto committing directly to a stale local main (another lane had pushed PR #361 in the interim). Stashed, fast-forwarded local main to origin, cut fix/pe-live-envelope-atom-reconcile properly, restored the stash, verified tests/typecheck again against the newer main before committing.",
+
+  "notActedOn": {
+    "crossRepoCanonicalSource": "The underlying vendored-setback-table duplication is real and bigger than the original brief scoped: at least three independently-drifting copies confirmed (hauska-engine packages/adapters, legacy-design-tools lib/adapters/src/local/setbacks — actively growing tonight, PRs #627-629 — and this repo's api/_lib/setback-tables). Per doc-repo-2c: routed to the operator directly, not decided in this lane. No package/dedup work attempted here."
+  },
+
+  "leave_behind": [
+    {
+      "item": "Cross-repo canonical setback-table source (one package instead of 3 independently-vendored copies)",
+      "owner": "operator / doc-repo-2c, needs Engine + LDT buy-in",
+      "plan_row": "not yet numbered — flagged by this lane and by doc-repo-2c, routing to operator",
+      "reason": "Spans three repos with active concurrent work in two of them; a sequencing call, not something one seat should decide unilaterally."
+    }
+  ]
+}
