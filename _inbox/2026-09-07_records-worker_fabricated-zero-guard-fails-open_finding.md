@@ -85,6 +85,19 @@ and the same Tyler self-service DOCSEARCH product make it likely. Likely is
 not measured, and this gate exists precisely because an unmeasured county
 was once reported as clean.
 
+**The block is deterministic, not transient.** Two operator-authorized live
+runs against the same target (`48209:168686`) a few minutes apart returned
+identical results: `needs-human/captcha-required`, `recaptchaPresent: true`,
+`stepsReached [open-disclaimer, open-search-surface]`. Same wall, same point,
+both times.
+
+That rules out the competing mechanism worth stating and rejecting: a flaky
+or load-dependent captcha, under which simple retry would eventually reach
+results-extraction and answer the page-wording question for free. It would
+not. Retry is not a path here. Reaching that step at Hays requires either a
+human-solved captcha or a different verification route entirely, and both are
+scope decisions rather than execution.
+
 ## Ruling withdrawn
 
 I recommended to R-02 and was about to recommend to the operator that
