@@ -6,20 +6,34 @@
 
   "method": "Passively sampled pg_stat_user_tables.n_tup_ins for the atoms table every 5s throughout cente-67's real apply run (run-id bfoot-apply-48309-2026-09-07T033437Z), no writes of my own, no synthetic data. Cross-checked the resulting insert delta against cente-67's own reported atomsWritten count.",
 
-  "results": {
-    "atomsWritten_reported": 125973,
-    "atomsWritten_confirmedViaCounterDelta": "138240342 - 138114369 = 125973 -- exact match to cente-67's own report and their independent post-write live count query",
-    "totalWallClockMs": 610454,
-    "realInsertWindowSeconds": 165,
-    "realInsertWindowNote": "The counter was flat before epoch 1788752544 and flat again after 1788752709 -- the actual bulk-INSERT activity is concentrated in a 165s sub-window, not the full 610s (~10.2 min) wall-clock time cente-67 reported for the whole apply (which also includes the geometry/join computation and the post-write verification read, neither of which touches n_tup_ins).",
-    "throughput_atomsPerSecond": "125973 / 165 = ~763.5 atoms/s, using the real DB-write window specifically (the number directly comparable to the original benchmark, which measured the write path itself, not end-to-end job wall time)"
-  },
+  "results": [
+    {
+      "county": "48309 McLennan",
+      "runId": "bfoot-apply-48309-2026-09-07T033437Z",
+      "atomsWritten_reported": 125973,
+      "atomsWritten_confirmedViaCounterDelta": "138240342 - 138114369 = 125973 -- exact match to cente-67's own report and their independent post-write live count query",
+      "totalWallClockMs": 610454,
+      "realInsertWindowSeconds": 165,
+      "realInsertWindowNote": "Counter flat before epoch 1788752544, flat again after 1788752709 -- the actual bulk-INSERT activity is a 165s sub-window inside the 610s (~10.2 min) total wall-clock time (the rest is geometry/join computation and the post-write verification read, neither touches n_tup_ins).",
+      "throughput_atomsPerSecond": "125973 / 165 = ~763.5"
+    },
+    {
+      "county": "48491 Williamson",
+      "runId": "bfoot-apply-48491-2026-09-07T034546Z",
+      "atomsWritten_reported": 308889,
+      "atomsWritten_confirmedViaCounterDelta": "138549231 - 138240342 = 308889 -- exact match to cente-67's own report and their independent post-write live count query",
+      "totalWallClockMs": 3737909,
+      "realInsertWindowSeconds": 416,
+      "realInsertWindowNote": "Counter flat before epoch 1788756089 (last flat sample 1788756084), flat again after 1788756505 -- the write burst is a 416s sub-window inside the ~62.3 min total wall-clock time (dominated by a ~61.6-min pre-write join/geometry phase, matching cente-67's own dry-run timing for this county's unusually high footprint density, 233K footprints/283K parcels vs McLennan's 55K/115K).",
+      "throughput_atomsPerSecond": "308889 / 416 = ~742.5"
+    }
+  ],
 
-  "comparisonToOriginalBaseline": "Original baseline (2026-08-26, post batched-links fix): 67-149 atoms/s, measured on the same writePropertyAtomsBatch write path. Tonight's real measurement: ~763.5 atoms/s -- roughly 5-11x higher. At this rate, the original concern ('100M atoms is over a week of continuous writing' at 67-149/s) would instead be ~36 hours (100M / 763.5s), a dramatic improvement, not a still-open capacity problem, at least for this writer/entity-type shape.",
+  "comparisonToOriginalBaseline": "Original baseline (2026-08-26, post batched-links fix): 67-149 atoms/s, measured on the same writePropertyAtomsBatch write path. Tonight's two independent real measurements: ~763.5 and ~742.5 atoms/s -- consistent with each other (within ~3%) despite covering counties of very different size (125,973 vs 308,889 atoms), and roughly 5-11x higher than the original baseline. At this rate, the original concern ('100M atoms is over a week of continuous writing' at 67-149/s) would instead be ~37-38 hours, a dramatic improvement, not a still-open capacity problem, at least for this writer/entity-type shape.",
 
-  "caveats": "This is one real observation, for one writer (building-footprint atom writes) against one mid-sized county (McLennan). Not claimed as a universal number for every atom entity type/writer in the system -- different writers may have different per-row costs. Also: the countAtoms() incident (still unresolved and actively degrading the shared compute, tracked separately) was very likely still ongoing during this exact measurement window, per the last live check shortly before this run. That the real write throughput still came in dramatically higher than the old baseline DESPITE known concurrent interference is itself a reassuring data point -- if anything this measurement is a lower bound on what this writer can do on a truly clean compute, not an inflated number.",
+  "caveats": "Two real observations now, both for the same writer (building-footprint atom writes), on two counties of different size and footprint density -- the consistency between them (742.5 vs 763.5 atoms/s) is itself evidence this is a real, stable rate for this writer, not a fluke of one run. Still not claimed as universal across every atom entity type/writer in the system -- different writers may have different per-row costs. Also: the countAtoms() incident (still unresolved and actively degrading the shared compute, tracked separately) was very likely still ongoing during both measurement windows. That real write throughput stayed consistently high across two separate runs DESPITE known concurrent interference is itself a reassuring data point -- if anything these measurements are a floor on what this writer can do on a truly clean compute, not inflated numbers.",
 
-  "conclusion": "Per the operator's own framing ('if throughput shows real volume-capacity work is needed, build it out'): this result does NOT show a volume-capacity problem for this writer -- the opposite. Real throughput is high and the original 'statewide takes over a week' framing appears to be stale, superseded by whatever fixes (batched-links, lease v2, or other work across the many OPS-16 rows tonight's investigation touched) landed since the original 67-149 atoms/s measurement. Recommend NOT building additional write-throughput capacity based on tonight's evidence -- recommend instead re-measuring on 1-2 other writer/entity-type shapes (not just building-footprint) before generalizing this conclusion broadly, since this session only captured one real writer in action.",
+  "conclusion": "Per the operator's own framing ('if throughput shows real volume-capacity work is needed, build it out'): this result does NOT show a volume-capacity problem for this writer -- the opposite, now confirmed twice. Real throughput is high and consistent, and the original 'statewide takes over a week' framing appears to be stale, superseded by whatever fixes (batched-links, lease v2, or other work across the many OPS-16 rows tonight's investigation touched) landed since the original 67-149 atoms/s measurement. Recommend NOT building additional write-throughput capacity based on tonight's evidence -- recommend instead re-measuring on 1-2 other writer/entity-type shapes (not just building-footprint) before generalizing this conclusion to every atom writer in the system.",
 
   "testListStatus_final": {
     "1_profile_under_load": "DONE -- countAtoms() root-cause work, still ongoing as a separate incident",
