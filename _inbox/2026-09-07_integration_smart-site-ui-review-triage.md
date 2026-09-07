@@ -2,7 +2,7 @@
 lane: integration
 plan_row: P-122
 item: "Smart Site UI review (P:\\tmp\\smart site review 9-4.pdf, 2026-09-04) triaged into UI-only work for the new hauska-map-ui-qa lane, plus non-UI/non-report items routed elsewhere."
-checkpoint: "PAUSED at a natural stopping point 2026-09-07, all six batches worked in order. Closed/merged or verified-green-pending-merge: Batches 1, 2 (except 1 unreproducible item), 4 (except 1 held item), 6 (except 1 flagged idea). Batch 3 mostly closed, 2 items routed cross-thread. Batch 5 (Sharing) fully held, three real architecture findings, no code written. Five items outstanding with the operator: Batch 4's 5th boilerplate message, the Stripe cancellation reframe, and Batch 5's three findings (notes-default rule, checkbox-lag exception, share-flow notes scope). P-122 filed in OPS-16 by doc-repo-6f (cross-roadmap coordinator)."
+checkpoint: "FINAL STATE PASS 2026-09-07 per doc-repo-6f request. Every merged PR (#364, #366, #367, #368, #369, #371, all 2026-09-07 15:20Z-17:41Z) is MERGED_NOT_DEPLOYED, not SERVING: verified via vercel ls/inspect, newest property-explorer Production deployment is 2026-09-05T12:52:17-05:00, zero deploys today, hauska-map does not auto-deploy on merge. Nothing this lane shipped is customer-visible yet. Solo-checkout item RESOLVED as stale (real 2026-09-04, not live by the time it was chased, real relay-degradation cost, recorded in OPS-20 and P-123). Two prior doc gaps corrected this pass: layer-hover-dot fix was implemented and merged (PR #367) but never marked closed here; Solo-checkout staleness wasn't caught before real hours were spent tracing it. Full item-by-item state given to doc-repo-6f 2026-09-07."
 date: 2026-09-07
 ---
 
@@ -53,13 +53,43 @@ the integration seat instead of fixing it.
      user-facing em dashes (X-ray/PDF label text) but is byte-identical-locked
      against a `hauska-engine` file by a SHA256 parity fixture
      (`buildable-display-vocab.parity.test.ts`) — a cross-repo change, correctly
-     not touched by this lane. RULING: contended across three threads (this
-     lane, P-120 item 5, the P-121 atom program); doc-repo-6f is sequencing the
-     order. Keep not touching it until that sequencing comes back. Two more
-     same-convention files inside hauska-map itself (`lib/sheet-to-card-model.ts`,
-     `lib/baked-facets.ts`) are fixable in-repo but need a coordinated
-     multi-file pass against several exact-match tests, not a one-line edit;
-     still unsequenced.
+     not touched by this lane. RESOLVED 2026-09-07: not a sequencing problem,
+     an ownership one. The file is a full 10.4 KB copy in both repos, each also
+     carrying a `peer.fixture` copy of the other's source plus a sha256
+     lockfile — one text change is six files across two repos, and CI goes red
+     in both sides if either moves alone. No single lane can execute it. This
+     lane's 9 em dashes are the only byte change of the three claimants, so
+     they go first, run by doc-repo-6f across both lanes in one window once
+     current batches settle. Keep not touching it. Two more same-convention
+     files inside hauska-map itself (`lib/sheet-to-card-model.ts`,
+     `lib/baked-facets.ts`) have no cross-repo lock and are CLEARED as ordinary
+     work in this lane — still need a coordinated multi-file pass against
+     several exact-match tests, not a one-line edit, but no longer blocked.
+     CLOSED 2026-09-07, `hauska-map` PR #371 (6 files, CI running as of this
+     note, Source encoding green). Fixed the `${type/code} — ${name/description}`
+     join in both files (special-district + land-use in
+     `sheet-to-card-model.ts`, its own land-use formatter in
+     `baked-facets.ts`), coordinated across every real consumer test including
+     `compare-facts.test.ts`/`compare-tool.test.tsx` (traced through
+     `deriveBakedCardModel`'s formatting via `cellFromFacet`, confirmed a real
+     call chain, not a coincidental shared string). One thing deliberately left
+     alone: `baked-facets.test.ts` also carries em-dash fixtures for
+     city-limits/utility-service/overlay-districts/ag-valuation `display`
+     fields, but those functions pass the `display` string through verbatim
+     from the sheet, they never compose it — the em dash simulates
+     backend-supplied data, not something this file joins. Not this lane's
+     fixture to "fix" without a real code change behind it; a data-owner
+     question if the real backend ever sends one. A six-batch combination
+     regression pass against this commit was CLAIMED then RETRACTED by the
+     lane before it had actually run (self-corrected within the same
+     exchange), then genuinely performed: 197 test files, 2788 tests passed,
+     1 todo, 0 failures, on `400d4d3`; fresh live-browser walkthrough clean
+     (button fills, "2 months free" x3, boilerplate absent, only the known
+     pre-existing backend-less console noise); one em dash found in the
+     pricing comparison table, traced via DOM inspection to the already
+     ruled-out-of-scope placeholder glyph, confirmed via source not assumed.
+     PR #371 merged (`b704cbf1`, 2026-09-07T17:41:05Z, verified live via `gh`
+     both pre- and post-merge).
 
   Separately found while checking question 1, not this lane's item: a
   dash-as-sentinel defect in `records-chat-context.ts:47` (a display glyph used
@@ -95,8 +125,13 @@ the integration seat instead of fixing it.
   app's own existing on-brand tooltip component (`MapFlyTip`, already used
   elsewhere in the same file) and scope the trigger to just the dot. Operator's
   original objection was to how it looks and how easily it fires, not to the
-  information existing, so WB7c's intent is preserved. Not yet implemented,
-  cleared to proceed.
+  information existing, so WB7c's intent is preserved. CLOSED 2026-09-07,
+  `hauska-map` PR #367 (`2281a74`, 2026-09-07T16:11:54Z): native `title`
+  removed from the row entirely, dot uses `MapFlyTip`, scoped to the dot only.
+  Verified live (dev build): computed styles confirm no native title anywhere,
+  hovering the row shows nothing, hovering the dot shows the styled tooltip
+  with the correct honesty note. This bullet was not updated when the fix
+  actually landed; corrected now during the 2026-09-07 final-state pass.
 - Search bar: selecting a property then searching a second one zooms in behind the
   subject bar (stacking/z-index bug). STILL HELD 2026-09-07: `cente-7d` cannot
   reproduce this at all in the current dev setup (search runs through
@@ -179,6 +214,18 @@ the integration seat instead of fixing it.
   whose client code is symmetric with Studio/Team). The two-choice-step gap is
   confirmed an independent frontend/product decision, not something that
   resolves itself once billing fixes Solo's price.
+  **RESOLVED 2026-09-07, and this was a real process failure worth stating
+  plainly: the Solo checkout defect was STALE, not live.** Per P-123, the
+  operator re-tested directly and Solo checkout works; Stripe shows Solo
+  Active with two subscriptions and $98 MRR, products created 2026-09-03. The
+  defect was real when the source review was written (2026-09-04) and had
+  stopped being true by the time anyone re-ran it. It was carried forward as
+  currently-true through this triage doc, into cente-7d's code trace, into
+  doc-repo-6f's escalation and root-cause elimination, without anyone
+  re-testing the actual button first. This lane triaged from a 3-day-old
+  document without flagging that time-sensitive items need re-verification
+  before deep investigation, not just before a fix — the cost was several real
+  hours of tracing a bug that had already stopped existing.
 - Signed-in user can't see what plan they're on; the page goes blank. BLOCKED,
   not yet verified either way: unverifiable without a real signed-in session;
   this dev environment has no backend, so everything correctly reads "not
