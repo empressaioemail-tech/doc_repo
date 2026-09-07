@@ -1,0 +1,46 @@
+{
+  "lane": "ctx-wrapup-map",
+  "seat": "hauska-map",
+  "snapshot": {
+    "repo": "hauska-map",
+    "branch": "main",
+    "commit": "5a2f56d"
+  },
+  "sourceItem": "90_operations/OPS-16_texas_market_plan_of_record.md, P-123 row, 'Go ahead on the P-123 items' from doc-repo-2c",
+  "checkpoint": "CLOSE — client-side half only, as agreed. Server side (legacy-design-tools) not built yet; MERGED, NOT DEPLOYED (see production-state note below).",
+  "date": "2026-09-07",
+
+  "investigationBeforeAnyCode": {
+    "email": "Confirmed buildable exactly as scoped: legacy-design-tools' peIdentity.ts already has getPeUserEmail(userId) (built for Stripe checkout email population), and peEntitlement.ts's peEntitlementAccountBody() has an established account-body-only field pattern (hasBillingAccount, added for A-062) to extend.",
+    "renewalDate": "NOT what the P-123 row framed it as. Checked whether a period-end/renewal value is stored anywhere in legacy-design-tools: it deliberately is not. Migration 0092's own comment: billing_interval was derived from the Stripe price id specifically 'to avoid current_period_end and price.recurring.interval, whose shapes track the Stripe API version.' So there is no stored column to read — the only source is a live, uncached Stripe API call. Reported this to doc-repo-2c before writing anything; agreed direction is a separate, narrower route (matching the billing-portal precedent) rather than folding a live Stripe dependency into the common /entitlement hit. NOT built this pass — the route doesn't exist yet and its shape isn't decided, so there is nothing concrete for a client to parse without inventing a contract."
+  },
+
+  "ownership": {
+    "decision": "Both server-side changes (email, renewal-date) route to cente-c1's existing legacy-design-tools queue rather than a new hauska-map-held LDT worktree — agreed with doc-repo-2c, standing up a full LDT worktree (Docker Postgres, drizzle push) was judged disproportionate for two small, bounded changes cente-c1 already has context for.",
+    "hauskaMapScope": "Client-side half only, built now so it's ready the moment the server field lands, per doc-repo-2c's go-ahead."
+  },
+
+  "fix": {
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/372, merged 5a2f56d (fast-forward).",
+    "what": "accountEntitlementClient.ts's AccountEntitlement gained `email: string | null`, parsed the same fail-closed way every other field on this contract is (absent/null/non-string -> null, only a real non-empty string resolves). SettingsModal.tsx's 'Signed in as' row now reads a new exported emailLabel(read) — same four-state discipline as accessLabel (unresolved/failed -> Not read, signed-out -> Not read, null email -> Not read, real string -> printed) — replacing what had been a hardcoded 'Not read' span since the row's original build.",
+    "renewalDateRow": "Left completely untouched (still the static 'Renewal date' / Not read row) — correctly, since there is no wire field or route to read from yet. Existing settings-plan-rows.test.tsx already pins this row staying inert; not touched or re-pinned differently.",
+    "testEvidence": "pnpm --filter property-explorer exec tsc --noEmit: clean. Full gate/test suite: 198 files / 2794 tests pass. New: settings-email-row.test.tsx (emailLabel unit tests + first-paint pin, mirroring settings-plan-rows.test.tsx's pattern for accessLabel/tierNameLabel/billingIntervalLabel). Extended account-entitlement-client.test.ts (email parse coverage, both the full-contract shape test and the pre-contract-server test) and settings-modal.test.tsx (testid renamed settings-email-not-read -> settings-email since the row is no longer permanently hardcoded, first-paint assertion re-pinned to confirm it still reads Not read before the account fetch resolves)."
+  },
+
+  "productionState": {
+    "note": "MERGED, NOT DEPLOYED, same as this lane's other four merges tonight (#362, #363, #365, #370) per the verification already reported to doc-repo-2c: the last production Vercel deploy for property-explorer was Sat Sep 05 2026 12:52:17 CDT, and no deploy has run since. This PR's commit (5a2f56d) is on main but will not be live on smartsite.cloud until someone runs a production deploy. Not claiming otherwise here."
+  },
+
+  "leave_behind": [
+    {
+      "item": "legacy-design-tools: add `email` to peEntitlementAccountBody (peEntitlement.ts), sourced from the existing getPeUserEmail(userId) in peIdentity.ts. Small, bounded, same pattern as hasBillingAccount.",
+      "owner": "cente-c1 (legacy-design-tools), per doc-repo-2c's routing",
+      "reason": "Server-side entitlement contract change; hauska-map holds no code here."
+    },
+    {
+      "item": "legacy-design-tools: design + build a separate, narrower renewal-date route (live Stripe call, likely gated to when Settings > Plan opens rather than folded into the common /entitlement hit) — the actual mechanism, not a stored-field read.",
+      "owner": "cente-c1 (legacy-design-tools), per doc-repo-2c's routing",
+      "reason": "Requires a live external Stripe call and a route-shape decision neither of which exists yet; hauska-map's client half cannot be built until the route and its response shape are real, to avoid inventing a contract."
+    }
+  ]
+}
