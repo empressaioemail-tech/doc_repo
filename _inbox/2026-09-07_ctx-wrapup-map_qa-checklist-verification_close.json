@@ -1,0 +1,55 @@
+{
+  "lane": "ctx-wrapup-map",
+  "seat": "hauska-map",
+  "snapshot": {
+    "repo": "hauska-map",
+    "branch": "main",
+    "commit": "fb8abc1"
+  },
+  "sourceItem": "_inbox/2026-09-07_integration_smart-site-ui-review-triage.md, 'Functional/backend QA checklist for already-merged work' section, routed by doc-repo-2c",
+  "checkpoint": "CLOSE — verification pass, not new fixes. Real findings surfaced, one real gap identified (P-106's projection is empty in production).",
+  "date": "2026-09-07",
+  "methodNote": "Live-verified wherever possible rather than reading code and trusting it: real MCP tool calls against the actual production Smart Site server (this session's own connected mcp__claude_ai_Smart_Site__* tools — a genuine signed-in free-tier account, not a simulation), a real read-only query against legacy-design-tools' production Neon, and a real Playwright pass against smartsite.cloud. Read each item's own close doc first (A-062, P-101-build, P-106) to know the real acceptance criteria rather than re-deriving them from the triage summary.",
+
+  "generalRegression": {
+    "tsErrors": "The triage doc's '~30 pre-existing TypeScript errors in api/pe-share*.ts' do not exist today. pnpm --filter property-explorer exec tsc --noEmit is clean, zero output, confirmed on current main (fb8abc1). Already resolved by other work that landed since the review was written 2026-09-04 -- not something this pass needed to fix.",
+    "coreSurfaces": "Live Playwright pass against smartsite.cloud (anonymous): map loads and renders, cold-open dismisses correctly, Brief/Chat/Reports & Exports workbench tools all open without error and render correct honest-empty-state copy for a no-parcel-selected anonymous session ('Sign in with Google', 'Select a property first', etc). Reports tool's 'My reports | Shared with me' tabs (P-100/W2.5-2.6) render. No unexpected console errors or thrown exceptions; the 401s and aborted map-layer requests observed are the expected shape for an anonymous session with no parcel selected (same as this lane's own earlier Killeen investigation tonight), not a regression."
+  },
+
+  "p100_shareFunnelInstrumentation": {
+    "verdict": "Already covered by this lane's own earlier close tonight (_inbox/2026-09-07_ctx-wrapup-map_share-attribution-retry_close.json) -- the attribution gap this checklist names is the bug already fixed and merged (PR #363). Not re-verified again here beyond that."
+  },
+
+  "p101_ladderRecut": {
+    "verdict": "PASS -- verified live, not just in source",
+    "clientSidePricingSurface_codeConfirmed": "pricing.ts's PE_PRICING.groups has exactly the four keys the close doc's acceptance item names (answer, list, handoff, firm) and Studio's badge is 'Work a list', not the retired 'The packet'. Confirmed on current main, not just in the close doc's own claim.",
+    "screenGate_liveConfirmed": "Called the real production MCP tools directly (mcp__claude_ai_Smart_Site__list_screens and create_screen), as this session's own connected (free-tier) account: list_screens succeeded unconditionally, returning 30 real existing screens -- confirms 'a free connector user can still see an empty/existing screen list' holds. create_screen was REFUSED live: {status:'upgrade_required', reason:'studio_screens', tier:'free', subscriptionTier:null, message:'Studio or Team is required to build a screen. Solo answers one parcel; Studio works a list of them.'} -- an exact match to the close doc's own acceptance item 1/5 wording. No test screen was created (the refusal fired before any write), nothing to clean up."
+  },
+
+  "p106_constraintSearch": {
+    "verdict": "GATING LOGIC: PASS, live-confirmed, honest. UNDERLYING FEATURE: NOT YET USABLE -- real finding, not assumed from the close doc's own 5-day-old 'not built' note.",
+    "infrastructureConfirmedLive": "Called mcp__claude_ai_Smart_Site__find_parcels for real against Bastrop (48021, filter acreage>=1). Result: a real, honest refusal -- {status:'refused', reason:'constraint_projection_missing', message:'No constraint index rows exist for county 48021. The projection has not been built for it; that is not a claim that no parcels match.'} This is the CORRECT behavior per the card's own design (item 5: refusals declared, never a fabricated zero-match answer) and confirms the route, the MCP tool, and the honest-decline wiring are all live and correct.",
+    "dataGapConfirmedLive_notAssumed": "Checked legacy-design-tools' production Neon directly (read-only): pe_parcel_constraint_index has ZERO rows in ANY county, and pe_parcel_constraint_index_builds has ZERO rows total -- the builder job has never run once, for any county, since migration 0094 was applied. This is not stale information carried over from the 2026-09-02 close doc; it was checked fresh tonight, five days later, and nothing has changed. The close doc itself already said this ('the write half is not written... every control in it is armed nowhere but in CI and in a local proof') -- this pass confirms it is STILL true, not assumed still true.",
+    "whatThisMeansForTheChecklist": "find_parcels cannot answer a real question for ANY of the six CTX counties today, for anyone, regardless of tier. The gate and the honesty discipline both work; the feature itself has no data to search. This is entirely a legacy-design-tools-owned gap (the builder job and the two operator rulings its own close doc named -- the unmeasured-ceiling default and the zoning-divergence question) -- not something hauska-map can fix, since hauska-map holds none of this projection's write path."
+  },
+
+  "a062_billingPortal": {
+    "verdict": "PARTIAL -- code confirmed merged and correct by reading; the one live-money verification step remains genuinely unperformed, same as its own close doc already declared",
+    "mergedConfirmed": "git log confirms #334 (hauska-map) landed the real PR, not just an uncommitted lane diff as the close doc's own snapshot showed at filing time. portalClient.ts, deep-allowlist.ts's billing/portal entry, and pe-terms-cancellation.ts all exist on current main.",
+    "liveOpenNotPerformed_sameAsOriginalClose": "The close doc's own item 4 (F3) already declared this unverified: 'a live open showing the customer returns to smartsite.cloud... requires a real Stripe test-mode session opened from the deployed surface by a signed-in account... NOT DONE and is not claimed.' This lane could not perform it either -- it requires a real Stripe-paying test customer account, which this session does not have (this session's own connected Smart Site account, confirmed via the P-101 check above, is tier:free -- exactly the account the portal is supposed to honestly REFUSE, not open). Did not fabricate this verification.",
+    "whatWasActuallyCheckable": "The honest-refusal-for-a-never-paid-account behavior is the one live check this session's own account COULD exercise, but no MCP tool exposes the billing portal (it is a PE web-app Settings feature, not an MCP tool) and this session has no way to drive a real signed-in PE browser session against Settings without real OAuth credentials. Not attempted rather than faked with a browser automation that can't actually authenticate."
+  },
+
+  "leave_behind": [
+    {
+      "item": "P-106's constraint search has correct gating/honesty behavior but zero usable data in any county -- the builder job named in its own close doc has never been run",
+      "owner": "legacy-design-tools, per the two operator rulings already named in that card's own close doc (unmeasured-ceiling default, zoning-divergence option A vs B)",
+      "reason": "Entirely LDT-owned write path; hauska-map has no code here to fix. Flagging because five days have passed with no change, which is worth someone's attention even though it's not new information this pass discovered from scratch."
+    },
+    {
+      "item": "A-062's live Stripe portal open (a real paying test customer signed in on smartsite.cloud, opening the portal, confirming the Stripe return lands back on smartsite.cloud) remains unperformed",
+      "owner": "whoever holds a real Stripe test-mode paying account for this purpose",
+      "reason": "Needs credentials/an account this session does not have. Code path confirmed correct by reading; the live-money step is the one thing that has to be a human (or an account) actually completing a real Stripe flow."
+    }
+  ]
+}
