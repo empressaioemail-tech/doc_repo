@@ -1,0 +1,36 @@
+{
+  "lane": "ctx-wrapup-map",
+  "seat": "hauska-map",
+  "snapshot": {
+    "repo": "hauska-map",
+    "branch": "main",
+    "commit": "fb8abc1"
+  },
+  "sourceItem": "_inbox/2026-09-07_integration_smart-site-ui-review-triage.md, 'Data / attribution bugs' bucket, routed by doc-repo-2c",
+  "checkpoint": "CLOSE — real fix shipped and verified against production; per-share opt-in gating explicitly left as a separate cross-repo item",
+  "date": "2026-09-07",
+
+  "trigger": "2026-09-04 Smart Site UI review: 'Flood report data isn't passing through to the sharable section even though the user can see it elsewhere in the app.'",
+
+  "investigation": {
+    "findingBeforeAnyCode": "Traced both parallel share-link mechanisms (/share#token -> api/pe-share-view.ts; /s/{grantId} -> api/pe-share-grant.ts, backed by cortex's own Neon store per pe-share-grant-store.ts). Neither ever served flood data -- the share-view data plane only supported brief/siteplan/terrain/dossier. Separately found PropertyDossierDetail.tsx's X-ray/Flood inclusion checkboxes were already dead on arrival: handleMintShare only ever sent includeNotes to the mint route, dropping includeXray/includeFlood before the request left the browser; even if it hadn't, cortex's ShareGrantInsertSchema (legacy-design-tools/propertyExplorer.ts, Zod) has no column for either flag and strips unknown fields silently.",
+    "scopeDecision": "Reported this to doc-repo-2c before writing code. Agreed scope: (c) ship the real, immediately-buildable half now (flood served whenever it exists, mirroring site plan/terrain's own no-per-share-flag precedent) rather than block on the cortex-side schema work a true per-share opt-in needs. doc-repo-2c added one requirement: the checkboxes could not stay interactive once they controlled nothing -- an inert interactive control is worse than no control (matches this whole sprint's honesty doctrine). Done in the same PR."
+  },
+
+  "fix": {
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/370, merged fb8abc1 (fast-forward, arrived alongside ~100 files of concurrent UI-QA lane work; re-verified typecheck clean on the merged HEAD before closing).",
+    "serverSide": "what=flood added to both api/pe-share-view.ts and api/pe-share-grant.ts, mirroring the existing siteplan/terrain download-only pattern exactly: direct BFF-to-engine-api transport (no MCP tool exists for this report -- see pe-flood-drainage-handler.ts), honest 404 rather than triggering a fresh engine run, no per-viewer entitlement re-check (same trust model already used for every other share artifact type -- the sharer's own entitlement produced it once, the link re-serves it read-only).",
+    "clientSide": "A 'Download flood & drainage report (PDF)' button added to ShareAnalysisContent -- the one composer both link types already share, so both consumption paths got the fix from one change.",
+    "honestyFix": "Retired PropertyRowReports' X-ray/Flood checkboxes as an interactive control per doc-repo-2c's requirement. Replaced with a plain status line. Removed the now-dead onToggleShareReport plumbing end to end (PropertyDossierDetail.tsx's prop chain, PropertiesTool.tsx's handleToggleShareReport) rather than leaving unused dead code around it.",
+    "verification_realProductionCall": "No PR-preview deployment exists for this repo (checked: no preview URL, no Vercel bot comment, gh pr view shows none) -- Vercel deploys are production-only, on merge. Verified BEFORE merging by calling the actual engine-api endpoint directly with the real HAUSKA_ENGINE_API_KEY: confirmed a real 404 {\"error\":\"not_found\"} for a parcel with no report (48021:8733833), then found a real cached report on 48021:34177 (a genuine 200, real PDF bytes). Then ran THIS REPO'S OWN pe-share-view.ts handler function directly (a real minted token, real query, real fetch to production engine-api, no mocks) against that same parcel: status 200, Content-Type application/pdf, correct Content-Disposition filename, 243,623 real PDF bytes starting with the %PDF- magic bytes. This is the closest available substitute for 'verify in a running dev server' given no local/preview engine-api exists to point a dev server at -- the production upstream itself was exercised directly, both for the honest-decline and the success path, before merging.",
+    "testEvidence": "pnpm --filter property-explorer exec tsc --noEmit: clean (both pre-merge on the branch and re-checked post-merge on the resulting main). Full gate/test suite: 197 files / 2788 tests pass pre-merge. New: api/pe-share-view.test.ts (7 tests) and api/pe-share-grant.test.ts (4 tests) -- positive PDF stream, honest 404 when never generated (never a trigger to generate), 503 when the engine gate token is missing, invalid/revoked access never reaches the engine, regression that the other what= values still route correctly. Extended share-dossier.test.tsx to assert the Flood button renders after site plan/terrain."
+  },
+
+  "leave_behind": [
+    {
+      "item": "Real per-share flood/X-ray opt-in/opt-out needs a column + schema + route change on cortex's own grant store (legacy-design-tools/propertyExplorer.ts's ShareGrantInsertSchema and Neon peShareGrants table) -- out of this repo's reach alone.",
+      "owner": "whoever owns legacy-design-tools' share-grant route, per doc-repo-2c's routing",
+      "reason": "Cross-repo schema change; this card shipped the always-available-if-generated behavior instead (matching site plan/terrain's existing precedent) and explicitly retired the checkbox that promised the unbuilt version rather than leave it lying."
+    }
+  ]
+}
