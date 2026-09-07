@@ -1,0 +1,41 @@
+{
+  "lane": "ctx-wrapup-map",
+  "seat": "hauska-map",
+  "snapshot": {
+    "repo": "hauska-map",
+    "branch": "main",
+    "commit": "7a1845a"
+  },
+  "sourceItem": "_inbox/2026-09-07_integration_smart-site-ui-review-triage.md, 'Data / attribution bugs' bucket, routed by doc-repo-2c",
+  "checkpoint": "CLOSE",
+  "date": "2026-09-07",
+
+  "trigger": "2026-09-04 Smart Site UI review flagged: share-link signups aren't attributing back to the correct sharer (pe_share_attributions row silently dropped) — already tracked as a 'NO' in P-100's own QA checklist.",
+
+  "verification_before_writing_code": {
+    "dbCheck": "Connected read-only to legacy-design-tools-prod Neon (DEPLOYMENT_DATABASE_URL_DIRECT). pe_share_attributions table exists (migration 0093 has been applied since P-100's 2026-09-01 close, which had flagged it as written-not-applied). All-time: 4 rows in pe_share_grants (all from one grantor, u_096f75b78584123cfb0c5568, all within the last 24h — consistent with the operator's own review/testing), 1 row in pe_share_attributions. Cross-referenced against users.created_at: exactly 1 real new signup occurred in that window (hoffmanshomes@gmail.com, 2026-09-06 23:20:45) and it attributed correctly one second later. The other 3 grants have no corresponding new-user row at all (consistent with the operator testing the mint/link flow without completing a fresh outside signup through it each time, not a failure).",
+    "conclusion": "Too small and too recent a sample to catch a live failure in the act, or to confirm the 9/4 review's finding is still reproducible today. Did not attempt to force a repro by creating a synthetic account against production. Proceeded from the code-level mechanism instead, which independently shows a real, unconditional gap regardless of whether this specific week's data happens to show it firing."
+  },
+
+  "rootCauseFoundByReadingTheWritePath": {
+    "mechanism": "apps/property-explorer/src/lib/gtmClient.ts's claimShareAttribution wraps its one POST attempt in a try/catch that swallows every failure and returns {ok:false} with no logging. Its only caller, ShareFunnelApp.tsx (on the ?signed_in=1 sign-in-return leg), calls it with `void` and never reads the result. The triggering URL param is stripped from the address bar immediately after this code runs (stripSignedInParam), so this was a genuine one-shot, unretried call: a single transient failure (a cold Vercel function, or the entitlement-detail lookup pe-gtm.ts itself makes to resolve who just signed in — also a single-attempt fetch, no retry) was a permanent, silent, untraceable loss.",
+    "secondMechanismConsidered_rejected": "That the sign-in method mattered (Google OAuth vs. the P-112 email magic-link) — e.g. one method redirecting through ?signed_in=1 and the other completing in-page without it, silently skipping the whole restore/attribution path for one entire class of users. Read api/auth.ts directly: both the OAuth callback (line 279) and the magic-link verify (line 358) redirect to the identical /?signed_in=1, so this theory does not hold — both paths converge correctly on the same restore mechanism."
+  },
+
+  "fix": {
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/363, merged 7a1845a (fast-forward).",
+    "what": "claimShareAttribution retries up to 3 attempts with backoff. New share-attribution-retry.ts persists the pending claim to localStorage BEFORE attempting it (survives a reload or the tab closing, unlike the sessionStorage grant-id stash share-landing.ts already clears) and clears it only on confirmed success. App.tsx retries any still-pending claim on every boot (share landing or plain map), declared before the share-landing branch so it runs regardless of which branch a given render takes. Safe to repeat: the server side is idempotent by design (P-100 — keyed on the recipient's own primary key).",
+    "scopeLimit": "Does not touch legacy-design-tools/cortex, where the actual pe_share_attributions table, the entitlement-detail route, and the share-attribution route itself live. This fix is entirely about the one-shot, unretried, undiscoverable-failure CLIENT call pattern in hauska-map. If the entitlement-detail hop or the cortex route itself has its own reliability gap, that's outside this repo and not assessed here.",
+    "testEvidence": "pnpm --filter property-explorer exec tsc --noEmit: clean. Full gate/test suite: 194 files / 2764 tests pass. New: gtmClient.test.ts (succeeds first try; retries a transient HTTP failure and a network throw; gives up after exhausting attempts without falsely reporting success; sends only grantId/surface, asserts no client identity); share-attribution-retry.test.ts (stash/read/clear round-trip, durability across independent reads, malformed/incomplete stored JSON degrades to null rather than throwing, newer stash overwrites older). Extended the existing share-funnel.test.tsx source-inspection test to assert the new stash/clear wiring is present in both ShareFunnelApp.tsx and App.tsx. CI (Typecheck, test, No double-encoded source) green before self-merge."
+  },
+
+  "sessionNote_branchHygiene": "Drifted onto editing directly against local main again before cutting a branch (second time this session — doc-repo-f9 flagged it mid-task). Caught before committing: stashed, fast-forwarded, moved to fix/pe-share-attribution-retry, then committed. No bad state reached main. Noting explicitly since it's a real repeated process gap on this lane's part, not a one-off.",
+
+  "leave_behind": [
+    {
+      "item": "This fix targets the mechanism gap (no retry, no durability), not a confirmed live reproduction — the production sample was too small (1 real signup) to catch a failure in progress. If the review's original symptom recurs after this fix, the next place to look is the entitlement-detail route or the cortex share-attribution route itself (legacy-design-tools), which this fix does not touch.",
+      "owner": "whoever owns legacy-design-tools if it recurs",
+      "reason": "Out of this repo's scope; flagging so a recurrence isn't assumed to mean this fix failed when the real cause could be server-side."
+    }
+  ]
+}
