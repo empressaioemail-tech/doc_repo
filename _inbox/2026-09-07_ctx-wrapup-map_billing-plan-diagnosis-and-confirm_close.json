@@ -1,0 +1,39 @@
+{
+  "lane": "ctx-wrapup-map",
+  "seat": "hauska-map",
+  "snapshot": {
+    "repo": "hauska-map",
+    "branch": "main",
+    "commit": "1ef9013"
+  },
+  "sourceItem": "_inbox/2026-09-07_integration_smart-site-ui-review-triage.md, 'Billing / payments logic' bucket, routed by doc-repo-2c",
+  "checkpoint": "CLOSE (diagnosis + defense-in-depth) — real fix routed elsewhere, not closed here",
+  "date": "2026-09-07",
+
+  "trigger": "2026-09-04 Smart Site UI review: one account held two simultaneously-active billing plans (one annual, one monthly).",
+
+  "diagnosis": {
+    "finding": "hauska-map has ZERO server-side subscription-management code for this flow. Confirmed by direct search: no Stripe webhook handling anywhere in this repo (no checkout.session.completed / customer.subscription.* handling at all). PE's checkout client (billingClient.ts's startPeCheckout, called from useCheckoutActions.ts's handleSubscription) does nothing but POST to cortex's /api/property-explorer/v1/billing/checkout and render whatever comes back — no check for an existing active plan before firing, client or server, anywhere in this codebase before this card.",
+    "whereTheRealFixLives": "legacy-design-tools (brokerageBilling.ts / brokerageStripe.ts) owns Stripe subscription creation and webhook processing — confirmed these exist and own this area from tracing P-100's 2026-09-01 close doc earlier tonight. A real fix (refuse or supersede a second active plan at checkout-session creation, or reconcile on webhook) belongs there.",
+    "actionTaken": "Reported the diagnosis to doc-repo-2c rather than attempting a fix in a repo this lane does not own. doc-repo-2c is routing the actual fix to cente-c1 (legacy-design-tools)."
+  },
+
+  "defenseInDepthShipped": {
+    "pr": "https://github.com/empressaioemail-tech/hauska-map/pull/365, merged 1ef9013 (fast-forward).",
+    "explicitlyNotTheFix": "Approved by doc-repo-2c on the condition it stays labeled as defense-in-depth, not the fix, in both the PR description and the code comment — done in both places.",
+    "what": "PricingModal already reads the account's current tier/interval via useAccountEntitlement but never checked it before firing a checkout for a different plan. A click that would change the account's active plan (different tier and/or interval) now shows an inline warning and requires a second click on the SAME tier to proceed. Logic extracted as a pure, directly-tested function (planChangeNeedsConfirmation) rather than left inline in the hook, matching this repo's own established idiom for exactly this class of decision.",
+    "whatItDoesNotClose": "Two browser tabs, or anything hitting the checkout endpoint directly (not through this UI), still isn't caught. Stated explicitly in the code comment and PR description so it can't be mistaken for the real fix later.",
+    "honestDegradeRule": "An unread, signed-out, or unknown current-plan state never blocks a checkout — absence must not read as 'no current plan' any more confidently than it reads as one. Verified: the existing 25 pricing-modal tests (which don't mock useAccountEntitlement's fetch) still pass unaffected — the hook's own fetchAccountEntitlement already catches every fetch failure and returns a safe {kind:'error'} outcome.",
+    "testEvidence": "pnpm --filter property-explorer exec tsc --noEmit: clean. Full gate/test suite: 194 files / 2770 tests pass. New: planChangeNeedsConfirmation unit tests (tier change, interval-only change, second-click proceeds, exact-current-plan falsifier, null/undefined-current-plan falsifier, pending-confirmation-for-a-different-tier resets). CI green before self-merge."
+  },
+
+  "sessionNote_branchHygiene": "Drifted onto editing directly against local main a THIRD time this session before cutting a branch, despite doc-repo-f9 flagging it after the second occurrence and my own explicit acknowledgment. Caught before committing each time; no bad state reached main. Filed a durable feedback memory this time (not just a one-off correction) since the pattern repeated after being flagged once already.",
+
+  "leave_behind": [
+    {
+      "item": "The actual dual-active-plan fix (refuse-or-supersede at checkout-session creation or webhook reconciliation) is unbuilt — this card only diagnosed it and shipped a partial client-side mitigation.",
+      "owner": "cente-c1 (legacy-design-tools), per doc-repo-2c's routing",
+      "reason": "Outside hauska-map's repo boundary; this lane does not own or write to legacy-design-tools."
+    }
+  ]
+}
