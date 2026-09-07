@@ -2,7 +2,7 @@
 id: 2026-09-07_records-worker_fabricated-zero-guard-fails-open_finding
 title: The fabricated-zero guard fails open in three ways, and nothing counts it
 date: 2026-09-07
-status: open, unruled
+status: open, unruled. AMENDED 2026-09-07 after R-02 established the fail-open path is asserted green in the test suite and named after Hays.
 plan_row: P-120 (OPS-16), item 17b-gate
 owner: planner (doc_repo, integration seat). Found while VERIFYING R-02's close, not by R-02, and not by the lane that wrote the guard.
 snapshot: legacy-design-tools origin/main, read 2026-09-07. Files and lines cited below were read from that ref via `git show`, not from a working tree. No live probe was run for this finding; the two probe results quoted are R-02's, re-read from their filed close.
@@ -105,6 +105,56 @@ outside because the failure produces a clean `complete` with a zero count.
 hint is indistinguishable, in anything downstream, from a genuine zero. So
 the exposure is not merely unfixed, it is unobserved. That is the sentence
 this finding exists to deliver.
+
+## The behaviour is asserted, green, and names Hays
+
+Established by R-02 on request and verified here against origin/main.
+`artifacts/records-request-worker/src/recipes/searchPostProcess.test.ts:37-48`:
+
+    it("reports complete/zero as before when the portal publishes no
+        total-results hint (no regression for portals without the signal,
+        e.g. Hays)", async () => {
+      const browser = mockBrowser(); // extractTotalResultsHint not implemented
+      const result = await finalizeIndexSearchWithAcquisition({
+        ctx, portalId: "hays-erss", browser,
+        scope: { mode: "index-search" }, resultCount: null,
+      });
+      expect(result.status).toBe("complete");
+    });
+
+This is worse than uncovered. The fail-open path is not an untested gap, it
+is a pinned specification: the test hard-codes `portalId: "hays-erss"`, names
+Hays in its own title as the reference example of a portal expected to return
+complete on an unverified zero, and is green in CI.
+
+Two consequences. A correct fix reads as a regression and fails this test, so
+whoever attempts it will see a red suite telling them they broke Hays. And
+the county 17b-gate was commissioned to investigate is the one written into
+the suite as the example of why the unsafe branch is fine.
+
+This is the doctrine's own rule landing exactly: never assert a value the
+system produces that no external authority recognises, because it converts a
+defect into a specification. No external authority says a portal that
+publishes no hint has zero records. The test asserts current behaviour, not
+the rule.
+
+Worth recording that this is the SECOND instance of that exact error found in
+one session, in two repos, by two authors. The planner's own
+`feasibility-narrative-wiring.test.ts` asserted that an unconfigured narrative
+fallback emitted no reason, under a heading about preserving pre-existing
+behaviour, pinning that defect the same way; caught in review by doc-repo-26
+and fixed in hauska-engine PR #403. Two instances in one night is a pattern in
+how tests get written here, not two accidents. Both were written by careful
+authors, both were green, and neither suite could have caught its own defect
+because the suite was the thing that was wrong.
+
+## Nothing counts it, confirmed by search
+
+R-02 grepped the full records-request-worker src tree, `scripts/p85/*`, and
+api-server's `records_request_jobs` consumers for anything counting or
+auditing a `complete` result carrying zero hits and a null or absent hint.
+Nothing. Only the implementation and its two test files reference the hint at
+all. The exposure is unobserved, not merely unfixed.
 
 ## What a fix has to answer
 
