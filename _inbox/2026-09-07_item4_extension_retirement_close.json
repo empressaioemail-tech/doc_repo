@@ -1,0 +1,26 @@
+{
+  "item": "P-120 item 4 — chrome-extension retirement",
+  "closedAt": "2026-09-07T23:25:00Z",
+  "repo": "legacy-design-tools",
+  "prs": [
+    {
+      "number": 634,
+      "title": "fix(brokerage): retire extension_public auth tier",
+      "mergeCommit": "b643a7e33743f6a57c21150bd1001413aeba8314",
+      "summary": "extension_public tier retired per operator ruling 2026-09-07 (\"cut the chrome extension we don't need it\"). loadBrokerageApiKeys() no longer recognizes BROKERAGE_EXTENSION_PUBLIC_KEY; resolveBrokerageClientTier never returns extension_public. isExtensionPublicClient and the extension_public union member left in place (now-permanently-dead branches in ~7 files), not a route deletion. 248 brokerage_brief_runs total ever, zero since 2026-08-09."
+    },
+    {
+      "number": 639,
+      "title": "fix(brokerage): check session-JWT before the keys-configured gate",
+      "mergeCommit": "03b4486a4245d00f82910fa28a3b74655e2194b0",
+      "summary": "Direct, necessary follow-on to #634, found while smoke-testing its canary before shifting traffic. BROKERAGE_EXTENSION_PUBLIC_KEY was the ONLY brokerage secret ever provisioned to cortex-api's Cloud Run service (confirmed via gcloud secrets list — BROKERAGE_OPERATOR_API_KEYS/BROKERAGE_API_KEYS have never existed). brokerageAuth()'s keys.size===0 503 gate ran before the session-JWT check, so it was only ever avoided because the extension key kept that set non-empty. Retiring it would have 503'd every brokerage request in production, including real logged-in session users, not just the retired tier. Fixed by checking session-JWT first, independent of key configuration; same fix in requireBrokerageAuthOrServiceToken's dual-path auth (had the identical bug independently)."
+    }
+  ],
+  "howFound": "Curled #634's canary directly with the old extension key BEFORE shifting traffic, predicting a 401. Got 503 property_brief_api_unconfigured instead — a pre-registered falsifier that caught the gap at 0% traffic, no real user touched.",
+  "verification": {
+    "unitTests": "New tests in brokerageAuth.test.ts: a valid session token (real HMAC-signed via mintSessionToken/verifySessionToken) authenticates with zero brokerage API keys configured; a garbage bearer token and an invalid dotted token both still 503 (honest unconfigured, not a false accept). Full brokerageBrief.test.ts (23 tests) and brokerageServiceAuth.test.ts (5 tests) pass unchanged. MCP service tokens confirmed independent of the brokerage key set entirely (checked via a separate SERVICE_API_KEY secret, before loadBrokerageApiKeys() is ever called) — never at risk.",
+    "productionSmokeTestCaveat": "A behavioral smoke test against the canary (old key / anonymous / garbage-dotted-token, all expecting 503) turned out to be non-discriminating — the unfixed code produces the identical 503 for all three inputs via a different code path (keys.size===0 gate firing first vs. session-verify-then-keys-gate). Caught this before treating the smoke test as verification. The decisive check was provenance: the running revision's container image digest (sha256:895bd7e4...) is tagged in Artifact Registry with the exact #639 merge commit SHA (03b4486a4245d00f82910fa28a3b74655e2194b0) via the build workflow's own `docker build -t \"${IMAGE}:${{ github.sha }}\"` step — first-party CI provenance, not an inference from timing. No live probe exists that can positively confirm the session-JWT success path in production without a genuine logged-in user's session token, which was correctly not forged.",
+    "servedRevision": "cortex-api-00745-cud, 100% traffic, commit 03b4486a4245d00f82910fa28a3b74655e2194b0"
+  },
+  "leaveBehind": "None outstanding for this item. isExtensionPublicClient/EXTENSION_PUBLIC_CLIENT_TIER and the ~7 files branching on them remain as permanently-dead-but-present code by design (larger, separate cleanup not required for the retirement)."
+}
