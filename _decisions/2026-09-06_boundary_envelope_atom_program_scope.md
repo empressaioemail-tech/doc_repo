@@ -80,6 +80,78 @@ rather than two independently-drifting implementations, with a real mechanism
 keeping coverage current as parcels change — not a one-time fill that quietly
 rots the way Bastrop's already has.
 
+## Correction (2026-09-07): this doc's "DONE" has been merge-verification
+## wearing the word "live" — a serving state is now tracked separately
+
+Found while compiling a real SERVING-vs-merged enumeration at the operator's
+request. Items 2 and 3 above read "DONE 2026-09-06... verified live via
+`gh pr view`" — that verifies the PR's merge state, not that the code is
+serving production traffic. Cross-referencing merge timestamps against
+actual Cloud Run serving-revision creation times (a cheap, general
+instrument, credited to doc-repo-6f) settles it either way: `cortex-api`'s
+currently-serving revision (`00737-fog`) was created 2026-09-05T17:56Z and
+`smartsite-mcp`'s (`00097-sov`) at 2026-09-05T13:59Z — both **before**
+`legacy-design-tools#626` merged (2026-09-06T20:21:28Z) and before `#632`
+merged (2026-09-07). A revision created before a merge cannot contain it,
+regardless of which of the two surfaces actually hosts this code path. Items
+2 and 3 are **merged, correct, and not currently serving any request** —
+neither PE nor the MCP app is reading this fix in production today. Same
+holds for the separately-tracked "PE / Smart Site MCP app parity" closure
+below (`#632`), whose own "verified live" language almost certainly means a
+real Postgres integration test, not production traffic — both readings were
+honest when written; neither means what a fresh reader takes it to mean.
+
+**Standing convention from here forward**: `DONE` in this document records
+git/code state (merged, correct, tested) and is never sufficient on its own
+to claim something serves a customer. Before restating any item above as
+currently correct in production, check the actual serving revision against
+the merge commit — the same check that caught this. This is the same defect
+shape as the constraint-index finding elsewhere in tonight's work (code
+correct, nothing runs it) approached from the opposite direction (code
+correct, merged, nothing serves it) — both are ENFORCEMENT's opening line:
+an artifact that exists, is correct, and does nothing.
+
+## Update (2026-09-07, later same session): cortex-api genuinely redeployed
+## and verified — items 2/3 and the #632 parity fix are now actually serving
+
+cente-c1 deployed cortex-api for real after operator approval independently
+confirmed through its own channel, not taken on relay: revision
+`cortex-api-00739-xoy`, pinned to `#632`'s exact merge commit's image digest
+(`sha256:bc13c708...`), 100% traffic confirmed by reading the JSON traffic
+field by name (not a positional formatter). `DATABASE_URL` binding checked
+by field name both before and after the shift — the pooler-revert hazard
+this thread had flagged did not fire. The one pending migration
+(`0098_tx_wcad_ag_valuation.sql`) applied as a documented no-op (table
+already existed). The prior "merged, not deployed" status for items 2/3 and
+the #632 parity closure is superseded: they are now genuinely serving.
+
+**Killeen re-test found the original test parcels were invalid, not that the
+fix was wrong.** Of the two parcels first used to claim Killeen worked: one
+(`48027:41199`) is actually in Belton, not Killeen, and separately hit a
+real, unrelated geometry-validation bug (a boolean clip error on that
+parcel's specific ring) — its setback data itself resolved correctly once
+the city mixup was corrected. The other (`48027:455201`) is zoned
+commercial, genuinely out of scope for the residential-only table — its
+"no-district" result was correct, not a defect. A real, valid, in-scope
+Killeen residential parcel (`48027:5720`) was found and re-tested instead:
+clean 200, real drawn polygon, correct PR #630 setback values with a real
+citation. The unrelated Belton geometry-validation bug is a fresh, separate
+finding, not yet filed as its own record or assigned an owner.
+
+**A new, honest, deployed-but-invisible finding on D5/D6.** The zoning
+precedence fix (D5) is deployed and its logic is correct (proven by local
+tests), and `setbacksFact` (D6) is wired and appears on the live facets
+endpoint. But live production data shows the gate-evaluation pipeline that
+would ever let D5's "record wins" branch fire has never actually passed a
+single county for these two rails — zero rows in `parcel_gate_verdict` for
+`setbackFrontFt`, and every evaluated county shows `zoningDistrict` refuse,
+not pass. Every real parcel today falls through to the pre-existing baked
+behavior, correctly and as designed. This is not a D5/D6 defect — it is a
+separate, real gap in the gate-evaluation pipeline (nobody has scheduled or
+run it for these rails), meaning the fix's actual effect on any live user
+is currently zero and will stay that way until that evaluation runs
+somewhere. Not yet carded or assigned.
+
 ## Full ledger atomization — explicitly out of scope here
 
 ADR-031 already anticipated a "CTX atom-backfill card" as an open decision, not
