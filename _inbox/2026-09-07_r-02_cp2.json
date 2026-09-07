@@ -1,0 +1,69 @@
+{
+  "checkpoint": "CP2",
+  "type": "pilot/mid-work",
+  "lane": "R-02",
+  "laneLabel": "courthouse",
+  "planRow": "P-120",
+  "timestamp": "2026-09-07T21:45:00Z",
+  "interruptions": [
+    {
+      "from": "doc-repo-26",
+      "what": "identification request (lane ID, worktree, branch, HEAD) + fleet-wide coordination context (P-124, register-write ownership, deploy-interlock model)",
+      "recovery": "no sub-agents were running (this lane did not fan out); replied with the 4 requested lines plus the item-15 finding below immediately, no work lost"
+    },
+    {
+      "from": "doc-repo-31",
+      "what": "independent verification of the item-15 finding, correction of the dispatch's own premise, and clarification that doc-repo-31 (not doc-repo-26) is this lane's acceptance-routing primary",
+      "recovery": "acknowledged; continued to item 17c per the unaffected scope doc-repo-31 confirmed"
+    },
+    {
+      "from": "user (operator)",
+      "what": "direct mid-session authorization: 'authorized to run one live index-search against the Hays clerk portal via runRecipeForJob -- index search only, no purchase, no document retrieval. Report the result either way.'",
+      "recovery": "this is the exact trigger the dispatch said only the operator could supply; executed the pre-designed CP1 probe immediately, once, as scoped, and reported the raw result without editorializing it into a pass"
+    }
+  ],
+  "results": {
+    "item15": {
+      "status": "CLOSED (no-op on deploy; probe run)",
+      "premiseError": "The dispatch's stated premise ('PR #597 is merged and NOT serving... a real undone step') was WRONG. doc-repo-31 traced this to their own dispatch-authoring error: a prior finding by cente-c1 in seat_register.json already established this as a no-op, and doc-repo-31 had read that file at session start without connecting it.",
+      "verification": [
+        "gcloud run services describe records-request-worker --region=us-central1 --project=legacy-design-tools-prod --format=json, read status.traffic BY FIELD NAME: 100% on revision records-request-worker-00029-guy",
+        "That revision's image: us-central1-docker.pkg.dev/legacy-design-tools-prod/apps/records-request-worker@sha256:6918819392dba8ea13aeb2b2f11bf30cb2cce9a13b09bce23f756e700342f535",
+        "Cloud Build history for this service: exactly one build since PR #597 merged (2026-09-03T14:54:30Z, commit 53ebb43b0188bc1af780531d24a901d4f2ea1020) -- build 0f616b18 at 2026-09-03T19:02-19:04Z, producing that exact digest",
+        "Pulled the exact serving image BY DIGEST (not by tag), docker cp'd the full /app/src tree out, diffed recursively against the r02-courthouse worktree at origin/main (contains 53ebb43b): byte-for-byte identical except one later, unrelated test-only file (test.skip additions from a separate 2026-09-06/07 Bastrop test-hang fix, doc_repo _inbox/2026-09-06_legacy-design-tools-shared-reader_p85-timeout-fragility_close.json) -- zero runtime-code drift",
+        "Live refuse-probe (McLennan, the shared Tyler self-service path PR #597 fixed): ran the existing DB-free recipe test's underlying call (portalId mclennan-online-records, ownerName BAYLOR UNIVERSITY, matching the PR's own pre-merge live proof). Result: stepsReached included open-disclaimer AND accept-disclaimer (disclaimer race fixed), terminal needs-human/index-hit-extraction-unsupported, portalDeclaredResultCount 1706, indexHits [] -- the exact honest-refuse shape PR #597 shipped, now confirmed against source proven identical to what's deployed"
+      ],
+      "noTrafficShiftPerformed": true,
+      "reasonNoShift": "already at 100% on the correct revision; nothing to sequence through doc-repo-26"
+    },
+    "item17bGate": {
+      "status": "PREPARED per dispatch; then EXECUTED once the operator personally authorized it mid-session (message received directly from the user, not relayed by a peer)",
+      "preparationBeforeAuthorization": "Read the two existing dead Hays job rows from records_request_jobs (read-only): both apn:48209:168686 (owner ZHANG YEJUN & WAN MIN) and apn:48209:166476 (owner MCI METRO ACCESS TRANS SVC), status needs-human/search-ui-not-found, stepsReached=[open-disclaimer] only, recipe_version=p85-records-request-scaffold-v0 -- an OLD, since-replaced recipe version, not the current shared Tyler self-service code PR #597 touched. This was the basis for CP1's 'Hays is structurally unmeasured' framing: the two historical failures don't even test today's code.",
+      "authorizedProbeRun": {
+        "target": "apn:48209:168686, ownerName 'ZHANG YEJUN & WAN MIN' (the real owner on the existing job row, matching the WDLL's own named grading parcel) -- run through the CURRENT shared code (recipes/index.ts's runRecipeForJob), portalId hays-erss",
+        "scope": "index-search only, DB-free (synthetic jobId, no records_request_jobs row created/touched), no purchase or document retrieval attempted at any point -- matches the operator's exact authorization",
+        "rawResult": {
+          "status": "needs-human",
+          "errorCode": "captcha-required",
+          "errorMessage": "Hays ERSS disclaimer blocked by reCAPTCHA; routed to needs-human",
+          "stepsReached": ["open-disclaimer", "open-search-surface"],
+          "recipeVersion": "p85-tyler-self-service-v2",
+          "recaptchaPresent": true
+        },
+        "interpretation": "Honest fail-closed refuse, not a fabrication -- reached one step further than the two historical dead jobs (open-search-surface, vs. those never getting past open-disclaimer under the old scaffold). But the probe never reached results-extraction, so the silent-fabricated-zero defect class this item exists to test STILL was not exercised. Hays remains structurally unmeasured for that specific class -- now blocked by reCAPTCHA rather than the old scaffold's search-ui-not-found. This matches neither of CP1's pre-registered 'defect present' or 'defect absent' falsifiers; it is the 'inconclusive/blocked-earlier' case CP1 did not fully anticipate (CP1 anticipated a possible zero-vs-true-zero ambiguity at the extraction step, not a wall one step before search entry)."
+      }
+    },
+    "item17c": {
+      "status": "CLOSED",
+      "finding": "Confirmed drift, not stale-but-harmless. Both p85ClerkPortalRegistry.ts and p85-clerk-portals.mjs pointed Caldwell and McLennan at the counties' informational webpages instead of the real vendor portals P-113 identified live 2026-09-03 (in legacy-design-tools#597): Caldwell -> tx.countygovernmentrecords.com (Tyler CountyGovernmentRecords, login-required with no anonymous search path at all -- loginRequired was wrongly false), McLennan -> mclennancountytx-web.tylerhost.net (Tyler self-service). Reconciled against the third source, records-request-worker/src/recipes/p85Portals.ts, which both files' own header comments already named as the sync target.",
+      "liveConsequenceFound": "Production clerk_portal_terms (DEPLOYMENT_DATABASE_URL) still carried the pre-correction portal_url/login_required for both rows, last updated 2026-08-27 -- predating the 2026-09-03 correction. The stale seed had already been materialized into live data.",
+      "fix": [
+        "Edited both files to match p85Portals.ts's corrected URLs and the correct login_required value for Caldwell",
+        "pnpm exec vitest run src/lib/__tests__/p85ClerkPortalRegistry.test.ts (api-server): 3/3 passing",
+        "pnpm exec tsc -p tsconfig.json --noEmit: no new errors attributable to the edit (pre-existing TS6305 project-reference noise in this fresh, un-built worktree, unrelated files)",
+        "Re-ran scripts/p85/fetch-clerk-portal-terms.mjs --portal=<id> for both portals against DEPLOYMENT_DATABASE_URL_DIRECT (the pooled URL is read-only per the known 2026-08-31 Neon injection incident; direct is required for writes) -- real HTTP 200 fetches of both live terms pages, confirmed by a follow-up SELECT that clerk_portal_terms now carries the corrected portal_url/login_required, automated_search untouched as expected (the script's ON CONFLICT clause doesn't overwrite it)",
+        "PR #635 opened, all 11 CI checks conclusion string SUCCESS, mergeStateStatus CLEAN, self-merged (squash) per this fleet's established self-merge-own-green-PR precedent"
+      ]
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "close": true,
+  "lane": "R-02",
+  "laneLabel": "courthouse",
+  "planRow": ["P-120"],
+  "dispatch": "_dispatches/2026-09-07_r-02_dispatch.md",
+  "worktree": "P:/tmp/r02-courthouse",
+  "branch": "feat/r02-courthouse",
+  "checkpoints": [
+    "_inbox/2026-09-07_r-02_cp1.json",
+    "_inbox/2026-09-07_r-02_cp2.json"
+  ],
+  "missionPremise": "Dispatch assigned items 15, 17b-gate and 17c from the (retired) courthouse-program WDLL, carried over unchanged into the recut WDLL per that card's own 'What this retires' table. Item 15's stated premise (PR #597 merged and not serving) turned out to be WRONG -- doc-repo-31 (dispatch author) confirmed this was their own error, propagated from an unread correction already sitting in seat_register.json (cente-c1's prior finding). The mission's real content became: verify item 15's true state at source, prepare (and, once directly authorized by the operator mid-session, execute) the item 17b-gate Hays probe, and reconcile item 17c's two stale files.",
+  "completionPredicate": "Item 15: done when the deployed production surface is proven (not inferred) to run PR #597's fix, plus one live refuse-probe on a previously-broken county in that shared code path succeeds. Item 17b-gate: done when a probe is designed with explicit two-directional falsifiers and handed to the operator without being run on this lane's own authority -- met that bar before the operator directly authorized one live run mid-session, at which point 'done' extended to reporting that run's real result honestly, whichever way it fell. Item 17c: done when the two named files are verified against current portal reality (not assumed) and, if mismatched, corrected and re-verified live, including any live data the stale files had already fed.",
+  "scopeBasis": "Dispatch explicitly reserved items 17a and 17b (the actual 21 held job re-runs, including McLennan's 4) to the operator's own hand, stating a planner-authored artifact cannot substitute for it. This lane never touched those specific job rows. Item 16 belongs to a different lane per the WDLL. The Hays live index-search was explicitly operator-only in the dispatch; it was run only after the operator (not a peer, not this lane) supplied direct, scoped, mid-session authorization (index-search only, no purchase, no document retrieval, report either way) -- a deliberate exception the dispatch itself anticipated ('the trigger sits with the operator').",
+  "items": {
+    "15": {
+      "status": "CLOSED",
+      "outcome": "No-op on deploy (already serving); live refuse-probe run and passed",
+      "prNumbers": [],
+      "mergeShas": [],
+      "ciConclusionStrings": [],
+      "note": "No code change and no PR for this item -- it closes as a verification-only finding that the dispatch's premise was wrong, not as a build/deploy action",
+      "counts": {
+        "cloudBuildRunsForServiceSincePR597Merge": "1 (id 0f616b18), counting rule: gcloud builds list --project=legacy-design-tools-prod filtered by image name records-request-worker, createTime > 2026-09-03T14:54:30Z (PR #597 merge time)",
+        "sourceFilesDivergingBetweenDeployedImageAndMergedCommit": "1 of ~30 files under artifacts/records-request-worker/src, counting rule: diff -rq between docker cp'd /app/src from the exact serving image digest and the r02-courthouse worktree's checked-out artifacts/records-request-worker/src at origin/main; the 1 diverging file is test-only (p85Portals.test.ts) from a later, unrelated commit, zero runtime files differ"
+      }
+    },
+    "17b-gate": {
+      "status": "PREPARED then EXECUTED (operator-authorized mid-session)",
+      "outcome": "Real result: needs-human/captcha-required. Silent-fabricated-zero defect class NOT exercised (probe never reached results-extraction) -- Hays index-search remains structurally unmeasured for that class, now blocked at reCAPTCHA rather than the historical search-ui-not-found",
+      "additionalFollowUp": "Per doc-repo-31's request, traced whether the shared results-extraction/zero-hits decision code (searchPostProcess.ts, indexHits.ts, playwrightBrowser.ts) has any Hays-specific or county-specific branch that would prevent McLennan's passing live result from transferring as evidence for Hays. Found none: vendorFamilyFromPortalId() explicitly groups hays-erss and mclennan-online-records into the same 'tyler' vendor family; extractTotalResultsHint() is one generic, unparameterized implementation; the single finalizeIndexSearchWithAcquisition() call site is unconditional for both portals. The only portalId branch found (tylerSearchInputSelectorsForPortal, choosing form-fill selectors) is upstream of and unrelated to the safety decision. Reported to doc-repo-31; did not draw the closing conclusion myself, per their explicit instruction to report and stop.",
+      "prNumbers": [],
+      "mergeShas": [],
+      "ciConclusionStrings": [],
+      "counts": {
+        "priorHaysJobRows": "2, counting rule: SELECT count(*) FROM records_request_jobs WHERE county_fips = '48209' (read-only, DEPLOYMENT_DATABASE_URL, SET default_transaction_read_only=on first); both status=needs-human/search-ui-not-found, both recipe_version=p85-records-request-scaffold-v0 (superseded), both stepsReached=[open-disclaimer] only",
+        "authorizedLiveProbesRun": "1, per explicit operator scope ('one live index-search')"
+      }
+    },
+    "17c": {
+      "status": "CLOSED",
+      "outcome": "Confirmed live drift (not stale-but-harmless) in both named files plus its live database consequence; fixed and verified",
+      "prNumbers": [635],
+      "mergeShas": ["c9295ad60e0612b0ec555e3bf859e9d076b56117"],
+      "ciConclusionStrings": ["SUCCESS x11 (gh pr view 635 --json statusCheckRollup, all 11 checks)"],
+      "beforeAfter": {
+        "caldwell-clerk-web": {
+          "before": { "portalUrl": "https://www.co.caldwell.tx.us/page/County.Clerk", "loginRequired": false },
+          "after": { "portalUrl": "https://tx.countygovernmentrecords.com/texas/web/", "loginRequired": true }
+        },
+        "mclennan-online-records": {
+          "before": { "portalUrl": "https://www.mclennan.gov/166/County-Clerk", "loginRequired": false },
+          "after": { "portalUrl": "https://mclennancountytx-web.tylerhost.net/web/", "loginRequired": false }
+        },
+        "liveDbTable": {
+          "table": "clerk_portal_terms (DEPLOYMENT_DATABASE_URL)",
+          "before": "portal_url/login_required for both rows unchanged since 2026-08-27 (predating the 2026-09-03 P-113 correction)",
+          "after": "corrected via scripts/p85/fetch-clerk-portal-terms.mjs --portal=<id> run against DEPLOYMENT_DATABASE_URL_DIRECT (the pooled URL is read-only per the known Neon injection incident), confirmed by a follow-up SELECT; automated_search untouched ('permitted', unchanged) since the script's ON CONFLICT clause doesn't overwrite it"
+        }
+      },
+      "counts": {
+        "portalRowsCorrected": "2 of 7, counting rule: rows in p85ClerkPortalRegistry.ts/p85-clerk-portals.mjs whose portalUrl/termsUrl/loginRequired disagreed with p85Portals.ts (the file both stale files' own headers name as their sync target) -- the other 5 rows already matched"
+      }
+    }
+  },
+  "constraintsHonored": [
+    "Verified at source throughout: git ancestry, gcloud (field-name reads, never positional --format=value), live DB reads (read-only transaction set first for investigation), exact-digest image pull + content diff for the deploy claim, live HTTP re-fetch for the portal-terms correction",
+    "Reported the dispatch's own wrong premise (item 15) rather than silently working around it or silently accepting it, per DEV_PROCESS 3.2",
+    "Named the commit to doc-repo-26 before any potential traffic shift, per P-124 binding -- no shift was ultimately needed",
+    "Did not touch operator-reserved held-job rows (items 17a/17b's specific 21 jobs) at any point",
+    "Did not run the Hays live index-search until direct, scoped operator authorization arrived mid-session; ran exactly one, as scoped (index-search only, no purchase/retrieval), and reported the raw result without editorializing it into a pass",
+    "Did not unilaterally rule on whether 17b-gate's residual (reCAPTCHA) closes the gate -- reported the code-path tracing doc-repo-31 asked for and stopped, leaving the ruling to the coordinator/operator",
+    "doc_repo commits: none made by this lane outside the three named _inbox/ checkpoint files, added by explicit path",
+    "Product-repo commit: staged by explicit pathspec (git add <two files>), never -A"
+  ],
+  "whatRemainsOpen": [
+    "17b-gate's underlying question (is the silent-fabricated-zero defect class present or absent specifically on Hays) is still not directly answered -- the probe never reached results-extraction. What IS now established: the shared code that would carry the defect, if reached, is proven identical for Hays and McLennan and passed on McLennan. Whether that transfers as sufficient evidence to close the gate, or whether Hays' reCAPTCHA wall needs its own resolution path (headed browser, human-solve, or a different verification route) before this item can close, is doc-repo-31/operator's call, not this lane's.",
+    "Items 17a and 17b (21 held-job re-runs) remain entirely with the operator, unstarted by design.",
+    "This lane's PR #635 landed a commit to legacy-design-tools main; per the standing P-124 note, any lane whose deploy lands after this one carries it forward -- not an action item for this lane, just a fact for whoever deploys next."
+  ]
+}

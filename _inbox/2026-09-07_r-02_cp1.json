@@ -1,0 +1,71 @@
+{
+  "checkpoint": "CP1",
+  "type": "design/pre-build",
+  "lane": "R-02",
+  "laneLabel": "courthouse",
+  "planRow": "P-120",
+  "dispatch": "_dispatches/2026-09-07_r-02_dispatch.md",
+  "worktree": "P:/tmp/r02-courthouse",
+  "branch": "feat/r02-courthouse",
+  "startedAtCommit": "bddc541ca3ccd5b899f471c4573ec36538c5ffd7",
+  "timestamp": "2026-09-07T21:20:00Z",
+  "scope": {
+    "items": ["15", "17b-gate", "17c"],
+    "explicitlyOutOfScope": [
+      "16 (courthouse-doc synthesis into Feasibility section 11) - separate lane per WDLL",
+      "17a (14 Bastrop digit-block re-runs) - operator-only per dispatch",
+      "17b (6 letter-block + McLennan's 4 re-runs) - operator-only per dispatch"
+    ],
+    "source": [
+      "_inbox/2026-09-07_reports_courthouse_program_WDLL.md (items 15/17b-gate/17c rows, retired card but courthouse rows carried over unchanged)",
+      "_inbox/2026-09-07_reports_one_model_recut_WDLL.md (confirms items 15/16/17a-c KEPT UNCHANGED by the recut)"
+    ]
+  },
+  "priorArtifactCheck": {
+    "note": "seat_register.json already carried a prior finding for item 15 by cente-c1: 'Traced P-120 item 15 (records-request-worker) via git merge-base --is-ancestor... confirmed PR #597's fix is already serving -- closes as a no-op.' Not seen by this lane before starting design (found retroactively via doc-repo-31's correction message); independently re-derived and strengthened rather than taken on trust, per DEV_PROCESS 4.1."
+  },
+  "designByItem": {
+    "item15": {
+      "task": "Deploy PR #597 (records-request-worker block-parser reliability fix) to production; check: traffic split by field name + live refuse-probe on a previously-broken county",
+      "plannedMethod": [
+        "1. Confirm PR #597 merge commit and that it's ancestor of origin/main",
+        "2. gcloud run services describe records-request-worker --format=json; read status.traffic by FIELD NAME only (dispatch explicitly forbids positional --format=value)",
+        "3. If not serving: coordinate with doc-repo-26 before any traffic shift, naming the commit, per binding P-124 ruling",
+        "4. Regardless of traffic-split outcome, verify the DEPLOYED IMAGE actually contains the fix by content, not by inferring from build/deploy timestamps alone (dispatch's own emphasis: verify at source, store truth beats artifacts) -- planned to pull the serving image by exact digest and diff its source tree against the merge-containing worktree",
+        "5. Live refuse-probe: run the existing DB-free recipe-level live test (mclennanTylerhost.live.test.ts's underlying call) against a previously-broken county in the SAME shared code path PR #597 fixed, without touching any operator-reserved held-job row from items 17a/17b"
+      ],
+      "preRegisteredFalsifiers": [
+        "If the deployed image's source differs from the merged commit in the files PR #597 touched: deploy IS still owed, dispatch's premise correct, proceed to a real deploy through doc-repo-26",
+        "If the live refuse-probe reproduces a fabricated 'complete' with 0 hits despite a real nonzero portal-declared count: the fix does not actually work in production regardless of what's deployed"
+      ]
+    },
+    "item17bGate": {
+      "task": "Verify Hays (48209:168686) for the silent-fabricated-zero defect class. Prepare only; do not execute on this lane's own authority -- trigger sits with the operator.",
+      "plannedMethod": [
+        "Read-only: pull the two existing dead Hays job rows from records_request_jobs (county_fips=48209) for their exact search terms, recipe_version, and failure detail -- ground the probe in real prior data rather than inventing a target",
+        "Design a single live-probe script mirroring mclennanTylerhost.live.test.ts's pattern (DB-free, index-search only, no purchase/retrieval — matches the recipe's own contract), targeting the CURRENT shared Tyler self-service code (not the old scaffold-v0 the two dead jobs ran under)",
+        "State explicit falsifiers for both directions before running anything, and hand the design to the operator without executing, per dispatch"
+      ],
+      "preRegisteredFalsifiers": {
+        "defectPresent": "Terminal status 'complete' with indexHits count less than a nonzero portalDeclaredResultCount (or empty indexHits despite nonzero portalDeclaredResultCount) -- the exact 'reports a real hit as empty' shape",
+        "defectAbsent": "Terminal status 'needs-human'/'index-hit-extraction-unsupported' with portalDeclaredResultCount>0 (honest refuse, matches McLennan's already-fixed behavior) OR 'complete' with indexHits.length matching portalDeclaredResultCount exactly (correct extraction)",
+        "inconclusive": "portalDeclaredResultCount is 0/absent and indexHits is empty -- genuinely ambiguous between a true zero and an extraction failure; flagged explicitly as a design risk of using a low-volume individual owner name rather than a known high-volume institution"
+      }
+    },
+    "item17c": {
+      "task": "Reconcile stale p85ClerkPortalRegistry.ts / p85-clerk-portals.mjs against corrected portal data. Check: files match current portal reality, verified by a real read, not assumed stale-but-harmless.",
+      "plannedMethod": [
+        "Locate both named files plus any other portal-config source in the repo (found a third: records-request-worker/src/recipes/p85Portals.ts, whose own header says the other two must stay in sync with it, and which carries inline P-113 live-verification comments dated 2026-09-03)",
+        "Diff all three sources field by field for the 7 portal rows",
+        "For any live-DB-backed field (login_required, portal_url feeding clerk_portal_terms via fetch-clerk-portal-terms.mjs), check the live table too -- a stale seed file that already got upserted into production is a materialized defect, not a latent one"
+      ]
+    }
+  },
+  "constraintsHonored": [
+    "Verify at source (git ancestry, gcloud, live DB, live image digest) before acting on any claim, including the dispatch's own",
+    "Traffic/status read by field name, never positional --format=value",
+    "No live index-search against Hays on this lane's own authority (deferred to CP2/close once operator directly authorized it mid-session)",
+    "No touching operator-reserved held-job rows (items 17a/17b's specific 21 jobs)",
+    "Branch created before any file edit"
+  ]
+}
