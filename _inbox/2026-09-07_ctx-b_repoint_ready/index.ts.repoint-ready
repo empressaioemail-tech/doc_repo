@@ -1,0 +1,253 @@
+/**
+ * Per-jurisdiction setback table loader.
+ *
+ * 2026-09-07 (CTX-B dispatch, item 5): repointed to the published
+ * `@empressaio/setback-corpus` package — the raw tables this file used to
+ * vendor locally now live there as the single source of truth shared with
+ * hauska-engine (which repointed first, PR #399), proven equivalent by
+ * `__tests__/corpus-divergence.test.ts` before this swap landed. The 28
+ * local `<jurisdiction>.json` files (29 with waco-tx) are NOT deleted by
+ * this change: at least two of them (bastrop-city-tx.json,
+ * bastrop-development-code.json) are read directly off disk by an
+ * unrelated program's cross-repo hash-lock tests
+ * (`__tests__/bastropCityTxSetbackHashLock.test.ts`,
+ * `bastropDevelopmentCodeSetbackHashLock.test.ts`, C1 / WDLL item 8), and a
+ * full audit of every other direct-fs consumer across this repo was out of
+ * this dispatch's scope to complete safely. Retirement (deleting the files
+ * this loader no longer reads) is left as a flagged, deliberately-deferred
+ * follow-up — see this lane's close artifact — not a silent gap.
+ *
+ * This file keeps every jurisdiction-specific ROUTING/business rule that
+ * was always this repo's own (repealed B3 Place Type filtering, BDC
+ * district classification, the elgin-tx alias) — the corpus package is
+ * deliberately pure data and was never the place for any of that.
+ *
+ * The briefing engine (DA-PI-3) calls {@link getSetbackTable} keyed by the
+ * resolved jurisdiction key when it builds dimensional-rule prose.
+ *
+ * Adding a new jurisdiction: add it to `@empressaio/setback-corpus` (see
+ * that package's own README), bump the dependency version here, and add
+ * its key to `VENDORED_JURISDICTION_KEYS` below.
+ */
+import { getSetbackTable as getCorpusSetbackTable } from "@empressaio/setback-corpus";
+
+/** Per locked decision #9 — one row per zoning district per jurisdiction. */
+export interface SetbackDistrict {
+  district_name: string;
+  front_ft: number;
+  rear_ft: number;
+  side_ft: number;
+  side_corner_ft: number;
+  max_height_ft: number;
+  max_lot_coverage_pct: number;
+  max_impervious_pct: number;
+  citation_url: string;
+  /**
+   * Optional per-value audit block read by the setback extraction acceptance
+   * gate (see `./gate.ts` + docs/setback-extraction-acceptance-gate.md). The
+   * serving route ignores it — it does not reach the wire — so adding it to a
+   * table cannot change the FE contract. New (fan-out) tables MUST carry it;
+   * a handful of legacy hand-curated tables predate it and are treated as
+   * un-gated. Typed loosely here (Record) so the loader stays JSON-schema-free
+   * per the original design note; the gate imposes the strict shape.
+   */
+  provenance?: Record<string, unknown>;
+}
+
+export interface SetbackTable {
+  jurisdictionKey: string;
+  jurisdictionDisplayName: string;
+  effectiveDate?: string;
+  /** Optional context note for fallback / statewide-default tables. */
+  note?: string;
+  districts: SetbackDistrict[];
+}
+
+/**
+ * The jurisdictions this package actually serves — a curated subset of the
+ * published corpus, matching this repo's own onboarding history. Not every
+ * corpus jurisdiction is meant to be reachable here.
+ */
+const VENDORED_JURISDICTION_KEYS = [
+  "grand-county-ut",
+  "lemhi-county-id",
+  "bastrop-tx",
+  "austin-tx",
+  "san-marcos-tx",
+  "dripping-springs-tx",
+  "kyle-tx",
+  "buda-tx",
+  "georgetown-tx",
+  "round-rock-tx",
+  "leander-tx",
+  "hutto-tx",
+  "new-braunfels-tx",
+  "cedar-park-tx",
+  "pflugerville-tx",
+  "liberty-hill-tx",
+  "lockhart-tx",
+  "taylor-tx",
+  "bastrop-city-tx",
+  "bastrop-development-code",
+  "elgin-development-code",
+  "elgin-tx",
+  "belton-tx",
+  "seguin-tx",
+  "cibolo-tx",
+  "killeen-tx",
+  "san-antonio-tx",
+  "utah-unincorporated",
+  "idaho-unincorporated",
+  "waco-tx",
+] as const;
+
+const SETBACK_TABLES: Readonly<Record<string, SetbackTable>> = Object.fromEntries(
+  VENDORED_JURISDICTION_KEYS.map((key) => {
+    const table = getCorpusSetbackTable(key);
+    if (!table) {
+      throw new Error(
+        `@empressaio/setback-corpus does not carry "${key}", which this package still vendors locally — repoint regressed.`,
+      );
+    }
+    return [key, table as SetbackTable];
+  }),
+);
+
+export const SETBACK_JURISDICTION_KEYS = Object.keys(SETBACK_TABLES);
+
+/**
+ * Normalize a jurisdiction key to the canonical format expected by the
+ * setback table lookup: lowercase with hyphens. The geocode path emits
+ * keys with underscores (e.g. `bastrop_tx`), but the JSON files are
+ * keyed with hyphens (`bastrop-tx.json`).
+ */
+function normalizeJurisdictionKey(key: string): string {
+  return key.toLowerCase().replace(/_/g, "-");
+}
+
+/** Repealed B3 Place Types — must not be served as current setback law. */
+function isRepealedB3PlaceType(code: string): boolean {
+  return (
+    /^P-[1-5](?:$|[-_\s])/.test(code) ||
+    /^P-(?:CS|EC)(?:$|[-_\s])/.test(code)
+  );
+}
+
+/** BDC districts whose scalars live on layer 23 only (not ordinance chart). */
+function isBdcPerParcelDistrictCode(code: string): boolean {
+  return (
+    /^(MU|GC|PDD|PI|IND|OS)(?:$|[-_\s])/.test(code) ||
+    /^P\/OS(?:$|[-_\s])/.test(code) ||
+    /^P-OS(?:$|[-_\s])/.test(code)
+  );
+}
+
+/** BDC Euclidean districts with ordinance-text scalar rows in bastrop-development-code. */
+function isBdcEuclideanCode(code: string): boolean {
+  return /^(SF-[123]|RR)(?:$|[-_\s])/.test(code);
+}
+
+/**
+ * Any known BDC Chapter 14 district stamp (Euclidean + conditional).
+ * Conditional codes (MU/GC/…) route to the BDC table so callers
+ * honest-decline on the missing row (CORRECTION C) instead of falling
+ * through to the legacy bastrop-tx county table.
+ */
+function isKnownBdcDistrictCode(code: string): boolean {
+  return isBdcEuclideanCode(code) || isBdcPerParcelDistrictCode(code);
+}
+
+function isBastropCityJurisdiction(normalizedKey: string): boolean {
+  return (
+    normalizedKey === "bastrop-tx" ||
+    normalizedKey === "bastrop-city-tx" ||
+    normalizedKey === "bastrop-development-code"
+  );
+}
+
+/**
+ * The Elgin GIS zoning layer's cityKey (elgin-tx, zoning-layers.ts) is a
+ * separate key from the ratified table's own jurisdictionKey
+ * (elgin-development-code) -- same two-key shape as Bastrop's GIS cityKey
+ * vs. its BDC table key. Route the GIS key to the table.
+ */
+function isElginCityJurisdiction(normalizedKey: string): boolean {
+  return normalizedKey === "elgin-tx" || normalizedKey === "elgin-development-code";
+}
+
+/**
+ * Returns the setback table for a jurisdiction key, or null if no table
+ * exists. The briefing engine should treat null as "no codified
+ * dimensional rules available — fall back to base IBC/IRC".
+ */
+export function getSetbackTable(jurisdictionKey: string): SetbackTable | null {
+  const normalized = normalizeJurisdictionKey(jurisdictionKey);
+  return SETBACK_TABLES[normalized] ?? null;
+}
+
+/**
+ * Resolve the table for a parcel's stamped zoning code.
+ *
+ * City of Bastrop (current law = BDC Sec. 14.02.003, WDLL STEP 3):
+ *   - SF-1 / SF-2 / SF-3 / RR → bastrop-development-code (ordinance scalars).
+ *   - MU / GC / PDD (layer 23 only): route to bastrop-development-code but
+ *     chart has no rows → mapDistrict honest-decline.
+ *   - Repealed B3 Place Types (P-1..P-5, P-CS, P-EC) → null
+ *     (honest-decline). Do NOT silently serve bastrop-city-tx as current.
+ *
+ * County / other jurisdictions: fall through to the keyed table
+ * (e.g. bastrop-tx legacy R-MD rows for non-city codes).
+ */
+export function getSetbackTableForZoning(
+  jurisdictionKey: string,
+  zoningCode: string | null | undefined,
+): SetbackTable | null {
+  const normalized = normalizeJurisdictionKey(jurisdictionKey);
+  const code = (zoningCode ?? "").trim().toUpperCase();
+
+  if (isBastropCityJurisdiction(normalized)) {
+    if (code && isRepealedB3PlaceType(code)) {
+      return null;
+    }
+
+    // County-only legacy codes (R-MD, etc.) on bastrop-tx key — not city BDC.
+    if (
+      normalized === "bastrop-tx" &&
+      code &&
+      !isKnownBdcDistrictCode(code)
+    ) {
+      return SETBACK_TABLES["bastrop-tx"] ?? null;
+    }
+
+    return SETBACK_TABLES["bastrop-development-code"] ?? null;
+  }
+
+  if (isElginCityJurisdiction(normalized)) {
+    return SETBACK_TABLES["elgin-development-code"] ?? null;
+  }
+
+  return SETBACK_TABLES[normalized] ?? null;
+}
+
+/**
+ * Look up a single zoning district within a jurisdiction. Case-
+ * insensitive on the district name to absorb the small spelling
+ * differences between the GIS layer and the ordinance PDF.
+ */
+export function getSetbackDistrict(
+  jurisdictionKey: string,
+  districtName: string,
+): SetbackDistrict | null {
+  const table = getSetbackTable(jurisdictionKey);
+  if (!table) return null;
+  const wanted = districtName.trim().toLowerCase();
+  return (
+    table.districts.find(
+      (d) => d.district_name.toLowerCase() === wanted,
+    ) ?? null
+  );
+}
+
+export function listSetbackTables(): SetbackTable[] {
+  return Object.values(SETBACK_TABLES);
+}
