@@ -97,10 +97,13 @@ Two live cross-session checks, both clear, no holds on starting:
 | 11 | QA (rides on spine) | Fix drainage-study integration gap | 6 | A parcel with a real persisted drainage study shows it in the Feasibility PDF, not "not on file" | [ ] |
 | 12 | QA (rides on spine) | Fix open-items table under-generation | 6 | Every typed absence in a test fixture emits exactly one row, verified by violation | [ ] |
 | 13 | QA (rides on spine) | Fix/confirm existing-structures wiring | 1 | A known-occupied parcel does not report "Structure 1: none" | [ ] |
-| 14 | QA (independent, batch) | Chip-semantics collision, raw slug leak, doc-code/product-name mismatch, citation-display inconsistency, internal-terminology leak, duplicated verdict caption, unlabeled setbacks, market/assessed-value duplicate check, well-record depth check | — | Each verified individually against a live-rendered PDF or bundle, not assumed from the diff | [ ] |
-| 15 | Courthouse | Deploy the already-merged block-parser reliability fix to production | — | Traffic split shows the merged commit serving, plus a live refuse-probe on a previously-broken county | [ ] |
+| 14 | QA (independent, batch) | Chip-semantics collision, raw slug leak, doc-code/product-name mismatch, citation-display inconsistency, internal-terminology leak, duplicated verdict caption, unlabeled setbacks, market/assessed-value duplicate check, well-record depth check — plus a real severity upgrade found during verification: an absence-vs-presence atom-filtering bug across 4 atom families, see `_inbox/2026-09-07_engine_absence-vs-presence-atom-filtering_finding.md` | — | Each verified individually against a live-rendered PDF or bundle, not assumed from the diff | in progress — hauska-engine PR #398 merged 2026-09-07 (all 9 pre-verified live against production before fixing; market/assessed-value confirmed correct, not a bug; jurisdiction-slug leak scoped out, held pending item 7). PR's own body states fixes are verified against local checkout only — merging does not deploy this repo, so this item's own check ("verified... against a live-rendered PDF") is NOT yet satisfied for the fixed code and stays open until a fresh live PDF confirms deployed behavior |
+| 15 | Courthouse | Deploy the already-merged block-parser reliability fix to production (`legacy-design-tools` PR #597) | — | Traffic split shows the merged commit serving, plus a live refuse-probe on a previously-broken county. Hard predecessor of 17a/17b below — that repo's post-merge workflow only builds and pushes an image, it does not deploy, so this is a real, undone step, not a formality | [ ] |
 | 16 | Courthouse | Wire courthouse-retrieved (MCP `list_purchased_records`/`read_purchased_record`) or Smart-Files-mounted document synthesis into Feasibility section 11, through the same cite-or-decline gate as item 6 | 6 | A fixture with a mounted/retrieved document produces cited synthesis; an uncited sentence fails the same violation harness as item 6 | [ ] |
-| 17 | Courthouse | Operator: authorize (or continue holding) the 21-job county-coverage re-run | — | A decision record exists either way | [ ] |
+| 17a | Courthouse | Re-run the 14 Bastrop digit-block jobs (3 parcels: `48021:34161`, `48021:34753`, `48021:35481`) | 15 | Operator personally executes the re-run once item 15 deploys; real output reviewed directly, not a decision record — the existing ruling (`_decisions/2026-09-01_owner_policy_and_portal_access_rulings.md` + 2026-09-03 addendum) already established the policy is sound and independently re-verified accurate, but a planner-authored artifact cannot stand in for the operator's own hand on the trigger | [ ] |
+| 17b-gate | Courthouse | Verify Hays (`48209:168686`) for the silent-fabricated-zero defect class (the same one that would have reported McLennan's real 1,706-record hit as empty) — promoted out of the P-113 leave-behind list into this program's critical path, ahead of 17b, because it's cheap and it gates correctness | 15 | Hays confirmed clean against the fixed shared code, or confirmed still broken and held — either way, a real check against real output, not an assumption that "the shared fix probably covers it" | [ ] |
+| 17b | Courthouse | Re-run the remaining 6 letter-block jobs (Bastrop `48021:81886`, Hays `48209:168686`, Travis `48453:500996`) and run McLennan's 4 (`48309:181849`) in parallel, expected to honestly refuse (extractor can't read that vendor's markup yet — a correct refuse, not a failure) | 15, 17b-gate (for Hays specifically; McLennan's 4 gate only on themselves and don't block the rest) | Operator personally executes; McLennan's 4 refusing honestly is a pass, not a defect, and does not block grading the other 3 | [ ] |
+| 17c | Courthouse (housekeeping, trails everything) | Reconcile the stale `p85ClerkPortalRegistry.ts` / `p85-clerk-portals.mjs` files against the corrected portal data | 17a, 17b | Files match current portal reality, verified by a real read, not assumed stale-but-harmless | [ ] |
 | 18 | Comprehensiveness | Floodplain acreage-in-tract + FIRM panel citation | — | Present and cited on a live-generated PDF | [ ] |
 | 19 | Comprehensiveness | Named downstream discharge point | — | Present and cited | [ ] |
 | 20 | Comprehensiveness | Soil type (USDA SSURGO) | — | Present and cited | [ ] |
@@ -110,7 +113,7 @@ Two live cross-session checks, both clear, no holds on starting:
 | 24 | Comprehensiveness | Broaden appended exhibit set (aerial, city-limits, FEMA, topo maps) | — | New sheets present in a generated PDF | [ ] |
 | 25 | Comprehensiveness (scope only) | Scope environmental/wetlands fact family (new NWI layer) | 6 | A scoping doc names data source, effort, and dependency | [ ] |
 | 26 | Comprehensiveness (scope only) | Scope thoroughfare/future-ROW fact family | 6 | Same | [ ] |
-| 27 | MCP exposure | Build `refresh_parcel_feasibility_export` / `download_parcel_feasibility_export` MCP tools, matching the existing site-plan/dossier pattern; confirm and add Flood & Drainage MCP export tools if genuinely absent | 6 | Both tools live in the production MCP tool registry, gated the same way site-plan/dossier already are, verified by a real call against a live parcel through the MCP companion app, not just a merged PR | [ ] |
+| 27 | MCP exposure | Build `refresh_parcel_feasibility_export` / `download_parcel_feasibility_export` MCP tools, matching the existing site-plan/dossier pattern; confirm and add Flood & Drainage MCP export tools if genuinely absent | none (see note) | Both tools live in the production MCP tool registry, gated the same way site-plan/dossier already are, verified by a real call against a live parcel through the MCP companion app, not just a merged PR | in progress — hauska-mcp-server PR #82 open per cente-65's own report 2026-09-07, CI running; local/mocked verification done, live companion-app call not yet done |
 
 ## Resolved — multi-parcel scope (operator ruling 2026-09-07, supersedes "Held" above)
 
@@ -153,6 +156,26 @@ mechanism that makes "reports callable to the MCP app" real, not aspirational.
   mechanism for multi-parcel leverage, routed through the MCP companion app
   instead. 26-item sequence becomes 27 items; all prior item numbers
   unchanged.
+- 2026-09-07 (third pass, per cross-thread coordinator doc-repo-6f's
+  findings): item 27's "depends on 6" corrected from a stated hard
+  dependency to what it actually was — a soft sequencing preference, never
+  written down as such; cente-65 building it ahead of item 6 was not a
+  violation. Item 14 graded in-progress rather than left blank: merged
+  (`hauska-engine#398`) but explicitly not yet re-verified against live
+  deployed output, per the PR's own body. Item 17 split into 17a (14
+  Bastrop digit-block jobs), 17b-gate (Hays silent-fabricated-zero
+  verification, promoted out of the P-113 leave-behind list into this
+  program's critical path), 17b (remaining 6 letter-block jobs + McLennan's
+  4 parallel honest-refuse jobs), and 17c (stale clerk-portal-registry
+  reconciliation, trailing housekeeping) — the 21 held jobs are not one
+  population and the original item 17 conflated them. Item 15 recorded
+  explicitly as a hard predecessor of 17a/17b, which the original card
+  omitted. Item 17's acceptance check rewritten from "a decision record
+  exists either way" (already satisfied and not load-bearing — the ruling
+  exists and was independently re-verified accurate, but a planner-authored
+  artifact cannot substitute for the operator's own execution) to require
+  the operator's direct execution. 27-item sequence becomes 30 items
+  (17 split into 17a/17b-gate/17b/17c); all other item numbers unchanged.
 
 ## Finish card
 

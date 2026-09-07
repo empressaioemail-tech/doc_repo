@@ -26,7 +26,47 @@ lost.
 | 2 | Shared reader — retire the second, independent implementation | Rewire `legacy-design-tools`'s `buildableEnvelope/derive.ts` to read the atom chain instead of independently re-deriving from raw geometry + its own setback-table logic | Confirmed: MCP-facing `cortex-api` does not consume the engine's atom at all today. A full atom backfill would not by itself fix MCP parity, and two independent implementations is exactly the drift risk the atom-first architecture exists to prevent | **DONE 2026-09-06.** `legacy-design-tools#626` merged to main at `c742439a` (verified live via `gh pr view`, state MERGED, mergedAt 2026-09-06T20:21:28Z), CI green on 5th attempt. `reconcileAtomEnvelope.ts` ships and reconciles the atom's reported area/outcome against `derive.ts`'s own live polygon without fabricating geometry the atom doesn't carry; a validation-failed local decline is never overridden. Close doc: `_inbox/2026-09-06_legacy-design-tools-shared-reader_items-2-3_close.json`. Note this closes the *reconciliation* half of the drift problem, not PE's separate third data path found in the hauska-map probe (§ below) — that remains open |
 | 3 | Third-defect audit | Check whether `derive.ts`'s default `roadClassSetbackTableForJurisdiction` call can still produce a road-class-derived setback value — the exact defect class already retired on the engine side (commit `293633a`) | Flagged, not confirmed either way — a real open question for whoever picks up item 2 | **DONE 2026-09-06.** Confirmed live on real Bastrop P-5 parcels via same PR #626 — the production caller always skipped the explicit-override parameter, silently substituting a road-class-derived setback. Fixed via explicit opt-in only; 2 new regression tests in `derive.test.ts` |
 | 4 | Lockhart spatial join | Build a real parcel-to-zoning-district join; today's registry row points at a 244-feature polygon layer with no `prop_id` and no fallback join anywhere in `zoning-staging/registry.ts` | Not stale — structurally unimplemented. Confirmed the ledger's own `zoningDistrict` data for Lockhart is fine (6,456 real values); this is strictly an atom-pipeline gap | **DONE 2026-09-06** (`hauska-engine#390`, `62dc2d09`, verified merged). Major scope discovery en route: `tx_zoning_district_staging` already holds real staged zoning-district polygons for 107 cities, not just Lockhart — including all 5 of item 6's setback-research cities. The join is now built generic/city-parameterized, tested only against Lockhart per scope. Dry-run: 4,897 real parcel matches, 4,894 clean, 3 genuinely ambiguous (real polygon disagreement, correctly left unresolved rather than picked). Cross-validated against the independent Tier-1 breadth-bake pipeline — identical district values on every checked parcel, no drift. Net finding: Lockhart's real gap was never missing data, it was the absence of any join capability — Tier-1 already had Lockhart covered, so a real `--apply` would write zero new atoms (all matches already stamped). The other 106 staged cities, including the item-6 overlap, remain an explicit, real, unscoped opportunity — not yet decided |
-| 5 | Travis join-key implementation | Build the `geo_id_or_address_crosswalk` `JoinKey` strategy — a type declaration exists and names Travis by comment, zero code implements it anywhere in engine-core | Travis's real `prop_id` bad-rate (51%) makes the default join unsafe. Confirmed the ledger's own CAD data for Travis is fine (0 unaccounted); strictly an atom-pipeline gap | **Investigation DONE 2026-09-06, moving to implementation.** Divergence resolved: `parcel_record` (380,917), live TCAD (386,682), and the decision doc's own trusted reference all agree within 1.5%; StratMap's 834,936 is the confirmed outlier at 2.19x, most likely finer-grain digitization in dense areas (condo/unit sub-records) — plausible, not directly confirmed, doesn't block the design. Approved join design: prop_id first, geo_id fallback (both sides carry it; more stable than prop_id's known bad rate), address crosswalk as last resort, TCAD/parcel_record as attribute authority, StratMap as geometry source, honest decline rather than forced 1:1 reconciliation for StratMap's extra granularity |
+| 5 | Travis join-key implementation | Build the `geo_id_or_address_crosswalk` `JoinKey` strategy — a type declaration exists and names Travis by comment, zero code implements it anywhere in engine-core | Travis's real `prop_id` bad-rate (51%) makes the default join unsafe. Confirmed the ledger's own CAD data for Travis is fine (0 unaccounted); strictly an atom-pipeline gap | **Re-scoped 2026-09-07 after real pre-implementation investigation (see below) — phase 1 approved and in progress, phase 2 held.** |
+
+**Travis join-key — full current understanding, 2026-09-07 (corrects the row above,
+which described the target as a from-scratch `JoinKey` build; that target does not
+match what actually needs building).**
+
+The `JoinKey`/`jurisdiction-registry.ts` mechanism the original design named is
+type-level only — zero implementation, zero registry rows use it. A **separate,
+already-real, already-live mechanism** (`ParcelKeyKind` in the published
+`@empressaio/atom-contract` package, `CROSSWALK_HOLD_FIPS` in
+`packages/atoms/src/fact-writer-ids.ts`) already handles Travis today: it correctly
+declines (honest hold, not an unsafe join) for `cad-parcel-roll`/`land-use-fact`/
+`flood-hazard-fact`. Building the originally-named `JoinKey` system from scratch
+would have shipped new infrastructure duplicating something already correct.
+Approved fix extends the real mechanism instead.
+
+Real per-plan investigation before any code (do not skip this step if this gets
+picked back up cold) found the fix is three pieces, not one:
+1. `ParcelKeyKind` lives in the published atom-contract package, not locally in
+   engine — adding a real address tier means a real contract PR + publish cycle,
+   same shape as tonight's `property-boundary-edge` work.
+2. The planner (`plan-county-parcel-nodes.ts`) currently assigns **one static
+   tier for an entire county**, not a per-parcel cascade — likely means Travis
+   sits entirely in the unresolved/hold tier today, even for the roughly 49% of
+   parcels where `prop_id` alone would actually resolve fine. A real per-parcel
+   cascade (try prop_id, fall back to geo_id, fall back to address) is a control-flow
+   rewrite, not a config change — and is shared infrastructure, not Travis-specific.
+3. Address data itself does not exist anywhere queryable yet for this planner
+   (`txgio_parcel` carries no situs/address fields; no existing TCAD-situs
+   ingestion code was found to build on). A real address tier needs a real
+   sourcing decision (live per-parcel TCAD query at plan time vs. a persisted
+   ingestion/crosswalk table) before it can be built at all — genuinely open,
+   not scoped further than that.
+
+**Ruling:** build phase 1 now — the contract PR (new `ParcelKeyKind` value) plus
+the real per-parcel cascade using prop_id and geo_id only. This is a real,
+substantial, standalone improvement (resolves the real-district-carrying majority
+of Travis parcels currently sitting in hold for no reason beyond the county-wide
+policy being too coarse), buildable today with zero new data sourcing. Phase 2
+(the address tier) is explicitly held pending a real decision on how address data
+gets sourced and stored — not resolved as a side effect of phase 1.
 | 6 | Hays / McLennan / Williamson in-city onboarding | From-scratch GIS source recon + ordinance transcription, same scale as the original Bastrop/Elgin/Lockhart build | Confirmed: these three have real, substantial `zoningDistrict` ledger data already (49,655 / 53,365 / 167,732 real values respectively) — the gap is specifically setback-*value* resolution (needs a live per-parcel record or codified table), which the ledger's zoning classification alone doesn't provide | Scoping only. **2026-09-06 correction below invalidates the "not-applicable stamp" quick-win path for Caldwell/Hays/McLennan/Williamson; item 6's real-gap framing (setback-value resolution, not zoning-existence) is CONFIRMED correct by the same finding** |
 | 7 | Preflight re-validation | Re-run and fix the existing 8-check `onboard-preflight` gate against current reality | Confirmed stale — last touched 2026-08-05/08, a full month before ADR-031 was ratified (2026-09-03) | Not started |
 | 8 | Rebake/publish trigger verification | Confirm whether `legacy-design-tools`'s facet-bake process (`nodeFacetBakeTier1`/`Tier2`) needs to explicitly re-run to pick up freshly-minted atoms, or reads them live | Found real precedent for the concern: Tier-1's own code comment describes an earlier "anti-zombie cut" retiring its own independent envelope computation in favor of deferring to the atom chain — implying baking is a separate step from emission, the same "correct in the store, not yet served" pattern found elsewhere in this sprint | Not started — flagged, not verified |
@@ -263,6 +303,149 @@ manual, by design). Operator-approved design:
 Not yet implemented; not yet dispatched to a lane. This record exists so
 the design survives context loss and doesn't need re-deriving when it's
 picked up.
+
+## Named gap: hauska-mcp-server has zero ledger connection — deferred, not urgent
+
+`hauska-mcp-server` (the commercial catalog gate, distinct product from Smart
+Site per settled brand separation) reads only atoms via retrieval-api,
+with zero connection anywhere to the parcel_record ledger — meaning for the
+15 rails that ARE ledger-served elsewhere, a hauska-mcp-server customer can
+get a different answer than a Smart Site user asking the same question. Real
+gap, matches this session's own two/three-readers drift pattern at a bigger
+scale. **Deliberately deferred**: operator's stated priority is PE/Smart-Site-
+MCP-app parity first (below), which is the actual near-term market-facing
+risk; this is a known skeleton to fix in a later wave, not urgent tonight.
+
+## Named gap and priority: PE / Smart Site MCP app parity — the real
+## market-blocking risk, 2026-09-07
+
+The operator's actual priority: Property Explorer (the web app) and the
+Smart Site MCP app (the Claude extension linked to it,
+`legacy-design-tools/artifacts/smartsite-mcp/`) must serve identical data in
+production. Tonight's ledger-tracing work already surfaced three concrete,
+confirmed divergences as a side effect, not from a dedicated audit:
+`valueHistory` and `agValuation` are wired into PE's own path
+(`brokerageNodeFacets.ts`) but not into the MCP app's brief-assembly path
+(`propertyExplorer.ts`'s `assembleNodeBriefBody`); `zoningDistrict` is
+computed two structurally different ways in each — PE derives its own answer
+from city-limits containment, while the MCP-app brief path reads the real
+ledger `zoningDistrict` cell directly. These three were found incidentally;
+a dedicated, systematic field-by-field audit of both functions would almost
+certainly find more. Real precedent exists for exactly this kind of audit —
+a separate parity effort (MCP connector vs. web app package/tier gating,
+PR #619/#620, referenced in tonight's OPS-16 amendment log) already used a
+"full audit matrix before any change" method for a different but structurally
+similar question.
+
+**Ruling: this is the priority item, dispatched now.**
+
+**CLOSED 2026-09-07.** `legacy-design-tools#632` (`c9d2806c`, verified merged).
+All six ruled-in divergences fixed and verified live, not just merged: D5
+(zoning) — a gate-passing live ledger fact now overrides a stale baked stamp
+end-to-end, proven with real integration tests against real Postgres. D6
+(setbacks) — the public inspect-card route now returns real setback values
+for gate-passing counties; it returned none for any parcel before this fix.
+D1/D2/D4 — missing fields wired on, land-use precedence corrected. D3 (owner)
+— added only after confirming the paid-tier gate already covers it at every
+real call site, proven both directions (refused when ungated, served when
+granted). This closes the confirmed part of the "will setbacks actually
+render" question: the public map already rendered them via the codified
+table (found separately), and now the MCP/brief path's own setback section
+does too.
+
+Real question the operator asked twice: does the ledger need to be "in place"
+for data to serve correctly? Answer, live-traced per rail, not inferred from
+doctrine: of 65 total rails, **15 are genuinely served live through the
+ledger today** (cityLimits, flood, wells, specialDistricts, valueHistory,
+assessedValue, marketValue, landValue, improvementValue, livingAreaSqft,
+yearBuilt, utilityService, overlayDistricts, agValuation, schoolDistrict).
+**4 have a real gate verdict but are not actually serving through the
+ledger**, for two different reasons that must not be conflated: `landUseCode`
+and `owner` are genuinely starved — gate passes, zero consuming code
+anywhere, no slate entry, no adapter file — a clean instance of the "declared
+but nothing reads it" failure mode. `zoningDistrict` and
+`maxImperviousCoverPct` are wired correctly end-to-end but their live gate
+verdict is currently refuse (346,165 unincorporated parcels unaccounted for
+zoning; 244,669 for Travis imperviousness) — **this is the system working
+correctly, fail-closed, against a real known gap, not a defect.** The
+remaining **46 rails have no gate verdict at all** and structurally cannot be
+ledger-served yet — this is the same ceiling the earlier ledger-atomization
+research found, confirmed independently here.
+
+No gap found against the original wiring decision
+(`_decisions/2026-09-02_step7_consumer_c_then_b.md`) — every rail it named
+for Slate 1 is confirmed genuinely wired. The gap is in ADR-031's own summary
+sentence ("the main serve path reads record cells"), which is true but
+doesn't distinguish "wired and passing" from "wired and correctly refusing"
+from "declared but starved" — a fresh reader would not catch the landUseCode/
+owner gap from that sentence alone.
+
+**Real architectural clarification, previously unclear all night**: there are
+two separate MCP-facing apps, not one. `hauska-mcp-server` — treated all
+session as "the MCP gate" — has zero references to the ledger anywhere in its
+codebase; it's a pure HTTP proxy to the atoms store and other services. The
+tool that's actually live for `get_smart_site` (used in this very session)
+lives in a third, separately-deployed app,
+`legacy-design-tools/artifacts/smartsite-mcp/`, which genuinely does read the
+ledger for the 11 currently-passing gated rails when it calls into cortex-api's
+brief-assembly function. Property Explorer is a pure HTTP consumer of that
+same resolved data — it never touches `parcel_record_cell` directly. This
+needs to be represented correctly in the architecture document, not
+simplified into "the MCP server reads the ledger."
+
+## Command Center's real production URL — resolved 2026-09-07
+
+Tonight's architecture survey flagged a real ambiguity: no Vercel project named
+`command-center`/`cmdcenter` exists, and four differently-named, lane-scoped
+projects (`hauska-map-records`, `hauska-map-lookup-perf`, `hauska-map-auth-esm`,
+`lane-a4c-panel`) were each independently found serving the identical
+`Empressa Command Center` app title, with no way to tell which was real
+production from the outside. Resolved directly by the operator: the real
+production URL is **`https://cmdcenter-blush.vercel.app`** — confirmed live
+(200, matching title) by the integration seat. Matches prior standing guidance
+("CC deploy = cmdcenter/blush, not command-center/jade — verify in the blush
+bundle") — the survey's finding independently rediscovered why that guidance
+exists rather than contradicting it.
+
+**Not yet resolved**: whether the four `hauska-map-*`/`lane-a4c-panel` Vercel
+projects the survey found are stale, abandoned lane deploys worth decommissioning
+(consistent with tonight's broader "quarantine orphaned things" work), or
+something still legitimately in use for a reason not yet checked. Worth a real
+look, not urgent — flagged here so a future agent doesn't mistake one of them
+for production the way tonight's survey nearly did.
+
+## Canonical setback-table source — three real implementation decisions,
+## 2026-09-07, ruled before Engine started building
+
+1. **Where it lives**: a new, dedicated repo, same shape as
+   `hauska-atom-contract` — own `package.json`, own tag-triggered publish
+   workflow. Not homed inside either `hauska-engine` or `legacy-design-tools`
+   — that would recreate an ownership asymmetry instead of fixing one.
+2. **Georgetown/San Marcos granularity**: not actually a conflict —
+   `hauska-engine`'s corpus has no competing version of either city.
+   `legacy-design-tools`'s field-level merge (9 preserved districts + 4 new)
+   is simply the correct, complete version to bring in as-is. Standing
+   principle for the rest of the merge: preserve field/district-level
+   granularity wherever both sides genuinely have data for the same city;
+   most cities only have one real source, so this is rarely a live question.
+3. **Consumer model — replace, not sit alongside.** Both `hauska-engine` and
+   `legacy-design-tools` import from the new package and retire their own
+   local JSON copies once the import is proven. A package that coexists with
+   both originals would recreate a fourth copy, not fix the drift problem
+   this whole effort exists to solve. PE's small local copy retires the same
+   way once its own atom-chain reconciliation (already landed) is trusted
+   enough to lean on fully — not blocking, same eventual direction.
+
+## Canonical setback-table source: ESCALATED TO TOP PRIORITY 2026-09-07
+
+Confirmed directly against a live parcel: the corpus merge is not just an
+atom-catalog completeness question — it is the actual blocker on the nine
+cities researched tonight (Killeen, Belton, Seguin, Cibolo, Waco, Round Rock,
+Kyle, Georgetown, San Marcos) rendering anywhere, map or brief, for real
+users. Nothing shows for these cities today, in either app, until this
+lands. Escalated above other queued work; dispatched to Engine to start now
+(data-merge side, independent of LDT's governance-porting contribution,
+which folds in once their current D5/D6 parity fix closes).
 
 ## Canonical setback-table source: DIRECTION RULED 2026-09-07, not yet executed
 
