@@ -1,0 +1,80 @@
+{
+  "artifact": "r03_cp1",
+  "checkpoint": "CP1",
+  "lane": "R-03",
+  "plan_rows": ["P-120"],
+  "status": "DESIGN_VERIFIED_BUILD_COMPLETE",
+  "registered_at": "2026-09-07T21:55:00Z",
+  "mission": "Items 18, 20, 21 from _inbox/2026-09-07_reports_one_model_recut_WDLL.md: floodplain acreage-in-tract + FIRM panel citation, USDA SSURGO soil type, electric/gas provider identification. Resolvers only, scoped to packages/engine-core/ in hauska-engine; R-01's composition root wires them into a section later.",
+  "worktree": "P:/tmp/r03-fact-families",
+  "branch": "feat/r03-fact-families",
+  "branch_point": "5d85228f5e803044ad1360af715f636653c51e4c (origin/main, matches doc-repo-26's stated main tip at registration time -- no gap)",
+  "contract_check": {
+    "canon_preamble": "v6f9d139b",
+    "agent_contract": "v1890f0bb",
+    "dev_process": "vbb19bd34",
+    "fleet_memory": "v2a98086b",
+    "dispatch_conflict": false,
+    "notes": "No sub-agents spawned that could themselves spawn further; one Explore (read-only, leaf) sub-agent used for architecture research, supervised and its findings independently verified against primary source before any code was written (fema-nfhl.ts and usda-ssurgo.ts read directly, not trusted from the sub-agent's paraphrase alone -- this is what surfaced that DFIRM_ID is already present unread on femaNfhlAdapter's raw features array). No write-slot/heavy-scan concerns: no atoms writes, no PostGIS writes, read-only live HTTP queries against public federal/HIFLD endpoints plus unit tests. packages/engine-core/ only; packages/adapters/ (CTX-B's) and engine-core/src/site-plan/ (R-01's) untouched -- verified by `git status` showing only new files under floodplain-acreage-fact/, soil-fact/, electric-provider-fact/, plus one new script."
+  },
+  "scopeBasis": "Dispatch names packages/adapters/ as CTX-B's for the sprint and engine-core/src/site-plan/ as R-01's for the composition re-cut. Three new top-level engine-core families were created (floodplain-acreage-fact/, soil-fact/, electric-provider-fact/) matching the existing sibling-family convention (flood-hazard-fact/, well-fact/, special-district-fact/, rrc-pipeline-fact/, utility-easement/) rather than extending any of those or touching site-plan/discharge-point.ts (the closest shipped precedent, PR #400/item 19, read but not modified).",
+  "missionPremise": "Per the dispatch: 'the acquisition and the honest-absence semantics are the actual work, and they do not need to wait' for R-01's composition root. Each family is verifiable standalone against real parcel output before any wiring exists. Gas is out of scope for live acquisition -- _decisions/2026-09-03_gas_utility_service_rail_closed_unacquirable.md already rules it permanently unaccounted; the only work item there is a correctly-cited structural absence, never a lookup.",
+  "completionPredicate": "For each of the three families: a resolver function exists in packages/engine-core/src/<family>/, returns a status:'present'|'absent' discriminated union (matching the shipped item-19 discharge-point.ts convention, not the bulk-planner outcome:'present'|'absent' convention used by the Factory county-writer families, since this is a live per-parcel report-time resolver, not a bulk atoms-writer), is unit-tested against both a present and a properly-absent case, and has been run against real live upstream data for both real Bastrop parcels named in the dispatch (48021:52726, 48021:52727) producing a correct, cited, non-fabricated result. All three are done as of this checkpoint; see verification below.",
+  "design_per_family": {
+    "item_18_floodplain_acreage_firm_panel": {
+      "approach": "Live polygon-intersects query against FEMA's public NFHL MapServer, not the internal tx_fema_nfhl_flood_zone staged table (this lane holds no DB credential -- see open_items). Two new sub-queries against a public service already used elsewhere in this repo (packages/adapters/src/federal/fema-nfhl.ts queries the same host by point): layer 28 (Flood Hazard Zones) by POLYGON intersects for real acreage-of-intersection (never a whole-parcel flag), layer 3 (FIRM Panels) for the actual citable panel number + effective date. Neither layer-3 query nor any polygon-vs-polygon intersection exists anywhere in this codebase today -- both new capabilities, not duplicated derivations.",
+      "finding_not_a_bug": "femaNfhlAdapter (packages/adapters, not touched) already requests DFIRM_ID and already returns the raw ArcGIS features array on its payload, so DFIRM_ID was reachable without any adapter change -- but DFIRM_ID alone is only the 6-char county-level FIRM database id ('48021C'), never a citable panel; the real citation (FIRM_PAN, EFF_DATE) lives only on layer 3, queried by nobody in this repo before now. Verified live 2026-09-07: layer 28 returns DFIRM_ID '48021C' for both Bastrop test parcels; layer 3 resolves the same point to FIRM_PAN '48021C0355F', EFF_DATE 2023-05-09, PANEL_TYP 'Countywide, Panel Printed'.",
+      "acreage_reconciliation_finding": "Live-verified 2026-09-07: this resolver's own shoelace-on-GIS-ring acreage (0.093 and 0.045 acres for 52726/52727 respectively, hand-verified independently outside the resolver) disagrees with Bastrop CAD's CALC_ACRE field, which reports the IDENTICAL 0.064 for both units despite their visibly different footprints. Reads as CALC_ACRE carrying the parent platted lot's acreage forward onto both child condo-unit rows rather than a per-unit figure -- a CAD-roll data-quality finding, reported per DEV_PROCESS 1.4 rather than silently reconciled by substituting the CAD field for the parcel's actual measured geometry, which is what item 18 asks for.",
+      "live_verified_result": "Both 48021:52726 and 48021:52727: present, sfhaAcres=0 (two Zone X hits: 'AREA OF MINIMAL FLOOD HAZARD' and '0.2 PCT ANNUAL CHANCE FLOOD HAZARD' -- neither SFHA), firmPanel present (48021C0355F, eff. 2023-05-09). A real, cited, non-fabricated zero -- not an absence, not a whole-parcel flag."
+    },
+    "item_20_soil_ssurgo": {
+      "approach": "Consumes the already-existing, already-working usdaSsurgoSoilsAdapter (packages/adapters/src/federal/usda-ssurgo.ts) through the public FEDERAL_ADAPTERS + runAdapters surface -- its own subpath export is not in the adapters package.json export map (unlike fema-nfhl, which site-plan/author.ts already imports directly), so this resolver looks the adapter up by adapterKey rather than requesting an export-map change for a single lookup-by-key. No new acquisition logic; a thin present/absent reshape.",
+      "live_verified_result": "Both parcels: present, mukey 393277, 'Bosque loam, 0 to 1 percent slopes, occasionally flooded', well drained, hydrologic group B, area symbol TX021. Independently corroborates the FEMA 0.2%-annual-chance shaded-X hit above -- two unrelated federal sources agreeing that this specific riverside downtown-Bastrop lot has real, if modest, flood exposure despite zero SFHA acreage."
+    },
+    "item_21_electric_gas": {
+      "approach_electric": "The staged HIFLD table (tx_utility_territory_staging, source_key hifld-electric-retail, 139 TX rows) that the mission's own check names is not reachable from this lane -- see open_items. This resolver queries the SAME public HIFLD_Electric_Retail_Service_Territories FeatureServer live instead (URL verified identical to the one three prior lanes -- L10, L14, L22 -- used to stage that exact table), same source, not a fresh acquisition mechanism.",
+      "finding_ambiguity_not_a_bug": "Live-verified 2026-09-07: both Bastrop test parcels return THREE overlapping HIFLD territory polygons at one point (CITY OF BASTROP municipal, BLUEBONNET ELECTRIC COOP, FAYETTE ELECTRIC COOP) -- a known HIFLD retail-territory data-quality artifact (municipal carve-outs inside a co-op's nominal territory are not always cleanly clipped), not a resolver defect. Reported as present-with-disclosed-ambiguity (all three candidates, ambiguous:true), never silently narrowed to the plausible one (City of Bastrop, given the downtown situs) without verification.",
+      "approach_gas": "No query at all. _decisions/2026-09-03_gas_utility_service_rail_closed_unacquirable.md already rules gas permanently unaccounted in Texas (franchise-based distribution, no certificated-territory GIS layer exists to query, staged or live). resolveGasProviderFact() is a pure function with no inputs, always the same structural, cited absence -- the correct behavior per that ruling, not a placeholder pending future acquisition."
+    }
+  },
+  "code_delivered": {
+    "files": [
+      "packages/engine-core/src/floodplain-acreage-fact/geo.ts",
+      "packages/engine-core/src/floodplain-acreage-fact/nfhl-query.ts",
+      "packages/engine-core/src/floodplain-acreage-fact/resolve-floodplain-acreage.ts",
+      "packages/engine-core/src/floodplain-acreage-fact/index.ts",
+      "packages/engine-core/src/floodplain-acreage-fact/__tests__/resolve-floodplain-acreage.test.ts",
+      "packages/engine-core/src/soil-fact/resolve-soil-fact.ts",
+      "packages/engine-core/src/soil-fact/index.ts",
+      "packages/engine-core/src/soil-fact/__tests__/resolve-soil-fact.test.ts",
+      "packages/engine-core/src/electric-provider-fact/hifld-query.ts",
+      "packages/engine-core/src/electric-provider-fact/resolve-electric-provider.ts",
+      "packages/engine-core/src/electric-provider-fact/resolve-gas-provider.ts",
+      "packages/engine-core/src/electric-provider-fact/index.ts",
+      "packages/engine-core/src/electric-provider-fact/__tests__/resolve-electric-provider.test.ts",
+      "packages/engine-core/src/electric-provider-fact/__tests__/resolve-gas-provider.test.ts",
+      "packages/engine-core/scripts/verify-r03-fact-families-live.mts"
+    ],
+    "not_modified": "packages/adapters/**, packages/engine-core/src/site-plan/** -- verified by git status containing zero entries under either path."
+  },
+  "verification": {
+    "typecheck": "npx tsc --noEmit (packages/engine-core) -- clean, zero errors",
+    "build": "npx tsc -b (packages/engine-core) -- clean",
+    "unit_tests": "npx vitest run -- 4 files, 16 tests, all passing. Fixtures for the 'real Bastrop replay' cases are verbatim live response bodies captured this session, not invented.",
+    "live_integration": "scripts/verify-r03-fact-families-live.mts run against real network for both real Bastrop parcels via the ACTUAL shipped resolver functions (not a re-implementation) -- output archived at P:/tmp/r03-fact-families root as r03-live-verification-results.json and reproduced in design_per_family above.",
+    "verified_at": "2026-09-07T21:40:00Z"
+  },
+  "open_items": [
+    "CORRECTED (per doc-repo-26, verified at source on legacy-design-tools origin/main before accepting): tx_utility_territory_staging is fully tracked -- migration lib/db/drizzle/0076_tx_utility_territory_staging.sql (renumbered from the 0075 the 2026-08-14 L22 close doc named, because 0075 was claimed by 0075_cad_property_vintage_crosswalk.sql in the meantime), plus lib/db/src/schema/txUtilityTerritoryStaging.ts, artifacts/api-server/src/lib/whoServesRead.ts(+.test.ts), scripts/stage-utility-territories.py, and the schema fixture template -- all confirmed present on origin/main by `git ls-tree`. My original claim in this artifact ('migration never committed anywhere') was wrong: I read the L22 close doc's committed:false field as current state rather than checking the live repo, and a migration filename is exactly the kind of identifier that moves after a close doc is written. What is still true and unchanged: this lane has no credential to that store (it lives in project cortex-prod, read by legacy-design-tools, neither of which this lane can reach), so the electric resolver here could not read the staged table and queried the public HIFLD source live instead -- legitimate on its own merits, arguably preferable to a snapshot of unknown freshness, but whether the 139 rows staged 2026-08-14 are still current is unverified from this lane.",
+    "This lane has no Postgres credential of any kind (CORTEX_DATABASE_URL/TXGIO_DATABASE_URL/DATABASE_URL/SUBSTRATE_DATABASE_URL all unset; no .env in the worktree). All three resolvers were therefore built to query live public upstreams directly rather than the internal staged tables the Factory pipeline already populates (tx_fema_nfhl_flood_zone for flood zones) -- correct and fully verifiable today, but a credential would let item 18 reuse the Factory's already-staged flood-zone table instead of live-querying FEMA per report.",
+    "Smart Site MCP access in this session is gated above my tier (get_smart_site returned upgrade_required for both test parcels) -- real parcel geometry was instead sourced from Bastrop County's own public ArcGIS parcel layer (services7.arcgis.com/qOeXJdBtGknaCJC4/.../Parcels_One_Click/FeatureServer/23), which is the same public source other lanes in this fleet already cite as live and public."
+  ],
+  "scratch": [
+    "GROUND-TRUTH (2026-09-07 live): FEMA NFHL layer 3 'FIRM Panels' at hazards.fema.gov resolves Bastrop 48021:52726/52727 to FIRM_PAN 48021C0355F, EFF_DATE 2023-05-09, PANEL_TYP 'Countywide, Panel Printed' -- layer 28's own DFIRM_ID ('48021C') is not a citable panel number by itself.",
+    "GROUND-TRUTH (2026-09-07 live): HIFLD_Electric_Retail_Service_Territories at services2.arcgis.com/LYMgRMwHfrWWEg3s returns 3 overlapping candidates (municipal + 2 co-ops) for both Bastrop test parcels -- multi-candidate ambiguity is real HIFLD data quality, not a query bug.",
+    "LESSON: femaNfhlAdapter's raw `features` array already carries DFIRM_ID even though the typed payload doesn't name it -- worth a mechanical guard (a test asserting the raw features array is never dropped) if another lane ever 'cleans up' that payload shape.",
+    "DEAD-END: attempted Smart Site MCP get_smart_site(depth:'node') for real parcel data -- refused upgrade_required at this session's tier; do not retry without a tier change, use the public county ArcGIS parcel layer instead.",
+    "OPEN: tx_utility_territory_staging is tracked and real (corrected, see open_items) but this lane has no credential to it and the 139-row staleness since 2026-08-14 is unverified -- next context with a cortex-prod credential should revisit whether the internal staged table can replace this lane's live HIFLD re-query, and check staged-vs-live parity while at it.",
+    "LESSON: a close doc's field (e.g. repo_changes.committed:false) is a claim about the repo's state AT THE TIME IT WAS WRITTEN, not now -- a filename or committed-status found stale in a close doc must be re-checked against the live repo (git ls-tree on the actual remote) before being reported as a current finding, not treated as a durable fact. Caught this session only because a peer (doc-repo-26) independently verified and corrected it."
+  ]
+}

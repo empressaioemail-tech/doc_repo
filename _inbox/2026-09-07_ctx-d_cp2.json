@@ -1,0 +1,54 @@
+{
+  "event": "CP2",
+  "lane": "CTX-D",
+  "planRow": "P-124",
+  "dispatch": "_dispatches/2026-09-07_ctx-d_dispatch.md",
+  "repo": "hauska-engine",
+  "worktree": "P:/tmp/ctx-d-geometry",
+  "branch": "feat/ctx-d-geometry-footprint",
+  "headCommit": "5d85228f5e803044ad1360af715f636653c51e4c",
+  "timestamp": "2026-09-07T21:40:17Z",
+  "checkpointKind": "pilot/mid-work",
+  "finding": {
+    "id": "F2",
+    "claim": "The dispatch's own headline (\"804,497 parcel-node atoms vs 500,307 CAD prop_ids = 304,190 unexplained\") is itself an instance of DEV_PROCESS rule 1.3 (measure the class, never derive by subtraction). The real reconciliation is a three-way split, not one residual bucket, and the true excess (423,580) is larger than the naive subtraction (304,190) because true overlap (380,917) is smaller than either total.",
+    "evidence": [
+      {
+        "instrument": "count(distinct entity_id), count(distinct body->>'parcelNodeId'), count(*) over atoms WHERE entity_type='parcel-node' AND countyFips='48453'",
+        "result": "804,497 / 804,497 / 804,497 -- every row is a genuinely distinct parcelNodeId; the divergence is not duplicate atoms per parcel."
+      },
+      {
+        "instrument": "Exported and diffed (sort/comm) the full Travis parcel-node atom id set against the full Travis cad_property distinct prop_id set",
+        "result": "overlap (real, CAD-backed, ring-bearing) = 380,917; CAD prop_ids with no parcel-node atom = 119,390 (the same set as F1/F3's no-ring gap); parcel-node atoms with no matching current CAD row = 423,580 -- this is the true excess, 119,390 more than the dispatch's naive-subtraction number."
+      },
+      {
+        "instrument": "Length/prefix inspection of the 423,580 unmatched ids",
+        "result": "423,540 (99.99%) match the pattern `_feature-stratmap25-landparcels-48453-travis-202508-<seq>` -- a documented synthetic key, not a stale numeric prop_id. Only 40 are plain numeric ids, and those 40 are status='retired' already."
+      },
+      {
+        "instrument": "Read of packages/engine-core/src/parcel-node/plan-county-parcel-nodes.ts and reconcile-county-parcel-nodes.ts",
+        "result": "SYNTHETIC_PARCEL_KEY_PREFIX = '_feature-' is a documented, tested, intentional fallback identity for a StratMap polygon feature the writer could not resolve to a real CAD account. reconcile-county-parcel-nodes.ts exists specifically to retire synthetic keys from a superseded vintage (invariant S2), but its mechanism is a vintage-transition diff -- it has nothing to diff against while a county has only ever had one ingested vintage."
+      },
+      {
+        "instrument": "SELECT body FROM atoms WHERE parcelNodeId LIKE '48453:_feature-stratmap25-landparcels-48453-travis-202508%' AND status='active' LIMIT 1",
+        "result": "body carries an honest, self-documenting absence: {\"kind\":\"parcel-key-unresolved\",\"reason\":\"every tier failed for this parcel -- no usable prop_id token (value \\\"0\\\"); ... no usable geo_id_crosswalk token (value \\\"0\\\") ...\"}. fetchedAt/evaluatedAt = 2026-09-07T14:58:22Z (today, likely from the same-day PR #396/#397 crosswalk-cascade apply CTX-E's CP1 independently documents on origin/main)."
+      },
+      {
+        "instrument": "SELECT source_vintage, count(*) FROM txgio_parcel WHERE county_fips='48453' GROUP BY 1",
+        "result": "Exactly one vintage on file: stratmap25-landparcels_48453_travis_202508 (894,657 raw polygon features). 894,657 = 380,917 (resolved to a real CAD account) + 423,540 (parcel-key-unresolved, source prop_id/geo_id token literally '0'/blank) + a small remainder. Confirms 804,497 counts every ingested StratMap polygon feature, resolved or not -- not a proxy for parcel count."
+      }
+    ],
+    "secondMechanismConsidered": "Stale prior-CAD-tax-year prop_ids (2025 vs 2026 vintage) was the first hypothesis, prompted by cad_property's own 2025/2026 tax_year split (380,918 / 492,848 distinct prop_ids) landing suspiciously close to the 380,917 overlap figure. Rejected on direct inspection: the unmatched ids are not numeric at all (they are the `_feature-stratmap25-...` synthetic key), and cad_property_vintage_crosswalk (the table that would carry a real prop_id-renumbering fact) has 0 rows for Travis -- there is no renumbering event to invoke.",
+    "conclusion": "Not a writer bug and not literally 'unexplained' -- the atom store already carries the mechanism, per-row, in its own absence field. The genuine gap is operational, not code-level: 423,540 Travis parcel-node atoms have sat in status=active with a self-declared parcel-key-unresolved absence since the only ingest Travis has ever had (Aug 2025), and any consumer that reads 'parcel-node atom count' as a proxy for 'real parcel count' for Travis will overcount by ~85%. The correct denominator is cad_property's distinct prop_id count (500,307), not the atom count."
+  },
+  "openThreads": [
+    "OPEN: Finding 4 (Bastrop 48021:104120) and both known writer-defect confirmations (PR #392 MultiPolygon scope, JSONB-vs-PostGIS-column pattern) still pending as of this checkpoint.",
+    "OPEN, out of CTX-D's repo scope, reporting only: Williamson's no-ring gap (91,021) does NOT share Travis's single-mechanism shape. Cross-tab against the known R-prefix 'leftover-farm' account population: 60,208 non-R-prefix ids are genuinely absent from txgio_parcel (Travis-shaped); but 34,811 R-prefix ids ARE present in txgio_parcel with a real, non-null geom AND non-null jsonb geometry, yet still carry a null tier1 envelope. This is a real join/derivation failure in the Z7 tier1 snapshot writer (node-facets:tier1), which per OPS-16 lives in legacy-design-tools, not hauska-engine -- out of this lane's repo, reported to doc-repo-26 for routing, not investigated further or fixed here.",
+    "GROUND-TRUTH (2026-09-07T21:40Z, live CORTEX_DATABASE_URL/ATOMS_DATABASE_URL): all counts in the evidence list above, plus the Williamson cross-tab (is_r_prefix x present_in_txgio: f/f=60208, f/t=2, t/t=34811)."
+  ],
+  "constraintsHonored": [
+    "Verified at source; did not accept the dispatch's own subtraction as the real reconciliation",
+    "Read-only queries only; no writes, no bake, no deploy",
+    "Williamson tier1-writer finding reported (Standing rules: 'anything you find that is real and outside your scope: report it, do not fix it') rather than investigated inside legacy-design-tools or patched from this repo"
+  ]
+}

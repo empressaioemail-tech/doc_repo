@@ -1,0 +1,55 @@
+{
+  "id": "2026-09-07_ctx-g_cp2",
+  "kind": "cp2",
+  "lane": "ctx-g",
+  "planRows": ["P-124"],
+  "filedAt": "2026-09-07T22:20:00Z",
+  "seat": "planner-run session (Claude), hauska-factory-ctx-g, worktree P:/tmp/ctx-g-ledger, branch feat/ctx-g-ledger-truth; no sub-agents used, all implementation and verification direct",
+  "sinceCP1": {
+    "built": [
+      "src/lib/county-rail-coverage.mjs (pure summarizeCountyRailCoverage/summarizeCoverageRows)",
+      "src/jobs/county-rail-coverage-report.mjs (read-only CLI, no writer-allowlist entry needed)",
+      "src/jobs/parcel-building-footprint-reconcile.mjs (write job, writer-allowlist entry added)",
+      "src/db/atoms-connect.mjs (ATOMS_DATABASE_URL connection helper, reuses connect.mjs's pooler guard)",
+      "writer-allowlist.mjs: new entry parcel-building-footprint-reconcile"
+    ],
+    "tests": "32 new tests across 3 new test files. Full suite: 1040/1040 passing (1008-test baseline + 32 new), 0 fail, 2 skip (unchanged, live-DB tests). Every CP1 pre-registered falsifier has a corresponding test: zero-sample pct=null, cadPopulation<inLedger refuses, zero-atoms-of-either-kind leaves unaccounted, absence-only atom produces absent-verified (not value), twice-run fingerprint equality, never-downgrade guard at both the JS and SQL layers, LAPTOP_WRITE_FROZEN without FACTORY_CLOUD=1.",
+    "liveSmokeVerification": "Both jobs run for real against production data, not just fixtures. (1) parcel-building-footprint-reconcile's reconcilePage called directly against real ATOMS_DATABASE_URL for five real/edge-case Bastrop propIds: two known absence atoms (48021:10001, 48021:10002) correctly resolved to absent-verified with the exact real reason text ('staged-geometry-true-join-below-10pct-overlap-threshold...'); two known real-footprint parcels (48021:102717 rowCount=1, 48021:102807 rowCount=3) correctly resolved to value; one nonexistent propId correctly stayed unaccounted. (2) county-rail-coverage-report's runCountyRailCoverageReport called against real PRODUCTION_NEONDB_URL + FACTORY_DATABASE_URL_RO for 48021/48453 across zoningDistrict/buildingFootprint/flood: output numbers match this lane's own CP1-cited live figures exactly (e.g. 48021 zoningDistrict inLedger=62256/cadPopulation=77799/pct=15.16; 48021/48453 buildingFootprint both status=unmeasured/pct=null, matching the 100%-unaccounted finding).",
+    "commit": "458c737, PR https://github.com/empressaioemail-tech/hauska-factory/pull/99 (feat/ctx-g-ledger-truth -> main), CI running at filing time (gate8: pass on the first push, pending re-run on a follow-up push; test: pending)."
+  },
+  "crossLaneFindingsFolded": [
+    {
+      "from": "doc-repo-26 / CTX-F",
+      "content": "Instantiation-gap denominator finding (parcel_record vs cad_property) independently triangulated three ways: this lane's own live query, doc-repo-26 reading the Factory store directly, and CTX-F reading source with default_transaction_read_only=on. All three agree to the row: Williamson 282,570/602,050 (46.94%), Caldwell 24,988/48,649 (51.36%), McLennan 114,254/114,255 (99.999%). CTX-F's requirePreBakeReadiness already enforces a 0.99 instantiation floor upstream of this lane's own instrument (requireCountyInstantiated), so this coverage instrument does not need to duplicate that refusal -- confirmed it only needs to compute against the correct (true cad_property) denominator, which it already does."
+    },
+    {
+      "from": "CTX-C via doc-repo-26",
+      "content": "Williamson (48491) sits in legacy-design-tools' LANDUSE_JOIN_DISABLED_FIPS_SEED on a stated basis (R-prefix/numeric prop_id collision) that CTX-C traced to a retired code path -- the R-strip that caused the collision is gone, and CTX-C's own live 644/644 situs-agreement sample on Williamson shows no collision under current code. Routed to me because I hold the ledger and the instantiation-denominator finding; combined into one report-only item in this lane's close since a county carrying both a stale join block AND a 46.9% instantiation gap may share an upstream root cause. Not touching the join gate -- per doc-repo-26's explicit instruction, this is routed to doc-repo-26 for a ruling, not acted on by this lane."
+    }
+  ],
+  "preRegisteredFalsifiersStatus": [
+    { "falsifier": "pct non-null when sampleSize=0", "result": "did not occur -- test enforces it, code refuses to compute pct unless sampleSize>0 AND cadPop>0" },
+    { "falsifier": "cadPopulation < inLedger silently accepted", "result": "did not occur -- CAD_POPULATION_IMPOSSIBLE refuses, tested" },
+    { "falsifier": "zero-atom parcel resolves to anything but unaccounted", "result": "did not occur -- unit-tested and live-confirmed (the nonexistent propId in the live smoke test)" },
+    { "falsifier": "absence-only atom resolves to value instead of absent-verified", "result": "did not occur -- unit-tested and live-confirmed (48021:10001/10002)" },
+    { "falsifier": "twice-run produces a different fingerprint", "result": "did not occur -- zero-drift on every run so far" },
+    { "falsifier": "an earned cell gets downgraded", "result": "did not occur -- guarded at both JS (ingestBuildingFootprintAbsenceOntoRecords only touches unaccounted cells) and SQL (UPSERT CASE) layers, both tested" },
+    { "falsifier": "suite regression beyond the 1008-test clean baseline", "result": "did not occur -- 1040/1040 passing" }
+  ],
+  "remainingWork": [
+    "Send CTX-F and CTX-C the rail names and check shapes directly (dispatch Acceptance requirement) -- next action after this checkpoint.",
+    "Confirm CI green on PR #99 (pending at filing time), then self-merge per this program's established precedent for a lane's own repo/seat authority.",
+    "Write setbackFrontFt's report (finding 3) into the close -- content already gathered at CP1, no further investigation needed, just needs to land in the close's required missionPremise/completionPredicate/scopeBasis fields.",
+    "File the close artifact once CI is confirmed green and the branch is merged (or, if CI is still pending when this lane's work otherwise concludes, report the merge as not-yet-confirmed rather than claiming a merge that has not happened -- AGENT_CONTRACT section 5's MERGE-only-on-CI-success rule)."
+  ],
+  "constraintsHonored": [
+    "worktree/branch unchanged since CP1",
+    "no doc_repo writes outside the three named checkpoint paths",
+    "no bake, no deploy, no traffic shift",
+    "no edits to seat_register.json",
+    "no secret value printed in this checkpoint",
+    "no vendored src/lib/parcel-record-engine/* file hand-edited -- both builds are new job-level files consuming the vendored engine's existing exports, confirmed by git diff against the commit",
+    "commit named to doc-repo-26 before any merge (PR link + commit sha given in this checkpoint)"
+  ],
+  "leave_behind": "declared at close"
+}

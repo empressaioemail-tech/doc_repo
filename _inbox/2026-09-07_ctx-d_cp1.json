@@ -1,0 +1,67 @@
+{
+  "event": "CP1",
+  "lane": "CTX-D",
+  "planRow": "P-124",
+  "program": "OPS-16_texas_market_plan_of_record / P-124 Central Texas completion sprint",
+  "dispatch": "_dispatches/2026-09-07_ctx-d_dispatch.md",
+  "repo": "hauska-engine",
+  "worktree": "P:/tmp/ctx-d-geometry",
+  "branch": "feat/ctx-d-geometry-footprint",
+  "headCommit": "5d85228f5e803044ad1360af715f636653c51e4c",
+  "timestamp": "2026-09-07T21:39:35Z",
+  "checkpointKind": "design/pre-build",
+  "missionPremise": "Dispatch cites four live-measured 2026-09-07 findings (Travis footprint acquisition gap, Travis parcel-node divergence, no-ring parcels across six counties, Bastrop 48021:104120 GEOMETRY-DIVERGE) and requires each be either fixed or given a stated mechanism plus an honest declared absence CTX-F's pre-bake readiness gate can consume. Per AGENT_CONTRACT section 5, re-verified every cited number at source before treating it as true, including the dispatch's own numbers.",
+  "instrumentsTraced": [
+    "CORTEX_DATABASE_URL (Neon, db=neondb) via gcloud secrets versions access -- holds tx_building_footprint, cad_property, txgio_parcel, place_layer_snapshots",
+    "ATOMS_DATABASE_URL (Neon, db=hauska_mcp) via gcloud secrets versions access -- holds the polymorphic atoms table (parcel-node, building-footprint entity types)",
+    "packages/engine-core/src/parcel-node/plan-county-parcel-nodes.ts and reconcile-county-parcel-nodes.ts (SYNTHETIC_PARCEL_KEY_PREFIX / orphan-retirement design)",
+    "packages/engine-core/src/registry/onboard-preflight.ts and preflight-probes.ts (geometryParitySample / probeGeometryParity definition)",
+    "packages/engine-core/src/registry/cert-grade-core.ts and boundary-primitive/lot-line-scrub.ts (warm==cert BCAD ring-divergence check, live at https://maps.co.bastrop.tx.us/.../Bastrop_County_Parcels/FeatureServer/0)"
+  ],
+  "findingsInProgress": [
+    {
+      "id": "F1+F3",
+      "claim": "Findings 1 (Travis footprint acquisition gap) and 3 (no-ring parcels) share one root cause for Travis, and it is a real source-data absence, not a join failure.",
+      "evidence": [
+        {
+          "instrument": "SELECT county_fips, count(*) FROM tx_building_footprint WHERE county_fips IN (six CTX-D counties) GROUP BY 1",
+          "result": "48453(Travis)=73394, 48491(Williamson)=233022, 48209(Hays)=209526 -- exact match to dispatch."
+        },
+        {
+          "instrument": "atoms WHERE entity_type='building-footprint' AND parcelNodeId LIKE '48453:%', split by body ? 'absence'",
+          "result": "72,919 real (non-absence) atoms, 323,543 declared-absence atoms (kind=no-footprint-feature). 72,919 matches the dispatch's cited atom count exactly."
+        },
+        {
+          "instrument": "Exported (bash comm/sort) three Travis id sets: cad_property distinct prop_id (500,307, exact dispatch match), tier1 envelope-null place_key (119,389, exact dispatch match), building-footprint-atom-touched parcelNodeId (380,917)",
+          "result": "comm -12 (untouched-by-footprint-writer) vs (no-ring) = 119,389 of 119,390; comm -23 the other direction = 0. The no-ring set and the footprint-writer-silently-skipped set are the same set, up to one outlier."
+        },
+        {
+          "instrument": "SQL join (inline VALUES array, read-only role) of the 119,389 no-ring Travis prop_ids against txgio_parcel(county_fips='48453')",
+          "result": "0 have a row in txgio_parcel at all (not a null-geom row, not a join-key mismatch -- absent from the source table entirely). property_use_code breakdown of the 119,389: A4 (condo) 53,672 (45%), blank 39,138 (33%), M1 (mobile home) 11,684 (10%), remainder scattered (O1/C1/F4/etc)."
+        },
+        {
+          "instrument": "Same envelope-null / txgio-presence check for McLennan (48309)",
+          "result": "0 no-ring rows (exact dispatch match) and txgio_parcel distinct prop_id (114,255) equals cad_property distinct prop_id (114,255) exactly -- a real, non-vacuous full-coverage county. McLennan's cad_property carries only 2 A4 and 2 M1 rows out of 114,255 -- negligible condo/mobile-home population explains the zero."
+        }
+      ],
+      "interpretation": "The footprint writer and the tier1 envelope builder both correctly cannot produce a ring/footprint for a parcel txgio_parcel never received a polygon for. The real defect is that the footprint writer's silent-skip (no atom at all, not even a declared absence) for these 119,389 Travis parcels is itself the SILENT FALLBACK class DEV_PROCESS section 0 and AGENT_CONTRACT section 5 name explicitly -- parcel-node's own three absence kinds (no-parcel-geometry / geometry-incomplete / parcel-key-unresolved) already model exactly this state; building-footprint has no equivalent for 'CAD parcel has no ring at all', so it says nothing rather than declining honestly.",
+      "secondMechanismConsidered": "A join-key mismatch between cad_property.prop_id and txgio_parcel.prop_id (e.g. leading-zero or format drift) was considered and rejected: the inline-VALUES join used the exact prop_id string with no normalization and found true absence (0 rows), not a near-miss; separately, cad_property_vintage_crosswalk has 0 rows for Travis, ruling out an un-applied vintage remap as the explanation."
+    }
+  ],
+  "openThreads": [
+    "OPEN: Finding 2 (parcel-node divergence, 804,497 vs 500,307) not yet mechanized as of this checkpoint -- moving to it next.",
+    "OPEN: Finding 4 (Bastrop 48021:104120 GEOMETRY-DIVERGE) not yet reproduced as of this checkpoint.",
+    "OPEN: PR #392 MultiPolygon outer-ring fix scope, and the JSONB-vs-PostGIS-column pattern, not yet checked against source as of this checkpoint.",
+    "GROUND-TRUTH (2026-09-07T21:39Z, live CORTEX_DATABASE_URL/ATOMS_DATABASE_URL): all counts in the evidence list above.",
+    "LESSON: the two Neon databases behind this lane's data (CORTEX_DATABASE_URL -> neondb; ATOMS_DATABASE_URL -> hauska_mcp) are genuinely separate instances -- no cross-database SQL join is possible; set reconciliation across them requires exporting id lists and diffing client-side (used comm/sort here on <1M-row sets, fast enough not to need a heavier approach).",
+    "LESSON: CORTEX_DATABASE_URL connects as a role that refuses CREATE TABLE ('cannot execute CREATE TABLE in a read-only transaction') -- confirmed read-only at the connection level, not just by convention. Cross-referencing a large id list against it requires an inline unnest(ARRAY[...]) VALUES clause via a generated .sql file, not a temp table."
+  ],
+  "constraintsHonored": [
+    "Verified every dispatch-cited number at source before treating it as true (AGENT_CONTRACT section 5 / DEV_PROCESS 4.1)",
+    "Read-only queries only against both live Neon databases; no writes, no temp tables, no bake, no deploy",
+    "Did not touch packages/adapters/ (CTX-B), packages/engine-core/src/site-plan/ (R-01), or the property-boundary-edge writer (CTX-E)",
+    "Identified to doc-repo-26 (lane, worktree, branch, HEAD) before starting substantive work",
+    "doc_repo edits (this checkpoint) left as plain file writes, not committed via git -- doc_repo remains planner-owned"
+  ],
+  "leaveBehind": "CP1 filed uncommitted at this path. No code changes made in hauska-engine worktree (HEAD unchanged from origin/main at 5d85228f). Continuing to findings 2 and 4."
+}

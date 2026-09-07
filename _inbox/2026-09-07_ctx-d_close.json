@@ -1,0 +1,99 @@
+{
+  "event": "CLOSE",
+  "lane": "CTX-D",
+  "planRow": "P-124",
+  "program": "OPS-16_texas_market_plan_of_record / P-124 Central Texas completion sprint",
+  "dispatch": "_dispatches/2026-09-07_ctx-d_dispatch.md",
+  "repo": "hauska-engine",
+  "worktree": "P:/tmp/ctx-d-geometry",
+  "branch": "feat/ctx-d-geometry-footprint",
+  "headCommit": "5d85228f5e803044ad1360af715f636653c51e4c",
+  "timestamp": "2026-09-07T21:40:58Z",
+  "missionPremise": "CTX-D's dispatch (P-124, Central Texas completion sprint) named four live-measured geometry/footprint findings and required each be either fixed or given a stated mechanism plus an honest declared absence CTX-F's pre-bake readiness gate can consume; plus confirmation of two known writer defects. AGENT_CONTRACT section 5 requires verifying every cited number at source, including the dispatch's own context block, before acting.",
+  "completionPredicate": "Met via the 'stated mechanism + honest absence characterization' branch for findings 1/2/3, an honest non-reproduction for finding 4, and a precise partial-coverage confirmation for both named defects -- not via code fixes. A stranger can evaluate this as done by: (a) reading the evidence chains below and independently re-running the same read-only queries against CORTEX_DATABASE_URL/ATOMS_DATABASE_URL and getting the same counts; (b) confirming no git diff exists in this worktree (investigation-only close, HEAD unchanged from origin/main); (c) confirming CTX-F has received the rail/absence-shape handoff below.",
+  "scopeBasis": "No code fix was attempted for findings 1-3 because their root cause is a genuine source-data gap (StratMap has no polygon for ~119K Travis/91K Williamson/etc parcels; ~423K Travis StratMap features carry no usable CAD identity token) that no code change in this repo can manufacture. The one real code-level gap identified -- the building-footprint writer silently emits nothing (not even a declared absence) for a CAD parcel with no ring -- is a well-scoped, safe candidate fix, but was left as a recommendation rather than shipped in this session: it touches a production writer that runs across all six counties, and AGENT_CONTRACT/DEV_PROCESS's verification bar (full test coverage, a live dry-run comparison, adversarial review) is not something to rush past 'confirm the mechanism' in the same pass that found it. Finding 4 is reported as a live non-reproduction, not fixed, because there is nothing currently failing to fix. Both known writer defects were investigated for SCOPE (does the existing fix cover the named class) per the dispatch's explicit ask, not re-implemented.",
+  "findings": [
+    {
+      "id": 1,
+      "name": "Travis footprint acquisition gap",
+      "dispatchNumbers": "73,394 polygons vs 500,307 parcels",
+      "verified": true,
+      "mechanism": "Same root cause as finding 3 (see below): the footprint writer cannot and does not produce a footprint OR a declared absence for a parcel txgio_parcel has no polygon for at all. 72,919 of Travis's 73,394 tx_building_footprint rows are real (non-absence); the writer correctly declines the other 323,543 candidate joins it did attempt. The uncounted 119,389 parcels are never touched by the writer in any form.",
+      "instrument": "tx_building_footprint / atoms(entity_type=building-footprint) live counts, CORTEX_DATABASE_URL + ATOMS_DATABASE_URL, 2026-09-07",
+      "declaredAbsenceRecommendation": "kind=no-parcel-geometry (matching parcel-node's existing vocabulary), basis='no txgio_parcel row for this prop_id at the current vintage' -- NOT YET IMPLEMENTED; the writer currently says nothing for this class rather than declining honestly, which is itself the silent-fallback defect DEV_PROCESS section 0 targets. CTX-F should treat this as UNDECLARED today, not as a false zero."
+    },
+    {
+      "id": 3,
+      "name": "No-ring parcels (all six counties)",
+      "dispatchNumbers": "Travis 119,389 / Williamson 91,021 / Hays 41,619 / Caldwell 23,660 / Bastrop 15,542 / McLennan 0",
+      "verified": true,
+      "mechanism": "Travis: 100% (119,389/119,389) genuinely absent from txgio_parcel at the source -- not a join failure. property_use_code breakdown of the missing set: A4 condo 45%, blank 33%, M1 mobile-home 10%, remainder scattered. These are CAD account types that structurally do not carry an independent platted-lot polygon in the StratMap parcel fabric. McLennan's 0 is a real, non-vacuous full-coverage result: its txgio_parcel distinct-prop_id count (114,255) equals its cad_property distinct-prop_id count (114,255) exactly, and it carries only 4 A4/M1 accounts total out of 114,255 -- it simply lacks the condo/mobile-home long tail driving the gap elsewhere. Williamson (91,021) is a MIXED case, not Travis-shaped: 60,208 genuinely absent from txgio_parcel; 34,811 (all R-prefix 'leftover-farm' accounts) ARE present in txgio_parcel with valid PostGIS and JSONB geometry, yet still carry a null tier1 envelope -- a real, previously-undocumented join/derivation defect in the Z7 tier1 snapshot writer, which lives in legacy-design-tools, not hauska-engine (out of this lane's repo scope; reported below, not investigated further).",
+      "instrument": "place_layer_snapshots(adapter_key=node-facets:tier1) envelope-null counts cross-referenced against txgio_parcel and cad_property, CORTEX_DATABASE_URL, 2026-09-07",
+      "haysColdwellBastropNote": "Counts re-verified exact matches to dispatch; root-cause depth (Travis-shaped vs Williamson-shaped vs other) not individually chased for Hays/Caldwell/Bastrop within this session -- flagged as an honest partial, not claimed either way."
+    },
+    {
+      "id": 2,
+      "name": "Travis parcel-node divergence",
+      "dispatchNumbers": "804,497 atoms vs 500,307 CAD prop_ids, framed as 304,190 unexplained",
+      "verified": true,
+      "mechanism": "The dispatch's own '304,190 unexplained' figure is a subtraction-of-totals (DEV_PROCESS rule 1.3 violation) and undercounts the real picture. True reconciliation: 380,917 atoms are real, CAD-backed, ring-bearing parcel nodes; 119,390 CAD prop_ids have no parcel-node atom at all (the same set as findings 1/3); 423,580 parcel-node atoms (not 304,190) correspond to no current CAD row. Of those 423,580, 423,540 (99.99%) are documented SYNTHETIC_PARCEL_KEY_PREFIX ('_feature-stratmap25-landparcels-48453-travis-202508-<seq>') identities the parcel-node writer mints, by design, for a raw StratMap polygon feature it could not resolve to a real CAD account. Each carries its own honest, self-documented absence (kind=parcel-key-unresolved, reason names the exact failed token, e.g. prop_id='0' and geo_id='0' at the source). These are status=active because reconcile-county-parcel-nodes.ts's orphan-retirement mechanism is a vintage-transition diff, and Travis has only ever had one ingested vintage (stratmap25-landparcels_48453_travis_202508, 894,657 raw features) -- there is nothing to diff against yet, not a bug in the reconciler. Only 40 stale ids (out of 804,497) are actually status=retired.",
+      "instrument": "atoms(entity_type=parcel-node, countyFips=48453) id-set export/diff against cad_property, plus source read of plan-county-parcel-nodes.ts / reconcile-county-parcel-nodes.ts, ATOMS_DATABASE_URL, 2026-09-07",
+      "declaredAbsenceRecommendation": "Already present and honest at the atom level (parcel-key-unresolved). The gap is that CTX-F or any other consumer treating 'parcel-node atom count' as a proxy for 'county parcel count' for Travis will overcount by ~85% -- the correct denominator is cad_property's distinct prop_id count (500,307)."
+    },
+    {
+      "id": 4,
+      "name": "Bastrop GEOMETRY-DIVERGE on 48021:104120",
+      "dispatchNumbers": "geometryParitySample DECLINE, 1 of 5 sampled parcels diverged, defect class GEOMETRY-DIVERGE",
+      "verified": "attempted; does not currently reproduce",
+      "mechanism": "Manually replicated the exact check the code performs (buildGeometryParityProbe / observeBcadRingDivergence / maxRingDeviationFt in cert-grade-core.ts), rather than running the literal CLI (onboard-preflight.mjs requires a full pnpm install in this fresh worktree, not done this session -- see leaveBehind). Fetched live BCAD geometry for prop_id 104120 via the exact same query the grader uses (https://maps.co.bastrop.tx.us/server/rest/services/Cadastral_BP/Bastrop_County_Parcels/FeatureServer/0/query?where=prop_id IN (104120)&outFields=prop_id&returnGeometry=true&f=geojson&outSR=4326), and compared it to txgio_parcel.geometry (the exact JSONB column loadTxgioParcelRing reads, not the geom PostGIS column) for county_fips=48021, prop_id=104120. Both rings are the same 4-corner rectangle to sub-meter precision (matched corner-by-corner, differing only in float-serialization precision and winding order/start vertex) -- well under the 2ft (PARCEL_RING_SOURCE_DIVERGENCE_TOLERANCE_FT) tolerance. maxRingDeviationFt itself is winding/start-vertex-independent (point-to-nearest-segment Hausdorff-style, not index-paired), so a naive-comparison bug does not explain the earlier DECLINE either.",
+      "openQuestion": "Does not currently reproduce. Two live, unverified-here hypotheses: (a) BCAD's live ArcGIS layer or txgio_parcel's stored geometry changed between the original DECLINE (surfaced by the integration seat earlier 2026-09-07, per _inbox/2026-09-07_integration_bastrop-geometry-parity-decline_flag.md) and this re-check; (b) the original run hit a transient condition (partial/slow BCAD response, or a different sample draw) not captured by this manual replication. Recommend the actual instrument (onboard-preflight.mjs --fips=48021, or block13-cert-grade.mjs) be run for real, with dependencies installed, before either closing this as resolved or re-escalating it as a live defect -- this session's finding is evidence of non-reproduction, not proof of a fix.",
+      "instrument": "Live curl against the BCAD FeatureServer + live SQL against CORTEX_DATABASE_URL, 2026-09-07T21:15Z-21:35Z"
+    }
+  ],
+  "knownDefectConfirmations": [
+    {
+      "name": "MultiPolygon outer-ring bug (secondary tracts silently dropped)",
+      "prClaimed": "PR #392",
+      "status": "MERGED, confirmed on origin/main (packages/engine-core/src/building-footprint/geo.ts:geometryOuterRing)",
+      "coverage": "PARTIAL, not full. PR #392 fixed WHICH single ring is kept for a MultiPolygon (now the largest-area part, previously always coordinates[0], i.e. arbitrary GeoJSON part order) -- this closes the 'silently misjoins against an arbitrary sliver' class the PR was written for. It does NOT preserve secondary tracts: geometryOuterRing()'s return type is a single RingLngLat, and every non-largest part of a MultiPolygon is still permanently discarded, with no absence or warning recorded. The dispatch's named class ('a MultiPolygon outer-ring bug silently drops secondary tracts') is therefore still present after PR #392 -- the bug that's fixed is 'wrong pick', not 'secondary tract loss'.",
+      "instrument": "gh pr view 392 (title/body/files) + direct read of geo.ts:geometryOuterRing, 2026-09-07"
+    },
+    {
+      "name": "Writer re-parses JSONB geometry in JS instead of using the indexed PostGIS column",
+      "status": "CONFIRMED present, at least in the onboarding/cert-grade path",
+      "coverage": "loadTxgioParcelRing (cert-grade-core.ts) runs `SELECT geometry FROM txgio_parcel ... regexp_replace(prop_id,...)` -- the JSONB column, parsed in JS via exteriorRingFromGeoJson -- rather than the indexed, PostGIS-typed geom column (which has a GiST index, txgio_parcel_geom_gist_idx). For 48021:104120 the two columns' values agree (both represent the same ring, confirmed by direct comparison), so this pattern did not explain finding 4's non-reproduction, but it remains a real, unaddressed performance pattern in a per-parcel query path as named in the dispatch. Not chased further afield (e.g. whether the production footprint/tier1 writers share this pattern) -- out of this checkpoint's time budget.",
+      "instrument": "Direct read of cert-grade-core.ts:loadTxgioParcelRing + live comparison of geometry (jsonb) vs ST_AsGeoJSON(geom) for 48021:104120, 2026-09-07"
+    }
+  ],
+  "ctxFHandoff": {
+    "note": "Per dispatch instruction, rail names and check shapes for anything resolved to a declared absence, routed via doc-repo-26 rather than direct-messaged (this lane's coordination seat is doc-repo-26, not another lane) -- see SendMessage to doc-repo-26 filed alongside this close.",
+    "rails": [
+      {
+        "rail": "buildingFootprint",
+        "counties": "Travis (and structurally the same class likely applies wherever a county's CAD roll has a large condo/mobile-home population)",
+        "checkShape": "A CAD parcel with no txgio_parcel row at the current vintage has no footprint atom of any kind today (undeclared, not a false zero). Recommend CTX-F's readiness gate treat 'no ring in txgio_parcel' as a pre-condition that makes buildingFootprint N/A for that parcel, sourced from txgio_parcel coverage directly, NOT from counting building-footprint atoms (which conflates 'no atom' with 'declined-and-recorded')."
+      },
+      {
+        "rail": "parcel-node atom count as a parcel-count proxy",
+        "counties": "Travis",
+        "checkShape": "Do not use raw parcel-node atom count as county parcel count for Travis -- 423,540 of 804,497 are synthetic StratMap-feature placeholders (kind=parcel-key-unresolved) with no CAD backing. Use cad_property distinct prop_id (500,307) as the denominator instead."
+      },
+      {
+        "rail": "envelope / no-ring (tier1 node-facets)",
+        "counties": "Travis, Williamson, Hays, Caldwell, Bastrop, McLennan",
+        "checkShape": "Travis/McLennan: envelope-null is a genuine, fully-source-absent state (safe to treat as a stable declared absence). Williamson: envelope-null is MIXED -- 60,208 genuine source absence + 34,811 where source geometry exists but the tier1 writer (legacy-design-tools, Z7 node-facets:tier1) failed to derive an envelope anyway. CTX-F should not treat Williamson's no-ring count as uniformly a source-absence the way Travis's is; ~38% of it is a live derivation defect in a different repo."
+      }
+    ]
+  },
+  "constraintsHonored": [
+    "Verified every dispatch-cited number at source (CORTEX_DATABASE_URL, ATOMS_DATABASE_URL live queries) before treating it as true, including re-deriving the dispatch's own arithmetic",
+    "Read-only throughout: no writes, no CREATE TABLE (the CORTEX connection itself refuses writes at the role level, confirmed), no bake, no deploy",
+    "Did not touch packages/adapters/ (CTX-B), packages/engine-core/src/site-plan/ (R-01), or the property-boundary-edge writer (CTX-E)",
+    "Williamson tier1-writer finding and the JSONB-reparse pattern reported, not fixed, per 'anything real outside your scope: report it, do not fix it'",
+    "Identified to doc-repo-26 with lane/worktree/branch/HEAD before starting substantive work; filed CP1/CP2 checkpoints as named _inbox/ artifacts before this close",
+    "No PR opened, no commit made in hauska-engine -- investigation-only close, consistent with the dispatch's 'or carries a stated mechanism' completion branch",
+    "doc_repo artifacts (this close and both checkpoints) left as plain file writes, not committed via git -- doc_repo remains planner-owned per Standing rules"
+  ],
+  "prsAndMerges": "none -- no code change made this session",
+  "leaveBehind": "hauska-engine worktree at P:/tmp/ctx-d-geometry, branch feat/ctx-d-geometry-footprint, HEAD unchanged from origin/main (5d85228f); no diff, nothing to commit. Recommended next actions, not started: (1) a well-scoped PR making the building-footprint writer emit an honest no-parcel-geometry absence instead of silently skipping a ringless CAD parcel (packages/engine-core/src/building-footprint/), with test coverage and a live Caldwell-scale dry-run per this repo's own verification norm; (2) running onboard-preflight.mjs or block13-cert-grade.mjs for real (needs `pnpm install` in this worktree -- not done this session) against Bastrop to get a literal, non-manual re-run of the geometryParitySample check before treating finding 4 as closed either way; (3) the Williamson tier1-writer defect and the broader JSONB-vs-PostGIS-column pattern both need an owner in legacy-design-tools / wherever the production footprint and tier1 writers' hot paths live -- not chased further here."
+}

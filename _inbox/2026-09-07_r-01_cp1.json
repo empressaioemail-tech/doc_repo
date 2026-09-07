@@ -1,0 +1,68 @@
+{
+  "lane": "R-01",
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "worktree": "P:/tmp/r01-composition",
+  "branch": "feat/r01-composition-root",
+  "baseCommit": "5d85228f5e803044ad1360af715f636653c51e4c",
+  "ancestorsVerified": {
+    "e1c14e3": "ancestor of base (git merge-base --is-ancestor: OK)",
+    "df96f57": "ancestor of base (git merge-base --is-ancestor: OK)"
+  },
+  "missionPremise": "_inbox/2026-09-07_reports_one_model_recut_WDLL.md supersedes the retired courthouse-program card. Operator ruling 2026-09-07: one composition, product manifests over it, delete the second derivation rather than reconcile it. My dispatch scopes me to R1-R5 only (composeParcelReport, section-level failure isolation, delete floodStudyAvailable, the manifest type, Feasibility rendering from a manifest). R6 (X-Ray manifest), R7 (Site Plan/Flood manifests), R8/R9 (retirements) are explicitly not mine.",
+  "readBeforeDesigning": [
+    "packages/engine-core/src/site-plan/author.ts (composeSitePlanModelForParcel)",
+    "packages/engine-core/src/site-plan/feasibility-model.ts (composeFeasibilityModel, FeasibilityFactState)",
+    "packages/engine-core/src/site-plan/feasibility-author.ts",
+    "packages/engine-core/src/site-plan/dossier-author.ts",
+    "packages/engine-core/src/site-plan/flood-drainage-author.ts",
+    "packages/engine-core/src/site-plan/flood-drainage-study.ts (runFloodDrainageStudy, no existing persisted-study READ path today -- only the author WRITES json-flood-drainage-study)",
+    "packages/engine-core/src/site-plan/pdf/feasibility.ts",
+    "packages/engine-core/src/site-plan/narrative-section-client.ts",
+    "packages/atoms/src/property-instances.ts (found a pre-declared but never-written 'json-feasibility-model' artifact slot, forward-looking, not used by this design -- noted as an OPEN for a future lane)",
+    "services/engine-api/src/routes/parcel-terrain.ts (feasibility-export/refresh route)",
+    "existing tests: feasibility-model.test.ts, feasibility-author.test.ts, pdf/__tests__/feasibility.test.ts, narrative-section-client.test.ts"
+  ],
+  "designDecisions": [
+    {
+      "item": "R4 manifest",
+      "decision": "New file report-manifest.ts. ReportManifest = { product, sections: ReadonlyArray<ReportSectionId> } where ReportSectionId is a closed string-literal union. No index signature, so an object literal assigned to ReportManifest with an extra fact-shaped property fails TS excess-property-check at compile time -- verified by a real @ts-expect-error fixture in a type-test file, not a narrated claim. All four manifests (site-plan, x-ray, flood, feasibility) are defined per the WDLL's own 'shape' section, but only FEASIBILITY_MANIFEST gets a real renderer this round; the other three exist as data + are used to prove R1's identity property without cutting X-Ray/Site Plan/Flood over (that stays R6/R7)."
+    },
+    {
+      "item": "R1 composeParcelReport",
+      "decision": "New file report-model.ts. ParcelReportModel = { parcelNodeId, geometry: FeasibilityFactState<SitePlanModel>, facts: {...}, drainage: FeasibilityFactState<FloodDrainageStudy>, package: PackageLayer }. Reuses the existing per-section fact interfaces from feasibility-model.ts (JurisdictionFacts, ParcelOwnershipFacts, etc.) rather than reinventing them -- they already satisfy R1's 'present/absent with provenance' requirement. Two-layer composition mirrors the existing author.ts pattern (composeSitePlanModelForParcel already split from the authors that call it): composeParcelReportFacts(sitePlan, storage, ...) is the atoms-driven half (today's composeFeasibilityModel, extended with drainage+package), composeParcelReport(parcelNodeId, options) = composeSitePlanModelForParcel + composeParcelReportFacts, for the full orchestration R1 describes. R1's identity check is proven by two independent section-reader functions (used by two different manifests, including a not-fully-wired X_RAY_MANIFEST) pulling the SAME model.facts.* object reference via toBe, not toEqual -- without cutting X-Ray's real PDF over."
+    },
+    {
+      "item": "R2 section isolation",
+      "decision": "geometry composition wrapped: on throw, geometry becomes absent(sitePlanUnavailableFromError(error).summary) instead of the whole report throwing (feasibility-author.ts currently hard-throws here -- this is the exact behavior being generalized, described in the dispatch as 'tonight's outage fix generalised'). Atoms fetch wrapped once; a fetch failure makes every atom-derived section (parcelOwnership, flood, specialDistricts, wellsPipelines, footprint) absent with the SAME honestly-shared reason rather than pretending independence. Each section's own derivation additionally gets its own try/catch for a malformed-atom-shape fault. utilities/dischargePoint keep their existing per-call try/catch. terrain becomes FeasibilityFactState-shaped since it depends on geometry. package computation is defensively coded and wrapped with a minimal absent-flavored fallback so a synthesis bug can't take down the whole document either. Verified by violation: a new test suite forces each section to throw in turn (stubbed storage/resolver) and asserts the OTHER sections still resolve and the document composes."
+    },
+    {
+      "item": "R3 delete floodStudyAvailable",
+      "decision": "Field deleted outright from FloodFacts, ComposeFeasibilityModelOptions-successor, AuthorParcelFeasibilityExportOptions, and the route's zod body schema (feasibilityRefreshBody) -- not renamed, not deprecated. drainage: FeasibilityFactState<FloodDrainageStudy> becomes its own top-level model field, resolved by: (1) look up the shared parcel-terrain-model atom's json-flood-drainage-study artifact (already written today by flood-drainage-author.ts -- real existing infra, not new); (2) if present and generatedAt is within a documented staleness TTL, read+parse it (present, no compute cost); (3) else, ONLY if the caller opts in (resolveDrainage.runWhenStale: true plus run inputs), run runFloodDrainageStudy fresh and persist the result onto the same atom/artifact store, mirroring authorParcelFloodDrainageReport's own persistence shape; (4) absent with reason otherwise. No staleness convention exists anywhere else in this codebase for this study -- I'm introducing one explicitly (documented constant, not silently assumed) since the card requires 'runs when stale' but names no TTL; flagged as a reversible default in my close.",
+      "whyOptIn": "Making drainage resolution opt-in (rather than automatic inside every composeParcelReport call) is the direct, proactive answer to the dispatch's own named risk: 'if composing the whole model... costs materially more and caching does not close it, STOP and report.' Opt-in means existing/cheap callers (and every existing unit test) pay zero extra cost by default; the real production Feasibility route opts in explicitly, matching today's Flood-Drainage report's own real-network default. This also avoids silently turning every existing feasibility-author.test.ts case into a live-network test."
+    },
+    {
+      "item": "R5 Feasibility renders from manifest",
+      "decision": "pdf/feasibility.ts's entry point moves from FeasibilityModel to ParcelReportModel + FEASIBILITY_MANIFEST. Package-layer computation (verdict headline, open items, data-quality note, deterministic narrative skeleton) MOVES from pdf/feasibility.ts + feasibility-model.ts into report-model.ts's package composition, since R5 says this must be 'computed across all sections rather than one product's slice' (today's generateOpenItems/deterministicNarrative only see feasibility-model fields, never drainage). narrativeOverride (LLM-generated) threading stays at the author/PDF layer exactly as today -- it is request-scoped and side-effecting, not part of a cacheable composition. Drainage section (flood-cover/catchment/ponding/flow-paths) renders the REAL study honestly present/absent instead of the caller-boolean-driven 'Site-specific drainage study: On file' chip. Geometry-absent path: header falls back to caller-supplied descriptor address/countyName (mirrors dossier-author.ts's existing pattern for the same situation), zoning-envelope section renders a declared-absent block, appended site-plan sheet is simply omitted -- all mechanisms that already exist elsewhere in this codebase, applied here rather than invented."
+    }
+  ],
+  "outOfScopeConfirmed": [
+    "packages/adapters/ untouched (CTX-B's for this sprint)",
+    "buildable-display-vocab.ts untouched (read-only, sha256 parity lock, four claimants)",
+    "R6 (X-Ray manifest, dossier-author.ts's actual PDF path), R7 (Site Plan/Flood manifests, author.ts/flood-drainage-author.ts actual PDF paths), R8/R9 (assembler retirement) not attempted this round -- their manifests are defined as data for R1's identity proof only"
+  ],
+  "preRegisteredSelfChecks": [
+    "Could composeParcelReport's atoms-fetch failure be mistaken for genuine per-atom absence? Guarded against by giving the fetch-failure path its own distinct reason string ('... read failed: <message>') vs the not-found path's ('No X atom on file for this parcel') -- a test asserts the two reasons are textually distinguishable.",
+    "Could making drainage opt-in silently mean production Feasibility never actually gets a real study (looks fixed, isn't)? Guarded against by wiring the actual engine-api route to pass resolveDrainage.runWhenStale: true using the SAME resolver/fetchDem the route already has for site-plan, and by live-verifying against a real parcel post-implementation rather than trusting the unit tests alone."
+  ],
+  "checksPlanned": {
+    "R1": "two manifest-driven section readers over ONE composeParcelReport call assert toBe identity on a shared fact object",
+    "R2": "each section's derivation forced to throw in turn (monkeypatched storage/resolver); document still composes, failing section reports absent with reason, others unaffected",
+    "R3": "a parcel with a persisted (fresh) study composes drainage present; one with none composes drainage absent with reason; floodStudyAvailable does not exist anywhere on the type (grep-verified after the edit)",
+    "R4": "a @ts-expect-error fixture assigning an extra fact-shaped property to a ReportManifest literal fails to compile without the suppression comment, i.e. tsc genuinely refuses it",
+    "R5": "one real PDF (via emitPdfFeasibility) contains the site plan section, the fact digest, real (not boolean) flood-drainage content, and package-layer narrative/open-items/verdict"
+  },
+  "liveVerifyPlan": "48021:52726 and 48021:52727 (Bastrop condo units, ~27m x 15m, the outage parcels) via a local tsx script driving composeParcelReport/authorParcelFeasibilityExport against the real Neon store (CORTEX_DATABASE_URL) and real adapters -- not the deployed Cloud Run revision, which predates both e1c14e3 and df96f57 per the WDLL's own snapshot note.",
+  "openQuestionsForOperatorIfAny": "None blocking. The drainage staleness TTL is a genuine judgment call with no prior convention in this codebase; documenting my chosen default explicitly in the close rather than blocking on it, per the dispatch's own 'if you cannot meet a criterion, say so by name' instruction applied to a sub-decision rather than a whole criterion.",
+  "status": "design complete, starting implementation"
+}

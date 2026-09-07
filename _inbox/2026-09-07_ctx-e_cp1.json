@@ -1,0 +1,67 @@
+{
+  "event": "CP1",
+  "lane": "CTX-E",
+  "planRow": "P-124",
+  "program": "OPS-16_texas_market_plan_of_record / P-124 Central Texas completion sprint",
+  "dispatch": "_dispatches/2026-09-07_ctx-e_dispatch.md",
+  "repo": "hauska-engine",
+  "worktree": "P:/tmp/ctx-e-edges",
+  "branch": "feat/ctx-e-boundary-edges",
+  "headCommit": "df96f579f3e62bfd8c1f0549c861df3f1458a4f8",
+  "timestamp": "2026-09-07T00:00:00Z",
+  "checkpointKind": "design/pre-build",
+  "missionPremise": "Dispatch claims: property-boundary-edge atoms exist for Bastrop (26,846) but zero for Caldwell/Hays/McLennan/Travis/Williamson, and the type-registration work (engine PR #394, mcp-server PR #81, atom-contract 1.31.0) is done, so the remaining work is to 'run the property-boundary-edge writer' for the five counties.",
+  "instrumentTraced": "packages/engine-core/scripts/depth-warm-city-batch.mjs (the only writer that reaches emitBoundaryEdgesFromWarmCandidate, via warmThenVerify -> promoteDepthWarmToStorage in src/depth-warm/promote.ts) and packages/engine-core/src/registry/jurisdiction-registry.ts (its config source, loadJurisdictionRegistryRowById).",
+  "finding": "The dispatch's premise does not hold. property-boundary-edge atoms are a byproduct of the FULL per-parcel warm/verify/promote pipeline, which requires a JurisdictionRegistryRow with a populated `warmRunner` (setback-table descriptor) config. Verified live against jurisdiction-registry.ts: of 14 real registry rows, exactly 3 have warmRunner config populated -- Bastrop (rowId 'Bastrop', descriptorId bastrop_tx), Elgin (descriptorId elgin_tx), and Lockhart (descriptorId caldwell_tx -- Lockhart is ONE CITY inside Caldwell/48055, not the county). Caldwell, Hays (48209), McLennan (48309), and Williamson (48491) each have only a bare '<County> County (unincorporated)' recon row (status: pre-flight-pending, zoningRegime: unzoned, no warmRunner key at all). Travis (48453) has NO registry row of any kind.",
+  "evidence": [
+    {
+      "claim": "Only 3 of 14 registry rows have warmRunner config",
+      "instrument": "grep -n 'rowId:|fips:|warmRunner:|descriptorId:' packages/engine-core/src/registry/jurisdiction-registry.ts",
+      "result": "warmRunner: appears at lines 265 (Bastrop), 430 (Elgin), 681 (Lockhart, fips 48055) only. Caldwell County (unincorporated) row at line 596 (fips 48055), Hays County (unincorporated) at 816 (fips 48209), McLennan County (unincorporated) at 855 (fips 48309), Williamson County (unincorporated) at 894 (fips 48491) all carry no warmRunner key."
+    },
+    {
+      "claim": "Travis (48453) has no registry row and is deliberately excluded",
+      "instrument": "Read of jurisdiction-registry.ts lines 483-493",
+      "result": "'EXCLUDED: Travis County (48453) is deliberately NOT added in this pass. Held per planner ruling 2026-08-04: Travis's prop_id bad-rate is 0.5147 ... Travis and it needs the geo_id_or_address_crosswalk JoinKey variant (already modeled on the JoinKey type specifically citing Travis) wired through the cohort loader before a Travis row can be authored safely.' No evidence that crosswalk wiring has since landed (grep for geo_id_or_address_crosswalk usage outside the type definition and this comment found none in this pass)."
+    },
+    {
+      "claim": "Real per-parcel zoning-fact atoms with genuine district codes already exist at scale for all five counties, despite no descriptor existing to resolve them",
+      "instrument": "Live SQL against hauska_mcp (ATOMS_DATABASE_URL secret), indexed LIKE-prefix scan on atoms_property_parcel_node_idx, 2026-09-07",
+      "result": "zoning-fact atoms with non-empty district and no absence flag, by county: 48055=6490 (of 24989 total), 48209=48732 (of 116421), 48309=48441 (of 114255), 48453=233249 (of 380920), 48491=124633 (of 282570). Sample district values are genuine multi-city zoning codes, e.g. Williamson (48491): RS 33936, SF2 21975, SU 13695, PUD 13244, SF-1 11800; Hays (48209): SF-6 6416, R-1-2 5645, MU 4614, R-1 3320, R2 3260. These are not stamped by any of the 3 configured descriptors (bastrop_tx/elgin_tx/caldwell_tx do not define these district codes) -- confirms a separate, already-run raw zoning-ingest pass populated zoning-fact county-wide, independent of the (missing) setback-table layer the boundary-edge writer depends on."
+    },
+    {
+      "claim": "road-node atoms (required for road-adjacency edge labeling) are entirely absent for two of the five counties -- an independent second blocker",
+      "instrument": "Live SQL against hauska_mcp, indexed scan on atoms_road_county_fips_idx, 2026-09-07",
+      "result": "road-node count by county: 48055=13790, 48209=40987, 48309=28787, 48453=0, 48491=0."
+    }
+  ],
+  "completionPredicate": "This CP1 is complete once the coordination seat (doc-repo-26) or the plan-of-record owner has read and routed this finding: either (a) directs CTX-E to scope and pilot ONE new city-level descriptor (Lockhart-scale effort: real zoning-ordinance setback research, a frozen registry row, verified against a sample) as a narrowed, honestly-smaller CTX-E deliverable, with the remaining cities/counties explicitly deferred and named as such, or (b) directs CTX-E to close this dispatch as a scope-correction (five counties are all blocked on prerequisites this lane did not create and cannot respondibly manufacture in-session), returning the real backlog item (per-city descriptor authoring across ~4 counties, a Travis join-key rework) to the plan-of-record for proper sizing, or (c) some other explicit routing decision.",
+  "scopeBasis": "Not proceeding to attempt a promotion run for any of the five counties without a real, ordinance-sourced setback-table descriptor, because: (1) reusing another jurisdiction's setback table or inventing plausible-looking setback figures would be exactly the silent-fabrication / fail-open defect class this program's ENFORCEMENT and DEV_PROCESS docs are built to prevent (DEV_PROCESS rule 0, 'never fabricate a value'; AGENT_CONTRACT verification rules on absences); (2) Travis is under a standing, still-unresolved planner ruling explicitly forbidding a registry row without a new join-key mechanism -- overriding that ruling is not this lane's call; (3) DEV_PROCESS 3.2 states explicitly that a lane finding the dispatching planner's own numbers wrong, and reporting rather than silently absorbing or unilaterally re-scoping, is a successful outcome, not a failure to execute.",
+  "constraintsHonored": [
+    "Read the writer and its config source before acting, per dispatch instruction",
+    "Verified at source (live SQL against hauska_mcp, not the dispatch's own prose) per AGENT_CONTRACT section 5",
+    "No fabricated setback data written",
+    "No writer run attempted against any of the five counties",
+    "No bake run, no deploy",
+    "Did not touch packages/adapters/ or packages/engine-core/src/site-plan/ (CTX-B / R-01) or footprint/geometry paths (CTX-D)",
+    "Reported the out-of-premise finding rather than unilaterally re-scoping or silently forcing execution",
+    "Reported to doc-repo-26 (coordination seat) directly, per dispatch's reporting line",
+    "doc_repo edits left uncommitted; no git operations performed in doc_repo"
+  ],
+  "leaveBehind": "CP1 filed uncommitted at this path. No code changes made in hauska-engine worktree yet (HEAD unchanged from origin/main at df96f579). Holding for coordination-seat routing before any further action.",
+  "openThreads": [
+    "RESOLVED by doc-repo-26 correction + independent verification (2026-09-07, this checkpoint): the Travis join-key gate this CP1 originally called 'still unbuilt' has landed. PR #396 (feat(parcel-node): per-parcel prop_id-then-geo_id crosswalk cascade, de0d4e8d) and PR #397 (fix(engine-core): wire the v2 scoped lease into write-parcel-node-county.mjs, 45c540ae) both MERGED 2026-09-07 and both confirmed ancestors of origin/main (5d85228) via git merge-base --is-ancestor. Live count confirms the claimed apply: parcel-node atoms for 48453 = 804,457 active / 804,497 total (the 40-row gap matches the reported 'forty orphans retired' exactly). The comment at jurisdiction-registry.ts:483-493 is now STALE -- do not cite it as current without rechecking.",
+    "OPEN: no attempt yet made to identify WHICH cities within Caldwell/Hays/McLennan/Williamson have the largest zoning-fact cohorts (i.e., best pilot-city candidates) -- deferred until routing decision on whether to pilot at all.",
+    "GROUND-TRUTH (2026-09-07, live hauska_mcp): zoning-fact-with-district counts and road-node counts per county as tabulated above.",
+    "GROUND-TRUTH (2026-09-07, live neondb/txgio_parcel): ring geometry row counts per county -- 48055=32781, 48209=131734, 48309=130650, 48453=894657, 48491=304298. Geometry coverage is NOT a blocker for any of the five counties; this was not checked in the original CP1 pass.",
+    "DEAD-END: none yet -- no build attempted."
+  ],
+  "addendum": {
+    "timestamp": "2026-09-07T00:00:00Z",
+    "trigger": "doc-repo-26 asked whether the boundary-edge writer intrinsically requires the setback-table descriptor, or only road adjacency + parcel geometry -- this determines whether Caldwell/Hays/McLennan are unblocked today independent of the per-city setback-table authoring problem.",
+    "finding": "Two separate code paths produce property-boundary-edge atoms, and only one needs the descriptor. (1) depth-warm-city-batch.mjs -> promoteDepthWarmToStorage/emitDepthWarmPromotion (src/depth-warm/promote.ts) is what produced Bastrop's 26,846 atoms and is what the original dispatch pointed at; it hard-requires setback resolution -- resolveSetbackTableRow throws (promote.ts:158-161) before boundary edges are ever emitted, because this path bundles setback-rule + buildable-envelope + boundary-edge into one promotion. (2) boundary-primitive/compute.ts's computeBoundaryEdgeAtoms, driven today only by scripts/boundary-primitive-caldwell.mjs, is a separate lighter path needing only parcel ring geometry, a parcel-adjacency index, and road-node atoms for edge/frontage labeling. Its JurisdictionDescriptor has setbackTable as an explicitly OPTIONAL field (property-reasoning/types.ts:91). When a district has no setback row, resolveDistrictEdgeSetback (resolve-road-class-setback.ts:61-77) returns {kind:'no-setback-row', reason} on that edge's setback field -- an honest absence, not a throw, not a fabricated value. This is mechanically tested, not inferred: boundary-primitive.test.ts (~lines 183-195) asserts every edge's setback is EITHER a resolved feet value OR the honest no-setback-row decline, never anything else.",
+    "unblockAssessment": "On the road-adjacency criterion alone (path 2): Caldwell, Hays, McLennan are unblocked -- they have real road-node coverage (13,790 / 40,987 / 28,787) and real ring geometry at scale. Williamson and Travis remain blocked regardless of the join-key/registry-row question, because both have ZERO road-node atoms -- untouched by PR #396/#397.",
+    "notYetTrue": "Not claiming path 2 is ready to run as-is. boundary-primitive-caldwell.mjs has its own extra parcel-level gate (line 200-202) that SKIPS a parcel entirely when districtHasSetbackRow is false, rather than letting the engine's own honest-absence path through -- would need removing/changing. That script is also wired to Caldwell's Lockhart-scoped descriptor and bbox only (header comment: 'batch persist for Bastrop cohort', reads as an in-progress copy). Hays and McLennan have no equivalent script at all. Building one per county is small (same shape, new county_fips, an identity-only descriptor with no setbackTable) but is still unbuilt, unrun, and unverified against a live sample as of this checkpoint.",
+    "action": "Reported to doc-repo-26 in full; holding without building or piloting, per explicit instruction not to scope/pilot a city onboarding unilaterally."
+  }
+}
