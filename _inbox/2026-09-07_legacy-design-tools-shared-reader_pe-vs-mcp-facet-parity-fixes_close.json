@@ -1,0 +1,52 @@
+{
+  "lane": "legacy-design-tools-shared-reader",
+  "item": "Close the 6 highest-priority divergences from the PE/MCP-vs-web-facets parity audit (D1-D6), per doc-repo-2c's rulings on the findings doc.",
+  "checkpoint": "DONE. legacy-design-tools PR #632 merged to main (c9d2806c), branch pe-mcp-facets-parity-audit-d5-d6-d1-d4 deleted.",
+  "date": "2026-09-07",
+
+  "priorArtifact": "_inbox/2026-09-07_legacy-design-tools-shared-reader_pe-vs-mcp-facet-parity-audit_findings.json (the 11-divergence report filed before any fix)",
+
+  "d5_zoning": {
+    "whatShipped": "attachVerdictLayersToFacets (structuralFactToFacetsWire.ts) now takes an optional parcelRecordZoningFact param and applies the SAME 'record wins whenever it has genuinely earned one (present, or a verified absence)' rule composeZoningBriefSectionFromParcelRecord already applies on the PE brief path -- reused the rule, not reimplemented. Before this fix, brokerageNodeFacets.ts's facets route never consulted the live parcel_record zoning ledger at all and always kept an existing baked stamp; the brief path's live ledger read won unconditionally. A parcel where the two disagreed could show a paying user and an anonymous map viewer genuinely different zoning districts.",
+    "correctionMade": "The informal pre-audit description of this bug (recorded before the fix) had the direction backwards -- described as 'PE derives from city-limits containment, MCP reads the ledger cell' when the opposite was true. Caught and corrected in the findings doc before fixing anything.",
+    "verifiedLive": "4 new integration tests in brokerageNodeFacets.test.ts against a real Postgres (pgvector+postgis) container: a gate-passing live ledger fact overrides a deliberately stale baked stamp end-to-end; falls back unchanged with no ledger fact. 8 new pure-function tests in structuralFactToFacetsWire.test.ts cover every precedence branch (present/absent-verified/not-applicable/refused/null)."
+  },
+
+  "d6_setbacks": {
+    "whatShipped": "brokerageNodeFacets.ts now calls loadSetbacksFactForServe (the SAME loader the PE brief path already used) and exposes a new setbacksFact sibling field, additive -- does not resurrect facets.envelope, which stays permanently null (WDLL 3.7 anti-zombie cut, untouched). Before this fix, this route's baked envelope was unconditionally null and no live setbacks fact was ever fetched, so it reported NO setback data for ANY parcel, in ANY county, ever -- the single largest capability gap the audit found, and the one with the most real market impact given tonight's whole setback-landing focus.",
+    "verifiedLive": "2 new integration tests: setbacksFact carries real frontFt/sideFt/rearFt/cornerFt for a gate-passing county; stays null (with facets.envelope still null, no regression) for an unslated county."
+  },
+
+  "d1_d4_additive": {
+    "whatShipped": "propertyExplorer.ts's assembleNodeBriefBody now also returns valueHistoryFact (D1, same loader as the facets route, previously never fetched at all) and specialDistrictFact/pipelineFact/wellFact/boundaryEdgeFact (D4, already fetched to feed the optional `draw` block but never exposed as their own typed fields -- a caller had no way to read them as structured data, and got nothing when draw was absent).",
+    "verifiedLive": "New describe block in pe-property-entitlement.test.ts hits the real POST research/brief route end-to-end and asserts all fields reach the wire."
+  },
+
+  "d2_landUse": {
+    "whatShipped": "The brief's land-use section previously read ONLY the retired baked/CAD-roll baseFacts.landUse value. buildR1Brief now takes an optional landUseFact param and applies the same zoning/setbacks precedence rule via a new composeLandUseBriefSectionFromAtom -- the real land-use-fact atom (loadLandUseFactAtom, same as the facets route) wins whenever it has genuinely earned an answer (present or a verified absence); falls through to the baked value only on a genuine refusal (atom-miss / store down / malformed -- land-use-fact has no allowlist/gate cutover, so a miss is REFUSED, not absent, unlike zoning/setbacks). Also exposed as its own top-level landUseFact field.",
+    "verifiedLive": "New r1BriefComposeLandUse.test.ts (8 pure-function tests covering every precedence branch) plus the same pe-property-entitlement.test.ts route-level assertion."
+  },
+
+  "d3_owner": {
+    "whatShipped": "Checked the gate before adding anything, per explicit instruction, since owner data is the one deliberately paid-gated property atom in the whole system. Confirmed grantsCadRollValuation (already threaded into assembleNodeBriefBody as a parameter) IS grantsOwnerCoGatedFields(...)'s result at every real call site -- the route handler's grantsCadRollValuationFor returns false immediately unless depth === 'node', the only depth that ever reaches this function -- the exact predicate brokerageNodeFacets.ts's callerGrantsOwnerFact already uses. Added ownerFact gated by that existing predicate; no second gate invented.",
+    "leakPreventionProof": "New route test proves a non-granted caller (paid, non-Studio, no Property Unlock) gets the typed studio-gated refusal with ownerName undefined -- not just that the field exists, but that it does NOT leak -- and a granted caller (active Property Unlock on the parcel, same predicate the CAD-roll dollar fields already prove) gets a real, non-studio-gated result."
+  },
+
+  "notFixed": {
+    "d9_d11": "Accepted as intentional product-surface differences per the ruling (no raw-facets-object equivalent on the brief path; adapterKey vs mode/reportFamily labeling convention) -- no action.",
+    "d7_d10": "Lower priority per the ruling, no access-policy stakes (instrument classification metadata on 9 fact slots; tier2/floodDisposition provenance narrative) -- deferred, flagged as a cheap follow-up if picked up later."
+  },
+
+  "sideInvestigation": {
+    "whatWasAsked": "doc-repo-2c broke in mid-fix with an urgent, unrelated real question: does PE's live map rendering (hauska-map, via the buildable-envelope POST endpoint) draw a real setback-based polygon for tonight's newly-landed cities TODAY, before any atom backfill -- or does the corpus merge/atom backfill block that too?",
+    "answeredEmpirically": "Ran the REAL production resolveAuthoritativeSetbacks + deriveBuildableEnvelope functions (legacy-design-tools' artifacts/api-server/src/lib/buildableEnvelope/) against the real landed killeen-tx.json for district R-1, atomRule: null (zero atoms). Real output: a real Polygon, buildableAreaSqFt 7350, empty:false, using tonight's actual PR #630 fixed values (front_ft 20 / side_ft 5). Confirmed the codified-ordinance JSON table is architecturally the HIGHEST-ranked authority tier (authoritativeSetbackSource.ts: codified-ordinance 3 > gis-per-parcel 2 > atom-chain 1) -- it wins even over an atom-chain rule when both exist, never merely a fallback for atom absence.",
+    "correctionMade": "The file doc-repo-2c named (hauska-map's live-envelope-augment.ts) has ZERO callers anywhere in that repo's main branch -- built and unit-tested, not wired into any UI path. Its only real consumer elsewhere imports just its boolean gate helper (facetsNeedLiveEnvelopeDerive), used by fact-sheet-resolver.ts to WITHHOLD the fact-sheet's numeric buildable-area headline until a real buildable-envelope atom exists (operator ruling B) -- the opposite job from drawing geometry. The actual live-derive wiring that reaches the map runs through two other active files (parcel-lookup.ts, fact-sheet-resolver.ts) calling the same underlying client directly.",
+    "bottomLine": "Corpus merge / atom backfill does NOT block map rendering for the nine landed cities -- the codified table alone is sufficient and already wins today. It DOES gate two other things: the fact-sheet's numeric headline (ruling B, a hauska-map-side concern, out of this lane's scope) and the MCP/brief's own setbacks-envelope section on the anonymous facets route, which is D6 above -- already fixed in this same PR.",
+    "notFullyVerified": "Did not trace every conditional gate inside ExplorerMap.tsx/InspectCard.tsx (hauska-map's own large React component tree) to certify the exact on-screen condition for every user flow -- flagged that boundary explicitly in the report rather than overclaiming full click-through certainty."
+  },
+
+  "testing": "New/extended: brokerageNodeFacets.test.ts (84 total, was 80), pe-property-entitlement.test.ts (46 total, was 43 pre-audit / 44 after D1/D4), structuralFactToFacetsWire.test.ts (new, 8), r1BriefComposeLandUse.test.ts (new, 8). All run against a real pgvector+postgis-enabled Postgres container (had to add the postgis-3 package manually, mirroring pr-checks.yml's own CI recipe). Full local api-server suite (372 files) also run as an extra check -- 9 unrelated pre-existing failures (MUD display-gate, chat, PDF export, county ledger, records-request routes, txgio parcels -- none touching anything this PR changed), consistent with known environment-load flakiness under a single heavy shared run, not a regression. CI's first run failed 4 tests in brokerageExtensionPublic.test.ts (Test timed out in 20000ms) -- confirmed unrelated (different route entirely, no import of anything this PR touched) and confirmed transient by running that file in isolation locally (11/11 passing) before re-running CI, which came back fully green on retry. npx tsc --build clean throughout every edit.",
+
+  "relatedPrs": ["empressaioemail-tech/legacy-design-tools#619", "#620", "#626", "#627", "#628", "#629", "#630", "#631", "#632"],
+  "relatedFindingsDoc": "_inbox/2026-09-07_legacy-design-tools-shared-reader_pe-vs-mcp-facet-parity-audit_findings.json"
+}
