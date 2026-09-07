@@ -1,0 +1,26 @@
+{
+  "lane": "legacy-design-tools-shared-reader",
+  "addendumTo": "_inbox/2026-09-06_legacy-design-tools-shared-reader_p85-timeout-fragility_close.json",
+  "date": "2026-09-07",
+  "checkpoint": "ESCALATED. The original close doc's diagnosis (marginal real-timer poll loop, symptom-patched with a 25000ms per-test timeout) is confirmed insufficient by two further, independent CI failures on a second, unrelated PR (#627) landing the same night. Reclassifying from 'timing fragility' to 'confirmed recurring, likely real intermittent hang' -- needs actual investigation by whoever owns P-85/records-request, not another timeout bump.",
+
+  "newEvidence": [
+    {
+      "run": "legacy-design-tools PR #627, CI run 34071665153, attempt 1",
+      "result": "2 of 4 tests failed with 'Test timed out in 25000ms' (the 25000ms fix from the original close doc, present in this branch, did not hold)."
+    },
+    {
+      "run": "legacy-design-tools PR #627, CI run 34071665153, attempt 2 (retry)",
+      "result": "3 of 4 tests failed with 'Test timed out in 25000ms' -- one more than the first attempt. Critically, 'fails closed when entry navigation fails' failed this time too: that test's mock (goto returns {ok:false, status:503} immediately) should fail closed almost instantly per the recipe's own logic, without ever reaching assertBastropSearchSettled's real polling loop at all."
+    }
+  ],
+
+  "whyThisChangesTheDiagnosis": "The original theory (assertBastropSearchSettled's real setTimeout-based poll loop, fillMissAfterMs=4000ms, is marginal against a short test timeout) only explains tests that actually enter that poll loop. It does not explain 'fails closed when entry navigation fails' timing out -- that test's own recipe path should short-circuit on the failed goto() before any polling begins. A test with no plausible reason to take anywhere near 25000ms failing with exactly that error is more consistent with something hanging or blocking across the whole test file/worker (a leaked timer or unresolved promise bleeding from a prior test, or severe event-loop starvation) than with a single function's own polling margin being too tight. Also notable: both PR #626 and PR #627 diffs touch zero files in artifacts/records-request-worker, and origin/main did not move during any of these CI attempts (re-verified same method as the original close doc) -- still confirmed unrelated to either PR's own changes.",
+
+  "notDone": "No further timeout bump applied on this session's own judgment -- two data points in a row getting WORSE (2 failures then 3, at a timeout already 5x the original) argues against 'just needs more headroom' and this session does not think guessing at a bigger number is responsible at this point. No change made to searchOutcome.ts, the recipe logic, or the test file beyond what the original close doc already recorded. Whether an explicit, documented, tracked skip of these 4 tests is acceptable for unrelated PRs in the meantime -- versus blocking merges until this is root-caused -- is raised as an open question for the operator/whoever owns P-85, not decided here.",
+
+  "relatedPrs": [
+    "empressaioemail-tech/legacy-design-tools#626 (merged, self-merged after the original 25000ms fix appeared to hold on that run)",
+    "empressaioemail-tech/legacy-design-tools#627 (open, blocked by this recurrence as of this addendum)"
+  ]
+}
