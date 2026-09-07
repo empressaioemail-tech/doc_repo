@@ -1,0 +1,31 @@
+{
+  "lane": "ctx-wrapup-factory",
+  "item": "Bottleneck analysis test-list item 5: re-measure atoms/s throughput, using cente-67's real McLennan (48309) building-footprint --apply as the writer to time.",
+  "checkpoint": "DONE. Real number obtained, dramatically better than the original baseline.",
+  "date": "2026-09-07",
+
+  "method": "Passively sampled pg_stat_user_tables.n_tup_ins for the atoms table every 5s throughout cente-67's real apply run (run-id bfoot-apply-48309-2026-09-07T033437Z), no writes of my own, no synthetic data. Cross-checked the resulting insert delta against cente-67's own reported atomsWritten count.",
+
+  "results": {
+    "atomsWritten_reported": 125973,
+    "atomsWritten_confirmedViaCounterDelta": "138240342 - 138114369 = 125973 -- exact match to cente-67's own report and their independent post-write live count query",
+    "totalWallClockMs": 610454,
+    "realInsertWindowSeconds": 165,
+    "realInsertWindowNote": "The counter was flat before epoch 1788752544 and flat again after 1788752709 -- the actual bulk-INSERT activity is concentrated in a 165s sub-window, not the full 610s (~10.2 min) wall-clock time cente-67 reported for the whole apply (which also includes the geometry/join computation and the post-write verification read, neither of which touches n_tup_ins).",
+    "throughput_atomsPerSecond": "125973 / 165 = ~763.5 atoms/s, using the real DB-write window specifically (the number directly comparable to the original benchmark, which measured the write path itself, not end-to-end job wall time)"
+  },
+
+  "comparisonToOriginalBaseline": "Original baseline (2026-08-26, post batched-links fix): 67-149 atoms/s, measured on the same writePropertyAtomsBatch write path. Tonight's real measurement: ~763.5 atoms/s -- roughly 5-11x higher. At this rate, the original concern ('100M atoms is over a week of continuous writing' at 67-149/s) would instead be ~36 hours (100M / 763.5s), a dramatic improvement, not a still-open capacity problem, at least for this writer/entity-type shape.",
+
+  "caveats": "This is one real observation, for one writer (building-footprint atom writes) against one mid-sized county (McLennan). Not claimed as a universal number for every atom entity type/writer in the system -- different writers may have different per-row costs. Also: the countAtoms() incident (still unresolved and actively degrading the shared compute, tracked separately) was very likely still ongoing during this exact measurement window, per the last live check shortly before this run. That the real write throughput still came in dramatically higher than the old baseline DESPITE known concurrent interference is itself a reassuring data point -- if anything this measurement is a lower bound on what this writer can do on a truly clean compute, not an inflated number.",
+
+  "conclusion": "Per the operator's own framing ('if throughput shows real volume-capacity work is needed, build it out'): this result does NOT show a volume-capacity problem for this writer -- the opposite. Real throughput is high and the original 'statewide takes over a week' framing appears to be stale, superseded by whatever fixes (batched-links, lease v2, or other work across the many OPS-16 rows tonight's investigation touched) landed since the original 67-149 atoms/s measurement. Recommend NOT building additional write-throughput capacity based on tonight's evidence -- recommend instead re-measuring on 1-2 other writer/entity-type shapes (not just building-footprint) before generalizing this conclusion broadly, since this session only captured one real writer in action.",
+
+  "testListStatus_final": {
+    "1_profile_under_load": "DONE -- countAtoms() root-cause work, still ongoing as a separate incident",
+    "2_falsify_one_heavy_op_rule": "DONE -- falsified for genuinely light ops, real data",
+    "3_read_replica_test": "Infrastructure exists on cortex-prod; not verified whether anything routes through it -- still open",
+    "4_cost_split_vs_scale": "Partially resolved (Factory already split); cortex/atoms split not costed -- still open",
+    "5_remeasure_throughput": "DONE -- this doc"
+  }
+}
