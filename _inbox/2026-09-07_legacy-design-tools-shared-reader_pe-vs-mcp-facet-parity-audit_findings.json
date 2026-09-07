@@ -1,0 +1,107 @@
+{
+  "lane": "legacy-design-tools-shared-reader",
+  "item": "Field-by-field audit: Property Explorer / get_smart_site node-brief path vs. the public web-map facets route, requested by doc-repo-2c as a follow-on to tonight's incidental valueHistory/agValuation + zoningDistrict findings.",
+  "status": "AUDIT ONLY. No fix landed yet, per explicit instruction to report the complete scope before touching anything broad.",
+  "date": "2026-09-07",
+
+  "premiseCorrection": {
+    "originalFraming": "Task was framed as 'Property Explorer (propertyExplorer.ts's assembleNodeBriefBody) vs. the Smart Site MCP app (brokerageNodeFacets.ts, used by get_smart_site depth node)'.",
+    "whatIVerified": "smartsite-mcp/src/tools.ts's get_smart_site handler calls POST /api/property-explorer/v1/research/brief for every depth including 'node' (confirmed at tools.ts lines ~880 and ~983). That route is propertyExplorer.ts's own research/brief handler, which calls assembleNodeBriefBody -- the exact same function that serves PE's own paid web brief. PR #619's own body confirms this too: 'assembleNodeBriefBody (the composer behind get_smart_site depth node AND POST /property-explorer/v1/research/brief)'.",
+    "conclusion": "There is no code-path divergence possible between 'PE' and 'get_smart_site' for depth=node -- they are the same backend function, byte-identical response. brokerageNodeFacets.ts's GET /api/brokerage/v1/place/node/:parcelNodeId/facets route is a THIRD, separate consumer: the anonymous public web-map inspect-card read path. The real comparison this audit performs is: {assembleNodeBriefBody, serving both PE's paid brief and get_smart_site} vs. {brokerageNodeFacets.ts's facets route}. Flagging this correction explicitly since it changes which two things are actually being compared."
+  },
+
+  "confirmedDivergences": [
+    {
+      "id": "D1",
+      "field": "valueHistoryFact",
+      "facetsRoute": "Present. Fetched via loadValueHistoryFactForServe, returned as its own top-level field (brokerageNodeFacets.ts:215,719,910).",
+      "briefPath": "Absent entirely. Not imported, not fetched, not returned anywhere in assembleNodeBriefBody.",
+      "severity": "gap"
+    },
+    {
+      "id": "D2",
+      "field": "landUseFact",
+      "facetsRoute": "Present. Fetched via loadLandUseFactAtom, enriched with the zoning verdict via enrichLandUseFactWithZoningVerdict, returned as its own top-level field.",
+      "briefPath": "Absent entirely -- not fetched, no top-level field. The brief's 'land-use' section instead reads baked facets.baseFacts.landUse, the older retired-store CAD-roll value, never the land-use-fact atom.",
+      "severity": "gap, plus a real land-use section is sourced from a different, older mechanism than the atom"
+    },
+    {
+      "id": "D3",
+      "field": "ownerFact",
+      "facetsRoute": "Present, gated (Studio/Team OR active Property Unlock for the parcel) via callerGrantsOwnerFact / grantsOwnerCoGatedFields.",
+      "briefPath": "Total, genuine gap. No import of loadOwnerFactAtom anywhere in propertyExplorer.ts, no ownerFact field, no owner section in buildR1Brief's five sections (zoning/setbacks-envelope/flood/land-use/drainage), no owner key in serializeTwinOnRecord's onRecord (apn/acreage/countyFips/countyName/situsState/cadRoll/asOf only). Verified there is no alternate owner mechanism anywhere in this path -- the CAD-roll-dollar co-gate comment referencing 'same predicate as owner-info display' governs only the four dollar fields (marketValue/assessedValue/landValue/improvementValue), not an actual owner name/mailing field.",
+      "severity": "gap -- likely intentional (owner display may be deliberately PE-web-UI-only via a different surface not yet located), but confirmed absent on this path specifically; worth an explicit ruling either way rather than leaving implicit"
+    },
+    {
+      "id": "D4",
+      "field": "specialDistrictFact, pipelineFact, wellFact, boundaryEdgeFact (boundaryFact)",
+      "facetsRoute": "All four returned as their own top-level typed fields.",
+      "briefPath": "All four are fetched (same loaders) but consumed ONLY internally to build the optional `draw` block (tryAssembleParcelDrawFromReads). None is exposed as its own field. A caller of research/brief gets nothing for these facts when draw is absent/not computed, and cannot read them as structured data even when draw is present (draw is a rendering instruction set, not a re-exposure of the fact).",
+      "severity": "gap -- structured data present in the response for one consumer, invisible to the other"
+    },
+    {
+      "id": "D5",
+      "field": "zoningDistrict -- computed via two structurally different, disagreement-capable mechanisms",
+      "facetsRoute": "facets.zoning: the baked stamp ALWAYS wins if facets.zoning already has a district/jurisdictionKey (parcelShapeLacksZoningAuthority + attachVerdictLayersToFacets both guard against overwriting a present stamp -- verdictLayerServe.ts, structuralFactToFacetsWire.ts). The city-limits verdict (zoningVerdictFromCityLimits) only ever fills in when the stamp is genuinely absent. This route never reads the live parcel_record zoning ledger at all -- loadZoningFactForServe is not imported here.",
+      "briefPath": "brief.sections' zoning entry: the LIVE parcel_record ledger read (loadZoningFactForServe -> parcelRecordZoningFact) wins UNCONDITIONALLY whenever it is present and not refused (r1BriefCompose.ts's composeZoningBriefSectionFromParcelRecord branch has no check for whether the baked stamp already has a district) -- confirmed by comment at r1BriefCompose.ts: 'parcel_record's zoning determination takes priority over the Tier-1 bake's own zoningDisposition whenever it has genuinely earned one.' Falls back to the baked stamp only when the record fact is absent/refused.",
+      "netEffect": "For a parcel where the baked stamp and the live parcel_record ledger disagree, the two surfaces WILL report different zoning districts for the same parcel at the same moment. This is the mechanism behind tonight's incidental zoningDistrict finding -- note the direction is the OPPOSITE of how it was informally described before this audit (it was described as 'PE derives from city-limits containment, MCP reads the ledger cell' -- verified that is backwards: the facets route never touches the live ledger at all, and the brief path is the one reading the live ledger; city-limits containment is a fallback used only by the facets route, only when no stamp exists, and never overrides a stamp on either path).",
+      "shapeDifference": "Also not the same wire shape: facets.zoning is a bare object (either {district,jurisdictionKey,provenance} or a LayerAbsenceWire with verdict/authority/scopeSearched/etc). brief.sections' zoning entry is nested inside a citation-oriented section object ({id,title,data,citations,asOf,disposition}), and `data` itself is a THIRD distinct shape (ZoningFactAbsent: {state,source,entityId,absence,verifiedAbsence,sourceTier,sourceAdapter,sourceVintage}) when parcel-record-sourced and absent.",
+      "severity": "real divergence -- the two surfaces can show a paying user and an anonymous map viewer two different zoning answers for the identical parcel"
+    },
+    {
+      "id": "D6",
+      "field": "setbacks / buildable envelope -- capability gap, not just a shape difference",
+      "facetsRoute": "facets.envelope is unconditionally forced to null (stripZombieEnvelopeFromFacets runs on every read, anti-zombie WDLL 3.7) and no live setbacks fact is ever fetched (no loadSetbacksFactForServe import). This route reports NO setback data for ANY parcel, in ANY county, ever, by construction.",
+      "briefPath": "Fetches loadSetbacksFactForServe -> parcelRecordSetbacksFact, and the brief's setbacks-envelope section surfaces REAL frontFt/sideFt/rearFt/cornerFt figures, live off parcel_record, for every gate-passing (county, field) pair -- falling back to the (always-null) baked envelope + envelopeBriefRefusal only when the record fact itself is absent/refused.",
+      "scopeOfTheFix": "Confirmed via repo-wide grep for A-096/A-097/A-098 (the 'zoning/setbacks not-applicable fix' tag): it touches propertyExplorer.ts, zoningFactServeCutover.ts, zoningFactFromParcelRecord.ts, smartSiteStub.ts, setbacksFactServeCutover.ts, setbacksFactFromParcelRecord.ts, r1BriefCompose.ts, parcelRecordAllowlist.ts (+ their tests). brokerageNodeFacets.ts is absent from that list -- the fix was never extended to the public facets route.",
+      "severity": "real divergence, and a real capability gap: the public map inspect-card structurally cannot show a setback figure the paid brief can"
+    },
+    {
+      "id": "D7",
+      "field": "instrument classification metadata (entityType, provenanceClass, subjectKind, chainAnchoring, serveLayer)",
+      "facetsRoute": "Whole response passed through enrichFacetsResponseWithRegistry (@workspace/instrument-registry), which adds these 5 keys onto 9 present-state fact slots: floodHazardFact, landUseFact, specialDistrictFact, pipelineFact, wellFact, buildingFootprintFact, boundaryEdgeFact, ownerFact, structuralFact.",
+      "briefPath": "No equivalent wrapper anywhere -- zero references to instrument-registry / withServeClassification / classificationFields in propertyExplorer.ts. floodHazardFact, structuralFact, and buildingFootprintFact on this path never carry the classification metadata when present (note: many absence-state wires already bake an equivalent set of fields in independently via absenceClassificationForEntityType, so this specifically affects present-state values).",
+      "severity": "wire-shape divergence -- a consumer keying off classification fields gets them from one surface and not the other for the same underlying fact"
+    },
+    {
+      "id": "D8",
+      "field": "snapshotAt vs bakedAt -- different name, and a different value in some cases",
+      "facetsRoute": "Emits `snapshotAt`, taken directly from the DB row's own snapshotAt column.",
+      "briefPath": "Emits `bakedAt`, which PREFERS the payload's own internal facets.bakedAt string over the DB row's snapshotAt, falling back to snapshotAt only when that internal field is absent.",
+      "severity": "minor/naming, but not guaranteed equal -- not independently verified against a live row where the two differ; flagging as unverified rather than asserting it never diverges"
+    },
+    {
+      "id": "D9",
+      "field": "no raw-facets equivalent on the brief path",
+      "facetsRoute": "Exposes the (gated, verdict-enriched, cadRoll-overlaid) baked `facets` object close to as-is -- baseFacts, facetCoverage, zoning, land-use, etc. all inline.",
+      "briefPath": "Never exposes anything resembling the raw facets object. Only `onRecord` (apn/acreage/countyFips/countyName/situsState/cadRoll/asOf -- no zoning, no land-use, no facetCoverage) and the five curated `brief.sections`. Anything not individually named as one of the explicit top-level return fields is structurally invisible to a brief-path consumer.",
+      "severity": "by-design product-surface difference (narrative brief+citations vs. raw facet dump), not itself a bug, but worth naming so nobody assumes brief-path parity with the raw facets object for any field not explicitly checked above"
+    },
+    {
+      "id": "D10",
+      "field": "tier2 / floodDisposition (why the retired legacy flood instrument is refused)",
+      "facetsRoute": "Surfaces the full `tier2` object including `floodDisposition`'s typed reason (e.g. retired-instrument, with the SS-W16 retirement narrative).",
+      "briefPath": "Never surfaces `tier2` or `floodDisposition` at all -- only the replacement `floodHazardFact`. The retirement/why-refused narrative is silently dropped on this path.",
+      "severity": "minor -- the replacement fact is what matters functionally, but the provenance narrative is asymmetric"
+    },
+    {
+      "id": "D11",
+      "field": "adapterKey",
+      "facetsRoute": "Top-level `adapterKey: TIER1_ADAPTER_KEY`.",
+      "briefPath": "No adapterKey field. Uses a different provenance-labeling convention entirely (`mode: \"baked-facet-intel-v1\"`, `reportFamily: \"R1\"`).",
+      "severity": "minor/by-design, different labeling convention for a different product surface"
+    }
+  ],
+
+  "checkedAndFoundNotDivergent": [
+    "structuralFact, cityLimitsFact, utilityServiceFact, overlayDistrictsFact, agValuationFact, schoolDistrictFact, maxImperviousCoverPctFact, buildingFootprintFact -- all present on both surfaces via the identical *ForServe loader, all closed by PR #619 for the brief path.",
+    "source: \"baked-snapshot\" -- identical literal on both.",
+    "PE/MCP-only fields (runId, reportFamily, mode, brief.sections, citations, draw) are product-specific to the paid/report surface and have no facets-route counterpart to diverge from -- not counted as defects."
+  ],
+
+  "notFixedYet": "Per explicit instruction, no code changes made. Awaiting a ruling on which of D1-D11 should be closed, in what order, and whether any (esp. D3 ownerFact, D9 raw-facets-object gap, D10 tier2/floodDisposition) are intentional product-surface differences rather than bugs -- same 'check for an intentional reason first' discipline applied to D5 (zoningDistrict) and D6 (setbacks), which are the two with clear user-facing correctness stakes (two different answers for the same parcel) and are the ones I'd recommend prioritizing if a fix pass is greenlit.",
+
+  "methodPrecedentUsed": "PR #619/#620 (empressaioemail-tech/legacy-design-tools) as instructed -- read in full. #619 is the precedent for closing exactly this shape of gap (reusing existing *ForServe loaders rather than inventing new mechanisms); #620 is the precedent for entitlement-tier parity specifically, a different kind of parity question, used only for the general 'MCP vs web must not silently diverge' framing, not applied literally here since no tier gating is involved in D1-D11.",
+
+  "relatedPrs": ["empressaioemail-tech/legacy-design-tools#619", "#620", "#626", "#627", "#628", "#629", "#630", "#631"]
+}
