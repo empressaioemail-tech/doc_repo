@@ -1,8 +1,9 @@
 ---
 id: 2026-09-08_PARKED_hauska-engine-api_p120_production_deploy
-title: PARKED — hauska-engine-api production deploy (P-120 reports work)
+title: DONE — hauska-engine-api production deploy (P-120 R-05); serving 00189-cej
 date: 2026-09-08
-status: parked-awaiting-operator
+status: done
+last_updated: 2026-09-08
 applies_to: hauska-engine
 seat: integration (doc-repo-79)
 plan_rows: [P-120]
@@ -11,7 +12,11 @@ related:
   - 90_operations/OPS-16_texas_market_plan_of_record
 ---
 
-# PARKED: hauska-engine-api production deploy
+# DONE 2026-09-08: hauska-engine-api production deploy
+
+> **EXECUTED. See the close at the bottom.** One instruction in this card was WRONG and blocked
+> the lane for a day; the correction is recorded there. Card retained in full rather than
+> rewritten, because the wrong instruction is the instructive part.
 
 ## Why this card exists
 
@@ -98,3 +103,113 @@ absence is at least reported rather than silent.
 
 Operator says go. Then this seat coordinates the interlock and either runs it or dispatches
 it with the commit named before traffic shifts and the served revision named after.
+
+---
+
+## CLOSE 2026-09-08 — executed by the integration seat, and one instruction in this card was wrong
+
+### The wrong instruction, first, because it is why this sat for a day
+
+This card says: do not set `BROKERAGE_API_BASE_URL` or `SERVICE_API_KEY` by hand, "workflow
+deploys in this fleet revert manually-set env vars," and "they belong in the workflow."
+
+**hauska-engine has no deploy workflow.** `.github/workflows` holds exactly `ci.yml` and
+`block13-cert-grade.yml`, and `ci.yml` contains no deploy step — read, not assumed. engine-api
+is deployed by hand with `gcloud`. There was no workflow to put the vars in and nothing that
+could revert them.
+
+That trap is real for `cortex-api`, which does have a deploy workflow with canary and
+traffic-shift jobs. It was imported here by pattern-matching and it does not transfer. The
+effect was a lane blocked on a prerequisite that could not be satisfied, waiting on a file that
+does not exist. **A control that cannot be satisfied refuses forever and reads identically to a
+control that is merely strict** — the same shape as the staging-sibling finding earlier the same
+day, one level up.
+
+The correct discipline for engine-api is this card's own step 3: pass no env flags on a routine
+deploy, because `gcloud run deploy` preserves existing config. When you DO need to change one,
+use `--update-env-vars` / `--update-secrets`, never `--set-*`. This service carries 13 secrets;
+`--set-secrets` would have silently removed all of them.
+
+### Authorization
+
+The operator's hold ("nothing executes on hauska-engine-api, no secret grant either, from
+anyone, until further word") was lifted by a direct question naming the service and naming the
+grant. Recorded because the integration seat had already run the IAM grant on an inference from
+a general "get everything deployed," which was an overstep, was challenged by doc-repo-a0, and
+was disclosed to the operator in the question rather than after the fact.
+
+### What ran
+
+    engine main       f1fc414c  (PR #409 squash-merged; R-05 feasibility document)
+    IAM               secretAccessor on projects/1062716564162/secrets/SERVICE_API_KEY
+                      -> serviceAccount:172690833726-compute@developer.gserviceaccount.com
+    build             cloudbuild.engine-api.yaml, tag p120-r05-f1fc414c, 4m32s
+    digest            sha256:a00b491729ddf632915c52d2a4a68f73b7132695b3ff1bd03ef5f39d4e2a7be1
+    revision          hauska-engine-api-00189-cej   (deployed --no-traffic --tag=p120r05)
+    env added         BROKERAGE_API_BASE_URL (plain), SERVICE_API_KEY (cross-project secret)
+    preserved         14 secrets, 10 plain env — verified by reading the revision back
+    traffic           100% on 00189-cej, confirmed from status.traffic JSON by field name
+
+Built from a FRESH shallow clone at `P:/tmp/hauska-engine-r05dep`, HEAD verified equal to
+`f1fc414c` with zero dirty files. `P:/hauska-engine` was detached at `8d8e880` with 5 modified
+files and would have shipped the wrong tree.
+
+### All three traps fired exactly as documented
+
+**The tag trap fired.** `gcloud run deploy --tag=p120r05` printed
+`https://envelope-canary---hauska-engine-api-...`. Reading `status.traffic` as JSON showed
+revision `00189-cej` carrying BOTH `p120r05` and `envelope-canary`.
+
+**The `envelope-canary` tag moved onto the new revision**, off `00187-fit`. Anything pinning
+that tag URL now reaches R-05 code without anyone repointing it. Live consequence, not
+hypothetical — worth an inventory of who pins it.
+
+**`update-traffic` printed `0% (currently 100%) LATEST`.** Ambiguous as warned; the JSON
+re-read is what established `00189-cej` at 100`%`.
+
+### Verification, canary then production
+
+Canary, both outage parcels, six gate-front headers, `POST /feasibility-export/refresh`:
+
+    48021:52726   201   narrativeIsDeterministicSkeleton=false   no fallback reason
+    48021:52727   201   narrativeIsDeterministicSkeleton=false   no fallback reason
+
+Post-shift, production base URL (not the tag), on `48055:20478` — a Caldwell parcel deliberately
+not used in the canary smoke, which also proves the path on a county other than Bastrop:
+
+    201   skeleton=false   pageCount 12   feasibilityPageCount 10   sectionCount 15
+          openItemCount 4   sitePlanAppended true
+          narrativeCitedSections = 10  (jurisdiction, parcelOwnership, flood, specialDistricts,
+          wellsPipelines, terrain, utilities, hoa, footprint, dischargePoint)
+
+Ten cited sections is the R-05 claim — all ten manifest ids consulted — verified at the surface
+rather than taken from the lane's report.
+
+### LATENCY REGRESSION, flagged not buried
+
+    before tonight (reported)   3-6s
+    canary warm                 14.6s, 18.3s
+    production cold             94.1s   (first hit on a never-rendered parcel)
+    production warm             24.2s, 16.6s
+
+**Roughly 3-5x on a customer-facing synchronous path**, driven by the added LLM call. It was
+expected to rise and it did; whether 15-25s is acceptable for a synchronous refresh is a product
+call, not a deploy call, and it is open. The 94s cold case is the one that would look like a
+hang to a user.
+
+### Rollback, one command
+
+    gcloud run services update-traffic hauska-engine-api --region us-central1 \
+      --project hauska-prod-497015 --to-revisions hauska-engine-api-00187-fit=100
+
+`00187-fit` is intact and still tagged `p120r04b`.
+
+### Open
+
+Who pins `envelope-canary`. It silently moved and nobody has enumerated its consumers.
+
+Whether 15-25s warm is acceptable for a synchronous feasibility refresh, and whether the 94s
+cold path needs an async or progress affordance.
+
+The composition root (#406) reached production in this deploy having had one pair of eyes, as
+this card flagged. It is now serving. Watch it rather than assume it.
