@@ -109,3 +109,75 @@ this axis, and that is worth knowing before any of them is cited as evidence.
 `WALK_FAILED` carries no detail into the Cloud Run log; the CLI prints only `err.code`. The
 walk's own verdict body was never written because it failed before recording. Diagnosing
 this took a store-versus-site comparison that the log should have made unnecessary.
+
+---
+
+## CORRECTION 2026-09-08 — the mechanism above is WRONG. The consequence stands.
+
+Filed by the integration seat after CTX-SITEPOINT (`cente-a6`) refused to execute the
+dispatch and reported that its mechanism did not match live code. It was right. Verified
+at source rather than taken on report.
+
+### What is wrong
+
+Everything above attributing the staleness to the Vercel project holding a database
+connection string pinned to an old Neon branch. **The site never held a database
+connection to repoint.** There was no Vercel-only action available and the dispatch was
+misscoped.
+
+`apps/factory/vercel.json` rewrites `/site/:path*` to `property-explorer-staging.vercel.app`,
+and `apps/property-explorer/api/spine.ts` (line 59-60) proxies the `cortex` segment to
+`CORTEX_API_URL` with a HARDCODED Cloud Run fallback. `CORTEX_API_URL` is empty on both
+staging and production property-explorer, so both resolve to the SAME shared cortex-api
+service. The site is an HTTP proxy, not a database client.
+
+### What is right, and newly established
+
+The CONSEQUENCE is unchanged and confirmed: a staging walk cannot verify a staging bake,
+so OPS-19 rule 6 could not be satisfied by any honest route. The reason is that the
+staging site proxies to the same production cortex-api as everything else, not that it
+reads a stale branch.
+
+Newly established, and it is the reassuring half: `cortex-api` takes `DATABASE_URL` from
+secret `DEPLOYMENT_DATABASE_URL_DIRECT` in `legacy-design-tools-prod`, and that resolves
+to `ep-lucky-truth-apodo8hr` / `neondb` — **the same host and database as
+`PRODUCTION_NEONDB_URL`**. Production bakes therefore do reach the served surface. The
+gap is staging-only.
+
+### The measurement was real; the inference was wrong
+
+The staging branch did hold a fresh bake at 14:41Z and the site did serve 2026-09-01
+data. Both true. Concluding "the site is pinned to an old branch" from that was the error:
+two candidate sources, an observation matching neither, and the wrong third thing chosen.
+
+CTX-SITEPOINT could not reproduce the fresh staging row and correctly suspected a reset
+had overwritten it. It had, and **the reset was mine** — `factory-staging-reset` was run
+twice at 15:19 and 15:20 to prove the stable-branch code restores in place, and restoring
+from parent discarded the Caldwell bake it had just measured. Evidence destroyed by its
+own verification twenty minutes later.
+
+### Still unexplained, handed over open
+
+The site serves `snapshotAt` 2026-09-01T22:01:22.861Z. In the database cortex-api reads,
+that parcel has exactly two rows: `node-facets:tier1` at 22:43:35.532Z and
+`node-facets:tier2` at 2026-08-29T20:18:36.917Z. **The served value matches neither.**
+`X-Vercel-Cache` was MISS and no `X-PE-Read-Path` header returned. Candidates not
+distinguished: a cache inside cortex-api, the atom-chain read path serving from
+`ATOMS_DATABASE_URL` rather than `place_layer_snapshots`, or a replica.
+
+This is upstream of the staging question and it touches what customers see, which makes
+it the more valuable half. Not asserted, not closed.
+
+### The real fix, unscoped
+
+Wire `property-explorer-staging`'s `CORTEX_API_URL` at a staging-tagged cortex-api
+revision carrying its own `DATABASE_URL` on `f06-staging-neondb`. That spans
+legacy-design-tools (Cloud Run) and hauska-map (Vercel), so it is a two-repo change and an
+operator call. An unused staging-tagged revision `cortex-api-00581-kuh` exists at 0%
+traffic with an unverified DB binding.
+
+### What survives from the original entry
+
+The stable-branch change (hauska-factory `3e0edafe`) is still correct and still worth
+having: branch ids no longer churn, the host is permanent, and branches stop accumulating.
+It simply does not fix the walk, because the walk was never blocked by branch churn.
