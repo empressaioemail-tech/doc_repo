@@ -190,6 +190,60 @@ refuse rather than complete. The second is cheaper and strictly safer, and
 it will convert some genuine zeros into needs-human until a real signal
 exists. That trade is the operator's call.
 
+## The count, run 2026-09-07: zero opportunities, not zero defects
+
+Run by R-02 (cente-30) on the operator's direct authorization, read-only
+against DEPLOYMENT_DATABASE_URL with `SET default_transaction_read_only=on`,
+no portal access. The structural claim below was re-verified here against
+legacy-design-tools origin/main before the count was accepted.
+
+Raw: 40 jobs total, 18 terminal `complete`, 13 of those `complete` with zero
+indexHits and no `portalDeclaredResultCount`. Nine `bastrop-aumentum`, four
+`mclennan-online-records`.
+
+**13 is the wrong number to report, and the right one is 0.** A
+recipeVersion-by-status breakdown across all 40 rows shows ZERO rows at
+`p85-tyler-self-service-v2`, of any status. The guarded code has never
+produced a single persisted job in this table.
+
+The nine Aumentum rows are structurally excluded, not merely different:
+`aumentumIndexSearch.ts` never calls `finalizeIndexSearchWithAcquisition` at
+all. Verified independently here — the only callers on origin/main are
+`countyGovernmentRecordsSearch.ts:234`, `publicsearchSearch.ts:223` and
+`tylerSelfServiceSearch.ts:329`, and a grep of `aumentumIndexSearch.ts`
+returns zero occurrences. Those jobs could not have passed through this guard.
+
+The four McLennan rows all ran under `p85-mclennan-clerk-scaffold-v0`, a
+retired pre-P-113 scaffold, not the current recipe.
+
+So the precise answer to "how many times has THIS guard produced this
+outcome" is zero, and the distinction that matters is:
+
+- **zero defects found** would mean the guard ran and behaved correctly.
+- **zero opportunities recorded** means the guard has never run at all.
+
+This is the second reading. The fix has had no real job traffic in the four
+days since it shipped. The only two real executions of the current code were
+the Hays probes on 2026-09-07, which are DB-free by design and write nothing
+here.
+
+That does not weaken the finding, it relocates it. The three fail-open paths
+are still real and still unfixed, and the test still pins the unsafe branch
+and names Hays. What the count establishes is that there is no production
+evidence in either direction, so nobody should read the absence of bad rows
+as the guard working. It is a dormant mechanism in the doctrine's sense:
+correct in intent, shipped, armed, and never once fired on real traffic.
+
+Two things this surfaces that are outside its own scope and are flagged
+rather than chased:
+
+1. Whether the 13 historical rows under the older Aumentum and retired
+   McLennan code share an equivalent fabricated-zero problem is unaudited.
+   Different code, same question, nobody has asked it.
+2. A shipped records-request path with zero persisted jobs in four days is
+   itself worth a question. Either the feature has no usage, or jobs are not
+   reaching persistence. Both are answerable and neither is answered.
+
 ## Counting the exposure first
 
 Before any fix, the cheap question is how large this already is: how many
