@@ -133,9 +133,39 @@ mistakes it for a CAD field.
 
 **If the owning seat rejects the derivation**, the fallback is a declared absence per case:
 `absent-verified` for (b), since the TxGIO row was consulted and carried nothing, and a named
-`refused` for (a), since nothing was consulted. What must NOT happen is writing
-`absent-verified` across both - nothing looked in case (a), and claiming otherwise is the lie
-that passes every check.
+`refused` for (a), since no TxGIO row existed to consult.
+
+### Why the 2026-09-05 join-miss ruling does not reach this
+
+`_decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md` is active and rules that a
+genuine join-miss against `cad_property` emits `absent-verified` rather than staying
+`unaccounted` forever. Read quickly it looks like it authorizes `absent-verified` for case (a)
+here. It does not, and the reason is worth stating because the next reader will hit the same
+apparent collision.
+
+That ruling is scoped to a `cad_property` join in hauska-engine's `ingest-existing.ts`, keyed
+county+propId across every tax year. Its argument is that the query genuinely looked, so a miss
+is a confirmed absence of the row - and **CAD is the authority for the facts CAD carries**.
+
+`situsState` fails that test on both halves. It is a different join (TxGIO, not `cad_property`,
+which has no `situs_state` column at all), and TxGIO is not the authority for what state a Texas
+parcel sits in. A TxGIO miss establishes "this system holds no TxGIO polygon record for this
+parcel" - a fact about our store, not about the world. The situs state of a Caldwell County
+property is TX whether or not TxGIO has a row.
+
+`absent-verified` is a claim that the fact does not exist. Asserting it here would say a
+Lockhart parcel has no situs state, which is false. The 09-05 ruling holds exactly where
+absence-of-row means absence-of-fact; this is not that.
+
+The 09-05 ruling's own reversal criterion anticipates a neighbouring case - a population whose
+miss means something other than genuine absence gets a population-scoped guard rather than the
+blanket reversal. Its author declined to extend it uncritically, and this is the kind of
+population it had in mind.
+
+This also sharpens why derivation is the recommendation rather than a shortcut. The value is not
+unknown. It is resolvable exactly, from a field already on the record. Both `absent-verified`
+and `refused` assert we cannot know something we can, which makes them the LESS honest answers
+here, not the more cautious ones.
 
 **What must not happen at all** is removing `baseFacts.situsState` from the required paths, or
 admitting null as a fifth state. The leaf is required on the bake side too and the served value

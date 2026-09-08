@@ -114,6 +114,34 @@ carried nothing, and a named `refused` for (a), because nothing was consulted. W
 You own this call. If you take route 2, say why in the PR; the integration seat's preference is
 not binding on your repo.
 
+**3. The 2026-09-05 join-miss ruling does NOT reach this case, and you will find it.**
+`_decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md` is active and rules that a
+genuine join-miss emits `absent-verified` rather than staying `unaccounted`. Read quickly it
+looks like it settles case (a) for you. It does not.
+
+That ruling is scoped to a `cad_property` join in hauska-engine's `ingest-existing.ts`, keyed
+county+propId across every tax year. Its argument is that the query genuinely looked, so a miss
+is a confirmed absence of the row - and CAD is the authority for the facts CAD carries.
+
+`situsState` fails that on both halves. Different join (TxGIO, not `cad_property`, which has no
+`situs_state` column at all), and TxGIO is not the authority for what state a Texas parcel sits
+in. A TxGIO miss establishes "this system holds no TxGIO polygon record for this parcel" - a
+fact about our store, not about the world. A Caldwell County property is in TX whether or not
+TxGIO has a row.
+
+`absent-verified` is a claim that the FACT does not exist. Asserting it here says a Lockhart
+parcel has no situs state, which is false. Note that the 09-05 ruling's own reversal criterion
+anticipates a neighbouring population and asks for a population-scoped guard rather than a
+blanket reversal; its author declined to extend it uncritically.
+
+This is also the real argument for route 1. The value is not unknown - it is resolvable exactly
+from a field already on the record. `absent-verified` and `refused` both assert we cannot know
+something we can, which makes them the LESS honest answers here, not the more cautious ones.
+
+If you disagree, that is a legitimate disagreement between two seats. Report both readings to
+the operator with the evidence for each. Do not settle it unilaterally and do not treat this
+paragraph as a ruling; the integration seat does not adjudicate your repo.
+
 ### What you must NOT do
 
 Do not remove `baseFacts.situsState` from `REQUIRED_TIER1_FACET_PATHS`.
