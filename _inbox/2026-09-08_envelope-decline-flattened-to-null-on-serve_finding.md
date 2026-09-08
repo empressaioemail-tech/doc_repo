@@ -1,8 +1,9 @@
 ---
 id: 2026-09-08_envelope-decline-flattened-to-null-on-serve_finding
-title: cortex-api flattens an honest envelope decline into a bare null, and the customer is told something false
+title: CORRECTED - the envelope null on the serve is deliberate anti-zombie stripping, not a serve defect; the walk was mis-specified
 date: 2026-09-08
-status: open
+last_updated: 2026-09-08
+status: corrected
 applies_to: legacy-design-tools
 plan_rows: [P-124]
 seat: integration (doc-repo-79)
@@ -13,6 +14,12 @@ related:
 ---
 
 # The envelope decline is flattened to null on the way out
+
+> **READ THE CORRECTION AT THE BOTTOM BEFORE ACTING ON ANYTHING ABOVE IT.** The central
+> claim of this finding is WRONG. The serve is behaving exactly as designed and the defect
+> was in the instrument that measured it. The second defect in the same rail, and the
+> exposure analysis, survive. Retained in full rather than rewritten, because the wrong
+> inference is the instructive part.
 
 ## The chain, verified end to end
 
@@ -123,3 +130,88 @@ The bake fix for the bare-null source-absent parcels. Separate change, separate 
 Whether any other rail is flattened the same way on the serve. Flood uses the identical
 decline-reason rendering pattern at `brief-view-model.ts:505`, so it is the first place to
 look, and nobody has looked.
+
+---
+
+## CORRECTION 2026-09-08 — the serve is not defective. The walk was.
+
+Filed by the integration seat after reading `brokerageNodeFacets.ts`, which is the write
+path this finding never read. Operator ruled the walk correction on the same day; shipped as
+hauska-factory PR #106.
+
+### What is wrong
+
+**The title, and the whole first half.** `facets.envelope = null` on the serve is not a
+flattening, a discard, or a loss. It is `stripZombieEnvelopeFromFacets`, applied
+unconditionally, and it is the anti-zombie rule WDLL 3.7: buildable envelope comes from the
+property atom chain and never from a Tier-1 row. The function's own comment says `setbacksFact`
+"does NOT resurrect `facets.envelope` (that stays permanently null by design)."
+
+The decline is not discarded in transit either. `extractEnvelopeBriefRefusal` reads the
+declared object out of the tier-1 row and carries it into the Brief compose path with agent
+guidance. The truth travels; it just travels somewhere other than the field this finding
+watched.
+
+**"The walk is correct and the served payload is wrong. The bake is blocked on this, and
+correctly so."** That is the load-bearing sentence and it is exactly inverted. The payload was
+right and the walk was wrong. `REQUIRED_TIER1_FACET_PATHS` in `verify-walk.mjs` is an explicit
+mirror of the BAKE-side list in LDT's `nodeFacetBakeTier1Conformant.ts`. LDT applies that list
+with a PRESENCE predicate to the BAKED payload. The walk borrowed the same list and applied a
+FOUR-STATE predicate to the SERVED payload. Same list, different artifact, different
+predicate, and for exactly one leaf the two artifacts deliberately disagree.
+
+So `BP-CONTENT-01` demanded a four-state at a field that is permanently and deliberately null,
+for every parcel of every county. It could never pass anywhere. That is the real reason no
+county has produced a passing walk, and this finding read the symptom as the disease.
+
+### What was actually shipped
+
+PR #106 declares `envelope` in a `SERVE_STRIPPED_LEAVES` map and requires it to be EXACTLY
+null on the served payload. That is STRICTER than what it replaced, not looser: a zombie
+envelope resurfacing on the serve now FAILS the walk, where the old four-state rule would have
+passed it as a `value`. A test pins that asymmetry in both directions. `facetCoverage.envelope`
+stays required and stays four-state checked, so the honest served signal is untouched.
+
+Adding a leaf to that map is a ruling, not a convenience: it asserts the serve deliberately
+removes the field and names where the truth went instead. It must never be used to silence a
+leaf that is null by accident. That is the line between this and tuning a gate to pass work.
+
+### What survives, unchanged
+
+**The second defect, and it is now the only one.** The bake writes a bare `null` envelope for
+parcels with no source geometry rather than a declared absence. Counts in the table above
+stand. Travis's 119,389 still matches CTX-D's independently measured source-absence count
+exactly.
+
+The correction makes that defect MORE consequential, not less. Because the serve strips the
+envelope object either way, the bake-side distinction is invisible on `facets.envelope` — but
+`extractEnvelopeBriefRefusal` has nothing to extract from a bare null, so those parcels reach
+the Brief with no reason at all while the 62,257 Bastrop parcels carrying a real declined
+object reach it with one. Reasoned from the read of the extract path, not measured end to end.
+Unscoped, unowned, still open.
+
+**The exposure analysis.** Engine report path not exposed (`resolveEnvelopeOutcome` reads
+`buildable-envelope` atoms directly); X-Ray exposed through hauska-map. Established by
+doc-repo-31, unaffected by this correction.
+
+**The flood question at `brief-view-model.ts:505`.** Still open, still nobody has looked, and
+now more interesting: the first thing to establish is whether flood is stripped by design like
+envelope or flattened by accident, because this finding proves those two look identical from
+the serve.
+
+### What is now open that this finding closed wrongly
+
+Whether PE's line-338 decline-reason branch can fire at all. This finding called it STARVED and
+said fixing the serve would make it fire with no PE change. That prescription is void — the
+serve is not going to start emitting `facets.envelope`. Whether the branch fires depends on
+whether PE reads the refusal from the Brief compose path, which was never checked. Unknown, not
+starved.
+
+### The pattern, restated against itself
+
+This finding named its own error in its own text: "State the mechanism you believe explains an
+observation, then state a second mechanism that would produce the same observation and why you
+rejected it." A deliberate strip and an accidental flatten produce an identical null. Only one
+of the two was ever listed. The write path was three files away and was not read, and
+`ENFORCEMENT.md` already says code reading outranks output measuring and that when the two
+disagree the code reading wins. Both halves of this were measured output.
