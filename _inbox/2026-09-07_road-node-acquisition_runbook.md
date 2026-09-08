@@ -174,3 +174,49 @@ Because the road path is not lease-gated, it has no self-heartbeat equivalent to
 protection that covers boundary-edge writes across a long run. Whether a long apply needs
 its own guard against the Tuesday 05:00 to 06:00 UTC Neon maintenance window is unestablished
 and should be settled before a run that could cross it.
+
+---
+
+## ADDENDUM — dry runs executed 2026-09-08 (integration seat, doc-repo-79)
+
+Both counties dry-run against the MD5-verified `P:/tmp/statewide-roads/` copy, from a
+dedicated worktree `P:/tmp/ctx-w2-roadnode` on `feat/ctx-w2-roadnode` at hauska-engine
+`661f620b`. Dry run is the default; nothing was written and `atomsWritten` is 0 in both.
+
+| County | plannedIds / atomsBuilt | priorActive | orphans | errors | wall |
+| --- | --- | --- | --- | --- | --- |
+| 48453 Travis | 218,345 | 0 | 0 | 0 | 35.9 min |
+| 48491 Williamson | 115,287 | 0 | 0 | 0 | 15.4 min |
+
+`priorActive: 0` on both confirms at source what A-111 asserted: neither county carries
+any road-node atom today. CTX-E declined to predict a count and was right to; both land
+far above the Hays 40,987 / McLennan 28,787 shape, Travis by better than five times.
+
+### Three corrections to this runbook, found by running it
+
+**`--list-counties` DOES require `ROAD_NODE_COUNTY_PATH=1`.** The runbook says it "needs
+no other flags". Without the env var it exits `FATAL: ROAD_NODE_COUNTY_PATH=1 required
+(guards against accidental invocation)`. Harmless, fails closed and loudly, but the
+documented invocation does not work as written.
+
+**The four-minute extraction budget is wrong for dense counties.** It is presented as a
+fixed per-run cost because the worker streams the whole statewide PBF every time, and the
+scan half genuinely is fixed. But the plan/build half scales with kept ways, and total
+wall was 36 minutes for Travis and 15 for Williamson against the ~4 minutes measured on
+Bastrop. Budget by county density, not by the constant.
+
+**Both `tx_county_boundary` rows exist**, re-confirmed live via `--list-counties`: 48453
+and 48491 both present, alongside 48021.
+
+### What has NOT been done
+
+No `--apply` has run for either county. The apply is still gated behind all three of
+`ROAD_NODE_COUNTY_PATH`, `PROPERTY_ATOM_PATH` and `ROAD_PBF_APPLY`, and was deliberately
+held rather than run concurrently with CTX-E's Hays boundary-edge write, which was still
+in flight against the same atoms store on a path that carries no lease. The risk there is
+contention, not corruption.
+
+The maintenance-window question this runbook carries as its one unresolved risk is still
+unresolved. It should be settled before an apply that could cross 05:00-06:00 UTC; both
+measured wall times are short enough to schedule clear of it entirely, which is the
+cheaper answer than establishing whether the road path survives a drop.
