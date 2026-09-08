@@ -1,0 +1,87 @@
+{
+  "lane": "ctx-elgin",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-08T00:00:00Z",
+  "snapshot": {
+    "repo": "empressaioemail-tech/legacy-design-tools",
+    "worktree": "P:/tmp/legacy-design-tools-ctx-elgin",
+    "branch": "fix/ctx-elgin-zoning-layer",
+    "headAtCP1": "9bbb48109b6cdef9eeb8aca0841dac26f3c0db40",
+    "headAfterFix": "719a4779",
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/643"
+  },
+  "mechanismDetermined": {
+    "bastrop48021": {
+      "verdict": "NEITHER of the dispatch's two named mechanisms. Mechanism (b) is disproven directly: layer 0's own layerWhere filter matches 100% of its own features live (3,220 total = 3,220 filtered, single distinct CITY_LIMIT value 'ELGIN') -- no dropped-polygon defect exists on this layer. Mechanism (a) does not apply to Bastrop at all: layer 1 is the Travis-side sliver, not Bastrop's.",
+      "actualMechanism": "Two separate, unrelated causes, established by cross-referencing the raw ingest table (txgio_parcel, cortex-prod) against the Factory-served cell store (parcel_record_cell) that the readiness gate actually reads: (1) BAKE-STALENESS -- 17 of 26 parcels already carry a real zoning_district value in txgio_parcel from a stamp run at 2026-09-03T04:38:06Z, but the Factory's parcel_record_cell snapshot for these cells was written 2026-09-01T18:57-18:59Z, two days EARLIER. The gate is reading a stale snapshot, not a broken measurement. (2) CONFIRMED REAL GIS GAP -- the remaining 9 parcels have no zoning_district value even in the freshest (2026-09-03) stamp run; verified directly by a live point-in-polygon query against both Elgin_Zoning layers (validated against a known-good control parcel, 48021:13058, which correctly returned a hit) -- no polygon exists at any of these 9 parcels' locations in either layer, today.",
+      "noCodeFixApplies": true,
+      "bakeStaleParcels": ["108218","117364","11779","12965","13058","13151","133717","14560","57003","64562","72637","77689","84565","84566","8715709","88089","99528"],
+      "confirmedRealGapParcels": ["115146","115734","11958","12043","15249","15534","15540","15657","61258"]
+    },
+    "travis48453": {
+      "verdict": "Mechanism (a) confirmed as the real, dominant cause -- layer 1 was genuinely never wired, and 0 of the 1,680 unaccounted parcels had ANY zoning_district value in txgio_parcel before this fix (not a bake-staleness case at all, unlike Bastrop).",
+      "fixApplied": "Wired Elgin_Zoning FeatureServer/1 as a new, separately county-scoped ZONING_LAYERS registry entry ('elgin-tx-travis', countyFips 48453), keeping cityKey the literal 'elgin-tx' so zoning_jurisdiction stamps consistently and isElginCityJurisdiction still routes to the ratified elgin-development-code setback table.",
+      "liveMeasurementBeforeCodeChange": "25-parcel random sample point-in-polygon'd directly against the live ArcGIS service: 21/25 (84%) hit.",
+      "fullScaleDryRunAfterCodeChange": "All 1,680 run through the actual zoning-stamp CLI in --dry-run: 1,223 matched (72.8%), 457 no polygon hit (27.2%) -- exact same miss-set as an independent manual verification, zero discrepancy.",
+      "realWriteExecuted": "Live (write) stamp run, scoped via --prop-ids-file to exactly the 1,680 known-unaccounted parcels (never a blind whole-county run): 1,287 physical rows now carry a real zoning_district; verified by direct SQL re-query post-write.",
+      "confirmedRealGapCount": 457
+    }
+  },
+  "diff": {
+    "pr": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/643",
+    "commit": "719a4779",
+    "filesChanged": [
+      "lib/cad-ingest/src/txgio/zoning-layers.ts",
+      "lib/cad-ingest/src/__tests__/zoningStamp.test.ts",
+      "lib/cad-ingest/src/__tests__/jurisdictions.test.ts"
+    ],
+    "testFileChangesAreExpectedNotRegressions": "Two pre-existing tests hardcoded Travis county's wired zoning-city Set as exactly {austin-tx, pflugerville-tx}; updated to include elgin-tx, which is now a genuinely true third member of that set, not a defect being papered over.",
+    "testResult": "77/77 pass (vitest run on zoningStamp.test.ts + jurisdictions.test.ts). Package-level tsc --noEmit shows pre-existing TS6305 errors unrelated to this change (a sibling workspace package, @workspace/db, has no built dist/ in this fresh standalone clone -- a monorepo build-order gap in the clone, not a type error introduced by this diff; none of the errors reference zoning-layers.ts or the touched test files)."
+  },
+  "beforeAfterTable": {
+    "note": "Two different instruments are in play and must not be conflated: the RAW INGEST state (txgio_parcel.zoning_district, cortex-prod) which this fix can and did change; and the GATE-VISIBLE state (parcel_record_cell.cell_state, Factory store) which only a Factory re-bake refreshes -- explicitly out of this lane's scope ('Do not re-bake any county').",
+    "bastrop48021_zoningDistrict": {
+      "gateVisible_unaccounted_before": "26 / 26",
+      "gateVisible_unaccounted_now": "26 / 26 (UNCHANGED -- no code in this repo touches the Factory bake; this county needs a re-bake, which this lane did not trigger, to reflect the already-current txgio_parcel state)",
+      "rawIngest_hasZoningValue_before_this_session": "17 / 26 (pre-existing from a 2026-09-03 run, unrelated to any change made in this session)",
+      "rawIngest_hasZoningValue_after_this_session": "17 / 26 (unchanged -- no code fix applies to Bastrop; nothing in this session altered its ingest state)",
+      "rawIngest_confirmedNoPolygon_stableAcrossSession": "9 / 26"
+    },
+    "travis48453_zoningDistrict": {
+      "gateVisible_unaccounted_before": "1,680 / 1,680",
+      "gateVisible_unaccounted_now": "1,680 / 1,680 (UNCHANGED for the same reason as Bastrop -- a Factory re-bake, not this lane's to trigger, is required before the gate reflects the new txgio_parcel state)",
+      "rawIngest_hasZoningValue_before_fix": "0 / 1,680",
+      "rawIngest_hasZoningValue_after_fix_and_real_write": "1,287 rows / 1,680 requested prop ids (1,223 distinct parcels matched; row count exceeds parcel count because some parcels span multiple tile_key/feature_index rows)",
+      "rawIngest_confirmedNoPolygon_after_fix": "457 / 1,680"
+    },
+    "denominatorCheck": "The denominator (26 for Bastrop, 1,680 for Travis, both defined as 'in-city Elgin parcels with no zoningDistrict value at the Factory layer') was NOT redefined anywhere in this work -- both counts were independently re-verified live against parcel_record_cell before and confirmed unchanged after (Bastrop still exactly 26; Travis's raw list still the same 1,680 place_keys). Coverage was not fixed by moving what counts as 'in-city'."
+  },
+  "verifyByViolating": {
+    "instrumentStillReportsNonZero": "Confirmed live: Bastrop's Factory-served zoningDistrict-unaccounted count is still exactly 26 (queried after the Travis fix and write), proving the measurement instrument was not silently zeroed out by this session's code change or database write -- it correctly still reports Bastrop's gap because nothing in this session altered Bastrop's code or its Factory bake state.",
+    "otherCTXCountiesChecked": "Hays (48209) currently shows 0 unaccounted on this rail -- consistent with the dispatch's own statement that Hays is already READY/baking, not a useful non-zero control, but confirms the query mechanism itself returns real, differentiated counts rather than a stuck value."
+  },
+  "pointInPolygonResultFor26": {
+    "method": "Live spatial query (esriSpatialRelIntersects) against Elgin_Zoning FeatureServer layers 0 and 1, each of the 26 parcels' real centroid (ST_Centroid on the actual txgio_parcel PostGIS geometry), validated against a known-good control before trusting negative results.",
+    "matched_17": {"108218":"R-1","117364":"I","11779":"C-3","12965":"C-3","13058":"R-3","13151":"R-1","133717":"R-1","14560":"R-1","57003":"R-1","64562":"R-1","72637":"R-1","77689":"R-1","84565":"R-1","84566":"R-1","8715709":"R-1","88089":"R-1","99528":"C-3"},
+    "noMatch_9": ["115146","115734","11958","12043","15249","15534","15540","15657","61258"]
+  },
+  "newCountsForIntegrationSeat": {
+    "note": "cellPct/arealPct are hauska-factory's own computed values (src/config/zoning-layer-completeness.mjs) and that file is not this repo -- reporting raw measured counts for the integration seat (doc-repo-79) to recompute from, not inventing percentages myself.",
+    "elginTravisSideRawCounts": {
+      "totalRequested": 1680,
+      "nowHasRealZoningValue": 1287,
+      "confirmedNoPolygonInEitherLayer": 457
+    },
+    "elginBastropSideRawCounts": {
+      "totalUnaccountedAtGate": 26,
+      "alreadyHasRealZoningValuePendingRebake": 17,
+      "confirmedNoPolygonInEitherLayer": 9
+    }
+  },
+  "openForOperator": {
+    "bastrop9": "Confirmed real gap in Elgin's own published GIS. Per dispatch 3b: stop, report, and the ruling (operator conversation with the city, or a declared refused naming the layer gap) is the operator's, not this lane's.",
+    "travis457": "Same situation, same ruling required, same 3b path.",
+    "factoryRebake": "Both counties' gate-visible numerators (26 and 1,680) will not move until hauska-factory re-bakes parcel_record_cell's zoningDistrict rail from the current txgio_parcel state. That re-bake is the integration seat's, not this lane's -- this lane explicitly did not trigger it."
+  }
+}
