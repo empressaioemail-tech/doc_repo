@@ -1,0 +1,41 @@
+{
+  "lane": "ctx-situs",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "status": "GREEN -- merged",
+  "checkpoints": [
+    "_inbox/2026-09-08_ctx-situs_cp1.json",
+    "_inbox/2026-09-08_ctx-situs_cp2.json"
+  ],
+  "pr": {
+    "number": 642,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/642",
+    "mergeSha": "c6b55a28461e17e4edcbafd44f0f572bcef7ff14",
+    "mergedAt": "2026-09-08T19:33:55Z",
+    "ciConclusion": "all 11 check-runs success, verified via the API conclusion field"
+  },
+  "diff": "artifacts/api-server/src/lib/nodeFacetTier1Assemble.ts: new situsStateFromCountyFips() + STATE_BY_FIPS_PREFIX, provenance.situsStateSource made an optional new-shape-only field. artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts: line 555 derives instead of reading the join; situsStateSource added to DIVERGENCE_ALLOWLIST_NEW_SHAPE_PREFIXES; stale doc comment corrected. artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts: 3 tests that asserted the old bug's null updated, 6 new tests added (FIPS helper, both populations across multiple counties, the 6-parcel wrong-state correction, provenance marker, real BP-CONTENT-01 classifier reproduction). 3 files, 151 insertions, 5 deletions.",
+  "probeParcelsBeforeAfter": {
+    "48055:19512 (population b, real Lockhart address, TxGIO situs_state empty)": {
+      "before": "null (row?.situs_state ?? null, with the raw TxGIO value being an empty string that str() would also collapse to null)",
+      "after": "\"TX\", provenance.situsStateSource=\"derived-county-fips\""
+    },
+    "48453:1000000 (population a, real Travis parcel, no TxGIO row)": {
+      "before": "null (row is null, row?.situs_state ?? null short-circuits to null)",
+      "after": "\"TX\", provenance.situsStateSource=\"derived-county-fips\""
+    }
+  },
+  "violationResult": "The real BP-CONTENT-01 classifier (reproduced verbatim from hauska-factory's verify-walk.mjs, not reimplemented from memory) still returns {state:'null', ok:false} for a null leaf -- the check was not weakened -- and returns {state:'value', ok:true} for both probe parcels' fixed output.",
+  "bastropRebakeJudgment": "YES, Bastrop's already-published production rows need a re-bake. 31,866 of Bastrop's 77,799 parcels (41.0%) are already serving a bare-null situsState in production TODAY, and per the dispatch's own note, Bastrop's 08-28/08-29 walks only passed because BP-CONTENT-01 did not exist yet at publish time -- meaning these rows have never actually been gated by this check and are silently non-compliant with it right now, live, for real customers. This code fix only changes what a FUTURE bake writes; it does nothing for rows already sitting in place_layer_snapshots. Sequencing that re-bake is the factory lane's per this dispatch's scope, not this lane's -- flagging it here as the explicit judgment call requested.",
+  "leaveBehindAtThisCheckpoint": {
+    "worktree": "P:/tmp/legacy-design-tools-ctx-situs, branch fix/situs-state-bare-null (now merged into main, branch left in place per --delete-branch=false; PR-only, no unmerged local commits remain uncommitted).",
+    "lessons": [
+      "LESSON: cad_property has situs_address/situs_city/situs_zip columns but NO situs_state column at all -- any future situs-field bake logic should not assume all four situs fields share a CAD source; situsState specifically has none.",
+      "LESSON: REQUIRED_TIER1_FACET_PATHS and DIVERGENCE_ALLOWLIST_NEW_SHAPE_PREFIXES in legacy-design-tools are hand-mirrored into hauska-factory's verify-walk.mjs (comment there: 'the LDT list-match test reads the LDT file when present and skips with a named reason when absent'). Any future change that adds a genuinely REQUIRED leaf (not just an additive new-shape-only one) needs a coordinated change on the hauska-factory side too -- this fix deliberately avoided that by making the new provenance field optional/additive instead.",
+      "LESSON: the shared nodeFacetTier1Assemble.ts module is used by BOTH the conformant bake and the legacy (retired-for-writes) bake. A change to its defaults can silently alter the retired bake's output shape too (caught via a failing REQUIRED_TIER1_FACET_PATHS-drift test during this fix) -- always re-run nodeFacetBakeTier1.test.ts, not just the file you meant to touch, when editing this module.",
+      "GROUND-TRUTH (2026-09-08, live PRODUCTION_NEONDB_URL, read-only): 48055:19512's cad_property situs_address is real ('821 PLUM ST'); txgio_parcel carries 2 rows for that prop_id, both situs_state empty. 48453:1000000 has zero txgio_parcel rows.",
+      "OPEN: Bastrop re-bake (see bastropRebakeJudgment above) -- not started by this lane, factory lane's per scope.",
+      "OPEN: the legacy (non-conformant) bake's own nodeFacetBakeTier1Cli.ts line 504 has the identical `row.situs_state` defect, left untouched because that writer is retired (OLD-SHAPE WRITES ENDED permanently per CANON-PREAMBLE) and out of this dispatch's stated scope -- flagging in case that assumption is ever revisited."
+    ]
+  }
+}
