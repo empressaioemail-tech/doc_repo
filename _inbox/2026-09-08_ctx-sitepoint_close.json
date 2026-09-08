@@ -1,0 +1,41 @@
+{
+  "lane": "ctx-sitepoint",
+  "planRow": "P-124",
+  "repo": "hauska-map",
+  "worktree": "P:/tmp/hauska-map-sitepoint",
+  "branch": "fix/staging-site-stable-branch",
+  "startCommit": "7a65e2b040b259ec4814beb2134d549e263c00d1",
+  "status": "STOPPED -- NOT GREEN",
+  "checkpoints": [
+    "_inbox/2026-09-08_ctx-sitepoint_cp1.json",
+    "_inbox/2026-09-08_ctx-sitepoint_cp2.json"
+  ],
+  "prsOpened": [],
+  "envVarSet": null,
+  "deploymentUrl": null,
+  "snapshotAtBefore": "2026-09-01T22:01:22.861Z",
+  "snapshotAtAfter": "2026-09-01T22:01:22.861Z (unchanged -- no change was made)",
+  "stagingBranchSnapshotAt": "2026-09-01 22:43:35.532726+00 (staging branch's own row for the same place_key/adapter_key, read directly against STAGING_NEONDB_URL -- does NOT match the served value, and is not a fresh same-day bake either)",
+  "match": false,
+  "summary": "Step 1 (stable branch exists) PASSED and is filed at CP1: f06-staging-neondb confirmed live via staging_targets + Neon API cross-check, no timestamp suffix. Steps 2-4 were NOT executed as instructed because step 3's premise failed a live-code trace, detailed in full at CP2: neither smart-site-factory nor property-explorer-staging (the actual project behind the /site proxy, confirmed via vercel project ls and apps/factory/vercel.json) holds a database connection string in any environment. Both resolve, through an empty CORTEX_API_URL, to the same shared Cloud Run cortex-api service (project legacy-design-tools-prod) that production property-explorer also uses -- a single global database connection, not one selectable per Vercel project or per caller. Setting STAGING_NEONDB_URL on a Vercel project and redeploying would change nothing the served response depends on. Per this dispatch's own instruction ('a repoint that reports success while the site still serves stale data is worse than not running at all'), stopping rather than performing that no-op and reporting green.",
+  "constraintsHonored": [
+    "Did not touch the property-explorer (production/smartsite.cloud) project -- only linked it read-only in a scratch temp dir to compare its CORTEX_API_URL against staging's.",
+    "Did not change PRODUCTION_NEONDB_URL or anything in the production project.",
+    "Did not run a bake, a staging reset, or publish-gate-sched.",
+    "Did not delete any Neon branch.",
+    "Never printed a connection string; only lengths/hosts/prefixes were echoed at any point.",
+    "Registered the worktree (both path and worktree set) before any doc_repo git write.",
+    "git pull before editing seat_register.json; staged and committed only the one file by explicit pathspec, never -A -- left every other lane's dirty doc_repo files untouched."
+  ],
+  "whatRemainsOpen": "The real fix needs a decision that crosses repo/seat boundaries: whether to point property-explorer-staging's CORTEX_API_URL at a Cloud Run revision with its own stable-branch database binding (a legacy-design-tools/Cloud Run change, a different repo than this dispatch scoped to), or something else entirely. Also open: this lane could not reproduce the dispatch's specific claim of a fresh (today, 14:41Z) staging-branch bake for Caldwell 48055:20478 -- the staging branch's own current row for that key is 2026-09-01, same vintage as what's served, which may mean the original measurement was about a different parcel/adapter, or that a staging-reset (reset_at 15:20:38Z, after the claimed 14:41Z bake) intervened. Recommend the integration seat re-verify that measurement independently before this mission is redispatched.",
+  "leaveBehind": {
+    "worktree": "P:/tmp/hauska-map-sitepoint, branch fix/staging-site-stable-branch, clean, zero commits.",
+    "lessons": [
+      "LESSON: apps/property-explorer/api/spine.ts's cortex segment has been a pure Cloud-Run-proxy (CORTEX_API_URL/CORTEX_SERVICE_API_KEY, static Bearer auth, no per-caller DB routing) since 2026-07-05 -- any future 'the Vercel-hosted Smart Site reads Postgres directly' assumption should be checked against this before acting.",
+      "LESSON: property-explorer-staging and property-explorer (production) currently resolve to the IDENTICAL cortex-api Cloud Run endpoint (CORTEX_API_URL empty on both, both fall to the same hardcoded default). Staging has no independent backend today for anything routed through spine.ts's cortex segment.",
+      "GROUND-TRUTH (2026-09-08, ~10:35-11:15 local via gcloud/vercel/psql/curl): cortex-api Cloud Run service lives in GCP project legacy-design-tools-prod (not hauska-prod-497015), 100% traffic on revision cortex-api-00745-cud (tag canary); a stale, unused 'staging' tag exists at revision cortex-api-00581-kuh with unverified DB binding.",
+      "OPEN: whether the 'staging' Cloud Run tag's DATABASE_URL, if fixed to point at f06-staging-neondb and wired up via property-explorer-staging's CORTEX_API_URL, is actually the intended real fix -- not verified, next lane should check legacy-design-tools' cortex-api deploy config for that revision before assuming it.",
+      "OPEN: the staging Neon branch's place_layer_snapshots row for 48055:20478/node-facets:tier1 was 2026-09-01T22:43:35Z at check time, not a fresh 2026-09-08 bake -- worth an independent re-measurement before redispatch."
+    ]
+  }
+}
