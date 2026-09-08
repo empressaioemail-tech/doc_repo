@@ -1,0 +1,31 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "planRow": "P-130",
+  "lane": "property-p130-team-invite",
+  "repo": "hauska-map",
+  "workingClone": "P:/tmp/hauska-map-p130-team-invite",
+  "branch": "seat/property-p130-team-invite",
+  "startingCommit": "75d0ec4a55580e03d488fc8617766a390d881dd5",
+  "subAgentsSpawned": false,
+  "note": "Filed retroactively, in sequence with implementation, to keep CP1/CP2/CLOSE as one coherent record of the actual reasoning at each stage rather than a re-derivation after the fact (same convention as sibling lane P-127's checkpoints this same day). No sub-agents were spawned per the dispatch's do-not-spawn clause, so section 1's fan-supervision content does not apply; this checkpoint carries the adversarial pre-build review of the plan instead.",
+  "investigationFindings": {
+    "clientGap": "src/lib/teamClient.ts had fetchTeamRoster (read) and pure seat-arithmetic helpers (seatCounts, canInvite, canActOn, isLastOwner) but no function that POSTs anything. Confirmed by reading the full file (202 lines) before writing any code.",
+    "serverContractAsClaimedByDispatch": "POST api/property-explorer/v1/team/invitations, body {email, role}, 201 on success, 400 with error in {invalid_email, invalid_role}. This was NOT independently re-derived from server source -- legacy-design-tools is not cloned into this working clone -- so the code and this checkpoint both mark it as dispatch-asserted, not independently verified.",
+    "allowlistGapFound": "api/_lib/deep-allowlist.ts's P-94 comment on the existing 'api/property-explorer/v1/team/members' GET entry read literally: 'Writes stay off until the client has a write path; invite UI is display-only.' This is the second, independent confirmation (beyond the dispatch's own framing) that the write path was deliberately withheld, not merely unbuilt by omission -- and it is the single most likely place a real client to have a POST fail invisibly: spine-deep.ts checks the session cookie BEFORE the allowlist, so a signed-out probe of a missing entry looks identical to a listed one (documented failure precedent in the same file for ai-connections and, once, the billing portal).",
+    "settingsModalGate": "SETTINGS_RUNNABLE explicitly excluded team_invite with an inline comment naming the exact same reason. runAction's switch had team_invite and unlock_expiring sharing one dead arm ('Unreachable: SETTINGS_RUNNABLE excludes both, with reasons').",
+    "nextActionContextGate": "lib/nextAction.ts's inviteTeammateRung only ever fires when context===\"team\" (nextAction(section, ...) is called with the live SettingsModal section), which means the rail can only ever propose team_invite while the Team tab -- and therefore the Invite panel -- is already on screen. This determined the CTA wiring: no cross-tab navigation is needed, only a focus signal into the already-rendered form."
+  },
+  "plannedImplementation": [
+    "teamClient.ts: add TEAM_INVITE_PATH (exported, second-derivation pattern already used by BILLING_PORTAL_PATH in portalClient.ts) and sendTeamInvite(email, role) returning a TeamInviteOutcome union with seven non-merging kinds.",
+    "api/_lib/deep-allowlist.ts: add the invitations path to DEEP_POST_EXACT in the SAME change as the client, per the file's own stated discipline for every prior entry.",
+    "SettingsModal.tsx: add team_invite to SETTINGS_RUNNABLE; give it its own runAction branch (bump a focus-token state); replace the Invite panel's prose with a real email input (kit Input) + Member/Owner role toggle (kit Button, not a raw <select>, to match the file's own stated 'every control is the kit Button' discipline) + submit, gated on the same canInvite-derived inviteAllowed the prose already explained; on success, refetch the roster (setTeam(null)) rather than fabricate a row from the POST response, since the 201 body shape was not independently confirmed.",
+    "Tests: sendTeamInvite outcome coverage (team-client.test.ts), a narrow allowlist proof importing TEAM_INVITE_PATH as the second derivation (proxy-allowlist.test.ts, same pattern as the A-062 billing-portal proof), and flipping the settings-next-action.test.tsx assertion that currently pins team_invite as excluded."
+  ],
+  "adversarialReviewAtCP1": [
+    "Risk: forgetting the allowlist entry ships a POST that 403s for every real signed-in user while looking fine in this client's own unit tests (which mock fetch and never touch spine-deep.ts). Mitigation: added the entry in the same change, plus a narrow allowlist test built from the client's own exported path constant rather than a second hand-typed literal, matching the exact pattern the file's BILLING_PORTAL_PATH / A-062 test already uses for this exact failure class.",
+    "Risk: fabricating the invitation's response shape (id, created-at, etc.) that the dispatch did not specify, which ENFORCEMENT.md's fail-closed discipline treats as inventing a resolution for a value that was not actually resolved. Mitigation: sendTeamInvite does not parse or expose anything from the 201 body beyond the bare 'sent' outcome; the UI treats the roster GET as the only source of truth for what the account now contains, refetching after a send rather than optimistically rendering a locally-constructed row.",
+    "Risk: a refused invite (unread seats / at capacity) still letting someone type into the field and hit submit, discarding the attempt silently. Mitigation: the email input and role toggle are disabled on the same inviteAllowed boolean the refusal copy already reads, not just the submit button.",
+    "Open question flagged for CLOSE, not resolved here: whether an invited person's acceptance is already covered by this repo's existing general magic-link sign-in (P-112, requestMagicLinkEmail in auth.ts) or is a genuine remaining gap. Deferred to after implementation since it does not gate the write-path wiring itself, and the dispatch explicitly says to report rather than guess."
+  ]
+}

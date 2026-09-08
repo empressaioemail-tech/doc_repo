@@ -1,0 +1,27 @@
+{
+  "checkpoint": "CP1",
+  "kind": "design/pre-build",
+  "planRow": "P-127",
+  "lane": "property-p127-plans-scroll",
+  "repo": "hauska-map",
+  "workingClone": "P:/tmp/hauska-map-ui-qa",
+  "branch": "seat/property-p127-plans-scroll",
+  "startingCommit": "75d0ec4a55580e03d488fc8617766a390d881dd5",
+  "subAgentsSpawned": false,
+  "note": "Filed retroactively, in sequence with implementation, to keep CP1/CP2/CLOSE as one coherent record of the actual reasoning at each stage rather than a re-derivation after the fact. No sub-agents were spawned per the dispatch's do-not-spawn clause, so section 1's fan-supervision content does not apply; this checkpoint carries the adversarial pre-build review of the plan instead.",
+  "targetFile": "apps/property-explorer/src/browse/PricingModal.tsx",
+  "bug1_scroll": {
+    "rootCauseHypothesis": "The outer card (data-testid=pricing-modal) sets overflow:\"hidden\" together with maxHeight:\"calc(100dvh - 24px)\", and NOTHING in the component sets overflowY anywhere -- a plain clip-instead-of-scroll defect, not a flexbox min-height:0 trap (the content is not inside a flex column with a constrained flex child; it's a flat block directly inside the height-capped, overflow-hidden card).",
+    "confirmedByReading": "Read PricingModal.tsx in full (802 lines) via the Read tool before forming this hypothesis; not guessed. Independently confirmed by the file's own pre-existing test (pricing-modal.test.tsx, 'card fits the viewport with no scrollbar'), which literally asserted overflow:hidden present AND overflow-y:auto absent -- the bug was pinned as intended behavior.",
+    "plannedFix": "Set overflowY: \"auto\" (replacing overflow: \"hidden\") and add className=\"pe-scroll\" (the codebase's shared scrollbar-styling utility, confirmed by reading src/styles/pe-tokens.css lines 425-451 -- it only styles the scrollbar, does not itself create a scroll container) directly on the same outer card.",
+    "precedentChecked": "Read the sibling src/checkout/UnlockCheckoutModal.tsx, which already solves this exact shape correctly: overflowY: \"auto\" + className=\"pe-scroll\" directly on its outer scrollable card, no separate sticky-header wrapper. Chose to mirror that pattern exactly rather than introduce a new sticky-header/flex-column architecture, per the dispatch's own framing ('not a redesigned control') applied consistently to the scroll fix as well as the CTA."
+  },
+  "bug2_topCta": {
+    "requirement": "A CTA button at the top of the modal, mirroring 'the' existing bottom CTA -- same action, same targeting logic, not a redesigned control.",
+    "ambiguityFound": "The modal has THREE tier subscription buttons at the bottom (Solo/Studio/Team) plus one unlock button -- there is no single obviously-unique 'the' bottom CTA by inspection alone.",
+    "resolution": "Read the bottom CTA cell JSX: variant={tier === \"studio\" ? \"primary\" : \"subtle\"}. Studio is the ONLY button anywhere in the modal styled variant=\"primary\"; every other button (Solo, Team, unlock, interval toggle non-active state) is subtle/ghost. That makes Studio the codebase's own unambiguous definition of 'the' primary CTA, independent of highlightTier/studioOnly props (which can emphasize multiple tiers simultaneously via the separate emphasize() helper and therefore cannot supply a single target).",
+    "alternativeConsidered": "Target whichever tier emphasize() resolves as emphasized (e.g. highlightTier when passed) instead of hardcoding studio. REJECTED at this checkpoint: emphasize() can return true for BOTH studio and highlightTier at once (see existing test 'highlightTier emphasizes that column too'), so there is no single tier to hand a solo top CTA button in the general case. variant===\"primary\" is deterministic and matches the codebase's own working definition of the primary action.",
+    "flaggedForOperator": "This worker did not see the operator's screenshot directly (dispatch describes it in prose only). The studio-is-the-primary-button reading is grounded in the component's own styling code, not in the screenshot, and should be spot-checked against the screenshot if the operator's intent was actually a different tier."
+  },
+  "adversarialReviewAtCP1": "Checked for a config-driven precedent (e.g. a 'defaultTier' or 'primaryTier' field in src/lib/pricing.ts) that might already name the primary tier explicitly instead of relying on the hardcoded variant check in the render function. None found -- tierHeadline/ctaLabel/etc are all per-tier lookups with no cross-tier 'which one is primary' field. The variant==='studio' check in PricingModal.tsx itself is the only place this is decided, so mirroring it structurally (hardcoding 'studio' in the new button, same as the existing line does) is the correct-for-this-codebase choice rather than a workaround."
+}

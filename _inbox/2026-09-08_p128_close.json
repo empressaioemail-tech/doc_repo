@@ -1,0 +1,57 @@
+{
+  "lane": "P-128",
+  "planRowList": ["P-128"],
+  "repo": "empressaioemail-tech/legacy-design-tools",
+  "branch": "feat/p128-claude-sync-diagnostic",
+  "startCommit": "bc7cf890bf85f581177f67c273dce633f6a11394",
+  "endCommit": "bc7cf890bf85f581177f67c273dce633f6a11394",
+  "codeChanged": false,
+  "prNumbers": "not applicable: no code change made, diagnosis-only close per dispatch Scenario A disposition",
+  "mergeShas": "not applicable: no code change made",
+  "ciConclusionStrings": "not applicable: no code change made, no CI run",
+  "checkpointArtifacts": [
+    "_inbox/2026-09-08_p128_cp1.json",
+    "_inbox/2026-09-08_p128_cp2.json"
+  ],
+  "missionPremise": "Dispatch framed two possible findings (A: no row exists, fail-closed UI is correct, architecture question; B: row exists, read/display bug, fix it). Source: this lane's own dispatch text, P-128, legacy-design-tools repo.",
+  "completionPredicate": "Done when either (a) a code fix is committed, tested, and PR-opened for a confirmed server-side read-path bug, or (b) the true mechanism behind the Claude Sync card's wrong state is established with live evidence (not assumption) and reported precisely enough that the operator can decide the next architectural step. This close satisfies (b).",
+  "scopeBasis": "Diagnosis required live production DB access (read-only) to resolve the operator's real user row and its pe_ai_connections rows -- this is squarely 'diagnose' as dispatched, not a boundary violation. Tracing the write path (smartsite-mcp/src/auth.ts, identity.ts, connection-record.ts) was required to explain WHY the row landed on a different account, and is inside this repo (legacy-design-tools) so in scope. Tracing WHERE WorkOS's external_id/subject gets bound to a specific PE session at connector-authorize time is NOT in this repo (no 'workos' hits in api-server initiate/authorize code; only hosted-issuer JWKS verification is present) and most likely lives in the hauska-map client or WorkOS's own hosted config -- out of scope per dispatch's explicit boundary ('you do not have that repo cloned here ... STOP and report exactly what's wrong and where').",
+  "counts": {
+    "pe_ai_connections_total_rows": {
+      "value": 3,
+      "countingRule": "SELECT count(*) FROM pe_ai_connections against the live DB resolved from Cloud Run secret DEPLOYMENT_DATABASE_URL_DIRECT (legacy-design-tools-prod project), read 2026-09-08"
+    },
+    "pe_ai_connections_rows_for_operator_account": {
+      "value": 0,
+      "countingRule": "SELECT count(*) FROM pe_ai_connections WHERE owner_user_id='u_c1247a93e54c975b690fadf4' (the users.id row whose email = empressaioemail@gmail.com), same DB, same read"
+    },
+    "pe_ai_connections_rows_for_orphan_account": {
+      "value": 3,
+      "countingRule": "SELECT count(*) FROM pe_ai_connections WHERE owner_user_id='u_e274e3c3f5b7a9289c398edf', same DB, same read -- ALL of the table's rows"
+    },
+    "users_table_total": {
+      "value": 9,
+      "countingRule": "SELECT count(*) FROM users, same DB, same read"
+    }
+  },
+  "constraintsHonored": [
+    "no sub-agents spawned; deepest worker did the work directly",
+    "did not touch pe_ai_connections schema",
+    "did not touch the MCP server's initialize handler (confirmed it is not the defect -- it correctly recorded a real handshake)",
+    "did not build a fix that fakes a connected state",
+    "did not reach into hauska-map (not cloned in this worktree) to chase the client/WorkOS-binding half of the mechanism",
+    "verified the DB connection string from the live deployed service's actual secret reference rather than guessing by Neon project name (guess was confirmed wrong: different host)",
+    "verified cortex-api and smartsite-mcp share one database before ruling out a split-DB explanation",
+    "left the worktree clean -- git status --short empty at close"
+  ],
+  "leave_behind": {
+    "item": "orphan account u_e274e3c3f5b7a9289c398edf holds all 3 live pe_ai_connections rows and will keep absorbing future Claude MCP initialize traffic for this connector until the binding-time defect is fixed upstream (client/WorkOS config, not in this repo). A one-time manual UPDATE reassigning those 3 rows' owner_user_id to u_c1247a93e54c975b690fadf4 would unblock the operator's card today but does not fix recurrence and was not authorized by this dispatch (Scenario A instructs stop-and-report, not patch). Recommend Nick decide whether to authorize that manual reassignment as an immediate relief measure separate from the architecture fix.",
+    "owner": "Nick / doc_repo planner to route",
+    "plan_row": "P-128 follow-up (unassigned)"
+  },
+  "whatRemainsOpen": [
+    "Root binding mechanism (why the connector's OAuth grant used an ephemeral anonymous PE session's owner id instead of requiring the operator's authenticated session) is not traced to a specific line of code -- it is inferred with strong evidence from this repo's session-middleware and identity-resolution shapes, but the actual initiate/authorize call site is outside this repo.",
+    "Whether Claude's own connector-verification step (the one that made Claude's Settings show a checkmark) runs from a cookie-isolated context, or whether the operator's own browser session was genuinely anonymous at the moment of connect, is not distinguished -- both produce identical DB evidence.",
+    "The 'Check again' UI copy: recommend it change, since a passive re-check can never resolve this class of mismatch (the connection is permanently bound to an account distinct from any future login) -- copy should instead direct the user to disconnect and reconnect the custom connector from an authenticated PE session, or (if a claim flow is later built) explain that step."
+  ]
+}

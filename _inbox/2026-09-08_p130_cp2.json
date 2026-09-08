@@ -1,0 +1,44 @@
+{
+  "checkpoint": "CP2",
+  "kind": "pilot/mid-work",
+  "planRow": "P-130",
+  "lane": "property-p130-team-invite",
+  "repo": "hauska-map",
+  "workingClone": "P:/tmp/hauska-map-p130-team-invite",
+  "branch": "seat/property-p130-team-invite",
+  "commitAtThisCheckpoint": "not yet committed at time this checkpoint was filed -- working tree changes only",
+  "subAgentsSpawned": false,
+  "implementationDone": {
+    "files": [
+      "apps/property-explorer/src/lib/teamClient.ts",
+      "apps/property-explorer/api/_lib/deep-allowlist.ts",
+      "apps/property-explorer/src/browse/SettingsModal.tsx",
+      "apps/property-explorer/src/lib/team-client.test.ts",
+      "apps/property-explorer/src/lib/proxy-allowlist.test.ts",
+      "apps/property-explorer/src/browse/settings-next-action.test.tsx"
+    ],
+    "teamClientTs": "Added TEAM_INVITE_PATH ('api/property-explorer/v1/team/invitations'), TeamInviteOutcome (7 non-merging kinds: sent, invalid-email, invalid-role, sign-in, blocked, not-built, error), TEAM_INVITE_NOT_BUILT_MESSAGE, and sendTeamInvite(email, role, fetchImpl). 400 body.error is checked for the two named strings before falling to a generic error so an unrecognized 400 reason is never mis-labelled as one of the two named ones.",
+    "deepAllowlistTs": "Added the invitations path to DEEP_POST_EXACT with a comment naming the same ai-connections/billing-portal failure precedent already documented in that file; updated the P-94 GET entry's comment to point at this new entry instead of asserting writes are off.",
+    "settingsModalTsx": "SETTINGS_RUNNABLE now includes team_invite (doc comment above it rewritten to explain the closed gap instead of the old exclusion). runAction's team_invite case bumps an inviteFocusToken state; unlock_expiring kept its own single-arm case with its own reason. TeamTab gained inviteEmail/inviteRole/inviteBusy/inviteOutcome state and an inviteInputRef, all declared above every early return per rules-of-hooks (the invite form only renders in the component's last branch, but hooks cannot be conditional). The Invite panel's prose paragraph is unchanged; a form was added below it: kit Input (email) + two kit Buttons as a Member/Owner toggle (no raw <select>, matching the file's own 'every control is the kit Button' line) + kit Button submit, all three disabled on the same inviteAllowed the prose already explains. A sent outcome clears the field and calls onInviteSent (== setTeam(null) at the call site), forcing the existing roster-fetch effect to re-run.",
+    "tests": "team-client.test.ts: 13 new tests for sendTeamInvite (wire shape incl. role variance, all 7 outcome kinds, transport failure, unreadable-201-body-still-succeeds). proxy-allowlist.test.ts: TEAM_INVITE_PATH imported as the second derivation (mirroring BILLING_PORTAL_PATH), added to SHIPPED_DEEP_POSTS, plus a narrow standalone proof (GET/DELETE/nested-path/neighbor-path all still refused). settings-next-action.test.tsx: flipped the SETTINGS_RUNNABLE assertion from excluding team_invite to including it, kept unlock_expiring's exclusion."
+  },
+  "selfCaughtDefect": {
+    "what": "First implementation used the input placeholder \"teammate@firm.com\". A pre-existing regression guard in settings-modal.test.tsx ('ships NO fixture roster in the component') asserts the shipped file's source never matches /@bastrop-arch\\.com|@structural\\.co|@firm\\.com/ -- a guard against comp fixture emails leaking into shipped code. The placeholder string matched @firm.com and failed that test on the first full test-suite run.",
+    "howCaught": "Running the full pnpm test suite before committing, not by re-reading the diff -- exactly the class of check ENFORCEMENT.md's 'verify a check by violating it' section describes: an existing check fired on a real, if trivial, mistake rather than the mistake being caught by inspection.",
+    "fix": "Changed the placeholder to \"name@company.com\", which matches none of the guarded domains. Re-ran the full suite; the specific test and all others passed.",
+    "notAScopeChange": "This was a one-line placeholder string fix inside the same file already being edited for this dispatch; no additional files touched, no test loosened to admit the mistake."
+  },
+  "verificationRun": {
+    "testCommand": "pnpm run test (apps/property-explorer) -- runs pe-chrome-kit-gate.mjs, seam-retired-guard.mjs, pe-public-pages-guard.mjs, then vitest run",
+    "testResult": "199/199 test files passed, 2820/2820 tests passed, 1 pre-existing todo (unrelated). Re-run twice: once after the placeholder fix, once again immediately before commit -- both clean.",
+    "typecheckCommand": "npx tsc --noEmit (apps/property-explorer)",
+    "typecheckResult": "exit 0, no output",
+    "targetedRerun": "npx vitest run src/lib/team-client.test.ts src/lib/proxy-allowlist.test.ts src/browse/settings-next-action.test.tsx src/browse/settings-modal.test.tsx --reporter=verbose -- 4 files, 89/89 tests passed, individually confirmed the new/changed assertions (sendTeamInvite outcomes, the P-130 allowlist proof, the flipped SETTINGS_RUNNABLE assertion, and that the pre-existing 'no fixture roster' guard now passes)."
+  },
+  "adversarialReviewAtCP2": [
+    "Checked whether the chrome-kit ratchet gate (scripts/pe-chrome-kit-gate.mjs, part of the test script) would flag any new colour literal, off-ramp font size/radius/weight, or raw <button>/<input> introduced by the new form. Read the gate's own source rather than assuming; confirmed the only new style literal added is fontSize: 12.5, which is on the legal Stone ramp already used elsewhere in the same file, and confirmed via grep that no new fontSize/borderRadius/fontWeight/hex literal was introduced beyond that one legal value. The gate's own run (part of pnpm test) is the actual proof; the grep was the pre-check.",
+    "Checked whether team_invite becoming runnable changes what the FIRST-PAINT static-markup tests in settings-next-action.test.tsx assert (those render before any effect resolves, so the ladder is always null at that point regardless of which ids are runnable). Confirmed unaffected: the 'rail exists and is EMPTY before any read has landed' test is about the ladder returning null pre-effects, not about SETTINGS_RUNNABLE membership, and it still passes.",
+    "Considered exposing a richer TeamInviteOutcome carrying the server's returned invitation (id, createdAt) for an optimistic row instead of a full refetch. Rejected: the 201 body's shape was never independently confirmed (CP1), so rendering fields from it would be exactly the 'raw source key defaulted into a resolution' pattern ENFORCEMENT.md prohibits. A refetch from the already-trusted roster GET is slower by one round trip but never risks displaying an invented shape."
+  ],
+  "remainingBeforeClose": "Commit (explicit pathspec, verify staged content), push, open PR (no merge, no deploy per dispatch), investigate the accept-invitation question this repo's own code can answer (search for invite-token handling / magic-link wiring client-side) and report honestly rather than asserting either way, write CLOSE."
+}

@@ -1,0 +1,77 @@
+{
+  "close": true,
+  "lane": "P-129",
+  "planRow": ["P-129"],
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/legacy-design-tools-p129-renewal-cancel",
+  "branch": "feat/p129-renewal-cancellation",
+  "startCommit": "bc7cf890bf85f581177f67c273dce633f6a11394",
+  "finalCommit": "54b0924b16914ac4fb3ccb77151048d20c0c45af",
+  "pr": {
+    "number": 641,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/641",
+    "base": "main",
+    "head": "feat/p129-renewal-cancellation",
+    "state": "OPEN",
+    "note": "Commit/push/PR-open were performed by the coordinator (doc_repo planner) directly in this same worktree while this lane's build/verify work was still in progress (mid-typecheck), per a mid-flight message. Per ENFORCEMENT.md's 'read the authoritative record, never a proxy for it' and AGENT_CONTRACT verification rules, this claim was independently verified at source rather than accepted: git status --short (clean), git rev-parse HEAD vs origin/feat/p129-renewal-cancellation (both 54b0924b16914ac4fb3ccb77151048d20c0c45af, zero diff), git show --name-only on that commit (exactly the 4 files this lane authored, no more/less), and gh pr view 641 (OPEN, base main, headRefOid matching exactly). All four checks passed independently. Did not commit or push anything further after verifying -- doing so would have conflicted with already-landed, already-verified work.",
+    "ciAtCloseTime": "gh pr checks 641: Typecheck=pass (2m7s, matches this lane's own local typecheck run below), PR base is main=pass, cortex daily limit bake=pass, 8 other repo-wide L5/L17/SS-W checks=pass, Test=pending (not polled to completion -- this lane does not merge; the coordinator stated they are watching CI separately)."
+  },
+  "missionPremise": "pePaywallStripe.ts's doc comment above peBillingIntervalForPriceId (verified in this worktree) states this repo deliberately never reads Stripe's current_period_end/plan.interval because their shape moves with the API version and nothing in this repo pins one -- confirmed by grep: zero pre-existing hits for Stripe-Version/STRIPE_API_VERSION anywhere in artifacts/api-server/src, and no `stripe` npm dependency (hand-rolled fetch client only). This is the exact exclusion named in P-125's CP1 (_inbox/2026-09-08_p125_cp1.json, same day, same repo) as deliberately deferred. P-129 is that deferred design, done live rather than stored, and doubles as the data source for the cancellation flow's 'is a cancellation already scheduled' state.",
+  "completionPredicate": "A live GET route at /property-explorer/v1/subscription, authenticated (requirePeAuthenticated + inner resolvePeOwnerUserId check), resolving the Stripe customer via the SAME function A-062's billing-portal route already uses (readPeStripeCustomerId -- never re-derived, never creates a customer as a side effect of a read), calling Stripe's Subscriptions API live with an explicitly pinned Stripe-Version header for that one call only (stripeGet widened with an additive optional param; its one other caller unaffected), returning ONLY currentPeriodEnd/cancelAtPeriodEnd/status extracted field-by-field (never the raw Stripe object -- proven by a violation test asserting foreign fields do not leak), with every failure mode producing a declared non-2xx or an explicit hasSubscription:false rather than a fabricated date or a silent null-looking 200 (no customer -> 200 false; no LIVE-status subscription -> 200 false; more than one live subscription -> 502, refused not guessed; malformed Stripe response -> 502, refused not coerced; Stripe not configured -> 503, distinct from the 200 absence; Stripe error -> 502 carrying Stripe's own message). MET -- verification below. Client wiring and the portal-replacement decision were explicitly out of this lane's completion bar per the dispatch and are reported, not built.",
+  "scopeBasis": "Dispatch scoped this lane to ONE route serving both the renewal-date read and the cancellation-flow's status read, built on the existing customer-resolution (readPeStripeCustomerId) and HTTP-client (stripeGet) seams rather than inventing new ones. Explicitly out of scope and NOT touched: the existing hosted Customer Portal redirect (A-062, PE_BILLING_PORTAL_ROUTE) -- investigated and NOT replaced (see stoppedOrFlagged below, this is a recommendation, not a decision made unilaterally); any hauska-map client-side wiring (repo not cloned in this worktree); any Stripe secret or price-id configuration.",
+  "routeContract": {
+    "method": "GET",
+    "path": "/property-explorer/v1/subscription",
+    "fullPath": "/api/property-explorer/v1/subscription",
+    "auth": "Session cookie / Bearer token resolving to an authenticated PE user via requirePeAuthenticated (same middleware/session mechanism as every other /property-explorer/v1/* route, e.g. PE_BILLING_PORTAL_ROUTE). No request body, no query params read.",
+    "responses": {
+      "401": "{ error: \"authentication_required\" } -- no session",
+      "200_no_subscription": "{ ok: true, hasSubscription: false, stripeConfigured: boolean } -- signed in, no live Stripe subscription (never had one, or the only one on file is not in an active/trialing/past_due/unpaid status)",
+      "200_active": "{ ok: true, hasSubscription: true, status: string, currentPeriodEnd: string (ISO 8601), cancelAtPeriodEnd: boolean, stripeConfigured: true }",
+      "503": "{ error: \"subscription_unavailable\", message: string, stripeConfigured: false } -- Stripe not configured on this deployment; distinct from the 200 absence -- means \"could not check\", never rendered as \"no renewal\"",
+      "502": "{ error: \"subscription_check_failed\", message: string, stripeConfigured: boolean } -- Stripe answered with an error, returned a subscription missing/mistyping status|current_period_end|cancel_at_period_end (extraction fails closed), or the customer carries more than one concurrently-live subscription (ambiguity refused rather than guessed at)"
+    },
+    "note": "hasSubscription is the discriminant a client should branch on FIRST; status/currentPeriodEnd/cancelAtPeriodEnd are only present when hasSubscription is true. stripeConfigured is informational on every 200/503 response. No field carries a raw Stripe object -- every field is individually extracted and type-checked server-side."
+  },
+  "diffFileList": [
+    "artifacts/api-server/src/lib/brokerageStripe.ts (+9/-2 -- stripeGet widened with an additive, optional extraHeaders?: Record<string,string> param; its one pre-existing caller, pePaywallStripe.ts, passes none and is unaffected)",
+    "artifacts/api-server/src/lib/peSubscriptionStripe.ts (new, 187 lines -- PE_SUBSCRIPTION_ROUTE, PeSubscriptionSnapshot discriminated union, STRIPE_SUBSCRIPTION_API_VERSION pin, field-by-field extraction, readPeSubscriptionSnapshot)",
+    "artifacts/api-server/src/routes/propertyExplorer.ts (+84/-0 -- import + GET route, placed immediately after A-062's billing-portal route, mirroring its auth/error-arm shape)",
+    "artifacts/api-server/src/__tests__/pe-subscription.test.ts (new, 13 tests)"
+  ],
+  "verification": {
+    "testCommand": "DATABASE_URL=postgres://postgres:postgres@localhost:55611/test_db PRIVATE_OBJECT_DIR=/test-bucket/private PUBLIC_OBJECT_SEARCH_PATHS=/test-bucket/public npx vitest run src/__tests__/pe-subscription.test.ts   (run from artifacts/api-server; DATABASE_URL was unset in this fresh worktree and had to be provisioned -- see cp2 environmentForThisInstrument for the full pgvector+postgis container setup replicating .github/workflows/pr-checks.yml's Test job)",
+    "testOutputFinalRun": "RUN v3.2.4 P:/tmp/legacy-design-tools-p129-renewal-cancel/artifacts/api-server\n\n \u2713 src/__tests__/pe-subscription.test.ts (13 tests) 91819ms\n   \u2713 P-129 the route is MOUNTED, read from the app and not from a grep > answers the subscription path (401 signed out) and 404s its neighbours 5942ms\n   \u2713 P-129 the route is MOUNTED, read from the app and not from a grep > requires an authenticated PE session 6181ms\n   \u2713 P-129 item 1 -- customer resolution is REUSED, never re-derived or created > a free user (no stripeCustomerId) gets an honest 200 absence, and Stripe is never called 6810ms\n   \u2713 P-129 item 1 -- customer resolution is REUSED, never re-derived or created > a paying user's request resolves the SAME customer id A-062's portal route would 5514ms\n   \u2713 P-129 item 2 -- the Stripe API version is PINNED on this call > VIOLATION-style assertion: the recorded request carries an explicit Stripe-Version header 5936ms\n   \u2713 P-129 item 3 -- active subscription: only the named fields, extracted defensively > returns hasSubscription, status, currentPeriodEnd (ISO), cancelAtPeriodEnd 5483ms\n   \u2713 P-129 item 3 > VIOLATION: the raw Stripe subscription object is NOT passed through 5843ms\n   \u2713 P-129 item 3 > VIOLATION: a subscription missing current_period_end fails the read CLOSED (502), never a fabricated date 5878ms\n   \u2713 P-129 item 3 > VIOLATION: cancel_at_period_end of the wrong type also fails closed 5643ms\n   \u2713 P-129 item 4 -- absence vs failure are DIFFERENT status codes, never collapsed > a customer with only a canceled subscription is an honest 200 absence, not an error 5393ms\n   \u2713 P-129 item 4 > VIOLATION: two concurrent LIVE subscriptions is refused (502), never a guessed pick 5319ms\n   \u2713 P-129 item 4 > Stripe not configured is 503 subscription_unavailable -- distinct from the 200 no-subscription absence 5261ms\n   \u2713 P-129 item 4 > a raw Stripe error response is 502, never 500 and never a fabricated snapshot 5913ms\n\n Test Files  1 passed (1)\n      Tests  13 passed (13)\n   Duration  94.26s",
+    "testOutputFirstRunNote": "The FIRST run of this same file (identical code, identical container) showed 12 passed / 1 failed with 'Hook timed out in 30000ms' on the first test's afterEach truncateAll, immediately following a cold createTestSchema (5097-line DDL replay + orphan-schema reap) against a just-started, just-provisioned local Docker container. The identical file re-run against the same now-warm container passed 13/13 at normal per-test speed (5-7s each, vs the first run's 30s+ timeout). Treated as a cold-start environment artifact, not a code defect, per ENFORCEMENT.md's second-mechanism-considered rule -- reasoning recorded in cp2.adversarialReview.secondMechanismConsidered.",
+    "typecheckCommand": "pnpm run typecheck (repo root: typecheck:libs [tsc --build, 9 workspace lib projects] then per-package typecheck filtered to artifacts/** and scripts)",
+    "typecheckExitCode": 0,
+    "typecheckErrorCount": 0,
+    "typecheckOutputTail": "Scope: 9 of 46 workspace projects\nartifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit\n...\nartifacts/api-server typecheck: Done\nscripts typecheck: Done",
+    "ciTypecheckCrossCheck": "PR #641's own 'Typecheck' CI check independently passed (2m7s) -- agrees with this lane's local run, a free reconciliation per DEV_PROCESS 1.4."
+  },
+  "workingTreeAtClose": "clean (git status --short empty). Local HEAD and origin/feat/p129-renewal-cancellation both verified at 54b0924b16914ac4fb3ccb77151048d20c0c45af with zero diff between them.",
+  "stoppedOrFlagged": [
+    "Client wiring (hauska-map): NOT attempted. hauska-map is not cloned in this worktree and this lane's dispatch explicitly said to stop and report the contract rather than guess at client code that could not be verified. The route contract above (path, method, auth, exact response shapes for all five states) is the handoff for that wiring to be scoped precisely.",
+    "Portal-replacement question: NOT decided unilaterally, per the dispatch's explicit instruction that this is a bigger call than the mission should make on its own. Investigation finding, reported as a recommendation: the existing hosted-portal redirect (A-062, PE_BILLING_PORTAL_ROUTE, POST /property-explorer/v1/billing/portal) and this new route serve DIFFERENT purposes -- the portal is where a customer actually manages or cancels a subscription (Stripe's own UI, handles payment-method changes, proration, etc.), while this route is a read used to DISPLAY renewal/cancellation-scheduled facts inline in the product before a customer is sent anywhere. Recommendation: do not replace the portal redirect; wire the cancellation flow to CALL this route first (to show what would be cancelled) and continue to hand off to the portal for the actual cancel action, unless a future card scopes building a fully custom cancel UI against Stripe's Subscriptions API directly (a materially larger change Stripe itself discourages moving off the portal for, given proration/dunning/payment-method edge cases the portal already handles). This is a recommendation for the operator to rule on, not a decision made here."
+  ],
+  "leave_behind": {
+    "note": "Ad hoc local Docker test-postgres container (p129-pe-subscription-testdb, pgvector/pgvector:pg14 + postgis, host port 55611) created solely to run this lane's tests in a fresh worktree with no DATABASE_URL provisioned -- REMOVED (docker rm -f) at close; it was scratch infrastructure only, not committed, not referenced by CI or the repo. PR #641's own CI Test job provisions its own container per .github/workflows/pr-checks.yml and is unaffected by this cleanup.",
+    "items": [
+      {
+        "item": "PR #641 CI 'Test' job was still pending at close time (Typecheck and 8 other checks already green)",
+        "owner": "coordinator (stated they are watching CI separately)",
+        "plan_row": "P-129"
+      },
+      {
+        "item": "Portal-replacement recommendation (see stoppedOrFlagged) needs an operator ruling before any future card acts on it",
+        "owner": "operator",
+        "plan_row": "P-129"
+      },
+      {
+        "item": "hauska-map client wiring against the route contract above is unscoped work, not started",
+        "owner": "unassigned",
+        "plan_row": "P-129"
+      }
+    ]
+  }
+}

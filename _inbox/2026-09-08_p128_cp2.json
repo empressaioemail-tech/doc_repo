@@ -1,0 +1,24 @@
+{
+  "lane": "P-128",
+  "checkpoint": "CP2-pilot",
+  "timestamp": "2026-09-08T18:50:00-05:00",
+  "repo": "empressaioemail-tech/legacy-design-tools",
+  "branch": "feat/p128-claude-sync-diagnostic",
+  "commit": "bc7cf890bf85f581177f67c273dce633f6a11394",
+  "planRow": "P-128",
+  "finding": "Neither pure Scenario A nor pure Scenario B as the dispatch framed them. A row DOES exist, is current (last_seen_at 2026-09-08, same day), and is correctly written by a genuine MCP initialize handshake -- disproving the dispatch's guessed A-mechanism ('OAuth completion never triggers an MCP handshake'). But the row is owned by owner_user_id=u_e274e3c3f5b7a9289c398edf, NOT the operator's real account u_c1247a93e54c975b690fadf4 (empressaioemail@gmail.com). readAiConnections(u_c1247a93e54c975b690fadf4) correctly and fail-closed-ly returns claude:null because THAT account genuinely has 0 rows. This is an identity-binding defect upstream of the read path, not a read-path or client-display bug.",
+  "evidence": {
+    "realDbHost": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech/neondb (read from live DEPLOYMENT_DATABASE_URL_DIRECT secret, GCP project legacy-design-tools-prod, shared by both cortex-api and smartsite-mcp Cloud Run services -- verified both services reference the identical secret name+project, ruling out a split-database explanation)",
+    "operatorAccount": "u_c1247a93e54c975b690fadf4, email=empressaioemail@gmail.com, provider=google, created 2026-09-04T00:34:46.53Z, has a paired pe_user_identities row (pei_google_103691656284794694947)",
+    "connectionRows": "3 rows in pe_ai_connections total in the ENTIRE table, ALL owned by u_e274e3c3f5b7a9289c398edf: claude-ai (last_seen 2026-09-08T11:55:14Z), claude-code (2026-09-08T15:16:23Z), Anthropic/ClaudeAI (2026-09-08T17:11:27Z)",
+    "orphanAccountShape": "u_e274e3c3f5b7a9289c398edf: email=NULL, display_name='u_e274e3c3f5b7a9289c398edf' (literally its own id), created 2026-09-04T00:34:21.93Z -- 25 seconds BEFORE the operator's real account. Zero rows in pe_user_identities, zero in user_auth_credentials, zero in pe_user_entitlements for this id."
+  },
+  "adversarialCheck": {
+    "altExplanation1": "Maybe this is a legitimate second real account for the same person (duplicate signup), not an anonymous-session artifact.",
+    "rejectedBecause": "Every legitimate account-creation path in this codebase pairs the `users` insert with a second table: upsertPeOidcIdentity (peIdentity.ts) always also writes pe_user_identities in the same call; the email/password path (authCredentials.ts) always also writes user_auth_credentials; the admin POST /api/users route requires an explicit caller-supplied id+displayName+email. u_e274e3c3f5b7a9289c398edf has none of these three companion rows. The ONLY code path in this repo that inserts a bare `users` row with no companion table and defaults displayName to the id itself is `ensureUserProfile` (userProfiles.ts) called with a single argument from api-server's sessionMiddleware for the ephemeral anonymous-owner-cookie identity (middlewares/session.ts, attachEphemeralAnonymousOwner). The shape match (no email, displayName==id, no companion rows) plus the 25-second proximity to the real account's creation is consistent with: the operator's browser/webview had no verified PE session at the moment the Claude connector's WorkOS grant was bound, so an ephemeral anonymous owner id was minted and that id (not the real account) became the external_id/JWT sub WorkOS issued back (identity.ts's own comment names this path: 'WorkOS Standalone Connect: complete API user.id may appear as token sub').",
+    "altExplanation2": "Maybe cortex-api and smartsite-mcp read/write different databases (a much simpler bug).",
+    "rejectedBecause": "Both live Cloud Run services (gcloud run services describe, legacy-design-tools-prod project) resolve DATABASE_URL from the identical Secret Manager secret name DEPLOYMENT_DATABASE_URL_DIRECT in the identical project, i.e. the identical live database. Verified via JSON secretKeyRef inspection, not assumed."
+  },
+  "boundaryHit": "The code that decides WHICH user id gets passed to WorkOS as the external_id/subject at the moment the Claude connector authorizes lives outside this repo (grep for 'workos'/'WorkOS' across api-server and smartsite-mcp finds WorkOS referenced only as a hosted issuer/JWKS verifier -- no authorize-initiation code in this repo). That binding-time code is most likely in the hauska-map client (property-explorer app, not cloned in this worktree per dispatch scope) or in WorkOS's own hosted dashboard config. Per dispatch instruction, not reaching into a repo not owned from here.",
+  "conclusion": "Architecture question, not a bug in this repo's read or write path. Matches dispatch Scenario A's disposition (stop, do not fake a connected state) via a different, now-evidenced mechanism than the dispatch's guess."
+}
