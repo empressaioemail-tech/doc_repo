@@ -347,6 +347,123 @@ no freelancing needed.
 - Studio badge/subline rotation idea: NOT BUILT, correctly left flagged per the
   reviewer's own framing ("flag Nick before building; not a bug fix").
 
+**Batch 7 — live operator QA pass, 2026-09-08.** Sourced from a real-time QA
+thread (screenshots against smartsite.cloud, not the source PDF this doc was
+built from). Cross-checked against Batches 1-6 and against doc-repo-79 (P-124)
+and doc-repo-31 (P-120 R-04..R-08) before dispatch: no file overlap with R-06's
+pending hauska-map retirement handback (dossier-export.ts, CompareTool.tsx
+comment only), no active writes from either thread in this repo. Two items
+below (account email, renewal date) are explicitly OUT of this lane's scope,
+same standing rule as every batch — filed as OPS-16 P-125 instead, not built
+here.
+- Claude Sync connector not detected. Claude's own Connectors settings shows
+  Smart Site connected (checkmark, Web/Custom); the map's Claude Sync bubble
+  still shows the 3-step connect flow, and "Already connected? Check again"
+  does not resolve it. Settings > Connections tab shows the same wrong state
+  (Claude row reads "Connect," not connected). Two surfaces, same wrong
+  answer, suggests one shared detection call rather than two independent
+  bugs. Investigate what signal is actually readable client-side before
+  fixing paint: if a third-party app genuinely cannot observe its own
+  connector-install state from inside Claude, this is an architecture
+  question (report it), not a UI bug (route back to integration if so, don't
+  fake a check to make the panel go quiet).
+- Landing / sign-in card copy, full rewrite (supersedes Batch 6's shipped
+  copy, which per this doc's own 2026-09-07 checkpoint is merged but was
+  never deployed):
+  ```
+  SMART SITE
+  Parcel intelligence for Central Texas
+
+  Everything the record says about a property.
+
+  Zoning, setbacks and buildable area
+  Flood, drainage, feasibility and terrain studies
+  Draw, take notes, export, share with one link
+
+  [Sign in with Google]
+  or
+  [you@example.com] [Continue with email]
+  No password, ever. We'll email you a link.
+
+  Or browse the map first, no account needed.
+  ```
+  Ship this version in the same deploy that finally serves Batch 6's
+  work, not as a separate deploy layered on top of still-unserved copy.
+  Verify by reading the served bundle's actual text, not the Vercel
+  deployment list or CLI exit code (per doc-repo-79: neither tells you
+  what commit is live).
+- AI Chat panel can't read what's loaded in the Compare panel (Property A /
+  Property B), so "compare these two" prompts a re-ask instead of acting.
+  Done looks like: when Compare has two properties loaded, AI Chat can
+  answer "compare these two" from that state directly.
+- Expanded tool panels (AI Chat, Compare, etc.) currently cap at the search
+  bar's edge. Reverses that constraint: allow panels to extend past the
+  search bar, up to roughly 2/3 of screen width, tested across multiple
+  screen sizes.
+- Settings modal: remove the "Every value here names where it was read
+  from..." debug footer entirely, all tabs (Account, Plan, Team,
+  Connections). This is Batch 4's HELD item 5 — operator ruled 2026-09-08:
+  remove, not keep. Supersedes the HOLD.
+- Settings > Connections tab: remove "Rows render the shared vendor list the
+  Claude Sync bubble renders. Settings does not declare its own." (under the
+  Claude card) and the same debug footer named above (under "Connect
+  Claude").
+- Settings > Team tab: right-hand column is empty. CORRECTED 2026-09-08 by
+  doc-repo-31 before dispatch, from an earlier draft of this item that
+  wrongly called it a confirmed missing-config case. Team is not excluded
+  by type the way Affiliate is (below), so it does flow through
+  `nextAction(section, ...)` in lib/nextAction.ts, but a second gate
+  (`SETTINGS_RUNNABLE`) can silently drop a proposed action whose id isn't
+  in that set. "The ladder has nothing to propose for Team" and "the ladder
+  proposed something SETTINGS_RUNNABLE is filtering" look identical from a
+  screenshot. Read the ladder in lib/nextAction.ts and SETTINGS_RUNNABLE
+  before touching anything. Operator content direction if a real gap is
+  confirmed: something about sharing properties or upgrading to a team
+  account. If SETTINGS_RUNNABLE is dropping a real proposed action, report
+  that as its own finding rather than patching around it.
+- Settings > Affiliate tab: copy rewrite —
+  ```
+  AFFILIATE
+
+  Smart Site pays a recurring commission to partners who send us paying
+  subscribers. Here is how it works.
+
+  Commission — 20%, recurring
+  Paid on the referred subscription for up to twelve months. About $118
+  per subscriber on the $49 monthly plan.
+
+  Attribution — PromoteKit
+  Tracked against live Stripe subscriptions, not self-reported clicks.
+  Signups count for 60 days after the click.
+
+  Payouts — PayPal
+  Paid monthly once your balance clears $50.
+
+  Applications — Opening soon
+  By application, not automatic. Full terms at signup.
+
+  [Tell me when applications open]
+  We'll email the address on your account. Nothing else.
+  ```
+  Right-hand column: DROPPED from this batch. CORRECTED 2026-09-08 by
+  doc-repo-31, from an earlier draft of this item that wrongly held it open
+  pending a content decision: the blank column is deliberate and
+  type-enforced (SettingsModal.tsx, `section === "affiliate" ? null : ...`),
+  covered by P-98's own acceptance test that the rail goes quiet on an
+  empty context. Not a bug, not open. Wiring content here would widen
+  `NextActionContext` to defeat a control someone put in on purpose. Leave
+  it alone; revisit only if the affiliate program itself becomes joinable,
+  as a product decision, not a QA fix.
+- Property Brief card: the raw bake-provenance line ("source baked-snapshot
+  · report R1 · baked ... · run pe-r1-...") shows on the card face by
+  default. Move it into the "More facts" / Sources detail panel rather than
+  deleting it — confirmed with doc-repo-79 (P-124) that nothing in the bake
+  pipeline reads the live UI, but the run/timestamp is currently the only
+  client-visible way to identify which bake run served a given card, which
+  matters while counties are being baked one at a time. Also: the numbered
+  Sources link ([1] City of Bastrop zoning map) should open in a new tab
+  (`target="_blank" rel="noopener"`), not navigate the current one.
+
 ## Found in the same document, NOT for this lane
 
 **Owned and in progress: `cente-b9` (hauska-map), confirmed 2026-09-07** — the
