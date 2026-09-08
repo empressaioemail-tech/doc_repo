@@ -1,0 +1,30 @@
+{
+  "checkpoint": "CP1",
+  "lane": "ctx-situs",
+  "type": "design/pre-build",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/legacy-design-tools-ctx-situs",
+  "branch": "fix/situs-state-bare-null",
+  "startCommit": "bc7cf890bf85f581177f67c273dce633f6a11394",
+  "mechanismConfirmedAtSource": {
+    "line555": "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts line 555 is exactly `situsState: row?.situs_state ?? null` -- confirmed by grep, not taken from the dispatch's word.",
+    "everyOtherSitusFieldSourcedFromClaim": "Same call: situsAddress from input.situsAddress, situsCity from claim.situsCity, situsZip from claim.situsZip -- only situsState reads `row` (the TxGIO parcel join). Confirmed by reading the surrounding assembleTier1Payload call.",
+    "cadPropertyHasNoSitusStateColumn": "lib/db/src/schema/cadProperty.ts declares situsAddress/situsCity/situsZip text columns; no situsState/situs_state anywhere in that schema file. Confirmed by grep.",
+    "txgioParcelDoesHaveSitusState": "lib/db/src/schema/txgioParcel.ts and 13 other files reference situs_state as a real column on txgio_parcel -- this is the ONLY source line 555 could have read from, and it is unreliable (the join can miss, or the column can be empty/wrong on a hit).",
+    "countyNamePrecedent": "nodeFacetTier1Assemble.ts line 443 (unchanged by this fix): `const countyName = input.countyName ?? COUNTY_NAMES[countyFips] ?? countyFips` -- countyName is already derived from a FIPS-keyed table at the exact same certainty level the dispatch argues for situsState.",
+    "allCountiesAreTexas": "COUNTY_NAMES (nodeFacetTier1Assemble.ts) has 10 entries, every key a \"48\" FIPS prefix -- this program is Texas-only today, matching a pre-existing STATE_BY_FIPS_PREFIX precedent already in the codebase (lib/cad-ingest/src/jurisdictions.ts: 48->TX, 49->UT, 16->ID, unexported).",
+    "decisionDocDoesNotReach": "_decisions/2026-09-05_cad_join_miss_becomes_absent_verified.md read in full: scoped explicitly to hauska-engine's cad_property join for parcel_record identity (a different join, different table, different repo). Its own reversal criteria anticipate exactly this kind of non-applicable population and require a population-scoped guard rather than blanket application -- it does not authorize absent-verified for the TxGIO situsState case. Independently confirmed; doc-repo-79 flagged the same distinction unprompted before I finished reading it."
+  },
+  "routeTaken": "Route 1 (recommended): derive situsState from countyFips.",
+  "why": "Not an inference from missing data -- countyFips prefix 48 is Texas with the same certainty countyName already relies on. Resolves BOTH populations (join-miss and join-hit-but-empty) with one mechanism, and additionally corrects the 6 parcels currently served a wrong non-TX state (TxGIO's own column is sometimes simply wrong, not just sometimes empty), which route 2 (absent-verified/refused) cannot do -- absent-verified would assert a Lockhart parcel has no situs state, which is false, not earned-absence.",
+  "implementationPlan": [
+    "Add situsStateFromCountyFips() and its backing STATE_BY_FIPS_PREFIX table to nodeFacetTier1Assemble.ts, next to COUNTY_NAMES (same pattern, kept local rather than importing lib/cad-ingest's unexported equivalent -- three literals, not worth widening that package's export surface).",
+    "Add an OPTIONAL provenance.situsStateSource field to the shared Tier1AssemblyInput/Tier1FacetPayload types, present ONLY when the caller supplies it -- so the legacy (non-conformant) bake's call site and its output shape are completely unchanged.",
+    "Update nodeFacetBakeTier1Conformant.ts line 555 to call situsStateFromCountyFips(countyFips) and pass situsStateSource: \"derived-county-fips\".",
+    "Add \"provenance.situsStateSource\" to DIVERGENCE_ALLOWLIST_NEW_SHAPE_PREFIXES (new-shape-only additive key, same treatment as the existing landUseOrigin/landUseAbsence precedent) -- explicitly NOT added to REQUIRED_TIER1_FACET_PATHS, which is hand-mirrored into hauska-factory's verify-walk.mjs and out of this dispatch's scope to touch.",
+    "Update the 3 existing unit tests that asserted a bare null for situsState in exactly the scenarios this fix changes (no-txgio-row, gate-blocked, blocked-county-collision) -- each was deliberately checking the OLD, buggy behavior.",
+    "Add a new describe block covering: the FIPS helper directly, population (a) across 3 counties, population (b) with an empty TxGIO value, the 6-parcel wrong-state defect (ST/TE/TN/ZZ all corrected to TX), the provenance marker, and a faithful reproduction of hauska-factory's real BP-CONTENT-01 classifyRequiredLeaf predicate (read from P:/tmp/ctx-w2-gate/src/jobs/verify-walk.mjs lines 252-258 on 2026-09-08, not reimplemented from memory) proving null fails and the derived value passes."
+  ],
+  "scopeBasis": "Strictly the conformant bake's situsState leaf, per the dispatch. Does not touch the legacy (non-conformant) bake's own line 504 situsState read (same underlying defect, but that writer is retired -- OLD-SHAPE WRITES ENDED permanently per CANON-PREAMBLE -- and the dispatch's own scope names only the conformant file)."
+}
