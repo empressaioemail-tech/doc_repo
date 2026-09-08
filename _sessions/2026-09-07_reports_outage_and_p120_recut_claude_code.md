@@ -163,15 +163,50 @@ do it now" to a lane, then corrected its own wording unprompted and adopted the
 distinction as standing form. Two lanes correctly refused relayed
 authorizations tonight.
 
+## After this summary was first written
+
+**The population count ran** (R-02, operator-authorized, read-only). It did
+not produce the number expected. Raw: 40 jobs, 18 terminal `complete`, 13 with
+zero hits and no `portalDeclaredResultCount`. But no row in the table ran under
+the current guarded recipe at all. Nine are Aumentum, whose recipe never calls
+`finalizeIndexSearchWithAcquisition` (verified independently: the only callers
+are `countyGovernmentRecordsSearch.ts:234`, `publicsearchSearch.ts:223`,
+`tylerSelfServiceSearch.ts:329`). Four are McLennan under a retired pre-P-113
+scaffold.
+
+So the guard has produced this outcome zero times because it has had zero
+opportunities. Four days shipped, no real traffic. Zero-defects-found and
+zero-opportunities-recorded are different states and only the second is true.
+A flat 13 would have entered the record as a measured exposure. R-02 caught
+that in their own result by checking `recipeVersion` before reporting, which
+is the whole reason it did not.
+
+This relocates the finding rather than weakening it: the three fail-open paths
+are still real and unfixed, the test still pins the unsafe branch and names
+Hays, and there is now no production evidence in either direction, so the
+absence of bad rows must not be read as the guard working.
+
+**R-01 and R-03 landed and were accepted.** R-01's manifest control verified
+at the type level: `ReportManifest` is a closed union with no index signature,
+and the compile-check proving it lives in `src/` proper rather than
+`__tests__/`, deliberately, because that directory is excluded from tsconfig
+and vitest strips types without checking them. A lane that saw the
+dormant-mechanism trap and stepped around it.
+
+**Deploy recommendation changed to HOLD.** Production is working; the outage is
+fixed and serving. The "small window" framing is dead: main is five commits
+across two programs, including a composition root that changes how every
+Feasibility report composes, merged to serving-candidate in under an hour on
+one lane's own verification. There is no fire, so it should be deployed
+deliberately rather than because a window is closing. A copy-paste deploy
+handoff was written for the incoming planner covering build-by-commit,
+canary-first, the six required gate-front headers, the real smoke parcels, and
+the three gcloud output traps that have each produced a wrong conclusion here.
+
 ## Open
 
-- **engine-api deploy.** Main is five commits ahead of production across two
-  programs, including R-01's composition root. The "small window" framing no
-  longer applies; see the operator note below.
-- **Population count** for the fail-open finding: stored jobs terminal
-  `complete`, zero hits, no `portalDeclaredResultCount`. Needs DB access this
-  seat does not have. Cheapest possible next step and it converts a code
-  reading into a number.
+- **engine-api deploy.** Five commits ahead across two programs. Held on
+  purpose, not blocked. Handoff block written for the incoming planner.
 - **LDT narrative-section deploy** plus `BROKERAGE_API_BASE_URL` and
   `SERVICE_API_KEY`, which belong in the workflow rather than a console because
   workflow deploys revert manually-set env vars.
