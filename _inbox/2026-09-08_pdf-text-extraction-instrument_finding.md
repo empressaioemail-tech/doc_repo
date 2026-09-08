@@ -37,6 +37,39 @@ suspect is the three-letter ligature, not the font embed as a whole. That is a
 much smaller fix than "the font is broken" and it should be confirmed before
 anything is changed.
 
+## CORRECTION 2026-09-08: the narrowing above over-claims
+
+Raised by doc-repo-79 on review, and it is right.
+
+The four green assertions prove the ToUnicode map round-trips `fi` and `fl`
+**for the helper**. They do not prove the glyph drawn on the page is correct,
+because display and extraction are different paths: the visual glyph comes from
+the content stream plus the font cmap, while extraction comes from the ToUnicode
+map. A map that is wrong can leave display fine, and a font encoding that is
+wrong can leave extraction fine.
+
+Worse for the method: because the helper inverts the document's OWN
+`beginbfchar` blocks, a document whose map is wrong in the same direction the
+helper reads would decode "correctly" through it and still render wrong. The
+green assertions are consistent with BOTH a narrow ffi bug AND a helper that
+cannot see this class of defect at all.
+
+So "the defect is narrow to ffi" is not established. What is established is
+that the ToUnicode path round-trips fi/fl. The operator's `oŬce` observation
+came from a viewer, which is the display path. Those have not been connected.
+
+**The fix follows from that.** Do not tighten this instrument. Build an
+independent extraction path as a second derivation: a different PDF library, or
+the renderer's own glyph source, so the check does not read back through the
+artifact it is checking. One party cannot then satisfy both sides. Tightening
+`decode-pdf-text.ts` would produce a more confident instrument measuring the
+same thing.
+
+doc-repo-79 also names the stale font comment as the more worrying half rather
+than a footnote, and that is the better read: a documented assumption that is
+wrong is exactly how a helper keeps passing while measuring something nobody
+intended, and ten test files rest on it.
+
 ## The instrument problem, which is the larger half
 
 The repo verifies PDF CONTENT by extracting text, and it does so through the
