@@ -1,0 +1,29 @@
+{
+  "checkpoint": "CP1",
+  "lane": "P-125",
+  "type": "design/pre-build",
+  "planRow": "P-125",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/tmp/legacy-design-tools-p125-entitlement-wire",
+  "branch": "feat/p125-account-entitlement-email",
+  "startCommit": "03b4486a",
+  "missionPremise": "hauska-map PR #372 (merged to hauska-map main) already reads account.email off the account-only /entitlement response body and falls back to \"Not read\" until the server sends it (verified live: apps/property-explorer/src/lib/accountEntitlementClient.ts line 173 declares email: string | null; line 282 does parseEmail(pick(\"email\"))). Server side sends nothing today. The wire contract is a top-level email field, string or null, on the account-only entitlement body only -- not the base body, not the with-parcel body.",
+  "verifiedBeforeBuild": {
+    "getPeUserEmail": "artifacts/api-server/src/lib/peIdentity.ts line 224: export async function getPeUserEmail(userId: string): Promise<string | null> -- matches the dispatch's expected shape exactly, no deviation found. Existing call sites: propertyExplorer.ts lines 1496 and 1773 (Stripe checkout email), both call it the same way (await getPeUserEmail(userId)).",
+    "hasBillingAccountPattern": "peEntitlement.ts: field declared in PeEntitlementSnapshot (~line 85, doc comment above explains ANONYMOUS=false as a positive determination), set in resolvePeEntitlement's anonymous early-return (false) and authenticated branch (derived from the row), and added ONLY to peEntitlementAccountBody's return type + object, never to peEntitlementBaseBody. email will mirror this exactly.",
+    "testFile": "peEntitlement.responseBody.unit.test.ts already has an A-062 hasBillingAccount block (both-ways travel, anonymous case, key-order assertion) to mirror for email.",
+    "outOfScope": "renewal date (needs live Stripe current_period_end design, deliberately avoided per comment above peBillingIntervalForPriceId in pePaywallStripe.ts) and peEntitlementBaseBody / with-parcel body / anonymous-per-property path are confirmed untouched by this plan."
+  },
+  "plan": [
+    "1. Add email: string | null to PeEntitlementSnapshot type, positioned right after hasBillingAccount, doc comment citing the client contract and mirroring hasBillingAccount's anonymous reasoning.",
+    "2. Import getPeUserEmail into peEntitlement.ts from ./peIdentity (already imports getPeAccessTier, getPeEntitlementRow from there).",
+    "3. resolvePeEntitlement anonymous early return: email: null. Authenticated branch: email: await getPeUserEmail(userId).",
+    "4. peEntitlementAccountBody: add email to return type annotation and returned object, positioned after hasBillingAccount, ADDED ONLY TO THE ACCOUNT BODY -- peEntitlementBaseBody untouched.",
+    "5. Update peEntitlement.responseBody.unit.test.ts: add email to both fixture snapshots (paidTeamSnapshot, anonymousSnapshot), extend the account-body Object.keys assertion, extend the base-body-does-not-gain-account-fields VIOLATION test, add a P-125 email block mirroring the A-062 hasBillingAccount block (both-ways travel + anonymous-returns-determined-null).",
+    "6. Run the touched test file and the repo typecheck script, paste real output.",
+    "7. Commit (one focused commit), push, gh pr create against main, do not merge, do not deploy."
+  ],
+  "completionPredicate": "email field is on PeEntitlementSnapshot, resolved from a real getPeUserEmail lookup for authenticated callers and null for anonymous, appears ONLY on peEntitlementAccountBody's output (peEntitlementBaseBody untouched, with-parcel body untouched), the touched unit test file passes, typecheck exits 0, and a PR is open against main citing the client contract and the two out-of-scope items.",
+  "scopeBasis": "Dispatch explicitly scopes to the stored-field wire-up (email) and explicitly excludes renewal date and any change to peEntitlementBaseBody / with-parcel / anonymous-per-property path; this plan follows that boundary exactly, no expansion.",
+  "leaveBehindAtThisCheckpoint": "none -- pre-build plan, no code written yet at time this checkpoint was formed"
+}
