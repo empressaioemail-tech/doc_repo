@@ -1,0 +1,45 @@
+{
+  "lane": "CTX-ACREAGE",
+  "checkpoint": "CP1 (design/pre-build)",
+  "at": "2026-09-09T23:10:00Z",
+  "planRows": ["P-124"],
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-acreage",
+  "branch": "fix/ctx-acreage-four-state-leaves",
+  "snapshot": {
+    "createdFrom": "origin/main f8293d53a6dad51338a883eaaa50ad7b4bcf7d9a",
+    "confirmedCleanWorktree": true
+  },
+  "falsifierRun": {
+    "what": "Fetched the live served body for Williamson gold 48491:76149 over HTTP (GET https://smart-site-factory.vercel.app/site/api/spine/cortex/api/brokerage/v1/place/node/48491:76149/facets) and ran the repo's OWN gradeTier1Content/classifyRequiredLeaf (src/jobs/verify-walk.mjs) against it directly, rather than trusting the dispatch's excerpted failure text.",
+    "why": "Per feedback-run-the-falsifier-before-choosing-scope: the dispatch's quoted failure message said '3 required leaf(s) fail' but only pasted 2 reasons (acreage null; zoning unmeasured). Running the real classifier was the only way to find the third before assuming it was a duplicate or a paste artifact.",
+    "result": {
+      "invalid": [
+        { "path": "baseFacts.acreage", "state": "null" },
+        { "path": "zoning", "state": "unrecognised-declared-state", "verdict": "unmeasured" },
+        { "path": "provenance.zoningSource", "state": "unrecognised-declared-state", "verdict": "unmeasured" }
+      ],
+      "conclusion": "The third leaf is provenance.zoningSource, NOT an independent defect: it carries the identical verdict=\"unmeasured\" token as the zoning leaf (CTX-MIRROR's zoningSourceMirror copies it verbatim, legacy-design-tools PR #646). So the dispatch's 'THREE separate defects' framing is confirmed at the DEFECT-CLASS level (acreage bare-null vs. zoning-vocabulary leak are genuinely independent root causes) but NOT at the leaf-count level: 3 failing leaves map to 2 independent root causes, since zoning and provenance.zoningSource share one root cause by design (a mirror). Both are still counted and reported; neither is collapsed silently."
+    }
+  },
+  "initialArchitectureFindings": {
+    "acreage": "src/jobs/verify-walk.mjs:157 lists baseFacts.acreage in REQUIRED_TIER1_FACET_PATHS. legacy-design-tools' bake (nodeFacetTier1Assemble.ts:328-330) writes `const acreage = ring ? parcelAcreage(ring) : (input.acreageWithoutRing ?? null)` -- a bare null, no absence object, whenever there is no parcel ring AND the CAD claim's land_acres is unusable. This is the SAME defect class CTX-LEAVES (2026-09-08) already fixed for 4 sibling leaves (baseFacts.situsCity, baseFacts.situsZip, baseFacts.landUse, provenance.landUseSource -- BAKE_OWNED_REQUIRED_LEAF_PATHS in nodeFacetBakeTier1Conformant.ts:470-475), via an earned Tier1LeafAbsence. baseFacts.acreage was not included in that leaf set and was not otherwise given an earned-absence path.",
+    "zoning": "verdictLayerServe.ts's LAYER_ABSENCE_VERDICTS is a deliberate 5-state vocabulary (absent-verified, lookup-failed, not-applicable, stamp-missing, unmeasured; doc 19 Section Layer, CTX card F, 2026-08-28) that is NARROWER in name overlap but WIDER in cardinality than the walk's four-state contract (value|absent-verified|not-applicable|refused). zoningVerdictFromCityLimits() emits verdict:\"unmeasured\" whenever the parcel lacks a zoning stamp and city-limits containment could not be determined. _decisions/2026-09-01_serve_path_never_emits_pipeline_state.md already rules that no served field may carry a pipeline-internal token and that the serve boundary must convert to absent-verified or refuse -- but that decision was never implemented against verdictLayerServe.ts's zoning path; the 5-state enum stands unmodified on origin/main today, tests included. This morning's classifier fix (P-124 CTX-LEAVES, verify-walk.mjs:254-284) is what now catches it -- previously any object fell through to an unconditional value/populated grade.",
+    "privateRoad": "Live GET on .../place/node/48491:PRIVATE ROAD/facets returns HTTP 400 validation_error ('parcelNodeId must be {fips}:{propId}'), confirming the walk is passing a non-numeric literal straight through as a cohort member, not mis-encoding a real id."
+  },
+  "planForCP2": [
+    "Count the null-acreage population across all six counties directly against place_layer_snapshots with a stated counting rule and a predicate control (not derived from the Williamson 8).",
+    "Establish the concrete origin of zoning verdict=unmeasured (which upstream read produces the unresolved city-limits determination) and whether the same mechanism is structurally reachable in the other 5 counties, not just empirically observed in one 8-day-old sweep.",
+    "Confirm PRIVATE ROAD's lineage at source (cad_property / landing_cad_property) rather than assuming the CTX-RETIRE/CTX-HAYS-SPLIT precedent applies without checking, and name the rejected alternative mechanism.",
+    "Determine, for each of the three defects, whether the correct fix lands in hauska-factory or elsewhere -- per the dispatch, do not implement a walk-side workaround (no widening BP-CONTENT-01, no permitting unmeasured, no cohort filtering) before that determination is made."
+  ],
+  "constraintsHonored": [
+    "no widening of BP-CONTENT-01",
+    "no addition of unmeasured to the permitted state set",
+    "no cohort filtering",
+    "no deploy, Cloud Build, bake, publish, walk, or job run executed",
+    "HTTP GET against the served staging surface only (read, not an execution)",
+    "DB access read-only (SET default_transaction_read_only = on as first statement each session)"
+  ]
+}
