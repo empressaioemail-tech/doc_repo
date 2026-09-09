@@ -167,3 +167,129 @@ Findings: envelope correction, situsState, staging-loop correction, narrative
 declared-but-uncounted, six fact families, clean-auto-merge, smartsite-mcp leave-behind.
 Dispatches: CTX-SITUS, CTX-ELGIN, CTX-LEAVES, CTX-INSPECTCARD, CTX-MIRROR, CTX-STAMP.
 hauska-factory PRs #106 and #109-#116.
+
+---
+
+# ADDENDUM, same session, written after the capture above
+
+Everything below happened after the capture was committed. Three items correct the capture
+itself, which is the part worth reading first.
+
+## CORRECTIONS TO THE CAPTURE ABOVE
+
+**Bastrop's 16,104 is NOT an independent blocker, and the cause attributed to it was wrong.**
+The capture repeated CTX-LEAVES's line that these are "parcels present at the declared vintage
+for which the Factory has produced no conformant atom." Measured directly:
+
+    Bastrop cad-parcel-roll atoms   conformant-v1   77,799 parcels
+    Bastrop cad_property            77,799 distinct parcels
+    Bastrop tier1 rows              77,799 -- ALL stale, all 2026-09-01
+
+**Full conformant coverage. There is no missing-atom population in Bastrop.** The 16,104 are
+rows where `baseFacts.situsZip` is ABSENT AS A KEY -- an old-shape artifact of the 09-01 bake.
+Bastrop has never been re-baked because the gate has blocked it the whole time, so ALL 77,799
+rows are old-shape; the 16,104 are just the subset where the old shape omitted a key rather than
+nulling it. **A re-bake fixes them and nothing else is needed.** Bastrop's only real blocker is
+the zoningDistrict gate.
+
+I carried that claim into the capture from a lane's close without verifying it. Same class as the
+CTX-STAMP error below: trusting a characterisation instead of measuring it.
+
+**Bastrop also has no vintage-disappearance population at all** -- its cad_property holds only
+tax_year 2025. The Caldwell 63 problem is specific to Caldwell having two rolls.
+
+**My CTX-STAMP dispatch named the wrong repo.** It pointed at `stampCountyZoning()` in
+legacy-design-tools as the writer for `tx_zoning_district_staging`. That function writes
+`txgio_parcel` -- different database, different registry, no path to the staging table. That table
+is written ONLY by hauska-engine (`scripts/stage-tx-zoning-district.mjs`, migration 0074, the
+drain scripts) from ITS OWN registry at `packages/engine-core/src/zoning-staging/`. I took the
+pointer from a code comment inside hauska-factory instead of reading what writes the table.
+
+The CTX-STAMP lane read the function, grepped the repo, checked the connection, and STOPPED
+rather than ship a no-op diff against txgio_parcel. That was right, and its CP1 saved a day.
+Re-dispatched as CTX-STAGE2, hauska-engine-scoped. **That lane is RUNNING as of this addendum.**
+
+## THE CALDWELL 63 -- DIAGNOSED AND RULED
+
+Not a staleness problem. A parcel-identity one:
+
+    Caldwell cad_property   tax_year 2025 = 24,989   tax_year 2026 = 48,382
+    the 63 stale parcels    tax_year 2025 = 63, ZERO 2026 rows
+                            62 of 63 still in landing_parcel_jurisdiction
+
+These 63 accounts were on the 2025 roll and are **not on the 2026 roll**. The bake reads the
+current vintage so it never touches them, and their 09-01 snapshot keeps being served. In Texas
+CAD terms that means split, merged, re-numbered or removed -- the identity churn A-114 measured.
+
+**OPERATOR RULING: retire them.** Serve a decline that NAMES WHY ("not on the 2026 roll") rather
+than a bare 404, and rather than continuing to serve last year's values as current. Operator
+confirmed the split/join explanation is expected for this population.
+
+Rejected alternatives, recorded because the reasoning is the reusable part:
+
+  - **keep serving the 2025 snapshot** -- a customer sees last year's valuation and ownership
+    presented as current with nothing saying so, and the walk fails forever, which teaches people
+    to route around the gate
+  - **re-bake from the 2025 roll with a vintage marker** -- most honest for someone following an
+    old link, but the bake must accept a non-current vintage deliberately and the walk needs a new
+    earned state; more machinery than 63 parcels justify
+
+The recommendation carried one condition and it is still open: establish whether these are
+deletions or splits before finalising. If a meaningful share have successor accounts, a bare
+retirement is user-hostile and the marker approach earns its cost.
+
+## THE SAMPLER BIAS, recorded rather than fixed
+
+The jurisdiction cohort selects `prop_id` ascending within each bucket, chosen so two walks are
+comparable. Low prop_ids in a CAD roll skew old, so the deterministic sample lands
+disproportionately on exactly the parcels most likely to be stale -- which is how 48055:1 kept
+surfacing. **Not changed.** Adjusting the sampler to avoid a failure it correctly found is
+sampling around the problem, which is the thing this session has objected to throughout. The bias
+is real and worth knowing; the failure it surfaced was also real.
+
+## IMPERVIOUS COVER -- RULED, IMPLEMENTED, MERGED, FLAGGED
+
+Of Austin's five watershed classes only WATER SUPPLY SUBURBAN resolves (30%, cited). Operator
+ruled the other four split by WHY they are unresolved:
+
+    URBAN, WATER SUPPLY RURAL  -> not-applicable   the ordinance says this rail does not govern
+                                                   these parcels (Urban defers to base zoning;
+                                                   WSR is a density control, not a percentage)
+    SUBURBAN, BSZ              -> refused          a real limit exists, the source cannot say
+                                                   which (45/50 city-vs-ETJ; 15/20/25 in the BSZ)
+
+Default is the WEAKER state: `terminalState` is per-class data and absent means refused. An
+undeclared class, a nonsense value, and an unrecognised WATERSHED_DEVELOPMENT_TYPE all refuse, so
+a new Austin classification cannot land in the generous branch by accident. FLAGGED FOR REVISIT
+per the operator -- the flag is in the code and pinned by a test, not only in conversation.
+
+## OTHER STATE CHANGES SINCE THE CAPTURE
+
+**cortex-api staging tag.** Production shifted to the mirror but the `staging` tag still pointed
+at the pre-mirror revision, so the staging walk kept reading stale code. Could not simply repoint
+it -- the production revision reads the production DB, which is the staging defect fixed earlier
+the same day. Deployed `00756-gim`: same image, DATABASE_URL rebound to
+`STAGING_DEPLOYMENT_DATABASE_URL`, 39 secrets preserved.
+
+**Caldwell went 16 walk failures to 3 to effectively 1.** 48055:10001 and 48055:10002 now grade
+clean. The survivor is 48055:1, one of the 63.
+
+**Hays staging is RUNNING.** McLennan and Williamson queued behind it, then production for all
+three. Those three depend on neither the Elgin lane nor the 63.
+
+## WHERE THE SIX STAND, AS OF THIS ADDENDUM
+
+    Caldwell    staging walk at 1 failure (48055:1, one of the 63). Production pending.
+    Hays        staging RUNNING
+    McLennan    gate-ready, queued
+    Williamson  gate-ready, queued
+    Bastrop     blocked ONLY on the zoningDistrict gate -> CTX-STAGE2. Its 16,104 needs nothing
+                but a re-bake.
+    Travis      blocked on the same Elgin lane, plus an impervious re-run that is now unblocked
+
+## LANES IN FLIGHT
+
+    CTX-STAGE2  hauska-engine, RUNNING. Stage Elgin's Travis-side polygons into
+                tx_zoning_district_staging, re-measure the residue per county, report the true
+                ceiling. Unblocks Bastrop AND Travis. Authorized for live Elgin GIS traffic and a
+                live CORTEX_DATABASE_URL write.
