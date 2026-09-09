@@ -1,0 +1,33 @@
+{
+  "lane": "CTX-ORPHANS",
+  "checkpoint": "CP1 (design / pre-build)",
+  "planRow": ["P-124"],
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-orphans",
+  "branch": "fix/ctx-orphans-rebuild-configs",
+  "confirmedBefore_any_edit": {
+    "seat": "property",
+    "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-orphans (created fresh via git worktree add -b fix/ctx-orphans-rebuild-configs origin/main; did not exist before this lane)",
+    "branch": "fix/ctx-orphans-rebuild-configs (did not exist locally or remotely before this lane; git ls-remote --heads returned nothing)",
+    "commit": "0c4c1ea6359bfe2a57fc06e1e483e28dced86cc2, verified equal to origin/main HEAD after a fresh git fetch, and equal to the CTX-BUILD merge commit named in the dispatch (PR #118)"
+  },
+  "missionPremise": "hauska-factory's CTX-BUILD lane (PR #118, merged 0c4c1ea6) added an instrument asserting every allowlisted, CLI-dispatchable writer has a deployable Cloud Run target, and in doing so found two populations neither hypothetical: three live Cloud Run jobs (factory-bake-migrate, factory-console-audit, factory-landing-import) with no build config anywhere, and six allowlisted writers with no deployable target. Source: _dispatches/2026-09-09_ctx-orphans_dispatch.md, plus the full CTX-BUILD close read in full first (_inbox/2026-09-09_ctx-build_close.json), whose own leave_behind names the three orphan jobs and the six quarantined writers by id, with its own basis for each.",
+  "planBeforeBuild": {
+    "item1_3_orphanConfigs": "For each of the three orphan jobs, read gcloud run jobs describe --format=json field by field (never positional --format=value(a,b,c)), reconstruct one cloudbuild.<job>.yaml per job matching this repo's established header/build/deploy convention (read cloudbuild.parcel-r5-zoning.yaml and cloudbuild.f10-cad-loop.yaml as the pattern), and state explicitly in each header what could not be recovered and whether identity with the live job is established. Do not deploy; committing is the deliverable.",
+    "item4_sixWriters": "Do not accept CTX-BUILD's six-way disposition at face value -- read each writer's own src/jobs/*.mjs source (not just the test file's summary comments) before assigning a disposition, since the test file's own comments already showed a stale/mismatched plan-row tag (F-01) on five of the six that does not resolve to any real OPS-19 F-01 row (F-01 is 'Factory Neon project; schema...', unrelated). Check whether each writer's --apply path can structurally ever succeed, whether its own docstring names a specific trigger job, and whether that job's already-bound secrets satisfy the writer's own env needs -- gcloud run jobs execute supports overriding --args (and --update-env-vars, not secrets) at execute time per its own --help text, which is a real mechanism this repo's writers already use (cloudbuild.parcel-record-fill.yaml deploys with a fixed default --args and every writer sharing its image/secrets is executable by overriding --args, not by a new deploy).",
+    "item5_instrumentCoverage": "Read test/writer-deployable-target.test.mjs in full before concluding anything. Its own bypass note (2) already states the reverse direction (live job, no config) 'needs gcloud and does not belong in an offline unit test' -- so the predicate is very likely: no, nothing catches this today, and CTX-BUILD's own leave_behind confirms the three orphans were found by a one-off manual reconciliation, not a repeatable check. Plan: build scripts/check-live-job-has-config.mjs as a standalone, on-demand script (not npm test -- .github/workflows/ci.yml carries no gcloud credentials, confirmed by reading the workflow file, so a CI-wired version would be a permanently-red gate per DEV_PROCESS 2.0), verified failing then passing against real live state the same way CTX-BUILD verified its own instrument (set aside one committed cloudbuild file, run, restore, run, sha256 verify the restore).",
+    "explicitRiskNamed": "Reconstruction risk (dispatch's own words): a config that drops one flag looks correct and deploys a subtly different job. Mitigation before writing any file: read every field of the live spec, not a similar job's config; for build-time provenance (ENGINE_SHA/LDT_SHA), check whether these are recoverable at all given they are Dockerfile ARG->ENV values invisible to `gcloud run jobs describe` -- plan to try `docker buildx imagetools inspect <image> --format '{{json .Image.Config}}'` (read-only, no pull of layers) before assuming they are unrecoverable and guessing."
+  },
+  "openQuestionsGoingIntoBuild": [
+    "Do the three orphan jobs share one image (checked live spec .image fields before committing to a plan) -- if so, one image-inspect call recovers build-arg provenance for all three, if not, three separate inspects are needed.",
+    "Does gcloud run jobs execute --args really override the deploy-time default to a DIFFERENT subcommand, or only append -- must check --help text before asserting either way in a writer's disposition.",
+    "For each of the six writers, does its own already-live 'trigger job' (named in its own docstring) actually exist, and does that job's already-bound secrets cover what the writer's own imports need -- must check both per writer, not assume the pattern holds for all six uniformly."
+  ],
+  "FLEET_MEMORY_SCRATCH": {
+    "OPEN": [
+      "OPEN going into build: whether p3-absence's --apply path can ever succeed regardless of deployment (its own docstring says 'Build, do not run' -- needs the actual refuse-condition line read before asserting this changes its disposition class from the other five)."
+    ]
+  }
+}

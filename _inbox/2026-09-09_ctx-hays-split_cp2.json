@@ -1,0 +1,46 @@
+{
+  "lane": "ctx-hays-split",
+  "planRow": "P-124",
+  "checkpoint": "CP2 (pilot/mid-work)",
+
+  "item1_absentPopulationSplitBySourceFile": {
+    "countingRule": "prop_id present in cad_property at (county_fips='48209', tax_year=2025) with NO row at (county_fips='48209', tax_year=2026, same prop_id) -- a NOT EXISTS anti-join on the table's own primary key (county_fips, prop_id, tax_year), grouped by the 2025 row's CURRENT source_file. Live query, f06-staging-neondb (database neondb), run 2026-09-09.",
+    "totalAbsent": 38444,
+    "bySourceFileAsRecordedToday": {
+      "stratmap25-landparcels_48209_lp.zip": 38304,
+      "hays-export2.zip": 140
+    },
+    "crossCheck": "38444 (absent) minus 934 (reverse anti-join: present@2026, absent@2025, i.e. new-in-2026 accounts) = 37510, which exactly matches the raw row-count delta 172116-134606 from the prior lane's own groundTruth. Two independently computed numbers agree exactly -- no free finding to reconcile here."
+  },
+
+  "item2_overlapAndOverwriteInPlace": {
+    "wasSourceFileOverwrittenInPlace": "YES, established two independent ways: (1) CODE -- lib/cad-ingest/src/p78Merge.ts:196-197, applyPathAMerge sets out.sourceFile = inc.sourceFile and out.sourceVintage = inc.sourceVintage UNCONDITIONALLY on every merge (never coalesced against the existing row), and this runs on the ON CONFLICT DO UPDATE path per lib/cad-ingest/src/ingest.ts. (2) ARITHMETIC -- the P-78 announce doc (_inbox/2026-08-25_p78_announce_hays_48209.md) states the pre-apply 2025 CAD-only population was 131246 and the apply touched 116421 rows of which 40870 were net-new inserts (i.e. 75551 were updates to pre-existing rows). 131246-75551(inferred updates)=55695, which is EXACTLY the live count of rows still tagged hays-export2.zip today. The two numbers, from a historical apply-log and a live query taken five months apart, agree exactly.",
+    "consequenceForSourceFileAlone": "Confirmed per the dispatch's own warning: source_file alone CANNOT distinguish the two populations, because every P-78-touched row (whether it was a genuine pre-existing CAD account or a brand-new geometry insert) now reads the identical source_file value. A naive GROUP BY source_file on the absent population (item 1 above) therefore reports 38304 rows as one undifferentiated 'stratmap' bucket that actually contains BOTH kinds.",
+    "recoveryFieldEstablished": "assessed_value. Mechanism: lib/cad-ingest/src/txgio/landuse.ts:146 hardcodes assessedValue: null on every StratMap-sourced row (StratMap/TxGIO carries land/improvement/market value fields but never an assessed value); assessedValue is in p78Merge.ts's COALESCE_FIELDS list, so on an UPDATE (pre-existing prop_id) coalesce(incoming=null, existing) preserves the ORIGINAL CAD assessed_value untouched, while on an INSERT (no prior row) assessed_value is written directly from the incoming (null) row. Calibrated against the known-pure hays-export2.zip lineage before use: that lineage is 100% assessed_value-populated (55695/55695) both in the full 2025 population and within its own 140-row absent subset -- zero false negatives in the reference population, so a NULL cleanly means 'no prior CAD row existed to coalesce against.'",
+    "recoverySplitOfTheAbsentStratmapTaggedSubset": {
+      "n": 38304,
+      "assessed_value_not_null_recoveredGenuineCad": 244,
+      "assessed_value_null_geometryOnlyNeverConfirmedCad": 38060,
+      "unionCheck": "count(assessed_value IS NOT NULL OR exemption_codes populated OR living_area_sqft IS NOT NULL) = 244, identical to assessed_value alone -- no additional rows carry a partial CAD-native signal that assessed_value misses; it is not just the best field, it is a complete one for this subset.",
+      "sanityCheck": "the 244 recovered rows carry real, varied dollar amounts (min $18, max $4,232,475, mean ~$253,144) -- not a degenerate placeholder/zero artifact."
+    },
+    "trueOverlapInTheAbsentPopulation": "384 total genuine-CAD-lineage absent accounts (140 still legibly tagged hays-export2.zip + 244 recovered from under the stratmap tag via assessed_value). 38060 absent rows carry NO CAD-native signal on any field this lane checked. 140+244+38060=38444, reconciles exactly to item 1's total."
+  },
+
+  "preRegisteredFalsifierOutcome": {
+    "recap": "Stated at CP1 before running item 1: assessed_value IS NOT NULL recovers genuine-CAD-lineage rows if (a) the stratmap-tagged not-null count lands near 75551 in the FULL 2025 population (already true pre-CP1) and near a proportionate figure in the ABSENT subset, and (b) the known-pure hays-export2.zip lineage itself stays near 0% null. It would NOT fire only if either condition failed.",
+    "firedInTheAbsentSubset": "NO. hays-export2.zip's absent subset (140 rows) is 100% assessed_value-populated, matching its full-population baseline exactly. The stratmap-tagged absent subset splits cleanly into 244 (recovered) / 38060 (no signal), internally consistent with the full-population 75551/40870 split (244 is a small fraction of 75551 because MOST genuine-CAD rows P-78 touched are still present in the real 2026 roll -- only the accounts that also happen to be genuinely absent from 2026 show up in this cut; that is expected, not a contradiction)."
+  },
+
+  "item4_bastropControlDeviationAndReplacement": {
+    "dispatchPremiseAsStated": "\"Bastrop 48021 holds only tax_year 2025 from one source\"",
+    "verifiedAtSource": "FALSE on the 'one source' half. Live query: cad_property county_fips=48021 tax_year=2025 has TWO source_file values -- stratmap25-landparcels_48021_lp.zip (62257 rows) and DATA-EXPORT-01.14.2026.zip (15542 rows). Bastrop carries the identical StratMap-fallback shape as Hays, just never flagged by the prior lane's sweep because that sweep only counted DISTINCT TAX_YEARS per county, not distinct source_files within a tax_year. This is a planner-brief error per DEV_PROCESS 3.2, reported here rather than silently worked around.",
+    "trueSingleLineageCountyUsedInstead": "48055 Caldwell. Verified live: tax_year=2025 (24989 rows) is 100% stratmap25-landparcels_48055_lp.zip (single source, 0/24989 assessed_value -- itself a StratMap-only vintage, structurally the SAME kind of case as Hays' contested lineage, just never overwritten by a second apply); tax_year=2026 (48382 rows) is 100% 2026-Caldwell-CAD-export_June-5-2026.zip (single source, 48382/48382 assessed_value -- genuinely CAD-native). Each vintage individually carries exactly one source_file: the clean single-lineage-per-vintage case the control needs.",
+    "controlResult": "Ran the identical item-1 query (present@2025/absent@2026 anti-join, grouped by source_file) against Caldwell: 267 total absent rows, ALL 267 under the single source_file stratmap25-landparcels_48055_lp.zip -- no fragmentation, no spurious second group. Applied the same assessed_value recovery check: 0/267 not-null, consistent with Caldwell's 2025 vintage never having a genuine-CAD-then-overwritten row to recover (the whole vintage is StratMap, so there is nothing there for the recovery signal to find, and correctly it finds nothing).",
+    "verdict": "Instrument confirmed sound: on a genuinely single-lineage vintage, both the source_file GROUP BY and the assessed_value recovery check return exactly what a single-lineage county should -- one group, full coverage, no spurious recovered rows."
+  },
+
+  "adjacentFindingNotedNotInvestigated": "Querying source_file across the full 40-county store for this control search surfaced that 48029 Bexar's ENTIRE cad_property footprint (703258 rows, the county the CANON-PREAMBLE names as the Factory's flagship 'roll, complete' county) is 100% stratmap25-landparcels_48029_lp.zip with 0 assessed_value populated anywhere -- same shape as the Hays/Caldwell StratMap-only vintages, at the county the program treats as its most-complete CAD reference. Out of this lane's scope (P-124, 48209 only); not investigated further; flagged for whichever seat owns the Factory writer / Bexar, since it directly bears on P-82-lite/BP-WRITE-01's 'Bexar finishes on the current shape' premise in the CANON-PREAMBLE.",
+
+  "nextStep": "Write the close artifact with the recommended honest absence state per population and the full leave_behind."
+}

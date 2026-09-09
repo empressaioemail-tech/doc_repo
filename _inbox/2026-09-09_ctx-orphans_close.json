@@ -1,0 +1,239 @@
+{
+  "lane": "CTX-ORPHANS",
+  "planRow": ["P-124"],
+  "closeType": "lane close",
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-orphans",
+  "branch": "fix/ctx-orphans-rebuild-configs",
+  "baseCommit": "0c4c1ea6359bfe2a57fc06e1e483e28dced86cc2",
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-orphans_cp1.json",
+    "_inbox/2026-09-09_ctx-orphans_cp2.json"
+  ],
+
+  "missionPremise": "CTX-BUILD (PR #118, merged 0c4c1ea6) added an instrument asserting every allowlisted, CLI-dispatchable writer has a deployable Cloud Run target, and while doing that found two populations neither hypothetical: three live Cloud Run jobs with no build config anywhere (factory-bake-migrate, factory-console-audit, factory-landing-import), and six allowlisted writers with no deployable target. Source: _dispatches/2026-09-09_ctx-orphans_dispatch.md, plus _inbox/2026-09-09_ctx-build_close.json read in full before any work, per that dispatch's own instruction.",
+  "completionPredicate": "One reconstructed cloudbuild config per orphan job, committed, each stating explicitly what could not be recovered and whether identity is established; the six writers each carrying a disposition, owner and plan row; a plain answer on whether anything catches the deployed-job-with-no-config inverse (and if not, a working instrument that does, verified failing then passing on real state); nothing deployed, executed, built or submitted.",
+  "completionPredicateMet": true,
+  "scopeBasis": "Exactly the dispatch's five numbered items, all in hauska-factory. Deliberately excluded: any gcloud run jobs execute / gcloud builds submit / gcloud run jobs deploy against the reconstructed configs -- the integration seat decides whether and when to prove them by running (dispatch item 3, explicit). Deliberately excluded: retiring or deleting any of the six writers, even the three found already complete below -- DEV_PROCESS 5.4 makes retirement an operator ruling, proposed here, not executed. hauska-engine was read only (its own cloudbuild.atoms-writer.yaml, to build the new instrument's negative-control scan, and its commits API, to verify a recovered SHA); legacy-design-tools was read only (commits API, to verify the other recovered SHA); hauska-map was not touched.",
+
+  "pullRequests": [
+    {
+      "number": 119,
+      "url": "https://github.com/empressaioemail-tech/hauska-factory/pull/119",
+      "title": "fix(P-124/CTX-ORPHANS): reconstruct 3 orphaned job configs, add deployed-job-with-no-config instrument",
+      "branchCommits": ["ff17538 fix(P-124/CTX-ORPHANS): reconstruct 3 orphaned Cloud Run job configs, add the deployed-job-with-no-config instrument"],
+      "ciConclusionStrings": [
+        {"name": "gate8", "status": "completed", "conclusion": "success"},
+        {"name": "test", "status": "completed", "conclusion": "success"},
+        {"name": "test", "status": "completed", "conclusion": "success"},
+        {"name": "gate8", "status": "completed", "conclusion": "success"}
+      ],
+      "ciNote": "four check-runs, two names each (push event and pull_request event), read from the check-runs API as the literal conclusion string 'success' via `gh api repos/.../commits/<sha>/check-runs`, never from `gh pr checks`'s 'pass' summary, per AGENT_CONTRACT section 5.",
+      "mergeMethod": "squash",
+      "MERGE_COMMIT": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7"
+    }
+  ],
+  "MERGE_COMMIT_FOR_THE_INTEGRATION_SEAT": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7",
+
+  "item1_3_reconstructedOrphanConfigs": {
+    "status": "done, committed, merged",
+    "commonMethod": "gcloud run jobs describe <job> --project=hauska-prod-497015 --region=us-east4 --format=json, read field by field, never `--format=value(a,b,c)`. All three share one live --image digest, sha256:0754e8bdb89cc577fbafe5d1bc8be088fd231de622a8c4949d2b58ddd17e8660.",
+    "buildArgRecovery": {
+      "method": "ENGINE_SHA/LDT_SHA/CONTRACT_VERSION are Dockerfile ARG->ENV, invisible to `gcloud run jobs describe` (only --set-env-vars/--set-secrets values appear there). Recovered by reading the shared image's own baked config: `gcloud auth configure-docker us-east4-docker.pkg.dev` then `docker buildx imagetools inspect <image>@<digest> --format '{{json .Image.Config}}'`, which fetches only the small config blob, no layer pull, no execution of the image.",
+      "recoveredValues": {"ENGINE_SHA": "bfa96424db85e4f656052e9334d86e61218a03cd", "LDT_SHA": "46e1a5a1b52a14953e9eb242fd1c908ea24b13ce", "CONTRACT_VERSION": "1.30.0"},
+      "verification": "both SHAs confirmed as real commits via `gh api repos/empressaioemail-tech/hauska-engine/commits/<sha>` and `gh api repos/empressaioemail-tech/legacy-design-tools/commits/<sha>` (read-only): ENGINE_SHA = 2026-09-01T16:47:29Z 'feat(parcel-record): closed cell shape, config inputs, and live proof path'; LDT_SHA = 2026-08-25T14:06:06Z 'fix(cortex): P-77 cad join miss emits lookup-failed at declared vintage (#478)'."
+    },
+    "perJobIdentityStatements": [
+      {
+        "job": "factory-bake-migrate",
+        "file": "cloudbuild.bake-migrate.yaml",
+        "deployBlockIdentity": "ESTABLISHED -- every field (command=[node,src/cli.mjs], args=[bake-migrate], env CONTRACT_VERSION/CLOUD_RUN_REGION/FACTORY_CLOUD/STAGING_SITE_URL, secrets STAGING_NEONDB_URL+PRODUCTION_NEONDB_URL, cpu 1000m, memory 1Gi, task-timeout 120s, max-retries 0) copied field for field from the live spec.",
+        "buildBlockIdentity": "recovered build-args verified real; a fresh build's output digest matching the live one is NOT proven and not attempted.",
+        "sideFinding": "this job's own live IMAGE_DIGEST env var (sha256:4103d8d9f418a60a2c238f13b878850401f00f3ba5261ed7623523038a5b6177) disagrees with its actual --image field (the shared sha256:0754e8bd... digest). Every other config in this repo sets IMAGE_DIGEST from the same shell variable used for --image, by construction, so they cannot disagree; generation=2 on this job means at least one redeploy happened after first deploy, most likely a manual `gcloud run jobs update --image=...` that skipped re-setting IMAGE_DIGEST. Reported as a live low-severity drift bug, not fixed (fixing means deploying)."
+      },
+      {
+        "job": "factory-console-audit",
+        "file": "cloudbuild.console-audit.yaml",
+        "deployBlockIdentity": "ESTABLISHED -- command=[node], args=[src/cli.mjs, console-audit] (note: this repo's OTHER configs put only the interpreter in --command; this job's own live spec splits differently, and this file preserves the LIVE split exactly rather than normalizing it, for fidelity), env FACTORY_CONTROL_API_URL/CLOUD_RUN_REGION, secrets FACTORY_DATABASE_URL+FACTORY_CONTROL_API_KEY, cpu 1, memory 1Gi, task-timeout 120s, max-retries 0.",
+        "buildBlockIdentity": "same as bake-migrate (identical image digest, same recovered args, same non-guarantee on rebuild digest identity).",
+        "sideFinding": "no IMAGE_DIGEST env var at all in this job's live spec -- nothing to reconcile against, unlike bake-migrate."
+      },
+      {
+        "job": "factory-landing-import",
+        "file": "cloudbuild.landing-import.yaml",
+        "deployBlockIdentity": "ESTABLISHED -- command=[node], args=[src/cli.mjs, landing-import] (same live split as console-audit, preserved verbatim), env LANDING_TABLE=tx_fema_nfhl_flood_zone/CLOUD_RUN_REGION, secrets FACTORY_DATABASE_URL+SOURCE_DATABASE_URL, cpu 2, memory 4Gi, task-timeout 86400s (matches the precedent already set by cloudbuild.f10-cad-loop.yaml's own 86400s statewide job -- not an anomaly for this repo), max-retries 0. generation=6 in the live metadata: only the current spec is recoverable, prior revisions are not.",
+        "buildBlockIdentity": "same as the other two.",
+        "sideFinding": "none beyond the shared build-block caveat."
+      }
+    ],
+    "whatCouldNotBeRecoveredAcrossAllThree": "whether a fresh `docker build` using the recovered args reproduces the currently-live image digest byte-for-byte. Two concrete, named reasons it might not: (1) Dockerfile's `FROM node:20-slim` is a mutable tag, not digest-pinned; (2) Dockerfile runs `npm install --omit=dev`, not `npm ci` -- package-lock.json exists but npm install does not strictly bind to it the way npm ci does. These three files are therefore high-confidence REBUILD PATHS, not proven bit-identical reproductions. Only running `gcloud builds submit` would settle it, and this lane does not run that."
+  },
+
+  "item4_sixWriters_disposition": {
+    "headline": "CTX-BUILD's own instrument correctly measured its own stated predicate (no cloudbuild file's DEPLOY-time --args names these six subcommands), but that predicate is narrower than 'cannot execute anywhere.' `gcloud run jobs execute --help` documents --args as overriding the deploy-time default for a single execution ('If provided, an execution will be created with the input values. Otherwise, the existing arguments of the job are used'), and no --update-secrets flag exists at execute time (checked, absent) -- only --args and --update-env-vars. Reading each writer's own source (not just the test file's summary comments) against this mechanism changes the disposition of five of the six.",
+    "writers": [
+      {
+        "id": "p3-rail-absence",
+        "module": "src/jobs/p3-absence.mjs",
+        "finding": "structurally inert regardless of deployment. `executeP3Apply()` (line 45) unconditionally calls `refuse(APPLY_NOT_THIS_CARD, \"P3 writes fixtures only; production apply is not this card\")` -- this fires even with a live Cloud Run job and FACTORY_CLOUD=1 set, because it is called AFTER the cloud-gate check passes, not gated by it. Its own docstring already says 'Build, do not run.' A deployable target would not make this writer's --apply succeed; the apply path is an intentional stub.",
+        "disposition": "GENUINELY QUARANTINED PENDING NAMEABLE WORK -- not 'needs a deployable target', needs the P3 apply implementation itself, which does not exist yet.",
+        "owner": "whoever picks up OPS-19 F-05/F-06 (both 'NOT STARTED' per 90_operations/OPS-19_factory_plan_of_record.md as of 2026-09-09)",
+        "planRow": "F-05 / F-06 (OPS-19) -- this writer's own docstring already carries this tag correctly, UNLIKE the other five below, whose 'F-01' comments in test/writer-deployable-target.test.mjs do not resolve to any matching OPS-19 row (F-01 there is 'Factory Neon project; schema for L2 landing...', unrelated to any of these five writers)."
+      },
+      {
+        "id": "purge-bastrop-orphans",
+        "module": "src/jobs/purge-bastrop-orphans.mjs",
+        "finding": "ALREADY RUN AND COMPLETE. Own docstring: 'Triggers: Cloud Run job factory-parcel-record-fill --args=purge-bastrop-orphans,--apply.' factory-parcel-record-fill is live, deployed by tracked cloudbuild.parcel-record-fill.yaml with a generic --command=node,src/cli.mjs and a default --args=parcel-record-fill -- exactly the shape execute-time --args override replaces. This writer's own env needs (connectFactory + neonUrlFromEnv -> FACTORY_DATABASE_URL, PRODUCTION_NEONDB_URL) are exactly the two secrets that job already has bound. Found in _inbox/2026-09-01_parcel-r2-juris-stamp_close.json (not filed under this writer's own name, which is why a first pass missed it): '2026-09-02T14:01:47Z purge-bastrop-orphans --apply: runId 709174a8-1ae0-47d6-817f-496b9621e72e, recordsDeleted=2, cellsDeleted=104', verified post-purge against the store (parcel_record total exactly 981,405, matching landing with zero residual orphans). It is a one-shot job by construction (AUTHORIZED_PLACE_KEYS is a frozen 2-entry array, no parameter can widen it) and its one shot has already fired successfully.",
+        "disposition": "DONE. Recommend retiring from WRITER_JOBS now that its single authorized purpose is fulfilled -- re-running is a no-op against its own idempotent verification but keeping a spent one-shot writer allowlisted indefinitely is exactly the kind of un-owned residue this program's own instruments hunt.",
+        "owner": "integration seat / planner (retirement is an operator ruling per DEV_PROCESS 5.4, proposed here, not executed)",
+        "planRow": "the addendum to _queue/cards/parcel-r2-juris-stamp named in its own AUTHORIZATION field, already closed 2026-09-02"
+      },
+      {
+        "id": "parcel-value-history",
+        "module": "src/jobs/parcel-value-history.mjs",
+        "finding": "the ONLY one of the six whose own docstring names a trigger job (factory-parcel-value-history) that genuinely does not exist live and never has a cloudbuild config anywhere -- confirmed absent from all 35 live jobs and from every cloudbuild*.yaml grepped. Its env needs (connectFactory + neonUrlFromEnv -> FACTORY_DATABASE_URL, PRODUCTION_NEONDB_URL) are identical to purge-bastrop-orphans' and s6's, i.e. already satisfied by factory-parcel-record-fill's existing bindings, so it is executable via the same override path even though its own docstring does not say so. Unlike purge-bastrop-orphans/s6/vh, this is NOT a one-shot -- it is an ongoing rail writer (ingests prior tax years into valueHistory) with no evidence in doc_repo that it has ever run.",
+        "disposition": "NOT 'nowhere to execute' -- executable today via factory-parcel-record-fill's --args override (unverified by actual execution, since this lane does not execute). Because it is ongoing rather than one-shot, recommend either documenting this override path explicitly in its own docstring, or -- cheaper long-term, matching the repo's own 4-jobs-per-file precedent (cloudbuild.parcel-record-fill.yaml) -- giving it a small dedicated cloudbuild entry so it is not permanently dependent on an undocumented cross-job override.",
+        "owner": "integration seat",
+        "planRow": "tagged 'F-01' in its own docstring, same mismatch noted for p3-rail-absence's siblings below -- no real OPS-19 or OPS-16 row currently names this work; recommend the operator assign the next open row (OPS-16's highest used is P-131 as of 2026-09-08; P-132 is the next free number) rather than this lane inventing one"
+      },
+      {
+        "id": "s6-collision-remediate",
+        "module": "src/jobs/s6-collision-remediate.mjs",
+        "finding": "ALREADY RUN AND COMPLETE. Own docstring names factory-parcel-record-fill as trigger (same pattern as purge-bastrop-orphans, same matching secrets). _inbox/2026-09-02_parcel-s6-collision_close.json reports full execution against live production: 2,878 crosswalk-sourced dollar cells reset across 777 accounts, 'Cloud Run only, digest verified against the build's own log before executing', zero collateral damage verified by exact count reconciliation across the 281,792 non-exposed accounts.",
+        "disposition": "DONE. Recommend retiring from WRITER_JOBS -- its corrective purpose (Williamson crosswalk collision fix) is fulfilled and the underlying crosswalk bug is independently already fixed in parcel-record-fill.mjs, per its own header.",
+        "owner": "integration seat / planner (retirement is an operator ruling)",
+        "planRow": "PARCEL-S6-COLLISION, named in its own header, closed 2026-09-02"
+      },
+      {
+        "id": "vh-collision-remediate",
+        "module": "src/jobs/vh-collision-remediate.mjs",
+        "finding": "ALSO REPORTED COMPLETE, with one unresolved documentation contradiction named plainly rather than silently resolved. Own docstring: 'Triggers: Cloud Run job factory-parcel-value-history --args=vh-collision-remediate,--apply' -- naming the SAME nonexistent job parcel-value-history's own docstring names. Yet _inbox/2026-09-03_parcel-vh-collision_close.json reports full Cloud Run execution, digest-verified 'two independently-derived ways', 777 companion rows reset, zero collateral damage across five unaffected counties, verified twice against live production. `gcloud run jobs executions list` (read-only, checked 2026-09-09) shows no execution history for any job named factory-parcel-value-history, and this writer's own env needs (connectFactory + neonUrlFromEnv) match factory-parcel-record-fill's bindings same as the others -- the most likely explanation is it ran via factory-parcel-record-fill's override and its own 'Triggers:' line is simply stale, matching the same drift pattern already found on parcel-value-history's docstring. This is NOT independently proven (execution history could have a retention window this lane did not test the edges of) and is reported as a strong corroboration, not a certainty.",
+        "disposition": "DONE, same recommendation as s6 -- retire from WRITER_JOBS. The documentation mismatch is a separate, smaller open item: fix the stale 'Triggers:' line regardless of the retirement decision, since it would mislead the next reader into thinking a job exists that does not.",
+        "owner": "integration seat / planner (retirement is an operator ruling; the docstring fix is a trivial follow-on for whoever touches this file next)",
+        "planRow": "PARCEL-VH-COLLISION, named in its own header, closed 2026-09-03"
+      },
+      {
+        "id": "owner-rail-collision-check",
+        "module": "src/jobs/owner-rail-collision-check.mjs",
+        "finding": "the ONE writer where CTX-BUILD's original framing is fully correct as stated. Own docstring already marks its trigger '(proposed)' -- self-aware it is not wired. It needs a genuinely NEW secret, SUBSTRATE_DATABASE_URL (grepped: appears nowhere in hauska-factory's existing --set-secrets bindings across any cloudbuild file), to read hauska-engine's atom store for its cross-system comparison -- and execute-time override cannot add a new secret (no --update-secrets flag exists on `gcloud run jobs execute`, confirmed via --help). This is real, un-deferrable deploy work, not a documentation gap.",
+        "disposition": "NEEDS A DEPLOYABLE TARGET BUILT, confirmed. Concretely: create the SUBSTRATE_DATABASE_URL secret in Secret Manager, then a cloudbuild deploy step (its own docstring proposes extending factory-parcel-owner, i.e. cloudbuild.parcel-wave2.yaml) binding it.",
+        "owner": "integration seat / whoever owns the Tier-1 owner-rail reconciliation this writer is part of",
+        "planRow": "tagged 'F-01 / PARCEL-S6-COLLISION-style' in its own docstring -- same F-01 mismatch as above; recommend the operator assign a real row rather than this lane inventing one"
+      }
+    ],
+    "correctedCounts": {
+      "countingRule": "of CTX-BUILD's original 6 UNDEPLOYABLE_KNOWN entries, read individually against source rather than trusted as one class",
+      "structurallyInertRegardlessOfDeploy": 1,
+      "alreadyExecutedAndComplete_recommendRetire": 3,
+      "executableTodayViaExistingJobOverride_notNewDeployNeeded": 1,
+      "genuinelyNeedsNewDeployableTargetAndSecret": 1,
+      "note": "parcel-value-history counts once, in the 'executable today' bucket, even though it is also the one ongoing (non-one-shot) writer among the six -- the two facts are independent, both stated in its own row above."
+    }
+  },
+
+  "item5_deployedJobNoConfigInverse": {
+    "didAnythingCatchItBefore": "NO. test/writer-deployable-target.test.mjs's own bypass note (2) states this in its own words: 'the reverse direction (live jobs no config can rebuild) needs gcloud and does not belong in an offline unit test.' Grepped the rest of the repo (scripts/, test/) for any other live gcloud-run-jobs-list reconciliation: none exists. CTX-BUILD's own three orphan jobs were found by a one-off manual reconciliation recorded in its close's leave_behind, not by a repeatable check.",
+    "whatWasBuilt": "scripts/check-live-job-has-config.mjs -- lists every live Cloud Run job in hauska-prod-497015/us-east4, resolves every `gcloud run jobs deploy <name>` block (including the one shell-variable indirection this repo's cloudbuild files actually use, a `for JOB in a b c; do ... deploy \"$$JOB\" ...; done` loop) in both hauska-factory's AND hauska-engine's tracked cloudbuild*.yaml files, and fails naming any live job neither repo's tracked config deploys.",
+    "whyNotCiWired": "checked .github/workflows/ci.yml: no GOOGLE- or workload-identity credentials present. A CI-integrated version would be permanently red for the wrong reason (DEV_PROCESS 2.0: 'a permanently-red gate is a dead gate'). Runs on demand instead, same operating model CTX-BUILD's own manual reconciliation already used, except repeatable.",
+    "negativeControlHonored": "factory-atoms-cad is live, absent from every hauska-factory cloudbuild*.yaml, and correctly reads as NOT orphaned because hauska-engine's cloudbuild.atoms-writer.yaml:47 deploys it -- proven by a dedicated unit test (test/check-live-job-has-config.test.mjs: 'NEGATIVE CONTROL: a job deployed only by the engine repo's config is not orphaned') and by the live end-to-end run below, whose 0-orphan pass result includes factory-atoms-cad among the 35 live jobs reconciled clean."
+  },
+
+  "requiredFailingRun": {
+    "howInduced": "moved cloudbuild.bake-migrate.yaml out of the working tree only (to /tmp), after it was already committed and merged -- never uncommitted, never re-staged during the test, exactly the CTX-BUILD-established pattern (removing cloudbuild.building-footprint-reconcile.yaml from the working tree only).",
+    "command": "node scripts/check-live-job-has-config.mjs",
+    "literalOutput": "{\n  \"ok\": false,\n  \"liveCount\": 35,\n  \"factoryConfigCount\": 28,\n  \"engineConfigCount\": 1,\n  \"engineRepoScanned\": true,\n  \"orphans\": [\n    \"factory-bake-migrate\",\n    \"factory-bastrop-publish\",\n    \"factory-dollar-fields-patch\",\n    \"factory-publish-migrate\",\n    \"factory-staging-reset\",\n    \"factory-verify-walk\"\n  ]\n}\nFAIL: 6 live Cloud Run job(s) with no tracked config in hauska-factory or hauska-engine: factory-bake-migrate, factory-bastrop-publish, factory-dollar-fields-patch, factory-publish-migrate, factory-staging-reset, factory-verify-walk",
+    "exitCode": 1,
+    "exitCodeReadHow": "read directly from the process (`node scripts/check-live-job-has-config.mjs; echo $?`), never from a pipe, per AGENT_CONTRACT section 5 / DEV_PROCESS 2.3",
+    "note": "5 of the 6 named here were a self-found parser gap, not the intended violation -- cloudbuild.publish.yaml deploys those five through a `for JOB in ...; do deploy \"$$JOB\"; done` loop the first version of deployedJobNamesIn() could not resolve. Fixed (see FLEET_MEMORY LESSON below) before this final run; the run pasted here is POST-FIX, so factory-bake-migrate is the only true violation-induced entry."
+  },
+  "requiredFailingRun_postFix_isolated": {
+    "note": "the same set-aside, re-run after the for-loop fix, confirming only the intended violation remains",
+    "orphans": ["factory-bake-migrate"],
+    "exitCode": 1
+  },
+  "requiredPassingRun": {
+    "howRestored": "moved cloudbuild.bake-migrate.yaml back from /tmp; `sha256sum -c` against the pre-removal hash reported 'cloudbuild.bake-migrate.yaml: OK'",
+    "command": "node scripts/check-live-job-has-config.mjs",
+    "literalOutput": "{\n  \"ok\": true,\n  \"liveCount\": 35,\n  \"factoryConfigCount\": 34,\n  \"engineConfigCount\": 1,\n  \"engineRepoScanned\": true,\n  \"orphans\": []\n}",
+    "exitCode": 0
+  },
+  "offlineUnitTests": {
+    "command": "node --test test/check-live-job-has-config.test.mjs",
+    "result": "11 pass, 0 fail, exit 0",
+    "includes": "a VIOLATION test for the for-loop indirection fix, and the negative-control test naming factory-atoms-cad explicitly"
+  },
+  "fullSuiteAfter": {
+    "note": "fresh worktree had no node_modules (same dead-end CTX-BUILD's own close already documented) -- npm install run first, not a regression",
+    "command": "npm test",
+    "tests": 1138,
+    "pass": 1136,
+    "fail": 0,
+    "skipped": 2,
+    "exitCode": 0,
+    "exitCodeReadHow": "read directly from the process, not a pipe"
+  },
+
+  "constraintsHonored": [
+    "no Cloud Run job executed",
+    "no Cloud Build submitted",
+    "no deploy of anything -- the three reconstructed configs were committed and merged, never built or deployed",
+    "writer allowlist not widened -- src/control/writer-allowlist.mjs untouched; the merged diff is exactly the 3 cloudbuild files + scripts/check-live-job-has-config.mjs + its test",
+    "no live job deleted or retired -- the three writers found already-complete are a RECOMMENDATION handed to the operator, per DEV_PROCESS 5.4, not executed here",
+    "hauska-engine: read only (cloudbuild.atoms-writer.yaml, via local worktree, for the new instrument's negative-control scan; commits API for one recovered SHA). No checkout, no branch, no fetch, no write.",
+    "legacy-design-tools: read only (commits API, for one recovered SHA). No checkout, no branch, no fetch, no write.",
+    "hauska-map: not touched",
+    "worktree created from origin/main with git worktree add before any edit, and confirmed (seat, worktree, branch, commit) in the first tool output of this lane",
+    "doc_repo edits (this close plus its two checkpoints) left UNCOMMITTED per AGENT_CONTRACT section 6 (doc_repo commits are planner-owned) and listed below"
+  ],
+
+  "docRepoEditsLeftUncommitted": [
+    "_inbox/2026-09-09_ctx-orphans_cp1.json (new)",
+    "_inbox/2026-09-09_ctx-orphans_cp2.json (new)",
+    "_inbox/2026-09-09_ctx-orphans_close.json (new, this file)"
+  ],
+
+  "leave_behind": {
+    "reconstructedConfigsNeedIntegrationSeatProof": "all three (cloudbuild.bake-migrate.yaml, cloudbuild.console-audit.yaml, cloudbuild.landing-import.yaml) are committed and merged but never built or deployed by this lane -- the deploy blocks are field-identical to live state today regardless, so nothing is at risk until someone runs `gcloud builds submit` against one of them, at which point the build-reproducibility caveat in each file's header applies.",
+    "sixWriterDispositions": "full table in item4 above -- 1 structurally inert pending a real apply-implementation card (p3-rail-absence), 3 already executed and complete, recommended for retirement (purge-bastrop-orphans, s6-collision-remediate, vh-collision-remediate), 1 executable today via an existing job's --args override with no new deploy needed (parcel-value-history), 1 genuinely needs a new secret and deploy (owner-rail-collision-check).",
+    "planRowGapAcrossFiveWriters": "five of the six writers' own source comments tag 'F-01', which does not resolve to any matching OPS-19 row (F-01 there is Factory Neon store schema, unrelated). This is either a stale informal label pre-dating strict OPS-19 F-row discipline, or an outright error, and this lane did not silently inherit it. Recommend the operator assign real plan rows to the parcel-value-history disposition decision and the owner-rail-collision-check build card -- OPS-16's highest used row is P-131 (2026-09-08); P-132 is the next free number, offered as a starting point, not assigned by this lane.",
+    "vhTriggerDocstringStale": "vh-collision-remediate.mjs's own 'Triggers:' line names factory-parcel-value-history, a job with no execution history and no live existence found. A one-line docstring fix (naming factory-parcel-record-fill instead, matching how it evidently actually ran) is a trivial follow-on for whoever next touches that file, independent of the retirement recommendation.",
+    "bakeMigrateImageDigestDrift": "factory-bake-migrate's live IMAGE_DIGEST env var (sha256:4103d8d9...) disagrees with its actual running --image (sha256:0754e8bd...). Not fixed here (fixing means deploying); the reconstructed config's own deploy block would correct it automatically the next time it is actually built and deployed via the same $$DIGEST pattern every other config in this repo uses.",
+    "scratchLeftInWorktree": ".ctx-orphans-work/ under the worktree root holds the raw `gcloud run jobs describe --format=json` dumps this lane read from -- untracked, not committed, left in place as primary-source backup for the recovered values (mirrors the CTX-BUILD close's own precedent of leaving debris files in place in P:/tmp/ctx-w2-gate rather than deleting)."
+  },
+
+  "FLEET_MEMORY_SCRATCH": {
+    "LESSON": [
+      "Dockerfile ARG->ENV values (build-time provenance like ENGINE_SHA/LDT_SHA) are invisible to `gcloud run jobs describe` -- that only returns runtime env vars set via --set-env-vars/--set-secrets. They ARE recoverable, read-only, no image pull, via `docker buildx imagetools inspect <image>@<digest> --format '{{json .Image.Config}}'` (requires `gcloud auth configure-docker <registry>` first). This is the difference between 'unrecoverable, must guess' and 'recoverable, verify against upstream commits' for a reconstruction task -- worth trying before writing a config with placeholder or copied-from-a-similar-job build args.",
+      "gcloud run jobs execute --args overrides the deploy-time default for a single execution (confirmed via --help text, not assumed): 'If provided, an execution will be created with the input values. Otherwise, the existing arguments of the job are used.' No --update-secrets flag exists at execute time -- only --args and --update-env-vars. This means a writer whose secret/env needs already match an EXISTING job's bindings is executable today via that job, with no new deploy, regardless of whether any cloudbuild file's own default --args names its subcommand. An instrument (or a planner) checking only DEPLOY-time --args for 'deployability' will over-report undeployable writers whose real gap is documentation, not infrastructure.",
+      "A repo's own shell-variable indirection patterns are not uniform: cloudbuild.publish.yaml varies the JOB NAME itself in a for-loop (`deploy \"$$JOB\"`), not just the --args value (which the pre-existing sibling instrument already resolved). A new instrument parsing the same class of file needs its own resolution pass and its own violation test proving that resolution -- copying the sibling instrument's args-only resolution logic silently would have shipped 5 false positives.",
+      "A writer's own module docstring 'Triggers:' line is a claim, not a fact -- two of six writers here (parcel-value-history, vh-collision-remediate) name a trigger job that does not exist live and has no execution history. Cross-check every such claim against `gcloud run jobs list` before propagating it into a disposition."
+    ],
+    "GROUND_TRUTH": [
+      "GROUND-TRUTH (2026-09-09, read-only gcloud): hauska-prod-497015/us-east4 has 35 live Cloud Run jobs (clean re-count via --format=value(metadata.name), matching CTX-BUILD's own same-day count exactly; an earlier malformed extraction attempt in this lane produced a spurious 37/inconsistent count from a broken multi-field JSON parse, corrected before being relied on).",
+      "GROUND-TRUTH (2026-09-09, docker buildx imagetools inspect): image sha256:0754e8bdb89cc577fbafe5d1bc8be088fd231de622a8c4949d2b58ddd17e8660 (shared by all three orphan jobs) bakes ENGINE_SHA=bfa96424db85e4f656052e9334d86e61218a03cd, LDT_SHA=46e1a5a1b52a14953e9eb242fd1c908ea24b13ce, CONTRACT_VERSION=1.30.0.",
+      "GROUND-TRUTH (2026-09-09, gh api): both recovered SHAs are real commits on their respective repos' history.",
+      "GROUND-TRUTH (2026-09-02 / 2026-09-03, read from existing closes, not re-derived): purge-bastrop-orphans, s6-collision-remediate and vh-collision-remediate have each already executed successfully against live production via Cloud Run, verified in their own close artifacts."
+    ],
+    "DEAD_END": [
+      "Assuming CTX-BUILD's UNDEPLOYABLE_KNOWN six-writer list was one uniform class. Reading each writer's own source individually (not just the shared test-file comment block) found three different disposition classes hiding inside what looked like one quarantine."
+    ],
+    "OPEN": [
+      "OPEN: whether vh-collision-remediate genuinely ran via factory-parcel-record-fill's override or via some other, now-gone mechanism -- corroborated (no execution history for its named trigger job) but not proven.",
+      "OPEN: the operator's retirement decision on purge-bastrop-orphans / s6-collision-remediate / vh-collision-remediate, and the plan-row assignment for parcel-value-history's disposition and owner-rail-collision-check's build card.",
+      "OPEN: the three reconstructed configs' rebuild-digest identity is unproven -- only an actual `gcloud builds submit`, which this lane does not run, would settle it."
+    ],
+    "promotionNote": "Not self-promoted to durable memory. The planner gates promotion."
+  },
+
+  "whatRemainsOpen": [
+    "the integration seat proves the three reconstructed configs by building and deploying them, if and when it chooses to (dispatch item 3, explicit)",
+    "the operator rules on retiring purge-bastrop-orphans, s6-collision-remediate and vh-collision-remediate from WRITER_JOBS",
+    "the operator assigns real plan rows for parcel-value-history's disposition and owner-rail-collision-check's build card (both currently mistagged 'F-01' in source, which does not resolve to a real OPS-19 row)",
+    "owner-rail-collision-check's SUBSTRATE_DATABASE_URL secret creation and cloudbuild deploy step, genuinely unbuilt",
+    "vh-collision-remediate.mjs's stale 'Triggers:' docstring line, a trivial fix independent of the retirement decision",
+    "doc_repo checkpoint and close artifacts are uncommitted, awaiting the planner"
+  ],
+  "honestPartialCloseNote": "All five dispatch items are complete as scoped. What is deliberately incomplete is everything the dispatch put out of scope: no build, no deploy, no execution of the reconstructed configs; no retirement of any writer, only a recommendation with evidence; no plan-row assignment, only a proposal, since editing the plan of record is not this lane's authority."
+}

@@ -1,0 +1,101 @@
+{
+  "lane": "ctx-hays-split",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays",
+  "branch": "fix/ctx-hays-2026-cad-reacquire",
+  "baseCommit": "3885efadb789942a479b475d34d1518807756e0a",
+  "workingTreeConfirmedCleanAtStart": true,
+  "codeDiff": "none. Confirmed at close: `git status` on this worktree still reads clean, `git log -1` still shows the same base commit. This lane is read-only measurement and produced no code diff, as the dispatch anticipated and required.",
+
+  "missionPremise": "CTX-HAYS-SPLIT dispatch (2026-09-09): the prior CTX-HAYS close handed the operator a ruling on Hays's ~37,510-account 2025-to-2026 gap (recordRetirement via CTX-RETIRE) that treated the gap as one population, but the same close's own finding shows cad_property 48209 tax_year=2025 has two source lineages (hays-export2.zip, genuine CAD; stratmap25-landparcels_48209_lp.zip, a non-CAD geometry coverage fallback applied 2026-08-25 by P-78). recordRetirement asserts an account left the roll -- honest for a genuine CAD dropout, a fabricated claim for a StratMap geometry row that was never an appraisal account. This lane's mission is to split the absent population by lineage, determine whether source_file (overwritten in place by P-78 for updated rows) can still support that split, find a field that can if not, and recommend -- not implement -- the honest absence state per resulting population.",
+
+  "completionPredicate": "A stranger can evaluate this done by: (1) the absent population (present@2025, absent@2026, county 48209) is counted directly via anti-join and reported with its full rule (38444 total); (2) grouped by current source_file, and that grouping is shown, from code and from independent arithmetic, to conflate two different kinds of row because P-78 overwrote source_file unconditionally on every touched row; (3) a field that survives the overwrite (assessed_value) is identified, calibrated against a known-pure reference lineage before being trusted, and applied to recover the true split (384 genuine-CAD-lineage absent / 38060 geometry-only absent); (4) a control run against a genuinely single-lineage county confirms the instrument does not manufacture a split where none exists, and any deviation between the dispatch's named control county and its live state is reported rather than silently worked around; (5) the pre-registered falsifier is stated before the split runs and its outcome (fired or not) is reported plainly; (6) a one-sentence honest-absence-state recommendation is given per resulting population, recommending only, with no recordRetirement or other absence state written to any row; (7) a stranger reading only this close (or the companion finding doc) can act on the ruling without reading any prior lane's close.",
+
+  "scopeBasis": "In scope, per the dispatch: measuring and splitting the 48209 absent population by lineage, establishing whether source_file supports that split and what does if not, a single-lineage control, and a recommendation. Out of scope, explicitly named and honored: writing recordRetirement or any absence state to any parcel; re-acquiring, backfilling, or touching MAX_MISS_RATE or any gate threshold; baking, publishing, walking, deploying, Cloud Build, or Cloud Run; writing to hauska-factory, hauska-engine, or hauska-map; manufacturing a code diff to satisfy a general 'you write code' expectation -- the previous lane in this worktree correctly shipped nothing and said so, and this lane does the same because the honest output here is a measurement and a recommendation, not an implementation. One adjacent finding (Bexar 48029's cad_property footprint being 100% StratMap-sourced with zero assessed_value) surfaced incidentally while searching for a genuine single-lineage control county; it was named and left for the owning seat, not investigated, per govtech-style scope discipline -- chasing it would have exceeded this lane's P-124/48209 mandate.",
+
+  "checkpoints": [
+    "_inbox/2026-09-09_ctx-hays-split_cp1.json (design/pre-build: prior-artifact read, code-level mechanism, pre-registered falsifier, calibration run, control plan)",
+    "_inbox/2026-09-09_ctx-hays-split_cp2.json (pilot/mid-work: the full split, the recovery-field application, the falsifier outcome, the control run and its Bastrop-premise deviation)"
+  ],
+
+  "splitCountsByLineage": {
+    "countingRule": "Live anti-join against f06-staging-neondb (database neondb): prop_id present at (county_fips='48209', tax_year=2025) with no row at (county_fips='48209', tax_year=2026, same prop_id), on cad_property's own primary key (county_fips, prop_id, tax_year). 2026-09-09.",
+    "totalAbsent": 38444,
+    "asRecordedTodayBySourceFile_NOT_the_true_split": { "stratmap25-landparcels_48209_lp.zip": 38304, "hays-export2.zip": 140 },
+    "trueSplitAfterRecoveryField": {
+      "genuineCadLineageAbsent": { "n": 384, "composition": "140 still legibly tagged hays-export2.zip + 244 recovered from under the overwritten stratmap tag via assessed_value IS NOT NULL" },
+      "geometryOnlyAbsentNoCadSignal": { "n": 38060, "composition": "stratmap-tagged, assessed_value NULL, exemption_codes NULL/empty, living_area_sqft NULL -- no field checked shows any trace of a prior CAD account" }
+    },
+    "reconciliation": "384 + 38060 = 38444, exact. Also: 38444 (absent) - 934 (reverse anti-join, new-in-2026) = 37510, exactly matching the raw 172116-134606 delta the prior lane already reported. No unreconciled numbers."
+  },
+
+  "sourceFileOverwrittenInPlace": {
+    "answer": true,
+    "evidence": [
+      "CODE: lib/cad-ingest/src/p78Merge.ts:196-197, applyPathAMerge sets out.sourceFile = inc.sourceFile and out.sourceVintage = inc.sourceVintage unconditionally, never coalesced against the existing row; runs on the ON CONFLICT DO UPDATE path.",
+      "ARITHMETIC: pre-apply CAD-only population (131246, from the P-78 announce doc) minus live count still tagged hays-export2.zip today (55695) = 75551 = the live count of stratmap-tagged rows with assessed_value populated in the full 2025 population, recovered independently by direct query. Two numbers from unrelated sources, five months apart, agree exactly."
+    ],
+    "recoveryField": "assessed_value. StratMap's own row mapper (lib/cad-ingest/src/txgio/landuse.ts:146) hardcodes assessedValue: null unconditionally; p78Merge.ts's COALESCE_FIELDS preserves the prior CAD value on an UPDATE (coalesce(null, existing) = existing) while an INSERT gets null directly. Calibrated against the untouched hays-export2.zip lineage before use (100% populated, both overall and within its own absent subset -- zero false negatives against the reference)."
+  },
+
+  "recommendedHonestAbsenceStatePerPopulation": {
+    "genuineCadLineageAbsent_n384": "recordRetirement (CTX-RETIRE's declared-absence mechanism) is correct and honest here: these are real Hays CAD accounts confirmed present on the 2025 roll and confirmed absent from the 2026 export.",
+    "geometryOnlyAbsent_n38060": "recordRetirement does not apply: no field checked shows these prop_ids were ever a Hays CAD appraisal account, so nothing has been shown to have 'left the roll'; they need a distinct, honestly-named non-appraisal-geometry absence state instead, not a retirement."
+  },
+
+  "singleLineageControlResult": {
+    "dispatchNamedCounty": "48021 Bastrop, described by the dispatch as holding only tax_year 2025 from one source",
+    "verifiedAtSourceAndFoundWrong": "Bastrop's 2025 vintage carries TWO source_files live (stratmap25-landparcels_48021_lp.zip n=62257, DATA-EXPORT-01.14.2026.zip n=15542) -- the identical StratMap-fallback shape as Hays. The prior lane's 'single-vintage' sweep counted distinct tax_years per county only, never distinct source_files within one vintage, so this was never caught. Reported per DEV_PROCESS 3.2 rather than silently substituted or ignored.",
+    "replacementCountyUsed": "48055 Caldwell -- verified live to be genuinely single-source per vintage: 2025 (n=24989) is 100% stratmap25-landparcels_48055_lp.zip; 2026 (n=48382) is 100% 2026-Caldwell-CAD-export_June-5-2026.zip.",
+    "resultRunningTheIdenticalItem1Query": "267 total absent rows (present@2025, absent@2026), ALL 267 under the single true source_file -- zero fragmentation. The assessed_value recovery check applied to those 267 correctly found 0 to recover (Caldwell's 2025 vintage was never overwritten in place by a second apply, so there is nothing there for the recovery signal to find, and it correctly finds nothing).",
+    "verdict": "Instrument confirmed sound: on a genuinely single-lineage vintage it returns one group at full coverage with no spurious recovered rows. It has now been shown to distinguish something, not just to have been run where a split was expected."
+  },
+
+  "preRegisteredFalsifier": {
+    "statedBeforeRunningTheSplit": "assessed_value IS NOT NULL would be trusted as a recovery signal only if (a) applied to the full stratmap-tagged 2025 population it landed near the independently-derived 75551, and (b) the known-pure hays-export2.zip lineage's own null rate stayed near zero. Either condition failing would mean the field does not cleanly track prior CAD membership and the split could not be reported as separable.",
+    "fired": "No. (a) landed at exactly 75551 (not merely 'near'). (b) hays-export2.zip is 100% populated (55695/55695) overall and within its own 140-row absent subset. Both held before and after restricting to the absent population specifically."
+  },
+
+  "constraintsHonored": [
+    "Did not write recordRetirement or any absence state to any parcel -- every psql invocation this lane issued was a SELECT",
+    "Did not re-acquire, backfill, or touch MAX_MISS_RATE or any gate threshold",
+    "Did not bake, publish, walk, deploy, submit a Cloud Build, or run a Cloud Run job",
+    "Did not write to hauska-factory, hauska-engine, or hauska-map -- this lane touched only doc_repo _inbox/ artifacts and read (never wrote) legacy-design-tools source",
+    "Did not manufacture a code diff -- confirmed at close via git status/log against the same base commit the lane started from",
+    "Verified at source throughout: every count in this close is a live query result, not an inference from prose, including a live re-verification of the dispatch's own Bastrop premise, which failed verification and is reported as such",
+    "Confirmed seat/worktree/branch/commit before any file was read, per the dispatch's own instruction",
+    "STAGING_NEONDB_URL pulled from Secret Manager to a scratch file outside the repo tree, used for this lane's query batches, deleted (rm -f) immediately after the final query -- confirmed removed"
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "A merge's ON CONFLICT DO UPDATE can overwrite a row's own provenance column (source_file/source_vintage) unconditionally even while coalescing every substantive attribute field -- p78Merge.ts does exactly this. Any future lineage-archaeology on a county that has been through more than one apply at the same tax_year should assume the provenance column itself is untrustworthy and look for a field the newer source structurally cannot populate (here: assessed_value, because StratMap/TxGIO never carries one) rather than trusting source_file as a partition. This generalizes the lesson the parent CTX-HAYS close already flagged about source_file being 'last writer, not full provenance' -- this lane found the specific field that survives it for this merge.",
+      "A 'single-vintage' sweep (distinct tax_years per county) is not the same claim as a 'single-lineage' sweep (distinct source_files within a vintage) -- Bastrop passed the first and failed the second, and nothing before this lane had checked the second dimension. Any future per-county lineage audit should check both.",
+      "assessed_value's calibration (100% populated in the known-pure reference lineage, both overall and in its absent subset) is specific to Hays/Caldwell's CAD export shape; a different CAD vendor or a county with legitimately null assessed values on some real accounts (e.g. certain exempt classes) would need its own baseline check before reusing this exact field as a recovery signal elsewhere."
+    ],
+    "deadEnds": [
+      "exemption_codes and living_area_sqft were checked as alternative recovery fields alongside assessed_value; both are legitimately sparse even in the known-pure reference lineage (60.6% and 71.2% populated respectively, not 100%), so a NULL on either does not imply 'never CAD' -- they are not usable as the primary discriminator, only as a (redundant, in this case) secondary check."
+    ],
+    "groundTruths": [
+      "(2026-09-09, live, f06-staging-neondb) cad_property county_fips=48209: absent population (present@2025, absent@2026) = 38444 total; true split 384 genuine-CAD-lineage / 38060 geometry-only-no-CAD-signal.",
+      "(2026-09-09, live) cad_property county_fips=48021 (Bastrop) tax_year=2025 carries TWO source_files, not one: stratmap25-landparcels_48021_lp.zip (62257) and DATA-EXPORT-01.14.2026.zip (15542). The dispatch's characterization of Bastrop as single-lineage is wrong.",
+      "(2026-09-09, live) cad_property county_fips=48055 (Caldwell) is genuinely single-source per vintage (2025 all-stratmap, 2026 all-CAD) and was used as this lane's actual control.",
+      "(2026-09-09, live) cad_property county_fips=48029 (Bexar), the CANON-PREAMBLE's 'roll, complete' county, is 100% stratmap25-landparcels_48029_lp.zip (n=703258) with 0 assessed_value populated anywhere -- surfaced incidentally, not investigated, flagged below as open."
+    ],
+    "open": [
+      "Operator ruling still needed, now on a better-specified question: does the 384-account genuine-CAD-lineage absent population get recordRetirement while the 38060-row geometry-only population gets a different, distinctly-named absence state (or no write at all)? This lane recommends that split but does not have standing to rule on it or to name the second mechanism.",
+      "Whether the 34-(now-fewer)-county 'single-vintage' list from the parent lane's sweep needs re-running with a distinct-source_files-per-vintage check added, given Bastrop failed a dimension that sweep never checked -- proposed, not built, per DEV_PROCESS 5.4.",
+      "Bexar (48029) being 100% StratMap-sourced with zero assessed_value across 703,258 rows, at the county the Factory program treats as its complete flagship reference -- flagged for the Factory-writer/Bexar-owning seat, not investigated, out of this lane's 48209 scope.",
+      "This same source_file-overwrite-plus-assessed_value-recovery pattern likely applies unchanged to the other StratMap-fallback counties this program has touched (at minimum Bastrop, now confirmed two-lineage) -- flagged, not run, out of this lane's single-county mandate."
+    ]
+  },
+
+  "close_contract_extra": {
+    "note": "AGENT_CONTRACT section 6 fields for a non-code doc_repo lane, stated explicitly rather than omitted",
+    "prNumbers": "not applicable: doc_repo/read-only measurement lane, no PR opened",
+    "mergeShas": "not applicable: no merge performed",
+    "ciConclusionStrings": "not applicable: no CI run triggered by this lane",
+    "docRepoCommits": "planner-owned, left UNCOMMITTED per contract section 6. This lane's four _inbox/ writes: 2026-09-09_ctx-hays-split_cp1.json, 2026-09-09_ctx-hays-split_cp2.json, 2026-09-09_ctx-hays-split_resolved_finding.md, this close.json -- plus no edits to any other lane's in-flight uncommitted _inbox/ files, confirmed by re-checking git status only touched this lane's own new paths."
+  }
+}

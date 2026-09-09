@@ -1,0 +1,45 @@
+{
+  "lane": "CTX-ORPHANS",
+  "checkpoint": "CP2 (pilot / mid-work)",
+  "planRow": ["P-124"],
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-orphans",
+  "branch": "fix/ctx-orphans-rebuild-configs",
+  "status": "implementation complete, PR merged, writing final close next",
+
+  "item1_3_orphanConfigs_done": {
+    "method": "for each job: gcloud run jobs describe <job> --project=hauska-prod-497015 --region=us-east4 --format=json, saved and read field by field. All three share the identical --image digest sha256:0754e8bdb89cc577fbafe5d1bc8be088fd231de622a8c4949d2b58ddd17e8660.",
+    "buildArgRecovery": "ENGINE_SHA/LDT_SHA/CONTRACT_VERSION are Dockerfile ARG->ENV and so are invisible to `gcloud run jobs describe` -- recovered instead from the shared image's own baked config via `gcloud auth configure-docker us-east4-docker.pkg.dev` then `docker buildx imagetools inspect <image>@<digest> --format '{{json .Image.Config}}'` (fetches only the config blob, no layer pull). Result: ENGINE_SHA=bfa96424db85e4f656052e9334d86e61218a03cd, LDT_SHA=46e1a5a1b52a14953e9eb242fd1c908ea24b13ce, CONTRACT_VERSION=1.30.0. Both SHAs verified as real commits via `gh api repos/.../commits/<sha>` (read-only): ENGINE_SHA lands 2026-09-01T16:47:29Z 'feat(parcel-record): closed cell shape...'; LDT_SHA lands 2026-08-25T14:06:06Z 'fix(cortex): P-77 cad join miss...' (#478).",
+    "filesCommitted": [
+      "cloudbuild.bake-migrate.yaml",
+      "cloudbuild.console-audit.yaml",
+      "cloudbuild.landing-import.yaml"
+    ],
+    "identityFinding": "the DEPLOY block (command, args, every env var, every secret, cpu, memory, task-timeout, max-retries) is identity-established, field for field, from the live spec. The BUILD block's recovered args are verified real but a fresh build's OUTPUT DIGEST reproducing the live one byte-for-byte is explicitly NOT established and NOT attempted (would require gcloud builds submit, out of scope): node:20-slim is not digest-pinned in the Dockerfile, and Dockerfile uses `npm install --omit=dev`, not `npm ci`, so drift is possible even with identical build-args.",
+    "sideFinding_imageDigestDrift": "factory-bake-migrate's OWN live IMAGE_DIGEST env var (sha256:4103d8d9f4...) disagrees with its actual --image field (sha256:0754e8bd...) -- every OTHER config in this repo sets IMAGE_DIGEST from the same $$DIGEST shell variable used for --image, by construction, so they cannot disagree. generation=2 on this job means it was redeployed at least once after first deploy; most likely a manual `gcloud run jobs update --image=...` that skipped re-setting IMAGE_DIGEST. Reported, not fixed (fixing means deploying)."
+  },
+
+  "item5_instrumentCoverage_done": {
+    "predicate": "test/writer-deployable-target.test.mjs's own bypass note (2) already states the answer in prose: 'the reverse direction (live jobs no config can rebuild) needs gcloud and does not belong in an offline unit test.' Confirmed by reading the file in full: nothing in it, or anywhere else grepped in this repo, checks live Cloud Run state against tracked configs. CTX-BUILD's own three orphan jobs were found by a one-off manual reconciliation (leave_behind.liveJobsNoConfigCanRebuild), not a repeatable instrument.",
+    "answer": "NO, nothing caught this class before this lane. A second instrument was required, and was built: scripts/check-live-job-has-config.mjs.",
+    "design": "standalone script, NOT wired into `npm test` -- .github/workflows/ci.yml has no GOOGLE-/workload-identity credentials (grepped, confirmed), so a CI-integrated version would be permanently red for the wrong reason (DEV_PROCESS 2.0). Runs on demand by a seat with real gcloud credentials, same operating model as the CTX-BUILD close's own manual reconciliation, except repeatable and machine-checkable. Scans BOTH hauska-factory's and hauska-engine's tracked cloudbuild*.yaml files (read-only, local worktree, no fetch/write) so the dispatch's own named negative control -- factory-atoms-cad, deployed only by hauska-engine's cloudbuild.atoms-writer.yaml -- never misreads as orphaned.",
+    "selfCorrectionDuringBuild": "the first version of deployedJobNamesIn() only matched a literal job name after `gcloud run jobs deploy`. Running it live against real project state immediately surfaced 5 false positives (factory-bastrop-publish, factory-dollar-fields-patch, factory-publish-migrate, factory-staging-reset, factory-verify-walk) -- all five are deployed by cloudbuild.publish.yaml's `for JOB in name1 name2 ...; do gcloud run jobs deploy \"$$JOB\" ...; done` loop, a shell-variable indirection the simple regex could not resolve. Fixed by resolving `deploy \"$$JOB\"` against an earlier `for JOB in ...; do` on the same file, mirroring the sibling instrument's own resolution of `--args=$$ARGS`. This is exactly DEV_PROCESS 2.2 in action: the check was tested against real state before being trusted, and it failed for the RIGHT reason (a real parsing gap), not the wrong one."
+  },
+
+  "item4_sixWriters_disposition_summary": "Full disposition detail in the close. Headline: CTX-BUILD's own instrument correctly measured its own predicate (no cloudbuild DEPLOY-time --args names these six subcommands), but that predicate is narrower than 'cannot execute anywhere' -- gcloud run jobs execute --args overrides the deploy-time default for a single execution (confirmed via `gcloud run jobs execute --help`, not assumed), and four of the six writers' own env/secret needs already match an existing, already-deployed job's bindings. Reclassified: 1 structurally inert regardless of deployment (p3-rail-absence), 2 already reported complete against live production per their own 2026-09 closes (s6-collision-remediate, vh-collision-remediate), 2 executable today via an existing job's execute-time override without any new deploy (purge-bastrop-orphans, parcel-value-history), 1 genuinely needs a new deployable target and a new secret (owner-rail-collision-check) -- CTX-BUILD's framing is fully correct only for this last one.",
+
+  "verificationRunsSoFar": {
+    "offlineUnitTests": "node --test test/check-live-job-has-config.test.mjs: 11 pass, 0 fail, exit 0",
+    "fullSuite": "npm test (after npm install in the fresh worktree, matching CTX-BUILD's own documented node_modules dead-end): 1136 pass, 0 fail, 2 skipped (1138 total), exit 0 read directly from the process, not a pipe",
+    "liveViolationDemo": "cloudbuild.bake-migrate.yaml set aside to /tmp (working tree only, never committed/staged during the test) -> node scripts/check-live-job-has-config.mjs exited 1, naming factory-bake-migrate among 6 orphans (5 were the publish.yaml false positives, fixed before this final run -- see selfCorrectionDuringBuild) -> file restored, sha256sum -c confirmed byte-identical -> re-run exited 0, orphans: []",
+    "pr": "https://github.com/empressaioemail-tech/hauska-factory/pull/119, four check-runs (push+pull_request x {test, gate8}), all literal conclusion string 'success' read via `gh api repos/.../commits/<sha>/check-runs`, never from `gh pr checks`'s 'pass' summary",
+    "merge": "squash-merged, MERGE_COMMIT 8bcfbb2c85c16f958a87ad3e65af481fd208beb7, confirmed equal to origin/main HEAD after fetch, all four new files confirmed present via git cat-file -e"
+  },
+
+  "remainingBeforeClose": [
+    "write the final close artifact with full six-writer disposition, owners, plan rows",
+    "RESOLVED: purge-bastrop-orphans already ran and completed, 2026-09-02T14:01:47Z, runId 709174a8-1ae0-47d6-817f-496b9621e72e, recordsDeleted=2, cellsDeleted=104, verified against the store post-purge (981,405 exact landing match) -- found in _inbox/2026-09-01_parcel-r2-juris-stamp_close.json, not under its own filename, which is why the first CP2 pass missed it. This changes its disposition from 'unclear' to 'done, recommend retire', same class as s6/vh below.",
+    "double check vh-collision-remediate's stale trigger-job docstring against gcloud run jobs executions list (done: no execution history exists for any job named factory-parcel-value-history, corroborating -- not proving -- that it ran via factory-parcel-record-fill's override instead, same mechanism as s6 and purge-bastrop-orphans)"
+  ]
+}

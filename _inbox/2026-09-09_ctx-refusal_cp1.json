@@ -1,0 +1,38 @@
+{
+  "lane": "ctx-refusal",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T00:00:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-refusal",
+  "branch": "fix/ctx-refusal-rail-residue-definition",
+  "headAtOpen": "0c4c1ea6359bfe2a57fc06e1e483e28dced86cc2",
+
+  "note": "Design/pre-build checkpoint. Filed after reading the dispatch, CTX-ELGIN's close (_inbox/2026-09-09_ctx-elgin_close.json), AGENT_CONTRACT.md, DEV_PROCESS.md, and fleet_memory_practice.md, then locating and reading the actual rail source before touching anything live.",
+
+  "sourcesRead": [
+    "src/jobs/parcel-r5-zoning.mjs (the rail: JOB_ID=parcel-r5-zoning, exports LAYER_GAP_RESIDUE_EXCEEDED, assertResidueWithinDeclaration)",
+    "src/config/zoning-layer-completeness.mjs (DECLARED_COMPLETE, DECLARED_LAYER_GAP.Elgin, expectedResidue={48021:9, 48453:457})",
+    "scripts/ctx-w2/city-residue-coverage.mjs (the instrument behind COMPLETENESS_RULE's cellPct figures -- a different, third population definition: parcel_record_cell current cell_state)",
+    "scripts/ctx-w2/live-gate-check.mjs, zoning-unaccounted-census.mjs (adjacent instruments, confirmed NOT the LAYER_GAP_RESIDUE_EXCEEDED guard -- different gate, requireCountyPopulation in publish-readiness-gate.mjs)"
+  ],
+
+  "earlyFinding_preRun": "Source read alone (before any live query) already overturns CTX-ELGIN's own residual-uncertainty flag. CTX-ELGIN could not open hauska-factory and hypothesized the rail reads txgio_parcel.zoning_district (instrument A's write target). It does not. HOIST_ZONES_SQL and CHUNK_ZONE_MATCH_SQL show the rail hoists zone polygons directly from tx_zoning_district_staging (city_key + layer_role='base') on PRODUCTION_NEONDB_URL -- the SAME physical cortex-prod table CTX-ELGIN restaged in hauska-engine, read cross-repo. CTX-ELGIN's close explicitly named this as the one thing it could not rule out from its own scope; confirmed true here.",
+
+  "populationFinding_preRun": "The residue the LAYER_GAP_RESIDUE_EXCEEDED guard checks (layerGapByCounty, fed by assertResidueWithinDeclaration) is computed fresh every run over CITY_ALL_PARCELS_SQL's full in-city population (landing_parcel_jurisdiction, disposition='in-city', all counties in PROGRAM_FIPS) -- NOT gated by current parcel_record_cell state. This falsifies the dispatch's Mechanism A as literally stated ('the rail counts UNACCOUNTED CELLS, which excludes parcels already carrying an earned state') -- that description matches scripts/ctx-w2/city-residue-coverage.mjs's population, a DIFFERENT instrument from the one that actually gates the refusal.",
+
+  "planForVerification": [
+    "Run the rail's own dry run (runParcelR5Zoning, apply=false) scoped to --city elgin-tx via PRODUCTION_NEONDB_URL, fetched live via gcloud secrets, never persisted.",
+    "Capture the full thrown error (code, message, actualResidue, declaredCeiling), not just cli.mjs's truncated code-only catch.",
+    "If residue is confirmed to exceed ceiling, drill into whether the rail's own zone-decode step (ST_MakeValid/ST_IsEmpty) silently drops any staged polygons, and whether Elgin's two-county, two-layer shape (elgin-tx / elgin-tx-travis) is handled correctly by loadInScopeCities and processCity's per-city population scoping.",
+    "All ad hoc diagnostics live as _scratch_ctx_refusal_*.mjs inside the worktree, reusing the job's own exported SQL/functions rather than reimplementing, deleted before close."
+  ],
+
+  "constraintsConfirmedBeforeAnyExecution": [
+    "Seat/worktree/branch/commit confirmed: property / P:/seat-worktrees/property/hauska-factory-ctx-refusal / fix/ctx-refusal-rail-residue-definition / 0c4c1ea6, created via git worktree add -b from origin/main, matching seat_register.json's pre-registration.",
+    "Dry runs only, no --apply, planned for the entire lane.",
+    "No write to hauska-engine, legacy-design-tools, hauska-map planned or performed.",
+    "No ceiling edit planned; any conclusion about the ceiling is a recommendation, not a commit."
+  ]
+}

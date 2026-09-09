@@ -1,0 +1,56 @@
+{
+  "lane": "ctx-refusal",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T00:00:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-refusal",
+  "branch": "fix/ctx-refusal-rail-residue-definition",
+
+  "note": "Pilot/mid-work checkpoint. Filed after the live dry run and read-only diagnostics, before finalizing the mechanism resolution and close.",
+
+  "dryRunResult_authoritative": {
+    "invocation": "runParcelR5Zoning(process.env, { flags: parseParcelR5ZoningFlags(['--city','elgin-tx']) }) -- apply:false, the real exported job function, not a reimplementation.",
+    "thrown": {
+      "code": "LAYER_GAP_RESIDUE_EXCEEDED",
+      "message": "Elgin/48021 residue is 36, above the declared 9 that was actually probed. The gap grew and the extra parcels have not been looked at -- re-probe and update the declaration rather than widening it.",
+      "actualResidue": 36,
+      "declaredCeiling": 9
+    },
+    "verdict": "Reproduces the dispatch's named refusal (execution dppvg) on Bastrop 48021. Confirmed real: the guard is not vacuous, and this specific number (36) is not a units mismatch -- see decomposition below."
+  },
+
+  "diagnostic_zoneDecodeIntegrity": {
+    "method": "Reused the job's own exported HOIST_ZONES_SQL/HOIST_ZONES_COUNT_SQL against city_key='elgin-tx' to check for silent ST_MakeValid/ST_IsEmpty drops between raw staged rows and the decoded zone-polygon pool.",
+    "result": "raw staged rows (base layer, elgin-tx) = 3209, with geometry not null = 3209, decoded r5_zones_ok count = 3209. Zero drops. Rules out a decode-time defect as the explanation for the residue."
+  },
+
+  "diagnostic_perCountyResidueByLayer": {
+    "method": "Reused CITY_ALL_PARCELS_SQL + CHUNK_ZONE_MATCH_SQL directly (same SQL constants the job exports), run to completion without invoking assertResidueWithinDeclaration, once per Elgin city_key row.",
+    "against_elgin_tx_layer_3209_polygons_Bastrop_side": {
+      "48021_Bastrop": { "total": 3749, "matched": 3713, "residue": 36 },
+      "48453_Travis":  { "total": 1706, "matched": 26,   "residue": 1680 }
+    },
+    "against_elgin_tx_travis_layer_499_polygons_Travis_side": {
+      "48021_Bastrop": { "total": 3749, "matched": 461,  "residue": 3288 },
+      "48453_Travis":  { "total": 1706, "matched": 1199, "residue": 507 }
+    },
+    "mechanismConfirmed": "loadInScopeCities returns ONE ROW PER (place_fips, city_key), and Elgin has TWO staged base layers under two different city_keys (elgin-tx = FeatureServer/0 Bastrop-side, 3209 polygons; elgin-tx-travis = FeatureServer/1 Travis-side, 499 polygons, staged by CTX-STAGE2). Each row's population, via CITY_ALL_PARCELS_SQL, is scoped ONLY by place_fips -- the WHOLE city, both counties -- never intersected with the county the row's own layer actually covers. So every processCity call for Elgin spatial-joins THOUSANDS of parcels from the other county against a zone-polygon pool that cannot structurally cover them, manufacturing a large false residue for whichever county does not belong to that pass's layer. Bastrop's real residue against its OWN correct layer is 36; Travis's real residue against its OWN correct layer is 507 -- both close to instrument A/B's independent numbers (9/457 and 48-58/525 respectively). The 1680 and 3288 figures are pure cross-layer artifacts.",
+    "orderingHazard": "assertResidueWithinDeclaration is called in a loop over layerGapByCounty (a Map whose insertion order follows CITY_ALL_PARCELS_SQL's ORDER BY county_fips ASC), so Bastrop (48021) is always checked before Travis (48453) within a single processCity call, and IN_SCOPE_CITIES_SQL's own ORDER BY (in_city_parcels DESC, no tiebreaker) does not deterministically order Elgin's two tied (5455-parcel) city_key rows relative to each other. A production sweep with no --city filter can therefore surface EITHER the real Bastrop number (36, if elgin-tx's row happens to process first) OR the wildly spurious cross-layer number (3288, if elgin-tx-travis processes first) for the SAME refusal code on the SAME underlying data, purely as a function of an unstable sort tie."
+  },
+
+  "diagnostic_otherCitiesSameClass": {
+    "method": "SELECT city_geo_id, array_agg(DISTINCT city_key) FROM tx_zoning_district_staging WHERE layer_role='base' GROUP BY city_geo_id HAVING count(DISTINCT city_key) > 1.",
+    "result": "Exactly one city_geo_id (4823044 / Elgin) currently has more than one base-layer city_key. No other city in tx_zoning_district_staging is split across multiple layers today.",
+    "caveat": "This bounds CURRENT exposure, not the defect's scope. loadInScopeCities/processCity's failure to intersect a layer's county with its population is latent in the code for ANY future multi-county, multi-layer city, not specific to Elgin."
+  },
+
+  "scratchFilesUsedAndDeleted": [
+    "_scratch_ctx_refusal_diagnostic.mjs",
+    "_scratch_ctx_refusal_diagnostic2.mjs",
+    "_scratch_ctx_refusal_diagnostic3.mjs",
+    "_scratch_ctx_refusal_diagnostic4.mjs"
+  ],
+  "gitStatusAfterCleanup": "clean, nothing to commit"
+}

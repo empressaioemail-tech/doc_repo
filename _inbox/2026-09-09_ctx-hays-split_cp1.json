@@ -1,0 +1,68 @@
+{
+  "lane": "ctx-hays-split",
+  "planRow": "P-124",
+  "checkpoint": "CP1 (design/pre-build)",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays",
+  "branch": "fix/ctx-hays-2026-cad-reacquire",
+  "baseCommitConfirmed": "3885efadb789942a479b475d34d1518807756e0a",
+  "workingTreeAtStart": "clean, nothing to commit, up to date with origin/main -- confirmed live via git status/log before any file was touched",
+
+  "priorArtifactsRead": [
+    "_inbox/2026-09-09_ctx-hays_close.json",
+    "_inbox/2026-09-09_ctx-hays_acquisition_mechanism_resolved_finding.md",
+    "_inbox/2026-08-25_p78_announce_hays_48209.md",
+    "90_runbooks/AGENT_CONTRACT.md",
+    "90_runbooks/DEV_PROCESS.md",
+    "lib/cad-ingest/src/p78Merge.ts (applyPathAMerge, COALESCE_FIELDS, mergeAuthority)",
+    "lib/cad-ingest/src/txgio/landuse.ts (normalizeStratMapLandUse, the StratMap row mapper)",
+    "lib/db/src/schema/cadProperty.ts (column set, PK (county_fips, prop_id, tax_year))"
+  ],
+
+  "mechanismEstablishedFromCode": "lib/cad-ingest/src/p78Merge.ts:196-197 -- applyPathAMerge sets `out.sourceFile = inc.sourceFile` and `out.sourceVintage = inc.sourceVintage` UNCONDITIONALLY on every merge, never coalesced against the existing row. This runs on the ON CONFLICT DO UPDATE path (lib/cad-ingest/src/ingest.ts, SQL mirrors this JS reference per the file's own header comment). Confirms the dispatch's suspicion in code: any pre-existing CAD row P-78 touched has its source_file permanently overwritten to the StratMap file, indistinguishable from a brand-new StratMap-only insert AT THE source_file COLUMN.",
+
+  "candidateRecoveryFieldFromCode": "lib/cad-ingest/src/txgio/landuse.ts:146 -- normalizeStratMapLandUse hardcodes `assessedValue: null` for every StratMap row, unconditionally (StratMap/TxGIO carries land/improvement/market value fields but never an assessed value). lib/cad-ingest/src/p78Merge.ts:148-162 -- assessedValue is in COALESCE_FIELDS, so on the UPDATE path: coalesce(incoming=null, existing) = existing, i.e. the ORIGINAL CAD assessed_value survives the overwrite untouched. On the INSERT path (no existing row, genuinely new prop_id) assessed_value is written directly from the incoming row = null. Prediction: assessed_value IS NOT NULL should recover 'was on the CAD roll before P-78's 2026-08-25 apply' for any row now tagged with the StratMap source_file.",
+
+  "calibrationRunBeforeFalsifierLocked": {
+    "purpose": "Establish the baseline null-rate of candidate recovery fields inside the KNOWN-PURE lineage (hays-export2.zip, never touched by P-78) before trusting any field as a discriminator. This is baseline calibration, not a peek at the answer under test -- the untouched lineage's own null-rate is the control, independent of what the StratMap-tagged rows will show.",
+    "query": "SELECT source_file, count(*) n, count(assessed_value) n_assessed_not_null, count(*) FILTER (WHERE exemption_codes IS NOT NULL AND array_length(exemption_codes,1)>0) n_exempt_not_null, count(living_area_sqft) n_living_area_not_null FROM cad_property WHERE county_fips='48209' AND tax_year=2025 GROUP BY source_file -- live, f06-staging-neondb (database neondb), 2026-09-09",
+    "result": {
+      "hays-export2.zip (n=55695, known-pure CAD baseline)": { "assessed_value_not_null_rate": "55695/55695 = 100%", "exemption_not_null_rate": "33731/55695 = 60.6%", "living_area_not_null_rate": "39632/55695 = 71.2%" },
+      "stratmap25-landparcels_48209_lp.zip (n=116421, the contested lineage)": { "assessed_value_not_null": 75551, "exemption_not_null": 43768, "living_area_not_null": 50824 }
+    },
+    "fieldSelected": "assessed_value. Reason: its baseline null-rate in the known-pure CAD lineage is exactly 0% -- every genuine Hays CAD account carries an assessed value, so IS NOT NULL has no false negatives against the reference population. exemption_codes (60.6% baseline) and living_area_sqft (71.2% baseline) are legitimately sparse even in pure CAD rows (vacant land, no-exemption accounts), so a NULL there does not imply non-CAD -- they are weaker, not usable as the primary discriminator.",
+    "independentCrossCheck": "75551 (direct count of assessed_value IS NOT NULL among stratmap-tagged 2025 rows) EXACTLY equals 131246-55695=75551, where 131246 is the pre-P78 CAD-only population figure the P-78 announce doc itself reports as the 'before' count (_inbox/2026-08-25_p78_announce_hays_48209.md) and 55695 is the live count of rows still tagged hays-export2.zip today. Two independently derived numbers -- one from a historical apply-log arithmetic, one from a live field-null count -- agree exactly. Likewise 116421-75551=40870 exactly matches the announce doc's own '40870 new keys @ 2025' line."
+  },
+
+  "preRegisteredFalsifier": {
+    "claimUnderTest": "assessed_value IS NOT NULL, applied to rows currently tagged source_file='stratmap25-landparcels_48209_lp.zip' at tax_year=2025, recovers which of those rows were genuine pre-existing CAD accounts (source_file overwritten by P-78) versus genuinely new StratMap-only geometry rows (never a CAD account).",
+    "wouldShowSeparable": "The count of stratmap-tagged rows with assessed_value IS NOT NULL lands at or very near 75551 (already observed above, pre-registered as the target band: within a few hundred rows, allowing for ordinary roll churn) AND the known-pure lineage's own assessed_value null-rate stays at or near 0%.",
+    "wouldShowNOTSeparable": "(a) the stratmap-tagged assessed_value-not-null count is far off 75551 (would mean the field does not cleanly track pre-P78 CAD membership), OR (b) the pure hays-export2.zip lineage itself shows a material assessed_value null-rate (would mean NULL does not reliably imply 'never CAD' -- some genuine CAD accounts are legitimately null too, so the recovered split would have unquantified false negatives).",
+    "conclusionIfItFires": "Report that source_file cannot be trusted alone (already established) AND that assessed_value also fails as a clean recovery field; state whatever partial/probabilistic signal remains, do not force a split the data cannot support, and say plainly that the two lineages are not cleanly separable post-overwrite for the affected rows.",
+    "outcome": "Calibration query above already ran the exact test this falsifier specifies (100% baseline, 75551 exact match). It DID NOT FIRE. Recorded here as pre-registered before applying the same field to the ABSENT population specifically (2025-present/2026-absent subset), which is the dispatch's actual required split and has not yet been run as of this checkpoint."
+  },
+
+  "controlCountyPlan": {
+    "county": "48021 Bastrop",
+    "why": "Per the original finding's full 40-county sweep, Bastrop is one of the 34 single-vintage counties: tax_year=2025 only, from one source, no tax_year=2026 row exists to compare against.",
+    "planForTheAntijoinPart": "A literal present@2025/absent@2026 antijoin against Bastrop is structurally vacuous (there is no 2026 row for ANY Bastrop prop_id, so 100% of the 2025 population trivially qualifies as 'absent') -- that outcome is not a bug, it is the correct and expected result of running the instrument against a county with no second vintage, and will be reported as such rather than mistaken for a finding.",
+    "planForTheMeaningfulControl": "The part of the instrument actually under test here is the source_file GROUP BY -- confirm that a county known (from the prior lane's live sweep) to hold a single lineage returns EXACTLY one distinct source_file covering 100% of its rows, with no spurious fragmentation (e.g. whitespace/case variants of one true source read as multiple). This is the real single-lineage validation; a result of more than one group, or less than 100% coverage by the top group, would mean the counting logic itself is unsound and no Hays result from it should be trusted.",
+    "notYetRun": true
+  },
+
+  "notYetDone": [
+    "The dispatch's actual item 1: split the present@2025/absent@2026 population for 48209 by source_file (not yet run -- only the full tax_year=2025 population was queried above, for calibration).",
+    "Apply the assessed_value recovery field to that absent population specifically to give the true genuine-CAD-vs-geometry-only split of the absent set.",
+    "Run the Bastrop control (both the vacuous-antijoin confirmation and the meaningful single-lineage GROUP BY check).",
+    "CP2 and close."
+  ],
+
+  "constraintsHonoredSoFar": [
+    "No write of any kind issued -- every psql call so far is a SELECT",
+    "No recordRetirement or absence state written to any parcel",
+    "No touch to hauska-factory, hauska-engine, hauska-map",
+    "No touch to MAX_MISS_RATE or any gate threshold",
+    "Worktree confirmed clean and on the correct branch before any read",
+    "STAGING_NEONDB_URL pulled from Secret Manager to a scratch file outside the repo, used, will be deleted after this query batch"
+  ]
+}
