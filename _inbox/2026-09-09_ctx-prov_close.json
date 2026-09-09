@@ -1,0 +1,108 @@
+{
+  "lane": "ctx-prov",
+  "planRow": "P-124",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-prov",
+  "branch": "fix/ctx-prov-conformant-provenance",
+  "baseCommit": "8bcfbb2c85c16f958a87ad3e65af481fd208beb7",
+  "headCommit": "85f4cf00f94d587617ebb5c2f47edb74222115d9",
+
+  "missionPremise": "Dispatch 2026-09-09_ctx-prov: McLennan 48309:103671 is the only failure left on an otherwise-clean staging walk (pass=181, fail=1, BP-CONFORMANT-01, three consecutive runs unchanged). The retired planner's own unverified-claims section flagged and then retracted an inference that this matches Caldwell 48055:1's roll-dropout class, on the correct ground that McLennan has only one CAD vintage and cannot have a roll-dropout population. This lane starts from nothing rather than inheriting that retracted inference, per explicit instruction.",
+
+  "completionPredicate": "A stranger can evaluate this done by: (1) the rule BP-CONFORMANT-01 actually enforces is written down, verified against its own source, and now lives as a comment on responseCarriesConformantV1 (previously undocumented anywhere); (2) 48309:103671's served payload is quoted verbatim and read against that rule, naming which check it fails and why; (3) a mechanism is named with source-level evidence (not inference from the dispatch's prose or from a sibling lane's prose) and at least one candidate is explicitly rejected with evidence; (4) the failing population is counted for all six counties with its counting rule stated inline, not just for McLennan; (5) no fix was made in hauska-factory beyond documentation, because the diagnosed defect lives in legacy-design-tools, which the dispatch forbids writing to -- and the report is precise enough that a dispatch can be compiled against that repo without a second diagnostic pass; (6) the concurrent CTX-WALKRULE lane's uncommitted edits in the same file were checked for actual line overlap, not just file-level proximity.",
+
+  "scopeBasis": "In scope: reading the rule and the served payload (both explicitly permitted, HTTP reads are 'not an execution'); establishing mechanism and population via read-only queries against the STAGING Neon store (matching the target the recorded walk actually used) with credentials pulled from gcloud Secret Manager and deleted immediately after use, mirroring the read-only pattern already established in scripts/ctx-w2/*.mjs; documenting the true predicate in verify-walk.mjs as a comment (dispatch step 1 explicitly asks for this to be 'written down', calling it half the lane's value). Out of scope, deliberately: any change to legacy-design-tools (nodeFacetBakeTier1ConformantCli.ts, where the actual defect lives), any change to hauska-engine or hauska-map, any deploy/Cloud Build/job execution/bake/publish/walk run, any change to cloudbuild.publish.yaml's _LDT_SHA pin, and any change to BP-CONFORMANT-01's pass/fail logic itself (the rule is not wrong -- the data genuinely is non-conformant for the affected rows -- so 'do not widen the predicate' was honored by leaving the logic untouched).",
+
+  "step1_provenanceRuleWrittenOut": {
+    "whatItChecksPerLayer": "It does NOT check per layer, despite the failure reason text ('facets lack conformant-v1 provenance per layer') and the file's header comment implying a layer-by-layer audit. responseCarriesConformantV1(body) is two whole-body checks: (1) FAIL immediately if body.facets.facetSchemaVersion === 'node-facets-tier1-v1' (OLD_TIER1_FACET_SCHEMA_VERSION, the old-shape literal); (2) otherwise PASS iff JSON.stringify(body) contains the substring 'conformant-v1' anywhere at all. This is now written as a comment directly above the function (src/jobs/verify-walk.mjs), which previously had only a one-line comment and no explanation of the actual mechanics.",
+    "whatShapeSatisfiesIt": "In practice, a row's facetSchemaVersion being exactly 'node-facets-tier1-conformant-v1' (TIER1_CONFORMANT_FACET_SCHEMA_VERSION) is sufficient on its own, since that string contains the substring 'conformant-v1'. provenance.parcelSource carrying the bake's 'conformant-v1-cad-parcel-roll' literal would independently satisfy it too. The finer, leaf-by-leaf provenance audit is a separate check, BP-CONTENT-01 (gradeTier1Content), which runs strictly after BP-CONFORMANT-01 and was not confused with it in this diagnosis."
+  },
+
+  "step2_servedPayload": {
+    "parcel": "48309:103671",
+    "fetchedFrom": "https://smart-site-factory.vercel.app/site/api/spine/cortex/api/brokerage/v1/place/node/48309:103671/facets (the exact URL pattern walkParcel builds), HTTP 200",
+    "verbatimFailingFields": {
+      "facets.facetSchemaVersion": "node-facets-tier1-v1",
+      "facets.baseFacts.situsAddress": ", ,",
+      "facets.provenance.parcelSource": "txgio",
+      "facets.provenance.parcelVintage": "stratmap25-landparcels_48309_mclennan_202503",
+      "facets.bakedAt": "2026-07-24T19:33:06.683Z",
+      "snapshotAt": "2026-09-01T22:52:40.996Z"
+    },
+    "whichLayerFails": "facetSchemaVersion (check 1, the old-shape literal exclusion) fails immediately; the walk never even reaches the substring check. facets.provenance carries the pre-conformant txgio parcelSource, not the CAD-roll-driven conformant source -- provenance is the layer that actually reveals the mechanism, even though the failing check itself is whole-body.",
+    "noRecordRetirement": "The payload carries no recordRetirement field anywhere -- confirms this is not a CTX-RETIRE roll-dropout case."
+  },
+
+  "step3_mechanism": {
+    "chosen": "The conformant bake CLI (legacy-design-tools/artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts, verified at origin/main 3885efad) permanently skips writing a row, on every run forever, when: the parcel's prop_id IS present in the current declared-vintage CAD roll (rollAbsent === false -- true for every row in this population, since none are retired) AND the CAD claim's raw situsAddress is punctuation-only. Source: situsForBake(body) calls assertSitusNotPunctuationOnly (serveGuards.ts: PUNCTUATION_ONLY_RE = /^[\\s,.\\-;:'\"`]+$/); when it throws, situsForBake returns {situs:null, refuse:true}; the per-row loop (lines ~336-345) does `if (rollAbsent) { situs = situsForRetiredBake(body) } else { const {situs:s, refuse:refuseSitus} = situsForBake(body); if (refuseSitus) { skippedBadSitus += 1; continue } situs = s }`. The `continue` fires BEFORE any DB write, so the row's snapshot is never touched -- it stays frozen on whatever schema/bakedAt it last held, indefinitely, across every subsequent bake run for that county.",
+    "evidenceFor": [
+      "100% match, not a sample, across all three affected counties: every failing row has a punctuation-only baseFacts.situsAddress (16104/16104 Bastrop, 768/768 Hays, 1165/1165 McLennan -- measured live via SQL regex against the exact same PUNCTUATION_ONLY_RE pattern serveGuards.ts uses).",
+      "100% match: every failing row carries provenance.parcelSource = 'txgio' -- the pre-conformant bake's literal (nodeFacetTier1Assemble.ts's ParcelSource union is exactly 'txgio' | 'conformant-v1-cad-parcel-roll'; zero failing rows carry the latter).",
+      "bakedAt is frozen and disjoint from passing rows: Hays's 768 failing rows share exactly ONE bakedAt (2026-07-23T15:22:13.921Z); McLennan's 1,165 share exactly ONE bakedAt (2026-07-24T19:33:06.683Z, matching the served payload above bit-for-bit). Passing rows in the same counties were baked today, 2026-09-09, repeatedly (McLennan's passing bakedAt window is 16:27:28-16:39:36Z -- one second before the recorded failing walk 4c3d0746 completed at 16:39:51Z). The failing set has not moved across any bake run since its original bakedAt.",
+      "Read from source directly, not from a sibling lane's prose: CTX-RETIRE's PR #647 (legacy-design-tools, merged 2026-09-09T13:13:58Z as commit 3885efad -- the exact LDT_SHA this dispatch's publish image cloudbuild.publish.yaml is pinned to) added the rollAbsent branch (situsForRetiredBake, which has no punctuation guard) specifically for roll-absent accounts, and its own close artifact (_inbox/2026-09-09_ctx-retire_close.json) states rule3 of its own walk-grading proposal: 'BP-CONFORMANT-01 ... is UNCHANGED ... it is not a new tolerance, it is the walk's EXISTING rule finally being satisfiable for [the 63 roll-absent Caldwell accounts]'. Reading nodeFacetBakeTier1ConformantCli.ts at that exact merged commit confirms the `else` branch (on-roll accounts, situsForBake, skippedBadSitus) is untouched by that PR."
+    ],
+    "rejected": "That this matches Caldwell 48055:1's class (a roll-dropout/retired account, per the retired planner's retracted inference). Rejected on: (1) the dispatch's own instruction -- McLennan has one CAD vintage, no roll-dropout population is possible; (2) live verification -- 48309:103671 carries no recordRetirement field and takes the bake CLI's on-roll (`else`) branch, not the rollAbsent branch; (3) Caldwell itself now measures 0/48,649 failures post-PR#647, confirming its roll-absent population is fixed and disjoint from this dispatch's still-open on-roll population. The two classes share one ROOT CODE PATH (situsForBake's punctuation guard) but are different POPULATIONS with different fixes: PR #647 already covers roll-absent accounts; the on-roll skip-before-write for a blank/placeholder CAD situs is untouched and is the actual cause of all 18,037 rows this dispatch found.",
+    "ruleNotWrong": "BP-CONFORMANT-01 itself is not the defect. It correctly identifies that these 18,037 rows were never touched by the conformant bake -- that is a true statement about the data, not a false positive from an overbroad or malformed check. No change was made to its logic."
+  },
+
+  "step4_population": {
+    "countingRule": "READ-ONLY, live, STAGING (STAGING_NEONDB_URL, gcloud Secret Manager, deleted after use -- matching the target smart-site-factory.vercel.app/site that produced the recorded walk 4c3d0746). Query: place_layer_snapshots WHERE place_key LIKE 'node:<fips>:%' AND adapter_key = 'node-facets:tier1'; FAIL := facetSchemaVersion = 'node-facets-tier1-v1' OR payload_json::text NOT LIKE '%conformant-v1%' -- the SAME predicate as responseCarriesConformantV1, re-expressed in SQL against the identical stored payload the serve route returns verbatim as body.facets (confirmed by comparing the live HTTP fetch to the SQL row for 48309:103671 -- exact match). Predicate control: the query matched 1,516,110 rows total across all six counties (not zero), ruling out a broken WHERE clause silently reporting a false absence, per the same control discipline scripts/ctx-w2/cadroll-served-state.mjs already established as this program's convention.",
+    "results": {
+      "48021_Bastrop": { "fail": 16104, "total": 77799, "pct": "20.7%" },
+      "48055_Caldwell": { "fail": 0, "total": 48649, "pct": "0%", "note": "CTX-RETIRE PR #647's roll-absent fix already resolved this county's population; disjoint from this dispatch's finding." },
+      "48209_Hays": { "fail": 768, "total": 173050, "pct": "0.44%" },
+      "48309_McLennan": { "fail": 1165, "total": 114255, "pct": "1.02%", "note": "The dispatch-named parcel 48309:103671 is one of these 1,165, not an isolated case." },
+      "48453_Travis": { "fail": 0, "total": 500307, "pct": "0%" },
+      "48491_Williamson": { "fail": 0, "total": 602050, "pct": "0%" }
+    },
+    "totalFail": 18037,
+    "totalMatched": 1516110,
+    "verdict": "One parcel is a curiosity; this is a class. 18,037 rows across three counties fail, with Bastrop alone at 20.7% of its entire served population -- a launch blocker by the dispatch's own stated standard, not a per-county rounding error. The sampler-bias caveat the dispatch raised (low prop_id bias making a single surfaced failure weak evidence of rarity) is moot here: this count is a full-table scan of the served store, not a sample."
+  },
+
+  "step5_fixLocation": {
+    "fixedHere": false,
+    "reasonNotFixedHere": "The defect is entirely in legacy-design-tools/artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts's per-row bake loop (the `else` branch at situsForBake/skippedBadSitus, roughly lines 336-345 at commit 3885efad), which this dispatch explicitly forbids writing to. BP-CONFORMANT-01 in hauska-factory is not wrong and was not changed.",
+    "whatWasDoneHereInstead": "Documented the actual BP-CONFORMANT-01 predicate as a comment on responseCarriesConformantV1 (src/jobs/verify-walk.mjs), per the dispatch's explicit ask that this definition 'does not exist in writing anywhere and producing it is half the value of this lane'. Left a read-only leave-behind instrument, scripts/ctx-prov/provenance-population.mjs, which reproduces the step-4 count against any target's Neon store and can be re-run after a legacy-design-tools fix lands to confirm the population clears.",
+    "precisionForACompiledDispatch": {
+      "targetRepo": "legacy-design-tools",
+      "targetFile": "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts",
+      "targetFunction": "situsForBake / the per-row loop's `else` branch (on-roll accounts), specifically the `if (refuseSitus) { skippedBadSitus += 1; continue }` line",
+      "problemStatement": "An on-roll (non-retired) account whose CAD claim carries a punctuation-only situsAddress is silently skipped by the conformant bake forever, leaving it stuck on whatever pre-conformant snapshot it last held (facetSchemaVersion node-facets-tier1-v1, parcelSource txgio) with no declared state distinguishing it from a genuinely unbaked row. This is the same underlying data-quality symptom CTX-RETIRE's situsForRetiredBake handled for roll-absent accounts (PR #647), but for accounts that ARE on the current roll -- 18,037 of them across Bastrop/Hays/McLennan as of 2026-09-09, likely recurring in future bakes wherever a CAD roll's situs field is blank or placeholder-only.",
+      "suggestedShape_notAnImplementation": "An on-roll account with an unusable situs is not retired and must not be routed through situsForRetiredBake's recordRetirement branch (that would misrepresent it as a roll-dropout it is not). It needs its own declared state -- e.g. a situs-quality absence/refusal on the situs leaf, written WITH the row (not skipping the write) so the row still reaches facetSchemaVersion=conformant-v1 and carries an honest, four-state-compliant absence for situsAddress specifically, rather than the whole row vanishing from the bake's write path. This is a proposal for the receiving lane's own diagnosis, not a prescribed fix -- CTX-PROV did not design or implement it, per the dispatch's scope."
+    }
+  },
+
+  "collisionCheck_CTX_WALKRULE": {
+    "method": "Read-only inspection of git diff origin/main -- src/jobs/verify-walk.mjs inside CTX-WALKRULE's own live worktree (P:/seat-worktrees/property/hauska-factory-ctx-walkrule, fix/ctx-walkrule-retired-grading). No edits made there; no coordination with that lane.",
+    "finding": "CTX-WALKRULE has uncommitted changes in the same file: an import, two new grade constants, a RECORD_RETIRED branch inside gradeParcelResponse, and retiredCount/servedCount reporting in runVerifyWalk -- all genuinely retirement-grading work, matching their stated ownership. Line-range comparison against the shared base (origin/main 8bcfbb2): their hunks sit at original lines ~64, ~462-519, and ~1276-1400+; this lane's own edit sits entirely within original lines 111-116 (the responseCarriesConformantV1 doc comment). No overlapping lines. The two diffs should merge cleanly.",
+    "verdict": "Not a collision by the dispatch's stated trigger ('touches the same lines'). Reported for transparency rather than silently proceeding, since both lanes are concurrently editing the same file and whichever merges first will shift the other's line numbers even without a textual conflict.",
+    "action": "Proceeded. Did not read further into CTX-WALKRULE's implementation details beyond what was needed to confirm non-overlap; this lane's own commit message and code comment cite CTX-RETIRE's already-merged LDT PR #647 (a different, closed lane) as evidence, never CTX-WALKRULE's in-progress work."
+  },
+
+  "constraintsHonored": [
+    "Worktree created via `git worktree add` from origin/main BEFORE any file edit; seat/worktree/branch/commit confirmed at the start.",
+    "Did not inherit the retired planner's retracted Caldwell-match assumption -- started the mechanism diagnosis from nothing and rejected that class explicitly, with evidence.",
+    "Did not deploy, submit a Cloud Build, or run any bake/publish/walk. Every DB read was `SET default_transaction_read_only = on`; every HTTP call was a GET against the already-serving staging site. gcloud secret access was a read, immediately deleted from disk after use.",
+    "Did not write to legacy-design-tools, hauska-engine, or hauska-map (grepped this lane's diff: touches only hauska-factory).",
+    "Did not touch cloudbuild.publish.yaml's _LDT_SHA pin.",
+    "Did not widen BP-CONFORMANT-01 -- zero logic changes to responseCarriesConformantV1 or gradeParcelResponse's use of it; verified via the full existing test suite (178/178 passing, unchanged) after the edit.",
+    "Did not exclude the failing parcel or its class by filter -- the class is named, counted, and its counting rule stated inline, never filtered out of a grade.",
+    "Checked for the CTX-WALKRULE collision explicitly and reported the finding rather than silently resolving or ignoring it.",
+    "This close artifact and both checkpoints are left as UNCOMMITTED _inbox/ files in P:/doc_repo -- doc_repo commits are planner-owned."
+  ],
+
+  "leave_behind": {
+    "instrument": "scripts/ctx-prov/provenance-population.mjs (committed, hauska-factory). Read-only; re-expresses responseCarriesConformantV1 in SQL against place_layer_snapshots for all six counties, with the same predicate-control refusal discipline as scripts/ctx-w2/cadroll-served-state.mjs. Re-run after a legacy-design-tools fix lands to confirm the 18,037-row population clears (expect Bastrop/Hays/McLennan to drop to 0, matching Caldwell/Travis/Williamson's current state).",
+    "openQuestions": [
+      "Whether the punctuation-only-situs population exists in Caldwell/Travis/Williamson too but happens to be zero today, or whether those counties' CAD rolls simply never produce a blank situs -- this dispatch measured the current state, not the underlying rate, and did not sample those three counties' cad_property tables directly for punctuation-only situs candidates that haven't yet reached place_layer_snapshots.",
+      "Whether the suggested situs-quality-absence shape (step5) is the right design, or whether the receiving legacy-design-tools lane should instead extend situsForRetiredBake's no-guard behavior to a new named class -- left to that lane's own diagnosis, per this dispatch's scope boundary."
+    ]
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-prov_cp1.json",
+    "_inbox/2026-09-09_ctx-prov_cp2.json",
+    "_inbox/2026-09-09_ctx-prov_close.json"
+  ]
+}

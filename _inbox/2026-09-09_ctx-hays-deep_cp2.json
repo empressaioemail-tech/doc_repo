@@ -1,0 +1,82 @@
+{
+  "lane": "ctx-hays-deep",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T17:28:53Z",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays",
+  "branch": "fix/ctx-hays-2026-cad-reacquire",
+
+  "independentAuthorityFindings": [
+    {
+      "candidate": "Hays CAD's own 2025 Annual Report (hayscad.com/wp-content/uploads/2025/12/2025-ANNUAL-REPORT.pdf), fetched 2026-09-09 with a browser User-Agent (bare fetch 403s, matching the documented WAF note; header only, no auth bypass)",
+      "independentBecause": "Prose/PDF report, not the bulk-download CSV file our ingest reads; produced by Hays CAD's own administrative/budget process, not their data-downloads pipeline.",
+      "figures": {
+        "numberOfAccounts_budgetTable_page5": { "2025": 132538, "2024": 126766, "2023": 128510 },
+        "propertyCountByCategory_page2_ATTRIBUTED_BY_HAYS_CAD_TO": "the 2025 Comptroller's Audit Reports",
+        "propertyCountByCategory_2025_total": 132358,
+        "categoryBreakdown_2025": { "A-Residential": 83082, "B-Multi-Family": 1205, "C-Vacant": 9876, "D-FarmRanchQualified": 7081, "E-FarmRanchNonQualified": 6501, "F-Commercial": 3396, "J-Utility": 371, "L-IndustrialRealBPP": 6506, "M-MobileHomes": 3046, "O-InventoryReal": 8962, "X-Exempt": 2265, "S-SpecialInventoryBPP": 67 },
+        "schoolDistrictBreakdown_2025_total": 132358,
+        "internalReconciliation": "Both the category-sum (12 rows) and the school-district-sum (7 ISDs) tables in the same report independently total to exactly 132,358 -- verified by direct arithmetic, not read from a printed total line alone."
+      }
+    },
+    {
+      "candidate": "Texas Comptroller PTAD Property Value Study, live pages at comptroller.texas.gov/auto-data/PT2/PVS/, fetched 2026-09-09",
+      "independentBecause": "Published directly by the state agency with statutory oversight (Tax Code 5.10/5.102), not by Hays CAD or this program.",
+      "whatWasFound": "The 2024P index for Hays (105index.php) confirms PTAD conducts a full stratified study across all 7 Hays-area ISDs, with per-category/per-district Confidence Interval and Stratified Ratio detail pages. One directly fetched (Dripping Springs ISD, 105-904, 2023 Confidence Interval Detail) shows genuine per-category parcel totals in the low thousands (category A alone: 3,103-3,620), the correct order of magnitude for that district's slice of the county roll. PTAD's own site does not publish a single rolled-up all-category, all-district grand total on one page -- the total has to be assembled ISD-by-ISD, category-by-category, which is exactly what Hays CAD's Annual Report states it did ('based on the 2025 Comptroller's Audit Reports').",
+      "limitation_honestlyStated": "I did not personally re-sum all 7 ISDs x ~12 categories from PTAD's own worksheet pages to independently reconstruct 132,358 from raw Comptroller data -- the per-ISD Summary Worksheet tables render client-side (present in the WebFetch-rendered read, absent from the raw HTML a plain curl retrieves), and re-deriving 84 individual category-cells was judged not worth the marginal confidence gain given the strength of the corroboration already in hand (see next section). This is named as a real gap in this lane's own rigor, not glossed over."
+    }
+  ],
+
+  "whyTheCorroborationIsStrongDespiteTheGap": [
+    "Two numbers from two different tables in the SAME Hays CAD document, produced by two different internal processes (budget/accounts tracking vs. Comptroller-audit-sourced category count), land within 180 of each other (132,538 vs 132,358) -- if either were fabricated or mislabeled, this close an agreement between two unrelated internal processes would be a coincidence.",
+    "Neither number is anywhere near 172,116 (the padded 2025 comparator) -- both are within 1% of the prior lane's already-established 131,246 'CAD-only 2025' figure, and within 1.7% of our own 134,606 2026 ingest, on the LOW side (both PRECEDE our 2026 figure and are smaller than it, consistent with one more year of normal growth, not consistent with a roll that's supposed to be 172K).",
+    "This report was published 2025-12, five months before our 2026-07-16 ingest and independent of it in time as well as in pipeline."
+  ],
+
+  "propertyTypeComposition": {
+    "sourceOfTruth": "Orion Appraisal Export Layout.xlsx, Hays CAD's own official schema documentation, shipped inside the same 2026_07_18_2127-Orion-2026-Certified-Export.zip the prior lane already fetched and recounted. Downloaded 2026-09-09 with a browser User-Agent, unzipped, read directly from its embedded sharedStrings.xml (no interpretation, no external source).",
+    "officialDefinition_verbatim": "RecordType / PropertyTypeCode field: \"Appraisal District's ID. First character denotes property type (R = Real, M = Mobile Home, N = Mineral, P = Personal, A = Automobile)\"",
+    "correctionToDispatchsOwnHypothesis": "The dispatch guessed 'if M is mineral and P is personal property' -- the official layout says the opposite pairing: N is Mineral, M is Mobile Home. P is correctly Personal. Worth stating precisely since the letters look mnemonic but are not in the order a reader would guess.",
+    "priorLaneRawBreakdown_recounted_not_reFetched": { "R_Real": 123429, "P_Personal": 8682, "M_MobileHome": 2479, "N_Mineral": 10, "A_Automobile": "not separately reported by the prior lane; 0 or folded into another code" },
+    "exhaustivenessCheck": "123429 + 8682 + 2479 + 10 = 134600, which equals the prior lane's own reported total row count for that file. R+P+M+(+A) is not a subset of the roll -- it IS the roll. There is no fifth property class sitting in an unfetched file: the Certified Export's own four-letter type code, by construction, tags every row it contains.",
+    "verdictOnDispatchItem3": "Ruled out as the undercount mechanism. This was the dispatch's own flagged 'single most likely mechanism' and it does not hold -- the composition is closed and accounted for, not a partial slice missing 30,000+ rows of some other class."
+  },
+
+  "mundaneFailureModes": {
+    "multipleFileSetsCheck": "Fetched hayscad.com/data-downloads/ directly (browser UA, 200) and listed every 2025/2026 file link on the page (curl + grep, raw HTML, not a summarized read). Every 2026 file already named by the prior lane appears (2026-PRELIMINARY-DATA-EXPORT-FILES.zip, 2026_07_18_2127-Orion-2026-Certified-Export.zip, 2026-PROPERTY-DATA-EXPORT-FILES-AS-OF-8-26-2026.zip) plus the monthly 'AS-OF' 2025-vintage drops (Jan-Aug 2026) which are 2025 tax-year supplements, not a fourth 2026 population. No unfetched 2026 file set of a different kind exists on the page today.",
+    "paginationTruncationCheck": "Not re-run independently this lane -- the prior lane's byte-for-byte recount (134,606 / 134,600 / 134,591 across three separate files) already rules out truncation-in-transit for those three drops; re-verifying a fourth time was judged redundant.",
+    "silentParserDropCheck": "lib/cad-ingest/src/orion/parser.ts:69-75 (classifyOrionHeader) throws on an unrecognized file rather than silently skipping it (parser.ts:264-268, 'expected an Orion property file, classified as unknown' is a thrown Error, not a swallowed continue). A schema the parser doesn't recognize fails loud, not silent -- read directly from the current source, not inferred."
+  },
+
+  "perCapitaSanityCheck": {
+    "note": "Explicitly weak per the dispatch's own framing (item 4) -- reported as weak, not leaned on.",
+    "populationSources": "Hays: Hays CAD's own 2025 Annual Report, 'approximately 309,000-312,000 residents' (2025 est., Census Bureau-sourced per the report). Travis/Williamson/Caldwell: 2025 Census Bureau county population estimates via web search, figures 1,363,767 / 752,827 / 55,150 respectively.",
+    "residentsPerAccount_2025or2026roll": {
+      "Hays": "~310,500 / 134,606 = 2.31 (using 2026 roll against 2025 population est., the closest available pairing)",
+      "Travis": "1,363,767 / 492,848 = 2.77",
+      "Williamson": "752,827 / 319,480 = 2.36",
+      "Caldwell": "55,150 / 48,382 = 1.14 (rural, land-parcel-heavy roll -- expected to run low)"
+    },
+    "reading": "Hays sits inside the Travis-Williamson band, not below it. If Hays were genuinely missing 30,000+ accounts (true count ~164,600), its ratio would drop to ~1.89 -- noticeably below Williamson's suburban 2.36 and closer to rural Caldwell's shape, which would be an odd fit for a county whose growth profile (per the Annual Report) is suburban/exurban, not rural. This is weak, directional corroboration for reading 2, not proof."
+  },
+
+  "preRegisteredFalsifier_outcome": {
+    "recap": "Stated in CP1 before any fetch: near-or-below ~134,600 (121,000-148,000 band) confirms reading 2; near 172,000+ reopens mechanism A and fires the falsifier.",
+    "actualIndependentFigures": "132,358 and 132,538 (Hays CAD's own 2025 Annual Report, one branch attributed to Comptroller Audit Reports) -- both inside the confirming band, both on the low-and-growing side of our 134,606, neither anywhere near 172,000.",
+    "fired": "NO. Reading 2 is confirmed by a source outside this program's fetch/parse/store pipeline."
+  },
+
+  "midWorkAdversarialCheck": {
+    "question": "Could the Annual Report's numbers themselves be circular -- e.g., did Hays CAD just copy our own bulk-export total into their annual report, making this a false independent check?",
+    "reasoning": "No plausible path for that: the Annual Report's 132,358/132,538 are 2025-tax-year figures, published 2025-12, seven months before our program's first 2026 ingest (2026-07-16) and eight-plus months before this lane's 2026-09-09 read. Hays CAD cannot have copied a number our program produced later. The 132,358 branch is explicitly attributed to the Comptroller, an entirely separate compiling authority. The two branches also come from different report sections (budget/operations vs. reappraisal-plan/Comptroller-citation) prepared for different purposes.",
+    "conclusion": "The independence holds on timing and on authorship grounds. No basis to discount it."
+  },
+
+  "decision": "Reading 2 confirmed by an authority outside this program's own pipeline. Falsifier did not fire. Mechanism A stays closed. No re-acquire, no apply, no gate change. Proceeding to close.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-hays-deep_cp1.json",
+    "_inbox/2026-09-09_ctx-hays-deep_cp2.json"
+  ]
+}

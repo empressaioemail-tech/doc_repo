@@ -3,7 +3,7 @@ id: 2026-09-09_hays_2026_cad_roll_is_incomplete_finding
 title: Hays' 2026 CAD roll is 21.8 percent smaller than its 2025 roll, and it is the only county that shrank
 date: 2026-09-09
 last_updated: 2026-09-09
-status: open
+status: resolved
 applies_to: hauska-factory
 plan_rows: [P-124]
 seat: integration (doc-repo-79)
@@ -13,6 +13,19 @@ snapshot:
   measured_at: 2026-09-09T13:40Z
 related:
   - _inbox/2026-09-09_ctx-retire_close.json
+  - _inbox/2026-09-09_ctx-hays_acquisition_mechanism_resolved_finding.md
+resolution: >
+  2026-09-09, seat property (fix/ctx-hays-2026-cad-reacquire). The "Not established" and "Open" sections
+  below are resolved: mechanism B, not A -- three independent source recounts of Hays CAD's own 2026
+  exports (a 5-month span, two schemas) converge on ~134,600 accounts; re-acquiring under the current
+  source does not change the count (the freshest available drop is 15 rows SMALLER). Full evidence in
+  _inbox/2026-09-09_ctx-hays_acquisition_mechanism_resolved_finding.md and
+  _inbox/2026-09-09_ctx-hays_cp1.json. Per this dispatch's own instruction under mechanism B: STOPPED,
+  no re-acquire/apply/bake/backfill performed, handed back for an operator ruling. Also resolved: the
+  172,116 2025 baseline used above is itself a CAD export padded with a non-CAD StratMap parcel-geometry
+  fallback (see the resolution doc) -- not a clean single-source count. Additionally found: 48113
+  (Dallas) and 48439 (Tarrant) carry the same latent smaller-prior-vintage shape as Caldwell, not
+  previously named.
 ---
 
 # Hays' current CAD vintage does not cover the county

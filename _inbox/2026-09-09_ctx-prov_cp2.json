@@ -1,0 +1,45 @@
+{
+  "lane": "ctx-prov",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T17:35:00Z",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-prov",
+  "branch": "fix/ctx-prov-conformant-provenance",
+
+  "step4_population": {
+    "countingRule": "READ-ONLY, live, staging (STAGING_NEONDB_URL via gcloud Secret Manager, deleted from shell after use). place_layer_snapshots, adapter_key='node-facets:tier1', place_key LIKE 'node:<fips>:%'. FAIL := facetSchemaVersion = 'node-facets-tier1-v1' OR payload_json::text NOT LIKE '%conformant-v1%' (the exact same predicate as responseCarriesConformantV1, re-expressed in SQL against the same stored payload the route serves verbatim as body.facets). Predicate control: matched 1,516,110 rows total across the six counties (not zero), so this is a measured population, not a broken filter returning a false absence.",
+    "results": {
+      "48021_Bastrop": { "fail": 16104, "total": 77799, "pct": "20.7%" },
+      "48055_Caldwell": { "fail": 0, "total": 48649, "pct": "0%" },
+      "48209_Hays": { "fail": 768, "total": 173050, "pct": "0.44%" },
+      "48309_McLennan": { "fail": 1165, "total": 114255, "pct": "1.02%" },
+      "48453_Travis": { "fail": 0, "total": 500307, "pct": "0%" },
+      "48491_Williamson": { "fail": 0, "total": 602050, "pct": "0%" }
+    },
+    "totalFail": 18037,
+    "totalMatched": 1516110,
+    "verdict": "This is a CLASS, not a curiosity, in three of six counties. McLennan's 1,165 is not one parcel; Bastrop's 16,104 (one row in five) is the largest population found. Caldwell/Travis/Williamson currently show zero."
+  },
+
+  "step3_mechanism": {
+    "chosen": "The conformant bake CLI (legacy-design-tools, nodeFacetBakeTier1ConformantCli.ts) permanently skips writing a row -- on every run, forever -- when the parcel is still present on its county's current CAD roll (not a CTX-RETIRE roll-absent/retired case) AND the CAD claim's raw situsAddress is punctuation-only. Verified at source, origin/main 3885efad: situsForBake() calls assertSitusNotPunctuationOnly (serveGuards.ts, PUNCTUATION_ONLY_RE = /^[\\s,.\\-;:'\"`]+$/); when it throws, situsForBake returns {situs:null, refuse:true}; the per-row loop does `skippedBadSitus += 1; continue` BEFORE any write (nodeFacetBakeTier1ConformantCli.ts:341-345). A skipped row is never touched again on any future run, so it stays frozen on whatever bakedAt/schema it last held.",
+    "evidence": [
+      "100% match, not a sample: every one of the 18,037 failing rows across all three counties has a punctuation-only baseFacts.situsAddress (measured live: 16104/16104 Bastrop, 768/768 Hays, 1165/1165 McLennan).",
+      "100% match: every failing row carries provenance.parcelSource = 'txgio', the pre-conformant bake's literal marker (ParcelSource union in nodeFacetTier1Assemble.ts is exactly 'txgio' | 'conformant-v1-cad-parcel-roll') -- none carry the conformant source.",
+      "bakedAt is frozen and disjoint from passing rows in every county checked: Hays and McLennan's failing rows share ONE exact bakedAt timestamp each (2026-07-23T15:22:13.921Z and 2026-07-24T19:33:06.683Z respectively) while passing rows in the same county were baked today (2026-09-09), hours-to-months later, repeatedly -- the failing set has not moved across any of those later runs.",
+      "Source read directly (not inferred from CTX-RETIRE's prose): nodeFacetBakeTier1ConformantCli.ts's rollAbsent branch (situsForRetiredBake, CTX-RETIRE PR #647, merged today as 3885efad -- the exact LDT_SHA this dispatch's publish image is pinned to) explicitly bypasses the punctuation guard ONLY when cadPropertyRoll.byPropId lacks the prop_id. Every failing row here IS present on its roll (confirmed for 48309:103671: real baseFacts, no recordRetirement field), so it takes the untouched `else` branch and hits the pre-existing skip."
+    ],
+    "rejected": "Matching Caldwell's 48055:1 class (a roll-dropout / retired account). Rejected on two independent grounds: (1) the dispatch's own instruction that McLennan holds a single CAD vintage and cannot have a roll-dropout population; (2) live-verified -- 48309:103671's served payload carries no recordRetirement field at all, and its provenance/situs shape matches the on-roll `else` branch of the bake CLI, not the rollAbsent branch. The two failure classes share a root CODE PATH (the same punctuation guard in situsForBake) but are DIFFERENT POPULATIONS: roll-absent accounts (Caldwell, now fixed by PR #647) versus live on-roll accounts with a blank/placeholder CAD situs (this dispatch's 18,037, still unfixed). Caldwell's 0/48,649 current failure count corroborates this: PR #647's fix already resolved its roll-absent population; the on-roll punctuation-skip defect this dispatch found is untouched by that fix and has no representation in Caldwell today because none of Caldwell's on-roll accounts happen to carry a punctuation-only situs (or if any do, they are a separate, unmeasured question the dispatch did not name)."
+  },
+
+  "collisionCheck_CTX_WALKRULE": {
+    "checked": "git diff origin/main -- src/jobs/verify-walk.mjs in P:/seat-worktrees/property/hauska-factory-ctx-walkrule (their live worktree, read-only inspection, no edits made there).",
+    "finding": "CTX-WALKRULE has uncommitted changes in the SAME FILE (src/jobs/verify-walk.mjs) -- an import, two new grade constants, a RECORD_RETIRED branch inside gradeParcelResponse, and retiredCount/servedCount reporting in runVerifyWalk. My own edit is a documentation-only comment added directly above responseCarriesConformantV1's definition (original lines 111-116). Line-range comparison against a common base (origin/main 8bcfbb2, which both branches share): WALKRULE's hunks sit at original lines ~64, ~462-519, and ~1276-1400+; mine sits entirely within lines 111-116. NO OVERLAPPING LINES. My comment does not implement, duplicate, or alter retirement grading; it factually cites CTX-RETIRE's already-merged LDT PR #647 as evidence for the bake-side mechanism, and does not reference or depend on CTX-WALKRULE's in-progress hauska-factory-side work. Reporting this proximity rather than treating it as the STOP condition, since the dispatch's collision trigger is 'touches the same lines' and that condition is not met -- both lanes touch the same file in non-overlapping regions and should merge cleanly, but a human should still be aware two lanes are concurrently editing verify-walk.mjs.",
+    "action": "Proceeded (not a blocking collision). Did not coordinate with or read any further into CTX-WALKRULE's implementation beyond confirming line ranges."
+  },
+
+  "decision": "Mechanism and population established from source + live data. Step 1 (rule definition) written into the codebase as a doc comment, since the dispatch named that half the value of the lane. No fix belongs in hauska-factory: BP-CONFORMANT-01 is not wrong (the data genuinely is non-conformant for these rows) and the actual defect -- the punctuation-guard skip-before-write for on-roll accounts -- lives entirely in legacy-design-tools' nodeFacetBakeTier1ConformantCli.ts, which this dispatch forbids writing to. Proceeding to close with a precise handoff.",
+
+  "checkpointArtifacts": ["_inbox/2026-09-09_ctx-prov_cp1.json", "_inbox/2026-09-09_ctx-prov_cp2.json"]
+}
