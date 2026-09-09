@@ -1,0 +1,40 @@
+{
+  "lane": "ctx-elgin",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T14:55:00.000Z",
+  "seat": "property",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-ctx-elgin",
+  "branch": "fix/ctx-elgin-restage-and-reconcile",
+
+  "restage": {
+    "dryRun": {"featuresFetched": 3220, "featuresStaged": 3209, "skipped": 11},
+    "apply": {"featuresFetched": 3220, "featuresStaged": 3209, "skipped": 11, "hostFingerprint": "ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech (direct, pooler=false)", "storeVerify": {"n": 3209, "null_tier": 0, "distinct_codes": 8, "geometry_crs": "EPSG:4326"}, "elapsedMs": 3330},
+    "scopeConfirmed": "REPLACE semantics are DELETE ... WHERE city_key='elgin-tx' then batched INSERT, inside one transaction (read directly from stage-tx-zoning-district.mjs before running it). city_key='elgin-tx-travis' (CTX-STAGE2's write) is a structurally different partition and was not touched -- confirmed unchanged before/after (499 rows both times, spot-checked)."
+  },
+
+  "residueRemeasure_ctxStage2RuleVerbatim": {
+    "countingRule": "Identical to CTX-STAGE2's close: denom_incity = COUNT(DISTINCT prop_id) landing_parcel_jurisdiction WHERE city_name='Elgin' AND place_fips='23044' AND disposition='in-city' AND county_fips=C AND prop_id NOT IN ('','0'). denom_with_geom = per-parcel EXISTS >=1 txgio_parcel row with geom IS NOT NULL. matched_count = per-parcel EXISTS >=1 tx_zoning_district_staging row (layer_role='base', is_overlay=false, city_key IN ('elgin-tx','elgin-tx-travis')) with ST_Contains(ST_SetSRID(ST_GeomFromGeoJSON(z.geometry::text),4326), ST_PointOnSurface(p.geom)) -- this is the exact predicate hauska-engine's own join-zoning-district-to-parcels.mjs uses in production, read from source before writing this query, not reinvented. Added a numeric bbox pre-filter (both tables carry west_lng/south_lat/east_lng/north_lat) on top of CTX-STAGE2's rule, per their own LESSON about the unrestricted-scan stall; the bbox filter is provably non-lossy (ST_PointOnSurface always lies within both the parcel's own bbox and, when truly contained, the zoning polygon's bbox, so a real match can never fail the pre-filter). Instrument correctness check: re-ran this exact query against Travis (48453), which this restage did NOT touch, and reproduced CTX-STAGE2's own numbers exactly (matched_count=1181, residue_unmatched=525, byte-for-byte) -- the instrument replicates a known result before being trusted on the new one.",
+    "bastrop_48021_beforeRestage": {"source": "CTX-STAGE2 close, staged data vintage 2026-08-12/14", "denom_incity": 3749, "denom_with_geom": 3749, "matched_count": 3701, "residue_unmatched": 48},
+    "bastrop_48021_afterRestage": {"source": "this lane, live re-stage 2026-09-09", "denom_incity": 3749, "denom_with_geom": 3749, "matched_count": 3691, "residue_unmatched": 58},
+    "travis_48453_unchanged": {"denom_incity": 1706, "denom_with_geom": 1706, "matched_count": 1181, "residue_unmatched": 525, "note": "elgin-tx-travis was not restaged this lane (out of scope -- CTX-STAGE2 staged it fresh on 2026-09-09, already current); reproduced verbatim as an instrument sanity check, not a new measurement."},
+    "denominatorStability": "denom_incity and denom_with_geom for Bastrop are IDENTICAL before and after restage (3749/3749 both times) -- confirms the restage did not touch landing_parcel_jurisdiction or txgio_parcel (read-only for this lane) and the denominator did not move as a side effect of this lane's own write, matching the structural guarantee CTX-STAGE2 established for its own write."
+  },
+
+  "driftVsRealAbsenceVerdict": "NOT staging drift toward CTX-ELGIN's probed 9. Freshening city_key='elgin-tx' from the live service moved Bastrop residue from 48 to 58 -- further from 9, not toward it. The dispatch's own decidable test therefore resolves in favor of 'the published layer genuinely does not cover them' (its 'stays near 48' branch), and the live re-stage made the picture MORE unfavorable, not less -- ruling out the hypothesis that CTX-STAGE2's number was inflated by a stale August snapshot.",
+
+  "theTenParcelFinding_notInEitherOriginalHypothesis": {
+    "what": "Live-fetched Elgin_Zoning FeatureServer/0 today (2026-09-09) carries 11 features (of 3,220 total) with Zone_Code='S-P' ('Specific Use' per the layer's own Zoning field) -- a REAL Elgin zoning code that packages/engine-core/src/zoning-staging/registry.ts's codeDomainMap for elgin-tx does NOT include (map has R-1/R-2/R-3/A->R-4/C-1/C-2/C-3/I only, 8 codes, unchanged since 2026-08-12). normalizeZoningFeature() honestly skips any feature whose code fails the domain map (src/zoning-staging/normalize.ts:75-80, 'Map present -> only listed values stamp'); this is correct, intentional fail-closed behavior, not a bug in the skip logic itself.",
+    "geometricTest": "Fetched all 11 S-P features WITH geometry live and ran the identical ST_Contains/ST_PointOnSurface predicate (ad hoc, not persisted) against this lane's 58 Bastrop residue parcels. Result: 9 of the 11 S-P polygons geometrically cover 10 of the 58 residue prop_ids (12948, 111348, 14457, 124619, 12830, 8712013, 60891, 11364, 85259, 14535). These 10 parcels ARE covered by a real, currently-live Elgin zoning district polygon -- they are not a GIS coverage gap at all. They are unmatched only because this repo's registry has never carried an S-P entry.",
+    "decomposition": "58 total Bastrop residue = 10 parcels covered by a live polygon whose code (S-P) is missing from the registry's codeDomainMap, + 48 parcels with ZERO live polygon coverage under any code (mapped or unmapped) -- confirmed by exhaustion, since the 11 S-P features are the entire non-domain-mapped subset of the 3,220-feature layer (0 other non-S-P, non-8-code values exist in the live layer today).",
+    "notThisLanesToFix": "codeDomainMap is a config value in this same repo (registry.ts), and adding an S-P entry is a plausible, narrowly-scoped fix -- but it is outside this dispatch's scope (re-stage-and-reconcile, not fix-domain-map) and is reported as a finding for a follow-on lane or the integration seat to decide, not applied here."
+  },
+
+  "falsifier": {
+    "city": "Pflugerville (city_key='pflugerville-tx'), untouched by both this lane and CTX-STAGE2's writes",
+    "sample": "first 3,000 of ~20,138 in-city parcels by prop_id order (same sampling CTX-STAGE2 used, for direct comparability)",
+    "result": {"denom_with_geom": 3000, "matched_count": 2959, "residue_unmatched": 41},
+    "verdict": "Non-zero, and reproduces CTX-STAGE2's own falsifier result on this city exactly (2,959/41) -- the instrument is not hard-wired to return zero, and independently reproduces a known-good prior result before being trusted on Elgin."
+  }
+}

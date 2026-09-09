@@ -1,0 +1,83 @@
+{
+  "lane": "ctx-hays",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays",
+  "branch": "fix/ctx-hays-2026-cad-reacquire",
+  "baseCommit": "3885efadb789942a479b475d34d1518807756e0a",
+
+  "missionPremise": "Operator ruling 2026-09-09 (in the dispatch): re-acquire the 2026 Hays roll, BUT the dispatch made re-acquiring conditional on first establishing which of two mechanisms produced the 21.8% shrink -- 'The fork ... is the whole mission. Do not skip to re-acquiring.' Under mechanism A (an incomplete ingest on our side) re-acquire and re-measure; under mechanism B (Hays CAD's own 2026 export is genuinely that size) STOP and hand back for an operator ruling, with no fabrication, backfill, or gate relaxation.",
+
+  "completionPredicate": "A stranger can evaluate this done by: (1) the acquisition-side record was read and named, with the finding that no run-log mechanism exists in this program today, only cad_property's row-level source_file/source_vintage/ingested_at fingerprint (named at CP1); (2) the source was counted directly -- three independent Hays CAD drops, fetched live from hayscad.com, spanning 2026-03 to 2026-08-27, parsed with the repo's own exact CSV/dedup rule -- and all three land within 15 rows of each other and of the 134,606 already in cad_property (CP1); (3) the pre-registered falsifier (would a source recount land near 172,000, proving A) did not fire; mechanism B stands; (4) per the dispatch's own instruction under B, no re-acquire/apply/bake/deploy/backfill was performed; (5) the other-counties sweep from item 4 was run against the full 40-county store, not just the six the dispatch named, and found two additional latent instances (CP2); (6) both a resolution finding doc and an update to the original open finding's status were filed for the operator/integration seat.",
+
+  "scopeBasis": "In scope, per the dispatch: reading the acquisition record, counting the source, the A-vs-B determination, and the item-4 county sweep -- all read-only research plus doc_repo write-up. Out of scope, explicitly named by the dispatch and honored: relaxing MAX_MISS_RATE or any gate threshold; baking, publishing, running a walk, or any deploy/Cloud Run/Cloud Build (integration seat's execution program); writing to hauska-factory, hauska-engine, or hauska-map; backfilling 2026 from 2025 rows. Because the investigation concluded mechanism B, the dispatch's own branching logic means the 're-acquire, apply, and re-measure' half of item 3 never activates -- this is not an omission, it is the dispatch's own conditional resolving to its STOP branch. No code was written or needs to be in legacy-design-tools: the correct action under B is to stop and report, not to implement anything, and manufacturing a diff to satisfy a general 'you write code and commit' framing would be worse than an honest zero-diff close.",
+
+  "acquisitionRecordRead": {
+    "tableOrLogName": "None exists. No cad_ingest_runs / acquisition_log / run-artifact mechanism anywhere in this program (checked lib/db/src/schema/*, lib/cad-ingest/src/cli.ts, doc_repo _catalog/). Read instead: cad_property's own source_file/source_vintage/ingested_at columns (lib/db/src/schema/cadProperty.ts:70-76), the closest thing to an authoritative record, named explicitly as a proxy per the dispatch's own warning, not as the record it asked for.",
+    "literalQuery": "SELECT source_file, source_vintage, min(ingested_at), max(ingested_at), count(*) FROM cad_property WHERE county_fips='48209' AND tax_year=2026 GROUP BY source_file, source_vintage -- live, f06-staging-neondb, 2026-09-09",
+    "result": "source_file='2026-PRELIMINARY-DATA-EXPORT-FILES.zip', ingested 2026-07-16T11:40:47Z-11:41:20Z (one 33-second pass), n=134606"
+  },
+
+  "sourceSideCount": {
+    "countingRule": "Distinct PropertyID in the record-1 Property file, exact reproduction of lib/cad-ingest/src/csv.ts + orion/parser.ts's dedup loop, run against freshly downloaded bytes from https://hayscad.com/data-downloads/ (public page; 403s a bare fetch, 200s with a standard browser User-Agent -- no auth bypass)",
+    "results": {
+      "2026-PRELIMINARY-DATA-EXPORT-FILES.zip (file our ingest used, 2026-03)": 134606,
+      "2026_07_18_2127-Orion-2026-Certified-Export.zip (different schema, 2026-07-18)": "134600 raw rows (R=123429/P=8682/M=2479/N=10)",
+      "2026-PROPERTY-DATA-EXPORT-FILES-AS-OF-8-26-2026.zip (freshest available, 2026-08-27)": 134591
+    },
+    "verdictAvsB": "B (theirs). Three independent counts across 5 months and two export schemas converge within 0.01% of each other and of the 134,606 already ingested; none approaches 172,116. See _inbox/2026-09-09_ctx-hays_cp1.json for full detail."
+  },
+
+  "reacquired": "No. Mechanism B; the dispatch's own instruction is to STOP under B, not re-acquire. No before/after counts to report -- 48209 tax_year 2026 remains 134,606 in cad_property, untouched by this lane.",
+
+  "otherCountiesPartialVintageSweep": {
+    "method": "SELECT county_fips, tax_year, count(*) FROM cad_property GROUP BY county_fips, tax_year, live against the full 40-county staging store, not limited to the dispatch's six named counties",
+    "additionalLatentInstancesFound": [
+      { "fips": "48113", "name": "Dallas", "2025": 693556, "2026": 806563, "shape": "same as Caldwell -- smaller prior vintage, currently harmless because current is larger" },
+      { "fips": "48439", "name": "Tarrant", "2025": 689838, "2026": 975885, "shape": "same shape, +41.5% -- large enough that whether Tarrant's OWN 2025 vintage was itself a partial acquisition is worth the integration seat checking separately" }
+    ],
+    "singleVintageCounties": "34 of 40 counties hold exactly one tax_year (2025 only) -- not the defect class under investigation (nothing to diff against), but flagged as an open, unaddressed class rather than silently omitted.",
+    "conclusion": "Hays remains the only county in the full 40-county store whose current vintage is SMALLER than its prior one."
+  },
+
+  "preRegisteredFalsifier": {
+    "statedBefore": "A source recount landing near 172,000 (materially above 134,606) would prove mechanism A. A source recount landing near 134,606 (within normal roll churn) across independently-drawn drops would prove mechanism B.",
+    "fired": "No, for A. Result clustered at 134,591-134,606-134,600 across three independent drops. B confirmed."
+  },
+
+  "constraintsHonored": [
+    "Did not relax MAX_MISS_RATE or any gate threshold (grep of this lane's changes: zero files touched in hauska-factory, which owns that gate, and zero files touched anywhere carrying that constant)",
+    "Did not bake, publish, run a walk, or deploy anything (no CLI invocation of cad-ingest's --apply, no gcloud run deploy, no cloudbuild trigger, no hauska-factory command run)",
+    "Did not run any Cloud Run job or Cloud Build",
+    "Did not write to hauska-factory, hauska-engine, or hauska-map (grepped: this lane touched only doc_repo _inbox/ artifacts and downloaded/read Hays CAD zips to a local scratchpad; zero files changed in any of the three forbidden repos)",
+    "Did not backfill 2026 from 2025 rows under any circumstances (no DB write of any kind was issued by this lane -- every psql invocation was a SELECT; the only writes were the CP1/CP2/finding/close JSON and markdown files in doc_repo _inbox/, left uncommitted per AGENT_CONTRACT section 6)",
+    "Registered the worktree via git worktree add from origin/main, on a freshly cut branch, before any file was read or edited",
+    "Verified at source: the acquisition fingerprint, the source-side account counts (three independent live downloads, not inferred from cad_property), and the other-counties sweep are all live reads against f06-staging-neondb or hayscad.com, not assumptions from the dispatch's prose or the original finding doc",
+    "Credential hygiene: STAGING_NEONDB_URL pulled from gcloud Secret Manager per query batch, written to a scratch file, used, and deleted immediately after (rm -f) each time",
+    "doc_repo commits are planner-owned: this lane's four _inbox/ writes (cp1.json, cp2.json, the resolution finding.md, and the status-field edit to the original finding.md) plus this close.json are left UNCOMMITTED in P:/doc_repo, listed here rather than committed"
+  ],
+
+  "leave_behind": {
+    "lessons": [
+      "hayscad.com/data-downloads/ 403s any fetch with no User-Agent header (matches lib/cad-ingest/src/sources.ts's documented WAF note) but returns 200 to a plain curl carrying a standard browser User-Agent -- no cookies, no JS challenge, no auth needed. Any future Hays acquisition work that needs to enumerate available drops programmatically should set a UA header rather than treating the page as unreachable; this is not the OAuth/credential-rotation trap the CANON-PREAMBLE warns about (COTALITY IS EXTINGUISHED), it is a bare bot-UA block.",
+      "Hays CAD publishes at least two structurally DIFFERENT export schemas for the same roll: the informal 'PropertyDataExport' CSV convention (PropertyID, MarketValue, Situs columns -- what the current orion parser reads) used for preliminary/as-of snapshots, and their own 'Orion Certified Export' naming (PropertyQuickRefID, no MarketValue/Situs columns, values likely live in a companion file within that same zip) used for the certified release. The current classifyOrionHeader (lib/cad-ingest/src/orion/parser.ts:69-75) cannot read the second shape at all -- it would classify it 'unknown' and the CLI would hard-fail (rowsParsed===0), which is a safe failure, not a silent one, but it means the certified export is NOT currently an ingestable source for Hays even though it is Hays CAD's own most-official release.",
+      "cad_property's source_file/source_vintage fields reflect LAST WRITER, not full provenance -- a later upsert (e.g. the P-78 StratMap fallback) overwrites those fields for any row it touches, even a row that originally came from a different source and was merely updated. Counting rows by source_file after multiple layered applies to the same tax_year will undercount the original source's true contribution. Any future acquisition-record archaeology on a county with more than one applied layer at the same tax_year should expect this and cross-check against a filed announce/apply-log artifact (P-78's, in this case) rather than trusting source_file alone as a partition.",
+      "No ingest-run-log mechanism exists anywhere in this program (no cad_ingest_runs table, no per-run JSON artifact). This lane worked around it by recounting the source directly, which the dispatch itself anticipated and required ('do not infer it from the shape of cad_property'). Proposing, not building (DEV_PROCESS 5.4 -- propose, do not unilaterally remediate; out of this dispatch's scope): a lightweight per-run log (source URL/file, row counts reported, success/fail, timestamp) would have let this question be answered by reading a table instead of re-downloading and re-parsing 40MB+ zip files three times."
+    ],
+    "deadEnds": [
+      "WebFetch on https://hayscad.com/data-downloads/ returns a bare 403 with no body -- do not retry it plain; it needs a browser User-Agent via curl/Bash instead."
+    ],
+    "groundTruths": [
+      "(2026-09-09, live read against f06-staging-neondb) cad_property county_fips=48209: tax_year 2025 = 172116 (source_file split: hays-export2.zip=55695, stratmap25-landparcels_48209_lp.zip=116421), tax_year 2026 = 134606 (source_file: 2026-PRELIMINARY-DATA-EXPORT-FILES.zip, single ingest 2026-07-16T11:40:47Z-11:41:20Z).",
+      "(2026-09-09, live fetch from hayscad.com) Hays CAD's data-downloads page currently lists, most-recent-first: 2026-PROPERTY-DATA-EXPORT-FILES-AS-OF-8-26-2026.zip (134591 distinct accounts), 2026_07_18_2127-Orion-2026-Certified-Export.zip (134600 raw rows, different schema, published 2026-07-18), 2026-PRELIMINARY-DATA-EXPORT-FILES.zip (134606 distinct accounts, the file already ingested, published ~2026-03).",
+      "(2026-09-09, live read against f06-staging-neondb, full 40-county sweep) Six two-vintage counties exist: 48055 Caldwell (grew), 48209 Hays (SHRANK -- the only one), 48453 Travis (grew), 48491 Williamson (grew), 48113 Dallas (grew, not previously named), 48439 Tarrant (grew +41.5%, not previously named). 34 counties hold a single vintage (2025 only)."
+    ],
+    "open": [
+      "Operator ruling needed: does Hays launch on its true ~134,600-account 2026 population (absent accounts handled via CTX-RETIRE's recordRetirement mechanism), does it wait, or something else -- this lane does not have standing to decide.",
+      "Whether Tarrant's (48439) own 2025 vintage was itself a partial acquisition, given the unusually large +41.5% jump to 2026 -- flagged, not investigated, belongs to whichever seat owns Tarrant.",
+      "Whether any of the 34 single-vintage counties is itself an undercounted acquisition with nothing to diff against -- a structurally harder question than this dispatch's shrink-detection, requires a source recount per county the way this lane did for Hays, out of scope here.",
+      "Whether to build a parser path for Hays' 'Orion Certified Export' schema (PropertyQuickRefID-keyed, no MarketValue/Situs) so the county's actual certified release becomes an ingestable source -- proposed as a lesson above, not implemented, no operator ruling requested this.",
+      "Whether a lightweight ingest-run-log table is worth building given this lane had to re-derive acquisition history from a row-level fingerprint plus an unrelated P-78 announce doc that happened to exist -- proposed, not built, per DEV_PROCESS 5.4."
+    ]
+  }
+}

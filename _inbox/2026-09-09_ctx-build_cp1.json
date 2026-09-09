@@ -1,0 +1,140 @@
+{
+  "lane": "CTX-BUILD",
+  "planRow": ["P-124"],
+  "checkpoint": "CP1",
+  "checkpointKind": "design / pre-build adversarial check",
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-build",
+  "branch": "fix/ctx-build-pin-and-rescue",
+  "baseCommit": "004236d2edb1237d8e915b628bf648672cbe3535",
+  "subagents": "none spawned; this lane is three small repo writes and a new test, all in one worktree. Fan model permits sub-agents but does not require them, and verification never delegates downward anyway.",
+
+  "missionPremise": "A publish image can only be trusted to bake what the serve projects if (a) every live job's build config is in a repo, (b) the LDT pin names the code that is actually wanted, and (c) a writer that is allowlisted and CLI-dispatchable is also deployable. Source: dispatch _dispatches/2026-09-09_ctx-build_dispatch.md, and OPS-16 row A-120 as stated in test/writer-cli-reachability.test.mjs:1-38.",
+  "completionPredicate": "cloudbuild.parcel-r5-zoning.yaml is tracked on hauska-factory main (git cat-file -e origin/main:<path> succeeds after merge, having failed before); cloudbuild.publish.yaml pins _LDT_SHA 3885efadb789942a479b475d34d1518807756e0a with a comment naming what it picks up and why; a new test asserts deployability for allowlisted CLI-dispatchable writers, has been observed both failing and passing, and CI is green on the PR.",
+  "scopeBasis": "Three items named by the dispatch, all repo writes in hauska-factory. Explicitly OUT of scope and not touched: any Cloud Run execution, any Cloud Build submission, any deploy; P:/tmp/ctx-w2-gate beyond reading one file; legacy-design-tools, hauska-engine, hauska-map (read-only only). The six unrunnable writers found in item 3 are REPORTED, not fixed -- writing six cloudbuild configs is a different card and would be an unrequested widening.",
+
+  "section_contextClaimsReMeasured": {
+    "rule": "DEV_PROCESS 4.1 -- verify at source, including your own dispatch's context block. Every number below was re-measured by this seat on 2026-09-09; none was taken on the dispatch's word.",
+    "claims": [
+      {
+        "dispatchClaim": "cloudbuild.parcel-r5-zoning.yaml is untracked in P:/tmp/ctx-w2-gate and is the only copy",
+        "measured": "git status --porcelain in P:/tmp/ctx-w2-gate lists it as '?? cloudbuild.parcel-r5-zoning.yaml'. git cat-file -e origin/main:cloudbuild.parcel-r5-zoning.yaml fails with exit 128, 'path does not exist in origin/main'.",
+        "verdict": "AGREE"
+      },
+      {
+        "dispatchClaim": "the file is 85 lines",
+        "measured": "wc -l = 85. Copied byte-identical (cmp clean), sha256 a5ff29f314e06dbac9dab5d49742ebc8f4ff8edb6c3c84c42c8df53f4e85f45b.",
+        "verdict": "AGREE"
+      },
+      {
+        "dispatchClaim": "job factory-parcel-r5-zoning is live in hauska-prod-497015/us-east4 at generation 1, digest sha256:795e0e78bc078c2b",
+        "measured": "gcloud run jobs describe (read-only) returns generation 1 and image ...hauska-factory@sha256:795e0e78bc078c2ba3ca554327318c8a038bc8129097f29ef648150013a32387.",
+        "verdict": "AGREE"
+      },
+      {
+        "dispatchClaim": "legacy-design-tools main is 3885efadb789942a479b475d34d1518807756e0a with nothing ahead of it, and 301bb75a...3885efad is ahead_by=3",
+        "measured": "gh api .../commits/main -> sha 3885efadb789942a479b475d34d1518807756e0a. gh api .../compare/301bb75a...3885efad -> status ahead, ahead_by 3, behind_by 0, total_commits 3, exactly the three SHAs named.",
+        "verdict": "AGREE -- pinning to 3885efad is therefore permitted; LDT main has not moved."
+      },
+      {
+        "dispatchClaim": "recordRetirement appears zero times in hauska-factory main at 004236d2",
+        "measured": "git grep -c recordRetirement origin/main exits 1 with no output (zero occurrences). At LDT 3885efad the string appears 6 times in artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts.",
+        "verdict": "AGREE"
+      },
+      {
+        "dispatchClaim": "commit 3c3c243d is 'fix(deploy): Smart Site MCP export env vars survive redeploy (#645)'",
+        "measured": "actual subject is 'fix(deploy): make Smart Site MCP export env vars survive redeploy (#645)' -- the word 'make' is missing from the dispatch's transcription.",
+        "verdict": "DISAGREE (trivial, textual only; no consequence)"
+      }
+    ]
+  },
+
+  "section_item2_bakeReachability_FINDING": {
+    "questionAsked": "State explicitly whether 3c3c243d (the smartsite-mcp env fix) has any effect on the bake. The integration seat believes it does not and that belief is UNVERIFIED.",
+    "answerFor3c3c243d": "NO EFFECT. Measured, not believed.",
+    "answerFor69de8fe6": "ALSO NO EFFECT ON THE BAKE -- and this contradicts the dispatch's framing of item 2. See disagreement below.",
+    "answerFor3885efad": "REACHES THE BAKE, one hop from an entrypoint.",
+    "method": "The publish image's LDT content is not the LDT checkout. Dockerfile.publish's final stage (lines 17-24) copies only /ldt/node_modules and /app/bakes; /app/bakes is produced by scripts/build-publish-bake-clis.mjs, which esbuild-bundles exactly four entrypoints (lines 27-32): nodeFacetBakeTier1ConformantCli.ts, nodeFacetBakeTier2ConformantCli.ts, parcelsPmtilesBakeCli.ts, nodeFacetPatchCadRollFromCadPropertyCli.ts. So 'reaches the bake' == 'is in the transitive import graph of those four'. That graph was traced at SHA 3885efad by reading every module with git show (no checkout, no write to legacy-design-tools): 26 modules, 0 unresolved relative specifiers.",
+    "traceResult": {
+      "modulesReached": 26,
+      "unresolvedRelativeSpecifiers": 0,
+      "nodeFacetBakeTier1Conformant_ts": "REACHED via nodeFacetBakeTier1ConformantCli.ts -> lib/nodeFacetBakeTier1Conformant.ts",
+      "parcelRecordCellRead_ts": "NOT REACHED",
+      "structuralFactToFacetsWire_ts": "NOT REACHED",
+      "github_workflows_cloud_run_deploy_smartsite_mcp_yml": "NOT REACHED (a workflow file cannot be in a JS import graph; it is also absent from the final image, which copies only node_modules and bakes)"
+    },
+    "corroboration": "Repo-wide at 3885efad, every non-test importer of parcelRecordCellRead.ts and structuralFactToFacetsWire.ts is under artifacts/api-server/src/lib/*Fact*.ts or artifacts/api-server/src/routes/ -- none of which is in the 26-module bake graph. No workspace package under lib/ imports either file; the only lib/ mentions of artifacts/api-server are prose comments. The bake graph's four bare workspace specifiers (@workspace/adapters, @workspace/cad-ingest, @workspace/cad-ingest/zoning-layers, @empressaio/atom-contract/access) resolve to lib/adapters and lib/cad-ingest per pnpm-workspace.yaml, neither of which reaches back into api-server sources.",
+    "consequence": "Of the three commits in this pin bump, exactly ONE changes the publish image's baked code: 3885efad. The other two are inert with respect to the bake."
+  },
+
+  "section_disagreements": [
+    {
+      "id": "D1",
+      "severity": "material -- changes what this pin bump can be claimed to accomplish",
+      "dispatchText": "'69de8fe6 is CTX-MIRROR. Production cortex-api-00754-feg is ALREADY built from it. So the serve projects the rail's own refused state while the bake, pinned to 301bb75a, does not write it. The bake is behind the serve on the exact field the zoning walk grades.'",
+      "finding": "The premise that the pin bump closes a bake/serve gap on 69de8fe6 is not supported. 69de8fe6 changes only artifacts/api-server/src/lib/parcelRecordCellRead.ts and structuralFactToFacetsWire.ts (plus their tests). Neither file is reachable from any of the four bake entrypoints, so neither is compiled into /app/bakes. Bumping the pin from 301bb75a to 3885efad does not change the bake's behaviour with respect to 69de8fe6 at all -- before or after, the bake does not contain that code. Whatever bake/serve disagreement exists on the refused state, this pin bump is not the lever that closes it; the refused state is written by the parcel-r5-zoning RAIL out of hauska-factory's own src (UPDATE_ZONING_CELLS_SQL, per the rescued config's header), not by the LDT bake.",
+      "evidentiaryStandard": "DEV_PROCESS 3.2a -- this correction quotes source and names files. Dockerfile.publish:17-24, scripts/build-publish-bake-clis.mjs:27-32, plus the 26-module trace and the repo-wide importer scan above.",
+      "doesItChangeTheAction": "No. The bump still proceeds, because 3885efad DOES reach the bake and adds recordRetirement to nodeFacetBakeTier1Conformant.ts, which is the honest justification for it. The pin comment will say that and will not repeat the 69de8fe6 claim.",
+      "residualUncertainty": "This is a static-reachability argument. It proves the code is not in the bundle. It does not prove that no bake/serve disagreement exists on the refused state by some other mechanism -- only that this pin does not address one."
+    },
+    {
+      "id": "D2",
+      "severity": "minor -- stale description inside the rescued file",
+      "dispatchText": "the dispatch quotes the rescued config's header: 'test/writer-cli-reachability.test.mjs asserts every allowlisted writer has a cmd === \"<id>\" branch in cli.mjs'",
+      "finding": "That describes the FIRST version of the predicate, which the shipped test explicitly says was wrong and replaced. test/writer-cli-reachability.test.mjs:14-25 states the cmd === '<id>' check 'is over-broad and it fired on four healthy jobs immediately', and the shipped predicate is allowlist id -> the src/jobs module declaring JOB_ID === id -> imported by cli.mjs. The rescued header's criticism still lands (a CLI command is not a place to execute it) but its description of the instrument is out of date. Rescuing the file verbatim is still correct -- it is the record of what deployed the live job -- so the header is left as written and the correction is recorded here rather than by editing history.",
+      "doesItChangeTheAction": "No."
+    },
+    {
+      "id": "D3",
+      "severity": "informational -- my own earlier reading, corrected before it reached a deliverable",
+      "finding": "A first pass at the live-vs-config comparison read factory-atoms-cad as having no build config anywhere, which would have been a serious claim given the canon preamble names it the only writer job. It is wrong. factory-atoms-cad is deployed by hauska-engine's cloudbuild.atoms-writer.yaml:47, which is tracked and present on hauska-engine origin/main. The job is owned by a different repo, not orphaned."
+    }
+  ],
+
+  "section_item3_design": {
+    "predicate": "allowlist id -> the src/jobs module declaring JOB_ID === id -> the cli.mjs `cmd === \"<command>\"` branch that imports that module -> a `gcloud run jobs deploy` block in some cloudbuild*.yaml whose --args names that command. Same shape as the existing reachability test: two independently derived sources asked whether they agree.",
+    "whyNotTheObviousPredicate": "Matching the allowlist id against any --args= in any cloudbuild file would pass on DOCUMENTATION. cloudbuild.parcel-acquire-gis.yaml and cloudbuild.parcel-wave2.yaml carry commented `gcloud run jobs execute ... --args=<id>` example lines. A check satisfied by a comment is a fail-open of exactly the class this program hunts, so comment lines are stripped before parsing and only text inside a `gcloud run jobs deploy` block counts.",
+    "knownIndirection": "cloudbuild.publish.yaml deploys five jobs through a shell for-loop with --args=$$ARGS and a per-job case block. A deploy whose --args is a shell variable resolves to every literal assignment of that variable in the same file. This is an approximation and will be stated in the instrument's bypasses section.",
+    "measuredCurrentState": {
+      "countingRule": "denominator = the 23 ids in WRITER_JOBS (Object.keys length, measured, not counted by eye); 3 of those have no src/jobs module declaring their JOB_ID and are already quarantined by the existing test's ORPHANS_KNOWN, leaving 20 identifiable writers as the population for this check.",
+      "countCorrection": "an earlier draft of this checkpoint said 24 allowlist ids / 21 identifiable / 15 with a target. Those were hand-counted and wrong. Measured values are 23 / 20 / 14. DEV_PROCESS 1.1 -- the figure travels with its denominator, and the denominator is read from the source, not counted off the screen.",
+      "allowlistTotal": 23,
+      "identifiableWriters": 20,
+      "withDeployableTarget": 14,
+      "withoutDeployableTarget": 6,
+      "withoutList": ["p3-rail-absence", "purge-bastrop-orphans", "parcel-value-history", "s6-collision-remediate", "vh-collision-remediate", "owner-rail-collision-check"]
+    },
+    "theSixAreNotExemptions": "All six refuse --apply unless FACTORY_CLOUD=1 (p3-absence.mjs:53-54, purge-bastrop-orphans.mjs:89-90, parcel-value-history.mjs:258-259, s6-collision-remediate.mjs:171-172, vh-collision-remediate.mjs:170-171, owner-rail-collision-check.mjs:502-503, each refusing LAPTOP_WRITE_FROZEN). A read-only gcloud run jobs list confirms none of factory-p3-absence, factory-purge-bastrop-orphans, factory-parcel-value-history, factory-s6-collision-remediate, factory-vh-collision-remediate or factory-owner-rail-collision-check exists in hauska-prod-497015/us-east4. So all six are dispatchable, cloud-gated, and have nowhere to execute -- their --apply path cannot run anywhere. That is the A-120 class, six live instances of it, and calling them exemptions would be dishonest. Declared exemptions in this lane: 0.",
+    "howTheTestStaysHonestWithoutBeingPermanentlyRed": "DEV_PROCESS 2.0 says a permanently-red gate is a dead gate. The repo already has the right idiom for this: ORPHANS_KNOWN in the existing test is a pinned quarantine, not an exemption. The new check pins the six as UNDEPLOYABLE_KNOWN with a written reason each, asserts deep-equality against that frozen set so the set cannot GROW unnoticed, and states in the file that shrinking it is the point.",
+    "provingItCanFire": "Required by the dispatch and by DEV_PROCESS 2.2. Will be demonstrated two ways: (a) in-file VIOLATION tests that run every time, and (b) the dispatch's own demonstration -- delete a real config from the working tree, show the suite go red, restore it, show it go green. Exit codes read from the process, never from a pipe (DEV_PROCESS 2.3)."
+    },
+
+  "section_liveStateReadOnly": {
+    "asOf": "2026-09-09, read-only gcloud, no execution and no deploy",
+    "cloudRunJobsInProject": 35,
+    "jobNamesDeployedByATrackedHauskaFactoryConfig": 31,
+    "liveJobsNoHauskaFactoryConfigDeploys": ["factory-atoms-cad", "factory-bake-migrate", "factory-console-audit", "factory-landing-import"],
+    "note": "factory-atoms-cad is resolved: hauska-engine cloudbuild.atoms-writer.yaml:47, tracked and on that repo's origin/main -- owned by another repo, not orphaned. factory-bake-migrate, factory-console-audit and factory-landing-import are NOT deployed by any cloudbuild*.yaml found on this machine (searched hauska-factory, every property-seat worktree, every P:/tmp worktree, and hauska-engine, at depth 2). They are the same class as parcel-r5-zoning but with no rescuable file located, so there is nothing to commit for them -- reported to the backlog, not fixed here. Counted WITH the rescued r5-zoning config in place; without it, factory-parcel-r5-zoning would be a fifth entry, which is item 1 restated as a measurement.",
+    "configuredButNotLive": "none -- every one of the 31 job names a tracked config deploys exists in the project"
+  },
+
+  "constraintsHonored": [
+    "no Cloud Run job executed",
+    "no Cloud Build submitted",
+    "no deploy",
+    "no bake, walk or publish run",
+    "P:/tmp/ctx-w2-gate: one file read, nothing checked out, nothing committed, no untracked file removed (the three debris files _cty.mjs, _shapes.mjs, _sz.mjs are untouched)",
+    "legacy-design-tools read via git show and gh api only; no branch, no checkout, no fetch, no write",
+    "hauska-engine read only (one config inspected); hauska-map not touched",
+    "worktree created from origin/main with git worktree add before any edit"
+  ],
+
+  "openAtCP1": [
+    "the pin bump itself is not yet written",
+    "the new instrument is not yet written",
+    "three live jobs (factory-bake-migrate, factory-console-audit, factory-landing-import) not yet resolved to a config or to nothing",
+    "nothing committed yet"
+  ]
+}

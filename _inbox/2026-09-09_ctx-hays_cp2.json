@@ -1,0 +1,45 @@
+{
+  "lane": "ctx-hays",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T15:35:00Z",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays",
+  "branch": "fix/ctx-hays-2026-cad-reacquire",
+  "baseCommit": "3885efadb789942a479b475d34d1518807756e0a",
+
+  "midWorkAdversarialCheck": {
+    "question": "Is there any way the B verdict from CP1 is wrong -- e.g. is 134,600ish itself a ceiling imposed by something all three drops share (a shared upstream bug at Hays CAD's export system, or a filter our own counting script silently applies)?",
+    "checksRun": [
+      "The standalone recount script (count_orion_property.mjs) contains no property-type or use-code filter -- verified by reading it back after writing it; it iterates every data row and only skips on a blank PropertyID, matching lib/cad-ingest/src/orion/parser.ts's own loop exactly.",
+      "The Certified export's PropertyTypeCode breakdown (R=123429, P=8682, M=2479, N=10, summing to the full 134600) shows all four property classes present in roughly the proportions expected for a Texas county (residential dominant, some personal/mobile-home) -- not a single class cut off, which would be the signature of a category-level export bug.",
+      "The three counts come from three DIFFERENT files, fetched at three different times (2026-03, 2026-07, 2026-08), through two different export code paths on Hays CAD's own systems (the informal PropertyDataExport CSV convention vs. their own 'Orion Certified Export' naming). A bug shared by all three would have to live on Hays CAD's appraisal-roll side itself, at which point it stops being an 'acquisition' question and becomes exactly the operator-ruling case the dispatch names for mechanism B ('the county needs an operator ruling about serving a county whose own appraisal district has not published a complete current roll')."
+    ],
+    "conclusion": "No basis found to overturn CP1's B verdict. Not proceeding to re-acquire."
+  },
+
+  "item4_otherCountiesPartialVintageSweep": {
+    "instruction": "State whether any OTHER county has a partial vintage that happens not to be the current one, per the dispatch's item 4.",
+    "countingRule": "SELECT county_fips, tax_year, count(*) FROM cad_property GROUP BY county_fips, tax_year ORDER BY county_fips, tax_year -- live, f06-staging-neondb, 2026-09-09. Deliberately NOT limited to the six counties the dispatch's own finding table named -- the staging store holds 40 counties total; scoping the sweep to only the six pre-selected ones would repeat the dispatch's own 'unmentioned vs out of scope' risk (DEV_PROCESS 3.3).",
+    "countiesWithTwoVintages": [
+      { "fips": "48055", "name": "Caldwell", "prior_2025": 24989, "current_2026": 48382, "direction": "GREW", "note": "Already named in the dispatch's finding; the county CTX-RETIRE was built for." },
+      { "fips": "48209", "name": "Hays", "prior_2025": 172116, "current_2026": 134606, "direction": "SHRANK", "note": "This dispatch's subject. Per CP1, 2025's own baseline is itself a mixed CAD+StratMap composite, not a clean prior CAD count." },
+      { "fips": "48453", "name": "Travis", "prior_2025": 380918, "current_2026": 492848, "direction": "GREW", "note": "Already named in the dispatch's finding." },
+      { "fips": "48491", "name": "Williamson", "prior_2025": 282570, "current_2026": 319480, "direction": "GREW", "note": "Already named in the dispatch's finding." },
+      { "fips": "48113", "name": "Dallas (DCAD)", "prior_2025": 693556, "current_2026": 806563, "direction": "GREW (+16.3%)", "note": "NOT in the dispatch's six-county table. Same latent shape as Caldwell/Travis/Williamson: today's current vintage is larger, so nothing drops out today, but the prior (2025) vintage held fewer accounts than the current one -- the same asymmetry class the dispatch is treating as the churn signature. New finding, discovered by broadening the sweep past the six named counties." },
+      { "fips": "48439", "name": "Tarrant (TAD)", "prior_2025": 689838, "current_2026": 975885, "direction": "GREW (+41.5%)", "note": "NOT in the dispatch's six-county table. Same latent shape. The +41.5% jump is large enough that it, on its own, would be worth the integration seat's attention as a possible SEPARATE acquisition-completeness question about the 2025 Tarrant vintage (was 2025 itself partial the way Hays turns out to be?) -- flagged, not investigated further; out of this lane's scope (Tarrant, not Hays)." }
+    ],
+    "singleVintageCounties": {
+      "count": 34,
+      "note": "The remaining 34 counties in the staging store hold exactly one tax_year each (2025 only, no 2026 row at all). Per the dispatch's own framing this is explicitly NOT the defect class under investigation ('Bastrop and McLennan are unaffected -- single vintage, nothing to drop out of') -- there is no prior/current pair to compare, so no shrink or churn signature is measurable. Whether any of these 34 counties' SINGLE held vintage is itself an incomplete acquisition (undercounting the true county population with nothing to diff against) is a structurally different and much harder question -- it would need a source-side recount per county, the same method CP1 used for Hays, run 34 times. Explicitly out of scope for this lane; naming it as an open class rather than silently leaving it unmentioned (DEV_PROCESS 3.3)."
+    },
+    "conclusion": "Two additional latent instances of the same asymmetry class found beyond the dispatch's named Caldwell (Dallas 48113, Tarrant 48439), both currently harmless (current > prior) for the same reason Caldwell/Travis/Williamson are. Hays is confirmed as the only county in the six-county table that shrank, and remains the only county in the FULL 40-county store whose current vintage is smaller than its prior one."
+  },
+
+  "decision": "B verdict holds after adversarial review. Item 4 complete with two new findings beyond the dispatch's own list. No code change is being made in legacy-design-tools -- the dispatch's own instruction under mechanism B is to STOP, not to implement anything. Proceeding to close.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-hays_cp1.json",
+    "_inbox/2026-09-09_ctx-hays_cp2.json"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "lane": "ctx-elgin",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T14:05:00.000Z",
+  "seat": "property",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-ctx-elgin",
+  "branch": "fix/ctx-elgin-restage-and-reconcile",
+  "headAtOpen": "f2535f4931290c24d5ad4179c233c001e2c7c599",
+
+  "goal": "Re-stage Elgin layer 0 (city_key='elgin-tx') from the live ArcGIS service, then re-measure per-county residue using CTX-STAGE2's exact counting rule, to determine whether the CTX-STAGE2 vs CTX-ELGIN disagreement (48/525 vs 9/457) is staging drift or a real coverage gap. Then reconcile all three definitions and report a derived ceiling -- not written into any config.",
+
+  "preFlightState": {
+    "registrySource": "packages/engine-core/src/zoning-staging/registry.ts, this worktree, HEAD f2535f49 -- ONLY 2 entries: elgin-tx (layer 0, verifiedAt=2026-08-12T16:05:11.759Z, layerWhere=\"CITY_LIMIT = 'ELGIN'\"), smithville-tx. NO elgin-tx-travis entry present here -- CTX-STAGE2's registry.ts diff adding that entry was left uncommitted in the CTX-STAGE2 worktree per its own close and is not visible from origin/main or this worktree.",
+    "liveDbStateBeforeAnyWrite": "Queried tx_zoning_district_staging directly (CORTEX_DATABASE_URL, direct host): city_key='elgin-tx' holds 3,220 rows, fetched_at=2026-08-14T19:34:48.336Z (uniform, single staging run). city_key='elgin-tx-travis' holds 499 rows, fetched_at=2026-09-09T12:11:32.257Z -- CTX-STAGE2's write persisted in the shared database even though its registry.ts code change did not merge; the DB and the code registry are independently-durable artifacts and can disagree, which is itself worth recording.",
+    "activeHeavyScans": "pg_stat_activity checked immediately before this checkpoint: zero other active queries on this connection's visibility. Clear to proceed under AGENT-CONTRACT section 4 (at most one heavy scan across lanes); will announce again immediately before the residue spatial join, which is the actual heavy step.",
+    "dependenciesInstalled": "node_modules were absent in this fresh worktree (git worktree add does not run pnpm install); ran `pnpm install --frozen-lockfile` at the workspace root before any script use -- lockfile-only install, no dependency version changes, not a tracked-file edit."
+  },
+
+  "planForThisLane": [
+    "1. Dry-run stage-tx-zoning-district.mjs --city=elgin-tx against the live service; compare featuresFetched/featuresStaged to the current 3,220 staged rows before writing anything.",
+    "2. If materially different, --apply (REPLACE semantics scoped to city_key='elgin-tx' only, confirmed by reading the script: DELETE ... WHERE city_key=$1 inside one transaction, then batched INSERT -- 'elgin-tx-travis' and every other city_key is structurally untouched).",
+    "3. Re-measure Bastrop (48021) and Travis (48453) residue with CTX-STAGE2's exact counting rule (per-parcel EXISTS aggregation against landing_parcel_jurisdiction denominator, city_key IN ('elgin-tx','elgin-tx-travis'), layer_role='base', is_overlay=false), restricted by city_fips/bbox pre-filter, with connect_timeout/statement_timeout set, per the LESSON left by CTX-STAGE2 (unrestricted scan stalled 1h05m at ~0% CPU).",
+    "4. Falsify: confirm the same instrument returns a non-zero residue on a city this mission never touches.",
+    "5. Reconcile: write the three instruments' population/predicate/exclusion side by side and state which the ceiling should derive from.",
+    "6. Report the ceiling as a number with derivation. Do NOT write it into hauska-factory/src/config/zoning-layer-completeness.mjs (different repo, different worktree, never opened here)."
+  ],
+
+  "constraintsInForceForThisLane": [
+    "hauska-engine only -- never legacy-design-tools, hauska-factory, hauska-map",
+    "Never open P:/seat-worktrees/property/hauska-engine-ctx-stage2",
+    "Never run a bake, publish, walk, Cloud Run job, Cloud Build, or deploy",
+    "txgio_parcel: read-only (for the spatial join CTX-STAGE2 already established), never write",
+    "Do not write 'not-applicable' on any parcel; a probed-and-uncovered parcel earns 'refused', never 'not-applicable'",
+    "Do not adjust LAYER_GAP_RESIDUE_EXCEEDED or any ceiling to make the gate pass"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "lane": "CTX-BUILD",
+  "planRow": ["P-124"],
+  "checkpoint": "CP2",
+  "checkpointKind": "pilot / mid-work adversarial check",
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-build",
+  "branch": "fix/ctx-build-pin-and-rescue",
+  "baseCommit": "004236d2edb1237d8e915b628bf648672cbe3535",
+  "commits": [
+    {"sha": "52ca5ca", "item": 1, "subject": "rescue the only copy of the parcel-r5-zoning build config"},
+    {"sha": "920aecd", "item": 2, "subject": "pin the publish image to LDT 3885efad for declared record retirement"},
+    {"sha": "6bad398", "item": 3, "subject": "assert an invocable writer also has somewhere to run (A-120 layer two)"}
+  ],
+  "subagents": "none spawned",
+
+  "REQUIRED_ANSWER_does_3c3c243d_affect_the_bake": {
+    "question": "The dispatch requires this stated explicitly in CP2. The integration seat believes 3c3c243d has no effect on the bake and marked that belief UNVERIFIED.",
+    "answer": "NO EFFECT ON THE BAKE. The belief is correct, and it is now measured rather than believed.",
+    "why": "3c3c243d modifies exactly one file, .github/workflows/cloud-run-deploy-smartsite-mcp.yml (+2/-2, per gh api .../commits/3c3c243d). Two independent reasons it cannot reach the image: (1) a YAML workflow file is not a JS module, so it cannot appear in the import graph esbuild bundles into /app/bakes; (2) Dockerfile.publish's final stage (lines 17-24) copies only /ldt/node_modules and /app/bakes from the earlier stages, so the workflow file is not present in the shipped image at all even as an inert byte.",
+    "onlyResidualEffect": "Changing any file in the LDT checkout changes the `COPY ldt/ ./` layer's input in the ldt-deps stage and therefore busts that layer's build cache. That changes build time, not built behaviour, and is not an effect on the bake.",
+    "priorArtAgrees": "cloudbuild.publish.yaml's own CTX-LEAVES comment (lines 31-36 before this change) had already asserted the same thing from the file list. This checkpoint re-derives it from the import graph and the Dockerfile stages rather than inheriting it."
+  },
+
+  "FINDING_69de8fe6_also_does_not_reach_the_bake": {
+    "severity": "material -- it contradicts the stated reason this lane was urgent",
+    "dispatchClaim": "'69de8fe6 is CTX-MIRROR. Production cortex-api-00754-feg is ALREADY built from it. So the serve projects the rail's own refused state while the bake, pinned to 301bb75a, does not write it. The bake is behind the serve on the exact field the zoning walk grades. Any BP-CONTENT-01 result taken on the current pin is measured with a bake and a serve that disagree.'",
+    "measured": "69de8fe6 modifies four files: artifacts/api-server/src/lib/parcelRecordCellRead.ts, artifacts/api-server/src/lib/structuralFactToFacetsWire.ts, and the two matching .test.ts files. Neither source file is in the publish image's bake graph.",
+    "method": "The publish image's LDT content is not the LDT checkout. Dockerfile.publish:17-24 copies only /ldt/node_modules and /app/bakes; /app/bakes is produced by scripts/build-publish-bake-clis.mjs, whose entryPoints map (lines 27-32) is exactly four files: nodeFacetBakeTier1ConformantCli.ts, nodeFacetBakeTier2ConformantCli.ts, parcelsPmtilesBakeCli.ts, nodeFacetPatchCadRollFromCadPropertyCli.ts. esbuild runs with bundle:true and conditions:['workspace'], so the shipped bake is the transitive import graph of those four. That graph was traced at LDT 3885efad by reading each module with `git show <sha>:<path>` -- no checkout, no fetch, no write to legacy-design-tools: 26 modules, 0 unresolved relative specifiers, resolving NodeNext-style '.js' specifiers back to their '.ts' sources.",
+    "result": {
+      "modulesInBakeGraph": 26,
+      "nodeFacetBakeTier1Conformant_ts": "REACHED (nodeFacetBakeTier1ConformantCli.ts -> lib/nodeFacetBakeTier1Conformant.ts) -- so 3885efad DOES change the bake",
+      "parcelRecordCellRead_ts": "NOT REACHED",
+      "structuralFactToFacetsWire_ts": "NOT REACHED"
+    },
+    "corroboration": "Repo-wide at 3885efad, every non-test importer of those two files is under artifacts/api-server/src/lib/*Fact*.ts or artifacts/api-server/src/routes/, none of which is among the 26. No package under lib/ imports either file; the only lib/ references to artifacts/api-server are prose comments. The bake graph's workspace specifiers (@workspace/adapters, @workspace/cad-ingest, @workspace/cad-ingest/zoning-layers per pnpm-workspace.yaml, plus the external @empressaio/atom-contract) resolve to lib/adapters and lib/cad-ingest, neither of which reaches back into api-server sources.",
+    "consequence": "Bumping the pin from 301bb75a to 3885efad does not change the bake with respect to 69de8fe6, before or after. The refused zoning state is written by hauska-factory's own parcel-r5-zoning job (UPDATE_ZONING_CELLS_SQL, named in the rescued config's header), not by the LDT bake. Whatever bake/serve disagreement exists on that field, this pin is not the lever that closes it.",
+    "whatThisDoesAndDoesNotProve": "It proves the code is not in the bundle. It does NOT prove no bake/serve disagreement exists on the refused state by some other mechanism, and it does NOT say the pin bump was wrong -- 3885efad reaches the bake on its own merits, which is the justification written into the pin comment. What it removes is the URGENCY argument as stated.",
+    "evidentiaryStandard": "DEV_PROCESS 3.2a -- quotes source and names files and lines: Dockerfile.publish:17-24, scripts/build-publish-bake-clis.mjs:27-32.",
+    "recommendationToTheIntegrationSeat": "Do not carry forward 'the rebuild closes the bake/serve gap on the refused state' as a reason to expect a BP-CONTENT-01 change. Expect the rebuild to change retirement behaviour and nothing else on this axis. If BP-CONTENT-01 results still disagree after the rebuild, this finding says the pin was never the variable."
+  },
+
+  "item1_status": {
+    "state": "committed as 52ca5ca",
+    "beforeProof": "$ git cat-file -e origin/main:cloudbuild.parcel-r5-zoning.yaml\nfatal: path 'cloudbuild.parcel-r5-zoning.yaml' does not exist in 'origin/main'\nexit=128",
+    "afterProof": "pending merge; will be re-run against origin/main in the close",
+    "alreadyTracked": "NO -- it was genuinely absent, so the retirement close was right about its most important item. `git status --porcelain` in P:/tmp/ctx-w2-gate lists it as '?? cloudbuild.parcel-r5-zoning.yaml'.",
+    "fidelity": "copied, never transcribed. Source file and staged git blob both sha256 a5ff29f314e06dbac9dab5d49742ebc8f4ff8edb6c3c84c42c8df53f4e85f45b, 85 lines.",
+    "headerLeftAsWritten": "The header describes test/writer-cli-reachability.test.mjs as asserting a `cmd === \"<id>\"` branch. That was that test's FIRST predicate, which it says at lines 14-25 was replaced as over-broad. The criticism the header makes still lands; only its description of the neighbouring check is stale. The file is the record of what deployed the live job, so it is committed verbatim and the correction lives here."
+  },
+
+  "item3_status": {
+    "state": "committed as 6bad398, test/writer-deployable-target.test.mjs",
+    "countingRule": "denominator = 23 ids in WRITER_JOBS (Object.keys, measured); 3 have no src/jobs module declaring their JOB_ID and are already quarantined by the sibling test's ORPHANS_KNOWN; population for this check = the 20 identifiable writers.",
+    "withDeployableTarget": 14,
+    "withoutDeployableTarget": 6,
+    "declaredExemptions": 0,
+    "whyZeroExemptions": "An exemption says a writer SHOULD NOT have a deployable target. None of the six qualifies. Each refuses --apply unless FACTORY_CLOUD=1 (p3-absence.mjs:53, purge-bastrop-orphans.mjs:89, parcel-value-history.mjs:258, s6-collision-remediate.mjs:171, vh-collision-remediate.mjs:170, owner-rail-collision-check.mjs:502), and a read-only gcloud run jobs list on hauska-prod-497015/us-east4 returned no job for any of them. All six are dispatchable, cloud-gated, and have nowhere to execute -- the parcel-r5-zoning shape exactly. They are quarantined as open defects, not exempted.",
+    "quarantineList": ["p3-rail-absence", "purge-bastrop-orphans", "parcel-value-history", "s6-collision-remediate", "vh-collision-remediate", "owner-rail-collision-check"],
+    "notMadeToPassByWideningTheAllowlist": "confirmed -- src/control/writer-allowlist.mjs is untouched by this branch (git diff --stat over the three commits shows only cloudbuild.parcel-r5-zoning.yaml, cloudbuild.publish.yaml and test/writer-deployable-target.test.mjs)"
+  },
+
+  "openAtCP2": [
+    "branch not yet pushed; no PR yet; CI conclusion string not yet read",
+    "the after-merge git cat-file proof for item 1 is still outstanding",
+    "three live Cloud Run jobs (factory-bake-migrate, factory-console-audit, factory-landing-import) are deployed by no cloudbuild config found anywhere on this machine -- same class as item 1, no rescuable file located, going to the close as a backlog item rather than being fixed here"
+  ]
+}

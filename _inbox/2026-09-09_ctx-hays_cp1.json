@@ -1,0 +1,66 @@
+{
+  "lane": "ctx-hays",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T15:20:00Z",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-hays",
+  "branch": "fix/ctx-hays-2026-cad-reacquire",
+  "headAtOpen": "3885efadb789942a479b475d34d1518807756e0a",
+
+  "preRegisteredFalsifier": {
+    "statedBeforeCounting": "Mechanism A (ours) is what I expect to find if the 2026-vintage record-1 Property file, counted directly and independently of our own ingest, contains a distinct-PropertyID population MATERIALLY ABOVE 134,606 -- specifically approaching the 172,116 baseline (a result in, say, the 150,000-172,000 band would mean our ingest dropped a large fraction of a genuinely larger source and A is likely). Mechanism B (theirs) is what I expect if an independent recount of the source lands at or near 134,606 (within normal roll-to-roll churn, call it +/-1-2%) -- that means 134,606 is faithfully what Hays CAD's own 2026 export contains and re-acquiring the same source changes nothing. A result of exactly 134,606 on a re-count of the SAME file our ingest used would be a strong but not sufficient A-rule-out on its own (it would only prove our parser read that one file completely, not that the file itself is complete); the discriminating test is counting a DIFFERENT, independently-drawn 2026 vintage from the same county and checking whether it lands in the same place.",
+    "wouldNotBeAFalsifierIfTrue": "If I had only re-read cad_property's own row count and called that 'the source count,' that would prove nothing (it's the same number by construction) and is explicitly the DEV_PROCESS 4.1 violation the dispatch warns against ('reading the store to guess at the ingest is reading a proxy for the authoritative record'). The falsifier requires fetching bytes Hays CAD serves today, outside our pipeline, and counting them with the same rule our parser uses.",
+    "fired": "NO -- for mechanism A. Three independent source counts (below) cluster tightly around 134,600 across a 5-month span and two different export schemas; none approaches the 172,116 band. Mechanism A is ruled out by this falsifier. Mechanism B is what the data shows."
+  },
+
+  "step1_acquisitionRecord": {
+    "whatIRead": "There is no ingest-run-log table or artifact anywhere in this program (checked lib/db/src/schema/*, lib/cad-ingest/src/cli.ts, and doc_repo _catalog/ for anything resembling cad_ingest_runs/acquisition_log; the closest-named candidate, manifest_run, is confirmed unused by cad-ingest -- grepped, zero imports from lib/cad-ingest). The CLI (lib/cad-ingest/src/cli.ts:68-70, 464-480) only console.logs; nothing is persisted per-run. The ONLY durable trace of a run is the row-level fingerprint cad_property itself carries: source_file, source_vintage, ingested_at (lib/db/src/schema/cadProperty.ts:70-76), bumped on every upsert (lib/cad-ingest/src/ingest.ts:79-123). This is a proxy for the run, not a run record, and I am naming it as exactly that per the dispatch's own warning -- it is the most authoritative thing that exists, but it is not what the dispatch asked me to find, because that artifact does not exist in this program today.",
+    "literalQuery": "SELECT source_file, source_vintage, min(ingested_at), max(ingested_at), count(*) FROM cad_property WHERE county_fips='48209' AND tax_year=2026 GROUP BY source_file, source_vintage -- run live against f06-staging-neondb (STAGING_NEONDB_URL via gcloud secret, read-only, credential deleted immediately after use)",
+    "result": "source_file='2026-PRELIMINARY-DATA-EXPORT-FILES.zip', source_vintage='2026-preliminary-data-export-files', ingested 2026-07-16T11:40:47.281Z to 2026-07-16T11:41:20.261Z, n=134606. All 134,606 rows landed inside one 33-second window -- one continuous upsert pass, not a stall/crash/retry signature (a truncated-mid-run would ordinarily leave a gap, a second later timestamp cluster, or a partial-count row; there is exactly one file, one vintage label, one tight timestamp band, for the entire 2026 population).",
+    "sameQueryFor2025": "Two source lineages, not one: hays-export2.zip / source_vintage '2025-hays-export-6-29-2026', n=55695, ingested 2026-07-15T15:47-15:48Z; AND stratmap25-landparcels_48209_lp.zip / 'tier:stratmap-roll;adapter:stratmap;drop:stratmap25-landparcels_48209_lp', n=116421, ingested 2026-08-25T17:38-17:40Z. These sum to exactly 172116, the dispatch's '2025' baseline. See step1b."
+  },
+
+  "step1b_the172116BaselineIsNotACleanCadCount": {
+    "whatIFound": "P:/doc_repo/_inbox/2026-08-25_p78_announce_hays_48209.md, a filed and already-applied P-78 leftover fill, documents that on 2026-08-25 a StratMap parcel/land-use geometry fallback (TxGIO StratMap 202503 zip, NOT a Hays CAD export) was applied to tax_year 2025 ONLY for county 48209, explicitly stated 'Declared 2026 rows unchanged.' Before-measure was 131246 rows at tax_year 2025; after, 172116 (116421 rows upserted, of which 40870 were net-new keys, the remainder in-place updates to already-existing 2025 PKs whose source_file attribution the upsert overwrote). This fallback exists BECAUSE the original 2025 CAD-only population was already known to be incomplete (131246, itself short of 172116) -- it is a documented patch for exactly the kind of gap this dispatch is investigating, applied one tax year earlier and to a different, non-CAD source.",
+    "consequence": "172116 was never a single-source, single-vintage CAD roll count. It is a genuine Hays CAD 2025 export layered with a StratMap parcel-geometry supplement applied for coverage, not appraisal completeness. Comparing 134606 (2026, one CAD-only source, one ingest, one 33-second window) against 172116 (2025, two source lineages of different classes, applied five weeks apart) compares two different classes of number -- DEV_PROCESS 1.3/1.4. This does not change the A-vs-B verdict below, which rests on the independent source recount, not on this comparison; it explains why the shrinkage looked as large as it did, and means the dispatch's own fallback instruction under mechanism A ('target: a roll not smaller than 2025 without a named reason') would itself need re-scoping if this were A, since 2025's own number already isn't a clean bar. It is not A, so this does not need to be resolved now, but it is filed here as a finding in its own right."
+  },
+
+  "step2_sourceCount": {
+    "countingRule": "Reproduced lib/cad-ingest/src/csv.ts readCsvRows (RFC-4180 quoted-CSV, exact copy) + lib/cad-ingest/src/orion/parser.ts parseOrionExport's PropertyID loop (case-insensitive header lookup, stripLeadingZeros, dedupe on propId, skip on blank propId) verbatim in a standalone script (no repo/DB write, pure recount) at C:/Users/cente/AppData/Local/Temp/claude/.../scratchpad/count_orion_property.mjs. This is the SAME rule that produces cad_property's rowsParsed, run cold against freshly downloaded bytes.",
+    "sourcePageAccess": "https://hayscad.com/data-downloads/ 403s a bare WebFetch (confirmed, matches lib/cad-ingest/src/sources.ts:91-102's documented WAF note); a plain curl with a standard browser User-Agent header returns 200 and the full page (confirmed 2026-09-09). No authentication, no bypass of any access control beyond a UA header -- this is a public data-downloads page.",
+    "threeIndependentDrops": [
+      {
+        "file": "2026-PRELIMINARY-DATA-EXPORT-FILES.zip (hayscad.com/wp-content/uploads/2026/03/..., the EXACT file our ingest used on 2026-07-16)",
+        "recordType1Path": "2026 PRELIMINARY DATA EXPORT FILES/2026-PRELIM-PROPERTY.zip -> PropertyDataExport1351089.txt",
+        "distinctPropertyId": 134606,
+        "rowsRead": 134606,
+        "duplicates": 0,
+        "missingPropId": 0,
+        "note": "EXACT match to cad_property's 134606. Proves the parser captured 100% of this source file -- zero rows lost in transit or in parsing. This alone rules out truncated-download and parse-drop as the mechanism for THIS file."
+      },
+      {
+        "file": "2026-PROPERTY-DATA-EXPORT-FILES-AS-OF-8-26-2026.zip (hayscad.com/wp-content/uploads/2026/08/..., published 5 months after our ingest and 5 months after certification -- the FRESHEST same-schema Hays 2026 drop available today)",
+        "recordType1Path": "2026 PROPERTY DATA EXPORT FILES AS OF 8-26-2026/2026-PROPERTY-DATA-EXPORT-FILE-PROPERTY-8.26.2026.zip -> PropertyDataExport1404449.txt",
+        "distinctPropertyId": 134591,
+        "rowsRead": 134592,
+        "duplicates": 1,
+        "missingPropId": 0,
+        "note": "Statistically flat against 134606 -- 15 FEWER, five months later. This is the number a naive re-acquire under the current source registration would land on. It does not close any gap toward 172116."
+      },
+      {
+        "file": "2026_07_18_2127-Orion-2026-Certified-Export.zip (hayscad.com/wp-content/uploads/2026/07/..., Hays CAD's own 'Certified' 2026 export, published 2 days after our ingest; DIFFERENT schema -- PropertyQuickRefID not PropertyID, no MarketValue/Situs columns -- classifyOrionHeader would call this 'unknown', not 'property', so today's parser cannot read it as-is)",
+        "recordType1Path": "2026_07_18_2127_PropertyExport.txt (flat, not nested)",
+        "distinctPropertyId": "not parseable by the current parser (0 rows would classify as property; PropertyID column does not exist under that name)",
+        "rowsReadRaw": 134600,
+        "propertyTypeCodeBreakdown": "R=123429, P=8682, M=2479, N=10 (sums to 134600 -- full population, not a use-code subset)",
+        "note": "A THIRD, independently-schemaed cross-check of Hays' own 2026 population, produced by an entirely different export mechanism than the PropertyDataExport CSV convention. 134600 total rows, all property-type codes represented. This was not run through our dedupe logic (no PropertyID column to key on) -- reported as raw row count, which is the ceiling, not a refined distinct-account count; still lands in the same ~134.6K band as the other two."
+      }
+    ],
+    "verdict": "Three independent Hays-sourced counts, spanning 2026-03 through 2026-08-27 and two different export schemas, converge on 134591-134606-134600 (a spread of 15 rows, 0.01%). None approaches 172116 or even a meaningfully-larger neighborhood. MECHANISM B (theirs): Hays CAD's own 2026 roll genuinely contains ~134,600 accounts. This is not an artifact of our acquisition."
+  },
+
+  "decision": "B confirmed by the pre-registered falsifier. Per the dispatch's explicit instruction under B: STOP. No re-acquire, no apply, no backfill, no MAX_MISS_RATE change. Proceeding to CP2 for the item-4 other-counties sweep (broadened past the six named counties to the full staging store) and the close.",
+
+  "checkpointArtifacts": ["_inbox/2026-09-09_ctx-hays_cp1.json"]
+}
