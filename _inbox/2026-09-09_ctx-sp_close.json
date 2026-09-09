@@ -1,0 +1,109 @@
+{
+  "lane": "ctx-sp",
+  "planRow": "P-124",
+  "seat": "property",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-ctx-sp",
+  "branch": "fix/ctx-sp-elgin-district-map",
+  "filedAt": "2026-09-09T19:30:00.000Z",
+
+  "missionPremise": "Eleven live polygons in Elgin's Bastrop-side zoning layer carry Zone_Code='S-P', a real Elgin district this repo's codeDomainMap never included (established by CTX-ELGIN 2026-09-09 and independently re-verified live by CTX-ZONESCOPE the same day). Nine of the eleven geometrically cover ten named Bastrop parcels; three of those ten (14457, 12830, 60891) carry no real zoning_district anywhere else, so under the concurrently-built hauska-factory per-parcel write gate they were structurally eligible for a `refused` layer-gap cell -- asserting no zoning coverage on land that is in fact zoned. Source: this dispatch, CTX-ELGIN's and CTX-ZONESCOPE's closes, CTX-PARCELGATE's part2 close (which withheld Bastrop's ceiling specifically pending this lane).",
+
+  "completionPredicate": "Done when: (1) S-P's meaning is established from Elgin's own material rather than guessed, and a decision -- map it honestly or declare no honest equivalent -- is made and justified; (2) if no honest equivalent, S-P is staged under its own identity in codeDomainMap, scoped to whichever of the two Elgin registry entries actually carry it; (3) the affected layer is re-staged live, dry-run then apply, with the untouched partition proven unchanged; (4) per-county residue is re-measured with CTX-STAGE2's counting rule verbatim and reported as measured, not as expected; (5) all ten named parcels are confirmed by id, with the three previously-unresolved ones specifically called out; (6) a falsifier on an untouched city still returns non-zero. All six are met below.",
+
+  "scopeBasis": "hauska-engine only, specifically packages/engine-core/src/zoning-staging/registry.ts and the tx_zoning_district_staging write path (scripts/stage-tx-zoning-district.mjs) -- the dispatch names this as the only repo with a legal write path to that table (a prior lane pointed at legacy-design-tools for this table and correctly stopped). Excluded by explicit dispatch instruction: hauska-factory, legacy-design-tools, hauska-map (all held by concurrently-running lanes, notably CTX-PARCELGATE which consumes this lane's residue number); any bake, publish, walk, Cloud Run job, Cloud Build, or deploy (integration seat owns those); any write to txgio_parcel (read-only join target). Also out of scope by design-principle: property-reasoning/district-code-section-map.ts (S-P has no shared narrative ordinance section to cite -- adding one would be an invented citation, which that file's own header explicitly forbids) and the elgin-tx-travis registry entry, which does not exist in committed source (see nonObviousFinding below) and so was not this lane's to create.",
+
+  "prAndMerge": {
+    "prNumber": 415,
+    "url": "https://github.com/empressaioemail-tech/hauska-engine/pull/415",
+    "commitSha": "789243e51c776c1a00b1755ee50aa44a60e81025",
+    "ciCheckRun": { "name": "typecheck + test", "status": "completed", "conclusion": "success" },
+    "conclusionVerification": "Verified via gh api repos/.../commits/<sha>/check-runs .conclusion field directly (returned the string \"success\"), not from `gh pr checks`' human-readable \"pass\" text, per AGENT_CONTRACT section 5's explicit distinction.",
+    "mergeMethod": "squash",
+    "mergeCommitSha": "15021ef3112e869c22c8271c27eb9e22b5e5a257",
+    "mergedAt": "2026-09-09T19:16:18Z",
+    "state": "MERGED"
+  },
+
+  "spFinding": {
+    "whatSPIs": "\"Special Permit\" per Elgin_Zoning FeatureServer/0's own service-level description field (attributed to \"1. The City of Elgin\" in its copyrightText), quoted verbatim: 'Zoning Codes and Descriptions: R-1 Single Family, R-2 Single Family & Duplex, R-3 Single Family, Duplex & Mobile Home, A Multiple Family, C-1 Neighborhood Shopping District, C-2 General Commercial District, C-3 Highway Commercial District, I General Industrial District, S-P Special Permit'. Independently, each of the 11 live S-P features' own per-feature 'Zoning' attribute reads 'Specific Use' (queried live: https://services3.arcgis.com/wdTkTU0MdZbNBEZy/arcgis/rest/services/Elgin_Zoning/FeatureServer/0/query?where=Zone_Code=%27S-P%27). Both descriptions point at the same real-world mechanism: a Specific Use Permit / special-permit grant, corroborated by Elgin's own Planning & Development process (city council review of individual SUP applications, e.g. its own 'SUP 700 Bull Run' agenda item) -- a floating, parcel-specific designation, not a base zoning district.",
+    "sourceCaveat": "A general WebSearch's own synthesized answer, when first asked 'what does S-P mean in Elgin zoning', claimed S-P stood for 'Neighborhood Shopping District'. This was checked against and contradicted by the primary source (the FeatureServer's own domain description, which attributes 'Neighborhood Shopping District' to C-1, not S-P) and discarded, per DEV_PROCESS 3.2a's standard that a correction/claim needs a quoted primary source, not a search-engine paraphrase.",
+    "noHonestEquivalentDecision": "No honest equivalent exists among this program's 8 mapped Elgin base districts (R-1..R-4, C-1..C-3, I). property-reasoning/district-code-section-map.ts's pre-existing ELGIN_TX_MAP (written by an earlier, unrelated lane) already documents that these 8 are exactly the districts established in Elgin Code of Ordinances Chapter 46 Sec. 46-203, each with its own dedicated 'Area regulations' and 'Uses permitted' ordinance sections. A Specific Use Permit does not carry any base district's fixed dimensional/use standards -- its conditions are set individually per grant. Mapping S-P into any of the 8 (e.g. into a spatially-plausible C-1 or R-3 neighbour) would assert that parcel is bound by that district's actual requirements, which is false. Decision: stage S-P under its own identity, 'S-P': 'S-P', matching this program's existing identity-mapping convention (R-1->R-1, etc.), rather than forcing a neighbour.",
+    "codeChange": "packages/engine-core/src/zoning-staging/registry.ts, ZONING_STAGING_REGISTRY['elgin-tx'].codeDomainMap gained one entry: \"S-P\": \"S-P\". No other entry changed."
+  },
+
+  "oneLayerOrBoth": {
+    "finding": "S-P appears only on FeatureServer/0 (Bastrop side, city_key='elgin-tx'). FeatureServer/1 (Travis side) carries zero S-P features.",
+    "evidence": "Live returnDistinctValues query against FeatureServer/1's Zone_Code field returned exactly [' ' (blank), 'A', 'C-1', 'C-2', 'C-3', 'R-1', 'R-3'] -- no S-P. This independently reproduces CTX-STAGE2's own prior observation of the Travis-side code domain (A, C-1, C-2, C-3, R-1, R-3, no S-P) from a fresh, independent query rather than trusting the prior report alone. Only the elgin-tx entry needed the mapping; elgin-tx-travis was correctly left untouched.",
+    "nonObviousFinding": "The dispatch's premise that 'there are now two registry entries' describes live DATABASE state, not committed source. On fresh origin/main (and on every branch/merged-PR searched), registry.ts has only one Elgin entry ('elgin-tx'); the 'elgin-tx-travis' entry CTX-STAGE2 used to write its 499 Travis-side rows exists ONLY as an uncommitted working-tree diff in that lane's own worktree (P:/seat-worktrees/property/hauska-engine-ctx-stage2), never committed or pushed -- read but not touched, per AGENT_CONTRACT's isolated-worktree rule. The 499 rows are real, live, and unaffected by this lane's work, but the code that produced them has no legal path to survive a reset of that worktree. Not this lane's scope to fix; named here so the planner can route it (either that lane commits its own registry addition, or the entry is re-derived and committed separately)."
+  },
+
+  "dryRunThenApply": {
+    "dryRun": "featuresFetched=3220, featuresStaged=3220, skipped=0, sampleDistrictCodes includes 'S-P' (prior state per CTX-ELGIN's 2026-09-08/09 restage: 3209 staged / 11 skipped, all 11 the S-P features).",
+    "apply": "Ran against CORTEX_DATABASE_URL, direct host confirmed via hostFingerprint ('ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech', pooler=false). featuresFetched=3220, featuresStaged=3220, skipped=0, elapsedMs=3037. storeVerify: n=3220, null_tier=0, distinct_codes=9, geometry_crs=EPSG:4326. Per-code counts post-apply: C-1=31, C-2=153, C-3=131, I=73, R-1=670, R-2=988, R-3=1148, R-4=15, S-P=11.",
+    "untouchedPartitionReadBack": "city_key='elgin-tx-travis' read back at exactly 499 rows after the apply, unchanged from CTX-STAGE2's own write, confirming the apply's REPLACE-per-city_key semantics stayed confined to city_key='elgin-tx' only."
+  },
+
+  "residuePerCounty": {
+    "countingRule": "CTX-STAGE2's rule verbatim: denom_incity = COUNT(DISTINCT prop_id) from landing_parcel_jurisdiction WHERE city_name='Elgin' AND place_fips='23044' AND disposition='in-city' AND county_fips=C AND prop_id NOT IN ('','0'). denom_with_geom = per-parcel EXISTS aggregation against txgio_parcel geom IS NOT NULL (never a flat join -- txgio_parcel carries multiple rows per prop_id, 48021: 74,729 rows vs 62,257 distinct). matched_count = per-parcel EXISTS aggregation of ST_Contains(ST_SetSRID(ST_GeomFromGeoJSON(z.geometry::text),4326), ST_PointOnSurface(p.geom)) against tx_zoning_district_staging rows with layer_role='base', is_overlay=false, city_key IN ('elgin-tx','elgin-tx-travis'). residue_unmatched = denom_with_geom - matched_count. Run live, restricted by city_key and a numeric-bbox pre-filter on both tables, statement_timeout=45000.",
+    "bastrop_48021": { "before": { "denom_with_geom": 3749, "matched_count": 3701, "residue_unmatched": 48, "source": "CTX-STAGE2's close, recorded before this lane's fix, S-P not staged at that time (3209/11 skipped)" }, "after": { "denom_with_geom": 3749, "matched_count": 3701, "residue_unmatched": 48, "source": "this lane, live, post-apply" } },
+    "travis_48453": { "after": { "denom_with_geom": 1706, "matched_count": 1181, "residue_unmatched": 525, "note": "reported per the dispatch's per-county instruction; this lane made no write affecting Travis, and CTX-PARCELGATE already wrote Travis's ceiling using this same raw number" } },
+    "reportedAsMeasuredNotExpected": "The dispatch expected Bastrop's raw residue to drop from 36 toward 26. What was measured: 48 before AND 48 after -- no change in the county-wide aggregate, under CTX-STAGE2's specific counting rule. Reporting this plainly rather than tuning it, per the dispatch's own explicit instruction and DEV_PROCESS 4.5.",
+    "reconciliationAttempted": "Verified the fix is NOT a no-op: a same-table-state counterfactual (matched_count with S-P rows excluded from the join, computed live in the same session, same underlying data) gives matched_excl_sp=3691 vs the real matched_incl_sp=3701 -- a difference of exactly 10, corroborated one-for-one by the ten named parcels' individual verification below. The fix's own marginal effect is unambiguous and directly proven at the per-parcel level. What remains unexplained: CTX-STAGE2 recorded matched_count=3701 for Bastrop HOURS before S-P was ever staged (when elgin-tx held only 3209 rows, zero of them S-P) -- mathematically its matched_count should have equaled this lane's matched_excl_sp (3691), not 3701, an unexplained agreement between two counts that DEV_PROCESS rule 1.4 says should be reconciled, not rounded off. Not reconciled here: full investigation of CTX-STAGE2's own query/session is outside this dispatch's scope (the S-P mapping and re-stage, not the landing_parcel_jurisdiction raw-residue methodology, which CTX-STAGE2's own close already flagged as disagreeing with the gate-based method and explicitly withheld from ceiling status). Filed as an OPEN leave_behind item below.",
+    "gateBasedMethodForComparison": "CTX-PARCELGATE's part2 close (a different method than CTX-STAGE2's raw residue -- the two-condition per-parcel gate) recorded Bastrop's pre-fix decomposition as 36 = 9 genuinely-uncovered + 17 staleness + 10 S-P, and named 26 (9+17+0) as the expected post-fix figure IF reproduced fresh. This lane did not re-run CTX-PARCELGATE's own gate instrument (different repo, different mechanism, explicitly out of this lane's write scope) -- that re-verification is CTX-PARCELGATE's own next step now that this lane's residue number has landed, per the dispatch's routing."
+  },
+
+  "tenNamedParcels": {
+    "allTenNowMatchARealPolygon": true,
+    "verificationMethod": "Checked individually and live, not in aggregate: in-city membership, geometry presence, whether each matched any NON-S-P polygon (to rule out prior coverage via a different, already-staged district), and its post-fix match.",
+    "dispositions": [
+      { "propId": "12948", "priorZoningDistrictColumn": "R-2 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:443" },
+      { "propId": "111348", "priorZoningDistrictColumn": "R-2 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:618" },
+      { "propId": "14457", "priorZoningDistrictColumn": null, "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:640", "unresolvedBeforeThisFix": true },
+      { "propId": "124619", "priorZoningDistrictColumn": "R-2 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:663" },
+      { "propId": "12830", "priorZoningDistrictColumn": null, "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:677", "unresolvedBeforeThisFix": true },
+      { "propId": "8712013", "priorZoningDistrictColumn": "R-3 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:677", "note": "shares one S-P polygon with 12830" },
+      { "propId": "60891", "priorZoningDistrictColumn": null, "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:1356", "unresolvedBeforeThisFix": true },
+      { "propId": "11364", "priorZoningDistrictColumn": "R-2 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:2187" },
+      { "propId": "85259", "priorZoningDistrictColumn": "R-1 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:2961" },
+      { "propId": "14535", "priorZoningDistrictColumn": "R-2 (real value elsewhere)", "matchedNonSpBefore": false, "postFixDistrictCode": "S-P", "stagingRowId": "elgin-tx:3108" }
+    ],
+    "theThreeUnresolvedOnes": "14457, 12830, 60891 -- the three that carried no real zoning_district value anywhere before this fix (matching CTX-PARCELGATE's prior finding exactly) -- now each resolve to district_code='S-P', a real, staged, citable district. None of the ten matched any non-S-P polygon before this fix (verified individually), confirming they were genuinely unmatched, not already covered by some other overlapping polygon."
+  },
+
+  "falsifier": {
+    "target": "Pflugerville, city_key='pflugerville-tx', county_fips='48453' -- never touched or written to by this lane.",
+    "method": "Identical query shape (per-parcel EXISTS aggregation, bbox pre-filter, statement_timeout=45000), sampled to the first 3,000 in-city prop_ids ordered by prop_id, matching CTX-STAGE2's 'first 3,000 of 20,138' sampling convention.",
+    "result": "denom_incity_sample=3000, denom_with_geom=3000, matched_count=2959, residue_unmatched=41 -- non-zero, exactly reproducing both CTX-STAGE2's original 41 and CTX-ZONESCOPE's independent reproduction of the same figure. The instrument correctly returns a non-zero residue on a city this mission never touched."
+  },
+
+  "constraintsHonored": [
+    "hauska-engine only -- no write to hauska-factory, legacy-design-tools, or hauska-map",
+    "No forced/invented district mapping -- S-P staged under its own identity after determining it has no honest equivalent among Elgin's 8 base districts, sourced from Elgin's own live GIS material",
+    "No write to txgio_parcel (read-only for the spatial join and per-parcel disposition checks)",
+    "No parcel-r5-zoning, bake, publish, walk, Cloud Run job, Cloud Build, or deploy run",
+    "Dry run before apply, on the staging write only",
+    "Heavy-scan trap avoided: every live query restricted by city_key/county_fips, bbox-pre-filtered on both tables' numeric columns, statement_timeout set, announced before running",
+    "Per-parcel EXISTS aggregation used throughout (never a flat join against txgio_parcel's multi-row-per-prop_id shape)",
+    "Isolated worktree: created fresh from origin/main; CTX-STAGE2's separate worktree was read for context (its uncommitted registry diff) but never edited, cleaned, or stashed",
+    "CI merge gated on the check-run conclusion STRING 'success', verified via the API directly rather than trusting `gh pr checks`' human-readable 'pass'",
+    "All ad hoc diagnostic scripts (7 total: probe_state, schema, residue, named_parcels, diff, prefix_count, falsifier x2) deleted immediately after use; git status confirmed clean of anything but the intended registry.ts edit before commit"
+  ],
+
+  "leave_behind": [
+    { "kind": "GROUND-TRUTH", "text": "2026-09-09T19:1x-19:2xZ, live: tx_zoning_district_staging city_key='elgin-tx' holds 3220 rows (9 distinct codes incl. S-P=11 rows); city_key='elgin-tx-travis' holds 499 rows, unchanged by this lane. Bastrop (48021) raw residue under CTX-STAGE2's counting rule: denom_with_geom=3749, matched_count=3701, residue_unmatched=48 (unchanged from CTX-STAGE2's pre-fix number). Travis (48453): denom_with_geom=1706, matched_count=1181, residue_unmatched=525." },
+    { "kind": "GROUND-TRUTH", "text": "2026-09-09, live: all ten CTX-ELGIN/CTX-ZONESCOPE-named Bastrop parcels (12948, 111348, 14457, 124619, 12830, 8712013, 60891, 11364, 85259, 14535) now geometrically match district_code='S-P' in tx_zoning_district_staging; none matched any non-S-P polygon before this fix (individually verified, not inferred)." },
+    { "kind": "OPEN", "text": "CTX-STAGE2's Bastrop matched_count=3701 (recorded before S-P was ever staged) equals this lane's post-fix matched_count=3701, when it should mathematically equal this lane's matched-excluding-S-P counterfactual of 3691 (a 10-row gap, matching the ten named parcels exactly). Two counts that should differ by 10 do not. Not reconciled -- outside this dispatch's scope. Whoever next touches the Bastrop raw-residue number should re-derive CTX-STAGE2's original query/session rather than trust either number at face value." },
+    { "kind": "OPEN", "text": "The elgin-tx-travis registry entry (499 live rows in tx_zoning_district_staging, written by CTX-STAGE2) has no committed source -- it exists only as an uncommitted diff in P:/seat-worktrees/property/hauska-engine-ctx-stage2's working tree. If that worktree is reset or removed before the entry is committed and PR'd, the code that explains those 499 rows is gone even though the rows themselves persist in the live database. Not this lane's action; named for the planner to route." },
+    { "kind": "OPEN", "text": "CTX-PARCELGATE's own gate-based decomposition (36 = 9 + 17 + 10 S-P, expected 26 = 9 + 17 + 0 post-fix) was not re-run by this lane (different repo, different mechanism, out of this lane's write scope). CTX-PARCELGATE should re-run its own instrument now that S-P is staged and report whether it reproduces 26, per its own close's stated next step." },
+    { "kind": "LESSON", "text": "A search engine's synthesized answer to 'what does zoning code X mean' can be wrong even when it cites real district names from the correct city -- it attributed S-P to 'Neighborhood Shopping District' (actually C-1's definition). Always verify a code's meaning against the primary source (here: the live FeatureServer's own domain description and per-feature attribute, both sourced from the City itself) before trusting a search summary, per DEV_PROCESS 3.2a." },
+    { "kind": "LESSON", "text": "A boolean-flag CTE (SELECT EXISTS(...) AS col FROM ...) computing two EXISTS checks per row ran far slower (60s+ timeout) than two separate WHERE-EXISTS-filtered CTEs computing the same two counts independently (each under 45s) against the identical join, same bbox pre-filter, same table. Prefer the WHERE-EXISTS-as-semi-join shape over a SELECT-EXISTS-as-column shape for per-row correlated existence checks against a spatial join in this store -- the planner appears to lose the ability to short-circuit efficiently in the latter form." }
+  ],
+
+  "checkpoints": [
+    "_inbox/2026-09-09_ctx-sp_cp1.json",
+    "_inbox/2026-09-09_ctx-sp_cp2.json"
+  ],
+
+  "docRepoEdits": "This close, cp1, and cp2 written directly to _inbox/ by this lane; not committed to doc_repo git by this lane (doc_repo commits are planner-owned per AGENT_CONTRACT section 6)."
+}

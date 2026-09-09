@@ -1,0 +1,58 @@
+{
+  "lane": "ctx-sp",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T19:20:00.000Z",
+  "seat": "property",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-ctx-sp",
+  "branch": "fix/ctx-sp-elgin-district-map",
+
+  "edit": {
+    "file": "packages/engine-core/src/zoning-staging/registry.ts",
+    "change": "codeDomainMap['elgin-tx'] gained one entry: 'S-P': 'S-P' (identity mapping, matching the existing R-1..I convention). No other registry entry touched. elgin-tx-travis not edited (does not exist in committed source; see CP1 criticalStateFindingBeforeEditing).",
+    "testsBeforeLiveWrite": "src/__tests__/zoning-staging.test.ts: 15/15 pass with the new entry. Full engine-core suite: 1524 passed, 11 skipped, 4 failed -- verified by git-stashing this change and re-running the same 4 suites against clean origin/main: identical 4 failures (SyntaxError: Invalid or unexpected token, a pre-existing comment-parsing issue in 4 unrelated *-and-report.test.ts files, nothing to do with zoning-staging). Restored the change after confirming."
+  },
+
+  "liveDryRunThenApply": {
+    "dryRun": "featuresFetched=3220, featuresStaged=3220, skipped=0, codeDomainMapAppliedCount=15, sampleDistrictCodes includes 'S-P' (confirms the new mapping fires). Prior state (per CTX-ELGIN's 2026-09-08/09 restage): 3209 staged / 11 skipped, all 11 the S-P features.",
+    "apply": "Ran against CORTEX_DATABASE_URL, direct host confirmed via hostFingerprint ('ep-lucky-truth-apodo8hr.c-7.us-east-1.aws.neon.tech', pooler=false). featuresFetched=3220, featuresStaged=3220, skipped=0, elapsedMs=3037. storeVerify: n=3220, null_tier=0, distinct_codes=9, geometry_crs=EPSG:4326.",
+    "perCodeRowCounts_postApply": { "C-1": 31, "C-2": 153, "C-3": 131, "I": 73, "R-1": 670, "R-2": 988, "R-3": 1148, "R-4": 15, "S-P": 11 },
+    "untouchedPartitionReadBack": "city_key='elgin-tx-travis' still holds exactly 499 rows, unchanged, confirming the write stayed confined to city_key='elgin-tx' (REPLACE-per-city_key semantics, per stage-tx-zoning-district.mjs's own docstring). No active queries observed against tx_zoning_district_staging at read-back time (pg_stat_activity checked)."
+  },
+
+  "namedParcelVerification": {
+    "method": "For each of the 10 named prop_ids, checked live and individually (not in aggregate): (a) in-city membership in landing_parcel_jurisdiction, (b) geometry presence in txgio_parcel, (c) whether it ST_Contains-matches ANY non-S-P base polygon (i.e. would it have matched something else even before this fix), (d) whether it now matches a real polygon post-fix.",
+    "result": "All 10 in-city, all 10 have geometry. None of the 10 matched any non-S-P polygon (preMatches query returned zero rows) -- ruling out 'already covered by an overlapping polygon' as an explanation and confirming these parcels were genuinely unmatched before this fix, exactly as CTX-ELGIN/CTX-ZONESCOPE found. All 10 now match their S-P polygon by staging_row_id: 12948->elgin-tx:443, 111348->elgin-tx:618, 14457->elgin-tx:640, 124619->elgin-tx:663, 12830->elgin-tx:677, 8712013->elgin-tx:677 (same polygon as 12830 -- two parcels under one S-P polygon), 60891->elgin-tx:1356, 11364->elgin-tx:2187, 85259->elgin-tx:2961, 14535->elgin-tx:3108.",
+    "theThreeUnresolvedNamesResolveToARealDistrict": "14457, 12830, 60891 (confirmed via txgio_parcel.zoning_district IS NULL for all three, matching CTX-PARCELGATE's prior finding) now each match district_code='S-P' -- they are no longer layer-gap/refused-eligible; S-P is their real district, now staged and citable.",
+    "sevenAlreadyHadOtherValue": "111348, 11364, 124619, 12948, 14535 (all zoning_district='R-2'), 85259 ('R-1'), 8712013 ('R-3') -- unaffected by this fix's correctness, now additionally covered by their S-P polygon too (a real multi-source agreement, not a conflict: the GIS district and the parcel-level zoning_district column are two different write paths that happen to describe the same real S-P designation for these seven differently)."
+  },
+
+  "residueMeasurement": {
+    "countingRuleUsed": "CTX-STAGE2's rule verbatim (quoted from _inbox/2026-09-09_ctx-stage2_close.json step4_residue.countingRule): denom_incity = COUNT(DISTINCT prop_id) from landing_parcel_jurisdiction WHERE city_name='Elgin' AND place_fips='23044' AND disposition='in-city' AND county_fips=C AND prop_id NOT IN ('','0'). denom_with_geom = EXISTS aggregation per parcel against txgio_parcel geom IS NOT NULL (never a flat join, since txgio_parcel carries multiple rows per prop_id). matched_count = EXISTS aggregation of ST_Contains(ST_SetSRID(ST_GeomFromGeoJSON(z.geometry::text),4326), ST_PointOnSurface(p.geom)) against tx_zoning_district_staging rows with layer_role='base', is_overlay=false, city_key IN ('elgin-tx','elgin-tx-travis'). residue_unmatched = denom_with_geom - matched_count. Ran with city_key restriction, a bbox pre-filter (p.east_lng>=z.west_lng AND p.west_lng<=z.east_lng AND p.north_lat>=z.south_lat AND p.south_lat<=z.north_lat) on both tables' numeric bbox columns, and statement_timeout=45000, per AGENT_CONTRACT's own named trap (CTX-STAGE2 lost over an hour to the unrestricted version).",
+    "bastrop_48021_postFix": { "denom_incity": 3749, "denom_with_geom": 3749, "matched_count": 3701, "residue_unmatched": 48 },
+    "travis_48453_postFix": { "denom_incity": 1706, "denom_with_geom": 1706, "matched_count": 1181, "residue_unmatched": 525 },
+    "unexpectedResult_reportedAsInstructed": "The dispatch's own text expected Bastrop's raw residue to drop from 36 toward 26. What was measured instead: 48, IDENTICAL to CTX-STAGE2's own recorded pre-fix number (48) for this exact county under this exact method. Per the dispatch's explicit instruction ('Report what you measure, not what is expected'), reporting this plainly rather than reconciling it away.",
+    "decompositionProvingTheFixWorkedAnyway": "Computed a same-table-state counterfactual (matched_count with tx_zoning_district_staging's S-P rows excluded from the join, everything else identical -- NOT a re-query of old data, since REPLACE semantics overwrote the pre-fix rows; this is a same-moment simulation): matched_excl_sp = 3691 vs matched_incl_sp (the real post-fix number) = 3701, a difference of exactly 10 -- matching the 10 named parcels one-for-one. So under a same-table-state comparison, THIS FIX's own marginal contribution is unambiguous: +10 matched / -10 residue (58 -> 48 by that internal decomposition), directly corroborated by the per-parcel verification above. The unresolved part is why the AGGREGATE lands on 48 rather than something lower than CTX-STAGE2's own recorded 48 -- since CTX-STAGE2 measured 48 HOURS before S-P was ever staged (S-P was skipped, not present, at that time: 3209 staged / 11 skipped), its matched_count=3701 should mathematically have been achievable only via non-S-P matches, i.e. it should equal this lane's matched_excl_sp=3691, not 3701. It does not. This is a genuine, unexplained agreement between two counts that should differ by 10 and don't (DEV_PROCESS rule 1.4), inherited on top of the already-flagged CTX-STAGE2-vs-CTX-ELGIN/ZONESCOPE disagreement (48 vs 36/9) from before this lane started. Not reconciled here -- out of this dispatch's scope, which is the S-P mapping/re-stage itself, not the landing_parcel_jurisdiction raw-residue methodology. Named explicitly in the close as an open thread."
+  },
+
+  "falsifier": {
+    "target": "Pflugerville, city_key='pflugerville-tx', county_fips='48453' -- never touched by this lane or written to.",
+    "method": "Identical query shape (EXISTS aggregation, bbox pre-filter, statement_timeout), sampled to the first 3,000 in-city prop_ids ordered by prop_id, matching CTX-STAGE2's 'first 3,000 of 20,138' sampling.",
+    "result": "denom_incity_sample=3000, denom_with_geom=3000, matched_count=2959, residue_unmatched=41 -- non-zero, exactly reproducing both CTX-STAGE2's original 41 and CTX-ZONESCOPE's independent reproduction of 41. The instrument is not hard-wired to return zero."
+  },
+
+  "gitState": {
+    "commit": "789243e51c776c1a00b1755ee50aa44a60e81025",
+    "subject": "fix(zoning-staging): stage Elgin S-P as its own district code (P-124/CTX-SP)",
+    "pushedBranch": "fix/ctx-sp-elgin-district-map",
+    "pr": "https://github.com/empressaioemail-tech/hauska-engine/pull/415",
+    "ciStatus": "pending at time of this checkpoint; will not merge until the CI check-run conclusion string reads 'success', per AGENT_CONTRACT section 5"
+  },
+
+  "openQuestionsCarriedToClose": [
+    "The unexplained 3691-vs-3701 agreement noted above -- flagged, not resolved, named as an OPEN leave_behind item.",
+    "CI conclusion and merge SHA -- pending.",
+    "Whether the elgin-tx-travis registry entry (uncommitted in CTX-STAGE2's worktree) should be committed by that lane separately -- named for the record, not this lane's action."
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "lane": "ctx-stampfall",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T19:05:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-stampfall",
+  "branch": "fix/ctx-stampfall-stamp-sourced-value",
+  "baseCommit": "f0fe15bbb6d8da6acc62cb1f4603eb069196cd02",
+  "baseConfirmed": "git worktree add -b fix/ctx-stampfall-stamp-sourced-value P:/seat-worktrees/property/hauska-factory-ctx-stampfall origin/main, run against origin/main AFTER git fetch. HEAD landed exactly on f0fe15bb (CTX-PARCELGATE, PR #122, merged, 'make the layer-gap WRITE per-parcel eligible') -- confirmed via git merge-base --is-ancestor f0fe15bb origin/main before the worktree was created, and by the worktree's own HEAD after creation, before any file was opened for edit.",
+
+  "designSummary": {
+    "target": "src/jobs/parcel-r5-zoning.mjs's processCity / RESIDUE_HAS_REAL_ZONING_SQL / loadResidueWithRealZoning, plus a new revisit flag in src/config/zoning-layer-completeness.mjs.",
+    "theHole": "CTX-PARCELGATE's condition 2 correctly excludes a residual parcel from the refused sweep when it already carries a real zoning_district in txgio_parcel elsewhere (the staleness class: 17 Bastrop / 50 Travis, both re-verified live). But nothing else in this rail ever writes that parcel a value -- it matched no polygon in this rail's own spatial join, which is the only other path to 'value'. Two prior closes (CTX-ZONESCOPE, CTX-PARCELGATE) assumed a 'pending Factory re-bake' would resolve these parcels to value on its own. Traced and confirmed that job does not exist -- not deferred, not scheduled, fabricated by inference and repeated. Per the dispatch, not chasing it further.",
+    "theFix": "When a residual parcel is condition-2-eligible (a real txgio_parcel.zoning_district exists elsewhere), write it a value cell instead of leaving it unaccounted. Source must NOT be ZONING_SOURCE (tx_zoning_district_staging) -- that value never came from there; a new STAMP_SOURCE constant names the actual origin (legacy-design-tools' stampCountyZoning(), from its own zoning-layers.ts registry, confirmed by direct read of zoning-stamp-db.ts's UPDATE statement).",
+    "reuseDesign": "Per the dispatch's explicit instruction ('one definition, two consumers... two independent queries that must agree would drift'): RESIDUE_HAS_REAL_ZONING_SQL's EXISTS gate stays byte-for-byte the eligibility decision (unchanged predicate, still EXISTS, still never a flat join -- the existing pinned SQL-shape test enforces this). Widened via three correlated scalar subqueries (same predicate, LIMIT 1 by feature_index) to also return the value in the SAME round trip, rather than adding a second, independently-derived query. loadResidueWithRealZoning's return type changes from Set<string> to Map<string, {districtCode, jurisdiction, ingestedAt}> -- membership (.has, condition 2's original use) and value (.get, this card's new use) come from one query result.",
+    "currencyPlan": "Checked the schema (txgioParcel.ts) and the write path (zoning-stamp-db.ts, zoning-cli.ts): no stamp-date column exists anywhere, and the CLI persists no audit/run log (only console.log). Found one real, derivable lower bound instead: legacy-design-tools' geometry-ingest CLI wholesale-replaces a county's txgio_parcel rows (DELETE then a fresh INSERT whose column list excludes zoning_district -- confirmed in ingest.ts's replaceCountyParcels/upsertTxgioParcels), so a currently non-null zoning_district proves the stamp ran strictly after that row's own ingested_at. Plan: carry ingested_at as stampProvenance.currencyFloor with an honest currencyNote stating it is a lower bound, never an exact stamp date. To be live-verified at CP2 against the actual 17/50 population before committing to this as sufficient.",
+    "revisitFlagPlan": "ZONING_REGISTRY_RECONCILIATION_DEFERRED, a frozen object in src/config/zoning-layer-completeness.mjs (co-located with the sibling PER_COUNTY_CEILING_INSTRUMENT_DEFERRED flag from CTX-PARCELGATE, same shape: deferred/deferredWhy/ruledBy/revisitTriggers, plus a required fallbackCost field per this dispatch's explicit ask). Names: what is deferred (reconciling hauska-engine's zoning-staging registry against legacy-design-tools' zoning-layers registry), why (unblock the Central Texas bake, operator ruling 2026-09-09), what this fallback costs (a value whose provenance is a second registry the staged layer disagrees with -- honest, not the same claim as coverage), what triggers a revisit. Pinned by a dedicated test, same pattern as the sibling flag."
+  },
+
+  "plannedChanges": {
+    "src/jobs/parcel-r5-zoning.mjs": [
+      "add STAMP_SOURCE constant, distinct from ZONING_SOURCE",
+      "widen RESIDUE_HAS_REAL_ZONING_SQL to also select zoning_district/zoning_jurisdiction/ingested_at via correlated scalar subqueries; EXISTS gate byte-for-byte unchanged",
+      "loadResidueWithRealZoning returns a Map (districtCode/jurisdiction/ingestedAt), not a Set; normalizes ingested_at to an ISO string at the DB-read boundary",
+      "add stampCurrencyNote, stampSourcedCellStateFor, buildStampSourcedCells, STAMP_PROVENANCE_TEXT",
+      "processCity: replace the layerGapStaleExcluded tally with stampSourcedCells; for each condition-2-eligible residual parcel, build+push a stamp-sourced value cell alongside (not instead of) the existing buildLayerGapCells defense-in-depth call; residualAfterCompleteness formula gains the stampSourcedCells term"
+    ],
+    "src/config/zoning-layer-completeness.mjs": [
+      "add ZONING_REGISTRY_RECONCILIATION_DEFERRED (frozen), no changes to DECLARED_LAYER_GAP.expectedResidue or any other number"
+    ],
+    "test/parcel-r5-zoning.test.mjs": [
+      "update RESIDUE_HAS_REAL_ZONING_SQL/loadResidueWithRealZoning tests for the Set->Map widening",
+      "update the Travis and Bastrop VERIFY BY VIOLATING tests: the staleness parcel now gets a stamp-sourced value instead of zero writes -- explicitly noted as a deliberate, dispatch-sanctioned behavior change from CTX-PARCELGATE's own version of these tests, not a silent reversal",
+      "add a third case to the Bastrop violation test: a real matched-polygon parcel, to prove ZONING_SOURCE is unaffected",
+      "add buildStampSourcedCells / stampSourcedCellStateFor / stampCurrencyNote unit tests, including a falsifier for STAMP_SOURCE != ZONING_SOURCE",
+      "add ZONING_REGISTRY_RECONCILIATION_DEFERRED shape/pinning test"
+    ]
+  },
+
+  "realParcelIdsOnHandForCP2Violation": {
+    "source": "_inbox/2026-09-09_ctx-parcelgate_close.json / _inbox/2026-09-08_ctx-elgin_close.json",
+    "bastropStaleness": "48021:11779 (C-3)",
+    "bastropGenuineGap": "48021:115146",
+    "travisStaleness": "48453:500816 (C-3)",
+    "travisGenuineGap": "48453:227351",
+    "matchedCase": "not yet on hand -- will live-fetch a real matched Bastrop/Elgin parcel at CP2 to prove ZONING_SOURCE is unaffected, since neither CTX-PARCELGATE nor CTX-ELGIN's closes needed one"
+  },
+
+  "hardProhibitionsAcknowledged": [
+    "no ceiling number changes anywhere",
+    "no touching assertResidueWithinDeclaration",
+    "no not-applicable writes on any parcel",
+    "no --apply passed anywhere, ever",
+    "no deploy, no Cloud Build, no bake/publish/walk",
+    "no write to hauska-engine or legacy-design-tools",
+    "no attempting the registry reconciliation itself -- flag it, don't do it",
+    "no going looking for the 'pending Factory re-bake' -- confirmed it does not exist, not chasing it further"
+  ]
+}

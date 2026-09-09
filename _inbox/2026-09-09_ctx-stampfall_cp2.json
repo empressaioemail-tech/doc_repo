@@ -1,0 +1,44 @@
+{
+  "lane": "ctx-stampfall",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T19:20:00.000Z",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-stampfall",
+  "branch": "fix/ctx-stampfall-stamp-sourced-value",
+
+  "implementationDone": {
+    "src/jobs/parcel-r5-zoning.mjs": "STAMP_SOURCE added. RESIDUE_HAS_REAL_ZONING_SQL widened (EXISTS gate byte-for-byte unchanged; 3 correlated scalar subqueries added for zoning_district/zoning_jurisdiction/ingested_at). loadResidueWithRealZoning returns Map<string,{districtCode,jurisdiction,ingestedAt}>, ingested_at normalized from a node-postgres Date to an ISO string at the read boundary. stampCurrencyNote/stampSourcedCellStateFor/buildStampSourcedCells/STAMP_PROVENANCE_TEXT added. processCity wires the new branch: each condition-2-eligible residual parcel gets a stamp-sourced value cell; buildLayerGapCells is still called unconditionally afterward as defense in depth (returns [] for the same parcel, unchanged). layerGapStaleExcluded replaced by stampSourcedCells in the return shape; residualAfterCompleteness's formula updated to subtract it.",
+    "src/config/zoning-layer-completeness.mjs": "ZONING_REGISTRY_RECONCILIATION_DEFERRED added (frozen). DECLARED_LAYER_GAP.expectedResidue untouched: still {48021: 9, 48453: 506}.",
+    "diffStat": "3 files changed, 430 insertions(+), 48 deletions(-) (git diff --stat, committed at 961a0f4)",
+    "noCeilingNumberChanged": "grep-confirmed: no expectedResidue value or any other declared-ceiling config number appears in the diff."
+  },
+
+  "testSuite": {
+    "targetedFile": "node --test test/parcel-r5-zoning.test.mjs: 78/78 pass, 0 fail (54 pre-existing, 3 rewritten to reflect the sanctioned behavior change, 21 new)",
+    "fullRepoSuite": "node --test test/*.test.mjs: 1175 tests, 1172 pass, 0 fail, 3 skipped (pre-existing skips, unrelated to this lane's files) -- run both before opening the PR and again after CI, same result"
+  },
+
+  "verifyByViolating": {
+    "unitLevel": "processCity VERIFY BY VIOLATING (real Bastrop ids, one run): 48021:11779 (staleness, real C-3) now gets a value cell sourced STAMP_SOURCE; 48021:115146 (genuine gap) still gets refused, unchanged; 48021:103412 (live-fetched 2026-09-09, matches Elgin's staged base layer, district R-2) still gets value sourced ZONING_SOURCE, unchanged. Companion Travis test (48453:500816 staleness, 48453:227351 genuine gap) updated the same way, at the real re-derived ceiling of 506.",
+    "liveReadOnlyRun": {
+      "method": "processCity(realCortex, fakeFactory, {city: <live Elgin group>, apply: true, ...}) against PRODUCTION_NEONDB_URL (read-only: SELECTs plus one session-local CREATE TEMP TABLE, dropped in a finally). fakeFactory is a local object that pushes each would-be UPDATE_ZONING_CELLS_SQL call into an in-memory array and never opens a real database connection -- apply:true here drives only the fake client, never a real Cloud Run write, never the CLI's own --apply flag. Script deleted after the run; git status confirmed clean of anything but the 3 tracked-file edits before commit.",
+      "confirmedLive_2026-09-09": {
+        "48021:11779": "value, source=legacy-design-tools:txgio_parcel.zoning_district, value=C-3, stampProvenance.currencyFloor=2026-09-03T04:38:06.918Z",
+        "48453:500816": "value, source=legacy-design-tools:txgio_parcel.zoning_district, value=C-3, stampProvenance.currencyFloor=2026-09-03T05:47:23.630Z",
+        "48021:115146": "refused, reason unchanged from CTX-PARCELGATE",
+        "48453:227351": "refused, reason unchanged from CTX-PARCELGATE",
+        "48021:103412": "value, source=tx_zoning_district_staging, value=R-2 -- unaffected by this change, confirming the matched path is untouched",
+        "guardStillFires": "the combined processCity(Elgin) call THREW LAYER_GAP_RESIDUE_EXCEEDED (actualResidue=26, declaredCeiling=9) for 48021 -- all 11 chunks across BOTH counties (5455 in-city parcels) had already been fully processed and their would-be writes captured before the county-level guard ran, confirming the guard's placement (after all per-chunk work, unconditional on apply) is untouched by this card and still fires correctly"
+      },
+      "unexpectedLiveFinding": "Bastrop's raw layer-gap residue is 26 today, not the 36 CTX-PARCELGATE measured on 2026-09-09 earlier the same day -- directly re-measured (not by subtraction) via a per-county residual count against the live spatial join: {48021: 26, 48453: 506}. This matches CTX-PARCELGATE's own bastropCeilingPending.candidateHypothetical_postEngineFix (26) exactly, and 26 = 9 genuinely-uncovered + 17 staleness with 0 S-P remaining -- consistent with CTX-SP (Elgin's S-P code staged into hauska-engine's zoning-staging registry) having landed and re-staged since CTX-PARCELGATE closed. Travis's raw residue is unchanged at 506, matching its already-written ceiling exactly, and its 0-S-P composition is why CTX-SP landing had no effect there."
+    },
+    "liveBugCaughtAndFixed": "The first live run exposed a real defect this fixture-only unit-testing had not caught: node-postgres returns a timestamptz column as a JS Date object, and stampCurrencyNote's template-literal interpolation of a raw Date renders via Date.prototype.toString() -- a locale/timezone-shifted string (e.g. 'Wed Sep 02 2026 23:38:06 GMT-0500...' for a UTC 2026-09-03T04:38:06.918Z value), not the deterministic UTC instant. Fixed by normalizing ingested_at to an ISO string at loadResidueWithRealZoning's DB-read boundary (Date instanceof check), so every downstream consumer sees the same representation regardless of environment timezone. Re-ran the live probe after the fix and confirmed clean ISO strings throughout. A regression test (a real Date instance, not a string fixture) was added so this class of bug cannot silently return."
+  },
+
+  "openQuestionsForClose": [
+    "Direct answer for Bastrop (does parcel-r5-zoning run to completion and does unaccountedCount reach zero): the fix by itself does not flip Bastrop to a completed run today -- the ceiling (still 9, correctly untouched by this card) is now below the live raw residue (26), and the guard throws before Bastrop's chunk-level cell writes would count as a completed run at the job level. That 26-vs-9 gap is a SEPARATE, already-anticipated task (CTX-PARCELGATE's own bastropCeilingPending) this card is explicitly forbidden from touching.",
+    "Direct answer for Travis: this card's own change is structurally sufficient by itself -- every one of Travis's 506 residual parcels resolves to either a stamp-sourced value or a refused layer-gap cell (residualAfterCompleteness is mathematically guaranteed to reach 0 for a declared-layer-gap city once its own county-level guard does not throw), and Travis's raw residue (506, live-confirmed) does not exceed its already-written ceiling (506). But because Elgin is processed as ONE grouped city spanning both counties (CTX-ZONESCOPE), the SAME processCity(Elgin) invocation that resolves Travis cleanly still throws overall on Bastrop's stale ceiling -- Travis's own writes commit chunk-by-chunk before that throw (confirmed live), but the combined job-level run reports failure until Bastrop's ceiling is also addressed. This nuance belongs in the close's direct-answer section verbatim, not flattened to a single yes/no."
+  ]
+}
