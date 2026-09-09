@@ -1,0 +1,85 @@
+{
+  "lane": "CTX-PIN",
+  "planRow": ["P-124"],
+  "checkpoint": "CP2",
+  "checkpointKind": "pilot / mid-work adversarial check",
+  "filedAt": "2026-09-09",
+  "seat": "property",
+  "repo": "hauska-factory",
+  "worktree": "P:/seat-worktrees/property/hauska-factory-ctx-pin",
+  "branch": "fix/ctx-pin-ldt-situs-skip",
+  "baseCommit": "eed6f1321bffbc51cd7f72aa4d86c29d4460329a",
+  "commit": {
+    "sha": "7c6521e03c746058b7d6bedb59d25643738b8c6b",
+    "subject": "chore(publish): bump _LDT_SHA to 7a739849 (P-124/CTX-PIN, picks up CTX-situs-skip)"
+  },
+  "subagents": "none spawned",
+
+  "REQUIRED_DELIVERABLE_moduleGraphTrace": {
+    "question": "Does the CTX-situs-skip commit (7a739849) reach /app/bakes? State the method and the result -- this is the actual mission, not the pin bump.",
+    "method": "Same relative-import-only recursive tracer built and validated at CP1 (reproduced CTX-BUILD's claimed 26-module/0-unresolved result at the old pin before being trusted). Run a second time at commit 7a739849 in a throwaway scratch clone, against the CURRENT build script's five entrypoints (scripts/build-publish-bake-clis.mjs at HEAD eed6f13: tier1-conformant, tier2-conformant, parcels-pmtiles, dollar-fields, and CTX-WALKRULE's tier1-conformant-lib), not the four the dispatch describes -- see the CP1 discrepancy note.",
+    "resultAtOldPin_4entrypoints": {
+      "moduleCount": 26,
+      "unresolvedRelativeSpecifiers": 0,
+      "note": "reproduction run, confirms method before trusting the new-commit result below"
+    },
+    "resultAtNewPin_5entrypoints": {
+      "moduleCount": 26,
+      "unresolvedRelativeSpecifiers": 0,
+      "note": "identical file set to the 4-entrypoint run -- the fifth entrypoint (lib/nodeFacetBakeTier1Conformant.ts itself) adds no new module because it was already transitively reachable from the CLI entrypoint. Graph is fully connected both ways: 0 unresolved specifiers at both commits confirms no broken relative import anywhere in the closure."
+    },
+    "bothChangedSourceFilesConfirmedInGraph": [
+      "lib\\nodeFacetBakeTier1Conformant.ts -- present in the 26-file list",
+      "nodeFacetBakeTier1ConformantCli.ts -- present in the 26-file list (it IS the tier1-conformant entrypoint)"
+    ],
+    "thirdChangedFileConfirmedExcluded": {
+      "file": "artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts",
+      "check": "`grep -rn nodeFacetBakeTier1Conformant.test artifacts/api-server/src` in the scratch clone returns only two prose-comment references inside the lib file itself (documentation pointers), zero import/require statements anywhere",
+      "conclusion": "correctly excluded -- test files are never bundled and this one is not imported by any production module"
+    },
+    "reachPath": [
+      "Path A (pre-existing, unchanged by this pin): nodeFacetBakeTier1ConformantCli.ts line 61-69 imports directly from ./lib/nodeFacetBakeTier1Conformant.js -- the CLI IS the tier1-conformant bake entrypoint per scripts/build-publish-bake-clis.mjs:28",
+      "Path B (added by CTX-WALKRULE, already on main, not by this pin): lib/nodeFacetBakeTier1Conformant.ts is now ALSO its own entrypoint, tier1-conformant-lib, scripts/build-publish-bake-clis.mjs:35"
+    ],
+    "mechanism": "esbuild runs with bundle:true and no `external` entry covering either changed file, so both are inlined -- as source, not merely referenced -- into the .mjs output esbuild writes to /app/bakes. Dockerfile.publish's final stage (lines 17-24) copies /app/bakes verbatim from the bake-bundle stage into the shipped image. There is no step between esbuild's output and the final COPY that could drop or replace bundle content.",
+    "answer": "YES, this reaches /app/bakes. Confirmed by two independent paths, one of them (Path B) not requiring any transitive resolution at all -- the changed lib file is a bundle entrypoint in its own right as of CTX-WALKRULE."
+  },
+
+  "FINDING_dispatchEntrypointCountIsStale": {
+    "severity": "informational -- does not change the reach conclusion, both counts agree at 26 modules",
+    "dispatchText": "'/app/bakes is an esbuild bundle of four entrypoints over a 26-module graph'",
+    "measured": "scripts/build-publish-bake-clis.mjs at current HEAD (eed6f13, the commit this worktree was built from) has FIVE entries, not four. The fifth, tier1-conformant-lib, was added by CTX-WALKRULE (ce19c3b, #120, 'grade earned record retirement as its own class, RETIRED'), confirmed via `git merge-base --is-ancestor 0c4c1ea ce19c3b` (true) to be a commit AFTER CTX-BUILD's own pin-bump commit (0c4c1ea, the one that measured and reported 'four entrypoints, 26 modules'). Both commits are ancestors of current HEAD.",
+    "consequence": "CTX-BUILD's figure was correct when it was measured. The dispatch, written after CTX-WALKRULE landed, repeats it as current. It is off by one commit's worth of history, not wrong at the time it was made. The module count itself is unaffected (still 26 at both counts, per the CP2 trace above) because the fifth entrypoint's target was already inside the four-entrypoint closure.",
+    "evidentiaryStandard": "DEV_PROCESS 3.2a -- quoted and located: scripts/build-publish-bake-clis.mjs (current, 5 entries) vs. the dispatch text (4), git ancestry of 0c4c1ea and ce19c3b."
+  },
+
+  "section_guardCheck": {
+    "question": "Confirm the pin is a real 40-char SHA and that a malformed value would be caught. Check whether anything guards _LDT_SHA's shape; if nothing does, say so rather than adding a guard unasked.",
+    "shaShapeConfirmed": "7a739849fb16be68576ba0b9f1e397818b710614 -- length 40, matches /^[0-9a-f]{40}$/ (checked programmatically, not by eye)",
+    "wouldAMalformedValueBeCaught": "NO. Read the full 168-line cloudbuild.publish.yaml. Exactly one shape guard exists in the file: the deploy DIGEST regex at the gcloud-artifacts-describe step (`[[ \"$$DIGEST\" =~ ^${_IMAGE}@sha256:[0-9a-f]{64}$ ]] || { echo FATAL ...; exit 1; }`). No equivalent check exists for `_LDT_SHA`. It flows straight from the substitutions block into `git fetch --depth 1 origin ${_LDT_SHA}` (line 83) with no validation in between. A malformed value -- empty string, a branch name such as 'main' (which the dispatch explicitly says never to pin to), a truncated hash -- would either fail the fetch with an unguarded git error, or in the 'main' case, succeed silently against whatever main resolves to at build time, which is exactly the failure mode 'never pin to main' exists to prevent and nothing here enforces it mechanically.",
+    "actionTaken": "none -- not asked for. Reported as required by the dispatch's verify-by-violating section."
+  },
+
+  "section_ceilingCollisionCheck": {
+    "instruction": "CTX-CEILING is live in a separate worktree and owns zoning-layer-completeness.mjs. This lane owns cloudbuild.publish.yaml. If they appear to collide, STOP and report.",
+    "filesTouchedByThisLane": ["cloudbuild.publish.yaml"],
+    "zoningLayerCompletenessTouched": false,
+    "ceilingWorkAlreadyOnMain": "CTX-CEILING's own commit (eed6f13, 'fix(zoning-layer-completeness): re-derive Bastrop's ceiling to 26 ... (#124)') is the tip of origin/main this worktree was built from -- already merged, not in flight in this lane's diff, not touched by this commit's single-file change.",
+    "collision": "none"
+  },
+
+  "constraintsHonored": [
+    "no Cloud Run job executed",
+    "no Cloud Build submitted",
+    "no deploy, bake, publish or walk run",
+    "legacy-design-tools touched only via the same throwaway scratch clone from CP1, read-only, no checkout inside any tracked worktree, no push",
+    "hauska-engine, hauska-map not touched",
+    "no touch to zoning-layer-completeness.mjs or any other CTX-CEILING file"
+  ],
+
+  "openAtCP2": [
+    "branch not yet pushed; no PR yet; CI conclusion string not yet read",
+    "final LDT-main re-confirmation at close not yet run",
+    "nothing merged yet"
+  ]
+}
