@@ -1,0 +1,39 @@
+{
+  "lane": "ctx-retire",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T12:54:44Z",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-retire",
+  "branch": "fix/ctx-retire-declared-absence",
+  "baseCommit": "69de8fe6bc3c059ce89ccc988b8df72f312eee94",
+
+  "step2_implementation": {
+    "files": [
+      "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts",
+      "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts",
+      "artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts"
+    ],
+    "whatWasAdded": "Tier1RecordRetirement + isEarnedRecordRetirement + buildRecordRetirement in the lib file -- the SAME family as Tier1LeafAbsence/isEarnedLeafAbsence (CTX-LEAVES) one level up, at the record rather than the leaf. ConformantTier1Payload gains a required recordRetirement: Tier1RecordRetirement | null field, ALWAYS present (never an omitted key). buildConformantTier1Payload computes it from ONLY the already-fetched cadPropertyRoll (the declared-vintage cad_property read the bake already does for the dollar facets, ALL rows, not filtered to a use code): apn present, roll consulted, and byPropId has no row for it -> retired. Any prop_id present in the current roll structurally cannot reach this branch. recordRetirement is added to DIVERGENCE_IGNORE_NEW_SHAPE_KEYS (new-shape-only, same treatment as shapeSource/baked/source/access/publishRunId) so the old-vs-new divergence instrument is unaffected.",
+    "cliChange": "The CLI computes rollAbsent = cadPropertyRoll.consulted && !cadPropertyRoll.byPropId.has(propId) BEFORE the situs read. A rollAbsent record takes situsForRetiredBake (new, exported-locally) -- the claim's raw situsAddress, trimmed, with NO punctuation-only guard -- instead of situsForBake, so a retirement declaration is never gated by the very data-quality symptom (a punctuation-only situs on stale claim content, the mechanism CP1 established) that today causes these accounts to be silently skipped. A live record's situs handling is completely unchanged (same function, same refusal, same skippedBadSitus counter). The write path, assertNoOwnerKey / assertLandUseAbsenceEarned / assertRequiredLeafStatesEarned, and the place_layer_snapshots upsert are unchanged -- retired records now simply REACH the write instead of being skipped. Summary JSON gains a `retired` count alongside `written`.",
+    "notDone": "No change to hauska-factory (the walk), no deploy, no re-bake of any county -- per the dispatch's explicit prohibitions. No change to any serve/route file in this repo: no downstream consumer currently imports these types (grepped, zero hits outside the three files above), so nothing else needed updating for this change to be safe. Whether Property Explorer's customer-facing serve/UI should surface recordRetirement to a viewer is an open, unscoped follow-on decision -- not addressed here (see leave_behind in the close)."
+  },
+
+  "step3_noDeletion": "Confirmed by construction: no atoms table write, no DELETE/UPDATE against cad_property or place_layer_snapshots rows other than the normal upsert every bake run already performs (ON CONFLICT DO UPDATE, same as every other parcel). A retired row's place_layer_snapshots row is now WRITTEN (previously it was skipped and an OLDER row from before the conformant bake existed kept serving); nothing is removed anywhere.",
+
+  "step4_verification": {
+    "unitTests": "63/63 passing (54 pre-existing + 9 new CTX-RETIRE tests) via `DATABASE_URL=<dummy> npx vitest run src/nodeFacetBakeTier1Conformant.test.ts`. New tests cover: retired case is well-formed (isEarnedRecordRetirement), live case is null by construction, the two side by side, the negative case for an UNCONSULTED roll (no positive determination, no retirement), leaf-level guards still fire on a retired payload (not weakened), isEarnedRecordRetirement rejects a half-built object, and the divergence instrument tolerates the new key on both sides.",
+    "typecheck": "`npx tsc --noEmit -p .` on the whole api-server package: 1124 pre-existing errors, ALL in files this lane never touched (unbuilt sibling workspace .d.ts outputs -- this worktree has never run `pnpm run build`, a fresh-worktree environment condition, not a regression; plus a handful of libs this lane does not import missing drizzle-orm/etc. from a scoped install). Zero errors mention nodeFacetBakeTier1Conformant, nodeFacetBakeTier1ConformantCli, recordRetirement, or Tier1RecordRetirement anywhere in the 1124 lines -- grepped explicitly. src is included in this tsconfig with no test exclusion, so the .test.ts file (which imports every new symbol) was in scope and compiled clean.",
+    "liveVerification": "Ran the REAL buildConformantTier1Payload (via tsx, not vitest mocks) against the REAL production hauska_mcp atoms for 48055:1 (retired) and 48055:9900357 (live, real 2026-roll account) and the REAL fetchCountyCadPropertyRoll(neondb, '48055') result (consulted=true, declaredTaxYear=2026, 48,382 rows) -- read-only, no writes. Full side-by-side output archived at C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/4b72e193-bed3-44e1-b61f-5279e0dede4d/scratchpad/verify_retirement_output.json and reproduced in the close. Result: 48055:1 carries recordRetirement.verdict='absent-verified', basis names the parcel, declared tax_year 2026, last-seen tax_year 2025, and 'no successor account has been verified'; baseFacts.situsAddress is preserved as-is (', ,', the last-known claim, not voided). 48055:9900357 carries recordRetirement: null. This is the exact negative-case proof the mission required: a real, currently-served, current-roll account through the SAME code path emits no retirement.",
+    "credentialHygiene": "PRODUCTION_HAUSKA_MCP_URL / PRODUCTION_NEONDB_URL pulled from gcloud Secret Manager (project hauska-prod-497015) for this read-only verification; the plaintext files were deleted immediately after use."
+  },
+
+  "step_successorQuestion_final": "No successor identified by either the vintage crosswalk table (0 rows matching any of Caldwell's 267 roll-dropouts) or true polygon ST_Intersects against every 2026-roll parcel's geometry (0 of 47 single-feature retired parcels show genuine AREA overlap with a current-roll parcel -- all touches found are boundary/edge adjacency, area 0). No 'superseded by' field is being built. This is reported as an established negative in the close, not a guess.",
+
+  "decision": "Implementation, tests and live verification complete. Proceeding to open a PR on this branch (fix/ctx-retire-declared-absence), following the same-day CTX-lane precedent (ctx-mirror #646, ctx-elgin #643, ctx-inspectcard #381 -- all self-merged on a literal CI conclusion=success), then file the close with the PR outcome, the walk-grading-rule proposal, and the leave_behind block.",
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-retire_cp1.json",
+    "_inbox/2026-09-09_ctx-retire_cp2.json"
+  ]
+}

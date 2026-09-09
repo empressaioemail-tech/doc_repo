@@ -1,0 +1,119 @@
+{
+  "lane": "ctx-retire",
+  "planRow": "P-124",
+  "repo": "legacy-design-tools",
+  "worktree": "P:/seat-worktrees/property/legacy-design-tools-ctx-retire",
+  "branch": "fix/ctx-retire-declared-absence",
+  "baseCommit": "69de8fe6bc3c059ce89ccc988b8df72f312eee94",
+
+  "missionPremise": "Operator ruling 2026-09-09 (in the dispatch): an account absent from the current CAD roll must serve a DECLINE THAT NAMES WHY, never the prior vintage presented as current and never a silent skip; retirement is a declared state, never a deletion. The dispatch's own diagnosis ('the bake reads the current vintage, gets no CAD claim, and skips them entirely') was directionally right but not the literal mechanism -- CP1 established the real one from source plus live data.",
+
+  "completionPredicate": "A stranger can evaluate this done by: (1) buildConformantTier1Payload emits a well-formed, non-null recordRetirement (verified by isEarnedRecordRetirement) for every account absent from the county's current declared-vintage cad_property roll, and null for every account present in it -- proven both structurally (the predicate is built only from the already-fetched cadPropertyRoll map, so a present prop_id cannot reach the retired branch) and empirically (real production atoms for one retired and one live 48055 account, run through the real function, produce exactly that split); (2) no row, atom, or snapshot was deleted; (3) 63/63 tests pass, CI is green (11/11 literal conclusion=success), and the PR is merged; (4) a walk grading rule is proposed (not implemented -- hauska-factory is out of scope) that treats a retired row as its own class, never a content failure and never silently folded into a live coverage denominator.",
+
+  "scopeBasis": "In scope: the conformant bake (nodeFacetBakeTier1Conformant.ts, its CLI, its tests) only -- the dispatch named this file explicitly and forbade hauska-factory/hauska-engine, deploy, and re-bake. The retirement predicate was deliberately built on ROLL ABSENCE (cadPropertyRoll miss) rather than the dispatch-named situs-punctuation symptom, because CP1's live read showed the punctuation guard is incidental to Caldwell's specific stub-row shape and covers only 63 of the 267 accounts genuinely absent from the roll -- gating on the general, reliable signal is a superset of the dispatch's named 63 and does not regress anything asked for. Out of scope, deliberately: hauska-factory's verify-walk.mjs (grading rule is proposed, not implemented, per instruction); Property Explorer's serve/UI surfacing of recordRetirement to a human viewer (no operator ruling on that surface exists yet); a fleet-wide sweep of the other five counties for the same roll-absence population (this lane's live verification was scoped to Caldwell, the county the dispatch named).",
+
+  "pr": {
+    "number": 647,
+    "url": "https://github.com/empressaioemail-tech/legacy-design-tools/pull/647",
+    "mergeMethod": "squash",
+    "mergedAt": "2026-09-09T13:13:58Z",
+    "mergeCommit": "3885efadb789942a479b475d34d1518807756e0a",
+    "ciConclusions": "11 of 11 check-runs, literal conclusion string SUCCESS (verified via `gh pr view 647 --json statusCheckRollup`, not `gh pr checks` text). One transient failure on the first run ('Test', in lib/submission-classifier/src/__tests__/upsert.test.ts -- a package this lane never touched, zero mentions of nodeFacetBakeTier1Conformant anywhere in its log; main's most recent run at this exact base commit was already green) cleared on `gh run rerun --failed` with no code change -- treated as flaky, not investigated further since it is outside this lane's changed files and outside its scope."
+  },
+
+  "diff": {
+    "filesChanged": 3,
+    "insertions": 400,
+    "deletions": 9,
+    "files": [
+      "artifacts/api-server/src/lib/nodeFacetBakeTier1Conformant.ts (+recordRetirement field, Tier1RecordRetirement/isEarnedRecordRetirement/buildRecordRetirement, DIVERGENCE_IGNORE_NEW_SHAPE_KEYS entry)",
+      "artifacts/api-server/src/nodeFacetBakeTier1ConformantCli.ts (+rollAbsent branch, situsForRetiredBake, `retired` summary counter)",
+      "artifacts/api-server/src/nodeFacetBakeTier1Conformant.test.ts (+9 tests, +1 pinned-list update)"
+    ],
+    "fullDiff": "see PR #647 (link above) for the literal diff -- omitted here to keep this artifact a reasonable size; every changed line is covered by the summaries above and the counts in step2_implementation of the CP2 checkpoint."
+  },
+
+  "counts": {
+    "caldwell_cad_property_tax_year_2025": { "n": 24989, "countingRule": "SELECT count(*) FROM cad_property WHERE county_fips='48055' AND tax_year=2025, live read 2026-09-09" },
+    "caldwell_cad_property_tax_year_2026": { "n": 48382, "countingRule": "SELECT count(*) FROM cad_property WHERE county_fips='48055' AND tax_year=2026, live read 2026-09-09" },
+    "roll_dropout_prop_ids_2025_present_2026_absent": { "n": 267, "countingRule": "SELECT prop_id FROM cad_property WHERE county_fips='48055' AND tax_year=2025 EXCEPT SELECT prop_id FROM cad_property WHERE county_fips='48055' AND tax_year=2026 -- the TRUE population this fix's recordRetirement predicate covers" },
+    "of_267_with_punctuation_only_situs": { "n": 63, "countingRule": "of the 267 above, situs_address matches /^[\\s,.\\-;:'\"`]+$/ (the same regex assertSitusNotPunctuationOnly uses) -- the dispatch's named '63 stale parcels', an EXACT match to the count of Caldwell tier1 snapshots still on the old node-facets-tier1-v1 schema" },
+    "caldwell_tier1_snapshots_on_old_schema": { "n": 63, "countingRule": "SELECT count(*) FROM place_layer_snapshots WHERE adapter_key='node-facets:tier1' AND place_key LIKE 'node:48055:%' AND payload_json->>'facetSchemaVersion'='node-facets-tier1-v1', live read 2026-09-09 -- confirms the 63 are the same population, not a coincidence" },
+    "caldwell_tier1_snapshots_on_conformant_schema": { "n": 48586, "countingRule": "same query, facetSchemaVersion='node-facets-tier1-conformant-v1'" },
+    "of_267_with_normal_situs_silently_restale_baked": { "n": 204, "countingRule": "267 minus the 63 above; confirmed live that all 204 DO get a fresh bakedAt every run (same run timestamp as every live parcel) using their own STALE 2025 claim for baseFacts, with only the dollar-roll fields (correctly) reading absent since those alone are read from the current-vintage cadPropertyRoll -- this is the quieter half of the same defect, and this fix's roll-absence predicate now covers it too" },
+    "crosswalk_matches_for_the_267": { "n": 0, "countingRule": "SELECT * FROM cad_property_vintage_crosswalk WHERE county_fips='48055' AND from_prop_id = ANY(<the 267>) -- table exists, zero rows for this county's dropouts" },
+    "successor_geometry_overlap_single_feature_retired_parcels": { "n": "0 of 47", "countingRule": "of the 63, 47 are genuine single-feature txgio_parcel rows (the other 16, including the dispatch's own worked example 48055:1, share a prop_id with dozens to hundreds of other features -- sentinel/bucket ids, not individually identifiable parcels); ST_Area(ST_Intersection(retired.geom, current_roll_parcel.geom)) was exactly 0 for every one of the 157 (retired, candidate) pairs that ST_Intersects found -- every touch is boundary/edge adjacency, never real area overlap" },
+    "tests": { "n": "63/63 passing", "countingRule": "vitest run src/nodeFacetBakeTier1Conformant.test.ts -- 54 pre-existing + 9 new, zero regressions" }
+  },
+
+  "constraintsHonored": [
+    "Did not touch hauska-factory or hauska-engine (grepped: zero files under either path in this diff)",
+    "Did not deploy anything (no gcloud run deploy / vercel deploy / cloudbuild trigger issued)",
+    "Did not re-bake any county (the CLI was never invoked with --apply / without --dry-run against production in this session; the CLI file itself was only imported, never executed against a live write path)",
+    "Did not delete any row, atom, or snapshot (grepped the diff: no DELETE statement anywhere; the only DB write in the touched code is the pre-existing ON CONFLICT DO UPDATE upsert every bake run already performs)",
+    "Did not fabricate a successor account (no 'superseded by' field was added; the successor search came back negative and is reported as a negative, not omitted)",
+    "Did not weaken any leaf check to make the walk pass (assertLandUseAbsenceEarned / assertRequiredLeafStatesEarned run unchanged on a retired payload -- proven by a dedicated test that a bare-null leaf on a retired payload still throws REQUIRED_LEAF_BARE_NULL)",
+    "Registered the worktree in _catalog/seat_register.json (both path and worktree set) BEFORE the first file edit, on a freshly cut branch, never the dirty primary property worktree",
+    "Verified at source: the skip mechanism, the 267-vs-63 discrepancy, the schema-distribution match, and both worked-example payloads are all live database reads, not assumptions from the dispatch's prose",
+    "doc_repo commits are planner-owned: this lane's _catalog/seat_register.json edits (worktree registration, then the CLOSED status update) are left UNCOMMITTED in P:/doc_repo, listed here rather than committed. This close artifact and both checkpoints are also uncommitted _inbox/ files in that same tree."
+  ],
+
+  "walkGradingRuleProposal": {
+    "summary": "The integration seat implements this in hauska-factory's verify-walk.mjs (or wherever county_facet_coverage/BP-* grading lives). This lane does not touch that repo.",
+    "rule1": "Read payload.recordRetirement. Apply isEarnedRecordRetirement (exported from nodeFacetBakeTier1Conformant.ts, same completeness discipline as isEarnedLeafAbsence) rather than a bare truthy check.",
+    "rule2": "A row where isEarnedRecordRetirement(recordRetirement) is true grades as its own class, RETIRED -- never a BP-CONTENT-01 failure, never silently dropped from any denominator. Report it as its own count (retiredCount) alongside servedCount, with its own counting rule stated inline (DEV_PROCESS 1.1/1.2).",
+    "rule3": "BP-CONFORMANT-01 (schema-version check) is UNCHANGED. A retired row must still carry facetSchemaVersion === 'node-facets-tier1-conformant-v1' like every other row -- this fix makes that true for the first time for the 63 that were stuck on the old schema; it is not a new tolerance, it is the walk's EXISTING rule finally being satisfiable for this population.",
+    "rule4": "BP-CONTENT-01 (leaf four-state check) is UNCHANGED at the leaf level. assertRequiredLeafStatesEarned / isEarnedLeafAbsence already enforce this for every row, retired or not, and this lane deliberately did not touch that code path or its wording. No new tolerance there either -- 'a genuinely different state, not a null that got excused.'",
+    "rule5_NEW": "Any coverage/completeness metric the walk computes over a county (percent parcels with a resolved land use, percent with acreage, etc.) must EXCLUDE retired rows from its denominator, or report retired-vs-live as an explicitly separate split. Folding a retired account's necessarily-absent facets into a live coverage denominator manufactures a false coverage gap for a population the operator has already ruled out of scope (DEV_PROCESS 1.3: measure the class you are reporting, never derive it by subtraction -- 'still needs a land use' and 'retired, not a current account' are different classes and must not be merged).",
+    "rule6_verifyByViolating": "Per DEV_PROCESS 2.2, the walk's new retirement-recognition check must be proven able to REJECT a malformed marker before it is trusted -- e.g. a payload with recordRetirement: {status:'retired'} (required fields missing) must NOT be graded RETIRED. isEarnedRecordRetirement already implements this rejection; the walk's own test suite should exercise it the same way this lane's own test does (`isEarnedRecordRetirement rejects a half-built object`)."
+  },
+
+  "successorQuestion": {
+    "operatorsOpenQuestion": "are these deletions, or splits with successor accounts?",
+    "finding": "No successor identified by either method tried. (1) cad_property_vintage_crosswalk (the L21 mechanism built exactly for this) has zero rows for any of Caldwell's 267 roll-dropouts. (2) True polygon ST_Intersects + ST_Area(ST_Intersection(...)) against every prop_id in the 2026 roll: for the 47 of 63 punctuation-only accounts that are genuine single-feature parcels (the other 16 -- including the dispatch's own worked example, 48055:1 -- share a prop_id with 200+ OTHER txgio_parcel features and are not individually identifiable accounts to begin with, a finding in its own right), zero showed any real AREA overlap with a current-roll parcel; every geometric touch found was boundary/edge adjacency (area exactly 0), i.e. a neighboring parcel, not a successor.",
+    "conclusion": "This does not prove deletion -- a true successor could exist on a plat not yet geometrically ingested into txgio_parcel, which this check cannot see. But it is real, negative evidence against the simplest alternative (renumbered into an adjacent/neighboring account), and per the mission's instruction, naming an unverified successor would be worse than naming none. No 'superseded by' field is being built. This question is answered as 'no successor established', not left silently unaddressed.",
+    "additionalFinding_notAskedFor_reportedAnyway": "48055:1, the dispatch's own worked example, is not a well-formed single account in the underlying geometry data -- txgio_parcel holds 203 distinct features sharing prop_id '1' (and 227 sharing prop_id '0'), almost certainly sentinel/bucket ids from the stratmap25-landparcels ingest rather than a real CAD account identity. The dispatch's stated '7.025 acres' for this parcel does not match the currently-served (pre-fix) payload's own computed acreage of 195.2147 (shoelace off whichever of the 203 features the old join happened to pick first) -- flagging this discrepancy rather than silently reconciling it (DEV_PROCESS 1.4)."
+  },
+
+  "verifyByViolating_payloadsSideBySide": {
+    "method": "Ran the REAL buildConformantTier1Payload (via tsx, not a mock) against the REAL production hauska_mcp atoms for 48055:1 and 48055:9900357, and the REAL fetchCountyCadPropertyRoll(neondb, '48055') result (consulted=true, declaredTaxYear=2026, 48,382 rows) -- read-only, no writes, credentials pulled from gcloud Secret Manager and deleted immediately after use.",
+    "retired_48055_1": {
+      "recordRetirement": {
+        "status": "retired",
+        "verdict": "absent-verified",
+        "authority": "Caldwell County CAD roll (cad_property) for county_fips 48055 at declared tax_year 2026",
+        "scopeSearched": "cad_property, ALL rows (not filtered to a use code), county_fips 48055 tax_year 2026",
+        "asOf": "2026-09-09T12:52:39.712Z",
+        "basis": "48055:1: prop_id 1 carries no row in the Caldwell County CAD roll's declared tax_year 2026; this record's own claim last carried tax_year 2025. This account is not on the current roll -- split, merged, renumbered or removed; no successor account has been verified. The facts elsewhere on this payload are the LAST-KNOWN claim, not current.",
+        "lastSeenTaxYear": 2025
+      },
+      "facetSchemaVersion": "node-facets-tier1-conformant-v1",
+      "baseFacts_situsAddress": ", ,",
+      "note": "Full payload (all leaves) archived at C:/Users/cente/AppData/Local/Temp/claude/C--Users-cente/4b72e193-bed3-44e1-b61f-5279e0dede4d/scratchpad/verify_retirement_output.json (this session's scratchpad; not durable -- copy it out if the operator wants it kept)."
+    },
+    "live_48055_9900357": {
+      "recordRetirement": null,
+      "facetSchemaVersion": "node-facets-tier1-conformant-v1",
+      "baseFacts_cadRoll_marketValue": { "v": 1038, "source": "cad_property", "vintage": "2026", "valueBasis": "county-assessed" },
+      "note": "A REAL 2026-roll account, same county, run through the identical code path. recordRetirement is null -- the required negative-case proof, on real data, not a constructed fixture."
+    }
+  },
+
+  "leave_behind": {
+    "lessons": [
+      "assertSitusNotPunctuationOnly's regex (/^[\\s,.\\-;:'\"`]+$/) is the literal, incidental mechanism that turned 'absent from the current roll' into 'silently never rebaked' for Caldwell specifically -- the retired accounts' stale claims happen to carry situsAddress ', ,'. This is a symptom of THIS county's stratmap-tier stub rows, not the general retirement signal. The general, reliable signal is cadPropertyRoll.byPropId.has(propId) against the DECLARED vintage, which the bake already fetches every run for the dollar facets. Any future 'why is this account not updating' investigation on another county should check roll-absence FIRST, situs shape second.",
+      "A scoped `pnpm install --filter \"./artifacts/api-server...\"` did NOT reliably pull every transitively-imported workspace package's own dependencies (missed yauzl for lib/cad-ingest, missed the drizzle-orm link for lib/db) even though pnpm's `...` selector is documented to include dependencies. Needed an explicit `--filter \"./lib/X...\"` per workspace package actually imported before tsx/a standalone script would resolve cleanly (vitest tolerated the gap for the target test file, but a plain tsx run of the same import graph did not). Budget for this on any fresh worktree that needs to run real code, not just vitest.",
+      "`tsc --noEmit -p .` on a FRESH worktree that has never run `pnpm run build` produces ~1,100 pre-existing TS6305 'output not built' errors across the whole monorepo (project-reference .d.ts outputs missing) -- an environment artifact, not a code signal. CI's own Typecheck job (which runs a real build first) passed cleanly on this exact branch, confirming the local noise was spurious. Don't read a fresh-worktree whole-package tsc --noEmit as ground truth; grep for your own files/symbols in the output, or trust CI instead."
+    ],
+    "deadEnds": [
+      "A bbox-overlap query (west_lng/south_lat/east_lng/north_lat) as a cheap successor-search proxy is USELESS here -- a retired prop_id with even a handful of scattered txgio_parcel features produces a bbox spanning enormous unrelated territory, matching hundreds of spurious 'candidates' (one 5-feature retired id matched 100+ current-roll parcels by bbox). True ST_Intersects + ST_Area(ST_Intersection(...)) is not much more expensive and is the only method that produced a real signal."
+    ],
+    "groundTruths": [
+      "(2026-09-09, live read against production) Caldwell 48055 cad_property tax_year 2025=24,989, tax_year 2026=48,382. 267 prop_ids are on 2025 and absent from 2026. Of those, exactly 63 carry a punctuation-only situsAddress (', ,') sourced from stratmap25-landparcels_48055_caldwell_202503 and are the ONLY 63 of 48,649 Caldwell tier1 place_layer_snapshots rows still on the old (node-facets-tier1-v1) schema -- confirmed by direct query, not inference. cad_property_vintage_crosswalk has ZERO rows for any of the 267. prop_id 0 and 1 in txgio_parcel are NOT single parcels -- 227 and 203 distinct features respectively share those ids."
+    ],
+    "open": [
+      "Whether Property Explorer's customer-facing serve/API/UI should surface recordRetirement to a human viewer (vs. it existing only in the stored payload for walk/coverage tooling) is unaddressed and unscoped -- this lane's dispatch asked only for the bake-side declaration and a proposed walk rule. Needs an operator ruling before any lane touches routes/UI for it.",
+      "Whether the integration seat wants a fleet-wide sweep across the other five counties (48021, 48027, 48029, 48085, 48091, 48113, 48121, 48187, 48209, 48257, 48309, 48439, 48453, 48491 -- Caldwell's siblings) for the same roll-absence population before the next publish. This lane's LIVE verification was scoped to Caldwell only (the county the dispatch named), but the FIX itself (recordRetirement) applies to every county the conformant bake runs against, unconditionally, since it reads only cadPropertyRoll, which every county already supplies. No county-specific code was written."
+    ]
+  }
+}
