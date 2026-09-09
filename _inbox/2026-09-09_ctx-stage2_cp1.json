@@ -1,0 +1,32 @@
+{
+  "lane": "ctx-stage2",
+  "planRow": "P-124",
+  "checkpoint": "CP1",
+  "filedAt": "2026-09-09T00:00:00Z",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-ctx-stage2",
+  "branch": "fix/ctx-stage2-elgin-travis-zoning-staging",
+  "headAtOpen": "f2535f4931290c24d5ad4179c233c001e2c7c599",
+
+  "step1_registryState": {
+    "file": "packages/engine-core/src/zoning-staging/registry.ts",
+    "finding": "ZONING_STAGING_REGISTRY has exactly 2 entries total: 'elgin-tx' and 'smithville-tx'. The 'elgin-tx' entry is layer 0 ONLY (Elgin_Zoning FeatureServer/0, layerWhere \"CITY_LIMIT = 'ELGIN'\", parentCountyFips '48021', layerRole 'base', geometryGrain 'parcel-joined', cityGeoId 4823044). Its allCountyFips field already lists ['48021','48453'] -- the multi-county span is DOCUMENTED but only one layer/one county is actually wired; there is no second registry entry pointing at FeatureServer/1 or at county 48453. No Travis-side entry exists under any key.",
+    "verdict": "GAP CONFIRMED, not already fixed. This mission is correctly scoped -- proceeding to step 2, not stopping.",
+    "shapeNote": "ZoningCityRegistryEntry has singular layerUrl/layerId/parentCountyFips fields (no array), and ZONING_STAGING_REGISTRY is a plain object literal keyed by cityKey. resolveZoningStagingCity() throws on a missing key. Consequence for step 2: the Travis-side layer cannot reuse the 'elgin-tx' key in the same object literal (a duplicate key would silently overwrite the layer-0 entry, not merge with it -- JS object-literal semantics, not a registry bug). It must be added as a new, distinct key."
+  },
+
+  "step_reconfirmZero": {
+    "countingRule": "SELECT city_key, parent_county_fips, layer_role, source_layer_id, count(*) FROM tx_zoning_district_staging WHERE city_key ILIKE 'elgin%' OR parent_county_fips='48453', GROUP BY 1,2,3,4. Live read-only session (SET default_transaction_read_only = on) against CORTEX_DATABASE_URL direct host (pooler suffix stripped), independent of CTX-STAMP's own read.",
+    "result": [
+      { "city_key": "elgin-tx", "parent_county_fips": "48021", "layer_role": "base", "source_layer_id": "0", "n": 3220 },
+      { "city_key": "austin-tx", "parent_county_fips": "48453", "layer_role": "base", "source_layer_id": "0", "n": 21953 },
+      { "city_key": "lakeway-tx", "parent_county_fips": "48453", "layer_role": "base", "source_layer_id": "0", "n": 749 },
+      { "city_key": "pflugerville-tx", "parent_county_fips": "48453", "layer_role": "base", "source_layer_id": "0", "n": 725 }
+    ],
+    "verdict": "Reconfirmed independently: Elgin has ZERO staged rows under county 48453 (Travis) at any city_key. Matches CTX-STAMP's prior read exactly (3,220 / 0 / 21,953 / 749 / 725)."
+  },
+
+  "decision": "Mission confirmed as scoped. Proceeding to step 2 (add Travis-side registry entry under a new cityKey, since the layer-0 entry's key cannot be reused without overwriting it), step 3 (dry-run then apply staging against CORTEX_DATABASE_URL direct host), and step 4 (re-measure residue per county).",
+
+  "checkpointArtifacts": ["_inbox/2026-09-09_ctx-stage2_cp1.json"]
+}

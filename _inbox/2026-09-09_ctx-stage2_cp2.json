@@ -1,0 +1,45 @@
+{
+  "lane": "ctx-stage2",
+  "planRow": "P-124",
+  "checkpoint": "CP2",
+  "filedAt": "2026-09-09T13:29:00.000Z",
+  "repo": "hauska-engine",
+  "worktree": "P:/seat-worktrees/property/hauska-engine-ctx-stage2",
+  "branch": "fix/ctx-stage2-elgin-travis-zoning-staging",
+
+  "step2_registryEntryAdded": {
+    "file": "packages/engine-core/src/zoning-staging/registry.ts",
+    "newKey": "elgin-tx-travis",
+    "whyNewKey": "ZONING_STAGING_REGISTRY is a plain object literal keyed by cityKey; the layer-0 entry already owns 'elgin-tx', and a duplicate key in one object literal silently overwrites rather than merges. Since ZoningCityRegistryEntry has singular layerUrl/layerId/parentCountyFips fields (no array), the Travis-side layer needed a distinct key, not a field addition to the existing entry.",
+    "liveProbeBeforeWiring": "_inbox/2026-09-09_ctx-stage2_elgin_travis_layer1_probe.json -- layer 1 total 500 features, CITY_LIMIT='ELGIN' on 499 (1 blank, excluded, matching layer 0's identical filter -- not widened), field schema (OBJECTID/Zone_Code/Zoning/CITY_LIMIT) and spatialReference (wkid 102739) confirmed identical to layer 0.",
+    "entryShape": "Same shape as elgin-tx: layerId '1', layerWhere \"CITY_LIMIT = 'ELGIN'\" (unwidened), same codeDomainMap (A->R-4 ordinance divergence preserved verbatim), parentCountyFips '48453', allCountyFips ['48021','48453'], layerRole 'base', geometryGrain 'parcel-joined', confidence 'high'.",
+    "testsAndTypecheck": "src/__tests__/zoning-staging.test.ts: 15/15 pass (no test asserted a fixed registry key count). tsc --noEmit: clean.",
+    "diffScope": "Exactly one file changed: registry.ts, one new object added. No other file touched."
+  },
+
+  "step3_staging": {
+    "dryRun": {
+      "cmd": "ZONING_STAGING_PATH=1 tsx scripts/stage-tx-zoning-district.mjs --city=elgin-tx-travis --dry-run",
+      "result": "featuresFetched=499, featuresStaged=499, skipped=0, codeDomainMapAppliedCount=3 (the 3 Zone_Code='A' rows correctly mapped to R-4), sampleDistrictCodes includes 'R-4' confirming the ordinance mapping fired."
+    },
+    "apply": {
+      "cmd": "ZONING_STAGING_PATH=1 CORTEX_DATABASE_URL=<direct host, pooler suffix stripped by the script's own stripPooler()> tsx scripts/stage-tx-zoning-district.mjs --city=elgin-tx-travis --apply",
+      "authorization": "Explicit, dispatch-scoped: 'A live write to CORTEX_DATABASE_URL (direct host, never a -pooler host) to stage the polygons... authorized by the operator as part of the six-county run.'",
+      "result": "499 rows inserted under city_key='elgin-tx-travis'. storeVerify: n=499, null_tier=0, distinct_codes=6, geometry_crs=EPSG:4326. hostFingerprint confirmed direct (pooler=false).",
+      "collateralCheck": "Re-queried both keys after apply: elgin-tx (layer 0, Bastrop) still exactly 3,220 rows, unchanged -- the REPLACE-by-city_key semantics in the writer (DELETE WHERE city_key=$1) only ever touched 'elgin-tx-travis', a key that held zero rows before this write. Bastrop's existing staged data was never at risk and is confirmed untouched."
+    }
+  },
+
+  "processNote_heavyScanIncident": {
+    "what": "A first attempt at the step-4 residue query joined candidate parcels against tx_zoning_district_staging with NO city_key restriction and no bbox pre-filter -- effectively a nested-loop scan against the FULL table (~107 cities' worth of staged polygons per the script's own header comment), launched as a background shell command without a prior heavy-scan announcement per AGENT_CONTRACT section 4. It ran 1h05m at ~0% CPU (diagnosed as stalled, not merely slow, via Get-CimInstance CPU sampling) and was killed (mine, read-only, SET default_transaction_read_only=on, safe to terminate; pg_stat_activity confirmed no leftover server-side query afterward). Rewritten with a per-target city_key restriction, a numeric bbox-overlap pre-filter (both tables carry west_lng/south_lat/east_lng/north_lat), a connect_timeout, and a statement_timeout, after which every subsequent query completed in single-digit to low-double-digit seconds. Reported here rather than omitted because AGENT_CONTRACT requires announcing heavy scans before they start, and this one was not announced because it was not recognized as heavy until it had already stalled.",
+    "leaveBehindLesson": "LESSON: never join against tx_zoning_district_staging without a city_key filter (or a bbox pre-filter) on the polygon side -- the table holds ~107 cities' worth of ArcGIS polygons and the geometry column is JSONB cast per-row via ST_GeomFromGeoJSON, so an unrestricted nested-loop spatial join has no cheap early-out and can hang indefinitely rather than merely run slowly. Always set statement_timeout on ad hoc PostGIS sessions against this store."
+  },
+
+  "checkpointArtifacts": [
+    "_inbox/2026-09-09_ctx-stage2_cp1.json",
+    "_inbox/2026-09-09_ctx-stage2_cp2.json",
+    "_inbox/2026-09-09_ctx-stage2_elgin_travis_layer1_probe.json"
+  ],
+
+  "nextStep": "Step 4/5: re-measure per-county residue (denominator + numerator, real point-in-polygon against the now-staged Travis layer) and compare against CTX-ELGIN's probed 9 (48021) / 457 (48453). Proceeding to CLOSE with those results."
+}
